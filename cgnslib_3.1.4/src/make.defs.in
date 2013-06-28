@@ -1,0 +1,142 @@
+# makefile include for @SYSTEM@
+
+SHELL = @SHELL@
+
+#------------------------------------------------------------------------
+# CC      - C compiler
+# CFLAGS  - compiler flags
+# COOUT   - flag to name the object output (typically -o).
+# CEOUT   - flag to name the output executable (typically -o).
+# LDFLAGS - any additional linking flags
+# CLIBS   - any additional libraries needed to link a CGNS application
+#------------------------------------------------------------------------
+
+CC      = @CC@
+CFLAGS  = @CFLAGS@ @SYSCFLAGS@
+COOUT   = @COOUT@
+CEOUT   = @CEOUT@
+LDFLAGS = @LDFLAGS@
+CLIBS   = @LIBS@
+
+#------------------------------------------------------------------------
+# SPACE  - used to force a space in the compiler executable output flag
+# O       - object file extension (typicaly o)
+# A       - library file extension (typically a)
+# EXE     - executable extension (typically blank)
+# LIBCGNS - CGNS library name
+#------------------------------------------------------------------------
+
+SPACE   =
+O       = @OBJEXT@
+A       = @LIBEXT@
+EXE     = @EXEEXT@
+
+LIBCGNS = @BUILDDIR@/@CGNSLIB@
+
+#------------------------------------------------------------------------
+# F2CFLAGS defines the type of Fortran to C interface.
+# -DUSE_ADF_MACROS causes the ADF Fortran to C interface to use
+#    the old ADF macros instead of the same macros as the CGNS library.
+# The Fortran module name for Cray, VMS and Windows are set internally,
+# everything else is handled by setting F2CFLAGS to one of:
+#   -DUPPERCASE   : names are uppercase
+#   -DUPPERCASE_  : names are uppercase followed by underscore
+#   -DUPPERCASE__ : names are uppercase followed by 2 underscores
+#   -DLOWERCASE   : names are lowercase
+#   -DLOWERCASE_  : names are lowercase followed by underscore
+#   -DLOWERCASE__ : names are lowercase followed by 2 underscores
+# If not specified, LOWERCASE_ is assumed.
+#
+# CFGFLAGS defines any additional compiler options needed to build
+# the CGNS library. This is typically set by the configure script.
+#------------------------------------------------------------------------
+
+F2CFLAGS = @F2CFLAGS@
+CFGFLAGS = @CFGFLAGS@
+
+#------------------------------------------------------------------------
+# These are not used to build the CGNS library.
+# Fortran compiler (F77) and options (FFLAGS).
+# FEOUT is the flag to name the output executable (typically -o).
+# FLIBS lists any additional libraries needed to link a CGNS application
+#------------------------------------------------------------------------
+
+F77    = @F77@
+FFLAGS = @FFLAGS@ @SYSFFLAGS@
+FEOUT  = @FEOUT@
+FLIBS  = @FLIBS@
+
+#------------------------------------------------------------------------
+# strip command for executables - set to true if not used
+#------------------------------------------------------------------------
+
+STRIP  = @STRIP@
+
+#------------------------------------------------------------------------
+# library archiver and ranlib
+# AROUT may be used to set a library output flag as:
+#    $(AR) $(AROUT)library_name objects
+# Set RANLIB to true if not used
+#------------------------------------------------------------------------
+
+AR     = @AR@
+AROUT  = @AROUT@
+RANLIB = @RANLIB@
+
+#------------------------------------------------------------------------
+# these should only be set if building with HDF5
+# HDF5INC - path to HDF5 header files
+# HDF5LIB - HDF5 library
+# SZIPLIB - szip library (if needed)
+# ZLIBLIB - zlib library (if needed)
+#------------------------------------------------------------------------
+
+HDF5INC = @HDF5DEF@
+HDF5LIB = @HDF5LIB@
+SZIPLIB = @SZIPLIB@
+ZLIBLIB = @ZLIBLIB@
+
+#------------------------------------------------------------------------
+# these should only be set if building with HDF5 and MPI
+# MPIINC  - path to MPI header files
+# MPILIBS - MPI libraries
+# MPIEXEC - MPI executor
+#------------------------------------------------------------------------
+
+MPIINC  = @MPIDEF@
+MPILIBS = @MPILIBS@
+MPIEXEC = @MPIEXEC@
+
+#------------------------------------------------------------------------
+# BUILDLIBS contains the list of additional libraries
+#           with which a CGNS application needs to link
+#------------------------------------------------------------------------
+
+BUILDLIBS = $(HDF5LIB) $(SZIPLIB) $(ZLIBLIB) $(MPILIBS)
+
+#------------------------------------------------------------------------
+# commands for removing files and creating/deleting directory
+#------------------------------------------------------------------------
+
+RM     = /bin/rm -f
+RMDIR  = /bin/rm -rf
+MKDIR  = mkdir
+
+#------------------------------------------------------------------------
+# installation library name and directories
+#
+# INSTALL      - install command
+# INSTALL_PROG - install executable
+# INSTALL_DATA - install data
+# LIBDIR       - installation directory for CGNS library
+# INCLUDEDIR   - installation directory for CGNS headers
+# BINDIR       - installation directory for CGNS executables
+#------------------------------------------------------------------------
+
+INSTALL      = @INSTALL@
+INSTALL_PROG = @INSTALL_PROGRAM@
+INSTALL_DATA = @INSTALL_DATA@
+LIBDIR       = @LIBDIR@
+INCLUDEDIR   = @INCLUDEDIR@
+BINDIR       = @BINDIR@
+

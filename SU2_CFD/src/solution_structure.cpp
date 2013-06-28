@@ -43,25 +43,18 @@ CSolution::CSolution(void) {
 	Res_Sour = NULL;
 	Res_Conv_i = NULL;
 	Res_Visc_i = NULL;
-	Res_Sour_i = NULL;
 	Res_Conv_j = NULL;
 	Res_Visc_j = NULL;
-	Res_Sour_j = NULL;
 	Jacobian_i = NULL;
 	Jacobian_j = NULL;
-  Jacobian_MeanFlow_i = NULL;
-	Jacobian_MeanFlow_j = NULL;
 	Jacobian_ii = NULL;
 	Jacobian_ij = NULL;
 	Jacobian_ji = NULL;
 	Jacobian_jj = NULL;
 	Smatrix = NULL;
 	cvector = NULL;
-	StiffMatrix_Elem = NULL;
-	StiffMatrix_Node = NULL;
   xsol = NULL;
 	xres = NULL;
-	rhs = NULL;
   node = NULL;
 
 }
@@ -87,8 +80,6 @@ CSolution::~CSolution(void) {
 	if (Res_Sour != NULL) delete [] Res_Sour;
 	if (Res_Conv_i != NULL) delete [] Res_Conv_i;
 	if (Res_Visc_i != NULL) delete [] Res_Visc_i;
-	if (Res_Sour_i != NULL) delete [] Res_Sour_i;
-	if (Res_Conv_j != NULL) delete [] Res_Conv_j;
 	if (Res_Visc_j != NULL) delete [] Res_Visc_j;
 	if (Res_Sour_j != NULL) delete [] Res_Sour_j;
   if (xsol != NULL) delete [] xsol;
@@ -105,12 +96,6 @@ CSolution::~CSolution(void) {
     for (iVar = 0; iVar < nVar; iVar++)
       delete Jacobian_j[iVar];
     delete [] Jacobian_j;
-  }
-  
-	if (Jacobian_MeanFlow_i != NULL) {
-    for (iVar = 0; iVar < nVar; iVar++)
-      delete Jacobian_MeanFlow_i[iVar];
-    delete [] Jacobian_MeanFlow_i;
   }
   
 	if (Jacobian_MeanFlow_j != NULL) {
@@ -164,58 +149,6 @@ CSolution::~CSolution(void) {
   
   //	delete [] **StiffMatrix_Elem;
   //	delete [] **StiffMatrix_Node;*/
-  
-}
-
-void CSolution::SetResidual_RKCoeff(CGeometry *geometry, CConfig *config, unsigned short iRKStep) {
-	unsigned short iVar;
-	unsigned long iPoint;
-	double *local_Res_Conv, *local_Res_Visc, *local_Res_Sour, *local_Res_Total, *Res_Visc_km1, *Res_Visc_k, RK_BetaCoeff;
-
-	Res_Visc_km1 = new double [nVar];
-	Res_Visc_k = new double [nVar];
-	local_Res_Total = new double [nVar];
-
-	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-		local_Res_Conv = node[iPoint]->GetResConv();
-		local_Res_Visc = node[iPoint]->GetResVisc();
-		local_Res_Sour = node[iPoint]->GetResSour();
-
-		for (iVar = 0; iVar < nVar; iVar++) {
-			if (iRKStep == 0) {
-				Res_Visc_k[iVar] = local_Res_Visc[iVar];
-				local_Res_Total[iVar] = local_Res_Conv[iVar] + local_Res_Sour[iVar] + Res_Visc_k[iVar]; }
-			else {
-				RK_BetaCoeff = config->Get_Beta_RKStep(iRKStep);
-				Res_Visc_km1[iVar] = node[iPoint]->GetRes_Visc_RK(iVar, iRKStep-1);
-				Res_Visc_k[iVar] = RK_BetaCoeff*local_Res_Visc[iVar] + (1.0 - RK_BetaCoeff) * Res_Visc_km1[iVar];
-				local_Res_Total[iVar] = local_Res_Conv[iVar] + local_Res_Sour[iVar] + Res_Visc_k[iVar]; 
-			}
-		}
-		node[iPoint]->SetRes_Visc_RK(Res_Visc_k, iRKStep);
-		node[iPoint]->SetResidual(local_Res_Total);
-	}
-
-	delete [] Res_Visc_km1;
-	delete [] Res_Visc_k;
-	delete [] local_Res_Total;
-}
-
-void CSolution::SetResidual_Total(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iRKStep, unsigned short iMesh) {
-
-	unsigned short iVar, nVar = GetnVar();
-	unsigned long iPoint;
-	double *Res_Conv, *Res_Visc, *Res_Sour;
-
-	/*--- Add the convective and the viscous residual ---*/
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-		Res_Conv = node[iPoint]->GetResConv();
-		Res_Visc = node[iPoint]->GetResVisc();
-		Res_Sour = node[iPoint]->GetResSour();
-		for (iVar = 0; iVar < nVar; iVar++)
-			Residual[iVar] = (Res_Conv[iVar]+Res_Visc[iVar]+Res_Sour[iVar]);
-		node[iPoint]->SetResidual(Residual);		
-	}
   
 }
 
@@ -317,8 +250,8 @@ void CSolution::SetGrid_Movement_Residual (CGeometry *geometry, CConfig *config)
 		for (unsigned short iVar = 0; iVar < nVar; iVar++)
 			Residual[iVar] = ProjGridVel*Solution[iVar];
 
-		node[iPoint]->SubtractRes_Conv(Residual);
-		node[jPoint]->AddRes_Conv(Residual);
+		SubtractResidual(iPoint, Residual);
+		AddResidual(jPoint, Residual);
 
 	}
 
@@ -344,7 +277,7 @@ void CSolution::SetGrid_Movement_Residual (CGeometry *geometry, CConfig *config)
 			for (unsigned short iVar = 0; iVar < nVar; iVar++)
 				Residual[iVar] = ProjGridVel*Solution[iVar];
 
-			node[Point]->AddResidual(Residual);
+			AddResidual(Point, Residual);
 		}
 	}
 }

@@ -5301,6 +5301,7 @@ private:
 	bool implicit;
 
 public:
+  bool debugme; // For debugging only, remove this. -AA
 
 	/*! 
 	 * \brief Constructor of the class.
@@ -5323,6 +5324,8 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
   void SetResidual_TransLM(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config, double &gamma_sep);
+  
+  void CSourcePieceWise_TransLM__SetResidual_TransLM_d(double *TransVar_i, double *TransVar_id, double *val_residual, double *val_residuald, CConfig *config);
 };
 
 /*! 

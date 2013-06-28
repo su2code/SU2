@@ -38,12 +38,7 @@ CVariable::CVariable(void) {
 	Solution_Min = NULL;
 	Grad_AuxVar = NULL;
 	Undivided_Laplacian = NULL;
-	Residual = NULL;
-	Res_Conv = NULL;
-	Res_Visc = NULL;
-	Res_Sour = NULL;
 	Res_TruncError = NULL;
-	Res_Visc_RK = NULL;
   Residual_Old = NULL;
 	Residual_Sum = NULL;
   
@@ -62,12 +57,7 @@ CVariable::CVariable(unsigned short val_nvar, CConfig *config) {
 	Solution_Min = NULL;
 	Grad_AuxVar = NULL;
 	Undivided_Laplacian = NULL;
-	Residual = NULL;
-	Res_Conv = NULL;
-	Res_Visc = NULL;
-	Res_Sour = NULL;
 	Res_TruncError = NULL;
-	Res_Visc_RK = NULL;
   Residual_Old = NULL;
 	Residual_Sum = NULL;
   
@@ -99,12 +89,7 @@ CVariable::CVariable(unsigned short val_ndim, unsigned short val_nvar, CConfig *
 	Solution_Min = NULL;
 	Grad_AuxVar = NULL;
 	Undivided_Laplacian = NULL;
-	Residual = NULL;
-	Res_Conv = NULL;
-	Res_Visc = NULL;
-	Res_Sour = NULL;
 	Res_TruncError = NULL;
-	Res_Visc_RK = NULL;
   Residual_Old = NULL;
 	Residual_Sum = NULL;
   
@@ -122,10 +107,6 @@ CVariable::CVariable(unsigned short val_ndim, unsigned short val_nvar, CConfig *
 		Solution[iVar] = 0.0;
 
 	Solution_Old = new double [nVar];
-
-	Residual = new double [nVar];
-	for (iVar = 0; iVar < nVar; iVar++)
-		Residual[iVar] = 0.0;
 	
 	Gradient = new double* [nVar];
 	for (iVar = 0; iVar < nVar; iVar++) {
@@ -153,10 +134,6 @@ CVariable::~CVariable(void) {
 	if (Solution_Min        != NULL) delete [] Solution_Min;
 	if (Grad_AuxVar         != NULL) delete [] Grad_AuxVar;
 	if (Undivided_Laplacian != NULL) delete [] Undivided_Laplacian;
-	if (Residual            != NULL) delete [] Residual;
-	if (Res_Conv            != NULL) delete [] Res_Conv;
-	if (Res_Visc            != NULL) delete [] Res_Visc;
-	if (Res_Sour            != NULL) delete [] Res_Sour;
 	if (Res_TruncError      != NULL) delete [] Res_TruncError;
 	if (Residual_Old        != NULL) delete [] Residual_Old;
 	if (Residual_Sum        != NULL) delete [] Residual_Sum;
@@ -165,12 +142,6 @@ CVariable::~CVariable(void) {
     for (iVar = 0; iVar < nVar; iVar++)
       delete Gradient[iVar];
     delete [] Gradient;
-  }
-  
-  if (Res_Visc_RK != NULL) {
-    for (iVar = 0; iVar < nVar; iVar++)
-      delete Res_Visc_RK[iVar];
-    delete [] Res_Visc_RK;
   }
 
 }
@@ -196,11 +167,6 @@ void CVariable::SetUnd_LaplZero(void) {
 
 void CVariable::SetUnd_Lapl(unsigned short val_var, double val_und_lapl) {
 		Undivided_Laplacian[val_var] = val_und_lapl;
-}
-
-void CVariable::GetResidual(double *val_residual) {
-	for (unsigned short iVar = 0; iVar < nVar; iVar++)
-		val_residual[iVar] = Residual[iVar];
 }
 
 void CVariable::SetSolution(double *val_solution) {
@@ -249,38 +215,6 @@ void CVariable::SubtractRes_TruncError(double *val_truncation_error) {
 		Res_TruncError[iVar] -= val_truncation_error[iVar];
 }
 
-double CVariable::GetProjRes(double *val_vector) {
-	double ProjRes = 0;
-	for (unsigned short iDim = 0; iDim < nDim; iDim++)
-		ProjRes += Residual[iDim+1]*val_vector[iDim];
-	return ProjRes;
-}
-
-void CVariable::SetResidual(double *val_residual) {
-	for (unsigned short iVar = 0; iVar < nVar; iVar++)
-		Residual[iVar] = val_residual[iVar];
-}
-
-void CVariable::SetRes_Conv(double *val_residual) {
-	for (unsigned short iVar = 0; iVar < nVar; iVar++)
-		Res_Conv[iVar] = val_residual[iVar];
-}
-
-void CVariable::SetRes_Visc(double *val_residual) {
-	for (unsigned short iVar = 0; iVar < nVar; iVar++)
-		Res_Visc[iVar] = val_residual[iVar];
-}
-
-void CVariable::SetRes_Sour(double *val_residual) {
-	for (unsigned short iVar = 0; iVar < nVar; iVar++)
-		Res_Sour[iVar] = val_residual[iVar];
-}
-
-void CVariable::SetRes_Visc_RK(double *val_residual, unsigned short iRKStep) {
-	for (unsigned short iVar = 0; iVar < nVar; iVar++)
-		Res_Visc_RK[iVar][iRKStep] = val_residual[iVar];
-}
-
 void CVariable::SetResidual_Old(double *val_residual_old) {
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		Residual_Old[iVar] = val_residual_old[iVar];
@@ -296,61 +230,9 @@ void CVariable::AddResidual_Sum(double *val_residual) {
 		Residual_Sum[iVar] += val_residual[iVar];
 }
 
-void CVariable::SetResidualZero(void) {
-	for (unsigned short iVar = 0; iVar < nVar; iVar++)
-		Residual[iVar] = 0.0;
-}
-
-void CVariable::Set_ResConv_Zero(void) {
-	for (unsigned short iVar = 0; iVar < nVar; iVar++)
-		Res_Conv[iVar] = 0.0;
-}
-
-void CVariable::Set_ResVisc_Zero(void) {
-	for (unsigned short iVar = 0; iVar < nVar; iVar++)
-		Res_Visc[iVar] = 0.0;
-}
-
-void CVariable::Set_ResSour_Zero(void) {
-	for (unsigned short iVar = 0; iVar < nVar; iVar++)
-		Res_Sour[iVar] = 0.0;
-}
-
-void CVariable::SetVelResidualZero(void) {
-	for (unsigned short iDim = 0; iDim < nDim; iDim++)
-		Residual[iDim+1] = 0.0;
-}
-
-void CVariable::SetVel_ResVisc_Zero(void) {
-	for (unsigned short iDim = 0; iDim < nDim; iDim++)
-		Res_Visc[iDim+1] = 0.0;
-}
-
-void CVariable::SetVel_ResSour_Zero(void) {
-	for (unsigned short iDim = 0; iDim < nDim; iDim++)
-		Res_Sour[iDim+1] = 0.0;
-}
-
-void CVariable::SetVel_ResConv_Zero(void) {
-	for (unsigned short iDim = 0; iDim < nDim; iDim++)
-		Res_Conv[iDim+1] = 0.0;
-}
-
 void CVariable::SetVel_ResTruncError_Zero(void) {
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
 		Res_TruncError[iDim+1] = 0.0;
-}
-
-void CVariable::SetEnergy_ResVisc_Zero(void) {
-  Res_Visc[nDim+1] = 0.0;
-}
-
-void CVariable::SetEnergy_ResSour_Zero(void) {
-  Res_Sour[nDim+1] = 0.0;
-}
-
-void CVariable::SetEnergy_ResConv_Zero(void) {
-  Res_Conv[nDim+1] = 0.0;
 }
 
 void CVariable::SetEnergy_ResTruncError_Zero(void) {

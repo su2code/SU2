@@ -4687,16 +4687,6 @@ void CAvgGrad_Plasma::SetResidual(double *val_residual, double **val_Jacobian_i,
       else {
         
         GetViscousProjJacsDiatomics(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Mean_Thermal_Conductivity, Mean_Thermal_Conductivity_vib, dist_ij, UnitaryNormal, Area, Proj_Flux_Tensor, val_Jacobian_i, val_Jacobian_j, iSpecies);
-        
-        /*cout << "Jacobian i: " << endl;
-        for (iVar = 0; iVar < nVar; iVar++) {
-          for (jVar = 0; jVar < nVar; jVar++) {
-            cout << val_Jacobian_i[iVar][jVar] << "\t";
-          }
-          cout << endl;
-        }
-        cin.get();*/
-        
       }
     }
   }

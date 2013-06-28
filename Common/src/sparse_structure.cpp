@@ -26,7 +26,7 @@
 CSparseMatrix::CSparseMatrix(void) {
 
   /*--- Array initialization ---*/
-	val               = NULL;
+	matrix            = NULL;
 	row_ptr           = NULL;
 	col_ind           = NULL;
 	block             = NULL;
@@ -34,7 +34,6 @@ CSparseMatrix::CSparseMatrix(void) {
 	prod_row_vector   = NULL;
 	aux_vector        = NULL;
   invM              = NULL;
-  Sub_block_sizes   = NULL;
   LineletBool       = NULL;
   LineletPoint      = NULL;
 
@@ -42,7 +41,7 @@ CSparseMatrix::CSparseMatrix(void) {
 
 CSparseMatrix::~CSparseMatrix(void) {
   
-	if (val != NULL) delete [] val;
+	if (matrix != NULL) delete [] matrix;
 	if (row_ptr != NULL) delete [] row_ptr;
 	if (col_ind != NULL) delete [] col_ind;
 	if (block != NULL) delete [] block;
@@ -50,7 +49,6 @@ CSparseMatrix::~CSparseMatrix(void) {
 	if (prod_row_vector != NULL) delete [] prod_row_vector;
 	if (aux_vector != NULL) delete [] aux_vector;
   if (invM != NULL) delete [] invM;
-  if (Sub_block_sizes != NULL) delete [] Sub_block_sizes;
   if (LineletBool != NULL) delete [] LineletBool;
   if (LineletPoint != NULL) delete [] LineletPoint;
 
@@ -66,7 +64,7 @@ void CSparseMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPoin
 	row_ptr = val_row_ptr;
 	col_ind = val_col_ind;
 	
-	val = new double [nnz*nVar*nEqn];	// Reserve memory for the values of the matrix
+	matrix = new double [nnz*nVar*nEqn];	// Reserve memory for the values of the matrix
 	block = new double [nVar*nEqn];
 	prod_block_vector = new double [nEqn]; //correct?
 	prod_row_vector = new double [nVar]; //correct?
@@ -84,7 +82,7 @@ void CSparseMatrix::GetBlock(unsigned long block_i, unsigned long block_j) {
 		step++;
 		if (col_ind[index] == block_j) {
 			for (iVar = 0; iVar < nVar*nEqn; iVar++)
-				block[iVar] = val[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar];
+				block[iVar] = matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar];
 			break;
 		}
 	}
@@ -115,7 +113,7 @@ void CSparseMatrix::AddBlock(unsigned long block_i, unsigned long block_j, doubl
 		if (col_ind[index] == block_j) {
 			for (iVar = 0; iVar < nVar; iVar++)
 				for (jVar = 0; jVar < nEqn; jVar++)
-					val[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] += val_block[iVar][jVar];
+					matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] += val_block[iVar][jVar];
 			break;
 		}
 	}
@@ -129,26 +127,26 @@ void CSparseMatrix::SubtractBlock(unsigned long block_i, unsigned long block_j, 
 		if (col_ind[index] == block_j) {
 			for (iVar = 0; iVar < nVar; iVar++)
 				for (jVar = 0; jVar < nEqn; jVar++)
-					val[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] -= val_block[iVar][jVar];
+					matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] -= val_block[iVar][jVar];
 			break;
 		}
 	}
 }
 
-void CSparseMatrix::AddVal2Diag(unsigned long block_i, double val_val) {
+void CSparseMatrix::AddVal2Diag(unsigned long block_i, double val_matrix) {
 	unsigned long step = 0, iVar, index;
 	
 	for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
 		step++;
 		if (col_ind[index] == block_i) {	// Only elements on the diagonal
 			for (iVar = 0; iVar < nVar; iVar++)
-				val[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+iVar] += val_val;
+				matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+iVar] += val_matrix;
 			break;
 		}
 	}
 }
 
-void CSparseMatrix::AddVal2Diag(unsigned long block_i,  double* val_val, unsigned short num_dim) {
+void CSparseMatrix::AddVal2Diag(unsigned long block_i,  double* val_matrix, unsigned short num_dim) {
 	unsigned long step = 0, iVar, iSpecies;
 	
 	for (unsigned long index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
@@ -156,14 +154,14 @@ void CSparseMatrix::AddVal2Diag(unsigned long block_i,  double* val_val, unsigne
 		if (col_ind[index] == block_i) {	// Only elements on the diagonal
 			for (iVar = 0; iVar < nVar; iVar++) {
 				iSpecies = iVar/(num_dim + 2);
-				val[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+iVar] += val_val[iSpecies];
+				matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+iVar] += val_matrix[iSpecies];
 			}
 			break;
 		}
 	}
 }
 
-void CSparseMatrix::AddVal2Diag(unsigned long block_i,  double* val_val, unsigned short val_nDim, unsigned short val_nDiatomics) {
+void CSparseMatrix::AddVal2Diag(unsigned long block_i,  double* val_matrix, unsigned short val_nDim, unsigned short val_nDiatomics) {
 	unsigned long step = 0, iVar, iSpecies;
 	
 	for (unsigned long index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
@@ -172,7 +170,7 @@ void CSparseMatrix::AddVal2Diag(unsigned long block_i,  double* val_val, unsigne
 			for (iVar = 0; iVar < nVar; iVar++) {
         if (iVar < (val_nDim+3)*val_nDiatomics) iSpecies = iVar / (val_nDim+3);
         else iSpecies = (iVar - (val_nDim+3)*val_nDiatomics) / (val_nDim+2) + val_nDiatomics;
-				val[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+iVar] += val_val[iSpecies];
+				matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+iVar] += val_matrix[iSpecies];
 			}
 			break;
 		}
@@ -187,9 +185,9 @@ void CSparseMatrix::DeleteValsRowi(unsigned long i) {
 
 	for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
 		for (iVar = 0; iVar < nVar; iVar++)
-			val[index*nVar*nVar+row*nVar+iVar] = 0.0; // Delete row values in the block
+			matrix[index*nVar*nVar+row*nVar+iVar] = 0.0; // Delete row values in the block
 		if (col_ind[index] == block_i)
-			val[index*nVar*nVar+row*nVar+row] = 1.0; // Set 1 to the diagonal element
+			matrix[index*nVar*nVar+row*nVar+row] = 1.0; // Set 1 to the diagonal element
 	}
 }
 
@@ -200,7 +198,7 @@ double CSparseMatrix::SumAbsRowi(unsigned long i) {
 	double sum = 0;
 	for (unsigned long index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++)
 		for (unsigned long iVar = 0; iVar < nVar; iVar ++)
-			sum += fabs(val[index*nVar*nVar+row*nVar+iVar]);
+			sum += fabs(matrix[index*nVar*nVar+row*nVar+iVar]);
 
 	return sum;
 }
@@ -515,7 +513,7 @@ void CSparseMatrix::MatrixVectorProduct(const CSysVector & vec, CSysVector & pro
 			mat_begin = (index*nVar*nVar); // offset to beginning of matrix block[row_i][col_ind[indx]]
 			for (iVar = 0; iVar < nVar; iVar++) {
 				for (jVar = 0; jVar < nVar; jVar++) {
-					prod[(const unsigned int)(prod_begin+iVar)] += val[(const unsigned int)(mat_begin+iVar*nVar+jVar)]*vec[(const unsigned int)(vec_begin+jVar)];
+					prod[(const unsigned int)(prod_begin+iVar)] += matrix[(const unsigned int)(mat_begin+iVar*nVar+jVar)]*vec[(const unsigned int)(vec_begin+jVar)];
 				}
 			}
 		}

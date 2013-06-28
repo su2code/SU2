@@ -1,0 +1,95 @@
+# makefile to build CGNS tools
+
+include make.defs
+
+DOMAKE=$(MAKE) -f Makefile.unix
+
+# if OGL was not found, cgnsplot will not be included in the
+# default build, otherwise this target is the same as for all
+
+default : @PROGLIST@
+install : @INSTLIST@
+
+all : cgnsview cgnscalc cgnsplot utilities
+install-all : install-cgnsview install-cgnscalc install-cgnsplot \
+	      install-utilities
+
+clean :
+	@for d in cgnsview cgnscalc cgnsplot utilities calclib tkogl ; do \
+	  echo "----- $$d -----"; \
+	  cd $$d; $(DOMAKE) clean; cd ..; \
+	done;
+
+allclean  : distclean
+
+distclean : clean
+	-@$(RM) config.*
+	-@$(RM) make.defs Makefile cgconfig
+
+cgnsview  : prog-cgnsview
+cgnscalc  : prog-cgnscalc
+cgnsplot  : prog-cgnsplot
+utilities : prog-utilities
+
+uninstall :
+	@for d in cgnsview cgnscalc cgnsplot utilities ; do \
+	  echo "----- $$d -----"; \
+	  cd $$d; $(DOMAKE) uninstall; cd ..; \
+	done;
+	@if [ -f $(EXE_INSTALL_DIR)/cgconfig ] ; then \
+	  /bin/rm -f $(EXE_INSTALL_DIR)/cgconfig; \
+	fi;
+	-@if [ -d $(WSH_INSTALL_DIR) ] ; then \
+	  rmdir $(WSH_INSTALL_DIR); \
+	fi;
+	-@if [ -d $(EXE_INSTALL_DIR) -a \
+	      ! $(EXE_INSTALL_DIR) = $(BIN_INSTALL_DIR) ] ; then \
+	  rmdir $(EXE_INSTALL_DIR); \
+	fi;
+	-@if [ -d $(LIB_INSTALL_DIR)/help ] ; then \
+	  rmdir $(LIB_INSTALL_DIR)/help; \
+	fi;
+	-@if [ -d $(LIB_INSTALL_DIR) ] ; then \
+	  rmdir $(LIB_INSTALL_DIR); \
+	fi;
+
+prog-cgnsview :
+	@echo "----- cgnsview -----"
+	@cd cgnsview && $(DOMAKE)
+
+prog-cgnscalc : lib-calclib
+	@echo "----- cgnscalc -----"
+	@cd cgnscalc && $(DOMAKE)
+
+prog-cgnsplot : lib-tkogl
+	@echo "----- cgnsplot -----"
+	@cd cgnsplot && $(DOMAKE)
+
+prog-utilities : lib-calclib
+	@echo "----- utilities -----"
+	@cd utilities && $(DOMAKE)
+
+lib-calclib :
+	@echo "----- calclib -----"
+	@cd calclib && $(DOMAKE)
+
+lib-tkogl :
+	@echo "----- tkogl -----"
+	@cd tkogl && $(DOMAKE)
+
+install-cgnsview :
+	@echo "----- cgnsview -----"
+	@cd cgnsview && $(DOMAKE) install
+
+install-cgnscalc : lib-calclib
+	@echo "----- cgnscalc -----"
+	@cd cgnscalc && $(DOMAKE) install
+
+install-cgnsplot : lib-tkogl
+	@echo "----- cgnsplot -----"
+	@cd cgnsplot && $(DOMAKE) install
+
+install-utilities : lib-calclib
+	@echo "----- utilities -----"
+	@cd utilities && $(DOMAKE) install
+

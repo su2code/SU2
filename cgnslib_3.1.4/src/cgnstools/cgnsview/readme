@@ -1,0 +1,45 @@
+This is a Tcl/Tk graphical interface for displaying
+and editing ADF/CGNS files.
+
+Under Unix/Linux, you first need to build
+the adfwish executable. To do this, you will need to
+edit the Makefile and set up the path to the CGNS
+library and ADF directory. You may also need to set
+the path for the tk.h include file and the Tcl/Tk
+libraries. Once you have built adfwish, you can run
+the program as:
+
+    adfwish adfviewer.tcl [ADFfile]
+
+where 'ADFfile' is an optional ADF/CGNS filename.
+
+A shell script, 'adfviewer', is provided to do this also.
+You may need to edit adfviewer to set up paths to the
+Tcl/Tk scrpits and the libraries (if shared). You may
+also need to do a 'chmod +x adfviewer' to make it executable.
+Then
+
+    adfviewer [ADFfile]
+
+should start the program.
+
+Under Windows, the normal wish command is used, and the ADF
+routines are linked in using a DLL. Edit the Makefile.win32
+file to set up the paths to CGNS and Tcl/Tk, then make the
+adftcl??.dll. The ?? is replaced with the Tcl/Tk version.
+You should then be able to run with
+
+    wish?? adfviewer.tcl [ADFfile]
+
+or edit the 'adfviewer.bat' batch file and run
+
+    adfviewer [ADFfile]
+
+FINAL NOTE: There is a known problem with ADF when trying
+to access links from a file opened in OLD or UNKNOWN mode
+when then linked-to file is READ_ONLY. I have include an
+updated ADF_internals.c file in the adf_patch subdirectory
+which fixes this problem.
+
+Bruce Wedan
+brucewedan@hotmail.com

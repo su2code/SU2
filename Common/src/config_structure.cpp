@@ -246,8 +246,6 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	// these options share nRKStep as their size, which is not a good idea in general
 	/* DESCRIPTION: Runge-Kutta alpha coefficients */
 	AddListOption("RK_ALPHA_COEFF", nRKStep, RK_Alpha_Step);
-	/* DESCRIPTION: Runge-Kutta beta coefficients */
-	AddListOption("RK_BETA_COEFF", nRKStep, RK_Beta_Step);
 	/* DESCRIPTION: Time Step for dual time stepping simulations (s) */
 	AddScalarOption("UNST_TIMESTEP", Delta_UnstTime, 0.0);
 	/* DESCRIPTION: Total Physical Time for dual time stepping simulations (s) */
@@ -1400,7 +1398,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
 	if (nRKStep == 0) {
 		RK_Alpha_Step = new double[1]; RK_Alpha_Step[0] = 1.0;
-		RK_Beta_Step = new double[1]; RK_Beta_Step[0] = 1.0;
 	}
 
 
@@ -3212,11 +3209,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 					cout << "\t" << RK_Alpha_Step[iRKStep];
 				}
 				cout << endl;
-				cout << "Beta coefficients: ";
-				for (unsigned short iRKStep = 0; iRKStep < nRKStep; iRKStep++) {
-					cout << "\t" << RK_Beta_Step[iRKStep];
-				}
-				cout << endl;
 				break;
 			case EULER_EXPLICIT: cout << "Euler explicit method for the flow equations." << endl; break;
 			case EULER_IMPLICIT:
@@ -3258,11 +3250,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 					cout << "\t" << RK_Alpha_Step[iRKStep];
 				}
 				cout << endl;
-				cout << "Beta coefficients: ";
-				for (unsigned short iRKStep = 0; iRKStep < nRKStep; iRKStep++) {
-					cout << "\t" << RK_Beta_Step[iRKStep];
-				}
-				cout << endl;
 				break;
 			case EULER_EXPLICIT: cout << "Euler explicit method for the plasma equations." << endl; break;
 			case EULER_IMPLICIT: cout << "Euler implicit method for the plasma equations." << endl; break;
@@ -3279,11 +3266,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 					cout << "\t" << RK_Alpha_Step[iRKStep];
 				}
 				cout << endl;
-				cout << "Beta coefficients: ";
-				for (unsigned short iRKStep = 0; iRKStep < nRKStep; iRKStep++) {
-					cout << "\t" << RK_Beta_Step[iRKStep];
-				}
-				cout << endl;
 				break;
 			case EULER_EXPLICIT: cout << "Euler explicit method for the adjoint equations." << endl; break;
 			case EULER_IMPLICIT: cout << "Euler implicit method for the adjoint equations." << endl; break;
@@ -3298,11 +3280,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				cout << "Alpha coefficients: ";
 				for (unsigned short iRKStep = 0; iRKStep < nRKStep; iRKStep++) {
 					cout << "\t" << RK_Alpha_Step[iRKStep];
-				}
-				cout << endl;
-				cout << "Beta coefficients: ";
-				for (unsigned short iRKStep = 0; iRKStep < nRKStep; iRKStep++) {
-					cout << "\t" << RK_Beta_Step[iRKStep];
 				}
 				cout << endl;
 				break;
@@ -4266,7 +4243,6 @@ unsigned short CConfig::GetMarker_Config_Sliding(string val_marker) {
 CConfig::~CConfig(void)
 {
 	delete [] RK_Alpha_Step;
-	delete [] RK_Beta_Step;
 	delete [] MG_PreSmooth;
 	delete [] MG_PostSmooth;
 	delete [] U_FreeStreamND;

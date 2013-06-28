@@ -1,0 +1,71 @@
+# Makefile for Unix/Linux
+
+include ../make.defs
+
+COPTS = $(CFLAGS) $(TKOGLOPTS)
+
+OBJS = \
+	tkogl.$(O) \
+	get.$(O) \
+	gencyl.$(O) \
+	load3ds.$(O) \
+	nurbs.$(O) \
+	quadric.$(O) \
+	tess.$(O) \
+	printstr.$(O) \
+	feedback.$(O) \
+	tkoglparse.$(O)
+
+lib	: libtkogl.$(A)
+install : libtkogl.$(A)
+clean:
+	$(RM) *.$(O) *~ *.bak *.$(A) glwish$(EXE)
+
+#----------------------------------------------------------
+
+libtkogl.$(A) : $(OBJS)
+	$(AR) $@ $(OBJS)
+	$(RANLIB) $@
+
+tkogl.$(O): tkogl.h tkoglparse.h load3ds.h tess.h quadric.h nurbs.h \
+	    get.h gencyl.h tkogl.c
+	$(CC) $(COPTS) -c tkogl.c
+
+get.$(O): get.h get.c
+	$(CC) $(COPTS) -c get.c
+
+printstr.$(O): printstr.c printstr.h
+	$(CC) $(COPTS) -c printstr.c
+
+tess.$(O): tkogl.h tess.h tess.c
+	$(CC) $(COPTS) -c tess.c
+
+nurbs.$(O): tkogl.h nurbs.h nurbs.c
+	$(CC) $(COPTS) -c nurbs.c
+
+quadric.$(O): tkogl.h quadric.h quadric.c
+	$(CC) $(COPTS) -c quadric.c
+
+load3ds.$(O): tkogl.h load3ds.h load3ds.c
+	$(CC) $(COPTS) -c load3ds.c
+
+gencyl.$(O): tkogl.h gencyl.h gencyl.c
+	$(CC) $(COPTS) -c gencyl.c
+
+tkoglparse.$(O): tkoglparse.h tkoglparse.c
+	$(CC) $(COPTS) -c tkoglparse.c
+
+feedback.$(O): feedback.h feedback.c
+	$(CC) $(COPTS) -c feedback.c
+
+#----------------------------------------------------------
+
+LIBS = $(TKLIBS) $(OGLLIBS) $(TKOGLLIB) $(X11LIBS) $(TKOGLXLIB)
+
+glwish$(EXE) : tkAppInit.$(O) libtkogl.$(A)
+	$(CC) -o $@ tkAppInit.$(O) libtkogl.$(A) $(LIBS)
+	$(STRIP) $@
+
+tkAppInit.$(O): tkogl.h tkAppInit.c
+	$(CC) $(COPTS) -c tkAppInit.c
+

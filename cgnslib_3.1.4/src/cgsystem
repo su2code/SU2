@@ -1,0 +1,192 @@
+#!/bin/sh
+#
+# try to determine system type
+# most of this was borrowed from pvmgetarch
+
+dir=`dirname $0`
+current=0
+do64bit=0
+config=0
+dohelp=0
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -*cur* | cur*) current=1 ;;
+    -*enable-64* | -*64* | 64*) do64bit=1 ;;
+    -*conf* | conf*) config=1 ;;
+    -*help | help) dohelp=1 ;;
+    *) echo "unknown argument $1"; exit 1 ;;
+  esac
+  shift
+done
+
+if [ $dohelp -gt 0 ]; then
+cat << EOF
+usage: cgsystem [[-][enable-]64[bit]] [[-]cur[rent]] [[-]conf[igure]]
+
+Returns an identifier for the type of system. If the -cur[rent] option
+is specified, then reads the system name from the make.system file, if
+it exists. If the -64[bit] flag is set, checks if 64-bit is supported
+and if so, returns a version of the system name ending with 64. The
+-con[figure] flag, will update the make.system file with the system name.
+
+The currently defined system names are:
+  ALPHA		DEC Alpha/OSF
+  APOLLO	HP 300 running Domain/OS
+  BSD386	80[345]86 running BSD
+  BSDM68K	Motorola 68K running NetBSD
+  BSDMIPS	Mips running NetBSD
+  CONVEX	Convex
+  CRAY		Cray, Cray-2, Cray XMP
+  CYGWIN	POSIX emulation on top of Windows
+  DARWIN	Macintosh running Darwin
+  DEC		DEC Risc/Mips/Microvax
+  FREEBSD	FreeBSD
+  HPPA		HP 9000 PA-Risc
+  HPPA10	HP 9000 PA-Risc running OS 10.x
+  HPPA11	HP 9000 PA-Risc running OS 11.x (32-bit)
+  HPPA64	HP 9000 PA-Risc running OS 11.x (64-bit)
+  HPIT		HP with 64-bit Intel processor (32-bit)
+  HPIT64	HP with 64-bit Intel processor (64-bit)
+  HP		HP
+  I860		Intel Hypercube
+  IBM		IBM running AIX
+  IBM64		IBM with AIX 4.3 or above (64-bit)
+  LINUX		Linux
+  LINUX64	64-bit Linux
+  M88K		Motorola M88100 running Real/IX
+  MACOSX	Power Macintosh runing OSx
+  NETBSD	NetBSD not defined elseware
+  NEXT		NeXT
+  OS2		OS/2
+  PGON		Intel Paragon
+  SGI5		Silicon Graphics running OS 5.x
+  SGI6		Silicon Graphics running OS 6.x
+  SGI64		Silicon Graphics (64-bit)
+  SGI		Silicon Graphics
+  SUN3		Sun 3
+  SUN4		Sun 4, 4c, sparc, .etc
+  SUN64		Sun 4 (64-bit)
+  SUN		Sun
+  VAX		DEC/Microvax
+  UNKNOWN	couldn't determine system type
+EOF
+exit 0
+fi
+
+SYSTEM=UNKNOWN
+
+# read SYSTEM from make.system if current specified
+
+if [ $current -gt 0 -a -f $dir/make.system ]; then
+  system=`grep "SYSTEM *= *[a-zA-Z]*" $dir/make.system`
+  if [ -n "$system" ]; then
+    SYSTEM=`echo $system | sed 's/SYSTEM *=//'`
+    if [ -z $SYSTEM ]; then SYSTEM=UNKNOWN; fi
+  fi
+fi
+
+if [ -f /bin/uname ]; then
+  uname=/bin/uname
+elif [ -f /usr/bin/uname ]; then
+  uname=/usr/bin/uname
+elif [ -f /bin/uname.exe ]; then
+  uname=/bin/uname.exe
+elif [ -f /usr/bin/uname.exe ]; then
+  uname=/usr/bin/uname.exe
+else
+  uname=""
+fi
+
+if [ $SYSTEM = UNKNOWN -a -n $uname ]; then
+  os=`$uname -s`
+  mt=`$uname -m`
+  case "$os,$mt" in
+    AIX*,*)		SYSTEM=IBM
+			if [ $do64bit -gt 0 -a `uname -v` -ge 4 ]; then
+			  if [ `uname -v` -gt 4 -o `uname -r` -ge 3 ]; then
+			    SYSTEM=IBM64
+			  fi
+			fi ;;
+    BSD/OS,i[3456]86)	SYSTEM=BSD386 ;;
+    FreeBSD,*)		SYSTEM=FREEBSD ;;
+    NetBSD,*)		case `$uname -p` in
+			  i386)	   SYSTEM=BSD386 ;;
+			  m68k)	   SYSTEM=BSDM68K ;;
+			  mips*)   SYSTEM=BSDMIPS ;;
+			  default) SYSTEM=NETBSD ;;
+			esac ;;
+    *,CRAY*)		SYSTEM=CRAY ;;
+    CYGWIN*,*)		SYSTEM=CYGWIN ;;
+    DomainOS,DN*)	SYSTEM=APOLLO ;;
+    *HP*,9000/[78]*)	case `$uname -r` in
+			  B.10.*) SYSTEM=HPPA10 ;;
+			  B.11.*) if [ $do64bit -gt 0 ]; then
+				    SYSTEM=HPPA64
+				  else
+				    SYSTEM=HPPA11
+				  fi ;;
+			  *)	  SYSTEM=HPPA ;;
+			esac ;;
+    *HP*,ia64)		if [ $do64bit -gt 0 ]; then
+			  SYSTEM=HPIT64
+			else
+			  SYSTEM=HPIT
+			fi ;;
+    *HP*,*)		SYSTEM=HP ;;
+    IRIX64,*)		if [ $do64bit -gt 0 ]; then
+			  SYSTEM=SGI64
+			else
+			  SYSTEM=SGI6
+			fi ;;
+    IRIX*,*)		case `$uname -r` in
+			  5.*) SYSTEM=SGI5 ;;
+			  6.*) SYSTEM=SGI6 ;;
+			  *)   SYSTEM=SGI ;;
+			esac ;;
+    Linux,*64)		if [ $do64bit -gt 0 ]; then
+			  SYSTEM=LINUX64
+    			else
+			  SYSTEM=LINUX
+			fi ;;
+    Linux,*)		SYSTEM=LINUX ;;
+    *OSF*,alpha)	SYSTEM=ALPHA ;;
+    OS/2,i[3456]86)	SYSTEM=OS2 ;;
+    SunOS,sun3*)	SYSTEM=SUN3 ;;
+    SunOS,sun4*)	case `$uname -r` in
+			  5.[0-6]*) SYSTEM=SUN4 ;;
+			  5.*) if [ $do64bit -gt 0 ]; then
+				 SYSTEM=SUN64
+			       else
+				 SYSTEM=SUN4
+			       fi ;;
+			  *)   SYSTEM=SUN4 ;;
+			esac ;;
+    SunOS,*)		SYSTEM=SUN ;;
+    ULTRIX,VAX)		SYSTEM=VAX ;;
+    ULTRIX,*)		SYSTEM=DEC ;;
+    Darwin,*)		SYSTEM=DARWIN ;;
+    *,"Power Macintosh") SYSTEM=MACOSX ;;
+    *,paragon)		SYSTEM=PGON ;;
+    realix,M88*)	SYSTEM=M88K ;;
+  esac
+fi
+
+if [ $SYSTEM = UNKNOWN ]; then
+  if [ -f /ultrixboot ]; then SYSTEM=DEC; fi
+  if [ -d /usr/convex ]; then SYSTEM=CONVEX; fi
+  if [ -f /unicos ]; then SYSTEM=CRAY; fi
+  if [ -f /hp-ux ]; then SYSTEM=HP; fi
+  if [ -f /usr/bin/getcube ]; then SYSTEM=I860; fi
+  if [ -f /etc/vg ]; then SYSTEM=IBM; fi
+  if [ -f /usr/bin/asm56000 ]; then SYSTEM=NEXT; fi
+  if [ -f /bin/4d ]; then SYSTEM=SGI; fi
+fi
+
+if [ $config -eq 0 ]; then
+  echo $SYSTEM
+else
+  echo "modifying make.system to set SYSTEM=$SYSTEM"
+  echo "SYSTEM = $SYSTEM" > $dir/make.system
+fi
+exit

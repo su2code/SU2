@@ -1,0 +1,294 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=iso-8859-1">
+<meta name="GENERATOR" content="Microsoft FrontPage Express 2.0">
+<title>Data Conversion Utiltities</title>
+</head>
+
+<body>
+
+<h1>Data Conversion Utilities</h1>
+
+<p>This document describes the conversion routines which operate
+on CGNS data files. The following conversion utilities are
+currently available.</p>
+
+<table border="1" cellpadding="5" cellspacing="0">
+    <tr>
+        <td><a href="#Location">Solution Location</a></td>
+        <td>convert_location</td>
+        <td>Convert between cell-center and vertex solutions</td>
+    </tr>
+    <tr>
+        <td><a href="#Variables">Solution Variables</a></td>
+        <td>convert_variables</td>
+        <td>Convert between primitive and conserved variables</td>
+    </tr>
+    <tr>
+        <td><a href="#Dimensionalization">Dimensionalization</a></td>
+        <td>convert_dataclass</td>
+        <td>Convert between dimensional and nondimensional
+        variables</td>
+    </tr>
+</table>
+
+<p><br>
+</p>
+
+<hr>
+
+<h2><a name="Location"></a>Solution Location</h2>
+
+<p>Converts the solution in a CGNS file between cell-center and
+vertex locations.</p>
+
+<h3>Command Line</h3>
+
+<p>The program is executed from the command line as:</p>
+
+<p><b>convert_location</b> <i>options</i> <b>CGNSfile</b> <i>newCGNSfile</i>
+</p>
+
+<p>The input CGNS file, <i>CGNSfile</i> is required. If the
+output CGNS file, <em>newCGNSfile</em>, is specified the modified
+CGNS data file will be written to it, otherwise <em>CGNSfile</em>
+will be modified. The command line options are:</p>
+
+<table border="1" cellpadding="5">
+    <tr>
+        <td bgcolor="#C0C0C0"><b>option</b></td>
+        <td bgcolor="#C0C0C0"><b>description</b></td>
+    </tr>
+    <tr>
+        <td nowrap>-c</td>
+        <td>convert solution location to cell-center</td>
+    </tr>
+    <tr>
+        <td nowrap>-v</td>
+        <td>convert solution location to vertex</td>
+    </tr>
+    <tr>
+        <td nowrap>-w</td>
+        <td>use volume weighted averaging (default is simple
+        averaging)</td>
+    </tr>
+    <tr>
+        <td nowrap>-b<i> base</i></td>
+        <td>use CGNS base index <i>base</i>. (default 1)</td>
+    </tr>
+    <tr>
+        <td nowrap>-z<i> zone</i></td>
+        <td>read zone number <i>zone</i> (default all zones)</td>
+    </tr>
+    <tr>
+        <td nowrap>-s<i> sol</i></td>
+        <td>read solution number <i>sol</i> (default all
+        solutions)</td>
+    </tr>
+    <tr>
+        <td nowrap>-S<i> name</i></td>
+        <td>write to solution <i>name</i> (default is same as
+        read)</td>
+    </tr>
+    <tr>
+        <td align="center" colspan="2"><em>options valid only for
+        conversion to cell-center</em></td>
+    </tr>
+    <tr>
+        <td nowrap>-i</td>
+        <td>add rind cell at imin</td>
+    </tr>
+    <tr>
+        <td nowrap>-I</td>
+        <td>add rind cell at imax</td>
+    </tr>
+    <tr>
+        <td nowrap>-j</td>
+        <td>add rind cell at jmin</td>
+    </tr>
+    <tr>
+        <td nowrap>-J</td>
+        <td>add rind cell at jmax</td>
+    </tr>
+    <tr>
+        <td nowrap>-k</td>
+        <td>add rind cell at kmin</td>
+    </tr>
+    <tr>
+        <td nowrap>-K</td>
+        <td>add rind cell at kmax</td>
+    </tr>
+</table>
+
+<p>One of the options, <strong>-c</strong> or<strong> -v</strong>
+must be specified; the others are optional.</p>
+
+<h3>ADFviewer Interface</h3>
+
+<p>The following panel is created when launched from the
+ADFviewer GUI:</p>
+
+<p><img src="images/solution_location.gif" width="447"
+height="446"></p>
+
+<p>This allows interactive selection of the input and output
+files and options. The <em>Accept</em> button will then construct
+the command line and run <strong>convert_location</strong>. If
+the conversion is successful, ADFviewer will read and display the
+CGNS file.</p>
+
+<hr>
+
+<h2><a name="Variables"></a>Solution Variables</h2>
+
+<p>Converts the solution in a CGNS file between primitive and
+conserved variables.</p>
+
+<h3>Command Line</h3>
+
+<p>The program is executed from the command line as:</p>
+
+<p><b>convert_variables</b> <i>options</i> <b>CGNSfile </b><em>newCGNSfile</em></p>
+
+<p>The input CGNS file, <i>CGNSfile</i> is required. If the
+output CGNS file, <em>newCGNSfile</em>, is specified the modified
+CGNS data file will be written to it, otherwise <em>CGNSfile</em>
+will be modified. The command line options are:</p>
+
+<table border="1" cellpadding="5">
+    <tr>
+        <td bgcolor="#C0C0C0"><b>option</b></td>
+        <td bgcolor="#C0C0C0"><b>description</b></td>
+    </tr>
+    <tr>
+        <td nowrap>-p</td>
+        <td>convert to primitive variables</td>
+    </tr>
+    <tr>
+        <td nowrap>-c</td>
+        <td>convert to conserved variables</td>
+    </tr>
+    <tr>
+        <td nowrap>-f <em>file</em></td>
+        <td>read conversion expressions from file <em>file</em></td>
+    </tr>
+    <tr>
+        <td nowrap>-b<i> base</i></td>
+        <td>use CGNS base index <i>base</i>. (default 1)</td>
+    </tr>
+    <tr>
+        <td nowrap>-z <i>zone</i></td>
+        <td>read zone number <i>zone</i> (default all zones)</td>
+    </tr>
+    <tr>
+        <td nowrap>-s<i> sol</i></td>
+        <td>read solution number <i>sol</i> (default all
+        solutions)</td>
+    </tr>
+    <tr>
+        <td nowrap>-S <i>name</i></td>
+        <td>write to solution <i>name</i> (default is same as
+        read)</td>
+    </tr>
+    <tr>
+        <td nowrap>-g<em> gamma</em></td>
+        <td>value of gamma for conversions (default 1.4)</td>
+    </tr>
+</table>
+
+<p>One of the options, -p<strong>, -c</strong> or<strong> -f</strong>
+must be specified; the others are optional.</p>
+
+<h3>ADFviewer Interface</h3>
+
+<p>The following panel is created when launched from the
+ADFviewer GUI:</p>
+
+<p><img src="images/solution_variables.gif" width="447"
+height="449"></p>
+
+<p>This allows interactive selection of the input and output
+files and options. The <em>Accept</em> button will then construct
+the command line and run <strong>convert_variables</strong>. If
+the conversion is successful, ADFviewer will read and display the
+CGNS file.</p>
+
+<hr>
+
+<h2><a name="Dimensionalization"></a>Dimensionalization</h2>
+
+<p>Converts the solution in a CGNS file between dimensional and
+non-dimensional data.</p>
+
+<h3>Command Line</h3>
+
+<p>The program is executed from the command line as:</p>
+
+<p><b>convert_dataclass</b> <i>options</i> <b>CGNSfile </b><em>newCGNSfile</em></p>
+
+<p>The input CGNS file, <i>CGNSfile</i> is required. If the
+output CGNS file, <em>newCGNSfile</em>, is specified the modified
+CGNS data file will be written to it, otherwise <em>CGNSfile</em>
+will be modified. The command line options are:</p>
+
+<table border="1" cellpadding="5">
+    <tr>
+        <td bgcolor="#C0C0C0"><b>option</b></td>
+        <td bgcolor="#C0C0C0"><b>description</b></td>
+    </tr>
+    <tr>
+        <td nowrap>-d</td>
+        <td>convert to Dimensional variables (default)</td>
+    </tr>
+    <tr>
+        <td nowrap>-n</td>
+        <td>convert to NormalizedByDimensional variables</td>
+    </tr>
+    <tr>
+        <td nowrap>-u</td>
+        <td>convert to NormalizedByUnknownDimensional variables</td>
+    </tr>
+    <tr>
+        <td nowrap>-v</td>
+        <td>verbose output - show expression parsing errors, if
+        any</td>
+    </tr>
+    <tr>
+        <td nowrap>-f <em>file</em></td>
+        <td>read conversion expressions from file <em>file</em></td>
+    </tr>
+    <tr>
+        <td nowrap>-b<i> base</i></td>
+        <td>use CGNS base index <i>base</i>. (default 1)</td>
+    </tr>
+    <tr>
+        <td nowrap>-z<i> zone</i></td>
+        <td>read zone number <i>zone</i> (default all zones)</td>
+    </tr>
+    <tr>
+        <td nowrap>-s<i> sol</i></td>
+        <td>read solution number <i>sol</i> (default all
+        solutions)</td>
+    </tr>
+</table>
+
+<p>One of the options, -p<strong>, -c</strong> or<strong> -f</strong>
+must be specified; the others are optional</p>
+
+<h3>ADFviewer Interface</h3>
+
+<p>The following panel is created when launched from the
+ADFviewer GUI:</p>
+
+<p><img src="images/dimensionalization.gif" width="552"
+height="419"></p>
+
+<p>This allows interactive selection of the input and output
+files and options. The <em>Accept</em> button will then construct
+the command line and run <strong>convert_dataclass</strong>. If
+the conversion is successful, ADFviewer will read and display the
+CGNS file.</p>
+</body>
+</html>

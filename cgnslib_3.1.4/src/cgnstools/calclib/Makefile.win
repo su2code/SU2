@@ -1,0 +1,52 @@
+include ..\make.win
+
+CALCLIB = cgnscalc.lib
+
+COPTS = $(CFLAGS) -I$(CGNSDIR)
+
+READ_NODE = -DREAD_NODE
+
+lib : $(CALCLIB)
+all : $(CALCLIB) calctest.exe
+
+install : $(CALCLIB)
+
+#--------------------------------------------------
+
+$(CALCLIB) : calc.obj vec.obj vecsym.obj
+	$(LINK) /lib /out:$@ calc.obj vec.obj vecsym.obj
+
+#--------------------------------------------------
+
+calctest.exe : calctest.obj $(CALCLIB)
+	$(LINK) $(LFLAGS) /out:$@ calctest.obj $(CALCLIB) \
+	$(CGNSLIB) $(BUILDLIBS) $(CLIBS)
+
+calctest.obj : calctest.c
+
+#--------------------------------------------------
+
+vec.obj	   : vec.c vec.h vecsym.h vecerr.h
+	$(CC) $(COPTS) $(MATHERR) -c vec.c
+
+vecsym.obj : vecsym.c vec.h vecsym.h
+
+calc.obj   : calc.c calc.h vecerr.h
+	$(CC) $(COPTS) $(READ_NODE) -c calc.c
+
+calc.h	   : vecsym.h
+vecsym.h   : vec.h
+
+#--------------------------------------------------
+
+.c.obj :
+	$(CC) $(COPTS) -Fo$@ -c $<
+
+clean:
+	-$(RM) *.obj
+	-$(RM) *.lib
+	-$(RM) *.pdb
+	-$(RM) *.ilk
+	-$(RM) *.bak
+	-$(RM) *.exe
+

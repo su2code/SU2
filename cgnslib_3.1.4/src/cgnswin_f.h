@@ -1,0 +1,5 @@
+!DEC$ ATTRIBUTES REFERENCE, C, VARYING :: cg_goto_f
+!DEC$ ATTRIBUTES REFERENCE, C, VARYING :: cg_array_read_f
+!DEC$ ATTRIBUTES REFERENCE, C, VARYING :: cg_array_read_as_f
+!DEC$ ATTRIBUTES REFERENCE, C, VARYING :: cg_array_write_f
+

@@ -1,0 +1,46 @@
+# Makefile for Unix/Linux
+
+include ../make.defs
+
+CALCLIB = libcgnscalc.$(A)
+
+COPTS = $(CFLAGS) $(CALCOPTS) -I$(CGNSDIR)
+
+lib : $(CALCLIB)
+all : $(CALCLIB) calctest$(EXE)
+
+install : $(CALCLIB)
+
+#----------------------------------------------------
+
+$(CALCLIB) : calc.$(O) vec.$(O) vecsym.$(O)
+	$(AR) $@ calc.$(O) vec.$(O) vecsym.$(O)
+	$(RANLIB) $@
+
+#----------------------------------------------------
+
+calctest$(EXE) : calctest.$(O) $(CALCLIB)
+	$(CC) $(LDFLAGS) -o $@ calctest.$(O) $(CALCLIB) \
+	$(CGNSLIB) $(BUILDLIBS) -lm
+	$(STRIP) $@
+
+calctest.$(O) : calctest.c
+
+#---------------------------------------------------
+
+calc.$(O)   : calc.c calc.h vecerr.h
+vec.$(O)    : vec.c vec.h vecsym.h vecerr.h
+vecsym.$(O) : vecsym.c vec.h vecsym.h
+
+calc.h	 : vecsym.h
+vecsym.h : vec.h
+
+
+#---------------------------------------------------------------
+
+.c.$(O) :
+	$(CC) $(COPTS) -c $<
+
+clean:
+	-$(RM) $(CALCLIB) *.$(O) *~ *.bak calctest$(EXE)
+

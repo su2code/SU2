@@ -1,0 +1,81 @@
+
+This file contains two test problems
+
+4elt.graph
+	This is a small graph corresponding to a 2D finite element mesh
+
+test.mgraph
+	This is a very small graph with two vertex weights (multi-constraint)
+
+metis.mesh
+	This is a small 2D mesh (It is a triangulation of 'METIS')
+
+
+You can use them to test the various partitioning, and ordering routines.
+For example try something like
+
+	../kmetis 4elt.graph 40
+	../onmetis 4elt.graph
+	../pmetis test.mgraph 2
+	../kmetis test.mgraph 2
+	../kmetis test.mgraph 5
+	../partnmesh metis.mesh 10
+	../partdmesh metis.mesh 10
+	../mesh2dual metis.mesh
+	../kmetis metis.mesh.dgraph 10
+
+and so on...
+
+
+You can also use the 'mtest' program that tests the various partitioning 
+routines. Here is how the correct output of 'mtest 4elt.graph' should 
+look like.
+
+prompt%: mtest 4elt.graph
+**********************************************************************
+  METIS 4.0   Copyright 1998, Regents of the University of Minnesota
+
+Graph Information ---------------------------------------------------
+  Name: 4elt.graph, #Vertices: 15606, #Edges: 45878
+
+Testing METIS_PartGraphRecursive ------------------------------------
+  [1:ok][2:ok][3:ok][4:ok][5:ok][6:ok]
+
+Testing METIS_WPartGraphRecursive -----------------------------------
+  [1:ok][2:ok][3:ok][4:ok][5:ok][6:ok]
+
+Testing METIS_PartGraphKway -----------------------------------------
+  [1:ok][2:ok][3:ok][4:ok][5:ok][6:ok][7:ok][8:ok]
+
+Testing METIS_WPartGraphKway ----------------------------------------
+  [1:ok][2:ok][3:ok][4:ok][5:ok][6:ok][7:ok][8:ok]
+
+Testing METIS_PartGraphVKway ----------------------------------------
+  [1:ok][2:ok][3:ok][4:ok][5:ok][6:ok][7:ok]
+
+Testing METIS_WPartGraphVKway ---------------------------------------
+  [1:ok][2:ok][3:ok][4:ok][5:ok][6:ok][7:ok]
+
+Testing METIS_mCPartGraphRecursive ----------------------------------
+  [1:ok][2:ok][3:ok][4:ok][5:ok][6:ok][7:ok][8:ok][9:ok][10:ok]
+  [11:ok][12:ok]
+
+Testing METIS_mCPartGraphKway ---------------------------------------
+  [1:ok][2:ok][3:ok][4:ok][5:ok][6:ok][7:ok][8:ok][9:ok][10:ok]
+  [11:ok][12:ok][13:ok][14:ok]
+
+Testing METIS_EdgeND ------------------------------------------------
+  [1:ok][2:ok][3:ok]
+
+Testing METIS_NodeND ------------------------------------------------
+  [1:ok][2:ok][3:ok][4:ok][5:ok][6:ok][7:ok][8:ok][9:ok][10:ok]
+  [11:ok][12:ok][13:ok]
+
+Testing METIS_NodeWND -----------------------------------------------
+  [1:ok][2:ok][3:ok][4:ok][5:ok][6:ok]
+
+---------------------------------------------------------------------
+ Testing completed.
+**********************************************************************
+
+

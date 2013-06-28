@@ -2703,17 +2703,17 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **so
       /*--- Residual (first, second and third system of equations) ---*/
       if (config->GetWrt_Residuals()) {
         for (iVar = 0; iVar < nVar_First; iVar++) {
-          Data[jVar][jPoint] = solution[FirstIndex]->node[iPoint]->GetResidual(iVar);
+          Data[jVar][jPoint] = solution[FirstIndex]->GetResidual(iPoint, iVar);
           jVar++;
         }
         
         for (iVar = 0; iVar < nVar_Second; iVar++) {
-          Data[jVar][jPoint] = solution[SecondIndex]->node[iPoint]->GetResidual(iVar);
+          Data[jVar][jPoint] = solution[SecondIndex]->GetResidual(iPoint, iVar);
           jVar++;
         }
         
         for (iVar = 0; iVar < nVar_Third; iVar++) {
-          Data[jVar][jPoint] = solution[ThirdIndex]->node[iPoint]->GetResidual(iVar);
+          Data[jVar][jPoint] = solution[ThirdIndex]->GetResidual(iPoint, iVar);
           jVar++;
         }
       }
@@ -2998,7 +2998,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **so
         /*--- Get this variable into the temporary send buffer. ---*/
         Buffer_Send_Var[jPoint] = solution[CurrentIndex]->node[iPoint]->GetSolution(jVar);
         if (config->GetWrt_Residuals()) {
-          Buffer_Send_Res[jPoint] = solution[CurrentIndex]->node[iPoint]->GetResidual(jVar);
+          Buffer_Send_Res[jPoint] = solution[CurrentIndex]->GetResidual(iPoint, jVar);
         }
         
         /*--- Only send/recv the volumes & global indices during the first loop ---*/
@@ -4667,6 +4667,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
       sbuf_force[10] += solution_container[val_iZone][FinestMesh][PLASMA_SOL]->Get_PressureDrag();
       sbuf_force[11] += solution_container[val_iZone][FinestMesh][PLASMA_SOL]->Get_ViscDrag();
       sbuf_force[12] += solution_container[val_iZone][FinestMesh][PLASMA_SOL]->Get_MagnetDrag();
+      sbuf_force[13] += solution_container[val_iZone][FinestMesh][PLASMA_SOL]->GetTotal_Q();
       
       /*--- Plasma Residuals ---*/
       for (iVar = 0; iVar < nVar_Plasma; iVar++)
@@ -4769,7 +4770,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
     }
     
     if (plasma) {
-      Total_CQ = rbuf_force[9];
+      Total_Q = rbuf_force[13];
       PressureDrag = rbuf_force[10];
       ViscDrag = rbuf_force[11];
       MagDrag = rbuf_force[12];
@@ -4960,7 +4961,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
             /*--- Direct problem coefficients ---*/
             sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
                      Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy,
-                     Total_CFz, Total_CEff, Total_CQ, PressureDrag, ViscDrag, MagDrag);
+                     Total_CFz, Total_CEff, Total_Q, PressureDrag, ViscDrag, MagDrag);
             //                        PressureDrag += solution_container[val_iZone][FinestMesh][PLASMA_SOL]->Get_PressureDrag();
             //                        ViscDrag += solution_container[val_iZone][FinestMesh][PLASMA_SOL]->Get_ViscDrag();
             //                        MagDrag += solution_container[val_iZone][FinestMesh][PLASMA_SOL]->Get_MagnetDrag();
@@ -5105,7 +5106,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
             if (config[val_iZone]->GetKind_GasModel() == AIR21)
               cout << "      Res[r1]" << "       Res[r2]" << "   Res(r3)"<<  endl;
             if ((config[val_iZone]->GetKind_GasModel() == ARGON_SID) || (config[val_iZone]->GetKind_GasModel() == AIR7) || (config[val_iZone]->GetKind_GasModel() == AIR5) || (config[val_iZone]->GetKind_GasModel() == N2) || (config[val_iZone]->GetKind_GasModel() == O2))
-              cout << "      Res[Rho0]" << "      Res[E0]" << "	  CQ(Total)" << "	 CDrag(Total)" << endl;
+              cout << "      Res[Rho0]" << "      Res[E0]" << "	  Q(Total)" << "	 CDrag(Total)" << endl;
             break;
             
           case WAVE_EQUATION :
@@ -5309,7 +5310,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
           if ((config[val_iZone]->GetKind_GasModel() == ARGON_SID) || config[val_iZone]->GetKind_GasModel() == AIR7 || config[val_iZone]->GetKind_GasModel() == O2 || config[val_iZone]->GetKind_GasModel() == N2 || config[val_iZone]->GetKind_GasModel() == AIR5) {
             cout.width(14); cout << log10(residual_plasma[0]);
             cout.width(14); cout << log10(residual_plasma[nDim+1]);
-            cout.width(14); cout << Total_CQ;
+            cout.width(14); cout << Total_Q;
             cout.width(14); cout << Total_CDrag;
           }
           cout << endl;

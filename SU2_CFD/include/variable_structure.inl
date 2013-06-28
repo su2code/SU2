@@ -41,8 +41,6 @@ inline void CVariable::SetSolution(unsigned short val_var, double val_solution) 
 
 inline void CVariable::SetUndivided_Laplacian(unsigned short val_var, double val_undivided_laplacian) { Undivided_Laplacian[val_var] = val_undivided_laplacian; }
 
-inline void CVariable::SetResidual(unsigned short val_var, double val_residual) { Residual[val_var] = val_residual; }
-
 inline void CVariable::SetAuxVar(double val_auxvar) { AuxVar = val_auxvar; }
 
 inline void CVariable::SetSolution_Old(unsigned short val_var, double val_solution_old) { Solution_Old[val_var] = val_solution_old; }
@@ -73,23 +71,11 @@ inline double *CVariable::GetUnd_Lapl(void) { return Undivided_Laplacian; }
 
 inline double CVariable::GetUnd_Lapl(unsigned short val_var) { return Undivided_Laplacian[val_var]; }
 
-inline double CVariable::GetResidual(unsigned short val_var) { return Residual[val_var]; }
-
 inline void CVariable::AddSolution(unsigned short val_var, double val_solution) {Solution[val_var] = Solution_Old[val_var] + val_solution; }
 
 inline double CVariable::GetSolution(unsigned short val_var) { return Solution[val_var]; }
 
 inline double CVariable::GetSolution_Old(unsigned short val_var) { return Solution_Old[val_var]; }
-
-inline double *CVariable::GetResidual(void) { return Residual; }
-
-inline double *CVariable::GetResConv(void) { return Res_Conv; }
-
-inline double *CVariable::GetResVisc(void) { return Res_Visc; }
-
-inline double *CVariable::GetResSour(void) { return Res_Sour; }
-
-inline double CVariable::GetRes_Visc_RK(unsigned short val_var, unsigned short iRKStep) { return Res_Visc_RK[val_var][iRKStep]; }
 
 inline double *CVariable::GetResidual_Sum(void) { return Residual_Sum; }
 
@@ -188,24 +174,6 @@ inline void CVariable::AddMax_Lambda_Visc(double val_max_lambda, unsigned short 
 inline void CVariable::SetSensor(double val_sensor) { Sensor = val_sensor; }
 
 inline void CVariable::SetSensor(double val_sensor, unsigned short val_iSpecies) {}
-
-inline void CVariable::AddResidual(double *val_residual) { for (unsigned short iVar = 0; iVar < nVar; iVar++) Residual[iVar] += val_residual[iVar]; }
-
-inline void CVariable::AddResidual(double val_residual) { Residual[0] += val_residual ; }
-
-inline void CVariable::AddRes_Conv(double *val_residual) { for (unsigned short iVar = 0; iVar < nVar; iVar++) Res_Conv[iVar] += val_residual[iVar]; }
-
-inline void CVariable::AddRes_Visc(double *val_residual) { for (unsigned short iVar = 0; iVar < nVar; iVar++) Res_Visc[iVar] += val_residual[iVar]; }
-
-inline void CVariable::AddRes_Sour(double *val_residual) { for (unsigned short iVar = 0; iVar < nVar; iVar++) Res_Sour[iVar] += val_residual[iVar]; }
-
-inline void CVariable::SubtractResidual(double *val_residual) { for (unsigned short iVar = 0; iVar < nVar; iVar++) Residual[iVar] -= val_residual[iVar]; }
-
-inline void CVariable::SubtractRes_Visc(double *val_residual) { for (unsigned short iVar = 0; iVar < nVar; iVar++) Res_Visc[iVar] -= val_residual[iVar]; }
-
-inline void CVariable::SubtractRes_Conv(double *val_residual) { for (unsigned short iVar = 0; iVar < nVar; iVar++) Res_Conv[iVar] -= val_residual[iVar]; }
-
-inline void CVariable::SubtractRes_Sour(double *val_residual) { for (unsigned short iVar = 0; iVar < nVar; iVar++) Res_Sour[iVar] -= val_residual[iVar]; }
 
 inline double CVariable::GetDensity(void) {	return 0; }
 
@@ -356,12 +324,6 @@ inline void CVariable::SetVelocity2(void) { }
 inline void CVariable::SetVelocity_Old(double *val_velocity, bool val_incomp) { }
 
 inline void CVariable::SetVelocity_Old(double *val_velocity, unsigned short iSpecies) { }
-
-inline void CVariable::SetVel_ResConv_Zero(unsigned short iSpecies) { }
-
-inline void CVariable::SetVel_ResVisc_Zero(unsigned short iSpecies) { }
-
-inline void CVariable::SetVel_ResSour_Zero(unsigned short iSpecies) { }
 
 inline void CVariable::SetVel_ResTruncError_Zero(unsigned short iSpecies) { }
 

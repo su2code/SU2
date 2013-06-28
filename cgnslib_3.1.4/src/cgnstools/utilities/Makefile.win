@@ -1,0 +1,272 @@
+include ..\make.win
+
+CALCDIR = ..\calclib
+CALCLIB = $(CALCDIR)\cgnscalc.lib
+
+COPTS = $(CFLAGS) -I..\common -I$(CGNSDIR)
+
+#--------------------------------------------------
+
+ALL = \
+	plot3d_to_cgns.exe \
+	cgns_to_plot3d.exe \
+	patran_to_cgns.exe \
+	tecplot_to_cgns.exe \
+	cgns_to_tecplot.exe \
+	cgns_to_vtk.exe \
+	convert_location.exe \
+	convert_variables.exe \
+	convert_dataclass.exe \
+	extract_subset.exe \
+	interpolate_cgns.exe
+
+OTHERS = \
+	cgns_info.exe \
+	fieldview_to_cgns.exe \
+	cgns_to_fieldview.exe \
+	vextex_to_cell.exe \
+	cell_to_vertex.exe
+
+SCRIPTS = \
+	utilities.mnu	\
+	plot3d.tcl	\
+	patran.tcl	\
+	tecplot.tcl	\
+	vtk.tcl		\
+	convert.tcl	\
+	util.tcl
+
+CNVFILES = \
+	primitive.cnv	\
+	conserved.cnv	\
+	dimensional.cnv
+
+all : $(ALL)
+others : $(OTHERS)
+
+#--------------------------------------------------
+
+cgns_info : cgns_info.exe
+
+cgns_info.exe : cgns_info.obj cgnsutil.obj getargs.obj
+	$(LINK) $(LFLAGS) cgns_info.obj cgnsutil.obj getargs.obj \
+	$(CGNSLIB) $(BUILDLIBS) $(CLIBS)
+
+cgns_info.obj : cgns_info.c cgnsutil.h
+
+#--------------------------------------------------
+
+plot3d_to_cgns : plot3d_to_cgns.exe
+
+plot3d_to_cgns.exe : plot3d_to_cgns.obj cgnsutil.obj binaryio.obj getargs.obj
+	$(LINK) $(LFLAGS) plot3d_to_cgns.obj cgnsutil.obj binaryio.obj \
+	getargs.obj $(CGNSLIB) $(BUILDLIBS) $(CLIBS)
+
+plot3d_to_cgns.obj : plot3d_to_cgns.c cgnsutil.h binaryio.h
+
+#--------------------------------------------------
+
+cgns_to_plot3d : cgns_to_plot3d.exe
+
+cgns_to_plot3d.exe : cgns_to_plot3d.obj cgnsutil.obj getargs.obj p3dfout.obj
+	$(LINK) $(LFLAGS) cgns_to_plot3d.obj cgnsutil.obj \
+	getargs.obj p3dfout.obj $(CGNSLIB) $(BUILDLIBS) $(CLIBS)
+
+cgns_to_plot3d.obj : cgns_to_plot3d.c cgnsutil.h
+p3dfout.obj	   : p3dfout.c
+
+#--------------------------------------------------
+
+patran_to_cgns : patran_to_cgns.exe
+
+patran_to_cgns.exe : patran_to_cgns.obj cgnsImport.obj getargs.obj hash.obj
+	$(LINK) $(LFLAGS) patran_to_cgns.obj cgnsImport.obj getargs.obj \
+	hash.obj $(CGNSLIB) $(BUILDLIBS) $(CLIBS)
+
+patran_to_cgns.obj : patran_to_cgns.c cgnsImport.h
+
+#--------------------------------------------------
+
+tecplot_to_cgns : tecplot_to_cgns.exe
+
+tecplot_to_cgns.exe : tecplot_to_cgns.obj cgnsImport.obj getargs.obj hash.obj
+	$(LINK) $(LFLAGS) tecplot_to_cgns.obj cgnsImport.obj getargs.obj \
+	hash.obj $(CGNSLIB) $(BUILDLIBS) $(CLIBS)
+
+tecplot_to_cgns.obj : tecplot_to_cgns.c cgnsImport.h
+
+#--------------------------------------------------
+
+cgns_to_tecplot : cgns_to_tecplot.exe
+
+cgns_to_tecplot.exe : cgns_to_tecplot.obj cgnsutil.obj getargs.obj
+	$(LINK) $(LFLAGS) cgns_to_tecplot.obj cgnsutil.obj \
+	getargs.obj $(CGNSLIB) $(BUILDLIBS) $(CLIBS)
+
+cgns_to_tecplot.obj : cgns_to_tecplot.c cgnsutil.h
+
+#--------------------------------------------------
+
+cgns_to_vtk : cgns_to_vtk.exe
+
+cgns_to_vtk.exe : cgns_to_vtk.obj getargs.obj
+	$(LINK) $(LFLAGS) cgns_to_vtk.obj getargs.obj \
+	$(CGNSLIB) $(BUILDLIBS) $(CLIBS)
+
+cgns_to_vtk.obj : cgns_to_vtk.c
+
+#--------------------------------------------------
+
+fieldview_to_cgns : fieldview_to_cgns.exe
+
+fieldview_to_cgns.exe : fieldview_to_cgns.obj cgnsImport.obj getargs.obj hash.obj
+	$(LINK) $(LFLAGS) fieldview_to_cgns.obj cgnsImport.obj getargs.obj \
+	hash.obj $(CGNSLIB) $(BUILDLIBS) $(CLIBS)
+
+fieldview_to_cgns.obj : fieldview_to_cgns.c cgnsImport.h
+
+#--------------------------------------------------
+
+cgns_to_fieldview : cgns_to_fieldview.exe
+
+cgns_to_fieldview.exe : cgns_to_fieldview.obj cgnsutil.obj getargs.obj
+	$(LINK) $(LFLAGS) cgns_to_fieldview.obj cgnsutil.obj \
+	getargs.obj $(CGNSLIB) $(BUILDLIBS) $(CLIBS)
+
+cgns_to_fieldview.obj : cgns_to_fieldview.c cgnsutil.h
+
+#--------------------------------------------------
+
+convert_location : convert_location.exe
+
+convert_location.exe : convert_location.obj cgnsutil.obj getargs.obj
+	$(LINK) $(LFLAGS) convert_location.obj cgnsutil.obj getargs.obj \
+	$(CGNSLIB) $(BUILDLIBS) $(CLIBS)
+
+convert_location.obj : convert_location.c cgnsutil.h
+
+#--------------------------------------------------
+
+convert_variables : convert_variables.exe
+
+convert_variables.exe : convert_variables.obj cgnsutil.obj getargs.obj $(CALCLIB)
+	$(LINK) $(LFLAGS) convert_variables.obj cgnsutil.obj getargs.obj \
+	$(CALCLIB) $(CGNSLIB) $(BUILDLIBS) $(CLIBS)
+
+convert_variables.obj : convert_variables.c cgnsutil.h
+	$(CC) $(COPTS) -I$(CALCDIR) -Fo$@ -c convert_variables.c
+
+#--------------------------------------------------
+
+convert_dataclass : convert_dataclass.exe
+
+convert_dataclass.exe : convert_dataclass.obj cgnsutil.obj getargs.obj $(CALCLIB)
+	$(LINK) $(LFLAGS) convert_dataclass.obj cgnsutil.obj getargs.obj \
+	$(CALCLIB) $(CGNSLIB) $(BUILDLIBS) $(CLIBS)
+
+convert_dataclass.obj : convert_dataclass.c
+	$(CC) $(COPTS) -I$(CALCDIR) -Fo$@ -c convert_dataclass.c
+
+#--------------------------------------------------
+
+extract_subset : extract_subset.exe
+
+extract_subset.exe : extract_subset.obj cgnsutil.obj getargs.obj
+	$(LINK) $(LFLAGS) extract_subset.obj cgnsutil.obj getargs.obj \
+	$(CGNSLIB) $(BUILDLIBS) $(CLIBS)
+
+extract_subset.obj : extract_subset.c cgnsutil.h
+
+#--------------------------------------------------
+
+vertex_to_cell : vertex_to_cell.exe
+
+vertex_to_cell.exe : vertex_to_cell.obj cgnsutil.obj getargs.obj
+	$(LINK) $(LFLAGS) vertex_to_cell.obj cgnsutil.obj getargs.obj \
+	$(CGNSLIB) $(BUILDLIBS) $(CLIBS)
+
+vertex_to_cell.obj : convert_location.c cgnsutil.h
+	$(CC) $(COPTS) -DVERTEX_TO_CELL -Fovertex_to_cell.obj \
+	-c convert_location.c
+
+#--------------------------------------------------
+
+cell_to_vertex : cell_to_vertex.exe
+
+cell_to_vertex.exe : cell_to_vertex.obj cgnsutil.obj getargs.obj
+	$(LINK) $(LFLAGS) cell_to_vertex.obj cgnsutil.obj getargs.obj \
+	$(CGNSLIB) $(BUILDLIBS) $(CLIBS)
+
+cell_to_vertex.obj : convert_location.c cgnsutil.h
+	$(CC) $(COPTS) -DCELL_TO_VERTEX -Focell_to_vertex.obj \
+	-c convert_location.c
+
+#--------------------------------------------------
+
+interpolate_cgns : interpolate_cgns.exe
+
+interpolate_cgns.exe : interpolate_cgns.obj cgnsutil.obj getargs.obj
+	$(LINK) $(LFLAGS) interpolate_cgns.obj cgnsutil.obj getargs.obj \
+	$(CGNSLIB) $(BUILDLIBS) $(CLIBS)
+
+interpolate_cgns.obj : interpolate_cgns.c cgnsutil.h
+
+#--------------------------------------------------
+
+cgnsImport.obj : cgnsImport.c cgnsImport.h
+cgnsutil.obj   : cgnsutil.c cgnsutil.h
+binaryio.obj   : binaryio.c binaryio.h
+
+getargs.obj : ..\common\getargs.c ..\common\getargs.h
+	$(CC) $(COPTS) -Fogetargs.obj -c ..\common\getargs.c
+
+hash.obj : ..\common\hash.c ..\common\hash.h
+	$(CC) $(COPTS) -Fohash.obj -c ..\common\hash.c
+
+p3dfint.obj : p3dfint.f
+
+#--------------------------------------------------
+
+install : install-prog install-help
+
+install-prog : $(ALL) $(BINDIR) $(SHAREDIR)
+	-$(INSTALL) *.exe $(BINDIR)
+	-$(INSTALL) utilities.mnu $(SHAREDIR)
+	-$(INSTALL) *.tcl $(SHAREDIR)
+	-$(INSTALL) *.cnv $(SHAREDIR)
+
+install-help : $(SHAREDIR)\help\utilities\images
+	-$(INSTALL) help\*.html $(SHAREDIR)\help\utilities
+	-$(INSTALL) help\images\*.* $(SHAREDIR)\help\utilities\images
+
+$(BINDIR) : $(INSTALLDIR)
+	-mkdir $(BINDIR)
+
+$(SHAREDIR) : $(INSTALLDIR)
+	-mkdir $(SHAREDIR)
+
+$(INSTALLDIR) :
+	-mkdir $(INSTALLDIR)
+
+$(SHAREDIR)\help\utilities\images : $(SHAREDIR)\help\utilities
+	-mkdir $(SHAREDIR)\help\utilities\images
+
+$(SHAREDIR)\help\utilities : $(SHAREDIR)\help
+	-mkdir $(SHAREDIR)\help\utilities
+
+$(SHAREDIR)\help :
+	-mkdir $(SHAREDIR)\help
+
+.c.obj :
+	$(CC) $(COPTS) -Fo$@ -c $<
+
+.f.obj :
+	$(F77) $(FFLAGS) -Fo$@ -c $<
+
+clean:
+	-$(RM) *.obj
+	-$(RM) *.pdb
+	-$(RM) *.ilk
+	-$(RM) *.exe
+	-$(RM) *.bak
+

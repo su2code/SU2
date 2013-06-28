@@ -155,11 +155,6 @@ void CIntegration::Space_Integration(CGeometry *geometry, CSolution **solution_c
 				solution_container[MainSolution]->BC_Custom(geometry, solution_container, solver[CONV_BOUND_TERM], config, iMarker);
 				break;
 		}
-	
-	/*--- Add source, viscous and convective residuals (note that the turbulent 
-	 models don't divide the contributions, i.e., they don't store the different residuals separately up to this point). ---*/
-	if (RunTime_EqSystem != RUNTIME_TURB_SYS && RunTime_EqSystem != RUNTIME_ADJTURB_SYS && RunTime_EqSystem != RUNTIME_ELEC_SYS && RunTime_EqSystem != RUNTIME_TRANS_SYS)
-		solution_container[MainSolution]->SetResidual_Total(geometry, solution_container, config, iRKStep, iMesh);
 
 }
 
@@ -205,7 +200,6 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolution **solution_co
 			/*--- Perform the time integration ---*/
 			switch (config->GetKind_TimeIntScheme()) {
 			case (RUNGE_KUTTA_EXPLICIT):
-				solution_container[MainSolution]->SetResidual_RKCoeff(geometry, config, iRKStep);
 				solution_container[MainSolution]->ExplicitRK_Iteration(geometry, solution_container, config, iRKStep);
 				break;
 			case (EULER_EXPLICIT):

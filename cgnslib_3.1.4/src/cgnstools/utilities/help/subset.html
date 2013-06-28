@@ -1,0 +1,197 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=iso-8859-1">
+<meta name="GENERATOR" content="Microsoft FrontPage Express 2.0">
+<title>Subsets and Interpolation</title>
+</head>
+
+<body>
+
+<h1>Subset Extraction and Interpolation</h1>
+
+<p>This document describes routines to extract a subset from a
+CGNS data file and interpolate a solution from one CGNS file to
+another.</p>
+
+<table border="1" cellpadding="5" cellspacing="0">
+    <tr>
+        <td><a href="#Extract">Extract Subset</a></td>
+        <td>extract_subset</td>
+        <td>Extract subset from structured CGNS file.</td>
+    </tr>
+    <tr>
+        <td><a href="#Interpolation">Interpolation</a></td>
+        <td>interpolate_cgns</td>
+        <td>Interpolate solution from one CGNS file to another</td>
+    </tr>
+</table>
+
+<hr>
+
+<h2><a name="Extract"></a>Extract Subset</h2>
+
+<p>Extracts a subset of the grid from a structured CGNS file.</p>
+
+<h3>Command Line</h3>
+
+<p>The program is executed from the command line as:</p>
+
+<p><b>extract_subset</b> <i>options</i> <b>CGNSfile</b> <i>newCGNSfile</i>
+</p>
+
+<p>The input CGNS file, <i>CGNSfile</i> is required. If the
+output CGNS file, <em>newCGNSfile</em>, is specified the modified
+CGNS data file will be written to it, otherwise <em>CGNSfile</em>
+will be modified. The command line options are:</p>
+
+<table border="1" cellpadding="5">
+    <tr>
+        <td bgcolor="#C0C0C0"><b>option</b></td>
+        <td bgcolor="#C0C0C0"><b>description</b></td>
+    </tr>
+    <tr>
+        <td nowrap>-w</td>
+        <td>use volume weighted averaging (default is simple
+        averaging)</td>
+    </tr>
+    <tr>
+        <td nowrap>-b<i> base</i></td>
+        <td>use CGNS base index <i>base</i>. (default 1)</td>
+    </tr>
+    <tr>
+        <td nowrap>-z<i> zone</i></td>
+        <td>read zone number <i>zone</i> (default all zones)</td>
+    </tr>
+    <tr>
+        <td nowrap>-B<i> name</i></td>
+        <td>write subset to base <i>name</i> (default is same as
+        read)</td>
+    </tr>
+    <tr>
+        <td nowrap>-i</td>
+        <td>subset in i-direction</td>
+    </tr>
+    <tr>
+        <td nowrap>-j</td>
+        <td>subset in j-direction</td>
+    </tr>
+    <tr>
+        <td nowrap>-k</td>
+        <td>subset in k-direction</td>
+    </tr>
+    <tr>
+        <td nowrap>-a</td>
+        <td>subset in i,j and k-directions (default)</td>
+    </tr>
+</table>
+
+<h3>ADFviewer Interface</h3>
+
+<p>The following panel is created when launched from the
+ADFviewer GUI:</p>
+
+<p><img src="images/extract_subset.gif" width="447" height="416"></p>
+
+<p>This allows interactive selection of the input and output
+files and options. The <em>Accept</em> button will then construct
+the command line and run <strong>extract_subset</strong>. If the
+extraction is successful, ADFviewer will read and display the
+CGNS file.</p>
+
+<hr>
+
+<h2><a name="Interpolation"></a>Interpolation</h2>
+
+<p>Reads a solution from one CGNS file and interpolates the
+solution onto the grid from another CGNS file.</p>
+
+<h3>Command Line</h3>
+
+<p>The program is executed from the command line as:</p>
+
+<p><b>interpolate_cgns</b> <i>options</i> <b>CGNSsol CGNSgrid </b><em>newCGNSfile</em></p>
+
+<p>The solution CGNS file, <i>CGNSsol</i>, and the grid CGNS
+file, <em>CGNSgrid</em>, are required. If the output CGNS file, <em>newCGNSfile</em>,
+is specified the modified CGNS data file will be written to it,
+otherwise <em>CGNSgrid</em> will be modified. The command line
+options are:</p>
+
+<table border="1" cellpadding="5">
+    <tr>
+        <td bgcolor="#C0C0C0"><b>option</b></td>
+        <td bgcolor="#C0C0C0"><b>description</b></td>
+    </tr>
+    <tr>
+        <td nowrap>-c<i> base</i></td>
+        <td>use CGNS base index <i>base</i> for the solution file.
+        (default 1)</td>
+    </tr>
+    <tr>
+        <td nowrap>-b<i> base</i></td>
+        <td>use CGNS base index <i>base</i> for the grid file. (default
+        1)</td>
+    </tr>
+    <tr>
+        <td nowrap>-B<i> name</i></td>
+        <td>write results to base <i>name</i> (default is same as
+        read)</td>
+    </tr>
+    <tr>
+        <td nowrap>-S<i> name</i></td>
+        <td>write to solution <i>name</i> (default is same as
+        read)</td>
+    </tr>
+    <tr>
+        <td nowrap>-w</td>
+        <td>use volume weighted averaging (default is simple
+        averaging)</td>
+    </tr>
+    <tr>
+        <td nowrap>-a</td>
+        <td>allow element extrapolation</td>
+    </tr>
+    <tr>
+        <td nowrap>-d <em>depth</em></td>
+        <td>set max depth for octtree to <em>depth</em> (default
+        16)</td>
+    </tr>
+    <tr>
+        <td nowrap>-e <em>nelem</em></td>
+        <td>set max elements in an octtree branch to <em>nelem</em>
+        (default 256)</td>
+    </tr>
+    <tr>
+        <td nowrap>-p <em>pad</em></td>
+        <td>set the bounding box padding fraction to <em>pad</em>
+        (default 0.01)</td>
+    </tr>
+    <tr>
+        <td nowrap>-i <em>iter</em></td>
+        <td>set the max number of Newton interations to <em>iter</em>
+        (default 20)</td>
+    </tr>
+    <tr>
+        <td nowrap>-t<em> tol</em></td>
+        <td>set the parametric u, v, w tolerance to <em>tol</em>
+        (default 0.00001)</td>
+    </tr>
+</table>
+
+<h3>ADFviewer Interface</h3>
+
+<p>The following panel is created when launched from the
+ADFviewer GUI:</p>
+
+<p><img src="images/interpolate_solution.gif" width="437"
+height="599"></p>
+
+<p>This allows interactive selection of the input and output
+files and options. The <em>Accept</em> button will then construct
+the command line and run <strong>interpolate_cgns</strong>. If
+the interpolation is successful, ADFviewer will read and display
+the CGNS file.</p>
+</body>
+</html>

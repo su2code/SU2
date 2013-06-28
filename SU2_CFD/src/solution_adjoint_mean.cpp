@@ -75,6 +75,7 @@ CAdjEulerSolution::CAdjEulerSolution(CGeometry *geometry, CConfig *config, unsig
 	nDim = geometry->GetnDim();
   nMarker = config->GetnMarker_All();
   nPoint = geometry->GetnPoint();
+  nPointDomain = geometry->GetnPointDomain();
 
 	if (incompressible) nVar = nDim + 1;
 	else nVar = nDim + 2;
@@ -85,7 +86,6 @@ CAdjEulerSolution::CAdjEulerSolution(CGeometry *geometry, CConfig *config, unsig
 	Residual_i = new double[nVar];	Residual_j = new double[nVar];
 	Res_Conv_i = new double[nVar];	Res_Visc_i = new double[nVar];
 	Res_Conv_j = new double[nVar];	Res_Visc_j = new double[nVar];
-	Res_Sour_i = new double[nVar];	Res_Sour_j = new double[nVar];
   Residual_Max = new double[nVar]; Point_Max = new unsigned long[nVar];
   
 	/*--- Define some auxiliary vectors related to the solution ---*/
@@ -110,6 +110,9 @@ CAdjEulerSolution::CAdjEulerSolution(CGeometry *geometry, CConfig *config, unsig
     Jacobian_j[iVar] = new double [nVar];
   }
   
+  xsol = new double [nPoint*nVar];
+  xres = new double [nPoint*nVar];
+  
 	/*--- Jacobians and vector structures for implicit computations ---*/
   if (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT) {
 		Jacobian_ii = new double* [nVar];
@@ -122,11 +125,10 @@ CAdjEulerSolution::CAdjEulerSolution(CGeometry *geometry, CConfig *config, unsig
 			Jacobian_ji[iVar] = new double [nVar];
 			Jacobian_jj[iVar] = new double [nVar];
 		}
+    
     if (rank == MASTER_NODE)
       cout << "Initialize jacobian structure (Adjoint Euler). MG level: " << iMesh <<"." << endl;
 		Initialize_SparseMatrix_Structure(&Jacobian, nVar, nVar, geometry, config);
-		xsol = new double [nPoint*nVar];
-		rhs  = new double [nPoint*nVar];
 
     if (axisymmetric) {
       Jacobian_Axisymmetric = new double* [nVar];
@@ -151,7 +153,7 @@ CAdjEulerSolution::CAdjEulerSolution(CGeometry *geometry, CConfig *config, unsig
 
 		Initialize_SparseMatrix_Structure(&Jacobian, nVar, nVar, geometry, config);
 		xsol = new double [nPoint*nVar];
-		rhs  = new double [nPoint*nVar];
+		xres = new double [nPoint*nVar];
 	}
 
 	/*--- Computation of gradients by least squares ---*/
@@ -167,17 +169,17 @@ CAdjEulerSolution::CAdjEulerSolution(CGeometry *geometry, CConfig *config, unsig
 	}
 
 	/*--- Sensitivity definition and coefficient in all the markers ---*/
-	CSensitivity = new double* [config->GetnMarker_All()];
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+	CSensitivity = new double* [nMarker];
+	for (iMarker = 0; iMarker < nMarker; iMarker++) {
 		CSensitivity[iMarker] = new double [geometry->nVertex[iMarker]];
 	}
-	Sens_Geo  = new double[config->GetnMarker_All()];
-	Sens_Mach = new double[config->GetnMarker_All()];
-	Sens_AoA  = new double[config->GetnMarker_All()];
-	Sens_Press = new double[config->GetnMarker_All()];
-	Sens_Temp  = new double[config->GetnMarker_All()];
+	Sens_Geo  = new double[nMarker];
+	Sens_Mach = new double[nMarker];
+	Sens_AoA  = new double[nMarker];
+	Sens_Press = new double[nMarker];
+	Sens_Temp  = new double[nMarker];
 
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+	for (iMarker = 0; iMarker < nMarker; iMarker++) {
 		Sens_Geo[iMarker]  = 0.0;
 		Sens_Mach[iMarker] = 0.0;
 		Sens_AoA[iMarker]  = 0.0;
@@ -246,7 +248,7 @@ CAdjEulerSolution::CAdjEulerSolution(CGeometry *geometry, CConfig *config, unsig
 			Global2Local[iPoint] = -1;
 		}
 		/*--- Now fill array with the transform values only for local points ---*/
-		for(iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+		for(iPoint = 0; iPoint < nPointDomain; iPoint++) {
 			Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
 		}
 
@@ -281,7 +283,7 @@ CAdjEulerSolution::CAdjEulerSolution(CGeometry *geometry, CConfig *config, unsig
 		/*--- Instantiate the variable class with an arbitrary solution
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
-		for(iPoint = geometry->GetnPointDomain(); iPoint < nPoint; iPoint++) {
+		for(iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
 			node[iPoint] = new CAdjEulerVariable(Solution, nDim, nVar, config);
 		}
 
@@ -345,7 +347,7 @@ void CAdjEulerSolution::SetSolution_MPI(CGeometry *geometry, CConfig *config) {
 	newSolution = new double[nVar];
   
 	/*--- Send-Receive boundary conditions ---*/
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+	for (iMarker = 0; iMarker < nMarker; iMarker++) {
 		if (config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) {
 			SendRecv = config->GetMarker_All_SendRecv(iMarker);
 			nVertex = geometry->nVertex[iMarker];
@@ -464,7 +466,7 @@ void CAdjEulerSolution::SetSolution_Limiter_MPI(CGeometry *geometry, CConfig *co
 	newLimit = new double[nVar];
   
 	/*--- Send-Receive boundary conditions ---*/
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+	for (iMarker = 0; iMarker < nMarker; iMarker++) {
 		if (config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) {
 			SendRecv = config->GetMarker_All_SendRecv(iMarker);
 			nVertex = geometry->nVertex[iMarker];
@@ -644,7 +646,7 @@ void CAdjEulerSolution::SetForceProj_Vector(CGeometry *geometry, CSolution **sol
 	x_origin = RefOriginMoment[0]; y_origin = RefOriginMoment[1]; z_origin = RefOriginMoment[2];
 
 
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+	for (iMarker = 0; iMarker < nMarker; iMarker++)
 		if ((config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE) && 
 				(config->GetMarker_All_Monitoring(iMarker) == YES))
 			for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -855,7 +857,7 @@ void CAdjEulerSolution::SetIntBoundary_Jump(CGeometry *geometry, CSolution **sol
 	}
 
 	/*--- Compute the jump on the adjoint variables for the upper and the lower side ---*/
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+	for (iMarker = 0; iMarker < nMarker; iMarker++)
 		if (config->GetMarker_All_Boundary(iMarker) == NEARFIELD_BOUNDARY)
 			for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
@@ -1200,20 +1202,13 @@ void CAdjEulerSolution::Preprocessing(CGeometry *geometry, CSolution **solution_
   bool center      = (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst  = (config->GetKind_Centered_AdjFlow() == JST);
   bool limiter     = (config->GetKind_SlopeLimit() != NONE);
-  bool dissipation = ((config->Get_Beta_RKStep(iRKStep) != 0) || implicit);
   
 	/*--- Residual initialization ---*/
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
+	for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
 		/*--- Initialize the convective residual vector ---*/
-		node[iPoint]->Set_ResConv_Zero();
-    
-		/*--- Initialize the source residual vector ---*/
-		node[iPoint]->Set_ResSour_Zero();
-    
-		/*--- Initialize the viscous residual vector ---*/
-		if ((config->Get_Beta_RKStep(iRKStep) != 0) || implicit)
-			node[iPoint]->Set_ResVisc_Zero();
+		Set_Residual_Zero(iPoint);
+
 	}
   
   /*--- Upwind second order reconstruction ---*/
@@ -1227,7 +1222,7 @@ void CAdjEulerSolution::Preprocessing(CGeometry *geometry, CSolution **solution_
 
   /*--- Artificial dissipation ---*/
   if (center) {
-    if ((center_jst) && (iMesh == MESH_0) && (dissipation)) {
+    if ((center_jst) && (iMesh == MESH_0)) {
       SetDissipation_Switch(geometry, config);
       SetUndivided_Laplacian(geometry, config);
       if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
@@ -1246,7 +1241,6 @@ void CAdjEulerSolution::Centered_Residual(CGeometry *geometry, CSolution **solut
 	unsigned long iEdge, iPoint, jPoint;
 
 	bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-	bool dissipation = ((config->Get_Beta_RKStep(iRKStep) != 0) || implicit);
 	bool high_order_diss = ((config->GetKind_Centered_AdjFlow() == JST) && (iMesh == MESH_0));
 	
 	bool rotating_frame = config->GetRotating_Frame();
@@ -1283,7 +1277,7 @@ void CAdjEulerSolution::Centered_Residual(CGeometry *geometry, CSolution **solut
 		solver->SetLambda(solution_container[FLOW_SOL]->node[iPoint]->GetLambda(), 
 				solution_container[FLOW_SOL]->node[jPoint]->GetLambda());
 
-		if (dissipation && high_order_diss) {
+		if (high_order_diss) {
 			solver->SetUndivided_Laplacian(node[iPoint]->GetUnd_Lapl(), node[jPoint]->GetUnd_Lapl());
 			solver->SetSensor(solution_container[FLOW_SOL]->node[iPoint]->GetSensor(),
 					solution_container[FLOW_SOL]->node[jPoint]->GetSensor());
@@ -1306,12 +1300,10 @@ void CAdjEulerSolution::Centered_Residual(CGeometry *geometry, CSolution **solut
 				Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 
 		/*--- Update convective and artificial dissipation residuals ---*/
-		node[iPoint]->SubtractRes_Conv(Res_Conv_i);
-		node[jPoint]->SubtractRes_Conv(Res_Conv_j);
-		if (dissipation) {
-			node[iPoint]->SubtractRes_Visc(Res_Visc_i);
-			node[jPoint]->SubtractRes_Visc(Res_Visc_j);
-		}
+		SubtractResidual(iPoint, Res_Conv_i);
+		SubtractResidual(jPoint, Res_Conv_j);
+    SubtractResidual(iPoint, Res_Visc_i);
+    SubtractResidual(jPoint, Res_Visc_j);
 
 		/*--- Implicit contribution to the residual ---*/
 		if (implicit) {
@@ -1494,8 +1486,8 @@ void CAdjEulerSolution::Upwind_Residual(CGeometry *geometry, CSolution **solutio
 		}
 		else {
 
-			node[iPoint]->SubtractRes_Conv(Residual_i);
-			node[jPoint]->SubtractRes_Conv(Residual_j);
+			SubtractResidual(iPoint, Residual_i);
+			SubtractResidual(jPoint, Residual_j);
 
 			/*--- Implicit contribution to the residual ---*/
 			if ((implicit) && (config->GetKind_Adjoint() != DISCRETE)) {
@@ -1525,7 +1517,7 @@ void CAdjEulerSolution::Source_Residual(CGeometry *geometry, CSolution **solutio
 	if (rotating_frame) {
 
 		/*--- loop over points ---*/
-		for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) { 
+		for (iPoint = 0; iPoint < nPointDomain; iPoint++) { 
 
 			/*--- Set solution  ---*/
 			solver->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
@@ -1540,7 +1532,7 @@ void CAdjEulerSolution::Source_Residual(CGeometry *geometry, CSolution **solutio
 			solver->SetResidual(Residual, Jacobian_i, config);
 
 			/*--- Add Residual ---*/
-			node[iPoint]->AddRes_Conv(Residual);
+			AddResidual(iPoint, Residual);
 		}
 	}
 
@@ -1549,7 +1541,7 @@ void CAdjEulerSolution::Source_Residual(CGeometry *geometry, CSolution **solutio
 		double Volume, Source;
 
 		/*--- loop over points ---*/
-		for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+		for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
 			/*--- Get control volume ---*/
 			Volume = geometry->node[iPoint]->GetVolume();
@@ -1561,7 +1553,7 @@ void CAdjEulerSolution::Source_Residual(CGeometry *geometry, CSolution **solutio
 			}
 
 			/*--- Add Residual ---*/
-			node[iPoint]->AddRes_Conv(Residual);
+			AddResidual(iPoint, Residual);
 
 		}
 	}
@@ -1577,7 +1569,7 @@ void CAdjEulerSolution::Source_Residual(CGeometry *geometry, CSolution **solutio
     }
 
 		/*--- loop over points ---*/
-		for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) { 
+		for (iPoint = 0; iPoint < nPointDomain; iPoint++) { 
 			
 			/*--- Set solution ---*/
 			solver->SetConservative(solution_container[FLOW_SOL]->node[iPoint]->GetSolution(), solution_container[FLOW_SOL]->node[iPoint]->GetSolution());
@@ -1595,7 +1587,7 @@ void CAdjEulerSolution::Source_Residual(CGeometry *geometry, CSolution **solutio
 			solver->SetResidual(Residual, Jacobian_i, config);
 
 			/*--- Add Residual ---*/
-			node[iPoint]->AddRes_Conv(Residual);
+			AddResidual(iPoint, Residual);
 
       /*--- Implicit part ---*/
 			if (implicit)
@@ -1609,7 +1601,7 @@ void CAdjEulerSolution::Source_Residual(CGeometry *geometry, CSolution **solutio
 	}
 
 	if (freesurface) {
-    for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       
       double Volume = geometry->node[iPoint]->GetVolume();
       double **Gradient = solution_container[ADJLEVELSET_SOL]->node[iPoint]->GetGradient();
@@ -1620,7 +1612,7 @@ void CAdjEulerSolution::Source_Residual(CGeometry *geometry, CSolution **solutio
         Residual[iDim+1] = coeff*Gradient[0][iDim]*Volume;
       }
       
-      node[iPoint]->AddRes_Conv(Residual);
+      AddResidual(iPoint, Residual);
       
 		}		
 	}
@@ -1638,7 +1630,7 @@ void CAdjEulerSolution::SetUndivided_Laplacian(CGeometry *geometry, CConfig *con
   
   Diff = new double[nVar];
 
-	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
+	for (iPoint = 0; iPoint < nPointDomain; iPoint++)
 		node[iPoint]->SetUnd_LaplZero();
 
 	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {	
@@ -1687,7 +1679,7 @@ void CAdjEulerSolution::SetUndivided_Laplacian(CGeometry *geometry, CConfig *con
 	/*--- Loop over all boundaries and include an extra contribution
 	 from a halo node. Find the nearest normal, interior point 
 	 for a boundary node and make a linear approximation. ---*/
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
 		if (config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE &&
 				config->GetMarker_All_Boundary(iMarker) != INTERFACE_BOUNDARY &&
@@ -1742,7 +1734,7 @@ void CAdjEulerSolution::SetUndivided_Laplacian_MPI(CGeometry *geometry, CConfig 
 	newUndLapl = new double[nVar];
   
 	/*--- Send-Receive boundary conditions ---*/
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+	for (iMarker = 0; iMarker < nMarker; iMarker++) {
 		if (config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) {
 			SendRecv = config->GetMarker_All_SendRecv(iMarker);
 			nVertex = geometry->nVertex[iMarker];
@@ -1857,7 +1849,7 @@ void CAdjEulerSolution::SetDissipation_Switch(CGeometry *geometry, CConfig *conf
 	du_max, du_min, u_ij, *Solution_i, *Solution_j, dp, dm;
 
 
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) 
+	for (iPoint = 0; iPoint < nPoint; iPoint++) 
 
 		if (geometry->node[iPoint]->GetDomain()) {
 
@@ -1921,7 +1913,7 @@ void CAdjEulerSolution::SetDissipation_Switch_MPI(CGeometry *geometry, CConfig *
 #endif
   
 	/*--- Send-Receive boundary conditions ---*/
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+	for (iMarker = 0; iMarker < nMarker; iMarker++) {
 		if (config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) {
 			SendRecv = config->GetMarker_All_SendRecv(iMarker);
 			nVertex = geometry->nVertex[iMarker];
@@ -1998,12 +1990,12 @@ void CAdjEulerSolution::ExplicitRK_Iteration(CGeometry *geometry, CSolution **so
   }
 
 	/*--- Update the solution ---*/
-	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 		Vol = geometry->node[iPoint]->GetVolume();
 		Delta = solution_container[FLOW_SOL]->node[iPoint]->GetDelta_Time() / Vol;
     
 		Res_TruncError = node[iPoint]->GetResTruncError();
-		Residual = node[iPoint]->GetResidual(); // Note that this residual has been computed using a RK strategy.
+		Residual = GetResidual(iPoint);
     
 		for (iVar = 0; iVar < nVar; iVar++) {
       Res = Residual[iVar] + Res_TruncError[iVar];
@@ -2023,7 +2015,7 @@ void CAdjEulerSolution::ExplicitRK_Iteration(CGeometry *geometry, CSolution **so
 }
 
 void CAdjEulerSolution::ExplicitEuler_Iteration(CGeometry *geometry, CSolution **solution_container, CConfig *config) {
-	double *local_ResConv, *local_ResVisc, *local_ResSour, *local_Res_TruncError, Vol, Delta, Res;
+	double *local_Residual, *local_Res_TruncError, Vol, Delta, Res;
 	unsigned short iVar;
 	unsigned long iPoint;
 
@@ -2033,17 +2025,15 @@ void CAdjEulerSolution::ExplicitEuler_Iteration(CGeometry *geometry, CSolution *
   }
 
 	/*--- Update the solution ---*/
-	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 		Vol = geometry->node[iPoint]->GetVolume();
 		Delta = solution_container[FLOW_SOL]->node[iPoint]->GetDelta_Time() / Vol;
     
 		local_Res_TruncError = node[iPoint]->GetResTruncError();
-		local_ResConv = node[iPoint]->GetResConv();
-		local_ResVisc = node[iPoint]->GetResVisc();
-		local_ResSour = node[iPoint]->GetResSour();
+		local_Residual = GetResidual(iPoint);
     
 		for (iVar = 0; iVar < nVar; iVar++) {
-      Res = local_ResConv[iVar] + local_ResVisc[iVar] + local_ResSour[iVar] + local_Res_TruncError[iVar];
+      Res = local_Residual[iVar] + local_Res_TruncError[iVar];
 			node[iPoint]->AddSolution(iVar, -Res*Delta);
 			AddRes_RMS(iVar, Res*Res);
       AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex());
@@ -2062,7 +2052,7 @@ void CAdjEulerSolution::ExplicitEuler_Iteration(CGeometry *geometry, CSolution *
 void CAdjEulerSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **solution_container, CConfig *config) {
 	unsigned short iVar;
 	unsigned long iPoint, total_index;
-	double Delta, Res, *local_ResConv, *local_ResVisc, *local_ResSour, *local_Res_TruncError, Vol;
+	double Delta, *local_Res_TruncError, Vol;
 
 	/*--- Set maximum residual to zero ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
@@ -2071,13 +2061,10 @@ void CAdjEulerSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution *
   }
 
 	/*--- Build implicit system ---*/
-	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
 		/*--- Read the residual ---*/
 		local_Res_TruncError = node[iPoint]->GetResTruncError();
-		local_ResConv = node[iPoint]->GetResConv();
-		local_ResVisc = node[iPoint]->GetResVisc();
-		local_ResSour = node[iPoint]->GetResSour();
 
 		/*--- Read the volume ---*/
 		Vol = geometry->node[iPoint]->GetVolume();
@@ -2090,40 +2077,37 @@ void CAdjEulerSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution *
 		/*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 		for (iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar+iVar;
-			Res = local_ResConv[iVar] + local_ResVisc[iVar] + local_ResSour[iVar] + local_Res_TruncError[iVar];
-			rhs[total_index] = -Res;
+			xres[total_index] = -(xres[total_index] + local_Res_TruncError[iVar]);
 			xsol[total_index] = 0.0;
-			AddRes_RMS(iVar, Res*Res);
-      AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex());
+			AddRes_RMS(iVar, xres[total_index]*xres[total_index]);
+      AddRes_Max(iVar, fabs(xres[total_index]), geometry->node[iPoint]->GetGlobalIndex());
 		}
     
 	}
   
   /*--- Initialize residual and solution at the ghost points ---*/
-  for (iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
+  for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
       total_index = iPoint*nVar + iVar;
-      rhs[total_index] = 0.0;
+      xres[total_index] = 0.0;
       xsol[total_index] = 0.0;
     }
   }
   
 	/*--- Solve the linear system (Stationary iterative methods) ---*/
 	if (config->GetKind_Linear_Solver() == SYM_GAUSS_SEIDEL) 
-		Jacobian.SGSSolution(rhs, xsol, config->GetLinear_Solver_Error(), 
+		Jacobian.SGSSolution(xres, xsol, config->GetLinear_Solver_Error(), 
 				config->GetLinear_Solver_Iter(), false, geometry, config);
 
 	if (config->GetKind_Linear_Solver() == LU_SGS) 
-		Jacobian.LU_SGSIteration(rhs, xsol, geometry, config);
+		Jacobian.LU_SGSIteration(xres, xsol, geometry, config);
 
 	/*--- Solve the linear system (Krylov subspace methods) ---*/
-	if ((config->GetKind_Linear_Solver() == BCGSTAB) || 
+	if ((config->GetKind_Linear_Solver() == BCGSTAB) ||
 			(config->GetKind_Linear_Solver() == GMRES)) {
 
-		CSysVector rhs_vec((const unsigned int)geometry->GetnPoint(),
-				(const unsigned int)geometry->GetnPointDomain(), nVar, rhs);
-		CSysVector sol_vec((const unsigned int)geometry->GetnPoint(),
-				(const unsigned int)geometry->GetnPointDomain(), nVar, xsol);
+		CSysVector rhs_vec(nPoint, nPointDomain, nVar, xres);
+		CSysVector sol_vec(nPoint, nPointDomain, nVar, xsol);
 
 		CMatrixVectorProduct* mat_vec = new CSparseMatrixVectorProduct(Jacobian);
 		CSolutionSendReceive* sol_mpi = new CSparseMatrixSolMPI(Jacobian, geometry, config);
@@ -2155,7 +2139,7 @@ void CAdjEulerSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution *
 	}
 
 	/*--- Update solution (system written in terms of increments) ---*/
-	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) 
+	for (iPoint = 0; iPoint < nPointDomain; iPoint++) 
 		for (iVar = 0; iVar < nVar; iVar++)
 			node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*xsol[iPoint*nVar+iVar]);
 
@@ -2174,11 +2158,11 @@ void CAdjEulerSolution::Solve_LinearSystem(CGeometry *geometry, CSolution **solu
 	double *ObjFuncSource;
 
 	/*--- Build linear system ---*/
-	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 		ObjFuncSource = node[iPoint]->GetObjFuncSource();
 		for (iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar+iVar;
-			rhs[total_index] = ObjFuncSource[iVar];
+			xres[total_index] = ObjFuncSource[iVar];
 			xsol[total_index] = 0.0;
 		}
 	}
@@ -2186,7 +2170,7 @@ void CAdjEulerSolution::Solve_LinearSystem(CGeometry *geometry, CSolution **solu
 // output grid for MATLAB:
 		ofstream grid_file;
 		grid_file.open("discrete_mesh.txt", ios:: out);
-		for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+		for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 			grid_file << geometry->node[iPoint]->GetCoord(0) << " "
 					<< geometry->node[iPoint]->GetCoord(1) << endl;
 		}
@@ -2195,7 +2179,7 @@ void CAdjEulerSolution::Solve_LinearSystem(CGeometry *geometry, CSolution **solu
 // output obj function for MATLAB:
 		ofstream objfunc_file;
 		objfunc_file.open("discrete_source.txt", ios:: out);
-		for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+		for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 			for (iVar = 0; iVar < nVar; iVar++) {
 				total_index = iPoint*nVar+iVar;
 				objfunc_file << rhs[total_index] << endl;
@@ -2208,18 +2192,18 @@ void CAdjEulerSolution::Solve_LinearSystem(CGeometry *geometry, CSolution **solu
 		unsigned short jVar, iPos, jPos;
 		double **full_jacobian;
 		double **jacobian_block;
-		full_jacobian = new double*[geometry->GetnPointDomain()*nVar];
-		for(iPoint = 0; iPoint < geometry->GetnPointDomain()*nVar; iPoint++)
-			full_jacobian[iPoint] = new double[geometry->GetnPointDomain()*nVar];
+		full_jacobian = new double*[nPointDomain*nVar];
+		for(iPoint = 0; iPoint < nPointDomain*nVar; iPoint++)
+			full_jacobian[iPoint] = new double[nPointDomain*nVar];
 		jacobian_block = new double*[nVar];
 		for(iPos = 0; iPos < nVar; iPos++)
 			jacobian_block[iPos] = new double[nVar];
 		ofstream jacobian_file;
 		jacobian_file.open("discrete_jacobian.txt", ios::out);
-		for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+		for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 			for (iPos = 0; iPos < nVar; iPos++) {
 				total_i_index = iPoint*nVar+iPos;
-				for (jPoint = 0; jPoint < geometry->GetnPointDomain(); jPoint++) {
+				for (jPoint = 0; jPoint < nPointDomain; jPoint++) {
 					if(iPoint == jPoint) {
 						Jacobian.GetBlock(iPoint, jPoint);
 						Jacobian.ReturnBlock(jacobian_block);
@@ -2244,10 +2228,10 @@ void CAdjEulerSolution::Solve_LinearSystem(CGeometry *geometry, CSolution **solu
 			}
 		}
 
-		for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+		for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 			for (iVar = 0; iVar < nVar; iVar++) {
 				total_i_index = iPoint*nVar+iVar;
-				for (jPoint = 0; jPoint < geometry->GetnPointDomain(); jPoint++) {
+				for (jPoint = 0; jPoint < nPointDomain; jPoint++) {
 					for (jVar = 0; jVar < nVar; jVar++) {
 						total_j_index = jPoint*nVar+jVar;
 
@@ -2261,20 +2245,18 @@ void CAdjEulerSolution::Solve_LinearSystem(CGeometry *geometry, CSolution **solu
 	 */
 	/*--- Solve the linear system (Stationary iterative methods) ---*/
 	if (config->GetKind_Linear_Solver() == SYM_GAUSS_SEIDEL)
-		Jacobian.SGSSolution(rhs, xsol, config->GetLinear_Solver_Error(),
+		Jacobian.SGSSolution(xres, xsol, config->GetLinear_Solver_Error(),
 				config->GetLinear_Solver_Iter(), true, geometry, config);
 
 	if (config->GetKind_Linear_Solver() == LU_SGS)
-		Jacobian.LU_SGSIteration(rhs, xsol, geometry, config);
+		Jacobian.LU_SGSIteration(xres, xsol, geometry, config);
 
 	/*--- Solve the linear system (Krylov subspace methods) ---*/
 	if ((config->GetKind_Linear_Solver() == BCGSTAB) ||
 			(config->GetKind_Linear_Solver() == GMRES)) {
 
-		CSysVector rhs_vec((const unsigned int)geometry->GetnPoint(),
-				(const unsigned int)geometry->GetnPointDomain(), nVar, rhs);
-		CSysVector sol_vec((const unsigned int)geometry->GetnPoint(),
-				(const unsigned int)geometry->GetnPointDomain(), nVar, xsol);
+		CSysVector rhs_vec(nPoint, nPointDomain, nVar, xres);
+		CSysVector sol_vec(nPoint, nPointDomain, nVar, xsol);
 
 		CMatrixVectorProduct* mat_vec = new CSparseMatrixVectorProduct(Jacobian);
 		CSolutionSendReceive* sol_mpi = new CSparseMatrixSolMPI(Jacobian, geometry, config);
@@ -2305,7 +2287,7 @@ void CAdjEulerSolution::Solve_LinearSystem(CGeometry *geometry, CSolution **solu
 	}
 
 	/*--- Update solution (system written in terms of increments) ---*/
-	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
+	for (iPoint = 0; iPoint < nPointDomain; iPoint++)
 		for (iVar = 0; iVar < nVar; iVar++)
 			node[iPoint]->SetSolution(iVar, config->GetLinear_Solver_Relax()*xsol[iPoint*nVar+iVar]);
 
@@ -2358,7 +2340,7 @@ void CAdjEulerSolution::Inviscid_Sensitivity(CGeometry *geometry, CSolution **so
 	if (config->GetKind_Adjoint() != DISCRETE) {
     
 		/*--- Loop over boundary markers to select those for Euler walls ---*/
-		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+		for (iMarker = 0; iMarker < nMarker; iMarker++)
 			if (config->GetMarker_All_Boundary(iMarker) == EULER_WALL)
 
 				/*--- Loop over points on the surface to store the auxiliary variable ---*/
@@ -2400,7 +2382,7 @@ void CAdjEulerSolution::Inviscid_Sensitivity(CGeometry *geometry, CSolution **so
 		SetAuxVar_Surface_Gradient(geometry, config);
 
 		/*--- Evaluate the shape sensitivity ---*/
-		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+		for (iMarker = 0; iMarker < nMarker; iMarker++) {
 			Sens_Geo[iMarker] = 0.0;
 
 			if (config->GetMarker_All_Boundary(iMarker) == EULER_WALL) {
@@ -2463,7 +2445,7 @@ void CAdjEulerSolution::Inviscid_Sensitivity(CGeometry *geometry, CSolution **so
 	/*--- Farfield Sensitivity, only for compressible flows ---*/
   if (!incompressible) {
     
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
       if (config->GetMarker_All_Boundary(iMarker) == FAR_FIELD) {
         Sens_Mach[iMarker] = 0.0;
         Sens_AoA[iMarker] = 0.0;
@@ -2710,7 +2692,7 @@ void CAdjEulerSolution::Inviscid_Sensitivity(CGeometry *geometry, CSolution **so
     }
     
     // Explicit contribution from farfield quantity (Cl or Cd)
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
       if (config->GetMarker_All_Boundary(iMarker) == EULER_WALL) {
         
         //Sens_Far = 0.0;
@@ -2815,7 +2797,7 @@ void CAdjEulerSolution::Smooth_Sensitivity(CGeometry *geometry, CSolution **solu
 	unsigned long iVertex, jVertex, nVertex, iPoint;
 	double **A, *b, Sens, *ArchLength, *Coord_begin, *Coord_end, dist;
 
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+	for (iMarker = 0; iMarker < nMarker; iMarker++) {
 		if (config->GetMarker_All_Boundary(iMarker) == EULER_WALL) {
 			nVertex = geometry->nVertex[iMarker];
 
@@ -3008,7 +2990,7 @@ void CAdjEulerSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_
           Residual[iDim+1] = - phis2 * Normal[iDim];
                 
         /*--- Update residual ---*/
-        node[iPoint]->SubtractRes_Conv(Residual);
+        SubtractResidual(iPoint, Residual);
         
         if (implicit) {
           
@@ -3165,7 +3147,7 @@ void CAdjEulerSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_
 					}
 
 					/*--- Update residual ---*/
-					node[iPoint]->SubtractRes_Conv(Residual);
+					SubtractResidual(iPoint, Residual);
 
 				} else { // DISCRETE
 
@@ -3375,7 +3357,7 @@ void CAdjEulerSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_c
 			}
 
 			/*--- Update residual ---*/
-			node[iPoint]->SubtractRes_Conv(Residual);
+			SubtractResidual(iPoint, Residual);
 
 
 			/*--- Implicit stuff ---*/
@@ -3501,7 +3483,7 @@ void CAdjEulerSolution::BC_Interface_Boundary(CGeometry *geometry, CSolution **s
 			/*--- Compute residual ---*/			
 			solver->SetResidual(Res_Conv_i, Res_Conv_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 
-			node[iPoint]->SubtractRes_Conv(Res_Conv_i);
+			SubtractResidual(iPoint, Res_Conv_i);
 
 		}
 	}
@@ -3581,7 +3563,7 @@ void CAdjEulerSolution::BC_Interface_Boundary(CGeometry *geometry, CSolution **s
 
 			/*--- Compute residual ---*/			
 			solver->SetResidual(Res_Conv_i, Res_Conv_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
-			node[iPoint]->SubtractRes_Conv(Res_Conv_i);
+			SubtractResidual(iPoint, Res_Conv_i);
 		}
 	}
 
@@ -3669,7 +3651,7 @@ void CAdjEulerSolution::BC_NearField_Boundary(CGeometry *geometry, CSolution **s
 			/*--- Compute residual ---*/			
 			solver->SetResidual(Res_Conv_i, Res_Conv_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 
-			node[iPoint]->SubtractRes_Conv(Res_Conv_i);
+			SubtractResidual(iPoint, Res_Conv_i);
 
 		}
 	}
@@ -3792,7 +3774,7 @@ void CAdjEulerSolution::BC_NearField_Boundary(CGeometry *geometry, CSolution **s
 
 			/*--- Compute residual ---*/			
 			solver->SetResidual(Res_Conv_i, Res_Conv_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
-			node[iPoint]->SubtractRes_Conv(Res_Conv_i);
+			SubtractResidual(iPoint, Res_Conv_i);
 		}
 	}
 
@@ -3899,7 +3881,7 @@ void CAdjEulerSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_c
 
 			}
 			else {
-				node[iPoint]->SubtractRes_Conv(Residual_i);
+				SubtractResidual(iPoint, Residual_i);
 
 				/*--- Implicit contribution to the residual ---*/
 				if ((implicit) && (config->GetKind_Adjoint() != DISCRETE))
@@ -4222,7 +4204,7 @@ void CAdjEulerSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_conta
                                Jacobian_ji, Jacobian_jj, config);
 
 			/*--- Add and Subtract Residual ---*/
-			node[iPoint]->SubtractRes_Conv(Residual_i);
+			SubtractResidual(iPoint, Residual_i);
 
 			/*--- Implicit contribution to the residual ---*/
 			if (implicit) 
@@ -4509,7 +4491,7 @@ void CAdjEulerSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_cont
 					Jacobian_ji, Jacobian_jj, config);
 
 			/*--- Add and Subtract Residual ---*/
-			node[iPoint]->SubtractRes_Conv(Residual_i);
+			SubtractResidual(iPoint, Residual_i);
 
 			/*--- Implicit contribution to the residual ---*/
 			if (implicit)
@@ -4636,7 +4618,7 @@ void CAdjEulerSolution::BC_NacelleInflow(CGeometry *geometry, CSolution **soluti
 			conv_solver->SetResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 
 			/*--- Add and Subtract Residual ---*/
-			node[iPoint]->SubtractRes_Conv(Residual_i);
+			SubtractResidual(iPoint, Residual_i);
 
 			/*--- Implicit contribution to the residual ---*/
 			if (implicit) 
@@ -4816,7 +4798,7 @@ void CAdjEulerSolution::BC_NacelleExhaust(CGeometry *geometry, CSolution **solut
 			conv_solver->SetResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 
 			/*--- Add and Subtract Residual ---*/
-			node[iPoint]->SubtractRes_Conv(Residual_i);
+			SubtractResidual(iPoint, Residual_i);
 
 			/*--- Implicit contribution to the residual ---*/
 			if (implicit)
@@ -4843,9 +4825,7 @@ void CAdjEulerSolution::BC_FWH(CGeometry *geometry, CSolution **solution_contain
 		/*--- Store solution computed in coupling routine ---*/
 		node[iPoint]->SetSolution(node[iPoint]->GetIntBoundary_Jump());
 		node[iPoint]->SetSolution_Old(node[iPoint]->GetIntBoundary_Jump());
-		node[iPoint]->Set_ResConv_Zero();
-		node[iPoint]->Set_ResSour_Zero();
-		node[iPoint]->Set_ResVisc_Zero();
+		Set_Residual_Zero(iPoint);
 		node[iPoint]->SetRes_TruncErrorZero();
 
 		/*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
@@ -5038,7 +5018,7 @@ void CAdjEulerSolution::SetResidual_DualTime(CGeometry *geometry, CSolution **so
 	bool Grid_Movement = config->GetGrid_Movement();
 
 	/*--- loop over points ---*/
-	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
 		/*--- Solution at time n-1, n and n+1 ---*/
 		U_time_nM1 = node[iPoint]->GetSolution_time_n1();
@@ -5072,7 +5052,7 @@ void CAdjEulerSolution::SetResidual_DualTime(CGeometry *geometry, CSolution **so
 		if ((incompressible && FlowEq) || (incompressible && AdjEq)) Residual[0] = 0.0;
 
 		/*--- Add Residual ---*/
-		node[iPoint]->AddRes_Conv(Residual);
+		AddResidual(iPoint, Residual);
 
 		if (implicit) {
 			for (iVar = 0; iVar < nVar; iVar++) {
@@ -5116,7 +5096,9 @@ CAdjNSSolution::CAdjNSSolution(CGeometry *geometry, CConfig *config, unsigned sh
 	/*--- Define geometry constants in the solver structure ---*/
 	nDim    = geometry->GetnDim();
   nMarker = config->GetnMarker_All();
-  nPoint  = geometry->GetnPoint();
+  nPoint = geometry->GetnPoint();
+  nPointDomain = geometry->GetnPointDomain();
+  
 	if (incompressible) nVar = nDim + 1;
 	else nVar = nDim + 2;
 	node = new CVariable*[nPoint];
@@ -5126,7 +5108,6 @@ CAdjNSSolution::CAdjNSSolution(CGeometry *geometry, CConfig *config, unsigned sh
 	Residual_i = new double[nVar];	 Residual_j   = new double[nVar];
 	Res_Conv_i = new double[nVar];	 Res_Visc_i   = new double[nVar];
 	Res_Conv_j = new double[nVar];	 Res_Visc_j   = new double[nVar];
-	Res_Sour_j = new double[nVar];	 Res_Sour_j   = new double[nVar];
   Residual_Max = new double[nVar]; Point_Max    = new unsigned long[nVar];
 
 	/*--- Define some auxiliary arrays related to the solution ---*/
@@ -5145,6 +5126,10 @@ CAdjNSSolution::CAdjNSSolution(CGeometry *geometry, CConfig *config, unsigned sh
     Jacobian_j[iVar] = new double [nVar];
   }
   
+  /*--- Solution and residual vectors ---*/
+  xsol = new double [nPoint*nVar];
+  xres = new double [nPoint*nVar];
+  
 	/*--- Jacobians and vector structures for implicit computations ---*/
 	if (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT) {
 
@@ -5161,8 +5146,7 @@ CAdjNSSolution::CAdjNSSolution(CGeometry *geometry, CConfig *config, unsigned sh
     if (rank == MASTER_NODE)
       cout << "Initialize jacobian structure (Adjoint N-S). MG level: " << iMesh <<"." << endl;
 		Initialize_SparseMatrix_Structure(&Jacobian, nVar, nVar, geometry, config);
-		xsol = new double [nPoint*nVar];
-		rhs = new double [nPoint*nVar];
+
   } else {
       if (rank == MASTER_NODE)
         cout << "Explicit scheme. No jacobian structure (Adjoint N-S). MG level: " << iMesh <<"." << endl;
@@ -5181,18 +5165,18 @@ CAdjNSSolution::CAdjNSSolution(CGeometry *geometry, CConfig *config, unsigned sh
 	}
 
 	/*--- Sensitivity definition and coefficient on all markers ---*/
-	CSensitivity = new double* [config->GetnMarker_All()];
-	for (iMarker=0; iMarker<config->GetnMarker_All(); iMarker++) {
+	CSensitivity = new double* [nMarker];
+	for (iMarker=0; iMarker<nMarker; iMarker++) {
 		CSensitivity[iMarker] = new double [geometry->nVertex[iMarker]];
 	}
-	Sens_Geo   = new double[config->GetnMarker_All()];
-	Sens_Mach  = new double[config->GetnMarker_All()];
-	Sens_AoA   = new double[config->GetnMarker_All()];
-	Sens_Press = new double[config->GetnMarker_All()];
-	Sens_Temp  = new double[config->GetnMarker_All()];
+	Sens_Geo   = new double[nMarker];
+	Sens_Mach  = new double[nMarker];
+	Sens_AoA   = new double[nMarker];
+	Sens_Press = new double[nMarker];
+	Sens_Temp  = new double[nMarker];
 
   /*--- Initialize sensitivities to zero ---*/
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+	for (iMarker = 0; iMarker < nMarker; iMarker++) {
 		Sens_Geo[iMarker]   = 0.0;
 		Sens_Mach[iMarker]  = 0.0;
 		Sens_AoA[iMarker]   = 0.0;
@@ -5265,7 +5249,7 @@ CAdjNSSolution::CAdjNSSolution(CGeometry *geometry, CConfig *config, unsigned sh
 			Global2Local[iPoint] = -1;
 		}
 		/*--- Now fill array with the transform values only for local points ---*/
-		for(iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+		for(iPoint = 0; iPoint < nPointDomain; iPoint++) {
 			Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
 		}
 
@@ -5300,7 +5284,7 @@ CAdjNSSolution::CAdjNSSolution(CGeometry *geometry, CConfig *config, unsigned sh
 		/*--- Instantiate the variable class with an arbitrary solution
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
-		for(iPoint = geometry->GetnPointDomain(); iPoint < nPoint; iPoint++) {
+		for(iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
 			node[iPoint] = new CAdjNSVariable(Solution, nDim, nVar, config);
 		}
 
@@ -5332,20 +5316,13 @@ void CAdjNSSolution::Preprocessing(CGeometry *geometry, CSolution **solution_con
   bool center      = (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst  = (config->GetKind_Centered_AdjFlow() == JST);
   bool limiter     = (config->GetKind_SlopeLimit() != NONE);
-  bool dissipation = ((config->Get_Beta_RKStep(iRKStep) != 0) || implicit);
   
 	/*--- Residual initialization ---*/
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
+	for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
 		/*--- Initialize the convective residual vector ---*/
-		node[iPoint]->Set_ResConv_Zero();
+		Set_Residual_Zero(iPoint);
     
-		/*--- Initialize the source residual vector ---*/
-		node[iPoint]->Set_ResSour_Zero();
-    
-		/*--- Initialize the viscous residual vector ---*/
-		if ((config->Get_Beta_RKStep(iRKStep) != 0) || implicit)
-			node[iPoint]->Set_ResVisc_Zero();
 	}
   
   /*--- Compute gradients for upwind second-order reconstruction ---*/
@@ -5359,7 +5336,7 @@ void CAdjNSSolution::Preprocessing(CGeometry *geometry, CSolution **solution_con
   
   /*--- Artificial dissipation for centered schemes ---*/
   if (center) {
-    if ((center_jst) && (iMesh == MESH_0) && (dissipation)) {
+    if ((center_jst) && (iMesh == MESH_0)) {
       SetDissipation_Switch(geometry, config);
       SetUndivided_Laplacian(geometry, config);
       if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
@@ -5394,7 +5371,7 @@ void CAdjNSSolution::Viscous_Residual(CGeometry *geometry, CSolution **solution_
 	bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
 	bool incompressible = config->GetIncompressible();
   
-	if ((config->Get_Beta_RKStep(iRKStep) != 0) || implicit) {
+	if (true) {
 
 		for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
@@ -5480,8 +5457,8 @@ void CAdjNSSolution::Viscous_Residual(CGeometry *geometry, CSolution **solution_
 			}
       
       /*--- Update adjoint viscous residual ---*/
-			node[iPoint]->SubtractRes_Visc(Residual_i);
-			node[jPoint]->AddRes_Visc(Residual_j);
+			SubtractResidual(iPoint, Residual_i);
+			AddResidual(jPoint, Residual_j);
 
 			if (implicit) {
 				Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
@@ -5507,7 +5484,7 @@ void CAdjNSSolution::Source_Residual(CGeometry *geometry, CSolution **solution_c
 
 	/*--- Loop over all the points, note that we are supposing that primitive and
 	 adjoint gradients have been computed previously ---*/
-	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
  
 		/*--- Conservative variables w/o reconstruction ---*/
 		solver->SetConservative(solution_container[FLOW_SOL]->node[iPoint]->GetSolution(), NULL);
@@ -5612,7 +5589,7 @@ void CAdjNSSolution::Source_Residual(CGeometry *geometry, CSolution **solution_c
 		}
     
     /*--- Add and substract to the residual ---*/
-		node[iPoint]->AddRes_Conv(Residual);
+		AddResidual(iPoint, Residual);
 	}
 
   // WARNING: The rotating frame source term has been placed in the second
@@ -5622,7 +5599,7 @@ void CAdjNSSolution::Source_Residual(CGeometry *geometry, CSolution **solution_c
   if (rotating_frame) {
     
 		/*--- loop over points ---*/
-		for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+		for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       
 			/*--- Set solution  ---*/
 			second_solver->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
@@ -5637,12 +5614,12 @@ void CAdjNSSolution::Source_Residual(CGeometry *geometry, CSolution **solution_c
 			second_solver->SetResidual(Residual, Jacobian_i, config);
       
 			/*--- Add Residual ---*/
-			node[iPoint]->AddRes_Conv(Residual);
+			AddResidual(iPoint, Residual);
 		}
 	}
   
 	if (freesurface) {
-    for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       
       double Volume = geometry->node[iPoint]->GetVolume();
       double **Gradient = solution_container[ADJLEVELSET_SOL]->node[iPoint]->GetGradient();
@@ -5653,7 +5630,7 @@ void CAdjNSSolution::Source_Residual(CGeometry *geometry, CSolution **solution_c
         Residual[iDim+1] = coeff*Gradient[0][iDim]*Volume;
       }
       
-      node[iPoint]->AddRes_Conv(Residual);
+      AddResidual(iPoint, Residual);
       
 		}
 	}
@@ -5695,8 +5672,8 @@ void CAdjNSSolution::Source_Residual(CGeometry *geometry, CSolution **solution_c
 //      /*--- Add and Subtract Residual ---*/
 //      for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
 //      second_solver->SetResidual(Residual, config);
-//      node[iPoint]->AddRes_Conv(Residual);
-//      node[jPoint]->SubtractRes_Conv(Residual);
+//      AddResidual(iPoint, Residual);
+//      SubtractResidual(jPoint, Residual);
 //    }
 //    
 //  }
@@ -5755,7 +5732,7 @@ void CAdjNSSolution::Viscous_Sensitivity(CGeometry *geometry, CSolution **soluti
       SetRotVel_Gradient(geometry, config);
     
     Total_Sens_Geo = 0.0;
-		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+		for (iMarker = 0; iMarker < nMarker; iMarker++) {
       
 			Sens_Geo[iMarker] = 0.0;
       
@@ -6059,9 +6036,9 @@ void CAdjNSSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_
       }
       
 			/*--- Strong BC imposition for the adjoint velocity equations ---*/
-      node[iPoint]->SetVel_ResConv_Zero();
-      node[iPoint]->SetVel_ResSour_Zero();
-      node[iPoint]->SetVel_ResVisc_Zero();
+      SetVel_Residual_Zero(iPoint);
+      SetVel_Residual_Zero(iPoint);
+      SetVel_Residual_Zero(iPoint);
       node[iPoint]->SetVel_ResTruncError_Zero();
 			for (iDim = 0; iDim < nDim; iDim++)
 				node[iPoint]->SetSolution_Old(iDim+1, phi[iDim]);
@@ -6248,8 +6225,8 @@ void CAdjNSSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_
       }
       
       /*--- Update convective and viscous residuals ---*/
-      node[iPoint]->SubtractRes_Conv(Res_Conv_i);
-      node[iPoint]->SubtractRes_Visc(Res_Visc_i);
+      SubtractResidual(iPoint, Res_Conv_i);
+      SubtractResidual(iPoint, Res_Visc_i);
       if (implicit) {
         Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
       }
@@ -6350,9 +6327,9 @@ void CAdjNSSolution::BC_Isothermal_Wall(CGeometry *geometry, CSolution **solutio
       }
       
 			/*--- Strong BC imposition for the adjoint velocity equations ---*/
-      node[iPoint]->SetVel_ResConv_Zero();
-      node[iPoint]->SetVel_ResSour_Zero();
-      node[iPoint]->SetVel_ResVisc_Zero();
+      SetVel_Residual_Zero(iPoint);
+      SetVel_Residual_Zero(iPoint);
+      SetVel_Residual_Zero(iPoint);
       node[iPoint]->SetVel_ResTruncError_Zero();
 			for (iDim = 0; iDim < nDim; iDim++)
 				node[iPoint]->SetSolution_Old(iDim+1, phi[iDim]);
@@ -6374,9 +6351,7 @@ void CAdjNSSolution::BC_Isothermal_Wall(CGeometry *geometry, CSolution **solutio
       }
       
       /*--- Strong enforcement of the energy equations ---*/
-      node[iPoint]->SetEnergy_ResConv_Zero();
-      node[iPoint]->SetEnergy_ResVisc_Zero();
-      node[iPoint]->SetEnergy_ResSour_Zero();
+      SetEnergy_Residual_Zero(iPoint);
       node[iPoint]->SetEnergy_ResTruncError_Zero();
       node[iPoint]->SetSolution_Old(nDim+1, q);
       
@@ -6551,8 +6526,8 @@ void CAdjNSSolution::BC_Isothermal_Wall(CGeometry *geometry, CSolution **solutio
       }
       
       /*--- Update convective and viscous residuals ---*/
-      node[iPoint]->SubtractRes_Conv(Res_Conv_i);      
-      node[iPoint]->SubtractRes_Visc(Res_Visc_i);
+      SubtractResidual(iPoint, Res_Conv_i);      
+      SubtractResidual(iPoint, Res_Visc_i);
       if (implicit) {
         Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
       }

@@ -1,0 +1,22 @@
+# convert primitive variables to conserved
+
+# Density -> Density
+# VelocityX -> MomentumX
+# VelocityY -> MomentumY
+# VelocityZ -> MomentumZ
+# Pressure -> EnergyStagnationDensity
+
+MomentumX = VelocityX * Density
+MomentumY = VelocityY * Density
+MomentumZ = VelocityZ * Density
+qq = VelocityX^2 + VelocityY^2 + VelocityZ^2
+EnergyStagnationDensity = Pressure / (gamma-1) + 0.5*Density*qq
+
+# add conserved variables
+
++ MomentumX,MomentumY,MomentumZ,EnergyStagnationDensity
+
+# remove primitive variables
+
+- VelocityX,VelocityY,VelocityZ,Pressure
+

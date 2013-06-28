@@ -219,8 +219,7 @@ private:
 	unsigned long IntIter;			/*!< \brief Current internal iteration number. */
 	unsigned long Unst_nIntIter;			/*!< \brief Number of internal iterations (Dual time Method). */
 	unsigned short nRKStep;			/*!< \brief Number of steps of the explicit Runge-Kutta method. */
-	double *RK_Alpha_Step,	/*!< \brief Runge-Kutta alfa coefficients. */
-	*RK_Beta_Step;			/*!< \brief Runge-Kutta beta coefficients. */
+	double *RK_Alpha_Step;			/*!< \brief Runge-Kutta beta coefficients. */
 	unsigned short nMultiLevel;		/*!< \brief Number of multigrid levels (coarse levels). */
 	unsigned short nCFL;			/*!< \brief Number of CFL, one for each multigrid level. */
 	double *CFL,		/*!< \brief CFL number for each multigrid level. */
@@ -1760,13 +1759,6 @@ public:
 	double Get_Alpha_RKStep(unsigned short val_step);
 
 	/*! 
-	 * \brief Get the beta (viscous) coefficients for the Runge-Kutta integration scheme.
-	 * \param[in] val_step - Index of the step.
-	 * \return Beta coefficient for the Runge-Kutta integration scheme.
-	 */		
-	double Get_Beta_RKStep(unsigned short val_step);
-
-	/*! 
 	 * \brief Get the index of the surface defined in the geometry file.
 	 * \param[in] val_marker - Value of the marker in which we are interested.
 	 * \return Value of the index that is in the geometry file for the surface that 
@@ -3088,15 +3080,6 @@ public:
 	 */
 
 	bool GetRestart_Flow(void);
-
-	/*!
-	 * \brief For some problems like multi species  flow equations , we have block diagonal jacobians which
-	 * can solved more effectively than inverting the whole big jacobian.
-	 * \return block diagonal jacobian information, if <code>TRUE</code> then the code will use a modified version of Gauss Elimination
-	 * for matrix inversion
-	 */
-
-	bool GetBlockDiagonalJacobian(void);
 
 	/*! 
 	 * \brief Information about doing a full multigrid strategy (start in the coarse level).

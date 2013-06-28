@@ -1,0 +1,489 @@
+<html><head><title>Changes in CGNS 3.1</title></head><body>
+
+<h2>Changes in CGNS 3.1</h2>
+
+<ul>
+ <li> <a href="#cpex0027">Time-dependent Connectivity</a>
+ <li> <a href="#cpex0030">Zone Subregions</a>
+ <li> <a href="#cpex0031">General SIDS Improvements</a>
+ <li> <a href="#64-bit">64-bit Implementation</a>
+  <ul>
+   <li> <a href="#c_interface">C Interface</a>
+   <li> <a href="#c_portability">C Portability</a>
+   <li> <a href="#fortran_interface">FORTRAN Interface</a>
+   <li> <a href="#fortran_issues">FORTRAN Issues and Portability</a>
+   <li> <a href="#examples">Examples</a>
+  </ul>
+</ul>
+
+<a name="cpex0027"></a>
+<h2>Time-dependent Connectivity</h2>
+
+<a href="http://cgns.sourceforge.net/ProposedExtensions/Timedepconn.pdf">CPEX0027</a>
+has been implemented. The added functions to support this extension are described
+in <a href="http://www.grc.nasa.gov/WWW/cgns/CGNS_docs_current/midlevel/timedep.html#zconn">Zone Grid Connectivity</a>
+in the Mid-Level Library.
+
+<a name="cpex0030"></a>
+<h2>Zone Subregions</h2>
+
+<a href="http://cgns.sourceforge.net/ProposedExtensions/RegionsIX.pdf">CPEX0030</a>
+has been implemented. The added functions to support this extension are described
+in <a href="http://www.grc.nasa.gov/WWW/cgns/CGNS_docs_current/midlevel/solution.html#subregion">Zone Subregions</a>
+in the Mid-Level Library.
+
+<a name="cpex0031"></a>
+<h2>General SIDS Improvements</h2>
+
+<a href="http://cgns.sourceforge.net/ProposedExtensions/intro_parts_of_sids2.pdf">CPEX0031</a>
+has been implemented. The added functions to support this extension are described
+in <a href="http://www.grc.nasa.gov/WWW/cgns/CGNS_docs_current/midlevel/solution.html#flowsolution">Flow Solution</a>
+and <a href="http://www.grc.nasa.gov/WWW/cgns/CGNS_docs_current/midlevel/solution.html#discretedata">Discrete Data</a> in
+the Mid-Level Library. There are also changes to
+<a href="http://www.grc.nasa.gov/WWW/cgns/CGNS_docs_current/midlevel/bc.html#bc">Boundary Conditions</a>
+and numerous places in the SIDS.
+
+<a name="64-bit"></a>
+<h2>64-bit Implementation</h2>
+
+You only need to read the following if you have a 64-bit computer and need to
+work with problems that exceed 2 billion coordinates and/or elements.
+Or, if you are bored.
+
+<a name="c_interface"></a>
+<h3>C Interface</h3>
+
+The major change in 3.1 is the introduction of the data type <tt><b>cgsize_t</b></tt>,
+which will be a 64-bit integer when building 64-bit code, and a 32-bit integer
+otherwise. This is defined in a new header file, <tt><i>cgnstypes.h</i></tt>, which is
+included in <tt><i>cgnslib.h</i></tt>. Some additional data types have also been
+introduced, <tt><b>cglong_t</b></tt> which is always 64-bits, <tt><b>cgint_t</b></tt> and
+<tt><b>cgerr_t</b></tt> which are 32-bit integers, and <tt><b>cgid_t</b></tt> which is a
+64-bit floating point number (<tt>double</tt>). With the exception of <tt><b>cglong_t</b></tt>
+these other data types are currently not used.
+The <tt><b>cglong_t</b></tt> data type is used internally,
+and may be used by application code in conjunction with
+<tt><b><i>DataType_t</i> LongInteger</b></tt> to write 64-bit data
+to the CGNS file, regardless of the compilation mode. The <tt><i>cgnstypes.h</i></tt>
+header file also defines 3 flags, which describe the current build mode,
+<tt><b>CG_BUILD_LEGACY</b></tt>, <tt><b>CG_BUILD_64BIT</b></tt>,
+and <tt><b>CG_BUILD_SCOPE</b></tt>,
+which are set to 0 or 1, depending on the build mode.
+<p>
+When the <tt><i>--enable-legacy</i></tt> option is given to <tt><i>configure</i></tt>,
+<tt><b>cgsize_t</b></tt> is defined as an <tt><b>int</b></tt> (<tt><b>integer*4</b></tt>),
+<tt><b>CG_BUILD_LEGACY</b></tt> is set to 1, and <tt><b>CG_BUILD_64BIT</b></tt> and
+<tt><b>CG_BUILD_SCOPE</b></tt> are set to 0. The <tt><i>--enable-scope</i></tt> and
+<tt><i>--enable-64bit</i></tt> options to <tt><i>configure</i></tt> are ignored.
+This will generate the same code as for the versions prior to 3.1.
+<p>
+When the <tt><i>--enable-64bit</i></tt> option is given to <tt><i>configure</i></tt>,
+<tt><b>cgsize_t</b></tt> is typedef'd as <tt><b>long</b></tt>, <tt><b>long long</b></tt> or
+<tt><b>__int64</b></tt> (depending on the machine) and the equivalent FORTRAN
+data type is <tt><b>integer*8</b></tt>. All other values are unchanged. This will
+set <tt><b>CG_BUILD_64BIT</b></tt> to 1, and <tt><b>CG_BUILD_LEGACY</b></tt> to 0 in
+<tt><i>cgnstypes.h</i></tt>. The value of <tt><b>CG_BUILD_SCOPE</b></tt> depends on
+the <tt><i>configure</i></tt> option below.
+<br>
+If this option is not given, then  <tt><b>cgsize_t</b></tt> is typedef'd as <tt><b>int</b></tt>,
+and the equivalent FORTRAN data type is <tt><b>integer*4</b></tt>. The value of
+<tt><b>CG_BUILD_64BIT</b></tt> is set to 0.
+<p>
+When the <tt><i>--enable-scope</i></tt> option is given to <tt><i>configure</i></tt>,
+scoping of the enumeration values in cgnslib are enabled. This will
+prefix all the enums with <tt><b>CG_</b></tt>. This is disabled by default and
+when <tt><i>--enable-legacy</i></tt> is enabled. If enabled, this will set the
+value of <tt><b>CG_BUILD_SCOPE</b></tt> in <tt><i>cgnstypes.h</i></tt> to 1.
+<p>
+These options are also available for <i>cmake</i> users, and have the same behavior.
+<p>
+When building 64-bit code, the ADF file format changes, and thus will not be
+readable by prior versions of the library. All dimensions are stored as
+64-bit integers, and the modifications to the ADF interface allow addressing
+and storage up to 1,000 terabytes of data. The HDF5 interface
+is also effected due to the the dimension sizes. I'm not sure of the HDF5
+limitations to file size, but I expect it to be as large as that
+addressable by a 64-bit integer.
+<p>
+Thus, when writing a CGNS file
+in 64-bit mode it will only be readable by the version 3.1 software. A 32-bit
+compilation of version 3.1 will be able to read the 64-bit CGNS file, but will fail
+gracefully if the dimensions exceed those that can be handled by a 32-bit
+integer. With a 32-bit mode compilation, the ADF version and HDF5 interfaces
+are unchanged, and thus the CGNS files will be readable by earlier version
+software.
+<p>
+Regardless of how the version 3.1 software is compiled, it is backwards
+compatible with earlier version CGNS files.
+<p>
+A new data type has also been added to the CGNS MLL, <tt><b>LongInteger</b></tt>, which
+is defined in the <tt><i>DataType_t</i></tt> enumeration. This refers to a true 64-bit
+integer. Previous versions of the MLL did not explicitly allow for 64-bit integer data.
+This data type is automatically used for dimensions, connectivity, boundary condition
+points, holes and elements when compiled in 64-bit mode. It may also be used by an
+application to define array data as 64-bit, regardless of the compilation mode. In this
+case, the data should be defined as <tt><b>cglong_t</b></tt> in the code in order to
+guarantee 64-bit data being passed to the array read or write routines.
+<p>
+The following routines have been modified to use the <tt><b>cgsize_t</b></tt> data type.
+<br><pre>
+cg_zone_read(int fn, int B, int Z, char *zonename, <i><font color="red">cgsize_t</font></i> *size);
+cg_zone_write(int fn, int B, const char * zonename,
+	const <i><font color="red">cgsize_t</font></i> * size, CGNS_ENUMT(ZoneType_t) type, int *Z);
+
+cg_coord_read(int fn, int B, int Z, const char * coordname,
+	CGNS_ENUMT(DataType_t) type, const <i><font color="red">cgsize_t</font></i> * rmin,
+	const <i><font color="red">cgsize_t</font></i> * rmax, void *coord);
+cg_coord_partial_write(int fn, int B, int Z,
+	CGNS_ENUMT(DataType_t) type, const char * coordname,
+        const <i><font color="red">cgsize_t</font></i> *rmin, const <i><font color="red">cgsize_t</font></i> *rmax,
+        const void * coord_ptr, int *C);
+
+cg_section_read(int file_number, int B, int Z, int S,
+	char *SectionName,  CGNS_ENUMT(ElementType_t) *type,
+	<i><font color="red">cgsize_t</font></i> *start, <i><font color="red">cgsize_t</font></i> *end, int *nbndry, int *parent_flag);
+cg_section_write(int file_number, int B, int Z,
+	const char * SectionName, CGNS_ENUMT(ElementType_t) type,
+	<i><font color="red">cgsize_t</font></i> start, <i><font color="red">cgsize_t</font></i> end, int nbndry, const <i><font color="red">cgsize_t</font></i> * elements,
+	int *S);
+cg_section_partial_write(int file_number, int B, int Z,
+	const char * SectionName, CGNS_ENUMT(ElementType_t) type,
+	<i><font color="red">cgsize_t</font></i> start, <i><font color="red">cgsize_t</font></i> end, int nbndry, int *S);
+
+cg_elements_read(int file_number, int B, int Z, int S,
+	<i><font color="red">cgsize_t</font></i> *elements, <i><font color="red">cgsize_t</font></i> *parent_data);
+cg_elements_partial_write(int fn, int B, int Z, int S,
+	<i><font color="red">cgsize_t</font></i> start, <i><font color="red">cgsize_t</font></i> end, const <i><font color="red">cgsize_t</font></i> *elements);
+cg_elements_partial_read(int file_number, int B, int Z, int S,
+	<i><font color="red">cgsize_t</font></i> start, <i><font color="red">cgsize_t</font></i> end, <i><font color="red">cgsize_t</font></i> *elements, <i><font color="red">cgsize_t</font></i> *parent_data);
+
+cg_parent_data_write(int file_number, int B, int Z, int S,
+	const <i><font color="red">cgsize_t</font></i> * parent_data);
+cg_parent_data_partial_write(int fn, int B, int Z, int S,
+	<i><font color="red">cgsize_t</font></i> start, <i><font color="red">cgsize_t</font></i> end, const <i><font color="red">cgsize_t</font></i> *ParentData);
+
+cg_ElementDataSize(int file_number, int B, int Z, int S,
+	<i><font color="red">cgsize_t</font></i> *ElementDataSize);
+cg_ElementPartialSize(int file_number, int B, int Z, int S,
+	<i><font color="red">cgsize_t</font></i> start, <i><font color="red">cgsize_t</font></i> end, <i><font color="red">cgsize_t</font></i> *ElementDataSize);
+
+cg_field_read(int fn, int B, int Z, int S, const char *fieldname,
+	CGNS_ENUMT(DataType_t) type, const <i><font color="red">cgsize_t</font></i> *rmin,
+        const <i><font color="red">cgsize_t</font></i> *rmax, void *field_ptr);
+cg_field_partial_write(int fn, int B, int Z, int S,
+	CGNS_ENUMT(DataType_t) type, const char * fieldname,
+	const <i><font color="red">cgsize_t</font></i> *rmin, const <i><font color="red">cgsize_t</font></i> *rmax,
+        const void * field_ptr, int *F);
+
+cg_hole_info(int fn, int B, int Z, int I, char *holename,
+	CGNS_ENUMT(GridLocation_t) *location,  CGNS_ENUMT(PointSetType_t) *ptset_type,
+	int *nptsets, <i><font color="red">cgsize_t</font></i> *npnts);
+cg_hole_read(int fn, int B, int Z, int I, <i><font color="red">cgsize_t</font></i> *pnts);
+cg_hole_write(int fn, int B, int Z, const char * holename,
+	CGNS_ENUMT(GridLocation_t) location, CGNS_ENUMT(PointSetType_t) ptset_type,
+	int nptsets, <i><font color="red">cgsize_t</font></i> npnts, const <i><font color="red">cgsize_t</font></i> * pnts, int *I);
+
+cg_conn_info(int file_number, int B, int Z, int I,
+	char *connectname, CGNS_ENUMT(GridLocation_t) *location,
+	CGNS_ENUMT(GridConnectivityType_t) *type,
+	CGNS_ENUMT(PointSetType_t) *ptset_type,
+	<i><font color="red">cgsize_t</font></i> *npnts, char *donorname,
+	CGNS_ENUMT(ZoneType_t) *donor_zonetype,
+	CGNS_ENUMT(PointSetType_t) *donor_ptset_type,
+        CGNS_ENUMT(DataType_t) *donor_datatype,
+	<i><font color="red">cgsize_t</font></i> *ndata_donor);
+cg_conn_read(int file_number, int B, int Z, int I, <i><font color="red">cgsize_t</font></i> *pnts,
+        CGNS_ENUMT(DataType_t) donor_datatype,
+	<i><font color="red">cgsize_t</font></i> *donor_data);
+cg_conn_write(int file_number, int B, int Z,
+	const char * connectname, CGNS_ENUMT(GridLocation_t) location,
+	CGNS_ENUMT(GridConnectivityType_t) type,
+	CGNS_ENUMT(PointSetType_t) ptset_type,
+	<i><font color="red">cgsize_t</font></i> npnts, const <i><font color="red">cgsize_t</font></i> * pnts, const char * donorname,
+	CGNS_ENUMT(ZoneType_t) donor_zonetype,
+	CGNS_ENUMT(PointSetType_t) donor_ptset_type,
+        CGNS_ENUMT(DataType_t) donor_datatype,
+        <i><font color="red">cgsize_t</font></i> ndata_donor, const <i><font color="red">cgsize_t</font></i> *donor_data, int *I);
+cg_conn_write_short(int file_number, int B, int Z,
+	const char * connectname, CGNS_ENUMT(GridLocation_t) location,
+	CGNS_ENUMT(GridConnectivityType_t) type,
+	CGNS_ENUMT(PointSetType_t) ptset_type,
+	<i><font color="red">cgsize_t</font></i> npnts, const <i><font color="red">cgsize_t</font></i> * pnts, const char * donorname, int *I);
+cg_conn_read_short(int file_number, int B, int Z, int I,
+	<i><font color="red">cgsize_t</font></i> *pnts);
+
+cg_1to1_read(int fn, int B, int Z, int I, char *connectname,
+	char *donorname, <i><font color="red">cgsize_t</font></i> *range, <i><font color="red">cgsize_t</font></i> *donor_range, int *transform);
+cg_1to1_write(int fn, int B, int Z, const char * connectname,
+	const char * donorname, const <i><font color="red">cgsize_t</font></i> * range,
+	const <i><font color="red">cgsize_t</font></i> * donor_range, const int * transform, int *I);
+cg_1to1_read_global(int fn, int B, char **connectname,
+	char **zonename, char **donorname, <i><font color="red">cgsize_t</font></i> **range,
+	<i><font color="red">cgsize_t</font></i> **donor_range, int **transform);
+
+cg_boco_info(int fn, int B, int Z, int BC, char *boconame,
+	CGNS_ENUMT(BCType_t) *bocotype, CGNS_ENUMT(PointSetType_t) *ptset_type,
+ 	<i><font color="red">cgsize_t</font></i> *npnts, int *NormalIndex, <i><font color="red">cgsize_t</font></i> *NormalListFlag,
+ 	CGNS_ENUMT(DataType_t) *NormalDataType, int *ndataset);
+cg_boco_read(int fn, int B, int Z, int BC, <i><font color="red">cgsize_t</font></i> *pnts,
+	void *NormalList);
+cg_boco_write(int file_number, int B, int Z, const char * boconame,
+	CGNS_ENUMT(BCType_t) bocotype, CGNS_ENUMT(PointSetType_t) ptset_type,
+	<i><font color="red">cgsize_t</font></i> npnts, const <i><font color="red">cgsize_t</font></i> * pnts, int *BC);
+
+cg_array_info(int A, char *ArrayName,
+	CGNS_ENUMT(DataType_t) *DataType,
+	int *DataDimension, <i><font color="red">cgsize_t</font></i> *DimensionVector);
+cg_array_write(const char * ArrayName,
+	CGNS_ENUMT(DataType_t) DataType, int DataDimension,
+	const <i><font color="red">cgsize_t</font></i> * DimensionVector, const void * Data);
+
+cg_ptset_info(CGNS_ENUMT(PointSetType_t) *ptset_type,
+	<i><font color="red">cgsize_t</font></i> *npnts);
+cg_ptset_write(CGNS_ENUMT(PointSetType_t) ptset_type,
+	<i><font color="red">cgsize_t</font></i> npnts, const <i><font color="red">cgsize_t</font></i> *pnts);
+cg_ptset_read(<i><font color="red">cgsize_t</font></i> *pnts);
+</pre><p>
+Note that, as in earlier versions of the library, the <tt><i>donor_datatype</i></tt>
+argument to <tt><i>cg_conn_write</i></tt> and <tt><i>cg_conn_read</i></tt> are redundant. Earlier versions
+required this value to be <tt><b>Integer</b></tt>. In 3.1 this is ignored altogether,
+and is taken to <tt><b>Integer</b></tt> in 32-bit mode and
+<tt><b>LongInteger</b></tt> in 64-bit mode. The corresponding <tt><i>donor_data</i></tt>
+is always of type <tt><b>cgsize_t</b></tt>.
+<p>
+A new convenience function has been added to the MLL:
+<pre>
+cg_index_dim(int file_number, int B, int Z, int *index_dim)
+</pre>
+which gets the index dimension for the specified base and zone. The return value
+will be the Cell Dimension for a structured grid, and 1 for an unstructured grid.
+
+<a name="c_portability"></a>
+<h3>C Portability</h3>
+
+If you use the <tt><b>cgsize_t</b></tt> data type in new code, it will work in
+both 32 and 64-bit compilation modes. In order to support CGNS versions prior
+to 3.1, you may also want to add something like this to your code:
+<pre>
+#if CGNS_VERSION < 3100
+#define cgsize_t int
+#endif
+</pre>
+Existing code that uses <tt><b>int</b></tt> will not work with a CGNS 3.1 library
+compiled with the <tt><i>enable-64bit</i></tt> option turned on. You may want
+to add something like this to your code:
+<pre>
+#if CGNS_VERSION >= 3100 && CG_BUILD_64BIT
+#error does not work in 64 bit mode
+#endif
+</pre>
+or modify your code to use <tt><b>cgsize_t</b></tt>.
+
+<a name="fortran_interface"></a>
+<h3>FORTRAN Interface</h3>
+
+All integer arguments in the FORTRAN interface are taken to be
+<tt><b>integer*4</b></tt> in 32-bit mode and <tt><b>integer*8</b></tt>
+in 64-bit mode. If you have used default or implicit integers in your FORTRAN
+code, it should port to 64-bit mode in most cases by simply turning on your
+compiler option that promotes implicit integers to <tt><b>integer*8</b></tt>.
+However, be sure that you read the next section about issues.
+For example, all the FORTRAN code in the User's Guide examples ported
+unmodified when using the <tt><i>-fdefault-integer-8</i></tt> compiler option
+with <tt><i>gfortran</i></tt>. If you have explicitly defined your integers
+as <tt><b>integer*4</b></tt>, your code will not work in 64-bit mode.
+In that case, you will either need to change them to <tt><b>integer</b></tt>
+(recommended for portability) or <tt><b>integer*8</b></tt>.
+<p>
+The <tt><i>cgnslib_f.h</i></tt> header file has been modified to explicitly
+define all integer values based on the CGNS library compilation mode,
+<tt><b>integer*8</b></tt> when compiled in 64-bit mode and
+<tt><b>integer*4</b></tt> otherwise. A new integer parameter has also
+been added to the header, <tt><b>CG_BUILD_64BIT</b></tt>, which will be set
+to 1 in 64-bit mode and 0 otherwise. You may use this parameter to check
+if the CGNS library has been compiled in 64-bit mode or not, as in:
+<pre>
+if (CG_BUILD_64BIT .ne. 0) then
+    print *,'will not work in 64-bit mode'
+    stop
+endif
+</pre>
+If you are using a CGNS library prior to version 3.1, this parameter will
+not be defined and you will need to rely on your compiler initializing all
+undefined values to 0 (not always the case) for this test to work.
+
+<a name="fortran_issues"></a>
+<h3>FORTRAN Issues and Portability</h3>
+
+If your compiler supports automatic promotion of integers, and you use
+implicit integers, your code should port to 64-bit with the following exception.
+<p>
+If you use an <tt><b>Integer</b></tt> data type in any routine that takes
+a data type specification, and an implicit integer for the data, the code
+will fail when compiled in 64-bit mode with automatic integer promotion.
+An example of this would be:
+<pre>
+integer dim
+integer data(dim)
+call cg_array_write_f('array',Integer,1,dim,data)
+</pre>
+This is because the MLL interprets the <tt><b>Integer</b></tt> data type
+as <tt><b>integer*4</b></tt> regardless of the compilation mode. The compiler,
+however, has automatically promoted <tt><i>data</i></tt> to be
+<tt><b>integer*8</b></tt>. What you will need to do to prevent this problem,
+is to either explicitly define <tt><i>data</i></tt> as in:
+<pre>
+integer dim
+integer*4 data(dim)
+call cg_array_write_f('array',Integer,1,dim,data)
+</pre>
+or
+<pre>
+integer dim
+integer*8 data(dim)
+call cg_array_write_f('array',LongInteger,1,dim,data)
+</pre>
+or test on <tt><b>CG_BUILD_64BIT</b></tt> as in:
+<pre>
+integer dim
+integer data(dim)
+if (CG_BUILD_64BIT .eq. 0) then
+  call cg_array_write_f('array',Integer,1,dim,data)
+else
+  call cg_array_write_f('array',LongInteger,1,dim,data)
+endif
+</pre>
+The last 2 options will only work with CGNS Version 3.1, since
+<tt><b>LongInteger</b></tt> and <tt><b>CG_BUILD_64BIT</b></tt> are
+not defined in previous versions. Note also, that this does not
+apply to the <tt><i>donor_datatype</i></tt>
+argument to <tt><i>cg_conn_write</i></tt> and
+<tt><i>cg_conn_read</i></tt> as discussed above.
+<p>
+You may also need to be careful when using integer constants as arguments
+in 64-bit mode. If your compiler automatically promotes integer constants
+to <tt><b>integer*8</b></tt>, then there is no problem. This is probably
+the case if your compiler supports implicit integer promotion. If not,
+then the constants will be <tt><b>integer*4</b></tt>, and your code
+will not work in 64-bit mode. In that case you will need to do something like:
+<pre>
+integer*8 one,dim
+integer*4 data(dim)
+one = 1
+call cg_array_write_f('array',Integer,one,dim,data)
+</pre>
+If you can't or don't want to use automatic integer promotion, but still want
+to be able to port to 64-bit code, you may include the preprocessor header file,
+<tt><i>cgnstypes_f.h</i></tt> in your code. In 64-bit mode, the <tt><b>CG_BUILD_64BIT</b></tt> define
+in the header will be set to 1, and <tt><b>cgsize_t</b></tt> and <tt><b>CGSIZE_T</b></tt>
+will be defined as <tt><b>integer*8</b></tt>, otherwise <tt><b>CG_BUILD_64BIT</b></tt> will
+be 0 and <tt><b>cgsize_t</b></tt> and <tt><b>CGSIZE_T</b></tt> will be defined
+as <tt><b>integer*4</b></tt>. By including this header file as a preprocessor
+include (i.e. <tt><i>#include "cgnstypes_f.h"</i></tt>) you may then use
+<tt><b>cgsize_t</b></tt> as variable type name. for example:
+<pre>
+#include "cgnstypes_f.h"
+cgsize_t cgfile,cgbase,celldim,physdim
+cgsize_t one,dim,ierr
+cgsize_t data(dim)
+
+call cg_open_f('file.cgns',CG_MODE_WRITE,cgfile,ierr)
+celldim = 3
+physdim = 3
+call cg_base_write_f(cgfile,'base',celldim,physdim,cgbase,ierr)
+...
+one = 1
+#if CG_BUILD_64
+  call cg_array_write_f('array',Integer,one,dim,data)
+#else
+  call cg_array_write_f('array',LongInteger,one,dim,data)
+#endif
+</pre>
+Notice, that you will not be able to use integer constants, but your
+FORTRAN code will be portable to 64-bit mode.
+<p>
+Lastly, you may use the header to simply limit the code to 32
+or 64-bit modes, such as:
+<pre>
+#include "cgnstypes_f.h"
+#if CG_BUILD_64BIT
+# error can only be built in 32-bit mode
+#endif
+</pre>
+
+<a name="examples"></a>
+<h3>Examples</h3>
+
+All the distributed C examples have been modified to use
+<tt><b>cgsize_t</b></tt>. and will work in both 32 and 64-bit modes. They
+are also fully compatible with previous CGNS versions.
+
+<h4>C Test Program</h4>
+
+There is a new C example in the <tt><i>tests</i></tt> subdirectory,
+<tt><i>test64c.c</i></tt>, that you may use for simple 64-bit mode testing.
+To compile it, do <tt>make test64</tt> from within the <tt><i>tests</i></tt>
+subdirectory. The program allows you to write any number of coordinates or
+tetrahedral elements using whatever amount of memory you specify. To
+get the list of available options, enter:
+<pre>
+test64c -help
+or
+test64c --
+</pre>
+Without any options, the program will try to use 16 billion bytes of memory,
+and write 4 billion float coordinates and 500 million tetrahedra. The number
+of coordinates and tetrahedra default to the number that will fit within
+the available memory, in this case (16b / 4) and (16b / 32). To specify the
+amount of memory, use the <tt><i>-m</i></tt> option. For example, to
+use 4 billion bytes, run as
+<pre>
+test64c -m4b
+</pre>
+In this case, the program will write 1 billion coordinates and 125 million
+tetrahedra, by default. I recommend that you use less than the full amount
+of available memory, otherwise swapping will result in your elapsed run
+time going from minutes to hours (or even a day).
+<p>
+To specify the number of coordinates or elements to write, use the
+<tt><i>-c</i></tt> and <tt><i>-e</i></tt> options. The number may be followed
+by a qualifier (<tt><i>b</i></tt> for billion, <tt><i>m</i></tt> for million,
+or <tt><i>k</i></tt> for thousand). For example, to write 10 billion
+coordinates and 400 million tetrahedra using 2 billion bytes of memory, use:
+<pre>
+test64c -m2b -c10b -e400m
+</pre>
+If the memory required for either the coordinate or element data exceeds the
+memory available, the program will use partial writes to write the data.
+In the case above, the coordinates will be written 500m and the elements 62.5m
+at a time. A value of 0 may also be used for the number of coordinates or
+elements, in which case they are not written. Be aware, that 1 billion
+coordinates and elements require a liitle over 4 Gb and 32Gb of disk space,
+respectively.
+<p>
+To control the output file format, use <tt><i>-adf</i></tt> to force ADF
+and <tt><i>-hdf5</i></tt> for HDF5 output. The last option is
+<tt><i>-test</i></tt>, which will cause the file to be reopened in read-only
+mode and the data read and checked for accuracy.
+
+<h4>FORTRAN</h4>
+
+The examples <tt><i>cgread.F</i></tt> and <tt><i>cgwrite.F</i></tt>
+in the <tt><i>tests</i></tt> subdirectory have been modified to support
+64-bit compilation. The <tt><i>cgnstype_f.h</i></tt> header was included
+in these, and the <tt><b>cgsize_t</b></tt> definition for variables was used
+as described above. This makes the code portable to 64-bit without requiring
+any additional compiler options.
+<p>
+Another example, <tt><i>test64f.F</i></tt> has been created in this
+directory. This program explicitly defines
+the integer variables as <tt><b>integer*8</b></tt> and then tests
+on the <tt><b>CG_BUILD_64BIT</b></tt> variable in order to prevent
+the program from running (and failing) unless built in 64-bit mode.
+<p>
+These FORTRAN examples do not really require 64 bits to run, they are
+provided to help with porting of your code. To build these,
+do <tt>make fortran</tt> from within the <tt><i>tests</i></tt>
+subdirectory.
+</body>
+</html>

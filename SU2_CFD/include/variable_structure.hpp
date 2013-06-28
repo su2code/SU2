@@ -58,12 +58,7 @@ protected:
 	Lambda;				/*!< \brief Value of the eingenvalue. */
 	double Sensor;	/*!< \brief Pressure sensor for high order central scheme. */
 	double *Undivided_Laplacian;	/*!< \brief Undivided laplacian of the solution. */
-	double *Residual,	/*!< \brief Residual of the problem. */
-	*Res_Conv,			/*!< \brief Convective Residual of the problem. */
-	*Res_Visc,			/*!< \brief Viscous Residual of the problem. */
-	*Res_Sour,			/*!< \brief Source Residual of the problem. */
-	*Res_TruncError,	/*!< \brief Truncation error for multigrid cycle. */
-	**Res_Visc_RK,		/*!< \brief Viscous Residual for RK steps. */
+	double *Res_TruncError,	/*!< \brief Truncation error for multigrid cycle. */
 	*Residual_Old,		/*!< \brief Auxiliar structure for residual smoothing. */
 	*Residual_Sum;		/*!< \brief Auxiliar structure for residual smoothing. */
 	static unsigned short nDim;		/*!< \brief Number of dimension of the problem. */
@@ -230,78 +225,10 @@ public:
 	double *GetSolution_time_n1(void);
 
 	/*!
-	 * \brief Set the value of the residual.
-	 * \param[in] val_var - Index of the variable.
-	 * \param[in] val_residual - Value of the residual for the index <i>val_var</i>.
-	 */
-	void SetResidual(unsigned short val_var, double val_residual);
-
-	/*!
-	 * \overload
-	 * \param[in] val_residual - Pointer to the residual vector.
-	 */
-	void SetResidual(double *val_residual);
-
-	/*!
-	 * \brief Set the value of the convective residual.
-	 * \param[in] val_residual - Pointer to the residual vector.
-	 */
-	void SetRes_Conv(double *val_residual);
-
-	/*!
-	 * \brief Set the value of the viscous residual.
-	 * \param[in] val_residual - Pointer to the residual vector.
-	 */
-	void SetRes_Visc(double *val_residual);
-
-	/*!
-	 * \brief Set the value of the source residual.
-	 * \param[in] val_residual - Pointer to the residual vector.
-	 */
-	void SetRes_Sour(double *val_residual);
-
-	/*!
-	 * \brief Set the value of the viscous residual in the Runge-Kutta iteration.
-	 * \param[in] val_residual - Pointer to the residual vector.
-	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-	 */
-	void SetRes_Visc_RK(double *val_residual, unsigned short iRKStep);
-
-	/*!
 	 * \brief Set the value of the old residual.
 	 * \param[in] val_residual_old - Pointer to the residual vector.
 	 */
 	void SetResidual_Old(double *val_residual_old);
-
-	/*!
-	 * \brief Add a value to the residual vector.
-	 * \param[in] val_residual - Pointer to the residual vector.
-	 */
-	void AddResidual(double *val_residual);
-
-	/*!
-	 * \brief Add a value to the residual vector.
-	 * \param[in] val_residual - residual value.
-	 */
-	void AddResidual(double val_residual);
-
-	/*!
-	 * \brief Add a value to the convective residual vector.
-	 * \param[in] val_residual - Pointer to the residual vector.
-	 */
-	void AddRes_Conv(double *val_residual);
-
-	/*!
-	 * \brief Add a value to the viscous residual vector.
-	 * \param[in] val_residual - Pointer to the residual vector.
-	 */	
-	void AddRes_Visc(double *val_residual);
-
-	/*!
-	 * \brief Add a value to the source residual vector.
-	 * \param[in] val_residual - Pointer to the residual vector.
-	 */	
-	void AddRes_Sour(double *val_residual);
 
 	/*!
 	 * \brief Add a value to the summed residual vector.
@@ -313,150 +240,11 @@ public:
 	 * \brief Set summed residual vector to zero value.
 	 */
 	void SetResidualSumZero(void);
-
-	/*!
-	 * \brief Subtract a value to the residual vector.
-	 * \param[in] val_residual - Pointer to the residual vector.
-	 */
-	void SubtractResidual(double *val_residual);
-
-	/*!
-	 * \brief Subtract a value to the viscous vector.
-	 * \param[in] val_residual - Pointer to the residual vector.
-	 */
-	void SubtractRes_Visc(double *val_residual);
-
-	/*!
-	 * \brief Subtract a value to the source vector.
-	 * \param[in] val_residual - Pointer to the residual vector.
-	 */
-	void SubtractRes_Sour(double *val_residual);
-
-	/*!
-	 * \brief Subtract a value to the convective residual vector.
-	 * \param[in] val_residual - Pointer to the residual vector.
-	 */	
-	void SubtractRes_Conv(double *val_residual);
-
-	/*!
-	 * \brief Set the residual to zero value.
-	 */
-	void SetResidualZero(void);
-
-	/*!
-	 * \brief Set the residual of the velocity to zero value.
-	 */
-	void SetVelResidualZero(void);
-
-	/*!
-	 * \brief Set the viscous velocity residual to zero value.
-	 */		
-	void SetVel_ResVisc_Zero(void);
-  
-  /*!
-	 * \brief Set the viscous energy residual to zero value.
-	 */
-	void SetEnergy_ResVisc_Zero(void);
-
-	/*!
-	 * \brief Set the viscous velocity residual to zero value.
-	 */		
-	void SetVel_ResSour_Zero(void);
-  
-  /*!
-	 * \brief Set the source energy residual to zero value.
-	 */
-	void SetEnergy_ResSour_Zero(void);
-
-  /*!
-	 * \brief Set the convective velocity residual to zero value.
-	 */
-	virtual void SetVel_ResConv_Zero(unsigned short iSpecies);
-  
-	/*!
-	 * \brief Set the viscous velocity residual to zero value.
-	 */
-	virtual void SetVel_ResVisc_Zero(unsigned short iSpecies);
-
-	/*!
-	 * \brief Set the viscous velocity residual to zero value.
-	 */
-	virtual void SetVel_ResSour_Zero(unsigned short iSpecies);
   
   /*!
 	 * \brief Set the velocity of the truncation error to zero.
 	 */
 	virtual void SetVel_ResTruncError_Zero(unsigned short iSpecies);
-
-	/*!
-	 * \brief Set the convective velocity residual to zero value.
-	 */		
-	void SetVel_ResConv_Zero(void);
-  
-  /*!
-	 * \brief Set the convective velocity residual to zero value.
-	 */
-	void SetEnergy_ResConv_Zero(void);
-
-	/*!
-	 * \brief Set the viscous residual to zero value.
-	 */	
-	void Set_ResVisc_Zero(void);
-
-	/*!
-	 * \brief Set the convective residual to zero value.
-	 */	
-	void Set_ResConv_Zero(void);
-
-	/*!
-	 * \brief Set the convective residual to zero value.
-	 */	
-	void Set_ResSour_Zero(void);
-
-	/*!
-	 * \brief Get the residual value.
-	 * \return Pointer to the residual vector.
-	 */
-	double *GetResidual(void);
-
-	/*!
-	 * \brief Get the convective residual value.
-	 * \return Pointer to the convective residual vector.
-	 */	
-	double *GetResConv(void);
-
-	/*!
-	 * \brief Get the viscous residual value.
-	 * \return Pointer to the viscous residual vector.
-	 */	
-	double *GetResVisc(void);
-
-	/*!
-	 * \brief Get the source residual value.
-	 * \return Pointer to the viscous residual vector.
-	 */	
-	double *GetResSour(void);
-
-	/*!
-	 * \brief Get the viscous R-K residual value.
-	 * \param[in] val_var - Index of the variable.
-	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-	 * \return Pointer to the viscous R-K  residual vector.
-	 */
-	double GetRes_Visc_RK(unsigned short val_var, unsigned short iRKStep);
-
-	/*!
-	 * \brief Get the residual value.
-	 * \param[out] val_residual - Pointer to the residual vector.
-	 */	
-	void GetResidual(double *val_residual);
-
-	/*!
-	 * \brief Get the residual value.
-	 * \param[in] val_var - Index of the variable.
-	 * \return Value of the residual vector for the variable <i>val_var</i>.
-	 */	
-	double GetResidual(unsigned short val_var);
 
 	/*!
 	 * \brief Get the value of the summed residual.
@@ -475,13 +263,6 @@ public:
 	 * \param[out] val_residual - Pointer to the summed residual.
 	 */	
 	void GetResidual_Sum(double *val_residual);
-
-	/*!
-	 * \brief Get the projected residual.
-	 * \param[in] val_vector - Direction of the projection.
-	 * \return Value of the projected residual.
-	 */
-	double GetProjRes(double *val_vector);
 
 	/*!
 	 * \brief Set auxiliar variables, we are looking for the gradient of that variable.
@@ -3097,24 +2878,6 @@ public:
 	 * \brief Destructor of the class.
 	 */
 	~CPlasmaVariable(void);
-  
-  /*!
-	 * \brief Set the convective velocity residual to zero value.
-   * \param[in] iSpecies - Species index.
-	 */
-	void SetVel_ResConv_Zero(unsigned short iSpecies);
-  
-	/*!
-	 * \brief Set the viscous velocity residual to zero value.
-   * \param[in] iSpecies - Species index.
-	 */
-	void SetVel_ResVisc_Zero(unsigned short iSpecies);
-  
-	/*!
-	 * \brief Set the viscous velocity residual to zero value.
-   * \param[in] iSpecies - Species index.
-	 */
-	void SetVel_ResSour_Zero(unsigned short iSpecies);
   
   /*!
 	 * \brief Set the velocity of the truncation error to zero.

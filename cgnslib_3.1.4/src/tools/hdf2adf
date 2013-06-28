@@ -1,0 +1,16 @@
+#!/bin/sh
+if [ $# -lt 1 ]; then
+  echo "usage: hdf2adf [-links] inputCGNSfile [outputCGNSfile]"
+  exit 1
+fi
+dir=`dirname $0`
+if ! [ -x $dir/cgnsconvert ]; then
+  echo "cgnsconvert does not exist in $dir"
+  exit 1
+fi
+links=
+if test "$1" = "-l" -o "$1" = "-links" ; then
+  links=-l
+  shift
+fi
+$dir/cgnsconvert -a $links $1 $2

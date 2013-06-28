@@ -39,7 +39,10 @@ CLevelSetSolution::CLevelSetSolution(CGeometry *geometry, CConfig *config, unsig
   
 	/*--- Define geometry constans in the solver structure ---*/
 	nDim = geometry->GetnDim();
-	node = new CVariable*[geometry->GetnPoint()];
+  nPoint = geometry->GetnPoint();
+	nPointDomain = geometry->GetnPointDomain();
+  
+	node = new CVariable*[nPoint];
 	
 	/*--- Dimension of the problem ---*/
 	nVar = 1;
@@ -69,6 +72,9 @@ CLevelSetSolution::CLevelSetSolution(CGeometry *geometry, CConfig *config, unsig
     FlowSolution_i = new double[nDim+1]; for (iVar = 0; iVar < nDim+1; iVar++) FlowSolution_i[iVar]  = 0.0;
     FlowSolution_j = new double[nDim+1]; for (iVar = 0; iVar < nDim+1; iVar++) FlowSolution_j[iVar]  = 0.0;
     
+    xsol = new double [nPoint*nVar];
+    xres = new double [nPoint*nVar];
+    
     /*--- Jacobians and vector structures for implicit computations ---*/
     if (config->GetKind_TimeIntScheme_LevelSet() == EULER_IMPLICIT) {
       
@@ -90,9 +96,6 @@ CLevelSetSolution::CLevelSetSolution(CGeometry *geometry, CConfig *config, unsig
       /*--- Initialization of the structure of the whole Jacobian ---*/
       if (rank == MASTER_NODE) cout << "Initialize jacobian structure (Level Set). MG level: 0." << endl;
       Initialize_SparseMatrix_Structure(&Jacobian, nVar, nVar, geometry, config);
-
-      xsol = new double [geometry->GetnPoint()*nVar];
-      rhs = new double [geometry->GetnPoint()*nVar];
       
     }
     
@@ -115,7 +118,7 @@ CLevelSetSolution::CLevelSetSolution(CGeometry *geometry, CConfig *config, unsig
 	if (!restart || geometry->GetFinestMGLevel() == false) {
     
     /*--- Restart the solution from uniform distance ---*/
-		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+		for (iPoint = 0; iPoint < nPoint; iPoint++) {
       XCoord = geometry->node[iPoint]->GetCoord(0);
       YCoord = geometry->node[iPoint]->GetCoord(1);
       if (nDim == 2) levelset = YCoord - config->GetFreeSurface_Zero();
@@ -165,7 +168,7 @@ CLevelSetSolution::CLevelSetSolution(CGeometry *geometry, CConfig *config, unsig
       Global2Local[iPoint] = -1;
     }
     /*--- Now fill array with the transform values only for local points ---*/
-    for(iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+    for(iPoint = 0; iPoint < nPointDomain; iPoint++) {
       Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
     }
     
@@ -200,7 +203,7 @@ CLevelSetSolution::CLevelSetSolution(CGeometry *geometry, CConfig *config, unsig
     /*--- Instantiate the variable class with an arbitrary solution
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
-    for(iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
+    for(iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
       node[iPoint] = new CLevelSetVariable(Solution[0], nDim, nVar, config);
     }
     
@@ -365,25 +368,23 @@ void CLevelSetSolution::Preprocessing(CGeometry *geometry, CSolution **solution_
 	
 	bool implicit = (config->GetKind_TimeIntScheme_LevelSet() == EULER_IMPLICIT);
 	bool high_order_diss = (config->GetKind_Upwind_LevelSet() == SCALAR_UPWIND_2ND);
-  bool limiter = (config->GetKind_SlopeLimit() != NONE);
-  
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
-		node[iPoint]->Set_ResConv_Zero();
-		node[iPoint]->Set_ResSour_Zero();
-		node[iPoint]->SetResidualZero();
+    bool limiter = (config->GetKind_SlopeLimit() != NONE);
+    
+	for (iPoint = 0; iPoint < nPoint; iPoint ++) {
+		Set_Residual_Zero(iPoint);
 	}
 	
 	/*--- Implicit part ---*/
 	if (implicit) {
-    Jacobian.SetValZero();
-  }
-
-  if (high_order_diss) {
+        Jacobian.SetValZero();
+    }
+    
+    if (high_order_diss) {
 		if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
 		if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
-    if (limiter) SetSolution_Limiter(geometry, config);
+        if (limiter) SetSolution_Limiter(geometry, config);
 	}
-  
+    
 }
 
 void CLevelSetSolution::Postprocessing(CGeometry *geometry, CSolution **solution_container, CConfig *config,
@@ -455,8 +456,8 @@ void CLevelSetSolution::Upwind_Residual(CGeometry *geometry, CSolution **solutio
 		/*--- Add and subtract Residual ---*/
 		solver->SetResidual(Residual, Jacobian_i, Jacobian_j, Jacobian_MeanFlow_i, Jacobian_MeanFlow_j, config);
 		
-		node[iPoint]->AddRes_Conv(Residual);
-		node[jPoint]->SubtractRes_Conv(Residual);
+		AddResidual(iPoint, Residual);
+		SubtractResidual(jPoint, Residual);
 		
 		/*--- Implicit part ---*/
 		if (implicit) {
@@ -478,7 +479,7 @@ void CLevelSetSolution::Source_Residual(CGeometry *geometry, CSolution **solutio
 	x_o = config->GetFreeSurface_Outlet();
 	x_od = x_o - factor*2.0*PI_NUMBER*config->GetFroude()*config->GetFroude();
 
-	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) { 
+	for (iPoint = 0; iPoint < nPointDomain; iPoint++) { 
 		
 		Vol = geometry->node[iPoint]->GetVolume();
 		x = geometry->node[iPoint]->GetCoord()[0];
@@ -492,7 +493,7 @@ void CLevelSetSolution::Source_Residual(CGeometry *geometry, CSolution **solutio
 		Residual[0] = Vol*(levelset-z)*DampingFactor;
 		Jacobian_i[0][0] = Vol*DampingFactor;
 		
-		node[iPoint]->AddRes_Sour(Residual);
+		AddResidual(iPoint, Residual);
 		if (implicit)
 			Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 	}
@@ -503,6 +504,63 @@ void CLevelSetSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_
 
 void CLevelSetSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver,
 																		 CConfig *config, unsigned short val_marker) {
+	unsigned long iPoint, iVertex, Point_Normal;
+	unsigned short iVar, iDim;
+	double *V_domain, *V_wall, *V_mirror, *LevelSet_domain, *LevelSet_wall, *LevelSet_mirror;
+	
+	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+	
+	V_domain = new double[nDim+1];
+	V_wall = new double[nDim+1];
+  V_mirror = new double[nDim+1];
+  
+	LevelSet_domain = new double[1];
+	LevelSet_wall = new double[1];
+  LevelSet_mirror = new double[1];
+  
+	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    
+		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+    
+		/*--- If the node belong to the domain ---*/
+		if (geometry->node[iPoint]->GetDomain()) {
+      
+			for (iVar = 0; iVar < nDim+1; iVar++) {
+				V_domain[iVar] = solution_container[FLOW_SOL]->node[Point_Normal]->GetPrimVar(iVar);
+				V_wall[iVar] = solution_container[FLOW_SOL]->node[iPoint]->GetPrimVar(iVar);
+        V_mirror[iVar] = 2.0*V_wall[iVar] - V_domain[iVar];
+			}
+      
+      LevelSet_domain[0] = node[iPoint]->GetSolution(0);
+			LevelSet_wall[0] = node[iPoint]->GetSolution(0);
+      LevelSet_mirror[0] = 2.0*LevelSet_wall[0] - LevelSet_domain[0];
+      
+			/*--- Set the normal vector ---*/
+			geometry->vertex[val_marker][iVertex]->GetNormal(Vector);
+			for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = -Vector[iDim];
+			conv_solver->SetNormal(Vector);
+			
+			conv_solver->SetPrimitive(V_wall, V_wall);
+      
+			conv_solver->SetLevelSetVar(LevelSet_domain, LevelSet_wall);
+      conv_solver->SetResidual(Residual, Jacobian_i, Jacobian_j, Jacobian_MeanFlow_i, Jacobian_MeanFlow_j, config);
+			
+			AddResidual(iPoint, Residual);
+			
+			if (implicit) {
+        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      }
+			
+		}
+	}
+  
+  delete[] V_domain;
+  delete[] V_wall;
+  delete[] V_mirror;
+  delete[] LevelSet_domain;
+  delete[] LevelSet_wall;
+  delete[] LevelSet_mirror;
 }
 
 void CLevelSetSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
@@ -520,9 +578,7 @@ void CLevelSetSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_c
 		Solution[0] = node[iPoint]->GetSolution(0);
 		
 		node[iPoint]->SetSolution_Old(Solution);
-		node[iPoint]->SetResidualZero();
-		node[iPoint]->Set_ResConv_Zero();
-		node[iPoint]->Set_ResSour_Zero();
+		Set_Residual_Zero(iPoint);
 		
 		/*--- Includes 1 in the diagonal ---*/
 		if (implicit)
@@ -539,135 +595,88 @@ void CLevelSetSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_conta
 	
 	V_domain = new double[nDim+1];
 	V_wall = new double[nDim+1];
-  V_mirror = new double[nDim+1];
-  
+    V_mirror = new double[nDim+1];
+    
 	LevelSet_domain = new double[1];
 	LevelSet_wall = new double[1];
-  LevelSet_mirror = new double[1];
-  
+    LevelSet_mirror = new double[1];
+    
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    
+        
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-    
+        Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+        
 		/*--- If the node belong to the domain ---*/
 		if (geometry->node[iPoint]->GetDomain()) {
-      
+            
 			for (iVar = 0; iVar < nDim+1; iVar++) {
 				V_domain[iVar] = solution_container[FLOW_SOL]->node[Point_Normal]->GetPrimVar(iVar);
 				V_wall[iVar] = solution_container[FLOW_SOL]->node[iPoint]->GetPrimVar(iVar);
-        V_mirror[iVar] = 2.0*V_wall[iVar] - V_domain[iVar];
+                V_mirror[iVar] = 2.0*V_wall[iVar] - V_domain[iVar];
 			}
-      
-//			LevelSet_domain[0] = node[Point_Normal]->GetSolution(0);
-//			LevelSet_wall[0] = node[iPoint]->GetSolution(0);
-//      LevelSet_mirror[0] = 2.0*LevelSet_wall[0] - LevelSet_domain[0];
-
-      LevelSet_domain[0] = node[iPoint]->GetSolution(0);
-			LevelSet_wall[0] = node[iPoint]->GetPrimVar(0);
-      LevelSet_mirror[0] = 2.0*LevelSet_wall[0] - LevelSet_domain[0];
-      
+            
+            LevelSet_domain[0] = node[iPoint]->GetSolution(0);
+			LevelSet_wall[0] = node[iPoint]->GetSolution(0);
+            LevelSet_mirror[0] = 2.0*LevelSet_wall[0] - LevelSet_domain[0];
+            
 			/*--- Set the normal vector ---*/
 			geometry->vertex[val_marker][iVertex]->GetNormal(Vector);
 			for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = -Vector[iDim];
 			conv_solver->SetNormal(Vector);
 			
-			conv_solver->SetPrimitive(V_wall, V_wall);
-      
-			conv_solver->SetLevelSetVar(LevelSet_domain, LevelSet_wall);
-      conv_solver->SetResidual(Residual, Jacobian_i, Jacobian_j, Jacobian_MeanFlow_i, Jacobian_MeanFlow_j, config);
+			conv_solver->SetPrimitive(V_wall, V_mirror);
+            
+			conv_solver->SetLevelSetVar(LevelSet_domain, LevelSet_mirror);
+            conv_solver->SetResidual(Residual, Jacobian_i, Jacobian_j, Jacobian_MeanFlow_i, Jacobian_MeanFlow_j, config);
 			
-			node[iPoint]->AddRes_Conv(Residual);
+			AddResidual(iPoint, Residual);
 			
 			if (implicit) {
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-      }
+                Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+            }
 			
 		}
 	}
-  
-  delete[] V_domain;
-  delete[] V_wall;
-  delete[] V_mirror;
-  delete[] LevelSet_domain;
-  delete[] LevelSet_wall;
-  delete[] LevelSet_mirror;
+    
+    delete[] V_domain;
+    delete[] V_wall;
+    delete[] V_mirror;
+    delete[] LevelSet_domain;
+    delete[] LevelSet_wall;
+    delete[] LevelSet_mirror;
 }
 
 void CLevelSetSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
-	unsigned long iPoint, iVertex, Point_Normal;
-	unsigned short iVar, iDim;
-	double *V_domain, *V_wall, *V_mirror, *LevelSet_domain, *LevelSet_wall, *LevelSet_mirror;
+	unsigned long iPoint, iVertex;
 	
-	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+	bool implicit = (config->GetKind_TimeIntScheme_LevelSet() == EULER_IMPLICIT);
 	
-	V_domain = new double[nDim+1];
-	V_wall = new double[nDim+1];
-  V_mirror = new double[nDim+1];
-  
-	LevelSet_domain = new double[1];
-	LevelSet_wall = new double[1];
-  LevelSet_mirror = new double[1];
-  
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-    
-		/*--- If the node belong to the domain ---*/
-		if (geometry->node[iPoint]->GetDomain()) {
-      
-			for (iVar = 0; iVar < nDim+1; iVar++) {
-				V_domain[iVar] = solution_container[FLOW_SOL]->node[Point_Normal]->GetPrimVar(iVar);
-				V_wall[iVar] = solution_container[FLOW_SOL]->node[iPoint]->GetPrimVar(iVar);
-        V_mirror[iVar] = 2.0*V_wall[iVar] - V_domain[iVar];
-			}
-      
-			LevelSet_domain[0] = node[Point_Normal]->GetSolution(0);
-			LevelSet_wall[0] = node[iPoint]->GetSolution(0);
-      LevelSet_mirror[0] = 2.0*LevelSet_wall[0] - LevelSet_domain[0];
-      
-			/*--- Set the normal vector ---*/
-			geometry->vertex[val_marker][iVertex]->GetNormal(Vector);
-			for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = -Vector[iDim];
-			conv_solver->SetNormal(Vector);
-			
-			conv_solver->SetPrimitive(V_wall, V_wall);
-      
-			conv_solver->SetLevelSetVar(LevelSet_wall, LevelSet_wall);
-      conv_solver->SetResidual(Residual, Jacobian_i, Jacobian_j, Jacobian_MeanFlow_i, Jacobian_MeanFlow_j, config);
-			
-			node[iPoint]->AddRes_Conv(Residual);
-			
-			if (implicit) {
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-      }
-			
-		}
+		
+		/*--- Set the solution to the original value ---*/
+		Solution[0] = node[iPoint]->GetSolution(0);
+		
+		node[iPoint]->SetSolution_Old(Solution);
+		Set_Residual_Zero(iPoint);
+		
+		/*--- Includes 1 in the diagonal ---*/
+		if (implicit)
+			Jacobian.DeleteValsRowi(iPoint);
 	}
-
-  delete[] V_domain;
-  delete[] V_wall;
-  delete[] V_mirror;
-  delete[] LevelSet_domain;
-  delete[] LevelSet_wall;
-  delete[] LevelSet_mirror;
+    
 }
 
 void CLevelSetSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **solution_container, CConfig *config) {
 	unsigned long iPoint;
-	double Delta = 0.0, Res, *local_ResConv, *local_ResSour, Vol;
+	double Delta = 0.0, Vol;
 	
 	/*--- Set maximum residual to zero ---*/
 	SetRes_RMS(0, 0.0);
   SetRes_Max(0, 0.0, 0);
   
 	/*--- Build implicit system ---*/
-	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-		
-		/*--- Read the residual ---*/
-		local_ResConv = node[iPoint]->GetResConv();
-		local_ResSour = node[iPoint]->GetResSour();
+	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 		
 		/*--- Read the volume ---*/
 		Vol = geometry->node[iPoint]->GetVolume();
@@ -678,36 +687,32 @@ void CLevelSetSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution *
 		Jacobian.AddVal2Diag(iPoint,Delta);
     
 		/*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
-		Res = local_ResConv[0] + local_ResSour[0]; // + solution_container[FLOW_SOL]->rhs[iPoint*(nDim+1)];
-
-		rhs[iPoint] = -Res;
+		xres[iPoint] = -xres[iPoint];
 		xsol[iPoint] = 0.0;
-		AddRes_RMS(0, Res*Res);
-    AddRes_Max(0, fabs(Res), geometry->node[iPoint]->GetGlobalIndex());
+		AddRes_RMS(0, xres[iPoint]*xres[iPoint]);
+    AddRes_Max(0, fabs(xres[iPoint]), geometry->node[iPoint]->GetGlobalIndex());
 	}
 	
   /*--- Initialize residual and solution at the ghost points ---*/
-  for (iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
-    rhs[iPoint] = 0.0;
+  for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
+    xres[iPoint] = 0.0;
     xsol[iPoint] = 0.0;
   }
 	
   /*--- Solve the linear system (Stationary iterative methods) ---*/
 	if (config->GetKind_Linear_Solver() == SYM_GAUSS_SEIDEL)
-		Jacobian.SGSSolution(rhs, xsol, config->GetLinear_Solver_Error(),
+		Jacobian.SGSSolution(xres, xsol, config->GetLinear_Solver_Error(),
 												 config->GetLinear_Solver_Iter(), false, geometry, config);
 	
 	if (config->GetKind_Linear_Solver() == LU_SGS)
-    Jacobian.LU_SGSIteration(rhs, xsol, geometry, config);
+    Jacobian.LU_SGSIteration(xres, xsol, geometry, config);
 	
 	/*--- Solve the linear system (Krylov subspace methods) ---*/
 	if ((config->GetKind_Linear_Solver() == BCGSTAB) ||
 			(config->GetKind_Linear_Solver() == GMRES)) {
 		
-		CSysVector rhs_vec((const unsigned int)geometry->GetnPoint(),
-                       (const unsigned int)geometry->GetnPointDomain(), nVar, rhs);
-		CSysVector sol_vec((const unsigned int)geometry->GetnPoint(),
-                       (const unsigned int)geometry->GetnPointDomain(), nVar, xsol);
+		CSysVector rhs_vec(nPoint, nPointDomain, nVar, xres);
+		CSysVector sol_vec(nPoint, nPointDomain, nVar, xsol);
 		
 		CMatrixVectorProduct* mat_vec = new CSparseMatrixVectorProduct(Jacobian);
 		CSolutionSendReceive* sol_mpi = new CSparseMatrixSolMPI(Jacobian, geometry, config);
@@ -740,7 +745,7 @@ void CLevelSetSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution *
 	
 	/*--- Update solution (system written in terms of increments), be careful with the update of the
 	 scalar equations which includes the density ---*/
-	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
+	for (iPoint = 0; iPoint < nPointDomain; iPoint++)
 		node[iPoint]->AddSolution(0, config->GetLinear_Solver_Relax()*xsol[iPoint]);
   
   /*--- MPI solution ---*/
@@ -753,8 +758,8 @@ void CLevelSetSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution *
 
 void CLevelSetSolution::SetLevelSet_Distance(CGeometry *geometry, CConfig *config, bool Initialization, bool WriteLevelSet) {
 	double *coord = NULL, dist2, *iCoord = NULL, *jCoord = NULL, *U_i = NULL, *U_j = NULL,
-  **Coord_LevelSet = NULL, *xCoord = NULL, *yCoord = NULL, *zCoord = NULL, auxCoordx, auxCoordy,
-  auxCoordz, FreeSurface, volume, LevelSetDiff_Squared, LevelSetDiff, dist, Min_dist;
+    **Coord_LevelSet = NULL, *xCoord = NULL, *yCoord = NULL, *zCoord = NULL, auxCoordx, auxCoordy,
+    auxCoordz, FreeSurface, volume, LevelSetDiff_Squared, LevelSetDiff, dist, Min_dist;
 	unsigned short iDim;
 	unsigned long iPoint, jPoint, iVertex, jVertex, nVertex_LevelSet, iEdge;
 	ifstream index_file;
@@ -762,230 +767,225 @@ void CLevelSetSolution::SetLevelSet_Distance(CGeometry *geometry, CConfig *confi
 	string text_line;
 	int rank = MASTER_NODE;
 	char cstr[200], buffer[50];
-  
+    
 	unsigned short nDim = geometry->GetnDim();
-  unsigned long iExtIter = config->GetExtIter();
-  
-  
+    unsigned long iExtIter = config->GetExtIter();
+    
+    
 #ifdef NO_MPI
-  
-  /*--- Identification of the 0 level set points and coordinates ---*/
-  nVertex_LevelSet = 0;
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-    iPoint = geometry->edge[iEdge]->GetNode(0); U_i = node[iPoint]->GetSolution();
-    jPoint = geometry->edge[iEdge]->GetNode(1); U_j = node[jPoint]->GetSolution();
-    if (U_i[0]*U_j[0] < 0.0) nVertex_LevelSet ++;
-  }
-  
-  /*--- Allocate vector of boundary coordinates ---*/
-  Coord_LevelSet = new double* [nVertex_LevelSet];
-  for (iVertex = 0; iVertex < nVertex_LevelSet; iVertex++)
-    Coord_LevelSet[iVertex] = new double [nDim];
-  
-  /*--- Get coordinates of the points of the surface ---*/
-  nVertex_LevelSet = 0;
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-    iPoint = geometry->edge[iEdge]->GetNode(0); U_i = node[iPoint]->GetSolution(); iCoord = geometry->node[iPoint]->GetCoord();
-    jPoint = geometry->edge[iEdge]->GetNode(1); U_j = node[jPoint]->GetSolution(); jCoord = geometry->node[jPoint]->GetCoord();
-    if (U_i[0]*U_j[0] < 0.0) {
-      for (iDim = 0; iDim < nDim; iDim++)
-        Coord_LevelSet[nVertex_LevelSet][iDim] = iCoord[iDim]-U_i[0]*(jCoord[iDim]-iCoord[iDim])/(U_j[0]-U_i[0]);
-      nVertex_LevelSet++;
-    }
-  }
-  
-#else
-  
-  int iProcessor;
-  unsigned long *Buffer_Send_nVertex = NULL, *Buffer_Receive_nVertex = NULL,
-  nLocalVertex_LevelSet = 0, nGlobalVertex_LevelSet = 0, MaxLocalVertex_LevelSet = 0, nBuffer;
-  double *Buffer_Send_Coord = NULL, *Buffer_Receive_Coord = NULL;
-  
-  int nProcessor = MPI::COMM_WORLD.Get_size();
-  rank = MPI::COMM_WORLD.Get_rank();
-  
-  Buffer_Send_nVertex = new unsigned long [1];
-  Buffer_Receive_nVertex = new unsigned long [nProcessor];
-  
-  nLocalVertex_LevelSet = 0;
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-    iPoint = geometry->edge[iEdge]->GetNode(0); U_i = node[iPoint]->GetSolution();
-    jPoint = geometry->edge[iEdge]->GetNode(1); U_j = node[jPoint]->GetSolution();
-    if (U_i[0]*U_j[0] < 0.0) nLocalVertex_LevelSet ++;
-  }
-  
-  Buffer_Send_nVertex[0] = nLocalVertex_LevelSet;
-  
-  MPI::COMM_WORLD.Allreduce(&nLocalVertex_LevelSet, &nGlobalVertex_LevelSet, 1, MPI::UNSIGNED_LONG, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&nLocalVertex_LevelSet, &MaxLocalVertex_LevelSet, 1, MPI::UNSIGNED_LONG, MPI::MAX);
-  MPI::COMM_WORLD.Allgather(Buffer_Send_nVertex, 1, MPI::UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI::UNSIGNED_LONG);
-  
-  nBuffer = MaxLocalVertex_LevelSet*nDim;
-  Buffer_Send_Coord = new double [nBuffer];
-  Buffer_Receive_Coord = new double [nProcessor*nBuffer];
-  
-  for (iVertex = 0; iVertex < MaxLocalVertex_LevelSet; iVertex++)
-    for (iDim = 0; iDim < nDim; iDim++)
-      Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
-  
-  nLocalVertex_LevelSet = 0;
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-    iPoint = geometry->edge[iEdge]->GetNode(0); U_i = node[iPoint]->GetSolution(); iCoord = geometry->node[iPoint]->GetCoord();
-    jPoint = geometry->edge[iEdge]->GetNode(1); U_j = node[jPoint]->GetSolution(); jCoord = geometry->node[jPoint]->GetCoord();
     
-    if (U_i[0]*U_j[0] < 0.0) {
-      for (iDim = 0; iDim < nDim; iDim++)
-        Buffer_Send_Coord[nLocalVertex_LevelSet*nDim+iDim] = iCoord[iDim]-U_i[0]*(jCoord[iDim]-iCoord[iDim])/(U_j[0]-U_i[0]);
-      nLocalVertex_LevelSet++;
-    }
-  }
-  
-  MPI::COMM_WORLD.Allgather(Buffer_Send_Coord, nBuffer, MPI::DOUBLE, Buffer_Receive_Coord, nBuffer, MPI::DOUBLE);
-  
-  /*--- Identification of the 0 level set points and coordinates ---*/
-  nVertex_LevelSet = 0;
-  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
-    nVertex_LevelSet += Buffer_Receive_nVertex[iProcessor];
-  
-  /*--- Allocate vector of boundary coordinates ---*/
-  Coord_LevelSet = new double* [nVertex_LevelSet];
-  for (iVertex = 0; iVertex < nVertex_LevelSet; iVertex++)
-    Coord_LevelSet[iVertex] = new double [nDim];
-  
-  /*--- Set the value of the coordinates at the level set zero ---*/
-  nVertex_LevelSet = 0;
-  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
-    for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
-      for (iDim = 0; iDim < nDim; iDim++)
-        Coord_LevelSet[nVertex_LevelSet][iDim] = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_LevelSet+iVertex)*nDim+iDim];
-      nVertex_LevelSet++;
-    }
-  
-  delete [] Buffer_Send_Coord;
-  delete [] Buffer_Receive_Coord;
-  delete [] Buffer_Send_nVertex;
-  delete [] Buffer_Receive_nVertex;
-  
-#endif
-  
-  if (Initialization) {
-
-    /*--- Get coordinates of the points and compute distances to the surface ---*/
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-      coord = geometry->node[iPoint]->GetCoord();
-      
-      /*--- Compute the min distance ---*/
-      Min_dist = 1E20;
-      //double Ydist; double Xdist;
-      for (iVertex = 0; iVertex < nVertex_LevelSet; iVertex++) {
-        
-        dist2 = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          dist2 += (coord[iDim]-Coord_LevelSet[iVertex][iDim])*(coord[iDim]-Coord_LevelSet[iVertex][iDim]);
-        dist = sqrt(dist2);
-        if (dist < Min_dist) { Min_dist = dist; }
-
-//        Xdist = abs((coord[0]-Coord_LevelSet[iVertex][0]));
-//        if (Xdist < Min_dist) { Min_dist = Xdist; Ydist = abs((coord[1]-Coord_LevelSet[iVertex][1])); }
-        
-      }
-      
-      /*--- Compute the sign using the current solution ---*/
-      double NumberSign = 1.0;
-      if (node[iPoint]->GetSolution(0) != 0.0)
-        NumberSign = node[iPoint]->GetSolution(0)/fabs(node[iPoint]->GetSolution(0));
-      
-      /*--- Store the value of the primitive variable ---*/
-//      node[iPoint]->SetPrimVar(0, Min_dist*NumberSign);
-      node[iPoint]->SetSolution(0, Min_dist*NumberSign);
+    /*--- Identification of the 0 level set points and coordinates ---*/
+    nVertex_LevelSet = 0;
+    for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+        iPoint = geometry->edge[iEdge]->GetNode(0); U_i = node[iPoint]->GetSolution();
+        jPoint = geometry->edge[iEdge]->GetNode(1); U_j = node[jPoint]->GetSolution();
+        if (U_i[0]*U_j[0] < 0.0) nVertex_LevelSet ++;
     }
     
-  }
-  
-  if (WriteLevelSet) {
+    /*--- Allocate vector of boundary coordinates ---*/
+    Coord_LevelSet = new double* [nVertex_LevelSet];
+    for (iVertex = 0; iVertex < nVertex_LevelSet; iVertex++)
+        Coord_LevelSet[iVertex] = new double [nDim];
     
-    /*--- Order the arrays (x Coordinate, y Coordinate, z Coordiante) ---*/
-    for (iVertex = 0; iVertex < nVertex_LevelSet; iVertex++) {
-      for (jVertex = 0; jVertex < nVertex_LevelSet - 1 - iVertex; jVertex++) {
-        if (Coord_LevelSet[jVertex][0] > Coord_LevelSet[jVertex+1][0]) {
-          auxCoordx = Coord_LevelSet[jVertex][0]; Coord_LevelSet[jVertex][0] = Coord_LevelSet[jVertex+1][0]; Coord_LevelSet[jVertex+1][0] = auxCoordx;
-          auxCoordy = Coord_LevelSet[jVertex][1]; Coord_LevelSet[jVertex][1] = Coord_LevelSet[jVertex+1][1]; Coord_LevelSet[jVertex+1][1] = auxCoordy;
-          if (nDim == 3) { auxCoordz = Coord_LevelSet[jVertex][2]; Coord_LevelSet[jVertex][2] = Coord_LevelSet[jVertex+1][2]; Coord_LevelSet[jVertex+1][2] = auxCoordz; }
+    /*--- Get coordinates of the points of the surface ---*/
+    nVertex_LevelSet = 0;
+    for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+        iPoint = geometry->edge[iEdge]->GetNode(0); U_i = node[iPoint]->GetSolution(); iCoord = geometry->node[iPoint]->GetCoord();
+        jPoint = geometry->edge[iEdge]->GetNode(1); U_j = node[jPoint]->GetSolution(); jCoord = geometry->node[jPoint]->GetCoord();
+        if (U_i[0]*U_j[0] < 0.0) {
+            for (iDim = 0; iDim < nDim; iDim++)
+                Coord_LevelSet[nVertex_LevelSet][iDim] = iCoord[iDim]-U_i[0]*(jCoord[iDim]-iCoord[iDim])/(U_j[0]-U_i[0]);
+            nVertex_LevelSet++;
         }
-      }
     }
     
-    /*--- Get coordinates of the points and compute distances to the surface ---*/
-    FreeSurface = 0.0;
-    for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-      coord = geometry->node[iPoint]->GetCoord();
-      volume = geometry->node[iPoint]->GetVolume();
-      LevelSetDiff_Squared = 0.0; LevelSetDiff = 0.0;
-      
-      if ((coord[0] > 1.0) && (coord[0] < 4.0)){
-        LevelSetDiff = (node[iPoint]->GetSolution()[0] - coord[nDim-1]);
-        LevelSetDiff_Squared = LevelSetDiff*LevelSetDiff;
-        FreeSurface += 0.5*LevelSetDiff_Squared*volume;
-      }
-      else {
-        LevelSetDiff = 0.0;
-      }
-      
-      node[iPoint]->SetDiffLevelSet(LevelSetDiff);
-      
+#else
+    
+    int iProcessor;
+    unsigned long *Buffer_Send_nVertex = NULL, *Buffer_Receive_nVertex = NULL,
+    nLocalVertex_LevelSet = 0, nGlobalVertex_LevelSet = 0, MaxLocalVertex_LevelSet = 0, nBuffer;
+    double *Buffer_Send_Coord = NULL, *Buffer_Receive_Coord = NULL;
+    
+    int nProcessor = MPI::COMM_WORLD.Get_size();
+    rank = MPI::COMM_WORLD.Get_rank();
+    
+    Buffer_Send_nVertex = new unsigned long [1];
+    Buffer_Receive_nVertex = new unsigned long [nProcessor];
+    
+    nLocalVertex_LevelSet = 0;
+    for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+        iPoint = geometry->edge[iEdge]->GetNode(0); U_i = node[iPoint]->GetSolution();
+        jPoint = geometry->edge[iEdge]->GetNode(1); U_j = node[jPoint]->GetSolution();
+        if (U_i[0]*U_j[0] < 0.0) nLocalVertex_LevelSet ++;
     }
     
-    if ((rank == MASTER_NODE) && (iExtIter % config->GetWrt_Sol_Freq_DualTime() == 0)) {
-      
-      /*--- Write the Level Set distribution, the target level set---*/
-      LevelSet_file.precision(15);
-      
-      /*--- Write file name with extension ---*/
-      strcpy (cstr, "LevelSet");
-      if (config->GetUnsteady_Simulation()){
-        if ((int(iExtIter) >= 0) && (int(iExtIter) < 10)) sprintf (buffer, "_0000%d.dat", int(iExtIter));
-        if ((int(iExtIter) >= 10) && (int(iExtIter) < 100)) sprintf (buffer, "_000%d.dat", int(iExtIter));
-        if ((int(iExtIter) >= 100) && (int(iExtIter) < 1000)) sprintf (buffer, "_00%d.dat", int(iExtIter));
-        if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d.dat", int(iExtIter));
-        if (int(iExtIter) >= 10000) sprintf (buffer, "_%d.dat", int(iExtIter));
-      }
-      else {
-        sprintf (buffer, ".dat");
-      }
-      
-      strcat(cstr,buffer);
-      
-      LevelSet_file.open(cstr, ios::out);
-      LevelSet_file << "TITLE = \"SU2 Free surface simulation\"" << endl;
-      if (nDim == 2) LevelSet_file << "VARIABLES = \"x coord\",\"y coord\"" << endl;
-      if (nDim == 3) LevelSet_file << "VARIABLES = \"x coord\",\"y coord\",\"z coord\"" << endl;
-      LevelSet_file << "ZONE T= \"Free Surface\"" << endl;
-      
-      for (iVertex = 0; iVertex < nVertex_LevelSet; iVertex++) {
-        if (nDim == 2) LevelSet_file << scientific << Coord_LevelSet[iVertex][0] << ", " << Coord_LevelSet[iVertex][1] << endl;
-        if (nDim == 3) LevelSet_file << scientific << Coord_LevelSet[iVertex][0] << ", " << Coord_LevelSet[iVertex][1] << ", " << Coord_LevelSet[iVertex][2] << endl;
-      }
-      LevelSet_file.close();
-      
+    Buffer_Send_nVertex[0] = nLocalVertex_LevelSet;
+    
+    MPI::COMM_WORLD.Allreduce(&nLocalVertex_LevelSet, &nGlobalVertex_LevelSet, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+    MPI::COMM_WORLD.Allreduce(&nLocalVertex_LevelSet, &MaxLocalVertex_LevelSet, 1, MPI::UNSIGNED_LONG, MPI::MAX);
+    MPI::COMM_WORLD.Allgather(Buffer_Send_nVertex, 1, MPI::UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI::UNSIGNED_LONG);
+    
+    nBuffer = MaxLocalVertex_LevelSet*nDim;
+    Buffer_Send_Coord = new double [nBuffer];
+    Buffer_Receive_Coord = new double [nProcessor*nBuffer];
+    
+    for (iVertex = 0; iVertex < MaxLocalVertex_LevelSet; iVertex++)
+        for (iDim = 0; iDim < nDim; iDim++)
+            Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
+    
+    nLocalVertex_LevelSet = 0;
+    for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+        iPoint = geometry->edge[iEdge]->GetNode(0); U_i = node[iPoint]->GetSolution(); iCoord = geometry->node[iPoint]->GetCoord();
+        jPoint = geometry->edge[iEdge]->GetNode(1); U_j = node[jPoint]->GetSolution(); jCoord = geometry->node[jPoint]->GetCoord();
+        
+        if (U_i[0]*U_j[0] < 0.0) {
+            for (iDim = 0; iDim < nDim; iDim++)
+                Buffer_Send_Coord[nLocalVertex_LevelSet*nDim+iDim] = iCoord[iDim]-U_i[0]*(jCoord[iDim]-iCoord[iDim])/(U_j[0]-U_i[0]);
+            nLocalVertex_LevelSet++;
+        }
     }
     
-    /*--- Store the value of the free surface coefficient ---*/
-    if (config->GetExtIter() < 50) SetTotal_CFreeSurface(FreeSurface);
-    else { if ( FreeSurface < GetTotal_CFreeSurface() ) SetTotal_CFreeSurface(FreeSurface); }
+    MPI::COMM_WORLD.Allgather(Buffer_Send_Coord, nBuffer, MPI::DOUBLE, Buffer_Receive_Coord, nBuffer, MPI::DOUBLE);
     
-//    SetTotal_CFreeSurface(FreeSurface);
+    /*--- Identification of the 0 level set points and coordinates ---*/
+    nVertex_LevelSet = 0;
+    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
+        nVertex_LevelSet += Buffer_Receive_nVertex[iProcessor];
     
-    delete [] xCoord;
-    delete [] yCoord;
-    if (nDim == 3) delete [] zCoord;
+    /*--- Allocate vector of boundary coordinates ---*/
+    Coord_LevelSet = new double* [nVertex_LevelSet];
+    for (iVertex = 0; iVertex < nVertex_LevelSet; iVertex++)
+        Coord_LevelSet[iVertex] = new double [nDim];
     
-  }
-  
-  /*--- Deallocate vector of boundary coordinates ---*/
-  for (iVertex = 0; iVertex < nVertex_LevelSet; iVertex++)
-    delete Coord_LevelSet[iVertex];
-  delete [] Coord_LevelSet;
-
+    /*--- Set the value of the coordinates at the level set zero ---*/
+    nVertex_LevelSet = 0;
+    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
+        for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
+            for (iDim = 0; iDim < nDim; iDim++)
+                Coord_LevelSet[nVertex_LevelSet][iDim] = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_LevelSet+iVertex)*nDim+iDim];
+            nVertex_LevelSet++;
+        }
+    
+    delete [] Buffer_Send_Coord;
+    delete [] Buffer_Receive_Coord;
+    delete [] Buffer_Send_nVertex;
+    delete [] Buffer_Receive_nVertex;
+    
+#endif
+    
+    if (Initialization) {
+        
+        /*--- Get coordinates of the points and compute distances to the surface ---*/
+        for (iPoint = 0; iPoint < nPoint; iPoint++) {
+            coord = geometry->node[iPoint]->GetCoord();
+            
+            /*--- Compute the min distance ---*/
+            Min_dist = 1E20;
+            for (iVertex = 0; iVertex < nVertex_LevelSet; iVertex++) {
+                
+                dist2 = 0.0;
+                for (iDim = 0; iDim < nDim; iDim++)
+                    dist2 += (coord[iDim]-Coord_LevelSet[iVertex][iDim])*(coord[iDim]-Coord_LevelSet[iVertex][iDim]);
+                dist = sqrt(dist2);
+                if (dist < Min_dist) { Min_dist = dist; }
+                
+            }
+            
+            /*--- Compute the sign using the current solution ---*/
+            double NumberSign = 1.0;
+            if (node[iPoint]->GetSolution(0) != 0.0)
+                NumberSign = node[iPoint]->GetSolution(0)/fabs(node[iPoint]->GetSolution(0));
+            
+            /*--- Store the value of the primitive variable ---*/
+            node[iPoint]->SetPrimVar(0, Min_dist*NumberSign);
+        }
+        
+    }
+    
+    if (WriteLevelSet) {
+        
+        /*--- Order the arrays (x Coordinate, y Coordinate, z Coordiante) ---*/
+        for (iVertex = 0; iVertex < nVertex_LevelSet; iVertex++) {
+            for (jVertex = 0; jVertex < nVertex_LevelSet - 1 - iVertex; jVertex++) {
+                if (Coord_LevelSet[jVertex][0] > Coord_LevelSet[jVertex+1][0]) {
+                    auxCoordx = Coord_LevelSet[jVertex][0]; Coord_LevelSet[jVertex][0] = Coord_LevelSet[jVertex+1][0]; Coord_LevelSet[jVertex+1][0] = auxCoordx;
+                    auxCoordy = Coord_LevelSet[jVertex][1]; Coord_LevelSet[jVertex][1] = Coord_LevelSet[jVertex+1][1]; Coord_LevelSet[jVertex+1][1] = auxCoordy;
+                    if (nDim == 3) { auxCoordz = Coord_LevelSet[jVertex][2]; Coord_LevelSet[jVertex][2] = Coord_LevelSet[jVertex+1][2]; Coord_LevelSet[jVertex+1][2] = auxCoordz; }
+                }
+            }
+        }
+        
+        /*--- Get coordinates of the points and compute distances to the surface ---*/
+        FreeSurface = 0.0;
+        for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+            coord = geometry->node[iPoint]->GetCoord();
+            volume = geometry->node[iPoint]->GetVolume();
+            LevelSetDiff_Squared = 0.0; LevelSetDiff = 0.0;
+            
+            if ((coord[0] > 1.0) && (coord[0] < 4.0)){
+                LevelSetDiff = (node[iPoint]->GetSolution()[0] - coord[nDim-1]);
+                LevelSetDiff_Squared = LevelSetDiff*LevelSetDiff;
+                FreeSurface += 0.5*LevelSetDiff_Squared*volume;
+            }
+            else {
+                LevelSetDiff = 0.0;
+            }
+            
+            node[iPoint]->SetDiffLevelSet(LevelSetDiff);
+            
+        }
+        
+        if ((rank == MASTER_NODE) && (iExtIter % config->GetWrt_Sol_Freq_DualTime() == 0)) {
+            
+            /*--- Write the Level Set distribution, the target level set---*/
+            LevelSet_file.precision(15);
+            
+            /*--- Write file name with extension ---*/
+            strcpy (cstr, "LevelSet");
+            if (config->GetUnsteady_Simulation()){
+                if ((int(iExtIter) >= 0) && (int(iExtIter) < 10)) sprintf (buffer, "_0000%d.dat", int(iExtIter));
+                if ((int(iExtIter) >= 10) && (int(iExtIter) < 100)) sprintf (buffer, "_000%d.dat", int(iExtIter));
+                if ((int(iExtIter) >= 100) && (int(iExtIter) < 1000)) sprintf (buffer, "_00%d.dat", int(iExtIter));
+                if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d.dat", int(iExtIter));
+                if (int(iExtIter) >= 10000) sprintf (buffer, "_%d.dat", int(iExtIter));
+            }
+            else {
+                sprintf (buffer, ".dat");
+            }
+            
+            strcat(cstr,buffer);
+            
+            LevelSet_file.open(cstr, ios::out);
+            LevelSet_file << "TITLE = \"SU2 Free surface simulation\"" << endl;
+            if (nDim == 2) LevelSet_file << "VARIABLES = \"x coord\",\"y coord\"" << endl;
+            if (nDim == 3) LevelSet_file << "VARIABLES = \"x coord\",\"y coord\",\"z coord\"" << endl;
+            LevelSet_file << "ZONE T= \"Free Surface\"" << endl;
+            
+            for (iVertex = 0; iVertex < nVertex_LevelSet; iVertex++) {
+                if (nDim == 2) LevelSet_file << scientific << Coord_LevelSet[iVertex][0] << ", " << Coord_LevelSet[iVertex][1] << endl;
+                if (nDim == 3) LevelSet_file << scientific << Coord_LevelSet[iVertex][0] << ", " << Coord_LevelSet[iVertex][1] << ", " << Coord_LevelSet[iVertex][2] << endl;
+            }
+            LevelSet_file.close();
+            
+        }
+        
+        /*--- Store the value of the free surface coefficient ---*/
+        SetTotal_CFreeSurface(FreeSurface);
+        
+        //    if (config->GetExtIter() < 50) SetTotal_CFreeSurface(FreeSurface);
+        //    else { if ( FreeSurface < GetTotal_CFreeSurface() ) SetTotal_CFreeSurface(FreeSurface); }
+        
+        delete [] xCoord;
+        delete [] yCoord;
+        if (nDim == 3) delete [] zCoord;
+        
+    }
+    
+    /*--- Deallocate vector of boundary coordinates ---*/
+    for (iVertex = 0; iVertex < nVertex_LevelSet; iVertex++)
+        delete Coord_LevelSet[iVertex];
+    delete [] Coord_LevelSet;
+    
 }
 
 void CLevelSetSolution::SetResidual_DualTime(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
@@ -996,7 +996,7 @@ void CLevelSetSolution::SetResidual_DualTime(CGeometry *geometry, CSolution **so
 	bool Grid_Movement = config->GetGrid_Movement();
 
 	/*--- loop over points ---*/
-	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) { 
+	for (iPoint = 0; iPoint < nPointDomain; iPoint++) { 
 		
 		/*--- Solution at time n-1, n and n+1 ---*/
 		U_time_nM1  = node[iPoint]->GetSolution_time_n1();
@@ -1026,7 +1026,7 @@ void CLevelSetSolution::SetResidual_DualTime(CGeometry *geometry, CSolution **so
                      +  1.0*U_time_nM1[0]*Volume_nM1 ) / (2.0*TimeStep);
 				
 		/*--- Add Residual ---*/
-		node[iPoint]->AddRes_Conv(Residual);
+		AddResidual(iPoint, Residual);
 		
 		if (implicit) {
       Jacobian_i[0][0] = 0.0;

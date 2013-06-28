@@ -1,0 +1,32 @@
+[OPTIONS]
+Compatibility=1.1 or later
+Compiled file=cgnsview.chm
+Contents file=cgnsview.hhc
+Default Window=default
+Default topic=cgnsview.html
+Display compile progress=No
+Language=0x409 English (United States)
+Title=CGNSview Documentation
+
+[WINDOWS]
+default="CGNSview Documentation","cgnsview.hhc",,"cgnsview.html",,,,,,0x42120,150,0x300e,[100,100,950,700],,,,,,,0
+
+
+[FILES]
+toolbar.html
+buttons.html
+customize.html
+datadesc.html
+linkdesc.html
+menu.html
+nodedata.html
+nodedesc.html
+nodetree.html
+separator.html
+cgnsview.html
+unitconv.html
+cgnsnodes.html
+dialogs.html
+
+[INFOTYPES]
+

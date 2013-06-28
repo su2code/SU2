@@ -23,7 +23,31 @@
 
 #pragma once
 
+inline void CSolution::AddResidual(unsigned long val_ipoint, double *val_residual) { for (unsigned short iVar = 0; iVar < nVar; iVar++) xres[val_ipoint*nVar+iVar] += val_residual[iVar]; }
+
+inline void CSolution::SubtractResidual(unsigned long val_ipoint, double *val_residual) { for (unsigned short iVar = 0; iVar < nVar; iVar++) xres[val_ipoint*nVar+iVar] -= val_residual[iVar]; }
+
+inline void CSolution::SetResidual(unsigned long val_ipoint, double *val_residual) { for (unsigned short iVar = 0; iVar < nVar; iVar++) xres[val_ipoint*nVar+iVar] = val_residual[iVar]; }
+
+inline void CSolution::SetResidual(unsigned long val_ipoint, unsigned short val_var, double val_residual) { xres[val_ipoint*nVar+val_var] = val_residual; } 
+
+inline void CSolution::Set_Residual_Zero(unsigned long val_ipoint) { for (unsigned short iVar = 0; iVar < nVar; iVar++) xres[val_ipoint*nVar+iVar] = 0.0; }
+
+inline void CSolution::SetVel_Residual_Zero(unsigned long val_ipoint) { for (unsigned short iDim = 0; iDim < nDim; iDim++) xres[val_ipoint*nVar+iDim+1] = 0.0; }
+
+inline void CSolution::SetEnergy_Residual_Zero(unsigned long val_ipoint) { xres[val_ipoint*nVar+nDim+1] = 0.0; }
+
+inline double CSolution::GetResidual(unsigned long val_ipoint, unsigned short val_var) { return xres[val_ipoint*nVar + val_var]; }
+
+inline double *CSolution::GetResidual(unsigned long val_ipoint) { return &xres[val_ipoint*nVar]; }
+
 inline void CSolution::SetIterLinSolver(unsigned short val_iterlinsolver) { IterLinSolver = val_iterlinsolver; }
+
+inline unsigned short CSolution::GetnSpecies(void) { return 0; }
+
+inline unsigned short CSolution::GetnMonatomics(void) { return 0; }
+
+inline unsigned short CSolution::GetnDiatomics(void) { return 0; }
 
 inline void CSolution::SetSolution_MPI(CGeometry *geometry, CConfig *config) { }
 
@@ -78,7 +102,7 @@ inline void CSolution::SetPrimVar_Limiter_MPI(CGeometry *geometry, CConfig *conf
 
 inline void CSolution::SetPrimVar_Limiter(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolution::SetPreconditioner_Turkel(CConfig *config, unsigned short iPoint) { }
+inline void CSolution::SetPreconditioner(CConfig *config, unsigned short iPoint) { }
 
 inline void CSolution::SetDistance(CGeometry *geometry, CConfig *config) { };
 
@@ -440,12 +464,6 @@ inline double CSolution::GetMax_Delta_Time(unsigned short val_Species) { return 
 
 inline double CSolution::GetMin_Delta_Time(unsigned short val_Species) { return 0.0; }
 
-inline unsigned short CSolution::GetnSpecies(void) { return nSpecies; }
-
-inline unsigned short CSolution::GetnMonatomics(void) { return nMonatomics; }
-
-inline unsigned short CSolution::GetnDiatomics(void) { return nDiatomics; }
-
 inline void CSolution::Copy_Zone_Solution(CSolution ***solver1_solution, CGeometry **solver1_geometry, CConfig *solver1_config, 
 										  CSolution ***solver2_solution, CGeometry **solver2_geometry, CConfig *solver2_config) {};
 
@@ -604,6 +622,12 @@ inline double CElectricSolution::GetTotal_CCharge() { return Total_CCharge; }
 
 inline void CElectricSolution::SetTotal_CCharge(double val_Total_CCharge) {Total_CCharge = val_Total_CCharge; }
 
+inline unsigned short CPlasmaSolution::GetnSpecies(void) { return nSpecies; }
+
+inline unsigned short CPlasmaSolution::GetnMonatomics(void) { return nMonatomics; }
+
+inline unsigned short CPlasmaSolution::GetnDiatomics(void) { return nDiatomics; }
+
 inline double CPlasmaSolution::GetDensity_Energy_vib_Inf(unsigned short  iSpecies) { return Density_Inf[iSpecies]*Energy_vib_Inf[iSpecies]; }
 
 inline double CPlasmaSolution::GetDensity_Energy_Inf(unsigned short  iSpecies) { return Density_Inf[iSpecies]*Energy_Inf[iSpecies]; }
@@ -667,6 +691,12 @@ inline double CPlasmaSolution::GetMin_Delta_Time(unsigned short val_Species) { r
 inline double CLevelSetSolution::GetTotal_CFreeSurface() { return Total_CFreeSurface; }
 
 inline void CLevelSetSolution::SetTotal_CFreeSurface(double cfreesurface) { Total_CFreeSurface = cfreesurface; }
+
+inline unsigned short CAdjPlasmaSolution::GetnSpecies(void) { return nSpecies; }
+
+inline unsigned short CAdjPlasmaSolution::GetnMonatomics(void) { return nMonatomics; }
+
+inline unsigned short CAdjPlasmaSolution::GetnDiatomics(void) { return nDiatomics; }
 
 inline double CAdjPlasmaSolution::GetCSensitivity(unsigned short val_marker, unsigned short val_vertex) { return CSensitivity[val_marker][val_vertex]; }
 

@@ -59,8 +59,7 @@ protected:
   nPrimVar,                     /*!< \brief Number of primitive variables of the problem. */
 	nDim;													/*!< \brief Number of dimensions of the problem. */
 	unsigned long nPoint;					/*!< \brief Number of points of the computational grid. */
-	double Gamma;									/*!< \brief Fluid's Gamma constant (ratio of specific heats). */
-	double Gamma_Minus_One;				/*!< \brief Fluids's Gamma - 1.0  . */
+  unsigned long nPointDomain; 	/*!< \brief Number of points of the computational grid. */
 	double Max_Delta_Time,	/*!< \brief Maximum value of the delta time for all the control volumes. */
 	Min_Delta_Time;					/*!< \brief Minimum value of the delta time for all the control volumes. */
 	double *Residual_RMS,	/*!< \brief Vector with the mean residual for each variable. */
@@ -80,49 +79,28 @@ protected:
 	*Res_Sour,				/*!< \brief Auxiliary nVar vector for storing the viscous residual. */
 	*Res_Conv_i,		  /*!< \brief Auxiliary vector for storing the convective residual at point i. */
 	*Res_Visc_i,			/*!< \brief Auxiliary vector for storing the viscous residual at point i. */
-	*Res_Sour_i,			/*!< \brief Auxiliary vector for storing the source residual at point i. */
 	*Res_Conv_j,			/*!< \brief Auxiliary vector for storing the convective residual at point j. */
-	*Res_Visc_j,			/*!< \brief Auxiliary vector for storing the viscous residual at point j. */
-	*Res_Sour_j;			/*!< \brief Auxiliary vector for storing the viscous residual at point j. */
+	*Res_Visc_j;			/*!< \brief Auxiliary vector for storing the viscous residual at point j. */
 	double **Jacobian_i,	/*!< \brief Auxiliary matrices for storing point to point Jacobians at point i. */
-	**Jacobian_j,			    /*!< \brief Auxiliary matrices for storing point to point Jacobians at point j. */
-    	**Jacobian_k;			    /*!< \brief Auxiliary matrices for storing point to point Jacobians at point k. */
-    double **Jacobian_MeanFlow_i,	/*!< \brief Auxiliary matrices for storing point to point Jacobians of the mean flow at point i. */
-	**Jacobian_MeanFlow_j;			    /*!< \brief Auxiliary matrices for storing point to point Jacobians of the mean flow at point j. */
+	**Jacobian_j;			    /*!< \brief Auxiliary matrices for storing point to point Jacobians at point j. */
 	double **Jacobian_ii,	/*!< \brief Auxiliary matrices for storing point to point Jacobians. */
 	**Jacobian_ij,			  /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
 	**Jacobian_ji,			  /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
-	**Jacobian_jj,			  /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
-    **Jacobian_ik,			  /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
-	**Jacobian_jk;			  /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
+	**Jacobian_jj;			  /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
 
 	double **Smatrix,	/*!< \brief Auxiliary structure for computing gradients by least-squares */
 	**cvector;			 /*!< \brief Auxiliary structure for computing gradients by least-squares */
 
 	CSparseMatrix StiffMatrix; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations, and grid movement. */
 	CSparseMatrix Jacobian; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
-    CSparseMatrix JacobianMeanFlow; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
-    //CSparseMatrix DirectJacobian; /*!< \brief Sparse Jacobian structure for direct, discrete part of hybrid computation. */
-    //CSparseMatrix DirectBCJacobian; /*!< \brief Sparse Jacobian structure for direct, discrete boundary conditions part of hybrid computation. */
-
-	/*--- Move this to the child classes ---*/
-	double **StiffMatrix_Elem,			/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices (TODO move to plasma child classes). */
-	**StiffMatrix_Node;							/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices (TODO move to plasma child classes). */
-	CSparseMatrix StiffMatrixSpace; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations (TODO move to plasma child classes). */
-	CSparseMatrix StiffMatrixTime;	/*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations (TODO move to plasma child classes). */
-	unsigned short nSpecies,				/*! \brief Number of species in the plasma simulation (TODO move to plasma child classes). */
-	nMonatomics,										/*! \brief Number of monatomic species in the flow (TODO move to plasma child classes). */
-	nDiatomics;											/*! \brief Number of diatomic species in the flow (TODO move to plasma child classes). */
 
 public:
   double *xsol;		/*!< \brief vector to store iterative solution of implicit linear system. */
 	double *xres;		/*!< \brief vector to store iterative residual of implicit linear system. */
-	double *rhs;		/*!< \brief right hand side of implicit linear system. */
-  
 	CVariable** node;	/*!< \brief Vector which the define the variables for each problem. */
   
-  CSparseMatrix DirectJacobian; /*!< \brief Sparse Jacobian structure for direct, discrete part of hybrid computation. */
-  CSparseMatrix DirectBCJacobian; /*!< \brief Sparse Jacobian structure for direct, discrete boundary conditions part of hybrid computation. */
+  CSparseMatrix DirectJacobian; /*!< \brief Sparse Jacobian structure for direct, discrete part of hybrid computation (TODO move to the right place). */
+  CSparseMatrix DirectBCJacobian; /*!< \brief Sparse Jacobian structure for direct, discrete boundary conditions part of hybrid computation (TODO move to the right place). */
 
 	/*!
 	 * \brief Constructor of the class. 
@@ -134,6 +112,17 @@ public:
 	 */
 	virtual ~CSolution(void);
 
+  void SubtractResidual(unsigned long val_ipoint, double *val_residual);
+  void AddResidual(unsigned long val_ipoint, double *val_residual);
+  void SetResidual(unsigned long val_ipoint, unsigned short val_var, double val_residual); 
+  void SetResidual(unsigned long val_ipoint, double *val_residual);
+  void Set_Residual_Zero(unsigned long val_ipoint);
+  void SetVel_Residual_Zero(unsigned long val_ipoint);
+  void SetEnergy_Residual_Zero(unsigned long val_ipoint);
+	double *GetResidual(unsigned long val_ipoint);
+	double GetResidual(unsigned long val_ipoint, unsigned short val_var);
+  
+  
   /*!
 	 * \brief Set number of linear solver iterations.
 	 * \param[in] val_iterlinsolver - Number of linear iterations.
@@ -204,41 +193,6 @@ public:
 	 * \brief Get the number of variables of the problem.
 	 */
 	unsigned short GetnPrimVar(void);
-
-	/*! 
-	 * \brief Get the number of Species present in the flow.
-	 */
-	unsigned short GetnSpecies(void);
-
-	/*! 
-	 * \brief Get the number of Species present in the flow.
-	 */
-	unsigned short GetnMonatomics(void);
-
-	/*! 
-	 * \brief Get the number of Species present in the flow.
-	 */
-	unsigned short GetnDiatomics(void);
-
-	/*! 
-	 * \brief Compute the combination between convective and viscous residual in a RK-Stage.
-	 * \attention It is not necessary to store all the viscous residual, just storing the k-1 is enougth
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-	 */	
-	void SetResidual_RKCoeff(CGeometry *geometry, CConfig *config, unsigned short iRKStep);
-
-	/*! 
-	 * \brief Set the total residual (convective + viscous).
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-	 * \param[in] iMesh - Index of the mesh in multigrid computations.
-	 */	
-	void SetResidual_Total(CGeometry *geometry, CSolution **solution_container, CConfig *config, 
-			unsigned short iRKStep, unsigned short iMesh);
 
 	/*! 
 	 * \brief A virtual member.
@@ -876,7 +830,7 @@ public:
 	 * \param[in] iPoint - Index of the grid point.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetPreconditioner_Turkel(CConfig *config, unsigned short iPoint);
+	virtual void SetPreconditioner(CConfig *config, unsigned short iPoint);
 
 	/*!
 	 * \brief A virtual member.
@@ -1707,6 +1661,21 @@ public:
 	 */		
 	void Gauss_Elimination(double** A, double* rhs, unsigned long nVar);
 
+  /*!
+	 * \brief Get the number of Species present in the flow.
+	 */
+	virtual unsigned short GetnSpecies(void);
+  
+	/*!
+	 * \brief Get the number of Species present in the flow.
+	 */
+	virtual unsigned short GetnMonatomics(void);
+  
+	/*!
+	 * \brief Get the number of Species present in the flow.
+	 */
+	virtual unsigned short GetnDiatomics(void);
+  
 };
 
 /*!
@@ -1846,7 +1815,9 @@ protected:
 	euler_implicit,			/*!< \brief True if euler implicit scheme used. */
 	roe_turkel,         /*!< \brief True if computing preconditioning matrix for roe-turkel method. */
 	least_squares;        /*!< \brief True if computing gradients by least squares. */
-
+	double Gamma;									/*!< \brief Fluid's Gamma constant (ratio of specific heats). */
+	double Gamma_Minus_One;				/*!< \brief Fluids's Gamma - 1.0  . */
+  
 public:
 
 	/*! 
@@ -2113,7 +2084,7 @@ public:
 	 * \param[in] iPoint - Index of the grid point
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetPreconditioner_Turkel(CConfig *config, unsigned short iPoint);
+	void SetPreconditioner(CConfig *config, unsigned short iPoint);
 
 	/*!
 	 * \brief Compute the undivided laplacian for the solution, except the energy equation.
@@ -2783,7 +2754,9 @@ protected:
 	*FlowSolution_j,        /*!< \brief Store the flow solution at point j. */
 	*lowerlimit,            /*!< \brief contains lower limits for turbulence variables. */
 	*upperlimit;            /*!< \brief contains upper limits for turbulence variables. */
-
+	double Gamma;									/*!< \brief Fluid's Gamma constant (ratio of specific heats). */
+	double Gamma_Minus_One;				/*!< \brief Fluids's Gamma - 1.0  . */
+  
 public:
 
 	/*! 
@@ -3510,10 +3483,12 @@ protected:
 	bool space_centered;  /*!< \brief True if space centered scheeme used. */
   double **Jacobian_Axisymmetric; /*!< \brief Storage for axisymmetric Jacobian. */
 	unsigned long nMarker;				/*!< \brief Total number of markers using the grid information. */
-
+	double Gamma;									/*!< \brief Fluid's Gamma constant (ratio of specific heats). */
+	double Gamma_Minus_One;				/*!< \brief Fluids's Gamma - 1.0  . */
+  
 public:
 
-	/*! 
+	/*!
 	 * \brief Constructor of the class. 
 	 */
 	CAdjEulerSolution(void);
@@ -3940,7 +3915,7 @@ public:
 class CAdjNSSolution : public CAdjEulerSolution {
 public:
 
-	/*! 
+	/*!
 	 * \brief Constructor of the class. 
 	 */
 	CAdjNSSolution(void);
@@ -4042,6 +4017,12 @@ private:
 	double ***Jacobian_gradi,
 	***Jacobian_gradj;
 
+	double Gamma;									/*!< \brief Fluid's Gamma constant (ratio of specific heats). */
+	double Gamma_Minus_One;				/*!< \brief Fluids's Gamma - 1.0  . */
+    
+  double **Jacobian_k;			    /*!< \brief Auxiliary matrices for storing point to point Jacobians at point k. */
+	double  **Jacobian_ik,			  /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
+	**Jacobian_jk;			  /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
 
 public:
 
@@ -4253,7 +4234,9 @@ private:
 	AllBound_CDeltaLift_Inv;		/*!< \brief Total linearized lift coefficient (inviscid contribution) for all the boundaries. */
 	double Total_CDeltaDrag,	/*!< \brief Total linearized drag coefficient for all the boundaries. */
 	Total_CDeltaLift;			/*!< \brief Total linearized lift coefficient for all the boundaries. */
-
+	double Gamma;									/*!< \brief Fluid's Gamma constant (ratio of specific heats). */
+	double Gamma_Minus_One;				/*!< \brief Fluids's Gamma - 1.0  . */
+  
 public:
 
 	/*! 
@@ -4368,7 +4351,7 @@ public:
 /*! \class CElectricSolution
  *  \brief Main class for defining the electric potential solver.
  *  \author F. Palacios.
- *  \version 2.0.
+ *  \version 2.0.5
  *  \date May 3, 2010.
  */
 class CElectricSolution : public CSolution {
@@ -4376,6 +4359,13 @@ private:
 	double Total_CCharge;			/*!< \brief Total charge coefficient for all the domain. */
 	double *Source_Vector;		/*!< \brief Auxiliary vector for storing element source vector. */
 
+  double Gamma;									/*!< \brief Fluid's Gamma constant (ratio of specific heats). */
+	double Gamma_Minus_One;				/*!< \brief Fluids's Gamma - 1.0  . */
+  
+  double **StiffMatrix_Elem,			/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
+	**StiffMatrix_Node;							/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
+
+  
 public:
 
 	/*! 
@@ -4554,7 +4544,7 @@ public:
 /*! \class CWaveSolution
  *  \brief Main class for defining the wave solver.
  *  \author F. Palacios.
- *  \version 2.0.
+ *  \version 2.0.5
  *  \date May 3, 2010.
  */
 class CWaveSolution : public CSolution {
@@ -4562,6 +4552,12 @@ private:
 	double *CWave;	/*!< \brief Wave strength for each boundary. */
 	double AllBound_CWave;	/*!< \brief Total wave strength for all the boundaries. */
 	double Total_CWave; /*!< \brief Total wave strength for all the boundaries. */
+
+  CSparseMatrix StiffMatrixSpace; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
+	CSparseMatrix StiffMatrixTime;	/*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
+
+  double **StiffMatrix_Elem,			/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
+	**StiffMatrix_Node;							/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
 
 public:
 
@@ -4730,7 +4726,7 @@ public:
 /*! \class CHeatSolution
  *  \brief Main class for defining the heat solver.
  *  \author F. Palacios.
- *  \version 2.0.
+ *  \version 2.0.5
  *  \date May 3, 2010.
  */
 class CHeatSolution : public CSolution {
@@ -4738,6 +4734,12 @@ private:
 	double *CHeat;	/*!< \brief Heat strength for each boundary. */
 	double AllBound_CHeat;	/*!< \brief Total Heat strength for all the boundaries. */
 	double Total_CHeat; /*!< \brief Total Heat strength for all the boundaries. */
+
+  CSparseMatrix StiffMatrixSpace; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
+	CSparseMatrix StiffMatrixTime;	/*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
+  
+  double **StiffMatrix_Elem,			/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
+	**StiffMatrix_Node;							/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
 
 public:
 
@@ -4871,12 +4873,18 @@ public:
 /*! \class CFEASolution
  *  \brief Main class for defining the FEA solver.
  *  \author F. Palacios.
- *  \version 2.0.
+ *  \version 2.0.5
  *  \date May 3, 2010.
  */
 class CFEASolution : public CSolution {
 private:
 	double  Total_CFEA;			/*!< \brief Total FEA coefficient for all the boundaries. */
+
+  CSparseMatrix StiffMatrixSpace; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
+	CSparseMatrix StiffMatrixTime;	/*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
+
+  double **StiffMatrix_Elem,			/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
+	**StiffMatrix_Node;							/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
 
 public:
 
@@ -5056,6 +5064,9 @@ protected:
 	*FlowSolution_j,		/*!< \brief Store the flow solution at point j. */
 	Total_CFreeSurface;			/*!< \brief Total Free Surface coefficient for all the boundaries. */
 
+  double **Jacobian_MeanFlow_i,	/*!< \brief Auxiliary matrices for storing point to point Jacobians of the mean flow at point i. */
+	**Jacobian_MeanFlow_j;			    /*!< \brief Auxiliary matrices for storing point to point Jacobians of the mean flow at point j. */
+  
 public:
 
 	/*!
@@ -5779,6 +5790,14 @@ protected:
 	double Prandtl_Lam;   	/*!< \brief Laminar Prandtl number. */
 	bool roe_turkel;         /*!< \brief True if computing preconditioning matrix for roe-turkel method. */
 	bool magnet;         /*!< \brief True if including magnetic field in simulation */
+  
+  double Gamma;									/*!< \brief Fluid's Gamma constant (ratio of specific heats). */
+	double Gamma_Minus_One;				/*!< \brief Fluids's Gamma - 1.0  . */
+  
+	unsigned short nSpecies,				/*! \brief Number of species in the plasma simulation. */
+	nMonatomics,										/*! \brief Number of monatomic species in the flow. */
+	nDiatomics;											/*! \brief Number of diatomic species in the flow. */
+
 public:
 
 	/*!
@@ -5798,6 +5817,23 @@ public:
 	 */
 	~CPlasmaSolution(void);
 
+  void SetVel_Residual_Zero(unsigned long val_ipoint, unsigned short iSpecies);
+
+	/*!
+	 * \brief Get the number of Species present in the flow.
+	 */
+	unsigned short GetnSpecies(void);
+  
+	/*!
+	 * \brief Get the number of Species present in the flow.
+	 */
+	unsigned short GetnMonatomics(void);
+  
+	/*!
+	 * \brief Get the number of Species present in the flow.
+	 */
+	unsigned short GetnDiatomics(void);
+  
 	/*!
 	 * \brief Compute the density at the infinity.
 	 * \param[in] val_var - Index of the variable for the density.
@@ -6071,7 +6107,7 @@ public:
 	 * \param[in] iPoint - Index of the grid point
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetPreconditioner_Turkel(CConfig *config, unsigned short iPoint);
+	void SetPreconditioner(CConfig *config, unsigned short iPoint);
 
 	/*!
 	 * \brief Compute the undivided laplacian for the solution, except the energy equation.
@@ -6366,6 +6402,10 @@ protected:
 	*p2_Und_Lapl;			/*!< \brief Auxiliary variable for the undivided Laplacians. */ 
 	bool space_centered;  /*!< \brief True if space centered scheeme used. */
 
+	unsigned short nSpecies,				/*! \brief Number of species in the plasma simulation. */
+	nMonatomics,										/*! \brief Number of monatomic species in the flow. */
+	nDiatomics;											/*! \brief Number of diatomic species in the flow. */
+
 public:
 
 	/*! 
@@ -6384,6 +6424,21 @@ public:
 	 * \brief Destructor of the class. 
 	 */
 	virtual ~CAdjPlasmaSolution(void);
+  
+	/*!
+	 * \brief Get the number of Species present in the flow.
+	 */
+	unsigned short GetnSpecies(void);
+  
+	/*!
+	 * \brief Get the number of Species present in the flow.
+	 */
+	unsigned short GetnMonatomics(void);
+  
+	/*!
+	 * \brief Get the number of Species present in the flow.
+	 */
+	unsigned short GetnDiatomics(void);
   
   /*!
    * \overload

@@ -1,0 +1,85 @@
+@SET_MAKE@
+
+CGNSDIR = @CGNSDIR@
+
+include $(CGNSDIR)/make.defs
+
+CGNSLIB  = $(CGNSDIR)/$(LIBCGNS)
+
+#-----------------------------------------------------------------------
+# installation directories
+# BIN_INSTALL_DIR - installation directory for shell script
+# EXE_INSTALL_DIR - installation directory for executables
+# WSH_INSTALL_DIR - installation directory for cgns wish executables
+# LIB_INSTALL_DIR - installation directory for tcl scripts
+#-----------------------------------------------------------------------
+
+BIN_INSTALL_DIR = @BIN_INSTALL_DIR@
+EXE_INSTALL_DIR = @EXE_INSTALL_DIR@
+WSH_INSTALL_DIR = $(EXE_INSTALL_DIR)
+LIB_INSTALL_DIR = @LIB_INSTALL_DIR@
+
+#-----------------------------------------------------------------------
+# path to Tcl/Tk includes and libraries
+# you may have to set these if Tcl/Tk not in standard locations
+# in order to find tk.h and/or the Tcl/Tk libraries
+#
+# For example, if you have build Tcl/Tk locally under Unix/Linux
+#   TCLROOT = $(HOME)/tcl8.3.1
+#   TKROOT  = $(HOME)/tk8.3.1
+#   TKINCS = -I$(TKROOT)/generic -I$(TCLROOT)/generic
+#   TKLIBS = $(TKROOT)/unix/libtk8.3.a $(TCLROOT)/unix/libtcl8.3.a -lm
+#
+# With CYGWIN source distribution:
+#   TCLTKSRC = /usr/src/tcltk-20001125-1
+#   TKINCS = -I$(TCLTKSRC)/tk/win -I$(TCLTKSRC)/tk/generic \
+#            -I$(TCLTKSRC)/tk/xlib -I$(TCLTKSRC)/tcl/generic
+#   TKLIBS = -ltk80 -ltcl80 -lm
+#-----------------------------------------------------------------------
+
+TKINCS = @TKINCS@
+TKLIBS = @TKLIBS@
+
+#-----------------------------------------------------------------------
+# X11 include path and library
+# X11LIBS not needed if included with TKLIBS above
+#-----------------------------------------------------------------------
+
+X11INCS = @X11INCS@
+X11LIBS = @X11LIBS@
+
+#-----------------------------------------------------------------------
+# OpenGL include path and libs
+# this is needed by the cgnsplot
+#-----------------------------------------------------------------------
+
+OGLINCS = @OGLINCS@
+OGLLIBS = @OGLLIBS@
+
+#-----------------------------------------------------------------------
+# compile options for cgnsplot
+#    -DNO_MESH_BOUNDARIES - exclude structured mesh boundaries
+#    -DNO_CUTTING_PLANE   - disable cutting plane
+#-----------------------------------------------------------------------
+
+PLOTOPTS = @PLOTOPTS@
+
+#-----------------------------------------------------------------------
+# this is where TkOGL lib is located relative to cgnsplot directory
+# and additional compile options and X libs needed for linking
+#-----------------------------------------------------------------------
+
+TKOGLLIB  = ../tkogl/libtkogl.$(A)
+
+TKOGLXLIB = @TKOGLXLIB@
+TKOGLOPTS = @TKOGLOPTS@ $(X11INCS) $(TKINCS) $(OGLINCS)
+
+#-----------------------------------------------------------------------
+# compile options for calculator
+#    -DUSE_MATHERR - matherr used to trap math errors in calculator
+#    -DREAD_NODE   - allow direct reading of ADF nodes
+#    -DSIGNAL=int  - signal return is int istead of void
+#-----------------------------------------------------------------------
+
+CALCOPTS = @CALCOPTS@
+

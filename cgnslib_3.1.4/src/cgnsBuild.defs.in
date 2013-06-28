@@ -1,0 +1,73 @@
+# makefile include for building CGNS code
+# this file contains the options and libraries used for
+# building and linking CGNS code, and is intended to be
+# included in a user's Makefile from the installation
+
+#-----------------------------------------------------------------------
+# CGNS library build options. A 1 indicates that the library
+# was built with that option, a 0 indicates without
+# CGNS_DEBUG   = debug
+# CGNS_LEGACY  = legacy code (prior to 3.0)
+# CGNS_SCOPING = scoping of enums
+# CGNS_64BIT   = 64 bit support
+# CGNS_FORTRAN = Fortran interface
+#-----------------------------------------------------------------------
+
+CGNS_DEBUG   = @BUILDDEBUG@
+CGNS_LEGACY  = @BUILDLEGACY@
+CGNS_SCOPING = @BUILDSCOPE@
+CGNS_64BIT   = @BUILD64BIT@
+CGNS_FORTRAN = @BUILDFORTRAN@
+
+#-----------------------------------------------------------------------
+# CGNS_LIBDIR     - installation directory for CGNS library
+# CGNS_INCLUDEDIR - installation directory for CGNS headers
+#-----------------------------------------------------------------------
+
+CGNS_LIBDIR     = @LIBDIR@
+CGNS_INCLUDEDIR = @INCLUDEDIR@
+
+#-----------------------------------------------------------------------
+# CGNS_CC      - C compiler used to build library
+# CGNS_CFLAGS  - compiler flags used to build library
+# CGNS_LDFLAGS - any additional linking flags
+#-----------------------------------------------------------------------
+
+CGNS_CC      = @CC@
+CGNS_CFLAGS  = @CFLAGS@ @SYSCFLAGS@ @CFGFLAGS@
+CGNS_LDFLAGS = @LDFLAGS@
+
+#-----------------------------------------------------------------------
+# LIBCGNS - CGNS library name
+#-----------------------------------------------------------------------
+
+CGNS_LIB = $(CGNS_LIBDIR)/@CGNSLIB@
+
+#-----------------------------------------------------------------------
+# CGNS_HDF5INC - path to HDF5 header files
+# CGNS_HDF5LIB - HDF5 library
+# CGNS_SZIPLIB - szip library (if needed)
+# CGNS_ZLIBLIB - zlib library (if needed)
+#-----------------------------------------------------------------------
+
+CGNS_HDF5INC = @HDF5INC@
+CGNS_HDF5LIB = @HDF5LIB@
+CGNS_SZIPLIB = @SZIPLIB@
+CGNS_ZLIBLIB = @ZLIBLIB@
+
+#-----------------------------------------------------------------------
+# CGNS_MPIINC  - path to MPI header files
+# CGNS_MPILIBS - MPI libraries
+#-----------------------------------------------------------------------
+
+CGNS_MPIINC  = @MPIINC@
+CGNS_MPILIBS = @MPILIBS@
+
+#-----------------------------------------------------------------------
+# CGNS_LINKLIBS contains the list of libraries
+#               with which a CGNS application needs to link
+#-----------------------------------------------------------------------
+
+CGNS_LINKLIBS = $(CGNS_LIB) $(CGNS_HDF5LIB) $(CGNS_SZIPLIB) \
+	$(CGNS_ZLIBLIB) $(CGNS_MPILIBS) @LIBS@
+

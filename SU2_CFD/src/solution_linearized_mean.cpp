@@ -61,7 +61,7 @@ CLinEulerSolution::CLinEulerSolution(CGeometry *geometry, CConfig *config) : CSo
 		/*--- Initialization of the structure of the whole Jacobian ---*/
 		Initialize_SparseMatrix_Structure(&Jacobian, nVar, nVar, geometry, config);
 		xsol = new double [geometry->GetnPoint()*nVar];
-		rhs = new double [geometry->GetnPoint()*nVar];
+		xres = new double [geometry->GetnPoint()*nVar];
 	}
 	
 	/*--- Computation of gradients by least squares ---*/
@@ -176,11 +176,10 @@ CLinEulerSolution::~CLinEulerSolution(void) {
 	delete [] Residual_i; delete [] Residual_j;
 	delete [] Res_Conv_i; delete [] Res_Visc_i;
 	delete [] Res_Conv_j; delete [] Res_Visc_j;
-	delete [] Res_Sour_i; delete [] Res_Sour_j;
 	delete [] Solution; 
 	delete [] Solution_i; delete [] Solution_j;
 	delete [] Vector_i; delete [] Vector_j;
-	delete [] xsol; delete [] rhs;
+	delete [] xsol; delete [] xres;
 	delete [] DeltaForceInviscid; delete [] DeltaVel_Inf;
 	delete [] CDeltaDrag_Inv; delete [] CDeltaLift_Inv;
 	
@@ -201,10 +200,9 @@ void CLinEulerSolution::Centered_Residual(CGeometry *geometry, CSolution **solut
 											 CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 	unsigned long iEdge, iPoint, jPoint;
 	bool implicit = (config->GetKind_TimeIntScheme_LinFlow() == EULER_IMPLICIT);
-	bool dissipation = ((config->Get_Beta_RKStep(iRKStep) != 0) || implicit);
 	bool high_order_diss = ((config->GetKind_Centered() == JST) && (iMesh == MESH_0));
 	
-	if (dissipation && high_order_diss) 
+	if (high_order_diss) 
 		SetUndivided_Laplacian(geometry, config);
 	
 	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -230,19 +228,17 @@ void CLinEulerSolution::Centered_Residual(CGeometry *geometry, CSolution **solut
 						  solution_container[FLOW_SOL]->node[jPoint]->GetLambda());
 
 		/*--- Undivided laplacian ---*/
-		if (dissipation && high_order_diss) 
+		if (high_order_diss) 
 			solver->SetUndivided_Laplacian(node[iPoint]->GetUnd_Lapl(),node[jPoint]->GetUnd_Lapl());
 		
 		/*--- Compute residual ---*/
 		solver->SetResidual(Res_Conv, Res_Visc, Jacobian_i, Jacobian_j, config);
 		
 		/*--- Update convective and artificial dissipation residuals ---*/
-		node[iPoint]->AddRes_Conv(Res_Conv);
-		node[jPoint]->SubtractRes_Conv(Res_Conv);
-		if (dissipation) {
-			node[iPoint]->AddRes_Visc(Res_Visc);
-			node[jPoint]->SubtractRes_Visc(Res_Visc);
-		}
+		AddResidual(iPoint, Res_Conv);
+		SubtractResidual(jPoint, Res_Conv);
+    AddResidual(iPoint, Res_Visc);
+    SubtractResidual(jPoint, Res_Visc);
 
 		/*--- Set implicit stuff ---*/
 		if (implicit) {
@@ -274,7 +270,7 @@ void CLinEulerSolution::ExplicitRK_Iteration(CGeometry *geometry, CSolution **so
 			Vol = geometry->node[iPoint]->GetVolume();
 			Delta = solution_container[FLOW_SOL]->node[iPoint]->GetDelta_Time() / Vol;
 			Res_TruncError = node[iPoint]->GetResTruncError();
-			Residual = node[iPoint]->GetResidual();
+			Residual = GetResidual(iPoint);
 			for (iVar = 0; iVar < nVar; iVar++) {
 				node[iPoint]->AddSolution(iVar, -(Residual[iVar]+Res_TruncError[iVar])*Delta*RK_AlphaCoeff);
 				AddRes_RMS(iVar, Residual[iVar]*Residual[iVar]);
@@ -292,14 +288,10 @@ void CLinEulerSolution::ExplicitRK_Iteration(CGeometry *geometry, CSolution **so
 
 void CLinEulerSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
-	bool implicit = (config->GetKind_TimeIntScheme_LinFlow() == EULER_IMPLICIT);
 	
 	/*--- Residual inicialization ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
-		node[iPoint]->Set_ResConv_Zero();
-		node[iPoint]->Set_ResSour_Zero();
-		if ((config->Get_Beta_RKStep(iRKStep) != 0) || implicit)
-			node[iPoint]->Set_ResVisc_Zero();
+		Set_Residual_Zero(iPoint);
 	}
 	
 	/*--- Inicialize the jacobian matrices ---*/
@@ -432,7 +424,7 @@ void CLinEulerSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_
 				Residual[iVar] = dS * Residual[iVar];
 			
 			/*--- Add value to the residual ---*/
-			node[iPoint]->AddRes_Conv(Residual);
+			AddResidual(iPoint, Residual);
 		}
 	}
 	
@@ -603,7 +595,7 @@ void CLinEulerSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_c
 					Residual[iVar] +=Jac_Matrix[iVar][jVar]*DeltaU_update[jVar]*dS;
 			}
 			
-			node[iPoint]->AddRes_Conv(Residual);
+			AddResidual(iPoint, Residual);
 			
 		}
 	}

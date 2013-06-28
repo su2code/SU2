@@ -1,0 +1,91 @@
+include ..\make.win
+
+COPTS = $(CFLAGS) -I..\common -I$(CGNSDIR) $(TCLINC)
+
+#--------------------------------------------------
+
+all : plotwish.exe
+dll : cgnstcl.dll
+
+install : install-prog install-help
+
+install-prog : plotwish.exe $(BINDIR) $(SHAREDIR)
+	-$(INSTALL) plotwish.exe $(BINDIR)
+	-$(INSTALL) cgnsplot.bat $(BINDIR)
+	-$(INSTALL) cgnsplot.tcl $(SHAREDIR)
+	-$(INSTALL) *.ico $(SHAREDIR)
+
+install-help : $(SHAREDIR)\help\cgnsplot\images
+	-$(INSTALL) help\*.html $(SHAREDIR)\help\cgnsplot
+	-$(INSTALL) help\images\*.* $(SHAREDIR)\help\cgnsplot\images
+
+$(BINDIR) : $(INSTALLDIR)
+	-mkdir $(BINDIR)
+
+$(SHAREDIR) : $(INSTALLDIR)
+	-mkdir $(SHAREDIR)
+
+$(INSTALLDIR) :
+	-mkdir $(INSTALLDIR)
+
+$(SHAREDIR)\help\cgnsplot\images : $(SHAREDIR)\help\cgnsplot
+	-mkdir $(SHAREDIR)\help\cgnsplot\images
+
+$(SHAREDIR)\help\cgnsplot : $(SHAREDIR)\help
+	-mkdir $(SHAREDIR)\help\cgnsplot
+
+$(SHAREDIR)\help :
+	-mkdir $(SHAREDIR)\help
+
+#--------------------------------------------------
+
+plotwish.exe : winmain.obj cgnstcl.obj hash.obj $(WINHTML_OBJ)
+	$(LINK) $(LFLAGS) /nodefaultlib /subsystem:windows \
+	-out:$@ winmain.obj cgnstcl.obj hash.obj $(WINHTML_OBJ) \
+	$(CGNSLIB) $(BUILDLIBS) $(CLIBS) $(TKOGLLIB) $(TCLLIB) $(TKLIB) \
+	$(guilibs) $(ogllibs) $(WINHTML_LIB)
+
+winmain.obj : winmain.c
+	$(CC) $(COPTS) $(WINHTML_OPT) -c winmain.c
+
+cgnstcl.obj : cgnstcl.c
+	$(CC) $(COPTS) $(PLOTOPTS) -c cgnstcl.c
+
+#--------------------------------------------------
+
+cgnstcl.dll : cgnstcl-dll.obj hash.obj cgnames.obj $(CGNSLIB)
+	$(LINK) -dll -out:cgnstcl.dll cgnstcl-dll.obj \
+	hash.obj cgnames.obj $(CGNSLIB) $(CLIBS) $(TCLLIB) $(TKLIB) \
+	$(dlllibs) $(ogllibs)
+
+cgnstcl-dll.obj : cgnstcl.c
+	$(CC) $(COPTS) $(PLOTOPTS) -DBUILD_DLL -Fo$@ -c cgnstcl.c
+
+#--------------------------------------------------
+
+hash.obj : ..\common\hash.c ..\common\hash.h
+	$(CC) $(COPTS) -Fohash.obj -c ..\common\hash.c
+
+#--------------------------------------------------
+
+winhtml.obj : ..\common\winhtml.c
+	$(CC) $(COPTS) $(WINHTML_INC) -Fowinhtml.obj -c ..\common\winhtml.c
+
+#--------------------------------------------------
+
+.c.obj :
+	$(CC) $(COPTS) -Fo$@ -c $<
+
+.obj.exe :
+	$(LINK) $(LFLAGS) /out:$@ $< $(CGNSLIB)
+
+clean:
+	-$(RM) *.obj
+	-$(RM) *.lib
+	-$(RM) *.exp
+	-$(RM) *.exe
+	-$(RM) *.pdb
+	-$(RM) *.ilk
+	-$(RM) *.dll
+	-$(RM) *.bak
+

@@ -42,11 +42,11 @@ using namespace std;
  */
 class CSparseMatrix {
 private:
-	unsigned long nPoint;      /*!< \brief Number of points in the grid. */
-	unsigned long nPointDomain;/*!< \brief Number of points in the grid. */
-	unsigned long nVar;        /*!< \brief Number of variables. */
-	unsigned long nEqn;        /*!< \brief Number of equations. */
-	double *val;               /*!< \brief Entries of the sparse matrix. */
+	unsigned long nPoint,   /*!< \brief Number of points in the grid. */
+	nPointDomain,           /*!< \brief Number of points in the grid. */
+	nVar,                   /*!< \brief Number of variables. */
+	nEqn;                   /*!< \brief Number of equations. */
+	double *matrix;               /*!< \brief Entries of the sparse matrix. */
 	unsigned long *row_ptr;    /*!< \brief Pointers to the first element in each row. */
 	unsigned long *col_ind;    /*!< \brief Column index for each of the elements in val(). */
 	unsigned long nnz;         /*!< \brief Number of possible nonzero entries in the matrix. */
@@ -55,12 +55,10 @@ private:
 	double *prod_row_vector;   /*!< \brief Internal array to store the product of a matrix-by-blocks "row" with a vector. */
 	double *aux_vector;		   /*!< \brief Auxilar array to store intermediate results. */	
 	double *invM;              /*!< \brief Inverse of (Jacobi) preconditioner. */
-	unsigned short nSub_blocks; /*!< \brief  Number of sub-blocks in the nVar*nVar block structure */
-	unsigned short *Sub_block_sizes;		/*!< \brief  Size of each sub-block in the nVar*nVar block structure */
-	bool blockDiagonalJacobian; /*!< \brief flag if the Jacobian has a block diagonal structure like in multi species flow */
 	bool *LineletBool;						 /*!< \brief Identify if a point belong to a linelet. */
 	vector<unsigned long> *LineletPoint;	 /*!< \brief Linelet structure. */
 	unsigned long nLinelet;							 /*!< \brief Number of Linelets in the system. */
+  
 public:
 
 	/*! 
@@ -130,34 +128,50 @@ public:
 	 */
 	void SubtractBlock(unsigned long block_i, unsigned long block_j, double **val_block);
 
+  /*!
+	 * \brief Adds the specified block to the sparse matrix.
+	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
+	 * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
+	 * \param[in] **val_block - Block to add to A(i,j).
+	 */
+	void AddBlock(unsigned long point_i, double **val_block);
+  
+	/*!
+	 * \brief Subtracts the specified block to the sparse matrix.
+	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
+	 * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
+	 * \param[in] **val_block - Block to subtract to A(i,j).
+	 */
+	void SubtractBlock(unsigned long point_i, double **val_block);
+  
 	/*! 
 	 * \brief Adds the specified value to the diagonal of the (i,i) subblock 
 	 *        of the matrix-by-blocks structure. 
 	 * \param[in] block_i - Index of the block in the matrix-by-blocks structure.
-	 * \param[in] val_val - Value to add to the diagonal elements of A(i,i).
+	 * \param[in] val_matrix - Value to add to the diagonal elements of A(i,i).
 	 */
-	void AddVal2Diag(unsigned long block_i, double val_val);
+	void AddVal2Diag(unsigned long block_i, double val_matrix);
 
 	/*! 
 	 * \brief Adds the specified value to the diagonal of the (i,i) subblock
 	 *        of the matrix-by-blocks structure.
 	 * \param[in] block_i - Index of the block in the matrix-by-blocks structure.
-	 * \param[in] *val_val - Values to add to the diagonal elements of A(i,i).
+	 * \param[in] *val_matrix - Values to add to the diagonal elements of A(i,i).
 	 * \param[in] num_dim - number of dimensions
 	 *
 	 */
-	void AddVal2Diag(unsigned long block_i, double* val_val, unsigned short num_dim);
+	void AddVal2Diag(unsigned long block_i, double* val_matrix, unsigned short num_dim);
   
   /*!
 	 * \brief Adds the specified value to the diagonal of the (i,i) subblock
 	 *        of the matrix-by-blocks structure.
 	 * \param[in] block_i - Index of the block in the matrix-by-blocks structure.
-	 * \param[in] *val_val - Values to add to the diagonal elements of A(i,i).
+	 * \param[in] *val_matrix - Values to add to the diagonal elements of A(i,i).
 	 * \param[in] val_nDim - number of dimensions
    * \param[in] val_nDiatomics - number of diatomic species
 	 *
 	 */
-	void AddVal2Diag(unsigned long block_i, double* val_val, unsigned short val_nDim, unsigned short val_nDiatomics);
+	void AddVal2Diag(unsigned long block_i, double* val_matrix, unsigned short val_nDim, unsigned short val_nDiatomics);
 
 	/*!
 	 * \brief Deletes the values of the row i of the sparse matrix.

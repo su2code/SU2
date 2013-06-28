@@ -60,10 +60,8 @@ CWaveSolution::CWaveSolution(CGeometry *geometry,
 	Initialize_SparseMatrix_Structure(&Jacobian, nVar, nVar, geometry, config);
   
   /*--- Initialization of linear solver structures ---*/
-  
 	xsol = new double [nPoint*nVar];
 	xres = new double [nPoint*nVar];
-	rhs  = new double [nPoint*nVar];
   
   /* Wave strength coefficient for all of the markers */
   
@@ -175,7 +173,6 @@ CWaveSolution::~CWaveSolution(void) {
 	
 	delete [] xsol;
 	delete [] xres;
-	delete [] rhs;
   
 }
 
@@ -190,9 +187,7 @@ void CWaveSolution::Preprocessing(CGeometry *geometry,
   /* Set residuals and matrix entries to zero */
   
 	for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
-    node[iPoint]->Set_ResConv_Zero();
-		node[iPoint]->Set_ResVisc_Zero();
-		node[iPoint]->Set_ResSour_Zero();
+    Set_Residual_Zero(iPoint);
 	}
 	
   /* Zero out the entries in the various matrices */
@@ -316,9 +311,9 @@ void CWaveSolution::Source_Residual(CGeometry *geometry,
       Res_Sour[1] = Noise_Total;
       
       /* CHECK SIGN!!! */
-      node[Point_0]->SubtractRes_Sour(Res_Sour);
-      node[Point_1]->SubtractRes_Sour(Res_Sour);
-      node[Point_2]->SubtractRes_Sour(Res_Sour);
+      SubtractResidual(Point_0, Res_Sour);
+      SubtractResidual(Point_1, Res_Sour);
+      SubtractResidual(Point_2, Res_Sour);
       
     }
     
@@ -358,9 +353,9 @@ void CWaveSolution::Source_Residual(CGeometry *geometry,
     Res_Sour[1] = eps*(1.0/3.0)*Sponge_1;
     
     /* Set sponge source terms */
-    node[Point_0]->SubtractRes_Sour(Res_Sour);
-    node[Point_1]->SubtractRes_Sour(Res_Sour);
-    node[Point_2]->SubtractRes_Sour(Res_Sour);
+    SubtractResidual(Point_0, Res_Sour);
+    SubtractResidual(Point_1, Res_Sour);
+    SubtractResidual(Point_2, Res_Sour);
     
 	}
   
@@ -458,7 +453,7 @@ void CWaveSolution::Galerkin_Method(CGeometry *geometry,
 			total_index = iPoint*nVar+iVar;
 			Residual[iVar] = xres[total_index];
 		}
-		node[iPoint]->SubtractRes_Visc(Residual);
+		SubtractResidual(iPoint, Residual);
 	}
   
   
@@ -602,8 +597,8 @@ void CWaveSolution::BC_Euler_Wall(CGeometry *geometry,
 		}
 		node[iPoint]->SetSolution(Solution);
 		node[iPoint]->SetSolution_Old(Solution);
-    node[iPoint]->SetRes_Visc(Residual); 
-		node[iPoint]->SetRes_Sour(Residual);
+    SetResidual(iPoint, Residual);
+		SetResidual(iPoint, Residual);
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       total_index = iPoint*nVar+iVar;
       Jacobian.DeleteValsRowi(total_index);
@@ -631,8 +626,8 @@ void CWaveSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_conta
 //    Solution[1] = node[iPoint]->GetSolution(1);
 //		node[iPoint]->SetSolution(Solution);
 //		node[iPoint]->SetSolution_Old(Solution);
-//    node[iPoint]->SetRes_Visc(Residual); 
-//		node[iPoint]->SetRes_Sour(Residual);
+//    SetResidual(iPoint, Residual); 
+//		SetResidual(iPoint, Residual);
 //    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
 //      total_index = iPoint*nVar+iVar;
 //      Jacobian.DeleteValsRowi(total_index);
@@ -698,11 +693,11 @@ void CWaveSolution::BC_Observer(CGeometry *geometry,
       if (nDim == 2) {
         Residual[0] = 0.0; 
         Residual[1] = (1.0/2.0)*bcn*Length_Elem; 
-        node[Point_0]->AddRes_Sour(Residual);
+        AddResidual(Point_0, Residual);
         
         Residual[0] = 0.0;
         Residual[1] = (1.0/2.0)*bcn*Length_Elem;
-        node[Point_1]->AddRes_Sour(Residual);
+        AddResidual(Point_1, Residual);
       }
       else {
         /*--- do nothing for now - only in 2-D ---*/
@@ -859,7 +854,7 @@ void CWaveSolution::SetResidual_DualTime(CGeometry *geometry, CSolution **soluti
 			total_index = iPoint*nVar+iVar;
 			Residual[iVar] = xres[total_index];
 		}
-		node[iPoint]->SubtractRes_Visc(Residual);
+		SubtractResidual(iPoint, Residual);
 	}
 	
 }
@@ -869,7 +864,6 @@ void CWaveSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **sol
 	
   unsigned short iVar;
 	unsigned long iPoint, total_index;
-	double *local_ResVisc, *local_ResSour;
   
 	/*--- Set maximum residual to zero ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
@@ -879,18 +873,13 @@ void CWaveSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **sol
 	
 	/*--- Build implicit system ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-		
-		/*--- Read the residual ---*/
-		local_ResVisc = node[iPoint]->GetResVisc();
-		local_ResSour = node[iPoint]->GetResSour();
     
 		/*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 		for (iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar+iVar;
-			rhs[total_index] = local_ResVisc[iVar] + local_ResSour[iVar];
 			xsol[total_index] = 0.0;
-			AddRes_RMS(iVar, rhs[total_index]*rhs[total_index]);
-      AddRes_Max(iVar, fabs(rhs[total_index]), geometry->node[iPoint]->GetGlobalIndex());
+			AddRes_RMS(iVar, xres[total_index]*xres[total_index]);
+      AddRes_Max(iVar, fabs(xres[total_index]), geometry->node[iPoint]->GetGlobalIndex());
 		}
 	}
   
@@ -898,25 +887,25 @@ void CWaveSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **sol
   for (iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
       total_index = iPoint*nVar + iVar;
-      rhs[total_index] = 0.0;
+      xres[total_index] = 0.0;
       xsol[total_index] = 0.0;
     }
   }
   
 	/*--- Solve the linear system (Stationary iterative methods) ---*/
 	if (config->GetKind_Linear_Solver() == SYM_GAUSS_SEIDEL) 
-		Jacobian.SGSSolution(rhs, xsol, config->GetLinear_Solver_Error(), 
+		Jacobian.SGSSolution(xres, xsol, config->GetLinear_Solver_Error(),
 												 config->GetLinear_Solver_Iter(), false, geometry, config);
 	
 	if (config->GetKind_Linear_Solver() == LU_SGS) 
-    Jacobian.LU_SGSIteration(rhs, xsol, geometry, config);
+    Jacobian.LU_SGSIteration(xres, xsol, geometry, config);
 	
 	/*--- Solve the linear system (Krylov subspace methods) ---*/
 	if ((config->GetKind_Linear_Solver() == BCGSTAB) || 
 			(config->GetKind_Linear_Solver() == GMRES)) {
 		
 		CSysVector rhs_vec((const unsigned int)geometry->GetnPoint(),
-                       (const unsigned int)geometry->GetnPointDomain(), nVar, rhs);
+                       (const unsigned int)geometry->GetnPointDomain(), nVar, xres);
 		CSysVector sol_vec((const unsigned int)geometry->GetnPoint(),
                        (const unsigned int)geometry->GetnPointDomain(), nVar, xsol);
 		

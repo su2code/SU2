@@ -109,7 +109,7 @@ CAdjTurbSolution::CAdjTurbSolution(CGeometry *geometry, CConfig *config) : CSolu
 	Initialize_SparseMatrix_Structure(&Jacobian, nVar, nVar, geometry, config);
     Jacobian.SetValZero();
 	xsol = new double [nPoint*nVar];
-	rhs  = new double [nPoint*nVar];
+	xres = new double [nPoint*nVar];
 
 	/*--- Initialization of discrete sparse Jacobian for Hybrid ---*/
 	// nVar = # turb vars, nTotalVar = # turb vars + # flow vars
@@ -372,9 +372,9 @@ void CAdjTurbSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solutio
             for (iVar = 0; iVar < nVar; iVar++)
                 Residual[iVar] = EPS;
             //node[Point]->AddResidual(Residual);
-            node[Point]->SetResidualZero();
+            Set_Residual_Zero(Point);
         } else
-            node[Point]->SetResidualZero();
+            Set_Residual_Zero(Point);
 //		node[Point]->SetRes_TruncErrorZero();
 		Jacobian.DeleteValsRowi(Point); // & includes 1 in the diagonal
 	}
@@ -405,7 +405,7 @@ void CAdjTurbSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solutio
 
 		Solution[0] = node[Point]->GetSolution(0) - 2.0*Vol_i*flux/normal2;
 		node[Point]->SetSolution_Old(Solution);
-		node[Point]->SetResidualZero();
+		node[Point]->Set_Residual_Zero();
 //		node[Point]->SetRes_TruncErrorZero();
 		Jacobian.DeleteValsRowi(Point); // & includes 1 in the diagonal
 	}
@@ -495,7 +495,7 @@ void CAdjTurbSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_co
 
 				/*--- Add Residuals and Jacobians ---*/
 				conv_solver->SetResidual(Residual, Jacobian_ii, NULL, config);
-				node[Point]->AddResidual(Residual);
+				AddResidual(Point, Residual);
 				Jacobian.AddBlock(Point, Point, Jacobian_ii);
 			}
 
@@ -506,7 +506,7 @@ void CAdjTurbSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_co
 void CAdjTurbSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 
 	for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-		node[iPoint]->SetResidualZero(); // Initialize the residual vector
+		Set_Residual_Zero(iPoint); // Initialize the residual vector
     
     if ((config->GetKind_Adjoint() != HYBRID) || ((config->GetKind_Adjoint() == HYBRID) && (config->GetExtIter() == 0)))
         Jacobian.SetValZero();
@@ -654,8 +654,8 @@ void CAdjTurbSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution
 				solver->SetResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 
 				/*--- Add and Subtract Residual ---*/
-				node[iPoint]->AddResidual(Residual_i);
-				node[jPoint]->AddResidual(Residual_j);
+				AddResidual(iPoint, Residual_i);
+				AddResidual(jPoint, Residual_j);
 				Jacobian.AddBlock(iPoint,iPoint,Jacobian_ii);
 				Jacobian.AddBlock(iPoint,jPoint,Jacobian_ij);
 				Jacobian.AddBlock(jPoint,iPoint,Jacobian_ji);
@@ -667,446 +667,443 @@ void CAdjTurbSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution
 
 }
 
-void CAdjTurbSolution::Viscous_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
+void CAdjTurbSolution::Viscous_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
 																				unsigned short iMesh, unsigned short iRKStep) {
 	unsigned long iEdge, iPoint, jPoint, kPoint;
 	double *Coord_i, *Coord_j;
-	bool implicit = (config->GetKind_TimeIntScheme_AdjTurb() == EULER_IMPLICIT);
-
-	if ((config->Get_Beta_RKStep(iRKStep) != 0) || implicit) {
-		for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-			
-			/*--- Points in edge ---*/
-			iPoint = geometry->edge[iEdge]->GetNode(0);
-			jPoint = geometry->edge[iEdge]->GetNode(1);
-			
-            /*--- Get Continuous Adjoint Residual --*/
-			if (config->GetKind_Adjoint() != HYBRID) {
-
-				/*--- Points coordinates, and set normal vectors and length ---*/
-				Coord_i = geometry->node[iPoint]->GetCoord();
-				Coord_j = geometry->node[jPoint]->GetCoord();
-				solver->SetCoord(Coord_i, Coord_j);
-				solver->SetNormal(geometry->edge[iEdge]->GetNormal());
-
-				/*--- Conservative variables w/o reconstruction, turbulent variables w/o reconstruction,
+  
+  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+    
+    /*--- Points in edge ---*/
+    iPoint = geometry->edge[iEdge]->GetNode(0);
+    jPoint = geometry->edge[iEdge]->GetNode(1);
+    
+    /*--- Get Continuous Adjoint Residual --*/
+    if (config->GetKind_Adjoint() != HYBRID) {
+      
+      /*--- Points coordinates, and set normal vectors and length ---*/
+      Coord_i = geometry->node[iPoint]->GetCoord();
+      Coord_j = geometry->node[jPoint]->GetCoord();
+      solver->SetCoord(Coord_i, Coord_j);
+      solver->SetNormal(geometry->edge[iEdge]->GetNormal());
+      
+      /*--- Conservative variables w/o reconstruction, turbulent variables w/o reconstruction,
 			 and turbulent adjoint variables w/o reconstruction ---*/
-				solver->SetConservative(solution_container[FLOW_SOL]->node[iPoint]->GetSolution(), solution_container[FLOW_SOL]->node[jPoint]->GetSolution());
-				solver->SetTurbVar(solution_container[TURB_SOL]->node[iPoint]->GetSolution(), solution_container[TURB_SOL]->node[jPoint]->GetSolution());
-				solver->SetTurbAdjointVar(node[iPoint]->GetSolution(), node[jPoint]->GetSolution());
-
-				/*--- Viscosity ---*/
-				solver->SetLaminarViscosity(solution_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(),
-						solution_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity());
-
-				/*--- Turbulent adjoint variables w/o reconstruction ---*/
-				solver->SetTurbAdjointGradient(node[iPoint]->GetGradient(), node[jPoint]->GetGradient());
-
-				// ATTENTION: CHOOSE ONE OF THE FOLLOWING FORMS TO COMPUTE THE RESIDUAL
-
-				// Add and Subtract Residual (CONSERVATIVE FORM)
-				solver->SetResidual(Residual, Jacobian_ii, Jacobian_jj, config);
-				node[iPoint]->AddResidual(Residual);
-				node[jPoint]->SubtractResidual(Residual);
-				Jacobian.AddBlock(iPoint,iPoint,Jacobian_ii);
-				Jacobian.AddBlock(iPoint,jPoint,Jacobian_jj);
-				Jacobian.SubtractBlock(jPoint,iPoint,Jacobian_ii);
-				Jacobian.SubtractBlock(jPoint,jPoint,Jacobian_jj);
-
-				/*		// Add and Subtract Residual (NON-CONSERVATIVE FORM)
+      solver->SetConservative(solution_container[FLOW_SOL]->node[iPoint]->GetSolution(), solution_container[FLOW_SOL]->node[jPoint]->GetSolution());
+      solver->SetTurbVar(solution_container[TURB_SOL]->node[iPoint]->GetSolution(), solution_container[TURB_SOL]->node[jPoint]->GetSolution());
+      solver->SetTurbAdjointVar(node[iPoint]->GetSolution(), node[jPoint]->GetSolution());
+      
+      /*--- Viscosity ---*/
+      solver->SetLaminarViscosity(solution_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(),
+                                  solution_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity());
+      
+      /*--- Turbulent adjoint variables w/o reconstruction ---*/
+      solver->SetTurbAdjointGradient(node[iPoint]->GetGradient(), node[jPoint]->GetGradient());
+      
+      // ATTENTION: CHOOSE ONE OF THE FOLLOWING FORMS TO COMPUTE THE RESIDUAL
+      
+      // Add and Subtract Residual (CONSERVATIVE FORM)
+      solver->SetResidual(Residual, Jacobian_ii, Jacobian_jj, config);
+      AddResidual(iPoint, Residual);
+      SubtractResidual(jPoint, Residual);
+      Jacobian.AddBlock(iPoint,iPoint,Jacobian_ii);
+      Jacobian.AddBlock(iPoint,jPoint,Jacobian_jj);
+      Jacobian.SubtractBlock(jPoint,iPoint,Jacobian_ii);
+      Jacobian.SubtractBlock(jPoint,jPoint,Jacobian_jj);
+      
+      /*		// Add and Subtract Residual (NON-CONSERVATIVE FORM)
 			 solver->SetResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
-			 node[iPoint]->AddResidual(Residual_i);
-			 node[jPoint]->AddResidual(Residual_j);
+			 AddResidual(iPoint, Residual_i);
+			 AddResidual(jPoint, Residual_j);
 			 Jacobian.AddBlock(iPoint,iPoint,Jacobian_ii);
 			 Jacobian.AddBlock(iPoint,jPoint,Jacobian_ij);
 			 Jacobian.AddBlock(jPoint,iPoint,Jacobian_ji);
 			 Jacobian.AddBlock(jPoint,jPoint,Jacobian_jj);*/
-
-            /*--- Set up discrete system of Hybrid Adjoint --*/
-			} else if ((config->GetKind_Adjoint() == HYBRID) && (config->GetExtIter() == 0)) {
-
-				unsigned short iPos, jPos;
-				double Laminar_Viscosity_i, Laminar_Viscosity_j;
-				double *U_i, *U_j, *TurbVar_i, *TurbVar_j;
-				unsigned short nFlowVar = nDim + 2;
-				unsigned short kNode;
-				double **Normals;
-
-				/*--- Initialise flow conditions and geometric info ---*/
-				/*--- Points coordinates, and set normal vectors and length ---*/
-				Coord_i = geometry->node[iPoint]->GetCoord();
-				Coord_j = geometry->node[jPoint]->GetCoord();
-				solver->SetCoord(Coord_i, Coord_j);
-				solver->SetNormal(geometry->edge[iEdge]->GetNormal());
-
-				U_i = solution_container[FLOW_SOL]->node[iPoint]->GetSolution();
-				U_j = solution_container[FLOW_SOL]->node[jPoint]->GetSolution();
-				solver->SetConservative(U_i, U_j);
-                
-                // Gradient of primitive variables w/o reconstruction
-                solver->SetPrimVarGradient(solution_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(), solution_container[FLOW_SOL]->node[jPoint]->GetGradient_Primitive());
-
-				Laminar_Viscosity_i = solution_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
-				Laminar_Viscosity_j = solution_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity();
-				solver->SetLaminarViscosity(Laminar_Viscosity_i, Laminar_Viscosity_j);
-                
-
-				/*--- Eddy Viscosity ---*/
-				solver->SetEddyViscosity(solution_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),
-						solution_container[FLOW_SOL]->node[jPoint]->GetEddyViscosity());
-
-				/*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-				TurbVar_i = solution_container[TURB_SOL]->node[iPoint]->GetSolution();
-				TurbVar_j = solution_container[TURB_SOL]->node[jPoint]->GetSolution();
-				solver->SetTurbVar(TurbVar_i, TurbVar_j);
-				solver->SetTurbVarGradient(solution_container[TURB_SOL]->node[iPoint]->GetGradient(),solution_container[TURB_SOL]->node[jPoint]->GetGradient());
-
-				// BUILD DISCRETE SYSTEM
-                /*--- Auto-Diff direct residual ---*/
-				solver->SetResidual(Jacobian_i, Jacobian_mui, Jacobian_gradi,
-						Jacobian_j, Jacobian_muj, Jacobian_gradj, config);
-
-				/*--- Save contribution from explicit U_i, U_j sensitivity ---*/
-				DirectJacobian.AddBlock(iPoint, iPoint, Jacobian_i); //******************************************************************
-				DirectJacobian.SubtractBlock(iPoint, jPoint, Jacobian_i);
-				DirectJacobian.AddBlock(jPoint, iPoint, Jacobian_j);
-				DirectJacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
-                
-                for (iPos = 0; iPos < nVar; iPos++)
-                    for (jPos = 0; jPos < nVar; jPos++) {
-                        Jacobian_ii[iPos][jPos] = Jacobian_i[iPos+nFlowVar][jPos];
-                        Jacobian_jj[iPos][jPos] = Jacobian_j[iPos+nFlowVar][jPos];
-                    }
-                
-                Jacobian.AddBlock(iPoint,iPoint,Jacobian_ii); //******************************************************************
-				Jacobian.SubtractBlock(iPoint,jPoint,Jacobian_ii);
-				Jacobian.AddBlock(jPoint,iPoint,Jacobian_jj);
-				Jacobian.SubtractBlock(jPoint,jPoint,Jacobian_jj);
-
-				/*--- Extract contribution from implicit U_i sensitivity (from mui sensitivity) ---*/
-				this->ConvertSensMu_to_SensU(U_i, Laminar_Viscosity_i,
-						Jacobian_i, Jacobian_mui,
-						nFlowVar, nVar+nFlowVar, nVar, config);
-
-				/*--- Save contribution from implicit U_i sensitivity (from mui sensitivity) ---*/
-				DirectJacobian.AddBlock(iPoint, iPoint, Jacobian_i); //******************************************************************
-				DirectJacobian.SubtractBlock(iPoint, jPoint, Jacobian_i);
-                
-                for (iPos = 0; iPos < nVar; iPos++)
-                    for (jPos = 0; jPos < nVar; jPos++) {
-                        Jacobian_ii[iPos][jPos] = Jacobian_i[iPos+nFlowVar][jPos];
-                    }
-                
-                Jacobian.AddBlock(iPoint,iPoint,Jacobian_ii); //******************************************************************
-				Jacobian.SubtractBlock(iPoint,jPoint,Jacobian_ii);
-
-				/*--- Extract contribution from implicit U_j sensitivity (from muj sensitivity) ---*/
-				this->ConvertSensMu_to_SensU(U_j, Laminar_Viscosity_j,
-						Jacobian_j, Jacobian_muj,
-						nFlowVar, nVar+nFlowVar, nVar, config);
-
-				/*--- Save contribution from implicit U_j sensitivity (from muj sensitivity) ---*/
-				DirectJacobian.AddBlock(jPoint, iPoint, Jacobian_j); //******************************************************************
-				DirectJacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
-                
-                for (iPos = 0; iPos < nVar; iPos++)
-                    for (jPos = 0; jPos < nVar; jPos++) {
-                        Jacobian_jj[iPos][jPos] = Jacobian_j[iPos+nFlowVar][jPos];
-                    }
-                
-				Jacobian.AddBlock(jPoint,iPoint,Jacobian_jj); //******************************************************************
-				Jacobian.SubtractBlock(jPoint,jPoint,Jacobian_jj);
-
-				/*--- Extract implicit U_i sensitivity (from gradient_i sensitivity) ---*/
-                /*--- Set up arrays and store flow and geometry information ---*/
-				unsigned short nNeigh;
-				nNeigh = geometry->node[iPoint]->GetnPoint();
-				double *U_k, *TurbVar_k, *Normal;
-				double *Vars_i, **Vars_ks;
-				unsigned long iEdge;
-                
-                Vars_i = new double[nFlowVar+nVar];
-                Vars_ks = new double*[nNeigh];
-                Normals = new double*[nNeigh];
-                for (iPos = 0; iPos<nNeigh; iPos++) {
-                    Vars_ks[iPos] = new double[nFlowVar+nVar];
-                    Normals[iPos] = new double[nDim];
-                }
-                
-                for (iPos = 0; iPos<nFlowVar; iPos++) {
-                    Vars_i[iPos] = U_i[iPos];
-                }
-                
-                for (iPos = 0; iPos<nVar; iPos++) {
-                    Vars_i[iPos+nFlowVar] = TurbVar_i[iPos];
-                }
-                
-                for (kNode = 0; kNode < nNeigh; kNode++){
-                    kPoint = geometry->node[iPoint]->GetPoint(kNode);
-                    U_k = solution_container[FLOW_SOL]->node[kPoint]->GetSolution();
-                    TurbVar_k = solution_container[TURB_SOL]->node[kPoint]->GetSolution();
-                    iEdge = geometry->FindEdge(iPoint,kPoint);
-                    Normal = geometry->edge[iEdge]->GetNormal();
-                    
-                    for (iPos = 0; iPos<nFlowVar; iPos++) {
-                        Vars_ks[kNode][iPos] = U_k[iPos];
-                    }
-                    
-                    for (iPos = 0; iPos<nVar; iPos++) {
-                        Vars_ks[kNode][iPos+nFlowVar] = TurbVar_k[iPos];
-                    }
-                
-                for (iPos = 0; iPos<nDim; iPos++) {
-                    Normals[kNode][iPos] = Normal[iPos];
-                }
-                }
-
-                /*--- For i ---*/
-                /*--- Extract Primitive_i sensitivity (from gradient_i sensitivity) ---*/
-				ConvertSensGradPrimVar_to_SensPrimVar(Vars_i, Vars_ks,
-						Jacobian_i, Jacobian_gradi, iPoint, -1, Normals,
-						nVar+nFlowVar, nNeigh, nVar, geometry, config);
-
-				/*--- Extract implicit U_i sensitivity (from gradient_i -> Primitive_i sensitivity) ---*/
-				ConvertSensPrimVar_to_SensU(U_i, Jacobian_i, nFlowVar, config);
-
-				/*--- Save contribution from implicit U_i sensitivity (from gradient_i -> Primitive_i sensitivity) ---*/
-				DirectJacobian.AddBlock(iPoint, iPoint, Jacobian_i); //******************************************************************
-				DirectJacobian.SubtractBlock(iPoint, jPoint, Jacobian_i);
-                
-                for (iPos = 0; iPos < nVar; iPos++)
-                    for (jPos = 0; jPos < nVar; jPos++) {
-                        Jacobian_ii[iPos][jPos] = Jacobian_i[iPos+nFlowVar][jPos];
-                    }
-                
-                Jacobian.AddBlock(iPoint,iPoint,Jacobian_ii); //******************************************************************
-				Jacobian.SubtractBlock(iPoint,jPoint,Jacobian_ii);
-
-				/*--- For neighbours (k) of i ---*/
-				for (kNode = 0; kNode < nNeigh; kNode++){
-					kPoint = geometry->node[iPoint]->GetPoint(kNode);
-
-                    /*--- Extract Primitive_k sensitivity (from gradient_i sensitivity) ---*/
-						ConvertSensGradPrimVar_to_SensPrimVar(Vars_i, Vars_ks,
-								Jacobian_k, Jacobian_gradi, iPoint, kNode, Normals,
-								nVar+nFlowVar, nNeigh, nVar, geometry, config);
-                        
-                        for (iPos = 0; iPos<nFlowVar; iPos++) {
-                            U_k[iPos] = Vars_ks[kNode][iPos];
-                        }
-
-						/*--- Extract implicit U_k sensitivity (from gradient_i -> Primitive_k sensitivity) ---*/
-						ConvertSensPrimVar_to_SensU(U_k, Jacobian_k, nFlowVar, config);
-
-						/*--- Save contribution from implicit U_k sensitivity (from gradient_i -> Primitive_k sensitivity) ---*/
-                    if (geometry->CheckEdge(iPoint, kPoint)) {
-						DirectJacobian.AddBlock(kPoint, iPoint, Jacobian_k); //******************************************************************
-                        
-                        for (iPos = 0; iPos < nVar; iPos++)
-                            for (jPos = 0; jPos < nVar; jPos++) {
-                                Jacobian_ik[iPos][jPos] = Jacobian_k[iPos+nFlowVar][jPos];
-                            }
-                        
-                        Jacobian.AddBlock(kPoint,iPoint,Jacobian_ik); //******************************************************************
-
-                    }
-                    if (geometry->CheckEdge(jPoint, kPoint)) {
-						DirectJacobian.SubtractBlock(kPoint, jPoint, Jacobian_i); //******************************************************************
-                    
-                        for (iPos = 0; iPos < nVar; iPos++)
-                            for (jPos = 0; jPos < nVar; jPos++) {
-                                Jacobian_jk[iPos][jPos] = Jacobian_i[iPos+nFlowVar][jPos];
-                            }
-                    
-                        Jacobian.SubtractBlock(kPoint,jPoint,Jacobian_jk); //******************************************************************
-                    }
-                
-
-
-				}
-
-                for (iPos = 0; iPos<nNeigh; iPos++) {
-                    delete [] Vars_ks[iPos];
-                    delete [] Normals[iPos];
-                }
-                
-                delete [] Vars_ks;
-                delete [] Normals;
-
-				/*--- Extract implicit U_j sensitivity (from gradient_j sensitivity) ---*/
-                /*--- Store flow and geometry information ---*/
-				nNeigh = geometry->node[jPoint]->GetnPoint();
-
-                Vars_i = new double[nFlowVar+nVar];
-                Vars_ks = new double*[nNeigh];
-                Normals = new double*[nNeigh];
-                for (iPos = 0; iPos<nNeigh; iPos++) {
-                    Vars_ks[iPos] = new double[nFlowVar+nVar];
-                    Normals[iPos] = new double[nDim];
-                }
-                
-                
-                for (iPos = 0; iPos<nFlowVar; iPos++) {
-                    Vars_i[iPos] = U_j[iPos];
-                }
-                
-                for (iPos = 0; iPos<nVar; iPos++) {
-                    Vars_i[iPos+nFlowVar] = TurbVar_j[iPos];
-                }
-
-
-                for (kNode = 0; kNode < nNeigh; kNode++){
-                    kPoint = geometry->node[jPoint]->GetPoint(kNode);
-                    U_k = solution_container[FLOW_SOL]->node[kPoint]->GetSolution();
-                    TurbVar_k = solution_container[TURB_SOL]->node[kPoint]->GetSolution();
-                    iEdge = geometry->FindEdge(jPoint,kPoint);
-                    Normal = geometry->edge[iEdge]->GetNormal();
-                    
-                    for (iPos = 0; iPos<nFlowVar; iPos++) {
-                        Vars_ks[kNode][iPos] = U_k[iPos];
-                    }
-                    
-                    for (iPos = 0; iPos<nVar; iPos++) {
-                        Vars_ks[kNode][iPos+nFlowVar] = TurbVar_k[iPos];
-                    }
-                
-                for (iPos = 0; iPos<nDim; iPos++) {
-                    Normals[kNode][iPos] = Normal[iPos];
-                }
-                }
-
-                /*--- For j ---*/
-                /*--- Extract Primitive_j sensitivity (from gradient_j sensitivity) ---*/
-				ConvertSensGradPrimVar_to_SensPrimVar(Vars_i, Vars_ks,
-						Jacobian_j, Jacobian_gradj, jPoint, -1, Normals,
-						nVar+nFlowVar, nNeigh, nVar, geometry, config);
-
-				/*--- Extract implicit U_j sensitivity (from gradient_j -> Primitive_j sensitivity) ---*/
-				ConvertSensPrimVar_to_SensU(U_j, Jacobian_j, nFlowVar, config);
-
-				/*--- Save contribution from implicit U_j sensitivity (from gradient_j -> Primitive_j sensitivity) ---*/
-				DirectJacobian.AddBlock(jPoint, iPoint, Jacobian_j); //******************************************************************
-				DirectJacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
-                
-                for (iPos = 0; iPos < nVar; iPos++)
-                    for (jPos = 0; jPos < nVar; jPos++) {
-                        Jacobian_jj[iPos][jPos] = Jacobian_j[iPos+nFlowVar][jPos];
-                    }
-                
-				Jacobian.AddBlock(jPoint,iPoint,Jacobian_jj); //******************************************************************
-				Jacobian.SubtractBlock(jPoint,jPoint,Jacobian_jj);
-
-				/*--- For neighbours (k) of j ---*/
-				for (kNode = 0; kNode < nNeigh; kNode++){
-					kPoint = geometry->node[jPoint]->GetPoint(kNode);
-
-                    /*--- Extract Primitive_k sensitivity (from gradient_j sensitivity) ---*/
-						ConvertSensGradPrimVar_to_SensPrimVar(Vars_i, Vars_ks,
-								Jacobian_k, Jacobian_gradj, jPoint, kNode, Normals,
-								nVar+nFlowVar, nNeigh, nVar, geometry, config);
-                        
-                        for (iPos = 0; iPos<nFlowVar; iPos++) {
-                            U_k[iPos] = Vars_ks[kNode][iPos];
-                        }
-
-						/*--- Extract implicit U_k sensitivity (from gradient_j -> Primitive_k sensitivity) ---*/
-						ConvertSensPrimVar_to_SensU(U_k, Jacobian_k, nFlowVar, config);
-
-						/*--- Save contribution from implicit U_k sensitivity (from gradient_j -> Primitive_k sensitivity) ---*/
-                    if (geometry->CheckEdge(iPoint, kPoint)) {
-						DirectJacobian.AddBlock(kPoint, iPoint, Jacobian_k); //******************************************************************
-                        
-                        for (iPos = 0; iPos < nVar; iPos++)
-                            for (jPos = 0; jPos < nVar; jPos++) {
-                                Jacobian_ik[iPos][jPos] = Jacobian_k[iPos+nFlowVar][jPos];
-                            }
-                        
-                        Jacobian.AddBlock(kPoint,iPoint,Jacobian_ik); //******************************************************************
-                        
-                    }
-                    if (geometry->CheckEdge(jPoint, kPoint)) {
-						DirectJacobian.SubtractBlock(kPoint, jPoint, Jacobian_k); //******************************************************************
-                        
-                        for (iPos = 0; iPos < nVar; iPos++)
-                            for (jPos = 0; jPos < nVar; jPos++) {
-                                Jacobian_jk[iPos][jPos] = Jacobian_k[iPos+nFlowVar][jPos];
-                            }
-                        
-                        Jacobian.SubtractBlock(kPoint,jPoint,Jacobian_jk); //******************************************************************
-                    }
-
-				}
-                
-                delete [] Vars_i;
-                
-                for (iPos = 0; iPos<nNeigh; iPos++) {
-                    delete [] Vars_ks[iPos];
-                    delete [] Normals[iPos];
-                }
-                
-                delete [] Vars_ks;
-                delete [] Normals;
-
-
-			}
-
-            /*--- Get Hybrid Adjoint Residual --*/
-			if (config->GetKind_Adjoint() == HYBRID) {
-
-				double *TurbPsi_i, *TurbPsi_j;
-				double **DJ_ij, **DJ_ji;
-
-				unsigned short nFlowVar, nTurbVar, nTotalVar;
-				nFlowVar = nDim + 2;
-				nTurbVar = nVar;
-				nTotalVar = nFlowVar + nTurbVar;
-
-				DJ_ij = new double*[nTotalVar];
-				DJ_ji = new double*[nTotalVar];
-				for (unsigned short iVar = 0; iVar<nTotalVar; iVar++){
-					DJ_ij[iVar] = new double[nTurbVar];
-					DJ_ji[iVar] = new double[nTurbVar];
-				}
-                
-                for (unsigned short iVar = 0; iVar<nVar; iVar++){
-                    
-                    Residual_i[iVar] = 0.0;
-                    Residual_j[iVar] = 0.0;
-                    
-				}
-
-
-				TurbPsi_i = solution_container[ADJTURB_SOL]->node[iPoint]->GetSolution();
-				TurbPsi_j = solution_container[ADJTURB_SOL]->node[jPoint]->GetSolution();
-
-				DirectJacobian.GetBlock(iPoint, jPoint);
-				DirectJacobian.ReturnBlock(DJ_ij);
-				DirectJacobian.GetBlock(jPoint, iPoint);
-				DirectJacobian.ReturnBlock(DJ_ji);
-
-				for (unsigned short iVar = 0; iVar<nVar; iVar++){
-
-					for (unsigned short jVar = 0; jVar<nVar; jVar++) {
-						Residual_i[iVar] += DJ_ij[iVar+nFlowVar][jVar]*TurbPsi_j[jVar]; // +?
-						Residual_j[iVar] += DJ_ji[iVar+nFlowVar][jVar]*TurbPsi_i[jVar]; // +?
-					}
-
-				}
-                
-                node[iPoint]->AddResidual(Residual_i);
-                node[jPoint]->AddResidual(Residual_j);
-
-				for (unsigned short iVar = 0; iVar<nTotalVar; iVar++){
-					delete [] DJ_ij[iVar];
-					delete [] DJ_ji[iVar];
-				}
-				delete [] DJ_ij;
-				delete [] DJ_ji;
-
-			}
-		}
-	}
-
+      
+      /*--- Set up discrete system of Hybrid Adjoint --*/
+    } else if ((config->GetKind_Adjoint() == HYBRID) && (config->GetExtIter() == 0)) {
+      
+      unsigned short iPos, jPos;
+      double Laminar_Viscosity_i, Laminar_Viscosity_j;
+      double *U_i, *U_j, *TurbVar_i, *TurbVar_j;
+      unsigned short nFlowVar = nDim + 2;
+      unsigned short kNode;
+      double **Normals;
+      
+      /*--- Initialise flow conditions and geometric info ---*/
+      /*--- Points coordinates, and set normal vectors and length ---*/
+      Coord_i = geometry->node[iPoint]->GetCoord();
+      Coord_j = geometry->node[jPoint]->GetCoord();
+      solver->SetCoord(Coord_i, Coord_j);
+      solver->SetNormal(geometry->edge[iEdge]->GetNormal());
+      
+      U_i = solution_container[FLOW_SOL]->node[iPoint]->GetSolution();
+      U_j = solution_container[FLOW_SOL]->node[jPoint]->GetSolution();
+      solver->SetConservative(U_i, U_j);
+      
+      // Gradient of primitive variables w/o reconstruction
+      solver->SetPrimVarGradient(solution_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(), solution_container[FLOW_SOL]->node[jPoint]->GetGradient_Primitive());
+      
+      Laminar_Viscosity_i = solution_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+      Laminar_Viscosity_j = solution_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity();
+      solver->SetLaminarViscosity(Laminar_Viscosity_i, Laminar_Viscosity_j);
+      
+      
+      /*--- Eddy Viscosity ---*/
+      solver->SetEddyViscosity(solution_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),
+                               solution_container[FLOW_SOL]->node[jPoint]->GetEddyViscosity());
+      
+      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
+      TurbVar_i = solution_container[TURB_SOL]->node[iPoint]->GetSolution();
+      TurbVar_j = solution_container[TURB_SOL]->node[jPoint]->GetSolution();
+      solver->SetTurbVar(TurbVar_i, TurbVar_j);
+      solver->SetTurbVarGradient(solution_container[TURB_SOL]->node[iPoint]->GetGradient(),solution_container[TURB_SOL]->node[jPoint]->GetGradient());
+      
+      // BUILD DISCRETE SYSTEM
+      /*--- Auto-Diff direct residual ---*/
+      solver->SetResidual(Jacobian_i, Jacobian_mui, Jacobian_gradi,
+                          Jacobian_j, Jacobian_muj, Jacobian_gradj, config);
+      
+      /*--- Save contribution from explicit U_i, U_j sensitivity ---*/
+      DirectJacobian.AddBlock(iPoint, iPoint, Jacobian_i); //******************************************************************
+      DirectJacobian.SubtractBlock(iPoint, jPoint, Jacobian_i);
+      DirectJacobian.AddBlock(jPoint, iPoint, Jacobian_j);
+      DirectJacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
+      
+      for (iPos = 0; iPos < nVar; iPos++)
+        for (jPos = 0; jPos < nVar; jPos++) {
+          Jacobian_ii[iPos][jPos] = Jacobian_i[iPos+nFlowVar][jPos];
+          Jacobian_jj[iPos][jPos] = Jacobian_j[iPos+nFlowVar][jPos];
+        }
+      
+      Jacobian.AddBlock(iPoint,iPoint,Jacobian_ii); //******************************************************************
+      Jacobian.SubtractBlock(iPoint,jPoint,Jacobian_ii);
+      Jacobian.AddBlock(jPoint,iPoint,Jacobian_jj);
+      Jacobian.SubtractBlock(jPoint,jPoint,Jacobian_jj);
+      
+      /*--- Extract contribution from implicit U_i sensitivity (from mui sensitivity) ---*/
+      this->ConvertSensMu_to_SensU(U_i, Laminar_Viscosity_i,
+                                   Jacobian_i, Jacobian_mui,
+                                   nFlowVar, nVar+nFlowVar, nVar, config);
+      
+      /*--- Save contribution from implicit U_i sensitivity (from mui sensitivity) ---*/
+      DirectJacobian.AddBlock(iPoint, iPoint, Jacobian_i); //******************************************************************
+      DirectJacobian.SubtractBlock(iPoint, jPoint, Jacobian_i);
+      
+      for (iPos = 0; iPos < nVar; iPos++)
+        for (jPos = 0; jPos < nVar; jPos++) {
+          Jacobian_ii[iPos][jPos] = Jacobian_i[iPos+nFlowVar][jPos];
+        }
+      
+      Jacobian.AddBlock(iPoint,iPoint,Jacobian_ii); //******************************************************************
+      Jacobian.SubtractBlock(iPoint,jPoint,Jacobian_ii);
+      
+      /*--- Extract contribution from implicit U_j sensitivity (from muj sensitivity) ---*/
+      this->ConvertSensMu_to_SensU(U_j, Laminar_Viscosity_j,
+                                   Jacobian_j, Jacobian_muj,
+                                   nFlowVar, nVar+nFlowVar, nVar, config);
+      
+      /*--- Save contribution from implicit U_j sensitivity (from muj sensitivity) ---*/
+      DirectJacobian.AddBlock(jPoint, iPoint, Jacobian_j); //******************************************************************
+      DirectJacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
+      
+      for (iPos = 0; iPos < nVar; iPos++)
+        for (jPos = 0; jPos < nVar; jPos++) {
+          Jacobian_jj[iPos][jPos] = Jacobian_j[iPos+nFlowVar][jPos];
+        }
+      
+      Jacobian.AddBlock(jPoint,iPoint,Jacobian_jj); //******************************************************************
+      Jacobian.SubtractBlock(jPoint,jPoint,Jacobian_jj);
+      
+      /*--- Extract implicit U_i sensitivity (from gradient_i sensitivity) ---*/
+      /*--- Set up arrays and store flow and geometry information ---*/
+      unsigned short nNeigh;
+      nNeigh = geometry->node[iPoint]->GetnPoint();
+      double *U_k, *TurbVar_k, *Normal;
+      double *Vars_i, **Vars_ks;
+      unsigned long iEdge;
+      
+      Vars_i = new double[nFlowVar+nVar];
+      Vars_ks = new double*[nNeigh];
+      Normals = new double*[nNeigh];
+      for (iPos = 0; iPos<nNeigh; iPos++) {
+        Vars_ks[iPos] = new double[nFlowVar+nVar];
+        Normals[iPos] = new double[nDim];
+      }
+      
+      for (iPos = 0; iPos<nFlowVar; iPos++) {
+        Vars_i[iPos] = U_i[iPos];
+      }
+      
+      for (iPos = 0; iPos<nVar; iPos++) {
+        Vars_i[iPos+nFlowVar] = TurbVar_i[iPos];
+      }
+      
+      for (kNode = 0; kNode < nNeigh; kNode++){
+        kPoint = geometry->node[iPoint]->GetPoint(kNode);
+        U_k = solution_container[FLOW_SOL]->node[kPoint]->GetSolution();
+        TurbVar_k = solution_container[TURB_SOL]->node[kPoint]->GetSolution();
+        iEdge = geometry->FindEdge(iPoint,kPoint);
+        Normal = geometry->edge[iEdge]->GetNormal();
+        
+        for (iPos = 0; iPos<nFlowVar; iPos++) {
+          Vars_ks[kNode][iPos] = U_k[iPos];
+        }
+        
+        for (iPos = 0; iPos<nVar; iPos++) {
+          Vars_ks[kNode][iPos+nFlowVar] = TurbVar_k[iPos];
+        }
+        
+        for (iPos = 0; iPos<nDim; iPos++) {
+          Normals[kNode][iPos] = Normal[iPos];
+        }
+      }
+      
+      /*--- For i ---*/
+      /*--- Extract Primitive_i sensitivity (from gradient_i sensitivity) ---*/
+      ConvertSensGradPrimVar_to_SensPrimVar(Vars_i, Vars_ks,
+                                            Jacobian_i, Jacobian_gradi, iPoint, -1, Normals,
+                                            nVar+nFlowVar, nNeigh, nVar, geometry, config);
+      
+      /*--- Extract implicit U_i sensitivity (from gradient_i -> Primitive_i sensitivity) ---*/
+      ConvertSensPrimVar_to_SensU(U_i, Jacobian_i, nFlowVar, config);
+      
+      /*--- Save contribution from implicit U_i sensitivity (from gradient_i -> Primitive_i sensitivity) ---*/
+      DirectJacobian.AddBlock(iPoint, iPoint, Jacobian_i); //******************************************************************
+      DirectJacobian.SubtractBlock(iPoint, jPoint, Jacobian_i);
+      
+      for (iPos = 0; iPos < nVar; iPos++)
+        for (jPos = 0; jPos < nVar; jPos++) {
+          Jacobian_ii[iPos][jPos] = Jacobian_i[iPos+nFlowVar][jPos];
+        }
+      
+      Jacobian.AddBlock(iPoint,iPoint,Jacobian_ii); //******************************************************************
+      Jacobian.SubtractBlock(iPoint,jPoint,Jacobian_ii);
+      
+      /*--- For neighbours (k) of i ---*/
+      for (kNode = 0; kNode < nNeigh; kNode++){
+        kPoint = geometry->node[iPoint]->GetPoint(kNode);
+        
+        /*--- Extract Primitive_k sensitivity (from gradient_i sensitivity) ---*/
+        ConvertSensGradPrimVar_to_SensPrimVar(Vars_i, Vars_ks,
+                                              Jacobian_k, Jacobian_gradi, iPoint, kNode, Normals,
+                                              nVar+nFlowVar, nNeigh, nVar, geometry, config);
+        
+        for (iPos = 0; iPos<nFlowVar; iPos++) {
+          U_k[iPos] = Vars_ks[kNode][iPos];
+        }
+        
+        /*--- Extract implicit U_k sensitivity (from gradient_i -> Primitive_k sensitivity) ---*/
+        ConvertSensPrimVar_to_SensU(U_k, Jacobian_k, nFlowVar, config);
+        
+        /*--- Save contribution from implicit U_k sensitivity (from gradient_i -> Primitive_k sensitivity) ---*/
+        if (geometry->CheckEdge(iPoint, kPoint)) {
+          DirectJacobian.AddBlock(kPoint, iPoint, Jacobian_k); //******************************************************************
+          
+          for (iPos = 0; iPos < nVar; iPos++)
+            for (jPos = 0; jPos < nVar; jPos++) {
+              Jacobian_ik[iPos][jPos] = Jacobian_k[iPos+nFlowVar][jPos];
+            }
+          
+          Jacobian.AddBlock(kPoint,iPoint,Jacobian_ik); //******************************************************************
+          
+        }
+        if (geometry->CheckEdge(jPoint, kPoint)) {
+          DirectJacobian.SubtractBlock(kPoint, jPoint, Jacobian_i); //******************************************************************
+          
+          for (iPos = 0; iPos < nVar; iPos++)
+            for (jPos = 0; jPos < nVar; jPos++) {
+              Jacobian_jk[iPos][jPos] = Jacobian_i[iPos+nFlowVar][jPos];
+            }
+          
+          Jacobian.SubtractBlock(kPoint,jPoint,Jacobian_jk); //******************************************************************
+        }
+        
+        
+        
+      }
+      
+      for (iPos = 0; iPos<nNeigh; iPos++) {
+        delete [] Vars_ks[iPos];
+        delete [] Normals[iPos];
+      }
+      
+      delete [] Vars_ks;
+      delete [] Normals;
+      
+      /*--- Extract implicit U_j sensitivity (from gradient_j sensitivity) ---*/
+      /*--- Store flow and geometry information ---*/
+      nNeigh = geometry->node[jPoint]->GetnPoint();
+      
+      Vars_i = new double[nFlowVar+nVar];
+      Vars_ks = new double*[nNeigh];
+      Normals = new double*[nNeigh];
+      for (iPos = 0; iPos<nNeigh; iPos++) {
+        Vars_ks[iPos] = new double[nFlowVar+nVar];
+        Normals[iPos] = new double[nDim];
+      }
+      
+      
+      for (iPos = 0; iPos<nFlowVar; iPos++) {
+        Vars_i[iPos] = U_j[iPos];
+      }
+      
+      for (iPos = 0; iPos<nVar; iPos++) {
+        Vars_i[iPos+nFlowVar] = TurbVar_j[iPos];
+      }
+      
+      
+      for (kNode = 0; kNode < nNeigh; kNode++){
+        kPoint = geometry->node[jPoint]->GetPoint(kNode);
+        U_k = solution_container[FLOW_SOL]->node[kPoint]->GetSolution();
+        TurbVar_k = solution_container[TURB_SOL]->node[kPoint]->GetSolution();
+        iEdge = geometry->FindEdge(jPoint,kPoint);
+        Normal = geometry->edge[iEdge]->GetNormal();
+        
+        for (iPos = 0; iPos<nFlowVar; iPos++) {
+          Vars_ks[kNode][iPos] = U_k[iPos];
+        }
+        
+        for (iPos = 0; iPos<nVar; iPos++) {
+          Vars_ks[kNode][iPos+nFlowVar] = TurbVar_k[iPos];
+        }
+        
+        for (iPos = 0; iPos<nDim; iPos++) {
+          Normals[kNode][iPos] = Normal[iPos];
+        }
+      }
+      
+      /*--- For j ---*/
+      /*--- Extract Primitive_j sensitivity (from gradient_j sensitivity) ---*/
+      ConvertSensGradPrimVar_to_SensPrimVar(Vars_i, Vars_ks,
+                                            Jacobian_j, Jacobian_gradj, jPoint, -1, Normals,
+                                            nVar+nFlowVar, nNeigh, nVar, geometry, config);
+      
+      /*--- Extract implicit U_j sensitivity (from gradient_j -> Primitive_j sensitivity) ---*/
+      ConvertSensPrimVar_to_SensU(U_j, Jacobian_j, nFlowVar, config);
+      
+      /*--- Save contribution from implicit U_j sensitivity (from gradient_j -> Primitive_j sensitivity) ---*/
+      DirectJacobian.AddBlock(jPoint, iPoint, Jacobian_j); //******************************************************************
+      DirectJacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
+      
+      for (iPos = 0; iPos < nVar; iPos++)
+        for (jPos = 0; jPos < nVar; jPos++) {
+          Jacobian_jj[iPos][jPos] = Jacobian_j[iPos+nFlowVar][jPos];
+        }
+      
+      Jacobian.AddBlock(jPoint,iPoint,Jacobian_jj); //******************************************************************
+      Jacobian.SubtractBlock(jPoint,jPoint,Jacobian_jj);
+      
+      /*--- For neighbours (k) of j ---*/
+      for (kNode = 0; kNode < nNeigh; kNode++){
+        kPoint = geometry->node[jPoint]->GetPoint(kNode);
+        
+        /*--- Extract Primitive_k sensitivity (from gradient_j sensitivity) ---*/
+        ConvertSensGradPrimVar_to_SensPrimVar(Vars_i, Vars_ks,
+                                              Jacobian_k, Jacobian_gradj, jPoint, kNode, Normals,
+                                              nVar+nFlowVar, nNeigh, nVar, geometry, config);
+        
+        for (iPos = 0; iPos<nFlowVar; iPos++) {
+          U_k[iPos] = Vars_ks[kNode][iPos];
+        }
+        
+        /*--- Extract implicit U_k sensitivity (from gradient_j -> Primitive_k sensitivity) ---*/
+        ConvertSensPrimVar_to_SensU(U_k, Jacobian_k, nFlowVar, config);
+        
+        /*--- Save contribution from implicit U_k sensitivity (from gradient_j -> Primitive_k sensitivity) ---*/
+        if (geometry->CheckEdge(iPoint, kPoint)) {
+          DirectJacobian.AddBlock(kPoint, iPoint, Jacobian_k); //******************************************************************
+          
+          for (iPos = 0; iPos < nVar; iPos++)
+            for (jPos = 0; jPos < nVar; jPos++) {
+              Jacobian_ik[iPos][jPos] = Jacobian_k[iPos+nFlowVar][jPos];
+            }
+          
+          Jacobian.AddBlock(kPoint,iPoint,Jacobian_ik); //******************************************************************
+          
+        }
+        if (geometry->CheckEdge(jPoint, kPoint)) {
+          DirectJacobian.SubtractBlock(kPoint, jPoint, Jacobian_k); //******************************************************************
+          
+          for (iPos = 0; iPos < nVar; iPos++)
+            for (jPos = 0; jPos < nVar; jPos++) {
+              Jacobian_jk[iPos][jPos] = Jacobian_k[iPos+nFlowVar][jPos];
+            }
+          
+          Jacobian.SubtractBlock(kPoint,jPoint,Jacobian_jk); //******************************************************************
+        }
+        
+      }
+      
+      delete [] Vars_i;
+      
+      for (iPos = 0; iPos<nNeigh; iPos++) {
+        delete [] Vars_ks[iPos];
+        delete [] Normals[iPos];
+      }
+      
+      delete [] Vars_ks;
+      delete [] Normals;
+      
+      
+    }
+    
+    /*--- Get Hybrid Adjoint Residual --*/
+    if (config->GetKind_Adjoint() == HYBRID) {
+      
+      double *TurbPsi_i, *TurbPsi_j;
+      double **DJ_ij, **DJ_ji;
+      
+      unsigned short nFlowVar, nTurbVar, nTotalVar;
+      nFlowVar = nDim + 2;
+      nTurbVar = nVar;
+      nTotalVar = nFlowVar + nTurbVar;
+      
+      DJ_ij = new double*[nTotalVar];
+      DJ_ji = new double*[nTotalVar];
+      for (unsigned short iVar = 0; iVar<nTotalVar; iVar++){
+        DJ_ij[iVar] = new double[nTurbVar];
+        DJ_ji[iVar] = new double[nTurbVar];
+      }
+      
+      for (unsigned short iVar = 0; iVar<nVar; iVar++){
+        
+        Residual_i[iVar] = 0.0;
+        Residual_j[iVar] = 0.0;
+        
+      }
+      
+      
+      TurbPsi_i = solution_container[ADJTURB_SOL]->node[iPoint]->GetSolution();
+      TurbPsi_j = solution_container[ADJTURB_SOL]->node[jPoint]->GetSolution();
+      
+      DirectJacobian.GetBlock(iPoint, jPoint);
+      DirectJacobian.ReturnBlock(DJ_ij);
+      DirectJacobian.GetBlock(jPoint, iPoint);
+      DirectJacobian.ReturnBlock(DJ_ji);
+      
+      for (unsigned short iVar = 0; iVar<nVar; iVar++){
+        
+        for (unsigned short jVar = 0; jVar<nVar; jVar++) {
+          Residual_i[iVar] += DJ_ij[iVar+nFlowVar][jVar]*TurbPsi_j[jVar]; // +?
+          Residual_j[iVar] += DJ_ji[iVar+nFlowVar][jVar]*TurbPsi_i[jVar]; // +?
+        }
+        
+      }
+      
+      AddResidual(iPoint, Residual_i);
+      AddResidual(jPoint, Residual_j);
+      
+      for (unsigned short iVar = 0; iVar<nTotalVar; iVar++){
+        delete [] DJ_ij[iVar];
+        delete [] DJ_ji[iVar];
+      }
+      delete [] DJ_ij;
+      delete [] DJ_ji;
+      
+    }
+  }
+  
 }
 
 void CAdjTurbSolution::Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CNumerics *second_solver,
@@ -1117,7 +1114,7 @@ void CAdjTurbSolution::Source_Residual(CGeometry *geometry, CSolution **solution
 	double **TurbVar_Grad_i, **TurbVar_Grad_j, *TurbPsi_i, *TurbPsi_j, **PsiVar_Grad_i; // Gradients
 
     /*--- Piecewise source term ---*/
-	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) { 
+	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
 
         /*--- Get Continuous Adjoint Residual --*/
 		if (config->GetKind_Adjoint() != HYBRID) {
@@ -1156,7 +1153,7 @@ void CAdjTurbSolution::Source_Residual(CGeometry *geometry, CSolution **solution
 
 			// Add and Subtract Residual
 			solver->SetResidual(Residual, Jacobian_ii, NULL, config);
-			node[iPoint]->AddResidual(Residual);
+			AddResidual(iPoint, Residual);
 			Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);
             
         /*--- Set up discrete system of Hybrid Adjoint --*/
@@ -1448,7 +1445,7 @@ void CAdjTurbSolution::Source_Residual(CGeometry *geometry, CSolution **solution
 
 			}
             
-            node[iPoint]->AddResidual(Residual);
+            AddResidual(iPoint, Residual);
 
 			for (unsigned short iVar = 0; iVar<nTotalVar; iVar++){
 				delete [] DJ_ii[iVar];
@@ -1490,8 +1487,8 @@ void CAdjTurbSolution::Source_Residual(CGeometry *geometry, CSolution **solution
 		// Add and Subtract Residual
 		//solver->SetResidual(Residual, Jacobian_ii, Jacobian_jj, config);
 		second_solver->SetResidual(Residual, Jacobian_ii, Jacobian_jj, config);
-		node[iPoint]->AddResidual(Residual);
-		node[jPoint]->SubtractResidual(Residual);
+		AddResidual(iPoint, Residual);
+		SubtractResidual(jPoint, Residual);
 		Jacobian.AddBlock(iPoint,iPoint,Jacobian_ii);
 		Jacobian.AddBlock(iPoint,jPoint,Jacobian_jj);
 		Jacobian.SubtractBlock(jPoint,iPoint,Jacobian_ii);
@@ -1535,8 +1532,8 @@ void CAdjTurbSolution::SourceConserv_Residual(CGeometry *geometry, CSolution **s
 //
 //		// Add and Subtract Residual
 //		solver->SetResidual(Residual, Jacobian_ii, Jacobian_jj, config);
-//		node[iPoint]->AddResidual(Residual);
-//		node[jPoint]->SubtractResidual(Residual);
+//		AddResidual(iPoint, Residual);
+//		SubtractResidual(jPoint, Residual);
 //		Jacobian.AddBlock(iPoint,iPoint,Jacobian_ii);
 //		Jacobian.AddBlock(iPoint,jPoint,Jacobian_jj);
 //		Jacobian.SubtractBlock(jPoint,iPoint,Jacobian_ii);
@@ -1547,7 +1544,7 @@ void CAdjTurbSolution::SourceConserv_Residual(CGeometry *geometry, CSolution **s
 void CAdjTurbSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **solution_container, CConfig *config) {
 	unsigned short iVar;
 	unsigned long iPoint, total_index;
-	double Delta, Res, *local_Residual, Vol;
+	double Delta, Vol;
 
 	/*--- Set maximum residual to zero ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
@@ -1557,7 +1554,6 @@ void CAdjTurbSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **
 
 	/*--- Build implicit system ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-		local_Residual = node[iPoint]->GetResidual();
     
     /*--- Read the volume ---*/
 		Vol = geometry->node[iPoint]->GetVolume();
@@ -1573,11 +1569,10 @@ void CAdjTurbSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 		for (iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar+iVar;
-      Res = local_Residual[iVar];
-			rhs[total_index] = -Res;
+			xres[total_index] = -xres[total_index];
 			xsol[total_index] = 0.0;
-      AddRes_RMS(iVar, Res*Res);
-      AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex());
+      AddRes_RMS(iVar, xres[total_index]*xres[total_index]);
+      AddRes_Max(iVar, fabs(xres[total_index]), geometry->node[iPoint]->GetGlobalIndex());
 		}
 	}
   
@@ -1585,7 +1580,7 @@ void CAdjTurbSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **
   for (iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
       total_index = iPoint*nVar + iVar;
-      rhs[total_index] = 0.0;
+      xres[total_index] = 0.0;
       xsol[total_index] = 0.0;
     }
   }
@@ -1593,7 +1588,7 @@ void CAdjTurbSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **
 	/*--- Solve the system ---*/
   //if (config->GetKind_AdjTurb_Linear_Solver() == LU_SGS)
   if (config->GetKind_Linear_Solver() == LU_SGS)
-      Jacobian.LU_SGSIteration(rhs, xsol, geometry, config);
+      Jacobian.LU_SGSIteration(xres, xsol, geometry, config);
   
 	/*--- Solve the linear system (Krylov subspace methods) ---*/
 	//if ((config->GetKind_AdjTurb_Linear_Solver() == BCGSTAB) ||
@@ -1602,7 +1597,7 @@ void CAdjTurbSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **
         (config->GetKind_Linear_Solver() == GMRES)) {
         
 		CSysVector rhs_vec((const unsigned int)geometry->GetnPoint(),
-                           (const unsigned int)geometry->GetnPointDomain(), nVar, rhs);
+                           (const unsigned int)geometry->GetnPointDomain(), nVar, xres);
 		CSysVector sol_vec((const unsigned int)geometry->GetnPoint(),
                            (const unsigned int)geometry->GetnPointDomain(), nVar, xsol);
         

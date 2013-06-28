@@ -1,0 +1,10 @@
+# sample conversion file for dimensional data
+
+CoordinateX = CoordinateX * ~LengthReference
+CoordinateY = CoordinateY * ~LengthReference
+CoordinateZ = CoordinateZ * ~LengthReference
+
+VelocityX = VelocityX * ~VelocitySound
+VelocityY = VelocityY * ~VelocitySound
+VelocityZ = VelocityZ * ~VelocitySound
+

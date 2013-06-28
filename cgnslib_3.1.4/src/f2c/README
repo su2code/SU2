@@ -1,0 +1,53 @@
+
+There are 2 things that need to be correct for the
+Fortran to C interface to work properly. The first
+is the form of the Fortran name mangling. If you get
+unresolved references, then this is not correct. You
+can control this by defining one of:
+
+UPPERCASE   : Fortran name is CSUB
+UPPERCASE_  : Fortran name is CSUB_
+UPPERCASE__ : Fortran name is CSUB__
+LOWERCASE   : Fortran name is csub
+LOWERCASE_  : Fortran name is csub_
+LOWERCASE__ : Fortran name is csub__
+
+The default is LOWERCASE_, except for Cray, VMS and Windows
+which use UPPERCASE. See csub.c for these interfaces.
+
+*** NOTE ***
+If you are using g77, this will probably not work unless
+you use LOWERCASE_ (the default) and add -fno-second-underscore
+to the Fortran compile line. The reason is that g77 appends
+2 underscores to names that contain an underscore already,
+and only 1 to names that don't.
+Thus, cg_sub becomes cg_sub__ and adfsub becomes adfsub_
+************
+
+The second is the location of the implicit string len
+in the argument list, and accessing the character string.
+With the exception of Cray, VMS and Windows, the standard
+is to put the implicit length at the end of the argument list.
+For the Cray and VMS, these are accessed through structures.
+For Visual Fortran, the implicit length immediately follows the string.
+
+To figure out what you need, compile csub.c with the appropriate
+define, then compile and link fmain.f with you Fortran compiler.
+
+cc -c csub.c
+f77 -o fmain fmain.f csub.o [any other libs you need]
+
+If you get an undefined reference to CSUB_ or _CSUB_ (for instance) then
+repeat with:
+
+cc -DUPPERCASE_ -c csub.c
+
+After your links succeeds, run fmain.
+
+There is also a Makefile - edit as needed, then run make.
+
+If none of these work for you, please let me know:
+
+Bruce Wedan
+bruce.wedan@ansys.com
+

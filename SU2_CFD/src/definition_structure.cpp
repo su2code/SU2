@@ -1172,7 +1172,7 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 			case AVG_GRAD_CORRECTED :
           for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
             solver_container[iMGlevel][PLASMA_SOL][VISC_TERM] = new CAvgGradCorrected_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics,config);
-            solver_container[iMGlevel][PLASMA_SOL][VISC_BOUND_TERM] = new CAvgGradCorrected_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics,config);
+            solver_container[iMGlevel][PLASMA_SOL][VISC_BOUND_TERM] = new CAvgGrad_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics,config);
           }
 				break;
 			default :

@@ -1,0 +1,210 @@
+# makefile for the CGNS Library
+
+include make.defs
+
+CGNSVER = @CGNSVERS@
+
+.SUFFIXES :
+.SUFFIXES : .c .$(O) $(EXE)
+
+OBJDIR  = @BUILDDIR@
+COPTS	= $(CFLAGS) $(CFGFLAGS) -I. @BUILDOPTS@
+CGNSLIB = $(LIBCGNS)
+INSTLIB = @CGNSLIB@
+
+#----------
+
+CGNSOBJS=\
+	$(OBJDIR)/cgns_error.$(O) \
+	$(OBJDIR)/cgns_internals.$(O) \
+	$(OBJDIR)/cgns_io.$(O) \
+	$(OBJDIR)/cgnslib.$(O)
+
+# ADF/ADFH routines
+
+ADFOBJS=@ADFOBJS@ \
+	$(OBJDIR)/ADF_interface.$(O) \
+	$(OBJDIR)/ADF_internals.$(O)
+
+# Fortran interface routines
+# comment this out if you don't want/need Fortran
+
+@F2COBJS@=$(OBJDIR)/cg_ftoc.$(O) $(OBJDIR)/cgio_ftoc.$(O)
+
+#----------
+
+all     : $(CGNSLIB) tools @CGNSTOOLS@
+cgns    : $(CGNSLIB)
+test    : runtests
+install : install-cgns @INSTALLCGNSTOOLS@
+
+#----------
+
+$(CGNSLIB) : $(OBJDIR) $(CGNSOBJS) $(ADFOBJS) $(F2COBJS)
+	-@$(RM) $@
+	@AR_LIB@ $@ $(CGNSOBJS) $(ADFOBJS) $(F2COBJS)
+	@RAN_LIB@ $@
+
+$(OBJDIR) :
+	-$(MKDIR) $(OBJDIR)
+
+#----------
+
+tools : $(CGNSLIB)
+	-cd tools && $(MAKE)
+
+cgnstools : $(CGNSLIB)
+	-cd cgnstools && $(MAKE)
+
+tests : $(CGNSLIB)
+	-cd tests && $(MAKE)
+
+runtests : $(CGNSLIB)
+	-cd tests && $(MAKE) test
+
+#----------
+
+clean :
+	-$(RM) $(OBJDIR)/*.$(O)
+	-cd tools && $(MAKE) clean
+	-cd tests && $(MAKE) clean
+	-cd cgnstools && $(MAKE) clean
+
+allclean : distclean
+
+distclean :
+	-cd tools && $(MAKE) allclean
+	-$(RM) tools/Makefile
+	-cd tests && $(MAKE) allclean
+	-$(RM) tests/Makefile
+	-cd cgnstools && $(MAKE) allclean
+	-$(RM) $(CGNSLIB)
+	-$(RM) $(OBJDIR)/*.$(O)
+	-$(RMDIR) $(OBJDIR)
+	-$(RM) cgnstypes.h cgnstypes_f.h cgnslib_f.h
+	-$(RM) config.log config.status
+	-$(RM) make.defs cgnsBuild.defs Makefile
+	-$(RM) *~ *.bak
+
+install-all : install
+
+install-cgns : $(CGNSLIB) $(INCLUDEDIR) $(LIBDIR) @INSTALLADF@
+	$(INSTALL_DATA) cgnstypes.h $(INCLUDEDIR)/cgnstypes.h
+	$(INSTALL_DATA) cgnstypes_f.h $(INCLUDEDIR)/cgnstypes_f.h
+	$(INSTALL_DATA) cgnslib.h $(INCLUDEDIR)/cgnslib.h
+	$(INSTALL_DATA) cgnslib_f.h $(INCLUDEDIR)/cgnslib_f.h
+	$(INSTALL_DATA) cgnswin_f.h $(INCLUDEDIR)/cgnswin_f.h
+	$(INSTALL_DATA) cgns_io.h $(INCLUDEDIR)/cgns_io.h
+	$(INSTALL_DATA) cgnsBuild.defs $(INCLUDEDIR)/cgnsBuild.defs
+	$(INSTALL_DATA) $(CGNSLIB) $(LIBDIR)/$(INSTLIB)
+
+install-tools :
+	-cd tools && $(MAKE) install
+
+install-cgnstools : install-tools
+	-cd cgnstools && $(MAKE) install
+
+install-adf : $(INCLUDEDIR)/adf
+	$(INSTALL_DATA) adf/ADF.h $(INCLUDEDIR)/adf/ADF.h
+
+install-adfh : $(INCLUDEDIR)/adfh
+	$(INSTALL_DATA) adfh/ADFH.h $(INCLUDEDIR)/adfh/ADFH.h
+
+$(INCLUDEDIR) :
+	@if [ ! -d $(INCLUDEDIR) ] ; then \
+	    echo "Making directory $(INCLUDEDIR)"; \
+	    mkdir -p $(INCLUDEDIR); \
+	    chmod 755 $(INCLUDEDIR); \
+	  fi;
+
+$(LIBDIR) :
+	@if [ ! -d $(LIBDIR) ] ; then \
+	    echo "Making directory $(LIBDIR)"; \
+	    mkdir -p $(LIBDIR); \
+	    chmod 755 $(LIBDIR); \
+	  fi;
+
+$(INCLUDEDIR)/adf : $(INCLUDEDIR)
+	@if [ ! -d $(INCLUDEDIR)/adf ] ; then \
+	    echo "Making directory $(INCLUDEDIR)/adf"; \
+	    mkdir -p $(INCLUDEDIR)/adf; \
+	    chmod 755 $(INCLUDEDIR)/adf; \
+	  fi;
+
+$(INCLUDEDIR)/adfh : $(INCLUDEDIR)
+	@if [ ! -d $(INCLUDEDIR)/adfh ] ; then \
+	    echo "Making directory $(INCLUDEDIR)/adfh"; \
+	    mkdir -p $(INCLUDEDIR)/adfh; \
+	    chmod 755 $(INCLUDEDIR)/adfh; \
+	  fi;
+
+uninstall :
+	-cd tools && $(MAKE) uninstall
+	-cd cgnstools && $(MAKE) uninstall
+	-$(RM) $(INCLUDEDIR)/cgnstypes.h
+	-$(RM) $(INCLUDEDIR)/cgnstypes_f.h
+	-$(RM) $(INCLUDEDIR)/cgnslib.h
+	-$(RM) $(INCLUDEDIR)/cgnslib_f.h
+	-$(RM) $(INCLUDEDIR)/cgnswin_f.h
+	-$(RM) $(INCLUDEDIR)/cgns_io.h
+	-$(RM) $(INCLUDEDIR)/cgnsBuild.defs
+	-$(RM) $(LIBDIR)/$(INSTLIB)
+	@if [ -f $(INCLUDEDIR)/adf/ADF.h ] ; then \
+	   $(RM) $(INCLUDEDIR)/adf/ADF.h; \
+	   $(RMDIR) $(INCLUDEDIR)/adf; \
+	 fi; \
+	 if [ -f $(INCLUDEDIR)/adfh/ADFH.h ] ; then \
+	   $(RM) $(INCLUDEDIR)/adfh/ADFH.h; \
+	   $(RMDIR) $(INCLUDEDIR)/adfh; \
+	 fi;
+
+#---------- mid-level library
+
+$(OBJDIR)/cgns_error.$(O) : cgns_error.c cgnslib.h cgns_header.h cgns_io.h
+	$(CC) $(COPTS) $(COOUT)$@ -c cgns_error.c
+
+$(OBJDIR)/cgns_internals.$(O) : cgns_internals.c cgnslib.h cgns_header.h \
+	cgns_io.h
+	$(CC) $(COPTS) $(COOUT)$@ -c cgns_internals.c
+
+$(OBJDIR)/cgnslib.$(O) : cgnslib.c cgnslib.h cgns_header.h cgns_io.h
+	$(CC) $(COPTS) $(HDF5INC) $(MPIINC) $(COOUT)$@ -c cgnslib.c
+
+$(OBJDIR)/cgns_io.$(O) : cgns_io.c cgnslib.h cgns_io.h \
+	adf/ADF.h @ADFINCS@
+	$(CC) $(COPTS) $(COOUT)$@ -c cgns_io.c
+
+$(OBJDIR)/cg_ftoc.$(O) : cg_ftoc.c fortran_macros.h cgnslib.h \
+	cgns_header.h cgns_io.h
+	$(CC) $(COPTS) $(F2CFLAGS) $(COOUT)$@ -c cg_ftoc.c
+
+$(OBJDIR)/cgio_ftoc.$(O) : cgio_ftoc.c fortran_macros.h cgns_io.h
+	$(CC) $(COPTS) $(F2CFLAGS) $(COOUT)$@ -c cgio_ftoc.c
+
+$(OBJDIR)/cg_malloc.$(O) : cg_malloc.c cg_malloc.h
+	$(CC) $(COPTS) $(COOUT)$@ -c cg_malloc.c
+
+cgnslib.h : cgnstypes.h
+cgns_header.h : cgnstypes.h
+cgns_io.h : cgnstypes.h
+
+#---------- ADF
+
+$(OBJDIR)/ADF_interface.$(O) : adf/ADF_interface.c \
+	adf/ADF.h adf/ADF_internals.h
+	$(CC) $(COPTS) -Iadf $(COOUT)$@ -c adf/ADF_interface.c
+
+$(OBJDIR)/ADF_internals.$(O) : adf/ADF_internals.c \
+	adf/ADF.h adf/ADF_internals.h
+	$(CC) $(COPTS) -Iadf $(COOUT)$@ -c adf/ADF_internals.c
+
+adf/ADF.h : cgnstypes.h
+adf/ADF_internals.h : cgnstypes.h
+
+#---------- HDF5
+
+$(OBJDIR)/ADFH.$(O) : adfh/ADFH.c adfh/ADFH.h
+	$(CC) $(COPTS) -Iadfh $(HDF5INC) $(MPIINC) $(COOUT)$@ -c adfh/ADFH.c
+
+adfh/ADFH.h : cgnstypes.h
+

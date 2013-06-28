@@ -25,12 +25,12 @@
 
 inline void CSparseMatrix::SetValZero(void) { 
 	for (unsigned long index = 0; index < nnz*nVar*nEqn; index++) 
-		val[index] = 0.0; 
+		matrix[index] = 0.0;
 }
 
 inline void CSparseMatrix::ScaleVals(double val_scale) { 
 	for (unsigned long index = 0; index < nnz*nVar*nVar; index++) 
-		val[index] *= val_scale; 
+		matrix[index] *= val_scale; 
 }
 
 

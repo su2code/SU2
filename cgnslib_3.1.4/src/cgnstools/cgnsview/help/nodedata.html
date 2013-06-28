@@ -1,0 +1,60 @@
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+   <meta name="GENERATOR" content="Mozilla/4.75 [en] (Windows NT 5.0; U) [Netscape]">
+   <title>Node Data</title>
+</head>
+<body bgcolor="#FFFFFF">
+
+<h2>
+<font color="#000066">Node Data</font></h2>
+This panel displays the data associated with a node, and allows editing
+of the data. The panel is a simple text editor, and really only intended
+to be used to edit small amounts of data.
+<p>The panel is filled in automatically when selecting a node from the
+<a href="nodetree.html">Node Tree</a> if <a href="menu.html#ConfigMenu">Auto
+Load Data</a> is enabled and the size of the the data is less than the
+<a href="menu.html#ConfigMenu">Auto Data Size</a> threshold. A read of
+the data may also be forced using the <a href="buttons.html">Read button</a>.
+<p>In the case of multidimensional arrays, the data will shown in groups
+of the inner dimension, with successive groups on a new line. In order
+to prevent very long lines, which may cause a problem for the editor, the
+number of data values to be displayed per line is limited to a maximum
+value (default 10). This maximum value may be changed from the <a href="menu.html#ConfigMenu">Auto
+Data Size</a> setup window. The current value may also be changed by typing
+the new value in the <b>Values/Line</b> entry box, followed by the <i>Enter</i>
+key.
+<p>The current line containing the insertion cursor is shown in the <b>Line</b>
+box. You may enter a new line number, followed by the <i>Enter</i> key
+to go to the line. This entry accepts arithmetic expressions, so you may
+type an expression like 75/3+1 to go to the line containing the 75th data
+value. The number in parenthesis following the line number is the number
+of the data value which is first on the current line.
+<p>The data in the following figure is dimensioned (3,60) and so is shown
+as 60 lines of 3 values each, and the cursor is currently on the 7th line,
+which contains data values 19, 20 and 21.
+<p><img SRC="images/nodedata.gif" NOSAVE height=172 width=380>
+<p>When formatting the data for display, the C "%g" format is used for
+real data and the "%d" format for integer data. When converting the data
+for writing to the node, the C routines atof() and atoi() are used for
+real and integer data, respectively. Character data is treated as C strings.
+<p>When creating a new node with the <a href="buttons.html">Create</a>
+button, the data values in this panel, will be used to assign data to the
+node. When modifying an existing node with the <a href="buttons.html">Modify</a>
+button, these values will be used if they exist, otherwise the actual node
+data is used. When doing data type conversions, this panel should generally
+be cleared of data. Therefore, the program will automatically clear this
+panel when the <b>Data Type</b> on the <a href="datadesc.html">Data Description</a>
+panel is changed. The <a href="buttons.html">Read</a> button may be used
+to reload the existing data if desired.
+<p>When the <b>Node Label</b> in the <a href="nodedesc.html">Node Description</a>
+panel is a known CGNS type, clicking Mouse Button 3 in this window will
+pop-up a panel which lists the data properties associated with the CGNS
+label type. If there is predefined data associated with the CGNS label
+type, then a list of these values will be presented instead, allowing selection
+of one of the predefined types.
+<p><a href="datadesc.html">[previous]</a> <a href="cgnsview.html">[index]</a>
+<a href="buttons.html">[next]</a>
+</body>
+</html>

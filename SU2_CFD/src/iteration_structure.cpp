@@ -458,7 +458,7 @@ void FreeSurfaceIteration(COutput *output, CIntegration ***integration_container
 		if ((config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
 				(config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) IntIter = 0;
         
-    /*--- Set the initial condition ---*/
+        /*--- Set the initial condition ---*/
 		solution_container[iZone][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone], solution_container[iZone], config_container[iZone], ExtIter);
 		
 		/*--- Navier-Stokes equations ---*/
@@ -467,7 +467,7 @@ void FreeSurfaceIteration(COutput *output, CIntegration ***integration_container
 		if (config_container[iZone]->GetKind_Solver() == FREE_SURFACE_RANS)           config_container[iZone]->SetGlobalParam(FREE_SURFACE_RANS, RUNTIME_FLOW_SYS, IntIter);
 		integration_container[iZone][FLOW_SOL]->SetMultiGrid_Solver(geometry_container, solution_container, solver_container, config_container, RUNTIME_FLOW_SYS, IntIter, iZone);
 		
-    /*--- Turbulence model ---*/
+        /*--- Turbulence model ---*/
 		if (config_container[iZone]->GetKind_Solver() == FREE_SURFACE_RANS) {
 			config_container[iZone]->SetGlobalParam(FREE_SURFACE_RANS, RUNTIME_TURB_SYS, IntIter);
 			integration_container[iZone][TURB_SOL]->SetSingleGrid_Solver(geometry_container, solution_container, solver_container, config_container, RUNTIME_TURB_SYS, IntIter, iZone);

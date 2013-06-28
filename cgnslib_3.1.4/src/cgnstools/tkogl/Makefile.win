@@ -1,0 +1,60 @@
+
+include ..\make.win
+
+INCS = $(TKOGLINCS) $(TCLINC)
+
+OBJS = \
+	tkogl.obj \
+	get.obj \
+	gencyl.obj \
+	load3ds.obj \
+	nurbs.obj \
+	quadric.obj \
+	tess.obj \
+	printstr.obj \
+	feedback.obj \
+	tkoglparse.obj
+
+lib : tkogl.lib
+install : tkogl.lib
+clean:
+	-$(RM) *.obj
+        -$(RM) tkogl.lib
+
+tkogl.lib : $(OBJS)
+	-$(RM) tkogl.lib
+	link /lib /OUT:tkogl.lib $(OBJS)
+
+tkogl.obj: tkogl.h tkoglparse.h \
+	load3ds.h tess.h quadric.h nurbs.h get.h gencyl.h \
+	tkogl.c
+	$(CC) $(CFLAGS) $(INCS) -c tkogl.c
+
+get.obj: get.h get.c
+	$(CC) $(CFLAGS) $(INCS) -c get.c
+
+printstr.obj: printstr.c printstr.h
+	$(CC) $(CFLAGS) $(INCS) -c printstr.c
+
+tess.obj: tkogl.h tess.h tess.c
+	$(CC) $(CFLAGS) $(INCS) -c tess.c
+
+nurbs.obj: tkogl.h nurbs.h nurbs.c
+	$(CC) $(CFLAGS) $(INCS) -c nurbs.c
+
+quadric.obj: tkogl.h quadric.h quadric.c
+	$(CC) $(CFLAGS) $(INCS) -c quadric.c
+
+load3ds.obj: tkogl.h load3ds.h load3ds.c
+	$(CC) $(CFLAGS) $(INCS) -c load3ds.c
+
+gencyl.obj: tkogl.h gencyl.h gencyl.c
+	$(CC) $(CFLAGS) $(INCS) -c gencyl.c
+
+tkoglparse.obj: tkoglparse.h tkoglparse.c
+	$(CC) $(CFLAGS) $(INCS) -c tkoglparse.c
+
+feedback.obj: feedback.h feedback.c
+	$(CC) $(CFLAGS) $(INCS) -c feedback.c
+
+

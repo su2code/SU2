@@ -66,9 +66,10 @@ CElectricSolution::CElectricSolution(CGeometry *geometry, CConfig *config) : CSo
 
 	/*--- Initialization of the structure of the whole Jacobian ---*/
 	Initialize_SparseMatrix_Structure(&StiffMatrix, nVar, nVar, geometry, config);
-	xsol = new double [nPoint*nVar];
-	xres = new double [nPoint*nVar];
-	rhs = new double [nPoint*nVar];
+
+  /*--- Solution and residual vectors ---*/
+  xsol = new double [nPoint*nVar];
+  xres = new double [nPoint*nVar];
 
 	/*--- Computation of gradients by least squares ---*/
 	Smatrix = new double* [nDim]; // S matrix := inv(R)*traspose(inv(R))
@@ -112,7 +113,6 @@ CElectricSolution::~CElectricSolution(void) {
 	delete [] StiffMatrix_Node;
 	delete [] xsol;
 	delete [] xres;
-	delete [] rhs;
 
 	/*--- Computation of gradients by least-squares ---*/
 	for (iDim = 0; iDim < this->nDim; iDim++)
@@ -129,7 +129,7 @@ void CElectricSolution::Preprocessing(CGeometry *geometry, CSolution **solution_
 	unsigned long iPoint;
 
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++)
-		node[iPoint]->SetResidualZero();
+		Set_Residual_Zero(iPoint);
 
 	StiffMatrix.SetValZero();
 }
@@ -143,13 +143,13 @@ void CElectricSolution::Solve_LinearSystem(CGeometry *geometry, CSolution **solu
 
 	/*--- Build lineal system ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-		rhs[iPoint] = node[iPoint]->GetResidual(iVar);
+		xres[iPoint] = GetResidual(iPoint, iVar);
 		xsol[iPoint] = node[iPoint]->GetSolution(iVar);
 	}
 
 	/*--- Solve the system ---*/
 	CSysVector rhs_vec((const unsigned int)geometry->GetnPoint(),
-			(const unsigned int)geometry->GetnPointDomain(), nVar, rhs);
+			(const unsigned int)geometry->GetnPointDomain(), nVar, xres);
 	CSysVector sol_vec((const unsigned int)geometry->GetnPoint(),
 			(const unsigned int)geometry->GetnPointDomain(), nVar, xsol);
 
@@ -187,17 +187,15 @@ void CElectricSolution::Compute_Residual(CGeometry *geometry, CSolution **soluti
 
 	/*--- Build linear system ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-		rhs[iPoint] = node[iPoint]->GetResidual(iVar);
+		xres[iPoint] = GetResidual(iPoint, iVar);
 		xsol[iPoint] = node[iPoint]->GetSolution(iVar);
-		xres[iPoint] = 0.0;
 	}
 
 	StiffMatrix.MatrixVectorProduct(xsol,xres);
 
 	/*--- Update residual ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-		node[iPoint]->SetResidual(0,xres[iPoint]-rhs[iPoint]);
-
+		SetResidual(iPoint, 0, xres[iPoint]);
 	}
 }
 
@@ -261,9 +259,9 @@ void CElectricSolution::Source_Residual(CGeometry *geometry, CSolution **solutio
 				solver->SetConsVarGradient(Gradient_0, Gradient_1, Gradient_2 );
 				solver->SetResidual_MacCormack(Source_Vector, config);
 
-				node[Point_0]->AddResidual(Source_Vector[0]);
-				node[Point_1]->AddResidual(Source_Vector[1]);
-				node[Point_2]->AddResidual(Source_Vector[2]);
+				AddResidual(Point_0, &Source_Vector[0]);
+				AddResidual(Point_1, &Source_Vector[1]);
+				AddResidual(Point_2, &Source_Vector[2]);
 
 				if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE) {
 
@@ -302,9 +300,9 @@ void CElectricSolution::Source_Residual(CGeometry *geometry, CSolution **solutio
 					solver->SetChargeDensity(node[Point_0]->GetChargeDensity(), node[Point_1]->GetChargeDensity(), node[Point_2]->GetChargeDensity(), node[Point_3]->GetChargeDensity());
 					solver->SetConsVarGradient(Gradient_0, Gradient_1, Gradient_2 );
 					solver->SetResidual_MacCormack(Source_Vector, config);
-					node[Point_0]->AddResidual(Source_Vector[0]);
-					node[Point_1]->AddResidual(Source_Vector[1]);
-					node[Point_2]->AddResidual(Source_Vector[2]);
+					AddResidual(Point_0, &Source_Vector[0]);
+					AddResidual(Point_1, &Source_Vector[1]);
+					AddResidual(Point_2, &Source_Vector[2]);
 				}
 			}
 		}
@@ -344,10 +342,10 @@ void CElectricSolution::Source_Residual(CGeometry *geometry, CSolution **solutio
 				}
 				else solver->SetResidual(Source_Vector, config);
 
-				node[Point_0]->AddResidual(Source_Vector[0]);
-				node[Point_1]->AddResidual(Source_Vector[1]);
-				node[Point_2]->AddResidual(Source_Vector[2]);
-				node[Point_3]->AddResidual(Source_Vector[3]);
+				AddResidual(Point_0, &Source_Vector[0]);
+				AddResidual(Point_1, &Source_Vector[1]);
+				AddResidual(Point_2, &Source_Vector[2]);
+				AddResidual(Point_3, &Source_Vector[3]);
 			}
 		}
 	}
@@ -568,7 +566,7 @@ void CElectricSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_
 			Point = geometry->vertex[val_marker][iVertex]->GetNode();
 			Solution[0]= config->GetDirichlet_Value(config->GetMarker_All_Tag(val_marker));
 			node[Point]->SetSolution(Solution);
-			node[Point]->SetResidual(Solution);
+			SetResidual(Point, Solution);
 			StiffMatrix.DeleteValsRowi(Point); // & includes 1 in the diagonal
 		}
 	}
@@ -590,7 +588,7 @@ void CElectricSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_c
 			Point = geometry->vertex[val_marker][iVertex]->GetNode();
 			Solution[0]= config->GetDirichlet_Value(config->GetMarker_All_Tag(val_marker));
 			node[Point]->SetSolution(Solution);
-			node[Point]->SetResidual(Solution);
+			SetResidual(Point, Solution);
 			StiffMatrix.DeleteValsRowi(Point); // & includes 1 in the diagonal
 		}
 	}
@@ -612,7 +610,7 @@ void CElectricSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **soluti
 			Point = geometry->vertex[val_marker][iVertex]->GetNode();
 			Solution[0]= config->GetDirichlet_Value(config->GetMarker_All_Tag(val_marker));
 			node[Point]->SetSolution(Solution);
-			node[Point]->SetResidual(Solution);
+			SetResidual(Point, Solution);
 			StiffMatrix.DeleteValsRowi(Point); // & includes 1 in the diagonal
 		}
 	}
@@ -634,7 +632,7 @@ void CElectricSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_cont
 			Point = geometry->vertex[val_marker][iVertex]->GetNode();
 			Solution[0]= config->GetDirichlet_Value(config->GetMarker_All_Tag(val_marker));
 			node[Point]->SetSolution(Solution);
-			node[Point]->SetResidual(Solution);
+			SetResidual(Point, Solution);
 			StiffMatrix.DeleteValsRowi(Point); // & includes 1 in the diagonal
 		}
 	}
@@ -656,7 +654,7 @@ void CElectricSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_conta
 			Point = geometry->vertex[val_marker][iVertex]->GetNode();
 			Solution[0]= config->GetDirichlet_Value(config->GetMarker_All_Tag(val_marker));
 			node[Point]->SetSolution(Solution);
-			node[Point]->SetResidual(Solution);
+			SetResidual(Point, Solution);
 			StiffMatrix.DeleteValsRowi(Point); // & includes 1 in the diagonal
 		}
 	}
@@ -678,7 +676,7 @@ void CElectricSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_c
 			Point = geometry->vertex[val_marker][iVertex]->GetNode();
 			Solution[0]= config->GetDirichlet_Value(config->GetMarker_All_Tag(val_marker));
 			node[Point]->SetSolution(Solution);
-			node[Point]->SetResidual(Solution);
+			SetResidual(Point, Solution);
 			StiffMatrix.DeleteValsRowi(Point); // & includes 1 in the diagonal
 		}
 	}

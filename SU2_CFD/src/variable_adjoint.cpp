@@ -70,15 +70,9 @@ CAdjEulerVariable::CAdjEulerVariable(double val_psirho, double *val_phi, double 
 	TS_Source = NULL;
   
 	/*--- Allocate residual structures ---*/
-	Res_Conv = new double [nVar];
-  Res_Visc = new double [nVar];
-  Res_Sour = new double [nVar];
   Res_TruncError = new double [nVar];
 
   for (iVar = 0; iVar < nVar; iVar++) {
-		Res_Conv[iVar] = 0.0;
-		Res_Visc[iVar] = 0.0;
-		Res_Sour[iVar] = 0.0;
 		Res_TruncError[iVar] = 0.0;
 	}
   
@@ -89,13 +83,6 @@ CAdjEulerVariable::CAdjEulerVariable(double val_psirho, double *val_phi, double 
   if (nMGSmooth > 0) {
     Residual_Sum = new double [nVar];
     Residual_Old = new double [nVar];
-  }
-  
-  /*--- Only for Runge-Kutta computations ---*/
-	if (config->GetKind_TimeIntScheme_AdjFlow() == RUNGE_KUTTA_EXPLICIT) {
-    Res_Visc_RK = new double* [nVar];
-    for (iVar = 0; iVar < nVar; iVar++)
-      Res_Visc_RK[iVar] = new double [nVar];
   }
 	
 	/*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
@@ -196,15 +183,9 @@ CAdjEulerVariable::CAdjEulerVariable(double *val_solution, unsigned short val_nd
 	TS_Source = NULL;
   
 	/*--- Allocate residual structures ---*/
-	Res_Conv = new double [nVar];
-  Res_Visc = new double [nVar];
-  Res_Sour = new double [nVar];
   Res_TruncError = new double [nVar];
   
   for (iVar = 0; iVar < nVar; iVar++) {
-		Res_Conv[iVar] = 0.0;
-		Res_Visc[iVar] = 0.0;
-		Res_Sour[iVar] = 0.0;
 		Res_TruncError[iVar] = 0.0;
 	}
   
@@ -217,13 +198,6 @@ CAdjEulerVariable::CAdjEulerVariable(double *val_solution, unsigned short val_nd
     Residual_Old = new double [nVar];
   }
   
-  /*--- Only for Runge-Kutta computations ---*/
-	if (config->GetKind_TimeIntScheme_AdjFlow() == RUNGE_KUTTA_EXPLICIT) {
-    Res_Visc_RK = new double* [nVar];
-    for (iVar = 0; iVar < nVar; iVar++)
-      Res_Visc_RK[iVar] = new double [nVar];
-  }
-	
 	/*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
 	if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED)
 		Undivided_Laplacian = new double [nVar];
@@ -472,11 +446,7 @@ CAdjPlasmaVariable::CAdjPlasmaVariable(double val_psirho, double *val_phi, doubl
 	unsigned short iVar, iDim;
 		
 	/*--- Allocate residual structures ---*/
-	Res_Conv = new double [nVar]; Res_Visc = new double [nVar]; Res_Sour = new double [nVar];
 	Residual_Sum = new double [nVar]; Residual_Old = new double [nVar];
-	Res_Visc_RK = new double* [nVar];
-	for (iVar = 0; iVar < nVar; iVar++)
-		Res_Visc_RK[iVar] = new double [nVar];
 	
 	/*--- Allocate undivided laplacian, limiter, and auxiliar gradient ---*/
 	Limiter = new double [nVar];
@@ -521,11 +491,7 @@ CAdjPlasmaVariable::CAdjPlasmaVariable(double *val_solution, unsigned short val_
 	unsigned short iVar, iDim;
 		
 	/*--- Allocate residual structures ---*/
-	Res_Conv = new double [nVar]; Res_Visc = new double [nVar]; Res_Sour = new double [nVar];
 	Residual_Sum = new double [nVar]; Residual_Old = new double [nVar];
-	Res_Visc_RK = new double* [nVar];
-	for (iVar = 0; iVar < nVar; iVar++)
-		Res_Visc_RK[iVar] = new double [nVar];
 	
 	/*--- Allocate undivided laplacian, limiter and auxiliar gradient ---*/
 	Limiter = new double [nVar];
@@ -569,11 +535,7 @@ CAdjLevelSetVariable::CAdjLevelSetVariable(unsigned short val_ndim, unsigned sho
 	unsigned short iVar;
 	
 	/*--- Allocate residual structures ---*/
-	Res_Conv = new double [nVar]; Res_Visc = new double [nVar]; Res_Sour = new double [nVar];
 	Residual_Sum = new double [nVar]; Residual_Old = new double [nVar];
-	Res_Visc_RK = new double* [nVar];
-	for (iVar = 0; iVar < nVar; iVar++)
-		Res_Visc_RK[iVar] = new double [nVar];
 	
 	/*--- Allocate limiter (upwind)---*/
 	if (config->GetKind_SlopeLimit() != NONE) Limiter = new double [nVar];
@@ -588,11 +550,7 @@ CAdjLevelSetVariable::CAdjLevelSetVariable(double val_levelset, unsigned short v
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
 	/*--- Allocate residual structures ---*/
-	Res_Conv = new double [nVar]; Res_Visc = new double [nVar]; Res_Sour = new double [nVar];
 	Residual_Sum = new double [nVar]; Residual_Old = new double [nVar];
-	Res_Visc_RK = new double* [nVar];
-	for (iVar = 0; iVar < nVar; iVar++)
-		Res_Visc_RK[iVar] = new double [nVar];
 	
 	/*--- Allocate limiter (upwind)---*/
 	if (config->GetKind_SlopeLimit() != NONE) Limiter = new double [nVar];
@@ -610,11 +568,7 @@ CAdjLevelSetVariable::CAdjLevelSetVariable(double val_levelset, unsigned short v
 CAdjLevelSetVariable::~CAdjLevelSetVariable(void) {
 	unsigned short iVar;
 	
-	delete [] Res_Conv; delete [] Res_Visc; delete [] Res_Sour;
 	delete [] Residual_Sum; delete [] Residual_Old;
 	if (Limiter != NULL) delete [] Limiter;
 	
-	for (iVar = 0; iVar < nVar; iVar++)
-		delete [] Res_Visc_RK[iVar];
-	delete [] Res_Visc_RK;
 }

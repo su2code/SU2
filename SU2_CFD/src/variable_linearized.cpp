@@ -39,14 +39,8 @@ CLinEulerVariable::CLinEulerVariable(double *val_solution, unsigned short val_nd
   ForceProj_Vector = NULL;
   
 	/*--- Allocate structures ---*/
-	Res_Conv = new double [nVar];
-	Res_Visc = new double [nVar];
-	Res_Sour = new double [nVar];
 	Residual_Sum = new double [nVar];
 	Residual_Old = new double [nVar];
-	Res_Visc_RK = new double* [nVar];
-	for (unsigned short iVar = 0; iVar < nVar; iVar++)
-		Res_Visc_RK[iVar] = new double [nVar];
 	
 	Undivided_Laplacian = new double [nVar];
 	Limiter = new double [nVar];
@@ -79,14 +73,8 @@ CLinEulerVariable::CLinEulerVariable(double val_deltarho, double *val_deltavel,
   ForceProj_Vector = NULL;
   
 	/*--- Allocate structures ---*/
-	Res_Conv = new double [nVar];
-	Res_Visc = new double [nVar];
-	Res_Sour = new double [nVar];
 	Residual_Sum = new double [nVar];
 	Residual_Old = new double [nVar];
-	Res_Visc_RK = new double* [nVar];
-	for (unsigned short iVar = 0; iVar < nVar; iVar++)
-		Res_Visc_RK[iVar] = new double [nVar];
 	
 	Undivided_Laplacian = new double [nVar];
 	Limiter = new double [nVar];

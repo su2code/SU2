@@ -1,0 +1,58 @@
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+   <meta name="GENERATOR" content="Mozilla/4.75 [en] (Windows NT 5.0; U) [Netscape]">
+   <title>Defaults Setup</title>
+</head>
+<body>
+
+<h2>
+Cutting Plane</h2>
+
+<table CELLSPACING=3 WIDTH="100%" >
+<tr>
+<td><img SRC="images/cutplane.gif" NOSAVE height=389 width=288></td>
+
+<td><img SRC="images/cutview.gif" NOSAVE height=364 width=547></td>
+</tr>
+</table>
+
+<p>This panel defines and controls the display of a cutting plane. The
+first section, <b>Color</b>, defines the color and transparency of the
+cutting plane positioner, as shown in the image to the right.
+<p>The second section, <b>Cut Plane</b>, controls the location of the cutting
+plane. The <i>X</i>, <i>Y</i> and <i>Z Directions</i> are the components
+of the cutting plane normal, and the <i>Offset</i> is the distance along
+the normal. The <i>X</i>, <i>Y</i> and <i>Z Cut</i> buttons will initialize
+the cutting plane normal to the specified axis, and in the middle of the
+bounding box. The <i>X</i>, <i>Y</i> and <u>Z</u> <i>Rotate</i> sliders
+will rotate the plane about the corresponding axis, and the <i>Translate</i>
+slider translates the plane along it's current normal. Lastly, the <i>Center</i>
+button will center the plane in the middle of the bounding box. The cutting
+plane is clipped the the bounding box, which is either that of the visible
+objects or the entire model if the <i>Ignore Region Visibility</i> button
+is checked (see below).
+<p>In the image to the right, the cutting plane was first located by using
+the <i>X Cut</i> button and computed, then repositioned using the <i>Y
+Cut</i> button. Entering <i>Compute</i> now will remove the previous cutting
+plane results, and recompute it at the new location.
+<p>The last section, <b>Display</b>, controls how the cut elements will
+be displayed. <i>Off</i> disables display of the cut elements; <i>Planar</i>
+displays the intersect of the cut elements as lines in the plane; and <i>Elements</i>
+and <i>Shaded</i> display the cut elements as either a wireframe or shaded
+surfaces. The cut elements will either be colored by the region colors
+or by the cutplane positioner color, depending on whether <i>Use Cutplane
+Color</i> is enabled. If <i>Ignore Region Visibility</i> is enabled, then
+all elements will be intersected and displayed, regardless of whether they
+are actually visible or not.
+<p>When the cutting plane has been positioned, the <i>Compute</i> button
+or the <i>Enter</i> key will compute and display the cutting plane. The
+<i>Defaults</i> button will reset everything to the defaults, and the <i>Close</i>
+button will close the panel and remove the cut plane.
+<p><a href="status.html">[previous]</a> <a href="cgnsplot.html">[index]</a>
+[<a href="defaults.html">next</a>]
+<br>&nbsp;
+<br>&nbsp;
+</body>
+</html>

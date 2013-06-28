@@ -1,0 +1,16 @@
+
+The distribution of METIS 4.0 consists of a number of files arranged
+in five directories. The files contained in each directory are as follows:
+
+Doc/		Contains METIS's user manual
+
+Graphs/		Contains some small sample graphs and meshes
+		that can be used with METIS.
+
+Lib/		Contains the code for METIS's library
+
+Programs/	Contains the code for METIS's stand-alone programs
+
+Test/		Contains a comprehensive tester for METIS's partitioning
+                routines.
+

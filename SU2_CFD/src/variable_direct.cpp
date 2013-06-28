@@ -102,15 +102,9 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
   else { nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
   
 	/*--- Allocate residual structures ---*/
-	Res_Conv = new double [nVar];
-	Res_Visc = new double [nVar];
-	Res_Sour = new double [nVar];
 	Res_TruncError = new double [nVar];
 
 	for (iVar = 0; iVar < nVar; iVar++) {
-		Res_Conv[iVar] = 0.0;
-		Res_Visc[iVar] = 0.0;
-		Res_Sour[iVar] = 0.0;
 		Res_TruncError[iVar] = 0.0;
 	}
 
@@ -121,13 +115,6 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
 	if ((nMGSmooth > 0) || low_fidelity || Freesurface) {
 		Residual_Sum = new double [nVar];
 		Residual_Old = new double [nVar];
-	}
-
-	/*--- Only for Runge-Kutta computations ---*/
-	if (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_EXPLICIT) {
-		Res_Visc_RK = new double* [nVar];
-		for (iVar = 0; iVar < nVar; iVar++)
-			Res_Visc_RK[iVar] = new double [nVar];
 	}
 
 	/*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
@@ -240,15 +227,9 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_ndim, un
   Limiter_Primitive = NULL;
 
 	/*--- Allocate residual structures ---*/
-	Res_Conv = new double [nVar];
-	Res_Visc = new double [nVar];
-	Res_Sour = new double [nVar];
 	Res_TruncError = new double [nVar];
 
 	for (iVar = 0; iVar < nVar; iVar++) {
-		Res_Conv[iVar] = 0.0;
-		Res_Visc[iVar] = 0.0;
-		Res_Sour[iVar] = 0.0;
 		Res_TruncError[iVar] = 0.0;
 	}
 
@@ -259,13 +240,6 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_ndim, un
 	if ((nMGSmooth > 0) || low_fidelity) {
 		Residual_Sum = new double [nVar];
 		Residual_Old = new double [nVar];
-	}
-
-	/*--- Only for Runge-Kutta computations ---*/
-	if (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_EXPLICIT) {
-		Res_Visc_RK = new double* [nVar];
-		for (iVar = 0; iVar < nVar; iVar++)
-			Res_Visc_RK[iVar] = new double [nVar];
 	}
 
 	/*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
@@ -822,16 +796,10 @@ CPlasmaVariable::CPlasmaVariable(double *val_density, double **val_velocity, dou
   nPrimVar = nDim+3;
 
 	/*--- Allocate residual structures ---*/
-	Res_Conv = new double [nVar];
-	Res_Visc = new double [nVar];
-	Res_Sour = new double [nVar];
 	/*--- Allocate truncation error for multigrid strategy ---*/
 	Res_TruncError = new double [nVar];
 
 	for (iVar = 0; iVar < nVar; iVar++) {
-		Res_Conv[iVar] = 0.0;
-		Res_Visc[iVar] = 0.0;
-		Res_Sour[iVar] = 0.0;
 		Res_TruncError[iVar] = 0.0;
 	}
 	/*--- Only for residual smoothing (multigrid) ---*/
@@ -841,13 +809,6 @@ CPlasmaVariable::CPlasmaVariable(double *val_density, double **val_velocity, dou
 	if (nMGSmooth > 0) {
 		Residual_Sum = new double [nVar];
 		Residual_Old = new double [nVar];
-	}
-
-	/*--- Only for Runge-Kutta computations ---*/
-	if (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_EXPLICIT) {
-		Res_Visc_RK = new double* [nVar];
-		for (iVar = 0; iVar < nVar; iVar++)
-			Res_Visc_RK[iVar] = new double [nVar];
 	}
 
 	/*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
@@ -989,16 +950,10 @@ CPlasmaVariable::CPlasmaVariable(double *val_solution, unsigned short val_ndim, 
   nPrimVar = nDim+3;
 
 	/*--- Allocate residual structures ---*/
-	Res_Conv = new double [nVar];
-	Res_Visc = new double [nVar];
-	Res_Sour = new double [nVar];
 	/*--- Allocate truncation error for multigrid strategy ---*/
 	Res_TruncError = new double [nVar];
 
 	for (iVar = 0; iVar < nVar; iVar++) {
-		Res_Conv[iVar] = 0.0;
-		Res_Visc[iVar] = 0.0;
-		Res_Sour[iVar] = 0.0;
 		Res_TruncError[iVar] = 0.0;
 	}
 	/*--- Only for residual smoothing (multigrid) ---*/
@@ -1008,13 +963,6 @@ CPlasmaVariable::CPlasmaVariable(double *val_solution, unsigned short val_ndim, 
 	if (nMGSmooth > 0) {
 		Residual_Sum = new double [nVar];
 		Residual_Old = new double [nVar];
-	}
-
-	/*--- Only for Runge-Kutta computations ---*/
-	if (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_EXPLICIT) {
-		Res_Visc_RK = new double* [nVar];
-		for (iVar = 0; iVar < nVar; iVar++)
-			Res_Visc_RK[iVar] = new double [nVar];
 	}
 
 	/*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
@@ -1153,33 +1101,6 @@ CPlasmaVariable::~CPlasmaVariable(void) {
     delete [] LimiterPrimitive;
   }
   
-}
-
-void CPlasmaVariable::SetVel_ResConv_Zero(unsigned short iSpecies) {
-	unsigned short loc, iDim;
-	if ( iSpecies < nDiatomics ) loc = (nDim+3)*iSpecies;
-	else loc = (nDim+3)*nDiatomics + (nDim+2)*(iSpecies-nDiatomics);
-
-	for (iDim = 0; iDim < nDim; iDim++)
-		Res_Conv[loc+iDim+1] = 0.0;
-}
-
-void CPlasmaVariable::SetVel_ResVisc_Zero(unsigned short iSpecies) {
-	unsigned short loc, iDim;
-	if ( iSpecies < nDiatomics ) loc = (nDim+3)*iSpecies;
-	else loc = (nDim+3)*nDiatomics + (nDim+2)*(iSpecies-nDiatomics);
-
-	for (iDim = 0; iDim < nDim; iDim++)
-		Res_Visc[loc+iDim+1] = 0.0;
-}
-
-void CPlasmaVariable::SetVel_ResSour_Zero(unsigned short iSpecies) {
-	unsigned short loc, iDim;
-	if ( iSpecies < nDiatomics ) loc = (nDim+3)*iSpecies;
-	else loc = (nDim+3)*nDiatomics + (nDim+2)*(iSpecies-nDiatomics);
-
-	for (iDim = 0; iDim < nDim; iDim++)
-		Res_Sour[loc+iDim+1] = 0.0;
 }
 
 void CPlasmaVariable::SetVel_ResTruncError_Zero(unsigned short iSpecies) {
@@ -1575,9 +1496,11 @@ void CPlasmaVariable::SetPrimVar(CConfig *config) {
 
 void CPlasmaVariable::SetLaminarViscosity(CConfig *config) {
 	double Temperature_Dim;
-	unsigned short iSpecies;
+	unsigned short iSpecies, jSpecies, iLoc, jLoc;
 	double Temperature_Ref, Viscosity_Ref;
-	double As, Bs, Cs;
+  double densityMixture, molarConc_i, molarConc_j, Mi, Mj, Tc;
+  double delta2_ij, collisionArea, denom;
+  double ***Omega11;
 
 	switch (config->GetKind_GasModel()) {
 	case ARGON:
@@ -1598,26 +1521,55 @@ void CPlasmaVariable::SetLaminarViscosity(CConfig *config) {
 
 
 	case N2:
-		for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-			/*--- Retrieve flow quantities ---*/
-			Temperature_Dim = Primitive[iSpecies][0];
+            
+      /*--- Gupta-Yos approximation ---*/
+      densityMixture = 0.0;
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+        if ( iSpecies < nDiatomics ) iLoc = (nDim+3)*iSpecies;
+        else iLoc = (nDim+3)*nDiatomics + (nDim+2)*(iSpecies-nDiatomics);
+        densityMixture += Solution[iLoc];
+      }
+      
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+        if ( iSpecies < nDiatomics ) iLoc = (nDim+3)*iSpecies;
+        else iLoc = (nDim+3)*nDiatomics + (nDim+2)*(iSpecies-nDiatomics);
+        
+        denom = 0.0;
+        
+        /*--- Calculate molar concentration ---*/
+        Mi = config->GetMolar_Mass(iSpecies);
+        molarConc_i = Solution[iLoc] / (densityMixture * Mi);
+        
+        for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+          if ( jSpecies < nDiatomics ) jLoc = (nDim+3)*jSpecies;
+          else jLoc = (nDim+3)*nDiatomics + (nDim+2)*(jSpecies-nDiatomics);
+          Mj = config->GetMolar_Mass(jSpecies);
+          molarConc_j = Solution[jLoc] / (densityMixture * Mj);
+          
+          /*--- Calculate "delta" quantities ---*/
+          Tc = sqrt(Primitive[iSpecies][0]*Primitive[jSpecies][0]);
+          Omega11 = config->GetCollisionIntegral11();
+          collisionArea = 1E-20 * Omega11[iSpecies][jSpecies][3] * pow(Tc, Omega11[iSpecies][jSpecies][0]*log(Tc)*log(Tc) + Omega11[iSpecies][jSpecies][1]*log(Tc) + Omega11[iSpecies][jSpecies][2]);
+          delta2_ij = 16.0/5.0 * sqrt((2.0*Mi*Mj) / (PI_NUMBER * UNIVERSAL_GAS_CONSTANT * Tc * (Mi+Mj))) * collisionArea;
 
-			/*--- Calculate species viscosity Blottner et. al. (1971) model ---*/
-			As = config->GetBlottnerCoeff(iSpecies,0);
-			Bs = config->GetBlottnerCoeff(iSpecies,1);
-			Cs = config->GetBlottnerCoeff(iSpecies,2);
-
-			/*--- Calculate the laminar viscosity using the correlation (returns in kg/m*s )---*/
-			LaminarViscosity_MultiSpecies[iSpecies] = 0.1*exp( (As*log(Temperature_Dim) + Bs) * log(Temperature_Dim) + Cs );
-		}
+          /*--- Add to denominator of viscosity ---*/
+          denom += molarConc_j*delta2_ij;
+        }
+        
+        /*--- Calculate species laminar viscosity ---*/
+        LaminarViscosity_MultiSpecies[iSpecies] = (Mi/AVOGAD_CONSTANT * molarConc_i) / denom;
+      }
 		break;
 	}
 }
 
 
 void CPlasmaVariable ::SetThermalCoeff(CConfig *config) {
-	unsigned short iSpecies;
-	double Gamma, Gas_constant, cv_t, cv_rot, cv_vib;
+	unsigned short iSpecies, jSpecies, iLoc, jLoc;
+	double Gamma, Gas_constant, cv_vib;
+  double densityMixture, molarConc_i, molarConc_j, collisionArea, Mi, Mj, Tc, Tv, Theta_v;
+  double denom_t, denom_r, delta1_ij, delta2_ij, a_ij;
+  double ***Omega00, ***Omega11;
 
 	if (config->GetKind_GasModel() == ARGON) {
 		for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++) {
@@ -1626,27 +1578,60 @@ void CPlasmaVariable ::SetThermalCoeff(CConfig *config) {
 			ThermalCoeff[iSpecies] = Gamma * LaminarViscosity_MultiSpecies[iSpecies] *Gas_constant/ ( (Gamma-1.0)*Prandtl_Lam );
 		}
 	} else {
-		/*--- Set thermal conductivity on a species-by-species basis ---*/
-		for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-			Gas_constant = config->GetSpecies_Gas_Constant(iSpecies);
-
-			/*--- Set the specific heat at constant volume based available energy storage modes in the species ---*/
-			if (iSpecies < nDiatomics) {
-				cv_t   = 3.0/2.0 * Gas_constant;
-				cv_rot = Gas_constant;
-				cv_vib = Gas_constant;
-			} else {
-				cv_t   = 3.0/2.0 * Gas_constant;
-				cv_rot = 0.0;
-				cv_vib = 0.0;
-			}
-
-			/*--- Set the thermal conductivity according to Eucken's relation ---*/
-			ThermalCoeff[iSpecies] = LaminarViscosity_MultiSpecies[iSpecies]*(5.0/2.0*cv_t + cv_rot);
-			ThermalCoeff_vib[iSpecies] = LaminarViscosity_MultiSpecies[iSpecies]*cv_vib;
-		}
+    
+    /*--- Gupta-Yos approximation ---*/
+    densityMixture = 0.0;
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      if ( iSpecies < nDiatomics ) iLoc = (nDim+3)*iSpecies;
+      else iLoc = (nDim+3)*nDiatomics + (nDim+2)*(iSpecies-nDiatomics);
+      densityMixture += Solution[iLoc];
+    }
+    
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      if ( iSpecies < nDiatomics ) iLoc = (nDim+3)*iSpecies;
+      else iLoc = (nDim+3)*nDiatomics + (nDim+2)*(iSpecies-nDiatomics);
+      
+      /*--- Calculate molar concentration ---*/
+      Mi = config->GetMolar_Mass(iSpecies);
+      molarConc_i = Solution[iLoc] / (densityMixture * Mi);
+      Theta_v = config->GetCharVibTemp(iSpecies);
+      Tv = Primitive[iSpecies][nDim+1];
+      cv_vib = 0.0;
+      if (iSpecies < nDiatomics)
+        cv_vib = UNIVERSAL_GAS_CONSTANT/Mi * (Theta_v/Tv)*(Theta_v/Tv) * exp(Theta_v/Tv) / ((exp(Theta_v/Tv) - 1.0)*(exp(Theta_v/Tv) - 1.0));
+      
+      denom_t = 0.0;
+      denom_r = 0.0;
+      
+      for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+        if ( jSpecies < nDiatomics ) jLoc = (nDim+3)*jSpecies;
+        else jLoc = (nDim+3)*nDiatomics + (nDim+2)*(jSpecies-nDiatomics);
+        Mj = config->GetMolar_Mass(jSpecies);
+        molarConc_j = Solution[jLoc] / (densityMixture * Mj);
+        
+        /*--- Calculate "delta" quantities ---*/
+        Tc = sqrt(Primitive[iSpecies][0]*Primitive[jSpecies][0]);
+        Omega00 = config->GetCollisionIntegral00();
+        Omega11 = config->GetCollisionIntegral11();
+        a_ij = 1.0 + (1.0 - Mi/Mj)*(0.45 - 2.54*Mi/Mj) / ((1.0 + Mi/Mj)*(1.0 + Mi/Mj));
+        
+        collisionArea = 1E-20 * Omega00[iSpecies][jSpecies][3] * pow(Tc, Omega00[iSpecies][jSpecies][0]*log(Tc)*log(Tc) + Omega00[iSpecies][jSpecies][1]*log(Tc) + Omega00[iSpecies][jSpecies][2]);
+        delta1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (PI_NUMBER * UNIVERSAL_GAS_CONSTANT * Tc * (Mi+Mj))) * collisionArea;
+        
+        collisionArea = 1E-20 * Omega11[iSpecies][jSpecies][3] * pow(Tc, Omega11[iSpecies][jSpecies][0]*log(Tc)*log(Tc) + Omega11[iSpecies][jSpecies][1]*log(Tc) + Omega11[iSpecies][jSpecies][2]);
+        delta2_ij = 16.0/5.0 * sqrt((2.0*Mi*Mj) / (PI_NUMBER * UNIVERSAL_GAS_CONSTANT * Tc * (Mi+Mj))) * collisionArea;
+        
+        
+        /*--- Add to denominator of translational & rotational thermal conductivity ---*/
+        denom_t += a_ij*molarConc_j*delta2_ij;
+        denom_r += molarConc_j*delta1_ij;
+      }
+            
+      /*--- Calculate species laminar viscosity ---*/
+      ThermalCoeff[iSpecies] = 15.0/4.0 * BOLTZMANN_CONSTANT * molarConc_i / denom_t + BOLTZMANN_CONSTANT * molarConc_i / denom_r;
+      ThermalCoeff_vib[iSpecies] = BOLTZMANN_CONSTANT * cv_vib/config->GetSpecies_Gas_Constant(iSpecies) * molarConc_i / denom_r;
+    }
 	}
-
 }
 
 CLevelSetVariable::CLevelSetVariable(void) : CVariable() {}
@@ -1656,11 +1641,7 @@ CLevelSetVariable::CLevelSetVariable(unsigned short val_ndim, unsigned short val
 	unsigned short iVar;
 
 	/*--- Allocate residual structures ---*/
-	Res_Conv = new double [nVar]; Res_Visc = new double [nVar]; Res_Sour = new double [nVar];
 	Residual_Sum = new double [nVar]; Residual_Old = new double [nVar];
-	Res_Visc_RK = new double* [nVar];
-	for (iVar = 0; iVar < nVar; iVar++)
-		Res_Visc_RK[iVar] = new double [nVar];
 
 	/*--- Allocate limiter (upwind) ---*/
 	Limiter = new double [nVar];
@@ -1680,11 +1661,7 @@ CLevelSetVariable::CLevelSetVariable(double val_levelset, unsigned short val_ndi
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
 	/*--- Allocate residual structures ---*/
-	Res_Conv = new double [nVar]; Res_Visc = new double [nVar]; Res_Sour = new double [nVar];
 	Residual_Sum = new double [nVar]; Residual_Old = new double [nVar];
-	Res_Visc_RK = new double* [nVar];
-	for (iVar = 0; iVar < nVar; iVar++)
-		Res_Visc_RK[iVar] = new double [nVar];
 
 	/*--- Allocate limiter (upwind)---*/
 	Limiter = new double [nVar];
@@ -1724,7 +1701,6 @@ CWaveVariable::CWaveVariable(double *val_wave, unsigned short val_ndim, unsigned
 	Solution_Direct = NULL;
   
 	/*--- Allocate residual structures ---*/
-	Res_Conv = new double [nVar]; Res_Visc = new double [nVar]; Res_Sour = new double [nVar];
 	Residual_Sum = new double [nVar]; Residual_Old = new double [nVar];
 
 	/*--- Allocate direct solution container for adjoint problem ---*/
@@ -1760,7 +1736,6 @@ CFEAVariable::CFEAVariable(double *val_fea, unsigned short val_ndim, unsigned sh
 	unsigned short iVar;
 
 	/*--- Allocate residual structures ---*/
-	Res_Conv = new double [nVar]; Res_Visc = new double [nVar]; Res_Sour = new double [nVar];
 	Residual_Sum = new double [nVar]; Residual_Old = new double [nVar];
 
 	/*--- Initialization of variables ---*/
@@ -1787,7 +1762,6 @@ CHeatVariable::CHeatVariable(double *val_heat, unsigned short val_ndim, unsigned
 	Solution_Direct = NULL;
   
 	/*--- Allocate residual structures ---*/
-	Res_Conv = new double [nVar]; Res_Visc = new double [nVar]; Res_Sour = new double [nVar];
 	Residual_Sum = new double [nVar]; Residual_Old = new double [nVar];
 
 	/*--- Allocate direct solution container for adjoint problem ---*/

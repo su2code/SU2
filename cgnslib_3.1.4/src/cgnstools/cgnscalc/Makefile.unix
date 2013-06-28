@@ -1,0 +1,99 @@
+# Makefile for Unix/Linux
+
+include ../make.defs
+
+CALCDIR = ../calclib
+CALCLIB = $(CALCDIR)/libcgnscalc.$(A)
+
+COPTS  = $(CFLAGS) -I$(CGNSDIR) -I$(CALCDIR) $(TKINCS)
+LDLIST = $(CALCLIB) $(CGNSLIB) $(BUILDLIBS) $(TKLIBS) $(X11LIBS) $(CLIBS)
+
+#--------------------------------------------------
+
+calcwish$(EXE) : calcwish.$(O) calctcl.$(O) $(CALCLIB)
+	$(CC) $(LDFLAGS) -o $@ calcwish.$(O) calctcl.$(O) $(LDLIST)
+	$(STRIP) $@
+
+calcwish.$(O) : calcwish.c
+calctcl.$(O)  : calctcl.c
+
+$(CALCLIB) :
+	cd $(CALCDIR) && $(MAKE)
+
+#---------------------------------------------------------------
+
+SCRIPTS = cgnscalc.tcl unitconv.tcl
+ICONS = cgnscalc.ico cgnscalc.png cgnscalc-icon.xbm cgnscalc-mask.xbm \
+	unitconv.ico unitconv.png unitconv.xbm
+
+install : install-dirs install-prog install-wish install-script
+
+install-dirs :
+	@for d in \
+	  $(BIN_INSTALL_DIR) \
+	  $(EXE_INSTALL_DIR) \
+	  $(WSH_INSTALL_DIR) \
+	  $(LIB_INSTALL_DIR) ; do \
+	  if [ ! -d $$d ] ; then \
+	    echo "Making directory $$d"; \
+	    mkdir -p $$d; \
+	    chmod 755 $$d; \
+	  fi; \
+	done;
+
+install-prog :
+	@echo "installing cgnscalc shell scripts to $(BIN_INSTALL_DIR)"
+	@$(INSTALL_PROG) cgnscalc.sh $(BIN_INSTALL_DIR)/cgnscalc
+	@chmod +x $(BIN_INSTALL_DIR)/cgnscalc
+	@$(INSTALL_PROG) unitconv.sh $(BIN_INSTALL_DIR)/unitconv
+	@chmod +x $(BIN_INSTALL_DIR)/unitconv
+	@if [ ! -f $(EXE_INSTALL_DIR)/cgconfig ] ; then \
+	  echo "installing configuration file to $(EXE_INSTALL_DIR)"; \
+	  $(INSTALL_DATA) ../cgconfig $(EXE_INSTALL_DIR)/cgconfig; \
+	fi;
+
+install-wish : calcwish$(EXE)
+	@echo "installing calcwish executable to $(WSH_INSTALL_DIR)"
+	@$(INSTALL_PROG) calcwish$(EXE) $(WSH_INSTALL_DIR)
+
+install-script :
+	@echo "installing tcl scripts to $(LIB_INSTALL_DIR)"
+	@for i in $(SCRIPTS) ; do \
+	  $(INSTALL_DATA) $$i $(LIB_INSTALL_DIR); \
+	done;
+	@echo "installing icons to $(LIB_INSTALL_DIR)"
+	@for i in $(ICONS) ; do \
+	  $(INSTALL_DATA) $$i $(LIB_INSTALL_DIR); \
+	done;
+
+uninstall :
+	@echo "uninstalling cgnscalc executables"
+	@for i in cgnscalc unitconv ; do \
+	  if [ -f $(BIN_INSTALL_DIR)/$$i ] ; then \
+	    /bin/rm -f $(BIN_INSTALL_DIR)/$$i; \
+	  fi; \
+	done;
+	@if [ -f $(WSH_INSTALL_DIR)/calcwish$(EXE) ] ; then \
+	  /bin/rm -f $(WSH_INSTALL_DIR)/calcwish$(EXE); \
+	fi;
+	@echo "uninstalling cgnscalc tcl scripts"
+	@for i in $(SCRIPTS) ; do \
+	  if [ -f $(LIB_INSTALL_DIR)/$$i ] ; then \
+	    /bin/rm -f $(LIB_INSTALL_DIR)/$$i; \
+	  fi; \
+	done;
+	@echo "uninstalling cgnscalc icons"
+	@for i in $(ICONS) ; do \
+	  if [ -f $(LIB_INSTALL_DIR)/$$i ] ; then \
+	    /bin/rm -f $(LIB_INSTALL_DIR)/$$i; \
+	  fi; \
+	done;
+
+#---------------------------------------------------------------
+
+.c.$(O) :
+	$(CC) $(COPTS) -c $<
+
+clean:
+	-$(RM) *.$(O) *~ *.bak calcwish$(EXE)
+

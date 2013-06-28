@@ -1,0 +1,36 @@
+#---------------------------------------------------------------------
+# this is where the executables and tcl scripts
+# may be found after installation
+#---------------------------------------------------------------------
+
+CG_BIN_DIR=@CG_BIN_DIR@; export CG_BIN_DIR
+CG_LIB_DIR=@CG_LIB_DIR@; export CG_LIB_DIR
+
+#---------------------------------------------------------------------
+# you may need to set the paths to the Tcl/Tk scripts
+# if the system can't find them. If using shared libraries,
+# you may also need to modify LD_LIBRARY_PATH to include
+# the directories where libtcl.so and libtk.so are located
+#
+# for example, if Tcl/Tk built locally under Unix/Linux
+# using shared libraries, then set
+#
+#   TCL_ROOT=$HOME/tcl8.3
+#   TK_ROOT=$HOME/tk8.3
+#   export TCL_LIBRARY=$TCL_ROOT/library
+#   export TK_LIBRARY=$TK_ROOT/library
+#   export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$TCL_ROOT/unix:$TK_ROOT/unix
+#
+# running under Cygwin, may need (assuming Tcl/Tk 8.0)
+#
+#   sharedir=`cygpath -m /usr/share`
+#   export TCL_LIBRARY=$sharedir/tcl8.0
+#   export TK_LIBRARY=$sharedir/tk8.0
+#
+# under SGI, may need LD_LIBRARYN32_PATH instead
+#----------------------------------------------------------------------
+
+@TCL_LIBRARY_SPEC@
+@TK_LIBRARY_SPEC@
+@LIBRARY_PATH_SPEC@
+

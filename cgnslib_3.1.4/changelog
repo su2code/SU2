@@ -1,0 +1,44 @@
+== 3.1.4 ==
+- added some const definitions to library
+- moved unlink of filename when using CG_MODE_WRITE on open to cgio
+- fixed goto for FamilyBCDataset for UserData, .etc
+- added cg_get_cgio_f and cg_root_id_f Fortran routines
+- fixed cmake and configure scripts to allow MPI with HDF5 and
+  fixed bugs in those scripts
+- updated CGNSplot to handle all element types and 1-d and 2-d cases
+- fixes to cgnscheck
+- cleaned up some compiler warnings
+- added cgnsBuild.defs Makefile include to installation
+- removed unneeded tools directory from cgnstools
+- cgnstools no longer built automatically - need to set configure flag
+- allow CellCenter for BCs
+- added cg_precision and cg_precision_f functions to get integer
+  size used to create the file (32 or 64)
+
+== 3.0.8 ==
+- Fix flag
+- Test for v3.0 release
+
+== 3.0.7 ==
+- Internal updates
+
+== 3.0.6 ==
+- Internal updates
+
+== 3.0.5 ==
+- Added install.txt and install.lyx
+- Added readme.txt and readme.lyx
+- Re-integrated the automake build system into the src directory
+  so that the old build system can be used by invoking ./configure
+  make, make install in the src directory.
+- Added license.txt
+
+== 3.0.4 ==
+- Fixed a compilation problem with gcc-4.1
+
+== 3.0.3
+- Internal debugging release
+
+== 3.0.2 ==
+- Fixed BUILD_HDF5 flag in CMakeLists.txt
+- Fixed file prop list scope problem in ADFH.c
