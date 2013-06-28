@@ -3,7 +3,7 @@
 ## \file libSU2.py
 #  \brief Support Functions for SU2 Python Scripts
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.
+#  \version 2.0.1
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -114,6 +114,9 @@ def Get_ConfigParams(filename):
             
             # int parameters
             if case("NUMBER_PART")            : pass
+            if case("AVAILABLE_PROC")         : pass
+            if case("EXT_ITER")               : pass
+            if case("TIME_INSTANCES")         : pass
             if case("ADAPT_CYCLES")           :
                 data_dict[this_param] = int(this_value)
                 break                
@@ -854,7 +857,11 @@ def get_SpecialCases(data_dict):
     
     if (data_dict['WRT_SOL_FREQ'] != 1) and ('WRT_UNSTEADY' in special_cases):
         raise Exception('Must set WRT_SOL_FREQ= 1 for WRT_UNSTEADY= YES')
-            
+  
+    # Special case for time-spectral
+    if data_dict.has_key('UNSTEADY_SIMULATION') and data_dict['UNSTEADY_SIMULATION'] == 'TIME_SPECTRAL':
+        special_cases.append('TIME_SPECTRAL')
+
     return special_cases
 
 #: def get_SpecialCases()
@@ -1257,11 +1264,52 @@ class bunch:
 
 
 # -------------------------------------------------------------------
+#  Output Redirection 
+# -------------------------------------------------------------------
+# original source: original source: http://stackoverflow.com/questions/6796492/python-temporarily-redirect-stdout-stderr
+class redirect_output(object):
+    ''' Temporarily redirects sys.stdout and sys.stderr when used in
+        a with contextmanager
+    '''
+    def __init__(self, stdout=None, stderr=None):
+        
+        _newout = False
+        _newerr = False
+        
+        if isinstance(stdout,str):
+            stdout = open(stdout,'a')
+            _newout = True            
+        if isinstance(stderr,str):
+            stderr = open(stderr,'a')
+            _newerr = True                   
+                
+        self._stdout = stdout or sys.stdout
+        self._stderr = stderr or sys.stderr
+        self._newout = _newout
+        self._newerr = _newerr
+
+    def __enter__(self):
+        self.old_stdout, self.old_stderr = sys.stdout, sys.stderr
+        self.old_stdout.flush(); self.old_stderr.flush()
+        sys.stdout, sys.stderr = self._stdout, self._stderr
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self._stdout.flush(); self._stderr.flush()
+        sys.stdout = self.old_stdout
+        sys.stderr = self.old_stderr
+        
+        if self._newout:
+            self._stdout.close()
+        if self._newerr:
+            self._stderr.close()           
+
+#: class redirect_output()
+
+# -------------------------------------------------------------------
 #  File Lock Class
 # -------------------------------------------------------------------  
 # source: Evan Fosmark, BSD license
 #         http://www.evanfosmark.com/2009/01/cross-platform-file-locking-support-in-python/
- 
 class FileLock(object):
     """ A file locking mechanism that has context-manager support so 
         you can use it in a with statement. This should be relatively cross

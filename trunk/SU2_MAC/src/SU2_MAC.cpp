@@ -2,7 +2,7 @@
  * \file SU2_MAC.cpp
  * \brief Main file of Mesh Adaptation Code (SU2_MAC).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.
+ * \version 2.0.1
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -30,17 +30,17 @@ int main(int argc, char *argv[]) {
 	char file_name[200];
   unsigned short nZone = 1;
 
-	/*-- Definition of the Class for the definition of the problem ---*/
+#ifndef NO_MPI
+	MPI::Init(argc, argv);
+#endif
+	
+	/*--- Definition of the config problem ---*/
 	CConfig *config;
 	if (argc == 2) config = new CConfig(argv[1], SU2_MAC, ZONE_0, nZone, VERB_HIGH);
-	else {
-		strcpy (file_name, "default.cfg");
-		config = new CConfig(file_name, SU2_MAC, ZONE_0, nZone, VERB_HIGH);
-	}
+	else { strcpy (file_name, "default.cfg"); config = new CConfig(file_name, SU2_MAC, ZONE_0, nZone, VERB_HIGH); }
 	
-	/*-- Definition of the Class for the geometry ---*/
-	CGeometry *geometry; 
-	geometry = new CGeometry;
+	/*--- Definition of the Class for the geometry ---*/
+	CGeometry *geometry; geometry = new CGeometry;
 	geometry = new CPhysicalGeometry(config, config->GetMesh_FileName(), config->GetMesh_FileFormat(), ZONE_0, nZone);
 	
   /*--- Perform the non-dimensionalization, in case any values are needed ---*/
@@ -223,6 +223,10 @@ int main(int argc, char *argv[]) {
 		geometry->SetMeshFile (config, config->GetMesh_Out_FileName());
 	}
 
+#ifndef NO_MPI
+	MPI::Finalize();
+#endif
+	
 	/*--- End solver ---*/
 	cout << endl <<"------------------------- Exit Success (SU2_MAC) ------------------------" << endl << endl;
 		

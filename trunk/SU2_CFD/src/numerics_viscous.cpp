@@ -2,7 +2,7 @@
  * \file numerics_viscous.cpp
  * \brief This file contains all the viscous term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.
+ * \version 2.0.1
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -27,55 +27,49 @@ CAvgGrad_Flow::CAvgGrad_Flow(unsigned short val_nDim, unsigned short val_nVar, C
 
 	implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
-	Gamma = config->GetGamma();
-	Gamma_Minus_One = Gamma - 1.0;
+	PrimVar_i = new double [nDim+3];
+	PrimVar_j = new double [nDim+3];
+	Mean_PrimVar = new double [nDim+3];
 
-	/*--- Allocate some useful vectors ---*/
-	Velocity_i = new double [nVar];
-	Velocity_j = new double [nVar];
-	Prim_Var_i = new double [nVar];
-	Prim_Var_j = new double [nVar];
-	Mean_PrimVar = new double [nVar];
-	Mean_GradPrimVar = new double* [nVar];
-	for (iVar = 0; iVar < nVar; iVar++)
+	Mean_GradPrimVar = new double* [nDim+1];
+	for (iVar = 0; iVar < nDim+1; iVar++)
 		Mean_GradPrimVar[iVar] = new double [nDim];
 }
 
 CAvgGrad_Flow::~CAvgGrad_Flow(void) {
 
-	delete [] Velocity_i;
-	delete [] Velocity_j;
-	delete [] Prim_Var_i;
-	delete [] Prim_Var_j;
+	delete [] PrimVar_i;
+	delete [] PrimVar_j;
 	delete [] Mean_PrimVar;
-	for (iVar = 0; iVar < nVar; iVar++)
+
+	for (iVar = 0; iVar < nDim+1; iVar++)
 		delete [] Mean_GradPrimVar[iVar];
 	delete [] Mean_GradPrimVar;
 }
 
 void CAvgGrad_Flow::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
-//************************************************//
-// Please do not delete //SU2_CPP2C comment lines //
-//************************************************//
+	//************************************************//
+	// Please do not delete //SU2_CPP2C comment lines //
+	//************************************************//
 
-//SU2_CPP2C START CAvgGrad_Flow::SetResidual
-//SU2_CPP2C CALL_LIST START
-//SU2_CPP2C INVARS *U_i *U_j **PrimVar_Grad_i **PrimVar_Grad_j
-//SU2_CPP2C INVARS Laminar_Viscosity_i Laminar_Viscosity_j Eddy_Viscosity_i Eddy_Viscosity_j
-//SU2_CPP2C OUTVARS *val_residual
-//SU2_CPP2C VARS DOUBLE *Normal Gamma Gamma_Minus_One Gas_Constant
-//SU2_CPP2C CALL_LIST END
+	//SU2_CPP2C START CAvgGrad_Flow::SetResidual
+	//SU2_CPP2C CALL_LIST START
+	//SU2_CPP2C INVARS *U_i *U_j **PrimVar_Grad_i **PrimVar_Grad_j
+	//SU2_CPP2C INVARS Laminar_Viscosity_i Laminar_Viscosity_j Eddy_Viscosity_i Eddy_Viscosity_j
+	//SU2_CPP2C OUTVARS *val_residual
+	//SU2_CPP2C VARS DOUBLE *Normal Gamma Gamma_Minus_One Gas_Constant
+	//SU2_CPP2C CALL_LIST END
 
-//SU2_CPP2C DEFINE nDim nVar
+	//SU2_CPP2C DEFINE nDim nVar
 
-//SU2_CPP2C DECL_LIST START
-//SU2_CPP2C VARS INT SCALAR iDim jDim iVar
-//SU2_CPP2C VARS DOUBLE SCALAR Area Mean_Laminar_Viscosity Mean_Eddy_Viscosity dist_ij
-//SU2_CPP2C VARS DOUBLE SCALAR total_viscosity heat_flux_factor div_vel cp Density sq_vel
-//SU2_CPP2C VARS DOUBLE MATRIX SIZE=nVar Prim_Var_i Prim_Var_j Mean_PrimVar Proj_Flux_Tensor
-//SU2_CPP2C VARS DOUBLE MATRIX SIZE=nVar SIZE=nDim Mean_GradPrimVar
-//SU2_CPP2C VARS DOUBLE MATRIX SIZE=nDim SIZE=nDim tau
-//SU2_CPP2C DECL_LIST END
+	//SU2_CPP2C DECL_LIST START
+	//SU2_CPP2C VARS INT SCALAR iDim jDim iVar
+	//SU2_CPP2C VARS DOUBLE SCALAR Area Mean_Laminar_Viscosity Mean_Eddy_Viscosity dist_ij
+	//SU2_CPP2C VARS DOUBLE SCALAR total_viscosity heat_flux_factor div_vel cp Density sq_vel
+	//SU2_CPP2C VARS DOUBLE MATRIX SIZE=nVar PrimVar_i PrimVar_j Mean_PrimVar Proj_Flux_Tensor
+	//SU2_CPP2C VARS DOUBLE MATRIX SIZE=nVar SIZE=nDim Mean_GradPrimVar
+	//SU2_CPP2C VARS DOUBLE MATRIX SIZE=nDim SIZE=nDim tau
+	//SU2_CPP2C DECL_LIST END
 
 
 	/*--- Normalized normal vector ---*/
@@ -87,22 +81,14 @@ void CAvgGrad_Flow::SetResidual(double *val_residual, double **val_Jacobian_i, d
 	for (iDim = 0; iDim < nDim; iDim++)
 		UnitaryNormal[iDim] = Normal[iDim]/Area;
 
-	/*--- Conversion to Primitive Variables ---*/
-//SU2_CPP2C SUBROUTINE START ConsVar2PrimVar
-	ConsVar2PrimVar(U_i, Prim_Var_i, turb_ke_i);
-//SU2_CPP2C SUBROUTINE LOCATION numerics_structure.cpp
-//SU2_CPP2C SUBROUTINE VARS U_i Prim_Var_i
-//SU2_CPP2C SUBROUTINE END
+	/*--- Setting the primitive variables (T,    vel,      p,    rho) and compute the mean ---*/
+	/*---                       index     (0, iDim+1, nDim+1, nDim+2)                      ---*/
 
-//SU2_CPP2C SUBROUTINE START ConsVar2PrimVar
-	ConsVar2PrimVar(U_j, Prim_Var_j, turb_ke_j);
-//SU2_CPP2C SUBROUTINE LOCATION numerics_structure.cpp
-//SU2_CPP2C SUBROUTINE VARS U_j Prim_Var_j
-//SU2_CPP2C SUBROUTINE END
-
-	/*--- Mean Primitive variable value ---*/
-	for (iVar = 0; iVar < nVar; iVar++)
-		Mean_PrimVar[iVar] = 0.5*(Prim_Var_i[iVar]+Prim_Var_j[iVar]);
+	for (iVar = 0; iVar < nDim+3; iVar++) {
+		PrimVar_i[iVar] = V_i[iVar];
+		PrimVar_j[iVar] = V_j[iVar];
+		Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
+	}
 
 	/*--- Mean Viscosities and turbulent kinetic energy---*/
 	Mean_Laminar_Viscosity = 0.5*(Laminar_Viscosity_i + Laminar_Viscosity_j);
@@ -110,63 +96,59 @@ void CAvgGrad_Flow::SetResidual(double *val_residual, double **val_Jacobian_i, d
 	Mean_turb_ke           = 0.5*(turb_ke_i + turb_ke_j);
 
 	/*--- Mean gradient approximation ---*/
-	for (iVar = 0; iVar < nVar; iVar++)
-		for (iDim = 0; iDim < nDim; iDim++)
+	for (iVar = 0; iVar < nDim+1; iVar++) {
+		for (iDim = 0; iDim < nDim; iDim++) {
 			Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar][iDim] + PrimVar_Grad_j[iVar][iDim]);
+		}
+	}
 
 	/*--- Get projected flux tensor ---*/
-//SU2_CPP2C SUBROUTINE START GetViscousProjFlux
+	//SU2_CPP2C SUBROUTINE START GetViscousProjFlux
 	GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
-//SU2_CPP2C SUBROUTINE LOCATION numerics_structure.cpp
-//SU2_CPP2C SUBROUTINE VARS Mean_PrimVar Mean_GradPrimVar Normal Mean_Laminar_Viscosity Mean_Eddy_Viscosity
-//SU2_CPP2C SUBROUTINE END
+	//SU2_CPP2C SUBROUTINE LOCATION numerics_structure.cpp
+	//SU2_CPP2C SUBROUTINE VARS Mean_PrimVar Mean_GradPrimVar Normal Mean_Laminar_Viscosity Mean_Eddy_Viscosity
+	//SU2_CPP2C SUBROUTINE END
 
 	/*--- Update viscous residual ---*/
 	for (iVar = 0; iVar < nVar; iVar++)
 		val_residual[iVar] = Proj_Flux_Tensor[iVar];
 
-//SU2_CPP2C COMMENT START
+	//SU2_CPP2C COMMENT START
 
-	/*--- Implicit part ---*/
+	/*--- Compute the implicit part ---*/
 	if (implicit) {
 		dist_ij = 0;
 		for (iDim = 0; iDim < nDim; iDim++)
 			dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
 		dist_ij = sqrt(dist_ij);
-		Mean_Density = 0.5*(U_i[0]+U_j[0]);
-
-		GetViscousProjJacs(Mean_Density, Mean_PrimVar[nVar-1], Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, 
-				dist_ij, UnitaryNormal, Area, Mean_PrimVar, Proj_Flux_Tensor, val_Jacobian_i, val_Jacobian_j);
+		GetViscousProjJacs(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, 
+				dist_ij, UnitaryNormal, Area, Proj_Flux_Tensor, val_Jacobian_i, val_Jacobian_j);
 	}
 
-//SU2_CPP2C COMMENT END
+	//SU2_CPP2C COMMENT END
 
-//SU2_CPP2C END CAvgGrad_Flow::SetResidual
+	//SU2_CPP2C END CAvgGrad_Flow::SetResidual
 }
 
 CAvgGradArtComp_Flow::CAvgGradArtComp_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
 	implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
-	/*--- Allocate some useful vectors ---*/
-	Velocity_i = new double [nVar];
-	Velocity_j = new double [nVar];
-	Prim_Var_i = new double [nVar];
-	Prim_Var_j = new double [nVar];
+	PrimVar_i = new double [nVar];
+	PrimVar_j = new double [nVar];
 	Mean_PrimVar = new double [nVar];
 	Mean_GradPrimVar = new double* [nVar];
+
 	for (iVar = 0; iVar < nVar; iVar++)
 		Mean_GradPrimVar[iVar] = new double [nDim];
-
 }
 
 CAvgGradArtComp_Flow::~CAvgGradArtComp_Flow(void) {
 
-	delete [] Velocity_i;
-	delete [] Velocity_j;
-	delete [] Prim_Var_i;
-	delete [] Prim_Var_j;
+	delete [] PrimVar_i;
+	delete [] PrimVar_j;
 	delete [] Mean_PrimVar;
+
 	for (iVar = 0; iVar < nVar; iVar++)
 		delete [] Mean_GradPrimVar[iVar];
 	delete [] Mean_GradPrimVar;
@@ -186,13 +168,10 @@ void CAvgGradArtComp_Flow::SetResidual(double *val_residual, double **val_Jacobi
 
 	/*--- Conversion to Primitive Variables ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
-		Prim_Var_i[iVar] = U_i[iVar];
-		Prim_Var_j[iVar] = U_j[iVar];		
+		PrimVar_i[iVar] = V_i[iVar];
+		PrimVar_j[iVar] = V_j[iVar];
+		Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
 	}
-
-	/*--- Mean Primitive variable value ---*/
-	for (iVar = 0; iVar < nVar; iVar++)
-		Mean_PrimVar[iVar] = 0.5*(Prim_Var_i[iVar]+Prim_Var_j[iVar]);
 
 	/*--- Mean Viscosities ---*/
 	Mean_Laminar_Viscosity = 0.5*(Laminar_Viscosity_i + Laminar_Viscosity_j);
@@ -217,8 +196,8 @@ void CAvgGradArtComp_Flow::SetResidual(double *val_residual, double **val_Jacobi
 			dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
 		dist_ij = sqrt(dist_ij);
 
-		GetViscousArtCompProjJacs(Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, 
-				dist_ij, UnitaryNormal, Area, val_Jacobian_i, val_Jacobian_j);
+		GetViscousArtCompProjJacs(Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, dist_ij, UnitaryNormal, 
+				Area, val_Jacobian_i, val_Jacobian_j);
 	}
 }
 
@@ -254,45 +233,45 @@ CAvgGrad_TurbSA::~CAvgGrad_TurbSA(void) {
 
 void CAvgGrad_TurbSA::SetResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) {
 
-//************************************************//
-// Please do not delete //SU2_CPP2C comment lines //
-//************************************************//
+	//************************************************//
+	// Please do not delete //SU2_CPP2C comment lines //
+	//************************************************//
 
-//SU2_CPP2C START CAvgGrad_TurbSA::SetResidual
-//SU2_CPP2C CALL_LIST START
-//SU2_CPP2C INVARS *U_i *U_j **PrimVar_Grad_i Laminar_Viscosity_i Laminar_Viscosity_j *TurbVar_i *TurbVar_j **TurbVar_Grad_i **TurbVar_Grad_j
-//SU2_CPP2C OUTVARS *val_residual
-//SU2_CPP2C VARS DOUBLE sigma *Coord_i *Coord_j
-//SU2_CPP2C CALL_LIST END
+	//SU2_CPP2C START CAvgGrad_TurbSA::SetResidual
+	//SU2_CPP2C CALL_LIST START
+	//SU2_CPP2C INVARS *U_i *U_j **PrimVar_Grad_i Laminar_Viscosity_i Laminar_Viscosity_j *TurbVar_i *TurbVar_j **TurbVar_Grad_i **TurbVar_Grad_j
+	//SU2_CPP2C OUTVARS *val_residual
+	//SU2_CPP2C VARS DOUBLE sigma *Coord_i *Coord_j
+	//SU2_CPP2C CALL_LIST END
 
-//SU2_CPP2C DEFINE nDim nVar
+	//SU2_CPP2C DEFINE nDim nVar
 
-//SU2_CPP2C DECL_LIST START
-//SU2_CPP2C VARS INT SCALAR iDim
-//SU2_CPP2C VARS DOUBLE SCALAR Density_i Density_j nu_i nu_j nu_e
-//SU2_CPP2C VARS DOUBLE SCALAR dist_ij_2 proj_vector_ij
-//SU2_CPP2C VARS DOUBLE MATRIX SIZE=nDim Edge_Vector
-//SU2_CPP2C VARS DOUBLE MATRIX SIZE=nVar Proj_Mean_GradTurbVar_Kappa Proj_Mean_GradTurbVar_Edge
-//SU2_CPP2C VARS DOUBLE MATRIX SIZE=nVar SIZE=nDim Mean_GradTurbVar
-//SU2_CPP2C DECL_LIST END
+	//SU2_CPP2C DECL_LIST START
+	//SU2_CPP2C VARS INT SCALAR iDim
+	//SU2_CPP2C VARS DOUBLE SCALAR Density_i Density_j nu_i nu_j nu_e
+	//SU2_CPP2C VARS DOUBLE SCALAR dist_ij_2 proj_vector_ij
+	//SU2_CPP2C VARS DOUBLE MATRIX SIZE=nDim Edge_Vector
+	//SU2_CPP2C VARS DOUBLE MATRIX SIZE=nVar Proj_Mean_GradTurbVar_Kappa Proj_Mean_GradTurbVar_Edge
+	//SU2_CPP2C VARS DOUBLE MATRIX SIZE=nVar SIZE=nDim Mean_GradTurbVar
+	//SU2_CPP2C DECL_LIST END
 
-//SU2_CPP2C COMMENT START
+	//SU2_CPP2C COMMENT START
 	if (incompressible) {
 		Density_i = DensityInc_i;
 		Density_j = DensityInc_j;
 	}
 	else {
-//SU2_CPP2C COMMENT END
+		//SU2_CPP2C COMMENT END
 		Density_i = U_i[0];
 		Density_j = U_j[0];
-//SU2_CPP2C COMMENT START
+		//SU2_CPP2C COMMENT START
 	}
-//SU2_CPP2C COMMENT END
-	
-//SU2_CPP2C DECL_LIST START
+	//SU2_CPP2C COMMENT END
+
+	//SU2_CPP2C DECL_LIST START
 	switch (config->GetKind_Turb_Model()) {
 	case SA :
-//SU2_CPP2C COMMENT END
+		//SU2_CPP2C COMMENT END
 
 		/*--- Compute mean effective viscosity ---*/
 		nu_i = Laminar_Viscosity_i/Density_i;
@@ -319,60 +298,25 @@ void CAvgGrad_TurbSA::SetResidual(double *val_residual, double **Jacobian_i, dou
 		}
 
 		val_residual[0] = nu_e*Proj_Mean_GradTurbVar_Kappa[0]/sigma;
-//SU2_CPP2C COMMENT START
+		//SU2_CPP2C COMMENT START
 		/*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
 		if (implicit) {
 			Jacobian_i[0][0] = (0.5*Proj_Mean_GradTurbVar_Kappa[0]-nu_e*proj_vector_ij)/sigma;
 			Jacobian_j[0][0] = (0.5*Proj_Mean_GradTurbVar_Kappa[0]+nu_e*proj_vector_ij)/sigma;
 		}
-//SU2_CPP2C COMMENT END
+		//SU2_CPP2C COMMENT END
 
-//SU2_CPP2C COMMENT START
+		//SU2_CPP2C COMMENT START
 		break;
 
-	case SA_COMP :
-
-		/*--- Compute mean effective viscosity ---*/
-		nu_e = 0.5*(Laminar_Viscosity_i+Laminar_Viscosity_j+TurbVar_i[0]+TurbVar_j[0]);
-		nu_hat_i = TurbVar_i[0]/Density_i;
-		nu_hat_j = TurbVar_j[0]/Density_j;
-
-		/*--- Compute vector going from iPoint to jPoint ---*/
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
-			dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
-			proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
-		}
-		proj_vector_ij = proj_vector_ij/dist_ij_2;
-
-		/*--- Mean gradient approximation. Projection of the mean
-			 gradient in the direction of the edge ---*/
-		Proj_Mean_GradTurbVar_Kappa[0] = 0.0;
-		Proj_Mean_GradTurbVar_Edge[0] = 0.0;
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Mean_GradTurbVar[0][iDim] =
-					0.5*( (TurbVar_Grad_i[0][iDim] - ConsVar_Grad_i[0][iDim]*nu_hat_i)/Density_i
-					                                                                       +(TurbVar_Grad_j[0][iDim] - ConsVar_Grad_j[0][iDim]*nu_hat_j)/Density_j );
-			Proj_Mean_GradTurbVar_Kappa[0] += Mean_GradTurbVar[0][iDim]*Normal[iDim];
-		}
-
-		val_residual[0] = nu_e*Proj_Mean_GradTurbVar_Kappa[0]/sigma;
-
-		/*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
-		if (implicit) {
-			Jacobian_i[0][0] = (0.5*Proj_Mean_GradTurbVar_Kappa[0]-nu_e/Density_i*proj_vector_ij)/sigma;
-			Jacobian_j[0][0] = (0.5*Proj_Mean_GradTurbVar_Kappa[0]+nu_e/Density_j*proj_vector_ij)/sigma;
-		}
-		break;
 	}
-//SU2_CPP2C COMMENT END
+	//SU2_CPP2C COMMENT END
 
-//SU2_CPP2C END CAvgGrad_TurbSA::SetResidual
+	//SU2_CPP2C END CAvgGrad_TurbSA::SetResidual
 
 }
 
 CAvgGrad_TransLM::CAvgGrad_TransLM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
-  // TODO, Aniket
 	unsigned short iVar;
 
 	implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
@@ -384,35 +328,32 @@ CAvgGrad_TransLM::CAvgGrad_TransLM(unsigned short val_nDim, unsigned short val_n
 	sigma = 2./3.;
 
 	Edge_Vector = new double [nDim];
-	Proj_Mean_GradTurbVar_Kappa = new double [nVar];
-	Proj_Mean_GradTurbVar_Edge = new double [nVar];
-	Mean_GradTurbVar = new double* [nVar];
+	Proj_Mean_GradTransVar_Kappa = new double [nVar];
+	Proj_Mean_GradTransVar_Edge = new double [nVar];
+	Mean_GradTransVar = new double* [nVar];
 	for (iVar = 0; iVar < nVar; iVar++)
-		Mean_GradTurbVar[iVar] = new double [nDim];
+		Mean_GradTransVar[iVar] = new double [nDim];
 }
 
 CAvgGrad_TransLM::~CAvgGrad_TransLM(void) {
-  // TODO, Aniket
+
 	unsigned short iVar;
 
 	delete [] Edge_Vector;
-	delete [] Proj_Mean_GradTurbVar_Kappa;
-	delete [] Proj_Mean_GradTurbVar_Edge;
+	delete [] Proj_Mean_GradTransVar_Kappa;
+	delete [] Proj_Mean_GradTransVar_Edge;
 	for (iVar = 0; iVar < nVar; iVar++)
-		delete [] Mean_GradTurbVar[iVar];
-	delete [] Mean_GradTurbVar;
+		delete [] Mean_GradTransVar[iVar];
+	delete [] Mean_GradTransVar;
 }
 
 void CAvgGrad_TransLM::SetResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) {
 
-  // TODO, Aniket
-	switch (config->GetKind_Turb_Model()) {
-	case SA :
 
-		/*--- Compute mean effective viscosity ---*/
+	/*--- Compute mean effective viscosity ---*/
 		nu_i = Laminar_Viscosity_i/U_i[0];
 		nu_j = Laminar_Viscosity_j/U_j[0];
-		nu_e = 0.5*(nu_i+nu_j+TurbVar_i[0]+TurbVar_j[0]);
+		nu_e = 0.5*(nu_i+nu_j+Eddy_Viscosity_i+Eddy_Viscosity_j) ;
 
 		/*--- Compute vector going from iPoint to jPoint ---*/
 		dist_ij_2 = 0; proj_vector_ij = 0;
@@ -425,59 +366,27 @@ void CAvgGrad_TransLM::SetResidual(double *val_residual, double **Jacobian_i, do
 
 		/*--- Mean gradient approximation ---*/
 		for (iVar = 0; iVar < nVar; iVar++) {
-			Proj_Mean_GradTurbVar_Kappa[iVar] = 0.0;
-			Proj_Mean_GradTurbVar_Edge[iVar] = 0.0;
+			Proj_Mean_GradTransVar_Kappa[iVar] = 0.0;
+			Proj_Mean_GradTransVar_Edge[iVar] = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++) {
-				Mean_GradTurbVar[iVar][iDim] = 0.5*(TurbVar_Grad_i[iVar][iDim] + TurbVar_Grad_j[iVar][iDim]);
-				Proj_Mean_GradTurbVar_Kappa[iVar] += Mean_GradTurbVar[iVar][iDim]*Normal[iDim];
+				Mean_GradTransVar[iVar][iDim] = 0.5*(TransVar_Grad_i[iVar][iDim] + TransVar_Grad_j[iVar][iDim]);
+				Proj_Mean_GradTransVar_Kappa[iVar] += Mean_GradTransVar[iVar][iDim]*Normal[iDim];
 			}
 		}
 
-		val_residual[0] = nu_e*Proj_Mean_GradTurbVar_Kappa[0]/sigma;
+		val_residual[0] = nu_e*Proj_Mean_GradTransVar_Kappa[0]/1.0;
+		val_residual[1] = nu_e*Proj_Mean_GradTransVar_Kappa[1]/2.0;
 
 		/*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
 		if (implicit) {
-			Jacobian_i[0][0] = (0.5*Proj_Mean_GradTurbVar_Kappa[0]-nu_e*proj_vector_ij)/sigma;
-			Jacobian_j[0][0] = (0.5*Proj_Mean_GradTurbVar_Kappa[0]+nu_e*proj_vector_ij)/sigma;
-		}
-		break;
-
-	case SA_COMP :
-
-		/*--- Compute mean effective viscosity ---*/
-		nu_e = 0.5*(Laminar_Viscosity_i+Laminar_Viscosity_j+TurbVar_i[0]+TurbVar_j[0]);
-		nu_hat_i = TurbVar_i[0]/U_i[0];
-		nu_hat_j = TurbVar_j[0]/U_j[0];
-
-		/*--- Compute vector going from iPoint to jPoint ---*/
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
-			dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
-			proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
-		}
-		proj_vector_ij = proj_vector_ij/dist_ij_2;
-
-		/*--- Mean gradient approximation. Projection of the mean
-			 gradient in the direction of the edge ---*/
-		Proj_Mean_GradTurbVar_Kappa[0] = 0.0;
-		Proj_Mean_GradTurbVar_Edge[0] = 0.0;
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Mean_GradTurbVar[0][iDim] =
-					0.5*( (TurbVar_Grad_i[0][iDim] - ConsVar_Grad_i[0][iDim]*nu_hat_i)/U_i[0]
-					                                                                       +(TurbVar_Grad_j[0][iDim] - ConsVar_Grad_j[0][iDim]*nu_hat_j)/U_j[0] );
-			Proj_Mean_GradTurbVar_Kappa[0] += Mean_GradTurbVar[0][iDim]*Normal[iDim];
+			Jacobian_i[0][0] = (0.5*Proj_Mean_GradTransVar_Kappa[0]-nu_e*proj_vector_ij)/1.0;
+			Jacobian_j[0][0] = (0.5*Proj_Mean_GradTransVar_Kappa[0]+nu_e*proj_vector_ij)/1.0;
+			Jacobian_i[1][1] = (0.5*Proj_Mean_GradTransVar_Kappa[1]-nu_e*proj_vector_ij)/2.0;
+			Jacobian_j[1][1] = (0.5*Proj_Mean_GradTransVar_Kappa[1]+nu_e*proj_vector_ij)/2.0;
 		}
 
-		val_residual[0] = nu_e*Proj_Mean_GradTurbVar_Kappa[0]/sigma;
-
-		/*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
-		if (implicit) {
-			Jacobian_i[0][0] = (0.5*Proj_Mean_GradTurbVar_Kappa[0]-nu_e/U_i[0]*proj_vector_ij)/sigma;
-			Jacobian_j[0][0] = (0.5*Proj_Mean_GradTurbVar_Kappa[0]+nu_e/U_j[0]*proj_vector_ij)/sigma;
-		}
-		break;
-	}
 }
+
 CAvgGrad_TurbSST::CAvgGrad_TurbSST(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 	unsigned short iVar;
 
@@ -509,7 +418,7 @@ CAvgGrad_TurbSST::~CAvgGrad_TurbSST(void) {
 }
 
 void CAvgGrad_TurbSST::SetResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) {
-	
+
 	/*--- Compute mean effective viscosity ---*/
 	diff_i = Laminar_Viscosity_i + Eddy_Viscosity_i;
 	diff_j = Laminar_Viscosity_j + Eddy_Viscosity_j;
@@ -558,7 +467,6 @@ CAvgGrad_AdjFlow::CAvgGrad_AdjFlow(unsigned short val_nDim, unsigned short val_n
 	Mean_GradPsiE = new double [nDim];
 	Edge_Vector = new double [nDim];
 
-
 }
 
 CAvgGrad_AdjFlow::~CAvgGrad_AdjFlow(void) {
@@ -572,8 +480,8 @@ CAvgGrad_AdjFlow::~CAvgGrad_AdjFlow(void) {
 }
 
 void CAvgGrad_AdjFlow::SetResidual(double *val_residual_i, double *val_residual_j, 
-																		double **val_Jacobian_ii, double **val_Jacobian_ij,
-																		double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config) {
+		double **val_Jacobian_ii, double **val_Jacobian_ij,
+		double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config) {
 	unsigned short iDim, jDim, iVar, jVar;
 	double Density_i, sq_vel_i, Energy_i, SoundSpeed_i, Pressure_i, ViscDens_i, XiDens_i, 
 	Density_j, sq_vel_j, Energy_j, SoundSpeed_j, Pressure_j, ViscDens_j, XiDens_j, dist_ij_2, dPhiE_dn, 
@@ -613,7 +521,7 @@ void CAvgGrad_AdjFlow::SetResidual(double *val_residual_i, double *val_residual_
 		Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
 		dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
 	}
-	
+
 	/*--- Average of the derivatives of the adjoint variables ---*/
 	for (iDim = 0; iDim < nDim; iDim++) {
 		Mean_GradPsiE[iDim] =  0.5*(PsiVar_Grad_i[nVar-1][iDim]+PsiVar_Grad_j[nVar-1][iDim]);
@@ -627,7 +535,7 @@ void CAvgGrad_AdjFlow::SetResidual(double *val_residual_i, double *val_residual_
 
 	/*--- Compute the viscous residual ---*/
 	if (nDim == 3) {
-		
+
 		/*--- Residual at iPoint ---*/
 		Sigma_xx = ViscDens_i * (FOUR3 * Mean_GradPhi[0][0] -  TWO3 * Mean_GradPhi[1][1] - TWO3  * Mean_GradPhi[2][2]);
 		Sigma_yy = ViscDens_i * (-TWO3 * Mean_GradPhi[0][0] + FOUR3 * Mean_GradPhi[1][1] - TWO3  * Mean_GradPhi[2][2]);
@@ -650,7 +558,7 @@ void CAvgGrad_AdjFlow::SetResidual(double *val_residual_i, double *val_residual_
 				+ (Velocity_i[0] * Normal[2] + Velocity_i[2] * Normal[0]) * eta_xz
 				+ (Velocity_i[2] * Normal[1] + Velocity_i[1] * Normal[2]) * eta_yz
 				- (sq_vel_i - Pressure_i/(Density_i*Gamma_Minus_One)) * Sigma_5);
-		
+
 		val_residual_i[1] = (eta_xx * Normal[0] + eta_xy * Normal[1] + eta_xz * Normal[2] - Velocity_i[0] * Sigma_5);
 		val_residual_i[2] = (eta_xy * Normal[0] + eta_yy * Normal[1] + eta_yz * Normal[2] - Velocity_i[1] * Sigma_5);
 		val_residual_i[3] = (eta_xz * Normal[0] + eta_yz * Normal[1] + eta_zz * Normal[2] - Velocity_i[2] * Sigma_5);
@@ -661,7 +569,7 @@ void CAvgGrad_AdjFlow::SetResidual(double *val_residual_i, double *val_residual_
 		double dSigmaxx_phi2, dSigmayy_phi2, dSigmazz_phi2, dSigmaxy_phi2, dSigmaxz_phi2, dSigmayz_phi2;
 		double dSigmaxx_phi3, dSigmayy_phi3, dSigmazz_phi3, dSigmaxy_phi3, dSigmaxz_phi3, dSigmayz_phi3;
 		double dSigmaxx5_psi5, dSigmayy5_psi5, dSigmazz5_psi5, dSigmaxy5_psi5, dSigmaxz5_psi5, dSigmayz5_psi5, dSigma5_psi5;
-		
+
 		dSigmaxx_phi1 = -FOUR3 * ViscDens_i * Edge_Vector[0]/dist_ij_2;
 		dSigmaxx_phi2 =   TWO3 * ViscDens_i * Edge_Vector[1]/dist_ij_2;
 		dSigmaxx_phi3 =   TWO3 * ViscDens_i * Edge_Vector[2]/dist_ij_2;
@@ -680,7 +588,7 @@ void CAvgGrad_AdjFlow::SetResidual(double *val_residual_i, double *val_residual_
 		dSigmayz_phi1 = 0;
 		dSigmayz_phi2 = -ViscDens_i * Edge_Vector[2]/dist_ij_2;
 		dSigmayz_phi3 = -ViscDens_i * Edge_Vector[1]/dist_ij_2;
-		
+
 		dSigmaxx5_psi5 = -ViscDens_i * ( FOUR3*Velocity_i[0]*Edge_Vector[0] -  TWO3*Velocity_i[1]*Edge_Vector[1] -  TWO3*Velocity_i[2]*Edge_Vector[2])/dist_ij_2;
 		dSigmayy5_psi5 = -ViscDens_i * (- TWO3*Velocity_i[0]*Edge_Vector[0] + FOUR3*Velocity_i[1]*Edge_Vector[1] -  TWO3*Velocity_i[2]*Edge_Vector[2])/dist_ij_2;
 		dSigmazz5_psi5 = -ViscDens_i * (- TWO3*Velocity_i[0]*Edge_Vector[0] -  TWO3*Velocity_i[1]*Edge_Vector[1] + FOUR3*Velocity_i[2]*Edge_Vector[2])/dist_ij_2;
@@ -688,50 +596,50 @@ void CAvgGrad_AdjFlow::SetResidual(double *val_residual_i, double *val_residual_
 		dSigmaxz5_psi5 = -ViscDens_i * ( Velocity_i[0]*Edge_Vector[2] + Velocity_i[2]*Edge_Vector[0] )/dist_ij_2;
 		dSigmayz5_psi5 = -ViscDens_i * ( Velocity_i[1]*Edge_Vector[2] + Velocity_i[2]*Edge_Vector[1] )/dist_ij_2;
 		dSigma5_psi5   = -XiDens_i * ( Edge_Vector[0]*Normal[0] + Edge_Vector[1]*Normal[1] + Edge_Vector[2]*Normal[2] )/dist_ij_2;
-		
+
 		val_Jacobian_ii[0][0] = 0;
 		val_Jacobian_ii[0][1] = -( Velocity_i[0]*Normal[0]*dSigmaxx_phi1 + Velocity_i[1]*Normal[1]*dSigmayy_phi1 + Velocity_i[2]*Normal[2]*dSigmazz_phi1 
-															+ (Velocity_i[0]*Normal[1] + Velocity_i[1]*Normal[0])*dSigmaxy_phi1
-															+ (Velocity_i[0]*Normal[2] + Velocity_i[2]*Normal[0])*dSigmaxz_phi1
-															+ (Velocity_i[2]*Normal[1] + Velocity_i[1]*Normal[2])*dSigmayz_phi1 );
+				+ (Velocity_i[0]*Normal[1] + Velocity_i[1]*Normal[0])*dSigmaxy_phi1
+				+ (Velocity_i[0]*Normal[2] + Velocity_i[2]*Normal[0])*dSigmaxz_phi1
+				+ (Velocity_i[2]*Normal[1] + Velocity_i[1]*Normal[2])*dSigmayz_phi1 );
 		val_Jacobian_ii[0][2] = -( Velocity_i[0]*Normal[0]*dSigmaxx_phi2 + Velocity_i[1]*Normal[1]*dSigmayy_phi2 + Velocity_i[2]*Normal[2]*dSigmazz_phi2 
-															+ (Velocity_i[0]*Normal[1] + Velocity_i[1]*Normal[0])*dSigmaxy_phi2
-															+ (Velocity_i[0]*Normal[2] + Velocity_i[2]*Normal[0])*dSigmaxz_phi2
-															+ (Velocity_i[2]*Normal[1] + Velocity_i[1]*Normal[2])*dSigmayz_phi2 );
+				+ (Velocity_i[0]*Normal[1] + Velocity_i[1]*Normal[0])*dSigmaxy_phi2
+				+ (Velocity_i[0]*Normal[2] + Velocity_i[2]*Normal[0])*dSigmaxz_phi2
+				+ (Velocity_i[2]*Normal[1] + Velocity_i[1]*Normal[2])*dSigmayz_phi2 );
 		val_Jacobian_ii[0][3] = -( Velocity_i[0]*Normal[0]*dSigmaxx_phi3 + Velocity_i[1]*Normal[1]*dSigmayy_phi3 + Velocity_i[2]*Normal[2]*dSigmazz_phi3 
-															+ (Velocity_i[0]*Normal[1] + Velocity_i[1]*Normal[0])*dSigmaxy_phi3
-															+ (Velocity_i[0]*Normal[2] + Velocity_i[2]*Normal[0])*dSigmaxz_phi3
-															+ (Velocity_i[2]*Normal[1] + Velocity_i[1]*Normal[2])*dSigmayz_phi3 );
+				+ (Velocity_i[0]*Normal[1] + Velocity_i[1]*Normal[0])*dSigmaxy_phi3
+				+ (Velocity_i[0]*Normal[2] + Velocity_i[2]*Normal[0])*dSigmaxz_phi3
+				+ (Velocity_i[2]*Normal[1] + Velocity_i[1]*Normal[2])*dSigmayz_phi3 );
 		val_Jacobian_ii[0][4] = (sq_vel_i - Pressure_i/(Density_i*Gamma_Minus_One)) * dSigma5_psi5;
-		
+
 		val_Jacobian_ii[1][0] = 0;
 		val_Jacobian_ii[1][1] = Normal[0]*dSigmaxx_phi1 + Normal[1]*dSigmaxy_phi1 + Normal[2]*dSigmaxz_phi1;
 		val_Jacobian_ii[1][2] = Normal[0]*dSigmaxx_phi2 + Normal[1]*dSigmaxy_phi2 + Normal[2]*dSigmaxz_phi2;
 		val_Jacobian_ii[1][3] = Normal[0]*dSigmaxx_phi3 + Normal[1]*dSigmaxy_phi3 + Normal[2]*dSigmaxz_phi3;
 		val_Jacobian_ii[1][4] = -Velocity_i[0]*dSigma5_psi5;
-		
+
 		val_Jacobian_ii[2][0] = 0;
 		val_Jacobian_ii[2][1] = Normal[0]*dSigmaxy_phi1 + Normal[1]*dSigmayy_phi1 + Normal[2]*dSigmayz_phi1;
 		val_Jacobian_ii[2][2] = Normal[0]*dSigmaxy_phi2 + Normal[1]*dSigmayy_phi2 + Normal[2]*dSigmayz_phi2;
 		val_Jacobian_ii[2][3] = Normal[0]*dSigmaxy_phi3 + Normal[1]*dSigmayy_phi3 + Normal[2]*dSigmayz_phi3;
 		val_Jacobian_ii[2][4] = -Velocity_i[1]*dSigma5_psi5;
-		
+
 		val_Jacobian_ii[3][0] = 0;
 		val_Jacobian_ii[3][1] = Normal[0]*dSigmaxz_phi1 + Normal[1]*dSigmayz_phi1 + Normal[2]*dSigmazz_phi1;
 		val_Jacobian_ii[3][2] = Normal[0]*dSigmaxz_phi2 + Normal[1]*dSigmayz_phi2 + Normal[2]*dSigmazz_phi2;
 		val_Jacobian_ii[3][3] = Normal[0]*dSigmaxz_phi3 + Normal[1]*dSigmayz_phi3 + Normal[2]*dSigmazz_phi3;
 		val_Jacobian_ii[3][4] = -Velocity_i[2]*dSigma5_psi5;
-		
+
 		val_Jacobian_ii[4][0] = 0;
 		val_Jacobian_ii[4][1] = 0;
 		val_Jacobian_ii[4][2] = 0;
 		val_Jacobian_ii[4][3] = 0;
 		val_Jacobian_ii[4][4] = dSigma5_psi5;
-		
+
 		for (iVar = 0; iVar < nVar; iVar++)
 			for (jVar = 0; jVar < nVar; jVar++)
 				val_Jacobian_ij[iVar][jVar] = -val_Jacobian_ii[iVar][jVar];
-		
+
 		/*--- Residual at jPoint ---*/
 		Sigma_xx = ViscDens_j * (FOUR3 * Mean_GradPhi[0][0] -  TWO3 * Mean_GradPhi[1][1] - TWO3  * Mean_GradPhi[2][2]);
 		Sigma_yy = ViscDens_j * (-TWO3 * Mean_GradPhi[0][0] + FOUR3 * Mean_GradPhi[1][1] - TWO3  * Mean_GradPhi[2][2]);
@@ -758,7 +666,7 @@ void CAvgGrad_AdjFlow::SetResidual(double *val_residual_i, double *val_residual_
 		val_residual_j[2] = (eta_xy * Normal[0] + eta_yy * Normal[1] + eta_yz * Normal[2] - Velocity_j[1] * Sigma_5);
 		val_residual_j[3] = (eta_xz * Normal[0] + eta_yz * Normal[1] + eta_zz * Normal[2] - Velocity_j[2] * Sigma_5);
 		val_residual_j[4] = (Sigma_5);
-		
+
 		/*--- Computation of the Jacobians at Point j---*/
 		dSigmaxx_phi1 = FOUR3 * ViscDens_j * Edge_Vector[0]/dist_ij_2;
 		dSigmaxx_phi2 = -TWO3 * ViscDens_j * Edge_Vector[1]/dist_ij_2;
@@ -778,7 +686,7 @@ void CAvgGrad_AdjFlow::SetResidual(double *val_residual_i, double *val_residual_
 		dSigmayz_phi1 = 0;
 		dSigmayz_phi2 = ViscDens_j * Edge_Vector[2]/dist_ij_2;
 		dSigmayz_phi3 = ViscDens_j * Edge_Vector[1]/dist_ij_2;
-		
+
 		dSigmaxx5_psi5 = ViscDens_j * ( FOUR3*Velocity_j[0]*Edge_Vector[0] -  TWO3*Velocity_j[1]*Edge_Vector[1] -  TWO3*Velocity_j[2]*Edge_Vector[2])/dist_ij_2;
 		dSigmayy5_psi5 = ViscDens_j * (- TWO3*Velocity_j[0]*Edge_Vector[0] + FOUR3*Velocity_j[1]*Edge_Vector[1] -  TWO3*Velocity_j[2]*Edge_Vector[2])/dist_ij_2;
 		dSigmazz5_psi5 = ViscDens_j * (- TWO3*Velocity_j[0]*Edge_Vector[0] -  TWO3*Velocity_j[1]*Edge_Vector[1] + FOUR3*Velocity_j[2]*Edge_Vector[2])/dist_ij_2;
@@ -786,46 +694,46 @@ void CAvgGrad_AdjFlow::SetResidual(double *val_residual_i, double *val_residual_
 		dSigmaxz5_psi5 = ViscDens_j * ( Velocity_j[0]*Edge_Vector[2] + Velocity_j[2]*Edge_Vector[0] )/dist_ij_2;
 		dSigmayz5_psi5 = ViscDens_j * ( Velocity_j[1]*Edge_Vector[2] + Velocity_j[2]*Edge_Vector[1] )/dist_ij_2;
 		dSigma5_psi5   = XiDens_j * ( Edge_Vector[0]*Normal[0] + Edge_Vector[1]*Normal[1] + Edge_Vector[2]*Normal[2] )/dist_ij_2;
-		
+
 		val_Jacobian_jj[0][0] = 0;
 		val_Jacobian_jj[0][1] = -( Velocity_j[0]*Normal[0]*dSigmaxx_phi1 + Velocity_j[1]*Normal[1]*dSigmayy_phi1 + Velocity_j[2]*Normal[2]*dSigmazz_phi1 
-															+ (Velocity_j[0]*Normal[1] + Velocity_j[1]*Normal[0])*dSigmaxy_phi1
-															+ (Velocity_j[0]*Normal[2] + Velocity_j[2]*Normal[0])*dSigmaxz_phi1
-															+ (Velocity_j[2]*Normal[1] + Velocity_j[1]*Normal[2])*dSigmayz_phi1 );
+				+ (Velocity_j[0]*Normal[1] + Velocity_j[1]*Normal[0])*dSigmaxy_phi1
+				+ (Velocity_j[0]*Normal[2] + Velocity_j[2]*Normal[0])*dSigmaxz_phi1
+				+ (Velocity_j[2]*Normal[1] + Velocity_j[1]*Normal[2])*dSigmayz_phi1 );
 		val_Jacobian_jj[0][2] = -( Velocity_j[0]*Normal[0]*dSigmaxx_phi2 + Velocity_j[1]*Normal[1]*dSigmayy_phi2 + Velocity_j[2]*Normal[2]*dSigmazz_phi2 
-															+ (Velocity_j[0]*Normal[1] + Velocity_j[1]*Normal[0])*dSigmaxy_phi2
-															+ (Velocity_j[0]*Normal[2] + Velocity_j[2]*Normal[0])*dSigmaxz_phi2
-															+ (Velocity_j[2]*Normal[1] + Velocity_j[1]*Normal[2])*dSigmayz_phi2 );
+				+ (Velocity_j[0]*Normal[1] + Velocity_j[1]*Normal[0])*dSigmaxy_phi2
+				+ (Velocity_j[0]*Normal[2] + Velocity_j[2]*Normal[0])*dSigmaxz_phi2
+				+ (Velocity_j[2]*Normal[1] + Velocity_j[1]*Normal[2])*dSigmayz_phi2 );
 		val_Jacobian_jj[0][3] = -( Velocity_j[0]*Normal[0]*dSigmaxx_phi3 + Velocity_j[1]*Normal[1]*dSigmayy_phi3 + Velocity_j[2]*Normal[2]*dSigmazz_phi3 
-															+ (Velocity_j[0]*Normal[1] + Velocity_j[1]*Normal[0])*dSigmaxy_phi3
-															+ (Velocity_j[0]*Normal[2] + Velocity_j[2]*Normal[0])*dSigmaxz_phi3
-															+ (Velocity_j[2]*Normal[1] + Velocity_j[1]*Normal[2])*dSigmayz_phi3 );
+				+ (Velocity_j[0]*Normal[1] + Velocity_j[1]*Normal[0])*dSigmaxy_phi3
+				+ (Velocity_j[0]*Normal[2] + Velocity_j[2]*Normal[0])*dSigmaxz_phi3
+				+ (Velocity_j[2]*Normal[1] + Velocity_j[1]*Normal[2])*dSigmayz_phi3 );
 		val_Jacobian_jj[0][4] = (sq_vel_j - Pressure_j/(Density_j*Gamma_Minus_One)) * dSigma5_psi5;
-		
+
 		val_Jacobian_jj[1][0] = 0;
 		val_Jacobian_jj[1][1] = Normal[0]*dSigmaxx_phi1 + Normal[1]*dSigmaxy_phi1 + Normal[2]*dSigmaxz_phi1;
 		val_Jacobian_jj[1][2] = Normal[0]*dSigmaxx_phi2 + Normal[1]*dSigmaxy_phi2 + Normal[2]*dSigmaxz_phi2;
 		val_Jacobian_jj[1][3] = Normal[0]*dSigmaxx_phi3 + Normal[1]*dSigmaxy_phi3 + Normal[2]*dSigmaxz_phi3;
 		val_Jacobian_jj[1][4] = -Velocity_j[0]*dSigma5_psi5;
-		
+
 		val_Jacobian_jj[2][0] = 0;
 		val_Jacobian_jj[2][1] = Normal[0]*dSigmaxy_phi1 + Normal[1]*dSigmayy_phi1 + Normal[2]*dSigmayz_phi1;
 		val_Jacobian_jj[2][2] = Normal[0]*dSigmaxy_phi2 + Normal[1]*dSigmayy_phi2 + Normal[2]*dSigmayz_phi2;
 		val_Jacobian_jj[2][3] = Normal[0]*dSigmaxy_phi3 + Normal[1]*dSigmayy_phi3 + Normal[2]*dSigmayz_phi3;
 		val_Jacobian_jj[2][4] = -Velocity_j[1]*dSigma5_psi5;
-		
+
 		val_Jacobian_jj[3][0] = 0;
 		val_Jacobian_jj[3][1] = Normal[0]*dSigmaxz_phi1 + Normal[1]*dSigmayz_phi1 + Normal[2]*dSigmazz_phi1;
 		val_Jacobian_jj[3][2] = Normal[0]*dSigmaxz_phi2 + Normal[1]*dSigmayz_phi2 + Normal[2]*dSigmazz_phi2;
 		val_Jacobian_jj[3][3] = Normal[0]*dSigmaxz_phi3 + Normal[1]*dSigmayz_phi3 + Normal[2]*dSigmazz_phi3;
 		val_Jacobian_jj[3][4] = -Velocity_j[2]*dSigma5_psi5;
-		
+
 		val_Jacobian_jj[4][0] = 0;
 		val_Jacobian_jj[4][1] = 0;
 		val_Jacobian_jj[4][2] = 0;
 		val_Jacobian_jj[4][3] = 0;
 		val_Jacobian_jj[4][4] = dSigma5_psi5;
-		
+
 		for (iVar = 0; iVar < nVar; iVar++)
 			for (jVar = 0; jVar < nVar; jVar++)
 				val_Jacobian_ji[iVar][jVar] = -val_Jacobian_jj[iVar][jVar];		
@@ -853,45 +761,45 @@ void CAvgGrad_AdjFlow::SetResidual(double *val_residual_i, double *val_residual_
 		double dSigmaxx_phi1, dSigmayy_phi1, dSigmaxy_phi1;
 		double dSigmaxx_phi2, dSigmayy_phi2, dSigmaxy_phi2;
 		double dSigmaxx5_psi5, dSigmayy5_psi5, dSigmaxy5_psi5, dSigma5_psi5;
-		
+
 		dSigmaxx_phi1 = -FOUR3 * ViscDens_i * Edge_Vector[0]/dist_ij_2;
 		dSigmaxx_phi2 =   TWO3 * ViscDens_i * Edge_Vector[1]/dist_ij_2;
 		dSigmayy_phi1 =   TWO3 * ViscDens_i * Edge_Vector[0]/dist_ij_2;
 		dSigmayy_phi2 = -FOUR3 * ViscDens_i * Edge_Vector[1]/dist_ij_2;
 		dSigmaxy_phi1 = -ViscDens_i * Edge_Vector[1]/dist_ij_2;
 		dSigmaxy_phi2 = -ViscDens_i * Edge_Vector[0]/dist_ij_2;
-		
+
 		dSigmaxx5_psi5 = -ViscDens_i * ( FOUR3*Velocity_i[0]*Edge_Vector[0] -  TWO3*Velocity_i[1]*Edge_Vector[1] )/dist_ij_2;
 		dSigmayy5_psi5 = -ViscDens_i * (- TWO3*Velocity_i[0]*Edge_Vector[0] + FOUR3*Velocity_i[1]*Edge_Vector[1] )/dist_ij_2;
 		dSigmaxy5_psi5 = -ViscDens_i * ( Velocity_i[0]*Edge_Vector[1] + Velocity_i[1]*Edge_Vector[0] )/dist_ij_2;
 		dSigma5_psi5   = -XiDens_i * ( Edge_Vector[0]*Normal[0] + Edge_Vector[1]*Normal[1] )/dist_ij_2;
-		
+
 		val_Jacobian_ii[0][0] = 0;
 		val_Jacobian_ii[0][1] = -( Velocity_i[0]*Normal[0]*dSigmaxx_phi1 + Velocity_i[1]*Normal[1]*dSigmayy_phi1  
-															+ (Velocity_i[0]*Normal[1] + Velocity_i[1]*Normal[0])*dSigmaxy_phi1 );
+				+ (Velocity_i[0]*Normal[1] + Velocity_i[1]*Normal[0])*dSigmaxy_phi1 );
 		val_Jacobian_ii[0][2] = -( Velocity_i[0]*Normal[0]*dSigmaxx_phi2 + Velocity_i[1]*Normal[1]*dSigmayy_phi2  
-															+ (Velocity_i[0]*Normal[1] + Velocity_i[1]*Normal[0])*dSigmaxy_phi2 );
+				+ (Velocity_i[0]*Normal[1] + Velocity_i[1]*Normal[0])*dSigmaxy_phi2 );
 		val_Jacobian_ii[0][3] = (sq_vel_i - Pressure_i/(Density_i*Gamma_Minus_One)) * dSigma5_psi5;
-		
+
 		val_Jacobian_ii[1][0] = 0;
 		val_Jacobian_ii[1][1] = Normal[0]*dSigmaxx_phi1 + Normal[1]*dSigmaxy_phi1;
 		val_Jacobian_ii[1][2] = Normal[0]*dSigmaxx_phi2 + Normal[1]*dSigmaxy_phi2;
 		val_Jacobian_ii[1][3] = -Velocity_i[0]*dSigma5_psi5;
-		
+
 		val_Jacobian_ii[2][0] = 0;
 		val_Jacobian_ii[2][1] = Normal[0]*dSigmaxy_phi1 + Normal[1]*dSigmayy_phi1;
 		val_Jacobian_ii[2][2] = Normal[0]*dSigmaxy_phi2 + Normal[1]*dSigmayy_phi2;
 		val_Jacobian_ii[2][3] = -Velocity_i[1]*dSigma5_psi5;
-		
+
 		val_Jacobian_ii[3][0] = 0;
 		val_Jacobian_ii[3][1] = 0;
 		val_Jacobian_ii[3][2] = 0;
 		val_Jacobian_ii[3][3] = dSigma5_psi5;
-		
+
 		for (iVar = 0; iVar < nVar; iVar++)
 			for (jVar = 0; jVar < nVar; jVar++)
 				val_Jacobian_ij[iVar][jVar] = -val_Jacobian_ii[iVar][jVar];
-		
+
 		/*--- Residual at jPoint ---*/		
 		Sigma_xx = ViscDens_j * (FOUR3 * Mean_GradPhi[0][0] -  TWO3 * Mean_GradPhi[1][1]);
 		Sigma_yy = ViscDens_j * (-TWO3 * Mean_GradPhi[0][0] + FOUR3 * Mean_GradPhi[1][1]);
@@ -908,7 +816,7 @@ void CAvgGrad_AdjFlow::SetResidual(double *val_residual_i, double *val_residual_
 		val_residual_j[1] = (eta_xx * Normal[0] + eta_xy * Normal[1]  - Velocity_j[0] * Sigma_5);
 		val_residual_j[2] = (eta_xy * Normal[0] + eta_yy * Normal[1]  - Velocity_j[1] * Sigma_5);
 		val_residual_j[3] = (Sigma_5);
-		
+
 		/*--- Computation of the Jacobians at Point j---*/
 		dSigmaxx_phi1 = FOUR3 * ViscDens_j * Edge_Vector[0]/dist_ij_2;
 		dSigmaxx_phi2 = -TWO3 * ViscDens_j * Edge_Vector[1]/dist_ij_2;
@@ -916,34 +824,34 @@ void CAvgGrad_AdjFlow::SetResidual(double *val_residual_i, double *val_residual_
 		dSigmayy_phi2 = FOUR3 * ViscDens_j * Edge_Vector[1]/dist_ij_2;
 		dSigmaxy_phi1 = ViscDens_j * Edge_Vector[1]/dist_ij_2;
 		dSigmaxy_phi2 = ViscDens_j * Edge_Vector[0]/dist_ij_2;
-		
+
 		dSigmaxx5_psi5 = ViscDens_j * ( FOUR3*Velocity_j[0]*Edge_Vector[0] -  TWO3*Velocity_j[1]*Edge_Vector[1] )/dist_ij_2;
 		dSigmayy5_psi5 = ViscDens_j * (- TWO3*Velocity_j[0]*Edge_Vector[0] + FOUR3*Velocity_j[1]*Edge_Vector[1] )/dist_ij_2;
 		dSigmaxy5_psi5 = ViscDens_j * ( Velocity_j[0]*Edge_Vector[1] + Velocity_j[1]*Edge_Vector[0] )/dist_ij_2;
 		dSigma5_psi5   = XiDens_j * ( Edge_Vector[0]*Normal[0] + Edge_Vector[1]*Normal[1] )/dist_ij_2;
-		
+
 		val_Jacobian_jj[0][0] = 0;
 		val_Jacobian_jj[0][1] = -( Velocity_j[0]*Normal[0]*dSigmaxx_phi1 + Velocity_j[1]*Normal[1]*dSigmayy_phi1  
-															+ (Velocity_j[0]*Normal[1] + Velocity_j[1]*Normal[0])*dSigmaxy_phi1 );
+				+ (Velocity_j[0]*Normal[1] + Velocity_j[1]*Normal[0])*dSigmaxy_phi1 );
 		val_Jacobian_jj[0][2] = -( Velocity_j[0]*Normal[0]*dSigmaxx_phi2 + Velocity_j[1]*Normal[1]*dSigmayy_phi2  
-															+ (Velocity_j[0]*Normal[1] + Velocity_j[1]*Normal[0])*dSigmaxy_phi2 );
+				+ (Velocity_j[0]*Normal[1] + Velocity_j[1]*Normal[0])*dSigmaxy_phi2 );
 		val_Jacobian_jj[0][3] = (sq_vel_j - Pressure_j/(Density_j*Gamma_Minus_One)) * dSigma5_psi5;
-		
+
 		val_Jacobian_jj[1][0] = 0;
 		val_Jacobian_jj[1][1] = Normal[0]*dSigmaxx_phi1 + Normal[1]*dSigmaxy_phi1;
 		val_Jacobian_jj[1][2] = Normal[0]*dSigmaxx_phi2 + Normal[1]*dSigmaxy_phi2;
 		val_Jacobian_jj[1][3] = -Velocity_j[0]*dSigma5_psi5;
-		
+
 		val_Jacobian_jj[2][0] = 0;
 		val_Jacobian_jj[2][1] = Normal[0]*dSigmaxy_phi1 + Normal[1]*dSigmayy_phi1;
 		val_Jacobian_jj[2][2] = Normal[0]*dSigmaxy_phi2 + Normal[1]*dSigmayy_phi2;
 		val_Jacobian_jj[2][3] = -Velocity_j[1]*dSigma5_psi5;
-		
+
 		val_Jacobian_jj[3][0] = 0;
 		val_Jacobian_jj[3][1] = 0;
 		val_Jacobian_jj[3][2] = 0;
 		val_Jacobian_jj[3][3] = dSigma5_psi5;
-		
+
 		for (iVar = 0; iVar < nVar; iVar++)
 			for (jVar = 0; jVar < nVar; jVar++)
 				val_Jacobian_ji[iVar][jVar] = -val_Jacobian_jj[iVar][jVar];		
@@ -1111,37 +1019,29 @@ void CAvgGradArtComp_AdjFlow::SetResidual (double *val_residual_i, double *val_r
 }
 
 CAvgGradCorrected_Flow::CAvgGradCorrected_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
-	unsigned short iVar;
-
-	Gamma = config->GetGamma();
-	Gamma_Minus_One = Gamma - 1.0;
 
 	implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
-	Velocity_i = new double [nVar];
-	Velocity_j = new double [nVar];
-	Prim_Var_i = new double [nVar];
-	Prim_Var_j = new double [nVar];
-	Mean_PrimVar = new double [nVar];
-	Proj_Mean_GradPrimVar_Edge = new double [nVar];
+	PrimVar_i = new double [nDim+3];
+	PrimVar_j = new double [nDim+3];
+	Mean_PrimVar = new double [nDim+3];
+	Proj_Mean_GradPrimVar_Edge = new double [nDim+1];
 	Edge_Vector = new double [nDim];
 
-	Mean_GradPrimVar = new double* [nVar];
-	for (iVar = 0; iVar < nVar; iVar++)
+	Mean_GradPrimVar = new double* [nDim+1];
+	for (iVar = 0; iVar < nDim+1; iVar++)
 		Mean_GradPrimVar[iVar] = new double [nDim];
 }
 
 CAvgGradCorrected_Flow::~CAvgGradCorrected_Flow(void) {
 
-	delete [] Velocity_i;
-	delete [] Velocity_j;
-	delete [] Prim_Var_i;
-	delete [] Prim_Var_j;
+	delete [] PrimVar_i;
+	delete [] PrimVar_j;
 	delete [] Mean_PrimVar;
 	delete [] Proj_Mean_GradPrimVar_Edge;
 	delete [] Edge_Vector;
 
-	for (iVar = 0; iVar < nVar; iVar++)
+	for (iVar = 0; iVar < nDim+1; iVar++)
 		delete [] Mean_GradPrimVar[iVar];
 	delete [] Mean_GradPrimVar;
 }
@@ -1157,36 +1057,38 @@ void CAvgGradCorrected_Flow::SetResidual(double *val_residual, double **val_Jaco
 	for (iDim = 0; iDim < nDim; iDim++)
 		UnitaryNormal[iDim] = Normal[iDim]/Area;
 
-	/*--- Conversion to Primitive Variables ---*/
-	ConsVar2PrimVar(U_i, Prim_Var_i, turb_ke_i);
-	ConsVar2PrimVar(U_j, Prim_Var_j, turb_ke_j);
+	/*--- Compute vector going from iPoint to jPoint ---*/
+	dist_ij_2 = 0.0;
+	for (iDim = 0; iDim < nDim; iDim++) {
+		Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
+		dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
+	}
 
-	/*--- Mean Primitive variable value ---*/
-	for (iVar = 0; iVar < nVar; iVar++)
-		Mean_PrimVar[iVar] = 0.5*(Prim_Var_i[iVar]+Prim_Var_j[iVar]);
+	/*--- Setting the primitive variables (T,    vel,      p,    rho) and compute the mean ---*/
+	/*---                       index     (0, iDim+1, nDim+1, nDim+2)                      ---*/
+
+	for (iVar = 0; iVar < nDim+3; iVar++) {
+		PrimVar_i[iVar] = V_i[iVar];
+		PrimVar_j[iVar] = V_j[iVar];
+		Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
+	}
 
 	/*--- Mean Viscosities and turbulent kinetic energy ---*/
 	Mean_Laminar_Viscosity = 0.5*(Laminar_Viscosity_i + Laminar_Viscosity_j);
 	Mean_Eddy_Viscosity    = 0.5*(Eddy_Viscosity_i + Eddy_Viscosity_j);
 	Mean_turb_ke           = 0.5*(turb_ke_i + turb_ke_j);
 
-	/*--- Compute vector going from iPoint to jPoint ---*/
-	dist_ij_2 = 0;
-	for (iDim = 0; iDim < nDim; iDim++) {
-		Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
-		dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
-	}
-
 	/*--- Projection of the mean gradient in the direction of the edge ---*/
-	for (iVar = 0; iVar < nVar; iVar++) {
+	for (iVar = 0; iVar < nDim+1; iVar++) {
 		Proj_Mean_GradPrimVar_Edge[iVar] = 0.0;
 		for (iDim = 0; iDim < nDim; iDim++) {
 			Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar][iDim] + PrimVar_Grad_j[iVar][iDim]);
 			Proj_Mean_GradPrimVar_Edge[iVar] += Mean_GradPrimVar[iVar][iDim]*Edge_Vector[iDim];
 		}
-		for (iDim = 0; iDim < nDim; iDim++)
+		for (iDim = 0; iDim < nDim; iDim++) {
 			Mean_GradPrimVar[iVar][iDim] -= (Proj_Mean_GradPrimVar_Edge[iVar] - 
-					(Prim_Var_j[iVar]-Prim_Var_i[iVar]))*Edge_Vector[iDim] / dist_ij_2;
+					(PrimVar_j[iVar]-PrimVar_i[iVar]))*Edge_Vector[iDim] / dist_ij_2;
+		}
 	}
 
 	/*--- Get projected flux tensor ---*/
@@ -1198,20 +1100,17 @@ void CAvgGradCorrected_Flow::SetResidual(double *val_residual, double **val_Jaco
 
 	/*--- Compute the implicit part ---*/
 	if (implicit) {
-		GetViscousProjJacs(Mean_PrimVar[0], Mean_PrimVar[nVar-1], Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, 
-				sqrt(dist_ij_2), UnitaryNormal, Area, Mean_PrimVar, Proj_Flux_Tensor, val_Jacobian_i, val_Jacobian_j);
+		GetViscousProjJacs(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, 
+				sqrt(dist_ij_2), UnitaryNormal, Area, Proj_Flux_Tensor, val_Jacobian_i, val_Jacobian_j);
 	}
 }
 
 CAvgGradCorrectedArtComp_Flow::CAvgGradCorrectedArtComp_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
-	unsigned short iVar;
 
 	implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
-	Velocity_i = new double [nVar];
-	Velocity_j = new double [nVar];
-	Prim_Var_i = new double [nVar];
-	Prim_Var_j = new double [nVar];
+	PrimVar_i = new double [nVar];
+	PrimVar_j = new double [nVar];
 	Mean_PrimVar = new double [nVar];
 	Proj_Mean_GradPrimVar_Edge = new double [nVar];
 	Edge_Vector = new double [nDim];
@@ -1223,15 +1122,13 @@ CAvgGradCorrectedArtComp_Flow::CAvgGradCorrectedArtComp_Flow(unsigned short val_
 
 CAvgGradCorrectedArtComp_Flow::~CAvgGradCorrectedArtComp_Flow(void) {
 
-	delete [] Velocity_i;
-	delete [] Velocity_j;
-	delete [] Prim_Var_i;
-	delete [] Prim_Var_j;
+	delete [] PrimVar_i;
+	delete [] PrimVar_j;
 	delete [] Mean_PrimVar;
 	delete [] Proj_Mean_GradPrimVar_Edge;
 	delete [] Edge_Vector;
 
-	for (iVar = 0; iVar < nVar; iVar++)
+	for (iVar = 0; iVar < nDim+1; iVar++)
 		delete [] Mean_GradPrimVar[iVar];
 	delete [] Mean_GradPrimVar;
 }
@@ -1249,13 +1146,10 @@ void CAvgGradCorrectedArtComp_Flow::SetResidual(double *val_residual, double **v
 
 	/*--- Conversion to Primitive Variables ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
-		Prim_Var_i[iVar] = U_i[iVar];
-		Prim_Var_j[iVar] = U_j[iVar];		
+		PrimVar_i[iVar] = V_i[iVar];
+		PrimVar_j[iVar] = V_j[iVar];
+		Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
 	}
-
-	/*--- Mean Primitive variable value ---*/
-	for (iVar = 0; iVar < nVar; iVar++)
-		Mean_PrimVar[iVar] = 0.5*(Prim_Var_i[iVar]+Prim_Var_j[iVar]);
 
 	/*--- Mean Viscosities ---*/
 	Mean_Laminar_Viscosity = 0.5*(Laminar_Viscosity_i + Laminar_Viscosity_j);
@@ -1275,9 +1169,10 @@ void CAvgGradCorrectedArtComp_Flow::SetResidual(double *val_residual, double **v
 			Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar][iDim] + PrimVar_Grad_j[iVar][iDim]);
 			Proj_Mean_GradPrimVar_Edge[iVar] += Mean_GradPrimVar[iVar][iDim]*Edge_Vector[iDim];
 		}
-		for (iDim = 0; iDim < nDim; iDim++)
+		for (iDim = 0; iDim < nDim; iDim++) {
 			Mean_GradPrimVar[iVar][iDim] -= (Proj_Mean_GradPrimVar_Edge[iVar] - 
-					(Prim_Var_j[iVar]-Prim_Var_i[iVar]))*Edge_Vector[iDim] / dist_ij_2;
+					(PrimVar_j[iVar]-PrimVar_i[iVar]))*Edge_Vector[iDim] / dist_ij_2;
+		}
 	}
 
 	/*--- Get projected flux tensor ---*/
@@ -1289,13 +1184,8 @@ void CAvgGradCorrectedArtComp_Flow::SetResidual(double *val_residual, double **v
 
 	/*--- Implicit part ---*/
 	if (implicit) {
-		double dist_ij = 0;
-		for (iDim = 0; iDim < nDim; iDim++)
-			dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
-		dist_ij = sqrt(dist_ij);
-
-		GetViscousArtCompProjJacs(Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, 
-				dist_ij, UnitaryNormal, Area, val_Jacobian_i, val_Jacobian_j);
+		GetViscousArtCompProjJacs(Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, sqrt(dist_ij_2), UnitaryNormal, 
+				Area, val_Jacobian_i, val_Jacobian_j);
 	}
 }
 
@@ -1342,89 +1232,49 @@ void CAvgGradCorrected_TurbSA::SetResidual(double *val_residual, double **Jacobi
 		Density_i = U_i[0];
 		Density_j = U_j[0];
 	}
-	
-	switch (config->GetKind_Turb_Model()) {
-	case SA :
-		/*--- Compute mean effective viscosity ---*/
-		nu_i = Laminar_Viscosity_i/Density_i;
-		nu_j = Laminar_Viscosity_j/Density_j;
-		nu_e = 0.5*(nu_i+nu_j+TurbVar_i[0]+TurbVar_j[0]);
 
-		/*--- Compute vector going from iPoint to jPoint ---*/
-		dist_ij_2 = 0; proj_vector_ij = 0;
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
-			dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
-			proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
-		}
-		proj_vector_ij = proj_vector_ij/dist_ij_2;
+	/*--- Compute mean effective viscosity ---*/
+	nu_i = Laminar_Viscosity_i/Density_i;
+	nu_j = Laminar_Viscosity_j/Density_j;
+	nu_e = 0.5*(nu_i+nu_j+TurbVar_i[0]+TurbVar_j[0]);
 
-		/*--- Mean gradient approximation. Projection of the mean gradient
-			 in the direction of the edge ---*/
-		for (iVar = 0; iVar < nVar; iVar++) {
-			Proj_Mean_GradTurbVar_Kappa[iVar] = 0.0;
-			Proj_Mean_GradTurbVar_Edge[iVar] = 0.0;
-			for (iDim = 0; iDim < nDim; iDim++) {
-				Mean_GradTurbVar[iVar][iDim] = 0.5*(TurbVar_Grad_i[iVar][iDim] + TurbVar_Grad_j[iVar][iDim]);
-				Proj_Mean_GradTurbVar_Kappa[iVar] += Mean_GradTurbVar[iVar][iDim]*Normal[iDim];
-				Proj_Mean_GradTurbVar_Edge[iVar] += Mean_GradTurbVar[iVar][iDim]*Edge_Vector[iDim];
-			}
-			Proj_Mean_GradTurbVar_Corrected[iVar] = Proj_Mean_GradTurbVar_Kappa[iVar];
-			Proj_Mean_GradTurbVar_Corrected[iVar] -= Proj_Mean_GradTurbVar_Edge[iVar]*proj_vector_ij -
-					(TurbVar_j[iVar]-TurbVar_i[iVar])*proj_vector_ij;
-		}
-
-		val_residual[0] = nu_e*Proj_Mean_GradTurbVar_Corrected[0]/sigma;
-
-		/*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
-		if (implicit) {
-			Jacobian_i[0][0] = (0.5*Proj_Mean_GradTurbVar_Corrected[0]-nu_e*proj_vector_ij)/sigma;
-			Jacobian_j[0][0] = (0.5*Proj_Mean_GradTurbVar_Corrected[0]+nu_e*proj_vector_ij)/sigma;
-		}
-		break;
-
-	case SA_COMP :
-		/*--- Compute mean effective viscosity ---*/
-		nu_e = 0.5*(Laminar_Viscosity_i+Laminar_Viscosity_j+TurbVar_i[0]+TurbVar_j[0]);
-		nu_hat_i = TurbVar_i[0]/Density_i;
-		nu_hat_j = TurbVar_j[0]/Density_j;
-
-		/*--- Compute vector going from iPoint to jPoint ---*/
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
-			dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
-			proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
-		}
-		proj_vector_ij = proj_vector_ij/dist_ij_2;
-
-		/*--- Mean gradient approximation. Projection of the mean gradient
-			 in the direction of the edge ---*/
-		Proj_Mean_GradTurbVar_Kappa[0] = 0.0;
-		Proj_Mean_GradTurbVar_Edge[0] = 0.0;
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Mean_GradTurbVar[0][iDim] = 0.5*( (TurbVar_Grad_i[0][iDim] - ConsVar_Grad_i[0][iDim]*nu_hat_i)/Density_i
-																			 +(TurbVar_Grad_j[0][iDim] - ConsVar_Grad_j[0][iDim]*nu_hat_j)/Density_j );
-			Proj_Mean_GradTurbVar_Kappa[0] += Mean_GradTurbVar[0][iDim]*Normal[iDim];
-			Proj_Mean_GradTurbVar_Edge[0] += Mean_GradTurbVar[0][iDim]*Edge_Vector[iDim];
-		}
-		Proj_Mean_GradTurbVar_Corrected[0] = Proj_Mean_GradTurbVar_Kappa[0];
-		Proj_Mean_GradTurbVar_Corrected[0] -= Proj_Mean_GradTurbVar_Edge[0]*proj_vector_ij -
-				(nu_hat_j-nu_hat_i)*proj_vector_ij;
-
-		val_residual[0] = nu_e*Proj_Mean_GradTurbVar_Corrected[0]/sigma;
-
-		/*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
-		if (implicit) {
-			Jacobian_i[0][0] = (0.5*Proj_Mean_GradTurbVar_Corrected[0]-nu_e/Density_i*proj_vector_ij)/sigma;
-			Jacobian_j[0][0] = (0.5*Proj_Mean_GradTurbVar_Corrected[0]+nu_e/Density_j*proj_vector_ij)/sigma;
-		}
-		break;
+	/*--- Compute vector going from iPoint to jPoint ---*/
+	dist_ij_2 = 0; proj_vector_ij = 0;
+	for (iDim = 0; iDim < nDim; iDim++) {
+		Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
+		dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
+		proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
 	}
+	proj_vector_ij = proj_vector_ij/dist_ij_2;
+
+	/*--- Mean gradient approximation. Projection of the mean gradient
+	 in the direction of the edge ---*/
+	for (iVar = 0; iVar < nVar; iVar++) {
+		Proj_Mean_GradTurbVar_Kappa[iVar] = 0.0;
+		Proj_Mean_GradTurbVar_Edge[iVar] = 0.0;
+		for (iDim = 0; iDim < nDim; iDim++) {
+			Mean_GradTurbVar[iVar][iDim] = 0.5*(TurbVar_Grad_i[iVar][iDim] + TurbVar_Grad_j[iVar][iDim]);
+			Proj_Mean_GradTurbVar_Kappa[iVar] += Mean_GradTurbVar[iVar][iDim]*Normal[iDim];
+			Proj_Mean_GradTurbVar_Edge[iVar] += Mean_GradTurbVar[iVar][iDim]*Edge_Vector[iDim];
+		}
+		Proj_Mean_GradTurbVar_Corrected[iVar] = Proj_Mean_GradTurbVar_Kappa[iVar];
+		Proj_Mean_GradTurbVar_Corrected[iVar] -= Proj_Mean_GradTurbVar_Edge[iVar]*proj_vector_ij -
+				(TurbVar_j[iVar]-TurbVar_i[iVar])*proj_vector_ij;
+	}
+
+	val_residual[0] = nu_e*Proj_Mean_GradTurbVar_Corrected[0]/sigma;
+
+	/*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
+	if (implicit) {
+		Jacobian_i[0][0] = (0.5*Proj_Mean_GradTurbVar_Corrected[0]-nu_e*proj_vector_ij)/sigma;
+		Jacobian_j[0][0] = (0.5*Proj_Mean_GradTurbVar_Corrected[0]+nu_e*proj_vector_ij)/sigma;
+	}
+
 }
 
 CAvgGradCorrected_TransLM::CAvgGradCorrected_TransLM(unsigned short val_nDim, unsigned short val_nVar,
 		CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
-  // TODO, Aniket
+
 	unsigned short iVar;
 
 	implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
@@ -1445,7 +1295,7 @@ CAvgGradCorrected_TransLM::CAvgGradCorrected_TransLM(unsigned short val_nDim, un
 }
 
 CAvgGradCorrected_TransLM::~CAvgGradCorrected_TransLM(void) {
-  // TODO, Aniket
+
 	unsigned short iVar;
 
 	delete [] Edge_Vector;
@@ -1459,85 +1309,47 @@ CAvgGradCorrected_TransLM::~CAvgGradCorrected_TransLM(void) {
 
 void CAvgGradCorrected_TransLM::SetResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) {
 
-  // TODO, Aniket
-	switch (config->GetKind_Turb_Model()) {
-	case SA :
-		/*--- Compute mean effective viscosity ---*/
-		nu_i = Laminar_Viscosity_i/U_i[0];
-		nu_j = Laminar_Viscosity_j/U_j[0];
-		nu_e = 0.5*(nu_i+nu_j+TurbVar_i[0]+TurbVar_j[0]);
-
-		/*--- Compute vector going from iPoint to jPoint ---*/
-		dist_ij_2 = 0; proj_vector_ij = 0;
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
-			dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
-			proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
-		}
-		proj_vector_ij = proj_vector_ij/dist_ij_2;
-
-		/*--- Mean gradient approximation. Projection of the mean gradient
-			 in the direction of the edge ---*/
-		for (iVar = 0; iVar < nVar; iVar++) {
-			Proj_Mean_GradTurbVar_Kappa[iVar] = 0.0;
-			Proj_Mean_GradTurbVar_Edge[iVar] = 0.0;
-			for (iDim = 0; iDim < nDim; iDim++) {
-				Mean_GradTurbVar[iVar][iDim] = 0.5*(TurbVar_Grad_i[iVar][iDim] + TurbVar_Grad_j[iVar][iDim]);
-				Proj_Mean_GradTurbVar_Kappa[iVar] += Mean_GradTurbVar[iVar][iDim]*Normal[iDim];
-				Proj_Mean_GradTurbVar_Edge[iVar] += Mean_GradTurbVar[iVar][iDim]*Edge_Vector[iDim];
-			}
-			Proj_Mean_GradTurbVar_Corrected[iVar] = Proj_Mean_GradTurbVar_Kappa[iVar];
-			Proj_Mean_GradTurbVar_Corrected[iVar] -= Proj_Mean_GradTurbVar_Edge[iVar]*proj_vector_ij -
-					(TurbVar_j[iVar]-TurbVar_i[iVar])*proj_vector_ij;
-		}
-
-		val_residual[0] = nu_e*Proj_Mean_GradTurbVar_Corrected[0]/sigma;
-
-		/*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
-		if (implicit) {
-			Jacobian_i[0][0] = (0.5*Proj_Mean_GradTurbVar_Corrected[0]-nu_e*proj_vector_ij)/sigma;
-			Jacobian_j[0][0] = (0.5*Proj_Mean_GradTurbVar_Corrected[0]+nu_e*proj_vector_ij)/sigma;
-		}
-		break;
-
-	case SA_COMP :
-		/*--- Compute mean effective viscosity ---*/
-		nu_e = 0.5*(Laminar_Viscosity_i+Laminar_Viscosity_j+TurbVar_i[0]+TurbVar_j[0]);
-		nu_hat_i = TurbVar_i[0]/U_i[0];
-		nu_hat_j = TurbVar_j[0]/U_j[0];
-
-		/*--- Compute vector going from iPoint to jPoint ---*/
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
-			dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
-			proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
-		}
-		proj_vector_ij = proj_vector_ij/dist_ij_2;
-
-		/*--- Mean gradient approximation. Projection of the mean gradient
-			 in the direction of the edge ---*/
-		Proj_Mean_GradTurbVar_Kappa[0] = 0.0;
-		Proj_Mean_GradTurbVar_Edge[0] = 0.0;
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Mean_GradTurbVar[0][iDim] =
-					0.5*( (TurbVar_Grad_i[0][iDim] - ConsVar_Grad_i[0][iDim]*nu_hat_i)/U_i[0]
-					                                                                       +(TurbVar_Grad_j[0][iDim] - ConsVar_Grad_j[0][iDim]*nu_hat_j)/U_j[0] );
-			Proj_Mean_GradTurbVar_Kappa[0] += Mean_GradTurbVar[0][iDim]*Normal[iDim];
-			Proj_Mean_GradTurbVar_Edge[0] += Mean_GradTurbVar[0][iDim]*Edge_Vector[iDim];
-		}
-		Proj_Mean_GradTurbVar_Corrected[0] = Proj_Mean_GradTurbVar_Kappa[0];
-		Proj_Mean_GradTurbVar_Corrected[0] -= Proj_Mean_GradTurbVar_Edge[0]*proj_vector_ij -
-				(nu_hat_j-nu_hat_i)*proj_vector_ij;
-
-		val_residual[0] = nu_e*Proj_Mean_GradTurbVar_Corrected[0]/sigma;
-
-		/*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
-		if (implicit) {
-			Jacobian_i[0][0] = (0.5*Proj_Mean_GradTurbVar_Corrected[0]-nu_e/U_i[0]*proj_vector_ij)/sigma;
-			Jacobian_j[0][0] = (0.5*Proj_Mean_GradTurbVar_Corrected[0]+nu_e/U_j[0]*proj_vector_ij)/sigma;
-		}
-		break;
-	}
+//	switch (config->GetKind_Turb_Model()) {
+//	case SA :
+//		/*--- Compute mean effective viscosity ---*/
+//		nu_i = Laminar_Viscosity_i/U_i[0];
+//		nu_j = Laminar_Viscosity_j/U_j[0];
+//		nu_e = 0.5*(nu_i+nu_j+TurbVar_i[0]+TurbVar_j[0]);
+//
+//		/*--- Compute vector going from iPoint to jPoint ---*/
+//		dist_ij_2 = 0; proj_vector_ij = 0;
+//		for (iDim = 0; iDim < nDim; iDim++) {
+//			Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
+//			dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
+//			proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
+//		}
+//		proj_vector_ij = proj_vector_ij/dist_ij_2;
+//
+//		/*--- Mean gradient approximation. Projection of the mean gradient
+//			 in the direction of the edge ---*/
+//		for (iVar = 0; iVar < nVar; iVar++) {
+//			Proj_Mean_GradTurbVar_Kappa[iVar] = 0.0;
+//			Proj_Mean_GradTurbVar_Edge[iVar] = 0.0;
+//			for (iDim = 0; iDim < nDim; iDim++) {
+//				Mean_GradTurbVar[iVar][iDim] = 0.5*(TurbVar_Grad_i[iVar][iDim] + TurbVar_Grad_j[iVar][iDim]);
+//				Proj_Mean_GradTurbVar_Kappa[iVar] += Mean_GradTurbVar[iVar][iDim]*Normal[iDim];
+//				Proj_Mean_GradTurbVar_Edge[iVar] += Mean_GradTurbVar[iVar][iDim]*Edge_Vector[iDim];
+//			}
+//			Proj_Mean_GradTurbVar_Corrected[iVar] = Proj_Mean_GradTurbVar_Kappa[iVar];
+//			Proj_Mean_GradTurbVar_Corrected[iVar] -= Proj_Mean_GradTurbVar_Edge[iVar]*proj_vector_ij -
+//					(TurbVar_j[iVar]-TurbVar_i[iVar])*proj_vector_ij;
+//		}
+//
+//		val_residual[0] = nu_e*Proj_Mean_GradTurbVar_Corrected[0]/sigma;
+//
+//		/*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
+//		if (implicit) {
+//			Jacobian_i[0][0] = (0.5*Proj_Mean_GradTurbVar_Corrected[0]-nu_e*proj_vector_ij)/sigma;
+//			Jacobian_j[0][0] = (0.5*Proj_Mean_GradTurbVar_Corrected[0]+nu_e*proj_vector_ij)/sigma;
+//		}
+//		break;
+//
+//	}
 }
 
 CAvgGradCorrected_TurbSST::CAvgGradCorrected_TurbSST(unsigned short val_nDim, unsigned short val_nVar, double *constants,
@@ -1549,7 +1361,7 @@ CAvgGradCorrected_TurbSST::CAvgGradCorrected_TurbSST(unsigned short val_nDim, un
 
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
-		
+
 	sigma_k1  = constants[0];
 	sigma_om1 = constants[2];
 	sigma_k2  = constants[1];
@@ -1765,7 +1577,7 @@ void CAvgGradCorrected_AdjFlow::SetResidual(double *val_residual_i, double *val_
 				+ (Velocity_i[0] * Normal[2] + Velocity_i[2] * Normal[0]) * eta_xz
 				+ (Velocity_i[2] * Normal[1] + Velocity_i[1] * Normal[2]) * eta_yz
 				- (sq_vel_i - Pressure_i/(Density_i*Gamma_Minus_One)) * Sigma_5);
-		
+
 		val_residual_i[1] = (eta_xx * Normal[0] + eta_xy * Normal[1] + eta_xz * Normal[2] - Velocity_i[0] * Sigma_5);
 		val_residual_i[2] = (eta_xy * Normal[0] + eta_yy * Normal[1] + eta_yz * Normal[2] - Velocity_i[1] * Sigma_5);
 		val_residual_i[3] = (eta_xz * Normal[0] + eta_yz * Normal[1] + eta_zz * Normal[2] - Velocity_i[2] * Sigma_5);
@@ -2494,8 +2306,6 @@ void CGalerkin_FEA::SetResidual(double **val_stiffmatrix_elem, CConfig *config) 
 					val_stiffmatrix_elem[iVar][jVar] += Volume * Aux_Matrix[iVar][kVar]*B_Matrix[kVar][jVar];
 			}
 		}
-
-
 	}
 }
 
@@ -2507,31 +2317,145 @@ CAvgGrad_Plasma::CAvgGrad_Plasma(unsigned short val_nDim, unsigned short val_nVa
 	Gamma_Minus_One = Gamma - 1.0;
 
 	/*--- Allocate some useful vectors ---*/
-	Prim_Var_i = new double [nVar];
-	Prim_Var_j = new double [nVar];
-	Mean_Laminar_Viscosity = new double [nSpecies];
-	Mean_Eddy_Viscosity = new double [nSpecies];
-	Mean_PrimVar = new double [nVar];
-	Mean_Density = new double [nSpecies];
-	Mean_GradPrimVar = new double* [nVar+nSpecies];
-	for (iVar = 0; iVar < nVar+nSpecies; iVar++)
+
+	PrimVar_i        = new double [nDim+6];
+	PrimVar_j        = new double [nDim+6];
+  Mean_PrimVar     = new double [nDim+6];
+  Mean_GradPrimVar = new double*[nDim+3];
+	for (iVar = 0; iVar < nVar+3; iVar++)
 		Mean_GradPrimVar[iVar] = new double [nDim];
+  
+	Mean_Laminar_Viscosity         = new double[nSpecies];
+	Mean_Eddy_Viscosity            = new double[nSpecies];
+  Mean_Thermal_Conductivity      = new double[nSpecies];
+  Mean_Thermal_Conductivity_vib  = new double[nSpecies];
 }
 
 CAvgGrad_Plasma::~CAvgGrad_Plasma(void) {
 
-	delete [] Prim_Var_i;
-	delete [] Prim_Var_j;
+	delete [] PrimVar_i;
+	delete [] PrimVar_j;
 	delete [] Mean_PrimVar;
-	for (iVar = 0; iVar < nVar+nSpecies; iVar++)
+	for (iVar = 0; iVar < nDim+6; iVar++)
 		delete [] Mean_GradPrimVar[iVar];
 	delete [] Mean_GradPrimVar;
+  
+  delete [] Mean_Laminar_Viscosity;
+  delete [] Mean_Eddy_Viscosity;
+  delete [] Mean_Thermal_Conductivity;
+  delete [] Mean_Thermal_Conductivity_vib;
 }
 
 void CAvgGrad_Plasma::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
 
-	unsigned short loc, iSpecies;
+	unsigned short loc, iVar, jVar, nVar_species, iSpecies;
 
+  for (iVar = 0; iVar < nVar; iVar++)
+    for (jVar =0 ; jVar < nVar; jVar++) {
+      val_Jacobian_i[iVar][jVar] = 0.0;
+      val_Jacobian_j[iVar][jVar] = 0.0;
+    }
+  
+	/*--- Normalized normal vector ---*/
+	Area = 0;
+	for (iDim = 0; iDim < nDim; iDim++)
+		Area += Normal[iDim]*Normal[iDim];
+	Area = sqrt(Area);
+
+	/*-- Calculate distance between nodes (for use in implicit calculations only) ---*/
+	dist_ij = 0;
+	for (iDim = 0; iDim < nDim; iDim++)
+		dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
+	dist_ij = sqrt(dist_ij);
+
+	for (iDim = 0; iDim < nDim; iDim++)
+		UnitaryNormal[iDim] = Normal[iDim]/Area;
+  
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    if ( iSpecies < nDiatomics ) {
+      loc = (nDim+3)*iSpecies;
+      nVar_species = nDim+3;
+    }	else {
+      loc = (nDim+3)*nDiatomics + (nDim+2)*(iSpecies-nDiatomics);
+      nVar_species = nDim+2;
+    }
+    
+    /*--- Set the primitive variables (T_tr,    vel,  T_vib,      p,    rho,      h,      c) and compute the mean ---*/
+    /*--- Indices:                    (   0, iDim+1, nDim+1, nDim+2, nDim+3, nDim+4, nDim+5)                      ---*/
+    for (iVar = 0; iVar < nDim+6; iVar++) {
+      PrimVar_i[iVar] = Varray_i[iSpecies][iVar];
+      PrimVar_j[iVar] = Varray_j[iSpecies][iVar];
+      Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar] + PrimVar_j[iVar]);
+    }
+    
+    /*--- Calculate mean values of the transport coefficients ---*/
+    Mean_Laminar_Viscosity[iSpecies] = 0.5*(Laminar_Viscosity_MultipleSpecies_i[iSpecies] + Laminar_Viscosity_MultipleSpecies_j[iSpecies]);
+    Mean_Eddy_Viscosity[iSpecies] = 0.5*(Eddy_Viscosity_MultipleSpecies_i[iSpecies] + Eddy_Viscosity_MultipleSpecies_j[iSpecies]);
+    Mean_Thermal_Conductivity[iSpecies] = 0.5*(Thermal_Conductivity_MultipleSpecies_i[iSpecies] + Thermal_Conductivity_MultipleSpecies_j[iSpecies]);
+    Mean_Thermal_Conductivity_vib[iSpecies] = 0.5*(Thermal_Conductivity_vib_MultipleSpecies_i[iSpecies] + Thermal_Conductivity_vib_MultipleSpecies_j[iSpecies]);
+    
+    /*--- Mean gradient approximation ---*/
+    for (iVar = 0; iVar < nDim+3; iVar++)
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i_array[iSpecies][iVar][iDim] + PrimVar_Grad_j_array[iSpecies][iVar][iDim]);
+      }
+    
+    /*--- Get projected viscous flux tensor ---*/
+    GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Mean_Thermal_Conductivity, Mean_Thermal_Conductivity_vib, iSpecies);
+
+    /*--- Update viscous residual with the species projected flux ---*/
+    for (iVar = 0; iVar < nVar_species; iVar++)
+      val_residual[loc+iVar] = Proj_Flux_Tensor[iVar];
+  
+    /*--- Implicit part ---*/
+    if (implicit) {
+
+      if (config->GetKind_GasModel() == ARGON)
+        GetViscousProjJacs(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, dist_ij, UnitaryNormal, Area, Proj_Flux_Tensor, val_Jacobian_i, val_Jacobian_j, iSpecies);
+
+      else
+        GetViscousProjJacsDiatomics(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Mean_Thermal_Conductivity, Mean_Thermal_Conductivity_vib, dist_ij, UnitaryNormal, Area, Proj_Flux_Tensor, val_Jacobian_i, val_Jacobian_j, iSpecies);
+    }
+  }
+}
+
+CAvgGradCorrected_Plasma::CAvgGradCorrected_Plasma(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nSpecies,unsigned short val_nDiatomics, unsigned short val_nMonatomics,  CConfig *config) : CNumerics(val_nDim, val_nVar,val_nSpecies, val_nDiatomics, val_nMonatomics, config) {
+
+	implicit = (config->GetKind_TimeIntScheme_Plasma() == EULER_IMPLICIT);
+
+	Gamma = config->GetGamma();
+	Gamma_Minus_One = Gamma - 1.0;
+
+	/*--- Allocate some useful vectors ---*/
+	Edge_Vector = new double [nDim];
+	Proj_Mean_GradPrimVar_Edge = new double [nDim+3];
+
+	PrimVar_i = new double [nDim+6];
+	PrimVar_j = new double [nDim+6];
+	Mean_Laminar_Viscosity = new double [nSpecies];
+	Mean_Eddy_Viscosity = new double [nSpecies];
+	Mean_PrimVar = new double [nDim+6];
+	Mean_Density = new double [nSpecies];
+	Mean_GradPrimVar = new double* [nDim+3];
+	for (iVar = 0; iVar < nDim+3; iVar++)
+		Mean_GradPrimVar[iVar] = new double [nDim];
+}
+
+CAvgGradCorrected_Plasma::~CAvgGradCorrected_Plasma(void) {
+
+	delete [] PrimVar_i;
+	delete [] PrimVar_j;
+	delete [] Mean_PrimVar;
+	for (iVar = 0; iVar < nDim+6; iVar++)
+		delete [] Mean_GradPrimVar[iVar];
+	delete [] Mean_GradPrimVar;
+	delete [] Proj_Mean_GradPrimVar_Edge;
+	delete [] Edge_Vector;
+}
+
+void CAvgGradCorrected_Plasma::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+
+	unsigned short loc, iVar, nVar_species, iSpecies;
 
 	/*--- Normalized normal vector ---*/
 	Area = 0;
@@ -2542,48 +2466,58 @@ void CAvgGrad_Plasma::SetResidual(double *val_residual, double **val_Jacobian_i,
 	for (iDim = 0; iDim < nDim; iDim++)
 		UnitaryNormal[iDim] = Normal[iDim]/Area;
 
-	/*--- Conversion to Primitive Variables ---*/
-	ConsVar2PrimVar_MultiSpecies(U_i, Prim_Var_i);
-	ConsVar2PrimVar_MultiSpecies(U_j, Prim_Var_j);
+	/*--- Compute vector going from iPoint to jPoint ---*/
+	dist_ij_2 = 0.0;
+	for (iDim = 0; iDim < nDim; iDim++) {
+		Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
+		dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
+	}
 
-	/*--- Mean Primitive variable value ---*/
-	for (iVar = 0; iVar < nVar; iVar++)
-		Mean_PrimVar[iVar] = 0.5*(Prim_Var_i[iVar]+Prim_Var_j[iVar]);
-
-	/*--- Mean Viscosities ---*/
-	for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++) {
+	for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+		if ( iSpecies < nDiatomics ) {
+			loc = (nDim+3)*iSpecies;
+			nVar_species = nDim+3;
+		}	else {
+			loc = (nDim+3)*nDiatomics + (nDim+2)*(iSpecies-nDiatomics);
+			nVar_species = nDim+2;
+		}
+		/*--- Set the primitive variables (T_tr,    vel,  T_vib,      p,    rho,      h,      c) and compute the mean ---*/
+		/*--- Indices:                    (   0, iDim+1, nDim+1, nDim+2, nDim+3, nDim+4, nDim+5)                      ---*/
+		for (iVar = 0; iVar < nDim+6; iVar++) {
+			PrimVar_i[iVar] = Varray_i[iSpecies][iVar];
+			PrimVar_j[iVar] = Varray_j[iSpecies][iVar];
+			Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar] + PrimVar_j[iVar]);
+		}
 		Mean_Laminar_Viscosity[iSpecies] = 0.5*(Laminar_Viscosity_MultipleSpecies_i[iSpecies] + Laminar_Viscosity_MultipleSpecies_j[iSpecies]);
 		Mean_Eddy_Viscosity[iSpecies] = 0.5*(Eddy_Viscosity_MultipleSpecies_i[iSpecies] + Eddy_Viscosity_MultipleSpecies_j[iSpecies]);
-	}
 
-	/*--- Mean gradient approximation ---*/
-	for (iVar = 0; iVar < nVar + nSpecies; iVar++)
-		for (iDim = 0; iDim < nDim; iDim++)
-			Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar][iDim] + PrimVar_Grad_j[iVar][iDim]);
-
-	/*--- Get projected flux tensor ---*/
-	GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
-
-	/*--- Update viscous residual ---*/
-	for (iVar = 0; iVar < nVar; iVar++)
-		val_residual[iVar] = Proj_Flux_Tensor[iVar];
-
-
-	/*--- Implicit part ---*/
-	if (implicit) {
-		dist_ij = 0;
-		for (iDim = 0; iDim < nDim; iDim++)
-			dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
-		dist_ij = sqrt(dist_ij);
-		for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++) {
-			loc = (nDim+2)* iSpecies;
-			Mean_Density[iSpecies] = 0.5*(U_i[loc + 0]+U_j[loc + 0]);
+		/*--- Projection of the mean gradient in the direction of the edge ---*/
+		for (iVar = 0; iVar < nDim+3; iVar++) {
+			Proj_Mean_GradPrimVar_Edge[iVar] = 0.0;
+			for (iDim = 0; iDim < nDim; iDim++) {
+				Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i_array[iSpecies][iVar][iDim] + PrimVar_Grad_j_array[iSpecies][iVar][iDim]);
+				Proj_Mean_GradPrimVar_Edge[iVar] += Mean_GradPrimVar[iVar][iDim]*Edge_Vector[iDim];
+			}
+			for (iDim = 0; iDim < nDim; iDim++) {
+				Mean_GradPrimVar[iVar][iDim] -= (Proj_Mean_GradPrimVar_Edge[iVar] -
+						(PrimVar_j[iVar]-PrimVar_i[iVar]))*Edge_Vector[iDim] / dist_ij_2;
+			}
 		}
-		GetViscousProjJacs(Mean_Density, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,
-				dist_ij, UnitaryNormal, Area, Mean_PrimVar, Proj_Flux_Tensor, val_Jacobian_i, val_Jacobian_j);
-	}
 
+		/*--- Get projected viscous flux tensor ---*/
+		GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, iSpecies);
+
+		/*--- Update viscous residual with the species projected flux ---*/
+		for (iVar = 0; iVar < nVar_species; iVar++)
+			val_residual[loc+iVar] = Proj_Flux_Tensor[iVar];
+
+		/*--- Implicit part ---*/
+		if (implicit) {
+			GetViscousProjJacs(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, sqrt(dist_ij_2), UnitaryNormal, Area, Proj_Flux_Tensor, val_Jacobian_i, val_Jacobian_j, iSpecies);
+		}
+	}
 }
+
 
 CViscous_Template::CViscous_Template(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) { }
 

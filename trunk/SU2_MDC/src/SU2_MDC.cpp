@@ -2,7 +2,7 @@
  * \file SU2_MDC.cpp
  * \brief Main file of Mesh Deformation Code (SU2_MDC).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.
+ * \version 2.0.1
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -463,7 +463,7 @@ unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CCo
   
   /*--- For time spectral integration, nZones = nTimeInstances. ---*/
   if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-    nZone = config->GetnTimeInstances();
+    nZone = 1; //config->GetnTimeInstances();
   }
 	
 	return (unsigned short) nZone;

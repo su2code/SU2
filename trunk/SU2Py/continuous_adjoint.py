@@ -3,7 +3,7 @@
 ## \file continuous_adjoint.py
 #  \brief Python script for doing the continuous adjoint computation using the SU2 suite.
 #  \author Francisco Palacios, Tom Economon, Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.
+#  \version 2.0.1
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -21,13 +21,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os, time, sys, shutil, numpy, libSU2
+import os, time, sys, shutil, numpy, libSU2, libSU2_run
 from optparse import OptionParser
 from parallel_computation import parallel_computation
 from filter_adjoint import process_surface_adjoint
-
-SU2_RUN = os.environ['SU2_RUN'] 
-sys.path.append( SU2_RUN ) 
 
 # -------------------------------------------------------------------
 #  Main 
@@ -64,35 +61,24 @@ def main():
 #: def main()
 
 
-
 # -------------------------------------------------------------------
 #  Continuous Adjoint Function 
 # -------------------------------------------------------------------
 
 def continuous_adjoint( filename                , 
-                        partitions  = 1         , 
+                        partitions  = 0         , 
                         compute     = "True"    ,
                         output      = "True"    ,
                         step        = 1e-4      , 
-                        divide_grid = "True"    ,
-                        report      = "verbose" ,
-                        logfile     = 'SU2_CADJ.out' ):
+                        divide_grid = "True"     ):
     
-    # error checking
-    assert report in ['quiet','concise','verbose'] , 'unrecognized report verbosity'                        
-
     # General and default parameters
     Config_INP_filename   = filename
     Config_CADJ_filename  = "config_CADJ_" + Config_INP_filename
     FinDiff_Step          = float(step)
     partitions            = int(partitions)
     objfunc_grad_filename = "objfunc_grad_adj_" + Config_INP_filename.replace('.cfg','.dat')
-    gradient_filename     = "cont_adj_" + Config_INP_filename.replace('.cfg','')
-    parallel              = partitions > 1    
-    print_quiet           = report == 'quiet'
-    print_concise         = report == 'concise'
-    use_logfile           = print_quiet or print_concise
-    if not use_logfile: logfile = None
+    gradient_filename     = "cont_adj_" + Config_INP_filename.replace('.cfg','')  
     
     # do computations?
     if   compute == "True":
@@ -157,19 +143,6 @@ def continuous_adjoint( filename                ,
     # surface filenames
     surface_adj_filtered = surface_adj_filename+ '_filtered'
     
-    # some os commands
-    run_SU2_CFD = "SU2_CFD " + Config_CADJ_filename 
-    run_SU2_GPC = "SU2_GPC " + Config_CADJ_filename 
-    
-    if parallel:
-        run_SU2_GPC = os.path.join( SU2_RUN , run_SU2_GPC )
-        run_SU2_GPC = "mpirun -np %i %s" % (partitions, run_SU2_GPC)
-
-    # log files
-    if use_logfile:
-        run_SU2_CFD    = run_SU2_CFD    + ' >> ' + logfile
-        run_SU2_GPC    = run_SU2_GPC    + ' >> ' + logfile
-
     # initizlize outputs
     ObjFun_Dict   = []
     Gradient_Dict = []
@@ -179,10 +152,6 @@ def continuous_adjoint( filename                ,
     # -------------------------------------------------------------------
     if compute_flow:
         
-        if print_concise:
-            sys.stdout.write( "    Direct Solution   ... ")
-            sys.stdout.flush()
-        
         # Change the parameters to do a flow simulation
         params_set = { 'MATH_PROBLEM'  : 'DIRECT'                  ,
                        'CONV_FILENAME' : History_filename_CFD       }
@@ -190,14 +159,11 @@ def continuous_adjoint( filename                ,
             params_set['CONV_CRITERIA'] = 'CAUCHY'
         libSU2.Set_ConfigParams( Config_CADJ_filename, params_set )
 
-        if parallel: 
-            parallel_computation( filename        = Config_CADJ_filename ,
-                                  partitions      = partitions           ,
-                                  divide_grid     = divide_grid          ,
-                                  output          = output               ,
-                                  logfile         = logfile               )
-        else: 
-            os.system ( run_SU2_CFD )
+        # RUN THE FLOW SOLUTION        
+        parallel_computation( filename    = Config_CADJ_filename ,
+                              partitions  = partitions           ,  # handles partitions = 0 as serial
+                              divide_grid = divide_grid          ,
+                              output      = output                )
         
         # Get objective function values
         ObjFun_Dict = libSU2.get_ObjFunVals( History_filename_CFD+plotfile_ext , special_cases )
@@ -205,10 +171,6 @@ def continuous_adjoint( filename                ,
         # Get number of iterations
         History_Data_CFD = libSU2.read_History( History_filename_CFD+plotfile_ext )
         iterations_direct = int( History_Data_CFD['ITERATION'][-1] )
-        
-        if print_concise:
-            sys.stdout.write( "Done \n")    
-            sys.stdout.flush()
             
     #: if compute_flow
     
@@ -216,35 +178,25 @@ def continuous_adjoint( filename                ,
     # ADJOINT CFD SOLUTION
     # -------------------------------------------------------------------
     if compute_adj:
-        
-        if print_concise:
-            sys.stdout.write( "    Adjoint Solution  ... ") 
-            sys.stdout.flush()
-        
+           
         # Change the parameters to do an adjoint simulation
         params_set = { 'MATH_PROBLEM'           : 'ADJOINT'                 ,
                        'SOLUTION_FLOW_FILENAME' : restart_flow_filename     ,
                        'CONV_FILENAME'          : History_filename_ADJ       }
+        
         # special cauchy => set adjoint iterations to direct iterations
         if special_cauchy:
             params_set['EXT_ITER'] = iterations_direct
             params_set['CONV_CRITERIA'] = 'RESIDUAL'
+            
         # update parameters    
         libSU2.Set_ConfigParams( Config_CADJ_filename, params_set )
 
-        # run the problem
-        if parallel: 
-            parallel_computation( filename    = Config_CADJ_filename ,
-                                  partitions  = partitions           ,
-                                  divide_grid = 'False'              ,
-                                  output      = output               ,
-                                  logfile     = logfile               )
-        else: 
-            os.system ( run_SU2_CFD )
-        
-        if print_concise:
-            sys.stdout.write( "Done \n")  
-            sys.stdout.flush()
+        # RUN THE ADJOINT SOLUTION
+        parallel_computation( filename    = Config_CADJ_filename ,
+                              partitions  = partitions           ,
+                              divide_grid = 'False'              ,
+                              output       = output               )
             
     #: if compute_adj
     
@@ -261,7 +213,6 @@ def continuous_adjoint( filename                ,
         # update surface filename
         params_set = { 'SURFACE_ADJ_FILENAME' : surface_adj_filtered }
         libSU2.Set_ConfigParams(Config_CADJ_filename,params_set)
-        
         
     #: if filter_adj
     
@@ -285,7 +236,7 @@ def continuous_adjoint( filename                ,
         libSU2.Set_ConfigParams( Config_CADJ_filename, params_set )
         
         # Compute gradient with continuous adjoint
-        os.system ( run_SU2_GPC )
+        libSU2_run.SU2_GPC( Config_CADJ_filename , partitions )
     
         # Get raw gradients
         gradients = libSU2.get_GradientVals(objfunc_grad_filename)    
@@ -313,7 +264,7 @@ def continuous_adjoint( filename                ,
             _,write_format = libSU2.get_GradFileFormat( 'CONTINUOUS_ADJOINT',
                                                         output_format,
                                                         Definition_DV['KIND'][i_DV] )        
-                
+            
             # Merge information for output
             Output_Vector = [i_DV] + [gradients[i_DV]] + [FinDiff_Step] + Definition_DV['PARAM'][i_DV]
             Output_Vector = tuple(Output_Vector)

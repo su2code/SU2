@@ -5,7 +5,7 @@
  *        technique definition). The subroutines and functions are in 
  *        the <i>grid_movement_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.
+ * \version 2.0.1
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -42,7 +42,7 @@ using namespace std;
  * \brief Class for moving the surface and volumetric 
  *        numerical grid (2D and 3D problems).
  * \author F. Palacios.
- * \version 2.0.
+ * \version 2.0.1
  */
 class CGridMovement {
 public:
@@ -62,7 +62,7 @@ public:
  * \class CFreeFormChunk
  * \brief Class for defining the free form chunk structure.
  * \author F. Palacios & A. Galdran.
- * \version 2.0.
+ * \version 2.0.1
  */
 class CFreeFormChunk : public CGridMovement {
 public:
@@ -654,7 +654,7 @@ public:
  * \class CVolumetricMovement
  * \brief Class for moving the volumetric numerical grid.
  * \author F. Palacios, and A. Bueno.
- * \version 2.0.
+ * \version 2.0.1
  */
 class CVolumetricMovement : public CGridMovement {
 protected:
@@ -670,7 +670,7 @@ protected:
 	double C_mat[3][3];			/*!< \brief Element-based torsional stiffness matrix. */
 	double R_mat[3][6];			/*!< \brief Torsional kinematic matrix (nodes displacements -> change in angles). */
 	double Rt_mat[6][3];		/*!< \brief Transposed R_mat. */
-	double Klin_mat[4][4];	/*!< \brief Edge-based lineal stiffness matrix. */
+	double Klin_mat[6][6];	/*!< \brief Edge-based lineal stiffness matrix. */
 	double C_tor,		/*!< \brief Weighting coefficient for torsional stiffness. */
 	C_lin;					/*!< \brief Weighting coefficient for lineal stiffness. */
 	double tol,			/*!< \brief Error tolerance (total and per point) in the resolution. */
@@ -881,7 +881,19 @@ public:
 	 */
 	void SetRigidPlunging(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
   
-	/*! 
+
+    /*!
+	 * \brief Unsteady aeroelastic grid movement using rigid mesh motion.
+     * \author S. Padron
+	 * \param[in] geometry - Geometrical definition of the problem.
+     * \param[in] solution - Solution of the particular problem.
+	 * \param[in] config - Definition of the particular problem.
+     * \param[in] iZone - Zone number in the mesh.
+     * \param[in] iter - Physical time iteration number.
+	 */
+    void SetAeroElasticMotion(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned short iZone, unsigned long iter);
+    
+	/*!
 	 * \brief Grid deformation using the spring analogy method.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
@@ -902,7 +914,7 @@ public:
  * \class CSurfaceMovement
  * \brief Class for moving the surface numerical grid.
  * \author F. Palacios.
- * \version 2.0.
+ * \version 2.0.1
  */
 class CSurfaceMovement : public CGridMovement {
 protected:

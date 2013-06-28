@@ -2,7 +2,7 @@
  * \file solution_linearized_mean.cpp
  * \brief Main subrotuines for solving linearized problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.
+ * \version 2.0.1
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -309,7 +309,8 @@ void CLinEulerSolution::Inviscid_DeltaForces(CGeometry *geometry, CSolution **so
 	double Density_Inf = solution_container[FLOW_SOL]->GetDensity_Inf();
 	double ModVelocity_Inf = solution_container[FLOW_SOL]->GetModVelocity_Inf();
 	double C_p = 1.0/(0.5*Density_Inf*RefAreaCoeff*ModVelocity_Inf*ModVelocity_Inf);
-	
+	bool incompressible = config->GetIncompressible();
+
 	/*-- Inicialization ---*/
 	Total_CDeltaDrag = 0.0; Total_CDeltaLift = 0.0;
 	AllBound_CDeltaDrag_Inv = 0.0; AllBound_CDeltaLift_Inv = 0.0;
@@ -331,7 +332,7 @@ void CLinEulerSolution::Inviscid_DeltaForces(CGeometry *geometry, CSolution **so
 					
 					double rho = solution_container[FLOW_SOL]->node[Point]->GetSolution(0) + node[Point]->GetSolution(0);
 					double rhoE = solution_container[FLOW_SOL]->node[Point]->GetSolution(nVar-1) + node[Point]->GetSolution(nVar-1);
-					double Pressure = solution_container[FLOW_SOL]->node[Point]->GetPressure();
+					double Pressure = solution_container[FLOW_SOL]->node[Point]->GetPressure(incompressible);
 					double rhoVel[3];
 					double sqr_vel = 0.0;
 					for (iDim = 0; iDim < nDim; iDim++) {

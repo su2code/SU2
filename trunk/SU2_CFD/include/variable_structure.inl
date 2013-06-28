@@ -2,7 +2,7 @@
  * \file variable_structure.inl
  * \brief In-Line subroutines of the <i>variable_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.
+ * \version 2.0.1
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -25,11 +25,7 @@
 
 inline void CVariable::SetVelocityInc2(void) { }
 
-inline void CVariable::SetBetaInc2(CConfig *config) { }
-
-inline void CVariable::SetPressureInc(void) { }
-
-inline void CVariable::SetPressure(double val_pressure) { }
+inline void CVariable::SetPressureValue(double val_pressure) { }
 
 inline void CVariable::SetPressureInc(double val_pressure) { }
 
@@ -52,6 +48,10 @@ inline void CVariable::SetAuxVar(double val_auxvar) { AuxVar = val_auxvar; }
 inline void CVariable::SetSolution_Old(unsigned short val_var, double val_solution_old) { Solution_Old[val_var] = val_solution_old; }
 
 inline void CVariable::SetLimiter(unsigned short val_var, double val_limiter) { Limiter[val_var] = val_limiter; }
+
+inline void CVariable::SetSolution_Max(unsigned short val_var, double val_solution) { Solution_Max[val_var] = val_solution; }
+
+inline void CVariable::SetSolution_Min(unsigned short val_var, double val_solution) { Solution_Min[val_var] = val_solution; }
 
 inline void CVariable::SetAuxVarGradient(unsigned short iDim, double val_gradient) { Grad_AuxVar[iDim] = val_gradient; }
 
@@ -105,9 +105,17 @@ inline double CVariable::GetGradient(unsigned short val_var, unsigned short val_
 
 inline double CVariable::GetLimiter(unsigned short val_var) { return Limiter[val_var]; }
 
+inline double CVariable::GetSolution_Max(unsigned short val_var) { return Solution_Max[val_var]; }
+
+inline double CVariable::GetSolution_Min(unsigned short val_var) { return Solution_Min[val_var]; }
+
 inline double CVariable::GetPreconditioner_Beta() { return 0; }
 
 inline void CVariable::SetPreconditioner_Beta( double val_Beta) { }
+
+inline double* CVariable::GetMagneticField() { return 0; }
+
+inline void CVariable::SetMagneticField( double* val_B) {}
 
 inline double **CVariable::GetGradient(void) { return Gradient; }
 
@@ -209,13 +217,21 @@ inline double *CVariable::GetIntBoundary_Jump(void) { return NULL; }
 
 inline double CVariable::GetEddyViscosity(void) { return 0; }
 
+inline void CVariable::SetGammaEff(void) { }
+
+inline void CVariable::SetGammaSep(double gamma_sep) { }
+
+inline double CVariable::GetIntermittency(void) { return 0; }
+
 inline double CVariable::GetEnthalpy(void) { return 0; }
 
 inline double CVariable::GetEnthalpy(unsigned short iSpecies) { return 0; }
 
-inline double CVariable::GetPressure(void) { return 0; }
+inline double CVariable::GetPressure(bool val_incomp) { return 0; }
 
 inline double CVariable::GetPressure_Old(void) { return 0; }
+
+inline double CVariable::GetPressure_Old(unsigned short val_Species) { return 0; }
 
 inline double CVariable::GetDeltaPressure(void) { return 0; }
 
@@ -229,9 +245,7 @@ inline double CVariable::GetSoundSpeed(unsigned short val_var) { return 0; }
 
 inline double CVariable::GetTemperature(void) { return 0; }
 
-inline double CVariable::GetTemperature(unsigned short val_iSpecies) { return 0; }
-
-inline double CVariable::GetTemperature_TR(unsigned short val_iSpecies) { return 0; }
+inline double CVariable::GetTemperature_tr(unsigned short val_iSpecies) { return 0; }
 
 inline double CVariable::GetTemperature_vib(unsigned short val_iSpecies) { return 0; }
 
@@ -253,6 +267,10 @@ inline double CVariable::GetLaminarViscosityInc(void) { return 0; }
 
 inline double CVariable::GetLaminarViscosity(unsigned short iSpecies) { return 0; }
 
+inline double CVariable::GetThermalConductivity(unsigned short iSpecies) { return 0; }
+
+inline double CVariable::GetThermalConductivity_vib(unsigned short iSpecies) { return 0; }
+
 inline double CVariable::GetEddyViscosity(unsigned short iSpecies) { return 0; }
 
 inline double CVariable::GetVorticity(unsigned short val_dim) { return 0; }
@@ -269,6 +287,22 @@ inline void CVariable::SetEddyViscosity(unsigned short val_Kind_Turb_Model, CVar
 
 inline void CVariable::SetEnthalpy(void) { }
 
+inline void CVariable::SetPrimVar_Compressible(double Gamma, double Gas_Constant) { }
+
+inline void CVariable::SetPrimVar_Compressible(double Gamma, double Gas_Constant, double turb_ke) { }
+
+inline void CVariable::SetPrimVar_Incompressible(double Density_Inf, double ArtComp_Factor, bool freesurface) { }
+
+inline void CVariable::SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double ArtComp_Factor, double turb_ke, bool freesurface) { }
+
+inline double CVariable::GetPrimVar(unsigned short val_var) { return 0; }
+
+inline double *CVariable::GetPrimVar(void) { return NULL; }
+
+inline double **CVariable::GetPrimVar_Plasma(void) { return NULL; }
+
+inline double CVariable::GetPrimVar(unsigned short iSpecies, unsigned short iVar) { return 0; }
+
 inline void CVariable::SetBetaInc2(double val_betainc2) { }
 
 inline void CVariable::SetDensityInc(double val_densityinc) { }
@@ -277,11 +311,11 @@ inline void CVariable::SetPhi_Old(double *val_phi) { }
 
 inline void CVariable::SetDiffLevelSet(double val_difflevelset) { }
 
-inline void CVariable::SetPressure(double Gamma, double *Coord) { }
+inline void CVariable::SetPressure(double Gamma) { }
 
-inline void CVariable::SetPressure(CConfig *config, double *Coord) { }
+inline void CVariable::SetPressure(CConfig *config) { }
 
-inline void CVariable::SetPressure(double Gamma, double *Coord, double turb_ke) { }
+inline void CVariable::SetPressure(double Gamma, double turb_ke) { }
 
 inline void CVariable::SetPressure() { }
 
@@ -295,9 +329,11 @@ inline void CVariable::SetSoundSpeed(double Gamma) { }
 
 inline void CVariable::SetTemperature(double Gas_Constant) { }
 
-inline void CVariable::SetTemperature_TR(CConfig *config, double *Coord) { }
+inline void CVariable::SetTemperature_tr(CConfig *config) { }
 
-inline void CVariable::SetTemperature_vib(CConfig *config, double *Coord) { }
+inline void CVariable::SetTemperature_vib(CConfig *config) { }
+
+inline void CVariable::SetPrimVar(CConfig *config) { }
 
 inline void CVariable::SetWallTemperature(double Temperature_Wall) { }
 
@@ -314,6 +350,13 @@ inline void CVariable::SetVelocity2(void) { }
 inline void CVariable::SetVelocity_Old(double *val_velocity, bool val_incomp) { }
 
 inline void CVariable::SetVelocity_Old(double *val_velocity, unsigned short iSpecies) { }
+
+inline void CVariable::SetVel_ResConv_Zero(unsigned short iSpecies) { }
+inline void CVariable::SetVel_ResVisc_Zero(unsigned short iSpecies) { }
+inline void CVariable::SetVel_ResSour_Zero(unsigned short iSpecies) { }
+inline void CVariable::SetVelRes_TruncErrorZero(unsigned short iSpecies) { }
+
+inline void CVariable::SetLaminarViscosity() { }
 
 inline void CVariable::SetLaminarViscosity(CConfig *config) { }
 
@@ -333,13 +376,25 @@ inline void CVariable::SetGradient_PrimitiveZero(void) { }
 
 inline void CVariable::AddGradient_Primitive(unsigned short val_var, unsigned short val_dim, double val_value) { }
 
+inline void CVariable::AddGradient_Primitive(unsigned short val_species, unsigned short val_var, unsigned short val_dim, double val_value) { }
+
 inline void CVariable::SubtractGradient_Primitive(unsigned short val_var, unsigned short val_dim, double val_value) { }
+
+inline void CVariable::SubtractGradient_Primitive(unsigned short val_species, unsigned short val_var, unsigned short val_dim, double val_value) { }
 
 inline double CVariable::GetGradient_Primitive(unsigned short val_var, unsigned short val_dim) { return 0; }
 
+inline double CVariable::GetGradient_Primitive(unsigned short val_species, unsigned short val_var, unsigned short val_dim) { return 0; }
+
 inline void CVariable::SetGradient_Primitive(unsigned short val_var, unsigned short val_dim, double val_value) { }
 
+inline void CVariable::SetGradient_Primitive(unsigned short val_species, unsigned short val_var, unsigned short val_dim, double val_value) { }
+
 inline double **CVariable::GetGradient_Primitive(void) { return NULL; }
+
+inline double **CVariable::GetGradient_Primitive(unsigned short val_species) { return NULL; }
+
+inline double ***CVariable::GetGradient_Primitive_Plasma(void) { return NULL; }
 
 inline void CVariable::SetBlendingFunc(double val_viscosity, double val_dist, double val_density) { }
 
@@ -389,21 +444,24 @@ inline double CVariable::GetTimeSpectral_Source(unsigned short val_var) { return
 
 inline double CEulerVariable::GetDensity(void) { return Solution[0]; }
 
-inline double CEulerVariable::GetDensityInc(void) { return Solution[nDim+1]; }
+inline double CEulerVariable::GetDensityInc(void) { return Primitive[0]; }
 
-inline double CEulerVariable::GetBetaInc2(void) { return Solution[nDim+2]; }
+inline double CEulerVariable::GetBetaInc2(void) { return Primitive[nDim+1]; }
 
 inline double CEulerVariable::GetEnergy(void) { return Solution[nVar-1]/Solution[0]; };
 
-inline double CEulerVariable::GetEnthalpy(void) { return Enthalpy; }
+inline double CEulerVariable::GetEnthalpy(void) { return Primitive[nDim+3]; }
 
-inline double CEulerVariable::GetPressure(void) { return Pressure; }
+inline double CEulerVariable::GetPressure(bool val_incomp) { 
+if (val_incomp) return Solution[0];
+else return Primitive[nDim+1]; 
+}
 
 inline double CEulerVariable::GetPressure_Old(void) { return Pressure_Old; }
 
-inline double CEulerVariable::GetSoundSpeed(void) { return SoundSpeed; }
+inline double CEulerVariable::GetSoundSpeed(void) { return Primitive[nDim+4]; }
 
-inline double CEulerVariable::GetTemperature(void) { return Temperature; }
+inline double CEulerVariable::GetTemperature(void) { return Primitive[0]; }
 
 inline double CEulerVariable::GetVelocity(unsigned short val_dim, bool val_incomp) {
 double velocity;
@@ -414,26 +472,19 @@ return velocity;
 
 inline double CEulerVariable::GetVelocity2(void) { return Velocity2; }
 
-inline void CEulerVariable::SetEnthalpy(void) { Enthalpy = (Solution[nVar-1] + Pressure) / Solution[0]; }
+inline void CEulerVariable::SetEnthalpy(void) { Primitive[nDim+3] = (Solution[nVar-1] + Primitive[nDim+1]) / Solution[0]; }
 
-inline void CEulerVariable::SetDensityInc(double val_density) { Solution[nDim+1] = val_density; }
+inline void CEulerVariable::SetDensityInc(double val_density) { Primitive[0] = val_density; }
 
-inline void CEulerVariable::SetBetaInc2(double val_betainc2) { Solution[nDim+2] = val_betainc2; }
+inline void CEulerVariable::SetBetaInc2(double val_betainc2) { Primitive[nDim+1] = val_betainc2; }
 
-inline void CEulerVariable::SetPressure(double Gamma, double *Coord) {
-	Pressure_Old = Pressure;
-	Pressure = (Gamma-1.0)*Solution[0]*(Solution[nVar-1]/Solution[0]-0.5*Velocity2);
-	if (Pressure < 0.0) {
-		Pressure = Pressure_Old;
-		cout <<"Negative pressure at point: ";
-		for (unsigned short iDim = 0; iDim < nDim; iDim++) cout << Coord[iDim] <<" ";
-		cout << endl;
-		}
-}
+inline void CEulerVariable::SetSoundSpeed(double Gamma) { Primitive[nDim+4] = sqrt(Gamma*Primitive[nDim+1]/Solution[0]); }
 
-inline void CEulerVariable::SetSoundSpeed(double Gamma) { SoundSpeed = sqrt(Gamma*Pressure/Solution[0]); }
+inline void CEulerVariable::SetTemperature(double Gas_Constant) { Primitive[0] = Primitive[nDim+1] / ( Gas_Constant * Solution[0]); }
 
-inline void CEulerVariable::SetTemperature(double Gas_Constant) { Temperature = Pressure / ( Gas_Constant * Solution[0]); }
+inline double CEulerVariable::GetPrimVar(unsigned short val_var) { return Primitive[val_var]; }
+
+inline double *CEulerVariable::GetPrimVar(void) { return Primitive; }
 
 inline void CEulerVariable::SetVelocity(double *val_velocity, bool val_incomp) { 
 	if (val_incomp) {
@@ -448,13 +499,9 @@ inline void CEulerVariable::SetVelocity(double *val_velocity, bool val_incomp) {
 
 inline void CEulerVariable::SetVelocity2(void) { Velocity2 = 0.0; for (unsigned short iDim = 0; iDim < nDim; iDim++) Velocity2 += Solution[iDim+1]*Solution[iDim+1]/(Solution[0]*Solution[0]); }
 
-inline void CEulerVariable::SetVelocityInc2(void) { Velocity2 = 0.0; for (unsigned short iDim = 0; iDim < nDim; iDim++) Velocity2 += (Solution[iDim+1]/Solution[nDim+1])*(Solution[iDim+1]/Solution[nDim+1]); }
+inline void CEulerVariable::SetVelocityInc2(void) { Velocity2 = 0.0; for (unsigned short iDim = 0; iDim < nDim; iDim++) Velocity2 += (Solution[iDim+1]/Primitive[0])*(Solution[iDim+1]/Primitive[0]); }
 
-inline void CEulerVariable::SetBetaInc2(CConfig *config) { Solution[nDim+2] = config->GetArtComp_Factor(); }
-
-inline void CEulerVariable::SetPressureInc(void) { Pressure = Solution[0]; }
-
-inline void CEulerVariable::SetPressureInc(double val_pressure) { Solution[0] = val_pressure; Pressure = val_pressure; }
+inline void CEulerVariable::SetPressureInc(double val_pressure) { Solution[0] = val_pressure; }
 
 inline void CEulerVariable::SetVelocity_Old(double *val_velocity, bool val_incomp) { 
 	if (val_incomp) {
@@ -485,6 +532,16 @@ inline double CEulerVariable::GetPreconditioner_Beta() { return Precond_Beta; }
 
 inline void CEulerVariable::SetPreconditioner_Beta(double val_Beta) { Precond_Beta = val_Beta; }
 
+inline void CEulerVariable::SetPressure(double Gamma) {
+	Pressure_Old = Primitive[nDim+1];
+	Primitive[nDim+1] = (Gamma-1.0)*Solution[0]*(Solution[nVar-1]/Solution[0]-0.5*Velocity2);
+	if (Primitive[nDim+1] < 0.0) Primitive[nDim+1] = Pressure_Old;
+}
+
+inline void CEulerVariable::SetMagneticField( double* val_B) { B_Field[0] = val_B[0]; B_Field[1] = val_B[1];B_Field[2] = val_B[2];}
+
+inline double* CEulerVariable::GetMagneticField() { return B_Field;}
+
 inline double CNSVariable::GetEddyViscosity(void) { return EddyViscosity; }
 
 inline double CNSVariable::GetLaminarViscosity(void) { return LaminarViscosity; }
@@ -501,7 +558,17 @@ inline void CNSVariable::SetLaminarViscosityInc(double val_laminar_viscosity_inc
 
 inline void CNSVariable::SetEddyViscosity(double val_eddy_viscosity) { EddyViscosity = val_eddy_viscosity; }
 
-inline void CNSVariable::SetWallTemperature(double Temperature_Wall ) { Temperature = Temperature_Wall; }
+inline void CNSVariable::SetWallTemperature(double Temperature_Wall ) { Primitive[0] = Temperature_Wall; }
+
+inline void CNSVariable::SetPressure(double Gamma, double turb_ke){
+	Pressure_Old = Primitive[nDim+1];
+	Primitive[nDim+1] = (Gamma-1.0)*Solution[0]*(Solution[nVar-1]/Solution[0]-0.5*Velocity2 - turb_ke);
+	if (Primitive[nDim+1] < 0.0) Primitive[nDim+1] = Pressure_Old;
+}
+
+inline double CTransLMVariable::GetIntermittency() {return Solution[0];}
+
+inline void CTransLMVariable::SetGammaSep(double gamma_sep_in) {gamma_sep = gamma_sep_in;}
 
 inline double *CAdjEulerVariable::GetForceProj_Vector(void) { return ForceProj_Vector; }
 
@@ -518,6 +585,10 @@ inline void CAdjEulerVariable::SetObjFuncSource(double *val_ObjFuncSource) { for
 inline void CAdjEulerVariable::SetIntBoundary_Jump(double *val_IntBoundary_Jump) { for (unsigned short iVar = 0; iVar < nVar; iVar++) IntBoundary_Jump[iVar] = val_IntBoundary_Jump[iVar]; }
 
 inline void CAdjEulerVariable::SetPhi_Old(double *val_phi) { for (unsigned short iDim = 0; iDim < nDim; iDim++) Solution_Old[iDim+1]=val_phi[iDim]; };
+
+inline void CAdjEulerVariable::SetTimeSpectral_Source(unsigned short val_var, double val_source) { TS_Source[val_var] = val_source; }
+
+inline double CAdjEulerVariable::GetTimeSpectral_Source(unsigned short val_var) { return TS_Source[val_var]; }
 
 inline double *CAdjNSVariable::GetForceProj_Vector(void) { return ForceProj_Vector; }
 
@@ -539,23 +610,29 @@ inline void CLinEulerVariable::SetDeltaVel_Old(double *val_deltavel) { for (unsi
 
 inline double CLinEulerVariable::GetDeltaPressure(void) { return DeltaPressure; }
 
-inline double CPlasmaVariable::GetPressure(unsigned short val_iSpecies) { return Pressure[val_iSpecies]; }
+inline double CPlasmaVariable::GetPressure(unsigned short val_iSpecies) { return Primitive[val_iSpecies][nDim+2]; }
 
 inline double CPlasmaVariable::GetVelocity2(unsigned short val_iSpecies) { return Velocity2[val_iSpecies]; }
 
-inline void CPlasmaVariable::AddGradient_Primitive(unsigned short val_var, unsigned short val_dim, double val_value) { Gradient_Primitive[val_var][val_dim] += val_value; }
+inline void CPlasmaVariable::AddGradient_Primitive(unsigned short val_species, unsigned short val_var, unsigned short val_dim, double val_value) { Gradient_Primitive[val_species][val_var][val_dim] += val_value; }
 
-inline void CPlasmaVariable::SubtractGradient_Primitive(unsigned short val_var, unsigned short val_dim, double val_value) { Gradient_Primitive[val_var][val_dim] -= val_value; }
+inline void CPlasmaVariable::SubtractGradient_Primitive(unsigned short val_species, unsigned short val_var, unsigned short val_dim, double val_value) { Gradient_Primitive[val_species][val_var][val_dim] -= val_value; }
 
-inline double **CPlasmaVariable::GetGradient_Primitive(void) { return Gradient_Primitive; }
+inline double CPlasmaVariable::GetPrimVar(unsigned short iSpecies, unsigned short iVar) { return Primitive[iSpecies][iVar]; }
 
-inline double CPlasmaVariable::GetGradient_Primitive(unsigned short val_var, unsigned short val_dim) { return Gradient_Primitive[val_var][val_dim]; }
+inline double **CPlasmaVariable::GetPrimVar_Plasma(void) { return Primitive; }
 
-inline void CPlasmaVariable::SetGradient_Primitive(unsigned short val_var, unsigned short val_dim, double val_value) { Gradient_Primitive[val_var][val_dim] = val_value; }
+inline double **CPlasmaVariable::GetGradient_Primitive(unsigned short val_species) { return Gradient_Primitive[val_species]; }
 
-inline double CPlasmaVariable::GetSoundSpeed(unsigned short val_species) { return SoundSpeed[val_species]; }
+inline double ***CPlasmaVariable::GetGradient_Primitive_Plasma(void) { return Gradient_Primitive; }
 
-inline double CPlasmaVariable::GetEnthalpy(unsigned short val_species) { return Enthalpy[val_species]; }
+inline double CPlasmaVariable::GetGradient_Primitive(unsigned short val_species, unsigned short val_var, unsigned short val_dim) { return Gradient_Primitive[val_species][val_var][val_dim]; }
+
+inline void CPlasmaVariable::SetGradient_Primitive(unsigned short val_species, unsigned short val_var, unsigned short val_dim, double val_value) { Gradient_Primitive[val_species][val_var][val_dim] = val_value; }
+
+inline double CPlasmaVariable::GetSoundSpeed(unsigned short val_species) { return Primitive[val_species][nDim+5]; }
+
+inline double CPlasmaVariable::GetEnthalpy(unsigned short val_species) { return Primitive[val_species][nDim+4]; }
 
 inline double CPlasmaVariable::GetMax_Lambda_Inv(unsigned short iSpecies) { return Max_Lambda_Inv_MultiSpecies[iSpecies]; }
 
@@ -577,21 +654,21 @@ inline double CPlasmaVariable::GetLambda(unsigned short iSpecies) { return Lambd
 
 inline double CPlasmaVariable::GetLaminarViscosity(unsigned short iSpecies) { return LaminarViscosity_MultiSpecies[iSpecies]; }
 
+inline double CPlasmaVariable::GetThermalConductivity(unsigned short iSpecies) {return ThermalCoeff[iSpecies]; }
+
+inline double CPlasmaVariable::GetThermalConductivity_vib(unsigned short iSpecies) {return ThermalCoeff_vib[iSpecies]; }
+
 inline double CPlasmaVariable::GetEddyViscosity(unsigned short iSpecies) { return EddyViscosity_MultiSpecies[iSpecies]; }
 
 inline void CPlasmaVariable::SetLaminarViscosity(double val_laminar_viscosity, unsigned short iSpecies ) { LaminarViscosity_MultiSpecies[iSpecies] = val_laminar_viscosity; }
 
-inline double CPlasmaVariable::GetTemperature(unsigned short iSpecies) { return Temperature[iSpecies]; }
+inline double CPlasmaVariable::GetTemperature_tr(unsigned short iSpecies) { return Primitive[iSpecies][0]; }
 
-inline double CPlasmaVariable::GetTemperature_TR(unsigned short iSpecies) { return Temperature_tr[iSpecies]; }
+inline double CPlasmaVariable::GetTemperature_vib(unsigned short iSpecies) { return Primitive[iSpecies][nDim+1]; }
 
-inline double CPlasmaVariable::GetTemperature_vib(unsigned short iSpecies) { return Temperature_vib[iSpecies]; }
+inline double CPlasmaVariable::GetDensity(unsigned short iSpecies) { return Primitive[iSpecies][nDim+3]; }
 
-inline double CPlasmaVariable::GetDensity(unsigned short iSpecies) { return Solution[(nDim+2)*iSpecies + 0]; }
-
-inline void CPlasmaVariable::SetVelocity_Old(double *val_velocity, unsigned short iSpecies) { for (unsigned short iDim = 0; iDim < nDim; iDim++)	Solution_Old[iSpecies*(nDim+2)+ iDim+1] = val_velocity[iDim]*Solution[iSpecies*(nDim+2)+ 0]; }
-
-inline void CPlasmaVariable::SetWallTemperature(double* Temperature_Wall ) { for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) Temperature[iSpecies] = Temperature_Wall[iSpecies]; }
+inline void CPlasmaVariable::SetWallTemperature(double* Temperature_Wall ) { for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) Primitive[iSpecies][0] = Temperature_Wall[iSpecies]; }
 
 inline void CPlasmaVariable::SetDelta_Time(double val_delta_time, unsigned short iSpecies) { Species_Delta_Time[iSpecies] = val_delta_time;}
 
@@ -604,6 +681,12 @@ inline double CPlasmaVariable::GetSensor(unsigned short iSpecies) {return Sensor
 inline void CPlasmaVariable::SetElectricField(double* ElectricField) {Elec_Field = ElectricField; }
 
 inline double* CPlasmaVariable::GetElectricField() { return Elec_Field;}
+
+inline double* CPlasmaVariable::GetMagneticField() { return B_Field; }
+
+inline double CPlasmaVariable::GetPressure_Old(unsigned short val_Species) { return Pressure_Old[val_Species]; }
+
+inline void CPlasmaVariable::SetMagneticField( double* val_B) { B_Field[0] = val_B[0]; B_Field[1] = val_B[1];B_Field[2] = val_B[2];}
 
 inline double *CAdjPlasmaVariable::GetForceProj_Vector(void) { return ForceProj_Vector; }
 
@@ -621,9 +704,7 @@ inline void CLevelSetVariable::SetDiffLevelSet(double val_difflevelset) { DiffLe
 
 inline double CLevelSetVariable::GetDiffLevelSet(void) { return DiffLevelSet; }
 
-inline double CFEAVariable::GetPressure(void) { return Pressure; }
-
-inline void CFEAVariable::SetPressure(double val_pressure) { Pressure = val_pressure; }
+inline void CFEAVariable::SetPressureValue(double val_pressure) { Pressure = val_pressure; }
 
 inline void CWaveVariable::SetThickness_Noise(double val_thickness_noise) { Thickness_Noise = val_thickness_noise; }
 

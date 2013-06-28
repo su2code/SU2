@@ -2,7 +2,7 @@
  * \file SU2_CFD.cpp
  * \brief Main file of Computational Fluid Dynamics Code (SU2_CFD).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.
+ * \version 2.0.1
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -44,6 +44,12 @@ int main(int argc, char *argv[]) {
 	MPI::Attach_buffer(buffer, bufsize);
 	rank = MPI::COMM_WORLD.Get_rank();
 	size = MPI::COMM_WORLD.Get_size();
+#ifdef TIME
+  /*--- Set up a timer for performance comparisons ---*/
+  double start, finish, time;
+  MPI::COMM_WORLD.Barrier();
+  start = MPI::Wtime();
+#endif
 #endif
 
 	/*--- Pointer to different structures that will be used throughout the entire code ---*/
@@ -137,7 +143,7 @@ int main(int argc, char *argv[]) {
 		/*--- Definition of the numerical method class (solver_container[#ZONES][#MG_GRIDS][#EQ_SYSTEMS][#EQ_TERMS]) ---*/
 		solver_container[iZone] = new CNumerics***[config_container[iZone]->GetMGLevels()+1];
 		Solver_Definition(solver_container[iZone], solution_container[iZone], geometry_container[iZone], config_container[iZone], iZone);
-		
+
 #ifndef NO_MPI
 		/*--- Synchronization point after the solver definition subrotuine ---*/
 		MPI::COMM_WORLD.Barrier();
@@ -146,16 +152,16 @@ int main(int argc, char *argv[]) {
 		/*--- Computation of wall distance ---*/
 		if ((config_container[iZone]->GetKind_Solver() == RANS) || (config_container[iZone]->GetKind_Solver() == ADJ_RANS))
 			geometry_container[iZone][MESH_0]->SetWall_Distance(config_container[iZone]);
-		
+
 		/*--- Computation of positive area in the z-plane  ---*/
 		geometry_container[iZone][MESH_0]->SetPositive_ZArea(config_container[iZone]);
-		
+
 		/*--- Set the near-field and interface boundary conditions  ---*/
 		for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
 			geometry_container[iZone][iMesh]->MatchNearField(config_container[iZone]);
 			geometry_container[iZone][iMesh]->MatchInterface(config_container[iZone]); 
 		}
-    
+
 		/*--- Instantiate the geometry movement classes for dynamic meshes ---*/
 		if (config_container[iZone]->GetGrid_Movement()) {
       if (rank == MASTER_NODE)
@@ -166,9 +172,13 @@ int main(int argc, char *argv[]) {
       surface_movement[iZone]->CopyBoundary(geometry_container[iZone][MESH_0], config_container[iZone]);
       if (config_container[iZone]->GetUnsteady_Simulation() == TIME_SPECTRAL)
         SetGrid_Movement(geometry_container[iZone], surface_movement[iZone],
-                         grid_movement[iZone], ffd_chunk[iZone], config_container[iZone], iZone, 0);
+                         grid_movement[iZone], ffd_chunk[iZone], solution_container[iZone], config_container[iZone], iZone, 0);
 		}
 	}
+
+  	/*--- Set the mesh velocities for the time-spectral case ---*/
+  	if (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL)
+  		SetTimeSpectral_Velocities(geometry_container, config_container, nZone);
   
   /*--- Coupling between zones (only two zones... it can be done in a general way) ---*/
 	if (nZone == 2) {
@@ -357,7 +367,21 @@ int main(int argc, char *argv[]) {
 	//Geometrical_Deallocation(geometry_container, config_container[iZone]);
 		
 #ifndef NO_MPI
-	/*--- Finalize MPI parallelization ---*/	
+  /*--- Compute and print the total time for scaling tests. ---*/
+#ifdef TIME
+  MPI::COMM_WORLD.Barrier();
+  finish = MPI::Wtime();
+  time = finish-start;
+  if (rank == MASTER_NODE) {
+    if (size == 1) {cout << "\nCompleted in " << time << " seconds on ";
+      cout << size << " core.\n" << endl;
+    } else {
+      cout << "\nCompleted in " << time << " seconds on " << size;
+      cout << " cores.\n" << endl;
+    }
+  }
+#endif
+	/*--- Finalize MPI parallelization ---*/
 	old_buffer = buffer;
 	MPI::Detach_buffer(old_buffer);
 	//	delete [] buffer;

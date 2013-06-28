@@ -2,7 +2,7 @@
  * \file grid_movement_structure.cpp
  * \brief Subroutines for doing the grid movement using different strategies.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.
+ * \version 2.0.1
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -1419,6 +1419,7 @@ void CVolumetricMovement::SetRigidRotation(CGeometry *geometry, CConfig *config,
 	double dtheta, dphi, dpsi, cosTheta, sinTheta;
   double cosPhi, sinPhi, cosPsi, sinPsi;
   double DEG2RAD = PI_NUMBER/180.0;
+  bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
   bool adjoint = config->IsAdjoint();
 
 	/*--- Problem dimension and physical time step ---*/
@@ -1426,6 +1427,13 @@ void CVolumetricMovement::SetRigidRotation(CGeometry *geometry, CConfig *config,
 	dt   = config->GetDelta_UnstTimeND();
   Lref = config->GetLength_Ref();
 
+  /*--- For time-spectral, motion is the same in each zone (at each instance). ---*/
+  if (time_spectral) {
+	  iZone = ZONE_0;
+    // hard-coded to be off for time spectral at the moment
+    dt = 0.0;
+  }
+  
   /*--- For the unsteady adjoint, use reverse time ---*/
   if (adjoint) {
     /*--- Set the first adjoint mesh position to the final direct one ---*/
@@ -1696,10 +1704,11 @@ void CVolumetricMovement::SetRigidPlunging(CGeometry *geometry, CConfig *config,
   Ampl[2]   = config->GetPlunging_Ampl_Z(iZone)/Lref;
   
   if (time_spectral) {
-	  /*--- period of oscillation & compute time interval using nTimeInstances ---*/
-	  double Omega_mag = sqrt(pow(Omega[0],2)+pow(Omega[1],2)+pow(Omega[2],2));
-	  double period = 2*PI_NUMBER/Omega_mag;
-	  deltaT = period/(double)(config->GetnTimeInstances());
+//	  /*--- period of oscillation & time interval using nTimeInstances ---*/
+//	  double Omega_mag = sqrt(pow(Omega[0],2)+pow(Omega[1],2)+pow(Omega[2],2));
+//	  double period = 2*PI_NUMBER/Omega_mag;
+//	  deltaT = period/(double)(config->GetnTimeInstances());
+    deltaT = 0.0;
   }
   
   /*--- Compute delta time based on physical time step ---*/
@@ -1765,6 +1774,103 @@ void CVolumetricMovement::SetRigidPlunging(CGeometry *geometry, CConfig *config,
 	geometry->SetBoundControlVolume(config, UPDATE);
   
 }
+
+
+void CVolumetricMovement::SetAeroElasticMotion(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned short iZone, unsigned long iter) {
+    //Implement in here.
+    // Will need the dimension of b
+    // Will need to use a to move the moment to the elastic axis.
+    int rank = MASTER_NODE;
+#ifndef NO_MPI
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+    
+    /*--- Local variables ---*/
+    double deltaX[3], newCoord[3], Center[3], *Coord, Omega[3], Ampl[3], Lref;
+    double deltaT, time_new, time_old;
+    unsigned short iDim, nDim = geometry->GetnDim();
+    unsigned long iPoint;
+    bool adjoint = config->IsAdjoint();
+	
+    /*--- Retrieve values from the config file ---*/
+    deltaT = config->GetDelta_UnstTimeND();
+    Lref   = config->GetLength_Ref();
+    
+    /*--- Plunging frequency and amplitude from config. ---*/
+    Center[0] = config->GetMotion_Origin_X(iZone);
+    Center[1] = config->GetMotion_Origin_Y(iZone);
+    Center[2] = config->GetMotion_Origin_Z(iZone);
+    Omega[0]  = config->GetPlunging_Omega_X(iZone)/config->GetOmega_Ref();
+    Omega[1]  = config->GetPlunging_Omega_Y(iZone)/config->GetOmega_Ref();
+    Omega[2]  = config->GetPlunging_Omega_Z(iZone)/config->GetOmega_Ref();
+    Ampl[0]   = config->GetPlunging_Ampl_X(iZone)/Lref;
+    Ampl[1]   = config->GetPlunging_Ampl_Y(iZone)/Lref;
+    Ampl[2]   = config->GetPlunging_Ampl_Z(iZone)/Lref;
+    
+    /*--- Compute delta time based on physical time step ---*/
+    if (adjoint) {
+        /*--- For the unsteady adjoint, we integrate backwards through
+         physical time, so perform mesh motion in reverse. ---*/
+        unsigned long nFlowIter  = config->GetnExtIter();
+        unsigned long directIter = nFlowIter - iter - 1;
+        time_new = static_cast<double>(directIter)*deltaT;
+        time_old = time_new;
+        if (iter != 0) time_old = (static_cast<double>(directIter)+1.0)*deltaT;
+    } else {
+        /*--- Forward time for the direct problem ---*/
+        time_new = static_cast<double>(iter)*deltaT;
+        time_old = time_new;
+        if (iter != 0) time_old = (static_cast<double>(iter)-1.0)*deltaT;
+    }
+    
+    //put stuff in here.
+    
+    
+	/*--- Compute delta change in the position in the x, y, & z directions. ---*/
+	deltaX[0] = -Ampl[0]*(sin(Omega[0]*time_new) - sin(Omega[0]*time_old));
+	deltaX[1] = -Ampl[1]*(sin(Omega[1]*time_new) - sin(Omega[1]*time_old));
+	deltaX[2] = -Ampl[2]*(sin(Omega[2]*time_new) - sin(Omega[2]*time_old));
+    
+    if (rank == MASTER_NODE) {
+        cout.precision(4);
+		cout << "Delta plunging increments (dx, dy, dz): (";
+        cout << deltaX[0] << ", ";
+        cout << deltaX[1] << ", ";
+        cout << deltaX[2] << ")." << endl;
+    }
+    
+	/*--- Loop over and move each node in the volume mesh ---*/
+	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+        
+        /*--- Coordinates of the current point ---*/
+        Coord = geometry->node[iPoint]->GetCoord();
+        
+        /*--- Increment the node position using the delta values. ---*/
+        // maybe will switch this.
+        for (iDim = 0; iDim < nDim; iDim++)
+            newCoord[iDim] = Coord[iDim] + deltaX[iDim];
+        
+        /*--- Store new node location ---*/
+        for (iDim = 0; iDim < nDim; iDim++) {
+            geometry->node[iPoint]->SetCoord(iDim,newCoord[iDim]);
+        }
+    }
+    
+    /*--- Set the mesh motion center to the new location after
+     incrementing the position with the rigid translation. This
+     new loation will be used for subsequent pitching/rotation.---*/
+    config->SetMotion_Origin_X(iZone,Center[0]+deltaX[0]);
+    config->SetMotion_Origin_Y(iZone,Center[1]+deltaX[1]);
+    config->SetMotion_Origin_Z(iZone,Center[2]+deltaX[2]);
+    
+	/*--- After moving all nodes, update geometry class ---*/
+	geometry->SetCG();
+	geometry->SetControlVolume(config, UPDATE);
+	geometry->SetBoundControlVolume(config, UPDATE);
+    
+    
+}
+
 
 CSurfaceMovement::CSurfaceMovement(void) : CGridMovement() {
 	nChunk = 0;

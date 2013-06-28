@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.
+ * \version 2.0.1
  *
  * Many of the classes in this file are templated, and therefore must
  * be declared and defined here; to keep all elements together, there
@@ -131,10 +131,21 @@ const double TWO3 = 2.0 / 3.0;			/*!< \brief Two divided by three. */
 const double FOUR3 = 4.0 / 3.0;			/*!< \brief Four divided by three. */
 const double PI_NUMBER = 4.0 * atan(1.0);	/*!< \brief Pi number. */
 const unsigned int MAX_NUMBER_DOMAIN = 1000;	/*!< \brief Maximum number of domains. */
+const unsigned int MAX_COMM_LEVEL = 1000;	/*!< \brief Maximum number of communication levels. */
 const unsigned int MAX_NUMBER_PERIODIC = 10;	/*!< \brief Maximum number of periodic boundary conditions. */
 const unsigned int MAX_NUMBER_SLIDING  = 10;	/*!< \brief Maximum number of sliding boundary conditions. */
 const int MASTER_NODE = 0;			/*!< \brief Master node for MPI parallelization. */
 const int AUX_NODE = 1;			/*!< \brief Computational node that is used for IO stuff. */
+
+/** General output & CGNS defines **/
+const unsigned int N_ELEM_TYPES = 7;
+const unsigned int N_POINTS_LINE = 2;
+const unsigned int N_POINTS_TRIANGLE = 3;
+const unsigned int N_POINTS_RECTANGLE = 4;
+const unsigned int N_POINTS_TETRAHEDRON = 4;
+const unsigned int N_POINTS_HEXAHEDRON = 8;
+const unsigned int N_POINTS_PYRAMID = 5;
+const unsigned int N_POINTS_WEDGE = 6; 
 
 /*!
  * \brief Boolean answers
@@ -333,6 +344,7 @@ enum ENUM_GRIDMOVEMENT {
 	FLUID_STRUCTURE = 3,		/*!< \brief _______. */
 	EXTERNAL = 4,  /*!< \brief Arbitrary grid motion specified by external files at each time step. */
 	EXTERNAL_ROTATION = 5,  /*!< \brief Arbitrary grid motion specified by external files at each time step with rigid rotation. */
+    AEROELASTIC = 6,    /*!< \brief Simulation with aeroelastic motion. */
 };
 static const map<string, ENUM_GRIDMOVEMENT> GridMovement_Map = CCreateMap<string, ENUM_GRIDMOVEMENT>
 ("NONE", NO_MOVEMENT)       
@@ -340,7 +352,8 @@ static const map<string, ENUM_GRIDMOVEMENT> GridMovement_Map = CCreateMap<string
 ("RIGID_MOTION", RIGID_MOTION)
 ("FLUID_STRUCTURE", FLUID_STRUCTURE)
 ("EXTERNAL", EXTERNAL)
-("EXTERNAL_ROTATION", EXTERNAL_ROTATION);
+("EXTERNAL_ROTATION", EXTERNAL_ROTATION)
+("AEROELASTIC", AEROELASTIC);
 
 /*!
  * \brief types of centered spatial discretizations
@@ -395,15 +408,11 @@ static const map<string, ENUM_UPWIND> Upwind_Map = CCreateMap<string, ENUM_UPWIN
  */
 enum ENUM_LIMITER {
 	NO_LIMITER = 0,               /*!< \brief No slope limiter */
-	VENKATAKRISHNAN = 1,		/*!< \brief Slope limiter using Venkatakrisnan method. */
-	BARTH = 2,							/*!< \brief Slope limiter using Barth and Jespersen method. */
-	MINMOD = 3
+	VENKATAKRISHNAN = 1		/*!< \brief Slope limiter using Venkatakrisnan method. */
 };
 static const map<string, ENUM_LIMITER> Limiter_Map = CCreateMap<string, ENUM_LIMITER>
 ("NONE", NO_LIMITER)
-("VENKATAKRISHNAN", VENKATAKRISHNAN)
-("BARTH", BARTH)
-("MINMOD", MINMOD);
+("VENKATAKRISHNAN", VENKATAKRISHNAN);
 
 /*!
  * \brief types of viscous term discretizations
@@ -454,21 +463,19 @@ static const map<string, ENUM_SOURCEJAC> SourceJac_Map = CCreateMap<string, ENUM
 enum ENUM_TURB_MODEL {
 	NO_TURB_MODEL = 0,            /*!< \brief No turbulence model. */
 	SA = 1,                       /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
-	SA_COMP = 2,          	/*!< \brief Kind of Turbulent model (Spalart-Allmaras) for compresibles flows. */
-	SST = 3       		/*!< \brief Kind of Turbulence model (Menter SST). */
+	SST = 2       		/*!< \brief Kind of Turbulence model (Menter SST). */
 };
 static const map<string, ENUM_TURB_MODEL> Turb_Model_Map = CCreateMap<string, ENUM_TURB_MODEL>
 ("NONE", NO_TURB_MODEL)
 ("SA", SA)
-("SA_COMP", SA_COMP)
 ("SST", SST);
 
 /*!
  * \brief types of transition models
  */
 enum ENUM_TRANS_MODEL {
-	NO_TRANS_MODEL = 0,            /*!< \brief No turbulence model. */
-	LM = 1												/*!< \brief Kind of Turbulence model (Menter SST). */
+	NO_TRANS_MODEL = 0,            /*!< \brief No transition model. */
+	LM = 1												/*!< \brief Kind of transition model (LM for Spalart-Allmaras). */
 };
 static const map<string, ENUM_TRANS_MODEL> Trans_Model_Map = CCreateMap<string, ENUM_TRANS_MODEL>
 ("NONE", NO_TRANS_MODEL)
@@ -507,6 +514,17 @@ enum GEOMETRY_ACTION {
 };
 
 /*!
+ * \brief types of action to perform when doing the geometry evaluation
+ */
+enum GEOMETRY_MODE {
+	ANALYSIS = 0,     /*!<  \brief Geometrical analysis. */
+	GRADIENT = 1      /*!<  \brief Geometrical analysis and gradient using finite differences. */
+};
+static const map<string, GEOMETRY_MODE> GeometryMode_Map = CCreateMap<string, GEOMETRY_MODE>
+("ANALYSIS", ANALYSIS)
+("GRADIENT", GRADIENT);
+
+/*!
  * \brief types of boundary conditions
  */
 enum BC_TYPE {
@@ -535,6 +553,8 @@ enum BC_TYPE {
 	NACELLE_INFLOW = 25,		/*!< \brief Boundary nacelle inflow. */
 	NACELLE_EXHAUST = 26,		/*!< \brief Boundary nacelle exhaust. */
 	SLIDING_INTERFACE = 27,		/*!< \brief Boundary sliding interface definition. */
+  ISOTHERMAL = 28,      /*!< \brief No slip isothermal wall boundary condition. */
+  HEAT_FLUX  = 29,      /*!< \brief No slip constant heat flux wall boundary condition. */
 	SEND_RECEIVE = 99		/*!< \brief Boundary send-receive definition. */
 };
 
@@ -577,15 +597,16 @@ enum ENUM_OBJECTIVE {
 	MOMENT_Z_COEFFICIENT = 8,	/*!< \brief Yawing objective function definition. */
 	EQUIVALENT_AREA = 9,		/*!< \brief Equivalent area objective function definition. */
 	NEARFIELD_PRESSURE = 10,	/*!< \brief NearField Pressure objective function definition. */
-	ELECTRIC_CHARGE = 11,		/*!< \brief Charge distribution objective function definition. */
 	FORCE_X_COEFFICIENT = 12,	/*!< \brief X-direction force objective function definition. */
 	FORCE_Y_COEFFICIENT = 13,	/*!< \brief Y-direction force objective function definition. */
 	FORCE_Z_COEFFICIENT = 14,	/*!< \brief Z-direction force objective function definition. */
 	THRUST_COEFFICIENT = 15,		/*!< \brief Thrust objective function definition. */
 	TORQUE_COEFFICIENT = 16,		/*!< \brief Torque objective function definition. */
 	FIGURE_OF_MERIT = 17,		/*!< \brief Rotor Figure of Merit objective function definition. */
-	FREESURFACE = 18,		/*!< \brief Free Surface objective function definition. */
-	NOISE = 19              /*!< \brief Noise objective function definition. */
+	FREESURFACE = 18,				/*!< \brief Free Surface objective function definition. */
+	NOISE = 19,             /*!< \brief Noise objective function definition. */
+	MAX_THICKNESS = 20,       /*!< \brief Maximum thickness. */
+	TOTAL_VOLUME = 21       /*!< \brief Total volume. */
 };
 
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>
@@ -599,7 +620,6 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("MOMENT_Z", MOMENT_Z_COEFFICIENT)
 ("EQUIVALENT_AREA", EQUIVALENT_AREA)
 ("NEARFIELD_PRESSURE", NEARFIELD_PRESSURE)
-("ELECTRIC_CHARGE", ELECTRIC_CHARGE)
 ("FORCE_X", FORCE_X_COEFFICIENT)
 ("FORCE_Y", FORCE_Y_COEFFICIENT)
 ("FORCE_Z", FORCE_Z_COEFFICIENT)
@@ -607,8 +627,9 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("TORQUE", TORQUE_COEFFICIENT)
 ("FIGURE_OF_MERIT", FIGURE_OF_MERIT)
 ("FREESURFACE", FREESURFACE)
-("NOISE", NOISE);
-
+("NOISE", NOISE)
+("TOTAL_VOLUME", TOTAL_VOLUME)
+("MAX_THICKNESS", MAX_THICKNESS);
 
 /*!
  * \brief types (Continuous/Discrete) of objective functions

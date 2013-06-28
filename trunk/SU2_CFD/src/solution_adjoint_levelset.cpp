@@ -2,7 +2,7 @@
  * \file solution_adjoint_levelset.cpp
  * \brief Main subrotuines for solving the level set problem.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.
+ * \version 2.0.1
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -118,7 +118,6 @@ CAdjLevelSetSolution::CAdjLevelSetSolution(CGeometry *geometry, CConfig *config)
 			case MOMENT_Y_COEFFICIENT: AdjExt = "_cmy.dat"; break;
 			case MOMENT_Z_COEFFICIENT: AdjExt = "_cmz.dat"; break;
 			case EFFICIENCY: AdjExt = "_eff.dat"; break;
-			case ELECTRIC_CHARGE: AdjExt = "_ec.dat"; break;
 			case EQUIVALENT_AREA: AdjExt = "_ea.dat"; break;
 			case NEARFIELD_PRESSURE: AdjExt = "_nfp.dat"; break;
       case FORCE_X_COEFFICIENT: AdjExt = "_cfx.dat"; break;
@@ -456,6 +455,14 @@ void CAdjLevelSetSolution::Source_Residual(CGeometry *geometry, CSolution **solu
 	}
 	
 }
+
+void CAdjLevelSetSolution::Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+																								 CConfig *config, unsigned short iMesh) {
+
+
+}
+
+
 
 void CAdjLevelSetSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short val_marker) {
 	unsigned long iPoint, iVertex, Point_Normal;

@@ -2,7 +2,7 @@
  * \file solution_structure.inl
  * \brief In-Line subroutines of the <i>solution_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.
+ * \version 2.0.1
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -44,6 +44,8 @@ inline void CSolution::SetNoise_Source(CSolution ***flow_solution, CGeometry **w
 
 inline void CSolution::SetAeroacoustic_Coupling(CSolution ***wave_solution, CSolution ***flow_solution, CNumerics *solver, CGeometry **flow_geometry, CConfig *flow_config) { }
 
+inline void CSolution::Initialize_Jacobian_StructureLM(CGeometry *geometry, CConfig *config) { }
+
 inline void CSolution::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement, CConfig *flow_config, CConfig *fea_config, CGeometry **fea_geometry, CSolution ***fea_solution) { }
 
 inline void CSolution::SetCSensitivity(unsigned short val_marker, unsigned short val_vertex, double val_sensitivity) { }
@@ -63,6 +65,10 @@ inline double CSolution::GetPsiE_Inf(void) { return 0; }
 inline void CSolution::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolution::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config) { }
+
+inline void CSolution::SetPrimVar_Limiter(CGeometry *geometry, CConfig *config) { }
+
+inline void CSolution::SetPreconditioner_Turkel(CConfig *config, unsigned short iPoint) { }
 
 inline void CSolution::SetDistance(CGeometry *geometry, CConfig *config) { };
 
@@ -178,7 +184,10 @@ inline void CSolution::AddStiffMatrix(double ** StiffMatrix_Elem, unsigned long 
 									   
 inline void CSolution::Source_Residual(CGeometry *geometry, CSolution **solution_container, 
 												  CNumerics *solver, CConfig *config, unsigned short iMesh) { }
-
+									   
+inline void CSolution::Source_Template(CGeometry *geometry, CSolution **solution_container, 
+												  CNumerics *solver, CConfig *config, unsigned short iMesh) { }
+												  
 inline void CSolution::SourceConserv_Residual(CGeometry *geometry, CSolution **solution_container, 
 											   CNumerics *solver, CConfig *config, unsigned short iMesh) { }
 
@@ -257,6 +266,10 @@ inline void CSolution::BC_Load(CGeometry *geometry, CSolution **solution_contain
 
 inline void CSolution::BC_NS_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
 								  unsigned short val_marker) { }
+                  
+inline void CSolution::BC_Isothermal_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short val_marker) { }
+                  
+inline void CSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short val_marker) { }
 									
 inline void CSolution::BC_Dirichlet(CGeometry *geometry, CSolution **solution_container, CConfig *config, 
 								  unsigned short val_marker) { }

@@ -2,7 +2,7 @@
  * \file variable_structure.cpp
  * \brief Definition of the solution fields.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.
+ * \version 2.0.1
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -30,8 +30,6 @@ CVariable::CVariable(void) { }
 CVariable::CVariable(unsigned short val_ndim, unsigned short val_nvar, CConfig *config) {
 	unsigned short iVar, iDim;
 	
-	bool incompressible = config->GetIncompressible();
-
 	/*--- Initializate the number of dimension and number of variables ---*/
 	nDim = val_ndim;
 	nVar = val_nvar;
@@ -40,8 +38,7 @@ CVariable::CVariable(unsigned short val_ndim, unsigned short val_nvar, CConfig *
 	 which is common for all the problems, here it is also possible 
 	 to allocate some extra flow variables that do not participate 
 	 in the simulation ---*/
-	if (incompressible) Solution = new double [nVar+2];
-	else Solution = new double [nVar];
+	Solution = new double [nVar];
 	
 	for (iVar = 0; iVar < nVar; iVar++)
 		Solution[iVar] = 0.0;
@@ -235,42 +232,15 @@ void CVariable::SetVel_ResSour_Zero(void) {
 		Res_Sour[iDim+1] = 0.0;
 }
 
-void CVariable::SetVel_ResVisc_Zero(unsigned short iSpecies) {
-	unsigned short loc = (nDim+2)*iSpecies;
-
-	for (unsigned short iDim = 0; iDim < nDim; iDim++)
-		Res_Visc[loc + iDim+1] = 0.0;
-}
-
-void CVariable::SetVel_ResSour_Zero(unsigned short iSpecies) {
-	unsigned short loc = (nDim+2)*iSpecies;
-	
-	for (unsigned short iDim = 0; iDim < nDim; iDim++)
-		Res_Sour[loc + iDim+1] = 0.0;
-}
-
 void CVariable::SetVel_ResConv_Zero(void) {
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
 		Res_Conv[iDim+1] = 0.0;
-}
-
-void CVariable::SetVel_ResConv_Zero(unsigned short iSpecies) {
-	unsigned short loc = (nDim+2)*iSpecies;
-	for (unsigned short iDim = 0; iDim < nDim; iDim++)
-		Res_Conv[loc + iDim+1] = 0.0;
 }
 
 void CVariable::SetVelRes_TruncErrorZero(void) {
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
 		Res_TruncError[iDim+1] = 0.0;
 }
-
-void CVariable::SetVelRes_TruncErrorZero(unsigned short iSpecies) {
-	unsigned short loc = (nDim+2)*iSpecies;
-	for (unsigned short iDim = 0; iDim < nDim; iDim++)
-		Res_TruncError[loc + iDim+1] = 0.0;
-}
-
 
 void CVariable::SetVelSolutionZero(void) {
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)

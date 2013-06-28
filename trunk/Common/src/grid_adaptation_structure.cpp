@@ -60,9 +60,15 @@ CGridAdaptation::~CGridAdaptation(void) {
 	unsigned short iVar, iDim;
 	
 	for (iVar = 0; iVar < nVar; iVar++){
-		delete [] ConsVar_Adapt[iVar], ConsVar_Sol[iVar], ConsVar_Res[iVar];
-		delete [] AdjVar_Adapt[iVar], AdjVar_Sol[iVar], AdjVar_Res[iVar];
-		delete [] LinVar_Adapt[iVar], LinVar_Sol[iVar], LinVar_Res[iVar];
+		delete [] ConsVar_Adapt[iVar]; 
+		delete [] ConsVar_Sol[iVar]; 
+		delete [] ConsVar_Res[iVar];
+		delete [] AdjVar_Adapt[iVar]; 
+		delete [] AdjVar_Sol[iVar]; 
+		delete [] AdjVar_Res[iVar];
+		delete [] LinVar_Adapt[iVar]; 
+		delete [] LinVar_Sol[iVar]; 
+		delete [] LinVar_Res[iVar];
 	}
 	
 	for (iDim = 0; iDim < nDim; iDim++){
@@ -70,9 +76,15 @@ CGridAdaptation::~CGridAdaptation(void) {
 		delete [] Gradient_Flow[iDim];
 		delete [] Gradient_Adj[iDim];		
 	}
-	delete [] ConsVar_Adapt, ConsVar_Sol, ConsVar_Res;
-	delete [] AdjVar_Adapt, AdjVar_Sol, AdjVar_Res;
-	delete [] LinVar_Adapt, LinVar_Sol, LinVar_Res;
+	delete [] ConsVar_Adapt; 
+	delete [] ConsVar_Sol;
+	delete [] ConsVar_Res;
+	delete [] AdjVar_Adapt; 
+	delete [] AdjVar_Sol;
+	delete [] AdjVar_Res;
+	delete [] LinVar_Adapt; 
+	delete [] LinVar_Sol; 
+	delete [] LinVar_Res;
 	delete [] Gradient;
 	delete [] Gradient_Flow;	
 	delete [] Gradient_Adj;	
@@ -193,7 +205,6 @@ void CGridAdaptation::GetAdjSolution(CGeometry *geometry, CConfig *config) {
 	if (config->GetKind_ObjFunc() == MOMENT_Y_COEFFICIENT) sprintf (buffer, "_cmy.dat"); 
 	if (config->GetKind_ObjFunc() == MOMENT_Z_COEFFICIENT) sprintf (buffer, "_cmz.dat"); 
 	if (config->GetKind_ObjFunc() == EFFICIENCY) sprintf (buffer, "_eff.dat"); 
-	if (config->GetKind_ObjFunc() == ELECTRIC_CHARGE) sprintf (buffer, "_cc.dat"); 
   if (config->GetKind_ObjFunc() == FORCE_X_COEFFICIENT) sprintf (buffer, "_cfx.dat"); 
 	if (config->GetKind_ObjFunc() == FORCE_Y_COEFFICIENT) sprintf (buffer, "_cfy.dat"); 
 	if (config->GetKind_ObjFunc() == FORCE_Z_COEFFICIENT) sprintf (buffer, "_cfz.dat"); 
@@ -271,7 +282,6 @@ void CGridAdaptation::GetAdjResidual(CGeometry *geometry, CConfig *config){
 	if (config->GetKind_ObjFunc() == MOMENT_Y_COEFFICIENT) sprintf (buffer, "_cmy.dat"); 
 	if (config->GetKind_ObjFunc() == MOMENT_Z_COEFFICIENT) sprintf (buffer, "_cmz.dat"); 
 	if (config->GetKind_ObjFunc() == EFFICIENCY) sprintf (buffer, "_eff.dat"); 
-	if (config->GetKind_ObjFunc() == ELECTRIC_CHARGE) sprintf (buffer, "_ec.dat"); 
   if (config->GetKind_ObjFunc() == FORCE_X_COEFFICIENT) sprintf (buffer, "_cfx.dat"); 
 	if (config->GetKind_ObjFunc() == FORCE_Y_COEFFICIENT) sprintf (buffer, "_cfy.dat"); 
 	if (config->GetKind_ObjFunc() == FORCE_Z_COEFFICIENT) sprintf (buffer, "_cfz.dat");
@@ -1577,7 +1587,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 	
 	unsigned long iPoint, iElem, iEdge, ip_0, ip_1, ip_2, ip_3, iVertex;
 	unsigned short iDim, iMarker, iVar;
-	int no_0, no_1, no_2, no_3;
+	int no_0 = 0, no_1 = 0, no_2 = 0, no_3 = 0;
 
 	int *TriangleAdaptCode; 
 	int **TriangleEdgeIndex; bool **TriangleEdgeCode; int **TriangleEdgeNode;
@@ -2214,7 +2224,7 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 
 	unsigned long iPoint, iElem, iEdge, ip_0, ip_1, ip_2, ip_3, ip_4, ip_5, ip_6, ip_7, iVertex;
 	unsigned short iDim, iMarker, iVar;
-	int no_0, no_1, no_2, no_3, no_4, no_5, no_6, no_7;
+	int no_0 = 0, no_1 = 0, no_2 = 0, no_3 = 0, no_4 = 0, no_5 = 0, no_6 = 0, no_7 = 0;
 	unsigned short counter;
 
 	int *TetraAdaptCode; 
@@ -2337,7 +2347,7 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 
 	/*--- Remove pyramids and wedges in the adaptation process ---*/
 	unsigned short iFace, iNode, ElemIndex;
-	unsigned long jElem;
+	long jElem;
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem ++) {
 		if ((geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON) || 
 				(geometry->elem[iElem]->GetVTK_Type() == PYRAMID) || 
@@ -3523,7 +3533,6 @@ void CGridAdaptation::SetRestart_AdjSolution(CConfig *config, string mesh_adjfil
 	if (config->GetKind_ObjFunc() == MOMENT_Y_COEFFICIENT) sprintf (buffer, "_cmy.dat"); 
 	if (config->GetKind_ObjFunc() == MOMENT_Z_COEFFICIENT) sprintf (buffer, "_cmz.dat"); 
 	if (config->GetKind_ObjFunc() == EFFICIENCY) sprintf (buffer, "_eff.dat"); 
-	if (config->GetKind_ObjFunc() == ELECTRIC_CHARGE) sprintf (buffer, "_cc.dat"); 
   if (config->GetKind_ObjFunc() == FORCE_X_COEFFICIENT) sprintf (buffer, "_cfx.dat"); 
 	if (config->GetKind_ObjFunc() == FORCE_Y_COEFFICIENT) sprintf (buffer, "_cfy.dat"); 
 	if (config->GetKind_ObjFunc() == FORCE_Z_COEFFICIENT) sprintf (buffer, "_cfz.dat");

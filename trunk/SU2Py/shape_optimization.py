@@ -3,7 +3,7 @@
 ## \file shape_optimization.py
 #  \brief Python script for performing the shape optimization.
 #  \author Francisco Palacios, Tom Economon, Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.
+#  \version 2.0.1
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -21,7 +21,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import time, os, sys, shutil, subprocess, numpy, libSU2, copy
+import libSU2, libSU2_run
+import time, os, sys, shutil, subprocess, numpy, copy
 from optparse import OptionParser
 from scipy.optimize import fmin_bfgs
 from scipy.optimize import fmin_slsqp
@@ -29,9 +30,6 @@ from parallel_computation import parallel_computation
 from continuous_adjoint   import continuous_adjoint
 from finite_differences   import finite_differences
 from parallel_deformation import parallel_deformation
-
-SU2_RUN = os.environ['SU2_RUN'] 
-sys.path.append( SU2_RUN )
 
 counter = 0
 
@@ -52,14 +50,10 @@ parser.add_option("-s", "--step", dest="findiffstep", default=1e-4,
 (options, args)=parser.parse_args()
 
 # process inputs
-options.partitions = int( options.partitions )
-options.cycle      = int( options.cycle )
+options.partitions  = int( options.partitions )
+options.cycle       = int( options.cycle )
 options.findiffstep = float( options.findiffstep )
-parallel = options.partitions > 1
-if options.quiet == 'True':
-    report = 'quiet'
-else: 
-    report = 'verbose'
+options.quiet       = options.quiet == 'True'
 
 # Read design variable information
 params_base = libSU2.Get_ConfigParams( options.filename )
@@ -160,62 +154,55 @@ Opt_file.close()
 
 def update_grid(x):
     #print( 'grid  ') # + str(x) )
-
-    # Copy all the design variables 
-    global x_new, x_old, Gradients_OLD, Objectives_OLD
-    x_new = [ xx for xx in x ] # avoiding reference copy
     
-    delta_x = numpy.array(x_new) - numpy.array(x_old)
-    if numpy.dot(delta_x,delta_x) == 0.0:
-        #print( 'skip update')
-        return False
-    
-    # Change the parameters of the design variables
-    params_set = { 'DV_VALUE_NEW'      : x_new  } #'DV_VALUE_OLD'      : x_old ,
-    libSU2.Set_ConfigParams(Config_MDC_file,params_set)       
-    
-    # Apply grid update
-    # print('  SU2_MDC')
     logfile = 'SU2_MDC.out'
+    if not options.quiet: logfile = None
     
-    if parallel and not adaptation: 
-        if options.quiet == 'False':
-            logfile = None
-            
-        parallel_deformation( Config_MDC_file        ,
+    # output logging
+    with libSU2.redirect_output(logfile,logfile):
+    
+        # Copy all the design variables 
+        global x_new, x_old, Gradients_OLD, Objectives_OLD
+        x_new = [ xx for xx in x ] # avoiding reference copy
+        
+        delta_x = numpy.array(x_new) - numpy.array(x_old)
+        if numpy.dot(delta_x,delta_x) == 0.0:
+            #print( 'skip update')
+            return False
+        
+        # Change the parameters of the design variables
+        params_set = { 'DV_VALUE_NEW'      : x_new  } #'DV_VALUE_OLD'      : x_old ,
+        libSU2.Set_ConfigParams(Config_MDC_file,params_set)       
+        
+        # Apply grid update
+        # print('  SU2_MDC')
+        
+        parallel_deformation( Config_MDC_file                  ,
                               partitions  = options.partitions , 
-                              divide_grid = "False"  ,
-                              merge_grid  = "True"  ,
-                              logfile     = logfile   )        
-    else:    
-        run_SU2_MDC = "SU2_MDC " + Config_MDC_file
-        if options.quiet == 'True':
-            run_SU2_MDC = run_SU2_MDC + ' >> ' + logfile
-        os.system ( run_SU2_MDC )
-        
-        
-    if adaptation:
-        
-        #print( '  adapt')
-        
-        run_adapt = 'mesh_adaptation.py -f %s -p %s -c %s -o True' % ( Config_MAC_file, options.partitions, options.cycle ) 
-        run_DDC   = 'SU2_DDC ' + Config_MAC_file 
-        if options.quiet == 'True':
-            run_adapt = run_adapt + ' >> ' + logfile
-            run_DDC   = run_DDC   + ' >> ' + logfile
-  
-        # ADAPT MESH (will overwrite mesh file)
-        os.system( run_adapt )
-        
-        # decompose new mesh
-        os.system( run_DDC )
-        
-
-    # Copy solution
-    x_old = [ xx for xx in x_new ] # also copy.deepcopy(x_new) works
+                              divide_grid = "False"            ,
+                              merge_grid  = "True"              )        
+            
+        if adaptation:
+            #print( '  adapt')
+            
+            # ADAPT MESH (will overwrite mesh file)
+            mesh_adaptation( Config_MAC_file                   ,
+                             partitions   = options.partitions , 
+                             cycles       = options.cycle      ,
+                             overwrite    = True               ,
+                             save_all     = False               )
+            
+            # decompose new mesh
+            libSU2_run.SU2_DDC( Config_MAC_file , options.partitions )
+            
     
-    Objectives_OLD = {}
-    Gradients_OLD  = {}    
+        # Copy solution
+        x_old = [ xx for xx in x_new ] # also copy.deepcopy(x_new) works
+        
+        Objectives_OLD = {}
+        Gradients_OLD  = {}    
+    
+    #: with redirect_output()
     
     return True
 
@@ -226,49 +213,55 @@ def update_grid(x):
 
 def f(x):
     #print( 'f     ') # + str(x))
+    
+    logfile = 'SU2_CFD.out'
+    if not options.quiet: logfile = None
+    
+    # output logging
+    with libSU2.redirect_output(logfile,logfile):    
 
-    # Update the computational grid to the design variable state
-    updated = update_grid(x)
+        # Update the computational grid to the design variable state
+        updated = update_grid(x)
+    
+        # CFD computation to evaluate the objective function
+        global counter, Objectives_OLD
+        counter = counter + 1
+    
+        # run direct problem
+        if updated:
+            ObjFun_Dict,_ = continuous_adjoint ( filename    = Config_CFD_file    ,
+                                                 partitions  = options.partitions ,
+                                                 compute     = 'Direct'           ,
+                                                 output      = 'True'             ,
+                                                 divide_grid = 'False'             )
+            Objectives_OLD = ObjFun_Dict
+        else:
+            ObjFun_Dict = Objectives_OLD
+        
+        # copy mesh file
+        shutil.copyfile( Mesh_MDC_file, "mesh_ShapeIter_%03d.su2" % counter )
+    
+        # To save memory, don't store each iteration for unsteady problems
+        if not 'WRT_UNSTEADY' in special_cases: 
+            rename_data()
+        
+        # setup variables for writing
+        vars_write = ObjFun_Dict
+        vars_write['ITERATION'] = counter  # set to optimization iteration
+        
+        # values for writing
+        write_vals = [ vars_write[key] for key in header_vars ] 
+        write_vals = tuple(write_vals)
+        
+        # Output optimization history
+        Opt_file = open(optimization_file,"a")
+        Opt_file.write(write_format % write_vals)
+        Opt_file.close()    
+        
+        # return objective function, scaled and sign fixed for maximization problems
+        f_val =  ObjFun_Dict[objfunc] * scale * libSU2.get_ObjFunSign(objfunc)
 
-    # CFD computation to evaluate the objective function
-    global counter, Objectives_OLD
-    counter = counter + 1
-
-    # run direct problem
-    if updated:
-        ObjFun_Dict,_ = continuous_adjoint ( filename    = Config_CFD_file    ,
-                                             partitions  = options.partitions ,
-                                             compute     = 'Direct'           ,
-                                             output      = 'True'             ,
-                                             divide_grid = 'False'            ,
-                                             report      = report             ,
-                                             logfile     = 'SU2_CFD.out'       )
-        Objectives_OLD = ObjFun_Dict
-    else:
-        ObjFun_Dict = Objectives_OLD
-    
-    # copy mesh file
-    shutil.copyfile( Mesh_MDC_file, "mesh_ShapeIter_%03d.su2" % counter )
-
-    # To save memory, don't store each iteration for unsteady problems
-    if not 'WRT_UNSTEADY' in special_cases: 
-        rename_data()
-    
-    # setup variables for writing
-    vars_write = ObjFun_Dict
-    vars_write['ITERATION'] = counter  # set to optimization iteration
-    
-    # values for writing
-    write_vals = [ vars_write[key] for key in header_vars ] 
-    write_vals = tuple(write_vals)
-    
-    # Output optimization history
-    Opt_file = open(optimization_file,"a")
-    Opt_file.write(write_format % write_vals)
-    Opt_file.close()    
-    
-    # return objective function, scaled and sign fixed for maximization problems
-    f_val =  ObjFun_Dict[objfunc] * scale * libSU2.get_ObjFunSign(objfunc)
+    #: with redirect_output()
 
     return f_val
 
@@ -281,48 +274,51 @@ def f(x):
 def df(x):
     #print( 'df    ') # + str(x))
     
-    global Objectives_OLD, Gradients_OLD
-
-    # Update the computational grid to the design variable state
-    updated = update_grid(x)
+    logfile = 'SU2_ADJ.out'
+    if not options.quiet: logfile = None
     
-    if not Objectives_OLD.has_key(objfunc):
-        ObjFun_Dict,_ = continuous_adjoint ( filename    = Config_CFD_file    ,
-                                             partitions  = options.partitions ,
-                                             compute     = 'Direct'           ,
-                                             output      = 'True'            ,
-                                             divide_grid = 'False'            ,
-                                             report      = report             ,
-                                             logfile     = 'SU2_CFD.out'       )
-        Objectives_OLD = ObjFun_Dict
-        
-    if not Gradients_OLD.has_key(objfunc):
-        if options.gradient == 'Adjoint':
-            # Change grid file for Gradient Computation over the deformed grid
-            params_set = { 'ADJ_OBJFUNC'  : objfunc       }
-            libSU2.Set_ConfigParams(Config_GRAD_file,params_set) 
-        
-            # Compute Gradient using continuous adjoint strategy
-            _,Gradient_Dict = continuous_adjoint ( filename    = Config_GRAD_file   ,
-                                                   partitions  = options.partitions ,
-                                                   compute     = 'Adjoint'          , 
-                                                   output      = 'False'            ,
-                                                   divide_grid = 'False'            ,
-                                                   report      = report             ,
-                                                   logfile     = 'SU2_ADJ.out'       )             
-        elif options.gradient == 'FinDiff':
-            _,Gradient_Dict =  finite_differences( filename    = Config_GRAD_file   ,
-                                                   partitions  = options.partitions ,
-                                                   output      = 'False'            ,
-                                                   step        = options.findiffstep,
-                                                   logfile     = 'SU_FD.out'       )  
-        for key,value in Gradient_Dict.iteritems():
-            Gradients_OLD[key] = value
-    else:
-        Gradient_Dict = Gradients_OLD
+    # output logging
+    with libSU2.redirect_output(logfile,logfile):    
     
-    # pack gradients, apply scale and sign
-    df_vals = numpy.array( Gradient_Dict[ objfunc ] ) * scale * libSU2.get_ObjFunSign(objfunc)
+        global Objectives_OLD, Gradients_OLD
+    
+        # Update the computational grid to the design variable state
+        updated = update_grid(x)
+        
+        if not Objectives_OLD.has_key(objfunc):
+            ObjFun_Dict,_ = continuous_adjoint ( filename    = Config_CFD_file    ,
+                                                 partitions  = options.partitions ,
+                                                 compute     = 'Direct'           ,
+                                                 output      = 'True'             ,
+                                                 divide_grid = 'False'             )
+            Objectives_OLD = ObjFun_Dict
+            
+        if not Gradients_OLD.has_key(objfunc):
+            if options.gradient == 'Adjoint':
+                # Change grid file for Gradient Computation over the deformed grid
+                params_set = { 'ADJ_OBJFUNC'  : objfunc       }
+                libSU2.Set_ConfigParams(Config_GRAD_file,params_set) 
+            
+                # Compute Gradient using continuous adjoint strategy
+                _,Gradient_Dict = continuous_adjoint ( filename    = Config_GRAD_file   ,
+                                                       partitions  = options.partitions ,
+                                                       compute     = 'Adjoint'          , 
+                                                       output      = 'False'            ,
+                                                       divide_grid = 'False'             )             
+            elif options.gradient == 'FinDiff':
+                _,Gradient_Dict =  finite_differences( filename    = Config_GRAD_file    ,
+                                                       partitions  = options.partitions  ,
+                                                       output      = 'False'             ,
+                                                       step        = options.findiffstep  )  
+            for key,value in Gradient_Dict.iteritems():
+                Gradients_OLD[key] = value
+        else:
+            Gradient_Dict = Gradients_OLD
+        
+        # pack gradients, apply scale and sign
+        df_vals = numpy.array( Gradient_Dict[ objfunc ] ) * scale * libSU2.get_ObjFunSign(objfunc)
+            
+    #: with redirect_output
             
     return df_vals
     
@@ -334,41 +330,47 @@ def df(x):
 
 def eqcons(x):
     #print( 'ceq   ') # + str(x))
+    
+    logfile = 'SU2_CFD.out'
+    if not options.quiet: logfile = None
+    
+    # output logging
+    with libSU2.redirect_output(logfile,logfile):      
 
-    if UnitaryEqConst[0] != "NONE" :
-        
-        global Objectives_OLD
-
-        # Update the computational grid to the design variable state
-        updated = update_grid(x)
-        
-        # run direct problem
-        if updated:
-            ObjFun_Dict,_ = continuous_adjoint ( filename    = Config_CFD_file    ,
-                                                 partitions  = options.partitions ,
-                                                 compute     = 'Direct'           ,
-                                                 output      = 'True'            ,
-                                                 divide_grid = 'False'            ,
-                                                 report      = report             ,
-                                                 logfile     = 'SU2_CFD.out'       )
-            Objectives_OLD = ObjFun_Dict
+        if UnitaryEqConst[0] != "NONE" :
+            
+            global Objectives_OLD
+    
+            # Update the computational grid to the design variable state
+            updated = update_grid(x)
+            
+            # run direct problem
+            if updated:
+                ObjFun_Dict,_ = continuous_adjoint ( filename    = Config_CFD_file    ,
+                                                     partitions  = options.partitions ,
+                                                     compute     = 'Direct'           ,
+                                                     output      = 'True'             ,
+                                                     divide_grid = 'False'             )
+                Objectives_OLD = ObjFun_Dict
+            else:
+                ObjFun_Dict = Objectives_OLD
+    
+            # equality constraint vector
+            ceq = numpy.zeros(len(UnitaryEqConst))
+            
+            # assemble constraint vector
+            for i in range(len(UnitaryEqConst)) :
+                this_con = UnitaryEqConst[i]
+                this_val = UnitaryEqConst_Value[i]
+                this_scl = UnitaryEqConst_Scale[i]
+                
+                # apply scale
+                ceq[i] = ( ObjFun_Dict[this_con] - this_val ) * this_scl
+                
         else:
-            ObjFun_Dict = Objectives_OLD
+            ceq = numpy.zeros(0)
 
-        # equality constraint vector
-        ceq = numpy.zeros(len(UnitaryEqConst))
-        
-        # assemble constraint vector
-        for i in range(len(UnitaryEqConst)) :
-            this_con = UnitaryEqConst[i]
-            this_val = UnitaryEqConst_Value[i]
-            this_scl = UnitaryEqConst_Scale[i]
-            
-            # apply scale
-            ceq[i] = ( ObjFun_Dict[this_con] - this_val ) * this_scl
-            
-    else:
-        ceq = numpy.zeros(0)
+    #: with redirect_output()
 
     return ceq       
              
@@ -380,59 +382,63 @@ def eqcons(x):
 
 def deqcons(x):
     #print( 'dceq  ') # + str(x))
+    
+    logfile = 'SU2_ADJ.out'
+    if not options.quiet: logfile = None
+    
+    # output logging
+    with libSU2.redirect_output(logfile,logfile):      
 
-    # Read the conts function gradient
-    dceq = numpy.zeros((len(UnitaryEqConst), n_DV))
-
-    for i in range(len(UnitaryEqConst)) :
-        if UnitaryEqConst[i] != "NONE" :
-            
-            
-            global Objectives_OLD, Gradients_OLD
-        
-            # Update the computational grid to the design variable state
-            updated = update_grid(x)
-            
-            if not Objectives_OLD.has_key(UnitaryEqConst[i]):
-                ObjFun_Dict,_ = continuous_adjoint ( filename    = Config_CFD_file    ,
-                                                     partitions  = options.partitions ,
-                                                     compute     = 'Direct'           ,
-                                                     output      = 'True'            ,
-                                                     divide_grid = 'False'            ,
-                                                     report      = report             ,
-                                                     logfile     = 'SU2_CFD.out'       )
-                Objectives_OLD = ObjFun_Dict           
-        
-            if not Gradients_OLD.has_key(UnitaryEqConst[i]):
-                if options.gradient == 'Adjoint':
-                    # Change grid file for Gradient Computation over the deformed grid
-                    params_set = { 'ADJ_OBJFUNC'  : UnitaryEqConst[i] }
-                    libSU2.Set_ConfigParams(Config_GRAD_file,params_set) 
+        # Read the conts function gradient
+        dceq = numpy.zeros((len(UnitaryEqConst), n_DV))
+    
+        for i in range(len(UnitaryEqConst)) :
+            if UnitaryEqConst[i] != "NONE" :
                 
-                    # Compute Gradient using continuous adjoint strategy
-                    _,Gradient_Dict = continuous_adjoint ( filename    = Config_GRAD_file   ,
-                                                           partitions  = options.partitions ,
-                                                           compute     = 'Adjoint'          , 
-                                                           output      = 'False'            ,
-                                                           divide_grid = 'False'            ,
-                                                           report      = report             ,
-                                                           logfile     = 'SU2_ADJ.out'       )             
-                elif options.gradient == 'FinDiff':
-                    _,Gradient_Dict =  finite_differences( filename    = Config_GRAD_file   ,
-                                                           partitions  = options.partitions ,
-                                                           output      = 'False'            ,
-                                                           step        = options.findiffstep,
-                                                           logfile     = 'SU2_FD.out'       )  
-                for key,value in Gradient_Dict.iteritems():
-                    Gradients_OLD[key] = value
-            else:
-                Gradient_Dict = Gradients_OLD            
-                        
-            # apply scale 
-            dceq[i,:] = numpy.array( Gradient_Dict[ UnitaryEqConst[i] ] ) * UnitaryEqConst_Scale[i]
+                global Objectives_OLD, Gradients_OLD
             
-        else:
-            dceq = numpy.zeros((0, n_DV))
+                # Update the computational grid to the design variable state
+                updated = update_grid(x)
+                
+                if not Objectives_OLD.has_key(UnitaryEqConst[i]):
+                    ObjFun_Dict,_ = continuous_adjoint ( filename    = Config_CFD_file    ,
+                                                         partitions  = options.partitions ,
+                                                         compute     = 'Direct'           ,
+                                                         output      = 'True'             ,
+                                                         divide_grid = 'False'             )
+                    Objectives_OLD = ObjFun_Dict           
+            
+                if not Gradients_OLD.has_key(UnitaryEqConst[i]):
+                    if options.gradient == 'Adjoint':
+                        # Change grid file for Gradient Computation over the deformed grid
+                        params_set = { 'ADJ_OBJFUNC'  : UnitaryEqConst[i] }
+                        libSU2.Set_ConfigParams(Config_GRAD_file,params_set) 
+                    
+                        # Compute Gradient using continuous adjoint strategy
+                        _,Gradient_Dict = continuous_adjoint ( filename    = Config_GRAD_file   ,
+                                                               partitions  = options.partitions ,
+                                                               compute     = 'Adjoint'          , 
+                                                               output      = 'False'            ,
+                                                               divide_grid = 'False'             )             
+                    elif options.gradient == 'FinDiff':
+                        _,Gradient_Dict =  finite_differences( filename    = Config_GRAD_file   ,
+                                                               partitions  = options.partitions ,
+                                                               output      = 'False'            ,
+                                                               step        = options.findiffstep )  
+                    for key,value in Gradient_Dict.iteritems():
+                        Gradients_OLD[key] = value
+                else:
+                    Gradient_Dict = Gradients_OLD            
+                            
+                # apply scale 
+                dceq[i,:] = numpy.array( Gradient_Dict[ UnitaryEqConst[i] ] ) * UnitaryEqConst_Scale[i]
+                
+            else:
+                dceq = numpy.zeros((0, n_DV))
+        
+        #: for each eqconst
+    
+    #: with redirect_output()
 
     return dceq
 
@@ -444,46 +450,52 @@ def deqcons(x):
 
 def ieqcons(x):
     #print( 'cieq  ') # + str(x))
+    
+    logfile = 'SU2_CFD.out'
+    if not options.quiet: logfile = None
+    
+    # output logging
+    with libSU2.redirect_output(logfile,logfile):      
 
-    if UnitaryIeqConst[0].strip() != "NONE" :
-        
-        global Objectives_OLD
-
-        # Update the computational grid to the design variable state
-        updated = update_grid(x)
-        
-        # run direct problem
-        if updated:
-            ObjFun_Dict,_ = continuous_adjoint ( filename    = Config_CFD_file    ,
-                                                 partitions  = options.partitions ,
-                                                 compute     = 'Direct'           ,
-                                                 output      = 'True'            ,
-                                                 divide_grid = 'False'            ,
-                                                 report      = report             ,
-                                                 logfile     = 'SU2_CFD.out'       )
-            Objectives_OLD = ObjFun_Dict
+        if UnitaryIeqConst[0].strip() != "NONE" :
+            
+            global Objectives_OLD
+    
+            # Update the computational grid to the design variable state
+            updated = update_grid(x)
+            
+            # run direct problem
+            if updated:
+                ObjFun_Dict,_ = continuous_adjoint ( filename    = Config_CFD_file    ,
+                                                     partitions  = options.partitions ,
+                                                     compute     = 'Direct'           ,
+                                                     output      = 'True'             ,
+                                                     divide_grid = 'False'             )
+                Objectives_OLD = ObjFun_Dict
+            else:
+                ObjFun_Dict = Objectives_OLD
+            
+            # equality constraint vector
+            cieq = numpy.zeros(len(UnitaryIeqConst))
+            
+            # build the vector
+            for i in range(len(UnitaryIeqConst)) :
+                this_con = UnitaryIeqConst[i]
+                this_val = UnitaryIeqConst_Value[i]
+                this_sgn = UnitaryIeqConst_Sign[i]
+                this_scl = UnitaryIeqConst_Scale[i]
+                
+                if   this_sgn == 'GREATER': this_sgn =  1.0
+                elif this_sgn == 'LESS'   : this_sgn = -1.0
+                else : raise Exception('unknown inequality constraint sign')
+                
+                # apply scale and sign
+                cieq[i] = ( ObjFun_Dict[this_con] - this_val ) * this_scl * this_sgn
+                
         else:
-            ObjFun_Dict = Objectives_OLD
-        
-        # equality constraint vector
-        cieq = numpy.zeros(len(UnitaryIeqConst))
-        
-        # build the vector
-        for i in range(len(UnitaryIeqConst)) :
-            this_con = UnitaryIeqConst[i]
-            this_val = UnitaryIeqConst_Value[i]
-            this_sgn = UnitaryIeqConst_Sign[i]
-            this_scl = UnitaryIeqConst_Scale[i]
-            
-            if   this_sgn == 'GREATER': this_sgn =  1.0
-            elif this_sgn == 'LESS'   : this_sgn = -1.0
-            else : raise Exception('unknown inequality constraint sign')
-            
-            # apply scale and sign
-            cieq[i] = ( ObjFun_Dict[this_con] - this_val ) * this_scl * this_sgn
-            
-    else:
-        cieq = numpy.zeros(0)
+            cieq = numpy.zeros(0)
+
+    #: with redirect_output()
 
     return cieq      
 
@@ -495,63 +507,68 @@ def ieqcons(x):
 
 def dieqcons(x):
     #print( 'dcieq ') # + str(x))
+    
+    logfile = 'SU2_ADJ.out'
+    if not options.quiet: logfile = None
+    
+    # output logging
+    with libSU2.redirect_output(logfile,logfile):      
 
-    # Read the conts function gradient
-    dcieq = numpy.zeros((len(UnitaryIeqConst), n_DV))
-
-    for i in range(len(UnitaryIeqConst)) :
-        if UnitaryIeqConst[i] != "NONE" :
-            
-            
-            global Objectives_OLD, Gradients_OLD
-        
-            # Update the computational grid to the design variable state
-            updated = update_grid(x)
-            
-            if not Objectives_OLD.has_key(UnitaryIeqConst[i]):
-                ObjFun_Dict,_ = continuous_adjoint ( filename    = Config_CFD_file    ,
-                                                     partitions  = options.partitions ,
-                                                     compute     = 'Direct'           ,
-                                                     output      = 'True'            ,
-                                                     divide_grid = 'False'            ,
-                                                     report      = report             ,
-                                                     logfile     = 'SU2_CFD.out'       )
-                Objectives_OLD = ObjFun_Dict       
-        
-            if not Gradients_OLD.has_key(UnitaryIeqConst[i]):
-                if options.gradient == 'Adjoint':
-                    # Change grid file for Gradient Computation over the deformed grid
-                    params_set = { 'ADJ_OBJFUNC'  : UnitaryIeqConst[i] }
-                    libSU2.Set_ConfigParams(Config_GRAD_file,params_set) 
+        # Read the conts function gradient
+        dcieq = numpy.zeros((len(UnitaryIeqConst), n_DV))
+    
+        for i in range(len(UnitaryIeqConst)) :
+            if UnitaryIeqConst[i] != "NONE" :
                 
-                    # Compute Gradient using continuous adjoint strategy
-                    _,Gradient_Dict = continuous_adjoint ( filename    = Config_GRAD_file   ,
-                                                           partitions  = options.partitions ,
-                                                           compute     = 'Adjoint'          , 
-                                                           output      = 'False'            ,
-                                                           divide_grid = 'False'            ,
-                                                           report      = report             ,
-                                                           logfile     = 'SU2_ADJ.out'       )             
-                elif options.gradient == 'FinDiff':
-                    _,Gradient_Dict =  finite_differences( filename    = Config_GRAD_file   ,
-                                                           partitions  = options.partitions ,
-                                                           output      = 'False'            ,
-                                                           step        = options.findiffstep,
-                                                           logfile     = 'SU2_FD.out'       )  
-                for key,value in Gradient_Dict.iteritems():
-                    Gradients_OLD[key] = value
-            else:
-                Gradient_Dict = Gradients_OLD              
-              
-            if   UnitaryIeqConst_Sign[i] == 'GREATER': this_sign =  1.0
-            elif UnitaryIeqConst_Sign[i] == 'LESS'   : this_sign = -1.0
-            else : raise Exception('unknown inequality constraint sign')            
+                
+                global Objectives_OLD, Gradients_OLD
             
-            # apply scale and sign
-            dcieq[i,:] = numpy.array( Gradient_Dict[ UnitaryIeqConst[i] ] ) * UnitaryIeqConst_Scale[i] * this_sign
-
-        else:
-            dcieq = numpy.zeros((0, n_DV))
+                # Update the computational grid to the design variable state
+                updated = update_grid(x)
+                
+                if not Objectives_OLD.has_key(UnitaryIeqConst[i]):
+                    ObjFun_Dict,_ = continuous_adjoint ( filename    = Config_CFD_file    ,
+                                                         partitions  = options.partitions ,
+                                                         compute     = 'Direct'           ,
+                                                         output      = 'True'             ,
+                                                         divide_grid = 'False'             )
+                    Objectives_OLD = ObjFun_Dict       
+            
+                if not Gradients_OLD.has_key(UnitaryIeqConst[i]):
+                    if options.gradient == 'Adjoint':
+                        # Change grid file for Gradient Computation over the deformed grid
+                        params_set = { 'ADJ_OBJFUNC'  : UnitaryIeqConst[i] }
+                        libSU2.Set_ConfigParams(Config_GRAD_file,params_set) 
+                    
+                        # Compute Gradient using continuous adjoint strategy
+                        _,Gradient_Dict = continuous_adjoint ( filename    = Config_GRAD_file   ,
+                                                               partitions  = options.partitions ,
+                                                               compute     = 'Adjoint'          , 
+                                                               output      = 'False'            ,
+                                                               divide_grid = 'False'             )             
+                    elif options.gradient == 'FinDiff':
+                        _,Gradient_Dict =  finite_differences( filename    = Config_GRAD_file   ,
+                                                               partitions  = options.partitions ,
+                                                               output      = 'False'            ,
+                                                               step        = options.findiffstep )  
+                    for key,value in Gradient_Dict.iteritems():
+                        Gradients_OLD[key] = value
+                else:
+                    Gradient_Dict = Gradients_OLD              
+                  
+                if   UnitaryIeqConst_Sign[i] == 'GREATER': this_sign =  1.0
+                elif UnitaryIeqConst_Sign[i] == 'LESS'   : this_sign = -1.0
+                else : raise Exception('unknown inequality constraint sign')            
+                
+                # apply scale and sign
+                dcieq[i,:] = numpy.array( Gradient_Dict[ UnitaryIeqConst[i] ] ) * UnitaryIeqConst_Scale[i] * this_sign
+    
+            else:
+                dcieq = numpy.zeros((0, n_DV))
+        
+        #: for each ieqconst
+    
+    #: with redirect_output()
 
     return dcieq
 
@@ -607,6 +624,8 @@ def rename_data():
 
     # ok now rename files...
     for key in keys_to_rename:
+        if os.path.exists(output_names[key][1]):
+            os.remove(output_names[key][1])
         os.rename(output_names[key][0],output_names[key][1])
         if output_format == "TECPLOT":
             add_tecplot_iter( output_names[key][1] , counter )
@@ -634,6 +653,8 @@ def add_tecplot_iter(filename,this_counter):
     New_file.close()
 
     # Overwrite old solution with new solution file
+    if os.path.exists(filename):
+        os.remove(filename)   
     os.rename("temp_file.plt",filename)
 
 #: def add_tecplot_iter()
@@ -657,15 +678,10 @@ startup_DDC_filename = 'config_DDC_startup.cfg'
 shutil.copy(Config_DDC_file,startup_DDC_filename)
 libSU2.Set_ConfigParams( startup_DDC_filename, {'MESH_FILENAME':original_grid} )
 
-if parallel:
-    # print('  SU2_DDC')
-    run_DDC = "SU2_DDC " + startup_DDC_filename
-    if options.quiet == "True":
-        run_DDC = run_DDC + " >> SU2_DDC.out"
-    os.system ( run_DDC )
-
+if options.partitions > 1:
+    with libSU2.redirect_output("SU2_DDC.out","SU2_DDC.out"):
+        libSU2_run.SU2_DDC( startup_DDC_filename , options.partitions )
 os.remove(startup_DDC_filename)
-
 
 # Initial guess at the optimum
 x0 = numpy.zeros(n_DV)

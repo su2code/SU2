@@ -2,7 +2,7 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.
+ * \version 2.0.1
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -85,7 +85,7 @@ inline double CConfig::GetMaterialDensity(void) { return MaterialDensity; }
 
 inline double CConfig::GetRefLengthMoment(void) { return RefLengthMoment; }
 
-inline double CConfig::GetRefElemLength(void) { return RefLengthMoment; }
+inline double CConfig::GetRefElemLength(void) { return RefElemLength; }
 
 inline double CConfig::GetDomainVolume(void) { return DomainVolume; }
 
@@ -122,6 +122,8 @@ inline double CConfig::GetGas_Constant(void) { return Gas_Constant; }
 inline double CConfig::GetMixtureMolar_Mass(void) { return Mixture_Molar_mass; }
 
 inline double CConfig::GetSpecies_Gas_Constant(unsigned short val_Species) { return Species_Gas_Constant[val_Species]; }
+
+inline double CConfig::GetBlottnerCoeff(unsigned short val_Species, unsigned short val_Coeff) { return Blottner[val_Species][val_Coeff]; }
 
 inline double CConfig::GetSpecies_Temperature(unsigned short val_Species) { return Species_Temperature_FreeStream[val_Species]; }
 
@@ -223,6 +225,8 @@ inline unsigned short CConfig::GetConvCriteria(void) { return ConvCriteria; }
 
 inline unsigned short CConfig::GetMGCycle(void) { return MGCycle; }
 
+inline unsigned short CConfig::GetGeometryMode(void) { return GeometryMode; }
+
 inline double CConfig::GetCFL(unsigned short val_mesh) {	return CFL[val_mesh]; }
 
 inline double CConfig::GetUnst_CFL(void) {	return Unst_CFL; }
@@ -314,6 +318,10 @@ inline double CConfig::GetPlunging_Ampl_Y(unsigned short val_iZone) { return  Pl
 
 inline double CConfig::GetPlunging_Ampl_Z(unsigned short val_iZone) { return  Plunging_Ampl_Z[val_iZone]; }
 
+inline double CConfig::GetminTurkelBeta() { return  Min_Beta_RoeTurkel; }
+
+inline double CConfig::GetmaxTurkelBeta() { return  Max_Beta_RoeTurkel; }
+
 inline unsigned short CConfig::GetnSpecies(void) { return nSpecies; }
 
 inline unsigned short CConfig::GetnReactions(void) { return nReactions; }
@@ -328,15 +336,11 @@ inline double CConfig::GetCharVibTemp(unsigned short iSpecies) {return CharVibTe
 
 inline double CConfig::GetParticle_Mass(unsigned short iSpecies) { return Particle_Mass[iSpecies]; } 
 
-inline double CConfig::GetMagneticInteractionParameter() { return Magnetic_Interaction; } 
+inline double CConfig::GetStagnation_B() { return Stagnation_B; } 
 
-inline double CConfig::GetReferenceLength() { return Magnetic_RefLength; } 
+inline double CConfig::GetElec_Conductivity() { return Electric_Cond; } 
 
-inline double CConfig::GetReferenceDensity() { return Magnetic_RefDensity; } 
-
-inline double CConfig::GetReferenceSpeed() { return Magnetic_RefSpeed; } 
-
-inline double CConfig::GetMagneticDipole(unsigned short iDim) { return MagneticDipole[iDim]; } 
+inline double CConfig::GetDipoleDist() { return DipoleDist; } 
 
 inline double CConfig::GetMolar_Mass(unsigned short iSpecies) { return Molar_Mass[iSpecies]; } 
 
@@ -588,6 +592,8 @@ inline void CConfig::SetKind_SourNumScheme(unsigned short val_kind_sournumscheme
 
 inline unsigned short CConfig::GetKind_ObjFunc(void) {return Kind_ObjFunc; }
 
+inline unsigned short CConfig::GetKind_GeoObjFunc(void) {return Kind_GeoObjFunc; }
+
 inline unsigned short CConfig::GetKind_SensSmooth(void) {return Kind_SensSmooth; }
 
 inline unsigned short CConfig::GetKind_ObjFuncType(void) {return Kind_ObjFuncType; }
@@ -702,6 +708,8 @@ inline string CConfig::GetLin_FileName(void) { return Lin_FileName; }
 
 inline string CConfig::GetObjFunc_Grad_FileName(void) { return ObjFunc_Grad_FileName; }
 
+inline string CConfig::GetObjFunc_Eval_FileName(void) { return ObjFunc_Eval_FileName; }
+
 inline string CConfig::GetSurfFlowCoeff_FileName(void) { return SurfFlowCoeff_FileName; }
 
 inline string CConfig::GetSurfAdjCoeff_FileName(void) { return SurfAdjCoeff_FileName; }
@@ -804,6 +812,10 @@ inline double CConfig::GetOutlet_Species_Velocity(unsigned short iSpecies) { ret
 
 inline bool CConfig::GetGravityForce(void) { return GravityForce; }
 
+inline bool CConfig::GetMagnetic_Force(void) { return MagneticForce; }
+
+inline bool CConfig::GetJouleHeating(void) { return JouleHeating; }
+
 inline bool CConfig::GetSmoothNumGrid(void) { return SmoothNumGrid; }
 
 inline void CConfig::SetSmoothNumGrid(bool val_smoothnumgrid) { SmoothNumGrid = val_smoothnumgrid; }
@@ -847,6 +859,8 @@ inline bool CConfig::GetWrt_Vol_Sol(void) { return Wrt_Vol_Sol; }
 inline bool CConfig::GetWrt_Srf_Sol(void) { return Wrt_Srf_Sol; }
 
 inline bool CConfig::GetWrt_Csv_Sol(void) { return Wrt_Csv_Sol; }
+
+inline bool CConfig::GetWrt_Restart(void) { return Wrt_Restart; }
 
 inline bool CConfig::GetWrt_Sol_CGNS(void) { return Wrt_Sol_CGNS; }
 

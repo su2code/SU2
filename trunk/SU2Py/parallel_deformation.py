@@ -3,7 +3,7 @@
 ## \file parallel_deformation.py
 #  \brief Python script for doing the parallel deformation using SU2_MDC.
 #  \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.
+#  \version 2.0.1
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -21,11 +21,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os, time, sys, libSU2, shutil
+import libSU2, libSU2_run
+from merge_solution import merge_solution
+from merge_grid_su2 import merge_grid_su2
+import os, time, sys, shutil
 from optparse import OptionParser
-
-SU2_RUN = os.environ['SU2_RUN'] 
-sys.path.append( SU2_RUN )
 
 # -------------------------------------------------------------------
 #  Main 
@@ -48,21 +48,20 @@ def main():
     options.partitions = int( options.partitions )  
 
     # Run Parallel Comutation
-    parallel_deformation ( options.filename        ,
-                           options.partitions      , 
-                           options.divide_grid     ,
-                           options.merge_grid       )
+    parallel_deformation ( options.filename    ,
+                           options.partitions  , 
+                           options.divide_grid ,
+                           options.merge_grid   )
 #: def main()
     
 # -------------------------------------------------------------------
 #  Parallel Computation Function
 # -------------------------------------------------------------------
 
-def parallel_deformation( filename    ,
-                          partitions      = 2       , 
-                          divide_grid     = "True"  ,
-                          merge_grid      = "True"  ,
-                          logfile         = None     ):
+def parallel_deformation( filename             ,
+                          partitions  = 2      , 
+                          divide_grid = "True" ,
+                          merge_grid  = "True"  ):
     
     # General and default parameters
     Config_INP_filename = filename
@@ -80,22 +79,8 @@ def parallel_deformation( filename    ,
     # Set parameters
     params_set = { 'NUMBER_PART' : partitions }
     libSU2.Set_ConfigParams( Config_DDC_filename, params_set )
-
-    # run commands
-    run_SU2_DDC = os.path.join( SU2_RUN , "SU2_DDC " + Config_DDC_filename )
-    run_SU2_DDC = "mpirun -np 1 %s" % (run_SU2_DDC)
-    run_SU2_MDC = os.path.join( SU2_RUN , "SU2_MDC " + Config_MDC_filename )
-    run_SU2_MDC = "mpirun -np %i %s" % (partitions, run_SU2_MDC)
-    run_merge_solution = "merge_solution.py -p %s -f %s -o True"  % (partitions, Config_MDC_filename)
-    run_merge_grid     = "merge_grid_su2.py -p %s -f %s" % (partitions, Config_MDC_filename)
     
-    # log files
-    if not logfile is None:
-        run_SU2_DDC = run_SU2_DDC + ' >> ' + logfile
-        run_SU2_MDC = run_SU2_MDC + ' >> ' + logfile
-        run_merge_solution = run_merge_solution + ' >> ' + logfile
-        run_merge_grid     = run_merge_grid     + ' >> ' + logfile
-
+    
     # --------------------------------------------------------------
     #  SETUP PARALLEL JOB  
     # --------------------------------------------------------------
@@ -103,15 +88,12 @@ def parallel_deformation( filename    ,
     
         # Just in case domain decomposition is needed
         if divide_grid != "False":
-            os.system ( run_SU2_DDC )
-        
-        # Remove ddc config file
-        os.remove(Config_DDC_filename)   
+            libSU2_run.SU2_DDC(Config_DDC_filename,partitions)
         
         # ---------------------- #
         #  RUN THE PARALLEL JOB  #
         # ---------------------- #
-        os.system ( run_SU2_MDC )
+        libSU2_run.SU2_MDC(Config_MDC_filename,partitions)
 
         # Merge plt files
         if visualize_deformation == "YES":
@@ -120,25 +102,32 @@ def parallel_deformation( filename    ,
                            'VOLUME_FLOW_FILENAME'  : "deformed_volumetric_grid" ,
                            'SURFACE_FLOW_FILENAME' : "deformed_surface_grid"     }
             libSU2.Set_ConfigParams( Config_MDC_filename, params_set )
-            os.system ( run_merge_solution )
+
+            merge_solution( Config_MDC_filename     ,
+                            partitions = partitions ,
+                            output     = "True"      )  
 
             # Merge original grid files
             params_set = { 'MATH_PROBLEM'          : 'DIRECT'                   ,
                            'VOLUME_FLOW_FILENAME'  : "original_volumetric_grid" ,
                            'SURFACE_FLOW_FILENAME' : "original_surface_grid"     }
             libSU2.Set_ConfigParams( Config_MDC_filename, params_set )
-            os.system ( run_merge_solution )
+
+            merge_solution( Config_MDC_filename     ,
+                            partitions = partitions ,
+                            output     = "True"      )              
 
         # Just in case the grid merging is needed
         if merge_grid == "True":
-            os.system ( run_merge_grid )
+            merge_grid_su2( Config_MDC_filename , partitions )    
 
     # Otherwise: Serial Job
     else:
-        os.system ( run_SU2_MDC )
+        libSU2_run.SU2_MDC(Config_MDC_filename,partitions)
     
-    # remove cfd config file
+    # remove config files
     os.remove(Config_MDC_filename)
+    os.remove(Config_DDC_filename)     
 
 #: def parallel_deformation()
 

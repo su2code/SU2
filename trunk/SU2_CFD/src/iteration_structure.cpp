@@ -2,7 +2,7 @@
  * \file iteration_structure.cpp
  * \brief Main subroutines used by SU2_CFD.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.
+ * \version 2.0.1
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -28,11 +28,11 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
 											 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk,
 											 unsigned long ExtIter) {
 	
-	bool time_spectral = (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL);
 	double Physical_dt, Physical_t;
 	unsigned short iMesh, iZone;
 	unsigned long IntIter = 0;
 	int rank = MASTER_NODE;
+    bool time_spectral = (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL);
 	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
 	if (time_spectral) nZone = config_container[ZONE_0]->GetnTimeInstances();
 	bool relative_motion = config_container[ZONE_0]->GetRelative_Motion();
@@ -44,15 +44,15 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
   /*--- Initial set up for unsteady problems with dynamic meshes. ---*/
   for (iZone = 0; iZone < nZone; iZone++) {
   /*--- Dynamic mesh update ---*/
-  if (config_container[iZone]->GetGrid_Movement())
-    SetGrid_Movement(geometry_container[iZone], surface_movement[iZone],
-                     grid_movement[iZone], chunk[iZone], config_container[iZone], iZone, ExtIter);
+  if (config_container[iZone]->GetGrid_Movement() && !time_spectral)
+      SetGrid_Movement(geometry_container[iZone], surface_movement[iZone],
+                     grid_movement[iZone], chunk[iZone], solution_container[iZone], config_container[iZone], iZone, ExtIter);
   }
+	
   /*--- If any relative motion between zones was found, perform a search
    and interpolation for any sliding interfaces before the next timestep. ---*/
   if (relative_motion)
     SetSliding_Interfaces(geometry_container, solution_container, config_container, nZone);
-  
   
 	for (iZone = 0; iZone < nZone; iZone++) {
     
@@ -64,27 +64,33 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
 		/*--- Set the initial condition ---*/
 		solution_container[iZone][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone], solution_container[iZone], config_container[iZone], ExtIter);
 		
-		/*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations ---*/
+		/*--- Update global parameters ---*/
 		if (config_container[iZone]->GetKind_Solver() == EULER) config_container[iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, ExtIter);
 		if (config_container[iZone]->GetKind_Solver() == NAVIER_STOKES) config_container[iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter);
 		if (config_container[iZone]->GetKind_Solver() == RANS) config_container[iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS, ExtIter);
 		
+		/*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
 		integration_container[iZone][FLOW_SOL]->SetMultiGrid_Solver(geometry_container, solution_container, solver_container,
-																																config_container, RUNTIME_FLOW_SYS, IntIter, iZone);
-		
-    /*--- Solve the turbulence model ---*/
+				config_container, RUNTIME_FLOW_SYS, IntIter, iZone);
+
+		/*--- Solve the turbulence model ---*/
 		if (config_container[iZone]->GetKind_Solver() == RANS) {
-			/*--- Turbulent model solution ---*/
+
 			config_container[iZone]->SetGlobalParam(RANS, RUNTIME_TURB_SYS, ExtIter);
 			integration_container[iZone][TURB_SOL]->SetSingleGrid_Solver(geometry_container, solution_container, solver_container,
-																																	 config_container, RUNTIME_TURB_SYS, IntIter, iZone);
+					config_container, RUNTIME_TURB_SYS, IntIter, iZone);
+
+			/*--- Solve transition model ---*/
 			if (config_container[iZone]->GetKind_Trans_Model() == LM) {
-				/*--- Transition model solution ---*/
 				config_container[iZone]->SetGlobalParam(RANS, RUNTIME_TRANS_SYS, ExtIter);
-				integration_container[iZone][TRANS_SOL]->SetSingleGrid_Solver(geometry_container, solution_container, solver_container,
-																																			config_container, RUNTIME_TRANS_SYS, IntIter, iZone);
+				integration_container[iZone][TRANS_SOL]->SetSingleGrid_Solver(geometry_container, solution_container, solver_container,config_container, RUNTIME_TRANS_SYS, IntIter, iZone);
 			}
 		}
+
+		/*--- Compute & store time-spectral source terms across all zones ---*/
+		if (time_spectral)
+			SetTimeSpectral(geometry_container, solution_container, config_container, nZone, (iZone+1)%nZone);
+
   }
   
   /*--- Dual time stepping strategy ---*/
@@ -101,7 +107,7 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
         if (config_container[iZone]->GetKind_Solver() == RANS) config_container[iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS, ExtIter);
 				integration_container[iZone][FLOW_SOL]->SetMultiGrid_Solver(geometry_container, solution_container, solver_container,
 																																		config_container, RUNTIME_FLOW_SYS, IntIter, iZone);
-        
+
         /*--- Pseudo-timestepping the turbulence model ---*/
         if (config_container[iZone]->GetKind_Solver() == RANS) {
           /*--- Turbulent model solution ---*/
@@ -116,10 +122,21 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
           }
         }
         
+          
+        
+          
         /*--- For now, only write the console history of the first zone for clarity. ---*/
         if (iZone == ZONE_0) output->SetHistory_DualTime(geometry_container, solution_container, config_container, integration_container, IntIter, iZone);
 				if (integration_container[iZone][FLOW_SOL]->GetConvergence()) {if (rank == MASTER_NODE) cout<<endl; break;}
 			}
+        
+        // Called aeroelastic
+        if (config_container[ZONE_0]->GetKind_GridMovement(ZONE_0) == AEROELASTIC) {
+            SetGrid_Movement(geometry_container[iZone], surface_movement[iZone],
+                             grid_movement[iZone], chunk[iZone], solution_container[iZone], config_container[iZone], iZone, IntIter);//check intIter.
+        }
+        
+        
     }
     
     for (iZone = 0; iZone < nZone; iZone++) {
@@ -141,11 +158,10 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
         integration_container[iZone][FLOW_SOL]->SetConvergence(true);
     }
   }
-    
-  /*--- Compute & store time spectral source terms across all zones ---*/
-  if (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL)
-    SetTimeSpectral(geometry_container, solution_container, config_container, nZone);
-  
+
+//  /*--- Compute & store time-spectral source terms across all zones ---*/
+//  		if (time_spectral)
+//  			SetTimeSpectral(geometry_container, solution_container, config_container, nZone, iZone);
   
 }
 
@@ -157,7 +173,9 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
   double Physical_dt, Physical_t;
 	unsigned short iMesh, iZone;
 	unsigned long IntIter = 0;
+    bool time_spectral = (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL);
 	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
+	if (time_spectral) nZone = config_container[ZONE_0]->GetnTimeInstances();
   bool relative_motion = config_container[ZONE_0]->GetRelative_Motion();
 	int rank = MASTER_NODE;
   
@@ -168,9 +186,9 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
   /*--- Initial set up for unsteady problems with dynamic meshes. ---*/
   for (iZone = 0; iZone < nZone; iZone++) {
     /*--- Dynamic mesh update ---*/
-    if (config_container[iZone]->GetGrid_Movement())
+    if (config_container[iZone]->GetGrid_Movement() && !time_spectral)
       SetGrid_Movement(geometry_container[iZone], surface_movement[iZone],
-                       grid_movement[iZone], chunk[iZone], config_container[iZone], iZone, ExtIter);
+                       grid_movement[iZone], chunk[iZone], solution_container[iZone], config_container[iZone], iZone, ExtIter);
   }
   /*--- If any relative motion between zones was found, perform a search
    and interpolation for any sliding interfaces before the next timestep. ---*/
@@ -178,13 +196,13 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
     SetSliding_Interfaces(geometry_container, solution_container, config_container, nZone);
   
   
-	for (iZone = 0; iZone < nZone; iZone++) {
-		if (ExtIter == 0 || config_container[iZone]->GetUnsteady_Simulation()) {
-      if (rank == MASTER_NODE && iZone == ZONE_0)
-        cout << "Single iteration of the direct solver to store flow data." << endl;
-			if (config_container[iZone]->GetUnsteady_Simulation())
-        solution_container[iZone][MESH_0][FLOW_SOL]->GetRestart(geometry_container[iZone][MESH_0], config_container[iZone], iZone);
-    }
+  for (iZone = 0; iZone < nZone; iZone++) {
+	  if (((ExtIter == 0) && time_spectral) || (config_container[iZone]->GetUnsteady_Simulation() && !time_spectral)) {
+		  if (rank == MASTER_NODE && iZone == ZONE_0)
+			  cout << "Single iteration of the direct solver to store flow data." << endl;
+		  if (config_container[iZone]->GetUnsteady_Simulation())
+			  solution_container[iZone][MESH_0][FLOW_SOL]->GetRestart(geometry_container[iZone][MESH_0], config_container[iZone], iZone);
+	  }
   }
   
   for (iZone = 0; iZone < nZone; iZone++) {
@@ -781,7 +799,7 @@ void AeroacousticIteration(COutput *output, CIntegration ***integration_containe
 		/*--- Perform mesh motion for flow problem only, if necessary ---*/
 		if (config_container[ZONE_0]->GetGrid_Movement())
 			SetGrid_Movement(geometry_container[ZONE_0], surface_movement[ZONE_0],
-											 grid_movement[ZONE_0], chunk[ZONE_0], config_container[ZONE_0], ZONE_0, ExtIter);
+											 grid_movement[ZONE_0], chunk[ZONE_0], solution_container[ZONE_0], config_container[ZONE_0], ZONE_0, ExtIter);
 		
 		/*--- Set the value of the global convergence criteria ---*/
 		Physical_dt = config_container[ZONE_0]->GetDelta_UnstTime();
@@ -896,7 +914,7 @@ void AdjAeroacousticIteration(COutput *output, CIntegration ***integration_conta
 		/*--- Perform mesh motion, if necessary ---*/
 		if (config_container[ZONE_0]->GetGrid_Movement())
 			SetGrid_Movement(geometry_container[ZONE_0], surface_movement[ZONE_0],
-											 grid_movement[ZONE_0], chunk[ZONE_0], config_container[ZONE_0], ZONE_0, ExtIter);
+											 grid_movement[ZONE_0], chunk[ZONE_0], solution_container[ZONE_0],config_container[ZONE_0], ZONE_0, ExtIter);
 		
 		Physical_dt = config_container[ZONE_0]->GetDelta_UnstTime(); Physical_t  = (ExtIter+1)*Physical_dt;
 		if (Physical_t >=  config_container[ZONE_0]->GetTotal_UnstTime()) integration_container[ZONE_0][ADJFLOW_SOL]->SetConvergence(true);
@@ -906,13 +924,14 @@ void AdjAeroacousticIteration(COutput *output, CIntegration ***integration_conta
 
 void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_movement,
 											CVolumetricMovement *grid_movement, CFreeFormChunk **chunk,
-											CConfig *config_container, unsigned short iZone, unsigned long ExtIter)   {
+											CSolution ***solution_container, CConfig *config_container, unsigned short iZone, unsigned long ExtIter)   {
 	
 	unsigned short Kind_Grid_Movement = config_container->GetKind_GridMovement(iZone);
-	
-  /*--- For time-spectral case, set "iteration number" to the zone number,
+	bool time_spectral = (config_container->GetUnsteady_Simulation() == TIME_SPECTRAL);
+    double Cl, Cm;
+  /*--- For a time-spectral case, set "iteration number" to the zone number,
    so that the meshes are positioned correctly for each instance. ---*/
-	if (config_container->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+	if (time_spectral) {
     ExtIter = iZone;
 		Kind_Grid_Movement = config_container->GetKind_GridMovement(ZONE_0);
 	}
@@ -943,7 +962,7 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
       
       break;
 
-		case EXTERNAL: case EXTERNAL_ROTATION:
+    case EXTERNAL: case EXTERNAL_ROTATION:
 			
 			/*--- Apply rigid rotation first, if necessary ---*/
 			if (Kind_Grid_Movement == EXTERNAL_ROTATION) {
@@ -981,6 +1000,18 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
 			grid_movement->SpringMethod(geometry_container[MESH_0], config_container, true);
 			
 			break;
+            
+    case AEROELASTIC:
+            
+            //Put stuff.
+            Cl = solution_container[MESH_0][FLOW_SOL]->GetTotal_CLift();
+            Cm = solution_container[MESH_0][FLOW_SOL]->GetTotal_CMz();
+        
+            grid_movement->SetAeroElasticMotion(geometry_container[MESH_0], Cl, Cm, config_container, iZone, ExtIter);
+            
+            break;
+            
+            
       
     case NONE: default:
       
@@ -1002,29 +1033,30 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
 	/*--- Update mesh velocities. Direct problem is done by storing the
    nodal coordinates of the mesh at 2 previous times steps, and then 
    computing a velocity using a finite difference approximation. ---*/
-	if (!config_container->IsAdjoint()) {
-		/*--- Update grid node velocities on all mesh levels ---*/
-		if (rank == MASTER_NODE)
-			cout << "Computing the mesh velocities at each node." << endl;
-		geometry_container[MESH_0]->SetGridVelocity(config_container, ExtIter);
-		for (unsigned short iMGlevel = 1; iMGlevel <= config_container->GetMGLevels(); iMGlevel++) {
-			/*---Set the grid velocity on the coarser levels ---*/
-			geometry_container[iMGlevel]->SetGridVelocity(config_container, ExtIter);
+	if (!time_spectral) {
+		if (!config_container->IsAdjoint()) {
+			/*--- Update grid node velocities on all mesh levels ---*/
+			if (rank == MASTER_NODE)
+				cout << "Computing the mesh velocities at each node." << endl;
+			geometry_container[MESH_0]->SetGridVelocity(config_container, ExtIter);
+			for (unsigned short iMGlevel = 1; iMGlevel <= config_container->GetMGLevels(); iMGlevel++) {
+				/*---Set the grid velocity on the coarser levels ---*/
+				geometry_container[iMGlevel]->SetGridVelocity(config_container, ExtIter);
+			}
+		} else {
+			/*--- Adjoint mesh velocities: compute an approximation of the
+     	 	 mesh velocities on the coarser levels starting from the values
+     	 	 read in from the restart file for the finest mesh. ---*/
+			for (unsigned short iMGlevel = 1; iMGlevel <= config_container->GetMGLevels(); iMGlevel++) {
+				/*---Set the grid velocity on the coarser levels ---*/
+				geometry_container[iMGlevel]->SetRestricted_GridVelocity(geometry_container[iMGlevel-1], config_container, ExtIter);
+			}
 		}
-	} else {
-    /*--- Adjoint mesh velocities: compute an approximation of the
-     mesh velocities on the coarser levels starting from the values
-     read in from the restart file for the finest mesh. ---*/
-    for (unsigned short iMGlevel = 1; iMGlevel <= config_container->GetMGLevels(); iMGlevel++) {
-			/*---Set the grid velocity on the coarser levels ---*/
-			geometry_container[iMGlevel]->SetRestricted_GridVelocity(geometry_container[iMGlevel-1], config_container, ExtIter);
-		}
-    
   }
 }
 
 void SetTimeSpectral(CGeometry ***geometry_container, CSolution ****solution_container,
-		CConfig **config_container, unsigned short nZone) {
+		CConfig **config_container, unsigned short nZone, unsigned short iZone) {
 
   int rank = MASTER_NODE;
 #ifndef NO_MPI
@@ -1032,20 +1064,27 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolution ****solution_con
 #endif
   
 	/*--- Local variables and initialization ---*/
-	unsigned short iDim, iVar, iZone, jZone, iMGlevel;
-	unsigned short nDim = geometry_container[ZONE_0][MESH_0]->GetnDim();
+	unsigned short iVar, kZone, jZone, iMGlevel;
 	unsigned short nVar = solution_container[ZONE_0][MESH_0][FLOW_SOL]->GetnVar();
 	unsigned long iPoint;
+	bool implicit = (config_container[ZONE_0]->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+	bool adjoint = (config_container[ZONE_0]->IsAdjoint());
+	if (adjoint) {
+		implicit = (config_container[ZONE_0]->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
+	}
 
 	/*--- Retrieve values from the config file ---*/
-	double *U      = new double[nVar];
+	double *U      	= new double[nVar];
+	double *U_old  	= new double[nVar];
+	double *Psi	   	= new double[nVar];
+	double *Psi_old	= new double[nVar];
 	double *Source = new double[nVar];
-	double *Coord, Center[3], Omega[3], Ampl[3];
-	double Lref   = config_container[ZONE_0]->GetLength_Ref();
-	double current_time;
-	double alpha_dot[3];
+	double Center[3], Omega[3], Ampl[3], deltaU, deltaPsi;
+//	double Lref   = config_container[ZONE_0]->GetLength_Ref();
+//	double current_time;
+//	double alpha_dot[3];
 	double DEG2RAD = PI_NUMBER/180.0;
-	double GridVel[3];
+//	double GridVel[3];
 
 	/*--- rotational velocity ---*/
 	Omega[0]  = config_container[ZONE_0]->GetPitching_Omega_X(ZONE_0)/config_container[ZONE_0]->GetOmega_Ref();
@@ -1060,110 +1099,179 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolution ****solution_con
 
 	/*--- Compute period of oscillation & compute time interval using nTimeInstances ---*/
 	double period = 2*PI_NUMBER/Omega_mag;
-	double deltaT = period/(double)(config_container[ZONE_0]->GetnTimeInstances());
+//	double deltaT = period/(double)(config_container[ZONE_0]->GetnTimeInstances());
 
 	/*--- For now, hard code the origin for the pitching airfoil. ---*/
 	Center[0] = config_container[ZONE_0]->GetMotion_Origin_X(ZONE_0);
 	Center[1] = config_container[ZONE_0]->GetMotion_Origin_Y(ZONE_0);
 	Center[2] = config_container[ZONE_0]->GetMotion_Origin_Z(ZONE_0);
 
-	/*--- Compute the Mesh Velocities ---*/
-	if (config_container[ZONE_0]->GetExtIter() == 0) {
+//	/*--- Compute the Mesh Velocities ---*/
+//	if (config_container[ZONE_0]->GetExtIter() == 0) {
+//
+////
+////		/*--- Loop over all grid levels ---*/
+////		for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetMGLevels(); iMGlevel++) {
+////
+////			/*--- Loop over each zone ---*/
+////			for (iZone = 0; iZone < nZone; iZone++) {
+////
+////				/*--- Time at current instance, i.e. at the current zone ---*/
+////				current_time = (static_cast<double>(iZone))*deltaT;
+////
+////				/*--- Angular velocity at the given time instance ---*/
+////				alpha_dot[0] = -Omega[0]*Ampl[0]*cos(Omega[0]*current_time);
+////				alpha_dot[1] = -Omega[1]*Ampl[1]*cos(Omega[1]*current_time);
+////				alpha_dot[2] = -Omega[2]*Ampl[2]*cos(Omega[2]*current_time);
+////
+////				/*--- Loop over each node in the volume mesh ---*/
+////				for (iPoint = 0; iPoint < geometry_container[iZone][iMGlevel]->GetnPoint(); iPoint++) {
+////
+////					/*--- Coordinates of the current point ---*/
+////					Coord = geometry_container[iZone][iMGlevel]->node[iPoint]->GetCoord();
+////
+////					/*--- Calculate non-dim. position from rotation center ---*/
+////					double r[3] = {0,0,0};
+////					for (iDim = 0; iDim < nDim; iDim++)
+////						r[iDim] = (Coord[iDim]-Center[iDim])/Lref;
+////					if (nDim == 2) r[nDim] = 0.0;
+////
+////					/*--- Cross Product of angular velocity and distance from center ---*/
+////					GridVel[0] = alpha_dot[1]*r[2] - alpha_dot[2]*r[1];
+////					GridVel[1] = alpha_dot[2]*r[0] - alpha_dot[0]*r[2];
+////					GridVel[2] = alpha_dot[0]*r[1] - alpha_dot[1]*r[0];
+////
+////					// PRINT STATEMENTS FOR DEBUGGING!
+////					if (rank == MASTER_NODE && iMGlevel == 0 && iZone == 0) {
+////						if (iPoint == 440) {
+////							cout << "Analytical Mesh Velocity = (" <<  GridVel[0] << ", " << GridVel[1] << ", " << GridVel[2] << ")" << endl;
+////						}
+////					}
+////					/*--- Set Grid Velocity for the point in the given zone ---*/
+////					for(iDim = 0; iDim < nDim; iDim++) {
+////
+////						/*--- Store grid velocity for this point ---*/
+////						geometry_container[iZone][iMGlevel]->node[iPoint]->SetGridVel(iDim, GridVel[iDim]);
+////
+////					}
+////				}
+////			}
+////		}
+//
+//		/*--- by fourier interpolation ---*/
+//
+//	}
 
-		/*--- Loop over all grid levels ---*/
-		for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetMGLevels(); iMGlevel++) {
-
-			/*--- Loop over each zone ---*/
-			for (iZone = 0; iZone < nZone; iZone++) {
-
-				/*--- Time at current instance, i.e. at the current zone ---*/
-				current_time = (static_cast<double>(iZone))*deltaT;
-
-				/*--- Angular velocity at the given time instance ---*/
-				alpha_dot[0] = -Omega[0]*Ampl[0]*cos(Omega[0]*current_time);
-				alpha_dot[1] = -Omega[1]*Ampl[1]*cos(Omega[1]*current_time);
-				alpha_dot[2] = -Omega[2]*Ampl[2]*cos(Omega[2]*current_time);
-
-				/*--- Loop over each node in the volume mesh ---*/
-				for (iPoint = 0; iPoint < geometry_container[iZone][iMGlevel]->GetnPoint(); iPoint++) {
-
-					/*--- Coordinates of the current point ---*/
-					Coord = geometry_container[iZone][iMGlevel]->node[iPoint]->GetCoord();
-
-					/*--- Calculate non-dim. position from rotation center ---*/
-					double r[3] = {0,0,0};
-					for (iDim = 0; iDim < nDim; iDim++)
-						r[iDim] = (Coord[iDim]-Center[iDim])/Lref;
-					if (nDim == 2) r[nDim] = 0.0;
-
-					/*--- Cross Product of angular velocity and distance from center ---*/
-					GridVel[0] = alpha_dot[1]*r[2] - alpha_dot[2]*r[1];
-					GridVel[1] = alpha_dot[2]*r[0] - alpha_dot[0]*r[2];
-					GridVel[2] = alpha_dot[0]*r[1] - alpha_dot[1]*r[0];
-
-					/*--- Set Grid Velocity for the point in the given zone ---*/
-					for(iDim = 0; iDim < nDim; iDim++) {
-
-						/*--- Store grid velocity for this point ---*/
-						geometry_container[iZone][iMGlevel]->node[iPoint]->SetGridVel(iDim, GridVel[iDim]);
-
-					}
-				}
-			}
-		}
-	}
 
 
 
 	/*--- allocate dynamic memory for D ---*/
 	double **D = new double*[nZone];
-	for (iZone = 0; iZone < nZone; iZone++) {
-		D[iZone] = new double[nZone];
+	for (kZone = 0; kZone < nZone; kZone++) {
+		D[kZone] = new double[nZone];
 	}
 
-	/*--- Build the time spectral operator matrix ---*/
-	for (iZone = 0; iZone < nZone; iZone++) {
+	/*--- Build the time-spectral operator matrix ---*/
+	for (kZone = 0; kZone < nZone; kZone++) {
 		for (jZone = 0; jZone < nZone; jZone++) {
 
 			/*--- For an even number of time instances ---*/
 			if (nZone%2 == 0) {
-				if (iZone == jZone) {
-					D[iZone][jZone] = 0.0;
+				if (kZone == jZone) {
+					D[kZone][jZone] = 0.0;
 				} else {
-					D[iZone][jZone] = (PI_NUMBER/period)*pow(-1.0,(iZone-jZone))*(1/tan(PI_NUMBER*(iZone-jZone)/nZone));
+					D[kZone][jZone] = (PI_NUMBER/period)*pow(-1.0,(kZone-jZone))*(1/tan(PI_NUMBER*(kZone-jZone)/nZone));
 				}
 			} else {
 				/*--- For an odd number of time instances ---*/
-				if (iZone == jZone) {
-					D[iZone][jZone] = 0.0;
+				if (kZone == jZone) {
+					D[kZone][jZone] = 0.0;
 				} else {
-					D[iZone][jZone] = (PI_NUMBER/period)*pow(-1.0,(iZone-jZone))*(1/sin(PI_NUMBER*(iZone-jZone)/nZone));
+					D[kZone][jZone] = (PI_NUMBER/period)*pow(-1.0,(kZone-jZone))*(1/sin(PI_NUMBER*(kZone-jZone)/nZone));
 				}
 			}
 		}
 	}
 
+	/*--- Compute various source terms for explicit direct, implicit direct, and adjoint problems ---*/
 	/*--- Loop over all grid levels ---*/
 	for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetMGLevels(); iMGlevel++) {
 
 		/*--- Loop over each node in the volume mesh ---*/
 		for (iPoint = 0; iPoint < geometry_container[ZONE_0][iMGlevel]->GetnPoint(); iPoint++) {
-			for (iZone = 0; iZone < nZone; iZone++) {
-				for (iVar = 0; iVar < nVar; iVar++) Source[iVar] = 0.0;
-				for (jZone = 0; jZone < nZone; jZone++) {
 
-					/*--- Retrieve solution at this node in current zone ---*/
-					for (iVar = 0; iVar < nVar; iVar++) {
+			for (iVar = 0; iVar < nVar; iVar++) {
+				Source[iVar] = 0.0;
+			}
+
+			/*--- Step across the columns ---*/
+			for (jZone = 0; jZone < nZone; jZone++) {
+
+				/*--- Retrieve solution at this node in current zone ---*/
+				for (iVar = 0; iVar < nVar; iVar++) {
+
+					if (!adjoint) {
+
 						U[iVar] = solution_container[jZone][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution(iVar);
 						Source[iVar] += U[iVar]*D[iZone][jZone];
+
+						if (implicit) {
+							U_old[iVar] = solution_container[jZone][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution_Old(iVar);
+							deltaU = U[iVar] - U_old[iVar];
+							Source[iVar] += deltaU*D[iZone][jZone];
+						}
+
+					} else {
+
+						Psi[iVar] = solution_container[jZone][iMGlevel][ADJFLOW_SOL]->node[iPoint]->GetSolution(iVar);
+						Source[iVar] += Psi[iVar]*D[jZone][iZone];
+
+						if (implicit) {
+							Psi_old[iVar] = solution_container[jZone][iMGlevel][ADJFLOW_SOL]->node[iPoint]->GetSolution_Old(iVar);
+							deltaPsi = Psi[iVar] - Psi_old[iVar];
+							Source[iVar] += deltaPsi*D[jZone][iZone];
+						}
 					}
 				}
-				/*--- Store sources for current iZone ---*/
-				for (iVar = 0; iVar < nVar; iVar++)
-					solution_container[iZone][iMGlevel][FLOW_SOL]->node[iPoint]->SetTimeSpectral_Source(iVar,Source[iVar]);
+
+
+				/*--- Store sources for current row ---*/
+				for (iVar = 0; iVar < nVar; iVar++) {
+					if (!adjoint) {
+						solution_container[iZone][iMGlevel][FLOW_SOL]->node[iPoint]->SetTimeSpectral_Source(iVar,Source[iVar]);
+					} else {
+						solution_container[iZone][iMGlevel][ADJFLOW_SOL]->node[iPoint]->SetTimeSpectral_Source(iVar,Source[iVar]);
+					}
+				}
+
 			}
 		}
 	}
+
+
+
+//	/*--- Loop over all grid levels ---*/
+//	for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetMGLevels(); iMGlevel++) {
+//
+//		/*--- Loop over each node in the volume mesh ---*/
+//		for (iPoint = 0; iPoint < geometry_container[ZONE_0][iMGlevel]->GetnPoint(); iPoint++) {
+//
+//			for (iZone = 0; iZone < nZone; iZone++) {
+//				for (iVar = 0; iVar < nVar; iVar++) Source[iVar] = 0.0;
+//				for (jZone = 0; jZone < nZone; jZone++) {
+//
+//					/*--- Retrieve solution at this node in current zone ---*/
+//					for (iVar = 0; iVar < nVar; iVar++) {
+//						U[iVar] = solution_container[jZone][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution(iVar);
+//						Source[iVar] += U[iVar]*D[iZone][jZone];
+//					}
+//				}
+//				/*--- Store sources for current iZone ---*/
+//				for (iVar = 0; iVar < nVar; iVar++)
+//					solution_container[iZone][iMGlevel][FLOW_SOL]->node[iPoint]->SetTimeSpectral_Source(iVar,Source[iVar]);
+//			}
+//		}
+//	}
   
 		/*--- Source term for a turbulence model ---*/
   if (config_container[ZONE_0]->GetKind_Solver() == RANS) {
@@ -1176,7 +1284,7 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolution ****solution_con
     /*--- Loop over only the finest mesh level (turbulence is always solved
      on the original grid only). ---*/
 		for (iPoint = 0; iPoint < geometry_container[ZONE_0][MESH_0]->GetnPoint(); iPoint++) {
-			for (iZone = 0; iZone < nZone; iZone++) {
+			//for (iZone = 0; iZone < nZone; iZone++) {
 				for (iVar = 0; iVar < nVar_Turb; iVar++) Source_Turb[iVar] = 0.0;
 				for (jZone = 0; jZone < nZone; jZone++) {
           
@@ -1189,7 +1297,7 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolution ****solution_con
 				/*--- Store sources for current iZone ---*/
 				for (iVar = 0; iVar < nVar_Turb; iVar++)
 					solution_container[iZone][MESH_0][TURB_SOL]->node[iPoint]->SetTimeSpectral_Source(iVar,Source_Turb[iVar]);
-			}
+			//}
 		}
     
     delete [] U_Turb;
@@ -1197,11 +1305,14 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolution ****solution_con
 	}
 
 	/*--- delete dynamic memory for D ---*/
-	for (iZone = 0; iZone < nZone; iZone++) {
-		delete [] D[iZone];
+	for (kZone = 0; kZone < nZone; kZone++) {
+		delete [] D[kZone];
 	}
 	delete [] D;
 	delete [] U;
+	delete [] U_old;
+	delete [] Psi;
+	delete [] Psi_old;
 	delete [] Source;
   
 	/*--- Write file with force coefficients ---*/
@@ -1225,14 +1336,14 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolution ****solution_con
       TS_Flow_file <<  "\"time_instance\",\"lift_coeff\",\"drag_coeff\",\"moment_coeff_x\",\"moment_coeff_y\",\"moment_coeff_z\"" << endl;
   }
   
-  for (iZone = 0; iZone < nZone; iZone++) {
+  for (kZone = 0; kZone < nZone; kZone++) {
     
     /*--- Flow solution coefficients (parallel) ---*/
-    sbuf_force[0] = solution_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CLift();
-    sbuf_force[1] = solution_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CDrag();
-    sbuf_force[2] = solution_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CMx();
-    sbuf_force[3] = solution_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CMy();
-    sbuf_force[4] = solution_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CMz();
+    sbuf_force[0] = solution_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CLift();
+    sbuf_force[1] = solution_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CDrag();
+    sbuf_force[2] = solution_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMx();
+    sbuf_force[3] = solution_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMy();
+    sbuf_force[4] = solution_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMz();
     
 #ifndef NO_MPI
     MPI::COMM_WORLD.Reduce(sbuf_force, rbuf_force, nVar_Force, MPI::DOUBLE, MPI::SUM, MASTER_NODE);
@@ -1244,7 +1355,7 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolution ****solution_con
 #endif
   
   if (rank == MASTER_NODE) {
-      TS_Flow_file << iZone << ", ";
+      TS_Flow_file << kZone << ", ";
       for (iVar = 0; iVar < nVar_Force; iVar++) {
         TS_Flow_file << rbuf_force[iVar] << ", ";
       }
@@ -1377,4 +1488,121 @@ void SetSliding_Interfaces(CGeometry ***geometry_container, CSolution ****soluti
       }
     }
   }
+}
+
+void SetTimeSpectral_Velocities(CGeometry ***geometry_container,
+								CConfig **config_container, unsigned short nZone) {
+
+	unsigned short iZone, jDegree, iDim, iMGlevel;
+	unsigned short nDim = geometry_container[ZONE_0][MESH_0]->GetnDim();
+
+	double angular_interval = 2.0*PI_NUMBER/(double)(nZone);
+	double *Coord, Omega[3], Ampl[3];
+	unsigned long iPoint;
+	double DEG2RAD = PI_NUMBER/180.0;
+//	int rank = MASTER_NODE;
+
+	/*--- rotational velocity ---*/
+	Omega[0]  = config_container[ZONE_0]->GetPitching_Omega_X(ZONE_0)/config_container[ZONE_0]->GetOmega_Ref();
+	Omega[1]  = config_container[ZONE_0]->GetPitching_Omega_Y(ZONE_0)/config_container[ZONE_0]->GetOmega_Ref();
+	Omega[2]  = config_container[ZONE_0]->GetPitching_Omega_Z(ZONE_0)/config_container[ZONE_0]->GetOmega_Ref();
+	double Omega_mag = sqrt(pow(Omega[0],2)+pow(Omega[1],2)+pow(Omega[2],2));
+
+	/*--- amplitude of motion ---*/
+	Ampl[0]   = config_container[ZONE_0]->GetPitching_Ampl_X(ZONE_0)*DEG2RAD;
+	Ampl[1]   = config_container[ZONE_0]->GetPitching_Ampl_Y(ZONE_0)*DEG2RAD;
+	Ampl[2]   = config_container[ZONE_0]->GetPitching_Ampl_Z(ZONE_0)*DEG2RAD;
+
+	/*--- Compute period of oscillation & compute time interval using nTimeInstances ---*/
+	double period = 2*PI_NUMBER/Omega_mag;
+	double deltaT = period/(double)(config_container[ZONE_0]->GetnTimeInstances());
+
+	/*--- allocate dynamic memory for angular positions (these are the abscissas) ---*/
+	double *angular_positions = new double [nZone];
+	for (iZone = 0; iZone < nZone; iZone++) {
+		angular_positions[iZone] = iZone*angular_interval;
+	}
+
+	/*--- find the highest-degree trigonometric polynomial allowed by the Nyquist criterion---*/
+	double high_degree = (nZone-1)/2.0;
+	int highest_degree = (int)(high_degree);
+
+	/*--- allocate dynamic memory for a given point's coordinates ---*/
+	double **coords = new double *[nZone];
+	for (iZone = 0; iZone < nZone; iZone++) {
+		coords[iZone] = new double [nDim];
+	}
+
+	/*--- allocate dynamic memory for vectors of Fourier coefficients ---*/
+	double *a_coeffs = new double [highest_degree+1];
+	double *b_coeffs = new double [highest_degree+1];
+
+	/*--- allocate dynamic memory for the interpolated positions and velocities ---*/
+	double *fitted_coords = new double [nZone];
+	double *fitted_velocities = new double [nZone];
+
+	/*--- Loop over all grid levels ---*/
+	for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetMGLevels(); iMGlevel++) {
+
+		/*--- Loop over each node in the volume mesh ---*/
+		for (iPoint = 0; iPoint < geometry_container[ZONE_0][iMGlevel]->GetnPoint(); iPoint++) {
+
+			/*--- Populate the 2D coords array with the
+			coordinates of a given mesh point across
+			the time instances (i.e. the Zones) ---*/
+			/*--- Loop over each zone ---*/
+			for (iZone = 0; iZone < nZone; iZone++) {
+				/*--- get the coordinates of the given point ---*/
+				Coord = geometry_container[iZone][iMGlevel]->node[iPoint]->GetCoord();
+				for (iDim = 0; iDim < nDim; iDim++) {
+					/*--- add them to the appropriate place in the 2D coords array ---*/
+					coords[iZone][iDim] = Coord[iDim];
+				}
+			}
+
+			/*--- Loop over each Dimension ---*/
+			for (iDim = 0; iDim < nDim; iDim++) {
+
+				/*--- compute the Fourier coefficients ---*/
+				for (jDegree = 0; jDegree < highest_degree+1; jDegree++) {
+					a_coeffs[jDegree] = 0;
+					b_coeffs[jDegree] = 0;
+					for (iZone = 0; iZone < nZone; iZone++) {
+						a_coeffs[jDegree] = a_coeffs[jDegree] + (2.0/(double)nZone)*cos(jDegree*angular_positions[iZone])*coords[iZone][iDim];
+						b_coeffs[jDegree] = b_coeffs[jDegree] + (2.0/(double)nZone)*sin(jDegree*angular_positions[iZone])*coords[iZone][iDim];
+					}
+				}
+
+				/*--- find the interpolation of the coordinates and its derivative (the velocities) ---*/
+				for (iZone = 0; iZone < nZone; iZone++) {
+					fitted_coords[iZone] = a_coeffs[0]/2.0;
+					fitted_velocities[iZone] = 0.0;
+					for (jDegree = 1; jDegree < highest_degree+1; jDegree++) {
+						fitted_coords[iZone] = fitted_coords[iZone] + a_coeffs[jDegree]*cos(jDegree*angular_positions[iZone]) + b_coeffs[jDegree]*sin(jDegree*angular_positions[iZone]);
+						fitted_velocities[iZone] = fitted_velocities[iZone] + (angular_interval/deltaT)*jDegree*(b_coeffs[jDegree]*cos(jDegree*angular_positions[iZone]) - a_coeffs[jDegree]*sin(jDegree*angular_positions[iZone]));
+					}
+				}
+
+				/*--- Store grid velocity for this point, at this given dimension, across the Zones ---*/
+				for (iZone = 0; iZone < nZone; iZone++) {
+					geometry_container[iZone][iMGlevel]->node[iPoint]->SetGridVel(iDim, fitted_velocities[iZone]);
+				}
+
+
+
+			}
+		}
+	}
+
+	/*--- delete dynamic memory for the abscissas, coefficients, et cetera ---*/
+	delete [] angular_positions;
+	delete [] a_coeffs;
+	delete [] b_coeffs;
+	delete [] fitted_coords;
+	delete [] fitted_velocities;
+	for (iZone = 0; iZone < nDim; iZone++) {
+		delete [] coords[iZone];
+	}
+	delete [] coords;
+
 }

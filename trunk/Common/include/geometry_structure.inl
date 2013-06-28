@@ -2,7 +2,7 @@
  * \file geometry_structure.inl
  * \brief In-Line subroutines of the <i>geometry_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.
+ * \version 2.0.1
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -28,8 +28,6 @@ inline long CGeometry::GetGlobal_to_Local_Point(long val_ipoint) { return 0; }
 inline unsigned short CGeometry::GetGlobal_to_Local_Marker(unsigned short val_imarker) { return 0; }
 
 inline unsigned long CGeometry::GetGlobal_nPointDomain(void) { return 0; }
-
-inline void CGeometry::SetLockheedGrid(CConfig *config) { }
 
 inline void CGeometry::Check_Orientation(CConfig *config) { }
 
@@ -143,6 +141,8 @@ inline void CGeometry::SetTecPlot(char config_filename[200]) { }
 
 inline void CGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename) { }
 
+inline void CGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string val_mesh_out_filename, unsigned short val_domain) { }
+
 inline void CGeometry::SetMeshFile_IntSurface(CConfig *config, string val_mesh_out_filename) { }
 
 inline void CGeometry::SetBoundParaView(CConfig *config, char mesh_filename[200]) { }
@@ -150,6 +150,10 @@ inline void CGeometry::SetBoundParaView(CConfig *config, char mesh_filename[200]
 inline void CGeometry::SetBoundTecPlot(CConfig *config, char mesh_filename[200]) { }
 
 inline void CGeometry::FindSharpEdges(CConfig *config) { }
+
+inline double CGeometry::GetMaxThickness(CConfig *config, bool original_surface) { return 0; }
+
+inline double CGeometry::GetTotalVolume(CConfig *config, bool original_surface) { return 0; }
 
 inline void CGeometry::FindClosestNeighbor(CConfig *config) { }
 
@@ -164,3 +168,38 @@ inline long CDomainGeometry::GetGlobal_to_Local_Point(long val_ipoint) { return 
 inline unsigned short CDomainGeometry::GetGlobal_to_Local_Marker(unsigned short val_imarker) { return Global_to_Local_Marker[val_imarker]; }
 
 inline unsigned long CPhysicalGeometry::GetGlobal_nPointDomain(void) { return Global_nPointDomain; }
+
+inline void CGeometry::SetGeometryPlanes(CConfig *config) {}
+
+
+inline vector<double> CGeometry::GetGeometryPlanes() { return XCoordList; }
+
+inline vector<double> CPhysicalGeometry::GetGeometryPlanes() { return XCoordList; }
+
+inline vector<double> CMultiGridGeometry::GetGeometryPlanes() { return XCoordList; }
+
+inline vector<vector<double> > CGeometry::GetXCoord() { return Xcoord_plane; }
+
+inline vector<vector<double> > CPhysicalGeometry::GetXCoord() { return Xcoord_plane; }
+
+inline vector<vector<double> > CMultiGridGeometry::GetXCoord() { return Xcoord_plane; }
+
+inline vector<vector<double> > CGeometry::GetYCoord() { return Ycoord_plane; }
+
+inline vector<vector<double> > CPhysicalGeometry::GetYCoord() { return Ycoord_plane; }
+
+inline vector<vector<double> > CMultiGridGeometry::GetYCoord() { return Ycoord_plane; }
+
+inline vector<vector<double> > CGeometry::GetZCoord() { return Zcoord_plane; }
+
+inline vector<vector<double> > CPhysicalGeometry::GetZCoord() { return Zcoord_plane; }
+
+inline vector<vector<double> > CMultiGridGeometry::GetZCoord() { return Zcoord_plane; }
+
+
+inline vector<vector<unsigned long> > CGeometry::GetPlanarPoints() { return Plane_points; }
+
+inline vector<vector<unsigned long> > CPhysicalGeometry::GetPlanarPoints() { return Plane_points; }
+
+inline vector<vector<unsigned long> > CMultiGridGeometry::GetPlanarPoints() { return Plane_points; }
+

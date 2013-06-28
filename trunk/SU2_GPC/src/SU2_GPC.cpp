@@ -2,7 +2,7 @@
  * \file SU2_GPC.cpp
  * \brief Main file of the Gradient Projection Code (SU2_GPC).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.
+ * \version 2.0.1
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory

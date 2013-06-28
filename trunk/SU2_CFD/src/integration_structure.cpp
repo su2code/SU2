@@ -2,7 +2,7 @@
  * \file integration_structure.cpp
  * \brief This subroutine includes the space and time integration structure.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.
+ * \version 2.0.1
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -45,15 +45,14 @@ void CIntegration::Space_Integration(CGeometry *geometry, CSolution **solution_c
 
 	unsigned short MainSolution = config->GetContainerPosition(RunTime_EqSystem);
 
-
 	/*--- Compute inviscid residuals ---*/
 	switch (config->GetKind_ConvNumScheme()) {
-	case SPACE_CENTERED:
-		solution_container[MainSolution]->Centered_Residual(geometry, solution_container, solver[CONV_TERM], config, iMesh, iRKStep);
-		break;
-	case SPACE_UPWIND:
-		solution_container[MainSolution]->Upwind_Residual(geometry, solution_container, solver[CONV_TERM], config, iMesh);
-		break;
+		case SPACE_CENTERED:
+			solution_container[MainSolution]->Centered_Residual(geometry, solution_container, solver[CONV_TERM], config, iMesh, iRKStep);
+			break;
+		case SPACE_UPWIND:
+			solution_container[MainSolution]->Upwind_Residual(geometry, solution_container, solver[CONV_TERM], config, iMesh);
+			break;
 	}
 
 	/*--- Compute viscous residuals ---*/
@@ -70,6 +69,7 @@ void CIntegration::Space_Integration(CGeometry *geometry, CSolution **solution_c
 	switch (config->GetKind_SourNumScheme()) {
 	case PIECEWISE_CONSTANT:
 		solution_container[MainSolution]->Source_Residual(geometry, solution_container, solver[SOURCE_FIRST_TERM], config, iMesh);
+		solution_container[MainSolution]->Source_Template(geometry, solution_container, solver[SOURCE_SECOND_TERM], config, iMesh);
 		break;
 	}	
 
@@ -80,80 +80,86 @@ void CIntegration::Space_Integration(CGeometry *geometry, CSolution **solution_c
 	/*--- Weak boundary conditions ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 		switch (config->GetMarker_All_Boundary(iMarker)) {
-		case EULER_WALL:
-			solution_container[MainSolution]->BC_Euler_Wall(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
-			break;
-		case INLET_FLOW:
-			solution_container[MainSolution]->BC_Inlet(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
-			break;
-		case SUPERSONIC_INLET:
-			solution_container[MainSolution]->BC_Supersonic_Inlet(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
-			break;
-		case OUTLET_FLOW:
-			solution_container[MainSolution]->BC_Outlet(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
-			break;
-		case FAR_FIELD:
-			solution_container[MainSolution]->BC_Far_Field(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
-			break;
-		case SYMMETRY_PLANE:
-			solution_container[MainSolution]->BC_Sym_Plane(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
-			break;
-		case INTERFACE_BOUNDARY:
-			solution_container[MainSolution]->BC_Interface_Boundary(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
-			break;
-		case NEARFIELD_BOUNDARY:
-			solution_container[MainSolution]->BC_NearField_Boundary(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
-			break;
-		case ELECTRODE_BOUNDARY:
-			solution_container[MainSolution]->BC_Electrode(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
-			break;
-		case DIELECTRIC_BOUNDARY:
-			solution_container[MainSolution]->BC_Dielectric(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
-			break;
-		case DISPLACEMENT_BOUNDARY:
-			solution_container[MainSolution]->BC_Displacement(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
-			break;
-		case FLOWLOAD_BOUNDARY:
-			solution_container[MainSolution]->BC_FlowLoad(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
-			break;
-		case LOAD_BOUNDARY:
-			solution_container[MainSolution]->BC_Load(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
-			break;
-		case FWH_SURFACE:
-			solution_container[MainSolution]->BC_FWH(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
-			break;
-		case WAVE_OBSERVER:
-			solution_container[MainSolution]->BC_Observer(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
-			break;
-		case NEUMANN:
-			solution_container[MainSolution]->BC_Neumann(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
-			break;
-		case NACELLE_EXHAUST:
-			solution_container[MainSolution]->BC_NacelleExhaust(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
-			break;
-		case NACELLE_INFLOW:
-			solution_container[MainSolution]->BC_NacelleInflow(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
-			break;
+			case EULER_WALL:
+				solution_container[MainSolution]->BC_Euler_Wall(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
+				break;
+			case INLET_FLOW:
+				solution_container[MainSolution]->BC_Inlet(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
+				break;
+			case SUPERSONIC_INLET:
+				solution_container[MainSolution]->BC_Supersonic_Inlet(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
+				break;
+			case OUTLET_FLOW:
+				solution_container[MainSolution]->BC_Outlet(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
+				break;
+			case FAR_FIELD:
+				solution_container[MainSolution]->BC_Far_Field(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
+				break;
+			case SYMMETRY_PLANE:
+				solution_container[MainSolution]->BC_Sym_Plane(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
+				break;
+			case INTERFACE_BOUNDARY:
+				solution_container[MainSolution]->BC_Interface_Boundary(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
+				break;
+			case NEARFIELD_BOUNDARY:
+				solution_container[MainSolution]->BC_NearField_Boundary(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
+				break;
+			case ELECTRODE_BOUNDARY:
+				solution_container[MainSolution]->BC_Electrode(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
+				break;
+			case DIELECTRIC_BOUNDARY:
+				solution_container[MainSolution]->BC_Dielectric(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
+				break;
+			case DISPLACEMENT_BOUNDARY:
+				solution_container[MainSolution]->BC_Displacement(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
+				break;
+			case FLOWLOAD_BOUNDARY:
+				solution_container[MainSolution]->BC_FlowLoad(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
+				break;
+			case LOAD_BOUNDARY:
+				solution_container[MainSolution]->BC_Load(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
+				break;
+			case FWH_SURFACE:
+				solution_container[MainSolution]->BC_FWH(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
+				break;
+			case WAVE_OBSERVER:
+				solution_container[MainSolution]->BC_Observer(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
+				break;
+			case NEUMANN:
+				solution_container[MainSolution]->BC_Neumann(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
+				break;
+			case NACELLE_EXHAUST:
+				solution_container[MainSolution]->BC_NacelleExhaust(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
+				break;
+			case NACELLE_INFLOW:
+				solution_container[MainSolution]->BC_NacelleInflow(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
+				break;
 		}
 	}
 
 	/*--- Strong boundary conditions (Navier-Stokes and Dirichlet type BCs) ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
 		switch (config->GetMarker_All_Boundary(iMarker)) {
-		case NO_SLIP_WALL:
-			solution_container[MainSolution]->BC_NS_Wall(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
-			break;
-		case DIRICHLET:
-			solution_container[MainSolution]->BC_Dirichlet(geometry, solution_container, config, iMarker);
-			break;
-		case CUSTOM_BOUNDARY:
-			solution_container[MainSolution]->BC_Custom(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
-			break;
+			case NO_SLIP_WALL:
+				solution_container[MainSolution]->BC_NS_Wall(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
+				break;
+      case ISOTHERMAL:
+        solution_container[MainSolution]->BC_Isothermal_Wall(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
+				break;
+      case HEAT_FLUX:
+        solution_container[MainSolution]->BC_HeatFlux_Wall(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
+				break;
+			case DIRICHLET:
+				solution_container[MainSolution]->BC_Dirichlet(geometry, solution_container, config, iMarker);
+				break;
+			case CUSTOM_BOUNDARY:
+				solution_container[MainSolution]->BC_Custom(geometry, solution_container, solver[BOUND_TERM], config, iMarker);
+				break;
 		}
-
+	
 	/*--- Add source, viscous and convective residuals (note that the turbulent 
 	 models don't divide the contributions). ---*/
-	if (RunTime_EqSystem != RUNTIME_TURB_SYS && RunTime_EqSystem != RUNTIME_ELEC_SYS)
+	if (RunTime_EqSystem != RUNTIME_TURB_SYS && RunTime_EqSystem != RUNTIME_ELEC_SYS && RunTime_EqSystem != RUNTIME_TRANS_SYS)
 		solution_container[MainSolution]->SetResidual_Total(geometry, solution_container, config, iRKStep, iMesh);
 
 }
@@ -204,15 +210,15 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolution **solution_co
 			/*--- Perform the time integration ---*/
 			switch (config->GetKind_TimeIntScheme()) {
 			case (RUNGE_KUTTA_EXPLICIT):
-						solution_container[MainSolution]->SetResidual_RKCoeff(geometry, config, iRKStep);
-			solution_container[MainSolution]->ExplicitRK_Iteration(geometry, solution_container, config, iRKStep);
-			break;
+				solution_container[MainSolution]->SetResidual_RKCoeff(geometry, config, iRKStep);
+				solution_container[MainSolution]->ExplicitRK_Iteration(geometry, solution_container, config, iRKStep);
+				break;
 			case (EULER_EXPLICIT):
-						solution_container[MainSolution]->ExplicitEuler_Iteration(geometry, solution_container, config);
-			break;
+				solution_container[MainSolution]->ExplicitEuler_Iteration(geometry, solution_container, config);
+				break;
 			case (EULER_IMPLICIT):
-							solution_container[MainSolution]->ImplicitEuler_Iteration(geometry, solution_container, config);
-			break;
+					solution_container[MainSolution]->ImplicitEuler_Iteration(geometry, solution_container, config);
+				break;
 			}
 		}
 
@@ -242,7 +248,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
 	unsigned short iCounter;
 
 	bool Already_Converged = Convergence;
-
+	
 	if (config->GetConvCriteria() == CAUCHY) {
 		if (Iteration  == 0) {
 			Cauchy_Value = 0;
@@ -304,18 +310,18 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
 	if (Already_Converged) Convergence = true;
 
 	/*--- Stop the simulation in case a nan appears, do not save the solution ---*/
-	//	if (monitor != monitor) {
-	//		Convergence = true;
-	//    if (rank== MASTER_NODE)
-	//      cout << "\n !!! Error: NaNs detected in solution. Now exiting... !!!\n" << endl;
-	//
-	//#ifdef NO_MPI
-	//		exit(1);
-	//#else
-	//		MPI::COMM_WORLD.Abort(1);
-	//		MPI::Finalize();
-	//#endif
-	//	}
+//	if (monitor != monitor) {
+//		Convergence = true;
+//    if (rank== MASTER_NODE)
+//      cout << "\n !!! Error: NaNs detected in solution. Now exiting... !!!\n" << endl;
+//
+//#ifdef NO_MPI
+//		exit(1);
+//#else
+//		MPI::COMM_WORLD.Abort(1);
+//		MPI::Finalize();
+//#endif
+//	}
 
 }
 

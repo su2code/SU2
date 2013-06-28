@@ -4,7 +4,7 @@
  *        each kind of governing equation (direct, adjoint and linearized).
  *        The subroutines and functions are in the <i>variable_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.
+ * \version 2.0.1
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -36,7 +36,7 @@ using namespace std;
  * \class CVariable
  * \brief Main class for defining the variables.
  * \author F. Palacios.
- * \version 2.0.
+ * \version 2.0.1
  */
 class CVariable {
 protected:
@@ -46,7 +46,9 @@ protected:
 	double *Solution_time_n,	/*!< \brief Solution of the problem at time n for dual-time stepping technique. */
 	*Solution_time_n1;			/*!< \brief Solution of the problem at time n-1 for dual-time stepping technique. */
 	double **Gradient;		/*!< \brief Gradient of the solution of the problem. */ 
-	double *Limiter;		/*!< \brief Limiter of the solution of the problem. */ 
+	double *Limiter;				/*!< \brief Limiter of the solution of the problem. */
+	double *Solution_Max;		/*!< \brief Max solution for limiter computation. */
+	double *Solution_Min;		/*!< \brief Min solution for limiter computation. */
 	double AuxVar;			/*!< \brief Auxiliar variable for gradient computation. */
 	double *Grad_AuxVar;	/*!< \brief Gradient of the auxiliar variable. */
 	double Delta_Time;	/*!< \brief Time step. */
@@ -88,7 +90,7 @@ public:
 	 * \brief Destructor of the class. 
 	 */
 	virtual ~CVariable(void);
-	
+
 	/*!
 	 * \brief Set the value of the solution.
 	 * \param[in] val_solution - Solution of the problem.
@@ -335,25 +337,30 @@ public:
 	 */		
 	void SetVel_ResSour_Zero(void);
 
+  /*!
+	 * \brief Set the convective velocity residual to zero value.
+	 */
+	virtual void SetVel_ResConv_Zero(unsigned short iSpecies);
+  
 	/*!
 	 * \brief Set the viscous velocity residual to zero value.
 	 */
-	void SetVel_ResVisc_Zero(unsigned short iSpecies);
+	virtual void SetVel_ResVisc_Zero(unsigned short iSpecies);
 
 	/*!
 	 * \brief Set the viscous velocity residual to zero value.
 	 */
-	void SetVel_ResSour_Zero(unsigned short iSpecies);
+	virtual void SetVel_ResSour_Zero(unsigned short iSpecies);
+  
+  /*!
+	 * \brief Set the velocity of the truncation error to zero.
+	 */
+	virtual void SetVelRes_TruncErrorZero(unsigned short iSpecies);
 
 	/*!
 	 * \brief Set the convective velocity residual to zero value.
 	 */		
 	void SetVel_ResConv_Zero(void);
-
-	/*!
-	 * \brief Set the convective velocity residual to zero value.
-	 */
-	void SetVel_ResConv_Zero(unsigned short iSpecies);
 
 	/*!
 	 * \brief Set the viscous residual to zero value.
@@ -514,11 +521,6 @@ public:
 	void SetVelRes_TruncErrorZero(void);
 
 	/*!
-	 * \brief Set the velocity of the truncation error to zero.
-	 */
-	void SetVelRes_TruncErrorZero(unsigned short iSpecies);
-
-	/*!
 	 * \brief Get the truncation error.
 	 * \return Pointer to the truncation error.
 	 */	
@@ -585,6 +587,20 @@ public:
 	 * \param[in] val_limiter - Value of the limiter for the index <i>val_var</i>.
 	 */
 	void SetLimiter(unsigned short val_var, double val_limiter);
+	
+	/*!
+	 * \brief Set the value of the max solution.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_limiter - Value of the max solution for the index <i>val_var</i>.
+	 */
+	void SetSolution_Max(unsigned short val_var, double val_solution);
+	
+	/*!
+	 * \brief Set the value of the min solution.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_limiter - Value of the min solution for the index <i>val_var</i>.
+	 */
+	void SetSolution_Min(unsigned short val_var, double val_solution);
 
 	/*!
 	 * \brief Get the value of the slope limiter.
@@ -598,6 +614,20 @@ public:
 	 * \return Value of the limiter vector for the variable <i>val_var</i>.
 	 */
 	double GetLimiter(unsigned short val_var);
+	
+	/*!
+	 * \brief Get the value of the min solution.
+	 * \param[in] val_var - Index of the variable.
+	 * \return Value of the min solution for the variable <i>val_var</i>.
+	 */
+	double GetSolution_Max(unsigned short val_var);
+	
+	/*!
+	 * \brief Get the value of the min solution.
+	 * \param[in] val_var - Index of the variable.
+	 * \return Value of the min solution for the variable <i>val_var</i>.
+	 */
+	double GetSolution_Min(unsigned short val_var);
 
 	/*!
 	 * \brief Get the value of the preconditioner Beta.
@@ -610,6 +640,18 @@ public:
 	 * \param[in] Value of the low Mach preconditioner variable Beta
 	 */
 	virtual void SetPreconditioner_Beta(double val_Beta);
+
+	/*!
+	 * \brief Get the value of the magnetic field
+	 * \return Value of the magnetic field
+	 */
+	virtual double* GetMagneticField();
+
+	/*!
+	 * \brief Set the value of the magnetic field
+	 * \param[in] Value of the magnetic field
+	 */
+	virtual void SetMagneticField(double* val_B);
 
 	/*!
 	 * \brief Set the value of the time step.
@@ -636,7 +678,7 @@ public:
 	 * \return Value of the time step.
 	 */
 	virtual double GetDelta_Time(unsigned short iSpecies);
-	
+
 	/*!
 	 * \brief Set the value of the maximum eigenvalue.
 	 * \param[in] val_max_lambda - Value of the maximum eigenvalue.
@@ -873,14 +915,20 @@ public:
 	 * \brief A virtual member.
 	 * \return Value of the flow pressure.
 	 */		
-	virtual double GetPressure(void);
+	virtual double GetPressure(bool val_incomp);
 
 	/*!
 	 * \brief A virtual member.
 	 * \return Value of the flow pressure at the previous time step.
 	 */		
 	virtual double GetPressure_Old(void);
-	
+
+	/*!
+	 * \brief A virtual member.
+	 * \return Value of the flow pressure at the previous time step for multiple species.
+	 */
+	virtual double GetPressure_Old(unsigned short val_Species);
+
 	/*!
 	 * \brief A virtual member.
 	 * \return Value of the linearized pressure.
@@ -945,18 +993,12 @@ public:
 	 */		
 	virtual double GetTemperature(void);
 
-	/*! Overloaded for plasma equations
-	 * \brief A virtual member.
-	 * \return Value of the temperature.
-	 */
-	virtual double GetTemperature(unsigned short val_iSpecies);
-
 	/*!
 	 * \brief Overloaded for plasma equations
 	 * \param[in] iSpecies - Index of species for desired TR temperature.
 	 */
-	virtual double GetTemperature_TR(unsigned short iSpecies);
-	
+	virtual double GetTemperature_tr(unsigned short iSpecies);
+
 	/*!
 	 * \brief Overloaded for plasma equations
 	 * \param[in] iSpecies - Index of species for desired TR temperature.
@@ -1017,12 +1059,42 @@ public:
 	 * \return The laminar viscosity of the flow.
 	 */
 	virtual double GetLaminarViscosity(unsigned short iSpecies);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the thermal conductivity (translational/rotational)
+   */
+  virtual double GetThermalConductivity(unsigned short iSpecies);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the thermal conductivity (vibrational)
+   */
+  virtual double GetThermalConductivity_vib(unsigned short iSpecies);
 
 	/*!
 	 * \brief A virtual member.
 	 * \return The Eddy viscosity of the flow.
 	 */
 	virtual double GetEddyViscosity(unsigned short iSpecies);
+
+	/*!
+	 * \brief A virtual member.
+	 * \return Sets separation intermittency
+	 */
+	virtual void SetGammaSep(double gamma_sep);
+
+	/*!
+	 * \brief A virtual member.
+	 * \return Sets separation intermittency
+	 */
+	virtual void SetGammaEff(void);
+
+	/*!
+	 * \brief A virtual member.
+	 * \return Returns intermittency
+	 */
+	virtual double GetIntermittency();
 
 	/*!
 	 * \brief A virtual member.
@@ -1072,7 +1144,47 @@ public:
 	 * \brief A virtual member.
 	 */		
 	virtual void SetEnthalpy(void);
+	
+	/*!
+	 * \brief A virtual member.
+	 */		
+	virtual void SetPrimVar_Compressible(double Gamma, double Gas_Constant);
+	
+	/*!
+	 * \brief A virtual member.
+	 */		
+	virtual void SetPrimVar_Compressible(double Gamma, double Gas_Constant, double turb_ke);
+	
+	/*!
+	 * \brief A virtual member.
+	 */		
+	virtual void SetPrimVar_Incompressible(double Density_Inf, double ArtComp_Factor, bool freesurface);
+	
+	/*!
+	 * \brief A virtual member.
+	 */		
+	virtual void SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double ArtComp_Factor, double turb_ke, bool freesurface);
+	
+	/*!
+	 * \brief A virtual member.
+	 */
+	virtual double GetPrimVar(unsigned short val_var);
+  
+  /*!
+	 * \brief A virtual member.
+	 */
+	virtual double GetPrimVar(unsigned short iSpecies, unsigned short val_var);
 
+	/*!
+	 * \brief A virtual member.
+	 */
+	virtual double *GetPrimVar(void);
+  
+  /*!
+	 * \brief A virtual member.
+	 */
+	virtual double **GetPrimVar_Plasma(void);
+	
 	/*!
 	 * \brief A virtual member.
 	 */		
@@ -1092,19 +1204,18 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] Gamma - Ratio of Specific heats
-	 * \param[in] Coord - Coordinates of the point where the pressure is computed
 	 */
-	virtual void SetPressure(double Gamma, double *Coord);
+	virtual void SetPressure(double Gamma);
 
 	/*!
 	 * \brief A virtual member.
 	 */
-	virtual void SetPressure(CConfig *config, double *Coord);
+	virtual void SetPressure(CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
 	 */
-	virtual void SetPressure(double Gamma, double *Coord, double turb_ke);
+	virtual void SetPressure(double Gamma, double turb_ke);
 
 	/*!
 	 * \brief A virtual member.
@@ -1146,15 +1257,21 @@ public:
 	 * \param[in] config - Configuration parameters.
 	 * \param[in] Coord - Coordinates for identifying non-physical temperatures.
 	 */
-	virtual void SetTemperature_TR(CConfig *config, double *Coord);
-	
+	virtual void SetTemperature_tr(CConfig *config);
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] config - Configuration parameters.
 	 * \param[in] Coord - Coordinates for identifying non-physical temperatures.
 	 */
-	virtual void SetTemperature_vib(CConfig *config, double *Coord);
+	virtual void SetTemperature_vib(CConfig *config);
 
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] config - Configuration parameters.
+	 */	
+	virtual void SetPrimVar(CConfig *config);
+	
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] Temperature_Wall - Value of the Temperature at the wall
@@ -1178,7 +1295,7 @@ public:
 	 * \param[in] val_density - Value of the density.
 	 * \param[in] val_velocity - Pointer to the velocity.
 	 * \param[in] val_enthalpy - Value of the enthalpy.
-	 */		
+	 */
 	virtual void SetTheta(double val_density, double *val_velocity, double val_enthalpy);
 
 	/*!
@@ -1194,24 +1311,13 @@ public:
 
 	/*!
 	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void SetBetaInc2(CConfig *config);
-
-	/*!
-	 * \brief A virtual member.
-	 */
-	virtual void SetPressureInc(void);
-
-	/*!
-	 * \brief A virtual member.
 	 */
 	virtual void SetPressureInc(double val_pressure);
 
 	/*!
 	 * \brief A virtual member.
 	 */
-	virtual void SetPressure(double val_pressure);	
+	virtual void SetPressureValue(double val_pressure);	
 
 	/*!
 	 * \brief A virtual member.
@@ -1233,10 +1339,15 @@ public:
 
 	/*!
 	 * \brief A virtual member.
+	 */	
+	virtual void SetLaminarViscosity();
+
+	/*!
+	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.	 
 	 */	
 	virtual void SetLaminarViscosity(CConfig *config);
-
+	
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
@@ -1288,6 +1399,7 @@ public:
 	 * \param[in] val_value - Value to add to the gradient of the primitive variables.
 	 */
 	virtual void AddGradient_Primitive(unsigned short val_var, unsigned short val_dim, double val_value);
+	virtual void AddGradient_Primitive(unsigned short val_species, unsigned short val_var, unsigned short val_dim, double val_value);
 
 	/*!
 	 * \brief A virtual member.
@@ -1296,6 +1408,7 @@ public:
 	 * \param[in] val_value - Value to subtract to the gradient of the primitive variables.
 	 */
 	virtual void SubtractGradient_Primitive(unsigned short val_var, unsigned short val_dim, double val_value);
+	virtual void SubtractGradient_Primitive(unsigned short val_species, unsigned short val_var, unsigned short val_dim, double val_value);
 
 	/*!
 	 * \brief A virtual member.
@@ -1304,6 +1417,7 @@ public:
 	 * \return Value of the primitive variables gradient.
 	 */
 	virtual double GetGradient_Primitive(unsigned short val_var, unsigned short val_dim);
+	virtual double GetGradient_Primitive(unsigned short val_species, unsigned short val_var, unsigned short val_dim);
 
 	/*!
 	 * \brief A virtual member.
@@ -1312,12 +1426,15 @@ public:
 	 * \param[in] val_value - Value of the gradient.
 	 */
 	virtual void SetGradient_Primitive(unsigned short val_var, unsigned short val_dim, double val_value);
+	virtual void SetGradient_Primitive(unsigned short val_species, unsigned short val_var, unsigned short val_dim, double val_value);
 
 	/*!
 	 * \brief A virtual member.
 	 * \return Value of the primitive variables gradient.
 	 */
 	virtual double **GetGradient_Primitive(void);
+	virtual double **GetGradient_Primitive(unsigned short val_species);
+  virtual double ***GetGradient_Primitive_Plasma(void);
 
 	/*!
 	 * \brief Set the blending function for the blending of k-w and k-eps.
@@ -1503,7 +1620,7 @@ public:
  * \brief Main class for defining the variables of the potential solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.
+ * \version 2.0.1
  */
 class CPotentialVariable : public CVariable {
 	double *Charge_Density;
@@ -1572,7 +1689,7 @@ public:
  * \brief Main class for defining the variables of the wave equation solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.
+ * \version 2.0.1
  */
 class CWaveVariable : public CVariable {
 protected:
@@ -1654,19 +1771,19 @@ public:
  * \brief Main class for defining the variables of the Heat equation solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.
+ * \version 2.0.1
  */
 class CHeatVariable : public CVariable {
 protected:
 	double *Solution_Direct;  /*!< \brief Direct solution container for use in the adjoint Heat solver. */
-	
+
 public:
-	
+
 	/*!
 	 * \brief Constructor of the class. 
 	 */
 	CHeatVariable(void);
-	
+
 	/*!
 	 * \overload
 	 * \param[in] val_Heat - Values of the Heat solution (initialization value).		 
@@ -1675,24 +1792,24 @@ public:
 	 * \param[in] config - Definition of the particular problem.	 
 	 */	
 	CHeatVariable(double *val_Heat, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
-	
+
 	/*!
 	 * \brief Destructor of the class. 
 	 */	
 	~CHeatVariable(void);
-		
+
 	/*!
 	 * \brief Set the direct solution for the adjoint solver.
 	 * \param[in] val_solution_direct - Value of the direct solution.
 	 */
 	void SetSolution_Direct(double *val_solution_direct);
-	
+
 	/*!
 	 * \brief Get the direct solution for the adjoint solver.
 	 * \return Pointer to the direct solution vector.
 	 */
 	double *GetSolution_Direct(void);
-	
+
 };
 
 /*! 
@@ -1700,7 +1817,7 @@ public:
  * \brief Main class for defining the variables of the FEA equation solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.
+ * \version 2.0.1
  */
 class CFEAVariable : public CVariable {
 protected:
@@ -1730,13 +1847,8 @@ public:
 	/*!
 	 * \brief Set the value of the pressure.
 	 */
-	void SetPressure(double val_pressure);
+	void SetPressureValue(double val_pressure);
 
-	/*!
-	 * \brief Get the flow pressure.
-	 * \return Value of the flow pressure.
-	 */
-	double GetPressure(void);
 };
 
 /*! 
@@ -1744,19 +1856,19 @@ public:
  * \brief Main class for defining the variables of the Euler's solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.
+ * \version 2.0.1
  */
 class CEulerVariable : public CVariable {
 protected:
-	double Velocity2;	/*!< \brief Square of the velocity vector. */
-	double Pressure;	/*!< \brief Pressure of the fluid. */
+	double Velocity2;			/*!< \brief Square of the velocity vector. */
 	double Pressure_Old;	/*!< \brief Pressure of the fluid in the previous time step. */
-	double SoundSpeed;	/*!< \brief Speed of Sound in the fluid. */
-	double Enthalpy;	/*!< \brief Enthalpy of the fluid. */
-	double Temperature; /*!< \brief Temperature of the fluid. */
-	double *TS_Source; 	/*!< \brief Time spectral source term. */
-	double **Gradient_Primitive;	/*!< \brief Gradient of the primitive variables (T,vx,vy,vz,P,rho). */ 
+	double *TS_Source;		/*!< \brief Time spectral source term. */
 	double Precond_Beta;	/*!< \brief Low Mach number preconditioner value, Beta. */
+	double *B_Field;		/*! < \brief Magnetic field value */
+
+	/*--- Primitive variable definition ---*/
+	double *Primitive;	/*!< \brief Primitive variables (T,vx,vy,vz,P,rho,h,c) in compressible flows. */ 
+	double **Gradient_Primitive;	/*!< \brief Gradient of the primitive variables (T,vx,vy,vz,P,rho). */ 
 
 public:
 
@@ -1840,17 +1952,6 @@ public:
 	void SetVelocityInc2(void);
 
 	/*!
-	 * \brief Set the value of the beta*beta for the incompressible solver.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetBetaInc2(CConfig *config);
-
-	/*!
-	 * \brief Set the value of the pressure for the incompressible solver.
-	 */
-	void SetPressureInc(void);
-
-	/*!
 	 * \brief Set the value of the pressure for the incompressible solver.
 	 */
 	void SetPressureInc(double val_pressure);
@@ -1863,7 +1964,7 @@ public:
 	/*!
 	 * \brief Set the value of the pressure.
 	 */
-	void SetPressure(double Gamma, double *Coord);
+	void SetPressure(double Gamma);
 
 	/*!
 	 * \brief Set the value of the speed of the sound.
@@ -1875,7 +1976,30 @@ public:
 	 * \brief Set the value of the enthalpy.
 	 */
 	void SetEnthalpy(void);
+	
+	/*!
+	 * \brief Set all the primitive variables for compressible flows.
+	 */
+	void SetPrimVar_Compressible(double Gamma, double Gas_Constant);
+	
+	/*!
+	 * \brief Set all the primitive variables for incompressible flows.
+	 */
+	void SetPrimVar_Incompressible(double Density_Inf, double ArtComp_Factor, bool freesurface);
+	
+	/*!
+	 * \brief Get the primitive variables.
+	 * \param[in] val_var - Index of the variable.
+	 * \return Value of the primitive variable for the index <i>val_var</i>.
+	 */
+	double GetPrimVar(unsigned short val_var);	
 
+	/*!
+	 * \brief Get the primitive variables of the problem.
+	 * \return Pointer to the primitive variable vector.
+	 */
+	double *GetPrimVar(void);
+	
 	/*!
 	 * \brief Set the value of the density for the incompressible flows.
 	 */
@@ -1902,14 +2026,14 @@ public:
 	 * \brief Get the flow pressure.
 	 * \return Value of the flow pressure.
 	 */
-	double GetPressure(void);
+	double GetPressure(bool val_incomp);
 
 	/*!
 	 * \brief Get the flow pressure.
 	 * \return Value of the flow pressure at the previous time step.
 	 */
 	double GetPressure_Old(void);
-	
+
 	/*!
 	 * \brief Get the speed of the sound.
 	 * \return Value of speed of the sound.
@@ -2010,6 +2134,18 @@ public:
 	 * \param[in] Value of the low Mach preconditioner variable Beta
 	 */
 	void SetPreconditioner_Beta(double val_Beta);
+
+	/*!
+	 * \brief Get the value of the magnetic field
+	 * \param[out] Value of the magnetic field
+	 */
+	double* GetMagneticField();
+
+	/*!
+	 * \brief Set the value of the magnetic field
+	 * \param[in] Value of the magnetic field
+	 */
+	void SetMagneticField(double* val_B);
 };
 
 /*! 
@@ -2017,7 +2153,7 @@ public:
  * \brief Main class for defining the variables of the Navier-Stokes' solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 2.0.
+ * \version 2.0.1
  */
 class CNSVariable : public CEulerVariable {
 private:
@@ -2066,9 +2202,8 @@ public:
 
 	/*!
 	 * \brief Set the laminar viscosity.
-	 * \param[in] config - Definition of the particular problem.	
 	 */
-	void SetLaminarViscosity(CConfig *config);
+	void SetLaminarViscosity();
 
 	/*!
 	 * \overload
@@ -2144,7 +2279,17 @@ public:
 	/*!
 	 * \brief Set the value of pressure.
 	 */
-	void SetPressure(double Gamma, double *Coord, double turb_ke);
+	void SetPressure(double Gamma, double turb_ke);
+	
+	/*!
+	 * \brief Set all the primitive variables for compressible flows
+	 */
+	void SetPrimVar_Compressible(double Gamma, double Gas_Constant, double turb_ke);
+	
+	/*!
+	 * \brief Set all the primitive variables for incompressible flows
+	 */
+	void SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double ArtComp_Factor, double turb_ke, bool freesurface);
 };
 
 /*! 
@@ -2152,13 +2297,13 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.
+ * \version 2.0.1
  */
 class CTurbVariable : public CVariable {
 protected:
 	double muT;                /*!< \brief Eddy viscosity. */
-    double *TS_Source; 	       /*!< \brief Time spectral source term. */
-	
+	double *TS_Source; 	       /*!< \brief Time spectral source term. */
+
 public:
 	/*!
 	 * \brief Constructor of the class. 
@@ -2196,7 +2341,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.
+ * \version 2.0.1
  */
 
 class CTurbSAVariable : public CTurbVariable {
@@ -2220,21 +2365,21 @@ public:
 	 * \brief Destructor of the class. 
 	 */
 	~CTurbSAVariable(void);
-  
-  /*!
+
+	/*!
 	 * \brief Set the time spectral source term.
 	 * \param[in] val_var - Index of the variable.
 	 * \param[in] val_solution - Value of the time spectral source term. for the index <i>val_var</i>.
 	 */
 	void SetTimeSpectral_Source(unsigned short val_var, double val_source);
-  
+
 	/*!
 	 * \brief Get the time spectral source term.
 	 * \param[in] val_var - Index of the variable.
 	 * \return Value of the time spectral source term for the index <i>val_var</i>.
 	 */
 	double GetTimeSpectral_Source(unsigned short val_var);
-  
+
 };
 
 /*!
@@ -2242,10 +2387,11 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.
+ * \version 2.0.1
  */
 
 class CTransLMVariable : public CTurbVariable {
+  double gamma_sep;
 public:
 	/*!
 	 * \brief Constructor of the class.
@@ -2260,12 +2406,16 @@ public:
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.	 
 	 */	
-	CTransLMVariable(double val_nu_tilde, double val_intermittency, double val_REth, double val_muT, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+	CTransLMVariable(double val_nu_tilde, double val_intermittency, double val_REth, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
 
 	/*!
 	 * \brief Destructor of the class. 
 	 */
 	~CTransLMVariable(void);
+
+  double GetIntermittency();
+  void SetGammaSep(double gamma_sep_in);
+  void SetGammaEff(void);
 };
 
 /*! 
@@ -2273,7 +2423,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.
+ * \version 2.0.1
  */
 
 class CTurbSSTVariable : public CTurbVariable {
@@ -2335,7 +2485,7 @@ public:
  * \brief Main class for defining the variables of the adjoint potential solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.
+ * \version 2.0.1
  */
 class CAdjPotentialVariable : public CVariable {
 private:
@@ -2370,7 +2520,7 @@ public:
  * \brief Main class for defining the variables of the adjoint Euler solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.
+ * \version 2.0.1
  */
 class CAdjEulerVariable : public CVariable {
 protected:
@@ -2378,6 +2528,7 @@ protected:
 	double *ForceProj_Vector;	/*!< \brief Vector d. */
 	double *ObjFuncSource;    /*!< \brief Vector containing objective function sensitivity for discrete adjoint. */
 	double *IntBoundary_Jump;	/*!< \brief Interior boundary jump vector. */
+	double *TS_Source;		/*!< \brief Time spectral source term. */
 	double Theta;		/*!< \brief Theta variable. */
 	bool incompressible;
 public:
@@ -2466,6 +2617,20 @@ public:
 	 * \return Pointer to the force projection vector.
 	 */		
 	double *GetIntBoundary_Jump(void);
+
+	/*!
+	 * \brief Set the time spectral source term.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_solution - Value of the time spectral source term. for the index <i>val_var</i>.
+	 */
+	void SetTimeSpectral_Source(unsigned short val_var, double val_source);
+
+	/*!
+	 * \brief Get the time spectral source term.
+	 * \param[in] val_var - Index of the variable.
+	 * \return Value of the time spectral source term for the index <i>val_var</i>.
+	 */
+	double GetTimeSpectral_Source(unsigned short val_var);
 };
 
 /*! 
@@ -2473,7 +2638,7 @@ public:
  * \brief Main class for defining the variables of the adjoint Navier-Stokes solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 2.0.
+ * \version 2.0.1
  */
 class CAdjNSVariable : public CAdjEulerVariable {	
 public:
@@ -2568,7 +2733,7 @@ public:
  * \brief Main class for defining the variables of the adjoint turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.
+ * \version 2.0.1
  */
 class CAdjTurbVariable : public CVariable {
 public:
@@ -2598,7 +2763,7 @@ public:
  * \brief Main class for defining the variables of the linearized potential equation.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.
+ * \version 2.0.1
  */
 class CLinPotentialVariable : public CVariable {
 public:	
@@ -2609,7 +2774,7 @@ public:
  * \brief Main class for defining the variables of the linearized Euler's equations.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.
+ * \version 2.0.1
  */
 class CLinEulerVariable : public CVariable {
 private:
@@ -2686,7 +2851,7 @@ public:
  * \brief Main class for defining the variables of the linearized Navier-Stokes' equations.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 2.0.
+ * \version 2.0.1
  */
 class CLinNSVariable : public CLinEulerVariable {
 public:
@@ -2695,21 +2860,13 @@ public:
 /*!
  * \class CPlasmaVariable
  * \brief Main class for defining the variables of the Plasma solver.
- * \version 2.0.
+ * \version 2.0.1
  */
 class CPlasmaVariable : public CVariable {
-protected:
-	double *Pressure;				/*!< \brief  partial Pressure of species in flow. */
-	double *Temperature;			/*!< \brief temperature of species in flow. */
-	double *Temperature_tr; /*!< \brief translation-rotation temperature of species in flow. */
-	double *Temperature_vib;	/*!< \brief vibrational temperature in flow. */
-
-	double **Gradient_Primitive;	/*!< \brief Gradient of the primitive variables (T,vx,vy,vz,P,rho). */
+protected:	
 	double *Sensor_MultiSpecies;
 	double *Velocity2;
 	double **Velocity;
-	double *SoundSpeed;
-	double *Enthalpy;
 	double *Max_Lambda_Inv_MultiSpecies; /*!< \brief Vector of Maximun inviscid eingenvalues for different fluids */
 	double *Max_Lambda_Visc_MultiSpecies; /*!< \brief Vector of Maximun viscous eingenvalues for different fluids */
 	double *Lambda;
@@ -2720,13 +2877,20 @@ protected:
 	double *EddyViscosity_MultiSpecies;	/*!< \brief Viscosity of the fluid. */
 	double Prandtl_Lam;       /*!< \brief Laminar Prandtl number. */
 	double *ThermalCoeff;		/*!< \brief Thermal conductivity of the fluid. */
+  double *ThermalCoeff_vib; /*!< \brief Vibrational thermal conductivity. */
 	double *Species_Delta_Time;
 	double *Residual_Chemistry,	/*!< \brief Residual of the chemistry source terms. */
 	*Residual_ElecForce,	/*!< \brief Residual of the electrostatic force source terms. */
 	*Residual_MomentumExch, /*!< \brief Residual of the collisional momentum exchange source terms. */
 	*Residual_EnergyExch;	/*! < \brief Residual of the collisional energy exchange source terms. */
-	double *Elec_Field;	/*! < \brief Electric potential value from the electrical solver. */
-
+	double *Elec_Field;		/*! < \brief Electric field value from the electrical solver. */
+	double *B_Field;		/*! < \brief Magnetic field value */
+	
+	/*--- Primitive variable definition ---*/
+											/*!< \brief Primitive variables (T_tr,vx,vy,   vz,   T_vi,      P,    rho,      h,      c ). */ 
+	double **Primitive;	/*!< \brief Primitive variables (   0, 1, 2, nDim, nDim+1, nDim+2, nDim+3, nDim+4, nDim+5 ). */ 
+	double ***Gradient_Primitive;	/*!< \brief Gradient of the primitive variables (T_tr, vx, vy, vz, T_vi). */
+	double *Pressure_Old;
 public:
 
 	/*!
@@ -2760,9 +2924,34 @@ public:
 	 * \brief Destructor of the class.
 	 */
 	~CPlasmaVariable(void);
+  
+  /*!
+	 * \brief Set the convective velocity residual to zero value.
+   * \param[in] iSpecies - Species index.
+	 */
+	void SetVel_ResConv_Zero(unsigned short iSpecies);
+  
+	/*!
+	 * \brief Set the viscous velocity residual to zero value.
+   * \param[in] iSpecies - Species index.
+	 */
+	void SetVel_ResVisc_Zero(unsigned short iSpecies);
+  
+	/*!
+	 * \brief Set the viscous velocity residual to zero value.
+   * \param[in] iSpecies - Species index.
+	 */
+	void SetVel_ResSour_Zero(unsigned short iSpecies);
+  
+  /*!
+	 * \brief Set the velocity of the truncation error to zero.
+   * \param[in] iSpecies - Species index.
+	 */
+	void SetVelRes_TruncErrorZero(unsigned short iSpecies);
 
 	/*!
 	 * \brief Set to zero the gradient of the primitive variables.
+   * \param[in] iSpecies - Species index.
 	 */
 	void SetGradient_PrimitiveZero(void);
 
@@ -2785,7 +2974,7 @@ public:
 	 * \param[in] val_dim - Index of the dimension.
 	 * \param[in] val_value - Value to add to the gradient of the primitive variables.
 	 */
-	void AddGradient_Primitive(unsigned short val_var, unsigned short val_dim, double val_value);
+	void AddGradient_Primitive(unsigned short val_species, unsigned short val_var, unsigned short val_dim, double val_value);
 
 	/*!
 	 * \brief Subtract <i>val_value</i> to the gradient of the primitive variables.
@@ -2793,7 +2982,7 @@ public:
 	 * \param[in] val_dim - Index of the dimension.
 	 * \param[in] val_value - Value to subtract to the gradient of the primitive variables.
 	 */
-	void SubtractGradient_Primitive(unsigned short val_var, unsigned short val_dim, double val_value);
+	void SubtractGradient_Primitive(unsigned short val_species, unsigned short val_var, unsigned short val_dim, double val_value);
 
 	/*!
 	 * \brief Get the value of the primitive variables gradient.
@@ -2801,7 +2990,13 @@ public:
 	 * \param[in] val_dim - Index of the dimension.
 	 * \return Value of the primitive variables gradient.
 	 */
-	double GetGradient_Primitive(unsigned short val_var, unsigned short val_dim);
+	double GetGradient_Primitive(unsigned short val_species, unsigned short val_var, unsigned short val_dim);
+  
+  /*!
+	 * \brief Get the value of the primitive variables gradient.
+	 * \return Value of the primitive variables gradient.
+	 */
+  double ***GetGradient_Primitive_Plasma(void);
 
 	/*!
 	 * \brief Set the gradient of the primitive variables.
@@ -2809,13 +3004,13 @@ public:
 	 * \param[in] val_dim - Index of the dimension.
 	 * \param[in] val_value - Value of the gradient.
 	 */
-	void SetGradient_Primitive(unsigned short val_var, unsigned short val_dim, double val_value);
+	void SetGradient_Primitive(unsigned short val_species, unsigned short val_var, unsigned short val_dim, double val_value);
 
 	/*!
 	 * \brief Get the value of the primitive variables gradient.
 	 * \return Value of the primitive variables gradient.
 	 */
-	double **GetGradient_Primitive(void);
+	double **GetGradient_Primitive(unsigned short val_species);
 
 	/*!
 	 * \brief Set the value of the pressure.
@@ -2830,34 +3025,26 @@ public:
 	/*!
 	 * \brief Set the value of the pressure.
 	 */
-	void SetPressure(CConfig *config, double *Coord);
+	void SetPressure(CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] config - Configuration parameters.
-	 * \param[in] Coord - Coordinates for identifying non-physical temperatures.
 	 */
-	void SetTemperature_TR(CConfig *config, double *Coord);
-	
+	void SetTemperature_tr(CConfig *config);
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] config - Configuration parameters.
-	 * \param[in] Coord - Coordinates for identifying non-physical temperatures.
 	 */
-	void SetTemperature_vib(CConfig *config, double *Coord);
-
-	/*!
-	 * \brief Get the value of the temperature.
-	 * \param[in] iSpecies - Species index of desired temperature.
-	 */
-	double GetTemperature(unsigned short iSpecies);
+	void SetTemperature_vib(CConfig *config);
 
 	/*!
 	 * \brief Get the value of the trans-rot temperature.
 	 * \param[in] iSpecies - Species index of desired temperature.
 	 */
-	double GetTemperature_TR(unsigned short iSpecies);	 
-	
+	double GetTemperature_tr(unsigned short iSpecies);	 
+
 	/*!
 	 * \brief Get the value of the trans-rot temperature.
 	 * \param[in] iSpecies - Species index of desired temperature.
@@ -2883,6 +3070,25 @@ public:
 	 * \return Value of the velocity for the dimension <i>val_dim</i>.
 	 */
 	double GetVelocity(unsigned short val_dim, unsigned short val_species);
+
+	/*!
+	 * \brief Set the primitive variables.
+	 * \param[in] config - Configuration parameters.
+	 */	
+	void SetPrimVar(CConfig *config);
+  
+  /*!
+	 * \brief Get the primitive variables.
+	 * \param[in] val_var - Index of the variable.
+	 * \return Value of the primitive variable for the index <i>val_var</i>.
+	 */
+	double GetPrimVar(unsigned short iSpecies, unsigned short val_var);
+  
+  /*!
+	 * \brief Returns a second order tensor of the primitive variables V[nSpecies][nVar]
+	 * \return Memory address of the matrix of primitive variables
+	 */
+  double **GetPrimVar_Plasma(void);
 
 	/*!
 	 * \brief Get the square of velocity of that particular flow.
@@ -2931,7 +3137,6 @@ public:
 
 	/*!
 	 * \brief Set the laminar viscosity.
-	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetLaminarViscosity(CConfig *config);
 
@@ -3010,6 +3215,18 @@ public:
 	 * \return Value of the laminar viscosity of the flow.
 	 */
 	double GetLaminarViscosity(unsigned short iSpecies);
+  
+  /*!
+   * \brief Get the thermal conductivity (translational/rotational)
+   * \return Value of the thermal conductivity (translational/rotational)
+   */
+  double GetThermalConductivity(unsigned short iSpecies);
+  
+  /*!
+   * \brief Get the thermal conductivity (vibrational)
+   * \return Value of the thermal conductivity (vibrational)
+   */
+  double GetThermalConductivity_vib(unsigned short iSpecies);
 
 	/*!
 	 * \brief Set the thermal coefficient.
@@ -3022,7 +3239,7 @@ public:
 	 * \return Value of the laminar viscosity of the flow.
 	 */
 	double GetEddyViscosity(unsigned short iSpecies);
-
+    
 	/*!
 	 * \brief Set the velocity vector from the old solution.
 	 * \param[in] val_velocity - Pointer to the velocity.
@@ -3040,12 +3257,30 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] ElectricField - ElectricField
 	 */
-	 void SetElectricField(double* ElectricField);
+	void SetElectricField(double* ElectricField);
 
 	/*!
 	 * \brief A virtual member.
 	 */
-	 double* GetElectricField();
+	double* GetElectricField();
+
+	/*!
+	 * \brief Get the value of the magnetic field
+	 * \return Value of the magnetic field
+	 */
+	double* GetMagneticField();
+
+	/*!
+	 * \brief Set the value of the magnetic field
+	 * \param[in] Value of the magnetic field
+	 */
+	void SetMagneticField(double* val_B);
+
+	/*!
+	 * \brief A virtual member.
+	 * \return Value of the flow pressure at the previous time step for multiple species.
+	 */
+	double GetPressure_Old(unsigned short val_Species);
 
 };
 
@@ -3055,7 +3290,7 @@ public:
  * \brief Main class for defining the variables of the Level Set.
  * \ingroup LevelSet_Model
  * \author F. Palacios.
- * \version 2.0.
+ * \version 2.0.1
  */
 class CLevelSetVariable : public CVariable {
 protected:
@@ -3107,7 +3342,7 @@ public:
  * \brief Main class for defining the variables of the Level Set.
  * \ingroup LevelSet_Model
  * \author F. Palacios.
- * \version 2.0.
+ * \version 2.0.1
  */
 class CAdjLevelSetVariable : public CVariable {
 public:
@@ -3145,7 +3380,7 @@ public:
  * \brief Main class for defining the variables of the adjoint Euler solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.
+ * \version 2.0.1
  */
 class CAdjPlasmaVariable : public CVariable {
 protected:
@@ -3166,7 +3401,7 @@ public:
 	 * \param[in] val_psirho - Value of the adjoint density (initialization value).
 	 * \param[in] val_phi - Value of the adjoint velocity (initialization value).
 	 * \param[in] val_psie - Value of the adjoint energy (initialization value).
-   * \param[in] val_psievib - Value of the adjoint vibrational energy (initialization value).
+	 * \param[in] val_psievib - Value of the adjoint vibrational energy (initialization value).
 	 * \param[in] val_ndim - Number of dimensions of the problem.		 
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.	 
@@ -3236,7 +3471,7 @@ public:
  * \brief Main class for defining the variables of the potential solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.
+ * \version 2.0.1
  */
 class CTemplateVariable : public CVariable {
 public:

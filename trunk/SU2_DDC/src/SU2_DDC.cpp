@@ -2,7 +2,7 @@
  * \file SU2_DDC.cpp
  * \brief Main file of Domain Decomposition Code (SU2_DDC).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.
+ * \version 2.0.1
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
 	/*--- Definition of the config problem ---*/
 	if (argc == 2) config = new CConfig(argv[1], SU2_DDC, ZONE_0, nZone, VERB_HIGH);
 	else { strcpy (file_name, "default.cfg"); config = new CConfig(file_name, SU2_DDC, ZONE_0, nZone, VERB_HIGH); }
-  
+	
 	/*--- Definition of the Class for the geometry ---*/
 	CGeometry *geometry; geometry = new CGeometry;
   geometry = new CPhysicalGeometry(config, config->GetMesh_FileName(), config->GetMesh_FileFormat(), ZONE_0, nZone);
@@ -102,7 +102,7 @@ int main(int argc, char *argv[]) {
 			sprintf (buffer_su2, "_%d.su2", int(iDomain+1));
 			string MeshFile_su2 = MeshFile + buffer_su2;
 			char *cstr_su2 = strdup(MeshFile_su2.c_str());
-			domain[iDomain]->SetMeshFile(config, cstr_su2);
+			domain[iDomain]->SetMeshFile(geometry, config, cstr_su2, iDomain);
 			
 			/*--- Write the FFD information (3D problems)---*/
 			if (geometry->GetnDim() == 3)

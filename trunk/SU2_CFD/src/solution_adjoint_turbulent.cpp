@@ -2,7 +2,7 @@
  * \file solution_adjoint_turbulent.cpp
  * \brief Main subrotuines for solving adjoint problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.
+ * \version 2.0.1
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -37,9 +37,6 @@ CAdjTurbSolution::CAdjTurbSolution(CGeometry *geometry, CConfig *config) : CSolu
 	/*--- Dimension of the problem --> dependent of the turbulent model ---*/
 	switch (config->GetKind_Turb_Model()) {	
 		case SA :
-			nVar = 1;		
-			break;
-		case SA_COMP :
 			nVar = 1;		
 			break;
 		case SST :
@@ -121,7 +118,6 @@ CAdjTurbSolution::CAdjTurbSolution(CGeometry *geometry, CConfig *config) : CSolu
 			case MOMENT_Y_COEFFICIENT: AdjExt = "_cmy.dat"; break;
 			case MOMENT_Z_COEFFICIENT: AdjExt = "_cmz.dat"; break;
 			case EFFICIENCY: AdjExt = "_eff.dat"; break;
-			case ELECTRIC_CHARGE: AdjExt = "_ec.dat"; break;
 			case EQUIVALENT_AREA: AdjExt = "_ea.dat"; break;
 			case NEARFIELD_PRESSURE: AdjExt = "_nfp.dat"; break;
       case FORCE_X_COEFFICIENT: AdjExt = "_cfx.dat"; break;
@@ -295,7 +291,7 @@ void CAdjTurbSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution
 	if (high_order_diss) { 
 		if (config->GetKind_Gradient_Method() == GREEN_GAUSS) solution_container[FLOW_SOL]->SetSolution_Gradient_GG(geometry);
 		if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) solution_container[FLOW_SOL]->SetSolution_Gradient_LS(geometry, config);
-		if (config->GetKind_SlopeLimit() == VENKATAKRISHNAN) SetSolution_Limiter(geometry, config);
+		if (config->GetKind_SlopeLimit() != NONE) SetSolution_Limiter(geometry, config);
 	}
 
 	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -477,6 +473,10 @@ void CAdjTurbSolution::Source_Residual(CGeometry *geometry, CSolution **solution
 		node[iPoint]->AddResidual(Residual);
 		Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);
 	}
+}
+
+void CAdjTurbSolution::Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+											   CConfig *config, unsigned short iMesh) {
 }
 
 void CAdjTurbSolution::SourceConserv_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,

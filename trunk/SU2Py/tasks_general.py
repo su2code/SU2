@@ -3,7 +3,7 @@
 ## \file tasks_general.py
 #  \brief Basic class structure for SU2 tasks.
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.
+#  \version 2.0.1
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -21,7 +21,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os, sys, shutil, glob, copy
+import os, sys, shutil, glob, copy, tarfile
 import numpy
 import libSU2
 
@@ -45,7 +45,8 @@ class General_Task():
             will start in folder_super
             should not create any new files because 
             the class may be built temporarily 
-            as a comparison tester '''        
+            as a comparison tester 
+        '''        
 
         self.assets_current = {}
         self.assets_pull    = {}
@@ -68,7 +69,8 @@ class General_Task():
     # ---------------------------------------------------------------------- 
     def set_signature( self, config_delta={} ):
         ''' assign the properties that represent
-            this task's configuration '''
+            this task's configuration 
+        '''
         
         # default signature items
         signature   = {'TYPE':'General_Task'}
@@ -90,7 +92,8 @@ class General_Task():
     #  CHECK GENERAL TASK
     # ----------------------------------------------------------------------     
     def check( self, config_delta, assets_super, design_super ):
-        ''' check if job needs to be run or modify super assets ''' 
+        ''' check if job needs to be run or modify super assets 
+        ''' 
         
         # modifications to input dictionaries will be by reference
         
@@ -112,7 +115,8 @@ class General_Task():
     # ---------------------------------------------------------------------- 
     def configure( self, config_delta, assets_super, design_super ):
         ''' configure any control and data inputs 
-            for the analysis task '''
+            for the analysis task 
+        '''
         
         # can also use self.config_current, self.design_current
                 
@@ -123,7 +127,8 @@ class General_Task():
     # ---------------------------------------------------------------------- 
     def run( self, config_delta, assets_super, design_super ):
         ''' run the analysis task and return an 
-            updated design dictionary '''
+            updated design dictionary 
+        '''
         
         # can also use self.config_current, self.design_current
         
@@ -137,7 +142,7 @@ class General_Task():
     # ---------------------------------------------------------------------- 
     def packup( self, config_delta, assets_super, design_super ):
         ''' assign assets to push to super folder 
-            and clean uneeded files '''
+        '''
         
         # can also use self.config_current, self.design_current
         
@@ -146,6 +151,39 @@ class General_Task():
         config_return = {}
         
         return assets_return, config_return
+    
+    # ----------------------------------------------------------------------     
+    #  CLEANUP GENERAL TASK
+    # ---------------------------------------------------------------------- 
+    def cleanup( self, config_delta, assets_super, design_super ):
+        ''' cleans files based on desired output weight 
+            operates in self.folder_super, use self.folder_self to 
+            access files 
+        '''
+        
+        output_weight = self.config_current['OUTPUT_WEIGHT']
+        folder_self   = self.folder_self
+        
+        if   output_weight == 'HEAVY':
+            # do nothing
+            pass
+        
+        elif output_weight == 'COMPRESS':
+            # create an gzipped tar archive of the job folder
+            sys.stdout.write('Compress \n')
+            tar_name = folder_self + '.tgz'
+            tar = tarfile.open(tar_name,'w:gz')
+            tar.add(folder_self)
+            tar.close()
+            shutil.rmtree(folder_self)
+            
+        elif output_weight == 'LIGHT':
+            # remove all job folders
+            shutil.rmtree(folder_self)
+            
+        #: if output_weight
+        
+        return 
     
     # ----------------------------------------------------------------------     
     #  GENERAL TASK REPRESENTATION
@@ -204,7 +242,10 @@ class General_Task():
         self.push_assets( assets_return )
         
         # return to super directory
-        os.chdir( self.folder_super )
+        os.chdir( self.folder_super )        
+        
+        # clean folder
+        self.cleanup( config_delta, assets_super, design_super )
         
         # flush output
         sys.stdout.flush()

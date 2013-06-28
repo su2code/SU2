@@ -2,7 +2,7 @@
  * \file variable_direct.cpp
  * \brief Definition of the solution fields.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.
+ * \version 2.0.1
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -59,14 +59,11 @@ CEulerVariable::CEulerVariable(void) : CVariable() { }
 
 CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double val_energy, unsigned short val_ndim, 
 		unsigned short val_nvar, CConfig *config) : CVariable(val_ndim, val_nvar, config) {
-	unsigned short iVar, iDim;
-	unsigned short iMesh, nMGSmooth = 0;
+	unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
 
 	bool Incompressible = config->GetIncompressible();
-	bool FreeSurface = (config->GetKind_Solver() == FREE_SURFACE_EULER);
-	bool AdjEuler = ((config->GetKind_Solver() == ADJ_EULER) || (config->GetKind_Solver() == ADJ_AEROACOUSTIC_EULER));
-	bool Viscous = ((config->GetKind_Solver() == NAVIER_STOKES) || (config->GetKind_Solver() == RANS) || 
-			(config->GetKind_Solver() == ADJ_NAVIER_STOKES) || (config->GetKind_Solver() == ADJ_NAVIER_STOKES) );
+	bool FreeSurface = (config->GetKind_Solver() == FREE_SURFACE_EULER || config->GetKind_Solver() == FREE_SURFACE_NAVIER_STOKES);
+	bool magnet = (config->GetMagnetic_Force() == YES);
 
 	/*--- Allocate residual structures ---*/
 	Res_Conv = new double [nVar]; 
@@ -98,8 +95,14 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
 	}
 
 	/*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
-	if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) Undivided_Laplacian = new double [nVar];
-	if (config->GetKind_ConvNumScheme_Flow() == SPACE_UPWIND) Limiter = new double [nVar];
+	if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) 
+		Undivided_Laplacian = new double [nVar];
+	if ((config->GetKind_ConvNumScheme_Flow() == SPACE_UPWIND) && 
+			(config->GetKind_SlopeLimit_Flow() != NONE)) {
+		Limiter = new double [nVar];
+		Solution_Max = new double [nVar];
+		Solution_Min = new double [nVar];
+	}
 
 	/*--- Solution and old solution initialization ---*/
 	if (Incompressible) {
@@ -150,27 +153,34 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
 			TS_Source[iVar] = 0.0;
 	}
 
-
-	/*--- Allocate and initialize the primitive gradient variable (nVar+1) variables ---*/
-	if (AdjEuler || Viscous) {
-		Gradient_Primitive = new double* [nVar+1];
-		for (iVar = 0; iVar < nVar+1; iVar++)
-			Gradient_Primitive[iVar] = new double [nDim];
+	/*--- Allocate and initialize the primitive variables and gradients ---*/
+	if (Incompressible) {
+		/*--- Compressible flow, primitive variables nDim+2, (rho,vx,vy,vz,beta) ---*/
+		/*--- Gradients primitive variables nDim+1, (rho,vx,vy,vz) ---*/
+		Primitive = new double [nDim+2];
 	}
+	else {
+		/*--- Compressible flow, primitive variables nDim+5, (T,vx,vy,vz,P,rho,h,c) ---*/
+		Primitive = new double [nDim+5];
+	}
+
+	/*--- Gradients primitive variables nDim+2, (T,vx,vy,vz,P) ---*/
+	Gradient_Primitive = new double* [nDim+3];
+	for (iVar = 0; iVar < nDim+3; iVar++)
+		Gradient_Primitive[iVar] = new double [nDim];
 
 	/*--- Allocate auxiliary vector for free surface source term ---*/
 	if (FreeSurface) Grad_AuxVar = new double [nDim];
+	if (magnet) B_Field = new double [3];
 
 }
 
 CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_ndim, unsigned short val_nvar, CConfig *config) : CVariable(val_ndim, val_nvar, config) {
-	unsigned short iVar;
-	unsigned short iMesh, nMGSmooth = 0;
+	unsigned short iVar, iMesh, nMGSmooth = 0;
 
-	bool FreeSurface = (config->GetKind_Solver() == FREE_SURFACE_EULER);
-	bool AdjEuler = ((config->GetKind_Solver() == ADJ_EULER) || (config->GetKind_Solver() == ADJ_AEROACOUSTIC_EULER));
-	bool Viscous = ((config->GetKind_Solver() == NAVIER_STOKES) || (config->GetKind_Solver() == RANS) || 
-			(config->GetKind_Solver() == ADJ_NAVIER_STOKES) || (config->GetKind_Solver() == ADJ_NAVIER_STOKES) );
+	bool Incompressible = config->GetIncompressible();
+	bool FreeSurface = (config->GetKind_Solver() == FREE_SURFACE_EULER || config->GetKind_Solver() == FREE_SURFACE_NAVIER_STOKES);
+	bool magnet = (config->GetMagnetic_Force() == YES);
 
 	/*--- Allocate residual structures ---*/
 	Res_Conv = new double [nVar]; 
@@ -202,8 +212,14 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_ndim, un
 	}	
 
 	/*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
-	if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) Undivided_Laplacian = new double [nVar];
-	if (config->GetKind_ConvNumScheme_Flow() == SPACE_UPWIND) Limiter = new double [nVar];
+	if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) 
+		Undivided_Laplacian = new double [nVar];
+	if ((config->GetKind_ConvNumScheme_Flow() == SPACE_UPWIND) && 
+			(config->GetKind_SlopeLimit_Flow() != NONE)) {
+		Limiter = new double [nVar];
+		Solution_Max = new double [nVar];
+		Solution_Min = new double [nVar];
+	}
 
 	/*--- Solution initialization ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
@@ -230,15 +246,25 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_ndim, un
 			TS_Source[iVar] = 0.0;
 	}
 
-	/*--- Allocate and initializate the primitive gradient variable (nVar+1) variables ---*/
-	if (AdjEuler || Viscous) {
-		Gradient_Primitive = new double* [nVar+1];
-		for (iVar = 0; iVar < nVar+1; iVar++)
-			Gradient_Primitive[iVar] = new double [nDim];
+	/*--- Allocate and initialize the primitive variables and gradients ---*/
+	if (Incompressible) {
+		/*--- Compressible flow, primitive variables nDim+2, (rho,vx,vy,vz,beta) ---*/
+		/*--- Gradients primitive variables nDim+1, (rho,vx,vy,vz) ---*/
+		Primitive = new double [nDim+2];
 	}
+	else {
+		/*--- Compressible flow, primitive variables nDim+5, (T,vx,vy,vz,P,rho,h,c) ---*/
+		Primitive = new double [nDim+5];
+	}
+
+	/*--- Gradients primitive variables nDim+2, (T,vx,vy,vz,P,rho) ---*/
+	Gradient_Primitive = new double* [nDim+3];
+	for (iVar = 0; iVar < nDim+3; iVar++)
+		Gradient_Primitive[iVar] = new double [nDim];
 
 	/*--- Allocate auxiliar vector for free surface source term ---*/
 	if (FreeSurface) Grad_AuxVar = new double [nDim];
+	if (magnet) B_Field = new double [3];
 
 }
 
@@ -254,6 +280,7 @@ CEulerVariable::~CEulerVariable(void) {
 	delete [] Res_TruncError;
 
 	if (Grad_AuxVar != NULL) delete [] Grad_AuxVar;
+	if (B_Field != NULL) delete [] B_Field;
 
 	if (TS_Source != NULL) delete [] TS_Source;
 
@@ -261,14 +288,17 @@ CEulerVariable::~CEulerVariable(void) {
 		delete [] Res_Visc_RK[iVar];
 	delete [] Res_Visc_RK;
 
-	for (iVar = 0; iVar < nVar+1; iVar++)
+	delete [] Primitive;
+	for (iVar = 0; iVar < nDim+1; iVar++)
 		delete [] Gradient_Primitive[iVar];
 	delete [] Gradient_Primitive;
+
 }
 
 void CEulerVariable::SetGradient_PrimitiveZero(void) {
 	unsigned short iVar, iDim;
-	for (iVar = 0; iVar < nVar+1; iVar++)
+
+	for (iVar = 0; iVar < nDim+3; iVar++)
 		for (iDim = 0; iDim < nDim; iDim++)
 			Gradient_Primitive[iVar][iDim] = 0.0;
 }
@@ -290,9 +320,37 @@ double CEulerVariable::GetProjVelInc(double *val_vector) {
 
 	ProjVel = 0.0;
 	for (iDim = 0; iDim < nDim; iDim++)
-		ProjVel += (Solution[iDim+1]/Solution[nDim+1])*val_vector[iDim];
+		ProjVel += (Solution[iDim+1]/Primitive[0])*val_vector[iDim];
 
 	return ProjVel;
+}
+
+void CEulerVariable::SetPrimVar_Compressible(double Gamma, double Gas_Constant) {
+	unsigned short iDim;
+
+	SetVelocity2();									// Compute the modulus of the velocity.
+	SetPressure(Gamma);							// Requires Velocity2 computation.
+	SetSoundSpeed(Gamma);						// Requires pressure computation.
+	SetEnthalpy();									// Requires pressure computation.
+	SetTemperature(Gas_Constant);		// Requires pressure computation.
+
+	for (iDim = 0; iDim < nDim; iDim++) 
+		Primitive[iDim+1] = Solution[iDim+1] / Solution[0];
+	Primitive[nDim+2] = Solution[0];
+
+}
+
+void CEulerVariable::SetPrimVar_Incompressible(double Density_Inf, double ArtComp_Factor, bool freesurface) {
+	unsigned short iDim;
+
+	SetBetaInc2(ArtComp_Factor);	// Set the value of beta.
+	if (!freesurface) 
+		SetDensityInc(Density_Inf);	// Set the value of the density
+	SetVelocityInc2();						// Requires density computation.
+
+	for (iDim = 0; iDim < nDim; iDim++) 
+		Primitive[iDim+1] = Solution[iDim+1] / GetDensityInc();
+
 }
 
 CNSVariable::CNSVariable(void) : CEulerVariable() { }
@@ -336,11 +394,11 @@ CNSVariable::~CNSVariable(void) {
 	delete [] Res_Visc_RK;
 }
 
-void CNSVariable::SetLaminarViscosity(CConfig *config) {
+void CNSVariable::SetLaminarViscosity() {
 	double Temperature_Dim;
 
 	/*--- Calculate viscosity from a non-dim. Sutherland's Law ---*/
-	Temperature_Dim = Temperature*Temperature_Ref;
+	Temperature_Dim = Primitive[0]*Temperature_Ref;
 	LaminarViscosity = 1.853E-5*(pow(Temperature_Dim/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_Dim+110.3));
 	LaminarViscosity = LaminarViscosity/Viscosity_Ref;
 
@@ -349,10 +407,10 @@ void CNSVariable::SetLaminarViscosity(CConfig *config) {
 void CNSVariable::SetEddyViscosity(unsigned short val_Kind_Turb_Model, CVariable *Turb_Solution) {
 
 	switch (val_Kind_Turb_Model) {
-		case NONE :
-			EddyViscosity = 0.0;                     break;
-		case SA   : case SST  :
-			EddyViscosity = Turb_Solution->GetmuT(); break;
+	case NONE :
+		EddyViscosity = 0.0;                     break;
+	case SA   : case SST  :
+		EddyViscosity = Turb_Solution->GetmuT(); break;
 	}
 }
 
@@ -392,88 +450,112 @@ void CNSVariable::SetStrainMag(void) {
 	StrainMag = sqrt(2.0*StrainMag);
 }
 
-void CNSVariable::SetPressure(double Gamma, double *Coord, double turb_ke){
-	Pressure_Old = Pressure;
-	Pressure = (Gamma-1.0)*Solution[0]*(Solution[nVar-1]/Solution[0]-0.5*Velocity2 - turb_ke);
-	if (Pressure < 0.0) {
-		Pressure = Pressure_Old;
-		cout <<"Negative pressure at point: ";
-		for (unsigned short iDim = 0; iDim < nDim; iDim++) cout << Coord[iDim] <<" ";
-		cout << endl;
-		}
+void CNSVariable::SetPrimVar_Compressible(double Gamma, double Gas_Constant, double turb_ke) {
+	unsigned short iDim;
+
+	SetVelocity2();								 // Compute the modulus of the velocity.
+	SetPressure(Gamma, turb_ke);   // Requires Velocity2 computation.
+	SetSoundSpeed(Gamma);					 // Requires pressure computation.
+	SetEnthalpy();								 // Requires pressure computation.
+	SetTemperature(Gas_Constant);  // Requires pressure computation.
+	SetLaminarViscosity();				 // Requires temperature computation.
+
+	for (iDim = 0; iDim < nDim; iDim++)
+		Primitive[iDim+1] = Solution[iDim+1] / Solution[0];
+	Primitive[nDim+2] = Solution[0];
+
 }
 
-CTurbVariable::CTurbVariable(void) : CVariable() {}
+void CNSVariable::SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double ArtComp_Factor, double turb_ke, bool freesurface) {
+	unsigned short iDim;
 
-CTurbVariable::~CTurbVariable(void) {
-	if (Limiter != NULL) delete [] Limiter;
+
+	SetBetaInc2(ArtComp_Factor);	// Set the value of beta.
+	if (!freesurface) {
+		SetDensityInc(Density_Inf);							// Set the value of the density
+		SetLaminarViscosityInc(Viscosity_Inf);	// Set the value of the viscosity
+	}
+	SetVelocityInc2();						// Requires density computation.
+
+	for (iDim = 0; iDim < nDim; iDim++) 
+		Primitive[iDim+1] = Solution[iDim+1] / GetDensityInc();
+
 }
+
+CTurbVariable::CTurbVariable(void) : CVariable() { }
 
 CTurbVariable::CTurbVariable(unsigned short val_ndim, unsigned short val_nvar, CConfig *config)
-: CVariable(val_ndim, val_nvar, config) {
+: CVariable(val_ndim, val_nvar, config) { }
 
-	if (config->GetKind_SlopeLimit() != NONE) Limiter = new double [nVar];
-}
+CTurbVariable::~CTurbVariable(void) { }
 
-double CTurbVariable::GetmuT(){ return muT;}
+double CTurbVariable::GetmuT(){ return muT; }
 
-void CTurbVariable::SetmuT(double val_muT){ muT = val_muT;}
+void CTurbVariable::SetmuT(double val_muT){ muT = val_muT; }
 
-CTurbSAVariable::CTurbSAVariable(void) : CTurbVariable() {}
-
-CTurbSAVariable::~CTurbSAVariable(void) {
-	if (Limiter != NULL) delete [] Limiter;
-  if (TS_Source != NULL) delete [] TS_Source;
-}
+CTurbSAVariable::CTurbSAVariable(void) : CTurbVariable() { }
 
 CTurbSAVariable::CTurbSAVariable(double val_nu_tilde, double val_muT, unsigned short val_ndim, unsigned short val_nvar, CConfig *config)
-: CTurbVariable(val_ndim, val_nvar,config) {
-
+: CTurbVariable(val_ndim, val_nvar, config) {
+	unsigned short iVar;
+	
 	/*--- Initialization of S-A variables ---*/
 	Solution[0] = val_nu_tilde;		Solution_Old[0] = val_nu_tilde;
 
 	/*--- Initialization of the eddy viscosity ---*/
 	muT = val_muT;
-  
-  /*--- Allocate and initialize solution for the dual time strategy ---*/
+
+	/*--- Allocate and initialize solution for the dual time strategy ---*/
 	if ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-      (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
-			Solution_time_n[0]  = val_nu_tilde;
-			Solution_time_n1[0] = val_nu_tilde;
-  }
-  
-  /*--- Allocate space for the time spectral source terms ---*/
+			(config->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
+		Solution_time_n[0]  = val_nu_tilde;
+		Solution_time_n1[0] = val_nu_tilde;
+	}
+
+	/*--- Allocate space for the time spectral source terms ---*/
 	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
 		TS_Source = new double[nVar];
-		for (unsigned short iVar = 0; iVar < nVar; iVar++)
+		for (iVar = 0; iVar < nVar; iVar++)
 			TS_Source[iVar] = 0.0;
 	}
-  
+	
+	/*--- Allocate space for the limiter ---*/
+	if (config->GetKind_SlopeLimit_Turb() != NONE) {
+		Limiter = new double [nVar];
+		Solution_Max = new double [nVar];
+		Solution_Min = new double [nVar];
+	}
+
+}
+
+CTurbSAVariable::~CTurbSAVariable(void) {
+	if (Limiter != NULL) delete [] Limiter;
+	if (Solution_Max != NULL) delete [] Limiter;
+	if (Solution_Min != NULL) delete [] Limiter;
+	if (TS_Source != NULL) delete [] TS_Source;
 }
 
 CTransLMVariable::CTransLMVariable(void) : CTurbVariable() {}
 
-CTransLMVariable::~CTransLMVariable(void) {
-	if (Limiter != NULL) delete [] Limiter;
-}
-
-CTransLMVariable::CTransLMVariable(double val_nu_tilde, double val_intermittency, double val_REth, double val_muT, unsigned short val_ndim, unsigned short val_nvar, CConfig *config)
+CTransLMVariable::CTransLMVariable(double val_nu_tilde, double val_intermittency, double val_REth,  unsigned short val_ndim, unsigned short val_nvar, CConfig *config)
 : CTurbVariable(val_ndim, val_nvar,config) {
 
 	// Initialization of variables
-	Solution[0] = val_nu_tilde;		   Solution_Old[0] = val_nu_tilde;
-	Solution[1] = val_intermittency; Solution_Old[1] = val_intermittency;
-	Solution[2] = val_REth;          Solution_Old[2] = val_REth;
+	Solution[0] = val_intermittency; Solution_Old[0] = val_intermittency;
+	Solution[1] = val_REth;          Solution_Old[1] = val_REth;
 
-	// Initialization of eddy viscosity
-	muT = val_muT;
 }
 
-CTurbSSTVariable::CTurbSSTVariable(void) : CTurbVariable() {}
+CTransLMVariable::~CTransLMVariable(void) { }
 
-CTurbSSTVariable::~CTurbSSTVariable(void) {
-	if (Limiter != NULL) delete [] Limiter;
+void CTransLMVariable::SetGammaEff() {
+
+	/* -- Correction for separation-induced transition -- */
+	Solution[0] = max(Solution[0],gamma_sep);
+
 }
+
+CTurbSSTVariable::CTurbSSTVariable(void) : CTurbVariable() { }
 
 CTurbSSTVariable::CTurbSSTVariable(double val_kine, double val_omega, double val_muT, unsigned short val_ndim, unsigned short val_nvar,
 		double *constants, CConfig *config)
@@ -493,6 +575,8 @@ CTurbSSTVariable::CTurbSSTVariable(double val_kine, double val_omega, double val
 	// Initialization of eddy viscosity
 	muT = val_muT;
 }
+
+CTurbSSTVariable::~CTurbSSTVariable(void) { }
 
 void CTurbSSTVariable::SetBlendingFunc(double val_viscosity, double val_dist, double val_density){
 	unsigned short iDim;
@@ -534,8 +618,10 @@ CPlasmaVariable::CPlasmaVariable(void) : CVariable() { }
 CPlasmaVariable::CPlasmaVariable(double *val_density, double **val_velocity, double *val_energy, double *val_energy_vib,
 		unsigned short val_ndim, unsigned short val_nvar, CConfig *config) : CVariable(val_ndim, val_nvar, config) {
 
-	unsigned short iVar, loc = 0, iSpecies, iDim;
+	unsigned short iVar, loc = 0, iSpecies, iDim, iMesh, nMGSmooth = 0;
 	double rho, energy,	energy_vib, energy_el, enthalpy_formation, Gamma;	
+	bool viscous;
+	if ((config->GetKind_Solver() == PLASMA_NAVIER_STOKES) || (config->GetKind_Solver() == ADJ_PLASMA_NAVIER_STOKES)) viscous = true;
 
 	nMonatomics  = config->GetnMonatomics();
 	nDiatomics = config->GetnDiatomics();
@@ -555,13 +641,27 @@ CPlasmaVariable::CPlasmaVariable(double *val_density, double **val_velocity, dou
 		Res_Sour[iVar] = 0.0;
 		Res_TruncError[iVar] = 0.0;
 	}
-	Residual_Sum = new double [nVar]; Residual_Old = new double [nVar];
-	Res_Visc_RK = new double* [nVar];
-	for (iVar = 0; iVar < nVar; iVar++) 
-		Res_Visc_RK[iVar] = new double [nVar];
+	/*--- Only for residual smoothing (multigrid) ---*/
+	for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++)
+		nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
+
+	if (nMGSmooth > 0) {
+		Residual_Sum = new double [nVar];
+		Residual_Old = new double [nVar];
+	}
+
+	/*--- Only for Runge-Kutta computations ---*/
+	if (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_EXPLICIT) {
+		Res_Visc_RK = new double* [nVar];
+		for (iVar = 0; iVar < nVar; iVar++)
+			Res_Visc_RK[iVar] = new double [nVar];
+	}
 
 	/*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
-	if (config->GetKind_ConvNumScheme_Plasma() == SPACE_CENTERED) Undivided_Laplacian = new double [nVar];
+	if (config->GetKind_ConvNumScheme_Plasma() == SPACE_CENTERED) {
+		Undivided_Laplacian = new double [nVar];
+		Lambda = new double [nSpecies];
+	}
 	if (config->GetKind_ConvNumScheme_Plasma() == SPACE_UPWIND) Limiter = new double [nVar];
 
 	/*--- Solution and old solution initialization ---*/
@@ -585,43 +685,26 @@ CPlasmaVariable::CPlasmaVariable(double *val_density, double **val_velocity, dou
 
 	}
 
-	/*--- Allocate and initializate solution for dual time strategy ---*/
-	if ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
-		/*		Solution_time_n = new double [nVar];
-		 Solution_time_n1 = new double [nVar];
-
-		 Solution_time_n[0] = val_density;
-		 Solution_time_n1[0] = val_density;
-		 for (iDim = 0; iDim < nDim; iDim++) {
-		 Solution_time_n[iDim+1] = val_density*val_velocity[iDim];
-		 Solution_time_n1[iDim+1] = val_density*val_velocity[iDim];
-		 }
-		 Solution_time_n[nVar-1] = val_density*val_energy;
-		 Solution_time_n1[nVar-1] = val_density*val_energy;*/
-	}
-
-	/*--- Allocate and initialize the primitive gradient variable ---*/
-	Gradient_Primitive = new double* [nVar+nSpecies];
-	for (iVar = 0; iVar < nVar+nSpecies; iVar++)
-		Gradient_Primitive[iVar] = new double [nDim];
-
 	/*--- Allocate and initialize the local useful quantities ---*/
-	Pressure   	= new double [nSpecies];
-	Temperature	= new double [nSpecies];
-	Temperature_tr = new double [nSpecies];
-	Temperature_vib = new double [nSpecies];
-	SoundSpeed  = new double [nSpecies];
 	Velocity    = new double*[nSpecies];
 	Velocity2   = new double [nSpecies];
-	Enthalpy    = new double [nSpecies];
+	Pressure_Old = new double [nSpecies];
 	Max_Lambda_Inv_MultiSpecies = new double [nSpecies];
-	Max_Lambda_Visc_MultiSpecies = new double [nSpecies];
-	Lambda = new double [nSpecies];
 	Species_Delta_Time = new double [nSpecies];
 	Sensor_MultiSpecies = new double [nSpecies];
-	LaminarViscosity_MultiSpecies = new double [nSpecies];
-	EddyViscosity_MultiSpecies = new double [nSpecies];
-	ThermalCoeff = new double [nSpecies];
+
+	/*--- Compressible flow, primitive variables nDim+6, (T_tr,vx,vy,vz,T_vi, P, rho, h, c) ---*/
+	Primitive = new double*[nSpecies];
+	for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+		Primitive[iSpecies] = new double [nDim+6];
+
+	/*--- Allocate and initialize the primitive gradient variable nDim+2, (T_tr,vx,vy,vz,T_vi) ---*/
+	Gradient_Primitive = new double **[nSpecies];
+	for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+		Gradient_Primitive[iSpecies] = new double *[nDim+3];
+		for (iVar = 0; iVar < nDim+3; iVar++)
+			Gradient_Primitive[iSpecies][iVar] = new double [nDim];
+	}	
 
 	for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
 		if ( iSpecies < nDiatomics ) loc = (nDim+3)*iSpecies;
@@ -637,27 +720,52 @@ CPlasmaVariable::CPlasmaVariable(double *val_density, double **val_velocity, dou
 		}
 		Gamma = config->GetSpecies_Gamma(iSpecies);
 		enthalpy_formation = config->GetEnthalpy_Formation(iSpecies);
-		Pressure[iSpecies] 		= (Gamma - 1.0)*rho*(energy/rho - 0.5*Velocity2[iSpecies] - energy_vib/rho - energy_el - enthalpy_formation);
-		SoundSpeed[iSpecies] 	= sqrt(fabs(Gamma*(Gamma - 1.0)*(energy/rho - 0.5*Velocity2[iSpecies] - energy_vib/rho - energy_el - enthalpy_formation)));		
-		Enthalpy[iSpecies]		= energy + Pressure[iSpecies]/rho;
+		Primitive[iSpecies][nDim+2] 	= (Gamma - 1.0)*rho*(energy/rho - 0.5*Velocity2[iSpecies] - energy_vib/rho - energy_el - enthalpy_formation);
+		Primitive[iSpecies][nDim+5] 	= sqrt(fabs(Gamma*(Gamma - 1.0)*(energy/rho - 0.5*Velocity2[iSpecies] - energy_vib/rho - energy_el - enthalpy_formation)));		
+		Primitive[iSpecies][nDim+4]		= energy + Primitive[iSpecies][nDim+2]/rho;
 		Max_Lambda_Inv_MultiSpecies[iSpecies] = 0.0;
-		Max_Lambda_Visc_MultiSpecies[iSpecies] = 0.0;
-		Lambda[iSpecies] = 0.0;
-		LaminarViscosity_MultiSpecies[iSpecies] = 0.0;
-		EddyViscosity_MultiSpecies[iSpecies] = 0.0;
 		Species_Delta_Time[iSpecies] = 1.0;
 	}
 
-	Elec_Field = new double [nDim];
-	for(iDim =0; iDim < nDim; iDim ++)
+
+//	if (viscous) {
+		LaminarViscosity_MultiSpecies = new double [nSpecies];
+		EddyViscosity_MultiSpecies = new double [nSpecies];
+		ThermalCoeff = new double [nSpecies];
+    ThermalCoeff_vib = new double[nSpecies];
+		Max_Lambda_Visc_MultiSpecies = new double [nSpecies];
+
+		for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+			LaminarViscosity_MultiSpecies[iSpecies] = 0.0;
+			EddyViscosity_MultiSpecies[iSpecies] = 0.0;
+			ThermalCoeff[iSpecies] = 0.0;
+      ThermalCoeff_vib[iSpecies] = 0.0;
+			Max_Lambda_Visc_MultiSpecies[iSpecies] = 0.0;
+		}
+//	}
+
+
+//	if (config->GetElectricSolver()) {
+		Elec_Field = new double [nDim];
+		for(iDim =0; iDim < nDim; iDim ++)
+			Elec_Field[iDim] = 0.0;
+//	}
+
+
+	B_Field = new double [nDim];
+	for(iDim =0; iDim < nDim; iDim ++) {
 		Elec_Field[iDim] = 0.0;
+		B_Field[iDim] = 0.0;
+	}
+
 }
 
 CPlasmaVariable::CPlasmaVariable(double *val_solution, unsigned short val_ndim, unsigned short val_nvar, CConfig *config) : CVariable(val_ndim, val_nvar, config) {
 	unsigned short iVar, loc = 0, iSpecies, iDim;
 
 	double rho, energy, energy_vib, energy_el, Gamma, enthalpy_formation;
-
+	bool viscous;
+	if ((config->GetKind_Solver() == PLASMA_NAVIER_STOKES) || (config->GetKind_Solver() == ADJ_PLASMA_NAVIER_STOKES)) viscous = true;
 	nMonatomics  = config->GetnMonatomics();
 	nDiatomics = config->GetnDiatomics();
 	nSpecies = config->GetnSpecies();
@@ -681,7 +789,10 @@ CPlasmaVariable::CPlasmaVariable(double *val_solution, unsigned short val_ndim, 
 		Res_Visc_RK[iVar] = new double [nVar];
 
 	/*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
-	if (config->GetKind_ConvNumScheme_Plasma() == SPACE_CENTERED) Undivided_Laplacian = new double [nVar];
+	if (config->GetKind_ConvNumScheme_Plasma() == SPACE_CENTERED) {
+		Undivided_Laplacian = new double [nVar];
+		Lambda = new double [nSpecies];
+	}
 	if (config->GetKind_ConvNumScheme_Plasma() == SPACE_UPWIND) Limiter = new double [nVar];
 
 	/*--- Allocate truncation error for multigrid strategy ---*/
@@ -695,29 +806,26 @@ CPlasmaVariable::CPlasmaVariable(double *val_solution, unsigned short val_ndim, 
 		Solution[iVar] = val_solution[iVar];
 		Solution_Old[iVar] = val_solution[iVar];
 	}
-
-	/*--- Allocate and initializate the primitive gradient variable ---*/
-	Gradient_Primitive = new double* [nVar+nSpecies];
-	for (iVar = 0; iVar < nVar+nSpecies; iVar++)
-		Gradient_Primitive[iVar] = new double [nDim];
-
-	Pressure   	= new double [nSpecies];
-	Temperature	= new double [nSpecies];
-	Temperature_tr = new double [nSpecies];
-	Temperature_vib = new double [nSpecies];
-	SoundSpeed  = new double [nSpecies];
 	Velocity    = new double*[nSpecies];
 	Velocity2   = new double [nSpecies];
-	Enthalpy    = new double [nSpecies];
-	Max_Lambda_Inv_MultiSpecies = new double [nSpecies];
-	Max_Lambda_Visc_MultiSpecies = new double [nSpecies];
-	Lambda = new double [nSpecies];
+	Pressure_Old = new double [nSpecies];
+Max_Lambda_Inv_MultiSpecies = new double [nSpecies];
 	Species_Delta_Time = new double [nSpecies];
 	Sensor_MultiSpecies = new double [nSpecies];
 
-	LaminarViscosity_MultiSpecies = new double [nSpecies];
-	EddyViscosity_MultiSpecies = new double [nSpecies];
-	ThermalCoeff = new double [nSpecies];
+  
+	/*--- Compressible flow, primitive variables nDim+6, (T_tr,vx,vy,vz,T_vi, P, rho, h, c) ---*/
+	Primitive = new double*[nSpecies];
+	for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+		Primitive[iSpecies] = new double [nDim+6];
+
+	/*--- Allocate and initialize the primitive gradient variable nDim+2, (T_tr,vx,vy,vz,T_vi) ---*/
+	Gradient_Primitive = new double **[nSpecies];
+	for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+		Gradient_Primitive[iSpecies] = new double *[nDim+3];
+		for (iVar = 0; iVar < nDim+3; iVar++)
+			Gradient_Primitive[iSpecies][iVar] = new double [nDim];
+	}
 
 	for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
 		if ( iSpecies < nDiatomics ) loc = (nDim+3)*iSpecies;
@@ -735,23 +843,53 @@ CPlasmaVariable::CPlasmaVariable(double *val_solution, unsigned short val_ndim, 
 		}
 		Gamma = config->GetSpecies_Gamma(iSpecies);
 		enthalpy_formation = config->GetEnthalpy_Formation(iSpecies);
-		Pressure[iSpecies] 		= (Gamma - 1.0)*rho*(energy/rho - 0.5*Velocity2[iSpecies] - energy_vib/rho - energy_el - enthalpy_formation);
-		SoundSpeed[iSpecies] 	= sqrt(fabs(Gamma*(Gamma - 1.0)*(energy/rho - 0.5*Velocity2[iSpecies] - energy_vib/rho - energy_el - enthalpy_formation)));
-		Enthalpy[iSpecies]		= (energy - 0.5*rho*Velocity2[iSpecies] - energy_vib - rho*enthalpy_formation + Pressure[iSpecies])/rho  + enthalpy_formation;
+		Primitive[iSpecies][nDim+2] 		= (Gamma - 1.0)*rho*(energy/rho - 0.5*Velocity2[iSpecies] - energy_vib/rho - energy_el - enthalpy_formation);
+		Primitive[iSpecies][nDim+5] 	= sqrt(fabs(Gamma*(Gamma - 1.0)*(energy/rho - 0.5*Velocity2[iSpecies] - energy_vib/rho - energy_el - enthalpy_formation)));
+		Primitive[iSpecies][nDim+4]		= (energy - 0.5*rho*Velocity2[iSpecies] - energy_vib - rho*enthalpy_formation + Primitive[iSpecies][nDim+2])/rho  + enthalpy_formation;
 		Max_Lambda_Inv_MultiSpecies[iSpecies] = 0.0;
-		Max_Lambda_Visc_MultiSpecies[iSpecies] = 0.0;
-		Lambda[iSpecies] = 0.0;
-		LaminarViscosity_MultiSpecies[iSpecies] = 0.0;
-		EddyViscosity_MultiSpecies[iSpecies] = 0.0;
 		Species_Delta_Time[iSpecies] = 1.0;
 	}
-	Elec_Field = new double [nDim];
+	B_Field = new double [nDim];
 	for(iDim =0; iDim < nDim; iDim ++)
-		Elec_Field[iDim] = 0.0;
+		B_Field[iDim] = 0.0;
+
+
+//	if (viscous) {
+		LaminarViscosity_MultiSpecies = new double [nSpecies];
+		EddyViscosity_MultiSpecies    = new double [nSpecies];
+    ThermalCoeff                  = new double [nSpecies];
+    ThermalCoeff_vib              = new double [nSpecies];
+		Max_Lambda_Visc_MultiSpecies  = new double [nSpecies];
+
+		for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+			LaminarViscosity_MultiSpecies[iSpecies] = 0.0;
+			EddyViscosity_MultiSpecies[iSpecies]    = 0.0;
+			ThermalCoeff[iSpecies]                  = 0.0;
+      ThermalCoeff_vib[iSpecies]              = 0.0;
+			Max_Lambda_Visc_MultiSpecies[iSpecies]  = 0.0;
+
+		}
+
+//	}
+
+//	if (config->GetElectricSolver()) {
+		Elec_Field = new double [nDim];
+		for(iDim =0; iDim < nDim; iDim ++)
+			Elec_Field[iDim] = 0.0;
+//	}
+
 }
 
 CPlasmaVariable::~CPlasmaVariable(void) {
-	unsigned short iVar;
+	unsigned short iVar, iSpecies;
+
+	if (Elec_Field                    !=NULL ) delete [] Elec_Field;
+	if (LaminarViscosity_MultiSpecies !=NULL ) delete [] LaminarViscosity_MultiSpecies;
+	if (EddyViscosity_MultiSpecies    !=NULL ) delete [] EddyViscosity_MultiSpecies;
+	if (ThermalCoeff                  !=NULL ) delete [] ThermalCoeff;
+  if (ThermalCoeff_vib              !=NULL ) delete [] ThermalCoeff_vib;
+	if (Max_Lambda_Visc_MultiSpecies  !=NULL ) delete [] Max_Lambda_Visc_MultiSpecies;
+	if (Lambda                        !=NULL ) delete [] Lambda;
 
 	delete [] Res_Conv; delete [] Res_Visc; delete [] Res_Sour; delete [] Res_TruncError;
 	delete [] Residual_Sum; delete [] Residual_Old;
@@ -763,43 +901,79 @@ CPlasmaVariable::~CPlasmaVariable(void) {
 	delete [] Max_Lambda_Inv_MultiSpecies;
 	delete [] Max_Lambda_Visc_MultiSpecies;
 	delete [] Lambda;
+	delete [] Pressure_Old;
 
 	for (iVar = 0; iVar < nVar; iVar++)
 		delete [] Res_Visc_RK[iVar];
 	delete [] Res_Visc_RK;
 
-	for (iVar = 0; iVar < nVar+nSpecies; iVar++)
-		delete [] Gradient_Primitive[iVar];
+	for (iSpecies = 0; iSpecies< nSpecies; iSpecies++) {
+		for (iVar = 0; iVar < nDim+3; iVar++) {
+			delete [] Gradient_Primitive[iSpecies][iVar];
+		}
+		delete [] Gradient_Primitive[iSpecies];
+	}
 	delete [] Gradient_Primitive;
 
+	delete [] B_Field;
 
 	for (iVar = 0; iVar < nSpecies; iVar++) {
 		delete [] Velocity[iVar];
 	}
 	delete [] Velocity;
-	delete [] Pressure;
 	delete [] Velocity2;
-	delete [] Temperature;
-	delete [] Temperature_tr;
-	delete [] Temperature_vib;
-	delete [] SoundSpeed;
-	delete [] Enthalpy;
 
 	delete [] Max_Lambda_Inv_MultiSpecies;
-	delete [] Max_Lambda_Visc_MultiSpecies; 
+	delete [] Max_Lambda_Visc_MultiSpecies;
 	delete [] Lambda;
-	delete [] Species_Delta_Time; 
+	delete [] Species_Delta_Time;
 	delete [] Sensor_MultiSpecies;
-	delete [] LaminarViscosity_MultiSpecies;
-	delete [] EddyViscosity_MultiSpecies; 
-	delete [] ThermalCoeff;
+}
+
+void CPlasmaVariable::SetVel_ResConv_Zero(unsigned short iSpecies) {
+  unsigned short loc, iDim;
+  if ( iSpecies < nDiatomics ) loc = (nDim+3)*iSpecies;
+  else loc = (nDim+3)*nDiatomics + (nDim+2)*(iSpecies-nDiatomics);
+  
+	for (iDim = 0; iDim < nDim; iDim++)
+		Res_Conv[loc+iDim+1] = 0.0;
+}
+
+void CPlasmaVariable::SetVel_ResVisc_Zero(unsigned short iSpecies) {
+	unsigned short loc, iDim;
+  if ( iSpecies < nDiatomics ) loc = (nDim+3)*iSpecies;
+  else loc = (nDim+3)*nDiatomics + (nDim+2)*(iSpecies-nDiatomics);
+  
+	for (iDim = 0; iDim < nDim; iDim++)
+		Res_Visc[loc+iDim+1] = 0.0;
+}
+
+void CPlasmaVariable::SetVel_ResSour_Zero(unsigned short iSpecies) {
+  unsigned short loc, iDim;
+  if ( iSpecies < nDiatomics ) loc = (nDim+3)*iSpecies;
+  else loc = (nDim+3)*nDiatomics + (nDim+2)*(iSpecies-nDiatomics);
+	
+	for (iDim = 0; iDim < nDim; iDim++)
+		Res_Sour[loc+iDim+1] = 0.0;
+}
+
+void CPlasmaVariable::SetVelRes_TruncErrorZero(unsigned short iSpecies) {
+  unsigned short loc, iDim;
+  if ( iSpecies < nDiatomics ) loc = (nDim+3)*iSpecies;
+  else loc = (nDim+3)*nDiatomics + (nDim+2)*(iSpecies-nDiatomics);
+  
+	for (iDim = 0; iDim < nDim; iDim++)
+		Res_TruncError[loc+iDim+1] = 0.0;
 }
 
 void CPlasmaVariable::SetGradient_PrimitiveZero(void) {
-	unsigned short iVar, iDim;
-	for (iVar = 0; iVar < nVar+nSpecies; iVar++)
-		for (iDim = 0; iDim < nDim; iDim++)
-			Gradient_Primitive[iVar][iDim] = 0.0;
+	unsigned short iSpecies, iVar, iDim;
+
+	for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+		for (iVar = 0; iVar < nDim+3; iVar++)
+			for (iDim = 0; iDim < nDim; iDim++)
+				Gradient_Primitive[iSpecies][iVar][iDim] = 0.0;
+
 }
 
 double CPlasmaVariable::GetProjVel(double *val_vector, unsigned short val_Species) {
@@ -850,11 +1024,11 @@ void CPlasmaVariable::SetSoundSpeed(CConfig *config) {
 			Energy_vib = Solution[loc+nDim+2] / Density;
 		Gamma = config->GetSpecies_Gamma(iSpecies);
 		Enthalpy_formation = config->GetEnthalpy_Formation(iSpecies);
-		SoundSpeed[iSpecies] 	= sqrt(Gamma*(Gamma - 1.0)*(Energy - 0.5*Velocity2[iSpecies] - Energy_vib - Energy_el - Enthalpy_formation));
+		Primitive[iSpecies][nDim+5] = sqrt(Gamma*(Gamma - 1.0)*(Energy - 0.5*Velocity2[iSpecies] - Energy_vib - Energy_el - Enthalpy_formation));
 	}
 }
 
-void CPlasmaVariable::SetPressure(CConfig *config, double *Coord) {
+void CPlasmaVariable::SetPressure(CConfig *config) {
 
 	unsigned short loc = 0, iSpecies, iDim;
 	double Gamma, Enthalpy_formation;
@@ -862,6 +1036,7 @@ void CPlasmaVariable::SetPressure(CConfig *config, double *Coord) {
 	double Vel2;
 
 	for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++) {
+		Pressure_Old[iSpecies] = Primitive[iSpecies][nDim+2];
 		if ( iSpecies < nDiatomics ) loc = (nDim+3)*iSpecies;
 		else loc = (nDim+3)*nDiatomics + (nDim+2)*(iSpecies-nDiatomics);
 
@@ -876,23 +1051,21 @@ void CPlasmaVariable::SetPressure(CConfig *config, double *Coord) {
 			Vel2 += Solution[loc+iDim+1]/Solution[loc+0] * Solution[loc+iDim+1]/Solution[loc+0];
 		Gamma = config->GetSpecies_Gamma(iSpecies);
 		Enthalpy_formation = config->GetEnthalpy_Formation(iSpecies);
-		Pressure[iSpecies] = (Gamma-1.0) * Density * (Energy - 1.0/2.0*Vel2 - Enthalpy_formation - Energy_vib - Energy_el);
+		Primitive[iSpecies][nDim+2] = (Gamma-1.0) * Density * (Energy - 1.0/2.0*Vel2 - Enthalpy_formation - Energy_vib - Energy_el);
 
-		if (Pressure[iSpecies] < 0.0) {
+		if (Primitive[iSpecies][nDim+2] < 0.0) {
+			Primitive[iSpecies][nDim+2] = Pressure_Old[iSpecies];
 			cout << "Density = " << Density << endl;
 			cout << "energy = " << Energy << endl;
 			cout << "vel2  = " << Vel2 << endl;
-
-			cout << "Negative pressure of " << Pressure[iSpecies] << " at point: ";
-			for (unsigned short iDim = 0; iDim < nDim; iDim++) cout << Coord[iDim] <<" ";
-			cout << " in species " << iSpecies;
+			cout << "Negative pressure of " << Primitive[iSpecies][nDim+2] << " in species " << iSpecies;
 			cout << endl;
 		}
 
 	}
 }
 
-void CPlasmaVariable::SetTemperature_TR(CConfig *config, double *Coord) {
+void CPlasmaVariable::SetTemperature_tr(CConfig *config) {
 
 	unsigned short loc = 0, iSpecies, iDim;
 	double Gamma, Enthalpy_formation, Gas_constant;
@@ -901,7 +1074,7 @@ void CPlasmaVariable::SetTemperature_TR(CConfig *config, double *Coord) {
 
 	for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++) {
 		if ( iSpecies < nDiatomics ) loc = (nDim+3)*iSpecies;
-		else loc = (nDim+3)*nDiatomics + (nDim+2)*(iSpecies-nDiatomics);			
+		else loc = (nDim+3)*nDiatomics + (nDim+2)*(iSpecies-nDiatomics);
 		Density    = Solution[loc+0];
 		Energy     = Solution[loc+nDim+1] / Density;
 		Energy_vib = 0.0;
@@ -916,19 +1089,12 @@ void CPlasmaVariable::SetTemperature_TR(CConfig *config, double *Coord) {
 		Enthalpy_formation = config->GetEnthalpy_Formation(iSpecies);
 		Gas_constant = config->GetSpecies_Gas_Constant(iSpecies);
 
-		Temperature_tr[iSpecies] = (Gamma-1.0)/Gas_constant 
+		Primitive[iSpecies][0] = (Gamma-1.0)/Gas_constant
 				* (Energy - 1.0/2.0*Vel2 - Enthalpy_formation - Energy_vib - Energy_el);
-		Temperature[iSpecies] = Temperature_tr[iSpecies];
-		if (Temperature_tr[iSpecies] < 0.0) {
-			cout << "Negative translational-rotational temperature at point: ";
-			for (unsigned short iDim = 0; iDim < nDim; iDim++) cout << Coord[iDim] <<" ";
-			cout << " in species " << iSpecies;
-			cout << endl;
-		}
 	}
 }
 
-void CPlasmaVariable::SetTemperature_vib(CConfig *config, double *Coord) {
+void CPlasmaVariable::SetTemperature_vib(CConfig *config) {
 	//Based on energy in a harmonic oscillator.  Used by Candler (1988) and Scalabrin (2007).
 	unsigned short loc = 0, iSpecies;
 	double Density, Energy_vib, CharVibTemp, MolarMass;
@@ -941,29 +1107,15 @@ void CPlasmaVariable::SetTemperature_vib(CConfig *config, double *Coord) {
 
 		if (iSpecies < nDiatomics) {
 			Density    = Solution[loc+0];
-			Energy_vib = Solution[loc+nDim+2] / Density;		
+			Energy_vib = Solution[loc+nDim+2] / Density;
 			CharVibTemp = config->GetCharVibTemp(iSpecies);
 			MolarMass = config->GetMolar_Mass(iSpecies);
 
-			Temperature_vib[iSpecies] = CharVibTemp / log(CharVibTemp*UNIVERSAL_GAS_CONSTANT/(Energy_vib*MolarMass) + 1.0);			
-			if (Temperature_vib[iSpecies] < 0.0) {
-				cout << "Negative vibrational temperature at point: ";
-				for (unsigned short iDim = 0; iDim < nDim; iDim++) cout << Coord[iDim] <<" ";
-				cout << " in species " << iSpecies;
-				cout << endl;
-			}
-			if (Temperature_vib[iSpecies] != Temperature_vib[iSpecies]) {
-				cout << "NaN vibrational temperature at point: ";				
-				for (unsigned short iDim = 0; iDim < nDim; iDim++) cout << Coord[iDim] <<" ";
-				cout << " in species " << iSpecies;
-				cout << endl;
-				cout << "log term: " << CharVibTemp*UNIVERSAL_GAS_CONSTANT/(Energy_vib*MolarMass) + 1.0 << endl;
-				cout << "energy vib: " << Energy_vib << endl;
+			Primitive[iSpecies][nDim+1] = CharVibTemp / log(CharVibTemp*UNIVERSAL_GAS_CONSTANT/(Energy_vib*MolarMass) + 1.0);
 
-			}
 		}
 		else {
-			Temperature_vib[iSpecies] = 0.0;
+			Primitive[iSpecies][nDim+1] = 0.0;
 		}
 	}
 }
@@ -978,7 +1130,7 @@ void CPlasmaVariable::SetEnthalpy() {
 		else loc = (nDim+3)*nDiatomics + (nDim+2)*(iSpecies-nDiatomics);
 		Density    = Solution[loc+0];
 		Energy     = Solution[loc+nDim+1] / Density;
-		Enthalpy[iSpecies] = Energy + Pressure[iSpecies] / Density;
+		Primitive[iSpecies][nDim+4] = Energy + Primitive[iSpecies][nDim+2] / Density;
 	}
 }
 
@@ -994,48 +1146,162 @@ double CPlasmaVariable::GetVelocity(unsigned short val_dim,unsigned short val_Sp
 	return (rho_vel/rho);
 }
 
+void CPlasmaVariable::SetVelocity_Old(double *val_velocity, unsigned short iSpecies) {
+  unsigned short loc, iDim;
+  
+  if ( iSpecies < nDiatomics ) loc = (nDim+3)*iSpecies;
+  else loc = (nDim+3)*nDiatomics + (nDim+2)*(iSpecies-nDiatomics);
+  
+  for (iDim = 0; iDim < nDim; iDim++)
+    Solution_Old[loc+iDim+1] = val_velocity[iDim]*Solution[loc+0];
+}
+
+void CPlasmaVariable::SetPrimVar(CConfig *config) {
+	unsigned short iDim, iSpecies, loc;
+
+	bool viscous = (config->GetKind_ViscNumScheme_Plasma());
+
+	double Gamma, Enthalpy_formation, Gas_constant, Molar_mass, Char_temp_vib;
+	double density, energy_tot, energy_vib, energy_el;
+
+	/*--- Primitive variable vector: (Ttr, vx, vy, vz, Tvib, P, rho, h, c) ---*/
+
+	for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+		if ( iSpecies < nDiatomics ) {
+			loc = (nDim+3)*iSpecies;
+			energy_vib = Solution[loc+nDim+2]/Solution[loc];
+		}	else {
+			loc = (nDim+3)*nDiatomics + (nDim+2)*(iSpecies-nDiatomics);
+			energy_vib = 0.0;
+		}
+
+		/*--- Store useful quantities ---*/
+		density    = Solution[loc+0];
+		energy_tot = Solution[loc+nDim+1]/density;
+		energy_el  = 0.0;
+
+		Gamma = config->GetSpecies_Gamma(iSpecies);
+		Gas_constant = config->GetSpecies_Gas_Constant(iSpecies);
+		Enthalpy_formation = config->GetEnthalpy_Formation(iSpecies);
+		Molar_mass = config->GetMolar_Mass(iSpecies);
+
+		/*--- Velocity ---*/
+		Velocity2[iSpecies] = 0.0;
+		for (iDim = 0; iDim < nDim; iDim++) {
+			Velocity2[iSpecies] += Solution[loc+iDim+1]*Solution[loc+iDim+1]/(density*density);
+			Primitive[iSpecies][iDim+1] = Solution[loc+iDim+1] / Solution[loc+0];
+		}
+
+		/*--- Density ---*/
+		Primitive[iSpecies][nDim+3] = Solution[loc+0];
+
+		/*--- Sound speed ---*/
+		Primitive[iSpecies][nDim+5] = sqrt(Gamma*(Gamma - 1.0)*(energy_tot - 0.5*Velocity2[iSpecies] - energy_vib - energy_el - Enthalpy_formation));
+
+		/*--- Pressure ---*/
+		Primitive[iSpecies][nDim+2] = (Gamma-1.0) * density * (energy_tot - 0.5*Velocity2[iSpecies] - Enthalpy_formation - energy_vib - energy_el);
+
+		/*--- Translational-rotational temperature ---*/
+		Primitive[iSpecies][0] = (Gamma-1.0)/Gas_constant * (energy_tot - 0.5*Velocity2[iSpecies] - Enthalpy_formation - energy_vib - energy_el);
+
+		/*--- Vibrational temperature ---*/
+		if (iSpecies < nDiatomics) {
+			Char_temp_vib = config->GetCharVibTemp(iSpecies);
+			Primitive[iSpecies][nDim+1] = Char_temp_vib / log(Char_temp_vib*UNIVERSAL_GAS_CONSTANT/(energy_vib*Molar_mass) + 1.0);
+		} else {
+			Primitive[iSpecies][nDim+1] = 0.0;
+		}
+
+		/*--- Enthalpy ---*/
+		Primitive[iSpecies][nDim+4] = energy_tot + Primitive[iSpecies][nDim+2]/density;
+
+		/*    unsigned short iVar;
+    for (iVar = 0; iVar < nDim+6; iVar++)
+      cout << Primitive[iSpecies][iVar] << endl;
+    cin.get();*/
+	}
+
+	if(viscous) {
+		SetLaminarViscosity(config);
+		SetThermalCoeff(config);
+	}
+}
+
 void CPlasmaVariable::SetLaminarViscosity(CConfig *config) {
 	double Temperature_Dim;
 	unsigned short iSpecies;
 	double Temperature_Ref, Viscosity_Ref;
+  double As, Bs, Cs;
 
-  switch (config->GetKind_GasModel()) {
-    case ARGON:
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++) {
-        Temperature_Ref	= config->GetTemperature_Ref(iSpecies);
-        Viscosity_Ref = config->GetViscosity_Ref(iSpecies);
-        Temperature_Dim = Temperature[iSpecies]*Temperature_Ref;
-        LaminarViscosity_MultiSpecies[iSpecies] = 2.3E-5*(pow(Temperature_Dim/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_Dim+110.3));
-        LaminarViscosity_MultiSpecies[iSpecies] = LaminarViscosity_MultiSpecies[iSpecies]/Viscosity_Ref;
-      }
-      iSpecies = nSpecies - 1;
-      Temperature_Ref	= config->GetTemperature_Ref(iSpecies);
-      Viscosity_Ref = config->GetViscosity_Ref(iSpecies);
-      Temperature_Dim = Temperature[iSpecies]*Temperature_Ref;
-      LaminarViscosity_MultiSpecies[iSpecies] = 2.3E-5*1.3E-7*(pow(Temperature_Dim/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_Dim+110.3));
-      LaminarViscosity_MultiSpecies[iSpecies] = LaminarViscosity_MultiSpecies[iSpecies]/Viscosity_Ref;
-      //LaminarViscosity_MultiSpecies[iSpecies-1] = 0.0*LaminarViscosity_MultiSpecies[iSpecies]/Viscosity_Ref;
-      break;
+	switch (config->GetKind_GasModel()) {
+	case ARGON:
+		for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++) {
+			Temperature_Ref	= config->GetTemperature_Ref(iSpecies);
+			Viscosity_Ref = config->GetViscosity_Ref(iSpecies);
+			Temperature_Dim = Primitive[iSpecies][0]*Temperature_Ref;
+			LaminarViscosity_MultiSpecies[iSpecies] = 2.3E-5*(pow(Temperature_Dim/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_Dim+110.3));
+			LaminarViscosity_MultiSpecies[iSpecies] = LaminarViscosity_MultiSpecies[iSpecies]/Viscosity_Ref;
+		}
+		iSpecies = nSpecies - 1;
+		Temperature_Ref	= config->GetTemperature_Ref(iSpecies);
+		Viscosity_Ref = config->GetViscosity_Ref(iSpecies);
+		Temperature_Dim = Primitive[iSpecies][0]*Temperature_Ref;
+		LaminarViscosity_MultiSpecies[iSpecies] = 2.3E-5*1.3E-7*(pow(Temperature_Dim/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_Dim+110.3));
+		LaminarViscosity_MultiSpecies[iSpecies] = LaminarViscosity_MultiSpecies[iSpecies]/Viscosity_Ref;
+		//LaminarViscosity_MultiSpecies[iSpecies-1] = 0.0*LaminarViscosity_MultiSpecies[iSpecies]/Viscosity_Ref;
+		break;
+
+
+	case N2:
+		for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      /*--- Retrieve flow quantities ---*/
+      Temperature_Dim = Primitive[iSpecies][0];
       
-    case N2:
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        
-        
-        
-      }
-      break;
-  }
+      /*--- Calculate species viscosity Blottner et. al. (1971) model ---*/
+      As = config->GetBlottnerCoeff(iSpecies,0);
+      Bs = config->GetBlottnerCoeff(iSpecies,1);
+      Cs = config->GetBlottnerCoeff(iSpecies,2);
+      
+      /*--- Calculate the laminar viscosity using the correlation (returns in kg/m*s )---*/
+      LaminarViscosity_MultiSpecies[iSpecies] = 0.1*exp( (As*log(Temperature_Dim) + Bs) * log(Temperature_Dim) + Cs );
+		}
+		break;
+	}
 }
+
 
 void CPlasmaVariable ::SetThermalCoeff(CConfig *config) {
 	unsigned short iSpecies;
-	double Gamma, Gas_constant;
-
-	for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++) {
-		Gamma = config->GetSpecies_Gamma(iSpecies);
-		Gas_constant = config->GetSpecies_Gas_Constant(iSpecies);
-		ThermalCoeff[iSpecies] = Gamma * LaminarViscosity_MultiSpecies[iSpecies] / ( (Gamma-1.0)*Gas_constant*Prandtl_Lam );
-	}
+	double Gamma, Gas_constant, cv_t, cv_rot, cv_vib;
+  
+  if (config->GetKind_GasModel() == ARGON) {
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++) {
+      Gamma = config->GetSpecies_Gamma(iSpecies);
+      Gas_constant = config->GetSpecies_Gas_Constant(iSpecies);
+      ThermalCoeff[iSpecies] = Gamma * LaminarViscosity_MultiSpecies[iSpecies] *Gas_constant/ ( (Gamma-1.0)*Prandtl_Lam );
+    }
+  } else {
+    /*--- Set thermal conductivity on a species-by-species basis ---*/
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      Gas_constant = config->GetSpecies_Gas_Constant(iSpecies);
+      
+      /*--- Set the specific heat at constant volume based available energy storage modes in the species ---*/
+      if (iSpecies < nDiatomics) {
+        cv_t   = 3.0/2.0 * Gas_constant;
+        cv_rot = Gas_constant;
+        cv_vib = Gas_constant;
+      } else {
+        cv_t   = 3.0/2.0 * Gas_constant;
+        cv_rot = 0.0;
+        cv_vib = 0.0;
+      }
+      
+      /*--- Set the thermal conductivity according to Eucken's relation ---*/
+      ThermalCoeff[iSpecies] = LaminarViscosity_MultiSpecies[iSpecies]*(5.0/2.0*cv_t + cv_rot);
+      ThermalCoeff_vib[iSpecies] = LaminarViscosity_MultiSpecies[iSpecies]*cv_vib;
+    }
+  }
+  
 }
 
 CLevelSetVariable::CLevelSetVariable(void) : CVariable() {}
@@ -1052,7 +1318,9 @@ CLevelSetVariable::CLevelSetVariable(unsigned short val_ndim, unsigned short val
 		Res_Visc_RK[iVar] = new double [nVar];
 
 	/*--- Allocate limiter (upwind)---*/
-	if (config->GetKind_SlopeLimit() != NONE) Limiter = new double [nVar];
+	Limiter = new double [nVar];
+	Solution_Max = new double [nVar];
+	Solution_Min = new double [nVar];
 
 }
 
@@ -1068,12 +1336,14 @@ CLevelSetVariable::CLevelSetVariable(double val_levelset, unsigned short val_ndi
 		Res_Visc_RK[iVar] = new double [nVar];
 
 	/*--- Allocate limiter (upwind)---*/
-	if (config->GetKind_SlopeLimit() != NONE) Limiter = new double [nVar];
-
+	Limiter = new double [nVar];
+	Solution_Max = new double [nVar];
+	Solution_Min = new double [nVar];
+	
 	/*--- Solution and old solution initialization ---*/
 	Solution[0] = val_levelset;		Solution_Old[0] = val_levelset;
 
-	if ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) 
+	if ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
 			|| (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
 		Solution_time_n[0] = val_levelset;
 		Solution_time_n1[0] = val_levelset;
@@ -1095,7 +1365,7 @@ CLevelSetVariable::~CLevelSetVariable(void) {
 
 CWaveVariable::CWaveVariable(void) : CVariable() { }
 
-CWaveVariable::CWaveVariable(double *val_wave, unsigned short val_ndim, unsigned short val_nvar, CConfig *config) 
+CWaveVariable::CWaveVariable(double *val_wave, unsigned short val_ndim, unsigned short val_nvar, CConfig *config)
 : CVariable(val_ndim, val_nvar, config) {
 	unsigned short iVar;
 
@@ -1111,7 +1381,7 @@ CWaveVariable::CWaveVariable(double *val_wave, unsigned short val_ndim, unsigned
 
 	/*--- Initialization of variables ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
-		Solution[iVar] = val_wave[iVar]; 
+		Solution[iVar] = val_wave[iVar];
 		Solution_Old[iVar] = val_wave[iVar];
 		Solution_Direct[iVar] = 0.0;
 	}
@@ -1123,7 +1393,7 @@ CWaveVariable::CWaveVariable(double *val_wave, unsigned short val_ndim, unsigned
 
 }
 
-CWaveVariable::~CWaveVariable(void) { 
+CWaveVariable::~CWaveVariable(void) {
 
 	delete [] Res_Conv; delete [] Res_Visc; delete [] Res_Sour;
 	delete [] Residual_Sum; delete [] Residual_Old;
@@ -1132,7 +1402,7 @@ CWaveVariable::~CWaveVariable(void) {
 
 CFEAVariable::CFEAVariable(void) : CVariable() { }
 
-CFEAVariable::CFEAVariable(double *val_fea, unsigned short val_ndim, unsigned short val_nvar, CConfig *config) 
+CFEAVariable::CFEAVariable(double *val_fea, unsigned short val_ndim, unsigned short val_nvar, CConfig *config)
 : CVariable(val_ndim, val_nvar, config) {
 	unsigned short iVar;
 
@@ -1142,12 +1412,12 @@ CFEAVariable::CFEAVariable(double *val_fea, unsigned short val_ndim, unsigned sh
 
 	/*--- Initialization of variables ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
-		Solution[iVar] = val_fea[iVar]; 
+		Solution[iVar] = val_fea[iVar];
 		Solution_Old[iVar] = val_fea[iVar];
 	}
 }
 
-CFEAVariable::~CFEAVariable(void) { 
+CFEAVariable::~CFEAVariable(void) {
 
 	delete [] Res_Conv; delete [] Res_Visc; delete [] Res_Sour;
 	delete [] Residual_Sum; delete [] Residual_Old;
@@ -1156,33 +1426,33 @@ CFEAVariable::~CFEAVariable(void) {
 
 CHeatVariable::CHeatVariable(void) : CVariable() { }
 
-CHeatVariable::CHeatVariable(double *val_heat, unsigned short val_ndim, unsigned short val_nvar, CConfig *config) 
+CHeatVariable::CHeatVariable(double *val_heat, unsigned short val_ndim, unsigned short val_nvar, CConfig *config)
 : CVariable(val_ndim, val_nvar, config) {
 	unsigned short iVar;
-	
+
 	/*--- Allocate residual structures ---*/
 	Res_Conv = new double [nVar]; Res_Visc = new double [nVar]; Res_Sour = new double [nVar];
 	Residual_Sum = new double [nVar]; Residual_Old = new double [nVar];
-	
+
 	/*--- Allocate direct solution container for adjoint problem ---*/
 	Solution_Direct = new double[nVar];
-	
+
 	/*--- Allocate aux gradient vector ---*/
 	Grad_AuxVar = new double [nDim];
-	
+
 	/*--- Initialization of variables ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
-		Solution[iVar] = val_heat[iVar]; 
+		Solution[iVar] = val_heat[iVar];
 		Solution_Old[iVar] = val_heat[iVar];
 		Solution_Direct[iVar] = 0.0;
 	}
-	
+
 }
 
-CHeatVariable::~CHeatVariable(void) { 
-	
+CHeatVariable::~CHeatVariable(void) {
+
 	delete [] Res_Conv; delete [] Res_Visc; delete [] Res_Sour;
 	delete [] Residual_Sum; delete [] Residual_Old;
-	
+
 }
 

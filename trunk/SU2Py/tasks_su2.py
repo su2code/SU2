@@ -3,7 +3,7 @@
 ## \file tasks_SU2.py
 #  \brief Python classes and functions for evaluating designs in SU2
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.
+#  \version 2.0.1
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -30,14 +30,12 @@
 
 import os, sys, shutil, glob, copy
 import numpy
-import libSU2
+import libSU2, libSU2_run
 from tasks_general      import General_Task
 from finite_differences import finite_differences
 from mesh_adaptation    import mesh_adaptation
 from filter_adjoint     import process_surface_adjoint
-
-SU2_RUN = os.environ['SU2_RUN'] 
-sys.path.append( SU2_RUN )
+from merge_solution     import merge_solution
 
 # TODO:
 #  mesh decomposition runs at every direct and adjoint solution, fix
@@ -68,6 +66,8 @@ def eval_f( Variables, The_Project ):
     sys.stdout.flush()
 
     Value = design_new['OBJECTIVES'][Objective][0][0] * Scale * Sign
+    
+    print '\n%s: %.6f' % (Objective,design_new['OBJECTIVES'][Objective][0][0])
     
     return Value
 
@@ -112,7 +112,7 @@ def eval_ceq( Variables, The_Project ):
     Con_Definition = The_Project.config_current['OPT_CONSTR']['EQUALITY']
     
     if not Con_Definition:
-        return numpy.zeros(0)
+        return numpy.zeros([0,1])
     
     Constraints = Con_Definition.keys()
     Scales      = [ x['SCALE'] for x in Con_Definition.values() ]
@@ -180,7 +180,7 @@ def eval_cieq( Variables, The_Project ):
     Con_Definition = The_Project.config_current['OPT_CONSTR']['INEQUALITY']
     
     if not Con_Definition:
-        return numpy.zeros(0)    
+        return numpy.zeros([0,1])    
     
     Constraints = Con_Definition.keys()
     Scales      = [ x['SCALE'] for x in Con_Definition.values() ]
@@ -378,14 +378,15 @@ class Decomp(General_Task):
     def run( self, config_delta, assets_super, design_super ):
         ''' Run SU2_DDC '''
         
-        # setup run command
-        run_Command = "SU2_DDC " + self.assets_current['config']
+        config_name = self.assets_current['config']
+        partitions  = self.config_current['NUMBER_PART']
+        log_file    = self.log_filename
+        if self.config_current['CONSOLE'] == 'VERBOSE' : 
+            log_file = None
         
-        if self.config_current['CONSOLE'] in ['QUIET','CONCISE']:
-            run_Command = run_Command + ' >> ' + self.log_filename
-            
-        # run command TODO: error checking
-        os.system(run_Command)
+        # run command 
+        with libSU2.redirect_output(log_file,log_file):
+            libSU2_run.SU2_DDC( config_name , partitions )
         
         # no design to return
         design_return = {}
@@ -405,6 +406,14 @@ class Decomp(General_Task):
         del self.assets_pull['mesh']        
         
         return assets_push    
+    
+    # ----------------------------------------------------------------------
+    #  CLEANUP DECOMPOSITION TASK
+    # ----------------------------------------------------------------------    
+    def cleanup( self, config_delta, assets_super, design_super ):
+        # use general task's cleanup
+        General_Task.cleanup(self,config_delta,assets_super,design_super)
+        return
     
     # -------------------------------------------------------------------
     #  DECOMPOSITION TASK REPRESENTATION
@@ -494,20 +503,13 @@ class Deform(General_Task):
         
         config_name = self.assets_current['config']
         partitions  = self.config_current['NUMBER_PART']
+        log_file    = self.log_filename
+        if self.config_current['CONSOLE'] == 'VERBOSE' : 
+            log_file = None
         
-        # prepare command
-        #if partitions == 0:
-        run_Command = "SU2_MDC " + config_name
-        #else:
-            #run_Command = os.path.join( SU2_RUN , run_command )
-            #run_Command = "mpirun -np %i %s" % ( partitions , run_Command )                
-        
-        # log file
-        if self.config_current['CONSOLE'] in ['QUIET','CONCISE']:
-            run_Command = run_Command + ' >> ' + self.log_filename  
-            
         # run command 
-        os.system(run_Command)
+        with libSU2.redirect_output(log_file,log_file):
+            libSU2_run.SU2_MDC( config_name , 1 )        
         
         # no design to return
         design_return = {}
@@ -548,6 +550,14 @@ class Deform(General_Task):
         del self.assets_pull['mesh']              
         
         return assets_push, config_return
+    
+    # ----------------------------------------------------------------------
+    #  CLEANUP DEFORMATION TASK
+    # ----------------------------------------------------------------------    
+    def cleanup( self, config_delta, assets_super, design_super ):
+        # use general task's cleanup
+        General_Task.cleanup(self,config_delta,assets_super,design_super)
+        return    
     
     # -------------------------------------------------------------------
     #  DEFORMATION TASK REPRESENTATION
@@ -664,16 +674,16 @@ class Adapt(General_Task):
         config_name = self.assets_current['config']
         partitions  = self.config_current['NUMBER_PART']
         cycles      = self.config_current['ADAPT_CYCLES']
+        log_file    = self.log_filename
+        if self.config_current['CONSOLE'] == 'VERBOSE' : 
+            log_file = None
         
-        # prepare command
-        run_Command = 'mesh_adaptation.py -f %s -p %i -c %i' % (config_name,partitions,cycles)
-            
-        if self.config_current['CONSOLE'] in ['QUIET','CONCISE']:
-            run_Command = run_Command + ' >> ' + self.log_filename                  
-            
         # run command 
-        os.system(run_Command)
-                    
+        with libSU2.redirect_output(log_file,log_file):
+            mesh_adaptation( config_name               ,
+                             partitions   = partitions , 
+                             cycles       = cycles      )
+
         # no design to return
         design_return = {}
         
@@ -749,6 +759,14 @@ class Adapt(General_Task):
         
         return assets_push, config_return  
     
+    # ----------------------------------------------------------------------
+    #  CLEANUP ADAPTATION TASK
+    # ----------------------------------------------------------------------    
+    def cleanup( self, config_delta, assets_super, design_super ):
+        # use general task's cleanup
+        #General_Task.cleanup(self,config_delta,assets_super,design_super)
+        return    
+    
     # -------------------------------------------------------------------
     #  MESH ADAPTATION TASK REPRESENTATION
     # -------------------------------------------------------------------
@@ -775,6 +793,9 @@ class Direct(General_Task):
         self.config_current.update(config_delta)               
 
         self.assets_pull  = ['config','mesh','direct']
+        
+        if self.config_current.get('EQUIV_AREA','NO')=='YES':
+            self.assets_pull.append('targetea')        
         
         self.config_check = []
                 
@@ -880,28 +901,16 @@ class Direct(General_Task):
         history_filename = self.config_current['CONV_FILENAME']
         output_format    = self.config_current['OUTPUT_FORMAT']
         plotfile_ext     = libSU2.get_ExtensionName(output_format)
-        special_cases    = libSU2.get_SpecialCases(self.config_current)            
-        
-        # prepare command
-        if partitions == 0:
-            run_Decomp = ""
-            run_Direct = "SU2_CFD %s" % config_name
-            run_Merge  = ""
-        else:
-            run_Decomp = "SU2_DDC %s" % config_name
-            run_Direct = os.path.join( SU2_RUN , "SU2_CFD " + config_name )
-            run_Direct = "mpirun -np %i %s" % ( partitions , run_Direct )   
-            run_Merge  = "merge_solution.py -f %s -p %i" % ( config_name , partitions )
-        
-        if self.config_current['CONSOLE'] in ['QUIET','CONCISE']:
-            run_Decomp = run_Decomp + ' >> ' + self.log_filename  
-            run_Direct = run_Direct + ' >> ' + self.log_filename  
-            run_Merge  = run_Merge  + ' >> ' + self.log_filename  
+        special_cases    = libSU2.get_SpecialCases(self.config_current)   
+        log_file    = self.log_filename
+        if self.config_current['CONSOLE'] == 'VERBOSE' : 
+            log_file = None
             
         # run commands
-        if partitions > 1: os.system(run_Decomp)
-        os.system(run_Direct)
-        if partitions > 1: os.system(run_Merge)
+        with libSU2.redirect_output(log_file,log_file):
+            libSU2_run.SU2_DDC( config_name, partitions )
+            libSU2_run.SU2_CFD( config_name, partitions )
+            if partitions > 1: merge_solution( config_name, partitions )
         
         # get objective function values, update design
         ObjFun_Dict = libSU2.get_ObjFunVals( history_filename+plotfile_ext , special_cases )
@@ -925,8 +934,9 @@ class Direct(General_Task):
         assets_push   = {}
         config_return = {}
         
-        restart_filename  = self.config_current['RESTART_FLOW_FILENAME']
-        solution_filename = self.config_current['SOLUTION_FLOW_FILENAME']
+        restart_filename   = self.config_current['RESTART_FLOW_FILENAME']
+        solution_filename  = self.config_current['SOLUTION_FLOW_FILENAME']
+        nearfield_filename = 'WeightNF.dat' 
         
         # remove pathing
         solution_filename = os.path.split(solution_filename)[-1]
@@ -942,6 +952,10 @@ class Direct(General_Task):
         if 'ADAPT' in self.config_current['TASKS']:
             assets_push['mesh'] = self.assets_current['mesh']
             config_return['MESH_FILENAME'] = self.assets_current['mesh']
+
+        # equivalent area files
+        if self.config_current.get('EQUIV_AREA','NO') == 'YES':
+            assets_push['weightnf'] = nearfield_filename
             
         # update current assets
         self.assets_current.update( assets_push )
@@ -951,6 +965,14 @@ class Direct(General_Task):
         del self.assets_pull['direct']
         
         return assets_push, config_return
+    
+    # ----------------------------------------------------------------------
+    #  CLEANUP DIRECT SOLUTION TASK
+    # ----------------------------------------------------------------------    
+    def cleanup( self, config_delta, assets_super, design_super ):
+        # use general task's cleanup
+        General_Task.cleanup(self,config_delta,assets_super,design_super)
+        return    
     
     # -------------------------------------------------------------------
     #  DIRECT SOLUTION TASK REPRESENTATION
@@ -981,7 +1003,7 @@ class Multiple_Cont_Adjoint(General_Task):
         self.config_current = libSU2.Get_ConfigParams( assets_super['config'] )
         self.config_current.update(config_delta)          
         
-        self.assets_pull  = ['config','mesh','direct','adjoint'] 
+        self.assets_pull  = ['config','mesh','direct','adjoint','weightnf'] 
         
         self.config_check = ['GRADIENTS']
         
@@ -1135,6 +1157,19 @@ class Multiple_Cont_Adjoint(General_Task):
         return assets_push, config_return  
     
     # ----------------------------------------------------------------------
+    #  CLEANUP MULTIPLE CONTINUOUS ADJOINTS TASK
+    # ----------------------------------------------------------------------    
+    def cleanup( self, config_delta, assets_super, design_super ):
+        # use general task's cleanup
+        if self.config_current['OUTPUT_WEIGHT']=='COMPRESS':
+            name_pat = os.path.join(self.folder_self,'*.cfg')
+            names = glob.glob(name_pat)
+            for this_name in names: os.remove(this_name)
+        else:
+            General_Task.cleanup(self,config_delta,assets_super,design_super)
+        return  
+    
+    # ----------------------------------------------------------------------
     #  MULTIPLE CONTINUOUS ADJOINTS TASK REPRESENATION
     # ----------------------------------------------------------------------    
     def __repr__ (self):
@@ -1163,7 +1198,7 @@ class Cont_Adjoint(General_Task):
         objective = self.config_current['ADJ_OBJFUNC']
         prefix    = libSU2.get_AdjointPrefix(objective)
         
-        self.assets_pull  = ['config','mesh','direct','adjoint']
+        self.assets_pull  = ['config','mesh','direct','adjoint','weightnf']
         
         self.config_check = ['ADJ_OBJFUNC']
         
@@ -1275,56 +1310,45 @@ class Cont_Adjoint(General_Task):
     def run( self, config_delta, assets_super, design_super ):
         ''' Run MDC '''
         
+        # adjoint configuration
         config_name        = self.assets_current['config']
         partitions         = self.config_current['NUMBER_PART']
         gradient_filename  = self.config_current['GRAD_OBJFUNC_FILENAME']
         objective_function = self.config_current['ADJ_OBJFUNC']
+        log_file    = self.log_filename
+        if self.config_current['CONSOLE'] == 'VERBOSE' : 
+            log_file = None        
         
-        # moothing configuration
+        # smoothing configuration
         smoothing_type     = self.config_current.get('ADJOINT_SMOOTHING','NONE')
         surface_filename   = self.config_current['SURFACE_ADJ_FILENAME']
         filtered_filename  = surface_filename + '_filtered'
         marker_smooth      = 'airfoil'
         chord_length       = 1.0
-                
-        # prepare command
-        if partitions == 0:
-            run_Decomp  = ""
-            run_Adjoint = "SU2_CFD " + config_name
-            run_Project = "SU2_GPC " + config_name
-            run_Merge   = ""
-        else:
-            run_Decomp  = "SU2_DDC %s" % config_name
-            run_Adjoint = os.path.join( SU2_RUN , "SU2_CFD " + config_name )
-            run_Project = os.path.join( SU2_RUN , "SU2_GPC " + config_name )
-            run_Adjoint = "mpirun -np %i %s" % ( partitions , run_Adjoint )
-            run_Project = "mpirun -np %i %s" % ( partitions , run_Project )
-            run_Merge   = "merge_solution.py -f %s -p %i" % ( config_name , partitions )
-        #: if partitions
-        run_Filter = 'filter_adjoint.py -f %s -t %s -m %s -c %f' % (config_name,smoothing_type,marker_smooth,chord_length)
-        
-        if self.config_current['CONSOLE'] in ['QUIET','CONCISE']:
-            run_Decomp  = run_Decomp  + ' >> ' + self.log_filename  
-            run_Adjoint = run_Adjoint + ' >> ' + self.log_filename  
-            run_Project = run_Project + ' >> ' + self.log_filename  
-            run_Merge   = run_Merge   + ' >> ' + self.log_filename  
-            run_Filter  = run_Filter  + ' >> ' + self.log_filename  
             
-        # run solution
-        if partitions > 1: os.system( run_Decomp )
-        os.system(run_Adjoint)
-        if partitions > 1: os.system( run_Merge )
+        # run continuous adjoint problem
+        with libSU2.redirect_output(log_file,log_file):
+            
+            # run adjoint solution
+            if partitions > 1: libSU2_run.SU2_DDC(config_name,partitions)
+            libSU2_run.SU2_CFD(config_name,partitions)
+            if partitions > 1: merge_solution( config_name, partitions )
+            
+            # run filtering
+            if not smoothing_type == 'NONE':
+                process_surface_adjoint( config_name                   ,
+                                         filter_type  = smoothing_type ,
+                                         marker_name  = marker_smooth  ,
+                                         chord_length = chord_length    )            
+                config_update = { 'SURFACE_ADJ_FILENAME' : filtered_filename }
+                self.config_current.update(config_update)
+                config_delta.update(config_update)
+                libSU2.Set_ConfigParams(config_name,config_update)
+            
+            # run gradient projection
+            libSU2_run.SU2_GPC(config_name,partitions)
         
-        # run filtering
-        if not smoothing_type == 'NONE':
-            os.system( run_Filter )
-            config_update = { 'SURFACE_ADJ_FILENAME' : filtered_filename }
-            self.config_current.update(config_update)
-            config_delta.update(config_update)
-            libSU2.Set_ConfigParams(config_name,config_update)
-        
-        # run gradient projection
-        os.system(run_Project)
+        #: with redirect_output()
                          
         # get gradient values, update design
         gradients     = libSU2.get_GradientVals(gradient_filename)  
@@ -1420,6 +1444,14 @@ class Cont_Adjoint(General_Task):
         Grad_File.close()             
         
         return
+    
+    # ----------------------------------------------------------------------
+    #  CLEANUP ADJOINT SOLUTION TASK
+    # ----------------------------------------------------------------------    
+    def cleanup( self, config_delta, assets_super, design_super ):
+        # use general task's cleanup
+        General_Task.cleanup(self,config_delta,assets_super,design_super)
+        return        
     
     # -------------------------------------------------------------------
     #  DIRECT CONTINUOUS ADJOINT TASK REPRESENTATION
@@ -1524,19 +1556,16 @@ class Finite_Diff(General_Task):
         config_name   = self.assets_current['config']
         partitions    = self.config_current['NUMBER_PART']
         fin_diff_step = self.config_current.get('FIN_DIFF_STEP') # defaults 1e-4
-        
-        # console output
-        if self.config_current['CONSOLE'] in ['CONCISE','QUIET']:
-            logfile = self.log_filename
-        else:
-            logfile = None
+        log_file    = self.log_filename
+        if self.config_current['CONSOLE'] == 'VERBOSE' : 
+            log_file = None
             
-        # run finite differences
-        ObjFun_Dict,Gradient_Dict = finite_differences( filename   = config_name   ,
-                                                        partitions = partitions    ,
-                                                        step       = fin_diff_step ,
-                                                        output     = False         ,
-                                                        logfile    = logfile        )            
+        # run commands
+        with libSU2.redirect_output(log_file,log_file):        
+            ObjFun_Dict,Gradient_Dict = finite_differences( filename   = config_name   ,
+                                                            partitions = partitions    ,
+                                                            step       = fin_diff_step ,
+                                                            output     = False          )           
         # save design data
         ### self.design_current['OBJECTIVES'] = ObjFun_Dict
         self.design_current['GRADIENTS']  = Gradient_Dict
@@ -1573,6 +1602,14 @@ class Finite_Diff(General_Task):
         del self.assets_pull['direct']        
         
         return assets_push, config_return
+    
+    # ----------------------------------------------------------------------
+    #  CLEANUP FINITE DIFFERENCING TASK
+    # ----------------------------------------------------------------------    
+    def cleanup( self, config_delta, assets_super, design_super ):
+        # use general task's cleanup
+        General_Task.cleanup(self,config_delta,assets_super,design_super)
+        return       
     
     # -------------------------------------------------------------------
     #  FINITE DIFFERENCING TASK REPRESENTATION

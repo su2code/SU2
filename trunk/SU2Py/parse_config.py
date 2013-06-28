@@ -3,7 +3,7 @@
 ## \file parse_config.py
 #  \brief Builds a worksheet of all SU2.cpp options
 #  \author Aniket Aranake, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.
+#  \version 2.0.1
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -244,4 +244,4 @@ if __name__=="__main__":
   # Dump parsed data to screen
   print_all(option_list)
 
-  make_spreadsheet('out.xls',option_list)
+  #make_spreadsheet('out.xls',option_list)

@@ -3,7 +3,7 @@
 ## \file parallel_computation.py
 #  \brief Python script for doing the parallel computation using SU2_CFD.
 #  \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.
+#  \version 2.0.1
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -21,11 +21,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os, time, sys, libSU2, shutil
+import os, time, sys, shutil, libSU2, libSU2_run
 from optparse import OptionParser
-
-SU2_RUN = os.environ['SU2_RUN'] 
-sys.path.append( SU2_RUN ) 
+from merge_solution import merge_solution
+from merge_unsteady import merge_unsteady
 
 # -------------------------------------------------------------------
 #  Main 
@@ -35,13 +34,13 @@ def main():
     
     # Command Line Options
     parser = OptionParser()
-    parser.add_option("-f", "--file",       dest="filename",
+    parser.add_option("-f", "--file", dest="filename",
                       help="read config from FILE", metavar="FILE")
     parser.add_option("-p", "--partitions", dest="partitions", default=2,
                       help="number of PARTITIONS", metavar="PARTITIONS")
-    parser.add_option("-d", "--divide_grid",     dest="divide_grid",     default="True",
+    parser.add_option("-d", "--divide_grid", dest="divide_grid", default="True",
                       help="DIVIDE_GRID the numerical grid", metavar="DIVIDE_GRID")
-    parser.add_option("-o", "--output",     dest="output",     default="True",
+    parser.add_option("-o", "--output", dest="output", default="True",
                       help="OUTPUT the domain solution (.plt)", metavar="OUTPUT")
     
     (options, args)=parser.parse_args()    
@@ -60,11 +59,10 @@ def main():
 #  Parallel Computation Function
 # -------------------------------------------------------------------
 
-def parallel_computation( filename                       ,
-                          partitions           = 2       , 
-                          divide_grid          = "True"  ,
-                          output               = "True"  ,
-                          logfile              = None     ):
+def parallel_computation( filename              ,
+                          partitions  = 2       , 
+                          divide_grid = "True"  ,
+                          output      = "True"   ):
 
     # General and default parameters
     Config_INP_filename = filename
@@ -85,6 +83,7 @@ def parallel_computation( filename                       ,
     
     special_cases = libSU2.get_SpecialCases(params_get)
     unsteady_simulation = 'WRT_UNSTEADY' in special_cases
+    time_spectral = 'TIME_SPECTRAL' in special_cases
 
     # Set parameters
     params_set = { 'NUMBER_PART' : partitions }
@@ -96,21 +95,6 @@ def parallel_computation( filename                       ,
         adj_objfunc = params_get['ADJ_OBJFUNC']
         adj_prefix   = libSU2.get_AdjointPrefix(adj_objfunc)
         
-    # compose function call format and inputs
-    run_SU2_DDC = os.path.join( SU2_RUN , "SU2_DDC " + Config_DDC_filename )
-    run_SU2_CFD = os.path.join( SU2_RUN , "SU2_CFD " + Config_CFD_filename )
-    run_SU2_DDC = "mpirun -np  1 %s" % (run_SU2_DDC)
-    run_SU2_CFD = "mpirun -np %i %s" % (partitions, run_SU2_CFD)
-    if unsteady_simulation:
-        run_merge_solution = "merge_unsteady.py -p %s -f %s -b %s -e %s"  % (partitions, Config_CFD_filename, 0, nExtIter) 
-    else:
-        run_merge_solution = "merge_solution.py -p %s -f %s -o %s"        % (partitions, Config_CFD_filename, output)
-    
-    # add log command if desired
-    if not logfile is None:
-        run_SU2_DDC         = run_SU2_DDC         + ' >> ' + logfile
-        run_SU2_CFD         = run_SU2_CFD         + ' >> ' + logfile
-        run_merge_solution  = run_merge_solution  + ' >> ' + logfile        
         
     # --------------------------------------------------------------
     #  SETUP PARALLEL JOB  
@@ -119,7 +103,7 @@ def parallel_computation( filename                       ,
         
         # Just in case domain decomposition is needed
         if divide_grid != "False":
-            os.system ( run_SU2_DDC ) # >> log
+            libSU2_run.SU2_DDC(Config_DDC_filename,partitions)
             
             
     # --------------------------------------------------------------
@@ -127,9 +111,9 @@ def parallel_computation( filename                       ,
     # --------------------------------------------------------------    
       
     # MPI Call, Run the Job
-    os.system ( run_SU2_CFD ) # >> log      
-      
-      
+    libSU2_run.SU2_CFD(Config_CFD_filename,partitions)
+    
+    
     # --------------------------------------------------------------
     #  CLEANUP JOB  
     # --------------------------------------------------------------        
@@ -138,16 +122,24 @@ def parallel_computation( filename                       ,
     
         # Merge solution files
         if output == "True":
-            os.system ( run_merge_solution )
+            if unsteady_simulation:
+                merge_unsteady( Config_CFD_filename, partitions, 0, nExtIter )
+	    elif time_spectral:	
+		merge_unsteady( Config_CFD_filename, partitions, 0, params_get['TIME_INSTANCES'] )
+            else:
+                merge_solution( Config_CFD_filename, partitions, output=output)
 
-        # Remove ddc config file
-        os.remove(Config_DDC_filename)
+    # Remove ddc config file
+    os.remove(Config_DDC_filename)
         
     #: if partitions>1
     
     # remove cfd config file
-    os.remove(Config_CFD_filename)     
-    
+    os.remove(Config_CFD_filename) 
+
+    # new-line character upon exiting merge script    
+    print '\n'
+
 #: def parallel_computation()
 
 

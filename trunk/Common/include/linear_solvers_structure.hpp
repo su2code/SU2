@@ -3,7 +3,7 @@
  * \brief Headers for the classes related to linear solvers (LU_SGS, CG, GMRES, etc)
  *        The subroutines and functions are in the <i>linear_solvers_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.
+ * \version 2.0.1
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -43,7 +43,7 @@ const double eps = numeric_limits<double>::epsilon(); /*!< \brief machine epsilo
  * \class CSysVector
  * \brief Class for holding and manipulating vectors needed by linear solvers
  * \author J. Hicken.
- * \version 2.0.
+ * \version 2.0.1
  *
  * We could use the STL vector as a base class here, but this gives us
  * more flexibility with the underlying data (e.g. we may decide to
@@ -264,7 +264,7 @@ public:
  * \class CMatrixVectorProduct
  * \brief abstract base class for defining matrix-vector products
  * \author J. Hicken.
- * \version 2.0.
+ * \version 2.0.1
  *
  * The Krylov-subspace solvers require only matrix-vector products and
  * not the actual matrix/Jacobian.  We need some way to indicate which
@@ -289,7 +289,7 @@ inline CMatrixVectorProduct::~CMatrixVectorProduct() {}
  * \class CSolutionSendReceive
  * \brief abstract base class for defining MPI send receive
  * \author F. Palacios.
- * \version 2.0.
+ * \version 2.0.1
  *
  * See the remarks regarding the CMatrixVectorProduct class.  The same
  * idea applies here to the preconditioning operation.
@@ -306,7 +306,7 @@ inline CSolutionSendReceive::~CSolutionSendReceive() {}
  * \class CPreconditioner
  * \brief abstract base class for defining preconditioning operation
  * \author J. Hicken.
- * \version 2.0.
+ * \version 2.0.1
  *
  * See the remarks regarding the CMatrixVectorProduct class.  The same
  * idea applies here to the preconditioning operation.
@@ -323,7 +323,7 @@ inline CPreconditioner::~CPreconditioner() {}
  * \class CSysSolve
  * \brief Class for solving linear systems using classical and Krylov-subspace iterative methods
  * \author J. Hicken.
- * \version 2.0.
+ * \version 2.0.1
  *
  * The individual solvers could be stand-alone subroutines, but by
  * creating CSysSolve objects we can more easily assign different

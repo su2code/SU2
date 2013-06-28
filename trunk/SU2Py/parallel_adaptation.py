@@ -3,7 +3,7 @@
 ## \file parallel_adaptation.py
 #  \brief Python script for doing the parallel adaptation using SU2_MAC.
 #  \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.
+#  \version 2.0.1
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -21,11 +21,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os, time, sys, libSU2, shutil
+import libSU2, libSU2_run
+from merge_solution import merge_solution
+from merge_grid_su2 import merge_grid_su2
+import os, time, sys, shutil
 from optparse import OptionParser
-
-SU2_RUN = os.environ['SU2_RUN'] 
-sys.path.append( SU2_RUN ) 
 
 # -------------------------------------------------------------------
 #  Main 
@@ -48,10 +48,10 @@ def main():
     options.partitions = int( options.partitions )  
 
     # Run Parallel Comutation
-    parallel_adaptation ( options.filename        ,
-                           options.partitions      , 
-                           options.divide_grid     ,
-                           options.merge_grid       )
+    parallel_adaptation ( options.filename     ,
+                          options.partitions  , 
+                          options.divide_grid ,
+                          options.merge_grid   )
 #: def main()
     
 # -------------------------------------------------------------------
@@ -61,8 +61,7 @@ def main():
 def parallel_adaptation( filename    ,
                           partitions      = 2       , 
                           divide_grid     = "True"  ,
-                          merge_grid      = "True"  ,
-                          logfile         = None     ):
+                          merge_grid      = "True"   ):
     
     # General and default parameters
     Config_INP_filename = filename
@@ -81,22 +80,7 @@ def parallel_adaptation( filename    ,
     # Set parameters
     params_set = { 'NUMBER_PART' : partitions }
     libSU2.Set_ConfigParams( Config_DDC_filename, params_set )
-
-    # run commands
-    run_SU2_DDC = os.path.join( SU2_RUN , "SU2_DDC " + Config_DDC_filename )
-    run_SU2_MAC = os.path.join( SU2_RUN , "SU2_MAC " + Config_MAC_filename )
-    run_SU2_DDC = "mpirun -np  1 %s" % (run_SU2_DDC)
-    run_SU2_MAC = "mpirun -np %i %s" % (partitions, run_SU2_MAC)
-    run_merge_solution = "merge_solution.py -p %s -f %s -o True"  % (partitions, Config_MAC_filename)
-    run_merge_grid     = "merge_grid_su2.py -p %s -f %s" % (partitions, Config_MAC_filename)
     
-    # log files
-    if not logfile is None:
-        run_SU2_DDC = run_SU2_DDC + ' >> ' + logfile
-        run_SU2_MAC = run_SU2_MAC + ' >> ' + logfile
-        run_merge_solution = run_merge_solution + ' >> ' + logfile
-        run_merge_grid     = run_merge_grid     + ' >> ' + logfile
-
     # --------------------------------------------------------------
     #  SETUP PARALLEL JOB  
     # --------------------------------------------------------------
@@ -104,15 +88,12 @@ def parallel_adaptation( filename    ,
     
         # Just in case domain decomposition is needed
         if divide_grid != "False":
-            os.system ( run_SU2_DDC )
-        
-        # Remove ddc config file
-        os.remove(Config_DDC_filename)   
+            libSU2_run.SU2_DDC(Config_DDC_filename,partitions)
         
         # ---------------------- #
         #  RUN THE PARALLEL JOB  #
         # ---------------------- #
-        os.system ( run_SU2_MAC )
+        libSU2_run.SU2_MAC(Config_MAC_filename,partitions)
 
         # Merge plt files
         if visualize_deformation == "YES":
@@ -121,24 +102,31 @@ def parallel_adaptation( filename    ,
                            'VOLUME_FLOW_FILENAME'  : "adapted_grid" ,
                            'SURFACE_FLOW_FILENAME' : "adapted_surface"     }
             libSU2.Set_ConfigParams( Config_MAC_filename, params_set )
-            os.system ( run_merge_solution )
+            
+            merge_solution( Config_MAC_filename     ,
+                            partitions = partitions ,
+                            output     = "True"      )    
 
             # Merge original grid files
             params_set = { 'MATH_PROBLEM'          : 'DIRECT'                   ,
                            'VOLUME_FLOW_FILENAME'  : "original_grid" ,
                            'SURFACE_FLOW_FILENAME' : "original_surface"     }
             libSU2.Set_ConfigParams( Config_MAC_filename, params_set )
-            os.system ( run_merge_solution )
+            
+            merge_solution( Config_MAC_filename     ,
+                            partitions = partitions ,
+                            output     = "True"      )  
 
         # Just in case the grid merging is needed
         if merge_grid == "True":
-            os.system ( run_merge_grid )
+            merge_grid_su2( Config_MAC_filename , partitions )    
 
     # Otherwise: Serial Job
     else:
-        os.system ( run_SU2_MAC )
+        libSU2_run.SU2_MAC(Config_MAC_filename,partitions)
     
-    # remove cfd config file
+    # remove config files
+    os.remove(Config_DDC_filename)       
     os.remove(Config_MAC_filename)
 
 #: def parallel_adaptation()

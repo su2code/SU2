@@ -2,7 +2,7 @@
  * \file solution_direct_wave.cpp
  * \brief Main subrotuines for solving the wave equation.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.
+ * \version 2.0.1
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -364,6 +364,15 @@ void CWaveSolution::Source_Residual(CGeometry *geometry,
   
 }
 
+
+void CWaveSolution::Source_Template(CGeometry *geometry,
+                                    CSolution **solution_container,
+                                    CNumerics *solver,
+                                    CConfig   *config,
+                                    unsigned short iMesh) {
+
+}
+
 void CWaveSolution::Galerkin_Method(CGeometry *geometry, 
                                     CSolution **solution_container, 
                                     CNumerics *solver,
@@ -466,7 +475,8 @@ void CWaveSolution::SetNoise_Source(CSolution ***flow_solution, CGeometry **wave
   double rho_0  = wave_config->GetDensity_FreeStreamND();
   double p_0    = wave_config->GetPressure_FreeStreamND();
   double *v_inf = wave_config->GetVelocity_FreeStreamND();
-  
+	bool incompressible = wave_config->GetIncompressible();
+
 	for (iMarker = 0; iMarker < wave_config->GetnMarker_All(); iMarker++) {
     
 		if (wave_config->GetMarker_All_Boundary(iMarker) == FWH_SURFACE) {
@@ -493,7 +503,7 @@ void CWaveSolution::SetNoise_Source(CSolution ***flow_solution, CGeometry **wave
         Density  = Solution[0];
         for (iDim = 0; iDim < nDim; iDim++)
           Velocity[iDim] = Solution[iDim+1]/Density;
-        Pressure = flow_solution[MESH_0][FLOW_SOL]->node[iPoint_Donor]->GetPressure();
+        Pressure = flow_solution[MESH_0][FLOW_SOL]->node[iPoint_Donor]->GetPressure(incompressible);
 
         /* Get old solution for computing time derivative */
         Solution_Old = flow_solution[MESH_0][FLOW_SOL]->node[iPoint_Donor]->GetSolution_time_n();

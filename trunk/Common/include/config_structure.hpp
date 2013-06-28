@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.
+ * \version 2.0.1
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -45,12 +45,12 @@ using namespace std;
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
  * \author F. Palacios.
- * \version 2.0.
+ * \version 2.0.1
  */
 class CConfig {
 private:
 	unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component. */
-  unsigned short nZone; /*!< \brief Number of zones in the mesh. */
+	unsigned short nZone; /*!< \brief Number of zones in the mesh. */
 	double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
 	double *RotAxisOrigin,	 /*!< \brief Axis of rotation (origin) for rotational frame problem. */
 	*Omega,						/*!< \brief Angular velocity vector for rotational frame problem. */
@@ -72,10 +72,12 @@ private:
 	IsothermalWall,			/*!< \brief Flag to know if we are using the Isothermal Wall. */
 	CatalyticWall,			/*!< \brief Flag to know if we are using the Catalytic Wall. */
 	PlasmaMultiTimeSteps,	/*!< \brief Flag to know if we are using multiple time steps for different species in plasma. */
-	ElectricSolver,		/*!< \brief Flag to know if we are solving  electric forces  in plasma solver. */
-	Low_Mach_Precon,/*!< \brief Flag to know if we are using a low Mach number preconditioner. */
-	MacCormackRelaxation,/*!< \brief Flag to know if we are using MacCormack's relaxation in solving Gauss's law. */
+	ElectricSolver,			/*!< \brief Flag to know if we are solving  electric forces  in plasma solver. */
+	Low_Mach_Precon,		/*!< \brief Flag to know if we are using a low Mach number preconditioner. */
+	MacCormackRelaxation,	/*!< \brief Flag to know if we are using MacCormack's relaxation in solving Gauss's law. */
 	GravityForce,			/*!< \brief Flag to know if the gravity force is incuded in the formulation. */
+	MagneticForce,			/*!< \brief Flag to know if the magnetic force is incuded in the formulation. */
+	JouleHeating,			/*!< \brief Flag to know if the Joule heating  is incuded in the formulation. */
 	SmoothNumGrid,			/*!< \brief Smooth the numerical grid. */
 	AdaptBoundary,			/*!< \brief Adapt the elements on the boundary. */
 	FullMG,					/*!< \brief Full multigrid strategy. */
@@ -98,6 +100,7 @@ private:
 	double LimiterCoeff;				/*!< \brief Limiter coefficient */ 
 	unsigned short Kind_Adjoint;	/*!< \brief Kind of adjoint function. */
 	unsigned short Kind_ObjFunc;	/*!< \brief Kind of objective function. */
+	unsigned short Kind_GeoObjFunc;	/*!< \brief Kind of geometrical objective function. */
 	unsigned short Kind_SensSmooth;	/*!< \brief Kind of sensitivity smoothing technique. */
 	unsigned short Kind_ObjFuncType;	/*!< \brief Type of objective function. */
 	unsigned short Continuous_Eqns;	/*!< \brief Which equations to treat continuously (Hybrid adjoint) */
@@ -111,7 +114,7 @@ private:
 	FreeSurface_Damping_Coeff,  /*!< \brief Damping coefficient of the free surface for a free surface problem. */
 	FreeSurface_Damping_Length;  /*!< \brief Damping length of the free surface for a free surface problem. */
 	unsigned short Kind_Adaptation;	/*!< \brief Kind of numerical grid adaptation. */
-  unsigned short nTimeInstances;  /*!< \brief Number of periodic time instances for Time Spectral integration. */
+	unsigned short nTimeInstances;  /*!< \brief Number of periodic time instances for Time Spectral integration. */
 	double New_Elem_Adapt;			/*!< \brief Elements to adapt in the numerical grid adaptation process. */
 	double Delta_UnstTime,			/*!< \brief Time step for unsteady computations. */
 	Delta_UnstTimeND;						/*!< \brief Time step for unsteady computations (non dimensional). */
@@ -127,7 +130,7 @@ private:
 	nMarker_Custom,
 	nMarker_SymWall,				/*!< \brief Number of symmetry wall markers. */
 	nMarker_PerBound,				/*!< \brief Number of periodic boundary markers. */
-  nMarker_Sliding,        /*!< \brief Number of sliding boundary markers. */
+	nMarker_Sliding,        /*!< \brief Number of sliding boundary markers. */
 	nMarker_NearFieldBound,				/*!< \brief Number of near field boundary markers. */
 	nMarker_InterfaceBound,				/*!< \brief Number of interface boundary markers. */
 	nMarker_Dirichlet,				/*!< \brief Number of interface boundary markers. */
@@ -135,6 +138,8 @@ private:
 	nMarker_Inlet,					/*!< \brief Number of inlet flow markers. */
 	nMarker_Supersonic_Inlet,					/*!< \brief Number of supersonic inlet flow markers. */
 	nMarker_Outlet,					/*!< \brief Number of outlet flow markers. */
+  nMarker_Isothermal,     /*!< \brief Number of isothermal wall boundaries. */
+  nMarker_HeatFlux,       /*!< \brief Number of constant heat flux wall boundaries. */
 	nMarker_NacelleExhaust,					/*!< \brief Number of nacelle exhaust flow markers. */
 	nMarker_NacelleInflow,					/*!< \brief Number of nacelle inflow flow markers. */
 	nMarker_Displacement,					/*!< \brief Number of displacement surface markers. */
@@ -155,15 +160,17 @@ private:
 	*Marker_SymWall,				/*!< \brief Symmetry wall markers. */
 	*Marker_PerBound,				/*!< \brief Periodic boundary markers. */
 	*Marker_PerDonor,				/*!< \brief Rotationally periodic boundary donor markers. */
-  *Marker_SlideBound,      /*!< \brief Sliding boundary markers. */
-  *Marker_SlideDonor,      /*!< \brief Sliding boundary donor markers. */
+	*Marker_SlideBound,      /*!< \brief Sliding boundary markers. */
+	*Marker_SlideDonor,      /*!< \brief Sliding boundary donor markers. */
 	*Marker_NearFieldBound,				/*!< \brief Near Field boundaries markers. */
 	*Marker_InterfaceBound,				/*!< \brief Interface boundaries markers. */
 	*Marker_Dirichlet,				/*!< \brief Interface boundaries markers. */
 	*Marker_Dirichlet_Elec,				/*!< \brief Interface boundaries markers. */
 	*Marker_Inlet,					/*!< \brief Inlet flow markers. */
-  *Marker_Supersonic_Inlet,					/*!< \brief Supersonic inlet flow markers. */
+	*Marker_Supersonic_Inlet,					/*!< \brief Supersonic inlet flow markers. */
 	*Marker_Outlet,					/*!< \brief Outlet flow markers. */
+  *Marker_Isothermal,     /*!< \brief Isothermal wall markers. */
+  *Marker_HeatFlux,       /*!< \brief Constant heat flux wall markers. */
 	*Marker_NacelleInflow,					/*!< \brief Nacelle Inflow flow markers. */
 	*Marker_NacelleExhaust,					/*!< \brief Nacelle Exhaust flow markers. */
 	*Marker_Displacement,					/*!< \brief Displacement markers. */
@@ -182,11 +189,13 @@ private:
 	double *Inlet_Ttotal;    /*!< \brief Specified total temperatures for inlet boundaries. */
 	double *Inlet_Ptotal;    /*!< \brief Specified total pressures for inlet boundaries. */
 	double **Inlet_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for inlet boundaries. */
-  double *Inlet_Temperature;    /*!< \brief Specified temperatures for a supersonic inlet boundaries. */
+	double *Inlet_Temperature;    /*!< \brief Specified temperatures for a supersonic inlet boundaries. */
 	double *Inlet_Pressure;    /*!< \brief Specified static pressures for supersonic inlet boundaries. */
 	double **Inlet_Velocity;  /*!< \brief Specified flow velocity vectors for supersonic inlet boundaries. */
 	double *FanFace_Mach;    /*!< \brief Specified fan face mach for nacelle boundaries. */
 	double *Outlet_Pressure;    /*!< \brief Specified back pressures (static) for outlet boundaries. */
+  double *Isothermal_Temperature; /*!< \brief Specified isothermal wall temperatures (static). */
+  double *Heat_Flux;  /*!< \brief Specified wall heat fluxes. */
 	double *Displ_Value;    /*!< \brief Specified displacement for displacement boundaries. */
 	double *Load_Value;    /*!< \brief Specified force for load boundaries. */
 	double *FlowLoad_Value;    /*!< \brief Specified force for flow load boundaries. */
@@ -202,8 +211,8 @@ private:
 	*Marker_Config_Boundary;		/*!< \brief Global index for boundaries using config file. */
 	short *Marker_All_SendRecv;		/*!< \brief Information about if the boundary is sended (+), received (-). */
 	short *Marker_All_PerBound;	/*!< \brief Global index for periodic bc using the grid information. */
-  unsigned short *SlideBound_Zone,  /*!< \brief Zone number for sliding mesh markers. */
-  *SlideDonor_Zone;    /*!< \brief Zone number for donors to sliding mesh markers. */
+	unsigned short *SlideBound_Zone,  /*!< \brief Zone number for sliding mesh markers. */
+	*SlideDonor_Zone;    /*!< \brief Zone number for donors to sliding mesh markers. */
 	unsigned long nExtIter;			/*!< \brief Number of external iterations. */
 	unsigned long ExtIter;			/*!< \brief Current external iteration number. */
 	unsigned long Unst_nIntIter;			/*!< \brief Number of internal iterations (Dual time Method). */
@@ -225,6 +234,7 @@ private:
 	unsigned short nParamDV;		/*!< \brief Number of parameters of the design variable. */
 	double **ParamDV;				/*!< \brief Parameters of the design variable. */
 	double PrimGrad_Threshold;		/*!< \brief Primitive variables gradient threshold for the adjoint problem. */
+	unsigned short GeometryMode;			/*!< \brief Gemoetry mode (analysis or gradient computation). */
 	unsigned short MGCycle;			/*!< \brief Kind of multigrid cycle. */
 	unsigned short FinestMesh;		/*!< \brief Finest mesh for the full multigrid approach. */
 	unsigned short nMG_PreSmooth,                 /*!< \brief Number of MG pre-smooth parameters found in config file. */
@@ -329,7 +339,7 @@ private:
 	Kind_Upwind_AdjPlasma,			/*!< \brief Upwind scheme for the adjoint plasma model. */
 	Kind_Turb_Model,			/*!< \brief Turbulent model definition. */
 	Kind_Trans_Model,			/*!< \brief Transition model definition. */
-  Kind_Inlet;           /*!< \brief Kind of inlet boundary treatment. */
+	Kind_Inlet;           /*!< \brief Kind of inlet boundary treatment. */
 	double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
 	unsigned short Linear_Solver_Iter;		/*!< \brief Min error of the linear solver for the implicit formulation. */
 	bool Linear_Solver_Hist;		/*!< \brief Whether or not to output linear solver history to file */
@@ -346,6 +356,8 @@ private:
 	Kappa_1st_Flow,			/*!< \brief JST 1st order dissipation coefficient for flow equations (coarse multigrid levels). */
 	Kappa_2nd_Flow,			/*!< \brief JST 2nd order dissipation coefficient for flow equations. */
 	Kappa_4th_Flow;			/*!< \brief JST 4th order dissipation coefficient for flow equations. */
+	double Min_Beta_RoeTurkel,		/*!< \brief Minimum value of Beta for the Roe-Turkel low Mach preconditioner. */
+	Max_Beta_RoeTurkel;		/*!< \brief Maximum value of Beta for the Roe-Turkel low Mach preconditioner. */
 	double Kappa_1st_AdjPlasma,	/*!< \brief JST 1st order dissipation coefficient for adjoint plasma equations (coarse multigrid levels). */
 	Kappa_2nd_AdjPlasma,			/*!< \brief JST 2nd order dissipation coefficient for adjoint plasma equations. */
 	Kappa_4th_AdjPlasma,			/*!< \brief JST 4th order dissipation coefficient for adjoint plasma equations. */
@@ -386,11 +398,11 @@ private:
 	unsigned short  *Marker_All_Monitoring,				/*!< \brief Global index for monitoring using the grid information. */
 	*Marker_All_Plotting,				/*!< \brief Global index for plotting using the grid information. */
 	*Marker_All_Moving,					/*!< \brief Global index for moving using the grid information. */
-  *Marker_All_Sliding,					/*!< \brief Global index for sliding interfaces using the grid information. */
+	*Marker_All_Sliding,					/*!< \brief Global index for sliding interfaces using the grid information. */
 	*Marker_Config_Monitoring,			/*!< \brief Global index for monitoring using the config information. */
 	*Marker_Config_Plotting,			/*!< \brief Global index for plotting using the config information. */
 	*Marker_Config_Moving,				/*!< \brief Global index for moving using the config information. */
-  *Marker_Config_Sliding,				/*!< \brief Global index for sliding interfaces using the config information. */
+	*Marker_Config_Sliding,				/*!< \brief Global index for sliding interfaces using the config information. */
 	*Marker_Config_PerBound;			/*!< \brief Global index for periodic boundaries using the config information. */
 	string *PlaneTag;			/*!< \brief Global index for the plane adaptation (upper, lower). */
 	unsigned short nDomain;			/*!< \brief Number of domains in the MPI parallelization. */
@@ -424,6 +436,7 @@ private:
 	Adj_FileName,					/*!< \brief Output file with the adjoint variables. */
 	Lin_FileName,					/*!< \brief Output file with the linearized variables. */
 	ObjFunc_Grad_FileName,			/*!< \brief Gradient of the objective function. */
+	ObjFunc_Eval_FileName,			/*!< \brief Objective function. */
 	SurfFlowCoeff_FileName,			/*!< \brief Output file with the flow variables on the surface. */
 	SurfAdjCoeff_FileName,			/*!< \brief Output file with the adjoint variables on the surface. */
 	SurfLinCoeff_FileName,			/*!< \brief Output file with the linearized variables on the surface. */
@@ -432,10 +445,11 @@ private:
 	unsigned short nSpecies, 		/*!< \brief No of species present in plasma */
 	nReactions;									/*!< \brief Number of reactions in chemical model. */
 	bool Write_Mean_Solution,		/*!< \brief Write a mean solution file */
-  Wrt_Sol_CGNS,               /*!< \brief Write a CGNS volume solution file */
-  Wrt_Vol_Sol,                /*!< \brief Write a volume solution file */
-  Wrt_Srf_Sol,                /*!< \brief Write a surface solution file */
-  Wrt_Csv_Sol;                /*!< \brief Write a surface comma-separated values solution file */
+	Wrt_Sol_CGNS,               /*!< \brief Write a CGNS volume solution file */
+	Wrt_Vol_Sol,                /*!< \brief Write a volume solution file */
+	Wrt_Srf_Sol,                /*!< \brief Write a surface solution file */
+  Wrt_Restart,                /*!< \brief Write a restart solution file */
+	Wrt_Csv_Sol;                /*!< \brief Write a surface comma-separated values solution file */
 	double *ArrheniusCoefficient,					/*!< \brief Arrhenius reaction coefficient */
 	*ArrheniusEta,								/*!< \brief Arrhenius reaction temperature exponent */
 	*ArrheniusTheta,							/*!< \brief Arrhenius reaction characteristic temperature */
@@ -459,21 +473,20 @@ private:
 	*Species_Gas_Constant,			/*!< \brief Array of gas constants. */
 	*Molar_Mass,								/*!< \brief Molar mass of species in the plasma [kg/kmol] */
 	Mixture_Molar_mass,				/*!< \brief Molar mass of the multi-species fluid [kg/kmol] */
-	Magnetic_Interaction,				/*!< \brief Magnetic interaction parameter */
-	Magnetic_RefLength,				/*!< \brief Reference length used in defining the magnetic interaction */
-	Magnetic_RefDensity,				/*!< \brief Reference density used in defining the magnetic interaction */
-	Magnetic_RefSpeed,				/*!< \brief Reference speed used in defining the magnetic interaction*/
 	*Molecular_Diameter,			/*!< \brief Molecular diameter of species [m] */
 	*Gas_Composition,					/*!< \brief Initial mass fractions of flow [dimensionless] */
 	*Enthalpy_Formation,			/*!< \brief Enthalpy of formation */
+  **Blottner,               /*!< \brief Blottner viscosity coefficients */
 	*Species_Ref_Temperature,	/*!< \brief Reference Temperature for viscosity of all particles present in the plasma */
-	*Species_Ref_Viscosity,		/*!< \brief Reference viscosity  of all particles present in the plasma */
-	*MagneticDipole;			/*!< \brief Magnetic dipole present in the plasma */
+	*Species_Ref_Viscosity;		/*!< \brief Reference viscosity  of all particles present in the plasma */
 	unsigned short nMonatomics,	/*!< \brief Number of monatomic species in the gas. */
 	nDiatomics;									/*!< \brief Number of diatomic species in the gas. */
 	double Gamma,			/*!< \brief Ratio of specific heats of the gas. */
 	GammaDiatomic,			/*!< \brief Ratio of specific heats of the diatomic gas. */ 
 	GammaMonatomic,			/*!< \brief Ratio of specific heats of the monatomic gas. */ 
+	Stagnation_B,/*!< \brief value of the magnetic field in Tesla at the stagnation point */
+	Electric_Cond,/*!< \brief value of the electrical conductivity in mho/m */
+	DipoleDist,/*!< \brief value of the minimum distance for the dipole. */
 	Bulk_Modulus,			/*!< \brief Value of the bulk modulus for incompressible flows. */ 
 	ArtComp_Factor,			/*!< \brief Value of the artificial compresibility factor for incompressible flows. */
 	Gas_Constant,     /*!< \brief Specific gas constant. */
@@ -509,39 +522,39 @@ private:
 	Energy_FreeStreamND,       /*!< \brief Farfield energy value (external flow). */
 	Viscosity_FreeStreamND;    /*!< \brief Farfield viscosity value (external flow). */
 	int ***Reactions;					/*!< \brief Reaction map for chemically reacting, multi-species flows. */
-  double ***Omega00,        /*!< \brief Collision integrals (Omega(0,0)) */
-  ***Omega11;                  /*!< \brief Collision integrals (Omega(1,1)) */
+	double ***Omega00,        /*!< \brief Collision integrals (Omega(0,0)) */
+	***Omega11;                  /*!< \brief Collision integrals (Omega(1,1)) */
 	bool Write_Converted_Mesh; /*!< \brief Flag to specify whether a new mesh should be written in the converted units. */
 	double ElasticyMod,			/*!< \brief Young's modulus of elasticity. */
 	PoissonRatio,						/*!< \brief Poisson's ratio. */
 	MaterialDensity;								/*!< \brief Material density. */	
 	double Wave_Speed;			/*!< \brief Wave speed used in the wave solver. */
 	double Thermal_Diffusivity;			/*!< \brief Thermal diffusivity used in the heat solver. */
-  double Cyclic_Pitch,          /*!< \brief Cyclic pitch for rotorcraft simulations. */
-  Collective_Pitch;             /*!< \brief Collective pitch for rotorcraft simulations. */
+	double Cyclic_Pitch,          /*!< \brief Cyclic pitch for rotorcraft simulations. */
+	Collective_Pitch;             /*!< \brief Collective pitch for rotorcraft simulations. */
 	string Motion_Filename;				/*!< \brief Arbitrary mesh motion input base filename. */
-  double *Motion_Origin_X,    /*!< \brief X-coordinate of the mesh motion origin. */
-  *Motion_Origin_Y,           /*!< \brief Y-coordinate of the mesh motion origin. */
-  *Motion_Origin_Z,           /*!< \brief Z-coordinate of the mesh motion origin. */
-  *Rotation_Rate_X,           /*!< \brief Angular velocity of the mesh about the x-axis. */
-  *Rotation_Rate_Y,           /*!< \brief Angular velocity of the mesh about the y-axis. */
-  *Rotation_Rate_Z,           /*!< \brief Angular velocity of the mesh about the z-axis. */
-  *Pitching_Omega_X,           /*!< \brief Angular frequency of the mesh pitching about the x-axis. */
-  *Pitching_Omega_Y,           /*!< \brief Angular frequency of the mesh pitching about the y-axis. */
-  *Pitching_Omega_Z,           /*!< \brief Angular frequency of the mesh pitching about the z-axis. */
-  *Pitching_Ampl_X,           /*!< \brief Pitching amplitude about the x-axis. */
-  *Pitching_Ampl_Y,           /*!< \brief Pitching amplitude about the y-axis. */
-  *Pitching_Ampl_Z,           /*!< \brief Pitching amplitude about the z-axis. */
-  *Pitching_Phase_X,           /*!< \brief Pitching phase offset about the x-axis. */
-  *Pitching_Phase_Y,           /*!< \brief Pitching phase offset about the y-axis. */
-  *Pitching_Phase_Z,           /*!< \brief Pitching phase offset about the z-axis. */
-  *Plunging_Omega_X,           /*!< \brief Angular frequency of the mesh plunging in the x-direction. */
-  *Plunging_Omega_Y,           /*!< \brief Angular frequency of the mesh plunging in the y-direction. */
-  *Plunging_Omega_Z,           /*!< \brief Angular frequency of the mesh plunging in the z-direction. */
-  *Plunging_Ampl_X,           /*!< \brief Plunging amplitude in the x-direction. */
-  *Plunging_Ampl_Y,           /*!< \brief Plunging amplitude in the y-direction. */
-  *Plunging_Ampl_Z;           /*!< \brief Plunging amplitude in the z-direction. */
-  bool Relative_Motion;       /*!< \brief Flag for relative motion between zones (search & interpolate required). */
+	double *Motion_Origin_X,    /*!< \brief X-coordinate of the mesh motion origin. */
+	*Motion_Origin_Y,           /*!< \brief Y-coordinate of the mesh motion origin. */
+	*Motion_Origin_Z,           /*!< \brief Z-coordinate of the mesh motion origin. */
+	*Rotation_Rate_X,           /*!< \brief Angular velocity of the mesh about the x-axis. */
+	*Rotation_Rate_Y,           /*!< \brief Angular velocity of the mesh about the y-axis. */
+	*Rotation_Rate_Z,           /*!< \brief Angular velocity of the mesh about the z-axis. */
+	*Pitching_Omega_X,           /*!< \brief Angular frequency of the mesh pitching about the x-axis. */
+	*Pitching_Omega_Y,           /*!< \brief Angular frequency of the mesh pitching about the y-axis. */
+	*Pitching_Omega_Z,           /*!< \brief Angular frequency of the mesh pitching about the z-axis. */
+	*Pitching_Ampl_X,           /*!< \brief Pitching amplitude about the x-axis. */
+	*Pitching_Ampl_Y,           /*!< \brief Pitching amplitude about the y-axis. */
+	*Pitching_Ampl_Z,           /*!< \brief Pitching amplitude about the z-axis. */
+	*Pitching_Phase_X,           /*!< \brief Pitching phase offset about the x-axis. */
+	*Pitching_Phase_Y,           /*!< \brief Pitching phase offset about the y-axis. */
+	*Pitching_Phase_Z,           /*!< \brief Pitching phase offset about the z-axis. */
+	*Plunging_Omega_X,           /*!< \brief Angular frequency of the mesh plunging in the x-direction. */
+	*Plunging_Omega_Y,           /*!< \brief Angular frequency of the mesh plunging in the y-direction. */
+	*Plunging_Omega_Z,           /*!< \brief Angular frequency of the mesh plunging in the z-direction. */
+	*Plunging_Ampl_X,           /*!< \brief Plunging amplitude in the x-direction. */
+	*Plunging_Ampl_Y,           /*!< \brief Plunging amplitude in the y-direction. */
+	*Plunging_Ampl_Z;           /*!< \brief Plunging amplitude in the z-direction. */
+	bool Relative_Motion;       /*!< \brief Flag for relative motion between zones (search & interpolate required). */
 
 	map<string, CAnyOptionRef*> param; /*!< \brief associates option names (strings) with options */
 
@@ -556,7 +569,7 @@ public:
 	 * \brief Constructor of the class which reads the input file.
 	 */
 	CConfig(char case_filename[200]);
-	
+
 	/*! 
 	 * \brief Destructor of the class. 
 	 */
@@ -746,19 +759,19 @@ public:
 			string* & Marker_PerBound, string* & Marker_PerDonor,
 			double** & RotCenter, double** & RotAngles, double** & Translation);
 
-  /*!
+	/*!
 	 * \brief adds a sliding marker option to the param map
 	 * \param[in] name - name of the sliding marker option in the config file
 	 * \param[in] nMarker_Sliding - the number of sliding marker boundaries
 	 * \param[in] Marker_SlideBound - string names of sliding boundaries
 	 * \param[in] Marker_SlideDonor - names of boundaries that supply data to sliding boundaries
-   * \param[in] SlideBound_Zone - zone number of the sliding mesh markers
+	 * \param[in] SlideBound_Zone - zone number of the sliding mesh markers
 	 * \param[in] SlideDonor_Zone - zone number of the donor sliding mesh markers
 	 */
 	void AddMarkerSliding(const string & name, unsigned short & nMarker_Sliding,
-                        string* & Marker_SlidingBound, string* & Marker_SlidingDonor,
-                        unsigned short* & SlideBound_Zone, unsigned short* & SlideDonor_Zone);
-  
+			string* & Marker_SlidingBound, string* & Marker_SlidingDonor,
+			unsigned short* & SlideBound_Zone, unsigned short* & SlideDonor_Zone);
+
 	/*!
 	 * \brief adds an inlet marker option to the param map
 	 * \param[in] name - name of the inlet marker option in the config file
@@ -771,7 +784,7 @@ public:
 	void AddMarkerInlet(const string & name, unsigned short & nMarker_Inlet,
 			string* & Marker_Inlet, double* & Ttotal, double* & Ptotal,
 			double** & FlowDir);
-	
+
 	/*!
 	 * \brief adds an inlet marker without flow direction option to the param map
 	 * \param[in] name - name of the inlet marker option in the config file
@@ -781,8 +794,8 @@ public:
 	 * \param[in] Ptotal - specified total pressures for inlet boundaries
 	 */
 	void AddMarkerInlet(const string & name, unsigned short & nMarker_Inlet,
-											string* & Marker_Inlet, double* & Ttotal, double* & Ptotal);
-  
+			string* & Marker_Inlet, double* & Ttotal, double* & Ptotal);
+
 	/*!
 	 * \brief adds an Dirichlet marker option to the param map
 	 * \param[in] name - name of the inlet marker option in the config file
@@ -881,7 +894,7 @@ public:
 	 * \return Integration limits for the equivalent area computation.
 	 */
 	double GetEA_IntLimit(unsigned short index);
-	
+
 	/*! 
 	 * \brief Get the the coordinates where of the box where the grid is going to be deformed.
 	 * \return Coordinates where of the box where the grid is going to be deformed.
@@ -993,14 +1006,14 @@ public:
 	 * \return Memory location of the triple pointer to the 3-D reaction map array.
 	 */
 	int ***GetReaction_Map(void);
-  
-  /*! 
+
+	/*!
 	 * \brief Get the array containing the curve fit coefficients for the Omega(0,0) collision integrals.
 	 * \return Memory location of the triple pointer to the 3-D collision integral array.
 	 */
 	double ***GetCollisionIntegral00(void);
-  
-  /*! 
+
+	/*!
 	 * \brief Get the array containing the curve fit coefficients for the Omega(1,1) collision integrals.
 	 * \return Memory location of the triple pointer to the 3-D collision integral array.
 	 */
@@ -1054,6 +1067,14 @@ public:
 	 * \return Value of the constant: R
 	 */
 	double GetSpecies_Gas_Constant(unsigned short val_Species);
+  
+  /*!
+   * \brief Get the coefficients of the Blottner viscosity model
+   * \param[in] val_Species - Index of the species
+   * \param[in] val_Coeff - Index of the coefficient (As, Bs, Cs)
+   * \return Value of the Blottner coefficient
+   */
+  double GetBlottnerCoeff(unsigned short val_Species, unsigned short val_Coeff);
 
 	/*!
 	 * \brief Get the value of wall temperature.
@@ -1205,7 +1226,7 @@ public:
 	 * \return Non-dimensionalized freestream intensity.
 	 */
 	double GetTurbulenceIntensity_FreeStream(void);
-  
+
 	/*!
 	 * \brief Get the value of the turbulent to laminar viscosity ratio.
 	 * \return Ratio of turbulent to laminar viscosity ratio.
@@ -1248,7 +1269,7 @@ public:
 	 * \return Value of the wave speed.
 	 */
 	double GetWaveSpeed(void);
-	
+
 	/*!
 	 * \brief Get the wave speed.
 	 * \return Value of the wave speed.
@@ -1427,6 +1448,12 @@ public:
 	 * \return 0 or 1 depending of we are dealing with a V or W cycle.
 	 */		
 	unsigned short GetMGCycle(void);
+	
+	/*! 
+	 * \brief Get the king of evaluation in the geometrical module.
+	 * \return 0 or 1 depending of we are dealing with a V or W cycle.
+	 */		
+	unsigned short GetGeometryMode(void);
 
 	/*! 
 	 * \brief Get the Courant Friedrich Levi number for each grid.
@@ -1484,8 +1511,8 @@ public:
 	 * \return Number of internal iterations.
 	 */
 	unsigned long GetUnst_nIntIter(void);
-  
-  /*!
+
+	/*!
 	 * \brief Retrieves the number of periodic time instances for Time Spectral.
 	 * \return: Number of periodic time instances for Time Spectral.
 	 */
@@ -1535,30 +1562,36 @@ public:
 	 */
 	bool GetWrt_Unsteady(void);
 
-  /*!
+	/*!
 	 * \brief Get information about writing a volume solution file.
 	 * \return <code>TRUE</code> means that a volume solution file will be written.
 	 */
 	bool GetWrt_Vol_Sol(void);
-  
-  /*!
+
+	/*!
 	 * \brief Get information about writing a surface solution file.
 	 * \return <code>TRUE</code> means that a surface solution file will be written.
 	 */
 	bool GetWrt_Srf_Sol(void);
-  
-  /*!
+
+	/*!
 	 * \brief Get information about writing a surface comma-separated values (CSV) solution file.
 	 * \return <code>TRUE</code> means that a surface comma-separated values (CSV) solution file will be written.
 	 */
 	bool GetWrt_Csv_Sol(void);
-  
+
   /*!
+	 * \brief Get information about writing a restart solution file.
+	 * \return <code>TRUE</code> means that a restart solution file will be written.
+	 */
+	bool GetWrt_Restart(void);
+  
+	/*!
 	 * \brief Get information about writing a CGNS volume solution file.
 	 * \return <code>TRUE</code> means that a CGNS volume solution file will be written.
 	 */
 	bool GetWrt_Sol_CGNS(void);
-  
+
 	/*!
 	 * \brief Get the alpha (convective) coefficients for the Runge-Kutta integration scheme.
 	 * \param[in] val_step - Index of the step.
@@ -1644,8 +1677,8 @@ public:
 	 * \param[in] val_perbound - Index of the surface with the periodic boundary.
 	 */	
 	void SetMarker_All_PerBound(unsigned short val_marker, short val_perbound);
-  
-  /*!
+
+	/*!
 	 * \brief Set if a marker <i>val_marker</i> is going to be sliding <i>val_perbound</i>
 	 *        (read from the config file).
 	 * \param[in] val_marker - Index of the marker in which we are interested.
@@ -1675,13 +1708,13 @@ public:
 	 * \return The internal index of the periodic boundary condition. 
 	 */		
 	short GetMarker_All_PerBound(unsigned short val_marker);
-  
-  /*!
+
+	/*!
 	 * \brief Get an internal index that identifies the sliding boundary conditions.
 	 * \param[in] val_marker - Value of the marker that corresponds with the sliding boundary.
 	 * \return The internal index of the sliding boundary condition.
 	 */
-  unsigned short GetMarker_All_Sliding(unsigned short val_marker);
+	unsigned short GetMarker_All_Sliding(unsigned short val_marker);
 
 	/*! 
 	 * \brief Get the monitoring information for a marker <i>val_marker</i>.
@@ -1755,13 +1788,13 @@ public:
 	 * \return Numerical solver for implicit formulation (solving the linear system).
 	 */
 	unsigned short GetKind_Linear_Solver(void);
-	
+
 	/*!
 	 * \brief Get the kind of preconditioner for the implicit solver.
 	 * \return Numerical preconditioner for implicit formulation (solving the linear system).
 	 */
 	unsigned short GetKind_Linear_Solver_Prec(void);
-	
+
 	/*!
 	 * \brief Set the kind of preconditioner for the implicit solver.
 	 * \return Numerical preconditioner for implicit formulation (solving the linear system).
@@ -1802,7 +1835,7 @@ public:
 	 * \return Kind of the turbulence model.
 	 */
 	unsigned short GetKind_Turb_Model(void);
-	
+
 	/*! 
 	 * \brief Get the kind of the transition model.
 	 * \return Kind of the transion model.
@@ -1892,7 +1925,7 @@ public:
 	 * \return Kind of integration scheme for the plasma equations.
 	 */
 	unsigned short GetKind_TimeIntScheme_Plasma(void);
-	
+
 	/*! 
 	 * \brief Get the kind of integration scheme (explicit or implicit) 
 	 *        for the adjoint plasma equations.
@@ -1946,7 +1979,7 @@ public:
 	 * \return Kind of convective numerical scheme for the plasma equations.
 	 */		
 	unsigned short GetKind_ConvNumScheme_Plasma(void);
-	
+
 	/*! 
 	 * \brief Get the kind of convective numerical scheme for the adjoint plasma 
 	 *        equations (centered or upwind).
@@ -2046,7 +2079,7 @@ public:
 	 * \return Kind of viscous numerical scheme for the flow equations.
 	 */		
 	unsigned short GetKind_ViscNumScheme_Plasma(void);
-	
+
 	/*! 
 	 * \brief Get the kind of viscous numerical scheme for the adjoint plasma
 	 *        equations (Galerkin, Average of gradients)
@@ -2080,7 +2113,7 @@ public:
 	 * \return Kind of source term for the plasma equations.
 	 */			
 	unsigned short GetKind_SourNumScheme_Plasma(void);
-	
+
 	/*! 
 	 * \brief Get the kind of source term for the adjoint plasma equations.
 	 * \note This value is obtained from the config file, and it is constant 
@@ -2088,7 +2121,7 @@ public:
 	 * \return Kind of source term for the adjoint plasma equations.
 	 */			
 	unsigned short GetKind_SourNumScheme_AdjPlasma(void);
-	
+
 	/*! 
 	 * \brief Get the kind of source term for the plasma equations.
 	 * \note This value is obtained from the config file, and it is constant 
@@ -2152,7 +2185,7 @@ public:
 	 * \return Kind of center convective numerical scheme for the flow equations.
 	 */
 	unsigned short GetKind_Centered_Plasma(void);
-	
+
 	/*! 
 	 * \brief Get the kind of center convective numerical scheme for the adjoint plasma equations.
 	 * \note This value is obtained from the config file, and it is constant 
@@ -2216,7 +2249,7 @@ public:
 	 * \return Kind of upwind convective numerical scheme for the adjoint plasma equations.
 	 */
 	unsigned short GetKind_Upwind_AdjPlasma(void);
-	
+
 	/*! 
 	 * \brief Get the method for limiting the spatial gradients.
 	 * \return Method for limiting the spatial gradients.
@@ -2264,7 +2297,7 @@ public:
 	 * \return Method for limiting the spatial gradients solving the Plasma equations.
 	 */
 	unsigned short GetKind_SlopeLimit_Plasma(void);
-	
+
 	/*! 
 	 * \brief Get the method for limiting the spatial gradients.
 	 * \return Method for limiting the spatial gradients solving the Plasma equations.
@@ -2289,39 +2322,39 @@ public:
 	 * \return Calibrated constant for the JST method for the flow equations.
 	 */		
 	double GetKappa_4th_Flow(void);
-	
+
 	/*!
 	 * \brief Value of the calibrated constant for the Lax method (center scheme).
 	 * \note This constant is used in coarse levels and with first order methods.
 	 * \return Calibrated constant for the Lax method.
 	 */		
 	double GetKappa_1st_Plasma(void);
-	
+
 	/*! 
 	 * \brief Value of the calibrated constant for the JST method (center scheme).
 	 * \return Calibrated constant for the JST method for the flow equations.
 	 */		
 	double GetKappa_2nd_Plasma(void);
-	
+
 	/*! 
 	 * \brief Value of the calibrated constant for the JST method (center scheme).
 	 * \return Calibrated constant for the JST method for the flow equations.
 	 */		
 	double GetKappa_4th_Plasma(void);
-	
+
 	/*!
 	 * \brief Value of the calibrated constant for the Lax method (center scheme).
 	 * \note This constant is used in coarse levels and with first order methods.
 	 * \return Calibrated constant for the Lax method.
 	 */		
 	double GetKappa_1st_AdjPlasma(void);
-	
+
 	/*! 
 	 * \brief Value of the calibrated constant for the JST method (center scheme).
 	 * \return Calibrated constant for the JST method for the flow equations.
 	 */		
 	double GetKappa_2nd_AdjPlasma(void);
-	
+
 	/*! 
 	 * \brief Value of the calibrated constant for the JST method (center scheme).
 	 * \return Calibrated constant for the JST method for the flow equations.
@@ -2650,12 +2683,12 @@ public:
 	 */
 	bool GetShow_Adj_Sens(void);
 
-  /*! 
-   * \brief Get the kind of inlet boundary condition treatment (total conditions or mass flow).
+	/*!
+	 * \brief Get the kind of inlet boundary condition treatment (total conditions or mass flow).
 	 * \return Kind of inlet boundary condition.
 	 */
 	unsigned short GetKind_Inlet(void);
-  
+
 	/*! 
 	 * \brief Provides information about the the nodes that are going to be moved on a deformation 
 	 *        volumetric grid deformation.
@@ -2664,7 +2697,7 @@ public:
 	bool GetHold_GridFixed(void);
 
 	/*! 
-     * \brief Get the kind of adjoint approach. There are several options: Continuous, Discrete, Hyrbid
+	 * \brief Get the kind of adjoint approach. There are several options: Continuous, Discrete, Hyrbid
 	 * \return Kind of adjoint approach.
 	 */
 	unsigned short GetKind_Adjoint(void);
@@ -2677,6 +2710,12 @@ public:
 	 */
 	unsigned short GetKind_ObjFunc(void);
 	
+	/*!
+	 * \brief Get the kind of geometrical objective function.
+	 * \return Kind of geometrical objective function.
+	 */
+	unsigned short GetKind_GeoObjFunc(void);
+
 	/*!
 	 * \brief Get the kind of sensitivity smoothing technique.
 	 * \return Kind of sensitivity smoothing technique.
@@ -2739,7 +2778,7 @@ public:
 	 * \return: The number of chemical reactions, read from input file
 	 */
 	double GetArrheniusTheta(unsigned short iReaction);
-	
+
 	/*! 
 	 * \brief Provides the characteristic vibrational temperature for calculating e_vib
 	 * \return: The number of chemical reactions, read from input file
@@ -2769,30 +2808,6 @@ public:
 	 * \return: Mass of each species in Kg
 	 */
 	double GetMolecular_Diameter(unsigned short iSpecies);
-
-	/*!
-	 * \brief Provides the magnetic interaction parameter
-	 * \return: Magnetic interaction parameter
-	 */
-	double GetMagneticInteractionParameter();
-
-	/*!
-	 * \brief Provides the length scale in magnetic interaction parameter
-	 * \return: Reference Length of the interaction parameter
-	 */
-	double GetReferenceLength();
-
-	/*!
-	 * \brief Provides the density in magnetic interaction parameter
-	 * \return: Reference Density of the interaction parameter
-	 */
-	double GetReferenceDensity();
-
-	/*!
-	 * \brief Provides the seed in magnetic interaction parameter
-	 * \return: Reference speed of the interaction parameter
-	 */
-	double GetReferenceSpeed();
 
 	/*!
 	 * \brief Retrieves the number of monatomic species in the multicomponent gas.
@@ -2858,17 +2873,29 @@ public:
 	double GetViscosity_Ref(unsigned short iSpecies);
 
 	/*!
-	 * \brief Provides the Dipole moment of a magnet
-	 * \return: dipole moment value
+	 * \brief Provides the value of the magnetic field at the stagnation point
+	 * \return: magnetic field in Tesla
 	 */
-	double GetMagneticDipole(unsigned short iDim);
+	double GetStagnation_B();
+
+	/*!
+	 * \brief Provides the value of the electrical conductivity
+	 * \return: electrical conductivity
+	 */
+	double GetElec_Conductivity();
+
+	/*!
+	 * \brief Provides the dipole location
+	 * \return: minimum dipole distance
+	 */
+	double GetDipoleDist();
 
 	/*!
 	 * \brief Provides the restart information.
 	 * \return Restart information, if <code>TRUE</code> then the code will use the solution as restart.
 	 */		
 	bool GetRestart(void);
-	
+
 	/*!
 	 * \brief Provides the restart information.
 	 * \return Restart information, if <code>TRUE</code> then the code will use the Euler solution as restart for the plasma problem.
@@ -3010,7 +3037,7 @@ public:
 	 * \return Name of the restart file for the flow variables.
 	 */
 	string GetRestart_HeatFileName(void);
-	
+
 	/*! 
 	 * \brief Get the name of the restart file for the flow variables.
 	 * \return Name of the restart file for the flow variables.
@@ -3046,6 +3073,12 @@ public:
 	 * \return Name of the file with the gradient of the objective function.
 	 */
 	string GetObjFunc_Grad_FileName(void);
+	
+	/*! 
+	 * \brief Get the name of the file with the gradient of the objective function.
+	 * \return Name of the file with the gradient of the objective function.
+	 */
+	string GetObjFunc_Eval_FileName(void);
 
 	/*! 
 	 * \brief Get the name of the file with the surface information for the flow problem.
@@ -3185,182 +3218,194 @@ public:
 	 * \return <code>TRUE</code> if there is a grid movement; otherwise <code>FALSE</code>.
 	 */
 	bool GetGrid_Movement(void);
-  
-  /*!
+
+	/*!
 	 * \brief Get the type of dynamic mesh motion.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Type of dynamic mesh motion.
 	 */
 	unsigned short GetKind_GridMovement(unsigned short val_iZone);
 
-  /*!
+	/*!
 	 * \brief Get x-coordinate of the mesh motion origin.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return X-coordinate of the mesh motion origin.
 	 */
 	double GetMotion_Origin_X(unsigned short val_iZone);
-  
-  /*!
+
+	/*!
 	 * \brief Get y-coordinate of the mesh motion origin
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Y-coordinate of the mesh motion origin.
 	 */
 	double GetMotion_Origin_Y(unsigned short val_iZone);
-  
-  /*!
+
+	/*!
 	 * \brief Get z-coordinate of the mesh motion origin
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Z-coordinate of the mesh motion origin.
 	 */
 	double GetMotion_Origin_Z(unsigned short val_iZone);
-  
-  /*!
+
+	/*!
 	 * \brief Set x-coordinate of the mesh motion origin.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \param[in] val_origin - New x-coordinate of the mesh motion origin.
+	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+	 * \param[in] val_origin - New x-coordinate of the mesh motion origin.
 	 */
 	void SetMotion_Origin_X(unsigned short val_iZone, double val_origin);
-  
-  /*!
+
+	/*!
 	 * \brief Set y-coordinate of the mesh motion origin
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \param[in] val_origin - New y-coordinate of the mesh motion origin.
+	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+	 * \param[in] val_origin - New y-coordinate of the mesh motion origin.
 	 */
 	void SetMotion_Origin_Y(unsigned short val_iZone, double val_origin);
-  
-  /*!
+
+	/*!
 	 * \brief Set z-coordinate of the mesh motion origin
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-   * \param[in] val_origin - New y-coordinate of the mesh motion origin.
+	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+	 * \param[in] val_origin - New y-coordinate of the mesh motion origin.
 	 */
 	void SetMotion_Origin_Z(unsigned short val_iZone, double val_origin);
-  
-  /*!
+
+	/*!
 	 * \brief Get the angular velocity of the mesh about the x-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Angular velocity of the mesh about the x-axis.
 	 */
 	double GetRotation_Rate_X(unsigned short val_iZone);
-  
-  /*!
+
+	/*!
 	 * \brief Get the angular velocity of the mesh about the y-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Angular velocity of the mesh about the y-axis.
 	 */
 	double GetRotation_Rate_Y(unsigned short val_iZone);
-  
-  /*!
+
+	/*!
 	 * \brief Get the angular velocity of the mesh about the z-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Angular velocity of the mesh about the z-axis.
 	 */
 	double GetRotation_Rate_Z(unsigned short val_iZone);
-  
-  /*!
+
+	/*!
 	 * \brief Get the angular frequency of a mesh pitching about the x-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Angular frequency of a mesh pitching about the x-axis.
 	 */
 	double GetPitching_Omega_X(unsigned short val_iZone);
-  
-  /*!
+
+	/*!
 	 * \brief Get the angular frequency of a mesh pitching about the y-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Angular frequency of a mesh pitching about the y-axis.
 	 */
 	double GetPitching_Omega_Y(unsigned short val_iZone);
-  
-  /*!
+
+	/*!
 	 * \brief Get the angular frequency of a mesh pitching about the z-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Angular frequency of a mesh pitching about the z-axis.
 	 */
 	double GetPitching_Omega_Z(unsigned short val_iZone);
-  
-  /*!
+
+	/*!
 	 * \brief Get the pitching amplitude about the x-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Pitching amplitude about the x-axis.
 	 */
 	double GetPitching_Ampl_X(unsigned short val_iZone);
-  
-  /*!
+
+	/*!
 	 * \brief Get the pitching amplitude about the y-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Pitching amplitude about the y-axis.
 	 */
 	double GetPitching_Ampl_Y(unsigned short val_iZone);
-  
-  /*!
+
+	/*!
 	 * \brief Get the pitching amplitude about the z-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Pitching amplitude about the z-axis.
 	 */
 	double GetPitching_Ampl_Z(unsigned short val_iZone);
-  
-  /*!
+
+	/*!
 	 * \brief Get the pitching phase offset about the x-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Pitching phase offset about the x-axis.
 	 */
 	double GetPitching_Phase_X(unsigned short val_iZone);
-  
-  /*!
+
+	/*!
 	 * \brief Get the pitching phase offset about the y-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Pitching phase offset about the y-axis.
 	 */
 	double GetPitching_Phase_Y(unsigned short val_iZone);
-  
-  /*!
+
+	/*!
 	 * \brief Get the pitching phase offset about the z-axis.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Pitching phase offset about the z-axis.
 	 */
 	double GetPitching_Phase_Z(unsigned short val_iZone);
-  
-  /*!
+
+	/*!
 	 * \brief Get the angular frequency of a mesh plunging in the x-direction.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Angular frequency of a mesh plunging in the x-direction.
 	 */
 	double GetPlunging_Omega_X(unsigned short val_iZone);
-  
-  /*!
+
+	/*!
 	 * \brief Get the angular frequency of a mesh plunging in the y-direction.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Angular frequency of a mesh plunging in the y-direction.
 	 */
 	double GetPlunging_Omega_Y(unsigned short val_iZone);
-  
-  /*!
+
+	/*!
 	 * \brief Get the angular frequency of a mesh plunging in the z-direction.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Angular frequency of a mesh plunging in the z-direction.
 	 */
 	double GetPlunging_Omega_Z(unsigned short val_iZone);
-  
-  /*!
+
+	/*!
 	 * \brief Get the plunging amplitude in the x-direction.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Plunging amplitude in the x-direction.
 	 */
 	double GetPlunging_Ampl_X(unsigned short val_iZone);
-  
-  /*!
+
+	/*!
 	 * \brief Get the plunging amplitude in the y-direction.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Plunging amplitude in the y-direction.
 	 */
 	double GetPlunging_Ampl_Y(unsigned short val_iZone);
-  
-  /*!
+
+	/*!
 	 * \brief Get the plunging amplitude in the z-direction.
-   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Plunging amplitude in the z-direction.
 	 */
 	double GetPlunging_Ampl_Z(unsigned short val_iZone);
-  
+
+	/*!
+	 * \brief Get the minimum value of Beta for Roe-Turkel preconditioner
+	 * \return the minimum value of Beta for Roe-Turkel preconditioner
+	 */
+	double GetminTurkelBeta();
+
+	/*!
+	 * \brief Get the minimum value of Beta for Roe-Turkel preconditioner
+	 * \return the minimum value of Beta for Roe-Turkel preconditioner
+	 */
+	double GetmaxTurkelBeta();
+
 	/*!
 	 * \brief Get information about the compressible or imcompressible solver.
 	 * \return <code>TRUE</code> if it is a incompressible formulation; otherwise <code>FALSE</code>.
@@ -3410,12 +3455,24 @@ public:
 	bool GetMacCormackRelaxation(void);
 
 	/*! 
-	 * \brief Get information about the the gravity force.
+	 * \brief Get information about the gravity force.
 	 * \return <code>TRUE</code> if it uses the gravity force; otherwise <code>FALSE</code>.
 	 */
 	bool GetGravityForce(void);
 
 	/*! 
+	 * \brief Get information about the magnetic force.
+	 * \return <code>TRUE</code> if it uses the magnetic force; otherwise <code>FALSE</code>.
+	 */
+	bool GetMagnetic_Force(void);
+
+	/*!
+	 * \brief Get information about the Joule heating.
+	 * \return <code>TRUE</code> if it uses joule heating; otherwise <code>FALSE</code>.
+	 */
+	bool GetJouleHeating(void);
+
+	/*!
 	 * \brief Get information about the rotational frame.
 	 * \return <code>TRUE</code> if there is a rotational frame; otherwise <code>FALSE</code>.
 	 */
@@ -3438,7 +3495,7 @@ public:
 	 * \return <code>TRUE</code> if there is smoothing of the grid coordinates; otherwise <code>FALSE</code>.
 	 */	
 	bool GetSmoothNumGrid(void);
-	
+
 	/*! 
 	 * \brief Set information about there is a smoothing of the grid coordinates.
 	 * \param[in] val_smoothnumgrid - <code>TRUE</code> if there is smoothing of the grid coordinates; otherwise <code>FALSE</code>.
@@ -3506,8 +3563,8 @@ public:
 	 * \return Periodic information of the boundary in the config information of the marker <i>val_marker</i>.
 	 */	
 	unsigned short GetMarker_Config_PerBound(string val_marker);
-  
-  /*!
+
+	/*!
 	 * \brief Get the sliding information from the config definition of the marker <i>val_marker</i>.
 	 * \return Sliding information of the boundary in the config information of the marker <i>val_marker</i>.
 	 */
@@ -3625,31 +3682,31 @@ public:
 	 * \return Periodic donor marker from the config information for the marker <i>val_marker</i>.
 	 */	
 	unsigned short GetMarker_Periodic_Donor(string val_marker);
-  
-  /*!
+
+	/*!
 	 * \brief Get the sliding interface donor marker for boundary <i>val_marker</i>.
 	 * \return Sliding interface donor marker from the config information for the marker <i>val_marker</i>.
 	 */
 	string GetMarker_Sliding_Donor(string val_marker);
-  
-  /*!
+
+	/*!
 	 * \brief Get the sliding interface donor domain for boundary <i>val_marker</i>.
 	 * \return Sliding interface donor domain from the config information for the marker <i>val_marker</i>.
 	 */
 	unsigned short GetSlideDonor_Zone(string val_marker);
-  
-  /*!
+
+	/*!
 	 * \brief Get the sliding interface domain for boundary <i>val_marker</i>.
 	 * \return Sliding interface domain from the config information for the marker <i>val_marker</i>.
 	 */
 	unsigned short GetSlideBound_Zone(string val_marker);
 
-  /*!
+	/*!
 	 * \brief Flag for relative motion between zones.
 	 * \return <code>TRUE</code> if there is relative motion (need to search & interpolate); otherwise <code>FALSE</code>.
 	 */
 	bool GetRelative_Motion(void);
-  
+
 	/*!
 	 * \brief Get information about converting a mesh from CGNS to SU2 format.
 	 * \return <code>TRUE</code> if a conversion is requested; otherwise <code>FALSE</code>.
@@ -3722,7 +3779,7 @@ public:
 	 * \return The total temperature.
 	 */	
 	double GetNozzle_Ttotal(string val_index);
-	
+
 	/*!
 	 * \brief Get the total temperature at an inlet boundary.
 	 * \param[in] val_index - Index corresponding to the inlet boundary.
@@ -3730,27 +3787,27 @@ public:
 	 */	
 	double GetInlet_Ttotal(string val_index);
 
-  /*!
+	/*!
 	 * \brief Get the temperature at a supersonic inlet boundary.
 	 * \param[in] val_index - Index corresponding to the inlet boundary.
 	 * \return The inlet density.
 	 */	
 	double GetInlet_Temperature(string val_index);
-  
-  /*!
+
+	/*!
 	 * \brief Get the pressure at a supersonic inlet boundary.
 	 * \param[in] val_index - Index corresponding to the inlet boundary.
 	 * \return The inlet pressure.
 	 */	
 	double GetInlet_Pressure(string val_index);
-  
-  /*!
+
+	/*!
 	 * \brief Get the velocity vector at a supersonic inlet boundary.
 	 * \param[in] val_index - Index corresponding to the inlet boundary.
 	 * \return The inlet velocity vector.
 	 */
 	double* GetInlet_Velocity(string val_index);
-  
+
 	/*!
 	 * \brief Get the fixed value at the Dirichlet boundary.
 	 * \param[in] val_index - Index corresponding to the Dirichlet boundary.
@@ -3771,7 +3828,7 @@ public:
 	 * \return The total pressure.
 	 */
 	double GetInlet_Ptotal(string val_index);
-	
+
 	/*!
 	 * \brief Get the total pressure at an nacelle boundary.
 	 * \param[in] val_index - Index corresponding to the inlet boundary.
@@ -3847,6 +3904,20 @@ public:
 	 * \return The outlet pressure.
 	 */
 	double GetOutlet_Pressure(string val_index);
+  
+  /*!
+	 * \brief Get the wall temperature (static) at an isothermal boundary.
+	 * \param[in] val_index - Index corresponding to the isothermal boundary.
+	 * \return The wall temperature.
+	 */
+	double GetIsothermal_Temperature(string val_index);
+  
+  /*!
+	 * \brief Get the wall heat flux on a constant heat flux boundary.
+	 * \param[in] val_index - Index corresponding to the constant heat flux boundary.
+	 * \return The heat flux.
+	 */
+	double GetWall_HeatFlux(string val_index);
 
 	/*!
 	 * \brief Get the back pressure (static) at an outlet boundary.
@@ -3854,7 +3925,7 @@ public:
 	 * \return The outlet pressure.
 	 */
 	double GetFanFace_Mach(string val_marker);
-	
+
 	/*!
 	 * \brief Get the displacement value at an displacement boundary.
 	 * \param[in] val_index - Index corresponding to the displacement boundary.

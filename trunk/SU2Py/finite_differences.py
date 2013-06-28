@@ -3,7 +3,7 @@
 ## \file finite_differences.py
 #  \brief Python script for doing the finite differences computation using the SU2 suite.
 #  \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.
+#  \version 2.0.1
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -26,9 +26,6 @@ import os, time, sys, shutil, numpy, libSU2
 from optparse import OptionParser
 from parallel_computation import parallel_computation
 from parallel_deformation import parallel_deformation
-
-SU2_RUN = os.environ['SU2_RUN'] 
-sys.path.append( SU2_RUN ) 
 
 # -------------------------------------------------------------------
 #  Main 
@@ -60,10 +57,9 @@ def main():
 # -------------------------------------------------------------------
 
 def finite_differences( filename             , 
-                        partitions = 1       , 
+                        partitions = 0       , 
                         step       = 1e-4    ,
-                        output     = 'False' ,
-                        logfile    = None     ):
+                        output     = 'False'  ):
    
     # General and default parameters
     Config_INP_filename   = filename
@@ -73,16 +69,11 @@ def finite_differences( filename             ,
     History_filename      = "history_"          + Config_INP_filename.replace('.cfg','')
     objfunc_grad_filename = "objfunc_grad_adj_" + Config_INP_filename.replace('.cfg','.dat')
     gradient_filename     = "fin_diff_"         + Config_INP_filename.replace('.cfg','')
-    use_logfile           = not logfile is None
+    parallel              = partitions > 1
     
     # Finite Difference Step
     val_FDStep    = [1E-4] # default value, can add additional steps
     val_FDStep[0] = float(step)
-    
-    # running parallel?
-    if int(partitions) == 1:
-        parallel = False
-    else : parallel = True
     
     # Read design variable information
     params_get = libSU2.Get_ConfigParams( Config_INP_filename )
@@ -141,22 +132,11 @@ def finite_differences( filename             ,
     # copy working config files
     shutil.copy(Config_INP_filename,Config_MDC_filename)
     shutil.copy(Config_INP_filename,Config_CFD_filename)
-    
-    # some os commands
-    run_SU2_CFD = "SU2_CFD " + Config_CFD_filename
-    run_SU2_MDC = "SU2_MDC " + Config_MDC_filename
-    
-    if use_logfile:
-        run_SU2_CFD = run_SU2_CFD + ' >> ' + logfile  
-        run_SU2_MDC = run_SU2_MDC + ' >> ' + logfile  
-    
+
     
     # -------------------------------------------------------------------
     # INITIAL CFD SOLUTION
     # -------------------------------------------------------------------
-    
-    #if use_logfile:
-        #sys.stdout.write( "    Initial Solution  ... ")    
     
     # write parameters
     params_set = { 'MATH_PROBLEM'  : 'DIRECT'         ,
@@ -164,14 +144,10 @@ def finite_differences( filename             ,
     libSU2.Set_ConfigParams(Config_CFD_filename,params_set)
     
     # RUN CFD
-    if parallel: 
-        parallel_computation( filename            = Config_CFD_filename ,
-                              partitions          = partitions          ,
-                              divide_grid         = "True"              ,
-                              output              = output              ,
-                              logfile             = logfile              )
-    else: 
-        os.system ( run_SU2_CFD )
+    parallel_computation( filename    = Config_CFD_filename ,
+                          partitions  = partitions          , # handles 0 as serial
+                          divide_grid = "True"              ,
+                          output      = output               )
           
     # Read Objective Function Values
     ObjFun_values = libSU2.get_ObjFunVals( History_filename+plotfile_ext , special_cases )
@@ -194,8 +170,6 @@ def finite_differences( filename             ,
         params_set = { 'RESTART_SOL' : 'YES' }
         libSU2.Set_ConfigParams(Config_CFD_filename,params_set)
 
-    #if use_logfile:
-        #sys.stdout.write( "Done \n") 
         
     # -------------------------------------------------------------------
     # ITERATE THROUGH DESIGN VARIABLES
@@ -211,9 +185,6 @@ def finite_differences( filename             ,
             this_DV_Parameters = Definition_DV['PARAM'][iDesignVar]
             if this_DV_Kind == "AOA" or this_DV_Kind == "MACH_NUMBER":
                 this_DV_Kind = "NO_DEFORMATION"
-
-            #if use_logfile:
-                #sys.stdout.write( "    Variable %3i      ... " % iDesignVar )   
             
             # -------------------------------------------------------------------
             # MESH DEFORMATION
@@ -230,14 +201,10 @@ def finite_differences( filename             ,
             libSU2.Set_ConfigParams(Config_MDC_filename,params_set)
     
             # Apply grid deformation
-            if parallel: 
-                parallel_deformation( filename            = Config_MDC_filename ,
-                                      partitions          = partitions          ,
-                                      divide_grid         = "False"             ,
-                                      merge_grid          = "False"             ,
-                                      logfile             = logfile              )
-            else: 
-                os.system ( run_SU2_MDC )
+            parallel_deformation( filename    = Config_MDC_filename ,
+                                  partitions  = partitions          ,
+                                  divide_grid = "False"             ,
+                                  merge_grid  = "False"              )
     
             # -------------------------------------------------------------------
             # CFD SOLUTION
@@ -256,18 +223,13 @@ def finite_differences( filename             ,
             libSU2.Set_ConfigParams(Config_CFD_filename,params_set)
             
             # CFD computation to evaluate nondimensional coefficient
-            if parallel: 
-                parallel_computation( filename            = Config_CFD_filename ,
-                                      partitions          = partitions          ,
-                                      divide_grid         = "False"             ,                                     
-                                      output              = "False"             ,
-                                      logfile             = logfile              )
-            else: 
-                os.system ( run_SU2_CFD )                
+            parallel_computation( filename            = Config_CFD_filename ,
+                                  partitions          = partitions          ,
+                                  divide_grid         = "False"             ,
+                                  output              = "False"              )              
                 
             # Read Objective Function Values
             ObjFun_values = libSU2.get_ObjFunVals( History_filename+plotfile_ext, special_cases )        
-    
     
             # Keep relevent values
             This_ObjFun_values = [ ObjFun_values[this_name] for this_name in ObjFun_names ]            
@@ -305,9 +267,6 @@ def finite_differences( filename             ,
                 
             os.remove(History_filename+plotfile_ext)
             
-            #if use_logfile:
-                #sys.stdout.write( "Done \n")             
-    
         #: for each FDStep   
         
     #: for each DesignVariable

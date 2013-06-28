@@ -31,7 +31,7 @@ class YesNoBox(wx.CheckBox):
 class LabeledComboBox():
   '''Wrap a StaticText and TextCtrl into a single object'''
 
-  def __init__(self,parent,option_name,txtlabel,option_default,option_values,option_type):
+  def __init__(self,parent,option_name,txtlabel,option_default,option_values,option_type,option_description):
     self.label       = wx.StaticText(parent,label=txtlabel+", "+option_type)
     self.option_name = option_name
     self.control     = wx.ComboBox(parent,value=option_default,choices=option_values)
@@ -42,8 +42,9 @@ class LabeledComboBox():
     self.sizer.Add(self.control,wx.EXPAND)
     self.sizer.SetMinSize((400,20))
 
-    self.option_default = option_default
-    self.option_type    = option_type
+    self.option_default     = option_default
+    self.option_type        = option_type
+    self.option_description = option_description
 
   def GetSizer(self):
     return self.sizer
@@ -134,7 +135,7 @@ class config_gui(wx.Frame):
       yctr = 0
       for j,opt in enumerate(option_data[category]):
         if opt.option_type in ["EnumOption","MathProblem","SpecialOption","ConvectOption"]:
-          self.ctrldict[category].append(LabeledComboBox(self.right_panel,opt.option_name,opt.option_name,opt.option_default,opt.option_values,opt.option_type))
+          self.ctrldict[category].append(LabeledComboBox(self.right_panel,opt.option_name,opt.option_name,opt.option_default,opt.option_values,opt.option_type,opt.option_description))
         else:
           self.ctrldict[category].append(LabeledTextCtrl(self.right_panel,opt.option_name,opt.option_name,opt.option_default,opt.option_type))
 

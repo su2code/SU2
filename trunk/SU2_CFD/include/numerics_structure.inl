@@ -2,7 +2,7 @@
  * \file numerics_structure.inl
  * \brief In-Line subroutines of the <i>numerics_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.
+ * \version 2.0.1
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -56,6 +56,8 @@ inline void CNumerics::SetResidual(double **val_stiffmatrix_elem, CConfig *confi
 inline void CNumerics::GetEq_Rxn_Coefficients(double **EqnRxnConstants, CConfig *config) { };
 														
 inline void CNumerics::SetResidual(double *val_residual, double **val_Jacobian_i, CConfig *config) { }
+
+inline void CNumerics::SetResidual_TransLM(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config, double &gamma_sep) {}
 
 inline void CNumerics::SetResidual_Axisymmetric(double *val_residual, CConfig *config) { }
 
@@ -142,6 +144,16 @@ inline void CNumerics::SetConservative(double *val_u_i, double *val_u_j) {
 	U_j = val_u_j;
 }
 
+inline void CNumerics::SetPrimitive(double *val_v_i, double *val_v_j) {
+	V_i = val_v_i;
+	V_j = val_v_j;
+}
+
+inline void CNumerics::SetPrimitive(double **val_v_i, double**val_v_j) {
+  Varray_i = val_v_i;
+  Varray_j = val_v_j;
+}
+
 inline void CNumerics::SetConservative(double *val_u_0, double *val_u_1, double *val_u_2) {
 	U_0 = val_u_0;
 	U_1 = val_u_1;
@@ -167,7 +179,13 @@ inline void CNumerics::SetChargeDensity(double *val_u_0, double *val_u_1, double
 }
 
 inline void CNumerics::SetElectricField(double *val_Efield) {}
-	
+
+inline double* CNumerics::GetMagneticField() {return 0;}
+
+inline double CNumerics::GetMagneticForce(unsigned short val_Species, unsigned short val_dim) {return 0;}
+
+inline void CNumerics::SetElec_Cond() {}
+
 inline void CNumerics::SetLaminarViscosity(double val_lam_viscosity_i, double val_lam_viscosity_j) {
 	Laminar_Viscosity_i = val_lam_viscosity_i;
 	Laminar_Viscosity_j = val_lam_viscosity_j;
@@ -176,6 +194,16 @@ inline void CNumerics::SetLaminarViscosity(double val_lam_viscosity_i, double va
 inline void CNumerics::SetLaminarViscosity(double val_lam_viscosity_i, double val_lam_viscosity_j, unsigned short iSpecies) {
 	Laminar_Viscosity_MultipleSpecies_i[iSpecies] = val_lam_viscosity_i;
 	Laminar_Viscosity_MultipleSpecies_j[iSpecies] = val_lam_viscosity_j;
+}
+
+inline void CNumerics::SetThermalConductivity(double val_therm_conductivity_i, double val_therm_conductivity_j, unsigned short iSpecies) {
+	Thermal_Conductivity_MultipleSpecies_i[iSpecies] = val_therm_conductivity_i;
+	Thermal_Conductivity_MultipleSpecies_j[iSpecies] = val_therm_conductivity_j;
+}
+
+inline void CNumerics::SetThermalConductivity_vib(double val_therm_conductivity_vib_i, double val_therm_conductivity_vib_j, unsigned short iSpecies) {
+	Thermal_Conductivity_vib_MultipleSpecies_i[iSpecies] = val_therm_conductivity_vib_i;
+	Thermal_Conductivity_vib_MultipleSpecies_j[iSpecies] = val_therm_conductivity_vib_j;
 }
 
 inline void CNumerics::SetEddyViscosity(double val_eddy_viscosity_i, double val_eddy_viscosity_j, unsigned short iSpecies) {
@@ -187,6 +215,8 @@ inline void CNumerics::SetEddyViscosity(double val_eddy_viscosity_i, double val_
 	Eddy_Viscosity_i=val_eddy_viscosity_i;
 	Eddy_Viscosity_j=val_eddy_viscosity_j;
 }
+
+inline void CNumerics::SetIntermittency(double intermittency_in) {}
 
 inline void CNumerics::SetTurbKineticEnergy(double val_turb_ke_i, double val_turb_ke_j) {
 	turb_ke_i = val_turb_ke_i;
@@ -246,6 +276,11 @@ inline void CNumerics::SetLevelSetVarGradient(double **val_levelsetvar_grad_i, d
 inline void CNumerics::SetPrimVarGradient(double **val_primvar_grad_i, double **val_primvar_grad_j) {
 	PrimVar_Grad_i = val_primvar_grad_i;
 	PrimVar_Grad_j = val_primvar_grad_j;
+}
+
+inline void CNumerics::SetPrimVarGradient(double ***val_primvar_grad_i, double ***val_primvar_grad_j) {
+  PrimVar_Grad_i_array = val_primvar_grad_i;
+  PrimVar_Grad_j_array = val_primvar_grad_j;
 }
 
 inline void CNumerics::SetConsVarGradient(double **val_consvar_grad_i, double **val_consvar_grad_j) {
@@ -437,7 +472,7 @@ inline void CNumerics::SetTemperature(double val_temp_i, double val_temp_j) {
 	Temp_j = val_temp_j;
 }
 
-inline void CNumerics::SetTemperature_TR(double* val_temp_i, double* val_temp_j) {
+inline void CNumerics::SetTemperature_tr(double* val_temp_i, double* val_temp_j) {
 	Temp_tr_i = val_temp_i;
 	Temp_tr_j = val_temp_j;
 }
@@ -455,6 +490,11 @@ inline void CNumerics::SetPressure(double* val_pressure_i, double* val_pressure_
 inline void CNumerics::SetPressure_Old(double val_pressure_old_i, double val_pressure_old_j) {
 	Pressure_Old_i = val_pressure_old_i;
 	Pressure_Old_j = val_pressure_old_j;
+}
+
+inline void CNumerics::SetPressure_Old(double *val_pressure_old_i, double *val_pressure_old_j) {
+	Pressure_Old_i_MS = val_pressure_old_i;
+	Pressure_Old_j_MS = val_pressure_old_j;
 }
 
 inline void CNumerics::SetAuxVarGrad(double *val_auxvargrad_i, double *val_auxvargrad_j) {
@@ -484,7 +524,22 @@ inline void CSourcePieceWise_TurbSST::SetCrossDiff(double val_CDkw_i, double val
 	CDkw = val_CDkw_i;
 }			
 
+inline void CSourcePieceWise_TurbSA::SetIntermittency(double intermittency_in) {intermittency=intermittency_in;}
+
 inline void CSourcePieceWise_Plasma::SetElectricField(double *val_Efield) { ElectricField = val_Efield; }
+
+inline double* CSourcePieceWise_Plasma::GetMagneticField() { return JcrossB; }
+
+inline double CSourcePieceWise_Plasma::GetMagneticForce(unsigned short val_Species, unsigned short val_dim) { return Mag_Force[val_Species][val_dim]; }
 
 inline double CUpwRoe_Turkel_Flow::GetPrecond_Beta() { return Beta; }
 
+inline double* CSource_Magnet::GetMagneticField() { return Current_Density; }
+
+inline double CNumerics::GetElec_CondIntegral() {return 0;}
+
+inline double CSource_JouleHeating::GetElec_CondIntegral() {return Elec_Conduct*Coord_i[1]*(Coord_i[1]-Coord_j[1]);}
+
+inline void CNumerics::SetElec_CondIntegralsqr(double val_var) {}
+
+inline void CSource_JouleHeating::SetElec_CondIntegralsqr(double val_var) {Integralsqr = val_var; }

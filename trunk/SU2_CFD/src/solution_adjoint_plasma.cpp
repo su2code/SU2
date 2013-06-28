@@ -2,7 +2,7 @@
  * \file solution_adjoint_plasma.cpp
  * \brief Main subrotuines for solving adjoint problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.
+ * \version 2.0.1
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -157,7 +157,6 @@ CAdjPlasmaSolution::CAdjPlasmaSolution(CGeometry *geometry, CConfig *config) : C
 			case MOMENT_Y_COEFFICIENT: AdjExt = "_cmy.dat"; break;
 			case MOMENT_Z_COEFFICIENT: AdjExt = "_cmz.dat"; break;
 			case EFFICIENCY: AdjExt = "_eff.dat"; break;
-			case ELECTRIC_CHARGE: AdjExt = "_ec.dat"; break;
 			case EQUIVALENT_AREA: AdjExt = "_ea.dat"; break;
 			case NEARFIELD_PRESSURE: AdjExt = "_nfp.dat"; break;
       case FORCE_X_COEFFICIENT: AdjExt = "_cfx.dat"; break;
@@ -520,11 +519,11 @@ void CAdjPlasmaSolution::Source_Residual(CGeometry *geometry, CSolution **soluti
     
     /*--- Set temperature ---*/
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
-      Temperature_tr_i[iSpecies] = solution_container[PLASMA_SOL]->node[iPoint]->GetTemperature_TR(iSpecies);
+      Temperature_tr_i[iSpecies] = solution_container[PLASMA_SOL]->node[iPoint]->GetTemperature_tr(iSpecies);
       Temperature_vib_i[iSpecies] = solution_container[PLASMA_SOL]->node[iPoint]->GetTemperature_vib(iSpecies);
       Pressure_i[iSpecies] = solution_container[PLASMA_SOL]->node[iPoint]->GetPressure(iSpecies);
     }
-    solver->SetTemperature_TR(Temperature_tr_i, Temperature_tr_i);
+    solver->SetTemperature_tr(Temperature_tr_i, Temperature_tr_i);
     solver->SetTemperature_vib(Temperature_vib_i, Temperature_vib_i);
     
     /*--- Load auxiliary vector with local adjoint variables ---*/
@@ -635,6 +634,11 @@ void CAdjPlasmaSolution::Source_Residual(CGeometry *geometry, CSolution **soluti
 	delete[] Temperature_vib_i;
 	delete[] Pressure_i;
 }
+
+void CAdjPlasmaSolution::Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+																				 CConfig *config, unsigned short iMesh) {
+}
+
 
 void CAdjPlasmaSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **solution_container, CConfig *config) {
 	unsigned short iVar;

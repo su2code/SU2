@@ -2,7 +2,7 @@
  * \file solution_direct_fea.cpp
  * \brief Main subrotuines for solving the FEA equation.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.
+ * \version 2.0.1
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -404,6 +404,11 @@ void CFEASolution::Source_Residual(CGeometry *geometry, CSolution **solution_con
 		
 		
 	}
+
+}
+
+void CFEASolution::Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+																	 CConfig *config, unsigned short iMesh) {
 
 }
 
@@ -897,9 +902,9 @@ void CFEASolution::BC_FlowLoad(CGeometry *geometry, CSolution **solution_contain
 	unsigned short iDim;
 		
 	for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {		
-		Point_0 = geometry->bound[val_marker][iElem]->GetNode(0);	Coord_0_ = geometry->node[Point_0]->GetCoord(); Press_0 = node[Point_0]->GetPressure();
-		Point_1 = geometry->bound[val_marker][iElem]->GetNode(1);	Coord_1_ = geometry->node[Point_1]->GetCoord(); Press_1 = node[Point_1]->GetPressure();
-		if (nDim == 3) { Point_2 = geometry->bound[val_marker][iElem]->GetNode(2);	Coord_2_ = geometry->node[Point_2]->GetCoord(); Press_2 = node[Point_2]->GetPressure(); }
+		Point_0 = geometry->bound[val_marker][iElem]->GetNode(0);	Coord_0_ = geometry->node[Point_0]->GetCoord(); Press_0 = 1.0; //node[Point_0]->GetPressure();
+		Point_1 = geometry->bound[val_marker][iElem]->GetNode(1);	Coord_1_ = geometry->node[Point_1]->GetCoord(); Press_1 = 1.0; //node[Point_1]->GetPressure();
+		if (nDim == 3) { Point_2 = geometry->bound[val_marker][iElem]->GetNode(2);	Coord_2_ = geometry->node[Point_2]->GetCoord(); Press_2 = 1.0; }//node[Point_2]->GetPressure(); }
 		
 		/*--- Modification of the goemtry due to the current displacement (Value of the solution) ---*/
 		for (iDim = 0; iDim < nDim; iDim++) {
@@ -1487,8 +1492,8 @@ void CFEASolution::SetFEA_Load(CSolution ***flow_solution, CGeometry **fea_geome
 			for(iVertex = 0; iVertex < fea_geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
 				iPoint = fea_geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
 				iPoint_Donor = fea_geometry[MESH_0]->vertex[iMarker][iVertex]->GetDonorPoint();
-				Pressure = (flow_solution[MESH_0][FLOW_SOL]->node[iPoint_Donor]->GetPressure()-101325.0);
-				node[iPoint]->SetPressure(Pressure);
+				Pressure = 1.0; //(flow_solution[MESH_0][FLOW_SOL]->node[iPoint_Donor]->GetPressure()-101325.0);
+				node[iPoint]->SetPressureValue(Pressure);
 			}
 		}
 	}
@@ -1517,7 +1522,7 @@ void CFEASolution::SetFEA_Load(CSolution ***flow_solution, CGeometry **fea_geome
 					
 					/*--- We only send the pressure that belong to other boundary ---*/
 					if (jProcessor != rank) {
-						Buffer_Send_U[0] = (flow_solution[MESH_0][FLOW_SOL]->node[iPoint]->GetPressure()-101325.0);;
+						Buffer_Send_U[0] = 1.0; //(flow_solution[MESH_0][FLOW_SOL]->node[iPoint]->GetPressure()-101325.0);;
 						MPI::COMM_WORLD.Bsend(Buffer_Send_U, 1, MPI::DOUBLE, jProcessor, iPoint);
 					}
 					
@@ -1541,11 +1546,11 @@ void CFEASolution::SetFEA_Load(CSolution ***flow_solution, CGeometry **fea_geome
 					if (jProcessor != rank)
 						MPI::COMM_WORLD.Recv(Buffer_Receive_U, 1, MPI::DOUBLE, jProcessor, jPoint);
 					else
-						Buffer_Receive_U[0] = (flow_solution[MESH_0][FLOW_SOL]->node[jPoint]->GetPressure()-101325.0);
+						Buffer_Receive_U[0] = 1.0; //(flow_solution[MESH_0][FLOW_SOL]->node[jPoint]->GetPressure()-101325.0);
 					
 					/*--- Store the solution for both points ---*/
 					Pressure = Buffer_Receive_U[1];
-					node[iPoint]->SetPressure(Pressure);
+					node[iPoint]->SetPressureValue(Pressure);
 					
 				}
 			}

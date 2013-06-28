@@ -23,6 +23,7 @@ bin_SCRIPTS = 	box.py \
 		insert_math.py \
 		insert_routines.py \
 		libSU2_mesh.py \
+		libSU2_run.py \
 		libSU2.py \
 		merge_grid_su2.py \
 		merge_restart_su2.py \

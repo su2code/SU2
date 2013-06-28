@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.
+ * \version 2.0.1
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -41,7 +41,7 @@ using namespace std;
  * \brief Class for writing the flow, adjoint and linearized solver 
  *        solution (including the history solution, and parallel stuff).
  * \author F. Palacios.
- * \version 2.0.
+ * \version 2.0.1
  */
 class COutput {
 protected:
@@ -200,8 +200,9 @@ public:
 	 * \param[in] AdjSolution - Adjoint solution.
 	 * \param[in] FlowSolution - Flow solution.
 	 * \param[in] iExtIter - Current external (time) iteration.
+	 * \param[in] val_iZone - Current zone number in the grid file.
 	 */
-	void SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolution *AdjSolution, CSolution *FlowSolution, unsigned long iExtIter);
+	void SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolution *AdjSolution, CSolution *FlowSolution, unsigned long iExtIter, unsigned short val_iZone);
 
 	/*! 
 	 * \brief Create and write the file with linearized coefficient on the surface for serial computations

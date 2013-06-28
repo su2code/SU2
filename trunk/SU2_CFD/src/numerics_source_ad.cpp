@@ -5,7 +5,7 @@
  * semi-automatically using python, Tapenade and some minor requirement
  * to add in small bits of code/comments
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.
+ * \version 2.0.1
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -593,8 +593,8 @@ void CSourcePieceWise_Plasma::SetResidual_MomentumExch_ad(double *val_residual, 
                 collisionArea = 1E-20*Omega11[iSpecies][jSpecies][3]*exp(arg1);
                 /*----- An if-condition for the case when a positive charge collides with an electron -----
                 */
-                if (ChargeNumber[iSpecies] == 1 && jSpecies == nSpecies - 1 || 
-                iSpecies == nSpecies - 1 && ChargeNumber[jSpecies] == 1) {
+                if ((ChargeNumber[iSpecies] == 1 && jSpecies == nSpecies - 1) || 
+                (iSpecies == nSpecies - 1 && ChargeNumber[jSpecies] == 1)) {
                     radius_electronIonCollisiond = -(ELECTRON_CHARGE*ELECTRON_CHARGE*32.0*
                         FREE_PERMITTIVITY*BOLTZMANN_CONSTANT*electron_temperatured/(32.0*FREE_PERMITTIVITY*
                         BOLTZMANN_CONSTANT*electron_temperature*(32.0*FREE_PERMITTIVITY*BOLTZMANN_CONSTANT*

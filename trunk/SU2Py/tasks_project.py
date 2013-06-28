@@ -3,7 +3,7 @@
 ## \file tasks_project.py
 #  \brief Python classes for evaluating SU2 projects
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.
+#  \version 2.0.1
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -69,6 +69,9 @@ class Project(General_Task):
         self.jobs_todo = []
         self.jobs_done = []
         
+
+        self.backup_name = 'backup_project.pkl'        
+        
         # restart option
         self.use_restart = self.config_current['RESTART_SOL'] == 'YES'
         
@@ -86,6 +89,14 @@ class Project(General_Task):
             # if the associated files don't exist, then they won't be pulled, 
                 
         #: if use_restart
+        
+        # equivalent area files
+        if self.config_current.get('EQUIV_AREA','NO') == 'YES':
+            target_filename = 'TargetEA.dat'
+            if os.path.exists(target_filename):
+                self.assets_current['targetea'] = target_filename
+            else:
+                sys.stdout.write('Warning: no target equivalent area file \n')        
                 
         # working folder is where the project starts
         self.folder_self = '.'
@@ -175,7 +186,6 @@ class Project(General_Task):
         design_return = { 'VARIABLES'  : [] ,
                           'OBJECTIVES' : {} ,
                           'GRADIENTS'  : {}  }
-        design_backup = 'backup_' + self.assets_current['design']
         
         # Run the Job List!!!
         for This_Job,this_config_delta in zip(self.jobs_todo,config_delta):
@@ -197,13 +207,15 @@ class Project(General_Task):
             # append the nested dictionary
             libSU2.append_nestdict( design_return, this_design )
             
-            # save current design
-            libSU2.save_data(design_backup,design_return)
+            # save project
+            libSU2.save_data( self.backup_name, self )
             
             if not self.config_current['CONSOLE'] == 'QUIET':
                 sys.stdout.write('\n')
         
         #: for each Job
+        
+        
         
         # only return newly updated designs
         return design_return
@@ -282,11 +294,21 @@ class Project(General_Task):
         # save current design
         libSU2.save_data(self.assets_current['design'],self.design_current)
         
+        # save project
+        libSU2.save_data( self.backup_name, self )
+        
         # this is the root task, no assets to push
         assets_push = {}
         config_return = {}
         
         return assets_push, config_return  
+    
+    # ----------------------------------------------------------------------
+    #  CLEANUP PROJECT
+    # ----------------------------------------------------------------------    
+    def cleanup( self, config_delta, assets_super, design_super ):
+        # nothing to do
+        pass
     
     # ----------------------------------------------------------------------
     #  PROJECT REPRESENTATION
@@ -323,6 +345,10 @@ class Job(General_Task):
         # define assets keys to pull
         self.assets_pull = ['config','mesh','direct','adjoint'] 
         
+        # equivalent area files
+        if self.config_current.get('EQUIV_AREA','NO') == 'YES':
+            self.assets_pull.append('targetea')
+            
         # task lists
         self.tasks_todo = []
         self.tasks_done = []
@@ -503,6 +529,13 @@ class Job(General_Task):
                 del self.assets_pull[key]        
         
         return assets_push, config_return
+    
+    # ----------------------------------------------------------------------
+    #  CLEANUP PROJECT
+    # ----------------------------------------------------------------------    
+    def cleanup( self, config_delta, assets_super, design_super ):
+        # nothing to do
+        pass
     
     # ----------------------------------------------------------------------
     #  JOB REPRESENATION

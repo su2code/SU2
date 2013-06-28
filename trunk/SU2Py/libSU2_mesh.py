@@ -3,7 +3,7 @@
 ## \file libSU2_mesh.py
 #  \brief Python support functions for SU2 native mesh files.
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.
+#  \version 2.0.1
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory

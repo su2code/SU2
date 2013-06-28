@@ -2,7 +2,7 @@
  * \file definition_structure.cpp
  * \brief Main subroutines used by SU2_CFD.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.
+ * \version 2.0.1
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -49,6 +49,7 @@ unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CCo
 		strcpy (cstr, val_mesh_filename.c_str());
 		mesh_file.open(cstr, ios::in);
 		if (mesh_file.fail()) {
+      cout << "cstr=" << cstr << endl;
 			cout << "There is no geometry file (GetnZone))!" << endl;
 			cout << "Press any key to exit..." << endl;
 			cin.get();
@@ -203,13 +204,14 @@ void Geometrical_Definition(CGeometry ***geometry, CConfig **config, unsigned sh
 		if (rank == MASTER_NODE) cout << "Searching for closest normal neighbor on the surface." << endl;
 		geometry[iZone][MESH_0]->FindClosestNeighbor(config[iZone]);
 
-		/*--- Find any sharp edges ---*/
-		if (rank == MASTER_NODE) cout << "Searching for sharp corners on the geometry." << endl;
-		geometry[iZone][MESH_0]->FindSharpEdges(config[iZone]);
+//		/*--- Find any sharp edges ---*/
+//		if (rank == MASTER_NODE) cout << "Searching for sharp corners on the geometry." << endl;
+//		geometry[iZone][MESH_0]->FindSharpEdges(config[iZone]);
 
 		/*--- For a rotating frame, set the velocity due to rotation at each mesh point ---*/
 		if (config[iZone]->GetRotating_Frame())
 			geometry[iZone][MESH_0]->SetRotationalVelocity(config[iZone]);
+		
 		if ((config[iZone]->GetMGLevels() != 0) && (rank == MASTER_NODE))
 			cout << "Setting the multigrid structure." <<endl;
 
@@ -345,7 +347,7 @@ void Solution_Definition(CSolution ***solution_container, CGeometry **geometry, 
 	/*--- Assign turbulence model booleans --- */
 	if (turbulent)
 		switch (config->GetKind_Turb_Model()){
-		case SA: case SA_COMP: spalart_allmaras = true; break;
+		case SA: spalart_allmaras = true; break;
 		case SST: menter_sst = true; break;
 		default: cout << "Specified turbulence model unavailable or none selected" << endl; cin.get(); break;
 		}
@@ -505,7 +507,7 @@ void Integration_Definition(CIntegration **integration_container, CGeometry **ge
 	/*--- Assign turbulence model booleans --- */
 	if (turbulent)
 		switch (config->GetKind_Turb_Model()){
-		case SA: case SA_COMP: spalart_allmaras = true; break;
+		case SA: spalart_allmaras = true; break;
 		case SST: menter_sst = true; break;
 		default: cout << "Specified turbulence model unavailable or none selected" << endl; cin.get(); break;
 		}
@@ -639,7 +641,7 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 	/*--- Assign turbulence model booleans --- */
 	if (turbulent)
 		switch (config->GetKind_Turb_Model()){
-		case SA: case SA_COMP: spalart_allmaras = true; break;
+		case SA: spalart_allmaras = true; break;
 		case SST: menter_sst = true; constants = solution_container[MESH_0][TURB_SOL]->GetConstants(); break;
 		default: cout << "Specified turbulence model unavailable or none selected" << endl; cin.get(); break;
 		}
@@ -865,12 +867,12 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 					solver_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
 			}
 			break;
-		case GALERKIN :
-			cout << "Viscous scheme not implemented." << endl; cin.get();
-			break;
-		default :
-			cout << "Viscous scheme not implemented." << endl; cin.get();
-			break;
+			case GALERKIN :
+				cout << "Galerkin viscous scheme not implemented." << endl; cin.get(); exit(1);
+				break;
+			default :
+				cout << "Numerical viscous scheme not recognized." << endl; cin.get(); exit(1);
+				break;
 		}
 
 		/*--- Definition of the source term integration scheme for each equation and mesh level ---*/
@@ -887,6 +889,10 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 					solver_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceAxisymmetric_Flow(nDim,nVar_Flow, config);
 				else if (config->GetGravityForce() == YES)
 					solver_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_Gravity(nDim, nVar_Flow, config);
+				else if (config->GetMagnetic_Force() == YES)
+					solver_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSource_Magnet(nDim, nVar_Flow, config);
+				else if (config->GetJouleHeating() == YES)
+					solver_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSource_JouleHeating(nDim, nVar_Flow, config);
 				else
 					solver_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Flow, config);
 
@@ -961,8 +967,8 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 
 		/*--- Definition of the boundary condition method ---*/
 		for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++){
-			if (spalart_allmaras) solver_container[iMGlevel][TURB_SOL][BOUND_TERM] = new CUpwLin_TurbSA(nDim, nVar_Turb, config);
-			else if (menter_sst) solver_container[iMGlevel][TURB_SOL][BOUND_TERM] = new CUpwLin_TurbSST(nDim, nVar_Turb, config);
+			if (spalart_allmaras) solver_container[iMGlevel][TURB_SOL][BOUND_TERM] = new CUpwSca_TurbSA(nDim, nVar_Turb, config);
+			else if (menter_sst) solver_container[iMGlevel][TURB_SOL][BOUND_TERM] = new CUpwSca_TurbSST(nDim, nVar_Turb, config);
 		}
 	}
 
@@ -990,11 +996,13 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 				break;
 			case AVG_GRAD :
 				for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++){
+					cout << "Allocating AVG_GRAD for LM -AA" << endl;
 					solver_container[iMGlevel][TRANS_SOL][VISC_TERM] = new CAvgGrad_TransLM(nDim, nVar_Trans, config);
 				}
 				break;
 			case AVG_GRAD_CORRECTED :
 				for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++){
+					cout << "Allocating AVG_GRAD_CORRECTED -AA" << endl;
 					solver_container[iMGlevel][TRANS_SOL][VISC_TERM] = new CAvgGradCorrected_TransLM(nDim, nVar_Trans, config);
 				}
 				break;
@@ -1048,10 +1056,6 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 					case O2: case N2:	case AIR5:	case AIR7:
 						solver_container[iMGlevel][PLASMA_SOL][CONV_TERM]  = new CUpwRoe_PlasmaDiatomic(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
 						solver_container[iMGlevel][PLASMA_SOL][BOUND_TERM] = new CUpwRoe_PlasmaDiatomic(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-						break;
-					case AIR21:
-						solver_container[iMGlevel][PLASMA_SOL][CONV_TERM] = new CUpwRoe_PlasmaDiatomic_AM(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-						solver_container[iMGlevel][PLASMA_SOL][BOUND_TERM] = new CUpwRoe_PlasmaDiatomic_AM(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
 						break;
 					}
 				}
@@ -1135,6 +1139,10 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 				for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
 					solver_container[iMGlevel][PLASMA_SOL][VISC_TERM] = new CAvgGrad_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics,config);
 				break;
+			case AVG_GRAD_CORRECTED :
+				for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+					solver_container[iMGlevel][PLASMA_SOL][VISC_TERM] = new CAvgGradCorrected_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics,config);
+				break;
 			default :
 				cout << "Viscous scheme not implemented." << endl; cin.get();
 				break;
@@ -1153,7 +1161,7 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 					solver_container[iMGlevel][PLASMA_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
 				}
 				if (config->GetKind_GasModel() == AIR21)
-					solver_container[iMGlevel][PLASMA_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_Plasma_Air(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
+					cout << "ERROR: 21 Species air gas chemistry model not implemented!!!" << endl;
 				if (config->GetKind_GasModel() == O2)
 					solver_container[iMGlevel][PLASMA_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
 				if (config->GetKind_GasModel() == N2)
@@ -1653,7 +1661,7 @@ void Solver_Deallocation(CNumerics ****solver_container, CSolution ***solution_c
 	/*--- Assign turbulence model booleans --- */
 	if (turbulent)
 		switch (config->GetKind_Turb_Model()){
-		case SA: case SA_COMP: spalart_allmaras = true; break;
+		case SA: spalart_allmaras = true; break;
 		case SST: menter_sst = true; break;
 		}
 

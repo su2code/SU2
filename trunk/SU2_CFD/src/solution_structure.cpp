@@ -2,7 +2,7 @@
  * \file solution_structure.cpp
  * \brief Main subrotuines for solving direct, adjoint and linearized problems.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.
+ * \version 2.0.1
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -885,83 +885,126 @@ void CSolution::SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config)
 }
 
 void CSolution::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
-	unsigned long iPoint, jPoint;
-	unsigned short iNeigh, nNeigh, iVar, iDim;
-	double **Gradient_i, *Coord_i, *Coord_j, diff_coord, dist_ij, r_u, r_u_ij, 
-	du_max, du_min, u_ij, *Solution_i, *Solution_j, eps2, dp, dm;
-  
-  double **Gradient_j;
-  double ProjGrad_i, ProjGrad_j;
+		
+	unsigned long iEdge, iPoint, jPoint;
+	unsigned short iVar, iDim;
+	double *Limiter, **Gradient, **Gradient_i, **Gradient_j, *Coord_i, *Coord_j, *Solution_i, *Solution_j, 
+	dave, LimK, eps2, dm, dp, du, limiter;
 
-	double dx = config->GetRefElemLength();
-	double LimK = config->GetLimiterCoeff();
-
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) 
-		if (geometry->node[iPoint]->GetDomain()) {
-			Solution_i = node[iPoint]->GetSolution();
-			Gradient_i = node[iPoint]->GetGradient();
-			Coord_i = geometry->node[iPoint]->GetCoord();
-			nNeigh = geometry->node[iPoint]->GetnPoint();
-
-			for (iVar = 0; iVar < nVar; iVar++) {
-
-				/*--- Find max and min value of the variable in the control volume around the mesh point ---*/
-				du_max = 1.0E-8; du_min = -1.0E-8;
-				for (iNeigh = 0; iNeigh < nNeigh; iNeigh++) {
-					jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-					Solution_j = node[jPoint]->GetSolution();
-					du_max = max(du_max, Solution_j[iVar] - Solution_i[iVar]);
-					du_min = min(du_min, Solution_j[iVar] - Solution_i[iVar]);
-				}
-
-				r_u = 1.0;
-				for (iNeigh = 0; iNeigh < nNeigh; iNeigh++) {
-
-					/*--- Unconstrained reconstructed solution ---*/
-					jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-					Solution_j = node[jPoint]->GetSolution();
-          Gradient_j = node[jPoint]->GetGradient();
-					Coord_j = geometry->node[jPoint]->GetCoord();
-					u_ij = Solution_i[iVar]; dist_ij = 0;
-					for (iDim = 0; iDim < nDim; iDim++) {
-						diff_coord = Coord_j[iDim]-Coord_i[iDim];
-						u_ij += 0.5*diff_coord*Gradient_i[iVar][iDim];
-					}
-
-					/*--- Barth and Jespersen limiter ---*/
-					if (config->GetKind_SlopeLimit() == BARTH) {
-						r_u_ij = 1.0;
-						if ((u_ij - Solution_i[iVar]) > 0.0) r_u_ij = min(1.0, du_max / (u_ij - Solution_i[iVar]));
-						if ((u_ij - Solution_i[iVar]) < 0.0) r_u_ij = min(1.0, du_min / (u_ij - Solution_i[iVar]));
-					}
-					
-					/*--- Venkatakrishnan limiter ---*/
-					if (config->GetKind_SlopeLimit() == VENKATAKRISHNAN) {
-						if ((u_ij - Solution_i[iVar]) >= 0.0) dp = du_max;
-						else	dp = du_min;
-						dm = u_ij - Solution_i[iVar];
-						eps2 =  pow((LimK*dx),3);
-						r_u_ij = (dp*dp+2.0*dm*dp + eps2)/(dp*dp+2*dm*dm+dm*dp + eps2);
-					}
-
-          if (config->GetKind_SlopeLimit() == MINMOD) {
-            ProjGrad_i = 0.0; ProjGrad_j = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++) {
-              diff_coord = Coord_j[iDim]-Coord_i[iDim];
-              ProjGrad_i += Gradient_i[iVar][iDim]*diff_coord;
-              ProjGrad_j += Gradient_j[iVar][iDim]*diff_coord;
-            }            
-						r_u_ij = max(0.0, min(ProjGrad_i/ProjGrad_j, 1.0));
-					}
-
-					/*--- Take the smallest value of the limiter ---*/
-					r_u = min(r_u, r_u_ij);
-
-				}
-
-				node[iPoint]->SetLimiter(iVar, r_u);
-			} 
+	/*--- Initialize solution max and solution min in the entire domain --*/
+	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+		for (iVar = 0; iVar < nVar; iVar++) {
+			node[iPoint]->SetSolution_Max(iVar, -EPS);
+			node[iPoint]->SetSolution_Min(iVar, EPS);
 		}
+	}
+
+	/*--- Compute solution max and solution min --*/
+	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+		
+		/*--- Point identification, Normal vector and area ---*/
+		iPoint = geometry->edge[iEdge]->GetNode(0); 
+		jPoint = geometry->edge[iEdge]->GetNode(1);
+		
+		/*--- Get the solution ---*/
+		Solution_i = node[iPoint]->GetSolution();
+		Solution_j = node[jPoint]->GetSolution();
+
+		/*--- Compute the maximum, and minimum values ---*/
+		for (iVar = 0; iVar < nVar; iVar++) {
+			du = (Solution_j[iVar] - Solution_i[iVar]);
+			node[iPoint]->SetSolution_Min(iVar, min(node[iPoint]->GetSolution_Min(iVar), du));
+			node[iPoint]->SetSolution_Max(iVar, max(node[iPoint]->GetSolution_Max(iVar), du));
+			node[jPoint]->SetSolution_Min(iVar, min(node[jPoint]->GetSolution_Min(iVar), -du));
+			node[jPoint]->SetSolution_Max(iVar, max(node[jPoint]->GetSolution_Max(iVar), -du));
+		}
+	}
+
+	/*--- Initialize the limiter to 1.0 --*/
+	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+		for (iVar = 0; iVar < nVar; iVar++) {
+			node[iPoint]->SetLimiter(iVar, 1.0);
+		}
+	}
+	
+	/*--- Compute the limiter ---*/
+	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+		
+		/*--- Point identification, Normal vector and area ---*/
+		iPoint = geometry->edge[iEdge]->GetNode(0); 
+		jPoint = geometry->edge[iEdge]->GetNode(1);
+		
+		/*--- Get the solution ---*/
+		Solution_i = node[iPoint]->GetSolution();
+		Solution_j = node[jPoint]->GetSolution();
+		
+		/*--- Get the gradient and coordiante ---*/
+		Gradient_i = node[iPoint]->GetGradient();
+		Gradient_j = node[jPoint]->GetGradient();
+
+		/*--- Get the coordiante ---*/
+		Coord_i = geometry->node[iPoint]->GetCoord();
+		Coord_j = geometry->node[jPoint]->GetCoord();
+				
+		for (iVar = 0; iVar < nVar; iVar++) {
+			
+			/*-- First point in edge ---*/
+			dave = config->GetRefElemLength(); //2.0*sqrt(geometry->node[iPoint]->GetVolume()/PI_NUMBER);
+			LimK = config->GetLimiterCoeff();
+			eps2 = pow((LimK*dave), 3.0);
+			
+			dm = 0.0;
+			for (iDim = 0; iDim < nDim; iDim++)
+				dm += 0.5*(Coord_j[iDim]-Coord_i[iDim])*Gradient_i[iVar][iDim];
+						
+			if ( dm > 0.0 ) dp = node[iPoint]->GetSolution_Max(iVar);	
+			else dp = node[iPoint]->GetSolution_Min(iVar);
+			limiter = ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
+			if ((limiter < node[iPoint]->GetLimiter(iVar)) && (limiter < 1.0)) 
+				if (geometry->node[iPoint]->GetDomain()) node[iPoint]->SetLimiter(iVar, limiter);
+			
+			/*-- Second point in edge ---*/
+			dave = config->GetRefElemLength(); //2.0*sqrt(geometry->node[jPoint]->GetVolume()/PI_NUMBER);
+			LimK = config->GetLimiterCoeff();
+			eps2 = pow((LimK*dave), 3.0);
+					
+			dm = 0.0;
+			for (iDim = 0; iDim < nDim; iDim++)
+				dm += 0.5*(Coord_i[iDim]-Coord_j[iDim])*Gradient_j[iVar][iDim];
+			
+			if ( dm > 0.0 ) dp = node[jPoint]->GetSolution_Max(iVar);	
+			else dp = node[jPoint]->GetSolution_Min(iVar);
+			limiter = ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
+			if ((limiter < node[jPoint]->GetLimiter(iVar)) && (limiter < 1.0))
+				if (geometry->node[jPoint]->GetDomain()) node[jPoint]->SetLimiter(iVar, limiter);
+			
+		}
+	}
+
+	/*--- Fix the gradient using the limiter ---*/
+	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+		Gradient = node[iPoint]->GetGradient();
+		Limiter = node[iPoint]->GetLimiter();
+		for (iVar = 0; iVar < nVar; iVar++) {
+			for (iDim = 0; iDim < nDim; iDim++) {
+				node[iPoint]->SetGradient(iVar, iDim, Gradient[iVar][iDim]*Limiter[iVar]);
+			}
+		}
+	}
+	
+//	/*--- No reconstruction on the far-field ---*/
+//	for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+//		if (config->GetMarker_All_Boundary(iMarker) == FAR_FIELD) {
+//			for (unsigned long iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//				for (iVar = 0; iVar < nVar; iVar++) {
+//					for (iDim = 0; iDim < nDim; iDim++) {
+//						node[iPoint]->SetGradient(iVar, iDim, 0.0);
+//					}
+//				}
+//			}
+//		}
+//	}
 	
 }
 

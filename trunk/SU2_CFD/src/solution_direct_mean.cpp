@@ -2,7 +2,7 @@
  * \file solution_direct_mean.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.
+ * \version 2.0.1
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -73,6 +73,12 @@ CEulerSolution::CEulerSolution(CGeometry *geometry, CConfig *config, unsigned sh
 		p2_Und_Lapl = new double [geometry->GetnPoint()]; 
 	}
 
+	if ((config->GetKind_Upwind() == ROE_TURKEL_2ND) || (config->GetKind_Upwind() == ROE_TURKEL_1ST)) {
+		Precon_Mat_inv = new double* [nVar];
+		for (iVar = 0; iVar < nVar; iVar ++)
+			Precon_Mat_inv[iVar] = new double[nVar];
+	}
+
 	/*--- Jacobians and vector structures for implicit computations ---*/
 	if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) {
 
@@ -101,8 +107,8 @@ CEulerSolution::CEulerSolution(CGeometry *geometry, CConfig *config, unsigned sh
 			Smatrix[iDim] = new double [nDim];
 
 		/*--- c vector := transpose(WA)*(Wb) ---*/
-		cvector = new double* [nVar+1]; 
-		for (iVar = 0; iVar < nVar+1; iVar++)
+		cvector = new double* [nDim+3];
+		for (iVar = 0; iVar < nDim+3; iVar++)
 			cvector[iVar] = new double [nDim];
 	}
 
@@ -294,6 +300,11 @@ CEulerSolution::CEulerSolution(CGeometry *geometry, CConfig *config, unsigned sh
 
 	if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
 	else least_squares = false;
+
+	if ((config->GetKind_Upwind() == ROE_TURKEL_2ND) || (config->GetKind_Upwind() == ROE_TURKEL_1ST)) roe_turkel = true;
+	else roe_turkel = false;
+
+
 }
 
 CEulerSolution::~CEulerSolution(void) {
@@ -330,6 +341,12 @@ CEulerSolution::~CEulerSolution(void) {
 		for (iVar = 0; iVar < nVar+1; iVar++)
 			delete [] cvector[iVar];
 		delete [] cvector;
+	}
+
+	if (roe_turkel) {
+		for (iVar = 0; iVar < nVar; iVar ++)
+			delete [] Precon_Mat_inv[iVar];
+		delete [] Precon_Mat_inv;
 	}
 
 	for (iMarker = 0; iMarker < nMarker; iMarker++)
@@ -413,23 +430,17 @@ void CEulerSolution::Preprocessing(CGeometry *geometry, CSolution **solution_con
 			config->GetKind_Solver() == FREE_SURFACE_RANS || config->GetKind_Solver() == ADJ_FREE_SURFACE_RANS ||
 			config->GetKind_Solver() == ADJ_FREE_SURFACE_EULER || config->GetKind_Solver() == ADJ_FREE_SURFACE_NAVIER_STOKES);
 	double Gas_Constant = config->GetGas_Constant();
+	double ArtComp_Factor = config->GetArtComp_Factor();
 
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
 
-		/*--- Compute squared velocity, sound velocity, pressure, and enthalpy ---*/
-		if (incompressible) {
-			node[iPoint]->SetPressureInc();
-			node[iPoint]->SetVelocityInc2();
-			node[iPoint]->SetBetaInc2(config);
-			if (!freesurface) node[iPoint]->SetDensityInc(Density_Inf);
-		}
-		else {
-			node[iPoint]->SetVelocity2();
-			node[iPoint]->SetPressure(Gamma, geometry->node[iPoint]->GetCoord());
-			node[iPoint]->SetSoundSpeed(Gamma);
-			node[iPoint]->SetTemperature(Gas_Constant);
-			node[iPoint]->SetEnthalpy();
-		}
+		/*--- Set the primitive variables incompressible (dens, vx, vy, vz, beta)---*/
+		/*--- and compressible (temp, vx, vy, vz, press, dens, enthal, sos)---*/
+		if (incompressible)
+			node[iPoint]->SetPrimVar_Incompressible(Density_Inf, ArtComp_Factor, freesurface);
+		else
+			node[iPoint]->SetPrimVar_Compressible(Gamma, Gas_Constant);
+
 
 		/*--- Initialize the convective residual vector ---*/
 		node[iPoint]->Set_ResConv_Zero();
@@ -444,6 +455,12 @@ void CEulerSolution::Preprocessing(CGeometry *geometry, CSolution **solution_con
 
 	/*--- Initialize the jacobian matrices ---*/
 	if (implicit) Jacobian.SetValZero();
+
+	// Be careful! it breaks the MPI parallelization!
+//	bool jouleheating = (config->GetJouleHeating() == YES);
+//	if (jouleheating)	geometry->SetGeometryPlanes(config);
+
+
 }
 
 void CEulerSolution::SetTime_Step(CGeometry *geometry, CSolution **solution_container, CConfig *config, 
@@ -463,19 +480,8 @@ void CEulerSolution::SetTime_Step(CGeometry *geometry, CSolution **solution_cont
 
 	/*--- Set maximum inviscid eigenvalue to zero, and compute sound speed ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-
 		node[iPoint]->SetMax_Lambda_Inv(0.0);
 		if (centered) node[iPoint]->SetLambda(0.0);
-
-		if (incompressible) {
-			node[iPoint]->SetVelocityInc2();
-			node[iPoint]->SetBetaInc2(config);
-		}
-		else {
-			node[iPoint]->SetVelocity2();
-			node[iPoint]->SetPressure(Gamma, geometry->node[iPoint]->GetCoord());
-			node[iPoint]->SetSoundSpeed(Gamma);
-		}
 	}
 
 	/*--- Loop interior edges ---*/
@@ -693,7 +699,7 @@ void CEulerSolution::Centered_Residual(CGeometry *geometry, CSolution **solution
 			solver->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[jPoint]->GetCoord());
 		}
 		else {
-			solver->SetPressure(node[iPoint]->GetPressure(), node[jPoint]->GetPressure());
+			solver->SetPressure(node[iPoint]->GetPressure(incompressible), node[jPoint]->GetPressure(incompressible));
 			solver->SetSoundSpeed(node[iPoint]->GetSoundSpeed(), node[jPoint]->GetSoundSpeed());
 			solver->SetEnthalpy(node[iPoint]->GetEnthalpy(), node[jPoint]->GetEnthalpy());
 		}
@@ -739,13 +745,14 @@ void CEulerSolution::Centered_Residual(CGeometry *geometry, CSolution **solution
 void CEulerSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, 
 		CConfig *config, unsigned short iMesh) {
 	double Pressure_Old_i, Pressure_Old_j, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, 
-	*Limiter_i = NULL, *Limiter_j = NULL, *U_i, *U_j;
+	*U_i, *U_j, sqvel;
 	unsigned long iEdge, iPoint, jPoint;
 	unsigned short iDim, iVar;
 
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 	bool high_order_diss = (((config->GetKind_Upwind() == ROE_2ND) || (config->GetKind_Upwind() == AUSM_2ND) 
-			|| (config->GetKind_Upwind() == HLLC_2ND) || (config->GetKind_Upwind() == ROE_TURKEL_2ND)) && (iMesh == MESH_0));
+			|| (config->GetKind_Upwind() == HLLC_2ND) || (config->GetKind_Upwind() == ROE_TURKEL_2ND))
+			&& (iMesh == MESH_0));
 	bool incompressible = config->GetIncompressible();
 	bool rotating_frame = config->GetRotating_Frame();
 	bool gravity = config->GetGravityForce();
@@ -758,9 +765,9 @@ void CEulerSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_c
 	}
 
 	for(iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+
 		/*--- Points in edge and normal vectors ---*/
-		iPoint = geometry->edge[iEdge]->GetNode(0);
-		jPoint = geometry->edge[iEdge]->GetNode(1);
+		iPoint = geometry->edge[iEdge]->GetNode(0); jPoint = geometry->edge[iEdge]->GetNode(1);
 		solver->SetNormal(geometry->edge[iEdge]->GetNormal());
 
 		/*--- Set conservative variables w/o reconstruction ---*/
@@ -770,9 +777,10 @@ void CEulerSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_c
 		/*--- Set the old value of the pressure, in case the new pressure is negative ---*/
 		Pressure_Old_i = node[iPoint]->GetPressure_Old(); Pressure_Old_j = node[jPoint]->GetPressure_Old();
 		solver->SetPressure_Old(Pressure_Old_i, Pressure_Old_j);
-		
-		if ((config->GetKind_Upwind() == ROE_TURKEL_2ND) || (config->GetKind_Upwind() == ROE_TURKEL_1ST)) {
-			double sqvel = 0.0;
+
+		/*--- Roe Turkel preconditioning ---*/
+		if (roe_turkel) {
+			sqvel = 0.0;
 			for (iDim = 0; iDim < nDim; iDim ++)
 				sqvel += config->GetVelocity_FreeStream()[iDim]*config->GetVelocity_FreeStream()[iDim];
 			solver->SetVelocity2_Inf(sqvel);
@@ -790,15 +798,14 @@ void CEulerSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_c
 
 		/*--- High order reconstruction using MUSCL strategy ---*/
 		if (high_order_diss) {
+			
 			for (iDim = 0; iDim < nDim; iDim++) {
 				Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
 				Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
 			}
 
-			Gradient_i = node[iPoint]->GetGradient(); Gradient_j = node[jPoint]->GetGradient();
-			if (config->GetKind_SlopeLimit() != NONE) {
-				Limiter_j = node[jPoint]->GetLimiter(); Limiter_i = node[iPoint]->GetLimiter();
-			}
+			Gradient_i = node[iPoint]->GetGradient(); 
+			Gradient_j = node[jPoint]->GetGradient();
 
 			for (iVar = 0; iVar < nVar; iVar++) {
 				Project_Grad_i = 0; Project_Grad_j = 0;
@@ -806,15 +813,10 @@ void CEulerSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_c
 					Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
 					Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
 				}
-				if (config->GetKind_SlopeLimit() == NONE) {
-					Solution_i[iVar] = U_i[iVar] + Project_Grad_i;
-					Solution_j[iVar] = U_j[iVar] + Project_Grad_j;
-				}
-				else {
-					Solution_i[iVar] = U_i[iVar] + Project_Grad_i*Limiter_i[iVar];
-					Solution_j[iVar] = U_j[iVar] + Project_Grad_j*Limiter_j[iVar];
-				}
+				Solution_i[iVar] = U_i[iVar] + Project_Grad_i; 
+				Solution_j[iVar] = U_j[iVar] + Project_Grad_j;
 			}
+
 			/*--- Set conservative variables with reconstruction ---*/
 			solver->SetConservative(Solution_i, Solution_j);
 		}
@@ -857,7 +859,9 @@ void CEulerSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_c
 			Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
 			Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
 		}
-		if ((config->GetKind_Upwind() == ROE_TURKEL_2ND) || (config->GetKind_Upwind() == ROE_TURKEL_1ST)) {
+
+		/*--- Roe Turkel preconditioning, set the value of beta ---*/
+		if (roe_turkel) {
 			node[iPoint]->SetPreconditioner_Beta(solver->GetPrecond_Beta());
 			node[jPoint]->SetPreconditioner_Beta(solver->GetPrecond_Beta());
 		}
@@ -876,6 +880,8 @@ void CEulerSolution::Source_Residual(CGeometry *geometry, CSolution **solution_c
 	bool incompressible = config->GetIncompressible();
 	bool gravity = (config->GetGravityForce() == YES);
 	bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
+	bool magnet = (config->GetMagnetic_Force() == YES);
+	bool jouleheating = (config->GetJouleHeating() == YES);
 
 	for (iVar = 0; iVar < nVar; iVar++)
 		Residual[iVar] = 0;
@@ -979,7 +985,116 @@ void CEulerSolution::Source_Residual(CGeometry *geometry, CSolution **solution_c
 		}
 	}
 
+	if (magnet) {
+		bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+		for (iVar = 0; iVar < nVar; iVar ++)
+			for (unsigned short jVar = 0; jVar < nVar; jVar ++)
+				Jacobian_i[iVar][jVar] = 0.0;
+		/*--- loop over points ---*/
+		for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+
+			/*--- Set the coordinate ---*/
+			solver->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
+
+			/*--- Set solution  ---*/
+			solver->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
+
+			/*--- Set control volume ---*/
+			solver->SetVolume(geometry->node[iPoint]->GetVolume());
+
+			/*--- Compute Residual ---*/
+			solver->SetResidual(Residual, Jacobian_i, config);
+
+			node[iPoint]->SubtractRes_Sour(Residual);
+			if (nDim ==3) node[iPoint]->SetMagneticField(solver->GetMagneticField());
+			if (implicit)
+				Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+
+		}
+	}
+
+	if (jouleheating) {
+
+		bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+		for (iVar = 0; iVar < nVar; iVar ++)
+			for (unsigned short jVar = 0; jVar < nVar; jVar ++)
+				Jacobian_i[iVar][jVar] = 0.0;
+
+		double integral = 0.0; unsigned long jPoint;
+		vector<double> XCoordList = geometry->GetGeometryPlanes();
+		vector<vector<double> > Xcoord_plane = geometry->GetXCoord();
+		vector<vector<double> > Ycoord_plane = geometry->GetYCoord();
+		vector<vector<unsigned long> > Plane_points = geometry->GetPlanarPoints();
+
+		for (unsigned short iPlane = 0; iPlane < XCoordList.size(); iPlane++) {
+			integral= 0.0;
+
+			for (unsigned short iVertex = 1; iVertex < Xcoord_plane[iPlane].size(); iVertex++) {
+				iPoint = Plane_points[iPlane][iVertex];
+				jPoint = Plane_points[iPlane][iVertex-1];
+				//cout << "iPoint = " << iPoint << ", 	 x = " << geometry->node[iPoint]->GetCoord(0) << " y = " << geometry->node[iPoint]->GetCoord(1) << endl;
+
+				/*--- Set solution  ---*/
+				solver->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
+
+				/*--- Set control volume ---*/
+				solver->SetVolume(geometry->node[iPoint]->GetVolume());
+
+				/*--- Set the coordinate ---*/
+				solver->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[jPoint]->GetCoord());
+
+				/*--- Set electrical conductivity  ---*/
+				solver->SetElec_Cond();
+
+				/*--- Sum over points to get the integral  ---*/
+				integral +=solver->GetElec_CondIntegral();
+			}
+
+			/*--- Set the integral  ---*/
+			solver->SetElec_CondIntegralsqr(integral*integral);
+			//cout << " integral = " << integral << endl;
+
+			for (unsigned short iVertex = 0; iVertex < Xcoord_plane[iPlane].size(); iVertex++) {
+				iPoint = Plane_points[iPlane][iVertex];
+
+				/*--- Set solution  ---*/
+				solver->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
+
+				/*--- Set control volume ---*/
+				solver->SetVolume(geometry->node[iPoint]->GetVolume());
+
+				/*--- Set the coordinate ---*/
+				solver->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
+
+				/*--- Set electrical conductivity  ---*/
+				solver->SetElec_Cond();
+
+				/*--- Compute Residual ---*/
+				solver->SetResidual(Residual, Jacobian_i, config);
+				//				for (iVar = 0; iVar < nVar; iVar++)
+				//					cout << Residual[iVar] << ", ";
+				//				cout << endl;
+				node[iPoint]->SubtractRes_Sour(Residual);
+				if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+			}
+		}
+	}
 }
+
+void CEulerSolution::Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+		CConfig *config, unsigned short iMesh) {
+
+	/* This method should be used to call any new source terms for a particular problem*/
+	/* This method calls the new child class in CNumerics, where the new source term should be implemented.  */
+
+	/* Next we describe how to get access to some important quanties for this method */
+	/* Access to all points in the current geometric mesh by saying: geometry->GetnPointDomain() */
+	/* Get the vector of conservative variables at some point iPoint = node[iPoint]->GetSolution() */
+	/* Get the volume (or area in 2D) associated with iPoint = node[iPoint]->GetVolume() */
+	/* Get the vector of geometric coordinates of point iPoint = node[iPoint]->GetCoord() */
+
+}
+
 
 void CEulerSolution::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) {
 
@@ -993,7 +1108,7 @@ void CEulerSolution::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
 		node[iPoint]->SetUnd_LaplZero();
 
-	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {	
+	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 		iPoint = geometry->edge[iEdge]->GetNode(0);
 		jPoint = geometry->edge[iEdge]->GetNode(1);
 
@@ -1003,7 +1118,7 @@ void CEulerSolution::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config
 
 		/*--- Correction for compressible flows which use the enthalpy ---*/
 		if (!incompressible) {
-			Pressure_i = node[iPoint]->GetPressure(); Pressure_j = node[jPoint]->GetPressure();
+			Pressure_i = node[iPoint]->GetPressure(incompressible); Pressure_j = node[jPoint]->GetPressure(incompressible);
 			Diff[nVar-1] = (node[iPoint]->GetSolution(nVar-1) + Pressure_i) - (node[jPoint]->GetSolution(nVar-1) + Pressure_j);
 		}
 
@@ -1028,7 +1143,7 @@ void CEulerSolution::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config
 
 					/*--- Interpolate & compute difference in the conserved variables ---*/
 					for (iVar = 0; iVar < nVar; iVar++) {
-						if (config->GetMarker_All_Boundary(iMarker) == EULER_WALL 
+						if (config->GetMarker_All_Boundary(iMarker) == EULER_WALL
 								|| config->GetMarker_All_Boundary(iMarker) == NO_SLIP_WALL) {
 							U_halo[iVar] = node[Point_Normal]->GetSolution(iVar);
 						} else {
@@ -1039,8 +1154,8 @@ void CEulerSolution::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config
 
 					/*--- Correction for compressible flows ---*/
 					if (!incompressible) {
-						Pressure_i = node[iPoint]->GetPressure(); 
-						Pressure_j = 2.0*node[iPoint]->GetPressure() - node[Point_Normal]->GetPressure();
+						Pressure_i = node[iPoint]->GetPressure(incompressible);
+						Pressure_j = 2.0*node[iPoint]->GetPressure(incompressible) - node[Point_Normal]->GetPressure(incompressible);
 						Diff[nVar-1] = (node[iPoint]->GetSolution(nVar-1) + Pressure_i) - (U_halo[nVar-1] + Pressure_j);
 					}
 
@@ -1073,8 +1188,8 @@ void CEulerSolution::SetDissipation_Switch(CGeometry *geometry, CSolution **solu
 		jPoint = geometry->edge[iEdge]->GetNode(1);
 
 		if (!incompressible) {
-			Pressure_i = node[iPoint]->GetPressure();
-			Pressure_j = node[jPoint]->GetPressure();
+			Pressure_i = node[iPoint]->GetPressure(incompressible);
+			Pressure_j = node[jPoint]->GetPressure(incompressible);
 		}
 		else {
 			Pressure_i = node[iPoint]->GetDensityInc();
@@ -1105,10 +1220,11 @@ void CEulerSolution::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 	double Alpha           = config->GetAoA()*PI_NUMBER/180.0;
 	double Beta            = config->GetAoS()*PI_NUMBER/180.0;
 	double RefAreaCoeff    = config->GetRefAreaCoeff();
-	double RefLengthMoment = config->GetRefLengthMoment(); 
+	double RefLengthMoment = config->GetRefLengthMoment();
 	double *Origin         = config->GetRefOriginMoment();
 	double Pressure_Inf    = config->GetPressure_FreeStreamND();
 	double *Velocity_Inf   = config->GetVelocity_FreeStreamND();
+	bool incompressible    = config->GetIncompressible();
 
 	/*--- Reference values ---*/
 	if (!rotating_frame) {
@@ -1116,7 +1232,7 @@ void CEulerSolution::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 		RefVel2 = 0.0;
 		for (iDim = 0; iDim < nDim; iDim++)
 			RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
-	} 
+	}
 	else {
 		/*--- Use the rotational origin for computing moments ---*/
 		Origin = config->GetRotAxisOrigin();
@@ -1126,23 +1242,23 @@ void CEulerSolution::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 		RefAreaCoeff = PI_NUMBER*RefLengthMoment*RefLengthMoment;
 
 		/*--- Reference velocity is the rotational speed times rotor radius ---*/
-		RefVel2 = (config->GetOmegaMag()*RefLengthMoment)*(config->GetOmegaMag()*RefLengthMoment);		
+		RefVel2 = (config->GetOmegaMag()*RefLengthMoment)*(config->GetOmegaMag()*RefLengthMoment);
 	}
 
 	RefDensity  = config->GetDensity_FreeStreamND();
 	RefPressure = config->GetPressure_FreeStreamND();
-
+		
 	/*-- Initialization ---*/
-	Total_CDrag = 0.0; Total_CLift = 0.0;  Total_CSideForce = 0.0; 
+	Total_CDrag = 0.0; Total_CLift = 0.0;  Total_CSideForce = 0.0;
 	Total_CMx = 0.0;   Total_CMy = 0.0;    Total_CMz = 0.0;
 	Total_CFx = 0.0;   Total_CFy = 0.0;    Total_CFz = 0.0;
 	Total_CEff = 0.0;  Total_CMerit = 0.0; Total_CNearFieldOF = 0.0;
 	Total_CT = 0.0;    Total_CQ = 0.0;
-	AllBound_CDrag_Inv = 0.0;        AllBound_CLift_Inv = 0.0;  AllBound_CSideForce_Inv = 0.0; 
+	AllBound_CDrag_Inv = 0.0;        AllBound_CLift_Inv = 0.0;  AllBound_CSideForce_Inv = 0.0;
 	AllBound_CMx_Inv = 0.0;          AllBound_CMy_Inv = 0.0;    AllBound_CMz_Inv = 0.0;
 	AllBound_CFx_Inv = 0.0;          AllBound_CFy_Inv = 0.0;    AllBound_CFz_Inv = 0.0;
 	AllBound_CEff_Inv = 0.0;         AllBound_CMerit_Inv = 0.0; AllBound_CQ_Inv = 0.0;
-	AllBound_CNearFieldOF_Inv = 0.0; AllBound_CT_Inv = 0.0; 
+	AllBound_CNearFieldOF_Inv = 0.0; AllBound_CT_Inv = 0.0;
 
 	/*--- Loop over the Euler and Navier-Stokes markers ---*/
 	factor = 1.0 / (0.5*RefDensity*RefAreaCoeff*RefVel2);
@@ -1159,10 +1275,11 @@ void CEulerSolution::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 
 			for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-				Pressure = node[iPoint]->GetPressure();
-				CPressure[iMarker][iVertex] = (Pressure - RefPressure)*factor*RefAreaCoeff;
+				Pressure = node[iPoint]->GetPressure(incompressible);
 
-				/*--- Note that the pressure coefficient is computed at the 
+				CPressure[iMarker][iVertex] = (Pressure - RefPressure)*factor*RefAreaCoeff;
+				
+				/*--- Note that the pressure coefficient is computed at the
 				 halo cells (for visualization purposes), but not the forces ---*/
 				if ( (geometry->node[iPoint]->GetDomain()) && (Monitoring == YES) ) {
 					Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
@@ -1287,7 +1404,7 @@ void CEulerSolution::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 	Total_CMerit += AllBound_CMerit_Inv;
 }
 
-void CEulerSolution::ExplicitRK_Iteration(CGeometry *geometry, CSolution **solution_container, 
+void CEulerSolution::ExplicitRK_Iteration(CGeometry *geometry, CSolution **solution_container,
 		CConfig *config, unsigned short iRKStep) {
 	double *Residual, *Res_TruncError, Vol, Delta;
 	unsigned short iVar;
@@ -1330,13 +1447,17 @@ void CEulerSolution::ExplicitEuler_Iteration(CGeometry *geometry, CSolution **so
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
 		Vol = geometry->node[iPoint]->GetVolume();
 		Delta = node[iPoint]->GetDelta_Time() / (Vol + EPS);
+
 		Res_TruncError = node[iPoint]->GetRes_TruncError();
 		Residual = node[iPoint]->GetResidual();
+
 		for (iVar = 0; iVar < nVar; iVar++) {
 			node[iPoint]->AddSolution(iVar, -(Residual[iVar]+Res_TruncError[iVar])*Delta);
 			AddRes_Max( iVar, Residual[iVar]*Residual[iVar]*Vol );
 		}
+
 	}
+
 
 #ifdef NO_MPI
 	/*--- Compute the norm-2 of the residual ---*/
@@ -1365,12 +1486,22 @@ void CEulerSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **so
 		local_ResSour = node[iPoint]->GetResSour();
 
 		/*--- Read the volume ---*/
-		Vol = geometry->node[iPoint]->GetVolume();		
+		Vol = geometry->node[iPoint]->GetVolume();
 
 		/*--- Modify matrix diagonal to assure diagonal dominance ---*/
 		Delta = Vol / (node[iPoint]->GetDelta_Time() + EPS);
 
-		Jacobian.AddVal2Diag(iPoint, Delta);
+		if (roe_turkel) {
+			SetPreconditioner_Turkel(config, iPoint);
+			for (iVar = 0; iVar < nVar; iVar ++ ) {
+				for (unsigned short jVar = 0; jVar < nVar; jVar ++ ) {
+					Precon_Mat_inv[iVar][jVar] = Delta*Precon_Mat_inv[iVar][jVar];
+				}
+			}
+			Jacobian.AddBlock(iPoint, iPoint, Precon_Mat_inv);
+		}
+
+		else 		Jacobian.AddVal2Diag(iPoint, Delta);
 
 		/*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 		for (iVar = 0; iVar < nVar; iVar++) {
@@ -1383,15 +1514,15 @@ void CEulerSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **so
 	}
 
 	/*--- Solve the linear system (Stationary iterative methods) ---*/
-	if (config->GetKind_Linear_Solver() == SYM_GAUSS_SEIDEL) 
+	if (config->GetKind_Linear_Solver() == SYM_GAUSS_SEIDEL)
 		Jacobian.SGSSolution(rhs, xsol, config->GetLinear_Solver_Error(),
 				config->GetLinear_Solver_Iter(), false, geometry, config);
 
-	if (config->GetKind_Linear_Solver() == LU_SGS) 
+	if (config->GetKind_Linear_Solver() == LU_SGS)
 		Jacobian.LU_SGSIteration(rhs, xsol, geometry, config);
 
 	/*--- Solve the linear system (Krylov subspace methods) ---*/
-	if ((config->GetKind_Linear_Solver() == BCGSTAB) || 
+	if ((config->GetKind_Linear_Solver() == BCGSTAB) ||
 			(config->GetKind_Linear_Solver() == GMRES)) {
 
 		CSysVector rhs_vec(geometry->GetnPoint(), geometry->GetnPointDomain(), nVar, rhs);
@@ -1403,21 +1534,21 @@ void CEulerSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **so
 		CPreconditioner* precond = NULL;
 		if (config->GetKind_Linear_Solver_Prec() == JACOBI) {
 			Jacobian.BuildJacobiPreconditioner();
-			precond = new CJacobiPreconditioner(Jacobian);			
+			precond = new CJacobiPreconditioner(Jacobian);
 		}
 		else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
 			Jacobian.BuildJacobiPreconditioner();
 			precond = new CLineletPreconditioner(Jacobian);
 		}
-		else if (config->GetKind_Linear_Solver_Prec() == NO_PREC) 
+		else if (config->GetKind_Linear_Solver_Prec() == NO_PREC)
 			precond = new CIdentityPreconditioner();
 
 		CSysSolve system;
 		if (config->GetKind_Linear_Solver() == BCGSTAB)
-			IterLinSol = system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetLinear_Solver_Error(), 
+			IterLinSol = system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetLinear_Solver_Error(),
 					config->GetLinear_Solver_Iter(), false);
 		else if (config->GetKind_Linear_Solver() == GMRES)
-			IterLinSol = system.FlexibleGMRES(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetLinear_Solver_Error(), 
+			IterLinSol = system.FlexibleGMRES(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetLinear_Solver_Error(),
 					config->GetLinear_Solver_Iter(), false);
 
 		/*--- The the number of iterations of the linear solver ---*/
@@ -1427,7 +1558,7 @@ void CEulerSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **so
 		sol_vec.CopyToArray(xsol);
 
 		/*--- dealocate memory ---*/
-		delete mat_vec; 
+		delete mat_vec;
 		delete precond;
 		delete sol_mpi;
 	}
@@ -1448,53 +1579,31 @@ void CEulerSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **so
 void CEulerSolution::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *config) {
 	unsigned long iPoint, jPoint, iEdge, iVertex;
 	unsigned short iDim, iVar, iMarker;
-	double *PrimVar_Vertex, *PrimVar_i, *PrimVar_j, PrimVar_Average, 
+	double *PrimVar_Vertex, *PrimVar_i, *PrimVar_j, PrimVar_Average,
 	Partial_Gradient, Partial_Res, *Normal;
 
-	bool incompressible = config->GetIncompressible();
+	/*--- Primitive variables definition compressible (temperature, vx, vy, vz, P, rho) ---*/
+	/*--- Primitive variables definition incompressible (rho, vx, vy, vz) ---*/
+	PrimVar_Vertex = new double [nDim+3];
+	PrimVar_i = new double [nDim+3];
+	PrimVar_j = new double [nDim+3];
 
-	/*--- Primitive variables definition (temperature, velocity, pressure, density) ---*/
-
-	PrimVar_Vertex = new double [nVar+1];
-	PrimVar_i = new double [nVar+1];
-	PrimVar_j = new double [nVar+1]; 
-
-	/*--- Set Gradient_Primitive to Zero (nVar+1) ---*/
+	/*--- Set Gradient_Primitive to Zero (nDim+3) ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
 		node[iPoint]->SetGradient_PrimitiveZero();
 
-	/*--- Loop interior edges ---*/ 
-	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {	
+	/*--- Loop interior edges ---*/
+	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 		iPoint = geometry->edge[iEdge]->GetNode(0);
 		jPoint = geometry->edge[iEdge]->GetNode(1);
 
-		if (incompressible) {
-			PrimVar_i[0] = node[iPoint]->GetDensityInc();
-			for (iDim = 0; iDim < nDim; iDim++)
-				PrimVar_i[iDim+1] = node[iPoint]->GetSolution(iDim+1)/node[iPoint]->GetDensityInc();
-			PrimVar_i[nDim+1] = node[iPoint]->GetSolution(0);
-
-			PrimVar_j[0] = node[jPoint]->GetDensityInc();
-			for (iDim = 0; iDim < nDim; iDim++)
-				PrimVar_j[iDim+1] = node[jPoint]->GetSolution(iDim+1)/node[jPoint]->GetDensityInc();
-			PrimVar_j[nDim+1] = node[jPoint]->GetSolution(0);
-		}
-		else {
-			PrimVar_i[0] = node[iPoint]->GetTemperature();
-			for (iDim = 0; iDim < nDim; iDim++)
-				PrimVar_i[iDim+1] = node[iPoint]->GetVelocity(iDim, incompressible);
-			PrimVar_i[nDim+1] = node[iPoint]->GetPressure();
-			PrimVar_i[nDim+2] = node[iPoint]->GetDensity();
-
-			PrimVar_j[0] = node[jPoint]->GetTemperature();
-			for (iDim = 0; iDim < nDim; iDim++)
-				PrimVar_j[iDim+1] = node[jPoint]->GetVelocity(iDim, incompressible);
-			PrimVar_j[nDim+1] = node[jPoint]->GetPressure();
-			PrimVar_j[nDim+2] = node[jPoint]->GetDensity();
+		for (iVar = 0; iVar < nDim+3; iVar++) {
+			PrimVar_i[iVar] = node[iPoint]->GetPrimVar(iVar);
+			PrimVar_j[iVar] = node[jPoint]->GetPrimVar(iVar);
 		}
 
-		Normal = geometry->edge[iEdge]->GetNormal();		
-		for (iVar = 0; iVar < nVar+1; iVar++) {
+		Normal = geometry->edge[iEdge]->GetNormal();
+		for (iVar = 0; iVar < nDim+3; iVar++) {
 			PrimVar_Average =  0.5 * ( PrimVar_i[iVar] + PrimVar_j[iVar] );
 			for (iDim = 0; iDim < nDim; iDim++) {
 				Partial_Res = PrimVar_Average*Normal[iDim];
@@ -1502,7 +1611,7 @@ void CEulerSolution::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *config
 					node[iPoint]->AddGradient_Primitive(iVar, iDim, Partial_Res);
 				if (geometry->node[jPoint]->GetDomain())
 					node[jPoint]->SubtractGradient_Primitive(iVar, iDim, Partial_Res);
-			}				
+			}
 		}
 	}
 
@@ -1511,22 +1620,12 @@ void CEulerSolution::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *config
 		for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 			iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 			if (geometry->node[iPoint]->GetDomain()) {
-				if (incompressible) {
-					PrimVar_Vertex[0] = node[iPoint]->GetDensityInc();
-					for (iDim = 0; iDim < nDim; iDim++)
-						PrimVar_Vertex[iDim+1] = node[iPoint]->GetSolution(iDim+1)/node[iPoint]->GetDensityInc();
-					PrimVar_Vertex[nDim+1] = node[iPoint]->GetSolution(0);
-				}
-				else {
-					PrimVar_Vertex[0] = node[iPoint]->GetTemperature();
-					for (iDim = 0; iDim < nDim; iDim++)
-						PrimVar_Vertex[iDim+1] = node[iPoint]->GetVelocity(iDim, incompressible);
-					PrimVar_Vertex[nDim+1] = node[iPoint]->GetPressure();
-					PrimVar_Vertex[nDim+2] = node[iPoint]->GetDensity();
-				}
+
+				for (iVar = 0; iVar < nDim+3; iVar++)
+					PrimVar_Vertex[iVar] = node[iPoint]->GetPrimVar(iVar);
 
 				Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-				for (iVar = 0; iVar < nVar+1; iVar++)
+				for (iVar = 0; iVar < nDim+3; iVar++)
 					for (iDim = 0; iDim < nDim; iDim++) {
 						Partial_Res = PrimVar_Vertex[iVar]*Normal[iDim];
 						node[iPoint]->SubtractGradient_Primitive(iVar, iDim, Partial_Res);
@@ -1535,13 +1634,11 @@ void CEulerSolution::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *config
 		}
 	}
 
-	/*--- Update gradient value ---*/ 
+	/*--- Update gradient value ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-		for (iVar = 0; iVar < nVar+1; iVar++) {
+		for (iVar = 0; iVar < nDim+3; iVar++) {
 			for (iDim = 0; iDim < nDim; iDim++) {
 				Partial_Gradient = node[iPoint]->GetGradient_Primitive(iVar,iDim) / (geometry->node[iPoint]->GetVolume()+EPS);
-				//					if (Partial_Gradient > config->GetPrimGrad_Threshold()) Partial_Gradient = config->GetPrimGrad_Threshold();
-				//					if (Partial_Gradient < -config->GetPrimGrad_Threshold()) Partial_Gradient = -config->GetPrimGrad_Threshold();
 				node[iPoint]->SetGradient_Primitive(iVar, iDim, Partial_Gradient);
 			}
 		}
@@ -1556,36 +1653,22 @@ void CEulerSolution::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *config
 void CEulerSolution::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
 	unsigned short iVar, iDim, jDim, iNeigh;
 	unsigned long iPoint, jPoint;
-	double *PrimVar_i, *PrimVar_j, *Coord_i, *Coord_j, r11, r12, r13, r22, r23, r23_a, 
+	double *PrimVar_i, *PrimVar_j, *Coord_i, *Coord_j, r11, r12, r13, r22, r23, r23_a,
 	r23_b, r33, weight, product;
 
-	bool incompressible = config->GetIncompressible();
-
-	/*--- Primitive variables definition (temperature, velocity, pressure, density) ---*/
-
-	PrimVar_i = new double [nVar+1];
-	PrimVar_j = new double [nVar+1]; 
+	/*--- Primitive variables definition (temperature, vx, vy, vz) ---*/
+	PrimVar_i = new double [nDim+3];
+	PrimVar_j = new double [nDim+3]; 
 
 	/*--- Loop over points of the grid ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
 		Coord_i = geometry->node[iPoint]->GetCoord();
 
-		if (incompressible) {
-			PrimVar_i[0] = node[iPoint]->GetDensityInc();
-			for (iDim = 0; iDim < nDim; iDim++)
-				PrimVar_i[iDim+1] = node[iPoint]->GetVelocity(iDim, incompressible);
-			PrimVar_i[nDim+1] = node[iPoint]->GetSolution(0);
-		}
-		else {
-			PrimVar_i[0] = node[iPoint]->GetTemperature();
-			for (iDim = 0; iDim < nDim; iDim++)
-				PrimVar_i[iDim+1] = node[iPoint]->GetVelocity(iDim, incompressible);
-			PrimVar_i[nDim+1] = node[iPoint]->GetPressure();
-			PrimVar_i[nDim+2] = node[iPoint]->GetDensity();
-		}
+		for (iVar = 0; iVar < nDim+3; iVar++)
+			PrimVar_i[iVar] = node[iPoint]->GetPrimVar(iVar);
 
 		/*--- Inizialization of variables ---*/
-		for (iVar = 0; iVar < nVar+1; iVar++)
+		for (iVar = 0; iVar < nDim+3; iVar++)
 			for (iDim = 0; iDim < nDim; iDim++)
 				cvector[iVar][iDim] = 0.0;
 		r11 = 0.0; r12 = 0.0; r13 = 0.0; r22 = 0.0; r23 = 0.0; r23_a = 0.0; r23_b = 0.0; r33 = 0.0;
@@ -1594,19 +1677,8 @@ void CEulerSolution::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config
 			jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
 			Coord_j = geometry->node[jPoint]->GetCoord();
 
-			if (incompressible) {
-				PrimVar_j[0] = node[jPoint]->GetDensityInc();
-				for (iDim = 0; iDim < nDim; iDim++)
-					PrimVar_j[iDim+1] = node[jPoint]->GetVelocity(iDim, incompressible);
-				PrimVar_j[nDim+1] = node[jPoint]->GetSolution(0);
-			}
-			else {
-				PrimVar_j[0] = node[jPoint]->GetTemperature();
-				for (iDim = 0; iDim < nDim; iDim++)
-					PrimVar_j[iDim+1] = node[jPoint]->GetVelocity(iDim, incompressible);
-				PrimVar_j[nDim+1] = node[jPoint]->GetPressure();
-				PrimVar_j[nDim+2] = node[jPoint]->GetDensity();
-			}
+			for (iVar = 0; iVar < nDim+3; iVar++)
+				PrimVar_j[iVar] = node[jPoint]->GetPrimVar(iVar);
 
 			weight = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++)
@@ -1624,7 +1696,7 @@ void CEulerSolution::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config
 			}
 
 			/*--- Entries of c:= transpose(A)*b ---*/
-			for (iVar = 0; iVar < nVar+1; iVar++)
+			for (iVar = 0; iVar < nDim+3; iVar++)
 				for (iDim = 0; iDim < nDim; iDim++)
 					cvector[iVar][iDim] += (Coord_j[iDim]-Coord_i[iDim])*(PrimVar_j[iVar]-PrimVar_i[iVar])/(weight);
 		}
@@ -1666,13 +1738,11 @@ void CEulerSolution::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config
 			Smatrix[2][2] = (z33*z33)/(detR2);
 		}
 		/*--- Computation of the gradient: S*c ---*/
-		for (iVar = 0; iVar < nVar+1; iVar++) {
+		for (iVar = 0; iVar < nDim+3; iVar++) {
 			for (iDim = 0; iDim < nDim; iDim++) {
 				product = 0.0;
 				for (jDim = 0; jDim < nDim; jDim++)
 					product += Smatrix[iDim][jDim]*cvector[iVar][jDim];
-				//					if (product > config->GetPrimGrad_Threshold()) product = config->GetPrimGrad_Threshold();
-				//					if (product < -config->GetPrimGrad_Threshold()) product = -config->GetPrimGrad_Threshold();
 				node[iPoint]->SetGradient_Primitive(iVar, iDim, product);
 			}
 		}
@@ -1682,7 +1752,63 @@ void CEulerSolution::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config
 	delete [] PrimVar_j;
 }
 
-void CEulerSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, 
+void CEulerSolution::SetPrimVar_Limiter(CGeometry *geometry, CConfig *config) { }
+
+void CEulerSolution::SetPreconditioner_Turkel(CConfig *config, unsigned short iPoint) {
+	unsigned short iDim, jDim, iVar, jVar;
+	double Beta, local_Mach, Beta2;
+	double *U_i;
+	double Beta_min = config->GetminTurkelBeta();
+	double Beta_max = config->GetmaxTurkelBeta();
+
+	/*--- Variables to calculate the preconditioner parameter Beta ---*/
+
+	local_Mach = sqrt(node[iPoint]->GetVelocity2())/node[iPoint]->GetSoundSpeed();
+	Beta 		    = max(Beta_min,min(local_Mach,Beta_max));
+	Beta2 		    = Beta*Beta;
+
+	U_i = node[iPoint]->GetSolution();
+
+	double rho, enthalpy, soundspeed, sq_vel;
+	rho = U_i[0];
+	enthalpy = node[iPoint]->GetEnthalpy();
+	soundspeed = node[iPoint]->GetSoundSpeed();
+	sq_vel = node[iPoint]->GetVelocity2();
+
+	/*---Calculating the inverse of the preconditioning matrix that multiplies the time derivative  */
+	Precon_Mat_inv[0][0] = 0.5*sq_vel;
+	Precon_Mat_inv[0][nVar-1] = 1.0;
+	for (iDim = 0; iDim < nDim; iDim ++)
+		Precon_Mat_inv[0][1+iDim] = -1.0*U_i[iDim+1]/rho;
+
+
+	for (iDim = 0; iDim < nDim; iDim ++) {
+		Precon_Mat_inv[iDim+1][0] = 0.5*sq_vel*U_i[iDim+1]/rho;
+		Precon_Mat_inv[iDim+1][nVar-1] = U_i[iDim+1]/rho;
+		for (jDim = 0; jDim < nDim; jDim ++) {
+			Precon_Mat_inv[iDim+1][1+jDim] = -1.0*U_i[jDim+1]/rho*U_i[iDim+1]/rho;
+		}
+	}
+
+	Precon_Mat_inv[nVar-1][0] = 0.5*sq_vel*enthalpy;
+	Precon_Mat_inv[nVar-1][nVar-1] = enthalpy;
+	for (iDim = 0; iDim < nDim; iDim ++)
+		Precon_Mat_inv[nVar-1][1+iDim] = -1.0*U_i[iDim+1]/rho*enthalpy;
+
+
+	for (iVar = 0; iVar < nVar; iVar ++ ) {
+		for (jVar = 0; jVar < nVar; jVar ++ ) {
+			Precon_Mat_inv[iVar][jVar] = (1.0/(Beta2+EPS) - 1.0) * (Gamma-1.0)/(soundspeed*soundspeed)*Precon_Mat_inv[iVar][jVar];
+			if (iVar == jVar)
+				Precon_Mat_inv[iVar][iVar] += 1.0;
+		}
+	}
+
+	delete [] U_i;
+}
+
+
+void CEulerSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container,
 		CNumerics *solver, CConfig *config, unsigned short val_marker) {
 
 	/*--- Local variables ---*/
@@ -1718,7 +1844,7 @@ void CEulerSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_con
 
 			/*--- Set the residual using the pressure ---*/
 			if (incompressible) Pressure = node[iPoint]->GetSolution(0);
-			else Pressure = node[iPoint]->GetPressure();
+			else Pressure = node[iPoint]->GetPressure(incompressible);
 			Residual[0] = 0;
 			for (iDim = 0; iDim < nDim; iDim++)
 				Residual[iDim+1] = Pressure*UnitaryNormal[iDim]*Area;
@@ -1731,7 +1857,7 @@ void CEulerSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_con
 			}
 
 			/*--- Adjustment to energy equation due to grid motion ---*/
-			if (grid_movement) {        
+			if (grid_movement) {
 				ProjGridVel = 0.0;
 				GridVel = geometry->node[iPoint]->GetGridVel();
 				for (iDim = 0; iDim < nDim; iDim++)
@@ -1750,7 +1876,7 @@ void CEulerSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_con
 						for (jVar = 0; jVar < nVar; jVar++)
 							Jacobian_i[iVar][jVar] = 0.0;
 					}
-					for (iDim = 0; iDim < nDim; iDim++) 
+					for (iDim = 0; iDim < nDim; iDim++)
 						Jacobian_i[iDim+1][0] = -Normal[iDim];
 					Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
 				}
@@ -1788,9 +1914,10 @@ void CEulerSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_con
 			}
 		}
 	}
+
 }
 
-void CEulerSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_container, 
+void CEulerSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_container,
 		CNumerics *solver, CConfig *config, unsigned short val_marker) {
 	unsigned short iVar, iDim;
 	unsigned long iVertex, iPoint;
@@ -1847,15 +1974,15 @@ void CEulerSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_cont
 			solver->SetNormal(Vector);
 			solver->SetConservative(U_domain, U_infty);
 			if (incompressible) {
-				solver->SetDensityInc(node[iPoint]->GetDensityInc(), 
+				solver->SetDensityInc(node[iPoint]->GetDensityInc(),
 						node[iPoint]->GetDensityInc());
-				solver->SetBetaInc2(node[iPoint]->GetBetaInc2(), 
+				solver->SetBetaInc2(node[iPoint]->GetBetaInc2(),
 						node[iPoint]->GetBetaInc2());
 				double *iCoord = geometry->node[iPoint]->GetCoord();
 				solver->SetCoord(iCoord, iCoord);
 			}
 			if (rotating_frame) {
-				solver->SetRotVel(geometry->node[iPoint]->GetRotVel(), 
+				solver->SetRotVel(geometry->node[iPoint]->GetRotVel(),
 						geometry->node[iPoint]->GetRotVel());
 				solver->SetRotFlux(-geometry->vertex[val_marker][iVertex]->GetRotFlux());
 			}
@@ -1884,7 +2011,7 @@ void CEulerSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_cont
 
 }
 
-void CEulerSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_container, 
+void CEulerSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_container,
 		CNumerics *solver, CConfig *config, unsigned short val_marker) {
 
 	/*--- Local variables and initialization. ---*/
@@ -1930,7 +2057,7 @@ void CEulerSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_containe
 
 			/*--- Current solution at this boundary node ---*/
 			for (iVar = 0; iVar < nVar; iVar++)
-				U_domain[iVar] = node[iPoint]->GetSolution(iVar);			
+				U_domain[iVar] = node[iPoint]->GetSolution(iVar);
 
 			/*--- Build the fictitious intlet state based on characteristics ---*/
 			if (incompressible) {
@@ -1941,12 +2068,12 @@ void CEulerSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_containe
 				/*--- Pressure computation using the internal value ---*/
 				U_inlet[0] = node[Point_Normal]->GetSolution(0);
 
-				/*--- The velocity is computed from the interior, and normal 
+				/*--- The velocity is computed from the interior, and normal
          derivative for the density ---*/
 				for (iDim = 0; iDim < nDim; iDim++)
 					U_inlet[iDim+1] = GetVelocity_Inf(iDim)*node[Point_Normal]->GetDensityInc();
 
-				/*--- Note that the y velocity is recomputed due to the 
+				/*--- Note that the y velocity is recomputed due to the
          free surface effect on the pressure ---*/
 				U_inlet[nDim] = node[Point_Normal]->GetSolution(nDim);
 
@@ -1993,7 +2120,7 @@ void CEulerSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_containe
 
 					/*--- Total speed of sound ---*/
 					SoundSpeed_Total2 = Gamma_Minus_One*(H_Total - (Energy
-                            + Pressure/Density)+0.5*Velocity2) + SoundSpeed2;
+							+ Pressure/Density)+0.5*Velocity2) + SoundSpeed2;
 
 					/*--- Dot product of normal and flow direction. This should
              be negative due to outward facing boundary normal convention. ---*/
@@ -2068,7 +2195,7 @@ void CEulerSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_containe
 					/*--- Get primitives from current inlet state. ---*/
 					for (iDim = 0; iDim < nDim; iDim++)
 						Velocity[iDim] = node[iPoint]->GetVelocity(iDim, incompressible);
-					Pressure    = node[iPoint]->GetPressure();
+					Pressure    = node[iPoint]->GetPressure(incompressible);
 					SoundSpeed2 = Gamma*Pressure/U_domain[0];
 
 					/*--- Compute the acoustic Riemann invariant that is extrapolated
@@ -2808,7 +2935,7 @@ void CEulerSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_cont
 				UnitaryNormal[iDim] = -Normal[iDim]/Area;
 
 			if (incompressible) Pressure = node[iPoint]->GetSolution(0);
-			else Pressure = node[iPoint]->GetPressure();
+			else Pressure = node[iPoint]->GetPressure(incompressible);
 
 			/*--- Set the residual using the pressure ---*/
 			Residual[0] = 0;
@@ -2873,7 +3000,7 @@ void CEulerSolution::BC_Interface_Boundary(CGeometry *geometry, CSolution **solu
 
 				/*--- Store the solution for both points ---*/
 				for (iVar = 0; iVar < nVar; iVar++) {
-					Solution_i[iVar] = node[iPoint]->GetSolution(iVar); 
+					Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
 					Solution_j[iVar] = node[jPoint]->GetSolution(iVar);
 				}
 
@@ -2883,7 +3010,7 @@ void CEulerSolution::BC_Interface_Boundary(CGeometry *geometry, CSolution **solu
 				/*--- Set the normal vector ---*/
 				geometry->vertex[val_marker][iVertex]->GetNormal(Vector);
 				for (iDim = 0; iDim < nDim; iDim++)
-					Vector[iDim] = -Vector[iDim]; 
+					Vector[iDim] = -Vector[iDim];
 				solver->SetNormal(Vector);
 
 				/*--- Add Residuals and Jacobians ---*/
@@ -2924,7 +3051,7 @@ void CEulerSolution::BC_Interface_Boundary(CGeometry *geometry, CSolution **solu
 					Buffer_Send_U[iVar] = Conserv_Var[iVar];
 				MPI::COMM_WORLD.Bsend(Buffer_Send_U, nVar, MPI::DOUBLE, jProcessor, iPoint);
 			}
-		}		
+		}
 	}
 
 	for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -3293,508 +3420,270 @@ void CEulerSolution::BC_Custom(CGeometry *geometry, CSolution **solution_contain
 	}
 }
 
+#ifndef NEW_MPI
+
 void CEulerSolution::MPI_Send_Receive(CGeometry ***geometry, CSolution ****solution_container,
-		CConfig **config, unsigned short iMGLevel, unsigned short iZone) {
-	unsigned short iVar, iMarker;
-	unsigned long iVertex, iPoint;
-	double *Conserv_Var, *Conserv_Undivided_Laplacian = NULL;
-	double **Conserv_Grad = NULL, **PrimVar_Grad= NULL, *Grad_Limit = NULL;
-
+																			CConfig **config, unsigned short iMGLevel, unsigned short iZone) {
+	
+	unsigned short iVar, iDim, iMarker, iPeriodic_Index;
+	unsigned long iVertex, iPoint, nVertex, nBuffer_Vector, nBuffer_VectorGrad, nBuffer_Scalar;
+	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, 
+	sinPsi, *newSolution = NULL, **newGradient = NULL, *Buffer_Receive_U = NULL, 
+	*Buffer_Receive_BetaInc2 = NULL, *Buffer_Receive_DensityInc = NULL,
+	*Buffer_Receive_UGrad = NULL, *Buffer_Receive_Limit = NULL, *Buffer_Receive_Undivided_Laplacian = NULL, 
+	*Buffer_Receive_Sensor = NULL, *Buffer_Receive_Lambda = NULL, *Buffer_Receive_LaminarViscosity = NULL, 
+	*Buffer_Receive_EddyViscosity = NULL, *Buffer_Receive_VGrad = NULL;
+	unsigned short *Buffer_Receive_Neighbor = NULL;
+	short SendRecv;
+	int send_to, receive_from;
+	bool viscous = false, upwind = false, centered = false;
+	bool incompressible = config[iZone]->GetIncompressible();
+	
+#ifdef NO_MPI
+	double N_0, N_1, N_2;
+	unsigned long Point_0, Point_1, Point_2, donorPoint, donorElem;
+	unsigned short donorZone, iMark, donorMarker, donor_marker;
+#else
+	double *Buffer_Send_U = NULL, *Buffer_Send_BetaInc2 = NULL, *Buffer_Send_DensityInc = NULL, *Buffer_Send_LaminarViscosity = NULL, 
+	*Buffer_Send_EddyViscosity = NULL, *Buffer_Send_VGrad = NULL, *Buffer_Send_UGrad = NULL, *Buffer_Send_Limit = NULL, *Buffer_Send_Undivided_Laplacian = NULL,
+	*Buffer_Send_Sensor = NULL, *Buffer_Send_Lambda = NULL;
+	unsigned short *Buffer_Send_Neighbor = NULL;
+#endif
+	
+	newSolution = new double[nVar];
+	newGradient = new double* [nVar];
+	for (iVar=0; iVar< nVar; iVar++)
+		newGradient[iVar] = new double[3];
+	
+	if ((config[iZone]->GetKind_Solver() == NAVIER_STOKES) || (config[iZone]->GetKind_Solver() == ADJ_NAVIER_STOKES)) viscous = true;
+	if ((config[iZone]->GetKind_Solver() == RANS) || (config[iZone]->GetKind_Solver() == ADJ_RANS)) viscous = true;
+	if (config[iZone]->GetKind_ConvNumScheme() == SPACE_UPWIND) upwind = true;
+	if (config[iZone]->GetKind_ConvNumScheme() == SPACE_CENTERED) centered = true;
+	
 	/*--- Send-Receive boundary conditions ---*/
-	for (iMarker = 0; iMarker < config[iZone]->GetnMarker_All(); iMarker++)
+	for (iMarker = 0; iMarker < config[iZone]->GetnMarker_All(); iMarker++) {
+		
 		if (config[iZone]->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) {
-
-			short SendRecv = config[iZone]->GetMarker_All_SendRecv(iMarker);
-			bool incompressible = config[iZone]->GetIncompressible();
-			unsigned long nVertex = geometry[iZone][iMGLevel]->nVertex[iMarker];
-			unsigned short SlopeLimit = config[iZone]->GetKind_SlopeLimit();
-			bool viscous = false;
-			if ((config[iZone]->GetKind_Solver() == NAVIER_STOKES) || (config[iZone]->GetKind_Solver() == ADJ_NAVIER_STOKES)) viscous = true;
-			if ((config[iZone]->GetKind_Solver() == RANS) || (config[iZone]->GetKind_Solver() == ADJ_RANS)) viscous = true;
-
-			/*--- Send information  ---*/
-			if (SendRecv > 0) {
-
-				/*--- Sending only occurs with MPI ---*/
+			
+			SendRecv = config[iZone]->GetMarker_All_SendRecv(iMarker);
+			nVertex = geometry[iZone][iMGLevel]->nVertex[iMarker];
+			
+			nBuffer_VectorGrad	= nVertex*nVar*nDim;
+			nBuffer_Vector			= nVertex*nVar;
+			nBuffer_Scalar			= nVertex;
+			
+			send_to = SendRecv-1;
+			receive_from = abs(SendRecv)-1;
+			
 #ifndef NO_MPI
-
-				unsigned long nBuffer_Vector = geometry[iZone][iMGLevel]->nVertex[iMarker]*nVar;
-				unsigned long nBuffer_Scalar = geometry[iZone][iMGLevel]->nVertex[iMarker];
-				int send_to = SendRecv-1;
-
-				/*--- Inviscid part ---*/
-				double *Buffer_Send_U = new double[nBuffer_Vector];
-				double *Buffer_Send_BetaInc2 = NULL, *Buffer_Send_DensityInc = NULL;
-				if (incompressible) {
-					Buffer_Send_BetaInc2 = new double [nBuffer_Scalar];
-					Buffer_Send_DensityInc = new double [nBuffer_Scalar];
-				}
-
-				/*--- Viscous part ---*/
-				double *Buffer_Send_LaminarViscosity = NULL, *Buffer_Send_EddyViscosity = NULL, *Buffer_Send_Vx = NULL,
-						*Buffer_Send_Vy = NULL, *Buffer_Send_Vz = NULL;
-				if (viscous) {
-					Buffer_Send_LaminarViscosity = new double[nBuffer_Scalar];
-					Buffer_Send_EddyViscosity = new double[nBuffer_Scalar];
-					Buffer_Send_Vx = new double[nBuffer_Vector];
-					Buffer_Send_Vy = new double[nBuffer_Vector];
-					Buffer_Send_Vz = new double[nBuffer_Vector];
-				}
-
-				/*--- Upwind scheme ---*/
-				if (config[iZone]->GetKind_ConvNumScheme() == SPACE_UPWIND) {
-
-					double *Buffer_Send_Ux = NULL, *Buffer_Send_Uy = NULL, *Buffer_Send_Uz = NULL, *Buffer_Send_Limit = NULL;
+			
+			/*--- Send information using MPI  ---*/
+			if (SendRecv > 0) {
+				
+				/*--- Allocate upwind variables ---*/
+				if (upwind) {
+					Buffer_Send_U = new double[nBuffer_Vector];
 					if (iMGLevel == MESH_0) {
-						Buffer_Send_Ux = new double[nBuffer_Vector];
-						Buffer_Send_Uy = new double[nBuffer_Vector];
-						Buffer_Send_Uz = new double[nBuffer_Vector];
+						Buffer_Send_UGrad = new double[nBuffer_VectorGrad];
 						Buffer_Send_Limit = new double[nBuffer_Vector];
 					}
-
-					/*--- Copy the conservative, gradient and limiter to the buffer vector ---*/
-					for (iVertex = 0; iVertex < nVertex; iVertex++) {
-						iPoint = geometry[iZone][iMGLevel]->vertex[iMarker][iVertex]->GetNode();
-						Conserv_Var = node[iPoint]->GetSolution();
-						if (iMGLevel == MESH_0) {
-							Conserv_Grad = node[iPoint]->GetGradient();
-							if (SlopeLimit != NONE) Grad_Limit = node[iPoint]->GetLimiter();
-						}
-						for (iVar = 0; iVar < nVar; iVar++) {
-							Buffer_Send_U[iVar*nVertex+iVertex] = Conserv_Var[iVar];
-							if (iMGLevel == MESH_0) {
-								Buffer_Send_Ux[iVar*nVertex+iVertex] = Conserv_Grad[iVar][0];
-								Buffer_Send_Uy[iVar*nVertex+iVertex] = Conserv_Grad[iVar][1];
-								if (nDim == 3) Buffer_Send_Uz[iVar*nVertex+iVertex] = Conserv_Grad[iVar][2];
-								if (SlopeLimit != NONE) Buffer_Send_Limit[iVar*nVertex+iVertex] = Grad_Limit[iVar];
-							}
-						}
-						if (incompressible) {
-							Buffer_Send_BetaInc2[iVertex] = node[iPoint]->GetBetaInc2();
-							Buffer_Send_DensityInc[iVertex] = node[iPoint]->GetDensityInc();
-						}
-						if (viscous) {
-							PrimVar_Grad = node[iPoint]->GetGradient_Primitive();
-							for (iVar = 0; iVar < nVar; iVar++) {
-								Buffer_Send_Vx[iVar*nVertex+iVertex] = PrimVar_Grad[iVar][0];
-								Buffer_Send_Vy[iVar*nVertex+iVertex] = PrimVar_Grad[iVar][1];
-								if (nDim == 3) Buffer_Send_Vz[iVar*nVertex+iVertex] = PrimVar_Grad[iVar][2];
-							}
-							Buffer_Send_LaminarViscosity[iVertex] = node[iPoint]->GetLaminarViscosity();
-							Buffer_Send_EddyViscosity[iVertex] = node[iPoint]->GetEddyViscosity();
-						}
-					}
-
-					/*--- Send the buffer information ---*/
-					MPI::COMM_WORLD.Bsend(Buffer_Send_U, nBuffer_Vector, MPI::DOUBLE, send_to, 0);
-					if (iMGLevel == MESH_0) {
-						MPI::COMM_WORLD.Bsend(Buffer_Send_Ux, nBuffer_Vector, MPI::DOUBLE, send_to, 1);
-						MPI::COMM_WORLD.Bsend(Buffer_Send_Uy, nBuffer_Vector, MPI::DOUBLE, send_to, 2);
-						if (nDim == 3) MPI::COMM_WORLD.Bsend(Buffer_Send_Uz, nBuffer_Vector,MPI::DOUBLE,send_to, 3);
-						if (SlopeLimit != NONE) MPI::COMM_WORLD.Bsend(Buffer_Send_Limit, nBuffer_Vector, MPI::DOUBLE, send_to, 4);
-					}
-					if (incompressible) {
-						MPI::COMM_WORLD.Bsend(Buffer_Send_BetaInc2, nBuffer_Scalar, MPI::DOUBLE, send_to, 5);
-						MPI::COMM_WORLD.Bsend(Buffer_Send_DensityInc, nBuffer_Scalar, MPI::DOUBLE, send_to, 6);
-					}
-					if (viscous) {
-						MPI::COMM_WORLD.Bsend(Buffer_Send_LaminarViscosity, nBuffer_Scalar, MPI::DOUBLE, send_to, 7);
-						MPI::COMM_WORLD.Bsend(Buffer_Send_EddyViscosity, nBuffer_Scalar, MPI::DOUBLE, send_to, 8);
-						MPI::COMM_WORLD.Bsend(Buffer_Send_Vx, nBuffer_Vector, MPI::DOUBLE, send_to, 9);
-						MPI::COMM_WORLD.Bsend(Buffer_Send_Vy, nBuffer_Vector, MPI::DOUBLE, send_to, 10);
-						if (nDim == 3) MPI::COMM_WORLD.Bsend(Buffer_Send_Vz, nBuffer_Vector, MPI::DOUBLE, send_to, 11);
-					}
-
-					if (iMGLevel == MESH_0) {
-						delete [] Buffer_Send_Ux;
-						delete [] Buffer_Send_Uy;
-						delete [] Buffer_Send_Uz;
-						delete [] Buffer_Send_Limit;
-					}
-
 				}
-
-				/*--- Centered scheme ---*/
-				if (config[iZone]->GetKind_ConvNumScheme() == SPACE_CENTERED) {
-
-					double *Buffer_Send_Undivided_Laplacian = NULL, *Buffer_Send_Sensor = NULL;
+				
+				/*--- Allocate centered variables ---*/
+				if (centered) {
+					Buffer_Send_U = new double[nBuffer_Vector];
+					Buffer_Send_Lambda = new double [nBuffer_Scalar];
+					Buffer_Send_Neighbor = new unsigned short [nBuffer_Scalar];
 					if (iMGLevel == MESH_0) {
 						Buffer_Send_Undivided_Laplacian = new double [nBuffer_Vector];
 						Buffer_Send_Sensor = new double [nBuffer_Scalar];
 					}
-					double *Buffer_Send_Lambda = new double [nBuffer_Scalar];
-					unsigned short *Buffer_Send_Neighbor = new unsigned short [nBuffer_Scalar];
-
-					/*--- Copy all the variables to the buffer vectors ---*/
-					for (iVertex = 0; iVertex < nVertex; iVertex++) {
-						iPoint = geometry[iZone][iMGLevel]->vertex[iMarker][iVertex]->GetNode();
-						Conserv_Var = node[iPoint]->GetSolution();
-						if (iMGLevel == MESH_0) Conserv_Undivided_Laplacian = node[iPoint]->GetUnd_Lapl();
+				}
+				
+				/*--- Allocate incompressible variables ---*/
+				if (incompressible) {
+					Buffer_Send_BetaInc2 = new double [nBuffer_Scalar];
+					Buffer_Send_DensityInc = new double [nBuffer_Scalar];
+				}
+				
+				/*--- Allocate viscous variables ---*/
+				if (viscous) {
+					Buffer_Send_LaminarViscosity = new double[nBuffer_Scalar];
+					Buffer_Send_EddyViscosity = new double[nBuffer_Scalar];
+					Buffer_Send_VGrad = new double[nBuffer_VectorGrad];
+				}
+				
+				for (iVertex = 0; iVertex < nVertex; iVertex++) {
+					
+					iPoint = geometry[iZone][iMGLevel]->vertex[iMarker][iVertex]->GetNode();
+					
+					/*--- Copy upwind data ---*/
+					if (upwind) {
 						for (iVar = 0; iVar < nVar; iVar++) {
-							Buffer_Send_U[iVar*nVertex+iVertex] = Conserv_Var[iVar];
-							if (iMGLevel == MESH_0) Buffer_Send_Undivided_Laplacian[iVar*nVertex+iVertex] = Conserv_Undivided_Laplacian[iVar];
+							Buffer_Send_U[iVar*nVertex+iVertex] = node[iPoint]->GetSolution(iVar);
+							if (iMGLevel == MESH_0) {
+								Buffer_Send_Limit[iVar*nVertex+iVertex] = node[iPoint]->GetLimiter(iVar);
+								for (iDim = 0; iDim < nDim; iDim++)
+									Buffer_Send_UGrad[iDim*nVar*nVertex+iVar*nVertex+iVertex] = node[iPoint]->GetGradient(iVar,iDim);
+							}
+						}
+					}
+					
+					/*--- Copy centered data ---*/
+					if (centered) {
+						for (iVar = 0; iVar < nVar; iVar++) {
+							Buffer_Send_U[iVar*nVertex+iVertex] = node[iPoint]->GetSolution(iVar);
+							if (iMGLevel == MESH_0)
+								Buffer_Send_Undivided_Laplacian[iVar*nVertex+iVertex] = node[iPoint]->GetUnd_Lapl(iVar);							
 						}
 						if (iMGLevel == MESH_0) Buffer_Send_Sensor[iVertex] = node[iPoint]->GetSensor();
 						Buffer_Send_Lambda[iVertex] = node[iPoint]->GetLambda();
 						Buffer_Send_Neighbor[iVertex] = geometry[iZone][iMGLevel]->node[iPoint]->GetnPoint();
-						if (incompressible) {
-							Buffer_Send_BetaInc2[iVertex] = node[iPoint]->GetBetaInc2();
-							Buffer_Send_DensityInc[iVertex] = node[iPoint]->GetDensityInc();
-						}
-						if (viscous) {
-							PrimVar_Grad = node[iPoint]->GetGradient_Primitive();
-							for (iVar = 0; iVar < nVar; iVar++) {
-								Buffer_Send_Vx[iVar*nVertex+iVertex] = PrimVar_Grad[iVar][0];
-								Buffer_Send_Vy[iVar*nVertex+iVertex] = PrimVar_Grad[iVar][1];
-								if (nDim == 3) Buffer_Send_Vz[iVar*nVertex+iVertex] = PrimVar_Grad[iVar][2];
-							}
-							Buffer_Send_LaminarViscosity[iVertex] = node[iPoint]->GetLaminarViscosity();
-							Buffer_Send_EddyViscosity[iVertex] = node[iPoint]->GetEddyViscosity();
-						}
 					}
-
-					/*--- Send the buffer information ---*/
-					MPI::COMM_WORLD.Bsend(Buffer_Send_U, nBuffer_Vector, MPI::DOUBLE, send_to, 0);
-					if (iMGLevel == MESH_0) {
-						MPI::COMM_WORLD.Bsend(Buffer_Send_Undivided_Laplacian, nBuffer_Vector, MPI::DOUBLE, send_to, 1);
-						MPI::COMM_WORLD.Bsend(Buffer_Send_Sensor, nBuffer_Scalar, MPI::DOUBLE, send_to, 2);
-					}
-					MPI::COMM_WORLD.Bsend(Buffer_Send_Lambda, nBuffer_Scalar, MPI::DOUBLE, send_to, 3);
-					MPI::COMM_WORLD.Bsend(Buffer_Send_Neighbor, nBuffer_Scalar, MPI::UNSIGNED_SHORT, send_to, 4);
+					
+					/*--- Copy incompressible data ---*/
 					if (incompressible) {
-						MPI::COMM_WORLD.Bsend(Buffer_Send_BetaInc2,nBuffer_Scalar,MPI::DOUBLE,send_to, 5);
-						MPI::COMM_WORLD.Bsend(Buffer_Send_DensityInc,nBuffer_Scalar,MPI::DOUBLE,send_to, 6);
+						Buffer_Send_BetaInc2[iVertex] = node[iPoint]->GetBetaInc2();
+						Buffer_Send_DensityInc[iVertex] = node[iPoint]->GetDensityInc();
 					}
+					
+					/*--- Copy viscous data ---*/
 					if (viscous) {
-						MPI::COMM_WORLD.Bsend(Buffer_Send_LaminarViscosity, nBuffer_Scalar, MPI::DOUBLE, send_to, 7);
-						MPI::COMM_WORLD.Bsend(Buffer_Send_EddyViscosity, nBuffer_Scalar, MPI::DOUBLE, send_to, 8);
-						MPI::COMM_WORLD.Bsend(Buffer_Send_Vx, nBuffer_Vector, MPI::DOUBLE, send_to, 9);
-						MPI::COMM_WORLD.Bsend(Buffer_Send_Vy, nBuffer_Vector, MPI::DOUBLE, send_to, 10);
-						if (nDim == 3) MPI::COMM_WORLD.Bsend(Buffer_Send_Vz, nBuffer_Vector, MPI::DOUBLE, send_to, 11);
+						Buffer_Send_LaminarViscosity[iVertex] = node[iPoint]->GetLaminarViscosity();
+						Buffer_Send_EddyViscosity[iVertex] = node[iPoint]->GetEddyViscosity();
+						for (iVar = 0; iVar < nVar; iVar++)
+							for (iDim = 0; iDim < nDim; iDim++)
+								Buffer_Send_VGrad[iDim*nVar*nVertex+iVar*nVertex+iVertex] = node[iPoint]->GetGradient_Primitive(iVar,iDim);							
 					}
-
+					
+				}
+				
+				/*--- Send the buffer, and deallocate information using MPI ---*/
+				if (upwind) {
+					MPI::COMM_WORLD.Bsend(Buffer_Send_U, nBuffer_Vector, MPI::DOUBLE, send_to, 0); delete [] Buffer_Send_U;
 					if (iMGLevel == MESH_0) {
-						delete [] Buffer_Send_Undivided_Laplacian;
-						delete [] Buffer_Send_Sensor;
+						MPI::COMM_WORLD.Bsend(Buffer_Send_UGrad, nBuffer_VectorGrad, MPI::DOUBLE, send_to, 1); delete [] Buffer_Send_UGrad;
+						MPI::COMM_WORLD.Bsend(Buffer_Send_Limit, nBuffer_Vector, MPI::DOUBLE, send_to, 2); delete [] Buffer_Send_Limit;
 					}
-					delete [] Buffer_Send_Lambda;
-					delete [] Buffer_Send_Neighbor;
-
 				}
-
-				delete [] Buffer_Send_U;
+				
+				if (centered) {
+					MPI::COMM_WORLD.Bsend(Buffer_Send_U, nBuffer_Vector, MPI::DOUBLE, send_to, 0); delete [] Buffer_Send_U;
+					MPI::COMM_WORLD.Bsend(Buffer_Send_Lambda, nBuffer_Scalar, MPI::DOUBLE, send_to, 1); delete [] Buffer_Send_Lambda;
+					MPI::COMM_WORLD.Bsend(Buffer_Send_Neighbor, nBuffer_Scalar, MPI::UNSIGNED_SHORT, send_to, 2); delete [] Buffer_Send_Neighbor;
+					if (iMGLevel == MESH_0) {
+						MPI::COMM_WORLD.Bsend(Buffer_Send_Undivided_Laplacian, nBuffer_Vector, MPI::DOUBLE, send_to, 3); delete [] Buffer_Send_Undivided_Laplacian;
+						MPI::COMM_WORLD.Bsend(Buffer_Send_Sensor, nBuffer_Scalar, MPI::DOUBLE, send_to, 4); delete [] Buffer_Send_Sensor;
+					}
+				}
+				
 				if (incompressible) {
-					delete [] Buffer_Send_BetaInc2;
-					delete [] Buffer_Send_DensityInc;
+					MPI::COMM_WORLD.Bsend(Buffer_Send_BetaInc2, nBuffer_Scalar, MPI::DOUBLE, send_to, 5); delete [] Buffer_Send_BetaInc2;
+					MPI::COMM_WORLD.Bsend(Buffer_Send_DensityInc, nBuffer_Scalar, MPI::DOUBLE, send_to, 6); delete [] Buffer_Send_DensityInc;
 				}
+				
 				if (viscous) {
-					delete [] Buffer_Send_Vx;
-					delete [] Buffer_Send_Vy;
-					delete [] Buffer_Send_Vz;
-					delete [] Buffer_Send_LaminarViscosity;
-					delete [] Buffer_Send_EddyViscosity;
+					MPI::COMM_WORLD.Bsend(Buffer_Send_LaminarViscosity, nBuffer_Scalar, MPI::DOUBLE, send_to, 7); delete [] Buffer_Send_LaminarViscosity;
+					MPI::COMM_WORLD.Bsend(Buffer_Send_EddyViscosity, nBuffer_Scalar, MPI::DOUBLE, send_to, 8); delete [] Buffer_Send_EddyViscosity;
+					MPI::COMM_WORLD.Bsend(Buffer_Send_VGrad, nBuffer_VectorGrad, MPI::DOUBLE, send_to, 9); delete []  Buffer_Send_VGrad;
 				}
-
-#endif
+				
 			}
-
+			
+#endif
+			
 			/*--- Receive information  ---*/
 			if (SendRecv < 0) {
-
-				double rotMatrix[3][3], *angles;
-				double theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi;
-				unsigned short iPeriodic_Index;
-
-				double *newSolution = new double[nVar];
-				double **newGradient;
-				newGradient = new double* [nVar];
-				for (iVar=0; iVar< nVar; iVar++)
-					newGradient[iVar] = new double[3];
-
-				int receive_from = abs(SendRecv)-1;
-				unsigned long nBuffer_Vector = geometry[iZone][iMGLevel]->nVertex[iMarker]*nVar;
-				unsigned long nBuffer_Scalar = geometry[iZone][iMGLevel]->nVertex[iMarker];
-
-				/*--- Inviscid part ---*/
-				double *Buffer_Receive_U = new double [nBuffer_Vector];
-				double *Buffer_Receive_BetaInc2 = NULL, *Buffer_Receive_DensityInc = NULL;
-				if (incompressible) {
-					Buffer_Receive_BetaInc2 = new double [nBuffer_Scalar];
-					Buffer_Receive_DensityInc = new double [nBuffer_Scalar];
-				}
-
-				/*--- Viscous part ---*/
-				double *Buffer_Receive_LaminarViscosity = NULL, *Buffer_Receive_EddyViscosity = NULL,
-						*Buffer_Receive_Vx = NULL, *Buffer_Receive_Vy = NULL, *Buffer_Receive_Vz = NULL;
-				if (viscous) {
-					Buffer_Receive_LaminarViscosity = new double [nBuffer_Scalar];
-					Buffer_Receive_EddyViscosity = new double [nBuffer_Scalar];
-					Buffer_Receive_Vx = new double [nBuffer_Vector];
-					Buffer_Receive_Vy = new double [nBuffer_Vector];
-					Buffer_Receive_Vz = new double [nBuffer_Vector];
-				}
-
-				/*--- Upwind scheme ---*/
-				if (config[iZone]->GetKind_ConvNumScheme() == SPACE_UPWIND) {
-
-					double *Buffer_Receive_Ux = NULL, *Buffer_Receive_Uy = NULL, *Buffer_Receive_Uz = NULL, *Buffer_Receive_Limit = NULL;
+				
+				/*--- Allocate upwind variables ---*/
+				if (upwind) {
+					Buffer_Receive_U = new double [nBuffer_Vector];
 					if (iMGLevel == MESH_0) {
-						Buffer_Receive_Ux = new double [nBuffer_Vector];
-						Buffer_Receive_Uy = new double [nBuffer_Vector];
-						Buffer_Receive_Uz = new double [nBuffer_Vector];
+						Buffer_Receive_UGrad = new double [nBuffer_VectorGrad];
 						Buffer_Receive_Limit = new double [nBuffer_Vector];
 					}
-
-#ifdef NO_MPI
-					/*--- Allow for periodic boundaries to use SEND_RECEIVE in serial.
-					 Serial computations will only use the BC in receive mode, as
-					 the proc will always be sending information to itself. ---*/
-
-					/*--- Retrieve the donor boundary marker ---*/
-					unsigned short donor_marker = 1;
-					unsigned long  donorPoint;
-
-					for (unsigned short iMark = 0; iMark < config[iZone]->GetnMarker_All(); iMark++)
-						if (config[iZone]->GetMarker_All_SendRecv(iMark)-1 == receive_from) donor_marker = iMark;
-
-					/*--- Get the information from the donor point directly. This is a
-					 serial computation with access to all nodes. Note that there is an
-					 implicit ordering in the list. ---*/
-					for (iVertex = 0; iVertex < nVertex; iVertex++) {
-						donorPoint = geometry[iZone][iMGLevel]->vertex[donor_marker][iVertex]->GetNode();
-						Conserv_Var = node[donorPoint]->GetSolution();
-						if (iMGLevel == MESH_0) {
-							Conserv_Grad = node[donorPoint]->GetGradient();
-							if (config[iZone]->GetKind_SlopeLimit() != NONE)
-								Grad_Limit = node[donorPoint]->GetLimiter();
-						}
-						for (iVar = 0; iVar < nVar; iVar++) {
-							Buffer_Receive_U[iVar*nVertex+iVertex] = Conserv_Var[iVar];
-							if (iMGLevel == MESH_0) {
-								Buffer_Receive_Ux[iVar*nVertex+iVertex] = Conserv_Grad[iVar][0];
-								Buffer_Receive_Uy[iVar*nVertex+iVertex] = Conserv_Grad[iVar][1];
-								if (nDim == 3) Buffer_Receive_Uz[iVar*nVertex+iVertex] = Conserv_Grad[iVar][2];
-								if (SlopeLimit != NONE) Buffer_Receive_Limit[iVar*nVertex+iVertex] = Grad_Limit[iVar];
-							}
-						}
-						if (incompressible) {
-							Buffer_Receive_BetaInc2[iVertex] = node[donorPoint]->GetBetaInc2();
-							Buffer_Receive_DensityInc[iVertex] = node[donorPoint]->GetDensityInc();
-						}
-						if (viscous) {
-							PrimVar_Grad = node[donorPoint]->GetGradient_Primitive();
-							for (iVar = 0; iVar < nVar; iVar++) {
-								Buffer_Receive_Vx[iVar*nVertex+iVertex] = PrimVar_Grad[iVar][0];
-								Buffer_Receive_Vy[iVar*nVertex+iVertex] = PrimVar_Grad[iVar][1];
-								if (nDim == 3) Buffer_Receive_Vz[iVar*nVertex+iVertex] = PrimVar_Grad[iVar][2];
-							}
-							Buffer_Receive_LaminarViscosity[iVertex] = node[donorPoint]->GetLaminarViscosity();
-							Buffer_Receive_EddyViscosity[iVertex] = node[donorPoint]->GetEddyViscosity();
-						}
-					}
-
-#else
-					/*--- Receive the information ---*/
-					MPI::COMM_WORLD.Recv(Buffer_Receive_U, nBuffer_Vector, MPI::DOUBLE, receive_from, 0);
-					if (iMGLevel == MESH_0) {
-						MPI::COMM_WORLD.Recv(Buffer_Receive_Ux, nBuffer_Vector, MPI::DOUBLE, receive_from, 1);
-						MPI::COMM_WORLD.Recv(Buffer_Receive_Uy, nBuffer_Vector, MPI::DOUBLE, receive_from, 2);
-						if (nDim == 3) MPI::COMM_WORLD.Recv(Buffer_Receive_Uz, nBuffer_Vector, MPI::DOUBLE,receive_from, 3);
-						if (SlopeLimit != NONE) MPI::COMM_WORLD.Recv(Buffer_Receive_Limit, nBuffer_Vector, MPI::DOUBLE, receive_from, 4);
-					}
-					if (incompressible) {
-						MPI::COMM_WORLD.Recv(Buffer_Receive_BetaInc2, nBuffer_Scalar, MPI::DOUBLE, receive_from, 5);
-						MPI::COMM_WORLD.Recv(Buffer_Receive_DensityInc, nBuffer_Scalar, MPI::DOUBLE, receive_from, 6);
-					}
-					if (viscous) {
-						MPI::COMM_WORLD.Recv(Buffer_Receive_LaminarViscosity, nBuffer_Scalar, MPI::DOUBLE, receive_from, 7);
-						MPI::COMM_WORLD.Recv(Buffer_Receive_EddyViscosity, nBuffer_Scalar, MPI::DOUBLE, receive_from, 8);
-						MPI::COMM_WORLD.Recv(Buffer_Receive_Vx, nBuffer_Vector, MPI::DOUBLE, receive_from, 9);
-						MPI::COMM_WORLD.Recv(Buffer_Receive_Vy, nBuffer_Vector, MPI::DOUBLE, receive_from, 10);
-						if (nDim == 3) MPI::COMM_WORLD.Recv(Buffer_Receive_Vz, nBuffer_Vector, MPI::DOUBLE, receive_from, 11);
-					}
-#endif
-
-					/*--- Do the coordinate transformation ---*/
-					for (iVertex = 0; iVertex < nVertex; iVertex++) {
-
-						/*--- Find point and its type of transformation ---*/
-						iPoint = geometry[iZone][iMGLevel]->vertex[iMarker][iVertex]->GetNode();
-						iPeriodic_Index = geometry[iZone][iMGLevel]->vertex[iMarker][iVertex]->GetRotation_Type();
-
-						/*--- Retrieve the supplied periodic information. ---*/
-						angles = config[iZone]->GetPeriodicRotation(iPeriodic_Index);
-
-						/*--- Store angles separately for clarity. ---*/
-						theta    = angles[0];   phi    = angles[1]; psi    = angles[2];
-						cosTheta = cos(theta);  cosPhi = cos(phi);  cosPsi = cos(psi);
-						sinTheta = sin(theta);  sinPhi = sin(phi);  sinPsi = sin(psi);
-
-						/*--- Compute the rotation matrix. Note that the implicit
-						 ordering is rotation about the x-axis, y-axis,
-						 then z-axis. Note that this is the transpose of the matrix
-						 used during the preprocessing stage. ---*/
-						rotMatrix[0][0] = cosPhi*cosPsi; rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi; rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-						rotMatrix[0][1] = cosPhi*sinPsi; rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi; rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-						rotMatrix[0][2] = -sinPhi; rotMatrix[1][2] = sinTheta*cosPhi; rotMatrix[2][2] = cosTheta*cosPhi;
-
-						/*--- Copy conserved variables before performing transformation. ---*/
-						for (iVar = 0; iVar < nVar; iVar++) newSolution[iVar] = Buffer_Receive_U[iVar*nVertex+iVertex];
-
-						/*--- Rotate the momentum components. ---*/
-						if (nDim == 2) {
-							newSolution[1] = rotMatrix[0][0]*Buffer_Receive_U[1*nVertex+iVertex] + rotMatrix[0][1]*Buffer_Receive_U[2*nVertex+iVertex];
-							newSolution[2] = rotMatrix[1][0]*Buffer_Receive_U[1*nVertex+iVertex] + rotMatrix[1][1]*Buffer_Receive_U[2*nVertex+iVertex];
-						}
-						else {
-							newSolution[1] = rotMatrix[0][0]*Buffer_Receive_U[1*nVertex+iVertex] + rotMatrix[0][1]*Buffer_Receive_U[2*nVertex+iVertex] + rotMatrix[0][2]*Buffer_Receive_U[3*nVertex+iVertex];
-							newSolution[2] = rotMatrix[1][0]*Buffer_Receive_U[1*nVertex+iVertex] + rotMatrix[1][1]*Buffer_Receive_U[2*nVertex+iVertex] + rotMatrix[1][2]*Buffer_Receive_U[3*nVertex+iVertex];
-							newSolution[3] = rotMatrix[2][0]*Buffer_Receive_U[1*nVertex+iVertex] + rotMatrix[2][1]*Buffer_Receive_U[2*nVertex+iVertex] + rotMatrix[2][2]*Buffer_Receive_U[3*nVertex+iVertex];
-						}
-
-						/*--- Copy transformed conserved variables back into buffer. ---*/
-						for (iVar = 0; iVar < nVar; iVar++) Buffer_Receive_U[iVar*nVertex+iVertex] = newSolution[iVar];
-
-						/*--- Also transform the gradient for upwinding if this is the fine mesh ---*/
-						if (iMGLevel == MESH_0) {
-							for (iVar = 0; iVar < nVar; iVar++) {
-								newGradient[iVar][0] = Buffer_Receive_Ux[iVar*nVertex+iVertex];
-								newGradient[iVar][1] = Buffer_Receive_Uy[iVar*nVertex+iVertex];
-								if (nDim == 3) newGradient[iVar][2] = Buffer_Receive_Uz[iVar*nVertex+iVertex];
-							}
-
-							/*--- Need to rotate the gradients for all conserved variables. ---*/
-							for (iVar = 0; iVar < nVar; iVar++) {
-								if (nDim == 2) {
-									newGradient[iVar][0] = rotMatrix[0][0]*Buffer_Receive_Ux[iVar*nVertex+iVertex] + rotMatrix[0][1]*Buffer_Receive_Uy[iVar*nVertex+iVertex];
-									newGradient[iVar][1] = rotMatrix[1][0]*Buffer_Receive_Ux[iVar*nVertex+iVertex] + rotMatrix[1][1]*Buffer_Receive_Uy[iVar*nVertex+iVertex];
-								}
-								else {
-									newGradient[iVar][0] = rotMatrix[0][0]*Buffer_Receive_Ux[iVar*nVertex+iVertex] + rotMatrix[0][1]*Buffer_Receive_Uy[iVar*nVertex+iVertex] + rotMatrix[0][2]*Buffer_Receive_Uz[iVar*nVertex+iVertex];
-									newGradient[iVar][1] = rotMatrix[1][0]*Buffer_Receive_Ux[iVar*nVertex+iVertex] + rotMatrix[1][1]*Buffer_Receive_Uy[iVar*nVertex+iVertex] + rotMatrix[1][2]*Buffer_Receive_Uz[iVar*nVertex+iVertex];
-									newGradient[iVar][2] = rotMatrix[2][0]*Buffer_Receive_Ux[iVar*nVertex+iVertex] + rotMatrix[2][1]*Buffer_Receive_Uy[iVar*nVertex+iVertex] + rotMatrix[2][2]*Buffer_Receive_Uz[iVar*nVertex+iVertex];
-								}
-							}
-
-							/*--- Copy transformed gradients back into buffer. ---*/
-							for (iVar = 0; iVar < nVar; iVar++) {
-								Buffer_Receive_Ux[iVar*nVertex+iVertex] = newGradient[iVar][0];
-								Buffer_Receive_Uy[iVar*nVertex+iVertex] = newGradient[iVar][1];
-								if (nDim == 3) Buffer_Receive_Uz[iVar*nVertex+iVertex] = newGradient[iVar][2];
-							}
-						}
-
-						if (viscous) {
-							for (iVar = 0; iVar < nVar; iVar++) {
-								newGradient[iVar][0] = Buffer_Receive_Vx[iVar*nVertex+iVertex];
-								newGradient[iVar][1] = Buffer_Receive_Vy[iVar*nVertex+iVertex];
-								if (nDim == 3) newGradient[iVar][2] = Buffer_Receive_Vz[iVar*nVertex+iVertex];
-							}
-
-							/*--- Need to rotate the gradients for all conserved variables. ---*/
-							for (iVar = 0; iVar < nVar; iVar++) {
-								if (nDim == 2) {
-									newGradient[iVar][0] = rotMatrix[0][0]*Buffer_Receive_Vx[iVar*nVertex+iVertex] + rotMatrix[0][1]*Buffer_Receive_Vy[iVar*nVertex+iVertex];
-									newGradient[iVar][1] = rotMatrix[1][0]*Buffer_Receive_Vx[iVar*nVertex+iVertex] + rotMatrix[1][1]*Buffer_Receive_Vy[iVar*nVertex+iVertex];
-								}
-								else {
-									newGradient[iVar][0] = rotMatrix[0][0]*Buffer_Receive_Vx[iVar*nVertex+iVertex] + rotMatrix[0][1]*Buffer_Receive_Vy[iVar*nVertex+iVertex] + rotMatrix[0][2]*Buffer_Receive_Vz[iVar*nVertex+iVertex];
-									newGradient[iVar][1] = rotMatrix[1][0]*Buffer_Receive_Vx[iVar*nVertex+iVertex] + rotMatrix[1][1]*Buffer_Receive_Vy[iVar*nVertex+iVertex] + rotMatrix[1][2]*Buffer_Receive_Vz[iVar*nVertex+iVertex];
-									newGradient[iVar][2] = rotMatrix[2][0]*Buffer_Receive_Vx[iVar*nVertex+iVertex] + rotMatrix[2][1]*Buffer_Receive_Vy[iVar*nVertex+iVertex] + rotMatrix[2][2]*Buffer_Receive_Vz[iVar*nVertex+iVertex];
-								}
-							}
-
-							/*--- Copy transformed gradients back into buffer. ---*/
-							for (iVar = 0; iVar < nVar; iVar++) {
-								Buffer_Receive_Vx[iVar*nVertex+iVertex] = newGradient[iVar][0];
-								Buffer_Receive_Vy[iVar*nVertex+iVertex] = newGradient[iVar][1];
-								if (nDim == 3) Buffer_Receive_Vz[iVar*nVertex+iVertex] = newGradient[iVar][2];
-							}
-						}
-
-						/*--- Store the received information ---*/
-						for (iVar = 0; iVar < nVar; iVar++) {
-							node[iPoint]->SetSolution(iVar, Buffer_Receive_U[iVar*nVertex+iVertex]);
-							if (iMGLevel == MESH_0) {
-								node[iPoint]->SetGradient(iVar, 0, Buffer_Receive_Ux[iVar*nVertex+iVertex]);
-								node[iPoint]->SetGradient(iVar, 1, Buffer_Receive_Uy[iVar*nVertex+iVertex]);
-								if (nDim == 3) node[iPoint]->SetGradient(iVar, 2, Buffer_Receive_Uz[iVar*nVertex+iVertex]);
-								if (SlopeLimit != NONE) node[iPoint]->SetLimiter(iVar, Buffer_Receive_Limit[iVar*nVertex+iVertex]);
-							}
-						}
-						if (incompressible) {
-							node[iPoint]->SetBetaInc2(Buffer_Receive_BetaInc2[iVertex]);
-							node[iPoint]->SetDensityInc(Buffer_Receive_DensityInc[iVertex]);
-						}
-						if (viscous) {
-							for (iVar = 0; iVar < nVar; iVar++) {
-								node[iPoint]->SetGradient_Primitive(iVar, 0, Buffer_Receive_Vx[iVar*nVertex+iVertex]);
-								node[iPoint]->SetGradient_Primitive(iVar, 1, Buffer_Receive_Vy[iVar*nVertex+iVertex]);
-								if (nDim == 3) node[iPoint]->SetGradient_Primitive(iVar, 2, Buffer_Receive_Vz[iVar*nVertex+iVertex]);
-							}
-							node[iPoint]->SetLaminarViscosity(Buffer_Receive_LaminarViscosity[iVertex]);
-							node[iPoint]->SetEddyViscosity(Buffer_Receive_EddyViscosity[iVertex]);
-						}
-					}
-
-					if (iMGLevel == MESH_0) {
-						delete [] Buffer_Receive_Ux;
-						delete [] Buffer_Receive_Uy;
-						delete [] Buffer_Receive_Uz;
-						delete [] Buffer_Receive_Limit;
-					}
-
 				}
-
-				/*--- Centered scheme ---*/
-				if (config[iZone]->GetKind_ConvNumScheme() == SPACE_CENTERED) {
-
-					double *Buffer_Receive_Undivided_Laplacian = NULL, *Buffer_Receive_Sensor = NULL;
+				
+				/*--- Allocate centered variables ---*/
+				if (centered) {
+					Buffer_Receive_U = new double [nBuffer_Vector];
+					Buffer_Receive_Lambda = new double [nBuffer_Scalar];
+					Buffer_Receive_Neighbor = new unsigned short [nBuffer_Scalar];
 					if (iMGLevel == MESH_0) {
 						Buffer_Receive_Undivided_Laplacian = new double [nBuffer_Vector];
 						Buffer_Receive_Sensor = new double [nBuffer_Scalar];
 					}
-					double *Buffer_Receive_Lambda = new double [nBuffer_Scalar];
-					unsigned short *Buffer_Receive_Neighbor = new unsigned short [nBuffer_Scalar];
-
-
-#ifdef NO_MPI
-					/*--- Allow for periodic boundaries to use SEND_RECEIVE in serial.
-					 Serial computations will only use the BC in receive mode, as
-					 the proc will always be sending information to itself. ---*/
-					unsigned short donorZone   = 0;
-					unsigned short donorMarker = 1;
-					unsigned long  donorPoint, donorElem;
-					double N_0, N_1, N_2;
-					unsigned long Point_0, Point_1, Point_2;
-
-					/*--- Get the information from the donor directly. This is a serial
-					 computation with access to all nodes. Note that there is an
-					 implicit ordering in the list. ---*/
-					for (iVertex = 0; iVertex < nVertex; iVertex++) {
-
-						donorZone = geometry[iZone][iMGLevel]->vertex[iMarker][iVertex]->GetMatching_Zone();
-
-						/*--- This is a multizone simulation and we need to use the
-             results of the search & interpolation routine in case of
-             sliding interfaces. ---*/
-						if (donorZone != iZone) {
-
-							donorElem = geometry[iZone][iMGLevel]->vertex[iMarker][iVertex]->GetDonorElem();
-
-							N_0 = geometry[iZone][iMGLevel]->vertex[iMarker][iVertex]->GetBasisFunction(0);
-							N_1 = geometry[iZone][iMGLevel]->vertex[iMarker][iVertex]->GetBasisFunction(1);
-							N_2 = geometry[iZone][iMGLevel]->vertex[iMarker][iVertex]->GetBasisFunction(2);
-
-							Point_0 = geometry[donorZone][iMGLevel]->elem[donorElem]->GetNode(0);
-							Point_1 = geometry[donorZone][iMGLevel]->elem[donorElem]->GetNode(1);
-							Point_2 = geometry[donorZone][iMGLevel]->elem[donorElem]->GetNode(2);
-
-							/*--- Interpolation and storage of values from this element. ---*/
+				}
+				
+				/*--- Allocate incompressible variables ---*/
+				if (incompressible) {
+					Buffer_Receive_BetaInc2 = new double [nBuffer_Scalar];
+					Buffer_Receive_DensityInc = new double [nBuffer_Scalar];
+				}
+				
+				/*--- Allocate viscous variables ---*/
+				if (viscous) {
+					Buffer_Receive_LaminarViscosity = new double [nBuffer_Scalar];
+					Buffer_Receive_EddyViscosity = new double [nBuffer_Scalar];
+					Buffer_Receive_VGrad = new double [nBuffer_VectorGrad];
+				}
+				
+#ifdef NO_MPI	
+				
+				/*--- Allow for periodic boundaries to use SEND_RECEIVE in serial.
+				 Serial computations will only use the BC in receive mode, as
+				 the proc will always be sending information to itself. ---*/
+				
+				/*--- Retrieve the donor boundary marker ---*/
+				donor_marker = 1;
+				donorZone    = 0;
+				donorMarker  = 1;
+				
+				for (iMark = 0; iMark < config[iZone]->GetnMarker_All(); iMark++)
+					if (config[iZone]->GetMarker_All_SendRecv(iMark)-1 == receive_from) donor_marker = iMark;
+				
+				/*--- Get the information from the donor point directly. This is a
+				 serial computation with access to all nodes. Note that there is an
+				 implicit ordering in the list. ---*/
+				for (iVertex = 0; iVertex < nVertex; iVertex++) {
+					
+					donorPoint = geometry[iZone][iMGLevel]->vertex[donor_marker][iVertex]->GetNode();
+					donorZone = geometry[iZone][iMGLevel]->vertex[iMarker][iVertex]->GetMatching_Zone();
+					
+					/*--- This is a multizone simulation and we need to use the
+					 results of the search & interpolation routine in case of
+					 sliding interfaces. ---*/
+					if (donorZone != iZone) {
+						
+						donorElem = geometry[iZone][iMGLevel]->vertex[iMarker][iVertex]->GetDonorElem();
+						
+						N_0 = geometry[iZone][iMGLevel]->vertex[iMarker][iVertex]->GetBasisFunction(0);
+						N_1 = geometry[iZone][iMGLevel]->vertex[iMarker][iVertex]->GetBasisFunction(1);
+						N_2 = geometry[iZone][iMGLevel]->vertex[iMarker][iVertex]->GetBasisFunction(2);
+						
+						Point_0 = geometry[donorZone][iMGLevel]->elem[donorElem]->GetNode(0);
+						Point_1 = geometry[donorZone][iMGLevel]->elem[donorElem]->GetNode(1);
+						Point_2 = geometry[donorZone][iMGLevel]->elem[donorElem]->GetNode(2);
+						
+						/*--- Interpolation and storage of values from this element. ---*/
+						if (upwind) {
 							for (iVar = 0; iVar < nVar; iVar++) {
 								Buffer_Receive_U[iVar*nVertex+iVertex] = N_0*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_0]->GetSolution(iVar)
-                										+ N_1*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_1]->GetSolution(iVar)
-                										+ N_2*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_2]->GetSolution(iVar);
+								+ N_1*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_1]->GetSolution(iVar)
+								+ N_2*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_2]->GetSolution(iVar);
+								/*--- Gradient and limiters... ---*/
+								if (iMGLevel == MESH_0) {
+									
+								}
+							}	
+							
+						}
+						
+						if (centered) {
+							for (iVar = 0; iVar < nVar; iVar++) {
+								Buffer_Receive_U[iVar*nVertex+iVertex] = N_0*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_0]->GetSolution(iVar)
+								+ N_1*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_1]->GetSolution(iVar)
+								+ N_2*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_2]->GetSolution(iVar);
 								if (iMGLevel == MESH_0)
 									Buffer_Receive_Undivided_Laplacian[iVar*nVertex+iVertex] = N_0*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_0]->GetUnd_Lapl(iVar)
 									+ N_1*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_1]->GetUnd_Lapl(iVar)
@@ -3804,233 +3693,834 @@ void CEulerSolution::MPI_Send_Receive(CGeometry ***geometry, CSolution ****solut
 								Buffer_Receive_Sensor[iVertex] = N_0*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_0]->GetSensor()
 								+ N_1*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_1]->GetSensor()
 								+ N_2*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_2]->GetSensor();
-
+							
 							Buffer_Receive_Lambda[iVertex]  = N_0*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_0]->GetLambda()
-            										  + N_1*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_1]->GetLambda()
-            										  + N_2*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_2]->GetLambda();
-
+							+ N_1*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_1]->GetLambda()
+							+ N_2*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_2]->GetLambda();
+							
 							/*--- Just use the neighbors from the first node for now... ---*/
 							Buffer_Receive_Neighbor[iVertex] = geometry[donorZone][iMGLevel]->node[Point_0]->GetnPoint();
-							if (incompressible) {
-								Buffer_Receive_BetaInc2[iVertex] = N_0*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_0]->GetBetaInc2()
-                										+ N_1*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_1]->GetBetaInc2()
-                										+ N_2*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_2]->GetBetaInc2();
-								Buffer_Receive_DensityInc[iVertex] = N_0*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_0]->GetDensityInc()
-                										+ N_1*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_1]->GetDensityInc()
-                										+ N_2*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_2]->GetDensityInc();
-							}
-							if (viscous) {
-								PrimVar_Grad = solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_0]->GetGradient_Primitive();
-								for (iVar = 0; iVar < nVar; iVar++) {
-									Buffer_Receive_Vx[iVar*nVertex+iVertex] = N_0*PrimVar_Grad[iVar][0];
-									Buffer_Receive_Vy[iVar*nVertex+iVertex] = N_0*PrimVar_Grad[iVar][1];
-									if (nDim == 3) Buffer_Receive_Vz[iVar*nVertex+iVertex] = N_0*PrimVar_Grad[iVar][2];
-								}
-								PrimVar_Grad = solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_1]->GetGradient_Primitive();
-								for (iVar = 0; iVar < nVar; iVar++) {
-									Buffer_Receive_Vx[iVar*nVertex+iVertex] += N_1*PrimVar_Grad[iVar][0];
-									Buffer_Receive_Vy[iVar*nVertex+iVertex] += N_1*PrimVar_Grad[iVar][1];
-									if (nDim == 3) Buffer_Receive_Vz[iVar*nVertex+iVertex] += N_1*PrimVar_Grad[iVar][2];
-								}
-								PrimVar_Grad = solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_2]->GetGradient_Primitive();
-								for (iVar = 0; iVar < nVar; iVar++) {
-									Buffer_Receive_Vx[iVar*nVertex+iVertex] += N_2*PrimVar_Grad[iVar][0];
-									Buffer_Receive_Vy[iVar*nVertex+iVertex] += N_2*PrimVar_Grad[iVar][1];
-									if (nDim == 3) Buffer_Receive_Vz[iVar*nVertex+iVertex] += N_2*PrimVar_Grad[iVar][2];
-								}
-								Buffer_Receive_LaminarViscosity[iVertex] = N_0*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_0]->GetLaminarViscosity()
-                										+ N_1*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_1]->GetLaminarViscosity()
-                										+ N_2*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_2]->GetLaminarViscosity();
-								Buffer_Receive_EddyViscosity[iVertex] = N_0*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_0]->GetEddyViscosity()
-                										+ N_1*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_1]->GetEddyViscosity()
-                										+ N_2*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_2]->GetEddyViscosity();
-							}
-
-
-						} else {
-
-							/*--- For now, search for donor marker for every receive point. Probably
-               a more efficient way to do this in the future. ---*/
-							for (unsigned short iMark = 0; iMark < config[donorZone]->GetnMarker_All(); iMark++)
-								if (config[donorZone]->GetMarker_All_SendRecv(iMark)-1 == receive_from) donorMarker = iMark;
-
-							/*--- Index of the donor point. ---*/
-							donorPoint = geometry[donorZone][iMGLevel]->vertex[donorMarker][iVertex]->GetNode();
-
-							/*--- Retrieve and load the solution into the receive buffers. ---*/
-							Conserv_Var = solution_container[donorZone][iMGLevel][FLOW_SOL]->node[donorPoint]->GetSolution();
-							if (iMGLevel == MESH_0) Conserv_Undivided_Laplacian = solution_container[donorZone][iMGLevel][FLOW_SOL]->node[donorPoint]->GetUnd_Lapl();
-
+						}
+						
+						if (incompressible) {
+							Buffer_Receive_BetaInc2[iVertex] = N_0*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_0]->GetBetaInc2()
+							+ N_1*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_1]->GetBetaInc2()
+							+ N_2*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_2]->GetBetaInc2();
+							Buffer_Receive_DensityInc[iVertex] = N_0*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_0]->GetDensityInc()
+							+ N_1*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_1]->GetDensityInc()
+							+ N_2*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_2]->GetDensityInc();
+						}
+						
+						if (viscous) {
+							Buffer_Receive_LaminarViscosity[iVertex] = N_0*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_0]->GetLaminarViscosity()
+							+ N_1*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_1]->GetLaminarViscosity()
+							+ N_2*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_2]->GetLaminarViscosity();
+							Buffer_Receive_EddyViscosity[iVertex] = N_0*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_0]->GetEddyViscosity()
+							+ N_1*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_1]->GetEddyViscosity()
+							+ N_2*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_2]->GetEddyViscosity();
+							
 							for (iVar = 0; iVar < nVar; iVar++) {
-								Buffer_Receive_U[iVar*nVertex+iVertex] = Conserv_Var[iVar];
-								if (iMGLevel == MESH_0) Buffer_Receive_Undivided_Laplacian[iVar*nVertex+iVertex] = Conserv_Undivided_Laplacian[iVar];
+								for (iDim = 0; iDim < nDim; iDim++) {
+									Buffer_Receive_VGrad[iDim*nVar*nVertex+iVar*nVertex+iVertex]  = N_0*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_0]->GetGradient_Primitive(iVar, iDim);
+									Buffer_Receive_VGrad[iDim*nVar*nVertex+iVar*nVertex+iVertex] += N_1*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_1]->GetGradient_Primitive(iVar, iDim);
+									Buffer_Receive_VGrad[iDim*nVar*nVertex+iVar*nVertex+iVertex] += N_2*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_2]->GetGradient_Primitive(iVar, iDim);
+								}
 							}
-							if (iMGLevel == MESH_0) Buffer_Receive_Sensor[iVertex] = solution_container[donorZone][iMGLevel][FLOW_SOL]->node[donorPoint]->GetSensor();
+							
+						}						
+					}
+					
+					else {
+						
+						/*--- For now, search for donor marker for every receive point. Probably
+						 a more efficient way to do this in the future. ---*/
+						for (unsigned short iMark = 0; iMark < config[donorZone]->GetnMarker_All(); iMark++)
+							if (config[donorZone]->GetMarker_All_SendRecv(iMark)-1 == receive_from) donorMarker = iMark;
+						
+						/*--- Index of the donor point. ---*/
+						donorPoint = geometry[donorZone][iMGLevel]->vertex[donorMarker][iVertex]->GetNode();
+						
+						/*--- Copy upwind data ---*/
+						if (upwind) {
+							for (iVar = 0; iVar < nVar; iVar++) {
+								Buffer_Receive_U[iVar*nVertex+iVertex] = solution_container[donorZone][iMGLevel][FLOW_SOL]->node[donorPoint]->GetSolution(iVar);
+								if (iMGLevel == MESH_0) {
+									Buffer_Receive_Limit[iVar*nVertex+iVertex] = solution_container[donorZone][iMGLevel][FLOW_SOL]->node[donorPoint]->GetLimiter(iVar);
+									for (iDim = 0; iDim < nDim; iDim++)
+										Buffer_Receive_UGrad[iDim*nVar*nVertex+iVar*nVertex+iVertex] = solution_container[donorZone][iMGLevel][FLOW_SOL]->node[donorPoint]->GetGradient(iVar,iDim);
+								}
+							}
+						}
+						
+						/*--- Copy centered data ---*/
+						if (centered) {
+							for (iVar = 0; iVar < nVar; iVar++) {
+								Buffer_Receive_U[iVar*nVertex+iVertex] = solution_container[donorZone][iMGLevel][FLOW_SOL]->node[donorPoint]->GetSolution(iVar);
+								if (iMGLevel == MESH_0)
+									Buffer_Receive_Undivided_Laplacian[iVar*nVertex+iVertex] = solution_container[donorZone][iMGLevel][FLOW_SOL]->node[donorPoint]->GetUnd_Lapl()[iVar];							
+							}
 							Buffer_Receive_Lambda[iVertex] = solution_container[donorZone][iMGLevel][FLOW_SOL]->node[donorPoint]->GetLambda();
 							Buffer_Receive_Neighbor[iVertex] = geometry[donorZone][iMGLevel]->node[donorPoint]->GetnPoint();
-							if (incompressible) {
-								Buffer_Receive_BetaInc2[iVertex] = solution_container[donorZone][iMGLevel][FLOW_SOL]->node[donorPoint]->GetBetaInc2();
-								Buffer_Receive_DensityInc[iVertex] = solution_container[donorZone][iMGLevel][FLOW_SOL]->node[donorPoint]->GetDensityInc();
-							}
-							if (viscous) {
-								PrimVar_Grad = solution_container[donorZone][iMGLevel][FLOW_SOL]->node[donorPoint]->GetGradient_Primitive();
-								for (iVar = 0; iVar < nVar; iVar++) {
-									Buffer_Receive_Vx[iVar*nVertex+iVertex] = PrimVar_Grad[iVar][0];
-									Buffer_Receive_Vy[iVar*nVertex+iVertex] = PrimVar_Grad[iVar][1];
-									if (nDim == 3) Buffer_Receive_Vz[iVar*nVertex+iVertex] = PrimVar_Grad[iVar][2];
-								}
-								Buffer_Receive_LaminarViscosity[iVertex] = solution_container[donorZone][iMGLevel][FLOW_SOL]->node[donorPoint]->GetLaminarViscosity();
-								Buffer_Receive_EddyViscosity[iVertex] = solution_container[donorZone][iMGLevel][FLOW_SOL]->node[donorPoint]->GetEddyViscosity();
-							}
+						}
+						
+						/*--- Copy incompressible data ---*/
+						if (incompressible) {
+							Buffer_Receive_BetaInc2[iVertex] = solution_container[donorZone][iMGLevel][FLOW_SOL]->node[donorPoint]->GetBetaInc2();
+							Buffer_Receive_DensityInc[iVertex] = solution_container[donorZone][iMGLevel][FLOW_SOL]->node[donorPoint]->GetDensityInc();
+						}
+						
+						/*--- Copy viscous data ---*/
+						if (viscous) {
+							Buffer_Receive_LaminarViscosity[iVertex] = solution_container[donorZone][iMGLevel][FLOW_SOL]->node[donorPoint]->GetLaminarViscosity();
+							Buffer_Receive_EddyViscosity[iVertex] = solution_container[donorZone][iMGLevel][FLOW_SOL]->node[donorPoint]->GetEddyViscosity();
+							for (iVar = 0; iVar < nVar; iVar++)
+								for (iDim = 0; iDim < nDim; iDim++)
+									Buffer_Receive_VGrad[iDim*nVar*nVertex+iVar*nVertex+iVertex] = solution_container[donorZone][iMGLevel][FLOW_SOL]->node[donorPoint]->GetGradient_Primitive(iVar,iDim);
 						}
 					}
+				}
+				
 #else
-					/*--- Receive the information ---*/
-					MPI::COMM_WORLD.Recv(Buffer_Receive_U,nBuffer_Vector,MPI::DOUBLE,receive_from, 0);
+				/*--- Receive the information using MPI---*/
+				if (upwind) {
+					MPI::COMM_WORLD.Recv(Buffer_Receive_U, nBuffer_Vector, MPI::DOUBLE, receive_from, 0);
 					if (iMGLevel == MESH_0) {
-						MPI::COMM_WORLD.Recv(Buffer_Receive_Undivided_Laplacian,nBuffer_Vector,MPI::DOUBLE,receive_from, 1);
-						MPI::COMM_WORLD.Recv(Buffer_Receive_Sensor,nBuffer_Scalar,MPI::DOUBLE,receive_from, 2);
+						MPI::COMM_WORLD.Recv(Buffer_Receive_UGrad, nBuffer_VectorGrad, MPI::DOUBLE, receive_from, 1);
+						MPI::COMM_WORLD.Recv(Buffer_Receive_Limit, nBuffer_Vector, MPI::DOUBLE, receive_from, 2);
 					}
-					MPI::COMM_WORLD.Recv(Buffer_Receive_Lambda,nBuffer_Scalar,MPI::DOUBLE,receive_from, 3);
-					MPI::COMM_WORLD.Recv(Buffer_Receive_Neighbor,nBuffer_Scalar,MPI::UNSIGNED_SHORT,receive_from, 4);
-					if (incompressible) {
-						MPI::COMM_WORLD.Recv(Buffer_Receive_BetaInc2,nBuffer_Scalar,MPI::DOUBLE,receive_from, 5);
-						MPI::COMM_WORLD.Recv(Buffer_Receive_DensityInc,nBuffer_Scalar,MPI::DOUBLE,receive_from, 6);
+				}
+				
+				if (centered) {
+					MPI::COMM_WORLD.Recv(Buffer_Receive_U, nBuffer_Vector, MPI::DOUBLE, receive_from, 0);
+					MPI::COMM_WORLD.Recv(Buffer_Receive_Lambda, nBuffer_Scalar, MPI::DOUBLE, receive_from, 1);
+					MPI::COMM_WORLD.Recv(Buffer_Receive_Neighbor, nBuffer_Scalar, MPI::UNSIGNED_SHORT, receive_from, 2);
+					if (iMGLevel == MESH_0) {
+						MPI::COMM_WORLD.Recv(Buffer_Receive_Undivided_Laplacian, nBuffer_Vector, MPI::DOUBLE, receive_from, 3);
+						MPI::COMM_WORLD.Recv(Buffer_Receive_Sensor, nBuffer_Scalar, MPI::DOUBLE, receive_from, 4);
 					}
-					if (viscous) {
-						MPI::COMM_WORLD.Recv(Buffer_Receive_LaminarViscosity, nBuffer_Scalar, MPI::DOUBLE, receive_from, 7);
-						MPI::COMM_WORLD.Recv(Buffer_Receive_EddyViscosity, nBuffer_Scalar, MPI::DOUBLE, receive_from, 8);
-						MPI::COMM_WORLD.Recv(Buffer_Receive_Vx, nBuffer_Vector, MPI::DOUBLE, receive_from, 9);
-						MPI::COMM_WORLD.Recv(Buffer_Receive_Vy, nBuffer_Vector, MPI::DOUBLE, receive_from, 10);
-						if (nDim == 3) MPI::COMM_WORLD.Recv(Buffer_Receive_Vz, nBuffer_Vector, MPI::DOUBLE, receive_from, 11);
-					}
+				}
+				
+				if (incompressible) {
+					MPI::COMM_WORLD.Recv(Buffer_Receive_BetaInc2, nBuffer_Scalar, MPI::DOUBLE, receive_from, 5);
+					MPI::COMM_WORLD.Recv(Buffer_Receive_DensityInc, nBuffer_Scalar, MPI::DOUBLE, receive_from, 6);
+				}
+				
+				if (viscous) {
+					MPI::COMM_WORLD.Recv(Buffer_Receive_LaminarViscosity, nBuffer_Scalar, MPI::DOUBLE, receive_from, 7);
+					MPI::COMM_WORLD.Recv(Buffer_Receive_EddyViscosity, nBuffer_Scalar, MPI::DOUBLE, receive_from, 8);
+					MPI::COMM_WORLD.Recv(Buffer_Receive_VGrad, nBuffer_VectorGrad, MPI::DOUBLE, receive_from, 9);
+				}
 #endif
-
-					/*--- Do the coordinate transformation ---*/
-					for (iVertex = 0; iVertex < geometry[iZone][iMGLevel]->nVertex[iMarker]; iVertex++) {
-
-						/*--- Find point and its type of transformation ---*/
-						iPoint = geometry[iZone][iMGLevel]->vertex[iMarker][iVertex]->GetNode();
-						iPeriodic_Index = geometry[iZone][iMGLevel]->vertex[iMarker][iVertex]->GetRotation_Type();
-
-						/*--- Retrieve the supplied periodic information. ---*/
-						if (iPeriodic_Index > 0) {
-							angles = config[iZone]->GetPeriodicRotation(iPeriodic_Index);
-
-							/*--- Store angles separately for clarity. ---*/
-							theta    = angles[0];   phi    = angles[1]; psi    = angles[2];
-							cosTheta = cos(theta);  cosPhi = cos(phi);  cosPsi = cos(psi);
-							sinTheta = sin(theta);  sinPhi = sin(phi);  sinPsi = sin(psi);
-
-							/*--- Compute the rotation matrix. Note that the implicit
-						 ordering is rotation about the x-axis, y-axis,
-						 then z-axis. Note that this is the transpose of the matrix
-						 used during the preprocessing stage. ---*/
-							rotMatrix[0][0] = cosPhi*cosPsi; rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi; rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-							rotMatrix[0][1] = cosPhi*sinPsi; rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi; rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-							rotMatrix[0][2] = -sinPhi; rotMatrix[1][2] = sinTheta*cosPhi; rotMatrix[2][2] = cosTheta*cosPhi;
-
-							/*--- Copy solution before performing transformation. ---*/
-							for (iVar = 0; iVar < nVar; iVar++) newSolution[iVar] = Buffer_Receive_U[iVar*nVertex+iVertex];
-
-							/*--- Need to rotate the momentum components. ---*/
+				
+				/*--- Do the coordinate transformation ---*/
+				for (iVertex = 0; iVertex < nVertex; iVertex++) {
+					
+					/*--- Find point and its type of transformation ---*/
+					iPoint = geometry[iZone][iMGLevel]->vertex[iMarker][iVertex]->GetNode();
+					iPeriodic_Index = geometry[iZone][iMGLevel]->vertex[iMarker][iVertex]->GetRotation_Type();
+					
+					/*--- Retrieve the supplied periodic information. ---*/
+					angles = config[iZone]->GetPeriodicRotation(iPeriodic_Index);
+					
+					/*--- Store angles separately for clarity. ---*/
+					theta    = angles[0];   phi    = angles[1]; psi    = angles[2];
+					cosTheta = cos(theta);  cosPhi = cos(phi);  cosPsi = cos(psi);
+					sinTheta = sin(theta);  sinPhi = sin(phi);  sinPsi = sin(psi);
+					
+					/*--- Compute the rotation matrix. Note that the implicit
+					 ordering is rotation about the x-axis, y-axis,
+					 then z-axis. Note that this is the transpose of the matrix
+					 used during the preprocessing stage. ---*/
+					rotMatrix[0][0] = cosPhi*cosPsi; rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi; rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+					rotMatrix[0][1] = cosPhi*sinPsi; rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi; rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+					rotMatrix[0][2] = -sinPhi; rotMatrix[1][2] = sinTheta*cosPhi; rotMatrix[2][2] = cosTheta*cosPhi;
+					
+					/*--- Copy conserved variables before performing transformation. ---*/
+					for (iVar = 0; iVar < nVar; iVar++) 
+						newSolution[iVar] = Buffer_Receive_U[iVar*nVertex+iVertex];
+					
+					/*--- Rotate the momentum components. ---*/
+					if (nDim == 2) {
+						newSolution[1] = rotMatrix[0][0]*Buffer_Receive_U[1*nVertex+iVertex] + rotMatrix[0][1]*Buffer_Receive_U[2*nVertex+iVertex];
+						newSolution[2] = rotMatrix[1][0]*Buffer_Receive_U[1*nVertex+iVertex] + rotMatrix[1][1]*Buffer_Receive_U[2*nVertex+iVertex];
+					}
+					else {
+						newSolution[1] = rotMatrix[0][0]*Buffer_Receive_U[1*nVertex+iVertex] + rotMatrix[0][1]*Buffer_Receive_U[2*nVertex+iVertex] + rotMatrix[0][2]*Buffer_Receive_U[3*nVertex+iVertex];
+						newSolution[2] = rotMatrix[1][0]*Buffer_Receive_U[1*nVertex+iVertex] + rotMatrix[1][1]*Buffer_Receive_U[2*nVertex+iVertex] + rotMatrix[1][2]*Buffer_Receive_U[3*nVertex+iVertex];
+						newSolution[3] = rotMatrix[2][0]*Buffer_Receive_U[1*nVertex+iVertex] + rotMatrix[2][1]*Buffer_Receive_U[2*nVertex+iVertex] + rotMatrix[2][2]*Buffer_Receive_U[3*nVertex+iVertex];
+					}
+					
+					/*--- Copy transformed conserved variables back into buffer. ---*/
+					for (iVar = 0; iVar < nVar; iVar++) 
+						Buffer_Receive_U[iVar*nVertex+iVertex] = newSolution[iVar];
+					
+					/*--- Also transform the gradient for upwinding if this is the fine mesh ---*/
+					if ((upwind) && (iMGLevel == MESH_0)) {
+						
+						for (iVar = 0; iVar < nVar; iVar++) 
+							for (iDim = 0; iDim < nDim; iDim++)
+								newGradient[iVar][iDim] = Buffer_Receive_UGrad[iDim*nVar*nVertex+iVar*nVertex+iVertex];
+						
+						/*--- Need to rotate the gradients for all conserved variables. ---*/
+						for (iVar = 0; iVar < nVar; iVar++) {
 							if (nDim == 2) {
-								newSolution[1] = rotMatrix[0][0]*Buffer_Receive_U[1*nVertex+iVertex] + rotMatrix[0][1]*Buffer_Receive_U[2*nVertex+iVertex];
-								newSolution[2] = rotMatrix[1][0]*Buffer_Receive_U[1*nVertex+iVertex] + rotMatrix[1][1]*Buffer_Receive_U[2*nVertex+iVertex];
+								newGradient[iVar][0] = rotMatrix[0][0]*Buffer_Receive_UGrad[0*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[0][1]*Buffer_Receive_UGrad[1*nVar*nVertex+iVar*nVertex+iVertex];
+								newGradient[iVar][1] = rotMatrix[1][0]*Buffer_Receive_UGrad[0*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[1][1]*Buffer_Receive_UGrad[1*nVar*nVertex+iVar*nVertex+iVertex];
 							}
 							else {
-								newSolution[1] = rotMatrix[0][0]*Buffer_Receive_U[1*nVertex+iVertex] + rotMatrix[0][1]*Buffer_Receive_U[2*nVertex+iVertex] + rotMatrix[0][2]*Buffer_Receive_U[3*nVertex+iVertex];
-								newSolution[2] = rotMatrix[1][0]*Buffer_Receive_U[1*nVertex+iVertex] + rotMatrix[1][1]*Buffer_Receive_U[2*nVertex+iVertex] + rotMatrix[1][2]*Buffer_Receive_U[3*nVertex+iVertex];
-								newSolution[3] = rotMatrix[2][0]*Buffer_Receive_U[1*nVertex+iVertex] + rotMatrix[2][1]*Buffer_Receive_U[2*nVertex+iVertex] + rotMatrix[2][2]*Buffer_Receive_U[3*nVertex+iVertex];
-							}
-
-							/*--- Copy transformed conserved variables back into buffer. ---*/
-							for (iVar = 0; iVar < nVar; iVar++) Buffer_Receive_U[iVar*nVertex+iVertex] = newSolution[iVar];
-
-							if (viscous) {
-								for (iVar = 0; iVar < nVar; iVar++) {
-									newGradient[iVar][0] = Buffer_Receive_Vx[iVar*nVertex+iVertex];
-									newGradient[iVar][1] = Buffer_Receive_Vy[iVar*nVertex+iVertex];
-									if (nDim == 3) newGradient[iVar][2] = Buffer_Receive_Vz[iVar*nVertex+iVertex];
-								}
-
-								/*--- Need to rotate the gradients for all conserved variables. ---*/
-								for (iVar = 0; iVar < nVar; iVar++) {
-									if (nDim == 2) {
-										newGradient[iVar][0] = rotMatrix[0][0]*Buffer_Receive_Vx[iVar*nVertex+iVertex] + rotMatrix[0][1]*Buffer_Receive_Vy[iVar*nVertex+iVertex];
-										newGradient[iVar][1] = rotMatrix[1][0]*Buffer_Receive_Vx[iVar*nVertex+iVertex] + rotMatrix[1][1]*Buffer_Receive_Vy[iVar*nVertex+iVertex];
-									}
-									else {
-										newGradient[iVar][0] = rotMatrix[0][0]*Buffer_Receive_Vx[iVar*nVertex+iVertex] + rotMatrix[0][1]*Buffer_Receive_Vy[iVar*nVertex+iVertex] + rotMatrix[0][2]*Buffer_Receive_Vz[iVar*nVertex+iVertex];
-										newGradient[iVar][1] = rotMatrix[1][0]*Buffer_Receive_Vx[iVar*nVertex+iVertex] + rotMatrix[1][1]*Buffer_Receive_Vy[iVar*nVertex+iVertex] + rotMatrix[1][2]*Buffer_Receive_Vz[iVar*nVertex+iVertex];
-										newGradient[iVar][2] = rotMatrix[2][0]*Buffer_Receive_Vx[iVar*nVertex+iVertex] + rotMatrix[2][1]*Buffer_Receive_Vy[iVar*nVertex+iVertex] + rotMatrix[2][2]*Buffer_Receive_Vz[iVar*nVertex+iVertex];
-									}
-								}
-
-								/*--- Copy transformed gradients back into buffer. ---*/
-								for (iVar = 0; iVar < nVar; iVar++) {
-									Buffer_Receive_Vx[iVar*nVertex+iVertex] = newGradient[iVar][0];
-									Buffer_Receive_Vy[iVar*nVertex+iVertex] = newGradient[iVar][1];
-									if (nDim == 3) Buffer_Receive_Vz[iVar*nVertex+iVertex] = newGradient[iVar][2];
-								}
+								newGradient[iVar][0] = rotMatrix[0][0]*Buffer_Receive_UGrad[0*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[0][1]*Buffer_Receive_UGrad[1*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[0][2]*Buffer_Receive_UGrad[2*nVar*nVertex+iVar*nVertex+iVertex];
+								newGradient[iVar][1] = rotMatrix[1][0]*Buffer_Receive_UGrad[0*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[1][1]*Buffer_Receive_UGrad[1*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[1][2]*Buffer_Receive_UGrad[2*nVar*nVertex+iVar*nVertex+iVertex];
+								newGradient[iVar][2] = rotMatrix[2][0]*Buffer_Receive_UGrad[0*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[2][1]*Buffer_Receive_UGrad[1*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[2][2]*Buffer_Receive_UGrad[2*nVar*nVertex+iVar*nVertex+iVertex];
 							}
 						}
-
-						/*--- Store the received information ---*/
+						
+						/*--- Copy transformed gradients back into buffer. ---*/
+						for (iVar = 0; iVar < nVar; iVar++) 
+							for (iDim = 0; iDim < nDim; iDim++)
+								Buffer_Receive_UGrad[iDim*nVar*nVertex+iVar*nVertex+iVertex] = newGradient[iVar][iDim];
+						
+					}
+					
+					/*--- Also transform the gradient for viscous terms ---*/
+					if (viscous) {
+						
+						for (iVar = 0; iVar < nVar; iVar++)
+							for (iDim = 0; iDim < nDim; iDim++)
+								newGradient[iVar][iDim] = Buffer_Receive_VGrad[iDim*nVar*nVertex+iVar*nVertex+iVertex];
+						
+						/*--- Need to rotate the gradients for all conserved variables. ---*/
+						for (iVar = 0; iVar < nVar; iVar++) {
+							if (nDim == 2) {
+								newGradient[iVar][0] = rotMatrix[0][0]*Buffer_Receive_VGrad[0*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[0][1]*Buffer_Receive_VGrad[1*nVar*nVertex+iVar*nVertex+iVertex];
+								newGradient[iVar][1] = rotMatrix[1][0]*Buffer_Receive_VGrad[0*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[1][1]*Buffer_Receive_VGrad[1*nVar*nVertex+iVar*nVertex+iVertex];
+							}
+							else {
+								newGradient[iVar][0] = rotMatrix[0][0]*Buffer_Receive_VGrad[0*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[0][1]*Buffer_Receive_VGrad[1*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[0][2]*Buffer_Receive_VGrad[2*nVar*nVertex+iVar*nVertex+iVertex];
+								newGradient[iVar][1] = rotMatrix[1][0]*Buffer_Receive_VGrad[0*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[1][1]*Buffer_Receive_VGrad[1*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[1][2]*Buffer_Receive_VGrad[2*nVar*nVertex+iVar*nVertex+iVertex];
+								newGradient[iVar][2] = rotMatrix[2][0]*Buffer_Receive_VGrad[0*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[2][1]*Buffer_Receive_VGrad[1*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[2][2]*Buffer_Receive_VGrad[2*nVar*nVertex+iVar*nVertex+iVertex];
+							}
+						}
+						
+						/*--- Copy transformed gradients back into buffer. ---*/
+						for (iVar = 0; iVar < nVar; iVar++)
+							for (iDim = 0; iDim < nDim; iDim++)
+								Buffer_Receive_VGrad[iDim*nVar*nVertex+iVar*nVertex+iVertex] = newGradient[iVar][iDim];
+						
+					}
+					
+					
+					/*--- Upwind method. Store the received information ---*/
+					if (upwind) {
 						for (iVar = 0; iVar < nVar; iVar++) {
 							node[iPoint]->SetSolution(iVar, Buffer_Receive_U[iVar*nVertex+iVertex]);
-							if (iMGLevel == MESH_0) node[iPoint]->SetUndivided_Laplacian(iVar, Buffer_Receive_Undivided_Laplacian[iVar*nVertex+iVertex]);
+							if (iMGLevel == MESH_0) {
+								node[iPoint]->SetLimiter(iVar, Buffer_Receive_Limit[iVar*nVertex+iVertex]);
+								for (iDim = 0; iDim < nDim; iDim++)
+									node[iPoint]->SetGradient(iVar, iDim, Buffer_Receive_UGrad[iDim*nVar*nVertex+iVar*nVertex+iVertex]);
+							}
+						}
+					}
+					
+					/*--- Centered method. Store the received information ---*/
+					if (centered) {
+						for (iVar = 0; iVar < nVar; iVar++) {
+							node[iPoint]->SetSolution(iVar, Buffer_Receive_U[iVar*nVertex+iVertex]);
+							if (iMGLevel == MESH_0) 
+								node[iPoint]->SetUndivided_Laplacian(iVar, Buffer_Receive_Undivided_Laplacian[iVar*nVertex+iVertex]);
 						}
 						if (iMGLevel == MESH_0) node[iPoint]->SetSensor(Buffer_Receive_Sensor[iVertex]);
 						node[iPoint]->SetLambda(Buffer_Receive_Lambda[iVertex]);
-
 						geometry[iZone][iMGLevel]->node[iPoint]->SetnNeighbor(Buffer_Receive_Neighbor[iVertex]);
-
-						if (incompressible) {
-							node[iPoint]->SetBetaInc2(Buffer_Receive_BetaInc2[iVertex]);
-							node[iPoint]->SetDensityInc(Buffer_Receive_DensityInc[iVertex]);
-						}
-						if (viscous) {
-							for (iVar = 0; iVar < nVar; iVar++) {
-								node[iPoint]->SetGradient_Primitive(iVar, 0, Buffer_Receive_Vx[iVar*nVertex+iVertex]);
-								node[iPoint]->SetGradient_Primitive(iVar, 1, Buffer_Receive_Vy[iVar*nVertex+iVertex]);
-								if (nDim == 3) node[iPoint]->SetGradient_Primitive(iVar, 2, Buffer_Receive_Vz[iVar*nVertex+iVertex]);
-							}						
-							node[iPoint]->SetLaminarViscosity(Buffer_Receive_LaminarViscosity[iVertex]);
-							node[iPoint]->SetEddyViscosity(Buffer_Receive_EddyViscosity[iVertex]);	
-						}
 					}
-
+					
+					/*--- Incompressible method. Store the received information ---*/
+					if (incompressible) {
+						node[iPoint]->SetBetaInc2(Buffer_Receive_BetaInc2[iVertex]);
+						node[iPoint]->SetDensityInc(Buffer_Receive_DensityInc[iVertex]);
+					}
+					
+					/*--- Viscous method. Store the received information ---*/
+					if (viscous) {
+						node[iPoint]->SetLaminarViscosity(Buffer_Receive_LaminarViscosity[iVertex]);
+						node[iPoint]->SetEddyViscosity(Buffer_Receive_EddyViscosity[iVertex]);
+						for (iVar = 0; iVar < nVar; iVar++)
+							for (iDim = 0; iDim < nDim; iDim++)
+								node[iPoint]->SetGradient_Primitive(iVar, iDim, Buffer_Receive_VGrad[iDim*nVar*nVertex+iVar*nVertex+iVertex]);
+					}
+					
+				}
+				
+				if (upwind) {
+					delete [] Buffer_Receive_U;
+					if (iMGLevel == MESH_0) {
+						delete [] Buffer_Receive_UGrad;
+						delete [] Buffer_Receive_Limit;
+					}
+				}
+				
+				if (centered) {
+					delete [] Buffer_Receive_U;
+					delete [] Buffer_Receive_Lambda;
+					delete [] Buffer_Receive_Neighbor;
 					if (iMGLevel == MESH_0) {
 						delete [] Buffer_Receive_Undivided_Laplacian;
 						delete [] Buffer_Receive_Sensor;
 					}
-					delete [] Buffer_Receive_Lambda;
-					delete [] Buffer_Receive_Neighbor;
-				}	
-
-				delete [] Buffer_Receive_U;
+				}
+				
 				if (incompressible) {
 					delete [] Buffer_Receive_BetaInc2;
 					delete [] Buffer_Receive_DensityInc;
 				}
+				
 				if (viscous) {
 					delete [] Buffer_Receive_LaminarViscosity;
 					delete [] Buffer_Receive_EddyViscosity;
-					delete [] Buffer_Receive_Vx;
-					delete [] Buffer_Receive_Vy;
-					delete [] Buffer_Receive_Vz;
+					delete [] Buffer_Receive_VGrad;
 				}
-
-				delete [] newSolution;
-				for (iVar = 0; iVar < nVar; iVar++)
-					delete [] newGradient[iVar];
-				delete [] newGradient;
+				
 			}
 		}
+	}
+	
+	delete [] newSolution;
+	for (iVar = 0; iVar < nVar; iVar++)
+		delete [] newGradient[iVar];
+	delete [] newGradient;
+	
+}
+ 
+#else
+
+void CEulerSolution::MPI_Send_Receive(CGeometry ***geometry, CSolution ****solution_container,
+																			CConfig **config, unsigned short iMGLevel, unsigned short iZone) {
+	
+	unsigned short iVar, iDim, iMarker, iPeriodic_Index, MarkerS, MarkerR;
+	unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferS_VectorGrad, nBufferS_Scalar, 
+	nBufferR_Vector, nBufferR_VectorGrad, nBufferR_Scalar;
+	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, 
+	sinPsi, *newSolution = NULL, **newGradient = NULL, *Buffer_Receive_U = NULL, 
+	*Buffer_Receive_BetaInc2 = NULL, *Buffer_Receive_DensityInc = NULL,
+	*Buffer_Receive_UGrad = NULL, *Buffer_Receive_Limit = NULL, *Buffer_Receive_Undivided_Laplacian = NULL, 
+	*Buffer_Receive_Sensor = NULL, *Buffer_Receive_Lambda = NULL, *Buffer_Receive_LaminarViscosity = NULL, 
+	*Buffer_Receive_EddyViscosity = NULL, *Buffer_Receive_VGrad = NULL;
+	unsigned short *Buffer_Receive_Neighbor = NULL;
+	int send_to, receive_from;
+	bool viscous = false, upwind = false, centered = false;
+	bool incompressible = config[iZone]->GetIncompressible();
+	
+#ifdef NO_MPI
+	double N_0, N_1, N_2;
+	unsigned long Point_0, Point_1, Point_2, donorPoint, donorElem;
+	unsigned short donorZone, iMark, donorMarker, donor_marker;
+#endif
+	
+	double *Buffer_Send_U = NULL, *Buffer_Send_BetaInc2 = NULL, *Buffer_Send_DensityInc = NULL, *Buffer_Send_LaminarViscosity = NULL, 
+	*Buffer_Send_EddyViscosity = NULL, *Buffer_Send_VGrad = NULL, *Buffer_Send_UGrad = NULL, *Buffer_Send_Limit = NULL, *Buffer_Send_Undivided_Laplacian = NULL,
+	*Buffer_Send_Sensor = NULL, *Buffer_Send_Lambda = NULL;
+	unsigned short *Buffer_Send_Neighbor = NULL;
+	
+	newSolution = new double[nVar];
+	newGradient = new double* [nVar];
+	for (iVar=0; iVar< nVar; iVar++)
+		newGradient[iVar] = new double[3];
+	
+	if ((config[iZone]->GetKind_Solver() == NAVIER_STOKES) || (config[iZone]->GetKind_Solver() == ADJ_NAVIER_STOKES)) viscous = true;
+	if ((config[iZone]->GetKind_Solver() == RANS) || (config[iZone]->GetKind_Solver() == ADJ_RANS)) viscous = true;
+	if (config[iZone]->GetKind_ConvNumScheme() == SPACE_UPWIND) upwind = true;
+	if (config[iZone]->GetKind_ConvNumScheme() == SPACE_CENTERED) centered = true;
+	
+	/*--- Send-Receive boundary conditions ---*/
+	for (iMarker = 0; iMarker < config[iZone]->GetnMarker_All(); iMarker++) {
+		
+		if ((config[iZone]->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) && 
+				(config[iZone]->GetMarker_All_SendRecv(iMarker) > 0)) {
+			
+			MarkerS = iMarker;				// Marker of the boundary to be sended
+			MarkerR = iMarker+1;			// Marker of the boundary to be received
+			
+			send_to = config[iZone]->GetMarker_All_SendRecv(MarkerS)-1;
+			receive_from = abs(config[iZone]->GetMarker_All_SendRecv(MarkerR))-1;
+			
+			nVertexS = geometry[iZone][iMGLevel]->nVertex[MarkerS];
+			nVertexR = geometry[iZone][iMGLevel]->nVertex[MarkerR];
+			
+			nBufferS_VectorGrad	= nVertexS*nVar*nDim;		nBufferR_VectorGrad	= nVertexR*nVar*nDim;
+			nBufferS_Vector			= nVertexS*nVar;				nBufferR_Vector			= nVertexR*nVar;
+			nBufferS_Scalar			= nVertexS;							nBufferR_Scalar			= nVertexR;
+
+			/*--- Allocate upwind variables (send and receive) ---*/
+			if (upwind) {
+				Buffer_Send_U = new double[nBufferS_Vector];
+				Buffer_Receive_U = new double [nBufferR_Vector];
+				if (iMGLevel == MESH_0) {
+					Buffer_Send_UGrad = new double[nBufferS_VectorGrad];
+					Buffer_Receive_UGrad = new double [nBufferR_VectorGrad];
+					Buffer_Send_Limit = new double[nBufferS_Vector];
+					Buffer_Receive_Limit = new double [nBufferR_Vector];
+				}					
+			}
+			
+			/*--- Allocate centered variables (send and receive) ---*/
+			if (centered) {
+				Buffer_Send_U = new double[nBufferS_Vector];
+				Buffer_Receive_U = new double [nBufferR_Vector];
+				Buffer_Send_Lambda = new double [nBufferS_Scalar];
+				Buffer_Receive_Lambda = new double [nBufferR_Scalar];
+				Buffer_Send_Neighbor = new unsigned short [nBufferS_Scalar];
+				Buffer_Receive_Neighbor = new unsigned short [nBufferR_Scalar];	
+				if (iMGLevel == MESH_0) {
+					Buffer_Send_Undivided_Laplacian = new double [nBufferS_Vector];
+					Buffer_Receive_Undivided_Laplacian = new double [nBufferR_Vector];
+					Buffer_Send_Sensor = new double [nBufferS_Scalar];
+					Buffer_Receive_Sensor = new double [nBufferR_Scalar];
+				}
+			}
+			
+			/*--- Allocate incompressible variables (send and receive) ---*/
+			if (incompressible) {
+				Buffer_Send_BetaInc2 = new double [nBufferS_Scalar];
+				Buffer_Receive_BetaInc2 = new double [nBufferR_Scalar];
+				Buffer_Send_DensityInc = new double [nBufferS_Scalar];
+				Buffer_Receive_DensityInc = new double [nBufferR_Scalar];
+			}
+			
+			/*--- Allocate viscous variables (send and receive) ---*/
+			if (viscous) {
+				Buffer_Send_LaminarViscosity = new double[nBufferS_Scalar];
+				Buffer_Receive_LaminarViscosity = new double [nBufferR_Scalar];
+				Buffer_Send_EddyViscosity = new double[nBufferS_Scalar];
+				Buffer_Receive_EddyViscosity = new double [nBufferR_Scalar];
+				Buffer_Send_VGrad = new double[nBufferS_VectorGrad];
+				Buffer_Receive_VGrad = new double [nBufferR_VectorGrad];
+			}
+			
+#ifndef NO_MPI
+
+			/*--- Copy the solution that should be sended ---*/
+			for (iVertex = 0; iVertex < nVertexS; iVertex++) {
+				
+				iPoint = geometry[iZone][iMGLevel]->vertex[MarkerS][iVertex]->GetNode();
+				
+				/*--- Copy upwind data ---*/
+				if (upwind) {
+					for (iVar = 0; iVar < nVar; iVar++) {
+						Buffer_Send_U[iVar*nVertexS+iVertex] = node[iPoint]->GetSolution(iVar);
+						if (iMGLevel == MESH_0) {
+							Buffer_Send_Limit[iVar*nVertexS+iVertex] = node[iPoint]->GetLimiter(iVar);
+							for (iDim = 0; iDim < nDim; iDim++)
+								Buffer_Send_UGrad[iDim*nVar*nVertexS+iVar*nVertexS+iVertex] = node[iPoint]->GetGradient(iVar,iDim);
+						}
+					}
+				}
+				
+				/*--- Copy centered data ---*/
+				if (centered) {
+					for (iVar = 0; iVar < nVar; iVar++) {
+						Buffer_Send_U[iVar*nVertexS+iVertex] = node[iPoint]->GetSolution(iVar);
+						if (iMGLevel == MESH_0)
+							Buffer_Send_Undivided_Laplacian[iVar*nVertexS+iVertex] = node[iPoint]->GetUnd_Lapl(iVar);							
+					}
+					if (iMGLevel == MESH_0) Buffer_Send_Sensor[iVertex] = node[iPoint]->GetSensor();
+					Buffer_Send_Lambda[iVertex] = node[iPoint]->GetLambda();
+					Buffer_Send_Neighbor[iVertex] = geometry[iZone][iMGLevel]->node[iPoint]->GetnPoint();
+				}
+				
+				/*--- Copy incompressible data ---*/
+				if (incompressible) {
+					Buffer_Send_BetaInc2[iVertex] = node[iPoint]->GetBetaInc2();
+					Buffer_Send_DensityInc[iVertex] = node[iPoint]->GetDensityInc();
+				}
+				
+				/*--- Copy viscous data ---*/
+				if (viscous) {
+					Buffer_Send_LaminarViscosity[iVertex] = node[iPoint]->GetLaminarViscosity();
+					Buffer_Send_EddyViscosity[iVertex] = node[iPoint]->GetEddyViscosity();
+					for (iVar = 0; iVar < nVar; iVar++)
+						for (iDim = 0; iDim < nDim; iDim++)
+							Buffer_Send_VGrad[iDim*nVar*nVertexS+iVar*nVertexS+iVertex] = node[iPoint]->GetGradient_Primitive(iVar,iDim);							
+				}
+			}
+			
+			
+			/*--- Send the buffer, and deallocate information using MPI ---*/
+			if (upwind) {
+				MPI::COMM_WORLD.Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
+																 Buffer_Receive_U, nBufferR_Vector, MPI::DOUBLE, receive_from, 0); delete [] Buffer_Send_U;
+				if (iMGLevel == MESH_0) {
+					MPI::COMM_WORLD.Sendrecv(Buffer_Send_UGrad, nBufferS_VectorGrad, MPI::DOUBLE, send_to, 1,
+																	 Buffer_Receive_UGrad, nBufferR_VectorGrad, MPI::DOUBLE, receive_from, 1); delete [] Buffer_Send_UGrad;
+					MPI::COMM_WORLD.Sendrecv(Buffer_Send_Limit, nBufferS_Vector, MPI::DOUBLE, send_to, 2,
+																	 Buffer_Receive_Limit, nBufferR_Vector, MPI::DOUBLE, receive_from, 2); delete [] Buffer_Send_Limit;						
+				}
+			}
+			
+			if (centered) {
+				MPI::COMM_WORLD.Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
+																 Buffer_Receive_U, nBufferR_Vector, MPI::DOUBLE, receive_from, 0); delete [] Buffer_Send_U;
+				MPI::COMM_WORLD.Sendrecv(Buffer_Send_Lambda, nBufferS_Scalar, MPI::DOUBLE, send_to, 1,
+																 Buffer_Receive_Lambda, nBufferR_Scalar, MPI::DOUBLE, receive_from, 1); delete [] Buffer_Send_Lambda;
+				MPI::COMM_WORLD.Sendrecv(Buffer_Send_Neighbor, nBufferS_Scalar, MPI::UNSIGNED_SHORT, send_to, 2,
+																 Buffer_Receive_Neighbor, nBufferR_Scalar, MPI::UNSIGNED_SHORT, receive_from, 2); delete [] Buffer_Send_Neighbor;
+				if (iMGLevel == MESH_0) {
+					MPI::COMM_WORLD.Sendrecv(Buffer_Send_Undivided_Laplacian, nBufferS_Vector, MPI::DOUBLE, send_to, 3,
+																	 Buffer_Receive_Undivided_Laplacian, nBufferR_Vector, MPI::DOUBLE, receive_from, 3); delete [] Buffer_Send_Undivided_Laplacian;
+					MPI::COMM_WORLD.Sendrecv(Buffer_Send_Sensor, nBufferS_Scalar, MPI::DOUBLE, send_to, 4,
+																	 Buffer_Receive_Sensor, nBufferR_Scalar, MPI::DOUBLE, receive_from, 4); delete [] Buffer_Send_Sensor;
+				}
+			}
+			
+			if (incompressible) {
+				MPI::COMM_WORLD.Sendrecv(Buffer_Send_BetaInc2, nBufferS_Scalar, MPI::DOUBLE, send_to, 5,
+																 Buffer_Receive_BetaInc2, nBufferR_Scalar, MPI::DOUBLE, receive_from, 5); delete [] Buffer_Send_BetaInc2;
+				MPI::COMM_WORLD.Sendrecv(Buffer_Send_DensityInc, nBufferS_Scalar, MPI::DOUBLE, send_to, 6,
+																 Buffer_Receive_DensityInc, nBufferR_Scalar, MPI::DOUBLE, receive_from, 6); delete [] Buffer_Send_DensityInc;
+			}
+			
+			if (viscous) {
+				MPI::COMM_WORLD.Sendrecv(Buffer_Send_LaminarViscosity, nBufferS_Scalar, MPI::DOUBLE, send_to, 7,
+																 Buffer_Receive_LaminarViscosity, nBufferR_Scalar, MPI::DOUBLE, receive_from, 7); delete [] Buffer_Send_LaminarViscosity;
+				MPI::COMM_WORLD.Sendrecv(Buffer_Send_EddyViscosity, nBufferS_Scalar, MPI::DOUBLE, send_to, 8,
+																 Buffer_Receive_EddyViscosity, nBufferR_Scalar, MPI::DOUBLE, receive_from, 8); delete [] Buffer_Send_VGrad;
+				MPI::COMM_WORLD.Sendrecv(Buffer_Send_VGrad, nBufferS_VectorGrad, MPI::DOUBLE, send_to, 9,
+																 Buffer_Receive_VGrad, nBufferR_VectorGrad, MPI::DOUBLE, receive_from, 9); delete [] Buffer_Send_EddyViscosity;
+			}
+			
+			
+#else
+
+			/*--- Allow for periodic boundaries to use SEND_RECEIVE in serial.
+			 Serial computations will only use the BC in receive mode, as
+			 the proc will always be sending information to itself. ---*/
+			
+			/*--- Retrieve the donor boundary marker ---*/
+			donor_marker = 1;
+			donorZone    = 0;
+			donorMarker  = 1;
+			
+			for (iMark = 0; iMark < config[iZone]->GetnMarker_All(); iMark++)
+				if (config[iZone]->GetMarker_All_SendRecv(iMark)-1 == receive_from) donor_marker = iMark;
+			
+			/*--- Get the information from the donor point directly. This is a
+			 serial computation with access to all nodes. Note that there is an
+			 implicit ordering in the list. ---*/
+			for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+				
+				donorPoint = geometry[iZone][iMGLevel]->vertex[donor_marker][iVertex]->GetNode();
+				donorZone = geometry[iZone][iMGLevel]->vertex[MarkerR][iVertex]->GetMatching_Zone();
+				
+				/*--- This is a multizone simulation and we need to use the
+				 results of the search & interpolation routine in case of
+				 sliding interfaces. ---*/
+				if (donorZone != iZone) {
+					
+					donorElem = geometry[iZone][iMGLevel]->vertex[MarkerR][iVertex]->GetDonorElem();
+					
+					N_0 = geometry[iZone][iMGLevel]->vertex[MarkerR][iVertex]->GetBasisFunction(0);
+					N_1 = geometry[iZone][iMGLevel]->vertex[MarkerR][iVertex]->GetBasisFunction(1);
+					N_2 = geometry[iZone][iMGLevel]->vertex[MarkerR][iVertex]->GetBasisFunction(2);
+					
+					Point_0 = geometry[donorZone][iMGLevel]->elem[donorElem]->GetNode(0);
+					Point_1 = geometry[donorZone][iMGLevel]->elem[donorElem]->GetNode(1);
+					Point_2 = geometry[donorZone][iMGLevel]->elem[donorElem]->GetNode(2);
+					
+					/*--- Interpolation and storage of values from this element. ---*/
+					if (upwind) {
+						for (iVar = 0; iVar < nVar; iVar++) {
+							Buffer_Receive_U[iVar*nVertexR+iVertex] = N_0*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_0]->GetSolution(iVar)
+							+ N_1*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_1]->GetSolution(iVar)
+							+ N_2*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_2]->GetSolution(iVar);
+							/*--- Gradient and limiters... ---*/
+							if (iMGLevel == MESH_0) {
+								
+							}
+						}	
+						
+					}
+					
+					if (centered) {
+						for (iVar = 0; iVar < nVar; iVar++) {
+							Buffer_Receive_U[iVar*nVertexR+iVertex] = N_0*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_0]->GetSolution(iVar)
+							+ N_1*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_1]->GetSolution(iVar)
+							+ N_2*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_2]->GetSolution(iVar);
+							if (iMGLevel == MESH_0)
+								Buffer_Receive_Undivided_Laplacian[iVar*nVertexR+iVertex] = N_0*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_0]->GetUnd_Lapl(iVar)
+								+ N_1*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_1]->GetUnd_Lapl(iVar)
+								+ N_2*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_2]->GetUnd_Lapl(iVar);
+						}
+						if (iMGLevel == MESH_0)
+							Buffer_Receive_Sensor[iVertex] = N_0*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_0]->GetSensor()
+							+ N_1*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_1]->GetSensor()
+							+ N_2*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_2]->GetSensor();
+						
+						Buffer_Receive_Lambda[iVertex]  = N_0*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_0]->GetLambda()
+						+ N_1*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_1]->GetLambda()
+						+ N_2*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_2]->GetLambda();
+						
+						/*--- Just use the neighbors from the first node for now... ---*/
+						Buffer_Receive_Neighbor[iVertex] = geometry[donorZone][iMGLevel]->node[Point_0]->GetnPoint();
+					}
+					
+					if (incompressible) {
+						Buffer_Receive_BetaInc2[iVertex] = N_0*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_0]->GetBetaInc2()
+						+ N_1*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_1]->GetBetaInc2()
+						+ N_2*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_2]->GetBetaInc2();
+						Buffer_Receive_DensityInc[iVertex] = N_0*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_0]->GetDensityInc()
+						+ N_1*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_1]->GetDensityInc()
+						+ N_2*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_2]->GetDensityInc();
+					}
+					
+					if (viscous) {
+						Buffer_Receive_LaminarViscosity[iVertex] = N_0*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_0]->GetLaminarViscosity()
+						+ N_1*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_1]->GetLaminarViscosity()
+						+ N_2*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_2]->GetLaminarViscosity();
+						Buffer_Receive_EddyViscosity[iVertex] = N_0*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_0]->GetEddyViscosity()
+						+ N_1*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_1]->GetEddyViscosity()
+						+ N_2*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_2]->GetEddyViscosity();
+						
+						for (iVar = 0; iVar < nVar; iVar++) {
+							for (iDim = 0; iDim < nDim; iDim++) {
+								Buffer_Receive_VGrad[iDim*nVar*nVertexR+iVar*nVertexR+iVertex]  = N_0*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_0]->GetGradient_Primitive(iVar, iDim);
+								Buffer_Receive_VGrad[iDim*nVar*nVertexR+iVar*nVertexR+iVertex] += N_1*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_1]->GetGradient_Primitive(iVar, iDim);
+								Buffer_Receive_VGrad[iDim*nVar*nVertexR+iVar*nVertexR+iVertex] += N_2*solution_container[donorZone][iMGLevel][FLOW_SOL]->node[Point_2]->GetGradient_Primitive(iVar, iDim);
+							}
+						}
+						
+					}						
+				}
+				
+				else {
+					
+					/*--- For now, search for donor marker for every receive point. Probably
+					 a more efficient way to do this in the future. ---*/
+					for (iMark = 0; iMark < config[donorZone]->GetnMarker_All(); iMark++)
+						if (config[donorZone]->GetMarker_All_SendRecv(iMark)-1 == receive_from) donorMarker = iMark;
+					
+					/*--- Index of the donor point. ---*/
+					donorPoint = geometry[donorZone][iMGLevel]->vertex[donorMarker][iVertex]->GetNode();
+					
+					/*--- Copy upwind data ---*/
+					if (upwind) {
+						for (iVar = 0; iVar < nVar; iVar++) {
+							Buffer_Receive_U[iVar*nVertexR+iVertex] = solution_container[donorZone][iMGLevel][FLOW_SOL]->node[donorPoint]->GetSolution(iVar);
+							if (iMGLevel == MESH_0) {
+								Buffer_Receive_Limit[iVar*nVertexR+iVertex] = solution_container[donorZone][iMGLevel][FLOW_SOL]->node[donorPoint]->GetLimiter(iVar);
+								for (iDim = 0; iDim < nDim; iDim++)
+									Buffer_Receive_UGrad[iDim*nVar*nVertexR+iVar*nVertexR+iVertex] = solution_container[donorZone][iMGLevel][FLOW_SOL]->node[donorPoint]->GetGradient(iVar,iDim);
+							}
+						}
+					}
+					
+					/*--- Copy centered data ---*/
+					if (centered) {
+						for (iVar = 0; iVar < nVar; iVar++) {
+							Buffer_Receive_U[iVar*nVertexR+iVertex] = solution_container[donorZone][iMGLevel][FLOW_SOL]->node[donorPoint]->GetSolution(iVar);
+							if (iMGLevel == MESH_0)
+								Buffer_Receive_Undivided_Laplacian[iVar*nVertexR+iVertex] = solution_container[donorZone][iMGLevel][FLOW_SOL]->node[donorPoint]->GetUnd_Lapl()[iVar];							
+						}
+						Buffer_Receive_Lambda[iVertex] = solution_container[donorZone][iMGLevel][FLOW_SOL]->node[donorPoint]->GetLambda();
+						Buffer_Receive_Neighbor[iVertex] = geometry[donorZone][iMGLevel]->node[donorPoint]->GetnPoint();
+					}
+					
+					/*--- Copy incompressible data ---*/
+					if (incompressible) {
+						Buffer_Receive_BetaInc2[iVertex] = solution_container[donorZone][iMGLevel][FLOW_SOL]->node[donorPoint]->GetBetaInc2();
+						Buffer_Receive_DensityInc[iVertex] = solution_container[donorZone][iMGLevel][FLOW_SOL]->node[donorPoint]->GetDensityInc();
+					}
+					
+					/*--- Copy viscous data ---*/
+					if (viscous) {
+						Buffer_Receive_LaminarViscosity[iVertex] = solution_container[donorZone][iMGLevel][FLOW_SOL]->node[donorPoint]->GetLaminarViscosity();
+						Buffer_Receive_EddyViscosity[iVertex] = solution_container[donorZone][iMGLevel][FLOW_SOL]->node[donorPoint]->GetEddyViscosity();
+						for (iVar = 0; iVar < nVar; iVar++)
+							for (iDim = 0; iDim < nDim; iDim++)
+								Buffer_Receive_VGrad[iDim*nVar*nVertexR+iVar*nVertexR+iVertex] = solution_container[donorZone][iMGLevel][FLOW_SOL]->node[donorPoint]->GetGradient_Primitive(iVar,iDim);
+					}
+				}
+			}
+			
+#endif
+			
+			/*--- Do the coordinate transformation using the received information ---*/
+			for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+				
+				/*--- Find point and its type of transformation ---*/
+				iPoint = geometry[iZone][iMGLevel]->vertex[MarkerR][iVertex]->GetNode();
+				iPeriodic_Index = geometry[iZone][iMGLevel]->vertex[MarkerR][iVertex]->GetRotation_Type();
+				
+				/*--- Retrieve the supplied periodic information. ---*/
+				angles = config[iZone]->GetPeriodicRotation(iPeriodic_Index);
+				
+				/*--- Store angles separately for clarity. ---*/
+				theta    = angles[0];   phi    = angles[1]; psi    = angles[2];
+				cosTheta = cos(theta);  cosPhi = cos(phi);  cosPsi = cos(psi);
+				sinTheta = sin(theta);  sinPhi = sin(phi);  sinPsi = sin(psi);
+				
+				/*--- Compute the rotation matrix. Note that the implicit
+				 ordering is rotation about the x-axis, y-axis,
+				 then z-axis. Note that this is the transpose of the matrix
+				 used during the preprocessing stage. ---*/
+				rotMatrix[0][0] = cosPhi*cosPsi; rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi; rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+				rotMatrix[0][1] = cosPhi*sinPsi; rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi; rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+				rotMatrix[0][2] = -sinPhi; rotMatrix[1][2] = sinTheta*cosPhi; rotMatrix[2][2] = cosTheta*cosPhi;
+				
+				/*--- Copy conserved variables before performing transformation. ---*/
+				for (iVar = 0; iVar < nVar; iVar++) 
+					newSolution[iVar] = Buffer_Receive_U[iVar*nVertexR+iVertex];
+				
+				/*--- Rotate the momentum components. ---*/
+				if (nDim == 2) {
+					newSolution[1] = rotMatrix[0][0]*Buffer_Receive_U[1*nVertexR+iVertex] + rotMatrix[0][1]*Buffer_Receive_U[2*nVertexR+iVertex];
+					newSolution[2] = rotMatrix[1][0]*Buffer_Receive_U[1*nVertexR+iVertex] + rotMatrix[1][1]*Buffer_Receive_U[2*nVertexR+iVertex];
+				}
+				else {
+					newSolution[1] = rotMatrix[0][0]*Buffer_Receive_U[1*nVertexR+iVertex] + rotMatrix[0][1]*Buffer_Receive_U[2*nVertexR+iVertex] + rotMatrix[0][2]*Buffer_Receive_U[3*nVertexR+iVertex];
+					newSolution[2] = rotMatrix[1][0]*Buffer_Receive_U[1*nVertexR+iVertex] + rotMatrix[1][1]*Buffer_Receive_U[2*nVertexR+iVertex] + rotMatrix[1][2]*Buffer_Receive_U[3*nVertexR+iVertex];
+					newSolution[3] = rotMatrix[2][0]*Buffer_Receive_U[1*nVertexR+iVertex] + rotMatrix[2][1]*Buffer_Receive_U[2*nVertexR+iVertex] + rotMatrix[2][2]*Buffer_Receive_U[3*nVertexR+iVertex];
+				}
+				
+				/*--- Copy transformed conserved variables back into buffer. ---*/
+				for (iVar = 0; iVar < nVar; iVar++) 
+					Buffer_Receive_U[iVar*nVertexR+iVertex] = newSolution[iVar];
+				
+				/*--- Also transform the gradient for upwinding if this is the fine mesh ---*/
+				if ((upwind) && (iMGLevel == MESH_0)) {
+					
+					for (iVar = 0; iVar < nVar; iVar++) 
+						for (iDim = 0; iDim < nDim; iDim++)
+							newGradient[iVar][iDim] = Buffer_Receive_UGrad[iDim*nVar*nVertexR+iVar*nVertexR+iVertex];
+					
+					/*--- Need to rotate the gradients for all conserved variables. ---*/
+					for (iVar = 0; iVar < nVar; iVar++) {
+						if (nDim == 2) {
+							newGradient[iVar][0] = rotMatrix[0][0]*Buffer_Receive_UGrad[0*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[0][1]*Buffer_Receive_UGrad[1*nVar*nVertexR+iVar*nVertexR+iVertex];
+							newGradient[iVar][1] = rotMatrix[1][0]*Buffer_Receive_UGrad[0*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[1][1]*Buffer_Receive_UGrad[1*nVar*nVertexR+iVar*nVertexR+iVertex];
+						}
+						else {
+							newGradient[iVar][0] = rotMatrix[0][0]*Buffer_Receive_UGrad[0*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[0][1]*Buffer_Receive_UGrad[1*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[0][2]*Buffer_Receive_UGrad[2*nVar*nVertexR+iVar*nVertexR+iVertex];
+							newGradient[iVar][1] = rotMatrix[1][0]*Buffer_Receive_UGrad[0*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[1][1]*Buffer_Receive_UGrad[1*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[1][2]*Buffer_Receive_UGrad[2*nVar*nVertexR+iVar*nVertexR+iVertex];
+							newGradient[iVar][2] = rotMatrix[2][0]*Buffer_Receive_UGrad[0*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[2][1]*Buffer_Receive_UGrad[1*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[2][2]*Buffer_Receive_UGrad[2*nVar*nVertexR+iVar*nVertexR+iVertex];
+						}
+					}
+					
+					/*--- Copy transformed gradients back into buffer. ---*/
+					for (iVar = 0; iVar < nVar; iVar++) 
+						for (iDim = 0; iDim < nDim; iDim++)
+							Buffer_Receive_UGrad[iDim*nVar*nVertexR+iVar*nVertexR+iVertex] = newGradient[iVar][iDim];
+					
+				}
+				
+				/*--- Also transform the gradient for viscous terms ---*/
+				if (viscous) {
+					
+					for (iVar = 0; iVar < nVar; iVar++)
+						for (iDim = 0; iDim < nDim; iDim++)
+							newGradient[iVar][iDim] = Buffer_Receive_VGrad[iDim*nVar*nVertexR+iVar*nVertexR+iVertex];
+					
+					/*--- Need to rotate the gradients for all conserved variables. ---*/
+					for (iVar = 0; iVar < nVar; iVar++) {
+						if (nDim == 2) {
+							newGradient[iVar][0] = rotMatrix[0][0]*Buffer_Receive_VGrad[0*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[0][1]*Buffer_Receive_VGrad[1*nVar*nVertexR+iVar*nVertexR+iVertex];
+							newGradient[iVar][1] = rotMatrix[1][0]*Buffer_Receive_VGrad[0*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[1][1]*Buffer_Receive_VGrad[1*nVar*nVertexR+iVar*nVertexR+iVertex];
+						}
+						else {
+							newGradient[iVar][0] = rotMatrix[0][0]*Buffer_Receive_VGrad[0*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[0][1]*Buffer_Receive_VGrad[1*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[0][2]*Buffer_Receive_VGrad[2*nVar*nVertexR+iVar*nVertexR+iVertex];
+							newGradient[iVar][1] = rotMatrix[1][0]*Buffer_Receive_VGrad[0*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[1][1]*Buffer_Receive_VGrad[1*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[1][2]*Buffer_Receive_VGrad[2*nVar*nVertexR+iVar*nVertexR+iVertex];
+							newGradient[iVar][2] = rotMatrix[2][0]*Buffer_Receive_VGrad[0*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[2][1]*Buffer_Receive_VGrad[1*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[2][2]*Buffer_Receive_VGrad[2*nVar*nVertexR+iVar*nVertexR+iVertex];
+						}
+					}
+					
+					/*--- Copy transformed gradients back into buffer. ---*/
+					for (iVar = 0; iVar < nVar; iVar++)
+						for (iDim = 0; iDim < nDim; iDim++)
+							Buffer_Receive_VGrad[iDim*nVar*nVertexR+iVar*nVertexR+iVertex] = newGradient[iVar][iDim];
+					
+				}
+				
+				
+				/*--- Upwind method. Store the received information ---*/
+				if (upwind) {
+					for (iVar = 0; iVar < nVar; iVar++) {
+						node[iPoint]->SetSolution(iVar, Buffer_Receive_U[iVar*nVertexR+iVertex]);
+						if (iMGLevel == MESH_0) {
+							node[iPoint]->SetLimiter(iVar, Buffer_Receive_Limit[iVar*nVertexR+iVertex]);
+							for (iDim = 0; iDim < nDim; iDim++)
+								node[iPoint]->SetGradient(iVar, iDim, Buffer_Receive_UGrad[iDim*nVar*nVertexR+iVar*nVertexR+iVertex]);
+						}
+					}
+				}
+				
+				/*--- Centered method. Store the received information ---*/
+				if (centered) {
+					for (iVar = 0; iVar < nVar; iVar++) {
+						node[iPoint]->SetSolution(iVar, Buffer_Receive_U[iVar*nVertexR+iVertex]);
+						if (iMGLevel == MESH_0) 
+							node[iPoint]->SetUndivided_Laplacian(iVar, Buffer_Receive_Undivided_Laplacian[iVar*nVertexR+iVertex]);
+					}
+					if (iMGLevel == MESH_0) node[iPoint]->SetSensor(Buffer_Receive_Sensor[iVertex]);
+					node[iPoint]->SetLambda(Buffer_Receive_Lambda[iVertex]);
+					geometry[iZone][iMGLevel]->node[iPoint]->SetnNeighbor(Buffer_Receive_Neighbor[iVertex]);
+				}
+				
+				/*--- Incompressible method. Store the received information ---*/
+				if (incompressible) {
+					node[iPoint]->SetBetaInc2(Buffer_Receive_BetaInc2[iVertex]);
+					node[iPoint]->SetDensityInc(Buffer_Receive_DensityInc[iVertex]);
+				}
+				
+				/*--- Viscous method. Store the received information ---*/
+				if (viscous) {
+					node[iPoint]->SetLaminarViscosity(Buffer_Receive_LaminarViscosity[iVertex]);
+					node[iPoint]->SetEddyViscosity(Buffer_Receive_EddyViscosity[iVertex]);
+					for (iVar = 0; iVar < nVar; iVar++)
+						for (iDim = 0; iDim < nDim; iDim++)
+							node[iPoint]->SetGradient_Primitive(iVar, iDim, Buffer_Receive_VGrad[iDim*nVar*nVertexR+iVar*nVertexR+iVertex]);
+				}
+				
+			}
+			
+			if (upwind) {
+				delete [] Buffer_Receive_U;
+				if (iMGLevel == MESH_0) {
+					delete [] Buffer_Receive_UGrad;
+					delete [] Buffer_Receive_Limit;
+				}
+			}
+			
+			if (centered) {
+				delete [] Buffer_Receive_U;
+				delete [] Buffer_Receive_Lambda;
+				delete [] Buffer_Receive_Neighbor;
+				if (iMGLevel == MESH_0) {
+					delete [] Buffer_Receive_Undivided_Laplacian;
+					delete [] Buffer_Receive_Sensor;
+				}
+			}
+			
+			if (incompressible) {
+				delete [] Buffer_Receive_BetaInc2;
+				delete [] Buffer_Receive_DensityInc;
+			}
+			
+			if (viscous) {
+				delete [] Buffer_Receive_LaminarViscosity;
+				delete [] Buffer_Receive_EddyViscosity;
+				delete [] Buffer_Receive_VGrad;
+			}
+			
+		}
+	}
+	
+	delete [] newSolution;
+	for (iVar = 0; iVar < nVar; iVar++)
+		delete [] newGradient[iVar];
+	delete [] newGradient;
+	
 }
 
-void CEulerSolution::SetResidual_DualTime(CGeometry *geometry, CSolution **solution_container, CConfig *config, 
+#endif
+
+void CEulerSolution::SetResidual_DualTime(CGeometry *geometry, CSolution **solution_container, CConfig *config,
 		unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
 	unsigned short iVar, jVar;
 	unsigned long iPoint;
@@ -4044,7 +4534,7 @@ void CEulerSolution::SetResidual_DualTime(CGeometry *geometry, CSolution **solut
 	bool Grid_Movement = config->GetGrid_Movement();
 
 	/*--- loop over points ---*/
-	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) { 
+	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
 
 		/*--- Solution at time n-1, n and n+1 ---*/
 		U_time_nM1 = node[iPoint]->GetSolution_time_n1();
@@ -4060,7 +4550,7 @@ void CEulerSolution::SetResidual_DualTime(CGeometry *geometry, CSolution **solut
 		else {
 			Volume_nM1 = geometry->node[iPoint]->GetVolume();
 			Volume_n = geometry->node[iPoint]->GetVolume();
-			Volume_nP1 = geometry->node[iPoint]->GetVolume();			
+			Volume_nP1 = geometry->node[iPoint]->GetVolume();
 		}
 
 		/*--- Time Step ---*/
@@ -4088,12 +4578,12 @@ void CEulerSolution::SetResidual_DualTime(CGeometry *geometry, CSolution **solut
 				if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
 					Jacobian_i[iVar][iVar] = Volume_nP1 / TimeStep;
 				if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
-					Jacobian_i[iVar][iVar] = (Volume_nP1*3.0)/(2.0*TimeStep);				
+					Jacobian_i[iVar][iVar] = (Volume_nP1*3.0)/(2.0*TimeStep);
 			}
 			if (incompressible && (FlowEq || AdjEq)) Jacobian_i[0][0] = 0.0;
-			Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);	
+			Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 		}
-	}	
+	}
 }
 
 void CEulerSolution::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement,
@@ -4131,7 +4621,7 @@ void CEulerSolution::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetric
 	double *Buffer_Receive_Coord = new double [nDim];
 	unsigned long jPoint;
 
-	/*--- Do the send process, by the moment we are sending each 
+	/*--- Do the send process, by the moment we are sending each
 	 node individually, this must be changed ---*/
 	for (iMarker = 0; iMarker < fea_config->GetnMarker_All(); iMarker++) {
 		if (fea_config->GetMarker_All_Boundary(iMarker) == LOAD_BOUNDARY) {
@@ -4215,7 +4705,7 @@ void CEulerSolution::GetRestart(CGeometry *geometry, CConfig *config, unsigned s
 	unsigned short nZone = geometry->GetnZone();
 
 	/*--- Multi-zone restart files. ---*/
-	if (nZone > 1) {
+	if (nZone > 1 && !(config->GetUnsteady_Simulation() == TIME_SPECTRAL)) {
 		restart_filename.erase(restart_filename.end()-4, restart_filename.end());
 		sprintf (buffer, "_%d.dat", int(val_iZone));
 		UnstExt = string(buffer);
@@ -4224,7 +4714,17 @@ void CEulerSolution::GetRestart(CGeometry *geometry, CConfig *config, unsigned s
 
 	/*--- For the unsteady adjoint, we integrate backwards through
    physical time, so load in the direct solution files in reverse. ---*/
-	if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
+	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+		flowIter = val_iZone;
+		restart_filename.erase(restart_filename.end()-4, restart_filename.end());
+		if (int(val_iZone) < 10) sprintf (buffer, "_0000%d.dat", int(val_iZone));
+		if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) sprintf (buffer, "_000%d.dat", int(val_iZone));
+		if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) sprintf (buffer, "_00%d.dat", int(val_iZone));
+		if ((int(val_iZone) >= 1000) && (int(val_iZone) < 10000)) sprintf (buffer, "_0%d.dat", int(val_iZone));
+		if (int(val_iZone) >= 10000) sprintf (buffer, "_%d.dat", int(val_iZone));
+		UnstExt = string(buffer);
+		restart_filename.append(UnstExt);
+	} else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
 		nFlowIter = config->GetnExtIter() - 1;
 		adjIter   = config->GetExtIter();
 		flowIter  = nFlowIter - adjIter;
@@ -4250,7 +4750,7 @@ void CEulerSolution::GetRestart(CGeometry *geometry, CConfig *config, unsigned s
 
 	/*--- Open the flow solution from the restart file ---*/
 	if (rank == MASTER_NODE && val_iZone == ZONE_0)
-		cout << "Reading in the direct flow solution from iteration " << flowIter << "." << endl;;
+		cout << "Reading in the direct flow solution from iteration " << flowIter << "." << endl;
 	restart_file.open(restart_filename.data(), ios::in);
 
 	/*--- In case there is no file ---*/
@@ -4380,7 +4880,7 @@ CNSSolution::CNSSolution(CGeometry *geometry, CConfig *config, unsigned short iM
 	/*--- Define some auxiliar vector related with the residual ---*/
 	Residual = new double[nVar]; Residual_Max = new double[nVar];
 	Residual_i = new double[nVar]; Residual_j = new double[nVar];
-	Res_Conv = new double[nVar]; Res_Visc = new double[nVar]; 
+	Res_Conv = new double[nVar]; Res_Visc = new double[nVar];
 	Res_Sour = new double[nVar];
 
 	/*--- Define some auxiliar vector related with the solution ---*/
@@ -4398,19 +4898,26 @@ CNSSolution::CNSSolution(CGeometry *geometry, CConfig *config, unsigned short iM
 	/*--- Define some auxiliar vector related with the undivided lapalacian computation ---*/
 	if ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) ||
 			(config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED)) {
-		p1_Und_Lapl = new double [geometry->GetnPoint()]; 
-		p2_Und_Lapl = new double [geometry->GetnPoint()]; 
+		p1_Und_Lapl = new double [geometry->GetnPoint()];
+		p2_Und_Lapl = new double [geometry->GetnPoint()];
 	}
+
+	if ((config->GetKind_Upwind() == ROE_TURKEL_2ND) || (config->GetKind_Upwind() == ROE_TURKEL_1ST)) {
+		Precon_Mat_inv = new double* [nVar];
+		for (iVar = 0; iVar < nVar; iVar ++)
+			Precon_Mat_inv[iVar] = new double[nVar];
+	}
+
 
 	/*--- Jacobians and vector structures for implicit computations ---*/
 	if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) {
 
 		/*--- Point to point Jacobians ---*/
-		Jacobian_i = new double* [nVar]; 
+		Jacobian_i = new double* [nVar];
 		Jacobian_j = new double* [nVar];
 		for (iVar = 0; iVar < nVar; iVar++) {
-			Jacobian_i[iVar] = new double [nVar]; 
-			Jacobian_j[iVar] = new double [nVar]; 
+			Jacobian_i[iVar] = new double [nVar];
+			Jacobian_j[iVar] = new double [nVar];
 		}
 		/*--- Initialization of the structure of the whole Jacobian ---*/
 		if (rank == MASTER_NODE) cout << "Initialize jacobian structure (Navier-Stokes' equations). MG level: " << iMesh <<"." << endl;
@@ -4423,13 +4930,13 @@ CNSSolution::CNSSolution(CGeometry *geometry, CConfig *config, unsigned short iM
 	if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
 
 		/*--- S matrix := inv(R)*traspose(inv(R)) ---*/
-		Smatrix = new double* [nDim]; 
+		Smatrix = new double* [nDim];
 		for (iDim = 0; iDim < nDim; iDim++)
 			Smatrix[iDim] = new double [nDim];
 
 		/*--- c vector := transpose(WA)*(Wb) ---*/
-		cvector = new double* [nVar+1]; 
-		for (iVar = 0; iVar < nVar+1; iVar++)
+		cvector = new double* [nDim+3];
+		for (iVar = 0; iVar < nDim+3; iVar++)
 			cvector[iVar] = new double [nDim];
 	}
 
@@ -4446,7 +4953,7 @@ CNSSolution::CNSSolution(CGeometry *geometry, CConfig *config, unsigned short iM
 	/*--- Viscous forces definition and coefficient in all the markers ---*/
 	CSkinFriction = new double* [config->GetnMarker_All()];
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		CSkinFriction[iMarker] = new double [geometry->nVertex[iMarker]];	
+		CSkinFriction[iMarker] = new double [geometry->nVertex[iMarker]];
 
 	/*--- Non dimensional coefficients ---*/
 	ForceInviscid = new double[nDim];
@@ -4528,7 +5035,7 @@ CNSSolution::CNSSolution(CGeometry *geometry, CConfig *config, unsigned short iM
 
 	/*--- For a rotating frame, set the velocity due to rotation
 	 at each point just once, and store it in the geometry class. ---*/
-	if (rotating_frame) {		
+	if (rotating_frame) {
 		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
 			double RotVel[3], distance[3];
 			double *coord = geometry->node[iPoint]->GetCoord();
@@ -4645,7 +5152,7 @@ CNSSolution::CNSSolution(CGeometry *geometry, CConfig *config, unsigned short iM
 	}
 
 	/*--- Define solver parameters needed for execution of destructor ---*/
-	if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED || 
+	if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED ||
 			(config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED))
 		space_centered = true;
 	else space_centered = false;
@@ -4656,6 +5163,9 @@ CNSSolution::CNSSolution(CGeometry *geometry, CConfig *config, unsigned short iM
 
 	if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
 	else least_squares = false;
+
+	if ((config->GetKind_Upwind() == ROE_TURKEL_2ND) || (config->GetKind_Upwind() == ROE_TURKEL_1ST)) roe_turkel = true;
+	else roe_turkel = false;
 }
 
 CNSSolution::~CNSSolution(void) {
@@ -4668,9 +5178,9 @@ CNSSolution::~CNSSolution(void) {
 
 	delete [] Residual;   delete [] Residual_Max; delete [] Res_Sour;
 	delete [] Residual_i; delete [] Residual_j;   delete [] Solution_j;
-	delete [] Res_Conv;   delete [] Res_Visc;     delete [] Vector_i;     
+	delete [] Res_Conv;   delete [] Res_Visc;     delete [] Vector_i;
 	delete [] Solution;   delete [] Solution_i;   delete [] Vector_j;
-	delete [] Vector;			delete [] PrimVar;			delete [] PrimVar_i; 
+	delete [] Vector;			delete [] PrimVar;			delete [] PrimVar_i;
 	delete [] PrimVar_j;
 
 	if (space_centered) {
@@ -4695,6 +5205,12 @@ CNSSolution::~CNSSolution(void) {
 		delete [] cvector;
 	}
 
+	if (roe_turkel) {
+		for (iVar = 0; iVar < nVar; iVar ++)
+			delete [] Precon_Mat_inv[iVar];
+		delete [] Precon_Mat_inv;
+	}
+
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
 		delete [] CPressure[iMarker];
 		delete [] CHeatTransfer[iMarker];
@@ -4708,14 +5224,14 @@ CNSSolution::~CNSSolution(void) {
 	delete [] CDrag_Inv;			delete [] CLift_Inv;        delete [] CSideForce_Inv;
 	delete [] CMx_Inv;				delete [] CMy_Inv;          delete [] CMz_Inv;
 	delete [] CEff_Inv;				delete [] CEquivArea_Inv;   delete [] CNearFieldOF_Inv;
-	delete [] CFx_Inv;				delete [] CFy_Inv;          delete [] CFz_Inv; 
-	delete [] CMerit_Inv;			delete [] CT_Inv;           delete [] CQ_Inv;         
+	delete [] CFx_Inv;				delete [] CFy_Inv;          delete [] CFz_Inv;
+	delete [] CMerit_Inv;			delete [] CT_Inv;           delete [] CQ_Inv;
 	delete [] MassFlow_Rate;	delete [] FanFace_Pressure; delete [] CLift_Visc;
-	delete [] ForceViscous;		delete [] MomentViscous;		delete [] CDrag_Visc; 
+	delete [] ForceViscous;		delete [] MomentViscous;		delete [] CDrag_Visc;
 	delete [] CMx_Visc;				delete [] CMy_Visc;					delete [] CMz_Visc;
 	delete [] CFx_Visc;				delete [] CFy_Visc;					delete [] CFz_Visc;
-	delete [] CEff_Visc;			delete [] CMerit_Visc;			delete [] CT_Visc; 
-	delete [] CQ_Visc;				
+	delete [] CEff_Visc;			delete [] CMerit_Visc;			delete [] CT_Visc;
+	delete [] CQ_Visc;
 
 	delete [] Velocity_Inlet;		delete [] Velocity_Outlet;
 
@@ -4727,6 +5243,7 @@ void CNSSolution::Preprocessing(CGeometry *geometry, CSolution **solution_contai
 	bool freesurface = ((config->GetKind_Solver() == FREE_SURFACE_NAVIER_STOKES) || (config->GetKind_Solver() == ADJ_FREE_SURFACE_NAVIER_STOKES));
 	bool incompressible = config->GetIncompressible();
 	double Gas_Constant = config->GetGas_Constant();
+	double ArtComp_Factor = config->GetArtComp_Factor();
 	unsigned short turb_model = config->GetKind_Turb_Model();
 	bool tkeNeeded = (turb_model == SST);
 	double turb_ke = 0.0;
@@ -4735,31 +5252,17 @@ void CNSSolution::Preprocessing(CGeometry *geometry, CSolution **solution_contai
 
 		if (tkeNeeded) turb_ke = solution_container[TURB_SOL]->node[iPoint]->GetSolution(0);
 
-		/*--- Compute squared velocity, sound velocity, pressure, enthalpy, 
-		 vorticity, temperature, and laminar viscosity ---*/
-		if (incompressible) {			
-			node[iPoint]->SetPressureInc();
-			node[iPoint]->SetVelocityInc2();
-			node[iPoint]->SetBetaInc2(config);			
-			if (!freesurface) {
-				node[iPoint]->SetDensityInc(Density_Inf);
-				node[iPoint]->SetLaminarViscosityInc(Viscosity_Inf);
-			}
-		}
-		else {
-			node[iPoint]->SetVelocity2();
-			node[iPoint]->SetPressure(Gamma, geometry->node[iPoint]->GetCoord(), turb_ke);
-			node[iPoint]->SetSoundSpeed(Gamma);
-			node[iPoint]->SetEnthalpy();
-			node[iPoint]->SetVorticity(); // Commented out since primitive gradients not yet computed.
-			node[iPoint]->SetTemperature(Gas_Constant);
-			node[iPoint]->SetLaminarViscosity(config);	
-		}
+		/*--- Set the primitive variables incompressible (dens, vx, vy, vz, beta)---*/
+		/*--- and compressible (temp, vx, vy, vz, press, dens, enthal, sos)---*/
+		if (incompressible)
+			node[iPoint]->SetPrimVar_Incompressible(Density_Inf, Viscosity_Inf, ArtComp_Factor, turb_ke, freesurface);
+		else
+			node[iPoint]->SetPrimVar_Compressible(Gamma, Gas_Constant, turb_ke);
 
 		/*--- Set the value of the eddy viscosity ---*/
 		if (turb_model != NONE)
 			node[iPoint]->SetEddyViscosity(config->GetKind_Turb_Model(), solution_container[TURB_SOL]->node[iPoint]);
-		else 
+		else
 			node[iPoint]->SetEddyViscosity(NONE, NULL);
 
 		/*--- Initialize the convective, source and viscous residual vector ---*/
@@ -4775,7 +5278,7 @@ void CNSSolution::Preprocessing(CGeometry *geometry, CSolution **solution_contai
 }
 
 void CNSSolution::SetTime_Step(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iMesh, unsigned long Iteration) {
-	double Mean_BetaInc2, *Normal, Area, Vol, Mean_SoundSpeed, Mean_ProjVel, Lambda, Local_Delta_Time, Local_Delta_Time_Visc, 
+	double Mean_BetaInc2, *Normal, Area, Vol, Mean_SoundSpeed, Mean_ProjVel, Lambda, Local_Delta_Time, Local_Delta_Time_Visc,
 	Global_Delta_Time = 1E6, Mean_LaminarVisc, Mean_EddyVisc, Mean_Density, Lambda_1, Lambda_2, K_v = 0.25, Global_Delta_UnstTimeND;
 	unsigned long iEdge, iVertex, iPoint = 0, jPoint = 0;
 	unsigned short iDim, iMarker;
@@ -4783,7 +5286,6 @@ void CNSSolution::SetTime_Step(CGeometry *geometry, CSolution **solution_contain
 
 	bool rotating_frame = config->GetRotating_Frame();
 	bool incompressible = config->GetIncompressible();
-	double Gas_Constant = config->GetGas_Constant();
 	bool centered = (config->GetKind_ConvNumScheme() == SPACE_CENTERED);
 	bool grid_movement = config->GetGrid_Movement();
 	double turb_model = config->GetKind_Turb_Model();
@@ -4795,18 +5297,6 @@ void CNSSolution::SetTime_Step(CGeometry *geometry, CSolution **solution_contain
 		node[iPoint]->SetMax_Lambda_Inv(0.0);
 		node[iPoint]->SetMax_Lambda_Visc(0.0);
 		if (centered) node[iPoint]->SetLambda(0.0);
-		if (incompressible) {
-			node[iPoint]->SetVelocityInc2();
-			node[iPoint]->SetBetaInc2(config);
-		}
-		else {
-			node[iPoint]->SetVelocity2();
-			node[iPoint]->SetPressure(Gamma, geometry->node[iPoint]->GetCoord());
-			node[iPoint]->SetSoundSpeed(Gamma);
-		}
-
-		node[iPoint]->SetTemperature(Gas_Constant);
-		node[iPoint]->SetLaminarViscosity(config);
 
 		/*--- Set the value of the eddy viscosity ---*/
 		if (turb_model != NONE)
@@ -4816,10 +5306,10 @@ void CNSSolution::SetTime_Step(CGeometry *geometry, CSolution **solution_contain
 	}
 
 	/*--- Loop interior edges ---*/
-	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) { 
+	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
 		/*--- Point identification, Normal vector and area ---*/
-		iPoint = geometry->edge[iEdge]->GetNode(0); 
+		iPoint = geometry->edge[iEdge]->GetNode(0);
 		jPoint = geometry->edge[iEdge]->GetNode(1);
 		Normal = geometry->edge[iEdge]->GetNormal();
 		Area = 0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
@@ -4828,7 +5318,7 @@ void CNSSolution::SetTime_Step(CGeometry *geometry, CSolution **solution_contain
 		if (incompressible) {
 			Mean_ProjVel = 0.5 * (node[iPoint]->GetProjVelInc(Normal) + node[jPoint]->GetProjVelInc(Normal));
 			Mean_BetaInc2 = 0.5 * (node[iPoint]->GetBetaInc2() + node[jPoint]->GetBetaInc2());
-			Mean_SoundSpeed = sqrt(Mean_ProjVel*Mean_ProjVel + Mean_BetaInc2*Area*Area); 
+			Mean_SoundSpeed = sqrt(Mean_ProjVel*Mean_ProjVel + Mean_BetaInc2*Area*Area);
 		}
 		else {
 			Mean_ProjVel = 0.5 * (node[iPoint]->GetProjVel(Normal) + node[jPoint]->GetProjVel(Normal));
@@ -4889,7 +5379,7 @@ void CNSSolution::SetTime_Step(CGeometry *geometry, CSolution **solution_contain
 	}
 
 	/*--- Loop boundary edges ---*/
-	for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) { 
+	for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
 		for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
 			/*--- Point identification, Normal vector and area ---*/
@@ -4901,7 +5391,7 @@ void CNSSolution::SetTime_Step(CGeometry *geometry, CSolution **solution_contain
 			if (incompressible) {
 				Mean_ProjVel = node[iPoint]->GetProjVelInc(Normal);
 				Mean_BetaInc2 = node[iPoint]->GetBetaInc2();
-				Mean_SoundSpeed = sqrt(Mean_ProjVel*Mean_ProjVel + Mean_BetaInc2*Area*Area); 
+				Mean_SoundSpeed = sqrt(Mean_ProjVel*Mean_ProjVel + Mean_BetaInc2*Area*Area);
 			}
 			else {
 				Mean_ProjVel = node[iPoint]->GetProjVel(Normal);
@@ -4959,7 +5449,7 @@ void CNSSolution::SetTime_Step(CGeometry *geometry, CSolution **solution_contain
 		Local_Delta_Time_Visc = config->GetCFL(iMesh)*K_v*Vol*Vol/ (node[iPoint]->GetMax_Lambda_Visc()+EPS);
 		Local_Delta_Time = min(Local_Delta_Time, Local_Delta_Time_Visc);
 
-		/*--- Check if there is any element with only one neighbor... 
+		/*--- Check if there is any element with only one neighbor...
 		 a CV that is inside another CV ---*/
 		if (geometry->node[iPoint]->GetnPoint() == 1) Local_Delta_Time = 0.0;
 
@@ -4983,9 +5473,9 @@ void CNSSolution::SetTime_Step(CGeometry *geometry, CSolution **solution_contain
 			node[iPoint]->SetDelta_Time(Global_Delta_Time);
 	}
 
-	/*--- Recompute the unsteady time step for the dual time stratey 
+	/*--- Recompute the unsteady time step for the dual time stratey
 	 if the unsteady CFL is diferent from 0 ---*/
-	if (((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)) && 
+	if (((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)) &&
 			(Iteration == 0) && (config->GetUnst_CFL() != 0.0) && (iMesh == MESH_0)) {
 		Global_Delta_UnstTimeND = config->GetUnst_CFL()*Global_Delta_Time/config->GetCFL(iMesh);
 #ifndef NO_MPI
@@ -5012,7 +5502,7 @@ void CNSSolution::Viscous_Residual(CGeometry *geometry, CSolution **solution_con
 
 		/*--- Compute gradients (not in the preprocessing, because we want to be sure that we have
 		 the gradient of the primitive varibles, not the conservative) ---*/
-		if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetPrimVar_Gradient_GG(geometry, config); 
+		if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetPrimVar_Gradient_GG(geometry, config);
 		if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetPrimVar_Gradient_LS(geometry, config);
 
 		for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -5023,9 +5513,9 @@ void CNSSolution::Viscous_Residual(CGeometry *geometry, CSolution **solution_con
 			solver->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[jPoint]->GetCoord());
 			solver->SetNormal(geometry->edge[iEdge]->GetNormal());
 
-			/*--- Conservative variables, and primitive Variables w/o reconstruction ---*/
-			solver->SetConservative(node[iPoint]->GetSolution(), node[jPoint]->GetSolution());
-			solver->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(),node[jPoint]->GetGradient_Primitive());
+			/*--- Primitive variables, and gradient ---*/
+			solver->SetPrimitive(node[iPoint]->GetPrimVar(), node[jPoint]->GetPrimVar());
+			solver->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[jPoint]->GetGradient_Primitive());
 
 			/*--- Laminar and eddy viscosity ---*/
 			if (incompressible) {
@@ -5040,7 +5530,7 @@ void CNSSolution::Viscous_Residual(CGeometry *geometry, CSolution **solution_con
 			/*--- Turbulent kinetic energy ---*/
 			if (config->GetKind_Turb_Model() == SST)
 				solver->SetTurbKineticEnergy(solution_container[TURB_SOL]->node[iPoint]->GetSolution(0),
-						                     solution_container[TURB_SOL]->node[jPoint]->GetSolution(0));
+						solution_container[TURB_SOL]->node[jPoint]->GetSolution(0));
 
 			/*--- Compute and update residual ---*/
 			solver->SetResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
@@ -5065,7 +5555,7 @@ void CNSSolution::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 	double **Tau, Delta, Viscosity, **Grad_PrimVar, div_vel, *Normal, *TauElem;
 	double dist[3], *Coord, *UnitaryNormal, *TauTangent, Area, WallShearStress, TauNormal;
 	double factor, RefVel2, RefDensity;
-	double cp, Laminar_Viscosity, heat_flux_factor, GradTemperature;
+	double cp, heat_flux_factor, GradTemperature;
 
 	double Alpha        = config->GetAoA()*PI_NUMBER/180.0;
 	double Beta         = config->GetAoS()*PI_NUMBER/180.0;
@@ -5087,7 +5577,7 @@ void CNSSolution::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 		RefVel2 = 0.0;
 		for (iDim = 0; iDim < nDim; iDim++)
 			RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
-	} 
+	}
 	else {
 		/*--- Use the rotational origin for computing moments ---*/
 		Origin = config->GetRotAxisOrigin();
@@ -5115,7 +5605,7 @@ void CNSSolution::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 	TauTangent = new double [nDim];
 	Tau        = new double* [nDim];
 	for (iDim = 0; iDim < nDim; iDim++)
-		Tau[iDim]   = new double [nDim]; 
+		Tau[iDim]   = new double [nDim];
 
 	/*--- Loop over the Navier-Stokes markers ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -5129,7 +5619,9 @@ void CNSSolution::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+				
 				if (geometry->node[iPoint]->GetDomain()) {
+					
 					Coord = geometry->node[iPoint]->GetCoord();
 					for (iDim = 0; iDim < nDim; iDim++) dist[iDim] = Coord[iDim] - Origin[iDim];
 
@@ -5145,14 +5637,13 @@ void CNSSolution::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 					for (iDim = 0; iDim < nDim; iDim++)
 						for (jDim = 0 ; jDim < nDim; jDim++) {
 							Delta = 0.0; if (iDim == jDim) Delta = 1.0;
-							Tau[iDim][jDim] = Viscosity*(Grad_PrimVar[jDim+1][iDim] + 
+							Tau[iDim][jDim] = Viscosity*(Grad_PrimVar[jDim+1][iDim] +
 									Grad_PrimVar[iDim+1][jDim]) - TWO3*Viscosity*div_vel*Delta;
 						}
 
-					/*--- Compute viscous forces ---*/
 					Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 					Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
-					for (iDim = 0; iDim < nDim; iDim++) UnitaryNormal[iDim] = Normal[iDim]/Area;	
+					for (iDim = 0; iDim < nDim; iDim++) UnitaryNormal[iDim] = Normal[iDim]/Area;
 
 					for (iDim = 0; iDim < nDim; iDim++) {
 						TauElem[iDim] = 0.0;
@@ -5160,40 +5651,40 @@ void CNSSolution::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 							TauElem[iDim] += Tau[iDim][jDim]*UnitaryNormal[jDim] ;
 					}
 
-					if ((geometry->node[iPoint]->GetDomain()) && (Monitoring == YES)) {
+					/*--- Compute viscous forces, and moment ---*/
+					if (Monitoring == YES) {
 						for (iDim = 0; iDim < nDim; iDim++)
 							ForceViscous[iDim] += TauElem[iDim]*Area*factor;
-
-						/*--- Moment with respect to the reference axis ---*/
+						
 						if (iDim == 3) MomentViscous[0] += (ForceViscous[2]*dist[1] - ForceViscous[1]*dist[2])/RefLengthMoment;
 						if (iDim == 3) MomentViscous[1] += (ForceViscous[0]*dist[2] - ForceViscous[2]*dist[0])/RefLengthMoment;
 						MomentViscous[2] += (ForceViscous[1]*dist[0] - ForceViscous[0]*dist[1])/RefLengthMoment;
 					}
-
-					/*--- Compute wall shear stress, and skin friction coefficient ---*/
-					TauNormal = 0.0; 
-					for (iDim = 0; iDim < nDim; iDim++) 
+					
+					/*--- Compute wall shear stress, skin friction coefficient, and heat flux on the wall ---*/
+					TauNormal = 0.0;
+					for (iDim = 0; iDim < nDim; iDim++)
 						TauNormal += TauElem[iDim] * UnitaryNormal[iDim];
 
-					for (iDim = 0; iDim < nDim; iDim++) 
+					for (iDim = 0; iDim < nDim; iDim++)
 						TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitaryNormal[iDim];
 
-					WallShearStress = 0.0; 
-					for (iDim = 0; iDim < nDim; iDim++) 
-						WallShearStress += TauTangent[iDim]*TauTangent[iDim]; 
-
-					Laminar_Viscosity = node[iPoint]->GetLaminarViscosity() ;
-					heat_flux_factor = cp * Laminar_Viscosity/PRANDTL;
+					WallShearStress = 0.0;
+					for (iDim = 0; iDim < nDim; iDim++)
+						WallShearStress += TauTangent[iDim]*TauTangent[iDim];
 
 					/*--- Note that the wall Shear Stress is just mu(delta u/delta y)---*/
-
 					CSkinFriction[iMarker][iVertex] = sqrt(WallShearStress) / (0.5*RefDensity*RefVel2);
 
 					GradTemperature = 0.0;
 					for (iDim = 0; iDim < nDim; iDim++)
 						GradTemperature +=  Grad_PrimVar[0][iDim]*(-Normal[iDim]);
-					//CHeatTransfer[iMarker][iVertex] = heat_flux_factor*GradTemperature/(0.5*RefDensity*RefVel2);
+					
+					heat_flux_factor = (cp * Viscosity/PRANDTL);
+					CHeatTransfer[iMarker][iVertex] = heat_flux_factor*GradTemperature/(0.5*RefDensity*RefVel2);
+					
 				}
+				
 			}
 
 			/*--- Transform ForceInviscid into CLift and CDrag ---*/
@@ -5247,7 +5738,7 @@ void CNSSolution::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 	Total_CLift += AllBound_CLift_Visc;
 	Total_CMx += AllBound_CMx_Visc;
 	Total_CMy += AllBound_CMy_Visc;
-	Total_CMz += AllBound_CMz_Visc;	
+	Total_CMz += AllBound_CMz_Visc;
 	Total_CEff = Total_CLift/Total_CDrag;
 	Total_CFx += AllBound_CFx_Visc;
 	Total_CFy += AllBound_CFy_Visc;
@@ -5265,7 +5756,6 @@ void CNSSolution::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 }
 
 void CNSSolution::BC_NS_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short val_marker) {
-
 	unsigned long iVertex, iPoint, total_index, Point_Normal;
 	unsigned short iVar, iDim, jVar;
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -5278,17 +5768,17 @@ void CNSSolution::BC_NS_Wall(CGeometry *geometry, CSolution **solution_container
 	double *Normal, Density, *Coord_i, *Coord_j, dist_ij, *Grid_Vel, *Rot_Vel;
 	double *U_i, *U_j;
 	double  sq_vel, Pressure, Temperature, Temperature_Gradient;
-	double Twall, RefVel2, RefDensity, theta, phi;
+	double Twall, RefVel3, RefDensity, theta, phi;
 
 
 	Gas_Constant = config->GetGas_Constant();
 	cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
 	cpoR = cp/Gas_Constant; // cp over R
 
-	Twall = Pressure_Inf/(Gas_Constant*Density_Inf);
-	RefVel2 = 0.0;
+	Twall = 300.0;//Pressure_Inf/(Gas_Constant*Density_Inf);
+	RefVel3 = 0.0;
 	for (iDim = 0; iDim < nDim; iDim++)
-		RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
+		RefVel3  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
 	RefDensity  = Density_Inf;
 
 
@@ -5385,6 +5875,8 @@ void CNSSolution::BC_NS_Wall(CGeometry *geometry, CSolution **solution_container
 				U_i = node[iPoint]->GetSolution() ;
 				U_j = node[Point_Normal]->GetSolution();
 
+				CHeatTransfer[val_marker][iVertex] = 0.0;
+
 				sq_vel = 0.0;
 				for (iDim = 0; iDim < nDim; iDim ++)
 					sq_vel += pow(U_j[iDim+1]/U_j[0],2);
@@ -5399,7 +5891,7 @@ void CNSSolution::BC_NS_Wall(CGeometry *geometry, CSolution **solution_container
 
 				Res_Visc[nDim+1] = heat_flux_factor * Temperature_Gradient*Area;
 
-				CHeatTransfer[val_marker][iVertex] = heat_flux_factor * Temperature_Gradient/(0.5*RefDensity*RefVel2);
+				CHeatTransfer[val_marker][iVertex] = -heat_flux_factor * Temperature_Gradient/(0.5*RefDensity*RefVel3);
 
 				node[iPoint]->SubtractRes_Visc(Res_Visc);  // SIGN CHECK
 

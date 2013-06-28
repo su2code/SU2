@@ -2,7 +2,7 @@
  * \file variable_adjoint.cpp
  * \brief Definition of the solution fields.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.
+ * \version 2.0.1
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -89,6 +89,13 @@ CAdjEulerVariable::CAdjEulerVariable(double val_psirho, double *val_phi, double 
 			Solution_Old[iDim+1] = val_phi[iDim];
 		}
 	}
+
+	/*--- Allocate space for the time spectral source terms ---*/
+	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+		TS_Source = new double[nVar];
+		for (iVar = 0; iVar < nVar; iVar++)
+			TS_Source[iVar] = 0.0;
+	}
 }
 
 CAdjEulerVariable::CAdjEulerVariable(double *val_solution, unsigned short val_ndim, 
@@ -138,6 +145,13 @@ CAdjEulerVariable::CAdjEulerVariable(double *val_solution, unsigned short val_nd
 		Solution[iVar] = val_solution[iVar];
 		Solution_Old[iVar] = val_solution[iVar];
 	}
+
+	/*--- Allocate space for the time spectral source terms ---*/
+	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+		TS_Source = new double[nVar];
+		for (iVar = 0; iVar < nVar; iVar++)
+			TS_Source[iVar] = 0.0;
+	}
 }
 
 CAdjEulerVariable::~CAdjEulerVariable(void) {
@@ -156,6 +170,9 @@ CAdjEulerVariable::~CAdjEulerVariable(void) {
 	for (iVar = 0; iVar < nVar; iVar++)
 		delete [] Res_Visc_RK[iVar];
 	delete [] Res_Visc_RK;
+
+	if (TS_Source != NULL) delete [] TS_Source;
+
 }
 
 void CAdjEulerVariable::SetTheta(double val_density, double *val_velocity, double val_enthalpy) {

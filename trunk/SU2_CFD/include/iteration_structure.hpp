@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines used by SU2_CFD.
  *        The subroutines and functions are in the <i>definition_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.
+ * \version 2.0.1
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -245,13 +245,14 @@ void AdjAeroacousticIteration(COutput *output, CIntegration ***integration_conta
  * \param[in] surface_movement - Surface movement classes of the problem.
  * \param[in] grid_movement - Volume grid movement classes of the problem.
  * \param[in] chunk - FFD chunks of the problem.
+ * \param[in] solution_container - Container vector with all the solutions.
  * \param[in] config - Definition of the particular problem.
  * \param[in] iZone - Index of the zone.
  * \param[in] ExtIter - Current physical time iteration number.
  */
 void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_movement, 
                       CVolumetricMovement *grid_movement, CFreeFormChunk **chunk,
-                      CConfig *config_container, unsigned short iZone, unsigned long ExtIter);
+                      CSolution ***solution_container, CConfig *config_container, unsigned short iZone, unsigned long ExtIter);
 
 /*!
  * \brief Computation and storage of the time spectral source terms.
@@ -260,8 +261,19 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
  * \param[in] solution_container - Container vector with all the solutions.
  * \param[in] config - Definition of the particular problem.
  * \param[in] nZone - Total number of zones (periodic instances).
+ * \param[in] iZone - Current zone number.
  */
 void SetTimeSpectral(CGeometry ***geometry_container, CSolution ****solution_container,
+		CConfig **config_container, unsigned short nZone, unsigned short iZone);
+
+/*!
+ * \brief Computation and storage of the time-spectral mesh velocities.
+ * \author T. Economon, K. Naik
+ * \param[in] geometry - Geometrical definition of the problem.
+ * \param[in] config - Definition of the particular problem.
+ * \param[in] nZone - Total number of zones (periodic instances).
+ */
+void SetTimeSpectral_Velocities(CGeometry ***geometry_container,
 		CConfig **config_container, unsigned short nZone);
 
 /*!
