@@ -1,0 +1,78 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="gmake">
+      <UniqueIdentifier>{f6829704-fa63-4a3b-9ba5-1eec653b10ce}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shared">
+      <UniqueIdentifier>{d10113f3-a56d-4f16-b769-48828ad7b595}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shared\CAEP">
+      <UniqueIdentifier>{bdce45c3-e852-46a8-aa5f-1289c9d60d26}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shared\PWP">
+      <UniqueIdentifier>{6b02407f-fe14-4442-8a2a-c61a34e6948f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shared\PWGM">
+      <UniqueIdentifier>{2c4335d2-4669-4676-967a-627dcae5f2e9}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\shared\CAEP\apiCAEP.c">
+      <Filter>shared\CAEP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\CAEP\apiCAEPUtils.c">
+      <Filter>shared\CAEP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\PWP\apiPWP.c">
+      <Filter>shared\PWP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\PWP\apiPWPUtils.c">
+      <Filter>shared\PWP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\PWP\pwpPlatform.c">
+      <Filter>shared\PWP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\PWGM\apiGridModel.c">
+      <Filter>shared\PWGM</Filter>
+    </ClCompile>
+    <ClCompile Include="runtimeWrite.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\shared\CAEP\apiCAEP.h">
+      <Filter>shared\CAEP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\CAEP\apiCAEPUtils.h">
+      <Filter>shared\CAEP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\CAEP\runtimeWrite.h">
+      <Filter>shared\CAEP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\PWP\apiPWP.h">
+      <Filter>shared\PWP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\PWP\apiPWPUtils.h">
+      <Filter>shared\PWP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\PWP\apiUtils.h">
+      <Filter>shared\PWP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\PWP\pwpPlatform.h">
+      <Filter>shared\PWP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\PWGM\apiGridModel.h">
+      <Filter>shared\PWGM</Filter>
+    </ClInclude>
+    <ClInclude Include="rtCaepInitItems.h" />
+    <ClInclude Include="rtCaepInstanceData.h" />
+    <ClInclude Include="rtCaepSupportData.h" />
+    <ClInclude Include="rtPwpInitItems.h" />
+    <ClInclude Include="rtPwpPluginInfo.h" />
+    <ClInclude Include="rtPwpVersions.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuildStep Include="module.mk">
+      <Filter>gmake</Filter>
+    </CustomBuildStep>
+  </ItemGroup>
+</Project>

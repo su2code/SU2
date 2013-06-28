@@ -1,0 +1,16 @@
+#
+# Makefile.in for SU2_SOL
+# Platform: darwin10.gcc4.2.1.mpi
+# Author: T. Economon
+# Version: 1.0
+# 
+
+CXX = mpicxx
+CXXFLAGS = -O3 -Wall -frerun-cse-after-loop -fomit-frame-pointer \
+	   -fexpensive-optimizations -Wno-non-virtual-dtor -DNO_METIS \
+	   -DNO_OMP -DNO_CGNS -DNO_TECIO
+     
+ifeq (,$(findstring -DNO_CGNS,$(CXXFLAGS)))
+	INC_CGNS = -I/usr/local/include
+	LIB_CGNS = -L/usr/local/lib -lcgns
+endif

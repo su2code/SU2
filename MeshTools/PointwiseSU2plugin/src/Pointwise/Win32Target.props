@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="UserMacros">
+    <BuildTarget>win32</BuildTarget>
+    <MACHINE>win32</MACHINE>
+    <PW_RUNTIME_ROOT />
+  </PropertyGroup>
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <PreprocessorDefinitions>NCR_IS_SUPPORTED;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <BuildMacro Include="BuildTarget">
+      <Value>$(BuildTarget)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MACHINE">
+      <Value>$(MACHINE)</Value>
+      <EnvironmentVariable>true</EnvironmentVariable>
+    </BuildMacro>
+    <BuildMacro Include="PW_RUNTIME_ROOT">
+      <Value>$(PW_RUNTIME_ROOT)</Value>
+    </BuildMacro>
+  </ItemGroup>
+</Project>

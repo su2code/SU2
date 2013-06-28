@@ -19,7 +19,7 @@
 # Stanford University Aerospace Design Lab
 #
 # Created: 		10/26/12
-# Last updated: 	11/15/12
+# Last updated: 	3/16/13
 #
 # Created by: 		M. Colonno
 # Updated by: 		M. Colonno
@@ -42,13 +42,14 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-@BUILD_CFD_TRUE@am__append_1 = trunk/SU2_CFD/bin
-@BUILD_DDC_TRUE@am__append_2 = trunk/SU2_DDC/bin
-@BUILD_GPC_TRUE@am__append_3 = trunk/SU2_GPC/bin
-@BUILD_MAC_TRUE@am__append_4 = trunk/SU2_MAC/bin
-@BUILD_MDC_TRUE@am__append_5 = trunk/SU2_MDC/bin
-@BUILD_PBC_TRUE@am__append_6 = trunk/SU2_PBC/bin
-@BUILD_SMC_TRUE@am__append_7 = trunk/SU2_SMC/bin
+@BUILD_CFD_TRUE@am__append_1 = SU2_CFD/obj
+@BUILD_DDC_TRUE@am__append_2 = SU2_DDC/obj
+@BUILD_GPC_TRUE@am__append_3 = SU2_GPC/obj
+@BUILD_MAC_TRUE@am__append_4 = SU2_MAC/obj
+@BUILD_MDC_TRUE@am__append_5 = SU2_MDC/obj
+@BUILD_PBC_TRUE@am__append_6 = SU2_PBC/obj
+@BUILD_SMC_TRUE@am__append_7 = SU2_SMC/obj
+@BUILD_SOL_TRUE@am__append_8 = SU2_SOL/obj
 subdir = .
 DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(top_srcdir)/configure AUTHORS COPYING \
@@ -78,9 +79,8 @@ AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
 	distdir dist dist-all distcheck
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = trunk/Common/lib trunk/SU2Py trunk/SU2_CFD/bin \
-	trunk/SU2_DDC/bin trunk/SU2_GPC/bin trunk/SU2_MAC/bin \
-	trunk/SU2_MDC/bin trunk/SU2_PBC/bin trunk/SU2_SMC/bin
+DIST_SUBDIRS = Common/lib SU2Py SU2_CFD/obj SU2_DDC/obj SU2_GPC/obj \
+	SU2_MAC/obj SU2_MDC/obj SU2_PBC/obj SU2_SMC/obj SU2_SOL/obj
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 distdir = $(PACKAGE)-$(VERSION)
 top_distdir = $(distdir)
@@ -155,7 +155,6 @@ PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
 PACKAGE_NAME = @PACKAGE_NAME@
 PACKAGE_STRING = @PACKAGE_STRING@
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
-PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 RANLIB = @RANLIB@
@@ -207,11 +206,12 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AUTOMAKE_OPTIONS = subdir-objects
+
+# AUTOMAKE_OPTIONS = subdir-objects
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
-SUBDIRS = trunk/Common/lib trunk/SU2Py $(am__append_1) $(am__append_2) \
+SUBDIRS = Common/lib SU2Py $(am__append_1) $(am__append_2) \
 	$(am__append_3) $(am__append_4) $(am__append_5) \
-	$(am__append_6) $(am__append_7)
+	$(am__append_6) $(am__append_7) $(am__append_8)
 all: all-recursive
 
 .SUFFIXES:

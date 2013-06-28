@@ -2,43 +2,47 @@
 # Stanford University Aerospace Design Lab
 #
 # Created: 		10/26/12
-# Last updated: 	11/15/12
+# Last updated: 	3/16/13
 #
 # Created by: 		M. Colonno
 # Updated by: 		M. Colonno
 #
 ##########################
 
-AUTOMAKE_OPTIONS = subdir-objects
+# AUTOMAKE_OPTIONS = subdir-objects
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 
-SUBDIRS = trunk/Common/lib trunk/SU2Py
+SUBDIRS = Common/lib SU2Py
 
 if BUILD_CFD
-SUBDIRS +=trunk/SU2_CFD/bin
+SUBDIRS +=SU2_CFD/obj
 endif
 
 if BUILD_DDC
-SUBDIRS +=trunk/SU2_DDC/bin
+SUBDIRS +=SU2_DDC/obj
 endif
 
 if BUILD_GPC
-SUBDIRS +=trunk/SU2_GPC/bin
+SUBDIRS +=SU2_GPC/obj
 endif
 
 if BUILD_MAC
-SUBDIRS +=trunk/SU2_MAC/bin
+SUBDIRS +=SU2_MAC/obj
 endif
 
 if BUILD_MDC
-SUBDIRS +=trunk/SU2_MDC/bin
+SUBDIRS +=SU2_MDC/obj
 endif
 
 if BUILD_PBC
-SUBDIRS +=trunk/SU2_PBC/bin
+SUBDIRS +=SU2_PBC/obj
 endif
 
 if BUILD_SMC
-SUBDIRS +=trunk/SU2_SMC/bin
+SUBDIRS +=SU2_SMC/obj
+endif
+
+if BUILD_SOL
+SUBDIRS +=SU2_SOL/obj
 endif
 

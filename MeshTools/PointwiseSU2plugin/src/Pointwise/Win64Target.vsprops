@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioPropertySheet
+	ProjectType="Visual C++"
+	Version="8.00"
+	Name="Win64Target"
+	>
+	<Tool
+		Name="VCCLCompilerTool"
+		PreprocessorDefinitions="NCR_IS_SUPPORTED"
+	/>
+	<UserMacro
+		Name="BuildTarget"
+		Value="win64"
+	/>
+	<UserMacro
+		Name="MACHINE"
+		Value="win64"
+		PerformEnvironmentSet="true"
+	/>
+	<UserMacro
+		Name="PW_RUNTIME_ROOT"
+		Value=""
+	/>
+</VisualStudioPropertySheet>

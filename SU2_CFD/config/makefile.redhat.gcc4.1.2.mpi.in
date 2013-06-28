@@ -1,0 +1,14 @@
+#
+# Makefile.in for SU2_CFD
+# Platform: redhat.gcc4.1.2.mpi
+# Author: Francisco Palacios
+# Version: 1.0
+# 
+
+CXX = mpicxx
+CXXFLAGS = -O3 -Wall -Wno-non-virtual-dtor -DNO_METIS -DNO_OMP -DNO_CGNS -DNO_TECIO
+
+ifeq (,$(findstring -DNO_CGNS,$(CXXFLAGS)))
+	INC_CGNS = -I/usr/local/include
+	LIB_CGNS = -L/usr/local/lib -lcgns
+endif

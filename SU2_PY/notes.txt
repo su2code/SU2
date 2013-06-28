@@ -1,0 +1,92 @@
+a work in progress...
+
+vision:
+
+import SU2
+SU2.run.CFD()               # low-level suite interface
+SU2.io.Config()             # file i/o
+SU2.mesh.read()             # mesh operations
+SU2.util.switch()           # misc. utilities, growth 
+SU2.eval.func()             # design evaluation
+SU2.opt.SLSQP()             # design optimization
+
+structure:
+
+trunk/SU2_PY/
+
+__init__.py
+http://mikegrouchy.com/blog/2012/05/be-pythonic-__init__py.html
+
+run/
+	__init__.py
+	
+	interface.py
+	decompose.py
+	direct.py
+	adjoint.py
+	project.py
+	deform.py
+	adapt.py
+	
+io/
+	__init__.py
+	
+	config.py
+	state.py
+	data.py
+	filelock.py
+	redirect.py
+    tools.py
+	
+mesh/
+	__init__.py
+
+    tools.py (previously libSU2_mesh.py)
+    adapt.py (updated mesh_adaptation.py)
+	
+	(longterm)
+	swig/cython interface to su2/common.cpp for mesh read/write
+	
+util/
+	__init__.py
+	
+	filter_adjoint.py
+    pyCppTap.py  (cpp tapenade automatic differentiation)
+    bunch.py
+    filter_adjoint.py
+    misc.py
+    ordered_bunch.py
+    plot.py
+    switch.py
+    
+
+eval/
+	__init__.py
+	
+	functions.py
+	gradients.py
+	design.py
+	
+opt/
+    __init__.py
+    
+	project.py
+	server.py
+	scipy_tools.py
+
+
+
+(command-line interface)
+parallel_computation.py
+continuous_adjoint.py
+finite_differences.py
+mesh_deformation.py
+mesh_adaptation.py
+shape_optimization.py
+patient_designspace.py
+
+
+
+
+
+

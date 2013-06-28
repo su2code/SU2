@@ -1,0 +1,33 @@
+# The *_ALIAS environment variables allow one to specify alternate
+# versions of the compilers.
+#
+#
+ifeq ($(strip $(CXX_ALIAS)),)
+	CXX := cl
+else
+	CXX := $(CXX_ALIAS)
+endif
+
+ifeq ($(strip $(CC_ALIAS)),)
+	CC := cl
+else
+	CC := $(CC_ALIAS)
+endif
+
+CPPFLAGS_COMMON =
+
+ifeq ($(BUILD),Release)
+	# optimized compile flags
+	CPPFLAGS = $(CPPFLAGS_COMMON) -DNDEBUG 
+	CXXFLAGS = -c -O2 -pipe  -fPIC -fexceptions $(CPPFLAGS)
+	CFLAGS = -c -O2 -pipe  $(CPPFLAGS)
+else
+	# debug compile flags
+	CPPFLAGS = $(CPPFLAGS_COMMON) -DDEBUG -D_DEBUG
+	CXXFLAGS = -c -pipe -g -ggdb -gstabs  -fPIC -fexceptions $(CPPFLAGS)
+	CFLAGS = -c -pipe -g -ggdb -gstabs  -pedantic -Wall $(CPPFLAGS)
+endif
+
+STLIB_LD = ar cr
+SHLIB_LD = $(CXX) -shared -fPIC
+SHLIB_SUFFIX = so

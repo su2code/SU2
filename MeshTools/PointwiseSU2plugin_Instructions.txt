@@ -1,0 +1,46 @@
+SU2 Pointwise(R) Plugin Installation Instructions
+This plugin is compatible with Pointwise V17.00 and later
+Note: building for Windows is available but not supported
+
+To Install on LINUX - 
+
+In a terminal window -
+1. Change working directory to ../PointwiseSU2plugin/
+2. Type: make machine=your_machine
+   where your_machine = linux, or linux_x86_64
+3. Type: sudo cp ./dist/your_machine/plugins/debug/libCaeUnsSU2d.so
+	$POINTWISE/PointwiseV##.##/your_machine/plugins
+   where $POINTWISE is the pointwise installation folder
+   and your_machine is your machine type from above
+4. Close and Re-open Pointwise
+
+
+To Install on Mac OS X - 
+
+1. Change working directory to ../PointwiseSU2plugin/
+2. Open the FLAGS.macosx file and set your version of the operating system under the system root variable, 'MACOSX_SYSROOT =/Developer/SDKs/MacOSX10.X.sdk'. For example, on Mac OS X 10.7 Lion, this becomes 'MACOSX_SYSROOT = /Developer/SDKs/MacOSX10.7.sdk'.
+3. Type: 'make machine=macosx' at the command line
+4. Type: sudo cp dist/macosx/plugins/debug/libCaeUnsSU2d.dylib /Applications/Pointwise/PointwiseVXX.XX/macosx/Pointwise.app/Contents/Plugins/
+5. Close and Re-open Pointwise
+
+
+To Use the Plugin - 
+
+1. In Pointwise, the plugin can be found under
+   CAE -> Select Solver -> Stanford ADL/SU2
+2. Be sure to set Boundary conditions under 
+   CAE -> Set Boundary Conditions
+   Boundary condition types are not set in Pointwse
+3. To export, choose blocks (3D) or Domains(2D) to export, then
+   File -> Export -> CAE
+   And save
+   Note: Multiple domains/blocks are exported as one
+   
+   
+To Install on Windows with Visual Studio 2008 -
+Note: building for Windows is available but not supported
+   
+1. Open the ../PointwiseSU2plugin/PluginSDK.sln solution file.
+2. If not already there, add the CaeUnsSU2.vcproj file to the solution.
+3. Set the build type to Debug or Release.
+4. Build the solution (menu Build/Build Solution)

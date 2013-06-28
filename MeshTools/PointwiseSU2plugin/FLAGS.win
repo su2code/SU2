@@ -1,0 +1,14 @@
+// This file will be included at the beginning of every source file on windows
+
+// 4251: warning on stl not having dll interface to be used by clients
+// 4275: warning on stl base classes not having dll interface
+// 4311: warning on qatomic that its casts are questionable
+// 4312: warning on qatomic that its casts are questionable
+#pragma warning (disable : 4251 4275 4311 4312)
+
+#define INLINE_TEMPLATES
+#define SKIP_TQ
+
+#ifdef _M_AMD64
+#define IS64BIT
+#endif

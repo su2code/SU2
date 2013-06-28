@@ -1,0 +1,64 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Plugins", "Plugins", "{674FF944-4CD2-4805-A770-1D48106FBD9A}"
+	ProjectSection(SolutionItems) = preProject
+		src\plugins\module.mk = src\plugins\module.mk
+		src\plugins\pluginRegistry.h = src\plugins\pluginRegistry.h
+		src\plugins\README.txt = src\plugins\README.txt
+		src\plugins\site.h = src\plugins\site.h
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{5233A68B-7815-46E7-BA8E-D1E633A2B048}"
+	ProjectSection(SolutionItems) = preProject
+		Makefile = Makefile
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CaeUnsXML", "src\plugins\CaeUnsXML\CaeUnsXML.vcxproj", "{C96B0E7A-8389-4A7E-A309-544BD59603BD}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CaeStrXML", "src\plugins\CaeStrXML\CaeStrXML.vcxproj", "{4C1CD5CA-CB3A-4FA5-84BC-8086AA2C4717}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CaeUnsSU2", "src\plugins\CaeUnsSU2\CaeUnsSU2.vcxproj", "{C37E91BE-B3DC-415A-A288-819B2CBA4DF3}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Debug|x64 = Debug|x64
+		Release|Win32 = Release|Win32
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C96B0E7A-8389-4A7E-A309-544BD59603BD}.Debug|Win32.ActiveCfg = Debug|Win32
+		{C96B0E7A-8389-4A7E-A309-544BD59603BD}.Debug|Win32.Build.0 = Debug|Win32
+		{C96B0E7A-8389-4A7E-A309-544BD59603BD}.Debug|x64.ActiveCfg = Debug|x64
+		{C96B0E7A-8389-4A7E-A309-544BD59603BD}.Debug|x64.Build.0 = Debug|x64
+		{C96B0E7A-8389-4A7E-A309-544BD59603BD}.Release|Win32.ActiveCfg = Release|Win32
+		{C96B0E7A-8389-4A7E-A309-544BD59603BD}.Release|Win32.Build.0 = Release|Win32
+		{C96B0E7A-8389-4A7E-A309-544BD59603BD}.Release|x64.ActiveCfg = Release|x64
+		{C96B0E7A-8389-4A7E-A309-544BD59603BD}.Release|x64.Build.0 = Release|x64
+		{4C1CD5CA-CB3A-4FA5-84BC-8086AA2C4717}.Debug|Win32.ActiveCfg = Debug|Win32
+		{4C1CD5CA-CB3A-4FA5-84BC-8086AA2C4717}.Debug|Win32.Build.0 = Debug|Win32
+		{4C1CD5CA-CB3A-4FA5-84BC-8086AA2C4717}.Debug|x64.ActiveCfg = Debug|x64
+		{4C1CD5CA-CB3A-4FA5-84BC-8086AA2C4717}.Debug|x64.Build.0 = Debug|x64
+		{4C1CD5CA-CB3A-4FA5-84BC-8086AA2C4717}.Release|Win32.ActiveCfg = Release|Win32
+		{4C1CD5CA-CB3A-4FA5-84BC-8086AA2C4717}.Release|Win32.Build.0 = Release|Win32
+		{4C1CD5CA-CB3A-4FA5-84BC-8086AA2C4717}.Release|x64.ActiveCfg = Release|x64
+		{4C1CD5CA-CB3A-4FA5-84BC-8086AA2C4717}.Release|x64.Build.0 = Release|x64
+		{C37E91BE-B3DC-415A-A288-819B2CBA4DF3}.Debug|Win32.ActiveCfg = Debug|Win32
+		{C37E91BE-B3DC-415A-A288-819B2CBA4DF3}.Debug|Win32.Build.0 = Debug|Win32
+		{C37E91BE-B3DC-415A-A288-819B2CBA4DF3}.Debug|x64.ActiveCfg = Debug|x64
+		{C37E91BE-B3DC-415A-A288-819B2CBA4DF3}.Debug|x64.Build.0 = Debug|x64
+		{C37E91BE-B3DC-415A-A288-819B2CBA4DF3}.Release|Win32.ActiveCfg = Release|Win32
+		{C37E91BE-B3DC-415A-A288-819B2CBA4DF3}.Release|Win32.Build.0 = Release|Win32
+		{C37E91BE-B3DC-415A-A288-819B2CBA4DF3}.Release|x64.ActiveCfg = Release|x64
+		{C37E91BE-B3DC-415A-A288-819B2CBA4DF3}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{C96B0E7A-8389-4A7E-A309-544BD59603BD} = {674FF944-4CD2-4805-A770-1D48106FBD9A}
+		{4C1CD5CA-CB3A-4FA5-84BC-8086AA2C4717} = {674FF944-4CD2-4805-A770-1D48106FBD9A}
+		{C37E91BE-B3DC-415A-A288-819B2CBA4DF3} = {674FF944-4CD2-4805-A770-1D48106FBD9A}
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,33 @@
+#compiler names
+# The *_ALIAS environment variables allow one to specify alternate versions of
+# the GNU compilers on Linux.  For example, 'setenv CXX_ALIAS g++296' allows
+# one to compile with the 2.96 Gnu compilers used in RH 7.2.
+ifeq ($(strip $(CXX_ALIAS)),)
+    CXX := g++
+else
+    CXX := $(CXX_ALIAS)
+endif
+
+ifeq ($(strip $(CC_ALIAS)),)
+    CC := gcc 
+else
+    CC := $(CC_ALIAS)
+endif
+
+CPPFLAGS_COMMON = -Dlinux -DIS64BIT  -D_GNU_SOURCE 
+
+ifeq ($(BUILD),Release)
+    # optimized compile flags
+    CPPFLAGS = $(CPPFLAGS_COMMON) -DNDEBUG 
+    CXXFLAGS = -c -O -pipe  -mtune=opteron -fPIC -fexceptions $(CPPFLAGS)
+    CFLAGS = -c -O -pipe  -mtune=opteron  $(CPPFLAGS)
+else
+    # debug compile flags
+    CPPFLAGS = $(CPPFLAGS_COMMON) -DDEBUG -D_DEBUG 
+    CXXFLAGS = -pthread -c -pipe -g -ggdb -mtune=opteron -fPIC -fexceptions $(CPPFLAGS)
+    CFLAGS = -pthread -c -pipe -g -ggdb -mtune=opteron -pedantic -Wall $(CPPFLAGS)
+endif
+
+STLIB_LD = ar cr
+SHLIB_LD = $(CXX) -shared -fPIC
+SHLIB_SUFFIX = so

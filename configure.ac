@@ -2,14 +2,14 @@
 # Stanford University Aerospace Design Lab
 #
 # Created: 		10/26/12
-# Last updated: 	11/15/12
+# Last updated: 	3/16/13
 #
 # Created by: 		M. Colonno
 # Updated by: 		M. Colonno
 #
 ##########################
 
-AC_INIT([SU^2], [2.0], [susquared-dev@lists.stanford.edu],
+AC_INIT([SU^2], [2.0.1], [susquared-dev@lists.stanford.edu],
         [SU^2], [http://su2.stanford.edu])
 AC_PREREQ([2.59])
 AM_INIT_AUTOMAKE  # [SU^2], [2.0]
@@ -24,9 +24,12 @@ AC_ARG_WITH(CGNS-lib,
 AC_ARG_WITH(CGNS-include,
     	AS_HELP_STRING([--with-CGNS-include[=ARG]], [CGNS include directory, ARG = path to cgnslib.h]), 
 	[with_CGNS_include=$withval], [with_CGNS_include="no"])
-AC_ARG_WITH(Tecio,
-    	AS_HELP_STRING([--with-Tecio[=ARG]], [Tecplot i/o library directory, ARG = path to tecio.a]),
-	[with_Tecio=$withval], [with_Tecio="no"])
+AC_ARG_WITH(Tecio-lib,
+    	AS_HELP_STRING([--with-Tecio-lib[=ARG]], [Tecio library directory, ARG = path to tecio.a or tecio64.a]), 
+	[with_Tecio_lib=$withval], [with_Tecio_lib="no"])
+AC_ARG_WITH(Tecio-include,
+    	AS_HELP_STRING([--with-Tecio-include[=ARG]], [Tecio include directory, ARG = path to TECIO.h]), 
+	[with_Tecio_include=$withval], [with_Tecio_include="no"])
 AC_ARG_WITH(Metis-lib,
    	AS_HELP_STRING([--with-Metis-lib[=ARG]], [Metis library directory, ARG = path to libmetis.a]), 
 	[with_Metis_lib=$withval], [with_Metis_lib="no"])
@@ -57,6 +60,9 @@ AC_ARG_ENABLE(PBC,
 AC_ARG_ENABLE(SMC,
    	AS_HELP_STRING([--disable-SMC], [build the SU2_SMC executable (default = yes)]), 
 	[build_SMC=$enableval], [build_SMC="yes"])
+AC_ARG_ENABLE(SOL,
+   	AS_HELP_STRING([--disable-SOL], [build the SU2_SOL executable (default = yes)]), 
+	[build_SOL=$enableval], [build_SOL="yes"])
 
 ##########################
 
@@ -154,17 +160,47 @@ fi
 AC_SUBST([METIS_CXX])
 AC_SUBST([METIS_LD])
 
-###########################
+########################### Tecplot
 
-have_TECIO="no"
-Teciolib=tecio64.a   # FIX for 32-bit systems
+Teciolib=tecio64.a
+Tecioheader=TECIO.h
+have_Tecio="no"
 
-if test "$with_Tecio" != "no"
+# check for lib
+if test "$with_Tecio_lib" != "no" 
+then
+  	AC_CHECK_FILE([$with_Tecio_lib/$Teciolib],[have_Tecio="yes"],[have_Tecio="no"]) 
+	if test "$have_Tecio" == "no"
+	then
+		Teciolib=tecio.a
+		AC_CHECK_FILE([$with_Tecio_lib/$Teciolib],[have_Tecio="yes"],[have_Tecio="no"])
+	fi
+	if test "$have_Tecio" == "no"
+	then
+		AC_MSG_ERROR([Tecplot linking requested but library file not found.])
+	fi
+fi
+
+# check for header
+if test "$have_Tecio" != "no"
+then
+	if test "$with_Tecio_include" != "no"
+	then
+		AC_CHECK_FILE([$with_Tecio_include/$Tecioheader],[have_Tecio='yes'],[have_Tecio='no']) 
+		if test "$have_Tecio" == "no"
+		then
+			AC_MSG_ERROR([Tecplot linking requested but header file not found.])
+		fi
+	else
+		have_Tecio="no"
+	fi  
+fi
+
+if test "$have_Tecio" != "no"
 then
   	AM_CONDITIONAL(BUILD_TECIO,true)
-	TECIO_CXX=			
-	TECIO_LD="$with_Tecio"/$Teciolib
-	have_TECIO="yes"
+	TECIO_CXX=-I"$with_Tecio_include"
+	TECIO_LD="$with_Tecio_lib"/$Teciolib
 else
 	AM_CONDITIONAL(BUILD_TECIO,false)
 	TECIO_CXX=-DNO_TECIO
@@ -173,7 +209,7 @@ fi
 AC_SUBST([TECIO_CXX])
 AC_SUBST([TECIO_LD])
 
-###########################
+########################### MPI
 
 have_MPI="no"
 if test "$with_MPI" != "no"
@@ -193,22 +229,26 @@ AM_CONDITIONAL([BUILD_MAC],[test $build_MAC != "no"])
 AM_CONDITIONAL([BUILD_MDC],[test $build_MDC != "no"])
 AM_CONDITIONAL([BUILD_PBC],[test $build_PBC != "no"])
 AM_CONDITIONAL([BUILD_SMC],[test $build_SMC != "no"])
+AM_CONDITIONAL([BUILD_SOL],[test $build_SOL != "no"])
 
 ###########################
 
 # AC_CONFIG_HEADERS([config.h])
 AC_PROG_CXX
+# AC_PROG_CC
+# AM_PROG_CC_C_O
 AC_PROG_RANLIB
 AC_OUTPUT(Makefile \
-	trunk/Common/lib/Makefile \
-	trunk/SU2_CFD/bin/Makefile \
-	trunk/SU2_DDC/bin/Makefile \
-	trunk/SU2_GPC/bin/Makefile \
-	trunk/SU2_MAC/bin/Makefile \
-	trunk/SU2_MDC/bin/Makefile \
-	trunk/SU2_PBC/bin/Makefile \
-	trunk/SU2_SMC/bin/Makefile \
-	trunk/SU2Py/Makefile)
+	Common/lib/Makefile \
+	SU2_CFD/obj/Makefile \
+	SU2_DDC/obj/Makefile \
+	SU2_GPC/obj/Makefile \
+	SU2_MAC/obj/Makefile \
+	SU2_MDC/obj/Makefile \
+	SU2_PBC/obj/Makefile \
+	SU2_SMC/obj/Makefile \
+	SU2_SOL/obj/Makefile \
+	SU2Py/Makefile)
 
 abs_srcdir=`(cd $srcdir && pwd)`
 abs_prefix=`(cd $prefix && pwd)`
@@ -219,7 +259,7 @@ AC_MSG_RESULT([
 Build Configuration Summary:
 
       	Source code location: 	${abs_srcdir}
-      	Install location: 	${abs_prefix}
+      	Install location: 		${abs_prefix}
       	Version:              	${VERSION}
       	Compiler:             	${CXX}
       	Preprocessor flags:   	${CPPFLAGS}
@@ -236,7 +276,7 @@ Build Configuration Summary:
 	Build SU2_MDC: 		$build_MDC
 	Build SU2_PBC: 		$build_PBC
 	Build SU2_SMC: 		$build_SMC
-
+	Build SU2_SOL: 		$build_SOL
 
 Please be sure to add the [\$]SU2_HOME and [\$]SU2_RUN environment variables, and update your [\$]PATH with [\$]SU2_RUN
 
