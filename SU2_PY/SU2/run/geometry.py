@@ -28,33 +28,30 @@ import os, sys, shutil, copy
 from .. import io  as su2io
 from decompose import decompose as su2decomp
 from interface import GDC       as SU2_GDC
+from ..util import ordered_bunch
 
 # ----------------------------------------------------------------------
 #  Direct Simulation
 # ----------------------------------------------------------------------
 
-def geometry ( config ): 
-    """ info = SU2.run.direct(config)
+def geometry ( config , step = 1e-3 ): 
+    """ info = SU2.run.geometry(config)
         
-        Runs an adjoint analysis with:
+        Runs an geometry analysis with:
             SU2.run.decomp()
-            SU2.run.CFD()
-            SU2.run.merge()
+            SU2.run.GDC()
             
         Assumptions:
             Redundant decomposition if config.DECOMPOSED == True
-            Does not rename restart filename to solution filename
-            Adds 'direct' suffix to convergence filename
+            Performs both function and gradient analysis
                         
         Outputs:
             info - SU2 State with keys:
                 FUNCTIONS
-                HISTORY.DIRECT
-                FILES.DIRECT
+                GRADIENTS
                 
         Updates:
             config.DECOMPOSED
-            config.MATH_PROBLEM
             
         Executes in:
             ./
@@ -62,7 +59,26 @@ def geometry ( config ):
     
     # local copy
     konfig = copy.deepcopy(config)
-
+    
+    # unpack
+    function_name = konfig['GEO_PARAM']
+    func_filename = 'of_eval.dat'
+    grad_filename = 'of_grad.dat'
+    
+    # does both direct and gradient, very cheap
+    konfig.GEO_MODE  = 'GRADIENT' 
+    
+    # choose dv values 
+    Definition_DV = konfig['DEFINITION_DV']
+    n_DV          = len(Definition_DV['KIND'])
+    if isinstance(step,list):
+        assert len(step) == n_DV , 'unexpected step vector length'
+    else:
+        step = [step]*n_DV
+    dv_old = [0.0]*n_DV # SU2_GPC input requirement, assumes linear superposition of design variables
+    dv_new = step
+    konfig.unpack_dvs(dv_new,dv_old)    
+    
     # decompose
     su2decomp(konfig)
     
@@ -70,7 +86,15 @@ def geometry ( config ):
     SU2_GDC(konfig)
     
     # get function values
-    functions = {}
+    func_file = open(func_filename)
+    funcs = float( func_file.readline().strip() )
+    func_file.close()
+    functions = ordered_bunch({function_name : funcs})
+    
+    # get gradient_values
+    grads = su2io.read_gradients(grad_filename)
+    gradients = ordered_bunch({function_name : grads})
+    
     
     # update super config
     config.update({ 'DECOMPOSED' : konfig['DECOMPOSED'] })
@@ -78,5 +102,6 @@ def geometry ( config ):
     # info out
     info = su2io.State()
     info.FUNCTIONS.update( functions )
+    info.GRADIENTS.update( gradients )
     
     return info

@@ -2,7 +2,7 @@
  * \file SU2_GPC.cpp
  * \brief Main file of the Gradient Projection Code (SU2_GPC).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -68,7 +68,8 @@ int main(int argc, char *argv[]) {
 	config->SetFileNameDomain(rank+1);
 #endif
 	
-	/*--- Definition of the Class for the boundary of the geometry ---*/
+	/*--- Definition of the Class for the boundary of the geometry,
+   note that the orientation of the elements is not checked ---*/
 	boundary = new CBoundaryGeometry(config, config->GetMesh_FileName(), config->GetMesh_FileFormat());
   
   /*--- Perform the non-dimensionalization, in case any values are needed ---*/
@@ -120,6 +121,7 @@ int main(int argc, char *argv[]) {
 				cout << "Perform 2D deformation of the surface." << endl;
 			
 			switch ( config->GetDesign_Variable(iDV) ) {
+				case GAUSS_BUMP : surface_mov->SetGaussBump(boundary, config, iDV, true); break;
 				case HICKS_HENNE : surface_mov->SetHicksHenne(boundary, config, iDV, true); break;
 				case DISPLACEMENT : surface_mov->SetDisplacement(boundary, config, iDV, true); break;
 				case ROTATION : surface_mov->SetRotation(boundary, config, iDV, true); break;
@@ -275,7 +277,7 @@ int main(int argc, char *argv[]) {
 				case FIGURE_OF_MERIT :
 					if (iDV == 0) Gradient_file << "Rotor Figure of Merit grad. using cont. adj."<< endl;
 					cout << "Rotor Figure of Merit gradient: "<< Gradient << "." << endl; break;
-				case FREESURFACE :
+				case FREE_SURFACE :
 					if (iDV == 0) Gradient_file << "Free-Surface grad. using cont. adj."<< endl;
 					cout << "Free-surface gradient: "<< Gradient << "." << endl; break;
         case NOISE :

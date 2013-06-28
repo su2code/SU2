@@ -3,7 +3,7 @@
 ## \file tools.py
 #  \brief file i/o functions
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.3
+#  \version 2.0.4
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -177,7 +177,7 @@ optnames_aero = [ "LIFT"               ,
                   "FORCE_Y"            ,
                   "FORCE_Z"            ,
                   "EFFICIENCY"         ,
-                  "FREESURFACE"        ,
+                  "FREE_SURFACE"       ,
                   "FIGURE_OF_MERIT"    ,
                   "TORQUE"             ,
                   "THRUST"             ,
@@ -298,7 +298,7 @@ def get_adjointSuffix(adj_objfunc=None):
                  "THRUST"             : "ct"    ,
                  "TORQUE"             : "cq"    ,
                  "FIGURE_OF_MERIT"    : "merit" ,  
-                 "FREESURFACE"        : "fs"    ,
+                 "FREE_SURFACE"       : "fs"    ,
                  "NOISE"              : "fwh"    }
     
     # if none or false, return map
@@ -345,6 +345,7 @@ def get_dvMap():
     """ get dictionary that maps design variable 
         kind id number to name """
     dv_map = { 1   : "HICKS_HENNE"        ,
+               2   : "GAUSS_BUMP"         ,
                4   : "NACA_4DIGITS"       ,
                5   : "DISPLACEMENT"       ,
                6   : "ROTATION"           ,
@@ -436,7 +437,10 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
     if   kindID == "HICKS_HENNE"        : 
         header.append(r',"Up/Down","Loc_Max"')
         write_format.append(r', %s, %s')
-    elif kindID == "NACA_4DIGITS"       : 
+    elif kindID == "GAUSS_BUMP"       :
+        header.append(r',"Up/Down","Loc_Max","Size_Bump"')
+        write_format.append(r', %s, %s, %s')
+    elif kindID == "NACA_4DIGITS"       :
         header.append(r',"1st_digit","2nd_digit","3rd&4th_digits"')
         write_format.append(r', %s, %s, %s')
     elif kindID == "DISPLACEMENT"       : 
@@ -516,7 +520,7 @@ def get_optFileFormat(plot_format,special_cases=None):
         
     # special cases
     for key in special_cases: 
-        if key == "FREE_SURFACE"   : 
+        if key == "FREE_SURFACE" :
             header_list.extend(["CFreeSurface"])
             write_format.append(r', %.10f ')
         if key == "ROTATING_FRAME" : 
@@ -647,7 +651,8 @@ def expand_part(name,config):
     if config['DECOMPOSED']:
         n_part = config['NUMBER_PART']
         name_pat = add_suffix(name,'%i')
-        names = [name] + [name_pat%(i+1) for i in range(n_part)]
+        # names = [name_pat%(i+1) for i in range(n_part)]
+        names = [name] + [name_pat%(i+1) for i in range(n_part)] # hack - TWL
     else:
         names = [name]
     return names

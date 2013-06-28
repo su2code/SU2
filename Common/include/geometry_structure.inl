@@ -2,7 +2,7 @@
  * \file geometry_structure.inl
  * \brief In-Line subroutines of the <i>geometry_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -184,6 +184,8 @@ inline void CGeometry::FindSharpEdges(CConfig *config) { }
 inline double CGeometry::GetMaxThickness(CConfig *config, bool original_surface) { return 0; }
 
 inline double CGeometry::GetTotalVolume(CConfig *config, bool original_surface) { return 0; }
+
+inline double CGeometry::GetClearance(CConfig *config, bool original_surface) { return 0; }
 
 inline void CGeometry::FindNormal_Neighbor(CConfig *config) { }
 

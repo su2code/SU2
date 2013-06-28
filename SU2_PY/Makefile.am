@@ -30,8 +30,8 @@ bin_SCRIPTS = \
     mesh_adaptation.py \
     square.py
 		      
-pypkgdir = $(prefix)/bin
-nobase_dist_pypkg_DATA= \
+mypkgdir = $(prefix)/bin
+nobase_dist_mypkg_DATA= \
     SU2/__init__.py \
     SU2/eval/design.py \
     SU2/eval/functions.py \
@@ -58,10 +58,12 @@ nobase_dist_pypkg_DATA= \
     SU2/run/direct.py \
     SU2/run/interface.py \
     SU2/run/merge.py \
+    SU2/run/geometry.py \
     SU2/run/projection.py \
     SU2/run/__init__.py \
     SU2/util/bunch.py \
     SU2/util/filter_adjoint.py \
+    SU2/util/lhc_unif.py \
     SU2/util/misc.py \
     SU2/util/ordered_bunch.py \
     SU2/util/ordered_dict.py \

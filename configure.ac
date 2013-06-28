@@ -10,7 +10,7 @@
 #
 ##########################
 
-AC_INIT([SU^2], [2.0.3], [susquared-dev@lists.stanford.edu],
+AC_INIT([SU^2], [2.0.4], [susquared-dev@lists.stanford.edu],
         [SU^2], [http://su2.stanford.edu])
 AC_PREREQ([2.59])
 AM_INIT_AUTOMAKE  # [SU^2], [2.0]
@@ -64,6 +64,9 @@ AC_ARG_ENABLE(SMC,
 AC_ARG_ENABLE(SOL,
    	AS_HELP_STRING([--disable-SOL], [build the SU2_SOL executable (default = yes)]), 
 	[build_SOL=$enableval], [build_SOL="yes"])
+AC_ARG_ENABLE(GDC,
+   	AS_HELP_STRING([--disable-GDC], [build the SU2_GDC executable (default = yes)]), 
+	[build_GDC=$enableval], [build_GDC="yes"])
 
 ##########################
 
@@ -231,6 +234,7 @@ AM_CONDITIONAL([BUILD_MDC],[test $build_MDC != "no"])
 AM_CONDITIONAL([BUILD_PBC],[test $build_PBC != "no"])
 AM_CONDITIONAL([BUILD_SMC],[test $build_SMC != "no"])
 AM_CONDITIONAL([BUILD_SOL],[test $build_SOL != "no"])
+AM_CONDITIONAL([BUILD_GDC],[test $build_GDC != "no"])
 
 ###########################
 
@@ -249,6 +253,7 @@ AC_OUTPUT(Makefile \
 	SU2_PBC/obj/Makefile \
 	SU2_SMC/obj/Makefile \
 	SU2_SOL/obj/Makefile \
+	SU2_GDC/obj/Makefile \
 	SU2_PY/Makefile)
 
 abs_srcdir=`(cd $srcdir && pwd)`
@@ -278,6 +283,7 @@ Build Configuration Summary:
     Build SU2_PBC:        $build_PBC
     Build SU2_SMC:        $build_SMC
     Build SU2_SOL:        $build_SOL
+    Build SU2_GDC:        $build_GDC
 
 Please be sure to add the [\$]SU2_HOME and [\$]SU2_RUN environment variables, and update your [\$]PATH with [\$]SU2_RUN
 

@@ -5,7 +5,7 @@
  *        technique definition). The subroutines and functions are in 
  *        the <i>grid_movement_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -43,7 +43,7 @@ using namespace std;
  * \brief Class for moving the surface and volumetric 
  *        numerical grid (2D and 3D problems).
  * \author F. Palacios.
- * \version 2.0.3
+ * \version 2.0.4
  */
 class CGridMovement {
 public:
@@ -63,7 +63,7 @@ public:
  * \class CFreeFormChunk
  * \brief Class for defining the free form chunk structure.
  * \author F. Palacios & A. Galdran.
- * \version 2.0.3
+ * \version 2.0.4
  */
 class CFreeFormChunk : public CGridMovement {
 public:
@@ -655,7 +655,7 @@ public:
  * \class CVolumetricMovement
  * \brief Class for moving the volumetric numerical grid.
  * \author F. Palacios, A. Bueno, T. Economon, S. Padron.
- * \version 2.0.3
+ * \version 2.0.4
  */
 class CVolumetricMovement : public CGridMovement {
 protected:
@@ -808,7 +808,7 @@ public:
 	 * \brief Initialize the stiff matrix for grid movement using spring analogy
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 */
-	void Initialize_StiffMatrix_Structure(CGeometry *geometry);
+	void Initialize_StiffMatrix_Structure(unsigned short nVar, CGeometry *geometry);
 	
 	/*! 
 	 * \brief Deallocate the stiff matrix for grid movement using spring analogy
@@ -822,13 +822,66 @@ public:
 	 * \return Value of the length of the smallest edge of the grid.
 	 */
 	double SetSpringMethodContributions_Edges(CGeometry *geometry);
+  
+  /*!
+	 * \brief Compute the stiffness matrix for grid deformation using spring analogy.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \return Value of the length of the smallest edge of the grid.
+	 */
+	double SetFEAMethodContributions_Elem(CGeometry *geometry);
+  
+  /*!
+	 * \brief Build the stiffness matrix for a 2-D triangular element. The result will be placed in StiffMatrix_Elem.
+	 * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] StiffMatrix_Elem - Element stiffness matrix to be filled.
+	 * \param[in] val_Point_0 - Index value for Node 0 of the current triangle.
+   * \param[in] val_Point_1 - Index value for Node 1 of the current triangle.
+   * \param[in] val_Point_2 - Index value for Node 2 of the current triangle.
+	 */
+  void SetFEA_StiffMatrix2D(CGeometry *geometry, double **StiffMatrix_Elem,
+                              unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2);
+  
+  /*!
+	 * \brief Build the stiffness matrix for a 3-D tetrehedral element. The result will be placed in StiffMatrix_Elem.
+	 * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] StiffMatrix_Elem - Element stiffness matrix to be filled.
+	 * \param[in] val_Point_0 - Index value for Node 0 of the current tetrahedron.
+   * \param[in] val_Point_1 - Index value for Node 1 of the current tetrahedron.
+   * \param[in] val_Point_2 - Index value for Node 2 of the current tetrahedron.
+   * \param[in] val_Point_3 - Index value for Node 3 of the current tetrahedron.
+	 */
+  void SetFEA_StiffMatrix3D(CGeometry *geometry, double **StiffMatrix_Elem,
+                            unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2, unsigned long val_Point_3);
 	
+  /*!
+	 * \brief Add the stiffness matrix for a 2-D triangular element to the global stiffness matrix for the entire mesh (node-based).
+	 * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] StiffMatrix_Elem - Element stiffness matrix to be copied into the global matrix structure.
+	 * \param[in] val_Point_0 - Index value for Node 0 of the current triangle.
+   * \param[in] val_Point_1 - Index value for Node 1 of the current triangle.
+   * \param[in] val_Point_2 - Index value for Node 2 of the current triangle.
+	 */
+  void AddFEA_StiffMatrix2D(CGeometry *geometry, double **StiffMatrix_Elem,
+                              unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2);
+  
+  /*!
+	 * \brief Add the stiffness matrix for a 2-D triangular element to the global stiffness matrix for the entire mesh (node-based).
+	 * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] StiffMatrix_Elem - Element stiffness matrix to be filled.
+	 * \param[in] val_Point_0 - Index value for Node 0 of the current tetrahedron.
+   * \param[in] val_Point_1 - Index value for Node 1 of the current tetrahedron.
+   * \param[in] val_Point_2 - Index value for Node 2 of the current tetrahedron.
+   * \param[in] val_Point_3 - Index value for Node 3 of the current tetrahedron.
+	 */
+  void AddFEA_StiffMatrix3D(CGeometry *geometry, double **StiffMatrix_Elem,
+                            unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2, unsigned long val_Point_3);
+  
 	/*! 
 	 * \brief Check the boundary vertex that are going to be moved.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetBoundaryDisplacements(CGeometry *geometry, CConfig *config);
+	void SetBoundaryDisplacements(unsigned short nVar, CGeometry *geometry, CConfig *config);
 	
 	/*! 
 	 * \brief Check the domain points vertex that are going to be moved.
@@ -842,7 +895,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void UpdateSpringGrid(CGeometry *geometry, CConfig *config);
+	void UpdateSpringGrid(unsigned short nVar, CGeometry *geometry, CConfig *config);
   
 	/*! 
 	 * \brief Grid deformation using the torsional spring analogy method.
@@ -889,15 +942,34 @@ public:
 	void SetRigidTranslation(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
 
   /*!
-	 * \brief Unsteady aeroelastic grid movement using rigid mesh motion.
+	 * \brief Solve the typical section wing model.
 	 * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] Cl - Coefficient of lift at particular iteration.
    * \param[in] Cm - Moment coefficient about z-axis at particular iteration.
 	 * \param[in] config - Definition of the particular problem.
    * \param[in] iZone - Zone number in the mesh.
    * \param[in] iter - Physical time iteration number.
+   * \param[in] displacements - solution of typical section wing model.
 	 */
-  void SetAeroElasticMotion(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned short iZone, unsigned long iter);
+  void SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned short iZone, unsigned long iter, double (&displacements)[4]);
+  
+    /*!
+	 * \brief Unsteady aeroelastic grid movement by deforming the mesh.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+     * \param[in] iZone - Zone number in the mesh.
+     * \param[in] displacements - solution of typical section wing model.
+	 */
+    void AeroelasticDeform(CGeometry *geometry, CConfig *config, unsigned short iZone, double displacements[4]);
+    
+    /*!
+	 * \brief Unsteady aeroelastic grid movement using rigid mesh motion.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+     * \param[in] iZone - Zone number in the mesh.
+     * \param[in] displacements - solution of typical section wing model.
+	 */
+  void AeroelasticRigid(CGeometry *geometry, CConfig *config, unsigned short iZone, double displacements[4]);
   
   /*!
 	 * \brief Sets up the generalized eigenvectors and eigenvalues needed to solve the structural equations.
@@ -905,7 +977,7 @@ public:
    * \param[in] lambda - The eigenvalues of the generalized eigensystem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-  void AeroElasticSetUp(double (&PHI)[2][2],double (&lambda)[2], CConfig *config);
+  void SetUpTypicalSectionWingModel(double (&PHI)[2][2],double (&lambda)[2], CConfig *config);
   
 	/*!
 	 * \brief Grid deformation using the spring analogy method.
@@ -914,6 +986,14 @@ public:
 	 * \param[in] UpdateGeo - Update geometry.
 	 */
 	void SpringMethod(CGeometry *geometry, CConfig *config, bool UpdateGeo);
+  
+  /*!
+	 * \brief Grid deformation using the spring analogy method.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] UpdateGeo - Update geometry.
+	 */
+	void FEAMethod(CGeometry *geometry, CConfig *config, bool UpdateGeo);
 	
 	/*! 
 	 * \brief Grid deformation using an algebraic method.
@@ -922,13 +1002,21 @@ public:
 	 * \param[in] UpdateGeo - Update geometry.
 	 */
 	void AlgebraicMethod(CGeometry *geometry, CConfig *config, bool UpdateGeo);
+  
+  /*!
+	 * \brief Compute the determinant of a 3 by 3 matrix.
+	 * \param[in] val_matrix 3 by 3 matrix.
+	 * \result Determinant of the matrix
+	 */
+	double Determinant_3x3(double A00, double A01, double A02, double A10, double A11, double A12, double A20, double A21, double A22);
+
 };
 
 /*! 
  * \class CSurfaceMovement
  * \brief Class for moving the surface numerical grid.
  * \author F. Palacios.
- * \version 2.0.3
+ * \version 2.0.4
  */
 class CSurfaceMovement : public CGridMovement {
 protected:
@@ -957,6 +1045,15 @@ public:
 	 */
 	void SetHicksHenne(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
 	
+  /*!
+	 * \brief Set a Hicks-Henne deformation bump functions on an airfoil.
+	 * \param[in] boundary - Geometry of the boundary.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iDV - Index of the design variable.
+	 * \param[in] ResetDef - Reset the deformation before starting a new one.
+	 */
+	void SetGaussBump(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
+  
 	/*! 
 	 * \brief Set a NACA 4 digits airfoil family for airfoil deformation.
 	 * \param[in] boundary - Geometry of the boundary.

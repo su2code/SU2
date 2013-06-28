@@ -2,7 +2,7 @@
  * \file variable_structure.cpp
  * \brief Definition of the solution fields.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -25,10 +25,52 @@
 
 unsigned short CVariable::nDim = 0;
 
-CVariable::CVariable(void) { }
+CVariable::CVariable(void) {
+
+  /*--- Array initialization ---*/
+  Solution = NULL;
+	Solution_Old = NULL;
+	Solution_time_n = NULL;
+	Solution_time_n1 = NULL;
+	Gradient = NULL;
+	Limiter = NULL;
+	Solution_Max = NULL;
+	Solution_Min = NULL;
+	Grad_AuxVar = NULL;
+	Undivided_Laplacian = NULL;
+	Residual = NULL;
+	Res_Conv = NULL;
+	Res_Visc = NULL;
+	Res_Sour = NULL;
+	Res_TruncError = NULL;
+	Res_Visc_RK = NULL;
+  Residual_Old = NULL;
+	Residual_Sum = NULL;
+  
+}
 
 CVariable::CVariable(unsigned short val_nvar, CConfig *config) {
 
+  /*--- Array initialization ---*/
+  Solution = NULL;
+	Solution_Old = NULL;
+	Solution_time_n = NULL;
+	Solution_time_n1 = NULL;
+	Gradient = NULL;
+	Limiter = NULL;
+	Solution_Max = NULL;
+	Solution_Min = NULL;
+	Grad_AuxVar = NULL;
+	Undivided_Laplacian = NULL;
+	Residual = NULL;
+	Res_Conv = NULL;
+	Res_Visc = NULL;
+	Res_Sour = NULL;
+	Res_TruncError = NULL;
+	Res_Visc_RK = NULL;
+  Residual_Old = NULL;
+	Residual_Sum = NULL;
+  
   /*--- Initialize the number of solution variables. This version
    of the constructor will be used primarily for converting the
    restart files into solution files (SU2_SOL). ---*/
@@ -46,6 +88,26 @@ CVariable::CVariable(unsigned short val_nvar, CConfig *config) {
 CVariable::CVariable(unsigned short val_ndim, unsigned short val_nvar, CConfig *config) {
 	unsigned short iVar, iDim;
 	
+  /*--- Array initialization ---*/
+  Solution = NULL;
+	Solution_Old = NULL;
+	Solution_time_n = NULL;
+	Solution_time_n1 = NULL;
+	Gradient = NULL;
+	Limiter = NULL;
+	Solution_Max = NULL;
+	Solution_Min = NULL;
+	Grad_AuxVar = NULL;
+	Undivided_Laplacian = NULL;
+	Residual = NULL;
+	Res_Conv = NULL;
+	Res_Visc = NULL;
+	Res_Sour = NULL;
+	Res_TruncError = NULL;
+	Res_Visc_RK = NULL;
+  Residual_Old = NULL;
+	Residual_Sum = NULL;
+  
 	/*--- Initializate the number of dimension and number of variables ---*/
 	nDim = val_ndim;
 	nVar = val_nvar;
@@ -81,33 +143,23 @@ CVariable::CVariable(unsigned short val_ndim, unsigned short val_nvar, CConfig *
 
 CVariable::~CVariable(void) {
 	unsigned short iVar;
-	
-	delete [] Solution;
-	delete [] Residual;
-	delete [] Solution_Old;
 
-	for (iVar = 0; iVar < nVar; iVar++)
-		delete [] Gradient[iVar];
-	delete [] Gradient;
-  
-/*
-  if (Solution != NULL) delete [] Solution;
-	if (Solution_Old != NULL) delete [] Solution_Old;
-	if (Solution_time_n != NULL) delete [] Solution_time_n;
-	if (Solution_time_n1 != NULL) delete [] Solution_time_n1;
-  
-	if (Limiter != NULL) delete [] Limiter;
-	if (Solution_Max != NULL) delete [] Solution_Max;
-	if (Solution_Min != NULL) delete [] Solution_Min;
-	if (Grad_AuxVar != NULL) delete [] Grad_AuxVar;
+  if (Solution            != NULL) delete [] Solution;
+	if (Solution_Old        != NULL) delete [] Solution_Old;
+	if (Solution_time_n     != NULL) delete [] Solution_time_n;
+	if (Solution_time_n1    != NULL) delete [] Solution_time_n1;
+	if (Limiter             != NULL) delete [] Limiter;
+	if (Solution_Max        != NULL) delete [] Solution_Max;
+	if (Solution_Min        != NULL) delete [] Solution_Min;
+	if (Grad_AuxVar         != NULL) delete [] Grad_AuxVar;
 	if (Undivided_Laplacian != NULL) delete [] Undivided_Laplacian;
-	if (Residual != NULL) delete [] Residual;
-	if (Res_Conv != NULL) delete [] Res_Conv;
-	if (Res_Visc != NULL) delete [] Res_Visc;
-	if (Res_Sour != NULL) delete [] Res_Sour;
-	if (Res_TruncError != NULL) delete [] Res_TruncError;
-	if (Residual_Old != NULL) delete [] Residual_Old;
-	if (Residual_Sum != NULL) delete [] Residual_Sum;
+	if (Residual            != NULL) delete [] Residual;
+	if (Res_Conv            != NULL) delete [] Res_Conv;
+	if (Res_Visc            != NULL) delete [] Res_Visc;
+	if (Res_Sour            != NULL) delete [] Res_Sour;
+	if (Res_TruncError      != NULL) delete [] Res_TruncError;
+	if (Residual_Old        != NULL) delete [] Residual_Old;
+	if (Residual_Sum        != NULL) delete [] Residual_Sum;
   
   if (Gradient != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)
@@ -120,14 +172,7 @@ CVariable::~CVariable(void) {
       delete Res_Visc_RK[iVar];
     delete [] Res_Visc_RK;
   }
-  
-  //  if (LimiterPrimitive != NULL) {
-  //    for (iVar = 0; iVar < nVar; iVar++)
-  //      delete LimiterPrimitive[iVar];
-  //    delete [] LimiterPrimitive;
-  //  }
-*/
-  
+
 }
 
 void CVariable::AddUnd_Lapl(double *val_und_lapl) {
@@ -291,7 +336,7 @@ void CVariable::SetVel_ResConv_Zero(void) {
 		Res_Conv[iDim+1] = 0.0;
 }
 
-void CVariable::SetVelRes_TruncErrorZero(void) {
+void CVariable::SetVel_ResTruncError_Zero(void) {
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
 		Res_TruncError[iDim+1] = 0.0;
 }
@@ -301,9 +346,19 @@ void CVariable::SetVelSolutionZero(void) {
 		Solution[iDim+1] = 0.0;
 }
 
+void CVariable::SetVelSolutionVector(double *val_vector) {
+	for (unsigned short iDim = 0; iDim < nDim; iDim++)
+		Solution[iDim+1] = val_vector[iDim];
+}
+
 void CVariable::SetVelSolutionOldZero(void) {
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
 		Solution_Old[iDim+1] = 0.0;
+}
+
+void CVariable::SetVelSolutionOldVector(double *val_vector) {
+	for (unsigned short iDim = 0; iDim < nDim; iDim++)
+		Solution_Old[iDim+1] = val_vector[iDim];
 }
 
 void CVariable::SetVelSolutionOldDVector(void) { }
@@ -347,7 +402,7 @@ void CVariable::GetResidual_Sum(double *val_residual) {
 		val_residual[iVar] = Residual_Sum[iVar];
 }
 
-void CVariable::GetRes_TruncError(double *val_trunc_error) {
+void CVariable::GetResTruncError(double *val_trunc_error) {
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		val_trunc_error[iVar] = Res_TruncError[iVar];
 }

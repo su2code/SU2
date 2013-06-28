@@ -1,7 +1,7 @@
 ## \file interface.py
 #  \brief python package interfacing with the SU2 suite
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.3
+#  \version 2.0.4
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -261,6 +261,8 @@ def run_command( Command ):
     
     print "the command: %s" % Command
     print "the location: %s" % os.getcwd()
+    sys.stdout.flush()
+    
     proc = subprocess.Popen( Command, shell=True    ,
                              stdout=sys.stdout      , 
                              stderr=subprocess.PIPE  )
@@ -271,7 +273,7 @@ def run_command( Command ):
         message = "SU2 process was terminated by signal '%s'\n%s" % (-return_code,message)
         raise SystemExit , message
     elif return_code > 0:
-        message = "SU2 process returned error '%s'\n%s" % (return_code,message)
+        message = "Path = %s\nCommand = %s\nSU2 process returned error '%s'\n%s" % (os.path.abspath(','),Command,return_code,message)
         raise Exception , message
     else:
         sys.stdout.write(message)

@@ -3,7 +3,7 @@
 ## \file finite_differences.py
 #  \brief Python script for doing the finite differences computation using the SU2 suite.
 #  \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.3
+#  \version 2.0.4
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory

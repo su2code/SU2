@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for doing the complete dual grid structure.
  *        The subroutines and functions are in the <i>dual_grid_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -37,7 +37,7 @@ using namespace std;
  * \brief Class for controlling the dual volume definition. The dual volume is compose by 
  *        three main elements: points, edges, and vertices.
  * \author F. Palacios.
- * \version 2.0.3
+ * \version 2.0.4
  */
 class CDualGrid{
 protected:
@@ -122,7 +122,7 @@ public:
  * \class CPoint
  * \brief Class for point definition (including control volume definition).
  * \author F. Palacios.
- * \version 2.0.3
+ * \version 2.0.4
  */
 class CPoint : public CDualGrid {
 private:
@@ -160,9 +160,10 @@ public:
 	/*! 
 	 * \brief Constructor of the class. 
 	 * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_globalindex Global index in the parallel simulation.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CPoint(unsigned short val_nDim, CConfig *config);
+	CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *config);
 	
 	/*! 
 	 * \overload
@@ -640,7 +641,7 @@ public:
  * \class CEdge
  * \brief Class for defining an edge.
  * \author F. Palacios.
- * \version 2.0.3
+ * \version 2.0.4
  */
 class CEdge : public CDualGrid {
 private:
@@ -788,7 +789,7 @@ public:
  * \class CVertex
  * \brief Class for vertex definition (equivalent to edges, but for the boundaries).
  * \author F. Palacios.
- * \version 2.0.3
+ * \version 2.0.4
  */
 class CVertex : public CDualGrid {
 private:

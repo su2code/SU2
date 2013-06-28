@@ -1,7 +1,7 @@
 ## \file projection.py
 #  \brief python package for running gradient projection
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.3
+#  \version 2.0.4
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -35,7 +35,7 @@ from interface import GPC as SU2_GPC
 #  Gradient Projection
 # ----------------------------------------------------------------------
 
-def projection( config, step = 1e-3  ):
+def projection( config, step = 1e-3 ):
     """ info = SU2.run.projection(config,step=1e-3)
         
         Runs an gradient projection with:

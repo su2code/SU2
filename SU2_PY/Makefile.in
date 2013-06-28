@@ -44,7 +44,7 @@ NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
 subdir = SU2_PY
-DIST_COMMON = $(nobase_dist_pypkg_DATA) $(srcdir)/Makefile.am \
+DIST_COMMON = $(nobase_dist_mypkg_DATA) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -74,11 +74,11 @@ am__nobase_list = $(am__nobase_strip_setup); \
 am__base_list = \
   sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
   sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
-am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(pypkgdir)"
+am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(mypkgdir)"
 SCRIPTS = $(bin_SCRIPTS)
 SOURCES =
 DIST_SOURCES =
-DATA = $(nobase_dist_pypkg_DATA)
+DATA = $(nobase_dist_mypkg_DATA)
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
@@ -192,8 +192,8 @@ bin_SCRIPTS = \
     mesh_adaptation.py \
     square.py
 
-pypkgdir = $(prefix)/bin
-nobase_dist_pypkg_DATA = \
+mypkgdir = $(prefix)/bin
+nobase_dist_mypkg_DATA = \
     SU2/__init__.py \
     SU2/eval/design.py \
     SU2/eval/functions.py \
@@ -220,10 +220,12 @@ nobase_dist_pypkg_DATA = \
     SU2/run/direct.py \
     SU2/run/interface.py \
     SU2/run/merge.py \
+    SU2/run/geometry.py \
     SU2/run/projection.py \
     SU2/run/__init__.py \
     SU2/util/bunch.py \
     SU2/util/filter_adjoint.py \
+    SU2/util/lhc_unif.py \
     SU2/util/misc.py \
     SU2/util/ordered_bunch.py \
     SU2/util/ordered_dict.py \
@@ -299,29 +301,29 @@ uninstall-binSCRIPTS:
 	test -n "$$list" || exit 0; \
 	echo " ( cd '$(DESTDIR)$(bindir)' && rm -f" $$files ")"; \
 	cd "$(DESTDIR)$(bindir)" && rm -f $$files
-install-nobase_dist_pypkgDATA: $(nobase_dist_pypkg_DATA)
+install-nobase_dist_mypkgDATA: $(nobase_dist_mypkg_DATA)
 	@$(NORMAL_INSTALL)
-	test -z "$(pypkgdir)" || $(MKDIR_P) "$(DESTDIR)$(pypkgdir)"
-	@list='$(nobase_dist_pypkg_DATA)'; test -n "$(pypkgdir)" || list=; \
+	test -z "$(mypkgdir)" || $(MKDIR_P) "$(DESTDIR)$(mypkgdir)"
+	@list='$(nobase_dist_mypkg_DATA)'; test -n "$(mypkgdir)" || list=; \
 	$(am__nobase_list) | while read dir files; do \
 	  xfiles=; for file in $$files; do \
 	    if test -f "$$file"; then xfiles="$$xfiles $$file"; \
 	    else xfiles="$$xfiles $(srcdir)/$$file"; fi; done; \
 	  test -z "$$xfiles" || { \
 	    test "x$$dir" = x. || { \
-	      echo "$(MKDIR_P) '$(DESTDIR)$(pypkgdir)/$$dir'"; \
-	      $(MKDIR_P) "$(DESTDIR)$(pypkgdir)/$$dir"; }; \
-	    echo " $(INSTALL_DATA) $$xfiles '$(DESTDIR)$(pypkgdir)/$$dir'"; \
-	    $(INSTALL_DATA) $$xfiles "$(DESTDIR)$(pypkgdir)/$$dir" || exit $$?; }; \
+	      echo "$(MKDIR_P) '$(DESTDIR)$(mypkgdir)/$$dir'"; \
+	      $(MKDIR_P) "$(DESTDIR)$(mypkgdir)/$$dir"; }; \
+	    echo " $(INSTALL_DATA) $$xfiles '$(DESTDIR)$(mypkgdir)/$$dir'"; \
+	    $(INSTALL_DATA) $$xfiles "$(DESTDIR)$(mypkgdir)/$$dir" || exit $$?; }; \
 	done
 
-uninstall-nobase_dist_pypkgDATA:
+uninstall-nobase_dist_mypkgDATA:
 	@$(NORMAL_UNINSTALL)
-	@list='$(nobase_dist_pypkg_DATA)'; test -n "$(pypkgdir)" || list=; \
+	@list='$(nobase_dist_mypkg_DATA)'; test -n "$(mypkgdir)" || list=; \
 	$(am__nobase_strip_setup); files=`$(am__nobase_strip)`; \
 	test -n "$$files" || exit 0; \
-	echo " ( cd '$(DESTDIR)$(pypkgdir)' && rm -f" $$files ")"; \
-	cd "$(DESTDIR)$(pypkgdir)" && rm -f $$files
+	echo " ( cd '$(DESTDIR)$(mypkgdir)' && rm -f" $$files ")"; \
+	cd "$(DESTDIR)$(mypkgdir)" && rm -f $$files
 tags: TAGS
 TAGS:
 
@@ -363,7 +365,7 @@ check-am: all-am
 check: check-am
 all-am: Makefile $(SCRIPTS) $(DATA)
 installdirs:
-	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(pypkgdir)"; do \
+	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(mypkgdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -411,7 +413,7 @@ info: info-am
 
 info-am:
 
-install-data-am: install-nobase_dist_pypkgDATA
+install-data-am: install-nobase_dist_mypkgDATA
 
 install-dvi: install-dvi-am
 
@@ -455,7 +457,7 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-binSCRIPTS uninstall-nobase_dist_pypkgDATA
+uninstall-am: uninstall-binSCRIPTS uninstall-nobase_dist_mypkgDATA
 
 .MAKE: install-am install-strip
 
@@ -464,12 +466,12 @@ uninstall-am: uninstall-binSCRIPTS uninstall-nobase_dist_pypkgDATA
 	install install-am install-binSCRIPTS install-data \
 	install-data-am install-dvi install-dvi-am install-exec \
 	install-exec-am install-html install-html-am install-info \
-	install-info-am install-man install-nobase_dist_pypkgDATA \
+	install-info-am install-man install-nobase_dist_mypkgDATA \
 	install-pdf install-pdf-am install-ps install-ps-am \
 	install-strip installcheck installcheck-am installdirs \
 	maintainer-clean maintainer-clean-generic mostlyclean \
 	mostlyclean-generic pdf pdf-am ps ps-am uninstall uninstall-am \
-	uninstall-binSCRIPTS uninstall-nobase_dist_pypkgDATA
+	uninstall-binSCRIPTS uninstall-nobase_dist_mypkgDATA
 
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

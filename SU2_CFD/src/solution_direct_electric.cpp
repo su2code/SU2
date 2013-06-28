@@ -2,7 +2,7 @@
  * \file solution_direct_electric.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -125,7 +125,7 @@ CElectricSolution::~CElectricSolution(void) {
 }
 
 void CElectricSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver,
-																			CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+																			CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
 
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++)
@@ -579,7 +579,7 @@ void CElectricSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_
  * \brief Dirichlet/Neumann boundary condition
  * \author A. Lonkar
  */
-void CElectricSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+void CElectricSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
 		unsigned short val_marker) {
 	unsigned long Point, iVertex;
 
@@ -597,11 +597,11 @@ void CElectricSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_c
 }
 
 /*!
- * \method BC_NS_Wall
+ * \method BC_HeatFlux_Wall
  * \brief Dirichlet/Neumann boundary condition
  * \author A. Lonkar
  */
-void CElectricSolution::BC_NS_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+void CElectricSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
 		unsigned short val_marker) {
 	unsigned long Point, iVertex;
 

@@ -2,7 +2,7 @@
  * \file numerics_structure.cpp
  * \brief This file contains all the numerical methods.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -113,8 +113,6 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar, unsigned 
 	Laminar_Viscosity_MultipleSpecies_j = new double [nSpecies];
 	Eddy_Viscosity_MultipleSpecies_i = new double [nSpecies];
 	Eddy_Viscosity_MultipleSpecies_j = new double [nSpecies];
-	Pressure_Old_i_MS = new double [nSpecies];
-	Pressure_Old_j_MS = new double [nSpecies];
 
 }
 
@@ -187,8 +185,6 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar, unsigned 
 		dFvdV_j[iVar] = new double [nDim+3];
 		dFvdV_i[iVar] = new double [nDim+3];
 	}
-	Pressure_Old_i_MS = new double [nSpecies];
-	Pressure_Old_j_MS = new double [nSpecies];
 
 }
 
@@ -240,8 +236,6 @@ CNumerics::~CNumerics(void) {
 	delete [] dFvdV_i;
 	delete [] dFvdV_j;
 
-	if (Pressure_Old_i_MS != NULL) delete [] Pressure_Old_i_MS;
-	if (Pressure_Old_j_MS != NULL) delete [] Pressure_Old_j_MS;
 }
 
 void CNumerics::GetInviscidFlux(double val_density, double *val_velocity,
@@ -2349,7 +2343,7 @@ void CNumerics::GetViscousProjJacsDiatomics(double *val_Mean_PrimVar,   double *
       dVdU[5][2] = 0.0;
       dVdU[5][3] = 0.0;
       dVdU[5][4] = 0.0;
-      dVdU[5][5] = Tvib*Tvib/(CharVibTemp*Density*GasConstant) * (exp(CharVibTemp/Tvib)-1.0)*(exp(CharVibTemp/Tvib)-1.0)/exp(CharVibTemp/Tvib);
+      dVdU[5][5] = Tvib*Tvib/(CharVibTemp*CharVibTemp*Density*GasConstant) * (exp(CharVibTemp/Tvib)-1.0)*(exp(CharVibTemp/Tvib)-1.0)/exp(CharVibTemp/Tvib);
       
       dVdU[0][5] = 0.0;
       dVdU[1][5] = 0.0;
@@ -2454,7 +2448,7 @@ void CNumerics::GetViscousProjJacsDiatomics(double *val_Mean_PrimVar,   double *
       dVdU[4][1] = 0.0;
       dVdU[4][2] = 0.0;
       dVdU[4][3] = 0.0;
-      dVdU[4][4] = Tvib*Tvib/(CharVibTemp*Density*GasConstant) * (exp(CharVibTemp/Tvib)-1.0)*(exp(CharVibTemp/Tvib)-1.0)/exp(CharVibTemp/Tvib);
+      dVdU[4][4] = Tvib*Tvib/(CharVibTemp*CharVibTemp*Density*GasConstant) * (exp(CharVibTemp/Tvib)-1.0)*(exp(CharVibTemp/Tvib)-1.0)/exp(CharVibTemp/Tvib);
       
       dVdU[0][4] = 0.0;
       dVdU[1][4] = 0.0;

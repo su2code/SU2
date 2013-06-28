@@ -2,7 +2,7 @@
  * \file linear_solvers_structure.inl
  * \brief inline subroutines of the <i>linear_solvers_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory

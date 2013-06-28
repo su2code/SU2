@@ -1,7 +1,7 @@
 ## \file state.py
 #  \brief python package for state 
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.3
+#  \version 2.0.4
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -112,7 +112,7 @@ class State(ordered_bunch):
             if isinstance(v1,dict):
                 for k2,v2 in v1.iteritems():
                     output += '\n        %s: %s' % (k2,v2)
-            elif v1:
+            else:
                 output += '\n        %s' % v1
         return output
     
@@ -133,12 +133,13 @@ class State(ordered_bunch):
                 value = [value] + expand_part(value,config)
                 link.extend(value)
             elif key == 'DIRECT':
+                #if config.RESTART_SOL == 'YES':
                 # direct solution
                 link.append(value)
             elif 'ADJOINT_' in key:
+                #if config.RESTART_SOL == 'YES':
                 # adjoint solution
                 link.append(value)
-            
             # copy all other files
             else:
                 pull.append(value)

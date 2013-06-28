@@ -2,7 +2,7 @@
  * \file variable_linearized.cpp
  * \brief Definition of the solution fields.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -23,30 +23,22 @@
 
 #include "../include/variable_structure.hpp"
 
-CLinEulerVariable::CLinEulerVariable(void) : CVariable() {}
+CLinEulerVariable::CLinEulerVariable(void) : CVariable() {
 
-CLinEulerVariable::~CLinEulerVariable(void) {
-	delete [] Res_Conv;
-	delete [] Res_Visc;
-	delete [] Res_Sour;
-	delete [] Residual_Sum;
-	delete [] Residual_Old;
-	delete [] Undivided_Laplacian;
-	delete [] Limiter;
-	delete [] Grad_AuxVar;
-	delete [] Solution_time_n;
-	delete [] Solution_time_n1;
-	delete [] Res_TruncError;
-	
-	for (unsigned short iVar = 0; iVar < nVar; iVar++)
-		delete [] Res_Visc_RK[iVar];
-	delete [] Res_Visc_RK;
+  /*--- Array initialization ---*/
+	DeltaU = NULL;
+  ForceProj_Vector = NULL;
+
 }
 
 CLinEulerVariable::CLinEulerVariable(double *val_solution, unsigned short val_ndim, unsigned short val_nvar, CConfig *config) 
 : CVariable(val_ndim, val_nvar, config) {
 	
-	// Allocate structures
+  /*--- Array initialization ---*/
+	DeltaU = NULL;
+  ForceProj_Vector = NULL;
+  
+	/*--- Allocate structures ---*/
 	Res_Conv = new double [nVar];
 	Res_Visc = new double [nVar];
 	Res_Sour = new double [nVar];
@@ -67,7 +59,7 @@ CLinEulerVariable::CLinEulerVariable(double *val_solution, unsigned short val_nd
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		Res_TruncError[iVar] = 0.0;
 	
-	// Initialization of variables
+	/*--- Initialization of variables ---*/
 	ForceProj_Vector = new double [nDim];
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
 		ForceProj_Vector[iDim] = 0.0;
@@ -82,7 +74,11 @@ CLinEulerVariable::CLinEulerVariable(double val_deltarho, double *val_deltavel,
 					 double val_deltae, unsigned short val_ndim, unsigned short val_nvar, CConfig *config) 
 : CVariable(val_ndim, val_nvar, config) {
 	
-	// Allocate structures
+  /*--- Array initialization ---*/
+	DeltaU = NULL;
+  ForceProj_Vector = NULL;
+  
+	/*--- Allocate structures ---*/
 	Res_Conv = new double [nVar];
 	Res_Visc = new double [nVar];
 	Res_Sour = new double [nVar];
@@ -103,7 +99,7 @@ CLinEulerVariable::CLinEulerVariable(double val_deltarho, double *val_deltavel,
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		Res_TruncError[iVar] = 0.0;
 	
-	// Initialization of variables
+	/*--- Initialization of variables ---*/
 	ForceProj_Vector = new double [nDim];
 	Solution[0] = val_deltarho; 	Solution_Old[0] = val_deltarho;
 	Solution[nVar-1] = val_deltae; Solution_Old[nVar-1] = val_deltae;
@@ -112,6 +108,13 @@ CLinEulerVariable::CLinEulerVariable(double val_deltarho, double *val_deltavel,
 		Solution[iDim+1] = val_deltavel[iDim];
 		Solution_Old[iDim+1] = val_deltavel[iDim];
 	}
+}
+
+CLinEulerVariable::~CLinEulerVariable(void) {
+  
+	if (DeltaU != NULL) delete [] DeltaU;
+	if (ForceProj_Vector != NULL) delete [] ForceProj_Vector;
+  
 }
 
 void CLinEulerVariable::SetDeltaPressure(double *val_velocity, double Gamma) {

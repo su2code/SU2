@@ -2,7 +2,7 @@
  * \file geometry_structure.cpp
  * \brief Main subroutines for creating the primal grid and multigrid structure.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -2397,33 +2397,35 @@ void CPhysicalGeometry::SetEsuP(void) {
 void CPhysicalGeometry::SetWall_Distance(CConfig *config) {
 	double *coord, dist2, dist;
 	unsigned short iDim, iMarker;
-	unsigned long iPoint, iVertex, nVertex_NS;
+	unsigned long iPoint, iVertex, nVertex_SolidWall;
 
 #ifdef NO_MPI
 
 	/*--- identification of the wall points and coordinates ---*/
-	nVertex_NS = 0;
+	nVertex_SolidWall = 0;
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		if ((config->GetMarker_All_Boundary(iMarker) == NO_SLIP_WALL) || 
-				(config->GetMarker_All_Boundary(iMarker) == EULER_WALL))
-			nVertex_NS += GetnVertex(iMarker);
+		if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX) ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL) ||
+        (config->GetMarker_All_Boundary(iMarker) == EULER_WALL))
+			nVertex_SolidWall += GetnVertex(iMarker);
 
 	/*--- Allocate vector of boundary coordinates ---*/
 	double **Coord_bound;
-	Coord_bound = new double* [nVertex_NS];
-	for (iVertex = 0; iVertex < nVertex_NS; iVertex++)
+	Coord_bound = new double* [nVertex_SolidWall];
+	for (iVertex = 0; iVertex < nVertex_SolidWall; iVertex++)
 		Coord_bound[iVertex] = new double [nDim];
 
 	/*--- Get coordinates of the points of the surface ---*/
-	nVertex_NS = 0;
+	nVertex_SolidWall = 0;
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		if ((config->GetMarker_All_Boundary(iMarker) == NO_SLIP_WALL) || 
-				(config->GetMarker_All_Boundary(iMarker) == EULER_WALL))
+		if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX) ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL) ||
+        (config->GetMarker_All_Boundary(iMarker) == EULER_WALL))
 			for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
 				iPoint = vertex[iMarker][iVertex]->GetNode();
 				for (iDim = 0; iDim < nDim; iDim++)
-					Coord_bound[nVertex_NS][iDim] = node[iPoint]->GetCoord(iDim);
-				nVertex_NS++;
+					Coord_bound[nVertex_SolidWall][iDim] = node[iPoint]->GetCoord(iDim);
+				nVertex_SolidWall++;
 			}
 
 	/*--- Get coordinates of the points and compute distances to the surface ---*/
@@ -2431,7 +2433,7 @@ void CPhysicalGeometry::SetWall_Distance(CConfig *config) {
 		coord = node[iPoint]->GetCoord();
 		/*--- Compute the squared distance to the rest of points, and get the minimum ---*/
 		dist = 1E20;
-		for (iVertex = 0; iVertex < nVertex_NS; iVertex++) {
+		for (iVertex = 0; iVertex < nVertex_SolidWall; iVertex++) {
 			dist2 = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++)
 				dist2 += (coord[iDim]-Coord_bound[iVertex][iDim])*(coord[iDim]-Coord_bound[iVertex][iDim]);
@@ -2441,7 +2443,7 @@ void CPhysicalGeometry::SetWall_Distance(CConfig *config) {
 	}
 
 	/*--- Deallocate vector of boundary coordinates ---*/
-	for (iVertex = 0; iVertex < nVertex_NS; iVertex++)
+	for (iVertex = 0; iVertex < nVertex_SolidWall; iVertex++)
 		delete[] Coord_bound[iVertex];
 	delete[] Coord_bound;
 
@@ -2459,8 +2461,9 @@ void CPhysicalGeometry::SetWall_Distance(CConfig *config) {
 	unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
 
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		if ((config->GetMarker_All_Boundary(iMarker) == NO_SLIP_WALL) || 
-				(config->GetMarker_All_Boundary(iMarker) == EULER_WALL))
+		if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX) ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL) ||
+        (config->GetMarker_All_Boundary(iMarker) == EULER_WALL))
 			nLocalVertex_NS += GetnVertex(iMarker);
 
 	Buffer_Send_nVertex[0] = nLocalVertex_NS;	
@@ -2477,15 +2480,16 @@ void CPhysicalGeometry::SetWall_Distance(CConfig *config) {
 		for (iDim = 0; iDim < nDim; iDim++)
 			Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
 
-	nVertex_NS = 0;
+	nVertex_SolidWall = 0;
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		if ((config->GetMarker_All_Boundary(iMarker) == NO_SLIP_WALL) || 
-				(config->GetMarker_All_Boundary(iMarker) == EULER_WALL))
+		if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX) ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL) ||
+        (config->GetMarker_All_Boundary(iMarker) == EULER_WALL))
 			for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
 				iPoint = vertex[iMarker][iVertex]->GetNode();
 				for (iDim = 0; iDim < nDim; iDim++)
-					Buffer_Send_Coord[nVertex_NS*nDim+iDim] = node[iPoint]->GetCoord(iDim);
-				nVertex_NS++;
+					Buffer_Send_Coord[nVertex_SolidWall*nDim+iDim] = node[iPoint]->GetCoord(iDim);
+				nVertex_SolidWall++;
 			}
 
 	MPI::COMM_WORLD.Allgather(Buffer_Send_Coord, nBuffer, MPI::DOUBLE, Buffer_Receive_Coord, nBuffer, MPI::DOUBLE);
@@ -2534,7 +2538,8 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
 		Boundary = config->GetMarker_All_Boundary(iMarker);
 		Monitoring = config->GetMarker_All_Monitoring(iMarker);
 
-		if (((Boundary == EULER_WALL) || (Boundary == NO_SLIP_WALL)) && (Monitoring == YES))
+		if (((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) ||
+         (Boundary == ISOTHERMAL)) && (Monitoring == YES))
 			for(iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
 				iPoint = vertex[iMarker][iVertex]->GetNode();
 				if (node[iPoint]->GetDomain()) {
@@ -2555,7 +2560,8 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
 		Boundary = config->GetMarker_All_Boundary(iMarker);
 		Monitoring = config->GetMarker_All_Monitoring(iMarker);
 
-		if (((Boundary == EULER_WALL) || (Boundary == NO_SLIP_WALL)) && (Monitoring == YES))
+		if (((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) ||
+         (Boundary == ISOTHERMAL)) && (Monitoring == YES))
 			for(iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
 				iPoint = vertex[iMarker][iVertex]->GetNode();
 				if (node[iPoint]->GetDomain()) {
@@ -2581,21 +2587,21 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
 
 }
 
-
 void CPhysicalGeometry::SetPsuP(void) {
-	unsigned short Node_Neighbor, iElem, iNode, iNeighbor;
-	unsigned long jElem, Point_Neighbor, iPoint;
-
+  
+	unsigned short Node_Neighbor, iNode, iNeighbor;
+	unsigned long jElem, Point_Neighbor, iPoint, iElem;
+  
 	/*--- Loop over all the points ---*/
 	for(iPoint = 0; iPoint < nPoint; iPoint++)
-		/*--- Loop over all elements shared by the point ---*/
-		for(iElem = 0; iElem < node[iPoint]->GetnElem(); iElem++) {  
+  /*--- Loop over all elements shared by the point ---*/
+		for(iElem = 0; iElem < node[iPoint]->GetnElem(); iElem++) {
 			jElem = node[iPoint]->GetElem(iElem);
 			/*--- If we find the point iPoint in the surronding element ---*/
 			for(iNode = 0; iNode < elem[jElem]->GetnNodes(); iNode++)
 				if (elem[jElem]->GetNode(iNode) == iPoint)
-					/*--- Localize the local index of the neighbor of iPoint in the element ---*/
-					for(iNeighbor = 0; iNeighbor < elem[jElem]->GetnNeighbor_Nodes(iNode); iNeighbor++) { 
+        /*--- Localize the local index of the neighbor of iPoint in the element ---*/
+					for(iNeighbor = 0; iNeighbor < elem[jElem]->GetnNeighbor_Nodes(iNode); iNeighbor++) {
 						Node_Neighbor = elem[jElem]->GetNeighbor_Nodes(iNode,iNeighbor);
 						Point_Neighbor = elem[jElem]->GetNode(Node_Neighbor);
 						/*--- Store the point into the point ---*/
@@ -2603,11 +2609,134 @@ void CPhysicalGeometry::SetPsuP(void) {
 					}
 		}
 
-	/*--- Set the number of neighbors variable, this is 
+	/*--- Set the number of neighbors variable, this is
 	 important for JST and multigrid in parallel ---*/
 	for(iPoint = 0; iPoint < nPoint; iPoint++)
 		node[iPoint]->SetnNeighbor(node[iPoint]->GetnPoint());
+  
+}
 
+void CPhysicalGeometry::SetPsuP_FEA(void) {
+  
+	unsigned short Node_Neighbor, iNode, iNeighbor;
+	unsigned long jElem, Point_Neighbor, iPoint, jPoint, iElem;
+  
+	/*--- Loop over all the points ---*/
+	for(iPoint = 0; iPoint < nPoint; iPoint++) {
+    
+    /*--- Loop over all elements shared by the point ---*/
+		for(iElem = 0; iElem < node[iPoint]->GetnElem(); iElem++) {
+			jElem = node[iPoint]->GetElem(iElem);
+      
+			/*--- If we find the point iPoint in the surrounding element ---*/
+			for(iNode = 0; iNode < elem[jElem]->GetnNodes(); iNode++)
+				if (elem[jElem]->GetNode(iNode) == iPoint)
+        /*--- Localize the local index of the neighbor of iPoint in the element ---*/
+					for(iNeighbor = 0; iNeighbor < elem[jElem]->GetnNeighbor_Nodes(iNode); iNeighbor++) {
+						Node_Neighbor = elem[jElem]->GetNeighbor_Nodes(iNode,iNeighbor);
+						Point_Neighbor = elem[jElem]->GetNode(Node_Neighbor);
+						/*--- Store the point into the point ---*/
+						node[iPoint]->SetPoint(Point_Neighbor);
+					}
+		}
+  }
+
+  /*--- For grid deformation using the linear elasticity equations,
+   we will cut each element into either triangles (2-D) or tetrahedra (3-D)
+   because we already have these shape functions implemented. We only do
+   this internally however, because we want the deformed mesh to retain
+   the original element connectivity. Therefore, we add the new edges
+   in this routine manually for these divisions so that the global sparse
+   matrix is constructed correctly. ---*/
+  //unsigned long Point_0, Point_1, Point_2, Point_3;
+  for(iElem = 0; iElem < nElem; iElem++) {
+        
+    if (elem[iElem]->GetVTK_Type() == RECTANGLE) {
+      
+      iPoint = elem[iElem]->GetNode(0);
+      jPoint = elem[iElem]->GetNode(2);
+      
+      node[iPoint]->SetPoint(jPoint);
+      node[jPoint]->SetPoint(iPoint);
+      
+    }
+
+//    /*--- Divide hexehedra into 6 tetrahedra ---*/
+//    if (elem[iElem]->GetVTK_Type() == HEXAHEDRON) {
+//      
+//      /* Tetrahedron 1, nodes: [0,2,3,6] */
+//      Point_0 = elem[iElem]->GetNode(0);
+//      Point_1 = elem[iElem]->GetNode(2);
+//      Point_2 = elem[iElem]->GetNode(3);
+//      Point_3 = elem[iElem]->GetNode(6);
+//
+//      
+//      /* Tetrahedron 2, nodes: [0,3,7,6]  */
+//      Point_0 = elem[iElem]->GetNode(0);
+//      Point_1 = elem[iElem]->GetNode(3);
+//      Point_2 = elem[iElem]->GetNode(7);
+//      Point_3 = elem[iElem]->GetNode(6);
+//
+//      
+//      /* Tetrahedron 3, nodes: [0,7,4,6]  */
+//      Point_0 = elem[iElem]->GetNode(0);
+//      Point_1 = elem[iElem]->GetNode(7);
+//      Point_2 = elem[iElem]->GetNode(4);
+//      Point_3 = elem[iElem]->GetNode(6);
+//
+//      
+//      /* Tetrahedron 4, nodes: [0,5,6,4]  */
+//      Point_0 = elem[iElem]->GetNode(0);
+//      Point_1 = elem[iElem]->GetNode(5);
+//      Point_2 = elem[iElem]->GetNode(6);
+//      Point_3 = elem[iElem]->GetNode(4);
+//
+//      
+//      /* Tetrahedron 5, nodes: [1,5,6,0]  */
+//      Point_0 = elem[iElem]->GetNode(1);
+//      Point_1 = elem[iElem]->GetNode(5);
+//      Point_2 = elem[iElem]->GetNode(6);
+//      Point_3 = elem[iElem]->GetNode(0);
+//
+//      
+//      /* Tetrahedron 6, nodes: [1,6,2,0]  */
+//      Point_0 = elem[iElem]->GetNode(1);
+//      Point_1 = elem[iElem]->GetNode(6);
+//      Point_2 = elem[iElem]->GetNode(2);
+//      Point_3 = elem[iElem]->GetNode(0);
+//      
+//    }
+//    
+//    /*--- Divide prisms into 4 tetrahedra ---*/
+//    if (elem[iElem]->GetVTK_Type() == WEDGE) {
+//      
+//      // TO DO
+//      
+//    }
+//    
+//    /*--- Divide pyramids into 2 tetrahedra ---*/
+//    if (elem[iElem]->GetVTK_Type() == PYRAMID) {
+//      
+//      /*--- Tetrahedron 1, nodes: [0,1,2,4] ---*/
+//      Point_0 = elem[iElem]->GetNode(0);
+//      Point_1 = elem[iElem]->GetNode(1);
+//      Point_2 = elem[iElem]->GetNode(2);
+//      Point_3 = elem[iElem]->GetNode(4);
+//      
+//      /*--- Tetrahedron 2, nodes: [0,2,3,4]  ---*/
+//      Point_0 = elem[iElem]->GetNode(0);
+//      Point_1 = elem[iElem]->GetNode(2);
+//      Point_2 = elem[iElem]->GetNode(3);
+//      Point_3 = elem[iElem]->GetNode(4);
+//      
+//    }
+  }
+  
+	/*--- Set the number of neighbors variable, this is
+	 important for JST and multigrid in parallel ---*/
+	for(iPoint = 0; iPoint < nPoint; iPoint++)
+		node[iPoint]->SetnNeighbor(node[iPoint]->GetnPoint());
+  
 }
 
 void CPhysicalGeometry::SetEsuE(void) {
@@ -5086,8 +5215,9 @@ void CPhysicalGeometry::SetGeometryPlanes(CConfig *config) {
 	/*--- Compute the total number of points on the near-field ---*/
 	nVertex_Wall = 0;
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		if ((config->GetMarker_All_Boundary(iMarker) == NO_SLIP_WALL) ||
-				(config->GetMarker_All_Boundary(iMarker) == EULER_WALL))
+		if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX) ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL) ||
+        (config->GetMarker_All_Boundary(iMarker) == EULER_WALL))
 			nVertex_Wall += nVertex[iMarker];
 
 
@@ -5101,8 +5231,9 @@ void CPhysicalGeometry::SetGeometryPlanes(CConfig *config) {
 	/*--- Copy the boundary information to an array ---*/
 	iVertex_Wall = 0;
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		if ((config->GetMarker_All_Boundary(iMarker) == NO_SLIP_WALL) ||
-				(config->GetMarker_All_Boundary(iMarker) == EULER_WALL))
+		if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX) ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL) ||
+        (config->GetMarker_All_Boundary(iMarker) == EULER_WALL))
 			for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
 				iPoint = vertex[iMarker][iVertex]->GetNode();
 				Xcoord[iVertex_Wall] = node[iPoint]->GetCoord(0);
@@ -5225,7 +5356,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
 	node = new CPoint*[fine_grid->GetnPoint()];
 	for (iPoint = 0; iPoint < fine_grid->GetnPoint(); iPoint ++) {
 		/*--- Create node structure ---*/
-		node[iPoint] = new CPoint(nDim, config);
+		node[iPoint] = new CPoint(nDim, iPoint, config);
 		/*--- Set the indirect agglomeration to false ---*/
 		node[iPoint]->SetAgglomerate_Indirect(false);	
 	}
@@ -6081,7 +6212,7 @@ void CMultiGridGeometry::SetControlVolume(CConfig *config, CGeometry *fine_grid,
 		node[iCoarsePoint]->SetVolume(Coarse_Volume);
 	}
 
-	// Update or not the values of faces at the edge
+	/*--- Update or not the values of faces at the edge ---*/
 	if (action != ALLOCATE) {	
 		for(iEdge=0; iEdge < nEdge; iEdge++)
 			edge[iEdge]->SetZeroValues();
@@ -6367,8 +6498,9 @@ void CMultiGridGeometry::SetGeometryPlanes(CConfig *config) {
 	/*--- Compute the total number of points on the near-field ---*/
 	nVertex_Wall = 0;
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		if ((config->GetMarker_All_Boundary(iMarker) == NO_SLIP_WALL) ||
-				(config->GetMarker_All_Boundary(iMarker) == EULER_WALL))
+		if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX) ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL) ||
+        (config->GetMarker_All_Boundary(iMarker) == EULER_WALL))
 			nVertex_Wall += nVertex[iMarker];
 
 
@@ -6382,8 +6514,9 @@ void CMultiGridGeometry::SetGeometryPlanes(CConfig *config) {
 	/*--- Copy the boundary information to an array ---*/
 	iVertex_Wall = 0;
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		if ((config->GetMarker_All_Boundary(iMarker) == NO_SLIP_WALL) ||
-				(config->GetMarker_All_Boundary(iMarker) == EULER_WALL))
+		if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX) ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL) ||
+        (config->GetMarker_All_Boundary(iMarker) == EULER_WALL))
 			for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
 				iPoint = vertex[iMarker][iVertex]->GetNode();
 				Xcoord[iVertex_Wall] = node[iPoint]->GetCoord(0);
@@ -7268,6 +7401,30 @@ double CBoundaryGeometry::GetTotalVolume(CConfig *config, bool original_surface)
 
 }
 
+double CBoundaryGeometry::GetClearance(CConfig *config, bool original_surface) {
+	unsigned short iMarker;
+	unsigned long iVertex;
+	double *Coord, Min_YCoord, *VarCoord;
+
+  Min_YCoord = 1E6;
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+		for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
+			if (config->GetMarker_All_Moving(iMarker) == YES) {
+				Coord = vertex[iMarker][iVertex]->GetCoord();
+        if (original_surface == false) {
+          VarCoord = vertex[iMarker][iVertex]->GetVarCoord();
+          if ((Coord[nDim-1]+VarCoord[nDim-1]) < Min_YCoord) Min_YCoord = Coord[nDim-1]+VarCoord[nDim-1];
+        }
+        else {
+          if ((Coord[nDim-1]) < Min_YCoord) Min_YCoord = Coord[nDim-1];
+        }
+      }
+  
+  return Min_YCoord;
+
+}
+
+
 
 CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config, unsigned short val_domain) {
 	unsigned long iElemDomain, iPointDomain, iPointGhost, iPointReal, iPointPeriodic,
@@ -7967,7 +8124,7 @@ void CDomainGeometry::SetBoundParaView (CConfig *config, char mesh_filename[200]
 	unsigned long Total_nElem_Bound_Storage = 0;
 	for (unsigned short iMarker=0; iMarker < config->GetnMarker_All(); iMarker++) {
 		unsigned short Boundary = config->GetMarker_All_Boundary(iMarker);
-		if ((Boundary == NO_SLIP_WALL)||(Boundary == EULER_WALL)) {
+		if ((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL)) {
 			Total_nElem_Bound += nElem_Bound[iMarker];
 			Total_nElem_Bound_Storage += nElem_Bound_Storage[iMarker];
 		}
@@ -7976,7 +8133,7 @@ void CDomainGeometry::SetBoundParaView (CConfig *config, char mesh_filename[200]
 	para_file << "CELLS " << Total_nElem_Bound << "\t" << Total_nElem_Bound_Storage << endl;
 	for (unsigned short iMarker=0; iMarker < config->GetnMarker_All(); iMarker++) {
 		unsigned short Boundary = config->GetMarker_All_Boundary(iMarker);
-		if ((Boundary == NO_SLIP_WALL)||(Boundary == EULER_WALL)) {
+		if ((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL)) {
 			for(unsigned long ielem=0; ielem<nElem_Bound[iMarker]; ielem++) {
 				para_file << bound[iMarker][ielem]->GetnNodes() << "\t";
 				for(unsigned short inode=0; inode<bound[iMarker][ielem]->GetnNodes(); inode++)
@@ -7989,7 +8146,7 @@ void CDomainGeometry::SetBoundParaView (CConfig *config, char mesh_filename[200]
 	para_file << "CELL_TYPES " << Total_nElem_Bound << endl;
 	for (unsigned short iMarker=0; iMarker < config->GetnMarker_All(); iMarker++) {
 		unsigned short Boundary = config->GetMarker_All_Boundary(iMarker);
-		if ((Boundary == NO_SLIP_WALL)||(Boundary == EULER_WALL)) {
+		if ((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL)) {
 			for(unsigned long ielem=0; ielem <nElem_Bound[iMarker]; ielem++) {
 				para_file << bound[iMarker][ielem]->GetVTK_Type() << endl;
 			}

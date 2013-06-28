@@ -2,7 +2,7 @@
  * \file config_structure.cpp
  * \brief Main file for reading the config file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -73,6 +73,8 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	/* DESCRIPTION: Mathematical problem */
 	AddMathProblem("MATH_PROBLEM" , Adjoint, false , OneShot, false, 
 			Linearized, false, Restart_Flow, false);
+  /* DESCRIPTION: Free-surface problem */
+  AddSpecialOption("FREE_SURFACE", FreeSurface, SetBoolOption, false);
 	/* DESCRIPTION: Incompressible flow using artificial compressibility */
 	AddSpecialOption("INCOMPRESSIBLE_FORMULATION", Incompressible, SetBoolOption, false);
 	/* DESCRIPTION: Axisymmetric simulation */
@@ -87,7 +89,8 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddSpecialOption("MACCORMACK_RELAXATION", MacCormackRelaxation, SetBoolOption, false);
 	/* DESCRIPTION: Time stepping of the various species in a steady plasma solution */
 	AddSpecialOption("PLASMA_MULTI_TIME_STEP", PlasmaMultiTimeSteps, SetBoolOption, false);
-
+	/* DESCRIPTION: Perform a low fidelity simulation */
+	AddSpecialOption("LOW_FIDELITY_SIMULATION", LowFidelitySim, SetBoolOption, false);
 
 	/* DESCRIPTION: Roe-Turkel preconditioning for low Mach number flows */
 	AddSpecialOption("ROE_TURKEL_PREC", Low_Mach_Precon, SetBoolOption, false);
@@ -125,8 +128,6 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddMarkerOption("MARKER_PLOTTING", nMarker_Plotting, Marker_Plotting);
 	/* DESCRIPTION: Euler wall boundary marker(s) */
 	AddMarkerOption("MARKER_EULER", nMarker_Euler, Marker_Euler);
-	/* DESCRIPTION: Navier-Stokes wall boundary marker(s) */
-	AddMarkerOption("MARKER_NS", nMarker_NS, Marker_NS);
 	/* DESCRIPTION: Adiabatic wall boundary condition */
 	AddSpecialOption("ADIABATIC_WALL", AdiabaticWall, SetBoolOption, true);
 	/* DESCRIPTION: Isothermal wall boundary condition */
@@ -253,8 +254,6 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	/* DESCRIPTION: Time discretization */
 	AddEnumOption("TIME_DISCRE_FLOW", Kind_TimeIntScheme_Flow, Time_Int_Map, "RUNGE-KUTTA_EXPLICIT");
 	/* DESCRIPTION: Time discretization */
-	AddEnumOption("TIME_DISCRE_COMB", Kind_TimeIntScheme_Combustion, Time_Int_Map, "EULER_EXPLICIT");
-	/* DESCRIPTION: Time discretization */
 	AddEnumOption("TIME_DISCRE_LEVELSET", Kind_TimeIntScheme_LevelSet, Time_Int_Map, "RUNGE-KUTTA_EXPLICIT");
 	/* DESCRIPTION: Time discretization */
 	AddEnumOption("TIME_DISCRE_ADJLEVELSET", Kind_TimeIntScheme_AdjLevelSet, Time_Int_Map, "RUNGE-KUTTA_EXPLICIT");
@@ -288,8 +287,19 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddScalarOption("LINEAR_SOLVER_ERROR", Linear_Solver_Error, 1E-5);
 	/* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
 	AddScalarOption("LINEAR_SOLVER_ITER", Linear_Solver_Iter, 10);
+  /* DESCRIPTION: Relaxation of the linear solver for the implicit formulation */
+	AddScalarOption("LINEAR_SOLVER_RELAX", Linear_Solver_Relax, 1.0);
 	/* DESCRIPTION: Print the linear solver history */
 	AddSpecialOption("LINEAR_SOLVER_HIST", Linear_Solver_Hist, SetBoolOption, false);
+    
+    /* DESCRIPTION: Linear solver for the turbulent adjoint systems */
+	AddEnumOption("ADJTURB_LIN_SOLVER", Kind_AdjTurb_Linear_Solver, Linear_Solver_Map, "LU_SGS");
+	/* DESCRIPTION: Preconditioner for the turbulent adjoint Krylov linear solvers */
+	AddEnumOption("ADJTURB_LIN_PREC", Kind_AdjTurb_Linear_Prec, Linear_Solver_Prec_Map, "JACOBI");
+	/* DESCRIPTION: Minimum error threshold for the turbulent adjoint linear solver for the implicit formulation */
+	AddScalarOption("ADJTURB_LIN_ERROR", AdjTurb_Linear_Error, 1E-5);
+	/* DESCRIPTION: Maximum number of iterations of the turbulent adjoint linear solver for the implicit formulation */
+	AddScalarOption("ADJTURB_LIN_ITER", AdjTurb_Linear_Iter, 10);
 
 	/*--- options related to dynamic meshes ---*/
 	/* CONFIG_CATEGORY: Dynamic mesh definition */
@@ -301,6 +311,8 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
   default_vec_3d[0] = 0; default_vec_3d[1] = 0;
 	/* DESCRIPTION: Mesh motion ramp (starting iteration, ramp iterations (zero to max)) */
 	AddArrayOption("MOTION_RAMP", 2, Motion_Ramp, default_vec_3d);
+  /* DESCRIPTION: % Mach number (non-dimensional, based on the mesh velocity and freestream vals.) */
+	AddScalarOption("MACH_MOTION", Mach_Motion, 0.0);
 	/* DESCRIPTION: Coordinates of the rigid motion origin */
 	AddListOption("MOTION_ORIGIN_X", nZone, Motion_Origin_X);
 	/* DESCRIPTION: Coordinates of the rigid motion origin */
@@ -355,7 +367,15 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddScalarOption("RED_FREC", Reduced_Frequency, 0.0);
 	/* DESCRIPTION: Pitching amplitude for flutter (degrees) */
 	AddScalarOption("MAX_PITCH", Pitching_Amplitude, 0.0);
-
+    /* DESCRIPTION: Uncoupled Aeroelastic Frequency Plunge. */
+    AddScalarOption("FREQ_PLUNGE_AEROELASTIC", FreqPlungeAeroelastic, 100);
+    /* DESCRIPTION: Uncoupled Aeroelastic Frequency Pitch. */
+    AddScalarOption("FREQ_PITCH_AEROELASTIC", FreqPitchAeroelastic, 100);
+    /* DESCRIPTION: Type of aeroelastic grid movement */
+	AddEnumOption("TYPE_AEROELASTIC_GRID_MOVEMENT", Aeroelastic_Grid_Movement, Aeroelastic_Movement_Map, "RIGID");
+    /* DESCRIPTION: Type of grid velocities for aeroelastic motion */
+	AddEnumOption("TYPE_AEROELASTIC_GRID_VELOCITY", Aeroelastic_Grid_Velocity, Aeroelastic_Velocity_Map, "FD");
+    
 	/*--- options related to rotating frame problems ---*/
 	/* CONFIG_CATEGORY: Rotating frame */
 
@@ -367,8 +387,6 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	default_vec_3d[0] = 0.0; default_vec_3d[1] = 0.0; default_vec_3d[2] = 0.0;
 	/* DESCRIPTION: Angular velocity vector (rad/s) */
 	AddArrayOption("ROTATION_RATE", 3, Omega, default_vec_3d);
-	/* DESCRIPTION: Reference length (meters) for computing force coefficients (e.g., rotor radius) */
-	AddScalarOption("ROT_RADIUS", Rot_Radius, 1.0);
 	/*--- Initializing this here because it might be needed in the geometry classes. ---*/
 	Omega_FreeStreamND = new double[3];
 
@@ -419,11 +437,11 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	/* DESCRIPTION: Damping factor for the correction prolongation */
 	AddScalarOption("MG_DAMP_PROLONGATION", Damp_Correc_Prolong, 0.75);
 	/* DESCRIPTION: CFL reduction factor on the coarse levels */
-	AddScalarOption("MG_CFL_REDUCTION", MG_CFLRedCoeff, 0.8);
+	AddScalarOption("MG_CFL_REDUCTION", MG_CFLRedCoeff, 0.75);
 	/* DESCRIPTION: Maximum number of children in the agglomeration stage */
-	AddScalarOption("MAX_CHILDREN", MaxChildren, 100);
+	AddScalarOption("MAX_CHILDREN", MaxChildren, 500);
 	/* DESCRIPTION: Maximum length of an agglomerated element (relative to the domain) */
-	AddScalarOption("MAX_DIMENSION", MaxDimension, 0.004);
+	AddScalarOption("MAX_DIMENSION", MaxDimension, 0.1);
 
 	/*--- options related to the discretization ---*/
 	/* CONFIG_CATEGORY: Discretization */
@@ -438,16 +456,16 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddEnumOption("SLOPE_LIMITER_ADJTURB", Kind_SlopeLimit_AdjTurb, Limiter_Map, "NONE");
 	/* DESCRIPTION: Slope limiter */
 	AddEnumOption("SLOPE_LIMITER_LEVELSET", Kind_SlopeLimit_LevelSet, Limiter_Map, "NONE");
+  /* DESCRIPTION: Slope limiter */
+	AddEnumOption("SLOPE_LIMITER_ADJLEVELSET", Kind_SlopeLimit_AdjLevelSet, Limiter_Map, "NONE");
 	/* DESCRIPTION: Slope limiter */
 	AddEnumOption("SLOPE_LIMITER_PLASMA", Kind_SlopeLimit_Plasma, Limiter_Map, "NONE");
 	/* DESCRIPTION: Slope limiter */
 	AddEnumOption("SLOPE_LIMITER_ADJPLASMA", Kind_SlopeLimit_AdjPlasma, Limiter_Map, "NONE");
-	/* DESCRIPTION: Coefficient for the limiter (smooth regions) */
+	/* DESCRIPTION: Coefficient for the limiter */
 	AddScalarOption("LIMITER_COEFF", LimiterCoeff, 0.3);
 	/* DESCRIPTION: Convective numerical method */
 	AddConvectOption("CONV_NUM_METHOD_FLOW", Kind_ConvNumScheme_Flow, Kind_Centered_Flow, Kind_Upwind_Flow);
-	/* DESCRIPTION: Convective numerical method */
-	AddConvectOption("CONV_NUM_METHOD_COMB", Kind_ConvNumScheme_Combustion, Kind_Centered_Combustion, Kind_Upwind_Combustion);
 	/* DESCRIPTION: Convective numerical method */
 	AddConvectOption("CONV_NUM_METHOD_LEVELSET", Kind_ConvNumScheme_LevelSet, Kind_Centered_LevelSet, Kind_Upwind_LevelSet);
 	/* DESCRIPTION: Convective numerical method */
@@ -502,8 +520,6 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddEnumOption("SOUR_NUM_METHOD_ADJPLASMA", Kind_SourNumScheme_AdjPlasma, Source_Map, "NONE");
 	/* DESCRIPTION: Source term numerical method */
 	AddEnumOption("SOUR_JAC_METHOD_PLASMA", Kind_SourJac_Plasma, SourceJac_Map, "FINITE_DIFF");
-	/* DESCRIPTION: Source term numerical method */
-	AddEnumOption("SOUR_NUM_METHOD_COMB", Kind_SourNumScheme_Combustion, Source_Map, "NONE");
 	/* DESCRIPTION: Source term numerical method */
 	AddEnumOption("SOUR_NUM_METHOD_TEMPLATE", Kind_SourNumScheme_Template, Source_Map, "NONE");
 	/* DESCRIPTION: Viscous numerical method */
@@ -568,6 +584,9 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddScalarOption("CTE_VISCOUS_DRAG", CteViscDrag, 0.0);
 	/* DESCRIPTION: Print sensitivities to screen on exit */
 	AddSpecialOption("SHOW_ADJ_SENS", Show_Adj_Sens, SetBoolOption, false);
+    
+    /* DESCRIPTION: Reduction factor of the CFL coefficient in the turbulent adjoint problem */
+	AddScalarOption("ADJTURB_CFL_REDUCTION", AdjTurb_CFLRedCoeff, 0.1);
 
 	/*--- options related to input/output files and formats ---*/
 	/* CONFIG_CATEGORY: Input/output files and formats */
@@ -624,14 +643,12 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddScalarOption("SURFACE_LIN_FILENAME", SurfLinCoeff_FileName, string("surface_linear"));
 	/* DESCRIPTION: Writing solution file frequency */
 	AddScalarOption("WRT_SOL_FREQ", Wrt_Sol_Freq, 1000);
+  /* DESCRIPTION: Writing solution file frequency */
+	AddScalarOption("WRT_SOL_FREQ_DUALTIME", Wrt_Sol_Freq_DualTime, 1);
 	/* DESCRIPTION: Writing convergence history frequency */
 	AddScalarOption("WRT_CON_FREQ",  Wrt_Con_Freq, 1);
   /* DESCRIPTION: Writing convergence history frequency for the dual time */
 	AddScalarOption("WRT_CON_FREQ_DUALTIME",  Wrt_Con_Freq_DualTime, 10);
-	/* DESCRIPTION: Write unsteady data adding headers and prefixes */
-	AddSpecialOption("WRT_UNSTEADY", Wrt_Unsteady, SetBoolOption, false);
-	/* DESCRIPTION:  Write mass averaged solution file (plasma solver only, NO by default) */
-	AddSpecialOption("WRT_MASS_AVG_FLOW", Write_Mean_Solution, SetBoolOption, false);
 	/* DESCRIPTION: Write a volume solution file */
 	AddSpecialOption("WRT_VOL_SOL", Wrt_Vol_Sol, SetBoolOption, true);
 	/* DESCRIPTION: Write a surface solution file */
@@ -648,6 +665,8 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddSpecialOption("WRT_SOL_TEC_BINARY", Wrt_Sol_Tec_Binary, SetBoolOption, false);
   /* DESCRIPTION: List of output variables for the volume solution */
   AddEnumListOption("OUTPUT_VARS_VOL", nOutput_Vars_Vol, Output_Vars_Vol, Output_Vars_Map);
+    /* DESCRIPTION: Output residual info to solution/restart file */
+	AddSpecialOption("WRT_RESIDUALS", Wrt_Residuals, SetBoolOption, false);
   
 	/*--- options related to the equivalent area ---*/
 	/* CONFIG_CATEGORY: Equivalent Area */
@@ -714,6 +733,8 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddScalarOption("FREESTREAM_INTERMITTENCY", Intermittency_FreeStream, 1.0);
 	/* DESCRIPTION:  */
 	AddScalarOption("FREESTREAM_TURBULENCEINTENSITY", TurbulenceIntensity_FreeStream, 0.05);
+  /* DESCRIPTION:  */
+	AddScalarOption("FREESTREAM_NU_FACTOR", NuFactor_FreeStream, 3.0);
 	/* DESCRIPTION:  */
 	AddScalarOption("FREESTREAM_TURB2LAMVISCRATIO", Turb2LamViscRatio_FreeStream, 10.0);
 	/* DESCRIPTION: Laminar Prandtl number (0.72 (air), only for compressible flows) */
@@ -796,7 +817,9 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddScalarOption("FREESURFACE_DAMPING_LENGTH", FreeSurface_Damping_Length, 1.0);
 	/* DESCRIPTION: Location of the free surface outlet surface (x or y coordinate) */
 	AddScalarOption("FREESURFACE_OUTLET", FreeSurface_Outlet, 0.0);
-
+  /* DESCRIPTION: Writing convergence history frequency for the dual time */
+	AddScalarOption("FREESURFACE_REEVALUATION",  FreeSurface_Reevaluation, 25);
+  
 	/*--- options related to the grid deformation ---*/
 	// these options share nDV as their size in the option references; not a good idea
 	/* CONFIG_CATEGORY: Grid deformation */
@@ -811,7 +834,8 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddListOption("DV_VALUE_NEW", nDV, DV_Value_New);
 	/* DESCRIPTION: Parameters of the shape deformation
     	- HICKS_HENNE ( Lower Surface (0)/Upper Surface (1)/Only one Surface (2), x_Loc )
-    	- NACA_4DIGITS ( 1st digit, 2nd digit, 3rd and 4th digit )
+      - GAUSS_BUMP ( x_Loc, Thickness )
+      - NACA_4DIGITS ( 1st digit, 2nd digit, 3rd and 4th digit )
     	- PARABOLIC ( Center, Thickness )
     	- DISPLACEMENT ( x_Disp, y_Disp, z_Disp )
     	- ROTATION ( x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
@@ -866,11 +890,6 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	/* DESCRIPTION: Thermal diffusivity constant */
 	AddScalarOption("THERMAL_DIFFUSIVITY", Thermal_Diffusivity, 1.172E-5);
     
-    /* DESCRIPTION: Uncoupled Aeroelastic Frequency Plunge. */
-    AddScalarOption("FREQ_PLUNGE_AEROELASTIC", FreqPlungeAeroelastic, 100);
-    
-    /* DESCRIPTION: Uncoupled Aeroelastic Frequency Pitch. */
-    AddScalarOption("FREQ_PITCH_AEROELASTIC", FreqPitchAeroelastic, 100);
 
 	/* END_CONFIG_OPTIONS */
 
@@ -954,12 +973,33 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
 	Kind_SU2 = val_software;
 
+  /*--- Identification of free-surface problem, this problems are always unsteady and incompressible. ---*/
+  if (FreeSurface) {
+    Incompressible = true;
+		if (Kind_Solver == EULER) Kind_Solver = FREE_SURFACE_EULER;
+		if (Kind_Solver == NAVIER_STOKES) Kind_Solver = FREE_SURFACE_NAVIER_STOKES;
+    if (Unsteady_Simulation != DT_STEPPING_2ND) Unsteady_Simulation = DT_STEPPING_1ST;
+	}
+  
+  /*--- Decide whether we should be writing unsteady solution files. ---*/
+	if (Unsteady_Simulation == STEADY ||
+      Unsteady_Simulation == TIME_STEPPING ||
+      Unsteady_Simulation == TIME_SPECTRAL ||
+      Kind_Solver == FREE_SURFACE_EULER ||
+      Kind_Solver == FREE_SURFACE_NAVIER_STOKES)
+		Wrt_Unsteady = false;
+  else
+    Wrt_Unsteady = true;
+  
 	/*--- If we're solving a steady problem, make sure that
    there is no grid motion ---*/
 	if (Kind_SU2 == SU2_CFD && Unsteady_Simulation == STEADY)
-		Grid_Movement = false;	
-
-
+		Grid_Movement = false;
+  
+  /*--- If it is not specified, set the mesh motion mach number
+   equal to the freestream value. ---*/
+  if (Grid_Movement && Mach_Motion == 0.0)
+    Mach_Motion = Mach;
 
 	/*--- In case rigid-motion parameters have not been declared in the config file, set them equal to zero. ---*/
 	if ( Grid_Movement && (Kind_GridMovement[ZONE_0] == RIGID_MOTION) ) {
@@ -1333,11 +1373,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		Kind_SourNumScheme_AdjFlow  = PIECEWISE_CONSTANT;
 	}
 
-	//	if (Adjoint) {
-	//		Kind_TimeIntScheme_Flow = RUNGE_KUTTA_EXPLICIT;
-	//		Total_UnstTime = 0.1*Total_UnstTime;
-	//	}
-
 	nCFL = nMultiLevel+1; 
 	CFL = new double[nCFL];
 	CFL[0] = CFLFineGrid;
@@ -1351,7 +1386,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 	}
 
 
-	if (((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) 
+	if (((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS) || (Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == ADJ_FREE_SURFACE_RANS))
 			&& (Kind_ViscNumScheme_Flow == NONE)) {
 		cout << "You must define a viscous numerical method for the flow equations!!" << endl;
 		cout << "Press any key to exit..." << endl;
@@ -1359,20 +1394,20 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		exit(1);
 	}
 
-	if (((Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) && (Kind_ViscNumScheme_AdjFlow == NONE)) {
+	if (((Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == ADJ_FREE_SURFACE_RANS)) && (Kind_ViscNumScheme_AdjFlow == NONE)) {
 		cout << "You must define a viscous numerical method for the adjoint Navier-Stokes equations!!" << endl;
 		cout << "Press any key to exit..." << endl;
 		cin.get();
 		exit(1);
 	}	
 
-	if (((Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) && (Kind_SourNumScheme_AdjFlow == NONE)) {
+	if (((Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == ADJ_FREE_SURFACE_RANS)) && (Kind_SourNumScheme_AdjFlow == NONE)) {
 		cout << "You must define a source numerical method for the adjoint Navier-Stokes equations!!" << endl;
 		cout << "Press any key to exit..." << endl;
 		cin.get();
 		exit(1);
-	}	
-
+	}
+  
 	if ((Kind_Solver == PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_EULER) || 
 			(Kind_Solver == PLASMA_NAVIER_STOKES) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
 		unsigned short iSpecies, jSpecies, iReaction, ii;
@@ -2236,22 +2271,65 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 				Species_Temperature_FreeStream[iSpecies] = Temperature_FreeStream;
 		}
 
-
 		Inlet_Outlet_Defined = false;
 		if (Species_Temperature_Inlet != NULL || Species_Pressure_Inlet != NULL || Species_Pressure_Outlet != NULL )
 			Inlet_Outlet_Defined = true;
     
-	}
-  if (PlasmaMultiTimeSteps) {
-    nCFL = nMultiLevel+1;
-    CFL_MS = new double*[nSpecies];
-    for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-      CFL_MS[iSpecies] = new double[nCFL];
-      CFL_MS[iSpecies][0] = CFL_FineGrid_Species[iSpecies];
-      for (unsigned short iCFL = 1; iCFL < nCFL; iCFL++)
-        CFL_MS[iSpecies][iCFL] = CFL_MS[iSpecies][iCFL-1]*MG_CFLRedCoeff;
+    if (PlasmaMultiTimeSteps) {
+      
+      nCFL = nMultiLevel+1;
+      CFL_MS = new double*[nSpecies];
+      
+      if (CFL_FineGrid_Species == NULL) {
+#ifdef NO_MPI
+        cout << "WARNING: No species CFL numbers specified for plasma multi-timestepping, using mean flow CFL parameters" << endl;
+#else
+        if (MPI::COMM_WORLD.Get_rank() == MASTER_NODE)
+          cout << "WARNING: No species CFL numbers specified for plasma multi-timestepping, using mean flow CFL parameters" << endl;
+#endif
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          CFL_MS[iSpecies] = new double[nCFL];
+          CFL_MS[iSpecies][0] = CFL[0];
+          for (unsigned short iCFL = 1; iCFL < nCFL; iCFL++)
+            CFL_MS[iSpecies][iCFL] = CFL_MS[iSpecies][iCFL-1]*MG_CFLRedCoeff;
+        }
+      } else {
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          CFL_MS[iSpecies] = new double[nCFL];
+          CFL_MS[iSpecies][0] = CFL_FineGrid_Species[iSpecies];
+          for (unsigned short iCFL = 1; iCFL < nCFL; iCFL++)
+            CFL_MS[iSpecies][iCFL] = CFL_MS[iSpecies][iCFL-1]*MG_CFLRedCoeff;
+        }
+      }
+      
+      if (CFL_Iter_Species == NULL) {
+#ifdef NO_MPI
+        cout << "WARNING: No species CFL ramp iteration specified for plasma multi-timestepping, using mean flow CFL parameters" << endl;
+#else
+        if (MPI::COMM_WORLD.Get_rank() == MASTER_NODE)
+          cout << "WARNING: No species CFL ramp iteration specified for plasma multi-timestepping, using mean flow CFL parameters" << endl;
+#endif
+        CFL_Iter_Species = new unsigned short[nSpecies];
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          CFL_Iter_Species[iSpecies] = CFLRamp[1];
+        }
+      }
+      
+      if (CFL_Max_Species == NULL) {
+#ifdef NO_MPI
+        cout << "WARNING: No maximum CFL specified for plasma multi-timestepping, using mean flow CFL parameters" << endl;
+#else
+        if (MPI::COMM_WORLD.Get_rank() == MASTER_NODE)
+          cout << "WARNING: No maximum CFL specified for plasma multi-timestepping, using mean flow CFL parameters" << endl;
+#endif
+        CFL_Max_Species = new double[nSpecies];
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          CFL_Max_Species[iSpecies] = CFLRamp[2];
+        }
+      }
     }
-  }
+    
+	}
   
   
 	/*--- Some discrete adjoint requirements ---*/
@@ -2275,7 +2353,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 	/*--- Boundary (marker) treatment ---*/
 	nMarker_All = nMarker_Euler + nMarker_FarField + nMarker_SymWall + nMarker_PerBound + nMarker_NearFieldBound + nMarker_Supersonic_Inlet
   + nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux
-  + nMarker_NacelleInflow + nMarker_NacelleExhaust + nMarker_NS + nMarker_Dirichlet_Elec + nMarker_Displacement + nMarker_Load
+  + nMarker_NacelleInflow + nMarker_NacelleExhaust + nMarker_Dirichlet_Elec + nMarker_Displacement + nMarker_Load
   + nMarker_FlowLoad + nMarker_FWH + nMarker_Observer + nMarker_Custom + nMarker_Sliding + 2*nDomain;
 
 	Marker_All_Tag = new string[nMarker_All+2];									// Store the tag that correspond with each marker.
@@ -2287,7 +2365,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 	Marker_All_PerBound = new short[nMarker_All+2];							// Store if the boundary belongs to a periodic boundary.
 	Marker_All_Sliding = new unsigned short[nMarker_All+2];			// Store if the boundary belongs to a sliding interface.
 
-	unsigned short iMarker_All, iMarker_Config, iMarker_Euler, iMarker_NS, iMarker_Custom, iMarker_FarField,
+	unsigned short iMarker_All, iMarker_Config, iMarker_Euler, iMarker_Custom, iMarker_FarField,
 	iMarker_SymWall, iMarker_PerBound, iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
 	iMarker_Inlet, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement, iMarker_Load,
 	iMarker_FlowLoad, iMarker_FWH, iMarker_Observer, iMarker_Neumann, iMarker_Monitoring, iMarker_Plotting, iMarker_Moving,
@@ -2305,7 +2383,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 	}
 
 	nMarker_Config = nMarker_Euler + nMarker_FarField + nMarker_SymWall + nMarker_PerBound + nMarker_NearFieldBound
-  + nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux + nMarker_NacelleInflow + nMarker_NacelleExhaust + nMarker_Supersonic_Inlet + nMarker_Displacement + nMarker_Load + nMarker_FlowLoad + nMarker_FWH + nMarker_Observer + nMarker_NS + nMarker_Custom + nMarker_Sliding;
+  + nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux + nMarker_NacelleInflow + nMarker_NacelleExhaust + nMarker_Supersonic_Inlet + nMarker_Displacement + nMarker_Load + nMarker_FlowLoad + nMarker_FWH + nMarker_Observer + nMarker_Custom + nMarker_Sliding;
 
 	Marker_Config_Tag = new string[nMarker_Config];
 	Marker_Config_Boundary = new unsigned short[nMarker_Config];
@@ -2329,12 +2407,6 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 	for (iMarker_Euler = 0; iMarker_Euler < nMarker_Euler; iMarker_Euler++) {
 		Marker_Config_Tag[iMarker_Config] = Marker_Euler[iMarker_Euler];
 		Marker_Config_Boundary[iMarker_Config] = EULER_WALL;
-		iMarker_Config++;
-	}
-
-	for (iMarker_NS = 0; iMarker_NS < nMarker_NS; iMarker_NS++) {
-		Marker_Config_Tag[iMarker_Config] = Marker_NS[iMarker_NS];
-		Marker_Config_Boundary[iMarker_Config] = NO_SLIP_WALL;
 		iMarker_Config++;
 	}
 
@@ -2490,7 +2562,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 }
 
 void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
-	unsigned short iMarker_Euler, iMarker_NS, iMarker_Custom, iMarker_FarField,
+	unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
 	iMarker_SymWall, iMarker_PerBound, iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
 	iMarker_Inlet, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_FWH, iMarker_Observer,
 	iMarker_Neumann, iMarker_Monitoring, iMarker_Plotting, iMarker_Moving, iMarker_Supersonic_Inlet;
@@ -2513,21 +2585,21 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     case SU2_SOL: cout << "|   |_____/   \\____/  |____|  Suite (Solution Exporting Code)           |" << endl; break;
 	}
 
-  cout << "|                             Release 2.0.3                             |" << endl;
+  cout << "|                             Release 2.0.4                             |" << endl;
 	cout <<"-------------------------------------------------------------------------" << endl;
 
 	cout << endl <<"------------------------ Physical case definition -----------------------" << endl;
 	if (val_software == SU2_CFD) {
 		switch (Kind_Solver) {
             case EULER:
-                if (Incompressible) cout << "Incompressible Euler's equations." << endl;
-                else cout << "Compressible Euler's equations." << endl; break;
+                if (Incompressible) cout << "Incompressible Euler equations." << endl;
+                else cout << "Compressible Euler equations." << endl; break;
             case NAVIER_STOKES:
-                if (Incompressible) cout << "Incompressible Laminar Navier-Stokes' equations." << endl;
+                if (Incompressible) cout << "Incompressible Laminar Navier-Stokes equations." << endl;
                 else cout << "Compressible Laminar Navier-Stokes' equations." << endl; break;
             case RANS:
-                if (Incompressible) cout << "Incompressible RANS' equations." << endl;
-                else cout << "Compressible RANS' equations." << endl;
+                if (Incompressible) cout << "Incompressible RANS equations." << endl;
+                else cout << "Compressible RANS equations." << endl;
                 cout << "Turbulence model: ";
                 switch (Kind_Turb_Model) {
                     case SA:  cout << "Spalart Allmaras" << endl; break;
@@ -2588,8 +2660,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                     else
                         cout << "Continuous RANS adjoint equations." << endl;
                 }
-                else
-                    cout << "Hybrid RANS adjoint equations." << endl;
+                else if (Kind_Adjoint == HYBRID) {
+                    if (Frozen_Visc)
+                        cout << "Hybrid RANS adjoint equations with no turbulent -> mean flow coupling." << endl;
+                    else
+                        cout << "Hybrid RANS adjoint equations." << endl;
+                }
+
         
                 break;
 			case LIN_EULER: cout << "Linearized Euler equations." << endl; break;
@@ -2606,7 +2683,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                         case SST: cout << "Menter's SST"     << endl; break;
                     }
                 }
-				cout << "The free surface is located at: " << FreeSurface_Zero <<", and it thickness is: " << FreeSurface_Thickness << "." << endl;
+				cout << "The free surface is located at: " << FreeSurface_Zero <<", and its thickness is: " << FreeSurface_Thickness << "." << endl;
 				break;
                 
 		}
@@ -2626,9 +2703,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		}
 
 		if (Grid_Movement) {
-			cout << "Grid movement (fluttering)." << endl;
-			cout << "Reduced frequency: "<< Reduced_Frequency << "." << endl;
-			cout << "Maximum amplitude of pitching: "<< Pitching_Amplitude << "." << endl;
+			cout << "Performing a dynamic mesh simulation." << endl;
 		}
 
 		if (Rotating_Frame) {
@@ -2704,7 +2779,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				switch (Design_Variable[iDV]) {
 				case NO_DEFORMATION: cout << "There isn't any deformation." ; break;
 				case HICKS_HENNE: cout << "Hicks Henne <-> " ; break;
-				case MACH_NUMBER: cout << "Mach number <-> " ; break;
+        case GAUSS_BUMP: cout << "Gauss bump <-> " ; break;
+        case MACH_NUMBER: cout << "Mach number <-> " ; break;
 				case DISPLACEMENT: cout << "Displacement design variable."; break;
 				case NACA_4DIGITS: cout << "NACA four digits <-> "; break;
 				case PARABOLIC: cout << "Parabolic <-> "; break;
@@ -2728,6 +2804,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 				if (Design_Variable[iDV] == NO_DEFORMATION) nParamDV = 0;
 				if (Design_Variable[iDV] == HICKS_HENNE) nParamDV = 2;
+				if (Design_Variable[iDV] == GAUSS_BUMP) nParamDV = 3;
 				if (Design_Variable[iDV] == DISPLACEMENT) nParamDV = 3;
 				if (Design_Variable[iDV] == ROTATION) nParamDV = 6;
 				if (Design_Variable[iDV] == NACA_4DIGITS) nParamDV = 3;
@@ -2759,7 +2836,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			switch (Design_Variable[iDV]) {
 			case NO_DEFORMATION: cout << "There isn't any deformation." ; break;
 			case HICKS_HENNE: cout << "Hicks Henne <-> " ; break;
-			case MACH_NUMBER: cout << "Mach number <-> " ; break;
+      case GAUSS_BUMP: cout << "Gauss bump <-> " ; break;
+      case MACH_NUMBER: cout << "Mach number <-> " ; break;
 			case DISPLACEMENT: cout << "Displacement design variable."; break;
 			case NACA_4DIGITS: cout << "NACA four digits <-> "; break;
 			case PARABOLIC: cout << "Parabolic <-> "; break;
@@ -2783,6 +2861,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 			if (Design_Variable[iDV] == NO_DEFORMATION) nParamDV = 0;
 			if (Design_Variable[iDV] == HICKS_HENNE) nParamDV = 2;
+			if (Design_Variable[iDV] == GAUSS_BUMP) nParamDV = 3;
 			if (Design_Variable[iDV] == DISPLACEMENT) nParamDV = 3;
 			if (Design_Variable[iDV] == ROTATION) nParamDV = 6;
 			if (Design_Variable[iDV] == NACA_4DIGITS) nParamDV = 3;
@@ -2832,7 +2911,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		case THRUST_COEFFICIENT: cout << "Thrust objective function." << endl; break;
 		case TORQUE_COEFFICIENT: cout << "Torque efficiency objective function." << endl; break;
 		case FIGURE_OF_MERIT: cout << "Rotor Figure of Merit objective function." << endl; break;
-		case FREESURFACE: cout << "Free-Surface objective function." << endl; break;
+		case FREE_SURFACE: cout << "Free-Surface objective function." << endl; break;
 		case NOISE: cout << "Noise objective function." << endl; break;
 		}
 
@@ -3092,16 +3171,19 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 					cout << "A symmetric Gauss-Seidel method is used for solving the linear system." << endl;
 					cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<<endl;
 					cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<<endl;
+          cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
 					break;
 				case BCGSTAB:
 					cout << "A precond. BCGSTAB is used for solving the linear system." << endl;
 					cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<<endl;
 					cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<<endl;
+          cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
 					break;
 				case GMRES:
 					cout << "A precond. GMRES is used for solving the linear system." << endl;
 					cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<<endl;
 					cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<<endl;
+          cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
 					break;
 				}
 				break;
@@ -3337,7 +3419,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 		cout << "Writing a flow solution every " << Wrt_Sol_Freq <<" iterations."<<endl;
 		cout << "Writing the convergence history every " << Wrt_Con_Freq <<" iterations."<<endl;
-		cout << "Writing the dual time convergence history every " << Wrt_Con_Freq_DualTime <<" iterations."<<endl;
+    if ((Unsteady_Simulation == DT_STEPPING_1ST) || (Unsteady_Simulation == DT_STEPPING_2ND))  {
+      cout << "Writing the dual time flow solution every " << Wrt_Sol_Freq_DualTime <<" iterations."<<endl;
+      cout << "Writing the dual time convergence history every " << Wrt_Con_Freq_DualTime <<" iterations."<<endl;
+    }
 
 		switch (Output_FileFormat) {
       case PARAVIEW: cout << "The output file format is Paraview (.vtk)." << endl; break;
@@ -3428,15 +3513,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		for (iMarker_Euler = 0; iMarker_Euler < nMarker_Euler; iMarker_Euler++) {
 			cout << Marker_Euler[iMarker_Euler];
 			if (iMarker_Euler < nMarker_Euler-1) cout << ", ";
-			else cout <<"."<<endl;
-		}
-	}
-
-	if (nMarker_NS != 0) {
-		cout << "Navier-Stokes wall boundary marker(s): ";
-		for (iMarker_NS = 0; iMarker_NS < nMarker_NS; iMarker_NS++) {
-			cout << Marker_NS[iMarker_NS];
-			if (iMarker_NS < nMarker_NS-1) cout << ", ";
 			else cout <<"."<<endl;
 		}
 	}
@@ -4399,352 +4475,426 @@ void CConfig::SetGlobalParam(unsigned short val_solver, unsigned short val_syste
   
 	/*--- Set the solver methods ---*/
 	switch (val_solver) {
-        case EULER:
-            if (val_system == RUNTIME_FLOW_SYS) {
-                SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
-                                      GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
-                SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
-                SetKind_ViscNumScheme(NONE);
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
-            }
-            break;
-        case NAVIER_STOKES:
-            if (val_system == RUNTIME_FLOW_SYS) {
-                SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
-                                      GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
-                SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
-                SetKind_ViscNumScheme(GetKind_ViscNumScheme_Flow());
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
-            }
-            break;
-        case RANS:
-            if (val_system == RUNTIME_FLOW_SYS) {
-                SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
-                                      GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
-                SetKind_SourNumScheme(NONE);
-                SetKind_ViscNumScheme(GetKind_ViscNumScheme_Flow());
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
-            }
-            if (val_system == RUNTIME_TURB_SYS) {
-                SetKind_ConvNumScheme(GetKind_ConvNumScheme_Turb(), GetKind_Centered_Turb(),
-                                      GetKind_Upwind_Turb(), GetKind_SlopeLimit_Turb());
-                SetKind_ViscNumScheme(GetKind_ViscNumScheme_Turb());
-                SetKind_SourNumScheme(GetKind_SourNumScheme_Turb());
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_Turb());
-            }
-            if (val_system == RUNTIME_TRANS_SYS) {
-                SetKind_ConvNumScheme(GetKind_ConvNumScheme_Turb(), GetKind_Centered_Turb(),
-                                      GetKind_Upwind_Turb(), GetKind_SlopeLimit_Turb());
-                SetKind_ViscNumScheme(GetKind_ViscNumScheme_Turb());
-                SetKind_SourNumScheme(GetKind_SourNumScheme_Turb());
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_Turb());
-            }
-            break;
-        case PLASMA_EULER:
-            if (val_system == RUNTIME_PLASMA_SYS) {
-                SetKind_ConvNumScheme(GetKind_ConvNumScheme_Plasma(), GetKind_Centered_Plasma(),
-                                      GetKind_Upwind_Plasma(), GetKind_SlopeLimit_Plasma());
-                SetKind_ViscNumScheme(NONE);
-                SetKind_SourNumScheme(GetKind_SourNumScheme_Plasma());
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_Plasma());
-            }
-            if (val_system == RUNTIME_ELEC_SYS) {
-                SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
-                SetKind_ViscNumScheme(GetKind_ViscNumScheme_Elec());
-                SetKind_SourNumScheme(GetKind_SourNumScheme_Elec());
-                SetKind_TimeIntScheme(NONE);
-            }
-            break;
-        case PLASMA_NAVIER_STOKES:
-            if (val_system == RUNTIME_PLASMA_SYS) {
-                SetKind_ConvNumScheme(GetKind_ConvNumScheme_Plasma(), GetKind_Centered_Plasma(),
-                                      GetKind_Upwind_Plasma(), GetKind_SlopeLimit_Plasma());
-                SetKind_ViscNumScheme(GetKind_ViscNumScheme_Plasma());
-                SetKind_SourNumScheme(GetKind_SourNumScheme_Plasma());
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_Plasma());
-            }
-            if (val_system == RUNTIME_ELEC_SYS) {
-                SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
-                SetKind_ViscNumScheme(GetKind_ViscNumScheme_Elec());
-                SetKind_SourNumScheme(GetKind_SourNumScheme_Elec());
-                SetKind_TimeIntScheme(NONE);
-            }
-            break;
-        case ADJ_PLASMA_EULER:
-            if (val_system == RUNTIME_PLASMA_SYS) {
-                SetKind_ConvNumScheme(GetKind_ConvNumScheme_Plasma(), GetKind_Centered_Plasma(),
-                                      GetKind_Upwind_Plasma(), GetKind_SlopeLimit_Plasma());
-                SetKind_ViscNumScheme(NONE);
-                SetKind_SourNumScheme(GetKind_SourNumScheme_Plasma());
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_Plasma());
-            }
-            if (val_system == RUNTIME_ADJPLASMA_SYS) {
-                SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjPlasma(), GetKind_Centered_AdjPlasma(),
-                                      GetKind_Upwind_AdjPlasma(), GetKind_SlopeLimit_AdjPlasma());
-                SetKind_ViscNumScheme(NONE);
-                SetKind_SourNumScheme(GetKind_SourNumScheme_AdjPlasma());
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjPlasma());
-            }
-            break;
-        case ADJ_PLASMA_NAVIER_STOKES:
-            if (val_system == RUNTIME_PLASMA_SYS) {
-                SetKind_ConvNumScheme(GetKind_ConvNumScheme_Plasma(), GetKind_Centered_Plasma(),
-                                      GetKind_Upwind_Plasma(), GetKind_SlopeLimit_Plasma());
-                SetKind_ViscNumScheme(GetKind_ViscNumScheme_Plasma());
-                SetKind_SourNumScheme(GetKind_SourNumScheme_Plasma());
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_Plasma());
-            }
-            if (val_system == RUNTIME_ADJPLASMA_SYS) {
-                SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjPlasma(), GetKind_Centered_AdjPlasma(),
-                                      GetKind_Upwind_AdjPlasma(), GetKind_SlopeLimit_AdjPlasma());
-                SetKind_ViscNumScheme(GetKind_ViscNumScheme_AdjPlasma());
-                SetKind_SourNumScheme(GetKind_SourNumScheme_AdjPlasma());
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjPlasma());
-            }
-            break;
-        case FREE_SURFACE_EULER:
-            if (val_system == RUNTIME_FLOW_SYS) {
-                SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
-                                      GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
-                SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
-                SetKind_ViscNumScheme(NONE);
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
-            }
-            if (val_system == RUNTIME_LEVELSET_SYS) {
-                SetKind_ConvNumScheme(GetKind_ConvNumScheme_LevelSet(), GetKind_Centered_LevelSet(),
-                                      GetKind_Upwind_LevelSet(), GetKind_SlopeLimit_LevelSet());
-                SetKind_SourNumScheme(GetKind_SourNumScheme_LevelSet());
-                SetKind_ViscNumScheme(NONE);
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_LevelSet());
-            }
-            break;
-        case FREE_SURFACE_NAVIER_STOKES:
-            if (val_system == RUNTIME_FLOW_SYS) {
-                SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
-                                      GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
-                SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
-                SetKind_ViscNumScheme(GetKind_ViscNumScheme_Flow());
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
-            }
-            if (val_system == RUNTIME_LEVELSET_SYS) {
-                SetKind_ConvNumScheme(GetKind_ConvNumScheme_LevelSet(), GetKind_Centered_LevelSet(),
-                                      GetKind_Upwind_LevelSet(), GetKind_SlopeLimit_LevelSet());
-                SetKind_SourNumScheme(GetKind_SourNumScheme_LevelSet());
-                SetKind_ViscNumScheme(NONE);
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_LevelSet());
-            }
-            break;
-        case FREE_SURFACE_RANS:
-            if (val_system == RUNTIME_FLOW_SYS) {
-                SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
-                                      GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
-                SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
-                SetKind_ViscNumScheme(GetKind_ViscNumScheme_Flow());
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
-            }
-            if (val_system == RUNTIME_TURB_SYS) {
-                SetKind_ConvNumScheme(GetKind_ConvNumScheme_Turb(), GetKind_Centered_Turb(),
-                                      GetKind_Upwind_Turb(), GetKind_SlopeLimit_Turb());
-                SetKind_ViscNumScheme(GetKind_ViscNumScheme_Turb());
-                SetKind_SourNumScheme(GetKind_SourNumScheme_Turb());
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_Turb());
-            }
-            if (val_system == RUNTIME_LEVELSET_SYS) {
-                SetKind_ConvNumScheme(GetKind_ConvNumScheme_LevelSet(), GetKind_Centered_LevelSet(),
-                                      GetKind_Upwind_LevelSet(), GetKind_SlopeLimit_LevelSet());
-                SetKind_SourNumScheme(GetKind_SourNumScheme_LevelSet());
-                SetKind_ViscNumScheme(NONE);
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_LevelSet());
-            }
-            break;
-        case ADJ_EULER:
-            if (val_system == RUNTIME_FLOW_SYS) {
-                SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
-                                      GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
-                SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
-                SetKind_ViscNumScheme(NONE);
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
-            }
-            if (val_system == RUNTIME_ADJFLOW_SYS) {
-                SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjFlow(), GetKind_Centered_AdjFlow(),
-                                      GetKind_Upwind_AdjFlow(), GetKind_SlopeLimit_AdjFlow());
-                SetKind_SourNumScheme(GetKind_SourNumScheme_AdjFlow());
-                SetKind_ViscNumScheme(NONE);
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjFlow());
-            }
-            break;
-        case ADJ_NAVIER_STOKES:
-            if (val_system == RUNTIME_FLOW_SYS) {
-                SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
-                                      GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
-                SetKind_SourNumScheme(NONE);
-                SetKind_ViscNumScheme(GetKind_ViscNumScheme_Flow());
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
-            }
-            if (val_system == RUNTIME_ADJFLOW_SYS) {
-                SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjFlow(), GetKind_Centered_AdjFlow(),
-                                      GetKind_Upwind_AdjFlow(), GetKind_SlopeLimit_AdjFlow());
-                SetKind_ViscNumScheme(GetKind_ViscNumScheme_AdjFlow());
-                SetKind_SourNumScheme(GetKind_SourNumScheme_AdjFlow());
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjFlow());
-            }
-            break;
-        case ADJ_RANS:
-            if (val_system == RUNTIME_FLOW_SYS) {
-                SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
-                                      GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
-                SetKind_ViscNumScheme(GetKind_ViscNumScheme_Flow());
-                SetKind_SourNumScheme(NONE);
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
-            }
-            if (val_system == RUNTIME_ADJFLOW_SYS) {
-                SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjFlow(), GetKind_Centered_AdjFlow(),
-                                      GetKind_Upwind_AdjFlow(), GetKind_SlopeLimit_AdjFlow());
-                SetKind_ViscNumScheme(GetKind_ViscNumScheme_AdjFlow());
-                SetKind_SourNumScheme(GetKind_SourNumScheme_AdjFlow());
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjFlow());
-            }
-            if (val_system == RUNTIME_TURB_SYS) {
-                SetKind_ConvNumScheme(GetKind_ConvNumScheme_Turb(), GetKind_Centered_Turb(),
-                                      GetKind_Upwind_Turb(), GetKind_SlopeLimit_Turb());
-                SetKind_ViscNumScheme(GetKind_ViscNumScheme_Turb());
-                SetKind_SourNumScheme(GetKind_SourNumScheme_Turb());
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_Turb());
-            }
-            if (val_system == RUNTIME_ADJTURB_SYS) {
-                SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjTurb(), GetKind_Centered_AdjTurb(),
-                                      GetKind_Upwind_AdjTurb(), GetKind_SlopeLimit_AdjTurb());
-                SetKind_ViscNumScheme(GetKind_ViscNumScheme_AdjTurb());
-                SetKind_SourNumScheme(GetKind_SourNumScheme_AdjTurb());
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjTurb());
-            }
-            break;
-        case ADJ_FREE_SURFACE_EULER:
-            if (val_system == RUNTIME_FLOW_SYS) {
-                SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
-                                      GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
-                SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
-                SetKind_ViscNumScheme(NONE);
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
-            }
-            if (val_system == RUNTIME_LEVELSET_SYS) {
-                SetKind_ConvNumScheme(GetKind_ConvNumScheme_LevelSet(), GetKind_Centered_LevelSet(),
-                                      GetKind_Upwind_LevelSet(), GetKind_SlopeLimit_LevelSet());
-                SetKind_SourNumScheme(GetKind_SourNumScheme_LevelSet());
-                SetKind_ViscNumScheme(NONE);
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_LevelSet());
-            }
-            if (val_system == RUNTIME_ADJFLOW_SYS) {
-                SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjFlow(), GetKind_Centered_AdjFlow(),
-                                      GetKind_Upwind_AdjFlow(), GetKind_SlopeLimit_AdjFlow());
-                SetKind_SourNumScheme(GetKind_SourNumScheme_AdjFlow());
-                SetKind_ViscNumScheme(NONE);
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjFlow());
-            }
-            if (val_system == RUNTIME_ADJLEVELSET_SYS) {
-                SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjLevelSet(), GetKind_Centered_AdjLevelSet(),
-                                      GetKind_Upwind_AdjLevelSet(), GetKind_SlopeLimit_AdjLevelSet());
-                SetKind_SourNumScheme(GetKind_SourNumScheme_AdjLevelSet());
-                SetKind_ViscNumScheme(GetKind_ViscNumScheme_AdjLevelSet());
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjLevelSet());
-            }
-            break;
-        case LIN_EULER:
-            if (val_system == RUNTIME_FLOW_SYS) {
-                SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
-                                      GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
-                SetKind_SourNumScheme(NONE); SetKind_ViscNumScheme(NONE);
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
-            }
-            if (val_system == RUNTIME_LINFLOW_SYS) {
-                SetKind_ConvNumScheme(GetKind_ConvNumScheme_LinFlow(), GetKind_Centered_LinFlow(),
-                                      GetKind_Upwind_LinFlow(), NONE);
-                SetKind_ViscNumScheme(NONE); SetKind_SourNumScheme(NONE);
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_LinFlow());
-            }
-            break;
-        case ELECTRIC_POTENTIAL:
-            if (val_system == RUNTIME_ELEC_SYS) {
-                SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
-                SetKind_SourNumScheme(GetKind_SourNumScheme_Elec());
-                SetKind_ViscNumScheme(GetKind_ViscNumScheme_Elec());
-                SetKind_TimeIntScheme(NONE);
-            }
-            break;
-        case WAVE_EQUATION:
-            if (val_system == RUNTIME_WAVE_SYS) {
-                SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
-                SetKind_SourNumScheme(GetKind_SourNumScheme_Wave());
-                SetKind_ViscNumScheme(GetKind_ViscNumScheme_Wave());
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_Wave());
-            }
-            break;
-        case LINEAR_ELASTICITY:
-            if (val_system == RUNTIME_FEA_SYS) {
-                SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
-                SetKind_SourNumScheme(GetKind_SourNumScheme_FEA());
-                SetKind_ViscNumScheme(GetKind_ViscNumScheme_FEA());
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_FEA());
-            }
-            break;
-        case FLUID_STRUCTURE_EULER:
-            if (val_system == RUNTIME_FLOW_SYS) {
-                SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
-                                      GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
-                SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
-                SetKind_ViscNumScheme(NONE);
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
-            }
-            if (val_system == RUNTIME_FEA_SYS) {
-                SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
-                SetKind_SourNumScheme(GetKind_SourNumScheme_FEA());
-                SetKind_ViscNumScheme(GetKind_ViscNumScheme_FEA());
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_FEA());
-            }
-            break;
-        case AEROACOUSTIC_EULER:
-            if (val_system == RUNTIME_FLOW_SYS) {
-                SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
-                                      GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
-                SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
-                SetKind_ViscNumScheme(NONE);
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
-            }
-            if (val_system == RUNTIME_WAVE_SYS) {
-                SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
-                SetKind_SourNumScheme(GetKind_SourNumScheme_Wave());
-                SetKind_ViscNumScheme(GetKind_ViscNumScheme_Wave());
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_Wave());
-            }
-            break;
-        case ADJ_AEROACOUSTIC_EULER:
-            if (val_system == RUNTIME_FLOW_SYS) {
-                SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
-                                      GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
-                SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
-                SetKind_ViscNumScheme(NONE);
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
-            }
-            if (val_system == RUNTIME_WAVE_SYS) {
-                SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
-                SetKind_SourNumScheme(GetKind_SourNumScheme_Wave());
-                SetKind_ViscNumScheme(GetKind_ViscNumScheme_Wave());
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_Wave());
-            }
-            if (val_system == RUNTIME_ADJFLOW_SYS) {
-                SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjFlow(), GetKind_Centered_AdjFlow(),
-                                      GetKind_Upwind_AdjFlow(), GetKind_SlopeLimit_AdjFlow());
-                SetKind_SourNumScheme(GetKind_SourNumScheme_AdjFlow());
-                SetKind_ViscNumScheme(NONE);
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjFlow());
-            }
-            if (val_system == RUNTIME_WAVE_SYS) {
-                SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
-                SetKind_SourNumScheme(GetKind_SourNumScheme_Wave());
-                SetKind_ViscNumScheme(GetKind_ViscNumScheme_Wave());
-                SetKind_TimeIntScheme(GetKind_TimeIntScheme_Wave());
-            }
-            break;
+    case EULER:
+      if (val_system == RUNTIME_FLOW_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
+                              GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
+        SetKind_ViscNumScheme(NONE);
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
+      }
+      break;
+    case NAVIER_STOKES:
+      if (val_system == RUNTIME_FLOW_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
+                              GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
+        SetKind_ViscNumScheme(GetKind_ViscNumScheme_Flow());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
+      }
+      break;
+    case RANS:
+      if (val_system == RUNTIME_FLOW_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
+                              GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
+        SetKind_SourNumScheme(NONE);
+        SetKind_ViscNumScheme(GetKind_ViscNumScheme_Flow());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
+      }
+      if (val_system == RUNTIME_TURB_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Turb(), GetKind_Centered_Turb(),
+                              GetKind_Upwind_Turb(), GetKind_SlopeLimit_Turb());
+        SetKind_ViscNumScheme(GetKind_ViscNumScheme_Turb());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_Turb());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Turb());
+      }
+      if (val_system == RUNTIME_TRANS_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Turb(), GetKind_Centered_Turb(),
+                              GetKind_Upwind_Turb(), GetKind_SlopeLimit_Turb());
+        SetKind_ViscNumScheme(GetKind_ViscNumScheme_Turb());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_Turb());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Turb());
+      }
+      break;
+    case PLASMA_EULER:
+      if (val_system == RUNTIME_PLASMA_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Plasma(), GetKind_Centered_Plasma(),
+                              GetKind_Upwind_Plasma(), GetKind_SlopeLimit_Plasma());
+        SetKind_ViscNumScheme(NONE);
+        SetKind_SourNumScheme(GetKind_SourNumScheme_Plasma());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Plasma());
+      }
+      if (val_system == RUNTIME_ELEC_SYS) {
+        SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
+        SetKind_ViscNumScheme(GetKind_ViscNumScheme_Elec());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_Elec());
+        SetKind_TimeIntScheme(NONE);
+      }
+      break;
+    case PLASMA_NAVIER_STOKES:
+      if (val_system == RUNTIME_PLASMA_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Plasma(), GetKind_Centered_Plasma(),
+                              GetKind_Upwind_Plasma(), GetKind_SlopeLimit_Plasma());
+        SetKind_ViscNumScheme(GetKind_ViscNumScheme_Plasma());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_Plasma());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Plasma());
+      }
+      if (val_system == RUNTIME_ELEC_SYS) {
+        SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
+        SetKind_ViscNumScheme(GetKind_ViscNumScheme_Elec());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_Elec());
+        SetKind_TimeIntScheme(NONE);
+      }
+      break;
+    case ADJ_PLASMA_EULER:
+      if (val_system == RUNTIME_PLASMA_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Plasma(), GetKind_Centered_Plasma(),
+                              GetKind_Upwind_Plasma(), GetKind_SlopeLimit_Plasma());
+        SetKind_ViscNumScheme(NONE);
+        SetKind_SourNumScheme(GetKind_SourNumScheme_Plasma());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Plasma());
+      }
+      if (val_system == RUNTIME_ADJPLASMA_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjPlasma(), GetKind_Centered_AdjPlasma(),
+                              GetKind_Upwind_AdjPlasma(), GetKind_SlopeLimit_AdjPlasma());
+        SetKind_ViscNumScheme(NONE);
+        SetKind_SourNumScheme(GetKind_SourNumScheme_AdjPlasma());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjPlasma());
+      }
+      break;
+    case ADJ_PLASMA_NAVIER_STOKES:
+      if (val_system == RUNTIME_PLASMA_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Plasma(), GetKind_Centered_Plasma(),
+                              GetKind_Upwind_Plasma(), GetKind_SlopeLimit_Plasma());
+        SetKind_ViscNumScheme(GetKind_ViscNumScheme_Plasma());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_Plasma());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Plasma());
+      }
+      if (val_system == RUNTIME_ADJPLASMA_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjPlasma(), GetKind_Centered_AdjPlasma(),
+                              GetKind_Upwind_AdjPlasma(), GetKind_SlopeLimit_AdjPlasma());
+        SetKind_ViscNumScheme(GetKind_ViscNumScheme_AdjPlasma());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_AdjPlasma());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjPlasma());
+      }
+      break;
+    case FREE_SURFACE_EULER:
+      if (val_system == RUNTIME_FLOW_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
+                              GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
+        SetKind_ViscNumScheme(NONE);
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
+      }
+      if (val_system == RUNTIME_LEVELSET_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_LevelSet(), GetKind_Centered_LevelSet(),
+                              GetKind_Upwind_LevelSet(), GetKind_SlopeLimit_LevelSet());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_LevelSet());
+        SetKind_ViscNumScheme(NONE);
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_LevelSet());
+      }
+      break;
+    case FREE_SURFACE_NAVIER_STOKES:
+      if (val_system == RUNTIME_FLOW_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
+                              GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
+        SetKind_ViscNumScheme(GetKind_ViscNumScheme_Flow());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
+      }
+      if (val_system == RUNTIME_LEVELSET_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_LevelSet(), GetKind_Centered_LevelSet(),
+                              GetKind_Upwind_LevelSet(), GetKind_SlopeLimit_LevelSet());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_LevelSet());
+        SetKind_ViscNumScheme(NONE);
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_LevelSet());
+      }
+      break;
+    case FREE_SURFACE_RANS:
+      if (val_system == RUNTIME_FLOW_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
+                              GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
+        SetKind_ViscNumScheme(GetKind_ViscNumScheme_Flow());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
+      }
+      if (val_system == RUNTIME_TURB_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Turb(), GetKind_Centered_Turb(),
+                              GetKind_Upwind_Turb(), GetKind_SlopeLimit_Turb());
+        SetKind_ViscNumScheme(GetKind_ViscNumScheme_Turb());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_Turb());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Turb());
+      }
+      if (val_system == RUNTIME_LEVELSET_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_LevelSet(), GetKind_Centered_LevelSet(),
+                              GetKind_Upwind_LevelSet(), GetKind_SlopeLimit_LevelSet());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_LevelSet());
+        SetKind_ViscNumScheme(NONE);
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_LevelSet());
+      }
+      break;
+    case ADJ_EULER:
+      if (val_system == RUNTIME_FLOW_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
+                              GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
+        SetKind_ViscNumScheme(NONE);
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
+      }
+      if (val_system == RUNTIME_ADJFLOW_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjFlow(), GetKind_Centered_AdjFlow(),
+                              GetKind_Upwind_AdjFlow(), GetKind_SlopeLimit_AdjFlow());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_AdjFlow());
+        SetKind_ViscNumScheme(NONE);
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjFlow());
+      }
+      break;
+    case ADJ_NAVIER_STOKES:
+      if (val_system == RUNTIME_FLOW_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
+                              GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
+        SetKind_SourNumScheme(NONE);
+        SetKind_ViscNumScheme(GetKind_ViscNumScheme_Flow());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
+      }
+      if (val_system == RUNTIME_ADJFLOW_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjFlow(), GetKind_Centered_AdjFlow(),
+                              GetKind_Upwind_AdjFlow(), GetKind_SlopeLimit_AdjFlow());
+        SetKind_ViscNumScheme(GetKind_ViscNumScheme_AdjFlow());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_AdjFlow());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjFlow());
+      }
+      break;
+    case ADJ_RANS:
+      if (val_system == RUNTIME_FLOW_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
+                              GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
+        SetKind_ViscNumScheme(GetKind_ViscNumScheme_Flow());
+        SetKind_SourNumScheme(NONE);
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
+      }
+      if (val_system == RUNTIME_ADJFLOW_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjFlow(), GetKind_Centered_AdjFlow(),
+                              GetKind_Upwind_AdjFlow(), GetKind_SlopeLimit_AdjFlow());
+        SetKind_ViscNumScheme(GetKind_ViscNumScheme_AdjFlow());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_AdjFlow());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjFlow());
+      }
+      if (val_system == RUNTIME_TURB_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Turb(), GetKind_Centered_Turb(),
+                              GetKind_Upwind_Turb(), GetKind_SlopeLimit_Turb());
+        SetKind_ViscNumScheme(GetKind_ViscNumScheme_Turb());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_Turb());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Turb());
+      }
+      if (val_system == RUNTIME_ADJTURB_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjTurb(), GetKind_Centered_AdjTurb(),
+                              GetKind_Upwind_AdjTurb(), GetKind_SlopeLimit_AdjTurb());
+        SetKind_ViscNumScheme(GetKind_ViscNumScheme_AdjTurb());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_AdjTurb());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjTurb());
+      }
+      break;
+    case ADJ_FREE_SURFACE_EULER:
+      if (val_system == RUNTIME_FLOW_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
+                              GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
+        SetKind_ViscNumScheme(NONE);
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
+      }
+      if (val_system == RUNTIME_LEVELSET_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_LevelSet(), GetKind_Centered_LevelSet(),
+                              GetKind_Upwind_LevelSet(), GetKind_SlopeLimit_LevelSet());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_LevelSet());
+        SetKind_ViscNumScheme(NONE);
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_LevelSet());
+      }
+      if (val_system == RUNTIME_ADJFLOW_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjFlow(), GetKind_Centered_AdjFlow(),
+                              GetKind_Upwind_AdjFlow(), GetKind_SlopeLimit_AdjFlow());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_AdjFlow());
+        SetKind_ViscNumScheme(NONE);
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjFlow());
+      }
+      if (val_system == RUNTIME_ADJLEVELSET_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjLevelSet(), GetKind_Centered_AdjLevelSet(),
+                              GetKind_Upwind_AdjLevelSet(), GetKind_SlopeLimit_AdjLevelSet());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_AdjLevelSet());
+        SetKind_ViscNumScheme(NONE);
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjLevelSet());
+      }
+      break;
+    case ADJ_FREE_SURFACE_NAVIER_STOKES:      
+      if (val_system == RUNTIME_FLOW_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
+                              GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
+        SetKind_ViscNumScheme(GetKind_ViscNumScheme_Flow());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
+      }
+      if (val_system == RUNTIME_LEVELSET_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_LevelSet(), GetKind_Centered_LevelSet(),
+                              GetKind_Upwind_LevelSet(), GetKind_SlopeLimit_LevelSet());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_LevelSet());
+        SetKind_ViscNumScheme(NONE);
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_LevelSet());
+      }
+      if (val_system == RUNTIME_ADJFLOW_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjFlow(), GetKind_Centered_AdjFlow(),
+                              GetKind_Upwind_AdjFlow(), GetKind_SlopeLimit_AdjFlow());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_AdjFlow());
+        SetKind_ViscNumScheme(GetKind_ViscNumScheme_AdjFlow());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjFlow());
+      }
+      if (val_system == RUNTIME_ADJLEVELSET_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjLevelSet(), GetKind_Centered_AdjLevelSet(),
+                              GetKind_Upwind_AdjLevelSet(), GetKind_SlopeLimit_AdjLevelSet());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_AdjLevelSet());
+        SetKind_ViscNumScheme(NONE);
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjLevelSet());
+      }
+      break;
+    case ADJ_FREE_SURFACE_RANS:
+      if (val_system == RUNTIME_FLOW_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
+                              GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
+        SetKind_ViscNumScheme(GetKind_ViscNumScheme_Flow());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
+      }
+      if (val_system == RUNTIME_TURB_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Turb(), GetKind_Centered_Turb(),
+                              GetKind_Upwind_Turb(), GetKind_SlopeLimit_Turb());
+        SetKind_ViscNumScheme(GetKind_ViscNumScheme_Turb());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_Turb());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Turb());
+      }
+      if (val_system == RUNTIME_LEVELSET_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_LevelSet(), GetKind_Centered_LevelSet(),
+                              GetKind_Upwind_LevelSet(), GetKind_SlopeLimit_LevelSet());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_LevelSet());
+        SetKind_ViscNumScheme(NONE);
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_LevelSet());
+      }
+      if (val_system == RUNTIME_ADJFLOW_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjFlow(), GetKind_Centered_AdjFlow(),
+                              GetKind_Upwind_AdjFlow(), GetKind_SlopeLimit_AdjFlow());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_AdjFlow());
+        SetKind_ViscNumScheme(GetKind_ViscNumScheme_AdjFlow());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjFlow());
+      }
+      if (val_system == RUNTIME_ADJTURB_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjTurb(), GetKind_Centered_AdjTurb(),
+                              GetKind_Upwind_AdjTurb(), GetKind_SlopeLimit_AdjTurb());
+        SetKind_ViscNumScheme(GetKind_ViscNumScheme_AdjTurb());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_AdjTurb());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjTurb());
+      }
+      if (val_system == RUNTIME_ADJLEVELSET_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjLevelSet(), GetKind_Centered_AdjLevelSet(),
+                              GetKind_Upwind_AdjLevelSet(), GetKind_SlopeLimit_AdjLevelSet());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_AdjLevelSet());
+        SetKind_ViscNumScheme(NONE);
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjLevelSet());
+      }
+      break;
+    case LIN_EULER:
+      if (val_system == RUNTIME_FLOW_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
+                              GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
+        SetKind_SourNumScheme(NONE); SetKind_ViscNumScheme(NONE);
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
+      }
+      if (val_system == RUNTIME_LINFLOW_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_LinFlow(), GetKind_Centered_LinFlow(),
+                              GetKind_Upwind_LinFlow(), NONE);
+        SetKind_ViscNumScheme(NONE); SetKind_SourNumScheme(NONE);
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_LinFlow());
+      }
+      break;
+    case ELECTRIC_POTENTIAL:
+      if (val_system == RUNTIME_ELEC_SYS) {
+        SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
+        SetKind_SourNumScheme(GetKind_SourNumScheme_Elec());
+        SetKind_ViscNumScheme(GetKind_ViscNumScheme_Elec());
+        SetKind_TimeIntScheme(NONE);
+      }
+      break;
+    case WAVE_EQUATION:
+      if (val_system == RUNTIME_WAVE_SYS) {
+        SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
+        SetKind_SourNumScheme(GetKind_SourNumScheme_Wave());
+        SetKind_ViscNumScheme(GetKind_ViscNumScheme_Wave());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Wave());
+      }
+      break;
+    case LINEAR_ELASTICITY:
+      if (val_system == RUNTIME_FEA_SYS) {
+        SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
+        SetKind_SourNumScheme(GetKind_SourNumScheme_FEA());
+        SetKind_ViscNumScheme(GetKind_ViscNumScheme_FEA());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_FEA());
+      }
+      break;
+    case FLUID_STRUCTURE_EULER:
+      if (val_system == RUNTIME_FLOW_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
+                              GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
+        SetKind_ViscNumScheme(NONE);
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
+      }
+      if (val_system == RUNTIME_FEA_SYS) {
+        SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
+        SetKind_SourNumScheme(GetKind_SourNumScheme_FEA());
+        SetKind_ViscNumScheme(GetKind_ViscNumScheme_FEA());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_FEA());
+      }
+      break;
+    case AEROACOUSTIC_EULER:
+      if (val_system == RUNTIME_FLOW_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
+                              GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
+        SetKind_ViscNumScheme(NONE);
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
+      }
+      if (val_system == RUNTIME_WAVE_SYS) {
+        SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
+        SetKind_SourNumScheme(GetKind_SourNumScheme_Wave());
+        SetKind_ViscNumScheme(GetKind_ViscNumScheme_Wave());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Wave());
+      }
+      break;
+    case ADJ_AEROACOUSTIC_EULER:
+      if (val_system == RUNTIME_FLOW_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
+                              GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
+        SetKind_ViscNumScheme(NONE);
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
+      }
+      if (val_system == RUNTIME_WAVE_SYS) {
+        SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
+        SetKind_SourNumScheme(GetKind_SourNumScheme_Wave());
+        SetKind_ViscNumScheme(GetKind_ViscNumScheme_Wave());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Wave());
+      }
+      if (val_system == RUNTIME_ADJFLOW_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjFlow(), GetKind_Centered_AdjFlow(),
+                              GetKind_Upwind_AdjFlow(), GetKind_SlopeLimit_AdjFlow());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_AdjFlow());
+        SetKind_ViscNumScheme(NONE);
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjFlow());
+      }
+      if (val_system == RUNTIME_WAVE_SYS) {
+        SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
+        SetKind_SourNumScheme(GetKind_SourNumScheme_Wave());
+        SetKind_ViscNumScheme(GetKind_ViscNumScheme_Wave());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Wave());
+      }
+      break;
 	}
 }
 
@@ -4806,7 +4956,7 @@ string CConfig::GetMarker_Sliding_Donor(string val_marker) {
 	for (iMarker_SlideBound = 0; iMarker_SlideBound < nMarker_Sliding; iMarker_SlideBound++)
 		if (Marker_SlideBound[iMarker_SlideBound] == val_marker) break;
 
-	/*--- Return the tag for the sliding donor boundary. ---*/  
+	/*--- Return the tag for the sliding donor boundary. ---*/
 	return Marker_SlideDonor[iMarker_SlideBound];
 }
 
@@ -4972,34 +5122,35 @@ double CConfig::GetMotion_Ramp(unsigned long val_iter) {
 
 void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short val_iZone) {
 	double Mach2Vel_FreeStream, ModVel_FreeStream, Energy_FreeStream = 0.0, ModVel_FreeStreamND;
+    double Velocity_Reynolds;
 	unsigned short iDim;
 	int rank = MASTER_NODE;
-
+    
 #ifndef NO_MPI
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
-
+    
 	Velocity_FreeStreamND = new double[val_nDim];
-
+    
 	/*--- Local variables and memory allocation ---*/
 	double Alpha = AoA*PI_NUMBER/180.0;
 	double Beta  = AoS*PI_NUMBER/180.0;
 	double Gamma_Minus_One = Gamma - 1.0;
-
+    
 	bool Viscous = ((Kind_Solver == RANS || Kind_Solver == NAVIER_STOKES || Kind_Solver == FREE_SURFACE_NAVIER_STOKES || Kind_Solver == FREE_SURFACE_RANS) ||
-			(Kind_Solver == ADJ_RANS || Kind_Solver == ADJ_NAVIER_STOKES || Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES || Kind_Solver == ADJ_FREE_SURFACE_RANS));
+                    (Kind_Solver == ADJ_RANS || Kind_Solver == ADJ_NAVIER_STOKES || Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES || Kind_Solver == ADJ_FREE_SURFACE_RANS));
 	bool Compressible = (!Incompressible);
 	bool Unsteady = (Unsteady_Simulation != NO);
 	bool turbulent = (Kind_Solver == RANS);
-
-
+    
+    
 	if (Compressible) {
-
+        
 		Mach2Vel_FreeStream = sqrt(Gamma*Gas_Constant*Temperature_FreeStream);
-
+        
 		/*--- Compute the Free Stream velocity, using the Mach number ---*/
 		if (val_nDim == 2) {
-			Velocity_FreeStream[0] = cos(Alpha)*Mach*Mach2Vel_FreeStream;	
+			Velocity_FreeStream[0] = cos(Alpha)*Mach*Mach2Vel_FreeStream;
 			Velocity_FreeStream[1] = sin(Alpha)*Mach*Mach2Vel_FreeStream;
 		}
 		if (val_nDim == 3) {
@@ -5007,28 +5158,37 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 			Velocity_FreeStream[1] = sin(Beta)*Mach*Mach2Vel_FreeStream;
 			Velocity_FreeStream[2] = sin(Alpha)*cos(Beta)*Mach*Mach2Vel_FreeStream;
 		}
-
+        
 		/*--- Compute the modulus of the free stream velocity ---*/
-		ModVel_FreeStream = 0; 
-		for (iDim = 0; iDim < val_nDim; iDim++) 
+		ModVel_FreeStream = 0;
+		for (iDim = 0; iDim < val_nDim; iDim++)
 			ModVel_FreeStream += Velocity_FreeStream[iDim]*Velocity_FreeStream[iDim];
 		ModVel_FreeStream = sqrt(ModVel_FreeStream);
-
+        
 		if (Viscous) {
-			/*--- For viscous flows, pressure will be computed from a density which
-			 is found from the Reynolds number. The viscosity is computed from the Sutherland's law ---*/
+            
+            /*--- First, check if there is mesh motion. If yes, use the Mach
+             number relative to the body to initialize the flow. ---*/
+            if (Rotating_Frame || Grid_Movement)
+                Velocity_Reynolds = Mach_Motion*Mach2Vel_FreeStream;
+            else
+                Velocity_Reynolds = ModVel_FreeStream;
+            
+			/*--- For viscous flows, pressure will be computed from a density
+             that is found from the Reynolds number. The viscosity is computed
+             from the dimensional version of Sutherland's law ---*/
 			Viscosity_FreeStream = 1.853E-5*(pow(Temperature_FreeStream/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_FreeStream+110.3));
-			Density_FreeStream   = Reynolds*Viscosity_FreeStream/(ModVel_FreeStream*Length_Reynolds);
+			Density_FreeStream   = Reynolds*Viscosity_FreeStream/(Velocity_Reynolds*Length_Reynolds);
 			Pressure_FreeStream  = Density_FreeStream*Gas_Constant*Temperature_FreeStream;
 		} else {
 			/*--- For inviscid flow, density is calculated from the specified
 			 total temperature and pressure using the gas law. ---*/
-			Density_FreeStream  = Pressure_FreeStream/(Gas_Constant*Temperature_FreeStream);    
-		}	
+			Density_FreeStream  = Pressure_FreeStream/(Gas_Constant*Temperature_FreeStream);
+		}
 		/*-- Compute the freestream energy. ---*/
 		Energy_FreeStream = Pressure_FreeStream/(Density_FreeStream*Gamma_Minus_One)+0.5*ModVel_FreeStream*ModVel_FreeStream;
-
-		/*--- Additional reference values defined by Pref, Tref, RHOref. By definition, 
+        
+		/*--- Additional reference values defined by Pref, Tref, RHOref. By definition,
 		 Lref is one because we have converted the grid to meters.---*/
 		Length_Ref = 1.0;
 		Velocity_Ref = sqrt(Pressure_Ref/Density_Ref);
@@ -5038,57 +5198,56 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 		Gas_Constant_Ref  = Velocity_Ref*Velocity_Ref/Temperature_Ref;
 		Viscosity_Ref     = Density_Ref*Velocity_Ref*Length_Ref;
 		Froude = ModVel_FreeStream/sqrt(STANDART_GRAVITY*Length_Ref);
-
+        
 	}
-
+    
 	else {
-
+        
 		/*--- Reference length = 1 (by default)
-					Reference density = liquid density or freestream
-		      Reference viscosity = liquid viscosity or freestream
-		      Reference velocity = liquid velocity or freestream
-					Reference pressure = Reference density * Reference velocity * Reference velocity
-					Reynolds number based on the liquid or reference viscosity ---*/
-
-		Pressure_FreeStream = 0; // We set the pressure Freestream to zero
-
+         Reference density = liquid density or freestream
+         Reference viscosity = liquid viscosity or freestream
+         Reference velocity = liquid velocity or freestream
+         Reference pressure = Reference density * Reference velocity * Reference velocity
+         Reynolds number based on the liquid or reference viscosity ---*/
+        
+		Pressure_FreeStream = 0.0;
 		Length_Ref = 1.0;
 		Density_Ref = Density_FreeStream;
-		ModVel_FreeStream = 0; 
-		for (iDim = 0; iDim < val_nDim; iDim++) 
+		ModVel_FreeStream = 0;
+		for (iDim = 0; iDim < val_nDim; iDim++)
 			ModVel_FreeStream += Velocity_FreeStream[iDim]*Velocity_FreeStream[iDim];
 		ModVel_FreeStream = sqrt(ModVel_FreeStream);
 		Velocity_Ref = ModVel_FreeStream;
 		Pressure_Ref = Density_Ref*(Velocity_Ref*Velocity_Ref);
-
+        
 		if (Viscous) {
 			Reynolds = Density_Ref*Velocity_Ref*Length_Ref / Viscosity_FreeStream;
 			Viscosity_Ref = Viscosity_FreeStream * Reynolds;
 		}
-
+        
 		/*--- Compute mach number ---*/
 		Mach = ModVel_FreeStream / sqrt(Bulk_Modulus/Density_FreeStream);
 		if (val_nDim == 2) AoA = atan(Velocity_FreeStream[1]/Velocity_FreeStream[0])*180.0/PI_NUMBER;
 		else AoA = atan(Velocity_FreeStream[2]/Velocity_FreeStream[0])*180.0/PI_NUMBER;
 		if (val_nDim == 2) AoS = 0.0;
 		else AoS = asin(Velocity_FreeStream[1]/ModVel_FreeStream)*180.0/PI_NUMBER;
-
+        
 		Froude = ModVel_FreeStream/sqrt(STANDART_GRAVITY*Length_Ref);
-
+        
 		Time_Ref = Length_Ref/Velocity_Ref;
-
+        
 	}
-
+    
 	/*--- Divide by reference values, to compute the non-dimensional free-stream values ---*/
 	Pressure_FreeStreamND = Pressure_FreeStream/Pressure_Ref;
 	Density_FreeStreamND  = Density_FreeStream/Density_Ref;
-
+    
 	for (iDim = 0; iDim < val_nDim; iDim++)
 		Velocity_FreeStreamND[iDim] = Velocity_FreeStream[iDim]/Velocity_Ref;
 	Temperature_FreeStreamND = Temperature_FreeStream/Temperature_Ref;
-
+    
 	Gas_Constant = Gas_Constant/Gas_Constant_Ref;
-
+    
 	/*--- Perform non-dim. for rotating terms ---*/
 	Omega_Mag = 0.0;
 	for (iDim = 0; iDim < 3; iDim++) {
@@ -5096,9 +5255,8 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 		Omega_Mag += Omega[iDim]*Omega[iDim];
 	}
 	Omega_Mag = sqrt(Omega_Mag)/Omega_Ref;
-	Rot_Radius = Rot_Radius/Length_Ref;
-
-	ModVel_FreeStreamND = 0; 
+    
+	ModVel_FreeStreamND = 0;
 	for (iDim = 0; iDim < val_nDim; iDim++)
 		ModVel_FreeStreamND += Velocity_FreeStreamND[iDim]*Velocity_FreeStreamND[iDim];
 	ModVel_FreeStreamND    = sqrt(ModVel_FreeStreamND);
@@ -5106,24 +5264,24 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 	Viscosity_FreeStreamND = Viscosity_FreeStream / Viscosity_Ref;
 	Total_UnstTimeND = Total_UnstTime / Time_Ref;
 	Delta_UnstTimeND = Delta_UnstTime / Time_Ref;
-
+    
 	double kine_Inf  = 3.0/2.0*(ModVel_FreeStreamND*ModVel_FreeStreamND*TurbulenceIntensity_FreeStream*TurbulenceIntensity_FreeStream);
 	double omega_Inf = Density_FreeStreamND*kine_Inf/(Viscosity_FreeStreamND*Turb2LamViscRatio_FreeStream);
-
+    
 	/*--- Write output to the console if this is the master node and first domain ---*/
 	if ((rank == MASTER_NODE) && (val_iZone == 0)) {
-
+        
 		cout << endl <<"---------------- Flow & Non-dimensionalization information ---------------" << endl;
-
+        
 		cout.precision(6);
-
+        
 		if (Compressible) {
 			if (Viscous) {
 				cout << "Viscous flow: Computing pressure using the ideal gas law" << endl;
 				cout << "based on the freestream temperature and a density computed" << endl;
 				cout << "from the Reynolds number." << endl;
 			} else {
-				cout << "Inviscid flow: Computing density based on freestream" << endl;  
+				cout << "Inviscid flow: Computing density based on freestream" << endl;
 				cout << "temperature and pressure using the ideal gas law." << endl;
 			}
 		}
@@ -5137,10 +5295,10 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 			if (Viscous) cout << "Reynolds number: " << Reynolds << ", computed using free-stream values."<<endl;
 			cout << "Only dimensional computation, the grid should be dimensional." << endl;
 		}
-
+        
 		cout <<"--Input conditions:"<< endl;
 		cout << "Grid conversion factor to meters: " << Conversion_Factor << endl;
-
+        
 		if (Compressible) {
 			cout << "Ratio of specific heats: " << Gamma           << endl;
 			cout << "Specific gas constant (J/(kg.K)): "   << Gas_Constant*Gas_Constant_Ref  << endl;
@@ -5149,7 +5307,7 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 			cout << "Bulk modulus (N/m^2): "						<< Bulk_Modulus    << endl;
 			cout << "Artificial compressibility factor (N/m^2): "						<< ArtComp_Factor    << endl;
 		}
-
+        
 		cout << "Freestream pressure (N/m^2): "          << Pressure_FreeStream    << endl;
 		if (Compressible)
 			cout << "Freestream temperature (K): "       << Temperature_FreeStream << endl;
@@ -5161,40 +5319,43 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 			cout << "Freestream velocity (m/s): (" << Velocity_FreeStream[0] << ",";
 			cout << Velocity_FreeStream[1] << "," << Velocity_FreeStream[2] << ")";
 		}
-
+        
 		cout << " -> Modulus: "					 << ModVel_FreeStream << endl;
-
+        
 		if (Compressible)
 			cout << "Freestream energy (kg.m/s^2): "					 << Energy_FreeStream << endl;
-
+        
 		if (Viscous)
 			cout << "Freestream viscosity (N.s/m^2): "				 << Viscosity_FreeStream << endl;
-
-		if (Rotating_Frame) { 
+        
+		if (Rotating_Frame) {
 			cout << "Freestream rotation (rad/s): (" << Omega[0];
 			cout << "," << Omega[1] << "," << Omega[2] << ")" << endl;
 		}
 		if (Unsteady) {
 			cout << "Total time (s): " << Total_UnstTime << ". Time step (s): " << Delta_UnstTime << endl;
 		}
-
+        
 		/*--- Print out reference values. ---*/
-		cout <<"--Reference values:"<< endl;	
+		cout <<"--Reference values:"<< endl;
 		cout << "Reference pressure (N/m^2): "      << Pressure_Ref    << endl;
-
+        
 		if (Compressible) {
 			cout << "Reference temperature (K): "   << Temperature_Ref << endl;
 			cout << "Reference energy (kg.m/s^2): "       << Energy_FreeStream/Energy_FreeStreamND     << endl;
 		}
+    else {
+      cout << "Reference length (m): 1.0" << endl;
+    }
 		cout << "Reference density (kg/m^3): "       << Density_Ref     << endl;
 		cout << "Reference velocity (m/s): "       << Velocity_Ref     << endl;
-
+        
 		if (Viscous)
 			cout << "Reference viscosity (N.s/m^2): "       << Viscosity_Ref     << endl;
-
+        
 		if (Unsteady)
 			cout << "Reference time (s): "        << Time_Ref      << endl;
-
+        
 		/*--- Print out resulting non-dim values here. ---*/
 		cout << "--Resulting non-dimensional state:" << endl;
 		cout << "Mach number (non-dimensional): " << Mach << endl;
@@ -5206,6 +5367,7 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
         cout << "Lenght of the baseline wave (non-dimensional): " << 2.0*PI_NUMBER*Froude*Froude << endl;
         
 		if (Compressible) {
+      cout << "Negative pressure, temperature or density is not allowed!" << endl;
 			cout << "Specific gas constant (non-dimensional): "   << Gas_Constant << endl;
 			cout << "Freestream temperature (non-dimensional): "  << Temperature_FreeStreamND << endl;
 		}
@@ -5219,19 +5381,19 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 			cout << Velocity_FreeStreamND[1] << "," << Velocity_FreeStreamND[2] << ")";
 		}
 		cout << " -> Modulus: "					 << ModVel_FreeStreamND << endl;
-
+        
 		if (turbulent){
 			cout << "Free-stream turb. kinetic energy (non-dimensional): " << kine_Inf << endl;
 			cout << "Free-stream specific dissipation (non-dimensional): " << omega_Inf << endl;
 		}
-
+        
 		if (Compressible)
 			cout << "Freestream energy (non-dimensional): "					 << Energy_FreeStreamND << endl;
-
+        
 		if (Viscous)
 			cout << "Freestream viscosity (non-dimensional): " << Viscosity_FreeStreamND << endl;
-
-		if (Rotating_Frame) { 
+        
+		if (Rotating_Frame) {
 			cout << "Freestream rotation (non-dimensional): (" << Omega_FreeStreamND[0];
 			cout << "," << Omega_FreeStreamND[1] << "," << Omega_FreeStreamND[2] << ")" << endl;
 		}
@@ -5242,7 +5404,7 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 		if (Mach <= 0.0) cout << "Force coefficients computed using reference values." << endl;
 		else cout << "Force coefficients computed using freestream values." << endl;
 	}
-
+    
 }
 
 void CConfig::DeepCopy(CConfig *copy) { }

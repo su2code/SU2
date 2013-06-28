@@ -4,7 +4,7 @@
  *        The subroutines and functions are in the <i>integration_structure.cpp</i>, 
  *        <i>integration_time.cpp</i>, and <i>integration_notime.cpp</i> files.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -25,11 +25,11 @@
 
 #pragma once
 
-#include <cmath>
-#include <iostream>
 #ifndef NO_MPI
 #include <mpi.h>
 #endif
+#include <cmath>
+#include <iostream>
 
 #include "solution_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
@@ -42,7 +42,7 @@ using namespace std;
  * \brief Main class for doing the space integration, time integration, and monitoring 
  *        of a system of Partial Differential Equations (PDE).
  * \author F. Palacios.
- * \version 2.0.3
+ * \version 2.0.4
  */
 class CIntegration {
 protected:
@@ -305,14 +305,35 @@ public:
 	 */
 	virtual void SetPotential_Solver(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****solver_container,
                                    CConfig **config, unsigned short RunTime_EqSystem, unsigned short iMesh, unsigned short iZone);
-	
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+	 * \param[in] solution - Container vector with all the solutions on the finest grid.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] val_nSmooth - Number of smoothing iterations.
+	 * \param[in] val_smooth_coeff - Relaxation factor.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void Smooth_Solution(unsigned short RunTime_EqSystem, CSolution **solution, CGeometry *geometry,
+                       unsigned short val_nSmooth, double val_smooth_coeff, CConfig *config);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+	 * \param[in] solution - Container vector with all the solutions on the finest grid.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void Smooth_PrimVar(CSolution **solution, CGeometry *geometry, CConfig *config);
+
 };
 
-/*! 
+/*!
  * \class CMultiGridIntegration
  * \brief Class for doing the numerical integration using a multigrid method.
  * \author F. Palacios.
- * \version 2.0.3
+ * \version 2.0.4
  */
 class CMultiGridIntegration : public CIntegration {
 public:
@@ -402,15 +423,36 @@ public:
 	 */
 	void SmoothProlongated_Correction(unsigned short RunTime_EqSystem, CSolution **solution, CGeometry *geometry,
 																		 unsigned short val_nSmooth, double val_smooth_coeff, CConfig *config);
-	
-	/*! 
-	 * \brief Set the value of the corrected fine grid solution. 
+  
+  /*!
+	 * \brief Do an implicit smoothing of the solution.
+	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+	 * \param[in] solution - Container vector with all the solutions on the finest grid.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] val_nSmooth - Number of smoothing iterations.
+	 * \param[in] val_smooth_coeff - Relaxation factor.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Smooth_Solution(unsigned short RunTime_EqSystem, CSolution **solution, CGeometry *geometry,
+                                    unsigned short val_nSmooth, double val_smooth_coeff, CConfig *config);
+  
+  /*!
+	 * \brief Do an implicit smoothing of the primitive variables.
+	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+	 * \param[in] solution - Container vector with all the solutions on the finest grid.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Smooth_PrimVar(CSolution **solution, CGeometry *geometry, CConfig *config);
+
+	/*!
+	 * \brief Set the value of the corrected fine grid solution.
 	 * \param[out] sol_fine - Pointer to the solution on the fine grid.
 	 * \param[in] geo_fine - Geometrical definition of the fine grid.
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetProlongated_Correction(CSolution *sol_fine, CGeometry *geo_fine, CConfig *config);
-	
+
 	/*! 
 	 * \brief Compute truncation error in the coarse grid using the fine grid information. 
 	 * \param[in] sol_fine - Pointer to the solution on the fine grid.
@@ -470,7 +512,7 @@ public:
  * \class CSingleGridIntegration
  * \brief Class for doing the numerical integration of the turbulence model.
  * \author A. Bueno.
- * \version 2.0.3
+ * \version 2.0.4
  */
 class CSingleGridIntegration : public CIntegration {
 public:
@@ -517,7 +559,7 @@ public:
  * \class CPotentialIntegration
  * \brief Class for doing the numerical integration of the potential equation.
  * \author F. Palacios.
- * \version 2.0.3
+ * \version 2.0.4
  */
 class CPotentialIntegration : public CIntegration {
 public:

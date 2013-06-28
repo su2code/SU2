@@ -2,7 +2,7 @@
  * \file sparse_structure.cpp
  * \brief Main subroutines for doing the sparse structures.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -23,19 +23,37 @@
 
 #include "../include/sparse_structure.hpp"
 
-CSparseMatrix::CSparseMatrix(void) { }
+CSparseMatrix::CSparseMatrix(void) {
+
+  /*--- Array initialization ---*/
+	val               = NULL;
+	row_ptr           = NULL;
+	col_ind           = NULL;
+	block             = NULL;
+	prod_block_vector = NULL;
+	prod_row_vector   = NULL;
+	aux_vector        = NULL;
+  invM              = NULL;
+  Sub_block_sizes   = NULL;
+  LineletBool       = NULL;
+  LineletPoint      = NULL;
+
+}
 
 CSparseMatrix::~CSparseMatrix(void) {
-	delete [] val;
-	delete [] row_ptr;
-	delete [] col_ind;
-	delete [] block;
-	delete [] prod_block_vector;
-	delete [] prod_row_vector;
-	delete [] aux_vector;
+  
+	if (val != NULL) delete [] val;
+	if (row_ptr != NULL) delete [] row_ptr;
+	if (col_ind != NULL) delete [] col_ind;
+	if (block != NULL) delete [] block;
+	if (prod_block_vector != NULL) delete [] prod_block_vector;
+	if (prod_row_vector != NULL) delete [] prod_row_vector;
+	if (aux_vector != NULL) delete [] aux_vector;
+  if (invM != NULL) delete [] invM;
+  if (Sub_block_sizes != NULL) delete [] Sub_block_sizes;
+  if (LineletBool != NULL) delete [] LineletBool;
+  if (LineletPoint != NULL) delete [] LineletPoint;
 
-	if (invM != NULL)
-		delete [] invM;
 }
 
 void CSparseMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDomain, unsigned short val_nVar, unsigned short val_nEq, unsigned long* val_row_ptr, unsigned long* val_col_ind, unsigned long val_nnz, bool preconditioner) {
@@ -605,8 +623,8 @@ void CSparseMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConfig *con
 	/*--- Identify the linelets of the grid ---*/
 	bool *check_Point, add_point;
 	unsigned long iEdge, iPoint, jPoint, index_Point, iLinelet, iVertex, next_Point, counter, iElem;
-	unsigned short iMarker, iNode, ExtraLines = 100;	
-	double alpha = 0.7, weight, max_weight, *normal, area, volume_iPoint, volume_jPoint, MeanPoints;
+	unsigned short iMarker, iNode, ExtraLines = 100;
+	double alpha = 0.9, weight, max_weight, *normal, area, volume_iPoint, volume_jPoint, MeanPoints;
 	
 	check_Point = new bool [geometry->GetnPoint()]; 
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) 
@@ -615,16 +633,20 @@ void CSparseMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConfig *con
 	/*--- Memory allocation --*/
 	nLinelet = 0;
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		if ((config->GetMarker_All_Boundary(iMarker) == NO_SLIP_WALL) ||
-				(config->GetMarker_All_Boundary(iMarker) == EULER_WALL) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL)) {
+		if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX)  ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL) ||
+        (config->GetMarker_All_Boundary(iMarker) == EULER_WALL) ||
+        (config->GetMarker_All_Boundary(iMarker) == DISPLACEMENT_BOUNDARY)) {
 			nLinelet += geometry->nVertex[iMarker];
 		}
 	}
 	
 	if (nLinelet == 0) {
 		cout << " No linelet structure. Jacobi preconditioner will be used" << endl;
-		config->SetKind_Linear_Solver_Prec(JACOBI);
+        //if (config->GetContainerPosition(RunTime_EqSystem) != ADJTURB_SOL)
+            config->SetKind_Linear_Solver_Prec(JACOBI);
+        //else
+        //    config->SetKind_AdjTurb_Linear_Prec(JACOBI);
 	}
 	else {
 		
@@ -633,9 +655,10 @@ void CSparseMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConfig *con
 		
 		/*--- Define the basic linelets, starting from each vertex ---*/
 		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-			if ((config->GetMarker_All_Boundary(iMarker) == NO_SLIP_WALL) ||
-					(config->GetMarker_All_Boundary(iMarker) == EULER_WALL) ||
-          (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL)) {
+      if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX)  ||
+          (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL) ||
+          (config->GetMarker_All_Boundary(iMarker) == EULER_WALL) ||
+          (config->GetMarker_All_Boundary(iMarker) == DISPLACEMENT_BOUNDARY)){
 				iLinelet = 0;
 				for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 					iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -655,7 +678,6 @@ void CSparseMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConfig *con
         
 				/*--- Compute the value of the max weight ---*/
 				iPoint = LineletPoint[iLinelet][index_Point];
-				
 				max_weight = 0.0;
 				for(iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
 					jPoint = geometry->node[iPoint]->GetPoint(iNode);
@@ -1174,8 +1196,8 @@ void CSparseMatrix::CGSolution(double* b, double* x_i, double tol, int max_it, b
 		/*--- Monitoring of the result ---*/
 		norm = sqrt(norm_r_new);
 		
-//				if ((monitoring == true) && (iter%10 == 0) && (rank == MASTER_NODE))
-//					cout << "Prec. CG-Solution:: Iteration = " << iter << " ; Norm of the residual: " << norm << endl;
+    if ((monitoring == true) && (iter%10 == 0) && (rank == MASTER_NODE))
+      cout << "Prec. CG-Solution:: Iteration = " << iter << " ; Norm of the residual: " << norm << endl;
 		
 		if (norm < tol) break;
 		

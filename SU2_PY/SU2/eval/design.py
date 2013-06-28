@@ -1,7 +1,7 @@
 ## \file design.py
 #  \brief python package for designs
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.3
+#  \version 2.0.4
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -76,6 +76,8 @@ class Design(object):
     def __init__(self, config, state=None, folder='DESIGNS/DSN_*'):
         """ Initializes an SU2 Design """
         
+        ## ???: Move to Project, no next folder here
+        
         if '*' in folder: folder = su2io.next_folder(folder)
         
         print "New Design: %s" % folder
@@ -91,11 +93,14 @@ class Design(object):
         self.funcs  = state.FUNCTIONS
         self.grads  = state.GRADIENTS
         self.folder = folder
+        
+        self.design_file = 'design.pkl'
             
         # initialize folder with files
         pull,link = state.pullnlink(config)
         with redirect_folder(folder,pull,link,force=True):
-            pass
+            # save design
+            save_data(self.design_file,self)
         
     def _eval(self,eval_func,*args):
         """ Evaluates an SU2 Design """
@@ -104,6 +109,8 @@ class Design(object):
         state  = self.state
         files  = self.files
         folder = self.folder
+        
+        design_file = self.design_file
 
         # check folder
         assert os.path.exists(folder) , 'cannot find design folder %s' % folder
@@ -118,8 +125,8 @@ class Design(object):
             inputs = args + (config,state)
             vals = eval_func(*inputs)
             
-            # save project
-            save_data('design.pkl',self)
+            # save design
+            save_data(design_file,self)
             
         #: with redirect folder
         

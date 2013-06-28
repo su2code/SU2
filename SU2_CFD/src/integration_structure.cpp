@@ -2,7 +2,7 @@
  * \file integration_structure.cpp
  * \brief This subroutine includes the space and time integration structure.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -44,7 +44,9 @@ void CIntegration::Space_Integration(CGeometry *geometry, CSolution **solution_c
 	unsigned short iMarker;
 
 	unsigned short MainSolution = config->GetContainerPosition(RunTime_EqSystem);
-
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  
 	/*--- Compute inviscid residuals ---*/
 	switch (config->GetKind_ConvNumScheme()) {
 		case SPACE_CENTERED:
@@ -74,7 +76,7 @@ void CIntegration::Space_Integration(CGeometry *geometry, CSolution **solution_c
 	}	
 
 	/*--- Add viscous and convective residuals, and compute the Dual Time Source term ---*/
-	if ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND))
+	if (dual_time)
 		solution_container[MainSolution]->SetResidual_DualTime(geometry, solution_container, config, iRKStep, iMesh, RunTime_EqSystem);
 
 	/*--- Weak boundary conditions ---*/
@@ -96,7 +98,7 @@ void CIntegration::Space_Integration(CGeometry *geometry, CSolution **solution_c
 				solution_container[MainSolution]->BC_Far_Field(geometry, solution_container, solver[CONV_BOUND_TERM], solver[VISC_BOUND_TERM], config, iMarker);
 				break;
 			case SYMMETRY_PLANE:
-				solution_container[MainSolution]->BC_Sym_Plane(geometry, solution_container, solver[VISC_TERM], config, iMarker);
+				solution_container[MainSolution]->BC_Sym_Plane(geometry, solution_container, solver[CONV_BOUND_TERM], solver[VISC_BOUND_TERM], config, iMarker);
 				break;
 			case INTERFACE_BOUNDARY:
 				solution_container[MainSolution]->BC_Interface_Boundary(geometry, solution_container, solver[CONV_BOUND_TERM], config, iMarker);
@@ -140,9 +142,6 @@ void CIntegration::Space_Integration(CGeometry *geometry, CSolution **solution_c
 	/*--- Strong boundary conditions (Navier-Stokes and Dirichlet type BCs) ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
 		switch (config->GetMarker_All_Boundary(iMarker)) {
-			case NO_SLIP_WALL:
-				solution_container[MainSolution]->BC_NS_Wall(geometry, solution_container, solver[CONV_BOUND_TERM], config, iMarker);
-				break;
       case ISOTHERMAL:
         solution_container[MainSolution]->BC_Isothermal_Wall(geometry, solution_container, solver[CONV_BOUND_TERM], config, iMarker);
 				break;

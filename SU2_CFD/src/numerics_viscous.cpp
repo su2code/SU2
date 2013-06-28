@@ -2,7 +2,7 @@
  * \file numerics_viscous.cpp
  * \brief This file contains all the viscous term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -2626,6 +2626,8 @@ void CAvgGrad_TurbSST::SetResidual(double *val_residual, double **Jacobian_i, do
 CAvgGrad_AdjFlow::CAvgGrad_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 	unsigned short iDim;
 
+  implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
+  
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
 
@@ -2660,6 +2662,12 @@ void CAvgGrad_AdjFlow::SetResidual(double *val_residual_i, double *val_residual_
 	Sigma_xx5, Sigma_yy5, Sigma_zz5, Sigma_xy5, Sigma_xz5, 
 	Sigma_yz5, Sigma_5, eta_xx, eta_yy, eta_zz, eta_xy, eta_xz, eta_yz;	
 
+  /*--- Local variables needed for Jacobian calculations ---*/
+  double dSigmaxx_phi1, dSigmayy_phi1, dSigmazz_phi1, dSigmaxy_phi1, dSigmaxz_phi1, dSigmayz_phi1;
+  double dSigmaxx_phi2, dSigmayy_phi2, dSigmazz_phi2, dSigmaxy_phi2, dSigmaxz_phi2, dSigmayz_phi2;
+  double dSigmaxx_phi3, dSigmayy_phi3, dSigmazz_phi3, dSigmaxy_phi3, dSigmaxz_phi3, dSigmayz_phi3;
+  double dSigmaxx5_psi5, dSigmayy5_psi5, dSigmazz5_psi5, dSigmaxy5_psi5, dSigmaxz5_psi5, dSigmayz5_psi5, dSigma5_psi5;
+  
 	/*--- States at the point i ---*/
 	Density_i = U_i[0];		
 	sq_vel_i = 0;
@@ -2736,11 +2744,8 @@ void CAvgGrad_AdjFlow::SetResidual(double *val_residual_i, double *val_residual_
 		val_residual_i[4] = (Sigma_5);
 
 		/*--- Computation of the Jacobians at Point i---*/
-		double dSigmaxx_phi1, dSigmayy_phi1, dSigmazz_phi1, dSigmaxy_phi1, dSigmaxz_phi1, dSigmayz_phi1;
-		double dSigmaxx_phi2, dSigmayy_phi2, dSigmazz_phi2, dSigmaxy_phi2, dSigmaxz_phi2, dSigmayz_phi2;
-		double dSigmaxx_phi3, dSigmayy_phi3, dSigmazz_phi3, dSigmaxy_phi3, dSigmaxz_phi3, dSigmayz_phi3;
-		double dSigmaxx5_psi5, dSigmayy5_psi5, dSigmazz5_psi5, dSigmaxy5_psi5, dSigmaxz5_psi5, dSigmayz5_psi5, dSigma5_psi5;
 
+    if (implicit) {
 		dSigmaxx_phi1 = -FOUR3 * ViscDens_i * Edge_Vector[0]/dist_ij_2;
 		dSigmaxx_phi2 =   TWO3 * ViscDens_i * Edge_Vector[1]/dist_ij_2;
 		dSigmaxx_phi3 =   TWO3 * ViscDens_i * Edge_Vector[2]/dist_ij_2;
@@ -2810,7 +2815,8 @@ void CAvgGrad_AdjFlow::SetResidual(double *val_residual_i, double *val_residual_
 		for (iVar = 0; iVar < nVar; iVar++)
 			for (jVar = 0; jVar < nVar; jVar++)
 				val_Jacobian_ij[iVar][jVar] = -val_Jacobian_ii[iVar][jVar];
-
+    }
+    
 		/*--- Residual at jPoint ---*/
 		Sigma_xx = ViscDens_j * (FOUR3 * Mean_GradPhi[0][0] -  TWO3 * Mean_GradPhi[1][1] - TWO3  * Mean_GradPhi[2][2]);
 		Sigma_yy = ViscDens_j * (-TWO3 * Mean_GradPhi[0][0] + FOUR3 * Mean_GradPhi[1][1] - TWO3  * Mean_GradPhi[2][2]);
@@ -2839,6 +2845,7 @@ void CAvgGrad_AdjFlow::SetResidual(double *val_residual_i, double *val_residual_
 		val_residual_j[4] = (Sigma_5);
 
 		/*--- Computation of the Jacobians at Point j---*/
+    if (implicit) {
 		dSigmaxx_phi1 = FOUR3 * ViscDens_j * Edge_Vector[0]/dist_ij_2;
 		dSigmaxx_phi2 = -TWO3 * ViscDens_j * Edge_Vector[1]/dist_ij_2;
 		dSigmaxx_phi3 = -TWO3 * ViscDens_j * Edge_Vector[2]/dist_ij_2;
@@ -2907,7 +2914,9 @@ void CAvgGrad_AdjFlow::SetResidual(double *val_residual_i, double *val_residual_
 
 		for (iVar = 0; iVar < nVar; iVar++)
 			for (jVar = 0; jVar < nVar; jVar++)
-				val_Jacobian_ji[iVar][jVar] = -val_Jacobian_jj[iVar][jVar];		
+				val_Jacobian_ji[iVar][jVar] = -val_Jacobian_jj[iVar][jVar];
+    }
+    
 	} else if (nDim == 2) {
 		/*--- Residual at iPoint ---*/
 		Sigma_xx = ViscDens_i * (FOUR3 * Mean_GradPhi[0][0] -  TWO3 * Mean_GradPhi[1][1]);
@@ -2927,9 +2936,7 @@ void CAvgGrad_AdjFlow::SetResidual(double *val_residual_i, double *val_residual_
 		val_residual_i[3] = (Sigma_5);
 
 		/*--- Computation of the Jacobians at Point i---*/
-		double dSigmaxx_phi1, dSigmayy_phi1, dSigmaxy_phi1;
-		double dSigmaxx_phi2, dSigmayy_phi2, dSigmaxy_phi2;
-		double dSigmaxx5_psi5, dSigmayy5_psi5, dSigmaxy5_psi5, dSigma5_psi5;
+		if (implicit) {
 
 		dSigmaxx_phi1 = -FOUR3 * ViscDens_i * Edge_Vector[0]/dist_ij_2;
 		dSigmaxx_phi2 =   TWO3 * ViscDens_i * Edge_Vector[1]/dist_ij_2;
@@ -2968,6 +2975,7 @@ void CAvgGrad_AdjFlow::SetResidual(double *val_residual_i, double *val_residual_
 		for (iVar = 0; iVar < nVar; iVar++)
 			for (jVar = 0; jVar < nVar; jVar++)
 				val_Jacobian_ij[iVar][jVar] = -val_Jacobian_ii[iVar][jVar];
+    }
 
 		/*--- Residual at jPoint ---*/		
 		Sigma_xx = ViscDens_j * (FOUR3 * Mean_GradPhi[0][0] -  TWO3 * Mean_GradPhi[1][1]);
@@ -2987,6 +2995,7 @@ void CAvgGrad_AdjFlow::SetResidual(double *val_residual_i, double *val_residual_
 		val_residual_j[3] = (Sigma_5);
 
 		/*--- Computation of the Jacobians at Point j---*/
+    if (implicit) {
 		dSigmaxx_phi1 = FOUR3 * ViscDens_j * Edge_Vector[0]/dist_ij_2;
 		dSigmaxx_phi2 = -TWO3 * ViscDens_j * Edge_Vector[1]/dist_ij_2;
 		dSigmayy_phi1 = -TWO3 * ViscDens_j * Edge_Vector[0]/dist_ij_2;
@@ -3023,15 +3032,16 @@ void CAvgGrad_AdjFlow::SetResidual(double *val_residual_i, double *val_residual_
 
 		for (iVar = 0; iVar < nVar; iVar++)
 			for (jVar = 0; jVar < nVar; jVar++)
-				val_Jacobian_ji[iVar][jVar] = -val_Jacobian_jj[iVar][jVar];		
+				val_Jacobian_ji[iVar][jVar] = -val_Jacobian_jj[iVar][jVar];
+    }
 	}
 }
 
 CAvgGradArtComp_AdjFlow::CAvgGradArtComp_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 	unsigned short iDim;
 
-	Velocity_i = new double [nDim];
-	Velocity_j = new double [nDim];
+  implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
+
 	Mean_GradPhi = new double* [nDim];
 	for (iDim = 0; iDim < nDim; iDim++)
 		Mean_GradPhi[iDim] = new double [nDim];
@@ -3041,8 +3051,6 @@ CAvgGradArtComp_AdjFlow::CAvgGradArtComp_AdjFlow(unsigned short val_nDim, unsign
 CAvgGradArtComp_AdjFlow::~CAvgGradArtComp_AdjFlow(void) {
   unsigned short iDim;
   
-	delete [] Velocity_i;
-	delete [] Velocity_j;
 	for (iDim = 0; iDim < nDim; iDim++)
 		delete [] Mean_GradPhi[iDim];
   
@@ -3052,17 +3060,13 @@ void CAvgGradArtComp_AdjFlow::SetResidual(double *val_residual_i, double *val_re
                                           double **val_Jacobian_ii, double **val_Jacobian_ij,
                                           double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config) {
   unsigned short iVar, jVar, iDim, jDim;
-	double ViscDens_i, ViscDens_j, Sigma_xx, Sigma_yy, Sigma_zz, Sigma_xy, Sigma_xz, Sigma_yz;
+	double ViscDens_i, ViscDens_j;
 
 	/*--- States in the point i ---*/
-	for (iDim = 0; iDim < nDim; iDim++)
-		Velocity_i[iDim] = U_i[iDim+1] / DensityInc_i;
 	ViscDens_i = (Laminar_Viscosity_i + Eddy_Viscosity_i) / DensityInc_i;
 
 	/*--- States in the point j ---*/
-	for (iDim = 0; iDim < nDim; iDim++)
-		Velocity_j[iDim] = U_j[iDim+1] / DensityInc_j;
-	ViscDens_j = (Laminar_Viscosity_j + Eddy_Viscosity_j) / DensityInc_i;
+	ViscDens_j = (Laminar_Viscosity_j + Eddy_Viscosity_j) / DensityInc_j;
 
 	/*--- Average of the derivatives of the adjoint variables ---*/
 	for (iDim = 0; iDim < nDim; iDim++) {
@@ -3072,73 +3076,56 @@ void CAvgGradArtComp_AdjFlow::SetResidual(double *val_residual_i, double *val_re
 
 	/*--- Compute the adjoint viscous residual ---*/
 	if (nDim == 3) {
-		Sigma_xx = ViscDens_i * 2.0 * Mean_GradPhi[0][0];
-		Sigma_yy = ViscDens_i * 2.0 * Mean_GradPhi[1][1];
-		Sigma_zz = ViscDens_i * 2.0 * Mean_GradPhi[2][2];
-		Sigma_xy = ViscDens_i * (Mean_GradPhi[1][0] + Mean_GradPhi[0][1]);
-		Sigma_xz = ViscDens_i * (Mean_GradPhi[2][0] + Mean_GradPhi[0][2]);
-		Sigma_yz = ViscDens_i * (Mean_GradPhi[2][1] + Mean_GradPhi[1][2]);
 
 		val_residual_i[0] = 0.0;
-		val_residual_i[1] = (Sigma_xx * Normal[0] + Sigma_xy * Normal[1] + Sigma_xz * Normal[2]);
-		val_residual_i[2] = (Sigma_xy * Normal[0] + Sigma_yy * Normal[1] + Sigma_yz * Normal[2]);
-		val_residual_i[3] = (Sigma_xz * Normal[0] + Sigma_yz * Normal[1] + Sigma_zz * Normal[2]);
-
-    for (iVar = 0; iVar < nVar; iVar++) {
-      for (jVar = 0; jVar < nVar; jVar++) {
-        val_Jacobian_ij[iVar][jVar] = 0.0;
-        val_Jacobian_ii[iVar][jVar] = 0.0;
-      }
-    }
+		val_residual_i[1] = ViscDens_i * (Mean_GradPhi[0][0] * Normal[0] + Mean_GradPhi[0][1] * Normal[1] + Mean_GradPhi[0][2] * Normal[2]);
+		val_residual_i[2] = ViscDens_i * (Mean_GradPhi[1][0] * Normal[0] + Mean_GradPhi[1][1] * Normal[1] + Mean_GradPhi[1][2] * Normal[2]);
+		val_residual_i[3] = ViscDens_i * (Mean_GradPhi[2][0] * Normal[0] + Mean_GradPhi[2][1] * Normal[1] + Mean_GradPhi[2][2] * Normal[2]);
     
-		Sigma_xx = ViscDens_j * 2.0 * Mean_GradPhi[0][0];
-		Sigma_yy = ViscDens_j * 2.0 * Mean_GradPhi[1][1];
-		Sigma_zz = ViscDens_j * 2.0 * Mean_GradPhi[2][2];
-		Sigma_xy = ViscDens_j * (Mean_GradPhi[1][0] + Mean_GradPhi[0][1]);
-		Sigma_xz = ViscDens_j * (Mean_GradPhi[2][0] + Mean_GradPhi[0][2]);
-		Sigma_yz = ViscDens_j * (Mean_GradPhi[2][1] + Mean_GradPhi[1][2]);
-
 		val_residual_j[0] = 0.0;
-		val_residual_j[1] = (Sigma_xx * Normal[0] + Sigma_xy * Normal[1] + Sigma_xz * Normal[2]);
-		val_residual_j[2] = (Sigma_xy * Normal[0] + Sigma_yy * Normal[1] + Sigma_yz * Normal[2]);
-		val_residual_j[3] = (Sigma_xz * Normal[0] + Sigma_yz * Normal[1] + Sigma_zz * Normal[2]);
+		val_residual_j[1] = ViscDens_j * (Mean_GradPhi[0][0] * Normal[0] + Mean_GradPhi[0][1] * Normal[1] + Mean_GradPhi[0][2] * Normal[2]);
+		val_residual_j[2] = ViscDens_j * (Mean_GradPhi[1][0] * Normal[0] + Mean_GradPhi[1][1] * Normal[1] + Mean_GradPhi[1][2] * Normal[2]);
+		val_residual_j[3] = ViscDens_j * (Mean_GradPhi[2][0] * Normal[0] + Mean_GradPhi[2][1] * Normal[1] + Mean_GradPhi[2][2] * Normal[2]);
 	
-    for (iVar = 0; iVar < nVar; iVar++) {
-      for (jVar = 0; jVar < nVar; jVar++) {
-        val_Jacobian_ji[iVar][jVar] = 0.0;
-        val_Jacobian_jj[iVar][jVar] = 0.0;
+    if (implicit) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        for (jVar = 0; jVar < nVar; jVar++) {
+          val_Jacobian_ij[iVar][jVar] = 0.0;
+          val_Jacobian_ii[iVar][jVar] = 0.0;
+        }
+      }
+      
+      for (iVar = 0; iVar < nVar; iVar++) {
+        for (jVar = 0; jVar < nVar; jVar++) {
+          val_Jacobian_ji[iVar][jVar] = 0.0;
+          val_Jacobian_jj[iVar][jVar] = 0.0;
+        }
       }
     }
   
   } else if (nDim == 2) {
-		Sigma_xx = ViscDens_i * 2.0 * Mean_GradPhi[0][0];
-		Sigma_yy = ViscDens_i * 2.0 * Mean_GradPhi[1][1];
-		Sigma_xy = ViscDens_i * (Mean_GradPhi[1][0] + Mean_GradPhi[0][1]);
 
 		val_residual_i[0] = 0.0;
-		val_residual_i[1] = (Sigma_xx * Normal[0] + Sigma_xy * Normal[1]);
-		val_residual_i[2] = (Sigma_xy * Normal[0] + Sigma_yy * Normal[1]);
-
-    for (iVar = 0; iVar < nVar; iVar++) {
-      for (jVar = 0; jVar < nVar; jVar++) {
-        val_Jacobian_ij[iVar][jVar] = 0.0;
-        val_Jacobian_ii[iVar][jVar] = 0.0;
-        
-      }
-    }
+		val_residual_i[1] = ViscDens_i * (Mean_GradPhi[0][0] * Normal[0] + Mean_GradPhi[0][1] * Normal[1]);
+		val_residual_i[2] = ViscDens_i * (Mean_GradPhi[1][0] * Normal[0] + Mean_GradPhi[1][1] * Normal[1]);
     
-		Sigma_xx = ViscDens_j * 2.0 * Mean_GradPhi[0][0];
-		Sigma_yy = ViscDens_j * 2.0 * Mean_GradPhi[1][1];
-		Sigma_xy = ViscDens_j * (Mean_GradPhi[1][0] + Mean_GradPhi[0][1]);
-
 		val_residual_j[0] = 0.0;
-		val_residual_j[1] = (Sigma_xx * Normal[0] + Sigma_xy * Normal[1]);
-		val_residual_j[2] = (Sigma_xy * Normal[0] + Sigma_yy * Normal[1]);
+		val_residual_j[1] = ViscDens_j * (Mean_GradPhi[0][0] * Normal[0] + Mean_GradPhi[0][1] * Normal[1]);
+		val_residual_j[2] = ViscDens_j * (Mean_GradPhi[1][0] * Normal[0] + Mean_GradPhi[1][1] * Normal[1]);
     
-    for (iVar = 0; iVar < nVar; iVar++) {
-      for (jVar = 0; jVar < nVar; jVar++) {
-        val_Jacobian_ji[iVar][jVar] = 0.0;
-        val_Jacobian_jj[iVar][jVar] = 0.0;
+    if (implicit) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        for (jVar = 0; jVar < nVar; jVar++) {
+          val_Jacobian_ij[iVar][jVar] = 0.0;
+          val_Jacobian_ii[iVar][jVar] = 0.0;
+          
+        }
+      }
+      for (iVar = 0; iVar < nVar; iVar++) {
+        for (jVar = 0; jVar < nVar; jVar++) {
+          val_Jacobian_ji[iVar][jVar] = 0.0;
+          val_Jacobian_jj[iVar][jVar] = 0.0;
+        }
       }
     }
     
@@ -3265,7 +3252,7 @@ CAvgGradCorrectedArtComp_Flow::~CAvgGradCorrectedArtComp_Flow(void) {
 void CAvgGradCorrectedArtComp_Flow::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
 
 	/*--- Normalized normal vector ---*/
-	Area = 0;
+	Area = 0.0;
 	for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
 	Area = sqrt(Area);
 
@@ -3575,6 +3562,8 @@ void CAvgGradCorrected_TurbSST::SetResidual(double *val_residual, double **Jacob
 
 CAvgGradCorrected_AdjFlow::CAvgGradCorrected_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
+  implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
+  
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
 
@@ -3622,7 +3611,13 @@ void CAvgGradCorrected_AdjFlow::SetResidual(double *val_residual_i, double *val_
 	Sigma_xx, Sigma_yy, Sigma_zz, Sigma_xy, Sigma_xz, Sigma_yz,
 	Sigma_xx5, Sigma_yy5, Sigma_zz5, Sigma_xy5, Sigma_xz5, 
 	Sigma_yz5, Sigma_5, eta_xx, eta_yy, eta_zz, eta_xy, eta_xz, eta_yz;	
-
+  
+  /*--- Local variables needed for Jacobian calculations ---*/
+  double dSigmaxx_phi1, dSigmayy_phi1, dSigmazz_phi1, dSigmaxy_phi1, dSigmaxz_phi1, dSigmayz_phi1;
+  double dSigmaxx_phi2, dSigmayy_phi2, dSigmazz_phi2, dSigmaxy_phi2, dSigmaxz_phi2, dSigmayz_phi2;
+  double dSigmaxx_phi3, dSigmayy_phi3, dSigmazz_phi3, dSigmaxy_phi3, dSigmaxz_phi3, dSigmayz_phi3;
+  double dSigmaxx5_psi5, dSigmayy5_psi5, dSigmazz5_psi5, dSigmaxy5_psi5, dSigmaxz5_psi5, dSigmayz5_psi5, dSigma5_psi5;
+  
 	/*--- States in point i ---*/
 	Density_i = U_i[0];		
 	sq_vel_i = 0;
@@ -3712,11 +3707,8 @@ void CAvgGradCorrected_AdjFlow::SetResidual(double *val_residual_i, double *val_
 		val_residual_i[4] = (Sigma_5);
 
 		/*--- Computation of the Jacobians at Point i---*/
-		double dSigmaxx_phi1, dSigmayy_phi1, dSigmazz_phi1, dSigmaxy_phi1, dSigmaxz_phi1, dSigmayz_phi1;
-		double dSigmaxx_phi2, dSigmayy_phi2, dSigmazz_phi2, dSigmaxy_phi2, dSigmaxz_phi2, dSigmayz_phi2;
-		double dSigmaxx_phi3, dSigmayy_phi3, dSigmazz_phi3, dSigmaxy_phi3, dSigmaxz_phi3, dSigmayz_phi3;
-		double dSigmaxx5_psi5, dSigmayy5_psi5, dSigmazz5_psi5, dSigmaxy5_psi5, dSigmaxz5_psi5, dSigmayz5_psi5, dSigma5_psi5;
-
+        if (implicit) {
+          
 		dSigmaxx_phi1 = -FOUR3 * ViscDens_i * Edge_Vector[0]/dist_ij_2;
 		dSigmaxx_phi2 =   TWO3 * ViscDens_i * Edge_Vector[1]/dist_ij_2;
 		dSigmaxx_phi3 =   TWO3 * ViscDens_i * Edge_Vector[2]/dist_ij_2;
@@ -3786,7 +3778,8 @@ void CAvgGradCorrected_AdjFlow::SetResidual(double *val_residual_i, double *val_
 		for (iVar = 0; iVar < nVar; iVar++)
 			for (jVar = 0; jVar < nVar; jVar++)
 				val_Jacobian_ij[iVar][jVar] = -val_Jacobian_ii[iVar][jVar];
-
+    }
+    
 		/*--- Residual at jPoint ---*/
 		Sigma_xx = ViscDens_j * (FOUR3 * Mean_GradPhi[0][0] -  TWO3 * Mean_GradPhi[1][1] - TWO3  * Mean_GradPhi[2][2]);
 		Sigma_yy = ViscDens_j * (-TWO3 * Mean_GradPhi[0][0] + FOUR3 * Mean_GradPhi[1][1] - TWO3  * Mean_GradPhi[2][2]);
@@ -3815,6 +3808,8 @@ void CAvgGradCorrected_AdjFlow::SetResidual(double *val_residual_i, double *val_
 		val_residual_j[4] = (Sigma_5);
 
 		/*--- Computation of the Jacobians at Point j---*/
+    
+    if (implicit) {
 		dSigmaxx_phi1 = FOUR3 * ViscDens_j * Edge_Vector[0]/dist_ij_2;
 		dSigmaxx_phi2 = -TWO3 * ViscDens_j * Edge_Vector[1]/dist_ij_2;
 		dSigmaxx_phi3 = -TWO3 * ViscDens_j * Edge_Vector[2]/dist_ij_2;
@@ -3884,6 +3879,8 @@ void CAvgGradCorrected_AdjFlow::SetResidual(double *val_residual_i, double *val_
 		for (iVar = 0; iVar < nVar; iVar++)
 			for (jVar = 0; jVar < nVar; jVar++)
 				val_Jacobian_ji[iVar][jVar] = -val_Jacobian_jj[iVar][jVar];
+    }
+    
 	} else if (nDim == 2) {
 
 		/*--- Residual at iPoint ---*/
@@ -3904,9 +3901,8 @@ void CAvgGradCorrected_AdjFlow::SetResidual(double *val_residual_i, double *val_
 		val_residual_i[3] = (Sigma_5);
 
 		/*--- Computation of the Jacobians at Point i---*/
-		double dSigmaxx_phi1, dSigmayy_phi1, dSigmaxy_phi1;
-		double dSigmaxx_phi2, dSigmayy_phi2, dSigmaxy_phi2;
-		double dSigmaxx5_psi5, dSigmayy5_psi5, dSigmaxy5_psi5, dSigma5_psi5;
+    
+    if (implicit) {
 
 		dSigmaxx_phi1 = -FOUR3 * ViscDens_i * Edge_Vector[0]/dist_ij_2;
 		dSigmaxx_phi2 =   TWO3 * ViscDens_i * Edge_Vector[1]/dist_ij_2;
@@ -3946,7 +3942,8 @@ void CAvgGradCorrected_AdjFlow::SetResidual(double *val_residual_i, double *val_
 		for (iVar = 0; iVar < nVar; iVar++)
 			for (jVar = 0; jVar < nVar; jVar++)
 				val_Jacobian_ij[iVar][jVar] = -val_Jacobian_ii[iVar][jVar];
-
+    }
+    
 		/*--- Residual at jPoint ---*/
 		Sigma_xx = ViscDens_j * (FOUR3 * Mean_GradPhi[0][0] -  TWO3 * Mean_GradPhi[1][1]);
 		Sigma_yy = ViscDens_j * (-TWO3 * Mean_GradPhi[0][0] + FOUR3 * Mean_GradPhi[1][1]);
@@ -3965,6 +3962,7 @@ void CAvgGradCorrected_AdjFlow::SetResidual(double *val_residual_i, double *val_
 		val_residual_j[3] = (Sigma_5);
 
 		/*--- Computation of the Jacobians at Point j---*/
+    if (implicit) {
 		dSigmaxx_phi1 = FOUR3 * ViscDens_j * Edge_Vector[0]/dist_ij_2;
 		dSigmaxx_phi2 = -TWO3 * ViscDens_j * Edge_Vector[1]/dist_ij_2;
 		dSigmayy_phi1 = -TWO3 * ViscDens_j * Edge_Vector[0]/dist_ij_2;
@@ -4002,16 +4000,15 @@ void CAvgGradCorrected_AdjFlow::SetResidual(double *val_residual_i, double *val_
 		for (iVar = 0; iVar < nVar; iVar++)
 			for (jVar = 0; jVar < nVar; jVar++)
 				val_Jacobian_ji[iVar][jVar] = -val_Jacobian_jj[iVar][jVar];
-
+    }
 	}
 }
 
 CAvgGradCorrectedArtComp_AdjFlow::CAvgGradCorrectedArtComp_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   unsigned short iVar, iDim;
   
-  Velocity_i = new double [nDim];
-  Velocity_j = new double [nDim];
-  
+  implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
+
   Mean_GradPsiVar = new double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
     Mean_GradPsiVar[iVar] = new double [nDim];
@@ -4028,8 +4025,6 @@ CAvgGradCorrectedArtComp_AdjFlow::CAvgGradCorrectedArtComp_AdjFlow(unsigned shor
 CAvgGradCorrectedArtComp_AdjFlow::~CAvgGradCorrectedArtComp_AdjFlow(void) {
   unsigned short iVar, iDim;
   
-  delete [] Velocity_i;
-  delete [] Velocity_j;
   delete [] Edge_Vector;
   delete [] Proj_Mean_GradPsiVar_Edge;
   
@@ -4044,22 +4039,17 @@ CAvgGradCorrectedArtComp_AdjFlow::~CAvgGradCorrectedArtComp_AdjFlow(void) {
 
 void CAvgGradCorrectedArtComp_AdjFlow::SetResidual(double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii, double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config) {
   unsigned short iVar, jVar, iDim, jDim;
-  double ViscDens_i, ViscDens_j, dist_ij_2, Sigma_xx, Sigma_yy, Sigma_zz, Sigma_xy, Sigma_xz, Sigma_yz;
+  double ViscDens_i, ViscDens_j, dist_ij_2;
   
   /*--- States in point i ---*/
-  for (iDim = 0; iDim < nDim; iDim++)
-    Velocity_i[iDim] = U_i[iDim+1] / DensityInc_i;
   ViscDens_i = (Laminar_Viscosity_i + Eddy_Viscosity_i) / DensityInc_i;
   
   /*--- States in point j ---*/
-  for (iDim = 0; iDim < nDim; iDim++)
-    Velocity_j[iDim] = U_j[iDim+1] / DensityInc_j;
   ViscDens_j = (Laminar_Viscosity_j + Eddy_Viscosity_j) / DensityInc_j;
   
   /*--- Compute vector going from iPoint to jPoint ---*/
   dist_ij_2 = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
-    Mean_Velocity[iDim] = 0.5*(Velocity_i[iDim]+Velocity_j[iDim]);
     Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
     dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
   }
@@ -4085,75 +4075,56 @@ void CAvgGradCorrectedArtComp_AdjFlow::SetResidual(double *val_residual_i, doubl
   /*--- Compute the viscous residual ---*/
   if (nDim == 3) {
     
-    Sigma_xx = ViscDens_i * 2.0 * Mean_GradPhi[0][0];
-    Sigma_yy = ViscDens_i * 2.0 * Mean_GradPhi[1][1];
-    Sigma_zz = ViscDens_i * 2.0 * Mean_GradPhi[2][2];
-    Sigma_xy = ViscDens_i * (Mean_GradPhi[1][0] + Mean_GradPhi[0][1]);
-    Sigma_xz = ViscDens_i * (Mean_GradPhi[2][0] + Mean_GradPhi[0][2]);
-    Sigma_yz = ViscDens_i * (Mean_GradPhi[2][1] + Mean_GradPhi[1][2]);
+		val_residual_i[0] = 0.0;
+		val_residual_i[1] = ViscDens_i * (Mean_GradPhi[0][0] * Normal[0] + Mean_GradPhi[0][1] * Normal[1] + Mean_GradPhi[0][2] * Normal[2]);
+		val_residual_i[2] = ViscDens_i * (Mean_GradPhi[1][0] * Normal[0] + Mean_GradPhi[1][1] * Normal[1] + Mean_GradPhi[1][2] * Normal[2]);
+		val_residual_i[3] = ViscDens_i * (Mean_GradPhi[2][0] * Normal[0] + Mean_GradPhi[2][1] * Normal[1] + Mean_GradPhi[2][2] * Normal[2]);
     
-    val_residual_i[0] = 0.0;
-    val_residual_i[1] = (Sigma_xx * Normal[0] + Sigma_xy * Normal[1] + Sigma_xz * Normal[2]);
-    val_residual_i[2] = (Sigma_xy * Normal[0] + Sigma_yy * Normal[1] + Sigma_yz * Normal[2]);
-    val_residual_i[3] = (Sigma_xz * Normal[0] + Sigma_yz * Normal[1] + Sigma_zz * Normal[2]);
+		val_residual_j[0] = 0.0;
+		val_residual_j[1] = ViscDens_j * (Mean_GradPhi[0][0] * Normal[0] + Mean_GradPhi[0][1] * Normal[1] + Mean_GradPhi[0][2] * Normal[2]);
+		val_residual_j[2] = ViscDens_j * (Mean_GradPhi[1][0] * Normal[0] + Mean_GradPhi[1][1] * Normal[1] + Mean_GradPhi[1][2] * Normal[2]);
+		val_residual_j[3] = ViscDens_j * (Mean_GradPhi[2][0] * Normal[0] + Mean_GradPhi[2][1] * Normal[1] + Mean_GradPhi[2][2] * Normal[2]);
     
-    for (iVar = 0; iVar < nVar; iVar++) {
-      for (jVar = 0; jVar < nVar; jVar++) {
-        val_Jacobian_ij[iVar][jVar] = 0.0;
-        val_Jacobian_ii[iVar][jVar] = 0.0;
-        
+    if (implicit) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        for (jVar = 0; jVar < nVar; jVar++) {
+          val_Jacobian_ij[iVar][jVar] = 0.0;
+          val_Jacobian_ii[iVar][jVar] = 0.0;
+          
+        }
       }
-    }
-    
-    Sigma_xx = ViscDens_j * 2.0 * Mean_GradPhi[0][0];
-    Sigma_yy = ViscDens_j * 2.0 * Mean_GradPhi[1][1];
-    Sigma_zz = ViscDens_j * 2.0 * Mean_GradPhi[2][2];
-    Sigma_xy = ViscDens_j * (Mean_GradPhi[1][0] + Mean_GradPhi[0][1]);
-    Sigma_xz = ViscDens_j * (Mean_GradPhi[2][0] + Mean_GradPhi[0][2]);
-    Sigma_yz = ViscDens_j * (Mean_GradPhi[2][1] + Mean_GradPhi[1][2]);
-    
-    val_residual_j[0] = 0.0;
-    val_residual_j[1] = (Sigma_xx * Normal[0] + Sigma_xy * Normal[1] + Sigma_xz * Normal[2]);
-    val_residual_j[2] = (Sigma_xy * Normal[0] + Sigma_yy * Normal[1] + Sigma_yz * Normal[2]);
-    val_residual_j[3] = (Sigma_xz * Normal[0] + Sigma_yz * Normal[1] + Sigma_zz * Normal[2]);
-    
-    for (iVar = 0; iVar < nVar; iVar++) {
-      for (jVar = 0; jVar < nVar; jVar++) {
-        val_Jacobian_ji[iVar][jVar] = 0.0;
-        val_Jacobian_jj[iVar][jVar] = 0.0;
+      for (iVar = 0; iVar < nVar; iVar++) {
+        for (jVar = 0; jVar < nVar; jVar++) {
+          val_Jacobian_ji[iVar][jVar] = 0.0;
+          val_Jacobian_jj[iVar][jVar] = 0.0;
+        }
       }
     }
     
   } else if (nDim == 2) {
     
-    Sigma_xx = ViscDens_i * 2.0 * Mean_GradPhi[0][0];
-    Sigma_yy = ViscDens_i * 2.0 * Mean_GradPhi[1][1];
-    Sigma_xy = ViscDens_i * (Mean_GradPhi[1][0] + Mean_GradPhi[0][1]);
+		val_residual_i[0] = 0.0;
+		val_residual_i[1] = ViscDens_i * (Mean_GradPhi[0][0] * Normal[0] + Mean_GradPhi[0][1] * Normal[1]);
+		val_residual_i[2] = ViscDens_i * (Mean_GradPhi[1][0] * Normal[0] + Mean_GradPhi[1][1] * Normal[1]);
     
-    val_residual_i[0] = 0.0;
-    val_residual_i[1] = (Sigma_xx * Normal[0] + Sigma_xy * Normal[1]);
-    val_residual_i[2] = (Sigma_xy * Normal[0] + Sigma_yy * Normal[1]);
+		val_residual_j[0] = 0.0;
+		val_residual_j[1] = ViscDens_j * (Mean_GradPhi[0][0] * Normal[0] + Mean_GradPhi[0][1] * Normal[1]);
+		val_residual_j[2] = ViscDens_j * (Mean_GradPhi[1][0] * Normal[0] + Mean_GradPhi[1][1] * Normal[1]);
     
-    for (iVar = 0; iVar < nVar; iVar++) {
-      for (jVar = 0; jVar < nVar; jVar++) {
-        val_Jacobian_ij[iVar][jVar] = 0.0;
-        val_Jacobian_ii[iVar][jVar] = 0.0;
-        
+    if (implicit) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        for (jVar = 0; jVar < nVar; jVar++) {
+          val_Jacobian_ij[iVar][jVar] = 0.0;
+          val_Jacobian_ii[iVar][jVar] = 0.0;
+          
+        }
       }
-    }
-    
-    Sigma_xx = ViscDens_j * 2.0 * Mean_GradPhi[0][0];
-    Sigma_yy = ViscDens_j * 2.0 * Mean_GradPhi[1][1];
-    Sigma_xy = ViscDens_j * (Mean_GradPhi[1][0] + Mean_GradPhi[0][1]);
-    
-    val_residual_j[0] = 0.0;
-    val_residual_j[1] = (Sigma_xx * Normal[0] + Sigma_xy * Normal[1]);
-    val_residual_j[2] = (Sigma_xy * Normal[0] + Sigma_yy * Normal[1]);
-    
-    for (iVar = 0; iVar < nVar; iVar++) {
-      for (jVar = 0; jVar < nVar; jVar++) {
-        val_Jacobian_ji[iVar][jVar] = 0.0;
-        val_Jacobian_jj[iVar][jVar] = 0.0;
+      
+      for (iVar = 0; iVar < nVar; iVar++) {
+        for (jVar = 0; jVar < nVar; jVar++) {
+          val_Jacobian_ji[iVar][jVar] = 0.0;
+          val_Jacobian_jj[iVar][jVar] = 0.0;
+        }
       }
     }
     

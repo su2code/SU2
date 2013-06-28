@@ -2,7 +2,7 @@
  * \file numerics_convective.cpp
  * \brief This file contains all the convective term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -122,7 +122,6 @@ void CUpwRoe_Flow::SetResidual(double *val_residual, double **val_Jacobian_i, do
 	}
 	Energy_i     = U_i[nDim+1] / Density_i;
 	Pressure_i   = (Gamma_Minus_One*(Energy_i-0.5*sq_vel))*Density_i;
-	if (Pressure_i < 0.0) Pressure_i = Pressure_Old_i;
 
 	SoundSpeed_i = sqrt(Pressure_i*Gamma/Density_i);
 	Enthalpy_i   = (U_i[nDim+1] + Pressure_i) / Density_i;
@@ -138,7 +137,6 @@ void CUpwRoe_Flow::SetResidual(double *val_residual, double **val_Jacobian_i, do
 	}
 	Energy_j     = U_j[nDim+1] / Density_j;
 	Pressure_j   = (Gamma_Minus_One*(Energy_j-0.5*sq_vel))*Density_j;
-	if (Pressure_j < 0.0) Pressure_j = Pressure_Old_j;
 
 	SoundSpeed_j = sqrt(Pressure_j*Gamma/Density_j);
 	Enthalpy_j   = (U_j[nDim+1] + Pressure_j) / Density_j;
@@ -830,13 +828,13 @@ CUpwRoeArtComp_Flow::~CUpwRoeArtComp_Flow(void) {
 void CUpwRoeArtComp_Flow::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
 
 	/*--- Compute face area ---*/
-	Area = 0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+	Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
 	Area = sqrt(Area);
 
   /*--- Compute and unitary normal vector ---*/
 	for (iDim = 0; iDim < nDim; iDim++) {
 		UnitaryNormal[iDim] = Normal[iDim]/Area;
-    if (UnitaryNormal[iDim] == 0.0) UnitaryNormal[iDim] = EPS;
+    if (fabs(UnitaryNormal[iDim]) < EPS) UnitaryNormal[iDim] = EPS;
   }
 
 	/*--- Set velocity and pressure variables at points iPoint and jPoint ---*/
@@ -1404,23 +1402,24 @@ CUpwRoeArtComp_AdjFlow::~CUpwRoeArtComp_AdjFlow(void) {
 void CUpwRoeArtComp_AdjFlow::SetResidual (double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii, 
 		double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj,CConfig *config) {
 
-	/*--- Compute area nad unitary normal vector ---*/
-	Area = 0;
-	for (iDim = 0; iDim < nDim; iDim++)
-		Area += Normal[iDim]*Normal[iDim];
+	/*--- Compute face area ---*/
+	Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
 	Area = sqrt(Area);
 
-	/*--- Components of the normal & unit normal vector of the current face ---*/	
-	for (iDim = 0; iDim < nDim; iDim++)
-		UnitaryNormal[iDim] = numeric_limits<double>::epsilon() + Normal[iDim]/Area;
+  /*--- Compute and unitary normal vector ---*/
+	for (iDim = 0; iDim < nDim; iDim++) {
+		UnitaryNormal[iDim] = Normal[iDim]/Area;
+    if (fabs(UnitaryNormal[iDim]) < EPS) UnitaryNormal[iDim] = EPS;
+  }
 
 	/*--- Set the variables at point i, and j ---*/
 	Pressure_i = U_i[0]; Pressure_j = U_j[0];
+  
 	for (iDim = 0; iDim < nDim; iDim++) {
 		Velocity_i[iDim] = U_i[iDim+1]/DensityInc_i;
 		Velocity_j[iDim] = U_j[iDim+1]/DensityInc_j;
 	}
-
+  
 	/*--- Jacobians of the inviscid flux, scaled by 0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal ---*/
 	GetInviscidArtCompProjJac(&DensityInc_i, Velocity_i, &BetaInc2_i, Normal, 0.5, Proj_Jac_Tensor_i);
 	GetInviscidArtCompProjJac(&DensityInc_j, Velocity_j, &BetaInc2_j, Normal, 0.5, Proj_Jac_Tensor_j);
@@ -1929,13 +1928,13 @@ CUpwLin_LevelSet::~CUpwLin_LevelSet(void) {
 
 void CUpwLin_LevelSet::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j,
                                    double **val_JacobianMeanFlow_i, double **val_JacobianMeanFlow_j, CConfig *config) {
-	unsigned short iDim;
+	unsigned short iDim; //, jDim;
 	double a0, a1, q_ij, Velocity_i[3], Velocity_j[3]; //, dqij_dvi[3], dqij_dvj[3], dabsqij_dvi[3], dabsqij_dvj[3], da0_dvi[3], da0_dvj[3], da1_dvi[3], da1_dvj[3];
   
 	q_ij = 0;
 	for (iDim = 0; iDim < nDim; iDim++) {
-		Velocity_i[iDim] = V_i[iDim+1]; //U_i[iDim+1]/DensityInc_i;
-		Velocity_j[iDim] =  V_i[iDim+1]; //U_j[iDim+1]/DensityInc_j;
+		Velocity_i[iDim] = V_i[iDim+1];
+		Velocity_j[iDim] = V_i[iDim+1];
 		q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
 	}
   
@@ -1948,8 +1947,8 @@ void CUpwLin_LevelSet::SetResidual(double *val_residual, double **val_Jacobian_i
 		val_Jacobian_j[0][0] = a1;
     
 //    for (iDim = 0; iDim < nDim; iDim++) {
-//      dqij_dvi[iDim] = 0.5 * Normal[iDim]/DensityInc_i;
-//      dqij_dvj[iDim] = 0.5 * Normal[iDim]/DensityInc_j;
+//      dqij_dvi[iDim] = 0.5 * Normal[iDim]/V_i[0];
+//      dqij_dvj[iDim] = 0.5 * Normal[iDim]/V_j[0];
 //      if ( q_ij >= 0.0 ) {
 //        dabsqij_dvi[iDim] = dqij_dvi[iDim];
 //        dabsqij_dvj[iDim] = dqij_dvj[iDim];
@@ -1964,8 +1963,15 @@ void CUpwLin_LevelSet::SetResidual(double *val_residual, double **val_Jacobian_i
 //      da0_dvj[iDim] = 0.5 * (dqij_dvj[iDim] + dabsqij_dvj[iDim]);
 //      da1_dvj[iDim] = 0.5 * (dqij_dvj[iDim] - dabsqij_dvj[iDim]);
 //    }
+//
+//    for (iDim = 0; iDim < nDim+1; iDim++) {
+//      for (jDim = 0; jDim < nDim+1; jDim++) {
+//        val_JacobianMeanFlow_i[iDim][jDim] = 0.0;
+//        val_JacobianMeanFlow_j[iDim][jDim] = 0.0;
+//      }
+//    }
 //    
-//    val_JacobianMeanFlow_i[0][0] = 0.0; // No pressure contribution;
+//    val_JacobianMeanFlow_i[0][0] = 0.0; val_JacobianMeanFlow_j[0][0] = 0.0;
 //    for (iDim = 0; iDim < nDim; iDim++) {
 //      val_JacobianMeanFlow_i[0][iDim+1] = da0_dvi[iDim]*LevelSetVar_i[0]+da1_dvi[iDim]*LevelSetVar_j[0];
 //      val_JacobianMeanFlow_j[0][iDim+1] = da0_dvj[iDim]*LevelSetVar_i[0]+da1_dvj[iDim]*LevelSetVar_j[0];
@@ -1992,41 +1998,27 @@ CUpwLin_AdjLevelSet::~CUpwLin_AdjLevelSet(void) {
 void CUpwLin_AdjLevelSet::SetResidual (double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii, 
 		double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config)  {
 
-	unsigned short iDim;
-	double a0, a1, q_ij;
-
-	/*--- i point ---*/
-	q_ij = 0;
+  unsigned short iDim;
+	double proj_conv_flux_i = 0.0, proj_conv_flux_j = 0.0, proj_conv_flux_ij = 0.0;
+  
 	for (iDim = 0; iDim < nDim; iDim++) {
-		Velocity_i[iDim] = U_i[iDim+1]/DensityInc_i; Velocity_j[iDim] = U_j[iDim+1]/DensityInc_j;
-		q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
+		Velocity_i[iDim] = U_i[iDim+1]/DensityInc_i;
+		Velocity_j[iDim] = U_j[iDim+1]/DensityInc_j;
+		proj_conv_flux_i -= Velocity_i[iDim]*Normal[iDim]; // projection of convective flux at iPoint
+		proj_conv_flux_j -= Velocity_j[iDim]*Normal[iDim]; // projection of convective flux at jPoint
 	}
-
-	a0 = 0.5*(q_ij+fabs(q_ij)); a1 = 0.5*(q_ij-fabs(q_ij));
-
-	val_residual_i[0] = a0*LevelSetVar_i[0]+a1*LevelSetVar_j[0];
-
+	proj_conv_flux_ij = 0.5*fabs(proj_conv_flux_i+proj_conv_flux_j); // projection of average convective flux
+  
+	val_residual_i[0] = 0.5*( proj_conv_flux_i*(LevelSetVar_i[0]+LevelSetVar_j[0])-proj_conv_flux_ij*(LevelSetVar_j[0]-LevelSetVar_i[0]));
+	val_residual_j[0] = 0.5*(-proj_conv_flux_j*(LevelSetVar_j[0]+LevelSetVar_i[0])-proj_conv_flux_ij*(LevelSetVar_i[0]-LevelSetVar_j[0]));
+  
 	if (implicit) {
-		val_Jacobian_ii[0][0] = a0;
-		val_Jacobian_ij[0][0] = a1;
+		val_Jacobian_ii[0][0] = 0.5*( proj_conv_flux_i+proj_conv_flux_ij);
+		val_Jacobian_ij[0][0] = 0.5*( proj_conv_flux_i-proj_conv_flux_ij);
+		val_Jacobian_ji[0][0] = 0.5*(-proj_conv_flux_j-proj_conv_flux_ij);
+		val_Jacobian_jj[0][0] = 0.5*(-proj_conv_flux_j+proj_conv_flux_ij);
 	}
-
-	/*--- j point ---*/
-	q_ij = 0;
-	for (iDim = 0; iDim < nDim; iDim++) {
-		Velocity_i[iDim] = U_i[iDim+1]/DensityInc_i; Velocity_j[iDim] = U_j[iDim+1]/DensityInc_j;
-		q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
-	}
-
-	a0 = 0.5*(q_ij+fabs(q_ij)); a1 = 0.5*(q_ij-fabs(q_ij));
-
-	val_residual_j[0] = -(a0*LevelSetVar_i[0]+a1*LevelSetVar_j[0]);
-
-	if (implicit) {
-		val_Jacobian_ji[0][0] = -a0;
-		val_Jacobian_jj[0][0] = -a1;
-	}
-
+  
 }
 
 CUpwLin_AdjDiscLevelSet::CUpwLin_AdjDiscLevelSet() {
@@ -3173,7 +3165,7 @@ void CCentJSTArtComp_Flow::SetResidual(double *val_resconv, double *val_resvisc,
 	}
 
 	/*--- Compute the local espectral radius and the stretching factor ---*/
-	ProjVelocity_i = 0; ProjVelocity_j = 0; Area = 0;
+	ProjVelocity_i = 0.0; ProjVelocity_j = 0.0; Area = 0.0;
 	for (iDim = 0; iDim < nDim; iDim++) {
 		ProjVelocity_i += Velocity_i[iDim]*Normal[iDim];
 		ProjVelocity_j += Velocity_j[iDim]*Normal[iDim];
@@ -3527,7 +3519,7 @@ void CCentJSTArtComp_AdjFlow::SetResidual (double *val_resconv_i, double *val_re
 	GetInviscidArtCompProjJac(&DensityInc_j, Velocity_j, &BetaInc2_j, Normal, 0.5, Proj_Jac_Tensor_j);
 
 	for (iVar = 0; iVar < nDim; iVar++) {
-		val_resconv_i[iVar]  = 0.0; val_resconv_j[iVar]  = 0.0;
+		val_resconv_i[iVar] = 0.0; val_resconv_j[iVar] = 0.0;
 		for (jVar = 0; jVar < nVar; jVar++) {
 			val_resconv_i[iVar] += Proj_Jac_Tensor_i[jVar][iVar]*(Psi_i[jVar]+Psi_j[jVar]);
 			val_resconv_j[iVar] -= Proj_Jac_Tensor_j[jVar][iVar]*(Psi_i[jVar]+Psi_j[jVar]);
@@ -3552,13 +3544,12 @@ void CCentJSTArtComp_AdjFlow::SetResidual (double *val_resconv_i, double *val_re
 	}
 
 	/*--- Compute the local espectral radius and the stretching factor ---*/
-	ProjVelocity_i = 0; ProjVelocity_j = 0; Area = 0;
+	ProjVelocity_i = 0.0; ProjVelocity_j = 0.0; Area = 0.0;
 	for (iDim = 0; iDim < nDim; iDim++) {
 		ProjVelocity_i += Velocity_i[iDim]*Normal[iDim];
 		ProjVelocity_j += Velocity_j[iDim]*Normal[iDim];
 		Area += Normal[iDim]*Normal[iDim];
 	}
-
 	Area = sqrt(Area);
 
 	SoundSpeed_i = sqrt(ProjVelocity_i*ProjVelocity_i + (BetaInc2_i/DensityInc_i)*Area*Area); 
@@ -3576,6 +3567,7 @@ void CCentJSTArtComp_AdjFlow::SetResidual (double *val_resconv_i, double *val_re
 
 	sc2 = 3.0*(double(Neighbor_i)+double(Neighbor_j))/(double(Neighbor_i)*double(Neighbor_j));
 	sc4 = sc2*sc2/4.0;
+  
 	Epsilon_2 = Param_Kappa_2*0.5*(Sensor_i+Sensor_j)*sc2;
 	Epsilon_4 = max(0.0, Param_Kappa_4-Epsilon_2)*sc4;
 
@@ -3583,14 +3575,16 @@ void CCentJSTArtComp_AdjFlow::SetResidual (double *val_resconv_i, double *val_re
 	for (iVar = 0; iVar < nVar; iVar++) {
 		Residual = (Epsilon_2*Diff_Psi[iVar]-Epsilon_4*Diff_Lapl[iVar])*StretchingFactor*MeanLambda;
 		val_resvisc_i[iVar] = -Residual;
-		val_resvisc_j[iVar] =  Residual;
+		val_resvisc_j[iVar] = Residual;
+    
 		if (implicit) {
-			val_Jacobian_ii[iVar][iVar] -= Epsilon_2 + double(Neighbor_i+1)*Epsilon_4*StretchingFactor*MeanLambda;
-			val_Jacobian_ij[iVar][iVar] += Epsilon_2 + double(Neighbor_j+1)*Epsilon_4*StretchingFactor*MeanLambda;
-			val_Jacobian_ji[iVar][iVar] += Epsilon_2 + double(Neighbor_i+1)*Epsilon_4*StretchingFactor*MeanLambda;
-			val_Jacobian_jj[iVar][iVar] -= Epsilon_2 + double(Neighbor_j+1)*Epsilon_4*StretchingFactor*MeanLambda;
+			val_Jacobian_ii[iVar][iVar] -= Epsilon_2 + Epsilon_4*double(Neighbor_i+1)*StretchingFactor*MeanLambda;
+			val_Jacobian_ij[iVar][iVar] += Epsilon_2 + Epsilon_4*double(Neighbor_j+1)*StretchingFactor*MeanLambda;
+			val_Jacobian_ji[iVar][iVar] += Epsilon_2 + Epsilon_4*double(Neighbor_i+1)*StretchingFactor*MeanLambda;
+			val_Jacobian_jj[iVar][iVar] -= Epsilon_2 + Epsilon_4*double(Neighbor_j+1)*StretchingFactor*MeanLambda;
 		}
 	}
+  
 }
 
 CCentJST_LinFlow::CCentJST_LinFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
@@ -4373,7 +4367,6 @@ void CCentLaxArtComp_AdjFlow::SetResidual (double *val_resconv_i, double *val_re
 		ProjVelocity_j += Velocity_j[iDim]*Normal[iDim];
 		Area += Normal[iDim]*Normal[iDim];
 	}
-
 	Area = sqrt(Area);
 
 	SoundSpeed_i = sqrt(ProjVelocity_i*ProjVelocity_i + (BetaInc2_i/DensityInc_i)*Area*Area); 
@@ -4614,7 +4607,6 @@ void CUpwRoe_Plasma::SetResidual(double *val_residual, double **val_Jacobian_i, 
 		Energy_i		= U_i[loc + nDim+1] / Density_i;
 //		Pressure_i	= Gamma_Minus_One*(Energy_i-0.5*sq_vel))*Density_i;
 		Pressure_i  = Gamma_Minus_One*(Energy_i - 0.5*sq_vel - Enthalpy_formation[iSpecies] - Energy_vib - Energy_el)*Density_i;
-		if (Pressure_i < 0.0) Pressure_i = Pressure_Old_i_MS[iSpecies];
 
 		SoundSpeed_i	= sqrt(Pressure_i*Gamma/Density_i);
 		Enthalpy_i		= (U_i[loc + nDim + 1] + Pressure_i) / Density_i;
@@ -4631,7 +4623,6 @@ void CUpwRoe_Plasma::SetResidual(double *val_residual, double **val_Jacobian_i, 
 		Energy_j		= U_j[loc + nDim+1] / Density_j;
 //		Pressure_j	= (Gamma_Minus_One*(Energy_j-0.5*sq_vel))*Density_j;
 		Pressure_j  = Gamma_Minus_One*(Energy_j - 0.5*sq_vel - Enthalpy_formation[iSpecies] - Energy_vib - Energy_el)*Density_j;
-		if (Pressure_j < 0.0) Pressure_j= Pressure_Old_j_MS[iSpecies];
 
 		SoundSpeed_j	= sqrt(Pressure_j*Gamma/Density_j);
 		Enthalpy_j		= (U_j[loc + nDim+1] + Pressure_j) / Density_j;
@@ -4890,7 +4881,6 @@ void CUpwRoe_Turkel_Plasma::SetResidual(double *val_residual, double **val_Jacob
 		Energy_i		= U_i[loc + nDim+1] / Density_i;
 //		Pressure_i	= Gamma_Minus_One*(Energy_i-0.5*sq_vel))*Density_i;
 		Pressure_i  = Gamma_Minus_One*(Energy_i - 0.5*sq_vel - Enthalpy_formation[iSpecies] - Energy_vib - Energy_el)*Density_i;
-		if (Pressure_i < 0.0) Pressure_i = Pressure_Old_i_MS[iSpecies];
 
 		SoundSpeed_i	= sqrt(Pressure_i*Gamma/Density_i);
 		Enthalpy_i		= (U_i[loc + nDim + 1] + Pressure_i) / Density_i;
@@ -4908,7 +4898,6 @@ void CUpwRoe_Turkel_Plasma::SetResidual(double *val_residual, double **val_Jacob
 		Energy_j		= U_j[loc + nDim+1] / Density_j;
 //		Pressure_j	= (Gamma_Minus_One*(Energy_j-0.5*sq_vel))*Density_j;
 		Pressure_j  = Gamma_Minus_One*(Energy_j - 0.5*sq_vel - Enthalpy_formation[iSpecies] - Energy_vib - Energy_el)*Density_j;
-		if (Pressure_j < 0.0) Pressure_j= Pressure_Old_j_MS[iSpecies];
 
 		SoundSpeed_j	= sqrt(Pressure_j*Gamma/Density_j);
 		Enthalpy_j		= (U_j[loc + nDim+1] + Pressure_j) / Density_j;
@@ -6038,7 +6027,7 @@ void CUpwHLLC_PlasmaDiatomic::SetResidual(double *val_residual, double **val_Jac
 		RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
 		RoeSoundSpeed = sqrt((Gamma-1)*(RoeEnthalpy-0.5*sq_vel));
 
-		/*--- Compute P and Lambda (do it with the Normal) ---*/
+		/*--- Compute P and Lambda (do it with the Normal) ---*/    
 		GetPMatrix(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitaryNormal, P_Tensor);
 
 		ProjVelocity = 0.0; ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
@@ -6058,6 +6047,8 @@ void CUpwHLLC_PlasmaDiatomic::SetResidual(double *val_residual, double **val_Jac
 		GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitaryNormal, invP_Tensor);
 
 		/*--- Jacobias of the inviscid flux, scale = 0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal ---*/
+    cout << "Need to change the call to InvProjJacobians, to InvProjJacobians_ and include effects of diatomic species" << endl;
+    cin.get();
 		GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, val_Jacobian_i);
 		GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, val_Jacobian_j);
 

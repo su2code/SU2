@@ -49,3 +49,6 @@ if BUILD_SOL
 SUBDIRS +=SU2_SOL/obj
 endif
 
+if BUILD_GDC
+SUBDIRS +=SU2_GDC/obj
+endif

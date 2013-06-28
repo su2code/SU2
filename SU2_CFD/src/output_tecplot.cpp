@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2013 Aerospace Design Laboratory
@@ -119,9 +119,9 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
     
 	/*--- Prepare the variables lists. ---*/
 	if (nDim == 2) {
-		Tecplot_File << "VARIABLES = \"x\",\"y\",";
+		Tecplot_File << "VARIABLES = \"x\",\"y\"";
 	} else {
-		Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\",";
+		Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\"";
 	}
   
   /*--- Write the list of the fields in the restart file.
@@ -142,9 +142,11 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
     for (iVar = 0; iVar < nVar_Consv; iVar++) {
       Tecplot_File << ",\"Conservative_" << iVar+1 << "\"";
     }
-    for (iVar = 0; iVar < nVar_Consv; iVar++) {
-      Tecplot_File << ",\"Residual_" << iVar+1 << "\"";
-    }
+      if (config->GetWrt_Residuals()) {
+          for (iVar = 0; iVar < nVar_Consv; iVar++) {
+              Tecplot_File << ",\"Residual_" << iVar+1 << "\"";
+          }
+      }
     
     /*--- Add names for any extra variables (this will need to be adjusted). ---*/
     if (grid_movement) {
@@ -153,6 +155,10 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
       } else {
         Tecplot_File << ",\"Grid_Velx\",\"Grid_Vely\",\"Grid_Velz\"";
       }
+    }
+    
+    if ((Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+      Tecplot_File << ",\"Density\"";
     }
     
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
@@ -966,10 +972,10 @@ string AssembleVariableNames(bool GridMovement, bool Incompressible, unsigned sh
 		variables << "Conservative_Variable_" << iVar+1 << " ";
 		*NVar += 1;
 	}
-	for (iVar = nVar_Consv; iVar < 2*nVar_Consv; iVar++) {
-		variables << "Conservative_Residual_" << iVar-nVar_Consv+1 << " ";
-		*NVar += 1;
-	}
+//	for (iVar = nVar_Consv; iVar < 2*nVar_Consv; iVar++) {
+//		variables << "Conservative_Residual_" << iVar-nVar_Consv+1 << " ";
+//		*NVar += 1;
+//	}
 	if (GridMovement) {
 		variables << "Grid_Velocity_X " << "Grid_Velocity_Y "; *NVar += 2;
 		if (dims == 3) {

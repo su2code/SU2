@@ -2,7 +2,7 @@
  * \file SU2_SOL.cpp
  * \brief Main file for the solution export/conversion code (SU2_SOL).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -116,13 +116,16 @@ int main(int argc, char *argv[]) {
       Physical_t  = (iExtIter+1)*Physical_dt;
       if (Physical_t >=  config[ZONE_0]->GetTotal_UnstTime())
         StopCalc = true;
-      
+        
       if ((iExtIter+1 == config[ZONE_0]->GetnExtIter()) ||
-          ((iExtIter % config[ZONE_0]->GetWrt_Sol_Freq() == 0) && (iExtIter != 0)) ||
+          ((iExtIter % config[ZONE_0]->GetWrt_Sol_Freq() == 0) && (iExtIter != 0) &&
+           !((config[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+             (config[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND))) ||
           (StopCalc) ||
           (((config[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-            (config[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) && (iExtIter == 0))) {
-        
+            (config[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) &&
+           ((iExtIter == 0) || (iExtIter % config[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) {
+          
         /*--- Set the current iteration number in the config class. ---*/
         config[ZONE_0]->SetExtIter(iExtIter);
         

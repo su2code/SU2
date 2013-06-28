@@ -2,7 +2,7 @@
  * \file solution_structure.inl
  * \brief In-Line subroutines of the <i>solution_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -38,7 +38,7 @@ inline double CSolution::GetCSensitivity(unsigned short val_marker, unsigned sho
 inline void CSolution::SetResidual_DualTime(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iRKStep, 
 																		 unsigned short iMesh, unsigned short RunTime_EqSystem) { }
 																		 
-inline void CSolution::SetLevelSet_Distance(CGeometry *geometry, CConfig *config) { }
+inline void CSolution::SetLevelSet_Distance(CGeometry *geometry, CConfig *config, bool Initialization, bool WriteLevelSet) { }
 
 inline void CSolution::SetFEA_Load(CSolution ***flow_solution, CGeometry **fea_geometry, CGeometry **flow_geometry, CConfig *fea_config, CConfig *flow_config) { }
 
@@ -287,9 +287,6 @@ inline void CSolution::BC_FlowLoad(CGeometry *geometry, CSolution **solution_con
 									 
 inline void CSolution::BC_Load(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
 									 unsigned short val_marker) { }
-
-inline void CSolution::BC_NS_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
-								  unsigned short val_marker) { }
                   
 inline void CSolution::BC_Isothermal_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short val_marker) { }
                   
@@ -310,8 +307,8 @@ inline void CSolution::BC_NearField_Boundary(CGeometry *geometry, CSolution **so
 inline void CSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, 
 								    CConfig *config, unsigned short val_marker) { }
 
-inline void CSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, 
-									CConfig *config, unsigned short val_marker) { cout << "inline" <<endl; }
+inline void CSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, 
+									CConfig *config, unsigned short val_marker) { }
 									
 inline void CSolution::BC_Custom(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, 
 										 CConfig *config, unsigned short val_marker) { }
@@ -359,7 +356,7 @@ inline void CSolution::Centered_Residual(CGeometry *geometry, CSolution **soluti
 inline void CSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, 
 									   CConfig *config, unsigned short iMesh) { }
 
-inline void CSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep) { }
+inline void CSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) { }
 
 inline void CSolution::SetDissipation_Switch(CGeometry *geometry, CConfig *config) { }
 
@@ -425,9 +422,15 @@ inline void CSolution::Set_OldSolution(CGeometry *geometry) {
 
 inline unsigned short CSolution::GetnVar(void) { return nVar; }
 
+inline unsigned short CSolution::GetnPrimVar(void) { return nPrimVar; }
+
 inline double CSolution::GetMax_Delta_Time(void) { return Max_Delta_Time; }
 
 inline double CSolution::GetMin_Delta_Time(void) { return Min_Delta_Time; }
+
+inline double CSolution::GetMax_Delta_Time(unsigned short val_Species) { return 0.0; }
+
+inline double CSolution::GetMin_Delta_Time(unsigned short val_Species) { return 0.0; }
 
 inline unsigned short CSolution::GetnSpecies(void) { return nSpecies; }
 
@@ -640,6 +643,10 @@ inline double CPlasmaSolution::Get_PressureDrag() { return PressureDrag; }
 inline double CPlasmaSolution::Get_ViscDrag() { return ViscDrag; }
 
 inline double CPlasmaSolution::Get_MagnetDrag() { return MagnetDrag; }
+
+inline double CPlasmaSolution::GetMax_Delta_Time(unsigned short val_Species) { return Max_Delta_Time[val_Species]; }
+
+inline double CPlasmaSolution::GetMin_Delta_Time(unsigned short val_Species) { return Min_Delta_Time[val_Species]; }
 
 inline double CLevelSetSolution::GetTotal_CFreeSurface() { return Total_CFreeSurface; }
 

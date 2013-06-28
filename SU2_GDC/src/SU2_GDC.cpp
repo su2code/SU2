@@ -2,7 +2,7 @@
  * \file SU2_GDC.cpp
  * \brief Main file of the Geometry Definition Code (SU2_GDC).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -91,6 +91,10 @@ int main(int argc, char *argv[]) {
 			ObjectiveFunc = boundary->GetTotalVolume(config, true);
 			cout << "Total volume: "<< ObjectiveFunc << "." << endl; 
 			break;
+    case CLEARANCE :
+			ObjectiveFunc = boundary->GetClearance(config, true);
+			cout << "Clearance: "<< ObjectiveFunc << "." << endl;
+			break;
 	}
 	
 	/*--- Write the objective function in a external file ---*/
@@ -152,16 +156,23 @@ int main(int argc, char *argv[]) {
 					case MAX_THICKNESS :
 						ObjectiveFunc_New = boundary->GetMaxThickness(config, false);
 						delta_eps = config->GetDV_Value_New(iDV);
-						Gradient = (ObjectiveFunc_New - ObjectiveFunc) / delta_eps;
+						Gradient = (ObjectiveFunc_New - ObjectiveFunc) / (delta_eps + EPS);
 						if (iDV == 0) Gradient_file << "Max thickness grad. using fin. dif." << endl;
 						cout << "Max thickness gradient: "<< Gradient << "." << endl; 
 						break;
 					case TOTAL_VOLUME :
 						ObjectiveFunc_New = boundary->GetTotalVolume(config, false);
 						delta_eps = config->GetDV_Value_New(iDV);
-						Gradient = (ObjectiveFunc_New - ObjectiveFunc) / delta_eps;
+						Gradient = (ObjectiveFunc_New - ObjectiveFunc) / (delta_eps + EPS);
 						if (iDV == 0) Gradient_file << "Total volume grad. using fin. dif." << endl;
 						cout << "Total volume gradient: "<< Gradient << "." << endl; 
+						break;
+          case CLEARANCE :
+						ObjectiveFunc_New = boundary->GetClearance(config, false);
+						delta_eps = config->GetDV_Value_New(iDV);
+						Gradient = (ObjectiveFunc_New - ObjectiveFunc) / (delta_eps + EPS);
+						if (iDV == 0) Gradient_file << "Clearance grad. using fin. dif." << endl;
+						cout << "Clearance gradient: "<< Gradient << "." << endl;
 						break;
 				}
 				

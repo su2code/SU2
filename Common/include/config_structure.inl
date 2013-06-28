@@ -2,7 +2,7 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -62,6 +62,8 @@ inline double CConfig::GetFreeSurface_Thickness(void) { return FreeSurface_Thick
 inline double CConfig::GetFreeSurface_Damping_Coeff(void) { return FreeSurface_Damping_Coeff; }
 
 inline double CConfig::GetFreeSurface_Damping_Length(void) { return FreeSurface_Damping_Length; }
+
+inline unsigned long CConfig::GetFreeSurface_Reevaluation(void) { return FreeSurface_Reevaluation; }
 
 inline double CConfig::GetFreeSurface_Outlet(void) { return FreeSurface_Outlet; }
 
@@ -181,6 +183,8 @@ inline double CConfig::GetEnergy_FreeStreamND(void) { return Energy_FreeStreamND
 
 inline double CConfig::GetViscosity_FreeStreamND(void) { return Viscosity_FreeStreamND; }
 
+inline double CConfig::GetNuFactor_FreeStream(void) { return NuFactor_FreeStream; }
+
 inline double CConfig::GetIntermittency_FreeStream(void) { return Intermittency_FreeStream; }
 
 inline double CConfig::GetTurbulenceIntensity_FreeStream(void) { return TurbulenceIntensity_FreeStream; }
@@ -262,11 +266,15 @@ inline unsigned short CConfig::GetMG_CorrecSmooth(unsigned short val_mesh) {
 
 inline unsigned long CConfig::GetWrt_Sol_Freq(void) { return Wrt_Sol_Freq; }
 
+inline unsigned long CConfig::GetWrt_Sol_Freq_DualTime(void) { return Wrt_Sol_Freq_DualTime; }
+
 inline unsigned long CConfig::GetWrt_Con_Freq(void) { return Wrt_Con_Freq; }
 
 inline unsigned long CConfig::GetWrt_Con_Freq_DualTime(void) { return Wrt_Con_Freq_DualTime; }
 
 inline bool CConfig::GetWrt_Unsteady(void) { return Wrt_Unsteady; }
+
+inline bool CConfig::GetLowFidelitySim(void) { return LowFidelitySim; }
 
 inline unsigned short CConfig::GetKind_Solver(void) { return Kind_Solver; }
 
@@ -275,6 +283,8 @@ inline unsigned short CConfig::GetKind_GasModel(void) { return Kind_GasModel; }
 inline unsigned short CConfig::GetKind_GridMovement(unsigned short val_iZone) { return Kind_GridMovement[val_iZone]; }
 
 inline void CConfig::SetKind_GridMovement(unsigned short val_iZone, unsigned short motion_Type) { Kind_GridMovement[val_iZone] = motion_Type; }
+
+inline double CConfig::GetMach_Motion(void) { return Mach_Motion; }
 
 inline double CConfig::GetMotion_Origin_X(unsigned short val_iZone) { return Motion_Origin_X[val_iZone]; }
 
@@ -356,15 +366,13 @@ inline double CConfig::GetDipoleDist() { return DipoleDist; }
 
 inline double CConfig::GetMolar_Mass(unsigned short iSpecies) { return Molar_Mass[iSpecies]; } 
 
-inline unsigned short CConfig::GetnMonatomics(void) { return nMonatomics; };
+inline unsigned short CConfig::GetnMonatomics(void) { return nMonatomics; }
 	
-inline unsigned short CConfig::GetnDiatomics(void) { return nDiatomics; };	
+inline unsigned short CConfig::GetnDiatomics(void) { return nDiatomics; }	
 
 inline double CConfig::GetMolecular_Diameter(unsigned short iSpecies) { return Molecular_Diameter[iSpecies]; } 
 
 inline int CConfig::GetParticle_ChargeNumber(unsigned short iSpecies) { return Charge_Number[iSpecies]; }
-
-inline bool CConfig::GetWrite_Mean_Solution(void) { return Write_Mean_Solution; }
 
 inline double CConfig::GetInitial_Gas_Composition(unsigned short iSpecies) { return Gas_Composition[iSpecies]; }
 
@@ -374,23 +382,37 @@ inline double CConfig::GetTemperature_Ref(unsigned short iSpecies) { return Spec
 
 inline double CConfig::GetViscosity_Ref(unsigned short iSpecies) { return Species_Ref_Viscosity[iSpecies]; } 
 
-inline unsigned short CConfig::GetKind_Gradient_Method(void) { return Kind_Gradient_Method; };
+inline unsigned short CConfig::GetKind_Gradient_Method(void) { return Kind_Gradient_Method; }
 
-inline unsigned short CConfig::GetKind_GridDef_Method(void) { return Kind_GridDef_Method; };
+inline unsigned short CConfig::GetKind_GridDef_Method(void) { return Kind_GridDef_Method; }
 
-inline unsigned short CConfig::GetKind_Linear_Solver(void) { return Kind_Linear_Solver; };
+inline unsigned short CConfig::GetKind_Linear_Solver(void) { return Kind_Linear_Solver; }
 
-inline unsigned short CConfig::GetKind_Linear_Solver_Prec(void) { return Kind_Linear_Solver_Prec; };
+inline unsigned short CConfig::GetKind_Linear_Solver_Prec(void) { return Kind_Linear_Solver_Prec; }
 
-inline void CConfig::SetKind_Linear_Solver_Prec(unsigned short val_kind_prec) { Kind_Linear_Solver_Prec = val_kind_prec; };
+inline void CConfig::SetKind_Linear_Solver_Prec(unsigned short val_kind_prec) { Kind_Linear_Solver_Prec = val_kind_prec; }
 
-inline double CConfig::GetLinear_Solver_Error(void) { return Linear_Solver_Error; };
+inline double CConfig::GetLinear_Solver_Error(void) { return Linear_Solver_Error; }
 
-inline unsigned short CConfig::GetLinear_Solver_Iter(void) { return Linear_Solver_Iter; };
+inline unsigned long CConfig::GetLinear_Solver_Iter(void) { return Linear_Solver_Iter; }
 
-inline bool CConfig::GetLinear_Solver_Hist(void) { return Linear_Solver_Hist; };
+inline double CConfig::GetLinear_Solver_Relax(void) { return Linear_Solver_Relax; }
 
-inline double CConfig::GetGridDef_Error(void) { return GridDef_Error; };
+inline bool CConfig::GetLinear_Solver_Hist(void) { return Linear_Solver_Hist; }
+
+inline unsigned short CConfig::GetKind_AdjTurb_Linear_Solver(void) { return Kind_AdjTurb_Linear_Solver; }
+
+inline unsigned short CConfig::GetKind_AdjTurb_Linear_Prec(void) { return Kind_AdjTurb_Linear_Prec; }
+
+inline void CConfig::SetKind_AdjTurb_Linear_Prec(unsigned short val_kind_prec) { Kind_AdjTurb_Linear_Prec = val_kind_prec; }
+
+inline double CConfig::GetAdjTurb_Linear_Error(void) { return AdjTurb_Linear_Error; }
+
+inline unsigned short CConfig::GetAdjTurb_Linear_Iter(void) { return AdjTurb_Linear_Iter; }
+
+inline double CConfig::GetAdjTurb_CFLRedCoeff(void) { return AdjTurb_CFLRedCoeff; }
+
+inline double CConfig::GetGridDef_Error(void) { return GridDef_Error; }
 
 inline unsigned short CConfig::GetKind_Adaptation(void) { return Kind_Adaptation; }
 
@@ -428,8 +450,6 @@ inline unsigned short CConfig::GetKind_ConvNumScheme_LevelSet(void) { return Kin
 
 inline unsigned short CConfig::GetKind_ConvNumScheme_AdjLevelSet(void) { return Kind_ConvNumScheme_AdjLevelSet; }
 
-inline unsigned short CConfig::GetKind_ConvNumScheme_Combustion(void) { return Kind_ConvNumScheme_Combustion; }
-
 inline unsigned short CConfig::GetKind_ConvNumScheme_Template(void) { return Kind_ConvNumScheme_Template; }
 
 inline unsigned short CConfig::GetKind_ViscNumScheme_Flow(void) { return Kind_ViscNumScheme_Flow; }
@@ -458,8 +478,6 @@ inline unsigned short CConfig::GetKind_SourNumScheme_AdjPlasma(void) { return Ki
 
 inline unsigned short CConfig::GetKind_SourJac_Plasma(void) { return Kind_SourJac_Plasma; }
 
-inline unsigned short CConfig::GetKind_SourNumScheme_Combustion(void) { return Kind_SourNumScheme_Combustion; }
-
 inline unsigned short CConfig::GetKind_SourNumScheme_Template(void) { return Kind_SourNumScheme_Template; }
 
 inline unsigned short CConfig::GetKind_ViscNumScheme_Elec(void) { return Kind_ViscNumScheme_Elec; }
@@ -471,8 +489,6 @@ inline unsigned short CConfig::GetKind_Centered_Flow(void) { return Kind_Centere
 inline unsigned short CConfig::GetKind_Centered_LevelSet(void) { return Kind_Centered_LevelSet; }
 
 inline unsigned short CConfig::GetKind_Centered_AdjLevelSet(void) { return Kind_Centered_AdjLevelSet; }
-
-inline unsigned short CConfig::GetKind_Centered_Combustion(void) { return Kind_Centered_Combustion; }
 
 inline unsigned short CConfig::GetKind_Centered_Plasma(void) { return Kind_Centered_Plasma; }
 
@@ -501,8 +517,6 @@ inline unsigned short CConfig::GetKind_Upwind_Flow(void) { return Kind_Upwind_Fl
 inline unsigned short CConfig::GetKind_Upwind_LevelSet(void) { return Kind_Upwind_LevelSet; }
 
 inline unsigned short CConfig::GetKind_Upwind_AdjLevelSet(void) { return Kind_Upwind_AdjLevelSet; }
-
-inline unsigned short CConfig::GetKind_Upwind_Combustion(void) { return Kind_Upwind_Combustion; }
 
 inline unsigned short CConfig::GetKind_Upwind_Plasma(void) { return Kind_Upwind_Plasma; }
 
@@ -569,8 +583,6 @@ inline unsigned short CConfig::GetKind_TimeIntScheme_Turb(void) { return Kind_Ti
 inline unsigned short CConfig::GetKind_TimeIntScheme_LevelSet(void) { return Kind_TimeIntScheme_LevelSet; }
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_AdjLevelSet(void) { return Kind_TimeIntScheme_AdjLevelSet; }
-
-inline unsigned short CConfig::GetKind_TimeIntScheme_Combustion(void) { return Kind_TimeIntScheme_Combustion; }
 
 inline unsigned short CConfig::GetKind_ConvNumScheme_Turb(void) { return Kind_ConvNumScheme_Turb; }
 
@@ -778,8 +790,6 @@ inline double *CConfig::GetOmega(void) { return Omega; }
 
 inline double CConfig::GetOmegaMag(void) { return Omega_Mag; }
 
-inline double CConfig::GetRotRadius(void) { return Rot_Radius; }
-
 inline double CConfig::GetDV_Value_Old(unsigned short val_dv) { return DV_Value_Old[val_dv]; }
 
 inline bool CConfig::GetGrid_Movement(void) { return Grid_Movement; }
@@ -791,6 +801,8 @@ inline bool CConfig::GetAxisymmetric(void) { return Axisymmetric; }
 inline bool CConfig::GetAdaptBoundary(void) { return AdaptBoundary; }
 
 inline bool CConfig::GetIncompressible(void) { return Incompressible; }
+
+inline bool CConfig::GetFreeSurface(void) { return FreeSurface; }
 
 inline bool CConfig::GetAdiabaticWall(void) { return AdiabaticWall; }
 
@@ -878,6 +890,8 @@ inline bool CConfig::GetWrt_Sol_Tec_ASCII(void) { return Wrt_Sol_Tec_ASCII; }
 
 inline bool CConfig::GetWrt_Sol_Tec_Binary(void) { return Wrt_Sol_Tec_Binary; }
 
+inline bool CConfig::GetWrt_Residuals(void) { return Wrt_Residuals; }
+
 inline unsigned short CConfig::GetnOutput_Vars_Vol(void) { return nOutput_Vars_Vol; }
 
 inline unsigned short CConfig::GetOutput_Vars_Vol(unsigned short val_index) { return Output_Vars_Vol[val_index]; }
@@ -913,4 +927,8 @@ inline void CConfig::SetAeroelastic_n(void) {
 inline double CConfig::GetAeroelastic_Frequency_Plunge(void) {return FreqPlungeAeroelastic;}
 
 inline double CConfig::GetAeroelastic_Frequency_Pitch(void) {return FreqPitchAeroelastic;}
+
+inline unsigned short CConfig::GetType_Aeroelastic(void) {return Aeroelastic_Grid_Movement;}
+
+inline unsigned short CConfig::GetAeroelastic_GridVelocity(void) {return Aeroelastic_Grid_Velocity;}
 

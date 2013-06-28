@@ -2,7 +2,7 @@
  * \file dual_grid_structure.cpp
  * \brief Main classes for defining the dual grid (points, vertex, and edges).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -29,7 +29,7 @@ CDualGrid::CDualGrid(unsigned short val_nDim) { nDim = val_nDim;}
 
 CDualGrid::~CDualGrid() {}
 
-CPoint::CPoint(unsigned short val_nDim, CConfig *config) : CDualGrid(val_nDim) {
+CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *config) : CDualGrid(val_nDim) {
 	unsigned short iDim;
 	
 	/*--- Element, point and edge structures initialization ---*/
@@ -60,6 +60,9 @@ CPoint::CPoint(unsigned short val_nDim, CConfig *config) : CDualGrid(val_nDim) {
 	PhysicalBoundary = false;
 	Domain = true;
 
+  /*--- Set the global index in the parallel simulation ---*/
+	GlobalIndex = val_globalindex;
+  
 	/*--- Set the color for mesh partitioning ---*/
 	color = 0;
 

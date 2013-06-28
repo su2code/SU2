@@ -3,7 +3,7 @@
 ## \file mesh_adaptation.py
 #  \brief Python script for doing the grid adaptation using the SU2 suite.
 #  \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.3
+#  \version 2.0.4
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -45,7 +45,7 @@ def main():
                       help="SAVE_ALL the flow/adjoint/meshes solutions at each adaptation cycle", metavar="SAVE_ALL")
 
     (options, args)=parser.parse_args()
-    
+
     options.partitions = int( options.partitions )
     options.cycle      = int( options.cycle      )
     options.overwrite  = options.overwrite == "True"    
@@ -83,7 +83,7 @@ def mesh_adaptation( filename             ,
 
     # assumes serial with partitions = 1
     if partitions == 1: partitions = 0
-    
+
     # Get parameters
     params_get         = libSU2.Get_ConfigParams( Config_INP_filename )
     kind_adapt         = params_get['KIND_ADAPT']
@@ -91,7 +91,7 @@ def mesh_adaptation( filename             ,
     restart_flow_file  = params_get['RESTART_FLOW_FILENAME']
     restart_adj_file   = params_get['RESTART_ADJ_FILENAME']
     original_mesh_file = params_get['MESH_FILENAME']
-  #output_mesh_file   = params_get['MESH_OUT_FILENAME']
+    #output_mesh_file   = params_get['MESH_OUT_FILENAME']
     Mesh_MAC_filename  = params_get['MESH_OUT_FILENAME']
     cadj_prefix        = libSU2.get_AdjointPrefix(objfunc)
 
@@ -101,7 +101,7 @@ def mesh_adaptation( filename             ,
     surface_flow_file = params_get['SURFACE_FLOW_FILENAME']
     surface_adj_file  = params_get['SURFACE_ADJ_FILENAME']
     history_file      = params_get['CONV_FILENAME']
-    
+
     # Get mesh filenames and filetypes
     mesh_filetype     = params_get['MESH_FORMAT']
     if mesh_filetype == "CGNS":
@@ -147,9 +147,9 @@ def mesh_adaptation( filename             ,
         # Load the new config file options and run the direct problem
         libSU2.Set_ConfigParams( Config_CFD_filename, params_set )
         if partitions > 1:
-          parallel_computation( Config_CFD_filename, partitions )
+            parallel_computation( Config_CFD_filename, partitions )
         else:
-          libSU2_run.SU2_CFD( Config_CFD_filename, partitions )
+            libSU2_run.SU2_CFD( Config_CFD_filename, partitions )
 
         # Copy flow solution & history file
         if save_all:
@@ -260,7 +260,7 @@ def mesh_adaptation( filename             ,
                 # Run the mesh adaptation module
                 libSU2.Set_ConfigParams( Config_MAC_filename, params_set )
                 libSU2_run.SU2_MAC( Config_MAC_filename, partitions )
-        
+
             # Change the parameters to do one iteration of the flow solver on the finest grid
             # Always start from the interpolated solution and store the residual in the solution file for finest grid
             # No multigrid or convergence acceleration

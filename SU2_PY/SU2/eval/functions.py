@@ -1,7 +1,7 @@
 ## \file functions.py
 #  \brief python package for functions
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.3
+#  \version 2.0.4
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -72,12 +72,14 @@ def function( func_name, config, state=None ):
         
         # Aerodynamics
         if func_name == "ALL" or func_name in su2io.optnames_aero:
-            aero = aerodynamics( config, state )
+            aerodynamics( config, state )
         
         # Geometry
         elif func_name in su2io.optnames_geo:
-            geom = geometry( config, state )
+            geometry( func_name, config, state )
             
+        else:
+            raise Exception, 'unknown function name'
         
     #: if not redundant
     
@@ -179,7 +181,7 @@ def aerodynamics( config, state=None ):
     # files: direct solution
     if files.has_key('DIRECT'):
         link.append( files['DIRECT'] )
-        config['RESTART_SOL'] = 'YES'
+        ##config['RESTART_SOL'] = 'YES' # don't override config file
     else:
         config['RESTART_SOL'] = 'NO'
         
@@ -205,7 +207,10 @@ def aerodynamics( config, state=None ):
     #: with output redirection
     
     # return aerodynamic dictionary
-    aero = state['FUNCTIONS'] # naive update
+    aero = state['FUNCTIONS'] 
+    for key in aero.keys(): 
+        if key not in su2io.optnames_aero: del aero[key]
+        
     return copy.deepcopy(aero)
 
 #: def aerodynamics()
@@ -227,7 +232,7 @@ def geometry( func_name, config, state=None ):
             Config is already setup for deformation.
             Mesh may or may not be deformed.
             Updates config and state by reference.
-            Redundancy if state.FUNCTIONS is not empty.
+            Redundancy if state.FUNCTIONS does not have func_name.
             
         Executes in:
             ./GEOMETRY
@@ -256,114 +261,58 @@ def geometry( func_name, config, state=None ):
         log_geom = 'log_Geometry.out'
     else:
         log_geom = None
-        
-        
-    # ----------------------------------------------------
-    #  Redundancy Check
+    
     # ----------------------------------------------------    
-    
-    # master redundancy check
-    deform_set  = config['DV_KIND'] == config['DEFINITION_DV']['KIND']
-    deform_todo = not config['DV_VALUE_NEW'] == config['DV_VALUE_OLD']
-    direct_todo = all( [ state.FUNCTIONS.has_key(key) for key in su2io.optnames_aero ] )
-    if (not deform_set or not deform_todo) and direct_todo:
-        # could have geometry functions in state
-        aero = su2util.ordered_bunch()
-        for key in su2io.optnames_aero:
-            aero[key] = state.FUNCTIONS[key]
-        return copy.deepcopy(aero)
-    
-    
-    # ----------------------------------------------------
-    #  Decomposition    
+    #  Update Mesh
     # ----------------------------------------------------
     
-    # redundancy check
-    if not config.get('DECOMPOSED',False):
-        
-        # files to pull
-        pull = []
-        link = config['MESH_FILENAME']
-        
-        # output redirection
-        with redirect_folder('DECOMP',pull,link) as push:    
-            with redirect_output(log_decomp):
-            
-                # # RUN DECOMPOSITION # # 
-                info = su2run.decompose(config)
-                state.update(info)
-                              
-                # files to push
-                if info.FILES.has_key('MESH'):
-                    meshname = info.FILES.MESH
-                    names = su2io.expand_part( meshname , config )
-                    push.extend( names )
-                #: if push
-        
-        #: with output redirection
-        
-    #: if not redundant
-    
-    # ----------------------------------------------------
-    #  Deformation
-    # ----------------------------------------------------
-    
-    # redundancy check
-    if deform_set and deform_todo:
-    
-        # files to pull
-        pull = []
-        link = config['MESH_FILENAME']
-        link = su2io.expand_part(link,config)
-        
-        # output redirection
-        with redirect_folder('DEFORM',pull,link) as push:
-            with redirect_output(log_deform):
-                
-                # # RUN DEFORMATION # #
-                info = su2run.deform(config)
-                state.update(info)
-                
-                # data to push
-                meshname = info.FILES.MESH
-                names = su2io.expand_part( meshname , config )
-                push.extend( names )
-        
-        #: with redirect output
-        
-    elif deform_set and not deform_todo:
-        state.VARIABLES.DV_VALUE_NEW = config.DV_VALUE_NEW
-
-    #: if not redundant
+    # does decomposition and deformation
+    info = update_mesh(config,state)    
     
     
     # ----------------------------------------------------    
     #  Geometry Solution
     # ----------------------------------------------------    
     
-    # files to pull
-    files = state.FILES
-    pull = []; link = []
+    # redundancy check
+    geometry_done = state.FUNCTIONS.has_key(func_name)
+    #geometry_done = all( [ state.FUNCTIONS.has_key(key) for key in su2io.optnames_geo ] )
+    if not geometry_done:    
+        
+        # files to pull
+        files = state.FILES
+        pull = []; link = []
+        
+        # files: mesh
+        name = files['MESH']
+        name = su2io.expand_part(name,config)
+        link.extend(name)
+        
+        # update function name
+        ## TODO
+        
+        # output redirection
+        with redirect_folder( 'GEOMETRY', pull, link ) as push:
+            with redirect_output(log_geom):     
+                
+                # setup config
+                config.GEO_PARAM = func_name
+                
+                # # RUN GEOMETRY SOLUTION # #
+                info = su2run.geometry(config)
+                state.update(info)
+                
+                # no files to push
+                
+        #: with output redirection
+        
+    #: if not redundant 
     
-    # files: mesh
-    name = files['MESH']
-    name = su2io.expand_part(name,config)
-    link.extend(name)
-    
-    # output redirection
-    with redirect_folder( 'GEOMETRY', pull, link ) as push:
-        with redirect_output(log_direct):     
-            
-            # # RUN GEOMETRY SOLUTION # #
-            info = su2run.geometry(config)
-            state.update(info)
-            
-            # no files to push
-            
-    #: with output redirection
-    
-    # return aerodynamic dictionary
+    # return geometry dictionary
     geom = state['FUNCTIONS'] # naive update
+    for key in geom.keys(): 
+        if key not in su2io.optnames_geo: del geom[key]   
+        
     return copy.deepcopy(geom)
     
 

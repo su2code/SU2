@@ -3,7 +3,7 @@
 ## \file square.py
 #  \brief Python script for creating grid for freesurface channels.
 #  \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.3
+#  \version 2.0.4
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -30,9 +30,9 @@ parser.add_option("-n", "--nNode", dest="nNode", default=125,
                   help="use this NNODE in x direction", metavar="NNODE")
 parser.add_option("-m", "--mNode", dest="mNode", default=100,
                   help="use this MNODE in y direction", metavar="MNODE")
-parser.add_option("-x", "--xLength", dest="xLength", default=25.0,
+parser.add_option("-x", "--xLength", dest="xLength", default=7.0,
                   help="use this XLENGTH", metavar="XLENGTH")
-parser.add_option("--offsetx", dest="offsetx", default=12.5,
+parser.add_option("--offsetx", dest="offsetx", default=1.0,
                   help="use this OFFSETX", metavar="OFFSETX")
 parser.add_option("--xAdapt", dest="xAdapt", default="True",
                   help="Adapt the grid XADAPT", metavar="XADAPT")
@@ -40,7 +40,7 @@ parser.add_option("-y", "--yLength", dest="yLength", default=1.0,
                   help="use this YLENGTH", metavar="YLENGTH")
 parser.add_option("--offsety", dest="offsety", default=0.5,
                   help="use this OFFSETY", metavar="OFFSETY")
-parser.add_option("--yAdapt", dest="yAdapt", default="False",
+parser.add_option("--yAdapt", dest="yAdapt", default="True",
                   help="Adapt the grid YADAPT", metavar="YADAPT")
 (options, args)=parser.parse_args()
 
@@ -85,7 +85,7 @@ for jNode in range(mNode):
 
         if xAdapt == "True":
           
-          x0 = 0.0; x1 = 0.49; x2 = 0.51; x3 = 1.0;
+          x0 = 0.0; x1 = 0.12; x2 = 0.30; x3 = 1.0;
           fp3 = 10.0;  fp0 = fp3; fpp2 = 0.0; fpp1 = -fpp2;
           if (xCoord >= x0) and (xCoord < x1):
               incr = x1-x0; incr2 = x1*x1-x0*x0; incr3 = x1*x1*x1-x0*x0*x0
@@ -117,7 +117,7 @@ for jNode in range(mNode):
 
         if yAdapt == "True":
           
-          y0 = 0.0; y1 = 0.00001; y2 = 0.1; y3 = 1.0;
+          y0 = 0.0; y1 = 0.000001; y2 = 0.001; y3 = 1.0;
           fp3 = 10.0;  fp0 = fp3; fpp2 = 0.0; fpp1 = -fpp2;
           if (yCoord >= y0) and (yCoord < y1):
               incr = y1-y0; incr2 = y1*y1-y0*y0; incr3 = y1*y1*y1-y0*y0*y0

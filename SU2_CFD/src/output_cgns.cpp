@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2013 Aerospace Design Laboratory
@@ -107,10 +107,10 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
     
 		cgns_err = cg_open((char *)results_file.str().c_str(),CG_MODE_WRITE,&cgns_file);
 
-		element_dims = geometry->GetnDim();		// Currently (release 2.0.3) only all-2D or all-3D zones permitted
+		element_dims = geometry->GetnDim();		// Currently (release 2.0.4) only all-2D or all-3D zones permitted
 		physical_dims = element_dims;
 
-    /*--- write CGNS base data (one base assumed as of version 2.0.3) ---*/
+    /*--- write CGNS base data (one base assumed as of version 2.0.4) ---*/
 		cgns_err = cg_base_write(cgns_file,"SU^2 Base",element_dims,physical_dims,&cgns_base_results);
 		if (cgns_err) cg_error_print();
 
@@ -224,7 +224,7 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
 		element_dims = geometry->GetnDim();		// Currently (release 2.0) only all-2D or all-3D zones permitted
 		physical_dims = element_dims;
     
-		/*--- write CGNS base data (one base assumed as of version 2.0.3) ---*/
+		/*--- write CGNS base data (one base assumed as of version 2.0.4) ---*/
 		cgns_err = cg_base_write(cgns_file,"SU^2 Base",element_dims,physical_dims,&cgns_base);
 		if (cgns_err) cg_error_print();
     
@@ -256,7 +256,7 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
 		else cgns_err = cg_simulation_type_write(cgns_file,cgns_base,NonTimeAccurate);
 		if (cgns_err) cg_error_print();
     
-		cgns_err = cg_descriptor_write("Solver Information","SU^2 version 2.0.3, Stanford University Aerospace Design Lab");
+		cgns_err = cg_descriptor_write("Solver Information","SU^2 version 2.0.4, Stanford University Aerospace Design Lab");
 		if (cgns_err) cg_error_print();
 		
 		isize[0][0] = geometry->GetGlobal_nPointDomain(); //;				// vertex size
@@ -413,7 +413,7 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
 		element_dims = geometry->GetnDim();		// Currently (release 2.0) only all-2D or all-3D zones permitted
 		physical_dims = element_dims;
     
-//		/*--- write CGNS base data (one base assumed as of version 2.0.3) ---*/
+//		/*--- write CGNS base data (one base assumed as of version 2.0.4) ---*/
 //		cgns_err = cg_base_write(cgns_file,"SU^2 Base",element_dims,physical_dims,&cgns_base);
 //		if (cgns_err) cg_error_print();
     
@@ -462,11 +462,13 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
 	}
   
 	/*--- Write conservative variable residuals to CGNS file ---*/
-	for (iVar = nVar_Consv; iVar < 2*nVar_Consv; iVar++) {
-		name.str(string()); name << "Conservative Residual " << iVar-nVar_Consv+1;
-		cgns_err = cg_field_write(cgns_file,cgns_base,cgns_zone,cgns_flow,RealDouble,(char *)name.str().c_str(),Data[iVar],&cgns_field);
-		if (cgns_err) cg_error_print();
-	}
+    if (config->GetWrt_Residuals()){
+        for (iVar = nVar_Consv; iVar < 2*nVar_Consv; iVar++) {
+            name.str(string()); name << "Conservative Residual " << iVar-nVar_Consv+1;
+            cgns_err = cg_field_write(cgns_file,cgns_base,cgns_zone,cgns_flow,RealDouble,(char *)name.str().c_str(),Data[iVar],&cgns_field);
+            if (cgns_err) cg_error_print();
+        }
+    }
   
 	/*--- Write grid velocities to CGNS file, if applicable ---*/
 	if (config->GetGrid_Movement()) {

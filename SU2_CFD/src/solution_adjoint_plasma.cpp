@@ -2,7 +2,7 @@
  * \file solution_adjoint_plasma.cpp
  * \brief Main subrotuines for solving adjoint problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -167,7 +167,7 @@ CAdjPlasmaSolution::CAdjPlasmaSolution(CGeometry *geometry, CConfig *config) : C
       case THRUST_COEFFICIENT: AdjExt = "_ct.dat"; break;
       case TORQUE_COEFFICIENT: AdjExt = "_cq.dat"; break;
       case FIGURE_OF_MERIT: AdjExt = "_merit.dat"; break;
-			case FREESURFACE: AdjExt = "_fs.dat"; break;
+			case FREE_SURFACE: AdjExt = "_fs.dat"; break;
       case NOISE: AdjExt = "_fwh.dat"; break;
 		}
 		filename.append(AdjExt);
@@ -175,7 +175,7 @@ CAdjPlasmaSolution::CAdjPlasmaSolution(CGeometry *geometry, CConfig *config) : C
     
 		/*--- In case there is no file ---*/
 		if (restart_file.fail()) {
-			cout << "There is no adjoint restart file!!" << endl;
+			cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
 			cout << "Press any key to exit..." << endl;
 			cin.get(); exit(1);
 		}
@@ -285,7 +285,7 @@ CAdjPlasmaSolution::~CAdjPlasmaSolution(void) {
 	delete [] node; */
 }
 
-void CAdjPlasmaSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+void CAdjPlasmaSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
 	
 	bool implicit = (config->GetKind_TimeIntScheme_Plasma() == EULER_IMPLICIT);  
@@ -659,7 +659,7 @@ void CAdjPlasmaSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution 
 	
 	/*--- Build implicit system ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-			local_Res_TruncError = node[iPoint]->GetRes_TruncError();
+			local_Res_TruncError = node[iPoint]->GetResTruncError();
 			local_ResConv = node[iPoint]->GetResConv();
 			local_ResVisc = node[iPoint]->GetResVisc();
 			local_ResSour = node[iPoint]->GetResSour();
@@ -726,7 +726,7 @@ void CAdjPlasmaSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution 
 			system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetLinear_Solver_Error(), 
 										 config->GetLinear_Solver_Iter(), false);
 		else if (config->GetKind_Linear_Solver() == GMRES)
-			system.FlexibleGMRES(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetLinear_Solver_Error(), 
+			system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetLinear_Solver_Error(), 
 													 config->GetLinear_Solver_Iter(), false);		
 		
 		sol_vec.CopyToArray(xsol);
@@ -738,7 +738,7 @@ void CAdjPlasmaSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution 
 	/*--- Update solution (system written in terms of increments) ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
 		for (iVar = 0; iVar < nVar; iVar++)
-				node[iPoint]->AddSolution(iVar, xsol[iPoint*nVar+iVar]);
+				node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*xsol[iPoint*nVar+iVar]);
 	
   /*--- MPI solution ---*/
   SetSolution_MPI(geometry, config);
@@ -993,7 +993,7 @@ void CAdjPlasmaSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution
   delete [] dPdrhou;
 }
 
-void CAdjPlasmaSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, 
+void CAdjPlasmaSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, 
 																		 CConfig *config, unsigned short val_marker) {
 	
 	unsigned long iVertex, iPoint;

@@ -3,7 +3,7 @@
 ## \file project.py
 #  \brief package for optimization projects
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.3
+#  \version 2.0.4
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -56,7 +56,7 @@ class Project(object):
              files   - base files
              designs - list of designs
              folder  - project working folder
-             data    - project design data
+             results - project design results
              
         Methods:
             Optimizer Interface
@@ -72,11 +72,13 @@ class Project(object):
             con_cieq(dvs)  - inequality constraints          : list
             con_dcieq(dvs) - inequality constraint gradients : list[list]
             
-            Fucntional Interface
+            Functional Interface
             The following methods take an objective function name for input.
-            func(func_name)                  - function of specified name
-            grad(func_name,method='ADJOINT') - gradient of specified name
-            
+            func(func_name,config)        - function of specified name
+            grad(func_name,method,config) - gradient of specified name,
+                                            where method is 'ADJOINT' or 'FINDIFF'
+            setup config for given dvs with 
+            config = project.unpack_dvs(dvs)
     """  
     
     _design_folder = 'DESIGNS/DSN_*'
@@ -84,7 +86,8 @@ class Project(object):
     
     
     def __init__( self, config, state=None , 
-                  designs=None, folder='.'  ):
+                  designs=None, folder='.' ,
+                  warn = True                ):
         
         folder = folder.rstrip('/')+'/'
         if '*' in folder: folder = su2io.next_folder(folder)        
@@ -102,19 +105,29 @@ class Project(object):
         self.files   = state.FILES # base files
         self.designs = designs     # design list
         self.folder  = folder      # project folder
-        self.data    = su2util.ordered_bunch() # project design data
+        self.results = su2util.ordered_bunch() # project design results
+        
+        # output filenames
+        self.project_file = 'project.pkl' 
+        self.results_file = 'results.pkl' 
         
         # initialize folder with files
         pull,link = state.pullnlink(config)
         with redirect_folder(folder,pull,link,force=True):
+        
+            # look for existing designs
             folders = glob.glob(self._design_folder)
             if len(folders)>0:
                 sys.stdout.write('Warning, removing old designs...')
                 sys.stdout.flush()
-                time.sleep(7)
+                if warn: time.sleep(7)
                 sys.stdout.write(' now\n')
                 for f in folders: shutil.rmtree(f)
             #: if existing designs
+            
+            # save project
+            su2io.save_data(self.project_file,self)
+            
         return
     
     def _eval(self,config,func,*args):
@@ -126,6 +139,8 @@ class Project(object):
         state  = self.state            # project state
         folder = self.folder           # project folder
         
+        project_file = self.project_file
+        
         # check folder
         assert os.path.exists(folder) , 'cannot find project folder %s' % folder        
         
@@ -135,34 +150,27 @@ class Project(object):
         # project folder redirection, don't overwrite files
         with redirect_folder(folder,pull,link,force=False) as push:        
         
-            # find closest design
-            closest,delta = self.find_design(konfig)
-            # found existing design
-            if delta == 0.0 and closest:
-                design = closest
-            # start new design
-            else:
-                design = self.new_design(konfig,closest)
-            #: if new design
+            # state design
+            design = self.new_design(konfig)
             
             # run design
             vals = design._eval(func,*args)
                         
-            # recompile design data
-            self.compile_data()
+            # recompile design results
+            self.compile_results()
             
-            # plot data
-            self.plot_data()
+            # plot results
+            self.plot_results()
             
             # save project
-            su2io.save_data('project.pkl',self)
+            su2io.save_data(project_file,self)
             
         #: with redirect folder
         
         # done, return output
         return vals
     
-    def _unpack_dvs(self,dvs):
+    def unpack_dvs(self,dvs):
         dvs = copy.deepcopy(dvs)
         konfig = copy.deepcopy( self.config )
         if isinstance(dvs, np.ndarray): dvs = dvs.tolist()
@@ -171,32 +179,32 @@ class Project(object):
     
     def obj_f(self,dvs):
         func = su2eval.obj_f
-        konfig,dvs = self._unpack_dvs(dvs)
+        konfig,dvs = self.unpack_dvs(dvs)
         return self._eval(konfig, func,dvs)
         
     def obj_df(self,dvs):
         func = su2eval.obj_df
-        konfig,dvs = self._unpack_dvs(dvs)
+        konfig,dvs = self.unpack_dvs(dvs)
         return self._eval(konfig, func,dvs)
     
     def con_ceq(self,dvs):
         func = su2eval.con_ceq
-        konfig,dvs = self._unpack_dvs(dvs)
+        konfig,dvs = self.unpack_dvs(dvs)
         return self._eval(konfig, func,dvs)
     
     def con_dceq(self,dvs):
         func = su2eval.con_dceq
-        konfig,dvs = self._unpack_dvs(dvs)
+        konfig,dvs = self.unpack_dvs(dvs)
         return self._eval(konfig, func,dvs)
     
     def con_cieq(self,dvs):
         func = su2eval.con_cieq
-        konfig,dvs = self._unpack_dvs(dvs)
+        konfig,dvs = self.unpack_dvs(dvs)
         return self._eval(konfig, func,dvs)
     
     def con_dcieq(self,dvs):
         func = su2eval.con_dcieq
-        konfig,dvs = self._unpack_dvs(dvs)
+        konfig,dvs = self.unpack_dvs(dvs)
         return self._eval(konfig, func,dvs)
     
     def func(self,func_name,config):
@@ -214,8 +222,38 @@ class Project(object):
         #return self._eval(config, user_func,*args) 
         
         
-    def find_design(self,config):
-        """ looks for an existing or closest design
+    def new_design(self,config):
+        """ finds an existing design for given config
+            or starts a new design with a closest design 
+            used for restart data
+        """
+         # local konfig
+        konfig = copy.deepcopy(config)
+        
+        # find closest design
+        closest,delta = self.closest_design(konfig)
+        # found existing design
+        if delta == 0.0 and closest:
+            design = closest
+        # start new design
+        else:
+            design = self.init_design(konfig,closest)
+        #: if new design    
+        
+        return design
+    
+    def get_design(self,config):
+        konfig = copy.deepcopy(config)
+        closest,delta = self.closest_design(konfig)
+        if delta == 0.0 and closest:
+            design = closest
+        else:
+            raise Exception, 'design not found for this config'
+        return design
+        
+    def closest_design(self,config):
+        """ looks for an existing or closest design 
+            given a config
         """        
                 
         designs = self.designs
@@ -240,7 +278,7 @@ class Project(object):
         
         return closest, delta 
     
-    def new_design(self,config,closest=None):
+    def init_design(self,config,closest=None):
         """ starts a new design
         """
         
@@ -276,86 +314,97 @@ class Project(object):
         
         return design
     
-    def compile_data(self,default=np.nan):
-        """ data = SU2.opt.Project.compile_data(default=np.nan)
-            builds a Bunch() of design data
+    def compile_results(self,default=np.nan):
+        """ results = SU2.opt.Project.compile_results(default=np.nan)
+            builds a Bunch() of design results
             
             Inputs:
                 default - value for missing values
                 
             Outputs:
-                data - state with items filled with list of
+                results - state with items filled with list of
                 values ordered by each design iteration.
-                Contents:
-                    VARIABLES
-                    FUNCTIONS
-                    GRADIENTS
-                    HISTORY
-                    
+                
+                results.VARIABLES
+                results.FUNCTIONS
+                results.GRADIENTS
+                results.HISTORY.DIRECT
+                results.HISTORY.ADJOINT_*
                 
         """
         
-        data = su2io.State()
-        data.VARIABLES = []
-        del data.FILES
+        results = su2io.State()
+        results.VARIABLES = []
+        del results.FILES
+        results_file = self.results_file
         
         n_dv = 0
         
         # populate fields
         for i,design in enumerate(self.designs):
             for key in design.state.FUNCTIONS.keys():
-                data.FUNCTIONS[key] = []
+                results.FUNCTIONS[key] = []
             for key in design.state.GRADIENTS.keys():
-                data.GRADIENTS[key] = []
-            for key in design.state.HISTORY.keys():
-                data.HISTORY[key] = []
+                results.GRADIENTS[key] = []
+            for TYPE in design.state.HISTORY.keys():
+                if not results.HISTORY.has_key(TYPE):
+                    results.HISTORY[TYPE] = su2util.ordered_bunch()
+                for key in design.state.HISTORY[TYPE].keys():
+                    results.HISTORY[TYPE][key] = []
             this_ndv = len( design.state.design_vector() )
+            
+            # check design vectors are of same length
             if i == 0:
                 n_dv = this_ndv
             else:
                 if n_dv != this_ndv:
-                    print 'warning - different dv vector length during reduce_data()'
-                
-        # populate data
+                    print 'warning - different dv vector length during compile_results()'
+        #: for each design
+            
+        # populate results
         for design in self.designs:
             this_designvector = design.state.design_vector()
-            data.VARIABLES.append( this_designvector )
-            for key in data.FUNCTIONS.keys():
+            results.VARIABLES.append( this_designvector )
+            for key in results.FUNCTIONS.keys():
                 if design.state.FUNCTIONS.has_key(key):
                     new_func = design.state.FUNCTIONS[key]
                 else:
                     new_func = default
-                data.FUNCTIONS[key].append(new_func)
-            for key in data.GRADIENTS.keys():
+                results.FUNCTIONS[key].append(new_func)
+            for key in results.GRADIENTS.keys():
                 if design.state.GRADIENTS.has_key(key):
                     new_grad = design.state.GRADIENTS[key]
                 else:
                     new_grad = [default] * len( this_designvector )
-                data.GRADIENTS[key].append(new_grad)
-            for key in data.HISTORY.keys():
-                if design.state.HISTORY.has_key(key):
-                    new_func = design.state.HISTORY[key].ITERATION[-1]
-                else:
-                    new_func = 0.0
-                data.HISTORY[key].append(new_func)                
+                results.GRADIENTS[key].append(new_grad)
+            for TYPE in results.HISTORY.keys():
+                for key in results.HISTORY[TYPE].keys():
+                    try:
+                        new_func = design.state.HISTORY[TYPE][key][-1]
+                    except KeyError:
+                        new_func = default
+                    results.HISTORY[TYPE][key].append(new_func)
+        #: for each design
         
-        self.data = data
+        # save
+        self.results = results
+        su2io.save_data(results_file,results)
             
-        return self.data
+        return self.results
     
-    def plot_data(self):
-        """ writes a tecplot file for plotting design data
+    def plot_results(self):
+        """ writes a tecplot file for plotting design results
         """
         output_format = self.config.OUTPUT_FORMAT
-        functions     = self.data.FUNCTIONS
-        history       = self.data.HISTORY
+        functions     = self.results.FUNCTIONS
+        history       = self.results.HISTORY
         
-        data_plot     = su2util.ordered_bunch()
-        data_plot.EVALUATION = range(1,len(self.designs)+1)
-        data_plot.update(functions)
-        data_plot.update(history)
+        results_plot = su2util.ordered_bunch()
+        results_plot.EVALUATION = range(1,len(self.designs)+1)
+        results_plot.update(functions)
+        results_plot.update(history.get('DIRECT',{}))
         
-        su2util.write_plot('history_project.plt',output_format,data_plot)
+        su2util.write_plot('history_project.plt',output_format,results_plot)
         
     def __repr__(self):
         return '<Project> with %i <Design>' % len(self.designs)

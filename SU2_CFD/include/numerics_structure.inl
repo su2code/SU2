@@ -2,7 +2,7 @@
  * \file numerics_structure.inl
  * \brief In-Line subroutines of the <i>numerics_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -221,7 +221,7 @@ inline void CNumerics::SetEddyViscosity(double val_eddy_viscosity_i, double val_
 	Eddy_Viscosity_j=val_eddy_viscosity_j;
 }
 
-inline void CNumerics::SetIntermittency(double intermittency_in) {}
+inline void CNumerics::SetIntermittency(double intermittency_in) { }
 
 inline void CNumerics::SetTurbKineticEnergy(double val_turb_ke_i, double val_turb_ke_j) {
 	turb_ke_i = val_turb_ke_i;
@@ -452,11 +452,6 @@ inline void CCentLax_AdjPlasmaDiatomic::SetLambda(double val_lambda_i, double va
 	Lambda_j[iSpecies] = val_lambda_j;
 }
 
-inline void CNumerics::SetLambdaComb(double val_lambdacomb_i, double val_lambdacomb_j) {
-	LambdaComb_i = val_lambdacomb_i;
-	LambdaComb_j = val_lambdacomb_j;
-}
-
 inline void CNumerics::SetNeighbor(unsigned short val_neighbor_i, unsigned short val_neighbor_j) {
 	Neighbor_i = val_neighbor_i;
 	Neighbor_j = val_neighbor_j;
@@ -492,16 +487,6 @@ inline void CNumerics::SetPressure(double* val_pressure_i, double* val_pressure_
 	SpeciesPressure_j = val_pressure_j;
 }
 
-inline void CNumerics::SetPressure_Old(double val_pressure_old_i, double val_pressure_old_j) {
-	Pressure_Old_i = val_pressure_old_i;
-	Pressure_Old_j = val_pressure_old_j;
-}
-
-inline void CNumerics::SetPressure_Old(double *val_pressure_old_i, double *val_pressure_old_j) {
-	Pressure_Old_i_MS = val_pressure_old_i;
-	Pressure_Old_j_MS = val_pressure_old_j;
-}
-
 inline void CNumerics::SetAuxVarGrad(double *val_auxvargrad_i, double *val_auxvargrad_j) {
 	AuxVar_Grad_i = val_auxvargrad_i;
 	AuxVar_Grad_j = val_auxvargrad_j;
@@ -529,7 +514,7 @@ inline void CSourcePieceWise_TurbSST::SetCrossDiff(double val_CDkw_i, double val
 	CDkw = val_CDkw_i;
 }			
 
-inline void CSourcePieceWise_TurbSA::SetIntermittency(double intermittency_in) {intermittency=intermittency_in;}
+inline void CSourcePieceWise_TurbSA::SetIntermittency(double intermittency_in) { intermittency = intermittency_in; }
 
 inline void CSourcePieceWise_Plasma::SetElecField(double *val_Efield) { ElectricField = val_Efield; }
 

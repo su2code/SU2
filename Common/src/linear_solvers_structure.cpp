@@ -2,7 +2,7 @@
  * \file linear_solvers_structure.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author Current Development: Stanford University.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -476,7 +476,7 @@ void CSysSolve::writeHistory(const int & iter, const double & res, const double 
 }
 
 unsigned long CSysSolve::ConjugateGradient(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
-                                  CPreconditioner & precond, CSolutionSendReceive & sol_mpi, double tol, int m, bool monitoring) {
+                                  CPreconditioner & precond, CSolutionSendReceive & sol_mpi, double tol, unsigned long m, bool monitoring) {
 	
   /*--- Check the subspace size ---*/
   if (m < 1) {
@@ -571,12 +571,18 @@ unsigned long CSysSolve::ConjugateGradient(const CSysVector & b, CSysVector & x,
 
 }
 
-unsigned long CSysSolve::FlexibleGMRES(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
-                              CPreconditioner & precond, CSolutionSendReceive & sol_mpi, double tol, int m, bool monitoring) {
+unsigned long CSysSolve::GMRES(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
+                              CPreconditioner & precond, CSolutionSendReceive & sol_mpi, double tol, unsigned long m, bool monitoring) {
 
   /*---  Check the subspace size ---*/
   if (m < 1) {
-    cerr << "CSysSolve::FlexibleGMRES: illegal value for subspace size, m = " << m << endl;
+    cerr << "CSysSolve::GMRES: illegal value for subspace size, m = " << m << endl;
+    throw(-1);
+  }
+  
+  /*---  Check the subspace size ---*/
+  if (m > 1000) {
+    cerr << "CSysSolve::GMRES: illegal value for subspace size (too high), m = " << m << endl;
     throw(-1);
   }
   
@@ -602,7 +608,7 @@ unsigned long CSysSolve::FlexibleGMRES(const CSysVector & b, CSysVector & x, CMa
   double beta = w[0].norm();  
   if ( (beta < tol*norm0) || (beta < eps) ) {
     /*---  System is already solved ---*/
-    cout << "CSysSolve::FlexibleGMRES(): system solved by initial guess." << endl;
+    cout << "CSysSolve::GMRES(): system solved by initial guess." << endl;
     return 0;
   }
 
@@ -621,7 +627,7 @@ unsigned long CSysSolve::FlexibleGMRES(const CSysVector & b, CSysVector & x, CMa
   /*---  Output header information including initial residual ---*/
   int i = 0;
   if (monitoring) {
-    writeHeader("FGMRES", tol, beta);
+    writeHeader("GMRES", tol, beta);
     writeHistory(i, beta, norm0);
   }
 
@@ -652,7 +658,7 @@ unsigned long CSysSolve::FlexibleGMRES(const CSysVector & b, CSysVector & x, CMa
     beta = fabs(g[i+1]);
 
     /*---  Output the relative residual if necessary ---*/
-    if ((monitoring) && ((i+1) % 1 == 0)) writeHistory(i+1, beta, norm0);
+    if ((monitoring) && ((i+1) % 50 == 0)) writeHistory(i+1, beta, norm0);
   }
 
   /*---  Solve the least-squares system and update solution ---*/
@@ -668,12 +674,12 @@ unsigned long CSysSolve::FlexibleGMRES(const CSysVector & b, CSysVector & x, CMa
   double res = w[0].norm();
   
   if (monitoring) {
-    cout << "# FGMRES final (true) residual:" << endl;
+    cout << "# GMRES final (true) residual:" << endl;
     cout << "# iteration = " << i << ": |res|/|res0| = " << res/norm0 << endl;
   }
 
   if (fabs(res - beta) > tol*10.0) {
-    cout << "# WARNING in CSysSolve::FlexibleGMRES(): " << endl;
+    cout << "# WARNING in CSysSolve::GMRES(): " << endl;
     cout << "# true residual norm and calculated residual norm do not agree." << endl;
     cout << "# res - beta = " << res - beta << endl;
   }
@@ -683,7 +689,7 @@ unsigned long CSysSolve::FlexibleGMRES(const CSysVector & b, CSysVector & x, CMa
 }
 
 unsigned long CSysSolve::BCGSTAB(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
-                                  CPreconditioner & precond, CSolutionSendReceive & sol_mpi, double tol, int m, bool monitoring) {
+                                  CPreconditioner & precond, CSolutionSendReceive & sol_mpi, double tol, unsigned long m, bool monitoring) {
 	
   /*--- Check the subspace size ---*/
   if (m < 1) {
@@ -763,7 +769,7 @@ unsigned long CSysSolve::BCGSTAB(const CSysVector & b, CSysVector & x, CMatrixVe
     /*--- Check if solution has converged, else output the relative residual if necessary ---*/
     norm_r = r.norm();
     if (norm_r < tol*norm0) break;
-    if ((monitoring) && ((i+1) % 1 == 0)) writeHistory(i+1, norm_r, norm0);    
+    if ((monitoring) && ((i+1) % 50 == 0)) writeHistory(i+1, norm_r, norm0);
 
   }
 	

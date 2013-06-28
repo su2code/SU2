@@ -2,7 +2,7 @@
  * \file solution_direct_turbulent_ad.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -94,7 +94,7 @@ void CAdjTurbSolution::CalcPrimVar_Compressible_ad(double *val_Vars, double *val
 //SU2_DIFF START CTurbSolution__CalcPrimVar_Compressible
 
     unsigned short int iDim;
-    double Velocity2, Pressure_Old;
+    double Velocity2;
     double Velocity2d;
     //SetVelocity2();								 // Compute the modulus of the velocity.
     Velocity2 = 0.0;
@@ -109,7 +109,6 @@ void CAdjTurbSolution::CalcPrimVar_Compressible_ad(double *val_Vars, double *val
         ]);
     }
     //SetPressure(Gamma, turb_ke);   // Requires Velocity2 computation.
-    Pressure_Old = Primitive[nDim + 1];
     Primitived[nDim + 1] = (Gamma-1.0)*(val_Varsd[0]*(val_Vars[numVar-1]/
         val_Vars[0]-0.5*Velocity2-turb_ke)+val_Vars[0]*((val_Varsd[numVar-1]*
         val_Vars[0]-val_Vars[numVar-1]*val_Varsd[0])/(val_Vars[0]*val_Vars[0]

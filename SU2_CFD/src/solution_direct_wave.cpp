@@ -2,7 +2,7 @@
  * \file solution_direct_wave.cpp
  * \brief Main subrotuines for solving the wave equation.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -184,7 +184,8 @@ void CWaveSolution::Preprocessing(CGeometry *geometry,
                                   CNumerics **solver,
                                   CConfig   *config,
                                   unsigned short iMesh,
-                                  unsigned short iRKStep) {
+                                  unsigned short iRKStep,
+                                  unsigned short RunTime_EqSystem) {
   
   /* Set residuals and matrix entries to zero */
   
@@ -939,7 +940,7 @@ void CWaveSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **sol
 			system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetLinear_Solver_Error(), 
 										 config->GetLinear_Solver_Iter(), false);
 		else if (config->GetKind_Linear_Solver() == GMRES)
-			system.FlexibleGMRES(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetLinear_Solver_Error(), 
+			system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetLinear_Solver_Error(), 
 													 config->GetLinear_Solver_Iter(), false);		
 		
 		sol_vec.CopyToArray(xsol);
@@ -951,7 +952,7 @@ void CWaveSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **sol
 	/*--- Update solution (system written in terms of increments) ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
 		for (iVar = 0; iVar < nVar; iVar++) {
-			node[iPoint]->AddSolution(iVar, xsol[iPoint*nVar+iVar]);
+			node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*xsol[iPoint*nVar+iVar]);
 		}
 	}
 	

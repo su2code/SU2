@@ -2,7 +2,7 @@
  * \file integration_structure.inl
  * \brief In-Line subroutines of the <i>integration_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -67,4 +67,8 @@ inline void CIntegration::SetSingleGrid_Solver(CGeometry ***geometry, CSolution 
 
 inline void CIntegration::SetPotential_Solver(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****solver_container, 
                                               CConfig **config, unsigned short RunTime_EqSystem, unsigned short iMesh, unsigned short iZone) { }
+                                              
+inline void CIntegration::Smooth_Solution(unsigned short RunTime_EqSystem, CSolution **solution, CGeometry *geometry, unsigned short val_nSmooth, double val_smooth_coeff, CConfig *config) { }
+
+inline void CIntegration::Smooth_PrimVar(CSolution **solution, CGeometry *geometry, CConfig *config) { }
 

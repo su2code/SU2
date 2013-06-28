@@ -2,7 +2,7 @@
  * \file grid_movement_structure.inl
  * \brief In-Line subroutines of the <i>grid_movement_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -158,3 +158,7 @@ inline string CFreeFormChunk::GetTag() { return Tag; }
 inline void CFreeFormChunk::SetLevel(unsigned short val_level) { Level = val_level; }
 
 inline unsigned short CFreeFormChunk::GetLevel() { return Level; }
+
+inline double CVolumetricMovement::Determinant_3x3(double A00, double A01, double A02, double A10, double A11, double A12, double A20, double A21, double A22) {
+	return A00*(A11*A22-A12*A21) - A01*(A10*A22-A12*A20) + A02*(A10*A21-A11*A20);
+}

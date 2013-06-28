@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Many of the classes in this file are templated, and therefore must
  * be declared and defined here; to keep all elements together, there
@@ -359,7 +359,7 @@ enum ENUM_GRIDMOVEMENT {
 	FLUID_STRUCTURE = 3,		/*!< \brief _______. */
 	EXTERNAL = 4,  /*!< \brief Arbitrary grid motion specified by external files at each time step. */
 	EXTERNAL_ROTATION = 5,  /*!< \brief Arbitrary grid motion specified by external files at each time step with rigid rotation. */
-    AEROELASTIC = 6,    /*!< \brief Simulation with aeroelastic motion. */
+    AEROELASTIC = 6    /*!< \brief Simulation with aeroelastic motion. */
 };
 static const map<string, ENUM_GRIDMOVEMENT> GridMovement_Map = CCreateMap<string, ENUM_GRIDMOVEMENT>
 ("NONE", NO_MOVEMENT)       
@@ -369,6 +369,28 @@ static const map<string, ENUM_GRIDMOVEMENT> GridMovement_Map = CCreateMap<string
 ("EXTERNAL", EXTERNAL)
 ("EXTERNAL_ROTATION", EXTERNAL_ROTATION)
 ("AEROELASTIC", AEROELASTIC);
+
+/*!
+ * \brief type of aeroelastic grid movement
+ */
+enum ENUM_AEROELASTIC_GRIDMOVEMENT {
+	RIGID = 1, 		/*!< \brief Move mesh rigidly due to aeroelastic forces. */
+	DEFORM = 2,  		/*!< \brief Move mesh by deforming due to aeroelastic forces. */
+};
+static const map<string, ENUM_AEROELASTIC_GRIDMOVEMENT> Aeroelastic_Movement_Map = CCreateMap<string, ENUM_AEROELASTIC_GRIDMOVEMENT>
+("RIGID", RIGID)
+("DEFORM", DEFORM);
+
+/*!
+ * \brief type of aeroelastic grid velocities
+ */
+enum ENUM_AEROELASTIC_GRIDVELOCITY {
+	FD = 1, 		/*!< \brief Mesh velocities by finite difference. */
+	ANALYTIC = 2,  		/*!< \brief Analytic mesh velocities. */
+};
+static const map<string, ENUM_AEROELASTIC_GRIDVELOCITY> Aeroelastic_Velocity_Map = CCreateMap<string, ENUM_AEROELASTIC_GRIDVELOCITY>
+("FD", FD)
+("ANALYTIC", ANALYTIC);
 
 /*!
  * \brief types of centered spatial discretizations
@@ -402,7 +424,7 @@ enum ENUM_UPWIND {
   MSW_1ST = 12,     /*!< \brief First order Modified Steger-Warming method. */
   MSW_2ND = 13,     /*!< \brief Second order Modified Steger-Warming method. */
 	ROE_TURKEL_1ST = 14,			/*!< \brief First order Roe-Turkel's upwind numerical method. */
-	ROE_TURKEL_2ND = 15,			/*!< \brief Second order Roe-Turkel's upwind numerical method. */
+	ROE_TURKEL_2ND = 15			/*!< \brief Second order Roe-Turkel's upwind numerical method. */
   
 };
 static const map<string, ENUM_UPWIND> Upwind_Map = CCreateMap<string, ENUM_UPWIND>
@@ -509,7 +531,7 @@ static const map<string, ENUM_TRANS_MODEL> Trans_Model_Map = CCreateMap<string, 
 enum ENUM_TIME_INT {
 	RUNGE_KUTTA_EXPLICIT = 1,	/*!< \brief Explicit Runge-Kutta time integration definition. */
 	EULER_EXPLICIT = 2,   	/*!< \brief Explicit Euler time integration definition. */
-	EULER_IMPLICIT = 3,   	/*!< \brief Implicit Euler time integration definition. */
+	EULER_IMPLICIT = 3   	/*!< \brief Implicit Euler time integration definition. */
 };
 static const map<string, ENUM_TIME_INT> Time_Int_Map = CCreateMap<string, ENUM_TIME_INT>
 ("RUNGE-KUTTA_EXPLICIT", RUNGE_KUTTA_EXPLICIT)
@@ -551,7 +573,6 @@ static const map<string, GEOMETRY_MODE> GeometryMode_Map = CCreateMap<string, GE
  */
 enum BC_TYPE {
 	EULER_WALL = 1,		/*!< \brief Boundary Euler wall definition. */
-	NO_SLIP_WALL = 4,		/*!< \brief Boundary no slip wall definition. */
 	FAR_FIELD = 2,		/*!< \brief Boundary far-field definition. */
 	SYMMETRY_PLANE = 3,   	/*!< \brief Boundary symmetry plane definition. */
 	INLET_FLOW = 5,		/*!< \brief Boundary inlet flow definition. */
@@ -625,10 +646,11 @@ enum ENUM_OBJECTIVE {
 	THRUST_COEFFICIENT = 15,		/*!< \brief Thrust objective function definition. */
 	TORQUE_COEFFICIENT = 16,		/*!< \brief Torque objective function definition. */
 	FIGURE_OF_MERIT = 17,		/*!< \brief Rotor Figure of Merit objective function definition. */
-	FREESURFACE = 18,				/*!< \brief Free Surface objective function definition. */
+	FREE_SURFACE = 18,				/*!< \brief Free Surface objective function definition. */
 	NOISE = 19,             /*!< \brief Noise objective function definition. */
 	MAX_THICKNESS = 20,       /*!< \brief Maximum thickness. */
-	TOTAL_VOLUME = 21       /*!< \brief Total volume. */
+	TOTAL_VOLUME = 21,       /*!< \brief Total volume. */
+  CLEARANCE = 22       /*!< \brief Clearance. */
 };
 
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>
@@ -648,17 +670,18 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("THRUST", THRUST_COEFFICIENT)
 ("TORQUE", TORQUE_COEFFICIENT)
 ("FIGURE_OF_MERIT", FIGURE_OF_MERIT)
-("FREESURFACE", FREESURFACE)
+("FREE_SURFACE", FREE_SURFACE)
 ("NOISE", NOISE)
 ("TOTAL_VOLUME", TOTAL_VOLUME)
-("MAX_THICKNESS", MAX_THICKNESS);
+("MAX_THICKNESS", MAX_THICKNESS)
+("CLEARANCE", CLEARANCE);
 
 /*!
  * \brief types (Continuous/Discrete) of objective functions
  */
 enum ENUM_OBJECTIVE_TYPE {
 	FORCE_OBJ= 1, 	/*!< \brief Force dependent objective function. */
-	NON_FORCE_OBJ = 2, 	/*!< \brief Non-force dependent objective function. */
+	NON_FORCE_OBJ = 2 	/*!< \brief Non-force dependent objective function. */
 
 };
 
@@ -671,7 +694,7 @@ static const map<string, ENUM_OBJECTIVE_TYPE> ObjectiveType_Map = CCreateMap<str
  */
 enum ENUM_CONTINUOUS_EQNS {
 	EULER_EQNS= 1, 	/*!< \brief Euler equations. */
-	NAVIER_STOKES_EQNS = 2, 	/*!< \brief Navier Stokes equations. */
+	NAVIER_STOKES_EQNS = 2 	/*!< \brief Navier Stokes equations. */
 
 };
 
@@ -685,7 +708,7 @@ static const map<string, ENUM_CONTINUOUS_EQNS> ContinuousEqns_Map = CCreateMap<s
 enum ENUM_DISCRETE_EQNS {
 	NONE_EQNS= 1, 	/*!< \brief No equations. */
 	SA_EQNS = 2, 	/*!< \brief Spallart-Almaras equations. */
-	SST_EQNS = 2, 	/*!< \brief SST equations. */
+	SST_EQNS = 2 	/*!< \brief SST equations. */
 
 };
 
@@ -827,8 +850,6 @@ static const map<string, ENUM_OUTPUT_VARS> Output_Vars_Map = CCreateMap<string, 
 enum ENUM_PARAM {
 	NO_DEFORMATION = 0,		/*!< \brief No surface deformation. */
 	HICKS_HENNE = 1,		/*!< \brief Hicks-Henne bump function for airfoil deformation. */
-	HICKS_HENNE_SHOCK = 2,	/*!< \brief Special deformation at the shocks as design variable. */
-	HICKS_HENNE_NORMAL = 4,	/*!< \brief Normal Hicks-Henne bump function for airfoil deformation. */
 	MACH_NUMBER = 5,		/*!< \brief Mach number as design variable. */
 	NACA_4DIGITS = 6,		/*!< \brief The four digits NACA airfoil family as design variables. */
 	DISPLACEMENT = 8,		/*!< \brief Surface movement as design variable. */
@@ -843,13 +864,12 @@ enum ENUM_PARAM {
 	PARABOLIC = 17,		/*!< \brief Parabolic airfoil definition as design variables. */
 	OBSTACLE = 18,		        /*!< \brief Obstacle for free surface optimization. */
 	STRETCH = 19,		        /*!< \brief Stretch one side of a channel. */
-  SURFACE_FILE = 20		        /*!< Nodal coordinates set using a surface file. */
+  SURFACE_FILE = 20,		   /*!< Nodal coordinates set using a surface file. */
+  GAUSS_BUMP = 21		/*!< \brief Gauss bump function for airfoil deformation. */
 };
 static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("NO_DEFORMATION", NO_DEFORMATION)
 ("HICKS_HENNE", HICKS_HENNE)
-("HICKS_HENNE_SHOCK", HICKS_HENNE_SHOCK)
-("HICKS_HENNE_NORMAL", HICKS_HENNE_NORMAL)
 ("MACH_NUMBER", MACH_NUMBER)
 ("NACA_4DIGITS", NACA_4DIGITS)
 ("DISPLACEMENT", DISPLACEMENT)
@@ -864,6 +884,7 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("PARABOLIC", PARABOLIC)
 ("OBSTACLE", OBSTACLE)
 ("STRETCH", STRETCH)
+("GAUSS_BUMP", GAUSS_BUMP)
 ("SURFACE_FILE", SURFACE_FILE);
 
 /*!
@@ -921,12 +942,14 @@ static const map<string, ENUM_LINEAR_SOLVER_PREC> Linear_Solver_Prec_Map = CCrea
 enum ENUM_DEFORM {
 	SPRING = 1,  	         	/*!< \brief Classical spring analogy as the grid deformation technique. */
 	TORSIONAL_SPRING = 2, 	/*!< \brief Torsional spring analogy as the grid deformation technique. */
-	ALGEBRAIC = 3                 /*!< \brief Movement of the grid using an algebraic based method. */
+	ALGEBRAIC = 3,                 /*!< \brief Movement of the grid using an algebraic based method. */
+  FEA = 4                 /*!< \brief Movement of the grid using an FEA based method. */
 };
 static const map<string, ENUM_DEFORM> Deform_Map = CCreateMap<string, ENUM_DEFORM>
 ("SPRING", SPRING)
 ("TORSIONAL_SPRING", TORSIONAL_SPRING)
-("ALGEBRAIC", ALGEBRAIC);
+("ALGEBRAIC", ALGEBRAIC)
+("FEA", FEA);
 
 /*!
  * \brief types of analytic definitions for various geometries
@@ -994,7 +1017,7 @@ public:
 	virtual void WriteValue() = 0;
 	virtual void SetValue(const vector<string> & value) = 0;
 };
-inline CAnyOptionRef::~CAnyOptionRef() {};
+inline CAnyOptionRef::~CAnyOptionRef() {}
 
 /*!
  * \class COptionRef
@@ -2255,6 +2278,7 @@ public:
 			switch ((*Design_Variable_)[iDV]) {
 			case NO_DEFORMATION: nParamDV = 0; break;
 			case HICKS_HENNE: nParamDV = 2; break;
+      case GAUSS_BUMP: nParamDV = 3; break;
 			case DISPLACEMENT: nParamDV = 3; break;
 			case ROTATION: nParamDV = 6; break;
 			case NACA_4DIGITS: nParamDV = 3; break;
@@ -2302,7 +2326,8 @@ public:
 			switch ((*Design_Variable_)[iDV]) {
 			case NO_DEFORMATION: nParamDV = 0; break;
 			case HICKS_HENNE: nParamDV = 2; break;
-			case DISPLACEMENT: nParamDV = 3; break;
+      case GAUSS_BUMP: nParamDV = 3; break;
+      case DISPLACEMENT: nParamDV = 3; break;
 			case ROTATION: nParamDV = 6; break;
 			case NACA_4DIGITS: nParamDV = 3; break;
 			case PARABOLIC: nParamDV = 2; break;

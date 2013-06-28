@@ -2,7 +2,7 @@
  * \file solution_direct_fea.cpp
  * \brief Main subrotuines for solving the FEA equation.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -56,9 +56,9 @@ CFEASolution::CFEASolution(CGeometry *geometry, CConfig *config) : CSolution() {
 	}
 
 	/*--- Initialization of matrix structures ---*/
-    Initialize_SparseMatrix_Structure(&StiffMatrixSpace, nVar, nVar, geometry, config);
+  Initialize_SparseMatrix_Structure(&StiffMatrixSpace, nVar, nVar, geometry, config);
 	Initialize_SparseMatrix_Structure(&StiffMatrixTime, nVar, nVar, geometry, config);
-    Initialize_SparseMatrix_Structure(&Jacobian, nVar, nVar, geometry, config);
+  Initialize_SparseMatrix_Structure(&Jacobian, nVar, nVar, geometry, config);
 
   /*--- Initialization of linear solver structures ---*/
 	xsol = new double [nPoint*nVar];
@@ -184,7 +184,7 @@ CFEASolution::~CFEASolution(void) {
 	delete [] cvector;
 }
 
-void CFEASolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+void CFEASolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
 	
   /*--- Set residuals to zero ---*/
@@ -623,7 +623,7 @@ void CFEASolution::Galerkin_Method(CGeometry *geometry, CSolution **solution_con
 	} 
 }
 
-/*void CFEASolution::BC_Displacement(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
+void CFEASolution::BC_Displacement(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
 																	 unsigned short val_marker) {
 	unsigned long iPoint, iVertex, total_index;
 	unsigned short iVar;
@@ -638,7 +638,7 @@ void CFEASolution::Galerkin_Method(CGeometry *geometry, CSolution **solution_con
 			Residual[0] = 0.0;					Residual[1] = 0.0;	Residual[2] = 0.0;	Residual[3] = 0.0;
 		}
 		else {
-			Solution[0] = 0.0; Solution[1] = TotalDispl;	Solution[2] = 0.0;	Solution[3] = 0.0;	Solution[4] = 0.0;	Solution[5] = 0.0;
+			Solution[0] = TotalDispl; Solution[1] = 0.0;	Solution[2] = 0.0;	Solution[3] = 0.0;	Solution[4] = 0.0;	Solution[5] = 0.0;
 			Residual[0] = 0.0; Residual[1] = 0.0;					Residual[2] = 0.0;	Residual[3] = 0.0;	Residual[4] = 0.0;	Residual[5] = 0.0;
 		}
 		
@@ -651,249 +651,6 @@ void CFEASolution::Galerkin_Method(CGeometry *geometry, CSolution **solution_con
       Jacobian.DeleteValsRowi(total_index);
     }
 	}
-}*/
-
-void CFEASolution::BC_Displacement(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
-																	 unsigned short val_marker) {
-	unsigned long iVertex, total_index;
-	unsigned short iVar, iDim, nDim; 
-	unsigned long iPoint;
-	double r[3], rotCoord[3], rotMatrix[3][3], vel[3];
-  double *Coord_, Coord[3], *Center, *Omega, Lref, dt;
-	double dtheta, dphi, dpsi, cosTheta, sinTheta;
-  double cosPhi, sinPhi, cosPsi, sinPsi;
-	
-	/*--- Problem dimension and physical time step ---*/
-	nDim = geometry->GetnDim();
-	dt   = config->GetDelta_UnstTimeND();
-  
-	/*--- Center of rotation & angular velocity vector from config ---*/
-	Center = config->GetRotAxisOrigin();
-	Omega  = config->GetOmega_FreeStreamND();
-	Lref   = config->GetLength_Ref();
-  
-	/*--- Compute delta change in the angle about the x, y, & z axes. ---*/
-	dtheta = Omega[0]*dt; dphi   = Omega[1]*dt; dpsi   = Omega[2]*dt;
-  
-	/*--- Store angles separately for clarity. Compute sines/cosines. ---*/
-	cosTheta = cos(dtheta);  cosPhi = cos(dphi);  cosPsi = cos(dpsi);
-	sinTheta = sin(dtheta);  sinPhi = sin(dphi);  sinPsi = sin(dpsi);
-  
-	/*--- Compute the rotation matrix. Note that the implicit
-   ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
-	rotMatrix[0][0] = cosPhi*cosPsi;
-	rotMatrix[1][0] = cosPhi*sinPsi;
-	rotMatrix[2][0] = -sinPhi;
-  
-	rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
-	rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
-	rotMatrix[2][1] = sinTheta*cosPhi;
-  
-	rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-	rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-	rotMatrix[2][2] = cosTheta*cosPhi;
-	
-	/*--- Loop over and rotate each node in the marker ---*/
-	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-		
-		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-		
-		/*--- Coordinates of the current point ---*/
-    Coord_ = geometry->node[iPoint]->GetCoord();
-		
-		/*--- If we use dual time stepping the displacement if fixed during the inner iteration ---*/
-		if ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) || 
-				(config->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {		
-			for (iDim = 0; iDim < nDim; iDim++)
-				Coord[iDim] = Coord_[iDim] + node[iPoint]->GetSolution_time_n()[iDim];
-		}
-		else {
-			for (iDim = 0; iDim < nDim; iDim++)
-				Coord[iDim] = Coord_[iDim] + node[iPoint]->GetSolution()[iDim];
-		}
-		
-    /*--- Calculate non-dim. position from rotation center ---*/
-    for (iDim = 0; iDim < nDim; iDim++)
-      r[iDim] = (Coord[iDim]-Center[iDim])/Lref;
-    if (nDim == 2) r[nDim] = 0.0;
-    
-    /*--- Compute transformed point coordinates ---*/
-    rotCoord[0] = rotMatrix[0][0]*r[0] + rotMatrix[0][1]*r[1] + rotMatrix[0][2]*r[2] + Center[0];
-    rotCoord[1] = rotMatrix[1][0]*r[0] + rotMatrix[1][1]*r[1] + rotMatrix[1][2]*r[2] + Center[1];
-    rotCoord[2] = rotMatrix[2][0]*r[0] + rotMatrix[2][1]*r[1] + rotMatrix[2][2]*r[2] + Center[2];
-		
-		/*--- Compute the linear velocity v = Omega*r ---*/
-		vel[0] = Omega[1]*r[2]-Omega[2]*r[1]; 
-		vel[1] = -(Omega[0]*r[2]-Omega[2]*r[0]); 
-		vel[2] = Omega[0]*r[1]-Omega[1]*r[0];
-		
-		
-		/*--- Note that the displacement is computed with respect the original location ---*/
-		if (nDim == 2) {
-			Solution[0] = rotCoord[0]-Coord_[0];	Solution[1] = rotCoord[1]-Coord_[1];	
-			Solution[2] = vel[0];	Solution[3] = vel[1];
-			Residual[0] = 0.0;	Residual[1] = 0.0;
-			Residual[2] = 0.0;	Residual[3] = 0.0;
-		}
-		else {
-			Solution[0] = rotCoord[0]-Coord_[0];	Solution[1] = rotCoord[1]-Coord_[1];	Solution[2] = rotCoord[2]-Coord_[2];	
-			Solution[3] = vel[0];	Solution[4] = vel[1];	Solution[5] = vel[2];
-			Residual[0] = 0.0;	Residual[1] = 0.0;	Residual[2] = 0.0;										
-			Residual[3] = 0.0;	Residual[4] = 0.0;	Residual[5] = 0.0;
-		}
-				
-		
-#ifdef CHECK
-		
-		double Cyclic_Pitch, Cyclic_Omega;
-    double Cyclic_Mag, VarCoord[3];
-    double Cyclic_Origin_New[3], Cyclic_Axis_New[3];
-    double Time_New, Time_Old, Phase_Lag, Alpha_New, Alpha_Old, dalpha;
-    double DEG2RAD = PI_NUMBER/180.0;
-    unsigned long iter, iVertex;
-    unsigned short iMarker;
-    string Marker_Tag;
-		
-		/*--- Cyclic pitch information from config. Convert degrees to
-		 radians and note that our pitching frequency should match the 
-		 rotation frequency of the rotor, i.e. time of one revolution 
-		 equals one cyclic pitch period. ---*/
-		Cyclic_Pitch  = config->GetCyclic_Pitch()*DEG2RAD;
-		Cyclic_Omega  = config->GetOmegaMag();
-		
-		/*--- Compute physical time based on iteration number ---*/
-		iter     = config->GetExtIter();
-		Time_New = static_cast<double>(iter)*dt;
-		Time_Old = Time_New;
-		if (iter != 0) Time_Old = (static_cast<double>(iter)-1.0)*dt;
-		
-		/*--- Retrieve user specified cyclic pitch origin & axis ---*/
-		double Cyclic_Offset = 0.0*DEG2RAD;
-		double Cyclic_Origin[3] = {0.0, 0.0675, 0.0081};
-		double Cyclic_Axis[3]   = {1.0, 0.0, 0.0};
-		
-		/*--- Compute cyclic pitch angle delta at this time step. ---*/
-		Phase_Lag = PI_NUMBER/2.0 + Cyclic_Offset;
-		Alpha_New = Cyclic_Pitch*cos(Cyclic_Omega*Time_New - Phase_Lag);
-		Alpha_Old = Cyclic_Pitch*cos(Cyclic_Omega*Time_Old - Phase_Lag);
-		dalpha    = (1E-10 + (Alpha_New - Alpha_Old));
-		
-		/*--- Normalize the cyclic pitching axis, just in case ---*/		
-		Cyclic_Mag = 0.0;
-		for (iDim = 0; iDim < 3; iDim++)
-			Cyclic_Mag += Cyclic_Axis[iDim]*Cyclic_Axis[iDim];
-		Cyclic_Mag = sqrt(Cyclic_Mag);
-		for (iDim = 0; iDim < 3; iDim++)
-			Cyclic_Axis[iDim] = Cyclic_Axis[iDim]/Cyclic_Mag;
-		
-		/*--- Get total rotation since start of simulation (t = 0) ---*/
-		dtheta = Omega[0]*Time_New; dphi   = Omega[1]*Time_New; dpsi   = Omega[2]*Time_New;
-		
-		/*--- Store angles separately for clarity. Compute sines/cosines. ---*/
-		cosTheta = cos(dtheta);  cosPhi = cos(dphi);  cosPsi = cos(dpsi);
-		sinTheta = sin(dtheta);  sinPhi = sin(dphi);  sinPsi = sin(dpsi);
-		
-		/*--- Compute the rotation matrix. Note that the implicit
-		 ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
-		rotMatrix[0][0] = cosPhi*cosPsi;
-		rotMatrix[1][0] = cosPhi*sinPsi;
-		rotMatrix[2][0] = -sinPhi;
-		
-		rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
-		rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
-		rotMatrix[2][1] = sinTheta*cosPhi;
-		
-		rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-		rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-		rotMatrix[2][2] = cosTheta*cosPhi;
-		
-		/*--- Transform origin and axis with the rotation matrix. ---*/
-		Cyclic_Origin_New[0] = rotMatrix[0][0]*Cyclic_Origin[0] + rotMatrix[0][1]*Cyclic_Origin[1] + rotMatrix[0][2]*Cyclic_Origin[2];
-		Cyclic_Origin_New[1] = rotMatrix[1][0]*Cyclic_Origin[0] + rotMatrix[1][1]*Cyclic_Origin[1] + rotMatrix[1][2]*Cyclic_Origin[2];
-		Cyclic_Origin_New[2] = rotMatrix[2][0]*Cyclic_Origin[0] + rotMatrix[2][1]*Cyclic_Origin[1] + rotMatrix[2][2]*Cyclic_Origin[2];
-		Cyclic_Axis_New[0]   = rotMatrix[0][0]*Cyclic_Axis[0] + rotMatrix[0][1]*Cyclic_Axis[1] + rotMatrix[0][2]*Cyclic_Axis[2];
-		Cyclic_Axis_New[1]   = rotMatrix[1][0]*Cyclic_Axis[0] + rotMatrix[1][1]*Cyclic_Axis[1] + rotMatrix[1][2]*Cyclic_Axis[2];
-		Cyclic_Axis_New[2]   = rotMatrix[2][0]*Cyclic_Axis[0] + rotMatrix[2][1]*Cyclic_Axis[1] + rotMatrix[2][2]*Cyclic_Axis[2];
-		
-		/*--- Project pitching delta onto cyclic axis ---*/		
-		dtheta = Cyclic_Axis_New[0]*dalpha;  
-		dphi   = Cyclic_Axis_New[1]*dalpha; 
-		dpsi   = Cyclic_Axis_New[2]*dalpha;
-		
-		/*--- Store angles separately for clarity. Compute sines/cosines. ---*/			
-		cosTheta = cos(dtheta);  cosPhi = cos(dphi);  cosPsi = cos(dpsi);
-		sinTheta = sin(dtheta);  sinPhi = sin(dphi);  sinPsi = sin(dpsi);
-		
-		/*--- Compute the rotation matrix. Note that the implicit
-		 ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
-		rotMatrix[0][0] = cosPhi*cosPsi;
-		rotMatrix[1][0] = cosPhi*sinPsi;
-		rotMatrix[2][0] = -sinPhi;
-		
-		rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
-		rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
-		rotMatrix[2][1] = sinTheta*cosPhi;
-		
-		rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-		rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-		rotMatrix[2][2] = cosTheta*cosPhi;
-		
-		/*--- Coordinates of the current point ---*/
-    Coord_ = geometry->node[iPoint]->GetCoord();
-		
-		/*--- If we use dual time stepping the displacement if fixed during the inner iteration ---*/
-		if ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) || 
-				(config->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {		
-			for (iDim = 0; iDim < nDim; iDim++)
-				Coord[iDim] = Coord_[iDim] + node[iPoint]->GetSolution_time_n()[iDim];
-		}
-		else {
-			for (iDim = 0; iDim < nDim; iDim++)
-				Coord[iDim] = Coord_[iDim] + node[iPoint]->GetSolution()[iDim];
-		}
-		
-//		/*--- Coordinates of the current point, note that we are adding the previous movement ---*/
-//		for (iDim = 0; iDim < nDim; iDim++)
-//			Coord[iDim] = Coord_[iDim] + Solution[iDim];
-		
-		/*--- Calculate non-dim. position from rotation center ---*/
-		for (iDim = 0; iDim < nDim; iDim++)
-			r[iDim] = (Coord[iDim]-Cyclic_Origin_New[iDim])/Lref;
-		if (nDim == 2) r[nDim] = 0.0;
-		
-		/*--- Compute transformed point coordinates. ---*/
-		rotCoord[0] = rotMatrix[0][0]*r[0] + rotMatrix[0][1]*r[1] + rotMatrix[0][2]*r[2] + Cyclic_Origin_New[0];
-		rotCoord[1] = rotMatrix[1][0]*r[0] + rotMatrix[1][1]*r[1] + rotMatrix[1][2]*r[2] + Cyclic_Origin_New[1];
-		rotCoord[2] = rotMatrix[2][0]*r[0]  + rotMatrix[2][1]*r[1] + rotMatrix[2][2]*r[2] + Cyclic_Origin_New[2];
-		
-		/*--- Note that the displacement is computed with respect the original location ---*/
-		if (nDim == 2) {
-			Solution[0] = rotCoord[0]-Coord_[0];	Solution[1] = rotCoord[1]-Coord_[1];	
-			Solution[2] = vel[0];	Solution[3] = vel[1];
-			Residual[0] = 0.0;	Residual[1] = 0.0;
-			Residual[2] = 0.0;	Residual[3] = 0.0;
-		}
-		else {
-			Solution[0] = rotCoord[0]-Coord_[0];	Solution[1] = rotCoord[1]-Coord_[1];	Solution[2] = rotCoord[2]-Coord_[2];	
-			Solution[3] = vel[0];	Solution[4] = vel[1];	Solution[5] = vel[2];
-			Residual[0] = 0.0;	Residual[1] = 0.0;	Residual[2] = 0.0;										
-			Residual[3] = 0.0;	Residual[4] = 0.0;	Residual[5] = 0.0;
-		}
-#endif
-		
-		node[iPoint]->SetSolution(Solution);
-		node[iPoint]->SetSolution_Old(Solution);
-    node[iPoint]->SetRes_Visc(Residual); 
-		node[iPoint]->SetRes_Sour(Residual);
-		
-    for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar+iVar;
-      Jacobian.DeleteValsRowi(total_index);
-    }
-		
-	}
-	
-
 }
 
 void CFEASolution::BC_FlowLoad(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
@@ -1408,12 +1165,11 @@ void CFEASolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **solu
 			precond = new CIdentityPreconditioner();
 		
 		CSysSolve system;
+    
 		if (config->GetKind_Linear_Solver() == BCGSTAB)
-			system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetLinear_Solver_Error(), 
-										 config->GetLinear_Solver_Iter(), false);
+			system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetLinear_Solver_Error(), config->GetLinear_Solver_Iter(), true);
 		else if (config->GetKind_Linear_Solver() == GMRES)
-			system.FlexibleGMRES(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetLinear_Solver_Error(), 
-													 config->GetLinear_Solver_Iter(), false);		
+			system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetLinear_Solver_Error(), config->GetLinear_Solver_Iter(), true);
 		
 		sol_vec.CopyToArray(xsol);
 		delete mat_vec; 
@@ -1425,7 +1181,7 @@ void CFEASolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **solu
 	Norm = 0.0;
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
 		for (iVar = 0; iVar < nVar; iVar++) {
-			node[iPoint]->AddSolution(iVar, xsol[iPoint*nVar+iVar]);
+			node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*xsol[iPoint*nVar+iVar]);
 			Norm += xsol[iPoint*nVar+iVar]*xsol[iPoint*nVar+iVar];
 		}
 	}
@@ -1442,50 +1198,31 @@ void CFEASolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **solu
 
 void CFEASolution::SetInitialCondition(CGeometry **geometry, CSolution ***solution_container, CConfig *config, unsigned long ExtIter) {
 	unsigned long iPoint;
+  
 	bool restart = (config->GetRestart() || config->GetRestart_Flow());
-	unsigned short iDim; 
-	double r[3], vel[3], *Coord, *Center, *Omega, Lref;
-	
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  
 	/*--- Problem dimension and physical time step ---*/
 	unsigned short nDim = geometry[MESH_0]->GetnDim();
-
-	/*--- Center of rotation & angular velocity vector from config ---*/
-	Center = config->GetRotAxisOrigin();
-	Omega  = config->GetOmega_FreeStreamND();
-	Lref   = config->GetLength_Ref();
 	
 	for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPoint(); iPoint++) {
 		
 		/*--- Set initial boundary condition at the first iteration ---*/
 		if ((ExtIter == 0) && (!restart)) {
-			
-			/*--- Coordinates of the current point ---*/
-			Coord = geometry[MESH_0]->node[iPoint]->GetCoord();
-			
-			/*--- Calculate non-dim. position from rotation center ---*/
-			for (iDim = 0; iDim < nDim; iDim++)
-				r[iDim] = (Coord[iDim]-Center[iDim])/Lref;
-			if (nDim == 2) r[nDim] = 0.0;
-			
-			
-			/*--- Compute the linear velocity v = Omega*r ---*/
-			vel[0] = Omega[1]*r[2]-Omega[2]*r[1]; 
-			vel[1] = -(Omega[0]*r[2]-Omega[2]*r[0]); 
-			vel[2] = Omega[0]*r[1]-Omega[1]*r[0];
-			
-			
+						
 			if (nDim == 2) {
 				Solution[0] = 0.0;	Solution[1] = 0.0;	
-				Solution[2] = vel[0];	Solution[3] = vel[1];
+				Solution[2] = 0.0;	Solution[3] = 0.0;
 			}
 			else {
 				Solution[0] = 0.0;	Solution[1] = 0.0;	Solution[2] = 0.0;	
-				Solution[3] = vel[0];	Solution[4] = vel[1];	Solution[5] = vel[2];
+				Solution[3] = 0.0;	Solution[4] = 0.0;	Solution[5] = 0.0;
 			}
 			
 			node[iPoint]->SetSolution(Solution);
 
-			if ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
+			if (dual_time) {
 				node[iPoint]->Set_Solution_time_n();
 				node[iPoint]->Set_Solution_time_n1();
 			}

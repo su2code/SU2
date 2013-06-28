@@ -2,7 +2,7 @@
  * \file solution_linearized_mean.cpp
  * \brief Main subrotuines for solving linearized problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -273,7 +273,7 @@ void CLinEulerSolution::ExplicitRK_Iteration(CGeometry *geometry, CSolution **so
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
 			Vol = geometry->node[iPoint]->GetVolume();
 			Delta = solution_container[FLOW_SOL]->node[iPoint]->GetDelta_Time() / Vol;
-			Res_TruncError = node[iPoint]->GetRes_TruncError();
+			Res_TruncError = node[iPoint]->GetResTruncError();
 			Residual = node[iPoint]->GetResidual();
 			for (iVar = 0; iVar < nVar; iVar++) {
 				node[iPoint]->AddSolution(iVar, -(Residual[iVar]+Res_TruncError[iVar])*Delta*RK_AlphaCoeff);
@@ -290,7 +290,7 @@ void CLinEulerSolution::ExplicitRK_Iteration(CGeometry *geometry, CSolution **so
 
 }
 
-void CLinEulerSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+void CLinEulerSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
 	bool implicit = (config->GetKind_TimeIntScheme_LinFlow() == EULER_IMPLICIT);
 	
@@ -328,7 +328,7 @@ void CLinEulerSolution::Inviscid_DeltaForces(CGeometry *geometry, CSolution **so
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 		Boundary = config->GetMarker_All_Boundary(iMarker);
 		Monitoring = config->GetMarker_All_Monitoring(iMarker);
-		if ((Boundary == EULER_WALL) || (Boundary == NO_SLIP_WALL)) {
+		if ((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL)) {
 			for (iDim = 0; iDim < nDim; iDim++) DeltaForceInviscid[iDim] = 0.0;
 			for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 				Point = geometry->vertex[iMarker][iVertex]->GetNode();

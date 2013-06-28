@@ -2,7 +2,7 @@
  * \file numerics_source.cpp
  * \brief This file contains all the source term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -33,13 +33,12 @@ CSourcePieceWise_TurbSA::CSourcePieceWise_TurbSA(unsigned short val_nDim, unsign
 
 	implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
 	incompressible = config->GetIncompressible();
-	transition = (config->GetKind_Trans_Model()==LM);
-	//transition = false;
+	transition = (config->GetKind_Trans_Model() == LM);
 
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
 
-	/*--- Closure constants ---*/
+	/*--- Spalart-Allmaras closure constants ---*/
 	cv1_3 = pow(7.1,3.0);
 	k2 = pow(0.41,2.0);
 	cb1 = 0.1355;
@@ -125,7 +124,7 @@ void CSourcePieceWise_TurbSA::SetResidual(double *val_residual, double **val_Jac
 			//SU2_CPP2C COMMENT START
 		}
 		else {
-			val_residual[0] += cb1*Shat*TurbVar_i[0]*Volume * intermittency;
+			val_residual[0] += cb1*Shat*TurbVar_i[0]*Volume*intermittency;
 		}
 		//SU2_CPP2C COMMENT END
 
@@ -151,6 +150,8 @@ void CSourcePieceWise_TurbSA::SetResidual(double *val_residual, double **val_Jac
 		for (iDim = 0; iDim < nDim; iDim++)
 			norm2_Grad += TurbVar_Grad_i[0][iDim]*TurbVar_Grad_i[0][iDim];
 		val_residual[0] += cb2/sigma*norm2_Grad*Volume;
+    
+    
 		//SU2_CPP2C COMMENT START
 		/*--- Implicit part ---*/
 		if (implicit) {
@@ -162,14 +163,14 @@ void CSourcePieceWise_TurbSA::SetResidual(double *val_residual, double **val_Jac
 				dShat = 0.0;
 			else
 				dShat = (fv2+TurbVar_i[0]*dfv2)/(k2*dist_i_2);
-			//				val_Jacobian_i[0][0] += cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
+//				val_Jacobian_i[0][0] += cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
 
 			/*--- Destruction term ---*/
 			dr = (Shat-TurbVar_i[0]*dShat)/(Shat*Shat*k2*dist_i_2);
 			if (r == 10.) dr = 0.0;
 			dg = dr*(1.+cw2*(6.*pow(r,5.)-1.));
 			dfw = dg*glim*(1.-g_6/(g_6+cw3_6));
-			//				val_Jacobian_i[0][0] -= cw1*(dfw*TurbVar_i[0] +	2.*fw)*TurbVar_i[0]/dist_i_2*Volume;
+//				val_Jacobian_i[0][0] -= cw1*(dfw*TurbVar_i[0] +	2.*fw)*TurbVar_i[0]/dist_i_2*Volume;
 		}
 		//SU2_CPP2C COMMENT END
 	}
@@ -186,7 +187,7 @@ CSourcePieceWise_TransLM::CSourcePieceWise_TransLM(unsigned short val_nDim, unsi
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
     
-	/*--- Spalart-Allmaras Closure constants ---*/
+	/*--- Spalart-Allmaras closure constants ---*/
 	cv1_3 = pow(7.1,3.0);
 	k2 = pow(0.41,2.0);
 	cb1 = 0.1355;
@@ -196,7 +197,7 @@ CSourcePieceWise_TransLM::CSourcePieceWise_TransLM(unsigned short val_nDim, unsi
 	cb2 = 0.622;
 	cw1 = cb1/k2+(1+cb2)/sigma;
     
-	/*-- gamma-theta closure constants --*/
+	/*-- Gamma-theta closure constants --*/
 	c_e1    = 1.0;
 	c_a1    = 2.0;
 	c_e2    = 50.0;
@@ -209,6 +210,7 @@ CSourcePieceWise_TransLM::CSourcePieceWise_TransLM(unsigned short val_nDim, unsi
 	/*-- Correlation constants --*/
 	flen_global  = 12.0;
 	alpha_global = 0.85;
+  
 }
 
 CSourcePieceWise_TransLM::~CSourcePieceWise_TransLM(void) { }
@@ -950,10 +952,8 @@ void CSourceViscous_AdjFlow::SetResidual (double *val_residual, CConfig *config)
 					Sigma_5_vec[jDim]*PrimVar_Grad_i[iDim+1][jDim]/Density) * Volume;
 	val_residual[nVar-1] = alpha_gradpsi5 * Volume;
 
-	/*--- Turn on laminar viscosity sensitivity for NS (or Hybrid) ---*/
-	if ((!config->GetFrozen_Visc())
-			&& ((config->GetKind_Solver() != ADJ_RANS)
-					|| (config->GetKind_Adjoint() == HYBRID))) {
+	/*--- Turn on laminar viscosity sensitivity for NS ---*/
+	if ((!config->GetFrozen_Visc()) && (config->GetKind_Solver() != ADJ_RANS)) {    
 
 		double Temperature_Ref = config->GetTemperature_Ref();
 		double Temperature_Dim = Temp_i*Temperature_Ref;
@@ -963,19 +963,39 @@ void CSourceViscous_AdjFlow::SetResidual (double *val_residual, CConfig *config)
 		double kappa_psi = (sigma_gradpsi + vel_sigma_gradpsi5)/mu_tot_1;
 		double theta = (kappa_psi + Cp/PRANDTL*gradT_gradpsi5)*dVisc_T*Gamma_Minus_One/(Gas_Constant*Density);
 
-		val_residual[0] += (theta*(sq_vel-Energy))*Volume;
-		for (iDim = 0; iDim < nDim; iDim++)
-			val_residual[iDim+1] -= theta*Velocity[iDim]*Volume;
-		val_residual[nVar-1] += theta*Volume;
 
-		// if hybrid want to store this value for coupling
-		if (config->GetKind_Adjoint() == HYBRID) {
+        val_residual[0] += (theta*(sq_vel-Energy))*Volume;
+        for (iDim = 0; iDim < nDim; iDim++)
+            val_residual[iDim+1] -= theta*Velocity[iDim]*Volume;
+        val_residual[nVar-1] += theta*Volume;
 
-			kappapsi_Volume = kappa_psi*Volume;
+
+	}
+    
+    /*--- Turn on laminar/eddy viscosity sensitivity for Hybrid RANS ---*/
+	if ((config->GetKind_Adjoint() == HYBRID) && (config->GetKind_Solver() == ADJ_RANS)) {
+
+		double Temperature_Ref = config->GetTemperature_Ref();
+		double Temperature_Dim = Temp_i*Temperature_Ref;
+		double dVisc_T = ((Laminar_Viscosity_i)/(2.0*Temperature_Dim*(Temperature_Dim + 110.3)))*(Temperature_Dim + 3.0*110.3)*Temperature_Ref;
+        
+		double Cp = (Gamma/Gamma_Minus_One)*Gas_Constant;
+		double kappa_psi = (sigma_gradpsi + vel_sigma_gradpsi5)/mu_tot_1 + Cp/PRANDTL_TURB*gradT_gradpsi5;
+		double theta = (kappa_psi + Cp/PRANDTL*gradT_gradpsi5)*dVisc_T*Gamma_Minus_One/(Gas_Constant*Density);
+        
+        // If frozen hybrid, this doesn't get added
+        if (!config->GetFrozen_Visc()) {
+            val_residual[0] += (theta*(sq_vel-Energy))*Volume;
+            for (iDim = 0; iDim < nDim; iDim++)
+                val_residual[iDim+1] -= theta*Velocity[iDim]*Volume;
+            val_residual[nVar-1] += theta*Volume;
+        }
+        
+		// store this value for coupling
+        kappapsi_Volume = kappa_psi*Volume;
             
-            SetKappaPsiVolume(kappapsi_Volume);
-		}
-
+        SetKappaPsiVolume(kappapsi_Volume);
+        
 	}
 
 	/*--- Coupling terms coming from the continuous adjoint turbulent equations ---*/
@@ -2448,17 +2468,17 @@ void CSourceConservative_AdjDiscTurb::SetResidual() {
     
 }
 
-CSourceRotationalFrame_Flow::CSourceRotationalFrame_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
-    
+CSourceRotatingFrame_Flow::CSourceRotatingFrame_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+  
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
     
 }
 
-CSourceRotationalFrame_Flow::~CSourceRotationalFrame_Flow(void) { }
+CSourceRotatingFrame_Flow::~CSourceRotatingFrame_Flow(void) { }
 
-void CSourceRotationalFrame_Flow::SetResidual(double *val_residual, CConfig *config) {
-    
+void CSourceRotatingFrame_Flow::SetResidual(double *val_residual, double **val_Jacobian_i, CConfig *config) {
+
 	double CrossProduct[3], vel[3] = {0,0,0};
     
 	/*--- Retrieve the angular velocity vector ---*/
@@ -2486,21 +2506,21 @@ void CSourceRotationalFrame_Flow::SetResidual(double *val_residual, CConfig *con
 		val_residual[3] = CrossProduct[2]*Volume;
 		val_residual[4] = 0.0;
 	}	
-    
+  
 }
 
-CSourceRotationalFrame_AdjFlow::CSourceRotationalFrame_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) { }
+CSourceRotatingFrame_AdjFlow::CSourceRotatingFrame_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) { }
 
-CSourceRotationalFrame_AdjFlow::~CSourceRotationalFrame_AdjFlow(void) { }
+CSourceRotatingFrame_AdjFlow::~CSourceRotatingFrame_AdjFlow(void) { }
 
-void CSourceRotationalFrame_AdjFlow::SetResidual(double *val_residual, CConfig *config) {
+void CSourceRotatingFrame_AdjFlow::SetResidual(double *val_residual, double **val_Jacobian_i, CConfig *config) {
     
 	unsigned short iDim;
 	double phi[3] = {0,0,0};
     
 	/*--- Retrieve the angular velocity vector ---*/
 	double *Omega = config->GetOmega_FreeStreamND();
-    
+
 	/*--- Get adjoint velocity ---*/
 	for(iDim = 0; iDim < nDim; iDim++)
 		phi[iDim] = U_i[iDim+1];
@@ -2521,11 +2541,11 @@ void CSourceRotationalFrame_AdjFlow::SetResidual(double *val_residual, CConfig *
     
 }
 
-CSourceRotationalFrame_AdjDiscFlow::CSourceRotationalFrame_AdjDiscFlow() { }
+CSourceRotatingFrame_AdjDiscFlow::CSourceRotatingFrame_AdjDiscFlow() { }
 
-CSourceRotationalFrame_AdjDiscFlow::~CSourceRotationalFrame_AdjDiscFlow(void) { }
+CSourceRotatingFrame_AdjDiscFlow::~CSourceRotatingFrame_AdjDiscFlow(void) { }
 
-void CSourceRotationalFrame_AdjDiscFlow::SetResidual() {
+void CSourceRotatingFrame_AdjDiscFlow::SetResidual() {
     
 }
 
@@ -2635,6 +2655,7 @@ void CSourceAxisymmetric_AdjFlow::SetResidual(double *val_residual, double **Jac
     
     /* -- Residual = transpose(Jacobian) * psi --*/
     for (int iVar = 0; iVar < nVar; iVar++) {
+    	val_residual[iVar] = 0.0;
         for (int jVar = 0; jVar < nVar; jVar++) {
             val_residual[iVar] += Jacobian_Axisymmetric[jVar][iVar]*Psi_i[jVar];
             Jacobian_ii[iVar][jVar] = Jacobian_Axisymmetric[jVar][iVar];

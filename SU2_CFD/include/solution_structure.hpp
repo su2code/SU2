@@ -5,7 +5,7 @@
  *        <i>solution_direct.cpp</i>, <i>solution_adjoint.cpp</i>, and 
  *        <i>solution_linearized.cpp</i> files.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -26,14 +26,14 @@
 
 #pragma once
 
+#ifndef NO_MPI
+#include <mpi.h>
+#endif
 #include <cmath>
 #include <string>
 #include <fstream>
 #include <sstream>
 #include <algorithm>
-#ifndef NO_MPI
-#include <mpi.h>
-#endif
 
 #include "numerics_structure.hpp"
 #include "variable_structure.hpp"
@@ -50,12 +50,13 @@ using namespace std;
  * \brief Main class for defining the PDE solution, it requires 
  * a child class for each particular solver (Euler, Navier-Stokes, Plasma, etc.) 
  * \author F. Palacios.
- * \version 2.0.3
+ * \version 2.0.4
  */
 class CSolution {
 protected:
 	unsigned short IterLinSolver;	/*!< \brief Linear solver iterations. */
 	unsigned short nVar,					/*!< \brief Number of variables of the problem. */
+  nPrimVar,                     /*!< \brief Number of primitive variables of the problem. */
 	nDim;													/*!< \brief Number of dimensions of the problem. */
 	unsigned long nPoint;					/*!< \brief Number of points of the computational grid. */
 	double Gamma;									/*!< \brief Fluid's Gamma constant (ratio of specific heats). */
@@ -84,13 +85,16 @@ protected:
 	*Res_Visc_j,			/*!< \brief Auxiliary vector for storing the viscous residual at point j. */
 	*Res_Sour_j;			/*!< \brief Auxiliary vector for storing the viscous residual at point j. */
 	double **Jacobian_i,	/*!< \brief Auxiliary matrices for storing point to point Jacobians at point i. */
-	**Jacobian_j;			    /*!< \brief Auxiliary matrices for storing point to point Jacobians at point j. */
+	**Jacobian_j,			    /*!< \brief Auxiliary matrices for storing point to point Jacobians at point j. */
+    	**Jacobian_k;			    /*!< \brief Auxiliary matrices for storing point to point Jacobians at point k. */
     double **Jacobian_MeanFlow_i,	/*!< \brief Auxiliary matrices for storing point to point Jacobians of the mean flow at point i. */
 	**Jacobian_MeanFlow_j;			    /*!< \brief Auxiliary matrices for storing point to point Jacobians of the mean flow at point j. */
 	double **Jacobian_ii,	/*!< \brief Auxiliary matrices for storing point to point Jacobians. */
 	**Jacobian_ij,			  /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
 	**Jacobian_ji,			  /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
-	**Jacobian_jj;			  /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
+	**Jacobian_jj,			  /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
+    **Jacobian_ik,			  /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
+	**Jacobian_jk;			  /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
 
 	double **Smatrix,	/*!< \brief Auxiliary structure for computing gradients by least-squares */
 	**cvector;			 /*!< \brief Auxiliary structure for computing gradients by least-squares */
@@ -178,11 +182,28 @@ public:
 	 * \return Value of the minimum delta time.
 	 */
 	double GetMin_Delta_Time(void);
+  
+  /*!
+	 * \brief Get the value of the maximum delta time.
+	 * \return Value of the maximum delta time.
+	 */
+	virtual double GetMax_Delta_Time(unsigned short val_Species);
+  
+	/*!
+	 * \brief Get the value of the minimum delta time.
+	 * \return Value of the minimum delta time.
+	 */
+	virtual double GetMin_Delta_Time(unsigned short val_Species);
 
 	/*! 
 	 * \brief Get the number of variables of the problem.
 	 */
 	unsigned short GetnVar(void);
+  
+  /*!
+	 * \brief Get the number of variables of the problem.
+	 */
+	unsigned short GetnPrimVar(void);
 
 	/*! 
 	 * \brief Get the number of Species present in the flow.
@@ -421,9 +442,10 @@ public:
 	 * \param[in] solution_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
 	virtual void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver,
-			CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+			CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
 
 	/*!
 	 * \brief A virtual member.
@@ -543,17 +565,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_NS_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
-			unsigned short val_marker);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
 	virtual void BC_Isothermal_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
 			unsigned short val_marker);
 
@@ -617,7 +628,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short val_marker);
+	virtual void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker);
 
 	/*!
 	 * \brief A virtual member.
@@ -1579,7 +1590,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetLevelSet_Distance(CGeometry *geometry, CConfig *config);
+	virtual void SetLevelSet_Distance(CGeometry *geometry, CConfig *config, bool Initialization, bool WriteLevelSet);
 
 	/*!
 	 * \brief A virtual member.
@@ -1673,7 +1684,7 @@ public:
  * \class CBaselineSolution
  * \brief Main class for defining a baseline solution from a restart file (for output).
  * \author F. Palacios, T. Economon.
- * \version 2.0.3
+ * \version 2.0.4
  */
 class CBaselineSolution : public CSolution {
 public:
@@ -1717,7 +1728,7 @@ public:
  * \brief Main class for defining the Euler's flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.3
+ * \version 2.0.4
  */
 class CEulerSolution : public CSolution {
 protected:
@@ -1799,8 +1810,7 @@ protected:
 	double *PrimVar_i,	/*!< \brief Auxiliary vector for storing the solution at point i. */
 	*PrimVar_j;			/*!< \brief Auxiliary vector for storing the solution at point j. */
 	double **Precon_Mat_inv; /*!< \brief Auxiliary vector for storing the inverse of Roe-turkel preconditioner. */
-	unsigned long nPoint, /*!< \brief Number of points of the mesh. */
-	nMarker;				/*!< \brief Total number of markers using the grid information. */
+	unsigned long nMarker;				/*!< \brief Total number of markers using the grid information. */
 	bool space_centered,  /*!< \brief True if space centered scheeme used. */
 	euler_implicit,			/*!< \brief True if euler implicit scheme used. */
 	roe_turkel,         /*!< \brief True if computing preconditioning matrix for roe-turkel method. */
@@ -2016,8 +2026,9 @@ public:
 	 * \param[in] solution_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
 
 	/*!
 	 * \brief Compute a pressure sensor switch.
@@ -2131,7 +2142,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short val_marker);
+	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker);
 
 	/*!
 	 * \brief Impose the interface boundary condition using the residual.
@@ -2527,7 +2538,7 @@ public:
  * \brief Main class for defining the Navier-Stokes flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 2.0.3
+ * \version 2.0.4
  */
 class CNSSolution : public CEulerSolution {
 private:
@@ -2604,19 +2615,19 @@ public:
 	 * \param[in] solution_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep);
-
-	/*!
-	 * \brief Impose the Navier-Stokes boundary condition (strong).
+	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
+  
+  /*!
+	 * \brief Impose a constant heat-flux condition at the wall.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solution_container - Container vector with all the solutions.
 	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_NS_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
-			unsigned short val_marker);
+	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short val_marker);
   
   /*!
 	 * \brief Impose the Navier-Stokes boundary condition (strong).
@@ -2704,12 +2715,12 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.3
+ * \version 2.0.4
  */
 class CTurbSolution : public CSolution {
 protected:
 	double *FlowSolution_i,	/*!< \brief Store the flow solution at point i. */
-	*FlowSolution_j, 		/*!< \brief Store the flow solution at point j. */
+	*FlowSolution_j,        /*!< \brief Store the flow solution at point j. */
 	*lowerlimit,            /*!< \brief contains lower limits for turbulence variables. */
 	*upperlimit;            /*!< \brief contains upper limits for turbulence variables. */
 
@@ -2752,7 +2763,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short val_marker);
+	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker);
 
 	/*!
 	 * \brief Update the solution using an implicit solver.
@@ -2834,7 +2845,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.3
+ * \version 2.0.4
  */
 
 class CTurbSASolution: public CTurbSolution {
@@ -2865,8 +2876,9 @@ public:
 	 * \param[in] solution_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
 
 	/*!
 	 * \brief A virtual member.
@@ -2932,7 +2944,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_NS_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
 			unsigned short val_marker);
 
 	/*!
@@ -2999,7 +3011,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.3
+ * \version 2.0.4
  */
 
 class CTransLMSolution: public CTurbSolution {
@@ -3036,8 +3048,9 @@ public:
 	 * \param[in] solution_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
 
 	/*!
 	 * \brief A virtual member.
@@ -3103,7 +3116,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_NS_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
 			unsigned short val_marker);
 
 	/*!
@@ -3149,7 +3162,7 @@ public:
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
 
-	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
 			unsigned short val_marker);
 	/*!
 	 * \brief Update the solution using an implicit solver.
@@ -3175,7 +3188,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Campos, F. Palacios, T. Economon
- * \version 2.0.3
+ * \version 2.0.4
  */
 
 class CTurbSSTSolution: public CTurbSolution {
@@ -3208,8 +3221,9 @@ public:
 	 * \param[in] solution_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
 
 	/*!
 	 * \brief Computes the eddy viscosity.
@@ -3274,7 +3288,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_NS_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
 			unsigned short val_marker);
 
 	/*!
@@ -3336,7 +3350,7 @@ public:
  * \brief Main class for defining the Euler's adjoint flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.3
+ * \version 2.0.4
  */
 class CAdjEulerSolution : public CSolution {
 protected:
@@ -3358,6 +3372,7 @@ protected:
 	*p2_Und_Lapl;			/*!< \brief Auxiliary variable for the undivided Laplacians. */ 
 	bool space_centered;  /*!< \brief True if space centered scheeme used. */
   double **Jacobian_Axisymmetric; /*!< \brief Storage for axisymmetric Jacobian. */
+	unsigned long nMarker;				/*!< \brief Total number of markers using the grid information. */
 
 public:
 
@@ -3370,8 +3385,9 @@ public:
 	 * \overload
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	CAdjEulerSolution(CGeometry *geometry, CConfig *config);
+	CAdjEulerSolution(CGeometry *geometry, CConfig *config, unsigned short iMesh);
 
 	/*! 
 	 * \brief Destructor of the class. 
@@ -3385,7 +3401,14 @@ public:
 	 */
 	void SetSolution_MPI(CGeometry *geometry, CConfig *config);
   
-	/*! 
+  /*!
+	 * \brief Impose the send-receive boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetSolution_Limiter_MPI(CGeometry *geometry, CConfig *config);
+  
+	/*!
 	 * \brief Created the force projection vector for adjoint boundary conditions.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solution_container - Container vector with all the solutions.
@@ -3555,7 +3578,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
+	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
 			unsigned short val_marker);
 
 	/*!
@@ -3666,8 +3689,9 @@ public:
 	 * \param[in] solution_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
 
 	/*!
 	 * \brief Compute the inviscid sensitivity of the functional.
@@ -3757,6 +3781,15 @@ public:
 	 * \return kappapsi_Volume
 	 */
 	double GetKappaPsiVolume(void);
+  
+  /*!
+	 * \brief Set the initial condition for the Euler Equations.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solution_container - Container with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] ExtIter - External iteration.
+	 */
+	void SetInitialCondition(CGeometry **geometry, CSolution ***solution_container, CConfig *config, unsigned long ExtIter);
 
 };
 
@@ -3765,11 +3798,9 @@ public:
  * \brief Main class for defining the Navier-Stokes' adjoint flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 2.0.3
+ * \version 2.0.4
  */
 class CAdjNSSolution : public CAdjEulerSolution {
-private:
-
 public:
 
 	/*! 
@@ -3781,8 +3812,9 @@ public:
 	 * \overload
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	CAdjNSSolution(CGeometry *geometry, CConfig *config);
+	CAdjNSSolution(CGeometry *geometry, CConfig *config, unsigned short iMesh);
 
 	/*! 
 	 * \brief Destructor of the class. 
@@ -3790,14 +3822,14 @@ public:
 	~CAdjNSSolution(void);
 
 	/*!
-	 * \brief Impose via the residual or brute force the Navier-Stokes adjoint boundary condition.
+	 * \brief Impose via the residual or brute force the Navier-Stokes adjoint boundary condition (heat flux).
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solution_container - Container vector with all the solutions.
 	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_NS_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
+	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
 			unsigned short val_marker);
 
 	/*!
@@ -3806,8 +3838,9 @@ public:
 	 * \param[in] solution_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
 
 	/*!
 	 * \brief Compute the viscous sensitivity of the functional.
@@ -3848,7 +3881,7 @@ public:
  * \brief Main class for defining the adjoint turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.3
+ * \version 2.0.4
  */
 class CAdjTurbSolution : public CSolution {
 private:
@@ -3877,6 +3910,13 @@ public:
 	 */
 	CAdjTurbSolution(CGeometry *geometry, CConfig *config);
 
+  /*!
+	 * \brief Impose the send-receive boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetSolution_MPI(CGeometry *geometry, CConfig *config);
+  
 	/*! 
 	 * \brief Default destructor of the class. 
 	 */
@@ -3890,7 +3930,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_NS_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
+	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
 			unsigned short val_marker);
 
 	/*! 
@@ -3910,8 +3950,9 @@ public:
 	 * \param[in] solution_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
 
 	/*! 
 	 * \brief Compute the spatial integration using a upwind scheme.
@@ -4049,7 +4090,7 @@ public:
  * \brief Main class for defining the linearized Euler solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.3
+ * \version 2.0.4
  */
 class CLinEulerSolution : public CSolution {
 private:
@@ -4152,8 +4193,9 @@ public:
 	 * \param[in] solution_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
 
 	/*!
 	 * \brief Compute the linearization of the pressure forces and all the adimensional coefficients.
@@ -4261,7 +4303,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short val_marker);
+	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker);
 
 	/*!
 	 * \brief Impose via the residual the Euler wall boundary condition.
@@ -4282,7 +4324,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_NS_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
 			unsigned short val_marker);
 
 	/*!
@@ -4323,8 +4365,9 @@ public:
 	 * \param[in] solution_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
 
 	/*!
 	 * \brief Source term computation.
@@ -4442,8 +4485,9 @@ public:
 	 * \param[in] solution_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
 
 	/*!
 	 * \brief Source term computation.
@@ -4606,8 +4650,9 @@ public:
 	 * \param[in] solution_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
 
 	/*!
 	 * \brief Source term computation.
@@ -4755,8 +4800,9 @@ public:
 	 * \param[in] solution_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
 
 	/*!
 	 * \brief A virtual member.
@@ -4855,7 +4901,7 @@ public:
  * \brief Main class for defining the level set solver.
  * \ingroup LevelSet_Model
  * \author F. Palacios.
- * \version 2.0.3
+ * \version 2.0.4
  */
 class CLevelSetSolution : public CSolution {
 protected:
@@ -4865,13 +4911,8 @@ protected:
 
 public:
 
-	/*! 
-	 * \brief Constructor of the class. 
-	 */
-	CLevelSetSolution(void);
-
 	/*!
-	 * \overload
+	 * \brief Constructor of the class.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
@@ -4895,11 +4936,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
   void SetSolution_Limiter_MPI(CGeometry *geometry, CConfig *config);
-  
-	/*! 
-	 * \brief Constructor of the class. 
-	 */
-	CLevelSetSolution(CConfig *config);
 
 	/*!
 	 * \brief Provide the total (inviscid + viscous) non dimensional Free Surface coefficient.
@@ -4921,7 +4957,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
 			unsigned short val_marker);
 
 	/*!
@@ -4938,8 +4974,9 @@ public:
 	 * \param[in] solution_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
 
 	/*!
 	 * \brief Compute the spatial integration using a upwind scheme.
@@ -4982,7 +5019,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_NS_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
 			unsigned short val_marker);
 
 	/*!
@@ -5023,7 +5060,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetLevelSet_Distance(CGeometry *geometry, CConfig *config);
+	void SetLevelSet_Distance(CGeometry *geometry, CConfig *config, bool Initialization, bool WriteLevelSet);
 
 	/*! 
 	 * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
@@ -5044,7 +5081,7 @@ public:
  * \brief Main class for defining the level set solver.
  * \ingroup LevelSet_Model
  * \author F. Palacios.
- * \version 2.0.3
+ * \version 2.0.4
  */
 class CAdjLevelSetSolution : public CSolution {
 protected:
@@ -5053,49 +5090,32 @@ protected:
 	Total_CFreeSurface;			/*!< \brief Total Free Surface coefficient for all the boundaries. */
 
 public:
-
-	/*! 
-	 * \brief Constructor of the class. 
-	 */
-	CAdjLevelSetSolution(void);
-
+  
 	/*!
-	 * \overload
+	 * \brief Constructor of the class.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CAdjLevelSetSolution(CGeometry *geometry, CConfig *config);	
+	CAdjLevelSetSolution(CGeometry *geometry, CConfig *config, unsigned short iMesh);
 
 	/*! 
 	 * \brief Destructor of the class. 
 	 */
 	virtual ~CAdjLevelSetSolution(void);
 
-	/*! 
-	 * \brief Constructor of the class. 
-	 */
-	CAdjLevelSetSolution(CConfig *config);
-
-	/*!
-	 * \brief Compute the time step for solving the Level Set equations.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iMesh - Index of the mesh in multigrid computations.
-	 * \param[in] Iteration - Index of the current iteration.
-	 */
-	void SetTime_Step(CGeometry *geometry, CSolution **solution_container, CConfig *config, 
-			unsigned short iMesh, unsigned long Iteration);
-
-	/*!
+  /*!
 	 * \brief Impose the send-receive boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_mesh - Index of the mesh in multigrid computations.
 	 */
-	void MPI_Send_Receive(CGeometry ***geometry, CSolution ****solution_container,
-			CConfig **config, unsigned short iMGLevel, unsigned short iZone);
+	void SetSolution_MPI(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief Impose the send-receive boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  void SetSolution_Limiter_MPI(CGeometry *geometry, CConfig *config);
 
 	/*!
 	 * \brief Impose the Symmetry Plane boundary condition.
@@ -5105,7 +5125,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
 			unsigned short val_marker);
 
 	/*!
@@ -5122,8 +5142,9 @@ public:
 	 * \param[in] solution_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
 
 	/*!
 	 * \brief Compute the spatial integration using a upwind scheme.
@@ -5177,7 +5198,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_NS_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
 			unsigned short val_marker);
 
 	/*!
@@ -5212,14 +5233,19 @@ public:
 	 */
 	void BC_Outlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
 			unsigned short val_marker);
-
+  
 	/*!
-	 * \brief Recompute distance to the level set 0.
+	 * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
 	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solution_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+	 * \param[in] iMesh - Index of the mesh in multigrid computations.
+	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void SetLevelSet_Distance(CGeometry *geometry, CConfig *config);
-
+	void SetResidual_DualTime(CGeometry *geometry, CSolution **solution_container, CConfig *config,
+                            unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
+  
 };
 
 /*! 
@@ -5227,7 +5253,7 @@ public:
  * \brief Main class for defining the template model solver.
  * \ingroup Template_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.3
+ * \version 2.0.4
  */
 class CTemplateSolution : public CSolution {
 private:
@@ -5257,8 +5283,9 @@ public:
 	 * \param[in] solution_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
 
 	/*!
 	 * \brief Compute the time step for solving the Euler equations.
@@ -5345,7 +5372,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_NS_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
+	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
 			unsigned short val_marker);
 
 	/*!
@@ -5389,7 +5416,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
+	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
 			unsigned short val_marker);
 
 	/*!
@@ -5435,7 +5462,7 @@ public:
  * \class CPlasmaSolution
  * \brief Main class for defining the plasma solver.
  * \author ADL Stanford.
- * \version 2.0.3
+ * \version 2.0.4
  */
 class CPlasmaSolution : public CSolution {
 protected:
@@ -5446,7 +5473,7 @@ protected:
 	axisymmetric,
 	weighted_LS;
 
-	unsigned short nMarker;
+	unsigned short nMarker; /*!< \brief Total number of markers using the grid information. */
 	double Gas_Constant;		/*! \brief Gas constant for each species. */
 	double Enthalpy_formation;		/*! \brief Chemical enthalpy of formation for all species [?? From Candler]. */
 	double Molar_Mass; /*!< \brief Molar mass of each chemical constituent [kg/kmol].*/
@@ -5488,6 +5515,9 @@ protected:
 	double **Precon_Mat_inv; /*!< \brief Auxiliary vector for storing the inverse of Roe-turkel preconditioner. */
     double ***PrimGrad_i, ***PrimGrad_j, **PrimGradLimiter_i, **PrimGradLimiter_j;
   double ***PrimVar_max, ***PrimVar_min;
+  
+  double *Min_Delta_Time; /*!< \brief Minimum time step [nSpecies]. */
+  double *Max_Delta_Time; /*!< \brief Maximum time step [nSpecies]. */
   
 
 	double *Residual_Chemistry,	/*!< \brief Auxiliary vector for storing the residual from the chemistry source terms. */
@@ -5724,6 +5754,16 @@ public:
 	 */
 	void SetTime_Step(CGeometry *geometry, CSolution **solution_container, CConfig *config,
 			unsigned short iMesh, unsigned long Iteration);
+  
+  /*!
+   * \brief Compute the time step for solving the Euler equations.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solution_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] Iteration - Index of the current iteration.
+   */
+  void SetResidual_DualTime(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
 
 	/*!
 	 * \brief Compute the spatial integration using a centered scheme.
@@ -5787,14 +5827,29 @@ public:
   
   void SetSolution_MPI(CGeometry *geometry, CConfig *config);
   
+  /*!
+	 * \brief Get the value of the maximum delta time.
+   * \param[in] val_Species - Value of the species
+	 * \return Value of the maximum delta time for val_Species.
+	 */
+	double GetMax_Delta_Time(unsigned short val_Species);
+  
+  /*!
+	 * \brief Get the value of the maximum delta time.
+   * \param[in] val_Species - Value of the species
+	 * \return Value of the minimum delta time for val_Species.
+	 */
+  double GetMin_Delta_Time(unsigned short val_Species);
+  
 	/*!
 	 * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solution_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
 
 	/*!
 	 * \brief Compute a pressure sensor switch.
@@ -5872,7 +5927,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short val_marker);
+	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker);
 
 	/*!
 	 * \brief Impose via the residual the Euler wall boundary condition.
@@ -5899,17 +5954,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void Viscous_Forces(CGeometry *geometry, CConfig *config);
-
-	/*!
-	 * \brief Impose the Navier-Stokes boundary condition (strong).
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-	void BC_NS_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
-			unsigned short val_marker);
 
 	/*!
 	 * \brief Impose an isothermal wall boundary condition (no-slip).
@@ -6126,7 +6170,7 @@ public:
  * \brief Main class for defining the Euler's adjoint flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.3
+ * \version 2.0.4
  */
 class CAdjPlasmaSolution : public CSolution {
 protected:
@@ -6280,7 +6324,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
+	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, 
 			unsigned short val_marker);
 
 	/*!
@@ -6308,8 +6352,9 @@ public:
 	 * \param[in] solution_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
 
 	/*!
 	 * \brief Compute the inviscid sensitivity of the functional.

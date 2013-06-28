@@ -2,7 +2,7 @@
  * \file solution_structure.cpp
  * \brief Main subrotuines for solving direct, adjoint and linearized problems.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -23,9 +23,149 @@
 
 #include "../include/solution_structure.hpp"
 
-CSolution::CSolution(void) {}
+CSolution::CSolution(void) {
 
-CSolution::~CSolution(void) {}
+  /*--- Array initialization ---*/
+	Residual_RMS = NULL;
+  Residual_Max = NULL;
+	Residual = NULL;
+	Residual_i = NULL;
+	Residual_j = NULL;
+  Point_Max = NULL;
+	Solution = NULL;
+	Solution_i = NULL;
+	Solution_j = NULL;
+	Vector = NULL;
+	Vector_i = NULL;
+	Vector_j = NULL;
+	Res_Conv = NULL;
+	Res_Visc = NULL;
+	Res_Sour = NULL;
+	Res_Conv_i = NULL;
+	Res_Visc_i = NULL;
+	Res_Sour_i = NULL;
+	Res_Conv_j = NULL;
+	Res_Visc_j = NULL;
+	Res_Sour_j = NULL;
+	Jacobian_i = NULL;
+	Jacobian_j = NULL;
+  Jacobian_MeanFlow_i = NULL;
+	Jacobian_MeanFlow_j = NULL;
+	Jacobian_ii = NULL;
+	Jacobian_ij = NULL;
+	Jacobian_ji = NULL;
+	Jacobian_jj = NULL;
+	Smatrix = NULL;
+	cvector = NULL;
+	StiffMatrix_Elem = NULL;
+	StiffMatrix_Node = NULL;
+  xsol = NULL;
+	xres = NULL;
+	rhs = NULL;
+  node = NULL;
+
+}
+
+CSolution::~CSolution(void) {
+/*  unsigned short iVar, iDim;
+  unsigned long iPoint;
+  
+  if (Residual_RMS != NULL) delete [] Residual_RMS;
+  if (Residual_Max != NULL) delete [] Residual_Max;
+	if (Residual != NULL) delete [] Residual;
+	if (Residual_i != NULL) delete [] Residual_i;
+	if (Residual_j != NULL) delete [] Residual_j;
+  if (Point_Max != NULL) delete [] Point_Max;
+	if (Solution != NULL) delete [] Solution;
+	if (Solution_i != NULL) delete [] Solution_i;
+	if (Solution_j != NULL) delete [] Solution_j;
+	if (Vector != NULL) delete [] Vector;
+	if (Vector_i != NULL) delete [] Vector_i;
+	if (Vector_j != NULL) delete [] Vector_j;
+	if (Res_Conv != NULL) delete [] Res_Conv;
+	if (Res_Visc != NULL) delete [] Res_Visc;
+	if (Res_Sour != NULL) delete [] Res_Sour;
+	if (Res_Conv_i != NULL) delete [] Res_Conv_i;
+	if (Res_Visc_i != NULL) delete [] Res_Visc_i;
+	if (Res_Sour_i != NULL) delete [] Res_Sour_i;
+	if (Res_Conv_j != NULL) delete [] Res_Conv_j;
+	if (Res_Visc_j != NULL) delete [] Res_Visc_j;
+	if (Res_Sour_j != NULL) delete [] Res_Sour_j;
+  if (xsol != NULL) delete [] xsol;
+	if (xres != NULL) delete [] xres;
+	if (rhs != NULL) delete [] rhs;
+  
+	if (Jacobian_i != NULL) {
+    for (iVar = 0; iVar < nVar; iVar++)
+      delete Jacobian_i[iVar];
+    delete [] Jacobian_i;
+  }
+  
+	if (Jacobian_j != NULL) {
+    for (iVar = 0; iVar < nVar; iVar++)
+      delete Jacobian_j[iVar];
+    delete [] Jacobian_j;
+  }
+  
+	if (Jacobian_MeanFlow_i != NULL) {
+    for (iVar = 0; iVar < nVar; iVar++)
+      delete Jacobian_MeanFlow_i[iVar];
+    delete [] Jacobian_MeanFlow_i;
+  }
+  
+	if (Jacobian_MeanFlow_j != NULL) {
+    for (iVar = 0; iVar < nVar; iVar++)
+      delete Jacobian_MeanFlow_j[iVar];
+    delete [] Jacobian_MeanFlow_j;
+  }
+  
+	if (Jacobian_ii != NULL) {
+    for (iVar = 0; iVar < nVar; iVar++)
+      delete Jacobian_ii[iVar];
+    delete [] Jacobian_ii;
+  }
+  
+	if (Jacobian_ij != NULL) {
+    for (iVar = 0; iVar < nVar; iVar++)
+      delete Jacobian_ij[iVar];
+    delete [] Jacobian_ij;
+  }
+  
+	if (Jacobian_ji != NULL) {
+    for (iVar = 0; iVar < nVar; iVar++)
+      delete Jacobian_ji[iVar];
+    delete [] Jacobian_ji;
+  }
+  
+	if (Jacobian_jj != NULL) {
+    for (iVar = 0; iVar < nVar; iVar++)
+      delete Jacobian_jj[iVar];
+    delete [] Jacobian_jj;
+  }
+  
+	if (Smatrix != NULL) {
+    for (iDim = 0; iDim < nDim; iDim++)
+      delete Smatrix[iDim];
+    delete [] Smatrix;
+  }
+  
+	if (cvector != NULL) {
+    for (iVar = 0; iVar < nVar; iVar++)
+      delete cvector[iVar];
+    delete [] cvector;
+  }
+  
+  if (node != NULL) {
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      delete node[iPoint];
+    }
+    delete [] node;
+  }
+  
+  //	delete [] **StiffMatrix_Elem;
+  //	delete [] **StiffMatrix_Node;*/
+  
+}
 
 void CSolution::SetResidual_RKCoeff(CGeometry *geometry, CConfig *config, unsigned short iRKStep) {
 	unsigned short iVar;
@@ -76,6 +216,7 @@ void CSolution::SetResidual_Total(CGeometry *geometry, CSolution **solution_cont
 			Residual[iVar] = (Res_Conv[iVar]+Res_Visc[iVar]+Res_Sour[iVar]);
 		node[iPoint]->SetResidual(Residual);		
 	}
+  
 }
 
 void CSolution::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
@@ -84,7 +225,7 @@ void CSolution::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
 #ifdef NO_MPI
 
 	for (iVar = 0; iVar < nVar; iVar++)
-    SetRes_RMS(iVar, sqrt(GetRes_RMS(iVar)/geometry->GetnPoint()));
+    SetRes_RMS(iVar, max(EPS, sqrt(GetRes_RMS(iVar)/geometry->GetnPoint())));
   
 #else
   
@@ -105,7 +246,7 @@ void CSolution::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   MPI::COMM_WORLD.Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI::UNSIGNED_LONG, MPI::SUM);
   
   for (iVar = 0; iVar < nVar; iVar++)
-    SetRes_RMS(iVar, sqrt(rbuf_residual[iVar]/Global_nPointDomain));
+    SetRes_RMS(iVar, max(EPS, sqrt(rbuf_residual[iVar]/Global_nPointDomain)));
   
   delete [] sbuf_residual;
   delete [] rbuf_residual;
@@ -214,7 +355,11 @@ void CSolution::Initialize_SparseMatrix_Structure(CSparseMatrix *SparseMatrix, u
     
     unsigned long nPoint = geometry->GetnPoint();
     unsigned long nPointDomain = geometry->GetnPointDomain();
-	bool preconditioner = false; if (config->GetKind_Linear_Solver_Prec() != NO_PREC) preconditioner = true;
+	bool preconditioner = false;
+    //if ()
+        if (config->GetKind_Linear_Solver_Prec() != NO_PREC) preconditioner = true;
+    //else
+    //    if (config->GetKind_AdjTurb_Linear_Prec() != NO_PREC) preconditioner = true;
     
 	/*--- Don't delete *row_ptr, *col_ind because they are asigned to the Jacobian structure. ---*/
 	row_ptr = new unsigned long [nPoint+1];
@@ -241,8 +386,14 @@ void CSolution::Initialize_SparseMatrix_Structure(CSparseMatrix *SparseMatrix, u
 
 	SparseMatrix->SetIndexes(nPoint, nPointDomain, nVar, nEqn, row_ptr, col_ind, nnz, preconditioner);
 
-	if (config->GetKind_Linear_Solver_Prec() == LINELET)
-		SparseMatrix->BuildLineletPreconditioner(geometry, config);
+    //if () {
+        if (config->GetKind_Linear_Solver_Prec() == LINELET)
+            SparseMatrix->BuildLineletPreconditioner(geometry, config);
+    //}
+    //else {
+    //    if (config->GetKind_AdjTurb_Linear_Prec() == LINELET)
+    //        SparseMatrix->BuildLineletPreconditioner(geometry, config);
+    //}
      	
 	delete[] vneighs;
 }
@@ -694,7 +845,6 @@ void CSolution::SetSolution_Gradient_MPI(CGeometry *geometry, CConfig *config) {
 }
 
 void CSolution::SetSurface_Gradient(CGeometry *geometry, CConfig *config) {
-
 	unsigned short iDim, jDim, iVar, iNeigh, iMarker, Boundary;
 	unsigned short nDim = geometry->GetnDim();
 	unsigned long iPoint, jPoint, iVertex;
@@ -712,7 +862,7 @@ void CSolution::SetSurface_Gradient(CGeometry *geometry, CConfig *config) {
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 		Boundary = config->GetMarker_All_Boundary(iMarker);
 		switch (Boundary) {
-		case EULER_WALL: case NO_SLIP_WALL:
+		case EULER_WALL: case HEAT_FLUX: case ISOTHERMAL:
 
 			/*--- Loop over points on the surface (Least-Squares approximation) ---*/
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -811,9 +961,9 @@ void CSolution::SetSurface_Gradient(CGeometry *geometry, CConfig *config) {
 
 	/*--- Memory deallocation ---*/	
 	for (iVar = 0; iVar < nVar; iVar++)
-		delete [] cvector[iVar];
+		delete cvector[iVar];
 	for (iDim = 0; iDim < nDim; iDim++)
-		delete [] Smatrix[iDim];
+		delete Smatrix[iDim];
 	delete [] cvector;
 	delete [] Smatrix;
 }
@@ -836,7 +986,8 @@ void CSolution::SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config)
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 		Boundary = config->GetMarker_All_Boundary(iMarker);
 		switch (Boundary) {
-		case EULER_WALL: case NO_SLIP_WALL:
+      case EULER_WALL: case HEAT_FLUX: case ISOTHERMAL:
+        
 			/*--- Loop over points on the surface (Least-Squares approximation) ---*/
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -1249,7 +1400,7 @@ CBaselineSolution::CBaselineSolution(CGeometry *geometry, CConfig *config, unsig
       case THRUST_COEFFICIENT:    AdjExt = "_ct";   break;
       case TORQUE_COEFFICIENT:    AdjExt = "_cq";   break;
       case FIGURE_OF_MERIT:       AdjExt = "_merit";break;
-      case FREESURFACE:           AdjExt = "_fs";   break;
+      case FREE_SURFACE:           AdjExt = "_fs";   break;
       case NOISE:                 AdjExt = "_fwh";  break;
 		}
 		filename.append(AdjExt);
@@ -1532,7 +1683,7 @@ void CBaselineSolution::GetRestart(CGeometry *geometry, CConfig *config, unsigne
       case THRUST_COEFFICIENT:    AdjExt = "_ct";   break;
       case TORQUE_COEFFICIENT:    AdjExt = "_cq";   break;
       case FIGURE_OF_MERIT:       AdjExt = "_merit";break;
-      case FREESURFACE:           AdjExt = "_fs";   break;
+      case FREE_SURFACE:           AdjExt = "_fs";   break;
       case NOISE:                 AdjExt = "_fwh";  break;
 		}
 		filename.append(AdjExt);
@@ -1641,11 +1792,4 @@ void CBaselineSolution::GetRestart(CGeometry *geometry, CConfig *config, unsigne
   
 }
 
-CBaselineSolution::~CBaselineSolution(void) {
-	unsigned long iPoint;
-  
-	for (iPoint = 0; iPoint < nPoint; iPoint++)
-		delete node[iPoint];
-	delete [] node;
-  
-}
+CBaselineSolution::~CBaselineSolution(void) { }

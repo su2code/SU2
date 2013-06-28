@@ -1,7 +1,7 @@
 ## \file gradients.py
 #  \brief python package for gradients
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.3
+#  \version 2.0.4
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -29,7 +29,7 @@ from .. import io   as su2io
 from .. import util as su2util
 from .functions import function
 from ..io import redirect_folder, redirect_output
-
+import functions
 
 # ----------------------------------------------------------------------
 #  Main Gradient Interface
@@ -74,11 +74,21 @@ def gradient( func_name, method, config, state=None ):
         
         # Adjoint Gradients
         if method == 'ADJOINT':
-            grads = adjoint(func_name, config, state)
+            
+            # Aerodynamics
+            if func_name in su2io.optnames_aero:
+                grads = adjoint( func_name, config, state )
+            
+            # Geometry (actually a finite difference)
+            elif func_name in su2io.optnames_geo:
+                grads = geometry( func_name, config, state )
+                
+            else:
+                raise Exception, 'unknown function name'            
             
         # Finite Difference Gradients
         elif method == 'FINDIFF':
-            grads = findiff(config, state)
+            grads = findiff( config, state )
             
         else:
             raise Exception , 'unrecognized gradient method'
@@ -127,7 +137,8 @@ def adjoint( func_name, config, state=None ):
             state     - optional, an SU2 state
         
         Outputs:
-            A list of floats of gradient values
+            A Bunch() with keys of objective function names
+            and values of list of floats of gradient values
     """
     
     # ----------------------------------------------------
@@ -188,7 +199,7 @@ def adjoint( func_name, config, state=None ):
     # files: adjoint solution
     if files.has_key( ADJ_NAME ):
         link.append( files[ ADJ_NAME ] )
-        config['RESTART_SOL'] == 'YES'
+        ##config['RESTART_SOL'] = 'YES' # don't override config file
     else:
         config['RESTART_SOL'] = 'NO'
     
@@ -200,8 +211,10 @@ def adjoint( func_name, config, state=None ):
     with redirect_folder( ADJ_NAME, pull, link ) as push:
         with redirect_output(log_adjoint):        
             
-            # run
+            # setup config
             config['ADJ_OBJFUNC'] = func_name
+            
+            # # RUN ADJOINT SOLUTION # #
             info = su2run.adjoint(config)
             su2io.restart2solution(config,info)
             state.update(info)
@@ -349,6 +362,7 @@ def findiff( config, state=None, step=1e-4 ):
             for i_dv in range(n_dv):
                 
                 this_step = step[i_dv]
+                temp_config_name = 'config_FINDIFF_%i.cfg' % i_dv 
                 
                 this_dvs    = copy.deepcopy(dvs_base)
                 this_konfig = copy.deepcopy(konfig)
@@ -357,6 +371,8 @@ def findiff( config, state=None, step=1e-4 ):
                 this_state = su2io.State()
                 this_state.FILES = copy.deepcopy( state.FILES )
                 this_konfig.unpack_dvs(this_dvs,dvs_base)
+                
+                this_konfig.dump(temp_config_name)
                 
                 # Direct Solution, findiff step
                 func_step = function( 'ALL', this_konfig, this_state )
@@ -378,6 +394,7 @@ def findiff( config, state=None, step=1e-4 ):
                 #: for each grad name
                 
                 su2util.write_plot(grad_filename,output_format,grads)
+                os.remove(temp_config_name)
             
             #: for each dv
             
@@ -390,3 +407,45 @@ def findiff( config, state=None, step=1e-4 ):
     return copy.deepcopy(grads)
 
 #: def findiff()
+
+
+# ----------------------------------------------------------------------
+#  Geometric Gradients
+# ----------------------------------------------------------------------
+
+def geometry( func_name, config, state=None ):
+    """ val = SU2.eval.gradients.geometry(config,state=None)
+    
+        Evaluates geometry with the following:
+            SU2.eval.functions.geometry()
+                SU2.run.decompose()
+	        SU2.run.deform()
+                SU2.run.geometry()
+        
+        Assumptions:
+            Config is already setup for deformation.
+            Mesh may or may not be deformed.
+            Updates config and state by reference.
+            Redundancy if state.GRADIENTS does not have func_name.
+            
+        Executes in:
+            ./GEOMETRY
+            
+        Inputs:
+            config    - an SU2 config
+            state     - optional, an SU2 state
+        
+        Outputs:
+            A Bunch() with keys of objective function names
+            and values of list of floats of gradient values
+    """
+    
+    # # RUN GEOMETRY SOLUTION # #
+    if not state.GRADIENTS.has_key(func_name):
+        functions.geometry(func_name,config,state)
+        
+    # return gradient information
+    grads = state.GRADIENTS
+    return copy.deepcopy(grads)
+    
+    

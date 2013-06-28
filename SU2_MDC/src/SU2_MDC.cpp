@@ -2,7 +2,7 @@
  * \file SU2_MDC.cpp
  * \brief Main file of Mesh Deformation Code (SU2_MDC).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.3
+ * \version 2.0.4
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -86,9 +86,16 @@ int main(int argc, char *argv[]) {
 	if (rank == MASTER_NODE)
 		cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
   
-	/*--- Compute elements surrounding points, points surrounding points, and elements surronding elements ---*/
+	/*--- Compute elements surrounding points, points surrounding points, 
+   and elements surrounding elements ---*/
 	if (rank == MASTER_NODE) cout << "Setting local point and element connectivity." <<endl;
-	geometry[ZONE_0]->SetEsuP(); geometry[ZONE_0]->SetPsuP();
+	geometry[ZONE_0]->SetEsuP();
+  
+  /*--- Use a special preprocessing for FEA grid deformation ---*/
+  if (config[ZONE_0]->GetKind_GridDef_Method() == FEA)
+    geometry[ZONE_0]->SetPsuP_FEA();
+  else
+    geometry[ZONE_0]->SetPsuP();
 	
 	/*--- Check the orientation before computing geometrical quantities ---*/
 	if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation." <<endl;
@@ -139,8 +146,47 @@ int main(int argc, char *argv[]) {
 		}
 	}
   
-	/*--- Bump deformation for 2D problems ---*/
-	if (geometry[ZONE_0]->GetnDim() == 2) {
+  /*--- Arbitrary definition of surface coordinates from file. ---*/
+  if (config[ZONE_0]->GetDesign_Variable(0) == SURFACE_FILE) {
+    
+    /*--- Check whether a surface file exists for input ---*/
+    ofstream Surface_File;
+    string filename = config[ZONE_0]->GetMotion_FileName();
+    Surface_File.open(filename.c_str(), ios::in);
+    
+    /*--- A surface file does not exist, so write a new one for the
+     markers that are specified as part of the motion. ---*/
+    if (Surface_File.fail()) {
+      
+      if (rank == MASTER_NODE)
+        cout << "No surface file found. Writing a new file: " << filename << "." << endl;
+      Surface_File.open(filename.c_str(), ios::out);
+      Surface_File.precision(15);
+      unsigned long iMarker, jPoint, GlobalIndex, iVertex; double *Coords;
+      for (iMarker = 0; iMarker < config[ZONE_0]->GetnMarker_All(); iMarker++) {
+        if (config[ZONE_0]->GetMarker_All_Moving(iMarker) == YES) {
+          for(iVertex = 0; iVertex < geometry[ZONE_0]->nVertex[iMarker]; iVertex++) {
+            jPoint = geometry[ZONE_0]->vertex[iMarker][iVertex]->GetNode();
+            GlobalIndex = geometry[ZONE_0]->node[jPoint]->GetGlobalIndex();
+            Coords = geometry[ZONE_0]->node[jPoint]->GetCoord();
+            Surface_File << GlobalIndex << "\t" << Coords[0] << "\t" << Coords[1];
+            if (geometry[ZONE_0]->GetnDim() == 2) Surface_File << endl;
+            else Surface_File << "\t" << Coords[2] << endl;
+          }
+        }
+      }
+      Surface_File.close();
+      
+      /*--- A surface file exists, so read in the coordinates ---*/
+    } else {
+      Surface_File.close();
+      if (rank == MASTER_NODE)
+        cout << "Updating the surface coordinates from the input file." << endl;
+      surface_mov->SetExternal_Deformation(geometry[ZONE_0], config[ZONE_0], ZONE_0, iExtIter);
+    }
+    
+    /*--- Bump deformation for 2D problems ---*/
+  } else if (geometry[ZONE_0]->GetnDim() == 2) {
 		
 		if (rank == MASTER_NODE) {
 			if (config[ZONE_0]->GetDesign_Variable(0) != NO_DEFORMATION)
@@ -153,6 +199,7 @@ int main(int argc, char *argv[]) {
 		for (unsigned short iDV = 0; iDV < config[ZONE_0]->GetnDV(); iDV++) {
 			switch ( config[ZONE_0]->GetDesign_Variable(iDV) ) {
 				case HICKS_HENNE : surface_mov->SetHicksHenne(geometry[ZONE_0], config[ZONE_0], iDV, false); break;
+				case GAUSS_BUMP : surface_mov->SetGaussBump(geometry[ZONE_0], config[ZONE_0], iDV, false); break;
 				case DISPLACEMENT : surface_mov->SetDisplacement(geometry[ZONE_0], config[ZONE_0], iDV, false); break;
 				case ROTATION : surface_mov->SetRotation(geometry[ZONE_0], config[ZONE_0], iDV, false); break;
 				case NACA_4DIGITS : surface_mov->SetNACA_4Digits(geometry[ZONE_0], config[ZONE_0]); break;
@@ -162,163 +209,118 @@ int main(int argc, char *argv[]) {
         case SURFACE_FILE : surface_mov->SetExternal_Deformation(geometry[ZONE_0], config[ZONE_0], ZONE_0, iExtIter); break;
 			}
 		}
-	}
-  
-	/*--- Free Form deformation or surface file input for 3D problems ---*/
-	if (geometry[ZONE_0]->GetnDim() == 3) {
+    
+    /*--- Free Form deformation or surface file input for 3D problems ---*/
+	} else if (geometry[ZONE_0]->GetnDim() == 3) {
 		
-    if (config[ZONE_0]->GetDesign_Variable(0) == SURFACE_FILE) {
-      
-      /*--- Check whether a surface file exists for input ---*/
-      ofstream Surface_File;
-      string filename = config[ZONE_0]->GetMotion_FileName();
-      Surface_File.open(filename.c_str(), ios::in);
-      
-      /*--- A surface file does not exist, so write a new one for the
-       markers that are specified as part of the motion. ---*/
-      if (Surface_File.fail()) {
-        
-        if (rank == MASTER_NODE)
-          cout << "No surface file found. Writing a new file: " << filename << "." << endl;
-        Surface_File.open(filename.c_str(), ios::out);
-        Surface_File.precision(15);
-        unsigned long iMarker, jPoint, GlobalIndex, iVertex; double *Coords;
-        for (iMarker = 0; iMarker < config[ZONE_0]->GetnMarker_All(); iMarker++) {
-          if (config[ZONE_0]->GetMarker_All_Moving(iMarker) == YES) {
-            for(iVertex = 0; iVertex < geometry[ZONE_0]->nVertex[iMarker]; iVertex++) {
-              jPoint = geometry[ZONE_0]->vertex[iMarker][iVertex]->GetNode();
-              GlobalIndex = geometry[ZONE_0]->node[jPoint]->GetGlobalIndex();
-              Coords = geometry[ZONE_0]->node[jPoint]->GetCoord();
-              Surface_File << GlobalIndex << "\t" << Coords[0] << "\t" << Coords[1];
-              if (geometry[ZONE_0]->GetnDim() == 2) Surface_File << endl;
-              else Surface_File << "\t" << Coords[2] << endl;
-              //else Surface_File << "\t" << Coords[2] + 2.5/30.0*Coords[1] << endl;
-              //cout << Coords[2] << "  " <<  2.5/30.0*Coords[1]<< endl;
-            }
-          }
-        }
-        Surface_File.close();
-        
-        /*--- A surface file exists, so read in the coordinates ---*/
-      } else {
-        Surface_File.close();
-        if (rank == MASTER_NODE)
-          cout << "Updating the surface coordinates from the input file." << endl;
-        surface_mov->SetExternal_Deformation(geometry[ZONE_0], config[ZONE_0], ZONE_0, iExtIter);
-      }
-      
-		} else {
-      
-      if (rank == MASTER_NODE) {
-        if (config[ZONE_0]->GetDesign_Variable(0) != NO_DEFORMATION)
-          cout << "Performing the deformation of the surface grid." << endl;
-        else
-          cout << "No deformation of the surface grid." << endl;
-      }
-      
-      /*--- Read the FFD information fron the grid file ---*/
-      surface_mov->ReadFFDInfo(config[ZONE_0], geometry[ZONE_0], chunk, config[ZONE_0]->GetMesh_FileName());
-      
-      /*--- If the chunk was not defined in the input file ---*/
-      if (!surface_mov->GetChunkDefinition()) {
-        
-        if (rank == MASTER_NODE)
-          cout << endl <<"----------------- FFD technique (cartesian -> parametric) ---------------" << endl;
-        
-        /*--- Create a unitary chunk as baseline for other chunks shapes ---*/
-        CFreeFormChunk chunk_unitary(1,1,1);
-        chunk_unitary.SetUnitCornerPoints();
-        
-        /*--- Compute the control points of the unitary box, in this case the degree is 1 and the order is 2 ---*/
-        chunk_unitary.SetControlPoints_Parallelepiped();
-        
-        for (iChunk = 0; iChunk < surface_mov->GetnChunk(); iChunk++) {
-          /*--- Compute the support control points for the final FFD using the unitary box ---*/
-          chunk_unitary.SetSupportCP(chunk[iChunk]);
-          
-          /*--- Compute control points in the support box ---*/
-          chunk_unitary.SetSupportCPChange(chunk[iChunk]);
-          
-          /*--- Compute the parametric coordinates, it also find the points in
-           the chunk using the parametrics coordinates ---*/
-          surface_mov->SetParametricCoord(geometry[ZONE_0], config[ZONE_0], chunk[iChunk], iChunk);
-          
-        }
-        
-      }
-      
-      /*--- Output original FFD chunk ---*/
-      for (iChunk = 0; iChunk < surface_mov->GetnChunk(); iChunk++) {
-        if(config[ZONE_0]->GetOutput_FileFormat() == PARAVIEW) {
-          sprintf (buffer_char, "original_chunk.vtk");
-          if (iChunk == 0) chunk[iChunk]->SetParaView(buffer_char, true);
-          else chunk[iChunk]->SetParaView(buffer_char, false);
-        }
-        if(config[ZONE_0]->GetOutput_FileFormat() == TECPLOT) {
-          sprintf (buffer_char, "original_chunk.plt");
-          if (iChunk == 0) chunk[iChunk]->SetTecplot(buffer_char, true);
-          else chunk[iChunk]->SetTecplot(buffer_char, false);
-        }
-      }
+    if (rank == MASTER_NODE) {
+      if (config[ZONE_0]->GetDesign_Variable(0) != NO_DEFORMATION)
+        cout << "Performing the deformation of the surface grid." << endl;
+      else
+        cout << "No deformation of the surface grid." << endl;
+    }
+    
+    /*--- Read the FFD information fron the grid file ---*/
+    surface_mov->ReadFFDInfo(config[ZONE_0], geometry[ZONE_0], chunk, config[ZONE_0]->GetMesh_FileName());
+    
+    /*--- If the chunk was not defined in the input file ---*/
+    if (!surface_mov->GetChunkDefinition()) {
       
       if (rank == MASTER_NODE)
-        cout << endl <<"----------------- FFD technique (parametric -> cartesian) ---------------" << endl;
+        cout << endl <<"----------------- FFD technique (cartesian -> parametric) ---------------" << endl;
       
-      /*--- Loop over all the FFD boxes levels ---*/
-      for (iLevel = 0; iLevel < surface_mov->GetnLevel(); iLevel++) {
+      /*--- Create a unitary chunk as baseline for other chunks shapes ---*/
+      CFreeFormChunk chunk_unitary(1,1,1);
+      chunk_unitary.SetUnitCornerPoints();
+      
+      /*--- Compute the control points of the unitary box, in this case the degree is 1 and the order is 2 ---*/
+      chunk_unitary.SetControlPoints_Parallelepiped();
+      
+      for (iChunk = 0; iChunk < surface_mov->GetnChunk(); iChunk++) {
+        /*--- Compute the support control points for the final FFD using the unitary box ---*/
+        chunk_unitary.SetSupportCP(chunk[iChunk]);
         
-        /*--- Loop over all FFD chunks ---*/
-        for (iChunk = 0; iChunk < surface_mov->GetnChunk(); iChunk++) {
+        /*--- Compute control points in the support box ---*/
+        chunk_unitary.SetSupportCPChange(chunk[iChunk]);
+        
+        /*--- Compute the parametric coordinates, it also find the points in
+         the chunk using the parametrics coordinates ---*/
+        surface_mov->SetParametricCoord(geometry[ZONE_0], config[ZONE_0], chunk[iChunk], iChunk);
+        
+      }
+      
+    }
+    
+    /*--- Output original FFD chunk ---*/
+    for (iChunk = 0; iChunk < surface_mov->GetnChunk(); iChunk++) {
+      if(config[ZONE_0]->GetOutput_FileFormat() == PARAVIEW) {
+        sprintf (buffer_char, "original_chunk.vtk");
+        if (iChunk == 0) chunk[iChunk]->SetParaView(buffer_char, true);
+        else chunk[iChunk]->SetParaView(buffer_char, false);
+      }
+      if(config[ZONE_0]->GetOutput_FileFormat() == TECPLOT) {
+        sprintf (buffer_char, "original_chunk.plt");
+        if (iChunk == 0) chunk[iChunk]->SetTecplot(buffer_char, true);
+        else chunk[iChunk]->SetTecplot(buffer_char, false);
+      }
+    }
+    
+    if (rank == MASTER_NODE)
+      cout << endl <<"----------------- FFD technique (parametric -> cartesian) ---------------" << endl;
+    
+    /*--- Loop over all the FFD boxes levels ---*/
+    for (iLevel = 0; iLevel < surface_mov->GetnLevel(); iLevel++) {
+      
+      /*--- Loop over all FFD chunks ---*/
+      for (iChunk = 0; iChunk < surface_mov->GetnChunk(); iChunk++) {
+        
+        /*--- Check the level of the FFD box ---*/
+        if(chunk[iChunk]->GetLevel() == iLevel) {
           
-          /*--- Check the level of the FFD box ---*/
-          if(chunk[iChunk]->GetLevel() == iLevel) {
-            
-            /*--- Compute the parametric coordinates of the child box
-             control points (using the parent chunk)  ---*/
-            for (iChild = 0; iChild < chunk[iChunk]->GetnChildChunk(); iChild++) {
-              ChunkTag = chunk[iChunk]->GetChildChunkTag(iChild);
-              for (jChunk = 0; jChunk < surface_mov->GetnChunk(); jChunk++)
-                if (ChunkTag == chunk[jChunk]->GetTag()) break;
-              surface_mov->SetParametricCoordCP(geometry[ZONE_0], config[ZONE_0], chunk[iChunk], chunk[jChunk]);
-            }
-            
-            /*--- Update the parametric coordinates if it is a child chunk ---*/
-            if (iLevel > 0) surface_mov->UpdateParametricCoord(geometry[ZONE_0], config[ZONE_0], chunk[iChunk], iChunk);
-            
-            /*--- Apply the design variables to the control point position ---*/
-            for (iDV = 0; iDV < config[ZONE_0]->GetnDV(); iDV++) {
-              switch ( config[ZONE_0]->GetDesign_Variable(iDV) ) {
-                case FFD_CONTROL_POINT : surface_mov->SetFFDCPChange(geometry[ZONE_0], config[ZONE_0], chunk[iChunk], iChunk, iDV, false); break;
-                case FFD_DIHEDRAL_ANGLE : surface_mov->SetFFDDihedralAngle(geometry[ZONE_0], config[ZONE_0], chunk[iChunk], iChunk, iDV, false); break;
-                case FFD_TWIST_ANGLE : surface_mov->SetFFDTwistAngle(geometry[ZONE_0], config[ZONE_0], chunk[iChunk], iChunk, iDV, false); break;
-                case FFD_ROTATION : surface_mov->SetFFDRotation(geometry[ZONE_0], config[ZONE_0], chunk[iChunk], iChunk, iDV, false); break;
-                case FFD_CAMBER : surface_mov->SetFFDCamber(geometry[ZONE_0], config[ZONE_0], chunk[iChunk], iChunk, iDV, false); break;
-                case FFD_THICKNESS : surface_mov->SetFFDThickness(geometry[ZONE_0], config[ZONE_0], chunk[iChunk], iChunk, iDV, false); break;
-                case FFD_VOLUME : surface_mov->SetFFDVolume(geometry[ZONE_0], config[ZONE_0], chunk[iChunk], iChunk, iDV, false); break;
-              }
-            }
-            
-            /*--- Recompute cartesian coordinates using the new control point location ---*/
-            surface_mov->SetCartesianCoord(geometry[ZONE_0], config[ZONE_0], chunk[iChunk], iChunk);
-            
-            /*--- Reparametrization of the parent FFD box ---*/
-            for (iParent = 0; iParent < chunk[iChunk]->GetnParentChunk(); iParent++) {
-              ChunkTag = chunk[iChunk]->GetParentChunkTag(iParent);
-              for (jChunk = 0; jChunk < surface_mov->GetnChunk(); jChunk++)
-                if (ChunkTag == chunk[jChunk]->GetTag()) break;
-              surface_mov->UpdateParametricCoord(geometry[ZONE_0], config[ZONE_0], chunk[jChunk], jChunk);
-            }
-            
-            /*--- Compute the new location of the control points of the child boxes
-             (using the parent chunk) ---*/
-            for (iChild = 0; iChild < chunk[iChunk]->GetnChildChunk(); iChild++) {
-              ChunkTag = chunk[iChunk]->GetChildChunkTag(iChild);
-              for (jChunk = 0; jChunk < surface_mov->GetnChunk(); jChunk++)
-                if (ChunkTag == chunk[jChunk]->GetTag()) break;
-              surface_mov->GetCartesianCoordCP(geometry[ZONE_0], config[ZONE_0], chunk[iChunk], chunk[jChunk]);
+          /*--- Compute the parametric coordinates of the child box
+           control points (using the parent chunk)  ---*/
+          for (iChild = 0; iChild < chunk[iChunk]->GetnChildChunk(); iChild++) {
+            ChunkTag = chunk[iChunk]->GetChildChunkTag(iChild);
+            for (jChunk = 0; jChunk < surface_mov->GetnChunk(); jChunk++)
+              if (ChunkTag == chunk[jChunk]->GetTag()) break;
+            surface_mov->SetParametricCoordCP(geometry[ZONE_0], config[ZONE_0], chunk[iChunk], chunk[jChunk]);
+          }
+          
+          /*--- Update the parametric coordinates if it is a child chunk ---*/
+          if (iLevel > 0) surface_mov->UpdateParametricCoord(geometry[ZONE_0], config[ZONE_0], chunk[iChunk], iChunk);
+          
+          /*--- Apply the design variables to the control point position ---*/
+          for (iDV = 0; iDV < config[ZONE_0]->GetnDV(); iDV++) {
+            switch ( config[ZONE_0]->GetDesign_Variable(iDV) ) {
+              case FFD_CONTROL_POINT : surface_mov->SetFFDCPChange(geometry[ZONE_0], config[ZONE_0], chunk[iChunk], iChunk, iDV, false); break;
+              case FFD_DIHEDRAL_ANGLE : surface_mov->SetFFDDihedralAngle(geometry[ZONE_0], config[ZONE_0], chunk[iChunk], iChunk, iDV, false); break;
+              case FFD_TWIST_ANGLE : surface_mov->SetFFDTwistAngle(geometry[ZONE_0], config[ZONE_0], chunk[iChunk], iChunk, iDV, false); break;
+              case FFD_ROTATION : surface_mov->SetFFDRotation(geometry[ZONE_0], config[ZONE_0], chunk[iChunk], iChunk, iDV, false); break;
+              case FFD_CAMBER : surface_mov->SetFFDCamber(geometry[ZONE_0], config[ZONE_0], chunk[iChunk], iChunk, iDV, false); break;
+              case FFD_THICKNESS : surface_mov->SetFFDThickness(geometry[ZONE_0], config[ZONE_0], chunk[iChunk], iChunk, iDV, false); break;
+              case FFD_VOLUME : surface_mov->SetFFDVolume(geometry[ZONE_0], config[ZONE_0], chunk[iChunk], iChunk, iDV, false); break;
             }
           }
           
+          /*--- Recompute cartesian coordinates using the new control point location ---*/
+          surface_mov->SetCartesianCoord(geometry[ZONE_0], config[ZONE_0], chunk[iChunk], iChunk);
+          
+          /*--- Reparametrization of the parent FFD box ---*/
+          for (iParent = 0; iParent < chunk[iChunk]->GetnParentChunk(); iParent++) {
+            ChunkTag = chunk[iChunk]->GetParentChunkTag(iParent);
+            for (jChunk = 0; jChunk < surface_mov->GetnChunk(); jChunk++)
+              if (ChunkTag == chunk[jChunk]->GetTag()) break;
+            surface_mov->UpdateParametricCoord(geometry[ZONE_0], config[ZONE_0], chunk[jChunk], jChunk);
+          }
+          
+          /*--- Compute the new location of the control points of the child boxes
+           (using the parent chunk) ---*/
+          for (iChild = 0; iChild < chunk[iChunk]->GetnChildChunk(); iChild++) {
+            ChunkTag = chunk[iChunk]->GetChildChunkTag(iChild);
+            for (jChunk = 0; jChunk < surface_mov->GetnChunk(); jChunk++)
+              if (ChunkTag == chunk[jChunk]->GetTag()) break;
+            surface_mov->GetCartesianCoordCP(geometry[ZONE_0], config[ZONE_0], chunk[iChunk], chunk[jChunk]);
+          }
         }
       }
       
@@ -340,7 +342,7 @@ int main(int argc, char *argv[]) {
     }
 	}
 	
-  /*--- MPI sincronization point ---*/
+  /*--- MPI syncronization point ---*/
 #ifndef NO_MPI
 	MPI::COMM_WORLD.Barrier();
 #endif
@@ -357,6 +359,7 @@ int main(int argc, char *argv[]) {
 			cout << "Performing the deformation of the volumetric grid." << endl;
 		if (config[ZONE_0]->GetKind_GridDef_Method() == ALGEBRAIC) grid_movement->AlgebraicMethod(geometry[ZONE_0], config[ZONE_0], false);
 		if (config[ZONE_0]->GetKind_GridDef_Method() == SPRING) grid_movement->SpringMethod(geometry[ZONE_0], config[ZONE_0], false);
+		if (config[ZONE_0]->GetKind_GridDef_Method() == FEA) grid_movement->FEAMethod(geometry[ZONE_0], config[ZONE_0], false);
 		if (config[ZONE_0]->GetKind_GridDef_Method() == TORSIONAL_SPRING) grid_movement->TorsionalSpringMethod(geometry[ZONE_0], config[ZONE_0], false);
 	}
 	else {
