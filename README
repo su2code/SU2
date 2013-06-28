@@ -1,0 +1,21 @@
+
+-----------------------------------------------
+  SU^2 PATH SETUP 
+-----------------------------------------------
+
+When make install is complete, please be sure to add the $SU2_HOME and $SU2_RUN environment variables, and update your $PATH with $SU2_RUN. 
+
+For example, add these lines to your .bashrc file -
+
+export SU2_RUN="your_prefix/bin"
+export SU2_HOME="your_SU2v2.0/trunk"
+export PATH=$PATH:$SU2_RUN
+
+$SU2_RUN should point to the folder where all binaries and python scripts were installed.  This is the prefix you set with ./configure -prefix 
+
+$SU2_HOME should point to the source code's trunk folder.  This is (..)/SU2v2.0/trunk
+
+Thanks for building, and happy optimizing!
+- The SU2 Development Team
+  http://su2.stanford.edu
+
