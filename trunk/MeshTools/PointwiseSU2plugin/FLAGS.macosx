@@ -1,0 +1,112 @@
+MACOSX_VERSION_MINOR := $(shell sw_vers | sed -n 's/ProductVersion://p' | cut -d . -f 2)
+MACOSX_VERSION := 10.$(MACOSX_VERSION_MINOR)
+MACOSX_SYSROOT = /Developer/SDKs/MacOSX10.6.sdk
+
+PLUGIN_INSTALL_RELPATH = Pointwise.app/Contents/Plugins
+
+
+#compiler names
+# The *_ALIAS environment variables allow one to specify alternate versions of
+# the GNU compilers on Linux.  For example, 'setenv CXX_ALIAS g++296' allows
+# one to compile with the 2.96 Gnu compilers used in RH 7.2.
+ifeq ($(strip $(CXX_ALIAS)),)
+    CXX := g++
+else
+    CXX := $(CXX_ALIAS)
+endif
+
+ifeq ($(strip $(CC_ALIAS)),)
+    CC := gcc 
+else
+    CC := $(CC_ALIAS)
+endif
+
+CPPFLAGS_COMMON = \
+    -Ddarwin \
+    -D_GNU_SOURCE \
+    -fPIC \
+    -pipe \
+    -mmacosx-version-min=$(MACOSX_VERSION) \
+    -isysroot $(MACOSX_SYSROOT) \
+    $(NULL)
+
+ARCH_FLAGS = \
+    -arch i386 \
+    -arch x86_64 \
+    $(NULL)
+
+
+###################################################
+ifeq ($(BUILD),Release)
+    # optimized compile flags
+    CPPFLAGS = \
+        $(CPPFLAGS_COMMON) \
+        -DNDEBUG \
+        $(NULL)
+        
+    CXXFLAGS = \
+        -x c++ \
+        -fno-rtti \
+        -Os \
+        -c $(CPPFLAGS) \
+        -fmessage-length=0 \
+        -ftree-vectorize \
+        -gdwarf-2 \
+        -Wno-trigraphs \
+        -fpascal-strings \
+        -fasm-blocks \
+        -Wreturn-type \
+        -Wmissing-braces \
+        -Wnewline-eof \
+        $(NULL)
+
+    CFLAGS = \
+        -x c \
+        -Os \
+        -c $(CPPFLAGS) \
+        $(NULL)
+
+else
+
+    # debug compile flags
+    CPPFLAGS = \
+        $(CPPFLAGS_COMMON) \
+        -DDEBUG \
+        -D_DEBUG \
+        $(NULL)
+
+    CXXFLAGS = \
+        -g -c \
+        -x c++ \
+        -fno-rtti \
+        $(CPPFLAGS) \
+        -fmessage-length=0 \
+        -ftree-vectorize \
+        -gdwarf-2 \
+        -Wno-trigraphs \
+        -fpascal-strings \
+        -fasm-blocks \
+        -Wreturn-type \
+        -Wmissing-braces \
+        -Wnewline-eof \
+        $(NULL)
+
+    CFLAGS = \
+        -g -c \
+        -x c \
+        $(CPPFLAGS) \
+        $(NULL)
+endif
+
+STLIB_LD = ar cr
+
+SHLIB_LD = $(CXX) \
+                -Wl,-single_module \
+                -compatibility_version 1 \
+                -current_version 1 \
+                -dynamiclib \
+                -mmacosx-version-min=$(MACOSX_VERSION) \
+                -headerpad_max_install_names \
+                $(NULL)
+
+SHLIB_SUFFIX = dylib

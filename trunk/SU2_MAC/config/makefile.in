@@ -1,0 +1,9 @@
+#
+# Makefile.in for SU2_MAC
+# Platform: Any
+# Author: T. Economon
+# Version: 1.0
+# 
+
+CXX= g++
+CXXFLAGS= -O3 -g -DNO_MPI -DNO_METIS -DNO_OMP -DNO_CGNS

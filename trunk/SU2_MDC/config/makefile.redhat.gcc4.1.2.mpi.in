@@ -1,0 +1,9 @@
+#
+# Makefile.in for SU2_MDC
+# Platform: Any
+# Author: T. Economon
+# Version: 1.0
+# 
+
+CXX = mpicxx
+CXXFLAGS= -O3 -g -DNO_METIS -DNO_OMP -DNO_CGNS

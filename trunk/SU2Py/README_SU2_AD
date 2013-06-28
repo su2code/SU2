@@ -1,0 +1,263 @@
+Automatic Differentiation of SU2 routines:
+-----------------------------------------
+[Tom Taylor - tom.taylor@stanford.edu]
+
+Instructions for differentiating SU2 routines via the files:
+  1 - convert_routines_cpp2c.py
+  2 - differentiate_routines.py
+  3 - convert_routines_c2c.py [debug only] 
+  4 - convert_routines_c2cpp.py
+  5 - insert_routines.py
+
+General information:
+-------------------
+
+1. These python scripts need to be run in this order (1, 2, 4, 5). Eventually the plan is to tie all four routines together into one, removing some of the required manipulation of the scripts. The third routine only exists to create valid C code from Tapenades output, and is only for debugging purposes. To call each routine type:
+    python <script_name.py>
+
+2. Tapenade was originally written for Fortran, and more recently converted to work with C. There are therefore a few subleties in using with C, and this explains some of the steps taken in the python scripts (#defining certain variables, extracting the code from subroutines)
+
+3. The directory structure used by these scripts (that needs to exist) is:
+    $SU2_HOME/SU2_CFD/src/
+                          c_routines/
+                          c_routines_d/
+                          cpp_routines_d/
+
+4. convert_routines_cpp2c.py takes specified C++ routines from the source located in $SU2_HOME/SU2_CFD/src/ and converts them to C routines that are deposited in c_routines/.
+
+5. differentiate_routines.py takes specified C routines located in $SU2_HOME/SU2_CFD/src/c_routines and automatically differentiates them using Tapenade's tangent (forward) mode and deposits them in c_routines_d/.
+
+6. convert_routines_c2c.py takes specified differentiated C routines located in $SU2_HOME/SU2_CFD/src/c_routines_d and converts them into valid C routines that are deposited in c_routines_d/. This is for debugging only
+
+7. convert_routines_c2cpp.py takes specified differentiated C routines located in $SU2_HOME/SU2_CFD/src/c_routines_d and converts them into C++ routines that are deposited in cpp_routines_d/.
+
+8. insert_routines.py takes specified C++ routines located in $SU2_HOME/SU2_CFD/src/cpp_routines_d and inserts them into specified locations in the C++ files located in src/.
+
+9. The usage of these scripts will be demonstrated below using fragments of code. Comment lines that begin //MEANING: (C/C++) or #MEANING: (python) explain what these sections do.
+
+convert_routines_cpp2c.py:
+-------------------------
+- This extracts data according to specific comment lines inserted into the source SU2 C++ code. These comment lines must begin with //SU2_CPP2C and all commands within each comment line must be separated by white space.
+
+- Names of routines and subroutines are found according to the names declared in the //SU2_CPP2C lines, not the actual C++ names. This allows 'overloading' (not acceptable in C) via giving the routines different (temporary) names
+
+- It places some additional comment lines in for use by later scripts.
+
+- To specify which routines to convert in the python script adapt the following lines (located at the bottom of the python script):
+
+...
+# Convert <routine_name> in <routine_location.cpp>
+source_routine = '<routine_name>'
+#MEANING: <routine_name> must be the same as declared in the line in the C++ file //SU2_CPP START <routine_name>
+
+source_location = source_directory + '/' + <routine_location.cpp>'
+#MEANING: <routine_location.cpp> is the file name where <routine_name> is found
+
+convert_cpp2c(source_routine, source_location)
+...
+
+- The usage in the C++ follows this example:
+
+<routine_name>:
+
+void <routine_name>(...)
+{
+//************************************************//
+// Please do not delete //SU2_CPP2C comment lines //
+//************************************************//
+//MEANING: The above warning aims to stop people accidently removing some or all of the //SU2_CPP2C comment lines.
+
+//SU2_CPP2C START <routine_name>
+//MEANING: starts conversion of <routine_name> (changing any '::' to '__' in its name)
+
+//SU2_CPP2C CALL_LIST START
+//MEANING: starts the list of input variables to this function. all vars must be provided identically to in the source function (i.e. if there is a leading '*', this is required)
+
+//SU2_CPP2C INVARS *var1 *var2
+//MEANING: tells the script which variables to treat as independent variables (used in other scripts)
+
+//SU2_CPP2C OUTVARS *var3
+//MEANING: tells the script which variable to treat as dependent variables
+
+//SU2_CPP2C VARS DOUBLE var4
+//MEANING: tells the script about other variables that need to be loaded in. these can be of type DOUBLE or INT
+
+//SU2_CPP2C CALL_LIST END
+//MEANING: closes the list of input variables and outputs the new function declaration
+
+//SU2_CPP2C DEFINE nDim nVar
+//MEANING: adds dummy #define constants to the new <main_routine> that are required in the code. these could be the number of dimensions (e.g. nDim). these will eventually be removed, but are required for Tapenade
+
+//SU2_CPP2C DECL_LIST START
+//MEANING: starts the list of variables/arrays that need to be created to run this function. these are generally those parts of the C++ class structure that do not exist in (non-class) C code
+
+//SU2_CPP2C VARS INT SCALAR var5 var6
+//MEANING: declares variables directly into <main_routine>. these can be of type INT of DOUBLE, and also SCALAR or MATRIX. see below for and example of MATRIX
+
+//SU2_CPP2C VARS DOUBLE MATRIX SIZE=nDim SIZE=nDim var7
+//MEANING: this declares var7 as a nDim x nDim array of doubles
+
+//SU2_CPP2C DECL_LIST END
+//MEANING: closes the list of variables/arrays being declared
+
+...
+C++ code (included)
+...
+
+//SU2_CPP2C COMMENT START
+//MEANING: starts a section that will be commented out (i.e. not included in the converted file).
+
+...
+C++ code (not included)
+...
+
+//SU2_CPP2C COMMENT END
+//MEANING: ends commented section
+
+...
+C++ code (included)
+...
+
+//SU2_CPP2C SUBROUTINE START <sub_routine_name>
+//MEANING: extracts an external subroutine and includes the full code here. actual subroutine call must be between START and END
+<sub_routine_name>(...);
+
+//SU2_CPP2C SUBROUTINE LOCATION file.cpp
+//MEANING: looks for this subroutine (by the name declared above) in file.cpp
+
+//SU2_CPP2C SUBROUTINE VARS var8 var9
+//MEANING: variable names to replace respective variable names in subroutine (when pasting in code). order must be the same as in subroutine
+
+//SU2_CPP2C SUBROUTINE END
+//MEANING: ends extraction of subroutine
+
+...
+C++ code (included)
+...
+
+//SU2_CPP2C END <routine_name>
+//MEANING: ends creation of converted routine
+}
+
+---
+
+<sub_routine_name>:
+
+void <sub_routine_name>(...)
+{
+//************************************************//
+// Please do not delete //SU2_CPP2C comment lines //
+//************************************************//
+
+//SU2_CPP2C SUB START <sub_routine_name>
+//MEANING: start of section of code to extract
+
+//SU2_CPP2C SUB VARS Var8 Var9
+//MEANING: variable names used in subroutine that need to be replaced. order must be the same as in main function
+
+...
+C++
+...
+
+//SU2_CPP2C SUB END <sub_routine_name>
+//MEANING: end of section of code to extract
+}
+
+differentiate_routines.py:
+-------------------------
+- This calls Tapenade to convert a C routine produced by convert_routines_cpp2c.py.
+
+- It uses the forward mode of differentiation.
+
+- Where non-differentiable functions (such as fabs()) are used by the routine, differentiable forms need to be provided.
+
+- To specify which routine to differentiate in the python script adapt the following lines (located at the bottom of the python script):
+
+...
+# Differentiate <routine_name>:
+routine_name = '<routine_name>'
+#MEANING: routine to be differentiated
+
+file_list = ''
+file_list += source_directory + '/' + 'CUpwRoe_Flow__SetResidual.c '
+file_list += source_directory + '/' + 'fabs.c'
+#MEANING: list of files containing source code for the differentiation
+
+invars = ''
+invars += 'U_i' + ' '
+invars += 'U_j' + ' '
+#MEANING: list of independent variables
+
+outvars = ''
+outvars += 'val_residual' + ' '
+#MEANING: list of dependent variables
+
+diff_routine(routine_name, invars, outvars, file_list)
+...
+
+convert_routines_c2c.py: [debug]
+-----------------------
+- This converts a routine differentiated by Tapenade into one that is valid C, stripping out some of the adaptations needed to run Tapenade.
+
+- To specify which routine to convert in the python script adapt the following lines (located at the bottom of the python script):
+
+...
+# Convert <routine_name>
+source_routine = '<routine_name>'
+#MEANING: routine to be converted to valid C. to compile this it will require #defines of the variables added back in.
+
+convert_c2c(source_routine)
+...
+
+convert_routines_c2cpp.py:
+-------------------------
+- This converts a C routine differentiated by Tapenade into one that is valid C++, stripping out some of the adaptations needed to run Tapenade, and the variables declarations that should come from the class structure.
+
+- To specify which routine to convert in the python script adapt the following lines (located at the bottom of the python script):
+
+...
+# Convert <routine_name>
+source_routine = 'CUpwRoe_Flow__SetResidual'
+#MEANING: routine to be converted to C++
+
+convert_c2cpp(source_routine)
+...
+
+
+
+insert_routines.py:
+------------------
+- This inserts a differentiated C++ routine into the correct location in the SU2 source code.
+
+- Required declarations of class variables must be done by hand.
+
+- To specify which routine to insert and where to insert it, in the python script adapt the following lines (located at the bottom of the python script):
+
+...
+
+# Insert <routine_name>
+source_routine = '<routine_name>'
+//MEANING: name of routine to be copied
+
+target_routine = '<routine_name>'
+//MEANING: name of location where routine is to be pasted
+
+target_file = '<target_location.cpp>'
+//MEANING: file where routine is to be pasted
+
+insert_routine(source_routine, target_routine, target_file)
+...
+
+- The usage in the C++ file where this routine will be inserted follows this example:
+
+...
+//************************************************//
+// Please do not delete //SU2_DIFF comment lines //
+//************************************************//
+
+//SU2_DIFF START CUpwRoe_Flow__SetResidual
+//MEANING: start of section where code is to be pasted
+
+//SU2_DIFF END CUpwRoe_Flow__SetResidual
+//MEANING: end of section where code is to be pasted
+...

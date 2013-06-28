@@ -1,0 +1,10 @@
+#!/bin/sh
+########################################################################
+# Pointwise - Proprietary software product of Pointwise, Inc.
+#           Copyright (c) 1995-2009 Pointwise, Inc.
+#           All rights reserved.
+#
+# Plugin SDK, create plugin project sh-script
+########################################################################
+
+tclsh mkplugin.tcl $*
