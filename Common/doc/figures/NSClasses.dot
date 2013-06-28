@@ -1,0 +1,87 @@
+digraph CADES_CFD_RANS {
+	Main [shape=box, fontsize=10, label = "SU2_CFD (classes for a 2D explicit, upwind, RANS' simulation)", style=rounded];
+	
+	CConfig [shape=box, fontsize=6, color=blue];
+
+	COutput [shape=box, fontsize=6, color=blue];
+
+	CGeometry [shape=box, fontsize=6, color=blue];
+	CPhysicalGeometry [color=green];
+	subgraph CGeometry {
+		 CGeometry -> CPhysicalGeometry;
+	}
+
+	CDualGrid [shape=box, fontsize=6, color=blue];
+	CEdge [color=green];
+	CPoint [color=green];
+	CVertex [color=green];
+	subgraph CDualGrid {
+		CDualGrid -> CEdge
+		CDualGrid -> CPoint
+		CDualGrid -> CVertex
+	}
+
+	CPrimalGrid [shape=box, fontsize=6, color=blue];
+	CRectangle [fontsize=6, color=green];
+	CTriangle [fontsize=6, color=green];
+	CLine [fontsize=6, color=green];
+	subgraph CPrimalGrid {
+		 CPrimalGrid  -> CRectangle
+		 CPrimalGrid  -> CTriangle
+		 CPrimalGrid  -> CLine
+	}
+
+	CIntegration [shape=box, fontsize=6, color=blue];
+	CSingleGridIntegration [fontsize=6, color=green];
+	subgraph CIntegration {
+		CIntegration -> CSingleGridIntegration;
+	}
+
+	CSolution [shape=box, fontsize=6, color=blue];
+	CEulerSolution [fontsize=6, color=green];
+	CNSSolution [fontsize=6, color=green];
+	CTurbSolution [fontsize=6, color=green];
+	subgraph CSolution {
+		 CSolution -> CEulerSolution;
+		 CEulerSolution -> CNSSolution;
+		 CSolution -> CTurbSolution;
+	}
+
+	CVariable [shape=box, fontsize=6, color=blue];
+	CEulerVariable [fontsize=6, color=green];
+	CNSVariable [fontsize=6, color=green];
+	CTurbVariable [fontsize=6, color=green];
+	subgraph CVariable {	
+		CVariable -> CEulerVariable
+		CEulerVariable -> CNSVariable
+		CVariable -> CTurbVariable
+	}
+
+	CNumerics [shape=box, fontsize=6, color=blue];
+	CUpwRoeFlow [fontsize=6, color=green];
+	CDivergenceWeissFlow [fontsize=6, color=green];
+	CUpwScaTurb [fontsize=6, color=green];
+	CSourcePieceWiseTurb [fontsize=6, color=green];
+	CDivergenceWeissTurb [fontsize=6, color=green];
+	subgraph CNumerics {
+		 CNumerics -> CUpwRoeFlow;
+		 CNumerics -> CDivergenceWeissFlow;
+		 CNumerics -> CUpwScaTurb;
+		 CNumerics -> CSourcePieceWiseTurb;
+		 CNumerics -> CDivergenceWeissTurb;
+	}
+
+	CPhysicalGeometry  -> CDualGrid [style=dotted];
+	CPhysicalGeometry  -> CPrimalGrid [style=dotted];
+
+	CNSSolution -> CVariable [style=dotted];
+	CTurbSolution -> CVariable [style=dotted];
+
+	CSingleGridIntegration -> CGeometry [style=dotted];
+	CSingleGridIntegration -> CSolution [style=dotted];
+	CSingleGridIntegration -> CNumerics [style=dotted];
+
+	Main -> CConfig [style=dotted];
+	Main -> CIntegration [style=dotted];
+	Main -> COutput [style=dotted];
+}

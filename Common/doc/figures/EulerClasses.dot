@@ -1,0 +1,77 @@
+digraph CADES_CFD_Euler {
+	Main [shape=box, label = "SU2_CFD (classes for a 3D implicit, centered, multigrid Euler's simulation)", style=rounded];
+	
+	CConfig [shape=box, color=blue];
+
+	COutput [shape=box, color=blue];
+
+	CSparseMatrix	[shape=box, color=blue];
+
+	CGeometry [shape=box, color=blue];
+	CPhysicalGeometry [color=green];
+	CMultigridGeometry [color=green];
+	subgraph CGeometry {
+		CGeometry -> CPhysicalGeometry;
+		CGeometry -> CMultigridGeometry;
+	}
+
+	CDualGrid [shape=box, color=blue];
+	CEdge [color=green];
+	CPoint [color=green];
+	CVertex [color=green];
+	subgraph CDualGrid {
+		CDualGrid -> CEdge
+		CDualGrid -> CPoint
+		CDualGrid -> CVertex
+	}
+
+	CPrimalGrid [shape=box, color=blue];
+	CTetrahedron [color=green];
+	CTriangle [color=green];
+	subgraph CPrimalGrid {
+		 CPrimalGrid  -> CTetrahedron
+		 CPrimalGrid  -> CTriangle
+	}
+
+	CIntegration [shape=box, color=blue];
+	CMultiGridIntegration [color=green];
+	subgraph CIntegration {
+		CIntegration -> CMultiGridIntegration;
+	}
+
+	CSolution [shape=box, color=blue];
+	CEulerSolution [color=green];
+	subgraph CSolution {
+		 CSolution -> CEulerSolution;
+	}
+
+	CVariable [shape=box, color=blue];
+	CEulerVariable [color=green];
+	subgraph CVariable {	
+		CVariable -> CEulerVariable
+	}
+
+	CNumerics [shape=box, color=blue];
+	CCentJSTFlow [color=green];
+	CCentLaxFlow [color=green];
+	subgraph CNumerics {
+		 CNumerics -> CCentJSTFlow;
+		 CNumerics -> CCentLaxFlow;
+	}
+
+	CPhysicalGeometry  -> CDualGrid [style=dotted];
+	CPhysicalGeometry  -> CPrimalGrid [style=dotted];
+	CMultigridGeometry  -> CDualGrid [style=dotted];
+
+	CEulerSolution -> CVariable [style=dotted];
+
+	CMultiGridIntegration -> CGeometry [style=dotted];
+	CMultiGridIntegration -> CSolution [style=dotted];
+	CMultiGridIntegration -> CNumerics [style=dotted];
+
+	CEulerSolution -> CSparseMatrix [style=dotted];
+
+	Main -> CConfig [style=dotted];
+	Main -> CIntegration [style=dotted];
+	Main -> COutput [style=dotted];
+}
