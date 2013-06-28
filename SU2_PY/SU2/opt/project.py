@@ -3,7 +3,7 @@
 ## \file project.py
 #  \brief package for optimization projects
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.4
+#  \version 2.0.5
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -31,6 +31,9 @@ from .. import io   as su2io
 from .. import eval as su2eval
 from .. import util as su2util
 from ..io import redirect_folder
+
+from warnings import warn, simplefilter
+#simplefilter(Warning,'ignore')
 
 inf = 1.0e20
 
@@ -82,7 +85,7 @@ class Project(object):
     """  
     
     _design_folder = 'DESIGNS/DSN_*'
-    _design_number = '%3d'
+    _design_number = '%03d'
     
     
     def __init__( self, config, state=None , 
@@ -97,7 +100,7 @@ class Project(object):
         
         config = copy.deepcopy(config)
         state  = copy.deepcopy(state)
-        state  = su2io.state.default_state(state)
+        state  = su2io.State(state)
         state.find_files(config)
         
         self.config  = config      # base config
@@ -108,8 +111,8 @@ class Project(object):
         self.results = su2util.ordered_bunch() # project design results
         
         # output filenames
-        self.project_file = 'project.pkl' 
-        self.results_file = 'results.pkl' 
+        self.filename = 'project.pkl' 
+        self.results_filename = 'results.pkl' 
         
         # initialize folder with files
         pull,link = state.pullnlink(config)
@@ -126,7 +129,7 @@ class Project(object):
             #: if existing designs
             
             # save project
-            su2io.save_data(self.project_file,self)
+            su2io.save_data(self.filename,self)
             
         return
     
@@ -139,7 +142,7 @@ class Project(object):
         state  = self.state            # project state
         folder = self.folder           # project folder
         
-        project_file = self.project_file
+        filename = self.filename
         
         # check folder
         assert os.path.exists(folder) , 'cannot find project folder %s' % folder        
@@ -150,20 +153,27 @@ class Project(object):
         # project folder redirection, don't overwrite files
         with redirect_folder(folder,pull,link,force=False) as push:        
         
-            # state design
+            # start design
             design = self.new_design(konfig)
+            print os.path.join(self.folder,design.folder)
+            timestamp = design.state.tic()
             
-            # run design
+            # run design+
             vals = design._eval(func,*args)
-                        
-            # recompile design results
-            self.compile_results()
             
-            # plot results
-            self.plot_results()
-            
-            # save project
-            su2io.save_data(project_file,self)
+            # check for update
+            if design.state.toc(timestamp):
+                
+                # recompile design results
+                self.compile_results()
+                
+                # plot results
+                self.plot_results()
+
+                # save data
+                su2io.save_data(filename,self)
+                
+            #: if updated
             
         #: with redirect folder
         
@@ -220,7 +230,12 @@ class Project(object):
     def user(self,user_func,config,*args):
         raise NotImplementedError
         #return self._eval(config, user_func,*args) 
-        
+    
+    def add_design(self,config):
+        #func = su2eval.touch # hack - TWL
+        func = su2eval.skip 
+        konfig = copy.deepcopy(config)
+        return self._eval(konfig, func)
         
     def new_design(self,config):
         """ finds an existing design for given config
@@ -280,6 +295,7 @@ class Project(object):
     
     def init_design(self,config,closest=None):
         """ starts a new design
+            works in project folder
         """
         
         konfig = copy.deepcopy(config)
@@ -299,11 +315,15 @@ class Project(object):
                 name = os.path.join(seed_folder,name)
                 # update pull files
                 ztate.FILES[key] = name
+            
+        # name new folder
+        folder = self._design_folder.replace('*',self._design_number)
+        folder = folder % (len(self.designs) + 1)
 
         # start new design (pulls files to folder)
-        design = su2eval.Design(konfig,ztate)
+        design = su2eval.Design(konfig,ztate,folder)
         
-        # update local state filenames
+        # update local state filenames ( ??? why not in Design() )
         for key in design.files:
             name = design.files[key]
             name = os.path.split(name)[-1]
@@ -336,7 +356,7 @@ class Project(object):
         results = su2io.State()
         results.VARIABLES = []
         del results.FILES
-        results_file = self.results_file
+        filename = self.results_filename
         
         n_dv = 0
         
@@ -358,7 +378,7 @@ class Project(object):
                 n_dv = this_ndv
             else:
                 if n_dv != this_ndv:
-                    print 'warning - different dv vector length during compile_results()'
+                    warn('different dv vector length during compile_results()')
         #: for each design
             
         # populate results
@@ -388,9 +408,28 @@ class Project(object):
         
         # save
         self.results = results
-        su2io.save_data(results_file,results)
+        su2io.save_data(filename,results)
             
         return self.results
+    
+    def deep_compile(self):
+        """ Project.deep_compile()
+            recompiles project using design files saved in each design folder
+            useful if designs were run outside of project class
+        """
+        
+        project_folder = self.folder
+        designs = self.designs
+        
+        with su2io.redirect_folder(project_folder):
+            for i_dsn,design in enumerate(designs):
+                design_filename = os.path.join(design.folder,design.filename)
+                self.designs[i_dsn] = su2io.load_data(design_filename)
+            
+            self.compile_results()
+            su2io.save_data(self.filename,self)
+            
+        return
     
     def plot_results(self):
         """ writes a tecplot file for plotting design results
@@ -405,6 +444,11 @@ class Project(object):
         results_plot.update(history.get('DIRECT',{}))
         
         su2util.write_plot('history_project.plt',output_format,results_plot)
+        
+        
+    def save(self):
+        with su2io.redirect_folder(self.folder):
+            su2io.save_data(self.filename,self)
         
     def __repr__(self):
         return '<Project> with %i <Design>' % len(self.designs)

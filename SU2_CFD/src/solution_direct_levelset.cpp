@@ -2,7 +2,7 @@
  * \file solution_direct_levelset.cpp
  * \brief Main subrotuines for solving the level set problem.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -90,7 +90,7 @@ CLevelSetSolution::CLevelSetSolution(CGeometry *geometry, CConfig *config, unsig
       /*--- Initialization of the structure of the whole Jacobian ---*/
       if (rank == MASTER_NODE) cout << "Initialize jacobian structure (Level Set). MG level: 0." << endl;
       Initialize_SparseMatrix_Structure(&Jacobian, nVar, nVar, geometry, config);
-//      Initialize_SparseMatrix_Structure(&JacobianMeanFlow, nDim+1, nDim+1, geometry, config);
+
       xsol = new double [geometry->GetnPoint()*nVar];
       rhs = new double [geometry->GetnPoint()*nVar];
       
@@ -376,7 +376,6 @@ void CLevelSetSolution::Preprocessing(CGeometry *geometry, CSolution **solution_
 	/*--- Implicit part ---*/
 	if (implicit) {
     Jacobian.SetValZero();
-//    JacobianMeanFlow.SetValZero();
   }
 
   if (high_order_diss) {
@@ -385,6 +384,21 @@ void CLevelSetSolution::Preprocessing(CGeometry *geometry, CSolution **solution_
     if (limiter) SetSolution_Limiter(geometry, config);
 	}
   
+}
+
+void CLevelSetSolution::Postprocessing(CGeometry *geometry, CSolution **solution_container, CConfig *config,
+                                       unsigned short iMesh) {
+  bool output, reevaluation;
+
+  /*--- Compute level set function using the distance to the free surface ---*/
+  if (config->GetIntIter() == 0) output = true;
+  else output = false;
+  
+  if (config->GetIntIter() % config->GetFreeSurface_Reevaluation() == 0) reevaluation = true;
+  else reevaluation = false;
+  
+  SetLevelSet_Distance(geometry, config, reevaluation, output);
+    
 }
 
 void CLevelSetSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short iMesh) {
@@ -450,11 +464,6 @@ void CLevelSetSolution::Upwind_Residual(CGeometry *geometry, CSolution **solutio
 			Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
 			Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
 			Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
-      
-//      JacobianMeanFlow.AddBlock(iPoint, iPoint, Jacobian_MeanFlow_i);
-//			JacobianMeanFlow.AddBlock(iPoint, jPoint, Jacobian_MeanFlow_j);
-//			JacobianMeanFlow.SubtractBlock(jPoint, iPoint, Jacobian_MeanFlow_i);
-//			JacobianMeanFlow.SubtractBlock(jPoint, jPoint, Jacobian_MeanFlow_j);
 		}
 	}
 }
@@ -490,156 +499,13 @@ void CLevelSetSolution::Source_Residual(CGeometry *geometry, CSolution **solutio
 }
 
 void CLevelSetSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short val_marker) {
-	unsigned long iPoint, iVertex, Point_Normal;
-	unsigned short iVar, iDim;
-	double *V_domain, *V_wall, *V_mirror, *LevelSet_domain, *LevelSet_wall, *LevelSet_mirror, Density_domain, Density_wall, Density_mirror;
-	
-	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-	
-	V_domain = new double[nDim+1];
-	V_wall = new double[nDim+1];
-  V_mirror = new double[nDim+1];
-  
-	LevelSet_domain = new double[1];
-	LevelSet_wall = new double[1];
-  LevelSet_mirror = new double[1];
-  
-	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    
-		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-    
-		/*--- If the node belong to the domain ---*/
-		if (geometry->node[iPoint]->GetDomain()) {
-      
-			for (iVar = 0; iVar < nDim+1; iVar++) {
-				V_domain[iVar] = solution_container[FLOW_SOL]->node[Point_Normal]->GetPrimVar(iVar);
-				V_wall[iVar] = solution_container[FLOW_SOL]->node[iPoint]->GetPrimVar(iVar);
-        V_mirror[iVar] = 2.0*V_wall[iVar] - V_domain[iVar];
-			}
-      
-      Density_domain = solution_container[FLOW_SOL]->node[Point_Normal]->GetDensityInc();
-			Density_wall = solution_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
-      Density_mirror = 2.0*Density_wall - Density_domain;
-      
-			LevelSet_domain[0] = node[Point_Normal]->GetSolution(0);
-			LevelSet_wall[0] = node[iPoint]->GetSolution(0);
-      LevelSet_mirror[0] = 2.0*LevelSet_wall[0] - LevelSet_domain[0];
-      
-			/*--- Set the normal vector ---*/
-			geometry->vertex[val_marker][iVertex]->GetNormal(Vector);
-			for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = -Vector[iDim];
-			solver->SetNormal(Vector);
-			
-			solver->SetPrimitive(V_wall, V_wall);
-			solver->SetLevelSetVar(LevelSet_wall, LevelSet_wall);
-      solver->SetResidual(Residual, Jacobian_i, Jacobian_j, Jacobian_MeanFlow_i, Jacobian_MeanFlow_j, config);
-			
-			node[iPoint]->AddRes_Conv(Residual);
-			
-			if (implicit) {
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-//        JacobianMeanFlow.AddBlock(iPoint, iPoint, Jacobian_MeanFlow_i);
-      }
-			
-		}
-	}
-  
-  delete[] V_domain;
-  delete[] V_wall;
-  delete[] V_mirror;
-  delete[] LevelSet_domain;
-  delete[] LevelSet_wall;
-  delete[] LevelSet_mirror;
 }
 
 void CLevelSetSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver,
 																		 CConfig *config, unsigned short val_marker) {
-	unsigned long iPoint, iVertex, Point_Normal;
-	unsigned short iVar, iDim;
-	double *V_domain, *V_wall, *V_mirror, *LevelSet_domain, *LevelSet_wall, *LevelSet_mirror, Density_domain, Density_wall, Density_mirror;
-	
-	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-	
-	V_domain = new double[nDim+1];
-	V_wall = new double[nDim+1];
-  V_mirror = new double[nDim+1];
-  
-	LevelSet_domain = new double[1];
-	LevelSet_wall = new double[1];
-  LevelSet_mirror = new double[1];
-  
-	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    
-		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-    
-		/*--- If the node belong to the domain ---*/
-		if (geometry->node[iPoint]->GetDomain()) {
-      
-			for (iVar = 0; iVar < nDim+1; iVar++) {
-				V_domain[iVar] = solution_container[FLOW_SOL]->node[Point_Normal]->GetPrimVar(iVar);
-				V_wall[iVar] = solution_container[FLOW_SOL]->node[iPoint]->GetPrimVar(iVar);
-        V_mirror[iVar] = 2.0*V_wall[iVar] - V_domain[iVar];
-			}
-      
-      Density_domain = solution_container[FLOW_SOL]->node[Point_Normal]->GetDensityInc();
-			Density_wall = solution_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
-      Density_mirror = 2.0*Density_wall - Density_domain;
-      
-			LevelSet_domain[0] = node[Point_Normal]->GetSolution(0);
-			LevelSet_wall[0] = node[iPoint]->GetSolution(0);
-      LevelSet_mirror[0] = 2.0*LevelSet_wall[0] - LevelSet_domain[0];
-      
-			/*--- Set the normal vector ---*/
-			geometry->vertex[val_marker][iVertex]->GetNormal(Vector);
-			for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = -Vector[iDim];
-			conv_solver->SetNormal(Vector);
-			
-			conv_solver->SetPrimitive(V_wall, V_wall);
-			conv_solver->SetLevelSetVar(LevelSet_wall, LevelSet_wall);
-      conv_solver->SetResidual(Residual, Jacobian_i, Jacobian_j, Jacobian_MeanFlow_i, Jacobian_MeanFlow_j, config);
-			
-			node[iPoint]->AddRes_Conv(Residual);
-			
-			if (implicit) {
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-//        JacobianMeanFlow.AddBlock(iPoint, iPoint, Jacobian_MeanFlow_i);
-      }
-			
-		}
-	}
-  
-  delete[] V_domain;
-  delete[] V_wall;
-  delete[] V_mirror;
-  delete[] LevelSet_domain;
-  delete[] LevelSet_wall;
-  delete[] LevelSet_mirror;
 }
 
-void CLevelSetSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short val_marker) {
-	unsigned long iPoint, iVertex;
-	unsigned short iVar;
-	
-	bool implicit = (config->GetKind_TimeIntScheme_LevelSet() == EULER_IMPLICIT);
-	
-	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-		
-		/*--- Set the solution to the original value ---*/
-		for (iVar = 0; iVar < nVar; iVar++)
-			Solution[iVar] = node[iPoint]->GetSolution(0);
-		
-		node[iPoint]->SetSolution_Old(Solution);
-		node[iPoint]->SetResidualZero();
-		node[iPoint]->Set_ResConv_Zero();
-		node[iPoint]->Set_ResSour_Zero();
-
-		/*--- Includes 1 in the diagonal ---*/
-		if (implicit)
-			Jacobian.DeleteValsRowi(iPoint);
-	}
+void CLevelSetSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
 }
 
 void CLevelSetSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
@@ -693,8 +559,12 @@ void CLevelSetSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_conta
         V_mirror[iVar] = 2.0*V_wall[iVar] - V_domain[iVar];
 			}
       
-			LevelSet_domain[0] = node[Point_Normal]->GetSolution(0);
-			LevelSet_wall[0] = node[iPoint]->GetSolution(0);
+//			LevelSet_domain[0] = node[Point_Normal]->GetSolution(0);
+//			LevelSet_wall[0] = node[iPoint]->GetSolution(0);
+//      LevelSet_mirror[0] = 2.0*LevelSet_wall[0] - LevelSet_domain[0];
+
+      LevelSet_domain[0] = node[iPoint]->GetSolution(0);
+			LevelSet_wall[0] = node[iPoint]->GetPrimVar(0);
       LevelSet_mirror[0] = 2.0*LevelSet_wall[0] - LevelSet_domain[0];
       
 			/*--- Set the normal vector ---*/
@@ -703,14 +573,14 @@ void CLevelSetSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_conta
 			conv_solver->SetNormal(Vector);
 			
 			conv_solver->SetPrimitive(V_wall, V_wall);
-			conv_solver->SetLevelSetVar(LevelSet_wall, LevelSet_wall);
+      
+			conv_solver->SetLevelSetVar(LevelSet_domain, LevelSet_wall);
       conv_solver->SetResidual(Residual, Jacobian_i, Jacobian_j, Jacobian_MeanFlow_i, Jacobian_MeanFlow_j, config);
 			
 			node[iPoint]->AddRes_Conv(Residual);
 			
 			if (implicit) {
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-//        JacobianMeanFlow.AddBlock(iPoint, iPoint, Jacobian_MeanFlow_i);
       }
 			
 		}
@@ -727,7 +597,7 @@ void CLevelSetSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_conta
 void CLevelSetSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
 	unsigned long iPoint, iVertex, Point_Normal;
 	unsigned short iVar, iDim;
-	double *V_domain, *V_wall, *V_mirror, *LevelSet_domain, *LevelSet_wall, *LevelSet_mirror, Density_domain, Density_wall, Density_mirror;
+	double *V_domain, *V_wall, *V_mirror, *LevelSet_domain, *LevelSet_wall, *LevelSet_mirror;
 	
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 	
@@ -753,10 +623,6 @@ void CLevelSetSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_cont
         V_mirror[iVar] = 2.0*V_wall[iVar] - V_domain[iVar];
 			}
       
-      Density_domain = solution_container[FLOW_SOL]->node[Point_Normal]->GetDensityInc();
-			Density_wall = solution_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
-      Density_mirror = 2.0*Density_wall - Density_domain;
-      
 			LevelSet_domain[0] = node[Point_Normal]->GetSolution(0);
 			LevelSet_wall[0] = node[iPoint]->GetSolution(0);
       LevelSet_mirror[0] = 2.0*LevelSet_wall[0] - LevelSet_domain[0];
@@ -775,7 +641,6 @@ void CLevelSetSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_cont
 			
 			if (implicit) {
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-//        JacobianMeanFlow.AddBlock(iPoint, iPoint, Jacobian_MeanFlow_i);
       }
 			
 		}
@@ -796,9 +661,6 @@ void CLevelSetSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution *
 	/*--- Set maximum residual to zero ---*/
 	SetRes_RMS(0, 0.0);
   SetRes_Max(0, 0.0, 0);
-	
-//  /*--- Compute implicit term that comes from the mean flow jacobian ---*/
-//  JacobianMeanFlow.MatrixVectorProduct(solution_container[FLOW_SOL]->xsol, solution_container[FLOW_SOL]->rhs);
   
 	/*--- Build implicit system ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
@@ -892,8 +754,7 @@ void CLevelSetSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution *
 void CLevelSetSolution::SetLevelSet_Distance(CGeometry *geometry, CConfig *config, bool Initialization, bool WriteLevelSet) {
 	double *coord = NULL, dist2, *iCoord = NULL, *jCoord = NULL, *U_i = NULL, *U_j = NULL,
   **Coord_LevelSet = NULL, *xCoord = NULL, *yCoord = NULL, *zCoord = NULL, auxCoordx, auxCoordy,
-  auxCoordz, FreeSurface,
-  volume, LevelSetDiff_Squared, LevelSetDiff, dist;
+  auxCoordz, FreeSurface, volume, LevelSetDiff_Squared, LevelSetDiff, dist, Min_dist;
 	unsigned short iDim;
 	unsigned long iPoint, jPoint, iVertex, jVertex, nVertex_LevelSet, iEdge;
 	ifstream index_file;
@@ -1012,18 +873,31 @@ void CLevelSetSolution::SetLevelSet_Distance(CGeometry *geometry, CConfig *confi
     /*--- Get coordinates of the points and compute distances to the surface ---*/
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
       coord = geometry->node[iPoint]->GetCoord();
-      /*--- Compute the squared distance to the rest of points, and get the minimum ---*/
-      dist = 1E20;
+      
+      /*--- Compute the min distance ---*/
+      Min_dist = 1E20;
+      //double Ydist; double Xdist;
       for (iVertex = 0; iVertex < nVertex_LevelSet; iVertex++) {
+        
         dist2 = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
           dist2 += (coord[iDim]-Coord_LevelSet[iVertex][iDim])*(coord[iDim]-Coord_LevelSet[iVertex][iDim]);
-        if (dist2 < dist) dist = dist2;
+        dist = sqrt(dist2);
+        if (dist < Min_dist) { Min_dist = dist; }
+
+//        Xdist = abs((coord[0]-Coord_LevelSet[iVertex][0]));
+//        if (Xdist < Min_dist) { Min_dist = Xdist; Ydist = abs((coord[1]-Coord_LevelSet[iVertex][1])); }
+        
       }
+      
+      /*--- Compute the sign using the current solution ---*/
       double NumberSign = 1.0;
       if (node[iPoint]->GetSolution(0) != 0.0)
         NumberSign = node[iPoint]->GetSolution(0)/fabs(node[iPoint]->GetSolution(0));
-      node[iPoint]->SetSolution(0, sqrt(dist)*NumberSign);
+      
+      /*--- Store the value of the primitive variable ---*/
+//      node[iPoint]->SetPrimVar(0, Min_dist*NumberSign);
+      node[iPoint]->SetSolution(0, Min_dist*NumberSign);
     }
     
   }
@@ -1096,7 +970,10 @@ void CLevelSetSolution::SetLevelSet_Distance(CGeometry *geometry, CConfig *confi
     }
     
     /*--- Store the value of the free surface coefficient ---*/
-    SetTotal_CFreeSurface(FreeSurface);
+    if (config->GetExtIter() < 50) SetTotal_CFreeSurface(FreeSurface);
+    else { if ( FreeSurface < GetTotal_CFreeSurface() ) SetTotal_CFreeSurface(FreeSurface); }
+    
+//    SetTotal_CFreeSurface(FreeSurface);
     
     delete [] xCoord;
     delete [] yCoord;

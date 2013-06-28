@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>geometry_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -57,7 +57,7 @@ using namespace std;
  * \brief Parent class for defining the geometry of the problem (complete geometry, 
  *        multigrid agglomerated geometry, only boundary geometry, etc..)
  * \author F. Palacios.
- * \version 2.0.4
+ * \version 2.0.5
  */
 class CGeometry {
 protected:
@@ -95,6 +95,7 @@ protected:
 	nZone,								/*!< \brief Number of zones in the problem. */
 	nMarker;				/*!< \brief Number of different markers of the mesh. */
 	bool FinestMGLevel; /*!< \brief Indicates whether the geometry class contains the finest (original) multigrid mesh. */
+  unsigned long Max_GlobalPoint;  /*!< \brief Greater global point in the domain local structure. */
 
 public:
 	unsigned long *nElem_Bound_Storage;	/*!< \brief Storage capacity for ParaView format (boundaries, for each marker). */ 
@@ -173,6 +174,12 @@ public:
 	 */
 	unsigned long GetnPointDomain(void);
 
+  /*!
+	 * \brief Get number of elements.
+	 * \return Number of elements.
+	 */
+	unsigned long GetnLine(void);
+  
 	/*! 
 	 * \brief Get number of elements.
 	 * \return Number of elements.
@@ -310,6 +317,11 @@ public:
 	 */	
 	unsigned long GetnElem_Storage(void);
 
+  /*!
+	 * \brief Get the number of elements in vtk fortmat.
+	 */
+	unsigned long GetMax_GlobalPoint(void);
+  
 	/*!
 	 * \brief Get boolean for whether this is the finest (original) multigrid mesh level.
 	 * \return <code>TRUE</code> if this is the finest multigrid mesh level; otherwise <code>FALSE</code>.
@@ -475,7 +487,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_domain - Number of domains for parallelization purposes.		 
 	 */
-	virtual void SetSendReceive(CConfig *config, unsigned short val_domain);
+	virtual void SetSendReceive(CConfig *config);
 
 	/*! 
 	 * \brief A virtual member.
@@ -599,18 +611,32 @@ public:
   /*!
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
+   * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
+   * \returns The maximum value of the airfoil thickness.
 	 */
 	virtual double GetMaxThickness(CConfig *config, bool original_surface);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] config - Definition of the particular problem.
+   * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
+   * \returns The minimum value of the airfoil thickness.
+	 */
+	virtual double GetMinThickness(CConfig *config, bool original_surface);
 	
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
+   * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
+   * \returns The total volume of the airfoil.
 	 */
 	virtual double GetTotalVolume(CConfig *config, bool original_surface);
   
   /*!
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
+   * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
+   * \returns The clearance height of the airfoil.
 	 */
 	virtual double GetClearance(CConfig *config, bool original_surface);
 	
@@ -654,6 +680,12 @@ public:
   
   /*!
 	 * \brief A virtual member.
+	 * \returns Total number of line elements in a simulation across all processors.
+	 */
+	virtual unsigned long GetGlobal_nElemLine();
+  
+  /*!
+	 * \brief A virtual member.
 	 * \returns Total number of triangular elements in a simulation across all processors.
 	 */
 	virtual unsigned long GetGlobal_nElemTria();
@@ -687,6 +719,12 @@ public:
 	 * \returns Total number of pyramid elements in a simulation across all processors.
 	 */
 	virtual unsigned long GetGlobal_nElemPyra();
+  
+  /*!
+	 * \brief A virtual member.
+	 * \return Number of line elements.
+	 */
+	virtual unsigned long GetnElemLine();
   
   /*!
 	 * \brief A virtual member.
@@ -781,7 +819,7 @@ public:
  * \brief Class for reading a defining the primal grid which is read from the 
  *        grid file in .su2 format.
  * \author F. Palacios.
- * \version 2.0.4
+ * \version 2.0.5
  */
 class CPhysicalGeometry : public CGeometry {
 
@@ -809,6 +847,39 @@ public:
 	 * \brief Destructor of the class.
 	 */
 	~CPhysicalGeometry(void);
+  
+  /*!
+	 * \brief Reads the geometry of the grid and adjust the boundary
+	 *        conditions with the configuration file.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_mesh_filename - Name of the file with the grid information.
+	 * \param[in] val_format - Format of the file with the grid information.
+	 * \param[in] val_iZone - Domain to be read from the grid file.
+	 * \param[in] val_nZone - Total number of domains in the grid file.
+	 */
+	void SU2_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
+  
+  /*!
+	 * \brief Reads the geometry of the grid and adjust the boundary
+	 *        conditions with the configuration file.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_mesh_filename - Name of the file with the grid information.
+	 * \param[in] val_format - Format of the file with the grid information.
+	 * \param[in] val_iZone - Domain to be read from the grid file.
+	 * \param[in] val_nZone - Total number of domains in the grid file.
+	 */
+	void CGNS_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
+  
+  /*!
+	 * \brief Reads the geometry of the grid and adjust the boundary
+	 *        conditions with the configuration file.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_mesh_filename - Name of the file with the grid information.
+	 * \param[in] val_format - Format of the file with the grid information.
+	 * \param[in] val_iZone - Domain to be read from the grid file.
+	 * \param[in] val_nZone - Total number of domains in the grid file.
+	 */
+	void NETCDF_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
 
 	/*! 
 	 * \brief Find repeated nodes between two elements to identify the common face.
@@ -1048,6 +1119,12 @@ public:
   
   /*!
 	 * \brief Retrieve total number of triangular elements in a simulation across all processors.
+	 * \returns Total number of line elements in a simulation across all processors.
+	 */
+	unsigned long GetGlobal_nElemLine();
+  
+  /*!
+	 * \brief Retrieve total number of triangular elements in a simulation across all processors.
 	 * \returns Total number of triangular elements in a simulation across all processors.
 	 */
 	unsigned long GetGlobal_nElemTria();
@@ -1081,6 +1158,12 @@ public:
 	 * \returns Total number of pyramid elements in a simulation across all processors.
 	 */
 	unsigned long GetGlobal_nElemPyra();
+  
+  /*!
+	 * \brief Get number of triangular elements.
+	 * \return Number of line elements.
+	 */
+	unsigned long GetnElemLine();
   
   /*!
 	 * \brief Get number of triangular elements.
@@ -1154,7 +1237,7 @@ public:
  * \brief Class for defining the multigrid geometry, the main delicated part is the 
  *        agglomeration stage, which is done in the declaration.
  * \author F. Palacios.
- * \version 2.0.4
+ * \version 2.0.5
  */
 class CMultiGridGeometry : public CGeometry {
 
@@ -1319,7 +1402,7 @@ public:
  * \brief Class for only defining the boundary of the geometry, this class is only 
  *        used in case we are not interested in the volumetric grid.
  * \author F. Palacios.
- * \version 2.0.4
+ * \version 2.0.5
  */
 class CBoundaryGeometry : public CGeometry {
   
@@ -1368,18 +1451,32 @@ public:
 	/*! 
 	 * \brief Find the maximum thickness of the airfoil.
 	 * \param[in] config - Definition of the particular problem.
+   * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
+   * \returns The maximum value of the airfoil thickness.
 	 */
   double GetMaxThickness(CConfig *config, bool original_surface);
 	
+  /*!
+	 * \brief Find the minimum thickness of the airfoil.
+	 * \param[in] config - Definition of the particular problem.
+   * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
+   * \returns The minimum value of the airfoil thickness.
+	 */
+  double GetMinThickness(CConfig *config, bool original_surface);
+  
 	/*! 
 	 * \brief Find the total volume of the airfoil.
 	 * \param[in] config - Definition of the particular problem.
+   * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
+   * \returns The total volume of the airfoil.
 	 */
   double GetTotalVolume(CConfig *config, bool original_surface);
   
   /*!
-	 * \brief Find the total volume of the airfoil.
+	 * \brief Find the clearance height of the airfoil.
 	 * \param[in] config - Definition of the particular problem.
+   * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
+   * \returns The clearance height of the airfoil.
 	 */
   double GetClearance(CConfig *config, bool original_surface);
 	
@@ -1389,7 +1486,7 @@ public:
  * \class CDomainGeometry
  * \brief Class for defining an especial kind of grid used in the partioning stage.
  * \author F. Palacios.
- * \version 2.0.4
+ * \version 2.0.5
  */
 class CDomainGeometry : public CGeometry {
 	long *Global_to_Local_Point;				/*!< \brief Global-local indexation for the points. */
@@ -1405,20 +1502,28 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_domain - Number of domains for parallelization purposes.	 
 	 */
-	CDomainGeometry(CGeometry *geometry, CConfig *config, unsigned short val_domain);
+	CDomainGeometry(CGeometry *geometry, CConfig *config);
 
 	/*! 
 	 * \brief Destructor of the class.
 	 */
 	~CDomainGeometry(void);
-
+  
+  /*!
+	 * \brief Constructor of the class.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_domain - Number of domains for parallelization purposes.
+	 */
+	void SetDomainSerial(CGeometry *geometry, CConfig *config, unsigned short val_domain);
+  
 	/*! 
 	 * \brief Set the send receive boundaries of the grid.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_domain - Number of domains for parallelization purposes.	 
 	 */
-	void SetSendReceive(CConfig *config, unsigned short val_domain);
+	void SetSendReceive(CConfig *config);
 
 	/*! 
 	 * \brief Set the Paraview file.
@@ -1469,7 +1574,7 @@ public:
  * \class CPeriodicGeometry
  * \brief Class for defining a periodic boundary condition.
  * \author T. Economon, F. Palacios.
- * \version 2.0.4
+ * \version 2.0.5
  */
 class CPeriodicGeometry : public CGeometry {
 	CPrimalGrid*** newBoundPer;            /*!< \brief Boundary vector for new periodic elements (primal grid information). */
@@ -1522,7 +1627,7 @@ public:
  * \struct CMultiGridQueue
  * \brief Class for a multigrid queue system
  * \author F. Palacios.
- * \version 2.0.4
+ * \version 2.0.5
  * \date Aug 12, 2012
  */
 class CMultiGridQueue {

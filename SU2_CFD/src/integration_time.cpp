@@ -2,7 +2,7 @@
  * \file integration_time.cpp
  * \brief Time deppending numerical method.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -62,7 +62,7 @@ void CMultiGridIntegration::SetMultiGrid_Solver(CGeometry ***geometry, CSolution
 	FinestMesh = config[iZone]->GetFinestMesh();
 
 	/*--- Perform the Full Approximation Scheme multigrid ---*/
-	FAS_Multigrid(geometry, solution_container, solver_container, config, FinestMesh,
+	Multigrid_Iteration(geometry, solution_container, solver_container, config, FinestMesh,
                 config[iZone]->GetMGCycle(), RunTime_EqSystem, Iteration, iZone);
 
 	/*--- Compute non-dimensional parameters and the convergence monitor ---*/
@@ -74,7 +74,7 @@ void CMultiGridIntegration::SetMultiGrid_Solver(CGeometry ***geometry, CSolution
 
 }
 
-void CMultiGridIntegration::FAS_Multigrid(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****solver_container,
+void CMultiGridIntegration::Multigrid_Iteration(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****solver_container,
                                           CConfig **config, unsigned short iMesh, unsigned short mu, unsigned short RunTime_EqSystem,
                                           unsigned long Iteration, unsigned short iZone) {
 	unsigned short iPreSmooth, iPostSmooth, iRKStep, iRKLimit = 1;
@@ -141,12 +141,12 @@ void CMultiGridIntegration::FAS_Multigrid(CGeometry ***geometry, CSolution ****s
 		/*--- 3rd step, compute $P_(k+1) = I^(k+1)_k(r_k) - r_(k+1) ---*/
 		SetForcing_Term(solution_container[iZone][iMesh][SolContainer_Position], solution_container[iZone][iMesh+1][SolContainer_Position], geometry[iZone][iMesh], geometry[iZone][iMesh+1], config[iZone]);
 
-		/*--- Recursive call to FAS_Multigrid ---*/
+		/*--- Recursive call to Multigrid_Iteration ---*/
 		for (unsigned short imu = 0; imu <= mu; imu++) {
 			if (iMesh == config[iZone]->GetMGLevels()-2) 
-				FAS_Multigrid(geometry, solution_container, solver_container, config, iMesh+1, 0, RunTime_EqSystem, Iteration, iZone);
+				Multigrid_Iteration(geometry, solution_container, solver_container, config, iMesh+1, 0, RunTime_EqSystem, Iteration, iZone);
 			else 
-				FAS_Multigrid(geometry, solution_container, solver_container, config, iMesh+1, mu, RunTime_EqSystem, Iteration, iZone);
+				Multigrid_Iteration(geometry, solution_container, solver_container, config, iMesh+1, mu, RunTime_EqSystem, Iteration, iZone);
 		}
 
 		/*--- Compute prolongated solution, and smooth the correction $u^(new)_k = u_k +  Smooth(I^k_(k+1)(u_(k+1)-I^(k+1)_k u_k))$ ---*/
@@ -758,14 +758,15 @@ void CSingleGridIntegration::SetSingleGrid_Solver(CGeometry ***geometry, CSoluti
   
 	unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
 
-	solution_container[iZone][MESH_0][SolContainer_Position]->Set_OldSolution(geometry[iZone][MESH_0]);
-
 	/*--- Send-Receive boundary conditions ---*/
 	solution_container[iZone][MESH_0][SolContainer_Position]->MPI_Send_Receive(geometry, solution_container, config, MESH_0, iZone);
-
+  
 	/*--- Preprocessing ---*/
 	solution_container[iZone][MESH_0][SolContainer_Position]->Preprocessing(geometry[iZone][MESH_0], solution_container[iZone][MESH_0], solver_container[iZone][MESH_0][SolContainer_Position], config[iZone], MESH_0, 0, RunTime_EqSystem);
-
+  
+  /*--- Set the old solution ---*/
+  solution_container[iZone][MESH_0][SolContainer_Position]->Set_OldSolution(geometry[iZone][MESH_0]);
+  
 	/*--- Time step evaluation ---*/
 	solution_container[iZone][MESH_0][SolContainer_Position]->SetTime_Step(geometry[iZone][MESH_0], solution_container[iZone][MESH_0], config[iZone], MESH_0, 0);
 

@@ -5,7 +5,7 @@
  *        <i>solution_direct.cpp</i>, <i>solution_adjoint.cpp</i>, and 
  *        <i>solution_linearized.cpp</i> files.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -50,7 +50,7 @@ using namespace std;
  * \brief Main class for defining the PDE solution, it requires 
  * a child class for each particular solver (Euler, Navier-Stokes, Plasma, etc.) 
  * \author F. Palacios.
- * \version 2.0.4
+ * \version 2.0.5
  */
 class CSolution {
 protected:
@@ -348,6 +348,13 @@ public:
 	 */
   void SetSolution_Gradient_MPI(CGeometry *geometry, CConfig *config);
 
+  /*!
+	 * \brief Compute the Least Squares gradient of the grid velocity.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetRotVel_Gradient(CGeometry *geometry, CConfig *config);
+  
 	/*!
 	 * \brief Compute the Least Squares gradient of the solution on the profile surface.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -565,7 +572,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_Isothermal_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	virtual void BC_Isothermal_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
 			unsigned short val_marker);
 
 	/*!
@@ -576,7 +583,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short val_marker);
+	virtual void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker);
 
 	/*!
 	 * \brief A virtual member.
@@ -690,8 +697,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_NacelleInflow(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, 
-			CConfig *config, unsigned short val_marker);
+	virtual void BC_NacelleInflow(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker);
 
 	/*!
 	 * \brief A virtual member.
@@ -701,8 +707,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_NacelleExhaust(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, 
-			CConfig *config, unsigned short val_marker);
+	virtual void BC_NacelleExhaust(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker);
 
 	/*!
 	 * \brief A virtual member.
@@ -999,6 +1004,18 @@ public:
 	 * \param[in] val_Total_CQ - Value of the total torque coefficient.
 	 */
 	virtual void SetTotal_CQ(double val_Total_CQ);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_Total_Q - Value of the total heat load.
+	 */
+	virtual void SetTotal_Q(double val_Total_Q);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_Total_MaxQ - Value of the total heat load.
+	 */
+	virtual void SetTotal_MaxQ(double val_Total_MaxQ);
 
 	/*!
 	 * \brief A virtual member.
@@ -1126,7 +1143,19 @@ public:
 	 * \return Value of the torque coefficient (moment in the -x direction, inviscid + viscous contribution).
 	 */
 	virtual double GetTotal_CQ(void);
-    
+  
+  /*!
+	 * \brief A virtual member.
+	 * \return Value of the heat load (integrated heat flux).
+	 */
+	virtual double GetTotal_Q(void);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \return Value of the heat load (integrated heat flux).
+	 */
+	virtual double GetTotal_MaxQ(void);
+  
     /*!
 	 * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
 	 * \return Value of the drag coefficient (inviscid + viscous contribution).
@@ -1684,7 +1713,7 @@ public:
  * \class CBaselineSolution
  * \brief Main class for defining a baseline solution from a restart file (for output).
  * \author F. Palacios, T. Economon.
- * \version 2.0.4
+ * \version 2.0.5
  */
 class CBaselineSolution : public CSolution {
 public:
@@ -1728,7 +1757,7 @@ public:
  * \brief Main class for defining the Euler's flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.4
+ * \version 2.0.5
  */
 class CEulerSolution : public CSolution {
 protected:
@@ -1803,6 +1832,8 @@ protected:
 	Total_CMerit,			/*!< \brief Total rotor Figure of Merit for all the boundaries. */
 	Total_CT,		/*!< \brief Total thrust coefficient for all the boundaries. */
 	Total_CQ,		/*!< \brief Total torque coefficient for all the boundaries. */
+  Total_Q,    /*!< \brief Total heat load for all the boundaries. */
+  Total_Maxq, /*!< \brief Maximum heat flux on all boundaries. */
 	Total_CEquivArea,			/*!< \brief Total Equivalent Area coefficient for all the boundaries. */
 	Total_CNearFieldOF;			/*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
 	double *p1_Und_Lapl,	/*!< \brief Auxiliary variable for the undivided Laplacians. */ 
@@ -2229,7 +2260,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_NacelleInflow(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, 
+	void BC_NacelleInflow(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver,
 			CConfig *config, unsigned short val_marker);
 
 	/*!
@@ -2240,7 +2271,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_NacelleExhaust(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, 
+	void BC_NacelleExhaust(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver,
 			CConfig *config, unsigned short val_marker);
 
 	/*!
@@ -2432,12 +2463,36 @@ public:
 	 * \return Value of the rotor efficiency coefficient (inviscid + viscous contribution).
 	 */
 	double GetTotal_CQ(void);
+  
+  /*!
+	 * \brief Provide the total heat load.
+	 * \return Value of the heat load (viscous contribution).
+	 */
+	double GetTotal_Q(void);
+  
+  /*!
+	 * \brief Provide the total heat load.
+	 * \return Value of the heat load (viscous contribution).
+	 */
+	double GetTotal_MaxQ(void);
 
 	/*!
 	 * \brief Store the total (inviscid + viscous) non dimensional torque coefficient.
 	 * \param[in] val_Total_CQ - Value of the total torque coefficient.
 	 */
 	void SetTotal_CQ(double val_Total_CQ);
+  
+  /*!
+	 * \brief Store the total heat load.
+	 * \param[in] val_Total_Q - Value of the heat load.
+	 */
+	void SetTotal_Q(double val_Total_Q);
+  
+  /*!
+	 * \brief Store the total heat load.
+	 * \param[in] val_Total_Q - Value of the heat load.
+	 */
+	void SetTotal_MaxQ(double val_Total_MaxQ);
 
 	/*!
 	 * \brief Provide the total (inviscid + viscous) non dimensional rotor Figure of Merit.
@@ -2538,7 +2593,7 @@ public:
  * \brief Main class for defining the Navier-Stokes flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 2.0.4
+ * \version 2.0.5
  */
 class CNSSolution : public CEulerSolution {
 private:
@@ -2557,6 +2612,9 @@ private:
 	*CMerit_Visc,			/*!< \brief Rotor Figure of Merit (Viscous contribution) for each boundary. */
 	*CT_Visc,		/*!< \brief Thrust coefficient (viscous contribution) for each boundary. */
 	*CQ_Visc,		/*!< \brief Torque coefficient (viscous contribution) for each boundary. */
+  *Q_Visc,		/*!< \brief Heat load (viscous contribution) for each boundary. */
+  *Maxq_Visc, /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
+  
 	**CSkinFriction;	/*!< \brief Skin friction coefficient for each boundary and vertex. */
 	double *ForceViscous,	/*!< \brief Viscous force for each boundary. */
 	*MomentViscous;			/*!< \brief Inviscid moment for each boundary. */
@@ -2571,7 +2629,9 @@ private:
 	AllBound_CFz_Visc,			/*!< \brief Force z coefficient (inviscid contribution) for all the boundaries. */
 	AllBound_CMerit_Visc,			/*!< \brief Rotor Figure of Merit coefficient (Viscous contribution) for all the boundaries. */
 	AllBound_CT_Visc,		/*!< \brief Thrust coefficient (viscous contribution) for all the boundaries. */
-	AllBound_CQ_Visc;		/*!< \brief Torque coefficient (viscous contribution) for all the boundaries. */
+	AllBound_CQ_Visc,		/*!< \brief Torque coefficient (viscous contribution) for all the boundaries. */
+  AllBound_Q_Visc,		/*!< \brief Heat load (viscous contribution) for all the boundaries. */
+  AllBound_Maxq_Visc; /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
 
 public:
 
@@ -2627,7 +2687,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short val_marker);
+	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker);
   
   /*!
 	 * \brief Impose the Navier-Stokes boundary condition (strong).
@@ -2637,7 +2697,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Isothermal_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_Isothermal_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
                           unsigned short val_marker);
 
 	/*!
@@ -2715,7 +2775,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.4
+ * \version 2.0.5
  */
 class CTurbSolution : public CSolution {
 protected:
@@ -2764,7 +2824,18 @@ public:
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
 	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker);
-
+  
+  /*!
+	 * \brief Impose via the residual the Euler wall boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solution_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	void BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+                     unsigned short val_marker);
+  
 	/*!
 	 * \brief Update the solution using an implicit solver.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -2845,7 +2916,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.4
+ * \version 2.0.5
  */
 
 class CTurbSASolution: public CTurbSolution {
@@ -2944,8 +3015,19 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
 			unsigned short val_marker);
+  
+  /*!
+	 * \brief Impose the Navier-Stokes wall boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solution_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	void BC_Isothermal_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+                        unsigned short val_marker);
 
 	/*!
 	 * \brief Impose the Far Field boundary condition.
@@ -2980,6 +3062,50 @@ public:
 
 	void BC_Outlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
 			unsigned short val_marker);
+  
+  /*!
+	 * \brief Impose the nacelle inflow boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solution_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	void BC_NacelleInflow(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver,
+                        CConfig *config, unsigned short val_marker);
+  
+	/*!
+	 * \brief Impose the ancelle exhaust boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solution_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	void BC_NacelleExhaust(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver,
+                         CConfig *config, unsigned short val_marker);
+  
+  /*!
+	 * \brief Impose the interface boundary condition using the residual.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solution_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	void BC_Interface_Boundary(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+                             CConfig *config, unsigned short val_marker);
+  
+	/*!
+	 * \brief Impose the near-field boundary condition using the residual.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solution_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	void BC_NearField_Boundary(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+                             CConfig *config, unsigned short val_marker);
 
 	/*!
 	 * \brief Set the total residual adding the term that comes from the Dual Time-Stepping Strategy.
@@ -3011,7 +3137,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.4
+ * \version 2.0.5
  */
 
 class CTransLMSolution: public CTurbSolution {
@@ -3116,7 +3242,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
 			unsigned short val_marker);
 
 	/*!
@@ -3188,7 +3314,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Campos, F. Palacios, T. Economon
- * \version 2.0.4
+ * \version 2.0.5
  */
 
 class CTurbSSTSolution: public CTurbSolution {
@@ -3288,8 +3414,19 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
 			unsigned short val_marker);
+  
+  /*!
+	 * \brief Impose the Navier-Stokes wall boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solution_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	void BC_Isothermal_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+                        unsigned short val_marker);
 
 	/*!
 	 * \brief Impose the Far Field boundary condition.
@@ -3350,7 +3487,7 @@ public:
  * \brief Main class for defining the Euler's adjoint flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.4
+ * \version 2.0.5
  */
 class CAdjEulerSolution : public CSolution {
 protected:
@@ -3622,7 +3759,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_NacelleInflow(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, 
+	void BC_NacelleInflow(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, 
 			CConfig *config, unsigned short val_marker);
 
 	/*!
@@ -3633,7 +3770,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_NacelleExhaust(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, 
+	void BC_NacelleExhaust(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, 
 			CConfig *config, unsigned short val_marker);
 
 	/*!
@@ -3798,7 +3935,7 @@ public:
  * \brief Main class for defining the Navier-Stokes' adjoint flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 2.0.4
+ * \version 2.0.5
  */
 class CAdjNSSolution : public CAdjEulerSolution {
 public:
@@ -3829,9 +3966,19 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
 			unsigned short val_marker);
 
+  /*!
+	 * \brief Impose via the residual or brute force the Navier-Stokes adjoint boundary condition (heat flux).
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solution_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	void BC_Isothermal_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker);
+  
 	/*!
 	 * \brief Restart residual and compute gradients.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -3881,7 +4028,7 @@ public:
  * \brief Main class for defining the adjoint turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.4
+ * \version 2.0.5
  */
 class CAdjTurbSolution : public CSolution {
 private:
@@ -3930,7 +4077,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
+	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
 			unsigned short val_marker);
 
 	/*! 
@@ -4090,7 +4237,7 @@ public:
  * \brief Main class for defining the linearized Euler solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.4
+ * \version 2.0.5
  */
 class CLinEulerSolution : public CSolution {
 private:
@@ -4324,7 +4471,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
 			unsigned short val_marker);
 
 	/*!
@@ -4901,7 +5048,7 @@ public:
  * \brief Main class for defining the level set solver.
  * \ingroup LevelSet_Model
  * \author F. Palacios.
- * \version 2.0.4
+ * \version 2.0.5
  */
 class CLevelSetSolution : public CSolution {
 protected:
@@ -4978,6 +5125,16 @@ public:
 	 */
 	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
 
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solution_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iMesh - Index of the mesh in multigrid computations.
+	 */
+	void Postprocessing(CGeometry *geometry, CSolution **solution_container, CConfig *config,
+                      unsigned short iMesh);
+  
 	/*!
 	 * \brief Compute the spatial integration using a upwind scheme.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -5019,7 +5176,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
 			unsigned short val_marker);
 
 	/*!
@@ -5081,7 +5238,7 @@ public:
  * \brief Main class for defining the level set solver.
  * \ingroup LevelSet_Model
  * \author F. Palacios.
- * \version 2.0.4
+ * \version 2.0.5
  */
 class CAdjLevelSetSolution : public CSolution {
 protected:
@@ -5198,7 +5355,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
 			unsigned short val_marker);
 
 	/*!
@@ -5253,7 +5410,7 @@ public:
  * \brief Main class for defining the template model solver.
  * \ingroup Template_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.4
+ * \version 2.0.5
  */
 class CTemplateSolution : public CSolution {
 private:
@@ -5372,7 +5529,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
+	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
 			unsigned short val_marker);
 
 	/*!
@@ -5462,7 +5619,7 @@ public:
  * \class CPlasmaSolution
  * \brief Main class for defining the plasma solver.
  * \author ADL Stanford.
- * \version 2.0.4
+ * \version 2.0.5
  */
 class CPlasmaSolution : public CSolution {
 protected:
@@ -5565,6 +5722,8 @@ protected:
 	Total_CMerit,			/*!< \brief Total rotor Figure of Merit for all the boundaries. */
 	Total_CT,		/*!< \brief Total thrust coefficient for all the boundaries. */
 	Total_CQ,		/*!< \brief Total torque coefficient for all the boundaries. */
+  Total_Q,    /*!< \brief Total heat load for all the boundaries. */
+  Total_Maxq, /*!< \brief Maximum heat flux on all boundaries. */
 	Total_CEquivArea,			/*!< \brief Total Equivalent Area coefficient for all the boundaries. */
 	Total_CNearFieldOF;			/*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
     
@@ -5599,7 +5758,7 @@ protected:
 	AllBound_CFz_Visc,			/*!< \brief Force z coefficient (inviscid contribution) for all the boundaries. */
 	AllBound_CMerit_Visc,			/*!< \brief Rotor Figure of Merit coefficient (Viscous contribution) for all the boundaries. */
 	AllBound_CT_Visc,		/*!< \brief Thrust coefficient (viscous contribution) for all the boundaries. */
-	AllBound_CQ_Visc;		/*!< \brief Torque coefficient (viscous contribution) for all the boundaries. */
+	AllBound_Q_Visc;		/*!< \brief Heat load (integrated heat flux) for all the boundaries. */
 
 	double *CDrag_Visc,	/*!< \brief Drag coefficient (viscous contribution) for each boundary. */
 	*CLift_Visc,		/*!< \brief Lift coefficient (viscous contribution) for each boundary. */
@@ -5612,7 +5771,9 @@ protected:
 	*CEff_Visc,			/*!< \brief Efficiency (Cl/Cd) (Viscous contribution) for each boundary. */
 	*CMerit_Visc,			/*!< \brief Rotor Figure of Merit (Viscous contribution) for each boundary. */
 	*CT_Visc,		/*!< \brief Thrust coefficient (viscous contribution) for each boundary. */
-	*CQ_Visc;		/*!< \brief Torque coefficient (viscous contribution) for each boundary. */
+	*CQ_Visc,		/*!< \brief Torque coefficient (viscous contribution) for each boundary. */
+  *Q_Visc, /*!< \brief Heat load (viscous contribution) for each boundary. */
+  *Maxq_Visc; /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
 
 
 	double Prandtl_Lam;   	/*!< \brief Laminar Prandtl number. */
@@ -5963,7 +6124,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Isothermal_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_Isothermal_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
 			unsigned short val_marker);
 
 	/*!
@@ -5974,7 +6135,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
 			unsigned short val_marker);
 
 	/*!
@@ -6132,7 +6293,7 @@ public:
 	 * \brief Provide the total integrated heat flux.
 	 * \return Value of the integrated surface heat flux.
 	 */
-	double GetTotal_CQ(void);
+	double GetTotal_Q(void);
     
     /*!
 	 * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
@@ -6170,7 +6331,7 @@ public:
  * \brief Main class for defining the Euler's adjoint flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.4
+ * \version 2.0.5
  */
 class CAdjPlasmaSolution : public CSolution {
 protected:
@@ -6223,6 +6384,13 @@ public:
 	 * \brief Destructor of the class. 
 	 */
 	virtual ~CAdjPlasmaSolution(void);
+  
+  /*!
+   * \overload
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the problem.
+   */
+  void SetSolution_MPI(CGeometry *geometry, CConfig *config);
 
 	/*! 
 	 * \brief Created the force projection vector for adjoint boundary conditions.

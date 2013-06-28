@@ -2,7 +2,7 @@
  * \file geometry_structure.inl
  * \brief In-Line subroutines of the <i>geometry_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -33,6 +33,8 @@ inline unsigned long CGeometry::GetGlobal_nPointDomain(void) { return 0; }
 
 inline unsigned long CGeometry::GetGlobal_nElem(void) { return 0; }
 
+inline unsigned long CGeometry::GetGlobal_nElemLine(void) { return 0; }
+
 inline unsigned long CGeometry::GetGlobal_nElemTria(void) { return 0; }
 
 inline unsigned long CGeometry::GetGlobal_nElemQuad(void) { return 0; }
@@ -44,6 +46,8 @@ inline unsigned long CGeometry::GetGlobal_nElemHexa(void) { return 0; }
 inline unsigned long CGeometry::GetGlobal_nElemWedg(void) { return 0; }
 
 inline unsigned long CGeometry::GetGlobal_nElemPyra(void) { return 0; }
+
+inline unsigned long CGeometry::GetnElemLine(void) { return 0; }
 
 inline unsigned long CGeometry::GetnElemTria(void) { return 0; }
 
@@ -75,7 +79,7 @@ inline void CGeometry::SetPeriodicBoundary(CConfig *config) { }
 
 inline void CGeometry::SetPeriodicBoundary(CGeometry *geometry, CConfig *config) { }
 
-inline void CGeometry::SetSendReceive(CConfig *config, unsigned short val_domain) { }
+inline void CGeometry::SetSendReceive(CConfig *config) { }
 
 inline void CGeometry::SetWall_Distance(CConfig *config) { }
 
@@ -112,6 +116,8 @@ inline string CGeometry::GetMarker_Tag(unsigned short val_marker) { return Tag_t
 inline void CGeometry::SetnElem_Storage(unsigned long val_nelem_storage) { nElem_Storage = val_nelem_storage; }
 
 inline unsigned long CGeometry::GetnElem_Storage(void) { return nElem_Storage; }
+
+inline unsigned long CGeometry::GetMax_GlobalPoint(void) { return Max_GlobalPoint; }
 
 inline void CGeometry::SetnMarker(unsigned short val_nmarker) { nMarker = val_nmarker; }
 
@@ -183,6 +189,8 @@ inline void CGeometry::FindSharpEdges(CConfig *config) { }
 
 inline double CGeometry::GetMaxThickness(CConfig *config, bool original_surface) { return 0; }
 
+inline double CGeometry::GetMinThickness(CConfig *config, bool original_surface) { return 0; }
+
 inline double CGeometry::GetTotalVolume(CConfig *config, bool original_surface) { return 0; }
 
 inline double CGeometry::GetClearance(CConfig *config, bool original_surface) { return 0; }
@@ -205,6 +213,8 @@ inline unsigned long CPhysicalGeometry::GetGlobal_nPointDomain(void) { return Gl
 
 inline unsigned long CPhysicalGeometry::GetGlobal_nElem(void) { return Global_nElem; }
 
+inline unsigned long CPhysicalGeometry::GetGlobal_nElemLine(void) { return Global_nelem_edge; }
+
 inline unsigned long CPhysicalGeometry::GetGlobal_nElemTria(void) { return Global_nelem_triangle; }
 
 inline unsigned long CPhysicalGeometry::GetGlobal_nElemQuad(void) { return Global_nelem_quad; }
@@ -216,6 +226,8 @@ inline unsigned long CPhysicalGeometry::GetGlobal_nElemHexa(void) { return Globa
 inline unsigned long CPhysicalGeometry::GetGlobal_nElemWedg(void) { return Global_nelem_wedge; }
 
 inline unsigned long CPhysicalGeometry::GetGlobal_nElemPyra(void) { return Global_nelem_pyramid; }
+
+inline unsigned long CPhysicalGeometry::GetnElemLine(void) { return nelem_edge; }
 
 inline unsigned long CPhysicalGeometry::GetnElemTria(void) { return nelem_triangle; }
 

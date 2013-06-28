@@ -56,17 +56,19 @@ def convert_c2c(source_routine):
         target_file.writelines(new_data)
 
 
-def convert_c2cpp(source_routine):
+def convert_c2cpp(source_routine, overwrite=False):
 
     source_routine += '_d'
+    source_directory = os.path.join(os.environ['SU2_HOME'],'SU2_CFD/src/c_routines_d')
     source_location = source_directory + '/' + source_routine + '.c'
 
     # check to see if converted file has already been created (if it exists, skip conversion)
     target_routine = source_routine
 
+    target_directory = os.path.join(os.environ['SU2_HOME'],'SU2_CFD/src/cpp_routines_d')
     target_location = target_directory + '/' + target_routine + '.cpp'
 
-    if os.path.isfile(target_location):
+    if os.path.isfile(target_location) and overwrite==False:
         print target_routine + ' exists!'
 
     else:
@@ -171,15 +173,21 @@ def convert_c2cpp(source_routine):
         target_file = open(target_location, 'w')
 
         target_file.writelines(new_data)
+        print 'Wrote file: ' + target_location
 
-def convert_cpp2c(source_routine, source_location):
+def convert_cpp2c(source_routine, source_location, overwrite=False):
+    '''Convert a C++ code from within the SU2 source tree into a C code for automatic differentiation. The output will be located in $SU2_HOME/c_routines'''
 
-    # check to see if converted file has already been created (if it exists, skip conversion)
+    # Replace C++ :: notation with underscores
     target_routine = source_routine.replace('::', '__')
 
-    target_location = target_directory + '/' + target_routine + '.c'
+    # Location of output c file
+    cfilename = target_routine + '.c'
+    target_directory = os.path.join(os.environ['SU2_HOME'], 'SU2_CFD/src/c_routines')
+    target_location  = os.path.join(target_directory,cfilename)
 
-    if os.path.isfile(target_location):
+    # Do not process if file exists and overwrite is not set True
+    if os.path.isfile(target_location) and overwrite==False:
         print target_routine + ' exists!'
 
     else:
@@ -449,16 +457,27 @@ def convert_cpp2c(source_routine, source_location):
 
 def diff_routine(routine_name, invars, outvars, file_list):
 
-# Routine
+    # Tapenade command
+    tapenade = 'tapenade '
+
+    # Tapenade mode
+    mode = '-tangent '
+
+    # Routine
     root = '-root ' + routine_name + ' '
 
-# Variables
-    independents = '-vars "' + invars + '"' + ' '
-    dependents = '-outvars "' + outvars + '"' + ' '
+    # Variables
+    independents = '-vars "' + ' '.join(invars) + '"' + ' '
+    dependents = '-outvars "' + ' '.join(outvars) + '"' + ' '
+
+    # Output directory
+    output_directory = '-outputdirectory ' + os.path.join(os.environ['SU2_HOME'],'SU2_CFD/src/c_routines_d') + ' '
+    # Files
+    files = ' '.join(file_list)
 
     # Send command
     tapenade_call = tapenade + mode + root + independents + dependents + \
-        output_directory + file_list
+        output_directory + files
     print 'Differentiating ' + routine_name
     print 'Command: $ ' + tapenade_call
     os.system(tapenade_call)
@@ -604,9 +623,6 @@ def insert_routine(source_routine, target_routine, target_file):
             temp_data.append(data_line)
 
     routine_open = 0
-
-
-
 
     # add in function
     for data_line in target_file_data:

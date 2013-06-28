@@ -2,7 +2,7 @@
  * \file definition_structure.cpp
  * \brief Main subroutines used by SU2_CFD.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -566,12 +566,12 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 	bool incompressible = config->GetIncompressible();
 
 	/*--- Initialize some useful booleans ---*/
-	euler                   = false;   ns     = false;   turbulent        = false;
-	electric                = false;   plasma_monatomic = false;   plasma_diatomic = false;  levelset         = false;   plasma_euler     = false;
-	plasma_ns     = false;   adj_euler       = false;	 adj_ns           = false;	 adj_turb         = false;
-	wave                    = false;   fea              = false;   adj_levelset    = false;	 spalart_allmaras = false; 
-	lin_euler               = false;   lin_ns           = false;   lin_turb        = false;	 menter_sst       = false;   adj_plasma_euler = false;
-	adj_plasma_ns = false;   transition       = false;   template_solver = false;
+	euler          = false;   ns               = false;   turbulent        = false;
+	electric       = false;   plasma_monatomic = false;   plasma_diatomic  = false;  levelset         = false;   plasma_euler     = false;
+	plasma_ns      = false;   adj_euler        = false;	  adj_ns           = false;	 adj_turb         = false;
+	wave           = false;   fea              = false;   adj_levelset     = false;	 spalart_allmaras = false; 
+	lin_euler      = false;   lin_ns           = false;   lin_turb         = false;	 menter_sst       = false;   adj_plasma_euler = false;
+	adj_plasma_ns  = false;   transition       = false;   template_solver  = false;
 
 	/*--- Assign booleans ---*/
 	switch (config->GetKind_Solver()) {
@@ -980,8 +980,14 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 
 		/*--- Definition of the boundary condition method ---*/
 		for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++){
-			if (spalart_allmaras) solver_container[iMGlevel][TURB_SOL][CONV_BOUND_TERM] = new CUpwSca_TurbSA(nDim, nVar_Turb, config);
-			else if (menter_sst) solver_container[iMGlevel][TURB_SOL][CONV_BOUND_TERM] = new CUpwSca_TurbSST(nDim, nVar_Turb, config);
+			if (spalart_allmaras) {
+        solver_container[iMGlevel][TURB_SOL][CONV_BOUND_TERM] = new CUpwSca_TurbSA(nDim, nVar_Turb, config);
+        solver_container[iMGlevel][TURB_SOL][VISC_BOUND_TERM] = new CAvgGrad_TurbSA(nDim, nVar_Turb, config);
+      }
+			else if (menter_sst) {
+        solver_container[iMGlevel][TURB_SOL][CONV_BOUND_TERM] = new CUpwSca_TurbSST(nDim, nVar_Turb, config);
+        solver_container[iMGlevel][TURB_SOL][VISC_BOUND_TERM] = new CAvgGrad_TurbSST(nDim, nVar_Turb, config);
+      }
 		}
 	}
 
@@ -1367,8 +1373,10 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
         }
         else {
           /*--- Compressible flow ---*/
-          for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+          for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
             solver_container[iMGlevel][ADJFLOW_SOL][VISC_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
+            solver_container[iMGlevel][ADJFLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
+          }
         }
         break;
       case AVG_GRAD_CORRECTED :
@@ -1381,8 +1389,12 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
         else {
           /*--- Compressible flow ---*/
           solver_container[MESH_0][ADJFLOW_SOL][VISC_TERM] = new CAvgGradCorrected_AdjFlow(nDim, nVar_Adj_Flow, config);
-          for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+          solver_container[MESH_0][ADJFLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
+          for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
             solver_container[iMGlevel][ADJFLOW_SOL][VISC_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
+            solver_container[iMGlevel][ADJFLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
+          }
+          
         }
         break;
       default :

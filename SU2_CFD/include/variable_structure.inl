@@ -2,7 +2,7 @@
  * \file variable_structure.inl
  * \brief In-Line subroutines of the <i>variable_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -358,8 +358,11 @@ inline void CVariable::SetVelocity_Old(double *val_velocity, bool val_incomp) { 
 inline void CVariable::SetVelocity_Old(double *val_velocity, unsigned short iSpecies) { }
 
 inline void CVariable::SetVel_ResConv_Zero(unsigned short iSpecies) { }
+
 inline void CVariable::SetVel_ResVisc_Zero(unsigned short iSpecies) { }
+
 inline void CVariable::SetVel_ResSour_Zero(unsigned short iSpecies) { }
+
 inline void CVariable::SetVel_ResTruncError_Zero(unsigned short iSpecies) { }
 
 inline void CVariable::SetLaminarViscosity() { }
@@ -727,6 +730,10 @@ inline void CAdjPlasmaVariable::SetPhi_Old(double *val_phi) { for (unsigned shor
 inline void CLevelSetVariable::SetDiffLevelSet(double val_difflevelset) { DiffLevelSet = val_difflevelset; }
 
 inline double CLevelSetVariable::GetDiffLevelSet(void) { return DiffLevelSet; }
+
+inline void CLevelSetVariable::SetPrimVar(unsigned short val_var, double val_prim) { Primitive[val_var] = val_prim; }
+
+inline double CLevelSetVariable::GetPrimVar(unsigned short val_var) { return Primitive[val_var]; }
 
 inline void CFEAVariable::SetPressureValue(double val_pressure) { Pressure = val_pressure; }
 

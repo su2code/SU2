@@ -2,7 +2,7 @@
  * \file geometry_structure.cpp
  * \brief Main subroutines for creating the primal grid and multigrid structure.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -304,29 +304,29 @@ void CGeometry::SetSpline(vector<double> &x, vector<double> &y, unsigned long n,
 	u = new double [n];
   
 	if (yp1 > 0.99e30)			// The lower boundary condition is set either to be "nat
-		y2[1]=u[1]=0.0;			  // -ural"
+		y2[0]=u[0]=0.0;			  // -ural"
 	else {									// or else to have a specified first derivative.
-		y2[1] = -0.5;
-		u[1]=(3.0/(x[2]-x[1]))*((y[2]-y[1])/(x[2]-x[1])-yp1);
+		y2[0] = -0.5;
+		u[0]=(3.0/(x[1]-x[0]))*((y[1]-y[0])/(x[1]-x[0])-yp1);
 	}
   
 	for (i=2; i<=n-1; i++) {									//  This is the decomposition loop of the tridiagonal al-
-		sig=(x[i]-x[i-1])/(x[i+1]-x[i-1]);		//	gorithm. y2 and u are used for tem-
-		p=sig*y2[i-1]+2.0;										//	porary storage of the decomposed
-		y2[i]=(sig-1.0)/p;										//	factors.
-		u[i]=(y[i+1]-y[i])/(x[i+1]-x[i]) - (y[i]-y[i-1])/(x[i]-x[i-1]);
-		u[i]=(6.0*u[i]/(x[i+1]-x[i-1])-sig*u[i-1])/p;
+		sig=(x[i-1]-x[i-2])/(x[i]-x[i-2]);		//	gorithm. y2 and u are used for tem-
+		p=sig*y2[i-2]+2.0;										//	porary storage of the decomposed
+		y2[i-1]=(sig-1.0)/p;										//	factors.
+		u[i-1]=(y[i]-y[i-1])/(x[i]-x[i-1]) - (y[i-1]-y[i-2])/(x[i-1]-x[i-2]);
+		u[i-1]=(6.0*u[i-1]/(x[i]-x[i-2])-sig*u[i-2])/p;
 	}
   
 	if (ypn > 0.99e30)						// The upper boundary condition is set either to be
 		qn=un=0.0;									// "natural"
 	else {												// or else to have a specified first derivative.
 		qn=0.5;
-		un=(3.0/(x[n]-x[n-1]))*(ypn-(y[n]-y[n-1])/(x[n]-x[n-1]));
+		un=(3.0/(x[n-1]-x[n-2]))*(ypn-(y[n-1]-y[n-2])/(x[n-1]-x[n-2]));
 	}
-	y2[n]=(un-qn*u[n-1])/(qn*y2[n-1]+1.0);
+	y2[n-1]=(un-qn*u[n-2])/(qn*y2[n-2]+1.0);
 	for (k=n-1; k>=1; k--)					// This is the backsubstitution loop of the tridiagonal
-		y2[k]=y2[k]*y2[k+1]+u[k];	  // algorithm.
+		y2[k-1]=y2[k-1]*y2[k]+u[k-1];	  // algorithm.
   
 	delete[] u;
   
@@ -340,29 +340,109 @@ double CGeometry::GetSpline(vector<double>&xa, vector<double>&ya, vector<double>
 	khi=n;										// bisection. This is optimal if sequential calls to this
 	while (khi-klo > 1) {			// routine are at random values of x. If sequential calls
 		k=(khi+klo) >> 1;				// are in order, and closely spaced, one would do better
-		if (xa[k] > x) khi=k;		// to store previous values of klo and khi and test if
+		if (xa[k-1] > x) khi=k;		// to store previous values of klo and khi and test if
 		else klo=k;							// they remain appropriate on the next call.
 	}								// klo and khi now bracket the input value of x
-	h=xa[khi]-xa[klo];
+	h=xa[khi-1]-xa[klo-1];
 	if (h == 0.0) cout << "Bad xa input to routine splint" << endl;	// The xa’s must be dis-
-	a=(xa[khi]-x)/h;																					      // tinct.
-	b=(x-xa[klo])/h;				// Cubic spline polynomial is now evaluated.
-	y=a*ya[klo]+b*ya[khi]+((a*a*a-a)*y2a[klo]+(b*b*b-b)*y2a[khi])*(h*h)/6.0;
+	a=(xa[khi-1]-x)/h;																					      // tinct.
+	b=(x-xa[klo-1])/h;				// Cubic spline polynomial is now evaluated.
+	y=a*ya[klo-1]+b*ya[khi-1]+((a*a*a-a)*y2a[klo-1]+(b*b*b-b)*y2a[khi-1])*(h*h)/6.0;
   
 	return y;
 }
 
 CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {}
 
-CPhysicalGeometry::CPhysicalGeometry(CConfig *config, string val_mesh_filename, unsigned short val_format, 
-		unsigned short val_iZone, unsigned short val_nZone) : CGeometry() {
-
+CPhysicalGeometry::CPhysicalGeometry(CConfig *config, string val_mesh_filename, unsigned short val_format,
+                                     unsigned short val_iZone, unsigned short val_nZone) : CGeometry() {
+  
   /*--- Local variables and initialization ---*/
 	string text_line, Marker_Tag;
 	ifstream mesh_file;
-	unsigned short iNode_Surface, VTK_Type, iMarker, iChar, iCount = 0; 
-	unsigned long Point_Surface, iElem_Surface, iElem_Bound = 0, iPoint = 0, ielem_div = 0, ielem = 0, 
-      vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4], vnodes_tetra[4], vnodes_hexa[8], vnodes_wedge[6], vnodes_pyramid[5], dummy, GlobalIndex;
+	unsigned short iNode_Surface, iMarker;
+	unsigned long Point_Surface, iElem_Surface;
+	double Conversion_Factor = 1.0;
+	int rank = MASTER_NODE;
+	nZone = val_nZone;
+  
+  /*--- Initialize counters for local/global points & elements ---*/
+#ifndef NO_MPI
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+  
+	if (rank == MASTER_NODE)
+		cout << endl <<"---------------------- Read grid file information -----------------------" << endl;
+  
+	switch (val_format) {
+    case SU2:
+      SU2_Format(config, val_mesh_filename, val_iZone, val_nZone);
+      break;
+    case CGNS:
+      CGNS_Format(config, val_mesh_filename, val_iZone, val_nZone);
+      break;
+    case NETCDF_ASCII:
+      NETCDF_Format(config, val_mesh_filename, val_iZone, val_nZone);
+      break;
+    default:
+      cout << "Unrecognized mesh format specified!!" << endl;
+      cout << "Press any key to exit..." << endl;
+      cin.get();
+#ifdef NO_MPI
+      exit(1);
+#else
+      MPI::COMM_WORLD.Abort(1);
+      MPI::Finalize();
+#endif
+      break;
+	}
+  
+  if (config->GetKind_SU2() == SU2_CFD) Conversion_Factor = config->GetConversion_Factor();
+  else Conversion_Factor = 1.0;
+  
+	/*--- Loop over the surface element to set the boundaries ---*/
+	for (iMarker = 0; iMarker < nMarker; iMarker++)
+		for (iElem_Surface = 0; iElem_Surface < nElem_Bound[iMarker]; iElem_Surface++)
+			for (iNode_Surface = 0; iNode_Surface < bound[iMarker][iElem_Surface]->GetnNodes(); iNode_Surface++) {
+				Point_Surface = bound[iMarker][iElem_Surface]->GetNode(iNode_Surface);
+				node[Point_Surface]->SetBoundary(nMarker);
+        if (config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE &&
+            config->GetMarker_All_Boundary(iMarker) != INTERFACE_BOUNDARY &&
+            config->GetMarker_All_Boundary(iMarker) != NEARFIELD_BOUNDARY &&
+            config->GetMarker_All_Boundary(iMarker) != PERIODIC_BOUNDARY)
+          node[Point_Surface]->SetPhysicalBoundary(true);
+      }
+  
+	/*--- Write a new copy of the grid in meters if requested ---*/
+	if (config->GetKind_SU2() == SU2_CFD)
+		if (config->GetWrite_Converted_Mesh()) {
+			SetMeshFile(config,config->GetMesh_Out_FileName());
+			cout.precision(4);
+			cout << "Converted mesh by a factor of " << Conversion_Factor << endl;
+			cout << "  and wrote to the output file: " << config->GetMesh_Out_FileName() << endl;
+		}
+  
+#ifndef NO_MPI
+  /*--- Synchronization point after reading the grid ---*/
+  if (config->GetKind_SU2() != SU2_DDC) {
+    MPI::COMM_WORLD.Barrier();
+  }
+#endif
+  
+}
+
+CPhysicalGeometry::~CPhysicalGeometry(void) {
+  
+}
+
+void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone) {
+  
+  /*--- Local variables and initialization ---*/
+	string text_line, Marker_Tag;
+	ifstream mesh_file;
+	unsigned short VTK_Type, iMarker, iChar, iCount = 0;
+	unsigned long iElem_Bound = 0, iPoint = 0, ielem_div = 0, ielem = 0,
+  vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4], vnodes_tetra[4], vnodes_hexa[8], vnodes_wedge[6], vnodes_pyramid[5], dummy, GlobalIndex;
 	char cstr[200];
 	double Coord_2D[2], Coord_3D[3], Conversion_Factor = 1.0;
 	string::size_type position;
@@ -371,8 +451,604 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, string val_mesh_filename, 
 	bool domain_flag = false;
 	bool found_transform = false;
 	nZone = val_nZone;
+  
+  /*--- Initialize counters for local/global points & elements ---*/
+#ifndef NO_MPI
+	unsigned long LocalIndex;
+	unsigned long Local_nPoint, Local_nPointDomain;
+	unsigned long Local_nElem;
+  unsigned long Local_nElemTri, Local_nElemQuad, Local_nElemTet;
+  unsigned long Local_nElemHex, Local_nElemWedge, Local_nElemPyramid;
+	rank = MPI::COMM_WORLD.Get_rank();
+	size = MPI::COMM_WORLD.Get_size();
+#endif
+  FinestMGLevel = true;
+	Global_nPoint = 0; Global_nPointDomain = 0; Global_nElem = 0;
+  nelem_edge     = 0; Global_nelem_edge     = 0;
+  nelem_triangle = 0; Global_nelem_triangle = 0;
+  nelem_quad     = 0; Global_nelem_quad     = 0;
+  nelem_tetra    = 0; Global_nelem_tetra    = 0;
+  nelem_hexa     = 0; Global_nelem_hexa     = 0;
+  nelem_wedge    = 0; Global_nelem_wedge    = 0;
+  nelem_pyramid  = 0; Global_nelem_pyramid  = 0;
+  
+  /*--- Open grid file ---*/
+  strcpy (cstr, val_mesh_filename.c_str());
+  mesh_file.open(cstr, ios::in);
+  if (mesh_file.fail()) {
+    cout << "There is no geometry file (CPhysicalGeometry)!!" << endl;
+    cout << "Press any key to exit..." << endl;
+    cin.get();
+#ifdef NO_MPI
+    exit(1);
+#else
+    MPI::COMM_WORLD.Abort(1);
+    MPI::Finalize();
+#endif
+  }
+  
+  /*--- If more than one, find the zone in the mesh file ---*/
+  if (val_nZone > 1 || time_spectral) {
+    if (time_spectral) {
+      if (rank == MASTER_NODE) cout << "Reading time spectral instance " << val_iZone << ":" << endl;
+    } else {
+      while (getline (mesh_file,text_line)) {
+        /*--- Search for the current domain ---*/
+        position = text_line.find ("IZONE=",0);
+        if (position != string::npos) {
+          text_line.erase (0,6);
+          unsigned short jDomain = atoi(text_line.c_str());
+          if (jDomain == val_iZone) {
+            if (rank == MASTER_NODE) cout << "Reading zone " << val_iZone << ":" << endl;
+            break;
+          }
+        }
+      }
+    }
+  }
+  
+  /*--- Read grid file with format SU2 ---*/
+  while (getline (mesh_file,text_line)) {
+    
+    /*--- Read the dimension of the problem ---*/
+    position = text_line.find ("NDIME=",0);
+    if (position != string::npos) {
+      if (domain_flag == false) {
+        text_line.erase (0,6); nDim = atoi(text_line.c_str());
+        if (rank == MASTER_NODE) {
+          if (nDim == 2) cout << "Two dimensional problem." << endl;
+          if (nDim == 3) cout << "Three dimensional problem." << endl;
+        }
+        domain_flag = true;
+      } else {
+        break;
+      }
+    }
+    
+    /*--- Read the information about inner elements ---*/
+    position = text_line.find ("NELEM=",0);
+    if (position != string::npos) {
+      text_line.erase (0,6); nElem = atoi(text_line.c_str());
+      if (size == 1)
+        cout << nElem << " interior elements. " << endl;
+      
+#ifndef NO_MPI
+      if (config->GetKind_SU2() != SU2_DDC) {
+        Local_nElem = nElem;
+        MPI::COMM_WORLD.Allreduce(&Local_nElem, &Global_nElem, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+      }
+      else {
+        Local_nElem = nElem;
+        Global_nElem = Local_nElem;
+      }
+#else
+      Global_nElem = nElem;
+#endif
+      
+      /*--- Allocate space for elements ---*/
+      if (!config->GetDivide_Element()) elem = new CPrimalGrid*[nElem];
+      else {
+        if (size == 1) cout << "Dividing elements into triangles or tetrahedra." << endl;
+        if (nDim == 2) elem = new CPrimalGrid*[2*nElem];
+        if (nDim == 3) elem = new CPrimalGrid*[5*nElem];
+      }
+      
+      /*--- Indirection matrix for dividing prisms into tets ---*/
+      unsigned short inDirection[6][6], conversionTable[6];
+      unsigned short zero, one, two, three, four, five, iNode, smallestNode = 0, lookupindex;
+      inDirection[0][0] = 0; inDirection[0][1] = 2; inDirection[0][2] = 1; inDirection[0][3] = 3; inDirection[0][4] = 5; inDirection[0][5] = 4;
+      inDirection[1][0] = 2; inDirection[1][1] = 1; inDirection[1][2] = 0; inDirection[1][3] = 5; inDirection[1][4] = 4; inDirection[1][5] = 3;
+      inDirection[2][0] = 1; inDirection[2][1] = 0; inDirection[2][2] = 2; inDirection[2][3] = 4; inDirection[2][4] = 3; inDirection[2][5] = 5;
+      inDirection[3][0] = 3; inDirection[3][1] = 4; inDirection[3][2] = 5; inDirection[3][3] = 0; inDirection[3][4] = 1; inDirection[3][5] = 2;
+      inDirection[4][0] = 5; inDirection[4][1] = 3; inDirection[4][2] = 4; inDirection[4][3] = 2; inDirection[4][4] = 0; inDirection[4][5] = 1;
+      inDirection[5][0] = 4; inDirection[5][1] = 5; inDirection[5][2] = 3; inDirection[5][3] = 1; inDirection[5][4] = 2; inDirection[5][5] = 0;
+      
+      /*--- Conversion table for local numbering of prisms in vtk format ---*/
+      conversionTable[0] = 1;
+      conversionTable[1] = 3;
+      conversionTable[2] = 2;
+      conversionTable[3] = 4;
+      conversionTable[4] = 6;
+      conversionTable[5] = 5;
+      
+      /*--- Loop over all the volumetric elements ---*/
+      while (ielem_div < nElem) {
+        getline(mesh_file,text_line);
+        istringstream elem_line(text_line);
+        
+        elem_line >> VTK_Type;
+        
+        switch(VTK_Type) {
+          case TRIANGLE:
+            elem_line >> vnodes_triangle[0]; elem_line >> vnodes_triangle[1]; elem_line >> vnodes_triangle[2];
+            elem[ielem] = new CTriangle(vnodes_triangle[0],vnodes_triangle[1],vnodes_triangle[2],nDim);
+            ielem_div++; ielem++; nelem_triangle++; break;
+          case RECTANGLE:
+            elem_line >> vnodes_quad[0]; elem_line >> vnodes_quad[1]; elem_line >> vnodes_quad[2]; elem_line >> vnodes_quad[3];
+            if (!config->GetDivide_Element()) {
+              elem[ielem] = new CRectangle(vnodes_quad[0],vnodes_quad[1],vnodes_quad[2],vnodes_quad[3],nDim);
+              ielem++; nelem_quad++; }
+            else {
+              elem[ielem] = new CTriangle(vnodes_quad[0],vnodes_quad[1],vnodes_quad[2],nDim);
+              ielem++; nelem_triangle++;
+              elem[ielem] = new CTriangle(vnodes_quad[0],vnodes_quad[2],vnodes_quad[3],nDim);
+              ielem++; nelem_triangle++; }
+            ielem_div++;
+            break;
+          case TETRAHEDRON:
+            elem_line >> vnodes_tetra[0]; elem_line >> vnodes_tetra[1]; elem_line >> vnodes_tetra[2]; elem_line >> vnodes_tetra[3];
+            elem[ielem] = new CTetrahedron(vnodes_tetra[0],vnodes_tetra[1],vnodes_tetra[2],vnodes_tetra[3]);
+            ielem_div++; ielem++; nelem_tetra++; break;
+          case HEXAHEDRON:
+            elem_line >> vnodes_hexa[0]; elem_line >> vnodes_hexa[1]; elem_line >> vnodes_hexa[2];
+            elem_line >> vnodes_hexa[3]; elem_line >> vnodes_hexa[4]; elem_line >> vnodes_hexa[5];
+            elem_line >> vnodes_hexa[6]; elem_line >> vnodes_hexa[7];
+            if (!config->GetDivide_Element()) {
+              elem[ielem] = new CHexahedron(vnodes_hexa[0],vnodes_hexa[1],vnodes_hexa[2],vnodes_hexa[3],vnodes_hexa[4],vnodes_hexa[5],vnodes_hexa[6],vnodes_hexa[7]);
+              ielem++; nelem_hexa++; }
+            else {
+              elem[ielem] = new CTetrahedron(vnodes_hexa[0],vnodes_hexa[1],vnodes_hexa[2],vnodes_hexa[5]);
+              ielem++; nelem_tetra++;
+              elem[ielem] = new CTetrahedron(vnodes_hexa[0],vnodes_hexa[2],vnodes_hexa[7],vnodes_hexa[5]);
+              ielem++; nelem_tetra++;
+              elem[ielem] = new CTetrahedron(vnodes_hexa[0],vnodes_hexa[2],vnodes_hexa[3],vnodes_hexa[7]);
+              ielem++; nelem_tetra++;
+              elem[ielem] = new CTetrahedron(vnodes_hexa[0],vnodes_hexa[5],vnodes_hexa[7],vnodes_hexa[4]);
+              ielem++; nelem_tetra++;
+              elem[ielem] = new CTetrahedron(vnodes_hexa[2],vnodes_hexa[7],vnodes_hexa[5],vnodes_hexa[6]);
+              ielem++; nelem_tetra++;	}
+            ielem_div++;
+            break;
+          case WEDGE:
+            elem_line >> vnodes_wedge[0]; elem_line >> vnodes_wedge[1]; elem_line >> vnodes_wedge[2];
+            elem_line >> vnodes_wedge[3]; elem_line >> vnodes_wedge[4]; elem_line >> vnodes_wedge[5];
+            if (!config->GetDivide_Element()) {
+              elem[ielem] = new CWedge(vnodes_wedge[0],vnodes_wedge[1],vnodes_wedge[2],vnodes_wedge[3],vnodes_wedge[4],vnodes_wedge[5]);
+              ielem++; nelem_wedge++; }
+            else {
+              /* ---Reference: How to subdivide pyramids, prisms and hexahedra into tetrahedra by Julien Dompierre */
+              unsigned long smallest = 9999999;
+              for (iNode = 0; iNode < 6; iNode ++) {
+                if ( smallest > vnodes_wedge[iNode]) {
+                  smallest = vnodes_wedge[iNode];
+                  smallestNode = iNode;
+                }
+              }
+              lookupindex = conversionTable[smallestNode] - 1;
+              zero  = inDirection[lookupindex][0]; one  = inDirection[lookupindex][1]; two  = inDirection[lookupindex][2];
+              three = inDirection[lookupindex][3]; four = inDirection[lookupindex][4]; five = inDirection[lookupindex][5];
+              
+              unsigned long index1, index2;
+              bool division1 = false;
+              index1 = min(vnodes_wedge[one], vnodes_wedge[five]);
+              index2 = min(vnodes_wedge[two], vnodes_wedge[four]);
+              if(index1 < index2) division1 = true;
+              
+              if (division1) {
+                elem[ielem] = new CTetrahedron(vnodes_wedge[zero],vnodes_wedge[one],vnodes_wedge[two],vnodes_wedge[five]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_wedge[zero],vnodes_wedge[one],vnodes_wedge[five],vnodes_wedge[four]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_wedge[zero],vnodes_wedge[four],vnodes_wedge[five],vnodes_wedge[three]);
+                ielem++; nelem_tetra++;
+              }
+              else {
+                elem[ielem] = new CTetrahedron(vnodes_wedge[zero],vnodes_wedge[one],vnodes_wedge[two],vnodes_wedge[four]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_wedge[zero],vnodes_wedge[four],vnodes_wedge[two],vnodes_wedge[five]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_wedge[zero],vnodes_wedge[four],vnodes_wedge[five],vnodes_wedge[three]);
+                ielem++; nelem_tetra++;
+              }
+            }
+            ielem_div++;
+            break;
+          case PYRAMID:
+            elem_line >> vnodes_pyramid[0]; elem_line >> vnodes_pyramid[1]; elem_line >> vnodes_pyramid[2];
+            elem_line >> vnodes_pyramid[3]; elem_line >> vnodes_pyramid[4];
+            if (!config->GetDivide_Element()) {
+              elem[ielem] = new CPyramid(vnodes_pyramid[0],vnodes_pyramid[1],vnodes_pyramid[2],vnodes_pyramid[3],vnodes_pyramid[4]);
+              ielem++; nelem_pyramid++;
+            }
+            else {
+              elem[ielem] = new CTetrahedron(vnodes_pyramid[0],vnodes_pyramid[1],vnodes_pyramid[2],vnodes_pyramid[4]);
+              ielem++; nelem_tetra++;
+              elem[ielem] = new CTetrahedron(vnodes_pyramid[0],vnodes_pyramid[2],vnodes_pyramid[3],vnodes_pyramid[4]);
+              ielem++; nelem_tetra++; }
+            ielem_div++;
+            break;
+        }
+      }
+      nElem_Storage = nelem_triangle*4 + nelem_quad*5 + nelem_tetra*5 + nelem_hexa*9 + nelem_wedge*7 + nelem_pyramid*6;
+      if (config->GetDivide_Element()) nElem = nelem_triangle + nelem_quad + nelem_tetra + nelem_hexa + nelem_wedge + nelem_pyramid;
+      
+      /*--- Communicate the number of each element type to all processors. ---*/
+#ifndef NO_MPI
+      if (config->GetKind_SU2() != SU2_DDC) {
+        Local_nElemTri = nelem_triangle;
+        MPI::COMM_WORLD.Allreduce(&Local_nElemTri, &Global_nelem_triangle,
+                                  1, MPI::UNSIGNED_LONG, MPI::SUM);
+        Local_nElemQuad = nelem_quad;
+        MPI::COMM_WORLD.Allreduce(&Local_nElemQuad,     &Global_nelem_quad,
+                                  1, MPI::UNSIGNED_LONG, MPI::SUM);
+        Local_nElemTet = nelem_tetra;
+        MPI::COMM_WORLD.Allreduce(&Local_nElemTet,    &Global_nelem_tetra,
+                                  1, MPI::UNSIGNED_LONG, MPI::SUM);
+        Local_nElemHex = nelem_hexa;
+        MPI::COMM_WORLD.Allreduce(&Local_nElemHex,     &Global_nelem_hexa,
+                                  1, MPI::UNSIGNED_LONG, MPI::SUM);
+        Local_nElemWedge = nelem_wedge;
+        MPI::COMM_WORLD.Allreduce(&Local_nElemWedge,    &Global_nelem_wedge,
+                                  1, MPI::UNSIGNED_LONG, MPI::SUM);
+        Local_nElemPyramid = nelem_pyramid;
+        MPI::COMM_WORLD.Allreduce(&Local_nElemPyramid,  &Global_nelem_pyramid,
+                                  1, MPI::UNSIGNED_LONG, MPI::SUM);
+      }
+      else {
+        Local_nElemTri = nelem_triangle;
+        Global_nelem_triangle = Local_nElemTri;
+        Local_nElemQuad = nelem_quad;
+        Global_nelem_quad = Local_nElemQuad;
+        Local_nElemTet = nelem_tetra;
+        Global_nelem_tetra = Local_nElemTet;
+        Local_nElemHex = nelem_hexa;
+        Global_nelem_hexa = Local_nElemHex;
+        Local_nElemWedge = nelem_wedge;
+        Global_nelem_wedge = Local_nElemWedge;
+        Local_nElemPyramid = nelem_pyramid;
+        Global_nelem_pyramid = Local_nElemPyramid;
+      }
+#else
+      Global_nelem_triangle = nelem_triangle;
+      Global_nelem_quad     = nelem_quad;
+      Global_nelem_tetra    = nelem_tetra;
+      Global_nelem_hexa     = nelem_hexa;
+      Global_nelem_wedge    = nelem_wedge;
+      Global_nelem_pyramid  = nelem_pyramid;
+#endif
+      
+      /*--- Print information about the elements to the console ---*/
+      if (size == 1) {
+        if (Global_nelem_triangle > 0)
+          cout << Global_nelem_triangle << " triangles." << endl;
+        if (Global_nelem_quad > 0)
+          cout << Global_nelem_quad << " quadrilaterals." << endl;
+        if (Global_nelem_tetra > 0)
+          cout << Global_nelem_tetra << " tetrahedra." << endl;
+        if (Global_nelem_hexa > 0)
+          cout << Global_nelem_hexa << " hexahedra." << endl;
+        if (Global_nelem_wedge > 0)
+          cout << Global_nelem_wedge << " prisms." << endl;
+        if (Global_nelem_pyramid > 0)
+          cout << Global_nelem_pyramid << " pyramids." << endl;
+      }
+    }
+    
+    /*--- Read number of points ---*/
+    position = text_line.find ("NPOIN=",0);
+    if (position != string::npos) {
+      text_line.erase (0,6);
+      
+      /*--- Check for ghost points. ---*/
+      stringstream test_line(text_line);
+      while (test_line >> dummy)
+        iCount++;
+      
+      /*--- Now read and store the number of points and possible ghost points. ---*/
+      stringstream  stream_line(text_line);
+      if (iCount == 2) {
+        stream_line >> nPoint;
+        stream_line >> nPointDomain;
+        if (size == 1)
+          cout << nPoint << " points, and " << nPoint-nPointDomain << " ghost points." << endl;
+        
+        /*--- Set some important point information for parallel simulations. ---*/
+#ifndef NO_MPI
+        if (config->GetKind_SU2() != SU2_DDC) {
+          Local_nPoint = nPoint; Local_nPointDomain = nPointDomain;
+          MPI::COMM_WORLD.Allreduce(&Local_nPoint, &Global_nPoint, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+          MPI::COMM_WORLD.Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+        }
+        else {
+          Local_nPoint = nPoint; Local_nPointDomain = nPointDomain;
+          Global_nPoint = Local_nPoint;
+          Global_nPointDomain = Local_nPointDomain;
+        }
+#else
+        Global_nPoint = nPoint;
+        Global_nPointDomain = nPointDomain;
+#endif
+        
+      }
+      else if (iCount == 1) {
+        stream_line >> nPoint;
+        nPointDomain = nPoint;
+        Global_nPointDomain = nPoint;
+        Global_nPoint = nPoint;
+        if (rank == MASTER_NODE) cout << nPoint << " points." << endl;
+      }
+      else {
+        cout << "NPOIN improperly specified!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+#ifdef NO_MPI
+        exit(1);
+#else
+        MPI::COMM_WORLD.Abort(1);
+        MPI::Finalize();
+#endif
+      }
+      
+      /*--- Retrieve grid conversion factor. The conversion is only
+       applied for SU2_CFD. All other SU2 components leave the mesh
+       as is. ---*/
+      if (config->GetKind_SU2() == SU2_CFD)
+        Conversion_Factor = config->GetConversion_Factor();
+      else
+        Conversion_Factor = 1.0;
+      
+      node = new CPoint*[nPoint];
+      while (iPoint < nPoint) {
+        getline(mesh_file,text_line);
+        istringstream point_line(text_line);
+        switch(nDim) {
+          case 2:
+            GlobalIndex = iPoint;
+#ifdef NO_MPI
+            point_line >> Coord_2D[0]; point_line >> Coord_2D[1];
+#else
+            if (size > 1) { point_line >> Coord_2D[0]; point_line >> Coord_2D[1]; point_line >> LocalIndex; point_line >> GlobalIndex; }
+            else { point_line >> Coord_2D[0]; point_line >> Coord_2D[1]; LocalIndex = iPoint; GlobalIndex = iPoint; }
+#endif
+            node[iPoint] = new CPoint(Conversion_Factor*Coord_2D[0], Conversion_Factor*Coord_2D[1], GlobalIndex, config);
+            iPoint++; break;
+          case 3:
+            GlobalIndex = iPoint;
+#ifdef NO_MPI
+            point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2];
+#else
+            if (size > 1) { point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2]; point_line >> LocalIndex; point_line >> GlobalIndex; }
+            else { point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2]; LocalIndex = iPoint; GlobalIndex = iPoint; }
+#endif
+            node[iPoint] = new CPoint(Conversion_Factor*Coord_3D[0], Conversion_Factor*Coord_3D[1], Conversion_Factor*Coord_3D[2], GlobalIndex, config);
+            iPoint++; break;
+        }
+      }
+    }
+    
+    
+    /*--- Read number of markers ---*/
+    position = text_line.find ("NMARK=",0);
+    if (position != string::npos) {
+      text_line.erase (0,6); nMarker = atoi(text_line.c_str());
+      if (size == 1) cout << nMarker << " surface markers." << endl;
+      config->SetnMarker_All(nMarker);
+      bound = new CPrimalGrid**[nMarker];
+      nElem_Bound = new unsigned long [nMarker];
+      nElem_Bound_Storage = new unsigned long [nMarker];
+      Tag_to_Marker = new string [MAX_INDEX_VALUE];
+      
+      for (iMarker = 0 ; iMarker < nMarker; iMarker++) {
+        getline (mesh_file,text_line);
+        text_line.erase (0,11);
+        string::size_type position;
+        for (iChar = 0; iChar < 20; iChar++) {
+          position = text_line.find( " ", 0 );
+          if(position != string::npos) text_line.erase (position,1);
+          position = text_line.find( "\r", 0 );
+          if(position != string::npos) text_line.erase (position,1);
+          position = text_line.find( "\n", 0 );
+          if(position != string::npos) text_line.erase (position,1);
+        }
+        Marker_Tag = text_line.c_str();
+        
+        /*--- Physical boundaries definition ---*/
+        if (Marker_Tag != "SEND_RECEIVE") {
+          getline (mesh_file,text_line);
+          text_line.erase (0,13); nElem_Bound[iMarker] = atoi(text_line.c_str());
+          if (size == 1)
+            cout << nElem_Bound[iMarker]  << " boundary elements in index "<< iMarker <<" (Marker = " <<Marker_Tag<< ")." << endl;
+          bound[iMarker] = new CPrimalGrid* [nElem_Bound[iMarker]];
+          
+          nelem_edge_bound = 0; nelem_triangle_bound = 0; nelem_quad_bound = 0; ielem = 0;
+          for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
+            getline(mesh_file,text_line);
+            istringstream bound_line(text_line);
+            bound_line >> VTK_Type;
+            switch(VTK_Type) {
+              case LINE:
+                
+                if (nDim == 3) {
+                  cout << "Please remove line boundary conditions from the mesh file!" << endl;
+                  cout << "Press any key to exit..." << endl;
+                  cin.get();
+#ifdef NO_MPI
+                  exit(1);
+#else
+                  MPI::COMM_WORLD.Abort(1);
+                  MPI::Finalize();
+#endif
+                }
+                
+                bound_line >> vnodes_edge[0]; bound_line >> vnodes_edge[1];
+                bound[iMarker][ielem] = new CLine(vnodes_edge[0],vnodes_edge[1],2);
+                ielem++; nelem_edge_bound++; break;
+              case TRIANGLE:
+                bound_line >> vnodes_triangle[0]; bound_line >> vnodes_triangle[1]; bound_line >> vnodes_triangle[2];
+                bound[iMarker][ielem] = new CTriangle(vnodes_triangle[0],vnodes_triangle[1],vnodes_triangle[2],3);
+                ielem++; nelem_triangle_bound++; break;
+              case RECTANGLE:
+                bound_line >> vnodes_quad[0]; bound_line >> vnodes_quad[1]; bound_line >> vnodes_quad[2]; bound_line >> vnodes_quad[3];
+                bound[iMarker][ielem] = new CRectangle(vnodes_quad[0],vnodes_quad[1],vnodes_quad[2],vnodes_quad[3],3);
+                ielem++; nelem_quad_bound++; break;
+            }
+          }
+          nElem_Bound_Storage[iMarker] = nelem_edge_bound*3 + nelem_triangle_bound*4 + nelem_quad_bound*5;
+          
+          /*--- Update config information storing the boundary information in the right place ---*/
+          Tag_to_Marker[config->GetMarker_Config_Tag(Marker_Tag)] = Marker_Tag;
+          config->SetMarker_All_Tag(iMarker, Marker_Tag);
+          config->SetMarker_All_Boundary(iMarker, config->GetMarker_Config_Boundary(Marker_Tag));
+          config->SetMarker_All_Monitoring(iMarker, config->GetMarker_Config_Monitoring(Marker_Tag));
+          config->SetMarker_All_Designing(iMarker, config->GetMarker_Config_Designing(Marker_Tag));
+          config->SetMarker_All_Plotting(iMarker, config->GetMarker_Config_Plotting(Marker_Tag));
+          config->SetMarker_All_Moving(iMarker, config->GetMarker_Config_Moving(Marker_Tag));
+          config->SetMarker_All_PerBound(iMarker, config->GetMarker_Config_PerBound(Marker_Tag));
+          config->SetMarker_All_Sliding(iMarker, config->GetMarker_Config_Sliding(Marker_Tag));
+          config->SetMarker_All_SendRecv(iMarker, NONE);
+          
+        }
+        
+        /*--- Send-Receive boundaries definition ---*/
+        else {
+          unsigned long nelem_vertex = 0, vnodes_vertex;
+          unsigned short transform, matching_zone;
+          getline (mesh_file,text_line);
+          text_line.erase (0,13); nElem_Bound[iMarker] = atoi(text_line.c_str());
+          bound[iMarker] = new CPrimalGrid* [nElem_Bound[iMarker]];
+          
+          nelem_vertex = 0; ielem = 0;
+          getline (mesh_file,text_line); text_line.erase (0,8);
+          config->SetMarker_All_Boundary(iMarker, SEND_RECEIVE);
+          config->SetMarker_All_SendRecv(iMarker, atoi(text_line.c_str()));
+          
+          for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
+            getline(mesh_file,text_line);
+            istringstream bound_line(text_line);
+            bound_line >> VTK_Type; bound_line >> vnodes_vertex; bound_line >> transform;
+            
+            if (val_nZone > 1) bound_line >> matching_zone;
+            bound[iMarker][ielem] = new CVertexMPI(vnodes_vertex, nDim);
+            bound[iMarker][ielem]->SetRotation_Type(transform);
+            if (val_nZone > 1) bound[iMarker][ielem]->SetMatching_Zone(matching_zone);
+            ielem++; nelem_vertex++;
+            if (config->GetMarker_All_SendRecv(iMarker) < 0)
+              node[vnodes_vertex]->SetDomain(false);
+          }
+          
+        }
+        
+      }
+    }
+    /*--- Read periodic transformation info (center, rotation, translation) ---*/
+    position = text_line.find ("NPERIODIC=",0);
+    if (position != string::npos) {
+      unsigned short nPeriodic, iPeriodic, iIndex;
+      
+      /*--- Set bool signifying that periodic transormations were found ---*/
+      found_transform = true;
+      
+      /*--- Read and store the number of transformations. ---*/
+      text_line.erase (0,10); nPeriodic = atoi(text_line.c_str());
+      if (rank == MASTER_NODE) {
+        if (nPeriodic - 1 != 0)
+          cout << nPeriodic - 1 << " periodic transformations." << endl;
+      }
+      config->SetnPeriodicIndex(nPeriodic);
+      
+      /*--- Store center, rotation, & translation in that order for each. ---*/
+      for (iPeriodic = 0; iPeriodic < nPeriodic; iPeriodic++) {
+        getline (mesh_file,text_line);
+        position = text_line.find ("PERIODIC_INDEX=",0);
+        if (position != string::npos) {
+          text_line.erase (0,15); iIndex = atoi(text_line.c_str());
+          if (iIndex != iPeriodic) {
+            cout << "PERIODIC_INDEX out of order in SU2 file!!" << endl;
+            cout << "Press any key to exit..." << endl;
+            cin.get();
+#ifdef NO_MPI
+            exit(1);
+#else
+            MPI::COMM_WORLD.Abort(1);
+            MPI::Finalize();
+#endif
+          }
+        }
+        double* center    = new double[3];
+        double* rotation  = new double[3];
+        double* translate = new double[3];
+        getline (mesh_file,text_line);
+        istringstream cent(text_line);
+        cent >> center[0]; cent >> center[1]; cent >> center[2];
+        config->SetPeriodicCenter(iPeriodic, center);
+        getline (mesh_file,text_line);
+        istringstream rot(text_line);
+        rot >> rotation[0]; rot >> rotation[1]; rot >> rotation[2];
+        config->SetPeriodicRotation(iPeriodic, rotation);
+        getline (mesh_file,text_line);
+        istringstream tran(text_line);
+        tran >> translate[0]; tran >> translate[1]; tran >> translate[2];
+        config->SetPeriodicTranslate(iPeriodic, translate);
+      }
+      
+    }
+    
+  }
+  
+  /*--- If no periodic transormations were found, store default zeros ---*/
+  if (!found_transform) {
+    unsigned short nPeriodic = 1, iPeriodic = 0;
+    config->SetnPeriodicIndex(nPeriodic);
+    double* center    = new double[3];
+    double* rotation  = new double[3];
+    double* translate = new double[3];
+    for (unsigned short iDim = 0; iDim < 3; iDim++) {
+      center[iDim] = 0.0; rotation[iDim] = 0.0; translate[iDim] = 0.0;
+    }
+    config->SetPeriodicCenter(iPeriodic, center);
+    config->SetPeriodicRotation(iPeriodic, rotation);
+    config->SetPeriodicTranslate(iPeriodic, translate);
+  }
+  
+  /*--- Close the input file ---*/
+  mesh_file.close();
+  
+#ifndef NO_MPI
+  if ((size > 1) && (rank == MASTER_NODE))
+    cout << Global_nElem << " interior elements (incl. halo cells). " << Global_nPoint << " points (incl. ghost points) " << endl;
+#endif
+  
+}
 
+void CPhysicalGeometry::CGNS_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone){
+  
 #ifndef NO_CGNS
+
+  /*--- Local variables and initialization ---*/
+	string text_line, Marker_Tag;
+	ifstream mesh_file;
+	unsigned short VTK_Type, iMarker, iChar, iCount = 0;
+	unsigned long Point_Surface, iElem_Surface, iElem_Bound = 0, iPoint = 0, ielem_div = 0, ielem = 0,
+  vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4], vnodes_tetra[4], vnodes_hexa[8], vnodes_wedge[6], vnodes_pyramid[5], dummy, GlobalIndex;
+	char cstr[200];
+	double Coord_2D[2], Coord_3D[3], Conversion_Factor = 1.0;
+	string::size_type position;
+	bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
+	int rank = MASTER_NODE, size = 1;
+	bool domain_flag = false;
+	bool found_transform = false;
+	nZone = val_nZone;
+  
 	/*--- Local variables which are needed when calling the CGNS mid-level API. ---*/
 	unsigned long vnodes_cgns[8];
 	double Coord_cgns[3];
@@ -402,8 +1078,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, string val_mesh_filename, 
 	int** dataSize = NULL;
 	bool** isInternal = NULL;
 	char*** sectionNames = NULL;
-#endif
-
+  
   /*--- Initialize counters for local/global points & elements ---*/
 #ifndef NO_MPI
 	unsigned long LocalIndex;
@@ -412,7 +1087,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, string val_mesh_filename, 
   unsigned long Local_nElemTri, Local_nElemQuad, Local_nElemTet;
   unsigned long Local_nElemHex, Local_nElemWedge, Local_nElemPyramid;
 	rank = MPI::COMM_WORLD.Get_rank();
-	size = MPI::COMM_WORLD.Get_size();	
+	size = MPI::COMM_WORLD.Get_size();
 #endif
   FinestMGLevel = true;
 	Global_nPoint = 0; Global_nPointDomain = 0; Global_nElem = 0;
@@ -423,1639 +1098,1093 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, string val_mesh_filename, 
   nelem_hexa     = 0; Global_nelem_hexa     = 0;
   nelem_wedge    = 0; Global_nelem_wedge    = 0;
   nelem_pyramid  = 0; Global_nelem_pyramid  = 0;
-
-	if (rank == MASTER_NODE)
-		cout << endl <<"---------------------- Read grid file information -----------------------" << endl;
-
-	switch (val_format) {
-	case SU2:
-
-		/*--- Open grid file ---*/
-		strcpy (cstr, val_mesh_filename.c_str());
-		mesh_file.open(cstr, ios::in);
-		if (mesh_file.fail()) {
-			cout << "There is no geometry file (CPhysicalGeometry)!!" << endl;
-			cout << "Press any key to exit..." << endl;
-			cin.get();
-#ifdef NO_MPI
-			exit(1);
-#else
-			MPI::COMM_WORLD.Abort(1);
-			MPI::Finalize();
-#endif
-		}
-
-		/*--- If more than one, find the zone in the mesh file ---*/
-		if (val_nZone > 1 || time_spectral) {
-			if (time_spectral) {
-				if (rank == MASTER_NODE) cout << "Reading time spectral instance " << val_iZone << ":" << endl;
-			} else {
-				while (getline (mesh_file,text_line)) {
-					/*--- Search for the current domain ---*/
-					position = text_line.find ("IZONE=",0);
-					if (position != string::npos) {
-						text_line.erase (0,6);
-						unsigned short jDomain = atoi(text_line.c_str());
-						if (jDomain == val_iZone) {
-							if (rank == MASTER_NODE) cout << "Reading zone " << val_iZone << ":" << endl;
-							break;
-						}
-					}
-				}
-			}
-		}
-
-		/*--- Read grid file with format SU2 ---*/
-		while (getline (mesh_file,text_line)) {
-
-			/*--- Read the dimension of the problem ---*/
-			position = text_line.find ("NDIME=",0);
-			if (position != string::npos) {
-				if (domain_flag == false) {
-					text_line.erase (0,6); nDim = atoi(text_line.c_str());
-					if (rank == MASTER_NODE) {
-						if (nDim == 2) cout << "Two dimensional problem." << endl;
-						if (nDim == 3) cout << "Three dimensional problem." << endl;
-					}
-					domain_flag = true;
-				} else {
-					break;
-				}
-			}
-
-			/*--- Read the information about inner elements ---*/
-			position = text_line.find ("NELEM=",0);
-			if (position != string::npos) {
-				text_line.erase (0,6); nElem = atoi(text_line.c_str());
-				if (size == 1)
-					cout << nElem << " interior elements. ";
-
+  
+#ifndef NO_CGNS
+  
+  /*--- Throw error if not in serial mode. ---*/
 #ifndef NO_MPI
-				Local_nElem = nElem;
-				MPI::COMM_WORLD.Allreduce(&Local_nElem, &Global_nElem, 1, MPI::UNSIGNED_LONG, MPI::SUM);
-#else
-        Global_nElem = nElem;
+  cout << "Parallel support with CGNS format not yet implemented!!" << endl;
+  cout << "Press any key to exit..." << endl;
+  cin.get();
+  MPI::COMM_WORLD.Abort(1);
+  MPI::Finalize();
 #endif
-
-				/*--- Allocate space for elements ---*/
-				if (!config->GetDivide_Element()) elem = new CPrimalGrid*[nElem];
-				else {
-					if (nDim == 2) elem = new CPrimalGrid*[2*nElem];
-					if (nDim == 3) {
-						elem = new CPrimalGrid*[5*nElem];
-						//	cout << "The grid division only works in 2D!!" << endl;
-						//	cout << "Press any key to exit..." << endl;
-						//	cin.get();
-					}
-				}
-
-				/*--- Indirection matrix for dividing prisms into tets ---*/
-				unsigned short inDirection[6][6], conversionTable[6];
-				unsigned short zero, one, two, three, four, five, iNode, smallestNode = 0, lookupindex;
-				inDirection[0][0] = 0; inDirection[0][1] = 2; inDirection[0][2] = 1; inDirection[0][3] = 3; inDirection[0][4] = 5; inDirection[0][5] = 4;
-				inDirection[1][0] = 2; inDirection[1][1] = 1; inDirection[1][2] = 0; inDirection[1][3] = 5; inDirection[1][4] = 4; inDirection[1][5] = 3;
-				inDirection[2][0] = 1; inDirection[2][1] = 0; inDirection[2][2] = 2; inDirection[2][3] = 4; inDirection[2][4] = 3; inDirection[2][5] = 5;
-				inDirection[3][0] = 3; inDirection[3][1] = 4; inDirection[3][2] = 5; inDirection[3][3] = 0; inDirection[3][4] = 1; inDirection[3][5] = 2;
-				inDirection[4][0] = 5; inDirection[4][1] = 3; inDirection[4][2] = 4; inDirection[4][3] = 2; inDirection[4][4] = 0; inDirection[4][5] = 1;
-				inDirection[5][0] = 4; inDirection[5][1] = 5; inDirection[5][2] = 3; inDirection[5][3] = 1; inDirection[5][4] = 2; inDirection[5][5] = 0;
-
-				/*--- Conversion table for local numbering of prisms in vtk format ---*/
-				conversionTable[0] = 1;
-				conversionTable[1] = 3;
-				conversionTable[2] = 2;
-				conversionTable[3] = 4;
-				conversionTable[4] = 6;
-				conversionTable[5] = 5;
-
-				/*--- Loop over all the volumetric elements ---*/
-				while (ielem_div < nElem) {
-					getline(mesh_file,text_line);
-					istringstream elem_line(text_line);
-
-					elem_line >> VTK_Type;
-
-					switch(VTK_Type) {
-					case TRIANGLE:
-						elem_line >> vnodes_triangle[0]; elem_line >> vnodes_triangle[1]; elem_line >> vnodes_triangle[2];
-						elem[ielem] = new CTriangle(vnodes_triangle[0],vnodes_triangle[1],vnodes_triangle[2],nDim);
-						ielem_div++; ielem++; nelem_triangle++; break;
-					case RECTANGLE:
-						elem_line >> vnodes_quad[0]; elem_line >> vnodes_quad[1]; elem_line >> vnodes_quad[2]; elem_line >> vnodes_quad[3];
-						if (!config->GetDivide_Element()) {
-							elem[ielem] = new CRectangle(vnodes_quad[0],vnodes_quad[1],vnodes_quad[2],vnodes_quad[3],nDim);
-							ielem++; nelem_quad++; }
-						else {
-							elem[ielem] = new CTriangle(vnodes_quad[0],vnodes_quad[1],vnodes_quad[2],nDim);
-							ielem++; nelem_triangle++;
-							elem[ielem] = new CTriangle(vnodes_quad[0],vnodes_quad[2],vnodes_quad[3],nDim);
-							ielem++; nelem_triangle++; }
-						ielem_div++;
-						break;
-					case TETRAHEDRON:
-						elem_line >> vnodes_tetra[0]; elem_line >> vnodes_tetra[1]; elem_line >> vnodes_tetra[2]; elem_line >> vnodes_tetra[3];
-						elem[ielem] = new CTetrahedron(vnodes_tetra[0],vnodes_tetra[1],vnodes_tetra[2],vnodes_tetra[3]);
-						ielem_div++; ielem++; nelem_tetra++; break;
-					case HEXAHEDRON:
-						elem_line >> vnodes_hexa[0]; elem_line >> vnodes_hexa[1]; elem_line >> vnodes_hexa[2];
-						elem_line >> vnodes_hexa[3]; elem_line >> vnodes_hexa[4]; elem_line >> vnodes_hexa[5];
-						elem_line >> vnodes_hexa[6]; elem_line >> vnodes_hexa[7];
-						if (!config->GetDivide_Element()) {
-							elem[ielem] = new CHexahedron(vnodes_hexa[0],vnodes_hexa[1],vnodes_hexa[2],vnodes_hexa[3],vnodes_hexa[4],vnodes_hexa[5],vnodes_hexa[6],vnodes_hexa[7]);
-							ielem++; nelem_hexa++; }
-						else {
-							elem[ielem] = new CTetrahedron(vnodes_hexa[0],vnodes_hexa[1],vnodes_hexa[2],vnodes_hexa[5]);
-							ielem++; nelem_tetra++;
-							elem[ielem] = new CTetrahedron(vnodes_hexa[0],vnodes_hexa[2],vnodes_hexa[7],vnodes_hexa[5]);
-							ielem++; nelem_tetra++;
-							elem[ielem] = new CTetrahedron(vnodes_hexa[0],vnodes_hexa[2],vnodes_hexa[3],vnodes_hexa[7]);
-							ielem++; nelem_tetra++;
-							elem[ielem] = new CTetrahedron(vnodes_hexa[0],vnodes_hexa[5],vnodes_hexa[7],vnodes_hexa[4]);
-							ielem++; nelem_tetra++;
-							elem[ielem] = new CTetrahedron(vnodes_hexa[2],vnodes_hexa[7],vnodes_hexa[5],vnodes_hexa[6]);
-							ielem++; nelem_tetra++;	}
-						ielem_div++;
-						break;
-					case WEDGE:
-						elem_line >> vnodes_wedge[0]; elem_line >> vnodes_wedge[1]; elem_line >> vnodes_wedge[2];
-						elem_line >> vnodes_wedge[3]; elem_line >> vnodes_wedge[4]; elem_line >> vnodes_wedge[5];
-						if (!config->GetDivide_Element()) {
-							elem[ielem] = new CWedge(vnodes_wedge[0],vnodes_wedge[1],vnodes_wedge[2],vnodes_wedge[3],vnodes_wedge[4],vnodes_wedge[5]);
-							ielem++; nelem_wedge++; }
-						else {
-							/* ---Reference: How to subdivide pyramids, prisms and hexahedra into tetrahedra by Julien Dompierre */
-							unsigned long smallest = 9999999;
-							for (iNode = 0; iNode < 6; iNode ++) {
-								if ( smallest > vnodes_wedge[iNode]) {
-									smallest = vnodes_wedge[iNode];
-									smallestNode = iNode;
-								}
-							}
-							lookupindex = conversionTable[smallestNode] - 1;
-							zero  = inDirection[lookupindex][0]; one  = inDirection[lookupindex][1]; two  = inDirection[lookupindex][2];
-							three = inDirection[lookupindex][3]; four = inDirection[lookupindex][4]; five = inDirection[lookupindex][5];
-
-							unsigned long index1, index2;
-							bool division1 = false;
-							index1 = min(vnodes_wedge[one], vnodes_wedge[five]);
-							index2 = min(vnodes_wedge[two], vnodes_wedge[four]);
-							if(index1 < index2) division1 = true;
-
-							if (division1) {
-								elem[ielem] = new CTetrahedron(vnodes_wedge[zero],vnodes_wedge[one],vnodes_wedge[two],vnodes_wedge[five]);
-								ielem++; nelem_tetra++;
-								elem[ielem] = new CTetrahedron(vnodes_wedge[zero],vnodes_wedge[one],vnodes_wedge[five],vnodes_wedge[four]);
-								ielem++; nelem_tetra++;
-								elem[ielem] = new CTetrahedron(vnodes_wedge[zero],vnodes_wedge[four],vnodes_wedge[five],vnodes_wedge[three]);
-								ielem++; nelem_tetra++;
-							}
-							else {
-								elem[ielem] = new CTetrahedron(vnodes_wedge[zero],vnodes_wedge[one],vnodes_wedge[two],vnodes_wedge[four]);
-								ielem++; nelem_tetra++;
-								elem[ielem] = new CTetrahedron(vnodes_wedge[zero],vnodes_wedge[four],vnodes_wedge[two],vnodes_wedge[five]);
-								ielem++; nelem_tetra++;
-								elem[ielem] = new CTetrahedron(vnodes_wedge[zero],vnodes_wedge[four],vnodes_wedge[five],vnodes_wedge[three]);
-								ielem++; nelem_tetra++;
-							}
-						}
-						ielem_div++;
-						break;
-					case PYRAMID:
-						elem_line >> vnodes_pyramid[0]; elem_line >> vnodes_pyramid[1]; elem_line >> vnodes_pyramid[2];
-						elem_line >> vnodes_pyramid[3]; elem_line >> vnodes_pyramid[4];
-						if (!config->GetDivide_Element()) {
-							elem[ielem] = new CPyramid(vnodes_pyramid[0],vnodes_pyramid[1],vnodes_pyramid[2],vnodes_pyramid[3],vnodes_pyramid[4]);
-							ielem++; nelem_pyramid++;
-						}
-						else {
-							elem[ielem] = new CTetrahedron(vnodes_pyramid[0],vnodes_pyramid[1],vnodes_pyramid[2],vnodes_pyramid[4]);
-							ielem++; nelem_tetra++;
-							elem[ielem] = new CTetrahedron(vnodes_pyramid[0],vnodes_pyramid[2],vnodes_pyramid[3],vnodes_pyramid[4]);
-							ielem++; nelem_tetra++; }
-						ielem_div++;
-						break;
-					}
-				}
-				nElem_Storage = nelem_triangle*4 + nelem_quad*5 + nelem_tetra*5 + nelem_hexa*9 + nelem_wedge*7 + nelem_pyramid*6;
-				if (config->GetDivide_Element()) nElem = nelem_triangle + nelem_quad + nelem_tetra + nelem_hexa + nelem_wedge + nelem_pyramid;
-			
-        /*--- Communicate the number of each element type to all processors. ---*/
-#ifndef NO_MPI
-        Local_nElemTri = nelem_triangle;
-        MPI::COMM_WORLD.Allreduce(&Local_nElemTri, &Global_nelem_triangle,
-                                  1, MPI::UNSIGNED_LONG, MPI::SUM);
-        Local_nElemQuad = nelem_quad;
-        MPI::COMM_WORLD.Allreduce(&Local_nElemQuad,     &Global_nelem_quad,
-                                  1, MPI::UNSIGNED_LONG, MPI::SUM);
-        Local_nElemTet = nelem_tetra;
-        MPI::COMM_WORLD.Allreduce(&Local_nElemTet,    &Global_nelem_tetra,
-                                  1, MPI::UNSIGNED_LONG, MPI::SUM);
-        Local_nElemHex = nelem_hexa;
-        MPI::COMM_WORLD.Allreduce(&Local_nElemHex,     &Global_nelem_hexa,
-                                  1, MPI::UNSIGNED_LONG, MPI::SUM);
-        Local_nElemWedge = nelem_wedge;
-        MPI::COMM_WORLD.Allreduce(&Local_nElemWedge,    &Global_nelem_wedge,
-                                  1, MPI::UNSIGNED_LONG, MPI::SUM);
-        Local_nElemPyramid = nelem_pyramid;
-        MPI::COMM_WORLD.Allreduce(&Local_nElemPyramid,  &Global_nelem_pyramid,
-                                  1, MPI::UNSIGNED_LONG, MPI::SUM);
-#else
-        Global_nelem_triangle = nelem_triangle;
-        Global_nelem_quad     = nelem_quad;
-        Global_nelem_tetra    = nelem_tetra;
-        Global_nelem_hexa     = nelem_hexa;
-        Global_nelem_wedge    = nelem_wedge;
-        Global_nelem_pyramid  = nelem_pyramid;
-#endif
+  
+  /*--- Check whether the supplied file is truly a CGNS file. ---*/
+  if ( cg_is_cgns(val_mesh_filename.c_str(),&file_type) != CG_OK ) {
+    printf( "\n\n   !!! Error !!!\n" );
+    printf( " %s is not a CGNS file.\n", val_mesh_filename.c_str());
+    printf( " Now exiting...\n\n");
+    exit(0);
+  }
+  
+  /*--- Open the CGNS file for reading. The value of fn returned
+   is the specific index number for this file and will be
+   repeatedly used in the function calls. ---*/
+  if ( cg_open(val_mesh_filename.c_str(),CG_MODE_READ,&fn) ) cg_error_exit();
+  cout << "Reading the CGNS file: " << val_mesh_filename.c_str() << endl;
+  
+  /*--- Get the number of databases. This is the highest node
+   in the CGNS heirarchy. ---*/
+  if ( cg_nbases(fn, &nbases) ) cg_error_exit();
+  cout << "CGNS file contains " << nbases << " database(s)." << endl;
+  
+  /*--- Check if there is more than one database. Throw an
+   error if there is because this reader can currently
+   only handle one database. ---*/
+  if ( nbases > 1 ) {
+    printf("\n\n   !!! Error !!!\n" );
+    printf("CGNS reader currently incapable of handling more than 1 database.");
+    printf("Now exiting...\n\n");
+    exit(0);
+  }
+  
+  /*--- Read the databases. Note that the indexing starts at 1. ---*/
+  for ( int i = 1; i <= nbases; i++ ) {
+    
+    if ( cg_base_read(fn, i, basename, &cell_dim, &phys_dim) ) cg_error_exit();
+    
+    /*--- Get the number of zones for this base. ---*/
+    if ( cg_nzones(fn, i, &nzones) ) cg_error_exit();
+    cout << "Database " << i << ", " << basename << ": " << nzones;
+    cout << " zone(s), cell dimension of " << cell_dim << ", physical ";
+    cout << "dimension of " << phys_dim << "." << endl;
+    
+    /*--- Check if there is more than one zone. Throw an
+     error if there is, because this reader can currently
+     only handle one zone. This can/will be extended in the future. ---*/
+    if ( nzones > 1 ) {
+      printf("\n\n   !!! Error !!!\n" );
+      printf("CGNS reader currently incapable of handling more than 1 zone.");
+      printf("Now exiting...\n\n");
+      exit(0);
+    }
+    
+    /*--- Initialize some data structures for  all zones. ---*/
+    vertices   = new int[nzones];
+    cells      = new int[nzones];
+    boundVerts = new int[nzones];
+    
+    coordArray  = new double*[nzones];
+    gridCoords  = new double**[nzones];
+    elemTypeVTK = new int*[nzones];
+    elemIndex   = new int*[nzones];
+    nElems      = new int*[nzones];
+    dataSize    = new int*[nzones];
+    isInternal  = new bool*[nzones];
+    nMarkers    = 0;
+    
+    sectionNames= new char**[nzones];
+    connElems = new cgsize_t***[nzones];
+    
+    /*--- Loop over all zones in this base. Again, indexing starts at 1. ---*/
+    for ( int j = 1; j <= nzones; j++ ) {
+      
+      /*--- Read the basic information for this zone, including
+       the name and the number of vertices, cells, and
+       boundary cells which are stored in the cgsize variable. ---*/
+      if ( cg_zone_read(fn, i, j, zonename, cgsize) ) cg_error_exit();
+      
+      /*--- Rename the zone size information for clarity.
+       NOTE: The number of cells here may be only the number of
+       interior elements or it may be the total. This needs to
+       be counted explicitly later. ---*/
+      vertices[j-1]   = cgsize[0];
+      cells[j-1]      = cgsize[1];
+      boundVerts[j-1] = cgsize[2];
+      
+      /*--- Increment the total number of vertices from all zones. ---*/
+      totalVerts += vertices[j-1];
+      
+      if ( cg_zone_type(fn, i, j, &zonetype) ) cg_error_exit();
+      cout << "Zone " << j << ", " << zonename << ": " << vertices[j-1];
+      cout << " vertices, " << cells[j-1] << " cells, " << boundVerts[j-1];
+      cout << " boundary vertices." << endl;
+      
+      /*--- Retrieve the number of grids in this zone.
+       For now, we know this is one, but to be more
+       general, this will need to check and allow
+       for a loop over all grids. ---*/
+      
+      if ( cg_ngrids(fn, i, j, &ngrids) ) cg_error_exit();
+      
+      /*--- Check the number of coordinate arrays stored
+       in this zone. Should be 2 for 2-D grids and
+       3 for 3-D grids. ---*/
+      if ( ngrids > 1 ) {
+        printf("\n\n   !!! Error !!!\n" );
+        printf("CGNS reader currently handles only 1 grid per zone.");
+        printf("Now exiting...\n\n");
+        exit(0);
       }
       
-			/*--- Read number of points ---*/
-			position = text_line.find ("NPOIN=",0);
-			if (position != string::npos) {
-				text_line.erase (0,6);
-
-				/*--- Check for ghost points. ---*/
-				stringstream test_line(text_line);
-				while (test_line >> dummy)
-					iCount++;
-
-				/*--- Now read and store the number of points and possible ghost points. ---*/
-				stringstream  stream_line(text_line);
-				if (iCount == 2) {
-					stream_line >> nPoint;
-					stream_line >> nPointDomain;
-					if (size == 1)
-						cout << nPoint << " points, and " << nPoint-nPointDomain << " ghost points." << endl;
-
-					/*--- Set some important point information for parallel simulations. ---*/
-#ifndef NO_MPI
-					Local_nPoint = nPoint; Local_nPointDomain = nPointDomain;
-					MPI::COMM_WORLD.Allreduce(&Local_nPoint, &Global_nPoint, 1, MPI::UNSIGNED_LONG, MPI::SUM);
-					MPI::COMM_WORLD.Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI::UNSIGNED_LONG, MPI::SUM);
-#else
-          Global_nPoint = nPoint;
-					Global_nPointDomain = nPointDomain;
-#endif
-
-				}
-				else if (iCount == 1) {
-					stream_line >> nPoint;
-					nPointDomain = nPoint;
-					Global_nPointDomain = nPoint;
-					if (rank == MASTER_NODE) cout << nPoint << " points." << endl;
-				}
-				else {
-					cout << "NPOIN improperly specified!!" << endl;
-					cout << "Press any key to exit..." << endl;
-					cin.get();
-#ifdef NO_MPI
-					exit(1);
-#else
-					MPI::COMM_WORLD.Abort(1);
-					MPI::Finalize();
-#endif
-				}
-
-				/*--- Retrieve grid conversion factor. The conversion is only
-           applied for SU2_CFD. All other SU2 components leave the mesh
-           as is. ---*/
-				if (config->GetKind_SU2() == SU2_CFD)
-					Conversion_Factor = config->GetConversion_Factor();
-				else
-					Conversion_Factor = 1.0;
-
-				node = new CPoint*[nPoint];
-				while (iPoint < nPoint) {
-					getline(mesh_file,text_line);
-					istringstream point_line(text_line);
-					switch(nDim) {
-					case 2:
-						GlobalIndex = iPoint;
-#ifdef NO_MPI
-						point_line >> Coord_2D[0]; point_line >> Coord_2D[1];
-#else
-                        if (size > 1) { point_line >> Coord_2D[0]; point_line >> Coord_2D[1]; point_line >> LocalIndex; point_line >> GlobalIndex; }
-                        else { point_line >> Coord_2D[0]; point_line >> Coord_2D[1]; LocalIndex = iPoint; GlobalIndex = iPoint; }
-#endif
-						node[iPoint] = new CPoint(Conversion_Factor*Coord_2D[0], Conversion_Factor*Coord_2D[1], GlobalIndex, config);
-						iPoint++; break;
-					case 3:
-						GlobalIndex = iPoint;
-#ifdef NO_MPI
-						point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2];
-#else
-                        if (size > 1) { point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2]; point_line >> LocalIndex; point_line >> GlobalIndex; }
-                        else { point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2]; LocalIndex = iPoint; GlobalIndex = iPoint; }
-#endif
-						node[iPoint] = new CPoint(Conversion_Factor*Coord_3D[0], Conversion_Factor*Coord_3D[1], Conversion_Factor*Coord_3D[2], GlobalIndex, config);
-						iPoint++; break;
-					}
-				}
-			}
-
-
-			/*--- Read number of markers ---*/
-			position = text_line.find ("NMARK=",0);
-			if (position != string::npos) {
-				text_line.erase (0,6); nMarker = atoi(text_line.c_str());
-				if (size == 1) cout << nMarker << " surface markers." << endl;
-				config->SetnMarker_All(nMarker);
-				bound = new CPrimalGrid**[nMarker];
-				nElem_Bound = new unsigned long [nMarker];
-				nElem_Bound_Storage = new unsigned long [nMarker];
-				Tag_to_Marker = new string [MAX_INDEX_VALUE];
-
-				for (iMarker = 0 ; iMarker < nMarker; iMarker++) {
-					getline (mesh_file,text_line);
-					text_line.erase (0,11);
-					string::size_type position;
-					for (iChar = 0; iChar < 20; iChar++) {
-						position = text_line.find( " ", 0 );
-						if(position != string::npos) text_line.erase (position,1);
-						position = text_line.find( "\r", 0 );
-						if(position != string::npos) text_line.erase (position,1);
-						position = text_line.find( "\n", 0 );
-						if(position != string::npos) text_line.erase (position,1);
-					}
-					Marker_Tag = text_line.c_str();
-
-					/*--- Physical boundaries definition ---*/
-					if (Marker_Tag != "SEND_RECEIVE") {
-						getline (mesh_file,text_line);
-						text_line.erase (0,13); nElem_Bound[iMarker] = atoi(text_line.c_str());
-						if (size == 1)
-							cout << nElem_Bound[iMarker]  << " boundary elements in index "<< iMarker <<" (Marker = " <<Marker_Tag<< ")." << endl;
-						bound[iMarker] = new CPrimalGrid* [nElem_Bound[iMarker]];
-
-						nelem_edge_bound = 0; nelem_triangle_bound = 0; nelem_quad_bound = 0; ielem = 0;
-						for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-							getline(mesh_file,text_line);
-							istringstream bound_line(text_line);
-							bound_line >> VTK_Type;
-							switch(VTK_Type) {
-							case LINE:
-								bound_line >> vnodes_edge[0]; bound_line >> vnodes_edge[1];
-								bound[iMarker][ielem] = new CLine(vnodes_edge[0],vnodes_edge[1],2);
-								ielem++; nelem_edge_bound++; break;
-							case TRIANGLE:
-								bound_line >> vnodes_triangle[0]; bound_line >> vnodes_triangle[1]; bound_line >> vnodes_triangle[2];
-								bound[iMarker][ielem] = new CTriangle(vnodes_triangle[0],vnodes_triangle[1],vnodes_triangle[2],3);
-								ielem++; nelem_triangle_bound++; break;
-							case RECTANGLE:
-								bound_line >> vnodes_quad[0]; bound_line >> vnodes_quad[1]; bound_line >> vnodes_quad[2]; bound_line >> vnodes_quad[3];
-								bound[iMarker][ielem] = new CRectangle(vnodes_quad[0],vnodes_quad[1],vnodes_quad[2],vnodes_quad[3],3);
-								ielem++; nelem_quad_bound++; break;
-							}
-						}
-						nElem_Bound_Storage[iMarker] = nelem_edge_bound*3 + nelem_triangle_bound*4 + nelem_quad_bound*5;
-
-						/*--- Update config information storing the boundary information in the right place ---*/
-						Tag_to_Marker[config->GetMarker_Config_Tag(Marker_Tag)] = Marker_Tag;
-						config->SetMarker_All_Tag(iMarker, Marker_Tag);
-						config->SetMarker_All_Boundary(iMarker, config->GetMarker_Config_Boundary(Marker_Tag));
-						config->SetMarker_All_Monitoring(iMarker, config->GetMarker_Config_Monitoring(Marker_Tag));
-						config->SetMarker_All_Plotting(iMarker, config->GetMarker_Config_Plotting(Marker_Tag));
-						config->SetMarker_All_Moving(iMarker, config->GetMarker_Config_Moving(Marker_Tag));
-						config->SetMarker_All_PerBound(iMarker, config->GetMarker_Config_PerBound(Marker_Tag));
-						config->SetMarker_All_Sliding(iMarker, config->GetMarker_Config_Sliding(Marker_Tag));
-						config->SetMarker_All_SendRecv(iMarker, NONE);
-
-					}
-
-					/*--- Send-Receive boundaries definition ---*/
-					else {
-						unsigned long nelem_vertex = 0, vnodes_vertex;
-						unsigned short transform, matching_zone;
-						getline (mesh_file,text_line);
-						text_line.erase (0,13); nElem_Bound[iMarker] = atoi(text_line.c_str());
-						bound[iMarker] = new CPrimalGrid* [nElem_Bound[iMarker]];
-
-						nelem_vertex = 0; ielem = 0;
-						getline (mesh_file,text_line); text_line.erase (0,8);
-						config->SetMarker_All_Boundary(iMarker, SEND_RECEIVE);
-						config->SetMarker_All_SendRecv(iMarker, atoi(text_line.c_str()));
-
-						for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-							getline(mesh_file,text_line);
-							istringstream bound_line(text_line);
-							bound_line >> VTK_Type; bound_line >> vnodes_vertex; bound_line >> transform;
-
-							if (val_nZone > 1) bound_line >> matching_zone;
-							bound[iMarker][ielem] = new CVertexMPI(vnodes_vertex, nDim);
-							bound[iMarker][ielem]->SetRotation_Type(transform);
-							if (val_nZone > 1) bound[iMarker][ielem]->SetMatching_Zone(matching_zone);
-							ielem++; nelem_vertex++;
-							if (config->GetMarker_All_SendRecv(iMarker) < 0)
-								node[vnodes_vertex]->SetDomain(false);
-						}
-
-					}
-
-				}
-			}
-			/*--- Read periodic transformation info (center, rotation, translation) ---*/
-			position = text_line.find ("NPERIODIC=",0);
-			if (position != string::npos) {
-				unsigned short nPeriodic, iPeriodic, iIndex;
-
-				/*--- Set bool signifying that periodic transormations were found ---*/
-				found_transform = true;
-
-				/*--- Read and store the number of transformations. ---*/
-				text_line.erase (0,10); nPeriodic = atoi(text_line.c_str());
-				if (rank == MASTER_NODE) {
-					if (nPeriodic - 1 != 0)
-						cout << nPeriodic - 1 << " periodic transformations." << endl;
-				}
-				config->SetnPeriodicIndex(nPeriodic);
-
-				/*--- Store center, rotation, & translation in that order for each. ---*/
-				for (iPeriodic = 0; iPeriodic < nPeriodic; iPeriodic++) {
-					getline (mesh_file,text_line);
-					position = text_line.find ("PERIODIC_INDEX=",0);
-					if (position != string::npos) {
-						text_line.erase (0,15); iIndex = atoi(text_line.c_str());
-						if (iIndex != iPeriodic) {
-							cout << "PERIODIC_INDEX out of order in SU2 file!!" << endl;
-							cout << "Press any key to exit..." << endl;
-							cin.get();
-#ifdef NO_MPI
-							exit(1);
-#else
-							MPI::COMM_WORLD.Abort(1);
-							MPI::Finalize();
-#endif
-						}
-					}
-					double* center    = new double[3];
-					double* rotation  = new double[3];
-					double* translate = new double[3];
-					getline (mesh_file,text_line);
-					istringstream cent(text_line);
-					cent >> center[0]; cent >> center[1]; cent >> center[2];
-					config->SetPeriodicCenter(iPeriodic, center);
-					getline (mesh_file,text_line);
-					istringstream rot(text_line);
-					rot >> rotation[0]; rot >> rotation[1]; rot >> rotation[2];
-					config->SetPeriodicRotation(iPeriodic, rotation);
-					getline (mesh_file,text_line);
-					istringstream tran(text_line);
-					tran >> translate[0]; tran >> translate[1]; tran >> translate[2];
-					config->SetPeriodicTranslate(iPeriodic, translate);
-				}
-
-			}
-
-		}
-
-		/*--- If no periodic transormations were found, store default zeros ---*/
-		if (!found_transform) {
-			unsigned short nPeriodic = 1, iPeriodic = 0;
-			config->SetnPeriodicIndex(nPeriodic);
-			double* center    = new double[3];
-			double* rotation  = new double[3];
-			double* translate = new double[3];
-			for (unsigned short iDim = 0; iDim < 3; iDim++) {
-				center[iDim] = 0.0; rotation[iDim] = 0.0; translate[iDim] = 0.0;
-			}
-			config->SetPeriodicCenter(iPeriodic, center);
-			config->SetPeriodicRotation(iPeriodic, rotation);
-			config->SetPeriodicTranslate(iPeriodic, translate);
-		}
-
-		/*--- Close the input file ---*/
-		mesh_file.close();
-
-#ifndef NO_MPI
-		if ((size > 1) && (rank == MASTER_NODE))
-			cout << Global_nElem << " interior elements (incl. halo cells). " << Global_nPoint << " points (incl. ghost points) " << endl;
-#endif
-
-		break;
-
-	case CGNS:
-
-#ifndef NO_CGNS
-
-		/*--- Throw error if not in serial mode. ---*/
-#ifndef NO_MPI
-		cout << "Parallel support with CGNS format not yet implemented!!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get();
-		MPI::COMM_WORLD.Abort(1);
-		MPI::Finalize();
-#endif
-
-		/*--- Check whether the supplied file is truly a CGNS file. ---*/
-		if ( cg_is_cgns(val_mesh_filename.c_str(),&file_type) != CG_OK ) {
-			printf( "\n\n   !!! Error !!!\n" );
-			printf( " %s is not a CGNS file.\n", val_mesh_filename.c_str());
-			printf( " Now exiting...\n\n");
-			exit(0);
-		}
-
-		/*--- Open the CGNS file for reading. The value of fn returned
-       is the specific index number for this file and will be 
-       repeatedly used in the function calls. ---*/
-		if ( cg_open(val_mesh_filename.c_str(),CG_MODE_READ,&fn) ) cg_error_exit();
-		cout << "Reading the CGNS file: " << val_mesh_filename.c_str() << endl;
-
-		/*--- Get the number of databases. This is the highest node
-       in the CGNS heirarchy. ---*/
-		if ( cg_nbases(fn, &nbases) ) cg_error_exit();
-		cout << "CGNS file contains " << nbases << " database(s)." << endl;
-
-		/*--- Check if there is more than one database. Throw an
-       error if there is because this reader can currently
-       only handle one database. ---*/
-		if ( nbases > 1 ) {
-			printf("\n\n   !!! Error !!!\n" );
-			printf("CGNS reader currently incapable of handling more than 1 database.");
-			printf("Now exiting...\n\n");
-			exit(0);
-		}
-
-		/*--- Read the databases. Note that the indexing starts at 1. ---*/
-		for ( int i = 1; i <= nbases; i++ ) {
-
-			if ( cg_base_read(fn, i, basename, &cell_dim, &phys_dim) ) cg_error_exit();
-
-			/*--- Get the number of zones for this base. ---*/
-			if ( cg_nzones(fn, i, &nzones) ) cg_error_exit();
-			cout << "Database " << i << ", " << basename << ": " << nzones;
-			cout << " zone(s), cell dimension of " << cell_dim << ", physical ";
-			cout << "dimension of " << phys_dim << "." << endl;
-
-			/*--- Check if there is more than one zone. Throw an
-         error if there is, because this reader can currently
-         only handle one zone. This can/will be extended in the future. ---*/
-			if ( nzones > 1 ) {
-				printf("\n\n   !!! Error !!!\n" );
-				printf("CGNS reader currently incapable of handling more than 1 zone.");
-				printf("Now exiting...\n\n");
-				exit(0);
-			}
-
-			/*--- Initialize some data structures for  all zones. ---*/
-			vertices   = new int[nzones];
-			cells      = new int[nzones];
-			boundVerts = new int[nzones];
-
-			coordArray  = new double*[nzones];
-			gridCoords  = new double**[nzones];
-			elemTypeVTK = new int*[nzones];
-			elemIndex   = new int*[nzones];
-			nElems      = new int*[nzones];
-			dataSize    = new int*[nzones];
-			isInternal  = new bool*[nzones];
-			nMarkers    = 0;
-
-			sectionNames= new char**[nzones];
-			connElems = new cgsize_t***[nzones];
-
-			/*--- Loop over all zones in this base. Again, indexing starts at 1. ---*/
-			for ( int j = 1; j <= nzones; j++ ) {
-
-				/*--- Read the basic information for this zone, including
-           the name and the number of vertices, cells, and
-           boundary cells which are stored in the cgsize variable. ---*/
-				if ( cg_zone_read(fn, i, j, zonename, cgsize) ) cg_error_exit();
-
-				/*--- Rename the zone size information for clarity.
-           NOTE: The number of cells here may be only the number of
-           interior elements or it may be the total. This needs to 
-           be counted explicitly later. ---*/
-				vertices[j-1]   = cgsize[0];
-				cells[j-1]      = cgsize[1];
-				boundVerts[j-1] = cgsize[2];
-
-				/*--- Increment the total number of vertices from all zones. ---*/
-				totalVerts += vertices[j-1];
-
-				if ( cg_zone_type(fn, i, j, &zonetype) ) cg_error_exit();
-				cout << "Zone " << j << ", " << zonename << ": " << vertices[j-1];
-				cout << " vertices, " << cells[j-1] << " cells, " << boundVerts[j-1];
-				cout << " boundary vertices." << endl;
-
-				/*--- Retrieve the number of grids in this zone.
-           For now, we know this is one, but to be more
-           general, this will need to check and allow
-           for a loop over all grids. ---*/
-
-				if ( cg_ngrids(fn, i, j, &ngrids) ) cg_error_exit();
-
-				/*--- Check the number of coordinate arrays stored
-           in this zone. Should be 2 for 2-D grids and
-           3 for 3-D grids. ---*/
-				if ( ngrids > 1 ) {
-					printf("\n\n   !!! Error !!!\n" );
-					printf("CGNS reader currently handles only 1 grid per zone.");
-					printf("Now exiting...\n\n");
-					exit(0);
-				}
-
-				if ( cg_ncoords( fn, i, j, &ncoords) ) cg_error_exit();
-				cout << "Reading grid coordinates..." << endl;
-				cout << "Number of coordinate dimensions is " << ncoords << "." << endl;
-
-				/*--- Set the value of range_max to the total number
-           of nodes in the unstructured mesh. Also allocate
-           memory for the temporary array that will hold
-           the grid coordinates as they are extracted. ---*/
-
-				range_max       = cgsize[0];
-				coordArray[j-1] = new double[range_max];
-
-				/*--- Allocate memory for the 2-D array which will
-           store the x, y, & z (if required) coordinates
-           for writing into the SU2 mesh. ---*/
-
-				gridCoords[j-1] = new double*[ncoords];
-				for (int ii = 0; ii < ncoords; ii++) {
-					*( gridCoords[j-1] + ii ) = new double[range_max];
-				}
-
-				/*--- Loop over each set of coordinates. Note again
-           that the indexing starts at 1. ---*/
-
-				for ( int k = 1; k <= ncoords; k++ ) {
-
-					/*--- Read the coordinate info. This will retrieve the
-             data type (either RealSingle or RealDouble) as
-             well as the coordname which will specifiy the
-             type of data that it is based in the SIDS convention.
-             This might be "CoordinateX," for instance. ---*/
-
-					if ( cg_coord_info(fn, i, j, k, &datatype, coordname) ) cg_error_exit();
-					cout << "Reading " << coordname << " values from file." << endl;
-
-					/*--- Always retrieve the grid coords in double precision. ---*/
-					datatype = RealDouble;
-					if ( cg_coord_read(fn, i, j, coordname, datatype, &range_min,
-							&range_max, coordArray[j-1]) ) cg_error_exit();
-
-					/*--- Copy these coords into the 2-D array for storage until
-             writing the SU2 mesh. ---*/
-
-					for (int m = 0; m < range_max; m++ ) {
-						gridCoords[j-1][k-1][m] = coordArray[j-1][m];
-					}
-
-				}
-
-				/*--- Begin section for retrieving the connectivity info. ---*/
-
-				cout << "Reading connectivity information..." << endl;
-
-				/*--- First check the number of sections. ---*/
-
-				if ( cg_nsections(fn, i, j, &nsections) ) cg_error_exit();
-				cout << "Number of connectivity sections is " << nsections << "." << endl;
-
-				/*--- Allocate several data structures to hold the various
-           pieces of information describing each section. It is
-           stored in this manner so that it can be written to 
-           SU2 memory later. ---*/
-
-				elemTypeVTK[j-1] = new int[nsections];
-				elemIndex[j-1]   = new int[nsections];
-				nElems[j-1]      = new int[nsections];
-				dataSize[j-1]    = new int[nsections];
-				isInternal[j-1]  = new bool[nsections];
-				//          nMarkers    = 0;
-
-				sectionNames[j-1] = new char*[nsections];
-				for (int ii = 0; ii < nsections; ii++) {
-					sectionNames[j-1][ii]= new char[CGNS_STRING_SIZE];
-				}
-
-				/*--- Loop over each section. This will include the main
-           connectivity information for the grid cells, as well
-           as any boundaries which were labeled before export. ---*/
-
-				for ( int s = 1; s <= nsections; s++ ) {
-
-					/*--- Read the connectivity details for this section.
-             Store the total number of elements in this section
-             to be used later for memory allocation. ---*/
-
-					if ( cg_section_read(fn, i, j, s, sectionNames[j-1][s-1], &elemType, &startE,
-							&endE, &nbndry, &parent_flag) ) cg_error_exit();
-					nElems[j-1][s-1] = (int) (endE-startE+1);
-
-					/*--- Read the total number of nodes that will be
-             listed when reading this section. ---*/
-
-					if ( cg_ElementDataSize(fn, i, j, s, &ElementDataSize) )
-						cg_error_exit();
-					dataSize[j-1][s-1] = ElementDataSize;
-
-					/*--- Find the number of nodes required to represent
-             this type of element. ---*/
-
-					if ( cg_npe(elemType, &npe) ) cg_error_exit();
-					elemIndex[j-1][s-1] = npe;
-
-					/*--- Need to check the element type and correctly
-             specify the VTK identifier for that element.
-             SU2 recognizes elements by their VTK number. ---*/
-
-					switch (elemType) {
-					case NODE:
-						currentElem      = "Vertex";
-						elemTypeVTK[j-1][s-1] = 1;
-						break;
-					case BAR_2:
-						currentElem      = "Line";
-						elemTypeVTK[j-1][s-1] = 3;
-						break;
-					case BAR_3:
-						currentElem      = "Line";
-						elemTypeVTK[j-1][s-1] = 3;
-						break;
-					case TRI_3:
-						currentElem      = "Triangle";
-						elemTypeVTK[j-1][s-1] = 5;
-						break;
-					case QUAD_4:
-						currentElem      = "Rectangle";
-						elemTypeVTK[j-1][s-1] = 9;
-						break;
-					case TETRA_4:
-						currentElem      = "Tetrahedron";
-						elemTypeVTK[j-1][s-1] = 10;
-						break;
-					case HEXA_8:
-						currentElem      = "Hexahedron";
-						elemTypeVTK[j-1][s-1] = 12;
-						break;
-					case PENTA_6:
-						currentElem      = "Wedge";
-						elemTypeVTK[j-1][s-1] = 13;
-						break;
-					case PYRA_5:
-						currentElem      = "Pyramid";
-						elemTypeVTK[j-1][s-1] = 14;
-						break;
-					default:
-						printf( "\n\n   !!! Error !!!\n" );
-						printf( " Unrecognized element type.\n");
-						printf( " Now exiting...\n\n");
-						exit(0);
-						break;
-					}
-
-					/*--- Check if the elements in this section are part
-             of the internal domain or are part of the boundary
-             surfaces. This will be used later to separate the
-             internal connectivity from the boundary connectivity. 
-             We will check for quad and tri elements for 3-D meshes
-             because these will be the boundaries. Similarly, line
-             elements will be boundaries to 2-D problems. ---*/
-
-					if ( cell_dim == 2 ) {
-						/*--- In 2-D check for line elements, VTK type 3. ---*/
-						if (elemTypeVTK[j-1][s-1] == 3) {
-							isInternal[j-1][s-1] = false;
-							nMarkers++;
-							boundaryElems += nElems[j-1][s-1];
-						} else {
-							isInternal[j-1][s-1] = true;
-							interiorElems += nElems[j-1][s-1];
-						}
-					} else {
-						/*--- In 3-D check for tri or quad elements, VTK types 5 or 9. ---*/
-						if (elemTypeVTK[j-1][s-1] == 5 || elemTypeVTK[j-1][s-1] == 9) {
-							isInternal[j-1][s-1] = false;
-							nMarkers++;
-							boundaryElems += nElems[j-1][s-1];
-						} else {
-							isInternal[j-1][s-1] = true;
-							interiorElems += nElems[j-1][s-1];
-						}
-					}
-
-					/*--- Keep track of the sections with the largest
-             number of elements and the number of nodes 
-             required to specify an element of a specific
-             type. These max values will be used to allocate 
-             one large array. ---*/
-
-					if ( elemIndex[j-1][s-1] > indexMax || s == 1 ) indexMax = elemIndex[j-1][s-1];
-					if ( nElems[j-1][s-1] > elemMax || s == 1 )     elemMax  = nElems[j-1][s-1];
-
-					/*--- Print some information to the console. ---*/
-
-					cout << "Reading section " << sectionNames[j-1][s-1];
-					cout << " of element type " << currentElem << "\n   starting at ";
-					cout << startE << " and ending at " << endE << "." << endl;
-
-				}
-
-				/*--- Allocate memory to store all of the connectivity
-           information in one large array. ---*/
-
-				connElems[j-1] = new cgsize_t**[nsections];
-				for (int ii = 0; ii < nsections; ii++) {
-					connElems[j-1][ii] = new cgsize_t*[indexMax];
-					for (int jj = 0; jj < indexMax; jj++) {
-						connElems[j-1][ii][jj] = new cgsize_t[elemMax];
-					}
-				}
-
-				for ( int s = 1; s <= nsections; s++ ) {
-
-					connElemTemp = new cgsize_t[dataSize[j-1][s-1]];
-
-					/*--- Retrieve the connectivity information and store. ---*/
-
-					if ( cg_elements_read(fn, i, j, s, connElemTemp, parentData) )
-						cg_error_exit();
-
-					/*--- Copy these values into the larger array for
-             storage until writing the SU2 file. ---*/
-
-					int counter = 0;
-					for ( int ii = 0; ii < nElems[j-1][s-1]; ii++ ) {
-						for ( int jj = 0; jj < elemIndex[j-1][s-1]; jj++ ) {
-							connElems[j-1][s-1][jj][ii] = connElemTemp[counter] + prevVerts;
-							counter++;
-						}
-					}
-					delete[] connElemTemp;
-				}
-				prevVerts += vertices[j-1];
-
-			}
-		}
-
-		/*--- Close the CGNS file. ---*/
-
-		if ( cg_close(fn) ) cg_error_exit();
-		cout << "Successfully closed the CGNS file." << endl;
-
-		/*--- Write a SU2 mesh if requested in the config file. ---*/
-		if (config->GetCGNS_To_SU2()) {
-
-			string fileNameSU2 = config->GetMesh_Out_FileName();
-			cout << "Writing SU2 mesh file: " << fileNameSU2 << "." << endl;
-
-			/*--- Open the solution file for writing. ---*/
-
-			FILE *SU2File;
-			if ( (SU2File = fopen(fileNameSU2.c_str(), "w")) != NULL ) {
-
-				/*--- Write the dimension of the problem and the
-					 total number of elements first. Note that we
-					 need to use the interior elements here (not "cells"). ---*/
-
-				fprintf( SU2File, "NDIME= %i\n", cell_dim);
-				fprintf( SU2File, "NELEM= %i\n", interiorElems);
-
-				/*--- Connectivity info for the internal domain. ---*/
-
-				int counter = 0;
-				for ( int k = 0; k < nzones; k++ ) {
-					for ( int s = 0; s < nsections; s++ ) {
-						if ( isInternal[k][s] ) {
-							for ( int i = 0; i < nElems[k][s]; i++ ) {
-								fprintf( SU2File, "%2i\t", elemTypeVTK[k][s]);
-								for ( int j = 0; j < elemIndex[k][s]; j++ ) {
-									fprintf( SU2File, "%8i\t", connElems[k][s][j][i] - 1);
-								}
-								fprintf( SU2File, "%d\n", counter);
-								counter++;
-							}
-						}
-					}
-				}
-
-				/*--- Now write the node coordinates. First write
-					 the total number of vertices. Convert the mesh
-           if requesed. ---*/
-				if (config->GetKind_SU2() == SU2_CFD) {
-					if (config->GetWrite_Converted_Mesh()) {
-						Conversion_Factor = config->GetConversion_Factor();
-						cout << "Converted mesh by a factor of " << Conversion_Factor << endl;
-					} else {
-						Conversion_Factor = 1.0;
-					}
-				} else {
-					Conversion_Factor = 1.0;
-				}
-				fprintf( SU2File, "NPOIN= %i\n", totalVerts);
-				counter = 0;
-				for ( int k = 0; k < nzones; k ++ ) {
-					for ( int i = 0; i < vertices[k]; i++ ) {
-						for ( int j = 0; j < cell_dim; j++ ) {
-							fprintf( SU2File, "%.16le\t", Conversion_Factor*gridCoords[k][j][i]);
-						}
-						fprintf( SU2File, "%d\n", counter);
-						counter++;
-					}
-				}
-
-				/*--- Lastly write the boundary information.
-					 These will write out in the same order
-					 that they are stored in the cgns file.
-					 Note that the connectivity
-					 values are decremented by 1 in order to
-					 match the indexing in SU2.              ---*/
-
-				fprintf( SU2File, "NMARK= %i\n", nMarkers );
-				counter = 0;
-				for ( int k = 0; k < nzones; k ++ ) {
-					for ( int s = 0; s < nsections; s++ ) {
-						if ( !isInternal[k][s] ) {
-							counter++;
-							fprintf( SU2File, "MARKER_TAG= %s\n", sectionNames[k][s] );
-							fprintf( SU2File, "MARKER_ELEMS= %i\n", nElems[k][s] );
-							for ( int i = 0; i < nElems[k][s]; i++ ) {
-								fprintf( SU2File, "%2i\t", elemTypeVTK[k][s]);
-								for ( int j = 0; j < elemIndex[k][s]; j++ ) {
-									fprintf( SU2File, "%8i\t", connElems[k][s][j][i] - 1 );
-								}
-								fprintf( SU2File, "\n");
-							}
-						}
-					}
-				}
-
-			}
-
-			/*--- Close the SU2 mesh file. ---*/
-
-			fclose( SU2File );
-			cout << "Successfully wrote the SU2 mesh file." << endl;
-
-		}
-
-		/*--- Load the data from the CGNS file into SU2 memory. ---*/
-
-		/*--- Read the dimension of the problem ---*/
-		nDim = cell_dim;
-		if (rank == MASTER_NODE) {
-			if (nDim == 2) cout << "Two dimensional problem." << endl;
-			if (nDim == 3) cout << "Three dimensional problem." << endl;
-		}
-
-		/*--- Read the information about inner elements ---*/
-		nElem = interiorElems;
-		cout << nElem << " inner elements." << endl;
-
-		/*--- Allocate space for elements ---*/
-		if (!config->GetDivide_Element()) elem = new CPrimalGrid*[nElem];
-		else {
-			if (nDim == 2) elem = new CPrimalGrid*[2*nElem];
-			if (nDim == 3) {
-				elem = new CPrimalGrid*[5*nElem];
-				cout << "The grid division only works in 2D!!" << endl;
-				cout << "Press any key to exit..." << endl;
-				cin.get();
-			}
-		}
-
-		/*--- Loop over all the volumetric elements ---*/
-		for ( int k = 0; k < nzones; k ++ ) {
-			for ( int s = 0; s < nsections; s++ ) {
-				if ( isInternal[k][s] ) {
-					for ( int i = 0; i < nElems[k][s]; i++ ) {
-
-						/*--- Get the VTK type for this element. ---*/
-						VTK_Type = elemTypeVTK[k][s];
-
-						/*--- Transfer the nodes for this element. ---*/
-						for ( int j = 0; j < elemIndex[k][s]; j++ ) {
-							vnodes_cgns[j] = connElems[k][s][j][i] - 1;
-						}
-
-						/* Instantiate this element. */
-						switch(VTK_Type) {
-						case TRIANGLE:
-							elem[ielem] = new CTriangle(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],nDim);
-							ielem_div++; ielem++; nelem_triangle++; break;
-						case RECTANGLE:
-							if (!config->GetDivide_Element()) {
-								elem[ielem] = new CRectangle(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[3],nDim);
-								ielem++; nelem_quad++; }
-							else {
-								elem[ielem] = new CTriangle(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],nDim);
-								ielem++; nelem_triangle++;
-								elem[ielem] = new CTriangle(vnodes_cgns[0],vnodes_cgns[2],vnodes_cgns[3],nDim);
-								ielem++; nelem_triangle++; }
-							ielem_div++;
-							break;
-						case TETRAHEDRON:
-							elem[ielem] = new CTetrahedron(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[3]);
-							ielem_div++; ielem++; nelem_tetra++; break;
-						case HEXAHEDRON:
-							if (!config->GetDivide_Element()) {
-								elem[ielem] = new CHexahedron(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[3],vnodes_cgns[4],vnodes_cgns[5],vnodes_cgns[6],vnodes_cgns[7]);
-								ielem++; nelem_hexa++; }
-							else {
-								elem[ielem] = new CTetrahedron(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[5]);
-								ielem++; nelem_tetra++;
-								elem[ielem] = new CTetrahedron(vnodes_cgns[0],vnodes_cgns[2],vnodes_cgns[7],vnodes_cgns[5]);
-								ielem++; nelem_tetra++;
-								elem[ielem] = new CTetrahedron(vnodes_cgns[0],vnodes_cgns[2],vnodes_cgns[3],vnodes_cgns[7]);
-								ielem++; nelem_tetra++;
-								elem[ielem] = new CTetrahedron(vnodes_cgns[0],vnodes_cgns[5],vnodes_cgns[7],vnodes_cgns[4]);
-								ielem++; nelem_tetra++;
-								elem[ielem] = new CTetrahedron(vnodes_cgns[2],vnodes_cgns[7],vnodes_cgns[5],vnodes_cgns[6]);
-								ielem++; nelem_tetra++; }
-							ielem_div++;
-							break;
-						case WEDGE:
-							if (!config->GetDivide_Element()) {
-								elem[ielem] = new CWedge(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[3],vnodes_cgns[4],vnodes_cgns[5]);
-								ielem++; nelem_wedge++; }
-							else {
-								elem[ielem] = new CTetrahedron(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[5]);
-								ielem++; nelem_tetra++;
-								elem[ielem] = new CTetrahedron(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[5],vnodes_cgns[4]);
-								ielem++; nelem_tetra++;
-								elem[ielem] = new CTetrahedron(vnodes_cgns[0],vnodes_cgns[4],vnodes_cgns[5],vnodes_cgns[3]);
-								ielem++; nelem_tetra++; }
-							ielem_div++;
-							break;
-						case PYRAMID:
-							if (!config->GetDivide_Element()) {
-								elem[ielem] = new CPyramid(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[3],vnodes_cgns[4]);
-								ielem++; nelem_pyramid++;
-							}
-							else {
-								elem[ielem] = new CTetrahedron(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[4]);
-								ielem++; nelem_tetra++;
-								elem[ielem] = new CTetrahedron(vnodes_cgns[0],vnodes_cgns[2],vnodes_cgns[3],vnodes_cgns[4]);
-								ielem++; nelem_tetra++; }
-							ielem_div++;
-							break;
-						}
-					}
-				}
-			}
-		}
-		nElem_Storage = nelem_triangle*4 + nelem_quad*5 + nelem_tetra*5 + nelem_hexa*9 + nelem_wedge*7 + nelem_pyramid*6;
-		if (config->GetDivide_Element()) nElem = nelem_triangle + nelem_quad + nelem_tetra + nelem_hexa + nelem_wedge + nelem_pyramid;
-
-		/*--- Retrieve grid conversion factor. The conversion is only
-       applied for SU2_CFD. All other SU2 components leave the mesh
-       as is. ---*/
-		if (config->GetKind_SU2() == SU2_CFD)
-			Conversion_Factor = config->GetConversion_Factor();
-		else
-			Conversion_Factor = 1.0;
-
-		/*--- Read node coordinates. Note this assumes serial mode. ---*/
-		nPoint = totalVerts;
-		nPointDomain = nPoint;
-		cout << nPoint << " points." << endl;
-		node = new CPoint*[nPoint];
-		for ( int k = 0; k < nzones; k++ ) {
-			for ( int i = 0; i < vertices[k]; i++ ) {
-				for ( int j = 0; j < cell_dim; j++ ) {
-					Coord_cgns[j] = gridCoords[k][j][i];
-				}
-				switch(nDim) {
-				case 2:
-					GlobalIndex = i;
-					node[iPoint] = new CPoint(Conversion_Factor*Coord_cgns[0], Conversion_Factor*Coord_cgns[1], GlobalIndex, config);
-					iPoint++; break;
-				case 3:
-					GlobalIndex = i;
-					node[iPoint] = new CPoint(Conversion_Factor*Coord_cgns[0], Conversion_Factor*Coord_cgns[1], Conversion_Factor*Coord_cgns[2], GlobalIndex, config);
-					iPoint++; break;
-				}
-			}
-		}
-
-		/*--- Read number of markers ---*/
-		nMarker = nMarkers;
-		cout << nMarker << " surface markers." << endl;
-		config->SetnMarker_All(nMarker);
-		bound = new CPrimalGrid**[nMarker];
-		nElem_Bound = new unsigned long [nMarker];
-		nElem_Bound_Storage = new unsigned long [nMarker];
-		Tag_to_Marker = new string [MAX_INDEX_VALUE];
-
-		iMarker = 0;
-		for ( int k = 0; k < nzones; k ++ ) {
-			for ( int s = 0; s < nsections; s++ ) {
-				if ( !isInternal[k][s] ) {
-					nelem_edge = 0; nelem_triangle = 0; nelem_quad = 0; ielem = 0;
-					Marker_Tag = sectionNames[k][s];
-					if (Marker_Tag != "SEND_RECEIVE") {
-						nElem_Bound[iMarker] = nElems[k][s];
-						if (rank == MASTER_NODE)
-							cout << nElem_Bound[iMarker]  << " boundary elements in index "<< iMarker <<" (Marker = " <<Marker_Tag<< ")." << endl;
-						bound[iMarker] = new CPrimalGrid* [nElem_Bound[iMarker]];
-
-						for ( int i = 0; i < nElems[k][s]; i++ ) {
-
-							/* Get the VTK type for this element. */
-							VTK_Type = elemTypeVTK[k][s];
-
-							/* Transfer the nodes for this element. */
-							for ( int j = 0; j < elemIndex[k][s]; j++ ) {
-								vnodes_cgns[j] = connElems[k][s][j][i] - 1;
-							}
-							switch(VTK_Type) {
-							case LINE:
-								bound[iMarker][ielem] = new CLine(vnodes_cgns[0],vnodes_cgns[1],2);
-								ielem++; nelem_edge++; break;
-							case TRIANGLE:
-								bound[iMarker][ielem] = new CTriangle(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],3);
-								ielem++; nelem_triangle++; break;
-							case RECTANGLE:
-								bound[iMarker][ielem] = new CRectangle(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[3],3);
-								ielem++; nelem_quad++; break;
-							}
-						}
-						nElem_Bound_Storage[iMarker] = nelem_edge*3 + nelem_triangle*4 + nelem_quad*5;
-
-						/*--- Update config information storing the boundary information in the right place ---*/
-						Tag_to_Marker[config->GetMarker_Config_Tag(Marker_Tag)] = Marker_Tag;
-						config->SetMarker_All_Tag(iMarker, Marker_Tag);
-						config->SetMarker_All_Boundary(iMarker, config->GetMarker_Config_Boundary(Marker_Tag));
-						config->SetMarker_All_Monitoring(iMarker, config->GetMarker_Config_Monitoring(Marker_Tag));
-						config->SetMarker_All_Plotting(iMarker, config->GetMarker_Config_Plotting(Marker_Tag));
-						config->SetMarker_All_Moving(iMarker, config->GetMarker_Config_Moving(Marker_Tag));
-						config->SetMarker_All_SendRecv(iMarker, NONE);
-					}
-#ifndef NO_MPI
-					/*--- Send-Receive boundaries definition - could eventually be used for periodic BC ---*/
-					/*else {
-             unsigned long nelem_vertex = 0, vnodes_vertex;
-             getline (mesh_file,text_line);
-             text_line.erase (0,13); nElem_Bound[iMarker] = atoi(text_line.c_str());
-             bound[iMarker] = new CPrimalGrid* [nElem_Bound[iMarker]];
-             nelem_vertex = 0; ielem = 0;
-             getline (mesh_file,text_line); text_line.erase (0,8);
-             config->SetMarker_All_Boundary(iMarker, SEND_RECEIVE);
-             config->SetMarker_All_SendRecv(iMarker,atoi(text_line.c_str()));
-             for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-             getline(mesh_file,text_line);
-             istringstream bound_line(text_line);
-             bound_line >> VTK_Type; bound_line >> vnodes_vertex;
-             bound[iMarker][ielem] = new CVertexMPI(vnodes_vertex,nDim);
-             ielem++; nelem_vertex++;
-             if (config->GetMarker_All_SendRecv(iMarker) < 0) node[vnodes_vertex]->SetDomain(false);
-             }
-             } */
-#endif
-					iMarker++;
-				}
-			}
-		}
-
-		/*--- Deallocate temporary memory. ---*/
-		delete[] vertices;
-		delete[] cells;
-		delete[] boundVerts;
-
-		for ( int j = 0; j < nzones; j++) {
-			delete[] coordArray[j];
-			delete[] elemTypeVTK[j];
-			delete[] elemIndex[j];
-			delete[] nElems[j];
-			delete[] dataSize[j];
-			delete[] isInternal[j];
-			delete[] sectionNames[j];
-		}
-		delete[] coordArray;
-		delete[] elemTypeVTK;
-		delete[] elemIndex;
-		delete[] nElems;
-		delete[] dataSize;
-		delete[] isInternal;
-		delete[] sectionNames;
-
-		for ( int j = 0; j < nzones; j++) {
-			for( int i = 0; i < ncoords; i++ ) {
-				delete[] gridCoords[j][i];
-			}
-			delete[] gridCoords[j];
-		}
-		delete[] gridCoords;
-
-		for ( int kk = 0; kk < nzones; kk++) {
-			for (int ii = 0; ii < nsections; ii++) {
-				for (int jj = 0; jj < indexMax; jj++) {
-					delete[] connElems[kk][ii][jj];
-				}
-				delete connElems[kk][ii];
-			}
-			delete connElems[kk];
-		}
-		delete[] connElems;
-
-#else
-		cout << "SU2 built without CGNS support!!" << endl;
-		cout << "To use CGNS, remove the -DNO_CGNS directive ";
-		cout << "from the makefile and supply the correct path";
-		cout << " to the CGNS library." << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get();
-#ifdef NO_MPI
-		exit(1);
-#else
-		MPI::COMM_WORLD.Abort(1);
-		MPI::Finalize();
-#endif
-
-#endif
-
-		break;
-
-
-	case NETCDF_ASCII:
-
-
-#ifdef NO_MPI
-		unsigned short Marker_Index, VTK_Type, iMarker,
-		marker, icommas, iDim;
-		unsigned long vnodes_triangle[3], vnodes_quad[4], vnodes_tetra[4], vnodes_hexa[8],
-		vnodes_wedge[6], nmarker, ielem_triangle, ielem_hexa, ncoord, iSurfElem, ielem_wedge,
-		ielem_quad, *marker_list, **surf_elem, ielem_surface, *surf_marker, nSurfElem;
-		double coord;
-		string::size_type position, position_;
-		bool stop, add;
-
-		ielem_surface = 0; nSurfElem = 0;
-		surf_marker = NULL;
-		surf_elem = NULL;
-
-
-		nDim = 3; cout << "Three dimensional problem." << endl;
-
-		/*--- Open grid file ---*/
-		strcpy (cstr, val_mesh_filename.c_str());
-		mesh_file.open(cstr, ios::in);
-		if (mesh_file.fail()) {
-			cout << "There is no geometry file (CPhysicalGeometry)!!" << endl;
-			cout << "Press any key to exit..." << endl;
-			cin.get();
-			exit(1);
-
-		}
-
-		while (getline (mesh_file, text_line)) {
-
-			position = text_line.find ("no_of_elements = ",0);
-			if (position != string::npos) {
-				text_line.erase (0,17); nElem = atoi(text_line.c_str());
-				cout << nElem << " inner elements to store." << endl;
-				elem = new CPrimalGrid*[nElem]; }
-
-			position = text_line.find ("no_of_surfaceelements = ",0);
-			if (position != string::npos) {
-				text_line.erase (0,24); nSurfElem = atoi(text_line.c_str());
-				cout << nSurfElem << " surface elements to store." << endl;
-				surf_elem = new unsigned long* [nSurfElem];
-				for (ielem_surface = 0; ielem_surface < nSurfElem; ielem_surface++)
-					surf_elem[ielem_surface] = new unsigned long [5];
-				ielem_surface = 0;
-			}
-
-			position = text_line.find ("no_of_points = ",0);
-			if (position != string::npos) {
-				text_line.erase (0,15); nPoint = atoi(text_line.c_str()); nPointDomain = nPoint;
-				cout << nPoint << " points to store." << endl;
-				node = new CPoint*[nPoint]; }
-
-			position = text_line.find ("no_of_tetraeders = ",0);
-			if (position != string::npos) {
-				text_line.erase (0,19); nelem_tetra = atoi(text_line.c_str());
-				cout << nelem_tetra << " tetraeders elements to store." << endl; }
-
-			position = text_line.find ("no_of_prisms = ",0);
-			if (position != string::npos) {
-				text_line.erase (0,15); nelem_wedge = atoi(text_line.c_str());
-				cout << nelem_wedge << " prims elements to store." << endl; }
-
-			position = text_line.find ("no_of_hexaeders = ",0);
-			if (position != string::npos) {
-				text_line.erase (0,18); nelem_hexa = atoi(text_line.c_str());
-				cout << nelem_hexa << " hexaeders elements to store." << endl; }
-
-			position = text_line.find ("no_of_surfacetriangles = ",0);
-			if (position != string::npos) {
-				text_line.erase (0,25); nelem_triangle = atoi(text_line.c_str());
-				cout << nelem_triangle << " surface triangle elements to store." << endl; }
-
-			position = text_line.find ("no_of_surfacequadrilaterals = ",0);
-			if (position != string::npos) {
-				text_line.erase (0,30); nelem_quad = atoi(text_line.c_str());
-				cout << nelem_quad << " surface quadrilaterals elements to store." << endl; }
-
-			position = text_line.find ("points_of_tetraeders =",0);
-			if (position != string::npos) {
-				for (unsigned long ielem_tetra = 0; ielem_tetra < nelem_tetra; ielem_tetra++) {
-					getline(mesh_file,text_line);
-					for (unsigned short icommas = 0; icommas < 15; icommas++) {
-						position_ = text_line.find( ",", 0 ); if(position_!=string::npos) text_line.erase (position_,1);
-						position_ = text_line.find( ";", 0 ); if(position_!=string::npos) text_line.erase (position_,1);
-					}
-					istringstream elem_line(text_line);
-					VTK_Type = TETRAHEDRON;
-					elem_line >> vnodes_tetra[0]; elem_line >> vnodes_tetra[1]; elem_line >> vnodes_tetra[2]; elem_line >> vnodes_tetra[3];
-					elem[ielem] = new CTetrahedron(vnodes_tetra[0],vnodes_tetra[1],vnodes_tetra[2],vnodes_tetra[3]);
-					ielem++;
-				}
-				cout << "finish tetrahedron element reading" << endl;
-			}
-
-			position = text_line.find ("points_of_prisms =",0);
-			if (position != string::npos) {
-				for (ielem_wedge = 0; ielem_wedge < nelem_wedge; ielem_wedge++) {
-					getline(mesh_file,text_line);
-					for (icommas = 0; icommas < 15; icommas++) {
-						position_ = text_line.find( ",", 0 ); if(position_!=string::npos) text_line.erase (position_,1);
-						position_ = text_line.find( ";", 0 ); if(position_!=string::npos) text_line.erase (position_,1);
-					}
-					istringstream elem_line(text_line);
-					VTK_Type = WEDGE;
-					elem_line >> vnodes_wedge[0]; elem_line >> vnodes_wedge[1]; elem_line >> vnodes_wedge[2]; elem_line >> vnodes_wedge[3]; elem_line >> vnodes_wedge[4]; elem_line >> vnodes_wedge[5];
-					elem[ielem] = new CWedge(vnodes_wedge[0],vnodes_wedge[1],vnodes_wedge[2],vnodes_wedge[3],vnodes_wedge[4],vnodes_wedge[5]);
-					ielem++;
-				}
-				cout << "finish prims element reading" << endl;
-			}
-
-			position = text_line.find ("points_of_hexaeders =",0);
-			if (position != string::npos) {
-				for (ielem_hexa = 0; ielem_hexa < nelem_hexa; ielem_hexa++) {
-					getline(mesh_file,text_line);
-					for (icommas = 0; icommas < 15; icommas++) {
-						position_ = text_line.find( ",", 0 ); if(position_!=string::npos) text_line.erase (position_,1);
-						position_ = text_line.find( ";", 0 ); if(position_!=string::npos) text_line.erase (position_,1);
-					}
-					istringstream elem_line(text_line);
-					VTK_Type = HEXAHEDRON;
-					elem_line >> vnodes_hexa[0]; elem_line >> vnodes_hexa[1]; elem_line >> vnodes_hexa[2]; elem_line >> vnodes_hexa[3];
-					elem_line >> vnodes_hexa[4]; elem_line >> vnodes_hexa[5]; elem_line >> vnodes_hexa[6]; elem_line >> vnodes_hexa[7];
-					elem[ielem] = new CHexahedron(vnodes_hexa[0],vnodes_hexa[1],vnodes_hexa[2],vnodes_hexa[3],vnodes_hexa[4],vnodes_hexa[5],vnodes_hexa[6],vnodes_hexa[7]);
-					ielem++;
-				}
-				cout << "finish hexaeders element reading" << endl;
-			}
-			nElem_Storage = nelem_tetra*5 + nelem_wedge*7 + nelem_hexa*9;
-
-			position = text_line.find ("points_of_surfacetriangles =",0);
-			if (position != string::npos) {
-				for (ielem_triangle = 0; ielem_triangle < nelem_triangle; ielem_triangle++) {
-					getline(mesh_file,text_line);
-					for (icommas = 0; icommas < 15; icommas++) {
-						position_ = text_line.find( ",", 0 ); if(position_!=string::npos) text_line.erase (position_,1);
-						position_ = text_line.find( ";", 0 ); if(position_!=string::npos) text_line.erase (position_,1);
-					}
-					istringstream elem_line(text_line);
-					elem_line >> vnodes_triangle[0]; elem_line >> vnodes_triangle[1]; elem_line >> vnodes_triangle[2];
-					surf_elem[ielem_surface][0]= 3;
-					surf_elem[ielem_surface][1]= vnodes_triangle[0];
-					surf_elem[ielem_surface][2]= vnodes_triangle[1];
-					surf_elem[ielem_surface][3]= vnodes_triangle[2];
-					ielem_surface++;
-				}
-				cout << "finish surface triangles element reading" << endl;
-			}
-
-			position = text_line.find ("points_of_surfacequadrilaterals =",0);
-			if (position != string::npos) {
-				for (ielem_quad = 0; ielem_quad < nelem_quad; ielem_quad++) {
-					getline(mesh_file,text_line);
-					for (icommas = 0; icommas < 15; icommas++) {
-						position_ = text_line.find( ",", 0 ); if(position_!=string::npos) text_line.erase (position_,1);
-						position_ = text_line.find( ";", 0 ); if(position_!=string::npos) text_line.erase (position_,1);
-					}
-					istringstream elem_line(text_line);
-					elem_line >> vnodes_quad[0]; elem_line >> vnodes_quad[1]; elem_line >> vnodes_quad[2]; elem_line >> vnodes_quad[3];
-					surf_elem[ielem_surface][0]= 4;
-					surf_elem[ielem_surface][1]= vnodes_quad[0];
-					surf_elem[ielem_surface][2]= vnodes_quad[1];
-					surf_elem[ielem_surface][3]= vnodes_quad[2];
-					surf_elem[ielem_surface][4]= vnodes_quad[3];
-					ielem_surface++;
-				}
-				cout << "finish surface quadrilaterals element reading" << endl;
-			}
-
-			position = text_line.find ("boundarymarker_of_surfaces =",0);
-			if (position != string::npos) {
-				nmarker=0;
-				stop = false;
-				surf_marker = new unsigned long [nelem_triangle + nelem_quad];
-
-				text_line.erase (0,29);
-				for (icommas = 0; icommas < 50; icommas++) {
-					position_ = text_line.find( ",", 0 );
-					if(position_!=string::npos) text_line.erase (position_,1);
-				}
-
-				stringstream  point_line(text_line);
-				while (point_line >> marker,!point_line.eof()) {
-					surf_marker[nmarker] = marker;
-					nmarker++; }
-
-				while (!stop) {
-					getline(mesh_file,text_line);
-					for (icommas = 0; icommas < 50; icommas++) {
-						position_ = text_line.find( ",", 0 );
-						if(position_!=string::npos) text_line.erase (position_,1);
-						position_ = text_line.find( ";", 0 );
-						if(position_!=string::npos) text_line.erase (position_,1);
-					}
-					stringstream  point_line(text_line);
-					while (point_line>> marker,!point_line.eof()) {
-						surf_marker[nmarker] = marker;
-						if (nmarker == nSurfElem-1) {stop = true; break;}
-						nmarker++;
-					}
-				}
-			}
-
-			for (iDim = 0; iDim < nDim; iDim++) {
-				ncoord = 0; stop = false;
-				if (iDim == 0) position = text_line.find ("points_xc = ",0);
-				if (iDim == 1) position = text_line.find ("points_yc = ",0);
-				if (iDim == 2) position = text_line.find ("points_zc = ",0);
-
-				if (position != string::npos) {
-					text_line.erase (0,12);
-					for (icommas = 0; icommas < 50; icommas++) {
-						position_ = text_line.find( ",", 0 );
-						if(position_!=string::npos) text_line.erase (position_,1);
-					}
-					stringstream  point_line(text_line);
-					while (point_line>> coord,!point_line.eof()) {
-						if (iDim==0) node[ncoord] = new CPoint(coord, 0.0, 0.0, ncoord, config);
-						if (iDim==1) node[ncoord]->SetCoord(1, coord);
-						if (iDim==2) node[ncoord]->SetCoord(2, coord);
-						ncoord++; }
-					while (!stop) {
-						getline(mesh_file,text_line);
-						for (icommas = 0; icommas < 50; icommas++) {
-							position_ = text_line.find( ",", 0 );
-							if(position_!=string::npos) text_line.erase (position_,1);
-							position_ = text_line.find( ";", 0 );
-							if(position_!=string::npos) text_line.erase (position_,1);
-						}
-						stringstream  point_line(text_line);
-						while (point_line>> coord,!point_line.eof()) {
-							if (iDim==0) node[ncoord] = new CPoint(coord, 0.0, 0.0, ncoord, config);
-							if (iDim==1) node[ncoord]->SetCoord(1, coord);
-							if (iDim==2) node[ncoord]->SetCoord(2, coord);
-							if (ncoord == nPoint-1) {stop = true; break;}
-							ncoord++;
-						}
-					}
-					if (iDim==0) cout << "finish point xc reading" << endl;
-					if (iDim==1) cout << "finish point yc reading" << endl;
-					if (iDim==2) cout << "finish point zc reading" << endl;
-				}
-			}
-		}
-
-
-		/*--- Create a list with all the markers ---*/
-		marker_list = new unsigned long [MAX_NUMBER_MARKER];
-		marker_list[0] = surf_marker[0]; nMarker = 1;
-		for (iSurfElem = 0; iSurfElem < nSurfElem; iSurfElem++) {
-			add = true;
-			for (iMarker = 0; iMarker < nMarker; iMarker++)
-				if (marker_list[iMarker] == surf_marker[iSurfElem]) {
-					add = false; break; }
-			if (add) {
-				marker_list[nMarker] = surf_marker[iSurfElem];
-				nMarker++;
-			}
-		}
-
-		nElem_Bound = new unsigned long [nMarker];
-		nElem_Bound_Storage = new unsigned long [nMarker];
-
-		/*--- Compute the number of element per marker ---*/
-		for (iMarker = 0; iMarker < nMarker; iMarker++) {
-			nElem_Bound[iMarker] = 0;
-			for (iSurfElem = 0; iSurfElem < nSurfElem; iSurfElem++)
-				if (surf_marker[iSurfElem] == marker_list[iMarker])
-					nElem_Bound[iMarker]++;
-		}
-
-
-		/*--- Realate the marker index with the position in the array of markers ---*/
-		unsigned short *Index_to_Marker;
-		Index_to_Marker = new unsigned short [MAX_INDEX_VALUE];
-		for (iMarker = 0; iMarker < nMarker; iMarker++) {
-			Marker_Index = marker_list[iMarker];
-			Index_to_Marker[Marker_Index] = iMarker;
-		}
-
-		bound = new CPrimalGrid**[nMarker];
-
-		for (iMarker = 0; iMarker < nMarker; iMarker++) {
-			Marker_Index = marker_list[iMarker];
-			bound[iMarker] = new CPrimalGrid* [nElem_Bound[iMarker]];
-			ielem_triangle = 0; ielem_quad = 0;
-			for (iSurfElem = 0; iSurfElem < nSurfElem; iSurfElem++)
-				if (surf_marker[iSurfElem] == Marker_Index) {
-					if (surf_elem[iSurfElem][0] == 3) {
-						vnodes_triangle[0] = surf_elem[iSurfElem][1]; vnodes_triangle[1] = surf_elem[iSurfElem][2]; vnodes_triangle[2] = surf_elem[iSurfElem][3];
-						bound[iMarker][ielem_triangle+ielem_quad] = new CTriangle(vnodes_triangle[0],vnodes_triangle[1],vnodes_triangle[2],3);
-						ielem_triangle ++;
-					}
-					if (surf_elem[iSurfElem][0] == 4) {
-						vnodes_quad[0] = surf_elem[iSurfElem][1]; vnodes_quad[1] = surf_elem[iSurfElem][2]; vnodes_quad[2] = surf_elem[iSurfElem][3]; vnodes_quad[3] = surf_elem[iSurfElem][4];
-						bound[iMarker][ielem_triangle+ielem_quad] = new CRectangle(vnodes_quad[0],vnodes_quad[1],vnodes_quad[2],vnodes_quad[3],3);
-						ielem_quad ++;
-					}
-					nElem_Bound_Storage[iMarker] = ielem_triangle*4 + ielem_quad*5;
-				}
-		}
-
-
-
-		/*--- Update config information storing the boundary information in the right place ---*/
-		for (iMarker = 0; iMarker < nMarker; iMarker++) {
-
-			stringstream out;
-			out << marker_list[iMarker];
-			Marker_Tag = out.str();
-
-			Tag_to_Marker = new string [MAX_INDEX_VALUE];
-			Tag_to_Marker[config->GetMarker_Config_Tag(Marker_Tag)] = Marker_Tag;
-			config->SetMarker_All_Tag(iMarker, Marker_Tag);
-			config->SetMarker_All_Boundary(iMarker, config->GetMarker_Config_Boundary(Marker_Tag));
-			config->SetMarker_All_Monitoring(iMarker, config->GetMarker_Config_Monitoring(Marker_Tag));
-			config->SetMarker_All_Plotting(iMarker, config->GetMarker_Config_Plotting(Marker_Tag));
-			config->SetMarker_All_Moving(iMarker, config->GetMarker_Config_Moving(Marker_Tag));
-			config->SetMarker_All_SendRecv(iMarker, NONE);
-		}
-
-#else
-		cout << "NETCDF mesh format does not have parallel support!!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get();
-		MPI::COMM_WORLD.Abort(1);
-		MPI::Finalize();
-#endif
-
-		break;
-
-
-	default:
-		cout << "Unrecognized mesh format specified!!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get();
-#ifdef NO_MPI
-		exit(1);
-#else
-		MPI::COMM_WORLD.Abort(1);
-		MPI::Finalize();
-#endif
-		break;
-	}
-
-	/*--- Loop over the surface element to set the boundaries ---*/
-	for (iMarker = 0; iMarker < nMarker; iMarker++)
-		for (iElem_Surface = 0; iElem_Surface < nElem_Bound[iMarker]; iElem_Surface++)
-			for (iNode_Surface = 0; iNode_Surface < bound[iMarker][iElem_Surface]->GetnNodes(); iNode_Surface++) {
-				Point_Surface = bound[iMarker][iElem_Surface]->GetNode(iNode_Surface);
-				node[Point_Surface]->SetBoundary(nMarker);
-        if (config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE &&
-            config->GetMarker_All_Boundary(iMarker) != INTERFACE_BOUNDARY &&
-            config->GetMarker_All_Boundary(iMarker) != NEARFIELD_BOUNDARY &&
-            config->GetMarker_All_Boundary(iMarker) != PERIODIC_BOUNDARY)
-          node[Point_Surface]->SetPhysicalBoundary(true);
+      if ( cg_ncoords( fn, i, j, &ncoords) ) cg_error_exit();
+      cout << "Reading grid coordinates..." << endl;
+      cout << "Number of coordinate dimensions is " << ncoords << "." << endl;
+      
+      /*--- Set the value of range_max to the total number
+       of nodes in the unstructured mesh. Also allocate
+       memory for the temporary array that will hold
+       the grid coordinates as they are extracted. ---*/
+      
+      range_max       = cgsize[0];
+      coordArray[j-1] = new double[range_max];
+      
+      /*--- Allocate memory for the 2-D array which will
+       store the x, y, & z (if required) coordinates
+       for writing into the SU2 mesh. ---*/
+      
+      gridCoords[j-1] = new double*[ncoords];
+      for (int ii = 0; ii < ncoords; ii++) {
+        *( gridCoords[j-1] + ii ) = new double[range_max];
       }
-
-	/*--- Write a new copy of the grid in meters if requested ---*/
-	if (config->GetKind_SU2() == SU2_CFD)
-		if (config->GetWrite_Converted_Mesh()) {
-			SetMeshFile(config,config->GetMesh_Out_FileName());
-			cout.precision(4);
-			cout << "Converted mesh by a factor of " << Conversion_Factor << endl;
-			cout << "  and wrote to the output file: " << config->GetMesh_Out_FileName() << endl;
-		}
-
-#ifndef NO_MPI
-	/*--- Synchronization point after reading the grid ---*/
-	MPI::COMM_WORLD.Barrier();
+      
+      /*--- Loop over each set of coordinates. Note again
+       that the indexing starts at 1. ---*/
+      
+      for ( int k = 1; k <= ncoords; k++ ) {
+        
+        /*--- Read the coordinate info. This will retrieve the
+         data type (either RealSingle or RealDouble) as
+         well as the coordname which will specifiy the
+         type of data that it is based in the SIDS convention.
+         This might be "CoordinateX," for instance. ---*/
+        
+        if ( cg_coord_info(fn, i, j, k, &datatype, coordname) ) cg_error_exit();
+        cout << "Reading " << coordname << " values from file." << endl;
+        
+        /*--- Always retrieve the grid coords in double precision. ---*/
+        datatype = RealDouble;
+        if ( cg_coord_read(fn, i, j, coordname, datatype, &range_min,
+                           &range_max, coordArray[j-1]) ) cg_error_exit();
+        
+        /*--- Copy these coords into the 2-D array for storage until
+         writing the SU2 mesh. ---*/
+        
+        for (int m = 0; m < range_max; m++ ) {
+          gridCoords[j-1][k-1][m] = coordArray[j-1][m];
+        }
+        
+      }
+      
+      /*--- Begin section for retrieving the connectivity info. ---*/
+      
+      cout << "Reading connectivity information..." << endl;
+      
+      /*--- First check the number of sections. ---*/
+      
+      if ( cg_nsections(fn, i, j, &nsections) ) cg_error_exit();
+      cout << "Number of connectivity sections is " << nsections << "." << endl;
+      
+      /*--- Allocate several data structures to hold the various
+       pieces of information describing each section. It is
+       stored in this manner so that it can be written to
+       SU2 memory later. ---*/
+      
+      elemTypeVTK[j-1] = new int[nsections];
+      elemIndex[j-1]   = new int[nsections];
+      nElems[j-1]      = new int[nsections];
+      dataSize[j-1]    = new int[nsections];
+      isInternal[j-1]  = new bool[nsections];
+      //          nMarkers    = 0;
+      
+      sectionNames[j-1] = new char*[nsections];
+      for (int ii = 0; ii < nsections; ii++) {
+        sectionNames[j-1][ii]= new char[CGNS_STRING_SIZE];
+      }
+      
+      /*--- Loop over each section. This will include the main
+       connectivity information for the grid cells, as well
+       as any boundaries which were labeled before export. ---*/
+      
+      for ( int s = 1; s <= nsections; s++ ) {
+        
+        /*--- Read the connectivity details for this section.
+         Store the total number of elements in this section
+         to be used later for memory allocation. ---*/
+        
+        if ( cg_section_read(fn, i, j, s, sectionNames[j-1][s-1], &elemType, &startE,
+                             &endE, &nbndry, &parent_flag) ) cg_error_exit();
+        nElems[j-1][s-1] = (int) (endE-startE+1);
+        
+        /*--- Read the total number of nodes that will be
+         listed when reading this section. ---*/
+        
+        if ( cg_ElementDataSize(fn, i, j, s, &ElementDataSize) )
+          cg_error_exit();
+        dataSize[j-1][s-1] = ElementDataSize;
+        
+        /*--- Find the number of nodes required to represent
+         this type of element. ---*/
+        
+        if ( cg_npe(elemType, &npe) ) cg_error_exit();
+        elemIndex[j-1][s-1] = npe;
+        
+        /*--- Need to check the element type and correctly
+         specify the VTK identifier for that element.
+         SU2 recognizes elements by their VTK number. ---*/
+        
+        switch (elemType) {
+          case NODE:
+            currentElem      = "Vertex";
+            elemTypeVTK[j-1][s-1] = 1;
+            break;
+          case BAR_2:
+            currentElem      = "Line";
+            elemTypeVTK[j-1][s-1] = 3;
+            break;
+          case BAR_3:
+            currentElem      = "Line";
+            elemTypeVTK[j-1][s-1] = 3;
+            break;
+          case TRI_3:
+            currentElem      = "Triangle";
+            elemTypeVTK[j-1][s-1] = 5;
+            break;
+          case QUAD_4:
+            currentElem      = "Rectangle";
+            elemTypeVTK[j-1][s-1] = 9;
+            break;
+          case TETRA_4:
+            currentElem      = "Tetrahedron";
+            elemTypeVTK[j-1][s-1] = 10;
+            break;
+          case HEXA_8:
+            currentElem      = "Hexahedron";
+            elemTypeVTK[j-1][s-1] = 12;
+            break;
+          case PENTA_6:
+            currentElem      = "Wedge";
+            elemTypeVTK[j-1][s-1] = 13;
+            break;
+          case PYRA_5:
+            currentElem      = "Pyramid";
+            elemTypeVTK[j-1][s-1] = 14;
+            break;
+          default:
+            printf( "\n\n   !!! Error !!!\n" );
+            printf( " Unrecognized element type.\n");
+            printf( " Now exiting...\n\n");
+            exit(0);
+            break;
+        }
+        
+        /*--- Check if the elements in this section are part
+         of the internal domain or are part of the boundary
+         surfaces. This will be used later to separate the
+         internal connectivity from the boundary connectivity.
+         We will check for quad and tri elements for 3-D meshes
+         because these will be the boundaries. Similarly, line
+         elements will be boundaries to 2-D problems. ---*/
+        
+        if ( cell_dim == 2 ) {
+          /*--- In 2-D check for line elements, VTK type 3. ---*/
+          if (elemTypeVTK[j-1][s-1] == 3) {
+            isInternal[j-1][s-1] = false;
+            nMarkers++;
+            boundaryElems += nElems[j-1][s-1];
+          } else {
+            isInternal[j-1][s-1] = true;
+            interiorElems += nElems[j-1][s-1];
+          }
+        } else {
+          /*--- In 3-D check for tri or quad elements, VTK types 5 or 9. ---*/
+          if (elemTypeVTK[j-1][s-1] == 5 || elemTypeVTK[j-1][s-1] == 9) {
+            isInternal[j-1][s-1] = false;
+            nMarkers++;
+            boundaryElems += nElems[j-1][s-1];
+          } else {
+            isInternal[j-1][s-1] = true;
+            interiorElems += nElems[j-1][s-1];
+          }
+        }
+        
+        /*--- Keep track of the sections with the largest
+         number of elements and the number of nodes
+         required to specify an element of a specific
+         type. These max values will be used to allocate
+         one large array. ---*/
+        
+        if ( elemIndex[j-1][s-1] > indexMax || s == 1 ) indexMax = elemIndex[j-1][s-1];
+        if ( nElems[j-1][s-1] > elemMax || s == 1 )     elemMax  = nElems[j-1][s-1];
+        
+        /*--- Print some information to the console. ---*/
+        
+        cout << "Reading section " << sectionNames[j-1][s-1];
+        cout << " of element type " << currentElem << "\n   starting at ";
+        cout << startE << " and ending at " << endE << "." << endl;
+        
+      }
+      
+      /*--- Allocate memory to store all of the connectivity
+       information in one large array. ---*/
+      
+      connElems[j-1] = new cgsize_t**[nsections];
+      for (int ii = 0; ii < nsections; ii++) {
+        connElems[j-1][ii] = new cgsize_t*[indexMax];
+        for (int jj = 0; jj < indexMax; jj++) {
+          connElems[j-1][ii][jj] = new cgsize_t[elemMax];
+        }
+      }
+      
+      for ( int s = 1; s <= nsections; s++ ) {
+        
+        connElemTemp = new cgsize_t[dataSize[j-1][s-1]];
+        
+        /*--- Retrieve the connectivity information and store. ---*/
+        
+        if ( cg_elements_read(fn, i, j, s, connElemTemp, parentData) )
+          cg_error_exit();
+        
+        /*--- Copy these values into the larger array for
+         storage until writing the SU2 file. ---*/
+        
+        int counter = 0;
+        for ( int ii = 0; ii < nElems[j-1][s-1]; ii++ ) {
+          for ( int jj = 0; jj < elemIndex[j-1][s-1]; jj++ ) {
+            connElems[j-1][s-1][jj][ii] = connElemTemp[counter] + prevVerts;
+            counter++;
+          }
+        }
+        delete[] connElemTemp;
+      }
+      prevVerts += vertices[j-1];
+      
+    }
+  }
+  
+  /*--- Close the CGNS file. ---*/
+  
+  if ( cg_close(fn) ) cg_error_exit();
+  cout << "Successfully closed the CGNS file." << endl;
+  
+  /*--- Write a SU2 mesh if requested in the config file. ---*/
+  if (config->GetCGNS_To_SU2()) {
+    
+    string fileNameSU2 = config->GetMesh_Out_FileName();
+    cout << "Writing SU2 mesh file: " << fileNameSU2 << "." << endl;
+    
+    /*--- Open the solution file for writing. ---*/
+    
+    FILE *SU2File;
+    if ( (SU2File = fopen(fileNameSU2.c_str(), "w")) != NULL ) {
+      
+      /*--- Write the dimension of the problem and the
+       total number of elements first. Note that we
+       need to use the interior elements here (not "cells"). ---*/
+      
+      fprintf( SU2File, "NDIME= %i\n", cell_dim);
+      fprintf( SU2File, "NELEM= %i\n", interiorElems);
+      
+      /*--- Connectivity info for the internal domain. ---*/
+      
+      int counter = 0;
+      for ( int k = 0; k < nzones; k++ ) {
+        for ( int s = 0; s < nsections; s++ ) {
+          if ( isInternal[k][s] ) {
+            for ( int i = 0; i < nElems[k][s]; i++ ) {
+              fprintf( SU2File, "%2i\t", elemTypeVTK[k][s]);
+              for ( int j = 0; j < elemIndex[k][s]; j++ ) {
+                fprintf( SU2File, "%8i\t", connElems[k][s][j][i] - 1);
+              }
+              fprintf( SU2File, "%d\n", counter);
+              counter++;
+            }
+          }
+        }
+      }
+      
+      /*--- Now write the node coordinates. First write
+       the total number of vertices. Convert the mesh
+       if requesed. ---*/
+      if (config->GetKind_SU2() == SU2_CFD) {
+        if (config->GetWrite_Converted_Mesh()) {
+          Conversion_Factor = config->GetConversion_Factor();
+          cout << "Converted mesh by a factor of " << Conversion_Factor << endl;
+        } else {
+          Conversion_Factor = 1.0;
+        }
+      } else {
+        Conversion_Factor = 1.0;
+      }
+      fprintf( SU2File, "NPOIN= %i\n", totalVerts);
+      counter = 0;
+      for ( int k = 0; k < nzones; k ++ ) {
+        for ( int i = 0; i < vertices[k]; i++ ) {
+          for ( int j = 0; j < cell_dim; j++ ) {
+            fprintf( SU2File, "%.16le\t", Conversion_Factor*gridCoords[k][j][i]);
+          }
+          fprintf( SU2File, "%d\n", counter);
+          counter++;
+        }
+      }
+      
+      /*--- Lastly write the boundary information.
+       These will write out in the same order
+       that they are stored in the cgns file.
+       Note that the connectivity
+       values are decremented by 1 in order to
+       match the indexing in SU2.              ---*/
+      
+      fprintf( SU2File, "NMARK= %i\n", nMarkers );
+      counter = 0;
+      for ( int k = 0; k < nzones; k ++ ) {
+        for ( int s = 0; s < nsections; s++ ) {
+          if ( !isInternal[k][s] ) {
+            counter++;
+            fprintf( SU2File, "MARKER_TAG= %s\n", sectionNames[k][s] );
+            fprintf( SU2File, "MARKER_ELEMS= %i\n", nElems[k][s] );
+            for ( int i = 0; i < nElems[k][s]; i++ ) {
+              fprintf( SU2File, "%2i\t", elemTypeVTK[k][s]);
+              for ( int j = 0; j < elemIndex[k][s]; j++ ) {
+                fprintf( SU2File, "%8i\t", connElems[k][s][j][i] - 1 );
+              }
+              fprintf( SU2File, "\n");
+            }
+          }
+        }
+      }
+      
+    }
+    
+    /*--- Close the SU2 mesh file. ---*/
+    
+    fclose( SU2File );
+    cout << "Successfully wrote the SU2 mesh file." << endl;
+    
+  }
+  
+  /*--- Load the data from the CGNS file into SU2 memory. ---*/
+  
+  /*--- Read the dimension of the problem ---*/
+  nDim = cell_dim;
+  if (rank == MASTER_NODE) {
+    if (nDim == 2) cout << "Two dimensional problem." << endl;
+    if (nDim == 3) cout << "Three dimensional problem." << endl;
+  }
+  
+  /*--- Read the information about inner elements ---*/
+  nElem = interiorElems;
+  cout << nElem << " inner elements." << endl;
+  
+  /*--- Allocate space for elements ---*/
+  if (!config->GetDivide_Element()) elem = new CPrimalGrid*[nElem];
+  else {
+    if (nDim == 2) elem = new CPrimalGrid*[2*nElem];
+    if (nDim == 3) {
+      elem = new CPrimalGrid*[5*nElem];
+      cout << "The grid division only works in 2D!!" << endl;
+      cout << "Press any key to exit..." << endl;
+      cin.get();
+    }
+  }
+  
+  /*--- Loop over all the volumetric elements ---*/
+  for ( int k = 0; k < nzones; k ++ ) {
+    for ( int s = 0; s < nsections; s++ ) {
+      if ( isInternal[k][s] ) {
+        for ( int i = 0; i < nElems[k][s]; i++ ) {
+          
+          /*--- Get the VTK type for this element. ---*/
+          VTK_Type = elemTypeVTK[k][s];
+          
+          /*--- Transfer the nodes for this element. ---*/
+          for ( int j = 0; j < elemIndex[k][s]; j++ ) {
+            vnodes_cgns[j] = connElems[k][s][j][i] - 1;
+          }
+          
+          /* Instantiate this element. */
+          switch(VTK_Type) {
+            case TRIANGLE:
+              elem[ielem] = new CTriangle(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],nDim);
+              ielem_div++; ielem++; nelem_triangle++; break;
+            case RECTANGLE:
+              if (!config->GetDivide_Element()) {
+                elem[ielem] = new CRectangle(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[3],nDim);
+                ielem++; nelem_quad++; }
+              else {
+                elem[ielem] = new CTriangle(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],nDim);
+                ielem++; nelem_triangle++;
+                elem[ielem] = new CTriangle(vnodes_cgns[0],vnodes_cgns[2],vnodes_cgns[3],nDim);
+                ielem++; nelem_triangle++; }
+              ielem_div++;
+              break;
+            case TETRAHEDRON:
+              elem[ielem] = new CTetrahedron(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[3]);
+              ielem_div++; ielem++; nelem_tetra++; break;
+            case HEXAHEDRON:
+              if (!config->GetDivide_Element()) {
+                elem[ielem] = new CHexahedron(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[3],vnodes_cgns[4],vnodes_cgns[5],vnodes_cgns[6],vnodes_cgns[7]);
+                ielem++; nelem_hexa++; }
+              else {
+                elem[ielem] = new CTetrahedron(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[5]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_cgns[0],vnodes_cgns[2],vnodes_cgns[7],vnodes_cgns[5]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_cgns[0],vnodes_cgns[2],vnodes_cgns[3],vnodes_cgns[7]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_cgns[0],vnodes_cgns[5],vnodes_cgns[7],vnodes_cgns[4]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_cgns[2],vnodes_cgns[7],vnodes_cgns[5],vnodes_cgns[6]);
+                ielem++; nelem_tetra++; }
+              ielem_div++;
+              break;
+            case WEDGE:
+              if (!config->GetDivide_Element()) {
+                elem[ielem] = new CWedge(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[3],vnodes_cgns[4],vnodes_cgns[5]);
+                ielem++; nelem_wedge++; }
+              else {
+                elem[ielem] = new CTetrahedron(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[5]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[5],vnodes_cgns[4]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_cgns[0],vnodes_cgns[4],vnodes_cgns[5],vnodes_cgns[3]);
+                ielem++; nelem_tetra++; }
+              ielem_div++;
+              break;
+            case PYRAMID:
+              if (!config->GetDivide_Element()) {
+                elem[ielem] = new CPyramid(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[3],vnodes_cgns[4]);
+                ielem++; nelem_pyramid++;
+              }
+              else {
+                elem[ielem] = new CTetrahedron(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[4]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_cgns[0],vnodes_cgns[2],vnodes_cgns[3],vnodes_cgns[4]);
+                ielem++; nelem_tetra++; }
+              ielem_div++;
+              break;
+          }
+        }
+      }
+    }
+  }
+  nElem_Storage = nelem_triangle*4 + nelem_quad*5 + nelem_tetra*5 + nelem_hexa*9 + nelem_wedge*7 + nelem_pyramid*6;
+  if (config->GetDivide_Element()) nElem = nelem_triangle + nelem_quad + nelem_tetra + nelem_hexa + nelem_wedge + nelem_pyramid;
+  
+  /*--- Retrieve grid conversion factor. The conversion is only
+   applied for SU2_CFD. All other SU2 components leave the mesh
+   as is. ---*/
+  if (config->GetKind_SU2() == SU2_CFD)
+    Conversion_Factor = config->GetConversion_Factor();
+  else
+    Conversion_Factor = 1.0;
+  
+  /*--- Read node coordinates. Note this assumes serial mode. ---*/
+  nPoint = totalVerts;
+  nPointDomain = nPoint;
+  cout << nPoint << " points." << endl;
+  node = new CPoint*[nPoint];
+  for ( int k = 0; k < nzones; k++ ) {
+    for ( int i = 0; i < vertices[k]; i++ ) {
+      for ( int j = 0; j < cell_dim; j++ ) {
+        Coord_cgns[j] = gridCoords[k][j][i];
+      }
+      switch(nDim) {
+        case 2:
+          GlobalIndex = i;
+          node[iPoint] = new CPoint(Conversion_Factor*Coord_cgns[0], Conversion_Factor*Coord_cgns[1], GlobalIndex, config);
+          iPoint++; break;
+        case 3:
+          GlobalIndex = i;
+          node[iPoint] = new CPoint(Conversion_Factor*Coord_cgns[0], Conversion_Factor*Coord_cgns[1], Conversion_Factor*Coord_cgns[2], GlobalIndex, config);
+          iPoint++; break;
+      }
+    }
+  }
+  
+  /*--- Read number of markers ---*/
+  nMarker = nMarkers;
+  cout << nMarker << " surface markers." << endl;
+  config->SetnMarker_All(nMarker);
+  bound = new CPrimalGrid**[nMarker];
+  nElem_Bound = new unsigned long [nMarker];
+  nElem_Bound_Storage = new unsigned long [nMarker];
+  Tag_to_Marker = new string [MAX_INDEX_VALUE];
+  
+  iMarker = 0;
+  for ( int k = 0; k < nzones; k ++ ) {
+    for ( int s = 0; s < nsections; s++ ) {
+      if ( !isInternal[k][s] ) {
+        nelem_edge = 0; nelem_triangle = 0; nelem_quad = 0; ielem = 0;
+        Marker_Tag = sectionNames[k][s];
+        if (Marker_Tag != "SEND_RECEIVE") {
+          nElem_Bound[iMarker] = nElems[k][s];
+          if (rank == MASTER_NODE)
+            cout << nElem_Bound[iMarker]  << " boundary elements in index "<< iMarker <<" (Marker = " <<Marker_Tag<< ")." << endl;
+          bound[iMarker] = new CPrimalGrid* [nElem_Bound[iMarker]];
+          
+          for ( int i = 0; i < nElems[k][s]; i++ ) {
+            
+            /* Get the VTK type for this element. */
+            VTK_Type = elemTypeVTK[k][s];
+            
+            /* Transfer the nodes for this element. */
+            for ( int j = 0; j < elemIndex[k][s]; j++ ) {
+              vnodes_cgns[j] = connElems[k][s][j][i] - 1;
+            }
+            switch(VTK_Type) {
+              case LINE:
+                
+                if (nDim == 3) {
+                  cout << "Please remove line boundary conditions from the mesh file!" << endl;
+                  cout << "Press any key to exit..." << endl;
+                  cin.get();
+#ifdef NO_MPI
+                  exit(1);
+#else
+                  MPI::COMM_WORLD.Abort(1);
+                  MPI::Finalize();
+#endif
+                }
+                
+                bound[iMarker][ielem] = new CLine(vnodes_cgns[0],vnodes_cgns[1],2);
+                ielem++; nelem_edge++; break;
+              case TRIANGLE:
+                bound[iMarker][ielem] = new CTriangle(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],3);
+                ielem++; nelem_triangle++; break;
+              case RECTANGLE:
+                bound[iMarker][ielem] = new CRectangle(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[3],3);
+                ielem++; nelem_quad++; break;
+            }
+          }
+          nElem_Bound_Storage[iMarker] = nelem_edge*3 + nelem_triangle*4 + nelem_quad*5;
+          
+          /*--- Update config information storing the boundary information in the right place ---*/
+          Tag_to_Marker[config->GetMarker_Config_Tag(Marker_Tag)] = Marker_Tag;
+          config->SetMarker_All_Tag(iMarker, Marker_Tag);
+          config->SetMarker_All_Boundary(iMarker, config->GetMarker_Config_Boundary(Marker_Tag));
+          config->SetMarker_All_Monitoring(iMarker, config->GetMarker_Config_Monitoring(Marker_Tag));
+          config->SetMarker_All_Designing(iMarker, config->GetMarker_Config_Designing(Marker_Tag));
+          config->SetMarker_All_Plotting(iMarker, config->GetMarker_Config_Plotting(Marker_Tag));
+          config->SetMarker_All_Moving(iMarker, config->GetMarker_Config_Moving(Marker_Tag));
+          config->SetMarker_All_SendRecv(iMarker, NONE);
+        }
+        iMarker++;
+      }
+    }
+  }
+  
+  /*--- Deallocate temporary memory. ---*/
+  delete[] vertices;
+  delete[] cells;
+  delete[] boundVerts;
+  
+  for ( int j = 0; j < nzones; j++) {
+    delete[] coordArray[j];
+    delete[] elemTypeVTK[j];
+    delete[] elemIndex[j];
+    delete[] nElems[j];
+    delete[] dataSize[j];
+    delete[] isInternal[j];
+    delete[] sectionNames[j];
+  }
+  delete[] coordArray;
+  delete[] elemTypeVTK;
+  delete[] elemIndex;
+  delete[] nElems;
+  delete[] dataSize;
+  delete[] isInternal;
+  delete[] sectionNames;
+  
+  for ( int j = 0; j < nzones; j++) {
+    for( int i = 0; i < ncoords; i++ ) {
+      delete[] gridCoords[j][i];
+    }
+    delete[] gridCoords[j];
+  }
+  delete[] gridCoords;
+  
+  for ( int kk = 0; kk < nzones; kk++) {
+    for (int ii = 0; ii < nsections; ii++) {
+      for (int jj = 0; jj < indexMax; jj++) {
+        delete[] connElems[kk][ii][jj];
+      }
+      delete connElems[kk][ii];
+    }
+    delete connElems[kk];
+  }
+  delete[] connElems;
+  
+#else
+  cout << "SU2 built without CGNS support!!" << endl;
+  cout << "To use CGNS, remove the -DNO_CGNS directive ";
+  cout << "from the makefile and supply the correct path";
+  cout << " to the CGNS library." << endl;
+  cout << "Press any key to exit..." << endl;
+  cin.get();
+#ifdef NO_MPI
+  exit(1);
+#else
+  MPI::COMM_WORLD.Abort(1);
+  MPI::Finalize();
+#endif
+  
+#endif
+  
 #endif
 
-	//	Inner_file.close();
-	//	Outer_file.close();
-	//	exit(0);
 }
 
-CPhysicalGeometry::~CPhysicalGeometry(void) {
-
+void CPhysicalGeometry::NETCDF_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone) {
+  
+  /*--- Local variables and initialization ---*/
+	string text_line, Marker_Tag;
+	ifstream mesh_file;
+	unsigned short VTK_Type, iMarker;
+	unsigned long ielem = 0,
+  vnodes_triangle[3], vnodes_quad[4], vnodes_tetra[4], vnodes_hexa[8], vnodes_wedge[6];
+	char cstr[200];
+	string::size_type position;
+	nZone = val_nZone;
+  
+  /*--- Initialize counters for local/global points & elements ---*/
+  
+  FinestMGLevel = true;
+	Global_nPoint = 0; Global_nPointDomain = 0; Global_nElem = 0;
+  nelem_edge     = 0; Global_nelem_edge     = 0;
+  nelem_triangle = 0; Global_nelem_triangle = 0;
+  nelem_quad     = 0; Global_nelem_quad     = 0;
+  nelem_tetra    = 0; Global_nelem_tetra    = 0;
+  nelem_hexa     = 0; Global_nelem_hexa     = 0;
+  nelem_wedge    = 0; Global_nelem_wedge    = 0;
+  nelem_pyramid  = 0; Global_nelem_pyramid  = 0;
+  
+  /*--- Throw error if not in serial mode. ---*/
+#ifndef NO_MPI
+  cout << "Parallel support with NETCDF format not yet implemented!!" << endl;
+  cout << "Press any key to exit..." << endl;
+  cin.get();
+  MPI::COMM_WORLD.Abort(1);
+  MPI::Finalize();
+#endif
+  
+  unsigned short Marker_Index, marker, icommas, iDim;
+  unsigned long nmarker, ielem_triangle, ielem_hexa, ncoord, iSurfElem, ielem_wedge,
+  ielem_quad, *marker_list, **surf_elem, ielem_surface, *surf_marker, nSurfElem;
+  double coord;
+  string::size_type position_;
+  bool stop, add;
+  
+  ielem_surface = 0; nSurfElem = 0;
+  surf_marker = NULL;
+  surf_elem = NULL;
+  
+  
+  nDim = 3; cout << "Three dimensional problem." << endl;
+  
+  /*--- Open grid file ---*/
+  strcpy (cstr, val_mesh_filename.c_str());
+  mesh_file.open(cstr, ios::in);
+  if (mesh_file.fail()) {
+    cout << "There is no geometry file (CPhysicalGeometry)!!" << endl;
+    cout << "Press any key to exit..." << endl;
+    cin.get();
+    exit(1);
+    
+  }
+  
+  while (getline (mesh_file, text_line)) {
+    
+    position = text_line.find ("no_of_elements = ",0);
+    if (position != string::npos) {
+      text_line.erase (0,17); nElem = atoi(text_line.c_str());
+      cout << nElem << " inner elements to store." << endl;
+      elem = new CPrimalGrid*[nElem]; }
+    
+    position = text_line.find ("no_of_surfaceelements = ",0);
+    if (position != string::npos) {
+      text_line.erase (0,24); nSurfElem = atoi(text_line.c_str());
+      cout << nSurfElem << " surface elements to store." << endl;
+      surf_elem = new unsigned long* [nSurfElem];
+      for (ielem_surface = 0; ielem_surface < nSurfElem; ielem_surface++)
+        surf_elem[ielem_surface] = new unsigned long [5];
+      ielem_surface = 0;
+    }
+    
+    position = text_line.find ("no_of_points = ",0);
+    if (position != string::npos) {
+      text_line.erase (0,15); nPoint = atoi(text_line.c_str()); nPointDomain = nPoint;
+      cout << nPoint << " points to store." << endl;
+      node = new CPoint*[nPoint]; }
+    
+    position = text_line.find ("no_of_tetraeders = ",0);
+    if (position != string::npos) {
+      text_line.erase (0,19); nelem_tetra = atoi(text_line.c_str());
+      cout << nelem_tetra << " tetraeders elements to store." << endl; }
+    
+    position = text_line.find ("no_of_prisms = ",0);
+    if (position != string::npos) {
+      text_line.erase (0,15); nelem_wedge = atoi(text_line.c_str());
+      cout << nelem_wedge << " prims elements to store." << endl; }
+    
+    position = text_line.find ("no_of_hexaeders = ",0);
+    if (position != string::npos) {
+      text_line.erase (0,18); nelem_hexa = atoi(text_line.c_str());
+      cout << nelem_hexa << " hexaeders elements to store." << endl; }
+    
+    position = text_line.find ("no_of_surfacetriangles = ",0);
+    if (position != string::npos) {
+      text_line.erase (0,25); nelem_triangle = atoi(text_line.c_str());
+      cout << nelem_triangle << " surface triangle elements to store." << endl; }
+    
+    position = text_line.find ("no_of_surfacequadrilaterals = ",0);
+    if (position != string::npos) {
+      text_line.erase (0,30); nelem_quad = atoi(text_line.c_str());
+      cout << nelem_quad << " surface quadrilaterals elements to store." << endl; }
+    
+    position = text_line.find ("points_of_tetraeders =",0);
+    if (position != string::npos) {
+      for (unsigned long ielem_tetra = 0; ielem_tetra < nelem_tetra; ielem_tetra++) {
+        getline(mesh_file,text_line);
+        for (unsigned short icommas = 0; icommas < 15; icommas++) {
+          position_ = text_line.find( ",", 0 ); if(position_!=string::npos) text_line.erase (position_,1);
+          position_ = text_line.find( ";", 0 ); if(position_!=string::npos) text_line.erase (position_,1);
+        }
+        istringstream elem_line(text_line);
+        VTK_Type = TETRAHEDRON;
+        elem_line >> vnodes_tetra[0]; elem_line >> vnodes_tetra[1]; elem_line >> vnodes_tetra[2]; elem_line >> vnodes_tetra[3];
+        elem[ielem] = new CTetrahedron(vnodes_tetra[0],vnodes_tetra[1],vnodes_tetra[2],vnodes_tetra[3]);
+        ielem++;
+      }
+      cout << "finish tetrahedron element reading" << endl;
+    }
+    
+    position = text_line.find ("points_of_prisms =",0);
+    if (position != string::npos) {
+      for (ielem_wedge = 0; ielem_wedge < nelem_wedge; ielem_wedge++) {
+        getline(mesh_file,text_line);
+        for (icommas = 0; icommas < 15; icommas++) {
+          position_ = text_line.find( ",", 0 ); if(position_!=string::npos) text_line.erase (position_,1);
+          position_ = text_line.find( ";", 0 ); if(position_!=string::npos) text_line.erase (position_,1);
+        }
+        istringstream elem_line(text_line);
+        VTK_Type = WEDGE;
+        elem_line >> vnodes_wedge[0]; elem_line >> vnodes_wedge[1]; elem_line >> vnodes_wedge[2]; elem_line >> vnodes_wedge[3]; elem_line >> vnodes_wedge[4]; elem_line >> vnodes_wedge[5];
+        elem[ielem] = new CWedge(vnodes_wedge[0],vnodes_wedge[1],vnodes_wedge[2],vnodes_wedge[3],vnodes_wedge[4],vnodes_wedge[5]);
+        ielem++;
+      }
+      cout << "finish prims element reading" << endl;
+    }
+    
+    position = text_line.find ("points_of_hexaeders =",0);
+    if (position != string::npos) {
+      for (ielem_hexa = 0; ielem_hexa < nelem_hexa; ielem_hexa++) {
+        getline(mesh_file,text_line);
+        for (icommas = 0; icommas < 15; icommas++) {
+          position_ = text_line.find( ",", 0 ); if(position_!=string::npos) text_line.erase (position_,1);
+          position_ = text_line.find( ";", 0 ); if(position_!=string::npos) text_line.erase (position_,1);
+        }
+        istringstream elem_line(text_line);
+        VTK_Type = HEXAHEDRON;
+        elem_line >> vnodes_hexa[0]; elem_line >> vnodes_hexa[1]; elem_line >> vnodes_hexa[2]; elem_line >> vnodes_hexa[3];
+        elem_line >> vnodes_hexa[4]; elem_line >> vnodes_hexa[5]; elem_line >> vnodes_hexa[6]; elem_line >> vnodes_hexa[7];
+        elem[ielem] = new CHexahedron(vnodes_hexa[0],vnodes_hexa[1],vnodes_hexa[2],vnodes_hexa[3],vnodes_hexa[4],vnodes_hexa[5],vnodes_hexa[6],vnodes_hexa[7]);
+        ielem++;
+      }
+      cout << "finish hexaeders element reading" << endl;
+    }
+    nElem_Storage = nelem_tetra*5 + nelem_wedge*7 + nelem_hexa*9;
+    
+    position = text_line.find ("points_of_surfacetriangles =",0);
+    if (position != string::npos) {
+      for (ielem_triangle = 0; ielem_triangle < nelem_triangle; ielem_triangle++) {
+        getline(mesh_file,text_line);
+        for (icommas = 0; icommas < 15; icommas++) {
+          position_ = text_line.find( ",", 0 ); if(position_!=string::npos) text_line.erase (position_,1);
+          position_ = text_line.find( ";", 0 ); if(position_!=string::npos) text_line.erase (position_,1);
+        }
+        istringstream elem_line(text_line);
+        elem_line >> vnodes_triangle[0]; elem_line >> vnodes_triangle[1]; elem_line >> vnodes_triangle[2];
+        surf_elem[ielem_surface][0]= 3;
+        surf_elem[ielem_surface][1]= vnodes_triangle[0];
+        surf_elem[ielem_surface][2]= vnodes_triangle[1];
+        surf_elem[ielem_surface][3]= vnodes_triangle[2];
+        ielem_surface++;
+      }
+      cout << "finish surface triangles element reading" << endl;
+    }
+    
+    position = text_line.find ("points_of_surfacequadrilaterals =",0);
+    if (position != string::npos) {
+      for (ielem_quad = 0; ielem_quad < nelem_quad; ielem_quad++) {
+        getline(mesh_file,text_line);
+        for (icommas = 0; icommas < 15; icommas++) {
+          position_ = text_line.find( ",", 0 ); if(position_!=string::npos) text_line.erase (position_,1);
+          position_ = text_line.find( ";", 0 ); if(position_!=string::npos) text_line.erase (position_,1);
+        }
+        istringstream elem_line(text_line);
+        elem_line >> vnodes_quad[0]; elem_line >> vnodes_quad[1]; elem_line >> vnodes_quad[2]; elem_line >> vnodes_quad[3];
+        surf_elem[ielem_surface][0]= 4;
+        surf_elem[ielem_surface][1]= vnodes_quad[0];
+        surf_elem[ielem_surface][2]= vnodes_quad[1];
+        surf_elem[ielem_surface][3]= vnodes_quad[2];
+        surf_elem[ielem_surface][4]= vnodes_quad[3];
+        ielem_surface++;
+      }
+      cout << "finish surface quadrilaterals element reading" << endl;
+    }
+    
+    position = text_line.find ("boundarymarker_of_surfaces =",0);
+    if (position != string::npos) {
+      nmarker=0;
+      stop = false;
+      surf_marker = new unsigned long [nelem_triangle + nelem_quad];
+      
+      text_line.erase (0,29);
+      for (icommas = 0; icommas < 50; icommas++) {
+        position_ = text_line.find( ",", 0 );
+        if(position_!=string::npos) text_line.erase (position_,1);
+      }
+      
+      stringstream  point_line(text_line);
+      while (point_line >> marker,!point_line.eof()) {
+        surf_marker[nmarker] = marker;
+        nmarker++; }
+      
+      while (!stop) {
+        getline(mesh_file,text_line);
+        for (icommas = 0; icommas < 50; icommas++) {
+          position_ = text_line.find( ",", 0 );
+          if(position_!=string::npos) text_line.erase (position_,1);
+          position_ = text_line.find( ";", 0 );
+          if(position_!=string::npos) text_line.erase (position_,1);
+        }
+        stringstream  point_line(text_line);
+        while (point_line>> marker,!point_line.eof()) {
+          surf_marker[nmarker] = marker;
+          if (nmarker == nSurfElem-1) {stop = true; break;}
+          nmarker++;
+        }
+      }
+    }
+    
+    for (iDim = 0; iDim < nDim; iDim++) {
+      ncoord = 0; stop = false;
+      if (iDim == 0) position = text_line.find ("points_xc = ",0);
+      if (iDim == 1) position = text_line.find ("points_yc = ",0);
+      if (iDim == 2) position = text_line.find ("points_zc = ",0);
+      
+      if (position != string::npos) {
+        text_line.erase (0,12);
+        for (icommas = 0; icommas < 50; icommas++) {
+          position_ = text_line.find( ",", 0 );
+          if(position_!=string::npos) text_line.erase (position_,1);
+        }
+        stringstream  point_line(text_line);
+        while (point_line>> coord,!point_line.eof()) {
+          if (iDim==0) node[ncoord] = new CPoint(coord, 0.0, 0.0, ncoord, config);
+          if (iDim==1) node[ncoord]->SetCoord(1, coord);
+          if (iDim==2) node[ncoord]->SetCoord(2, coord);
+          ncoord++; }
+        while (!stop) {
+          getline(mesh_file,text_line);
+          for (icommas = 0; icommas < 50; icommas++) {
+            position_ = text_line.find( ",", 0 );
+            if(position_!=string::npos) text_line.erase (position_,1);
+            position_ = text_line.find( ";", 0 );
+            if(position_!=string::npos) text_line.erase (position_,1);
+          }
+          stringstream  point_line(text_line);
+          while (point_line>> coord,!point_line.eof()) {
+            if (iDim==0) node[ncoord] = new CPoint(coord, 0.0, 0.0, ncoord, config);
+            if (iDim==1) node[ncoord]->SetCoord(1, coord);
+            if (iDim==2) node[ncoord]->SetCoord(2, coord);
+            if (ncoord == nPoint-1) {stop = true; break;}
+            ncoord++;
+          }
+        }
+        if (iDim==0) cout << "finish point xc reading" << endl;
+        if (iDim==1) cout << "finish point yc reading" << endl;
+        if (iDim==2) cout << "finish point zc reading" << endl;
+      }
+    }
+  }
+  
+  
+  /*--- Create a list with all the markers ---*/
+  marker_list = new unsigned long [MAX_NUMBER_MARKER];
+  marker_list[0] = surf_marker[0]; nMarker = 1;
+  for (iSurfElem = 0; iSurfElem < nSurfElem; iSurfElem++) {
+    add = true;
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      if (marker_list[iMarker] == surf_marker[iSurfElem]) {
+        add = false; break; }
+    if (add) {
+      marker_list[nMarker] = surf_marker[iSurfElem];
+      nMarker++;
+    }
+  }
+  
+  nElem_Bound = new unsigned long [nMarker];
+  nElem_Bound_Storage = new unsigned long [nMarker];
+  
+  /*--- Compute the number of element per marker ---*/
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    nElem_Bound[iMarker] = 0;
+    for (iSurfElem = 0; iSurfElem < nSurfElem; iSurfElem++)
+      if (surf_marker[iSurfElem] == marker_list[iMarker])
+        nElem_Bound[iMarker]++;
+  }
+  
+  
+  /*--- Realate the marker index with the position in the array of markers ---*/
+  unsigned short *Index_to_Marker;
+  Index_to_Marker = new unsigned short [MAX_INDEX_VALUE];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    Marker_Index = marker_list[iMarker];
+    Index_to_Marker[Marker_Index] = iMarker;
+  }
+  
+  bound = new CPrimalGrid**[nMarker];
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    Marker_Index = marker_list[iMarker];
+    bound[iMarker] = new CPrimalGrid* [nElem_Bound[iMarker]];
+    ielem_triangle = 0; ielem_quad = 0;
+    for (iSurfElem = 0; iSurfElem < nSurfElem; iSurfElem++)
+      if (surf_marker[iSurfElem] == Marker_Index) {
+        if (surf_elem[iSurfElem][0] == 3) {
+          vnodes_triangle[0] = surf_elem[iSurfElem][1]; vnodes_triangle[1] = surf_elem[iSurfElem][2]; vnodes_triangle[2] = surf_elem[iSurfElem][3];
+          bound[iMarker][ielem_triangle+ielem_quad] = new CTriangle(vnodes_triangle[0],vnodes_triangle[1],vnodes_triangle[2],3);
+          ielem_triangle ++;
+        }
+        if (surf_elem[iSurfElem][0] == 4) {
+          vnodes_quad[0] = surf_elem[iSurfElem][1]; vnodes_quad[1] = surf_elem[iSurfElem][2]; vnodes_quad[2] = surf_elem[iSurfElem][3]; vnodes_quad[3] = surf_elem[iSurfElem][4];
+          bound[iMarker][ielem_triangle+ielem_quad] = new CRectangle(vnodes_quad[0],vnodes_quad[1],vnodes_quad[2],vnodes_quad[3],3);
+          ielem_quad ++;
+        }
+        nElem_Bound_Storage[iMarker] = ielem_triangle*4 + ielem_quad*5;
+      }
+  }
+  
+  
+  
+  /*--- Update config information storing the boundary information in the right place ---*/
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    
+    stringstream out;
+    out << marker_list[iMarker];
+    Marker_Tag = out.str();
+    
+    Tag_to_Marker = new string [MAX_INDEX_VALUE];
+    Tag_to_Marker[config->GetMarker_Config_Tag(Marker_Tag)] = Marker_Tag;
+    config->SetMarker_All_Tag(iMarker, Marker_Tag);
+    config->SetMarker_All_Boundary(iMarker, config->GetMarker_Config_Boundary(Marker_Tag));
+    config->SetMarker_All_Monitoring(iMarker, config->GetMarker_Config_Monitoring(Marker_Tag));
+    config->SetMarker_All_Designing(iMarker, config->GetMarker_Config_Designing(Marker_Tag));
+    config->SetMarker_All_Plotting(iMarker, config->GetMarker_Config_Plotting(Marker_Tag));
+    config->SetMarker_All_Moving(iMarker, config->GetMarker_Config_Moving(Marker_Tag));
+    config->SetMarker_All_SendRecv(iMarker, NONE);
+  }
+  
 }
 
 void CPhysicalGeometry::Check_Orientation(CConfig *config) {
-	unsigned long Point_1, Point_2, Point_3, Point_4, Point_5, Point_6, 
+	unsigned long Point_1, Point_2, Point_3, Point_4, Point_5, Point_6,
 	iElem, Point_1_Surface, Point_2_Surface, Point_3_Surface, Point_4_Surface,
 	iElem_Domain, Point_Domain = 0, Point_Surface, iElem_Surface;
-	double test_1, test_2, test_3, test_4, *Coord_1, *Coord_2, *Coord_3, *Coord_4, 
+	double test_1, test_2, test_3, test_4, *Coord_1, *Coord_2, *Coord_3, *Coord_4,
 	*Coord_5, *Coord_6, a[3], b[3], c[3], n[3], test;
 	unsigned short iDim, iMarker, iNode_Domain, iNode_Surface;
 	bool find;
@@ -2075,7 +2204,7 @@ void CPhysicalGeometry::Check_Orientation(CConfig *config) {
 				b[iDim] = 0.5*(Coord_3[iDim]-Coord_1[iDim]); }
 			test = a[0]*b[1]-b[0]*a[1];
 
-			if (test < 0.0) elem[iElem]->Change_Orientation();	
+			if (test < 0.0) elem[iElem]->Change_Orientation();
 		}
 
 		/*--- 2D grid, rectangle case ---*/
@@ -2107,7 +2236,7 @@ void CPhysicalGeometry::Check_Orientation(CConfig *config) {
 			test_4 = a[0]*b[1]-b[0]*a[1];
 
 			if ((test_1 < 0.0) && (test_2 < 0.0) && (test_3 < 0.0) && (test_4 < 0.0))
-				elem[iElem]->Change_Orientation();		
+				elem[iElem]->Change_Orientation();
 		}
 
 		/*--- 3D grid, tetrahedron case ---*/
@@ -2646,11 +2775,13 @@ void CPhysicalGeometry::SetPsuP_FEA(void) {
    because we already have these shape functions implemented. We only do
    this internally however, because we want the deformed mesh to retain
    the original element connectivity. Therefore, we add the new edges
-   in this routine manually for these divisions so that the global sparse
+   in this routine manually for these divisions so that the global stiffness
    matrix is constructed correctly. ---*/
-  //unsigned long Point_0, Point_1, Point_2, Point_3;
+
   for(iElem = 0; iElem < nElem; iElem++) {
-        
+    
+    /*--- Divide quads into 2 triangles ---*/
+    
     if (elem[iElem]->GetVTK_Type() == RECTANGLE) {
       
       iPoint = elem[iElem]->GetNode(0);
@@ -2661,75 +2792,80 @@ void CPhysicalGeometry::SetPsuP_FEA(void) {
       
     }
 
-//    /*--- Divide hexehedra into 6 tetrahedra ---*/
-//    if (elem[iElem]->GetVTK_Type() == HEXAHEDRON) {
-//      
-//      /* Tetrahedron 1, nodes: [0,2,3,6] */
-//      Point_0 = elem[iElem]->GetNode(0);
-//      Point_1 = elem[iElem]->GetNode(2);
-//      Point_2 = elem[iElem]->GetNode(3);
-//      Point_3 = elem[iElem]->GetNode(6);
-//
-//      
-//      /* Tetrahedron 2, nodes: [0,3,7,6]  */
-//      Point_0 = elem[iElem]->GetNode(0);
-//      Point_1 = elem[iElem]->GetNode(3);
-//      Point_2 = elem[iElem]->GetNode(7);
-//      Point_3 = elem[iElem]->GetNode(6);
-//
-//      
-//      /* Tetrahedron 3, nodes: [0,7,4,6]  */
-//      Point_0 = elem[iElem]->GetNode(0);
-//      Point_1 = elem[iElem]->GetNode(7);
-//      Point_2 = elem[iElem]->GetNode(4);
-//      Point_3 = elem[iElem]->GetNode(6);
-//
-//      
-//      /* Tetrahedron 4, nodes: [0,5,6,4]  */
-//      Point_0 = elem[iElem]->GetNode(0);
-//      Point_1 = elem[iElem]->GetNode(5);
-//      Point_2 = elem[iElem]->GetNode(6);
-//      Point_3 = elem[iElem]->GetNode(4);
-//
-//      
-//      /* Tetrahedron 5, nodes: [1,5,6,0]  */
-//      Point_0 = elem[iElem]->GetNode(1);
-//      Point_1 = elem[iElem]->GetNode(5);
-//      Point_2 = elem[iElem]->GetNode(6);
-//      Point_3 = elem[iElem]->GetNode(0);
-//
-//      
-//      /* Tetrahedron 6, nodes: [1,6,2,0]  */
-//      Point_0 = elem[iElem]->GetNode(1);
-//      Point_1 = elem[iElem]->GetNode(6);
-//      Point_2 = elem[iElem]->GetNode(2);
-//      Point_3 = elem[iElem]->GetNode(0);
-//      
-//    }
-//    
-//    /*--- Divide prisms into 4 tetrahedra ---*/
-//    if (elem[iElem]->GetVTK_Type() == WEDGE) {
-//      
-//      // TO DO
-//      
-//    }
-//    
-//    /*--- Divide pyramids into 2 tetrahedra ---*/
-//    if (elem[iElem]->GetVTK_Type() == PYRAMID) {
-//      
-//      /*--- Tetrahedron 1, nodes: [0,1,2,4] ---*/
-//      Point_0 = elem[iElem]->GetNode(0);
-//      Point_1 = elem[iElem]->GetNode(1);
-//      Point_2 = elem[iElem]->GetNode(2);
-//      Point_3 = elem[iElem]->GetNode(4);
-//      
-//      /*--- Tetrahedron 2, nodes: [0,2,3,4]  ---*/
-//      Point_0 = elem[iElem]->GetNode(0);
-//      Point_1 = elem[iElem]->GetNode(2);
-//      Point_2 = elem[iElem]->GetNode(3);
-//      Point_3 = elem[iElem]->GetNode(4);
-//      
-//    }
+    /*--- Divide hexehedra into 5 tetrahedra ---*/
+    
+    if (elem[iElem]->GetVTK_Type() == HEXAHEDRON) {
+      
+      /*--- Cut each of the 6 quad faces of the hex cell ---*/
+      
+      iPoint = elem[iElem]->GetNode(0);
+      jPoint = elem[iElem]->GetNode(2);
+      node[iPoint]->SetPoint(jPoint);
+      node[jPoint]->SetPoint(iPoint);
+      
+      iPoint = elem[iElem]->GetNode(2);
+      jPoint = elem[iElem]->GetNode(7);
+      node[iPoint]->SetPoint(jPoint);
+      node[jPoint]->SetPoint(iPoint);
+
+      iPoint = elem[iElem]->GetNode(5);
+      jPoint = elem[iElem]->GetNode(7);
+      node[iPoint]->SetPoint(jPoint);
+      node[jPoint]->SetPoint(iPoint);
+      
+      iPoint = elem[iElem]->GetNode(0);
+      jPoint = elem[iElem]->GetNode(5);
+      node[iPoint]->SetPoint(jPoint);
+      node[jPoint]->SetPoint(iPoint);
+      
+      iPoint = elem[iElem]->GetNode(0);
+      jPoint = elem[iElem]->GetNode(7);
+      node[iPoint]->SetPoint(jPoint);
+      node[jPoint]->SetPoint(iPoint);
+      
+      iPoint = elem[iElem]->GetNode(2);
+      jPoint = elem[iElem]->GetNode(5);
+      node[iPoint]->SetPoint(jPoint);
+      node[jPoint]->SetPoint(iPoint);
+      
+    }
+    
+    /*--- Divide prisms into 3 tetrahedra ---*/
+    
+    if (elem[iElem]->GetVTK_Type() == WEDGE) {
+      
+      /*--- Cut each of the 3 quad faces of the prism ---*/
+      
+      iPoint = elem[iElem]->GetNode(0);
+      jPoint = elem[iElem]->GetNode(4);
+      node[iPoint]->SetPoint(jPoint);
+      node[jPoint]->SetPoint(iPoint);
+      
+      iPoint = elem[iElem]->GetNode(2);
+      jPoint = elem[iElem]->GetNode(4);
+      node[iPoint]->SetPoint(jPoint);
+      node[jPoint]->SetPoint(iPoint);
+      
+      iPoint = elem[iElem]->GetNode(0);
+      jPoint = elem[iElem]->GetNode(5);
+      node[iPoint]->SetPoint(jPoint);
+      node[jPoint]->SetPoint(iPoint);
+      
+    }
+    
+    /*--- Divide pyramids into 2 tetrahedra ---*/
+    
+    if (elem[iElem]->GetVTK_Type() == PYRAMID) {
+      
+      /*--- Cut the single quad face of the pyramid ---*/
+      
+      iPoint = elem[iElem]->GetNode(0);
+      jPoint = elem[iElem]->GetNode(2);
+      node[iPoint]->SetPoint(jPoint);
+      node[jPoint]->SetPoint(iPoint);
+      
+    }
+    
   }
   
 	/*--- Set the number of neighbors variable, this is
@@ -4334,17 +4470,20 @@ void CPhysicalGeometry::SetBoundSTL (CConfig *config, char mesh_filename[200]) {
 }
 
 void CPhysicalGeometry::SetColorGrid(CConfig *config) {
-  
+
+#ifndef NO_MPI
+
 #ifndef NO_METIS
   
 	unsigned long iPoint, iElem, iElem_Triangle, iElem_Tetrahedron, nElem_Triangle,
 	nElem_Tetrahedron;
 	int ne = 0, nn, *elmnts = NULL, etype, *epart = NULL, *npart = NULL, numflag, nparts, edgecut, *eptr;
   
-	unsigned short nDomain = config->GetnDomain();
-    
-	cout << endl <<"---------------------- Performing mesh partitioning ---------------------" << endl;
+  int rank = MPI::COMM_WORLD.Get_rank();
+	int size = MPI::COMM_WORLD.Get_size();
   
+	unsigned short nDomain = size;
+      
 	nElem_Triangle = 0;
 	nElem_Tetrahedron = 0;
 	for (iElem = 0; iElem < GetnElem(); iElem++) {
@@ -4498,6 +4637,7 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
 	delete[] epart;
 	delete[] npart;
   
+#endif
 #endif
   
 }
@@ -6821,6 +6961,7 @@ CBoundaryGeometry::CBoundaryGeometry(CConfig *config, string val_mesh_filename, 
 					config->SetMarker_All_Tag(iMarker, Marker_Tag);
 					config->SetMarker_All_Boundary(iMarker, config->GetMarker_Config_Boundary(Marker_Tag));
 					config->SetMarker_All_Monitoring(iMarker, config->GetMarker_Config_Monitoring(Marker_Tag));
+					config->SetMarker_All_Designing(iMarker, config->GetMarker_Config_Designing(Marker_Tag));
 					config->SetMarker_All_Plotting(iMarker, config->GetMarker_Config_Plotting(Marker_Tag));
 					config->SetMarker_All_Moving(iMarker, config->GetMarker_Config_Moving(Marker_Tag));
 					config->SetMarker_All_PerBound(iMarker, config->GetMarker_Config_PerBound(Marker_Tag));
@@ -7339,6 +7480,96 @@ double CBoundaryGeometry::GetMaxThickness(CConfig *config, bool original_surface
 
 }
 
+double CBoundaryGeometry::GetMinThickness(CConfig *config, bool original_surface) {
+	unsigned short iMarker;
+	unsigned long iVertex, jVertex, n_U, n_L;
+	double *Coord, *Normal, *VarCoord = NULL, auxXCoord, auxYCoord, yp1, ypn, MinThickness;
+	vector<double> Xcoord_U, Ycoord_U, Y2coord_U;
+  vector<double> Xcoord_L, Ycoord_L, Y2coord_L;
+  
+	/*--- Identify upper and lower side --*/
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+		for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
+			if (config->GetMarker_All_Moving(iMarker) == YES) {
+				Coord = vertex[iMarker][iVertex]->GetCoord();
+				if (original_surface == false) VarCoord = vertex[iMarker][iVertex]->GetVarCoord();
+				Normal = vertex[iMarker][iVertex]->GetNormal();
+        
+        /*--- Build spline fits of both the upper and lower surfaces so that
+         we can check the thickness at a particular chord location. The name
+         of this routine needs to be changed to something more appropriate. ---*/
+				if (Normal[1] > 0) {						
+					if (original_surface == true) {
+						Xcoord_U.push_back(Coord[0]);
+						Ycoord_U.push_back(Coord[1]);
+					}
+					else {
+						Xcoord_U.push_back(Coord[0]+VarCoord[0]);
+						Ycoord_U.push_back(Coord[1]+VarCoord[1]);
+					}
+				} else {
+          if (original_surface == true) {
+						Xcoord_L.push_back(Coord[0]);
+						Ycoord_L.push_back(Coord[1]);
+					}
+					else {
+						Xcoord_L.push_back(Coord[0]+VarCoord[0]);
+						Ycoord_L.push_back(Coord[1]+VarCoord[1]);
+					}
+        }
+			}
+  
+	n_U = Xcoord_U.size();
+  n_L = Xcoord_L.size();
+  
+	/*--- Order the upper arrays using the y component ---*/
+	for (iVertex = 0; iVertex < Xcoord_U.size(); iVertex++)
+		for (jVertex = 0; jVertex < Xcoord_U.size() - 1 - iVertex; jVertex++)
+			if (Xcoord_U[jVertex] > Xcoord_U[jVertex+1]) {
+				auxXCoord = Xcoord_U[jVertex]; Xcoord_U[jVertex] = Xcoord_U[jVertex+1]; Xcoord_U[jVertex+1] = auxXCoord;
+				auxYCoord = Ycoord_U[jVertex]; Ycoord_U[jVertex] = Ycoord_U[jVertex+1]; Ycoord_U[jVertex+1] = auxYCoord;
+			}
+  
+  /*--- Build the upper surface spline ---*/
+	yp1=(Ycoord_U[1]-Ycoord_U[0])/(Xcoord_U[1]-Xcoord_U[0]);
+	ypn=(Ycoord_U[n_U-1]-Ycoord_U[n_U-2])/(Xcoord_U[n_U-1]-Xcoord_U[n_L-2]);
+	Y2coord_U.resize(n_U+1);
+	SetSpline(Xcoord_U, Ycoord_U, n_U, yp1, ypn, Y2coord_U);
+  
+  /*--- Order the lower arrays using the y component ---*/
+	for (iVertex = 0; iVertex < Xcoord_L.size(); iVertex++)
+		for (jVertex = 0; jVertex < Xcoord_L.size() - 1 - iVertex; jVertex++)
+			if (Xcoord_L[jVertex] > Xcoord_L[jVertex+1]) {
+				auxXCoord = Xcoord_L[jVertex]; Xcoord_L[jVertex] = Xcoord_L[jVertex+1]; Xcoord_L[jVertex+1] = auxXCoord;
+				auxYCoord = Ycoord_L[jVertex]; Ycoord_L[jVertex] = Ycoord_L[jVertex+1]; Ycoord_L[jVertex+1] = auxYCoord;
+			}
+  
+  /*--- Build the upper surface spline ---*/
+	yp1=(Ycoord_L[1]-Ycoord_L[0])/(Xcoord_L[1]-Xcoord_L[0]);
+	ypn=(Ycoord_L[n_L-1]-Ycoord_L[n_L-2])/(Xcoord_L[n_L-1]-Xcoord_L[n_L-2]);
+	Y2coord_L.resize(n_L+1);
+	SetSpline(Xcoord_L, Ycoord_L, n_L, yp1, ypn, Y2coord_L);
+  
+	/*--- Compute the thickness at the 3/4 chord point --*/
+  auxXCoord = 0.75;
+  //cout << "Upper Y-Coord @ 3c/4: " << fabs(GetSpline(Xcoord_U, Ycoord_U, Y2coord_U, n_U, auxXCoord)) << endl;
+  //cout << "Lower Y-Coord @ 3c/4: " << GetSpline(Xcoord_L, Ycoord_L, Y2coord_L, n_L, auxXCoord)<< endl;
+  
+  /*--- Upper surface minus lower surface (should prevent surface inversion) ---*/
+  MinThickness = GetSpline(Xcoord_U, Ycoord_U, Y2coord_U, n_U, auxXCoord) - GetSpline(Xcoord_L, Ycoord_L, Y2coord_L, n_L, auxXCoord);
+  
+	Xcoord_U.clear();
+	Ycoord_U.clear();
+	Y2coord_U.clear();
+  
+  Xcoord_L.clear();
+	Ycoord_L.clear();
+	Y2coord_L.clear();
+  
+	return MinThickness;
+  
+}
+
 double CBoundaryGeometry::GetTotalVolume(CConfig *config, bool original_surface) {
 	unsigned short iMarker;
 	unsigned long iVertex, jVertex;
@@ -7426,7 +7657,861 @@ double CBoundaryGeometry::GetClearance(CConfig *config, bool original_surface) {
 
 
 
-CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config, unsigned short val_domain) {
+CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
+  
+#ifndef NO_MPI
+
+	unsigned long nElemTotal, nPointTotal, nPointDomainTotal, nPointGhost, nPointPeriodic, nElemTriangle, nElemRectangle, nElemTetrahedron, nElemHexahedron, nElemWedge, nElemPyramid, iElemTotal, iPointTotal, iPointGhost, iPointDomain, iPointPeriodic, iElemTriangle, iElemRectangle, iElemTetrahedron, iElemHexahedron, iElemWedge, iElemPyramid, nVertexDomain[MAX_NUMBER_MARKER], iPoint, jPoint, iElem, iVertex, nBoundLine[MAX_NUMBER_MARKER], nBoundLineTotal, iBoundLineTotal, nBoundTriangle[MAX_NUMBER_MARKER], nBoundTriangleTotal, iBoundTriangleTotal, nBoundRectangle[MAX_NUMBER_MARKER], nBoundRectangleTotal, iBoundRectangleTotal;
+  unsigned short iVertexDomain, iBoundLine, iBoundTriangle, iBoundRectangle, iNode, iDim, iMarker, nMarkerDomain, iMarkerDomain, nDomain, iDomain, jDomain, jNode, nPeriodic, iPeriodic;
+  
+  long vnodes_local[8];
+	double coord[3];
+  char Marker_All_Tag[MAX_NUMBER_MARKER][200];
+
+  /*--- Define buffer vector interior domain ---*/
+  double        *Buffer_Send_Coord,             *Buffer_Receive_Coord;
+  unsigned long *Buffer_Send_Color,             *Buffer_Receive_Color;
+  unsigned long *Buffer_Send_GlobalPointIndex,  *Buffer_Receive_GlobalPointIndex;
+  unsigned long *Buffer_Send_Triangle,          *Buffer_Receive_Triangle;
+  unsigned long *Buffer_Send_Rectangle,         *Buffer_Receive_Rectangle;
+  unsigned long *Buffer_Send_Tetrahedron,       *Buffer_Receive_Tetrahedron;
+  unsigned long *Buffer_Send_Hexahedron,        *Buffer_Receive_Hexahedron;
+  unsigned long *Buffer_Send_Wedge,             *Buffer_Receive_Wedge;
+  unsigned long *Buffer_Send_Pyramid,           *Buffer_Receive_Pyramid;
+  
+  /*--- Define buffer vector boundary ---*/
+  unsigned long *Buffer_Send_BoundLine,           *Buffer_Receive_BoundLine;
+  unsigned long *Buffer_Send_BoundTriangle,       *Buffer_Receive_BoundTriangle;
+  unsigned long *Buffer_Send_BoundRectangle,      *Buffer_Receive_BoundRectangle;
+  unsigned long *Buffer_Send_Local2Global_Marker, *Buffer_Receive_Local2Global_Marker;
+  
+  int rank = MPI::COMM_WORLD.Get_rank();
+	int size = MPI::COMM_WORLD.Get_size();
+  
+  /*--- Basic dimensionalization ---*/
+	nDomain = size;
+  
+  bool *ElemIn, *MarkerIn, **VertexIn;
+  Marker_All_SendRecv = new short[MAX_NUMBER_MARKER];
+
+  /*--- Auxiliar vector defined in the master node (based on the original geometry) ---*/
+  if (rank == MASTER_NODE) {
+    ElemIn = new bool [geometry->GetnElem()];
+    MarkerIn = new bool [geometry->GetnMarker()];
+    VertexIn = new bool* [geometry->GetnMarker()];
+    for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
+      VertexIn[iMarker] = new bool [geometry->GetnElem_Bound(iMarker)];
+    
+    nDim = geometry->GetnDim();    
+    nPeriodic = config->GetnPeriodicIndex();
+    
+    Global_to_Local_Point =  new long[geometry->GetnPoint()];
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+      Global_to_Local_Point[iPoint] = -1;
+  }
+  
+  for (iDomain = 0; iDomain < size; iDomain++) {
+    
+    if (rank == MASTER_NODE) {
+      
+      /*--- Interior dimensionalization ---*/
+      /*--- Loop over the original grid to perform the dimensionalizaton of the domain variables ---*/
+      nElemTotal = 0; nPointTotal = 0; nPointGhost = 0; nPointDomainTotal = 0; nPointPeriodic = 0;
+      nElemTriangle = 0; nElemRectangle = 0; nElemTetrahedron = 0; nElemHexahedron = 0; nElemWedge = 0; nElemPyramid = 0;
+      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Global_to_Local_Point[iPoint] = -1;
+      
+      for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+        
+        /*--- Check if the element belong to the domain ---*/
+        ElemIn[iElem] = false;
+        for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
+          iPoint = geometry->elem[iElem]->GetNode(iNode);
+          if ( geometry->node[iPoint]->GetColor() == iDomain ) {
+            ElemIn[iElem] = true; break;
+          }
+        }
+        
+        /*--- If an element belong to the domain (at least one point belong has the
+         same color as the domain)---*/
+        if (ElemIn[iElem]) {
+          for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
+            iPoint = geometry->elem[iElem]->GetNode(iNode);
+            if (Global_to_Local_Point[iPoint] == -1) {
+              Global_to_Local_Point[iPoint] = 1;
+              
+              nPointTotal++;
+              
+              if ( geometry->node[iPoint]->GetColor() != iDomain ) nPointGhost++;
+              else {
+                if (iPoint > geometry->GetnPointDomain() - 1) {
+                  nPointGhost++; // Note that the periodic BC (receive) are also ghost cell
+                  nPointPeriodic++;
+                }
+                else nPointDomainTotal++;
+              }
+              
+            }
+          }
+          
+          switch(geometry->elem[iElem]->GetVTK_Type()) {
+            case TRIANGLE: nElemTriangle++; break;
+            case RECTANGLE: nElemRectangle++; break;
+            case TETRAHEDRON: nElemTetrahedron++; break;
+            case HEXAHEDRON: nElemHexahedron++; break;
+            case WEDGE: nElemWedge++; break;
+            case PYRAMID: nElemPyramid++; break;
+          }
+          
+          nElemTotal++;
+        }
+      }
+      
+      /*--- Boundary dimensionalization ---*/
+      /*--- Dimensionalization with physical boundaries, compute nMarkerDomain, nVertexDomain[nMarkerDomain] ---*/
+      nMarkerDomain = 0;
+      for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+        nVertexDomain[iMarker] = 0;
+        nBoundLine[iMarker] = 0; nBoundLineTotal = 0;
+        nBoundTriangle[iMarker] = 0; nBoundTriangleTotal = 0;
+        nBoundRectangle[iMarker] = 0; nBoundRectangleTotal = 0;
+        
+        /*--- Create a copy of the markers ---*/
+        Marker_All_SendRecv[iMarker] = config->GetMarker_All_SendRecv(iMarker);
+        sprintf(Marker_All_Tag[iMarker], "%s", config->GetMarker_All_Tag(iMarker).c_str());
+      }
+      
+      for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+        if (config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE) {
+          MarkerIn[iMarker] = false; nVertexDomain[nMarkerDomain] = 0;
+          for (iVertex = 0; iVertex < geometry->GetnElem_Bound(iMarker); iVertex++) {
+            VertexIn[iMarker][iVertex] = false;
+            for (iNode = 0; iNode < geometry->bound[iMarker][iVertex]->GetnNodes(); iNode++) {
+              if (geometry->node[geometry->bound[iMarker][iVertex]->GetNode(iNode)]->GetColor() == iDomain)
+                VertexIn[iMarker][iVertex] = true;
+            }
+            if (VertexIn[iMarker][iVertex]) {
+              
+              switch(geometry->bound[iMarker][iVertex]->GetVTK_Type()) {
+                case LINE: nBoundLine[nMarkerDomain]++; nBoundLineTotal++; break;
+                case TRIANGLE: nBoundTriangle[nMarkerDomain]++; nBoundTriangleTotal++; break;
+                case RECTANGLE: nBoundRectangle[nMarkerDomain]++; nBoundRectangleTotal++; break;
+              }
+              
+              nVertexDomain[nMarkerDomain] ++;
+              MarkerIn[iMarker] = true;
+            }
+          }
+          if (MarkerIn[iMarker]) { nMarkerDomain++; }
+        }
+      }
+      
+    }
+    
+    /*--- Allocate the buffer vectors in the appropiate domain (master, iDomain) using the following information
+     nElemTotal, nPointTotal, nPointGhost, nPointDomainTotal, nPointPeriodic
+     nElemTriangle, nElemRectangle, nElemTetrahedron, nElemHexahedron, nElemWedge, nElemPyramid
+     ---*/
+    
+    if (rank == MASTER_NODE) {
+      
+      /*--- Allocate the send buffer vector ---*/
+      Buffer_Send_Coord =             new double [nPointTotal*nDim];
+      Buffer_Send_Color =             new unsigned long [nPointTotal];
+      Buffer_Send_GlobalPointIndex =  new unsigned long [nPointTotal];
+      Buffer_Send_Triangle =          new unsigned long [nElemTriangle*3];
+      Buffer_Send_Rectangle =         new unsigned long [nElemRectangle*4];
+      Buffer_Send_Tetrahedron =       new unsigned long [nElemTetrahedron*4];
+      Buffer_Send_Hexahedron =        new unsigned long [nElemHexahedron*8];
+      Buffer_Send_Wedge =             new unsigned long [nElemWedge*6];
+      Buffer_Send_Pyramid =           new unsigned long [nElemPyramid*5];
+      
+      /*--- Send the size of buffers ---*/
+      MPI::COMM_WORLD.Bsend(&nDim,               1,  MPI::UNSIGNED_SHORT,  iDomain, 0);
+      MPI::COMM_WORLD.Bsend(&nPointTotal,        1,  MPI::UNSIGNED_LONG,   iDomain, 1);
+      MPI::COMM_WORLD.Bsend(&nPointDomainTotal,  1,  MPI::UNSIGNED_LONG,   iDomain, 2);
+      MPI::COMM_WORLD.Bsend(&nPointGhost,        1,  MPI::UNSIGNED_LONG,   iDomain, 3);
+      MPI::COMM_WORLD.Bsend(&nPointPeriodic,     1,  MPI::UNSIGNED_LONG,   iDomain, 4);
+      MPI::COMM_WORLD.Bsend(&nElemTotal,         1,  MPI::UNSIGNED_LONG,   iDomain, 5);
+      MPI::COMM_WORLD.Bsend(&nElemTriangle,      1,  MPI::UNSIGNED_LONG,   iDomain, 6);
+      MPI::COMM_WORLD.Bsend(&nElemRectangle,     1,  MPI::UNSIGNED_LONG,   iDomain, 7);
+      MPI::COMM_WORLD.Bsend(&nElemTetrahedron,   1,  MPI::UNSIGNED_LONG,   iDomain, 8);
+      MPI::COMM_WORLD.Bsend(&nElemHexahedron,    1,  MPI::UNSIGNED_LONG,   iDomain, 9);
+      MPI::COMM_WORLD.Bsend(&nElemWedge,         1,  MPI::UNSIGNED_LONG,   iDomain, 10);
+      MPI::COMM_WORLD.Bsend(&nElemPyramid,       1,  MPI::UNSIGNED_LONG,   iDomain, 11);
+
+      /*--- Allocate the send buffer vector ---*/
+      Buffer_Send_BoundLine =           new unsigned long [nBoundLineTotal*2];
+      Buffer_Send_BoundTriangle =       new unsigned long [nBoundTriangleTotal*3];
+      Buffer_Send_BoundRectangle =      new unsigned long [nBoundRectangleTotal*4];
+      Buffer_Send_Local2Global_Marker = new unsigned long [nMarkerDomain];
+      
+      /*--- Send the size of buffers ---*/
+      MPI::COMM_WORLD.Bsend(&nBoundLineTotal,      1, MPI::UNSIGNED_LONG, iDomain, 12);
+      MPI::COMM_WORLD.Bsend(&nBoundTriangleTotal,  1, MPI::UNSIGNED_LONG, iDomain, 13);
+      MPI::COMM_WORLD.Bsend(&nBoundRectangleTotal, 1, MPI::UNSIGNED_LONG, iDomain, 14);
+      MPI::COMM_WORLD.Bsend(&nMarkerDomain,        1, MPI::UNSIGNED_LONG, iDomain, 15);
+      MPI::COMM_WORLD.Bsend(nVertexDomain,         MAX_NUMBER_MARKER, MPI::UNSIGNED_LONG, iDomain, 16);
+      MPI::COMM_WORLD.Bsend(nBoundLine,            MAX_NUMBER_MARKER, MPI::UNSIGNED_LONG, iDomain, 17);
+      MPI::COMM_WORLD.Bsend(nBoundTriangle,        MAX_NUMBER_MARKER, MPI::UNSIGNED_LONG, iDomain, 18);
+      MPI::COMM_WORLD.Bsend(nBoundRectangle,       MAX_NUMBER_MARKER, MPI::UNSIGNED_LONG, iDomain, 19);
+      MPI::COMM_WORLD.Bsend(Marker_All_SendRecv,   MAX_NUMBER_MARKER, MPI::SHORT, iDomain, 20);
+      MPI::COMM_WORLD.Bsend(Marker_All_Tag,        MAX_NUMBER_MARKER*200, MPI::CHAR, iDomain, 21);
+
+      /*--- Send the size of buffers ---*/
+      MPI::COMM_WORLD.Bsend(&nPeriodic, 1, MPI::UNSIGNED_SHORT, iDomain, 22);
+
+    }
+    
+    if (rank == iDomain) {
+      
+      /*--- Receive the size of buffers---*/
+      MPI::COMM_WORLD.Recv(&nDim,               1, MPI::UNSIGNED_SHORT,   MASTER_NODE, 0);
+      MPI::COMM_WORLD.Recv(&nPointTotal,        1, MPI::UNSIGNED_LONG,    MASTER_NODE, 1);
+      MPI::COMM_WORLD.Recv(&nPointDomainTotal,  1, MPI::UNSIGNED_LONG,    MASTER_NODE, 2);
+      MPI::COMM_WORLD.Recv(&nPointGhost,        1, MPI::UNSIGNED_LONG,    MASTER_NODE, 3);
+      MPI::COMM_WORLD.Recv(&nPointPeriodic,     1, MPI::UNSIGNED_LONG,    MASTER_NODE, 4);
+      MPI::COMM_WORLD.Recv(&nElemTotal,         1, MPI::UNSIGNED_LONG,    MASTER_NODE, 5);
+      MPI::COMM_WORLD.Recv(&nElemTriangle,      1, MPI::UNSIGNED_LONG,    MASTER_NODE, 6);
+      MPI::COMM_WORLD.Recv(&nElemRectangle,     1, MPI::UNSIGNED_LONG,    MASTER_NODE, 7);
+      MPI::COMM_WORLD.Recv(&nElemTetrahedron,   1, MPI::UNSIGNED_LONG,    MASTER_NODE, 8);
+      MPI::COMM_WORLD.Recv(&nElemHexahedron,    1, MPI::UNSIGNED_LONG,    MASTER_NODE, 9);
+      MPI::COMM_WORLD.Recv(&nElemWedge,         1, MPI::UNSIGNED_LONG,    MASTER_NODE, 10);
+      MPI::COMM_WORLD.Recv(&nElemPyramid,       1, MPI::UNSIGNED_LONG,    MASTER_NODE, 11);
+
+      /*--- Receive the size of buffers ---*/
+      MPI::COMM_WORLD.Recv(&nBoundLineTotal,      1, MPI::UNSIGNED_LONG, MASTER_NODE, 12);
+      MPI::COMM_WORLD.Recv(&nBoundTriangleTotal,  1, MPI::UNSIGNED_LONG, MASTER_NODE, 13);
+      MPI::COMM_WORLD.Recv(&nBoundRectangleTotal, 1, MPI::UNSIGNED_LONG, MASTER_NODE, 14);
+      MPI::COMM_WORLD.Recv(&nMarkerDomain,        1, MPI::UNSIGNED_LONG, MASTER_NODE, 15);
+      MPI::COMM_WORLD.Recv(nVertexDomain,         MAX_NUMBER_MARKER, MPI::UNSIGNED_LONG, MASTER_NODE, 16);
+      MPI::COMM_WORLD.Recv(nBoundLine,            MAX_NUMBER_MARKER, MPI::UNSIGNED_LONG, MASTER_NODE, 17);
+      MPI::COMM_WORLD.Recv(nBoundTriangle,        MAX_NUMBER_MARKER, MPI::UNSIGNED_LONG, MASTER_NODE, 18);
+      MPI::COMM_WORLD.Recv(nBoundRectangle,       MAX_NUMBER_MARKER, MPI::UNSIGNED_LONG, MASTER_NODE, 19);
+      MPI::COMM_WORLD.Recv(Marker_All_SendRecv,   MAX_NUMBER_MARKER, MPI::SHORT, MASTER_NODE, 20);
+      MPI::COMM_WORLD.Recv(Marker_All_Tag,        MAX_NUMBER_MARKER*200, MPI::CHAR, MASTER_NODE, 21);
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        config->SetMarker_All_Tag(iMarker, string(Marker_All_Tag[iMarker]));
+      }
+      
+      /*--- Receive the size of buffers ---*/
+      MPI::COMM_WORLD.Recv(&nPeriodic, 1, MPI::UNSIGNED_SHORT, MASTER_NODE, 22);
+			config->SetnPeriodicIndex(nPeriodic);
+			double* center = new double[3]; double* rotation  = new double[3]; double* translate = new double[3];
+      for (iPeriodic = 0; iPeriodic < nPeriodic; iPeriodic++) {
+        for (iDim = 0; iDim < 3; iDim++) { center[iDim] = 0.0; rotation[iDim] = 0.0; translate[iDim] = 0.0; }
+        config->SetPeriodicCenter(iPeriodic, center);
+        config->SetPeriodicRotation(iPeriodic, rotation);
+        config->SetPeriodicTranslate(iPeriodic, translate);
+      }
+      
+      /*--- Allocate the receive buffer vector ---*/
+      Buffer_Receive_Coord =              new double [nPointTotal*nDim];
+      Buffer_Receive_Color =              new unsigned long [nPointTotal];
+      Buffer_Receive_GlobalPointIndex =   new unsigned long [nPointTotal];
+      Buffer_Receive_Triangle =           new unsigned long [nElemTriangle*3];
+      Buffer_Receive_Rectangle =          new unsigned long [nElemRectangle*4];
+      Buffer_Receive_Tetrahedron =        new unsigned long [nElemTetrahedron*4];
+      Buffer_Receive_Hexahedron =         new unsigned long [nElemHexahedron*8];
+      Buffer_Receive_Wedge =              new unsigned long [nElemWedge*6];
+      Buffer_Receive_Pyramid =            new unsigned long [nElemPyramid*5];
+
+      /*--- Allocate the receive buffer vector ---*/
+      Buffer_Receive_BoundLine =            new unsigned long [nBoundLineTotal*2];
+      Buffer_Receive_BoundTriangle =        new unsigned long [nBoundTriangleTotal*3];
+      Buffer_Receive_BoundRectangle =       new unsigned long [nBoundRectangleTotal*4];
+      Buffer_Receive_Local2Global_Marker =  new unsigned long [nMarkerDomain];
+      
+    }
+    
+    /*--- Set the value of the Send buffers ---*/
+    if (rank == MASTER_NODE) {
+      
+      /*--- Set the value of the interior geometry ---*/
+      iElemTotal = 0; iPointTotal = 0; iPointDomain = 0; iPointPeriodic = nPointDomainTotal; iPointGhost = nPointDomainTotal + nPointPeriodic;
+      iElemTriangle = 0; iElemRectangle = 0; iElemTetrahedron = 0; iElemHexahedron = 0; iElemWedge = 0; iElemPyramid = 0;
+      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Global_to_Local_Point[iPoint] = -1;
+      
+      for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+        
+        if (ElemIn[iElem]) {
+          
+          for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
+            iPoint = geometry->elem[iElem]->GetNode(iNode);
+            if (Global_to_Local_Point[iPoint] == -1) {
+              
+              if ( geometry->node[iPoint]->GetColor() == iDomain ) {
+                if ( iPoint > geometry->GetnPointDomain() - 1) iPointTotal = iPointPeriodic;
+                else iPointTotal = iPointDomain;
+              }
+              else iPointTotal = iPointGhost;
+              
+              Global_to_Local_Point[iPoint] = iPointTotal;
+              
+              /*--- Copy the information to be sended ---*/
+              Buffer_Send_Color[iPointTotal] = geometry->node[iPoint]->GetColor();
+              Buffer_Send_GlobalPointIndex[iPointTotal] = iPoint;
+              for (iDim = 0; iDim < nDim; iDim++)
+                Buffer_Send_Coord[nDim*iPointTotal+iDim] = geometry->node[iPoint]->GetCoord(iDim);
+              
+              /*--- Compute the index for the periodic and extra Ghost points. ---*/
+              if ( geometry->node[iPoint]->GetColor() == iDomain ) {
+                if ( iPoint > geometry->GetnPointDomain() - 1) iPointPeriodic++;
+                else iPointDomain++;
+              }
+              else iPointGhost++;
+            }
+            vnodes_local[iNode] = Global_to_Local_Point[iPoint];
+          }
+          
+          /*--- Create the elements ---*/
+          switch(geometry->elem[iElem]->GetVTK_Type()) {
+            case TRIANGLE:
+              for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
+                Buffer_Send_Triangle[3*iElemTriangle+iNode] = vnodes_local[iNode];
+              }
+              iElemTriangle++;
+              break;
+            case RECTANGLE:
+              for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++)
+                Buffer_Send_Rectangle[4*iElemRectangle+iNode] = vnodes_local[iNode];
+              iElemRectangle++;
+              break;
+            case TETRAHEDRON:
+              for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++)
+                Buffer_Send_Tetrahedron[4*iElemTetrahedron+iNode] = vnodes_local[iNode];
+              iElemTetrahedron++;
+              break;
+            case HEXAHEDRON:
+              for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++)
+                Buffer_Send_Hexahedron[8*iElemHexahedron+iNode] = vnodes_local[iNode];
+              iElemHexahedron++;
+              break;
+            case WEDGE:
+              for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++)
+                Buffer_Send_Wedge[6*iElemWedge+iNode] = vnodes_local[iNode];
+              iElemWedge++;
+              break;
+            case PYRAMID:
+              for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++)
+                Buffer_Send_Pyramid[5*iElemPyramid+iNode] = vnodes_local[iNode];
+              iElemPyramid++;
+              break;
+          }
+          
+          iElemTotal++;
+        }
+      }
+      
+      
+      /*--- Set the value of the boundary geometry ---*/
+      iMarkerDomain = 0;
+      iBoundLineTotal = 0; iBoundTriangleTotal = 0; iBoundRectangleTotal = 0;
+      
+      for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+        
+        if (config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE) {
+          
+          /*--- If the marker is in the domain ---*/
+          if (MarkerIn[iMarker]) {
+            
+            for (iVertex = 0; iVertex < geometry->GetnElem_Bound(iMarker); iVertex++) {
+              
+              /*--- If the vertex is in the domain ---*/
+              if (VertexIn[iMarker][iVertex]) {
+                
+                /*--- Read the points in the local domain ---*/
+                for (iNode = 0; iNode < geometry->bound[iMarker][iVertex]->GetnNodes(); iNode++) {
+                  vnodes_local[iNode] = Global_to_Local_Point[geometry->bound[iMarker][iVertex]->GetNode(iNode)];
+                }
+                
+                /*--- Create the data structure for the boundaries ---*/
+                switch(geometry->bound[iMarker][iVertex]->GetVTK_Type()) {
+                  case LINE:
+                    Buffer_Send_BoundLine[2*iBoundLineTotal+0] = vnodes_local[0];
+                    Buffer_Send_BoundLine[2*iBoundLineTotal+1] = vnodes_local[1];
+                    iBoundLineTotal++;
+                    break;
+                  case TRIANGLE:
+                    Buffer_Send_BoundTriangle[3*iBoundTriangleTotal+0] = vnodes_local[0];
+                    Buffer_Send_BoundTriangle[3*iBoundTriangleTotal+1] = vnodes_local[1];
+                    Buffer_Send_BoundTriangle[3*iBoundTriangleTotal+2] = vnodes_local[2];
+                    iBoundTriangleTotal++;
+                    break;
+                  case RECTANGLE:
+                    Buffer_Send_BoundRectangle[4*iBoundRectangleTotal+0] = vnodes_local[0];
+                    Buffer_Send_BoundRectangle[4*iBoundRectangleTotal+1] = vnodes_local[1];
+                    Buffer_Send_BoundRectangle[4*iBoundRectangleTotal+2] = vnodes_local[2];
+                    Buffer_Send_BoundRectangle[4*iBoundRectangleTotal+3] = vnodes_local[3];
+                    iBoundRectangleTotal++;
+                    break;
+                }
+              }
+            }
+            
+            Buffer_Send_Local2Global_Marker[iMarkerDomain] = iMarker;
+            iMarkerDomain++;
+            
+          }
+        }
+      }
+      
+      /*--- Estimate the size of the buffer for each domain ---*/
+      int SizeBuffer[11];
+      SizeBuffer[0] = (nPointTotal*nDim)*sizeof(double) + MPI_BSEND_OVERHEAD;
+      SizeBuffer[1] = (nPointTotal)*sizeof(unsigned long) + MPI_BSEND_OVERHEAD;
+      SizeBuffer[2] = (nElemTriangle*3)*sizeof(unsigned long) + MPI_BSEND_OVERHEAD;
+      SizeBuffer[3] = (nElemRectangle*4)*sizeof(unsigned long) + MPI_BSEND_OVERHEAD;
+      SizeBuffer[4] = (nElemTetrahedron*4)*sizeof(unsigned long) + MPI_BSEND_OVERHEAD;
+      SizeBuffer[5] = (nElemHexahedron*8)*sizeof(unsigned long) + MPI_BSEND_OVERHEAD;
+      SizeBuffer[6] = (nElemWedge*6)*sizeof(unsigned long) + MPI_BSEND_OVERHEAD;
+      SizeBuffer[7] = (nElemPyramid*5)*sizeof(unsigned long) + MPI_BSEND_OVERHEAD;
+      SizeBuffer[8] = (nBoundLineTotal*2)*sizeof(unsigned long) + MPI_BSEND_OVERHEAD;
+      SizeBuffer[9] = (nBoundTriangleTotal*3)*sizeof(unsigned long) + MPI_BSEND_OVERHEAD;
+      SizeBuffer[10] = (nBoundRectangleTotal*4)*sizeof(unsigned long) + MPI_BSEND_OVERHEAD;
+      SizeBuffer[11] = (nMarkerDomain)*sizeof(unsigned long) + MPI_BSEND_OVERHEAD;
+
+      int MaxBuffer = max(SizeBuffer[0], max(SizeBuffer[1], max(SizeBuffer[2], max(SizeBuffer[3], max(SizeBuffer[4], max(SizeBuffer[5], max(SizeBuffer[6], max(SizeBuffer[7], max(SizeBuffer[8], max(SizeBuffer[9], max(SizeBuffer[10], SizeBuffer[11])))))))))));
+      int TotalBuffer = SizeBuffer[0]+SizeBuffer[1]+SizeBuffer[2]+SizeBuffer[3]+SizeBuffer[4]+SizeBuffer[5]+SizeBuffer[6]+SizeBuffer[7]+SizeBuffer[8]+SizeBuffer[9]+SizeBuffer[10]+SizeBuffer[11];
+      
+      cout.precision(2);
+      cout.setf(ios::fixed, ios::floatfield);
+      cout << "Domain "<< iDomain + 1 << ": " << nPointTotal << " points (" << nPointGhost << " ghost points";
+      if (nPointPeriodic == 0) cout <<"). ";
+      else cout <<" including " << nPointPeriodic << " periodic points). ";
+      cout << "Comm buff: "<< double(TotalBuffer)/1048576 <<"MB of "<< double(MAX_MPI_BUFFER)/1048576 <<"MB."<< endl;
+      
+      /*--- Send the buffers with the geometrical information ---*/
+      MPI::COMM_WORLD.Bsend(Buffer_Send_Coord,                 nPointTotal*nDim,   MPI::DOUBLE,        iDomain, 0);
+      MPI::COMM_WORLD.Bsend(Buffer_Send_GlobalPointIndex,      nPointTotal,        MPI::UNSIGNED_LONG, iDomain, 1);
+      MPI::COMM_WORLD.Bsend(Buffer_Send_Color,                 nPointTotal,        MPI::UNSIGNED_LONG, iDomain, 2);
+      MPI::COMM_WORLD.Bsend(Buffer_Send_Triangle,              nElemTriangle*3,    MPI::UNSIGNED_LONG, iDomain, 3);
+      MPI::COMM_WORLD.Bsend(Buffer_Send_Rectangle,             nElemRectangle*4,   MPI::UNSIGNED_LONG, iDomain, 5);
+      MPI::COMM_WORLD.Bsend(Buffer_Send_Tetrahedron,           nElemTetrahedron*4, MPI::UNSIGNED_LONG, iDomain, 6);
+      MPI::COMM_WORLD.Bsend(Buffer_Send_Hexahedron,            nElemHexahedron*8,  MPI::UNSIGNED_LONG, iDomain, 7);
+      MPI::COMM_WORLD.Bsend(Buffer_Send_Wedge,                 nElemWedge*6,       MPI::UNSIGNED_LONG, iDomain, 8);
+      MPI::COMM_WORLD.Bsend(Buffer_Send_Pyramid,               nElemPyramid*5,     MPI::UNSIGNED_LONG, iDomain, 9);
+      
+      delete[] Buffer_Send_Coord;
+      delete[] Buffer_Send_GlobalPointIndex;
+      delete[] Buffer_Send_Color;
+      delete[] Buffer_Send_Triangle;
+      delete[] Buffer_Send_Rectangle;
+      delete[] Buffer_Send_Tetrahedron;
+      delete[] Buffer_Send_Hexahedron;
+      delete[] Buffer_Send_Wedge;
+      delete[] Buffer_Send_Pyramid;
+      
+      MPI::COMM_WORLD.Bsend(Buffer_Send_BoundLine,             nBoundLineTotal*2,      MPI::UNSIGNED_LONG, iDomain, 10);
+      MPI::COMM_WORLD.Bsend(Buffer_Send_BoundTriangle,         nBoundTriangleTotal*3,  MPI::UNSIGNED_LONG, iDomain, 11);
+      MPI::COMM_WORLD.Bsend(Buffer_Send_BoundRectangle,        nBoundRectangleTotal*4, MPI::UNSIGNED_LONG, iDomain, 12);
+      MPI::COMM_WORLD.Bsend(Buffer_Send_Local2Global_Marker,   nMarkerDomain,          MPI::UNSIGNED_LONG, iDomain, 13);
+      
+      delete[] Buffer_Send_BoundLine;
+      delete[] Buffer_Send_BoundTriangle;
+      delete[] Buffer_Send_BoundRectangle;
+      delete[] Buffer_Send_Local2Global_Marker;
+      
+    }
+    
+    /*--- Set a communitation barrier before 
+     receiving to reduce the buffering ---*/
+    MPI::COMM_WORLD.Barrier();
+
+    if (rank == iDomain) {
+            
+      /*--- Receive the buffers with the geometrical information ---*/
+      MPI::COMM_WORLD.Recv(Buffer_Receive_Coord,                 nPointTotal*nDim,    MPI::DOUBLE,        MASTER_NODE, 0);
+      MPI::COMM_WORLD.Recv(Buffer_Receive_GlobalPointIndex,      nPointTotal,         MPI::UNSIGNED_LONG, MASTER_NODE, 1);
+      MPI::COMM_WORLD.Recv(Buffer_Receive_Color,                 nPointTotal,         MPI::UNSIGNED_LONG, MASTER_NODE, 2);
+      MPI::COMM_WORLD.Recv(Buffer_Receive_Triangle,              nElemTriangle*3,     MPI::UNSIGNED_LONG, MASTER_NODE, 3);
+      MPI::COMM_WORLD.Recv(Buffer_Receive_Rectangle,             nElemRectangle*4,    MPI::UNSIGNED_LONG, MASTER_NODE, 5);
+      MPI::COMM_WORLD.Recv(Buffer_Receive_Tetrahedron,           nElemTetrahedron*4,  MPI::UNSIGNED_LONG, MASTER_NODE, 6);
+      MPI::COMM_WORLD.Recv(Buffer_Receive_Hexahedron,            nElemHexahedron*8,   MPI::UNSIGNED_LONG, MASTER_NODE, 7);
+      MPI::COMM_WORLD.Recv(Buffer_Receive_Wedge,                 nElemWedge*6,        MPI::UNSIGNED_LONG, MASTER_NODE, 8);
+      MPI::COMM_WORLD.Recv(Buffer_Receive_Pyramid,               nElemPyramid*5,      MPI::UNSIGNED_LONG, MASTER_NODE, 9);
+      
+      MPI::COMM_WORLD.Recv(Buffer_Receive_BoundLine,             nBoundLineTotal*2,      MPI::UNSIGNED_LONG, MASTER_NODE, 10);
+      MPI::COMM_WORLD.Recv(Buffer_Receive_BoundTriangle,         nBoundTriangleTotal*3,  MPI::UNSIGNED_LONG, MASTER_NODE, 11);
+      MPI::COMM_WORLD.Recv(Buffer_Receive_BoundRectangle,        nBoundRectangleTotal*4, MPI::UNSIGNED_LONG, MASTER_NODE, 12);
+      MPI::COMM_WORLD.Recv(Buffer_Receive_Local2Global_Marker,   nMarkerDomain,          MPI::UNSIGNED_LONG, MASTER_NODE, 13);
+      
+      /*--- Create the domain structures for the points ---*/
+      nPoint = nPointTotal; iPoint = 0;
+      nPointDomain = nPointDomainTotal;
+      node = new CPoint*[nPoint];
+      Local_to_Global_Point =  new unsigned long[nPoint];
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+        Local_to_Global_Point[iPoint] = Buffer_Receive_GlobalPointIndex[iPoint];
+        if ( nDim == 2 ) node[iPoint] = new CPoint(Buffer_Receive_Coord[iPoint*nDim+0], Buffer_Receive_Coord[iPoint*nDim+1], Local_to_Global_Point[iPoint], config);
+        if ( nDim == 3 ) node[iPoint] = new CPoint(Buffer_Receive_Coord[iPoint*nDim+0], Buffer_Receive_Coord[iPoint*nDim+1], Buffer_Receive_Coord[iPoint*nDim+2], Local_to_Global_Point[iPoint], config);
+        node[iPoint]->SetColor(Buffer_Receive_Color[iPoint]);
+      }
+      
+      delete[] Buffer_Receive_Coord;
+      delete[] Buffer_Receive_GlobalPointIndex;
+      delete[] Buffer_Receive_Color;
+      
+      /*--- Create the domain structures for the elements ---*/
+      nElem = nElemTotal; iElem = 0;
+      elem = new CPrimalGrid*[nElem];
+      
+      for (iElemTriangle = 0; iElemTriangle < nElemTriangle; iElemTriangle++) {
+        elem[iElem] = new CTriangle(Buffer_Receive_Triangle[iElemTriangle*3+0], Buffer_Receive_Triangle[iElemTriangle*3+1], Buffer_Receive_Triangle[iElemTriangle*3+2], 2);
+        iElem++;
+      }
+      for (iElemRectangle = 0; iElemRectangle < nElemRectangle; iElemRectangle++) {
+        elem[iElem] = new CRectangle(Buffer_Receive_Rectangle[iElemRectangle*4+0], Buffer_Receive_Rectangle[iElemRectangle*4+1], Buffer_Receive_Rectangle[iElemRectangle*4+2], Buffer_Receive_Rectangle[iElemRectangle*4+3], 2);
+        iElem++;
+      }
+      for (iElemTetrahedron = 0; iElemTetrahedron < nElemTetrahedron; iElemTetrahedron++) {
+        elem[iElem] = new CTetrahedron(Buffer_Receive_Tetrahedron[iElemTetrahedron*4+0], Buffer_Receive_Tetrahedron[iElemTetrahedron*4+1], Buffer_Receive_Tetrahedron[iElemTetrahedron*4+2], Buffer_Receive_Tetrahedron[iElemTetrahedron*4+3]);
+        iElem++;
+      }
+      for (iElemHexahedron = 0; iElemHexahedron < nElemHexahedron; iElemHexahedron++) {
+        elem[iElem] = new CHexahedron(Buffer_Receive_Hexahedron[iElemHexahedron*8+0], Buffer_Receive_Hexahedron[iElemHexahedron*8+1], Buffer_Receive_Hexahedron[iElemHexahedron*8+2], Buffer_Receive_Hexahedron[iElemHexahedron*8+3], Buffer_Receive_Hexahedron[iElemHexahedron*8+4], Buffer_Receive_Hexahedron[iElemHexahedron*8+5], Buffer_Receive_Hexahedron[iElemHexahedron*8+6], Buffer_Receive_Hexahedron[iElemHexahedron*8+7]);
+        iElem++;
+      }
+      for (iElemWedge = 0; iElemWedge < nElemWedge; iElemWedge++) {
+        elem[iElem] = new CWedge(Buffer_Receive_Wedge[iElemWedge*6+0], Buffer_Receive_Wedge[iElemWedge*6+1], Buffer_Receive_Wedge[iElemWedge*6+2], Buffer_Receive_Wedge[iElemWedge*6+3], Buffer_Receive_Wedge[iElemWedge*6+4], Buffer_Receive_Wedge[iElemWedge*6+5]);
+        iElem++;
+      }
+      for (iElemPyramid = 0; iElemPyramid < nElemPyramid; iElemPyramid++) {
+        elem[iElem] = new CPyramid(Buffer_Receive_Pyramid[iElemPyramid*5+0], Buffer_Receive_Pyramid[iElemPyramid*5+1], Buffer_Receive_Pyramid[iElemPyramid*5+2], Buffer_Receive_Pyramid[iElemPyramid*5+3], Buffer_Receive_Pyramid[iElemPyramid*5+4]);
+        iElem++;
+      }
+      
+      nElem_Storage = nElemTriangle*4 + nElemRectangle*5 + nElemTetrahedron*5 + nElemHexahedron*9 + nElemWedge*7 + nElemPyramid*6;
+      
+      delete[] Buffer_Receive_Triangle;
+      delete[] Buffer_Receive_Rectangle;
+      delete[] Buffer_Receive_Tetrahedron;
+      delete[] Buffer_Receive_Hexahedron;
+      delete[] Buffer_Receive_Wedge;
+      delete[] Buffer_Receive_Pyramid;
+            
+      /*--- Create the domain structures for the boundaries ---*/
+      nMarker = nMarkerDomain;
+      unsigned short overhead = 4;
+      
+      nElem_Bound = new unsigned long [nMarker+(overhead*size)];
+      Local_to_Global_Marker = new unsigned short [nMarker+(overhead*size)];
+      
+      for (iMarker = 0; iMarker < nMarker; iMarker++) nElem_Bound[iMarker] = nVertexDomain[iMarker];
+      
+      nElem_Bound_Storage = new unsigned long [nMarker+(overhead*size)];
+      
+      bound = new CPrimalGrid**[nMarker+(overhead*size)];
+      for (iMarker = 0; iMarker < nMarker; iMarker++) bound[iMarker] = new CPrimalGrid* [nElem_Bound[iMarker]];
+      
+      iBoundLineTotal = 0; iBoundTriangleTotal = 0; iBoundRectangleTotal = 0;
+      for (iMarker = 0; iMarker < nMarker; iMarker++) {
+        
+        iVertexDomain = 0;
+        
+        for (iBoundLine = 0; iBoundLine < nBoundLine[iMarker]; iBoundLine++) {
+          bound[iMarker][iVertexDomain] = new CLine(Buffer_Receive_BoundLine[iBoundLineTotal*2+0],
+                                                    Buffer_Receive_BoundLine[iBoundLineTotal*2+1], 2);
+          iVertexDomain++;
+          iBoundLineTotal++;
+        }
+        for (iBoundTriangle = 0; iBoundTriangle < nBoundTriangle[iMarker]; iBoundTriangle++) {
+          bound[iMarker][iVertexDomain] = new CTriangle(Buffer_Receive_BoundTriangle[iBoundTriangleTotal*3+0],
+                                                        Buffer_Receive_BoundTriangle[iBoundTriangleTotal*3+1],
+                                                        Buffer_Receive_BoundTriangle[iBoundTriangleTotal*3+2], 3);
+          iVertexDomain++;
+          iBoundTriangleTotal++;
+        }
+        for (iBoundRectangle = 0; iBoundRectangle < nBoundRectangle[iMarker]; iBoundRectangle++) {
+          bound[iMarker][iVertexDomain] = new CRectangle(Buffer_Receive_BoundRectangle[iBoundRectangleTotal*4+0],
+                                                         Buffer_Receive_BoundRectangle[iBoundRectangleTotal*4+1],
+                                                         Buffer_Receive_BoundRectangle[iBoundRectangleTotal*4+2],
+                                                         Buffer_Receive_BoundRectangle[iBoundRectangleTotal*4+3], 3);
+          iVertexDomain++;
+          iBoundRectangleTotal++;
+        }
+        
+        nElem_Bound_Storage[iMarker] = iBoundLine*3 + iBoundTriangle*4 + iBoundRectangle*5;
+        Local_to_Global_Marker[iMarker] = Buffer_Receive_Local2Global_Marker[iMarker];
+        
+      }
+      
+      delete[] Buffer_Receive_BoundLine;
+      delete[] Buffer_Receive_BoundTriangle;
+      delete[] Buffer_Receive_BoundRectangle;
+      delete[] Buffer_Receive_Local2Global_Marker;
+      
+    }
+    
+  }
+  
+  /*--- End of the MPI stuff, each node has the right piece of the grid ---*/
+  MPI::COMM_WORLD.Barrier();
+  
+//  /*--- Set the periodic boundary conditions ---*/
+//  unsigned long ReceptorColor, DonorColor, Transformation;
+//  unsigned short jMarker;
+//  
+//  unsigned long *nSendDomain_Periodic = new unsigned long [nDomain];
+//  unsigned long *iSendDomain_Periodic = new unsigned long [nDomain];
+//  unsigned long *nReceivedDomain_Periodic = new unsigned long [nDomain];
+//  unsigned long *iReceivedDomain_Periodic = new unsigned long [nDomain];
+//  unsigned long nTotalSendDomain_Periodic, iTotalSendDomain_Periodic;
+//  unsigned long nTotalReceivedDomain_Periodic, iTotalReceivedDomain_Periodic;
+//  
+//  unsigned long *SendDomain_Periodic;
+//  unsigned long *SendDomain_PeriodicTrans;
+//  unsigned long *ReceivedDomain_Periodic;
+//  unsigned long *ReceivedDomain_PeriodicTrans;
+//  
+//  unsigned long *Buffer_Send_SendDomain_Periodic;
+//  unsigned long *Buffer_Send_SendDomain_PeriodicTrans;
+//  unsigned long *Buffer_Send_ReceivedDomain_Periodic;
+//  unsigned long *Buffer_Send_ReceivedDomain_PeriodicTrans;
+//  
+//  unsigned long *Buffer_Receive_SendDomain_Periodic;
+//  unsigned long *Buffer_Receive_SendDomain_PeriodicTrans;
+//  unsigned long *Buffer_Receive_ReceivedDomain_Periodic;
+//  unsigned long *Buffer_Receive_ReceivedDomain_PeriodicTrans;
+//
+//  /*--- Periodic boundary conditions ---*/
+//  for (iDomain = 0; iDomain < size; iDomain++) {
+//    
+//    if (rank == MASTER_NODE) {
+//      
+//      /*--- Inizialization ---*/
+//      for (jDomain = 0; jDomain < size; jDomain++) {
+//        nSendDomain_Periodic[jDomain] = 0;      iSendDomain_Periodic[jDomain] = 0;
+//        nReceivedDomain_Periodic[jDomain] = 0;  iReceivedDomain_Periodic[jDomain] = 0;
+//      }
+//      nTotalSendDomain_Periodic = 0; iTotalSendDomain_Periodic = 0;
+//      nTotalReceivedDomain_Periodic = 0; iTotalReceivedDomain_Periodic = 0;
+//      
+//      /*--- Dimensionalization of the periodic auxiliar vectors ---*/
+//      for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+//        if (config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) {
+//          for (iVertex = 0; iVertex < geometry->GetnElem_Bound(iMarker); iVertex++) {
+//            iPoint = geometry->bound[iMarker][iVertex]->GetNode(0);
+//            if (iDomain == geometry->node[iPoint]->GetColor()) {
+//              
+//              if (Marker_All_SendRecv[iMarker] > 0) {
+//                
+//                /*--- Identify the color of the receptor ---*/
+//                for (jMarker = 0; jMarker < geometry->GetnMarker(); jMarker++) {
+//                  if ((config->GetMarker_All_Boundary(jMarker) == SEND_RECEIVE) &&
+//                    (Marker_All_SendRecv[jMarker] == -Marker_All_SendRecv[iMarker])) {
+//                      jPoint = geometry->bound[jMarker][iVertex]->GetNode(0);
+//                      ReceptorColor = geometry->node[jPoint]->GetColor();
+//                    }
+//                }
+//                
+//                nSendDomain_Periodic[ReceptorColor]++;
+//                nTotalSendDomain_Periodic++;
+//              
+//              }
+//              if (Marker_All_SendRecv[iMarker] < 0) {
+//                
+//                /*--- Identify the color of the donor ---*/
+//                for (jMarker = 0; jMarker < geometry->GetnMarker(); jMarker++) {
+//                  if ((config->GetMarker_All_Boundary(jMarker) == SEND_RECEIVE) &&
+//                      (Marker_All_SendRecv[jMarker] == -Marker_All_SendRecv[iMarker])) {
+//                    jPoint = geometry->bound[jMarker][iVertex]->GetNode(0);
+//                    DonorColor = geometry->node[jPoint]->GetColor();
+//                  }
+//                }
+//                
+//                nReceivedDomain_Periodic[DonorColor]++;
+//                nTotalReceivedDomain_Periodic++;
+//              
+//              }
+//            }
+//          }
+//        }
+//      }
+//      
+//      /*--- Allocate the send buffer vector ---*/
+//      Buffer_Send_SendDomain_Periodic           = new unsigned long [nTotalSendDomain_Periodic];
+//      Buffer_Send_SendDomain_PeriodicTrans      = new unsigned long [nTotalSendDomain_Periodic];
+//      Buffer_Send_ReceivedDomain_Periodic       = new unsigned long [nTotalReceivedDomain_Periodic];
+//      Buffer_Send_ReceivedDomain_PeriodicTrans  = new unsigned long [nTotalReceivedDomain_Periodic];
+//      
+//      /*--- Send the size of buffers ---*/
+//      MPI::COMM_WORLD.Bsend(&nTotalSendDomain_Periodic,       1, MPI::UNSIGNED_LONG, iDomain, 0);
+//      MPI::COMM_WORLD.Bsend(&nTotalReceivedDomain_Periodic,   1, MPI::UNSIGNED_LONG, iDomain, 1);
+//      MPI::COMM_WORLD.Bsend(nSendDomain_Periodic,             size, MPI::UNSIGNED_LONG, iDomain, 2);
+//      MPI::COMM_WORLD.Bsend(nReceivedDomain_Periodic,         size, MPI::UNSIGNED_LONG, iDomain, 3);
+//      
+//    }
+//    
+//    MPI::COMM_WORLD.Barrier();
+//    
+//    if (rank == iDomain) {
+//      
+//      /*--- Receive the size of buffers---*/
+//      MPI::COMM_WORLD.Recv(&nTotalSendDomain_Periodic,       1, MPI::UNSIGNED_LONG, MASTER_NODE, 0);
+//      MPI::COMM_WORLD.Recv(&nTotalReceivedDomain_Periodic,   1, MPI::UNSIGNED_LONG, MASTER_NODE, 1);
+//      MPI::COMM_WORLD.Recv(nSendDomain_Periodic,             size, MPI::UNSIGNED_LONG, MASTER_NODE, 2);
+//      MPI::COMM_WORLD.Recv(nReceivedDomain_Periodic,         size, MPI::UNSIGNED_LONG, MASTER_NODE, 3);
+//      
+//      /*--- Allocate the send buffer vector ---*/
+//      Buffer_Receive_SendDomain_Periodic           = new unsigned long [nTotalSendDomain_Periodic];
+//      Buffer_Receive_SendDomain_PeriodicTrans      = new unsigned long [nTotalSendDomain_Periodic];
+//      Buffer_Receive_ReceivedDomain_Periodic       = new unsigned long [nTotalReceivedDomain_Periodic];
+//      Buffer_Receive_ReceivedDomain_PeriodicTrans  = new unsigned long [nTotalReceivedDomain_Periodic];
+//      
+//    }
+//    
+//    MPI::COMM_WORLD.Barrier();
+//
+//    /*--- Copy SendDomain_Periodic, SendDomain_PeriodicTrans, ReceivedDomain_Periodic,
+//     and ReceivedDomain_PeriodicTrans ---*/
+//    if (rank == MASTER_NODE) {
+//      
+//      /*--- Evaluate the number of already existing periodic boundary conditions ---*/
+//      for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+//        
+//        if (config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) {
+//          
+//          for (iVertex = 0; iVertex < geometry->GetnElem_Bound(iMarker); iVertex++) {
+//            iPoint = geometry->bound[iMarker][iVertex]->GetNode(0);
+//            Transformation = geometry->bound[iMarker][iVertex]->GetRotation_Type();
+//            
+//            if (iDomain == geometry->node[iPoint]->GetColor()) {
+//              
+//              /*--- If the information is going to be sended, find the
+//               domain of the receptor ---*/
+//              if (Marker_All_SendRecv[iMarker] > 0) {
+//                
+//                /*--- Identify the color of the receptor ---*/
+//                for (jMarker = 0; jMarker < geometry->GetnMarker(); jMarker++) {
+//                  if ((config->GetMarker_All_Boundary(jMarker) == SEND_RECEIVE) &&
+//                      (Marker_All_SendRecv[jMarker] == -Marker_All_SendRecv[iMarker])) {
+//                    jPoint = geometry->bound[jMarker][iVertex]->GetNode(0);
+//                    ReceptorColor = geometry->node[jPoint]->GetColor();
+//                  }
+//                }
+//                
+//                /*--- For each color of the receptor we will han an extra marker (+) ---*/
+//                Buffer_Send_SendDomain_Periodic[iTotalSendDomain_Periodic] = 0;//Global_to_Local_Point[iPoint];
+//                Buffer_Send_SendDomain_PeriodicTrans[iTotalSendDomain_Periodic] = Transformation;
+//                iTotalSendDomain_Periodic++;
+//                
+//              }
+//              
+//              
+//              /*--- If the information is goint to be received,
+//               find the domain if the donor ---*/
+//              if (Marker_All_SendRecv[iMarker] < 0) {
+//                
+//                /*--- Identify the color of the donor ---*/
+//                for (jMarker = 0; jMarker < geometry->GetnMarker(); jMarker++) {
+//                  if ((config->GetMarker_All_Boundary(jMarker) == SEND_RECEIVE) &&
+//                      (Marker_All_SendRecv[jMarker] == -Marker_All_SendRecv[iMarker] )) {
+//                    jPoint = geometry->bound[jMarker][iVertex]->GetNode(0);
+//                    DonorColor = geometry->node[jPoint]->GetColor();
+//                  }
+//                }
+//                
+//                /*--- For each color of the donor we will han an extra marker (-) ---*/
+//                Buffer_Send_ReceivedDomain_Periodic[iTotalReceivedDomain_Periodic] = 0;//Global_to_Local_Point[iPoint];
+//                Buffer_Send_ReceivedDomain_PeriodicTrans[iTotalReceivedDomain_Periodic] = Transformation;
+//                iTotalReceivedDomain_Periodic++;
+//
+//              }
+//            }
+//          }
+//        }
+//      }
+//      
+//      
+//      MPI::COMM_WORLD.Bsend(Buffer_Send_SendDomain_Periodic,           nTotalSendDomain_Periodic, MPI::UNSIGNED_LONG, iDomain, 0);
+//      MPI::COMM_WORLD.Bsend(Buffer_Send_SendDomain_PeriodicTrans,      nTotalSendDomain_Periodic, MPI::UNSIGNED_LONG, iDomain, 1);
+//      MPI::COMM_WORLD.Bsend(Buffer_Send_ReceivedDomain_Periodic,       nTotalReceivedDomain_Periodic, MPI::UNSIGNED_LONG, iDomain, 2);
+//      MPI::COMM_WORLD.Bsend(Buffer_Send_ReceivedDomain_PeriodicTrans,  nTotalReceivedDomain_Periodic, MPI::UNSIGNED_LONG, iDomain, 3);
+//      
+//      delete[] Buffer_Send_SendDomain_Periodic;
+//      delete[] Buffer_Send_SendDomain_PeriodicTrans;
+//      delete[] Buffer_Send_ReceivedDomain_Periodic;
+//      delete[] Buffer_Send_ReceivedDomain_PeriodicTrans;
+//      
+//    }
+//    
+//    MPI::COMM_WORLD.Barrier();
+//
+//    if (rank == iDomain) {
+//      
+//      /*--- Receive the size of buffers---*/
+//      MPI::COMM_WORLD.Recv(Buffer_Receive_SendDomain_Periodic,          nTotalSendDomain_Periodic, MPI::UNSIGNED_LONG, MASTER_NODE, 0);
+//      MPI::COMM_WORLD.Recv(Buffer_Receive_SendDomain_PeriodicTrans,     nTotalSendDomain_Periodic, MPI::UNSIGNED_LONG, MASTER_NODE, 1);
+//      MPI::COMM_WORLD.Recv(Buffer_Receive_ReceivedDomain_Periodic,      nTotalReceivedDomain_Periodic, MPI::UNSIGNED_LONG, MASTER_NODE, 2);
+//      MPI::COMM_WORLD.Recv(Buffer_Receive_ReceivedDomain_PeriodicTrans, nTotalReceivedDomain_Periodic, MPI::UNSIGNED_LONG, MASTER_NODE, 3);
+//      
+//              
+//      /*--- Add the new periodic markers to the domain ---*/
+//      for (jDomain = 0; jDomain < size; jDomain++) {
+//        
+//        iTotalSendDomain_Periodic = 0;
+//        if (nSendDomain_Periodic[jDomain] != 0) {
+//          nVertexDomain[nMarker] = 0;
+//          for (iVertex = 0; iVertex < nSendDomain_Periodic[jDomain]; iVertex++) {
+//            bound[nMarker][iVertex] = new CVertexMPI(Buffer_Receive_SendDomain_Periodic[iTotalSendDomain_Periodic], nDim);
+//            bound[nMarker][iVertex]->SetRotation_Type(Buffer_Receive_SendDomain_PeriodicTrans[iTotalSendDomain_Periodic]);
+//            nVertexDomain[nMarker]++;
+//            iTotalSendDomain_Periodic++;
+//          }
+//          Marker_All_SendRecv[nMarker] = jDomain+1;
+//          nMarker++;
+//        }
+//        
+//        iTotalReceivedDomain_Periodic = 0;
+//        if (nReceivedDomain_Periodic[jDomain] != 0) {
+//          nVertexDomain[nMarker] = 0;
+//          for (iVertex = 0; iVertex < nReceivedDomain_Periodic[jDomain]; iVertex++) {
+//            bound[nMarker][iVertex] = new CVertexMPI(Buffer_Receive_ReceivedDomain_Periodic[iTotalReceivedDomain_Periodic], nDim);
+//            bound[nMarker][iVertex]->SetRotation_Type(Buffer_Receive_ReceivedDomain_PeriodicTrans[iTotalReceivedDomain_Periodic]);
+//            nVertexDomain[nMarker]++;
+//            iTotalReceivedDomain_Periodic++;
+//          }
+//          Marker_All_SendRecv[nMarker] = -(jDomain+1);
+//          nMarker++;
+//        }
+//        
+//      }
+//      
+//      delete[] Buffer_Receive_SendDomain_Periodic;
+//      delete[] Buffer_Receive_SendDomain_PeriodicTrans;
+//      delete[] Buffer_Receive_ReceivedDomain_Periodic;
+//      delete[] Buffer_Receive_ReceivedDomain_PeriodicTrans;
+//      
+//    }
+//
+//  }
+  
+  
+  /*--- End of the MPI stuff, each node has the right piece of the grid ---*/
+  MPI::COMM_WORLD.Barrier();
+
+  if (rank == MASTER_NODE) {
+    delete[] Global_to_Local_Point;
+    delete[] ElemIn;
+    delete[] MarkerIn;
+    for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
+      delete VertexIn[iMarker];
+    delete[] VertexIn;
+  }
+  
+#endif
+}
+
+CDomainGeometry::~CDomainGeometry(void) {
+  
+  delete[] Global_to_Local_Point;
+	delete[] Local_to_Global_Point;
+  delete[] Global_to_Local_Marker;
+	delete[] Local_to_Global_Marker;
+
+}
+
+void CDomainGeometry::SetDomainSerial(CGeometry *geometry, CConfig *config, unsigned short val_domain) {
 	unsigned long iElemDomain, iPointDomain, iPointGhost, iPointReal, iPointPeriodic,
 	nVertexDomain[MAX_NUMBER_MARKER], iPoint, iElem, iVertex, nElem_Storage = 0,
 	nelem_edge = 0, nelem_triangle = 0, nelem_quad = 0, nelem_tetra = 0,
@@ -7488,7 +8573,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config, unsigned 
 					Global_to_Local_Point[iPoint] = 1;
           
 					nPoint++;
-                    
+          
 					if ( geometry->node[iPoint]->GetColor() != val_domain ) nPointGhost++;
 					else {
             /*--- Note that the periodic BC (receive) are also ghost cell ---*/
@@ -7550,7 +8635,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config, unsigned 
 					if ( nDim == 2 ) node[iPointDomain] = new CPoint(coord[0], coord[1], iPoint, config);
 					if ( nDim == 3 ) node[iPointDomain] = new CPoint(coord[0], coord[1], coord[2], iPoint, config);
           node[iPointDomain]->SetColor(geometry->node[iPoint]->GetColor());
-                    
+          
           /*--- Compute the index for the PEriodic and extra Ghost points. ---*/
           if ( geometry->node[iPoint]->GetColor() == val_domain ) {
             if ( iPoint > geometry->GetnPointDomain() - 1) iPointPeriodic++;
@@ -7623,7 +8708,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config, unsigned 
     }
   }
   
-  /*--- Evaluate the number of already existing periodic boundary conditions ---*/  
+  /*--- Evaluate the number of already existing periodic boundary conditions ---*/
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
     
     if (config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) {
@@ -7859,23 +8944,113 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config, unsigned 
 	for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
 		delete VertexIn[iMarker];
 	delete[] VertexIn;
-
-}
-
-CDomainGeometry::~CDomainGeometry(void) {
   
-  delete[] Global_to_Local_Point;
-	delete[] Local_to_Global_Point;
-  delete[] Global_to_Local_Marker;
-	delete[] Local_to_Global_Marker;
-
 }
 
-void CDomainGeometry::SetSendReceive(CConfig *config, unsigned short val_domain) {
-	unsigned short iDomain, nDomain, Counter_Send, Counter_Receive, iMarkerSend, iMarkerReceive;
+void CDomainGeometry::SetSendReceive(CConfig *config) {
+  
+#ifndef NO_MPI
+  
+	unsigned short Counter_Send, Counter_Receive, iMarkerSend, iMarkerReceive;
 	unsigned long iVertex, LocalNode;
   
-	nDomain = config->GetnDomain();
+  unsigned long  nVertexDomain[MAX_NUMBER_MARKER], iPoint, jPoint, iElem;
+	unsigned short iNode, iDomain, jDomain, jNode;
+	vector<unsigned long>::iterator it;
+
+  int rank = MPI::COMM_WORLD.Get_rank();
+	int size = MPI::COMM_WORLD.Get_size();
+  
+	int nDomain = size;
+  
+  /*--- Loop over the all the points of the element
+	 to find the points with different colours, and create the send/received list ---*/
+	for (iElem = 0; iElem < nElem; iElem++) {
+		for (iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
+			iPoint = elem[iElem]->GetNode(iNode);
+      iDomain = node[iPoint]->GetColor();
+      
+      if (iDomain == rank) {
+        for(jNode = 0; jNode < elem[iElem]->GetnNodes(); jNode++) {
+          jPoint = elem[iElem]->GetNode(jNode);
+          jDomain = node[jPoint]->GetColor();
+          
+          /*--- If different color and connected by an edge, then we add them to the list ---*/
+          if (iDomain != jDomain) {
+            
+            /*--- We send from iDomain to jDomain the value of iPoint, we save the
+             global value becuase we need to sort the lists ---*/
+            SendDomainLocal[jDomain].push_back(Local_to_Global_Point[iPoint]);
+            /*--- We send from jDomain to iDomain the value of jPoint, we save the
+             global value becuase we need to sort the lists ---*/
+            ReceivedDomainLocal[jDomain].push_back(Local_to_Global_Point[jPoint]);
+            
+          }
+        }
+      }
+		}
+	}
+  
+  /*--- Sort the points that must be sended and delete repeated points, note
+   that the sortering should be done with the global point (not the local) ---*/
+	for (iDomain = 0; iDomain < nDomain; iDomain++) {
+		sort( SendDomainLocal[iDomain].begin(), SendDomainLocal[iDomain].end());
+		it = unique( SendDomainLocal[iDomain].begin(), SendDomainLocal[iDomain].end());
+		SendDomainLocal[iDomain].resize( it - SendDomainLocal[iDomain].begin() );
+	}
+	
+	/*--- Sort the points that must be received and delete repeated points, note
+   that the sortering should be done with the global point (not the local) ---*/
+	for (iDomain = 0; iDomain < nDomain; iDomain++) {
+		sort( ReceivedDomainLocal[iDomain].begin(), ReceivedDomainLocal[iDomain].end());
+		it = unique( ReceivedDomainLocal[iDomain].begin(), ReceivedDomainLocal[iDomain].end());
+		ReceivedDomainLocal[iDomain].resize( it - ReceivedDomainLocal[iDomain].begin() );
+	}
+  
+  /*--- Create Global to Local Point array, note that the array is smaller (Max_GlobalPoint) than the total 
+   number of points in the simulation  ---*/
+  Max_GlobalPoint = 0;
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    if (Local_to_Global_Point[iPoint] > Max_GlobalPoint)
+      Max_GlobalPoint = Local_to_Global_Point[iPoint];
+  }
+  Global_to_Local_Point =  new long[Max_GlobalPoint+1]; // +1 to include the bigger point.
+  
+  /*--- Initialization of the array with -1 this is important for the FFD ---*/
+  for (iPoint = 0; iPoint < Max_GlobalPoint+1; iPoint++)
+    Global_to_Local_Point[iPoint] = -1;
+  
+  /*--- Set the value of some of the points ---*/
+  for (iPoint = 0; iPoint < nPoint; iPoint++)
+    Global_to_Local_Point[Local_to_Global_Point[iPoint]] = iPoint;
+    
+  /*--- Add the new MPI send receive boundaries, reset the transformation, and save the local value ---*/
+	for (iDomain = 0; iDomain < nDomain; iDomain++) {
+		if (SendDomainLocal[iDomain].size() != 0) {
+			nVertexDomain[nMarker] = SendDomainLocal[iDomain].size();
+      for (iVertex = 0; iVertex < nVertexDomain[nMarker]; iVertex++) {
+        SendDomainLocal[iDomain][iVertex] = Global_to_Local_Point[SendDomainLocal[iDomain][iVertex]];
+        SendTransfLocal[iDomain].push_back(0);
+      }
+      nElem_Bound[nMarker] = nVertexDomain[nMarker];
+      bound[nMarker] = new CPrimalGrid*[nElem_Bound[nMarker]];
+			nMarker++;
+		}
+  }
+  
+  /*--- Add the new MPI receive boundaries, reset the transformation, and save the local value ---*/
+  for (iDomain = 0; iDomain < nDomain; iDomain++) {
+ 		if (ReceivedDomainLocal[iDomain].size() != 0) {
+			nVertexDomain[nMarker] = ReceivedDomainLocal[iDomain].size();
+      for (iVertex = 0; iVertex < nVertexDomain[nMarker]; iVertex++) {
+        ReceivedDomainLocal[iDomain][iVertex] = Global_to_Local_Point[ReceivedDomainLocal[iDomain][iVertex]];
+        ReceivedTransfLocal[iDomain].push_back(0);
+      }
+      nElem_Bound[nMarker] = nVertexDomain[nMarker];
+      bound[nMarker] = new CPrimalGrid*[nElem_Bound[nMarker]];
+			nMarker++;
+		}
+  }
   
 	/*--- First compute the Send/Receive boundaries ---*/
 	Counter_Send = 0; 	Counter_Receive = 0;
@@ -7914,6 +9089,8 @@ void CDomainGeometry::SetSendReceive(CConfig *config, unsigned short val_domain)
 		}
 	}
   
+#endif
+  
 }
 
 void CDomainGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename, unsigned short val_domain) {
@@ -7938,7 +9115,7 @@ void CDomainGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename,
 			output_file << "\t" << elem[iElem]->GetNode(iNodes);
 		output_file << "\t"<<iElem<<endl;
 	}
-  
+
 	output_file << "NPOIN= " << nPoint << "\t" << nPointDomain <<endl;
 	output_file.precision(15);
 	for (iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -7976,7 +9153,7 @@ void CDomainGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename,
       }
     }
   }
-  
+
 	/*--- Get the total number of periodic transformations ---*/
 	nPeriodic = config->GetnPeriodicIndex();
 	output_file << "NPERIODIC= " << nPeriodic << endl;

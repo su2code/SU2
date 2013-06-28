@@ -2,7 +2,7 @@
  * \file solution_adjoint_turbulent.cpp
  * \brief Main subrotuines for solving adjoint problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -175,6 +175,7 @@ CAdjTurbSolution::CAdjTurbSolution(CGeometry *geometry, CConfig *config) : CSolu
       case FIGURE_OF_MERIT: AdjExt = "_merit.dat"; break;
 			case FREE_SURFACE: AdjExt = "_fs.dat"; break;
       case NOISE: AdjExt = "_fwh.dat"; break;
+      case HEAT_LOAD: AdjExt = "_Q.dat"; break;
 		}
 		filename.append(AdjExt);
 		restart_file.open(filename.data(), ios::in);
@@ -357,7 +358,7 @@ void CAdjTurbSolution::SetSolution_MPI(CGeometry *geometry, CConfig *config) {
 }
 
 
-void CAdjTurbSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short val_marker) {
+void CAdjTurbSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
 
 	unsigned long Point, iVertex;
     unsigned short iVar;
@@ -1328,7 +1329,7 @@ void CAdjTurbSolution::Source_Residual(CGeometry *geometry, CSolution **solution
 //            
 //            double gamma, R;
 //            gamma = config->GetGamma();
-//            R = config->GetGas_Constant();
+//            R = config->GetGas_ConstantND();
 //            
 //            double Velocity[2];
 //            double sq_vel = 0;
@@ -1925,7 +1926,7 @@ void CAdjTurbSolution::ConvertSensPrimVar_to_SensU(double *val_Vars, double **va
 		unsigned short numVar, CConfig *config){
 
 	unsigned short iPos, jPos, lPos;
-	double Gas_Constant = config->GetGas_Constant();
+	double Gas_Constant = config->GetGas_ConstantND();
 	double *Primitive, *Primitived, *val_Varsd;
     double **temp_Jacobian;
     

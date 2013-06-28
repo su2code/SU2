@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2013 Aerospace Design Laboratory
@@ -24,7 +24,7 @@
 #include "../include/output_structure.hpp"
 string AssembleVariableNames(bool GridMovement, bool Incompressible, unsigned short KindSolver, unsigned short nVar_Consv, unsigned short dims, unsigned short *NVar);
 
-void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone) {
+void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol) {
     
 	/*--- Local variables and initialization ---*/
 	unsigned short iDim, iVar, nDim = geometry->GetnDim();
@@ -32,7 +32,9 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
     
 	unsigned long iPoint, iElem, iNode;
 	unsigned long iExtIter = config->GetExtIter();
-    
+  unsigned long *LocalIndex = NULL;
+  bool *SurfacePoint = NULL;
+  
 	bool grid_movement  = config->GetGrid_Movement();
 	bool isAdjoint = config->IsAdjoint();
     
@@ -40,11 +42,19 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
 	string filename;
     
 	/*--- Write file name with extension ---*/
-	if (isAdjoint)
-		filename = config->GetAdj_FileName();
-	else
-		filename = config->GetFlow_FileName();
-    
+  if (surf_sol) {
+    if (isAdjoint)
+      filename = config->GetSurfAdjCoeff_FileName();
+    else
+      filename = config->GetSurfFlowCoeff_FileName();
+  }
+  else {
+    if (isAdjoint)
+      filename = config->GetAdj_FileName();
+    else
+      filename = config->GetFlow_FileName();
+  }
+  
 	if (Kind_Solver == LINEAR_ELASTICITY)
 		filename = config->GetStructure_FileName().c_str();
 	if (Kind_Solver == WAVE_EQUATION)
@@ -115,8 +125,9 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
 	ofstream Tecplot_File;
 	Tecplot_File.open(cstr, ios::out);
   Tecplot_File.precision(6);
-	Tecplot_File << "TITLE = \"Visualization of the volumetric solution\"" << endl;
-    
+  if (surf_sol) Tecplot_File << "TITLE = \"Visualization of the surface solution\"" << endl;
+  else Tecplot_File << "TITLE = \"Visualization of the volumetric solution\"" << endl;
+
 	/*--- Prepare the variables lists. ---*/
 	if (nDim == 2) {
 		Tecplot_File << "VARIABLES = \"x\",\"y\"";
@@ -142,11 +153,11 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
     for (iVar = 0; iVar < nVar_Consv; iVar++) {
       Tecplot_File << ",\"Conservative_" << iVar+1 << "\"";
     }
-      if (config->GetWrt_Residuals()) {
-          for (iVar = 0; iVar < nVar_Consv; iVar++) {
-              Tecplot_File << ",\"Residual_" << iVar+1 << "\"";
-          }
+    if (config->GetWrt_Residuals()) {
+      for (iVar = 0; iVar < nVar_Consv; iVar++) {
+        Tecplot_File << ",\"Residual_" << iVar+1 << "\"";
       }
+    }
     
     /*--- Add names for any extra variables (this will need to be adjusted). ---*/
     if (grid_movement) {
@@ -163,12 +174,12 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
     
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
         (Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
-      Tecplot_File << ",\"Pressure\",\"Mach\"";
+      Tecplot_File << ",\"Pressure\",\"Pressure_Coefficient\",\"Mach\"";
     }
     
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
         (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
-      Tecplot_File << ",\"Temperature\",\"Laminar_Viscosity\"";
+      Tecplot_File << ", \"Temperature\", \"Laminar_Viscosity\", \"Skin_Friction_Coefficient\", \"Heat_Transfer\", \"Y_Plus\"";
     }
     
     if ((Kind_Solver == RANS) || (Kind_Solver == FREE_SURFACE_RANS)) {
@@ -204,93 +215,195 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
         Tecplot_File << ",\"ElectricField_" << iDim+1 << "\"";
     }
     
+    if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) ||
+        (Kind_Solver == ADJ_FREE_SURFACE_EULER) || (Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
+        (Kind_Solver == ADJ_FREE_SURFACE_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
+      Tecplot_File << ", \"Surface_Sensitivity\"";
+    }
+    
     Tecplot_File << endl;
     
   }
   
-	Tecplot_File << "ZONE ";
+  /*--- If it's a surface output, print only the points 
+   that are in the element list, change the numbering ---*/
+  
+  if (surf_sol) {
+        
+    LocalIndex = new unsigned long [nGlobal_Poin+1];
+    SurfacePoint = new bool [nGlobal_Poin+1];
+
+    for (iPoint = 0; iPoint < nGlobal_Poin+1; iPoint++) SurfacePoint[iPoint] = false;
+
+    for(iElem = 0; iElem < nGlobal_Line; iElem++) {
+      iNode = iElem*N_POINTS_LINE;
+      SurfacePoint[Conn_Line[iNode+0]] = true;
+      SurfacePoint[Conn_Line[iNode+1]] = true;
+    }
+    for(iElem = 0; iElem < nGlobal_BoundTria; iElem++) {
+      iNode = iElem*N_POINTS_TRIANGLE;
+      SurfacePoint[Conn_BoundTria[iNode+0]] = true;
+      SurfacePoint[Conn_BoundTria[iNode+1]] = true;
+      SurfacePoint[Conn_BoundTria[iNode+2]] = true;
+    }
+    for(iElem = 0; iElem < nGlobal_BoundQuad; iElem++) {
+      iNode = iElem*N_POINTS_QUADRILATERAL;
+      SurfacePoint[Conn_BoundQuad[iNode+0]] = true;
+      SurfacePoint[Conn_BoundQuad[iNode+1]] = true;
+      SurfacePoint[Conn_BoundQuad[iNode+2]] = true;
+      SurfacePoint[Conn_BoundQuad[iNode+3]] = true;
+    }
+    
+    nSurf_Poin = 0;
+    for (iPoint = 0; iPoint < nGlobal_Poin+1; iPoint++) {
+      LocalIndex[iPoint] = 0;
+      if (SurfacePoint[iPoint]) { nSurf_Poin++; LocalIndex[iPoint] = nSurf_Poin; }
+    }
+    
+  }
+  
+  /*--- Write the header ---*/
+  Tecplot_File << "ZONE ";
 	if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady())
 		Tecplot_File << "STRANDID="<<int(iExtIter+1)<<", SOLUTIONTIME="<<config->GetDelta_UnstTime()*iExtIter<<", ";
-    
+  
 	if (nDim == 2) {
-		Tecplot_File << "NODES= "<< nGlobal_Poin <<", ELEMENTS= "<< nGlobal_Elem <<", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
+    if (surf_sol) Tecplot_File << "NODES= "<< nSurf_Poin <<", ELEMENTS= "<< nSurf_Elem <<", DATAPACKING=POINT, ZONETYPE=FELINESEG"<< endl;
+    else Tecplot_File << "NODES= "<< nGlobal_Poin <<", ELEMENTS= "<< nGlobal_Elem <<", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
 	} else {
-		Tecplot_File << "NODES= "<< nGlobal_Poin <<", ELEMENTS= "<< nGlobal_Elem <<", DATAPACKING=POINT, ZONETYPE=FEBRICK"<< endl;
+    if (surf_sol) Tecplot_File << "NODES= "<< nSurf_Poin<<", ELEMENTS= "<< nSurf_Elem <<", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
+    else Tecplot_File << "NODES= "<< nGlobal_Poin <<", ELEMENTS= "<< nGlobal_Elem <<", DATAPACKING=POINT, ZONETYPE=FEBRICK"<< endl;
 	}
+  
+	/*--- Write surface and volumetric solution data. ---*/
+  
+  for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
     
-	/*--- Write solution data. ---*/
-	for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+    if (surf_sol) {
+      
+      if (LocalIndex[iPoint+1] != 0) {
         
-		/*--- Write the node coordinates ---*/
-		for(iDim = 0; iDim < nDim; iDim++)
-			Tecplot_File << scientific << Coords[iDim][iPoint] << "\t";
+        /*--- Write the node coordinates ---*/
+        for(iDim = 0; iDim < nDim; iDim++)
+          Tecplot_File << scientific << Coords[iDim][iPoint] << "\t";
         
-		/*--- Loop over the vars/residuals and write the values to file ---*/
-		for (iVar = 0; iVar < nVar_Total; iVar++) {
-			Tecplot_File << scientific << Data[iVar][iPoint] << "\t";
-		}
+        /*--- Loop over the vars/residuals and write the values to file ---*/
+        for (iVar = 0; iVar < nVar_Total; iVar++)
+          Tecplot_File << scientific << Data[iVar][iPoint] << "\t";
         
-		Tecplot_File << endl;
-	}
-    
+        Tecplot_File << endl;
+
+      }
+      
+    } else {
+      
+      /*--- Write the node coordinates ---*/
+      for(iDim = 0; iDim < nDim; iDim++)
+        Tecplot_File << scientific << Coords[iDim][iPoint] << "\t";
+      
+      /*--- Loop over the vars/residuals and write the values to file ---*/
+      for (iVar = 0; iVar < nVar_Total; iVar++)
+        Tecplot_File << scientific << Data[iVar][iPoint] << "\t";
+      
+      Tecplot_File << endl;
+      
+    }
+
+  }
+  
+
 	/*--- Write connectivity data. ---*/
+  
+  if (surf_sol) {
     
-	iNode = 0;
-	for(iElem = 0; iElem < nGlobal_Tria; iElem++) {
-		iNode = iElem*N_POINTS_TRIANGLE;
-		Tecplot_File << Conn_Tria[iNode+0] << "\t";
-		Tecplot_File << Conn_Tria[iNode+1] << "\t";
-		Tecplot_File << Conn_Tria[iNode+2] << "\t";
-		Tecplot_File << Conn_Tria[iNode+2] << "\n";
-	}
+    iNode = 0;
+    for(iElem = 0; iElem < nGlobal_Line; iElem++) {
+      iNode = iElem*N_POINTS_LINE;
+      Tecplot_File << LocalIndex[Conn_Line[iNode+0]] << "\t";
+      Tecplot_File << LocalIndex[Conn_Line[iNode+1]] << "\n";
+      
+    }
     
-	iNode = 0;
-	for(iElem = 0; iElem < nGlobal_Quad; iElem++) {
-		iNode = iElem*N_POINTS_QUADRILATERAL;
-		Tecplot_File << Conn_Quad[iNode+0] << "\t";
-		Tecplot_File << Conn_Quad[iNode+1] << "\t";
-		Tecplot_File << Conn_Quad[iNode+2] << "\t";
-		Tecplot_File << Conn_Quad[iNode+3] << "\n";
-	}
+    iNode = 0;
+    for(iElem = 0; iElem < nGlobal_BoundTria; iElem++) {
+      iNode = iElem*N_POINTS_TRIANGLE;
+      Tecplot_File << LocalIndex[Conn_BoundTria[iNode+0]] << "\t";
+      Tecplot_File << LocalIndex[Conn_BoundTria[iNode+1]] << "\t";
+      Tecplot_File << LocalIndex[Conn_BoundTria[iNode+2]] << "\t";
+      Tecplot_File << LocalIndex[Conn_BoundTria[iNode+2]] << "\n";
+    }
     
-	iNode = 0;
-	for(iElem = 0; iElem < nGlobal_Tetr; iElem++) {
-		iNode = iElem*N_POINTS_TETRAHEDRON;
-		Tecplot_File << Conn_Tetr[iNode+0] << "\t" << Conn_Tetr[iNode+1] << "\t";
-		Tecplot_File << Conn_Tetr[iNode+2] << "\t" << Conn_Tetr[iNode+2] << "\t";
-		Tecplot_File << Conn_Tetr[iNode+3] << "\t" << Conn_Tetr[iNode+3] << "\t";
-		Tecplot_File << Conn_Tetr[iNode+3] << "\t" << Conn_Tetr[iNode+3] << "\n";
-	}
+    iNode = 0;
+    for(iElem = 0; iElem < nGlobal_BoundQuad; iElem++) {
+      iNode = iElem*N_POINTS_QUADRILATERAL;
+      Tecplot_File << LocalIndex[Conn_BoundQuad[iNode+0]] << "\t";
+      Tecplot_File << LocalIndex[Conn_BoundQuad[iNode+1]] << "\t";
+      Tecplot_File << LocalIndex[Conn_BoundQuad[iNode+2]] << "\t";
+      Tecplot_File << LocalIndex[Conn_BoundQuad[iNode+3]] << "\n";
+    }
     
-	iNode = 0;
-	for(iElem = 0; iElem < nGlobal_Hexa; iElem++) {
-		iNode = iElem*N_POINTS_HEXAHEDRON;
-		Tecplot_File << Conn_Hexa[iNode+0] << "\t" << Conn_Hexa[iNode+1] << "\t";
-		Tecplot_File << Conn_Hexa[iNode+2] << "\t" << Conn_Hexa[iNode+3] << "\t";
-		Tecplot_File << Conn_Hexa[iNode+4] << "\t" << Conn_Hexa[iNode+5] << "\t";
-		Tecplot_File << Conn_Hexa[iNode+6] << "\t" << Conn_Hexa[iNode+7] << "\n";
-	}
+  }
+  else {
     
-	iNode = 0;
-	for(iElem = 0; iElem < nGlobal_Wedg; iElem++) {
-		iNode = iElem*N_POINTS_WEDGE;
-		Tecplot_File << Conn_Wedg[iNode+0] << "\t" << Conn_Wedg[iNode+1] << "\t";
-		Tecplot_File << Conn_Wedg[iNode+1] << "\t" << Conn_Wedg[iNode+2] << "\t";
-		Tecplot_File << Conn_Wedg[iNode+3] << "\t" << Conn_Wedg[iNode+4] << "\t";
-		Tecplot_File << Conn_Wedg[iNode+4] << "\t" << Conn_Wedg[iNode+5] << "\n";
-	}
+    iNode = 0;
+    for(iElem = 0; iElem < nGlobal_Tria; iElem++) {
+      iNode = iElem*N_POINTS_TRIANGLE;
+      Tecplot_File << Conn_Tria[iNode+0] << "\t";
+      Tecplot_File << Conn_Tria[iNode+1] << "\t";
+      Tecplot_File << Conn_Tria[iNode+2] << "\t";
+      Tecplot_File << Conn_Tria[iNode+2] << "\n";
+    }
     
-	iNode = 0;
-	for(iElem = 0; iElem < nGlobal_Pyra; iElem++) {
-		iNode = iElem*N_POINTS_PYRAMID;
-		Tecplot_File << Conn_Pyra[iNode+0] << "\t" << Conn_Pyra[iNode+1] << "\t";
-		Tecplot_File << Conn_Pyra[iNode+2] << "\t" << Conn_Pyra[iNode+3] << "\t";
-		Tecplot_File << Conn_Pyra[iNode+4] << "\t" << Conn_Pyra[iNode+4] << "\t";
-		Tecplot_File << Conn_Pyra[iNode+4] << "\t" << Conn_Pyra[iNode+4] << "\n";
-	}
+    iNode = 0;
+    for(iElem = 0; iElem < nGlobal_Quad; iElem++) {
+      iNode = iElem*N_POINTS_QUADRILATERAL;
+      Tecplot_File << Conn_Quad[iNode+0] << "\t";
+      Tecplot_File << Conn_Quad[iNode+1] << "\t";
+      Tecplot_File << Conn_Quad[iNode+2] << "\t";
+      Tecplot_File << Conn_Quad[iNode+3] << "\n";
+    }
+    
+    iNode = 0;
+    for(iElem = 0; iElem < nGlobal_Tetr; iElem++) {
+      iNode = iElem*N_POINTS_TETRAHEDRON;
+      Tecplot_File << Conn_Tetr[iNode+0] << "\t" << Conn_Tetr[iNode+1] << "\t";
+      Tecplot_File << Conn_Tetr[iNode+2] << "\t" << Conn_Tetr[iNode+2] << "\t";
+      Tecplot_File << Conn_Tetr[iNode+3] << "\t" << Conn_Tetr[iNode+3] << "\t";
+      Tecplot_File << Conn_Tetr[iNode+3] << "\t" << Conn_Tetr[iNode+3] << "\n";
+    }
+    
+    iNode = 0;
+    for(iElem = 0; iElem < nGlobal_Hexa; iElem++) {
+      iNode = iElem*N_POINTS_HEXAHEDRON;
+      Tecplot_File << Conn_Hexa[iNode+0] << "\t" << Conn_Hexa[iNode+1] << "\t";
+      Tecplot_File << Conn_Hexa[iNode+2] << "\t" << Conn_Hexa[iNode+3] << "\t";
+      Tecplot_File << Conn_Hexa[iNode+4] << "\t" << Conn_Hexa[iNode+5] << "\t";
+      Tecplot_File << Conn_Hexa[iNode+6] << "\t" << Conn_Hexa[iNode+7] << "\n";
+    }
+    
+    iNode = 0;
+    for(iElem = 0; iElem < nGlobal_Wedg; iElem++) {
+      iNode = iElem*N_POINTS_WEDGE;
+      Tecplot_File << Conn_Wedg[iNode+0] << "\t" << Conn_Wedg[iNode+1] << "\t";
+      Tecplot_File << Conn_Wedg[iNode+1] << "\t" << Conn_Wedg[iNode+2] << "\t";
+      Tecplot_File << Conn_Wedg[iNode+3] << "\t" << Conn_Wedg[iNode+4] << "\t";
+      Tecplot_File << Conn_Wedg[iNode+4] << "\t" << Conn_Wedg[iNode+5] << "\n";
+    }
+    
+    iNode = 0;
+    for(iElem = 0; iElem < nGlobal_Pyra; iElem++) {
+      iNode = iElem*N_POINTS_PYRAMID;
+      Tecplot_File << Conn_Pyra[iNode+0] << "\t" << Conn_Pyra[iNode+1] << "\t";
+      Tecplot_File << Conn_Pyra[iNode+2] << "\t" << Conn_Pyra[iNode+3] << "\t";
+      Tecplot_File << Conn_Pyra[iNode+4] << "\t" << Conn_Pyra[iNode+4] << "\t";
+      Tecplot_File << Conn_Pyra[iNode+4] << "\t" << Conn_Pyra[iNode+4] << "\n";
+    }
+  }
     
 	Tecplot_File.close();
-    
+  
+  if (surf_sol) delete [] LocalIndex;
+
 }
 
 void COutput::SetTecplot_Mesh(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {

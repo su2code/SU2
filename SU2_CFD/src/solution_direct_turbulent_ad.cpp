@@ -2,7 +2,7 @@
  * \file solution_direct_turbulent_ad.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -137,7 +137,7 @@ void CAdjTurbSolution::CalcPrimVar_Compressible_ad(double *val_Vars, double *val
 void CAdjTurbSolution::CalcLaminarViscosity_ad(double *val_U_i, double *val_U_id,
 		double *val_laminar_viscosity_i, double *val_laminar_viscosity_id, CConfig *config){
 
-	double Gas_Constant = config->GetGas_Constant();
+	double Gas_Constant = config->GetGas_ConstantND();
 	double Temperature_Ref = config->GetTemperature_Ref();
 	double Viscosity_Ref = config->GetViscosity_Ref();
 

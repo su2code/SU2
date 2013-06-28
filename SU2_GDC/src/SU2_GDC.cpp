@@ -2,7 +2,7 @@
  * \file SU2_GDC.cpp
  * \brief Main file of the Geometry Definition Code (SU2_GDC).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -87,6 +87,10 @@ int main(int argc, char *argv[]) {
 			ObjectiveFunc = boundary->GetMaxThickness(config, true);
 			cout << "Maximum thickness: "<< ObjectiveFunc << "." << endl; 
 			break;
+    case MIN_THICKNESS :
+			ObjectiveFunc = boundary->GetMinThickness(config, true);
+			cout << "Minimum thickness: "<< ObjectiveFunc << "." << endl;
+			break;
 		case TOTAL_VOLUME :
 			ObjectiveFunc = boundary->GetTotalVolume(config, true);
 			cout << "Total volume: "<< ObjectiveFunc << "." << endl; 
@@ -159,6 +163,13 @@ int main(int argc, char *argv[]) {
 						Gradient = (ObjectiveFunc_New - ObjectiveFunc) / (delta_eps + EPS);
 						if (iDV == 0) Gradient_file << "Max thickness grad. using fin. dif." << endl;
 						cout << "Max thickness gradient: "<< Gradient << "." << endl; 
+						break;
+          case MIN_THICKNESS :
+						ObjectiveFunc_New = boundary->GetMinThickness(config, false);
+						delta_eps = config->GetDV_Value_New(iDV);
+						Gradient = (ObjectiveFunc_New - ObjectiveFunc) / (delta_eps + EPS);
+						if (iDV == 0) Gradient_file << "Min thickness grad. using fin. dif." << endl;
+						cout << "Min thickness gradient: "<< Gradient << "." << endl;
 						break;
 					case TOTAL_VOLUME :
 						ObjectiveFunc_New = boundary->GetTotalVolume(config, false);

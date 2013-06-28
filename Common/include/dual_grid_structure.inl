@@ -2,7 +2,7 @@
  * \file dual_grid_structure.inl
  * \brief In-Line subroutines of the <i>dual_grid_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -79,7 +79,11 @@ inline double *CPoint::GetCoord_Sum(void) { return Coord_sum; }
 
 inline double *CPoint::GetGridVel(void) { return gridvel; }
 
+inline double **CPoint::GetGridVel_Grad(void) { return gridvel_grad; }
+
 inline double *CPoint::GetRotVel(void) { return rotvel; }
+
+inline double **CPoint::GetRotVel_Grad(void) { return rotvel_grad; }
 
 inline void CPoint::SetCoord_Old(double *val_coord_old) {
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
@@ -98,7 +102,11 @@ inline void CPoint::AddCoord_Sum(double *val_coord_sum) {
 
 inline void CPoint::SetGridVel(unsigned short val_dim, double val_gridvel) { gridvel[val_dim] = val_gridvel; }
 
+inline void CPoint::SetGridVel_Grad(unsigned short val_var, unsigned short val_dim, double val_value) { gridvel_grad[val_var][val_dim] = val_value; }
+
 inline void CPoint::SetRotVel(unsigned short val_dim, double val_rotvel) { rotvel[val_dim] = val_rotvel; }
+
+inline void CPoint::SetRotVel_Grad(unsigned short val_var, unsigned short val_dim, double val_value) { rotvel_grad[val_var][val_dim] = val_value; }
 
 inline void CPoint::SetChildren_CV (unsigned short val_nchildren_CV, unsigned long val_children_CV) {
 	if (Children_CV.size() <= val_nchildren_CV) Children_CV.resize(val_nchildren_CV+1);

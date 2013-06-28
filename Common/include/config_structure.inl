@@ -2,7 +2,7 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -124,6 +124,8 @@ inline double CConfig::GetGammaDiatomic(void) { return GammaDiatomic; }
 inline double CConfig::GetArtComp_Factor(void) { return ArtComp_Factor; }
 
 inline double CConfig::GetGas_Constant(void) { return Gas_Constant; }
+
+inline double CConfig::GetGas_ConstantND(void) { return Gas_ConstantND; }
 
 inline double CConfig::GetMixtureMolar_Mass(void) { return Mixture_Molar_mass; }
 
@@ -414,6 +416,8 @@ inline double CConfig::GetAdjTurb_CFLRedCoeff(void) { return AdjTurb_CFLRedCoeff
 
 inline double CConfig::GetGridDef_Error(void) { return GridDef_Error; }
 
+inline unsigned long CConfig::GetFEA_Iter(void) { return FEA_Iter; }
+
 inline unsigned short CConfig::GetKind_Adaptation(void) { return Kind_Adaptation; }
 
 inline double CConfig::GetNew_Elem_Adapt(void) { return New_Elem_Adapt; }
@@ -664,6 +668,8 @@ inline void CConfig::SetMarker_All_Tag(unsigned short val_marker, string val_ind
 
 inline void CConfig::SetMarker_All_Monitoring(unsigned short val_marker, unsigned short val_monitoring) { Marker_All_Monitoring[val_marker] = val_monitoring; }
 
+inline void CConfig::SetMarker_All_Designing(unsigned short val_marker, unsigned short val_designing) { Marker_All_Designing[val_marker] = val_designing; }
+
 inline void CConfig::SetMarker_All_Plotting(unsigned short val_marker, unsigned short val_plotting) { Marker_All_Plotting[val_marker] = val_plotting; }
 
 inline void CConfig::SetMarker_All_Moving(unsigned short val_marker, unsigned short val_moving) { Marker_All_Moving[val_marker] = val_moving; }
@@ -677,6 +683,8 @@ inline void CConfig::SetMarker_All_Sliding(unsigned short val_marker, unsigned s
 inline unsigned short CConfig::GetMarker_All_Sliding(unsigned short val_marker) { return Marker_All_Sliding[val_marker]; }
 
 inline unsigned short CConfig::GetMarker_All_Monitoring(unsigned short val_marker) { return Marker_All_Monitoring[val_marker]; }
+
+inline unsigned short CConfig::GetMarker_All_Designing(unsigned short val_marker) { return Marker_All_Designing[val_marker]; }
 
 inline short CConfig::GetMarker_All_SendRecv(unsigned short val_marker) { return Marker_All_SendRecv[val_marker]; }
 
@@ -701,6 +709,8 @@ inline string CConfig::GetConv_FileName(void) { return Conv_FileName; }
 inline string CConfig::GetLin_Conv_FileName(void) { return Lin_Conv_FileName; }
 
 inline string CConfig::GetSolution_FlowFileName(void) { return Solution_FlowFileName; }
+
+inline string CConfig::GetFarfield_FileName(void) { return Farfield_FileName; }
 
 inline string CConfig::GetSolution_LinFileName(void) { return Solution_LinFileName; }
 
@@ -766,6 +776,8 @@ inline double CConfig::GetTotal_UnstTime(void) { return Total_UnstTime; }
 
 inline bool CConfig::GetDivide_Element(void) { return Divide_Element; }
 
+inline bool CConfig::GetEngine_Intake(void) { return Engine_Intake; }
+
 inline double CConfig::GetDV_Value_New(unsigned short val_dv) { return DV_Value_New[val_dv]; }
 
 inline double CConfig::GetOrderMagResidual(void) { return OrderMagResidual; }
@@ -783,6 +795,8 @@ inline double CConfig::GetWeightCd(void) { return WeightCd; }
 inline double CConfig::GetCteViscDrag(void) { return CteViscDrag; }
 
 inline double CConfig::GetLevelSet_CFLRedCoeff(void) { return LevelSet_CFLRedCoeff; }
+
+inline double CConfig::GetTurb_CFLRedCoeff(void) { return Turb_CFLRedCoeff; }
 
 inline double *CConfig::GetRotAxisOrigin(void) { return RotAxisOrigin; }
 
@@ -815,6 +829,8 @@ inline bool CConfig::GetElectricSolver(void) { return ElectricSolver; }
 inline bool CConfig::Low_Mach_Preconditioning(void) { return Low_Mach_Precon; }
 
 inline bool CConfig::GetMacCormackRelaxation(void) { return MacCormackRelaxation; }
+
+inline bool CConfig::GetUnsteady_Farfield(void) { return Unsteady_Farfield; }
 
 inline bool CConfig::MultipleTimeSteps(void) { return PlasmaMultiTimeSteps; }
 
@@ -892,6 +908,8 @@ inline bool CConfig::GetWrt_Sol_Tec_Binary(void) { return Wrt_Sol_Tec_Binary; }
 
 inline bool CConfig::GetWrt_Residuals(void) { return Wrt_Residuals; }
 
+inline bool CConfig::GetWrt_Halo(void) { return Wrt_Halo; }
+
 inline unsigned short CConfig::GetnOutput_Vars_Vol(void) { return nOutput_Vars_Vol; }
 
 inline unsigned short CConfig::GetOutput_Vars_Vol(unsigned short val_index) { return Output_Vars_Vol[val_index]; }
@@ -931,4 +949,14 @@ inline double CConfig::GetAeroelastic_Frequency_Pitch(void) {return FreqPitchAer
 inline unsigned short CConfig::GetType_Aeroelastic(void) {return Aeroelastic_Grid_Movement;}
 
 inline unsigned short CConfig::GetAeroelastic_GridVelocity(void) {return Aeroelastic_Grid_Velocity;}
+
+inline	double  CConfig::GetDensity_FreeStreamND_Time(unsigned long val_Ext_Iter) {return Density_FreeStreamND_Time[val_Ext_Iter];}
+
+inline	double  CConfig::GetPressure_FreeStreamND_Time(unsigned long val_Ext_Iter) {return Pressure_FreeStreamND_Time[val_Ext_Iter];}
+
+inline	double  CConfig::GetEnergy_FreeStreamND_Time(unsigned long val_Ext_Iter) {return Energy_FreeStreamND_Time[val_Ext_Iter];}
+
+inline	double  CConfig::GetMach_FreeStreamND_Time(unsigned long val_Ext_Iter) {return Mach_Inf_Time[val_Ext_Iter];}
+
+inline	double*  CConfig::GetVelocity_FreeStreamND_Time(unsigned long val_Ext_Iter) {return Velocity_FreeStreamND_Time[val_Ext_Iter];}
 

@@ -4,7 +4,7 @@
  *        The subroutines and functions are in the <i>integration_structure.cpp</i>, 
  *        <i>integration_time.cpp</i>, and <i>integration_notime.cpp</i> files.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -42,7 +42,7 @@ using namespace std;
  * \brief Main class for doing the space integration, time integration, and monitoring 
  *        of a system of Partial Differential Equations (PDE).
  * \author F. Palacios.
- * \version 2.0.4
+ * \version 2.0.5
  */
 class CIntegration {
 protected:
@@ -191,7 +191,7 @@ public:
 	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 * \param[in] Iteration - Current iteration.
 	 */
-	virtual void FAS_Multigrid(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****solver_container,
+	virtual void Multigrid_Iteration(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****solver_container,
 							   CConfig **config, unsigned short iMesh, unsigned short mu, unsigned short RunTime_EqSystem,
 							   unsigned long Iteration, unsigned short iZone);
 	
@@ -333,7 +333,7 @@ public:
  * \class CMultiGridIntegration
  * \brief Class for doing the numerical integration using a multigrid method.
  * \author F. Palacios.
- * \version 2.0.4
+ * \version 2.0.5
  */
 class CMultiGridIntegration : public CIntegration {
 public:
@@ -350,7 +350,7 @@ public:
 	~CMultiGridIntegration(void);
 	
 	/*! 
-	 * \brief This subroutine calls the FAS_Multigrid and also prepare the multigrid levels and the monitoring.
+	 * \brief This subroutine calls the Multigrid_Iteration and also prepare the multigrid levels and the monitoring.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solution_container - Container vector with all the solutions.
 	 * \param[in] solver_container - Description of the numerical method (the way in which the equations are solved).
@@ -372,7 +372,7 @@ public:
 	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 * \param[in] Iteration - Current iteration.
 	 */
-	void FAS_Multigrid(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****solver_container,
+	void Multigrid_Iteration(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****solver_container,
                      CConfig **config, unsigned short iMesh, unsigned short mu, unsigned short RunTime_EqSystem,
                      unsigned long Iteration, unsigned short iZone);
 	
@@ -512,7 +512,7 @@ public:
  * \class CSingleGridIntegration
  * \brief Class for doing the numerical integration of the turbulence model.
  * \author A. Bueno.
- * \version 2.0.4
+ * \version 2.0.5
  */
 class CSingleGridIntegration : public CIntegration {
 public:
@@ -559,7 +559,7 @@ public:
  * \class CPotentialIntegration
  * \brief Class for doing the numerical integration of the potential equation.
  * \author F. Palacios.
- * \version 2.0.4
+ * \version 2.0.5
  */
 class CPotentialIntegration : public CIntegration {
 public:

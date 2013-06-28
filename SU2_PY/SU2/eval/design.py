@@ -1,7 +1,7 @@
 ## \file design.py
 #  \brief python package for designs
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.4
+#  \version 2.0.5
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -84,7 +84,7 @@ class Design(object):
         
         config = copy.deepcopy(config)
         state  = copy.deepcopy(state)
-        state  = su2io.state.default_state(state)
+        state  = su2io.State(state)
         state.find_files(config)
         
         self.config = config
@@ -94,23 +94,26 @@ class Design(object):
         self.grads  = state.GRADIENTS
         self.folder = folder
         
-        self.design_file = 'design.pkl'
+        self.filename = 'design.pkl'
             
         # initialize folder with files
         pull,link = state.pullnlink(config)
         with redirect_folder(folder,pull,link,force=True):
-            # save design
-            save_data(self.design_file,self)
+            # save design, config
+            save_data(self.filename,self)
+            config.dump('config_DSN.cfg')
         
     def _eval(self,eval_func,*args):
-        """ Evaluates an SU2 Design """
+        """ Evaluates an SU2 Design 
+            always adds config and state to the inputs list
+        """
         
         config = self.config
         state  = self.state
         files  = self.files
         folder = self.folder
         
-        design_file = self.design_file
+        filename = self.filename
 
         # check folder
         assert os.path.exists(folder) , 'cannot find design folder %s' % folder
@@ -121,12 +124,16 @@ class Design(object):
         # output redirection, don't re-pull files
         with redirect_folder(folder,pull,link,force=False) as push:
             
+            # get timestamp
+            timestamp = state.tic()
+            
             # run 
             inputs = args + (config,state)
             vals = eval_func(*inputs)
             
             # save design
-            save_data(design_file,self)
+            if state.toc(timestamp):
+                save_data(filename,self)
             
         #: with redirect folder
         
@@ -167,6 +174,13 @@ class Design(object):
         """ Evaluates SU2 Design Gradients by Name """
         return self._eval(su2grad,func_name,method)
     
+    def touch(self):
+        return self._eval(touch)
+    
+    def skip(self,*args,**kwarg):
+        return self._eval(skip)
+        
+    
     def __repr__(self):
         return '<Design> %s' % self.folder
     def __str__(self):
@@ -196,7 +210,7 @@ def obj_f(dvs,config,state=None):
     
     # unpack config and state 
     config.unpack_dvs(dvs)
-    state = su2io.state.default_state(state)
+    state = su2io.State(state)
     
     def_objs = config['OPT_OBJECTIVE']
     objectives = def_objs.keys()
@@ -242,10 +256,8 @@ def obj_df(dvs,config,state=None):
     
     # unpack config and state
     config.unpack_dvs(dvs)
-    state = su2io.state.default_state(state)
-    
-    # assumption
-    grad_method = 'ADJOINT'
+    state = su2io.State(state)
+    grad_method = config.get('GRADIENT_METHOD','ADJOINT')
     
     def_objs = config['OPT_OBJECTIVE']
     objectives = def_objs.keys()
@@ -295,7 +307,7 @@ def con_ceq(dvs,config,state=None):
     
     # unpack state and config
     config.unpack_dvs(dvs)
-    state = su2io.state.default_state(state)
+    state = su2io.State(state)
     
     def_cons = config['OPT_CONSTRAINT']['EQUALITY']
     constraints = def_cons.keys()
@@ -340,10 +352,8 @@ def con_dceq(dvs,config,state=None):
     
     # unpack state and config
     config.unpack_dvs(dvs)
-    state = su2io.state.default_state(state)
-    
-    # assumption
-    grad_method = 'ADJOINT'
+    state = su2io.State(state)
+    grad_method = config.get('GRADIENT_METHOD','ADJOINT')
     
     def_cons = config['OPT_CONSTRAINT']['EQUALITY']
     constraints = def_cons.keys()
@@ -392,7 +402,7 @@ def con_cieq(dvs,config,state=None):
     
     # unpack state and config    
     config.unpack_dvs(dvs)
-    state = su2io.state.default_state(state)
+    state = su2io.State(state)
     
     def_cons = config['OPT_CONSTRAINT']['INEQUALITY']
     constraints = def_cons.keys()
@@ -440,10 +450,8 @@ def con_dcieq(dvs,config,state=None):
     
     # unpack state and config
     config.unpack_dvs(dvs)
-    state = su2io.state.default_state(state)
-    
-    # assumption
-    grad_method = 'ADJOINT'
+    state = su2io.State(state)
+    grad_method = config.get('GRADIENT_METHOD','ADJOINT')
     
     def_cons = config['OPT_CONSTRAINT']['INEQUALITY']
     constraints = def_cons.keys()
@@ -476,3 +484,12 @@ def con_dcieq(dvs,config,state=None):
     return vals_out
     
 #: def obj_dcieq()
+
+def touch(config,state):
+    """ SU2.eval.touch(config,state)
+        resets state timestamp 
+    """
+    state.set_timestamp()
+    
+def skip(config,state):
+    pass

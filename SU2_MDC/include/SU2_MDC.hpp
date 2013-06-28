@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines of the code SU2_MDC.
  *        The subroutines and functions are in the <i>SU2_MDC.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -37,7 +37,6 @@ using namespace std;
 
 /*!
  * \brief Gets the number of zones in the mesh file for SU2_MDC.
- * \author T. Economon
  * \param[in] val_mesh_filename - Name of the file with the grid information.
  * \param[in] val_format - Format of the file with the grid information.
  * \param[in] config - Definition of the particular problem.
@@ -47,7 +46,6 @@ unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CCo
 
 /*!
  * \brief Write a multi-zone mesh file after deforming the mesh using SU2_MDC.
- * \author T. Economon
  * \param[in] geometry - Multi-zone physical geometry container.
  * \param[in] config - Definition of the particular problem.
  * \param[in] nZone - Number of zones in the mesh.

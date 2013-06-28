@@ -2,7 +2,7 @@
  * \file grid_movement_structure.cpp
  * \brief Subroutines for doing the grid movement using different strategies.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -31,491 +31,14 @@ CGridMovement::CGridMovement(void) { }
 CGridMovement::~CGridMovement(void) { }
 
 CVolumetricMovement::CVolumetricMovement(CGeometry *geometry) : CGridMovement() {
-	unsigned short iVar, jVar;
-	unsigned long iElem, iElem_aux;
 	
-	C_tor = 1E-6;
-	C_lin = 1.0;		
-	niter = 999999999;
 	nDim = geometry->GetnDim();
-	
-	/*--- This method only use triangles, it is necessary to divide everything into triangles ---*/
-	nElem = 0;
-	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-		if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE) nElem = nElem + 1;
-		if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE) nElem = nElem + 4;
-		if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON) nElem = nElem + 4; 
-	}
-	
-	nodes = new unsigned long* [nElem];
-	for (iElem = 0; iElem < nElem; iElem++)
-		nodes[iElem] = new unsigned long [3];
-	
-	iElem_aux = 0;
-	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-		if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE) {
-			nodes[iElem_aux][0] = geometry->elem[iElem]->GetNode(0);
-			nodes[iElem_aux][1] = geometry->elem[iElem]->GetNode(1);
-			nodes[iElem_aux][2] = geometry->elem[iElem]->GetNode(2);
-			iElem_aux++;
-		}
-		if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE) {
-			nodes[iElem_aux][0] = geometry->elem[iElem]->GetNode(0);
-			nodes[iElem_aux][1] = geometry->elem[iElem]->GetNode(1);
-			nodes[iElem_aux][2] = geometry->elem[iElem]->GetNode(2);
-			iElem_aux++;
-			
-			nodes[iElem_aux][0] = geometry->elem[iElem]->GetNode(0);
-			nodes[iElem_aux][1] = geometry->elem[iElem]->GetNode(2);
-			nodes[iElem_aux][2] = geometry->elem[iElem]->GetNode(3);
-			iElem_aux++;
-
-			nodes[iElem_aux][0] = geometry->elem[iElem]->GetNode(1);
-			nodes[iElem_aux][1] = geometry->elem[iElem]->GetNode(2);
-			nodes[iElem_aux][2] = geometry->elem[iElem]->GetNode(3);
-			iElem_aux++;
-			
-			nodes[iElem_aux][0] = geometry->elem[iElem]->GetNode(3);
-			nodes[iElem_aux][1] = geometry->elem[iElem]->GetNode(0);
-			nodes[iElem_aux][2] = geometry->elem[iElem]->GetNode(1);
-			iElem_aux++;
-		}
-		if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON) {
-			nodes[iElem_aux][0] = geometry->elem[iElem]->GetNode(0);
-			nodes[iElem_aux][1] = geometry->elem[iElem]->GetNode(1);
-			nodes[iElem_aux][2] = geometry->elem[iElem]->GetNode(2);
-			iElem_aux++;
-			
-			nodes[iElem_aux][0] = geometry->elem[iElem]->GetNode(3);
-			nodes[iElem_aux][1] = geometry->elem[iElem]->GetNode(2);
-			nodes[iElem_aux][2] = geometry->elem[iElem]->GetNode(1);
-			iElem_aux++;
-			
-			nodes[iElem_aux][0] = geometry->elem[iElem]->GetNode(0);
-			nodes[iElem_aux][1] = geometry->elem[iElem]->GetNode(2);
-			nodes[iElem_aux][2] = geometry->elem[iElem]->GetNode(3);
-			iElem_aux++;
-			
-			nodes[iElem_aux][0] = geometry->elem[iElem]->GetNode(0);
-			nodes[iElem_aux][1] = geometry->elem[iElem]->GetNode(3);
-			nodes[iElem_aux][2] = geometry->elem[iElem]->GetNode(1);
-			iElem_aux++;
-		}
-	}
-	
-	kijk = new double** [3*nDim];
-	for (iVar = 0; iVar < 3*nDim; iVar++) {
-		kijk[iVar] = new double* [3*nDim];
-		for (jVar = 0; jVar < 3*nDim; jVar++)
-			kijk[iVar][jVar] = new double [nElem]; 
-	}
-	
-	oldgcenter = new double* [nDim];
-	for (iVar = 0; iVar < nDim; iVar++)
-		oldgcenter[iVar] = new double [nElem];
-	
-	x = new double [nDim*geometry->GetnPoint()];
-	Initial_Boundary = new double [nDim*geometry->GetnPoint()+1];
-	diagk = new double [nDim*geometry->GetnPoint()+1];
-	p = new double [nDim*geometry->GetnPoint()+1];
-	r = new double [nDim*geometry->GetnPoint()+1];
-	z = new double [nDim*geometry->GetnPoint()+1];
+  
 }
 
 CVolumetricMovement::~CVolumetricMovement(void) {
-unsigned short iVar, jVar;
 
-	for (iVar = 0; iVar < 6; iVar++) {
-		for (jVar = 0; jVar < 6; jVar++)
-			delete [] kijk[iVar][jVar]; 
-		delete [] kijk[iVar];
-	}
-	delete [] kijk;
-
-	for (iVar = 0; iVar < 2; iVar++)
-		delete [] oldgcenter[iVar];
-	delete [] oldgcenter;
-
-	delete [] x;
-	delete [] Initial_Boundary;
-	delete [] diagk;
-	delete [] p;
-	delete [] r;
-	delete [] z;
 }
-
-void CVolumetricMovement::Set2DMatrix_Structure(CGeometry *geometry) {
-unsigned short iVar, jVar, kVar, iDim;
-unsigned long iPoint_0, iPoint_1, iPoint_2, iPoint, iElem;	
-double ar, rx12, ry12, l12, a12, b12, a21, b21, rx13, ry13, l13, a13, b13, a31, b31,
-	   rx23, ry23, l23, a23, b23, a32, b32, cosgam, singam;
-
-
-/*--- 1st step : Calculation of the stiffnesses, based on the former grid  ---*/
-	for (iVar = 0; iVar < 6; iVar++)
-		for (jVar = 0; jVar < 6; jVar++)
-			for (iElem = 0; iElem < nElem; iElem++)
-				kijk[iVar][jVar][iElem] = 0;
-
-	for (iPoint = 0; iPoint < 2*geometry->GetnPoint(); iPoint++) {
-		x[iPoint] = 0; 
-		diagk[iPoint] = 0;
-	}
-
-	for (iElem = 0; iElem < nElem; iElem ++) {
-
-		iPoint_0 = nodes[iElem][0];
-		iPoint_1 = nodes[iElem][1];
-		iPoint_2 = nodes[iElem][2];
-
-		for (iDim = 0; iDim < 2; iDim++) {
-			vec_a[iDim] = geometry->node[iPoint_2]->GetCoord(iDim)
-				-geometry->node[iPoint_0]->GetCoord(iDim);
-			vec_b[iDim] = geometry->node[iPoint_1]->GetCoord(iDim)
-				-geometry->node[iPoint_0]->GetCoord(iDim);
-		}
-
-		Dim_Normal[0] = (vec_a[1]*vec_b[2]-vec_a[2]*vec_b[1])*0.5;
-		Dim_Normal[1] = -(vec_a[0]*vec_b[2]-vec_a[2]*vec_b[0])*0.5;
-		Dim_Normal[2] = (vec_a[0]*vec_b[1]-vec_a[1]*vec_b[0])*0.5;
-
-		ar = sqrt(Dim_Normal[0]*Dim_Normal[0]+Dim_Normal[1]*Dim_Normal[1]+Dim_Normal[2]*Dim_Normal[2]);
-		
-		rx12 = geometry->node[iPoint_1]->GetCoord(0) - geometry->node[iPoint_0]->GetCoord(0);
-		ry12 = geometry->node[iPoint_1]->GetCoord(1) - geometry->node[iPoint_0]->GetCoord(1);
-		l12 = sqrt(rx12*rx12 + ry12*ry12);
-		a12 = rx12/(l12*l12);
-		b12 = ry12/(l12*l12);
-		a21 = -a12;
-		b21 = -b12;
-
-		rx13 = geometry->node[iPoint_2]->GetCoord(0) - geometry->node[iPoint_0]->GetCoord(0);
-		ry13 = geometry->node[iPoint_2]->GetCoord(1) - geometry->node[iPoint_0]->GetCoord(1);
-		l13 = sqrt(rx13*rx13 + ry13*ry13);
-		a13 = rx13/(l13*l13); 
-		b13 = ry13/(l13*l13); 
-		a31 = -a13; 
-		b31 = -b13; 
-
-		rx23 = geometry->node[iPoint_2]->GetCoord(0) - geometry->node[iPoint_1]->GetCoord(0);
-		ry23 = geometry->node[iPoint_2]->GetCoord(1) - geometry->node[iPoint_1]->GetCoord(1);
-		l23 = sqrt(rx23*rx23 + ry23*ry23);
-		a23 = rx23/(l23*l23);
-		b23 = ry23/(l23*l23);
-		a32 = -a23; 
-		b32 = -b23;
-
-		/*--- Torsional stiffness matrix calculation ---*/
-		C_mat[0][0] = (l12*l12)*(l13*l13)/(4.0*ar*ar);
-		C_mat[0][1] = 0.0;
-		C_mat[0][2] = 0.0;
-		C_mat[1][0] = 0.0;
-		C_mat[1][1] = (l12*l12)*(l23*l23)/(4.0*ar*ar);
-		C_mat[1][2] = 0.0;
-		C_mat[2][0] = 0.0;
-		C_mat[2][1] = 0.0;
-		C_mat[2][2] = (l13*l13)*(l23*l23)/(4.0*ar*ar);
-
-		/*--- Torsional kinematic matrix calculation ---*/
-		R_mat[0][0] = b13-b12; 
-		R_mat[0][1] = a12-a13; 
-		R_mat[0][2] = b12;
-		R_mat[0][3] = -a12; 
-		R_mat[0][4] = -b13; 
-		R_mat[0][5] = a13;
-		R_mat[1][0] = -b21; 
-		R_mat[1][1] =  a21; 
-		R_mat[1][2] = b21-b23;
-		R_mat[1][3] = a23-a21; 
-		R_mat[1][4] = b23; 
-		R_mat[1][5] = -a23;
-		R_mat[2][0] = b31; 
-		R_mat[2][1] = -a31; 
-		R_mat[2][2] = -b32;
-		R_mat[2][3] = a32; 
-		R_mat[2][4] = b32-b31; 
-		R_mat[2][5] = a31-a32;
-
-		/*--- Force-reduced torsional matrix calculation ---*/
-		for (iVar = 0; iVar < 3; iVar ++)
-			for (jVar = 0; jVar < 6; jVar ++)
-				Rt_mat[jVar][iVar] = R_mat[iVar][jVar];
-
-		for(iVar = 0; iVar < 3; iVar++)
-			for(jVar = 0; jVar < 6; jVar++) {
-				Aux_mat[iVar][jVar] = 0.0;
-				for(kVar = 0; kVar < 3; kVar++)
-					Aux_mat[iVar][jVar] += C_mat[iVar][kVar] * R_mat[kVar][jVar]; 
-			}
-
-		for(iVar = 0; iVar < 6; iVar++)
-			for(jVar = 0; jVar < 6; jVar++) {
-				Ktor_mat[iVar][jVar] = 0.0;
-				for(kVar = 0; kVar < 3; kVar++)
-					Ktor_mat[iVar][jVar] += Rt_mat[iVar][kVar] * Aux_mat[kVar][jVar];
-			}
-
-		for(iVar = 0; iVar < 6; iVar++)
-			for(jVar = 0; jVar < 6; jVar++) {
-				Ktor_mat[iVar][jVar] = C_tor * Ktor_mat[iVar][jVar];
-			}
-
-		/*--- Linear stiffness matrix calculation ---*/
-		cosgam = rx12/l12;
-		singam = ry12/l12;
-		Klin_mat[0][0] = cosgam*cosgam;
-		Klin_mat[0][1] = singam*cosgam;
-		Klin_mat[1][0] = Klin_mat[0][1];
-		Klin_mat[1][1] = singam*singam;
-
-		for(iVar = 0; iVar < 2; iVar++)
-			for(jVar = 0; jVar < 2; jVar++) {
-				Klin_mat[iVar][jVar+2] = -Klin_mat[iVar][jVar];
-				Klin_mat[iVar+2][jVar] = Klin_mat[iVar][jVar+2];
-				Klin_mat[iVar+2][jVar+2] = Klin_mat[iVar][jVar];
-			}
-
-		for(iVar = 0; iVar < 4; iVar++)
-			for(jVar = 0; jVar < 4; jVar++)
-				Ktor_mat[iVar][jVar] = Ktor_mat[iVar][jVar] + C_lin/(2.0*l12)*Klin_mat[iVar][jVar];
-
-
-		cosgam = rx23/l23; 
-		singam = ry23/l23;
-		Klin_mat[0][0] = cosgam*cosgam;
-		Klin_mat[0][1] = singam*cosgam;
-		Klin_mat[1][0] = Klin_mat[0][1];
-		Klin_mat[1][1] = singam*singam;
-
-		for(iVar = 0; iVar < 2; iVar++)
-			for(jVar = 0; jVar < 2; jVar++) {
-				Klin_mat[iVar][jVar+2] = -Klin_mat[iVar][jVar];
-				Klin_mat[iVar+2][jVar] = Klin_mat[iVar][jVar+2];
-				Klin_mat[iVar+2][jVar+2] = Klin_mat[iVar][jVar];
-			}
-
-		for(iVar = 0; iVar < 4; iVar++)
-			for(jVar = 0; jVar < 4; jVar++)
-				Ktor_mat[iVar+2][jVar+2] = Ktor_mat[iVar+2][jVar+2] + C_lin/(2.0*l23)*Klin_mat[iVar][jVar];
-
-		cosgam = rx13/l13; 
-		singam = ry13/l13;
-		Klin_mat[0][0] = cosgam*cosgam; 
-		Klin_mat[0][1] = singam*cosgam;
-		Klin_mat[1][0] = Klin_mat[0][1]; 
-		Klin_mat[1][1] = singam*singam;
-
-		for(iVar = 0; iVar < 2; iVar++)
-			for(jVar = 0; jVar < 2; jVar++) {
-				Klin_mat[iVar][jVar+2] = -Klin_mat[iVar][jVar];
-				Klin_mat[iVar+2][jVar] = Klin_mat[iVar][jVar+2];
-				Klin_mat[iVar+2][jVar+2] = Klin_mat[iVar][jVar];
-			}
-
-		for(iVar = 0; iVar < 2; iVar++)
-			for(jVar = 0; jVar < 2; jVar++) {
-				Ktor_mat[iVar][jVar] = Ktor_mat[iVar][jVar] + C_lin/(2.0*l13)*Klin_mat[iVar][jVar];
-				Ktor_mat[iVar][jVar+4] = Ktor_mat[iVar][jVar+4] + C_lin/(2.0*l13)*Klin_mat[iVar][jVar+2];
-				Ktor_mat[iVar+4][jVar] = Ktor_mat[iVar+4][jVar] + C_lin/(2.0*l13)*Klin_mat[iVar+2][jVar];
-				Ktor_mat[iVar+4][jVar+4] = Ktor_mat[iVar+4][jVar+4] + C_lin/(2.0*l13)*Klin_mat[iVar+2][jVar+2];
-			}
-
-		/*--- Storage ---*/
-		for(iVar = 0; iVar < 6; iVar++)
-			for(jVar = 0; jVar < 6; jVar++)
-				kijk[iVar][jVar][iElem] = Ktor_mat[iVar][jVar];
-
-		/*--- Calculation of the diagonal part of the "assembled" matrix ---*/
-		diagk[2*iPoint_0] = diagk[2*iPoint_0] + kijk[0][0][iElem];
-		diagk[2*iPoint_0+1] = diagk[2*iPoint_0+1] + kijk[1][1][iElem];
-		diagk[2*iPoint_1] = diagk[2*iPoint_1] + kijk[2][2][iElem];
-		diagk[2*iPoint_1+1] = diagk[2*iPoint_1+1] + kijk[3][3][iElem];
-		diagk[2*iPoint_2] = diagk[2*iPoint_2] + kijk[4][4][iElem];
-		diagk[2*iPoint_2+1] = diagk[2*iPoint_2+1] + kijk[5][5][iElem];
-	}
-}
-
-void CVolumetricMovement::Set3DMatrix_Structure(CGeometry *geometry) {
-	unsigned short iVar, jVar, iDim;
-	unsigned long iPoint_0, iPoint_1, iPoint_2, iPoint, iElem;	
-	double ar, rx12, ry12, rz12, l12, rx13, ry13, rz13, l13, rx23, ry23, rz23, l23, l, m, n;
-
-	/*--- 1st step : Calculation of the stiffnesses, based on the former grid ---*/
-	for (iVar = 0; iVar < 9; iVar++)
-		for (jVar = 0; jVar < 9; jVar++)
-			for (iElem = 0; iElem < nElem; iElem++)
-				kijk[iVar][jVar][iElem] = 0;
-	
-	for (iPoint = 0; iPoint < 3*geometry->GetnPoint(); iPoint++) {
-		x[iPoint] = 0; diagk[iPoint] = 0; }
-	
-	for (iElem = 0; iElem < nElem; iElem ++) {
-		
-		iPoint_0 = nodes[iElem][0]; iPoint_1 = nodes[iElem][1]; iPoint_2 = nodes[iElem][2];
-		
-		for (iDim = 0; iDim < 3; iDim++) {
-			vec_a[iDim] = geometry->node[iPoint_2]->GetCoord(iDim) - geometry->node[iPoint_0]->GetCoord(iDim);
-			vec_b[iDim] = geometry->node[iPoint_1]->GetCoord(iDim) - geometry->node[iPoint_0]->GetCoord(iDim);
-		}
-		
-		Dim_Normal[0] = (vec_a[1]*vec_b[2]-vec_a[2]*vec_b[1])*0.5;
-		Dim_Normal[1] = -(vec_a[0]*vec_b[2]-vec_a[2]*vec_b[0])*0.5;
-		Dim_Normal[2] = (vec_a[0]*vec_b[1]-vec_a[1]*vec_b[0])*0.5;
-		
-		ar = sqrt(Dim_Normal[0]*Dim_Normal[0]+Dim_Normal[1]*Dim_Normal[1]+Dim_Normal[2]*Dim_Normal[2]);
-		
-		rx12 = geometry->node[iPoint_1]->GetCoord(0) - geometry->node[iPoint_0]->GetCoord(0);
-		ry12 = geometry->node[iPoint_1]->GetCoord(1) - geometry->node[iPoint_0]->GetCoord(1);
-		rz12 = geometry->node[iPoint_1]->GetCoord(2) - geometry->node[iPoint_0]->GetCoord(2);
-		l12 = sqrt(rx12*rx12 + ry12*ry12 + rz12*rz12);
-		
-		rx13 = geometry->node[iPoint_2]->GetCoord(0) - geometry->node[iPoint_0]->GetCoord(0);
-		ry13 = geometry->node[iPoint_2]->GetCoord(1) - geometry->node[iPoint_0]->GetCoord(1);
-		rz13 = geometry->node[iPoint_2]->GetCoord(2) - geometry->node[iPoint_0]->GetCoord(2);
-		l13 = sqrt(rx13*rx13 + ry13*ry13 + rz13*rz13);
-
-		
-		rx23 = geometry->node[iPoint_2]->GetCoord(0) - geometry->node[iPoint_1]->GetCoord(0);
-		ry23 = geometry->node[iPoint_2]->GetCoord(1) - geometry->node[iPoint_1]->GetCoord(1);
-		rz23 = geometry->node[iPoint_2]->GetCoord(2) - geometry->node[iPoint_1]->GetCoord(2);
-		l23 = sqrt(rx23*rx23 + ry23*ry23 + rz23*rz23);
-		
-		for(iVar = 0; iVar < 9; iVar++)
-			for(jVar = 0; jVar < 9; jVar++)
-				Ktor_mat[iVar][jVar] = 0.0;
-		
-		/*--- Linear stiffness matrix calculation
-		 |	l^2		lm		ln		-l^2	-lm		-ln		|
-		 |	lm		m^2		mn		-lm		-m^2	-mn		|
-		 |	ln		mn		n^2		-ln		-mn		-n^2	|
-		 |	-l^2	-lm		-ln		l^2		lm		ln		|
-		 |	-lm		-m^2	-mn		lm		m^2		mn		|
-		 |	-ln		-mn		-n^2	ln		mn		n^2		|
-		 
-		 l_e = sqrt ((x_2-x_1)^2+(y_2-y_1)^2+(z_2-z_1)^2)
-		 l = cos(theta) = (x_2-x_1) / l_e
-		 m = cos(phi) = (y_2-y_1) / l_e
-		 n = cos(psi) = (z_2-z_1) / l_e ---*/
-		
-		l = rx12/l12; m = ry12/l12; n = rz12/l12;
-		Klin_mat[0][0] = l*l;
-		Klin_mat[0][1] = l*m;
-		Klin_mat[0][2] = l*n;
-		Klin_mat[1][0] = Klin_mat[0][1];
-		Klin_mat[1][1] = m*m;
-		Klin_mat[1][2] = m*n;
-		Klin_mat[2][0] = Klin_mat[0][2];
-		Klin_mat[2][1] = Klin_mat[1][2];
-		Klin_mat[2][2] = n*n;
-		
-		for(iVar = 0; iVar < 3; iVar++)
-			for(jVar = 0; jVar < 3; jVar++) {
-				Klin_mat[iVar][jVar+3] = -Klin_mat[iVar][jVar];
-				Klin_mat[iVar+3][jVar] = Klin_mat[iVar][jVar+3];
-				Klin_mat[iVar+3][jVar+3] = Klin_mat[iVar][jVar];
-			}
-		
-		for(iVar = 0; iVar < 6; iVar++)
-			for(jVar = 0; jVar < 6; jVar++)
-				Ktor_mat[iVar][jVar] = 1.0/(2.0*l12)*Klin_mat[iVar][jVar];
-		
-		
-		l = rx23/l23; m = ry23/l23; n = rz23/l23;
-		Klin_mat[0][0] = l*l;
-		Klin_mat[0][1] = l*m;
-		Klin_mat[0][2] = l*n;
-		Klin_mat[1][0] = Klin_mat[0][1];
-		Klin_mat[1][1] = m*m;
-		Klin_mat[1][2] = m*n;
-		Klin_mat[2][0] = Klin_mat[0][2];
-		Klin_mat[2][1] = Klin_mat[1][2];
-		Klin_mat[2][2] = n*n;
-		
-		for(iVar = 0; iVar < 3; iVar++)
-			for(jVar = 0; jVar < 3; jVar++) {
-				Klin_mat[iVar][jVar+3] = -Klin_mat[iVar][jVar];
-				Klin_mat[iVar+3][jVar] = Klin_mat[iVar][jVar+3];
-				Klin_mat[iVar+3][jVar+3] = Klin_mat[iVar][jVar];
-			}
-		
-		for(iVar = 0; iVar < 6; iVar++)
-			for(jVar = 0; jVar < 6; jVar++)
-				Ktor_mat[iVar+3][jVar+3] = C_lin/(2.0*l23)*Klin_mat[iVar][jVar];
-		
-		l = rx13/l13; m = ry13/l13; n = rz13/l13;
-		Klin_mat[0][0] = l*l;
-		Klin_mat[0][1] = l*m;
-		Klin_mat[0][2] = l*n;
-		Klin_mat[1][0] = Klin_mat[0][1];
-		Klin_mat[1][1] = m*m;
-		Klin_mat[1][2] = m*n;
-		Klin_mat[2][0] = Klin_mat[0][2];
-		Klin_mat[2][1] = Klin_mat[1][2];
-		Klin_mat[2][2] = n*n;
-		
-		for(iVar = 0; iVar < 3; iVar++)
-			for(jVar = 0; jVar < 3; jVar++) {
-				Klin_mat[iVar][jVar+3] = -Klin_mat[iVar][jVar];
-				Klin_mat[iVar+3][jVar] = Klin_mat[iVar][jVar+3];
-				Klin_mat[iVar+3][jVar+3] = Klin_mat[iVar][jVar];
-			}
-		
-		for(iVar = 0; iVar < 3; iVar++)
-			for(jVar = 0; jVar < 3; jVar++) {
-				Ktor_mat[iVar][jVar] = Ktor_mat[iVar][jVar] + C_lin/(2.0*l13)*Klin_mat[iVar][jVar];
-				Ktor_mat[iVar][jVar+6] = Ktor_mat[iVar][jVar+6] + C_lin/(2.0*l13)*Klin_mat[iVar][jVar+3];
-				Ktor_mat[iVar+6][jVar] = Ktor_mat[iVar+6][jVar] + C_lin/(2.0*l13)*Klin_mat[iVar+3][jVar];
-				Ktor_mat[iVar+6][jVar+6] = Ktor_mat[iVar+6][jVar+6] + C_lin/(2.0*l13)*Klin_mat[iVar+3][jVar+3];
-			}
-		
-		/*--- Storage ---*/
-		for(iVar = 0; iVar < 9; iVar++)
-			for(jVar = 0; jVar < 9; jVar++)
-				kijk[iVar][jVar][iElem] = Ktor_mat[iVar][jVar];
-		
-		/*--- Calculation of the diagonal part of the "assembled" matrix ---*/
-		diagk[3*iPoint_0] = diagk[3*iPoint_0] + kijk[0][0][iElem];
-		diagk[3*iPoint_0+1] = diagk[3*iPoint_0+1] + kijk[1][1][iElem];
-		diagk[3*iPoint_0+2] = diagk[3*iPoint_0+2] + kijk[2][2][iElem];
-		diagk[3*iPoint_1] = diagk[3*iPoint_1] + kijk[3][3][iElem];
-		diagk[3*iPoint_1+1] = diagk[3*iPoint_1+1] + kijk[4][4][iElem];
-		diagk[3*iPoint_1+2] = diagk[3*iPoint_1+2] + kijk[5][5][iElem];
-		diagk[3*iPoint_2] = diagk[3*iPoint_2] + kijk[6][6][iElem];
-		diagk[3*iPoint_2+1] = diagk[3*iPoint_2+1] + kijk[7][7][iElem];
-		diagk[3*iPoint_2+2] = diagk[3*iPoint_2+2] + kijk[8][8][iElem];
-	}
-}
-
-void CVolumetricMovement::SetBoundary(CGeometry *geometry, CConfig *config) {
-	unsigned long iVertex, Point;
-	unsigned short iMarker, iDim;
-	double *VarCoord;
-	unsigned short nDim = geometry->GetnDim();
-	
-	for (iMarker=0; iMarker < config->GetnMarker_All(); iMarker++)
-		if (config->GetMarker_All_Moving(iMarker) == YES)
-			for(iVertex = 0; iVertex<geometry->nVertex[iMarker]; iVertex++) {
-				Point = geometry->vertex[iMarker][iVertex]->GetNode();
-				VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
-				for (iDim = 0; iDim < nDim; iDim++)
-					x[nDim*Point + iDim] = VarCoord[iDim];
-			}
-}
-
-void CVolumetricMovement::SetInitial_Boundary(CGeometry *geometry, CConfig *config) {
-	unsigned short iMarker, Boundary;
-	unsigned long iVertex, Point;
-
-	for (iMarker=0; iMarker < config->GetnMarker_All(); iMarker++) {
-		Boundary = config->GetMarker_All_Boundary(iMarker);
-		for(iVertex = 0; iVertex<geometry->nVertex[iMarker]; iVertex++) {
-			Point = geometry->vertex[iMarker][iVertex]->GetNode();
-			double *Coord = geometry->node[Point]->GetCoord();
-			Initial_Boundary[2*Point] = Coord[0]; 
-			Initial_Boundary[2*Point+1] = Coord[1]; 
-		}
-	}
-}	
 
 void CVolumetricMovement::SetBoundary_Smooth(CGeometry *geometry, CConfig *config) {
 	unsigned short iMarker, Boundary, iDim;
@@ -605,7 +128,7 @@ void CVolumetricMovement::SetBoundary_Smooth(CGeometry *geometry, CConfig *confi
 		case EULER_WALL: case HEAT_FLUX: case ISOTHERMAL:
 			for(iVertex = 0; iVertex<geometry->nVertex[iMarker]; iVertex++) {
 				Point = geometry->vertex[iMarker][iVertex]->GetNode();
-				x[2*Point] = Coordinate[iVertex][0]-geometry->node[Point]->GetCoord(0); 
+				x[2*Point] = Coordinate[iVertex][0]-geometry->node[Point]->GetCoord(0);
 				x[2*Point+1] = Coordinate[iVertex][1]-geometry->node[Point]->GetCoord(1);
 			}
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -712,190 +235,6 @@ void CVolumetricMovement::SetSolution_Smoothing(CGeometry *geometry, CConfig *co
 	
 }
 
-
-
-void CVolumetricMovement::SetSolution(CGeometry *geometry, CConfig *config) {
-	
-	unsigned long iPoint, Point, iVertex;
-	unsigned short nDim = geometry->GetnDim();
-	unsigned long iter;
-	unsigned short iMarker;
-	
-	tol = config->GetGridDef_Error();
-	
-	Setkijk_times(geometry,x,r);
-	
-	for (iPoint = 0; iPoint < nDim*geometry->GetnPoint(); iPoint++) {
-		r[iPoint] = -r[iPoint];
-		z[iPoint] = r[iPoint] / diagk[iPoint];
-	}
-	
-	for (iter = 0; iter < niter; iter++) {
-		
-		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-			for(iVertex = 0; iVertex<geometry->nVertex[iMarker]; iVertex++) {
-				Point = geometry->vertex[iMarker][iVertex]->GetNode();
-				for(iPoint = nDim*Point; iPoint <= nDim*Point+1; iPoint++) {
-					r[iPoint] = 0.0; 
-					z[iPoint] = 0.0;
-				}
-			}	
-		
-		bknum=0.0;
-		for (iPoint = 0; iPoint < nDim*geometry->GetnPoint(); iPoint++) {
-			bknum = bknum + z[iPoint] * r[iPoint];
-		}
-		
-		if (iter == 0) {
-			for (iPoint = 0; iPoint < nDim*geometry->GetnPoint(); iPoint++) {
-				p[iPoint] = z[iPoint]; 
-			}
-		}
-		else {
-			bk = bknum / bkden;
-			for (iPoint = 0; iPoint < nDim*geometry->GetnPoint(); iPoint++)
-				p[iPoint] = bk * p[iPoint] + z[iPoint]; 
-		}
-		
-		bkden = bknum;
-		
-		Setkijk_times(geometry,p,z);
-		
-		akden=0.0;
-		for (iPoint = 0; iPoint < nDim*geometry->GetnPoint(); iPoint++)
-			akden = akden + z[iPoint]*p[iPoint];
-		
-		ak = bknum/akden;
-		for (iPoint = 0; iPoint < nDim*geometry->GetnPoint(); iPoint++) {
-			x[iPoint] = x[iPoint] + ak*p[iPoint];
-			r[iPoint] = r[iPoint] - ak*z[iPoint];
-			z[iPoint] = r[iPoint] / diagk[iPoint];
-		}
-		
-		err = 0.0;
-		for (iPoint = 0; iPoint < nDim*geometry->GetnPoint(); iPoint++)
-			err = err + r[iPoint]*r[iPoint];
-		
-		err = sqrt(err);
-		
-		if (err < tol) {
-			cout <<"Total number of iterations: "<< iter <<", with a final error of " << err <<"."<<endl;
-			return;
-		}
-	}
-}
-
-void CVolumetricMovement::Setkijk_times(CGeometry *geometry, double *vect, double *res) {
-	
-	unsigned long iPoint_0, iPoint_1, iPoint_2, iPoint, iElem;
-	unsigned short nDim = geometry->GetnDim();
-	
-	for (iPoint = 0; iPoint < nDim*geometry->GetnPoint(); iPoint++)
-		res[iPoint] = 0.0;
-	
-	if (nDim == 2) {
-		for (iElem = 0; iElem < nElem; iElem ++) {
-			iPoint_0 = nodes[iElem][0];
-			iPoint_1 = nodes[iElem][1];
-			iPoint_2 = nodes[iElem][2];
-			
-			res[2*iPoint_0] = res[2*iPoint_0] +
-			kijk[0][0][iElem]*vect[2*iPoint_0] +  kijk[0][1][iElem]*vect[2*iPoint_0+1] + 
-			kijk[0][2][iElem]*vect[2*iPoint_1] +  kijk[0][3][iElem]*vect[2*iPoint_1+1] + 
-			kijk[0][4][iElem]*vect[2*iPoint_2] +  kijk[0][5][iElem]*vect[2*iPoint_2+1];
-			res[2*iPoint_0+1] = res[2*iPoint_0+1] +
-			kijk[1][0][iElem]*vect[2*iPoint_0] +  kijk[1][1][iElem]*vect[2*iPoint_0+1] + 
-			kijk[1][2][iElem]*vect[2*iPoint_1] +  kijk[1][3][iElem]*vect[2*iPoint_1+1] + 
-			kijk[1][4][iElem]*vect[2*iPoint_2] +  kijk[1][5][iElem]*vect[2*iPoint_2+1];
-			res[2*iPoint_1] = res[2*iPoint_1] +
-			kijk[2][0][iElem]*vect[2*iPoint_0] +  kijk[2][1][iElem]*vect[2*iPoint_0+1] + 
-			kijk[2][2][iElem]*vect[2*iPoint_1] +  kijk[2][3][iElem]*vect[2*iPoint_1+1] + 
-			kijk[2][4][iElem]*vect[2*iPoint_2] +  kijk[2][5][iElem]*vect[2*iPoint_2+1];
-			res[2*iPoint_1+1] = res[2*iPoint_1+1] +
-			kijk[3][0][iElem]*vect[2*iPoint_0] +  kijk[3][1][iElem]*vect[2*iPoint_0+1] + 
-			kijk[3][2][iElem]*vect[2*iPoint_1] +  kijk[3][3][iElem]*vect[2*iPoint_1+1] + 
-			kijk[3][4][iElem]*vect[2*iPoint_2] +  kijk[3][5][iElem]*vect[2*iPoint_2+1];
-			res[2*iPoint_2] = res[2*iPoint_2] +
-			kijk[4][0][iElem]*vect[2*iPoint_0] +   kijk[4][1][iElem]*vect[2*iPoint_0+1] + 
-			kijk[4][2][iElem]*vect[2*iPoint_1] +   kijk[4][3][iElem]*vect[2*iPoint_1+1] + 
-			kijk[4][4][iElem]*vect[2*iPoint_2] +   kijk[4][5][iElem]*vect[2*iPoint_2+1];
-			res[2*iPoint_2+1] = res[2*iPoint_2+1] +
-			kijk[5][0][iElem]*vect[2*iPoint_0] +   kijk[5][1][iElem]*vect[2*iPoint_0+1] + 
-			kijk[5][2][iElem]*vect[2*iPoint_1] +   kijk[5][3][iElem]*vect[2*iPoint_1+1] + 
-			kijk[5][4][iElem]*vect[2*iPoint_2] +   kijk[5][5][iElem]*vect[2*iPoint_2+1];
-		}
-	}
-	else {
-		for (iElem = 0; iElem < nElem; iElem ++) {
-			iPoint_0 = nodes[iElem][0];
-			iPoint_1 = nodes[iElem][1];
-			iPoint_2 = nodes[iElem][2];
-			
-			res[3*iPoint_0] = res[3*iPoint_0] +
-			kijk[0][0][iElem]*vect[3*iPoint_0] +  kijk[0][1][iElem]*vect[3*iPoint_0+1] +  kijk[0][2][iElem]*vect[3*iPoint_0+2] + 
-			kijk[0][3][iElem]*vect[3*iPoint_1] +  kijk[0][4][iElem]*vect[3*iPoint_1+1] +  kijk[0][5][iElem]*vect[3*iPoint_0+2] + 
-			kijk[0][6][iElem]*vect[3*iPoint_2] +  kijk[0][7][iElem]*vect[3*iPoint_2+1] +  kijk[0][8][iElem]*vect[3*iPoint_0+2];
-			res[3*iPoint_0+1] = res[3*iPoint_0+1] +
-			kijk[1][0][iElem]*vect[3*iPoint_0] +  kijk[1][1][iElem]*vect[3*iPoint_0+1] +  kijk[1][2][iElem]*vect[3*iPoint_0+2] + 
-			kijk[1][3][iElem]*vect[3*iPoint_1] +  kijk[1][4][iElem]*vect[3*iPoint_1+1] +  kijk[1][5][iElem]*vect[3*iPoint_0+2] + 
-			kijk[1][6][iElem]*vect[3*iPoint_2] +  kijk[1][7][iElem]*vect[3*iPoint_2+1] +  kijk[1][8][iElem]*vect[3*iPoint_0+2];
-			res[3*iPoint_0+2] = res[3*iPoint_0+2] +
-			kijk[2][0][iElem]*vect[3*iPoint_0] +  kijk[2][1][iElem]*vect[3*iPoint_0+1] +  kijk[2][2][iElem]*vect[3*iPoint_0+2] + 
-			kijk[2][3][iElem]*vect[3*iPoint_1] +  kijk[2][4][iElem]*vect[3*iPoint_1+1] +  kijk[2][5][iElem]*vect[3*iPoint_0+2] + 
-			kijk[2][6][iElem]*vect[3*iPoint_2] +  kijk[2][7][iElem]*vect[3*iPoint_2+1] +  kijk[2][8][iElem]*vect[3*iPoint_0+2];
-			
-			
-			res[3*iPoint_1] = res[3*iPoint_1] +
-			kijk[3][0][iElem]*vect[3*iPoint_0] +  kijk[3][1][iElem]*vect[3*iPoint_0+1] +  kijk[3][2][iElem]*vect[3*iPoint_0+2] + 
-			kijk[3][3][iElem]*vect[3*iPoint_1] +  kijk[3][4][iElem]*vect[3*iPoint_1+1] +  kijk[3][5][iElem]*vect[3*iPoint_0+2] + 
-			kijk[3][6][iElem]*vect[3*iPoint_2] +  kijk[3][7][iElem]*vect[3*iPoint_2+1] +  kijk[3][8][iElem]*vect[3*iPoint_0+2];
-			res[3*iPoint_1+1] = res[3*iPoint_1+1] +
-			kijk[4][0][iElem]*vect[3*iPoint_0] +  kijk[4][1][iElem]*vect[3*iPoint_0+1] +  kijk[4][2][iElem]*vect[3*iPoint_0+2] + 
-			kijk[4][3][iElem]*vect[3*iPoint_1] +  kijk[4][4][iElem]*vect[3*iPoint_1+1] +  kijk[4][5][iElem]*vect[3*iPoint_0+2] + 
-			kijk[4][6][iElem]*vect[3*iPoint_2] +  kijk[4][7][iElem]*vect[3*iPoint_2+1] +  kijk[4][8][iElem]*vect[3*iPoint_0+2];
-			res[3*iPoint_1+2] = res[3*iPoint_1+2] +
-			kijk[5][0][iElem]*vect[3*iPoint_0] +  kijk[5][1][iElem]*vect[3*iPoint_0+1] +  kijk[5][2][iElem]*vect[3*iPoint_0+2] + 
-			kijk[5][3][iElem]*vect[3*iPoint_1] +  kijk[5][4][iElem]*vect[3*iPoint_1+1] +  kijk[5][5][iElem]*vect[3*iPoint_0+2] + 
-			kijk[5][6][iElem]*vect[3*iPoint_2] +  kijk[5][7][iElem]*vect[3*iPoint_2+1] +  kijk[5][8][iElem]*vect[3*iPoint_0+2];
-			
-			
-			res[3*iPoint_2] = res[3*iPoint_2] +
-			kijk[6][0][iElem]*vect[3*iPoint_0] +  kijk[6][1][iElem]*vect[3*iPoint_0+1] +  kijk[6][2][iElem]*vect[3*iPoint_0+2] + 
-			kijk[6][3][iElem]*vect[3*iPoint_1] +  kijk[6][4][iElem]*vect[3*iPoint_1+1] +  kijk[6][5][iElem]*vect[3*iPoint_0+2] + 
-			kijk[6][6][iElem]*vect[3*iPoint_2] +  kijk[6][7][iElem]*vect[3*iPoint_2+1] +  kijk[6][8][iElem]*vect[3*iPoint_0+2];
-			res[3*iPoint_2+1] = res[3*iPoint_2+1] +
-			kijk[7][0][iElem]*vect[3*iPoint_0] +  kijk[7][1][iElem]*vect[3*iPoint_0+1] +  kijk[7][2][iElem]*vect[3*iPoint_0+2] + 
-			kijk[7][3][iElem]*vect[3*iPoint_1] +  kijk[7][4][iElem]*vect[3*iPoint_1+1] +  kijk[7][5][iElem]*vect[3*iPoint_0+2] + 
-			kijk[7][6][iElem]*vect[3*iPoint_2] +  kijk[7][7][iElem]*vect[3*iPoint_2+1] +  kijk[7][8][iElem]*vect[3*iPoint_0+2];
-			res[3*iPoint_2+2] = res[3*iPoint_2+2] +
-			kijk[8][0][iElem]*vect[3*iPoint_0] +  kijk[8][1][iElem]*vect[3*iPoint_0+1] +  kijk[8][2][iElem]*vect[3*iPoint_0+2] + 
-			kijk[8][3][iElem]*vect[3*iPoint_1] +  kijk[8][4][iElem]*vect[3*iPoint_1+1] +  kijk[8][5][iElem]*vect[3*iPoint_0+2] + 
-			kijk[8][6][iElem]*vect[3*iPoint_2] +  kijk[8][7][iElem]*vect[3*iPoint_2+1] +  kijk[8][8][iElem]*vect[3*iPoint_0+2];
-			
-		}
-	}
-}
-
-void CVolumetricMovement::UpdateGrid(CGeometry *geometry, CConfig *config) {
-	double new_coord;
-	
-	unsigned long iPoint;
-	unsigned short iDim;
-	unsigned short nDim = geometry->GetnDim();
-	
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-		for (iDim = 0; iDim < nDim; iDim++) {
-			new_coord = geometry->node[iPoint]->GetCoord(iDim) + x[nDim*iPoint + iDim];
-			geometry->node[iPoint]->SetCoord(iDim,new_coord);
-			//			velocity = x[nDim*iPoint + iDim] / config->GetDelta_UnstTimeND();
-			//			geometry->node[iPoint]->SetGridVel(iDim,velocity);
-		}
-	
-	//	geometry->SetCG();
-	//	geometry->SetControlVolume(config,UPDATE);
-	//	geometry->SetBoundControlVolume(config, UPDATE);
-}
-
 void CVolumetricMovement::UpdateMultiGrid(CGeometry **geometry, CConfig *config) {
 	unsigned long Fine_Point, Coarse_Point;
 	unsigned short iDim, iChildren;
@@ -964,18 +303,24 @@ void CVolumetricMovement::GetBoundary(CGeometry *geometry, CConfig *config, stri
 void CVolumetricMovement::Initialize_StiffMatrix_Structure(unsigned short nVar, CGeometry *geometry) {
 	unsigned long iPoint, nPoint = geometry->GetnPoint(), nPointDomain = geometry->GetnPointDomain();
   unsigned long *row_ptr, *col_ind, *vneighs, index, nnz;
-	unsigned short iNeigh, nNeigh;
+	unsigned short iNeigh, nNeigh, Max_nNeigh;
   
 	row_ptr = new unsigned long [nPoint+1];
 	
 	/*--- +1 -> to include diagonal element	---*/
 	row_ptr[0] = 0;
 	for (iPoint = 0; iPoint < nPoint; iPoint++)
-		row_ptr[iPoint+1] = row_ptr[iPoint]+(geometry->node[iPoint]->GetnPoint()+1);
+		row_ptr[iPoint+1] = row_ptr[iPoint]+(geometry->node[iPoint]->GetnPoint()+1); // +1 -> to include diagonal 
 	nnz = row_ptr[nPoint]; 
 	
 	col_ind = new unsigned long [nnz];
-	vneighs = new unsigned long [MAX_NEIGHBORS];
+  
+  Max_nNeigh = 0;
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+		nNeigh = geometry->node[iPoint]->GetnPoint();
+    if (nNeigh > Max_nNeigh) Max_nNeigh = nNeigh;
+  }
+	vneighs = new unsigned long [Max_nNeigh+1]; // +1 -> to include diagonal 
   
 	/*--- Neighbors to point iPoint to include relation of the point with 
 	 itself (matrix diagonal) ---*/
@@ -986,7 +331,7 @@ void CVolumetricMovement::Initialize_StiffMatrix_Structure(unsigned short nVar, 
 			vneighs[iNeigh] = geometry->node[iPoint]->GetPoint(iNeigh);
 		
 		vneighs[nNeigh] = iPoint;
-		sort(vneighs,vneighs+nNeigh+1);
+		sort(vneighs, vneighs+nNeigh+1);
 		index = row_ptr[iPoint];
 		for (iNeigh = 0; iNeigh <= nNeigh; iNeigh++) {
 			col_ind[index] = vneighs[iNeigh];
@@ -1078,12 +423,12 @@ double CVolumetricMovement::SetSpringMethodContributions_Edges(CGeometry *geomet
 
 double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) {
   
-	unsigned short iVar, nVar = geometry->GetnDim()*2;
-	unsigned long Point_0, Point_1, Point_2, Point_3, iElem;
-	double MinLength;
-  double **StiffMatrix_Elem, **StiffMatrix_Node;
-  
-	MinLength = 1.0;
+	unsigned short iVar, iDim;
+	unsigned long Point_0, Point_1, Point_2, Point_3, iElem, iEdge;
+  double *Coord_0, *Coord_1;
+	double Length, MinLength = 1E10;
+  double **StiffMatrix_Elem;
+  double *Edge_Vector = new double [nDim];
   
   if (nDim == 2) {
     StiffMatrix_Elem = new double* [6];
@@ -1096,9 +441,24 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
       StiffMatrix_Elem[iVar] = new double [12];
   }
   
-  StiffMatrix_Node = new double* [nVar];
-  for (iVar = 0; iVar < nVar; iVar++)
-    StiffMatrix_Node[iVar] = new double [nVar];
+  /*--- First, check the minimum edge length in the entire mesh. ---*/
+	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+    
+		/*--- Points in edge and coordinates ---*/
+		Point_0 = geometry->edge[iEdge]->GetNode(0);
+		Point_1 = geometry->edge[iEdge]->GetNode(1);
+		Coord_0 = geometry->node[Point_0]->GetCoord();
+		Coord_1 = geometry->node[Point_1]->GetCoord();
+    
+		/*--- Compute Edge_Vector ---*/
+		Length = 0;
+		for (iDim = 0; iDim < nDim; iDim++) {
+			Edge_Vector[iDim] = Coord_1[iDim] - Coord_0[iDim];
+			Length += Edge_Vector[iDim]*Edge_Vector[iDim];
+		}
+		Length = sqrt(Length);
+		MinLength = min(Length, MinLength);
+	}
   
 	/*--- Compute contributions from each element by forming the stiffness matrix (FEA) ---*/
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
@@ -1135,66 +495,81 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
         AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
 			}
       
-      /*--- Divide hexehedra into 6 tetrahedra ---*/
+      /*--- Divide hexehedra into 5 tetrahedra ---*/
 			if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON) {
+
+				/*--- Tetrahedron 1, nodes: [0,1,2,5] ---*/
+				Point_0 = geometry->elem[iElem]->GetNode(0);
+				Point_1 = geometry->elem[iElem]->GetNode(1);
+				Point_2 = geometry->elem[iElem]->GetNode(2);
+				Point_3 = geometry->elem[iElem]->GetNode(5);
+        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
         
-				/* Tetrahedron 1, nodes: [0,2,3,6] */
+				/*--- Tetrahedron 2, nodes: [0,2,7,5] ---*/
 				Point_0 = geometry->elem[iElem]->GetNode(0);
 				Point_1 = geometry->elem[iElem]->GetNode(2);
-				Point_2 = geometry->elem[iElem]->GetNode(3);
-				Point_3 = geometry->elem[iElem]->GetNode(6);
-        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        
-				/* Tetrahedron 2, nodes: [0,3,7,6]  */
-				Point_0 = geometry->elem[iElem]->GetNode(0);
-				Point_1 = geometry->elem[iElem]->GetNode(3);
 				Point_2 = geometry->elem[iElem]->GetNode(7);
-				Point_3 = geometry->elem[iElem]->GetNode(6);
+				Point_3 = geometry->elem[iElem]->GetNode(5);
         SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
         AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
         
-				/* Tetrahedron 3, nodes: [0,7,4, 6]  */
+				/*--- Tetrahedron 3, nodes: [0,2,3,7] ---*/
 				Point_0 = geometry->elem[iElem]->GetNode(0);
 				Point_1 = geometry->elem[iElem]->GetNode(7);
-				Point_2 = geometry->elem[iElem]->GetNode(4);
-				Point_3 = geometry->elem[iElem]->GetNode(6);
-        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        
-				/* Tetrahedron 4, nodes: [0,5,6,4]  */
-				Point_0 = geometry->elem[iElem]->GetNode(0);
-				Point_1 = geometry->elem[iElem]->GetNode(5);
-				Point_2 = geometry->elem[iElem]->GetNode(6);
-				Point_3 = geometry->elem[iElem]->GetNode(4);
-        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        
-				/* Tetrahedron 5, nodes: [1,5,6,0]  */
-				Point_0 = geometry->elem[iElem]->GetNode(1);
-				Point_1 = geometry->elem[iElem]->GetNode(5);
-				Point_2 = geometry->elem[iElem]->GetNode(6);
-				Point_3 = geometry->elem[iElem]->GetNode(0);
-        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        
-				/* Tetrahedron 6, nodes: [1,6,2,0]  */
-				Point_0 = geometry->elem[iElem]->GetNode(1);
-				Point_1 = geometry->elem[iElem]->GetNode(6);
 				Point_2 = geometry->elem[iElem]->GetNode(2);
+				Point_3 = geometry->elem[iElem]->GetNode(3);
+        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+        
+				/*--- Tetrahedron 4, nodes: [0,5,7,4] ---*/
+				Point_0 = geometry->elem[iElem]->GetNode(4);
+				Point_1 = geometry->elem[iElem]->GetNode(7);
+				Point_2 = geometry->elem[iElem]->GetNode(5);
 				Point_3 = geometry->elem[iElem]->GetNode(0);
+        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+        
+				/*--- Tetrahedron 5, nodes: [2,7,5,6] ---*/
+				Point_0 = geometry->elem[iElem]->GetNode(2);
+				Point_1 = geometry->elem[iElem]->GetNode(6);
+				Point_2 = geometry->elem[iElem]->GetNode(5);
+				Point_3 = geometry->elem[iElem]->GetNode(7);
         SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
         AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
         
 			}
 
-      /*--- Divide prisms into 4 tetrahedra ---*/
+      /*--- Divide prisms into 3 tetrahedra ---*/
       if (geometry->elem[iElem]->GetVTK_Type() == WEDGE) {
         
-        // TO DO
+        /*--- Tetrahedron 1, nodes: [2,1,0,4] ---*/
+				Point_0 = geometry->elem[iElem]->GetNode(2);
+				Point_1 = geometry->elem[iElem]->GetNode(1);
+				Point_2 = geometry->elem[iElem]->GetNode(0);
+				Point_3 = geometry->elem[iElem]->GetNode(4);
+        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+        
+				/*--- Tetrahedron 2, nodes: [3,4,5,0]  ---*/
+				Point_0 = geometry->elem[iElem]->GetNode(3);
+				Point_1 = geometry->elem[iElem]->GetNode(4);
+				Point_2 = geometry->elem[iElem]->GetNode(5);
+				Point_3 = geometry->elem[iElem]->GetNode(0);
+        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+        
+        /*--- Tetrahedron 2, nodes: [5,2,0,4]  ---*/
+				Point_0 = geometry->elem[iElem]->GetNode(5);
+				Point_1 = geometry->elem[iElem]->GetNode(2);
+				Point_2 = geometry->elem[iElem]->GetNode(0);
+				Point_3 = geometry->elem[iElem]->GetNode(4);
+        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+        
         
       }
-      
+    
       /*--- Divide pyramids into 2 tetrahedra ---*/
       if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID) {
       
@@ -1215,6 +590,7 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
         AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
         
       }
+    
     }
 	}
 	
@@ -1230,12 +606,137 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
     delete [] StiffMatrix_Elem;
   }
   
-  for (iVar = 0; iVar < nVar; iVar++)
-    delete StiffMatrix_Node[iVar];
-  delete [] StiffMatrix_Node;
-  
+  delete [] Edge_Vector;
   
 	return MinLength;
+}
+
+void CVolumetricMovement::CheckFEA_Grid(CGeometry *geometry) {
+	unsigned long Point_0, Point_1, Point_2, Point_3, iElem;
+  
+	/*--- Compute contributions from each element by forming the stiffness matrix (FEA) ---*/
+  
+	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+    
+    if (nDim == 2) {
+      
+      /*--- Triangles are loaded directly ---*/
+      Point_0 = geometry->elem[iElem]->GetNode(0);
+      Point_1 = geometry->elem[iElem]->GetNode(1);
+      Point_2 = geometry->elem[iElem]->GetNode(2);
+      CheckFEA_Elem2D(geometry, iElem, Point_0, Point_1, Point_2);
+      
+      /*--- Divide any rectangles and add contribution from the second triangle ---*/
+      if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE) {
+        Point_0 = geometry->elem[iElem]->GetNode(0);
+        Point_1 = geometry->elem[iElem]->GetNode(2);
+        Point_2 = geometry->elem[iElem]->GetNode(3);
+        CheckFEA_Elem2D(geometry, iElem, Point_0, Point_1, Point_2);
+
+      }
+      
+    }
+    
+    if (nDim == 3) {
+      
+      /*--- Tetrahedra are loaded directly ---*/
+      if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON) {
+        Point_0 = geometry->elem[iElem]->GetNode(0);
+        Point_1 = geometry->elem[iElem]->GetNode(1);
+        Point_2 = geometry->elem[iElem]->GetNode(2);
+        Point_3 = geometry->elem[iElem]->GetNode(3);
+        CheckFEA_Elem3D(geometry, iElem, Point_0, Point_1, Point_2, Point_3);
+
+			}
+      
+      /*--- Divide hexehedra into 5 tetrahedra ---*/
+			if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON) {
+        
+				/*--- Tetrahedron 1, nodes: [0,1,2,5] ---*/
+				Point_0 = geometry->elem[iElem]->GetNode(0);
+				Point_1 = geometry->elem[iElem]->GetNode(1);
+				Point_2 = geometry->elem[iElem]->GetNode(2);
+				Point_3 = geometry->elem[iElem]->GetNode(5);
+        CheckFEA_Elem3D(geometry, iElem, Point_0, Point_1, Point_2, Point_3);
+        
+				/*--- Tetrahedron 2, nodes: [0,2,7,5] ---*/
+				Point_0 = geometry->elem[iElem]->GetNode(0);
+				Point_1 = geometry->elem[iElem]->GetNode(2);
+				Point_2 = geometry->elem[iElem]->GetNode(7);
+				Point_3 = geometry->elem[iElem]->GetNode(5);
+        CheckFEA_Elem3D(geometry, iElem, Point_0, Point_1, Point_2, Point_3);
+        
+				/*--- Tetrahedron 3, nodes: [0,2,3,7] ---*/
+				Point_0 = geometry->elem[iElem]->GetNode(0);
+				Point_1 = geometry->elem[iElem]->GetNode(2);
+				Point_2 = geometry->elem[iElem]->GetNode(3);
+				Point_3 = geometry->elem[iElem]->GetNode(7);
+        CheckFEA_Elem3D(geometry, iElem, Point_0, Point_1, Point_2, Point_3);
+        
+				/*--- Tetrahedron 4, nodes: [0,5,7,4] ---*/
+				Point_0 = geometry->elem[iElem]->GetNode(0);
+				Point_1 = geometry->elem[iElem]->GetNode(5);
+				Point_2 = geometry->elem[iElem]->GetNode(7);
+				Point_3 = geometry->elem[iElem]->GetNode(4);
+        CheckFEA_Elem3D(geometry, iElem, Point_0, Point_1, Point_2, Point_3);
+        
+				/*--- Tetrahedron 5, nodes: [2,7,5,6] ---*/
+				Point_0 = geometry->elem[iElem]->GetNode(2);
+				Point_1 = geometry->elem[iElem]->GetNode(7);
+				Point_2 = geometry->elem[iElem]->GetNode(5);
+				Point_3 = geometry->elem[iElem]->GetNode(6);
+        CheckFEA_Elem3D(geometry, iElem, Point_0, Point_1, Point_2, Point_3);
+        
+			}
+      
+      /*--- Divide prisms into 3 tetrahedra ---*/
+      if (geometry->elem[iElem]->GetVTK_Type() == WEDGE) {
+        
+        /*--- Tetrahedron 1, nodes: [2,1,0,4] ---*/
+				Point_0 = geometry->elem[iElem]->GetNode(2);
+				Point_1 = geometry->elem[iElem]->GetNode(1);
+				Point_2 = geometry->elem[iElem]->GetNode(0);
+				Point_3 = geometry->elem[iElem]->GetNode(4);
+        CheckFEA_Elem3D(geometry, iElem, Point_0, Point_1, Point_2, Point_3);
+        
+				/*--- Tetrahedron 2, nodes: [3,4,5,0]  ---*/
+				Point_0 = geometry->elem[iElem]->GetNode(3);
+				Point_1 = geometry->elem[iElem]->GetNode(4);
+				Point_2 = geometry->elem[iElem]->GetNode(5);
+				Point_3 = geometry->elem[iElem]->GetNode(0);
+        CheckFEA_Elem3D(geometry, iElem, Point_0, Point_1, Point_2, Point_3);
+        
+        /*--- Tetrahedron 2, nodes: [5,2,0,4]  ---*/
+				Point_0 = geometry->elem[iElem]->GetNode(5);
+				Point_1 = geometry->elem[iElem]->GetNode(2);
+				Point_2 = geometry->elem[iElem]->GetNode(0);
+				Point_3 = geometry->elem[iElem]->GetNode(4);
+        CheckFEA_Elem3D(geometry, iElem, Point_0, Point_1, Point_2, Point_3);
+        
+        
+      }
+      
+      /*--- Divide pyramids into 2 tetrahedra ---*/
+      if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID) {
+        
+        /*--- Tetrahedron 1, nodes: [0,1,2,4] ---*/
+				Point_0 = geometry->elem[iElem]->GetNode(0);
+				Point_1 = geometry->elem[iElem]->GetNode(1);
+				Point_2 = geometry->elem[iElem]->GetNode(2);
+				Point_3 = geometry->elem[iElem]->GetNode(4);
+        CheckFEA_Elem3D(geometry, iElem, Point_0, Point_1, Point_2, Point_3);
+        
+				/*--- Tetrahedron 2, nodes: [0,2,3,4]  ---*/
+				Point_0 = geometry->elem[iElem]->GetNode(0);
+				Point_1 = geometry->elem[iElem]->GetNode(2);
+				Point_2 = geometry->elem[iElem]->GetNode(3);
+				Point_3 = geometry->elem[iElem]->GetNode(4);
+        CheckFEA_Elem3D(geometry, iElem, Point_0, Point_1, Point_2, Point_3);
+        
+      }
+      
+    }
+	}
 }
 
 void CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, double **StiffMatrix_Elem,
@@ -1244,7 +745,7 @@ void CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, double **Sti
   
   unsigned short iDim, iVar, jVar, kVar;
   double B_Matrix[6][12], BT_Matrix[12][6], D_Matrix[6][6], Aux_Matrix[12][6];
-  double a[3], b[3], c[3], Area, E, Mu, Nu, Lambda;
+  double a[3], b[3], c[3], Area, E, Mu, Lambda, eps = 1e-14;
   
   double *Coord_0 = geometry->node[val_Point_0]->GetCoord();
   double *Coord_1 = geometry->node[val_Point_1]->GetCoord();
@@ -1260,7 +761,7 @@ void CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, double **Sti
     b[iDim] = Coord_1[iDim]-Coord_2[iDim];
   }
   
-  Area = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
+  Area = 0.5*fabs(a[0]*b[1]-a[1]*b[0]) + eps;
   
   /*--- Each element uses their own stiffness which is inversely
    proportional to the area/volume of the cell. Using Mu = E & Lambda = -E
@@ -1268,8 +769,7 @@ void CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, double **Sti
    "Robust Mesh Deformation using the Linear Elasticity Equations" by
    R. P. Dwight. This might need more testing... ---*/
   
-  E = 1.0/Area;
-	Nu = 0.3;
+  E = 1.0 / Area;
   Mu = E;
   Lambda = -E;
   
@@ -1324,8 +824,7 @@ void CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
   
   unsigned short iVar, jVar, kVar;
   double B_Matrix[6][12], BT_Matrix[12][6], D_Matrix[6][6], Aux_Matrix[12][6];
-  double a[4], b[4], c[4], d[4], Volume, E, Mu, Lambda;
-  
+  double a[4], b[4], c[4], d[4], Volume, E, Mu, Lambda, eps = 1e-14;
   
   double *Coord_0 = geometry->node[val_Point_0]->GetCoord();
   double *Coord_1 = geometry->node[val_Point_1]->GetCoord();
@@ -1337,16 +836,41 @@ void CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
   Volume += Determinant_3x3(Coord_0[0],Coord_0[1],Coord_0[2],Coord_2[0],Coord_2[1],Coord_2[2],Coord_3[0],Coord_3[1],Coord_3[2]);
   Volume -= Determinant_3x3(Coord_0[0],Coord_0[1],Coord_0[2],Coord_1[0],Coord_1[1],Coord_1[2],Coord_3[0],Coord_3[1],Coord_3[2]);
   Volume += Determinant_3x3(Coord_0[0],Coord_0[1],Coord_0[2],Coord_1[0],Coord_1[1],Coord_1[2],Coord_2[0],Coord_2[1],Coord_2[2]);
-  Volume = fabs(Volume / 6.0);
+  Volume = Volume / 6.0 + eps;
+  
+  double r1[3], r2[3], r3[3], CrossProduct[3];
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
+    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
+    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
+  }
+	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
+	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
+	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
+  Volume = (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  
+   if (Volume < 0.0) cout << "Negative Volume: " << Volume << endl;
+
+  //Volume = fabs(Volume);
   
   /*--- Each element uses their own stiffness which is inversely
    proportional to the area/volume of the cell. Using Mu = E & Lambda = -E
    is a modification to help allow rigid rotation of elements (see
    "Robust Mesh Deformation using the Linear Elasticity Equations" by
    R. P. Dwight. This might need more testing... ---*/
-  E = 1.0/Volume;
+  
+  /*--- Try basing the stiffness on the distance from the wall ---*/
+  //Volume = 0.25 * (Coord_0[2]+Coord_1[2]+Coord_2[2]+Coord_3[2]);
+  
+  E = 1.0 / Volume;
   Mu = E;
   Lambda = -E;
+  
+//  Steel, E = 2E11, Nu = 0.3
+//  double E = 2E11; //config->GetElasticyMod();
+//  double Nu = 0.0;//config->GetPoissonRatio();
+//  Mu = E / (2.0*(1.0 + Nu));
+//  Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
   
   a[0] = Determinant_3x3(Coord_1[0],Coord_1[1],Coord_1[2],Coord_2[0],Coord_2[1],Coord_2[2],Coord_3[0],Coord_3[1],Coord_3[2])/(6.0*Volume);
   b[0] = -Determinant_3x3(1.0,Coord_1[1],Coord_1[2],1.0,Coord_2[1],Coord_2[2],1.0,Coord_3[1],Coord_3[2])/(6.0*Volume);
@@ -1357,7 +881,7 @@ void CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
   b[1] = Determinant_3x3(1.0,Coord_2[1],Coord_2[2],1.0,Coord_3[1],Coord_3[2],1.0,Coord_0[1],Coord_0[2])/(6.0*Volume);
   c[1] = Determinant_3x3(Coord_2[0],1.0,Coord_2[2],Coord_3[0],1.0,Coord_3[2],Coord_0[0],1.0,Coord_0[2])/(6.0*Volume);
   d[1] = Determinant_3x3(Coord_2[0],Coord_2[1],1.0,Coord_3[0],Coord_3[1],1.0,Coord_0[0],Coord_0[1],1.0)/(6.0*Volume);
-  
+
   a[2] = Determinant_3x3(Coord_3[0],Coord_3[1],Coord_3[2],Coord_0[0],Coord_0[1],Coord_0[2],Coord_1[0],Coord_1[1],Coord_1[2])/(6.0*Volume);
   b[2] = -Determinant_3x3(1.0,Coord_3[1],Coord_3[2],1.0,Coord_0[1],Coord_0[2],1.0,Coord_1[1],Coord_1[2])/(6.0*Volume);
   c[2] = -Determinant_3x3(Coord_3[0],1.0,Coord_3[2],Coord_0[0],1.0,Coord_0[2],Coord_1[0],1.0,Coord_1[2])/(6.0*Volume);
@@ -1369,12 +893,35 @@ void CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
   d[3] = Determinant_3x3(Coord_0[0],Coord_0[1],1.0,Coord_1[0],Coord_1[1],1.0,Coord_2[0],Coord_2[1],1.0)/(6.0*Volume);
   
   /*--- Compute the B Matrix ---*/
-  B_Matrix[0][0] = b[0];	B_Matrix[0][1] = 0.0;		B_Matrix[0][2] = 0.0;		B_Matrix[0][3] = b[1];	B_Matrix[0][4] = 0.0;		B_Matrix[0][5] = 0.0;		B_Matrix[0][6] = b[2];	B_Matrix[0][7] = 0.0;		B_Matrix[0][8] = 0.0;		B_Matrix[0][9] = b[3];	B_Matrix[0][10] = 0.0;	B_Matrix[0][11] = 0.0;
-  B_Matrix[1][0] = 0.0;		B_Matrix[1][1] = c[0];	B_Matrix[1][2] = 0.0;		B_Matrix[1][3] = 0.0;		B_Matrix[1][4] = c[1];	B_Matrix[1][5] = 0.0;		B_Matrix[1][6] = 0.0;		B_Matrix[1][7] = c[2];	B_Matrix[1][8] = 0.0;		B_Matrix[1][9] = 0.0;		B_Matrix[1][10] = c[3];	B_Matrix[1][11] = 0.0;
-  B_Matrix[2][0] = 0.0;		B_Matrix[2][1] = 0.0;		B_Matrix[2][2] = d[0];	B_Matrix[2][3] = 0.0;		B_Matrix[2][4] = 0.0;		B_Matrix[2][5] = d[1];	B_Matrix[2][6] = 0.0;		B_Matrix[2][7] = 0.0;		B_Matrix[2][8] = c[2];	B_Matrix[2][9] = 0.0;		B_Matrix[2][10] = 0.0;	B_Matrix[2][11] = c[3];
-  B_Matrix[3][0] = c[0];	B_Matrix[3][1] = b[0];	B_Matrix[3][2] = 0.0;		B_Matrix[3][3] = c[1];	B_Matrix[3][4] = b[1];	B_Matrix[3][5] = 0.0;		B_Matrix[3][6] = c[2];	B_Matrix[3][7] = b[2];	B_Matrix[3][8] = 0.0;		B_Matrix[3][9] = c[3];	B_Matrix[3][10] = b[3];	B_Matrix[3][11] = 0.0;
-  B_Matrix[4][0] = 0.0;		B_Matrix[4][1] = d[0];	B_Matrix[4][2] = c[0];	B_Matrix[4][3] = 0.0;		B_Matrix[4][4] = d[1];	B_Matrix[4][5] = c[1];	B_Matrix[4][6] = 0.0;		B_Matrix[4][7] = d[2];	B_Matrix[4][8] = c[2];	B_Matrix[4][9] = 0.0;		B_Matrix[4][10] = d[3];	B_Matrix[4][11] = c[3];
-  B_Matrix[5][0] = d[0];	B_Matrix[5][1] = 0.0;		B_Matrix[5][2] = b[0];	B_Matrix[5][3] = d[1];	B_Matrix[5][4] = 0.0;		B_Matrix[5][5] = b[1];	B_Matrix[5][6] = d[2];	B_Matrix[5][7] = 0.0;		B_Matrix[5][8] = b[2];	B_Matrix[5][9] = d[3];	B_Matrix[5][10] = 0.0;	B_Matrix[5][11] = b[3];
+  B_Matrix[0][0] = b[0];	B_Matrix[0][1] = 0.0;		B_Matrix[0][2] = 0.0;
+  B_Matrix[0][3] = b[1];	B_Matrix[0][4] = 0.0;		B_Matrix[0][5] = 0.0;
+  B_Matrix[0][6] = b[2];	B_Matrix[0][7] = 0.0;		B_Matrix[0][8] = 0.0;
+  B_Matrix[0][9] = b[3];	B_Matrix[0][10] = 0.0;	B_Matrix[0][11] = 0.0;
+  
+  B_Matrix[1][0] = 0.0;   B_Matrix[1][1] = c[0];  B_Matrix[1][2] = 0.0;
+  B_Matrix[1][3] = 0.0;   B_Matrix[1][4] = c[1];	B_Matrix[1][5] = 0.0;
+  B_Matrix[1][6] = 0.0;		B_Matrix[1][7] = c[2];  B_Matrix[1][8] = 0.0;
+  B_Matrix[1][9] = 0.0;		B_Matrix[1][10] = c[3];	B_Matrix[1][11] = 0.0;
+  
+  B_Matrix[2][0] = 0.0;		B_Matrix[2][1] = 0.0;		B_Matrix[2][2] = d[0];
+  B_Matrix[2][3] = 0.0;   B_Matrix[2][4] = 0.0;		B_Matrix[2][5] = d[1];
+  B_Matrix[2][6] = 0.0;		B_Matrix[2][7] = 0.0;   B_Matrix[2][8] = d[2];
+  B_Matrix[2][9] = 0.0;		B_Matrix[2][10] = 0.0;	B_Matrix[2][11] = d[3];
+  
+  B_Matrix[3][0] = c[0];	B_Matrix[3][1] = b[0];	B_Matrix[3][2] = 0.0;
+  B_Matrix[3][3] = c[1];  B_Matrix[3][4] = b[1];	B_Matrix[3][5] = 0.0;
+  B_Matrix[3][6] = c[2];	B_Matrix[3][7] = b[2];  B_Matrix[3][8] = 0.0;
+  B_Matrix[3][9] = c[3];	B_Matrix[3][10] = b[3];	B_Matrix[3][11] = 0.0;
+  
+  B_Matrix[4][0] = 0.0;		B_Matrix[4][1] = d[0];	B_Matrix[4][2] = c[0];
+  B_Matrix[4][3] = 0.0;   B_Matrix[4][4] = d[1];	B_Matrix[4][5] = c[1];
+  B_Matrix[4][6] = 0.0;		B_Matrix[4][7] = d[2];  B_Matrix[4][8] = c[2];
+  B_Matrix[4][9] = 0.0;		B_Matrix[4][10] = d[3];	B_Matrix[4][11] = c[3];
+  
+  B_Matrix[5][0] = d[0];	B_Matrix[5][1] = 0.0;		B_Matrix[5][2] = b[0];
+  B_Matrix[5][3] = d[1];  B_Matrix[5][4] = 0.0;		B_Matrix[5][5] = b[1];
+  B_Matrix[5][6] = d[2];	B_Matrix[5][7] = 0.0;   B_Matrix[5][8] = b[2];
+  B_Matrix[5][9] = d[3];	B_Matrix[5][10] = 0.0;	B_Matrix[5][11] = b[3];
   
   for (iVar = 0; iVar < 6; iVar++)
     for (jVar = 0; jVar < 12; jVar++)
@@ -1387,6 +934,13 @@ void CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
   D_Matrix[3][0] = 0.0;							D_Matrix[3][1] = 0.0;							D_Matrix[3][2] = 0.0;							D_Matrix[3][3] = Mu;	D_Matrix[3][4] = 0.0;	D_Matrix[3][5] = 0.0;
   D_Matrix[4][0] = 0.0;							D_Matrix[4][1] = 0.0;							D_Matrix[4][2] = 0.0;							D_Matrix[4][3] = 0.0;	D_Matrix[4][4] = Mu;	D_Matrix[4][5] = 0.0;
   D_Matrix[5][0] = 0.0;							D_Matrix[5][1] = 0.0;							D_Matrix[5][2] = 0.0;							D_Matrix[5][3] = 0.0;	D_Matrix[5][4] = 0.0;	D_Matrix[5][5] = Mu;
+  
+//  D_Matrix[0][0] = 1.0;             D_Matrix[0][1] = 0.0;             D_Matrix[0][2] = 0.0;					D_Matrix[0][3] = 0.0;   D_Matrix[0][4] = 0.0;	D_Matrix[0][5] = 0.0;
+//  D_Matrix[1][0] = 0.0;             D_Matrix[1][1] = 1.0;             D_Matrix[1][2] = 0.0;					D_Matrix[1][3] = 0.0;   D_Matrix[1][4] = 0.0;	D_Matrix[1][5] = 0.0;
+//  D_Matrix[2][0] = 0.0;             D_Matrix[2][1] = 0.0;             D_Matrix[2][2] = 1.0;         D_Matrix[2][3] = 0.0;   D_Matrix[2][4] = 0.0;	D_Matrix[2][5] = 0.0;
+//  D_Matrix[3][0] = 0.0;							D_Matrix[3][1] = 0.0;							D_Matrix[3][2] = 0.0;         D_Matrix[3][3] = 1.0;   D_Matrix[3][4] = 0.0;	D_Matrix[3][5] = 0.0;
+//  D_Matrix[4][0] = 0.0;							D_Matrix[4][1] = 0.0;							D_Matrix[4][2] = 0.0;					D_Matrix[4][3] = 0.0;   D_Matrix[4][4] = 1.0;	D_Matrix[4][5] = 0.0;
+//  D_Matrix[5][0] = 0.0;							D_Matrix[5][1] = 0.0;							D_Matrix[5][2] = 0.0;					D_Matrix[5][3] = 0.0;   D_Matrix[5][4] = 0.0;	D_Matrix[5][5] = 1.0;
   
   /*--- Compute the BT.D Matrix ---*/
   for (iVar = 0; iVar < 12; iVar++) {
@@ -1412,7 +966,7 @@ void CVolumetricMovement::AddFEA_StiffMatrix2D(CGeometry *geometry, double **Sti
                                                unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2) {
   
   unsigned short iVar, jVar;
-  unsigned short nVar = geometry->GetnDim()*2;
+  unsigned short nVar = geometry->GetnDim();
   
   double **StiffMatrix_Node;
   StiffMatrix_Node = new double* [nVar];
@@ -1426,43 +980,40 @@ void CVolumetricMovement::AddFEA_StiffMatrix2D(CGeometry *geometry, double **Sti
   
   /*--- Transform the stiffness matrix for the triangular element into the
    contributions for the individual nodes relative to each other. ---*/
-  StiffMatrix_Node[0][2] = -1.0;
-  StiffMatrix_Node[1][3] = -1.0;
-    
-  StiffMatrix_Node[2][0] = StiffMatrix_Elem[0][0];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[0][1];
-  StiffMatrix_Node[3][0] = StiffMatrix_Elem[1][0];	StiffMatrix_Node[3][1] = StiffMatrix_Elem[1][1];
+  StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][0];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[0][1];
+  StiffMatrix_Node[1][0] = StiffMatrix_Elem[1][0];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[1][1];
   StiffMatrix.AddBlock(val_Point_0, val_Point_0, StiffMatrix_Node);
   
-  StiffMatrix_Node[2][0] = StiffMatrix_Elem[0][2];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[0][3];
-  StiffMatrix_Node[3][0] = StiffMatrix_Elem[1][2];	StiffMatrix_Node[3][1] = StiffMatrix_Elem[1][3];
+  StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][2];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[0][3];
+  StiffMatrix_Node[1][0] = StiffMatrix_Elem[1][2];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[1][3];
   StiffMatrix.AddBlock(val_Point_0, val_Point_1, StiffMatrix_Node);
   
-  StiffMatrix_Node[2][0] = StiffMatrix_Elem[0][4];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[0][5];
-  StiffMatrix_Node[3][0] = StiffMatrix_Elem[1][4];	StiffMatrix_Node[3][1] = StiffMatrix_Elem[1][5];
+  StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][4];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[0][5];
+  StiffMatrix_Node[1][0] = StiffMatrix_Elem[1][4];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[1][5];
   StiffMatrix.AddBlock(val_Point_0, val_Point_2, StiffMatrix_Node);
   
-  StiffMatrix_Node[2][0] = StiffMatrix_Elem[2][0];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[2][1];
-  StiffMatrix_Node[3][0] = StiffMatrix_Elem[3][0];	StiffMatrix_Node[3][1] = StiffMatrix_Elem[3][1];
+  StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][0];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[2][1];
+  StiffMatrix_Node[1][0] = StiffMatrix_Elem[3][0];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[3][1];
   StiffMatrix.AddBlock(val_Point_1, val_Point_0, StiffMatrix_Node);
   
-  StiffMatrix_Node[2][0] = StiffMatrix_Elem[2][2];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[2][3];
-  StiffMatrix_Node[3][0] = StiffMatrix_Elem[3][2];	StiffMatrix_Node[3][1] = StiffMatrix_Elem[3][3];
+  StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][2];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[2][3];
+  StiffMatrix_Node[1][0] = StiffMatrix_Elem[3][2];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[3][3];
   StiffMatrix.AddBlock(val_Point_1, val_Point_1, StiffMatrix_Node);
   
-  StiffMatrix_Node[2][0] = StiffMatrix_Elem[2][4];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[2][5];
-  StiffMatrix_Node[3][0] = StiffMatrix_Elem[3][4];	StiffMatrix_Node[3][1] = StiffMatrix_Elem[3][5];
+  StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][4];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[2][5];
+  StiffMatrix_Node[1][0] = StiffMatrix_Elem[3][4];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[3][5];
   StiffMatrix.AddBlock(val_Point_1, val_Point_2, StiffMatrix_Node);
   
-  StiffMatrix_Node[2][0] = StiffMatrix_Elem[4][0];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[4][1];
-  StiffMatrix_Node[3][0] = StiffMatrix_Elem[5][0];	StiffMatrix_Node[3][1] = StiffMatrix_Elem[5][1];
+  StiffMatrix_Node[0][0] = StiffMatrix_Elem[4][0];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[4][1];
+  StiffMatrix_Node[1][0] = StiffMatrix_Elem[5][0];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[5][1];
   StiffMatrix.AddBlock(val_Point_2, val_Point_0, StiffMatrix_Node);
   
-  StiffMatrix_Node[2][0] = StiffMatrix_Elem[4][2];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[4][3];
-  StiffMatrix_Node[3][0] = StiffMatrix_Elem[5][2];	StiffMatrix_Node[3][1] = StiffMatrix_Elem[5][3];
+  StiffMatrix_Node[0][0] = StiffMatrix_Elem[4][2];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[4][3];
+  StiffMatrix_Node[1][0] = StiffMatrix_Elem[5][2];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[5][3];
   StiffMatrix.AddBlock(val_Point_2, val_Point_1, StiffMatrix_Node);
   
-  StiffMatrix_Node[2][0] = StiffMatrix_Elem[4][4];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[4][5];	StiffMatrix_Node[2][2] = 0.0;		StiffMatrix_Node[2][3] = 0.0;
-  StiffMatrix_Node[3][0] = StiffMatrix_Elem[5][4];	StiffMatrix_Node[3][1] = StiffMatrix_Elem[5][5];	StiffMatrix_Node[3][2] = 0.0;		StiffMatrix_Node[3][3] = 0.0;
+  StiffMatrix_Node[0][0] = StiffMatrix_Elem[4][4];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[4][5];
+  StiffMatrix_Node[1][0] = StiffMatrix_Elem[5][4];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[5][5];
   StiffMatrix.AddBlock(val_Point_2, val_Point_2, StiffMatrix_Node);
   
   
@@ -1477,7 +1028,7 @@ void CVolumetricMovement::AddFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
                                                unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2, unsigned long val_Point_3) {
   
   unsigned short iVar, jVar;
-  unsigned short nVar = geometry->GetnDim()*2;
+  unsigned short nVar = geometry->GetnDim();
   
   double **StiffMatrix_Node;
   StiffMatrix_Node = new double* [nVar];
@@ -1488,91 +1039,99 @@ void CVolumetricMovement::AddFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
     for (jVar = 0; jVar < nVar; jVar++)
       StiffMatrix_Node[iVar][jVar] = 0.0;
   
+//  for (iVar = 0; iVar < 12; iVar++) {
+//    cout.precision(2);
+//  cout.setf(ios::fixed,ios::floatfield);
+//  cout << StiffMatrix_Elem[iVar][0] <<"\t"<< StiffMatrix_Elem[iVar][1] <<"\t"<< StiffMatrix_Elem[iVar][2] <<"\t"<< StiffMatrix_Elem[iVar][3] <<"\t"<< StiffMatrix_Elem[iVar][4] <<"\t"<< StiffMatrix_Elem[iVar][5] <<"\t"<< StiffMatrix_Elem[iVar][6] <<"\t"<< StiffMatrix_Elem[iVar][7] <<"\t"<< StiffMatrix_Elem[iVar][8] <<"\t"<< StiffMatrix_Elem[iVar][9] <<"\t"<< StiffMatrix_Elem[iVar][10] <<"\t"<< StiffMatrix_Elem[iVar][11] <<    endl;
+//  }
+//  cout << endl;
+//  cout << endl;
+//  cout << endl;
+//  cout << endl;
+//  cin.get();
+
+  
   /*--- Transform the stiffness matrix for the tetrahedral element into the
    contributions for the individual nodes relative to each other. ---*/
   
-  StiffMatrix_Node[0][3] = -1.0;
-  StiffMatrix_Node[1][4] = -1.0;
-  StiffMatrix_Node[2][5] = -1.0;
-  
-  StiffMatrix_Node[3][0] = StiffMatrix_Elem[0][0];	StiffMatrix_Node[3][1] = StiffMatrix_Elem[0][1];	StiffMatrix_Node[3][2] = StiffMatrix_Elem[0][2];
-  StiffMatrix_Node[4][0] = StiffMatrix_Elem[1][0];	StiffMatrix_Node[4][1] = StiffMatrix_Elem[1][1];	StiffMatrix_Node[4][2] = StiffMatrix_Elem[1][2];
-  StiffMatrix_Node[5][0] = StiffMatrix_Elem[2][0];	StiffMatrix_Node[5][1] = StiffMatrix_Elem[2][1];	StiffMatrix_Node[5][2] = StiffMatrix_Elem[2][2];
+  StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][0];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[0][1];	StiffMatrix_Node[0][2] = StiffMatrix_Elem[0][2];
+  StiffMatrix_Node[1][0] = StiffMatrix_Elem[1][0];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[1][1];	StiffMatrix_Node[1][2] = StiffMatrix_Elem[1][2];
+  StiffMatrix_Node[2][0] = StiffMatrix_Elem[2][0];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[2][1];	StiffMatrix_Node[2][2] = StiffMatrix_Elem[2][2];
   StiffMatrix.AddBlock(val_Point_0, val_Point_0, StiffMatrix_Node);
   
-  StiffMatrix_Node[3][0] = StiffMatrix_Elem[0][3];	StiffMatrix_Node[3][1] = StiffMatrix_Elem[0][4];	StiffMatrix_Node[3][2] = StiffMatrix_Elem[0][5];
-  StiffMatrix_Node[4][0] = StiffMatrix_Elem[1][3];	StiffMatrix_Node[4][1] = StiffMatrix_Elem[1][4];	StiffMatrix_Node[4][2] = StiffMatrix_Elem[1][5];
-  StiffMatrix_Node[5][0] = StiffMatrix_Elem[2][3];	StiffMatrix_Node[5][1] = StiffMatrix_Elem[2][4];	StiffMatrix_Node[5][2] = StiffMatrix_Elem[2][5];
+  StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][3];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[0][4];	StiffMatrix_Node[0][2] = StiffMatrix_Elem[0][5];
+  StiffMatrix_Node[1][0] = StiffMatrix_Elem[1][3];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[1][4];	StiffMatrix_Node[1][2] = StiffMatrix_Elem[1][5];
+  StiffMatrix_Node[2][0] = StiffMatrix_Elem[2][3];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[2][4];	StiffMatrix_Node[2][2] = StiffMatrix_Elem[2][5];
   StiffMatrix.AddBlock(val_Point_0, val_Point_1, StiffMatrix_Node);
   
-  StiffMatrix_Node[3][0] = StiffMatrix_Elem[0][6];	StiffMatrix_Node[3][1] = StiffMatrix_Elem[0][7];	StiffMatrix_Node[3][2] = StiffMatrix_Elem[0][8];
-  StiffMatrix_Node[4][0] = StiffMatrix_Elem[1][6];	StiffMatrix_Node[4][1] = StiffMatrix_Elem[1][7];	StiffMatrix_Node[4][2] = StiffMatrix_Elem[1][8];
-  StiffMatrix_Node[5][0] = StiffMatrix_Elem[2][6];	StiffMatrix_Node[5][1] = StiffMatrix_Elem[2][7];	StiffMatrix_Node[5][2] = StiffMatrix_Elem[2][8];
+  StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][6];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[0][7];	StiffMatrix_Node[0][2] = StiffMatrix_Elem[0][8];
+  StiffMatrix_Node[1][0] = StiffMatrix_Elem[1][6];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[1][7];	StiffMatrix_Node[1][2] = StiffMatrix_Elem[1][8];
+  StiffMatrix_Node[2][0] = StiffMatrix_Elem[2][6];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[2][7];	StiffMatrix_Node[2][2] = StiffMatrix_Elem[2][8];
   StiffMatrix.AddBlock(val_Point_0, val_Point_2, StiffMatrix_Node);
   
-  StiffMatrix_Node[3][0] = StiffMatrix_Elem[0][9];	StiffMatrix_Node[3][1] = StiffMatrix_Elem[0][10];	StiffMatrix_Node[3][2] = StiffMatrix_Elem[0][11];
-  StiffMatrix_Node[4][0] = StiffMatrix_Elem[1][9];	StiffMatrix_Node[4][1] = StiffMatrix_Elem[1][10];	StiffMatrix_Node[4][2] = StiffMatrix_Elem[1][11];
-  StiffMatrix_Node[5][0] = StiffMatrix_Elem[2][9];	StiffMatrix_Node[5][1] = StiffMatrix_Elem[2][10];	StiffMatrix_Node[5][2] = StiffMatrix_Elem[2][11];
+  StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][9];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[0][10];	StiffMatrix_Node[0][2] = StiffMatrix_Elem[0][11];
+  StiffMatrix_Node[1][0] = StiffMatrix_Elem[1][9];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[1][10];	StiffMatrix_Node[1][2] = StiffMatrix_Elem[1][11];
+  StiffMatrix_Node[2][0] = StiffMatrix_Elem[2][9];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[2][10];	StiffMatrix_Node[2][2] = StiffMatrix_Elem[2][11];
   StiffMatrix.AddBlock(val_Point_0, val_Point_3, StiffMatrix_Node);
   
-  StiffMatrix_Node[3][0] = StiffMatrix_Elem[3][0];	StiffMatrix_Node[3][1] = StiffMatrix_Elem[3][1];	StiffMatrix_Node[3][2] = StiffMatrix_Elem[3][2];
-  StiffMatrix_Node[4][0] = StiffMatrix_Elem[4][0];	StiffMatrix_Node[4][1] = StiffMatrix_Elem[4][1];	StiffMatrix_Node[4][2] = StiffMatrix_Elem[4][2];
-  StiffMatrix_Node[5][0] = StiffMatrix_Elem[5][0];	StiffMatrix_Node[5][1] = StiffMatrix_Elem[5][1];	StiffMatrix_Node[5][2] = StiffMatrix_Elem[5][2];
+  StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][0];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[3][1];	StiffMatrix_Node[0][2] = StiffMatrix_Elem[3][2];
+  StiffMatrix_Node[1][0] = StiffMatrix_Elem[4][0];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[4][1];	StiffMatrix_Node[1][2] = StiffMatrix_Elem[4][2];
+  StiffMatrix_Node[2][0] = StiffMatrix_Elem[5][0];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[5][1];	StiffMatrix_Node[2][2] = StiffMatrix_Elem[5][2];
   StiffMatrix.AddBlock(val_Point_1, val_Point_0, StiffMatrix_Node);
   
-  StiffMatrix_Node[3][0] = StiffMatrix_Elem[3][3];	StiffMatrix_Node[3][1] = StiffMatrix_Elem[3][4];	StiffMatrix_Node[3][2] = StiffMatrix_Elem[3][5];
-  StiffMatrix_Node[4][0] = StiffMatrix_Elem[4][3];	StiffMatrix_Node[4][1] = StiffMatrix_Elem[4][4];	StiffMatrix_Node[4][2] = StiffMatrix_Elem[4][5];
-  StiffMatrix_Node[5][0] = StiffMatrix_Elem[5][3];	StiffMatrix_Node[5][1] = StiffMatrix_Elem[5][4];	StiffMatrix_Node[5][2] = StiffMatrix_Elem[5][5];
+  StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][3];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[3][4];	StiffMatrix_Node[0][2] = StiffMatrix_Elem[3][5];
+  StiffMatrix_Node[1][0] = StiffMatrix_Elem[4][3];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[4][4];	StiffMatrix_Node[1][2] = StiffMatrix_Elem[4][5];
+  StiffMatrix_Node[2][0] = StiffMatrix_Elem[5][3];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[5][4];	StiffMatrix_Node[2][2] = StiffMatrix_Elem[5][5];
   StiffMatrix.AddBlock(val_Point_1, val_Point_1, StiffMatrix_Node);
   
-  StiffMatrix_Node[3][0] = StiffMatrix_Elem[3][6];	StiffMatrix_Node[3][1] = StiffMatrix_Elem[3][7];	StiffMatrix_Node[3][2] = StiffMatrix_Elem[3][8];
-  StiffMatrix_Node[4][0] = StiffMatrix_Elem[4][6];	StiffMatrix_Node[4][1] = StiffMatrix_Elem[4][7];	StiffMatrix_Node[4][2] = StiffMatrix_Elem[4][8];
-  StiffMatrix_Node[5][0] = StiffMatrix_Elem[5][6];	StiffMatrix_Node[5][1] = StiffMatrix_Elem[5][7];	StiffMatrix_Node[5][2] = StiffMatrix_Elem[5][8];
+  StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][6];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[3][7];	StiffMatrix_Node[0][2] = StiffMatrix_Elem[3][8];
+  StiffMatrix_Node[1][0] = StiffMatrix_Elem[4][6];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[4][7];	StiffMatrix_Node[1][2] = StiffMatrix_Elem[4][8];
+  StiffMatrix_Node[2][0] = StiffMatrix_Elem[5][6];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[5][7];	StiffMatrix_Node[2][2] = StiffMatrix_Elem[5][8];
   StiffMatrix.AddBlock(val_Point_1, val_Point_2, StiffMatrix_Node);
   
-  StiffMatrix_Node[3][0] = StiffMatrix_Elem[3][9];	StiffMatrix_Node[3][1] = StiffMatrix_Elem[3][10];	StiffMatrix_Node[3][2] = StiffMatrix_Elem[3][11];
-  StiffMatrix_Node[4][0] = StiffMatrix_Elem[4][9];	StiffMatrix_Node[4][1] = StiffMatrix_Elem[4][10];	StiffMatrix_Node[4][2] = StiffMatrix_Elem[4][11];
-  StiffMatrix_Node[5][0] = StiffMatrix_Elem[5][9];	StiffMatrix_Node[5][1] = StiffMatrix_Elem[5][10];	StiffMatrix_Node[5][2] = StiffMatrix_Elem[5][11];
+  StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][9];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[3][10];	StiffMatrix_Node[0][2] = StiffMatrix_Elem[3][11];
+  StiffMatrix_Node[1][0] = StiffMatrix_Elem[4][9];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[4][10];	StiffMatrix_Node[1][2] = StiffMatrix_Elem[4][11];
+  StiffMatrix_Node[2][0] = StiffMatrix_Elem[5][9];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[5][10];	StiffMatrix_Node[2][2] = StiffMatrix_Elem[5][11];
   StiffMatrix.AddBlock(val_Point_1, val_Point_3, StiffMatrix_Node);
   
-  StiffMatrix_Node[3][0] = StiffMatrix_Elem[6][0];	StiffMatrix_Node[3][1] = StiffMatrix_Elem[6][1];	StiffMatrix_Node[3][2] = StiffMatrix_Elem[6][2];
-  StiffMatrix_Node[4][0] = StiffMatrix_Elem[7][0];	StiffMatrix_Node[4][1] = StiffMatrix_Elem[7][1];	StiffMatrix_Node[4][2] = StiffMatrix_Elem[7][2];
-  StiffMatrix_Node[5][0] = StiffMatrix_Elem[8][0];	StiffMatrix_Node[5][1] = StiffMatrix_Elem[8][1];	StiffMatrix_Node[5][2] = StiffMatrix_Elem[8][2];
+  StiffMatrix_Node[0][0] = StiffMatrix_Elem[6][0];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[6][1];	StiffMatrix_Node[0][2] = StiffMatrix_Elem[6][2];
+  StiffMatrix_Node[1][0] = StiffMatrix_Elem[7][0];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[7][1];	StiffMatrix_Node[1][2] = StiffMatrix_Elem[7][2];
+  StiffMatrix_Node[2][0] = StiffMatrix_Elem[8][0];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[8][1];	StiffMatrix_Node[2][2] = StiffMatrix_Elem[8][2];
   StiffMatrix.AddBlock(val_Point_2, val_Point_0, StiffMatrix_Node);
   
-  StiffMatrix_Node[3][0] = StiffMatrix_Elem[6][3];	StiffMatrix_Node[3][1] = StiffMatrix_Elem[6][4];	StiffMatrix_Node[3][2] = StiffMatrix_Elem[6][5];
-  StiffMatrix_Node[4][0] = StiffMatrix_Elem[7][3];	StiffMatrix_Node[4][1] = StiffMatrix_Elem[7][4];	StiffMatrix_Node[4][2] = StiffMatrix_Elem[7][5];
-  StiffMatrix_Node[5][0] = StiffMatrix_Elem[8][3];	StiffMatrix_Node[5][1] = StiffMatrix_Elem[8][4];	StiffMatrix_Node[5][2] = StiffMatrix_Elem[8][5];
+  StiffMatrix_Node[0][0] = StiffMatrix_Elem[6][3];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[6][4];	StiffMatrix_Node[0][2] = StiffMatrix_Elem[6][5];
+  StiffMatrix_Node[1][0] = StiffMatrix_Elem[7][3];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[7][4];	StiffMatrix_Node[1][2] = StiffMatrix_Elem[7][5];
+  StiffMatrix_Node[2][0] = StiffMatrix_Elem[8][3];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[8][4];	StiffMatrix_Node[2][2] = StiffMatrix_Elem[8][5];
   StiffMatrix.AddBlock(val_Point_2, val_Point_1, StiffMatrix_Node);
   
-  StiffMatrix_Node[3][0] = StiffMatrix_Elem[6][6];	StiffMatrix_Node[3][1] = StiffMatrix_Elem[6][7];	StiffMatrix_Node[3][2] = StiffMatrix_Elem[6][8];
-  StiffMatrix_Node[4][0] = StiffMatrix_Elem[7][6];	StiffMatrix_Node[4][1] = StiffMatrix_Elem[7][7];	StiffMatrix_Node[4][2] = StiffMatrix_Elem[7][8];
-  StiffMatrix_Node[5][0] = StiffMatrix_Elem[8][6];	StiffMatrix_Node[5][1] = StiffMatrix_Elem[8][7];	StiffMatrix_Node[5][2] = StiffMatrix_Elem[8][8];
+  StiffMatrix_Node[0][0] = StiffMatrix_Elem[6][6];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[6][7];	StiffMatrix_Node[0][2] = StiffMatrix_Elem[6][8];
+  StiffMatrix_Node[1][0] = StiffMatrix_Elem[7][6];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[7][7];	StiffMatrix_Node[1][2] = StiffMatrix_Elem[7][8];
+  StiffMatrix_Node[2][0] = StiffMatrix_Elem[8][6];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[8][7];	StiffMatrix_Node[2][2] = StiffMatrix_Elem[8][8];
   StiffMatrix.AddBlock(val_Point_2, val_Point_2, StiffMatrix_Node);
   
-  StiffMatrix_Node[3][0] = StiffMatrix_Elem[6][9];	StiffMatrix_Node[3][1] = StiffMatrix_Elem[6][10];	StiffMatrix_Node[3][2] = StiffMatrix_Elem[6][11];
-  StiffMatrix_Node[4][0] = StiffMatrix_Elem[7][9];	StiffMatrix_Node[4][1] = StiffMatrix_Elem[7][10];	StiffMatrix_Node[4][2] = StiffMatrix_Elem[7][11];
-  StiffMatrix_Node[5][0] = StiffMatrix_Elem[8][9];	StiffMatrix_Node[5][1] = StiffMatrix_Elem[8][10];	StiffMatrix_Node[5][2] = StiffMatrix_Elem[8][11];
+  StiffMatrix_Node[0][0] = StiffMatrix_Elem[6][9];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[6][10];	StiffMatrix_Node[0][2] = StiffMatrix_Elem[6][11];
+  StiffMatrix_Node[1][0] = StiffMatrix_Elem[7][9];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[7][10];	StiffMatrix_Node[1][2] = StiffMatrix_Elem[7][11];
+  StiffMatrix_Node[2][0] = StiffMatrix_Elem[8][9];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[8][10];	StiffMatrix_Node[2][2] = StiffMatrix_Elem[8][11];
   StiffMatrix.AddBlock(val_Point_2, val_Point_3, StiffMatrix_Node);
   
-  StiffMatrix_Node[3][0] = StiffMatrix_Elem[9][0];	StiffMatrix_Node[3][1] = StiffMatrix_Elem[9][1];	StiffMatrix_Node[3][2] = StiffMatrix_Elem[9][2];
-  StiffMatrix_Node[4][0] = StiffMatrix_Elem[10][0];	StiffMatrix_Node[4][1] = StiffMatrix_Elem[10][1];	StiffMatrix_Node[4][2] = StiffMatrix_Elem[10][2];
-  StiffMatrix_Node[5][0] = StiffMatrix_Elem[11][0];	StiffMatrix_Node[5][1] = StiffMatrix_Elem[11][1];	StiffMatrix_Node[5][2] = StiffMatrix_Elem[11][2];
+  StiffMatrix_Node[0][0] = StiffMatrix_Elem[9][0];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[9][1];	StiffMatrix_Node[0][2] = StiffMatrix_Elem[9][2];
+  StiffMatrix_Node[1][0] = StiffMatrix_Elem[10][0];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[10][1];	StiffMatrix_Node[1][2] = StiffMatrix_Elem[10][2];
+  StiffMatrix_Node[2][0] = StiffMatrix_Elem[11][0];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[11][1];	StiffMatrix_Node[2][2] = StiffMatrix_Elem[11][2];
   StiffMatrix.AddBlock(val_Point_3, val_Point_0, StiffMatrix_Node);
   
-  StiffMatrix_Node[3][0] = StiffMatrix_Elem[9][3];	StiffMatrix_Node[3][1] = StiffMatrix_Elem[9][4];	StiffMatrix_Node[3][2] = StiffMatrix_Elem[9][5];
-  StiffMatrix_Node[4][0] = StiffMatrix_Elem[10][3];	StiffMatrix_Node[4][1] = StiffMatrix_Elem[10][4];	StiffMatrix_Node[4][2] = StiffMatrix_Elem[10][5];
-  StiffMatrix_Node[5][0] = StiffMatrix_Elem[11][3];	StiffMatrix_Node[5][1] = StiffMatrix_Elem[11][4];	StiffMatrix_Node[5][2] = StiffMatrix_Elem[11][5];
+  StiffMatrix_Node[0][0] = StiffMatrix_Elem[9][3];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[9][4];	StiffMatrix_Node[0][2] = StiffMatrix_Elem[9][5];
+  StiffMatrix_Node[1][0] = StiffMatrix_Elem[10][3];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[10][4];	StiffMatrix_Node[1][2] = StiffMatrix_Elem[10][5];
+  StiffMatrix_Node[2][0] = StiffMatrix_Elem[11][3];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[11][4];	StiffMatrix_Node[2][2] = StiffMatrix_Elem[11][5];
   StiffMatrix.AddBlock(val_Point_3, val_Point_1, StiffMatrix_Node);
   
-  StiffMatrix_Node[3][0] = StiffMatrix_Elem[9][6];	StiffMatrix_Node[3][1] = StiffMatrix_Elem[9][7];	StiffMatrix_Node[3][2] = StiffMatrix_Elem[9][8];
-  StiffMatrix_Node[4][0] = StiffMatrix_Elem[10][6];	StiffMatrix_Node[4][1] = StiffMatrix_Elem[10][7];	StiffMatrix_Node[4][2] = StiffMatrix_Elem[10][8];
-  StiffMatrix_Node[5][0] = StiffMatrix_Elem[11][6];	StiffMatrix_Node[5][1] = StiffMatrix_Elem[11][7];	StiffMatrix_Node[5][2] = StiffMatrix_Elem[11][8];
+  StiffMatrix_Node[0][0] = StiffMatrix_Elem[9][6];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[9][7];	StiffMatrix_Node[0][2] = StiffMatrix_Elem[9][8];
+  StiffMatrix_Node[1][0] = StiffMatrix_Elem[10][6];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[10][7];	StiffMatrix_Node[1][2] = StiffMatrix_Elem[10][8];
+  StiffMatrix_Node[2][0] = StiffMatrix_Elem[11][6];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[11][7];	StiffMatrix_Node[2][2] = StiffMatrix_Elem[11][8];
   StiffMatrix.AddBlock(val_Point_3, val_Point_2, StiffMatrix_Node);
   
-  StiffMatrix_Node[3][0] = StiffMatrix_Elem[9][9];	StiffMatrix_Node[3][1] = StiffMatrix_Elem[9][10];		StiffMatrix_Node[3][2] = StiffMatrix_Elem[9][11];
-  StiffMatrix_Node[4][0] = StiffMatrix_Elem[10][9];	StiffMatrix_Node[4][1] = StiffMatrix_Elem[10][10];	StiffMatrix_Node[4][2] = StiffMatrix_Elem[10][11];
-  StiffMatrix_Node[5][0] = StiffMatrix_Elem[11][9];	StiffMatrix_Node[5][1] = StiffMatrix_Elem[11][10];	StiffMatrix_Node[5][2] = StiffMatrix_Elem[11][11];
+  StiffMatrix_Node[0][0] = StiffMatrix_Elem[9][9];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[9][10];		StiffMatrix_Node[0][2] = StiffMatrix_Elem[9][11];
+  StiffMatrix_Node[1][0] = StiffMatrix_Elem[10][9];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[10][10];	StiffMatrix_Node[1][2] = StiffMatrix_Elem[10][11];
+  StiffMatrix_Node[2][0] = StiffMatrix_Elem[11][9];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[11][10];	StiffMatrix_Node[2][2] = StiffMatrix_Elem[11][11];
   StiffMatrix.AddBlock(val_Point_3, val_Point_3, StiffMatrix_Node);
   
   /*--- Deallocate memory and exit ---*/
@@ -1582,51 +1141,86 @@ void CVolumetricMovement::AddFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
   
 }
 
-void CVolumetricMovement::SetBoundaryDisplacements(unsigned short nVar, CGeometry *geometry, CConfig *config) {
+void CVolumetricMovement::CheckFEA_Elem2D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2) {
+  
+  
+  unsigned short iDim;
+  double a[3], b[3], Area, eps = 1e-14;
+  
+  double *Coord_0 = geometry->node[val_Point_0]->GetCoord();
+  double *Coord_1 = geometry->node[val_Point_1]->GetCoord();
+  double *Coord_2 = geometry->node[val_Point_2]->GetCoord();
+  
+  for (iDim = 0; iDim < nDim; iDim++) {
+    a[iDim] = Coord_0[iDim]-Coord_2[iDim];
+    b[iDim] = Coord_1[iDim]-Coord_2[iDim];
+  }
+  
+  Area = 0.5*fabs(a[0]*b[1]-a[1]*b[0]) + eps;
+  
+  if (Area < 0.0) cout << "Negative Volume for element " << val_iElem << ": " << Area << endl;
+  
+}
 
-	unsigned short iDim, nDim = geometry->GetnDim(), iMarker, axis = 0, iVar;
+void CVolumetricMovement::CheckFEA_Elem3D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2, unsigned long val_Point_3) {
+  
+  
+  unsigned short iDim;
+  double r1[3], r2[3], r3[3], CrossProduct[3], Volume;
+  
+  double *Coord_0 = geometry->node[val_Point_0]->GetCoord();
+  double *Coord_1 = geometry->node[val_Point_1]->GetCoord();
+  double *Coord_2 = geometry->node[val_Point_2]->GetCoord();
+  double *Coord_3 = geometry->node[val_Point_3]->GetCoord();
+  
+  for (iDim = 0; iDim < nDim; iDim++) {
+    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
+    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
+    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
+  }
+  
+	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
+	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
+	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
+  
+  Volume = (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  
+  if (Volume < 0.0) cout << "Negative Volume for element " << val_iElem << ": " << Volume << endl;
+  
+}
+
+void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig *config) {
+
+	unsigned short iDim, nDim = geometry->GetnDim(), iMarker, axis = 0;
 	unsigned long iPoint, total_index, iVertex;
-	double *VarCoord, MeanCoord[3];
+	double *VarCoord, MeanCoord[3], VarIncrement = 1.0;
+  
+  /*--- If using the FEA method, impose the surface deflections in increments
+   and solve the linear elasticity equations iteratively with successive
+   small deformations. ---*/
+  if (config->GetKind_GridDef_Method() == FEA)
+    VarIncrement = 1.0/((double)config->GetFEA_Iter());
 	
 	/*--- As initialization, set to zero displacements of all the surfaces except the symmetry
-	 plane, and the MPI boundaries (receive). Note that we are looping over 
-   the total number of variables (nVar). This is in case we are using the linear
-   elasticity equations and have both displacement and velocities. ---*/
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		if ((config->GetMarker_All_Boundary(iMarker) != SYMMETRY_PLANE) &&
-				(!((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) 
-					 && (config->GetMarker_All_SendRecv(iMarker) > 0))))
+	 plane and the receive boundaries. ---*/
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+		if ((config->GetMarker_All_Boundary(iMarker) != SYMMETRY_PLANE) && (config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE)) {
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-				for (iVar = 0; iVar < nVar; iVar++) {
-					total_index = iPoint*nVar + iVar;
+				for (iDim = 0; iDim < nDim; iDim++) {
+					total_index = iPoint*nDim + iDim;
 					rhs[total_index]  = 0.0;
 					usol[total_index] = 0.0;
-					StiffMatrix.DeleteValsRowi(total_index);
-				}
-			}
-	
-	/*--- Set the known displacements and modify the linear system. Here, we
-   set only the first nDim components of the solution. This is because even
-   in the case of using linear elasticity, the displacement variables are 
-   the first nDim components out of the full nVar state vector. ---*/
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		if (config->GetMarker_All_Moving(iMarker) == YES)  {
-			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-				VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
-				for (iDim = 0; iDim < nDim; iDim++) {
-					total_index = iPoint*nVar + iDim;
-					rhs[total_index]  = VarCoord[iDim];
-					usol[total_index] = VarCoord[iDim];
+          StiffMatrix.DeleteValsRowi(total_index);
 				}
 			}
     }
-
-	/*--- Set to zero displacements of the normal component for the Symmetry plane condition ---*/
+  }
+	
+  /*--- Set to zero displacements of the normal component for the symmetry plane condition ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		if (config->GetMarker_All_Boundary(iMarker) == SYMMETRY_PLANE) {
-
+		if ((config->GetMarker_All_Boundary(iMarker) == SYMMETRY_PLANE) && (nDim == 3)) {
+      
 			for (iDim = 0; iDim < nDim; iDim++) MeanCoord[iDim] = 0.0;
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -1639,32 +1233,49 @@ void CVolumetricMovement::SetBoundaryDisplacements(unsigned short nVar, CGeometr
 			if ((MeanCoord[0] <= MeanCoord[1]) && (MeanCoord[0] <= MeanCoord[2])) axis = 0;
 			if ((MeanCoord[1] <= MeanCoord[0]) && (MeanCoord[1] <= MeanCoord[2])) axis = 1;
 			if ((MeanCoord[2] <= MeanCoord[0]) && (MeanCoord[2] <= MeanCoord[1])) axis = 2;
-			
-			if (nDim == 2) axis = 1;
-			
+						
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-				total_index = iPoint*nVar + axis;
-				rhs[total_index] = 0.0; 
+				total_index = iPoint*nDim + axis;
+				rhs[total_index] = 0.0;
 				usol[total_index] = 0.0;
 				StiffMatrix.DeleteValsRowi(total_index);
 			}
 		}
 	}
-	
-	/*--- Set to zero displacements/velocities of the near-field. As above, note that we 
-   are looping over the total number of variables (nVar). ---*/
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		if (config->GetMarker_All_Boundary(iMarker) == NEARFIELD_BOUNDARY)
+  
+	/*--- Set the known displacements, note that some points of the moving surfaces 
+   could be on on the symmetry plane, we should specify DeleteValsRowi again (just in case) ---*/
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+		if (config->GetMarker_All_Moving(iMarker) == YES)  {
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-				for (iVar = 0; iVar < nVar; iVar++) {
-					total_index = iPoint*nVar + iDim;
-					rhs[total_index]  = 0.0;
-					usol[total_index] = 0.0;
-					StiffMatrix.DeleteValsRowi(total_index);
+				VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
+				for (iDim = 0; iDim < nDim; iDim++) {
+					total_index = iPoint*nDim + iDim;
+					rhs[total_index]  = VarCoord[iDim] * VarIncrement;
+					usol[total_index] = VarCoord[iDim] * VarIncrement;
+          StiffMatrix.DeleteValsRowi(total_index);
 				}
 			}
+    }
+  }
+  
+  /*--- Don't move the nearfield plane ---*/
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+		if (config->GetMarker_All_Boundary(iMarker) == NEARFIELD_BOUNDARY) {
+			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+				for (iDim = 0; iDim < nDim; iDim++) {
+					total_index = iPoint*nDim + iDim;
+					rhs[total_index]  = 0.0;
+					usol[total_index] = 0.0;
+          StiffMatrix.DeleteValsRowi(total_index);
+				}
+			}
+    }
+  }
+  
 }
 
 void CVolumetricMovement::SetDomainDisplacements(CGeometry *geometry, CConfig *config) {
@@ -1696,7 +1307,7 @@ void CVolumetricMovement::SetDomainDisplacements(CGeometry *geometry, CConfig *c
 	}
 }
 
-void CVolumetricMovement::UpdateSpringGrid(unsigned short nVar, CGeometry *geometry, CConfig *config) {
+void CVolumetricMovement::UpdateGridCoord(CGeometry *geometry, CConfig *config) {
 	unsigned long iPoint, total_index;
 	double new_coord;
 
@@ -1705,135 +1316,33 @@ void CVolumetricMovement::UpdateSpringGrid(unsigned short nVar, CGeometry *geome
   
 	for (iPoint = 0; iPoint < nPoint; iPoint++)
 		for (iDim = 0; iDim < nDim; iDim++) {
-			total_index = iPoint*nVar + iDim;
+			total_index = iPoint*nDim + iDim;
 			new_coord = geometry->node[iPoint]->GetCoord(iDim) + usol[total_index];
 			if (fabs(new_coord) < EPS*EPS) new_coord = 0.0;
 			geometry->node[iPoint]->SetCoord(iDim, new_coord);
 		}
 }
 
-void CVolumetricMovement::AlgebraicMethod(CGeometry *geometry, CConfig *config, bool UpdateGeo) {
-	unsigned long iPoint, jPoint, iVertex;
-	unsigned short iMarker, iDim;
-	double *iCoord, *jCoord, *DeltaS, *jNorm, jArea, jProjVec, *NuFunc, jLength, Up[3], 
-	Low, *NewCoordx, *NewCoordy, *NewCoordz, dist, alpha;
-	
-	/*--- This parameter limit the area of influence of a perturbation ---*/
-	alpha = 100.0;
-
-	/*--- Compute the nu function (The nu function is defined so that the deformation is smoothly 
-	 reduced as the distance to the body increases ---*/
-	NuFunc = new double [geometry->GetnPoint()]; 
-	NewCoordx = new double [geometry->GetnPoint()]; 
-	NewCoordy = new double [geometry->GetnPoint()]; 
-	NewCoordz = new double [geometry->GetnPoint()]; 
-	
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-		iCoord = geometry->node[iPoint]->GetCoord();
-		dist = (iCoord[nDim-1]+0.5)*(iCoord[nDim-1]+0.5);
-		dist = sqrt(dist);
-		if (dist <= 0.2) NuFunc[iPoint] = 1.0;
-		if ((dist > 0.2) && (dist < 0.4))
-			NuFunc[iPoint] = -5.0*dist + 2.0;
-		if (dist >= 0.4) NuFunc[iPoint] = 0.0;		
-	}
-	
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-		iCoord = geometry->node[iPoint]->GetCoord();
-		
-		Up[0] = 0.0; Up[1] = 0.0; Up[2] = 0.0; Low = 0.0;
-		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-			if (config->GetMarker_All_Moving(iMarker) == YES)		
-				for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-					jPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-					jCoord = geometry->node[jPoint]->GetCoord();
-					jNorm = geometry->vertex[iMarker][iVertex]->GetNormal();				
-					DeltaS = geometry->vertex[iMarker][iVertex]->GetVarCoord();
-					
-					jArea = 0.0; 
-					for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
-						jArea += jNorm[iDim]*jNorm[iDim];
-					jArea = sqrt(jArea); 
-						
-					jProjVec = 0.0; jLength = 0.0;
-					for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
-						jProjVec += (iCoord[iDim]-jCoord[iDim])*jNorm[iDim]/jArea;
-						jLength += (iCoord[iDim]-jCoord[iDim])*(iCoord[iDim]-jCoord[iDim]);
-					}
-					jLength = sqrt(jLength);		
-					
-					if (jPoint != iPoint) {
-						
-						/*--- Compute the numerator of the algeabric method ---*/
-						for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
-							Up[iDim] += jArea * DeltaS[iDim] * (jProjVec + 1.0) / pow(jLength, alpha);
-						
-						/*--- Compute the denominator of the algeabric method ---*/
-						Low += jArea * (jProjVec + 1.0) / pow(jLength, alpha);
-					}
-					
-				}
-						
-		/*--- Evaluate the new position of the interior point ---*/
-		NewCoordx[iPoint] = geometry->node[iPoint]->GetCoord(0) + NuFunc[iPoint]*Up[0] / Low;
-		NewCoordy[iPoint] = geometry->node[iPoint]->GetCoord(1) + NuFunc[iPoint]*Up[1] / Low;
-		if (geometry->GetnDim() == 3)
-			NewCoordz[iPoint] = geometry->node[iPoint]->GetCoord(2) + NuFunc[iPoint]*Up[2] / Low;
-		
-	}
-	
-/*	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		if (config->GetMarker_All_Moving(iMarker) == YES)		
-			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-				DeltaS = geometry->vertex[iMarker][iVertex]->GetVarCoord();
-				
-				NewCoordx[iPoint] = geometry->node[iPoint]->GetCoord(0) + DeltaS[0];
-				NewCoordy[iPoint] = geometry->node[iPoint]->GetCoord(1) + DeltaS[1];
-				if (geometry->GetnDim() == 3)
-					NewCoordz[iPoint] = geometry->node[iPoint]->GetCoord(2) + DeltaS[2];
-			}		*/		
-	
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-		geometry->node[iPoint]->SetCoord(0, NewCoordx[iPoint]);
-		geometry->node[iPoint]->SetCoord(1, NewCoordy[iPoint]);
-		if (geometry->GetnDim() == 3)
-			geometry->node[iPoint]->SetCoord(2, NewCoordz[iPoint]);
-	}
-		
-	if (UpdateGeo) {
-		geometry->SetCG();
-		geometry->SetControlVolume(config, UPDATE);
-		geometry->SetBoundControlVolume(config, UPDATE);
-	}
-	
-	delete [] NuFunc; 
-	delete [] NewCoordx; 
-	delete [] NewCoordy; 
-	delete [] NewCoordz; 
-
-}
-
 void CVolumetricMovement::SpringMethod(CGeometry *geometry, CConfig *config, bool UpdateGeo) {
 	double MinLength, NumError;
 	unsigned long iPoint, total_index;
-	unsigned short iVar;
-  unsigned short nVar = geometry->GetnDim();
+	unsigned short iDim, nDim = geometry->GetnDim();
 
-	Initialize_StiffMatrix_Structure(nVar, geometry);
+	Initialize_StiffMatrix_Structure(nDim, geometry);
 	
 	StiffMatrix.SetValZero();
 	
 	MinLength = SetSpringMethodContributions_Edges(geometry);
 	
-	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
-		for (iVar = 0; iVar < nVar; iVar++) {
-			total_index = iPoint*nVar + iVar;
+	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+		for (iDim = 0; iDim < nDim; iDim++) {
+			total_index = iPoint*nDim + iDim;
 			rhs[total_index]  = 0.0;
 			usol[total_index] = 0.0;
 		}
+  }
 	
-	SetBoundaryDisplacements(nVar, geometry, config);
+	SetBoundaryDisplacements(geometry, config);
   
 	if (config->GetHold_GridFixed())
 		SetDomainDisplacements(geometry, config);
@@ -1846,7 +1355,7 @@ void CVolumetricMovement::SpringMethod(CGeometry *geometry, CConfig *config, boo
     	
 	StiffMatrix.CGSolution(rhs, usol, NumError, 999999, true, geometry, config);
 	
-  UpdateSpringGrid(nVar, geometry, config);
+  UpdateGridCoord(geometry, config);
   
 	if (UpdateGeo) {
 		geometry->SetCG();
@@ -1859,81 +1368,64 @@ void CVolumetricMovement::SpringMethod(CGeometry *geometry, CConfig *config, boo
 }
 
 void CVolumetricMovement::FEAMethod(CGeometry *geometry, CConfig *config, bool UpdateGeo) {
-	double MinLength, NumError;
-	unsigned long iPoint, total_index, IterLinSol = 0;
-	unsigned short iVar;
-	unsigned short nVar = 2*geometry->GetnDim();
-  
-	Initialize_StiffMatrix_Structure(nVar, geometry);
 	
+  /*--- Local variables ---*/
+  
+  unsigned short iDim;
+	unsigned long iPoint, total_index, IterLinSol, iFEA;
+  double MinLength, NumError;
+  
+  /*--- Initialize the global stiffness matrix structure for the mesh ---*/
+  
+	Initialize_StiffMatrix_Structure(nDim, geometry);
+  
+  /*--- Loop over the total number of FEA iterations. The surface
+   deformation can be divided into increments, as the linear elasticity
+   equations hold only for small deformation. ---*/
+  
+  for (iFEA = 0; iFEA < config->GetFEA_Iter(); iFEA++) {
+  
 	StiffMatrix.SetValZero();
 	
+  /*--- Compute the stiffness matrix entries for all elements in the
+   mesh using a finite element method discretization of the linear
+   elasticity equations. Transfer element stiffnesses to point-to-point. ---*/
+  
 	MinLength = SetFEAMethodContributions_Elem(geometry);
 	
-	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
-		for (iVar = 0; iVar < nVar; iVar++) {
-			total_index = iPoint*nVar + iVar;
+  /*--- Print a warning if error tolerance is larger than min length ---*/
+	NumError = config->GetGridDef_Error();
+	if (NumError > MinLength) {
+    cout << "Warning: The error tol. is greater than the minimum edge length.\n" << endl;
+    cout << "NumError: " << NumError <<"." << "  MinLength: " << MinLength << "." << endl;
+  }
+  
+  /*--- Initialize the solution and r.h.s. vectors to zero ---*/
+    
+	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+		for (iDim = 0; iDim < nDim; iDim++) {
+			total_index = iPoint*nDim + iDim;
 			rhs[total_index]  = 0.0;
-			usol[total_index] = 0.0;
+      usol[total_index] = 0.0;
 		}
+  }
 	
-	SetBoundaryDisplacements(nVar, geometry, config);
+  /*--- Set the boundary displacements (as prescribed by the design variable
+   perturbations controlling the surface shape) as a Dirichlet BC. ---*/
   
-  /*--- Check the final residual manually (temporary) ---*/
-  double *aux   = new double [geometry->GetnPoint() * nVar];
-  double *resid = new double [geometry->GetnPoint() * nVar];
+	SetBoundaryDisplacements(geometry, config);
   
-#ifdef DEBUG_TDE
-  double norm = 0.0;
-  StiffMatrix.MatrixVectorProduct(usol, aux);
-  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-		for (iVar = 0; iVar < nVar; iVar++) {
-			total_index = iPoint*nVar + iVar;
-			resid[total_index]  = aux[total_index] - rhs[total_index];
-      norm += resid[total_index]*resid[total_index];
-    }
-  }
-  cout << "Initial residual norm (r = Ax - b): " << sqrt(norm) << endl;
-  
-  norm = 0.0;
-  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-		for (iVar = 0; iVar < nVar; iVar++) {
-			total_index = iPoint*nVar + iVar;
-      norm += usol[total_index]*usol[total_index];
-    }
-  }
-  cout << "USOL: " << sqrt(norm) << endl;
-  
-  norm = 0.0;
-  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-		for (iVar = 0; iVar < nVar; iVar++) {
-			total_index = iPoint*nVar + iVar;
-      norm += rhs[total_index]*rhs[total_index];
-    }
-  }
-  cout << "RHS: " << sqrt(norm) << endl;
-#endif
+  /*--- Fix the location of any points in the domain, if requested. ---*/
   
 	if (config->GetHold_GridFixed())
 		SetDomainDisplacements(geometry, config);
-	
-	NumError = config->GetGridDef_Error();
-	if (NumError > MinLength) {
-		cout << "The numerical error is greater than the length of the smallest edge! MinLength: " << MinLength <<"."<<endl;
-		cin.get();
-	}
   
-  /*--- Solve the linear system (Krylov subspace methods). So far,
-   Bi-CGSTAB seems to be the most efficient with Jacobi preconditioning. 
-   GMRES also performs well, but appears to be more costly. However, it
-   maybe be required for extreme deformations (especially with N-S meshes) ---*/
-  
-  //StiffMatrix.CGSolution(rhs, usol, NumError, 999999, true, geometry, config);
+  /*--- Solve the linear system (Krylov subspace methods) ---*/
   
   CSysVector rhs_vec((const unsigned int)geometry->GetnPoint(),
-                     (const unsigned int)geometry->GetnPointDomain(), nVar, rhs);
+                     (const unsigned int)geometry->GetnPointDomain(), nDim, rhs);
   CSysVector sol_vec((const unsigned int)geometry->GetnPoint(),
-                     (const unsigned int)geometry->GetnPointDomain(), nVar, usol);
+                     (const unsigned int)geometry->GetnPointDomain(), nDim, usol);
   
   CMatrixVectorProduct* mat_vec = new CSparseMatrixVectorProduct(StiffMatrix);
   CSolutionSendReceive* sol_mpi = new CSparseMatrixSolMPI(StiffMatrix, geometry, config);
@@ -1943,44 +1435,40 @@ void CVolumetricMovement::FEAMethod(CGeometry *geometry, CConfig *config, bool U
   precond = new CJacobiPreconditioner(StiffMatrix);
   
   CSysSolve system;
-  IterLinSol = system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, NumError, 1000, true);
-  //IterLinSol = system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, NumError, 1000, true);
+//  IterLinSol = system.ConjugateGradient(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, NumError, 200, true);
+    IterLinSol = system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, NumError, 300, true);
+//    IterLinSol = system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, NumError, 300, true);
   
   /*--- Copy the solution to the array ---*/
   sol_vec.CopyToArray(usol);
   
-  /*--- dealocate memory ---*/
+  /*--- Deallocate memory needed by the Krylov linear solver ---*/
+  
   delete mat_vec;
   delete precond;
   delete sol_mpi;
-  delete aux;
-  delete resid;
   
-  UpdateSpringGrid(nVar, geometry, config);
+  /*--- Update the grid coordinates for all nodes using the solution
+   of the linear system (usol contains the x, y, z displacements). ---*/
   
-	if (UpdateGeo) {
-		geometry->SetCG();
-		geometry->SetControlVolume(config, UPDATE);
-		geometry->SetBoundControlVolume(config, UPDATE);
-	}
+  UpdateGridCoord(geometry, config);
+    
+    if (UpdateGeo) {
+      geometry->SetCG();
+      geometry->SetControlVolume(config, UPDATE);
+      geometry->SetBoundControlVolume(config, UPDATE);
+    }
+  
+  }
+  
+  /*--- Perform a grid quality check after deformation. ---*/
+  
+  CheckFEA_Grid(geometry);
+  
+  /*--- Deallocate memory for the global stiffness matrix and exit. ---*/
   
 	Deallocate_StiffMatrix_Structure(geometry);
   
-}
-
-void CVolumetricMovement::TorsionalSpringMethod(CGeometry *geometry, CConfig *config, bool UpdateGeo) {
-	
-	Set2DMatrix_Structure(geometry);
-	SetBoundary(geometry, config);
-	SetSolution(geometry, config);
-	UpdateGrid(geometry, config);
-	
-	if (UpdateGeo) {
-		geometry->SetCG();
-		geometry->SetControlVolume(config, UPDATE);
-		geometry->SetBoundControlVolume(config, UPDATE);
-	}
-	
 }
 
 void CVolumetricMovement::SetRigidRotation(CGeometry *geometry, CConfig *config,
@@ -2540,7 +2028,7 @@ void CVolumetricMovement::SolveTypicalSectionWingModel(CGeometry *geometry, doub
     }
     
     /*--- Amount of output to print to screen ---*/
-    bool verbose = false;
+    bool verbose = true;
     
     /*--- Retrieve values from the config file ---*/
     double w_a = config->GetAeroelastic_Frequency_Pitch();
@@ -2725,7 +2213,7 @@ void CVolumetricMovement::AeroelasticDeform(CGeometry *geometry, CConfig *config
     
     double Center[2];
     Center[0] = config->GetMotion_Origin_X(iZone);
-    Center[1] = config->GetMotion_Origin_Y(iZone)+dy; //add the plunge.
+    Center[1] = config->GetMotion_Origin_Y(iZone);
     double Lref = config->GetLength_Ref();
     double *Coord;
     unsigned short iDim;
@@ -2750,23 +2238,23 @@ void CVolumetricMovement::AeroelasticDeform(CGeometry *geometry, CConfig *config
                     r[iDim] = (Coord[iDim]-Center[iDim])/Lref;
                 
                 /*--- Compute delta of transformed point coordinates ---*/
-                // rotation contribution + Center + plunging contribution (this contribution is accounted for in Center)
-                x_new = cos(dalpha)*r[0] - sin(dalpha)*r[1] -r[0]; // + Center[0];
-                y_new = sin(dalpha)*r[0] + cos(dalpha)*r[1] -r[1] + dy; //+ Center[1]; // needs the plunge think about it.
+                // The deltas are needed for the Spring Method.
+                // rotation contribution + plunging contribution - previous position
+                x_new = cos(dalpha)*r[0] - sin(dalpha)*r[1] -r[0];
+                y_new = sin(dalpha)*r[0] + cos(dalpha)*r[1] -r[1] + dy;
                 
                 VarCoord[0] = x_new;
                 VarCoord[1] = y_new;
                 VarCoord[2] = 0.0;
-                /*--- Store new node locations for the surface ---*/
+
+                /*--- Store new delta node locations for the surface ---*/
                 geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
             }
 		}
 	}
     
-    /*--- Set the mesh motion center to the new location after
-     incrementing the position with the rigid translation. This
-     new location will be used for subsequent pitching/rotation, aeroelastic movement.---*/
-    config->SetMotion_Origin_Y(iZone,Center[1]);
+        /*--- Set the mesh motion center to the new location after incrementing the position with the plunge ---*/
+    config->SetMotion_Origin_Y(iZone,Center[1]+dy);
     
     /*--- Move/Deform the rest of the mesh by the Spring Method ---*/
     SpringMethod(geometry, config, true);
@@ -2783,7 +2271,7 @@ void CVolumetricMovement::AeroelasticRigid(CGeometry *geometry, CConfig *config,
     
     double Center[2];
     Center[0] = config->GetMotion_Origin_X(iZone);
-    Center[1] = config->GetMotion_Origin_Y(iZone)+dy; //add the plunge.
+    Center[1] = config->GetMotion_Origin_Y(iZone);
     double Lref = config->GetLength_Ref();
     double *Coord;
     unsigned short iDim;
@@ -2804,19 +2292,17 @@ void CVolumetricMovement::AeroelasticRigid(CGeometry *geometry, CConfig *config,
             r[iDim] = (Coord[iDim]-Center[iDim])/Lref;
 
         /*--- Compute transformed point coordinates ---*/
-        // rotation contribution + Center + plunging contribution (this contribution is accounted for in Center)
+        // rotation contribution + Center + plunging contribution 
         x_new = cos(dalpha)*r[0] - sin(dalpha)*r[1] + Center[0];
-        y_new = sin(dalpha)*r[0] + cos(dalpha)*r[1] + Center[1];
+        y_new = sin(dalpha)*r[0] + cos(dalpha)*r[1] + Center[1] + dy;
 
         /*--- Store new node location ---*/
         geometry->node[iPoint]->SetCoord(0,x_new);
         geometry->node[iPoint]->SetCoord(1,y_new);
     }
 
-    /*--- Set the mesh motion center to the new location after
-     incrementing the position with the rigid translation. This
-     new location will be used for subsequent pitching/rotation, aeroelastic movement.---*/
-    config->SetMotion_Origin_Y(iZone,Center[1]);
+        /*--- Set the mesh motion center to the new location after incrementing the position with the plunge ---*/
+    config->SetMotion_Origin_Y(iZone,Center[1]+dy);
 
 
     /*--- After moving all nodes, update geometry class ---*/
@@ -3183,7 +2669,7 @@ void CSurfaceMovement::SetCartesianCoord(CGeometry *geometry, CConfig *config, C
 			
 			/*--- Set the variation of the coordinates ---*/
 			geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
-			
+
 		}
 	}
 		
@@ -3492,7 +2978,7 @@ void CSurfaceMovement::SetFFDRotation(CGeometry *geometry, CConfig *config, CFre
 void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
 	unsigned long iVertex, Point;
 	unsigned short iMarker;
-	double VarCoord[3], *Coord, *Normal, ek, fk, BumpSize = 4.0, BumpLoc = 1.0, xCoord;
+	double VarCoord[3], *Coord, *Normal, ek, fk, BumpSize = 1.0, BumpLoc = 0.0, xCoord;
   
 	bool upper = true, double_surface = false;
   
@@ -3548,10 +3034,137 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
 	}
 }
 
-void CSurfaceMovement::SetGaussBump(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
+void CSurfaceMovement::SetSpherical(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
+
+	unsigned long iVertex, iPoint, n;
+	unsigned short iMarker, jDV;
+	double VarCoord[3], *Coord, *Normal, Theta_Value, Radius_Value, Value_old, Value_new, Delta;
+	double x, x2, y2, z2, r_yz, r_yz2, theta, r, cos_theta, sin_theta, cos_phi, sin_phi;
+	vector<double> Theta_Spline, Radius_Spline, Radius2_Spline;
+	int ControlPoint_Index;
+	ofstream File;
+  
+  /*--- Read the baseline spline ---*/
+  Theta_Spline.push_back(0.0);              Radius_Spline.push_back(0.1524);
+  Theta_Spline.push_back(0.1963495408494);  Radius_Spline.push_back(0.1524);
+  Theta_Spline.push_back(0.3926990816987);  Radius_Spline.push_back(0.1524);
+  Theta_Spline.push_back(0.7853981633974);  Radius_Spline.push_back(0.1524);
+  Theta_Spline.push_back(1.570796326795);   Radius_Spline.push_back(0.1524);
+  
+  
+  /*--- Read the baseline spline ---*/
+//  Theta_Spline.push_back(0.0);              Radius_Spline.push_back(5.9);
+//  Theta_Spline.push_back(0.1963495408494);  Radius_Spline.push_back(5.0);
+//  Theta_Spline.push_back(0.3926990816987);  Radius_Spline.push_back(4.0);
+//  Theta_Spline.push_back(0.7853981633974);  Radius_Spline.push_back(3.0);
+//  Theta_Spline.push_back(1.570796326795);   Radius_Spline.push_back(2.6);
+    
+  if (ResetDef == true) { /*--- Only one deformation (iVD), reseting the spline at every design variable ---*/
+    
+    /*--- Modify the baseline control point positions using the the deformation ---*/
+    ControlPoint_Index = int(config->GetParamDV(iDV, 0));
+    
+    Theta_Value = config->GetParamDV(iDV, 1);
+    Radius_Value = config->GetParamDV(iDV, 2);
+    Value_old = config->GetDV_Value_Old(iDV);
+    Value_new = config->GetDV_Value_New(iDV);
+    Delta = Value_new-Value_old;
+    
+    Theta_Spline[ControlPoint_Index] += Delta*Theta_Value;
+    Radius_Spline[ControlPoint_Index] += Delta*Radius_Value;
+    
+  }
+  
+  else { /*--- Aditive deformation, change all the points of the original spline,
+          using all the design variables. ---*/
+    
+    for (jDV = 0; jDV < config->GetnDV(); jDV++) {
+            
+      /*--- Modify the baseline control point positions using the the deformation ---*/
+      ControlPoint_Index = int(config->GetParamDV(jDV, 0));
+      
+      Theta_Value = config->GetParamDV(jDV, 1);
+      Radius_Value = config->GetParamDV(jDV, 2);
+      Value_old = config->GetDV_Value_Old(jDV);
+      Value_new = config->GetDV_Value_New(jDV);
+      Delta = Value_new-Value_old;
+      
+      Theta_Spline[ControlPoint_Index] += Delta*Theta_Value;
+      Radius_Spline[ControlPoint_Index] += Delta*Radius_Value;
+      
+    }
+    
+  }
+  
+	/*--- Create the spline ---*/
+	n = Theta_Spline.size();
+	Radius2_Spline.resize(n);
+	boundary->SetSpline(Theta_Spline, Radius_Spline, n, 0, 0, Radius2_Spline);
+  
+	/*--- Loop over all the points in the surface to evaluate the coordinate change ---*/
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+		for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
+			VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
+      
+			if (config->GetMarker_All_Moving(iMarker) == YES) {
+        
+        iPoint = boundary->vertex[iMarker][iVertex]->GetNode();
+        Coord = boundary->vertex[iMarker][iVertex]->GetCoord();
+        Normal = boundary->vertex[iMarker][iVertex]->GetNormal();
+        
+        /*--- Compute the coordinate variation due to a surface modification, given
+         ControlPoint_Index, Theta, Radius, and Ampl ---*/
+        
+ //       x = Coord[0] - (6.5 + 2.9205);	// HARD-CODED VALUE; needs to be fixed (MC)
+ //       if (x > 0) {
+        
+        x = 0.1524 - Coord[0];	// HARD-CODED VALUE; needs to be fixed (MC)
+        
+        if ((Coord[0] >= 0.0) && (Coord[0] <= 0.128559))  {
+          
+          /*--- Compute the coordinate variation due to a surface modification, given
+           ControlPoint_Index, Theta, Radius, and Ampl ---*/
+          if (Coord[1] == 0.0 && Coord[2] == 0.0) {	// on axis
+            r = boundary->GetSpline(Theta_Spline, Radius_Spline, Radius2_Spline, n, 0.0);
+            VarCoord[0] = r - x;
+            VarCoord[1] = 0.0;
+            VarCoord[2] = 0.0;
+          }
+          else {
+            x2 = x*x; y2 = Coord[1]*Coord[1]; z2 = Coord[2]*Coord[2];
+            r_yz = sqrt(y2 + z2); r_yz2 = y2 + z2;
+            theta = atan(r_yz/x);
+            cos_theta = x/sqrt(x2 + r_yz2);
+            sin_theta = r_yz/sqrt(x2 + r_yz2);
+            cos_phi = Coord[1]/sqrt(z2 + y2);
+            sin_phi = Coord[2]/sqrt(z2 + y2);
+            r = boundary->GetSpline(Theta_Spline, Radius_Spline, Radius2_Spline, n, theta);
+            VarCoord[0] = r*cos_theta - x;
+            VarCoord[1] = r*sin_theta*cos_phi - Coord[1];
+            VarCoord[2] = r*sin_theta*sin_phi - Coord[2];
+          }
+          
+        }
+        
+				/*--- Set the coordinate variation due to a surface modification ---*/
+        
+				boundary->vertex[iMarker][iVertex]->AddVarCoord(VarCoord);
+        
+			}
+		}
+	}
+
+  
+  Theta_Spline.clear();
+  Radius_Spline.clear();
+  Radius2_Spline.clear();
+
+}
+
+void CSurfaceMovement::SetCosBump(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
 	unsigned long iVertex, Point;
 	unsigned short iMarker;
-	double VarCoord[3], *Coord, *Normal, ek, fk, DesignSize = 2.0, DesignLoc = 1.0, xCoord, xCoord_Local;
+	double VarCoord[3], *Coord, *Normal, fk, DesignSize = 2.0, DesignLoc = 1.0, xCoord, xCoord_Local;
   
 	bool upper = true, double_surface = false;
 
@@ -3587,9 +3200,9 @@ void CSurfaceMovement::SetGaussBump(CGeometry *boundary, CConfig *config, unsign
         /*--- Bump computation ---*/
 				if (double_surface) {
 					xCoord = Coord[0];
-					xCoord_Local = (Coord[0] - BumpCenter)/(0.5*BumpSize);
-					ek = -1.0 / (1.0 - xCoord_Local*xCoord_Local);
-          if (fabs(xCoord_Local) < 1.0) fk = exp(ek)/exp(-1.0);
+          xCoord_Local = (xCoord - BumpCenter);
+
+          if (fabs(xCoord_Local) < BumpSize) fk = 0.5*(1.0+cos(PI_NUMBER*xCoord_Local/BumpSize));
           else fk = 0.0;
 					/*--- Upper and lower surface ---*/
 					if (( upper) && (Normal[1] > 0)) { VarCoord[1] =  Ampl*fk; }
@@ -3598,11 +3211,102 @@ void CSurfaceMovement::SetGaussBump(CGeometry *boundary, CConfig *config, unsign
 				else {
 
 					xCoord = Coord[0];
-					xCoord_Local = (xCoord - BumpCenter)/(0.5*BumpSize);
-					ek = -1.0 / (1.0 - xCoord_Local*xCoord_Local);
-          if (fabs(xCoord_Local) < 1.0) fk = exp(ek)/exp(-1.0);
+          xCoord_Local = (xCoord - BumpCenter);
+          
+//          if (fabs(xCoord_Local) < BumpSize*4.0) fk = 0.5*(1.0+cos(PI_NUMBER*xCoord_Local/BumpSize))*
+//            0.5*(1.0+cos(PI_NUMBER*xCoord_Local/(BumpSize*2.0)))*
+//            0.5*(1.0+cos(PI_NUMBER*xCoord_Local/(BumpSize*4.0)));
+//          else fk = 0.0;
+          
+          if (fabs(xCoord_Local) < BumpSize) fk = 0.5*(1.0+cos(PI_NUMBER*xCoord_Local/BumpSize));
           else fk = 0.0;
+          
+//					xCoord_Local = (xCoord - BumpCenter)/(0.5*BumpSize);
+//					ek = -1.0 / (1.0 - xCoord_Local*xCoord_Local);
+//          if (fabs(xCoord_Local) < 1.0) fk = exp(ek)/exp(-1.0);
+//          else fk = 0.0;
 
+					/*--- Only one surface ---*/
+					VarCoord[1] =  Ampl*fk;
+				}
+			}
+      
+			boundary->vertex[iMarker][iVertex]->AddVarCoord(VarCoord);
+		}
+	}
+}
+
+void CSurfaceMovement::SetFourier(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
+	unsigned long iVertex, Point;
+	unsigned short iMarker;
+	double VarCoord[3], *Coord, *Normal, fk, DesignSize = 2.0, DesignLoc = 1.0, xCoord, xCoord_Local;
+  
+	bool upper = true, double_surface = false;
+  
+	/*--- Reset airfoil deformation if first deformation ---*/
+	if ((iDV == 0) || (ResetDef == true)) {
+		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+			for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
+				VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
+				boundary->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
+			}
+	}
+  
+	/*--- Perform multiple airfoil deformation ---*/
+	double Ampl_old = config->GetDV_Value_Old(iDV);
+	double Ampl_new = config->GetDV_Value_New(iDV);
+	double Ampl = Ampl_new-Ampl_old;
+  double T = DesignSize;
+  double n = int(config->GetParamDV(iDV, 1));
+  double omega = 2.0*PI_NUMBER/T;
+  double omega_n = omega*n;
+  
+	if (config->GetParamDV(iDV, 0) == NO)  { upper = false; double_surface = true; }
+	if (config->GetParamDV(iDV, 0) == YES) { upper = true; double_surface = true; }
+  
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    
+		for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
+			VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
+			if (config->GetMarker_All_Moving(iMarker) == YES) {
+        
+				Point = boundary->vertex[iMarker][iVertex]->GetNode();
+				Coord = boundary->vertex[iMarker][iVertex]->GetCoord();
+				Normal = boundary->vertex[iMarker][iVertex]->GetNormal();
+        
+        /*--- Bump computation ---*/
+				if (double_surface) {
+
+          xCoord = Coord[0];
+          xCoord_Local = (xCoord - (DesignLoc+0.5*DesignSize));
+          
+          if ((xCoord_Local < -0.5*T) || (xCoord_Local > 0.5*T)) fk = 0.0;
+          else {
+            if (n == 0) fk = 0.5;
+            else {
+              if (int(config->GetParamDV(iDV, 2)) == 0) fk = cos(omega_n*xCoord_Local);
+              else fk = sin(omega_n*xCoord_Local);
+            }
+          }
+          
+					/*--- Upper and lower surface ---*/
+					if (( upper) && (Normal[1] > 0)) { VarCoord[1] =  Ampl*fk; }
+					if ((!upper) && (Normal[1] < 0)) { VarCoord[1] = -Ampl*fk; }
+				}
+				else {
+          
+					xCoord = Coord[0];
+          xCoord_Local = (xCoord - (DesignLoc+0.5*DesignSize));
+          
+          if ((xCoord_Local < -0.5*T) || (xCoord_Local > 0.5*T)) fk = 0.0;
+          else {
+            if (n == 0) fk = 0.5;
+            else {
+              if (int(config->GetParamDV(iDV, 2)) == 0) fk = cos(omega_n*xCoord_Local);
+              else fk = sin(omega_n*xCoord_Local);
+            }
+          }
+          
 					/*--- Only one surface ---*/
 					VarCoord[1] =  Ampl*fk;
 				}
@@ -4199,19 +3903,17 @@ void CSurfaceMovement::SetStretch(CGeometry *boundary, CConfig *config) {
 		}
 }
 
-void CSurfaceMovement::ReadFFDInfo(CConfig *config, CGeometry *geometry, CFreeFormChunk **chunk, 
-								   string val_mesh_filename) {
+void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFormChunk **chunk, string val_mesh_filename, bool val_fullmesh) {
 	string text_line, iTag;
 	ifstream mesh_file;
 	double coord[3];
-	unsigned short degree[3], iChunk, iCornerPoints, iControlPoints, iMarker, iDegree, jDegree, kDegree, iChar;
-	unsigned long iSurfacePoints, iPoint, jPoint, iVertex, nPoint, iElem = 0, nElem;
-	unsigned short LevelChunk, nParentChunk, iParentChunk, nChildChunk, iChildChunk;
+	unsigned short degree[3], iChunk, iCornerPoints, iControlPoints, iMarker, iDegree, jDegree, kDegree, iChar, LevelChunk, nParentChunk, iParentChunk, nChildChunk, iChildChunk, nMarker;
+	unsigned long iSurfacePoints, iPoint, jPoint, iVertex, nVertex, nPoint, iElem = 0, nElem;
 
-#ifndef NO_MPI
-	int rank = MPI::COMM_WORLD.Get_rank();
-#else
-	int rank = MASTER_NODE;
+  int rank = MASTER_NODE;
+
+#ifndef NO_MPI  
+	rank = MPI::COMM_WORLD.Get_rank();
 #endif
 	
 	char *cstr = new char [val_mesh_filename.size()+1];
@@ -4224,16 +3926,15 @@ void CSurfaceMovement::ReadFFDInfo(CConfig *config, CGeometry *geometry, CFreeFo
 		cin.get();
 		exit(1);
 	}
-			
-	while (getline (mesh_file,text_line)) {
+	
+	while (getline (mesh_file, text_line)) {
 		
 		/*--- Read the inner elements ---*/
 		string::size_type position = text_line.find ("NELEM=",0);
 		if (position != string::npos) {
 			text_line.erase (0,6); nElem = atoi(text_line.c_str());
-			while (iElem < nElem) {
-				getline(mesh_file,text_line);
-				iElem++; 
+			for (iElem = 0; iElem < nElem; iElem++)  {
+				getline(mesh_file, text_line);
 			}
 		}
 		
@@ -4241,12 +3942,26 @@ void CSurfaceMovement::ReadFFDInfo(CConfig *config, CGeometry *geometry, CFreeFo
 		position = text_line.find ("NPOINT=",0);
 		if (position != string::npos) {
 			text_line.erase (0,6); nPoint = atoi(text_line.c_str());
-			while (iPoint < nPoint) {
-				getline(mesh_file,text_line);
-				iPoint++; 
+			for (iPoint = 0; iPoint < nPoint; iPoint++)  {
+				getline(mesh_file, text_line);
 			}
 		}
-		
+
+    /*--- Read the boundaries  ---*/
+		position = text_line.find ("NMARK=",0);
+		if (position != string::npos) {
+			text_line.erase (0,6); nMarker = atoi(text_line.c_str());
+      for (iMarker = 0; iMarker < nMarker; iMarker++) {
+        getline(mesh_file, text_line);
+        getline(mesh_file, text_line);
+        text_line.erase (0,13); nVertex = atoi(text_line.c_str());
+        for (iVertex = 0; iVertex < nVertex; iVertex++)  {
+          getline(mesh_file, text_line);
+        }
+      }
+		}
+    
+    /*--- Read the chunk information  ---*/
 		position = text_line.find ("NCHUNK=",0);
 		if (position != string::npos) {
 			text_line.erase (0,7);
@@ -4379,29 +4094,42 @@ void CSurfaceMovement::ReadFFDInfo(CConfig *config, CGeometry *geometry, CFreeFo
 				unsigned long nSurfPoints = 0;
 				
 #ifndef NO_MPI
-				MPI::COMM_WORLD.Allreduce(&my_nSurfPoints, &nSurfPoints, 1, MPI::UNSIGNED_LONG, MPI::SUM); 
+        if (config->GetKind_SU2() != SU2_DDC)
+          MPI::COMM_WORLD.Allreduce(&my_nSurfPoints, &nSurfPoints, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+        else
+          nSurfPoints = my_nSurfPoints;
 #else
 				nSurfPoints = my_nSurfPoints;
 #endif
 				
 				if (rank == MASTER_NODE) cout << "Surface points: " << nSurfPoints <<"."<<endl;
-												
+        
+				/*--- The the surface points parametric coordinates ---*/
 				for (iSurfacePoints = 0; iSurfacePoints < nSurfacePoints[iChunk]; iSurfacePoints++) {
 					getline(mesh_file,text_line); istringstream chunk_line(text_line);
 					chunk_line >> iTag; chunk_line >> iPoint;
 					iMarker = config->GetTag_Marker_All(iTag);
 					chunk_line >> coord[0]; chunk_line >> coord[1]; chunk_line >> coord[2];
-					for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-						jPoint =  geometry->vertex[iMarker][iVertex]->GetNode();
-						if (iPoint == jPoint) {
-							chunk[iChunk]->Set_MarkerIndex(iMarker);
-							chunk[iChunk]->Set_VertexIndex(iVertex);
-							chunk[iChunk]->Set_PointIndex(iPoint);
-							chunk[iChunk]->Set_ParametricCoord(coord);
-							chunk[iChunk]->Set_CartesianCoord(geometry->node[iPoint]->GetCoord());
-						}
+          
+          if (val_fullmesh) {  // With vertices information (mesh deformation).
+            for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+              jPoint =  geometry->vertex[iMarker][iVertex]->GetNode();
+              if (iPoint == jPoint) {
+                chunk[iChunk]->Set_MarkerIndex(iMarker);
+                chunk[iChunk]->Set_VertexIndex(iVertex);
+                chunk[iChunk]->Set_PointIndex(iPoint);
+                chunk[iChunk]->Set_ParametricCoord(coord);
+                chunk[iChunk]->Set_CartesianCoord(geometry->node[iPoint]->GetCoord());
+              }
+            }
 					}
+          else {  // Without vertices information (partitioning).
+            chunk[iChunk]->Set_MarkerIndex(iMarker);
+            chunk[iChunk]->Set_PointIndex(iPoint);
+            chunk[iChunk]->Set_ParametricCoord(coord);
+          }
 				}
+        
 			}
 			
 			delete [] nCornerPoints;
@@ -4410,13 +4138,14 @@ void CSurfaceMovement::ReadFFDInfo(CConfig *config, CGeometry *geometry, CFreeFo
 		}
 	}
 	mesh_file.close();
+  
 	if (nChunk == 0) {
-		cout <<"There is no FFD box definition. Just in case, review the .su2 file" << endl;
+		if (rank == MASTER_NODE) cout <<"There is no FFD box definition. Just in case, review the .su2 file" << endl;
 	}
 
 }
 
-void CSurfaceMovement::WriteFFDInfo(CGeometry *geometry, CConfig *config, CFreeFormChunk **chunk, string val_mesh_filename) {
+void CSurfaceMovement::WriteFFDInfo(CGeometry *geometry, CConfig *config, CFreeFormChunk **chunk, string val_mesh_filename, bool val_fullmesh) {
 	ofstream mesh_file;
 	unsigned short iOrder, jOrder, kOrder, iChunk, iCornerPoints, iMarker, iParentChunk, iChildChunk;
 	unsigned long iVertex, iPoint, iSurfacePoints;
@@ -4465,90 +4194,39 @@ void CSurfaceMovement::WriteFFDInfo(CGeometry *geometry, CConfig *config, CFreeF
 						mesh_file << iOrder << "\t" << jOrder << "\t" << kOrder << "\t" << coord[0] << "\t" << coord[1] << "\t" << coord[2] << endl;
 					}
 			
-			mesh_file << "CHUNK_SURFACE_POINTS= " << chunk[iChunk]->GetnSurfacePoint() << endl;
-			for (iSurfacePoints = 0; iSurfacePoints < chunk[iChunk]->GetnSurfacePoint(); iSurfacePoints++) {
-				iMarker = chunk[iChunk]->Get_MarkerIndex(iSurfacePoints);
-				iVertex = chunk[iChunk]->Get_VertexIndex(iSurfacePoints);
-				iPoint = chunk[iChunk]->Get_PointIndex(iSurfacePoints);
-				double *parcoord = chunk[iChunk]->Get_ParametricCoord(iSurfacePoints);
-				mesh_file << scientific << config->GetMarker_All_Tag(iMarker) << "\t" << iPoint << "\t" << parcoord[0] << "\t" << parcoord[1] << "\t" << parcoord[2] << endl;
-			}		
-			
-		}
-		
-	}
-	mesh_file.close();
-}
+      if (val_fullmesh) {
+        mesh_file << "CHUNK_SURFACE_POINTS= " << chunk[iChunk]->GetnSurfacePoint() << endl;
+        for (iSurfacePoints = 0; iSurfacePoints < chunk[iChunk]->GetnSurfacePoint(); iSurfacePoints++) {
+          iMarker = chunk[iChunk]->Get_MarkerIndex(iSurfacePoints);
+          iVertex = chunk[iChunk]->Get_VertexIndex(iSurfacePoints);
+          iPoint = chunk[iChunk]->Get_PointIndex(iSurfacePoints);
+          double *parcoord = chunk[iChunk]->Get_ParametricCoord(iSurfacePoints);
+          mesh_file << scientific << config->GetMarker_All_Tag(iMarker) << "\t" << iPoint << "\t" << parcoord[0] << "\t" << parcoord[1] << "\t" << parcoord[2] << endl;
+        }
+      }
+      else {
+        
+        /*--- Compute the number of points on the new surfaces, note that we are not
+         adding the new ghost points (receive), which eventually are also inside the chunck ---*/
+       unsigned long nSurfacePoint = 0;
+        for (iSurfacePoints = 0; iSurfacePoints < chunk[iChunk]->GetnSurfacePoint(); iSurfacePoints++) {
+          iPoint = chunk[iChunk]->Get_PointIndex(iSurfacePoints);
+          if ((geometry->GetGlobal_to_Local_Point(iPoint) != -1) && (iPoint <= geometry->GetMax_GlobalPoint())) nSurfacePoint++;
+        }
 
-void CSurfaceMovement::WriteFFDInfo(CGeometry *geometry, CGeometry *domain, CConfig *config, CFreeFormChunk **chunk, string val_mesh_filename) {
-	ofstream mesh_file;
-	unsigned short iOrder, jOrder, kOrder, iChunk, iCornerPoints, iMarker, iParentChunk, iChildChunk;
-	unsigned long iVertex, iPoint, iSurfacePoints;
-	char *cstr = new char [val_mesh_filename.size()+1];
-	strcpy (cstr, val_mesh_filename.c_str());
-	
-	mesh_file.precision(15);
-	mesh_file.open(cstr, ios::out | ios::app);
-	
-	mesh_file << "NCHUNK= " << nChunk << endl;
-	mesh_file << "NLEVEL= " << nLevel << endl;
-
-	for (iChunk = 0 ; iChunk < nChunk; iChunk++) {
-		
-		mesh_file << "CHUNK_TAG= " << chunk[iChunk]->GetTag() << endl;
-		mesh_file << "CHUNK_LEVEL= " << chunk[iChunk]->GetLevel() << endl;
-
-		mesh_file << "CHUNK_DEGREE_I= " << chunk[iChunk]->GetlOrder()-1 << endl;
-		mesh_file << "CHUNK_DEGREE_J= " << chunk[iChunk]->GetmOrder()-1 << endl;
-		mesh_file << "CHUNK_DEGREE_K= " << chunk[iChunk]->GetnOrder()-1 << endl;
-		
-		mesh_file << "CHUNK_PARENTS= " << chunk[iChunk]->GetnParentChunk() << endl;
-		for (iParentChunk = 0; iParentChunk < chunk[iChunk]->GetnParentChunk(); iParentChunk++)
-			mesh_file << chunk[iChunk]->GetParentChunkTag(iParentChunk) << endl;
-		
-		mesh_file << "CHUNK_CHILDREN= " << chunk[iChunk]->GetnChildChunk() << endl;
-		for (iChildChunk = 0; iChildChunk < chunk[iChunk]->GetnChildChunk(); iChildChunk++)
-			mesh_file << chunk[iChunk]->GetChildChunkTag(iChildChunk) << endl;
-		
-		mesh_file << "CHUNK_CORNER_POINTS= " << chunk[iChunk]->GetnCornerPoints() << endl;
-		for (iCornerPoints = 0; iCornerPoints < chunk[iChunk]->GetnCornerPoints(); iCornerPoints++) {
-			double *coord = chunk[iChunk]->GetCoordCornerPoints(iCornerPoints);
-			mesh_file << coord[0] << "\t" << coord[1] << "\t" << coord[2] << endl;
-		}
-		
-		/*--- No FFD definition ---*/
-		if (chunk[iChunk]->GetnControlPoints() == 0) {
-			mesh_file << "CHUNK_CONTROL_POINTS= 0" << endl;
-			mesh_file << "CHUNK_SURFACE_POINTS= 0" << endl;				
-		}
-		else {
-			mesh_file << "CHUNK_CONTROL_POINTS= " << chunk[iChunk]->GetnControlPoints() << endl;
-			for (iOrder = 0; iOrder < chunk[iChunk]->GetlOrder(); iOrder++)
-				for (jOrder = 0; jOrder < chunk[iChunk]->GetmOrder(); jOrder++)
-					for (kOrder = 0; kOrder < chunk[iChunk]->GetnOrder(); kOrder++) {
-						double *coord = chunk[iChunk]->GetCoordControlPoints(iOrder, jOrder, kOrder);
-						mesh_file << iOrder << "\t" << jOrder << "\t" << kOrder << "\t" << coord[0] << "\t" << coord[1] << "\t" << coord[2] << endl;
-					}
-			
-			/*--- Compute the number of points on the new surfaces ---*/
-			unsigned long nSurfacePoint = 0;
-			for (iSurfacePoints = 0; iSurfacePoints < chunk[iChunk]->GetnSurfacePoint(); iSurfacePoints++) {
-				iPoint = chunk[iChunk]->Get_PointIndex(iSurfacePoints);
-				if (domain->GetGlobal_to_Local_Point(iPoint) != -1) nSurfacePoint++;
-			}
-			
-			mesh_file << "CHUNK_SURFACE_POINTS= " << nSurfacePoint << endl;
-			for (iSurfacePoints = 0; iSurfacePoints < chunk[iChunk]->GetnSurfacePoint(); iSurfacePoints++) {
-				iMarker = chunk[iChunk]->Get_MarkerIndex(iSurfacePoints);
-				iVertex = chunk[iChunk]->Get_VertexIndex(iSurfacePoints);
-				iPoint = chunk[iChunk]->Get_PointIndex(iSurfacePoints);
-				if (domain->GetGlobal_to_Local_Point(iPoint) != -1) {
-					double *parcoord = chunk[iChunk]->Get_ParametricCoord(iSurfacePoints);
-					mesh_file << scientific << config->GetMarker_All_Tag(iMarker) << "\t" << domain->GetGlobal_to_Local_Point(iPoint) << "\t" << parcoord[0] << "\t" << parcoord[1] << "\t" << parcoord[2] << endl;
-				}
-			}
+        mesh_file << "CHUNK_SURFACE_POINTS= " << nSurfacePoint << endl;
+        for (iSurfacePoints = 0; iSurfacePoints < chunk[iChunk]->GetnSurfacePoint(); iSurfacePoints++) {
+          iMarker = chunk[iChunk]->Get_MarkerIndex(iSurfacePoints);
+          iPoint = chunk[iChunk]->Get_PointIndex(iSurfacePoints);
+          if ((geometry->GetGlobal_to_Local_Point(iPoint) != -1) && (iPoint <= geometry->GetMax_GlobalPoint())) {
+            double *parCoord = chunk[iChunk]->Get_ParametricCoord(iSurfacePoints);
+            mesh_file << scientific << config->GetMarker_All_Tag(iMarker) << "\t" << geometry->GetGlobal_to_Local_Point(iPoint) << "\t" << parCoord[0] << "\t" << parCoord[1] << "\t" << parCoord[2] << endl;
+          }
+        }
+      }
 			
 		}
+		
 	}
 	mesh_file.close();
 }

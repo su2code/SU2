@@ -1,7 +1,7 @@
 ## \file gradients.py
 #  \brief python package for gradients
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.4
+#  \version 2.0.5
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -65,7 +65,7 @@ def gradient( func_name, method, config, state=None ):
     
     # Initialize
     grads = {}
-    state = su2io.state.default_state(state)
+    state = su2io.State(state)
     if func_name == 'ALL':
         raise Exception , "func_name = 'ALL' not yet supported"
     
@@ -146,7 +146,7 @@ def adjoint( func_name, config, state=None ):
     # ----------------------------------------------------
     
     # initialize
-    state = su2io.state.default_state(state)
+    state = su2io.State(state)
     special_cases = su2io.get_specialCases(config)
     ADJ_NAME = 'ADJOINT_'+func_name
     
@@ -275,7 +275,7 @@ def findiff( config, state=None, step=1e-4 ):
     # ----------------------------------------------------
     
     # initialize
-    state = su2io.state.default_state(state)
+    state = su2io.State(state)
     special_cases = su2io.get_specialCases(config)
     Definition_DV = config['DEFINITION_DV']
     

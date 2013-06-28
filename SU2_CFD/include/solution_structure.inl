@@ -2,7 +2,7 @@
  * \file solution_structure.inl
  * \brief In-Line subroutines of the <i>solution_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -142,6 +142,10 @@ inline void CSolution::SetTotal_CT(double val_Total_CT) { }
 
 inline double CSolution::GetTotal_CQ() { return 0; }
 
+inline double CSolution::GetTotal_Q() { return 0; }
+
+inline double CSolution::GetTotal_MaxQ() { return 0; }
+
 inline double CSolution::Get_PressureDrag() { return 0; }
 
 inline double CSolution::Get_ViscDrag() { return 0; }
@@ -149,6 +153,10 @@ inline double CSolution::Get_ViscDrag() { return 0; }
 inline double CSolution::Get_MagnetDrag() { return 0; }
 
 inline void CSolution::SetTotal_CQ(double val_Total_CQ) { }
+
+inline void CSolution::SetTotal_Q(double val_Total_Q) { }
+
+inline void CSolution::SetTotal_MaxQ(double val_Total_Q) { }
 
 inline double CSolution::GetTotal_CMerit() { return 0; }
 
@@ -288,9 +296,9 @@ inline void CSolution::BC_FlowLoad(CGeometry *geometry, CSolution **solution_con
 inline void CSolution::BC_Load(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
 									 unsigned short val_marker) { }
                   
-inline void CSolution::BC_Isothermal_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short val_marker) { }
+inline void CSolution::BC_Isothermal_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) { }
                   
-inline void CSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short val_marker) { }
+inline void CSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) { }
 									
 inline void CSolution::BC_Dirichlet(CGeometry *geometry, CSolution **solution_container, CConfig *config, 
 								  unsigned short val_marker) { }
@@ -323,10 +331,10 @@ inline void CSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_conta
 inline void CSolution::BC_Supersonic_Inlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, 
 										 CConfig *config, unsigned short val_marker) { }
 
-inline void CSolution::BC_NacelleInflow(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, 
+inline void CSolution::BC_NacelleInflow(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, 
 										  CConfig *config, unsigned short val_marker) { }
 											
-inline void CSolution::BC_NacelleExhaust(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, 
+inline void CSolution::BC_NacelleExhaust(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, 
 										  CConfig *config, unsigned short val_marker) { }
 																						
 inline void CSolution::BC_Neumann(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, 
@@ -520,7 +528,15 @@ inline void CEulerSolution::SetTotal_CT(double val_Total_CT) { Total_CT = val_To
 
 inline double CEulerSolution::GetTotal_CQ() { return Total_CQ; }
 
+inline double CEulerSolution::GetTotal_Q() { return Total_Q; }
+
+inline double CEulerSolution::GetTotal_MaxQ() { return Total_Maxq; }
+
 inline void CEulerSolution::SetTotal_CQ(double val_Total_CQ) { Total_CQ = val_Total_CQ; }
+
+inline void CEulerSolution::SetTotal_Q(double val_Total_Q) { Total_Q = val_Total_Q; }
+
+inline void CEulerSolution::SetTotal_MaxQ(double val_Total_MaxQ) { Total_Maxq = val_Total_MaxQ; }
 
 inline double CEulerSolution::GetTotal_CMerit() { return Total_CMerit; }
 
@@ -636,7 +652,7 @@ inline double CPlasmaSolution::GetTotal_CSideForce() { return Total_CSideForce; 
 
 inline double CPlasmaSolution::GetTotal_CEff() { return Total_CEff; }
 
-inline double CPlasmaSolution::GetTotal_CQ() { return Total_CQ; }
+inline double CPlasmaSolution::GetTotal_Q() { return Total_Q; }
 
 inline double CPlasmaSolution::Get_PressureDrag() { return PressureDrag; }
 

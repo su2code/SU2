@@ -65,6 +65,7 @@ nobase_dist_mypkg_DATA= \
     SU2/util/filter_adjoint.py \
     SU2/util/lhc_unif.py \
     SU2/util/misc.py \
+    SU2/util/mp_eval.py \
     SU2/util/ordered_bunch.py \
     SU2/util/ordered_dict.py \
     SU2/util/plot.py \

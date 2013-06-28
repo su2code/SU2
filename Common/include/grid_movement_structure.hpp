@@ -5,7 +5,7 @@
  *        technique definition). The subroutines and functions are in 
  *        the <i>grid_movement_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -43,7 +43,7 @@ using namespace std;
  * \brief Class for moving the surface and volumetric 
  *        numerical grid (2D and 3D problems).
  * \author F. Palacios.
- * \version 2.0.4
+ * \version 2.0.5
  */
 class CGridMovement {
 public:
@@ -63,7 +63,7 @@ public:
  * \class CFreeFormChunk
  * \brief Class for defining the free form chunk structure.
  * \author F. Palacios & A. Galdran.
- * \version 2.0.4
+ * \version 2.0.5
  */
 class CFreeFormChunk : public CGridMovement {
 public:
@@ -655,43 +655,13 @@ public:
  * \class CVolumetricMovement
  * \brief Class for moving the volumetric numerical grid.
  * \author F. Palacios, A. Bueno, T. Economon, S. Padron.
- * \version 2.0.4
+ * \version 2.0.5
  */
 class CVolumetricMovement : public CGridMovement {
 protected:
-	double ***kijk;					/*!< \brief ___________. */
-	double **oldgcenter;		/*!< \brief ___________. */
-	double *x,							/*!< \brief ___________. */
-	*diagk,									/*!< \brief ___________. */
-	*p,											/*!< \brief ___________. */
-	*r,											/*!< \brief ___________. */
-	*z,											/*!< \brief ___________. */
-	*Initial_Boundary;			/*!< \brief ___________. */
-	double Ktor_mat[9][9];	/*!< \brief Element-based force-reduced torsional stiffness matrix. */
-	double C_mat[3][3];			/*!< \brief Element-based torsional stiffness matrix. */
-	double R_mat[3][6];			/*!< \brief Torsional kinematic matrix (nodes displacements -> change in angles). */
-	double Rt_mat[6][3];		/*!< \brief Transposed R_mat. */
-	double Klin_mat[6][6];	/*!< \brief Edge-based lineal stiffness matrix. */
-	double C_tor,		/*!< \brief Weighting coefficient for torsional stiffness. */
-	C_lin;					/*!< \brief Weighting coefficient for lineal stiffness. */
-	double tol,			/*!< \brief Error tolerance (total and per point) in the resolution. */
-	tol_per_point;	/*!< \brief Error tolerance (total and per point) in the resolution. */
-	double Aux_mat[3][6];	/*!< \brief ___________. */
-	unsigned long iter,		/*!< \brief Counter. */
-	niter;								/*!< \brief Maximum number of iterations in the resolution. */
-	double ar;						/*!< \brief Area of the element. */
-	double ak,	/*!< \brief Variables for conjugate gradient resolution. */
-	akden,			/*!< \brief Variables for conjugate gradient resolution. */
-	bk,					/*!< \brief Variables for conjugate gradient resolution. */
-	bkden,			/*!< \brief Variables for conjugate gradient resolution. */
-	bknum;			/*!< \brief Variables for conjugate gradient resolution. */
-	double err;	/*!< \brief Norm of the residual in the resolution. */
-	double vec_a[3],				/*!< \brief ___________. */
-	vec_b[3];								/*!< \brief ___________. */
-	double Dim_Normal[3];		/*!< \brief ___________. */
-	unsigned long nElem;		/*!< \brief ___________. */
-	unsigned long **nodes;	/*!< \brief ___________. */	
-	bool *triangle;					/*!< \brief ___________. */
+
+	double *x;							/*!< \brief ___________. */
+	double tol;			/*!< \brief Error tolerance (total and per point) in the resolution. */
 	unsigned short nDim;		/*!< \brief ___________. */
 	CSparseMatrix StiffMatrix; /*!< \brief Matrix to store the point-to-point stiffness. */
 	double *rhs,		/*!< \brief rhs (forces). */
@@ -712,53 +682,9 @@ public:
 	/*! 
 	 * \brief __________________________
 	 * \param[in] geometry - Geometrical definition of the problem.
-	 */
-	void Set2DMatrix_Structure(CGeometry *geometry);
-	
-	/*! 
-	 * \brief __________________________
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 */	
-	void Set3DMatrix_Structure(CGeometry *geometry);		
-
-	/*! 
-	 * \brief __________________________
-	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetBoundary_Smooth(CGeometry *geometry, CConfig *config);
-	
-	/*! 
-	 * \brief __________________________
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] ramp_angle ______________.
-	 * \param[in] angle ______________.
-	 */
-	void SetBoundary_Ramp(CGeometry *geometry, CConfig *config, double ramp_angle, double angle);
-	
-	/*! 
-	 * \brief __________________________
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] ramp_angle ______________.
-	 * \param[in] angle ______________.
-	 */
-	void SetBoundary_HyShot(CGeometry *geometry, CConfig *config, double ramp_angle, double angle);
-	
-	/*! 
-	 * \brief __________________________
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetBoundary(CGeometry *geometry, CConfig *config);
-	
-	/*! 
-	 * \brief __________________________
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetSolution(CGeometry *geometry, CConfig *config);
 	
 	/*! 
 	 * \brief __________________________
@@ -772,22 +698,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void UpdateGrid(CGeometry *geometry, CConfig *config);
-	
-	/*! 
-	 * \brief __________________________
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
 	void UpdateMultiGrid(CGeometry **geometry, CConfig *config);
-	
-	/*! 
-	 * \brief Multiply the "stiffness matrix" (stored element by element like in move_grid) by a vector.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] vect ______________.
-	 * \param[in] res ______________.
-	 */
-	void Setkijk_times(CGeometry *geometry, double *vect, double *res);
 	
 	/*! 
 	 * \brief __________________________
@@ -796,13 +707,6 @@ public:
 	 * \param[in] val_filename ______________.
 	 */
 	void GetBoundary(CGeometry *geometry, CConfig *config, string val_filename);
-	
-	/*! 
-	 * \brief __________________________
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetInitial_Boundary(CGeometry *geometry, CConfig *config);
 	
 	/*! 
 	 * \brief Initialize the stiff matrix for grid movement using spring analogy
@@ -876,12 +780,39 @@ public:
   void AddFEA_StiffMatrix3D(CGeometry *geometry, double **StiffMatrix_Elem,
                             unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2, unsigned long val_Point_3);
   
-	/*! 
+  /*!
+	 * \brief Check each of the mesh volumes for quality after performing grid deformation.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 */
+	void CheckFEA_Grid(CGeometry *geometry);
+  
+  /*!
+	 * \brief Check for negative volumes for 2-D elements after grid deformation.
+	 * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iElem - Index value for the current primal grid element.
+	 * \param[in] val_Point_0 - Index value for Node 0 of the current triangle.
+   * \param[in] val_Point_1 - Index value for Node 1 of the current triangle.
+   * \param[in] val_Point_2 - Index value for Node 2 of the current triangle.
+	 */
+  void CheckFEA_Elem2D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2);
+  
+  /*!
+	 * \brief Check for negative volumes for 3-D elements after grid deformation.
+	 * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iElem - Index value for the current primal grid element.
+	 * \param[in] val_Point_0 - Index value for Node 0 of the current tetrahedron.
+   * \param[in] val_Point_1 - Index value for Node 1 of the current tetrahedron.
+   * \param[in] val_Point_2 - Index value for Node 2 of the current tetrahedron.
+   * \param[in] val_Point_3 - Index value for Node 3 of the current tetrahedron.
+	 */
+  void CheckFEA_Elem3D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2, unsigned long val_Point_3);
+  
+	/*!
 	 * \brief Check the boundary vertex that are going to be moved.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetBoundaryDisplacements(unsigned short nVar, CGeometry *geometry, CConfig *config);
+	void SetBoundaryDisplacements(CGeometry *geometry, CConfig *config);
 	
 	/*! 
 	 * \brief Check the domain points vertex that are going to be moved.
@@ -895,15 +826,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void UpdateSpringGrid(unsigned short nVar, CGeometry *geometry, CConfig *config);
-  
-	/*! 
-	 * \brief Grid deformation using the torsional spring analogy method.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] UpdateGeo - Update geometry.
-	 */
-	void TorsionalSpringMethod(CGeometry *geometry, CConfig *config, bool UpdateGeo);
+	void UpdateGridCoord(CGeometry *geometry, CConfig *config);
   
   /*!
 	 * \brief Unsteady grid movement using rigid mesh rotation.
@@ -994,14 +917,6 @@ public:
 	 * \param[in] UpdateGeo - Update geometry.
 	 */
 	void FEAMethod(CGeometry *geometry, CConfig *config, bool UpdateGeo);
-	
-	/*! 
-	 * \brief Grid deformation using an algebraic method.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] UpdateGeo - Update geometry.
-	 */
-	void AlgebraicMethod(CGeometry *geometry, CConfig *config, bool UpdateGeo);
   
   /*!
 	 * \brief Compute the determinant of a 3 by 3 matrix.
@@ -1016,7 +931,7 @@ public:
  * \class CSurfaceMovement
  * \brief Class for moving the surface numerical grid.
  * \author F. Palacios.
- * \version 2.0.4
+ * \version 2.0.5
  */
 class CSurfaceMovement : public CGridMovement {
 protected:
@@ -1044,6 +959,15 @@ public:
 	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */
 	void SetHicksHenne(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
+  
+  /*!
+	 * \brief Set a spherical design problem.
+	 * \param[in] boundary - Geometry of the boundary.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iDV - Index of the design variable.
+	 * \param[in] ResetDef - Reset the deformation before starting a new one.
+	 */
+	void SetSpherical(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
 	
   /*!
 	 * \brief Set a Hicks-Henne deformation bump functions on an airfoil.
@@ -1052,7 +976,16 @@ public:
 	 * \param[in] iDV - Index of the design variable.
 	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */
-	void SetGaussBump(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
+	void SetCosBump(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
+  
+  /*!
+	 * \brief Set a Hicks-Henne deformation bump functions on an airfoil.
+	 * \param[in] boundary - Geometry of the boundary.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iDV - Index of the design variable.
+	 * \param[in] ResetDef - Reset the deformation before starting a new one.
+	 */
+	void SetFourier(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
   
 	/*! 
 	 * \brief Set a NACA 4 digits airfoil family for airfoil deformation.
@@ -1263,8 +1196,9 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] chunk - Array with all the free forms chunks of the computation.
 	 * \param[in] val_mesh_filename - Name of the grid input file.
+   * \param[in] val_vertex - With vertex information.
 	 */		
-	void ReadFFDInfo(CConfig *config, CGeometry *geometry, CFreeFormChunk **chunk, string val_mesh_filename);
+	void ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFormChunk **chunk, string val_mesh_filename, bool val_fullmesh);
 	
 	/*! 
 	 * \brief Write the Free Form information in the SU2 file.
@@ -1273,16 +1207,7 @@ public:
 	 * \param[in] chunk - Array with all the free forms chunks of the computation.
 	 * \param[in] val_mesh_filename - Name of the grid output file.
 	 */		
-	void WriteFFDInfo(CGeometry *geometry, CConfig *config, CFreeFormChunk **chunk, string val_mesh_filename);
-	
-	/*! 
-	 * \brief Write the Free Form information in the SU2 file.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] chunk - Array with all the free forms chunks of the computation.
-	 * \param[in] val_mesh_filename - Name of the grid output file.
-	 */		
-	void WriteFFDInfo(CGeometry *geometry, CGeometry *domain, CConfig *config, CFreeFormChunk **chunk, string val_mesh_filename);
+	void WriteFFDInfo(CGeometry *geometry, CConfig *config, CFreeFormChunk **chunk, string val_mesh_filename, bool val_fullmesh);
 	
 	/*! 
 	 * \brief Get information about if there is a complete chunk definition, or it is necessary to 

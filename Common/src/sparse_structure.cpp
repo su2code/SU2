@@ -2,7 +2,7 @@
  * \file sparse_structure.cpp
  * \brief Main subroutines for doing the sparse structures.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -1196,7 +1196,7 @@ void CSparseMatrix::CGSolution(double* b, double* x_i, double tol, int max_it, b
 		/*--- Monitoring of the result ---*/
 		norm = sqrt(norm_r_new);
 		
-    if ((monitoring == true) && (iter%10 == 0) && (rank == MASTER_NODE))
+    if ((monitoring == true) && (iter%50 == 0) && (rank == MASTER_NODE))
       cout << "Prec. CG-Solution:: Iteration = " << iter << " ; Norm of the residual: " << norm << endl;
 		
 		if (norm < tol) break;

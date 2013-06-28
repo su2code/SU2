@@ -2,7 +2,7 @@
  * \file solution_structure.cpp
  * \brief Main subrotuines for solving direct, adjoint and linearized problems.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -351,26 +351,30 @@ void CSolution::SetGrid_Movement_Residual (CGeometry *geometry, CConfig *config)
 
 void CSolution::Initialize_SparseMatrix_Structure(CSparseMatrix *SparseMatrix, unsigned short nVar, unsigned short nEqn, CGeometry *geometry, CConfig *config) {
 	unsigned long iPoint, *row_ptr, *col_ind, *vneighs, index, nnz;
-	unsigned short iNeigh, nNeigh;
-    
-    unsigned long nPoint = geometry->GetnPoint();
-    unsigned long nPointDomain = geometry->GetnPointDomain();
+	unsigned short iNeigh, nNeigh, Max_nNeigh;
+  
+  unsigned long nPoint = geometry->GetnPoint();
+  unsigned long nPointDomain = geometry->GetnPointDomain();
 	bool preconditioner = false;
-    //if ()
-        if (config->GetKind_Linear_Solver_Prec() != NO_PREC) preconditioner = true;
-    //else
-    //    if (config->GetKind_AdjTurb_Linear_Prec() != NO_PREC) preconditioner = true;
-    
+  
+  if (config->GetKind_Linear_Solver_Prec() != NO_PREC) preconditioner = true;
+  
 	/*--- Don't delete *row_ptr, *col_ind because they are asigned to the Jacobian structure. ---*/
 	row_ptr = new unsigned long [nPoint+1];
 	row_ptr[0] = 0;
 	for (iPoint = 0; iPoint < nPoint; iPoint++)
 		row_ptr[iPoint+1] = row_ptr[iPoint]+(geometry->node[iPoint]->GetnPoint()+1); // +1 -> to include diagonal element
 	nnz = row_ptr[nPoint];
-    
+  
 	col_ind = new unsigned long [nnz];
-	vneighs = new unsigned long [MAX_NEIGHBORS];
-    
+  
+  Max_nNeigh = 0;
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+		nNeigh = geometry->node[iPoint]->GetnPoint();
+    if (nNeigh > Max_nNeigh) Max_nNeigh = nNeigh;
+  }
+	vneighs = new unsigned long [Max_nNeigh+1]; // +1 -> to include diagonal 
+  
 	for (iPoint = 0; iPoint < nPoint; iPoint++) {
 		nNeigh = geometry->node[iPoint]->GetnPoint();
 		for (iNeigh = 0; iNeigh < nNeigh; iNeigh++)
@@ -383,18 +387,12 @@ void CSolution::Initialize_SparseMatrix_Structure(CSparseMatrix *SparseMatrix, u
 			index++;
 		}
 	}
-
+  
 	SparseMatrix->SetIndexes(nPoint, nPointDomain, nVar, nEqn, row_ptr, col_ind, nnz, preconditioner);
-
-    //if () {
-        if (config->GetKind_Linear_Solver_Prec() == LINELET)
-            SparseMatrix->BuildLineletPreconditioner(geometry, config);
-    //}
-    //else {
-    //    if (config->GetKind_AdjTurb_Linear_Prec() == LINELET)
-    //        SparseMatrix->BuildLineletPreconditioner(geometry, config);
-    //}
-     	
+  
+  if (config->GetKind_Linear_Solver_Prec() == LINELET)
+    SparseMatrix->BuildLineletPreconditioner(geometry, config);
+  
 	delete[] vneighs;
 }
 
@@ -841,6 +839,114 @@ void CSolution::SetSolution_Gradient_MPI(CGeometry *geometry, CConfig *config) {
   MPI::COMM_WORLD.Barrier();
   
 #endif
+  
+}
+
+void CSolution::SetRotVel_Gradient(CGeometry *geometry, CConfig *config) {
+	unsigned short iDim, jDim, iVar, iNeigh;
+	unsigned long iPoint, jPoint;
+	double *Coord_i, *Coord_j, *Solution_i, *Solution_j, Smatrix[3][3],
+	r11, r12, r13, r22, r23, r23_a, r23_b, r33, weight, detR2, z11, z12, z13,
+	z22, z23, z33, product;
+	double **cvector;
+  
+  /*--- Note that all nVar entries in this routine have been changed to nDim ---*/
+	cvector = new double* [nDim];
+	for (iVar = 0; iVar < nDim; iVar++)
+		cvector[iVar] = new double [nDim];
+  
+	/*--- Loop over points of the grid ---*/
+	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+    
+		Coord_i = geometry->node[iPoint]->GetCoord();
+		Solution_i = geometry->node[iPoint]->GetRotVel();
+    
+		/*--- Inizialization of variables ---*/
+		for (iVar = 0; iVar < nDim; iVar++)
+			for (iDim = 0; iDim < nDim; iDim++)
+				cvector[iVar][iDim] = 0.0;
+		r11 = 0.0; r12 = 0.0; r13 = 0.0; r22 = 0.0; r23 = 0.0; r23_a = 0.0; r23_b = 0.0; r33 = 0.0;
+    
+		for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+			jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+			Coord_j = geometry->node[jPoint]->GetCoord();
+			Solution_j = geometry->node[jPoint]->GetRotVel();
+      
+			weight = 0.0;
+			for (iDim = 0; iDim < nDim; iDim++)
+				weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
+      
+			/*--- Sumations for entries of upper triangular matrix R ---*/
+			r11 += (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/(weight);
+			r12 += (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/(weight);
+			r22 += (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/(weight);
+			if (nDim == 3) {
+				r13 += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/(weight);
+				r23_a += (Coord_j[1]-Coord_i[1])*(Coord_j[2]-Coord_i[2])/(weight);
+				r23_b += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/(weight);
+				r33 += (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/(weight);
+			}
+      
+			/*--- Entries of c:= transpose(A)*b ---*/
+			for (iVar = 0; iVar < nDim; iVar++)
+				for (iDim = 0; iDim < nDim; iDim++)
+					cvector[iVar][iDim] += (Coord_j[iDim]-Coord_i[iDim])*(Solution_j[iVar]-Solution_i[iVar])/(weight);
+		}
+    
+		/*--- Entries of upper triangular matrix R ---*/
+		r11 = sqrt(r11);
+		r12 = r12/(r11);
+		r22 = sqrt(r22-r12*r12);
+		if (nDim == 3) {
+			r13 = r13/(r11);
+			r23 = r23_a/(r22) - r23_b*r12/(r11*r22);
+			r33 = sqrt(r33-r23*r23-r13*r13);
+		}
+		/*--- S matrix := inv(R)*traspose(inv(R)) ---*/
+		if (nDim == 2) {
+			detR2 = (r11*r22)*(r11*r22);
+			Smatrix[0][0] = (r12*r12+r22*r22)/(detR2);
+			Smatrix[0][1] = -r11*r12/(detR2);
+			Smatrix[1][0] = Smatrix[0][1];
+			Smatrix[1][1] = r11*r11/(detR2);
+		}
+		else {
+			detR2 = (r11*r22*r33)*(r11*r22*r33);
+			z11 = r22*r33;
+			z12 = -r12*r33;
+			z13 = r12*r23-r13*r22;
+			z22 = r11*r33;
+			z23 = -r11*r23;
+			z33 = r11*r22;
+			Smatrix[0][0] = (z11*z11+z12*z12+z13*z13)/(detR2);
+			Smatrix[0][1] = (z12*z22+z13*z23)/(detR2);
+			Smatrix[0][2] = (z13*z33)/(detR2);
+			Smatrix[1][0] = Smatrix[0][1];
+			Smatrix[1][1] = (z22*z22+z23*z23)/(detR2);
+			Smatrix[1][2] = (z23*z33)/(detR2);
+			Smatrix[2][0] = Smatrix[0][2];
+			Smatrix[2][1] = Smatrix[1][2];
+			Smatrix[2][2] = (z33*z33)/(detR2);
+		}
+		/*--- Computation of the gradient: S*c ---*/
+		for (iVar = 0; iVar < nDim; iVar++) {
+			for (iDim = 0; iDim < nDim; iDim++) {
+				product = 0.0;
+				for (jDim = 0; jDim < nDim; jDim++)
+					product += Smatrix[iDim][jDim]*cvector[iVar][jDim];
+				geometry->node[iPoint]->SetRotVel_Grad(iVar,iDim,product);
+			}
+		}
+	}
+  
+	/*--- Deallocate memory ---*/
+	for (iVar = 0; iVar < nDim; iVar++)
+		delete [] cvector[iVar];
+	delete [] cvector;
+  
+  /*--- Gradient MPI ---*/
+  // TO DO!!!
+  //SetSolution_Gradient_MPI(geometry, config);
   
 }
 
@@ -1357,8 +1463,9 @@ CBaselineSolution::CBaselineSolution(CGeometry *geometry, CConfig *config, unsig
 	unsigned long iPoint, index, flowIter, iPoint_Global;
   long iPoint_Local;
   char buffer[50];
-  unsigned short iField, val_iZone;
+  unsigned short iField, val_iZone, iVar;
   string Tag, text_line, AdjExt, UnstExt;
+  
   unsigned short Kind_ObjFunc = config->GetKind_ObjFunc();
   unsigned short nZone = geometry->GetnZone();
   
@@ -1402,6 +1509,7 @@ CBaselineSolution::CBaselineSolution(CGeometry *geometry, CConfig *config, unsig
       case FIGURE_OF_MERIT:       AdjExt = "_merit";break;
       case FREE_SURFACE:           AdjExt = "_fs";   break;
       case NOISE:                 AdjExt = "_fwh";  break;
+      case HEAT_LOAD:                 AdjExt = "_Q";  break;
 		}
 		filename.append(AdjExt);
 	}
@@ -1504,6 +1612,9 @@ CBaselineSolution::CBaselineSolution(CGeometry *geometry, CConfig *config, unsig
   /*--- Instantiate the variable class with an arbitrary solution
    at any halo/periodic nodes. The initial solution can be arbitrary,
    because a send/recv is performed immediately in the solver. ---*/
+  for (iVar = 0; iVar < nVar; iVar++)
+    Solution[iVar] = 0.0;
+
   for(iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++)
     node[iPoint] = new CBaselineVariable(Solution, nVar, config);
   
@@ -1683,8 +1794,9 @@ void CBaselineSolution::GetRestart(CGeometry *geometry, CConfig *config, unsigne
       case THRUST_COEFFICIENT:    AdjExt = "_ct";   break;
       case TORQUE_COEFFICIENT:    AdjExt = "_cq";   break;
       case FIGURE_OF_MERIT:       AdjExt = "_merit";break;
-      case FREE_SURFACE:           AdjExt = "_fs";   break;
+      case FREE_SURFACE:          AdjExt = "_fs";   break;
       case NOISE:                 AdjExt = "_fwh";  break;
+      case HEAT_LOAD:             AdjExt = "_Q";  break;
 		}
 		filename.append(AdjExt);
 	}

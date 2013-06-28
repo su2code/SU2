@@ -2,7 +2,7 @@
  * \file numerics_viscous.cpp
  * \brief This file contains all the viscous term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -120,6 +120,7 @@ void CAvgGrad_Flow::SetResidual(double *val_residual, double **val_Jacobian_i, d
 		for (iDim = 0; iDim < nDim; iDim++)
 			dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
 		dist_ij = sqrt(dist_ij);
+    
 		GetViscousProjJacs(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, 
 				dist_ij, UnitaryNormal, Area, Proj_Flux_Tensor, val_Jacobian_i, val_Jacobian_j);
 	}
@@ -2520,11 +2521,27 @@ CAvgGrad_TransLM::~CAvgGrad_TransLM(void) {
 
 void CAvgGrad_TransLM::SetResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) {
 
+  double Density_Grad_i[nDim], Density_Grad_j[nDim], Conservative_Grad_i[nDim], Conservative_Grad_j[nDim];
+  double Primitive_Grad_i[nDim], Primitive_Grad_j[nDim];
 
-	/*--- Compute mean effective viscosity ---*/
-	nu_i = Laminar_Viscosity_i/U_i[0];
-	nu_j = Laminar_Viscosity_j/U_j[0];
-	nu_e = 0.5*(nu_i+nu_j+Eddy_Viscosity_i+Eddy_Viscosity_j) ;
+  /*--- Intermediate values for combining viscosities ---*/
+  double Inter_Viscosity_i, Inter_Viscosity_j, REth_Viscosity_i, REth_Viscosity_j, Inter_Viscosity_Mean, REth_Viscosity_Mean;
+
+  /*--- Model constants---*/
+  double sigmaf       = 1.0;
+  double sigma_thetat = 2.0;
+
+  /*--- Get density ---*/
+  Density_i = U_i[0]; 
+  Density_j = U_j[0];
+
+  /*--- Construct combinations of viscosity ---*/
+  Inter_Viscosity_i    = (Laminar_Viscosity_i+Eddy_Viscosity_i/sigmaf);
+  Inter_Viscosity_j    = (Laminar_Viscosity_j+Eddy_Viscosity_j/sigmaf);
+  Inter_Viscosity_Mean = 0.5*(Inter_Viscosity_i+Inter_Viscosity_j);
+  REth_Viscosity_i     = sigma_thetat*(Laminar_Viscosity_i+Eddy_Viscosity_i);
+  REth_Viscosity_j     = sigma_thetat*(Laminar_Viscosity_j+Eddy_Viscosity_j);
+  REth_Viscosity_Mean  = 0.5*(REth_Viscosity_i+REth_Viscosity_j);
 
 	/*--- Compute vector going from iPoint to jPoint ---*/
 	dist_ij_2 = 0; proj_vector_ij = 0;
@@ -2538,22 +2555,32 @@ void CAvgGrad_TransLM::SetResidual(double *val_residual, double **Jacobian_i, do
 	/*--- Mean gradient approximation ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
 		Proj_Mean_GradTransVar_Kappa[iVar] = 0.0;
-		Proj_Mean_GradTransVar_Edge[iVar] = 0.0;
+		// Proj_Mean_GradTransVar_Edge[iVar] = 0.0;
 		for (iDim = 0; iDim < nDim; iDim++) {
-			Mean_GradTransVar[iVar][iDim] = 0.5*(TransVar_Grad_i[iVar][iDim] + TransVar_Grad_j[iVar][iDim]);
+
+      /* -- Compute primitive grad using chain rule -- */
+      Density_Grad_i[iDim]      = ConsVar_Grad_i[0][iDim];
+      Density_Grad_j[iDim]      = ConsVar_Grad_j[0][iDim];
+      Conservative_Grad_i[iDim] = TransVar_Grad_i[iVar][iDim];
+      Conservative_Grad_j[iDim] = TransVar_Grad_j[iVar][iDim];
+      Primitive_Grad_i[iDim]    = 1./Density_i*(Conservative_Grad_i[iDim]-TransVar_i[iVar]*Density_Grad_i[iDim]);
+      Primitive_Grad_j[iDim]    = 1./Density_j*(Conservative_Grad_j[iDim]-TransVar_j[iVar]*Density_Grad_j[iDim]);
+
+      /*--- Compute the average primitive gradient and project it in the normal direction ---*/
+      Mean_GradTransVar[iVar][iDim] = 0.5*(Primitive_Grad_i[iDim] + Primitive_Grad_j[iDim]);
 			Proj_Mean_GradTransVar_Kappa[iVar] += Mean_GradTransVar[iVar][iDim]*Normal[iDim];
 		}
 	}
 
-	val_residual[0] = nu_e*Proj_Mean_GradTransVar_Kappa[0]/1.0;
-	val_residual[1] = nu_e*Proj_Mean_GradTransVar_Kappa[1]/2.0;
+	val_residual[0] = Inter_Viscosity_Mean*Proj_Mean_GradTransVar_Kappa[0];
+	val_residual[1] = REth_Viscosity_Mean*Proj_Mean_GradTransVar_Kappa[1];
 
 	/*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
 	if (implicit) {
-		Jacobian_i[0][0] = (0.5*Proj_Mean_GradTransVar_Kappa[0]-nu_e*proj_vector_ij)/1.0;
-		Jacobian_j[0][0] = (0.5*Proj_Mean_GradTransVar_Kappa[0]+nu_e*proj_vector_ij)/1.0;
-		Jacobian_i[1][1] = (0.5*Proj_Mean_GradTransVar_Kappa[1]-nu_e*proj_vector_ij)/2.0;
-		Jacobian_j[1][1] = (0.5*Proj_Mean_GradTransVar_Kappa[1]+nu_e*proj_vector_ij)/2.0;
+		Jacobian_i[0][0] = (0.5*Proj_Mean_GradTransVar_Kappa[0]-Inter_Viscosity_Mean*proj_vector_ij);
+		Jacobian_j[0][0] = (0.5*Proj_Mean_GradTransVar_Kappa[0]+Inter_Viscosity_Mean*proj_vector_ij);
+		Jacobian_i[1][1] = (0.5*Proj_Mean_GradTransVar_Kappa[1]-REth_Viscosity_Mean*proj_vector_ij);
+		Jacobian_j[1][1] = (0.5*Proj_Mean_GradTransVar_Kappa[1]+REth_Viscosity_Mean*proj_vector_ij);
 	}
 
 }
@@ -2656,8 +2683,8 @@ void CAvgGrad_AdjFlow::SetResidual(double *val_residual_i, double *val_residual_
 		double **val_Jacobian_ii, double **val_Jacobian_ij,
 		double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config) {
 	unsigned short iDim, jDim, iVar, jVar;
-	double Density_i, sq_vel_i, Energy_i, SoundSpeed_i, Pressure_i, ViscDens_i, XiDens_i, 
-	Density_j, sq_vel_j, Energy_j, SoundSpeed_j, Pressure_j, ViscDens_j, XiDens_j, dist_ij_2, dPhiE_dn, 
+	double sq_vel_i, Energy_i, ViscDens_i, XiDens_i, 
+  sq_vel_j, Energy_j, ViscDens_j, XiDens_j, dist_ij_2, dPhiE_dn, 
 	Sigma_xx, Sigma_yy, Sigma_zz, Sigma_xy, Sigma_xz, Sigma_yz,
 	Sigma_xx5, Sigma_yy5, Sigma_zz5, Sigma_xy5, Sigma_xz5, 
 	Sigma_yz5, Sigma_5, eta_xx, eta_yy, eta_zz, eta_xy, eta_xz, eta_yz;	
@@ -4516,7 +4543,7 @@ void CGalerkin_FEA::SetResidual(double **val_stiffmatrix_elem, CConfig *config) 
 		/*--- Compute the B Matrix ---*/
 		B_Matrix[0][0] = b[0];	B_Matrix[0][1] = 0.0;		B_Matrix[0][2] = 0.0;		B_Matrix[0][3] = b[1];	B_Matrix[0][4] = 0.0;		B_Matrix[0][5] = 0.0;		B_Matrix[0][6] = b[2];	B_Matrix[0][7] = 0.0;		B_Matrix[0][8] = 0.0;		B_Matrix[0][9] = b[3];	B_Matrix[0][10] = 0.0;	B_Matrix[0][11] = 0.0;
 		B_Matrix[1][0] = 0.0;		B_Matrix[1][1] = c[0];	B_Matrix[1][2] = 0.0;		B_Matrix[1][3] = 0.0;		B_Matrix[1][4] = c[1];	B_Matrix[1][5] = 0.0;		B_Matrix[1][6] = 0.0;		B_Matrix[1][7] = c[2];	B_Matrix[1][8] = 0.0;		B_Matrix[1][9] = 0.0;		B_Matrix[1][10] = c[3];	B_Matrix[1][11] = 0.0;
-		B_Matrix[2][0] = 0.0;		B_Matrix[2][1] = 0.0;		B_Matrix[2][2] = d[0];	B_Matrix[2][3] = 0.0;		B_Matrix[2][4] = 0.0;		B_Matrix[2][5] = d[1];	B_Matrix[2][6] = 0.0;		B_Matrix[2][7] = 0.0;		B_Matrix[2][8] = c[2];	B_Matrix[2][9] = 0.0;		B_Matrix[2][10] = 0.0;	B_Matrix[2][11] = c[3];
+		B_Matrix[2][0] = 0.0;		B_Matrix[2][1] = 0.0;		B_Matrix[2][2] = d[0];	B_Matrix[2][3] = 0.0;		B_Matrix[2][4] = 0.0;		B_Matrix[2][5] = d[1];	B_Matrix[2][6] = 0.0;		B_Matrix[2][7] = 0.0;		B_Matrix[2][8] = d[2];	B_Matrix[2][9] = 0.0;		B_Matrix[2][10] = 0.0;	B_Matrix[2][11] = d[3];
 		B_Matrix[3][0] = c[0];	B_Matrix[3][1] = b[0];	B_Matrix[3][2] = 0.0;		B_Matrix[3][3] = c[1];	B_Matrix[3][4] = b[1];	B_Matrix[3][5] = 0.0;		B_Matrix[3][6] = c[2];	B_Matrix[3][7] = b[2];	B_Matrix[3][8] = 0.0;		B_Matrix[3][9] = c[3];	B_Matrix[3][10] = b[3];	B_Matrix[3][11] = 0.0;
 		B_Matrix[4][0] = 0.0;		B_Matrix[4][1] = d[0];	B_Matrix[4][2] = c[0];	B_Matrix[4][3] = 0.0;		B_Matrix[4][4] = d[1];	B_Matrix[4][5] = c[1];	B_Matrix[4][6] = 0.0;		B_Matrix[4][7] = d[2];	B_Matrix[4][8] = c[2];	B_Matrix[4][9] = 0.0;		B_Matrix[4][10] = d[3];	B_Matrix[4][11] = c[3];
 		B_Matrix[5][0] = d[0];	B_Matrix[5][1] = 0.0;		B_Matrix[5][2] = b[0];	B_Matrix[5][3] = d[1];	B_Matrix[5][4] = 0.0;		B_Matrix[5][5] = b[1];	B_Matrix[5][6] = d[2];	B_Matrix[5][7] = 0.0;		B_Matrix[5][8] = b[2];	B_Matrix[5][9] = d[3];	B_Matrix[5][10] = 0.0;	B_Matrix[5][11] = b[3];

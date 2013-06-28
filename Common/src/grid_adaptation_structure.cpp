@@ -2,7 +2,7 @@
  * \file grid_adaptation_structure.cpp
  * \brief Main subroutines for grid adaptation.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  */
 
 #include "../include/grid_adaptation_structure.hpp"
@@ -207,10 +207,11 @@ void CGridAdaptation::GetAdjSolution(CGeometry *geometry, CConfig *config) {
 	if (config->GetKind_ObjFunc() == EFFICIENCY) sprintf (buffer, "_eff.dat"); 
   if (config->GetKind_ObjFunc() == FORCE_X_COEFFICIENT) sprintf (buffer, "_cfx.dat"); 
 	if (config->GetKind_ObjFunc() == FORCE_Y_COEFFICIENT) sprintf (buffer, "_cfy.dat"); 
-	if (config->GetKind_ObjFunc() == FORCE_Z_COEFFICIENT) sprintf (buffer, "_cfz.dat"); 
+	if (config->GetKind_ObjFunc() == FORCE_Z_COEFFICIENT) sprintf (buffer, "_cfz.dat");
   if (config->GetKind_ObjFunc() == THRUST_COEFFICIENT) sprintf (buffer, "_ct.dat"); 
 	if (config->GetKind_ObjFunc() == TORQUE_COEFFICIENT) sprintf (buffer, "_cq.dat"); 
-	if (config->GetKind_ObjFunc() == FIGURE_OF_MERIT) sprintf (buffer, "_merit.dat"); 
+	if (config->GetKind_ObjFunc() == FIGURE_OF_MERIT) sprintf (buffer, "_merit.dat");
+  if (config->GetKind_ObjFunc() == HEAT_LOAD) sprintf (buffer, "_Q.dat");
 	strcat(cstr, buffer);
 	
 	restart_file.open(cstr, ios::in);
@@ -285,6 +286,7 @@ void CGridAdaptation::GetAdjResidual(CGeometry *geometry, CConfig *config){
   if (config->GetKind_ObjFunc() == FORCE_X_COEFFICIENT) sprintf (buffer, "_cfx.dat"); 
 	if (config->GetKind_ObjFunc() == FORCE_Y_COEFFICIENT) sprintf (buffer, "_cfy.dat"); 
 	if (config->GetKind_ObjFunc() == FORCE_Z_COEFFICIENT) sprintf (buffer, "_cfz.dat");
+  if (config->GetKind_ObjFunc() == HEAT_LOAD) sprintf (buffer, "_Q.dat");
 //  if (config->GetKind_ObjFunc() == ROTOR_EFFICIENCY) sprintf (buffer, "_rot_eff.dat");
 	strcat(cstr, buffer);
 	
@@ -3524,6 +3526,7 @@ void CGridAdaptation::SetRestart_AdjSolution(CConfig *config, string mesh_adjfil
   if (config->GetKind_ObjFunc() == FORCE_X_COEFFICIENT) sprintf (buffer, "_cfx.dat"); 
 	if (config->GetKind_ObjFunc() == FORCE_Y_COEFFICIENT) sprintf (buffer, "_cfy.dat"); 
 	if (config->GetKind_ObjFunc() == FORCE_Z_COEFFICIENT) sprintf (buffer, "_cfz.dat");
+  if (config->GetKind_ObjFunc() == HEAT_LOAD) sprintf (buffer, "_Q.dat");
 //  if (config->GetKind_ObjFunc() == ROTOR_EFFICIENCY) sprintf (buffer, "_rot_eff.dat");
 	strcat(cstr, buffer);
 	

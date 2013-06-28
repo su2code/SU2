@@ -2,7 +2,7 @@
  * \file integration_structure.cpp
  * \brief This subroutine includes the space and time integration structure.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -100,6 +100,12 @@ void CIntegration::Space_Integration(CGeometry *geometry, CSolution **solution_c
 			case SYMMETRY_PLANE:
 				solution_container[MainSolution]->BC_Sym_Plane(geometry, solution_container, solver[CONV_BOUND_TERM], solver[VISC_BOUND_TERM], config, iMarker);
 				break;
+      case NACELLE_EXHAUST:
+				solution_container[MainSolution]->BC_NacelleExhaust(geometry, solution_container, solver[CONV_BOUND_TERM], solver[VISC_BOUND_TERM], config, iMarker);
+				break;
+			case NACELLE_INFLOW:
+				solution_container[MainSolution]->BC_NacelleInflow(geometry, solution_container, solver[CONV_BOUND_TERM], solver[VISC_BOUND_TERM], config, iMarker);
+				break;
 			case INTERFACE_BOUNDARY:
 				solution_container[MainSolution]->BC_Interface_Boundary(geometry, solution_container, solver[CONV_BOUND_TERM], config, iMarker);
 				break;
@@ -130,12 +136,6 @@ void CIntegration::Space_Integration(CGeometry *geometry, CSolution **solution_c
 			case NEUMANN:
 				solution_container[MainSolution]->BC_Neumann(geometry, solution_container, solver[CONV_BOUND_TERM], config, iMarker);
 				break;
-			case NACELLE_EXHAUST:
-				solution_container[MainSolution]->BC_NacelleExhaust(geometry, solution_container, solver[CONV_BOUND_TERM], config, iMarker);
-				break;
-			case NACELLE_INFLOW:
-				solution_container[MainSolution]->BC_NacelleInflow(geometry, solution_container, solver[CONV_BOUND_TERM], config, iMarker);
-				break;
 		}
 	}
 
@@ -143,10 +143,10 @@ void CIntegration::Space_Integration(CGeometry *geometry, CSolution **solution_c
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
 		switch (config->GetMarker_All_Boundary(iMarker)) {
       case ISOTHERMAL:
-        solution_container[MainSolution]->BC_Isothermal_Wall(geometry, solution_container, solver[CONV_BOUND_TERM], config, iMarker);
+        solution_container[MainSolution]->BC_Isothermal_Wall(geometry, solution_container, solver[CONV_BOUND_TERM], solver[VISC_BOUND_TERM], config, iMarker);
 				break;
       case HEAT_FLUX:
-        solution_container[MainSolution]->BC_HeatFlux_Wall(geometry, solution_container, solver[CONV_BOUND_TERM], config, iMarker);
+        solution_container[MainSolution]->BC_HeatFlux_Wall(geometry, solution_container, solver[CONV_BOUND_TERM], solver[VISC_BOUND_TERM], config, iMarker);
 				break;
 			case DIRICHLET:
 				solution_container[MainSolution]->BC_Dirichlet(geometry, solution_container, config, iMarker);

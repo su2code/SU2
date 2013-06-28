@@ -2,7 +2,7 @@
  * \file SU2_CFD.cpp
  * \brief Main file of Computational Fluid Dynamics Code (SU2_CFD).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -22,6 +22,36 @@
  */
 
 #include "../include/SU2_CFD.hpp"
+
+
+/*
+ * SU2_CFD.cpp is the main control file for the SU2 tool.
+ * Pseudocode:
+ *  BEGIN
+ *  Initialize data structures
+ *  Load in the geometry
+ *  Parse the input file and load settings
+ *  "Initialize solution and geometry processing" whatever that means
+ *  for ExtIter = 0; ExtIter < MaxIter; ExtIter++{
+ *      Make an iteration (problem dependent)
+ *      Check Convergence of the flow solution (problem dependent)
+ *      ??? Not sure ???
+ *      if converged{
+ *          break
+ *      }
+ *  }
+ *  Write solution files
+ *  END
+ *
+ *  Loading the geometry happens in ______.cpp
+ *  Parsing the input file happens in ______.cpp
+ *  Iterating the problem is problem dependent, and is located in solution_MATH_PHYSICAL.cpp
+ *      MATH is MATH_PROBLEM from the .cfg file
+ *      PHYSICAL is PHYSICAL_PROBLEM from the .cfg file
+ */
+
+
+
 
 using namespace std;
 
@@ -388,19 +418,19 @@ int main(int argc, char *argv[]) {
   }
 
   /*--- Solution deallocation ---*/
-  for (iZone = 0; iZone < nZone; iZone++) {
-    for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
-      for (iSol = 0; iSol < MAX_SOLS; iSol++) {
-        if (solution_container[iZone][iMesh][iSol] != NULL) {
-          delete solution_container[iZone][iMesh][iSol];
-        }
-      }
-      delete solution_container[iZone][iMesh];
-    }
-    delete solution_container[iZone];
-  }
-  delete [] solution_container;
-  if (rank == MASTER_NODE) cout <<"Solution container, deallocated." << endl;
+//  for (iZone = 0; iZone < nZone; iZone++) {
+//    for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
+//      for (iSol = 0; iSol < MAX_SOLS; iSol++) {
+//        if (solution_container[iZone][iMesh][iSol] != NULL) {
+//          delete solution_container[iZone][iMesh][iSol];
+//        }
+//      }
+//      delete solution_container[iZone][iMesh];
+//    }
+//    delete solution_container[iZone];
+//  }
+//  delete [] solution_container;
+//  if (rank == MASTER_NODE) cout <<"Solution container, deallocated." << endl;
 
   /*--- Geometry deallocation ---*/
 //  for (iZone = 0; iZone < nZone; iZone++) {

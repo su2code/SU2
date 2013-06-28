@@ -3,7 +3,7 @@
 ## \file tools.py
 #  \brief file i/o functions
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.4
+#  \version 2.0.5
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -155,7 +155,8 @@ def get_headerMap():
                  "CEquivArea"      : "EQUIVALENT_AREA"    ,
                  "CNearFieldOF"    : "NEARFIELD_PRESSURE" ,
                  "CWave"           : "NOISE"              ,
-                 "Time(min)"       : "TIME"                }    
+                 "Time(min)"       : "TIME"               ,
+                 "CHeat_Load"      : "HEAT_LOAD"           }
     
     return map_dict
 
@@ -183,11 +184,13 @@ optnames_aero = [ "LIFT"               ,
                   "THRUST"             ,
                   "EQUIVALENT_AREA"    ,
                   "NEARFIELD_PRESSURE" ,
-                  "NOISE"               ]
+                  "NOISE"              ,
+                  "HEAT_LOAD"           ]
 #: optnames_aero
 
 # Geometric Optimizer Function Names
 optnames_geo = [ "MAX_THICKNESS"       ,
+                 "MIN_THICKNESS"       ,
                  "TOTAL_VOLUME"         ]
 #: optnames_geo
 
@@ -299,7 +302,8 @@ def get_adjointSuffix(adj_objfunc=None):
                  "TORQUE"             : "cq"    ,
                  "FIGURE_OF_MERIT"    : "merit" ,  
                  "FREE_SURFACE"       : "fs"    ,
-                 "NOISE"              : "fwh"    }
+                 "NOISE"              : "fwh"   ,
+                 "HEAT_LOAD"          : "Q"       }
     
     # if none or false, return map
     if not adj_objfunc:
@@ -345,7 +349,8 @@ def get_dvMap():
     """ get dictionary that maps design variable 
         kind id number to name """
     dv_map = { 1   : "HICKS_HENNE"        ,
-               2   : "GAUSS_BUMP"         ,
+               2   : "COSINE_BUMP"        ,
+               3   : "FAIRING"            ,
                4   : "NACA_4DIGITS"       ,
                5   : "DISPLACEMENT"       ,
                6   : "ROTATION"           ,
@@ -356,6 +361,7 @@ def get_dvMap():
                11  : "FFD_CAMBER"         ,
                12  : "FFD_THICKNESS"      ,
                13  : "FFD_VOLUME"         ,
+               14  : "FOURIER"            ,
                101 : "MACH_NUMBER"        ,
                102 : "AOA"                 }
     
@@ -439,6 +445,9 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
         write_format.append(r', %s, %s')
     elif kindID == "GAUSS_BUMP"       :
         header.append(r',"Up/Down","Loc_Max","Size_Bump"')
+        write_format.append(r', %s, %s, %s')
+    elif kindID == "FAIRING"       :
+        header.append(r',"ControlPoint_Index","Theta_Disp","R_Disp"')
         write_format.append(r', %s, %s, %s')
     elif kindID == "NACA_4DIGITS"       :
         header.append(r',"1st_digit","2nd_digit","3rd&4th_digits"')
@@ -651,8 +660,8 @@ def expand_part(name,config):
     if config['DECOMPOSED']:
         n_part = config['NUMBER_PART']
         name_pat = add_suffix(name,'%i')
-        # names = [name_pat%(i+1) for i in range(n_part)]
-        names = [name] + [name_pat%(i+1) for i in range(n_part)] # hack - TWL
+        names = [name_pat%(i+1) for i in range(n_part)]
+        #names = [name] + [name_pat%(i+1) for i in range(n_part)] # hack - TWL
     else:
         names = [name]
     return names

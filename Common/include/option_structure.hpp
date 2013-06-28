@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Many of the classes in this file are templated, and therefore must
  * be declared and defined here; to keep all elements together, there
@@ -104,7 +104,6 @@ const unsigned int MAX_PARAMETERS = 10;		/*!< \brief Maximum number of parameter
 const unsigned int MAX_INDEX_VALUE = 100;	/*!< \brief Maximum value for a marker index. */
 const unsigned int MAX_NUMBER_MARKER = 200;	/*!< \brief Maximum number of domains. */
 const unsigned int MAX_NUMBER_CHUNK = 10;	/*!< \brief Maximum number of chunks for the FFD. */
-const unsigned int MAX_NEIGHBORS = 150;		/*!< \brief Maximum number of neighbors. */
 const unsigned int MAX_SOLS = 6;		/*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 6;		/*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 30; /*!< \brief Maximum number of zones. */
@@ -114,7 +113,7 @@ const unsigned int MESH_0 = 0;			/*!< \brief Definition of the finest grid level
 const unsigned int MESH_1 = 1;			/*!< \brief Definition of the finest grid level. */
 const unsigned int ZONE_0 = 0;			/*!< \brief Definition of the first grid domain. */
 const unsigned int ZONE_1 = 1;			/*!< \brief Definition of the first grid domain. */
-const unsigned int MAX_MPI_BUFFER = 20000000; /*!< \brief Buffer size for parallel simulations. */
+const unsigned int MAX_MPI_BUFFER = 52430000; /*!< \brief Buffer size for parallel simulations (50MB). */
 
 const double PRANDTL = 0.72;	        	/*!< \brief Fluid's Prandtl constant (air). */
 const double PRANDTL_TURB = 0.90;	/*!< \brief Fluid's turbulent Prandtl constant (air). */
@@ -650,7 +649,10 @@ enum ENUM_OBJECTIVE {
 	NOISE = 19,             /*!< \brief Noise objective function definition. */
 	MAX_THICKNESS = 20,       /*!< \brief Maximum thickness. */
 	TOTAL_VOLUME = 21,       /*!< \brief Total volume. */
-  CLEARANCE = 22       /*!< \brief Clearance. */
+  CLEARANCE = 22,       /*!< \brief Clearance. */
+  MIN_THICKNESS = 23,       /*!< \brief Minimum thickness. */
+  HEAT_LOAD = 24,        /*!< \brief Integrated heat flux (heat load). */
+  MAX_HEAT_FLUX = 25    /*!< \brief Maximum heat flux. */
 };
 
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>
@@ -669,12 +671,14 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("FORCE_Z", FORCE_Z_COEFFICIENT)
 ("THRUST", THRUST_COEFFICIENT)
 ("TORQUE", TORQUE_COEFFICIENT)
+("HEAT_LOAD", HEAT_LOAD)
 ("FIGURE_OF_MERIT", FIGURE_OF_MERIT)
 ("FREE_SURFACE", FREE_SURFACE)
 ("NOISE", NOISE)
 ("TOTAL_VOLUME", TOTAL_VOLUME)
 ("MAX_THICKNESS", MAX_THICKNESS)
-("CLEARANCE", CLEARANCE);
+("CLEARANCE", CLEARANCE)
+("MIN_THICKNESS", MIN_THICKNESS);
 
 /*!
  * \brief types (Continuous/Discrete) of objective functions
@@ -865,11 +869,14 @@ enum ENUM_PARAM {
 	OBSTACLE = 18,		        /*!< \brief Obstacle for free surface optimization. */
 	STRETCH = 19,		        /*!< \brief Stretch one side of a channel. */
   SURFACE_FILE = 20,		   /*!< Nodal coordinates set using a surface file. */
-  GAUSS_BUMP = 21		/*!< \brief Gauss bump function for airfoil deformation. */
+  COSINE_BUMP = 21,		/*!< \brief Gauss bump function for airfoil deformation. */
+  FOURIER = 22,		/*!< \brief Fourier function for airfoil deformation. */
+  SPHERICAL = 23		/*!< \brief Spherical geometry parameterization with spline-based radial profile. */
 };
 static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("NO_DEFORMATION", NO_DEFORMATION)
 ("HICKS_HENNE", HICKS_HENNE)
+("SPHERICAL", SPHERICAL)
 ("MACH_NUMBER", MACH_NUMBER)
 ("NACA_4DIGITS", NACA_4DIGITS)
 ("DISPLACEMENT", DISPLACEMENT)
@@ -884,7 +891,8 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("PARABOLIC", PARABOLIC)
 ("OBSTACLE", OBSTACLE)
 ("STRETCH", STRETCH)
-("GAUSS_BUMP", GAUSS_BUMP)
+("COSINE_BUMP", COSINE_BUMP)
+("FOURIER", FOURIER)
 ("SURFACE_FILE", SURFACE_FILE);
 
 /*!
@@ -941,14 +949,10 @@ static const map<string, ENUM_LINEAR_SOLVER_PREC> Linear_Solver_Prec_Map = CCrea
  */
 enum ENUM_DEFORM {
 	SPRING = 1,  	         	/*!< \brief Classical spring analogy as the grid deformation technique. */
-	TORSIONAL_SPRING = 2, 	/*!< \brief Torsional spring analogy as the grid deformation technique. */
-	ALGEBRAIC = 3,                 /*!< \brief Movement of the grid using an algebraic based method. */
-  FEA = 4                 /*!< \brief Movement of the grid using an FEA based method. */
+  FEA = 2                 /*!< \brief Movement of the grid using an FEA based method. */
 };
 static const map<string, ENUM_DEFORM> Deform_Map = CCreateMap<string, ENUM_DEFORM>
 ("SPRING", SPRING)
-("TORSIONAL_SPRING", TORSIONAL_SPRING)
-("ALGEBRAIC", ALGEBRAIC)
 ("FEA", FEA);
 
 /*!
@@ -2278,8 +2282,10 @@ public:
 			switch ((*Design_Variable_)[iDV]) {
 			case NO_DEFORMATION: nParamDV = 0; break;
 			case HICKS_HENNE: nParamDV = 2; break;
-      case GAUSS_BUMP: nParamDV = 3; break;
-			case DISPLACEMENT: nParamDV = 3; break;
+      case SPHERICAL: nParamDV = 3; break;
+      case COSINE_BUMP: nParamDV = 3; break;
+      case FOURIER: nParamDV = 3; break;
+      case DISPLACEMENT: nParamDV = 3; break;
 			case ROTATION: nParamDV = 6; break;
 			case NACA_4DIGITS: nParamDV = 3; break;
 			case PARABOLIC: nParamDV = 2; break;
@@ -2326,7 +2332,9 @@ public:
 			switch ((*Design_Variable_)[iDV]) {
 			case NO_DEFORMATION: nParamDV = 0; break;
 			case HICKS_HENNE: nParamDV = 2; break;
-      case GAUSS_BUMP: nParamDV = 3; break;
+      case SPHERICAL: nParamDV = 3; break;
+      case COSINE_BUMP: nParamDV = 3; break;
+      case FOURIER: nParamDV = 3; break;
       case DISPLACEMENT: nParamDV = 3; break;
 			case ROTATION: nParamDV = 6; break;
 			case NACA_4DIGITS: nParamDV = 3; break;

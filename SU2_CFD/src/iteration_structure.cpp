@@ -2,7 +2,7 @@
  * \file iteration_structure.cpp
  * \brief Main subroutines used by SU2_CFD.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -28,13 +28,14 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
 		CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk) {
 
 	double Physical_dt, Physical_t;
-	unsigned short iMesh, iZone;
+	unsigned short iMesh; // Index for multi-grid level
+    unsigned short iZone; // Index for zone of the mesh
 	bool time_spectral = (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL);
 	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
 	if (time_spectral) nZone = config_container[ZONE_0]->GetnTimeInstances();
 	bool relative_motion = config_container[ZONE_0]->GetRelative_Motion();
-  unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
-  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+    unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
+    unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
   
 #ifndef NO_MPI
 	int rank = MPI::COMM_WORLD.Get_rank();
@@ -52,7 +53,7 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
    and interpolation for any sliding interfaces before the next timestep. ---*/
 	if (relative_motion) {
 		SetSliding_Interfaces(geometry_container, solution_container, config_container, nZone);
-  }
+    }
 
 	for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -456,10 +457,7 @@ void FreeSurfaceIteration(COutput *output, CIntegration ***integration_container
 		IntIter = ExtIter;
 		if ((config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
 				(config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) IntIter = 0;
-    
-    /*--- Compute level set function using the distance to the free surface ---*/
-    solution_container[iZone][MESH_0][LEVELSET_SOL]->SetLevelSet_Distance(geometry_container[iZone][MESH_0], config_container[iZone], true, true);
-    
+        
     /*--- Set the initial condition ---*/
 		solution_container[iZone][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone], solution_container[iZone], config_container[iZone], ExtIter);
 		
@@ -493,10 +491,6 @@ void FreeSurfaceIteration(COutput *output, CIntegration ***integration_container
         /*--- Set the value of the internal iteration ---*/
         config_container[iZone]->SetIntIter(IntIter);
         
-        /*--- Compute level set function using the distance to the free surface ---*/
-        if (IntIter % config_container[iZone]->GetFreeSurface_Reevaluation() == 0)
-          solution_container[iZone][MESH_0][LEVELSET_SOL]->SetLevelSet_Distance(geometry_container[iZone][MESH_0], config_container[iZone], true, false);
-
 				/*--- Euler, Navier-Stokes, and RANS equations solution ---*/
 				if (config_container[iZone]->GetKind_Solver() == FREE_SURFACE_EULER)          config_container[iZone]->SetGlobalParam(FREE_SURFACE_EULER, RUNTIME_FLOW_SYS, IntIter);
 				if (config_container[iZone]->GetKind_Solver() == FREE_SURFACE_NAVIER_STOKES)  config_container[iZone]->SetGlobalParam(FREE_SURFACE_NAVIER_STOKES, RUNTIME_FLOW_SYS, IntIter);
@@ -1248,7 +1242,7 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
 #endif
             
             /*--- Use the if statement to move the grid only at selected dual time step iterations. ---*/
-            //if (ExtIter % 3 ==0) {
+            if (ExtIter % 3 ==0) {
                 
                 /*--- Solve typical section wing model, solution returned in structural solution ---*/
                 grid_movement->SolveTypicalSectionWingModel(geometry_container[MESH_0], Cl, Cm, config_container, iZone, ExtIter, structural_solution);
@@ -1281,7 +1275,7 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
                         geometry_container[iMGlevel]->SetGridVelocity(config_container,ExtIter);
                     }
                 }
-            //}
+            }
       break;
       
     case NONE: default:

@@ -1,7 +1,7 @@
 ## \file interface.py
 #  \brief python package interfacing with the SU2 suite
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.4
+#  \version 2.0.5
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -42,7 +42,7 @@ slurm_job = os.environ.has_key('SLURM_JOBID')
     
 # set mpi command
 if slurm_job:
-    mpi_Command = 'srun -n%i %s'
+    mpi_Command = 'srun -n %i %s'
 else:
     mpi_Command = 'mpirun -np %i %s'
     
@@ -60,11 +60,8 @@ def DDC(config):
     
     tempname = 'config_DDC.cfg'
     konfig.dump(tempname)
-    
+  
     processes = konfig['NUMBER_PART']
-    
-    # must run with rank 1
-    processes = min([1,processes])
     
     the_Command = 'SU2_DDC ' + tempname
     the_Command = build_command( the_Command , processes )
@@ -128,7 +125,7 @@ def MDC(config):
     
     # must run with rank 1
     processes = konfig['NUMBER_PART']
-    processes = min([1,processes])  
+    #processes = min([1,processes])  # hack - TWL
     
     the_Command = 'SU2_MDC ' + tempname
     the_Command = build_command( the_Command , processes )

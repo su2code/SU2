@@ -2,7 +2,7 @@
  * \file solution_adjoint_plasma.cpp
  * \brief Main subrotuines for solving adjoint problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -169,6 +169,7 @@ CAdjPlasmaSolution::CAdjPlasmaSolution(CGeometry *geometry, CConfig *config) : C
       case FIGURE_OF_MERIT: AdjExt = "_merit.dat"; break;
 			case FREE_SURFACE: AdjExt = "_fs.dat"; break;
       case NOISE: AdjExt = "_fwh.dat"; break;
+      case HEAT_LOAD: AdjExt = "_Q.dat"; break;
 		}
 		filename.append(AdjExt);
 		restart_file.open(filename.data(), ios::in);
@@ -237,6 +238,9 @@ CAdjPlasmaSolution::CAdjPlasmaSolution(CGeometry *geometry, CConfig *config) : C
 	if (config->GetKind_ConvNumScheme_Plasma() == SPACE_CENTERED) space_centered = true;
 	else space_centered = false;
   
+  /*--- Send solution information using MPI ---*/
+  SetSolution_MPI(geometry, config);
+  
 }
 
 CAdjPlasmaSolution::~CAdjPlasmaSolution(void) {
@@ -285,10 +289,162 @@ CAdjPlasmaSolution::~CAdjPlasmaSolution(void) {
 	delete [] node; */
 }
 
+
+void CAdjPlasmaSolution::SetSolution_MPI(CGeometry *geometry, CConfig *config) {
+  
+	unsigned short iVar, iMarker, iPeriodic_Index, iSpecies, loc;
+	unsigned long iVertex, iPoint, nVertex, nBuffer_Vector;
+	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi,
+	sinPsi, *newSolution = NULL, *Buffer_Receive_U = NULL;
+	short SendRecv;
+	int send_to, receive_from;
+  
+#ifndef NO_MPI
+	double *Buffer_Send_U = NULL, *Buffer_Send_LaminarViscosity = NULL,
+  *Buffer_Send_EddyViscosity = NULL, *Buffer_Send_VGrad = NULL, *Buffer_Send_UGrad = NULL, *Buffer_Send_Limit = NULL, *Buffer_Send_Undivided_Laplacian = NULL,
+  *Buffer_Send_Sensor = NULL, *Buffer_Send_Lambda = NULL;
+	unsigned short *Buffer_Send_Neighbor = NULL;
+#endif
+  
+	newSolution = new double[nVar];
+  
+	/*--- Send-Receive boundary conditions ---*/
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    
+		if (config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) {
+      
+			SendRecv = config->GetMarker_All_SendRecv(iMarker);
+			nVertex = geometry->nVertex[iMarker];
+      
+			nBuffer_Vector			= nVertex*nVar;
+      
+			send_to = SendRecv-1;
+			receive_from = abs(SendRecv)-1;
+      
+#ifndef NO_MPI
+      
+			/*--- Send information using MPI  ---*/
+			if (SendRecv > 0) {
+				/*--- Allocate upwind variables ---*/
+				Buffer_Send_U = new double[nBuffer_Vector];
+        
+				for (iVertex = 0; iVertex < nVertex; iVertex++) {
+          
+					iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          
+					/*--- Copy data ---*/
+					for (iVar = 0; iVar < nVar; iVar++) {
+						Buffer_Send_U[iVar*nVertex+iVertex] = node[iPoint]->GetSolution(iVar);
+					}
+				}
+        
+				/*--- Send the buffer, and deallocate information using MPI ---*/
+				MPI::COMM_WORLD.Bsend(Buffer_Send_U, nBuffer_Vector, MPI::DOUBLE, send_to, 0); delete [] Buffer_Send_U;
+			}
+      
+#endif
+      
+			/*--- Receive information  ---*/
+			if (SendRecv < 0) {
+        
+				/*--- Allocate upwind variables ---*/
+				Buffer_Receive_U = new double [nBuffer_Vector];
+        
+        
+#ifdef NO_MPI
+        
+				/*--- Get the information from the donor point directly. This is a
+				 serial computation with access to all nodes. Note that there is an
+				 implicit ordering in the list. ---*/
+				for (iVertex = 0; iVertex < nVertex; iVertex++) {
+          
+					iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          
+					/*--- Copy data ---*/
+					for (iVar = 0; iVar < nVar; iVar++) {
+						Buffer_Receive_U[iVar*nVertex+iVertex] = node[iPoint]->GetSolution(iVar);
+					}
+				}
+        
+#else
+				/*--- Receive the information using MPI---*/
+				MPI::COMM_WORLD.Recv(Buffer_Receive_U, nBuffer_Vector, MPI::DOUBLE, receive_from, 0);
+        
+#endif
+        
+				/*--- Do the coordinate transformation ---*/
+				for (iVertex = 0; iVertex < nVertex; iVertex++) {
+          
+					/*--- Find point and its type of transformation ---*/
+					iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+					iPeriodic_Index = geometry->vertex[iMarker][iVertex]->GetRotation_Type();
+          
+					/*--- Retrieve the supplied periodic information. ---*/
+					angles = config->GetPeriodicRotation(iPeriodic_Index);
+          
+					/*--- Store angles separately for clarity. ---*/
+					theta    = angles[0];   phi    = angles[1]; psi    = angles[2];
+					cosTheta = cos(theta);  cosPhi = cos(phi);  cosPsi = cos(psi);
+					sinTheta = sin(theta);  sinPhi = sin(phi);  sinPsi = sin(psi);
+          
+					/*--- Compute the rotation matrix. Note that the implicit
+					 ordering is rotation about the x-axis, y-axis,
+					 then z-axis. Note that this is the transpose of the matrix
+					 used during the preprocessing stage. ---*/
+					rotMatrix[0][0] = cosPhi*cosPsi; rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi; rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+					rotMatrix[0][1] = cosPhi*sinPsi; rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi; rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+					rotMatrix[0][2] = -sinPhi; rotMatrix[1][2] = sinTheta*cosPhi; rotMatrix[2][2] = cosTheta*cosPhi;
+          
+					/*--- Copy conserved variables before performing transformation. ---*/
+					for (iVar = 0; iVar < nVar; iVar++)
+						newSolution[iVar] = Buffer_Receive_U[iVar*nVertex+iVertex];
+          
+          
+					/*--- Rotate the momentum components. ---*/
+					if (nDim == 2) {
+						for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++ ) {
+							if (iSpecies < nDiatomics) loc = (nDim+3)*iSpecies;
+							else loc = (nDim+3)*nDiatomics + (nDim+2)*(iSpecies-nDiatomics);
+							newSolution[loc + 1] = rotMatrix[0][0]*Buffer_Receive_U[(loc + 1)*nVertex+iVertex] + rotMatrix[0][1]*Buffer_Receive_U[(loc + 2)*nVertex+iVertex];
+							newSolution[loc + 2] = rotMatrix[1][0]*Buffer_Receive_U[(loc + 1)*nVertex+iVertex] + rotMatrix[1][1]*Buffer_Receive_U[(loc + 2)*nVertex+iVertex];
+						}
+					}
+					else {
+						for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++ ) {
+							if (iSpecies < nDiatomics) loc = (nDim+3)*iSpecies;
+							else loc = (nDim+3)*nDiatomics + (nDim+2)*(iSpecies-nDiatomics);
+							newSolution[loc + 1] = rotMatrix[0][0]*Buffer_Receive_U[(loc + 1)*nVertex+iVertex] + rotMatrix[0][1]*Buffer_Receive_U[(loc + 2)*nVertex+iVertex] + rotMatrix[0][2]*Buffer_Receive_U[(loc + 3)*nVertex+iVertex];
+							newSolution[loc + 2] = rotMatrix[1][0]*Buffer_Receive_U[(loc + 1)*nVertex+iVertex] + rotMatrix[1][1]*Buffer_Receive_U[(loc + 2)*nVertex+iVertex] + rotMatrix[1][2]*Buffer_Receive_U[(loc + 3)*nVertex+iVertex];
+							newSolution[loc + 3] = rotMatrix[2][0]*Buffer_Receive_U[(loc + 1)*nVertex+iVertex] + rotMatrix[2][1]*Buffer_Receive_U[(loc + 2)*nVertex+iVertex] + rotMatrix[2][2]*Buffer_Receive_U[(loc + 3)*nVertex+iVertex];
+						}
+					}
+					/*--- Copy transformed conserved variables back into buffer. ---*/
+					for (iVar = 0; iVar < nVar; iVar++)
+						Buffer_Receive_U[iVar*nVertex+iVertex] = newSolution[iVar];
+          
+          
+					/*--- Upwind method. Store the received information ---*/
+					for (iVar = 0; iVar < nVar; iVar++) {
+						node[iPoint]->SetSolution(iVar, Buffer_Receive_U[iVar*nVertex+iVertex]);
+					}
+				}
+				delete [] Buffer_Receive_U;
+			}
+		}
+	}
+	delete [] newSolution;
+}
+
+
+
 void CAdjPlasmaSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
 	
-	bool implicit = (config->GetKind_TimeIntScheme_Plasma() == EULER_IMPLICIT);  
+	bool implicit   = (config->GetKind_TimeIntScheme_Plasma() == EULER_IMPLICIT);
+  bool upwind_2nd = ( (config->GetKind_Upwind_AdjPlasma() == ROE_2ND) ||
+                      (config->GetKind_Upwind_AdjPlasma() == SW_2ND)  ||
+                      (config->GetKind_Upwind_AdjPlasma() == MSW_2ND)    );
+  bool limiter    = (config->GetKind_SlopeLimit_AdjPlasma() != NONE);
   
 	/*--- Residual initialization ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
@@ -300,9 +456,17 @@ void CAdjPlasmaSolution::Preprocessing(CGeometry *geometry, CSolution **solution
 		node[iPoint]->Set_ResSour_Zero();
 		
 		/*--- Initialize the viscous residual vector ---*/
-		node[iPoint]->Set_ResVisc_Zero(); 
-		
+		node[iPoint]->Set_ResVisc_Zero();
 	}
+  
+  /*--- Upwind 2nd order flux reconstruction ---*/
+  if ( (upwind_2nd) && ((iMesh == MESH_0))) {
+    if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
+    else if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
+    
+    /*--- Limiter computation ---*/
+    if (limiter) SetSolution_Limiter(geometry, config);
+  }
 	
 	/*--- Implicit solution ---*/
 	if (implicit) Jacobian.SetValZero();
@@ -401,9 +565,16 @@ void CAdjPlasmaSolution::Centered_Residual(CGeometry *geometry, CSolution **solu
 														solution_container[PLASMA_SOL]->node[jPoint]->GetSoundSpeed(iSpecies),iSpecies);
 			solver->SetEnthalpy(solution_container[PLASMA_SOL]->node[iPoint]->GetEnthalpy(iSpecies), 
 													solution_container[PLASMA_SOL]->node[jPoint]->GetEnthalpy(iSpecies),iSpecies);
-			solver->SetLambda(solution_container[PLASMA_SOL]->node[iPoint]->GetLambda(iSpecies), 
-												solution_container[PLASMA_SOL]->node[jPoint]->GetLambda(iSpecies),iSpecies);
-		}
+
+      switch (config->GetKind_ConvNumScheme_Plasma()) {
+        case SPACE_CENTERED:
+          solver->SetLambda(solution_container[PLASMA_SOL]->node[iPoint]->GetLambda(iSpecies), solution_container[PLASMA_SOL]->node[jPoint]->GetLambda(iSpecies),iSpecies);
+          break;
+        case SPACE_UPWIND:
+          solver->SetLambda(solution_container[PLASMA_SOL]->node[iPoint]->GetMax_Lambda_Inv(iSpecies), solution_container[PLASMA_SOL]->node[jPoint]->GetMax_Lambda_Inv(iSpecies),iSpecies);
+          break;
+      }
+    }
 				
 		/*--- Compute residuals ---*/
 		solver->SetResidual(Res_Conv_i, Res_Visc_i, Res_Conv_j, Res_Visc_j, 
@@ -433,9 +604,15 @@ void CAdjPlasmaSolution::Centered_Residual(CGeometry *geometry, CSolution **solu
 void CAdjPlasmaSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, 
 																				 CConfig *config, unsigned short iMesh) {
 	double *Psi_i, *Psi_j, *U_i, *U_j;
+  double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j;
+  double *Limiter_i = NULL, *Limiter_j = NULL;
 	unsigned long iEdge, iPoint, jPoint;
-	
+  unsigned short iDim, iVar;
 	bool implicit = (config->GetKind_TimeIntScheme_Plasma() == EULER_IMPLICIT);
+  bool high_order_diss = (( (config->GetKind_Upwind_AdjPlasma() == ROE_2ND)  ||
+                            (config->GetKind_Upwind_AdjPlasma() == SW_2ND)   ||
+                            (config->GetKind_Upwind_AdjPlasma() == MSW_2ND)) &&
+                            (iMesh == MESH_0));
   
 	for(iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
@@ -452,6 +629,38 @@ void CAdjPlasmaSolution::Upwind_Residual(CGeometry *geometry, CSolution **soluti
 		U_i = solution_container[PLASMA_SOL]->node[iPoint]->GetSolution();
 		U_j = solution_container[PLASMA_SOL]->node[jPoint]->GetSolution();
 		solver->SetConservative(U_i, U_j);
+    
+    
+    if ((high_order_diss) && (config->GetKind_Adjoint() != DISCRETE) ) {
+      
+      cout << "CAdjPlasmaSolution::Upwind_Residual - FLUX RECONSTRUCTION NOT VERIFIED!!!" << endl;
+			for (iDim = 0; iDim < nDim; iDim++) {
+				Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
+				Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
+			}
+      
+			Gradient_i = node[iPoint]->GetGradient(); Gradient_j = node[jPoint]->GetGradient();
+			if (config->GetKind_SlopeLimit() != NONE) {
+				Limiter_j = node[jPoint]->GetLimiter(); Limiter_i = node[iPoint]->GetLimiter();
+			}
+      
+			for (iVar = 0; iVar < nVar; iVar++) {
+				Project_Grad_i = 0; Project_Grad_j = 0;
+				for (iDim = 0; iDim < nDim; iDim++) {
+					Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
+					Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
+				}
+				if (config->GetKind_SlopeLimit() == NONE) {
+					Solution_i[iVar] = U_i[iVar] + Project_Grad_i;
+					Solution_j[iVar] = U_j[iVar] + Project_Grad_j;
+				}
+				else {
+					Solution_i[iVar] = U_i[iVar] + Project_Grad_i*Limiter_i[iVar];
+					Solution_j[iVar] = U_j[iVar] + Project_Grad_j*Limiter_j[iVar];
+				}
+			}
+			solver->SetAdjointVar(Solution_i, Solution_j);
+		}
 		
 		solver->SetResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 		
@@ -472,23 +681,11 @@ void CAdjPlasmaSolution::Upwind_Residual(CGeometry *geometry, CSolution **soluti
 void CAdjPlasmaSolution::Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CNumerics *second_solver,
 																				 CConfig *config, unsigned short iMesh) {
 	
-	unsigned short iVar, jVar, iSpecies;
+	unsigned short iVar, jVar;
 	unsigned long iPoint;
 	double *Psi_i;
 	bool implicit = (config->GetKind_TimeIntScheme_AdjPlasma() == EULER_IMPLICIT);
-	bool axisymmetric = config->GetAxisymmetric();
-	
-	double *Temperature_tr_i, *Temperature_vib_i, *Pressure_i;
-	
-	Temperature_tr_i = new double [nSpecies];
-	Temperature_vib_i = new double [nSpecies];
-	Pressure_i = new double[nSpecies];
-	
-	for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-		Temperature_tr_i[iSpecies] = 0.0;
-		Temperature_vib_i[iSpecies] = 0.0;
-		Pressure_i[iSpecies] = 0.0;
-	}
+	bool axisymmetric = config->GetAxisymmetric();	
 	
 	/*--- loop over points ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
@@ -523,20 +720,12 @@ void CAdjPlasmaSolution::Source_Residual(CGeometry *geometry, CSolution **soluti
     /*--- Set control volume ---*/
     solver->SetVolume(geometry->node[iPoint]->GetVolume());
     
-    /*--- Set temperature ---*/
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
-      Temperature_tr_i[iSpecies] = solution_container[PLASMA_SOL]->node[iPoint]->GetTemperature_tr(iSpecies);
-      Temperature_vib_i[iSpecies] = solution_container[PLASMA_SOL]->node[iPoint]->GetTemperature_vib(iSpecies);
-      Pressure_i[iSpecies] = solution_container[PLASMA_SOL]->node[iPoint]->GetPressure(iSpecies);
-    }
-    solver->SetTemperature_tr(Temperature_tr_i, Temperature_tr_i);
-    solver->SetTemperature_vib(Temperature_vib_i, Temperature_vib_i);
+    /*--- Set all primitive variables and gradients ---*/
+		solver->SetPrimitive(solution_container[PLASMA_SOL]->node[iPoint]->GetPrimVar_Plasma(), solution_container[PLASMA_SOL]->node[iPoint]->GetPrimVar_Plasma());
+		solver->SetPrimVarGradient(solution_container[PLASMA_SOL]->node[iPoint]->GetGradient_Primitive_Plasma(),solution_container[PLASMA_SOL]->node[iPoint]->GetGradient_Primitive_Plasma());
     
     /*--- Load auxiliary vector with local adjoint variables ---*/
-    Psi_i = node[iPoint]->GetSolution();		
-    
-    /*--- Set pressure ---*/
-    solver->SetPressure(Pressure_i, Pressure_i);
+    Psi_i = node[iPoint]->GetSolution();		    
     
     /*--- Axisymmetric source terms ---*/
     if (axisymmetric) {
@@ -559,23 +748,6 @@ void CAdjPlasmaSolution::Source_Residual(CGeometry *geometry, CSolution **soluti
         Jacobian_ii[iVar][jVar] = Jacobian_Chemistry[jVar][iVar];
       }
     }
-    /*    if (iPoint == 17) {
-     cout << "Psi_i: " << endl;
-     for (iVar = 0; iVar < nVar; iVar++)
-     cout << Psi_i[iVar] << endl;
-     cout << endl << endl;
-     cout << "Residual Chemistry: " << endl;
-     for (iVar = 0; iVar < nVar; iVar++)
-     cout << Residual_Chemistry[iVar] << endl;
-     cout << endl << endl << "Jacobian Chemistry: " << endl;
-     for (iVar = 0; iVar < nVar; iVar++) {
-     for (jVar = 0; jVar < nVar; jVar++) {
-     cout << Jacobian_Chemistry[iVar][jVar] << "\t";
-     }
-     cout << endl;
-     }
-     cin.get();
-     }  */
     node[iPoint]->SubtractRes_Sour(Residual_Chemistry);
     if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);	
     
@@ -589,23 +761,6 @@ void CAdjPlasmaSolution::Source_Residual(CGeometry *geometry, CSolution **soluti
     }
     node[iPoint]->SubtractRes_Sour(Residual_MomentumExch);
     if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
-    /*    if (iPoint == 17) {
-     cout << "Psi_i: " << endl;
-     for (iVar = 0; iVar < nVar; iVar++)
-     cout << Psi_i[iVar] << endl;
-     cout << endl << endl;
-     cout << "Residual Momentum: " << endl;
-     for (iVar = 0; iVar < nVar; iVar++)
-     cout << Residual_MomentumExch[iVar] << endl;
-     cout << endl << endl << "Jacobian Momentum: " << endl;
-     for (iVar = 0; iVar < nVar; iVar++) {
-     for (jVar = 0; jVar < nVar; jVar++) {
-     cout << Jacobian_MomentumExch[iVar][jVar] << "\t";
-     }
-     cout << endl;
-     }
-     cin.get();
-     }  */
     
     /*--- Energy exchange source terms ---*/
     solver->SetJacobian_EnergyExch(Jacobian_EnergyExch, config);
@@ -615,30 +770,9 @@ void CAdjPlasmaSolution::Source_Residual(CGeometry *geometry, CSolution **soluti
         Jacobian_ii[iVar][jVar] = Jacobian_EnergyExch[jVar][iVar];
       }
     }
-    
-    /*    if (iPoint == 17) {
-     cout << "Psi_i: " << endl;
-     for (iVar = 0; iVar < nVar; iVar++)
-     cout << Psi_i[iVar] << endl;
-     cout << endl << endl;
-     cout << "Residual Energyexch: " << endl;
-     for (iVar = 0; iVar < nVar; iVar++)
-     cout << Residual_Chemistry[iVar] << endl;
-     cout << endl << endl << "Jacobian Energyexch: " << endl;
-     for (iVar = 0; iVar < nVar; iVar++) {
-     for (jVar = 0; jVar < nVar; jVar++) {
-     cout << Jacobian_EnergyExch[iVar][jVar] << "\t";
-     }
-     cout << endl;
-     }
-     cin.get();
-     }  */
     node[iPoint]->SubtractRes_Sour(Residual_EnergyExch);
     if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
   }
-	delete[] Temperature_tr_i;
-	delete[] Temperature_vib_i;
-	delete[] Pressure_i;
 }
 
 void CAdjPlasmaSolution::Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
@@ -647,10 +781,14 @@ void CAdjPlasmaSolution::Source_Template(CGeometry *geometry, CSolution **soluti
 
 
 void CAdjPlasmaSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **solution_container, CConfig *config) {
-	unsigned short iVar;
+	unsigned short iVar, iSpecies;
 	unsigned long iPoint, total_index;
 	double Delta, Delta_flow, Res, *local_ResConv, *local_ResVisc, *local_ResSour, *local_Res_TruncError, Vol;
-	
+  bool MultipleTimeSteps = config->MultipleTimeSteps();
+  double *Species_Delta;
+  
+  Species_Delta = new double [nSpecies];
+  
 	/*--- Set maximum residual to zero ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
 		SetRes_RMS(iVar, 0.0);
@@ -659,26 +797,33 @@ void CAdjPlasmaSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution 
 	
 	/*--- Build implicit system ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-			local_Res_TruncError = node[iPoint]->GetResTruncError();
-			local_ResConv = node[iPoint]->GetResConv();
-			local_ResVisc = node[iPoint]->GetResVisc();
-			local_ResSour = node[iPoint]->GetResSour();
-			Vol = geometry->node[iPoint]->GetVolume();
-			
-			/*--- Modify matrix diagonal to assure diagonal dominance ---*/
-			Delta_flow = Vol/(solution_container[PLASMA_SOL]->node[iPoint]->GetDelta_Time());
-			Delta = Delta_flow;
-			Jacobian.AddVal2Diag(iPoint, Delta);
-
-			for (iVar = 0; iVar < nVar; iVar++) {
-				total_index = iPoint*nVar+iVar;
-				/*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
-				Res = local_ResConv[iVar]+local_ResVisc[iVar]+local_ResSour[iVar];
-				rhs[total_index] = -(Res+local_Res_TruncError[iVar]);
-				AddRes_RMS(iVar, Res*Res);
-        AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex());
-			}
-		}
+    local_Res_TruncError = node[iPoint]->GetResTruncError();
+    local_ResConv = node[iPoint]->GetResConv();
+    local_ResVisc = node[iPoint]->GetResVisc();
+    local_ResSour = node[iPoint]->GetResSour();
+    Vol = geometry->node[iPoint]->GetVolume();
+    
+    /*--- Modify matrix diagonal to assure diagonal dominance ---*/
+    if (!MultipleTimeSteps) {
+      Delta_flow = Vol/(solution_container[PLASMA_SOL]->node[iPoint]->GetDelta_Time());
+      Delta = Delta_flow;
+      Jacobian.AddVal2Diag(iPoint, Delta);
+    } else {
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        Species_Delta[iSpecies] = Vol/(solution_container[PLASMA_SOL]->node[iPoint]->GetDelta_Time(iSpecies));
+      Jacobian.AddVal2Diag(iPoint, Species_Delta, nDim, nDiatomics);
+    }
+    
+    
+    for (iVar = 0; iVar < nVar; iVar++) {
+      total_index = iPoint*nVar+iVar;
+      /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
+      Res = local_ResConv[iVar]+local_ResVisc[iVar]+local_ResSour[iVar];
+      rhs[total_index] = -(Res+local_Res_TruncError[iVar]);
+      AddRes_RMS(iVar, Res*Res);
+      AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex());
+    }
+  }
   
   /*--- Initialize residual and solution at the ghost points ---*/
   for (iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
@@ -746,6 +891,7 @@ void CAdjPlasmaSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution 
   /*--- Compute the root mean square residual ---*/
   SetResidual_RMS(geometry, config);
 	
+  delete [] Species_Delta;
 }
 
 void CAdjPlasmaSolution::Inviscid_Sensitivity(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config) {
@@ -838,9 +984,8 @@ void CAdjPlasmaSolution::Inviscid_Sensitivity(CGeometry *geometry, CSolution **s
 void CAdjPlasmaSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short val_marker) {
 	
 	unsigned long iVertex, iPoint;
-	double *d, *Normal, *U, *Psi_Aux, ProjVel = 0.0, bcn, vn = 0.0, Area, *UnitaryNormal, *Coord, Gamma_Minus_One;
-  double *Velocity, *Psi, Enthalpy = 0.0, Energy_vib, sq_vel, phin;
-  //double phis1, phis2;
+	double *d, *Normal, *U, *Psi_Aux, ProjVel, bcn, Area, *UnitaryNormal, *Coord, Gamma_Minus_One;
+  double *Velocity, *Psi, Enthalpy, hf, Energy_vib, sq_vel, phin;
 	unsigned short iDim, iVar, jVar, jDim, loc, iSpecies;
   double phidotu, phidotn, Energy_el, dPdrho, *dPdrhou, dPdrhoE, dPdrhoEv;
 	
@@ -863,50 +1008,48 @@ void CAdjPlasmaSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution
 				if ( iSpecies < nDiatomics ) loc = (nDim+3)*iSpecies;
 				else loc = (nDim+3)*nDiatomics + (nDim+2)*(iSpecies-nDiatomics);
 				
-				if ( iSpecies < nDiatomics ) Gamma_Minus_One = config->GetGammaDiatomic()-1.0;
-				else  Gamma_Minus_One = config->GetGammaMonatomic()-1.0;
-				
 				/*--- Create a copy of the adjoint solution ---*/
 				Psi_Aux = node[iPoint]->GetSolution();
 				for (iVar = 0; iVar < nVar; iVar++) Psi[iVar] = Psi_Aux[iVar];			
 				
-				/*--- Flow solution ---*/
+				/*--- Flow solution and projected force vector ---*/
 				U = solution_container[PLASMA_SOL]->node[iPoint]->GetSolution();
 				d = node[iPoint]->GetForceProj_Vector();
 				
+        /*--- Geometry parameters ---*/
 				Area = 0; 
 				for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
 				Area = sqrt(Area);
-				
 				for (iDim = 0; iDim < nDim; iDim++)
 					UnitaryNormal[iDim]   = -Normal[iDim]/Area;
-				
-				for (iDim = 0; iDim < nDim; iDim++)
-					Velocity[iDim] = U[loc+iDim+1] / U[loc+0];
-				
+								
+
+        Gamma_Minus_One = config->GetSpecies_Gamma(iSpecies);
 				Enthalpy = solution_container[PLASMA_SOL]->node[iPoint]->GetEnthalpy(iSpecies);
-				sq_vel   = 0.5*solution_container[PLASMA_SOL]->node[iPoint]->GetVelocity2(iSpecies);
-        
+        hf = config->GetEnthalpy_Formation(iSpecies);
+        sq_vel = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+					Velocity[iDim] = U[loc+iDim+1] / U[loc+0];
+          sq_vel += Velocity[iDim]*Velocity[iDim];
+        }
+        Energy_el = 0;
         Energy_vib = 0.0;
         if (iSpecies < nDiatomics)
           Energy_vib = U[loc+nDim+2]/U[loc+0];
 				
 				/*--- Compute projections ---*/
-				ProjVel = 0.0; bcn = 0.0; vn = 0.0, phin = 0.0; sq_vel = 0.0;
+				ProjVel = 0.0; bcn = 0.0; phin = 0.0;
 				for (iDim = 0; iDim < nDim; iDim++) {
 //					ProjVel -= Velocity[iDim]*Normal[iDim];
 					ProjVel += Velocity[iDim]*UnitaryNormal[iDim];
 					bcn     += d[iDim]*UnitaryNormal[iDim];
-					vn      += Velocity[iDim]*UnitaryNormal[iDim];
 					phin    += Psi[loc+iDim+1]*UnitaryNormal[iDim];
 				}
 
 				/*--- Introduce the boundary condition ---*/
 				for (iDim = 0; iDim < nDim; iDim++) 
 					Psi[loc+iDim+1] -= ( phin - bcn ) * UnitaryNormal[iDim];
-
         
-        // NEW IMPLEMENTATION (NOT WORKING) ------------------------
         /*--- Pre-compute useful quantities ---*/
         phidotu = 0.0;
         phidotn = 0.0;
@@ -914,8 +1057,7 @@ void CAdjPlasmaSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution
           phidotu += Velocity[iDim] * Psi[loc+iDim+1];
           phidotn += Psi[loc+iDim+1] * UnitaryNormal[iDim];
         }
-        Energy_el = 0;
-        dPdrho = Gamma_Minus_One * (sq_vel - config->GetEnthalpy_Formation(iSpecies) - Energy_el);
+        dPdrho = Gamma_Minus_One * (0.5*sq_vel - hf - Energy_el);
         for (iDim = 0; iDim < nDim; iDim++)
           dPdrhou[iDim] = -Gamma_Minus_One*Velocity[iDim];
         dPdrhoE = Gamma_Minus_One;
@@ -926,7 +1068,7 @@ void CAdjPlasmaSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution
         for (iDim = 0; iDim < nDim; iDim++)
           Residual[loc+iDim+1] = UnitaryNormal[iDim]*Psi[loc] + ProjVel*Psi[loc+iDim+1] + phidotu*UnitaryNormal[iDim] + dPdrhou[iDim]*phidotn 
           + (dPdrhou[iDim]*ProjVel+Enthalpy*UnitaryNormal[iDim])*Psi[loc+nDim+1];
-        Residual[loc+nDim+1] = dPdrhoE*phidotn + ProjVel*(1+dPdrhoE)*Psi[loc+nDim+1];
+        Residual[loc+nDim+1] = dPdrhoE*phidotn + ProjVel*(1.0+dPdrhoE)*Psi[loc+nDim+1];
         
         if (iSpecies < nDiatomics) {
           Residual[loc+0] -= ProjVel*Energy_vib*Psi[loc+nDim+2];
@@ -951,7 +1093,7 @@ void CAdjPlasmaSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution
             for (jDim = 0; jDim < nDim; jDim++)
               Jacobian_ii[loc+iDim+1][loc+jDim+1] = Velocity[jDim]*UnitaryNormal[iDim] + dPdrhou[iDim]*UnitaryNormal[jDim];
             Jacobian_ii[loc+iDim+1][loc+iDim+1] += ProjVel;
-            Jacobian_ii[loc+iDim+1][loc+nDim+1] = dPdrhou[iDim]*ProjVel + Enthalpy;                        
+            Jacobian_ii[loc+iDim+1][loc+nDim+1] = dPdrhou[iDim]*ProjVel + Enthalpy*UnitaryNormal[iDim];
           }
           
           /*--- Adjoint energy ---*/
@@ -962,7 +1104,7 @@ void CAdjPlasmaSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution
           
           /*--- Adjoint vibrational energy ---*/
           if (iSpecies < nDiatomics) {
-            Jacobian_ii[loc+0][loc+nDim+2] = ProjVel*Energy_vib;
+            Jacobian_ii[loc+0][loc+nDim+2] = -ProjVel*Energy_vib;
             for (iDim = 0; iDim < nDim; iDim++)
               Jacobian_ii[loc+iDim+1][loc+nDim+2] = Energy_vib*UnitaryNormal[iDim];
             Jacobian_ii[loc+nDim+1][loc+nDim+2] = 0.0;
@@ -997,20 +1139,18 @@ void CAdjPlasmaSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_
 																		 CConfig *config, unsigned short val_marker) {
 	
 	unsigned long iVertex, iPoint;
-	double *d, *Normal, *U, *Psi_Aux, ProjVel = 0.0, bcn, vn = 0.0, Area, *UnitaryNormal, *Coord, Gamma_Minus_One;
-  double *Velocity, *Psi, Enthalpy = 0.0, Energy_vib, sq_vel, phin;
-  //double phis1, phis2;
+	double *Normal, *U, *Psi_Aux, ProjVel, bcn, Area, *UnitaryNormal, *Coord, Gamma_Minus_One;
+  double *Velocity, *Psi, Enthalpy, hf, Energy_vib, sq_vel, phin;
 	unsigned short iDim, iVar, jVar, jDim, loc, iSpecies;
   double phidotu, phidotn, Energy_el, dPdrho, *dPdrhou, dPdrhoE, dPdrhoEv;
-  
+	
 	bool implicit = (config->GetKind_TimeIntScheme_Plasma() == EULER_IMPLICIT);
 	
 	UnitaryNormal = new double[nDim];
 	Velocity = new double[nDim];
 	Psi      = new double[nVar];
   dPdrhou = new double[nDim];
-  
-  
+	
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 		
@@ -1023,46 +1163,45 @@ void CAdjPlasmaSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_
 				if ( iSpecies < nDiatomics ) loc = (nDim+3)*iSpecies;
 				else loc = (nDim+3)*nDiatomics + (nDim+2)*(iSpecies-nDiatomics);
 				
-				if ( iSpecies < nDiatomics ) Gamma_Minus_One = config->GetGammaDiatomic()-1.0;
-				else  Gamma_Minus_One = config->GetGammaMonatomic()-1.0;
-				
 				/*--- Create a copy of the adjoint solution ---*/
 				Psi_Aux = node[iPoint]->GetSolution();
-				for (iVar = 0; iVar < nVar; iVar++) Psi[iVar] = Psi_Aux[iVar];			
+				for (iVar = 0; iVar < nVar; iVar++) Psi[iVar] = Psi_Aux[iVar];
 				
-				/*--- Flow solution ---*/
+				/*--- Flow solution and projected force vector ---*/
 				U = solution_container[PLASMA_SOL]->node[iPoint]->GetSolution();
-				d = node[iPoint]->GetForceProj_Vector();
 				
-				Area = 0; 
+        /*--- Geometry parameters ---*/
+				Area = 0;
 				for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
 				Area = sqrt(Area);
-				
 				for (iDim = 0; iDim < nDim; iDim++)
 					UnitaryNormal[iDim]   = -Normal[iDim]/Area;
-				
-				for (iDim = 0; iDim < nDim; iDim++)
-					Velocity[iDim] = U[loc+iDim+1] / U[loc+0];
-				
-				Enthalpy = solution_container[PLASMA_SOL]->node[iPoint]->GetEnthalpy(iSpecies);
-				sq_vel   = 0.5*solution_container[PLASMA_SOL]->node[iPoint]->GetVelocity2(iSpecies);
         
+        Gamma_Minus_One = config->GetSpecies_Gamma(iSpecies);
+				Enthalpy = solution_container[PLASMA_SOL]->node[iPoint]->GetEnthalpy(iSpecies);
+        hf = config->GetEnthalpy_Formation(iSpecies);
+        sq_vel = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+					Velocity[iDim] = U[loc+iDim+1] / U[loc+0];
+          sq_vel += Velocity[iDim]*Velocity[iDim];
+        }
+        Energy_el = 0;
         Energy_vib = 0.0;
         if (iSpecies < nDiatomics)
           Energy_vib = U[loc+nDim+2]/U[loc+0];
 				
 				/*--- Compute projections ---*/
-				ProjVel = 0.0; bcn = 0.0; vn = 0.0, phin = 0.0;
+				ProjVel = 0.0; bcn = 0.0; phin = 0.0;
 				for (iDim = 0; iDim < nDim; iDim++) {
-          ProjVel += Velocity[iDim]*UnitaryNormal[iDim];
-					vn      += Velocity[iDim]*UnitaryNormal[iDim];
+          //					ProjVel -= Velocity[iDim]*Normal[iDim];
+					ProjVel += Velocity[iDim]*UnitaryNormal[iDim];
 					phin    += Psi[loc+iDim+1]*UnitaryNormal[iDim];
-				}        
+				}
         
 				/*--- Introduce the boundary condition ---*/
-				for (iDim = 0; iDim < nDim; iDim++) 
+				for (iDim = 0; iDim < nDim; iDim++)
 					Psi[loc+iDim+1] -= phin * UnitaryNormal[iDim];
-				
+              
         /*--- Pre-compute useful quantities ---*/
         phidotu = 0.0;
         phidotn = 0.0;
@@ -1070,8 +1209,7 @@ void CAdjPlasmaSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_
           phidotu += Velocity[iDim] * Psi[loc+iDim+1];
           phidotn += Psi[loc+iDim+1] * UnitaryNormal[iDim];
         }
-        Energy_el = 0;
-        dPdrho = Gamma_Minus_One * (sq_vel - config->GetEnthalpy_Formation(iSpecies) - Energy_el);
+        dPdrho = Gamma_Minus_One * (0.5*sq_vel - hf - Energy_el);
         for (iDim = 0; iDim < nDim; iDim++)
           dPdrhou[iDim] = -Gamma_Minus_One*Velocity[iDim];
         dPdrhoE = Gamma_Minus_One;
@@ -1080,17 +1218,17 @@ void CAdjPlasmaSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_
         /*--- Flux of the Euler wall: Psi^T * (dF/dU dot n) ---*/
         Residual[loc+0] = dPdrho*phidotn - ProjVel*phidotu + ProjVel*(dPdrho-Enthalpy)*Psi[loc+nDim+1];
         for (iDim = 0; iDim < nDim; iDim++)
-          Residual[loc+iDim+1] = UnitaryNormal[iDim]*Psi[loc] + ProjVel*Psi[loc+iDim+1] + phidotu*UnitaryNormal[iDim] + dPdrhou[iDim]*phidotn 
-                                + (dPdrhou[iDim]*ProjVel+Enthalpy*UnitaryNormal[iDim])*Psi[loc+nDim+1];
-        Residual[loc+nDim+1] = dPdrhoE*phidotn + ProjVel*(1+dPdrhoE)*Psi[loc+nDim+1];
-                
+          Residual[loc+iDim+1] = UnitaryNormal[iDim]*Psi[loc] + ProjVel*Psi[loc+iDim+1] + phidotu*UnitaryNormal[iDim] + dPdrhou[iDim]*phidotn
+          + (dPdrhou[iDim]*ProjVel+Enthalpy*UnitaryNormal[iDim])*Psi[loc+nDim+1];
+        Residual[loc+nDim+1] = dPdrhoE*phidotn + ProjVel*(1.0+dPdrhoE)*Psi[loc+nDim+1];
+        
         if (iSpecies < nDiatomics) {
           Residual[loc+0] -= ProjVel*Energy_vib*Psi[loc+nDim+2];
           for (iDim = 0; iDim < nDim; iDim++)
             Residual[loc+iDim+1] += Energy_vib*UnitaryNormal[iDim]*Psi[loc+nDim+2];
           Residual[loc+nDim+1] += 0.0;
           Residual[loc+nDim+2] = dPdrhoEv*phidotn + ProjVel*dPdrhoEv*Psi[loc+nDim+1] + ProjVel*Psi[loc+nDim+2];
-        }        
+        }
         
         /*--- Calculate Jacobians for implicit time marching ---*/
         if (implicit) {
@@ -1107,18 +1245,18 @@ void CAdjPlasmaSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_
             for (jDim = 0; jDim < nDim; jDim++)
               Jacobian_ii[loc+iDim+1][loc+jDim+1] = Velocity[jDim]*UnitaryNormal[iDim] + dPdrhou[iDim]*UnitaryNormal[jDim];
             Jacobian_ii[loc+iDim+1][loc+iDim+1] += ProjVel;
-            Jacobian_ii[loc+iDim+1][loc+nDim+1] = dPdrhou[iDim]*ProjVel + Enthalpy;                        
+            Jacobian_ii[loc+iDim+1][loc+nDim+1] = dPdrhou[iDim]*ProjVel + Enthalpy*UnitaryNormal[iDim];
           }
           
           /*--- Adjoint energy ---*/
           Jacobian_ii[loc+nDim+1][loc+0] = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) 
+          for (iDim = 0; iDim < nDim; iDim++)
             Jacobian_ii[loc+nDim+1][loc+iDim+1] = dPdrhoE*UnitaryNormal[iDim];
           Jacobian_ii[loc+nDim+1][loc+nDim+1] = ProjVel*(1.0+dPdrhoE);
-                      
+          
           /*--- Adjoint vibrational energy ---*/
           if (iSpecies < nDiatomics) {
-            Jacobian_ii[loc+0][loc+nDim+2] = ProjVel*Energy_vib;
+            Jacobian_ii[loc+0][loc+nDim+2] = -ProjVel*Energy_vib;
             for (iDim = 0; iDim < nDim; iDim++)
               Jacobian_ii[loc+iDim+1][loc+nDim+2] = Energy_vib*UnitaryNormal[iDim];
             Jacobian_ii[loc+nDim+1][loc+nDim+2] = 0.0;
@@ -1128,27 +1266,24 @@ void CAdjPlasmaSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_
               Jacobian_ii[loc+nDim+2][loc+iDim+1] = dPdrhoEv*UnitaryNormal[iDim];
             Jacobian_ii[loc+nDim+2][loc+nDim+1] = ProjVel*dPdrhoEv;
             Jacobian_ii[loc+nDim+2][loc+nDim+2] = ProjVel;
-          }  
+          }
         }
         
         /*--- Integrate over the area --*/
         for (iVar = 0; iVar < nVar; iVar++) {
           Residual[iVar] = Residual[iVar]*Area;
           for (jVar = 0; jVar < nVar; jVar++)
-            Jacobian_ii[iVar][jVar] = Jacobian_ii[iVar][jVar]*Area;          
+            Jacobian_ii[iVar][jVar] = Jacobian_ii[iVar][jVar]*Area;
         }
-      }
-      
-      
-      /*--- Update residual ---*/
-      node[iPoint]->SubtractRes_Conv(Residual);
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
-    }
-  }
-  
-  delete [] Velocity;
-  delete [] UnitaryNormal;
-  delete [] Psi;
+			}
+			/*--- Update residual ---*/
+			node[iPoint]->SubtractRes_Conv(Residual);
+			Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+		}
+	}
+	delete [] Velocity;
+	delete [] UnitaryNormal;
+	delete [] Psi;
   delete [] dPdrhou;
 }
 

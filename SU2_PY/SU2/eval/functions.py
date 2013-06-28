@@ -1,7 +1,7 @@
 ## \file functions.py
 #  \brief python package for functions
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.4
+#  \version 2.0.5
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -65,7 +65,7 @@ def function( func_name, config, state=None ):
     """
     
     # initialize
-    state = su2io.state.default_state(state)
+    state = su2io.State(state)
     
     # redundancy check
     if not state['FUNCTIONS'].has_key(func_name):
@@ -129,7 +129,7 @@ def aerodynamics( config, state=None ):
     # ----------------------------------------------------
     
     # initialize
-    state = su2io.state.default_state(state)
+    state = su2io.State(state)
     if not state.FILES.has_key('MESH'):
         state.FILES.MESH = config['MESH_FILENAME']
     special_cases = su2io.get_specialCases(config)
@@ -251,7 +251,7 @@ def geometry( func_name, config, state=None ):
     # ----------------------------------------------------
     
     # initialize
-    state = su2io.state.default_state(state)
+    state = su2io.State(state)
     if not state.FILES.has_key('MESH'):
         state.FILES.MESH = config['MESH_FILENAME']
     special_cases = su2io.get_specialCases(config)
@@ -351,7 +351,7 @@ def update_mesh(config,state=None):
     # ----------------------------------------------------
     
     # initialize
-    state = su2io.state.default_state(state)
+    state = su2io.State(state)
     if not state.FILES.has_key('MESH'):
         state.FILES.MESH = config['MESH_FILENAME']
     special_cases = su2io.get_specialCases(config)

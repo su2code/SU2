@@ -2,7 +2,7 @@
  * \file SU2_MDC.cpp
  * \brief Main file of Mesh Deformation Code (SU2_MDC).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -90,18 +90,18 @@ int main(int argc, char *argv[]) {
    and elements surrounding elements ---*/
 	if (rank == MASTER_NODE) cout << "Setting local point and element connectivity." <<endl;
 	geometry[ZONE_0]->SetEsuP();
+	
+	/*--- Check the orientation before computing geometrical quantities ---*/
+	if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation." <<endl;
+	geometry[ZONE_0]->SetBoundVolume();
+	geometry[ZONE_0]->Check_Orientation(config[ZONE_0]);
   
   /*--- Use a special preprocessing for FEA grid deformation ---*/
   if (config[ZONE_0]->GetKind_GridDef_Method() == FEA)
     geometry[ZONE_0]->SetPsuP_FEA();
   else
     geometry[ZONE_0]->SetPsuP();
-	
-	/*--- Check the orientation before computing geometrical quantities ---*/
-	if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation." <<endl;
-	geometry[ZONE_0]->SetBoundVolume();
-	geometry[ZONE_0]->Check_Orientation(config[ZONE_0]);
-	
+  
 	/*--- Create the edge structure ---*/
 	if (rank == MASTER_NODE) cout << "Identify edges and vertices." <<endl;
 	geometry[ZONE_0]->SetEdges(); geometry[ZONE_0]->SetVertex(config[ZONE_0]);
@@ -185,6 +185,11 @@ int main(int argc, char *argv[]) {
       surface_mov->SetExternal_Deformation(geometry[ZONE_0], config[ZONE_0], ZONE_0, iExtIter);
     }
     
+    /*--- Spherical parameterization ---*/
+  } else if (config[ZONE_0]->GetDesign_Variable(0) == SPHERICAL)  {
+    if (rank == MASTER_NODE) cout << "Perform 3D deformation of the surface." << endl;
+    surface_mov->SetSpherical(geometry[ZONE_0], config[ZONE_0], 0, false); // Note that the loop over the design variables is inside the subroutine
+    
     /*--- Bump deformation for 2D problems ---*/
   } else if (geometry[ZONE_0]->GetnDim() == 2) {
 		
@@ -196,10 +201,11 @@ int main(int argc, char *argv[]) {
 		}
     
 		/*--- Apply the design variables to the control point position ---*/
-		for (unsigned short iDV = 0; iDV < config[ZONE_0]->GetnDV(); iDV++) {
+		for (iDV = 0; iDV < config[ZONE_0]->GetnDV(); iDV++) {
 			switch ( config[ZONE_0]->GetDesign_Variable(iDV) ) {
 				case HICKS_HENNE : surface_mov->SetHicksHenne(geometry[ZONE_0], config[ZONE_0], iDV, false); break;
-				case GAUSS_BUMP : surface_mov->SetGaussBump(geometry[ZONE_0], config[ZONE_0], iDV, false); break;
+				case COSINE_BUMP : surface_mov->SetCosBump(geometry[ZONE_0], config[ZONE_0], iDV, false); break;
+				case FOURIER : surface_mov->SetFourier(geometry[ZONE_0], config[ZONE_0], iDV, false); break;
 				case DISPLACEMENT : surface_mov->SetDisplacement(geometry[ZONE_0], config[ZONE_0], iDV, false); break;
 				case ROTATION : surface_mov->SetRotation(geometry[ZONE_0], config[ZONE_0], iDV, false); break;
 				case NACA_4DIGITS : surface_mov->SetNACA_4Digits(geometry[ZONE_0], config[ZONE_0]); break;
@@ -210,7 +216,7 @@ int main(int argc, char *argv[]) {
 			}
 		}
     
-    /*--- Free Form deformation or surface file input for 3D problems ---*/
+    /*--- Free Form Deformation for 3D problems ---*/
 	} else if (geometry[ZONE_0]->GetnDim() == 3) {
 		
     if (rank == MASTER_NODE) {
@@ -221,12 +227,12 @@ int main(int argc, char *argv[]) {
     }
     
     /*--- Read the FFD information fron the grid file ---*/
-    surface_mov->ReadFFDInfo(config[ZONE_0], geometry[ZONE_0], chunk, config[ZONE_0]->GetMesh_FileName());
+    surface_mov->ReadFFDInfo(geometry[ZONE_0], config[ZONE_0], chunk, config[ZONE_0]->GetMesh_FileName(), true);
     
     /*--- If the chunk was not defined in the input file ---*/
     if (!surface_mov->GetChunkDefinition()) {
       
-      if (rank == MASTER_NODE)
+      if ((rank == MASTER_NODE) && (surface_mov->GetnChunk() != 0))
         cout << endl <<"----------------- FFD technique (cartesian -> parametric) ---------------" << endl;
       
       /*--- Create a unitary chunk as baseline for other chunks shapes ---*/
@@ -252,20 +258,22 @@ int main(int argc, char *argv[]) {
     }
     
     /*--- Output original FFD chunk ---*/
-    for (iChunk = 0; iChunk < surface_mov->GetnChunk(); iChunk++) {
-      if(config[ZONE_0]->GetOutput_FileFormat() == PARAVIEW) {
-        sprintf (buffer_char, "original_chunk.vtk");
-        if (iChunk == 0) chunk[iChunk]->SetParaView(buffer_char, true);
-        else chunk[iChunk]->SetParaView(buffer_char, false);
-      }
-      if(config[ZONE_0]->GetOutput_FileFormat() == TECPLOT) {
-        sprintf (buffer_char, "original_chunk.plt");
-        if (iChunk == 0) chunk[iChunk]->SetTecplot(buffer_char, true);
-        else chunk[iChunk]->SetTecplot(buffer_char, false);
+    if (rank == MASTER_NODE) {
+      for (iChunk = 0; iChunk < surface_mov->GetnChunk(); iChunk++) {
+        if(config[ZONE_0]->GetOutput_FileFormat() == PARAVIEW) {
+          sprintf (buffer_char, "original_chunk.vtk");
+          if (iChunk == 0) chunk[iChunk]->SetParaView(buffer_char, true);
+          else chunk[iChunk]->SetParaView(buffer_char, false);
+        }
+        if(config[ZONE_0]->GetOutput_FileFormat() == TECPLOT) {
+          sprintf (buffer_char, "original_chunk.plt");
+          if (iChunk == 0) chunk[iChunk]->SetTecplot(buffer_char, true);
+          else chunk[iChunk]->SetTecplot(buffer_char, false);
+        }
       }
     }
     
-    if (rank == MASTER_NODE)
+    if ((rank == MASTER_NODE) && (surface_mov->GetnChunk() != 0))
       cout << endl <<"----------------- FFD technique (parametric -> cartesian) ---------------" << endl;
     
     /*--- Loop over all the FFD boxes levels ---*/
@@ -325,28 +333,32 @@ int main(int argc, char *argv[]) {
       }
       
       /*--- Output the deformed chunks ---*/
-      for (iChunk = 0; iChunk < surface_mov->GetnChunk(); iChunk++) {
-        if (config[ZONE_0]->GetDesign_Variable(0) != NO_DEFORMATION) {
-          if(config[ZONE_0]->GetOutput_FileFormat() == PARAVIEW) {
-            sprintf (buffer_char, "deformed_chunk.vtk");
-            if (iChunk == 0) chunk[iChunk]->SetParaView(buffer_char, true);
-            else chunk[iChunk]->SetParaView(buffer_char, false);
-          }
-          if(config[ZONE_0]->GetOutput_FileFormat() == TECPLOT) {
-            sprintf (buffer_char, "deformed_chunk.plt");
-            if (iChunk == 0) chunk[iChunk]->SetTecplot(buffer_char, true);
-            else chunk[iChunk]->SetTecplot(buffer_char, false);
+      if (rank == MASTER_NODE) {
+        for (iChunk = 0; iChunk < surface_mov->GetnChunk(); iChunk++) {
+          if (config[ZONE_0]->GetDesign_Variable(0) != NO_DEFORMATION) {
+            if(config[ZONE_0]->GetOutput_FileFormat() == PARAVIEW) {
+              sprintf (buffer_char, "deformed_chunk.vtk");
+              if (iChunk == 0) chunk[iChunk]->SetParaView(buffer_char, true);
+              else chunk[iChunk]->SetParaView(buffer_char, false);
+            }
+            if(config[ZONE_0]->GetOutput_FileFormat() == TECPLOT) {
+              sprintf (buffer_char, "deformed_chunk.plt");
+              if (iChunk == 0) chunk[iChunk]->SetTecplot(buffer_char, true);
+              else chunk[iChunk]->SetTecplot(buffer_char, false);
+            }
           }
         }
       }
+      
     }
 	}
 	
-  /*--- MPI syncronization point ---*/
 #ifndef NO_MPI
+  /*--- MPI syncronization point ---*/
 	MPI::COMM_WORLD.Barrier();
 #endif
 	
+  
 	if (rank == MASTER_NODE)
 	  cout << endl <<"----------------------- Volumetric grid deformation ---------------------" << endl;
   
@@ -357,14 +369,12 @@ int main(int argc, char *argv[]) {
 	if (config[ZONE_0]->GetDesign_Variable(0) != NO_DEFORMATION) {
 		if (rank == MASTER_NODE)
 			cout << "Performing the deformation of the volumetric grid." << endl;
-		if (config[ZONE_0]->GetKind_GridDef_Method() == ALGEBRAIC) grid_movement->AlgebraicMethod(geometry[ZONE_0], config[ZONE_0], false);
 		if (config[ZONE_0]->GetKind_GridDef_Method() == SPRING) grid_movement->SpringMethod(geometry[ZONE_0], config[ZONE_0], false);
 		if (config[ZONE_0]->GetKind_GridDef_Method() == FEA) grid_movement->FEAMethod(geometry[ZONE_0], config[ZONE_0], false);
-		if (config[ZONE_0]->GetKind_GridDef_Method() == TORSIONAL_SPRING) grid_movement->TorsionalSpringMethod(geometry[ZONE_0], config[ZONE_0], false);
 	}
 	else {
 		if (rank == MASTER_NODE)
-			cout << "No deformation deformation of the volumetric grid." << endl;
+			cout << "No deformation of the volumetric grid." << endl;
 	}
 	
 	/*--- Output grid ---*/
@@ -406,7 +416,7 @@ int main(int argc, char *argv[]) {
   }
 	
 	if (geometry[ZONE_0]->GetnDim() == 3)
-		surface_mov->WriteFFDInfo(geometry[ZONE_0], config[ZONE_0], chunk, out_file);
+		surface_mov->WriteFFDInfo(geometry[ZONE_0], config[ZONE_0], chunk, out_file, true);
 	
 #ifndef NO_MPI
 	/*--- Finalize MPI parallelization ---*/

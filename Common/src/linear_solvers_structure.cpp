@@ -2,7 +2,7 @@
  * \file linear_solvers_structure.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author Current Development: Stanford University.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -488,8 +488,7 @@ unsigned long CSysSolve::ConjugateGradient(const CSysVector & b, CSysVector & x,
   CSysVector A_p(b);
 
   /*--- Calculate the initial residual, compute norm, and check if system is already solved ---*/
-  mat_vec(x,A_p);
-	sol_mpi(A_p);
+  mat_vec(x,A_p); sol_mpi(A_p);
 
   r -= A_p; // recall, r holds b initially
   double norm_r = r.norm();  
@@ -501,8 +500,7 @@ unsigned long CSysSolve::ConjugateGradient(const CSysVector & b, CSysVector & x,
 
   double alpha, beta, r_dot_z;
   CSysVector z(r);
-  precond(r, z);
-	sol_mpi(z);
+  precond(r, z); sol_mpi(z);
 
   CSysVector p(z);
 
@@ -517,8 +515,7 @@ unsigned long CSysSolve::ConjugateGradient(const CSysVector & b, CSysVector & x,
   for (i = 0; i < m; i++) {
 
     /*--- Apply matrix to p to build Krylov subspace ---*/
-    mat_vec(p, A_p);
-		sol_mpi(A_p);
+    mat_vec(p, A_p); sol_mpi(A_p);
 
     /*--- Calculate step-length alpha ---*/
     r_dot_z = dotProd(r, z);
@@ -548,8 +545,7 @@ unsigned long CSysSolve::ConjugateGradient(const CSysVector & b, CSysVector & x,
   }
 
   /*--- Recalculate final residual (this should be optional) ---*/
-  mat_vec(x, A_p);
-	sol_mpi(A_p);
+  mat_vec(x, A_p); sol_mpi(A_p);
 
   r = b;
   r -= A_p;
@@ -573,16 +569,21 @@ unsigned long CSysSolve::ConjugateGradient(const CSysVector & b, CSysVector & x,
 
 unsigned long CSysSolve::GMRES(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
                               CPreconditioner & precond, CSolutionSendReceive & sol_mpi, double tol, unsigned long m, bool monitoring) {
-
+	
+  int rank = 0;
+#ifndef NO_MPI
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+  
   /*---  Check the subspace size ---*/
   if (m < 1) {
-    cerr << "CSysSolve::GMRES: illegal value for subspace size, m = " << m << endl;
+    if (rank == 0) cerr << "CSysSolve::GMRES: illegal value for subspace size, m = " << m << endl;
     throw(-1);
   }
   
   /*---  Check the subspace size ---*/
   if (m > 1000) {
-    cerr << "CSysSolve::GMRES: illegal value for subspace size (too high), m = " << m << endl;
+    if (rank == 0) cerr << "CSysSolve::GMRES: illegal value for subspace size (too high), m = " << m << endl;
     throw(-1);
   }
   
@@ -602,17 +603,17 @@ unsigned long CSysSolve::GMRES(const CSysVector & b, CSysVector & x, CMatrixVect
 
   /*---  Calculate the initial residual (actually the negative residual)
 	 and compute its norm ---*/
-  mat_vec(x,w[0]);
+  mat_vec(x,w[0]); sol_mpi(w[0]);
   w[0] -= b;
 
   double beta = w[0].norm();  
   if ( (beta < tol*norm0) || (beta < eps) ) {
     /*---  System is already solved ---*/
-    cout << "CSysSolve::GMRES(): system solved by initial guess." << endl;
+    if (rank == 0) cout << "CSysSolve::GMRES(): system solved by initial guess." << endl;
     return 0;
   }
 
-	if (monitoring) {
+	if ((monitoring) && (rank == 0))  {
 		cout << "beta " << beta << endl;
 		cout << "eps*norm0 " << eps*norm0 << endl;
 	}
@@ -626,7 +627,7 @@ unsigned long CSysSolve::GMRES(const CSysVector & b, CSysVector & x, CMatrixVect
 
   /*---  Output header information including initial residual ---*/
   int i = 0;
-  if (monitoring) {
+  if ((monitoring) && (rank == 0)) {
     writeHeader("GMRES", tol, beta);
     writeHistory(i, beta, norm0);
   }
@@ -638,10 +639,10 @@ unsigned long CSysSolve::GMRES(const CSysVector & b, CSysVector & x, CMatrixVect
     if (beta < tol*norm0) break;
 
     /*---  Precondition the CSysVector w[i] and store result in z[i] ---*/
-    precond(w[i],z[i]);
+    precond(w[i],z[i]); sol_mpi(z[i]);
 
     /*---  Add to Krylov subspace ---*/
-    mat_vec(z[i],w[i+1]);
+    mat_vec(z[i],w[i+1]); sol_mpi(w[i+1]);
 
     /*---  Modified Gram-Schmidt orthogonalization ---*/
     modGramSchmidt(i,H,w);
@@ -658,7 +659,7 @@ unsigned long CSysSolve::GMRES(const CSysVector & b, CSysVector & x, CMatrixVect
     beta = fabs(g[i+1]);
 
     /*---  Output the relative residual if necessary ---*/
-    if ((monitoring) && ((i+1) % 50 == 0)) writeHistory(i+1, beta, norm0);
+    if (((monitoring) && ((i+1) % 50 == 0)) && (rank == 0)) writeHistory(i+1, beta, norm0);
   }
 
   /*---  Solve the least-squares system and update solution ---*/
@@ -668,20 +669,22 @@ unsigned long CSysSolve::GMRES(const CSysVector & b, CSysVector & x, CMatrixVect
   }
   
   /*---  Recalculate final (neg.) residual (this should be optional) ---*/
-  mat_vec(x,w[0]);
+  mat_vec(x,w[0]); sol_mpi(w[0]);
   w[0] -= b;
 
   double res = w[0].norm();
   
-  if (monitoring) {
+  if ((monitoring) && (rank == 0)) {
     cout << "# GMRES final (true) residual:" << endl;
     cout << "# iteration = " << i << ": |res|/|res0| = " << res/norm0 << endl;
   }
 
   if (fabs(res - beta) > tol*10.0) {
-    cout << "# WARNING in CSysSolve::GMRES(): " << endl;
-    cout << "# true residual norm and calculated residual norm do not agree." << endl;
-    cout << "# res - beta = " << res - beta << endl;
+    if (rank == 0) {
+      cout << "# WARNING in CSysSolve::GMRES(): " << endl;
+      cout << "# true residual norm and calculated residual norm do not agree." << endl;
+      cout << "# res - beta = " << res - beta << endl;
+    }
   }
 	
 	return i;
@@ -691,9 +694,14 @@ unsigned long CSysSolve::GMRES(const CSysVector & b, CSysVector & x, CMatrixVect
 unsigned long CSysSolve::BCGSTAB(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
                                   CPreconditioner & precond, CSolutionSendReceive & sol_mpi, double tol, unsigned long m, bool monitoring) {
 	
+  int rank = 0;
+#ifndef NO_MPI
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+  
   /*--- Check the subspace size ---*/
   if (m < 1) {
-    cerr << "CSysSolve::BCGSTAB: illegal value for subspace size, m = " << m << endl;
+    if (rank == 0) cerr << "CSysSolve::BCGSTAB: illegal value for subspace size, m = " << m << endl;
     throw(-1);
   }
 	
@@ -708,12 +716,12 @@ unsigned long CSysSolve::BCGSTAB(const CSysVector & b, CSysVector & x, CMatrixVe
   CSysVector A_x(b);
 
   /*--- Calculate the initial residual, compute norm, and check if system is already solved ---*/
-	mat_vec(x,A_x);
+	mat_vec(x,A_x); sol_mpi(A_x);
   r -= A_x; r_0 = r; // recall, r holds b initially
   double norm_r = r.norm();  
   double norm0 = b.norm();
   if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
-    cout << "CSysSolve::BCGSTAB(): system solved by initial guess." << endl;
+    if (rank == 0) cout << "CSysSolve::BCGSTAB(): system solved by initial guess." << endl;
     return 0;
   }  
 	
@@ -722,7 +730,7 @@ unsigned long CSysSolve::BCGSTAB(const CSysVector & b, CSysVector & x, CMatrixVe
 	
   /*--- Output header information including initial residual ---*/
   int i = 0;
-  if (monitoring) {
+  if ((monitoring) && (rank == 0)) {
     writeHeader("BCGSTAB", tol, norm_r);
     writeHistory(i, norm_r, norm0);
   }
@@ -745,8 +753,8 @@ unsigned long CSysSolve::BCGSTAB(const CSysVector & b, CSysVector & x, CMatrixVe
 		p.Plus_AX(1.0, r);
 		
 		/*--- Preconditioning step ---*/
-		precond(p, phat);
-		mat_vec(phat, v);
+		precond(p, phat); sol_mpi(phat);
+		mat_vec(phat, v); sol_mpi(v);
 
 		/*--- Calculate step-length alpha ---*/
     double r_0_v = dotProd(r_0, v);
@@ -756,8 +764,8 @@ unsigned long CSysSolve::BCGSTAB(const CSysVector & b, CSysVector & x, CMatrixVe
 		s.Equals_AX_Plus_BY(1.0, r, -alpha, v);
 		
 		/*--- Preconditioning step ---*/
-		precond(s, shat);
-		mat_vec(shat, t);
+		precond(s, shat); sol_mpi(shat);
+		mat_vec(shat, t); sol_mpi(t);
 
 		/*--- Calculate step-length omega ---*/
     omega = dotProd(t, s) / dotProd(t, t);
@@ -769,7 +777,7 @@ unsigned long CSysSolve::BCGSTAB(const CSysVector & b, CSysVector & x, CMatrixVe
     /*--- Check if solution has converged, else output the relative residual if necessary ---*/
     norm_r = r.norm();
     if (norm_r < tol*norm0) break;
-    if ((monitoring) && ((i+1) % 50 == 0)) writeHistory(i+1, norm_r, norm0);
+    if ((monitoring) && ((i+1) % 50 == 0) && (rank == 0)) writeHistory(i+1, norm_r, norm0);
 
   }
 	
@@ -778,12 +786,12 @@ unsigned long CSysSolve::BCGSTAB(const CSysVector & b, CSysVector & x, CMatrixVe
   r = b; r -= A_x;
   double true_res = r.norm();
   
-  if (monitoring) {
+  if ((monitoring) && (rank == 0)) {
     cout << "# BCGSTAB final (true) residual:" << endl;
     cout << "# iteration = " << i << ": |res|/|res0| = "  << true_res/norm0 << endl;
   }
 	
-  if (fabs(true_res - norm_r) > tol*10.0) {
+  if ((fabs(true_res - norm_r) > tol*10.0) && (rank == 0)) {
     cout << "# WARNING in CSysSolve::BCGSTAB(): " << endl;
     cout << "# true residual norm and calculated residual norm do not agree." << endl;
     cout << "# true_res - calc_res = " << true_res <<" "<< norm_r << endl;

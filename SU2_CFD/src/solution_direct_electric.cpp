@@ -2,7 +2,7 @@
  * \file solution_direct_electric.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -601,7 +601,7 @@ void CElectricSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_c
  * \brief Dirichlet/Neumann boundary condition
  * \author A. Lonkar
  */
-void CElectricSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+void CElectricSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
 		unsigned short val_marker) {
 	unsigned long Point, iVertex;
 

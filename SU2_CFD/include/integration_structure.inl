@@ -2,7 +2,7 @@
  * \file integration_structure.inl
  * \brief In-Line subroutines of the <i>integration_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -36,7 +36,7 @@ inline void CIntegration::SetConvergence(bool value) { Convergence = value; }
 inline void CIntegration::SetMultiGrid_Solver(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****solver_container, 
 											  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) { }
 	
-inline void CIntegration::FAS_Multigrid(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****solver_container,
+inline void CIntegration::Multigrid_Iteration(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****solver_container,
 							   CConfig **config, unsigned short iMesh, unsigned short mu, unsigned short RunTime_EqSystem,
 							   unsigned long Iteration, unsigned short iZone) { }
 										

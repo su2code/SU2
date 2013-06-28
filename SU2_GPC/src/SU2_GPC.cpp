@@ -2,7 +2,7 @@
  * \file SU2_GPC.cpp
  * \brief Main file of the Gradient Projection Code (SU2_GPC).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -121,7 +121,8 @@ int main(int argc, char *argv[]) {
 				cout << "Perform 2D deformation of the surface." << endl;
 			
 			switch ( config->GetDesign_Variable(iDV) ) {
-				case GAUSS_BUMP : surface_mov->SetGaussBump(boundary, config, iDV, true); break;
+				case COSINE_BUMP : surface_mov->SetCosBump(boundary, config, iDV, true); break;
+				case FOURIER : surface_mov->SetFourier(boundary, config, iDV, true); break;
 				case HICKS_HENNE : surface_mov->SetHicksHenne(boundary, config, iDV, true); break;
 				case DISPLACEMENT : surface_mov->SetDisplacement(boundary, config, iDV, true); break;
 				case ROTATION : surface_mov->SetRotation(boundary, config, iDV, true); break;
@@ -134,48 +135,60 @@ int main(int argc, char *argv[]) {
 		/*--- Free Form deformation for 3D problems ---*/
 		if (boundary->GetnDim() == 3) {
 			
-			/*--- Read the FFD information in the first iteration ---*/
-			if (iDV == 0) {
-				
-				if (rank == MASTER_NODE)
-					cout << "Read the FFD information from mesh file." << endl;
-				
-				/*--- Read the FFD information from the grid file ---*/
-				surface_mov->ReadFFDInfo(config, boundary, chunk, config->GetMesh_FileName());
-				
-				/*--- If the chunk was not defined in the input file ---*/
-				if (!surface_mov->GetChunkDefinition() && (rank == MASTER_NODE)) {
-					cout << "The input grid doesn't have the entire FFD information!" << endl;
-					cout << "Press any key to exit..." << endl;
-					cin.get();
-				}
-				
-				if (rank == MASTER_NODE)
-					cout <<"-------------------------------------------------------------------------" << endl;
-				
-			}
-			
-			if (rank == MASTER_NODE) {
-				cout << endl << "Design variable number "<< iDV <<"." << endl;
-				cout << "Perform 3D deformation of the surface." << endl;
-			}
-			
-			/*--- Apply the control point change ---*/
-			for (iChunk = 0; iChunk < surface_mov->GetnChunk(); iChunk++) {
-				
-				switch ( config->GetDesign_Variable(iDV) ) {
-					case FFD_CONTROL_POINT : surface_mov->SetFFDCPChange(boundary, config, chunk[iChunk], iChunk, iDV, true); break;
-					case FFD_DIHEDRAL_ANGLE : surface_mov->SetFFDDihedralAngle(boundary, config, chunk[iChunk], iChunk, iDV, true); break;
-					case FFD_TWIST_ANGLE : surface_mov->SetFFDTwistAngle(boundary, config, chunk[iChunk], iChunk, iDV, true); break;
-					case FFD_ROTATION : surface_mov->SetFFDRotation(boundary, config, chunk[iChunk], iChunk, iDV, true); break;
-					case FFD_CAMBER : surface_mov->SetFFDCamber(boundary, config, chunk[iChunk], iChunk, iDV, true); break;
-					case FFD_THICKNESS : surface_mov->SetFFDThickness(boundary, config, chunk[iChunk], iChunk, iDV, true); break;
-					case FFD_VOLUME : surface_mov->SetFFDVolume(boundary, config, chunk[iChunk], iChunk, iDV, true); break;
-				}
-				
-				/*--- Recompute cartesian coordinates using the new control points position ---*/
-				surface_mov->SetCartesianCoord(boundary, config, chunk[iChunk], iChunk);
-			}
+      if (config->GetDesign_Variable(0) == SPHERICAL)  {
+        
+        if (rank == MASTER_NODE) {
+          cout << endl << "Design variable number "<< iDV <<"." << endl;
+          cout << "Perform 3D deformation of the surface." << endl;
+        }
+        surface_mov->SetSpherical(boundary, config, iDV, true);
+        
+      }
+      else {
+        
+        /*--- Read the FFD information in the first iteration ---*/
+        if (iDV == 0) {
+          
+          if (rank == MASTER_NODE)
+            cout << "Read the FFD information from mesh file." << endl;
+          
+          /*--- Read the FFD information from the grid file ---*/
+          surface_mov->ReadFFDInfo(boundary, config, chunk, config->GetMesh_FileName(), true);
+          
+          /*--- If the chunk was not defined in the input file ---*/
+          if (!surface_mov->GetChunkDefinition() && (rank == MASTER_NODE)) {
+            cout << "The input grid doesn't have the entire FFD information!" << endl;
+            cout << "Press any key to exit..." << endl;
+            cin.get();
+          }
+          
+          if (rank == MASTER_NODE)
+            cout <<"-------------------------------------------------------------------------" << endl;
+          
+        }
+        
+        if (rank == MASTER_NODE) {
+          cout << endl << "Design variable number "<< iDV <<"." << endl;
+          cout << "Perform 3D deformation of the surface." << endl;
+        }
+        
+        /*--- Apply the control point change ---*/
+        for (iChunk = 0; iChunk < surface_mov->GetnChunk(); iChunk++) {
+          
+          switch ( config->GetDesign_Variable(iDV) ) {
+            case FFD_CONTROL_POINT : surface_mov->SetFFDCPChange(boundary, config, chunk[iChunk], iChunk, iDV, true); break;
+            case FFD_DIHEDRAL_ANGLE : surface_mov->SetFFDDihedralAngle(boundary, config, chunk[iChunk], iChunk, iDV, true); break;
+            case FFD_TWIST_ANGLE : surface_mov->SetFFDTwistAngle(boundary, config, chunk[iChunk], iChunk, iDV, true); break;
+            case FFD_ROTATION : surface_mov->SetFFDRotation(boundary, config, chunk[iChunk], iChunk, iDV, true); break;
+            case FFD_CAMBER : surface_mov->SetFFDCamber(boundary, config, chunk[iChunk], iChunk, iDV, true); break;
+            case FFD_THICKNESS : surface_mov->SetFFDThickness(boundary, config, chunk[iChunk], iChunk, iDV, true); break;
+            case FFD_VOLUME : surface_mov->SetFFDVolume(boundary, config, chunk[iChunk], iChunk, iDV, true); break;
+          }
+          
+          /*--- Recompute cartesian coordinates using the new control points position ---*/
+          surface_mov->SetCartesianCoord(boundary, config, chunk[iChunk], iChunk);
+        }
+      }
 			
 		}
 		
@@ -283,6 +296,10 @@ int main(int argc, char *argv[]) {
         case NOISE :
 					if (iDV == 0) Gradient_file << "Noise grad. using cont. adj."<< endl;
 					cout << "Noise gradient: "<< Gradient << "." << endl; break;
+        case HEAT_LOAD :
+					if (iDV == 0) Gradient_file << "Integrated surface heat flux. using cont. adj."<< endl;
+					cout << "Heat load gradient: "<< Gradient << "." << endl; break;
+          
 			}
 			
 			Gradient_file << Gradient << endl;

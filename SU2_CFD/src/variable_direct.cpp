@@ -2,7 +2,7 @@
  * \file variable_direct.cpp
  * \brief Definition of the solution fields.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -1662,10 +1662,13 @@ CLevelSetVariable::CLevelSetVariable(unsigned short val_ndim, unsigned short val
 	for (iVar = 0; iVar < nVar; iVar++)
 		Res_Visc_RK[iVar] = new double [nVar];
 
-	/*--- Allocate limiter (upwind)---*/
+	/*--- Allocate limiter (upwind) ---*/
 	Limiter = new double [nVar];
 	Solution_Max = new double [nVar];
 	Solution_Min = new double [nVar];
+  
+  /*--- Allocate primitive solution ---*/
+	Primitive = new double [nVar];
 
 }
 
@@ -1687,6 +1690,9 @@ CLevelSetVariable::CLevelSetVariable(double val_levelset, unsigned short val_ndi
 	Limiter = new double [nVar];
 	Solution_Max = new double [nVar];
 	Solution_Min = new double [nVar];
+  
+  /*--- Allocate primitive solution ---*/
+	Primitive = new double [nVar];
 
 	/*--- Solution and old solution initialization ---*/
 	Solution[0] = val_levelset;		Solution_Old[0] = val_levelset;
@@ -1695,6 +1701,9 @@ CLevelSetVariable::CLevelSetVariable(double val_levelset, unsigned short val_ndi
 		Solution_time_n[0] = val_levelset;
 		Solution_time_n1[0] = val_levelset;
 	}
+  
+  /*--- Set primitive solution ---*/
+  Primitive[0] = val_levelset;
 
 }
 

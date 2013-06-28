@@ -2,7 +2,7 @@
  * \file SU2_SOL.cpp
  * \brief Main file for the solution export/conversion code (SU2_SOL).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -157,7 +157,6 @@ int main(int argc, char *argv[]) {
       solution[iZone] = new CBaselineSolution(geometry[iZone], config[iZone], MESH_0);      
     }
     
-    if (rank == MASTER_NODE) cout << "Writing the volume solution." << endl;
     output->SetBaselineResult_Files(solution, geometry, config, 0, nZone);
     
   }

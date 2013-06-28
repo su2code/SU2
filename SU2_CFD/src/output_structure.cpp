@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -27,15 +27,19 @@
 COutput::COutput(void) {
 
 	/*--- Initialize point and connectivity counters to zero. ---*/
-	nGlobal_Poin = 0;
-	nGlobal_Elem = 0;
-	nGlobal_Tria = 0;
-	nGlobal_Quad = 0;
-	nGlobal_Tetr = 0;
-	nGlobal_Hexa = 0;
-	nGlobal_Wedg = 0;
-	nGlobal_Pyra = 0;
-	nGlobal_Line = 0;
+	nGlobal_Poin      = 0;
+  nSurf_Poin        = 0;
+	nGlobal_Elem      = 0;
+	nSurf_Elem        = 0;
+	nGlobal_Tria      = 0;
+	nGlobal_Quad      = 0;
+	nGlobal_Tetr      = 0;
+	nGlobal_Hexa      = 0;
+	nGlobal_Wedg      = 0;
+	nGlobal_Pyra      = 0;
+	nGlobal_Line      = 0;
+	nGlobal_BoundTria = 0;
+	nGlobal_BoundQuad = 0;
 
 	/*--- Initialize CGNS write flag ---*/
 	wrote_base_file = false;
@@ -50,900 +54,900 @@ COutput::COutput(void) {
 
 COutput::~COutput(void) { }
 
-void COutput::SetSurface_Flow(CConfig *config, CGeometry *geometry, CSolution *FlowSolution, unsigned long iExtIter, unsigned short iZone) {
-	unsigned long iPoint, iSpecies, iVertex;
-	unsigned short iMarker, iDim, Species_0, Species_1, Species_2;
-	double PressCoeff = 0.0, SkinFrictionCoeff, HeatTransferCoeff = 0.0,WallTemperature, WallTemperature_vib, WallNumDensity, WallPressure, WallHeatFlux, Mach, *aux_press = NULL, *aux_friction = NULL, *aux_rel_mach = NULL,
-			*aux_heat_transfer = NULL, *aux_y_plus = NULL;
-	double *aux_wall_temperature_Ar = NULL, *aux_wall_numdensity_Ar  = NULL, *aux_wall_temperature  = NULL;
-	double *aux_wall_temperature_Ion = NULL, *aux_wall_numdensity_Ion = NULL, *aux_wall_numdensity  = NULL;
-	double *aux_wall_pressure_Ar = NULL, *aux_wall_pressure_Ion = NULL, *aux_wall_pressure_Elec  = NULL;
-	double *aux_wall_temperature_Elec = NULL, *aux_wall_numdensity_Elec = NULL, *aux_wall_numdensity_diff = NULL;
-	double **aux_temp_tr, **aux_temp_vib, **aux_numdensity, **aux_heatflux, **aux_partpress, **aux_pressdrag, **aux_visforce;
-	char cstr[200], buffer [50];
-	ofstream SurfFlow_file;
-
-	unsigned short solver = config->GetKind_Solver();
-	bool incompressible = config->GetIncompressible();
-	bool rotating_frame = config->GetRotating_Frame();
-	bool adiabatic = config->GetAdiabaticWall();
-	if (config->GetOutput_FileFormat() == PARAVIEW) {
-
-		/*--- Write the surface .vtk file ---*/
-		strcpy (cstr, config->GetSurfFlowCoeff_FileName().c_str());
-		if (config->GetUnsteady_Simulation() != NO)
-			sprintf (buffer, "_%d.vtk", int(iExtIter));
-		else
-			sprintf (buffer, ".vtk");
-
-		strcat(cstr, buffer);
-
-		/*--- Write the geometrical information on the output file ---*/
-		geometry->SetBoundParaView(config, cstr);
-
-		/*--- Open the output file ---*/
-		SurfFlow_file.precision(15);
-		SurfFlow_file.open(cstr, ios::out | ios::app);
-
-		/*--- It is necessary to go from point to vertex, and an auxiliar variable is created ---*/
-		aux_press = new double [geometry->GetnPoint()];
-
-		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) aux_press[iPoint] = 0.0;
-		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-			if (config->GetMarker_All_Plotting(iMarker) == YES)
-				for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-					iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-					aux_press[iPoint] = FlowSolution->GetCPressure(iMarker,iVertex);
-				}
-
-		SurfFlow_file << "SCALARS Pressure_Coefficient float 1" << endl;
-		SurfFlow_file << "LOOKUP_TABLE default" << endl;
-		for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-			if (geometry->node[iPoint]->GetBoundary()) {
-				PressCoeff = aux_press[iPoint];
-				SurfFlow_file << scientific << PressCoeff << endl;
-			}
-		delete [] aux_press;
-
-		switch (solver) {
-
-		case NAVIER_STOKES: case RANS: case FREE_SURFACE_NAVIER_STOKES: case FREE_SURFACE_RANS:
-			aux_friction = new double [geometry->GetnPoint()];
-			for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) aux_friction[iPoint] = 0.0;
-			for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-				if (config->GetMarker_All_Plotting(iMarker) == YES)
-					for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-						iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-						aux_friction[iPoint] = FlowSolution->GetCSkinFriction(iMarker,iVertex);
-					}
-			SurfFlow_file << "SCALARS Skin_Friction_Coefficient float 1" << endl;
-			SurfFlow_file << "LOOKUP_TABLE default" << endl;
-			for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-				if (geometry->node[iPoint]->GetBoundary()) {
-					SkinFrictionCoeff = aux_friction[iPoint];
-					SurfFlow_file << scientific << SkinFrictionCoeff << endl;
-				}
-			delete [] aux_friction;
-			if (!adiabatic) {
-				aux_heat_transfer = new double [geometry->GetnPoint()];
-				for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) aux_heat_transfer[iPoint] = 0.0;
-				for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-					if (config->GetMarker_All_Plotting(iMarker) == YES)
-						for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-							iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-							aux_heat_transfer[iPoint] = FlowSolution->GetHeatTransferCoeff(iMarker,iVertex);
-						}
-				SurfFlow_file << "SCALARS Heat_Transfer_Coefficient float 1" << endl;
-				SurfFlow_file << "LOOKUP_TABLE default" << endl;
-				for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-					if (geometry->node[iPoint]->GetBoundary()) {
-						HeatTransferCoeff = aux_heat_transfer[iPoint];
-						SurfFlow_file << scientific << HeatTransferCoeff << endl;
-					}
-				delete [] aux_heat_transfer;
-			}
-			break;
-		case PLASMA_NAVIER_STOKES:	case PLASMA_EULER:
-			aux_friction = new double [geometry->GetnPoint()];
-			for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) aux_friction[iPoint] = 0.0;
-			for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-				if (config->GetMarker_All_Plotting(iMarker) == YES)
-					for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-						iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-						aux_friction[iPoint] = FlowSolution->GetCSkinFriction(iMarker,iVertex);
-					}
-			SurfFlow_file << "SCALARS Skin_Friction_Coefficient float 1" << endl;
-			SurfFlow_file << "LOOKUP_TABLE default" << endl;
-			for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-				if (geometry->node[iPoint]->GetBoundary()) {
-					SkinFrictionCoeff = aux_friction[iPoint];
-					SurfFlow_file << scientific << SkinFrictionCoeff << endl;
-				}
-			delete [] aux_friction;
-
-			aux_wall_temperature = new double [geometry->GetnPoint()];
-			aux_wall_numdensity = new double [geometry->GetnPoint()];
-			aux_wall_numdensity_diff = new double [geometry->GetnPoint()];
-			aux_heat_transfer = new double [geometry->GetnPoint()];
-
-			double *Mass = new double[3];
-			Mass[0] = config->GetParticle_Mass(0);
-			Mass[1] = config->GetParticle_Mass(1);
-			Mass[2] = config->GetParticle_Mass(2);
-
-			for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-				aux_wall_temperature[iPoint] = 0.0;
-				aux_wall_numdensity[iPoint] = 0.0;
-				aux_heat_transfer[iPoint] = 0.0;
-
-			}
-			for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-				if (config->GetMarker_All_Plotting(iMarker) == YES) {
-					/* Argon Temperature and Density */
-					for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-						iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-						aux_wall_temperature[iPoint] = FlowSolution->node[iPoint]->GetTemperature_tr(0);
-						aux_wall_numdensity[iPoint] = FlowSolution->node[iPoint]->GetDensity(0)/Mass[0];
-						if (!adiabatic) aux_heat_transfer[iPoint] = FlowSolution->GetHeatTransferCoeff(iMarker,0,iVertex);
-
-					}
-					SurfFlow_file << "SCALARS Ar_Temperature float 1" << endl;
-					SurfFlow_file << "LOOKUP_TABLE default" << endl;
-					for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-						if (geometry->node[iPoint]->GetBoundary()) {
-							WallTemperature = aux_wall_temperature[iPoint];
-							SurfFlow_file << scientific << WallTemperature << endl;
-						}
-
-					SurfFlow_file << "SCALARS Ar_NumDen float 1" << endl;
-					SurfFlow_file << "LOOKUP_TABLE default" << endl;
-					for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-						if (geometry->node[iPoint]->GetBoundary()) {
-							WallNumDensity = aux_wall_numdensity[iPoint];
-							SurfFlow_file << scientific << WallNumDensity << endl;
-						}
-
-					if (!adiabatic) { SurfFlow_file << "SCALARS Ar_Heat_Transfer_Coefficient float 1" << endl;
-					SurfFlow_file << "LOOKUP_TABLE default" << endl;
-					for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-						if (geometry->node[iPoint]->GetBoundary()) {
-							HeatTransferCoeff = aux_heat_transfer[iPoint];
-							SurfFlow_file << scientific << HeatTransferCoeff << endl;
-						}
-
-					}
-
-					//                        if (!adiabatic) {
-					//                            for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) aux_heat_transfer[iPoint] = 0.0;
-					//                            for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-					//                                if (config->GetMarker_All_Plotting(iMarker) == YES)
-					//                                    for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-					//                                        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-					//                                        aux_heat_transfer[iPoint] = FlowSolution->GetHeatTransferCoeff(iMarker,iVertex);
-					//                                    }
-					//                            SurfFlow_file << "SCALARS Heat_Transfer_Coefficient float 1" << endl;
-					//                            SurfFlow_file << "LOOKUP_TABLE default" << endl;
-					//                            for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-					//                                if (geometry->node[iPoint]->GetBoundary()) {
-					//                                    HeatTransferCoeff = aux_heat_transfer[iPoint];
-					//                                    SurfFlow_file << scientific << HeatTransferCoeff << endl;
-					//                                }
-					//
-					//                            delete [] aux_heat_transfer;
-					//                        }
-
-					/* Ion Temperature and Density*/
-					for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-						iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-						aux_wall_temperature[iPoint] = FlowSolution->node[iPoint]->GetTemperature_tr(1);
-						aux_wall_numdensity[iPoint] = FlowSolution->node[iPoint]->GetDensity(1)/Mass[1];
-						if (!adiabatic) aux_heat_transfer[iPoint] = FlowSolution->GetHeatTransferCoeff(iMarker,1,iVertex);
-
-					}
-					SurfFlow_file << "SCALARS Ion_Temperature float 1" << endl;
-					SurfFlow_file << "LOOKUP_TABLE default" << endl;
-					for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-						if (geometry->node[iPoint]->GetBoundary()) {
-							WallTemperature = aux_wall_temperature[iPoint];
-							SurfFlow_file << scientific << WallTemperature << endl;
-						}
-
-					SurfFlow_file << "SCALARS Ion_NumDen float 1" << endl;
-					SurfFlow_file << "LOOKUP_TABLE default" << endl;
-					for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-						if (geometry->node[iPoint]->GetBoundary()) {
-							WallNumDensity = aux_wall_numdensity[iPoint];
-							SurfFlow_file << scientific << WallNumDensity << endl;
-						}
-					if (!adiabatic){ SurfFlow_file << "SCALARS Ion_Heat_Transfer_Coefficient float 1" << endl;
-					SurfFlow_file << "LOOKUP_TABLE default" << endl;
-					for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-						if (geometry->node[iPoint]->GetBoundary()) {
-							HeatTransferCoeff = aux_heat_transfer[iPoint];
-							SurfFlow_file << scientific << HeatTransferCoeff << endl;
-						}
-					}
-
-					/* Electron Temperature and Density */
-					for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-						iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-						aux_wall_temperature[iPoint] = FlowSolution->node[iPoint]->GetTemperature_tr(2);
-						aux_wall_numdensity[iPoint] = FlowSolution->node[iPoint]->GetDensity(2)/Mass[2];
-						aux_wall_numdensity_diff[iPoint] = FlowSolution->node[iPoint]->GetDensity(2)/Mass[2] - FlowSolution->node[iPoint]->GetDensity(1)/Mass[1];
-						if (!adiabatic) aux_heat_transfer[iPoint] = FlowSolution->GetHeatTransferCoeff(iMarker,2,iVertex);
-
-					}
-					SurfFlow_file << "SCALARS Ele_Temperature float 1" << endl;
-					SurfFlow_file << "LOOKUP_TABLE default" << endl;
-					for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-						if (geometry->node[iPoint]->GetBoundary()) {
-							WallTemperature = aux_wall_temperature[iPoint];
-							SurfFlow_file << scientific << WallTemperature << endl;
-						}
-					SurfFlow_file << "SCALARS Ele_NumDen float 1" << endl;
-					SurfFlow_file << "LOOKUP_TABLE default" << endl;
-					for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-						if (geometry->node[iPoint]->GetBoundary()) {
-							WallNumDensity = aux_wall_numdensity[iPoint];
-							SurfFlow_file << scientific << WallNumDensity << endl;
-						}
-
-					SurfFlow_file << "SCALARS NumofNegCharge float 1" << endl;
-					SurfFlow_file << "LOOKUP_TABLE default" << endl;
-					for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-						if (geometry->node[iPoint]->GetBoundary()) {
-							WallNumDensity = aux_wall_numdensity_diff[iPoint];
-							SurfFlow_file << scientific << WallNumDensity << endl;
-						}
-
-					if (!adiabatic){ SurfFlow_file << "SCALARS Elec_Heat_Transfer_Coefficient float 1" << endl;
-					SurfFlow_file << "LOOKUP_TABLE default" << endl;
-					for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-						if (geometry->node[iPoint]->GetBoundary()) {
-							HeatTransferCoeff = aux_heat_transfer[iPoint];
-							SurfFlow_file << scientific << HeatTransferCoeff << endl;
-						}
-					}
-
-					delete [] aux_wall_temperature;
-					delete [] aux_wall_numdensity;
-					delete [] aux_wall_numdensity_diff;
-					delete [] aux_heat_transfer;
-
-				}
-			break;
-		}
-
-		SurfFlow_file.close();
-
-	}
-	if (config->GetOutput_FileFormat() == TECPLOT ||
-			config->GetOutput_FileFormat() == TECPLOT_BINARY ||
-			config->GetOutput_FileFormat() == CGNS_SOL) {
-
-		/*--- Write the surface .plt file ---*/
-		strcpy (cstr, config->GetSurfFlowCoeff_FileName().c_str());
-
-
-		if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-			if (int(iZone) < 10) sprintf (buffer, "_0000%d.plt", int(iZone));
-			if ((int(iZone) >= 10) && (int(iZone) < 100)) sprintf (buffer, "_000%d.plt", int(iZone));
-			if ((int(iZone) >= 100) && (int(iZone) < 1000)) sprintf (buffer, "_00%d.plt", int(iZone));
-			if ((int(iZone) >= 1000) && (int(iZone) < 10000)) sprintf (buffer, "_0%d.plt", int(iZone));
-			if (int(iZone) >= 10000) sprintf (buffer, "_%d.plt", int(iZone));
-
-		}
-
-		else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
-			if ((int(iExtIter) >= 0) && (int(iExtIter) < 10)) sprintf (buffer, "_0000%d.plt", int(iExtIter));
-			if ((int(iExtIter) >= 10) && (int(iExtIter) < 100)) sprintf (buffer, "_000%d.plt", int(iExtIter));
-			if ((int(iExtIter) >= 100) && (int(iExtIter) < 1000)) sprintf (buffer, "_00%d.plt", int(iExtIter));
-			if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d.plt", int(iExtIter));
-			if (int(iExtIter) >= 10000) sprintf (buffer, "_%d.plt", int(iExtIter));
-		}
-		else
-			sprintf (buffer, ".plt");
-
-		strcat(cstr, buffer);
-
-		SurfFlow_file.precision(15);
-		SurfFlow_file.open(cstr, ios::out);
-
-
-		SurfFlow_file << "TITLE = \"Visualization of the surface grid\"" << endl;
-		if (geometry->GetnDim() == 2) SurfFlow_file << "VARIABLES = \"x\", \"y\"";
-		if (geometry->GetnDim() == 3) SurfFlow_file << "VARIABLES = \"x\", \"y\", \"z\"";
-
-		if ((solver == EULER) || (solver == FREE_SURFACE_EULER) || (solver == FREE_SURFACE_NAVIER_STOKES) ||
-				(solver == NAVIER_STOKES) || (solver == RANS) || (solver == FREE_SURFACE_RANS) ) {
-			SurfFlow_file << ", \"Pressure Coefficient\"";
-		}
-
-		if ((solver == EULER) || (solver == FREE_SURFACE_EULER))
-			SurfFlow_file << ", \"Mach Number\"";
-
-		if ((solver == NAVIER_STOKES) || (solver == RANS)) {
-			if (incompressible) SurfFlow_file << ", \"Skin Friction Coefficient\", \"y+\"";
-			else SurfFlow_file << ", \"Skin Friction Coefficient\", \"Heat Transfer Coefficient\", \"y+\"";
-		}
-		if (rotating_frame && (solver == EULER))
-			SurfFlow_file << ", \"Relative Mach\"";
-
-		if (solver == PLASMA_NAVIER_STOKES ) {
-			switch (config->GetKind_GasModel()) {
-
-			case ARGON:
-				SurfFlow_file <<  ", \"Skin Friction Coefficient\"";
-				SurfFlow_file <<  ", \"Ar Temperature\", \"Ar NumDen\", \"Ion Temperature\", \"Ion NumDen \"";
-				SurfFlow_file <<  ", \"Ele Temperature\", \"Ele NumDen\", \"NumofNegCharge\"";
-				SurfFlow_file <<  ", \"Ar Pressure\", \"Ion Pressure\", \"Electron Pressure \"";
-				for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
-					SurfFlow_file <<  ", \"HeatFlux(" << iSpecies << ")\"";
-					SurfFlow_file <<  ", \"PressForce_x(" << iSpecies << ")\"";
-					SurfFlow_file <<  ", \"ViscForce_x(" << iSpecies << ")\"";
-				}
-
-				break;
-
-			case N2: case O2: case AIR5: case AIR7:
-				unsigned short iSpecies;
-				for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
-					SurfFlow_file << ", \"Temperature_tr(" << iSpecies << ")\"";
-					if (iSpecies < config->GetnDiatomics())
-						SurfFlow_file << ", \"Temperature_vib(" << iSpecies << ")\"";
-					SurfFlow_file << ", \"Pressure(" << iSpecies << ")\"";
-					SurfFlow_file << ", \"NumDensity(" << iSpecies << ")\"";
-					if (!adiabatic) SurfFlow_file <<  ", \"HeatFlux(" << iSpecies << ")\"";
-				}
-				break;
-			}
-
-		}
-		SurfFlow_file << endl;
-
-
-		/*--- It is important to do a renumering to don't add points that do not belong to the surfaces ---*/
-		unsigned long *PointSurface = new unsigned long[geometry->GetnPoint()];
-
-		unsigned long nPointSurface = 0;
-		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-			if (geometry->node[iPoint]->GetBoundary()) {
-				PointSurface[iPoint] = nPointSurface;
-				nPointSurface++;
-			}
-
-		/*--- Compute the total number of elements ---*/
-		unsigned long nElemSurface = 0;
-		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-			if (config->GetMarker_All_Plotting(iMarker) == YES) {
-				nElemSurface += geometry->GetnElem_Bound(iMarker);
-			}
-
-		SurfFlow_file << "ZONE ";
-		if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady())
-			SurfFlow_file << "STRANDID="<<int(iExtIter+1)<<", SOLUTIONTIME="<<config->GetDelta_UnstTime()*int(iExtIter+1)<<", ";
-
-		if (config->GetUnsteady_Simulation() == TIME_SPECTRAL)
-			SurfFlow_file << "STRANDID="<<int(iZone)<<", SOLUTIONTIME="<<config->GetDelta_UnstTime()*int(iZone)<<", ";
-
-		SurfFlow_file << "NODES="<< nPointSurface <<" , ELEMENTS="<< nElemSurface <<", DATAPACKING=POINT";
-		if (geometry->GetnDim() == 2) SurfFlow_file << ", ZONETYPE=FELINESEG" << endl;
-		if (geometry->GetnDim() == 3) SurfFlow_file << ", ZONETYPE=FEQUADRILATERAL"<< endl;
-
-		/*--- It is necessary to go from point to vertex, and an auxiliar variable is created ---*/
-		aux_press 	 	  = new double [geometry->GetnPoint()];
-		aux_friction 	  = new double [geometry->GetnPoint()];
-		aux_heat_transfer = new double [geometry->GetnPoint()];
-		aux_y_plus = new double [geometry->GetnPoint()];
-
-		if (rotating_frame && (solver == EULER)) aux_rel_mach = new double [geometry->GetnPoint()];
-
-		for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) aux_press[iPoint] = 0.0;
-		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-			if (config->GetMarker_All_Plotting(iMarker) == YES)
-				for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-					iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-					aux_press[iPoint] = FlowSolution->GetCPressure(iMarker,iVertex);
-				}
-
-		if ((solver == NAVIER_STOKES) || (solver == RANS)) {
-			for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-				aux_friction[iPoint] = 0.0;
-				aux_heat_transfer[iPoint] = 0.0;
-				aux_y_plus[iPoint] = 0.0;
-			}
-			for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-				if (config->GetMarker_All_Plotting(iMarker) == YES) {
-					for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-						iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-						aux_friction[iPoint] = FlowSolution->GetCSkinFriction(iMarker,iVertex);
-						aux_heat_transfer[iPoint] = FlowSolution->GetHeatTransferCoeff(iMarker,iVertex);
-						aux_y_plus[iPoint] = FlowSolution->GetYPlus(iMarker,iVertex);
-					}
-				}
-		}
-
-		if (solver == PLASMA_NAVIER_STOKES) {
-			unsigned short iSpecies;
-			unsigned short nSpecies = FlowSolution->GetnSpecies();
-			unsigned short nDim = geometry->GetnDim();
-
-			switch (config->GetKind_GasModel()) {
-			case ARGON:
-				aux_wall_temperature_Ar 	 = new double [geometry->GetnPoint()];
-				aux_wall_temperature_Ion 	 = new double [geometry->GetnPoint()];
-				aux_wall_temperature_Elec 	 = new double [geometry->GetnPoint()];
-				aux_wall_numdensity_Ar 	 	 = new double [geometry->GetnPoint()];
-				aux_wall_numdensity_Ion 	 = new double [geometry->GetnPoint()];
-				aux_wall_numdensity_Elec 	 = new double [geometry->GetnPoint()];
-				aux_wall_numdensity_diff 	 = new double [geometry->GetnPoint()];
-				aux_wall_pressure_Ar 		 = new double [geometry->GetnPoint()];
-				aux_wall_pressure_Ion		 = new double [geometry->GetnPoint()];
-				aux_wall_pressure_Elec		 = new double [geometry->GetnPoint()];
-				//  if (!adiabatic) aux_heat_transfer 		 	 = new double [geometry->GetnPoint()];
-				aux_heatflux   = new double*[nSpecies];
-				aux_pressdrag   = new double*[nSpecies];
-				aux_visforce   = new double*[nSpecies];
-				for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-					aux_heatflux[iSpecies]   = new double[geometry->GetnPoint()];
-					aux_pressdrag[iSpecies]   = new double[geometry->GetnPoint()];
-					aux_visforce[iSpecies]   = new double[geometry->GetnPoint()];
-				}
-
-
-
-				double Mass_0, Mass_1, Mass_2;
-				Mass_0 = config->GetParticle_Mass(0);
-				Mass_1 = config->GetParticle_Mass(1);
-				Mass_2 = config->GetParticle_Mass(2);
-				Species_0 = 0; Species_1 = 1; Species_2 = 2;
-				for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-					aux_friction[iPoint] 			  = 0.0;
-					aux_wall_temperature_Ar[iPoint]   = 0.0;
-					aux_wall_numdensity_Ar[iPoint] 	  = 0.0;
-					aux_wall_temperature_Ion[iPoint]  = 0.0;
-					aux_wall_numdensity_Ion[iPoint]   = 0.0;
-					aux_wall_temperature_Elec[iPoint] = 0.0;
-					aux_wall_numdensity_Elec[iPoint]  = 0.0;
-					aux_wall_numdensity_diff[iPoint]  = 0.0;
-					aux_wall_pressure_Ar[iPoint] 	  = 0.0;
-					aux_wall_pressure_Ion[iPoint]     = 0.0;
-					aux_wall_pressure_Elec[iPoint]    = 0.0;
-					for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-						aux_heatflux[iSpecies][iPoint] = 0.0;
-						aux_pressdrag[iSpecies][iPoint] = 0.0;
-						aux_visforce[iSpecies][iPoint] = 0.0;
-					}
-
-					//if (!adiabatic) 			aux_heat_transfer[iPoint] 		  = 0.0;
-				}
-				for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-					if (config->GetMarker_All_Plotting(iMarker) == YES)
-						for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-							iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-							aux_friction[iPoint] 				= 	FlowSolution->GetCSkinFriction(iMarker,iVertex);
-							aux_wall_temperature_Ar[iPoint] 	= 	FlowSolution->node[iPoint]->GetTemperature_tr(0);
-							aux_wall_numdensity_Ar[iPoint] 		= 	FlowSolution->node[iPoint]->GetDensity(0)/Mass_0;
-							aux_wall_temperature_Ion[iPoint] 	= 	FlowSolution->node[iPoint]->GetTemperature_tr(1);
-							aux_wall_numdensity_Ion[iPoint] 	= 	FlowSolution->node[iPoint]->GetDensity(1)/Mass_1;
-							aux_wall_temperature_Elec[iPoint] 	= 	FlowSolution->node[iPoint]->GetTemperature_tr(2);
-							aux_wall_numdensity_Elec[iPoint] 	= 	FlowSolution->node[iPoint]->GetDensity(2)/Mass_2;
-							aux_wall_numdensity_diff[iPoint] 	= 	FlowSolution->node[iPoint]->GetDensity(2)/Mass_2 - FlowSolution->node[iPoint]->GetDensity(1)/Mass_1;
-							aux_wall_pressure_Ar[iPoint] 		=   FlowSolution->node[iPoint]->GetPressure(Species_0);
-							aux_wall_pressure_Ion[iPoint] 		=   FlowSolution->node[iPoint]->GetPressure(Species_1);
-							aux_wall_pressure_Elec[iPoint] 		=   FlowSolution->node[iPoint]->GetPressure(Species_2);
-							// if (!adiabatic) aux_heat_transfer[iPoint] 			= 	FlowSolution->GetHeatTransferCoeff(iMarker,0,iVertex);
-							for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-								aux_heatflux[iSpecies][iPoint]  = 	FlowSolution->GetHeatTransferCoeff(iMarker,iSpecies,iVertex);
-								aux_pressdrag[iSpecies][iPoint]  = 	FlowSolution->GetPressureForce(iMarker,iSpecies,0,iVertex);
-								aux_visforce[iSpecies][iPoint]  = 	FlowSolution->GetViscForce(iMarker,iSpecies,0,iVertex);
-							}
-
-						}
-				break;
-
-			case N2: case O2: case AIR5: case AIR7:
-
-				/*--- Allocate arrays ---*/
-				aux_temp_tr    = new double*[nSpecies];
-				aux_temp_vib   = new double*[nSpecies];
-				aux_numdensity = new double*[nSpecies];
-				aux_heatflux   = new double*[nSpecies];
-				aux_partpress  = new double*[nSpecies];
-				for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-					aux_temp_tr[iSpecies]    = new double[geometry->GetnPoint()];
-					aux_temp_vib[iSpecies]   = new double[geometry->GetnPoint()];
-					aux_numdensity[iSpecies] = new double[geometry->GetnPoint()];
-					aux_heatflux[iSpecies]   = new double[geometry->GetnPoint()];
-					aux_partpress[iSpecies]  = new double[geometry->GetnPoint()];
-				}
-
-				/*--- Initialize arrays ---*/
-				for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-					for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-						aux_temp_tr[iSpecies][iPoint]    = 0.0;
-						aux_temp_vib[iSpecies][iPoint]   = 0.0;
-						aux_partpress[iSpecies][iPoint]  = 0.0;
-						aux_numdensity[iSpecies][iPoint] = 0.0;
-						aux_heatflux[iSpecies][iPoint]   = 0.0;
-					}
-				}
-				for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-					if (config->GetMarker_All_Plotting(iMarker) == YES) {
-						for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-							iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-							for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-								aux_temp_tr[iSpecies][iPoint]    = FlowSolution->node[iPoint]->GetPrimVar(iSpecies, 0);
-								aux_temp_vib[iSpecies][iPoint]   = FlowSolution->node[iPoint]->GetPrimVar(iSpecies, nDim+1);
-								aux_partpress[iSpecies][iPoint]  = FlowSolution->node[iPoint]->GetPrimVar(iSpecies, nDim+2);
-								aux_numdensity[iSpecies][iPoint] = FlowSolution->node[iPoint]->GetPrimVar(iSpecies, nDim+3)
-                                    		/ (config->GetMolar_Mass(iSpecies)) * AVOGAD_CONSTANT;
-								aux_heatflux[iSpecies][iPoint]   = FlowSolution->GetHeatTransferCoeff(iMarker,iSpecies,iVertex);
-							}
-						}
-					}
-				}
-
-				break;
-			}
-
-		}
-
-		/*--- Compute relative velocities for rotating frame Euler  ---*/
-		if (rotating_frame && (solver == EULER)) {
-			double rel_velocity_mag, rel_velocity[3] = {0.0,0.0,0.0};
-			for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) aux_rel_mach[iPoint] = 0.0;
-			for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-				if (config->GetMarker_All_Plotting(iMarker) == YES)
-					for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-						iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-						double *rot_vel = geometry->node[iPoint]->GetRotVel();
-						rel_velocity_mag = 0.0;
-						for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
-							rel_velocity[iDim] = FlowSolution->node[iPoint]->GetVelocity(iDim, config->GetIncompressible()) - rot_vel[iDim];
-							rel_velocity_mag  += rel_velocity[iDim]*rel_velocity[iDim];
-						}
-						aux_rel_mach[iPoint]  = sqrt(rel_velocity_mag)/FlowSolution->node[iPoint]->GetSoundSpeed();
-					}
-		}
-
-
-		for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-
-			/*--- Write the coordinates ---*/
-			for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
-				if (geometry->node[iPoint]->GetBoundary())
-					SurfFlow_file <<" "<< geometry->node[iPoint]->GetCoord(iDim);
-
-			/*--- Write the Euler variables ---*/
-			if ((solver == EULER) || (solver == NAVIER_STOKES) || (solver == RANS) ||
-					(solver == FREE_SURFACE_EULER) || (solver == FREE_SURFACE_NAVIER_STOKES) || (solver == FREE_SURFACE_RANS)) {
-				if (geometry->node[iPoint]->GetBoundary()) SurfFlow_file << " " << aux_press[iPoint];
-			}
-
-			/*--- Write the Mach number ---*/
-			if ((solver == EULER || (solver == FREE_SURFACE_EULER))) {
-				if (incompressible) {
-					double Density = FlowSolution->node[iPoint]->GetDensityInc()*config->GetDensity_Ref();
-					double SoundSpeed = sqrt(config->GetBulk_Modulus()/Density);
-					Mach = sqrt(FlowSolution->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/SoundSpeed;
-				}
-				else Mach = sqrt(FlowSolution->node[iPoint]->GetVelocity2())/FlowSolution->node[iPoint]->GetSoundSpeed();
-				if (geometry->node[iPoint]->GetBoundary()) SurfFlow_file << " " << Mach;
-			}
-
-			/*--- Write the skin friction coefficient variables ---*/
-			if ((solver == NAVIER_STOKES) || (solver == RANS) || (solver == FREE_SURFACE_NAVIER_STOKES) || (solver == FREE_SURFACE_RANS)) {
-				if (geometry->node[iPoint]->GetBoundary()) {
-					if (incompressible) SurfFlow_file << " " << aux_friction[iPoint] << " " << aux_y_plus[iPoint];
-					else SurfFlow_file << " " << aux_friction[iPoint] << " " << aux_heat_transfer[iPoint] << " " << aux_y_plus[iPoint];
-				}
-			}
-
-			if (solver == PLASMA_NAVIER_STOKES) {
-				unsigned short iSpecies;
-				unsigned short nSpecies = FlowSolution->GetnSpecies();
-
-				switch (config->GetKind_GasModel()) {
-				case ARGON:
-					if (geometry->node[iPoint]->GetBoundary()) {
-						SkinFrictionCoeff 	= aux_friction[iPoint]; 				SurfFlow_file << " " << SkinFrictionCoeff;
-						WallTemperature 	= aux_wall_temperature_Ar[iPoint]; 		SurfFlow_file << " " << WallTemperature;
-						WallNumDensity 		= aux_wall_numdensity_Ar[iPoint]; 		SurfFlow_file << " " << WallNumDensity;
-						WallTemperature 	= aux_wall_temperature_Ion[iPoint]; 	SurfFlow_file << " " << WallTemperature;
-						WallNumDensity 		= aux_wall_numdensity_Ion[iPoint]; 		SurfFlow_file << " " << WallNumDensity;
-						WallTemperature 	= aux_wall_temperature_Elec[iPoint]; 	SurfFlow_file << " " << WallTemperature;
-						WallNumDensity 		= aux_wall_numdensity_Elec[iPoint]; 	SurfFlow_file << " " << WallNumDensity;
-						WallNumDensity 		= aux_wall_numdensity_diff[iPoint]; 	SurfFlow_file << " " << WallNumDensity;
-						WallPressure 		= aux_wall_pressure_Ar[iPoint]; 		SurfFlow_file << " " << WallPressure;
-						WallPressure 		= aux_wall_pressure_Ion[iPoint]; 		SurfFlow_file << " " << WallPressure;
-						WallPressure 		= aux_wall_pressure_Elec[iPoint]; 		SurfFlow_file << " " << WallPressure;
-						for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-							HeatTransferCoeff 	= aux_heatflux[iSpecies][iPoint]; SurfFlow_file << " " << HeatTransferCoeff;
-							HeatTransferCoeff 	= aux_pressdrag[iSpecies][iPoint]; SurfFlow_file << " " << HeatTransferCoeff;
-							HeatTransferCoeff 	= aux_visforce[iSpecies][iPoint]; SurfFlow_file << " " << HeatTransferCoeff;
-
-						}
-
-					}
-					break;
-
-				case N2: case O2: case AIR5: case AIR7:
-					if (geometry->node[iPoint]->GetBoundary()) {
-						for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-							WallTemperature     = aux_temp_tr[iSpecies][iPoint];      SurfFlow_file << " " << WallTemperature;
-							WallTemperature_vib = aux_temp_vib[iSpecies][iPoint];     SurfFlow_file << " " << WallTemperature_vib;
-							WallPressure        = aux_partpress[iSpecies][iPoint];    SurfFlow_file << " " << WallPressure;
-							WallNumDensity      = aux_numdensity[iSpecies][iPoint];   SurfFlow_file << " " << WallNumDensity;
-							WallHeatFlux        = aux_heatflux[iSpecies][iPoint];     SurfFlow_file << " " << WallHeatFlux;
-						}
-					}
-					break;
-				}
-
-			}
-
-			/*--- Write the relative mach number ---*/
-			if (rotating_frame && (solver == EULER)) {
-				if (geometry->node[iPoint]->GetBoundary()) SurfFlow_file << " " << aux_rel_mach[iPoint];
-			}
-
-			/*--- End line ---*/
-			if (geometry->node[iPoint]->GetBoundary()) SurfFlow_file << endl;
-		}
-
-		/*--- Write the cells using the new numbering ---*/
-		unsigned long iElem;
-		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-			if (config->GetMarker_All_Plotting(iMarker) == YES)
-				for(iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
-					if (geometry->bound[iMarker][iElem]->GetVTK_Type() == LINE) {
-						SurfFlow_file <<
-								PointSurface[geometry->bound[iMarker][iElem]->GetNode(0)]+1 <<" "<< PointSurface[geometry->bound[iMarker][iElem]->GetNode(1)]+1 << endl;
-					}
-					if (geometry->bound[iMarker][iElem]->GetVTK_Type() == TRIANGLE) {
-						SurfFlow_file <<
-								PointSurface[geometry->bound[iMarker][iElem]->GetNode(0)]+1 <<" "<< PointSurface[geometry->bound[iMarker][iElem]->GetNode(1)]+1 <<" "<<
-								PointSurface[geometry->bound[iMarker][iElem]->GetNode(2)]+1 <<" "<< PointSurface[geometry->bound[iMarker][iElem]->GetNode(2)]+1 << endl;
-					}
-					if (geometry->bound[iMarker][iElem]->GetVTK_Type() == RECTANGLE) {
-						SurfFlow_file <<
-								PointSurface[geometry->bound[iMarker][iElem]->GetNode(0)]+1 <<" "<< PointSurface[geometry->bound[iMarker][iElem]->GetNode(1)]+1 <<" "<<
-								PointSurface[geometry->bound[iMarker][iElem]->GetNode(2)]+1 <<" "<< PointSurface[geometry->bound[iMarker][iElem]->GetNode(3)]+1 << endl;
-					}
-				}
-
-		delete [] aux_press;
-		delete [] aux_friction;
-		delete [] aux_heat_transfer;
-		delete [] aux_y_plus;
-		if (rotating_frame && (solver == EULER)) delete[] aux_rel_mach;
-		delete [] PointSurface;
-		SurfFlow_file.close();
-
-		if(solver == PLASMA_NAVIER_STOKES) {
-			switch(config->GetKind_GasModel()) {
-			case ARGON:
-				delete[]  aux_wall_temperature_Ar;
-				delete[]  aux_wall_temperature_Ion;
-				delete[]  aux_wall_temperature_Elec;
-				delete[]  aux_wall_numdensity_Ar;
-				delete[]  aux_wall_numdensity_Ion;
-				delete[]  aux_wall_numdensity_Elec;
-				delete[]  aux_wall_numdensity_diff;
-				delete[]  aux_wall_pressure_Ar;
-				delete[]  aux_wall_pressure_Ion;
-				delete[]  aux_wall_pressure_Elec;
-				for (iSpecies=0; iSpecies < FlowSolution->GetnSpecies(); iSpecies++) {
-					delete [] aux_heatflux[iSpecies];
-					delete [] aux_pressdrag[iSpecies];
-					delete [] aux_visforce[iSpecies];
-
-				}
-				delete [] aux_heatflux;
-				delete [] aux_pressdrag;
-				delete [] aux_visforce;
-
-				break;
-
-			case N2: case O2: case AIR5: case AIR7:
-				for (iSpecies=0; iSpecies < FlowSolution->GetnSpecies(); iSpecies++) {
-					delete [] aux_temp_tr[iSpecies];
-					delete [] aux_temp_vib[iSpecies];
-					delete [] aux_partpress[iSpecies];
-					delete [] aux_numdensity[iSpecies];
-					delete [] aux_heatflux[iSpecies];
-				}
-				delete [] aux_temp_tr;
-				delete [] aux_temp_vib;
-				delete [] aux_partpress;
-				delete [] aux_numdensity;
-				delete [] aux_heatflux;
-			}
-
-		}
-
-	}
-
-}
-
-void COutput::SetSurface_Adjoint(CConfig *config, CGeometry *geometry, CSolution *AdjSolution, CSolution *FlowSolution, unsigned long iExtIter, unsigned short iZone) {
-
-	unsigned long iPoint, iVertex, iElem;
-	double *aux_sens, sens_value;
-	unsigned short iMarker, iDim;
-	char cstr[200], buffer[50];
-	ofstream SurfAdj_file;
-
-	if (config->GetOutput_FileFormat() == PARAVIEW) {
-
-		/*--- Write the surface .vtk file ---*/
-		strcpy (cstr, config->GetSurfAdjCoeff_FileName().c_str());
-		if (config->GetUnsteady_Simulation() != NO)
-			sprintf (buffer, "_%d.vtk", int(iExtIter));
-		else
-			sprintf (buffer, ".vtk");
-
-		strcat(cstr, buffer);
-
-		/*--- Write the geometrical information on the output file ---*/
-		geometry->SetBoundParaView (config, cstr);
-
-		/*--- Open the output file ---*/
-		SurfAdj_file.precision(15);
-		SurfAdj_file.open(cstr, ios::out | ios::app);
-
-		/*--- It is necessary to go from point to vertex, and an auxiliar variable is created ---*/
-		aux_sens = new double [geometry->GetnPoint()];
-
-		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) aux_sens[iPoint] = 0.0;
-		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-			if (config->GetMarker_All_Plotting(iMarker) == YES)
-				for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-					iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-					aux_sens[iPoint] = AdjSolution->GetCSensitivity(iMarker,iVertex);
-				}
-
-		SurfAdj_file << "SCALARS Shape_Sensitivity float 1" << endl;
-		SurfAdj_file << "LOOKUP_TABLE default" << endl;
-		for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-			if (geometry->node[iPoint]->GetBoundary()) {
-				sens_value = aux_sens[iPoint];
-				SurfAdj_file << scientific << sens_value << endl;
-			}
-		delete [] aux_sens;
-
-		SurfAdj_file << "SCALARS PsiRho float 1" << endl;
-		SurfAdj_file << "LOOKUP_TABLE default" << endl;
-		for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-			if (geometry->node[iPoint]->GetBoundary())
-				SurfAdj_file << AdjSolution->node[iPoint]->GetSolution(0) << endl;
-
-		SurfAdj_file.close();
-	}
-
-	if (config->GetOutput_FileFormat() == TECPLOT) {
-
-		/*--- Write the surface .plt file ---*/
-		strcpy (cstr, config->GetSurfAdjCoeff_FileName().c_str());
-
-		if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-			if (int(iZone) < 10) sprintf (buffer, "_0000%d.plt", int(iZone));
-			if ((int(iZone) >= 10) && (int(iZone) < 100)) sprintf (buffer, "_000%d.plt", int(iZone));
-			if ((int(iZone) >= 100) && (int(iZone) < 1000)) sprintf (buffer, "_00%d.plt", int(iZone));
-			if ((int(iZone) >= 1000) && (int(iZone) < 10000)) sprintf (buffer, "_0%d.plt", int(iZone));
-			if (int(iZone) >= 10000) sprintf (buffer, "_%d.plt", int(iZone));
-
-		}
-
-		else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
-			if ((int(iExtIter) >= 0) && (int(iExtIter) < 10)) sprintf (buffer, "_0000%d.plt", int(iExtIter));
-			if ((int(iExtIter) >= 10) && (int(iExtIter) < 100)) sprintf (buffer, "_000%d.plt", int(iExtIter));
-			if ((int(iExtIter) >= 100) && (int(iExtIter) < 1000)) sprintf (buffer, "_00%d.plt", int(iExtIter));
-			if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d.plt", int(iExtIter));
-			if (int(iExtIter) >= 10000) sprintf (buffer, "_%d.plt", int(iExtIter));
-		}
-		else
-			sprintf (buffer, ".plt");
-
-		strcat(cstr, buffer);
-
-		/*--- Open the output file ---*/
-		SurfAdj_file.precision(15);
-		SurfAdj_file.open(cstr, ios::out);
-
-		SurfAdj_file << "TITLE = \"Visualization of the surface grid\"" << endl;
-		if (geometry->GetnDim() == 2) SurfAdj_file << "VARIABLES = \"x\", \"y\"";
-		if (geometry->GetnDim() == 3) SurfAdj_file << "VARIABLES = \"x\", \"y\", \"z\"";
-		SurfAdj_file << ", \"Shape_Sensitivity\", \"PsiRho\"";
-		SurfAdj_file << endl;
-
-		/*--- It is important to do a renumering to don't add points that do not belong to the surfaces ---*/
-		unsigned long *PointSurface = new unsigned long[geometry->GetnPoint()];
-
-		unsigned long nPointSurface = 0;
-		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-			if (geometry->node[iPoint]->GetBoundary()) {
-				PointSurface[iPoint] = nPointSurface;
-				nPointSurface++;
-			}
-
-		/*--- Compute the total number of elements ---*/
-		unsigned long nElemSurface = 0;
-		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-			if (config->GetMarker_All_Plotting(iMarker) == YES) {
-				nElemSurface += geometry->GetnElem_Bound(iMarker);
-			}
-
-		SurfAdj_file << "ZONE ";
-		if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady())
-			SurfAdj_file << "STRANDID="<<int(iExtIter+1)<<", SOLUTIONTIME="<<config->GetDelta_UnstTime()*int(iExtIter+1)<<", ";
-
-		if (config->GetUnsteady_Simulation() == TIME_SPECTRAL)
-			SurfAdj_file << "STRANDID="<<int(iZone)<<", SOLUTIONTIME="<<config->GetDelta_UnstTime()*int(iZone)<<", ";
-
-		SurfAdj_file << "NODES="<< nPointSurface <<" , ELEMENTS="<< nElemSurface <<", DATAPACKING=POINT";
-
-		if (geometry->GetnDim() == 2) SurfAdj_file << ", ZONETYPE=FELINESEG" << endl;
-		if (geometry->GetnDim() == 3) SurfAdj_file << ", ZONETYPE=FEQUADRILATERAL"<< endl;
-
-		/*--- It is necessary to go from point to vertex, and an auxiliar variable is created ---*/
-		aux_sens = new double [geometry->GetnPoint()];
-
-		for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) aux_sens[iPoint] = 0.0;
-		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-			if (config->GetMarker_All_Plotting(iMarker) == YES)
-				for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-					iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-					aux_sens[iPoint] = AdjSolution->GetCSensitivity(iMarker,iVertex);
-				}
-
-		for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-
-			/*--- Write the coordinates ---*/
-			for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
-				if (geometry->node[iPoint]->GetBoundary())
-					SurfAdj_file <<" "<< geometry->node[iPoint]->GetCoord(iDim);
-
-			/*--- Write the sensitivity variables ---*/
-			if (geometry->node[iPoint]->GetBoundary()) SurfAdj_file << " " << aux_sens[iPoint];
-
-			/*--- Write the adjoint density ---*/
-			if (geometry->node[iPoint]->GetBoundary()) SurfAdj_file << " " << AdjSolution->node[iPoint]->GetSolution(0);
-
-			/*--- End line ---*/
-			if (geometry->node[iPoint]->GetBoundary()) SurfAdj_file << endl;
-		}
-
-		/*--- Write the cells using the new numbering ---*/
-		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-			if (config->GetMarker_All_Plotting(iMarker) == YES)
-				for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
-					if (geometry->bound[iMarker][iElem]->GetVTK_Type() == LINE) {
-						SurfAdj_file <<
-								PointSurface[geometry->bound[iMarker][iElem]->GetNode(0)]+1 <<" "<< PointSurface[geometry->bound[iMarker][iElem]->GetNode(1)]+1 << endl;
-					}
-					if (geometry->bound[iMarker][iElem]->GetVTK_Type() == TRIANGLE) {
-						SurfAdj_file <<
-								PointSurface[geometry->bound[iMarker][iElem]->GetNode(0)]+1 <<" "<< PointSurface[geometry->bound[iMarker][iElem]->GetNode(1)]+1 <<" "<<
-								PointSurface[geometry->bound[iMarker][iElem]->GetNode(2)]+1 <<" "<< PointSurface[geometry->bound[iMarker][iElem]->GetNode(2)]+1 << endl;
-					}
-					if (geometry->bound[iMarker][iElem]->GetVTK_Type() == RECTANGLE) {
-						SurfAdj_file <<
-								PointSurface[geometry->bound[iMarker][iElem]->GetNode(0)]+1 <<" "<< PointSurface[geometry->bound[iMarker][iElem]->GetNode(1)]+1 <<" "<<
-								PointSurface[geometry->bound[iMarker][iElem]->GetNode(2)]+1 <<" "<< PointSurface[geometry->bound[iMarker][iElem]->GetNode(3)]+1 << endl;
-					}
-				}
-
-		delete [] aux_sens;
-		delete [] PointSurface;
-		SurfAdj_file.close();
-
-	}
-
-}
-
-void COutput::SetSurface_Linearized(CConfig *config, CGeometry *geometry, CSolution *LinSolution, string val_filename, unsigned long iExtIter) { }
+//void COutput::SetSurface_Flow(CConfig *config, CGeometry *geometry, CSolution *FlowSolution, unsigned long iExtIter, unsigned short iZone) {
+//	unsigned long iPoint, iSpecies, iVertex;
+//	unsigned short iMarker, iDim, Species_0, Species_1, Species_2;
+//	double PressCoeff = 0.0, SkinFrictionCoeff, HeatTransferCoeff = 0.0,WallTemperature, WallTemperature_vib, WallNumDensity, WallPressure, WallHeatFlux, Mach, *aux_press = NULL, *aux_friction = NULL, *aux_rel_mach = NULL,
+//			*aux_heat_transfer = NULL, *aux_y_plus = NULL;
+//	double *aux_wall_temperature_Ar = NULL, *aux_wall_numdensity_Ar  = NULL, *aux_wall_temperature  = NULL;
+//	double *aux_wall_temperature_Ion = NULL, *aux_wall_numdensity_Ion = NULL, *aux_wall_numdensity  = NULL;
+//	double *aux_wall_pressure_Ar = NULL, *aux_wall_pressure_Ion = NULL, *aux_wall_pressure_Elec  = NULL;
+//	double *aux_wall_temperature_Elec = NULL, *aux_wall_numdensity_Elec = NULL, *aux_wall_numdensity_diff = NULL;
+//	double **aux_temp_tr, **aux_temp_vib, **aux_numdensity, **aux_heatflux, **aux_partpress, **aux_pressdrag, **aux_visforce;
+//	char cstr[200], buffer [50];
+//	ofstream SurfFlow_file;
+//
+//	unsigned short solver = config->GetKind_Solver();
+//	bool incompressible = config->GetIncompressible();
+//	bool rotating_frame = config->GetRotating_Frame();
+//	bool adiabatic = config->GetAdiabaticWall();
+//	if (config->GetOutput_FileFormat() == PARAVIEW) {
+//
+//		/*--- Write the surface .vtk file ---*/
+//		strcpy (cstr, config->GetSurfFlowCoeff_FileName().c_str());
+//		if (config->GetUnsteady_Simulation() != NO)
+//			sprintf (buffer, "_%d.vtk", int(iExtIter));
+//		else
+//			sprintf (buffer, ".vtk");
+//
+//		strcat(cstr, buffer);
+//
+//		/*--- Write the geometrical information on the output file ---*/
+//		geometry->SetBoundParaView(config, cstr);
+//
+//		/*--- Open the output file ---*/
+//		SurfFlow_file.precision(15);
+//		SurfFlow_file.open(cstr, ios::out | ios::app);
+//
+//		/*--- It is necessary to go from point to vertex, and an auxiliar variable is created ---*/
+//		aux_press = new double [geometry->GetnPoint()];
+//
+//		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) aux_press[iPoint] = 0.0;
+//		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+//			if (config->GetMarker_All_Plotting(iMarker) == YES)
+//				for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//					iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//					aux_press[iPoint] = FlowSolution->GetCPressure(iMarker,iVertex);
+//				}
+//
+//		SurfFlow_file << "SCALARS Pressure_Coefficient float 1" << endl;
+//		SurfFlow_file << "LOOKUP_TABLE default" << endl;
+//		for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+//			if (geometry->node[iPoint]->GetBoundary()) {
+//				PressCoeff = aux_press[iPoint];
+//				SurfFlow_file << scientific << PressCoeff << endl;
+//			}
+//		delete [] aux_press;
+//
+//		switch (solver) {
+//
+//		case NAVIER_STOKES: case RANS: case FREE_SURFACE_NAVIER_STOKES: case FREE_SURFACE_RANS:
+//			aux_friction = new double [geometry->GetnPoint()];
+//			for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) aux_friction[iPoint] = 0.0;
+//			for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+//				if (config->GetMarker_All_Plotting(iMarker) == YES)
+//					for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//						iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//						aux_friction[iPoint] = FlowSolution->GetCSkinFriction(iMarker,iVertex);
+//					}
+//			SurfFlow_file << "SCALARS Skin_Friction_Coefficient float 1" << endl;
+//			SurfFlow_file << "LOOKUP_TABLE default" << endl;
+//			for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+//				if (geometry->node[iPoint]->GetBoundary()) {
+//					SkinFrictionCoeff = aux_friction[iPoint];
+//					SurfFlow_file << scientific << SkinFrictionCoeff << endl;
+//				}
+//			delete [] aux_friction;
+//			if (!adiabatic) {
+//				aux_heat_transfer = new double [geometry->GetnPoint()];
+//				for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) aux_heat_transfer[iPoint] = 0.0;
+//				for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+//					if (config->GetMarker_All_Plotting(iMarker) == YES)
+//						for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//							iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//							aux_heat_transfer[iPoint] = FlowSolution->GetHeatTransferCoeff(iMarker,iVertex);
+//						}
+//				SurfFlow_file << "SCALARS Heat_Transfer_Coefficient float 1" << endl;
+//				SurfFlow_file << "LOOKUP_TABLE default" << endl;
+//				for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+//					if (geometry->node[iPoint]->GetBoundary()) {
+//						HeatTransferCoeff = aux_heat_transfer[iPoint];
+//						SurfFlow_file << scientific << HeatTransferCoeff << endl;
+//					}
+//				delete [] aux_heat_transfer;
+//			}
+//			break;
+//		case PLASMA_NAVIER_STOKES:	case PLASMA_EULER:
+//			aux_friction = new double [geometry->GetnPoint()];
+//			for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) aux_friction[iPoint] = 0.0;
+//			for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+//				if (config->GetMarker_All_Plotting(iMarker) == YES)
+//					for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//						iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//						aux_friction[iPoint] = FlowSolution->GetCSkinFriction(iMarker,iVertex);
+//					}
+//			SurfFlow_file << "SCALARS Skin_Friction_Coefficient float 1" << endl;
+//			SurfFlow_file << "LOOKUP_TABLE default" << endl;
+//			for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+//				if (geometry->node[iPoint]->GetBoundary()) {
+//					SkinFrictionCoeff = aux_friction[iPoint];
+//					SurfFlow_file << scientific << SkinFrictionCoeff << endl;
+//				}
+//			delete [] aux_friction;
+//
+//			aux_wall_temperature = new double [geometry->GetnPoint()];
+//			aux_wall_numdensity = new double [geometry->GetnPoint()];
+//			aux_wall_numdensity_diff = new double [geometry->GetnPoint()];
+//			aux_heat_transfer = new double [geometry->GetnPoint()];
+//
+//			double *Mass = new double[3];
+//			Mass[0] = config->GetParticle_Mass(0);
+//			Mass[1] = config->GetParticle_Mass(1);
+//			Mass[2] = config->GetParticle_Mass(2);
+//
+//			for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+//				aux_wall_temperature[iPoint] = 0.0;
+//				aux_wall_numdensity[iPoint] = 0.0;
+//				aux_heat_transfer[iPoint] = 0.0;
+//
+//			}
+//			for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+//				if (config->GetMarker_All_Plotting(iMarker) == YES) {
+//					/* Argon Temperature and Density */
+//					for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//						iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//						aux_wall_temperature[iPoint] = FlowSolution->node[iPoint]->GetTemperature_tr(0);
+//						aux_wall_numdensity[iPoint] = FlowSolution->node[iPoint]->GetDensity(0)/Mass[0];
+//						if (!adiabatic) aux_heat_transfer[iPoint] = FlowSolution->GetHeatTransferCoeff(iMarker,0,iVertex);
+//
+//					}
+//					SurfFlow_file << "SCALARS Ar_Temperature float 1" << endl;
+//					SurfFlow_file << "LOOKUP_TABLE default" << endl;
+//					for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+//						if (geometry->node[iPoint]->GetBoundary()) {
+//							WallTemperature = aux_wall_temperature[iPoint];
+//							SurfFlow_file << scientific << WallTemperature << endl;
+//						}
+//
+//					SurfFlow_file << "SCALARS Ar_NumDen float 1" << endl;
+//					SurfFlow_file << "LOOKUP_TABLE default" << endl;
+//					for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+//						if (geometry->node[iPoint]->GetBoundary()) {
+//							WallNumDensity = aux_wall_numdensity[iPoint];
+//							SurfFlow_file << scientific << WallNumDensity << endl;
+//						}
+//
+//					if (!adiabatic) { SurfFlow_file << "SCALARS Ar_Heat_Transfer_Coefficient float 1" << endl;
+//					SurfFlow_file << "LOOKUP_TABLE default" << endl;
+//					for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+//						if (geometry->node[iPoint]->GetBoundary()) {
+//							HeatTransferCoeff = aux_heat_transfer[iPoint];
+//							SurfFlow_file << scientific << HeatTransferCoeff << endl;
+//						}
+//
+//					}
+//
+//					//                        if (!adiabatic) {
+//					//                            for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) aux_heat_transfer[iPoint] = 0.0;
+//					//                            for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+//					//                                if (config->GetMarker_All_Plotting(iMarker) == YES)
+//					//                                    for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//					//                                        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//					//                                        aux_heat_transfer[iPoint] = FlowSolution->GetHeatTransferCoeff(iMarker,iVertex);
+//					//                                    }
+//					//                            SurfFlow_file << "SCALARS Heat_Transfer_Coefficient float 1" << endl;
+//					//                            SurfFlow_file << "LOOKUP_TABLE default" << endl;
+//					//                            for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+//					//                                if (geometry->node[iPoint]->GetBoundary()) {
+//					//                                    HeatTransferCoeff = aux_heat_transfer[iPoint];
+//					//                                    SurfFlow_file << scientific << HeatTransferCoeff << endl;
+//					//                                }
+//					//
+//					//                            delete [] aux_heat_transfer;
+//					//                        }
+//
+//					/* Ion Temperature and Density*/
+//					for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//						iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//						aux_wall_temperature[iPoint] = FlowSolution->node[iPoint]->GetTemperature_tr(1);
+//						aux_wall_numdensity[iPoint] = FlowSolution->node[iPoint]->GetDensity(1)/Mass[1];
+//						if (!adiabatic) aux_heat_transfer[iPoint] = FlowSolution->GetHeatTransferCoeff(iMarker,1,iVertex);
+//
+//					}
+//					SurfFlow_file << "SCALARS Ion_Temperature float 1" << endl;
+//					SurfFlow_file << "LOOKUP_TABLE default" << endl;
+//					for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+//						if (geometry->node[iPoint]->GetBoundary()) {
+//							WallTemperature = aux_wall_temperature[iPoint];
+//							SurfFlow_file << scientific << WallTemperature << endl;
+//						}
+//
+//					SurfFlow_file << "SCALARS Ion_NumDen float 1" << endl;
+//					SurfFlow_file << "LOOKUP_TABLE default" << endl;
+//					for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+//						if (geometry->node[iPoint]->GetBoundary()) {
+//							WallNumDensity = aux_wall_numdensity[iPoint];
+//							SurfFlow_file << scientific << WallNumDensity << endl;
+//						}
+//					if (!adiabatic){ SurfFlow_file << "SCALARS Ion_Heat_Transfer_Coefficient float 1" << endl;
+//					SurfFlow_file << "LOOKUP_TABLE default" << endl;
+//					for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+//						if (geometry->node[iPoint]->GetBoundary()) {
+//							HeatTransferCoeff = aux_heat_transfer[iPoint];
+//							SurfFlow_file << scientific << HeatTransferCoeff << endl;
+//						}
+//					}
+//
+//					/* Electron Temperature and Density */
+//					for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//						iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//						aux_wall_temperature[iPoint] = FlowSolution->node[iPoint]->GetTemperature_tr(2);
+//						aux_wall_numdensity[iPoint] = FlowSolution->node[iPoint]->GetDensity(2)/Mass[2];
+//						aux_wall_numdensity_diff[iPoint] = FlowSolution->node[iPoint]->GetDensity(2)/Mass[2] - FlowSolution->node[iPoint]->GetDensity(1)/Mass[1];
+//						if (!adiabatic) aux_heat_transfer[iPoint] = FlowSolution->GetHeatTransferCoeff(iMarker,2,iVertex);
+//
+//					}
+//					SurfFlow_file << "SCALARS Ele_Temperature float 1" << endl;
+//					SurfFlow_file << "LOOKUP_TABLE default" << endl;
+//					for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+//						if (geometry->node[iPoint]->GetBoundary()) {
+//							WallTemperature = aux_wall_temperature[iPoint];
+//							SurfFlow_file << scientific << WallTemperature << endl;
+//						}
+//					SurfFlow_file << "SCALARS Ele_NumDen float 1" << endl;
+//					SurfFlow_file << "LOOKUP_TABLE default" << endl;
+//					for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+//						if (geometry->node[iPoint]->GetBoundary()) {
+//							WallNumDensity = aux_wall_numdensity[iPoint];
+//							SurfFlow_file << scientific << WallNumDensity << endl;
+//						}
+//
+//					SurfFlow_file << "SCALARS NumofNegCharge float 1" << endl;
+//					SurfFlow_file << "LOOKUP_TABLE default" << endl;
+//					for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+//						if (geometry->node[iPoint]->GetBoundary()) {
+//							WallNumDensity = aux_wall_numdensity_diff[iPoint];
+//							SurfFlow_file << scientific << WallNumDensity << endl;
+//						}
+//
+//					if (!adiabatic){ SurfFlow_file << "SCALARS Elec_Heat_Transfer_Coefficient float 1" << endl;
+//					SurfFlow_file << "LOOKUP_TABLE default" << endl;
+//					for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+//						if (geometry->node[iPoint]->GetBoundary()) {
+//							HeatTransferCoeff = aux_heat_transfer[iPoint];
+//							SurfFlow_file << scientific << HeatTransferCoeff << endl;
+//						}
+//					}
+//
+//					delete [] aux_wall_temperature;
+//					delete [] aux_wall_numdensity;
+//					delete [] aux_wall_numdensity_diff;
+//					delete [] aux_heat_transfer;
+//
+//				}
+//			break;
+//		}
+//
+//		SurfFlow_file.close();
+//
+//	}
+//	if (config->GetOutput_FileFormat() == TECPLOT ||
+//			config->GetOutput_FileFormat() == TECPLOT_BINARY ||
+//			config->GetOutput_FileFormat() == CGNS_SOL) {
+//
+//		/*--- Write the surface .plt file ---*/
+//		strcpy (cstr, config->GetSurfFlowCoeff_FileName().c_str());
+//
+//
+//		if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+//			if (int(iZone) < 10) sprintf (buffer, "_0000%d.plt", int(iZone));
+//			if ((int(iZone) >= 10) && (int(iZone) < 100)) sprintf (buffer, "_000%d.plt", int(iZone));
+//			if ((int(iZone) >= 100) && (int(iZone) < 1000)) sprintf (buffer, "_00%d.plt", int(iZone));
+//			if ((int(iZone) >= 1000) && (int(iZone) < 10000)) sprintf (buffer, "_0%d.plt", int(iZone));
+//			if (int(iZone) >= 10000) sprintf (buffer, "_%d.plt", int(iZone));
+//
+//		}
+//
+//		else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
+//			if ((int(iExtIter) >= 0) && (int(iExtIter) < 10)) sprintf (buffer, "_0000%d.plt", int(iExtIter));
+//			if ((int(iExtIter) >= 10) && (int(iExtIter) < 100)) sprintf (buffer, "_000%d.plt", int(iExtIter));
+//			if ((int(iExtIter) >= 100) && (int(iExtIter) < 1000)) sprintf (buffer, "_00%d.plt", int(iExtIter));
+//			if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d.plt", int(iExtIter));
+//			if (int(iExtIter) >= 10000) sprintf (buffer, "_%d.plt", int(iExtIter));
+//		}
+//		else
+//			sprintf (buffer, ".plt");
+//
+//		strcat(cstr, buffer);
+//
+//		SurfFlow_file.precision(15);
+//		SurfFlow_file.open(cstr, ios::out);
+//
+//
+//		SurfFlow_file << "TITLE = \"Visualization of the surface grid\"" << endl;
+//		if (geometry->GetnDim() == 2) SurfFlow_file << "VARIABLES = \"x\", \"y\"";
+//		if (geometry->GetnDim() == 3) SurfFlow_file << "VARIABLES = \"x\", \"y\", \"z\"";
+//
+//		if ((solver == EULER) || (solver == FREE_SURFACE_EULER) || (solver == FREE_SURFACE_NAVIER_STOKES) ||
+//				(solver == NAVIER_STOKES) || (solver == RANS) || (solver == FREE_SURFACE_RANS) ) {
+//			SurfFlow_file << ", \"Pressure Coefficient\"";
+//		}
+//
+//		if ((solver == EULER) || (solver == FREE_SURFACE_EULER))
+//			SurfFlow_file << ", \"Mach Number\"";
+//
+//		if ((solver == NAVIER_STOKES) || (solver == RANS)) {
+//			if (incompressible) SurfFlow_file << ", \"Skin Friction Coefficient\", \"y+\"";
+//			else SurfFlow_file << ", \"Skin Friction Coefficient\", \"Heat Transfer Coefficient\", \"y+\"";
+//		}
+//		if (rotating_frame && (solver == EULER))
+//			SurfFlow_file << ", \"Relative Mach\"";
+//
+//		if (solver == PLASMA_NAVIER_STOKES ) {
+//			switch (config->GetKind_GasModel()) {
+//
+//			case ARGON:
+//				SurfFlow_file <<  ", \"Skin Friction Coefficient\"";
+//				SurfFlow_file <<  ", \"Ar Temperature\", \"Ar NumDen\", \"Ion Temperature\", \"Ion NumDen \"";
+//				SurfFlow_file <<  ", \"Ele Temperature\", \"Ele NumDen\", \"NumofNegCharge\"";
+//				SurfFlow_file <<  ", \"Ar Pressure\", \"Ion Pressure\", \"Electron Pressure \"";
+//				for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
+//					SurfFlow_file <<  ", \"HeatFlux(" << iSpecies << ")\"";
+//					SurfFlow_file <<  ", \"PressForce_x(" << iSpecies << ")\"";
+//					SurfFlow_file <<  ", \"ViscForce_x(" << iSpecies << ")\"";
+//				}
+//
+//				break;
+//
+//			case N2: case O2: case AIR5: case AIR7:
+//				unsigned short iSpecies;
+//				for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
+//					SurfFlow_file << ", \"Temperature_tr(" << iSpecies << ")\"";
+//					if (iSpecies < config->GetnDiatomics())
+//						SurfFlow_file << ", \"Temperature_vib(" << iSpecies << ")\"";
+//					SurfFlow_file << ", \"Pressure(" << iSpecies << ")\"";
+//					SurfFlow_file << ", \"NumDensity(" << iSpecies << ")\"";
+//					if (!adiabatic) SurfFlow_file <<  ", \"HeatFlux(" << iSpecies << ")\"";
+//				}
+//				break;
+//			}
+//
+//		}
+//		SurfFlow_file << endl;
+//
+//
+//		/*--- It is important to do a renumering to don't add points that do not belong to the surfaces ---*/
+//		unsigned long *PointSurface = new unsigned long[geometry->GetnPoint()];
+//
+//		unsigned long nPointSurface = 0;
+//		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+//			if (geometry->node[iPoint]->GetBoundary()) {
+//				PointSurface[iPoint] = nPointSurface;
+//				nPointSurface++;
+//			}
+//
+//		/*--- Compute the total number of elements ---*/
+//		unsigned long nElemSurface = 0;
+//		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+//			if (config->GetMarker_All_Plotting(iMarker) == YES) {
+//				nElemSurface += geometry->GetnElem_Bound(iMarker);
+//			}
+//
+//		SurfFlow_file << "ZONE ";
+//		if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady())
+//			SurfFlow_file << "STRANDID="<<int(iExtIter+1)<<", SOLUTIONTIME="<<config->GetDelta_UnstTime()*int(iExtIter+1)<<", ";
+//
+//		if (config->GetUnsteady_Simulation() == TIME_SPECTRAL)
+//			SurfFlow_file << "STRANDID="<<int(iZone)<<", SOLUTIONTIME="<<config->GetDelta_UnstTime()*int(iZone)<<", ";
+//
+//		SurfFlow_file << "NODES="<< nPointSurface <<" , ELEMENTS="<< nElemSurface <<", DATAPACKING=POINT";
+//		if (geometry->GetnDim() == 2) SurfFlow_file << ", ZONETYPE=FELINESEG" << endl;
+//		if (geometry->GetnDim() == 3) SurfFlow_file << ", ZONETYPE=FEQUADRILATERAL"<< endl;
+//
+//		/*--- It is necessary to go from point to vertex, and an auxiliar variable is created ---*/
+//		aux_press 	 	  = new double [geometry->GetnPoint()];
+//		aux_friction 	  = new double [geometry->GetnPoint()];
+//		aux_heat_transfer = new double [geometry->GetnPoint()];
+//		aux_y_plus = new double [geometry->GetnPoint()];
+//
+//		if (rotating_frame && (solver == EULER)) aux_rel_mach = new double [geometry->GetnPoint()];
+//
+//		for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) aux_press[iPoint] = 0.0;
+//		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+//			if (config->GetMarker_All_Plotting(iMarker) == YES)
+//				for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//					iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//					aux_press[iPoint] = FlowSolution->GetCPressure(iMarker,iVertex);
+//				}
+//
+//		if ((solver == NAVIER_STOKES) || (solver == RANS)) {
+//			for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+//				aux_friction[iPoint] = 0.0;
+//				aux_heat_transfer[iPoint] = 0.0;
+//				aux_y_plus[iPoint] = 0.0;
+//			}
+//			for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+//				if (config->GetMarker_All_Plotting(iMarker) == YES) {
+//					for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//						iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//						aux_friction[iPoint] = FlowSolution->GetCSkinFriction(iMarker,iVertex);
+//						aux_heat_transfer[iPoint] = FlowSolution->GetHeatTransferCoeff(iMarker,iVertex);
+//						aux_y_plus[iPoint] = FlowSolution->GetYPlus(iMarker,iVertex);
+//					}
+//				}
+//		}
+//
+//		if (solver == PLASMA_NAVIER_STOKES) {
+//			unsigned short iSpecies;
+//			unsigned short nSpecies = FlowSolution->GetnSpecies();
+//			unsigned short nDim = geometry->GetnDim();
+//
+//			switch (config->GetKind_GasModel()) {
+//			case ARGON:
+//				aux_wall_temperature_Ar 	 = new double [geometry->GetnPoint()];
+//				aux_wall_temperature_Ion 	 = new double [geometry->GetnPoint()];
+//				aux_wall_temperature_Elec 	 = new double [geometry->GetnPoint()];
+//				aux_wall_numdensity_Ar 	 	 = new double [geometry->GetnPoint()];
+//				aux_wall_numdensity_Ion 	 = new double [geometry->GetnPoint()];
+//				aux_wall_numdensity_Elec 	 = new double [geometry->GetnPoint()];
+//				aux_wall_numdensity_diff 	 = new double [geometry->GetnPoint()];
+//				aux_wall_pressure_Ar 		 = new double [geometry->GetnPoint()];
+//				aux_wall_pressure_Ion		 = new double [geometry->GetnPoint()];
+//				aux_wall_pressure_Elec		 = new double [geometry->GetnPoint()];
+//				//  if (!adiabatic) aux_heat_transfer 		 	 = new double [geometry->GetnPoint()];
+//				aux_heatflux   = new double*[nSpecies];
+//				aux_pressdrag   = new double*[nSpecies];
+//				aux_visforce   = new double*[nSpecies];
+//				for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//					aux_heatflux[iSpecies]   = new double[geometry->GetnPoint()];
+//					aux_pressdrag[iSpecies]   = new double[geometry->GetnPoint()];
+//					aux_visforce[iSpecies]   = new double[geometry->GetnPoint()];
+//				}
+//
+//
+//
+//				double Mass_0, Mass_1, Mass_2;
+//				Mass_0 = config->GetParticle_Mass(0);
+//				Mass_1 = config->GetParticle_Mass(1);
+//				Mass_2 = config->GetParticle_Mass(2);
+//				Species_0 = 0; Species_1 = 1; Species_2 = 2;
+//				for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+//					aux_friction[iPoint] 			  = 0.0;
+//					aux_wall_temperature_Ar[iPoint]   = 0.0;
+//					aux_wall_numdensity_Ar[iPoint] 	  = 0.0;
+//					aux_wall_temperature_Ion[iPoint]  = 0.0;
+//					aux_wall_numdensity_Ion[iPoint]   = 0.0;
+//					aux_wall_temperature_Elec[iPoint] = 0.0;
+//					aux_wall_numdensity_Elec[iPoint]  = 0.0;
+//					aux_wall_numdensity_diff[iPoint]  = 0.0;
+//					aux_wall_pressure_Ar[iPoint] 	  = 0.0;
+//					aux_wall_pressure_Ion[iPoint]     = 0.0;
+//					aux_wall_pressure_Elec[iPoint]    = 0.0;
+//					for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//						aux_heatflux[iSpecies][iPoint] = 0.0;
+//						aux_pressdrag[iSpecies][iPoint] = 0.0;
+//						aux_visforce[iSpecies][iPoint] = 0.0;
+//					}
+//
+//					//if (!adiabatic) 			aux_heat_transfer[iPoint] 		  = 0.0;
+//				}
+//				for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+//					if (config->GetMarker_All_Plotting(iMarker) == YES)
+//						for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//							iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//							aux_friction[iPoint] 				= 	FlowSolution->GetCSkinFriction(iMarker,iVertex);
+//							aux_wall_temperature_Ar[iPoint] 	= 	FlowSolution->node[iPoint]->GetTemperature_tr(0);
+//							aux_wall_numdensity_Ar[iPoint] 		= 	FlowSolution->node[iPoint]->GetDensity(0)/Mass_0;
+//							aux_wall_temperature_Ion[iPoint] 	= 	FlowSolution->node[iPoint]->GetTemperature_tr(1);
+//							aux_wall_numdensity_Ion[iPoint] 	= 	FlowSolution->node[iPoint]->GetDensity(1)/Mass_1;
+//							aux_wall_temperature_Elec[iPoint] 	= 	FlowSolution->node[iPoint]->GetTemperature_tr(2);
+//							aux_wall_numdensity_Elec[iPoint] 	= 	FlowSolution->node[iPoint]->GetDensity(2)/Mass_2;
+//							aux_wall_numdensity_diff[iPoint] 	= 	FlowSolution->node[iPoint]->GetDensity(2)/Mass_2 - FlowSolution->node[iPoint]->GetDensity(1)/Mass_1;
+//							aux_wall_pressure_Ar[iPoint] 		=   FlowSolution->node[iPoint]->GetPressure(Species_0);
+//							aux_wall_pressure_Ion[iPoint] 		=   FlowSolution->node[iPoint]->GetPressure(Species_1);
+//							aux_wall_pressure_Elec[iPoint] 		=   FlowSolution->node[iPoint]->GetPressure(Species_2);
+//							// if (!adiabatic) aux_heat_transfer[iPoint] 			= 	FlowSolution->GetHeatTransferCoeff(iMarker,0,iVertex);
+//							for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//								aux_heatflux[iSpecies][iPoint]  = 	FlowSolution->GetHeatTransferCoeff(iMarker,iSpecies,iVertex);
+//								aux_pressdrag[iSpecies][iPoint]  = 	FlowSolution->GetPressureForce(iMarker,iSpecies,0,iVertex);
+//								aux_visforce[iSpecies][iPoint]  = 	FlowSolution->GetViscForce(iMarker,iSpecies,0,iVertex);
+//							}
+//
+//						}
+//				break;
+//
+//			case N2: case O2: case AIR5: case AIR7:
+//
+//				/*--- Allocate arrays ---*/
+//				aux_temp_tr    = new double*[nSpecies];
+//				aux_temp_vib   = new double*[nSpecies];
+//				aux_numdensity = new double*[nSpecies];
+//				aux_heatflux   = new double*[nSpecies];
+//				aux_partpress  = new double*[nSpecies];
+//				for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//					aux_temp_tr[iSpecies]    = new double[geometry->GetnPoint()];
+//					aux_temp_vib[iSpecies]   = new double[geometry->GetnPoint()];
+//					aux_numdensity[iSpecies] = new double[geometry->GetnPoint()];
+//					aux_heatflux[iSpecies]   = new double[geometry->GetnPoint()];
+//					aux_partpress[iSpecies]  = new double[geometry->GetnPoint()];
+//				}
+//
+//				/*--- Initialize arrays ---*/
+//				for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//					for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+//						aux_temp_tr[iSpecies][iPoint]    = 0.0;
+//						aux_temp_vib[iSpecies][iPoint]   = 0.0;
+//						aux_partpress[iSpecies][iPoint]  = 0.0;
+//						aux_numdensity[iSpecies][iPoint] = 0.0;
+//						aux_heatflux[iSpecies][iPoint]   = 0.0;
+//					}
+//				}
+//				for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+//					if (config->GetMarker_All_Plotting(iMarker) == YES) {
+//						for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//							iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//							for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//								aux_temp_tr[iSpecies][iPoint]    = FlowSolution->node[iPoint]->GetPrimVar(iSpecies, 0);
+//								aux_temp_vib[iSpecies][iPoint]   = FlowSolution->node[iPoint]->GetPrimVar(iSpecies, nDim+1);
+//								aux_partpress[iSpecies][iPoint]  = FlowSolution->node[iPoint]->GetPrimVar(iSpecies, nDim+2);
+//								aux_numdensity[iSpecies][iPoint] = FlowSolution->node[iPoint]->GetPrimVar(iSpecies, nDim+3)
+//                                    		/ (config->GetMolar_Mass(iSpecies)) * AVOGAD_CONSTANT;
+//								aux_heatflux[iSpecies][iPoint]   = FlowSolution->GetHeatTransferCoeff(iMarker,iSpecies,iVertex);
+//							}
+//						}
+//					}
+//				}
+//
+//				break;
+//			}
+//
+//		}
+//
+//		/*--- Compute relative velocities for rotating frame Euler  ---*/
+//		if (rotating_frame && (solver == EULER)) {
+//			double rel_velocity_mag, rel_velocity[3] = {0.0,0.0,0.0};
+//			for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) aux_rel_mach[iPoint] = 0.0;
+//			for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+//				if (config->GetMarker_All_Plotting(iMarker) == YES)
+//					for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//						iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//						double *rot_vel = geometry->node[iPoint]->GetRotVel();
+//						rel_velocity_mag = 0.0;
+//						for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
+//							rel_velocity[iDim] = FlowSolution->node[iPoint]->GetVelocity(iDim, config->GetIncompressible()) - rot_vel[iDim];
+//							rel_velocity_mag  += rel_velocity[iDim]*rel_velocity[iDim];
+//						}
+//						aux_rel_mach[iPoint]  = sqrt(rel_velocity_mag)/FlowSolution->node[iPoint]->GetSoundSpeed();
+//					}
+//		}
+//
+//
+//		for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+//
+//			/*--- Write the coordinates ---*/
+//			for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
+//				if (geometry->node[iPoint]->GetBoundary())
+//					SurfFlow_file <<" "<< geometry->node[iPoint]->GetCoord(iDim);
+//
+//			/*--- Write the Euler variables ---*/
+//			if ((solver == EULER) || (solver == NAVIER_STOKES) || (solver == RANS) ||
+//					(solver == FREE_SURFACE_EULER) || (solver == FREE_SURFACE_NAVIER_STOKES) || (solver == FREE_SURFACE_RANS)) {
+//				if (geometry->node[iPoint]->GetBoundary()) SurfFlow_file << " " << aux_press[iPoint];
+//			}
+//
+//			/*--- Write the Mach number ---*/
+//			if ((solver == EULER || (solver == FREE_SURFACE_EULER))) {
+//				if (incompressible) {
+//					double Density = FlowSolution->node[iPoint]->GetDensityInc()*config->GetDensity_Ref();
+//					double SoundSpeed = sqrt(config->GetBulk_Modulus()/Density);
+//					Mach = sqrt(FlowSolution->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/SoundSpeed;
+//				}
+//				else Mach = sqrt(FlowSolution->node[iPoint]->GetVelocity2())/FlowSolution->node[iPoint]->GetSoundSpeed();
+//				if (geometry->node[iPoint]->GetBoundary()) SurfFlow_file << " " << Mach;
+//			}
+//
+//			/*--- Write the skin friction coefficient variables ---*/
+//			if ((solver == NAVIER_STOKES) || (solver == RANS) || (solver == FREE_SURFACE_NAVIER_STOKES) || (solver == FREE_SURFACE_RANS)) {
+//				if (geometry->node[iPoint]->GetBoundary()) {
+//					if (incompressible) SurfFlow_file << " " << aux_friction[iPoint] << " " << aux_y_plus[iPoint];
+//					else SurfFlow_file << " " << aux_friction[iPoint] << " " << aux_heat_transfer[iPoint] << " " << aux_y_plus[iPoint];
+//				}
+//			}
+//
+//			if (solver == PLASMA_NAVIER_STOKES) {
+//				unsigned short iSpecies;
+//				unsigned short nSpecies = FlowSolution->GetnSpecies();
+//
+//				switch (config->GetKind_GasModel()) {
+//				case ARGON:
+//					if (geometry->node[iPoint]->GetBoundary()) {
+//						SkinFrictionCoeff 	= aux_friction[iPoint]; 				SurfFlow_file << " " << SkinFrictionCoeff;
+//						WallTemperature 	= aux_wall_temperature_Ar[iPoint]; 		SurfFlow_file << " " << WallTemperature;
+//						WallNumDensity 		= aux_wall_numdensity_Ar[iPoint]; 		SurfFlow_file << " " << WallNumDensity;
+//						WallTemperature 	= aux_wall_temperature_Ion[iPoint]; 	SurfFlow_file << " " << WallTemperature;
+//						WallNumDensity 		= aux_wall_numdensity_Ion[iPoint]; 		SurfFlow_file << " " << WallNumDensity;
+//						WallTemperature 	= aux_wall_temperature_Elec[iPoint]; 	SurfFlow_file << " " << WallTemperature;
+//						WallNumDensity 		= aux_wall_numdensity_Elec[iPoint]; 	SurfFlow_file << " " << WallNumDensity;
+//						WallNumDensity 		= aux_wall_numdensity_diff[iPoint]; 	SurfFlow_file << " " << WallNumDensity;
+//						WallPressure 		= aux_wall_pressure_Ar[iPoint]; 		SurfFlow_file << " " << WallPressure;
+//						WallPressure 		= aux_wall_pressure_Ion[iPoint]; 		SurfFlow_file << " " << WallPressure;
+//						WallPressure 		= aux_wall_pressure_Elec[iPoint]; 		SurfFlow_file << " " << WallPressure;
+//						for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//							HeatTransferCoeff 	= aux_heatflux[iSpecies][iPoint]; SurfFlow_file << " " << HeatTransferCoeff;
+//							HeatTransferCoeff 	= aux_pressdrag[iSpecies][iPoint]; SurfFlow_file << " " << HeatTransferCoeff;
+//							HeatTransferCoeff 	= aux_visforce[iSpecies][iPoint]; SurfFlow_file << " " << HeatTransferCoeff;
+//
+//						}
+//
+//					}
+//					break;
+//
+//				case N2: case O2: case AIR5: case AIR7:
+//					if (geometry->node[iPoint]->GetBoundary()) {
+//						for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//							WallTemperature     = aux_temp_tr[iSpecies][iPoint];      SurfFlow_file << " " << WallTemperature;
+//							WallTemperature_vib = aux_temp_vib[iSpecies][iPoint];     SurfFlow_file << " " << WallTemperature_vib;
+//							WallPressure        = aux_partpress[iSpecies][iPoint];    SurfFlow_file << " " << WallPressure;
+//							WallNumDensity      = aux_numdensity[iSpecies][iPoint];   SurfFlow_file << " " << WallNumDensity;
+//							WallHeatFlux        = aux_heatflux[iSpecies][iPoint];     SurfFlow_file << " " << WallHeatFlux;
+//						}
+//					}
+//					break;
+//				}
+//
+//			}
+//
+//			/*--- Write the relative mach number ---*/
+//			if (rotating_frame && (solver == EULER)) {
+//				if (geometry->node[iPoint]->GetBoundary()) SurfFlow_file << " " << aux_rel_mach[iPoint];
+//			}
+//
+//			/*--- End line ---*/
+//			if (geometry->node[iPoint]->GetBoundary()) SurfFlow_file << endl;
+//		}
+//
+//		/*--- Write the cells using the new numbering ---*/
+//		unsigned long iElem;
+//		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+//			if (config->GetMarker_All_Plotting(iMarker) == YES)
+//				for(iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
+//					if (geometry->bound[iMarker][iElem]->GetVTK_Type() == LINE) {
+//						SurfFlow_file <<
+//								PointSurface[geometry->bound[iMarker][iElem]->GetNode(0)]+1 <<" "<< PointSurface[geometry->bound[iMarker][iElem]->GetNode(1)]+1 << endl;
+//					}
+//					if (geometry->bound[iMarker][iElem]->GetVTK_Type() == TRIANGLE) {
+//						SurfFlow_file <<
+//								PointSurface[geometry->bound[iMarker][iElem]->GetNode(0)]+1 <<" "<< PointSurface[geometry->bound[iMarker][iElem]->GetNode(1)]+1 <<" "<<
+//								PointSurface[geometry->bound[iMarker][iElem]->GetNode(2)]+1 <<" "<< PointSurface[geometry->bound[iMarker][iElem]->GetNode(2)]+1 << endl;
+//					}
+//					if (geometry->bound[iMarker][iElem]->GetVTK_Type() == RECTANGLE) {
+//						SurfFlow_file <<
+//								PointSurface[geometry->bound[iMarker][iElem]->GetNode(0)]+1 <<" "<< PointSurface[geometry->bound[iMarker][iElem]->GetNode(1)]+1 <<" "<<
+//								PointSurface[geometry->bound[iMarker][iElem]->GetNode(2)]+1 <<" "<< PointSurface[geometry->bound[iMarker][iElem]->GetNode(3)]+1 << endl;
+//					}
+//				}
+//
+//		delete [] aux_press;
+//		delete [] aux_friction;
+//		delete [] aux_heat_transfer;
+//		delete [] aux_y_plus;
+//		if (rotating_frame && (solver == EULER)) delete[] aux_rel_mach;
+//		delete [] PointSurface;
+//		SurfFlow_file.close();
+//
+//		if(solver == PLASMA_NAVIER_STOKES) {
+//			switch(config->GetKind_GasModel()) {
+//			case ARGON:
+//				delete[]  aux_wall_temperature_Ar;
+//				delete[]  aux_wall_temperature_Ion;
+//				delete[]  aux_wall_temperature_Elec;
+//				delete[]  aux_wall_numdensity_Ar;
+//				delete[]  aux_wall_numdensity_Ion;
+//				delete[]  aux_wall_numdensity_Elec;
+//				delete[]  aux_wall_numdensity_diff;
+//				delete[]  aux_wall_pressure_Ar;
+//				delete[]  aux_wall_pressure_Ion;
+//				delete[]  aux_wall_pressure_Elec;
+//				for (iSpecies=0; iSpecies < FlowSolution->GetnSpecies(); iSpecies++) {
+//					delete [] aux_heatflux[iSpecies];
+//					delete [] aux_pressdrag[iSpecies];
+//					delete [] aux_visforce[iSpecies];
+//
+//				}
+//				delete [] aux_heatflux;
+//				delete [] aux_pressdrag;
+//				delete [] aux_visforce;
+//
+//				break;
+//
+//			case N2: case O2: case AIR5: case AIR7:
+//				for (iSpecies=0; iSpecies < FlowSolution->GetnSpecies(); iSpecies++) {
+//					delete [] aux_temp_tr[iSpecies];
+//					delete [] aux_temp_vib[iSpecies];
+//					delete [] aux_partpress[iSpecies];
+//					delete [] aux_numdensity[iSpecies];
+//					delete [] aux_heatflux[iSpecies];
+//				}
+//				delete [] aux_temp_tr;
+//				delete [] aux_temp_vib;
+//				delete [] aux_partpress;
+//				delete [] aux_numdensity;
+//				delete [] aux_heatflux;
+//			}
+//
+//		}
+//
+//	}
+//
+//}
+//
+//void COutput::SetSurface_Adjoint(CConfig *config, CGeometry *geometry, CSolution *AdjSolution, CSolution *FlowSolution, unsigned long iExtIter, unsigned short iZone) {
+//
+//	unsigned long iPoint, iVertex, iElem;
+//	double *aux_sens, sens_value;
+//	unsigned short iMarker, iDim;
+//	char cstr[200], buffer[50];
+//	ofstream SurfAdj_file;
+//
+//	if (config->GetOutput_FileFormat() == PARAVIEW) {
+//
+//		/*--- Write the surface .vtk file ---*/
+//		strcpy (cstr, config->GetSurfAdjCoeff_FileName().c_str());
+//		if (config->GetUnsteady_Simulation() != NO)
+//			sprintf (buffer, "_%d.vtk", int(iExtIter));
+//		else
+//			sprintf (buffer, ".vtk");
+//
+//		strcat(cstr, buffer);
+//
+//		/*--- Write the geometrical information on the output file ---*/
+//		geometry->SetBoundParaView (config, cstr);
+//
+//		/*--- Open the output file ---*/
+//		SurfAdj_file.precision(15);
+//		SurfAdj_file.open(cstr, ios::out | ios::app);
+//
+//		/*--- It is necessary to go from point to vertex, and an auxiliar variable is created ---*/
+//		aux_sens = new double [geometry->GetnPoint()];
+//
+//		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) aux_sens[iPoint] = 0.0;
+//		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+//			if (config->GetMarker_All_Plotting(iMarker) == YES)
+//				for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//					iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//					aux_sens[iPoint] = AdjSolution->GetCSensitivity(iMarker,iVertex);
+//				}
+//
+//		SurfAdj_file << "SCALARS Shape_Sensitivity float 1" << endl;
+//		SurfAdj_file << "LOOKUP_TABLE default" << endl;
+//		for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+//			if (geometry->node[iPoint]->GetBoundary()) {
+//				sens_value = aux_sens[iPoint];
+//				SurfAdj_file << scientific << sens_value << endl;
+//			}
+//		delete [] aux_sens;
+//
+//		SurfAdj_file << "SCALARS PsiRho float 1" << endl;
+//		SurfAdj_file << "LOOKUP_TABLE default" << endl;
+//		for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+//			if (geometry->node[iPoint]->GetBoundary())
+//				SurfAdj_file << AdjSolution->node[iPoint]->GetSolution(0) << endl;
+//
+//		SurfAdj_file.close();
+//	}
+//
+//	if (config->GetOutput_FileFormat() == TECPLOT) {
+//
+//		/*--- Write the surface .plt file ---*/
+//		strcpy (cstr, config->GetSurfAdjCoeff_FileName().c_str());
+//
+//		if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+//			if (int(iZone) < 10) sprintf (buffer, "_0000%d.plt", int(iZone));
+//			if ((int(iZone) >= 10) && (int(iZone) < 100)) sprintf (buffer, "_000%d.plt", int(iZone));
+//			if ((int(iZone) >= 100) && (int(iZone) < 1000)) sprintf (buffer, "_00%d.plt", int(iZone));
+//			if ((int(iZone) >= 1000) && (int(iZone) < 10000)) sprintf (buffer, "_0%d.plt", int(iZone));
+//			if (int(iZone) >= 10000) sprintf (buffer, "_%d.plt", int(iZone));
+//
+//		}
+//
+//		else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
+//			if ((int(iExtIter) >= 0) && (int(iExtIter) < 10)) sprintf (buffer, "_0000%d.plt", int(iExtIter));
+//			if ((int(iExtIter) >= 10) && (int(iExtIter) < 100)) sprintf (buffer, "_000%d.plt", int(iExtIter));
+//			if ((int(iExtIter) >= 100) && (int(iExtIter) < 1000)) sprintf (buffer, "_00%d.plt", int(iExtIter));
+//			if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d.plt", int(iExtIter));
+//			if (int(iExtIter) >= 10000) sprintf (buffer, "_%d.plt", int(iExtIter));
+//		}
+//		else
+//			sprintf (buffer, ".plt");
+//
+//		strcat(cstr, buffer);
+//
+//		/*--- Open the output file ---*/
+//		SurfAdj_file.precision(15);
+//		SurfAdj_file.open(cstr, ios::out);
+//
+//		SurfAdj_file << "TITLE = \"Visualization of the surface grid\"" << endl;
+//		if (geometry->GetnDim() == 2) SurfAdj_file << "VARIABLES = \"x\", \"y\"";
+//		if (geometry->GetnDim() == 3) SurfAdj_file << "VARIABLES = \"x\", \"y\", \"z\"";
+//		SurfAdj_file << ", \"Shape_Sensitivity\", \"PsiRho\"";
+//		SurfAdj_file << endl;
+//
+//		/*--- It is important to do a renumering to don't add points that do not belong to the surfaces ---*/
+//		unsigned long *PointSurface = new unsigned long[geometry->GetnPoint()];
+//
+//		unsigned long nPointSurface = 0;
+//		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+//			if (geometry->node[iPoint]->GetBoundary()) {
+//				PointSurface[iPoint] = nPointSurface;
+//				nPointSurface++;
+//			}
+//
+//		/*--- Compute the total number of elements ---*/
+//		unsigned long nElemSurface = 0;
+//		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+//			if (config->GetMarker_All_Plotting(iMarker) == YES) {
+//				nElemSurface += geometry->GetnElem_Bound(iMarker);
+//			}
+//
+//		SurfAdj_file << "ZONE ";
+//		if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady())
+//			SurfAdj_file << "STRANDID="<<int(iExtIter+1)<<", SOLUTIONTIME="<<config->GetDelta_UnstTime()*int(iExtIter+1)<<", ";
+//
+//		if (config->GetUnsteady_Simulation() == TIME_SPECTRAL)
+//			SurfAdj_file << "STRANDID="<<int(iZone)<<", SOLUTIONTIME="<<config->GetDelta_UnstTime()*int(iZone)<<", ";
+//
+//		SurfAdj_file << "NODES="<< nPointSurface <<" , ELEMENTS="<< nElemSurface <<", DATAPACKING=POINT";
+//
+//		if (geometry->GetnDim() == 2) SurfAdj_file << ", ZONETYPE=FELINESEG" << endl;
+//		if (geometry->GetnDim() == 3) SurfAdj_file << ", ZONETYPE=FEQUADRILATERAL"<< endl;
+//
+//		/*--- It is necessary to go from point to vertex, and an auxiliar variable is created ---*/
+//		aux_sens = new double [geometry->GetnPoint()];
+//
+//		for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) aux_sens[iPoint] = 0.0;
+//		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+//			if (config->GetMarker_All_Plotting(iMarker) == YES)
+//				for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//					iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//					aux_sens[iPoint] = AdjSolution->GetCSensitivity(iMarker,iVertex);
+//				}
+//
+//		for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+//
+//			/*--- Write the coordinates ---*/
+//			for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
+//				if (geometry->node[iPoint]->GetBoundary())
+//					SurfAdj_file <<" "<< geometry->node[iPoint]->GetCoord(iDim);
+//
+//			/*--- Write the sensitivity variables ---*/
+//			if (geometry->node[iPoint]->GetBoundary()) SurfAdj_file << " " << aux_sens[iPoint];
+//
+//			/*--- Write the adjoint density ---*/
+//			if (geometry->node[iPoint]->GetBoundary()) SurfAdj_file << " " << AdjSolution->node[iPoint]->GetSolution(0);
+//
+//			/*--- End line ---*/
+//			if (geometry->node[iPoint]->GetBoundary()) SurfAdj_file << endl;
+//		}
+//
+//		/*--- Write the cells using the new numbering ---*/
+//		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+//			if (config->GetMarker_All_Plotting(iMarker) == YES)
+//				for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
+//					if (geometry->bound[iMarker][iElem]->GetVTK_Type() == LINE) {
+//						SurfAdj_file <<
+//								PointSurface[geometry->bound[iMarker][iElem]->GetNode(0)]+1 <<" "<< PointSurface[geometry->bound[iMarker][iElem]->GetNode(1)]+1 << endl;
+//					}
+//					if (geometry->bound[iMarker][iElem]->GetVTK_Type() == TRIANGLE) {
+//						SurfAdj_file <<
+//								PointSurface[geometry->bound[iMarker][iElem]->GetNode(0)]+1 <<" "<< PointSurface[geometry->bound[iMarker][iElem]->GetNode(1)]+1 <<" "<<
+//								PointSurface[geometry->bound[iMarker][iElem]->GetNode(2)]+1 <<" "<< PointSurface[geometry->bound[iMarker][iElem]->GetNode(2)]+1 << endl;
+//					}
+//					if (geometry->bound[iMarker][iElem]->GetVTK_Type() == RECTANGLE) {
+//						SurfAdj_file <<
+//								PointSurface[geometry->bound[iMarker][iElem]->GetNode(0)]+1 <<" "<< PointSurface[geometry->bound[iMarker][iElem]->GetNode(1)]+1 <<" "<<
+//								PointSurface[geometry->bound[iMarker][iElem]->GetNode(2)]+1 <<" "<< PointSurface[geometry->bound[iMarker][iElem]->GetNode(3)]+1 << endl;
+//					}
+//				}
+//
+//		delete [] aux_sens;
+//		delete [] PointSurface;
+//		SurfAdj_file.close();
+//
+//	}
+//
+//}
+//
+//void COutput::SetSurface_Linearized(CConfig *config, CGeometry *geometry, CSolution *LinSolution, string val_filename, unsigned long iExtIter) { }
 
 void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry, CSolution *FlowSolution, unsigned long iExtIter) {
 
@@ -1501,12 +1505,15 @@ void COutput::SetSurfaceCSV_Linearized(CConfig *config, CGeometry *geometry, CSo
 void COutput::MergeGeometry(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
 
 	int rank = MASTER_NODE;
+  int size = 1;
+
 #ifndef NO_MPI
 	rank = MPI::COMM_WORLD.Get_rank();
+  size = MPI::COMM_WORLD.Get_size();
 #endif
 
 	/*--- Get the file output format ---*/
-
+  
 	unsigned short FileFormat = config->GetOutput_FileFormat();
 
 	bool dynamic_mesh = (config->GetUnsteady_Simulation() &&
@@ -1518,24 +1525,53 @@ void COutput::MergeGeometry(CConfig *config, CGeometry *geometry, unsigned short
 
 	if (!wrote_base_file) {
 
-		MergeConnectivity(config, geometry, TRIANGLE    );
-		MergeConnectivity(config, geometry, RECTANGLE   );
-		MergeConnectivity(config, geometry, TETRAHEDRON );
-		MergeConnectivity(config, geometry, HEXAHEDRON  );
-		MergeConnectivity(config, geometry, WEDGE       );
-		MergeConnectivity(config, geometry, PYRAMID     );
+    /*--- Merge volumetric grid. ---*/
 
-		/*--- Update total number of elements after merge. ---*/
+		MergeVolumetricConnectivity(config, geometry, TRIANGLE    );
+    if ((rank == MASTER_NODE) && (size != 1) && (nGlobal_Tria != 0)) cout <<"Merging volumetric triangle grid connectivity." << endl;
+
+		MergeVolumetricConnectivity(config, geometry, RECTANGLE   );
+    if ((rank == MASTER_NODE) && (size != 1) && (nGlobal_Quad != 0)) cout <<"Merging volumetric rectangle grid connectivity." << endl;
+
+		MergeVolumetricConnectivity(config, geometry, TETRAHEDRON );
+    if ((rank == MASTER_NODE) && (size != 1) && (nGlobal_Tetr != 0)) cout <<"Merging volumetric tetrahedron grid connectivity." << endl;
+
+		MergeVolumetricConnectivity(config, geometry, HEXAHEDRON  );
+    if ((rank == MASTER_NODE) && (size != 1) && (nGlobal_Hexa != 0)) cout <<"Merging volumetric hexahedron grid connectivity." << endl;
+
+		MergeVolumetricConnectivity(config, geometry, WEDGE       );
+    if ((rank == MASTER_NODE) && (size != 1) && (nGlobal_Wedg != 0)) cout <<"Merging volumetric wedge grid connectivity." << endl;
+
+		MergeVolumetricConnectivity(config, geometry, PYRAMID     );
+    if ((rank == MASTER_NODE) && (size != 1) && (nGlobal_Pyra != 0)) cout <<"Merging volumetric pyramid grid connectivity." << endl;
+
+    /*--- Merge surface grid. ---*/
+    
+    MergeSurfaceConnectivity(config, geometry, LINE      );
+    if ((rank == MASTER_NODE) && (size != 1) && (nGlobal_Line != 0)) cout <<"Merging surface line grid connectivity." << endl;
+
+		MergeSurfaceConnectivity(config, geometry, TRIANGLE  );
+    if ((rank == MASTER_NODE) && (size != 1) && (nGlobal_BoundTria != 0)) cout <<"Merging surface triangle grid connectivity." << endl;
+
+		MergeSurfaceConnectivity(config, geometry, RECTANGLE );
+    if ((rank == MASTER_NODE) && (size != 1) && (nGlobal_BoundQuad != 0)) cout <<"Merging surface rectangle grid connectivity." << endl;
+
+
+		/*--- Update total number of volumetric elements after merge. ---*/
 
 		nGlobal_Elem = nGlobal_Tria + nGlobal_Quad + nGlobal_Tetr +
 				nGlobal_Hexa + nGlobal_Pyra + nGlobal_Wedg;
+    
+    /*--- Update total number of surface elements after merge. ---*/
+    
+    nSurf_Elem = nGlobal_Line + nGlobal_BoundTria + nGlobal_BoundQuad;
 
 		/*--- Write the connectivity to the base binary output file, then
          clear the memory immediately for the rest of the computation. ---*/
 
 		if (rank == MASTER_NODE && FileFormat == CGNS_SOL) {
 			SetCGNS_Connectivity(config, geometry, val_iZone);
-			DeallocateConnectivity(config, geometry);
+			DeallocateConnectivity(config, geometry, false);
 		}
 
 	}
@@ -1544,8 +1580,10 @@ void COutput::MergeGeometry(CConfig *config, CGeometry *geometry, unsigned short
      Note that this also only needs to be done once, unless it is an
      unsteady simulation with grid motion. ---*/
 
-	if (!wrote_base_file || dynamic_mesh)
+	if (!wrote_base_file || dynamic_mesh) {
+    if ((rank == MASTER_NODE) && (size != 1)) cout <<"Merging grid coordinates." << endl;
 		MergeCoordinates(config, geometry);
+  }
 
 	if (rank == MASTER_NODE) {
 
@@ -1554,7 +1592,7 @@ void COutput::MergeGeometry(CConfig *config, CGeometry *geometry, unsigned short
 			if (!wrote_base_file || dynamic_mesh) DeallocateCoordinates(config, geometry);
 		} else if (FileFormat == TECPLOT_BINARY) {
 			SetTecplot_Mesh(config, geometry, val_iZone);
-			if (!wrote_base_file) DeallocateConnectivity(config, geometry);
+			if (!wrote_base_file) DeallocateConnectivity(config, geometry, false);
 		}
 	}
 
@@ -1566,14 +1604,14 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
 
 	unsigned short iDim, nDim = geometry->GetnDim();
 	unsigned long iPoint, jPoint;
-
+  
 #ifdef NO_MPI
 
 	/*--- In serial, the single process has access to all geometry, so simply
      load the coordinates into the data structure. ---*/
 
 	/*--- Total number of points in the mesh (excluding halos). ---*/
-	nGlobal_Poin = geometry->GetnPoint(); //geometry->GetnPointDomain(); (F.P.)
+  nGlobal_Poin = geometry->GetnPointDomain();
 	nGlobal_Doma = geometry->GetnPointDomain();
 
 	/*--- Allocate the coordinates data structure. ---*/
@@ -1589,26 +1627,27 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
 
 		/*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-		//    if (geometry->node[iPoint]->GetDomain()) {  (F.P.)
-
-		/*--- Retrieve the current coordinates at this node. ---*/
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Coords[iDim][jPoint] = geometry->node[iPoint]->GetCoord(iDim);
+		if (geometry->node[iPoint]->GetDomain()) {
+      
+      /*--- Retrieve the current coordinates at this node. ---*/
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Coords[iDim][jPoint] = geometry->node[iPoint]->GetCoord(iDim);
+      }
+      
+      /*--- Increment a counter since we may be skipping over
+       some halo nodes during this loop. ---*/
+      jPoint++;
 		}
-
-		/*--- Increment a counter since we may be skipping over
-         some halo nodes during this loop. ---*/
-		jPoint++;
-		//    }  (F.P.)
 	}
 
 #else
 
 	/*--- MPI preprocessing ---*/
-
 	int iProcessor;
 	int nProcessor = MPI::COMM_WORLD.Get_size();
 	int rank = MPI::COMM_WORLD.Get_rank();
+
+  bool Wrt_Halo = config->GetWrt_Halo();
 
 	/*--- Local variables needed for merging the geometry with MPI. ---*/
 
@@ -1632,7 +1671,10 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
 
 	/*--- Each processor sends its local number of nodes to the master. ---*/
 
-	nLocalPoint = geometry->GetnPoint(); //geometry->GetnPointDomain();  (F.P.)
+  if (Wrt_Halo) {
+    nLocalPoint = geometry->GetnPoint();
+  } else
+  nLocalPoint = geometry->GetnPointDomain();
 	Buffer_Send_nPoin[0] = nLocalPoint;
 	MPI::COMM_WORLD.Barrier();
 	MPI::COMM_WORLD.Allreduce(&nLocalPoint, &MaxLocalPoint,
@@ -1684,23 +1726,25 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
      Note that we are NOT including the halo nodes here. ---*/
 	double *Coords_Local; jPoint = 0;
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-		//    if (geometry->node[iPoint]->GetDomain()) {  (F.P.)
-
-		/*--- Retrieve local coordinates at this node. ---*/
-		Coords_Local = geometry->node[iPoint]->GetCoord();
-
-		/*--- Load local coords into the temporary send buffer. ---*/
-		Buffer_Send_X[jPoint] = Coords_Local[0];
-		Buffer_Send_Y[jPoint] = Coords_Local[1];
-		if (nDim == 3) Buffer_Send_Z[jPoint] = Coords_Local[2];
-
-		/*--- Store the global index for this local node. ---*/
-		Buffer_Send_GlobalIndex[jPoint] = geometry->node[iPoint]->GetGlobalIndex();
-
-		/*--- Increment jPoint as the counter. We need this because iPoint
-         may include halo nodes that we skip over during this loop. ---*/
-		jPoint++;
-		//    }  (F.P.)
+    
+    /*--- Check for halos and write only if requested ---*/
+		if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
+      
+      /*--- Retrieve local coordinates at this node. ---*/
+      Coords_Local = geometry->node[iPoint]->GetCoord();
+      
+      /*--- Load local coords into the temporary send buffer. ---*/
+      Buffer_Send_X[jPoint] = Coords_Local[0];
+      Buffer_Send_Y[jPoint] = Coords_Local[1];
+      if (nDim == 3) Buffer_Send_Z[jPoint] = Coords_Local[2];
+      
+      /*--- Store the global index for this local node. ---*/
+      Buffer_Send_GlobalIndex[jPoint] = geometry->node[iPoint]->GetGlobalIndex();
+      
+      /*--- Increment jPoint as the counter. We need this because iPoint
+       may include halo nodes that we skip over during this loop. ---*/
+      jPoint++;
+		}
 	}
 
 	/*--- Gather the coordinate data on the master node using MPI. ---*/
@@ -1758,7 +1802,7 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
 
 }
 
-void COutput::MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
+void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
 
 	int rank = MASTER_NODE;
 #ifndef NO_MPI
@@ -1835,9 +1879,10 @@ void COutput::MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned s
 			}
 
 			/*--- Loop over all nodes in this element and load the
-             connectivity into the temporary array. Do not merge any
-             halo cells (periodic BC). Note that we are adding one to
-             the index value because CGNS/Tecplot use 1-based indexing. ---*/
+       connectivity into the temporary array. Do not merge any
+       halo cells (periodic BC). Note that we are adding one to
+       the index value because CGNS/Tecplot use 1-based indexing. ---*/
+      
 			if (!isHalo) {
 				nElem_Total++;
 				for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
@@ -1859,11 +1904,16 @@ void COutput::MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned s
 
 	/*--- Local variables needed for merging the geometry with MPI. ---*/
 
+  unsigned long iVertex, iMarker;
+  
+  int SendRecv, RecvFrom;
+  
 	unsigned long Buffer_Send_nElem[1], *Buffer_Recv_nElem = NULL;
 	unsigned long nBuffer_Scalar = 0;
 	unsigned long kNode = 0, kElem = 0, pElem = 0;
 	unsigned long MaxLocalElem = 0;
 
+  bool Wrt_Halo = config->GetWrt_Halo();
 	bool *Write_Elem;
 
 	/*--- Find the max number of this element type among all
@@ -1888,6 +1938,10 @@ void COutput::MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned s
 	int *Buffer_Send_Halo = new int[MaxLocalElem];
 	int *Buffer_Recv_Halo = NULL;
 
+  int *Local_Halo = new int[geometry->GetnPoint()];
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+    Local_Halo[iPoint] = false;
+  
 	/*--- Prepare the receive buffers on the master node only. ---*/
 
 	if (rank == MASTER_NODE) {
@@ -1896,30 +1950,53 @@ void COutput::MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned s
 		Conn_Elem = new int[nProcessor*MaxLocalElem*NODES_PER_ELEMENT];
 	}
 
+  /*--- Search all send/recv boundaries on this partition for halo cells. In
+   particular, consider only the recv conditions (these are the true halo
+   nodes). Check the ranks of the processors that are communicating and 
+   choose to keep only the halo cells from the lower rank processor. ---*/
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+		if (config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) {
+			SendRecv = config->GetMarker_All_SendRecv(iMarker);
+			RecvFrom = abs(SendRecv)-1;
+      if (SendRecv < 0 && RecvFrom < rank) {
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          Local_Halo[iPoint] = true;
+        }
+      }
+    }
+  }
+  
 	/*--- Loop over all elements in this partition and load the
      elements of the current type into the buffer to be sent to
      the master node. ---*/
+  
 	jNode = 0; jElem = 0;
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
 		if(geometry->elem[iElem]->GetVTK_Type() == Elem_Type) {
 
 			/*--- Loop over all nodes in this element and load the
              connectivity into the send buffer. ---*/
+      
 			Buffer_Send_Halo[jElem] = false;
 			for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
 
 				/*--- Store the global index values directly. ---*/
+        
 				iPoint = geometry->elem[iElem]->GetNode(iNode);
 				Buffer_Send_Elem[jNode] = (int)geometry->node[iPoint]->GetGlobalIndex();
 
 				/*--- Check if this is a halo node. If so, flag this element
-                 as a halo cell. We will use this later to sort and remove
-                 any duplicates from the connectivity list. ---*/
-				if (!geometry->node[iPoint]->GetDomain())
+         as a halo cell. We will use this later to sort and remove
+         any duplicates from the connectivity list. ---*/
+        
+        if (Local_Halo[iPoint])
 					Buffer_Send_Halo[jElem] = true;
 
 				/*--- Increment jNode as the counter. We need this because iElem
-                 may include other elements that we skip over during this loop. ---*/
+         may include other elements that we skip over during this loop. ---*/
+        
 				jNode++;
 			}
 			jElem++;
@@ -1941,56 +2018,33 @@ void COutput::MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned s
 	if (rank == MASTER_NODE) {
 
 		/*---  We need to remove any duplicate elements (halo cells) that
-         exist on multiple partitions. Start by initializing all elements
-         to the "write" state by using a boolean array. ---*/
+     exist on multiple partitions. Start by initializing all elements
+     to the "write" state by using a boolean array. ---*/
+    
 		Write_Elem = new bool[nProcessor*MaxLocalElem];
 		for (iElem = 0; iElem < nProcessor*MaxLocalElem; iElem++) {
 			Write_Elem[iElem] = true;
 		}
 
-		/*--- Loop for flagging duplicate elements so that they are not
-         included in the final connectivity list. ---*/
-		kElem = 0;
-		for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-			for (iElem = 0; iElem < Buffer_Recv_nElem[iProcessor]; iElem++) {
-
-				/*--- Check if this element was originally marked as a halo. ---*/
-				if (Buffer_Recv_Halo[kElem+iElem]) {
-
-					/*--- Check all other elements flagged as halos on the
-                     remaining processors for duplicates (start at iProcessor+1). ---*/
-					pElem = (iProcessor+1)*MaxLocalElem;
-					for (jProcessor = iProcessor+1; jProcessor < nProcessor; jProcessor++) {
-						for (jElem = 0; jElem < Buffer_Recv_nElem[jProcessor]; jElem++) {
-
-							/*--- Check if this element was originally marked as a halo. ---*/
-							if (Buffer_Recv_Halo[pElem+jElem]) {
-
-								/*--- Check for a duplicate by comparing the index of each
-                                 node in the element. ---*/
-								bool isDuplicate = true;
-								for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
-									if (Buffer_Recv_Elem[kElem*NODES_PER_ELEMENT+iElem*NODES_PER_ELEMENT+iNode] !=
-											Buffer_Recv_Elem[pElem*NODES_PER_ELEMENT+jElem*NODES_PER_ELEMENT+iNode])
-										isDuplicate = false;
-								}
-
-								/*--- If we have found a duplicate element, set both the
-                                 original flag and "write" state booleans to false. In this
-                                 way, this element will not be found as we continue searching
-                                 and it will not be written to the connectivity list. ---*/
-								if (isDuplicate) {
-									Buffer_Recv_Halo[pElem+jElem] = false;
-									Write_Elem[pElem+jElem] = false;
-								}
-							}
-						}
-						pElem = (jProcessor+1)*MaxLocalElem;
-					}
-				}
-			}
-			kElem = (iProcessor+1)*MaxLocalElem;
-		}
+    /*--- Remove the rind layer from the solution only if requested ---*/
+    
+    if (!Wrt_Halo) {
+      
+      /*--- Loop for flagging duplicate elements so that they are not
+       included in the final connectivity list. ---*/
+      
+      kElem = 0;
+      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        for (iElem = 0; iElem < Buffer_Recv_nElem[iProcessor]; iElem++) {
+          
+          /*--- Check if this element was marked as a halo. ---*/
+          if (Buffer_Recv_Halo[kElem+iElem])
+            Write_Elem[kElem+iElem] = false;
+            
+          }
+        kElem = (iProcessor+1)*MaxLocalElem;
+      }
+    }
 
 		/*--- Store the unique connectivity list for this element type. ---*/
 
@@ -2005,8 +2059,9 @@ void COutput::MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned s
 					nElem_Total++;
 
 					/*--- Get global index, then loop over each variable and store.
-                     Note that we are adding one to the index value because CGNS/Tecplot
-                     use 1-based indexing.---*/
+           Note that we are adding one to the index value because CGNS/Tecplot
+           use 1-based indexing.---*/
+          
 					for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
 						Conn_Elem[kNode] = Buffer_Recv_Elem[jNode+iElem*NODES_PER_ELEMENT+iNode] + 1;
 						kNode++;
@@ -2022,6 +2077,7 @@ void COutput::MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned s
 	/*--- Immediately release the temporary buffers. ---*/
 	delete [] Buffer_Send_Elem;
 	delete [] Buffer_Send_Halo;
+  delete [] Local_Halo;
 	if (rank == MASTER_NODE) {
 		delete [] Buffer_Recv_nElem;
 		delete [] Buffer_Recv_Elem;
@@ -2031,8 +2087,8 @@ void COutput::MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned s
 
 #endif
 
-/*--- Store the particular global element count in the class data,
-     and set the class data pointer to the connectivity array. ---*/
+  /*--- Store the particular global element count in the class data,
+   and set the class data pointer to the connectivity array. ---*/
 
 	if (rank == MASTER_NODE) {
 		switch (Elem_Type) {
@@ -2068,25 +2124,341 @@ void COutput::MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned s
 
 }
 
-void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **solution, unsigned short val_iZone) {
-
+void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
+  
+	int rank = MASTER_NODE;
+#ifndef NO_MPI
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+  
 	/*--- Local variables needed on all processors ---*/
+  
+	unsigned short NODES_PER_ELEMENT;
+  
+  unsigned short iMarker;
+	unsigned long iPoint, iNode, jNode;
+	unsigned long iElem = 0, jElem = 0;
+	unsigned long nLocalElem = 0, nElem_Total = 0;
+  
+	int *Conn_Elem;
+  
+	/*--- Store the local number of this element type and the number of nodes
+   per this element type. In serial, this will be the total number of this
+   element type in the entire mesh. In parallel, it is the number on only
+   the current partition. ---*/
+  
+  nLocalElem = 0;
 
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+		if (config->GetMarker_All_Plotting(iMarker) == YES) {
+			for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
+        if (geometry->bound[iMarker][iElem]->GetVTK_Type() == Elem_Type) {
+          nLocalElem++;
+        }
+      }
+    }
+  }
+  
+  switch (Elem_Type) {
+    case LINE:
+      NODES_PER_ELEMENT = N_POINTS_LINE;
+      break;
+    case TRIANGLE:
+      NODES_PER_ELEMENT = N_POINTS_TRIANGLE;
+      break;
+    case RECTANGLE:
+      NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
+      break;
+    default:
+      cout << "Error: Unrecognized element type \n";
+      exit(0); break;
+  }
+  
+	/*--- Merge the connectivity in serial or parallel. ---*/
+  
+#ifdef NO_MPI
+  
+	/*--- In serial, the single process has access to all connectivity,
+   so simply load it into the data structure. ---*/
+  
+	/*--- Allocate a temporary array for the connectivity ---*/
+	Conn_Elem = new int[nLocalElem*NODES_PER_ELEMENT];
+  
+	/*--- Load all elements of the current type into the buffer
+   to be sent to the master node. ---*/
+	jNode = 0; jElem = 0; nElem_Total = 0; bool isHalo;
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+		if (config->GetMarker_All_Plotting(iMarker) == YES)
+			for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
+        
+        if (geometry->bound[iMarker][iElem]->GetVTK_Type() == Elem_Type) {
+          
+          /*--- Check if this is a halo node. ---*/
+          isHalo = false;
+          for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
+            iPoint = geometry->bound[iMarker][iElem]->GetNode(iNode);
+            if (!geometry->node[iPoint]->GetDomain())
+              isHalo = true;
+          }
+          
+          /*--- Loop over all nodes in this element and load the
+           connectivity into the temporary array. Do not merge any
+           halo cells (periodic BC). Note that we are adding one to
+           the index value because CGNS/Tecplot use 1-based indexing. ---*/
+          if (!isHalo) {
+            nElem_Total++;
+            for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
+              Conn_Elem[jNode] = (int)geometry->bound[iMarker][iElem]->GetNode(iNode) + 1;
+              
+              /*--- Increment jNode as the counter. ---*/
+              jNode++;
+            }
+          }
+        }
+      }
+  
+#else
+  
+	/*--- MPI preprocessing ---*/
+  
+	int iProcessor, jProcessor;
+	int nProcessor = MPI::COMM_WORLD.Get_size();
+  
+	/*--- Local variables needed for merging the geometry with MPI. ---*/
+  
+  unsigned long iVertex;
+  
+  int SendRecv, RecvFrom;
+  
+	unsigned long Buffer_Send_nElem[1], *Buffer_Recv_nElem = NULL;
+	unsigned long nBuffer_Scalar = 0;
+	unsigned long kNode = 0, kElem = 0, pElem = 0;
+	unsigned long MaxLocalElem = 0;
+  
+  bool Wrt_Halo = config->GetWrt_Halo();
+	bool *Write_Elem;
+  
+	/*--- Find the max number of this element type among all
+   partitions and set up buffers. ---*/
+  
+	Buffer_Send_nElem[0] = nLocalElem;
+	if (rank == MASTER_NODE) Buffer_Recv_nElem = new unsigned long[nProcessor];
+
+	MPI::COMM_WORLD.Barrier();
+	MPI::COMM_WORLD.Allreduce(&nLocalElem, &MaxLocalElem,
+                            1, MPI::UNSIGNED_LONG, MPI::MAX);
+	MPI::COMM_WORLD.Gather(&Buffer_Send_nElem, 1, MPI::UNSIGNED_LONG,
+                         Buffer_Recv_nElem, 1, MPI::UNSIGNED_LONG, MASTER_NODE);
+  
+	nBuffer_Scalar = MaxLocalElem*NODES_PER_ELEMENT;
+  
+	/*--- Send and Recv buffers ---*/
+  
+	int *Buffer_Send_Elem = new int[nBuffer_Scalar];
+	int *Buffer_Recv_Elem = NULL;
+  
+	int *Buffer_Send_Halo = new int[MaxLocalElem];
+	int *Buffer_Recv_Halo = NULL;
+
+  int *Local_Halo = new int[geometry->GetnPoint()];
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+    Local_Halo[iPoint] = false;
+  
+	/*--- Prepare the receive buffers on the master node only. ---*/
+  
+	if (rank == MASTER_NODE) {
+		Buffer_Recv_Elem = new int[nProcessor*nBuffer_Scalar];
+		Buffer_Recv_Halo = new int[nProcessor*MaxLocalElem];
+		Conn_Elem = new int[nProcessor*MaxLocalElem*NODES_PER_ELEMENT];
+	}
+  
+  /*--- Search all send/recv boundaries on this partition for halo cells. In
+   particular, consider only the recv conditions (these are the true halo
+   nodes). Check the ranks of the processors that are communicating and
+   choose to keep only the halo cells from the lower rank processor. ---*/
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+		if (config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) {
+			SendRecv = config->GetMarker_All_SendRecv(iMarker);
+			RecvFrom = abs(SendRecv)-1;
+      if (SendRecv < 0 && RecvFrom < rank) {
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          Local_Halo[iPoint] = true;
+        }
+      }
+    }
+  }
+  
+	/*--- Loop over all elements in this partition and load the
+   elements of the current type into the buffer to be sent to
+   the master node. ---*/
+	jNode = 0; jElem = 0;
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+		if (config->GetMarker_All_Plotting(iMarker) == YES)
+			for(iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
+        
+        if(geometry->bound[iMarker][iElem]->GetVTK_Type() == Elem_Type) {
+          
+          /*--- Loop over all nodes in this element and load the
+           connectivity into the send buffer. ---*/
+          
+          Buffer_Send_Halo[jElem] = false;
+          for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
+            
+            /*--- Store the global index values directly. ---*/
+            
+            iPoint = geometry->bound[iMarker][iElem]->GetNode(iNode);
+            Buffer_Send_Elem[jNode] = (int)geometry->node[iPoint]->GetGlobalIndex();
+            
+            /*--- Check if this is a halo node. If so, flag this element
+             as a halo cell. We will use this later to sort and remove
+             any duplicates from the connectivity list. ---*/
+            
+            if (Local_Halo[iPoint])
+              Buffer_Send_Halo[jElem] = true;
+            
+            /*--- Increment jNode as the counter. We need this because iElem
+             may include other elements that we skip over during this loop. ---*/
+            
+            jNode++;
+          }
+          jElem++;
+        }
+      }
+
+	/*--- Gather the element connectivity information. ---*/
+  
+	MPI::COMM_WORLD.Barrier();
+	MPI::COMM_WORLD.Gather(Buffer_Send_Elem, nBuffer_Scalar, MPI::INT,
+                         Buffer_Recv_Elem, nBuffer_Scalar, MPI::INT,
+                         MASTER_NODE);
+	MPI::COMM_WORLD.Gather(Buffer_Send_Halo, MaxLocalElem, MPI::INT,
+                         Buffer_Recv_Halo, MaxLocalElem, MPI::INT,
+                         MASTER_NODE);
+  
+	/*--- The master node unpacks and sorts the connectivity. ---*/
+  
+	if (rank == MASTER_NODE) {
+    
+    /*---  We need to remove any duplicate elements (halo cells) that
+     exist on multiple partitions. Start by initializing all elements
+     to the "write" state by using a boolean array. ---*/
+    
+    Write_Elem = new bool[nProcessor*MaxLocalElem];
+    for (iElem = 0; iElem < nProcessor*MaxLocalElem; iElem++) {
+      Write_Elem[iElem] = true;
+    }
+    
+    /*--- Remove the rind layer from the solution only if requested ---*/
+    
+    if (!Wrt_Halo) {
+      
+      /*--- Loop for flagging duplicate elements so that they are not
+       included in the final connectivity list. ---*/
+      
+      kElem = 0;
+      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        for (iElem = 0; iElem < Buffer_Recv_nElem[iProcessor]; iElem++) {
+          
+          /*--- Check if this element was marked as a halo. ---*/
+          if (Buffer_Recv_Halo[kElem+iElem])
+            Write_Elem[kElem+iElem] = false;
+          
+        }
+        kElem = (iProcessor+1)*MaxLocalElem;
+      }
+    }
+    
+		/*--- Store the unique connectivity list for this element type. ---*/
+    
+		jNode = 0; kNode = 0; jElem = 0; nElem_Total = 0;
+		for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+			for (iElem = 0; iElem < Buffer_Recv_nElem[iProcessor]; iElem++) {
+        
+				/*--- Only write the elements that were flagged for it. ---*/
+				if (Write_Elem[jElem+iElem]) {
+          
+					/*--- Increment total count for this element type ---*/
+					nElem_Total++;
+          
+					/*--- Get global index, then loop over each variable and store.
+           Note that we are adding one to the index value because CGNS/Tecplot
+           use 1-based indexing.---*/
+          
+					for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
+						Conn_Elem[kNode] = Buffer_Recv_Elem[jNode+iElem*NODES_PER_ELEMENT+iNode] + 1;
+						kNode++;
+					}
+				}
+			}
+			/*--- Adjust jNode to index of next proc's data in the buffers. ---*/
+			jElem = (iProcessor+1)*MaxLocalElem;
+			jNode = (iProcessor+1)*nBuffer_Scalar;
+		}
+	}
+  
+	/*--- Immediately release the temporary buffers. ---*/
+	delete [] Buffer_Send_Elem;
+	delete [] Buffer_Send_Halo;
+  delete [] Local_Halo;
+	if (rank == MASTER_NODE) {
+		delete [] Buffer_Recv_nElem;
+		delete [] Buffer_Recv_Elem;
+		delete [] Buffer_Recv_Halo;
+		delete [] Write_Elem;
+	}
+  
+#endif
+  
+  /*--- Store the particular global element count in the class data,
+   and set the class data pointer to the connectivity array. ---*/
+  
+	if (rank == MASTER_NODE) {
+		switch (Elem_Type) {
+      case LINE:
+        nGlobal_Line = nElem_Total;
+        if (nGlobal_Line > 0) Conn_Line = Conn_Elem;
+        break;
+      case TRIANGLE:
+        nGlobal_BoundTria = nElem_Total;
+        if (nGlobal_BoundTria > 0) Conn_BoundTria = Conn_Elem;
+        break;
+      case RECTANGLE:
+        nGlobal_BoundQuad = nElem_Total;
+        if (nGlobal_BoundQuad > 0) Conn_BoundQuad = Conn_Elem;
+        break;
+      default:
+        cout << "Error: Unrecognized element type \n";
+        exit(0); break;
+		}
+	}
+  
+}
+
+void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **solution, unsigned short val_iZone) {
+  
+	/*--- Local variables needed on all processors ---*/
+  
 	unsigned short Kind_Solver  = config->GetKind_Solver();
 	unsigned short iVar, jVar, iSpecies, FirstIndex = NONE, SecondIndex = NONE, ThirdIndex = NONE;
 	unsigned short nVar_First = 0, nVar_Second = 0, nVar_Third = 0, iVar_Eddy = 0;
-	unsigned short iVar_GridVel = 0, iVar_PressMach = 0, iVar_Density = 0, iVar_TempLam = 0, iVar_Tempv = 0,iVar_MagF = 0, iVar_EF =0, iVar_Temp = 0, iVar_Lam =0, iVar_Mach = 0, iVar_Press = 0;
-
-	unsigned long iPoint = 0, jPoint = 0;
-
+	unsigned short iVar_GridVel = 0, iVar_PressMach = 0, iVar_Density = 0, iVar_TempLam = 0,
+  iVar_Tempv = 0,iVar_MagF = 0, iVar_EF =0, iVar_Temp = 0, iVar_Lam =0, iVar_Mach = 0, iVar_Press = 0,
+  iVar_ViscCoeffs = 0, iVar_Sens = 0;
+  
+	unsigned long iPoint = 0, jPoint = 0, iVertex = 0, iMarker = 0;
+  
+  double *Aux_Press, *Aux_Frict, *Aux_Heat, *Aux_yPlus, *Aux_Sens;
+  
 	bool grid_movement = ((config->GetUnsteady_Simulation() &&
-			config->GetWrt_Unsteady() &&
-			config->GetGrid_Movement()) ||
-			((config->GetUnsteady_Simulation() == TIME_SPECTRAL) &&
-					config->GetGrid_Movement()));
+                         config->GetWrt_Unsteady() &&
+                         config->GetGrid_Movement()) ||
+                        ((config->GetUnsteady_Simulation() == TIME_SPECTRAL) &&
+                         config->GetGrid_Movement()));
 	bool incompressible = config->GetIncompressible();
   bool transition = (config->GetKind_Trans_Model()==LM);
-
+  
 	if (Kind_Solver == AEROACOUSTIC_EULER) {
 		if (val_iZone == ZONE_0) Kind_Solver = EULER;
 		if (val_iZone == ZONE_1) Kind_Solver = WAVE_EQUATION;
@@ -2099,77 +2471,77 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **so
 		if (val_iZone == ZONE_0) Kind_Solver = PLASMA_NAVIER_STOKES;
 		if (val_iZone == ZONE_1) Kind_Solver = ELECTRIC_POTENTIAL;
 	}
-
+  
 	/*--- Prepare send buffers for the conservative variables. Need to
-     find the total number of conservative variables and also the
-     index for their particular solution container. ---*/
+   find the total number of conservative variables and also the
+   index for their particular solution container. ---*/
 	switch (Kind_Solver) {
-	case EULER : case NAVIER_STOKES:
-		FirstIndex = FLOW_SOL; SecondIndex = NONE; ThirdIndex = NONE;
-		break;
-	case PLASMA_EULER : case PLASMA_NAVIER_STOKES:
-		FirstIndex = PLASMA_SOL; SecondIndex = NONE; ThirdIndex = NONE;
-		break;
-	case RANS :
-		FirstIndex = FLOW_SOL; SecondIndex = TURB_SOL;
-    if (transition) ThirdIndex=TRANS_SOL;
-    else ThirdIndex = NONE;
-		break;
-	case FREE_SURFACE_EULER: case FREE_SURFACE_NAVIER_STOKES:
-		FirstIndex = FLOW_SOL; SecondIndex = LEVELSET_SOL; ThirdIndex = NONE;
-		break;
-	case FREE_SURFACE_RANS:
-		FirstIndex = FLOW_SOL; SecondIndex = TURB_SOL; ThirdIndex = LEVELSET_SOL;
-		break;
-	case ELECTRIC_POTENTIAL:
-		FirstIndex = ELEC_SOL; SecondIndex = NONE; ThirdIndex = NONE;
-		break;
-	case WAVE_EQUATION:
-		FirstIndex = WAVE_SOL; SecondIndex = NONE; ThirdIndex = NONE;
-		break;
-	case LINEAR_ELASTICITY:
-		FirstIndex = FEA_SOL; SecondIndex = NONE; ThirdIndex = NONE;
-		break;
-	case ADJ_EULER : case ADJ_NAVIER_STOKES :
-		FirstIndex = ADJFLOW_SOL; SecondIndex = NONE; ThirdIndex = NONE;
-		break;
-	case ADJ_PLASMA_EULER : case ADJ_PLASMA_NAVIER_STOKES :
-		FirstIndex = ADJPLASMA_SOL; SecondIndex = NONE; ThirdIndex = NONE;
-		break;
-	case ADJ_FREE_SURFACE_EULER : case ADJ_FREE_SURFACE_NAVIER_STOKES:  case ADJ_FREE_SURFACE_RANS:
-		FirstIndex = ADJFLOW_SOL; SecondIndex = ADJLEVELSET_SOL; ThirdIndex = NONE;
-		break;
-	case ADJ_RANS :
-		FirstIndex = ADJFLOW_SOL;
-		if ((config->GetFrozen_Visc()) && (config->GetKind_Adjoint() != HYBRID))
-			SecondIndex = NONE;
-		else
-			SecondIndex = ADJTURB_SOL;
-		ThirdIndex = NONE;
-		break;
-	case LIN_EULER : case LIN_NAVIER_STOKES : ThirdIndex = NONE;
-	FirstIndex = LINFLOW_SOL; SecondIndex = NONE;
-	break;
-	default: SecondIndex = NONE; ThirdIndex = NONE;
-	break;
+    case EULER : case NAVIER_STOKES:
+      FirstIndex = FLOW_SOL; SecondIndex = NONE; ThirdIndex = NONE;
+      break;
+    case PLASMA_EULER : case PLASMA_NAVIER_STOKES:
+      FirstIndex = PLASMA_SOL; SecondIndex = NONE; ThirdIndex = NONE;
+      break;
+    case RANS :
+      FirstIndex = FLOW_SOL; SecondIndex = TURB_SOL;
+      if (transition) ThirdIndex=TRANS_SOL;
+      else ThirdIndex = NONE;
+      break;
+    case FREE_SURFACE_EULER: case FREE_SURFACE_NAVIER_STOKES:
+      FirstIndex = FLOW_SOL; SecondIndex = LEVELSET_SOL; ThirdIndex = NONE;
+      break;
+    case FREE_SURFACE_RANS:
+      FirstIndex = FLOW_SOL; SecondIndex = TURB_SOL; ThirdIndex = LEVELSET_SOL;
+      break;
+    case ELECTRIC_POTENTIAL:
+      FirstIndex = ELEC_SOL; SecondIndex = NONE; ThirdIndex = NONE;
+      break;
+    case WAVE_EQUATION:
+      FirstIndex = WAVE_SOL; SecondIndex = NONE; ThirdIndex = NONE;
+      break;
+    case LINEAR_ELASTICITY:
+      FirstIndex = FEA_SOL; SecondIndex = NONE; ThirdIndex = NONE;
+      break;
+    case ADJ_EULER : case ADJ_NAVIER_STOKES :
+      FirstIndex = ADJFLOW_SOL; SecondIndex = NONE; ThirdIndex = NONE;
+      break;
+    case ADJ_PLASMA_EULER : case ADJ_PLASMA_NAVIER_STOKES :
+      FirstIndex = ADJPLASMA_SOL; SecondIndex = NONE; ThirdIndex = NONE;
+      break;
+    case ADJ_FREE_SURFACE_EULER : case ADJ_FREE_SURFACE_NAVIER_STOKES:  case ADJ_FREE_SURFACE_RANS:
+      FirstIndex = ADJFLOW_SOL; SecondIndex = ADJLEVELSET_SOL; ThirdIndex = NONE;
+      break;
+    case ADJ_RANS :
+      FirstIndex = ADJFLOW_SOL;
+      if ((config->GetFrozen_Visc()) && (config->GetKind_Adjoint() != HYBRID))
+        SecondIndex = NONE;
+      else
+        SecondIndex = ADJTURB_SOL;
+      ThirdIndex = NONE;
+      break;
+    case LIN_EULER : case LIN_NAVIER_STOKES : ThirdIndex = NONE;
+      FirstIndex = LINFLOW_SOL; SecondIndex = NONE;
+      break;
+    default: SecondIndex = NONE; ThirdIndex = NONE;
+      break;
 	}
 	nVar_First = solution[FirstIndex]->GetnVar();
 	if (SecondIndex != NONE) nVar_Second = solution[SecondIndex]->GetnVar();
 	if (ThirdIndex != NONE) nVar_Third = solution[ThirdIndex]->GetnVar();
 	nVar_Consv = nVar_First + nVar_Second + nVar_Third;
-    if (config->GetWrt_Residuals()) {
-        nVar_Total = 2*nVar_Consv;
-    } else {
-        nVar_Total = nVar_Consv;
-    }
-
+  if (config->GetWrt_Residuals()) {
+    nVar_Total = 2*nVar_Consv;
+  } else {
+    nVar_Total = nVar_Consv;
+  }
+  
 	/*--- Add the grid velocity to the restart file for the unsteady adjoint ---*/
 	if (grid_movement) {
 		iVar_GridVel = nVar_Total;
 		if (geometry->GetnDim() == 2) nVar_Total += 2;
 		else if (geometry->GetnDim() == 3) nVar_Total += 3;
 	}
-
+  
   if ((Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) ||
 			(Kind_Solver == FREE_SURFACE_RANS)) {
 		/*--- Density ---*/
@@ -2180,30 +2552,32 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **so
 	if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
 			(Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) ||
 			(Kind_Solver == FREE_SURFACE_RANS)) {
-		/*--- Pressure and Mach ---*/
+		/*--- Pressure, Cp, and Mach ---*/
 		iVar_PressMach = nVar_Total;
-		nVar_Total += 2;
+		nVar_Total += 3;
 	}
-
-
+  
 	if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
 			(Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
-		/*--- Temperature & Laminar Viscosity ---*/
+		/*--- Temperature, Laminar Viscosity ---*/
 		iVar_TempLam = nVar_Total;
 		nVar_Total += 2;
+    /*--- Skin Friction, Heat Flux, & yPlus ---*/
+    iVar_ViscCoeffs = nVar_Total;
+		nVar_Total += 3;
 	}
-
+  
 	if ((Kind_Solver == RANS) || (Kind_Solver == FREE_SURFACE_RANS)) {
 		/*--- Eddy Viscosity ---*/
 		iVar_Eddy = nVar_Total;
 		nVar_Total += 1;
 	}
-
+  
 	if (Kind_Solver == ELECTRIC_POTENTIAL) {
 		iVar_EF = geometry->GetnDim();
 		nVar_Total += geometry->GetnDim();
 	}
-
+  
 	if ((Kind_Solver == PLASMA_EULER) || (Kind_Solver == PLASMA_NAVIER_STOKES)) {
 		iVar_Press  = nVar_Total;
 		nVar_Total += config->GetnSpecies();
@@ -2214,7 +2588,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **so
     iVar_Mach   = nVar_Total;
     nVar_Total += config->GetnSpecies();
 	}
-
+  
 	if (Kind_Solver == PLASMA_NAVIER_STOKES) {
 		iVar_Lam = nVar_Total;
 		nVar_Total  += config->GetnSpecies();
@@ -2223,199 +2597,284 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **so
 			nVar_Total  += 3;
 		}
 	}
-
+  
+  if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) ||
+			(Kind_Solver == ADJ_FREE_SURFACE_EULER) || (Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
+			(Kind_Solver == ADJ_FREE_SURFACE_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
+    /*--- Surface sensitivity coefficient ---*/
+    iVar_Sens   = nVar_Total;
+    nVar_Total += 1;
+  }
+  
 	/*--- Merge the solution either in serial or parallel. ---*/
-
+  
 #ifdef NO_MPI
-
-/*--- In serial, the single process has access to all solution data,
-     so it is simple to retrieve and store inside Solution_Data. ---*/
-	nGlobal_Poin = geometry->GetnPoint(); //geometry->GetnPointDomain();  (F.P.)
+  
+  /*--- In serial, the single process has access to all solution data,
+   so it is simple to retrieve and store inside Solution_Data. ---*/
+	nGlobal_Poin = geometry->GetnPointDomain();
 	Data = new double*[nVar_Total];
 	for (iVar = 0; iVar < nVar_Total; iVar++) {
 		Data[iVar] = new double[nGlobal_Poin];
 	}
-	//Volume = new double[nGlobal_Poin];
-
+  
 	/*--- In case there is grid movement ---*/
 	double *Grid_Vel;
-
+  
+  /*--- First, loop through the mesh in order to find and store the
+   value of the coefficient of pressure at any surface nodes. They
+   will be placed in an auxiliary vector and then communicated like
+   all other volumetric variables. ---*/
+  
+  Aux_Press = new double [geometry->GetnPointDomain()];
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Aux_Press[iPoint] = 0.0;
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+    if (config->GetMarker_All_Plotting(iMarker) == YES)
+      for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        Aux_Press[iPoint] = solution[FLOW_SOL]->GetCPressure(iMarker,iVertex);
+      }
+  
+	if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
+      (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    
+    Aux_Frict = new double [geometry->GetnPointDomain()];
+		Aux_Heat  = new double [geometry->GetnPointDomain()];
+		Aux_yPlus = new double [geometry->GetnPointDomain()];
+    
+    for(iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+      Aux_Frict[iPoint] = 0.0;
+      Aux_Heat[iPoint]  = 0.0;
+      Aux_yPlus[iPoint] = 0.0;
+    }
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+      if (config->GetMarker_All_Plotting(iMarker) == YES) {
+        for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          Aux_Frict[iPoint] = solution[FLOW_SOL]->GetCSkinFriction(iMarker,iVertex);
+          Aux_Heat[iPoint]  = solution[FLOW_SOL]->GetHeatTransferCoeff(iMarker,iVertex);
+          Aux_yPlus[iPoint] = solution[FLOW_SOL]->GetYPlus(iMarker,iVertex);
+        }
+      }
+  }
+  
+  if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) ||
+			(Kind_Solver == ADJ_FREE_SURFACE_EULER) || (Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
+			(Kind_Solver == ADJ_FREE_SURFACE_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
+    
+    Aux_Sens = new double [geometry->GetnPointDomain()];
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Aux_Sens[iPoint] = 0.0;
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+      if (config->GetMarker_All_Plotting(iMarker) == YES) {
+        for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          Aux_Sens[iPoint] = solution[ADJFLOW_SOL]->GetCSensitivity(iMarker,iVertex);
+        }
+      }
+    
+  }
+  
 	/*--- Loop over all points in the mesh, but only write data
-     for nodes in the domain (ignore periodic/sliding halo nodes). ---*/
+   for nodes in the domain (ignore periodic/sliding halo nodes). ---*/
 	jPoint = 0;
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-		//		if (geometry->node[iPoint]->GetDomain()) {  (F.P.)
-
-		/*--- Solution (first, second and third system of equations) ---*/
-		jVar = 0;
-		for (iVar = 0; iVar < nVar_First; iVar++) {
-			Data[jVar][jPoint] = solution[FirstIndex]->node[iPoint]->GetSolution(iVar);
-			jVar++;
-		}
-
-		for (iVar = 0; iVar < nVar_Second; iVar++) {
-			Data[jVar][jPoint] = solution[SecondIndex]->node[iPoint]->GetSolution(iVar);
-			jVar++;
-		}
-
-		for (iVar = 0; iVar < nVar_Third; iVar++) {
-			Data[jVar][jPoint] = solution[ThirdIndex]->node[iPoint]->GetSolution(iVar);
-			jVar++;
-		}
-
-		/*--- Residual (first, second and third system of equations) ---*/
-    if (config->GetWrt_Residuals()) {
+    
+    /*--- Check for halo nodes & only write if requested ---*/
+    
+    if (geometry->node[iPoint]->GetDomain()) {
+      
+      /*--- Solution (first, second and third system of equations) ---*/
+      jVar = 0;
       for (iVar = 0; iVar < nVar_First; iVar++) {
-        Data[jVar][jPoint] = solution[FirstIndex]->node[iPoint]->GetResidual(iVar);
+        Data[jVar][jPoint] = solution[FirstIndex]->node[iPoint]->GetSolution(iVar);
         jVar++;
       }
       
       for (iVar = 0; iVar < nVar_Second; iVar++) {
-        Data[jVar][jPoint] = solution[SecondIndex]->node[iPoint]->GetResidual(iVar);
+        Data[jVar][jPoint] = solution[SecondIndex]->node[iPoint]->GetSolution(iVar);
         jVar++;
       }
       
       for (iVar = 0; iVar < nVar_Third; iVar++) {
-        Data[jVar][jPoint] = solution[ThirdIndex]->node[iPoint]->GetResidual(iVar);
+        Data[jVar][jPoint] = solution[ThirdIndex]->node[iPoint]->GetSolution(iVar);
         jVar++;
       }
-    }
-
-//    /*--- Store the volume of the current CV ---*/
-//    Volume[jPoint] = geometry->node[iPoint]->GetVolume();
-
-    /*--- For unsteady problems with grid movement, write the mesh velocities
-     also, in case we need them for the unsteady adjoint. ---*/
-    if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady() && grid_movement) {
-      Grid_Vel = geometry->node[iPoint]->GetGridVel();
-      for (unsigned short iDim = 0; iDim < geometry->GetnDim(); iDim++) {
-        Data[jVar][jPoint] = Grid_Vel[iDim];
-        jVar++;
+      
+      /*--- Residual (first, second and third system of equations) ---*/
+      if (config->GetWrt_Residuals()) {
+        for (iVar = 0; iVar < nVar_First; iVar++) {
+          Data[jVar][jPoint] = solution[FirstIndex]->node[iPoint]->GetResidual(iVar);
+          jVar++;
+        }
+        
+        for (iVar = 0; iVar < nVar_Second; iVar++) {
+          Data[jVar][jPoint] = solution[SecondIndex]->node[iPoint]->GetResidual(iVar);
+          jVar++;
+        }
+        
+        for (iVar = 0; iVar < nVar_Third; iVar++) {
+          Data[jVar][jPoint] = solution[ThirdIndex]->node[iPoint]->GetResidual(iVar);
+          jVar++;
+        }
       }
-    }
-    
-    /*--- Any extra data for output files ---*/
-    switch (Kind_Solver) {
-      case EULER: case FREE_SURFACE_EULER:
-        /*--- Load buffers with the pressure and mach variables. ---*/
-        if (incompressible) {
-          if (Kind_Solver == FREE_SURFACE_EULER) {
-            Data[jVar][jPoint] = solution[FLOW_SOL]->node[iPoint]->GetDensityInc(); jVar++;
-          }
-          Data[jVar][jPoint] = solution[FLOW_SOL]->node[iPoint]->GetPressure(incompressible); jVar++;
-          Data[jVar][jPoint] = sqrt(solution[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/sqrt(config->GetBulk_Modulus()/(solution[FLOW_SOL]->node[iPoint]->GetDensityInc()*config->GetDensity_Ref())); jVar++;
-        } else {
-          Data[jVar][jPoint] = solution[FLOW_SOL]->node[iPoint]->GetPressure(incompressible); jVar++;
-          Data[jVar][jPoint] = sqrt(solution[FLOW_SOL]->node[iPoint]->GetVelocity2())/
-          solution[FLOW_SOL]->node[iPoint]->GetSoundSpeed(); jVar++;
-        }
-        break;
-        /*--- Write pressure, mach, temperature and laminar viscosity ---*/
-      case NAVIER_STOKES: case FREE_SURFACE_NAVIER_STOKES:
-        if (incompressible) {
-          if (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) {
-            Data[jVar][jPoint] = solution[FLOW_SOL]->node[iPoint]->GetDensityInc(); jVar++;
-          }
-          Data[jVar][jPoint] = solution[FLOW_SOL]->node[iPoint]->GetPressure(incompressible); jVar++;
-          Data[jVar][jPoint] = sqrt(solution[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/sqrt(config->GetBulk_Modulus()/(solution[FLOW_SOL]->node[iPoint]->GetDensityInc()*config->GetDensity_Ref())); jVar++;
-          Data[jVar][jPoint] = 0.0; jVar++;
-          Data[jVar][jPoint] = solution[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc(); jVar++;
-        } else {
-          Data[jVar][jPoint] = solution[FLOW_SOL]->node[iPoint]->GetPressure(incompressible); jVar++;
-          Data[jVar][jPoint] = sqrt(solution[FLOW_SOL]->node[iPoint]->GetVelocity2())/
-          solution[FLOW_SOL]->node[iPoint]->GetSoundSpeed(); jVar++;
-          Data[jVar][jPoint] = solution[FLOW_SOL]->node[iPoint]->GetTemperature(); jVar++;
-          Data[jVar][jPoint] = solution[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(); jVar++;
-        }
-        break;
-        /*--- Write  pressure, mach, temperature, laminar viscosity, eddy viscosity ---*/
-      case RANS: case FREE_SURFACE_RANS:
-        if (incompressible) {
-          if (Kind_Solver == FREE_SURFACE_RANS) {
-            Data[jVar][jPoint] = solution[FLOW_SOL]->node[iPoint]->GetDensityInc(); jVar++;
-          }
-          Data[jVar][jPoint] = solution[FLOW_SOL]->node[iPoint]->GetPressure(incompressible); jVar++;
-          Data[jVar][jPoint] = sqrt(solution[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/sqrt(config->GetBulk_Modulus()/(solution[FLOW_SOL]->node[iPoint]->GetDensityInc()*config->GetDensity_Ref())); jVar++;
-          Data[jVar][jPoint] = 0.0; jVar++;
-          Data[jVar][jPoint] = solution[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc(); jVar++;
-        } else {
-          Data[jVar][jPoint] = solution[FLOW_SOL]->node[iPoint]->GetPressure(incompressible); jVar++;
-          Data[jVar][jPoint] = sqrt(solution[FLOW_SOL]->node[iPoint]->GetVelocity2())/
-          solution[FLOW_SOL]->node[iPoint]->GetSoundSpeed(); jVar++;
-          Data[jVar][jPoint] = solution[FLOW_SOL]->node[iPoint]->GetTemperature(); jVar++;
-          Data[jVar][jPoint] = solution[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(); jVar++;
-        }
-        Data[jVar][jPoint] = solution[FLOW_SOL]->node[iPoint]->GetEddyViscosity(); jVar++;
-        break;
-        /*--- Write electric field. ---*/
-      case ELECTRIC_POTENTIAL:
+      
+      /*--- For unsteady problems with grid movement, write the mesh velocities
+       also, in case we need them for the unsteady adjoint. ---*/
+      if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady() && grid_movement) {
+        Grid_Vel = geometry->node[iPoint]->GetGridVel();
         for (unsigned short iDim = 0; iDim < geometry->GetnDim(); iDim++) {
-          Data[jVar][jPoint] = -1.0*solution[ELEC_SOL]->node[iPoint]->GetGradient(0,iDim);
+          Data[jVar][jPoint] = Grid_Vel[iDim];
           jVar++;
         }
-        break;
-        
-      case PLASMA_EULER:
-        /*--- Write partial pressures ---*/
-        for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
-          Data[jVar][jPoint] = solution[PLASMA_SOL]->node[iPoint]->GetPressure(iSpecies);
-          jVar++;
-        }
-        /*--- Write translational-rotational temperature ---*/
-        for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
-          Data[jVar][jPoint] = solution[PLASMA_SOL]->node[iPoint]->GetTemperature_tr(iSpecies);
-          jVar++;
-        }
-        /*--- Write vibrational temperature ---*/
-        for (iSpecies = 0; iSpecies < config->GetnDiatomics(); iSpecies++) {
-          Data[jVar][jPoint] = solution[PLASMA_SOL]->node[iPoint]->GetTemperature_vib(iSpecies);
-          jVar++;
-        }
-        /*--- Write Mach number ---*/
-        for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
-          Data[jVar][jPoint] =  sqrt(solution[PLASMA_SOL]->node[iPoint]->GetVelocity2(iSpecies))
-          / solution[PLASMA_SOL]->node[iPoint]->GetSoundSpeed(iSpecies);
-          jVar++;
-        }
-        break;
-        
-      case PLASMA_NAVIER_STOKES:
-        /*--- Write partial pressures ---*/
-        for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
-          Data[jVar][jPoint] = solution[PLASMA_SOL]->node[iPoint]->GetPressure(iSpecies);
-          jVar++;
-        }
-        /*--- Write translational-rotational temperature ---*/
-        for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
-          Data[jVar][jPoint] = solution[PLASMA_SOL]->node[iPoint]->GetTemperature_tr(iSpecies);
-          jVar++;
-        }
-        /*--- Write vibrational temperature ---*/
-        for (iSpecies = 0; iSpecies < config->GetnDiatomics(); iSpecies++) {
-          Data[jVar][jPoint] = solution[PLASMA_SOL]->node[iPoint]->GetTemperature_vib(iSpecies);
-          jVar++;
-        }
-        /*--- Write Mach number ---*/
-        for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
-          Data[jVar][jPoint] =  sqrt(solution[PLASMA_SOL]->node[iPoint]->GetVelocity2(iSpecies))
-          / solution[PLASMA_SOL]->node[iPoint]->GetSoundSpeed(iSpecies);
-          jVar++;
-        }
-        /*--- Write laminar viscosity ---*/
-        for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
-          Data[jVar][jPoint] =  solution[PLASMA_SOL]->node[iPoint]->GetLaminarViscosity(iSpecies);
-          jVar++;
-        }
-        /*--- Write magnetic force ---*/
-        if((config->GetMagnetic_Force() == YES) && (geometry->GetnDim() == 3)) {
+      }
+      
+      /*--- Any extra data for output files ---*/
+      switch (Kind_Solver) {
+        case EULER: case FREE_SURFACE_EULER:
+          /*--- Load buffers with the pressure, Cp, and mach variables. ---*/
+          if (incompressible) {
+            if (Kind_Solver == FREE_SURFACE_EULER) {
+              Data[jVar][jPoint] = solution[FLOW_SOL]->node[iPoint]->GetDensityInc(); jVar++;
+            }
+            Data[jVar][jPoint] = solution[FLOW_SOL]->node[iPoint]->GetPressure(incompressible); jVar++;
+            Data[jVar][jPoint] = Aux_Press[iPoint]; jVar++;
+            Data[jVar][jPoint] = sqrt(solution[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/sqrt(config->GetBulk_Modulus()/(solution[FLOW_SOL]->node[iPoint]->GetDensityInc()*config->GetDensity_Ref())); jVar++;
+          } else {
+            Data[jVar][jPoint] = solution[FLOW_SOL]->node[iPoint]->GetPressure(incompressible); jVar++;
+            Data[jVar][jPoint] = Aux_Press[iPoint]; jVar++;
+            Data[jVar][jPoint] = sqrt(solution[FLOW_SOL]->node[iPoint]->GetVelocity2())/
+            solution[FLOW_SOL]->node[iPoint]->GetSoundSpeed(); jVar++;
+          }
+          break;
+          /*--- Write pressure, Cp, mach, temperature, laminar viscosity, skin friction, heat transfer, yplus ---*/
+        case NAVIER_STOKES: case FREE_SURFACE_NAVIER_STOKES:
+          if (incompressible) {
+            if (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) {
+              Data[jVar][jPoint] = solution[FLOW_SOL]->node[iPoint]->GetDensityInc(); jVar++;
+            }
+            Data[jVar][jPoint] = solution[FLOW_SOL]->node[iPoint]->GetPressure(incompressible); jVar++;
+            Data[jVar][jPoint] = Aux_Press[iPoint]; jVar++;
+            Data[jVar][jPoint] = sqrt(solution[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/sqrt(config->GetBulk_Modulus()/(solution[FLOW_SOL]->node[iPoint]->GetDensityInc()*config->GetDensity_Ref())); jVar++;
+            Data[jVar][jPoint] = 0.0; jVar++;
+            Data[jVar][jPoint] = solution[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc(); jVar++;
+            Data[jVar][jPoint] = Aux_Frict[iPoint]; jVar++;
+            Data[jVar][jPoint] = Aux_Heat[iPoint];  jVar++;
+            Data[jVar][jPoint] = Aux_yPlus[iPoint]; jVar++;
+          } else {
+            Data[jVar][jPoint] = solution[FLOW_SOL]->node[iPoint]->GetPressure(incompressible); jVar++;
+            Data[jVar][jPoint] = Aux_Press[iPoint]; jVar++;
+            Data[jVar][jPoint] = sqrt(solution[FLOW_SOL]->node[iPoint]->GetVelocity2())/
+            solution[FLOW_SOL]->node[iPoint]->GetSoundSpeed(); jVar++;
+            Data[jVar][jPoint] = solution[FLOW_SOL]->node[iPoint]->GetTemperature(); jVar++;
+            Data[jVar][jPoint] = solution[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(); jVar++;
+            Data[jVar][jPoint] = Aux_Frict[iPoint]; jVar++;
+            Data[jVar][jPoint] = Aux_Heat[iPoint];  jVar++;
+            Data[jVar][jPoint] = Aux_yPlus[iPoint]; jVar++;
+          }
+          break;
+          /*--- Write pressure, Cp, mach, temperature, laminar viscosity, skin friction, heat transfer, yplus, eddy viscosity ---*/
+        case RANS: case FREE_SURFACE_RANS:
+          if (incompressible) {
+            if (Kind_Solver == FREE_SURFACE_RANS) {
+              Data[jVar][jPoint] = solution[FLOW_SOL]->node[iPoint]->GetDensityInc(); jVar++;
+            }
+            Data[jVar][jPoint] = solution[FLOW_SOL]->node[iPoint]->GetPressure(incompressible); jVar++;
+            Data[jVar][jPoint] = Aux_Press[iPoint]; jVar++;
+            Data[jVar][jPoint] = sqrt(solution[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/sqrt(config->GetBulk_Modulus()/(solution[FLOW_SOL]->node[iPoint]->GetDensityInc()*config->GetDensity_Ref())); jVar++;
+            Data[jVar][jPoint] = 0.0; jVar++;
+            Data[jVar][jPoint] = solution[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc(); jVar++;
+            Data[jVar][jPoint] = Aux_Frict[iPoint]; jVar++;
+            Data[jVar][jPoint] = Aux_Heat[iPoint];  jVar++;
+            Data[jVar][jPoint] = Aux_yPlus[iPoint]; jVar++;
+          } else {
+            Data[jVar][jPoint] = solution[FLOW_SOL]->node[iPoint]->GetPressure(incompressible); jVar++;
+            Data[jVar][jPoint] = Aux_Press[iPoint]; jVar++;
+            Data[jVar][jPoint] = sqrt(solution[FLOW_SOL]->node[iPoint]->GetVelocity2())/
+            solution[FLOW_SOL]->node[iPoint]->GetSoundSpeed(); jVar++;
+            Data[jVar][jPoint] = solution[FLOW_SOL]->node[iPoint]->GetTemperature(); jVar++;
+            Data[jVar][jPoint] = solution[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(); jVar++;
+            Data[jVar][jPoint] = Aux_Frict[iPoint]; jVar++;
+            Data[jVar][jPoint] = Aux_Heat[iPoint];  jVar++;
+            Data[jVar][jPoint] = Aux_yPlus[iPoint]; jVar++;
+          }
+          Data[jVar][jPoint] = solution[FLOW_SOL]->node[iPoint]->GetEddyViscosity(); jVar++;
+          break;
+          /*--- Write electric field. ---*/
+        case ELECTRIC_POTENTIAL:
           for (unsigned short iDim = 0; iDim < geometry->GetnDim(); iDim++) {
-            Data[jVar][jPoint] =  solution[PLASMA_SOL]->node[iPoint]->GetMagneticField()[iDim];
+            Data[jVar][jPoint] = -1.0*solution[ELEC_SOL]->node[iPoint]->GetGradient(0,iDim);
             jVar++;
           }
-        }
-        break;
-        
-        //			}  (F.P.)
+          break;
+          
+        case PLASMA_EULER:
+          /*--- Write partial pressures ---*/
+          for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
+            Data[jVar][jPoint] = solution[PLASMA_SOL]->node[iPoint]->GetPressure(iSpecies);
+            jVar++;
+          }
+          /*--- Write translational-rotational temperature ---*/
+          for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
+            Data[jVar][jPoint] = solution[PLASMA_SOL]->node[iPoint]->GetTemperature_tr(iSpecies);
+            jVar++;
+          }
+          /*--- Write vibrational temperature ---*/
+          for (iSpecies = 0; iSpecies < config->GetnDiatomics(); iSpecies++) {
+            Data[jVar][jPoint] = solution[PLASMA_SOL]->node[iPoint]->GetTemperature_vib(iSpecies);
+            jVar++;
+          }
+          /*--- Write Mach number ---*/
+          for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
+            Data[jVar][jPoint] =  sqrt(solution[PLASMA_SOL]->node[iPoint]->GetVelocity2(iSpecies))
+            / solution[PLASMA_SOL]->node[iPoint]->GetSoundSpeed(iSpecies);
+            jVar++;
+          }
+          break;
+          
+        case PLASMA_NAVIER_STOKES:
+          /*--- Write partial pressures ---*/
+          for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
+            Data[jVar][jPoint] = solution[PLASMA_SOL]->node[iPoint]->GetPressure(iSpecies);
+            jVar++;
+          }
+          /*--- Write translational-rotational temperature ---*/
+          for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
+            Data[jVar][jPoint] = solution[PLASMA_SOL]->node[iPoint]->GetTemperature_tr(iSpecies);
+            jVar++;
+          }
+          /*--- Write vibrational temperature ---*/
+          for (iSpecies = 0; iSpecies < config->GetnDiatomics(); iSpecies++) {
+            Data[jVar][jPoint] = solution[PLASMA_SOL]->node[iPoint]->GetTemperature_vib(iSpecies);
+            jVar++;
+          }
+          /*--- Write Mach number ---*/
+          for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
+            Data[jVar][jPoint] =  sqrt(solution[PLASMA_SOL]->node[iPoint]->GetVelocity2(iSpecies))
+            / solution[PLASMA_SOL]->node[iPoint]->GetSoundSpeed(iSpecies);
+            jVar++;
+          }
+          /*--- Write laminar viscosity ---*/
+          for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
+            Data[jVar][jPoint] =  solution[PLASMA_SOL]->node[iPoint]->GetLaminarViscosity(iSpecies);
+            jVar++;
+          }
+          /*--- Write magnetic force ---*/
+          if((config->GetMagnetic_Force() == YES) && (geometry->GetnDim() == 3)) {
+            for (unsigned short iDim = 0; iDim < geometry->GetnDim(); iDim++) {
+              Data[jVar][jPoint] =  solution[PLASMA_SOL]->node[iPoint]->GetMagneticField()[iDim];
+              jVar++;
+            }
+          }
+          break;
+          
+        case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
+        case ADJ_FREE_SURFACE_EULER: case ADJ_FREE_SURFACE_NAVIER_STOKES: case ADJ_FREE_SURFACE_RANS:
+        case ADJ_PLASMA_EULER: case ADJ_PLASMA_NAVIER_STOKES:
+          
+          Data[jVar][jPoint] = Aux_Sens[iPoint]; jVar++;
+          break;
+          
+      }
     }
     
     /*--- Increment jPoint as the counter. We need this because iPoint
@@ -2439,11 +2898,14 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **so
 	unsigned long nLocalPoint = 0, MaxLocalPoint = 0;
 	unsigned long iGlobal_Index = 0, nBuffer_Scalar = 0;
   
+  bool Wrt_Halo = config->GetWrt_Halo();
+  
 	/*--- Each processor sends its local number of nodes to the master. ---*/
-	//!
-	//! TO DO: MPI I/O for writing the solution files.
-	//!
-	nLocalPoint = geometry->GetnPoint(); // geometry->GetnPointDomain();  (F.P.)
+
+  if (Wrt_Halo) {
+    nLocalPoint = geometry->GetnPoint();
+  } else
+    nLocalPoint = geometry->GetnPointDomain();
 	Buffer_Send_nPoint[0] = nLocalPoint;
 	if (rank == MASTER_NODE) Buffer_Recv_nPoint = new unsigned long[nProcessor];
 	MPI::COMM_WORLD.Barrier();
@@ -2452,13 +2914,8 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **so
                          Buffer_Recv_nPoint, 1, MPI::UNSIGNED_LONG, MASTER_NODE);
 	nBuffer_Scalar = MaxLocalPoint;
   
-	//!
-	//! TO DO: Here is where the code can be extended to an arbitrary number
-	//! of variables specified by the user (name & type), and more
-	//! logic needs to be done.
-	//!
-  
 	/*--- Send and Recv buffers. ---*/
+  
 	double *Buffer_Send_Var = new double[MaxLocalPoint];
 	double *Buffer_Recv_Var = NULL;
   
@@ -2471,7 +2928,25 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **so
 	unsigned long *Buffer_Send_GlobalIndex = new unsigned long[MaxLocalPoint];
 	unsigned long *Buffer_Recv_GlobalIndex = NULL;
   
+  /*--- Auxiliary vectors for surface coefficients ---*/
+  
+  Aux_Press = new double[geometry->GetnPoint()];
+  if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
+      (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    Aux_Frict = new double[geometry->GetnPoint()];
+    Aux_Heat  = new double[geometry->GetnPoint()];
+    Aux_yPlus = new double[geometry->GetnPoint()];
+  }
+  
+  if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) ||
+			(Kind_Solver == ADJ_FREE_SURFACE_EULER) || (Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
+			(Kind_Solver == ADJ_FREE_SURFACE_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
+    Aux_Sens = new double[geometry->GetnPoint()];
+    
+  }
+  
 	/*--- Prepare the receive buffers in the master node only. ---*/
+  
 	if (rank == MASTER_NODE) {
     
 		Buffer_Recv_Var = new double[nProcessor*MaxLocalPoint];
@@ -2488,8 +2963,6 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **so
 		for (iVar = 0; iVar < nVar_Total; iVar++) {
 			Data[iVar] = new double[nGlobal_Poin];
 		}
-		//Volume = new double[nGlobal_Poin];
-    
 	}
   
 	/*--- Main communication routine. Loop over each variable that has
@@ -2497,9 +2970,11 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **so
    1-D buffers are used to send the solution for each variable at all
    nodes on each partition to the master node. These are then unpacked
    by the master and sorted by global index in one large n-dim. array. ---*/
+  
 	for (iVar = 0; iVar < nVar_Consv; iVar++) {
     
 		/*--- Logic for which solution class to draw from. ---*/
+    
 		jVar = iVar;
 		CurrentIndex = FirstIndex;
 		if ((SecondIndex != NONE) && (iVar > nVar_First-1)) {
@@ -2512,23 +2987,26 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **so
 		}
     
 		/*--- Loop over this partition to collect the current variable ---*/
+    
 		jPoint = 0;
 		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-			//			if (geometry->node[iPoint]->GetDomain()) {  (F.P.)
       
-			/*--- Get this variable into the temporary send buffer. ---*/
-			Buffer_Send_Var[jPoint] = solution[CurrentIndex]->node[iPoint]->GetSolution(jVar);
-            if (config->GetWrt_Residuals()) {
-                Buffer_Send_Res[jPoint] = solution[CurrentIndex]->node[iPoint]->GetResidual(jVar);
-            }
+      /*--- Check for halos & write only if requested ---*/
       
-			/*--- Only send/recv the volumes & global indices during the first loop ---*/
-			if (iVar == 0) {
-				//Buffer_Send_Vol[jPoint]         = geometry->node[iPoint]->GetVolume();
-				Buffer_Send_GlobalIndex[jPoint] = geometry->node[iPoint]->GetGlobalIndex();
-			}
-			jPoint++;
-			//			}  (F.P.)
+      if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
+        
+        /*--- Get this variable into the temporary send buffer. ---*/
+        Buffer_Send_Var[jPoint] = solution[CurrentIndex]->node[iPoint]->GetSolution(jVar);
+        if (config->GetWrt_Residuals()) {
+          Buffer_Send_Res[jPoint] = solution[CurrentIndex]->node[iPoint]->GetResidual(jVar);
+        }
+        
+        /*--- Only send/recv the volumes & global indices during the first loop ---*/
+        if (iVar == 0) {
+          Buffer_Send_GlobalIndex[jPoint] = geometry->node[iPoint]->GetGlobalIndex();
+        }
+        jPoint++;
+      }
 		}
     
 		/*--- Gather the data on the master node. ---*/
@@ -2536,16 +3014,12 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **so
 		MPI::COMM_WORLD.Gather(Buffer_Send_Var, nBuffer_Scalar, MPI::DOUBLE,
                            Buffer_Recv_Var, nBuffer_Scalar, MPI::DOUBLE,
                            MASTER_NODE);
-        if (config->GetWrt_Residuals()) {
-            MPI::COMM_WORLD.Gather(Buffer_Send_Res, nBuffer_Scalar, MPI::DOUBLE,
-                                   Buffer_Recv_Res, nBuffer_Scalar, MPI::DOUBLE,
-                                   MASTER_NODE);
-        }
-    
+    if (config->GetWrt_Residuals()) {
+      MPI::COMM_WORLD.Gather(Buffer_Send_Res, nBuffer_Scalar, MPI::DOUBLE,
+                             Buffer_Recv_Res, nBuffer_Scalar, MPI::DOUBLE,
+                             MASTER_NODE);
+    }
 		if (iVar == 0) {
-//			MPI::COMM_WORLD.Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI::DOUBLE,
-//                             Buffer_Recv_Vol, nBuffer_Scalar, MPI::DOUBLE,
-//                             MASTER_NODE);
 			MPI::COMM_WORLD.Gather(Buffer_Send_GlobalIndex, nBuffer_Scalar, MPI::UNSIGNED_LONG,
                              Buffer_Recv_GlobalIndex, nBuffer_Scalar, MPI::UNSIGNED_LONG,
                              MASTER_NODE);
@@ -2560,10 +3034,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **so
 					/*--- Get global index, then loop over each variable and store ---*/
 					iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
 					Data[iVar][iGlobal_Index] = Buffer_Recv_Var[jPoint];
-                    if (config->GetWrt_Residuals()) {
-                        Data[iVar+nVar_Consv][iGlobal_Index] = Buffer_Recv_Res[jPoint];
-                    }
-//					if (iVar == 0) Volume[iGlobal_Index] = Buffer_Recv_Vol[jPoint];
+          if (config->GetWrt_Residuals()) {
+            Data[iVar+nVar_Consv][iGlobal_Index] = Buffer_Recv_Res[jPoint];
+          }
 					jPoint++;
 				}
 				/*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
@@ -2576,20 +3049,24 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **so
    we are reusing the same temporary buffers from above for efficiency.
    Also, in the future more routines like this could be used to write
    an arbitrary number of additional variables to the file. ---*/
+  
 	if (grid_movement) {
     
 		/*--- Loop over this partition to collect the current variable ---*/
 		jPoint = 0; double *Grid_Vel;
 		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-			//			if (geometry->node[iPoint]->GetDomain()) {  (F.P.)
       
-			/*--- Load buffers with the three grid velocity components. ---*/
-			Grid_Vel = geometry->node[iPoint]->GetGridVel();
-			Buffer_Send_Var[jPoint] = Grid_Vel[0];
-			Buffer_Send_Res[jPoint] = Grid_Vel[1];
-			if (geometry->GetnDim() == 3) Buffer_Send_Vol[jPoint] = Grid_Vel[2];
-			jPoint++;
-			//			}  (F.P.)
+      /*--- Check for halos & write only if requested ---*/
+      
+      if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
+        
+        /*--- Load buffers with the three grid velocity components. ---*/
+        Grid_Vel = geometry->node[iPoint]->GetGridVel();
+        Buffer_Send_Var[jPoint] = Grid_Vel[0];
+        Buffer_Send_Res[jPoint] = Grid_Vel[1];
+        if (geometry->GetnDim() == 3) Buffer_Send_Vol[jPoint] = Grid_Vel[2];
+        jPoint++;
+      }
     }
     
 		/*--- Gather the data on the master node. ---*/
@@ -2632,17 +3109,20 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **so
 		/*--- Loop over this partition to collect the current variable ---*/
 		jPoint = 0;
 		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-			//      if (geometry->node[iPoint]->GetDomain()) {  (F.P.)
       
-			/*--- Load buffers with the pressure and mach variables. ---*/
-      if (incompressible) {
-        Buffer_Send_Var[jPoint] = solution[FLOW_SOL]->node[iPoint]->GetDensityInc();
+      /*--- Check for halos & write only if requested ---*/
+      
+      if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
+        
+        /*--- Load buffers with the pressure and mach variables. ---*/
+        if (incompressible) {
+          Buffer_Send_Var[jPoint] = solution[FLOW_SOL]->node[iPoint]->GetDensityInc();
+        }
+        else {
+          Buffer_Send_Var[jPoint] = solution[FLOW_SOL]->node[iPoint]->GetDensityInc();
+        }
+        jPoint++;
       }
-      else {
-        Buffer_Send_Var[jPoint] = solution[FLOW_SOL]->node[iPoint]->GetDensityInc();
-      }
-			jPoint++;
-			//      }  (F.P.)
 		}
     
 		/*--- Gather the data on the master node. ---*/
@@ -2669,28 +3149,47 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **so
     
 	}
   
-	/*--- Communicate Pressure and Mach ---*/
+	/*--- Communicate Pressure, Cp, and Mach ---*/
+  
 	if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
       (Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    
+    /*--- First, loop through the mesh in order to find and store the
+     value of the coefficient of pressure at any surface nodes. They 
+     will be placed in an auxiliary vector and then communicated like
+     all other volumetric variables. ---*/
+    
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Aux_Press[iPoint] = 0.0;
+		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+			if (config->GetMarker_All_Plotting(iMarker) == YES)
+				for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+					iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+					Aux_Press[iPoint] = solution[FLOW_SOL]->GetCPressure(iMarker,iVertex);
+				}
     
 		/*--- Loop over this partition to collect the current variable ---*/
 		jPoint = 0;
 		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-			//      if (geometry->node[iPoint]->GetDomain()) {  (F.P.)
       
-			/*--- Load buffers with the pressure and mach variables. ---*/
-			if (incompressible) {
-				Buffer_Send_Var[jPoint] = solution[FLOW_SOL]->node[iPoint]->GetPressure(incompressible);
-        Buffer_Send_Res[jPoint] = sqrt(solution[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/
-        sqrt(config->GetBulk_Modulus()/(solution[FLOW_SOL]->node[iPoint]->GetDensityInc()*config->GetDensity_Ref()));
+      /*--- Check for halos & write only if requested ---*/
+      
+      if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
+        
+        /*--- Load buffers with the pressure, Cp, and mach variables. ---*/
+        if (incompressible) {
+          Buffer_Send_Var[jPoint] = solution[FLOW_SOL]->node[iPoint]->GetPressure(incompressible);
+          Buffer_Send_Res[jPoint] = Aux_Press[iPoint];
+          Buffer_Send_Vol[jPoint] = sqrt(solution[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/
+          sqrt(config->GetBulk_Modulus()/(solution[FLOW_SOL]->node[iPoint]->GetDensityInc()*config->GetDensity_Ref()));
+        }
+        else {
+          Buffer_Send_Var[jPoint] = solution[FLOW_SOL]->node[iPoint]->GetPressure(incompressible);
+          Buffer_Send_Res[jPoint] = Aux_Press[iPoint];
+          Buffer_Send_Vol[jPoint] = sqrt(solution[FLOW_SOL]->node[iPoint]->GetVelocity2())/
+          solution[FLOW_SOL]->node[iPoint]->GetSoundSpeed();
+        }
+        jPoint++;
       }
-      else {
-        Buffer_Send_Var[jPoint] = solution[FLOW_SOL]->node[iPoint]->GetPressure(incompressible);
-				Buffer_Send_Res[jPoint] = sqrt(solution[FLOW_SOL]->node[iPoint]->GetVelocity2())/
-        solution[FLOW_SOL]->node[iPoint]->GetSoundSpeed();
-			}
-			jPoint++;
-			//      }  (F.P.)
     }
     
 		/*--- Gather the data on the master node. ---*/
@@ -2700,6 +3199,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **so
                            MASTER_NODE);
 		MPI::COMM_WORLD.Gather(Buffer_Send_Res, nBuffer_Scalar, MPI::DOUBLE,
                            Buffer_Recv_Res, nBuffer_Scalar, MPI::DOUBLE,
+                           MASTER_NODE);
+    MPI::COMM_WORLD.Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI::DOUBLE,
+                           Buffer_Recv_Vol, nBuffer_Scalar, MPI::DOUBLE,
                            MASTER_NODE);
     
 		/*--- The master node unpacks and sorts this variable by global index ---*/
@@ -2712,6 +3214,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **so
 					iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
 					Data[iVar][iGlobal_Index]   = Buffer_Recv_Var[jPoint];
 					Data[iVar+1][iGlobal_Index] = Buffer_Recv_Res[jPoint];
+          Data[iVar+2][iGlobal_Index] = Buffer_Recv_Vol[jPoint];
 					jPoint++;
 				}
 				/*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
@@ -2727,19 +3230,22 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **so
 		/*--- Loop over this partition to collect the current variable ---*/
 		jPoint = 0;
 		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-			//      if (geometry->node[iPoint]->GetDomain()) {  (F.P.)
       
-			/*--- Load buffers with the temperature and laminar viscosity variables. ---*/
-      if (incompressible) {
-        Buffer_Send_Var[jPoint] = 0.0;
-        Buffer_Send_Res[jPoint] = solution[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc();
+      /*--- Check for halos & write only if requested ---*/
+      
+      if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
+        
+        /*--- Load buffers with the temperature and laminar viscosity variables. ---*/
+        if (incompressible) {
+          Buffer_Send_Var[jPoint] = 0.0;
+          Buffer_Send_Res[jPoint] = solution[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc();
+        }
+        else {
+          Buffer_Send_Var[jPoint] = solution[FLOW_SOL]->node[iPoint]->GetTemperature();
+          Buffer_Send_Res[jPoint] = solution[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+        }
+        jPoint++;
       }
-      else {
-        Buffer_Send_Var[jPoint] = solution[FLOW_SOL]->node[iPoint]->GetTemperature();
-        Buffer_Send_Res[jPoint] = solution[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
-      }
-			jPoint++;
-			//      }  (F.P.)
 		}
     
 		/*--- Gather the data on the master node. ---*/
@@ -2769,23 +3275,104 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **so
 		}
 	}
   
+  /*--- Communicate skin friction, heat transfer, y+ ---*/
+	if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
+      (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    
+    /*--- First, loop through the mesh in order to find and store the
+     value of the viscous coefficients at any surface nodes. They
+     will be placed in an auxiliary vector and then communicated like
+     all other volumetric variables. ---*/
+    
+    for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      Aux_Frict[iPoint] = 0.0;
+      Aux_Heat[iPoint]  = 0.0;
+      Aux_yPlus[iPoint] = 0.0;
+    }
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+      if (config->GetMarker_All_Plotting(iMarker) == YES) {
+        for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          Aux_Frict[iPoint] = solution[FLOW_SOL]->GetCSkinFriction(iMarker,iVertex);
+          Aux_Heat[iPoint]  = solution[FLOW_SOL]->GetHeatTransferCoeff(iMarker,iVertex);
+          Aux_yPlus[iPoint] = solution[FLOW_SOL]->GetYPlus(iMarker,iVertex);
+        }
+      }
+    
+		/*--- Loop over this partition to collect the current variable ---*/
+		jPoint = 0;
+		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      
+      /*--- Check for halos & write only if requested ---*/
+      
+      if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
+        
+        /*--- Load buffers with the skin friction, heat transfer, y+ variables. ---*/
+        if (incompressible) {
+          Buffer_Send_Var[jPoint] = Aux_Frict[iPoint];
+          Buffer_Send_Res[jPoint] = Aux_Heat[iPoint];
+          Buffer_Send_Vol[jPoint] = Aux_yPlus[iPoint];
+        }
+        else {
+          Buffer_Send_Var[jPoint] = Aux_Frict[iPoint];
+          Buffer_Send_Res[jPoint] = Aux_Heat[iPoint];
+          Buffer_Send_Vol[jPoint] = Aux_yPlus[iPoint];
+        }
+        jPoint++;
+      }
+    }
+    
+		/*--- Gather the data on the master node. ---*/
+		MPI::COMM_WORLD.Barrier();
+		MPI::COMM_WORLD.Gather(Buffer_Send_Var, nBuffer_Scalar, MPI::DOUBLE,
+                           Buffer_Recv_Var, nBuffer_Scalar, MPI::DOUBLE,
+                           MASTER_NODE);
+		MPI::COMM_WORLD.Gather(Buffer_Send_Res, nBuffer_Scalar, MPI::DOUBLE,
+                           Buffer_Recv_Res, nBuffer_Scalar, MPI::DOUBLE,
+                           MASTER_NODE);
+    MPI::COMM_WORLD.Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI::DOUBLE,
+                           Buffer_Recv_Vol, nBuffer_Scalar, MPI::DOUBLE,
+                           MASTER_NODE);
+    
+		/*--- The master node unpacks and sorts this variable by global index ---*/
+		if (rank == MASTER_NODE) {
+			jPoint = 0; iVar = iVar_ViscCoeffs;
+			for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+				for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
+          
+					/*--- Get global index, then loop over each variable and store ---*/
+					iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
+					Data[iVar+0][iGlobal_Index] = Buffer_Recv_Var[jPoint];
+					Data[iVar+1][iGlobal_Index] = Buffer_Recv_Res[jPoint];
+          Data[iVar+2][iGlobal_Index] = Buffer_Recv_Vol[jPoint];
+					jPoint++;
+				}
+				/*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+				jPoint = (iProcessor+1)*nBuffer_Scalar;
+			}
+		}
+	}
+  
 	/*--- Communicate the Eddy Viscosity ---*/
 	if ((Kind_Solver == RANS) || (Kind_Solver == FREE_SURFACE_RANS)) {
     
 		/*--- Loop over this partition to collect the current variable ---*/
 		jPoint = 0;
 		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-			//      if (geometry->node[iPoint]->GetDomain()) {  (F.P.)
       
-			/*--- Load buffers with the pressure and mach variables. ---*/
-      if (incompressible) {
-        Buffer_Send_Var[jPoint] = solution[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
+      /*--- Check for halos & write only if requested ---*/
+      
+      if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
+        
+        /*--- Load buffers with the pressure and mach variables. ---*/
+        if (incompressible) {
+          Buffer_Send_Var[jPoint] = solution[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
+        }
+        else {
+          Buffer_Send_Var[jPoint] = solution[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
+        }
+        jPoint++;
       }
-      else {
-        Buffer_Send_Var[jPoint] = solution[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
-      }
-			jPoint++;
-			//      }  (F.P.)
 		}
     
 		/*--- Gather the data on the master node. ---*/
@@ -2820,9 +3407,16 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **so
 			/*--- Loop over this partition to collect the current variable ---*/
 			jPoint = 0;
 			for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-				/*--- Load buffers with the temperature and laminar viscosity variables. ---*/
-				Buffer_Send_Var[jPoint] = solution[PLASMA_SOL]->node[iPoint]->GetPressure(iSpecies);
-				jPoint++;
+        
+        /*--- Check for halos & write only if requested ---*/
+        
+        if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
+          
+          /*--- Load buffers with the temperature and laminar viscosity variables. ---*/
+          Buffer_Send_Var[jPoint] = solution[PLASMA_SOL]->node[iPoint]->GetPressure(iSpecies);
+          jPoint++;
+        }
+        
 			}
       
 			/*--- Gather the data on the master node. ---*/
@@ -2854,9 +3448,16 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **so
 			/*--- Loop over this partition to collect the current variable ---*/
 			jPoint = 0;
 			for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-				/*--- Load buffer with the temperature. ---*/
-				Buffer_Send_Var[jPoint] = solution[PLASMA_SOL]->node[iPoint]->GetTemperature_tr(iSpecies);
-				jPoint++;
+        
+        
+        /*--- Check for halos & write only if requested ---*/
+        
+        if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
+          
+          /*--- Load buffer with the temperature. ---*/
+          Buffer_Send_Var[jPoint] = solution[PLASMA_SOL]->node[iPoint]->GetTemperature_tr(iSpecies);
+          jPoint++;
+        }
 			}
       
 			/*--- Gather the data on the master node. ---*/
@@ -2888,9 +3489,16 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **so
 			/*--- Loop over this partition to collect the current variable ---*/
 			jPoint = 0;
 			for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-				/*--- Load buffer with the vibrational temperature. ---*/
-				Buffer_Send_Var[jPoint] = solution[PLASMA_SOL]->node[iPoint]->GetTemperature_vib(iSpecies);
-				jPoint++;
+        
+        
+        /*--- Check for halos & write only if requested ---*/
+        
+        if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
+          
+          /*--- Load buffer with the vibrational temperature. ---*/
+          Buffer_Send_Var[jPoint] = solution[PLASMA_SOL]->node[iPoint]->GetTemperature_vib(iSpecies);
+          jPoint++;
+        }
 			}
       
 			/*--- Gather the data on the master node. ---*/
@@ -2922,10 +3530,17 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **so
 			/*--- Loop over this partition to collect the current variable ---*/
 			jPoint = 0;
 			for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-				/*--- Load buffer with the vibrational temperature. ---*/
-				Buffer_Send_Var[jPoint] = sqrt(solution[PLASMA_SOL]->node[iPoint]->GetVelocity2(iSpecies))
-        / solution[PLASMA_SOL]->node[iPoint]->GetSoundSpeed(iSpecies);
-				jPoint++;
+        
+        
+        /*--- Check for halos & write only if requested ---*/
+        
+        if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
+          
+          /*--- Load buffer with the vibrational temperature. ---*/
+          Buffer_Send_Var[jPoint] = sqrt(solution[PLASMA_SOL]->node[iPoint]->GetVelocity2(iSpecies))
+          / solution[PLASMA_SOL]->node[iPoint]->GetSoundSpeed(iSpecies);
+          jPoint++;
+        }
 			}
       
 			/*--- Gather the data on the master node. ---*/
@@ -2960,9 +3575,16 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **so
 			/*--- Loop over this partition to collect the current variable ---*/
 			jPoint = 0;
 			for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-				/*--- Load buffer with the laminar viscosity. ---*/
-				Buffer_Send_Var[jPoint] = solution[PLASMA_SOL]->node[iPoint]->GetLaminarViscosity(iSpecies);
-				jPoint++;
+        
+        
+        /*--- Check for halos & write only if requested ---*/
+        
+        if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
+          /*--- Load buffer with the laminar viscosity. ---*/
+          Buffer_Send_Var[jPoint] = solution[PLASMA_SOL]->node[iPoint]->GetLaminarViscosity(iSpecies);
+          jPoint++;
+          
+        }
 			}
       
 			/*--- Gather the data on the master node. ---*/
@@ -2996,11 +3618,17 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **so
 		/*--- Loop over this partition to collect the current variable ---*/
 		jPoint = 0;
 		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-			/*--- Load buffers with the temperature and laminar viscosity variables. ---*/
-			Buffer_Send_Var[jPoint] = solution[PLASMA_SOL]->node[iPoint]->GetMagneticField()[0];
-			Buffer_Send_Res[jPoint] = solution[PLASMA_SOL]->node[iPoint]->GetMagneticField()[1];
-			Buffer_Send_Vol[jPoint] = solution[PLASMA_SOL]->node[iPoint]->GetMagneticField()[2];
-			jPoint++;
+      
+      /*--- Check for halos & write only if requested ---*/
+      
+      if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
+        
+        /*--- Load buffers with the temperature and laminar viscosity variables. ---*/
+        Buffer_Send_Var[jPoint] = solution[PLASMA_SOL]->node[iPoint]->GetMagneticField()[0];
+        Buffer_Send_Res[jPoint] = solution[PLASMA_SOL]->node[iPoint]->GetMagneticField()[1];
+        Buffer_Send_Vol[jPoint] = solution[PLASMA_SOL]->node[iPoint]->GetMagneticField()[2];
+        jPoint++;
+      }
 		}
     
 		/*--- Gather the data on the master node. ---*/
@@ -3033,6 +3661,64 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **so
 		}
 	}
   
+  /*--- Communicate the surface sensitivity ---*/
+  
+  if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) ||
+			(Kind_Solver == ADJ_FREE_SURFACE_EULER) || (Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
+			(Kind_Solver == ADJ_FREE_SURFACE_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
+    
+    /*--- First, loop through the mesh in order to find and store the
+     value of the surface sensitivity at any surface nodes. They
+     will be placed in an auxiliary vector and then communicated like
+     all other volumetric variables. ---*/
+
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Aux_Sens[iPoint] = 0.0;
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+      if (config->GetMarker_All_Plotting(iMarker) == YES) {
+        for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          Aux_Sens[iPoint] = solution[ADJFLOW_SOL]->GetCSensitivity(iMarker,iVertex);
+        }
+      }
+    
+		/*--- Loop over this partition to collect the current variable ---*/
+		jPoint = 0;
+		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      
+      /*--- Check for halos & write only if requested ---*/
+      
+      if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
+        
+        /*--- Load buffers with the skin friction, heat transfer, y+ variables. ---*/
+        Buffer_Send_Var[jPoint] = Aux_Sens[iPoint];
+        
+        jPoint++;
+      }
+    }
+    
+		/*--- Gather the data on the master node. ---*/
+		MPI::COMM_WORLD.Barrier();
+		MPI::COMM_WORLD.Gather(Buffer_Send_Var, nBuffer_Scalar, MPI::DOUBLE,
+                           Buffer_Recv_Var, nBuffer_Scalar, MPI::DOUBLE,
+                           MASTER_NODE);
+    
+		/*--- The master node unpacks and sorts this variable by global index ---*/
+		if (rank == MASTER_NODE) {
+			jPoint = 0; iVar = iVar_Sens;
+			for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+				for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
+          
+					/*--- Get global index, then loop over each variable and store ---*/
+					iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
+					Data[iVar][iGlobal_Index] = Buffer_Recv_Var[jPoint];
+					jPoint++;
+				}
+				/*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+				jPoint = (iProcessor+1)*nBuffer_Scalar;
+			}
+		}
+	}
+  
 	/*--- Immediately release the temporary buffers. ---*/
   
 	delete [] Buffer_Send_Var;
@@ -3047,6 +3733,19 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **so
 	}
   
 #endif
+  
+  /*--- Release memory needed for surface coefficients ---*/
+  
+  delete [] Aux_Press;
+	if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
+      (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    delete [] Aux_Frict; delete [] Aux_Heat; delete [] Aux_yPlus;
+  }
+  if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) ||
+			(Kind_Solver == ADJ_FREE_SURFACE_EULER) || (Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
+			(Kind_Solver == ADJ_FREE_SURFACE_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
+    delete [] Aux_Sens;
+  }
   
 }
 
@@ -3063,7 +3762,7 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolut
   
 	/*--- In serial, the single process has access to all solution data,
    so it is simple to retrieve and store inside Solution_Data. ---*/
-  nGlobal_Poin = geometry->GetnPoint(); //geometry->GetnPointDomain();
+  nGlobal_Poin = geometry->GetnPointDomain();
 	Data = new double*[nVar_Total];
 	for (iVar = 0; iVar < nVar_Total; iVar++) {
 		Data[iVar] = new double[nGlobal_Poin];
@@ -3073,14 +3772,14 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolut
    for nodes in the domain (ignore periodic/sliding halo nodes). ---*/
   jPoint = 0;
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-		//if (geometry->node[iPoint]->GetDomain()) {
+		if (geometry->node[iPoint]->GetDomain()) {
 			/*--- Solution (first, and second system of equations) ---*/
 			unsigned short jVar = 0;
 			for (iVar = 0; iVar < nVar_Total; iVar++) {
 				Data[jVar][jPoint] = solution->node[iPoint]->GetSolution(iVar);
         jVar++;
 			}
-		//}
+		}
     
     /*--- Increment jPoint as the counter. We need this because iPoint
      may include halo nodes that we skip over during this loop. ---*/
@@ -3101,11 +3800,16 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolut
 	unsigned long nLocalPoint = 0, MaxLocalPoint = 0;
 	unsigned long iGlobal_Index = 0, nBuffer_Scalar = 0;
   
+  bool Wrt_Halo = config->GetWrt_Halo();
+  
   /*--- Each processor sends its local number of nodes to the master. ---*/
 	//!
 	//! TO DO: MPI I/O for writing the solution files.
 	//!
-	nLocalPoint = geometry->GetnPoint(); //geometry->GetnPointDomain();
+  if (Wrt_Halo) {
+    nLocalPoint = geometry->GetnPoint();
+  } else
+    nLocalPoint = geometry->GetnPointDomain();
 	Buffer_Send_nPoint[0] = nLocalPoint;
 	if (rank == MASTER_NODE) Buffer_Recv_nPoint = new unsigned long[nProcessor];
 	MPI::COMM_WORLD.Barrier();
@@ -3114,13 +3818,8 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolut
                          Buffer_Recv_nPoint, 1, MPI::UNSIGNED_LONG, MASTER_NODE);
 	nBuffer_Scalar = MaxLocalPoint;
   
-	//!
-	//! TO DO: Here is where the code can be extended to an arbitrary number
-	//! of variables specified by the user (name & type), and more
-	//! logic needs to be done.
-	//!
-  
 	/*--- Send and Recv buffers. ---*/
+  
 	double *Buffer_Send_Var = new double[MaxLocalPoint];
 	double *Buffer_Recv_Var = NULL;
   
@@ -3150,12 +3849,15 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolut
    1-D buffers are used to send the solution for each variable at all
    nodes on each partition to the master node. These are then unpacked
    by the master and sorted by global index in one large n-dim. array. ---*/
+  
 	for (iVar = 0; iVar < nVar_Total; iVar++) {
     
 		/*--- Loop over this partition to collect the current variable ---*/
 		jPoint = 0;
 		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-			//if (geometry->node[iPoint]->GetDomain()) {
+			
+      /*--- Check for halos and write only if requested ---*/
+      if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
 
       /*--- Get this variable into the temporary send buffer. ---*/
 				Buffer_Send_Var[jPoint] = solution->node[iPoint]->GetSolution(iVar);
@@ -3165,7 +3867,7 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolut
 					Buffer_Send_GlobalIndex[jPoint] = geometry->node[iPoint]->GetGlobalIndex();
 				}
 				jPoint++;
-			//}
+			}
 		}
     
 		/*--- Gather the data on the master node. ---*/
@@ -3254,8 +3956,10 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short va
 		case FORCE_Z_COEFFICIENT:   AdjExt = "_cfz";  break;
 		case THRUST_COEFFICIENT:    AdjExt = "_ct";   break;
 		case TORQUE_COEFFICIENT:    AdjExt = "_cq";   break;
+    case HEAT_LOAD:             AdjExt = "_Q";    break;
+    case MAX_HEAT_FLUX:         AdjExt = "_qmax"; break;
 		case FIGURE_OF_MERIT:       AdjExt = "_merit";break;
-		case FREE_SURFACE:           AdjExt = "_fs";   break;
+		case FREE_SURFACE:          AdjExt = "_fs";   break;
 		case NOISE:                 AdjExt = "_fwh";  break;
 		}
 		filename.append(AdjExt);
@@ -3320,12 +4024,12 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short va
   
   if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
       (Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
-    restart_file << ", \"Pressure\", \"Mach\"";
+    restart_file << ", \"Pressure\", \"Pressure_Coefficient\", \"Mach\"";
   }
 
   if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
       (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
-    restart_file << ", \"Temperature\", \"Laminar_Viscosity\"";
+    restart_file << ", \"Temperature\", \"Laminar_Viscosity\", \"Skin_Friction_Coefficient\", \"Heat_Transfer\", \"Y_Plus\"";
   }
 
   if ((Kind_Solver == RANS) || (Kind_Solver == FREE_SURFACE_RANS)) {
@@ -3356,12 +4060,18 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short va
   }
   
   if (Kind_Solver == ELECTRIC_POTENTIAL) {
-    unsigned short iDim;
     for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
       restart_file << ", \"ElectricField_" << iDim+1 << "\"";
   }
   
+  if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) ||
+			(Kind_Solver == ADJ_FREE_SURFACE_EULER) || (Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
+			(Kind_Solver == ADJ_FREE_SURFACE_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
+    restart_file << ", \"Surface_Sensitivity\"";
+  }
+  
   restart_file << endl;
+  
   
 	//  for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) { (F.P.)
 	for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
@@ -3369,7 +4079,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short va
 		/*--- Index of the point ---*/
 		restart_file << iPoint << "\t";
 
-		/*--- Loop over the vars/residuals and write the values to file ---*/
+		/*--- Loop over the variables and write the values to file ---*/
 		for (iVar = 0; iVar < nVar_Total; iVar++) {
 			restart_file << scientific << Data[iVar][iPoint] << "\t";
 		}
@@ -3377,6 +4087,8 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short va
 		restart_file << endl;
 	}
 
+  restart_file.close();
+  
 	/*--- Binary version - eventually ---*/
 	//  restart_file.close();
 	//  restart_file.open("restart_file.bin", ios::binary);
@@ -3410,7 +4122,7 @@ void COutput::DeallocateCoordinates(CConfig *config, CGeometry *geometry) {
 	}
 }
 
-void COutput::DeallocateConnectivity(CConfig *config, CGeometry *geometry) {
+void COutput::DeallocateConnectivity(CConfig *config, CGeometry *geometry, bool surf_sol) {
 
 	int rank = MASTER_NODE;
 #ifndef NO_MPI
@@ -3421,13 +4133,19 @@ void COutput::DeallocateConnectivity(CConfig *config, CGeometry *geometry) {
 	if (rank == MASTER_NODE) {
 
 		/*--- Deallocate memory for connectivity data ---*/
-		if (nGlobal_Tria > 0) delete [] Conn_Tria;
-		if (nGlobal_Quad > 0) delete [] Conn_Quad;
-		if (nGlobal_Tetr > 0) delete [] Conn_Tetr;
-		if (nGlobal_Hexa > 0) delete [] Conn_Hexa;
-		if (nGlobal_Wedg > 0) delete [] Conn_Wedg;
-		if (nGlobal_Pyra > 0) delete [] Conn_Pyra;
-		if (nGlobal_Line > 0) delete [] Conn_Line;
+    if (surf_sol) {
+      if (nGlobal_Line > 0) delete [] Conn_Line;
+      if (nGlobal_BoundTria > 0) delete [] Conn_BoundTria;
+      if (nGlobal_BoundQuad > 0) delete [] Conn_BoundQuad;
+    }
+    else {
+      if (nGlobal_Tria > 0) delete [] Conn_Tria;
+      if (nGlobal_Quad > 0) delete [] Conn_Quad;
+      if (nGlobal_Tetr > 0) delete [] Conn_Tetr;
+      if (nGlobal_Hexa > 0) delete [] Conn_Hexa;
+      if (nGlobal_Wedg > 0) delete [] Conn_Wedg;
+      if (nGlobal_Pyra > 0) delete [] Conn_Pyra;
+    }
 
 	}
 }
@@ -3464,6 +4182,11 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
 	bool rotating_frame = config->GetRotating_Frame();
 	bool equiv_area = config->GetEquivArea();
 	bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == ADJ_RANS));
+  
+  bool isothermal = false;
+  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+    if (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL) isothermal = true;
+  
 	unsigned short iSpecies;
 
 	/*--- Write file name with extension ---*/
@@ -3480,22 +4203,23 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
 	char begin[]= "\"Iteration\"";
 
 	char flow_coeff[]= ",\"CLift\",\"CDrag\",\"CSideForce\",\"CMx\",\"CMy\",\"CMz\",\"CFx\",\"CFy\",\"CFz\",\"CL/CD\"";
+	char heat_coeff[]= ",\"CHeat_Load\",\"CHeat_Max\"";
 	char equivalent_area_coeff[]= ",\"CEquivArea\",\"CNearFieldOF\"";
 	char rotating_frame_coeff[]= ",\"CMerit\",\"CT\",\"CQ\"";
 	char free_surface_coeff[]= ",\"CFreeSurface\"";
-	char plasma_coeff[]= ",\"CLift\",\"CDrag\",\"CSideForce\",\"CMx\",\"CMy\",\"CMz\",\"CFx\",\"CFy\",\"CFz\",\"CL/CD\",\"CQ\",\"PressDrag\",\"ViscDrag\",\"MagnetDrag\"";
+	char plasma_coeff[]= ",\"CLift\",\"CDrag\",\"CSideForce\",\"CMx\",\"CMy\",\"CMz\",\"CFx\",\"CFy\",\"CFz\",\"CL/CD\",\"Q\",\"PressDrag\",\"ViscDrag\",\"MagnetDrag\"";
 	char wave_coeff[]= ",\"CWave\"";
 	char fea_coeff[]= ",\"CFEA\"";
-    char adj_coeff[]= ",\"Sens_Geo\",\"Sens_Mach\",\"Sens_AoA\",\"Sens_Press\",\"Sens_Temp\",\"Sens_AoS\"";
-    char adj_plasma_coeff[]= ",\"Sens_Geo\",\"Sens_Mach\",\"Sens_AoA\",\"Sens_Press\",\"Sens_Temp\",\"Sens_AoS\"";
-
+  char adj_coeff[]= ",\"Sens_Geo\",\"Sens_Mach\",\"Sens_AoA\",\"Sens_Press\",\"Sens_Temp\",\"Sens_AoS\"";
+  char adj_plasma_coeff[]= ",\"Sens_Geo\",\"Sens_Mach\",\"Sens_AoA\",\"Sens_Press\",\"Sens_Temp\",\"Sens_AoS\"";
+  
 	char flow_resid[]= ",\"Res_Flow[0]\",\"Res_Flow[1]\",\"Res_Flow[2]\",\"Res_Flow[3]\",\"Res_Flow[4]\"";
 	char adj_flow_resid[]= ",\"Res_AdjFlow[0]\",\"Res_AdjFlow[1]\",\"Res_AdjFlow[2]\",\"Res_AdjFlow[3]\",\"Res_AdjFlow[4]\"";
-
+  
 	char turb_resid[1000];
 	switch (config->GetKind_Turb_Model()){
-	case SA:	sprintf (turb_resid, ",\"Res_Turb[0]\""); break;
-	case SST:	sprintf (turb_resid, ",\"Res_Turb[0]\",\"Res_Turb[1]\""); break;
+    case SA:	sprintf (turb_resid, ",\"Res_Turb[0]\""); break;
+    case SST:	sprintf (turb_resid, ",\"Res_Turb[0]\",\"Res_Turb[1]\""); break;
 	}
 
 	char adj_turb_resid[]= ",\"Res_AdjTurb[0]\"";
@@ -3519,6 +4243,7 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
 	switch (config->GetKind_Solver()) {
 	case EULER : case NAVIER_STOKES: case RANS :
 		ConvHist_file[0] << begin << flow_coeff;
+    if (isothermal) ConvHist_file[0] << heat_coeff;
 		if (equiv_area) ConvHist_file[0] << equivalent_area_coeff;
 		if (rotating_frame) ConvHist_file[0] << rotating_frame_coeff;
 		ConvHist_file[0] << flow_resid;
@@ -3611,7 +4336,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
 	/*--- WARNING: These buffers have hard-coded lengths. Note that you
    may have to adjust them to be larger if adding more entries. ---*/
 	char begin[1000], direct_coeff[1000], adjoint_coeff[1000], flow_resid[1000], adj_flow_resid[1000],
-	turb_resid[1000], adj_turb_resid[1000], plasma_resid[1000], adj_plasma_resid[1000], resid_aux[1000],
+	turb_resid[1000], trans_resid[1000], adj_turb_resid[1000], plasma_resid[1000], adj_plasma_resid[1000], resid_aux[1000],
 	levelset_resid[1000], adj_levelset_resid[1000], wave_coeff[1000], fea_coeff[1000], wave_resid[1000],
 	fea_resid[1000], end[1000];
 	double dummy = 0.0;
@@ -3628,6 +4353,11 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
 	bool compressible = !config[val_iZone]->GetIncompressible();
 	bool rotating_frame = config[val_iZone]->GetRotating_Frame();
 	bool equiv_area = config[val_iZone]->GetEquivArea();
+	bool transition = (config[val_iZone]->GetKind_Trans_Model() == LM);
+  bool isothermal = false;
+  for (unsigned short iMarker = 0; iMarker < config[val_iZone]->GetnMarker_All(); iMarker++)
+    if (config[val_iZone]->GetMarker_All_Boundary(iMarker) == ISOTHERMAL) isothermal = true;
+  
   
 //	bool flow = ((config[val_iZone]->GetKind_Solver() == EULER) || (config[val_iZone]->GetKind_Solver() == NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == RANS) ||
 //               (config[val_iZone]->GetKind_Solver() == FREE_SURFACE_EULER) || (config[val_iZone]->GetKind_Solver() == FREE_SURFACE_NAVIER_STOKES) ||
@@ -3661,14 +4391,14 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
 	/*--- Initialize variables to store information from all domains (direct solution) ---*/
   double Total_CLift = 0.0, Total_CDrag = 0.0, Total_CSideForce = 0.0, Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0,
   Total_CEquivArea = 0.0, Total_CNearFieldOF = 0.0, Total_CFx = 0.0, Total_CFy = 0.0, Total_CFz = 0.0, Total_CMerit = 0.0,
-  Total_CT = 0.0, Total_CQ = 0.0, Total_CFreeSurface = 0.0, Total_CWave = 0.0, Total_CFEA = 0.0, PressureDrag = 0.0, ViscDrag = 0.0, MagDrag = 0.0;
+  Total_CT = 0.0, Total_CQ = 0.0, Total_CFreeSurface = 0.0, Total_CWave = 0.0, Total_CFEA = 0.0, PressureDrag = 0.0, ViscDrag = 0.0, MagDrag = 0.0, Total_Q = 0.0, Total_MaxQ = 0.0;
   
   /*--- Initialize variables to store information from all domains (adjoint solution) ---*/
   double Total_Sens_Geo = 0.0, Total_Sens_Mach = 0.0, Total_Sens_AoA = 0.0;
   double Total_Sens_Press = 0.0, Total_Sens_Temp = 0.0;
   
   /*--- Residual arrays ---*/
-  double *residual_flow = NULL, *residual_turbulent = NULL, *residual_levelset = NULL, *residual_plasma = NULL;
+  double *residual_flow = NULL, *residual_turbulent = NULL, *residual_transition = NULL, *residual_levelset = NULL, *residual_plasma = NULL;
   double *residual_adjflow = NULL, *residual_adjturbulent = NULL, *residual_adjlevelset = NULL, *residual_adjplasma = NULL;
   double *residual_wave = NULL; double *residual_fea = NULL;
   
@@ -3677,7 +4407,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
   unsigned long *sbuf_time = NULL, *rbuf_time = NULL;
   
   /*--- Initialize number of variables ---*/
-  unsigned short nVar_Flow = 0, nVar_LevelSet = 0, nVar_Turb = 0, nVar_Wave = 0, nVar_FEA = 0, nVar_Plasma = 0,
+  unsigned short nVar_Flow = 0, nVar_LevelSet = 0, nVar_Turb = 0, nVar_Trans = 0, nVar_Wave = 0, nVar_FEA = 0, nVar_Plasma = 0,
   nVar_AdjFlow = 0, nVar_AdjPlasma = 0, nVar_AdjLevelSet = 0, nVar_AdjTurb = 0, nVar_Force = 0, nVar_Time = 0;
   
   /*--- Direct problem variables ---*/
@@ -3687,6 +4417,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
       case SA:	nVar_Turb = 1; break;
       case SST: nVar_Turb = 2; break;
     }
+  if (transition) nVar_Trans = 2;
   if (wave) nVar_Wave = 2;
   if (fea) nVar_FEA = nDim;
   if (plasma) nVar_Plasma = config[val_iZone]->GetnMonatomics()*(nDim+2) + config[val_iZone]->GetnDiatomics()*(nDim+3);
@@ -3703,7 +4434,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
   if (free_surface) nVar_AdjLevelSet = 1;
   
   /*--- Other vectors ---*/
-  nVar_Force = 16; nVar_Time = 3;
+  nVar_Force = 18; nVar_Time = 3;
   
   /*--- Allocate memory for send buffer ---*/
   sbuf_force = new double[nVar_Force];
@@ -3715,6 +4446,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
   /*--- Allocate memory for the residual ---*/
   residual_flow = new double[nVar_Flow];
   residual_turbulent = new double[nVar_Turb];
+  residual_transition = new double[nVar_Trans];
   residual_plasma = new double[nVar_Plasma];
   residual_levelset = new double[nVar_LevelSet];
   residual_wave = new double[nVar_Wave];
@@ -3761,6 +4493,11 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
       
       if (free_surface) {
         Total_CFreeSurface += solution_container[val_iZone][FinestMesh][LEVELSET_SOL]->GetTotal_CFreeSurface();
+      }
+      
+      if (isothermal) {
+        Total_Q += solution_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_Q();
+        Total_MaxQ += solution_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_MaxQ();
       }
       
       if (equiv_area) {
@@ -3816,6 +4553,11 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
         sbuf_force[11] += solution_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CQ();
       }
       
+      if (isothermal) {
+        sbuf_force[12] += solution_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_Q();
+        sbuf_force[13] += solution_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_MaxQ();
+      }
+      
       /*--- Flow Residuals ---*/
       for (iVar = 0; iVar < nVar_Flow; iVar++)
         residual_flow[iVar] = solution_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(iVar);
@@ -3824,6 +4566,12 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
       if (turbulent) {
         for (iVar = 0; iVar < nVar_Turb; iVar++)
           residual_turbulent[iVar] = solution_container[val_iZone][FinestMesh][TURB_SOL]->GetRes_RMS(iVar);
+      }
+      
+      /*--- Transition residual ---*/
+      if (transition) {
+        for (iVar = 0; iVar < nVar_Trans; iVar++)
+          residual_transition[iVar] = solution_container[val_iZone][FinestMesh][TRANS_SOL]->GetRes_RMS(iVar);
       }
       
       /*--- Free Surface residual ---*/
@@ -3900,7 +4648,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
       Total_CFy += solution_container[val_iZone][FinestMesh][PLASMA_SOL]->GetTotal_CFy();
       Total_CFz += solution_container[val_iZone][FinestMesh][PLASMA_SOL]->GetTotal_CFz();
       Total_CEff += solution_container[val_iZone][FinestMesh][PLASMA_SOL]->GetTotal_CEff();
-      Total_CQ += solution_container[val_iZone][FinestMesh][PLASMA_SOL]->GetTotal_CQ();
+      Total_Q += solution_container[val_iZone][FinestMesh][PLASMA_SOL]->GetTotal_Q();
       PressureDrag += solution_container[val_iZone][FinestMesh][PLASMA_SOL]->Get_PressureDrag();
       ViscDrag += solution_container[val_iZone][FinestMesh][PLASMA_SOL]->Get_ViscDrag();
       MagDrag  += solution_container[val_iZone][FinestMesh][PLASMA_SOL]->Get_MagnetDrag();
@@ -4003,7 +4751,11 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
     if (aeroacoustic) Total_CWave = rbuf_force[9];
     if (wave) Total_CWave = rbuf_force[9];
     if (fea) Total_CFEA = rbuf_force[9];
-        
+    if (isothermal) {
+      Total_Q = rbuf_force[12];
+      Total_MaxQ = rbuf_force[13];
+    }
+    
     /*--- Note that the nearfield based functionals should be redefined using the Cd weight ---*/
     if (equiv_area) {
       Total_CEquivArea  = config[val_iZone]->GetWeightCd()*Total_CDrag + (1.0-config[val_iZone]->GetWeightCd())*(rbuf_force[9]/double(size));
@@ -4116,6 +4868,9 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
             sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
                      Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy,
                      Total_CFz, Total_CEff);
+            if (isothermal)
+              sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy,
+                       Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_Q, Total_MaxQ);
             if (equiv_area)
               sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy,
                        Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_CEquivArea, Total_CNearFieldOF);
@@ -4149,6 +4904,11 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                 case 1: sprintf (turb_resid, ", %12.10f", log10 (residual_turbulent[0])); break;
                 case 2: sprintf (turb_resid, ", %12.10f, %12.10f", log10(residual_turbulent[0]), log10(residual_turbulent[1])); break;
               }
+            }
+            
+            /*--- Transition residual ---*/
+            if (transition){
+                sprintf (trans_resid, ", %12.10f, %12.10f", log10(residual_transition[0]), log10(residual_transition[1]));
             }
             
             /*--- Free surface residual ---*/
@@ -4325,6 +5085,8 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
               case SA:	cout << "       Res[nu]"; break;
               case SST:	cout << "     Res[kine]" << "     Res[omega]"; break;
             }
+            
+            if (transition) { cout << "      Res[Int]" << "       Res[Re]"; }
             if (rotating_frame && nDim == 3 ) cout << "   CThrust(Total)" << "   CTorque(Total)" << endl;
             else cout << "   CLift(Total)"   << "   CDrag(Total)"   << endl;
             break;
@@ -4360,6 +5122,14 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
             
           case ADJ_PLASMA_EULER : case ADJ_PLASMA_NAVIER_STOKES :
             if ((config[val_iZone]->GetKind_GasModel() == ARGON_SID) || (config[val_iZone]->GetKind_GasModel() == AIR7) || (config[val_iZone]->GetKind_GasModel() == AIR5) || (config[val_iZone]->GetKind_GasModel() == N2) || (config[val_iZone]->GetKind_GasModel() == O2))
+              
+            /*--- Visualize the maximum residual ---*/
+              cout << endl << " Maximum residual: " << log10(solution_container[val_iZone][FinestMesh][ADJPLASMA_SOL]->GetRes_Max(0))
+              <<", located at point "<< solution_container[val_iZone][FinestMesh][ADJPLASMA_SOL]->GetPoint_Max(0) << "." << endl;
+            
+              if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
+              else cout << endl << " IntIter" << "  ExtIter";
+            
               cout << "        Res[Psi_Rho0]" << "       Res[Psi_E0]" << "	      Sens_Geo" << endl;
             break;
             
@@ -4420,9 +5190,9 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
             <<", located at point "<< solution_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetPoint_Max(0) << "." << endl;
             
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
-            else cout << endl << " IntIter" << "  ExtIter";
+            else cout << endl << " IntIter" << " ExtIter";
             
-            cout << "     Res[Psi_Press]" << "   Res[Psi_Dist]" << "     Sens_Geo" << "    Sens_Mach" << endl;
+            cout << "   Res[Psi_Press]" << "   Res[Psi_Dist]" << "    Sens_Geo" << "   Sens_Mach" << endl;
             break;
             
         }
@@ -4497,6 +5267,9 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
             case 2: cout.width(14); cout << log10(residual_turbulent[0]);
               cout.width(14); cout << log10(residual_turbulent[1]); break;
           }
+          
+          if (transition) { cout.width(14); cout << log10(residual_transition[0]); cout.width(14); cout << log10(residual_transition[1]); }
+      
           if (rotating_frame  && nDim == 3 ) { cout.width(15); cout << Total_CT; cout.width(15); cout << Total_CQ; }
           else { cout.width(15); cout << Total_CLift; cout.width(15); cout << Total_CDrag; }
           cout << endl;
@@ -4650,7 +5423,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
         case ADJ_FREE_SURFACE_RANS :
           
           if (!DualTime_Iteration) {
-            ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid << adj_levelset_resid << end;
+            ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid << adj_levelset_resid;
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
@@ -4658,12 +5431,12 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
           cout.precision(6);
           cout.setf(ios::fixed,ios::floatfield);
           cout.width(17); cout << log10(residual_adjflow[0]);
-          cout.width(15); cout << log10(residual_adjlevelset[0]);
+          cout.width(16); cout << log10(residual_adjlevelset[0]);
           
           cout.precision(4);
           cout.setf(ios::scientific,ios::floatfield);
-          cout.width(14); cout << Total_Sens_Geo;
-          cout.width(14); cout << Total_Sens_Mach;
+          cout.width(12); cout << Total_Sens_Geo;
+          cout.width(12); cout << Total_Sens_Mach;
           cout << endl;
           break;
           
@@ -4690,6 +5463,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
     delete [] residual_levelset;
     delete [] residual_plasma;
     delete [] residual_turbulent;
+    delete [] residual_transition;
     delete [] residual_wave;
     delete [] residual_fea;
     
@@ -4730,14 +5504,18 @@ void COutput::SetResult_Files(CSolution ****solution_container, CGeometry ***geo
 
 		/*--- Flags identifying the types of files to be written. ---*/
 		bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol();
+    bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol();
+    
 #ifndef NO_MPI
     /*--- Do not merge the volume solutions if we are running in parallel.
      Force the use of SU2_SOL to merge the volume sols in this case. ---*/
     int size = MPI::COMM_WORLD.Get_size();
-    if (size > 1)
+    if (size > 1) {
       Wrt_Vol = false;
+      Wrt_Srf = false;
+    }
 #endif
-		bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol();
+    
 		bool Wrt_Csv = config[iZone]->GetWrt_Csv_Sol();
 		bool Wrt_Rst = config[iZone]->GetWrt_Restart();
 
@@ -4747,41 +5525,24 @@ void COutput::SetResult_Files(CSolution ****solution_container, CGeometry ***geo
 		case FREE_SURFACE_EULER : case FREE_SURFACE_NAVIER_STOKES: case FREE_SURFACE_RANS:
 		case FLUID_STRUCTURE_EULER : case FLUID_STRUCTURE_NAVIER_STOKES : case FLUID_STRUCTURE_RANS:
 
-			/*--- Prototyping new volume output specification. ---*/
-			//solution_container[iZone][MESH_0][FLOW_SOL]->SetVolume_Output(config[iZone], geometry[iZone][MESH_0], data_container[iZone][FLOW_SOL], nOutput_Vars[iZone][FLOW_SOL]);
-
-			if (Wrt_Srf) SetSurface_Flow(config[iZone], geometry[iZone][MESH_0], solution_container[iZone][MESH_0][FLOW_SOL], iExtIter, iZone);
 			if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][MESH_0], solution_container[iZone][MESH_0][FLOW_SOL], iExtIter);
 			break;
 
-		case PLASMA_EULER : case PLASMA_NAVIER_STOKES :
-			if (Wrt_Srf) SetSurface_Flow(config[iZone], geometry[iZone][MESH_0], solution_container[0][MESH_0][PLASMA_SOL], iExtIter, iZone);
-			break;
-
-		case WAVE_EQUATION:
-			if (Wrt_Srf) SetSurface_Flow(config[iZone], geometry[iZone][MESH_0], solution_container[iZone][MESH_0][WAVE_SOL], iExtIter, iZone);
-			break;
-
 		case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS : case ADJ_FREE_SURFACE_EULER : case ADJ_FREE_SURFACE_NAVIER_STOKES: case ADJ_FREE_SURFACE_RANS:
-			if (Wrt_Srf) SetSurface_Adjoint(config[iZone], geometry[iZone][MESH_0], solution_container[iZone][MESH_0][ADJFLOW_SOL], solution_container[iZone][MESH_0][FLOW_SOL], iExtIter, iZone);
 			if (Wrt_Csv) SetSurfaceCSV_Adjoint(config[iZone], geometry[iZone][MESH_0], solution_container[iZone][MESH_0][ADJFLOW_SOL], solution_container[iZone][MESH_0][FLOW_SOL], iExtIter, iZone);
 			break;
 
 		case LIN_EULER : case LIN_NAVIER_STOKES :
-			if (Wrt_Srf) SetSurface_Linearized(config[iZone], geometry[iZone][MESH_0], solution_container[iZone][MESH_0][LINFLOW_SOL], config[iZone]->GetSurfLinCoeff_FileName(), iExtIter);
 			if (Wrt_Csv) SetSurfaceCSV_Linearized(config[iZone], geometry[iZone][MESH_0], solution_container[iZone][MESH_0][LINFLOW_SOL], config[iZone]->GetSurfLinCoeff_FileName(), iExtIter);
 			break;
 
 		case AEROACOUSTIC_EULER : case AEROACOUSTIC_NAVIER_STOKES : case AEROACOUSTIC_RANS:
-			if (Wrt_Srf) SetSurface_Flow(config[iZone], geometry[iZone][MESH_0], solution_container[iZone][MESH_0][FLOW_SOL], iExtIter, iZone);
 			if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][MESH_0], solution_container[iZone][MESH_0][FLOW_SOL], iExtIter);
 			break;
 		case ADJ_AEROACOUSTIC_EULER:
 			if (iZone == ZONE_0) {
-				if (Wrt_Srf) SetSurface_Adjoint(config[iZone], geometry[iZone][MESH_0], solution_container[iZone][MESH_0][ADJFLOW_SOL], solution_container[iZone][MESH_0][FLOW_SOL], iExtIter, iZone);
 				if (Wrt_Csv) SetSurfaceCSV_Adjoint(config[iZone], geometry[iZone][MESH_0], solution_container[iZone][MESH_0][ADJFLOW_SOL], solution_container[iZone][MESH_0][FLOW_SOL], iExtIter, iZone);
 			} else if (iZone == ZONE_1) {
-				if (Wrt_Srf) SetSurface_Flow(config[iZone], geometry[iZone][MESH_0], solution_container[iZone][MESH_0][FLOW_SOL], iExtIter, iZone);
 				if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][MESH_0], solution_container[iZone][MESH_0][FLOW_SOL], iExtIter);
 			}
 			break;
@@ -4798,25 +5559,25 @@ void COutput::SetResult_Files(CSolution ****solution_container, CGeometry ***geo
          is only performed if a volume solution file is requested, and it
          is active by default. ---*/
 
-		if (Wrt_Vol)
+    if (Wrt_Vol || Wrt_Srf)
 			MergeGeometry(config[iZone], geometry[iZone][MESH_0], iZone);
-
+  
 		/*--- Merge the solution data needed for volume solutions and restarts ---*/
 
 		if (Wrt_Vol || Wrt_Rst)
 			MergeSolution(config[iZone], geometry[iZone][MESH_0],
 					solution_container[iZone][MESH_0], iZone);
-
+  
 		/*--- Write restart, CGNS, or Tecplot files using the merged data.
          This data lives only on the master, and these routines are currently
          executed by the master proc alone (as if in serial). ---*/
 
 		if (rank == MASTER_NODE) {
-
+ 
 			/*--- Write a native restart file ---*/
 			if (Wrt_Rst)
 				SetRestart(config[iZone], geometry[iZone][MESH_0], iZone);
-
+  
 			if (Wrt_Vol) {
 
 				switch (FileFormat) {
@@ -4824,9 +5585,8 @@ void COutput::SetResult_Files(CSolution ****solution_container, CGeometry ***geo
 				case TECPLOT:
 
 					/*--- Write a Tecplot ASCII file ---*/
-					SetTecplot_ASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone);
-					DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0]);
-					DeallocateCoordinates(config[iZone], geometry[iZone][MESH_0]);
+					SetTecplot_ASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone, false);
+					DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
 					break;
 
 				case TECPLOT_BINARY:
@@ -4845,11 +5605,33 @@ void COutput::SetResult_Files(CSolution ****solution_container, CGeometry ***geo
 				default:
 					break;
 				}
+        
 			}
+      
+      if (Wrt_Srf) {
+        
+        switch (FileFormat) {
+            
+          case TECPLOT:
+            
+            /*--- Write a Tecplot ASCII file ---*/
+            SetTecplot_ASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone, true);
+            DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], true);
+            break;
+            
+          default:
+            break;
+        }
+        
+      }
 
 			/*--- Release memory needed for merging the solution data. ---*/
-			if (Wrt_Vol || Wrt_Rst)
-				DeallocateSolution(config[iZone], geometry[iZone][MESH_0]);
+      if (((Wrt_Vol) || (Wrt_Srf)) && (FileFormat == TECPLOT))
+        DeallocateCoordinates(config[iZone], geometry[iZone][MESH_0]);
+      
+      if (Wrt_Vol || Wrt_Rst)
+        DeallocateSolution(config[iZone], geometry[iZone][MESH_0]);
+      
 		}
 
 		/*--- Final broadcast (informing other procs that the base output
@@ -4879,8 +5661,7 @@ void COutput::SetBaselineResult_Files(CSolution **solution, CGeometry **geometry
     /*--- Flags identifying the types of files to be written. ---*/
     
 		bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol();
-		//bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol();
-		//bool Wrt_Csv = config[iZone]->GetWrt_Csv_Sol();
+		bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol();
     bool Wrt_Rst = config[iZone]->GetWrt_Restart();
     
     /*--- Get the file output format ---*/
@@ -4894,13 +5675,17 @@ void COutput::SetBaselineResult_Files(CSolution **solution, CGeometry **geometry
      is only performed if a volume solution file is requested, and it
      is active by default. ---*/
     
-    if (Wrt_Vol)
+    if (Wrt_Vol || Wrt_Srf) {
+      if (rank == MASTER_NODE) cout <<"Merging geometry." << endl;
       MergeGeometry(config[iZone], geometry[iZone], iZone);
+    }
     
     /*--- Merge the solution data needed for volume solutions and restarts ---*/
     
-    if (Wrt_Vol || Wrt_Rst)
+    if (Wrt_Vol || Wrt_Rst) {
+      if (rank == MASTER_NODE) cout <<"Merging solution." << endl;
       MergeBaselineSolution(config[iZone], geometry[iZone], solution[iZone], iZone);
+    }
     
     /*--- Write restart, CGNS, or Tecplot files using the merged data.
      This data lives only on the master, and these routines are currently
@@ -4910,14 +5695,15 @@ void COutput::SetBaselineResult_Files(CSolution **solution, CGeometry **geometry
       
       if (Wrt_Vol) {
         
+        if (rank == MASTER_NODE) cout <<"Writing volume solution." << endl;
+
         switch (FileFormat) {
             
           case TECPLOT:
             
             /*--- Write a Tecplot ASCII file ---*/
-            SetTecplot_ASCII(config[iZone], geometry[iZone], iZone, val_nZone);
-            DeallocateConnectivity(config[iZone], geometry[iZone]);
-            DeallocateCoordinates(config[iZone], geometry[iZone]);
+            SetTecplot_ASCII(config[iZone], geometry[iZone], iZone, val_nZone, false);
+            DeallocateConnectivity(config[iZone], geometry[iZone], false);
             break;
             
           case TECPLOT_BINARY:
@@ -4936,9 +5722,32 @@ void COutput::SetBaselineResult_Files(CSolution **solution, CGeometry **geometry
           default:
             break;
         }
+        
       }
       
-      /*--- Release memory needed for merging the solution data. ---*/
+      if (Wrt_Srf) {
+        
+        if (rank == MASTER_NODE) cout <<"Writing surface solution." << endl;
+        
+        switch (FileFormat) {
+            
+          case TECPLOT:
+            
+            /*--- Write a Tecplot ASCII file ---*/
+            SetTecplot_ASCII(config[iZone], geometry[iZone], iZone, val_nZone, true);
+            DeallocateConnectivity(config[iZone], geometry[iZone], true);
+            break;
+            
+          default:
+            break;
+        }
+        
+      }
+      
+			/*--- Release memory needed for merging the solution data. ---*/
+      if (((Wrt_Vol) || (Wrt_Srf)) && (FileFormat == TECPLOT))
+        DeallocateCoordinates(config[iZone], geometry[iZone]);
+      
       if (Wrt_Vol || Wrt_Rst)
         DeallocateSolution(config[iZone], geometry[iZone]);
     }

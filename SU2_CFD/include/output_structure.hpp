@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -49,14 +49,18 @@ using namespace std;
  * \brief Class for writing the flow, adjoint and linearized solver 
  *        solution (including the history solution, and parallel stuff).
  * \author F. Palacios, T. Economon, M. Colonno.
- * \version 2.0.4
+ * \version 2.0.5
  */
 class COutput {
 
 	unsigned long nGlobal_Poin;   // Global number of nodes with halos
+  unsigned long nSurf_Poin;   // Global number of nodes of the surface
   unsigned long nGlobal_Doma;   // Global number of nodes without halos
-	unsigned long nGlobal_Elem,  // Global number of elems without halos
-	nGlobal_Line,
+	unsigned long nGlobal_Elem;  // Global number of elems without halos
+  unsigned long nSurf_Elem,  // Global number of surface elems without halos
+  nGlobal_Line,
+	nGlobal_BoundTria,
+	nGlobal_BoundQuad,
 	nGlobal_Tria,
 	nGlobal_Quad,
 	nGlobal_Tetr,
@@ -64,13 +68,15 @@ class COutput {
 	nGlobal_Wedg,
 	nGlobal_Pyra;
 	double **Coords;              // node i (x,y,z) = (Coords[0][i], Coords[1][i], Coords[2][i])
+  int *Conn_Line;
+  int *Conn_BoundTria;
+	int *Conn_BoundQuad;
   int *Conn_Tria;	// triangle 1 = Conn_Tria[0], Conn_Tria[1], Conn_Tria[3]
 	int *Conn_Quad;
 	int *Conn_Tetr;
 	int *Conn_Hexa;
 	int *Conn_Wedg;
 	int *Conn_Pyra;
-	int *Conn_Line;
 	double *Volume;
 	double **Data;
 	double **residuals, **consv_vars;					// placeholders
@@ -140,38 +146,6 @@ public:
 	 */
 	void SetFlowRate(CSolution *solution_container, CGeometry *geometry, CConfig *config,
                    unsigned long iExtIter);
-
-	/*! 
-	 * \brief Create and write the file with the flow coefficient on the surface.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] FlowSolution - Flow solution.
-	 * \param[in] iExtIter - Current external (time) iteration.
-	 * \param[in] iZone - Current zone, or, if time-spectral, time instance
-	 */
-	void SetSurface_Flow(CConfig *config, CGeometry *geometry, CSolution *FlowSolution, unsigned long iExtIter, unsigned short iZone);
-	
-	/*! 
-	 * \brief Create and write the file with the adjoint coefficients on the surface for serial computations.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] AdjSolution - Adjoint solution.
-	 * \param[in] FlowSolution - Flow solution.
-	 * \param[in] iExtIter - Current external (time) iteration.
-	 * \param[in] iZone - Current zone, or - for time-spectral - current time instance
-	 */
-	void SetSurface_Adjoint(CConfig *config, CGeometry *geometry, CSolution *AdjSolution, CSolution *FlowSolution, unsigned long iExtIter, unsigned short iZone);
-	
-	/*! 
-	 * \brief Create and write the file with linearized coefficient on the surface for serial computations
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] LinSolution - Linearized solution.
-	 * \param[in] val_filename - Name of the output file.
-	 * \param[in] iExtIter - Current external (time) iteration.
-	 */
-	void SetSurface_Linearized(CConfig *config, CGeometry *geometry, CSolution *LinSolution, string val_filename, 
-																			 unsigned long iExtIter);
 	
 	/*! 
 	 * \brief Create and write the file with the flow coefficient on the surface.
@@ -224,7 +198,15 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] Elem_Type - VTK index of the element type being merged.
 	 */
-	void MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
+	void MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
+  
+  /*!
+	 * \brief Merge the connectivity for a single element type from all processors.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] Elem_Type - VTK index of the element type being merged.
+	 */
+	void MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
   
 	/*!
 	 * \brief Merge the solution into a data structure used for output file writing.
@@ -290,7 +272,7 @@ public:
    * \param[in] val_iZone - Current zone.
    * \param[in] val_nZone - Total number of zones.
 	 */
-	void SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone);
+	void SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
   
 	/*! 
 	 * \brief Write Tecplot binary results file.
@@ -350,7 +332,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 */
-	void DeallocateConnectivity(CConfig *config, CGeometry *geometry);
+	void DeallocateConnectivity(CConfig *config, CGeometry *geometry, bool surf_sol);
   
   /*!
 	 * \brief Deallocate temporary memory needed for merging and writing solution variables.

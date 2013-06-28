@@ -1,7 +1,7 @@
 ## \file filelock.py
 #  \brief python package for filelocking 
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.4
+#  \version 2.0.5
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -19,15 +19,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import os, time, errno
+from random import random
+
 # -------------------------------------------------------------------
 #  File Lock Class
 # -------------------------------------------------------------------  
-class FileLock(object):
+class filelock(object):
     """ A file locking mechanism that has context-manager support so 
         you can use it in a with statement. 
         
         Example:
-        with FileLock("test.txt", timeout=2, delay=0.5):
+        with filelock("test.txt", timeout=2, delay=0.5):
             print("Lock acquired.")
             # Do something with the locked file
             
@@ -58,7 +61,6 @@ class FileLock(object):
             exceeds `timeout` number of seconds, in which case it throws 
             an exception.
         """
-        from random import random
         start_time = time.time()
         while True:
             try:

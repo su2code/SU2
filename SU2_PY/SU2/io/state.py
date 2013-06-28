@@ -1,7 +1,7 @@
 ## \file state.py
 #  \brief python package for state 
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.4
+#  \version 2.0.5
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -23,7 +23,7 @@
 #  Imports
 # ----------------------------------------------------------------------
 
-import os, sys, shutil, copy
+import os, sys, shutil, copy, time
 from ..io   import expand_part, get_adjointSuffix, add_suffix, \
                    get_specialCases
 from ..util import bunch
@@ -31,14 +31,14 @@ from ..util import ordered_bunch
 
 
 # ----------------------------------------------------------------------
-#  State Class
+#  State Factory
 # ----------------------------------------------------------------------
 
-class State(ordered_bunch):
+def State_Factory(state=None):
     """ state = SU2.io.State()
         
         Starts a state class, an extension of ordered_bunch().
-        Stores data generated while traversing SU2 tool path
+        Stores data generated while traversing SU2 tool chain
         
         Parameters:
             FUNCTIONS - ordered bunch of objective function values
@@ -82,18 +82,45 @@ class State(ordered_bunch):
 
     """   
     
-    def __init__(self,*args,**kwarg):
-        """ Initializes a State """
-        super(State,self).__init__(*args,**kwarg)
+    if not state is None:
+        assert isinstance(state,State) , 'input is must be a state instance'
+        return state
+    
+    NewClass = State()
+    
+    for key in ['FUNCTIONS','GRADIENTS','VARIABLES','FILES','HISTORY']:
+        NewClass[key] = ordered_bunch()
+            
+    return NewClass
+
+
+# ----------------------------------------------------------------------
+#  State Class
+# ----------------------------------------------------------------------
+
+class State(ordered_bunch):
+    """ state = SU2.io.state.State()
         
-        if not args and not kwarg:
-            for key in ['FUNCTIONS','GRADIENTS','VARIABLES','FILES','HISTORY']:
-                if not self.has_key(key):
-                    self[key] = ordered_bunch()
+        This is the State class that should be generated with the 
+        Factory Function SU2.io.state.State_Factory()
+        
+        Parameters:
+            none, should be loaded with State_Factory()
+        
+        Methods:
+            update()        - updates self with another state
+            pullnlink()     - returns files to pull and link
+            design_vector() - vectorizes design variables
+            find_files()    - finds existing mesh and solutions
+
+    """
+    
+    _timestamp = 0
     
     def update(self,ztate):
         """ Updates self given another state
         """
+        
         if not ztate: return
         assert isinstance(ztate,State) , 'must update with another State-type'
         for key in self.keys():
@@ -101,6 +128,9 @@ class State(ordered_bunch):
                 self[key].update( ztate[key] )
             elif ztate[key]:
                 self[key] = ztate[key]
+        
+        self.set_timestamp()
+                
         
     def __repr__(self):
         return self.__str__()
@@ -130,7 +160,10 @@ class State(ordered_bunch):
             # link big files
             if key == 'MESH':
                 # mesh (merged and partitions)
-                value = [value] + expand_part(value,config)
+                if config.DECOMPOSED:
+                    value = expand_part(value,config) # hack - twl
+                else:
+                    value = [value]
                 link.extend(value)
             elif key == 'DIRECT':
                 #if config.RESTART_SOL == 'YES':
@@ -210,14 +243,25 @@ class State(ordered_bunch):
         
         return
     
+    def __setitem__(self,k,v):
+        if self._initialized:
+            self.set_timestamp()
+        super(State,self).__setitem__(k,v)
+    
+    def set_timestamp(self):
+        self._timestamp = time.time()
+    
+    def tic(self):
+        """ timestamp = State.tic() 
+            returns the time that this state was last modified
+        """
+        return self._timestamp
+    
+    def toc(self,timestamp):
+        """ updated = State.toc(timestamp)
+            returns True if state was modified since last timestamp
+        """
+        return self._timestamp > timestamp
+        
+    
 #: def State
-
-def default_state(state):
-    """ checks if input is already a state,
-        returns new state if empty
-        must provide a state or an empty object
-    """
-    if not state: 
-        state = State()
-    assert isinstance(state,State) , 'not a state instance'
-    return state

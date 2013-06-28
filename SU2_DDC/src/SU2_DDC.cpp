@@ -2,7 +2,7 @@
  * \file SU2_DDC.cpp
  * \brief Main file of Domain Decomposition Code (SU2_DDC).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -26,102 +26,143 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
 	
-	unsigned short iDomain, nZone = 1;
+	unsigned short nZone = 1;
 	char buffer_su2[8], buffer_vtk[8], buffer_plt[8], file_name[200];
 	string MeshFile;
-	
+  
+  int rank = MASTER_NODE;
+  int size = 1;
+  unsigned short nChunk = MAX_NUMBER_CHUNK;
+
 #ifndef NO_MPI
+	/*--- MPI initialization, and buffer setting ---*/
+  static char buffer[MAX_MPI_BUFFER]; // buffer size in bytes
+
+  void *ptr;
 	MPI::Init(argc, argv);
+	MPI::Attach_buffer(buffer, MAX_MPI_BUFFER);
+
+	rank = MPI::COMM_WORLD.Get_rank();
+	size = MPI::COMM_WORLD.Get_size();
 #endif
 	
 	/*--- Definition of some important class ---*/
 	CConfig *config = NULL;
+  CGeometry *geometry = NULL;
 	CSurfaceMovement *surface_mov = NULL;
 	CFreeFormChunk** chunk = NULL;
-	unsigned short nChunk = MAX_NUMBER_CHUNK;
 
 	/*--- Definition of the config problem ---*/
-	if (argc == 2) config = new CConfig(argv[1], SU2_DDC, ZONE_0, nZone, VERB_HIGH);
+	if (argc == 2) { config = new CConfig(argv[1], SU2_DDC, ZONE_0, nZone, VERB_HIGH); }
 	else { strcpy (file_name, "default.cfg"); config = new CConfig(file_name, SU2_DDC, ZONE_0, nZone, VERB_HIGH); }
-	
-	/*--- Definition of the Class for the geometry ---*/
-	CGeometry *geometry; geometry = new CGeometry;
-  geometry = new CPhysicalGeometry(config, config->GetMesh_FileName(), config->GetMesh_FileFormat(), ZONE_0, nZone);
-  		
-	cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
-		
-	/*--- Create the edge structure ---*/
-	cout << "Identifying vertices." <<endl; 
-	geometry->SetVertex(config);
-  geometry->SetEsuP();
-  geometry->SetPsuP();
   
-	/*--- Read the FFD information from the grid file (3D problems)---*/
-	if (geometry->GetnDim() == 3) {
-		cout << endl <<"--------------------------- Read FFD information ------------------------" << endl;
-		geometry->SetVertex(config);
-		chunk = new CFreeFormChunk*[nChunk];
-		surface_mov = new CSurfaceMovement();
-		surface_mov->ReadFFDInfo(config, geometry, chunk, config->GetMesh_FileName());
-	}
-	
-	/*--- Set domains for parallel computation (if any) ---*/
-	if (config->GetnDomain() > 1) {
-		
-		/*--- Color the initial grid and set the send-receive domains ---*/
-		geometry->SetColorGrid(config);
-				
-		/*--- Write the new subgrid ---*/
-		MeshFile = config->GetMesh_FileName();
-		MeshFile.erase (MeshFile.end()-4, MeshFile.end());
-		
-		cout << endl <<"----------------------------- Write mesh files --------------------------" << endl;
+  if (rank == MASTER_NODE) {
 
-		for (iDomain = 0; iDomain < config->GetnDomain(); iDomain++) {
-			
-      /*--- Allocate the memory of the current domain ---*/
-			CDomainGeometry *domain = new CDomainGeometry(geometry, config, iDomain);
-      
-			domain->SetSendReceive(config, iDomain);
-      
-			/*--- Write tecplot and paraview files ---*/
-			if (config->GetVisualize_Partition()) {
-				if(config->GetOutput_FileFormat() == PARAVIEW) {
-					sprintf (buffer_vtk, "_%d.vtk", int(iDomain+1));
-					string MeshFile_vtk = MeshFile + buffer_vtk;
-					char *cstr_vtk = strdup(MeshFile_vtk.c_str());
-					domain->SetParaView(cstr_vtk);
-				}
-				if(config->GetOutput_FileFormat() == TECPLOT) {
-					sprintf (buffer_plt, "_%d.plt", int(iDomain+1));
-					string MeshFile_plt = MeshFile + buffer_plt;
-					char *cstr_plt = strdup(MeshFile_plt.c_str());
-					domain->SetTecPlot(cstr_plt);
-				}
-			}
-			
-			/*--- Write .su2 file ---*/
-			sprintf (buffer_su2, "_%d.su2", int(iDomain+1));
-			string MeshFile_su2 = MeshFile + buffer_su2;
-			char *cstr_su2 = strdup(MeshFile_su2.c_str());
-			domain->SetMeshFile(config, cstr_su2, iDomain);
-			
-			/*--- Write the FFD information (3D problems)---*/
-			if (geometry->GetnDim() == 3)
-				surface_mov->WriteFFDInfo(geometry, domain, config, chunk, cstr_su2);
-      
-      /*--- Free the memory of the current domain ---*/
-      delete domain;
-      			
-		}		
-	}
-	
+    /*--- Definition of the Class for the geometry ---*/
+    geometry = new CPhysicalGeometry(config, config->GetMesh_FileName(), config->GetMesh_FileFormat(), ZONE_0, nZone);
+    		
+  }
+    
 #ifndef NO_MPI
-	MPI::Finalize();
+  MPI::COMM_WORLD.Barrier();
 #endif
-	
+  
+	/*--- Set domains for parallel computation (if any) ---*/
+	if (size > 1) {
+		
+    /*--- Write the new subgrid ---*/
+    MeshFile = config->GetMesh_FileName();
+    MeshFile.erase (MeshFile.end()-4, MeshFile.end());
+    
+    if (rank == MASTER_NODE) {
+      
+      cout << endl <<"------------------------ Divide the numerical grid ----------------------" << endl;
+
+      /*--- Color the initial grid and set the send-receive domains ---*/
+      geometry->SetColorGrid(config);      
+
+    }
+
+#ifndef NO_MPI
+    MPI::COMM_WORLD.Barrier();
+#endif
+    
+    /*--- Allocate the memory of the current domain, and 
+     divide the grid between the nodes ---*/
+    CDomainGeometry *domain = new CDomainGeometry(geometry, config);
+    
+    /*--- Add the Send/Receive boundaries ---*/
+    domain->SetSendReceive(config);
+    
+#ifndef NO_MPI
+    MPI::COMM_WORLD.Barrier();
+#endif
+    
+    if (rank == MASTER_NODE)
+      cout << endl <<"----------------------------- Write mesh files --------------------------" << endl;
+    
+#ifndef NO_MPI
+    MPI::COMM_WORLD.Barrier();
+#endif
+    
+    /*--- Write tecplot and paraview files ---*/
+    if (config->GetVisualize_Partition()) {
+      if(config->GetOutput_FileFormat() == PARAVIEW) {
+        sprintf (buffer_vtk, "_%d.vtk", int(rank+1));
+        string MeshFile_vtk = MeshFile + buffer_vtk;
+        char *cstr_vtk = strdup(MeshFile_vtk.c_str());
+        domain->SetParaView(cstr_vtk);
+      }
+      if(config->GetOutput_FileFormat() == TECPLOT) {
+        sprintf (buffer_plt, "_%d.plt", int(rank+1));
+        string MeshFile_plt = MeshFile + buffer_plt;
+        char *cstr_plt = strdup(MeshFile_plt.c_str());
+        domain->SetTecPlot(cstr_plt);
+      }
+    }
+    
+    /*--- Write .su2 file ---*/
+    sprintf (buffer_su2, "_%d.su2", int(rank+1));
+    string MeshFile_su2 = MeshFile + buffer_su2;
+    char *cstr_su2 = strdup(MeshFile_su2.c_str());
+    domain->SetMeshFile(config, cstr_su2, rank);
+    
+#ifndef NO_MPI
+    MPI::COMM_WORLD.Barrier();
+#endif
+    
+    cout << "Domain " << rank <<": Mesh writing done (" << MeshFile_su2 <<")." << endl;
+
+#ifndef NO_MPI
+    MPI::COMM_WORLD.Barrier();
+#endif
+    
+    /*--- Write the FFD information (3D problems)---*/
+    if (domain->GetnDim() == 3) {
+      
+      if (rank == MASTER_NODE)
+        cout << endl <<"---------------------- Read and write FFD information -------------------" << endl;
+
+      chunk = new CFreeFormChunk*[nChunk];
+      surface_mov = new CSurfaceMovement();
+      surface_mov->ReadFFDInfo(domain, config, chunk, config->GetMesh_FileName(), false);
+      surface_mov->WriteFFDInfo(domain, config, chunk, cstr_su2, false);
+      
+    }
+    
+    
+#ifndef NO_MPI
+  /*--- Finalize MPI parallelization ---*/
+    MPI::COMM_WORLD.Barrier();
+    MPI::Detach_buffer(ptr);
+    MPI::Finalize();
+#endif
+
+  }
+  
 	/*--- End solver ---*/
-	cout << endl <<"------------------------- Exit Success (SU2_DDC) ------------------------" << endl << endl;
+	if (rank == MASTER_NODE)
+    cout << endl <<"------------------------- Exit Success (SU2_DDC) ------------------------" << endl << endl;
 	
 	return EXIT_SUCCESS;
 	

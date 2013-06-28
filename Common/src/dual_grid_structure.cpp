@@ -2,7 +2,7 @@
  * \file dual_grid_structure.cpp
  * \brief Main classes for defining the dual grid (points, vertex, and edges).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -30,7 +30,7 @@ CDualGrid::CDualGrid(unsigned short val_nDim) { nDim = val_nDim;}
 CDualGrid::~CDualGrid() {}
 
 CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *config) : CDualGrid(val_nDim) {
-	unsigned short iDim;
+	unsigned short iDim, jDim;
 	
 	/*--- Element, point and edge structures initialization ---*/
 	Elem.clear(); nElem = 0;
@@ -40,7 +40,8 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
   Volume = NULL;  vertex = NULL;
 	coord = NULL; Coord_old = NULL; Coord_sum = NULL;
 	Coord_n = NULL; Coord_n1 = NULL;  Coord_p1 = NULL;
-	gridvel = NULL; rotvel = NULL;
+	gridvel = NULL; gridvel_grad = NULL;
+  rotvel = NULL; rotvel_grad = NULL;
 
 	/*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
 	if (config->GetUnsteady_Simulation() == NO) { Volume = new double[1]; Volume[0] = 0.0; }
@@ -77,6 +78,15 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
 		gridvel  = new double[nDim];
 			for (iDim = 0; iDim < nDim; iDim ++) 
 		gridvel[iDim] = 0.0;
+    
+    /*--- Gradient of the grid velocity ---*/
+    gridvel_grad = new double*[nDim];
+    for (iDim = 0; iDim < nDim; iDim++) {
+      gridvel_grad[iDim] = new double[nDim];
+      for (jDim = 0; jDim < nDim; jDim++)
+        gridvel_grad[iDim][jDim] = 0.0;
+    }
+    
     /*--- Structures for storing old locations for computing mesh velocities ---*/
     Coord_p1 = new double[nDim];
     Coord_n  = new double[nDim];
@@ -88,11 +98,19 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
 		rotvel = new double[nDim];
 		for (iDim = 0; iDim < nDim; iDim ++) 
 			rotvel[iDim] = 0.0;
+    
+    /*--- Gradient of the grid velocity ---*/
+    rotvel_grad = new double*[nDim];
+    for (iDim = 0; iDim < nDim; iDim++) {
+      rotvel_grad[iDim] = new double[nDim];
+      for (jDim = 0; jDim < nDim; jDim++)
+        rotvel_grad[iDim][jDim] = 0.0;
+    }
 	}
 }
 
 CPoint::CPoint(double val_coord_0, double val_coord_1, unsigned long val_globalindex, CConfig *config) : CDualGrid(2) {
-	unsigned short iDim;
+	unsigned short iDim, jDim;
 
 	/*--- Element, point and edge structures initialization ---*/
 	Elem.clear(); nElem = 0;
@@ -102,7 +120,8 @@ CPoint::CPoint(double val_coord_0, double val_coord_1, unsigned long val_globali
   Volume = NULL;  vertex = NULL;
 	coord = NULL; Coord_old = NULL; Coord_sum = NULL;
 	Coord_n = NULL; Coord_n1 = NULL;  Coord_p1 = NULL;
-	gridvel = NULL; rotvel = NULL;
+	gridvel = NULL; gridvel_grad = NULL;
+  rotvel = NULL; rotvel_grad = NULL;
 
 	/*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
 	if (config->GetUnsteady_Simulation() == NO) { Volume = new double[1]; Volume[0] = 0.0; }
@@ -139,6 +158,15 @@ CPoint::CPoint(double val_coord_0, double val_coord_1, unsigned long val_globali
 		gridvel = new double[nDim];
 		for (iDim = 0; iDim < nDim; iDim ++) 
 			gridvel[iDim] = 0.0;
+    
+    /*--- Gradient of the grid velocity ---*/
+    gridvel_grad = new double*[nDim];
+    for (iDim = 0; iDim < nDim; iDim++) {
+      gridvel_grad[iDim] = new double[nDim];
+      for (jDim = 0; jDim < nDim; jDim++)
+        gridvel_grad[iDim][jDim] = 0.0;
+    }
+    
     /*--- Structures for storing old locations for computing mesh velocities ---*/
     Coord_p1 = new double[nDim];
     Coord_n  = new double[nDim];
@@ -155,11 +183,19 @@ CPoint::CPoint(double val_coord_0, double val_coord_1, unsigned long val_globali
 		rotvel = new double[nDim];
 		for (iDim = 0; iDim < nDim; iDim ++) 
 			rotvel[iDim] = 0.0;
+    
+    /*--- Gradient of the grid velocity ---*/
+    rotvel_grad = new double*[nDim];
+    for (iDim = 0; iDim < nDim; iDim++) {
+      rotvel_grad[iDim] = new double[nDim];
+      for (jDim = 0; jDim < nDim; jDim++)
+        rotvel_grad[iDim][jDim] = 0.0;
+    }
 	}
 }
 
 CPoint::CPoint(double val_coord_0, double val_coord_1, double val_coord_2, unsigned long val_globalindex, CConfig *config) : CDualGrid(3) {
-	unsigned short iDim;
+	unsigned short iDim, jDim;
 
 	/*--- Element, point and edge structures initialization ---*/
 	Elem.clear(); nElem = 0;
@@ -169,7 +205,8 @@ CPoint::CPoint(double val_coord_0, double val_coord_1, double val_coord_2, unsig
 	Volume = NULL;  vertex = NULL;
 	coord = NULL; Coord_old = NULL; Coord_sum = NULL;
 	Coord_n = NULL; Coord_n1 = NULL;  Coord_p1 = NULL;
-	gridvel = NULL; rotvel = NULL;
+	gridvel = NULL; gridvel_grad = NULL;
+  rotvel = NULL; rotvel_grad = NULL;
   
 	/*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
 	if (config->GetUnsteady_Simulation() == NO) { Volume = new double[1]; Volume[0] = 0.0; }
@@ -206,6 +243,15 @@ CPoint::CPoint(double val_coord_0, double val_coord_1, double val_coord_2, unsig
 		gridvel = new double[nDim];
 		for (iDim = 0; iDim < nDim; iDim ++) 
 			gridvel[iDim] = 0.0;
+    
+    /*--- Gradient of the grid velocity ---*/
+    gridvel_grad = new double*[nDim];
+    for (iDim = 0; iDim < nDim; iDim++) {
+      gridvel_grad[iDim] = new double[nDim];
+      for (jDim = 0; jDim < nDim; jDim++)
+        gridvel_grad[iDim][jDim] = 0.0;
+    }
+    
     /*--- Structures for storing old locations for computing mesh velocities ---*/
     Coord_p1 = new double[nDim];
     Coord_n  = new double[nDim];
@@ -222,6 +268,14 @@ CPoint::CPoint(double val_coord_0, double val_coord_1, double val_coord_2, unsig
 		rotvel = new double[nDim];
 		for (iDim = 0; iDim < nDim; iDim ++) 
 			rotvel[iDim] = 0.0;
+    
+    /*--- Gradient of the grid velocity ---*/
+    rotvel_grad = new double*[nDim];
+    for (iDim = 0; iDim < nDim; iDim++) {
+      rotvel_grad[iDim] = new double[nDim];
+      for (jDim = 0; jDim < nDim; jDim++)
+        rotvel_grad[iDim][jDim] = 0.0;
+    }
 	}
 }
 

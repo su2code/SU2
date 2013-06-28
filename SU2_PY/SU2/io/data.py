@@ -1,7 +1,7 @@
 ## \file data.py
 #  \brief python package for data utility functions 
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.4
+#  \version 2.0.5
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -23,7 +23,9 @@
 #  Imports
 # ----------------------------------------------------------------------
 
-import os, sys, shutil, copy, pickle
+import os, sys, shutil, copy
+import cPickle as pickle
+from filelock import filelock
 
 # -------------------------------------------------------------------
 #  Load a Dictionary of Data
@@ -57,6 +59,9 @@ def load_data( file_name, var_names=None   ,
         scipy_loaded = True
     except ImportError:
         scipy_loaded = False    
+        
+    if not os.path.exists(file_name):
+        raise Exception , 'File does not exist: %s' % file_name
     
     # process file format
     if file_format == 'infer':
@@ -66,28 +71,32 @@ def load_data( file_name, var_names=None   ,
             file_format = 'pickle'
     assert file_format in ['matlab','pickle'] , 'unsupported file format'
         
+    # get filelock
+    with filelock(file_name):    
     
-    # LOAD MATLAB
-    if file_format == 'matlab' and scipy_loaded:
-        input_data = scipy.io.loadmat( file_name        = file_name ,
-                                       squeeze_me       = False     ,
-                                       chars_as_strings = True      ,
-                                       struct_as_record = True       )
-        # pull core variable
-        assert input_data.has_key(core_name) , 'core data not found'
-        input_data = input_data[core_name]
+        # LOAD MATLAB
+        if file_format == 'matlab' and scipy_loaded:
+            input_data = scipy.io.loadmat( file_name        = file_name ,
+                                           squeeze_me       = False     ,
+                                           chars_as_strings = True      ,
+                                           struct_as_record = True       )
+            # pull core variable
+            assert input_data.has_key(core_name) , 'core data not found'
+            input_data = input_data[core_name]
+            
+            # convert recarray to dictionary
+            input_data = rec2dict(input_data)
+            
+        # LOAD PICKLE
+        elif file_format == 'pickle':
+            input_data = load_pickle(file_name)
+            # pull core variable
+            assert input_data.has_key(core_name) , 'core data not found'
+            input_data = input_data[core_name]
+            
+        #: if file_format
         
-        # convert recarray to dictionary
-        input_data = rec2dict(input_data)
-        
-    # LOAD PICKLE
-    elif file_format == 'pickle':
-        input_data = load_pickle(file_name)
-        # pull core variable
-        assert input_data.has_key(core_name) , 'core data not found'
-        input_data = input_data[core_name]
-        
-    #: if file_format
+    #: with filelock
     
     # load specified varname into dictionary
     if var_names != None:
@@ -140,8 +149,8 @@ def save_data( file_name, data_dict, append=False ,
         import scipy.io
         scipy_loaded = True
     except ImportError:
-        scipy_loaded = False    
-    
+        scipy_loaded = False
+        
     # process file format
     if file_format == 'infer':
         if   os.path.splitext(file_name)[1] == '.mat':
@@ -149,39 +158,47 @@ def save_data( file_name, data_dict, append=False ,
         elif os.path.splitext(file_name)[1] == '.pkl':
             file_format = 'pickle'
     assert file_format in ['matlab','pickle'] , 'unsupported file format'
+
+    # get filelock
+    with filelock(file_name):
         
-    # if appending needed 
-    # TODO: don't overwrite other core_names
-    if append == True and os.path.exists(file_name):
-        # load old data
-        data_dict_old = load( file_name   = file_name   ,
-                              var_names   = None        ,
-                              file_format = file_format ,
-                              core_name   = core_name    )
-        # check for keys not in new data
-        for key,value in data_dict_old.iteritems():
-            if not data_dict.has_key(key):
-                data_dict[key] = value
-        #: for each dict item
-    #: if append
-    
-    # save to core name
-    data_dict = {core_name : data_dict}
-    
-    # SAVE MATLAB
-    if file_format == 'matlab':
-        # bunch it
-        data_dict = mat_bunch(data_dict)
-        # save it
-        scipy.io.savemat( file_name = file_name ,
-                          mdict     = data_dict,
-                          format    = '5',        # matlab 5 .mat format
-                          oned_as   = 'column' )
-    elif file_format == 'pickle':
-        # save it
-        save_pickle(file_name,data_dict)
+        # if appending needed 
+        # TODO: don't overwrite other core_names
+        if append == True and os.path.exists(file_name):
+            # check file exists
+            if not os.path.exists(file_name):
+                raise Exception , 'Cannot append, file does not exist: %s' % file_name  
+            # load old data
+            data_dict_old = load( file_name   = file_name   ,
+                                  var_names   = None        ,
+                                  file_format = file_format ,
+                                  core_name   = core_name    )
+            # check for keys not in new data
+            for key,value in data_dict_old.iteritems():
+                if not data_dict.has_key(key):
+                    data_dict[key] = value
+            #: for each dict item
+        #: if append
         
-    #: if file_format
+        # save to core name
+        data_dict = {core_name : data_dict}
+        
+        # SAVE MATLAB
+        if file_format == 'matlab':
+            # bunch it
+            data_dict = mat_bunch(data_dict)
+            # save it
+            scipy.io.savemat( file_name = file_name ,
+                              mdict     = data_dict,
+                              format    = '5',        # matlab 5 .mat format
+                              oned_as   = 'column' )
+        elif file_format == 'pickle':
+            # save it
+            save_pickle(file_name,data_dict)
+            
+        #: if file_format
+    
+    #: with filelock
     
     return
 
@@ -200,10 +217,12 @@ def load_pickle(file_name):
         returns dictionary of data
     """
     pkl_file = open(file_name,'rb')
-    names = safe_unpickle.loadf(pkl_file)
+    #names = safe_unpickle.loadf(pkl_file)
+    names = pickle.load(pkl_file)
     data_dict = dict.fromkeys(names,[])
     for key in names:
-        data_dict[key] = safe_unpickle.loadf(pkl_file)
+        #data_dict[key] = safe_unpickle.loadf(pkl_file)
+        data_dict[key] = pickle.load(pkl_file)
     pkl_file.close()
     return data_dict
 
@@ -235,57 +254,57 @@ def save_pickle(file_name,data_dict):
 #  Safe UnPickle
 # -------------------------------------------------------------------
 
-class safe_unpickle(pickle.Unpickler):
-    ''' adds some safety to unpickling
-        checks that only supported classes are loaded 
-        original source from http://nadiana.com/python-pickle-insecure#comment-144 
-    '''
+#class safe_unpickle(pickle.Unpickler):
+    #''' adds some safety to unpickling
+        #checks that only supported classes are loaded 
+        #original source from http://nadiana.com/python-pickle-insecure#comment-144 
+    #'''
         
-    # modules : classes considered safe
-    PICKLE_SAFE = {
-        'copy_reg'        : ['_reconstructor']  , 
-        '__builtin__'     : ['object']          ,
-        'numpy'           : ['dtype','ndarray'] ,
-        'numpy.core.multiarray' : ['scalar','_reconstruct'] ,
-        'collections'     : ['OrderedDict']     ,
-        'SU2.io.state'    : ['State']           , # SU2 Specific
-        'SU2.io.config'   : ['Config']          ,
-        'SU2.eval.design' : ['Design']          ,
-        'SU2.opt.project' : ['Project']         ,
-        'SU2.util.ordered_bunch' : ['OrderedBunch'] ,
-        'SU2.util.bunch'  : ['Bunch']           ,
-        'tasks_general'   : ['General_Task']    , 
-        'tasks_project'   : ['Project','Job']   , 
-        'tasks_su2'       : ['Decomp','Deform','Direct','Cont_Adjoint',
-                             'Multiple_Cont_Adjoint','Finite_Diff','Adapt'] ,        
-    }
+    ## modules : classes considered safe
+    #PICKLE_SAFE = {
+        #'copy_reg'        : ['_reconstructor']  , 
+        #'__builtin__'     : ['object']          ,
+        #'numpy'           : ['dtype','ndarray'] ,
+        #'numpy.core.multiarray' : ['scalar','_reconstruct'] ,
+        #'collections'     : ['OrderedDict']     ,
+        #'SU2.io.state'    : ['State']           , # SU2 Specific
+        #'SU2.io.config'   : ['Config']          ,
+        #'SU2.eval.design' : ['Design']          ,
+        #'SU2.opt.project' : ['Project']         ,
+        #'SU2.util.ordered_bunch' : ['OrderedBunch'] ,
+        #'SU2.util.bunch'  : ['Bunch']           ,
+        #'tasks_general'   : ['General_Task']    , 
+        #'tasks_project'   : ['Project','Job']   , 
+        #'tasks_su2'       : ['Decomp','Deform','Direct','Cont_Adjoint',
+                             #'Multiple_Cont_Adjoint','Finite_Diff','Adapt'] ,        
+    #}
     
-    # make sets
-    for key in PICKLE_SAFE.keys():
-        PICKLE_SAFE[key] = set(PICKLE_SAFE[key])
+    ## make sets
+    #for key in PICKLE_SAFE.keys():
+        #PICKLE_SAFE[key] = set(PICKLE_SAFE[key])
     
-    # check for save module/class
-    def find_class(self, module, name):
-        if not module in self.PICKLE_SAFE:
-            raise pickle.UnpicklingError(
-                'Attempting to unpickle unsafe module %s' % module
-            )
-        __import__(module)
-        mod = sys.modules[module]
-        if not name in self.PICKLE_SAFE[module]:
-            raise pickle.UnpicklingError(
-                'Attempting to unpickle unsafe class %s' % name
-            )
-        klass = getattr(mod, name)
-        return klass
+    ## check for save module/class
+    #def find_class(self, module, name):
+        #if not module in self.PICKLE_SAFE:
+            #raise pickle.UnpicklingError(
+                #'Attempting to unpickle unsafe module %s' % module
+            #)
+        #__import__(module)
+        #mod = sys.modules[module]
+        #if not name in self.PICKLE_SAFE[module]:
+            #raise pickle.UnpicklingError(
+                #'Attempting to unpickle unsafe class %s' % name
+            #)
+        #klass = getattr(mod, name)
+        #return klass
  
-    # extend the load() and loads() methods
-    @classmethod
-    def loadf(self, pickle_file): # loads a file like pickle.load()
-        return self(pickle_file).load()
-    @classmethod
-    def loads(self, pickle_string): #loads a string like pickle.loads()
-        return self(StringIO.StringIO(pickle_string)).load()    
+    ## extend the load() and loads() methods
+    #@classmethod
+    #def loadf(self, pickle_file): # loads a file like pickle.load()
+        #return self(pickle_file).load()
+    #@classmethod
+    #def loads(self, pickle_string): #loads a string like pickle.loads()
+        #return self(StringIO.StringIO(pickle_string)).load()    
 
 
     

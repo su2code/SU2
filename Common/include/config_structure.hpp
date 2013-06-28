@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -45,7 +45,7 @@ using namespace std;
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
  * \author F. Palacios.
- * \version 2.0.4
+ * \version 2.0.5
  */
 class CConfig {
 private:
@@ -75,6 +75,7 @@ private:
 	ElectricSolver,			/*!< \brief Flag to know if we are solving  electric forces  in plasma solver. */
 	Low_Mach_Precon,		/*!< \brief Flag to know if we are using a low Mach number preconditioner. */
 	MacCormackRelaxation,	/*!< \brief Flag to know if we are using MacCormack's relaxation in solving Gauss's law. */
+	Unsteady_Farfield, 		/*!< \brief Flag to know if we are using time dependent farfield boundaries. */
 	GravityForce,			/*!< \brief Flag to know if the gravity force is incuded in the formulation. */
 	MagneticForce,			/*!< \brief Flag to know if the magnetic force is incuded in the formulation. */
 	JouleHeating,			/*!< \brief Flag to know if the Joule heating  is incuded in the formulation. */
@@ -82,6 +83,7 @@ private:
 	AdaptBoundary,			/*!< \brief Adapt the elements on the boundary. */
 	FullMG,					/*!< \brief Full multigrid strategy. */
 	Divide_Element,			/*!< \brief Divide rectables and hexahedrom. */
+	Engine_Intake,			/*!< \brief Engine intake subsonic region. */
 	Frozen_Visc,			/*!< \brief Flag for adjoint problem with/without frozen viscosity. */
 	Hold_GridFixed,	/*!< \brief Flag hold fixed some part of the mesh during the deformation. */
 	Axisymmetric, /*!< \brief Flag for axisymmetric calculations */
@@ -112,7 +114,7 @@ private:
 	FreeSurface_Outlet,  /*!< \brief Outlet of the interfase for a free surface problem. */
 	FreeSurface_Damping_Coeff,  /*!< \brief Damping coefficient of the free surface for a free surface problem. */
 	FreeSurface_Damping_Length;  /*!< \brief Damping length of the free surface for a free surface problem. */
-  unsigned long FreeSurface_Reevaluation;  /*!< \brief Frecuency for level set reevaluation. */
+	unsigned long FreeSurface_Reevaluation;  /*!< \brief Frecuency for level set reevaluation. */
 	unsigned short Kind_Adaptation;	/*!< \brief Kind of numerical grid adaptation. */
 	unsigned short nTimeInstances;  /*!< \brief Number of periodic time instances for Time Spectral integration. */
 	double TimeSpectral_Period;		/*!< \brief Period of oscillation to be used with time-spectral computations. */
@@ -136,7 +138,7 @@ private:
 	nMarker_Dirichlet,				/*!< \brief Number of interface boundary markers. */
 	nMarker_Dirichlet_Elec,				/*!< \brief Number of interface boundary markers. */
 	nMarker_Inlet,					/*!< \brief Number of inlet flow markers. */
-  nMarker_Supersonic_Inlet,					/*!< \brief Number of supersonic inlet flow markers. */
+	nMarker_Supersonic_Inlet,					/*!< \brief Number of supersonic inlet flow markers. */
 	nMarker_Outlet,					/*!< \brief Number of outlet flow markers. */
 	nMarker_Isothermal,     /*!< \brief Number of isothermal wall boundaries. */
 	nMarker_HeatFlux,       /*!< \brief Number of constant heat flux wall boundaries. */
@@ -166,7 +168,7 @@ private:
 	*Marker_Dirichlet,				/*!< \brief Interface boundaries markers. */
 	*Marker_Dirichlet_Elec,				/*!< \brief Interface boundaries markers. */
 	*Marker_Inlet,					/*!< \brief Inlet flow markers. */
-  *Marker_Supersonic_Inlet,					/*!< \brief Supersonic inlet flow markers. */
+	*Marker_Supersonic_Inlet,					/*!< \brief Supersonic inlet flow markers. */
 	*Marker_Outlet,					/*!< \brief Outlet flow markers. */
 	*Marker_Isothermal,     /*!< \brief Isothermal wall markers. */
 	*Marker_HeatFlux,       /*!< \brief Constant heat flux wall markers. */
@@ -225,8 +227,9 @@ private:
 	**CFL_MS,               /*!< \brief CFL number for each multigrid level. */
 	MG_CFLRedCoeff,		/*!< \brief CFL reduction coefficient on the MG coarse level. */
 	LevelSet_CFLRedCoeff,		/*!< \brief CFL reduction coefficient on the LevelSet problem. */
+	Turb_CFLRedCoeff,		/*!< \brief CFL reduction coefficient on the LevelSet problem. */
 	Adj_CFLRedCoeff,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
-    AdjTurb_CFLRedCoeff,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
+	AdjTurb_CFLRedCoeff,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
 	CFLFineGrid,		/*!< \brief CFL of the finest grid. */
 	Unst_CFL;		/*!< \brief Unsteady CFL number. */
 	unsigned short MaxChildren;		/*!< \brief Maximum number of children. */
@@ -251,7 +254,7 @@ private:
 	Kind_GridDef_Method,		/*!< \brief Numerical method for the grid deformation. */
 	Kind_Linear_Solver,		/*!< \brief Numerical solver for the implicit scheme. */
 	Kind_Linear_Solver_Prec,		/*!< \brief Preconditioner of the linear solver. */
-    Kind_AdjTurb_Linear_Solver,		/*!< \brief Numerical solver for the turbulent adjoint implicit scheme. */
+	Kind_AdjTurb_Linear_Solver,		/*!< \brief Numerical solver for the turbulent adjoint implicit scheme. */
 	Kind_AdjTurb_Linear_Prec,		/*!< \brief Preconditioner of the turbulent adjoint linear solver. */
 	Kind_SlopeLimit,				/*!< \brief Global slope limiter. */
 	Kind_SlopeLimit_Flow,		/*!< \brief Slope limiter for flow equations.*/
@@ -340,8 +343,8 @@ private:
 	Kind_Inlet;           /*!< \brief Kind of inlet boundary treatment. */
 	double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
 	unsigned long Linear_Solver_Iter;		/*!< \brief Min error of the linear solver for the implicit formulation. */
-  double Linear_Solver_Relax;		/*!< \brief Relaxation coefficient of the linear solver. */
-  double AdjTurb_Linear_Error;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
+	double Linear_Solver_Relax;		/*!< \brief Relaxation coefficient of the linear solver. */
+	double AdjTurb_Linear_Error;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
 	unsigned short AdjTurb_Linear_Iter;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
 	bool Linear_Solver_Hist;		/*!< \brief Whether or not to output linear solver history to file */
 	double* Kappa_Flow,           /*!< \brief Numerical dissipation coefficients for the flow equations. */
@@ -366,6 +369,7 @@ private:
 	Kappa_2nd_Plasma,			/*!< \brief JST 2nd order dissipation coefficient for plasma equations. */
 	Kappa_4th_Plasma;			/*!< \brief JST 4th order dissipation coefficient for plasma equations. */	
 	double GridDef_Error;	/*!< \brief Error of the numerical solver for the linear system of the grid deformation. */
+  unsigned long FEA_Iter; /*!< \brief Number of iterations for FEA deformation. */
 	double Mach;		/*!< \brief Mach number. */
 	double Reynolds;	/*!< \brief Reynolds number. */
 	double Froude;	/*!< \brief Froude number. */	
@@ -383,25 +387,29 @@ private:
 	Cauchy_Eps_OneShot,	/*!< \brief Epsilon used for the one shot method convergence. */
 	Cauchy_Eps_FullMG;	/*!< \brief Epsilon used for the full multigrid method convergence. */
 	unsigned long Wrt_Sol_Freq,	/*!< \brief Writing solution frequency. */
-  Wrt_Sol_Freq_DualTime,	/*!< \brief Writing solution frequency for Dual Time. */
+	Wrt_Sol_Freq_DualTime,	/*!< \brief Writing solution frequency for Dual Time. */
 	Wrt_Con_Freq,				/*!< \brief Writing convergence history frequency. */
 	Wrt_Con_Freq_DualTime;				/*!< \brief Writing convergence history frequency. */
 	bool Wrt_Unsteady;  /*!< \brief Write unsteady data adding header and prefix. */
-  bool LowFidelitySim;  /*!< \brief Compute a low fidelity simulation. */
+	bool LowFidelitySim;  /*!< \brief Compute a low fidelity simulation. */
 	bool Restart,	/*!< \brief Restart solution (for direct, adjoint, and linearized problems). */
 	Restart_Euler2Plasma, /*!< \brief Restart plasma solution from an euler solution. */
 	Restart_Flow;	/*!< \brief Restart flow solution for adjoint and linearized problems. */
 	unsigned short nMarker_Monitoring,	/*!< \brief Number of markers to monitor. */
+	nMarker_Designing,					/*!< \brief Number of markers for the objective function. */
 	nMarker_Plotting,					/*!< \brief Number of markers to plot. */
 	nMarker_Moving;						/*!< \brief Number of markers to move. */
 	string *Marker_Monitoring,			/*!< \brief Markers to monitor. */
+	*Marker_Designing,					/*!< \brief Markers to plot. */
 	*Marker_Plotting,					/*!< \brief Markers to plot. */
 	*Marker_Moving;						/*!< \brief Markers to move. */
 	unsigned short  *Marker_All_Monitoring,				/*!< \brief Global index for monitoring using the grid information. */
 	*Marker_All_Plotting,				/*!< \brief Global index for plotting using the grid information. */
 	*Marker_All_Moving,					/*!< \brief Global index for moving using the grid information. */
+	*Marker_All_Designing,					/*!< \brief Global index for moving using the grid information. */
 	*Marker_All_Sliding,					/*!< \brief Global index for sliding interfaces using the grid information. */
 	*Marker_Config_Monitoring,			/*!< \brief Global index for monitoring using the config information. */
+	*Marker_Config_Designing,			/*!< \brief Global index for monitoring using the config information. */
 	*Marker_Config_Plotting,			/*!< \brief Global index for plotting using the config information. */
 	*Marker_Config_Moving,				/*!< \brief Global index for moving using the config information. */
 	*Marker_Config_Sliding,				/*!< \brief Global index for sliding interfaces using the config information. */
@@ -424,6 +432,7 @@ private:
 	Solution_LinFileName,			/*!< \brief Linearized flow solution input file. */
 	Solution_AdjFileName,			/*!< \brief Adjoint solution input file for drag functional. */
 	Flow_FileName,					/*!< \brief Flow variables output file. */
+	Farfield_FileName, 				/*!< \brief Data at farfield boundaries. */
 	Structure_FileName,					/*!< \brief Structure variables output file. */
 	Wave_FileName,					/*!< \brief Wave variables output file. */
 	AdjWave_FileName,					/*!< \brief Adjoint wave variables output file. */
@@ -447,15 +456,16 @@ private:
 	unsigned short nSpecies, 		/*!< \brief No of species present in plasma */
 	nReactions;									/*!< \brief Number of reactions in chemical model. */
 	bool Wrt_Sol_CGNS,               /*!< \brief Write a CGNS volume solution file */
-  Wrt_Sol_Tec_ASCII,          /*!< \brief Write a Tecplot ASCII volume solution file */
-  Wrt_Sol_Tec_Binary,         /*!< \brief Write a Tecplot binary volume solution file */
+	Wrt_Sol_Tec_ASCII,          /*!< \brief Write a Tecplot ASCII volume solution file */
+	Wrt_Sol_Tec_Binary,         /*!< \brief Write a Tecplot binary volume solution file */
 	Wrt_Vol_Sol,                /*!< \brief Write a volume solution file */
 	Wrt_Srf_Sol,                /*!< \brief Write a surface solution file */
 	Wrt_Restart,                /*!< \brief Write a restart solution file */
 	Wrt_Csv_Sol,                /*!< \brief Write a surface comma-separated values solution file */
-    Wrt_Residuals;              /*!< \brief Write residuals to solution file */
-  unsigned short nOutput_Vars_Vol, /*!< \brief No. of output variables specified for the volume solution file. */
-  *Output_Vars_Vol;                  /*!< \brief List of output variables specified for the volume solution file. */
+	Wrt_Residuals,              /*!< \brief Write residuals to solution file */
+  Wrt_Halo;                   /*!< \brief Write rind layers in solution files */
+	unsigned short nOutput_Vars_Vol, /*!< \brief No. of output variables specified for the volume solution file. */
+	*Output_Vars_Vol;                  /*!< \brief List of output variables specified for the volume solution file. */
 	double *ArrheniusCoefficient,					/*!< \brief Arrhenius reaction coefficient */
 	*ArrheniusEta,								/*!< \brief Arrhenius reaction temperature exponent */
 	*ArrheniusTheta,							/*!< \brief Arrhenius reaction characteristic temperature */
@@ -501,6 +511,7 @@ private:
 	Bulk_Modulus,			/*!< \brief Value of the bulk modulus for incompressible flows. */ 
 	ArtComp_Factor,			/*!< \brief Value of the artificial compresibility factor for incompressible flows. */
 	Gas_Constant,     /*!< \brief Specific gas constant. */
+	Gas_ConstantND,     /*!< \brief Non-dimensional specific gas constant. */
 	Gas_Constant_Ref, /*!< \brief Reference specific gas constant. */
 	FreeSurface_Zero,	/*!< \brief Coordinate of the level set zero. */
 	FreeSurface_Depth,	/*!< \brief Coordinate of the level set zero. */
@@ -510,7 +521,7 @@ private:
 	Intermittency_FreeStream,     /*!< \brief Freestream intermittency (for sagt transition model) of the fluid.  */
 	TurbulenceIntensity_FreeStream,     /*!< \brief Freestream turbulent intensity (for sagt transition model) of the fluid.  */
 	Turb2LamViscRatio_FreeStream,          /*!< \brief Ratio of turbulent to laminar viscosity. */
-  NuFactor_FreeStream,  /*!< \brief Ratio of turbulent to laminar viscosity. */
+	NuFactor_FreeStream,  /*!< \brief Ratio of turbulent to laminar viscosity. */
 	Pressure_FreeStream,     /*!< \brief Total pressure of the fluid.  */
 	Temperature_FreeStream,  /*!< \brief Total temperature of the fluid.  */
 	Prandtl_Lam,      /*!< \brief Laminar Prandtl number for the gas.  */
@@ -545,12 +556,12 @@ private:
 	double Cyclic_Pitch,          /*!< \brief Cyclic pitch for rotorcraft simulations. */
 	Collective_Pitch;             /*!< \brief Collective pitch for rotorcraft simulations. */
 	string Motion_Filename;				/*!< \brief Arbitrary mesh motion input base filename. */
-  double *Motion_Ramp;			/*!< \brief Information about the mesh motion ramp. */
-  double Mach_Motion;			/*!< \brief Mach number based on mesh velocity and freestream quantities. */
+	double *Motion_Ramp;			/*!< \brief Information about the mesh motion ramp. */
+	double Mach_Motion;			/*!< \brief Mach number based on mesh velocity and freestream quantities. */
 	double *Motion_Origin_X,    /*!< \brief X-coordinate of the mesh motion origin. */
 	*Motion_Origin_Y,           /*!< \brief Y-coordinate of the mesh motion origin. */
 	*Motion_Origin_Z,           /*!< \brief Z-coordinate of the mesh motion origin. */
-  *Translation_Rate_X,           /*!< \brief Translational velocity of the mesh in the x-direction. */
+	*Translation_Rate_X,           /*!< \brief Translational velocity of the mesh in the x-direction. */
 	*Translation_Rate_Y,           /*!< \brief Translational velocity of the mesh in the y-direction. */
 	*Translation_Rate_Z,           /*!< \brief Translational velocity of the mesh in the z-direction. */
 	*Rotation_Rate_X,           /*!< \brief Angular velocity of the mesh about the x-axis. */
@@ -572,21 +583,25 @@ private:
 	*Plunging_Ampl_Y,           /*!< \brief Plunging amplitude in the y-direction. */
 	*Plunging_Ampl_Z;           /*!< \brief Plunging amplitude in the z-direction. */
 	bool Relative_Motion;       /*!< \brief Flag for relative motion between zones (search & interpolate required). */
-    double FreqPlungeAeroelastic; /*!< \brief Plunging natural frequency for Aeroelastic. */
-    double FreqPitchAeroelastic; /*!< \brief Pitch natural frequency for Aeroelastic. */
-    double *Aeroelastic_np1; /*!< \brief Structural source terms used for Aeroelastic computation at time level n+1. */
+	double FreqPlungeAeroelastic; /*!< \brief Plunging natural frequency for Aeroelastic. */
+	double FreqPitchAeroelastic; /*!< \brief Pitch natural frequency for Aeroelastic. */
+	double *Aeroelastic_np1; /*!< \brief Structural source terms used for Aeroelastic computation at time level n+1. */
 	double *Aeroelastic_n; /*!< \brief Structural source terms used for Aeroelastic computation at time level n. */
 	double *Aeroelastic_n1; /*!< \brief Structural Source terms used for Aeroelastic computation at time level n-1. */
-    double Aeroelastic_plunge; /*!< \brief Value of plunging coordinate at the end of an external iteration. */
-    double Aeroelastic_pitch; /*!< \brief Value of pitching coordinate at the end of an external iteration. */
+	double Aeroelastic_plunge; /*!< \brief Value of plunging coordinate at the end of an external iteration. */
+	double Aeroelastic_pitch; /*!< \brief Value of pitching coordinate at the end of an external iteration. */
 	unsigned short Aeroelastic_Grid_Movement;	/*!< \brief Type of Aeroelastic grid movement. */
 	unsigned short Aeroelastic_Grid_Velocity;	/*!< \brief Type of Aeroelastic grid velocity. */
-
+	double *Density_FreeStreamND_Time,
+	*Pressure_FreeStreamND_Time,
+	**Velocity_FreeStreamND_Time,
+	*Energy_FreeStreamND_Time,
+	*Mach_Inf_Time;
 
 	map<string, CAnyOptionRef*> param; /*!< \brief associates option names (strings) with options */
 
 public:
-  vector<string> fields; /*!< \brief Tags for the different fields in a restart file. */
+	vector<string> fields; /*!< \brief Tags for the different fields in a restart file. */
 
 	/*! 
 	 * \brief Constructor of the class which reads the input file.
@@ -978,8 +993,8 @@ public:
 	 * \return Damping of the interfase for a free surface problem.
 	 */
 	double GetFreeSurface_Damping_Length(void);
-  
-  /*!
+
+	/*!
 	 * \brief Get the damping of the free surface for a free surface problem.
 	 * \return Damping of the interfase for a free surface problem.
 	 */
@@ -1088,6 +1103,12 @@ public:
 	 * \return Value of the constant: Gamma
 	 */
 	double GetGas_Constant(void);
+  
+  /*!
+	 * \brief Get the value of specific gas constant.
+	 * \return Value of the constant: Gamma
+	 */
+	double GetGas_ConstantND(void);
 
 	/*! 
 	 * \brief Get the value of specific gas constant for a particular species.
@@ -1190,6 +1211,42 @@ public:
 	double GetForce_Ref(void);
 
 	/*!
+	 * \brief Get the value of the non-dimensionalized freestream density at iteration val_Ext_Iter.
+	 * \param[in] val_Ext_Iter - current iteration number
+	 * \return Non-dimensionalized freestream density.
+	 */
+	double GetDensity_FreeStreamND_Time(unsigned long val_Ext_Iter);
+
+	/*!
+	 * \brief Get the value of the non-dimensionalized freestream pressure at iteration val_Ext_Iter.
+	 * \param[in] val_Ext_Iter - current iteration number
+	 * \return Non-dimensionalized freestream density.
+	 */
+	double GetPressure_FreeStreamND_Time(unsigned long val_Ext_Iter);
+
+	/*!
+	 * \brief Get the value of the non-dimensionalized freestream energy at iteration val_Ext_Iter.
+	 * \param[in] val_Ext_Iter - current iteration number
+	 * \return Non-dimensionalized freestream density.
+	 */
+	double GetEnergy_FreeStreamND_Time(unsigned long val_Ext_Iter);
+
+
+	/*!
+	 * \brief Get the value of the non-dimensionalized freestream velocity at iteration val_Ext_Iter.
+	 * \param[in] val_Ext_Iter - current iteration number
+	 * \return Non-dimensionalized freestream density.
+	 */
+	double* GetVelocity_FreeStreamND_Time(unsigned long val_Ext_Iter);
+
+	/*!
+	 * \brief Get the value of the freestream Mach at iteration val_Ext_Iter.
+	 * \param[in] val_Ext_Iter - current iteration number
+	 * \return Non-dimensionalized freestream density.
+	 */
+	double GetMach_FreeStreamND_Time(unsigned long val_Ext_Iter);
+
+	/*!
 	 * \brief Get the value of the non-dimensionalized freestream pressure.
 	 * \return Non-dimensionalized freestream pressure.
 	 */
@@ -1254,8 +1311,8 @@ public:
 	 * \return Non-dimensionalized freestream intensity.
 	 */
 	double GetTurbulenceIntensity_FreeStream(void);
-  
-  /*!
+
+	/*!
 	 * \brief Get the value of the non-dimensionalized freestream turbulence intensity.
 	 * \return Non-dimensionalized freestream intensity.
 	 */
@@ -1490,13 +1547,13 @@ public:
 	 */		
 	double GetCFL(unsigned short val_mesh);
 
-    /*!
-     * \brief Get the Courant Friedrich Levi number for each grid, for each species
-     * \param[in] val_mesh - Index of the mesh were the CFL is applied.
-     * \param[in] val_Species - Index of the chemical species
-     * \return CFL number for each grid.
-     */
-    double GetCFL(unsigned short val_mesh, unsigned short val_Species);
+	/*!
+	 * \brief Get the Courant Friedrich Levi number for each grid, for each species
+	 * \param[in] val_mesh - Index of the mesh were the CFL is applied.
+	 * \param[in] val_Species - Index of the chemical species
+	 * \return CFL number for each grid.
+	 */
+	double GetCFL(unsigned short val_mesh, unsigned short val_Species);
 
 	/*! 
 	 * \brief Get the Courant Friedrich Levi number for unsteady simulations.
@@ -1573,8 +1630,8 @@ public:
 	 * \param[in] val_iter - Current external iteration number.
 	 */
 	void SetExtIter(unsigned long val_iter);
-  
-  /*!
+
+	/*!
 	 * \brief Set the current internal iteration number.
 	 * \param[in] val_iter - Current external iteration number.
 	 */
@@ -1585,8 +1642,8 @@ public:
 	 * \return Current external iteration.
 	 */
 	unsigned long GetExtIter(void);
-  
-  /*!
+
+	/*!
 	 * \brief Get the current external iteration number.
 	 * \return Current external iteration.
 	 */
@@ -1598,31 +1655,31 @@ public:
 	 */		
 	unsigned long GetWrt_Sol_Freq(void);
 
-  /*!
+	/*!
 	 * \brief Get the frequency for writing the solution file in Dual Time.
 	 * \return It writes the solution file with this frequency.
 	 */
 	unsigned long GetWrt_Sol_Freq_DualTime(void);
-  
+
 	/*!
 	 * \brief Get the frequency for writing the convergence file.
 	 * \return It writes the convergence file with this frequency.
 	 */		
 	unsigned long GetWrt_Con_Freq(void);
-  
-  /*!
+
+	/*!
 	 * \brief Get the frequency for writing the convergence file in Dual Time.
 	 * \return It writes the convergence file with this frequency.
 	 */
 	unsigned long GetWrt_Con_Freq_DualTime(void);
-  
-  /*!
+
+	/*!
 	 * \brief Get information about writing unsteady headers and file extensions.
 	 * \return 	<code>TRUE</code> means that unsteady solution files will be written.
 	 */
 	bool GetWrt_Unsteady(void);
-  
-  /*!
+
+	/*!
 	 * \brief Get information about performing a low fidelity simulation.
 	 * \return 	<code>TRUE</code> means that a low fidelity simulation will be performed.
 	 */
@@ -1657,38 +1714,44 @@ public:
 	 * \return <code>TRUE</code> means that a CGNS volume solution file will be written.
 	 */
 	bool GetWrt_Sol_CGNS(void);
-  
-  /*!
+
+	/*!
 	 * \brief Get information about writing a Tecplot ASCII volume solution file.
 	 * \return <code>TRUE</code> means that a Tecplot ASCII volume solution file will be written.
 	 */
 	bool GetWrt_Sol_Tec_ASCII(void);
-  
-  /*!
+
+	/*!
 	 * \brief Get information about writing a Tecplot binary volume solution file.
 	 * \return <code>TRUE</code> means that a Tecplot binary volume solution file will be written.
 	 */
 	bool GetWrt_Sol_Tec_Binary(void);
-    
-    /*!
+
+	/*!
 	 * \brief Get information about writing residuals to volume solution file.
 	 * \return <code>TRUE</code> means that residuals will be written to the solution file.
 	 */
 	bool GetWrt_Residuals(void);
 
   /*!
+	 * \brief Get information about writing rind layers to the solution files.
+	 * \return <code>TRUE</code> means that rind layers will be written to the solution file.
+	 */
+	bool GetWrt_Halo(void);
+  
+	/*!
 	 * \brief Get the number of volume output variables.
 	 * \return Number of volume output variables.
 	 */
 	unsigned short GetnOutput_Vars_Vol(void);
-  
-  /*!
+
+	/*!
 	 * \brief Get the volume output variable.
-   * \param[in] val_index - Index of the output variable.
+	 * \param[in] val_index - Index of the output variable.
 	 * \return Type of volume output variable.
 	 */
 	unsigned short GetOutput_Vars_Vol(unsigned short val_index);
-  
+
 	/*!
 	 * \brief Get the alpha (convective) coefficients for the Runge-Kutta integration scheme.
 	 * \param[in] val_step - Index of the step.
@@ -1750,6 +1813,15 @@ public:
 	 * \param[in] val_monitoring - 0 or 1 depending if the the marker is going to be monitored.
 	 */	
 	void SetMarker_All_Monitoring(unsigned short val_marker, unsigned short val_monitoring);
+  
+  /*!
+	 * \brief Set if a marker <i>val_marker</i> is going to be designed <i>val_designing</i>
+	 *        (read from the config file).
+	 * \note This is important for non dimensional coefficient computation.
+	 * \param[in] val_marker - Index of the marker in which we are interested.
+	 * \param[in] val_monitoring - 0 or 1 depending if the the marker is going to be designed.
+	 */
+	void SetMarker_All_Designing(unsigned short val_marker, unsigned short val_designing);
 
 	/*! 
 	 * \brief Set if a marker <i>val_marker</i> is going to be plot <i>val_plotting</i> 
@@ -1819,6 +1891,13 @@ public:
 	 * \return 0 or 1 depending if the marker is going to be monitorized.
 	 */		
 	unsigned short GetMarker_All_Monitoring(unsigned short val_marker);
+  
+  /*!
+	 * \brief Get the monitoring information for a marker <i>val_marker</i>.
+	 * \param[in] val_marker - 0 or 1 depending if the the marker is going to be moved.
+	 * \return 0 or 1 depending if the marker is going to be monitorized.
+	 */
+	unsigned short GetMarker_All_Designing(unsigned short val_marker);
 
 	/*! 
 	 * \brief Get the plotting information for a marker <i>val_marker</i>.
@@ -1909,60 +1988,66 @@ public:
 	 * \return Max number of iterations of the linear solver for the implicit formulation.
 	 */
 	unsigned long GetLinear_Solver_Iter(void);
-  
-  /*!
+
+	/*!
 	 * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
 	 * \return relaxation coefficient of the linear solver for the implicit formulation.
 	 */
 	double GetLinear_Solver_Relax(void);
-  
+
 	/*!
 	 * \brief Get whether or not to output linear solver histry to file.
 	 * \return true or false.
 	 */
 	bool GetLinear_Solver_Hist(void);
-    
-    /*!
+
+	/*!
 	 * \brief Get the kind of solver for the implicit solver.
 	 * \return Numerical solver for implicit formulation (solving the linear system).
 	 */
 	unsigned short GetKind_AdjTurb_Linear_Solver(void);
-    
+
 	/*!
 	 * \brief Get the kind of preconditioner for the implicit solver.
 	 * \return Numerical preconditioner for implicit formulation (solving the linear system).
 	 */
 	unsigned short GetKind_AdjTurb_Linear_Prec(void);
-    
+
 	/*!
 	 * \brief Set the kind of preconditioner for the implicit solver.
 	 * \return Numerical preconditioner for implicit formulation (solving the linear system).
 	 */
 	void SetKind_AdjTurb_Linear_Prec(unsigned short val_kind_prec);
-    
+
 	/*!
 	 * \brief Get min error of the linear solver for the implicit formulation.
 	 * \return Min error of the linear solver for the implicit formulation.
 	 */
 	double GetAdjTurb_Linear_Error(void);
-    
+
 	/*!
 	 * \brief Get max number of iterations of the linear solver for the implicit formulation.
 	 * \return Max number of iterations of the linear solver for the implicit formulation.
 	 */
 	unsigned short GetAdjTurb_Linear_Iter(void);
-    
-    /*!
+
+	/*!
 	 * \brief Get CFL reduction factor for adjoint turbulence model.
 	 * \return CFL reduction factor.
 	 */
 	double GetAdjTurb_CFLRedCoeff(void);
-    
+
 	/*!
 	 * \brief Get the error of the solver for deforming the numerical grid (linear system solving).
 	 * \return Numerical error of the solver for deforming the numerical grid (solving the linear system).
 	 */
 	double GetGridDef_Error(void);
+  
+  /*!
+	 * \brief Get the number of iterations for FEA mesh deformation.
+	 * \return Number of iterations for FEA mesh deformation.
+	 */
+	unsigned long GetFEA_Iter(void);
 
 	/*!
 	 * \brief Get the kind of SU2 software component.
@@ -3049,8 +3134,14 @@ public:
 	 * \return Name of the file with the solution of the flow problem.
 	 */
 	string GetSolution_FlowFileName(void);
-  
+
 	/*! 
+	 * \brief Get the name of the file with the data for farfield boundaries.
+	 * \return Name of the file with the farfield boundary conditions.
+	 */
+	string GetFarfield_FileName(void);
+
+	/*!
 	 * \brief Get the name of the file with the solution of the linearized flow problem.
 	 * \return Name of the file with the solution of the linearized flow problem.
 	 */
@@ -3290,6 +3381,12 @@ public:
 	 * \return <code>TRUE</code> if the elements must be divided; otherwise <code>FALSE</code>.
 	 */
 	bool GetDivide_Element(void);
+  
+  /*!
+	 * \brief Divide the rectbles and hexahedron.
+	 * \return <code>TRUE</code> if the elements must be divided; otherwise <code>FALSE</code>.
+	 */
+	bool GetEngine_Intake(void);
 
 	/*! 
 	 * \brief Value of the design variable step, we use this value in design problems.
@@ -3317,26 +3414,26 @@ public:
 	 * \return Type of dynamic mesh motion.
 	 */
 	unsigned short GetKind_GridMovement(unsigned short val_iZone);
-    
-    /*!
+
+	/*!
 	 * \brief Set the type of dynamic mesh motion.
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
-     * \param[in] motion_Type - Specify motion type.
+	 * \param[in] motion_Type - Specify motion type.
 	 */
 	void SetKind_GridMovement(unsigned short val_iZone, unsigned short motion_Type);
 
-  /*!
+	/*!
 	 * \brief Get the mesh motion ramp information.
 	 * \param[in] val_iter - Current solver iteration.
 	 */
 	double GetMotion_Ramp(unsigned long val_iter);
-  
-  /*!
+
+	/*!
 	 * \brief Get the mach number based on the mesh velocity and freestream quantities.
 	 * \return Mach number based on the mesh velocity and freestream quantities.
 	 */
 	double GetMach_Motion(void);
-  
+
 	/*!
 	 * \brief Get x-coordinate of the mesh motion origin.
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
@@ -3379,27 +3476,27 @@ public:
 	 */
 	void SetMotion_Origin_Z(unsigned short val_iZone, double val_origin);
 
-  /*!
+	/*!
 	 * \brief Get the translational velocity of the mesh in the x-direction.
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Translational velocity of the mesh in the x-direction.
 	 */
 	double GetTranslation_Rate_X(unsigned short val_iZone);
-  
-  /*!
+
+	/*!
 	 * \brief Get the translational velocity of the mesh in the y-direction.
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Translational velocity of the mesh in the y-direction.
 	 */
 	double GetTranslation_Rate_Y(unsigned short val_iZone);
-  
-  /*!
+
+	/*!
 	 * \brief Get the translational velocity of the mesh in the z-direction.
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Translational velocity of the mesh in the z-direction.
 	 */
 	double GetTranslation_Rate_Z(unsigned short val_iZone);
-  
+
 	/*!
 	 * \brief Get the angular velocity of the mesh about the x-axis.
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
@@ -3543,8 +3640,8 @@ public:
 	 * \return <code>TRUE</code> if it is a incompressible formulation; otherwise <code>FALSE</code>.
 	 */
 	bool GetIncompressible(void);
-  
-  /*!
+
+	/*!
 	 * \brief Get information about the cfree surface solver.
 	 * \return <code>TRUE</code> if it is a free surface formulation; otherwise <code>FALSE</code>.
 	 */
@@ -3591,6 +3688,12 @@ public:
 	 * \return <code>TRUE</code> if we are using MacCormack's relaxation technique; otherwise <code>FALSE</code>.
 	 */
 	bool GetMacCormackRelaxation(void);
+
+	/*!
+	 * \brief Get information about using time dependent farfield boundaries
+	 * \return <code>TRUE</code> if we are using time dependent farfield boundaries; otherwise <code>FALSE</code>.
+	 */
+	bool GetUnsteady_Farfield(void);
 
 	/*! 
 	 * \brief Get information about the gravity force.
@@ -3683,6 +3786,12 @@ public:
 	 * \return Monitoring information of the boundary in the config information of the marker <i>val_marker</i>.
 	 */	
 	unsigned short GetMarker_Config_Monitoring(string val_marker);
+  
+  /*!
+	 * \brief Get the monitoring information from the config definition of the marker <i>val_marker</i>.
+	 * \return Monitoring information of the boundary in the config information of the marker <i>val_marker</i>.
+	 */
+	unsigned short GetMarker_Config_Designing(string val_marker);
 
 	/*! 
 	 * \brief Get the plotting information from the config definition of the marker <i>val_marker</i>.
@@ -4022,6 +4131,12 @@ public:
 	 * \return Value of the CFL reduction in LevelSet problems.
 	 */
 	double GetLevelSet_CFLRedCoeff(void);
+  
+  /*!
+	 * \brief Value of the CFL reduction in LevelSet problems.
+	 * \return Value of the CFL reduction in LevelSet problems.
+	 */
+	double GetTurb_CFLRedCoeff(void);
 
 	/*!
 	 * \brief Get the flow direction unit vector at an inlet boundary.
@@ -4155,49 +4270,70 @@ public:
 	 * \brief Value of Aeroelastic solution coordinate at time n-1 from time n.
 	 */
 	void SetAeroelastic_n1(void);
-    
-    /*!
+
+	/*!
 	 * \brief Uncoupled Aeroelastic Frequency Plunge.
 	 */
 	double GetAeroelastic_Frequency_Plunge(void);
-    
-    /*!
+
+	/*!
 	 * \brief Uncoupled Aeroelastic Frequency Pitch.
 	 */
 	double GetAeroelastic_Frequency_Pitch(void);
-    
-    /*!
+
+	/*!
 	 * \brief Value of plunging coordinate at the end of an external iteration.
 	 */
-    double GetAeroelastic_plunge(void);
-    
-    /*!
+	double GetAeroelastic_plunge(void);
+
+	/*!
 	 * \brief Value of pitching coordinate at the end of an external iteration.
 	 */
-    double GetAeroelastic_pitch(void);
-    
-    /*!
+	double GetAeroelastic_pitch(void);
+
+	/*!
 	 * \brief Value of plunging coordinate at the end of an external iteration.
 	 */
-    void SetAeroelastic_plunge(double val);
-    
-    /*!
+	void SetAeroelastic_plunge(double val);
+
+	/*!
 	 * \brief Value of pitching coordinate at the end of an external iteration.
 	 */
-    void SetAeroelastic_pitch(double val);
-    
-    /*!
+	void SetAeroelastic_pitch(double val);
+
+	/*!
 	 * \brief Get the type of aeroelastic grid movement.
 	 * \return type of aeroelastic grid movement.
 	 */
 	unsigned short GetType_Aeroelastic(void);
-    
-    /*!
+
+	/*!
 	 * \brief Get the way to compute grid velocities for aeroelastic motion.
 	 * \return type of grid velocity computation used.
 	 */
 	unsigned short GetAeroelastic_GridVelocity(void);
-    
+
+	/*!
+	 * \brief Given arrays x[1..n] and y[1..n] containing a tabulated function, i.e., yi = f(xi), with
+	          x1 < x2 < . . . < xN , and given values yp1 and ypn for the first derivative of the interpolating
+	          function at points 1 and n, respectively, this routine returns an array y2[1..n] that contains
+	          the second derivatives of the interpolating function at the tabulated points xi. If yp1 and/or
+	          ypn are equal to 1 × 1030 or larger, the routine is signaled to set the corresponding boundary
+	          condition for a natural spline, with zero second derivative on that boundary.
+						Numerical Recipes: The Art of Scientific Computing, Third Edition in C++.
+	 */
+	void SetSpline(vector<double> &x, vector<double> &y, unsigned long n, double yp1, double ypn, vector<double> &y2);
+
+	/*!
+	 * \brief Given the arrays xa[1..n] and ya[1..n], which tabulate a function (with the xai’s in order),
+	          and given the array y2a[1..n], which is the output from spline above, and given a value of
+	          x, this routine returns a cubic-spline interpolated value y.
+         	  Numerical Recipes: The Art of Scientific Computing, Third Edition in C++.
+	 * \returns The interpolated value of for x.
+	 */
+	double GetSpline(vector<double> &xa, vector<double> &ya, vector<double> &y2a, unsigned long n, double x);
+
+
 };
 
 #include "config_structure.inl"

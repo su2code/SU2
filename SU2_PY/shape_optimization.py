@@ -3,7 +3,7 @@
 ## \file shape_optimization.py
 #  \brief Python script for performing the shape optimization.
 #  \author Francisco Palacios, Tom Economon, Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.4
+#  \version 2.0.5
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -40,7 +40,7 @@ def main():
     parser.add_option("-p", "--partitions", dest="partitions", default=1,
                       help="number of PARTITIONS", metavar="PARTITIONS")
     parser.add_option("-g", "--gradient", dest="gradient", default="Adjoint",
-                      help="Method for computing the GRADIENT (Adjoint or FinDiff)", metavar="GRADIENT")
+                      help="Method for computing the GRADIENT (ADJOINT or FINDIFF)", metavar="GRADIENT")
     parser.add_option("-q", "--quiet", dest="quiet", default="False",
                       help="True/False Quiet all SU2 output (optimizer output only)", metavar="QUIET")
     parser.add_option("-c", "--cycle", dest="cycle", default=0,
@@ -82,6 +82,7 @@ def shape_optimization( filename                ,
     config = SU2.io.Config(filename)
     config.NUMBER_PART = partitions
     if quiet: config.CONSOLE = 'CONCISE'
+    config.GRADIENT_METHOD = gradient
     
     def_dv = config.DEFINITION_DV
     n_dv   = len(def_dv['KIND'])  

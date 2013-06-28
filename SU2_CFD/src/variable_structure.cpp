@@ -2,7 +2,7 @@
  * \file variable_structure.cpp
  * \brief Definition of the solution fields.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -339,6 +339,22 @@ void CVariable::SetVel_ResConv_Zero(void) {
 void CVariable::SetVel_ResTruncError_Zero(void) {
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
 		Res_TruncError[iDim+1] = 0.0;
+}
+
+void CVariable::SetEnergy_ResVisc_Zero(void) {
+  Res_Visc[nDim+1] = 0.0;
+}
+
+void CVariable::SetEnergy_ResSour_Zero(void) {
+  Res_Sour[nDim+1] = 0.0;
+}
+
+void CVariable::SetEnergy_ResConv_Zero(void) {
+  Res_Conv[nDim+1] = 0.0;
+}
+
+void CVariable::SetEnergy_ResTruncError_Zero(void) {
+  Res_TruncError[nDim+1] = 0.0;
 }
 
 void CVariable::SetVelSolutionZero(void) {

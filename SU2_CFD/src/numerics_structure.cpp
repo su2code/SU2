@@ -2,7 +2,7 @@
  * \file numerics_structure.cpp
  * \brief This file contains all the numerical methods.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -30,7 +30,7 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar, CConfig *
 	nVar = val_nVar;
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
-	Gas_Constant = config->GetGas_Constant();
+	Gas_Constant = config->GetGas_ConstantND();
 
 	//U_id = new double [nVar];
 	//U_jd = new double [nVar];
@@ -2150,24 +2150,33 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar, double val_laminar_
 	unsigned short iDim, iVar, jVar;
 
 	double theta = 0.0, sqvel = 0.0, proj_viscousflux_vel = 0.0;
+  
 	for (iDim = 0; iDim < nDim; iDim++) {
 		theta += val_normal[iDim]*val_normal[iDim];
 		sqvel += val_Mean_PrimVar[iDim+1]*val_Mean_PrimVar[iDim+1];
 		proj_viscousflux_vel += val_Proj_Visc_Flux[iDim+1]*val_Mean_PrimVar[iDim+1];
 	}
-	double phi = 0.5*(Gamma-1.)*sqvel;
-
+  
+	double phi = 0.5*(Gamma-1.0)*sqvel;
 	double Density = val_Mean_PrimVar[nDim+2];
 	double Pressure = val_Mean_PrimVar[nDim+1];
 	double total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
 	double heat_flux_factor = val_laminar_viscosity / PRANDTL + val_eddy_viscosity / PRANDTL_TURB;
-	double cpoR = Gamma/(Gamma-1.); // cp over R
-	double factor = total_viscosity/(Density*val_dist_ij)*val_dS;
+	double cpoR = Gamma/(Gamma-1.0); // cp over R
+	double factor = total_viscosity*val_dS/(Density*val_dist_ij);
 	double phi_rho = -cpoR*heat_flux_factor*Pressure/(Density*Density);
-	double phi_p = cpoR*heat_flux_factor/Density;
-	double rhoovisc = Density/total_viscosity; // rho over viscosity
+	double phi_p = cpoR*heat_flux_factor/(Density);
+	double rhoovisc = Density/(total_viscosity); // rho over viscosity
 
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+      val_Proj_Jac_Tensor_i[iVar][jVar] = 0.0;
+      val_Proj_Jac_Tensor_j[iVar][jVar] = 0.0;
+    }
+  }
+  
 	if (nDim == 2) {
+    
 		double thetax = theta + val_normal[0]*val_normal[0]/3.0;
 		double thetay = theta + val_normal[1]*val_normal[1]/3.0;
 
@@ -2191,10 +2200,10 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar, double val_laminar_
 
 		val_Proj_Jac_Tensor_i[3][0] = -factor*(rhoovisc*theta*(phi_rho+phi*phi_p) -
 				pix*val_Mean_PrimVar[1]+piy*val_Mean_PrimVar[2]);
-		val_Proj_Jac_Tensor_i[3][1] = -factor*(pix-rhoovisc*theta*phi_p*(Gamma-1)*val_Mean_PrimVar[1]);
-		val_Proj_Jac_Tensor_i[3][2] = -factor*(piy-rhoovisc*theta*phi_p*(Gamma-1)*val_Mean_PrimVar[2]);
-		val_Proj_Jac_Tensor_i[3][3] = -factor*((Gamma-1)*rhoovisc*theta*phi_p);
-
+		val_Proj_Jac_Tensor_i[3][1] = -factor*(pix-rhoovisc*theta*phi_p*(Gamma-1.0)*val_Mean_PrimVar[1]);
+		val_Proj_Jac_Tensor_i[3][2] = -factor*(piy-rhoovisc*theta*phi_p*(Gamma-1.0)*val_Mean_PrimVar[2]);
+		val_Proj_Jac_Tensor_i[3][3] = -factor*((Gamma-1.0)*rhoovisc*theta*phi_p);
+    
 		for (iVar = 0; iVar < nVar; iVar++)
 			for (jVar = 0; jVar < nVar; jVar++)
 				val_Proj_Jac_Tensor_j[iVar][jVar] = -val_Proj_Jac_Tensor_i[iVar][jVar];
@@ -2206,6 +2215,8 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar, double val_laminar_
 		val_Proj_Jac_Tensor_j[3][1] += factor*val_Proj_Visc_Flux[1];
 		val_Proj_Jac_Tensor_i[3][2] += factor*val_Proj_Visc_Flux[2];
 		val_Proj_Jac_Tensor_j[3][2] += factor*val_Proj_Visc_Flux[2];
+    
+    
 	} 
 	else {
 

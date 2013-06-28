@@ -2,7 +2,7 @@
  * \file solution_adjoint_levelset.cpp
  * \brief Main subrotuines for solving the level set problem.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -147,6 +147,7 @@ CAdjLevelSetSolution::CAdjLevelSetSolution(CGeometry *geometry, CConfig *config,
       case FIGURE_OF_MERIT: AdjExt = "_merit.dat"; break;
       case FREE_SURFACE: AdjExt = "_fs.dat"; break;
       case NOISE: AdjExt = "_fwh.dat"; break;
+      case HEAT_LOAD: AdjExt = "_Q.dat"; break;
 		}
 		filename.append(AdjExt);
 		restart_file.open(filename.data(), ios::in);		
@@ -366,6 +367,7 @@ void CAdjLevelSetSolution::Preprocessing(CGeometry *geometry, CSolution **soluti
 	unsigned long iPoint;
 	
 	bool implicit = (config->GetKind_TimeIntScheme_AdjLevelSet() == EULER_IMPLICIT);
+	bool high_order_diss = (config->GetKind_Upwind_AdjLevelSet() == SCALAR_UPWIND_2ND);
 
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
 		node[iPoint]->Set_ResConv_Zero();
@@ -377,8 +379,11 @@ void CAdjLevelSetSolution::Preprocessing(CGeometry *geometry, CSolution **soluti
 	if (implicit)
 		Jacobian.SetValZero();
 	
-	if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
-	if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
+  if (high_order_diss) {
+    if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
+    if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
+  }
+  
 }
 
 void CAdjLevelSetSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short iMesh) {
@@ -387,19 +392,12 @@ void CAdjLevelSetSolution::Upwind_Residual(CGeometry *geometry, CSolution **solu
 	unsigned short iDim, iVar;
 	
 	bool implicit = (config->GetKind_TimeIntScheme_AdjLevelSet() == EULER_IMPLICIT);
-	bool high_order_diss = (config->GetKind_Upwind_LevelSet() == SCALAR_UPWIND_2ND);
-	
-	if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-		solution_container[FLOW_SOL]->SetSolution_Gradient_GG(geometry, config);		
-	}
-	if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-		solution_container[FLOW_SOL]->SetSolution_Gradient_LS(geometry, config);
-	}
-	
+	bool high_order_diss = (config->GetKind_Upwind_AdjLevelSet() == SCALAR_UPWIND_2ND);
+		
 	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+    
 		/*--- Points in edge and normal vectors ---*/
-		iPoint = geometry->edge[iEdge]->GetNode(0);
-		jPoint = geometry->edge[iEdge]->GetNode(1);
+		iPoint = geometry->edge[iEdge]->GetNode(0); jPoint = geometry->edge[iEdge]->GetNode(1);
 		solver->SetNormal(geometry->edge[iEdge]->GetNormal());
 		
 		/*--- Conservative variables w/o reconstruction ---*/
@@ -460,7 +458,7 @@ void CAdjLevelSetSolution::Source_Residual(CGeometry *geometry, CSolution **solu
 																								 CConfig *config, unsigned short iMesh) {
 	unsigned short iVar, iDim;
 	unsigned long iPoint;
-  double epsilon, DeltaDirac, lambda, dRho_dPhi, dMud_Phi, Vol, S_star, LevelSet, *MeanFlow, *AdjMeanFlow, **AdjLevelSetGradient, **AdjMeanFlowGradient, Density, Velocity[3], ProjAdj, dFc_dRho[3][4], ProjFlux;
+  double epsilon, DeltaDirac, lambda, dRho_dPhi, dMud_Phi, Vol, DiffLevelSet, LevelSet, *MeanFlow, *AdjMeanFlow, **AdjLevelSetGradient, **AdjMeanFlowGradient, Density, Velocity[3], ProjAdj, dFc_dRho[3][4], ProjFlux;
   
 	double Froude2 = config->GetFroude()*config->GetFroude();
   bool incompressible = config->GetIncompressible();
@@ -474,7 +472,7 @@ void CAdjLevelSetSolution::Source_Residual(CGeometry *geometry, CSolution **solu
 		Vol = geometry->node[iPoint]->GetVolume();
 
     /*--- Direct problem quantities ---*/
-		S_star = solution_container[LEVELSET_SOL]->node[iPoint]->GetDiffLevelSet();
+		DiffLevelSet = solution_container[LEVELSET_SOL]->node[iPoint]->GetDiffLevelSet();
 		LevelSet = solution_container[LEVELSET_SOL]->node[iPoint]->GetSolution(0);
 		MeanFlow = solution_container[FLOW_SOL]->node[iPoint]->GetSolution();
     Density = solution_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
@@ -520,8 +518,11 @@ void CAdjLevelSetSolution::Source_Residual(CGeometry *geometry, CSolution **solu
       }
     }
     
- 		Residual[0] = ( ProjFlux -(LevelSet*ProjAdj/Density) - (AdjMeanFlow[nDim]/Froude2))*dRho_dPhi*Vol + S_star* Vol;
+ 		Residual[0] = ( ProjFlux -(LevelSet*ProjAdj/Density) - (AdjMeanFlow[nDim]/Froude2))*dRho_dPhi*Vol;
 		
+    /*--- The Free surface objective function requires the levelt set difference ---*/
+    if (config->GetKind_ObjFunc() == FREE_SURFACE) Residual[0] +=  DiffLevelSet* Vol;
+
 		/*--- Add Residual ---*/
 		node[iPoint]->AddRes_Sour(Residual);
 	}
@@ -623,7 +624,7 @@ void CAdjLevelSetSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solutio
 	}
 }
 
-void CAdjLevelSetSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short val_marker) {
+void CAdjLevelSetSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
 	unsigned long iPoint, iVertex, Point_Normal;
 	unsigned short iVar, iDim;
 	double *U_domain, *U_wall, *LevelSet_domain, *LevelSet_wall;
@@ -654,12 +655,12 @@ void CAdjLevelSetSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **sol
 			/*--- Set the normal vector ---*/
 			geometry->vertex[val_marker][iVertex]->GetNormal(Vector);
 			for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = -Vector[iDim];
-			solver->SetNormal(Vector);
+			conv_solver->SetNormal(Vector);
 			
-			solver->SetConservative(U_wall, U_wall);
-			solver->SetLevelSetVar(LevelSet_wall, LevelSet_wall);
-			solver->SetDensityInc(solution_container[FLOW_SOL]->node[iPoint]->GetDensityInc(), solution_container[FLOW_SOL]->node[iPoint]->GetDensityInc());
-      solver->SetResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+			conv_solver->SetConservative(U_wall, U_wall);
+			conv_solver->SetLevelSetVar(LevelSet_wall, LevelSet_wall);
+			conv_solver->SetDensityInc(solution_container[FLOW_SOL]->node[iPoint]->GetDensityInc(), solution_container[FLOW_SOL]->node[iPoint]->GetDensityInc());
+      conv_solver->SetResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 			
 			node[iPoint]->AddRes_Conv(Residual_i);
 			

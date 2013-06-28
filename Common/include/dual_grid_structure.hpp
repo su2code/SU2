@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for doing the complete dual grid structure.
  *        The subroutines and functions are in the <i>dual_grid_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.4
+ * \version 2.0.5
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -37,7 +37,7 @@ using namespace std;
  * \brief Class for controlling the dual volume definition. The dual volume is compose by 
  *        three main elements: points, edges, and vertices.
  * \author F. Palacios.
- * \version 2.0.4
+ * \version 2.0.5
  */
 class CDualGrid{
 protected:
@@ -122,7 +122,7 @@ public:
  * \class CPoint
  * \brief Class for point definition (including control volume definition).
  * \author F. Palacios.
- * \version 2.0.4
+ * \version 2.0.5
  */
 class CPoint : public CDualGrid {
 private:
@@ -143,7 +143,9 @@ private:
   *Coord_n1,		/*!< \brief Coordinates at time n-1 for use with dynamic meshes. */
   *Coord_p1;		/*!< \brief Coordinates at time n+1 for use with dynamic meshes. */
 	double *gridvel;	/*!< \brief Velocity of the grid, in case the grid is moving. */
-	double *rotvel;	/*!< \brief Rotational velocity, in case rotational frame. */
+  double **gridvel_grad;  /*!< \brief Gradient of the grid velocity for dynamic meshes. */
+	double *rotvel;         /*!< \brief Rotational velocity for a rotating frame. */
+  double **rotvel_grad;   /*!< \brief Gradient of the grid velocity for a rotating frame. */
 	unsigned long Parent_CV;			/*!< \brief Index of the parent control volume in the agglomeration process. */
 	unsigned short nChildren_CV;		/*!< \brief Number of children in the agglomeration process. */
 	vector<unsigned long> Children_CV;		/*!< \brief Index of the children control volumes in the agglomeration process. */
@@ -538,12 +540,24 @@ public:
 	 * \return Grid velocity at the point.
 	 */	
 	double *GetGridVel(void);
+  
+  /*!
+	 * \brief Get the value of the grid velocity gradient at the point.
+	 * \return Grid velocity gradient at the point.
+	 */
+	double **GetGridVel_Grad(void);
 	
 	/*! 
 	 * \brief Get the value of the rotational velocity at the point.
 	 * \return Rotational velocity at the point.
 	 */	
 	double *GetRotVel(void);
+  
+  /*!
+	 * \brief Get the value of the rotational velocity gradient at the point.
+	 * \return Rotational velocity gradient at the point.
+	 */
+	double **GetRotVel_Grad(void);
 	
 	/*! 
 	 * \brief Add the value of the coordinates to the <i>Coord_sum</i> vector for implicit smoothing.
@@ -574,6 +588,14 @@ public:
 	 * \param[in] val_gridvel - Value of the grid velocity.
 	 */	
 	void SetGridVel(double *val_gridvel);
+  
+  /*!
+	 * \brief Set the gradient of the grid velocity.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_dim - Index of the dimension.
+	 * \param[in] val_value - Value of the gradient.
+	 */
+	void SetGridVel_Grad(unsigned short val_var, unsigned short val_dim, double val_value);
 	
 	/*! 
 	 * \brief Set the value of the rotational velocity at the point.
@@ -587,6 +609,14 @@ public:
 	 * \param[in] val_rotvel - Value of the rotational velocity.
 	 */	
 	void SetRotVel(double *val_rotvel);
+  
+  /*!
+	 * \brief Set the gradient of the rotational grid velocity.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_dim - Index of the dimension.
+	 * \param[in] val_value - Value of the gradient.
+	 */
+	void SetRotVel_Grad(unsigned short val_var, unsigned short val_dim, double val_value);
 	
 	/*! 
 	 * \brief This function does nothing (it comes from a pure virtual function, that implies the 
@@ -641,7 +671,7 @@ public:
  * \class CEdge
  * \brief Class for defining an edge.
  * \author F. Palacios.
- * \version 2.0.4
+ * \version 2.0.5
  */
 class CEdge : public CDualGrid {
 private:
@@ -789,7 +819,7 @@ public:
  * \class CVertex
  * \brief Class for vertex definition (equivalent to edges, but for the boundaries).
  * \author F. Palacios.
- * \version 2.0.4
+ * \version 2.0.5
  */
 class CVertex : public CDualGrid {
 private:
