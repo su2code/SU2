@@ -4,7 +4,7 @@
  *        The subroutines and functions are in the <i>integration_structure.cpp</i>, 
  *        <i>integration_time.cpp</i>, and <i>integration_notime.cpp</i> files.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -42,7 +42,7 @@ using namespace std;
  * \brief Main class for doing the space integration, time integration, and monitoring 
  *        of a system of Partial Differential Equations (PDE).
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CIntegration {
 protected:
@@ -115,17 +115,6 @@ public:
 	 */
 	void Solving_Linear_System(CGeometry *geometry, CSolution *solution, CSolution **solution_container, 
 							   CConfig *config, unsigned short iMesh);
-	
-	/*! 
-	 * \brief Do the space integration of the numerical system.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
-	 * \param[in] solver_container - Description of the numerical method (the way in which the equations are solved).
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] Iteration - Current iteration.
-	 */
-	void SetFreeSurface_Solver(CGeometry **geometry, CSolution ***solution_container, CNumerics ****solver_container, 
-													 CConfig *config, unsigned long Iteration);
 
 	/*! 
 	 * \brief Do the convergence analisys to determine if the code must stop the execution.
@@ -174,10 +163,10 @@ public:
 	/*! 
 	 * \brief Save the solution, and volume at different time steps. 
 	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] flow - Flow solution.
+	 * \param[in] solution - Flow solution.
    * \param[in] config - Definition of the particular problem.
 	 */
-	void SetDualTime_Solver(CGeometry *geometry, CSolution *flow, CConfig *config);
+	void SetDualTime_Solver(CGeometry *geometry, CSolution *solution, CConfig *config);
 	
 	/*! 
 	 * \brief A virtual member.
@@ -261,9 +250,7 @@ public:
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] InclSharedDomain - Include the shared domain in the interpolation.
 	 */
-	virtual void SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolution **sol_fine, CSolution **sol_coarse, 
-										CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config, unsigned short iMesh,
-										bool InclSharedDomain);
+	virtual void SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolution **sol_fine, CSolution **sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
 
 	/*! 
 	 * \brief A virtual member.
@@ -325,7 +312,7 @@ public:
  * \class CMultiGridIntegration
  * \brief Class for doing the numerical integration using a multigrid method.
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CMultiGridIntegration : public CIntegration {
 public:
@@ -446,9 +433,7 @@ public:
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] InclSharedDomain - Include the shared domain in the interpolation.
 	 */
-	void SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolution **sol_fine, CSolution **sol_coarse, 
-								CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config, unsigned short iMesh, 
-								bool InclSharedDomain);
+	void SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolution **sol_fine, CSolution **sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
 	
 	/*! 
 	 * \brief Compute the gradient in coarse grid using the fine grid information. 
@@ -485,7 +470,7 @@ public:
  * \class CSingleGridIntegration
  * \brief Class for doing the numerical integration of the turbulence model.
  * \author A. Bueno.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CSingleGridIntegration : public CIntegration {
 public:
@@ -512,13 +497,27 @@ public:
 	 */
 	void SetSingleGrid_Solver(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****solver_container,
 							 CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
+  
+  /*!
+	 * \brief Restrict solution from fine grid to a coarse grid.
+	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+	 * \param[in] sol_fine - Pointer to the solution on the fine grid.
+	 * \param[out] sol_coarse - Pointer to the solution on the coarse grid.
+	 * \param[in] geo_fine - Geometrical definition of the fine grid.
+	 * \param[in] geo_coarse - Geometrical definition of the coarse grid.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iMesh - Index of the mesh in multigrid computations.
+	 * \param[in] InclSharedDomain - Include the shared domain in the interpolation.
+	 */
+	void SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolution **sol_fine, CSolution **sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
+  
 };
 
 /*! 
  * \class CPotentialIntegration
  * \brief Class for doing the numerical integration of the potential equation.
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CPotentialIntegration : public CIntegration {
 public:

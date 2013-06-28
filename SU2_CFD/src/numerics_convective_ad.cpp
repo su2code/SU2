@@ -5,7 +5,7 @@
  * semi-automatically using python, Tapenade and some minor requirement
  * to add in small bits of code/comments
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -611,6 +611,39 @@ void CUpwSca_AdjDiscTurbSA::SetDirectResidual_ad(double *val_residual, double *v
 
 //SU2_DIFF START CUpwSca_TurbSA__SetResidual
 
+    double result1;
+    double result1d;
+    int ii1;
+    Density_id = U_id[0];
+    Density_i = U_i[0];
+    Density_jd = U_jd[0];
+    Density_j = U_j[0];
+    q_ij = 0;
+    for (ii1 = 0; ii1 < nDim; ++ii1)
+        Velocity_id[ii1] = 0.0;
+    for (ii1 = 0; ii1 < nDim; ++ii1)
+        Velocity_jd[ii1] = 0.0;
+    q_ijd = 0.0;
+    for (iDim = 0; iDim < nDim; ++iDim) {
+        Velocity_id[iDim] = (U_id[iDim+1]*Density_i-U_i[iDim+1]*Density_id)/(
+            Density_i*Density_i);
+        Velocity_i[iDim] = U_i[iDim+1]/Density_i;
+        Velocity_jd[iDim] = (U_jd[iDim+1]*Density_j-U_j[iDim+1]*Density_jd)/(
+            Density_j*Density_j);
+        Velocity_j[iDim] = U_j[iDim+1]/Density_j;
+        q_ijd = q_ijd + 0.5*Normal[iDim]*(Velocity_id[iDim]+Velocity_jd[iDim])
+        ;
+        q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
+    }
+    result1d = fabs_d(q_ij, q_ijd, &result1);
+    a0d = 0.5*(q_ijd+result1d);
+    a0 = 0.5*(q_ij+result1);
+    result1d = fabs_d(q_ij, q_ijd, &result1);
+    a1d = 0.5*(q_ijd-result1d);
+    a1 = 0.5*(q_ij-result1);
+    val_residuald[0] = a0d*TurbVar_i[0] + a0*TurbVar_id[0] + a1d*TurbVar_j[0] 
+        + a1*TurbVar_jd[0];
+    val_residual[0] = a0*TurbVar_i[0] + a1*TurbVar_j[0];
 
 
 //SU2_DIFF END CUpwSca_TurbSA__SetResidual

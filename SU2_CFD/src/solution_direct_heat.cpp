@@ -2,7 +2,7 @@
  * \file solution_direct_heat.cpp
  * \brief Main subrotuines for solving the heat equation.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -37,11 +37,12 @@ CHeatSolution::CHeatSolution(CGeometry *geometry,
 	node    = new CVariable*[nPoint];
 	nVar    = 2; // solve as a 2 eq. system		
   
-	Residual     = new double[nVar];
-	Residual_Max = new double[nVar];
+	Residual     = new double[nVar]; Residual_RMS = new double[nVar];
 	Solution     = new double[nVar];
   Res_Sour     = new double[nVar];
+  Residual_Max = new double[nVar]; Point_Max = new unsigned long[nVar];
   
+
 	/*--- Point to point stiffness matrix (only for triangles)---*/	
 	StiffMatrix_Elem = new double*[nDim+1];
 	for (iVar = 0; iVar < nDim+1; iVar++) {
@@ -181,6 +182,7 @@ void CHeatSolution::Preprocessing(CGeometry *geometry,
                                   CSolution **solution_container,
                                   CNumerics **solver,
                                   CConfig   *config, 
+                                  unsigned short iMesh,
                                   unsigned short iRKStep) {
   
   /* Set residuals and matrix entries to zero */
@@ -462,8 +464,10 @@ void CHeatSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **sol
 	double *local_ResVisc, *local_ResSour;
   
 	/*--- Set maximum residual to zero ---*/
-	for (iVar = 0; iVar < nVar; iVar++)
-		SetRes_Max(iVar, 0.0);
+	for (iVar = 0; iVar < nVar; iVar++) {
+		SetRes_RMS(iVar, 0.0);
+    SetRes_Max(iVar, 0.0, 0);
+  }
 	
 	/*--- Build implicit system ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
@@ -477,9 +481,19 @@ void CHeatSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **sol
 			total_index = iPoint*nVar+iVar;
 			rhs[total_index] = local_ResVisc[iVar] + local_ResSour[iVar];
 			xsol[total_index] = 0.0;
-			AddRes_Max( iVar, rhs[total_index]*rhs[total_index] );
+			AddRes_RMS(iVar, rhs[total_index]*rhs[total_index]);
+      AddRes_Max(iVar, fabs(rhs[total_index]), geometry->node[iPoint]->GetGlobalIndex());
 		}
 	}
+  
+  /*--- Initialize residual and solution at the ghost points ---*/
+  for (iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      total_index = iPoint*nVar + iVar;
+      rhs[total_index] = 0.0;
+      xsol[total_index] = 0.0;
+    }
+  }
   
 	/*--- Solve the linear system (Stationary iterative methods) ---*/
 	if (config->GetKind_Linear_Solver() == SYM_GAUSS_SEIDEL) 
@@ -534,12 +548,11 @@ void CHeatSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **sol
 		}
 	}
 	
-#ifdef NO_MPI
-	/*--- Compute the norm-2 of the residual ---*/
-	for (iVar = 0; iVar < nVar; iVar++) {
-		SetRes_Max(iVar, sqrt(GetRes_Max(iVar)));
-	}
-#endif
+  /*--- MPI solution ---*/
+  SetSolution_MPI(geometry, config);
+  
+  /*--- Compute the root mean square residual ---*/
+  SetResidual_RMS(geometry, config);
   
 }
 

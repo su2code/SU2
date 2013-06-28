@@ -2,7 +2,7 @@
  * \file SU2_CFD.cpp
  * \brief Main file of Computational Fluid Dynamics Code (SU2_CFD).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -134,21 +134,21 @@ int main(int argc, char *argv[]) {
 		/*--- Definition of the integration class (integration_container[#ZONES][#EQ_SYSTEMS]) ---*/
 		integration_container[iZone] = new CIntegration*[MAX_SOLS];
 		Integration_Definition(integration_container[iZone], geometry_container[iZone], config_container[iZone], iZone);
-		
+
 #ifndef NO_MPI
 		/*--- Synchronization point after the integration definition subroutine ---*/
 		MPI::COMM_WORLD.Barrier();
 #endif	
-		
+
 		/*--- Definition of the numerical method class (solver_container[#ZONES][#MG_GRIDS][#EQ_SYSTEMS][#EQ_TERMS]) ---*/
 		solver_container[iZone] = new CNumerics***[config_container[iZone]->GetMGLevels()+1];
 		Solver_Definition(solver_container[iZone], solution_container[iZone], geometry_container[iZone], config_container[iZone], iZone);
 
 #ifndef NO_MPI
-		/*--- Synchronization point after the solver definition subrotuine ---*/
+		/*--- Synchronization point after the solver definition subroutine ---*/
 		MPI::COMM_WORLD.Barrier();
 #endif	
-		
+
 		/*--- Computation of wall distance ---*/
 		if ((config_container[iZone]->GetKind_Solver() == RANS) || (config_container[iZone]->GetKind_Solver() == ADJ_RANS))
 			geometry_container[iZone][MESH_0]->SetWall_Distance(config_container[iZone]);
@@ -211,74 +211,74 @@ int main(int argc, char *argv[]) {
 			config_container[iZone]->SetExtIter(ExtIter);
 			config_container[iZone]->UpdateCFL(ExtIter);
 		}
-		
+
 		switch (config_container[ZONE_0]->GetKind_Solver()) {
 								
-			case EULER: case NAVIER_STOKES: case RANS:				
+			case EULER: case NAVIER_STOKES: case RANS:
 				MeanFlowIteration(output, integration_container, geometry_container, 
 													solution_container, solver_container, config_container, 
-													surface_movement, grid_movement, ffd_chunk, ExtIter);
+													surface_movement, grid_movement, ffd_chunk);
 				break;
 				
 			case PLASMA_EULER: case PLASMA_NAVIER_STOKES:
 				PlasmaIteration(output, integration_container, geometry_container,
 												solution_container, solver_container, config_container,
-												surface_movement, grid_movement, ffd_chunk, ExtIter);
+												surface_movement, grid_movement, ffd_chunk);
 				break;
 				
 			case FREE_SURFACE_EULER: case FREE_SURFACE_NAVIER_STOKES: case FREE_SURFACE_RANS:
 				FreeSurfaceIteration(output, integration_container, geometry_container, 
 														 solution_container, solver_container, config_container, 
-														 surface_movement, grid_movement, ffd_chunk, ExtIter);
+														 surface_movement, grid_movement, ffd_chunk);
 				break;
 				
 			case FLUID_STRUCTURE_EULER: case FLUID_STRUCTURE_NAVIER_STOKES:
 				FluidStructureIteration(output, integration_container, geometry_container, 
 																solution_container, solver_container, config_container, 
-																surface_movement, grid_movement, ffd_chunk, ExtIter);
+																surface_movement, grid_movement, ffd_chunk);
 				break;
 				
 			case AEROACOUSTIC_EULER: case AEROACOUSTIC_NAVIER_STOKES:
 				AeroacousticIteration(output, integration_container, geometry_container, 
 															solution_container, solver_container, config_container, 
-															surface_movement, grid_movement, ffd_chunk, ExtIter);
+															surface_movement, grid_movement, ffd_chunk);
 				break;
 				
 			case WAVE_EQUATION:
 				WaveIteration(output, integration_container, geometry_container, 
 											solution_container, solver_container, config_container, 
-											surface_movement, grid_movement, ffd_chunk, ExtIter);
+											surface_movement, grid_movement, ffd_chunk);
 				break;
 				
 			case LINEAR_ELASTICITY:
 				FEAIteration(output, integration_container, geometry_container, 
 										 solution_container, solver_container, config_container, 
-										 surface_movement, grid_movement, ffd_chunk, ExtIter);
+										 surface_movement, grid_movement, ffd_chunk);
 				break;
 				
 				
 			case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
 				AdjMeanFlowIteration(output, integration_container, geometry_container, 
 														 solution_container, solver_container, config_container, 
-														 surface_movement, grid_movement, ffd_chunk, ExtIter);				
+														 surface_movement, grid_movement, ffd_chunk);
 				break;
 				
 			case ADJ_PLASMA_EULER: case ADJ_PLASMA_NAVIER_STOKES:
 				AdjPlasmaIteration(output, integration_container, geometry_container, 
 													 solution_container, solver_container, config_container, 
-													 surface_movement, grid_movement, ffd_chunk, ExtIter);
+													 surface_movement, grid_movement, ffd_chunk);
 				break;
 				
 			case ADJ_FREE_SURFACE_EULER: case ADJ_FREE_SURFACE_NAVIER_STOKES: case ADJ_FREE_SURFACE_RANS:
 				AdjFreeSurfaceIteration(output, integration_container, geometry_container, 
 																solution_container, solver_container, config_container, 
-																surface_movement, grid_movement, ffd_chunk, ExtIter);
+																surface_movement, grid_movement, ffd_chunk);
 				break;
 
 			case ADJ_AEROACOUSTIC_EULER:
 				AdjAeroacousticIteration(output, integration_container, geometry_container, 
 																 solution_container, solver_container, config_container, 
-																 surface_movement, grid_movement, ffd_chunk, ExtIter);
+																 surface_movement, grid_movement, ffd_chunk);
 				break;
 		}
 		
@@ -290,23 +290,17 @@ int main(int argc, char *argv[]) {
 		
 		StopTime = clock(); TimeUsed += (StopTime - StartTime);
 
+    /*--- Evaluate and plot the equivalent area, and flow rate ---*/
+    if (config_container[ZONE_0]->GetKind_Solver() == EULER) {
+      if (config_container[ZONE_0]->GetEquivArea() == YES)
+        output->SetEquivalentArea(solution_container[ZONE_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
+      if (config_container[ZONE_0]->GetFlowRate() == YES)
+        output->SetFlowRate(solution_container[ZONE_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
+    }
+    
 		/*--- Convergence history for serial and parallel computation ---*/
-			if ((ExtIter % config_container[ZONE_0]->GetWrt_Con_Freq() == 0)
-					|| ((config_container[ZONE_0]->IsAdjoint()) && (config_container[ZONE_0]->GetKind_Adjoint() == DISCRETE))){
-			
-				/*--- Evaluate and plot the equivalent area, and flow rate ---*/
-				if (config_container[ZONE_0]->GetKind_Solver() == EULER) {
-					if (config_container[ZONE_0]->GetEquivArea() == YES)
-						output->SetEquivalentArea(solution_container[ZONE_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
-					if (config_container[ZONE_0]->GetFlowRate() == YES)
-						output->SetFlowRate(solution_container[ZONE_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
-				}
+    output->SetConvergence_History(&ConvHist_file, geometry_container, solution_container, config_container, integration_container, false, TimeUsed, ZONE_0);
 
-				/*--- Print the history file --*/
-				output->SetHistory_MainIter(&ConvHist_file, geometry_container, solution_container, config_container[ZONE_0], integration_container, ExtIter, TimeUsed, ZONE_0);
-
-			}
-		
 		/*--- Convergence criteria ---*/
 		switch (config_container[ZONE_0]->GetKind_Solver()) {
 			case EULER: case NAVIER_STOKES: case RANS:
@@ -326,20 +320,16 @@ int main(int argc, char *argv[]) {
 			case ADJ_PLASMA_EULER: case ADJ_PLASMA_NAVIER_STOKES:
 				StopCalc = integration_container[ZONE_0][ADJPLASMA_SOL]->GetConvergence(); break;
 		}
-		
-
 
 		/*--- Solution output ---*/
-		if ( (((ExtIter+1 == config_container[ZONE_0]->GetnExtIter()) || 
-					 (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) || StopCalc ) && (ExtIter != 0)) || 
-				(config_container[ZONE_0]->GetnExtIter() == 1) || 
-				(((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || 
-					(config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) && (ExtIter == 0)) ) {
+		if ((ExtIter+1 == config_container[ZONE_0]->GetnExtIter()) ||
+        ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) && (ExtIter != 0)) ||
+        (StopCalc) ||
+				(((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+          (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) && (ExtIter == 0))) {
 			output->SetResult_Files(solution_container, geometry_container, config_container, ExtIter, nZone);
 		}
-
-
-
+      
 		/*--- Stop criteria	---*/	
 		if (StopCalc) break;
 		
@@ -361,12 +351,8 @@ int main(int argc, char *argv[]) {
 
 	}
 
-	//if ((!config_container[ZONE_0]->IsAdjoint()) || (config_container[ZONE_0]->GetKind_Adjoint() != DISCRETE))
-		ConvHist_file.close();
-	
-	/*--- Memory deallocation ---*/
-	//Solver_Deallocation(solver_container[iZone], solution_container, integration_container[ZONE_0], output, geometry_container, config_container[iZone]);
-	//Geometrical_Deallocation(geometry_container, config_container[iZone]);
+  /*--- Close history file ---*/
+  ConvHist_file.close();
 		
 #ifndef NO_MPI
   /*--- Compute and print the total time for scaling tests. ---*/

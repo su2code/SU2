@@ -9,7 +9,8 @@ from interface import  \
     MDC               ,\
     GPC               ,\
     SMC               ,\
-    PBC               ;
+    PBC               ,\
+    SOL               ;
 
 from decompose  import decompose
 from direct     import direct
@@ -17,3 +18,4 @@ from adjoint    import adjoint
 from projection import projection
 from deform     import deform
 from adaptation import adaptation
+from merge      import merge 

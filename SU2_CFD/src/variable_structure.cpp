@@ -2,7 +2,7 @@
  * \file variable_structure.cpp
  * \brief Definition of the solution fields.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -26,6 +26,22 @@
 unsigned short CVariable::nDim = 0;
 
 CVariable::CVariable(void) { }
+
+CVariable::CVariable(unsigned short val_nvar, CConfig *config) {
+
+  /*--- Initialize the number of solution variables. This version
+   of the constructor will be used primarily for converting the
+   restart files into solution files (SU2_SOL). ---*/
+	nVar = val_nvar;
+  
+	/*--- Allocate the solution array - here it is also possible
+	 to allocate some extra flow variables that do not participate
+	 in the simulation ---*/
+	Solution = new double [nVar];
+	for (unsigned short iVar = 0; iVar < nVar; iVar++)
+		Solution[iVar] = 0.0;
+  
+}
 
 CVariable::CVariable(unsigned short val_ndim, unsigned short val_nvar, CConfig *config) {
 	unsigned short iVar, iDim;
@@ -73,6 +89,44 @@ CVariable::~CVariable(void) {
 	for (iVar = 0; iVar < nVar; iVar++)
 		delete [] Gradient[iVar];
 	delete [] Gradient;
+  
+/*
+  if (Solution != NULL) delete [] Solution;
+	if (Solution_Old != NULL) delete [] Solution_Old;
+	if (Solution_time_n != NULL) delete [] Solution_time_n;
+	if (Solution_time_n1 != NULL) delete [] Solution_time_n1;
+  
+	if (Limiter != NULL) delete [] Limiter;
+	if (Solution_Max != NULL) delete [] Solution_Max;
+	if (Solution_Min != NULL) delete [] Solution_Min;
+	if (Grad_AuxVar != NULL) delete [] Grad_AuxVar;
+	if (Undivided_Laplacian != NULL) delete [] Undivided_Laplacian;
+	if (Residual != NULL) delete [] Residual;
+	if (Res_Conv != NULL) delete [] Res_Conv;
+	if (Res_Visc != NULL) delete [] Res_Visc;
+	if (Res_Sour != NULL) delete [] Res_Sour;
+	if (Res_TruncError != NULL) delete [] Res_TruncError;
+	if (Residual_Old != NULL) delete [] Residual_Old;
+	if (Residual_Sum != NULL) delete [] Residual_Sum;
+  
+  if (Gradient != NULL) {
+    for (iVar = 0; iVar < nVar; iVar++)
+      delete Gradient[iVar];
+    delete [] Gradient;
+  }
+  
+  if (Res_Visc_RK != NULL) {
+    for (iVar = 0; iVar < nVar; iVar++)
+      delete Res_Visc_RK[iVar];
+    delete [] Res_Visc_RK;
+  }
+  
+  //  if (LimiterPrimitive != NULL) {
+  //    for (iVar = 0; iVar < nVar; iVar++)
+  //      delete LimiterPrimitive[iVar];
+  //    delete [] LimiterPrimitive;
+  //  }
+*/
   
 }
 
@@ -297,3 +351,15 @@ void CVariable::GetRes_TruncError(double *val_trunc_error) {
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		val_trunc_error[iVar] = Res_TruncError[iVar];
 }
+
+CBaselineVariable::CBaselineVariable(void) : CVariable() { }
+
+CBaselineVariable::CBaselineVariable(double *val_solution, unsigned short val_nvar, CConfig *config) : CVariable(val_nvar, config) {
+  
+	/*--- Solution initialization ---*/
+	for (unsigned short iVar = 0; iVar < nVar; iVar++)
+		Solution[iVar] = val_solution[iVar];
+  
+}
+
+CBaselineVariable::~CBaselineVariable(void) { }

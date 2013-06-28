@@ -2,14 +2,15 @@
 # Stanford University Aerospace Design Lab
 #
 # Created: 		10/26/12
-# Last updated: 	3/16/13
+# Last updated: 4/4/2013
 #
-# Created by: 		M. Colonno
-# Updated by: 		M. Colonno
+# Created by: 		M. Colonno  10/26/12
+# Updated by: 		M. Colonno  3/16/13
+#                   T. Lukaczyk 4/4/13
 #
 ##########################
 
-AC_INIT([SU^2], [2.0.1], [susquared-dev@lists.stanford.edu],
+AC_INIT([SU^2], [2.0.3], [susquared-dev@lists.stanford.edu],
         [SU^2], [http://su2.stanford.edu])
 AC_PREREQ([2.59])
 AM_INIT_AUTOMAKE  # [SU^2], [2.0]
@@ -248,7 +249,7 @@ AC_OUTPUT(Makefile \
 	SU2_PBC/obj/Makefile \
 	SU2_SMC/obj/Makefile \
 	SU2_SOL/obj/Makefile \
-	SU2Py/Makefile)
+	SU2_PY/Makefile)
 
 abs_srcdir=`(cd $srcdir && pwd)`
 abs_prefix=`(cd $prefix && pwd)`
@@ -258,32 +259,32 @@ AC_MSG_RESULT([
 
 Build Configuration Summary:
 
-      	Source code location: 	${abs_srcdir}
-      	Install location: 		${abs_prefix}
-      	Version:              	${VERSION}
-      	Compiler:             	${CXX}
-      	Preprocessor flags:   	${CPPFLAGS}
-      	Compiler flags:       	${CXXFLAGS}
-      	Linker flags:         	${LDFLAGS}
-      	CGNS support:         	$have_CGNS
-	MPI support:         	$have_MPI
-	Metis support:		$have_METIS
+    Source code location: ${abs_srcdir}
+    Install location: 	  ${abs_prefix}
+    Version:              ${VERSION}
+    Compiler:             ${CXX}
+    Preprocessor flags:   ${CPPFLAGS}
+    Compiler flags:       ${CXXFLAGS}
+    Linker flags:         ${LDFLAGS}
+    CGNS support:         $have_CGNS
+    MPI support:          $have_MPI
+    Metis support:        $have_METIS
 
-	Build SU2_CFD: 		$build_CFD
-	Build SU2_DDC: 		$build_DDC
-	Build SU2_GPC: 		$build_GPC
-	Build SU2_MAC: 		$build_MAC
-	Build SU2_MDC: 		$build_MDC
-	Build SU2_PBC: 		$build_PBC
-	Build SU2_SMC: 		$build_SMC
-	Build SU2_SOL: 		$build_SOL
+    Build SU2_CFD:        $build_CFD
+    Build SU2_DDC:        $build_DDC
+    Build SU2_GPC:        $build_GPC
+    Build SU2_MAC:        $build_MAC
+    Build SU2_MDC:        $build_MDC
+    Build SU2_PBC:        $build_PBC
+    Build SU2_SMC:        $build_SMC
+    Build SU2_SOL:        $build_SOL
 
 Please be sure to add the [\$]SU2_HOME and [\$]SU2_RUN environment variables, and update your [\$]PATH with [\$]SU2_RUN
 
 Based on the input to this configuration, add these lines to your .bashrc file -
 
 export SU2_RUN="${abs_prefix}/bin"
-export SU2_HOME="${abs_srcdir}/trunk"
+export SU2_HOME="${abs_srcdir}"
 export PATH=[\$]PATH:[\$]SU2_RUN
 
 

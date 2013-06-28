@@ -1,0 +1,238 @@
+goals - 
+cascading levels of functionality
+lower levels stand on their own, and provide usefulness to
+higher levels when asked
+
+updating config, state at or close to point of operation
+
+delay class structure until mid/high levels
+
+EXECUTION
+
+level0 - raw suite
+no upstream pointer communication
+
+partitions set once in config initial read
+
+SU2.run.DDC(config)
+SU2.run.CFD(config)
+SU2.run.MAC(config)
+SU2.run.MDC(config)
+SU2.run.GPC(config)
+SU2.run.SMC(config)
+SU2.run.PBC(config)
+	interpret partitions
+	dump config
+	prepare os command
+	run os command
+	handle suite errors
+
+level1 - suite + intent
+upstream pointer communication of config
+config (super copy) vs konfig (local copy)
+update super copy to make useful for next analysis steps
+make temporary super deepcopy if not desired
+returns info dictionary for higher level functions
+all tools assume config['NUMBER_PART'] already set
+
+SU2.run.decomp(config)
+	check for decomposition in config['DECOMPOSED'] = True/False
+	run DDC
+	pointer updated config
+		'DECOMPOSED' = True
+
+SU2.run.deform(config,dv_new=[])
+	optional dv_new sets:
+		'DV_VALUE_OLD' = [0.0]*n_dv
+		'DV_VALUE_NEW' = dv_new
+		'DV_MARKER','DV_KIND','DV_PARAM' based on 'DEFINITION_DV'
+	checks decomp
+	adds 'deform' suffix to mesh_out
+	run MDC
+	pointer updated config
+		'MESH_FILENAME' = 'MESH_FILENAME'+'_deform'
+		'DV_VALUE_OLD' = 'DV_VALUE_NEW'
+	
+SU2.run.direct(config)
+	checks decomp
+	ensures config:
+		'MATH_PROBLEM' = 'DIRECT'
+		'CONV_FILENAME' = 'CONFIG_FILENAME' + '_direct'
+	run CFD
+	read history, get reduced aero data
+	does not move restart to solution
+	returns dictionary 'info' with keys:
+		'FUNCTIONS' - dict of function:value
+		'HISTORY' - dict of col_header:iteration history
+		'FILES' - dict of useful file names
+	
+SU2.run.adjoint(config)
+	checks decomp
+	ensures config:
+		'MATH_PROBLEM' = 'ADJOINT'
+		'CONV_FILENAME' = 'CONFIG_FILENAME' + '_adjoint'	
+	run CFD
+	read history
+	does not move restart to solution
+	does not run gradient projection
+	returns dictionary 'info' with keys:
+		'HISTORY' - dict of col_header:iteration history
+		'FILES' - dict of useful file names
+	
+SU2.run.projection(config,step=1e-4)
+	assumes linear superposition of design variables
+	checks decomp
+	optional step float or vector
+	update config
+	run GPC
+	read raw gradient file, remove file
+	write plotable gradient file
+	returns dictionary 'info' with keys:
+		'HISTORY' - dict of col_header:iteration history
+		'GRADIENTS' - dict of function:grad list
+	
+SU2.run.adaptation(config,kind=None) (*incomplete*)
+	wraps SU2.mesh.adapt.* 
+	optional kind overides config['KIND_ADAPT']
+	skips adapt if 'KIND_ADAPT' = 'NONE'
+	adds suffix 'adapt' to 'MESH_OUT_FILENAME'
+	updates config
+		'MESH_FILENAME' = 'MESH_FILENAME'+'_adapt'
+		
+level2 - objective and gradient analysis, redundancy protection
+upstream pointer update of config and state
+config - controls SU2
+state  - stores design information 
+
+STATE
+	FILES
+		DIRECT
+		ADJOINT_LIFT
+		ADJOINT_DRAG (...)
+		MESH
+		TARGET_EA
+		WEIGHT_NF
+	HISTORY
+		DIRECT
+		ADJOINT_LIFT
+		ADJOINT_DRAG
+	FUNCTIONS
+		LIFT
+		DRAG
+		MOMENT_Z
+	GRADIENTS
+		LIFT
+		DRAG
+		MOMENT_Z
+	
+SU2.eval.functions.function()
+aliased to SU2.eval.func()
+	runs the aerodynamics and geometry control functions
+	pulls requested function names(), returns a dict
+	updates config and state by reference
+
+SU2.eval.functions.aerodynamics()
+	runs with redundancy protection (using state):
+		decomposition
+		deformation
+		direct solution
+	evaluates each step in its own folder, returning state.FILES to the super folder
+	updates config and state by pointer
+	
+
+SU2.eval.functions.geometry()
+    todo ...
+    
+SU2.eval.gradients.gradient()
+aliased to SU2.eval.grad()
+
+SU2.eval.gradients.adjoint()
+	runs with redundancy protection (using state):
+        functions()
+            decom, deform, direct
+		adjoint solution
+	evaluates each step in its own folder, returning state.FILES to the super folder
+	updates config and state by pointer
+    
+    
+SU2.eval.gradients.findiff()
+	runs with redundancy protection (using state):
+        functions()
+            decom, deform, direct
+        finite difference evaluation of functions()
+	finite difference steps performed in the FINDIFF folder, removed when completed    
+	updates config and state by pointer
+
+    
+level3 - design management
+major assumption - one design, one config, one state
+start a new design if a new config is needed
+
+SU2.eval.design(config,state,folder)
+    starts a design class, which manages config and state
+    exposes func() and grad() and functions useful for optimizers
+    will run design in folder with self indexing name
+    attributes:
+        state
+        config
+    methods:
+        func()      function of specified name
+        grad()      gradient of specified name
+        obj_f()     objective function
+        obj_df()    objective function derivatives
+        con_ceq()   equality constraints
+        con_dceq()  equality constraint derivatives
+        con_cieq()  inequality constraints
+        con_dcieq() inequality constraint gradients
+    
+    
+level4 - project managent
+SU2.opt.project(config,state,folder)
+    runs multiple design classes, again avoiding redundancy
+    looks for closest design on restart
+        right now this is based only on DV_VALUE_NEW
+    exposes all methods of SU2.eval.design
+
+level5 - optimization
+SU2.opt.scipy_slsqp(project)
+    sets up and runs a scipy slsqp optimization
+    
+FILE IO
+
+level0 - in/out/mod
+
+class SU2.io.config(dict)
+	config.__init__(name)
+	config.read()
+	config.write(name=self.name)
+	config.dump(name='temp.cfg')
+	config.unpack_dvs(dv_new.dv_old)
+	config.__diff__(konfig)
+	config.__eq__(konfig)
+	
+	config.read_history()
+	config.read_aerodynamics()
+	config.rename_restart()
+	
+SU2.io.read_history( name )
+SU2.io.read_aerodynamics( hist_name, special_cases )
+	
+level1 - files translate,modify,plotting
+
+SU2.io.add_suffix(name,suffix)
+SU2.io.resurrect_restart(config,state)
+
+SU2.io.plot.adjoint_gradient(config,grad_dict)
+SU2.io.plot.findiff_gradient(config,grad_dict)
+
+
+
+
+
+
+
+
+
+
+
+

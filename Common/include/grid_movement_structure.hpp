@@ -5,7 +5,7 @@
  *        technique definition). The subroutines and functions are in 
  *        the <i>grid_movement_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -43,7 +43,7 @@ using namespace std;
  * \brief Class for moving the surface and volumetric 
  *        numerical grid (2D and 3D problems).
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CGridMovement {
 public:
@@ -63,7 +63,7 @@ public:
  * \class CFreeFormChunk
  * \brief Class for defining the free form chunk structure.
  * \author F. Palacios & A. Galdran.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CFreeFormChunk : public CGridMovement {
 public:
@@ -654,8 +654,8 @@ public:
 /*! 
  * \class CVolumetricMovement
  * \brief Class for moving the volumetric numerical grid.
- * \author F. Palacios, and A. Bueno.
- * \version 2.0.2
+ * \author F. Palacios, A. Bueno, T. Economon, S. Padron.
+ * \version 2.0.3
  */
 class CVolumetricMovement : public CGridMovement {
 protected:
@@ -854,7 +854,6 @@ public:
   
   /*!
 	 * \brief Unsteady grid movement using rigid mesh rotation.
-   * \author T. Economon
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
    * \param[in] iZone - Zone number in the mesh.
@@ -864,7 +863,6 @@ public:
 	
   /*!
 	 * \brief Unsteady pitching grid movement using rigid mesh motion.
-   * \author T. Economon
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
    * \param[in] iZone - Zone number in the mesh.
@@ -874,7 +872,6 @@ public:
   
   /*!
 	 * \brief Unsteady plunging grid movement using rigid mesh motion.
-   * \author T. Economon
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
    * \param[in] iZone - Zone number in the mesh.
@@ -882,28 +879,34 @@ public:
 	 */
 	void SetRigidPlunging(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
   
-
-    /*!
-	 * \brief Unsteady aeroelastic grid movement using rigid mesh motion.
-     * \author S. Padron
+  /*!
+	 * \brief Unsteady translational grid movement using rigid mesh motion.
 	 * \param[in] geometry - Geometrical definition of the problem.
-     * \param[in] Cl - Coefficient of lift at particular iteration.
-     * \param[in] Cm - Moment coefficient about z-axis at particular iteration.
 	 * \param[in] config - Definition of the particular problem.
-     * \param[in] iZone - Zone number in the mesh.
-     * \param[in] iter - Physical time iteration number.
+   * \param[in] iZone - Zone number in the mesh.
+   * \param[in] iter - Physical time iteration number.
 	 */
-    void SetAeroElasticMotion(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned short iZone, unsigned long iter);
-    
-    /*!
+	void SetRigidTranslation(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
+
+  /*!
+	 * \brief Unsteady aeroelastic grid movement using rigid mesh motion.
+	 * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] Cl - Coefficient of lift at particular iteration.
+   * \param[in] Cm - Moment coefficient about z-axis at particular iteration.
+	 * \param[in] config - Definition of the particular problem.
+   * \param[in] iZone - Zone number in the mesh.
+   * \param[in] iter - Physical time iteration number.
+	 */
+  void SetAeroElasticMotion(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned short iZone, unsigned long iter);
+  
+  /*!
 	 * \brief Sets up the generalized eigenvectors and eigenvalues needed to solve the structural equations.
-     * \author S. Padron
-     * \param[in] PHI - Matrix of the generalized eigenvectors.
-     * \param[in] lambda - The eigenvalues of the generalized eigensystem.
+   * \param[in] PHI - Matrix of the generalized eigenvectors.
+   * \param[in] lambda - The eigenvalues of the generalized eigensystem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-    void AeroElasticSetUp(double (&PHI)[2][2],double (&lambda)[2], CConfig *config);
-    
+  void AeroElasticSetUp(double (&PHI)[2][2],double (&lambda)[2], CConfig *config);
+  
 	/*!
 	 * \brief Grid deformation using the spring analogy method.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -925,7 +928,7 @@ public:
  * \class CSurfaceMovement
  * \brief Class for moving the surface numerical grid.
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CSurfaceMovement : public CGridMovement {
 protected:

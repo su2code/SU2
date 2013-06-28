@@ -2,7 +2,7 @@
  * \file dual_grid_structure.inl
  * \brief In-Line subroutines of the <i>dual_grid_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -62,6 +62,10 @@ inline bool CPoint::GetMove (void) { return Move; }
 inline bool CPoint::GetBoundary(void) { return Boundary; }
 
 inline void CPoint::SetBoundary(bool val_boundary) { Boundary = val_boundary; }
+
+inline void CPoint::SetPhysicalBoundary(bool val_boundary) { PhysicalBoundary = val_boundary; }
+
+inline bool CPoint::GetPhysicalBoundary(void) { return PhysicalBoundary; }
 
 inline void CPoint::AddVolume (double val_Volume) { Volume[0] += val_Volume; }
 
@@ -316,8 +320,8 @@ inline bool CVertex::GetSharp_Corner(void) { return Sharp_Corner; }
 
 inline void CVertex::SetSharp_Corner(bool val_sharp_corner) { Sharp_Corner = val_sharp_corner; }
 
-inline unsigned long CVertex::GetClosest_Neighbor(void) { return Closest_Neighbor; }
+inline unsigned long CVertex::GetNormal_Neighbor(void) { return Normal_Neighbor; }
 
-inline void CVertex::SetClosest_Neighbor(unsigned long val_closest_neighbor) { Closest_Neighbor = val_closest_neighbor; }
+inline void CVertex::SetNormal_Neighbor(unsigned long val_Normal_Neighbor) { Normal_Neighbor = val_Normal_Neighbor; }
 
 

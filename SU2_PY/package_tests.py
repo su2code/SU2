@@ -1,6 +1,6 @@
 
 import os, sys, shutil, copy
-sys.path.append('/home/rktchip/Dropbox/SU2_SVN/source/trunk/SU2_PY')
+sys.path.append(os.environ['SU2_RUN'])
 import SU2
 
 from collections import OrderedDict
@@ -13,6 +13,8 @@ from collections import OrderedDict
 # plotting
 # verbose redirection
 # pyopt optimizers
+# verify server.py
+
 
 # needed config options
 # DECOMPOSED = YES/NO
@@ -31,11 +33,11 @@ def main():
     
     #io0()       # working
     #io1()
-    #level0()    # working
-    #level1()    # working
-    #level2()    # working
-    #level3()    # working
-    #level4()    # working
+    level0()    # working
+    level1()    # working
+    level2()    # working
+    level3()    # working
+    level4()    # working
     level5()    # working
     
     print 'DONE!'
@@ -143,8 +145,8 @@ def level2():
         
         state = SU2.io.State()
         
-        with SU2.io.redirect.folder(folder='JOB_001',link='mesh_NACA0012.su2'):
-            grad = SU2.eval.grad( 'DRAG', 'FINDIFF', config, state )
+        #with SU2.io.redirect.folder(folder='JOB_001',link='mesh_NACA0012.su2'):
+        #    grad = SU2.eval.grad( 'DRAG', 'FINDIFF', config, state )
         
         with SU2.io.redirect_folder(folder='JOB_001',link='mesh_NACA0012.su2'):
             func  = SU2.eval.func( 'LIFT', config, state )
@@ -229,6 +231,7 @@ def level4():
         data = project.data
         
     wait = 0
+    print "Done!"
     
 def level5():
     folder='test_level5'; pull='config_NACA0012.cfg'; link='mesh_NACA0012.su2'

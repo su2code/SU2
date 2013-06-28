@@ -40,11 +40,9 @@ ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
 		../src/numerics_structure.cpp \
 		../src/numerics_viscous.cpp \
 		../src/numerics_viscous_ad.cpp \
-		../src/output_CleanUp.cpp \
 		../src/output_structure.cpp \
-		../src/output_WriteCGNS.cpp \
-		../src/output_WriteTecplotASCII.cpp \
-		../src/output_WriteTecplotBinary.cpp \
+		../src/output_cgns.cpp \
+		../src/output_tecplot.cpp \
 		../src/solution_adjoint_levelset.cpp \
 		../src/solution_adjoint_mean.cpp \
 		../src/solution_adjoint_plasma.cpp \

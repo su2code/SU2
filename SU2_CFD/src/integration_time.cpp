@@ -2,7 +2,7 @@
  * \file integration_time.cpp
  * \brief Time deppending numerical method.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -44,8 +44,7 @@ void CMultiGridIntegration::SetMultiGrid_Solver(CGeometry ***geometry, CSolution
 	/*--- If restart, update multigrid levels at the first multigrid iteration ---*/
 	if ((restart && (Iteration == config[iZone]->GetnStartUpIter())) || startup_multigrid) {
 		for (iMGLevel = 0; iMGLevel < config[iZone]->GetMGLevels(); iMGLevel++) {
-			SetRestricted_Solution(RunTime_EqSystem, solution_container[iZone][iMGLevel], solution_container[iZone][iMGLevel+1], 
-														 geometry[iZone][iMGLevel], geometry[iZone][iMGLevel+1], config[iZone], iMGLevel, true);
+			SetRestricted_Solution(RunTime_EqSystem, solution_container[iZone][iMGLevel], solution_container[iZone][iMGLevel+1], geometry[iZone][iMGLevel], geometry[iZone][iMGLevel+1], config[iZone]);
 		}
 	}
 
@@ -58,7 +57,7 @@ void CMultiGridIntegration::SetMultiGrid_Solver(CGeometry ***geometry, CSolution
 	}
 
 	/*--- Set the current finest grid (full multigrid strategy) ---*/
-	FinestMesh = config[iZone]->GetFinestMesh();	
+	FinestMesh = config[iZone]->GetFinestMesh();
 
 	/*--- Perform the Full Approximation Scheme multigrid ---*/
 	FAS_Multigrid(geometry, solution_container, solver_container, config, FinestMesh,
@@ -66,7 +65,7 @@ void CMultiGridIntegration::SetMultiGrid_Solver(CGeometry ***geometry, CSolution
 
 	/*--- Compute non-dimensional parameters and the convergence monitor ---*/
 	NonDimensional_Parameters(geometry[iZone], solution_container[iZone], solver_container[iZone], config[iZone],
-                                     FinestMesh, RunTime_EqSystem, Iteration, &monitor);
+                            FinestMesh, RunTime_EqSystem, Iteration, &monitor);
 
 	/*--- Convergence strategy ---*/
 	Convergence_Monitoring(geometry[iZone][FinestMesh], config[iZone], Iteration, monitor);
@@ -91,60 +90,54 @@ void CMultiGridIntegration::FAS_Multigrid(CGeometry ***geometry, CSolution ****s
 		/*--- Time and space integration ---*/
 		for (iRKStep = 0; iRKStep < iRKLimit; iRKStep++) {
 
-			/*--- Send-Receive boundary conditions ---*/
+			/*--- Send-Receive boundary conditions, and preprocessing ---*/
 			solution_container[iZone][iMesh][SolContainer_Position]->MPI_Send_Receive(geometry, solution_container, config, iMesh, iZone);
-
-            /*--- Preprocessing ---*/
-			solution_container[iZone][iMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iMesh], solution_container[iZone][iMesh],
-                                                                                   solver_container[iZone][iMesh][SolContainer_Position], config[iZone], iRKStep);
+			solution_container[iZone][iMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iMesh], solution_container[iZone][iMesh], solver_container[iZone][iMesh][SolContainer_Position], config[iZone], iMesh, iRKStep);
 
 			if (iRKStep == 0) {
 
-				/*--- Set the old solution for the Runge-Kutta iteration ---*/
+				/*--- Set the old solution ---*/
 				solution_container[iZone][iMesh][SolContainer_Position]->Set_OldSolution(geometry[iZone][iMesh]);
 
 				/*--- Compute time step, max eigenvalue, and integration scheme (steady and unsteady problems) ---*/
-				solution_container[iZone][iMesh][SolContainer_Position]->SetTime_Step(geometry[iZone][iMesh], solution_container[iZone][iMesh],
-                                                                                      config[iZone], iMesh, Iteration);
+				solution_container[iZone][iMesh][SolContainer_Position]->SetTime_Step(geometry[iZone][iMesh], solution_container[iZone][iMesh], config[iZone], iMesh, Iteration);
 
 				/*--- Restrict the solution and gradient for the adjoint problem ---*/
 				Adjoint_Setup(geometry, solution_container, config, RunTime_EqSystem, Iteration, iZone);
 
 			}
-
+      
 			/*--- Space integration ---*/
-			Space_Integration(geometry[iZone][iMesh], solution_container[iZone][iMesh], solver_container[iZone][iMesh][SolContainer_Position],
-                              config[iZone], iMesh, iRKStep, RunTime_EqSystem);
-
-			/*--- Time integration ---*/
+			Space_Integration(geometry[iZone][iMesh], solution_container[iZone][iMesh], solver_container[iZone][iMesh][SolContainer_Position], config[iZone], iMesh, iRKStep, RunTime_EqSystem);
+      
+			/*--- Time integration, update solution using the old solution plus the solution increment ---*/
 			Time_Integration(geometry[iZone][iMesh], solution_container[iZone][iMesh], config[iZone], iRKStep, RunTime_EqSystem, Iteration);
 
-			/*--- Send-Receive boundary conditions ---*/
+			/*--- Send-Receive boundary conditions, and postprocessing ---*/
 			solution_container[iZone][iMesh][SolContainer_Position]->MPI_Send_Receive(geometry, solution_container, config, iMesh, iZone);
-            
-			/*--- Postprocessing ---*/
 			solution_container[iZone][iMesh][SolContainer_Position]->Postprocessing(geometry[iZone][iMesh], solution_container[iZone][iMesh], config[iZone], iMesh);
 
 		}
+    
 	}
 
 	/*--- Compute Forcing Term $P_(k+1) = I^(k+1)_k(P_k+F_k(u_k))-F_(k+1)(I^(k+1)_k u_k)$ and update solution for multigrid ---*/
-	if ((iMesh < config[iZone]->GetMGLevels() && ((Iteration >= config[iZone]->GetnStartUpIter()) || startup_multigrid)) ) { 
+	if ( (iMesh < config[iZone]->GetMGLevels() && ((Iteration >= config[iZone]->GetnStartUpIter()) || startup_multigrid)) ) { 
 
-		/*--- 1st step, compute $r_k = P_k+F_k(u_k)$ ---*/
+		/*--- 1st step, compute $r_k = P_k + F_k(u_k)$ ---*/
 		solution_container[iZone][iMesh][SolContainer_Position]->MPI_Send_Receive(geometry, solution_container, config, iMesh, iZone);
-		solution_container[iZone][iMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iMesh], solution_container[iZone][iMesh], solver_container[iZone][iMesh][SolContainer_Position], config[iZone], NO_RK_ITER);
+		solution_container[iZone][iMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iMesh], solution_container[iZone][iMesh], solver_container[iZone][iMesh][SolContainer_Position], config[iZone], iMesh, NO_RK_ITER);
 		Space_Integration(geometry[iZone][iMesh], solution_container[iZone][iMesh], solver_container[iZone][iMesh][SolContainer_Position], config[iZone], iMesh, NO_RK_ITER, RunTime_EqSystem);
 		SetResidual_Term(geometry[iZone][iMesh], solution_container[iZone][iMesh][SolContainer_Position]);
 
 		/*--- 2nd step, compute $r_(k+1) = F_(k+1)(I^(k+1)_k u_k)$ ---*/
-		SetRestricted_Solution(RunTime_EqSystem, solution_container[iZone][iMesh], solution_container[iZone][iMesh+1], geometry[iZone][iMesh], geometry[iZone][iMesh+1], config[iZone], iMesh, false);
+		SetRestricted_Solution(RunTime_EqSystem, solution_container[iZone][iMesh], solution_container[iZone][iMesh+1], geometry[iZone][iMesh], geometry[iZone][iMesh+1], config[iZone]);
 		solution_container[iZone][iMesh+1][SolContainer_Position]->MPI_Send_Receive(geometry, solution_container, config, iMesh+1, iZone);
-		solution_container[iZone][iMesh+1][SolContainer_Position]->Preprocessing(geometry[iZone][iMesh+1], solution_container[iZone][iMesh+1], solver_container[iZone][iMesh][SolContainer_Position], config[iZone], NO_RK_ITER);
+		solution_container[iZone][iMesh+1][SolContainer_Position]->Preprocessing(geometry[iZone][iMesh+1], solution_container[iZone][iMesh+1], solver_container[iZone][iMesh][SolContainer_Position], config[iZone], iMesh+1, NO_RK_ITER);
 		Space_Integration(geometry[iZone][iMesh+1], solution_container[iZone][iMesh+1], solver_container[iZone][iMesh+1][SolContainer_Position], config[iZone], iMesh+1, NO_RK_ITER, RunTime_EqSystem);
 
 		/*--- 3rd step, compute $P_(k+1) = I^(k+1)_k(r_k) - r_(k+1) ---*/
-		SetForcing_Term(solution_container[iZone][iMesh][SolContainer_Position],solution_container[iZone][iMesh+1][SolContainer_Position],geometry[iZone][iMesh],geometry[iZone][iMesh+1], config[iZone]);
+		SetForcing_Term(solution_container[iZone][iMesh][SolContainer_Position], solution_container[iZone][iMesh+1][SolContainer_Position], geometry[iZone][iMesh], geometry[iZone][iMesh+1], config[iZone]);
 
 		/*--- Recursive call to FAS_Multigrid ---*/
 		for (unsigned short imu = 0; imu <= mu; imu++) {
@@ -166,13 +159,12 @@ void CMultiGridIntegration::FAS_Multigrid(CGeometry ***geometry, CSolution ****s
 
 			switch (config[iZone]->GetKind_TimeIntScheme()) {
 			case RUNGE_KUTTA_EXPLICIT: iRKLimit = config[iZone]->GetnRKStep(); break;
-			case EULER_EXPLICIT: case EULER_IMPLICIT: iRKLimit = 1; break;
-			}
+			case EULER_EXPLICIT: case EULER_IMPLICIT: iRKLimit = 1; break; }
 
 			for (iRKStep = 0; iRKStep < iRKLimit; iRKStep++) {
 
 				solution_container[iZone][iMesh][SolContainer_Position]->MPI_Send_Receive(geometry, solution_container, config, iMesh, iZone);
-				solution_container[iZone][iMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iMesh], solution_container[iZone][iMesh], solver_container[iZone][iMesh][SolContainer_Position], config[iZone], iRKStep);
+				solution_container[iZone][iMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iMesh], solution_container[iZone][iMesh], solver_container[iZone][iMesh][SolContainer_Position], config[iZone], iMesh, iRKStep);
 
 				if (iRKStep == 0) {
 					solution_container[iZone][iMesh][SolContainer_Position]->Set_OldSolution(geometry[iZone][iMesh]);
@@ -182,7 +174,7 @@ void CMultiGridIntegration::FAS_Multigrid(CGeometry ***geometry, CSolution ****s
 				Space_Integration(geometry[iZone][iMesh], solution_container[iZone][iMesh], solver_container[iZone][iMesh][SolContainer_Position], config[iZone], iMesh, iRKStep, RunTime_EqSystem);
 				Time_Integration(geometry[iZone][iMesh], solution_container[iZone][iMesh], config[iZone], iRKStep, RunTime_EqSystem, Iteration);
 
-                solution_container[iZone][iMesh][SolContainer_Position]->MPI_Send_Receive(geometry, solution_container, config, iMesh, iZone);
+        solution_container[iZone][iMesh][SolContainer_Position]->MPI_Send_Receive(geometry, solution_container, config, iMesh, iZone);
 				solution_container[iZone][iMesh][SolContainer_Position]->Postprocessing(geometry[iZone][iMesh], solution_container[iZone][iMesh], config[iZone], iMesh);
 
 			}
@@ -220,6 +212,9 @@ void CMultiGridIntegration::GetProlongated_Correction(CSolution *sol_fine, CSolu
 		for (iVar = 0; iVar < nVar; iVar++)
 			sol_coarse->node[Point_Coarse]->SetSolution_Old(Solution);
 	}
+  
+  /*--- MPI the set solution old ---*/
+  sol_coarse->SetSolution_Old_MPI(geo_coarse, config);
 
 	/*--- If we are dealing with a dirichlet wall, there is no contribution from the boundaries ---*/
 	for (iMarker=0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -312,10 +307,17 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolution *sol_fine, CGeom
 	for (Point_Fine = 0; Point_Fine < geo_fine->GetnPointDomain(); Point_Fine++) {
 		Residual_Fine = sol_fine->node[Point_Fine]->GetResidual();
 		Solution_Fine = sol_fine->node[Point_Fine]->GetSolution();
-		for (iVar = 0; iVar < nVar; iVar++)
+		for (iVar = 0; iVar < nVar; iVar++) {
+      /*--- Prevent a fine grid divergence due to a coarse grid divergence ---*/
+      if (Residual_Fine[iVar] != Residual_Fine[iVar]) Residual_Fine[iVar] = 0.0;
 			Solution[iVar] = Solution_Fine[iVar]+config->GetDamp_Correc_Prolong()*Residual_Fine[iVar];
+    }
 		sol_fine->node[Point_Fine]->SetSolution(Solution);
 	}
+  
+  /*--- MPI the new interpolated solution ---*/
+  sol_fine->SetSolution_MPI(geo_fine, config);
+  
 	delete [] Solution;
 }
 
@@ -358,7 +360,7 @@ void CMultiGridIntegration::SetForcing_Term(CSolution *sol_fine, CSolution *sol_
 			for(iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
 				Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
 				sol_coarse->node[Point_Coarse]->SetVelRes_TruncErrorZero();
-			}	
+			}
 	}
 
 	for(Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
@@ -398,98 +400,69 @@ void CMultiGridIntegration::SetRestricted_Residual(CSolution *sol_fine, CSolutio
 	}
 
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		if (config->GetMarker_All_Boundary(iMarker) == NO_SLIP_WALL)
+		if (config->GetMarker_All_Boundary(iMarker) == NO_SLIP_WALL) {
 			for(iVertex = 0; iVertex<geo_coarse->nVertex[iMarker]; iVertex++) {
 				Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
 				sol_coarse->node[Point_Coarse]->SetVelRes_TruncErrorZero();
 			}
+    }
 	}
 
 	delete [] Residual;
 }
 
-void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolution **sol_fine, CSolution **sol_coarse, CGeometry *geo_fine, 
-		CGeometry *geo_coarse, CConfig *config, unsigned short iMesh, bool InclSharedDomain) {
+void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolution **sol_fine, CSolution **sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
 	unsigned long iVertex, Point_Fine, Point_Coarse;
 	unsigned short iMarker, iVar, iChildren;
 	double Area_Parent, Area_Children, *Solution_Fine, *Solution;
 	unsigned short SolContainer_Position = config->GetContainerPosition(RunTime_EqSystem);
 	unsigned short nVar = sol_coarse[SolContainer_Position]->GetnVar();
-
+  bool grid_movement  = config->GetGrid_Movement();
+	bool rotating_frame = config->GetRotating_Frame();
+  
 	Solution = new double[nVar];
-
+    
 	/*--- Compute coarse solution from fine solution ---*/
 	for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
 		Area_Parent = geo_coarse->node[Point_Coarse]->GetVolume();
-
+    
 		for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
+    
 		for (iChildren = 0; iChildren < geo_coarse->node[Point_Coarse]->GetnChildren_CV(); iChildren++) {
-
+      
 			Point_Fine = geo_coarse->node[Point_Coarse]->GetChildren_CV(iChildren);
 			Area_Children = geo_fine->node[Point_Fine]->GetVolume();
 			Solution_Fine = sol_fine[SolContainer_Position]->node[Point_Fine]->GetSolution();
-			for (iVar = 0; iVar < nVar; iVar++)
-				Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;  
+			for (iVar = 0; iVar < nVar; iVar++) {
+				Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
+        }
 		}
-
+    
 		sol_coarse[SolContainer_Position]->node[Point_Coarse]->SetSolution(Solution);
-
+    
 	}
-
-	/*--- Update solution at the boundary ---*/
+  
+  /*--- MPI the new interpolated solution ---*/
+  sol_coarse[SolContainer_Position]->SetSolution_MPI(geo_coarse, config);
+  
+	/*--- Update solution at the no slip wall boundary ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		if (config->GetMarker_All_Boundary(iMarker) == NO_SLIP_WALL)
+		if (config->GetMarker_All_Boundary(iMarker) == NO_SLIP_WALL) {
 			for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
 				Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
-				if (SolContainer_Position == FLOW_SOL) sol_coarse[SolContainer_Position]->node[Point_Coarse]->SetVelSolutionZero();
-				if (SolContainer_Position == ADJFLOW_SOL) sol_coarse[SolContainer_Position]->node[Point_Coarse]->SetVelSolutionDVector();
-				if (SolContainer_Position == TURB_SOL) sol_coarse[SolContainer_Position]->node[Point_Coarse]->SetSolutionZero();
+				if (SolContainer_Position == FLOW_SOL && !rotating_frame && !grid_movement)
+          sol_coarse[SolContainer_Position]->node[Point_Coarse]->SetVelSolutionZero();
+				if (SolContainer_Position == ADJFLOW_SOL)
+          sol_coarse[SolContainer_Position]->node[Point_Coarse]->SetVelSolutionDVector();
 			}
-
-#ifndef NO_MPI
-		unsigned long nBuffer;
-		double *Conserv_Var;
-		short SendRecv;
-
-		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) && (InclSharedDomain)) {
-			SendRecv = config->GetMarker_All_SendRecv(iMarker);
-			nBuffer = geo_coarse->nVertex[iMarker]*nVar;
-
-			/*--- Send information  ---*/
-			if (SendRecv > 0) {
-				double *Buffer_Send_U = new double [geo_coarse->nVertex[iMarker]*nVar];
-				int send_to = SendRecv-1;
-				for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
-					Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
-					Conserv_Var = sol_coarse[SolContainer_Position]->node[Point_Coarse]->GetSolution();
-					for (iVar = 0; iVar < nVar; iVar++)
-						Buffer_Send_U[iVertex*nVar + iVar] = Conserv_Var[iVar];
-				}
-				MPI::COMM_WORLD.Bsend(Buffer_Send_U,nBuffer,MPI::DOUBLE,send_to, 0);
-
-				delete [] Buffer_Send_U;
-			}
-			/*--- Receive information  ---*/
-			if (SendRecv < 0) {
-				double *Buffer_Receive_U = new double [geo_coarse->nVertex[iMarker]*nVar];
-				int receive_from = abs(SendRecv)-1;
-				MPI::COMM_WORLD.Recv(Buffer_Receive_U,nBuffer,MPI::DOUBLE,receive_from, 0);
-				for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
-					Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();	
-					for (iVar = 0; iVar < nVar; iVar++)
-						sol_coarse[SolContainer_Position]->node[Point_Coarse]->SetSolution(iVar, Buffer_Receive_U[iVertex*nVar+iVar]);
-				}
-				delete[] Buffer_Receive_U;
-			}
-		}	
-#endif
+    }
 	}
-
+  
 	delete [] Solution;
-
+  
 }
 
-void CMultiGridIntegration::SetRestricted_Gradient(unsigned short RunTime_EqSystem, CSolution **sol_fine, CSolution **sol_coarse, CGeometry *geo_fine, 
+void CMultiGridIntegration::SetRestricted_Gradient(unsigned short RunTime_EqSystem, CSolution **sol_fine, CSolution **sol_coarse, CGeometry *geo_fine,
 		CGeometry *geo_coarse, CConfig *config) {
 	unsigned long Point_Fine, Point_Coarse;
 	unsigned short iVar, iDim, iChildren, nDim, nVar;
@@ -546,13 +519,8 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
 				if (config->GetCauchy_Func_Flow() == NEARFIELD_PRESSURE) (*monitor) = solution_container[FinestMesh][FLOW_SOL]->GetTotal_CNearFieldOF();
 			}
 
-			if (config->GetConvCriteria() == RESIDUAL) {
-#ifdef NO_MPI
-				(*monitor) = log10(solution_container[FinestMesh][FLOW_SOL]->GetRes_Max(0));
-#else
-				(*monitor) = log10(sqrt(solution_container[FinestMesh][FLOW_SOL]->GetRes_Max(0)));
-#endif
-			}
+			if (config->GetConvCriteria() == RESIDUAL)
+				(*monitor) = log10(solution_container[FinestMesh][FLOW_SOL]->GetRes_RMS(0));
 
 			break;
 
@@ -563,14 +531,9 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
 			if (config->GetKind_ViscNumScheme() != NONE) solution_container[FinestMesh][PLASMA_SOL]->Viscous_Forces(geometry[FinestMesh], config);
 
 			/*--- Evaluate convergence monitor ---*/
-			if (config->GetConvCriteria() == RESIDUAL) {
-#ifdef NO_MPI
-				(*monitor) = log10(solution_container[FinestMesh][PLASMA_SOL]->GetRes_Max(0));
-#else
-				(*monitor) = log10(sqrt(solution_container[FinestMesh][PLASMA_SOL]->GetRes_Max(0)));
-#endif
-			}
-
+			if (config->GetConvCriteria() == RESIDUAL)
+				(*monitor) = log10(solution_container[FinestMesh][PLASMA_SOL]->GetRes_RMS(0));
+      
 			break;
 
 		case RUNTIME_ADJFLOW_SYS:
@@ -587,13 +550,8 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
 				if (config->GetCauchy_Func_AdjFlow() == SENS_GEOMETRY) (*monitor) = solution_container[FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Geo();
 				if (config->GetCauchy_Func_AdjFlow() == SENS_MACH) (*monitor) = solution_container[FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Mach();
 			}
-			if (config->GetConvCriteria() == RESIDUAL) {
-#ifdef NO_MPI
-				(*monitor) = log10(solution_container[FinestMesh][ADJFLOW_SOL]->GetRes_Max(0));
-#else
-				(*monitor) = log10(sqrt(solution_container[FinestMesh][ADJFLOW_SOL]->GetRes_Max(0)));
-#endif
-			}
+			if (config->GetConvCriteria() == RESIDUAL)
+				(*monitor) = log10(solution_container[FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0));
 
 			break;
 
@@ -608,13 +566,8 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
 				if (config->GetCauchy_Func_LinFlow() == DELTA_DRAG_COEFFICIENT) (*monitor) = solution_container[FinestMesh][LINFLOW_SOL]->GetTotal_CDeltaDrag();
 				if (config->GetCauchy_Func_LinFlow() == DELTA_LIFT_COEFFICIENT) (*monitor) = solution_container[FinestMesh][LINFLOW_SOL]->GetTotal_CDeltaLift();
 			}
-			if (config->GetConvCriteria() == RESIDUAL) {
-#ifdef NO_MPI
-				(*monitor) = log10(solution_container[FinestMesh][LINFLOW_SOL]->GetRes_Max(0));
-#else
-				(*monitor) = log10(sqrt(solution_container[FinestMesh][LINFLOW_SOL]->GetRes_Max(0)));
-#endif
-			}
+			if (config->GetConvCriteria() == RESIDUAL)
+				(*monitor) = log10(solution_container[FinestMesh][LINFLOW_SOL]->GetRes_RMS(0));
 
 			break;
 	}
@@ -626,8 +579,9 @@ CSingleGridIntegration::~CSingleGridIntegration(void) { }
 
 void CSingleGridIntegration::SetSingleGrid_Solver(CGeometry ***geometry, CSolution ****solution_container,
 		CNumerics *****solver_container, CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) {
-
+  unsigned short iMesh;
   double monitor = 0.0;
+  
 	unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
 
 	solution_container[iZone][MESH_0][SolContainer_Position]->Set_OldSolution(geometry[iZone][MESH_0]);
@@ -636,7 +590,7 @@ void CSingleGridIntegration::SetSingleGrid_Solver(CGeometry ***geometry, CSoluti
 	solution_container[iZone][MESH_0][SolContainer_Position]->MPI_Send_Receive(geometry, solution_container, config, MESH_0, iZone);
 
 	/*--- Preprocessing ---*/
-	solution_container[iZone][MESH_0][SolContainer_Position]->Preprocessing(geometry[iZone][MESH_0], solution_container[iZone][MESH_0], solver_container[iZone][MESH_0][SolContainer_Position], config[iZone], 0);
+	solution_container[iZone][MESH_0][SolContainer_Position]->Preprocessing(geometry[iZone][MESH_0], solution_container[iZone][MESH_0], solver_container[iZone][MESH_0][SolContainer_Position], config[iZone], MESH_0, 0);
 
 	/*--- Time step evaluation ---*/
 	solution_container[iZone][MESH_0][SolContainer_Position]->SetTime_Step(geometry[iZone][MESH_0], solution_container[iZone][MESH_0], config[iZone], MESH_0, 0);
@@ -646,10 +600,11 @@ void CSingleGridIntegration::SetSingleGrid_Solver(CGeometry ***geometry, CSoluti
 										config[iZone], MESH_0, NO_RK_ITER, RunTime_EqSystem);
 
 	/*--- Time integration ---*/
-	Time_Integration(geometry[iZone][MESH_0], solution_container[iZone][MESH_0], config[iZone], NO_RK_ITER, 
+	Time_Integration(geometry[iZone][MESH_0], solution_container[iZone][MESH_0], config[iZone], NO_RK_ITER,
 									 RunTime_EqSystem, Iteration);
 
 	/*--- Postprocessing ---*/
+  solution_container[iZone][MESH_0][SolContainer_Position]->MPI_Send_Receive(geometry, solution_container, config, MESH_0, iZone);
 	solution_container[iZone][MESH_0][SolContainer_Position]->Postprocessing(geometry[iZone][MESH_0], solution_container[iZone][MESH_0], config[iZone], MESH_0);
 
 	/*--- Compute adimensional parameters and the convergence monitor ---*/
@@ -667,22 +622,73 @@ void CSingleGridIntegration::SetSingleGrid_Solver(CGeometry ***geometry, CSoluti
 
 			if (config[iZone]->GetConvCriteria() == RESIDUAL)
 #ifdef NO_MPI
-				monitor = log10(solution_container[iZone][MESH_0][WAVE_SOL]->GetRes_Max(0));
+				monitor = log10(solution_container[iZone][MESH_0][WAVE_SOL]->GetRes_RMS(0));
 #else
-			monitor = log10(sqrt(solution_container[iZone][MESH_0][WAVE_SOL]->GetRes_Max(0)));
+			monitor = log10(sqrt(solution_container[iZone][MESH_0][WAVE_SOL]->GetRes_RMS(0)));
 #endif
 			break;
 
 		case RUNTIME_FEA_SYS:
 #ifdef NO_MPI
-			monitor = log10(solution_container[iZone][MESH_0][FEA_SOL]->GetRes_Max(0));
+			monitor = log10(solution_container[iZone][MESH_0][FEA_SOL]->GetRes_RMS(0));
 #else
-			monitor = log10(sqrt(solution_container[iZone][MESH_0][FEA_SOL]->GetRes_Max(0)));
+			monitor = log10(sqrt(solution_container[iZone][MESH_0][FEA_SOL]->GetRes_RMS(0)));
 #endif
 			break;
 	}
 
 	/*--- Convergence strategy ---*/
 	Convergence_Monitoring(geometry[iZone][MESH_0], config[iZone], Iteration, monitor);
+  
+  /*--- Copy the solution to the coarse levels ---*/
+  for (iMesh = 0; iMesh < config[iZone]->GetMGLevels(); iMesh++)
+    SetRestricted_Solution(RunTime_EqSystem, solution_container[iZone][iMesh], solution_container[iZone][iMesh+1], geometry[iZone][iMesh], geometry[iZone][iMesh+1], config[iZone]);
 
+}
+
+void CSingleGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolution **sol_fine, CSolution **sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
+	unsigned long iVertex, Point_Fine, Point_Coarse;
+	unsigned short iMarker, iVar, iChildren;
+	double Area_Parent, Area_Children, *Solution_Fine, *Solution;
+  
+	unsigned short SolContainer_Position = config->GetContainerPosition(RunTime_EqSystem);
+	unsigned short nVar = sol_coarse[SolContainer_Position]->GetnVar();
+  
+	Solution = new double[nVar];
+  
+	/*--- Compute coarse solution from fine solution ---*/
+	for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
+		Area_Parent = geo_coarse->node[Point_Coarse]->GetVolume();
+    
+		for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
+    
+		for (iChildren = 0; iChildren < geo_coarse->node[Point_Coarse]->GetnChildren_CV(); iChildren++) {
+      
+			Point_Fine = geo_coarse->node[Point_Coarse]->GetChildren_CV(iChildren);
+			Area_Children = geo_fine->node[Point_Fine]->GetVolume();
+			Solution_Fine = sol_fine[SolContainer_Position]->node[Point_Fine]->GetSolution();
+			for (iVar = 0; iVar < nVar; iVar++)
+				Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
+		}
+    
+		sol_coarse[SolContainer_Position]->node[Point_Coarse]->SetSolution(Solution);
+    
+	}
+  
+  /*--- MPI the new interpolated solution ---*/
+  sol_coarse[SolContainer_Position]->SetSolution_MPI(geo_coarse, config);
+  
+	/*--- Update solution at the no slip wall boundary ---*/
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+		if (config->GetMarker_All_Boundary(iMarker) == NO_SLIP_WALL) {
+			for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
+				Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
+				if (SolContainer_Position == TURB_SOL) sol_coarse[SolContainer_Position]->node[Point_Coarse]->SetSolutionZero();
+        if (SolContainer_Position == LEVELSET_SOL) sol_coarse[SolContainer_Position]->node[Point_Coarse]->SetSolutionZero();
+			}
+    }
+	}
+  
+	delete [] Solution;
+  
 }

@@ -2,7 +2,7 @@
  * \file SU2_GDC.cpp
  * \brief Main file of the Geometry Definition Code (SU2_GDC).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
 	CSurfaceMovement *surface_mov = NULL;
 	
 	/*--- Definition of the Class for the definition of the problem ---*/
-	if (argc == 2) config = new CConfig(argv[1], SU2_GPC, ZONE_0, nZone, VERB_HIGH);
+	if (argc == 2) config = new CConfig(argv[1], SU2_GDC, ZONE_0, nZone, VERB_HIGH);
 	else {
 		char grid_file[200];
 		strcpy (grid_file, "default.cfg");

@@ -1,9 +1,9 @@
 #!/usr/bin/env python 
 
-## \file libSU2.py
-#  \brief Support Functions for SU2 Python Scripts
+## \file tools.py
+#  \brief file i/o functions
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.1
+#  \version 2.0.3
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -21,6 +21,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+# -------------------------------------------------------------------
+#  Imports
+# -------------------------------------------------------------------
 
 import os, time, sys, pickle, errno, copy
 import shutil, glob
@@ -31,6 +34,9 @@ from ..util import ordered_bunch
 # -------------------------------------------------------------------
 
 def read_gradients( Grad_filename , scale = 1.0):
+    """ reads the raw gradients from the gradient file
+        returns a list of floats
+    """
         
     # open file and skip first line
     gradfile = open(Grad_filename)
@@ -56,6 +62,14 @@ def read_gradients( Grad_filename , scale = 1.0):
 # -------------------------------------------------------------------
 
 def read_history( History_filename ):
+    """ reads a history file
+        returns an ordered bunch with the history file headers for keys
+        and a list of each header's floats for values.
+        if header is an optimization objective, its name is mapped to 
+        the optimization name.
+        Iter and Time(min) headers are mapped to ITERATION and TIME
+        respectively.
+    """
     
     extension = os.path.splitext( History_filename )[1]
     
@@ -118,7 +132,9 @@ def read_history( History_filename ):
 # -------------------------------------------------------------------
 
 def get_headerMap():
-    
+    """ returns a dictionary that maps history file header names
+        to optimization problem function names
+    """
     # header name to config file name map
     map_dict = { "Iteration"       : "ITERATION"          ,
                  "CLift"           : "LIFT"               ,
@@ -146,34 +162,54 @@ def get_headerMap():
 #: def get_headerMap()
 
 
+# -------------------------------------------------------------------
+#  Optimizer Function Names
+# -------------------------------------------------------------------
+
+# Aerodynamic Optimizer Function Names
+optnames_aero = [ "LIFT"               ,
+                  "DRAG"               ,
+                  "SIDEFORCE"          ,
+                  "MOMENT_X"           ,
+                  "MOMENT_Y"           ,
+                  "MOMENT_Z"           ,
+                  "FORCE_X"            ,
+                  "FORCE_Y"            ,
+                  "FORCE_Z"            ,
+                  "EFFICIENCY"         ,
+                  "FREESURFACE"        ,
+                  "FIGURE_OF_MERIT"    ,
+                  "TORQUE"             ,
+                  "THRUST"             ,
+                  "EQUIVALENT_AREA"    ,
+                  "NEARFIELD_PRESSURE" ,
+                  "NOISE"               ]
+#: optnames_aero
+
+# Geometric Optimizer Function Names
+optnames_geo = [ "MAX_THICKNESS"       ,
+                 "TOTAL_VOLUME"         ]
+#: optnames_geo
 
 # -------------------------------------------------------------------
 #  Read Aerodynamic Function Values from History File
 # -------------------------------------------------------------------
 
 def read_aerodynamics( History_filename , special_cases=[] ):
+    """ values = read_aerodynamics(historyname, special_cases=[])
+        read aerodynamic function values from history file
+        
+        Outputs:
+            dictionary with function keys and thier values
+            if special cases has 'WRT_UNSTEADY', returns time averaged data
+            otherwise returns final value from history file
+    """
     
     # read the history data
     history_data = read_history(History_filename)
     
     # list of functions to pull
-    func_names = [ "LIFT"               ,
-                   "DRAG"               ,
-                   "SIDEFORCE"          ,
-                   "MOMENT_X"           ,
-                   "MOMENT_Y"           ,
-                   "MOMENT_Z"           ,
-                   "FORCE_X"            ,
-                   "FORCE_Y"            ,
-                   "FORCE_Z"            ,
-                   "EFFICIENCY"         ,
-                   "FREESURFACE"        ,
-                   "FIGURE_OF_MERIT"    ,
-                   "TORQUE"             ,
-                   "THRUST"             ,
-                   "EQUIVALENT_AREA"    ,
-                   "NEARFIELD_PRESSURE" ,
-                   "NOISE"               ]
+    func_names = optnames_aero
 
     # pull only these functions
     Func_Values = ordered_bunch()
@@ -202,6 +238,13 @@ def read_aerodynamics( History_filename , special_cases=[] ):
 # -------------------------------------------------------------------
 
 def get_objectiveSign( ObjFun_name ):
+    """ returns -1 for maximization problems:
+            LIFT
+            EFFICIENCY
+            THRUST
+            FIGURE_OF_MERIT
+        returns +1 otherwise
+    """
     
     # flip sign for maximization problems
     if ObjFun_name == "LIFT"            : return -1.0
@@ -220,7 +263,8 @@ def get_objectiveSign( ObjFun_name ):
 # -------------------------------------------------------------------
 
 def get_constraintSign( sign ):
-    """ posed as c(x) < 0
+    """ gets +/-1 given a constraint sign < or > respectively
+        inequality constraint is posed as c(x) < 0
     """
     sign_map = { '>' : -1.0 ,
                  '<' : +1.0  }
@@ -236,6 +280,7 @@ def get_constraintSign( sign ):
 # -------------------------------------------------------------------
 
 def get_adjointSuffix(adj_objfunc=None):
+    """ gets the adjoint suffix given an objective function """
     
     # adjoint name map
     name_map = { "DRAG"               : "cd"    ,
@@ -275,6 +320,13 @@ def get_adjointSuffix(adj_objfunc=None):
 # -------------------------------------------------------------------
 
 def add_suffix(base_name,suffix):
+    """ suffix_name = add_suffix(base_name,suffix)
+        adds suffix to a filename, accounting for file type extension
+        example:
+            base_name   = 'input.txt'
+            suffix      = 'new'
+            suffix_name = 'input_new.txt'
+    """
     
     base_name = os.path.splitext(base_name)    
     suffix_name = base_name[0] + '_' + suffix + base_name[1]
@@ -290,7 +342,8 @@ def add_suffix(base_name,suffix):
 # -------------------------------------------------------------------
 
 def get_dvMap():
-    
+    """ get dictionary that maps design variable 
+        kind id number to name """
     dv_map = { 1   : "HICKS_HENNE"        ,
                4   : "NACA_4DIGITS"       ,
                5   : "DISPLACEMENT"       ,
@@ -313,6 +366,7 @@ def get_dvMap():
 #  Get Design Variable Kind Name from ID
 # -------------------------------------------------------------------
 def get_dvKind( kindID ):
+    """ get design variable kind name from id number """
     dv_map = get_dvMap()
     try: 
         return dv_map[ kindID ]
@@ -324,8 +378,9 @@ def get_dvKind( kindID ):
 #  Get Design Variable Kind ID from Name
 # -------------------------------------------------------------------
 def get_dvID( kindName ):
+    """ get design variable kind id number from name """
     dv_map = get_dvMap()
-    id_map = {v:k for k,v in dv_map.iteritems()}
+    id_map = dict((v,k) for (k,v) in dv_map.iteritems())
     try: 
         return id_map[ kindName ]
     except KeyError: 
@@ -439,7 +494,9 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
 #  Get Optimization File Header
 # -------------------------------------------------------------------    
     
-def get_optFileFormat(plot_format,special_cases=[]):
+def get_optFileFormat(plot_format,special_cases=None):
+    
+    if special_cases is None: special_cases = []
     
     # start header, build a list of strings and join at the end
     header_list   = []
@@ -512,9 +569,10 @@ def get_extension(output_format):
 # -------------------------------------------------------------------
 #  Check Special Case
 # -------------------------------------------------------------------
-#   returns a list of special physical problems that were
-#   specified in the config file, and set to 'yes'
 def get_specialCases(config):
+    """ returns a list of special physical problems that were
+        specified in the config file, and set to 'yes'
+    """
     
     all_special_cases = [ 'FREE_SURFACE'       ,
                           'ROTATING_FRAME'     ,
@@ -546,11 +604,24 @@ def get_specialCases(config):
 #: def get_specialCases()
 
 
-def next_folder(folder,num_format='%03d'):
+def next_folder(folder_format,num_format='%03d'):
+    """ folder = next_folder(folder_format,num_format='%03d')
+        finds the next folder with given format
+        
+        Inputs:
+            folder_format - folder name with wild card (*) to mark expansion
+            num_format    - %d formating to expand the wild card with
+            
+        Outputs:
+            folder - a folder with the next index number inserted in 
+            the wild card, first index is 1
+    """
     
-    folders = glob.glob(folder)
-    split   = folder.split('*')
-    folder  = folder.replace('*',num_format)
+    assert '*' in folder_format , 'wildcard (*) missing in folder_format name'
+    
+    folders = glob.glob(folder_format)
+    split   = folder_format.split('*')
+    folder  = folder_format.replace('*',num_format)
     
     if folders:
         # find folder number, could be done with regex...
@@ -575,18 +646,24 @@ def next_folder(folder,num_format='%03d'):
 def expand_part(name,config):
     if config['DECOMPOSED']:
         n_part = config['NUMBER_PART']
-        name = add_suffix(name,'%i')
-        names = [name%(i+1) for i in range(n_part)]
+        name_pat = add_suffix(name,'%i')
+        names = [name] + [name_pat%(i+1) for i in range(n_part)]
     else:
         names = [name]
     return names
     
     
 def make_link(src,dst):
-    """ makes a relative link
+    """ make_link(src,dst)
+        makes a relative link
+        Inputs:
+            src - source file
+            dst - destination to place link
+        
+        Windows links currently unsupported, will copy file instead
     """
     
-    assert os.path.exists(src) , 'source file does not exist'
+    assert os.path.exists(src) , 'source file does not exist \n%s' % src
     
     if os.name == 'nt':
         # can't make a link in windows, need to look for other options
@@ -601,6 +678,9 @@ def make_link(src,dst):
         src = os.path.normpath(src)
         dst = os.path.normpath(dst)        
         
+        # check for self referencing
+        if src == dst: return        
+        
         # find relative folder path
         srcfolder = os.path.join( os.path.split(src)[0] ) + '/'
         dstfolder = os.path.join( os.path.split(dst)[0] ) + '/'
@@ -612,8 +692,11 @@ def make_link(src,dst):
         os.symlink(src,dst)
     
 def restart2solution(config,state={}):
-    """ moves restart file to solution file, 
+    """ restart2solution(config,state={})
+        moves restart file to solution file, 
         optionally updates state
+        direct or adjoint is read from config
+        adjoint objective is read from config
     """
     
     # direct solution

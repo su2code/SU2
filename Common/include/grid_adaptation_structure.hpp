@@ -2,7 +2,7 @@
  * \file grid_adaptation_structure.hpp
  * \brief Header file for the adaptation subroutines.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  */
 
 #pragma once

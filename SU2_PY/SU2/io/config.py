@@ -1,25 +1,68 @@
-__all__ = ['Config','read_config','write_config','dump_config']
+## \file config.py
+#  \brief python package for config 
+#  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
+#  \version 2.0.3
+#
+# Stanford University Unstructured (SU2) Code
+# Copyright (C) 2012 Aerospace Design Laboratory
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+# ----------------------------------------------------------------------
+#  Imports
+# ----------------------------------------------------------------------
 
 import os, sys, shutil, copy
 import numpy as np
-from collections import OrderedDict
 from ..util import bunch, ordered_bunch, switch
 from .tools import *
 
+try:
+    from collections import OrderedDict
+except ImportError:
+    from ..util.ordered_dict import OrderedDict
+
 inf = 1.0e20
 
+
+# ----------------------------------------------------------------------
+#  Configuration Class
+# ----------------------------------------------------------------------
+
 class Config(ordered_bunch):
-    """ use 1: initialize by reading config file
+    """ config = SU2.io.Config(filename="")
+        
+        Starts a config class, an extension of 
+        ordered_bunch()
+        
+        use 1: initialize by reading config file
             config = SU2.io.Config('filename')
-        use 2: initialize from dictionary
+        use 2: initialize from dictionary or bunch
             config = SU2.io.Config(param_dict)
         use 3: initialize empty
             config = SU2.io.Config()
-        remembers order of config file
         
-        parameter access by attribute or item
+        Parameters can be accessed by item or attribute
         ie: config['MESH_FILENAME'] or config.MESH_FILENAME
+        
+        Methods:
+            read()       - read from a config file
+            write()      - write to a config file (requires existing file)
+            dump()       - dump a raw config file
+            unpack_dvs() - unpack a design vector 
+            diff()       - returns the difference from another config
+            dist()       - computes the distance from another config
     """    
 
     _filename = 'config.cfg'
@@ -46,14 +89,18 @@ class Config(ordered_bunch):
         self._filename = filename
     
     def read(self,filename):
+        """ reads from a config file """
         konfig = read_config(filename)
         self.update(konfig)
         
     def write(self,filename=''):
+        """ updates an existing config file """
         if not filename: filename = self._filename
+        assert os.path.exists(filename) , 'must write over an existing config file'
         write_config(filename,self)
         
     def dump(self,filename=''):
+        """ dumps all items in the config bunch, without comments """
         if not filename: filename = self._filename
         dump_config(filename,self)
     
@@ -69,11 +116,22 @@ class Config(ordered_bunch):
         except KeyError:
             raise KeyError , 'Config parameter not found'
 
-
-    def unpack_dvs(self,dv_new,dv_old=[]):
-        ''' update config with design variable vectors
+    def unpack_dvs(self,dv_new,dv_old=None):
+        """ updates config with design variable vectors
             will scale according to each DEFINITION_DV scale parameter
-        '''
+            
+            Modifies:
+                DV_KIND
+                DV_MARKER
+                DV_PARAM
+                DV_VALUE_OLD
+                DV_VALUE_NEW
+            
+            Inputs:
+                dv_new - list or array of new dv values
+                dv_old - optional, list or array of old dv values, defaults to zeros
+                         
+        """
         
         dv_new = copy.deepcopy(dv_new)
         dv_old = copy.deepcopy(dv_old)
@@ -101,7 +159,28 @@ class Config(ordered_bunch):
     def __ne__(self,konfig):
         return super(Config,self).__ne__(konfig)
     
+    
+    def local_files(self):
+        """ removes path prefix from all *_FILENAME params
+        """
+        for key,value in self.iteritems():
+            if key.split('_')[-1] == 'FILENAME':
+                self[key] = os.path.basename(value)    
+    
     def diff(self,konfig):
+        """ compares self to another config
+            
+            Inputs: 
+                konfig - a second config
+            
+            Outputs:
+                config_diff - a config containing only the differing 
+                    keys, each with values of a list of the different 
+                    config values.
+                for example: 
+                config_diff.MATH_PROBLEM = ['DIRECT','ADJOINT']
+                
+        """
         
         keys = set([])
         keys.update( self.keys() )
@@ -118,6 +197,19 @@ class Config(ordered_bunch):
         return konfig_diff
     
     def dist(self,konfig,keys_check='ALL'):
+        """ calculates a distance to another config
+            
+            Inputs: 
+                konfig     - a second config
+                keys_check - optional, a list of keys to check
+            
+            Outputs:
+                distance   - a float
+                
+            Currently only works for DV_VALUE_NEW and DV_VALUE_OLD
+            Returns a large value otherwise
+                
+        """        
 
         konfig_diff = self.diff(konfig)
         
@@ -195,6 +287,7 @@ class MathProblem(Option):
 # -------------------------------------------------------------------
 
 def read_config(filename):
+    """ reads a config file """
       
     # initialize output dictionary
     data_dict = OrderedDict() 
@@ -392,6 +485,10 @@ def read_config(filename):
         #: for case
         
     #: for line
+    
+    # some defaults
+    if not data_dict.has_key('DECOMPOSED'):
+        data_dict['DECOMPOSED'] = False
             
     return data_dict
     
@@ -404,6 +501,7 @@ def read_config(filename):
 # -------------------------------------------------------------------
 
 def write_config(filename,param_dict):
+    """ updates an existing config file """
     
     temp_filename = "temp.cfg"
     shutil.copy(filename,temp_filename)
@@ -588,7 +686,8 @@ def write_config(filename,param_dict):
 
 
 def dump_config(filename,config):
-    ''' dumps a raw config file with all options in config
+    ''' dumps a raw config file with all options in config 
+        and no comments
     '''
     config_file = open(filename,'w')
     # write dummy file

@@ -1,3 +1,27 @@
+## \file gradients.py
+#  \brief python package for gradients
+#  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
+#  \version 2.0.3
+#
+# Stanford University Unstructured (SU2) Code
+# Copyright (C) 2012 Aerospace Design Laboratory
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# ----------------------------------------------------------------------
+#  Imports
+# ----------------------------------------------------------------------
 
 import os, sys, shutil, copy
 from .. import run  as su2run
@@ -6,15 +30,42 @@ from .. import util as su2util
 from .functions import function
 from ..io import redirect_folder, redirect_output
 
-def gradient( func_name, method, config, state=None ):
-    ''' method = "ADJOINT" or "FINDIFF"
-        func_name = 'ALL' not yet supported
-    '''
+
+# ----------------------------------------------------------------------
+#  Main Gradient Interface
+# ----------------------------------------------------------------------
+
+def gradient( func_name, method, config, state=None ):    
+    """ val = SU2.eval.grad(func_name,method,config,state=None)
+    
+        Evaluates the aerodynamic gradients.
+        
+        Wraps:
+            SU2.eval.adjoint()
+            SU2.eval.findiff()
+        
+        Assumptions:
+            Config is already setup for deformation.
+            Mesh need not be deformed.
+            Updates config and state by reference.
+            Redundancy if state.GRADIENTS has the key func_name.
+            
+        Executes in:
+            ./ADJOINT_* or ./FINDIFF
+        
+        Inputs:
+            func_name - SU2 objective function name
+            method    - 'ADJOINT' or 'FINDIFF'
+            config    - an SU2 config
+            state     - optional, an SU2 state
+        
+        Outputs:
+            A list of floats of gradient values
+    """
     
     # Initialize
     grads = {}
     state = su2io.state.default_state(state)
-    
     if func_name == 'ALL':
         raise Exception , "func_name = 'ALL' not yet supported"
     
@@ -40,9 +91,44 @@ def gradient( func_name, method, config, state=None ):
     # prepare output
     grads_out = state['GRADIENTS'][func_name]
     
-    return grads_out
+    return copy.deepcopy(grads_out)
+
+#: def gradient()
+
+
+# ----------------------------------------------------------------------
+#  Adjoint Gradients
+# ----------------------------------------------------------------------
 
 def adjoint( func_name, config, state=None ):
+    """ vals = SU2.eval.adjoint(func_name,config,state=None)
+    
+        Evaluates the aerodynamics gradients using the 
+        adjoint methodology with:
+            SU2.eval.func()
+               SU2.run.decompose()
+	       SU2.run.deform()
+               SU2.run.direct()
+            SU2.run.adjoint()
+            
+        Assumptions:
+            Config is already setup for deformation.
+            Mesh may or may not be deformed.
+            Updates config and state by reference.
+            Adjoint Redundancy if state.GRADIENTS has key func_name.
+            Direct Redundancy if state.FUNCTIONS has key func_name.
+        
+        Executes in:
+            ./ADJOINT_<func_name>
+        
+        Inputs:
+            func_name - SU2 objective function name
+            config    - an SU2 config
+            state     - optional, an SU2 state
+        
+        Outputs:
+            A list of floats of gradient values
+    """
     
     # ----------------------------------------------------
     #  Initialize    
@@ -66,7 +152,7 @@ def adjoint( func_name, config, state=None ):
     # master redundancy check
     if state['GRADIENTS'].has_key(func_name):
         grads = state['GRADIENTS']
-        return grads
+        return copy.deepcopy(grads)
         
     # ----------------------------------------------------
     #  Direct Solution    
@@ -131,10 +217,45 @@ def adjoint( func_name, config, state=None ):
 
     # return output 
     grads = state['GRADIENTS']
-    return grads
+    return copy.deepcopy(grads)
 
+#: def adjoint()
+
+
+# ----------------------------------------------------------------------
+#  Finite Difference Gradients
+# ----------------------------------------------------------------------
 
 def findiff( config, state=None, step=1e-4 ):
+    """ vals = SU2.eval.findiff(config,state=None,step=1e-4)
+    
+        Evaluates the aerodynamics gradients using 
+        finite differencing with:
+            SU2.eval.func()
+               SU2.run.decompose()
+	       SU2.run.deform()
+               SU2.run.direct()
+        
+        Assumptions:
+            Config is already setup for deformation.
+            Mesh may or may not be deformed.
+            Updates config and state by reference.
+            Gradient Redundancy if state.GRADIENTS has the key func_name.
+            Direct Redundancy if state.FUNCTIONS has key func_name.
+    
+        Executes in:
+            ./FINDIFF
+            
+        Inputs:
+            config - an SU2 config
+            state  - optional, an SU2 state
+            step   - finite difference step size, as a float or
+                     list of floats of length n_DV
+        
+        Outputs:
+            A Bunch() with keys of objective function names
+            and values of list of floats of gradient values
+    """    
     
     # ----------------------------------------------------
     #  Initialize    
@@ -156,9 +277,11 @@ def findiff( config, state=None, step=1e-4 ):
     # ----------------------------------------------------    
         
     # master redundancy check
-    if len(state['GRADIENTS'].keys()) > 0: # naive check
+    opt_names = su2io.optnames_aero + su2io.optnames_geo 
+    findiff_todo = all( [ state.GRADIENTS.has_key(key) for key in opt_names ] )
+    if findiff_todo:
         grads = state['GRADIENTS']
-        return grads
+        return copy.deepcopy(grads)
     
     # ----------------------------------------------------
     #  Zero Step  
@@ -237,6 +360,8 @@ def findiff( config, state=None, step=1e-4 ):
                 
                 # Direct Solution, findiff step
                 func_step = function( 'ALL', this_konfig, this_state )
+                
+                # remove deform step files
                 meshfiles = this_state.FILES.MESH
                 meshfiles = su2io.expand_part(meshfiles,this_konfig)
                 for name in meshfiles: os.remove(name)
@@ -259,7 +384,9 @@ def findiff( config, state=None, step=1e-4 ):
     #: with output redirection
     
     # remove plot items
-    del grads['iVar']
-    del grads['FinDiff_Step']
+    del grads['VARIABLE']
+    del grads['FINDIFF_STEP']
     
-    return grads
+    return copy.deepcopy(grads)
+
+#: def findiff()

@@ -3,7 +3,7 @@
 ## \file continuous_adjoint.py
 #  \brief Python script for doing the continuous adjoint computation using the SU2 suite.
 #  \author Francisco Palacios, Tom Economon, Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.2
+#  \version 2.0.3
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -21,7 +21,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import os, sys, shutil, copy
 from optparse import OptionParser
+sys.path.append(os.environ['SU2_RUN'])
 import SU2
 
 # -------------------------------------------------------------------
@@ -71,26 +73,29 @@ def continuous_adjoint( filename           ,
     # Config
     config = SU2.io.Config(filename)
     config.NUMBER_PART = partitions
-    config.DECOMPOSED  = divide_grid
+    config.DECOMPOSED  = not divide_grid
     
     # State
     state = SU2.io.State()
     
     # check for existing files
     if not compute:
+        config.RESTART_SOL = 'YES'
         state.find_files(config)
     else:
         state.FILES.MESH = config.MESH_FILENAME
     
     # Direct Solution
-    info = SU2.run.direct(config) 
-    state.update(info)
-    SU2.io.restart2solution(config,state)
+    if compute:
+        info = SU2.run.direct(config) 
+        state.update(info)
+        SU2.io.restart2solution(config,state)
     
     # Adjoint Solution
-    info = SU2.run.adjoint(config)
-    state.update(info)
-    SU2.io.restart2solution(config,state)
+    if compute:
+        info = SU2.run.adjoint(config)
+        state.update(info)
+        #SU2.io.restart2solution(config,state)
     
     # Gradient Projection
     info = SU2.run.projection(config,step)

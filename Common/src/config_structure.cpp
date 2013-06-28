@@ -2,7 +2,7 @@
  * \file config_structure.cpp
  * \brief Main file for reading the config file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -36,10 +36,14 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
 
-	/*--- intializing motion pointers to NULL ---*/
+	/*--- Intialize motion pointers to NULL. If we don't find these values
+   in the config file, they will all be set to zero. ---*/
 	Motion_Origin_X = NULL;
 	Motion_Origin_Y = NULL;
 	Motion_Origin_Z = NULL;
+  Translation_Rate_X = NULL;
+	Translation_Rate_Y = NULL;
+	Translation_Rate_Z = NULL;
 	Rotation_Rate_X = NULL;
 	Rotation_Rate_Y = NULL;
 	Rotation_Rate_Z = NULL;
@@ -76,7 +80,8 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	/* DESCRIPTION: Magnetic simulation */
 	AddSpecialOption("MAGNET", MagneticForce, SetBoolOption, false);
 	/* DESCRIPTION: Joule heating simulation */
-	AddSpecialOption("JOULE_HEAT", JouleHeating, SetBoolOption, false);	/* DESCRIPTION: Flag for running the electric potential solver as part of the plasma solver */
+	AddSpecialOption("JOULE_HEAT", JouleHeating, SetBoolOption, false);
+  /* DESCRIPTION: Flag for running the electric potential solver as part of the plasma solver */
 	AddSpecialOption("ELECTRIC_SOLVER", ElectricSolver, SetBoolOption, false);
 	/* DESCRIPTION:  */
 	AddSpecialOption("MACCORMACK_RELAXATION", MacCormackRelaxation, SetBoolOption, false);
@@ -110,8 +115,6 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, "NONE");
 	/* DESCRIPTION: Specify transition model */
 	AddEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, "NONE");
-	/* DESCRIPTION: Block diagonal structure of Jacobian */
-	AddSpecialOption("BLOCK_DIAGONAL_JACOBIAN", Block_Diagonal_Jacobian, SetBoolOption, false);
 
 	/*--- options related to various boundary markers ---*/
 	/* CONFIG_CATEGORY: Boundary Markers */
@@ -272,7 +275,7 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	/* DESCRIPTION: Time discretization */
 	AddEnumOption("TIME_DISCRE_FEA", Kind_TimeIntScheme_FEA, Time_Int_Map, "EULER_IMPLICIT");
 	/* DESCRIPTION: Reduction factor of the CFL coefficient in the level set problem */
-	AddScalarOption("LEVELSET_CFL_REDUCTION", LevelSet_CFLRedCoeff, 0.1);
+	AddScalarOption("LEVELSET_CFL_REDUCTION", LevelSet_CFLRedCoeff, 1E-2);
 
 	/*--- options related to the linear solvers ---*/
 	/* CONFIG_CATEGORY: Linear solver definition */
@@ -295,12 +298,21 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddSpecialOption("GRID_MOVEMENT", Grid_Movement, SetBoolOption, false);
 	/* DESCRIPTION: Type of mesh motion */
 	AddEnumListOption("GRID_MOVEMENT_KIND", nZone, Kind_GridMovement, GridMovement_Map);
+  default_vec_3d[0] = 0; default_vec_3d[1] = 0;
+	/* DESCRIPTION: Mesh motion ramp (starting iteration, ramp iterations (zero to max)) */
+	AddArrayOption("MOTION_RAMP", 2, Motion_Ramp, default_vec_3d);
 	/* DESCRIPTION: Coordinates of the rigid motion origin */
 	AddListOption("MOTION_ORIGIN_X", nZone, Motion_Origin_X);
 	/* DESCRIPTION: Coordinates of the rigid motion origin */
 	AddListOption("MOTION_ORIGIN_Y", nZone, Motion_Origin_Y);
 	/* DESCRIPTION: Coordinates of the rigid motion origin */
 	AddListOption("MOTION_ORIGIN_Z", nZone, Motion_Origin_Z);
+  /* DESCRIPTION: Translational velocity vector (m/s) in the x, y, & z directions (RIGID_MOTION only) */
+	AddListOption("TRANSLATION_RATE_X", nZone, Translation_Rate_X);
+	/* DESCRIPTION: Translational velocity vector (m/s) in the x, y, & z directions (RIGID_MOTION only) */
+	AddListOption("TRANSLATION_RATE_Y", nZone, Translation_Rate_Y);
+	/* DESCRIPTION: Translational velocity vector (m/s) in the x, y, & z directions (RIGID_MOTION only) */
+	AddListOption("TRANSLATION_RATE_Z", nZone, Translation_Rate_Z);
 	/* DESCRIPTION: Angular velocity vector (rad/s) about x, y, & z axes (RIGID_MOTION only) */
 	AddListOption("ROTATION_RATE_X", nZone, Rotation_Rate_X);
 	/* DESCRIPTION: Angular velocity vector (rad/s) about x, y, & z axes (RIGID_MOTION only) */
@@ -534,8 +546,6 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddEnumOption("ADJOINT_TYPE", Kind_Adjoint, Adjoint_Map,"CONTINUOUS");
 	/* DESCRIPTION: Reduction factor of the CFL coefficient in the adjoint problem */
 	AddScalarOption("ADJ_CFL_REDUCTION", Adj_CFLRedCoeff, 0.8);
-	/* DESCRIPTION: Primitive variables gradient threshold */
-	AddScalarOption("PRIMGRAD_THRESHOLD", PrimGrad_Threshold, 1E14);
 	/* DESCRIPTION: Adjoint problem boundary condition */
 	AddEnumOption("ADJ_OBJFUNC", Kind_ObjFunc, Objective_Map, "DRAG");
 	/* DESCRIPTION: Geometrical objective function */
@@ -616,8 +626,8 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddScalarOption("WRT_SOL_FREQ", Wrt_Sol_Freq, 1000);
 	/* DESCRIPTION: Writing convergence history frequency */
 	AddScalarOption("WRT_CON_FREQ",  Wrt_Con_Freq, 1);
-	/* DESCRIPTION: Writing linear solver history frequency */
-	AddScalarOption("WRT_LIN_CON_FREQ",  Wrt_Lin_Con_Freq, 1);
+  /* DESCRIPTION: Writing convergence history frequency for the dual time */
+	AddScalarOption("WRT_CON_FREQ_DUALTIME",  Wrt_Con_Freq_DualTime, 10);
 	/* DESCRIPTION: Write unsteady data adding headers and prefixes */
 	AddSpecialOption("WRT_UNSTEADY", Wrt_Unsteady, SetBoolOption, false);
 	/* DESCRIPTION:  Write mass averaged solution file (plasma solver only, NO by default) */
@@ -636,6 +646,8 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddSpecialOption("WRT_SOL_TEC_ASCII", Wrt_Sol_Tec_ASCII, SetBoolOption, true);
   /* DESCRIPTION: Write a Tecplot binary volume solution file */
 	AddSpecialOption("WRT_SOL_TEC_BINARY", Wrt_Sol_Tec_Binary, SetBoolOption, false);
+  /* DESCRIPTION: List of output variables for the volume solution */
+  AddEnumListOption("OUTPUT_VARS_VOL", nOutput_Vars_Vol, Output_Vars_Vol, Output_Vars_Map);
   
 	/*--- options related to the equivalent area ---*/
 	/* CONFIG_CATEGORY: Equivalent Area */
@@ -784,8 +796,6 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddScalarOption("FREESURFACE_DAMPING_LENGTH", FreeSurface_Damping_Length, 1.0);
 	/* DESCRIPTION: Location of the free surface outlet surface (x or y coordinate) */
 	AddScalarOption("FREESURFACE_OUTLET", FreeSurface_Outlet, 0.0);
-	/* DESCRIPTION: Location of the free surface inlet surface (x or y coordinate) */
-	AddScalarOption("FREESURFACE_INLET", FreeSurface_Inlet, 0.0);
 
 	/*--- options related to the grid deformation ---*/
 	// these options share nDV as their size in the option references; not a good idea
@@ -975,6 +985,25 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 				Motion_Origin_Z[iZone] = 0.0;
 		}
 
+    /*--- Translation: ---*/
+		if (Translation_Rate_X == NULL) {
+			Translation_Rate_X = new double[nZone];
+			for (iZone = 0; iZone < nZone; iZone++ )
+				Translation_Rate_X[iZone] = 0.0;
+		}
+    
+		if (Translation_Rate_Y == NULL) {
+			Translation_Rate_Y = new double[nZone];
+			for (iZone = 0; iZone < nZone; iZone++ )
+				Translation_Rate_Y[iZone] = 0.0;
+		}
+    
+		if (Translation_Rate_Z == NULL) {
+			Translation_Rate_Z = new double[nZone];
+			for (iZone = 0; iZone < nZone; iZone++ )
+				Translation_Rate_Z[iZone] = 0.0;
+		}
+    
 		/*--- Rotation: ---*/
 		if (Rotation_Rate_X == NULL) {
 			Rotation_Rate_X = new double[nZone];
@@ -1130,8 +1159,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
 	}
 
-	/*--- Allocating memory for previous time step solutions of Aeroelastic problem. ---*/
+	/*--- Allocating memory for previous time step solutions of Aeroelastic problem and Intializing variables. ---*/
 	if (Grid_Movement && (Kind_GridMovement[ZONE_0] == AEROELASTIC)) {
+        Aeroelastic_pitch = 0.0;
+        Aeroelastic_plunge = 0.0;
 		Aeroelastic_np1 = new double[4];
 		Aeroelastic_n   = new double[4];
 		Aeroelastic_n1  = new double[4];
@@ -1158,18 +1189,19 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 	if (FullMG) FinestMesh = nMultiLevel;
 	else FinestMesh = MESH_0;
 
-    if (Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES) {
-        if (Kind_Turb_Model == SA || Kind_Turb_Model == SST)
-            Kind_Solver = RANS;
-    }
+  if ((Kind_Solver == NAVIER_STOKES) &&
+      (Kind_Turb_Model == SA || Kind_Turb_Model == SST))
+    Kind_Solver = RANS;
+  
+	if ((Kind_Solver == FREE_SURFACE_NAVIER_STOKES) &&
+      (Kind_Turb_Model == SA || Kind_Turb_Model == SST))
+    Kind_Solver = FREE_SURFACE_RANS;
 
-	if (Kind_Solver == FREE_SURFACE_EULER || Kind_Solver == FREE_SURFACE_NAVIER_STOKES) {
-        GravityForce = true;
-		if (Kind_Turb_Model == SA || Kind_Turb_Model == SST)
-            Kind_Solver = FREE_SURFACE_RANS;
-	}
-    else GravityForce = false;
-
+  if (Kind_Solver == FREE_SURFACE_EULER ||
+      Kind_Solver == FREE_SURFACE_NAVIER_STOKES ||
+      Kind_Solver == FREE_SURFACE_RANS) GravityForce = true;
+  else GravityForce = false;
+  
 	Kappa_1st_Flow = Kappa_Flow[0];
 	Kappa_2nd_Flow = Kappa_Flow[1];
 	Kappa_4th_Flow = Kappa_Flow[2];   
@@ -1260,8 +1292,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
 	if (Restart) FullMG = false;
 
-	if (!Adjoint && !Linearized) PrimGrad_Threshold = 1E14;
-
 	if (Adjoint) {
 		if (Kind_Solver == EULER) Kind_Solver = ADJ_EULER;
 		if (Kind_Solver == FREE_SURFACE_EULER) Kind_Solver = ADJ_FREE_SURFACE_EULER;
@@ -1270,10 +1300,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		if (Kind_Solver == PLASMA_NAVIER_STOKES) Kind_Solver = ADJ_PLASMA_NAVIER_STOKES;
 		if (Kind_Solver == NAVIER_STOKES) Kind_Solver = ADJ_NAVIER_STOKES;
 		if (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) Kind_Solver = ADJ_FREE_SURFACE_NAVIER_STOKES;
-        if ((Kind_Solver == FREE_SURFACE_RANS) && (Frozen_Visc)) Kind_Solver = ADJ_FREE_SURFACE_NAVIER_STOKES;
-		if ((Kind_Solver == FREE_SURFACE_RANS) && (!Frozen_Visc)) Kind_Solver = ADJ_FREE_SURFACE_RANS;
-		if ((Kind_Solver == RANS) && (Frozen_Visc)) Kind_Solver = ADJ_NAVIER_STOKES;
-		if ((Kind_Solver == RANS) && (!Frozen_Visc)) Kind_Solver = ADJ_RANS;
+		if (Kind_Solver == FREE_SURFACE_RANS) Kind_Solver = ADJ_FREE_SURFACE_RANS;
+		if (Kind_Solver == RANS) Kind_Solver = ADJ_RANS;
 	}
 
 	if (Linearized) {
@@ -2226,12 +2254,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   
-	// Some discrete adjoint requirements:
-	if (GetKind_Adjoint() == DISCRETE && (Kind_Solver==ADJ_EULER||ADJ_NAVIER_STOKES||ADJ_RANS)) {
-
+	/*--- Some discrete adjoint requirements ---*/
+	if ((IsAdjoint() && (GetKind_Adjoint() == DISCRETE)) && (Kind_Solver==ADJ_EULER||ADJ_NAVIER_STOKES||ADJ_RANS)) {
 		SetnExtIter(1);
 		SetMGLevels(0);
 	}
+  
+  delete [] tmp_smooth;
 
 
 }
@@ -2239,7 +2268,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) {
 
 #ifndef NO_MPI
-	if ((val_software != SU2_DDC) && (val_software != SU2_MAC))
+	if ((val_software != SU2_DDC) && (val_software != SU2_MAC) && (val_software != SU2_GDC))
 		nDomain = MPI::COMM_WORLD.Get_size();
 #endif
 
@@ -2484,6 +2513,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     case SU2_SOL: cout << "|   |_____/   \\____/  |____|  Suite (Solution Exporting Code)           |" << endl; break;
 	}
 
+  cout << "|                             Release 2.0.3                             |" << endl;
 	cout <<"-------------------------------------------------------------------------" << endl;
 
 	cout << endl <<"------------------------ Physical case definition -----------------------" << endl;
@@ -2545,8 +2575,23 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			case LINEAR_ELASTICITY: cout << "Finite Element Analysis." << endl; break;
 			case FLUID_STRUCTURE_EULER: case FLUID_STRUCTURE_NAVIER_STOKES: cout << "Fluid-structure interaction." << endl; break;
 			case ADJ_EULER: cout << "Continuous Euler adjoint equations." << endl; break;
-			case ADJ_NAVIER_STOKES: cout << "Continuous Navier-Stokes adjoint equations with frozen viscosity." << endl; break;
-			case ADJ_RANS: cout << "Continuous RANS adjoint equations." << endl; break;
+			case ADJ_NAVIER_STOKES:
+                if (Frozen_Visc)
+                    cout << "Continuous Navier-Stokes adjoint equations with frozen (laminar) viscosity." << endl;
+                else
+                    cout << "Continuous Navier-Stokes adjoint equations." << endl;
+                break;
+			case ADJ_RANS:
+                if (Kind_Adjoint == CONTINUOUS) {
+                    if (Frozen_Visc)
+                        cout << "Continuous RANS adjoint equations with frozen (laminar and eddy) viscosity." << endl;
+                    else
+                        cout << "Continuous RANS adjoint equations." << endl;
+                }
+                else
+                    cout << "Hybrid RANS adjoint equations." << endl;
+        
+                break;
 			case LIN_EULER: cout << "Linearized Euler equations." << endl; break;
 			case FREE_SURFACE_EULER: case FREE_SURFACE_NAVIER_STOKES: case FREE_SURFACE_RANS:
 				if (Kind_Solver == FREE_SURFACE_EULER)
@@ -2604,7 +2649,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		if (Adjoint || Linearized)
 			cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
 
-		cout << "Surface(s) where the force coefficients are to be evaluated: ";
+		cout << "Surface(s) where the force coefficients are evaluated: ";
 		for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++) {
 			cout << Marker_Monitoring[iMarker_Monitoring];
 			if (iMarker_Monitoring < nMarker_Monitoring-1) cout << ", ";
@@ -2652,7 +2697,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		}
 		cout << "Convergence criteria of the linear solver: "<< GridDef_Error <<"."<<endl;
 
-		if (Design_Variable[0] != NO_DEFORMATION) {
+		if (Design_Variable[0] != NO_DEFORMATION && Design_Variable[0] != SURFACE_FILE) {
 			if (Hold_GridFixed == YES) cout << "Hold some regions of the mesh fixed (hardcode implementation)." <<endl;
 			cout << "Geo. design var. definition (markers <-> old def., new def. <-> param):" <<endl;
 			for (unsigned short iDV = 0; iDV < nDV; iDV++) {
@@ -2790,8 +2835,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		case FREESURFACE: cout << "Free-Surface objective function." << endl; break;
 		case NOISE: cout << "Noise objective function." << endl; break;
 		}
-
-		cout << "Primitive variables gradient threshold: "<< PrimGrad_Threshold << "." << endl;
 
 	}
 
@@ -2949,14 +2992,14 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				cout << "Scalar upwind solver (second order) for the turbulence model."<< endl;
 		}
 
-		if (Kind_Solver == ADJ_RANS) {
+		if ((Kind_Solver == ADJ_RANS) && (!Frozen_Visc)) {
 			if ((Kind_ConvNumScheme_AdjTurb == SPACE_UPWIND) && (Kind_Upwind_AdjTurb == SCALAR_UPWIND_1ST))
 				cout << "Adjoint turbulent eq - Scalar upwind solver (first order)"<< endl;
 			if ((Kind_ConvNumScheme_AdjTurb == SPACE_UPWIND) && (Kind_Upwind_AdjTurb == SCALAR_UPWIND_2ND))
 				cout << "Adjoint turbulent eq - Scalar upwind solver (second order)"<< endl;
 		}
 
-		if (Kind_Solver == ADJ_NAVIER_STOKES) {
+		if ((Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) {
 			switch (Kind_ViscNumScheme_AdjFlow) {
 			case AVG_GRAD: cout << "Average of gradients (viscous adjoint terms)." << endl; break;
 			case AVG_GRAD_CORRECTED: cout << "Average of gradients with correction (viscous adjoint terms)." << endl; break;
@@ -2980,7 +3023,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			if (Kind_ViscNumScheme_Elec == GALERKIN) cout << "Galerkin method for viscous terms computation of the electric potential equation." << endl;
 		}
 
-		if (Kind_Solver == ADJ_RANS) {
+		if ((Kind_Solver == ADJ_RANS) && (!Frozen_Visc)) {
 			if (Kind_ViscNumScheme_AdjTurb == AVG_GRAD) cout << "Average of gradients (1st order) for computation of adjoint viscous turbulence terms." << endl;
 			if (Kind_ViscNumScheme_AdjTurb == AVG_GRAD_CORRECTED) cout << "Average of gradients with correction (2nd order) for computation of adjoint viscous turbulence terms." << endl;
 			if (Kind_SourNumScheme_AdjTurb == PIECEWISE_CONSTANT) cout << "Piecewise constant integration of the turbulence adjoint model source terms." << endl;
@@ -3294,10 +3337,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 		cout << "Writing a flow solution every " << Wrt_Sol_Freq <<" iterations."<<endl;
 		cout << "Writing the convergence history every " << Wrt_Con_Freq <<" iterations."<<endl;
+		cout << "Writing the dual time convergence history every " << Wrt_Con_Freq_DualTime <<" iterations."<<endl;
 
 		switch (Output_FileFormat) {
-		case PARAVIEW: cout << "The output file format is Paraview (.vtk)." << endl; break;
-		case TECPLOT: cout << "The output file format is Tecplot (.plt)." << endl; break;
+      case PARAVIEW: cout << "The output file format is Paraview (.vtk)." << endl; break;
+      case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
+      case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
+      case CGNS_SOL: cout << "The output file format is CGNS (.cgns)." << endl; break;
 		}
 
 		cout << "Convergence history file name: " << Conv_FileName << "." << endl;
@@ -3332,7 +3378,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   if (val_software == SU2_SOL) {
     switch (Output_FileFormat) {
       case PARAVIEW: cout << "The output file format is Paraview (.vtk)." << endl; break;
-      case TECPLOT: cout << "The output file format is Tecplot (.plt)." << endl; break;
+      case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
+      case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
+      case CGNS_SOL: cout << "The output file format is CGNS (.cgns)." << endl; break;
 		}
     cout << "Flow variables file name: " << Flow_FileName << "." << endl;
   }
@@ -3939,8 +3987,6 @@ bool CConfig::TokenizeString(string & str, string & option_name,
 		if (pos != string::npos) {
 			string before_semi = it->substr(0, pos);
 			string after_semi= it->substr(pos+1,string::npos);
-			cout << "before_semi = " << before_semi << endl;
-			cout << "after_semi = " << after_semi << endl;
 			if (before_semi.empty()) {
 				*it = ";";
 				it++;
@@ -4015,13 +4061,14 @@ bool CConfig::GetPython_Option(string & option_name) {
 	if (option_name == "CONST_EQ_VALUE") isPython_Option = true;
 	if (option_name == "DEFINITION_DV") isPython_Option = true;
 	if (option_name == "TASKS") isPython_Option = true;
-	if (option_name == "OPT_OBJFUNC") isPython_Option = true;
-	if (option_name == "OPT_CONSTR") isPython_Option = true;
+	if (option_name == "OPT_OBJECTIVE") isPython_Option = true;
+	if (option_name == "OPT_CONSTRAINT") isPython_Option = true;
 	if (option_name == "GRADIENTS") isPython_Option = true;
 	if (option_name == "FIN_DIFF_STEP") isPython_Option = true;
 	if (option_name == "ADAPT_CYCLES") isPython_Option = true;
 	if (option_name == "CONSOLE") isPython_Option = true;
-
+  if (option_name == "DECOMPOSED") isPython_Option = true;
+  
 	return isPython_Option;
 }
 
@@ -4557,6 +4604,13 @@ void CConfig::SetGlobalParam(unsigned short val_solver, unsigned short val_syste
                 SetKind_SourNumScheme(GetKind_SourNumScheme_AdjFlow());
                 SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjFlow());
             }
+            if (val_system == RUNTIME_TURB_SYS) {
+                SetKind_ConvNumScheme(GetKind_ConvNumScheme_Turb(), GetKind_Centered_Turb(),
+                                      GetKind_Upwind_Turb(), GetKind_SlopeLimit_Turb());
+                SetKind_ViscNumScheme(GetKind_ViscNumScheme_Turb());
+                SetKind_SourNumScheme(GetKind_SourNumScheme_Turb());
+                SetKind_TimeIntScheme(GetKind_TimeIntScheme_Turb());
+            }
             if (val_system == RUNTIME_ADJTURB_SYS) {
                 SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjTurb(), GetKind_Centered_AdjTurb(),
                                       GetKind_Upwind_AdjTurb(), GetKind_SlopeLimit_AdjTurb());
@@ -4899,7 +4953,24 @@ double CConfig::GetFlowLoad_Value(string val_marker) {
 	return FlowLoad_Value[iMarker_FlowLoad];
 }
 
-void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short val_iZone) { 
+double CConfig::GetMotion_Ramp(unsigned long val_iter) {
+	double coeff;
+  
+  if ((val_iter < int(Motion_Ramp[0])) ) {
+    coeff = 0.0;
+  } else if (((val_iter >= int(Motion_Ramp[0])) && (int(Motion_Ramp[1]) == 0)) ||
+             (val_iter >= int(Motion_Ramp[0])+int(Motion_Ramp[1]))) {
+    coeff = 1.0;
+  } else if ((val_iter >= int(Motion_Ramp[0])) &&
+             (val_iter <  int(Motion_Ramp[0])+int(Motion_Ramp[1]))) {
+    coeff = ((double)val_iter - Motion_Ramp[0])/Motion_Ramp[1];
+  } else
+    coeff = 1.0;
+
+  return coeff;
+}
+
+void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short val_iZone) {
 	double Mach2Vel_FreeStream, ModVel_FreeStream, Energy_FreeStream = 0.0, ModVel_FreeStreamND;
 	unsigned short iDim;
 	int rank = MASTER_NODE;

@@ -2,7 +2,7 @@
  * \file solution_linearized_mean.cpp
  * \brief Main subrotuines for solving linearized problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -40,10 +40,11 @@ CLinEulerSolution::CLinEulerSolution(CGeometry *geometry, CConfig *config) : CSo
 	node = new CVariable*[geometry->GetnPoint()];
 	
 	/*--- Define some auxiliar vector related with the residual ---*/
-	Residual = new double[nVar];	Residual_Max = new double[nVar];
-	Residual_i = new double[nVar];	Residual_j = new double[nVar];
+	Residual = new double[nVar];	Residual_RMS = new double[nVar];  
+	Residual_i = new double[nVar]; Residual_j = new double[nVar];
 	Res_Conv = new double[nVar];	Res_Visc = new double[nVar]; Res_Sour = new double[nVar];
-	
+  Residual_Max = new double[nVar]; Point_Max = new unsigned long[nVar];
+
 	/*--- Define some auxiliar vector related with the solution ---*/
 	Solution   = new double[nVar];
 	Solution_i = new double[nVar];	Solution_j = new double[nVar];
@@ -262,8 +263,11 @@ void CLinEulerSolution::ExplicitRK_Iteration(CGeometry *geometry, CSolution **so
 	unsigned long iPoint;
 	double RK_AlphaCoeff = config->Get_Alpha_RKStep(iRKStep);
 
-	for (iVar = 0; iVar < nVar; iVar++)
-		SetRes_Max( iVar, 0.0 );
+	/*--- Set maximum residual to zero ---*/
+	for (iVar = 0; iVar < nVar; iVar++) {
+		SetRes_RMS(iVar, 0.0);
+    SetRes_Max(iVar, 0.0, 0);
+  }
 	
 	/*--- Update the solution ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
@@ -273,20 +277,20 @@ void CLinEulerSolution::ExplicitRK_Iteration(CGeometry *geometry, CSolution **so
 			Residual = node[iPoint]->GetResidual();
 			for (iVar = 0; iVar < nVar; iVar++) {
 				node[iPoint]->AddSolution(iVar, -(Residual[iVar]+Res_TruncError[iVar])*Delta*RK_AlphaCoeff);
-				AddRes_Max( iVar, Residual[iVar]*Residual[iVar]*Vol );
+				AddRes_RMS(iVar, Residual[iVar]*Residual[iVar]);
+        AddRes_Max(iVar, fabs(Residual[iVar]), geometry->node[iPoint]->GetGlobalIndex());
 			}
 		}
 	
-#ifdef NO_MPI
-	/*--- Compute the norm-2 of the residual ---*/
-	for (iVar = 0; iVar < nVar; iVar++)
-		SetRes_Max( iVar, sqrt(GetRes_Max(iVar)) );
-#endif
+  /*--- MPI solution ---*/
+  SetSolution_MPI(geometry, config);
+  
+  /*--- Compute the root mean square residual ---*/
+  SetResidual_RMS(geometry, config);
 
 }
 
-void CLinEulerSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config,
-									  unsigned short iRKStep) {
+void CLinEulerSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 	unsigned long iPoint;
 	bool implicit = (config->GetKind_TimeIntScheme_LinFlow() == EULER_IMPLICIT);
 	

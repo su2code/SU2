@@ -3,7 +3,7 @@
 ## \file parallel_computation.py
 #  \brief Python script for doing the continuous adjoint computation using the SU2 suite.
 #  \author Francisco Palacios, Tom Economon, Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.2
+#  \version 2.0.3
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -21,7 +21,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import os, sys, shutil, copy
 from optparse import OptionParser
+sys.path.append(os.environ['SU2_RUN'])
 import SU2
 
 # -------------------------------------------------------------------
@@ -34,7 +36,7 @@ def main():
     parser=OptionParser()
     parser.add_option("-f", "--file",       dest="filename",
                       help="read config from FILE", metavar="FILE")
-    parser.add_option("-p", "--partitions", dest="partitions", default=1,
+    parser.add_option("-p", "--partitions", dest="partitions", default=2,
                       help="number of PARTITIONS", metavar="PARTITIONS")
     parser.add_option("-c", "--compute",    dest="compute",    default="True",
                       help="COMPUTE direct and adjoint problem", metavar="COMPUTE")
@@ -55,7 +57,7 @@ def main():
 
 
 # -------------------------------------------------------------------
-#  Direct Solution
+#  CFD Solution
 # -------------------------------------------------------------------
 
 def parallel_computation( filename           , 
@@ -66,10 +68,13 @@ def parallel_computation( filename           ,
     # Config
     config = SU2.io.Config(filename)
     config.NUMBER_PART = partitions
-    config.DECOMPOSED  = divide_grid
+    config.DECOMPOSED  = not divide_grid
     
     # State
     state = SU2.io.State()
+    
+    # Decomposition
+    info = SU2.run.decompose(config)
     
     # check for existing files
     if not compute:
@@ -77,11 +82,19 @@ def parallel_computation( filename           ,
     else:
         state.FILES.MESH = config.MESH_FILENAME
     
-    # Direct Solution
-    info = SU2.run.direct(config) 
+    # CFD Solution (direct or adjoint)
+    info = SU2.run.CFD(config) 
     state.update(info)
-    SU2.io.restart2solution(config,state)
-    
+    #SU2.io.restart2solution(config,state)
+
+    # Solution merging
+    if config.MATH_PROBLEM == 'DIRECT':
+        config.SOLUTION_FLOW_FILENAME = config.RESTART_FLOW_FILENAME
+    elif config.MATH_PROBLEM == 'ADJOINT':
+        config.SOLUTION_ADJ_FILENAME = config.RESTART_ADJ_FILENAME
+    info = SU2.run.merge(config)
+    state.update(info)
+  
     return state
 
 #: parallel_computation()

@@ -1,28 +1,94 @@
+#!/usr/bin/env python 
 
-import os, sys, shutil, copy
+## \file project.py
+#  \brief package for optimization projects
+#  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
+#  \version 2.0.3
+#
+# Stanford University Unstructured (SU2) Code
+# Copyright (C) 2012 Aerospace Design Laboratory
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# -------------------------------------------------------------------
+#  Imports
+# -------------------------------------------------------------------
+
+import os, sys, shutil, copy, glob, time
 import numpy as np
 from .. import io   as su2io
 from .. import eval as su2eval
 from .. import util as su2util
 from ..io import redirect_folder
 
-
 inf = 1.0e20
 
-# todo: 
-# dump design data
 
-# nice:
-# shouldnt be needed, but self.append_state() (ie after initialization)
-# append_design()
+# -------------------------------------------------------------------
+#  Project Class
+# -------------------------------------------------------------------
 
 class Project(object):
+    """ project = SU2.opt.Project(self,config,state=None, 
+                                  designs=[],folder='.')
+        
+        Starts a project class to manage multiple designs
+        
+        Runs multiple design classes, avoiding redundancy
+        Looks for closest design on restart
+        Currently only based on DV_VALUE_NEW
+        Exposes all methods of SU2.eval.design
+        
+        Attributes:
+             config  - base config
+             state   - base state
+             files   - base files
+             designs - list of designs
+             folder  - project working folder
+             data    - project design data
+             
+        Methods:
+            Optimizer Interface
+            The following methods take a design vector for input
+            as a list (shape n) or numpy array (shape n or nx1 or 1xn).
+            Values are returned as floats or lists or lists of lists.
+            See SU2.eval.obj_f, etc for more detail.
+            
+            obj_f(dvs)     - objective function              : float
+            obj_df(dvs)    - objective function derivatives  : list
+            con_ceq(dvs)   - equality constraints            : list
+            con_dceq(dvs)  - equality constraint derivatives : list[list]
+            con_cieq(dvs)  - inequality constraints          : list
+            con_dcieq(dvs) - inequality constraint gradients : list[list]
+            
+            Fucntional Interface
+            The following methods take an objective function name for input.
+            func(func_name)                  - function of specified name
+            grad(func_name,method='ADJOINT') - gradient of specified name
+            
+    """  
+    
+    _design_folder = 'DESIGNS/DSN_*'
+    _design_number = '%3d'
+    
     
     def __init__( self, config, state=None , 
-                  designs=[], folder='.'  ):
+                  designs=None, folder='.'  ):
         
         folder = folder.rstrip('/')+'/'
         if '*' in folder: folder = su2io.next_folder(folder)        
+        if designs is None: designs = []
         
         print 'New Project: %s' % (folder)
         
@@ -41,16 +107,27 @@ class Project(object):
         # initialize folder with files
         pull,link = state.pullnlink(config)
         with redirect_folder(folder,pull,link,force=True):
-            pass
-            
+            folders = glob.glob(self._design_folder)
+            if len(folders)>0:
+                sys.stdout.write('Warning, removing old designs...')
+                sys.stdout.flush()
+                time.sleep(7)
+                sys.stdout.write(' now\n')
+                for f in folders: shutil.rmtree(f)
+            #: if existing designs
         return
     
     def _eval(self,config,func,*args):
+        """ evalautes a config, checking for existing designs
+        """
         
         konfig = copy.deepcopy(config) # design config
         config = self.config           # project config
         state  = self.state            # project state
         folder = self.folder           # project folder
+        
+        # check folder
+        assert os.path.exists(folder) , 'cannot find project folder %s' % folder        
         
         # list project files to pull and link
         pull,link = state.pullnlink(config)
@@ -70,7 +147,7 @@ class Project(object):
             
             # run design
             vals = design._eval(func,*args)
-            
+                        
             # recompile design data
             self.compile_data()
             
@@ -138,6 +215,8 @@ class Project(object):
         
         
     def find_design(self,config):
+        """ looks for an existing or closest design
+        """        
                 
         designs = self.designs
         
@@ -161,10 +240,13 @@ class Project(object):
         
         return closest, delta 
     
-    def new_design(self,config,closest=[]):
+    def new_design(self,config,closest=None):
+        """ starts a new design
+        """
         
         konfig = copy.deepcopy(config)
         ztate  = copy.deepcopy(self.state)
+        if closest is None: closest = []
         
         # use closest design as seed
         if closest:
@@ -195,7 +277,22 @@ class Project(object):
         return design
     
     def compile_data(self,default=np.nan):
-        """
+        """ data = SU2.opt.Project.compile_data(default=np.nan)
+            builds a Bunch() of design data
+            
+            Inputs:
+                default - value for missing values
+                
+            Outputs:
+                data - state with items filled with list of
+                values ordered by each design iteration.
+                Contents:
+                    VARIABLES
+                    FUNCTIONS
+                    GRADIENTS
+                    HISTORY
+                    
+                
         """
         
         data = su2io.State()
@@ -247,6 +344,8 @@ class Project(object):
         return self.data
     
     def plot_data(self):
+        """ writes a tecplot file for plotting design data
+        """
         output_format = self.config.OUTPUT_FORMAT
         functions     = self.data.FUNCTIONS
         history       = self.data.HISTORY
@@ -256,7 +355,7 @@ class Project(object):
         data_plot.update(functions)
         data_plot.update(history)
         
-        su2util.write_plot('project.plt',output_format,data_plot)
+        su2util.write_plot('history_project.plt',output_format,data_plot)
         
     def __repr__(self):
         return '<Project> with %i <Design>' % len(self.designs)

@@ -5,6 +5,30 @@
 #         http://code.activestate.com/recipes/410692/
 
 class switch(object):
+    """ Readable switch construction
+    
+        Example:
+        
+        c = 'z'
+        for case in switch(c):
+            if case('a'): pass # only necessary if the rest of the suite is empty
+            if case('b'): pass
+            # ...
+            if case('y'): pass
+            if case('z'):
+                print "c is lowercase!"
+                break
+            if case('A'): pass
+            # ...
+            if case('Z'):
+                print "c is uppercase!"
+                break
+            if case(): # default
+                print "I dunno what c was!"
+        
+        source: Brian Beck, PSF License, ActiveState Code
+        http://code.activestate.com/recipes/410692/
+    """
     
     def __init__(self, value):
         self.value = value

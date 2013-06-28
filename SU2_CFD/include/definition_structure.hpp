@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines used by SU2_CFD.
  *        The subroutines and functions are in the <i>definition_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -93,23 +93,3 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
  * \param[in] val_nZone - Total number of zones.
  */
 void Geometrical_Definition(CGeometry ***geometry, CConfig **config, unsigned short val_nZone);
-
-/*!
- * \brief Deallocation of the pointers solver_container, solution_container, integration_container, geometry, output, config.
- * \param[in] solver_container - Description of the numerical method (the way in which the equations are solved).
- * \param[in] solution_container - Container vector with all the solutions.
- * \param[in] integration_container - Container vector with all the integration methods.
- * \param[in] output - Pointer to the COutput class.
- * \param[in] geometry - Geometrical definition of the problem.
- * \param[in] config - Definition of the particular problem.
- * \param[in] iZone - Index of the zone.
- */
-void Solver_Deallocation(CNumerics ****solver_container, CSolution ***solution_container, CIntegration **integration_container,
-					  COutput *output, CGeometry **geometry, CConfig *config, unsigned short iZone);
-
-/*! 
- * \brief Deallocation of the pointers geometry.
- * \param[in] geometry - Geometrical definition of the problem.
- * \param[in] config - Definition of the particular problem.
- */
-void Geometrical_Deallocation(CGeometry **geometry, CConfig *config);

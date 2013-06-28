@@ -3,7 +3,7 @@
 ## \file mesh_deformation.py
 #  \brief Python script for doing the parallel deformation using SU2_MDC.
 #  \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.2
+#  \version 2.0.3
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -21,7 +21,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import os, sys, shutil, copy
 from optparse import OptionParser
+sys.path.append(os.environ['SU2_RUN'])
 import SU2
 
 # -------------------------------------------------------------------
@@ -66,7 +68,7 @@ def mesh_deformation( filename           ,
     # Config
     config = SU2.io.Config(filename)
     config.NUMBER_PART = partitions
-    config.DECOMPOSED  = divide_grid
+    config.DECOMPOSED  = not divide_grid
     
     # State
     state = SU2.io.State()

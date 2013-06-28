@@ -2,7 +2,7 @@
  * \file numerics_structure.inl
  * \brief In-Line subroutines of the <i>numerics_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -181,7 +181,9 @@ inline void CNumerics::SetChargeDensity(double *val_u_0, double *val_u_1, double
 	U_3 = val_u_3;
 }
 
-inline void CNumerics::SetElectricField(double *val_Efield) {}
+inline void CNumerics::SetElecField(double *val_Efield) {}
+
+inline void CNumerics::SetTimeStep(double val_timestep) {TimeStep = val_timestep;}
 
 inline double* CNumerics::GetMagneticField() {return 0;}
 
@@ -529,7 +531,7 @@ inline void CSourcePieceWise_TurbSST::SetCrossDiff(double val_CDkw_i, double val
 
 inline void CSourcePieceWise_TurbSA::SetIntermittency(double intermittency_in) {intermittency=intermittency_in;}
 
-inline void CSourcePieceWise_Plasma::SetElectricField(double *val_Efield) { ElectricField = val_Efield; }
+inline void CSourcePieceWise_Plasma::SetElecField(double *val_Efield) { ElectricField = val_Efield; }
 
 inline double* CSourcePieceWise_Plasma::GetMagneticField() { return JcrossB; }
 
@@ -546,3 +548,16 @@ inline double CSource_JouleHeating::GetElec_CondIntegral() {return Elec_Conduct*
 inline void CNumerics::SetElec_CondIntegralsqr(double val_var) {}
 
 inline void CSource_JouleHeating::SetElec_CondIntegralsqr(double val_var) {Integralsqr = val_var; }
+
+inline double CNumerics::GetKappaPsiVolume() {return 0;}
+
+inline double CSourceViscous_AdjFlow::GetKappaPsiVolume() { return kappapsi_Volume; }
+
+inline void CNumerics::SetKappaPsiVolume(double val_kappapsi_Volume) {}
+
+inline void CSourceViscous_AdjFlow::SetKappaPsiVolume(double val_kappapsi_Volume) { kappapsi_Volume = val_kappapsi_Volume;}
+
+inline void CNumerics::SetResidual(double **val_Jacobian_i, double *val_Jacobian_mui, double ***val_Jacobian_gradi, CConfig *config) { }
+
+inline void CNumerics::SetResidual(double **val_Jacobian_i, double *val_Jacobian_mui, double ***val_Jacobian_gradi, 
+									double **val_Jacobian_j, double *val_Jacobian_muj, double ***val_Jacobian_gradj, CConfig *config) { }

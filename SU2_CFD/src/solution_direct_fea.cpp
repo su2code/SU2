@@ -2,7 +2,7 @@
  * \file solution_direct_fea.cpp
  * \brief Main subrotuines for solving the FEA equation.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -38,10 +38,11 @@ CFEASolution::CFEASolution(CGeometry *geometry, CConfig *config) : CSolution() {
 	if (nDim == 2) NodesElement = 3;	// Trianles in 2D
 	if (nDim == 3) NodesElement = 4;	// Tets in 3D
 	
-	Residual     = new double[nVar];
-	Residual_Max = new double[nVar];
+	Residual     = new double[nVar]; Residual_RMS = new double[nVar];
 	Solution     = new double[nVar];
+  Residual_Max = new double[nVar]; Point_Max = new unsigned long[nVar];
   
+
 	/*--- Element aux stiffness matrix definition ---*/
 	StiffMatrix_Elem = new double*[NodesElement*nDim];
 	for (iVar = 0; iVar < NodesElement*nDim; iVar++) {
@@ -183,7 +184,7 @@ CFEASolution::~CFEASolution(void) {
 	delete [] cvector;
 }
 
-void CFEASolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iRKStep) {
+void CFEASolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 	unsigned long iPoint;
 	
   /*--- Set residuals to zero ---*/
@@ -1177,7 +1178,7 @@ void CFEASolution::MPI_Send_Receive(CGeometry ***geometry, CSolution ****solutio
 void CFEASolution::Postprocessing(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iMesh) {
 
 	/*--- Compute the gradient of the displacement ---*/
-	if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry); 
+	if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
 	if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
 
 }
@@ -1343,8 +1344,10 @@ void CFEASolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **solu
 	double *local_ResVisc, *local_ResSour, Norm;
 		
 	/*--- Set maximum residual to zero ---*/
-	for (iVar = 0; iVar < nVar; iVar++)
-		SetRes_Max(iVar, 0.0);
+	for (iVar = 0; iVar < nVar; iVar++) {
+		SetRes_RMS(iVar, 0.0);
+    SetRes_Max(iVar, 0.0, 0);
+  }
 	
 	/*--- Build implicit system ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
@@ -1358,9 +1361,19 @@ void CFEASolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **solu
 			total_index = iPoint*nVar+iVar;
 			rhs[total_index] = local_ResVisc[iVar] + local_ResSour[iVar];
 			xsol[total_index] = 0.0;
-			AddRes_Max( iVar, rhs[total_index]*rhs[total_index] );
+			AddRes_RMS(iVar, rhs[total_index]*rhs[total_index]);
+      AddRes_Max(iVar, fabs(rhs[total_index]), geometry->node[iPoint]->GetGlobalIndex());
 		}
 	}
+  
+  /*--- Initialize residual and solution at the ghost points ---*/
+  for (iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      total_index = iPoint*nVar + iVar;
+      rhs[total_index] = 0.0;
+      xsol[total_index] = 0.0;
+    }
+  }
   
 	/*--- Solve the linear system (Stationary iterative methods) ---*/
 	if (config->GetKind_Linear_Solver() == SYM_GAUSS_SEIDEL) 
@@ -1419,14 +1432,12 @@ void CFEASolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **solu
 	Norm = sqrt(Norm);
 	SetTotal_CFEA(Norm);
 	
-		
-#ifdef NO_MPI
-	/*--- Compute the norm-2 of the residual ---*/
-	for (iVar = 0; iVar < nVar; iVar++) {
-		SetRes_Max(iVar, sqrt(GetRes_Max(iVar)));
-	}
-#endif
-
+  /*--- MPI solution ---*/
+  SetSolution_MPI(geometry, config);
+  
+  /*--- Compute the root mean square residual ---*/
+  SetResidual_RMS(geometry, config);
+  
 }
 
 void CFEASolution::SetInitialCondition(CGeometry **geometry, CSolution ***solution_container, CConfig *config, unsigned long ExtIter) {

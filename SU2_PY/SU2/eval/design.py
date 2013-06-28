@@ -1,3 +1,27 @@
+## \file design.py
+#  \brief python package for designs
+#  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
+#  \version 2.0.3
+#
+# Stanford University Unstructured (SU2) Code
+# Copyright (C) 2012 Aerospace Design Laboratory
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# ----------------------------------------------------------------------
+#  Imports
+# ----------------------------------------------------------------------
 
 import os, sys, shutil, copy, glob, re
 from .. import io   as su2io
@@ -5,17 +29,52 @@ from .  import func as su2func
 from .  import grad as su2grad
 from ..io import redirect_folder, save_data
 
-# todo: 
-# save self in design folder
-# setup working folder on initialization
-
-# nice:
+# todo:
 # shouldnt be needed, but self.append_state() (ie after initialization)
 
+
+# ----------------------------------------------------------------------
+#  Design Class
+# ----------------------------------------------------------------------
+
 class Design(object):
+    """ SU2.eval.Design(config,state=None,folder='DESIGNS/DSN_*')
     
-    def __init__( self, config, state=None, 
-                  folder='DESIGNS/DSN_*'   ):
+        Starts a design class, which manages a config and state.
+        Will run design in folder, and with self indexing name if '*' is
+        included in the folder name.
+        Methods are wrappers for SU2.eval.func() and SU2.eval.grad()
+       
+        Attributes:
+            state  - design state
+            config - design config
+            files  - design files
+            folder - design folder
+            funcs  - design function value bunch
+            grads  - design gradient values bunch
+        
+        Methods:
+            Optimizer Interface
+            The following methods take a design vector for input
+            as a list (shape n) or numpy array (shape n or nx1 or 1xn).
+            Values are returned as floats or lists or lists of lists.
+            See SU2.eval.obj_f, etc for more detail.
+            
+            obj_f(dvs)     - objective function              : float
+            obj_df(dvs)    - objective function derivatives  : list
+            con_ceq(dvs)   - equality constraints            : list
+            con_dceq(dvs)  - equality constraint derivatives : list[list]
+            con_cieq(dvs)  - inequality constraints          : list
+            con_dcieq(dvs) - inequality constraint gradients : list[list]
+            
+            Fucntional Interface
+            The following methods take an objective function name for input.
+            func(func_name)                  - function of specified name
+            grad(func_name,method='ADJOINT') - gradient of specified name
+    """
+    
+    def __init__(self, config, state=None, folder='DESIGNS/DSN_*'):
+        """ Initializes an SU2 Design """
         
         if '*' in folder: folder = su2io.next_folder(folder)
         
@@ -39,11 +98,15 @@ class Design(object):
             pass
         
     def _eval(self,eval_func,*args):
+        """ Evaluates an SU2 Design """
         
         config = self.config
         state  = self.state
         files  = self.files
         folder = self.folder
+
+        # check folder
+        assert os.path.exists(folder) , 'cannot find design folder %s' % folder
         
         # list files to pull and link
         pull,link = state.pullnlink(config)
@@ -66,27 +129,35 @@ class Design(object):
         return vals
     
     def obj_f(self,dvs):
+        """ Evaluates SU2 Design Objectives """
         return self._eval(obj_f,dvs)
     
     def obj_df(self,dvs):
+        """ Evaluates SU2 Design Objective Gradients """
         return self._eval(obj_df,dvs)
 
     def con_ceq(self,dvs):
+        """ Evaluates SU2 Design Equality Constraints """
         return self._eval(con_ceq,dvs)
     
     def con_dceq(self,dvs):
+        """ Evaluates SU2 Design Equality Constraint Gradients """
         return self._eval(con_dceq,dvs)
     
     def con_cieq(self,dvs):
+        """ Evaluates SU2 Design Inequality Constraints """
         return self._eval(con_cieq,dvs)
     
     def con_dcieq(self,dvs):
+        """ Evaluates SU2 Design Inequality Constraint Gradients """
         return self._eval(con_dcieq,dvs) 
 
     def func(self,func_name):
+        """ Evaluates SU2 Design Functions by Name """
         return self._eval(su2func,func_name)
     
     def grad(self,func_name,method='ADJOINT'):
+        """ Evaluates SU2 Design Gradients by Name """
         return self._eval(su2grad,func_name,method)
     
     def __repr__(self):
@@ -95,13 +166,26 @@ class Design(object):
         output = self.__repr__()
         output += '\n%s' % self.state
         return output
-            
-            
-            
-            
-            
-	
+    
+#: class Design()
+
+
+# ----------------------------------------------------------------------
+#  Optimization Interface Functions
+# ----------------------------------------------------------------------
+        
 def obj_f(dvs,config,state=None):
+    """ val = SU2.eval.obj_f(dvs,config,state=None)
+    
+        Evaluates SU2 Objectives 
+        Wraps SU2.eval.func()
+        
+        Takes a design vector for input as a list (shape n) 
+        or numpy array (shape n or nx1 or 1xn), a config
+        and optionally a state.
+        
+        Outputs a float.
+    """
     
     # unpack config and state 
     config.unpack_dvs(dvs)
@@ -134,7 +218,20 @@ def obj_f(dvs,config,state=None):
     
     return vals_out
 
+#: def obj_f()
+
 def obj_df(dvs,config,state=None):
+    """ vals = SU2.eval.obj_df(dvs,config,state=None)
+    
+        Evaluates SU2 Objective Gradients
+        Wraps SU2.eval.grad()
+        
+        Takes a design vector for input as a list (shape n) 
+        or numpy array (shape n or nx1 or 1xn), a config
+        and optionally a state.
+        
+        Outputs a list of gradients.
+    """    
     
     # unpack config and state
     config.unpack_dvs(dvs)
@@ -173,7 +270,21 @@ def obj_df(dvs,config,state=None):
     
     return vals_out
 
+#: def obj_df()
+
 def con_ceq(dvs,config,state=None):
+    """ vals = SU2.eval.con_ceq(dvs,config,state=None)
+    
+        Evaluates SU2 Equality Constraints
+        Wraps SU2.eval.func()
+        
+        Takes a design vector for input as a list (shape n) 
+        or numpy array (shape n or nx1 or 1xn), a config
+        and optionally a state.
+        
+        Returns a list of constraint values, ordered 
+        by the OPT_CONSTRAINT config parameter.
+    """
     
     # unpack state and config
     config.unpack_dvs(dvs)
@@ -204,7 +315,21 @@ def con_ceq(dvs,config,state=None):
     
     return vals_out
 
+#: def obj_ceq()
+
 def con_dceq(dvs,config,state=None):
+    """ vals = SU2.eval.con_dceq(dvs,config,state=None)
+    
+        Evaluates SU2 Equality Constraint Gradients
+        Wraps SU2.eval.grad()
+        
+        Takes a design vector for input as a list (shape n) 
+        or numpy array (shape n or nx1 or 1xn), a config
+        and optionally a state.
+        
+        Returns a list of lists of constraint gradients,
+        ordered by the OPT_CONSTRAINT config parameter.
+    """
     
     # unpack state and config
     config.unpack_dvs(dvs)
@@ -241,7 +366,22 @@ def con_dceq(dvs,config,state=None):
     
     return vals_out
 
+#: def obj_dceq()
+
 def con_cieq(dvs,config,state=None):
+    """ vals = SU2.eval.con_cieq(dvs,config,state=None)
+    
+        Evaluates SU2 Inequality Constraints
+        Wraps SU2.eval.func()
+        Convention is con(x)<=0
+        
+        Takes a design vector for input as a list (shape n) 
+        or numpy array (shape n or nx1 or 1xn), a config
+        and optionally a state.
+        
+        Returns a list of constraint gradients, ordered 
+        by the OPT_CONSTRAINT config parameter.
+    """    
     
     # unpack state and config    
     config.unpack_dvs(dvs)
@@ -274,7 +414,22 @@ def con_cieq(dvs,config,state=None):
     
     return vals_out
 
+#: def obj_cieq()
+
 def con_dcieq(dvs,config,state=None):
+    """ vals = SU2.eval.con_dceq(dvs,config,state=None)
+    
+        Evaluates SU2 Inequality Constraint Gradients
+        Wraps SU2.eval.grad()
+        Convention is con(x)<=0
+        
+        Takes a design vector for input as a list (shape n) 
+        or numpy array (shape n or nx1 or 1xn), a config
+        and optionally a state.
+        
+        Returns a list of lists of constraint gradients,
+        ordered by the OPT_CONSTRAINT config parameter.
+    """    
     
     # unpack state and config
     config.unpack_dvs(dvs)
@@ -313,3 +468,4 @@ def con_dcieq(dvs,config,state=None):
     
     return vals_out
     
+#: def obj_dcieq()

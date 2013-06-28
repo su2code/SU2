@@ -23,6 +23,7 @@
 #
 # Created by: 		M. Colonno
 # Updated by: 		M. Colonno
+# Updated by:       T. Lukaczyk 4/4/2013
 #
 ##########################
 VPATH = @srcdir@
@@ -79,7 +80,7 @@ AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
 	distdir dist dist-all distcheck
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = Common/lib SU2Py SU2_CFD/obj SU2_DDC/obj SU2_GPC/obj \
+DIST_SUBDIRS = Common/lib SU2_PY SU2_CFD/obj SU2_DDC/obj SU2_GPC/obj \
 	SU2_MAC/obj SU2_MDC/obj SU2_PBC/obj SU2_SMC/obj SU2_SOL/obj
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 distdir = $(PACKAGE)-$(VERSION)
@@ -155,6 +156,7 @@ PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
 PACKAGE_NAME = @PACKAGE_NAME@
 PACKAGE_STRING = @PACKAGE_STRING@
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
+PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 RANLIB = @RANLIB@
@@ -209,7 +211,7 @@ top_srcdir = @top_srcdir@
 
 # AUTOMAKE_OPTIONS = subdir-objects
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
-SUBDIRS = Common/lib SU2Py $(am__append_1) $(am__append_2) \
+SUBDIRS = Common/lib SU2_PY $(am__append_1) $(am__append_2) \
 	$(am__append_3) $(am__append_4) $(am__append_5) \
 	$(am__append_6) $(am__append_7) $(am__append_8)
 all: all-recursive

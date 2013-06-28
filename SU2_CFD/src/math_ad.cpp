@@ -1,9 +1,8 @@
 /*!
  * \file math_ad.cpp
  * \brief Differentiated math routines
- * \author Current Development: Stanford University.
- *         Original Structure: CADES 1.0 (2009).
- * \version 2.0.
+ * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -58,7 +57,7 @@ double pow_d(double a, double ad, double b, double *c) {
     double cd;
 
     c[0] = pow(a, b);
-    cd = b*pow(a, (b-1.0));
+    cd = b*ad*pow(a, (b-1.0));
     return cd;
 }
 

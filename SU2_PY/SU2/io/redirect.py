@@ -1,4 +1,27 @@
-__all__ = ['output','folder']
+## \file redirect.py
+#  \brief python package for file redirection 
+#  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
+#  \version 2.0.3
+#
+# Stanford University Unstructured (SU2) Code
+# Copyright (C) 2012 Aerospace Design Laboratory
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# ----------------------------------------------------------------------
+#  Imports
+# ----------------------------------------------------------------------
 
 import os, sys, shutil, copy, glob
 from .tools import add_suffix, make_link, expand_part
@@ -8,8 +31,23 @@ from .tools import add_suffix, make_link, expand_part
 # -------------------------------------------------------------------
 # original source: http://stackoverflow.com/questions/6796492/python-temporarily-redirect-stdout-stderr
 class output(object):
-    ''' Temporarily redirects sys.stdout and sys.stderr when used in
+    ''' with SU2.io.redirect_output(stdout,stderr)
+    
+        Temporarily redirects sys.stdout and sys.stderr when used in
         a 'with' contextmanager
+        
+        Example:
+        with SU2.io.redirect_output('stdout.txt','stderr.txt'):
+            sys.stdout.write("standard out")
+            sys.stderr.write("stanrard error")
+            # code
+        #: with output redirection
+        
+        Inputs:
+            stdout - None, a filename, or a file stream
+            stderr - None, a filename, or a file stream
+        None will not redirect outptu
+        
     '''
     def __init__(self, stdout=None, stderr=None):
         
@@ -50,14 +88,53 @@ class output(object):
 #  Folder Redirection 
 # -------------------------------------------------------------------
 class folder(object):
-    ''' Temporarily redirects working folder 
-        accepts wild cards
-        will overwrite pushed files
+    ''' with SU2.io.redirect_folder(folder,pull,link,force) as push
+    
+        Temporarily redirects to a working folder, pulling 
+        and pushing needed files
+        
+        Example:
+        
+        folder = 'temp'                    
+        pull   = ['file1.txt','file2.txt'] 
+        link   = ['file3.big']             
+        force  = True                      
+        
+        # original path
+        import os
+        print os.getcwd()
+        
+        # enter folder
+        with SU2.io.redirect_folder(folder,pull,link,force) as push:
+            print os.getcwd()
+            # code
+            push.append('file4.txt')
+        #: with folder redirection
+        
+        # returned to original path
+        print os.getcwd()
+        
+        Inputs:
+            folder - working folder, relative or absolute
+            pull   - list of files to pull (copy to working folder)
+            link   - list of files to link (symbolic link in working folder)
+            force  - True/False overwrite existing files in working folder
+        
+        Targets:
+            push   - list of files to push (copy to originating path)
+        
+        Notes:
+            push must be appended or extended, not overwritten
+            links in Windows not supported, will simply copy
     '''
-    def __init__(self, folder, pull=[], link=[], force=True ):
+    
+    def __init__(self, folder, pull=None, link=None, force=True ):
         ''' folder redirection initialization
             see help( folder ) for more info
         '''
+        
+        if pull is None: pull = []
+        if link is None: link = []
         
         if not isinstance(pull,list) : pull = [pull]
         if not isinstance(link,list) : link = [link]
@@ -95,31 +172,26 @@ class folder(object):
         
         # copy pull files
         for name in pull:
+            old_name = os.path.abspath(name)
             new_name = os.path.split(name)[-1]
             new_name = os.path.join(folder,new_name)
-            name = os.path.abspath(name)
-            if name == new_name: continue
+            if old_name == new_name: continue
             if os.path.exists( new_name ): 
-                if force:
-                    os.remove( new_name )
-                    shutil.copy(name,new_name)
-            else:
-                shutil.copy(name,new_name)
+                if force: os.remove( new_name )
+                else: continue
+            shutil.copy(old_name,new_name)
 
         # make links
         for name in link:
+            old_name = os.path.abspath(name)
             new_name = os.path.split(name)[-1]
             new_name = os.path.join(folder,new_name)
-            name = os.path.abspath(name)
-            if name == new_name: continue
+            if old_name == new_name: continue
             if os.path.exists( new_name ): 
-                if force:
-                    os.remove( new_name )
-                    make_link(name,new_name)
-            else:
-                make_link(name,new_name)
+                if force: os.remove( new_name )
+                else: continue
+            make_link(old_name,new_name)
             
-                
         # change directory
         os.chdir(folder)
         
@@ -139,17 +211,28 @@ class folder(object):
         
         # move assets
         for name in push:
-            new_name = os.path.join(origin,name)
-            name = os.path.abspath(name)
-            if name == new_name: continue
-            if os.path.exists( new_name ): 
-                if force:
-                    os.remove( new_name )
-                    shutil.move(name,new_name)
-            else:
-                shutil.move(name,new_name)
             
-        
+            old_name = os.path.abspath(name)
+            name = os.path.split(name)[-1]
+            new_name = os.path.join(origin,name)
+            
+            # links
+            if os.path.islink(old_name):
+                source = os.path.realpath(old_name)
+                if source == new_name: continue
+                if os.path.exists( new_name ):
+                    if force: os.remove( new_name )
+                    else: continue
+                make_link(source,new_name)
+            
+            # moves
+            else:
+                if old_name == new_name: continue
+                if os.path.exists( new_name ):
+                    if force: os.remove( new_name )
+                    else: continue
+                shutil.move(old_name,new_name)
+            
         # change directory
         os.chdir(origin)
         

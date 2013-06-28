@@ -2,7 +2,7 @@
  * \file variable_adjoint.cpp
  * \brief Definition of the solution fields.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -195,6 +195,7 @@ CAdjNSVariable::CAdjNSVariable(double *val_solution, unsigned short val_ndim,
 CAdjNSVariable::CAdjNSVariable(double val_psirho, double *val_phi, double val_psie, 
 								   unsigned short val_ndim, unsigned short val_nvar, CConfig *config) : CAdjEulerVariable(val_psirho, val_phi, val_psie, val_ndim, val_nvar, config) {
 
+    kappapsi_Volume = 0.0;
 
 }
 
@@ -289,7 +290,7 @@ CAdjTurbVariable::CAdjTurbVariable(void) : CVariable() {}
 
 CAdjTurbVariable::~CAdjTurbVariable(void) {}
 
-CAdjTurbVariable::CAdjTurbVariable(double val_psinu_inf, unsigned short val_ndim, unsigned short val_nvar, unsigned short nNeigh, CConfig *config)
+CAdjTurbVariable::CAdjTurbVariable(double val_psinu_inf, unsigned short val_ndim, unsigned short val_nvar, CConfig *config)
 			: CVariable(val_ndim, val_nvar, config) {
 
 	// Initialization of variables
@@ -303,30 +304,37 @@ CAdjTurbVariable::CAdjTurbVariable(double val_psinu_inf, unsigned short val_ndim
 	if (config->GetKind_SlopeLimit() != NONE) Limiter = new double [nVar];
 
 	// Hybrid adjoint
+//	if (config->GetKind_Adjoint() == HYBRID) {
+//		unsigned short totalnVar;
+//		totalnVar = nDim + 2 + nVar;
+//	// Allocate
+//		dmuT_dUTvar = new double [totalnVar];
+//		dRTstar_dUTvar = new double* [nNeigh+1];
+//		for (unsigned short iNeigh = 0; iNeigh < (nNeigh+1); iNeigh++) {
+//			dRTstar_dUTvar[iNeigh] = new double [totalnVar];
+//		}
+//
+//		dFT_dUTvar = new double* [nNeigh+1]; // In theory only needed at boundaries
+//		for (unsigned short iNeigh = 0; iNeigh < (nNeigh+1); iNeigh++) {
+//			dFT_dUTvar[iNeigh] = new double [totalnVar];
+//		}
+//	// Initialise
+//		for (unsigned short iVar = 0; iVar < totalnVar; iVar++) {
+//			dmuT_dUTvar[iVar] = 0.0;
+//		}
+//		for (unsigned short iNeigh = 0; iNeigh < (nNeigh+1); iNeigh++) {
+//			for (unsigned short iVar = 0; iVar < totalnVar; iVar++) {
+//				dRTstar_dUTvar[iNeigh][iVar] = 0.0;
+//				dFT_dUTvar[iNeigh][iVar] = 0.0;
+//			}
+//		}
+//	}
 	if (config->GetKind_Adjoint() == HYBRID) {
-		unsigned short totalnVar;
-		totalnVar = nDim + 2 + nVar;
-	// Allocate
-		dmuT_dUTvar = new double [totalnVar];
-		dRTstar_dUTvar = new double* [nNeigh+1];
-		for (unsigned short iNeigh = 0; iNeigh < (nNeigh+1); iNeigh++) {
-			dRTstar_dUTvar[iNeigh] = new double [totalnVar];
-		}
-
-		dFT_dUTvar = new double* [nNeigh+1]; // In theory only needed at boundaries
-		for (unsigned short iNeigh = 0; iNeigh < (nNeigh+1); iNeigh++) {
-			dFT_dUTvar[iNeigh] = new double [totalnVar];
-		}
-	// Initialise
-		for (unsigned short iVar = 0; iVar < totalnVar; iVar++) {
-			dmuT_dUTvar[iVar] = 0.0;
-		}
-		for (unsigned short iNeigh = 0; iNeigh < (nNeigh+1); iNeigh++) {
-			for (unsigned short iVar = 0; iVar < totalnVar; iVar++) {
-				dRTstar_dUTvar[iNeigh][iVar] = 0.0;
-				dFT_dUTvar[iNeigh][iVar] = 0.0;
-			}
-		}
+		unsigned short nTotalVar;
+		nTotalVar = nDim + 2 + nVar;
+		EddyViscSens = new double[nTotalVar];
+        for (unsigned short iVar = 0; iVar < nTotalVar; iVar++)
+            EddyViscSens[iVar] = 0.0;
 	}
 
 }

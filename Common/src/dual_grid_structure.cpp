@@ -2,7 +2,7 @@
  * \file dual_grid_structure.cpp
  * \brief Main classes for defining the dual grid (points, vertex, and edges).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -36,6 +36,11 @@ CPoint::CPoint(unsigned short val_nDim, CConfig *config) : CDualGrid(val_nDim) {
 	Elem.clear(); nElem = 0;
 	Point.clear(); nPoint = 0;
 	Edge.clear();
+  
+  Volume = NULL;  vertex = NULL;
+	coord = NULL; Coord_old = NULL; Coord_sum = NULL;
+	Coord_n = NULL; Coord_n1 = NULL;  Coord_p1 = NULL;
+	gridvel = NULL; rotvel = NULL;
 
 	/*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
 	if (config->GetUnsteady_Simulation() == NO) { Volume = new double[1]; Volume[0] = 0.0; }
@@ -52,6 +57,7 @@ CPoint::CPoint(unsigned short val_nDim, CConfig *config) : CDualGrid(val_nDim) {
 	 condition), detect if an element belong to the domain or it must 
 	 be computed with other processor  ---*/
 	Boundary = false;
+	PhysicalBoundary = false;
 	Domain = true;
 
 	/*--- Set the color for mesh partitioning ---*/
@@ -89,6 +95,11 @@ CPoint::CPoint(double val_coord_0, double val_coord_1, unsigned long val_globali
 	Elem.clear(); nElem = 0;
 	Point.clear(); nPoint = 0;
 	Edge.clear();
+  
+  Volume = NULL;  vertex = NULL;
+	coord = NULL; Coord_old = NULL; Coord_sum = NULL;
+	Coord_n = NULL; Coord_n1 = NULL;  Coord_p1 = NULL;
+	gridvel = NULL; rotvel = NULL;
 
 	/*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
 	if (config->GetUnsteady_Simulation() == NO) { Volume = new double[1]; Volume[0] = 0.0; }
@@ -105,6 +116,7 @@ CPoint::CPoint(double val_coord_0, double val_coord_1, unsigned long val_globali
 	 condition), detect if an element belong to the domain or it must 
 	 be computed with other processor  ---*/
 	Boundary = false;
+  PhysicalBoundary = false;
 	Domain = true;
 	
 	/*--- Set the color for mesh partitioning ---*/
@@ -150,7 +162,12 @@ CPoint::CPoint(double val_coord_0, double val_coord_1, double val_coord_2, unsig
 	Elem.clear(); nElem = 0;
 	Point.clear(); nPoint = 0;
 	Edge.clear();
-
+  
+	Volume = NULL;  vertex = NULL;
+	coord = NULL; Coord_old = NULL; Coord_sum = NULL;
+	Coord_n = NULL; Coord_n1 = NULL;  Coord_p1 = NULL;
+	gridvel = NULL; rotvel = NULL;
+  
 	/*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
 	if (config->GetUnsteady_Simulation() == NO) { Volume = new double[1]; Volume[0] = 0.0; }
 	else { Volume = new double[3]; Volume[0] = 0.0; Volume[1] = 0.0; Volume[2] = 0.0; }
@@ -166,6 +183,7 @@ CPoint::CPoint(double val_coord_0, double val_coord_1, double val_coord_2, unsig
 	 condition), detect if an element belong to the domain or it must 
 	 be computed with other processor  ---*/
 	Boundary = false;
+  PhysicalBoundary = false;
 	Domain = true;
 	
 	/*--- Set the color for mesh partitioning ---*/
@@ -205,10 +223,23 @@ CPoint::CPoint(double val_coord_0, double val_coord_1, double val_coord_2, unsig
 }
 
 CPoint::~CPoint() {
-	delete [] coord;
+  
 	Elem.~vector();
 	Point.~vector();
 	Edge.~vector();
+  Children_CV.~vector();
+
+	if (Volume != NULL) delete[] Volume;
+	if (vertex != NULL) delete[] vertex;
+	if (coord != NULL) delete[] coord;
+	if (Coord_old != NULL) delete[] Coord_old;
+	if (Coord_sum != NULL) delete[] Coord_sum;
+	if (Coord_n != NULL) delete[] Coord_n;
+	if (Coord_n1 != NULL) delete[] Coord_n1;
+	if (Coord_p1 != NULL) delete[] Coord_p1;
+	if (gridvel != NULL) delete[] gridvel;
+	if (rotvel != NULL) delete[] rotvel;
+  
 }
 
 void CPoint::SetPoint(unsigned long val_point) {
@@ -247,6 +278,11 @@ void CPoint::SetBoundary(unsigned short val_nmarker) {
 CEdge::CEdge(unsigned long val_iPoint, unsigned long val_jPoint,unsigned short val_ndim) : CDualGrid(val_ndim) {
 	unsigned short iDim;
 	
+  /*--- Pointers initialization ---*/
+  Coord_CG = NULL;
+	Normal = NULL;
+	Nodes = NULL;
+  
 	/*--- Allocate center of gravity coordinates, nodes, and face normal ---*/
 	Coord_CG = new double[nDim];
 	Nodes = new unsigned long[2];
@@ -267,9 +303,11 @@ CEdge::CEdge(unsigned long val_iPoint, unsigned long val_jPoint,unsigned short v
 }
 
 CEdge::~CEdge() {
-	delete [] Coord_CG;
-	delete [] Normal;
-	delete [] Nodes;	
+  
+	if (Coord_CG != NULL) delete[] Coord_CG;
+	if (Normal != NULL) delete[] Normal;
+	if (Nodes != NULL) delete[] Nodes;
+  
 }
 
 void CEdge::SetCG(double **val_coord) {
@@ -410,6 +448,10 @@ void CEdge::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG,
 CVertex::CVertex(unsigned long val_point, unsigned short val_nDim) : CDualGrid(val_nDim) {
 	unsigned short iDim;
 	
+  /*--- Pointers initialization ---*/
+  Nodes = NULL;
+	Normal = NULL;
+  
 	/*--- Allocate node, and face normal ---*/
 	Nodes = new unsigned long[1]; 
 	Normal = new double [nDim];
@@ -430,8 +472,10 @@ CVertex::CVertex(unsigned long val_point, unsigned short val_nDim) : CDualGrid(v
 }
 
 CVertex::~CVertex() {
-	delete [] Normal;
-	delete [] Nodes;	
+  
+	if (Normal != NULL) delete[] Normal;
+	if (Nodes != NULL) delete[] Nodes;
+  
 }
 
 void CVertex::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG, CConfig *config) {

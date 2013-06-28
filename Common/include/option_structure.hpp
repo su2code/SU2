@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Many of the classes in this file are templated, and therefore must
  * be declared and defined here; to keep all elements together, there
@@ -108,6 +108,7 @@ const unsigned int MAX_NEIGHBORS = 150;		/*!< \brief Maximum number of neighbors
 const unsigned int MAX_SOLS = 6;		/*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 6;		/*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 30; /*!< \brief Maximum number of zones. */
+const unsigned int MAX_OUTPUT_VARS = 20; /*!< \brief Maximum number of output vars for each solution container. */
 const unsigned int NO_RK_ITER = 0;		/*!< \brief No Runge-Kutta iteration. */
 const unsigned int MESH_0 = 0;			/*!< \brief Definition of the finest grid level. */
 const unsigned int MESH_1 = 1;			/*!< \brief Definition of the finest grid level. */
@@ -782,14 +783,43 @@ enum ENUM_OUTPUT {
 	TECPLOT = 2,  		/*!< \brief Tecplot format for the solution output. */
 	EXCEL = 3,			/*!< \brief Excel format for the solution output. */
 	CSV = 4,			/*!< \brief Comma-separated values format for the solution output. */
-	STL = 5				/*!< \brief STL CAD format for the solution output. */
+	STL = 5,				/*!< \brief STL CAD format for the solution output. */
+  TECPLOT_BINARY = 6,  		/*!< \brief Tecplot binary format for the solution output. */
+	CGNS_SOL = 7  		/*!< \brief CGNS format for the solution output. */
 };
 static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPUT>
 ("PARAVIEW", PARAVIEW)
 ("TECPLOT", TECPLOT)
 ("EXCEL", EXCEL)
 ("CSV", CSV)
-("STL", STL);
+("STL", STL)
+("TECPLOT_BINARY", TECPLOT_BINARY)
+("CGNS", CGNS_SOL);
+
+/*!
+ * \brief type of solution output variables
+ */
+enum ENUM_OUTPUT_VARS {
+  DENSITY = 1,      /*!< \brief Density. */
+  VEL_X = 2,        /*!< \brief X-component of velocity. */
+  VEL_Y = 3,        /*!< \brief Y-component of velocity. */
+  VEL_Z = 4,        /*!< \brief Z-component of velocity. */
+	PRESSURE = 5, 		/*!< \brief Static pressure. */
+	MACH = 6,         /*!< \brief Mach number. */
+  TEMPERATURE = 7,  /*!< \brief Temperature. */
+  LAM_VISC = 8,     /*!< \brief Laminar viscosity. */
+  EDDY_VISC = 9     /*!< \brief Eddy viscosity. */
+};
+static const map<string, ENUM_OUTPUT_VARS> Output_Vars_Map = CCreateMap<string, ENUM_OUTPUT_VARS>
+("DENSITY", DENSITY)
+("VEL_X", VEL_X)
+("VEL_Y", VEL_Y)
+("VEL_Z", VEL_Z)
+("PRESSURE", PRESSURE)
+("MACH", MACH)
+("TEMPERATURE", TEMPERATURE)
+("LAM_VISC", LAM_VISC)
+("EDDY_VISC", EDDY_VISC);
 
 /*!
  * \brief types of design parameterizations
@@ -812,7 +842,8 @@ enum ENUM_PARAM {
 	FFD_VOLUME = 16,		/*!< \brief Free form deformation for 3D design (volume change). */
 	PARABOLIC = 17,		/*!< \brief Parabolic airfoil definition as design variables. */
 	OBSTACLE = 18,		        /*!< \brief Obstacle for free surface optimization. */
-	STRETCH = 19		        /*!< \brief Stretch one side of a channel. */
+	STRETCH = 19,		        /*!< \brief Stretch one side of a channel. */
+  SURFACE_FILE = 20		        /*!< Nodal coordinates set using a surface file. */
 };
 static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("NO_DEFORMATION", NO_DEFORMATION)
@@ -832,7 +863,8 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_VOLUME", FFD_VOLUME)
 ("PARABOLIC", PARABOLIC)
 ("OBSTACLE", OBSTACLE)
-("STRETCH", STRETCH);
+("STRETCH", STRETCH)
+("SURFACE_FILE", SURFACE_FILE);
 
 /*!
  * \brief types of solvers for solving linear systems
@@ -2236,6 +2268,7 @@ public:
 			case FFD_CAMBER: nParamDV = 3; break;
 			case FFD_THICKNESS: nParamDV = 3; break;
 			case FFD_VOLUME: nParamDV = 3; break;
+      case SURFACE_FILE: nParamDV = 0; break;
 			default : {
 				cerr << "Error in CDVParamOptionRef::SetValue(): "
 						<< "undefined design variable type found in configuration file." << endl; break;

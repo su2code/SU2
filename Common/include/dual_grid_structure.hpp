@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for doing the complete dual grid structure.
  *        The subroutines and functions are in the <i>dual_grid_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -37,7 +37,7 @@ using namespace std;
  * \brief Class for controlling the dual volume definition. The dual volume is compose by 
  *        three main elements: points, edges, and vertices.
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CDualGrid{
 protected:
@@ -122,7 +122,7 @@ public:
  * \class CPoint
  * \brief Class for point definition (including control volume definition).
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CPoint : public CDualGrid {
 private:
@@ -133,7 +133,8 @@ private:
 	vector<long> Edge;		/*!< \brief Edges that set up a control volume. */
 	double *Volume;	/*!< \brief Volume or Area of the control volume in 3D and 2D. */
 	bool Domain,		/*!< \brief Indicates if a point must be computed or belong to another boundary */
-	Boundary;			/*!< \brief To see if a point belong to the boundary. */
+	Boundary,       /*!< \brief To see if a point belong to the boundary (including MPI). */
+  PhysicalBoundary;			/*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
 	long *vertex; /*!< \brief Index of the vertex that correspond which the control volume (we need one for each marker in the same node). */
 	double *coord,	/*!< \brief vector with the coordinates of the node. */
 	*Coord_old,		/*!< \brief Old coordinates vector for geometry smoothing. */
@@ -351,6 +352,18 @@ public:
 	 * \return <code>TRUE</code> if the point belong to the boundary; otherwise <code>FALSE</code>.
 	 */		
 	bool GetBoundary(void);
+  
+  /*!
+	 * \brief Set if a point belong to the boundary.
+	 * \param[in] val_boundary - <code>TRUE</code> if the point belong to the physical boundary; otherwise <code>FALSE</code>.
+	 */
+	void SetPhysicalBoundary(bool val_boundary);
+  
+  /*!
+	 * \brief Provides information about if a point belong to the physical boundaries (without MPI).
+	 * \return <code>TRUE</code> if the point belong to the boundary; otherwise <code>FALSE</code>.
+	 */
+	bool GetPhysicalBoundary(void);
 	
 	/*! 
 	 * \brief Set a color to the point that comes from the grid partitioning.
@@ -625,9 +638,9 @@ public:
 
 /*! 
  * \class CEdge
- * \brief Class for defining an edge (core of an edge based code).
+ * \brief Class for defining an edge.
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CEdge : public CDualGrid {
 private:
@@ -775,7 +788,7 @@ public:
  * \class CVertex
  * \brief Class for vertex definition (equivalent to edges, but for the boundaries).
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CVertex : public CDualGrid {
 private:
@@ -789,7 +802,7 @@ private:
   short Matching_Zone;			/*!< \brief Donor zone associated with the vertex (MPI and sliding) */
   double Rot_Flux;     /*!< \brief The exactly integrated rotational volume flux. */
   bool Sharp_Corner;     /*!< \brief Flag to mark vertices at sharp corners of the surfaces. */
-	unsigned long Closest_Neighbor; /*!< \brief Index of the closest neighbor. */
+	unsigned long Normal_Neighbor; /*!< \brief Index of the closest neighbor. */
   unsigned long Donor_Elem;   /*!< \brief Store the donor element for interpolation across zones/ */
   double Basis_Function[3]; /*!< \brief Basis function values for interpolation across zones. */
   
@@ -1016,15 +1029,15 @@ public:
 	
 	/*! 
 	 * \brief Set the index of the closest neighbor to a point on the boundaries.
-	 * \param[in] val_closest_neighbor - Index of the closest neighbor.
+	 * \param[in] val_Normal_Neighbor - Index of the closest neighbor.
 	 */
-	void SetClosest_Neighbor(unsigned long val_closest_neighbor);
+	void SetNormal_Neighbor(unsigned long val_Normal_Neighbor);
 	
 	/*! 
 	 * \brief Get the value of the closest neighbor.
 	 * \return Index of the closest neighbor.
 	 */
-	unsigned long GetClosest_Neighbor(void);
+	unsigned long GetNormal_Neighbor(void);
 	
 };
 

@@ -1,4 +1,27 @@
-__all__ = ['State']
+## \file state.py
+#  \brief python package for state 
+#  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
+#  \version 2.0.3
+#
+# Stanford University Unstructured (SU2) Code
+# Copyright (C) 2012 Aerospace Design Laboratory
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# ----------------------------------------------------------------------
+#  Imports
+# ----------------------------------------------------------------------
 
 import os, sys, shutil, copy
 from ..io   import expand_part, get_adjointSuffix, add_suffix, \
@@ -7,10 +30,60 @@ from ..util import bunch
 from ..util import ordered_bunch
 
 
+# ----------------------------------------------------------------------
+#  State Class
+# ----------------------------------------------------------------------
+
 class State(ordered_bunch):
+    """ state = SU2.io.State()
+        
+        Starts a state class, an extension of ordered_bunch().
+        Stores data generated while traversing SU2 tool path
+        
+        Parameters:
+            FUNCTIONS - ordered bunch of objective function values
+            GRADIENTS - ordered bunch of gradient value lists
+            VARIABLES - ordered bunch of variables
+            FILES     - ordered bunch of file types
+            HISTORY   - ordered bunch of history information
+            
+        Parameters can be accessed by item or attribute
+        ie: state['FUNCTIONS'] or state.FUNCTIONS
+        
+        Methods:
+            update()        - updates self with another state
+            pullnlink()     - returns files to pull and link
+            design_vector() - vectorizes design variables
+            find_files()    - finds existing mesh and solutions
+        
+        Example of a filled state:
+        FUNCTIONS:
+            LIFT: 0.2353065809
+            DRAG: 0.042149736
+            SIDEFORCE: 0.0
+            MOMENT_X: 0.0
+            MOMENT_Y: 0.0
+            MOMENT_Z: 0.046370243
+            FORCE_X: 0.0370065195
+            FORCE_Y: 0.2361700759
+            FORCE_Z: 0.0
+            EFFICIENCY: 5.5826347517
+        GRADIENTS:
+            DRAG: [0.133697, 0.41473, 0.698497, (...)
+        VARIABLES:
+            DV_VALUE_NEW: [0.002, 0.002, 0.002, (...)
+        FILES:
+            MESH: mesh.su2
+            DIRECT: solution_flow.dat
+            ADJOINT_DRAG: solution_adj_cd.dat
+        HISTORY:
+            DIRECT: {ITERATION=[1.0, 2.0, 3.0, (...)
+            ADJOINT_DRAG: {ITERATION=[1.0, 2.0, 3.0, (...)
+
+    """   
     
     def __init__(self,*args,**kwarg):
-        
+        """ Initializes a State """
         super(State,self).__init__(*args,**kwarg)
         
         if not args and not kwarg:
@@ -19,6 +92,9 @@ class State(ordered_bunch):
                     self[key] = ordered_bunch()
     
     def update(self,ztate):
+        """ Updates self given another state
+        """
+        if not ztate: return
         assert isinstance(ztate,State) , 'must update with another State-type'
         for key in self.keys():
             if isinstance(ztate[key],dict):
@@ -41,6 +117,10 @@ class State(ordered_bunch):
         return output
     
     def pullnlink(self,config):
+        """ pull,link = SU2.io.State.pullnlink(config)
+            returns lists pull and link of files for folder
+            redirection, based on a given config
+        """
         
         pull = []; link = []
         
@@ -49,11 +129,14 @@ class State(ordered_bunch):
             
             # link big files
             if key == 'MESH':
-                value = expand_part(value,config)
+                # mesh (merged and partitions)
+                value = [value] + expand_part(value,config)
                 link.extend(value)
             elif key == 'DIRECT':
+                # direct solution
                 link.append(value)
             elif 'ADJOINT_' in key:
+                # adjoint solution
                 link.append(value)
             
             # copy all other files
@@ -78,9 +161,11 @@ class State(ordered_bunch):
         return vector
     
     def find_files(self,config):
-        """ State.find_files(config)
-            finds mesh and solution files for a given config
-            files already logged in state are not overridden
+        """ SU2.io.State.find_files(config)
+            finds mesh and solution files for a given config.
+            updates state.FILES with filenames.
+            files already logged in state are not overridden.
+            will ignore solutions if config.RESTART_SOL == 'NO'.
         """
         
         files = self.FILES
@@ -124,11 +209,14 @@ class State(ordered_bunch):
         
         return
     
-            
-            
-    
+#: def State
 
 def default_state(state):
-    if not state: state = State()
+    """ checks if input is already a state,
+        returns new state if empty
+        must provide a state or an empty object
+    """
+    if not state: 
+        state = State()
     assert isinstance(state,State) , 'not a state instance'
     return state

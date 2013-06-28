@@ -2,7 +2,7 @@
  * \file solution_adjoint_plasma.cpp
  * \brief Main subrotuines for solving adjoint problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -44,11 +44,13 @@ CAdjPlasmaSolution::CAdjPlasmaSolution(CGeometry *geometry, CConfig *config) : C
 	node = new CVariable*[geometry->GetnPoint()];
 
 	/*--- Define some auxiliary vectors related to the residual ---*/
-	Residual = new double[nVar];	  Residual_Max = new double[nVar];
+	Residual = new double[nVar];	  Residual_RMS = new double[nVar];
 	Residual_i = new double[nVar];	Residual_j = new double[nVar];
 	Res_Conv_i = new double[nVar];	Res_Visc_i = new double[nVar];
 	Res_Conv_j = new double[nVar];	Res_Visc_j = new double[nVar];
 	Res_Sour_i = new double[nVar];	Res_Sour_j = new double[nVar];
+  Residual_Max = new double[nVar]; Point_Max = new unsigned long[nVar];
+
 	Residual_Chemistry = new double[nVar]; Residual_MomentumExch = new double[nVar];
 	Residual_ElecForce = new double[nVar]; Residual_EnergyExch = new double[nVar];
 	Res_Conv = new double[nVar];	Res_Visc = new double[nVar];	Res_Sour = new double[nVar];
@@ -283,7 +285,7 @@ CAdjPlasmaSolution::~CAdjPlasmaSolution(void) {
 	delete [] node; */
 }
 
-void CAdjPlasmaSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iRKStep) {
+void CAdjPlasmaSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 	unsigned long iPoint;
 	
 	bool implicit = (config->GetKind_TimeIntScheme_Plasma() == EULER_IMPLICIT);  
@@ -650,8 +652,10 @@ void CAdjPlasmaSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution 
 	double Delta, Delta_flow, Res, *local_ResConv, *local_ResVisc, *local_ResSour, *local_Res_TruncError, Vol;
 	
 	/*--- Set maximum residual to zero ---*/
-	for (iVar = 0; iVar < nVar; iVar++)
-		SetRes_Max(iVar, 0.0);
+	for (iVar = 0; iVar < nVar; iVar++) {
+		SetRes_RMS(iVar, 0.0);
+    SetRes_Max(iVar, 0.0, 0);
+  }
 	
 	/*--- Build implicit system ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
@@ -671,10 +675,20 @@ void CAdjPlasmaSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution 
 				/*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 				Res = local_ResConv[iVar]+local_ResVisc[iVar]+local_ResSour[iVar];
 				rhs[total_index] = -(Res+local_Res_TruncError[iVar]);
-				AddRes_Max( iVar, Res*Res*Vol );
+				AddRes_RMS(iVar, Res*Res);
+        AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex());
 			}
 		}
-	
+  
+  /*--- Initialize residual and solution at the ghost points ---*/
+  for (iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      total_index = iPoint*nVar + iVar;
+      rhs[total_index] = 0.0;
+      xsol[total_index] = 0.0;
+    }
+  }
+  
 	/*--- Solve the linear system (Stationary iterative methods) ---*/
 	if (config->GetKind_Linear_Solver() == SYM_GAUSS_SEIDEL) 
 		Jacobian.SGSSolution(rhs, xsol, config->GetLinear_Solver_Error(), 
@@ -726,11 +740,11 @@ void CAdjPlasmaSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution 
 		for (iVar = 0; iVar < nVar; iVar++)
 				node[iPoint]->AddSolution(iVar, xsol[iPoint*nVar+iVar]);
 	
-#ifdef NO_MPI
-	/*--- Compute the norm-2 of the residual ---*/
-	for (iVar = 0; iVar < nVar; iVar++)
-		SetRes_Max(iVar, sqrt(GetRes_Max(iVar)));
-#endif
+  /*--- MPI solution ---*/
+  SetSolution_MPI(geometry, config);
+  
+  /*--- Compute the root mean square residual ---*/
+  SetResidual_RMS(geometry, config);
 	
 }
 

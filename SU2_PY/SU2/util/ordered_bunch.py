@@ -26,7 +26,14 @@
     https://pypi.python.org/pypi/bunch
 """
 
-from collections import OrderedDict
+from ordered_dict import OrderedDict
+
+## Compatability Issues...
+#try:
+#    from collections import OrderedDict
+#except ImportError:
+#    from ordered_dict import OrderedDict
+
 
 class OrderedBunch(OrderedDict):
     """ A dictionary that provides attribute-style access.

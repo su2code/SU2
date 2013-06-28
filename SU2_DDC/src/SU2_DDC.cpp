@@ -2,7 +2,7 @@
  * \file SU2_DDC.cpp
  * \brief Main file of Domain Decomposition Code (SU2_DDC).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -79,6 +79,7 @@ int main(int argc, char *argv[]) {
 
 		for (iDomain = 0; iDomain < config->GetnDomain(); iDomain++) {
 			
+      /*--- Allocate the memory of the current domain ---*/
 			CDomainGeometry *domain = new CDomainGeometry(geometry, config, iDomain);
       
 			domain->SetSendReceive(config, iDomain);
@@ -108,6 +109,9 @@ int main(int argc, char *argv[]) {
 			/*--- Write the FFD information (3D problems)---*/
 			if (geometry->GetnDim() == 3)
 				surface_mov->WriteFFDInfo(geometry, domain, config, chunk, cstr_su2);
+      
+      /*--- Free the memory of the current domain ---*/
+      delete domain;
       			
 		}		
 	}

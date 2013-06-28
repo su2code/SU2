@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -45,7 +45,7 @@ using namespace std;
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CConfig {
 private:
@@ -56,9 +56,6 @@ private:
 	*Omega,						/*!< \brief Angular velocity vector for rotational frame problem. */
 	Omega_Mag,						/*!< \brief Angular velocity magnitude for rotational frame problem. */
 	Rot_Radius;						/*!< \brief Reference length (e.g. rotor radius) for computing force coefficients in a rotating frame. */
-	double *Aeroelastic_np1; /*!< \brief Structural source terms used for Aeroelastic computation at time level n+1. */
-	double *Aeroelastic_n; /*!< \brief Structural source terms used for Aeroelastic computation at time level n. */
-	double *Aeroelastic_n1; /*!< \brief Structural Source terms used for Aeroelastic computation at time level n-1. */
 	double MinLogResidual; /*!< \brief Minimum value of the log residual. */
 	double* EA_IntLimit; /*!< \brief Integration limits of the Equivalent Area computation */
 	double* Hold_GridFixed_Coord; /*!< \brief Coordinates of the box to hold fixed the nbumerical grid */
@@ -113,7 +110,6 @@ private:
 	RatioViscosity,				/*!< \brief Ratio of viscosity for a free surface problem. */
 	FreeSurface_Thickness,  /*!< \brief Thickness of the interfase for a free surface problem. */
 	FreeSurface_Outlet,  /*!< \brief Outlet of the interfase for a free surface problem. */
-	FreeSurface_Inlet,  /*!< \brief Inlet of the interfase for a free surface problem. */
 	FreeSurface_Damping_Coeff,  /*!< \brief Damping coefficient of the free surface for a free surface problem. */
 	FreeSurface_Damping_Length;  /*!< \brief Damping length of the free surface for a free surface problem. */
 	unsigned short Kind_Adaptation;	/*!< \brief Kind of numerical grid adaptation. */
@@ -219,6 +215,7 @@ private:
 	*SlideDonor_Zone;    /*!< \brief Zone number for donors to sliding mesh markers. */
 	unsigned long nExtIter;			/*!< \brief Number of external iterations. */
 	unsigned long ExtIter;			/*!< \brief Current external iteration number. */
+	unsigned long IntIter;			/*!< \brief Current internal iteration number. */
 	unsigned long Unst_nIntIter;			/*!< \brief Number of internal iterations (Dual time Method). */
 	unsigned short nRKStep;			/*!< \brief Number of steps of the explicit Runge-Kutta method. */
 	double *RK_Alpha_Step,	/*!< \brief Runge-Kutta alfa coefficients. */
@@ -238,7 +235,6 @@ private:
 	unsigned short nDV;		/*!< \brief Number of design variables. */
 	unsigned short nParamDV;		/*!< \brief Number of parameters of the design variable. */
 	double **ParamDV;				/*!< \brief Parameters of the design variable. */
-	double PrimGrad_Threshold;		/*!< \brief Primitive variables gradient threshold for the adjoint problem. */
 	unsigned short GeometryMode;			/*!< \brief Gemoetry mode (analysis or gradient computation). */
 	unsigned short MGCycle;			/*!< \brief Kind of multigrid cycle. */
 	unsigned short FinestMesh;		/*!< \brief Finest mesh for the full multigrid approach. */
@@ -388,12 +384,11 @@ private:
 	Cauchy_Eps_FullMG;	/*!< \brief Epsilon used for the full multigrid method convergence. */
 	unsigned long Wrt_Sol_Freq,	/*!< \brief Writing solution frequency. */
 	Wrt_Con_Freq,				/*!< \brief Writing convergence history frequency. */
-	Wrt_Lin_Con_Freq;				/*!< \brief Writing linear solver convergence history frequency. */
+	Wrt_Con_Freq_DualTime;				/*!< \brief Writing convergence history frequency. */
 	bool Wrt_Unsteady;  /*!< \brief Write unsteady data adding header and prefix. */
 	bool Restart,	/*!< \brief Restart solution (for direct, adjoint, and linearized problems). */
 	Restart_Euler2Plasma, /*!< \brief Restart plasma solution from an euler solution. */
 	Restart_Flow;	/*!< \brief Restart flow solution for adjoint and linearized problems. */
-	bool Block_Diagonal_Jacobian; /*!< \brief Block Diagonal Jacobian of multi species flow solution. */
 	unsigned short nMarker_Monitoring,	/*!< \brief Number of markers to monitor. */
 	nMarker_Plotting,					/*!< \brief Number of markers to plot. */
 	nMarker_Moving;						/*!< \brief Number of markers to move. */
@@ -457,6 +452,8 @@ private:
 	Wrt_Srf_Sol,                /*!< \brief Write a surface solution file */
 	Wrt_Restart,                /*!< \brief Write a restart solution file */
 	Wrt_Csv_Sol;                /*!< \brief Write a surface comma-separated values solution file */
+  unsigned short nOutput_Vars_Vol, /*!< \brief No. of output variables specified for the volume solution file. */
+  *Output_Vars_Vol;                  /*!< \brief List of output variables specified for the volume solution file. */
 	double *ArrheniusCoefficient,					/*!< \brief Arrhenius reaction coefficient */
 	*ArrheniusEta,								/*!< \brief Arrhenius reaction temperature exponent */
 	*ArrheniusTheta,							/*!< \brief Arrhenius reaction characteristic temperature */
@@ -545,9 +542,13 @@ private:
 	double Cyclic_Pitch,          /*!< \brief Cyclic pitch for rotorcraft simulations. */
 	Collective_Pitch;             /*!< \brief Collective pitch for rotorcraft simulations. */
 	string Motion_Filename;				/*!< \brief Arbitrary mesh motion input base filename. */
+  double *Motion_Ramp;			/*!< \brief Information about the mesh motion ramp. */
 	double *Motion_Origin_X,    /*!< \brief X-coordinate of the mesh motion origin. */
 	*Motion_Origin_Y,           /*!< \brief Y-coordinate of the mesh motion origin. */
 	*Motion_Origin_Z,           /*!< \brief Z-coordinate of the mesh motion origin. */
+  *Translation_Rate_X,           /*!< \brief Translational velocity of the mesh in the x-direction. */
+	*Translation_Rate_Y,           /*!< \brief Translational velocity of the mesh in the y-direction. */
+	*Translation_Rate_Z,           /*!< \brief Translational velocity of the mesh in the z-direction. */
 	*Rotation_Rate_X,           /*!< \brief Angular velocity of the mesh about the x-axis. */
 	*Rotation_Rate_Y,           /*!< \brief Angular velocity of the mesh about the y-axis. */
 	*Rotation_Rate_Z,           /*!< \brief Angular velocity of the mesh about the z-axis. */
@@ -569,6 +570,12 @@ private:
 	bool Relative_Motion;       /*!< \brief Flag for relative motion between zones (search & interpolate required). */
     double FreqPlungeAeroelastic; /*!< \brief Plunging natural frequency for Aeroelastic. */
     double FreqPitchAeroelastic; /*!< \brief Pitch natural frequency for Aeroelastic. */
+    double *Aeroelastic_np1; /*!< \brief Structural source terms used for Aeroelastic computation at time level n+1. */
+	double *Aeroelastic_n; /*!< \brief Structural source terms used for Aeroelastic computation at time level n. */
+	double *Aeroelastic_n1; /*!< \brief Structural Source terms used for Aeroelastic computation at time level n-1. */
+    double Aeroelastic_plunge; /*!< \brief Value of plunging coordinate at the end of an external iteration. */
+    double Aeroelastic_pitch; /*!< \brief Value of pitching coordinate at the end of an external iteration. */
+
 
 	map<string, CAnyOptionRef*> param; /*!< \brief associates option names (strings) with options */
 
@@ -967,12 +974,6 @@ public:
 	double GetFreeSurface_Damping_Length(void);
 
 	/*!
-	 * \brief Get the inlet position of the free surface for a free surface problem.
-	 * \return Inlet position of the interfase for a free surface problem.
-	 */
-	double GetFreeSurface_Inlet(void);
-
-	/*!
 	 * \brief Get the outlet position of the free surface for a free surface problem.
 	 * \return Outlet position of the interfase for a free surface problem.
 	 */
@@ -1258,12 +1259,6 @@ public:
 	 * \return Conversion factor for converting the grid to meters.
 	 */
 	double GetConversion_Factor(void);
-
-	/*! 
-	 * \brief Get the value of the Primitive variables gradient threshold (just for the adjoint problem).
-	 * \return Value of the Primitive variables gradient threshold.
-	 */
-	double GetPrimGrad_Threshold(void);
 
 	/*! 
 	 * \brief Get the start up iterations using the fine grid, this works only for multigrid problems.
@@ -1560,12 +1555,24 @@ public:
 	 * \param[in] val_iter - Current external iteration number.
 	 */
 	void SetExtIter(unsigned long val_iter);
+  
+  /*!
+	 * \brief Set the current internal iteration number.
+	 * \param[in] val_iter - Current external iteration number.
+	 */
+	void SetIntIter(unsigned long val_iter);
 
 	/*!
-	 * \brief Get the current external iteration number.
+	 * \brief Get the current internal iteration number.
 	 * \return Current external iteration.
 	 */
 	unsigned long GetExtIter(void);
+  
+  /*!
+	 * \brief Get the current external iteration number.
+	 * \return Current external iteration.
+	 */
+	unsigned long GetIntIter(void);
 
 	/*! 
 	 * \brief Get the frequency for writing the solution file.
@@ -1578,12 +1585,12 @@ public:
 	 * \return It writes the convergence file with this frequency.
 	 */		
 	unsigned long GetWrt_Con_Freq(void);
-
-	/*!
-	 * \brief Get the frequency for writing the linear solver convergence file.
-	 * \return It writes the linear solver convergence file with this frequency.
+  
+  /*!
+	 * \brief Get the frequency for writing the convergence file in Dual Time.
+	 * \return It writes the convergence file with this frequency.
 	 */
-	unsigned long GetWrt_Lin_Con_Freq(void);
+	unsigned long GetWrt_Con_Freq_DualTime(void);
 
 	/*!
 	 * \brief Get information about writing headers and prefix on the unsteady data.
@@ -1633,6 +1640,19 @@ public:
 	 */
 	bool GetWrt_Sol_Tec_Binary(void);
 
+  /*!
+	 * \brief Get the number of volume output variables.
+	 * \return Number of volume output variables.
+	 */
+	unsigned short GetnOutput_Vars_Vol(void);
+  
+  /*!
+	 * \brief Get the volume output variable.
+   * \param[in] val_index - Index of the output variable.
+	 * \return Type of volume output variable.
+	 */
+	unsigned short GetOutput_Vars_Vol(unsigned short val_index);
+  
 	/*!
 	 * \brief Get the alpha (convective) coefficients for the Runge-Kutta integration scheme.
 	 * \param[in] val_step - Index of the step.
@@ -3274,6 +3294,11 @@ public:
 	 */
 	void SetKind_GridMovement(unsigned short val_iZone, unsigned short motion_Type);
 
+  /*!
+	 * \brief Get the mesh motion ramp information.
+	 * \param[in] val_iter - Current solver iteration.
+	 */
+	double GetMotion_Ramp(unsigned long val_iter);
     
 	/*!
 	 * \brief Get x-coordinate of the mesh motion origin.
@@ -3317,6 +3342,27 @@ public:
 	 */
 	void SetMotion_Origin_Z(unsigned short val_iZone, double val_origin);
 
+  /*!
+	 * \brief Get the translational velocity of the mesh in the x-direction.
+	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+	 * \return Translational velocity of the mesh in the x-direction.
+	 */
+	double GetTranslation_Rate_X(unsigned short val_iZone);
+  
+  /*!
+	 * \brief Get the translational velocity of the mesh in the y-direction.
+	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+	 * \return Translational velocity of the mesh in the y-direction.
+	 */
+	double GetTranslation_Rate_Y(unsigned short val_iZone);
+  
+  /*!
+	 * \brief Get the translational velocity of the mesh in the z-direction.
+	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+	 * \return Translational velocity of the mesh in the z-direction.
+	 */
+	double GetTranslation_Rate_Z(unsigned short val_iZone);
+  
 	/*!
 	 * \brief Get the angular velocity of the mesh about the x-axis.
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
@@ -4082,6 +4128,26 @@ public:
 	 * \brief Uncoupled Aeroelastic Frequency Pitch.
 	 */
 	double GetAeroelastic_Frequency_Pitch(void);
+    
+    /*!
+	 * \brief Value of plunging coordinate at the end of an external iteration.
+	 */
+    double GetAeroelastic_plunge(void);
+    
+    /*!
+	 * \brief Value of pitching coordinate at the end of an external iteration.
+	 */
+    double GetAeroelastic_pitch(void);
+    
+    /*!
+	 * \brief Value of plunging coordinate at the end of an external iteration.
+	 */
+    void SetAeroelastic_plunge(double val);
+    
+    /*!
+	 * \brief Value of pitching coordinate at the end of an external iteration.
+	 */
+    void SetAeroelastic_pitch(double val);
     
 };
 

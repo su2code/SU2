@@ -2,7 +2,7 @@
  * \file solution_direct_turbulent.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -48,9 +48,11 @@ CTransLMSolution::CTransLMSolution(CGeometry *geometry, CConfig *config, unsigne
 	if (iMesh == MESH_0) {
 		
 		/*--- Define some auxiliar vector related with the residual ---*/
-		Residual = new double[nVar]; Residual_Max = new double[nVar];
+		Residual = new double[nVar]; Residual_RMS = new double[nVar];
 		Residual_i = new double[nVar]; Residual_j = new double[nVar];
-		
+    Residual_Max = new double[nVar]; Point_Max = new unsigned long[nVar];
+    
+
 		/*--- Define some auxiliar vector related with the solution ---*/
 		Solution   = new double[nVar];
 		Solution_i = new double[nVar]; Solution_j = new double[nVar];
@@ -188,7 +190,7 @@ CTransLMSolution::~CTransLMSolution(void){
 	delete [] cvector;
 }
 
-void CTransLMSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iRKStep) {
+void CTransLMSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 	unsigned long iPoint;
 
 //  cout << "Preprocessing LM -AA\n";
@@ -196,7 +198,7 @@ void CTransLMSolution::Preprocessing(CGeometry *geometry, CSolution **solution_c
 		node[iPoint]->SetResidualZero();
   Jacobian.SetValZero();
 
-	if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry);
+	if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
 	if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
 }
 
@@ -214,8 +216,10 @@ void CTransLMSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **
 
 
   /*--- Set maximum residual to zero ---*/
-	for (iVar = 0; iVar < nVar; iVar++)
-		SetRes_Max(iVar,0.0);
+	for (iVar = 0; iVar < nVar; iVar++) {
+		SetRes_RMS(iVar, 0.0);
+    SetRes_Max(iVar, 0.0, 0);
+  }
 
 	/*--- Build implicit system ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
@@ -233,10 +237,20 @@ void CTransLMSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **
 				/*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 				rhs[total_index] = -local_Residual[iVar];
 				xsol[total_index] = 0.0;
-				AddRes_Max( iVar, local_Residual[iVar]*local_Residual[iVar]*Vol );
+				AddRes_RMS(iVar, local_Residual[iVar]*local_Residual[iVar]*Vol);
+        AddRes_Max(iVar, fabs(local_Residual[iVar]), geometry->node[iPoint]->GetGlobalIndex());
 			}
 		}
-
+  
+  /*--- Initialize residual and solution at the ghost points ---*/
+  for (iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      total_index = iPoint*nVar + iVar;
+      rhs[total_index] = 0.0;
+      xsol[total_index] = 0.0;
+    }
+  }
+  
 	/*--- Solve the linear system (Stationary iterative methods) ---*/
 	if (config->GetKind_Linear_Solver() == SYM_GAUSS_SEIDEL) 
 		Jacobian.SGSSolution(rhs, xsol, config->GetLinear_Solver_Error(), 
@@ -293,12 +307,12 @@ void CTransLMSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **
 //			node[iPoint]->AddSolution(1,xsol[iPoint]);
   }
 
-#ifdef NO_MPI
-	/*--- Compute the norm-2 of the residual ---*/
-	for (iVar = 0; iVar < nVar; iVar++)
-		SetRes_Max(iVar, sqrt(GetRes_Max(iVar)));
-#endif
-	
+  /*--- MPI solution ---*/
+  SetSolution_MPI(geometry, config);
+  
+  /*--- Compute the root mean square residual ---*/
+  SetResidual_RMS(geometry, config);
+  
 }
 
 void CTransLMSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short iMesh) {
@@ -348,7 +362,7 @@ void CTransLMSolution::Viscous_Residual(CGeometry *geometry, CSolution **solutio
 //	if ((config->Get_Beta_RKStep(iRKStep) != 0) || implicit) {
 //	
 //  /*---  Need gradient of flow conservative variables ---*/
-//	  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) solution_container[FLOW_SOL]->SetSolution_Gradient_GG(geometry);
+//	  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) solution_container[FLOW_SOL]->SetSolution_Gradient_GG(geometry, config);
 //	  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) solution_container[FLOW_SOL]->SetSolution_Gradient_LS(geometry, config);
 //		
 //		for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -467,7 +481,7 @@ void CTransLMSolution::BC_NS_Wall(CGeometry *geometry, CSolution **solution_cont
 			geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
 			for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
-      Point_Normal = geometry->vertex[val_marker][iVertex]->GetClosest_Neighbor();
+      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
       /*--- Set both interior and exterior point to current value ---*/
       for (iVar=0; iVar < nVar; iVar++) {
         U_domain[iVar] = node[iPoint]->GetSolution(iVar);

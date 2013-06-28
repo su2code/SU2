@@ -1,20 +1,49 @@
-__all__ = ['load_data','save_data','load_pickle','save_pickle',
-           'safe_unpickle','rec2dict','append_nestdict','flatten_list']
+## \file data.py
+#  \brief python package for data utility functions 
+#  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
+#  \version 2.0.3
+#
+# Stanford University Unstructured (SU2) Code
+# Copyright (C) 2012 Aerospace Design Laboratory
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-# todo: check safe pickle
+# ----------------------------------------------------------------------
+#  Imports
+# ----------------------------------------------------------------------
 
 import os, sys, shutil, copy, pickle
-import scipy
 
 # -------------------------------------------------------------------
 #  Load a Dictionary of Data
 # -------------------------------------------------------------------
 
-def load_data( file_name, var_names=None ,
-          file_format = 'infer'     ,
-          core_name   = 'python_data'    ):
-    """ loads dictionary of data from python pickle or matlab struct
+def load_data( file_name, var_names=None   ,
+               file_format = 'infer'       ,
+               core_name   = 'python_data'  ):
+    """ data = load_data( file_name, var_names=None   ,
+                          file_format = 'infer'       ,
+                          core_name   = 'python_data'  )
+            
+        loads dictionary of data from python pickle or matlab struct
+        
+        Inputs:
+            file_name   - data file name
+            var_names   - variable names to read
+            file_format - 'infer', 'pickle', or 'matlab'
+            core_name   - data is stored under a dictionary with this name
+        
         default looks for variable 'python_data' in file_name
         file_format = pickle, will return any python object
         file_format = matlab, will return strings or float lists and 
@@ -82,10 +111,26 @@ def load_data( file_name, var_names=None ,
 # -------------------------------------------------------------------
 
 def save_data( file_name, data_dict, append=False ,
-          file_format = 'infer'             ,
-           core_name='python_data'            ):
-    """ saves data file from matlab 5 and later 
-        default saves variable 'python_data' in file_name
+               file_format = 'infer'              ,
+               core_name='python_data'             ):
+    """ save_data( file_name, data_dict, append=False ,
+                   file_format = 'infer'              ,
+                   core_name='python_data'             ):
+            
+        Inputs:
+            file_name   - data file name
+            data_dict   - a dictionary or bunch to write
+            append      - True/False to append existing data
+            file_format - 'infer', 'pickle', or 'matlab'
+            core_name   - data is stored under a dictionary with this name
+        
+        file_format = pickle, will save any pickleable python object
+        file_format = matlab, will save strings or float lists and 
+        requires scipy.io.loadmat
+        file_format = infer (default), will infer format from extention 
+        ('.mat','.pkl')
+        
+        matlab format saves data file from matlab 5 and later 
         will save nested dictionaries into nested matlab structures
         cannot save classes and modules
         uses scipy.io.loadmat
@@ -149,7 +194,9 @@ def save_data( file_name, data_dict, append=False ,
 # -------------------------------------------------------------------
 
 def load_pickle(file_name):
-    """ assumes first entry is a list of all following data names
+    """ data = load_pickle(file_name)
+        loads a pickle with core_data dictionaries
+        assumes first entry is a list of all following data names
         returns dictionary of data
     """
     pkl_file = open(file_name,'rb')
@@ -169,8 +216,9 @@ def load_pickle(file_name):
 # -------------------------------------------------------------------
 
 def save_pickle(file_name,data_dict):
-    """ saves first entry as a list of all following data names
-        saves dictionary of data
+    """ save_pickle(file_name,data_dict)
+        saves a core data dictionary
+        first pickle entry is a list of all following data names
     """
     pkl_file = open(file_name,'wb')
     names = data_dict.keys()
@@ -200,13 +248,13 @@ class safe_unpickle(pickle.Unpickler):
         'numpy'           : ['dtype','ndarray'] ,
         'numpy.core.multiarray' : ['scalar','_reconstruct'] ,
         'collections'     : ['OrderedDict']     ,
-        'SU2.io.state'    : ['State']           ,
+        'SU2.io.state'    : ['State']           , # SU2 Specific
         'SU2.io.config'   : ['Config']          ,
         'SU2.eval.design' : ['Design']          ,
         'SU2.opt.project' : ['Project']         ,
         'SU2.util.ordered_bunch' : ['OrderedBunch'] ,
         'SU2.util.bunch'  : ['Bunch']           ,
-        'tasks_general'   : ['General_Task']    , # SU2 Specific
+        'tasks_general'   : ['General_Task']    , 
         'tasks_project'   : ['Project','Job']   , 
         'tasks_su2'       : ['Decomp','Deform','Direct','Cont_Adjoint',
                              'Multiple_Cont_Adjoint','Finite_Diff','Adapt'] ,        
@@ -247,6 +295,7 @@ class safe_unpickle(pickle.Unpickler):
  
 def rec2dict(array_in):
     """ converts numpy record array to dictionary of lists 
+        needed for loading matlab data
         assumes array comes from scipy.io.loadmat, with
         squeeze_me = False and struct_as_record = True
     """
@@ -315,6 +364,11 @@ def flatten_list(input_list):
 # -------------------------------------------------------------------
 
 def append_nestdict(base_dict,add_dict):
+    """ append_nestdict(base_dict,add_dict)
+        appends base_dict with add_dict, allowing for 
+        updating nested dictionaries
+        will update base_dict in place
+    """
     
     # break pointer
     add_dict = copy.deepcopy(add_dict)

@@ -1,12 +1,44 @@
+## \file filelock.py
+#  \brief python package for filelocking 
+#  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
+#  \version 2.0.3
+#
+# Stanford University Unstructured (SU2) Code
+# Copyright (C) 2012 Aerospace Design Laboratory
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 # -------------------------------------------------------------------
 #  File Lock Class
 # -------------------------------------------------------------------  
-# source: Evan Fosmark, BSD license
-#         http://www.evanfosmark.com/2009/01/cross-platform-file-locking-support-in-python/
 class FileLock(object):
     """ A file locking mechanism that has context-manager support so 
-        you can use it in a with statement. This should be relatively cross
-        compatible as it doesn't rely on msvcrt or fcntl for the locking.
+        you can use it in a with statement. 
+        
+        Example:
+        with FileLock("test.txt", timeout=2, delay=0.5):
+            print("Lock acquired.")
+            # Do something with the locked file
+            
+        Inputs:
+            file_name - filename to lock
+            timeout   - default 10sec, maximum timeout to wait for lock
+            delay     - default 0.05sec, delay between each attempt to lock
+                        number incremented with a random perturbation
+           
+        original source: Evan Fosmark, BSD license
+        http://www.evanfosmark.com/2009/01/cross-platform-file-locking-support-in-python/
     """
  
     def __init__(self, file_name, timeout=10, delay=.05):
@@ -26,6 +58,7 @@ class FileLock(object):
             exceeds `timeout` number of seconds, in which case it throws 
             an exception.
         """
+        from random import random
         start_time = time.time()
         while True:
             try:
@@ -35,8 +68,9 @@ class FileLock(object):
                 if e.errno != errno.EEXIST:
                     raise 
                 if (time.time() - start_time) >= self.timeout:
-                    raise FileLockException("Timeout occured.")
-                time.sleep(self.delay)
+                    raise FileLockException("FileLock timeout occured for %s" % self.lockfile)
+                delay = self.delay*( 1. + 0.2*random() )
+                time.sleep(delay)
         self.is_locked = True
  
  

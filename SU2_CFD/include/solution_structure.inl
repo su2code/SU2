@@ -2,7 +2,7 @@
  * \file solution_structure.inl
  * \brief In-Line subroutines of the <i>solution_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -25,6 +25,12 @@
 
 inline void CSolution::SetIterLinSolver(unsigned short val_iterlinsolver) { IterLinSolver = val_iterlinsolver; }
 
+inline void CSolution::SetSolution_MPI(CGeometry *geometry, CConfig *config) { }
+
+inline void CSolution::SetSolution_Old_MPI(CGeometry *geometry, CConfig *config) { }
+
+inline void CSolution::SetSolution_Limiter_MPI(CGeometry *geometry, CConfig *config) { }
+
 inline unsigned short CSolution::GetIterLinSolver(void) { return IterLinSolver; }
 
 inline double CSolution::GetCSensitivity(unsigned short val_marker, unsigned short val_vertex) { return 0; }
@@ -40,6 +46,8 @@ inline void CSolution::SetInitialCondition(CGeometry **geometry, CSolution ***so
 
 inline void CSolution::GetRestart(CGeometry *geometry, CConfig *config, unsigned short val_iZone) { }
 
+inline void CSolution::SetVolume_Output(CConfig *config, CGeometry *geometry, double **data_container, unsigned short nOutput_Vars) { }
+  
 inline void CSolution::SetNoise_Source(CSolution ***flow_solution, CGeometry **wave_geometry, CConfig *wave_config) { }
 
 inline void CSolution::SetAeroacoustic_Coupling(CSolution ***wave_solution, CSolution ***flow_solution, CNumerics *solver, CGeometry **flow_geometry, CConfig *flow_config) { }
@@ -63,6 +71,10 @@ inline double CSolution::GetPsiE_Inf(void) { return 0; }
 inline void CSolution::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolution::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config) { }
+
+inline void CSolution::SetPrimVar_Gradient_MPI(CGeometry *geometry, CConfig *config) { }
+
+inline void CSolution::SetPrimVar_Limiter_MPI(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolution::SetPrimVar_Limiter(CGeometry *geometry, CConfig *config) { }
 
@@ -130,6 +142,12 @@ inline void CSolution::SetTotal_CT(double val_Total_CT) { }
 
 inline double CSolution::GetTotal_CQ() { return 0; }
 
+inline double CSolution::Get_PressureDrag() { return 0; }
+
+inline double CSolution::Get_ViscDrag() { return 0; }
+
+inline double CSolution::Get_MagnetDrag() { return 0; }
+
 inline void CSolution::SetTotal_CQ(double val_Total_CQ) { }
 
 inline double CSolution::GetTotal_CMerit() { return 0; }
@@ -171,6 +189,12 @@ inline double CSolution::GetCPressure(unsigned short val_marker, unsigned short 
 inline double CSolution::GetCSkinFriction(unsigned short val_marker, unsigned short val_vertex) { return 0; }
 
 inline double CSolution::GetHeatTransferCoeff(unsigned short val_marker, unsigned short val_vertex) { return 0; }
+
+inline double CSolution::GetHeatTransferCoeff(unsigned short val_marker, unsigned short val_iSpecies, unsigned short val_vertex) { return 0; }
+
+inline double CSolution::GetViscForce(unsigned short val_marker, unsigned short val_iSpecies, unsigned short iDim, unsigned short val_vertex) { return 0; }
+
+inline double CSolution::GetPressureForce(unsigned short val_marker, unsigned short val_iSpecies, unsigned short iDim, unsigned short val_vertex) { return 0; }
 
 inline double CSolution::GetYPlus(unsigned short val_marker, unsigned short val_vertex) { return 0; }
 
@@ -335,12 +359,19 @@ inline void CSolution::Centered_Residual(CGeometry *geometry, CSolution **soluti
 inline void CSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, 
 									   CConfig *config, unsigned short iMesh) { }
 
-inline void CSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, 
-									 unsigned short iRKStep) { }
+inline void CSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep) { }
 
-inline void CSolution::SetDissipation_Switch(CGeometry *geometry, CSolution **solution_container, CConfig *config) { }
+inline void CSolution::SetDissipation_Switch(CGeometry *geometry, CConfig *config) { }
+
+inline void CSolution::SetDissipation_Switch_MPI(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolution::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) { }
+
+inline void CSolution::SetUndivided_Laplacian_MPI(CGeometry *geometry, CConfig *config) { }
+
+inline void CSolution::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) { }
+
+inline void CSolution::SetMax_Eigenvalue_MPI(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolution::Inviscid_Forces(CGeometry *geometry, CConfig *config) { }
 
@@ -367,15 +398,29 @@ inline void CSolution::Solve_LinearSystem(CGeometry *geometry, CSolution **solut
 inline void CSolution::Compute_Residual(CGeometry *geometry, CSolution **solution_container, CConfig *config, 
 										unsigned short iMesh) { }
 
-inline void CSolution::SetRes_Max(unsigned short val_var, double val_residual) { Residual_Max[val_var] = val_residual; }
+inline void CSolution::SetRes_RMS(unsigned short val_var, double val_residual) { Residual_RMS[val_var] = val_residual; }
 
-inline void CSolution::AddRes_Max(unsigned short val_var, double val_residual) { Residual_Max[val_var] += val_residual; }
+inline void CSolution::AddRes_RMS(unsigned short val_var, double val_residual) { Residual_RMS[val_var] += val_residual; }
+
+inline double CSolution::GetRes_RMS(unsigned short val_var) { return Residual_RMS[val_var]; }
+
+inline void CSolution::SetRes_Max(unsigned short val_var, double val_residual, unsigned long val_point) { Residual_Max[val_var] = val_residual; Point_Max[val_var] = val_point; }
+
+inline void CSolution::AddRes_Max(unsigned short val_var, double val_residual, unsigned long val_point) { 
+  if (val_residual > Residual_Max[val_var]) {
+  Residual_Max[val_var] = val_residual;
+  Point_Max[val_var] = val_point; }
+}
 
 inline double CSolution::GetRes_Max(unsigned short val_var) { return Residual_Max[val_var]; }
 
+inline unsigned long CSolution::GetPoint_Max(unsigned short val_var) { return Point_Max[val_var]; }
+
 inline void CSolution::Set_OldSolution(CGeometry *geometry) {
-	for(unsigned long iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) 
-		node[iPoint]->Set_OldSolution(); 
+	for(unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) 
+		node[iPoint]->Set_OldSolution(); // The loop should be over nPoints 
+                                     //  to guarantee that the boundaries are
+                                     //  well updated
 }
 
 inline unsigned short CSolution::GetnVar(void) { return nVar; }
@@ -562,7 +607,11 @@ inline double CPlasmaSolution::GetDensity_Energy_Inlet(unsigned short val_Fluid)
 
 inline double CPlasmaSolution::GetCSkinFriction(unsigned short val_marker, unsigned short val_vertex) { return CSkinFriction[val_marker][val_vertex]; }
 
-inline double CPlasmaSolution::GetHeatTransferCoeff(unsigned short val_marker, unsigned short val_vertex) { return CHeatTransfer[val_marker][val_vertex]; }
+inline double CPlasmaSolution::GetHeatTransferCoeff(unsigned short val_marker, unsigned short val_iSpecies, unsigned short val_vertex) { return CHeatTransfer[val_marker][val_iSpecies][val_vertex]; }
+
+inline double CPlasmaSolution::GetViscForce(unsigned short val_marker, unsigned short val_iSpecies, unsigned short iDim, unsigned short val_vertex) { return CViscForce[val_marker][val_iSpecies][iDim][val_vertex]; }
+
+inline double CPlasmaSolution::GetPressureForce(unsigned short val_marker, unsigned short val_iSpecies, unsigned short iDim, unsigned short val_vertex) { return CPressForce[val_marker][val_iSpecies][iDim][val_vertex]; }
 
 inline double CPlasmaSolution::GetTotal_CLift() { return Total_CLift; }
 
@@ -585,6 +634,12 @@ inline double CPlasmaSolution::GetTotal_CSideForce() { return Total_CSideForce; 
 inline double CPlasmaSolution::GetTotal_CEff() { return Total_CEff; }
 
 inline double CPlasmaSolution::GetTotal_CQ() { return Total_CQ; }
+
+inline double CPlasmaSolution::Get_PressureDrag() { return PressureDrag; }
+
+inline double CPlasmaSolution::Get_ViscDrag() { return ViscDrag; }
+
+inline double CPlasmaSolution::Get_MagnetDrag() { return MagnetDrag; }
 
 inline double CLevelSetSolution::GetTotal_CFreeSurface() { return Total_CFreeSurface; }
 

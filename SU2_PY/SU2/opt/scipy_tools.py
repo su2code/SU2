@@ -1,13 +1,64 @@
+#!/usr/bin/env python 
+
+## \file scipy_tools.py
+#  \brief tools for interfacing with scipy
+#  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
+#  \version 2.0.3
+#
+# Stanford University Unstructured (SU2) Code
+# Copyright (C) 2012 Aerospace Design Laboratory
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# -------------------------------------------------------------------
+#  Imports
+# -------------------------------------------------------------------
 
 import os, sys, shutil, copy
 
 from .. import eval as su2eval
-from scipy.optimize import fmin_slsqp
 from numpy import array, zeros
 from numpy.linalg import norm
 
-def scipy_slsqp(project,x0=[],xb=[],its=20):
+
+# -------------------------------------------------------------------
+#  Scipy SLSQP
+# -------------------------------------------------------------------
+
+def scipy_slsqp(project,x0=None,xb=None,its=100):
+    """ result = scipy_slsqp(project,x0=[],xb=[],its=100)
     
+        Runs the Scipy implementation of SLSQP with 
+        an SU2 project
+        
+        Inputs:
+            project - an SU2 project
+            x0      - optional, initial guess
+            xb      - optional, design variable bounds
+            its     - max outer iterations, default 100
+        
+        Outputs:
+           result - the outputs from scipy.fmin_slsqp
+    """
+
+    # import scipy optimizer
+    from scipy.optimize import fmin_slsqp
+
+    if x0 is None: x0 = []
+    if xb is None: xb = []
+    
+    # number of design variables
     n_dv = len( project.config['DEFINITION_DV']['KIND'] )
     project.n_dv = n_dv
     
@@ -39,7 +90,12 @@ def scipy_slsqp(project,x0=[],xb=[],its=20):
     
     
 def obj_f(x,project):
-    """ su2:         minimize f(x), list[nobj]
+    """ obj = obj_f(x,project)
+        
+        Objective Function
+        SU2 Project interface to scipy.fmin_slsqp
+        
+        su2:         minimize f(x), list[nobj]
         scipy_slsqp: minimize f(x), float
     """
     
@@ -52,7 +108,12 @@ def obj_f(x,project):
     return obj
 
 def obj_df(x,project):
-    """ su2:         df(x), list[nobj x dim]
+    """ dobj = obj_df(x,project)
+        
+        Objective Function Gradients
+        SU2 Project interface to scipy.fmin_slsqp
+        
+        su2:         df(x), list[nobj x dim]
         scipy_slsqp: df(x), ndarray[dim]
     """    
     
@@ -63,7 +124,12 @@ def obj_df(x,project):
     return dobj
 
 def con_ceq(x,project):
-    """ su2:         ceq(x) = 0.0, list[nceq]
+    """ cons = con_ceq(x,project)
+        
+        Equality Constraint Functions
+        SU2 Project interface to scipy.fmin_slsqp
+        
+        su2:         ceq(x) = 0.0, list[nceq]
         scipy_slsqp: ceq(x) = 0.0, ndarray[nceq]
     """
     
@@ -75,7 +141,12 @@ def con_ceq(x,project):
     return cons
 
 def con_dceq(x,project):
-    """ su2:         dceq(x), list[nceq x dim]
+    """ dcons = con_dceq(x,project)
+        
+        Equality Constraint Gradients
+        SU2 Project interface to scipy.fmin_slsqp
+        
+        su2:         dceq(x), list[nceq x dim]
         scipy_slsqp: dceq(x), ndarray[nceq x dim]
     """
     
@@ -88,7 +159,12 @@ def con_dceq(x,project):
     return dcons
 
 def con_cieq(x,project):
-    """ su2:         cieq(x) < 0.0, list[ncieq]
+    """ cons = con_cieq(x,project)
+        
+        Inequality Constraints
+        SU2 Project interface to scipy.fmin_slsqp
+        
+        su2:         cieq(x) < 0.0, list[ncieq]
         scipy_slsqp: cieq(x) > 0.0, ndarray[ncieq]
     """
     
@@ -100,7 +176,12 @@ def con_cieq(x,project):
     return -cons
     
 def con_dcieq(x,project):
-    """ su2:         dcieq(x), list[ncieq x dim]
+    """ dcons = con_dcieq(x,project)
+        
+        Inequality Constraint Gradients
+        SU2 Project interface to scipy.fmin_slsqp
+        
+        su2:         dcieq(x), list[ncieq x dim]
         scipy_slsqp: dcieq(x), ndarray[ncieq x dim]
     """
     

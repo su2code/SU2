@@ -2,7 +2,7 @@
  * \file sparse_structure.cpp
  * \brief Main subroutines for doing the sparse structures.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -43,18 +43,19 @@ void CSparseMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPoin
 	nPoint = val_nPoint;                // Assign number of points in the mesh
 	nPointDomain = val_nPointDomain;	// Assign number of points in the mesh
 	nVar = val_nVar;                    // Assign number of vars in each block system
+	nEqn = val_nEq;                    // Assign number of eqns in each block system
 	nnz = val_nnz;                      // Assign number of possible non zero blocks
 	row_ptr = val_row_ptr;
 	col_ind = val_col_ind;
 	
-	val = new double [nnz*nVar*nVar];	// Reserve memory for the values of the matrix
-	block = new double [nVar*nVar];
-	prod_block_vector = new double [nVar];
-	prod_row_vector = new double [nVar];
-	aux_vector = new double [nVar];
+	val = new double [nnz*nVar*nEqn];	// Reserve memory for the values of the matrix
+	block = new double [nVar*nEqn];
+	prod_block_vector = new double [nEqn]; //correct?
+	prod_row_vector = new double [nVar]; //correct?
+	aux_vector = new double [nVar]; //correct?
 	
 	if (preconditioner)
-		invM = new double [nPoint*nVar*nVar];	// Reserve memory for the values of the inverse of the preconditioner
+		invM = new double [nPoint*nVar*nEqn];	// Reserve memory for the values of the inverse of the preconditioner
         
 }
 
@@ -64,8 +65,8 @@ void CSparseMatrix::GetBlock(unsigned long block_i, unsigned long block_j) {
 	for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
 		step++;
 		if (col_ind[index] == block_j) {
-			for (iVar = 0; iVar < nVar*nVar; iVar++)
-				block[iVar] = val[(row_ptr[block_i]+step-1)*nVar*nVar+iVar];
+			for (iVar = 0; iVar < nVar*nEqn; iVar++)
+				block[iVar] = val[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar];
 			break;
 		}
 	}
@@ -75,8 +76,8 @@ void CSparseMatrix::DisplayBlock(void) {
 	unsigned short iVar, jVar;
 	
 	for (iVar = 0; iVar < nVar; iVar++) {
-		for (jVar = 0; jVar < nVar; jVar++)
-			cout << block[iVar*nVar+jVar] << "  ";
+		for (jVar = 0; jVar < nEqn; jVar++)
+			cout << block[iVar*nEqn+jVar] << "  ";
 		cout << endl;
 	}
 }
@@ -84,8 +85,8 @@ void CSparseMatrix::DisplayBlock(void) {
 void CSparseMatrix::ReturnBlock(double **val_block) {
 	unsigned short iVar, jVar;
 	for (iVar = 0; iVar < nVar; iVar++)
-		for (jVar = 0; jVar < nVar; jVar++)
-			val_block[iVar][jVar] = block[iVar*nVar+jVar];
+		for (jVar = 0; jVar < nEqn; jVar++)
+			val_block[iVar][jVar] = block[iVar*nEqn+jVar];
 }
 
 void CSparseMatrix::AddBlock(unsigned long block_i, unsigned long block_j, double **val_block) {
@@ -95,8 +96,8 @@ void CSparseMatrix::AddBlock(unsigned long block_i, unsigned long block_j, doubl
 		step++;
 		if (col_ind[index] == block_j) {
 			for (iVar = 0; iVar < nVar; iVar++)
-				for (jVar = 0; jVar < nVar; jVar++)
-					val[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+jVar] += val_block[iVar][jVar];
+				for (jVar = 0; jVar < nEqn; jVar++)
+					val[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] += val_block[iVar][jVar];
 			break;
 		}
 	}
@@ -109,8 +110,8 @@ void CSparseMatrix::SubtractBlock(unsigned long block_i, unsigned long block_j, 
 		step++;
 		if (col_ind[index] == block_j) {
 			for (iVar = 0; iVar < nVar; iVar++)
-				for (jVar = 0; jVar < nVar; jVar++)
-					val[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+jVar] -= val_block[iVar][jVar];
+				for (jVar = 0; jVar < nEqn; jVar++)
+					val[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] -= val_block[iVar][jVar];
 			break;
 		}
 	}
@@ -279,7 +280,7 @@ void CSparseMatrix::UpperProduct(double* vec, unsigned long row_i) {
 
 	for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
 		if (col_ind[index] > row_i) {
-			ProdBlockVector(row_i,col_ind[index],vec);
+			ProdBlockVector(row_i, col_ind[index], vec);
 			for (iVar = 0; iVar < nVar; iVar++)
 				prod_row_vector[iVar] += prod_block_vector[iVar];
 		}
@@ -294,11 +295,12 @@ void CSparseMatrix::LowerProduct(double* vec, unsigned long row_i) {
 
 	for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
 		if (col_ind[index] < row_i) {
-			ProdBlockVector(row_i,col_ind[index],vec);
+			ProdBlockVector(row_i, col_ind[index], vec);
 			for (iVar = 0; iVar < nVar; iVar++)
 				prod_row_vector[iVar] += prod_block_vector[iVar];
 		}
 	}
+  
 }
 
 void CSparseMatrix::DiagonalProduct(double* vec, unsigned long row_i) {
@@ -319,28 +321,33 @@ void CSparseMatrix::DiagonalProduct(double* vec, unsigned long row_i) {
 void CSparseMatrix::SendReceive_Solution(double* x, CGeometry *geometry, CConfig *config) {
 
 #ifndef NO_MPI
+  MPI::COMM_WORLD.Barrier();
+  
 	unsigned long iPoint, iVertex;
 	unsigned short iVar, iMarker;
-
+  
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
 		if (config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) {
 
 			short SendRecv = config->GetMarker_All_SendRecv(iMarker);
 			unsigned long nVertex = geometry->nVertex[iMarker];
+      unsigned long nBuffer_Vector = nVertex*nVar;
+      
+      int send_to = SendRecv-1;
+      int receive_from = abs(SendRecv)-1;
 
 			/*--- Send information  ---*/
 			if (SendRecv > 0) {
 
 				/*--- Allocate buffer vector ---*/
-				unsigned long nBuffer_Vector = nVertex*nVar;
-				int send_to = SendRecv-1;
 				double *Buffer_Send_X = new double[nBuffer_Vector];
 
 				/*--- Copy the solution to the buffer vector ---*/
 				for (iVertex = 0; iVertex < nVertex; iVertex++) {
 					iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-					for (iVar = 0; iVar < nVar; iVar++)
-						Buffer_Send_X[iVar*nVertex+iVertex] = x[iPoint*nVar+iVar];
+					for (iVar = 0; iVar < nVar; iVar++) {
+						Buffer_Send_X[iVertex*nVar+iVar] = x[iPoint*nVar+iVar];
+          }
 				}
 
 				/*--- Send the buffer information ---*/
@@ -354,8 +361,6 @@ void CSparseMatrix::SendReceive_Solution(double* x, CGeometry *geometry, CConfig
 			if (SendRecv < 0) {
 
 				/*--- Allocate buffer vector ---*/
-				int receive_from = abs(SendRecv)-1;
-				unsigned long nBuffer_Vector = nVertex*nVar;
 				double *Buffer_Receive_X = new double [nBuffer_Vector];
 
 				/*--- Receive the information ---*/
@@ -364,8 +369,9 @@ void CSparseMatrix::SendReceive_Solution(double* x, CGeometry *geometry, CConfig
 				/*--- Store the received information ---*/
 				for (iVertex = 0; iVertex < nVertex; iVertex++) {
 					iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-					for (iVar = 0; iVar < nVar; iVar++)
-						x[iPoint*nVar+iVar] = Buffer_Receive_X[iVar*nVertex+iVertex];
+					for (iVar = 0; iVar < nVar; iVar++) {
+						x[iPoint*nVar+iVar] = Buffer_Receive_X[iVertex*nVar+iVar];
+          }
 
 				}
 
@@ -382,6 +388,8 @@ void CSparseMatrix::SendReceive_Solution(double* x, CGeometry *geometry, CConfig
 void CSparseMatrix::SendReceive_Solution(CSysVector & vec, CGeometry *geometry, CConfig *config) {
 	
 #ifndef NO_MPI
+  MPI::COMM_WORLD.Barrier();
+
 	unsigned long iPoint, iVertex;
 	unsigned short iVar, iMarker;
 	
@@ -403,7 +411,7 @@ void CSparseMatrix::SendReceive_Solution(CSysVector & vec, CGeometry *geometry, 
 				for (iVertex = 0; iVertex < nVertex; iVertex++) {
 					iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 					for (iVar = 0; iVar < nVar; iVar++)
-						Buffer_Send_X[iVar*nVertex+iVertex] = vec[iPoint*nVar+iVar];
+						Buffer_Send_X[iVertex*nVar+iVar] = vec[iPoint*nVar+iVar];
 				}
 				
 				/*--- Send the buffer information ---*/
@@ -428,7 +436,7 @@ void CSparseMatrix::SendReceive_Solution(CSysVector & vec, CGeometry *geometry, 
 				for (iVertex = 0; iVertex < nVertex; iVertex++) {
 					iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 					for (iVar = 0; iVar < nVar; iVar++)
-						vec[iPoint*nVar+iVar] = Buffer_Receive_X[iVar*nVertex+iVertex];
+						vec[iPoint*nVar+iVar] = Buffer_Receive_X[iVertex*nVar+iVar];
 					
 				}
 				
@@ -845,33 +853,39 @@ void CSparseMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVec
 
 void CSparseMatrix::LU_SGSIteration(double* b, double* x_n, CGeometry *geometry, CConfig *config) {
 	unsigned long iPoint, iVar;
+  
+  /*--- There are two approaches to the parallelization (AIAA-2000-0927):
+   1. Use a special scheduling algorithm which enables data parallelism by regrouping edges. This method has the advantage of producing exactly the same result as the single processor case, but it suffers from severe overhead penalties for parallel loop initiation, heavy interprocessor communications and poor load balance.
+   2. Split the computational domain into several nonoverlapping regions according to the number of processors, and apply the SGS method inside of each region with (or without) some special interprocessor boundary treatment. This approach may suffer from convergence degradation but takes advantage of minimal parallelization overhead and good load balance. ---*/
 	
 	/*--- First part of the symmetric iteration: (D+L).x* = b ---*/
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-		LowerProduct(x_n,iPoint);  // compute L.x*
+		LowerProduct(x_n, iPoint);                                        // Compute L.x*
 		for (iVar = 0; iVar < nVar; iVar++)
-			aux_vector[iVar] = b[iPoint*nVar+iVar] - prod_row_vector[iVar]; // compute aux_vector = b-L.x*
-		Gauss_Elimination(iPoint, aux_vector); // solve D.x* = aux_vector
+			aux_vector[iVar] = b[iPoint*nVar+iVar] - prod_row_vector[iVar]; // Compute aux_vector = b - L.x*
+		Gauss_Elimination(iPoint, aux_vector);                            // Solve D.x* = aux_vector
 		for (iVar = 0; iVar < nVar; iVar++)
-			x_n[iPoint*nVar+iVar] = aux_vector[iVar]; // assesing x* = solution
-	}	
+			x_n[iPoint*nVar+iVar] = aux_vector[iVar];                       // Assesing x* = solution
+	}
 
-	/*--- Send-Receive the solution vector (MPI) ---*/
+	/*--- Inner send-receive operation the solution vector ---*/
 	SendReceive_Solution(x_n, geometry, config);
 	
 	/*--- Second part of the symmetric iteration: (D+U).x_(1) = D.x* ---*/
 	for (iPoint = nPointDomain-1; (int)iPoint >= 0; iPoint--) {
-		DiagonalProduct(x_n,iPoint);  // compute D.x*
+		DiagonalProduct(x_n, iPoint);                 // Compute D.x*
 		for (iVar = 0; iVar < nVar; iVar++)
-			aux_vector[iVar] = prod_row_vector[iVar]; // compute aux_vector = D.x*
-		UpperProduct(x_n,iPoint);  // compute U.x_(n+1)
+			aux_vector[iVar] = prod_row_vector[iVar];   // Compute aux_vector = D.x*
+		UpperProduct(x_n, iPoint);                    // Compute U.x_(n+1)
 		for (iVar = 0; iVar < nVar; iVar++)
-			aux_vector[iVar] -= prod_row_vector[iVar]; // compute aux_vector = D.x*-U.x_(n+1)
-		Gauss_Elimination(iPoint, aux_vector); // solve D.x* = aux_vector
+			aux_vector[iVar] -= prod_row_vector[iVar];  // Compute aux_vector = D.x*-U.x_(n+1)
+		Gauss_Elimination(iPoint, aux_vector);        // Solve D.x* = aux_vector
 		for (iVar = 0; iVar < nVar; iVar++)
-			x_n[iPoint*nVar+iVar] = aux_vector[iVar]; // assesing x_(1) = solution
-		if (iPoint == 0) break;
+			x_n[iPoint*nVar + iVar] = aux_vector[iVar]; // Assesing x_(1) = solution
 	}
+  
+  /*--- Final send-receive operation the solution vector (redundant in CFD simulations) ---*/
+	SendReceive_Solution(x_n, geometry, config);
 
 }
 

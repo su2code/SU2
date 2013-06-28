@@ -2,7 +2,7 @@
  * \file geometry_structure.inl
  * \brief In-Line subroutines of the <i>geometry_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -26,6 +26,8 @@
 inline long CGeometry::GetGlobal_to_Local_Point(long val_ipoint) { return 0; }
 
 inline unsigned short CGeometry::GetGlobal_to_Local_Marker(unsigned short val_imarker) { return 0; }
+
+inline unsigned long CGeometry::GetGlobal_nPoint(void) { return 0; }
 
 inline unsigned long CGeometry::GetGlobal_nPointDomain(void) { return 0; }
 
@@ -60,6 +62,8 @@ inline void CGeometry::Check_Orientation(CConfig *config) { }
 inline void CGeometry::Set3D_to_2D (CConfig *config, char mesh_vtk[200], char mesh_su2[200], unsigned short nslices) { }
 
 inline void CGeometry::SetColorGrid(CConfig *config) { }
+
+inline void CGeometry::DivideConnectivity(CConfig *config, unsigned short Elem_Type) { }
 
 inline void CGeometry::SetRotationalVelocity(CConfig *config) { }
 
@@ -181,7 +185,7 @@ inline double CGeometry::GetMaxThickness(CConfig *config, bool original_surface)
 
 inline double CGeometry::GetTotalVolume(CConfig *config, bool original_surface) { return 0; }
 
-inline void CGeometry::FindClosestNeighbor(CConfig *config) { }
+inline void CGeometry::FindNormal_Neighbor(CConfig *config) { }
 
 inline void CGeometry::SetBoundSensitivity(CConfig *config) { }
 
@@ -192,6 +196,8 @@ inline void CMultiGridGeometry::SetPsuP(void) { CGeometry::SetPsuP(); }
 inline long CDomainGeometry::GetGlobal_to_Local_Point(long val_ipoint) { return Global_to_Local_Point[val_ipoint]; }
 
 inline unsigned short CDomainGeometry::GetGlobal_to_Local_Marker(unsigned short val_imarker) { return Global_to_Local_Marker[val_imarker]; }
+
+inline unsigned long CPhysicalGeometry::GetGlobal_nPoint(void) { return Global_nPoint; }
 
 inline unsigned long CPhysicalGeometry::GetGlobal_nPointDomain(void) { return Global_nPointDomain; }
 

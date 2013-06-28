@@ -2,7 +2,7 @@
  * \file grid_movement_structure.cpp
  * \brief Subroutines for doing the grid movement using different strategies.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -22,6 +22,7 @@
  */
 
 #include "../include/grid_movement_structure.hpp"
+#include <list>
 
 using namespace std;
 
@@ -1405,12 +1406,14 @@ void CVolumetricMovement::SetRigidRotation(CGeometry *geometry, CConfig *config,
 	unsigned short iDim, nDim; 
 	unsigned long iPoint;
 	double r[3], rotCoord[3], *Coord, Center[3], Omega[3], Lref, dt;
+  double *GridVel, newGridVel[3];
 	double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
 	double dtheta, dphi, dpsi, cosTheta, sinTheta;
 	double cosPhi, sinPhi, cosPsi, sinPsi;
 	double DEG2RAD = PI_NUMBER/180.0;
 	bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
 	bool adjoint = config->IsAdjoint();
+  double motion_ramp = config->GetMotion_Ramp(iter);
 
 	/*--- Problem dimension and physical time step ---*/
 	nDim = geometry->GetnDim();
@@ -1434,12 +1437,13 @@ void CVolumetricMovement::SetRigidRotation(CGeometry *geometry, CConfig *config,
   }
   
   /*--- Center of rotation & angular velocity vector from config ---*/
+  
   Center[0] = config->GetMotion_Origin_X(iZone);
   Center[1] = config->GetMotion_Origin_Y(iZone);
   Center[2] = config->GetMotion_Origin_Z(iZone);
-  Omega[0]  = config->GetRotation_Rate_X(iZone);
-  Omega[1]  = config->GetRotation_Rate_Y(iZone);
-  Omega[2]  = config->GetRotation_Rate_Z(iZone);
+  Omega[0]  = (config->GetRotation_Rate_X(iZone)/config->GetOmega_Ref())*motion_ramp;
+  Omega[1]  = (config->GetRotation_Rate_Y(iZone)/config->GetOmega_Ref())*motion_ramp;
+  Omega[2]  = (config->GetRotation_Rate_Z(iZone)/config->GetOmega_Ref())*motion_ramp;
 
   /*-- Set dt for time-spectral cases ---*/
   if (time_spectral) {
@@ -1486,7 +1490,8 @@ void CVolumetricMovement::SetRigidRotation(CGeometry *geometry, CConfig *config,
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     
     /*--- Coordinates of the current point ---*/
-    Coord = geometry->node[iPoint]->GetCoord();
+    Coord   = geometry->node[iPoint]->GetCoord();
+    GridVel = geometry->node[iPoint]->GetGridVel();
     
     /*--- Calculate non-dim. position from rotation center ---*/
     for (iDim = 0; iDim < nDim; iDim++)
@@ -1496,19 +1501,29 @@ void CVolumetricMovement::SetRigidRotation(CGeometry *geometry, CConfig *config,
     /*--- Compute transformed point coordinates ---*/
     rotCoord[0] = rotMatrix[0][0]*r[0] 
                 + rotMatrix[0][1]*r[1] 
-                + rotMatrix[0][2]*r[2] + Center[0];
+                + rotMatrix[0][2]*r[2];
     
     rotCoord[1] = rotMatrix[1][0]*r[0] 
                 + rotMatrix[1][1]*r[1] 
-                + rotMatrix[1][2]*r[2] + Center[1];
+                + rotMatrix[1][2]*r[2];
     
     rotCoord[2] = rotMatrix[2][0]*r[0] 
                 + rotMatrix[2][1]*r[1] 
-                + rotMatrix[2][2]*r[2] + Center[2];
+                + rotMatrix[2][2]*r[2];
     
-    /*--- Store new node location ---*/
+    /*--- Cross Product of angular velocity and distance from center.
+     Note that we have assumed the grid velocities have been set to
+     an initial value in the plunging routine. ---*/
+    
+    newGridVel[0] = GridVel[0] + Omega[1]*rotCoord[2] - Omega[2]*rotCoord[1];
+    newGridVel[1] = GridVel[1] + Omega[2]*rotCoord[0] - Omega[0]*rotCoord[2];
+    newGridVel[2] = GridVel[2] + Omega[0]*rotCoord[1] - Omega[1]*rotCoord[0];
+    
+    /*--- Store new node location & grid velocity. Add center. 
+     Do not store the grid velocity if this is an adjoint calculation.---*/
     for (iDim = 0; iDim < nDim; iDim++) {
-      geometry->node[iPoint]->SetCoord(iDim,rotCoord[iDim]);
+      geometry->node[iPoint]->SetCoord(iDim,rotCoord[iDim] + Center[iDim]);
+      if (!adjoint) geometry->node[iPoint]->SetGridVel(iDim, newGridVel[iDim]);
     }
   }
   
@@ -1528,7 +1543,7 @@ void CVolumetricMovement::SetRigidPitching(CGeometry *geometry, CConfig *config,
   
   /*--- Local variables ---*/
   double r[3], rotCoord[3],*Coord, Center[3], Omega[3], Ampl[3], Phase[3];
-  double Lref, deltaT;
+  double Lref, deltaT, alphaDot[3], *GridVel, newGridVel[3];
   double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
   double dtheta, dphi, dpsi, cosTheta, sinTheta;
   double cosPhi, sinPhi, cosPsi, sinPsi;
@@ -1539,7 +1554,8 @@ void CVolumetricMovement::SetRigidPitching(CGeometry *geometry, CConfig *config,
   unsigned long iPoint;
   bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
   bool adjoint = config->IsAdjoint();
-	
+	double motion_ramp = config->GetMotion_Ramp(iter);
+  
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND(); 
   Lref   = config->GetLength_Ref();
@@ -1553,9 +1569,9 @@ void CVolumetricMovement::SetRigidPitching(CGeometry *geometry, CConfig *config,
   Center[0] = config->GetMotion_Origin_X(iZone);
   Center[1] = config->GetMotion_Origin_Y(iZone);
   Center[2] = config->GetMotion_Origin_Z(iZone);
-  Omega[0]  = config->GetPitching_Omega_X(iZone)/config->GetOmega_Ref();
-  Omega[1]  = config->GetPitching_Omega_Y(iZone)/config->GetOmega_Ref();
-  Omega[2]  = config->GetPitching_Omega_Z(iZone)/config->GetOmega_Ref();
+  Omega[0]  = (config->GetPitching_Omega_X(iZone)/config->GetOmega_Ref())*motion_ramp;
+  Omega[1]  = (config->GetPitching_Omega_Y(iZone)/config->GetOmega_Ref())*motion_ramp;
+  Omega[2]  = (config->GetPitching_Omega_Z(iZone)/config->GetOmega_Ref())*motion_ramp;
   Ampl[0]   = config->GetPitching_Ampl_X(iZone)*DEG2RAD;
   Ampl[1]   = config->GetPitching_Ampl_Y(iZone)*DEG2RAD;
   Ampl[2]   = config->GetPitching_Ampl_Z(iZone)*DEG2RAD;
@@ -1596,6 +1612,12 @@ void CVolumetricMovement::SetRigidPitching(CGeometry *geometry, CConfig *config,
 	dphi   = -Ampl[1]*(sin(Omega[1]*time_new + Phase[1]) - sin(Omega[1]*time_old + Phase[1]));
 	dpsi   = -Ampl[2]*(sin(Omega[2]*time_new + Phase[2]) - sin(Omega[2]*time_old + Phase[2]));
   
+  /*--- Angular velocity at the new time ---*/
+  
+  alphaDot[0] = -Omega[0]*Ampl[0]*cos(Omega[0]*time_new);
+  alphaDot[1] = -Omega[1]*Ampl[1]*cos(Omega[1]*time_new);
+  alphaDot[2] = -Omega[2]*Ampl[2]*cos(Omega[2]*time_new);
+  
   if (rank == MASTER_NODE) {
     cout.precision(4);
 		cout << "New pitching angles (about x, y, z axes): (";
@@ -1629,7 +1651,8 @@ void CVolumetricMovement::SetRigidPitching(CGeometry *geometry, CConfig *config,
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     
     /*--- Coordinates of the current point ---*/
-    Coord = geometry->node[iPoint]->GetCoord();
+    Coord   = geometry->node[iPoint]->GetCoord();
+    GridVel = geometry->node[iPoint]->GetGridVel();
     
     /*--- Calculate non-dim. position from rotation center ---*/
     for (iDim = 0; iDim < nDim; iDim++)
@@ -1639,19 +1662,30 @@ void CVolumetricMovement::SetRigidPitching(CGeometry *geometry, CConfig *config,
     /*--- Compute transformed point coordinates ---*/
     rotCoord[0] = rotMatrix[0][0]*r[0] 
                 + rotMatrix[0][1]*r[1] 
-                + rotMatrix[0][2]*r[2] + Center[0];
+                + rotMatrix[0][2]*r[2];
     
     rotCoord[1] = rotMatrix[1][0]*r[0] 
                 + rotMatrix[1][1]*r[1] 
-                + rotMatrix[1][2]*r[2] + Center[1];
+                + rotMatrix[1][2]*r[2];
     
     rotCoord[2] = rotMatrix[2][0]*r[0] 
                 + rotMatrix[2][1]*r[1] 
-                + rotMatrix[2][2]*r[2] + Center[2];
+                + rotMatrix[2][2]*r[2];
     
-    /*--- Store new node location ---*/
+    /*--- Cross Product of angular velocity and distance from center.
+     Note that we have assumed the grid velocities have been set to 
+     an initial value in the plunging routine. ---*/
+    
+    newGridVel[0] = GridVel[0] + alphaDot[1]*rotCoord[2] - alphaDot[2]*rotCoord[1];
+    newGridVel[1] = GridVel[1] + alphaDot[2]*rotCoord[0] - alphaDot[0]*rotCoord[2];
+    newGridVel[2] = GridVel[2] + alphaDot[0]*rotCoord[1] - alphaDot[1]*rotCoord[0];
+    
+    /*--- Store new node location & grid velocity. Add center location.
+     Do not store the grid velocity if this is an adjoint calculation.---*/
+    
     for (iDim = 0; iDim < nDim; iDim++) {
-      geometry->node[iPoint]->SetCoord(iDim,rotCoord[iDim]);
+      geometry->node[iPoint]->SetCoord(iDim,rotCoord[iDim]+Center[iDim]);
+      if (!adjoint) geometry->node[iPoint]->SetGridVel(iDim,newGridVel[iDim]);
     }
   }
   
@@ -1671,12 +1705,14 @@ void CVolumetricMovement::SetRigidPlunging(CGeometry *geometry, CConfig *config,
   
   /*--- Local variables ---*/
   double deltaX[3], newCoord[3], Center[3], *Coord, Omega[3], Ampl[3], Lref;
+  double *GridVel, newGridVel[3], xDot[3];
   double deltaT, time_new, time_old;
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint;
   bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
   bool adjoint = config->IsAdjoint();
-	
+	double motion_ramp = config->GetMotion_Ramp(iter);
+  
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
   Lref   = config->GetLength_Ref();
@@ -1690,9 +1726,9 @@ void CVolumetricMovement::SetRigidPlunging(CGeometry *geometry, CConfig *config,
   Center[0] = config->GetMotion_Origin_X(iZone);
   Center[1] = config->GetMotion_Origin_Y(iZone);
   Center[2] = config->GetMotion_Origin_Z(iZone);
-  Omega[0]  = config->GetPlunging_Omega_X(iZone)/config->GetOmega_Ref();
-  Omega[1]  = config->GetPlunging_Omega_Y(iZone)/config->GetOmega_Ref();
-  Omega[2]  = config->GetPlunging_Omega_Z(iZone)/config->GetOmega_Ref();
+  Omega[0]  = (config->GetPlunging_Omega_X(iZone)/config->GetOmega_Ref())*motion_ramp;
+  Omega[1]  = (config->GetPlunging_Omega_Y(iZone)/config->GetOmega_Ref())*motion_ramp;
+  Omega[2]  = (config->GetPlunging_Omega_Z(iZone)/config->GetOmega_Ref())*motion_ramp;
   Ampl[0]   = config->GetPlunging_Ampl_X(iZone)/Lref;
   Ampl[1]   = config->GetPlunging_Ampl_Y(iZone)/Lref;
   Ampl[2]   = config->GetPlunging_Ampl_Z(iZone)/Lref;
@@ -1729,9 +1765,131 @@ void CVolumetricMovement::SetRigidPlunging(CGeometry *geometry, CConfig *config,
 	deltaX[1] = -Ampl[1]*(sin(Omega[1]*time_new) - sin(Omega[1]*time_old));
 	deltaX[2] = -Ampl[2]*(sin(Omega[2]*time_new) - sin(Omega[2]*time_old));
   
+  /*--- Compute grid velocity due to plunge in the x, y, & z directions. ---*/
+	xDot[0] = -Ampl[0]*Omega[0]*(cos(Omega[0]*time_new));
+	xDot[1] = -Ampl[1]*Omega[1]*(cos(Omega[1]*time_new));
+	xDot[2] = -Ampl[2]*Omega[2]*(cos(Omega[2]*time_new));
+  
   if (rank == MASTER_NODE) {
     cout.precision(4);
 		cout << "Delta plunging increments (dx, dy, dz): (";
+    cout << deltaX[0] << ", ";
+    cout << deltaX[1] << ", ";
+    cout << deltaX[2] << ")." << endl;
+  }
+  
+	/*--- Loop over and move each node in the volume mesh ---*/
+	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    
+    /*--- Coordinates of the current point ---*/
+    Coord   = geometry->node[iPoint]->GetCoord();
+    GridVel = geometry->node[iPoint]->GetGridVel();
+    
+    /*--- Increment the node position using the delta values. ---*/
+    for (iDim = 0; iDim < nDim; iDim++)
+      newCoord[iDim] = Coord[iDim] + deltaX[iDim];
+    
+    /*--- Cross Product of angular velocity and distance from center.
+     Note that we have assumed the grid velocities have been set to
+     an initial value in the plunging routine. ---*/
+    
+    newGridVel[0] = GridVel[0] + xDot[0];
+    newGridVel[1] = GridVel[1] + xDot[1];
+    newGridVel[2] = GridVel[2] + xDot[2];
+    
+    /*--- Store new node location & grid velocity. Do not store the grid
+     velocity if this is an adjoint calculation. ---*/
+    
+    for (iDim = 0; iDim < nDim; iDim++) {
+      geometry->node[iPoint]->SetCoord(iDim,newCoord[iDim]);
+      if (!adjoint) geometry->node[iPoint]->SetGridVel(iDim,newGridVel[iDim]);
+    }
+  }
+  
+  /*--- Set the mesh motion center to the new location after
+   incrementing the position with the rigid translation. This
+   new location will be used for subsequent pitching/rotation.---*/
+  
+  config->SetMotion_Origin_X(iZone,Center[0]+deltaX[0]);
+  config->SetMotion_Origin_Y(iZone,Center[1]+deltaX[1]);
+  config->SetMotion_Origin_Z(iZone,Center[2]+deltaX[2]);
+  
+	/*--- After moving all nodes, update geometry class ---*/
+	geometry->SetCG();
+	geometry->SetControlVolume(config, UPDATE);
+	geometry->SetBoundControlVolume(config, UPDATE);
+  
+}
+
+void CVolumetricMovement::SetRigidTranslation(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter) {
+  
+  int rank = MASTER_NODE;
+#ifndef NO_MPI
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+  
+  /*--- Local variables ---*/
+  double deltaX[3], newCoord[3], Center[3], *Coord, Lref;
+  double xDot[3];
+  double deltaT, time_new, time_old;
+  double motion_ramp = config->GetMotion_Ramp(iter);
+  unsigned short iDim, nDim = geometry->GetnDim();
+  unsigned long iPoint;
+  bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
+  bool adjoint = config->IsAdjoint();
+	
+  /*--- Retrieve values from the config file ---*/
+  deltaT = config->GetDelta_UnstTimeND();
+  Lref   = config->GetLength_Ref();
+  
+  /*--- For time-spectral, motion is the same in each zone (at each instance). ---*/
+  if (time_spectral) {
+	  iZone = ZONE_0;
+  }
+
+  /*--- Get motion center and translation rates from config ---*/
+  Center[0] = config->GetMotion_Origin_X(iZone);
+  Center[1] = config->GetMotion_Origin_Y(iZone);
+  Center[2] = config->GetMotion_Origin_Z(iZone);
+  xDot[0]   = config->GetTranslation_Rate_X(iZone)*motion_ramp;
+  xDot[1]   = config->GetTranslation_Rate_Y(iZone)*motion_ramp;
+  xDot[2]   = config->GetTranslation_Rate_Z(iZone)*motion_ramp;
+  
+  if (time_spectral) {
+	  /*--- period of oscillation & time interval using nTimeInstances ---*/
+	  double period = config->GetTimeSpectral_Period();
+	  deltaT = period/(double)(config->GetnTimeInstances());
+  }
+  
+  /*--- Compute delta time based on physical time step ---*/
+  if (adjoint) {
+    /*--- For the unsteady adjoint, we integrate backwards through
+     physical time, so perform mesh motion in reverse. ---*/
+    unsigned long nFlowIter  = config->GetnExtIter();
+    unsigned long directIter = nFlowIter - iter - 1;
+    time_new = static_cast<double>(directIter)*deltaT;
+    time_old = time_new;
+    if (iter != 0) time_old = (static_cast<double>(directIter)+1.0)*deltaT;
+  } else {
+    /*--- Forward time for the direct problem ---*/
+    time_new = static_cast<double>(iter)*deltaT;
+    if (time_spectral) {
+    	/*--- For time-spectral, begin movement from the zero position ---*/
+    	time_old = 0.0;
+    } else {
+    	time_old = time_new;
+    	if (iter != 0) time_old = (static_cast<double>(iter)-1.0)*deltaT;
+    }
+  }
+  
+	/*--- Compute delta change in the position in the x, y, & z directions. ---*/
+	deltaX[0] = xDot[0]*deltaT;
+	deltaX[1] = xDot[1]*deltaT;
+	deltaX[2] = xDot[2]*deltaT;
+  
+  if (rank == MASTER_NODE) {
+    cout.precision(4);
+		cout << "Delta translation increments (dx, dy, dz): (";
     cout << deltaX[0] << ", ";
     cout << deltaX[1] << ", ";
     cout << deltaX[2] << ")." << endl;
@@ -1747,15 +1905,19 @@ void CVolumetricMovement::SetRigidPlunging(CGeometry *geometry, CConfig *config,
     for (iDim = 0; iDim < nDim; iDim++)
       newCoord[iDim] = Coord[iDim] + deltaX[iDim];
     
-    /*--- Store new node location ---*/
+    /*--- Store new node location & grid velocity. Do not store the grid
+     velocity if this is an adjoint calculation. ---*/
+    
     for (iDim = 0; iDim < nDim; iDim++) {
       geometry->node[iPoint]->SetCoord(iDim,newCoord[iDim]);
+      if (!adjoint) geometry->node[iPoint]->SetGridVel(iDim,xDot[iDim]);
     }
   }
   
   /*--- Set the mesh motion center to the new location after
    incrementing the position with the rigid translation. This
    new location will be used for subsequent pitching/rotation.---*/
+  
   config->SetMotion_Origin_X(iZone,Center[0]+deltaX[0]);
   config->SetMotion_Origin_Y(iZone,Center[1]+deltaX[1]);
   config->SetMotion_Origin_Z(iZone,Center[2]+deltaX[2]);
@@ -1767,199 +1929,260 @@ void CVolumetricMovement::SetRigidPlunging(CGeometry *geometry, CConfig *config,
   
 }
 
-
 void CVolumetricMovement::SetAeroElasticMotion(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned short iZone, unsigned long iter) {
+    
+    /* The structural model solved in this routine is the typical section wing model
+     The details of the implementation can be found in J.J. Alonso "Fully-Implicit Time-Marching Aeroelastic Solutions" 1994.
+     This routine is limited to 2 dimensional problems */
     
     int rank = MASTER_NODE;
 #ifndef NO_MPI
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
-
-    // Use iter if to start after a few dual time step iterations.
     
-
+    unsigned short nDim=geometry->GetnDim();
+    if (nDim != 2) {
+        if (rank == MASTER_NODE) {
+            printf("\n\n   !!! Error !!!\n" );
+            printf("Grid movement kind Aeroelastic is only available in 2 dimensions.");
+            printf("Now exiting...\n\n");
+            exit(0);
+        }
+    }
+    
+    /* Amount of output to print to scree */
+    bool verbose = true;
+    
+    /* Use the if statement to move the grid only at selected dual time step iterations. */
+    //if (iter>5) {
+    
     /*--- Retrieve values from the config file ---*/
-    //double w_h = config->GetAeroelastic_Frequency_Plunge();
     double w_a = config->GetAeroelastic_Frequency_Pitch();
     double dt = config->GetDelta_UnstTime();
-    dt = dt*w_a; //Non-dimensional structural time.
+    dt = dt*w_a; //Non-dimensionalize the structural time.
     double Lref = config->GetLength_Ref();
     double b = Lref/2.0;  // airfoil semichord
     double Density_Inf  = config->GetDensity_FreeStreamND();
-    double Temperature_Inf  = config->GetTemperature_FreeStream();
+    double P_Inf = config->GetPressure_FreeStreamND();
     double Mach_Inf     = config->GetMach_FreeStreamND();
     double gamma = config->GetGamma();
-    double gas_constant = config->GetGas_Constant();
     
-    /*--- Local variables --- Parameters given*/
-    double mass = 13.589; //airfoil mass per unit span.
+    /* airfoil mass ratio */
+    double mu = 60;
+    /* Structural Equation damping */
+    double xi[2] = {0.0,0.0};
     
-    double mu; // airfoil mass ratio = 14.1241;
-    double k_c; // reduced frequency= 0.3452;
-    double Vf;  // Fluter Speed Index
-    double xi[2] = {0.0,0.0}; //Structural Equation damping
-    
-    mu = mass/(PI_NUMBER*Density_Inf*b*b);
-    k_c = (w_a*2*b)/(Mach_Inf*sqrt(gamma*gas_constant*Temperature_Inf));
-    Vf = (Mach_Inf*sqrt(gamma*gas_constant*Temperature_Inf))/(b*w_a*sqrt(mu));
-
-    // Note that rho inf might vary a bit with respect to the Matlab value causing the other variables to be slightly off.
-//    std::cout << "Density = " << Density_Inf << std::endl;
-//    std::cout << "Mach = " << Mach_Inf << std::endl;
-//    std::cout << "gamma = " << gamma << std::endl;
-//    std::cout << "gas constant = " << gas_constant << std::endl;
-//    std::cout << "Temperature = " << Temperature_Inf << std::endl;
-//    std::cout << "Value of mu = " << mu << std::endl;
-//    std::cout << "Value of k_c = " << k_c << std::endl;
-    std::cout << "Vf = " << Vf << std::endl;
-    
+    /* Flutter Speep Index */
+    double Vf = (Mach_Inf*sqrt(gamma*P_Inf/Density_Inf))/(b*w_a*sqrt(mu));
+    if (verbose && (rank == MASTER_NODE) && (iter == 1)) {
+        std::cout << "Flutter Speed Index = " << Vf << std::endl;
+    }
+        
     /* Eigenvectors and Eigenvalues of the Generalized EigenValue Problem. */
-    // generalized eigenvectors.
-    double PHI[2][2];
-    //generalized eigenvalues.
-    double w[2];
+    double PHI[2][2];   // generalized eigenvectors.
+    double w[2];        //generalized eigenvalues.
     AeroElasticSetUp(PHI,w,config);
     
-    /* Solving the Decoupled Problem with second order time discretization*/
+    /* Solving the Decoupled Aeroelastic Problem with second order time discretization Eq (9) */
     
-    // Solution variables set up. //x1[i], i-equation. // Time (n+1)->np1, n->n, (n-1)->n1
-    double x1_n[2];
-    double x1_n1[2];
-    double x1_np1[2];
-    double x2_n[2];
-    double x2_n1[2];
-    double x2_np1[2];
+    /* Solution variables. //x1[i], i-equation. // Time (n+1)->np1, n->n, (n-1)->n1 */
+    double x1_n[2], x1_n1[2], x1_np1[2];
+    double x2_n[2], x2_n1[2], x2_np1[2];
     
     double x1_np1_old[2];
-
-    // Get the source terms (x at old iterations)
+    double x2_np1_old[2];
+    
+    /* Values from previous movement of spring at true time step n+1 
+       We use this values because we are solving for delta changes not absolute changes */
     double *source_np1 = config->GetAeroelastic_np1();
+    x1_np1_old[0] = source_np1[0];
+    x1_np1_old[1] = source_np1[1];
+    x2_np1_old[0] = source_np1[2];
+    x2_np1_old[1] = source_np1[3];
+    
+    /* Values at previous timesteps. */
     double *source_n = config->GetAeroelastic_n();
     double *source_n1 = config->GetAeroelastic_n1();
     
-    // Values from previous movement of spring at true time step n+1
-    x1_np1_old[0] = source_np1[0];
-    x1_np1_old[1] = source_np1[1];
-    
-    // Values at previous timesteps.
     x1_n[0] = source_n[0];
     x1_n[1] = source_n[1];
-    x1_n1[0] = source_n1[0];
-    x1_n1[1] = source_n1[1];
-    
     x2_n[0] = source_n[2];
     x2_n[1] = source_n[3];
+    
+    x1_n1[0] = source_n1[0];
+    x1_n1[1] = source_n1[1];
     x2_n1[0] = source_n1[2];
     x2_n1[1] = source_n1[3];
     
-    // Set up of variables used to solve the structural problem.
+    /* Set up of variables used to solve the structural problem. */
     double Q[2];
     double A_inv[2][2];
     double detA;
     double S1, S2;
     double RHS[2];
     double eta[2];
+    double eta_dot[2];
     
-    // Forcing Term
-    double cons = 4/(PI_NUMBER*mu*k_c*k_c);
+    /* Forcing Term */
+    double cons = Vf*Vf/PI_NUMBER;
     double F[2] = {cons*(-Cl), cons*(2*Cm)};
-
     
     for (int i=0; i<2; i++) {
         Q[i] = 0;
         for (int k=0; k<2; k++) {
             Q[i] += PHI[k][i]*F[k]; //PHI transpose
         }
-        //std::cout << "Q[i] = " << Q[i] << std::endl;  //Be careful with sign of Q depends on sign of PHI
     }
-
     
-    // solve each decoupled equation
+    /* solve each decoupled equation (The inverse of the 2x2 matrix is provided) */
     for (int i=0; i<2; i++) {
-        //std::cout << "w[i] = " << w[i] << std::endl;
+        /* Matrix Inverse */
         detA = 9.0/(4.0*dt*dt) + 3*w[i]*xi[i]/(dt) + w[i]*w[i];
-        //std::cout << "detA = " << detA << std::endl;
         A_inv[0][0] = 1/detA * 3/(2.0*dt) + 2*xi[i]*w[i];
         A_inv[0][1] = 1/detA * 1;
         A_inv[1][0] = 1/detA * -w[i]*w[i];
         A_inv[1][1] = 1/detA * 3/(2.0*dt);
         
-        S1 = (-4*x1_n[i] + x1_n1[i])/(2.0*dt);  //need to figure out how to keep track of the old values.
+        /* Source Terms from previous iterations */
+        S1 = (-4*x1_n[i] + x1_n1[i])/(2.0*dt);
         S2 = (-4*x2_n[i] + x2_n1[i])/(2.0*dt);
-                
+        
+        /* Problem Right Hand Side */
         RHS[0] = -S1;
         RHS[1] = Q[i]-S2;
         
+        /* Solve the equations */
         x1_np1[i] = A_inv[0][0]*RHS[0] + A_inv[0][1]*RHS[1];
         x2_np1[i] = A_inv[1][0]*RHS[0] + A_inv[1][1]*RHS[1];
         
-        //std::cout << "x1[0] = " << x1[0] << std::endl;
-        //std::cout << "x2[0] = " << x2[0] << std::endl;
-        
-        eta[i] = x1_np1[i]-x1_np1_old[i];
-        
+        eta[i] = x1_np1[i]-x1_np1_old[i];  // For displacements, the change(deltas) is used.
+        eta_dot[i] = x2_np1[i]; // For velocities, absolute values are used.
     }
-
-    // Get the actual displacements
+    
+    /* Transform back from the generalized coordinates to get the actual displacements in plunge and pitch */
     double q[2];
+    double q_dot[2];
     for (int i=0; i<2; i++) {
         q[i] = 0;
+        q_dot[i] = 0;
         for (int k=0; k<2; k++) {
             q[i] += PHI[i][k]*eta[k];
+            q_dot[i] += PHI[i][k]*eta_dot[k];
         }
-        //std::cout << "q[i] = " << q[i] << std::endl;
     }
     
     double dy = b*q[0];
     double dalpha = q[1];
     
-    // write the plunging and pitching coordinates.
+    double y_dot = w_a*b*q_dot[0];
+    double alpha_dot = w_a*q_dot[1];
     
+    /* write the plunging and pitching coordinates.
+     For now have python scripts that post-process the output to either the file or the screen
+     In the future could have the post-process values written to a solution file */
     if (rank == MASTER_NODE) {
         std::fstream output_file;
         output_file.open("plunging_pitching.txt", std::fstream::in | std::fstream::out | std::fstream::app);
         
-        output_file << dy/b << "    " << dalpha << "\n";
+        output_file << std::setprecision(15) << dy/b << "    " << dalpha << "\n";
         output_file.close();
+        
+        if (verbose) {
+            std::cout.precision(15);
+            std::cout << "plunging movement = " << dy/b << std::endl;
+            std::cout << "pitching movement = " << dalpha << std::endl;
+        }
+    }
 
-        std::cout << "plunging movement = " << dy/b << std::endl;
-        std::cout << "pitching movement = " << dalpha << std::endl;
+    /* Calculate the total plunge and total pitch displacements for the unsteady step by summing the displacement at each sudo time step */
+    double pitch, plunge;
+    if (iter == 1) {
+        pitch = 0.0;
+        plunge = 0.0;
+    } else {
+        pitch = config->GetAeroelastic_pitch();
+        plunge = config->GetAeroelastic_plunge();
+    }
+    
+    config->SetAeroelastic_pitch(pitch+dalpha);
+    config->SetAeroelastic_plunge(plunge+dy/b);
+    
+    if (rank == MASTER_NODE && iter == (config->GetUnst_nIntIter()-1)) {
+        std::cout << "plunge = " << config->GetAeroelastic_plunge() << std::endl;
+        std::cout << "pitch = " << config->GetAeroelastic_pitch() << std::endl;
     }
     
     /* Move the Grid */
-    // work in 2 dimensions
+    
     double Center[2];
     Center[0] = config->GetMotion_Origin_X(iZone);
-    Center[1] = config->GetMotion_Origin_Y(iZone);
+    Center[1] = config->GetMotion_Origin_Y(iZone)-dy; //substract the plunge.
     double *Coord;
     unsigned short iDim;
     unsigned long iPoint;
     double x_new, y_new;
     
     /*--- Loop over and rotate each node in the volume mesh ---*/
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
         
         /*--- Coordinates of the current point ---*/
         Coord = geometry->node[iPoint]->GetCoord();
         
-        /*--- Calculate non-dim. position from rotation center ---*/   //why?...............................
-        for (iDim = 0; iDim < 2; iDim++)
+        /*--- Calculate non-dim. position from rotation center ---*/
+        double r[2] = {0,0};
+        for (iDim = 0; iDim < nDim; iDim++)
             r[iDim] = (Coord[iDim]-Center[iDim])/Lref;
         
         /*--- Compute transformed point coordinates ---*/
-        // rotation contribution + Center + plunging contribution
-        x_new = cos(-dalpha)*r[0] - sin(-dalpha)*r[1] + Center[0]; //Center doublecheck
-        y_new = sin(-dalpha)*r[0] + cos(-dalpha)*r[1] + Center[1] - dy;
+        // rotation contribution + Center + plunging contribution (this contribution is accounted for in Center)
+        x_new = cos(-dalpha)*r[0] - sin(-dalpha)*r[1] + Center[0];
+        y_new = sin(-dalpha)*r[0] + cos(-dalpha)*r[1] + Center[1];
         
         /*--- Store new node location ---*/
         geometry->node[iPoint]->SetCoord(0,x_new);
         geometry->node[iPoint]->SetCoord(1,y_new);
     }
-	
+    
     /*--- Set the mesh motion center to the new location after
      incrementing the position with the rigid translation. This
      new location will be used for subsequent pitching/rotation, aeroelastic movement.---*/
-    config->SetMotion_Origin_Y(iZone,Center[1]-dy);
+    config->SetMotion_Origin_Y(iZone,Center[1]);
+    
+    /*--- After moving all nodes, update geometry class ---*/
+    geometry->SetCG();
+    geometry->SetControlVolume(config, UPDATE);
+    geometry->SetBoundControlVolume(config, UPDATE);
+    
+    
+    /* Find Grid Velocities */
+    
+    /*--- Angular velocity at the given time instance ---*/
+    alpha_dot = -alpha_dot; //added minus because of sign convention.
+    
+    /*--- Loop over each node in the volume mesh ---*/
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+        
+        /*--- Coordinates of the current point ---*/
+        Coord = geometry->node[iPoint]->GetCoord();
+        
+        /*--- Calculate non-dim. position from rotation center ---*/
+        double r[2] = {0,0};
+        for (iDim = 0; iDim < nDim; iDim++)
+            r[iDim] = (Coord[iDim]-Center[iDim])/Lref;
+        
+        /*--- Cross Product of angular velocity and distance from center ---*/
+        double GridVel[2] = {0,0};
+        GridVel[0] = -alpha_dot*r[1];
+        GridVel[1] = alpha_dot*r[0] - y_dot;
+        
+        /*--- Set Grid Velocity for the point in the given zone ---*/
+        for(iDim = 0; iDim < nDim; iDim++) {
+            
+            /*--- Store grid velocity for this point ---*/
+            geometry->node[iPoint]->SetGridVel(iDim, GridVel[iDim]);
+            
+        }
+    }
     
     /* Set the Aeroelastic solution at time n+1. This gets update every sudo time step
      and after convering the sudo time step the solution at n+1 get moved to the solution at n
@@ -1968,11 +2191,8 @@ void CVolumetricMovement::SetAeroElasticMotion(CGeometry *geometry, double Cl, d
     config->SetAeroelastic_np1(1, x1_np1[1]);
     config->SetAeroelastic_np1(2, x2_np1[0]);
     config->SetAeroelastic_np1(3, x2_np1[1]);
-
-	/*--- After moving all nodes, update geometry class ---*/
-	geometry->SetCG();
-	geometry->SetControlVolume(config, UPDATE);
-	geometry->SetBoundControlVolume(config, UPDATE);
+    
+    //}
     
     
 }
@@ -1983,7 +2203,7 @@ void CVolumetricMovement::AeroElasticSetUp(double (&PHI)[2][2],double (&lambda)[
     double w_h = config->GetAeroelastic_Frequency_Plunge();
     double w_a = config->GetAeroelastic_Frequency_Pitch();
     
-    /*--- Geometrical Parameters*/
+    /*--- Geometrical Parameters */
     double x_a = 1.8;
     double r_a2 = 3.48;
     
@@ -2609,92 +2829,17 @@ void CSurfaceMovement::SetFFDRotation(CGeometry *geometry, CConfig *config, CFre
 	
 }
 
-//void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
-//	unsigned long iVertex, Point;
-//	unsigned short iMarker;
-//	double VarCoord[3], *Coord, *Normal, ek, fk, BumpSize = 1.0, BumpLoc = 1.5, xCoord;
-//    double *maxpt, *minpt, coord_normalization = 1.0, *temp;
-//	bool upper = true, double_surface = false;
-//
-//	/*--- Reset airfoil deformation if first deformation ---*/
-//	if ((iDV == 0) || (ResetDef == true)) {
-//		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-//			for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
-//				VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
-//				boundary->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
-//			}
-//	}
-//
-//	/*--- Perform multiple airfoil deformation ---*/
-//	double Ampl_old = config->GetDV_Value_Old(iDV);
-//	double Ampl_new = config->GetDV_Value_New(iDV);
-//	double Ampl = Ampl_new-Ampl_old;
-//	double xk = config->GetParamDV(iDV,1);
-//	const double t2 = 3.0;
-//
-//	if (config->GetParamDV(iDV,0) == NO)  { upper = false; double_surface = true; }
-//	if (config->GetParamDV(iDV,0) == YES) { upper = true; double_surface = true; }
-//
-//	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
-//		/*----Normalize surface to [0,1]----*/
-//		minpt = boundary->vertex[iMarker][0]->GetCoord();
-//		maxpt = boundary->vertex[iMarker][boundary->nVertex[iMarker]-1]->GetCoord();
-//
-//		for (iVertex = 1; iVertex < boundary->nVertex[iMarker]; iVertex++) {
-//			if (config->GetMarker_All_Moving(iMarker) == YES) {
-//				/*Coord is the x coordinate */
-//				temp = boundary->vertex[iMarker][iVertex]->GetCoord();
-//				if (*temp>*maxpt){
-//                    *maxpt=*temp;}
-//				else if (*temp<*minpt){
-//                    *minpt=*temp;}
-//			}
-//		}
-//		coord_normalization = *maxpt-*minpt;
-//		/* If there is a vertical line, normalizing factor will be zero, the line below corrects for this */
-//		if (coord_normalization==0){coord_normalization=1.0;}
-//        /*--------*/
-//
-//		for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
-//			VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
-//
-//			if (config->GetMarker_All_Moving(iMarker) == YES) {
-//
-//				Point = boundary->vertex[iMarker][iVertex]->GetNode();
-//				Coord = boundary->vertex[iMarker][iVertex]->GetCoord();
-//				Normal = boundary->vertex[iMarker][iVertex]->GetNormal();
-//				/*normalization of Coord:*/
-//				*Coord = (*Coord-*minpt)/coord_normalization;
-//
-//				/*--- Bump computation ---*/
-//				if (double_surface) {
-//					ek = log10(0.5)/log10(xk);
-//					fk = pow( sin( PI_NUMBER * pow(Coord[0],ek) ) , t2);
-//					/*--- Upper and lower surface ---*/
-//					if (( upper) && (Normal[1] > 0)) { VarCoord[1] =  Ampl*fk; }
-//					if ((!upper) && (Normal[1] < 0)) { VarCoord[1] = -Ampl*fk; }
-//				}
-//				else {
-//					xCoord = Coord[0] - BumpLoc;
-//					ek = log10(0.5)/log10(xk/BumpSize);
-//					fk = pow( sin( PI_NUMBER * pow(xCoord/BumpSize,ek)),t2);
-//					/*--- Only one surface ---*/
-//					if ((xCoord <= 0.0) || (xCoord >= BumpSize)) VarCoord[1] =  0.0;
-//					else VarCoord[1] =  Ampl*fk;
-//				}
-//			}
-//            VarCoord[1]=VarCoord[1]*coord_normalization; // scale the bump size to match surface scale
-//			boundary->vertex[iMarker][iVertex]->AddVarCoord(VarCoord);
-//		}
-//	}
-//}
 
 void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
 	unsigned long iVertex, Point;
 	unsigned short iMarker;
-	double VarCoord[3], *Coord, *Normal, ek, fk, BumpSize = 1.0, BumpLoc = 1.5, xCoord;
+	double VarCoord[3], *Coord, *Normal, ek, fk, BumpSize = 1.0, BumpLoc = 0.0, xCoord;
+  
+//  double *maxpt, *minpt, coord_normalization = 1.0;
+//  list<double> mylist;
+
 	bool upper = true, double_surface = false;
-		
+  
 	/*--- Reset airfoil deformation if first deformation ---*/
 	if ((iDV == 0) || (ResetDef == true)) {
 		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
@@ -2703,28 +2848,42 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
 				boundary->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
 			}
 	}
-		
+  
 	/*--- Perform multiple airfoil deformation ---*/
 	double Ampl_old = config->GetDV_Value_Old(iDV);
 	double Ampl_new = config->GetDV_Value_New(iDV);
 	double Ampl = Ampl_new-Ampl_old;
 	double xk = config->GetParamDV(iDV,1);
-	const double t2 = 3.0;	
-	
-	if (config->GetParamDV(iDV,0) == NO)  { upper = false; double_surface = true; }
-	if (config->GetParamDV(iDV,0) == YES) { upper = true; double_surface = true; }
-	
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+	const double t2 = 3.0;
+  
+	if (config->GetParamDV(iDV, 0) == NO)  { upper = false; double_surface = true; }
+	if (config->GetParamDV(iDV, 0) == YES) { upper = true; double_surface = true; }
+  
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+    
+		/*--- Normalize surface to [0,1] (this should be done in parallel, otherwise each partition 
+     of the airfoil has a different normalization, and note that xk should be also divided 
+     by the normalization).---*/
+//    mylist.clear();
+//		for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
+//      mylist.push_back(*(boundary->vertex[iMarker][iVertex]->GetCoord()));
+//		}
+//    mylist.sort();
+//    minpt = &mylist.front();
+//    maxpt = &mylist.back();
+//		coord_normalization = *maxpt - *minpt;
+
 		for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
 			VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
-				
 			if (config->GetMarker_All_Moving(iMarker) == YES) {
-	
 				Point = boundary->vertex[iMarker][iVertex]->GetNode();
 				Coord = boundary->vertex[iMarker][iVertex]->GetCoord();
 				Normal = boundary->vertex[iMarker][iVertex]->GetNormal();
+        
 
-				/*--- Bump computation ---*/
+//				*Coord = (*Coord - *minpt) / coord_normalization; // Normalization of Coord
+
+        /*--- Bump computation ---*/
 				if (double_surface) {
 					ek = log10(0.5)/log10(xk);
 					fk = pow( sin( PI_NUMBER * pow(Coord[0],ek) ) , t2);
@@ -2741,11 +2900,13 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
 					else VarCoord[1] =  Ampl*fk;
 				}
 			}
+      
+//    VarCoord[1] = VarCoord[1]*coord_normalization; // Scale the bump size to match surface scale
+
 			boundary->vertex[iMarker][iVertex]->AddVarCoord(VarCoord);
 		}
-
+	}
 }
-
 
 void CSurfaceMovement::SetDisplacement(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
 	unsigned long iVertex;
@@ -3012,7 +3173,9 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
   
 	unsigned short iDim, nDim; 
 	unsigned long iPoint, flowIter = 0;
-	double VarCoord[3], *Coord_Old = NULL, *Coord_New = NULL, Center[3], Lref;
+  unsigned long jPoint, GlobalIndex;
+	double VarCoord[3], *Coord_Old = NULL, *Coord_New = NULL, Center[3];
+  double Lref   = config->GetLength_Ref();
   double NewCoord[3], rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
   double r[3], rotCoord[3];
   unsigned long iVertex;
@@ -3020,6 +3183,7 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
   char buffer[50];
   string motion_filename, UnstExt, text_line;
   ifstream motion_file;
+  bool unsteady = config->GetUnsteady_Simulation();
   bool adjoint = ((config->GetKind_Solver() == ADJ_EULER) || 
                   (config->GetKind_Solver() == ADJ_NAVIER_STOKES) ||
                   (config->GetKind_Solver() == ADJ_RANS));
@@ -3029,44 +3193,41 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
 	nDim = geometry->GetnDim();
   motion_filename = config->GetMotion_FileName();
   
-  /*--- Center of rotation & angular velocity vector from config ---*/
-	Lref   = config->GetLength_Ref();
-  Center[0] = config->GetMotion_Origin_X(iZone);
-  Center[1] = config->GetMotion_Origin_Y(iZone);
-  Center[2] = config->GetMotion_Origin_Z(iZone);
+  /*--- Set the extension for the correct unsteady mesh motion file ---*/
   
-  /*--- Set the extension for the correct unsteady mesh motion file ---*/  
-  
-  if (adjoint) {
-    /*--- For the unsteady adjoint, we integrate backwards through
-     physical time, so perform mesh motion in reverse. ---*/ 
-    unsigned long nFlowIter = config->GetnExtIter() - 1;
-    flowIter  = nFlowIter - iter;
-    motion_filename.erase (motion_filename.end()-4, motion_filename.end());
-    if ((int(flowIter) >= 0) && (int(flowIter) < 10)) sprintf (buffer, "_0000%d.dat", int(flowIter));
-    if ((int(flowIter) >= 10) && (int(flowIter) < 100)) sprintf (buffer, "_000%d.dat", int(flowIter));
-    if ((int(flowIter) >= 100) && (int(flowIter) < 1000)) sprintf (buffer, "_00%d.dat", int(flowIter));
-    if ((int(flowIter) >= 1000) && (int(flowIter) < 10000)) sprintf (buffer, "_0%d.dat", int(flowIter));
-    if  (int(flowIter) >= 10000) sprintf (buffer, "_%d.dat", int(flowIter));
-    UnstExt = string(buffer);
-    motion_filename.append(UnstExt);
-  } else {
-    /*--- Forward time for the direct problem ---*/
-    flowIter = iter;
-    motion_filename.erase (motion_filename.end()-4, motion_filename.end());
-    if ((int(flowIter) >= 0) && (int(flowIter) < 10)) sprintf (buffer, "_0000%d.dat", int(flowIter));
-    if ((int(flowIter) >= 10) && (int(flowIter) < 100)) sprintf (buffer, "_000%d.dat", int(flowIter));
-    if ((int(flowIter) >= 100) && (int(flowIter) < 1000)) sprintf (buffer, "_00%d.dat", int(flowIter));
-    if ((int(flowIter) >= 1000) && (int(flowIter) < 10000)) sprintf (buffer, "_0%d.dat", int(flowIter));
-    if  (int(flowIter) >= 10000) sprintf (buffer, "_%d.dat", int(flowIter));
-    UnstExt = string(buffer);
-    motion_filename.append(UnstExt);
+  if (unsteady) {
+    if (adjoint) {
+      /*--- For the unsteady adjoint, we integrate backwards through
+       physical time, so perform mesh motion in reverse. ---*/
+      unsigned long nFlowIter = config->GetnExtIter() - 1;
+      flowIter  = nFlowIter - iter;
+      motion_filename.erase (motion_filename.end()-4, motion_filename.end());
+      if ((int(flowIter) >= 0) && (int(flowIter) < 10)) sprintf (buffer, "_0000%d.dat", int(flowIter));
+      if ((int(flowIter) >= 10) && (int(flowIter) < 100)) sprintf (buffer, "_000%d.dat", int(flowIter));
+      if ((int(flowIter) >= 100) && (int(flowIter) < 1000)) sprintf (buffer, "_00%d.dat", int(flowIter));
+      if ((int(flowIter) >= 1000) && (int(flowIter) < 10000)) sprintf (buffer, "_0%d.dat", int(flowIter));
+      if  (int(flowIter) >= 10000) sprintf (buffer, "_%d.dat", int(flowIter));
+      UnstExt = string(buffer);
+      motion_filename.append(UnstExt);
+    } else {
+      /*--- Forward time for the direct problem ---*/
+      flowIter = iter;
+      motion_filename.erase (motion_filename.end()-4, motion_filename.end());
+      if ((int(flowIter) >= 0) && (int(flowIter) < 10)) sprintf (buffer, "_0000%d.dat", int(flowIter));
+      if ((int(flowIter) >= 10) && (int(flowIter) < 100)) sprintf (buffer, "_000%d.dat", int(flowIter));
+      if ((int(flowIter) >= 100) && (int(flowIter) < 1000)) sprintf (buffer, "_00%d.dat", int(flowIter));
+      if ((int(flowIter) >= 1000) && (int(flowIter) < 10000)) sprintf (buffer, "_0%d.dat", int(flowIter));
+      if  (int(flowIter) >= 10000) sprintf (buffer, "_%d.dat", int(flowIter));
+      UnstExt = string(buffer);
+      motion_filename.append(UnstExt);
+    }
+    
+    if (rank == MASTER_NODE)
+      cout << "Reading in the arbitrary mesh motion from direct iteration " << flowIter << "." << endl;
   }
   
   /*--- Open the motion file ---*/
-  
-  if (rank == MASTER_NODE)
-    cout << "Reading in the arbitrary mesh motion from direct iteration " << flowIter << "." << endl;;
+
   motion_file.open(motion_filename.data(), ios::in);
   /*--- Throw error if there is no file ---*/
   if (motion_file.fail()) {
@@ -3081,39 +3242,37 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
     istringstream point_line(text_line);
     if (nDim == 2) point_line >> iPoint >> NewCoord[0] >> NewCoord[1];
     if (nDim == 3) point_line >> iPoint >> NewCoord[0] >> NewCoord[1] >> NewCoord[2];
-    
-#ifdef NO_MPI
-    geometry->node[iPoint]->SetCoord_p1(NewCoord);
-#else
-    /*--- With MPI, need to match the local/global indices. ---*/
-    unsigned long jPoint, GlobalIndex;
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_Moving(iMarker) == YES) {
         for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           jPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           GlobalIndex = geometry->node[jPoint]->GetGlobalIndex();
           if (GlobalIndex == iPoint) {
-            geometry->node[jPoint]->SetCoord_p1(NewCoord);
+            geometry->vertex[iMarker][iVertex]->SetVarCoord(NewCoord);
             break;
           }
         }
       }
     }
-#endif
-    
   }
   /*--- Close the restart file ---*/
   motion_file.close();
   
   /*--- If rotating as well, prepare the rotation matrix ---*/
   
-  if (config->GetKind_GridMovement(iZone) == EXTERNAL_ROTATION) {
+  if (config->GetGrid_Movement() &&
+      config->GetKind_GridMovement(iZone) == EXTERNAL_ROTATION) {
     
     /*--- Variables needed only for rotation ---*/
     
     double Omega[3], dt;
     double dtheta, dphi, dpsi, cosTheta, sinTheta;
     double cosPhi, sinPhi, cosPsi, sinPsi;
+    
+    /*--- Center of rotation & angular velocity vector from config ---*/
+    Center[0] = config->GetMotion_Origin_X(iZone);
+    Center[1] = config->GetMotion_Origin_Y(iZone);
+    Center[2] = config->GetMotion_Origin_Z(iZone);
     
     /*--- Angular velocity vector from config ---*/
     
@@ -3174,13 +3333,14 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
         /*--- Get current and new coordinates from file ---*/
         
         Coord_Old = geometry->node[iPoint]->GetCoord();
-        Coord_New = geometry->node[iPoint]->GetCoord_p1();
+        Coord_New = geometry->vertex[iMarker][iVertex]->GetVarCoord();
         
         /*--- If we're also rotating, multiply each point by the
          rotation matrix. It is assumed that the coordinates in
          Coord_Old have already been rotated using SetRigid_Rotation(). ---*/
         
-        if (config->GetKind_GridMovement(iZone) == EXTERNAL_ROTATION) {
+        if (config->GetGrid_Movement() &&
+            config->GetKind_GridMovement(iZone) == EXTERNAL_ROTATION) {
           
           /*--- Calculate non-dim. position from rotation center ---*/
           

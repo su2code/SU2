@@ -2,7 +2,7 @@
  * \file geometry_structure.cpp
  * \brief Main subroutines for creating the primal grid and multigrid structure.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -24,39 +24,119 @@
 #include "../include/geometry_structure.hpp"
 
 CGeometry::CGeometry(void) {
+  
 	nEdge = 0;
+  nPoint = 0;
+	nElem = 0;
+
+	nElem_Bound_Storage = NULL;
+	nElem_Bound = NULL;
+	Tag_to_Marker = NULL;
+	elem = NULL;
+	face = NULL;
+	bound = NULL;
+	node = NULL;
+	edge = NULL;
+	vertex = NULL;
+	nVertex = NULL;
+	newBound = NULL;
+	nNewElem_Bound = NULL;
+  Marker_All_SendRecv = NULL;
+  
+//	PeriodicPoint[MAX_NUMBER_PERIODIC][2].clear();
+//	PeriodicElem[MAX_NUMBER_PERIODIC].clear();
+//	OldBoundaryElems[MAX_NUMBER_MARKER].clear();
+//  SendTransfLocal[MAX_NUMBER_DOMAIN].clear();
+//  ReceivedTransfLocal[MAX_NUMBER_DOMAIN].clear();
+//	SendDomainLocal[MAX_NUMBER_DOMAIN].clear();
+//	ReceivedDomainLocal[MAX_NUMBER_DOMAIN].clear();
+//	XCoordList.clear();
+  
+//	Xcoord_plane.clear();
+//	Ycoord_plane.clear();
+//	Zcoord_plane.clear();
+//	FaceArea_plane.clear();
+//	Plane_points.clear();
+  
 }
 
 CGeometry::~CGeometry(void) {
-	if (nElem_Bound != NULL) delete [] nElem_Bound;
-	if (Tag_to_Marker != NULL) delete [] Tag_to_Marker;
-	if (nElem_Bound_Storage != NULL) delete [] nElem_Bound_Storage;
-	if (nVertex != NULL) delete [] nVertex;
-
-	/*	for (unsigned long iElem = 0; iElem < nElem; iElem++)
-		elem[iElem]->~CPrimalGrid();
-	if (elem != NULL) delete [] elem;
-
-	for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++)
-		for (unsigned long iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++)
-			bound[iMarker][iElem_Bound]->~CPrimalGrid();
-	if (bound != NULL) delete [] bound;*/
-
-	for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++)
-		node[iPoint]->~CPoint();
-	//		node[iPoint]->~CDualGrid();
-	if (node != NULL) delete [] node;
-
-	for (unsigned long iEdge = 0; iEdge < nEdge; iEdge ++)
-		edge[iEdge]->~CEdge();
-	//		edge[iEdge]->~CDualGrid();
-	if (edge != NULL) delete [] edge;
-
-	for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++)
-		for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-			vertex[iMarker][iVertex]->~CVertex();
-	//			vertex[iMarker][iVertex]->~CDualGrid();
-	if (vertex != NULL) delete [] vertex;
+  unsigned long iElem, iElem_Bound, iPoint, iFace, iVertex, iEdge;
+  unsigned short iMarker;
+  
+  if (elem != NULL) {
+    for (iElem = 0; iElem < nElem; iElem++)
+      if (elem[iElem] != NULL) delete elem[iElem];
+    delete[] elem;
+  }
+  
+  if (bound != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
+        if (bound[iMarker][iElem_Bound] != NULL) delete bound[iMarker][iElem_Bound];
+      }
+    }
+    delete[] bound;
+  }
+  
+  if (face != NULL) {
+    for (iFace = 0; iFace < nFace; iFace ++)
+      if (face[iFace] != NULL) delete face[iFace];
+    delete[] face;
+  }
+  
+  if (node != NULL) {
+    for (iPoint = 0; iPoint < nPoint; iPoint ++)
+      if (node[iPoint] != NULL) delete node[iPoint];
+    delete[] node;
+  }
+  
+  if (edge != NULL) {
+    for (iEdge = 0; iEdge < nEdge; iEdge ++)
+      if (edge[iPoint] != NULL) delete edge[iEdge];
+    delete[] edge;
+  }
+  
+  if (vertex != NULL)  {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+        if (vertex[iMarker][iVertex] != NULL) delete vertex[iMarker][iVertex];
+      }
+    }
+    delete[] vertex;
+  }
+  
+  if (newBound != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
+        if (newBound[iMarker][iElem_Bound] != NULL) delete newBound[iMarker][iElem_Bound];
+      }
+    }
+    delete[] newBound;
+  }
+  
+  if (nElem_Bound_Storage != NULL) delete[] nElem_Bound_Storage;
+	if (nElem_Bound != NULL) delete[] nElem_Bound;
+	if (nVertex != NULL) delete[] nVertex;
+	if (nNewElem_Bound != NULL) delete[] nNewElem_Bound;
+  if (Marker_All_SendRecv != NULL) delete[] Marker_All_SendRecv;
+	if (Tag_to_Marker != NULL) delete[] Tag_to_Marker;
+  
+//	PeriodicPoint[MAX_NUMBER_PERIODIC][2].~vector();
+//	PeriodicElem[MAX_NUMBER_PERIODIC].~vector();
+//	OldBoundaryElems[MAX_NUMBER_MARKER].~vector();
+//  SendTransfLocal[MAX_NUMBER_DOMAIN].~vector();
+//  ReceivedTransfLocal[MAX_NUMBER_DOMAIN].~vector();
+//	SendDomainLocal[MAX_NUMBER_DOMAIN].~vector();
+//	ReceivedDomainLocal[MAX_NUMBER_DOMAIN].~vector();
+//	XCoordList.~vector();
+  
+//	Xcoord_plane.~vector()
+//	Ycoord_plane.~vector()
+//	Zcoord_plane.~vector()
+//	FaceArea_plane.~vector()
+//	Plane_points.~vector()
+  
 }
 
 double CGeometry::Point2Plane_Distance(double *Coord, double *iCoord, double *jCoord, double *kCoord) {
@@ -94,10 +174,23 @@ long CGeometry::FindEdge(unsigned long first_point, unsigned long second_point) 
 	if (iPoint == second_point) return node[first_point]->GetEdge(iNode);
 	else {
     cout << "\n\n   !!! Error !!!\n" << endl;
-		cout <<"Can't find the edge that connect "<< first_point <<" and "<< second_point <<"."<< endl;
+		cout <<"Can't find the edge that connects "<< first_point <<" and "<< second_point <<"."<< endl;
 		exit(1);
 		return -1;
 	}
+}
+
+bool CGeometry::CheckEdge(unsigned long first_point, unsigned long second_point) {
+	unsigned long iPoint = 0;
+	unsigned short iNode;
+	for (iNode = 0; iNode < node[first_point]->GetnPoint(); iNode++) {
+		iPoint = node[first_point]->GetPoint(iNode);
+		if (iPoint == second_point) break;
+	}
+    
+	if (iPoint == second_point) return true;
+	else return false;
+
 }
 
 void CGeometry::SetEdges(void) {
@@ -204,58 +297,58 @@ void CGeometry::TestGeometry(void) {
 
 }
 
-void CGeometry::SetSpline(vector<double>* x, vector<double>* y, unsigned long n, double yp1, double ypn, vector<double>* y2) {
-	unsigned long i, k; 
+void CGeometry::SetSpline(vector<double> &x, vector<double> &y, unsigned long n, double yp1, double ypn, vector<double> &y2) {
+	unsigned long i, k;
 	double p, qn, sig, un, *u;
-
+  
 	u = new double [n];
-
+  
 	if (yp1 > 0.99e30)			// The lower boundary condition is set either to be "nat
-		(*y2)[1]=u[1]=0.0;			  // -ural"
+		y2[1]=u[1]=0.0;			  // -ural"
 	else {									// or else to have a specified first derivative.
-		(*y2)[1] = -0.5; 
-		u[1]=(3.0/((*x)[2]-(*x)[1]))*(((*y)[2]-(*y)[1])/((*x)[2]-(*x)[1])-yp1);
+		y2[1] = -0.5;
+		u[1]=(3.0/(x[2]-x[1]))*((y[2]-y[1])/(x[2]-x[1])-yp1);
 	}
-
+  
 	for (i=2; i<=n-1; i++) {									//  This is the decomposition loop of the tridiagonal al-
-		sig=((*x)[i]-(*x)[i-1])/((*x)[i+1]-(*x)[i-1]);		//	gorithm. y2 and u are used for tem-
-		p=sig*(*y2)[i-1]+2.0;										//	porary storage of the decomposed
-		(*y2)[i]=(sig-1.0)/p;										//	factors.
-		u[i]=((*y)[i+1]-(*y)[i])/((*x)[i+1]-(*x)[i]) - ((*y)[i]-(*y)[i-1])/((*x)[i]-(*x)[i-1]); 
-		u[i]=(6.0*u[i]/((*x)[i+1]-(*x)[i-1])-sig*u[i-1])/p;
+		sig=(x[i]-x[i-1])/(x[i+1]-x[i-1]);		//	gorithm. y2 and u are used for tem-
+		p=sig*y2[i-1]+2.0;										//	porary storage of the decomposed
+		y2[i]=(sig-1.0)/p;										//	factors.
+		u[i]=(y[i+1]-y[i])/(x[i+1]-x[i]) - (y[i]-y[i-1])/(x[i]-x[i-1]);
+		u[i]=(6.0*u[i]/(x[i+1]-x[i-1])-sig*u[i-1])/p;
 	}
-
-	if (ypn > 0.99e30)						// The upper boundary condition is set either to be 
+  
+	if (ypn > 0.99e30)						// The upper boundary condition is set either to be
 		qn=un=0.0;									// "natural"
 	else {												// or else to have a specified first derivative.
-		qn=0.5; 
-		un=(3.0/((*x)[n]-(*x)[n-1]))*(ypn-((*y)[n]-(*y)[n-1])/((*x)[n]-(*x)[n-1]));
+		qn=0.5;
+		un=(3.0/(x[n]-x[n-1]))*(ypn-(y[n]-y[n-1])/(x[n]-x[n-1]));
 	}
-	(*y2)[n]=(un-qn*u[n-1])/(qn*(*y2)[n-1]+1.0); 
+	y2[n]=(un-qn*u[n-1])/(qn*y2[n-1]+1.0);
 	for (k=n-1; k>=1; k--)					// This is the backsubstitution loop of the tridiagonal
-		(*y2)[k]=(*y2)[k]*(*y2)[k+1]+u[k];	  // algorithm.
+		y2[k]=y2[k]*y2[k+1]+u[k];	  // algorithm.
+  
+	delete[] u;
+  
+}
 
-	delete [] u;
-
-} 
-
-double CGeometry::GetSpline(vector<double>* xa, vector<double>* ya, vector<double>* y2a, unsigned long n, double x) {
+double CGeometry::GetSpline(vector<double>&xa, vector<double>&ya, vector<double>&y2a, unsigned long n, double x) {
 	unsigned long klo, khi, k;
 	double h, b, a, y;
-
+  
 	klo=1;										// We will find the right place in the table by means of
 	khi=n;										// bisection. This is optimal if sequential calls to this
 	while (khi-klo > 1) {			// routine are at random values of x. If sequential calls
 		k=(khi+klo) >> 1;				// are in order, and closely spaced, one would do better
-		if ((*xa)[k] > x) khi=k;		// to store previous values of klo and khi and test if
+		if (xa[k] > x) khi=k;		// to store previous values of klo and khi and test if
 		else klo=k;							// they remain appropriate on the next call.
 	}								// klo and khi now bracket the input value of x
-	h=(*xa)[khi]-(*xa)[klo]; 
-	if (h == 0.0) cout << "Bad xa input to routine splint" << endl;	// The xa’s must be dis-  
-	a=((*xa)[khi]-x)/h;																					      // tinct. 
-	b=(x-(*xa)[klo])/h;				// Cubic spline polynomial is now evaluated. 
-	y=a*(*ya)[klo]+b*(*ya)[khi]+((a*a*a-a)*(*y2a)[klo]+(b*b*b-b)*(*y2a)[khi])*(h*h)/6.0;
-
+	h=xa[khi]-xa[klo];
+	if (h == 0.0) cout << "Bad xa input to routine splint" << endl;	// The xa’s must be dis-
+	a=(xa[khi]-x)/h;																					      // tinct.
+	b=(x-xa[klo])/h;				// Cubic spline polynomial is now evaluated.
+	y=a*ya[klo]+b*ya[khi]+((a*a*a-a)*y2a[klo]+(b*b*b-b)*y2a[khi])*(h*h)/6.0;
+  
 	return y;
 }
 
@@ -314,14 +407,15 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, string val_mesh_filename, 
   /*--- Initialize counters for local/global points & elements ---*/
 #ifndef NO_MPI
 	unsigned long LocalIndex;
-	unsigned long Local_nPoint, Local_nPointDomain, Global_nPoint = 0;
+	unsigned long Local_nPoint, Local_nPointDomain;
 	unsigned long Local_nElem;
   unsigned long Local_nElemTri, Local_nElemQuad, Local_nElemTet;
   unsigned long Local_nElemHex, Local_nElemWedge, Local_nElemPyramid;
 	rank = MPI::COMM_WORLD.Get_rank();
 	size = MPI::COMM_WORLD.Get_size();	
 #endif
-	Global_nPointDomain = 0; Global_nElem = 0; FinestMGLevel = true;
+  FinestMGLevel = true;
+	Global_nPoint = 0; Global_nPointDomain = 0; Global_nElem = 0;
   nelem_edge     = 0; Global_nelem_edge     = 0;
   nelem_triangle = 0; Global_nelem_triangle = 0;
   nelem_quad     = 0; Global_nelem_quad     = 0;
@@ -598,6 +692,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, string val_mesh_filename, 
 					MPI::COMM_WORLD.Allreduce(&Local_nPoint, &Global_nPoint, 1, MPI::UNSIGNED_LONG, MPI::SUM);
 					MPI::COMM_WORLD.Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI::UNSIGNED_LONG, MPI::SUM);
 #else
+          Global_nPoint = nPoint;
 					Global_nPointDomain = nPointDomain;
 #endif
 
@@ -1923,10 +2018,15 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, string val_mesh_filename, 
 	/*--- Loop over the surface element to set the boundaries ---*/
 	for (iMarker = 0; iMarker < nMarker; iMarker++)
 		for (iElem_Surface = 0; iElem_Surface < nElem_Bound[iMarker]; iElem_Surface++)
-			for (iNode_Surface = 0; iNode_Surface < bound[iMarker][iElem_Surface]->GetnNodes(); iNode_Surface++) {        
+			for (iNode_Surface = 0; iNode_Surface < bound[iMarker][iElem_Surface]->GetnNodes(); iNode_Surface++) {
 				Point_Surface = bound[iMarker][iElem_Surface]->GetNode(iNode_Surface);
 				node[Point_Surface]->SetBoundary(nMarker);
-			}
+        if (config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE &&
+            config->GetMarker_All_Boundary(iMarker) != INTERFACE_BOUNDARY &&
+            config->GetMarker_All_Boundary(iMarker) != NEARFIELD_BOUNDARY &&
+            config->GetMarker_All_Boundary(iMarker) != PERIODIC_BOUNDARY)
+          node[Point_Surface]->SetPhysicalBoundary(true);
+      }
 
 	/*--- Write a new copy of the grid in meters if requested ---*/
 	if (config->GetKind_SU2() == SU2_CFD)
@@ -1947,7 +2047,9 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, string val_mesh_filename, 
 	//	exit(0);
 }
 
-CPhysicalGeometry::~CPhysicalGeometry(void) {}
+CPhysicalGeometry::~CPhysicalGeometry(void) {
+
+}
 
 void CPhysicalGeometry::Check_Orientation(CConfig *config) {
 	unsigned long Point_1, Point_2, Point_3, Point_4, Point_5, Point_6, 
@@ -2340,8 +2442,8 @@ void CPhysicalGeometry::SetWall_Distance(CConfig *config) {
 
 	/*--- Deallocate vector of boundary coordinates ---*/
 	for (iVertex = 0; iVertex < nVertex_NS; iVertex++)
-		delete [] Coord_bound[iVertex];
-	delete [] Coord_bound;
+		delete[] Coord_bound[iVertex];
+	delete[] Coord_bound;
 
 	cout << "Wall distance computation." << endl;
 
@@ -2405,10 +2507,10 @@ void CPhysicalGeometry::SetWall_Distance(CConfig *config) {
 		node[iPoint]->SetWallDistance(sqrt(dist));
 	}
 
-	delete [] Buffer_Send_Coord;
-	delete [] Buffer_Receive_Coord;
-	delete [] Buffer_Send_nVertex;
-	delete [] Buffer_Receive_nVertex;
+	delete[] Buffer_Send_Coord;
+	delete[] Buffer_Receive_Coord;
+	delete[] Buffer_Send_nVertex;
+	delete[] Buffer_Receive_nVertex;
 
 	int rank = MPI::COMM_WORLD.Get_rank();
 
@@ -2651,8 +2753,8 @@ void CPhysicalGeometry::SetCG(void) {
 		elem[iElem]->SetCG(Coord);
 
 		for (iNode = 0; iNode < nNode; iNode++)
-			if (Coord[iNode] != NULL) delete [] Coord[iNode];
-		if (Coord != NULL) delete [] Coord;		
+			if (Coord[iNode] != NULL) delete[] Coord[iNode];
+		if (Coord != NULL) delete[] Coord;		
 	}
 
 	/*--- Center of gravity for face elements ---*/
@@ -2670,8 +2772,8 @@ void CPhysicalGeometry::SetCG(void) {
 			/*--- Compute the element CG coordinates ---*/
 			bound[iMarker][iElem]->SetCG(Coord);
 			for (iNode=0; iNode < nNode; iNode++)
-				if (Coord[iNode] != NULL) delete [] Coord[iNode];
-			if (Coord != NULL) delete [] Coord;
+				if (Coord[iNode] != NULL) delete[] Coord[iNode];
+			if (Coord != NULL) delete[] Coord;
 		}
 
 	/*--- Center of gravity for edges ---*/
@@ -2689,14 +2791,15 @@ void CPhysicalGeometry::SetCG(void) {
 		edge[iEdge]->SetCG(Coord);
 
 		for (iNode=0; iNode < nNode; iNode++)
-			if (Coord[iNode] != NULL) delete [] Coord[iNode];
-		if (Coord != NULL) delete [] Coord;		
+			if (Coord[iNode] != NULL) delete[] Coord[iNode];
+		if (Coord != NULL) delete[] Coord;		
 	}
 }
 
 void CPhysicalGeometry::SetBoundControlVolume(CConfig *config, unsigned short action) {
 	unsigned short Neighbor_Node, iMarker, iNode, iNeighbor_Nodes, iDim;
 	unsigned long Neighbor_Point, iVertex, iEdge, iPoint, iElem;
+  double Area, *NormalFace = NULL;
 
 	/*--- Update values of faces of the edge ---*/
 	if (action != ALLOCATE)
@@ -2742,9 +2845,19 @@ void CPhysicalGeometry::SetBoundControlVolume(CConfig *config, unsigned short ac
 				}
 			}
 
-	delete [] Coord_Edge_CG;
-	delete [] Coord_Elem_CG;
-	delete [] Coord_Vertex;
+	delete[] Coord_Edge_CG;
+	delete[] Coord_Elem_CG;
+	delete[] Coord_Vertex;
+  
+  /*--- Check if there is a normal with null area ---*/
+	for (iMarker = 0; iMarker < nMarker; iMarker ++)
+		for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+      NormalFace = vertex[iMarker][iVertex]->GetNormal();
+      Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += NormalFace[iDim]*NormalFace[iDim];
+      Area = sqrt(Area);
+      if (Area == 0.0) for (iDim = 0; iDim < nDim; iDim++) NormalFace[iDim] = EPS*EPS;
+    }
+  
 }
 
 void CPhysicalGeometry::MatchNearField(CConfig *config) {
@@ -2903,14 +3016,14 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
 			cout <<"Node rank: "<<rank<<". The max distance between points is: " << maxdist <<"."<< endl;
 		}
 
-	delete [] Buffer_Send_Coord;
-	delete [] Buffer_Send_Point;
+	delete[] Buffer_Send_Coord;
+	delete[] Buffer_Send_Point;
 
-	delete [] Buffer_Receive_Coord;
-	delete [] Buffer_Receive_Point;
+	delete[] Buffer_Receive_Coord;
+	delete[] Buffer_Receive_Point;
 
-	delete [] Buffer_Send_nVertex;
-	delete [] Buffer_Receive_nVertex;
+	delete[] Buffer_Send_nVertex;
+	delete[] Buffer_Receive_nVertex;
 
 
 	MPI::COMM_WORLD.Barrier();
@@ -3076,14 +3189,14 @@ void CPhysicalGeometry::MatchInterface(CConfig *config) {
 			cout << "Node rank: "<< rank << ". The max distance between points is: " << maxdist <<"."<< endl;
 		}
 
-	delete [] Buffer_Send_Coord;
-	delete [] Buffer_Send_Point;
+	delete[] Buffer_Send_Coord;
+	delete[] Buffer_Send_Point;
 
-	delete [] Buffer_Receive_Coord;
-	delete [] Buffer_Receive_Point;
+	delete[] Buffer_Receive_Coord;
+	delete[] Buffer_Receive_Point;
 
-	delete [] Buffer_Send_nVertex;
-	delete [] Buffer_Receive_nVertex;
+	delete[] Buffer_Send_nVertex;
+	delete[] Buffer_Receive_nVertex;
 
 
 	MPI::COMM_WORLD.Barrier();
@@ -3231,14 +3344,14 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
 		}
 	}
 
-	delete [] Buffer_Send_Coord;
-	delete [] Buffer_Send_Point;
+	delete[] Buffer_Send_Coord;
+	delete[] Buffer_Send_Point;
 
-	delete [] Buffer_Receive_Coord;
-	delete [] Buffer_Receive_Point;
+	delete[] Buffer_Receive_Coord;
+	delete[] Buffer_Receive_Point;
 
-	delete [] Buffer_Send_nVertex;
-	delete [] Buffer_Receive_nVertex;
+	delete[] Buffer_Send_nVertex;
+	delete[] Buffer_Receive_nVertex;
 
 
 	MPI::COMM_WORLD.Barrier();
@@ -3252,7 +3365,7 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
 	unsigned long face_iPoint = 0, face_jPoint = 0, iEdge, iPoint, iElem;
 	unsigned short nEdgesFace = 1, iFace, iEdgesFace, iDim;
 	double *Coord_Edge_CG, *Coord_FaceElem_CG, *Coord_Elem_CG, *Coord_FaceiPoint, *Coord_FacejPoint, Area, 
-	Volume, DomainVolume, my_DomainVolume;
+	Volume, DomainVolume, my_DomainVolume, *NormalFace = NULL;
 	bool change_face_orientation;
 
 #ifdef NO_MPI
@@ -3338,6 +3451,14 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
 			}
 		}
 
+  /*--- Check if there is a normal with null area ---*/
+  for (iEdge = 0; iEdge < nEdge; iEdge++) {
+    NormalFace = edge[iEdge]->GetNormal();
+    Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += NormalFace[iDim]*NormalFace[iDim];
+    Area = sqrt(Area);
+    if (Area == 0.0) for (iDim = 0; iDim < nDim; iDim++) NormalFace[iDim] = EPS*EPS;
+  }
+  
 	//	/*--- Set the volume for the iterations n and n-1 (dual time stteping with grid movement) ---*/
 	//	if (config->GetUnsteady_Simulation() != NO) {
 	//		for (iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -3359,11 +3480,11 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
 
 	config->SetDomainVolume(DomainVolume);
 
-	delete [] Coord_Edge_CG;
-	delete [] Coord_FaceElem_CG;
-	delete [] Coord_Elem_CG;
-	delete [] Coord_FaceiPoint;
-	delete [] Coord_FacejPoint;
+	delete[] Coord_Edge_CG;
+	delete[] Coord_FaceElem_CG;
+	delete[] Coord_Elem_CG;
+	delete[] Coord_FaceiPoint;
+	delete[] Coord_FacejPoint;
 }
 
 void CPhysicalGeometry::SetMeshFile (CConfig *config, string val_mesh_out_filename) {
@@ -3759,7 +3880,7 @@ void CPhysicalGeometry::SetCoord_Smoothing (unsigned short val_nSmooth, double v
 			}
 	}
 
-	delete [] Coord;
+	delete[] Coord;
 }
 
 bool CPhysicalGeometry::FindFace(unsigned long first_elem, unsigned long second_elem, unsigned short &face_first_elem,
@@ -3911,7 +4032,7 @@ void CPhysicalGeometry::SetBoundParaView (CConfig *config, char mesh_filename[20
 	Paraview_File << "POINT_DATA " << nPointSurface << endl;
 
 	/*--- Dealocate memory and close the file ---*/
-	delete [] PointSurface;
+	delete[] PointSurface;
 	Paraview_File.close();
 }
 
@@ -3993,7 +4114,7 @@ void CPhysicalGeometry::SetBoundTecPlot (CConfig *config, char mesh_filename[200
 			}
 
 	/*--- Dealocate memory and close the file ---*/
-	delete [] PointSurface;
+	delete[] PointSurface;
 	Tecplot_File.close();
 }
 
@@ -4092,9 +4213,7 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
 	int ne = 0, nn, *elmnts = NULL, etype, *epart = NULL, *npart = NULL, numflag, nparts, edgecut, *eptr;
   
 	unsigned short nDomain = config->GetnDomain();
-  
-	unsigned long *RepColor = new unsigned long[nDomain];
-  
+    
 	cout << endl <<"---------------------- Performing mesh partitioning ---------------------" << endl;
   
 	nElem_Triangle = 0;
@@ -4126,7 +4245,7 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
 	npart = new int [nn];
 	eptr  = new int[ne+1];
 	if (nparts < 2) {
-		cout << "The number of domains must be greater than 1!!" << endl;
+		cout << "The number of domains must be greater than 1!" << endl;
 		cout << "Press any key to exit..." << endl;
 		cin.get(); exit(1);
 	}
@@ -4247,14 +4366,14 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
 	for (iPoint = 0; iPoint < nPoint; iPoint++)
 		node[iPoint]->SetColor(npart[iPoint]);
   
-	delete [] epart;
-	delete [] npart;
-	delete [] RepColor;
+	delete[] epart;
+	delete[] npart;
   
 #endif
+  
 }
 
-void CPhysicalGeometry::Set3D_to_2D (CConfig *config, char mesh_vtk[200], char mesh_su2[200], 
+void CPhysicalGeometry::Set3D_to_2D (CConfig *config, char mesh_vtk[200], char mesh_su2[200],
 		unsigned short nslices) {
 
 	// nslices: number of (identical) slices in the original 3D model (usually nslices == 1)
@@ -4278,7 +4397,7 @@ void CPhysicalGeometry::Set3D_to_2D (CConfig *config, char mesh_vtk[200], char m
 	para_file << "Visualization of the volumetric grid" << endl;
 	para_file << "ASCII" << endl;
 	para_file << "DATASET UNSTRUCTURED_GRID" << endl;
-	para_file << "POINTS " << nPoint_2D << " float" << endl; 
+	para_file << "POINTS " << nPoint_2D << " float" << endl;
 	su2_file << "NDIME=2" << endl;
 	su2_file << "NPOIN=" << nPoint_2D << endl;
 
@@ -4294,7 +4413,7 @@ void CPhysicalGeometry::Set3D_to_2D (CConfig *config, char mesh_vtk[200], char m
 		su2_file << ipoint << endl;
 	}
 
-	para_file << "CELLS " << nElem_2D << "\t" << 
+	para_file << "CELLS " << nElem_2D << "\t" <<
 			(nElem_Storage-nElem)/(nslices+1)+nElem_2D << endl;
 	su2_file << "NELEM=" << nElem_2D << endl;
 	for (ielem = 0; ielem < nElem_2D; ielem++) {
@@ -4810,7 +4929,7 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
 		}
 	}
 
-	delete [] PeriodicBC;
+	delete[] PeriodicBC;
 
 }
 
@@ -4904,7 +5023,7 @@ void CPhysicalGeometry::FindSharpEdges(CConfig *config) {
 				}
 			}
 
-			delete [] Surface_Node;
+			delete[] Surface_Node;
 		}
 
 	} else {
@@ -4913,48 +5032,48 @@ void CPhysicalGeometry::FindSharpEdges(CConfig *config) {
 
 }
 
-void CPhysicalGeometry::FindClosestNeighbor(CConfig *config) {
-    double cos_max, scalar_prod, norm_vect, norm_Normal, cos_alpha, diff_coord, *Normal;
-    unsigned long Point_Normal, jPoint;
-    unsigned short iNeigh, iMarker, iDim;
+void CPhysicalGeometry::FindNormal_Neighbor(CConfig *config) {
+  double cos_max, scalar_prod, norm_vect, norm_Normal, cos_alpha, diff_coord, *Normal;
+  unsigned long Point_Normal, jPoint;
+  unsigned short iNeigh, iMarker, iDim;
 	unsigned long iPoint, iVertex;
-
+  
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        
+    
 		if (config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE &&
 				config->GetMarker_All_Boundary(iMarker) != INTERFACE_BOUNDARY &&
-            config->GetMarker_All_Boundary(iMarker) != NEARFIELD_BOUNDARY ) {
+        config->GetMarker_All_Boundary(iMarker) != NEARFIELD_BOUNDARY ) {
 			
 			for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-
+        
 				iPoint = vertex[iMarker][iVertex]->GetNode();
-                Normal = vertex[iMarker][iVertex]->GetNormal();
-
-                /*--- Compute closest normal neighbor ---*/
-                Point_Normal = 0; cos_max = -1.0;
-                for (iNeigh = 0; iNeigh < node[iPoint]->GetnPoint(); iNeigh++) {
-                    jPoint = node[iPoint]->GetPoint(iNeigh);
-                    scalar_prod = 0.0; norm_vect = 0.0; norm_Normal = 0.0;
-                    for(iDim = 0; iDim < GetnDim(); iDim++) {
-                        diff_coord = node[jPoint]->GetCoord(iDim)-node[iPoint]->GetCoord(iDim);
-                        scalar_prod += diff_coord*Normal[iDim];
-                        norm_vect += diff_coord*diff_coord;
-                        norm_Normal += Normal[iDim]*Normal[iDim];
-                    }
-                    norm_vect = sqrt(norm_vect);
-                    norm_Normal = sqrt(norm_Normal);
-                    cos_alpha = scalar_prod/(norm_vect*norm_Normal);
-                    
-                    /*--- Get maximum cosine (not minimum because normals are oriented inwards) ---*/
-                    if (cos_alpha >= cos_max) {
-                        Point_Normal = jPoint;
-                        cos_max = cos_alpha;
-                    }
-                }
-                vertex[iMarker][iVertex]->SetClosest_Neighbor(Point_Normal);				
-			}
+        Normal = vertex[iMarker][iVertex]->GetNormal();
+        
+        /*--- Compute closest normal neighbor, note that the normal are oriented inwards ---*/
+        Point_Normal = 0; cos_max = -1.0;
+        for (iNeigh = 0; iNeigh < node[iPoint]->GetnPoint(); iNeigh++) {
+          jPoint = node[iPoint]->GetPoint(iNeigh);
+          scalar_prod = 0.0; norm_vect = 0.0; norm_Normal = 0.0;
+          for(iDim = 0; iDim < nDim; iDim++) {
+            diff_coord = node[jPoint]->GetCoord(iDim)-node[iPoint]->GetCoord(iDim);
+            scalar_prod += diff_coord*Normal[iDim];
+            norm_vect += diff_coord*diff_coord;
+            norm_Normal += Normal[iDim]*Normal[iDim];
+          }
+          norm_vect = sqrt(norm_vect);
+          norm_Normal = sqrt(norm_Normal);
+          cos_alpha = scalar_prod/(norm_vect*norm_Normal);
+          
+          /*--- Get maximum cosine ---*/
+          if (cos_alpha >= cos_max) {
+            Point_Normal = jPoint;
+            cos_max = cos_alpha;
+          }
         }
+        vertex[iMarker][iVertex]->SetNormal_Neighbor(Point_Normal);
+			}
     }
+  }
 }
 
 void CPhysicalGeometry::SetGeometryPlanes(CConfig *config) {
@@ -5052,9 +5171,9 @@ void CPhysicalGeometry::SetGeometryPlanes(CConfig *config) {
 				}
 
 	/*--- Delete structures ---*/
-	delete [] Xcoord; delete [] Ycoord;
-	if (nDim==3) delete [] Zcoord;
-	delete [] FaceArea;
+	delete[] Xcoord; delete[] Ycoord;
+	if (nDim==3) delete[] Zcoord;
+	delete[] FaceArea;
 }
 
 CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_container, unsigned short iMesh, unsigned short iZone) : CGeometry() {
@@ -5487,7 +5606,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
 
 			}
 
-
 			Index_CoarseCV += Aux_Parent.size();
 
 			unsigned short *nChildren_ = new unsigned short [Index_CoarseCV];
@@ -5505,13 +5623,13 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
 				node[Parent_Local[iVertex]]->SetDomain(false);
 			}
 
-			delete [] nChildren_;
-			delete [] Buffer_Receive_Parent;
-			delete [] Buffer_Receive_Children;
-			delete [] Parent_Remote;
-			delete [] Children_Remote;
-			delete [] Parent_Local;
-			delete [] Children_Local;			
+			delete[] nChildren_;
+			delete[] Buffer_Receive_Parent;
+			delete[] Buffer_Receive_Children;
+			delete[] Parent_Remote;
+			delete[] Children_Remote;
+			delete[] Parent_Local;
+			delete[] Children_Local;			
 		}
 	}
 
@@ -5534,7 +5652,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
 }
 
 CMultiGridGeometry::~CMultiGridGeometry(void) {
-	delete[] node;
+
 }
 
 bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, short marker_seed, CGeometry *fine_grid, CConfig *config) {
@@ -5948,7 +6066,7 @@ void CMultiGridGeometry::SetControlVolume(CConfig *config, CGeometry *fine_grid,
 	FineEdge, CoarseEdge, iPoint, jPoint;
 	unsigned short iChildren, iNode, iDim;
 	bool change_face_orientation;
-	double *Normal, Coarse_Volume;
+	double *Normal, Coarse_Volume, Area, *NormalFace = NULL;
 	Normal = new double [nDim];
 	bool rotating_frame = config->GetRotating_Frame();
 
@@ -6003,7 +6121,7 @@ void CMultiGridGeometry::SetControlVolume(CConfig *config, CGeometry *fine_grid,
 				}
 			}
 		}
-	delete [] Normal;
+	delete[] Normal;
 
 	/*--- Check if there isn't any element with only one neighbor... 
 	 a CV that is inside another CV ---*/
@@ -6013,13 +6131,22 @@ void CMultiGridGeometry::SetControlVolume(CConfig *config, CGeometry *fine_grid,
 			node[jPoint]->AddVolume(node[iPoint]->GetVolume());
 		}
 	}
+  
+  /*--- Check if there is a normal with null area ---*/
+  for (iEdge = 0; iEdge < nEdge; iEdge++) {
+    NormalFace = edge[iEdge]->GetNormal();
+    Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += NormalFace[iDim]*NormalFace[iDim];
+    Area = sqrt(Area);
+    if (Area == 0.0) for (iDim = 0; iDim < nDim; iDim++) NormalFace[iDim] = EPS*EPS;
+  }
 
 }
 
 void CMultiGridGeometry::SetBoundControlVolume(CConfig *config, CGeometry *fine_grid, unsigned short action) {
 	unsigned long iCoarsePoint, iFinePoint, FineVertex, iVertex;
-	unsigned short iMarker, iChildren;
-	double *Normal;
+	unsigned short iMarker, iChildren, iDim;
+	double *Normal, Area, *NormalFace = NULL;
+
 	Normal = new double [nDim];
 	bool rotating_frame = config->GetRotating_Frame();
 
@@ -6045,7 +6172,17 @@ void CMultiGridGeometry::SetBoundControlVolume(CConfig *config, CGeometry *fine_
 			}
 		}
 
-	delete [] Normal;
+	delete[] Normal;
+  
+  /*--- Check if there is a normal with null area ---*/
+	for (iMarker = 0; iMarker < nMarker; iMarker ++)
+		for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+      NormalFace = vertex[iMarker][iVertex]->GetNormal();
+      Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += NormalFace[iDim]*NormalFace[iDim];
+      Area = sqrt(Area);
+      if (Area == 0.0) for (iDim = 0; iDim < nDim; iDim++) NormalFace[iDim] = EPS*EPS;
+    }
+
 }
 
 void CMultiGridGeometry::SetCoord(CGeometry *geometry) {
@@ -6068,7 +6205,7 @@ void CMultiGridGeometry::SetCoord(CGeometry *geometry) {
 		for (iDim = 0; iDim < nDim; iDim++)
 			node[Point_Coarse]->SetCoord(iDim,Coordinates[iDim]);
 	}
-	delete [] Coordinates;
+	delete[] Coordinates;
 }
 
 void CMultiGridGeometry::SetRotationalVelocity(CConfig *config) {
@@ -6170,22 +6307,24 @@ void CMultiGridGeometry::SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfi
 	}
 }
 
-void CMultiGridGeometry::FindClosestNeighbor(CConfig *config) {
-
+void CMultiGridGeometry::FindNormal_Neighbor(CConfig *config) {
+  
 	unsigned short iMarker, iDim;
 	unsigned long iPoint, iVertex;
-
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+  
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    
 		if (config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE &&
 				config->GetMarker_All_Boundary(iMarker) != INTERFACE_BOUNDARY &&
-				config->GetMarker_All_Boundary(iMarker) != NEARFIELD_BOUNDARY )			
+				config->GetMarker_All_Boundary(iMarker) != NEARFIELD_BOUNDARY ) {
+      
 			for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-
+        
 				iPoint = vertex[iMarker][iVertex]->GetNode();
-
+        
 				/*--- If the node belong to the domain ---*/
 				if (node[iPoint]->GetDomain()) {
-
+          
 					/*--- Compute closest normal neighbor ---*/
 					double cos_max, scalar_prod, norm_vect, norm_Normal, cos_alpha, diff_coord;
 					unsigned long Point_Normal = 0, jPoint;
@@ -6195,7 +6334,7 @@ void CMultiGridGeometry::FindClosestNeighbor(CConfig *config) {
 					for (iNeigh = 0; iNeigh < node[iPoint]->GetnPoint(); iNeigh++) {
 						jPoint = node[iPoint]->GetPoint(iNeigh);
 						scalar_prod = 0.0; norm_vect = 0.0; norm_Normal = 0.0;
-						for(iDim = 0; iDim < GetnDim(); iDim++) {
+						for(iDim = 0; iDim < nDim; iDim++) {
 							diff_coord = node[jPoint]->GetCoord(iDim)-node[iPoint]->GetCoord(iDim);
 							scalar_prod += diff_coord*Normal[iDim];
 							norm_vect += diff_coord*diff_coord;
@@ -6204,15 +6343,18 @@ void CMultiGridGeometry::FindClosestNeighbor(CConfig *config) {
 						norm_vect = sqrt(norm_vect);
 						norm_Normal = sqrt(norm_Normal);
 						cos_alpha = scalar_prod/(norm_vect*norm_Normal);
+            
 						/*--- Get maximum cosine (not minimum because normals are oriented inwards) ---*/
 						if (cos_alpha >= cos_max) {
 							Point_Normal = jPoint;
 							cos_max = cos_alpha;
 						}
 					}
-					vertex[iMarker][iVertex]->SetClosest_Neighbor(Point_Normal);				
+					vertex[iMarker][iVertex]->SetNormal_Neighbor(Point_Normal);
 				}
 			}
+    }
+  }
 }
 
 
@@ -6310,9 +6452,9 @@ void CMultiGridGeometry::SetGeometryPlanes(CConfig *config) {
 				}
 
 	/*--- Delete structures ---*/
-	delete [] Xcoord; delete [] Ycoord;
-	if (nDim==3) delete [] Zcoord;
-	delete [] FaceArea;
+	delete[] Xcoord; delete[] Ycoord;
+	if (nDim==3) delete[] Zcoord;
+	delete[] FaceArea;
 }
 
 
@@ -6668,26 +6810,18 @@ CBoundaryGeometry::CBoundaryGeometry(CConfig *config, string val_mesh_filename, 
 			for (iNode_Surface = 0; iNode_Surface < bound[iMarker][iElem_Surface]->GetnNodes(); iNode_Surface++) {				
 				Point_Surface = bound[iMarker][iElem_Surface]->GetNode(iNode_Surface);
 				node[Point_Surface]->SetBoundary(nMarker);
+        if (config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE &&
+            config->GetMarker_All_Boundary(iMarker) != INTERFACE_BOUNDARY &&
+            config->GetMarker_All_Boundary(iMarker) != NEARFIELD_BOUNDARY &&
+            config->GetMarker_All_Boundary(iMarker) != PERIODIC_BOUNDARY)
+          node[Point_Surface]->SetPhysicalBoundary(true);
 			}
 
 }
 
 
 CBoundaryGeometry::~CBoundaryGeometry(void) {
-	if (nElem_Bound != NULL) delete [] nElem_Bound;
-	if (Tag_to_Marker != NULL) delete [] Tag_to_Marker;
-	if (nVertex != NULL) delete [] nVertex;
-
-	/*	for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++)
-		for (unsigned long iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++)
-			bound[iMarker][iElem_Bound]->~CPrimalGrid();
-	if (bound != NULL) delete [] bound;*/
-
-	for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++)
-		for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-			vertex[iMarker][iVertex]->~CVertex();
-	//			vertex[iMarker][iVertex]->~CDualGrid();
-	if (vertex != NULL) delete [] vertex;
+  
 }
 
 void CBoundaryGeometry::SetVertex(void) {
@@ -6764,8 +6898,8 @@ void CBoundaryGeometry::SetBoundControlVolume(CConfig *config, unsigned short ac
 			/*--- Compute the element CG coordinates ---*/
 			bound[iMarker][iElem]->SetCG(Coord);
 			for (iNode=0; iNode < nNode; iNode++)
-				if (Coord[iNode] != NULL) delete [] Coord[iNode];
-			if (Coord != NULL) delete [] Coord;
+				if (Coord[iNode] != NULL) delete[] Coord[iNode];
+			if (Coord != NULL) delete[] Coord;
 		}
 
 	double *Coord_Edge_CG = new double [nDim];
@@ -6807,9 +6941,9 @@ void CBoundaryGeometry::SetBoundControlVolume(CConfig *config, unsigned short ac
 				}
 			}
 
-	delete [] Coord_Edge_CG;
-	delete [] Coord_Elem_CG;
-	delete [] Coord_Vertex;
+	delete[] Coord_Edge_CG;
+	delete[] Coord_Elem_CG;
+	delete[] Coord_Vertex;
 }
 
 void CBoundaryGeometry::SetBoundSensitivity(CConfig *config) {
@@ -6950,7 +7084,7 @@ void CBoundaryGeometry::SetBoundSensitivity(CConfig *config) {
 		Surface_file.close();
 	}
 
-	delete [] Point2Vertex;
+	delete[] Point2Vertex;
 }
 
 void CBoundaryGeometry::SetBoundParaView (CConfig *config, char mesh_filename[200]) {
@@ -7045,8 +7179,8 @@ double CBoundaryGeometry::GetMaxThickness(CConfig *config, bool original_surface
 
 	yp1=(Ycoord[1]-Ycoord[0])/(Xcoord[1]-Xcoord[0]);
 	ypn=(Ycoord[n-1]-Ycoord[n-2])/(Xcoord[n-1]-Xcoord[n-2]);
-	Y2coord.resize(n); 
-	SetSpline(&Xcoord, &Ycoord, n, yp1, ypn, &Y2coord);
+	Y2coord.resize(n+1);
+	SetSpline(Xcoord, Ycoord, n, yp1, ypn, Y2coord);
 
 	/*--- Compute the max thickness --*/
 	MaxThickness = 0.0;
@@ -7058,9 +7192,9 @@ double CBoundaryGeometry::GetMaxThickness(CConfig *config, bool original_surface
 				Normal = vertex[iMarker][iVertex]->GetNormal();
 				if (Normal[1] < 0) {						// Lower side
 					if (original_surface == true)
-						MaxThickness = max(MaxThickness, fabs(Coord[1]) + fabs(GetSpline(&Xcoord, &Ycoord, &Y2coord, n, Coord[0])));
+						MaxThickness = max(MaxThickness, fabs(Coord[1]) + fabs(GetSpline(Xcoord, Ycoord, Y2coord, n, Coord[0])));
 					if (original_surface == false)
-						MaxThickness = max(MaxThickness, fabs(Coord[1]+VarCoord[1]) + fabs(GetSpline(&Xcoord, &Ycoord, &Y2coord, n, Coord[0]+VarCoord[0])));
+						MaxThickness = max(MaxThickness, fabs(Coord[1]+VarCoord[1]) + fabs(GetSpline(Xcoord, Ycoord, Y2coord, n, Coord[0]+VarCoord[0])));
 				}
 			}
 
@@ -7161,7 +7295,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config, unsigned 
 	for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
 		VertexIn[iMarker] = new bool [geometry->GetnElem_Bound(iMarker)];
   
-  /*--- Create a copy of ---*/
+  /*--- Create a copy of the markers ---*/
   Marker_All_SendRecv = new short[100];
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
     Marker_All_SendRecv[iMarker] = config->GetMarker_All_SendRecv(iMarker);
@@ -7563,40 +7697,21 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config, unsigned 
 	if (nPointPeriodic == 0) cout <<")." << endl;
 	else cout <<" including " << nPointPeriodic << " periodic points)." << endl;
   
-	delete [] ElemIn;
-	delete [] MarkerIn;
+	delete[] ElemIn;
+	delete[] MarkerIn;
 	for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
-		delete [] VertexIn[iMarker];
-	delete [] VertexIn;
+		delete VertexIn[iMarker];
+	delete[] VertexIn;
 
 }
 
 CDomainGeometry::~CDomainGeometry(void) {
-  unsigned long iElem, iElem_Bound, iPoint;
-  unsigned short iMarker;
   
-  if (Marker_All_SendRecv != NULL) delete [] Marker_All_SendRecv;
-  if (Global_to_Local_Point != NULL) delete [] Global_to_Local_Point;
-	if (Local_to_Global_Point != NULL) delete [] Local_to_Global_Point;
-  if (Global_to_Local_Marker != NULL) delete [] Global_to_Local_Marker;
-	if (Local_to_Global_Marker != NULL) delete [] Local_to_Global_Marker;
-  
-  if (nElem_Bound != NULL) delete [] nElem_Bound;
-	if (nElem_Bound_Storage != NULL) delete [] nElem_Bound_Storage;
+  delete[] Global_to_Local_Point;
+	delete[] Local_to_Global_Point;
+  delete[] Global_to_Local_Marker;
+	delete[] Local_to_Global_Marker;
 
-  for (iElem = 0; iElem < nElem; iElem++)
-    elem[iElem]->~CPrimalGrid();
-  if (elem != NULL) delete [] elem;
-  
-  for (iMarker = 0; iMarker < GetnMarker(); iMarker++)
-    for (iElem_Bound = 0; iElem_Bound < GetnElem_Bound(iMarker); iElem_Bound++)
-      bound[iMarker][iElem_Bound]->~CPrimalGrid();
-  if (bound != NULL) delete [] bound;
-  
-	for (iPoint = 0; iPoint < nPoint; iPoint ++)
-		node[iPoint]->~CPoint();
-	if (node != NULL) delete [] node;
-  
 }
 
 void CDomainGeometry::SetSendReceive(CConfig *config, unsigned short val_domain) {
@@ -7726,7 +7841,7 @@ void CDomainGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename,
   
 	output_file.close();
   
-  delete [] cstr;
+  delete[] cstr;
 }
 
 void CDomainGeometry::SetParaView(char mesh_filename[200]) {
@@ -8199,7 +8314,22 @@ CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) {
 
 	}
 
-	delete [] Index;
+	delete[] Index;
+
+}
+
+CPeriodicGeometry::~CPeriodicGeometry(void) {
+  unsigned long iElem_Bound;
+  unsigned short iMarker;
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
+      if (newBoundPer[iMarker][iElem_Bound] != NULL) delete newBoundPer[iMarker][iElem_Bound];
+    }
+  }
+  if (newBoundPer != NULL) delete[] newBoundPer;
+  
+  if (nNewElem_BoundPer != NULL) delete[] nNewElem_BoundPer;
 
 }
 
@@ -8517,8 +8647,10 @@ CMultiGridQueue::CMultiGridQueue(unsigned long val_npoint) {
 }
 
 CMultiGridQueue::~CMultiGridQueue(void) {
-	delete [] Priority;
-	delete [] RightCV;
+  
+	delete[] Priority;
+	delete[] RightCV;
+  
 }
 
 void CMultiGridQueue::AddCV(unsigned long val_new_point, unsigned short val_number_neighbors) {

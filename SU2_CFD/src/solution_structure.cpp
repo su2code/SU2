@@ -2,7 +2,7 @@
  * \file solution_structure.cpp
  * \brief Main subrotuines for solving direct, adjoint and linearized problems.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -26,19 +26,6 @@
 CSolution::CSolution(void) {}
 
 CSolution::~CSolution(void) {}
-
-void CSolution::Set_MultiSolution(CGeometry *geometry, short index) {
-	unsigned long iPoint;
-
-	if (index > 0) {
-		for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-			node[iPoint]->Set_OldSolution();
-	}
-	if (index < 0) {
-		for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-			node[iPoint]->Set_Solution();
-	}
-}
 
 void CSolution::SetResidual_RKCoeff(CGeometry *geometry, CConfig *config, unsigned short iRKStep) {
 	unsigned short iVar;
@@ -89,6 +76,69 @@ void CSolution::SetResidual_Total(CGeometry *geometry, CSolution **solution_cont
 			Residual[iVar] = (Res_Conv[iVar]+Res_Visc[iVar]+Res_Sour[iVar]);
 		node[iPoint]->SetResidual(Residual);		
 	}
+}
+
+void CSolution::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
+  unsigned short iVar;
+
+#ifdef NO_MPI
+
+	for (iVar = 0; iVar < nVar; iVar++)
+    SetRes_RMS(iVar, sqrt(GetRes_RMS(iVar)/geometry->GetnPoint()));
+  
+#else
+  
+  int iProcessor;
+  
+	int nProcessor = MPI::COMM_WORLD.Get_size();
+  double *sbuf_residual, *rbuf_residual;
+  unsigned long *sbuf_point, *rbuf_point, Local_nPointDomain, Global_nPointDomain;
+  
+  /*--- Set the L2 Norm residual in all the processors ---*/
+  sbuf_residual  = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_residual[iVar] = 0.0;
+  rbuf_residual  = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) rbuf_residual[iVar] = 0.0;
+  
+  for (iVar = 0; iVar < nVar; iVar++) sbuf_residual[iVar] = GetRes_RMS(iVar);
+  Local_nPointDomain = geometry->GetnPointDomain();
+  
+  MPI::COMM_WORLD.Allreduce(sbuf_residual, rbuf_residual, nVar, MPI::DOUBLE, MPI::SUM);
+  MPI::COMM_WORLD.Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+  
+  for (iVar = 0; iVar < nVar; iVar++)
+    SetRes_RMS(iVar, sqrt(rbuf_residual[iVar]/Global_nPointDomain));
+  
+  delete [] sbuf_residual;
+  delete [] rbuf_residual;
+  
+  /*--- Set the Maximum residual in all the processors ---*/
+  sbuf_residual = new double [nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_residual[iVar] = 0.0;
+  sbuf_point = new unsigned long [nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_point[iVar] = 0;
+  
+	rbuf_residual = new double [nProcessor*nVar]; for (iVar = 0; iVar < nProcessor*nVar; iVar++) rbuf_residual[iVar] = 0.0;
+	rbuf_point = new unsigned long [nProcessor*nVar]; for (iVar = 0; iVar < nProcessor*nVar; iVar++) rbuf_point[iVar] = 0;
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
+    sbuf_residual[iVar] = GetRes_Max(iVar);
+    sbuf_point[iVar] = GetPoint_Max(iVar);
+  }
+  
+	MPI::COMM_WORLD.Allgather(sbuf_residual, nVar, MPI::DOUBLE, rbuf_residual, nVar, MPI::DOUBLE);
+  MPI::COMM_WORLD.Allgather(sbuf_point, nVar, MPI::UNSIGNED_LONG, rbuf_point, nVar, MPI::UNSIGNED_LONG);
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
+    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+      AddRes_Max(iVar, rbuf_residual[iProcessor*nVar+iVar], rbuf_point[iProcessor*nVar+iVar]);
+    }
+  }
+  
+  delete [] sbuf_residual;
+  delete [] rbuf_residual;
+  
+  delete [] sbuf_point;
+  delete [] rbuf_point;
+  
+#endif
+  
 }
 
 void CSolution::SetGrid_Movement_Residual (CGeometry *geometry, CConfig *config) {
@@ -188,9 +238,9 @@ void CSolution::Initialize_SparseMatrix_Structure(CSparseMatrix *SparseMatrix, u
 			index++;
 		}
 	}
-    
+
 	SparseMatrix->SetIndexes(nPoint, nPointDomain, nVar, nEqn, row_ptr, col_ind, nnz, preconditioner);
-    
+
 	if (config->GetKind_Linear_Solver_Prec() == LINELET)
 		SparseMatrix->BuildLineletPreconditioner(geometry, config);
      	
@@ -345,7 +395,7 @@ void CSolution::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
 	delete [] cvector;
 }
 
-void CSolution::SetSolution_Gradient_GG(CGeometry *geometry) {
+void CSolution::SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config) {
 	unsigned long Point = 0, iPoint = 0, jPoint = 0, iEdge, iVertex;
 	unsigned short iVar, iDim, iMarker;
 	double *Solution_Vertex, *Solution_i, *Solution_j, Solution_Average, **Gradient, DualArea, 
@@ -399,6 +449,10 @@ void CSolution::SetSolution_Gradient_GG(CGeometry *geometry) {
 				Grad_Val = Gradient[iVar][iDim] / (DualArea+EPS);
 				node[iPoint]->SetGradient(iVar,iDim,Grad_Val);
 			}
+  
+  /*--- Gradient MPI ---*/
+  SetSolution_Gradient_MPI(geometry, config);
+  
 }
 
 void CSolution::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
@@ -501,8 +555,143 @@ void CSolution::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
 	for (iVar = 0; iVar < nVar; iVar++)
 		delete [] cvector[iVar];
 	delete [] cvector;
+  
+  /*--- Gradient MPI ---*/
+  SetSolution_Gradient_MPI(geometry, config);
+  
 }
 
+void CSolution::SetSolution_Gradient_MPI(CGeometry *geometry, CConfig *config) {
+	unsigned short iVar, iDim, iMarker, iPeriodic_Index;
+	unsigned long iVertex, iPoint, nVertex, nBuffer_VectorGrad;
+	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi,
+	sinPsi, **newGradient = NULL, *Buffer_Receive_UGrad = NULL;
+	short SendRecv;
+	int send_to, receive_from;
+  
+#ifndef NO_MPI
+  
+  MPI::COMM_WORLD.Barrier();
+	double *Buffer_Send_UGrad = NULL;
+
+#endif
+  
+	newGradient = new double* [nVar];
+	for (iVar = 0; iVar < nVar; iVar++)
+		newGradient[iVar] = new double[3];
+  
+	/*--- Send-Receive boundary conditions ---*/
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+		if (config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) {
+			SendRecv = config->GetMarker_All_SendRecv(iMarker);
+			nVertex = geometry->nVertex[iMarker];
+			nBuffer_VectorGrad = nVertex*nVar*nDim;
+			send_to = SendRecv-1;
+			receive_from = abs(SendRecv)-1;
+      
+#ifndef NO_MPI
+      
+			/*--- Send information using MPI  ---*/
+			if (SendRecv > 0) {
+        Buffer_Send_UGrad = new double[nBuffer_VectorGrad];
+				for (iVertex = 0; iVertex < nVertex; iVertex++) {
+					iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          for (iVar = 0; iVar < nVar; iVar++)
+            for (iDim = 0; iDim < nDim; iDim++)
+              Buffer_Send_UGrad[iDim*nVar*nVertex+iVar*nVertex+iVertex] = node[iPoint]->GetGradient(iVar,iDim);
+				}
+        MPI::COMM_WORLD.Bsend(Buffer_Send_UGrad, nBuffer_VectorGrad, MPI::DOUBLE, send_to, 0); delete [] Buffer_Send_UGrad;
+			}
+      
+#endif
+      
+			/*--- Receive information  ---*/
+			if (SendRecv < 0) {
+        Buffer_Receive_UGrad = new double [nBuffer_VectorGrad];
+        
+#ifdef NO_MPI
+        
+				/*--- Receive information without MPI ---*/
+				for (iVertex = 0; iVertex < nVertex; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          for (iVar = 0; iVar < nVar; iVar++)
+            for (iDim = 0; iDim < nDim; iDim++)
+              Buffer_Receive_UGrad[iDim*nVar*nVertex+iVar*nVertex+iVertex] = node[iPoint]->GetGradient(iVar,iDim);
+				}
+        
+#else
+        
+        MPI::COMM_WORLD.Recv(Buffer_Receive_UGrad, nBuffer_VectorGrad, MPI::DOUBLE, receive_from, 0);
+        
+#endif
+        
+				/*--- Do the coordinate transformation ---*/
+				for (iVertex = 0; iVertex < nVertex; iVertex++) {
+          
+					/*--- Find point and its type of transformation ---*/
+					iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+					iPeriodic_Index = geometry->vertex[iMarker][iVertex]->GetRotation_Type();
+          
+					/*--- Retrieve the supplied periodic information. ---*/
+					angles = config->GetPeriodicRotation(iPeriodic_Index);
+          
+					/*--- Store angles separately for clarity. ---*/
+					theta    = angles[0];   phi    = angles[1]; psi    = angles[2];
+					cosTheta = cos(theta);  cosPhi = cos(phi);  cosPsi = cos(psi);
+					sinTheta = sin(theta);  sinPhi = sin(phi);  sinPsi = sin(psi);
+          
+					/*--- Compute the rotation matrix. Note that the implicit
+					 ordering is rotation about the x-axis, y-axis,
+					 then z-axis. Note that this is the transpose of the matrix
+					 used during the preprocessing stage. ---*/
+					rotMatrix[0][0] = cosPhi*cosPsi; rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi; rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+					rotMatrix[0][1] = cosPhi*sinPsi; rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi; rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+					rotMatrix[0][2] = -sinPhi; rotMatrix[1][2] = sinTheta*cosPhi; rotMatrix[2][2] = cosTheta*cosPhi;
+          
+          for (iVar = 0; iVar < nVar; iVar++)
+            for (iDim = 0; iDim < nDim; iDim++)
+              newGradient[iVar][iDim] = Buffer_Receive_UGrad[iDim*nVar*nVertex+iVar*nVertex+iVertex];
+          
+          /*--- Need to rotate the gradients for all conserved variables. ---*/
+          for (iVar = 0; iVar < nVar; iVar++) {
+            if (nDim == 2) {
+              newGradient[iVar][0] = rotMatrix[0][0]*Buffer_Receive_UGrad[0*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[0][1]*Buffer_Receive_UGrad[1*nVar*nVertex+iVar*nVertex+iVertex];
+              newGradient[iVar][1] = rotMatrix[1][0]*Buffer_Receive_UGrad[0*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[1][1]*Buffer_Receive_UGrad[1*nVar*nVertex+iVar*nVertex+iVertex];
+            }
+            else {
+              newGradient[iVar][0] = rotMatrix[0][0]*Buffer_Receive_UGrad[0*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[0][1]*Buffer_Receive_UGrad[1*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[0][2]*Buffer_Receive_UGrad[2*nVar*nVertex+iVar*nVertex+iVertex];
+              newGradient[iVar][1] = rotMatrix[1][0]*Buffer_Receive_UGrad[0*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[1][1]*Buffer_Receive_UGrad[1*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[1][2]*Buffer_Receive_UGrad[2*nVar*nVertex+iVar*nVertex+iVertex];
+              newGradient[iVar][2] = rotMatrix[2][0]*Buffer_Receive_UGrad[0*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[2][1]*Buffer_Receive_UGrad[1*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[2][2]*Buffer_Receive_UGrad[2*nVar*nVertex+iVar*nVertex+iVertex];
+            }
+          }
+          
+          /*--- Copy transformed gradients back into buffer. ---*/
+          for (iVar = 0; iVar < nVar; iVar++)
+            for (iDim = 0; iDim < nDim; iDim++)
+              Buffer_Receive_UGrad[iDim*nVar*nVertex+iVar*nVertex+iVertex] = newGradient[iVar][iDim];
+          
+          
+					/*--- Store the received information ---*/
+          for (iVar = 0; iVar < nVar; iVar++)
+            for (iDim = 0; iDim < nDim; iDim++)
+              node[iPoint]->SetGradient(iVar, iDim, Buffer_Receive_UGrad[iDim*nVar*nVertex+iVar*nVertex+iVertex]);
+				}
+        delete [] Buffer_Receive_UGrad;
+			}
+		}
+	}
+  
+	for (iVar = 0; iVar < nVar; iVar++)
+		delete [] newGradient[iVar];
+	delete [] newGradient;
+  
+#ifndef NO_MPI
+  
+  MPI::COMM_WORLD.Barrier();
+  
+#endif
+  
+}
 
 void CSolution::SetSurface_Gradient(CGeometry *geometry, CConfig *config) {
 
@@ -888,6 +1077,9 @@ void CSolution::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
       }
       break;
   }
+  
+  /*--- Limiter MPI ---*/
+  SetSolution_Limiter_MPI(geometry, config);
 	
 }
 
@@ -1000,4 +1192,460 @@ void CSolution::Gauss_Elimination(double** A, double* rhs, unsigned long nVar) {
 			if (iVar == 0) break;
 		}
 	}
+}
+
+CBaselineSolution::CBaselineSolution(void) : CSolution() { }
+
+CBaselineSolution::CBaselineSolution(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolution() {
+  
+  int rank = MASTER_NODE;
+#ifndef NO_MPI
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+  
+	unsigned long iPoint, index, flowIter, iPoint_Global;
+  long iPoint_Local;
+  char buffer[50];
+  unsigned short iField, val_iZone;
+  string Tag, text_line, AdjExt, UnstExt;
+  unsigned short Kind_ObjFunc = config->GetKind_ObjFunc();
+  unsigned short nZone = geometry->GetnZone();
+  
+	/*--- Define geometry constants in the solver structure ---*/
+	nDim = geometry->GetnDim();
+  
+	/*--- Allocate the node variables ---*/
+	node = new CVariable*[geometry->GetnPoint()];
+  
+  /*--- Restart the solution from file information ---*/
+  ifstream restart_file;
+  string filename;
+  
+  /*--- Retrieve filename from config ---*/
+	if (config->IsAdjoint())
+		filename = config->GetSolution_AdjFileName();
+	else
+		filename = config->GetSolution_FlowFileName();
+  
+	/*--- Remove restart filename extension ---*/
+	filename.erase(filename.end()-4, filename.end());
+  
+	/*--- The adjoint problem requires a particular extension. ---*/
+	if (config->IsAdjoint()) {
+		switch (Kind_ObjFunc) {
+      case DRAG_COEFFICIENT:      AdjExt = "_cd";   break;
+      case LIFT_COEFFICIENT:      AdjExt = "_cl";   break;
+      case SIDEFORCE_COEFFICIENT: AdjExt = "_csf";  break;
+      case PRESSURE_COEFFICIENT:  AdjExt = "_cp";   break;
+      case MOMENT_X_COEFFICIENT:  AdjExt = "_cmx";  break;
+      case MOMENT_Y_COEFFICIENT:  AdjExt = "_cmy";  break;
+      case MOMENT_Z_COEFFICIENT:  AdjExt = "_cmz";  break;
+      case EFFICIENCY:            AdjExt = "_eff";  break;
+      case EQUIVALENT_AREA:       AdjExt = "_ea";   break;
+      case NEARFIELD_PRESSURE:    AdjExt = "_nfp";  break;
+      case FORCE_X_COEFFICIENT:   AdjExt = "_cfx";  break;
+      case FORCE_Y_COEFFICIENT:   AdjExt = "_cfy";  break;
+      case FORCE_Z_COEFFICIENT:   AdjExt = "_cfz";  break;
+      case THRUST_COEFFICIENT:    AdjExt = "_ct";   break;
+      case TORQUE_COEFFICIENT:    AdjExt = "_cq";   break;
+      case FIGURE_OF_MERIT:       AdjExt = "_merit";break;
+      case FREESURFACE:           AdjExt = "_fs";   break;
+      case NOISE:                 AdjExt = "_fwh";  break;
+		}
+		filename.append(AdjExt);
+	}
+  
+	/*--- Multi-zone restart files. ---*/
+	if (nZone > 1 && !(config->GetUnsteady_Simulation() == TIME_SPECTRAL)) {
+    val_iZone = config->GetExtIter();
+		filename.erase(filename.end()-4, filename.end());
+		sprintf (buffer, "_%d.dat", int(val_iZone));
+		UnstExt = string(buffer);
+		filename.append(UnstExt);
+	}
+  
+	/*--- For the unsteady adjoint, we integrate backwards through
+   physical time, so load in the direct solution files in reverse. ---*/
+	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+		flowIter = val_iZone;
+		if (int(val_iZone) < 10) sprintf (buffer, "_0000%d.dat", int(val_iZone));
+		if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) sprintf (buffer, "_000%d.dat", int(val_iZone));
+		if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) sprintf (buffer, "_00%d.dat", int(val_iZone));
+		if ((int(val_iZone) >= 1000) && (int(val_iZone) < 10000)) sprintf (buffer, "_0%d.dat", int(val_iZone));
+		if (int(val_iZone) >= 10000) sprintf (buffer, "_%d.dat", int(val_iZone));
+		UnstExt = string(buffer);
+		filename.append(UnstExt);
+	} else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
+		flowIter   = config->GetExtIter();
+		if ((int(flowIter) >= 0) && (int(flowIter) < 10)) sprintf (buffer, "_0000%d.dat", int(flowIter));
+		if ((int(flowIter) >= 10) && (int(flowIter) < 100)) sprintf (buffer, "_000%d.dat", int(flowIter));
+		if ((int(flowIter) >= 100) && (int(flowIter) < 1000)) sprintf (buffer, "_00%d.dat", int(flowIter));
+		if ((int(flowIter) >= 1000) && (int(flowIter) < 10000)) sprintf (buffer, "_0%d.dat", int(flowIter));
+		if (int(flowIter) >= 10000) sprintf (buffer, "_%d.dat", int(flowIter));
+		UnstExt = string(buffer);
+		filename.append(UnstExt);
+	} else
+    filename.append(".dat");
+  
+  restart_file.open(filename.data(), ios::in);
+
+  /*--- In case there is no restart file ---*/
+  if (restart_file.fail()) {
+    cout << "There is no SU2 restart file!!" << endl;
+    cout << "Press any key to exit..." << endl;
+    cin.get(); exit(1);
+  }
+  
+  /*--- Output the file name to the console. ---*/
+  if (rank == MASTER_NODE)
+    cout << "Reading and storing the solution from " << filename << "." << endl;
+  
+  /*--- In case this is a parallel simulation, we need to perform the
+   Global2Local index transformation first. ---*/
+  long *Global2Local = new long[geometry->GetGlobal_nPointDomain()];
+  
+  /*--- First, set all indices to a negative value by default ---*/
+  for(iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++)
+    Global2Local[iPoint] = -1;
+  
+  /*--- Now fill array with the transform values only for local points ---*/
+  for(iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
+    Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+  
+  
+  /*--- Identify the number of fields (and names) in the restart file ---*/
+  getline (restart_file, text_line);
+  stringstream ss(text_line);
+  while (ss >> Tag) {
+    config->fields.push_back(Tag);
+    if (ss.peek() == ',') ss.ignore();
+  }
+  
+  /*--- Set the number of variables, one per field in the
+   restart file (without including the PointID) ---*/
+  nVar = config->fields.size() - 1;
+  double Solution[nVar];
+  
+  /*--- Read all lines in the restart file ---*/
+  iPoint_Global = 0;
+  while (getline (restart_file, text_line)) {
+    istringstream point_line(text_line);
+    
+    /*--- Retrieve local index. If this node from the restart file lives
+     on a different processor, the value of iPoint_Local will be -1.
+     Otherwise, the local index for this node on the current processor
+     will be returned and used to instantiate the vars. ---*/
+    iPoint_Local = Global2Local[iPoint_Global];
+    if (iPoint_Local >= 0) {
+      
+      /*--- The PointID is not stored --*/
+      point_line >> index;
+      
+      /*--- Store the solution --*/
+      for (iField = 0; iField < nVar; iField++)
+        point_line >> Solution[iField];
+      
+      node[iPoint_Local] = new CBaselineVariable(Solution, nVar, config);
+    }
+    iPoint_Global++;
+  }
+  
+  /*--- Instantiate the variable class with an arbitrary solution
+   at any halo/periodic nodes. The initial solution can be arbitrary,
+   because a send/recv is performed immediately in the solver. ---*/
+  for(iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++)
+    node[iPoint] = new CBaselineVariable(Solution, nVar, config);
+  
+  /*--- Close the restart file ---*/
+  restart_file.close();
+  
+  /*--- Free memory needed for the transformation ---*/
+  delete [] Global2Local;
+  
+  /*--- MPI solution ---*/
+  SetSolution_MPI(geometry, config);
+  
+}
+
+void CBaselineSolution::SetSolution_MPI(CGeometry *geometry, CConfig *config) {
+	unsigned short iVar, iMarker, iPeriodic_Index;
+	unsigned long iVertex, iPoint, nVertex, nBuffer_Vector;
+	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi,
+  psi, cosPsi, sinPsi, *newSolution = NULL, *Buffer_Receive_U = NULL;
+	short SendRecv;
+	int send_to, receive_from;
+  
+#ifndef NO_MPI
+  
+  MPI::COMM_WORLD.Barrier();
+	double *Buffer_Send_U = NULL;
+  
+#endif
+  
+	newSolution = new double[nVar];
+
+	/*--- Send-Receive boundary conditions ---*/
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+		if (config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) {
+			SendRecv = config->GetMarker_All_SendRecv(iMarker);
+			nVertex = geometry->nVertex[iMarker];
+			nBuffer_Vector = nVertex*nVar;
+			send_to = SendRecv-1;
+			receive_from = abs(SendRecv)-1;
+      
+#ifndef NO_MPI
+      
+			/*--- Send information using MPI  ---*/
+			if (SendRecv > 0) {
+        Buffer_Send_U = new double[nBuffer_Vector];
+				for (iVertex = 0; iVertex < nVertex; iVertex++) {
+					iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          for (iVar = 0; iVar < nVar; iVar++)
+            Buffer_Send_U[iVar*nVertex+iVertex] = node[iPoint]->GetSolution(iVar);
+				}
+        MPI::COMM_WORLD.Bsend(Buffer_Send_U, nBuffer_Vector, MPI::DOUBLE, send_to, 0); delete [] Buffer_Send_U;
+			}
+      
+#endif
+
+			/*--- Receive information  ---*/
+			if (SendRecv < 0) {
+        Buffer_Receive_U = new double [nBuffer_Vector];
+        
+#ifdef NO_MPI
+        
+				/*--- Receive information without MPI ---*/
+				for (iVertex = 0; iVertex < nVertex; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          for (iVar = 0; iVar < nVar; iVar++)
+            Buffer_Receive_U[iVar*nVertex+iVertex] = node[iPoint]->GetSolution(iVar);
+        }
+        
+#else
+        
+        MPI::COMM_WORLD.Recv(Buffer_Receive_U, nBuffer_Vector, MPI::DOUBLE, receive_from, 0);
+        
+#endif
+        
+				/*--- Do the coordinate transformation ---*/
+				for (iVertex = 0; iVertex < nVertex; iVertex++) {
+          
+					/*--- Find point and its type of transformation ---*/
+					iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+					iPeriodic_Index = geometry->vertex[iMarker][iVertex]->GetRotation_Type();
+          
+					/*--- Retrieve the supplied periodic information. ---*/
+					angles = config->GetPeriodicRotation(iPeriodic_Index);
+          
+					/*--- Store angles separately for clarity. ---*/
+					theta    = angles[0];   phi    = angles[1]; psi    = angles[2];
+					cosTheta = cos(theta);  cosPhi = cos(phi);  cosPsi = cos(psi);
+					sinTheta = sin(theta);  sinPhi = sin(phi);  sinPsi = sin(psi);
+          
+					/*--- Compute the rotation matrix. Note that the implicit
+					 ordering is rotation about the x-axis, y-axis,
+					 then z-axis. Note that this is the transpose of the matrix
+					 used during the preprocessing stage. ---*/
+					rotMatrix[0][0] = cosPhi*cosPsi; rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi; rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+					rotMatrix[0][1] = cosPhi*sinPsi; rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi; rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+					rotMatrix[0][2] = -sinPhi; rotMatrix[1][2] = sinTheta*cosPhi; rotMatrix[2][2] = cosTheta*cosPhi;
+          
+					/*--- Copy conserved variables before performing transformation. ---*/
+					for (iVar = 0; iVar < nVar; iVar++)
+						newSolution[iVar] = Buffer_Receive_U[iVar*nVertex+iVertex];
+          
+					/*--- Rotate the momentum components. ---*/
+					if (nDim == 2) {
+						newSolution[1] = rotMatrix[0][0]*Buffer_Receive_U[1*nVertex+iVertex] + rotMatrix[0][1]*Buffer_Receive_U[2*nVertex+iVertex];
+						newSolution[2] = rotMatrix[1][0]*Buffer_Receive_U[1*nVertex+iVertex] + rotMatrix[1][1]*Buffer_Receive_U[2*nVertex+iVertex];
+					}
+					else {
+						newSolution[1] = rotMatrix[0][0]*Buffer_Receive_U[1*nVertex+iVertex] + rotMatrix[0][1]*Buffer_Receive_U[2*nVertex+iVertex] + rotMatrix[0][2]*Buffer_Receive_U[3*nVertex+iVertex];
+						newSolution[2] = rotMatrix[1][0]*Buffer_Receive_U[1*nVertex+iVertex] + rotMatrix[1][1]*Buffer_Receive_U[2*nVertex+iVertex] + rotMatrix[1][2]*Buffer_Receive_U[3*nVertex+iVertex];
+						newSolution[3] = rotMatrix[2][0]*Buffer_Receive_U[1*nVertex+iVertex] + rotMatrix[2][1]*Buffer_Receive_U[2*nVertex+iVertex] + rotMatrix[2][2]*Buffer_Receive_U[3*nVertex+iVertex];
+					}
+          
+					/*--- Copy transformed conserved variables back into buffer. ---*/
+					for (iVar = 0; iVar < nVar; iVar++)
+						Buffer_Receive_U[iVar*nVertex+iVertex] = newSolution[iVar];
+          
+          for (iVar = 0; iVar < nVar; iVar++)
+            node[iPoint]->SetSolution(iVar, Buffer_Receive_U[iVar*nVertex+iVertex]);
+          
+				}
+        delete [] Buffer_Receive_U;
+			}
+		}
+	}
+	delete [] newSolution;
+  
+#ifndef NO_MPI
+  
+  MPI::COMM_WORLD.Barrier();
+  
+#endif
+  
+}
+
+void CBaselineSolution::GetRestart(CGeometry *geometry, CConfig *config, unsigned short val_iZone) {
+  
+	int rank = MASTER_NODE;
+#ifndef NO_MPI
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+  
+	/*--- Restart the solution from file information ---*/
+	string filename;
+	unsigned long iPoint, index, flowIter;
+	char buffer[50];
+	string UnstExt, text_line, AdjExt;
+	ifstream restart_file;
+	unsigned short nZone = geometry->GetnZone();
+  unsigned short Kind_ObjFunc = config->GetKind_ObjFunc();
+  unsigned short iField;
+  
+  /*--- Retrieve filename from config ---*/
+	if (config->IsAdjoint())
+		filename = config->GetSolution_AdjFileName();
+	else
+		filename = config->GetSolution_FlowFileName();
+  
+	/*--- Remove restart filename extension ---*/
+	filename.erase(filename.end()-4, filename.end());
+  
+	/*--- The adjoint problem requires a particular extension. ---*/
+	if (config->IsAdjoint()) {
+		switch (Kind_ObjFunc) {
+      case DRAG_COEFFICIENT:      AdjExt = "_cd";   break;
+      case LIFT_COEFFICIENT:      AdjExt = "_cl";   break;
+      case SIDEFORCE_COEFFICIENT: AdjExt = "_csf";  break;
+      case PRESSURE_COEFFICIENT:  AdjExt = "_cp";   break;
+      case MOMENT_X_COEFFICIENT:  AdjExt = "_cmx";  break;
+      case MOMENT_Y_COEFFICIENT:  AdjExt = "_cmy";  break;
+      case MOMENT_Z_COEFFICIENT:  AdjExt = "_cmz";  break;
+      case EFFICIENCY:            AdjExt = "_eff";  break;
+      case EQUIVALENT_AREA:       AdjExt = "_ea";   break;
+      case NEARFIELD_PRESSURE:    AdjExt = "_nfp";  break;
+      case FORCE_X_COEFFICIENT:   AdjExt = "_cfx";  break;
+      case FORCE_Y_COEFFICIENT:   AdjExt = "_cfy";  break;
+      case FORCE_Z_COEFFICIENT:   AdjExt = "_cfz";  break;
+      case THRUST_COEFFICIENT:    AdjExt = "_ct";   break;
+      case TORQUE_COEFFICIENT:    AdjExt = "_cq";   break;
+      case FIGURE_OF_MERIT:       AdjExt = "_merit";break;
+      case FREESURFACE:           AdjExt = "_fs";   break;
+      case NOISE:                 AdjExt = "_fwh";  break;
+		}
+		filename.append(AdjExt);
+	}
+  
+	/*--- Multi-zone restart files. ---*/
+	if (nZone > 1 && !(config->GetUnsteady_Simulation() == TIME_SPECTRAL)) {
+		filename.erase(filename.end()-4, filename.end());
+		sprintf (buffer, "_%d.dat", int(val_iZone));
+		UnstExt = string(buffer);
+		filename.append(UnstExt);
+	}
+  
+	/*--- For the unsteady adjoint, we integrate backwards through
+   physical time, so load in the direct solution files in reverse. ---*/
+	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+		flowIter = val_iZone;
+		if (int(val_iZone) < 10) sprintf (buffer, "_0000%d.dat", int(val_iZone));
+		if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) sprintf (buffer, "_000%d.dat", int(val_iZone));
+		if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) sprintf (buffer, "_00%d.dat", int(val_iZone));
+		if ((int(val_iZone) >= 1000) && (int(val_iZone) < 10000)) sprintf (buffer, "_0%d.dat", int(val_iZone));
+		if (int(val_iZone) >= 10000) sprintf (buffer, "_%d.dat", int(val_iZone));
+		UnstExt = string(buffer);
+		filename.append(UnstExt);
+	} else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
+		flowIter   = config->GetExtIter();
+		if ((int(flowIter) >= 0) && (int(flowIter) < 10)) sprintf (buffer, "_0000%d.dat", int(flowIter));
+		if ((int(flowIter) >= 10) && (int(flowIter) < 100)) sprintf (buffer, "_000%d.dat", int(flowIter));
+		if ((int(flowIter) >= 100) && (int(flowIter) < 1000)) sprintf (buffer, "_00%d.dat", int(flowIter));
+		if ((int(flowIter) >= 1000) && (int(flowIter) < 10000)) sprintf (buffer, "_0%d.dat", int(flowIter));
+		if (int(flowIter) >= 10000) sprintf (buffer, "_%d.dat", int(flowIter));
+		UnstExt = string(buffer);
+		filename.append(UnstExt);
+	} else
+    filename.append(".dat");
+  
+  
+  restart_file.open(filename.data(), ios::in);
+  
+	/*--- In case there is no file ---*/
+	if (restart_file.fail()) {
+		cout << "There is no SU2 restart file!!" << endl;
+		cout << "Press any key to exit..." << endl;
+		cin.get(); exit(1);
+	}
+  
+  /*--- Output the file name to the console. ---*/
+  if (rank == MASTER_NODE)
+    cout << "Reading and storing the solution from " << filename
+    << "." << endl;
+  
+  /*--- Set the number of variables, one per field in the
+   restart file (without including the PointID) ---*/
+  nVar = config->fields.size() - 1;
+  double Solution[nVar];
+  
+	/*--- In case this is a parallel simulation, we need to perform the
+   Global2Local index transformation first. ---*/
+	long *Global2Local = NULL;
+	Global2Local = new long[geometry->GetGlobal_nPointDomain()];
+	/*--- First, set all indices to a negative value by default ---*/
+	for(iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
+		Global2Local[iPoint] = -1;
+	}
+  
+	/*--- Now fill array with the transform values only for local points ---*/
+	for(iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+		Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+	}
+  
+	/*--- Read all lines in the restart file ---*/
+	long iPoint_Local = 0; unsigned long iPoint_Global = 0;
+  
+	/*--- The first line is the header ---*/
+	getline (restart_file, text_line);
+  
+	while (getline (restart_file,text_line)) {
+		istringstream point_line(text_line);
+    
+		/*--- Retrieve local index. If this node from the restart file lives
+     on a different processor, the value of iPoint_Local will be -1, as
+     initialized above. Otherwise, the local index for this node on the
+     current processor will be returned and used to instantiate the vars. ---*/
+		iPoint_Local = Global2Local[iPoint_Global];
+		if (iPoint_Local >= 0) {
+      
+      /*--- The PointID is not stored --*/
+      point_line >> index;
+      
+      /*--- Store the solution --*/
+      for (iField = 0; iField < nVar; iField++)
+        point_line >> Solution[iField];
+      
+      node[iPoint_Local]->SetSolution(Solution);
+      
+      
+		}
+		iPoint_Global++;
+	}
+  
+	/*--- Close the restart file ---*/
+	restart_file.close();
+  
+	/*--- Free memory needed for the transformation ---*/
+	delete [] Global2Local;
+  
+}
+
+CBaselineSolution::~CBaselineSolution(void) {
+	unsigned long iPoint;
+  
+	for (iPoint = 0; iPoint < nPoint; iPoint++)
+		delete node[iPoint];
+	delete [] node;
+  
 }

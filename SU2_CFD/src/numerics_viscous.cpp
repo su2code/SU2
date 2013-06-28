@@ -2,7 +2,7 @@
  * \file numerics_viscous.cpp
  * \brief This file contains all the viscous term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -320,13 +320,2169 @@ void CAvgGrad_TurbSA::SetResidual(double *val_residual, double **Jacobian_i, dou
 
 CAvgGrad_AdjDiscTurbSA::CAvgGrad_AdjDiscTurbSA(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
+	sigma = 2.0/3.0;
+    
+    TurbVar_id = new double[nVar];
+    TurbVar_jd = new double[nVar];
+    val_residual = new double [nVar];
+    val_residuald = new double [nVar];
+    Edge_Vector = new double [nDim];
+    Edge_Vectord = new double [nDim];
+    
+    unsigned short nFlowVar = (nDim+2);
+    PrimVar_Grad_id = new double *[nFlowVar];
+    PrimVar_Grad_jd = new double *[nFlowVar];
+    for (unsigned short iPos = 0; iPos < nFlowVar; iPos++){
+        PrimVar_Grad_id[iPos] = new double [nDim];
+        PrimVar_Grad_jd[iPos] = new double [nDim];
+    }
+    
+    TurbVar_Grad_id = new double *[nVar];
+    TurbVar_Grad_jd = new double *[nVar];
+    Mean_GradTurbVar = new double*[nVar];
+    Mean_GradTurbVard = new double*[nVar];
+    for (unsigned short iPos = 0; iPos < nVar; iPos++){
+        TurbVar_Grad_id[iPos] = new double [nDim];
+        TurbVar_Grad_jd[iPos] = new double [nDim];
+        Mean_GradTurbVar[iPos] = new double [nDim];
+        Mean_GradTurbVard[iPos] = new double [nDim];
+    }
+    
+    Proj_Mean_GradTurbVar_Kappa = new double[nVar];
+    Proj_Mean_GradTurbVar_Kappad = new double[nVar];
+    Proj_Mean_GradTurbVar_Edge = new double[nVar];
+    Proj_Mean_GradTurbVar_Edged = new double[nVar];
+    
+    U_id = new double [nFlowVar];
+	U_jd = new double [nFlowVar];
+
 }
 
 CAvgGrad_AdjDiscTurbSA::~CAvgGrad_AdjDiscTurbSA(void) {
+    
+    delete [] TurbVar_id;
+    delete [] TurbVar_jd;
+    delete [] val_residual;
+    delete [] val_residuald;
+    delete [] Edge_Vector;
+    delete [] Edge_Vectord;
+    
+    unsigned short nFlowVar = (nDim+2);
+    for (unsigned short iPos = 0; iPos < nFlowVar; iPos++){
+        delete [] PrimVar_Grad_id[iPos];
+        delete [] PrimVar_Grad_jd[iPos];
+    }
+    delete [] PrimVar_Grad_id;
+    delete [] PrimVar_Grad_jd;
+    
+    for (unsigned short iPos = 0; iPos < nVar; iPos++){
+        delete [] TurbVar_Grad_id[iPos];
+        delete [] TurbVar_Grad_jd[iPos];
+        delete [] Mean_GradTurbVar[iPos];
+        delete [] Mean_GradTurbVard[iPos];
+    }
+    delete [] TurbVar_Grad_id;
+    delete [] TurbVar_Grad_jd;
+    delete [] Mean_GradTurbVar;
+    delete [] Mean_GradTurbVard;
+
+    delete [] Proj_Mean_GradTurbVar_Kappa;
+    delete [] Proj_Mean_GradTurbVar_Kappad;
+    delete [] Proj_Mean_GradTurbVar_Edge;
+    delete [] Proj_Mean_GradTurbVar_Edged;
+    
+    delete [] U_id;
+	delete [] U_jd;
 
 }
 
-void CAvgGrad_AdjDiscTurbSA::SetResidual() {
+void CAvgGrad_AdjDiscTurbSA::SetResidual(double **val_Jacobian_i, double *val_Jacobian_mui, double ***val_Jacobian_gradi,
+		double **val_Jacobian_j, double *val_Jacobian_muj, double ***val_Jacobian_gradj, CConfig *config) {
+	//unsigned short iVar, jVar;
+	unsigned short iPos, jPos, kPos, lPos; // iVar, jVar are global and used in SetResidual_ad, so cannot be used here
+
+	unsigned short nTotalVar, nFlowVar;
+	nFlowVar = nDim + 2;
+	nTotalVar = nVar + nFlowVar;
+
+////// i
+
+	// U_i sensitivity:
+
+	for (iPos = 0; iPos < nFlowVar; iPos++){
+// zero things first
+		for (jPos = 0; jPos < nFlowVar; jPos++){
+			U_id[jPos] = 0.0;
+			U_jd[jPos] = 0.0;
+		}
+
+		for (jPos = 0; jPos < nVar; jPos++){
+			TurbVar_id[jPos] = 0.0;
+			TurbVar_jd[jPos] = 0.0;
+			val_residuald[jPos] = 0.0;
+		}
+
+		Laminar_Viscosity_id = 0.0;
+		Laminar_Viscosity_jd = 0.0;
+
+		for (jPos = 0; jPos < nFlowVar; jPos++){
+			for (kPos = 0; kPos < nDim; kPos++){
+				PrimVar_Grad_id[jPos][kPos] = 0.0;
+				PrimVar_Grad_jd[jPos][kPos] = 0.0;
+			}
+		}
+
+		for (jPos = 0; jPos < nVar; jPos++){
+			for (kPos = 0; kPos < nDim; kPos++){
+				TurbVar_Grad_id[jPos][kPos] = 0.0;
+				TurbVar_Grad_jd[jPos][kPos] = 0.0;
+			}
+		}
+
+		U_id[iPos] = 1.0;
+
+		this->SetDirectResidual_ad(val_residual, val_residuald, config);
+
+		for (jPos = 0; jPos < nVar; jPos++) {
+			// Transpose each block: [jPos][iPos] -> [iPos][jPos]
+			val_Jacobian_i[iPos][jPos] = val_residuald[jPos];
+
+		}
+        
+//        // TEST AD *****************
+//        for (jPos = 0; jPos < nVar; jPos++) {
+//            //cout << "Dist: " << dist_i << endl;
+//            //cout << "Direct: " << val_residual[jPos] << endl;
+//            cout << "AD: " << val_residuald[jPos] << endl;
+//        }
+//        // cout << "--" << endl;
+//        // AD *****************
+
+
+	}
+    
+    
+//    // TEST FD *****************
+//    double *temp_U_i, *temp_U_j;
+//    double *temp_TurbVar_i, *temp_TurbVar_j;
+//    double temp_Laminar_Viscosity_i, temp_Laminar_Viscosity_j;
+//    temp_U_i = new double[nFlowVar];
+//    temp_U_j = new double[nFlowVar];
+//    temp_TurbVar_i  = new double[nVar];
+//    temp_TurbVar_j  = new double[nVar];
+//    double *temp1_val_residual, *temp2_val_residual;
+//    temp1_val_residual = new double[nVar];
+//    temp2_val_residual = new double[nVar];
+//    double **temp_PrimVar_Grad_i, **temp_TurbVar_Grad_i;
+//    double **temp_PrimVar_Grad_j, **temp_TurbVar_Grad_j;
+//    temp_PrimVar_Grad_i = new double*[nFlowVar];
+//    temp_PrimVar_Grad_j = new double*[nFlowVar];
+//    temp_TurbVar_Grad_i = new double*[nVar];
+//    temp_TurbVar_Grad_j = new double*[nVar];
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        temp_PrimVar_Grad_i[jPos] = new double[nDim];
+//        temp_PrimVar_Grad_j[jPos] = new double[nDim];
+//    }
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        temp_TurbVar_Grad_i[jPos] = new double[nDim];
+//        temp_TurbVar_Grad_j[jPos] = new double[nDim];
+//    }
+//    
+//    double delta;
+//    
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        temp_U_i[jPos] = U_i[jPos];
+//        temp_U_j[jPos] = U_j[jPos];
+//    }
+//    
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        temp_TurbVar_i[jPos] = TurbVar_i[jPos];
+//        temp_TurbVar_j[jPos] = TurbVar_j[jPos];
+//    }
+//    
+//    temp_Laminar_Viscosity_i = Laminar_Viscosity_i;
+//    temp_Laminar_Viscosity_j = Laminar_Viscosity_j;
+//    
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        for (kPos = 0; kPos < nDim; kPos++){
+//            temp_PrimVar_Grad_i[jPos][kPos] = PrimVar_Grad_i[jPos][kPos];
+//            temp_PrimVar_Grad_j[jPos][kPos] = PrimVar_Grad_j[jPos][kPos];
+//        }
+//    }
+//    
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        for (kPos = 0; kPos < nDim; kPos++){
+//            temp_TurbVar_Grad_i[jPos][kPos] = TurbVar_Grad_i[jPos][kPos];
+//            temp_TurbVar_Grad_j[jPos][kPos] = TurbVar_Grad_j[jPos][kPos];
+//        }
+//    }
+//    
+//    for (iPos = 0; iPos < nFlowVar; iPos++){
+//        
+//		for (jPos = 0; jPos < nFlowVar; jPos++){
+//			U_i[jPos] = temp_U_i[jPos];
+//            U_j[jPos] = temp_U_j[jPos];
+//		}
+//        
+//		for (jPos = 0; jPos < nVar; jPos++){
+//			TurbVar_i[jPos] = temp_TurbVar_i[jPos];
+//            TurbVar_j[jPos] = temp_TurbVar_j[jPos];
+//		}
+//        
+//        Laminar_Viscosity_i = temp_Laminar_Viscosity_i;
+//        Laminar_Viscosity_j = temp_Laminar_Viscosity_j;
+//        
+//        for (jPos = 0; jPos < nFlowVar; jPos++){
+//            for (kPos = 0; kPos < nDim; kPos++){
+//                PrimVar_Grad_i[jPos][kPos] = temp_PrimVar_Grad_i[jPos][kPos];
+//                PrimVar_Grad_j[jPos][kPos] = temp_PrimVar_Grad_j[jPos][kPos];
+//            }
+//        }
+//        
+//        for (jPos = 0; jPos < nVar; jPos++){
+//            for (kPos = 0; kPos < nDim; kPos++){
+//                TurbVar_Grad_i[jPos][kPos] = temp_TurbVar_Grad_i[jPos][kPos];
+//                TurbVar_Grad_j[jPos][kPos] = temp_TurbVar_Grad_j[jPos][kPos];
+//            }
+//        }
+//        
+//        if (fabs(temp_U_i[iPos]) > 1e-15)
+//            delta = 0.01*temp_U_i[iPos];
+//        else
+//            delta = 1e-15;
+//        
+//        U_i[iPos] = temp_U_i[iPos] - delta;
+//        
+//		this->SetDirectResidual_ad(temp1_val_residual, val_residuald, config);
+//        
+//		for (jPos = 0; jPos < nFlowVar; jPos++){
+//			U_i[jPos] = temp_U_i[jPos];
+//            U_j[jPos] = temp_U_j[jPos];
+//		}
+//        
+//		for (jPos = 0; jPos < nVar; jPos++){
+//			TurbVar_i[jPos] = temp_TurbVar_i[jPos];
+//            TurbVar_j[jPos] = temp_TurbVar_j[jPos];
+//		}
+//        
+//        Laminar_Viscosity_i = temp_Laminar_Viscosity_i;
+//        Laminar_Viscosity_j = temp_Laminar_Viscosity_j;
+//        
+//        for (jPos = 0; jPos < nFlowVar; jPos++){
+//            for (kPos = 0; kPos < nDim; kPos++){
+//                PrimVar_Grad_i[jPos][kPos] = temp_PrimVar_Grad_i[jPos][kPos];
+//                PrimVar_Grad_j[jPos][kPos] = temp_PrimVar_Grad_j[jPos][kPos];
+//            }
+//        }
+//        
+//        for (jPos = 0; jPos < nVar; jPos++){
+//            for (kPos = 0; kPos < nDim; kPos++){
+//                TurbVar_Grad_i[jPos][kPos] = temp_TurbVar_Grad_i[jPos][kPos];
+//                TurbVar_Grad_j[jPos][kPos] = temp_TurbVar_Grad_j[jPos][kPos];
+//            }
+//        }
+//        
+//        U_i[iPos] = temp_U_i[iPos] + delta;
+//        
+//		this->SetDirectResidual_ad(temp2_val_residual, val_residuald, config);
+//        
+//        //cout << "U_i: " << temp_U_i[iPos] << endl;
+//        
+//        for (jPos = 0; jPos < nVar; jPos++) {
+//            cout << "FD: " << (temp2_val_residual[jPos] - temp1_val_residual[jPos])/(2*delta) << endl;
+//        }
+//	}
+//    delete [] temp_U_i;
+//    delete [] temp_U_j;
+//    delete [] temp_TurbVar_i;
+//    delete [] temp_TurbVar_j;
+//    delete [] temp1_val_residual;
+//    delete [] temp2_val_residual;
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        delete [] temp_PrimVar_Grad_i[jPos];
+//        delete [] temp_PrimVar_Grad_j[jPos];
+//    }
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        delete [] temp_TurbVar_Grad_i[jPos];
+//        delete [] temp_TurbVar_Grad_j[jPos];
+//    }
+//    delete [] temp_PrimVar_Grad_i;
+//    delete [] temp_PrimVar_Grad_j;
+//    delete [] temp_TurbVar_Grad_i;
+//    delete [] temp_TurbVar_Grad_j;
+//    cin.get();
+//    // FD *****************
+
+    
+
+	// TurbVar_i sensitivity
+
+	for (iPos = 0; iPos < nVar; iPos++){
+		// zero things first
+		for (jPos = 0; jPos < nFlowVar; jPos++){
+			U_id[jPos] = 0.0;
+			U_jd[jPos] = 0.0;
+		}
+
+		for (jPos = 0; jPos < nVar; jPos++){
+			TurbVar_id[jPos] = 0.0;
+			TurbVar_jd[jPos] = 0.0;
+			val_residuald[jPos] = 0.0;
+		}
+
+		Laminar_Viscosity_id = 0.0;
+		Laminar_Viscosity_jd = 0.0;
+
+
+		for (jPos = 0; jPos < nFlowVar; jPos++){
+			for (kPos = 0; kPos < nDim; kPos++){
+				PrimVar_Grad_id[jPos][kPos] = 0.0;
+				PrimVar_Grad_jd[jPos][kPos] = 0.0;
+			}
+		}
+
+		for (jPos = 0; jPos < nVar; jPos++){
+			for (kPos = 0; kPos < nDim; kPos++){
+				TurbVar_Grad_id[jPos][kPos] = 0.0;
+				TurbVar_Grad_jd[jPos][kPos] = 0.0;
+			}
+		}
+
+		TurbVar_id[iPos] = 1.0;
+
+		this->SetDirectResidual_ad(val_residual, val_residuald, config);
+
+		for (jPos = 0; jPos < nVar; jPos++) {
+			// Transpose each block: [jPos][iPos] -> [iPos][jPos]
+			val_Jacobian_i[iPos+nFlowVar][jPos] = val_residuald[jPos];
+
+		}
+        
+//        // TEST AD *****************
+//        for (jPos = 0; jPos < nVar; jPos++) {
+//            //cout << "Dist: " << dist_i << endl;
+//            //cout << "Direct: " << val_residual[jPos] << endl;
+//            cout << "AD: " << val_residuald[jPos] << endl;
+//        }
+//        // cout << "--" << endl;
+//        // AD *****************
+
+
+	}
+    
+    
+//    // TEST FD *****************
+//    double *temp_U_i, *temp_U_j;
+//    double *temp_TurbVar_i, *temp_TurbVar_j;
+//    double temp_Laminar_Viscosity_i, temp_Laminar_Viscosity_j;
+//    temp_U_i = new double[nFlowVar];
+//    temp_U_j = new double[nFlowVar];
+//    temp_TurbVar_i  = new double[nVar];
+//    temp_TurbVar_j  = new double[nVar];
+//    double *temp1_val_residual, *temp2_val_residual;
+//    temp1_val_residual = new double[nVar];
+//    temp2_val_residual = new double[nVar];
+//    double **temp_PrimVar_Grad_i, **temp_TurbVar_Grad_i;
+//    double **temp_PrimVar_Grad_j, **temp_TurbVar_Grad_j;
+//    temp_PrimVar_Grad_i = new double*[nFlowVar];
+//    temp_PrimVar_Grad_j = new double*[nFlowVar];
+//    temp_TurbVar_Grad_i = new double*[nVar];
+//    temp_TurbVar_Grad_j = new double*[nVar];
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        temp_PrimVar_Grad_i[jPos] = new double[nDim];
+//        temp_PrimVar_Grad_j[jPos] = new double[nDim];
+//    }
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        temp_TurbVar_Grad_i[jPos] = new double[nDim];
+//        temp_TurbVar_Grad_j[jPos] = new double[nDim];
+//    }
+//    
+//    double delta;
+//    
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        temp_U_i[jPos] = U_i[jPos];
+//        temp_U_j[jPos] = U_j[jPos];
+//    }
+//    
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        temp_TurbVar_i[jPos] = TurbVar_i[jPos];
+//        temp_TurbVar_j[jPos] = TurbVar_j[jPos];
+//    }
+//    
+//    temp_Laminar_Viscosity_i = Laminar_Viscosity_i;
+//    temp_Laminar_Viscosity_j = Laminar_Viscosity_j;
+//    
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        for (kPos = 0; kPos < nDim; kPos++){
+//            temp_PrimVar_Grad_i[jPos][kPos] = PrimVar_Grad_i[jPos][kPos];
+//            temp_PrimVar_Grad_j[jPos][kPos] = PrimVar_Grad_j[jPos][kPos];
+//        }
+//    }
+//    
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        for (kPos = 0; kPos < nDim; kPos++){
+//            temp_TurbVar_Grad_i[jPos][kPos] = TurbVar_Grad_i[jPos][kPos];
+//            temp_TurbVar_Grad_j[jPos][kPos] = TurbVar_Grad_j[jPos][kPos];
+//        }
+//    }
+//    
+//    for (iPos = 0; iPos < nVar; iPos++){
+//        
+//		for (jPos = 0; jPos < nFlowVar; jPos++){
+//			U_i[jPos] = temp_U_i[jPos];
+//            U_j[jPos] = temp_U_j[jPos];
+//		}
+//        
+//		for (jPos = 0; jPos < nVar; jPos++){
+//			TurbVar_i[jPos] = temp_TurbVar_i[jPos];
+//            TurbVar_j[jPos] = temp_TurbVar_j[jPos];
+//		}
+//        
+//        Laminar_Viscosity_i = temp_Laminar_Viscosity_i;
+//        Laminar_Viscosity_j = temp_Laminar_Viscosity_j;
+//        
+//        for (jPos = 0; jPos < nFlowVar; jPos++){
+//            for (kPos = 0; kPos < nDim; kPos++){
+//                PrimVar_Grad_i[jPos][kPos] = temp_PrimVar_Grad_i[jPos][kPos];
+//                PrimVar_Grad_j[jPos][kPos] = temp_PrimVar_Grad_j[jPos][kPos];
+//            }
+//        }
+//        
+//        for (jPos = 0; jPos < nVar; jPos++){
+//            for (kPos = 0; kPos < nDim; kPos++){
+//                TurbVar_Grad_i[jPos][kPos] = temp_TurbVar_Grad_i[jPos][kPos];
+//                TurbVar_Grad_j[jPos][kPos] = temp_TurbVar_Grad_j[jPos][kPos];
+//            }
+//        }
+//        
+//        if (fabs(temp_TurbVar_i[iPos]) > 1e-15)
+//            delta = 0.01*temp_TurbVar_i[iPos];
+//        else
+//            delta = 1e-15;
+//        
+//        TurbVar_i[iPos] = temp_TurbVar_i[iPos] - delta;
+//        
+//		this->SetDirectResidual_ad(temp1_val_residual, val_residuald, config);
+//        
+//		for (jPos = 0; jPos < nFlowVar; jPos++){
+//			U_i[jPos] = temp_U_i[jPos];
+//            U_j[jPos] = temp_U_j[jPos];
+//		}
+//        
+//		for (jPos = 0; jPos < nVar; jPos++){
+//			TurbVar_i[jPos] = temp_TurbVar_i[jPos];
+//            TurbVar_j[jPos] = temp_TurbVar_j[jPos];
+//		}
+//        
+//        Laminar_Viscosity_i = temp_Laminar_Viscosity_i;
+//        Laminar_Viscosity_j = temp_Laminar_Viscosity_j;
+//        
+//        for (jPos = 0; jPos < nFlowVar; jPos++){
+//            for (kPos = 0; kPos < nDim; kPos++){
+//                PrimVar_Grad_i[jPos][kPos] = temp_PrimVar_Grad_i[jPos][kPos];
+//                PrimVar_Grad_j[jPos][kPos] = temp_PrimVar_Grad_j[jPos][kPos];
+//            }
+//        }
+//        
+//        for (jPos = 0; jPos < nVar; jPos++){
+//            for (kPos = 0; kPos < nDim; kPos++){
+//                TurbVar_Grad_i[jPos][kPos] = temp_TurbVar_Grad_i[jPos][kPos];
+//                TurbVar_Grad_j[jPos][kPos] = temp_TurbVar_Grad_j[jPos][kPos];
+//            }
+//        }
+//        
+//        TurbVar_i[iPos] = temp_TurbVar_i[iPos] + delta;
+//        
+//		this->SetDirectResidual_ad(temp2_val_residual, val_residuald, config);
+//        
+//        //cout << "U_i: " << temp_U_i[iPos] << endl;
+//        
+//        for (jPos = 0; jPos < nVar; jPos++) {
+//            cout << "FD: " << (temp2_val_residual[jPos] - temp1_val_residual[jPos])/(2*delta) << endl;
+//        }
+//	}
+//    delete [] temp_U_i;
+//    delete [] temp_U_j;
+//    delete [] temp_TurbVar_i;
+//    delete [] temp_TurbVar_j;
+//    delete [] temp1_val_residual;
+//    delete [] temp2_val_residual;
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        delete [] temp_PrimVar_Grad_i[jPos];
+//        delete [] temp_PrimVar_Grad_j[jPos];
+//    }
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        delete [] temp_TurbVar_Grad_i[jPos];
+//        delete [] temp_TurbVar_Grad_j[jPos];
+//    }
+//    delete [] temp_PrimVar_Grad_i;
+//    delete [] temp_PrimVar_Grad_j;
+//    delete [] temp_TurbVar_Grad_i;
+//    delete [] temp_TurbVar_Grad_j;
+//    cin.get();
+//    // FD *****************
+
+    
+    
+
+	// Laminar_Viscosity_i sensitivity
+	// zero things first
+	for (jPos = 0; jPos < nFlowVar; jPos++){
+		U_id[jPos] = 0.0;
+		U_jd[jPos] = 0.0;
+	}
+
+	for (jPos = 0; jPos < nVar; jPos++){
+		TurbVar_id[jPos] = 0.0;
+		TurbVar_jd[jPos] = 0.0;
+		val_residuald[jPos] = 0.0;
+	}
+
+	Laminar_Viscosity_id = 0.0;
+	Laminar_Viscosity_jd = 0.0;
+
+
+	for (jPos = 0; jPos < nFlowVar; jPos++){
+		for (kPos = 0; kPos < nDim; kPos++){
+			PrimVar_Grad_id[jPos][kPos] = 0.0;
+			PrimVar_Grad_jd[jPos][kPos] = 0.0;
+		}
+	}
+
+	for (jPos = 0; jPos < nVar; jPos++){
+		for (kPos = 0; kPos < nDim; kPos++){
+			TurbVar_Grad_id[jPos][kPos] = 0.0;
+			TurbVar_Grad_jd[jPos][kPos] = 0.0;
+		}
+	}
+
+	Laminar_Viscosity_id = 1.0;
+
+	this->SetDirectResidual_ad(val_residual, val_residuald, config);
+
+	for (jPos = 0; jPos < nVar; jPos++) {
+		val_Jacobian_mui[jPos] = val_residuald[jPos];
+	}
+
+//    // TEST AD *****************
+//    for (jPos = 0; jPos < nVar; jPos++) {
+//        //cout << "Dist: " << dist_i << endl;
+//        //cout << "Direct: " << val_residual[jPos] << endl;
+//        cout << "AD: " << val_residuald[jPos] << endl;
+//    }
+//    // cout << "--" << endl;
+//    // AD *****************
+    
+    
+//    // TEST FD *****************
+//    double *temp_U_i, *temp_U_j;
+//    double *temp_TurbVar_i, *temp_TurbVar_j;
+//    double temp_Laminar_Viscosity_i, temp_Laminar_Viscosity_j;
+//    temp_U_i = new double[nFlowVar];
+//    temp_U_j = new double[nFlowVar];
+//    temp_TurbVar_i  = new double[nVar];
+//    temp_TurbVar_j  = new double[nVar];
+//    double *temp1_val_residual, *temp2_val_residual;
+//    temp1_val_residual = new double[nVar];
+//    temp2_val_residual = new double[nVar];
+//    double **temp_PrimVar_Grad_i, **temp_TurbVar_Grad_i;
+//    double **temp_PrimVar_Grad_j, **temp_TurbVar_Grad_j;
+//    temp_PrimVar_Grad_i = new double*[nFlowVar];
+//    temp_PrimVar_Grad_j = new double*[nFlowVar];
+//    temp_TurbVar_Grad_i = new double*[nVar];
+//    temp_TurbVar_Grad_j = new double*[nVar];
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        temp_PrimVar_Grad_i[jPos] = new double[nDim];
+//        temp_PrimVar_Grad_j[jPos] = new double[nDim];
+//    }
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        temp_TurbVar_Grad_i[jPos] = new double[nDim];
+//        temp_TurbVar_Grad_j[jPos] = new double[nDim];
+//    }
+//    
+//    double delta;
+//    
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        temp_U_i[jPos] = U_i[jPos];
+//        temp_U_j[jPos] = U_j[jPos];
+//    }
+//    
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        temp_TurbVar_i[jPos] = TurbVar_i[jPos];
+//        temp_TurbVar_j[jPos] = TurbVar_j[jPos];
+//    }
+//    
+//    temp_Laminar_Viscosity_i = Laminar_Viscosity_i;
+//    temp_Laminar_Viscosity_j = Laminar_Viscosity_j;
+//    
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        for (kPos = 0; kPos < nDim; kPos++){
+//            temp_PrimVar_Grad_i[jPos][kPos] = PrimVar_Grad_i[jPos][kPos];
+//            temp_PrimVar_Grad_j[jPos][kPos] = PrimVar_Grad_j[jPos][kPos];
+//        }
+//    }
+//    
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        for (kPos = 0; kPos < nDim; kPos++){
+//            temp_TurbVar_Grad_i[jPos][kPos] = TurbVar_Grad_i[jPos][kPos];
+//            temp_TurbVar_Grad_j[jPos][kPos] = TurbVar_Grad_j[jPos][kPos];
+//        }
+//    }
+//            
+//		for (jPos = 0; jPos < nFlowVar; jPos++){
+//			U_i[jPos] = temp_U_i[jPos];
+//            U_j[jPos] = temp_U_j[jPos];
+//		}
+//        
+//		for (jPos = 0; jPos < nVar; jPos++){
+//			TurbVar_i[jPos] = temp_TurbVar_i[jPos];
+//            TurbVar_j[jPos] = temp_TurbVar_j[jPos];
+//		}
+//        
+//        Laminar_Viscosity_i = temp_Laminar_Viscosity_i;
+//        Laminar_Viscosity_j = temp_Laminar_Viscosity_j;
+//        
+//        for (jPos = 0; jPos < nFlowVar; jPos++){
+//            for (kPos = 0; kPos < nDim; kPos++){
+//                PrimVar_Grad_i[jPos][kPos] = temp_PrimVar_Grad_i[jPos][kPos];
+//                PrimVar_Grad_j[jPos][kPos] = temp_PrimVar_Grad_j[jPos][kPos];
+//            }
+//        }
+//        
+//        for (jPos = 0; jPos < nVar; jPos++){
+//            for (kPos = 0; kPos < nDim; kPos++){
+//                TurbVar_Grad_i[jPos][kPos] = temp_TurbVar_Grad_i[jPos][kPos];
+//                TurbVar_Grad_j[jPos][kPos] = temp_TurbVar_Grad_j[jPos][kPos];
+//            }
+//        }
+//        
+//        if (fabs(temp_Laminar_Viscosity_i) > 1e-15)
+//            delta = 0.01*temp_Laminar_Viscosity_i;
+//        else
+//            delta = 1e-15;
+//        
+//        Laminar_Viscosity_i = temp_Laminar_Viscosity_i - delta;
+//        
+//		this->SetDirectResidual_ad(temp1_val_residual, val_residuald, config);
+//        
+//		for (jPos = 0; jPos < nFlowVar; jPos++){
+//			U_i[jPos] = temp_U_i[jPos];
+//            U_j[jPos] = temp_U_j[jPos];
+//		}
+//        
+//		for (jPos = 0; jPos < nVar; jPos++){
+//			TurbVar_i[jPos] = temp_TurbVar_i[jPos];
+//            TurbVar_j[jPos] = temp_TurbVar_j[jPos];
+//		}
+//        
+//        Laminar_Viscosity_i = temp_Laminar_Viscosity_i;
+//        Laminar_Viscosity_j = temp_Laminar_Viscosity_j;
+//        
+//        for (jPos = 0; jPos < nFlowVar; jPos++){
+//            for (kPos = 0; kPos < nDim; kPos++){
+//                PrimVar_Grad_i[jPos][kPos] = temp_PrimVar_Grad_i[jPos][kPos];
+//                PrimVar_Grad_j[jPos][kPos] = temp_PrimVar_Grad_j[jPos][kPos];
+//            }
+//        }
+//        
+//        for (jPos = 0; jPos < nVar; jPos++){
+//            for (kPos = 0; kPos < nDim; kPos++){
+//                TurbVar_Grad_i[jPos][kPos] = temp_TurbVar_Grad_i[jPos][kPos];
+//                TurbVar_Grad_j[jPos][kPos] = temp_TurbVar_Grad_j[jPos][kPos];
+//            }
+//        }
+//        
+//        Laminar_Viscosity_i = temp_Laminar_Viscosity_i + delta;
+//        
+//		this->SetDirectResidual_ad(temp2_val_residual, val_residuald, config);
+//        
+//        //cout << "U_i: " << temp_U_i[iPos] << endl;
+//        
+//        for (jPos = 0; jPos < nVar; jPos++) {
+//            cout << "FD: " << (temp2_val_residual[jPos] - temp1_val_residual[jPos])/(2*delta) << endl;
+//        }
+//
+//    delete [] temp_U_i;
+//    delete [] temp_U_j;
+//    delete [] temp_TurbVar_i;
+//    delete [] temp_TurbVar_j;
+//    delete [] temp1_val_residual;
+//    delete [] temp2_val_residual;
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        delete [] temp_PrimVar_Grad_i[jPos];
+//        delete [] temp_PrimVar_Grad_j[jPos];
+//    }
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        delete [] temp_TurbVar_Grad_i[jPos];
+//        delete [] temp_TurbVar_Grad_j[jPos];
+//    }
+//    delete [] temp_PrimVar_Grad_i;
+//    delete [] temp_PrimVar_Grad_j;
+//    delete [] temp_TurbVar_Grad_i;
+//    delete [] temp_TurbVar_Grad_j;
+//    cin.get();
+//    // FD *****************
+
+
+
+	// PrimVar_Grad_i sensitivity
+
+	for (iPos = 0; iPos < nFlowVar; iPos++){
+		for (lPos = 0; lPos < nDim; lPos++){
+			// zero things first
+			for (jPos = 0; jPos < nFlowVar; jPos++){
+				U_id[jPos] = 0.0;
+				U_jd[jPos] = 0.0;
+			}
+
+			for (jPos = 0; jPos < nVar; jPos++){
+				TurbVar_id[jPos] = 0.0;
+				TurbVar_jd[jPos] = 0.0;
+				val_residuald[jPos] = 0.0;
+			}
+
+			Laminar_Viscosity_id = 0.0;
+			Laminar_Viscosity_jd = 0.0;
+
+
+			for (jPos = 0; jPos < nFlowVar; jPos++){
+				for (kPos = 0; kPos < nDim; kPos++){
+					PrimVar_Grad_id[jPos][kPos] = 0.0;
+					PrimVar_Grad_jd[jPos][kPos] = 0.0;
+				}
+			}
+
+			for (jPos = 0; jPos < nVar; jPos++){
+				for (kPos = 0; kPos < nDim; kPos++){
+					TurbVar_Grad_id[jPos][kPos] = 0.0;
+					TurbVar_Grad_jd[jPos][kPos] = 0.0;
+				}
+			}
+
+			PrimVar_Grad_id[iPos][lPos] = 1.0;
+
+			this->SetDirectResidual_ad(val_residual, val_residuald, config);
+
+			for (jPos = 0; jPos < nVar; jPos++) {
+				// Transpose each block: [jPos][iPos] -> [iPos][jPos]
+				val_Jacobian_gradi[iPos][lPos][jPos] = val_residuald[jPos];
+
+			}
+		}
+        
+//        // TEST AD *****************
+//        for (jPos = 0; jPos < nVar; jPos++) {
+//            //cout << "Dist: " << dist_i << endl;
+//            //cout << "Direct: " << val_residual[jPos] << endl;
+//            cout << "AD: " << val_residuald[jPos] << endl;
+//        }
+//        // cout << "--" << endl;
+//        // AD *****************
+
+        
+	}
+    
+//    // TEST FD *****************
+//    double *temp_U_i, *temp_U_j;
+//    double *temp_TurbVar_i, *temp_TurbVar_j;
+//    double temp_Laminar_Viscosity_i, temp_Laminar_Viscosity_j;
+//    temp_U_i = new double[nFlowVar];
+//    temp_U_j = new double[nFlowVar];
+//    temp_TurbVar_i  = new double[nVar];
+//    temp_TurbVar_j  = new double[nVar];
+//    double *temp1_val_residual, *temp2_val_residual;
+//    temp1_val_residual = new double[nVar];
+//    temp2_val_residual = new double[nVar];
+//    double **temp_PrimVar_Grad_i, **temp_TurbVar_Grad_i;
+//    double **temp_PrimVar_Grad_j, **temp_TurbVar_Grad_j;
+//    temp_PrimVar_Grad_i = new double*[nFlowVar];
+//    temp_PrimVar_Grad_j = new double*[nFlowVar];
+//    temp_TurbVar_Grad_i = new double*[nVar];
+//    temp_TurbVar_Grad_j = new double*[nVar];
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        temp_PrimVar_Grad_i[jPos] = new double[nDim];
+//        temp_PrimVar_Grad_j[jPos] = new double[nDim];
+//    }
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        temp_TurbVar_Grad_i[jPos] = new double[nDim];
+//        temp_TurbVar_Grad_j[jPos] = new double[nDim];
+//    }
+//    
+//    double delta;
+//    
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        temp_U_i[jPos] = U_i[jPos];
+//        temp_U_j[jPos] = U_j[jPos];
+//    }
+//    
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        temp_TurbVar_i[jPos] = TurbVar_i[jPos];
+//        temp_TurbVar_j[jPos] = TurbVar_j[jPos];
+//    }
+//    
+//    temp_Laminar_Viscosity_i = Laminar_Viscosity_i;
+//    temp_Laminar_Viscosity_j = Laminar_Viscosity_j;
+//    
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        for (kPos = 0; kPos < nDim; kPos++){
+//            temp_PrimVar_Grad_i[jPos][kPos] = PrimVar_Grad_i[jPos][kPos];
+//            temp_PrimVar_Grad_j[jPos][kPos] = PrimVar_Grad_j[jPos][kPos];
+//        }
+//    }
+//    
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        for (kPos = 0; kPos < nDim; kPos++){
+//            temp_TurbVar_Grad_i[jPos][kPos] = TurbVar_Grad_i[jPos][kPos];
+//            temp_TurbVar_Grad_j[jPos][kPos] = TurbVar_Grad_j[jPos][kPos];
+//        }
+//    }
+//    
+// 	for (iPos = 0; iPos < nFlowVar; iPos++){
+//		for (lPos = 0; lPos < nDim; lPos++){
+//        
+//		for (jPos = 0; jPos < nFlowVar; jPos++){
+//			U_i[jPos] = temp_U_i[jPos];
+//            U_j[jPos] = temp_U_j[jPos];
+//		}
+//        
+//		for (jPos = 0; jPos < nVar; jPos++){
+//			TurbVar_i[jPos] = temp_TurbVar_i[jPos];
+//            TurbVar_j[jPos] = temp_TurbVar_j[jPos];
+//		}
+//        
+//        Laminar_Viscosity_i = temp_Laminar_Viscosity_i;
+//        Laminar_Viscosity_j = temp_Laminar_Viscosity_j;
+//        
+//        for (jPos = 0; jPos < nFlowVar; jPos++){
+//            for (kPos = 0; kPos < nDim; kPos++){
+//                PrimVar_Grad_i[jPos][kPos] = temp_PrimVar_Grad_i[jPos][kPos];
+//                PrimVar_Grad_j[jPos][kPos] = temp_PrimVar_Grad_j[jPos][kPos];
+//            }
+//        }
+//        
+//        for (jPos = 0; jPos < nVar; jPos++){
+//            for (kPos = 0; kPos < nDim; kPos++){
+//                TurbVar_Grad_i[jPos][kPos] = temp_TurbVar_Grad_i[jPos][kPos];
+//                TurbVar_Grad_j[jPos][kPos] = temp_TurbVar_Grad_j[jPos][kPos];
+//            }
+//        }
+//        
+//        if (fabs(temp_PrimVar_Grad_i[iPos][lPos]) > 1e-15)
+//            delta = 0.01*temp_PrimVar_Grad_i[iPos][lPos];
+//        else
+//            delta = 1e-15;
+//        
+//        PrimVar_Grad_i[iPos][lPos] = temp_PrimVar_Grad_i[iPos][lPos] - delta;
+//        
+//		this->SetDirectResidual_ad(temp1_val_residual, val_residuald, config);
+//        
+//		for (jPos = 0; jPos < nFlowVar; jPos++){
+//			U_i[jPos] = temp_U_i[jPos];
+//            U_j[jPos] = temp_U_j[jPos];
+//		}
+//        
+//		for (jPos = 0; jPos < nVar; jPos++){
+//			TurbVar_i[jPos] = temp_TurbVar_i[jPos];
+//            TurbVar_j[jPos] = temp_TurbVar_j[jPos];
+//		}
+//        
+//        Laminar_Viscosity_i = temp_Laminar_Viscosity_i;
+//        Laminar_Viscosity_j = temp_Laminar_Viscosity_j;
+//        
+//        for (jPos = 0; jPos < nFlowVar; jPos++){
+//            for (kPos = 0; kPos < nDim; kPos++){
+//                PrimVar_Grad_i[jPos][kPos] = temp_PrimVar_Grad_i[jPos][kPos];
+//                PrimVar_Grad_j[jPos][kPos] = temp_PrimVar_Grad_j[jPos][kPos];
+//            }
+//        }
+//        
+//        for (jPos = 0; jPos < nVar; jPos++){
+//            for (kPos = 0; kPos < nDim; kPos++){
+//                TurbVar_Grad_i[jPos][kPos] = temp_TurbVar_Grad_i[jPos][kPos];
+//                TurbVar_Grad_j[jPos][kPos] = temp_TurbVar_Grad_j[jPos][kPos];
+//            }
+//        }
+//        
+//        PrimVar_Grad_i[iPos][lPos] = temp_PrimVar_Grad_i[iPos][lPos] + delta;
+//        
+//		this->SetDirectResidual_ad(temp2_val_residual, val_residuald, config);
+//        
+//        //cout << "U_i: " << temp_U_i[iPos] << endl;
+//        
+//        for (jPos = 0; jPos < nVar; jPos++) {
+//            cout << "FD: " << (temp2_val_residual[jPos] - temp1_val_residual[jPos])/(2*delta) << endl;
+//        }
+//	}
+//    }
+//    delete [] temp_U_i;
+//    delete [] temp_U_j;
+//    delete [] temp_TurbVar_i;
+//    delete [] temp_TurbVar_j;
+//    delete [] temp1_val_residual;
+//    delete [] temp2_val_residual;
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        delete [] temp_PrimVar_Grad_i[jPos];
+//        delete [] temp_PrimVar_Grad_j[jPos];
+//    }
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        delete [] temp_TurbVar_Grad_i[jPos];
+//        delete [] temp_TurbVar_Grad_j[jPos];
+//    }
+//    delete [] temp_PrimVar_Grad_i;
+//    delete [] temp_PrimVar_Grad_j;
+//    delete [] temp_TurbVar_Grad_i;
+//    delete [] temp_TurbVar_Grad_j;
+//    cin.get();
+//    // FD *****************
+
+
+	// TurbVar_Grad_i sensitivity
+
+	for (iPos = 0; iPos < nVar; iPos++){
+		for (lPos = 0; lPos < nDim; lPos++){
+			// zero things first
+			for (jPos = 0; jPos < nFlowVar; jPos++){
+				U_id[jPos] = 0.0;
+				U_jd[jPos] = 0.0;
+			}
+
+			for (jPos = 0; jPos < nVar; jPos++){
+				TurbVar_id[jPos] = 0.0;
+				TurbVar_jd[jPos] = 0.0;
+				val_residuald[jPos] = 0.0;
+			}
+
+			Laminar_Viscosity_id = 0.0;
+			Laminar_Viscosity_jd = 0.0;
+
+
+			for (jPos = 0; jPos < nFlowVar; jPos++){
+				for (kPos = 0; kPos < nDim; kPos++){
+					PrimVar_Grad_id[jPos][kPos] = 0.0;
+					PrimVar_Grad_jd[jPos][kPos] = 0.0;
+				}
+			}
+
+			for (jPos = 0; jPos < nVar; jPos++){
+				for (kPos = 0; kPos < nDim; kPos++){
+					TurbVar_Grad_id[jPos][kPos] = 0.0;
+					TurbVar_Grad_jd[jPos][kPos] = 0.0;
+				}
+			}
+
+			TurbVar_Grad_id[iPos][lPos] = 1.0;
+
+			this->SetDirectResidual_ad(val_residual, val_residuald, config);
+
+			for (jPos = 0; jPos < nVar; jPos++) {
+				// Transpose each block: [jPos][iPos] -> [iPos][jPos]
+				val_Jacobian_gradi[iPos+nFlowVar][lPos][jPos] = val_residuald[jPos];
+
+			}
+            
+//            // TEST AD ****************
+//            for (jPos = 0; jPos < nVar; jPos++) {
+//                //cout << "Dist: " << dist_i << endl;
+//                //cout << "Direct: " << val_residual[jPos] << endl;
+//                cout << "AD: " << val_residuald[jPos] << endl;
+//            }
+//            // cout << "--" << endl;
+//            // AD **********
+		}
+	}
+    
+    
+//    // TEST FD *****************
+//    
+//    double *temp_U_i, *temp_U_j;
+//    double *temp_TurbVar_i, *temp_TurbVar_j;
+//    double temp_Laminar_Viscosity_i, temp_Laminar_Viscosity_j;
+//    temp_U_i = new double[nFlowVar];
+//    temp_U_j = new double[nFlowVar];
+//    temp_TurbVar_i  = new double[nVar];
+//    temp_TurbVar_j  = new double[nVar];
+//    double *temp1_val_residual, *temp2_val_residual;
+//    temp1_val_residual = new double[nVar];
+//    temp2_val_residual = new double[nVar];
+//    double **temp_PrimVar_Grad_i, **temp_TurbVar_Grad_i;
+//    double **temp_PrimVar_Grad_j, **temp_TurbVar_Grad_j;
+//    temp_PrimVar_Grad_i = new double*[nFlowVar];
+//    temp_PrimVar_Grad_j = new double*[nFlowVar];
+//    temp_TurbVar_Grad_i = new double*[nVar];
+//    temp_TurbVar_Grad_j = new double*[nVar];
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        temp_PrimVar_Grad_i[jPos] = new double[nDim];
+//        temp_PrimVar_Grad_j[jPos] = new double[nDim];
+//    }
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        temp_TurbVar_Grad_i[jPos] = new double[nDim];
+//        temp_TurbVar_Grad_j[jPos] = new double[nDim];
+//    }
+//    
+//    double delta;
+//    
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        temp_U_i[jPos] = U_i[jPos];
+//        temp_U_j[jPos] = U_j[jPos];
+//    }
+//    
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        temp_TurbVar_i[jPos] = TurbVar_i[jPos];
+//        temp_TurbVar_j[jPos] = TurbVar_j[jPos];
+//    }
+//    
+//    temp_Laminar_Viscosity_i = Laminar_Viscosity_i;
+//    temp_Laminar_Viscosity_j = Laminar_Viscosity_j;
+//    
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        for (kPos = 0; kPos < nDim; kPos++){
+//            temp_PrimVar_Grad_i[jPos][kPos] = PrimVar_Grad_i[jPos][kPos];
+//            temp_PrimVar_Grad_j[jPos][kPos] = PrimVar_Grad_j[jPos][kPos];
+//        }
+//    }
+//    
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        for (kPos = 0; kPos < nDim; kPos++){
+//            temp_TurbVar_Grad_i[jPos][kPos] = TurbVar_Grad_i[jPos][kPos];
+//            temp_TurbVar_Grad_j[jPos][kPos] = TurbVar_Grad_j[jPos][kPos];
+//        }
+//    }
+//    
+// 	for (iPos = 0; iPos < nVar; iPos++){
+//		for (lPos = 0; lPos < nDim; lPos++){
+//            
+//            for (jPos = 0; jPos < nFlowVar; jPos++){
+//                U_i[jPos] = temp_U_i[jPos];
+//                U_j[jPos] = temp_U_j[jPos];
+//            }
+//            
+//            for (jPos = 0; jPos < nVar; jPos++){
+//                TurbVar_i[jPos] = temp_TurbVar_i[jPos];
+//                TurbVar_j[jPos] = temp_TurbVar_j[jPos];
+//            }
+//            
+//            Laminar_Viscosity_i = temp_Laminar_Viscosity_i;
+//            Laminar_Viscosity_j = temp_Laminar_Viscosity_j;
+//            
+//            for (jPos = 0; jPos < nFlowVar; jPos++){
+//                for (kPos = 0; kPos < nDim; kPos++){
+//                    PrimVar_Grad_i[jPos][kPos] = temp_PrimVar_Grad_i[jPos][kPos];
+//                    PrimVar_Grad_j[jPos][kPos] = temp_PrimVar_Grad_j[jPos][kPos];
+//                }
+//            }
+//            
+//            for (jPos = 0; jPos < nVar; jPos++){
+//                for (kPos = 0; kPos < nDim; kPos++){
+//                    TurbVar_Grad_i[jPos][kPos] = temp_TurbVar_Grad_i[jPos][kPos];
+//                    TurbVar_Grad_j[jPos][kPos] = temp_TurbVar_Grad_j[jPos][kPos];
+//                }
+//            }
+//            
+//            if (fabs(temp_TurbVar_Grad_i[iPos][lPos]) > 1e-15)
+//                delta = 0.01*temp_TurbVar_Grad_i[iPos][lPos];
+//            else
+//                delta = 1e-15;
+//            
+//            TurbVar_Grad_i[iPos][lPos] = temp_TurbVar_Grad_i[iPos][lPos] - delta;
+//            
+//            this->SetDirectResidual_ad(temp1_val_residual, val_residuald, config);
+//            
+//            for (jPos = 0; jPos < nFlowVar; jPos++){
+//                U_i[jPos] = temp_U_i[jPos];
+//                U_j[jPos] = temp_U_j[jPos];
+//            }
+//            
+//            for (jPos = 0; jPos < nVar; jPos++){
+//                TurbVar_i[jPos] = temp_TurbVar_i[jPos];
+//                TurbVar_j[jPos] = temp_TurbVar_j[jPos];
+//            }
+//            
+//            Laminar_Viscosity_i = temp_Laminar_Viscosity_i;
+//            Laminar_Viscosity_j = temp_Laminar_Viscosity_j;
+//            
+//            for (jPos = 0; jPos < nFlowVar; jPos++){
+//                for (kPos = 0; kPos < nDim; kPos++){
+//                    PrimVar_Grad_i[jPos][kPos] = temp_PrimVar_Grad_i[jPos][kPos];
+//                    PrimVar_Grad_j[jPos][kPos] = temp_PrimVar_Grad_j[jPos][kPos];
+//                }
+//            }
+//            
+//            for (jPos = 0; jPos < nVar; jPos++){
+//                for (kPos = 0; kPos < nDim; kPos++){
+//                    TurbVar_Grad_i[jPos][kPos] = temp_TurbVar_Grad_i[jPos][kPos];
+//                    TurbVar_Grad_j[jPos][kPos] = temp_TurbVar_Grad_j[jPos][kPos];
+//                }
+//            }
+//            
+//            TurbVar_Grad_i[iPos][lPos] = temp_TurbVar_Grad_i[iPos][lPos] + delta;
+//            
+//            this->SetDirectResidual_ad(temp2_val_residual, val_residuald, config);
+//            
+//            //cout << "U_i: " << temp_U_i[iPos] << endl;
+//            
+//            for (jPos = 0; jPos < nVar; jPos++) {
+//                cout << "FD: " << (temp2_val_residual[jPos] - temp1_val_residual[jPos])/(2*delta) << endl;
+//            }
+//        }
+//    }
+//    delete [] temp_U_i;
+//    delete [] temp_U_j;
+//    delete [] temp_TurbVar_i;
+//    delete [] temp_TurbVar_j;
+//    delete [] temp1_val_residual;
+//    delete [] temp2_val_residual;
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        delete [] temp_PrimVar_Grad_i[jPos];
+//        delete [] temp_PrimVar_Grad_j[jPos];
+//    }
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        delete [] temp_TurbVar_Grad_i[jPos];
+//        delete [] temp_TurbVar_Grad_j[jPos];
+//    }
+//    delete [] temp_PrimVar_Grad_i;
+//    delete [] temp_PrimVar_Grad_j;
+//    delete [] temp_TurbVar_Grad_i;
+//    delete [] temp_TurbVar_Grad_j;
+//    cin.get();
+//    // FD *************
+
+
+
+	////// j
+
+	// U_j sensitivity:
+
+	for (iPos = 0; iPos < nFlowVar; iPos++){
+		// zero things first
+		for (jPos = 0; jPos < nFlowVar; jPos++){
+			U_id[jPos] = 0.0;
+			U_jd[jPos] = 0.0;
+		}
+
+		for (jPos = 0; jPos < nVar; jPos++){
+			TurbVar_id[jPos] = 0.0;
+			TurbVar_jd[jPos] = 0.0;
+			val_residuald[jPos] = 0.0;
+		}
+
+		Laminar_Viscosity_id = 0.0;
+		Laminar_Viscosity_jd = 0.0;
+
+
+		for (jPos = 0; jPos < nFlowVar; jPos++){
+			for (kPos = 0; kPos < nDim; kPos++){
+				PrimVar_Grad_id[jPos][kPos] = 0.0;
+				PrimVar_Grad_jd[jPos][kPos] = 0.0;
+			}
+		}
+
+		for (jPos = 0; jPos < nVar; jPos++){
+			for (kPos = 0; kPos < nDim; kPos++){
+				TurbVar_Grad_id[jPos][kPos] = 0.0;
+				TurbVar_Grad_jd[jPos][kPos] = 0.0;
+			}
+		}
+
+		U_jd[iPos] = 1.0;
+
+		this->SetDirectResidual_ad(val_residual, val_residuald, config);
+
+		for (jPos = 0; jPos < nVar; jPos++) {
+			// Transpose each block: [jPos][iPos] -> [iPos][jPos]
+			val_Jacobian_j[iPos][jPos] = val_residuald[jPos];
+
+		}
+        
+//        // TEST AD *****************
+//        for (jPos = 0; jPos < nVar; jPos++) {
+//            //cout << "Dist: " << dist_i << endl;
+//            //cout << "Direct: " << val_residual[jPos] << endl;
+//            cout << "AD: " << val_residuald[jPos] << endl;
+//        }
+//        // cout << "--" << endl;
+//        // AD *****************
+
+	}
+    
+//    // TEST FD *****************
+//    double *temp_U_i, *temp_U_j;
+//    double *temp_TurbVar_i, *temp_TurbVar_j;
+//    double temp_Laminar_Viscosity_i, temp_Laminar_Viscosity_j;
+//    temp_U_i = new double[nFlowVar];
+//    temp_U_j = new double[nFlowVar];
+//    temp_TurbVar_i  = new double[nVar];
+//    temp_TurbVar_j  = new double[nVar];
+//    double *temp1_val_residual, *temp2_val_residual;
+//    temp1_val_residual = new double[nVar];
+//    temp2_val_residual = new double[nVar];
+//    double **temp_PrimVar_Grad_i, **temp_TurbVar_Grad_i;
+//    double **temp_PrimVar_Grad_j, **temp_TurbVar_Grad_j;
+//    temp_PrimVar_Grad_i = new double*[nFlowVar];
+//    temp_PrimVar_Grad_j = new double*[nFlowVar];
+//    temp_TurbVar_Grad_i = new double*[nVar];
+//    temp_TurbVar_Grad_j = new double*[nVar];
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        temp_PrimVar_Grad_i[jPos] = new double[nDim];
+//        temp_PrimVar_Grad_j[jPos] = new double[nDim];
+//    }
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        temp_TurbVar_Grad_i[jPos] = new double[nDim];
+//        temp_TurbVar_Grad_j[jPos] = new double[nDim];
+//    }
+//    
+//    double delta;
+//    
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        temp_U_i[jPos] = U_i[jPos];
+//        temp_U_j[jPos] = U_j[jPos];
+//    }
+//    
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        temp_TurbVar_i[jPos] = TurbVar_i[jPos];
+//        temp_TurbVar_j[jPos] = TurbVar_j[jPos];
+//    }
+//    
+//    temp_Laminar_Viscosity_i = Laminar_Viscosity_i;
+//    temp_Laminar_Viscosity_j = Laminar_Viscosity_j;
+//    
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        for (kPos = 0; kPos < nDim; kPos++){
+//            temp_PrimVar_Grad_i[jPos][kPos] = PrimVar_Grad_i[jPos][kPos];
+//            temp_PrimVar_Grad_j[jPos][kPos] = PrimVar_Grad_j[jPos][kPos];
+//        }
+//    }
+//    
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        for (kPos = 0; kPos < nDim; kPos++){
+//            temp_TurbVar_Grad_i[jPos][kPos] = TurbVar_Grad_i[jPos][kPos];
+//            temp_TurbVar_Grad_j[jPos][kPos] = TurbVar_Grad_j[jPos][kPos];
+//        }
+//    }
+//    
+//    for (iPos = 0; iPos < nFlowVar; iPos++){
+//        
+//		for (jPos = 0; jPos < nFlowVar; jPos++){
+//			U_i[jPos] = temp_U_i[jPos];
+//            U_j[jPos] = temp_U_j[jPos];
+//		}
+//        
+//		for (jPos = 0; jPos < nVar; jPos++){
+//			TurbVar_i[jPos] = temp_TurbVar_i[jPos];
+//            TurbVar_j[jPos] = temp_TurbVar_j[jPos];
+//		}
+//        
+//        Laminar_Viscosity_i = temp_Laminar_Viscosity_i;
+//        Laminar_Viscosity_j = temp_Laminar_Viscosity_j;
+//        
+//        for (jPos = 0; jPos < nFlowVar; jPos++){
+//            for (kPos = 0; kPos < nDim; kPos++){
+//                PrimVar_Grad_i[jPos][kPos] = temp_PrimVar_Grad_i[jPos][kPos];
+//                PrimVar_Grad_j[jPos][kPos] = temp_PrimVar_Grad_j[jPos][kPos];
+//            }
+//        }
+//        
+//        for (jPos = 0; jPos < nVar; jPos++){
+//            for (kPos = 0; kPos < nDim; kPos++){
+//                TurbVar_Grad_i[jPos][kPos] = temp_TurbVar_Grad_i[jPos][kPos];
+//                TurbVar_Grad_j[jPos][kPos] = temp_TurbVar_Grad_j[jPos][kPos];
+//            }
+//        }
+//        
+//        if (fabs(temp_U_j[iPos]) > 1e-15)
+//            delta = 0.01*temp_U_j[iPos];
+//        else
+//            delta = 1e-15;
+//        
+//        U_j[iPos] = temp_U_j[iPos] - delta;
+//        
+//		this->SetDirectResidual_ad(temp1_val_residual, val_residuald, config);
+//        
+//		for (jPos = 0; jPos < nFlowVar; jPos++){
+//			U_i[jPos] = temp_U_i[jPos];
+//            U_j[jPos] = temp_U_j[jPos];
+//		}
+//        
+//		for (jPos = 0; jPos < nVar; jPos++){
+//			TurbVar_i[jPos] = temp_TurbVar_i[jPos];
+//            TurbVar_j[jPos] = temp_TurbVar_j[jPos];
+//		}
+//        
+//        Laminar_Viscosity_i = temp_Laminar_Viscosity_i;
+//        Laminar_Viscosity_j = temp_Laminar_Viscosity_j;
+//        
+//        for (jPos = 0; jPos < nFlowVar; jPos++){
+//            for (kPos = 0; kPos < nDim; kPos++){
+//                PrimVar_Grad_i[jPos][kPos] = temp_PrimVar_Grad_i[jPos][kPos];
+//                PrimVar_Grad_j[jPos][kPos] = temp_PrimVar_Grad_j[jPos][kPos];
+//            }
+//        }
+//        
+//        for (jPos = 0; jPos < nVar; jPos++){
+//            for (kPos = 0; kPos < nDim; kPos++){
+//                TurbVar_Grad_i[jPos][kPos] = temp_TurbVar_Grad_i[jPos][kPos];
+//                TurbVar_Grad_j[jPos][kPos] = temp_TurbVar_Grad_j[jPos][kPos];
+//            }
+//        }
+//        
+//        U_j[iPos] = temp_U_j[iPos] + delta;
+//        
+//		this->SetDirectResidual_ad(temp2_val_residual, val_residuald, config);
+//        
+//        //cout << "U_i: " << temp_U_i[iPos] << endl;
+//        
+//        for (jPos = 0; jPos < nVar; jPos++) {
+//            cout << "FD: " << (temp2_val_residual[jPos] - temp1_val_residual[jPos])/(2*delta) << endl;
+//        }
+//	}
+//    delete [] temp_U_i;
+//    delete [] temp_U_j;
+//    delete [] temp_TurbVar_i;
+//    delete [] temp_TurbVar_j;
+//    delete [] temp1_val_residual;
+//    delete [] temp2_val_residual;
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        delete [] temp_PrimVar_Grad_i[jPos];
+//        delete [] temp_PrimVar_Grad_j[jPos];
+//    }
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        delete [] temp_TurbVar_Grad_i[jPos];
+//        delete [] temp_TurbVar_Grad_j[jPos];
+//    }
+//    delete [] temp_PrimVar_Grad_i;
+//    delete [] temp_PrimVar_Grad_j;
+//    delete [] temp_TurbVar_Grad_i;
+//    delete [] temp_TurbVar_Grad_j;
+//    cin.get();
+//    // FD *****************
+
+	// TurbVar_j sensitivity
+
+	for (iPos = 0; iPos < nVar; iPos++){
+		// zero things first
+		for (jPos = 0; jPos < nFlowVar; jPos++){
+			U_id[jPos] = 0.0;
+			U_jd[jPos] = 0.0;
+		}
+
+		for (jPos = 0; jPos < nVar; jPos++){
+			TurbVar_id[jPos] = 0.0;
+			TurbVar_jd[jPos] = 0.0;
+			val_residuald[jPos] = 0.0;
+		}
+
+		Laminar_Viscosity_id = 0.0;
+		Laminar_Viscosity_jd = 0.0;
+
+
+		for (jPos = 0; jPos < nFlowVar; jPos++){
+			for (kPos = 0; kPos < nDim; kPos++){
+				PrimVar_Grad_id[jPos][kPos] = 0.0;
+				PrimVar_Grad_jd[jPos][kPos] = 0.0;
+			}
+		}
+
+		for (jPos = 0; jPos < nVar; jPos++){
+			for (kPos = 0; kPos < nDim; kPos++){
+				TurbVar_Grad_id[jPos][kPos] = 0.0;
+				TurbVar_Grad_jd[jPos][kPos] = 0.0;
+			}
+		}
+
+		TurbVar_jd[iPos] = 1.0;
+
+		this->SetDirectResidual_ad(val_residual, val_residuald, config);
+
+		for (jPos = 0; jPos < nVar; jPos++) {
+			// Transpose each block: [jPos][iPos] -> [iPos][jPos]
+			val_Jacobian_j[iPos+nFlowVar][jPos] = val_residuald[jPos];
+
+		}
+        
+//        // TEST AD *****************
+//        for (jPos = 0; jPos < nVar; jPos++) {
+//            //cout << "Dist: " << dist_i << endl;
+//            //cout << "Direct: " << val_residual[jPos] << endl;
+//            cout << "AD: " << val_residuald[jPos] << endl;
+//        }
+//        // cout << "--" << endl;
+//        // AD *****************
+
+	}
+    
+    
+    
+//    // TEST FD *****************
+//    double *temp_U_i, *temp_U_j;
+//    double *temp_TurbVar_i, *temp_TurbVar_j;
+//    double temp_Laminar_Viscosity_i, temp_Laminar_Viscosity_j;
+//    temp_U_i = new double[nFlowVar];
+//    temp_U_j = new double[nFlowVar];
+//    temp_TurbVar_i  = new double[nVar];
+//    temp_TurbVar_j  = new double[nVar];
+//    double *temp1_val_residual, *temp2_val_residual;
+//    temp1_val_residual = new double[nVar];
+//    temp2_val_residual = new double[nVar];
+//    double **temp_PrimVar_Grad_i, **temp_TurbVar_Grad_i;
+//    double **temp_PrimVar_Grad_j, **temp_TurbVar_Grad_j;
+//    temp_PrimVar_Grad_i = new double*[nFlowVar];
+//    temp_PrimVar_Grad_j = new double*[nFlowVar];
+//    temp_TurbVar_Grad_i = new double*[nVar];
+//    temp_TurbVar_Grad_j = new double*[nVar];
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        temp_PrimVar_Grad_i[jPos] = new double[nDim];
+//        temp_PrimVar_Grad_j[jPos] = new double[nDim];
+//    }
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        temp_TurbVar_Grad_i[jPos] = new double[nDim];
+//        temp_TurbVar_Grad_j[jPos] = new double[nDim];
+//    }
+//    
+//    double delta;
+//    
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        temp_U_i[jPos] = U_i[jPos];
+//        temp_U_j[jPos] = U_j[jPos];
+//    }
+//    
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        temp_TurbVar_i[jPos] = TurbVar_i[jPos];
+//        temp_TurbVar_j[jPos] = TurbVar_j[jPos];
+//    }
+//    
+//    temp_Laminar_Viscosity_i = Laminar_Viscosity_i;
+//    temp_Laminar_Viscosity_j = Laminar_Viscosity_j;
+//    
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        for (kPos = 0; kPos < nDim; kPos++){
+//            temp_PrimVar_Grad_i[jPos][kPos] = PrimVar_Grad_i[jPos][kPos];
+//            temp_PrimVar_Grad_j[jPos][kPos] = PrimVar_Grad_j[jPos][kPos];
+//        }
+//    }
+//    
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        for (kPos = 0; kPos < nDim; kPos++){
+//            temp_TurbVar_Grad_i[jPos][kPos] = TurbVar_Grad_i[jPos][kPos];
+//            temp_TurbVar_Grad_j[jPos][kPos] = TurbVar_Grad_j[jPos][kPos];
+//        }
+//    }
+//    
+//    for (iPos = 0; iPos < nVar; iPos++){
+//        
+//		for (jPos = 0; jPos < nFlowVar; jPos++){
+//			U_i[jPos] = temp_U_i[jPos];
+//            U_j[jPos] = temp_U_j[jPos];
+//		}
+//        
+//		for (jPos = 0; jPos < nVar; jPos++){
+//			TurbVar_i[jPos] = temp_TurbVar_i[jPos];
+//            TurbVar_j[jPos] = temp_TurbVar_j[jPos];
+//		}
+//        
+//        Laminar_Viscosity_i = temp_Laminar_Viscosity_i;
+//        Laminar_Viscosity_j = temp_Laminar_Viscosity_j;
+//        
+//        for (jPos = 0; jPos < nFlowVar; jPos++){
+//            for (kPos = 0; kPos < nDim; kPos++){
+//                PrimVar_Grad_i[jPos][kPos] = temp_PrimVar_Grad_i[jPos][kPos];
+//                PrimVar_Grad_j[jPos][kPos] = temp_PrimVar_Grad_j[jPos][kPos];
+//            }
+//        }
+//        
+//        for (jPos = 0; jPos < nVar; jPos++){
+//            for (kPos = 0; kPos < nDim; kPos++){
+//                TurbVar_Grad_i[jPos][kPos] = temp_TurbVar_Grad_i[jPos][kPos];
+//                TurbVar_Grad_j[jPos][kPos] = temp_TurbVar_Grad_j[jPos][kPos];
+//            }
+//        }
+//        
+//        if (fabs(temp_TurbVar_j[iPos]) > 1e-15)
+//            delta = 0.01*temp_TurbVar_j[iPos];
+//        else
+//            delta = 1e-15;
+//        
+//        TurbVar_j[iPos] = temp_TurbVar_j[iPos] - delta;
+//        
+//		this->SetDirectResidual_ad(temp1_val_residual, val_residuald, config);
+//        
+//		for (jPos = 0; jPos < nFlowVar; jPos++){
+//			U_i[jPos] = temp_U_i[jPos];
+//            U_j[jPos] = temp_U_j[jPos];
+//		}
+//        
+//		for (jPos = 0; jPos < nVar; jPos++){
+//			TurbVar_i[jPos] = temp_TurbVar_i[jPos];
+//            TurbVar_j[jPos] = temp_TurbVar_j[jPos];
+//		}
+//        
+//        Laminar_Viscosity_i = temp_Laminar_Viscosity_i;
+//        Laminar_Viscosity_j = temp_Laminar_Viscosity_j;
+//        
+//        for (jPos = 0; jPos < nFlowVar; jPos++){
+//            for (kPos = 0; kPos < nDim; kPos++){
+//                PrimVar_Grad_i[jPos][kPos] = temp_PrimVar_Grad_i[jPos][kPos];
+//                PrimVar_Grad_j[jPos][kPos] = temp_PrimVar_Grad_j[jPos][kPos];
+//            }
+//        }
+//        
+//        for (jPos = 0; jPos < nVar; jPos++){
+//            for (kPos = 0; kPos < nDim; kPos++){
+//                TurbVar_Grad_i[jPos][kPos] = temp_TurbVar_Grad_i[jPos][kPos];
+//                TurbVar_Grad_j[jPos][kPos] = temp_TurbVar_Grad_j[jPos][kPos];
+//            }
+//        }
+//        
+//        TurbVar_j[iPos] = temp_TurbVar_j[iPos] + delta;
+//        
+//		this->SetDirectResidual_ad(temp2_val_residual, val_residuald, config);
+//        
+//        //cout << "U_i: " << temp_U_i[iPos] << endl;
+//        
+//        for (jPos = 0; jPos < nVar; jPos++) {
+//            cout << "FD: " << (temp2_val_residual[jPos] - temp1_val_residual[jPos])/(2*delta) << endl;
+//        }
+//	}
+//    delete [] temp_U_i;
+//    delete [] temp_U_j;
+//    delete [] temp_TurbVar_i;
+//    delete [] temp_TurbVar_j;
+//    delete [] temp1_val_residual;
+//    delete [] temp2_val_residual;
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        delete [] temp_PrimVar_Grad_i[jPos];
+//        delete [] temp_PrimVar_Grad_j[jPos];
+//    }
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        delete [] temp_TurbVar_Grad_i[jPos];
+//        delete [] temp_TurbVar_Grad_j[jPos];
+//    }
+//    delete [] temp_PrimVar_Grad_i;
+//    delete [] temp_PrimVar_Grad_j;
+//    delete [] temp_TurbVar_Grad_i;
+//    delete [] temp_TurbVar_Grad_j;
+//    cin.get();
+//    // FD *****************
+    
+    
+
+	// Laminar_Viscosity_j sensitivity
+	// zero things first
+	for (jPos = 0; jPos < nFlowVar; jPos++){
+		U_id[jPos] = 0.0;
+		U_jd[jPos] = 0.0;
+	}
+
+	for (jPos = 0; jPos < nVar; jPos++){
+		TurbVar_id[jPos] = 0.0;
+		TurbVar_jd[jPos] = 0.0;
+		val_residuald[jPos] = 0.0;
+	}
+
+	Laminar_Viscosity_id = 0.0;
+	Laminar_Viscosity_jd = 0.0;
+
+
+	for (jPos = 0; jPos < nFlowVar; jPos++){
+		for (kPos = 0; kPos < nDim; kPos++){
+			PrimVar_Grad_id[jPos][kPos] = 0.0;
+			PrimVar_Grad_jd[jPos][kPos] = 0.0;
+		}
+	}
+
+	for (jPos = 0; jPos < nVar; jPos++){
+		for (kPos = 0; kPos < nDim; kPos++){
+			TurbVar_Grad_id[jPos][kPos] = 0.0;
+			TurbVar_Grad_jd[jPos][kPos] = 0.0;
+		}
+	}
+
+	Laminar_Viscosity_jd = 1.0;
+
+	this->SetDirectResidual_ad(val_residual, val_residuald, config);
+
+	for (jPos = 0; jPos < nVar; jPos++) {
+		val_Jacobian_muj[jPos] = val_residuald[jPos];
+	}
+
+//    // TEST AD *****************
+//    for (jPos = 0; jPos < nVar; jPos++) {
+//        //cout << "Dist: " << dist_i << endl;
+//        //cout << "Direct: " << val_residual[jPos] << endl;
+//        cout << "AD: " << val_residuald[jPos] << endl;
+//    }
+//    // cout << "--" << endl;
+//    // AD *****************
+    
+    
+//    // FD ***********
+//    double *temp_U_i, *temp_U_j;
+//    double *temp_TurbVar_i, *temp_TurbVar_j;
+//    double temp_Laminar_Viscosity_i, temp_Laminar_Viscosity_j;
+//    temp_U_i = new double[nFlowVar];
+//    temp_U_j = new double[nFlowVar];
+//    temp_TurbVar_i  = new double[nVar];
+//    temp_TurbVar_j  = new double[nVar];
+//    double *temp1_val_residual, *temp2_val_residual;
+//    temp1_val_residual = new double[nVar];
+//    temp2_val_residual = new double[nVar];
+//    double **temp_PrimVar_Grad_i, **temp_TurbVar_Grad_i;
+//    double **temp_PrimVar_Grad_j, **temp_TurbVar_Grad_j;
+//    temp_PrimVar_Grad_i = new double*[nFlowVar];
+//    temp_PrimVar_Grad_j = new double*[nFlowVar];
+//    temp_TurbVar_Grad_i = new double*[nVar];
+//    temp_TurbVar_Grad_j = new double*[nVar];
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        temp_PrimVar_Grad_i[jPos] = new double[nDim];
+//        temp_PrimVar_Grad_j[jPos] = new double[nDim];
+//    }
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        temp_TurbVar_Grad_i[jPos] = new double[nDim];
+//        temp_TurbVar_Grad_j[jPos] = new double[nDim];
+//    }
+//    
+//    double delta;
+//    
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        temp_U_i[jPos] = U_i[jPos];
+//        temp_U_j[jPos] = U_j[jPos];
+//    }
+//    
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        temp_TurbVar_i[jPos] = TurbVar_i[jPos];
+//        temp_TurbVar_j[jPos] = TurbVar_j[jPos];
+//    }
+//    
+//    temp_Laminar_Viscosity_i = Laminar_Viscosity_i;
+//    temp_Laminar_Viscosity_j = Laminar_Viscosity_j;
+//    
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        for (kPos = 0; kPos < nDim; kPos++){
+//            temp_PrimVar_Grad_i[jPos][kPos] = PrimVar_Grad_i[jPos][kPos];
+//            temp_PrimVar_Grad_j[jPos][kPos] = PrimVar_Grad_j[jPos][kPos];
+//        }
+//    }
+//    
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        for (kPos = 0; kPos < nDim; kPos++){
+//            temp_TurbVar_Grad_i[jPos][kPos] = TurbVar_Grad_i[jPos][kPos];
+//            temp_TurbVar_Grad_j[jPos][kPos] = TurbVar_Grad_j[jPos][kPos];
+//        }
+//    }
+//    
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        U_i[jPos] = temp_U_i[jPos];
+//        U_j[jPos] = temp_U_j[jPos];
+//    }
+//    
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        TurbVar_i[jPos] = temp_TurbVar_i[jPos];
+//        TurbVar_j[jPos] = temp_TurbVar_j[jPos];
+//    }
+//    
+//    Laminar_Viscosity_i = temp_Laminar_Viscosity_i;
+//    Laminar_Viscosity_j = temp_Laminar_Viscosity_j;
+//    
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        for (kPos = 0; kPos < nDim; kPos++){
+//            PrimVar_Grad_i[jPos][kPos] = temp_PrimVar_Grad_i[jPos][kPos];
+//            PrimVar_Grad_j[jPos][kPos] = temp_PrimVar_Grad_j[jPos][kPos];
+//        }
+//    }
+//    
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        for (kPos = 0; kPos < nDim; kPos++){
+//            TurbVar_Grad_i[jPos][kPos] = temp_TurbVar_Grad_i[jPos][kPos];
+//            TurbVar_Grad_j[jPos][kPos] = temp_TurbVar_Grad_j[jPos][kPos];
+//        }
+//    }
+//    
+//    if (fabs(temp_Laminar_Viscosity_j) > 1e-15)
+//        delta = 0.01*temp_Laminar_Viscosity_j;
+//    else
+//        delta = 1e-15;
+//    
+//    Laminar_Viscosity_j = temp_Laminar_Viscosity_j - delta;
+//    
+//    this->SetDirectResidual_ad(temp1_val_residual, val_residuald, config);
+//    
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        U_i[jPos] = temp_U_i[jPos];
+//        U_j[jPos] = temp_U_j[jPos];
+//    }
+//    
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        TurbVar_i[jPos] = temp_TurbVar_i[jPos];
+//        TurbVar_j[jPos] = temp_TurbVar_j[jPos];
+//    }
+//    
+//    Laminar_Viscosity_i = temp_Laminar_Viscosity_i;
+//    Laminar_Viscosity_j = temp_Laminar_Viscosity_j;
+//    
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        for (kPos = 0; kPos < nDim; kPos++){
+//            PrimVar_Grad_i[jPos][kPos] = temp_PrimVar_Grad_i[jPos][kPos];
+//            PrimVar_Grad_j[jPos][kPos] = temp_PrimVar_Grad_j[jPos][kPos];
+//        }
+//    }
+//    
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        for (kPos = 0; kPos < nDim; kPos++){
+//            TurbVar_Grad_i[jPos][kPos] = temp_TurbVar_Grad_i[jPos][kPos];
+//            TurbVar_Grad_j[jPos][kPos] = temp_TurbVar_Grad_j[jPos][kPos];
+//        }
+//    }
+//    
+//    Laminar_Viscosity_j = temp_Laminar_Viscosity_j + delta;
+//    
+//    this->SetDirectResidual_ad(temp2_val_residual, val_residuald, config);
+//    
+//    //cout << "U_i: " << temp_U_i[iPos] << endl;
+//    
+//    for (jPos = 0; jPos < nVar; jPos++) {
+//        cout << "FD: " << (temp2_val_residual[jPos] - temp1_val_residual[jPos])/(2*delta) << endl;
+//    }
+//    
+//    delete [] temp_U_i;
+//    delete [] temp_U_j;
+//    delete [] temp_TurbVar_i;
+//    delete [] temp_TurbVar_j;
+//    delete [] temp1_val_residual;
+//    delete [] temp2_val_residual;
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        delete [] temp_PrimVar_Grad_i[jPos];
+//        delete [] temp_PrimVar_Grad_j[jPos];
+//    }
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        delete [] temp_TurbVar_Grad_i[jPos];
+//        delete [] temp_TurbVar_Grad_j[jPos];
+//    }
+//    delete [] temp_PrimVar_Grad_i;
+//    delete [] temp_PrimVar_Grad_j;
+//    delete [] temp_TurbVar_Grad_i;
+//    delete [] temp_TurbVar_Grad_j;
+//    cin.get();
+//    // FD *****************
+//    
+
+
+	// PrimVar_Grad_j sensitivity
+
+	for (iPos = 0; iPos < nFlowVar; iPos++){
+		for (lPos = 0; lPos < nDim; lPos++){
+			// zero things first
+			for (jPos = 0; jPos < nFlowVar; jPos++){
+				U_id[jPos] = 0.0;
+				U_jd[jPos] = 0.0;
+			}
+
+			for (jPos = 0; jPos < nVar; jPos++){
+				TurbVar_id[jPos] = 0.0;
+				TurbVar_jd[jPos] = 0.0;
+				val_residuald[jPos] = 0.0;
+			}
+
+			Laminar_Viscosity_id = 0.0;
+			Laminar_Viscosity_jd = 0.0;
+
+
+			for (jPos = 0; jPos < nFlowVar; jPos++){
+				for (kPos = 0; kPos < nDim; kPos++){
+					PrimVar_Grad_id[jPos][kPos] = 0.0;
+					PrimVar_Grad_jd[jPos][kPos] = 0.0;
+				}
+			}
+
+			for (jPos = 0; jPos < nVar; jPos++){
+				for (kPos = 0; kPos < nDim; kPos++){
+					TurbVar_Grad_id[jPos][kPos] = 0.0;
+					TurbVar_Grad_jd[jPos][kPos] = 0.0;
+				}
+			}
+
+			PrimVar_Grad_jd[iPos][lPos] = 1.0;
+
+			this->SetDirectResidual_ad(val_residual, val_residuald, config);
+
+			for (jPos = 0; jPos < nVar; jPos++) {
+				// Transpose each block: [jPos][iPos] -> [iPos][jPos]
+				val_Jacobian_gradj[iPos][lPos][jPos] = val_residuald[jPos];
+
+			}
+            
+//            // TEST AD *****************
+//            for (jPos = 0; jPos < nVar; jPos++) {
+//                //cout << "Dist: " << dist_i << endl;
+//                //cout << "Direct: " << val_residual[jPos] << endl;
+//                cout << "AD: " << val_residuald[jPos] << endl;
+//            }
+//            // cout << "--" << endl;
+//            // AD *****************
+
+		}
+	}
+    
+//    // TEST FD *****************
+//    
+//    double *temp_U_i, *temp_U_j;
+//    double *temp_TurbVar_i, *temp_TurbVar_j;
+//    double temp_Laminar_Viscosity_i, temp_Laminar_Viscosity_j;
+//    temp_U_i = new double[nFlowVar];
+//    temp_U_j = new double[nFlowVar];
+//    temp_TurbVar_i  = new double[nVar];
+//    temp_TurbVar_j  = new double[nVar];
+//    double *temp1_val_residual, *temp2_val_residual;
+//    temp1_val_residual = new double[nVar];
+//    temp2_val_residual = new double[nVar];
+//    double **temp_PrimVar_Grad_i, **temp_TurbVar_Grad_i;
+//    double **temp_PrimVar_Grad_j, **temp_TurbVar_Grad_j;
+//    temp_PrimVar_Grad_i = new double*[nFlowVar];
+//    temp_PrimVar_Grad_j = new double*[nFlowVar];
+//    temp_TurbVar_Grad_i = new double*[nVar];
+//    temp_TurbVar_Grad_j = new double*[nVar];
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        temp_PrimVar_Grad_i[jPos] = new double[nDim];
+//        temp_PrimVar_Grad_j[jPos] = new double[nDim];
+//    }
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        temp_TurbVar_Grad_i[jPos] = new double[nDim];
+//        temp_TurbVar_Grad_j[jPos] = new double[nDim];
+//    }
+//    
+//    double delta;
+//    
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        temp_U_i[jPos] = U_i[jPos];
+//        temp_U_j[jPos] = U_j[jPos];
+//    }
+//    
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        temp_TurbVar_i[jPos] = TurbVar_i[jPos];
+//        temp_TurbVar_j[jPos] = TurbVar_j[jPos];
+//    }
+//    
+//    temp_Laminar_Viscosity_i = Laminar_Viscosity_i;
+//    temp_Laminar_Viscosity_j = Laminar_Viscosity_j;
+//    
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        for (kPos = 0; kPos < nDim; kPos++){
+//            temp_PrimVar_Grad_i[jPos][kPos] = PrimVar_Grad_i[jPos][kPos];
+//            temp_PrimVar_Grad_j[jPos][kPos] = PrimVar_Grad_j[jPos][kPos];
+//        }
+//    }
+//    
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        for (kPos = 0; kPos < nDim; kPos++){
+//            temp_TurbVar_Grad_i[jPos][kPos] = TurbVar_Grad_i[jPos][kPos];
+//            temp_TurbVar_Grad_j[jPos][kPos] = TurbVar_Grad_j[jPos][kPos];
+//        }
+//    }
+//    
+// 	for (iPos = 0; iPos < nFlowVar; iPos++){
+//		for (lPos = 0; lPos < nDim; lPos++){
+//            
+//            for (jPos = 0; jPos < nFlowVar; jPos++){
+//                U_i[jPos] = temp_U_i[jPos];
+//                U_j[jPos] = temp_U_j[jPos];
+//            }
+//            
+//            for (jPos = 0; jPos < nVar; jPos++){
+//                TurbVar_i[jPos] = temp_TurbVar_i[jPos];
+//                TurbVar_j[jPos] = temp_TurbVar_j[jPos];
+//            }
+//            
+//            Laminar_Viscosity_i = temp_Laminar_Viscosity_i;
+//            Laminar_Viscosity_j = temp_Laminar_Viscosity_j;
+//            
+//            for (jPos = 0; jPos < nFlowVar; jPos++){
+//                for (kPos = 0; kPos < nDim; kPos++){
+//                    PrimVar_Grad_i[jPos][kPos] = temp_PrimVar_Grad_i[jPos][kPos];
+//                    PrimVar_Grad_j[jPos][kPos] = temp_PrimVar_Grad_j[jPos][kPos];
+//                }
+//            }
+//            
+//            for (jPos = 0; jPos < nVar; jPos++){
+//                for (kPos = 0; kPos < nDim; kPos++){
+//                    TurbVar_Grad_i[jPos][kPos] = temp_TurbVar_Grad_i[jPos][kPos];
+//                    TurbVar_Grad_j[jPos][kPos] = temp_TurbVar_Grad_j[jPos][kPos];
+//                }
+//            }
+//            
+//            if (fabs(temp_PrimVar_Grad_j[iPos][lPos]) > 1e-15)
+//                delta = 0.01*temp_PrimVar_Grad_j[iPos][lPos];
+//            else
+//                delta = 1e-15;
+//            
+//            PrimVar_Grad_j[iPos][lPos] = temp_PrimVar_Grad_j[iPos][lPos] - delta;
+//            
+//            this->SetDirectResidual_ad(temp1_val_residual, val_residuald, config);
+//            
+//            for (jPos = 0; jPos < nFlowVar; jPos++){
+//                U_i[jPos] = temp_U_i[jPos];
+//                U_j[jPos] = temp_U_j[jPos];
+//            }
+//            
+//            for (jPos = 0; jPos < nVar; jPos++){
+//                TurbVar_i[jPos] = temp_TurbVar_i[jPos];
+//                TurbVar_j[jPos] = temp_TurbVar_j[jPos];
+//            }
+//            
+//            Laminar_Viscosity_i = temp_Laminar_Viscosity_i;
+//            Laminar_Viscosity_j = temp_Laminar_Viscosity_j;
+//            
+//            for (jPos = 0; jPos < nFlowVar; jPos++){
+//                for (kPos = 0; kPos < nDim; kPos++){
+//                    PrimVar_Grad_i[jPos][kPos] = temp_PrimVar_Grad_i[jPos][kPos];
+//                    PrimVar_Grad_j[jPos][kPos] = temp_PrimVar_Grad_j[jPos][kPos];
+//                }
+//            }
+//            
+//            for (jPos = 0; jPos < nVar; jPos++){
+//                for (kPos = 0; kPos < nDim; kPos++){
+//                    TurbVar_Grad_i[jPos][kPos] = temp_TurbVar_Grad_i[jPos][kPos];
+//                    TurbVar_Grad_j[jPos][kPos] = temp_TurbVar_Grad_j[jPos][kPos];
+//                }
+//            }
+//            
+//            PrimVar_Grad_j[iPos][lPos] = temp_PrimVar_Grad_j[iPos][lPos] + delta;
+//            
+//            this->SetDirectResidual_ad(temp2_val_residual, val_residuald, config);
+//            
+//            //cout << "U_i: " << temp_U_i[iPos] << endl;
+//            
+//            for (jPos = 0; jPos < nVar; jPos++) {
+//                cout << "FD: " << (temp2_val_residual[jPos] - temp1_val_residual[jPos])/(2*delta) << endl;
+//            }
+//        }
+//    }
+//    delete [] temp_U_i;
+//    delete [] temp_U_j;
+//    delete [] temp_TurbVar_i;
+//    delete [] temp_TurbVar_j;
+//    delete [] temp1_val_residual;
+//    delete [] temp2_val_residual;
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        delete [] temp_PrimVar_Grad_i[jPos];
+//        delete [] temp_PrimVar_Grad_j[jPos];
+//    }
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        delete [] temp_TurbVar_Grad_i[jPos];
+//        delete [] temp_TurbVar_Grad_j[jPos];
+//    }
+//    delete [] temp_PrimVar_Grad_i;
+//    delete [] temp_PrimVar_Grad_j;
+//    delete [] temp_TurbVar_Grad_i;
+//    delete [] temp_TurbVar_Grad_j;
+//    cin.get();
+//    // FD *****************
+
+	// TurbVar_Grad_j sensitivity
+
+	for (iPos = 0; iPos < nVar; iPos++){
+		for (lPos = 0; lPos < nDim; lPos++){
+			// zero things first
+			for (jPos = 0; jPos < nFlowVar; jPos++){
+				U_id[jPos] = 0.0;
+				U_jd[jPos] = 0.0;
+			}
+
+			for (jPos = 0; jPos < nVar; jPos++){
+				TurbVar_id[jPos] = 0.0;
+				TurbVar_jd[jPos] = 0.0;
+				val_residuald[jPos] = 0.0;
+			}
+
+			Laminar_Viscosity_id = 0.0;
+			Laminar_Viscosity_jd = 0.0;
+
+
+			for (jPos = 0; jPos < nFlowVar; jPos++){
+				for (kPos = 0; kPos < nDim; kPos++){
+					PrimVar_Grad_id[jPos][kPos] = 0.0;
+					PrimVar_Grad_jd[jPos][kPos] = 0.0;
+				}
+			}
+
+			for (jPos = 0; jPos < nVar; jPos++){
+				for (kPos = 0; kPos < nDim; kPos++){
+					TurbVar_Grad_id[jPos][kPos] = 0.0;
+					TurbVar_Grad_jd[jPos][kPos] = 0.0;
+				}
+			}
+
+			TurbVar_Grad_jd[iPos][lPos] = 1.0;
+
+			this->SetDirectResidual_ad(val_residual, val_residuald, config);
+
+			for (jPos = 0; jPos < nVar; jPos++) {
+				// Transpose each block: [jPos][iPos] -> [iPos][jPos]
+				val_Jacobian_gradj[iPos+nFlowVar][lPos][jPos] = val_residuald[jPos];
+
+			}
+            
+//            // TEST AD *****************
+//            for (jPos = 0; jPos < nVar; jPos++) {
+//                //cout << "Dist: " << dist_i << endl;
+//                //cout << "Direct: " << val_residual[jPos] << endl;
+//                cout << "AD: " << val_residuald[jPos] << endl;
+//            }
+//            // cout << "--" << endl;
+//            // AD *****************
+
+		}
+	}
+    
+//    // TEST FD *****************
+//    
+//    double *temp_U_i, *temp_U_j;
+//    double *temp_TurbVar_i, *temp_TurbVar_j;
+//    double temp_Laminar_Viscosity_i, temp_Laminar_Viscosity_j;
+//    temp_U_i = new double[nFlowVar];
+//    temp_U_j = new double[nFlowVar];
+//    temp_TurbVar_i  = new double[nVar];
+//    temp_TurbVar_j  = new double[nVar];
+//    double *temp1_val_residual, *temp2_val_residual;
+//    temp1_val_residual = new double[nVar];
+//    temp2_val_residual = new double[nVar];
+//    double **temp_PrimVar_Grad_i, **temp_TurbVar_Grad_i;
+//    double **temp_PrimVar_Grad_j, **temp_TurbVar_Grad_j;
+//    temp_PrimVar_Grad_i = new double*[nFlowVar];
+//    temp_PrimVar_Grad_j = new double*[nFlowVar];
+//    temp_TurbVar_Grad_i = new double*[nVar];
+//    temp_TurbVar_Grad_j = new double*[nVar];
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        temp_PrimVar_Grad_i[jPos] = new double[nDim];
+//        temp_PrimVar_Grad_j[jPos] = new double[nDim];
+//    }
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        temp_TurbVar_Grad_i[jPos] = new double[nDim];
+//        temp_TurbVar_Grad_j[jPos] = new double[nDim];
+//    }
+//    
+//    double delta;
+//    
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        temp_U_i[jPos] = U_i[jPos];
+//        temp_U_j[jPos] = U_j[jPos];
+//    }
+//    
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        temp_TurbVar_i[jPos] = TurbVar_i[jPos];
+//        temp_TurbVar_j[jPos] = TurbVar_j[jPos];
+//    }
+//    
+//    temp_Laminar_Viscosity_i = Laminar_Viscosity_i;
+//    temp_Laminar_Viscosity_j = Laminar_Viscosity_j;
+//    
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        for (kPos = 0; kPos < nDim; kPos++){
+//            temp_PrimVar_Grad_i[jPos][kPos] = PrimVar_Grad_i[jPos][kPos];
+//            temp_PrimVar_Grad_j[jPos][kPos] = PrimVar_Grad_j[jPos][kPos];
+//        }
+//    }
+//    
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        for (kPos = 0; kPos < nDim; kPos++){
+//            temp_TurbVar_Grad_i[jPos][kPos] = TurbVar_Grad_i[jPos][kPos];
+//            temp_TurbVar_Grad_j[jPos][kPos] = TurbVar_Grad_j[jPos][kPos];
+//        }
+//    }
+//    
+// 	for (iPos = 0; iPos < nVar; iPos++){
+//		for (lPos = 0; lPos < nDim; lPos++){
+//            
+//            for (jPos = 0; jPos < nFlowVar; jPos++){
+//                U_i[jPos] = temp_U_i[jPos];
+//                U_j[jPos] = temp_U_j[jPos];
+//            }
+//            
+//            for (jPos = 0; jPos < nVar; jPos++){
+//                TurbVar_i[jPos] = temp_TurbVar_i[jPos];
+//                TurbVar_j[jPos] = temp_TurbVar_j[jPos];
+//            }
+//            
+//            Laminar_Viscosity_i = temp_Laminar_Viscosity_i;
+//            Laminar_Viscosity_j = temp_Laminar_Viscosity_j;
+//            
+//            for (jPos = 0; jPos < nFlowVar; jPos++){
+//                for (kPos = 0; kPos < nDim; kPos++){
+//                    PrimVar_Grad_i[jPos][kPos] = temp_PrimVar_Grad_i[jPos][kPos];
+//                    PrimVar_Grad_j[jPos][kPos] = temp_PrimVar_Grad_j[jPos][kPos];
+//                }
+//            }
+//            
+//            for (jPos = 0; jPos < nVar; jPos++){
+//                for (kPos = 0; kPos < nDim; kPos++){
+//                    TurbVar_Grad_i[jPos][kPos] = temp_TurbVar_Grad_i[jPos][kPos];
+//                    TurbVar_Grad_j[jPos][kPos] = temp_TurbVar_Grad_j[jPos][kPos];
+//                }
+//            }
+//            
+//            if (fabs(temp_TurbVar_Grad_j[iPos][lPos]) > 1e-15)
+//                delta = 0.01*temp_TurbVar_Grad_j[iPos][lPos];
+//            else
+//                delta = 1e-15;
+//            
+//            TurbVar_Grad_j[iPos][lPos] = temp_TurbVar_Grad_j[iPos][lPos] - delta;
+//            
+//            this->SetDirectResidual_ad(temp1_val_residual, val_residuald, config);
+//            
+//            for (jPos = 0; jPos < nFlowVar; jPos++){
+//                U_i[jPos] = temp_U_i[jPos];
+//                U_j[jPos] = temp_U_j[jPos];
+//            }
+//            
+//            for (jPos = 0; jPos < nVar; jPos++){
+//                TurbVar_i[jPos] = temp_TurbVar_i[jPos];
+//                TurbVar_j[jPos] = temp_TurbVar_j[jPos];
+//            }
+//            
+//            Laminar_Viscosity_i = temp_Laminar_Viscosity_i;
+//            Laminar_Viscosity_j = temp_Laminar_Viscosity_j;
+//            
+//            for (jPos = 0; jPos < nFlowVar; jPos++){
+//                for (kPos = 0; kPos < nDim; kPos++){
+//                    PrimVar_Grad_i[jPos][kPos] = temp_PrimVar_Grad_i[jPos][kPos];
+//                    PrimVar_Grad_j[jPos][kPos] = temp_PrimVar_Grad_j[jPos][kPos];
+//                }
+//            }
+//            
+//            for (jPos = 0; jPos < nVar; jPos++){
+//                for (kPos = 0; kPos < nDim; kPos++){
+//                    TurbVar_Grad_i[jPos][kPos] = temp_TurbVar_Grad_i[jPos][kPos];
+//                    TurbVar_Grad_j[jPos][kPos] = temp_TurbVar_Grad_j[jPos][kPos];
+//                }
+//            }
+//            
+//            TurbVar_Grad_j[iPos][lPos] = temp_TurbVar_Grad_j[iPos][lPos] + delta;
+//            
+//            this->SetDirectResidual_ad(temp2_val_residual, val_residuald, config);
+//            
+//            //cout << "U_i: " << temp_U_i[iPos] << endl;
+//            
+//            for (jPos = 0; jPos < nVar; jPos++) {
+//                cout << "FD: " << (temp2_val_residual[jPos] - temp1_val_residual[jPos])/(2*delta) << endl;
+//            }
+//        }
+//    }
+//    delete [] temp_U_i;
+//    delete [] temp_U_j;
+//    delete [] temp_TurbVar_i;
+//    delete [] temp_TurbVar_j;
+//    delete [] temp1_val_residual;
+//    delete [] temp2_val_residual;
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        delete [] temp_PrimVar_Grad_i[jPos];
+//        delete [] temp_PrimVar_Grad_j[jPos];
+//    }
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        delete [] temp_TurbVar_Grad_i[jPos];
+//        delete [] temp_TurbVar_Grad_j[jPos];
+//    }
+//    delete [] temp_PrimVar_Grad_i;
+//    delete [] temp_PrimVar_Grad_j;
+//    delete [] temp_TurbVar_Grad_i;
+//    delete [] temp_TurbVar_Grad_j;
+//    cin.get();
+//    // FD *************
 
 
 }
@@ -366,39 +2522,39 @@ void CAvgGrad_TransLM::SetResidual(double *val_residual, double **Jacobian_i, do
 
 
 	/*--- Compute mean effective viscosity ---*/
-		nu_i = Laminar_Viscosity_i/U_i[0];
-		nu_j = Laminar_Viscosity_j/U_j[0];
-		nu_e = 0.5*(nu_i+nu_j+Eddy_Viscosity_i+Eddy_Viscosity_j) ;
+	nu_i = Laminar_Viscosity_i/U_i[0];
+	nu_j = Laminar_Viscosity_j/U_j[0];
+	nu_e = 0.5*(nu_i+nu_j+Eddy_Viscosity_i+Eddy_Viscosity_j) ;
 
-		/*--- Compute vector going from iPoint to jPoint ---*/
-		dist_ij_2 = 0; proj_vector_ij = 0;
+	/*--- Compute vector going from iPoint to jPoint ---*/
+	dist_ij_2 = 0; proj_vector_ij = 0;
+	for (iDim = 0; iDim < nDim; iDim++) {
+		Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
+		dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
+		proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
+	}
+	proj_vector_ij = proj_vector_ij/dist_ij_2; // to normalize vectors
+
+	/*--- Mean gradient approximation ---*/
+	for (iVar = 0; iVar < nVar; iVar++) {
+		Proj_Mean_GradTransVar_Kappa[iVar] = 0.0;
+		Proj_Mean_GradTransVar_Edge[iVar] = 0.0;
 		for (iDim = 0; iDim < nDim; iDim++) {
-			Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
-			dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
-			proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
+			Mean_GradTransVar[iVar][iDim] = 0.5*(TransVar_Grad_i[iVar][iDim] + TransVar_Grad_j[iVar][iDim]);
+			Proj_Mean_GradTransVar_Kappa[iVar] += Mean_GradTransVar[iVar][iDim]*Normal[iDim];
 		}
-		proj_vector_ij = proj_vector_ij/dist_ij_2; // to normalize vectors
+	}
 
-		/*--- Mean gradient approximation ---*/
-		for (iVar = 0; iVar < nVar; iVar++) {
-			Proj_Mean_GradTransVar_Kappa[iVar] = 0.0;
-			Proj_Mean_GradTransVar_Edge[iVar] = 0.0;
-			for (iDim = 0; iDim < nDim; iDim++) {
-				Mean_GradTransVar[iVar][iDim] = 0.5*(TransVar_Grad_i[iVar][iDim] + TransVar_Grad_j[iVar][iDim]);
-				Proj_Mean_GradTransVar_Kappa[iVar] += Mean_GradTransVar[iVar][iDim]*Normal[iDim];
-			}
-		}
+	val_residual[0] = nu_e*Proj_Mean_GradTransVar_Kappa[0]/1.0;
+	val_residual[1] = nu_e*Proj_Mean_GradTransVar_Kappa[1]/2.0;
 
-		val_residual[0] = nu_e*Proj_Mean_GradTransVar_Kappa[0]/1.0;
-		val_residual[1] = nu_e*Proj_Mean_GradTransVar_Kappa[1]/2.0;
-
-		/*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
-		if (implicit) {
-			Jacobian_i[0][0] = (0.5*Proj_Mean_GradTransVar_Kappa[0]-nu_e*proj_vector_ij)/1.0;
-			Jacobian_j[0][0] = (0.5*Proj_Mean_GradTransVar_Kappa[0]+nu_e*proj_vector_ij)/1.0;
-			Jacobian_i[1][1] = (0.5*Proj_Mean_GradTransVar_Kappa[1]-nu_e*proj_vector_ij)/2.0;
-			Jacobian_j[1][1] = (0.5*Proj_Mean_GradTransVar_Kappa[1]+nu_e*proj_vector_ij)/2.0;
-		}
+	/*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
+	if (implicit) {
+		Jacobian_i[0][0] = (0.5*Proj_Mean_GradTransVar_Kappa[0]-nu_e*proj_vector_ij)/1.0;
+		Jacobian_j[0][0] = (0.5*Proj_Mean_GradTransVar_Kappa[0]+nu_e*proj_vector_ij)/1.0;
+		Jacobian_i[1][1] = (0.5*Proj_Mean_GradTransVar_Kappa[1]-nu_e*proj_vector_ij)/2.0;
+		Jacobian_j[1][1] = (0.5*Proj_Mean_GradTransVar_Kappa[1]+nu_e*proj_vector_ij)/2.0;
+	}
 
 }
 
@@ -874,161 +3030,120 @@ void CAvgGrad_AdjFlow::SetResidual(double *val_residual_i, double *val_residual_
 CAvgGradArtComp_AdjFlow::CAvgGradArtComp_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 	unsigned short iDim;
 
-	Gamma = config->GetGamma();
-	Gamma_Minus_One = Gamma - 1.0;
-
 	Velocity_i = new double [nDim];
 	Velocity_j = new double [nDim];
-	Mean_Velocity = new double [nDim];
 	Mean_GradPhi = new double* [nDim];
 	for (iDim = 0; iDim < nDim; iDim++)
 		Mean_GradPhi[iDim] = new double [nDim];
-	Mean_GradPsiE = new double [nDim];
 
 }
 
 CAvgGradArtComp_AdjFlow::~CAvgGradArtComp_AdjFlow(void) {
+  unsigned short iDim;
+  
 	delete [] Velocity_i;
 	delete [] Velocity_j;
-	delete [] Mean_Velocity;
-	delete [] Mean_GradPsiE;
-	for (unsigned short iDim = 0; iDim < nDim; iDim++)
+	for (iDim = 0; iDim < nDim; iDim++)
 		delete [] Mean_GradPhi[iDim];
+  
 }
 
-void CAvgGradArtComp_AdjFlow::SetResidual (double *val_residual_i, double *val_residual_j) {
-	unsigned short iDim, jDim;
-	double Density_i, sq_vel_i, Energy_i, SoundSpeed_i, Pressure_i, ViscDens_i, XiDens_i, 
-	Density_j, sq_vel_j, Energy_j, SoundSpeed_j, Pressure_j, ViscDens_j, XiDens_j, dPhiE_dn;
-	double Sigma_xx, Sigma_yy, Sigma_zz, Sigma_xy, Sigma_xz, Sigma_yz,
-	Sigma_xx5, Sigma_yy5, Sigma_zz5, Sigma_xy5, Sigma_xz5, 
-	Sigma_yz5, Sigma_5, eta_xx, eta_yy, eta_zz, eta_xy, eta_xz, eta_yz;	
+void CAvgGradArtComp_AdjFlow::SetResidual(double *val_residual_i, double *val_residual_j,
+                                          double **val_Jacobian_ii, double **val_Jacobian_ij,
+                                          double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config) {
+  unsigned short iVar, jVar, iDim, jDim;
+	double ViscDens_i, ViscDens_j, Sigma_xx, Sigma_yy, Sigma_zz, Sigma_xy, Sigma_xz, Sigma_yz;
 
 	/*--- States in the point i ---*/
-	Density_i = U_i[0];		
-	sq_vel_i = 0;
-	for (iDim = 0; iDim < nDim; iDim++) { 
-		Velocity_i[iDim] = U_i[iDim+1] / Density_i;
-		sq_vel_i += 0.5*Velocity_i[iDim]*Velocity_i[iDim];
-	}
-	Energy_i = U_i[nDim+1] / Density_i;
-	SoundSpeed_i = sqrt(Gamma*Gamma_Minus_One*(Energy_i-sq_vel_i));
-	Pressure_i = (SoundSpeed_i * SoundSpeed_i * Density_i) / Gamma;
-	ViscDens_i = (Laminar_Viscosity_i + Eddy_Viscosity_i) / Density_i;
-	XiDens_i = Gamma *(Laminar_Viscosity_i/PRANDTL + Eddy_Viscosity_i/PRANDTL_TURB) / Density_i;
+	for (iDim = 0; iDim < nDim; iDim++)
+		Velocity_i[iDim] = U_i[iDim+1] / DensityInc_i;
+	ViscDens_i = (Laminar_Viscosity_i + Eddy_Viscosity_i) / DensityInc_i;
 
 	/*--- States in the point j ---*/
-	Density_j = U_j[0];
-	sq_vel_j = 0;
-	for (iDim = 0; iDim < nDim; iDim++) { 
-		Velocity_j[iDim] = U_j[iDim+1] / Density_j;
-		sq_vel_j += 0.5*Velocity_j[iDim]*Velocity_j[iDim];
-	}
-	Energy_j = U_j[nDim+1] / Density_j;
-	SoundSpeed_j = sqrt(Gamma*Gamma_Minus_One*(Energy_j-sq_vel_j));
-	Pressure_j = (SoundSpeed_j * SoundSpeed_j * Density_j) / Gamma;
-	ViscDens_j = (Laminar_Viscosity_j + Eddy_Viscosity_j) / Density_j;
-	XiDens_j = Gamma *(Laminar_Viscosity_j/PRANDTL + Eddy_Viscosity_j/PRANDTL_TURB) / Density_j;
+	for (iDim = 0; iDim < nDim; iDim++)
+		Velocity_j[iDim] = U_j[iDim+1] / DensityInc_j;
+	ViscDens_j = (Laminar_Viscosity_j + Eddy_Viscosity_j) / DensityInc_i;
 
 	/*--- Average of the derivatives of the adjoint variables ---*/
 	for (iDim = 0; iDim < nDim; iDim++) {
-		Mean_GradPsiE[iDim] =  0.5*(PsiVar_Grad_i[nVar-1][iDim]+PsiVar_Grad_j[nVar-1][iDim]);
 		for (jDim = 0; jDim < nDim; jDim++)
 			Mean_GradPhi[iDim][jDim] =  0.5*(PsiVar_Grad_i[iDim+1][jDim]+PsiVar_Grad_j[iDim+1][jDim]);
 	}
 
-	dPhiE_dn = 0; 
-	for (iDim = 0; iDim < nDim; iDim++) 
-		dPhiE_dn += Mean_GradPsiE[iDim]*Normal[iDim];
-
-	/*--- Compute the viscous residual ---*/
+	/*--- Compute the adjoint viscous residual ---*/
 	if (nDim == 3) {
-		Sigma_xx = ViscDens_i * (FOUR3 * Mean_GradPhi[0][0] -  TWO3 * Mean_GradPhi[1][1] - TWO3  * Mean_GradPhi[2][2]);
-		Sigma_yy = ViscDens_i * (-TWO3 * Mean_GradPhi[0][0] + FOUR3 * Mean_GradPhi[1][1] - TWO3  * Mean_GradPhi[2][2]);
-		Sigma_zz = ViscDens_i * (-TWO3 * Mean_GradPhi[0][0] -  TWO3 * Mean_GradPhi[1][1] + FOUR3 * Mean_GradPhi[2][2]);
+		Sigma_xx = ViscDens_i * 2.0 * Mean_GradPhi[0][0];
+		Sigma_yy = ViscDens_i * 2.0 * Mean_GradPhi[1][1];
+		Sigma_zz = ViscDens_i * 2.0 * Mean_GradPhi[2][2];
 		Sigma_xy = ViscDens_i * (Mean_GradPhi[1][0] + Mean_GradPhi[0][1]);
 		Sigma_xz = ViscDens_i * (Mean_GradPhi[2][0] + Mean_GradPhi[0][2]);
 		Sigma_yz = ViscDens_i * (Mean_GradPhi[2][1] + Mean_GradPhi[1][2]);
-		Sigma_xx5 = ViscDens_i * ( FOUR3 * Velocity_i[0] * Mean_GradPsiE[0] -  TWO3 * Velocity_i[1] * Mean_GradPsiE[1] -  TWO3 * Velocity_i[2] * Mean_GradPsiE[2]);
-		Sigma_yy5 = ViscDens_i * (- TWO3 * Velocity_i[0] * Mean_GradPsiE[0] + FOUR3 * Velocity_i[1] * Mean_GradPsiE[1] -  TWO3 * Velocity_i[2] * Mean_GradPsiE[2]);
-		Sigma_zz5 = ViscDens_i * (- TWO3 * Velocity_i[0] * Mean_GradPsiE[0] -  TWO3 * Velocity_i[1] * Mean_GradPsiE[1] + FOUR3 * Velocity_i[2] * Mean_GradPsiE[2]);
-		Sigma_xy5 = ViscDens_i * (Velocity_i[0] * Mean_GradPsiE[1] + Velocity_i[1] * Mean_GradPsiE[0]);
-		Sigma_xz5 = ViscDens_i * (Velocity_i[0] * Mean_GradPsiE[2] + Velocity_i[2] * Mean_GradPsiE[0]);
-		Sigma_yz5 = ViscDens_i * (Velocity_i[1] * Mean_GradPsiE[2] + Velocity_i[2] * Mean_GradPsiE[1]);
-		Sigma_5   = XiDens_i * dPhiE_dn;
-		eta_xx = Sigma_xx + Sigma_xx5; eta_yy = Sigma_yy + Sigma_yy5; eta_zz = Sigma_zz + Sigma_zz5;
-		eta_xy = Sigma_xy + Sigma_xy5; eta_xz = Sigma_xz + Sigma_xz5; eta_yz = Sigma_yz + Sigma_yz5;
 
-		val_residual_i[0] = - (Velocity_i[0] * Normal[0] * eta_xx  + Velocity_i[1] * Normal[1] * eta_yy + Velocity_i[2] * Normal[2] * eta_zz
-				+ (Velocity_i[0] * Normal[1] + Velocity_i[1] * Normal[0]) * eta_xy
-				+ (Velocity_i[0] * Normal[2] + Velocity_i[2] * Normal[0]) * eta_xz
-				+ (Velocity_i[2] * Normal[1] + Velocity_i[1] * Normal[2]) * eta_yz
-				- (sq_vel_i - Pressure_i/(Density_i*Gamma_Minus_One)) * Sigma_5);
-		val_residual_i[1] = (eta_xx * Normal[0] + eta_xy * Normal[1] + eta_xz * Normal[2] - Velocity_i[0] * Sigma_5);
-		val_residual_i[2] = (eta_xy * Normal[0] + eta_yy * Normal[1] + eta_yz * Normal[2] - Velocity_i[1] * Sigma_5);
-		val_residual_i[3] = (eta_xz * Normal[0] + eta_yz * Normal[1] + eta_zz * Normal[2] - Velocity_i[2] * Sigma_5);
-		val_residual_i[4] = (Sigma_5);
+		val_residual_i[0] = 0.0;
+		val_residual_i[1] = (Sigma_xx * Normal[0] + Sigma_xy * Normal[1] + Sigma_xz * Normal[2]);
+		val_residual_i[2] = (Sigma_xy * Normal[0] + Sigma_yy * Normal[1] + Sigma_yz * Normal[2]);
+		val_residual_i[3] = (Sigma_xz * Normal[0] + Sigma_yz * Normal[1] + Sigma_zz * Normal[2]);
 
-		Sigma_xx = ViscDens_j * (FOUR3 * Mean_GradPhi[0][0] -  TWO3 * Mean_GradPhi[1][1] - TWO3  * Mean_GradPhi[2][2]);
-		Sigma_yy = ViscDens_j * (-TWO3 * Mean_GradPhi[0][0] + FOUR3 * Mean_GradPhi[1][1] - TWO3  * Mean_GradPhi[2][2]);
-		Sigma_zz = ViscDens_j * (-TWO3 * Mean_GradPhi[0][0] -  TWO3 * Mean_GradPhi[1][1] + FOUR3 * Mean_GradPhi[2][2]);
+    for (iVar = 0; iVar < nVar; iVar++) {
+      for (jVar = 0; jVar < nVar; jVar++) {
+        val_Jacobian_ij[iVar][jVar] = 0.0;
+        val_Jacobian_ii[iVar][jVar] = 0.0;
+      }
+    }
+    
+		Sigma_xx = ViscDens_j * 2.0 * Mean_GradPhi[0][0];
+		Sigma_yy = ViscDens_j * 2.0 * Mean_GradPhi[1][1];
+		Sigma_zz = ViscDens_j * 2.0 * Mean_GradPhi[2][2];
 		Sigma_xy = ViscDens_j * (Mean_GradPhi[1][0] + Mean_GradPhi[0][1]);
 		Sigma_xz = ViscDens_j * (Mean_GradPhi[2][0] + Mean_GradPhi[0][2]);
 		Sigma_yz = ViscDens_j * (Mean_GradPhi[2][1] + Mean_GradPhi[1][2]);
-		Sigma_xx5 = ViscDens_j * ( FOUR3 * Velocity_j[0] * Mean_GradPsiE[0] -  TWO3 * Velocity_j[1] * Mean_GradPsiE[1] -  TWO3 * Velocity_j[2] * Mean_GradPsiE[2]);
-		Sigma_yy5 = ViscDens_j * (- TWO3 * Velocity_j[0] * Mean_GradPsiE[0] + FOUR3 * Velocity_j[1] * Mean_GradPsiE[1] -  TWO3 * Velocity_j[2] * Mean_GradPsiE[2]);
-		Sigma_zz5 = ViscDens_j * (- TWO3 * Velocity_j[0] * Mean_GradPsiE[0] -  TWO3 * Velocity_j[1] * Mean_GradPsiE[1] + FOUR3 * Velocity_j[2] * Mean_GradPsiE[2]);
-		Sigma_xy5 = ViscDens_j * (Velocity_j[0] * Mean_GradPsiE[1] + Velocity_j[1] * Mean_GradPsiE[0]);
-		Sigma_xz5 = ViscDens_j * (Velocity_j[0] * Mean_GradPsiE[2] + Velocity_j[2] * Mean_GradPsiE[0]);
-		Sigma_yz5 = ViscDens_j * (Velocity_j[1] * Mean_GradPsiE[2] + Velocity_j[2] * Mean_GradPsiE[1]);
-		Sigma_5   = XiDens_j * dPhiE_dn;
-		eta_xx = Sigma_xx + Sigma_xx5; eta_yy = Sigma_yy + Sigma_yy5; eta_zz = Sigma_zz + Sigma_zz5;
-		eta_xy = Sigma_xy + Sigma_xy5; eta_xz = Sigma_xz + Sigma_xz5; eta_yz = Sigma_yz + Sigma_yz5;
 
-		val_residual_j[0] = - (Velocity_j[0] * Normal[0] * eta_xx  + Velocity_j[1] * Normal[1] * eta_yy + Velocity_j[2] * Normal[2] * eta_zz
-				+ (Velocity_j[0] * Normal[1] + Velocity_j[1] * Normal[0]) * eta_xy
-				+ (Velocity_j[0] * Normal[2] + Velocity_j[2] * Normal[0]) * eta_xz
-				+ (Velocity_j[2] * Normal[1] + Velocity_j[1] * Normal[2]) * eta_yz
-				- (sq_vel_j - Pressure_j/(Density_j*Gamma_Minus_One)) * Sigma_5);
-		val_residual_j[1] = (eta_xx * Normal[0] + eta_xy * Normal[1] + eta_xz * Normal[2] - Velocity_j[0] * Sigma_5);
-		val_residual_j[2] = (eta_xy * Normal[0] + eta_yy * Normal[1] + eta_yz * Normal[2] - Velocity_j[1] * Sigma_5);
-		val_residual_j[3] = (eta_xz * Normal[0] + eta_yz * Normal[1] + eta_zz * Normal[2] - Velocity_j[2] * Sigma_5);
-		val_residual_j[4] = (Sigma_5);
-	}
-
-	if (nDim == 2) {
-		Sigma_xx = ViscDens_i * (FOUR3 * Mean_GradPhi[0][0] -  TWO3 * Mean_GradPhi[1][1]);
-		Sigma_yy = ViscDens_i * (-TWO3 * Mean_GradPhi[0][0] + FOUR3 * Mean_GradPhi[1][1]);
+		val_residual_j[0] = 0.0;
+		val_residual_j[1] = (Sigma_xx * Normal[0] + Sigma_xy * Normal[1] + Sigma_xz * Normal[2]);
+		val_residual_j[2] = (Sigma_xy * Normal[0] + Sigma_yy * Normal[1] + Sigma_yz * Normal[2]);
+		val_residual_j[3] = (Sigma_xz * Normal[0] + Sigma_yz * Normal[1] + Sigma_zz * Normal[2]);
+	
+    for (iVar = 0; iVar < nVar; iVar++) {
+      for (jVar = 0; jVar < nVar; jVar++) {
+        val_Jacobian_ji[iVar][jVar] = 0.0;
+        val_Jacobian_jj[iVar][jVar] = 0.0;
+      }
+    }
+  
+  } else if (nDim == 2) {
+		Sigma_xx = ViscDens_i * 2.0 * Mean_GradPhi[0][0];
+		Sigma_yy = ViscDens_i * 2.0 * Mean_GradPhi[1][1];
 		Sigma_xy = ViscDens_i * (Mean_GradPhi[1][0] + Mean_GradPhi[0][1]);
-		Sigma_xx5 = ViscDens_i * ( FOUR3 * Velocity_i[0] * Mean_GradPsiE[0] -  TWO3 * Velocity_i[1] * Mean_GradPsiE[1]);
-		Sigma_yy5 = ViscDens_i * (- TWO3 * Velocity_i[0] * Mean_GradPsiE[0] + FOUR3 * Velocity_i[1] * Mean_GradPsiE[1]);
-		Sigma_xy5 = ViscDens_i * (Velocity_i[0] * Mean_GradPsiE[1] + Velocity_i[1] * Mean_GradPsiE[0]);
-		Sigma_5   = XiDens_i * dPhiE_dn;
-		eta_xx = Sigma_xx + Sigma_xx5; eta_yy = Sigma_yy + Sigma_yy5; eta_xy = Sigma_xy + Sigma_xy5;
 
-		val_residual_i[0] = - (Velocity_i[0] * Normal[0] * eta_xx  + Velocity_i[1] * Normal[1] * eta_yy
-				+ (Velocity_i[0] * Normal[1] + Velocity_i[1] * Normal[0]) * eta_xy
-				- (sq_vel_i - Pressure_i/(Density_i*Gamma_Minus_One)) * Sigma_5);
-		val_residual_i[1] = (eta_xx * Normal[0] + eta_xy * Normal[1] - Velocity_i[0] * Sigma_5);
-		val_residual_i[2] = (eta_xy * Normal[0] + eta_yy * Normal[1] - Velocity_i[1] * Sigma_5);
-		val_residual_i[3] = (Sigma_5);
+		val_residual_i[0] = 0.0;
+		val_residual_i[1] = (Sigma_xx * Normal[0] + Sigma_xy * Normal[1]);
+		val_residual_i[2] = (Sigma_xy * Normal[0] + Sigma_yy * Normal[1]);
 
-		Sigma_xx = ViscDens_j * (FOUR3 * Mean_GradPhi[0][0] -  TWO3 * Mean_GradPhi[1][1]);
-		Sigma_yy = ViscDens_j * (-TWO3 * Mean_GradPhi[0][0] + FOUR3 * Mean_GradPhi[1][1]);
+    for (iVar = 0; iVar < nVar; iVar++) {
+      for (jVar = 0; jVar < nVar; jVar++) {
+        val_Jacobian_ij[iVar][jVar] = 0.0;
+        val_Jacobian_ii[iVar][jVar] = 0.0;
+        
+      }
+    }
+    
+		Sigma_xx = ViscDens_j * 2.0 * Mean_GradPhi[0][0];
+		Sigma_yy = ViscDens_j * 2.0 * Mean_GradPhi[1][1];
 		Sigma_xy = ViscDens_j * (Mean_GradPhi[1][0] + Mean_GradPhi[0][1]);
-		Sigma_xx5 = ViscDens_j * ( FOUR3 * Velocity_j[0] * Mean_GradPsiE[0] -  TWO3 * Velocity_j[1] * Mean_GradPsiE[1]);
-		Sigma_yy5 = ViscDens_j * (- TWO3 * Velocity_j[0] * Mean_GradPsiE[0] + FOUR3 * Velocity_j[1] * Mean_GradPsiE[1]);
-		Sigma_xy5 = ViscDens_j * (Velocity_j[0] * Mean_GradPsiE[1] + Velocity_j[1] * Mean_GradPsiE[0]);
-		Sigma_5   = XiDens_j * dPhiE_dn;
-		eta_xx = Sigma_xx + Sigma_xx5; eta_yy = Sigma_yy + Sigma_yy5; eta_xy = Sigma_xy + Sigma_xy5;
 
-		val_residual_j[0] = - (Velocity_j[0] * Normal[0] * eta_xx  + Velocity_j[1] * Normal[1] * eta_yy
-				+ (Velocity_j[0] * Normal[1] + Velocity_j[1] * Normal[0]) * eta_xy
-				- (sq_vel_j - Pressure_j/(Density_j*Gamma_Minus_One)) * Sigma_5);
-		val_residual_j[1] = (eta_xx * Normal[0] + eta_xy * Normal[1]  - Velocity_j[0] * Sigma_5);
-		val_residual_j[2] = (eta_xy * Normal[0] + eta_yy * Normal[1]  - Velocity_j[1] * Sigma_5);
-		val_residual_j[3] = (Sigma_5);
+		val_residual_j[0] = 0.0;
+		val_residual_j[1] = (Sigma_xx * Normal[0] + Sigma_xy * Normal[1]);
+		val_residual_j[2] = (Sigma_xy * Normal[0] + Sigma_yy * Normal[1]);
+    
+    for (iVar = 0; iVar < nVar; iVar++) {
+      for (jVar = 0; jVar < nVar; jVar++) {
+        val_Jacobian_ji[iVar][jVar] = 0.0;
+        val_Jacobian_jj[iVar][jVar] = 0.0;
+      }
+    }
+    
 	}
+  
 }
 
 CAvgGradCorrected_Flow::CAvgGradCorrected_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
@@ -1151,8 +3266,7 @@ void CAvgGradCorrectedArtComp_Flow::SetResidual(double *val_residual, double **v
 
 	/*--- Normalized normal vector ---*/
 	Area = 0;
-	for (iDim = 0; iDim < nDim; iDim++)
-		Area += Normal[iDim]*Normal[iDim];
+	for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
 	Area = sqrt(Area);
 
 	for (iDim = 0; iDim < nDim; iDim++)
@@ -1893,13 +4007,157 @@ void CAvgGradCorrected_AdjFlow::SetResidual(double *val_residual_i, double *val_
 }
 
 CAvgGradCorrectedArtComp_AdjFlow::CAvgGradCorrectedArtComp_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+  unsigned short iVar, iDim;
+  
+  Velocity_i = new double [nDim];
+  Velocity_j = new double [nDim];
+  
+  Mean_GradPsiVar = new double* [nVar];
+  for (iVar = 0; iVar < nVar; iVar++)
+    Mean_GradPsiVar[iVar] = new double [nDim];
+  
+  Edge_Vector = new double [nDim];
+  Proj_Mean_GradPsiVar_Edge = new double [nVar];
+  
+  Mean_GradPhi = new double* [nDim];
+  for (iDim = 0; iDim < nDim; iDim++)
+    Mean_GradPhi[iDim] = new double [nDim];
+  
 }
 
 CAvgGradCorrectedArtComp_AdjFlow::~CAvgGradCorrectedArtComp_AdjFlow(void) {
+  unsigned short iVar, iDim;
+  
+  delete [] Velocity_i;
+  delete [] Velocity_j;
+  delete [] Edge_Vector;
+  delete [] Proj_Mean_GradPsiVar_Edge;
+  
+  for (iVar = 0; iVar < nVar; iVar++)
+    delete [] Mean_GradPsiVar[iVar];
+  delete [] Mean_GradPsiVar;
+  
+  for (iDim = 0; iDim < nDim; iDim++)
+    delete [] Mean_GradPhi[iDim];
+  delete [] Mean_GradPhi;
 }
 
-void CAvgGradCorrectedArtComp_AdjFlow::SetResidual(double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii, double **val_Jacobian_ij,
-		double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config) {
+void CAvgGradCorrectedArtComp_AdjFlow::SetResidual(double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii, double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config) {
+  unsigned short iVar, jVar, iDim, jDim;
+  double ViscDens_i, ViscDens_j, dist_ij_2, Sigma_xx, Sigma_yy, Sigma_zz, Sigma_xy, Sigma_xz, Sigma_yz;
+  
+  /*--- States in point i ---*/
+  for (iDim = 0; iDim < nDim; iDim++)
+    Velocity_i[iDim] = U_i[iDim+1] / DensityInc_i;
+  ViscDens_i = (Laminar_Viscosity_i + Eddy_Viscosity_i) / DensityInc_i;
+  
+  /*--- States in point j ---*/
+  for (iDim = 0; iDim < nDim; iDim++)
+    Velocity_j[iDim] = U_j[iDim+1] / DensityInc_j;
+  ViscDens_j = (Laminar_Viscosity_j + Eddy_Viscosity_j) / DensityInc_j;
+  
+  /*--- Compute vector going from iPoint to jPoint ---*/
+  dist_ij_2 = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Mean_Velocity[iDim] = 0.5*(Velocity_i[iDim]+Velocity_j[iDim]);
+    Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
+    dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
+  }
+  
+  /*--- Mean gradient approximation. Projection of the mean gradient in the direction of the edge, weiss correction ---*/
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Proj_Mean_GradPsiVar_Edge[iVar] = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Mean_GradPsiVar[iVar][iDim] = 0.5*(PsiVar_Grad_i[iVar][iDim] + PsiVar_Grad_j[iVar][iDim]);
+      Proj_Mean_GradPsiVar_Edge[iVar] += Mean_GradPsiVar[iVar][iDim]*Edge_Vector[iDim];
+    }
+    for (iDim = 0; iDim < nDim; iDim++)
+      Mean_GradPsiVar[iVar][iDim] -= (Proj_Mean_GradPsiVar_Edge[iVar] -
+                                      (Psi_j[iVar]-Psi_i[iVar]))*Edge_Vector[iDim]/dist_ij_2;
+  }
+  
+  /*--- Average of the derivatives of the adjoint variables ---*/
+  for (iDim = 0; iDim < nDim; iDim++) {
+    for (jDim = 0; jDim < nDim; jDim++)
+      Mean_GradPhi[iDim][jDim] = Mean_GradPsiVar[iDim+1][jDim];
+  }
+  
+  /*--- Compute the viscous residual ---*/
+  if (nDim == 3) {
+    
+    Sigma_xx = ViscDens_i * 2.0 * Mean_GradPhi[0][0];
+    Sigma_yy = ViscDens_i * 2.0 * Mean_GradPhi[1][1];
+    Sigma_zz = ViscDens_i * 2.0 * Mean_GradPhi[2][2];
+    Sigma_xy = ViscDens_i * (Mean_GradPhi[1][0] + Mean_GradPhi[0][1]);
+    Sigma_xz = ViscDens_i * (Mean_GradPhi[2][0] + Mean_GradPhi[0][2]);
+    Sigma_yz = ViscDens_i * (Mean_GradPhi[2][1] + Mean_GradPhi[1][2]);
+    
+    val_residual_i[0] = 0.0;
+    val_residual_i[1] = (Sigma_xx * Normal[0] + Sigma_xy * Normal[1] + Sigma_xz * Normal[2]);
+    val_residual_i[2] = (Sigma_xy * Normal[0] + Sigma_yy * Normal[1] + Sigma_yz * Normal[2]);
+    val_residual_i[3] = (Sigma_xz * Normal[0] + Sigma_yz * Normal[1] + Sigma_zz * Normal[2]);
+    
+    for (iVar = 0; iVar < nVar; iVar++) {
+      for (jVar = 0; jVar < nVar; jVar++) {
+        val_Jacobian_ij[iVar][jVar] = 0.0;
+        val_Jacobian_ii[iVar][jVar] = 0.0;
+        
+      }
+    }
+    
+    Sigma_xx = ViscDens_j * 2.0 * Mean_GradPhi[0][0];
+    Sigma_yy = ViscDens_j * 2.0 * Mean_GradPhi[1][1];
+    Sigma_zz = ViscDens_j * 2.0 * Mean_GradPhi[2][2];
+    Sigma_xy = ViscDens_j * (Mean_GradPhi[1][0] + Mean_GradPhi[0][1]);
+    Sigma_xz = ViscDens_j * (Mean_GradPhi[2][0] + Mean_GradPhi[0][2]);
+    Sigma_yz = ViscDens_j * (Mean_GradPhi[2][1] + Mean_GradPhi[1][2]);
+    
+    val_residual_j[0] = 0.0;
+    val_residual_j[1] = (Sigma_xx * Normal[0] + Sigma_xy * Normal[1] + Sigma_xz * Normal[2]);
+    val_residual_j[2] = (Sigma_xy * Normal[0] + Sigma_yy * Normal[1] + Sigma_yz * Normal[2]);
+    val_residual_j[3] = (Sigma_xz * Normal[0] + Sigma_yz * Normal[1] + Sigma_zz * Normal[2]);
+    
+    for (iVar = 0; iVar < nVar; iVar++) {
+      for (jVar = 0; jVar < nVar; jVar++) {
+        val_Jacobian_ji[iVar][jVar] = 0.0;
+        val_Jacobian_jj[iVar][jVar] = 0.0;
+      }
+    }
+    
+  } else if (nDim == 2) {
+    
+    Sigma_xx = ViscDens_i * 2.0 * Mean_GradPhi[0][0];
+    Sigma_yy = ViscDens_i * 2.0 * Mean_GradPhi[1][1];
+    Sigma_xy = ViscDens_i * (Mean_GradPhi[1][0] + Mean_GradPhi[0][1]);
+    
+    val_residual_i[0] = 0.0;
+    val_residual_i[1] = (Sigma_xx * Normal[0] + Sigma_xy * Normal[1]);
+    val_residual_i[2] = (Sigma_xy * Normal[0] + Sigma_yy * Normal[1]);
+    
+    for (iVar = 0; iVar < nVar; iVar++) {
+      for (jVar = 0; jVar < nVar; jVar++) {
+        val_Jacobian_ij[iVar][jVar] = 0.0;
+        val_Jacobian_ii[iVar][jVar] = 0.0;
+        
+      }
+    }
+    
+    Sigma_xx = ViscDens_j * 2.0 * Mean_GradPhi[0][0];
+    Sigma_yy = ViscDens_j * 2.0 * Mean_GradPhi[1][1];
+    Sigma_xy = ViscDens_j * (Mean_GradPhi[1][0] + Mean_GradPhi[0][1]);
+    
+    val_residual_j[0] = 0.0;
+    val_residual_j[1] = (Sigma_xx * Normal[0] + Sigma_xy * Normal[1]);
+    val_residual_j[2] = (Sigma_xy * Normal[0] + Sigma_yy * Normal[1]);
+    
+    for (iVar = 0; iVar < nVar; iVar++) {
+      for (jVar = 0; jVar < nVar; jVar++) {
+        val_Jacobian_ji[iVar][jVar] = 0.0;
+        val_Jacobian_jj[iVar][jVar] = 0.0;
+      }
+    }
+    
+  }
 }
 
 CAvgGradCorrected_AdjTurb::CAvgGradCorrected_AdjTurb(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
@@ -2337,7 +4595,7 @@ CAvgGrad_Plasma::CAvgGrad_Plasma(unsigned short val_nDim, unsigned short val_nVa
 	PrimVar_j        = new double [nDim+6];
   Mean_PrimVar     = new double [nDim+6];
   Mean_GradPrimVar = new double*[nDim+3];
-	for (iVar = 0; iVar < nVar+3; iVar++)
+	for (iVar = 0; iVar < nDim+3; iVar++)
 		Mean_GradPrimVar[iVar] = new double [nDim];
   
 	Mean_Laminar_Viscosity         = new double[nSpecies];
@@ -2351,7 +4609,7 @@ CAvgGrad_Plasma::~CAvgGrad_Plasma(void) {
 	delete [] PrimVar_i;
 	delete [] PrimVar_j;
 	delete [] Mean_PrimVar;
-	for (iVar = 0; iVar < nDim+6; iVar++)
+	for (iVar = 0; iVar < nDim+3; iVar++)
 		delete [] Mean_GradPrimVar[iVar];
 	delete [] Mean_GradPrimVar;
   

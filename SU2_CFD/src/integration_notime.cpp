@@ -2,7 +2,7 @@
  * \file integration_notime.cpp
  * \brief No time stepping methods for integration a PDE without time.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -36,7 +36,7 @@ void CPotentialIntegration::SetPotential_Solver(CGeometry ***geometry, CSolution
 	solution_container[iZone][iMesh][SolContainer_Position]->MPI_Send_Receive(geometry, solution_container, config, iMesh, iZone);
 
 	/*--- Do some preprocessing stuff ---*/
-	solution_container[iZone][iMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iMesh], solution_container[iZone][iMesh], solver_container[iZone][iMesh][SolContainer_Position],config[iZone], 0);
+	solution_container[iZone][iMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iMesh], solution_container[iZone][iMesh], solver_container[iZone][iMesh][SolContainer_Position],config[iZone], iMesh, 0);
 
 	/*--- Space integration ---*/
 	Space_Integration(geometry[iZone][iMesh], solution_container[iZone][iMesh], solver_container[iZone][iMesh][SolContainer_Position], config[iZone], iMesh, 0, RunTime_EqSystem);
@@ -45,7 +45,7 @@ void CPotentialIntegration::SetPotential_Solver(CGeometry ***geometry, CSolution
 	Solving_Linear_System(geometry[iZone][iMesh], solution_container[iZone][iMesh][SolContainer_Position], solution_container[iZone][iMesh], config[iZone], iMesh);
 
 	/*--- Compute the gradient ---*/
-	if (config[iZone]->GetKind_Gradient_Method() == GREEN_GAUSS) solution_container[iZone][iMesh][SolContainer_Position]->SetSolution_Gradient_GG(geometry[iZone][iMesh]);
+	if (config[iZone]->GetKind_Gradient_Method() == GREEN_GAUSS) solution_container[iZone][iMesh][SolContainer_Position]->SetSolution_Gradient_GG(geometry[iZone][iMesh], config[iZone]);
 	if (config[iZone]->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) solution_container[iZone][iMesh][SolContainer_Position]->SetSolution_Gradient_LS(geometry[iZone][iMesh], config[iZone]);
 
 }

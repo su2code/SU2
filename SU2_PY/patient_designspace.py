@@ -3,7 +3,7 @@
 ## \file patient_designspace.py
 #  \brief Python script for running multiple design configurations in multiple sessions
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.2
+#  \version 2.0.3
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -23,6 +23,7 @@
 
 import os, sys, numpy, time, shutil, glob, traceback
 from optparse import OptionParser
+sys.path.append(os.environ['SU2_RUN'])
 import SU2
 
 # human readable time stamper

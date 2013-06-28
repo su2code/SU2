@@ -2,7 +2,7 @@
  * \file solution_direct_electric.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -38,10 +38,10 @@ CElectricSolution::CElectricSolution(CGeometry *geometry, CConfig *config) : CSo
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
 
-	Residual = new double[nVar];
-	Residual_Max = new double[nVar];
+	Residual = new double[nVar]; Residual_RMS = new double[nVar];
 	Solution = new double[nVar];
-
+  Residual_Max = new double[nVar]; Point_Max = new unsigned long[nVar];
+ 
 	/*--- Point to point stiffness matrix ---*/
 	if (nDim == 2) {
 		StiffMatrix_Elem = new double* [3];
@@ -65,7 +65,7 @@ CElectricSolution::CElectricSolution(CGeometry *geometry, CConfig *config) : CSo
 	}
 
 	/*--- Initialization of the structure of the whole Jacobian ---*/
-    Initialize_SparseMatrix_Structure(&StiffMatrix, nVar, nVar, geometry, config);
+	Initialize_SparseMatrix_Structure(&StiffMatrix, nVar, nVar, geometry, config);
 	xsol = new double [nPoint*nVar];
 	xres = new double [nPoint*nVar];
 	rhs = new double [nPoint*nVar];
@@ -125,7 +125,7 @@ CElectricSolution::~CElectricSolution(void) {
 }
 
 void CElectricSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver,
-																			CConfig *config, unsigned short iRKStep) {
+																			CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 	unsigned long iPoint;
 
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++)
@@ -135,7 +135,7 @@ void CElectricSolution::Preprocessing(CGeometry *geometry, CSolution **solution_
 }
 
 void CElectricSolution::Solve_LinearSystem(CGeometry *geometry, CSolution **solution_container, 
-																					 CConfig *config, unsigned short iMesh) {
+		CConfig *config, unsigned short iMesh) {
 	unsigned long iPoint;
 	unsigned short iVar = 0;
 	double norm = 1E6;
@@ -149,34 +149,34 @@ void CElectricSolution::Solve_LinearSystem(CGeometry *geometry, CSolution **solu
 
 	/*--- Solve the system ---*/
 	CSysVector rhs_vec((const unsigned int)geometry->GetnPoint(),
-                     (const unsigned int)geometry->GetnPointDomain(), geometry->GetnDim(), rhs);
+			(const unsigned int)geometry->GetnPointDomain(), nVar, rhs);
 	CSysVector sol_vec((const unsigned int)geometry->GetnPoint(),
-                     (const unsigned int)geometry->GetnPointDomain(), geometry->GetnDim(), xsol);
-	
+			(const unsigned int)geometry->GetnPointDomain(), nVar, xsol);
+
 	CMatrixVectorProduct* mat_vec = new CSparseMatrixVectorProduct(StiffMatrix);
 	CSolutionSendReceive* sol_mpi = new CSparseMatrixSolMPI(StiffMatrix, geometry, config);
-	
+
 	StiffMatrix.BuildJacobiPreconditioner();
-	
+
 	CPreconditioner* precond = NULL;
 	Jacobian.BuildJacobiPreconditioner();
 	precond = new CJacobiPreconditioner(Jacobian);			
-	
+
 	CSysSolve system;
-	system.ConjugateGradient(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, 1E-10, iter_max, true);	
-	
+	system.ConjugateGradient(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, 1E-12, iter_max, true);	
+
 	sol_vec.CopyToArray(xsol);
 	delete mat_vec; 
 	delete precond;
 	delete sol_mpi;
-	
-	SetRes_Max(0, norm);
+
+	SetRes_RMS(0, norm);
 	/*--- Update solution ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
 		node[iPoint]->SetSolution(0,xsol[iPoint]);
 
 	}
-	
+
 }
 
 void CElectricSolution::Compute_Residual(CGeometry *geometry, CSolution **solution_container, CConfig *config, 
@@ -208,8 +208,6 @@ void CElectricSolution::Compute_Residual(CGeometry *geometry, CSolution **soluti
  */
 void CElectricSolution::Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CNumerics *second_solver,
 		CConfig *config, unsigned short iMesh) {
-
-	cout << " line 208 in elec " << endl;
 
 	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3 = 0;
 	double a[3], b[3],c[3], d[3], Area_Local,Volume_Local;
@@ -256,7 +254,7 @@ void CElectricSolution::Source_Residual(CGeometry *geometry, CSolution **solutio
 				 Local_Delta_Time = config->GetCFL(iMesh) * dx/(u+c);
 				 solver->SetTimeStep(Local_Delta_Time);
 				 */
-				
+
 				solver->SetCoord(Coord_0, Coord_1, Coord_2);
 				solver->SetTimeStep(dt);
 				solver->SetChargeDensity(node[Point_0]->GetChargeDensity(), node[Point_1]->GetChargeDensity(), node[Point_2]->GetChargeDensity(), node[Point_3]->GetChargeDensity());

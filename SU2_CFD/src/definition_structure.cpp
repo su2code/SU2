@@ -2,7 +2,7 @@
  * \file definition_structure.cpp
  * \brief Main subroutines used by SU2_CFD.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -202,7 +202,7 @@ void Geometrical_Definition(CGeometry ***geometry, CConfig **config, unsigned sh
 
 		/*--- Identify closest normal neighbor ---*/
 		if (rank == MASTER_NODE) cout << "Searching for closest normal neighbor on the surface." << endl;
-		geometry[iZone][MESH_0]->FindClosestNeighbor(config[iZone]);
+		geometry[iZone][MESH_0]->FindNormal_Neighbor(config[iZone]);
 
 		//		/*--- Find any sharp edges ---*/
 		//		if (rank == MASTER_NODE) cout << "Searching for sharp corners on the geometry." << endl;
@@ -244,7 +244,7 @@ void Geometrical_Definition(CGeometry ***geometry, CConfig **config, unsigned sh
 			geometry[iZone][iMGlevel]->SetCoord(geometry[iZone][iMGlevel-1]);
 
 			/*--- Find closest neighbor to a surface point ---*/
-			geometry[iZone][iMGlevel]->FindClosestNeighbor(config[iZone]);
+			geometry[iZone][iMGlevel]->FindNormal_Neighbor(config[iZone]);
 
 			/*--- For a rotating frame, set the velocity due to rotation at each mesh point ---*/
 			if (config[iZone]->GetRotating_Frame())
@@ -306,7 +306,7 @@ void Solution_Definition(CSolution ***solution_container, CGeometry **geometry, 
 	case LINEAR_ELASTICITY: fea = true; break;
 	case ADJ_EULER : euler = true; adj_euler = true; break;
 	case ADJ_NAVIER_STOKES : navierstokes = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-	case ADJ_RANS : navierstokes = true; turbulent = true; adj_ns = true; adj_turb = true; break;
+	case ADJ_RANS : navierstokes = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
 	case ADJ_FREE_SURFACE_EULER: euler = true; adj_euler = true; levelset = true; adj_levelset = true; break;
 	case ADJ_FREE_SURFACE_NAVIER_STOKES: navierstokes = true; adj_ns = true; levelset = true; adj_levelset = true; break;
 	case ADJ_FREE_SURFACE_RANS: navierstokes = true; adj_ns = true; turbulent = true; adj_turb = true; levelset = true; adj_levelset = true; break;
@@ -469,7 +469,7 @@ void Integration_Definition(CIntegration **integration_container, CGeometry **ge
         case LINEAR_ELASTICITY: fea = true; break;
         case ADJ_EULER : euler = true; adj_euler = true; break;
         case ADJ_NAVIER_STOKES : navierstokes = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-        case ADJ_RANS : navierstokes = true; turbulent = true; adj_ns = true; adj_turb = true; break;
+        case ADJ_RANS : navierstokes = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
         case ADJ_PLASMA_EULER : plasma_euler = true; adj_plasma_euler = true; break;
         case ADJ_PLASMA_NAVIER_STOKES : plasma_navierstokes = true; adj_plasma_navierstokes = true; break;
         case ADJ_FREE_SURFACE_EULER: euler = true; levelset = true; adj_euler = true; adj_levelset = true; break;
@@ -559,6 +559,7 @@ void Integration_Definition(CIntegration **integration_container, CGeometry **ge
 	if (lin_euler) integration_container[LINFLOW_SOL] = new CMultiGridIntegration(config);
 	if (lin_ns) { cout <<"Equation not implemented." << endl; cin.get(); }
 
+
 }
 
 
@@ -604,7 +605,7 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 	case LINEAR_ELASTICITY: fea = true; break;
 	case ADJ_EULER : euler = true; adj_euler = true; break;
 	case ADJ_NAVIER_STOKES : navierstokes = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-	case ADJ_RANS : navierstokes = true; turbulent = true; adj_ns = true; adj_turb = true; break;
+	case ADJ_RANS : navierstokes = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
 	case ADJ_FREE_SURFACE_EULER: euler = true; adj_euler = true; levelset = true; adj_levelset = true; break;
 	case ADJ_FREE_SURFACE_NAVIER_STOKES: navierstokes = true; adj_ns = true; levelset = true; adj_levelset = true; break;
 	case ADJ_FREE_SURFACE_RANS: navierstokes = true; adj_ns = true; turbulent = true; adj_turb = true; levelset = true; adj_levelset = true; break;
@@ -990,7 +991,6 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 		}
 	}
 
-
 	/*--- Solver definition for the transition model problem ---*/
 	if (transition) {
 
@@ -1014,13 +1014,11 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 			break;
 		case AVG_GRAD :
 			for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++){
-				cout << "Allocating AVG_GRAD for LM -AA" << endl;
 				solver_container[iMGlevel][TRANS_SOL][VISC_TERM] = new CAvgGrad_TransLM(nDim, nVar_Trans, config);
 			}
 			break;
 		case AVG_GRAD_CORRECTED :
 			for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++){
-				cout << "Allocating AVG_GRAD_CORRECTED -AA" << endl;
 				solver_container[iMGlevel][TRANS_SOL][VISC_TERM] = new CAvgGradCorrected_TransLM(nDim, nVar_Trans, config);
 			}
 			break;
@@ -1284,137 +1282,151 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 
 	/*--- Solver definition for the flow adjoint problem ---*/
 	if ((adj_pot)||(adj_euler)||(adj_ns)) {
-
+    
 		/*--- Definition of the convective scheme for each equation and mesh level ---*/
 		switch (config->GetKind_ConvNumScheme_AdjFlow()) {
-		case NO_CONVECTIVE :
-			cout << "No convective scheme." << endl; cin.get();
-			break;
-		case SPACE_CENTERED :
-			if (incompressible) {
-				/*--- Incompressible flow, use artificial compressibility method ---*/
-				switch (config->GetKind_Centered_AdjFlow()) {
-				case NO_CENTERED : cout << "No centered scheme." << endl; break;
-				case LAX : solver_container[MESH_0][ADJFLOW_SOL][CONV_TERM] = new CCentLaxArtComp_AdjFlow(nDim, nVar_Adj_Flow, config); break;
-				case JST : solver_container[MESH_0][ADJFLOW_SOL][CONV_TERM] = new CCentJSTArtComp_AdjFlow(nDim, nVar_Adj_Flow, config); break;
-				default : cout << "Centered scheme not implemented." << endl; cin.get(); break;
-				}
-				for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-					solver_container[iMGlevel][ADJFLOW_SOL][CONV_TERM] = new CCentLaxArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
-
-				/*--- Definition of the boundary condition method ---*/
-				for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-					solver_container[iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM] = new CUpwRoeArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
-
-			}
-			else {
-				/*--- Compressible flow ---*/
-				switch (config->GetKind_Centered_AdjFlow()) {
-				case NO_CENTERED : cout << "No centered scheme." << endl; break;
-				case LAX : solver_container[MESH_0][ADJFLOW_SOL][CONV_TERM] = new CCentLax_AdjFlow(nDim, nVar_Adj_Flow, config); break;
-				case JST : solver_container[MESH_0][ADJFLOW_SOL][CONV_TERM] = new CCentJST_AdjFlow(nDim, nVar_Adj_Flow, config); break;
-				default : cout << "Centered scheme not implemented." << endl; cin.get(); break;
-				}
-				for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-					solver_container[iMGlevel][ADJFLOW_SOL][CONV_TERM] = new CCentLax_AdjFlow(nDim, nVar_Adj_Flow, config);
-
-				/*--- Definition of the boundary condition method ---*/
-				for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-					solver_container[iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_AdjFlow(nDim, nVar_Adj_Flow, config);
-			}
-			break;
-		case SPACE_UPWIND :
-			if (incompressible) {
-				/*--- Incompressible flow, use artificial compressibility method ---*/
-				switch (config->GetKind_Upwind_AdjFlow()) {
-				case NO_UPWIND : cout << "No upwind scheme." << endl; break;
-				case ROE_1ST : case ROE_2ND :
-					for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-						solver_container[iMGlevel][ADJFLOW_SOL][CONV_TERM] = new CUpwRoeArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
-						solver_container[iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM] = new CUpwRoeArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
-					}
-					break;
-				default : cout << "Upwind scheme not implemented." << endl; cin.get(); break;
-				}
-			}
-			else {
-				/*--- Compressible flow ---*/
-				switch (config->GetKind_Upwind_AdjFlow()) {
-				case NO_UPWIND : cout << "No upwind scheme." << endl; break;
-				case ROE_1ST : case ROE_2ND :
-					for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-						if (config->GetKind_Adjoint() == DISCRETE) {
-							solver_container[iMGlevel][ADJFLOW_SOL][CONV_TERM] = new CUpwRoe_AdjDiscFlow(nDim, nVar_Adj_Flow, config);
-							solver_container[iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_AdjDiscFlow(nDim, nVar_Adj_Flow, config);
-						}
-						else {
-							solver_container[iMGlevel][ADJFLOW_SOL][CONV_TERM] = new CUpwRoe_AdjFlow(nDim, nVar_Adj_Flow, config);
-							solver_container[iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_AdjFlow(nDim, nVar_Adj_Flow, config);
-						}
-					}
-					break;
-				default : cout << "Upwind scheme not implemented." << endl; cin.get(); break;
-				}
-			}
-			break;
-
-		default :
-			cout << "Convective scheme not implemented." << endl; cin.get();
-			break;
+      case NO_CONVECTIVE :
+        cout << "No convective scheme." << endl; cin.get();
+        break;
+      case SPACE_CENTERED :
+        if (incompressible) {
+          /*--- Incompressible flow, use artificial compressibility method ---*/
+          switch (config->GetKind_Centered_AdjFlow()) {
+            case NO_CENTERED : cout << "No centered scheme." << endl; break;
+            case LAX : solver_container[MESH_0][ADJFLOW_SOL][CONV_TERM] = new CCentLaxArtComp_AdjFlow(nDim, nVar_Adj_Flow, config); break;
+            case JST : solver_container[MESH_0][ADJFLOW_SOL][CONV_TERM] = new CCentJSTArtComp_AdjFlow(nDim, nVar_Adj_Flow, config); break;
+            default : cout << "Centered scheme not implemented." << endl; cin.get(); break;
+          }
+          for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+            solver_container[iMGlevel][ADJFLOW_SOL][CONV_TERM] = new CCentLaxArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
+          
+          /*--- Definition of the boundary condition method ---*/
+          for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+            solver_container[iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM] = new CUpwRoeArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
+          
+        }
+        else {
+          /*--- Compressible flow ---*/
+          switch (config->GetKind_Centered_AdjFlow()) {
+            case NO_CENTERED : cout << "No centered scheme." << endl; break;
+            case LAX : solver_container[MESH_0][ADJFLOW_SOL][CONV_TERM] = new CCentLax_AdjFlow(nDim, nVar_Adj_Flow, config); break;
+            case JST : solver_container[MESH_0][ADJFLOW_SOL][CONV_TERM] = new CCentJST_AdjFlow(nDim, nVar_Adj_Flow, config); break;
+            default : cout << "Centered scheme not implemented." << endl; cin.get(); break;
+          }
+          for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+            solver_container[iMGlevel][ADJFLOW_SOL][CONV_TERM] = new CCentLax_AdjFlow(nDim, nVar_Adj_Flow, config);
+          
+          /*--- Definition of the boundary condition method ---*/
+          for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+            solver_container[iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_AdjFlow(nDim, nVar_Adj_Flow, config);
+        }
+        break;
+      case SPACE_UPWIND :
+        if (incompressible) {
+          /*--- Incompressible flow, use artificial compressibility method ---*/
+          switch (config->GetKind_Upwind_AdjFlow()) {
+            case NO_UPWIND : cout << "No upwind scheme." << endl; break;
+            case ROE_1ST : case ROE_2ND :
+              for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+                solver_container[iMGlevel][ADJFLOW_SOL][CONV_TERM] = new CUpwRoeArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
+                solver_container[iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM] = new CUpwRoeArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
+              }
+              break;
+            default : cout << "Upwind scheme not implemented." << endl; cin.get(); break;
+          }
+        }
+        else {
+          /*--- Compressible flow ---*/
+          switch (config->GetKind_Upwind_AdjFlow()) {
+            case NO_UPWIND : cout << "No upwind scheme." << endl; break;
+            case ROE_1ST : case ROE_2ND :
+              for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+                if (config->GetKind_Adjoint() == DISCRETE) {
+                  solver_container[iMGlevel][ADJFLOW_SOL][CONV_TERM] = new CUpwRoe_AdjDiscFlow(nDim, nVar_Adj_Flow, config);
+                  solver_container[iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_AdjDiscFlow(nDim, nVar_Adj_Flow, config);
+                }
+                else {
+                  solver_container[iMGlevel][ADJFLOW_SOL][CONV_TERM] = new CUpwRoe_AdjFlow(nDim, nVar_Adj_Flow, config);
+                  solver_container[iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_AdjFlow(nDim, nVar_Adj_Flow, config);
+                }
+              }
+              break;
+            default : cout << "Upwind scheme not implemented." << endl; cin.get(); break;
+          }
+        }
+        break;
+        
+      default :
+        cout << "Convective scheme not implemented." << endl; cin.get();
+        break;
 		}
-
+    
 		/*--- Definition of the viscous scheme for each equation and mesh level ---*/
 		switch (config->GetKind_ViscNumScheme_AdjFlow()) {
-		case NONE :
-			break;
-		case AVG_GRAD :
-			if (incompressible) {
-				/*--- Incompressible flow, use artificial compressibility method ---*/
-				for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-					solver_container[iMGlevel][ADJFLOW_SOL][VISC_TERM] = new CAvgGradArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
-			}
-			else {
-				/*--- Compressible flow ---*/
-				for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-					solver_container[iMGlevel][ADJFLOW_SOL][VISC_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
-			}
-			break;
-		case AVG_GRAD_CORRECTED :
-			if (incompressible) {
-				/*--- Incompressible flow, use artificial compressibility method ---*/
-				solver_container[MESH_0][ADJFLOW_SOL][VISC_TERM] = new CAvgGradCorrectedArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
-				for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-					solver_container[iMGlevel][ADJFLOW_SOL][VISC_TERM] = new CAvgGradArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
-			}
-			else {
-				/*--- Compressible flow ---*/
-				solver_container[MESH_0][ADJFLOW_SOL][VISC_TERM] = new CAvgGradCorrected_AdjFlow(nDim, nVar_Adj_Flow, config);
-				for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-					solver_container[iMGlevel][ADJFLOW_SOL][VISC_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
-			}
-			break;
-		default :
-			cout << "Viscous scheme not implemented." << endl; cin.get();
-			break;
+      case NONE :
+        break;
+      case AVG_GRAD :
+        if (incompressible) {
+          /*--- Incompressible flow, use artificial compressibility method ---*/
+          for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+            solver_container[iMGlevel][ADJFLOW_SOL][VISC_TERM] = new CAvgGradArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
+        }
+        else {
+          /*--- Compressible flow ---*/
+          for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+            solver_container[iMGlevel][ADJFLOW_SOL][VISC_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
+        }
+        break;
+      case AVG_GRAD_CORRECTED :
+        if (incompressible) {
+          /*--- Incompressible flow, use artificial compressibility method ---*/
+          solver_container[MESH_0][ADJFLOW_SOL][VISC_TERM] = new CAvgGradCorrectedArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
+          for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+            solver_container[iMGlevel][ADJFLOW_SOL][VISC_TERM] = new CAvgGradArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
+        }
+        else {
+          /*--- Compressible flow ---*/
+          solver_container[MESH_0][ADJFLOW_SOL][VISC_TERM] = new CAvgGradCorrected_AdjFlow(nDim, nVar_Adj_Flow, config);
+          for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+            solver_container[iMGlevel][ADJFLOW_SOL][VISC_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
+        }
+        break;
+      default :
+        cout << "Viscous scheme not implemented." << endl; cin.get();
+        break;
 		}
-
+    
 		/*--- Definition of the source term integration scheme for each equation and mesh level ---*/
 		switch (config->GetKind_SourNumScheme_AdjFlow()) {
-		case NONE :
-			break;
-		case PIECEWISE_CONSTANT :
-			for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-				if (adj_ns) {
-					solver_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceViscous_AdjFlow(nDim, nVar_Adj_Flow, config);
-					solver_container[iMGlevel][ADJFLOW_SOL][SOURCE_SECOND_TERM] = new CSourceConservative_AdjFlow(nDim, nVar_Adj_Flow, config);	
-				}
-				if (config->GetRotating_Frame() == YES)
-					solver_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceRotationalFrame_AdjFlow(nDim, nVar_Adj_Flow, config);
-			}
-			break;
-		default :
-			cout << "Source term not implemented." << endl; cin.get();
-			break;
+      case NONE :
+        break;
+      case PIECEWISE_CONSTANT :
+        for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+          
+          /*--- Note that RANS is incompatible with Axisymmetric or Rotational (Fix it!) ---*/ 
+          if ((adj_ns) && (!incompressible)) {
+            solver_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceViscous_AdjFlow(nDim, nVar_Adj_Flow, config);
+            solver_container[iMGlevel][ADJFLOW_SOL][SOURCE_SECOND_TERM] = new CSourceConservative_AdjFlow(nDim, nVar_Adj_Flow, config);	
+          }
+          else {
+            if (config->GetRotating_Frame() == YES)
+              solver_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceRotationalFrame_AdjFlow(nDim, nVar_Adj_Flow, config);
+            else
+              solver_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Adj_Flow, config);
+
+            if (config->GetAxisymmetric() == YES)
+              solver_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceAxisymmetric_AdjFlow(nDim, nVar_Adj_Flow, config);
+            else
+              solver_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Adj_Flow, config);
+            
+            solver_container[iMGlevel][ADJFLOW_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Adj_Flow, config);
+          }
+        
+        }
+        break;
+      default :
+        cout << "Source term not implemented." << endl; cin.get();
+        break;
 		}
 	}
 
@@ -1498,7 +1510,6 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 
 	/*--- Solver definition for the turbulent adjoint problem ---*/
 	if (adj_turb) {
-
 		/*--- Definition of the convective scheme for each equation and mesh level ---*/
 		switch (config->GetKind_ConvNumScheme_AdjTurb()) {
 		case NONE :
@@ -1508,8 +1519,13 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 			break;
 		case SPACE_UPWIND :
 			for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-				if (spalart_allmaras) solver_container[iMGlevel][ADJTURB_SOL][CONV_TERM] = new CUpwSca_AdjTurb(nDim, nVar_Adj_Turb, config);
-				else if (menter_sst) cout << "Adjoint SST turbulence model not implemented." << endl; cin.get();
+				if (spalart_allmaras) {
+					if (config->GetKind_Adjoint() == HYBRID)
+						solver_container[iMGlevel][ADJTURB_SOL][CONV_TERM] = new CUpwSca_AdjDiscTurbSA(nDim, nVar_Adj_Turb, config);
+					else
+						solver_container[iMGlevel][ADJTURB_SOL][CONV_TERM] = new CUpwSca_AdjTurb(nDim, nVar_Adj_Turb, config);
+				}
+				else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; cin.get();}
 			break;
 		default :
 			cout << "Convective scheme not implemented." << endl; cin.get();
@@ -1521,12 +1537,26 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 		case NONE :
 			break;
 		case AVG_GRAD :
-			cout << "Viscous scheme not implemented." << endl; cin.get();
+			for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+			if (spalart_allmaras){
+				if (config->GetKind_Adjoint() == HYBRID) {
+					solver_container[iMGlevel][ADJTURB_SOL][VISC_TERM] = new CAvgGrad_AdjDiscTurbSA(nDim, nVar_Adj_Turb, config);
+				}
+				else
+					{cout << "Viscous scheme not implemented." << endl; cin.get();}
+			}
+			else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; cin.get();}
 			break;
 		case AVG_GRAD_CORRECTED :
 			for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-				if (spalart_allmaras) solver_container[iMGlevel][ADJTURB_SOL][VISC_TERM] = new CAvgGradCorrected_AdjTurb(nDim, nVar_Adj_Turb, config);
-				else if (menter_sst) cout << "Adjoint SST turbulence model not implemented." << endl; cin.get();
+				if (spalart_allmaras){
+					if (config->GetKind_Adjoint() == HYBRID) {
+						cout << "Viscous scheme not implemented." << endl; cin.get();
+					}
+					else
+						solver_container[iMGlevel][ADJTURB_SOL][VISC_TERM] = new CAvgGradCorrected_AdjTurb(nDim, nVar_Adj_Turb, config);
+				}
+				else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; cin.get();}
 			break;
 		default :
 			cout << "Viscous scheme not implemented." << endl; cin.get();
@@ -1540,10 +1570,16 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 		case PIECEWISE_CONSTANT :
 			for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
 				if (spalart_allmaras) {
-					solver_container[iMGlevel][ADJTURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_AdjTurb(nDim, nVar_Adj_Turb, config);
-					solver_container[iMGlevel][ADJTURB_SOL][SOURCE_SECOND_TERM] = new CSourceConservative_AdjTurb(nDim, nVar_Adj_Turb, config);
+					if (config->GetKind_Adjoint() == HYBRID) {
+						solver_container[iMGlevel][ADJTURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_AdjDiscTurbSA(nDim, nVar_Adj_Turb, config);
+						//solver_container[iMGlevel][ADJTURB_SOL][SOURCE_SECOND_TERM] = new CSourceConservative_AdjTurb(nDim, nVar_Adj_Turb, config); // not used
+					}
+					else {
+						solver_container[iMGlevel][ADJTURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_AdjTurb(nDim, nVar_Adj_Turb, config);
+						solver_container[iMGlevel][ADJTURB_SOL][SOURCE_SECOND_TERM] = new CSourceConservative_AdjTurb(nDim, nVar_Adj_Turb, config);
+					}
 				}
-				else if (menter_sst) cout << "Adjoint SST turbulence model not implemented." << endl; cin.get();
+				else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; cin.get();}
 			}
 			break;
 		default :
@@ -1553,9 +1589,16 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 
 		/*--- Definition of the boundary condition method ---*/
 		for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-			if (spalart_allmaras) solver_container[iMGlevel][ADJTURB_SOL][CONV_BOUND_TERM] = new CUpwLin_AdjTurb(nDim, nVar_Adj_Turb, config);
-			else if (menter_sst) cout << "Adjoint SST turbulence model not implemented." << endl; cin.get();
+			if (spalart_allmaras)
+				if (config->GetKind_Adjoint() == HYBRID) {
+					solver_container[iMGlevel][ADJTURB_SOL][CONV_BOUND_TERM] = new CUpwSca_AdjDiscTurbSA(nDim, nVar_Adj_Turb, config);
+				}
+				else {
+					solver_container[iMGlevel][ADJTURB_SOL][CONV_BOUND_TERM] = new CUpwLin_AdjTurb(nDim, nVar_Adj_Turb, config);
+				}
+			else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; cin.get();}
 		}
+
 	}
 
 	/*--- Solver definition for the level set model problem ---*/
@@ -1660,485 +1703,3 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 	}
 
 }
-
-void Geometrical_Deallocation(CGeometry **geometry, CConfig *config) {
-
-	/*--- Deallocation of geometry pointer ---*/
-	/*if (config->GetKind_Solver() != NO_SOLVER)
-	 for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-	 delete geometry[iMGlevel];
-	 delete geometry[iDomain][MESH_0];
-	 delete [] geometry;*/
-
-}
-
-void Solver_Deallocation(CNumerics ****solver_container, CSolution ***solution_container, CIntegration **integration_container,
-		COutput *output, CGeometry **geometry, CConfig *config, unsigned short iZone){
-
-	unsigned short iMGlevel;
-	bool euler, navierstokes, plasma, adj_pot, lin_pot, adj_euler, lin_euler, adj_ns, lin_ns, turbulent,
-	adj_turb, lin_turb, electric, wave, fea, spalart_allmaras, sagt, menter_sst;
-
-	/*--- Initialize some useful booleans ---*/
-	euler = false;		navierstokes = false;	turbulent = false;	electric = false;	plasma = false;
-	adj_pot = false;	adj_euler = false;	adj_ns = false;			adj_turb = false;	wave = false; fea = false;	spalart_allmaras = false; sagt = false;
-	lin_pot = false;	lin_euler = false;	lin_ns = false;			lin_turb = false;	menter_sst = false;
-
-	/*--- Assign booleans ---*/
-	switch (config->GetKind_Solver()) {
-	case EULER : euler = true; break;
-	case NAVIER_STOKES: navierstokes = true; break;
-	case RANS : navierstokes = true; turbulent = true; break;
-	case PLASMA_NAVIER_STOKES : plasma = true; break;
-	case ELECTRIC_POTENTIAL: electric = true; break;
-	case WAVE_EQUATION: wave = true; break;
-	case LINEAR_ELASTICITY: fea = true; break;
-	case ADJ_EULER : euler = true; adj_euler = true; break;
-	case ADJ_NAVIER_STOKES : navierstokes = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-	case ADJ_RANS : navierstokes = true; turbulent = true; adj_ns = true; adj_turb = true; break;
-	case LIN_EULER: euler = true; lin_euler = true; break;
-	}
-
-	/*--- Assign turbulence model booleans --- */
-	if (turbulent)
-		switch (config->GetKind_Turb_Model()){
-		case SA: spalart_allmaras = true; break;
-		case SST: menter_sst = true; break;
-		}
-
-	/*--- Deallocation of integration_container---*/
-	if (euler)          delete integration_container[FLOW_SOL];
-	if (navierstokes)   delete integration_container[FLOW_SOL];
-	if (turbulent)      delete integration_container[TURB_SOL];
-	if (electric) 	    delete integration_container[ELEC_SOL];
-	if (plasma) 	    delete integration_container[PLASMA_SOL];
-	if (wave) 	    	delete integration_container[WAVE_SOL];
-	if (fea) 	    	delete integration_container[FEA_SOL];
-	if (adj_euler)      delete integration_container[ADJFLOW_SOL];
-	if (adj_ns) 	    delete integration_container[ADJFLOW_SOL];
-	if (adj_turb) 	    delete integration_container[ADJTURB_SOL];
-	if (lin_euler) 	    delete integration_container[LINFLOW_SOL];
-
-	delete [] integration_container;
-
-	/*--- Deallocation of solution_container---*/
-	for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-		if (euler) 		    delete solution_container[iMGlevel][FLOW_SOL];
-		//if (navierstokes)   delete solution_container[iMGlevel][FLOW_SOL];
-		//if (turbulent) {
-		//	if (spalart_allmaras) delete solution_container[iMGlevel][TURB_SOL];
-		//	else if (menter_sst)  delete solution_container[iMGlevel][TURB_SOL];
-		//}
-		//if (fea) 		delete solution_container[iMGlevel][FEA_SOL];
-		//if (wave) 		delete solution_container[iMGlevel][WAVE_SOL];
-		//if (electric) 		delete solution_container[iMGlevel][ELEC_SOL];
-		if (plasma) 		delete solution_container[iMGlevel][PLASMA_SOL];
-		//if (adj_euler) 		delete solution_container[iMGlevel][ADJFLOW_SOL];
-		//if (adj_ns) 		delete solution_container[iMGlevel][ADJFLOW_SOL];
-		//if (adj_turb)		delete solution_container[iMGlevel][ADJTURB_SOL];
-		//if (lin_euler) 		delete solution_container[iMGlevel][LINFLOW_SOL];
-		delete [] solution_container[iMGlevel];
-	}
-	delete [] solution_container;
-
-
-	/*--- Deallocation of solver_container---*/
-	/*--- Deallocation for the Potential, Euler, Navier-Stokes problems ---*/
-	if ((euler) || (navierstokes)) {
-
-		//--- Deallocation of the convective scheme for each equation and mesh level ---
-		switch (config->GetKind_ConvNumScheme_Flow()) {
-		case NONE :
-			break;
-		case SPACE_CENTERED :
-			switch (config->GetKind_Centered_Flow()) {
-			case LAX : delete solver_container[MESH_0][FLOW_SOL][CONV_TERM]; break;
-			case JST : delete solver_container[MESH_0][FLOW_SOL][CONV_TERM]; break;
-			}
-			for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-				delete solver_container[iMGlevel][FLOW_SOL][CONV_TERM];
-			break;
-			case SPACE_UPWIND :
-				switch (config->GetKind_Upwind_Flow()) {
-				case ROE_1ST : case ROE_2ND : case AUSM_1ST : case AUSM_2ND : case HLLC_1ST : case HLLC_2ND :
-					delete solver_container[MESH_0][FLOW_SOL][CONV_TERM]; break;
-				}
-				for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-					delete solver_container[iMGlevel][FLOW_SOL][CONV_TERM];
-				break;
-		} /*
-
-			 //--- Deallocation of the viscous scheme for each equation and mesh level ---
-			 switch (config->GetKind_ViscNumScheme_Flow()) {
-			 case NONE :
-			 break;
-			 case DIVERGENCE_THEOREM :
-			 for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-			 delete solver_container[iMGlevel][FLOW_SOL][VISC_TERM];
-			 break;
-			 case DIVERGENCE_THEOREM_WEISS :
-			 delete solver_container[MESH_0][FLOW_SOL][VISC_TERM];
-			 for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-			 delete solver_container[iMGlevel][FLOW_SOL][VISC_TERM];
-			 break;
-			 case GALERKIN :
-			 break;
-			 }
-
-			 //--- Deallocation of the source term integration scheme for each equation and mesh level ---
-			 switch (config->GetKind_SourNumScheme_Flow()) {
-			 case NONE :
-			 break;
-			 case PIECEWISE_CONSTANT :
-			 for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-			 delete solver_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM];
-			 delete solver_container[iMGlevel][FLOW_SOL][SOURCE_SECOND_TERM];
-			 }
-			 break;
-			 }
-		 */
-		//--- Deallocation of the boundary condition method ---
-		//for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-		//	delete solver_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM];
-	}
-	/*
-	 //--- Solver definition for the turbulent model problem ---
-	 if (turbulent) {
-
-	 //--- Definition of the convective scheme for each equation and mesh level ---
-	 switch (config->GetKind_ConvNumScheme_Turb()) {
-	 case NONE :
-	 break;
-	 case SPACE_UPWIND :
-	 for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++){
-	 if (spalart_allmaras) delete solver_container[iMGlevel][TURB_SOL][CONV_TERM];
-	 else if (menter_sst)  delete solver_container[iMGlevel][TURB_SOL][CONV_TERM];
-	 }
-	 break;
-	 }
-
-	 //--- Definition of the viscous scheme for each equation and mesh level ---
-	 switch (config->GetKind_ViscNumScheme_Turb()) {
-	 case NONE :
-	 break;
-	 case DIVERGENCE_THEOREM :
-	 for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++){
-	 if (spalart_allmaras) delete solver_container[iMGlevel][TURB_SOL][VISC_TERM];
-	 else if (menter_sst)  delete solver_container[iMGlevel][TURB_SOL][VISC_TERM];
-	 }
-	 break;
-	 case DIVERGENCE_THEOREM_WEISS :
-	 for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++){
-	 if (spalart_allmaras) delete solver_container[iMGlevel][TURB_SOL][VISC_TERM];
-	 else if (menter_sst)  delete solver_container[iMGlevel][TURB_SOL][VISC_TERM];
-	 }
-	 break;
-	 }
-
-	 //--- Definition of the source term integration scheme for each equation and mesh level ---
-	 switch (config->GetKind_SourNumScheme_Turb()) {
-	 case NONE :
-	 break;
-	 case PIECEWISE_CONSTANT :
-	 for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-	 if (spalart_allmaras) delete solver_container[iMGlevel][TURB_SOL][SOURCE_FIRST_TERM];
-	 else if (menter_sst)  delete solver_container[iMGlevel][TURB_SOL][SOURCE_FIRST_TERM];
-	 delete solver_container[iMGlevel][TURB_SOL][SOURCE_SECOND_TERM];
-	 }
-	 break;
-	 }
-
-	 //--- Definition of the boundary condition method ---
-	 for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++){
-	 if (spalart_allmaras) delete solver_container[iMGlevel][TURB_SOL][CONV_BOUND_TERM];
-	 else if (menter_sst)  delete solver_container[iMGlevel][TURB_SOL][CONV_BOUND_TERM];
-	 }
-	 }
-	 */
-	//--- Solver definition for the multi species plasma model problem ---
-	if (plasma) {
-
-		switch (config->GetKind_ConvNumScheme_Plasma()) {
-		case NONE :
-			break;
-		case SPACE_CENTERED :
-			switch (config->GetKind_Centered_Plasma()) {
-			case JST : delete solver_container[MESH_0][PLASMA_SOL][CONV_TERM]; break;
-			}
-			for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-				delete solver_container[iMGlevel][PLASMA_SOL][CONV_TERM];
-			break;
-			case SPACE_UPWIND :
-				switch (config->GetKind_Upwind_Flow()) {
-				case ROE_1ST : case ROE_2ND :
-					delete solver_container[MESH_0][PLASMA_SOL][CONV_TERM]; break;
-				}
-				for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-					delete solver_container[iMGlevel][PLASMA_SOL][CONV_TERM];
-				break;
-		}
-	}
-	/*
-	 //--- Definition of the viscous scheme for each equation and mesh level ---
-	 //This was commented.
-	 //	switch (config->GetKind_ViscNumScheme_Plasma()) {
-	 //		case NONE :
-	 //			break;
-	 //		case DIVERGENCE_THEOREM :
-	 //			for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-	 //				solver_container[iMGlevel][PLASMA_SOL][VISC_TERM] = new CDivergence_Plasma(nDim, nVar_Plasma, config);
-	 //			break;
-	 //		default :
-	 //			cout << "Viscous scheme not implemented." << endl; cin.get();
-	 //			break;
-	 //	}
-
-	 //--- Definition of the source term integration scheme for each equation and mesh level ---
-
-	 //	switch (config->GetKind_SourNumScheme_Plasma()) {
-	 //		case NONE :
-	 //			break;
-	 //		case PIECEWISE_CONSTANT :
-	 //			for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-	 //				solver_container[iMGlevel][PLASMA_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_Plasma(nDim, nVar_Plasma, config);
-	 //				solver_container[iMGlevel][PLASMA_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Plasma);
-	 //			}
-	 //			break;
-	 //		default :
-	 //			cout << "Source term not implemented." << endl; cin.get();
-	 //			break;
-	 //	}
-
-	 //Until here.
-	 //--- Definition of the boundary condition method ---
-	 for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-	 delete solver_container[iMGlevel][PLASMA_SOL][CONV_BOUND_TERM];
-	 }
-	 }
-
-	 //--- Solver definition for the electric potential problem ---
-	 if (electric) {
-
-	 //--- Definition of the viscous scheme for each equation and mesh level ---
-	 switch (config->GetKind_ViscNumScheme_Elec()) {
-	 case GALERKIN :
-	 delete solver_container[MESH_0][ELEC_SOL][VISC_TERM];
-	 break;
-	 default : cout << "Viscous scheme not implemented." << endl; cin.get(); break;
-	 }
-
-	 //--- Definition of the source term integration scheme for each equation and mesh level ---
-	 switch (config->GetKind_SourNumScheme_Elec()) {
-	 case NONE :
-	 break;
-	 case PIECEWISE_CONSTANT :
-	 delete solver_container[MESH_0][ELEC_SOL][SOURCE_FIRST_TERM];
-	 delete solver_container[MESH_0][ELEC_SOL][SOURCE_SECOND_TERM];
-	 break;
-	 default :
-	 cout << "Source term not implemented." << endl; cin.get();
-	 break;
-	 }
-	 }
-
-	 //--- Solver definition for the flow adjoint problem ---
-	 if ((adj_pot)||(adj_euler)||(adj_ns)) {
-
-	 //--- Definition of the convective scheme for each equation and mesh level ---
-	 switch (config->GetKind_ConvNumScheme_AdjFlow()) {
-	 case NONE :
-	 break;
-	 case SPACE_CENTERED :
-	 switch (config->GetKind_Centered_AdjFlow()) {
-	 case LAX : delete solver_container[MESH_0][ADJFLOW_SOL][CONV_TERM]; break;
-	 case JST : delete solver_container[MESH_0][ADJFLOW_SOL][CONV_TERM]; break;
-	 default : cout << "Centered scheme not implemented." << endl; cin.get(); break;
-	 }
-	 for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-	 delete solver_container[iMGlevel][ADJFLOW_SOL][CONV_TERM];
-	 break;
-	 case SPACE_UPWIND :
-	 switch (config->GetKind_Upwind_AdjFlow()) {
-	 case ROE_1ST : delete solver_container[MESH_0][ADJFLOW_SOL][CONV_TERM]; break;
-	 case ROE_2ND : delete solver_container[MESH_0][ADJFLOW_SOL][CONV_TERM]; break;
-	 default : cout << "Upwind scheme not implemented." << endl; cin.get(); break;
-	 }
-	 for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-	 delete solver_container[iMGlevel][ADJFLOW_SOL][CONV_TERM];
-	 break;
-	 default :
-	 cout << "Convective scheme not implemented." << endl; cin.get();
-	 break;
-	 }
-
-	 //--- Definition of the viscous scheme for each equation and mesh level ---
-	 switch (config->GetKind_ViscNumScheme_AdjFlow()) {
-	 case NONE :
-	 break;
-	 case DIVERGENCE_THEOREM :
-	 delete solver_container[MESH_0][ADJFLOW_SOL][VISC_TERM];
-	 for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-	 delete solver_container[iMGlevel][ADJFLOW_SOL][VISC_TERM];
-	 break;
-	 case DIVERGENCE_THEOREM_WEISS :
-	 delete solver_container[MESH_0][ADJFLOW_SOL][VISC_TERM];
-	 for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-	 delete solver_container[iMGlevel][ADJFLOW_SOL][VISC_TERM];
-	 break;
-	 default :
-	 cout << "Viscous scheme not implemented." << endl; cin.get();
-	 break;
-	 }
-
-	 //--- Definition of the source term integration scheme for each equation and mesh level ---
-	 switch (config->GetKind_SourNumScheme_AdjFlow()) {
-	 case NONE :
-	 break;
-	 case PIECEWISE_CONSTANT :
-	 for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-	 delete solver_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM];
-	 delete solver_container[iMGlevel][ADJFLOW_SOL][SOURCE_SECOND_TERM];
-	 }
-	 break;
-	 default :
-	 cout << "Source term not implemented." << endl; cin.get();
-	 break;
-	 }
-
-	 //--- Definition of the boundary condition method ---
-	 for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-	 delete solver_container[iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM];
-
-	 }
-
-	 //--- Solver definition for the linearized flow problem ---
-	 if (lin_euler) {
-
-	 //--- Definition of the convective scheme for each equation and mesh level ---
-	 switch (config->GetKind_ConvNumScheme_LinFlow()) {
-	 case NONE :
-	 break;
-	 case SPACE_CENTERED :
-	 switch (config->GetKind_Centered_LinFlow()) {
-	 case LAX : delete solver_container[MESH_0][LINFLOW_SOL][CONV_TERM]; break;
-	 case JST : delete solver_container[MESH_0][LINFLOW_SOL][CONV_TERM]; break;
-	 default : cout << "Centered scheme not implemented." << endl; cin.get(); break;
-	 }
-	 for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-	 delete solver_container[iMGlevel][LINFLOW_SOL][CONV_TERM];
-	 break;
-	 default :
-	 cout << "Convective scheme not implemented." << endl; cin.get();
-	 break;
-	 }
-
-	 //--- Definition of the boundary condition method ---
-	 for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-	 delete solver_container[iMGlevel][LINFLOW_SOL][CONV_BOUND_TERM];
-	 }
-
-	 //--- Solver definition for the turbulent adjoint problem ---
-	 if (adj_turb) {
-
-	 //--- Definition of the convective scheme for each equation and mesh level ---
-	 switch (config->GetKind_ConvNumScheme_AdjTurb()) {
-	 case NONE :
-	 break;
-	 case SPACE_CENTERED :
-	 cout << "Convective scheme not implemented." << endl; cin.get();
-	 break;
-	 case SPACE_UPWIND :
-	 for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-	 delete solver_container[iMGlevel][ADJTURB_SOL][CONV_TERM];
-	 break;
-	 default :
-	 cout << "Convective scheme not implemented." << endl; cin.get();
-	 break;
-	 }
-
-	 //--- Definition of the viscous scheme for each equation and mesh level ---
-	 switch (config->GetKind_ViscNumScheme_AdjTurb()) {
-	 case NONE :
-	 break;
-	 case DIVERGENCE_THEOREM :
-	 cout << "Viscous scheme not implemented." << endl; cin.get();
-	 break;
-	 case DIVERGENCE_THEOREM_WEISS :
-	 for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-	 delete solver_container[iMGlevel][ADJTURB_SOL][VISC_TERM];
-	 break;
-	 default :
-	 cout << "Viscous scheme not implemented." << endl; cin.get();
-	 break;
-	 }
-
-	 //--- Definition of the source term integration scheme for each equation and mesh level ---
-	 switch (config->GetKind_SourNumScheme_Turb()) {
-	 case NONE :
-	 break;
-	 case PIECEWISE_CONSTANT :
-	 for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-	 delete solver_container[iMGlevel][ADJTURB_SOL][SOURCE_FIRST_TERM];
-	 delete solver_container[iMGlevel][ADJTURB_SOL][SOURCE_SECOND_TERM];
-	 }
-	 break;
-	 default :
-	 cout << "Source term not implemented." << endl; cin.get();
-	 break;
-	 }
-
-	 //--- Definition of the boundary condition method ---
-	 for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-	 delete solver_container[iMGlevel][ADJTURB_SOL][CONV_BOUND_TERM];
-	 }
-
-	 //--- Solver definition for the adjoint electric potential problem ---
-	 if (wave) {
-
-	 //--- Definition of the viscous scheme for each equation and mesh level ---
-	 switch (config->GetKind_ViscNumScheme_Elec()) {
-	 case NONE :
-	 break;
-	 case DIVERGENCE_THEOREM :
-	 cout << "Viscous scheme not implemented." << endl; cin.get();
-	 break;
-	 case DIVERGENCE_THEOREM_WEISS :
-	 cout << "Viscous scheme not implemented." << endl; cin.get();
-	 break;
-	 case GALERKIN :
-	 delete solver_container[MESH_0][WAVE_SOL][VISC_TERM];
-	 break;
-	 default :
-	 cout << "Viscous scheme not implemented." << endl; cin.get();
-	 break;
-	 }
-
-	 //--- Definition of the source term integration scheme for each equation and mesh level ---
-	 switch (config->GetKind_SourNumScheme_Elec()) {
-	 case NONE :
-	 break;
-	 case PIECEWISE_CONSTANT :
-	 cout << "Source term not implemented." << endl; cin.get();
-	 break;
-	 default :
-	 cout << "Source term not implemented." << endl; cin.get();
-	 break;
-	 }
-	 }
-
-	 //--- Definition of the Class for the numerical method: solver_container[MESH_LEVEL][EQUATION][EQ_TERM] ---
-	 for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-	 solver_container[iMGlevel] = new CNumerics** [MAX_SOLS];
-	 for (iSol = 0; iSol < MAX_SOLS; iSol++)
-	 solver_container[iMGlevel][iSol] = new CNumerics* [MAX_TERMS];
-	 }*/
-
-	/*--- Deallocation of output pointer ---*/
-	delete output;
-
-	/*--- Deallocation of config pointer ---*/
-	delete config;
-
-	cout << "Deallocation completed." << endl;
-}
-

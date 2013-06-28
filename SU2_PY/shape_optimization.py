@@ -3,7 +3,7 @@
 ## \file shape_optimization.py
 #  \brief Python script for performing the shape optimization.
 #  \author Francisco Palacios, Tom Economon, Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.2
+#  \version 2.0.3
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -23,6 +23,7 @@
 
 import os, sys, shutil, copy
 from optparse import OptionParser
+sys.path.append(os.environ['SU2_RUN'])
 import SU2
 
 # -------------------------------------------------------------------
@@ -34,8 +35,8 @@ def main():
     parser=OptionParser()
     parser.add_option("-f", "--file", dest="filename",
                       help="read config from FILE", metavar="FILE")
-    parser.add_option("-n", "--name", dest="name", default='',
-                      help="project file NAME", metavar="NAME")
+    parser.add_option("-n", "--name", dest="projectname", default='',
+                      help="try to restart from project file NAME", metavar="NAME")
     parser.add_option("-p", "--partitions", dest="partitions", default=1,
                       help="number of PARTITIONS", metavar="PARTITIONS")
     parser.add_option("-g", "--gradient", dest="gradient", default="Adjoint",
@@ -56,13 +57,13 @@ def main():
     options.quiet       = options.quiet.upper() == 'TRUE'
     options.gradient    = options.gradient.upper()
     
-    shape_optimization( options.filename   ,
-                        options.name       ,
-                        options.partitions ,
-                        options.gradient   ,
-                        options.quiet      ,
-                        options.cycle      ,
-                        options.step        )
+    shape_optimization( options.filename    ,
+                        options.projectname ,
+                        options.partitions  ,
+                        options.gradient    ,
+                        options.quiet       ,
+                        options.cycle       ,
+                        options.step         )
     
 #: main()
 
@@ -80,7 +81,7 @@ def shape_optimization( filename                ,
     # Config
     config = SU2.io.Config(filename)
     config.NUMBER_PART = partitions
-    if quiet: config.CONSOLE = 'QUIET'
+    if quiet: config.CONSOLE = 'CONCISE'
     
     def_dv = config.DEFINITION_DV
     n_dv   = len(def_dv['KIND'])  
@@ -95,6 +96,7 @@ def shape_optimization( filename                ,
     # Project
     if os.path.exists(projectname):
         project = SU2.io.load_data(projectname)
+        project.config = config
     else:
         project = SU2.opt.Project(config,state)
     

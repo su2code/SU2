@@ -2,7 +2,7 @@
  * \file integration_structure.cpp
  * \brief This subroutine includes the space and time integration structure.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -55,6 +55,7 @@ void CIntegration::Space_Integration(CGeometry *geometry, CSolution **solution_c
 			break;
 	}
 
+
 	/*--- Compute viscous residuals ---*/
 	switch (config->GetKind_ViscNumScheme()) {
 	case AVG_GRAD: case AVG_GRAD_CORRECTED:
@@ -95,7 +96,7 @@ void CIntegration::Space_Integration(CGeometry *geometry, CSolution **solution_c
 				solution_container[MainSolution]->BC_Far_Field(geometry, solution_container, solver[CONV_BOUND_TERM], solver[VISC_BOUND_TERM], config, iMarker);
 				break;
 			case SYMMETRY_PLANE:
-				solution_container[MainSolution]->BC_Sym_Plane(geometry, solution_container, solver[CONV_BOUND_TERM], config, iMarker);
+				solution_container[MainSolution]->BC_Sym_Plane(geometry, solution_container, solver[VISC_TERM], config, iMarker);
 				break;
 			case INTERFACE_BOUNDARY:
 				solution_container[MainSolution]->BC_Interface_Boundary(geometry, solution_container, solver[CONV_BOUND_TERM], config, iMarker);
@@ -183,7 +184,7 @@ void CIntegration::Adjoint_Setup(CGeometry ***geometry, CSolution ****solution_c
 			/*--- Restrict solution and gradients to the coarse levels ---*/
 			if (iMGLevel != config[iZone]->GetMGLevels()) {
 				SetRestricted_Solution(RUNTIME_FLOW_SYS, solution_container[iZone][iMGLevel], solution_container[iZone][iMGLevel+1], 
-						geometry[iZone][iMGLevel], geometry[iZone][iMGLevel+1], config[iZone], iMGLevel, false);
+						geometry[iZone][iMGLevel], geometry[iZone][iMGLevel+1], config[iZone]);
 				SetRestricted_Gradient(RUNTIME_FLOW_SYS, solution_container[iZone][iMGLevel], solution_container[iZone][iMGLevel+1], 
 						geometry[iZone][iMGLevel], geometry[iZone][iMGLevel+1], config[iZone]);
 			}
@@ -198,13 +199,9 @@ void CIntegration::Adjoint_Setup(CGeometry ***geometry, CSolution ****solution_c
 void CIntegration::Time_Integration(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iRKStep, 
 		unsigned short RunTime_EqSystem, unsigned long Iteration) {
 	unsigned short MainSolution = config->GetContainerPosition(RunTime_EqSystem);
-	bool restart = (config->GetRestart() || config->GetRestart_Flow());
 
-	/*--- In case we are performing a restart, the first iteration doesn't count. This is very important in case
-	 we are performing a parallel simulation because at the first iterations gradients, undivided laplacian, etc.
-	 are not updated at the send-receive boundaries ---*/
-	if(config->GetKind_Adjoint() != DISCRETE) {
-		if ((!restart) || (restart && Iteration != 0)) {
+
+	if ((config->IsAdjoint()) || (config->GetKind_Adjoint() != DISCRETE)) {
 
 			/*--- Perform the time integration ---*/
 			switch (config->GetKind_TimeIntScheme()) {
@@ -218,7 +215,6 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolution **solution_co
 			case (EULER_IMPLICIT):
 					solution_container[MainSolution]->ImplicitEuler_Iteration(geometry, solution_container, config);
 				break;
-			}
 		}
 
 	} else {
@@ -239,19 +235,22 @@ void CIntegration::Solving_Linear_System(CGeometry *geometry, CSolution *solutio
 
 void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, unsigned long Iteration, double monitor) {
 
-	//	int rank = MASTER_NODE;
-	//#ifndef NO_MPI
-	//	rank = MPI::COMM_WORLD.Get_rank();
-	//#endif
+  unsigned short iCounter;
 
-	unsigned short iCounter;
+#ifndef NO_MPI
+  int size = MPI::COMM_WORLD.Get_size();
+  int rank = MPI::COMM_WORLD.Get_rank();
+#endif
 
 	bool Already_Converged = Convergence;
 	
+  /*--- Cauchi based convergence criteria ---*/
 	if (config->GetConvCriteria() == CAUCHY) {
+    
+    /*--- Initialize at the fist iteration ---*/
 		if (Iteration  == 0) {
-			Cauchy_Value = 0;
-			Cauchy_Counter = 0;
+			Cauchy_Value = 0.0;
+			Cauchy_Counter = 0.0;
 			for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
 				Cauchy_Serie[iCounter] = 0.0;
 		}
@@ -282,177 +281,103 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
 		else Convergence_FullMG = true;
 	}
 
-	if (Iteration > config->GetStartConv_Iter()) {
-		if (config->GetConvCriteria() == RESIDUAL) {
+  /*--- Residual based convergence criteria ---*/
+  if (config->GetConvCriteria() == RESIDUAL) {
+    
+    /*--- Compute the initial value ---*/
+    if (Iteration == config->GetStartConv_Iter() ) InitResidual = monitor;
+    if (monitor > InitResidual) InitResidual = monitor;
 
-			if (Iteration == 1 + config->GetStartConv_Iter() ) InitResidual = monitor;
-
-			if (monitor > InitResidual) InitResidual = monitor;
-
-			if (Iteration   > 1 + config->GetStartConv_Iter() ) {
-				if (((fabs(InitResidual - monitor) >= config->GetOrderMagResidual()) && (monitor < InitResidual))  ||
-						(monitor <= config->GetMinLogResidual())) Convergence = true;
-				else Convergence = false;
-
-			}
-			else Convergence = false;
-
-		}
-	}
-	else {
+    /*--- Check the convergence ---*/
+    if (((fabs(InitResidual - monitor) >= config->GetOrderMagResidual()) && (monitor < InitResidual))  ||
+        (monitor <= config->GetMinLogResidual())) Convergence = true;
+    else Convergence = false;
+    
+  }
+  
+  /*--- Do not apply any convergence criteria of the number 
+   of iterations is less than a particular value ---*/
+	if (Iteration < config->GetStartConv_Iter()) {
 		Convergence = false;
 		Convergence_OneShot = false;
 		Convergence_FullMG = false;
-
 	}
 
 	if (Already_Converged) Convergence = true;
 
-	/*--- Stop the simulation in case a nan appears, do not save the solution ---*/
-//	if (monitor != monitor) {
-//		Convergence = true;
-//    if (rank== MASTER_NODE)
-//      cout << "\n !!! Error: NaNs detected in solution. Now exiting... !!!\n" << endl;
-//
-//#ifdef NO_MPI
-//		exit(1);
-//#else
-//		MPI::COMM_WORLD.Abort(1);
-//		MPI::Finalize();
-//#endif
-//	}
+  
+  /*--- Apply the same convergence criteria to all the processors ---*/
+#ifndef NO_MPI
 
+  unsigned short *sbuf_conv = NULL, *rbuf_conv = NULL;
+  sbuf_conv = new unsigned short[1]; sbuf_conv[0] = 0;
+  rbuf_conv = new unsigned short[1]; rbuf_conv[0] = 0;
+
+  /*--- Convergence criteria ---*/
+  sbuf_conv[0] = Convergence;
+  MPI::COMM_WORLD.Reduce(sbuf_conv, rbuf_conv, 1, MPI::UNSIGNED_SHORT, MPI::SUM, MASTER_NODE);
+  MPI::COMM_WORLD.Barrier();
+
+  /*-- Compute global convergence criteria in the master node --*/
+  sbuf_conv[0] = 0;
+  if (rank == MASTER_NODE) {
+    if (rbuf_conv[0] == size) sbuf_conv[0] = 1;
+    else sbuf_conv[0] = 0;
+  }
+  
+  MPI::COMM_WORLD.Bcast(sbuf_conv, 1, MPI::UNSIGNED_SHORT, MASTER_NODE);
+
+  if (sbuf_conv[0] == 1) Convergence = true;
+  else Convergence = false;
+  
+  delete [] sbuf_conv;
+  delete [] rbuf_conv;
+
+#endif
+  
+	/*--- Stop the simulation in case a nan appears, do not save the solution ---*/
+	if (monitor != monitor) {
+
+#ifdef NO_MPI
+    cout << "\n !!! Error: NaNs detected in solution. Now exiting... !!!" << endl;
+		exit(1);
+#else
+    if (rank == MASTER_NODE)
+      cout << "\n !!! Error: NaNs detected in solution. Now exiting... !!!" << endl;
+    MPI::COMM_WORLD.Barrier();
+    MPI::COMM_WORLD.Abort(1);
+#endif
+        
+	}
+  
+#ifndef NO_MPI
+
+  MPI::COMM_WORLD.Barrier();
+
+#endif
+  
 }
 
-void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolution *flow, CConfig *config) {
+void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolution *solution, CConfig *config) {
 	unsigned long iPoint;
-
+  
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-		flow->node[iPoint]->Set_Solution_time_n1();
-		flow->node[iPoint]->Set_Solution_time_n();
-
+		solution->node[iPoint]->Set_Solution_time_n1();
+		solution->node[iPoint]->Set_Solution_time_n();
+    
 		geometry->node[iPoint]->SetVolume_nM1();
 		geometry->node[iPoint]->SetVolume_n();
-
+    
 		/*--- Store old coordinates in case there is grid movement ---*/
 		if (config->GetGrid_Movement()) {
 			geometry->node[iPoint]->SetCoord_n1();
 			geometry->node[iPoint]->SetCoord_n();
 		}
 	}
-    
-    if (config->GetGrid_Movement() && config->GetKind_GridMovement(ZONE_0) == AEROELASTIC && geometry->GetFinestMGLevel()) {
-        config->SetAeroelastic_n1();
-        config->SetAeroelastic_n();
-    }
-    
-}
-
-void CIntegration::SetFreeSurface_Solver(CGeometry **geometry, CSolution ***solution_container, CNumerics ****solver_container, CConfig *config,
-		unsigned long Iteration) {
-	unsigned long iPoint, Point_Fine;
-	unsigned short iMesh, iChildren, iVar, nVar;
-	double DensityInc, ViscosityInc, Heaviside, LevelSet, lambda, Density, 
-	Pressure, yFreeSurface, PressFreeSurface, DensityFreeSurface, 
-	Froude, yCoord, Area_Children, Area_Parent, LevelSet_Fine, Velx, Vely, Velz,
-	RhoVelx, RhoVely, RhoVelz;
-	double *Solution_Fine, *Solution;	
-
-
-	bool gravity = config->GetGravityForce();
-	bool restart = (config->GetRestart() || config->GetRestart_Flow());
-	unsigned short nDim = geometry[MESH_0]->GetnDim();
-
-	for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++) {
-		for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-
-			/*--- Compute the flow solution in all the MG levels ---*/
-			if (iMesh != MESH_0) {
-				Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
-				nVar = solution_container[iMesh][FLOW_SOL]->GetnVar();
-				Solution = new double[nVar];
-				for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
-				for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
-					Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
-					Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
-					Solution_Fine = solution_container[iMesh-1][FLOW_SOL]->node[Point_Fine]->GetSolution();
-					for (iVar = 0; iVar < nVar; iVar++)
-						Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;  
-				}
-				solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(Solution);
-				delete [] Solution;
-			}
-
-			/*--- Compute the level set value in all the MG levels ---*/
-			if (iMesh == MESH_0) 
-				LevelSet = solution_container[iMesh][LEVELSET_SOL]->node[iPoint]->GetSolution(0);
-			else {
-				Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
-				LevelSet = 0.0;
-				for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
-					Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
-					Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
-					LevelSet_Fine = solution_container[iMesh-1][LEVELSET_SOL]->node[Point_Fine]->GetSolution(0);
-					LevelSet += LevelSet_Fine*Area_Children/Area_Parent;  
-				}
-				solution_container[iMesh][LEVELSET_SOL]->node[iPoint]->SetSolution(0, LevelSet);
-			}
-
-			double epsilon = config->GetFreeSurface_Thickness();
-
-			Heaviside = 0.0;
-			if (LevelSet < -epsilon) Heaviside = 1.0;
-			if (fabs(LevelSet) <= epsilon) Heaviside = 1.0 - (0.5*(1.0+(LevelSet/epsilon)+(1.0/PI_NUMBER)*sin(PI_NUMBER*LevelSet/epsilon)));
-			if (LevelSet > epsilon) Heaviside = 0.0;
-
-			/*--- Set the value of the incompressible density for free surface flows (density ratio g/l)---*/
-			lambda = config->GetRatioDensity();
-			DensityInc = (lambda + (1.0 - lambda)*Heaviside)*config->GetDensity_FreeStreamND();
-			solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetDensityInc(DensityInc);
-
-			/*--- Set the value of the incompressible viscosity for free surface flows (viscosity ratio g/l)---*/
-			lambda = config->GetRatioViscosity();
-			ViscosityInc = (lambda + (1.0 - lambda)*Heaviside) / config->GetReynolds();
-			solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetLaminarViscosityInc(ViscosityInc);
-
-			/*--- Set initial boundary condition at iter 0 ---*/
-			if ((Iteration == 0) && (!restart)) {
-				yFreeSurface = config->GetFreeSurface_Zero();
-				PressFreeSurface = solution_container[iMesh][FLOW_SOL]->GetPressure_Inf();
-				DensityFreeSurface = solution_container[iMesh][FLOW_SOL]->GetDensity_Inf();
-				Density = solution_container[iMesh][FLOW_SOL]->node[iPoint]->GetDensityInc();
-				Froude = config->GetFroude();
-				yCoord = geometry[iMesh]->node[iPoint]->GetCoord(nDim-1);
-				if (gravity) Pressure = PressFreeSurface + Density*((yFreeSurface-yCoord)/(Froude*Froude));
-				else Pressure = PressFreeSurface;
-
-				/*--- Update solution with the new pressure ---*/
-				solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(0, Pressure);
-
-				Velx = solution_container[iMesh][FLOW_SOL]->GetVelocity_Inf(0);
-				Vely = solution_container[iMesh][FLOW_SOL]->GetVelocity_Inf(1);
-				RhoVelx = Velx * Density; RhoVely = Vely * Density;
-
-				solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(1, RhoVelx);
-				solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(2, RhoVely);
-
-				if (nDim == 3) {
-					Velz = solution_container[iMesh][FLOW_SOL]->GetVelocity_Inf(2);
-					RhoVelz = Velz * Density;
-					solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(3, RhoVelz);						
-				}
-			}
-
-			/*--- The value of the solution for the first iteration of the dual time ---*/
-			if (Iteration == 0) {
-				if ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) || 
-						(config->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
-					solution_container[iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n();
-					solution_container[iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n1();
-					solution_container[iMesh][LEVELSET_SOL]->node[iPoint]->Set_Solution_time_n();
-					solution_container[iMesh][LEVELSET_SOL]->node[iPoint]->Set_Solution_time_n1();
-				}	
-			}
-		}
-	}
+  
+  if (config->GetGrid_Movement() && config->GetKind_GridMovement(ZONE_0) == AEROELASTIC && geometry->GetFinestMGLevel()) {
+    config->SetAeroelastic_n1();
+    config->SetAeroelastic_n();
+  }
+  
 }

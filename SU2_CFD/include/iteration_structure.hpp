@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines used by SU2_CFD.
  *        The subroutines and functions are in the <i>definition_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -55,8 +55,7 @@ using namespace std;
  */
 void MeanFlowIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
 											 CSolution ****solution_container, CNumerics *****solver_container, CConfig **config_container, 
-											 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk, 
-											 unsigned long ExtIter);
+											 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk);
 
 /*! 
  * \brief ________________________.
@@ -73,8 +72,7 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
  */
 void PlasmaIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
 										 CSolution ****solution_container, CNumerics *****solver_container, CConfig **config_container, 
-										 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk, 
-										 unsigned long ExtIter);
+										 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk);
 
 /*! 
  * \brief ________________________.
@@ -91,8 +89,7 @@ void PlasmaIteration(COutput *output, CIntegration ***integration_container, CGe
  */
 void FreeSurfaceIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
 													CSolution ****solution_container, CNumerics *****solver_container, CConfig **config_container, 
-													CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk, 
-													unsigned long ExtIter);
+													CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk);
 
 /*! 
  * \brief ________________________.
@@ -109,8 +106,7 @@ void FreeSurfaceIteration(COutput *output, CIntegration ***integration_container
  */
 void FluidStructureIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
 														 CSolution ****solution_container, CNumerics *****solver_container, CConfig **config_container, 
-														 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk, 
-														 unsigned long ExtIter);
+														 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk);
 
 /*! 
  * \brief ________________________.
@@ -127,8 +123,7 @@ void FluidStructureIteration(COutput *output, CIntegration ***integration_contai
  */
 void AeroacousticIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
 													 CSolution ****solution_container, CNumerics *****solver_container, CConfig **config_container, 
-													 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk, 
-													 unsigned long ExtIter);
+													 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk);
 
 /*! 
  * \brief ________________________.
@@ -145,8 +140,7 @@ void AeroacousticIteration(COutput *output, CIntegration ***integration_containe
  */
 void WaveIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
 									 CSolution ****solution_container, CNumerics *****solver_container, CConfig **config_container, 
-									 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk, 
-									 unsigned long ExtIter);
+									 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk);
 
 /*! 
  * \brief ________________________.
@@ -163,8 +157,7 @@ void WaveIteration(COutput *output, CIntegration ***integration_container, CGeom
  */
 void FEAIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
 									CSolution ****solution_container, CNumerics *****solver_container, CConfig **config_container, 
-									CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk, 
-									unsigned long ExtIter);
+									CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk);
 
 /*! 
  * \brief ________________________.
@@ -181,8 +174,7 @@ void FEAIteration(COutput *output, CIntegration ***integration_container, CGeome
  */
 void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
 													CSolution ****solution_container, CNumerics *****solver_container, CConfig **config_container, 
-													CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk, 
-													unsigned long ExtIter);
+													CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk);
 
 /*! 
  * \brief ________________________.
@@ -199,8 +191,7 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
  */
 void AdjPlasmaIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
 												CSolution ****solution_container, CNumerics *****solver_container, CConfig **config_container, 
-												CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk, 
-												unsigned long ExtIter);
+												CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk);
 
 /*! 
  * \brief ________________________.
@@ -217,8 +208,7 @@ void AdjPlasmaIteration(COutput *output, CIntegration ***integration_container, 
  */
 void AdjFreeSurfaceIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
 														 CSolution ****solution_container, CNumerics *****solver_container, CConfig **config_container, 
-														 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk, 
-														 unsigned long ExtIter);
+														 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk);
 
 /*! 
  * \brief ________________________.
@@ -235,8 +225,7 @@ void AdjFreeSurfaceIteration(COutput *output, CIntegration ***integration_contai
  */
 void AdjAeroacousticIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
 															CSolution ****solution_container, CNumerics *****solver_container, CConfig **config_container, 
-															CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk, 
-															unsigned long ExtIter);
+															CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk);
 
 /*! 
  * \brief Updates the positions and grid velocities for dynamic meshes between physical time steps.

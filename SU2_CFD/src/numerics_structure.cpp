@@ -2,7 +2,7 @@
  * \file numerics_structure.cpp
  * \brief This file contains all the numerical methods.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -32,8 +32,8 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar, CConfig *
 	Gamma_Minus_One = Gamma - 1.0;
 	Gas_Constant = config->GetGas_Constant();
 
-	U_id = new double [nVar];
-	U_jd = new double [nVar];
+	//U_id = new double [nVar];
+	//U_jd = new double [nVar];
 
 	UnitaryNormal = new double [nDim];
 	UnitaryNormald = new double [nDim];
@@ -194,6 +194,7 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar, unsigned 
 
 CNumerics::~CNumerics(void) {
 
+  delete [] Normal;
 	delete [] UnitaryNormal;
 
 	delete [] U_n;
@@ -230,7 +231,7 @@ CNumerics::~CNumerics(void) {
 
 
 	unsigned short iVar;
-	for (iVar = 0; iVar < nDim+3; iVar++) {
+	for (iVar = 0; iVar < nVar; iVar++) {
 		delete [] dVdU[iVar];
 		delete [] dFvdV_i[iVar];
 		delete [] dFvdV_j[iVar];
@@ -650,9 +651,6 @@ void CNumerics::SetPastVolume (double val_volume_nM1, double val_volume_n, doubl
 	Volume_nM1 = val_volume_nM1;
 	Volume_n = val_volume_n;
 	Volume_nP1 = val_volume_nP1;
-}
-void CNumerics::SetTimeStep (double val_timestep) {
-	TimeStep = val_timestep;
 }
 
 

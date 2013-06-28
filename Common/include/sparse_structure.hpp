@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the sparse matrices-by-blocks.
  *        The subroutines and functions are in the <i>sparse_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -38,13 +38,14 @@ using namespace std;
  * \brief Main class for defining sparse matrices-by-blocks 
           with compressed row format.
  * \author A. Bueno.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CSparseMatrix {
 private:
 	unsigned long nPoint;      /*!< \brief Number of points in the grid. */
 	unsigned long nPointDomain;/*!< \brief Number of points in the grid. */
 	unsigned long nVar;        /*!< \brief Number of variables. */
+	unsigned long nEqn;        /*!< \brief Number of equations. */
 	double *val;               /*!< \brief Entries of the sparse matrix. */
 	unsigned long *row_ptr;    /*!< \brief Pointers to the first element in each row. */
 	unsigned long *col_ind;    /*!< \brief Column index for each of the elements in val(). */

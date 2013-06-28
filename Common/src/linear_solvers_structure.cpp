@@ -2,7 +2,7 @@
  * \file linear_solvers_structure.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author Current Development: Stanford University.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -508,10 +508,10 @@ unsigned long CSysSolve::ConjugateGradient(const CSysVector & b, CSysVector & x,
 
   /*--- Output header information including initial residual ---*/
   int i = 0;
-  if (monitoring) {
-    writeHeader("CG", tol, norm_r);
-    writeHistory(i, norm_r, norm0);
-  }
+//  if (monitoring) {
+//    writeHeader("CG", tol, norm_r);
+//    writeHistory(i, norm_r, norm0);
+//  }
 
   /*---  Loop over all search directions ---*/
   for (i = 0; i < m; i++) {
@@ -532,7 +532,7 @@ unsigned long CSysSolve::ConjugateGradient(const CSysVector & b, CSysVector & x,
     /*--- Check if solution has converged, else output the relative residual if necessary ---*/
     norm_r = r.norm();
     if (norm_r < tol*norm0) break;
-    if ((monitoring) && ((i+1) % 1 == 0)) writeHistory(i+1, norm_r, norm0);    
+    //if ((monitoring) && ((i+1) % 1 == 0)) writeHistory(i+1, norm_r, norm0);
  
     precond(r, z);
 		sol_mpi(z);
@@ -556,10 +556,10 @@ unsigned long CSysSolve::ConjugateGradient(const CSysVector & b, CSysVector & x,
 
   double true_res = r.norm();
   
-  if (monitoring) {
-    cout << "# Conjugate Gradient final (true) residual:" << endl;
-    cout << "# iteration = " << i << ": |res|/|res0| = "  << true_res/norm0 << endl;
-  }
+//  if (monitoring) {
+//    cout << "# Conjugate Gradient final (true) residual:" << endl;
+//    cout << "# iteration = " << i << ": |res|/|res0| = "  << true_res/norm0 << endl;
+//  }
 
   if (fabs(true_res - norm_r) > tol*10.0) {
     cout << "# WARNING in CSysSolve::ConjugateGradient(): " << endl;

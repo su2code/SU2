@@ -2,7 +2,7 @@
  * \file numerics_convective.cpp
  * \brief This file contains all the convective term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -833,22 +833,22 @@ void CUpwRoeArtComp_Flow::SetResidual(double *val_residual, double **val_Jacobia
 	Area = 0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
 	Area = sqrt(Area);
 
-    /*--- Compute and unitary normal vector ---*/
+  /*--- Compute and unitary normal vector ---*/
 	for (iDim = 0; iDim < nDim; iDim++) {
 		UnitaryNormal[iDim] = Normal[iDim]/Area;
-        if (UnitaryNormal[iDim] == 0.0) UnitaryNormal[iDim] = EPS;
-    }
+    if (UnitaryNormal[iDim] == 0.0) UnitaryNormal[iDim] = EPS;
+  }
 
 	/*--- Set velocity and pressure variables at points iPoint and jPoint ---*/
 	Pressure_i = U_i[0]; Pressure_j = U_j[0];
     
-    ProjVelocity = 0.0;
+  ProjVelocity = 0.0;
 	for (iDim = 0; iDim < nDim; iDim++) {
 		Velocity_i[iDim] = U_i[iDim+1]/DensityInc_i;
-        Velocity_j[iDim] = U_j[iDim+1]/DensityInc_j;
-        MeanVelocity[iDim] =  0.5*(Velocity_i[iDim] + Velocity_j[iDim]);
+    Velocity_j[iDim] = U_j[iDim+1]/DensityInc_j;
+    MeanVelocity[iDim] =  0.5*(Velocity_i[iDim] + Velocity_j[iDim]);
 		ProjVelocity += MeanVelocity[iDim]*Normal[iDim];
-    }
+  }
 
 	/*--- Mean variables at points iPoint and jPoint ---*/
 	MeanDensity = 0.5*(DensityInc_i + DensityInc_j);
@@ -1255,6 +1255,9 @@ CUpwRoe_AdjDiscFlow::CUpwRoe_AdjDiscFlow(unsigned short val_nDim, unsigned short
 
 	val_residual = new double [nVar];
 	val_residuald = new double [nVar];
+    
+    U_id = new double [nVar];
+	U_jd = new double [nVar];
 
 
 
@@ -1297,6 +1300,9 @@ CUpwRoe_AdjDiscFlow::~CUpwRoe_AdjDiscFlow(void) {
 
 	delete [] val_residual;
 	delete [] val_residuald;
+    
+    delete [] U_id;
+    delete [] U_jd;
 
 }
 
@@ -1924,48 +1930,48 @@ CUpwLin_LevelSet::~CUpwLin_LevelSet(void) {
 void CUpwLin_LevelSet::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j,
                                    double **val_JacobianMeanFlow_i, double **val_JacobianMeanFlow_j, CConfig *config) {
 	unsigned short iDim;
-	double a0, a1, q_ij, dqij_dvi[3], dqij_dvj[3], dabsqij_dvi[3], dabsqij_dvj[3], da0_dvi[3],
-    da0_dvj[3], da1_dvi[3], da1_dvj[3];
-    
+	double a0, a1, q_ij, Velocity_i[3], Velocity_j[3]; //, dqij_dvi[3], dqij_dvj[3], dabsqij_dvi[3], dabsqij_dvj[3], da0_dvi[3], da0_dvj[3], da1_dvi[3], da1_dvj[3];
+  
 	q_ij = 0;
 	for (iDim = 0; iDim < nDim; iDim++) {
-		Velocity_i[iDim] = U_i[iDim+1]/DensityInc_i;
-		Velocity_j[iDim] = U_j[iDim+1]/DensityInc_j;
+		Velocity_i[iDim] = V_i[iDim+1]; //U_i[iDim+1]/DensityInc_i;
+		Velocity_j[iDim] =  V_i[iDim+1]; //U_j[iDim+1]/DensityInc_j;
 		q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
 	}
-    
+  
 	a0 = 0.5*(q_ij+fabs(q_ij)); a1 = 0.5*(q_ij-fabs(q_ij));
-    
+  
 	val_residual[0] = a0*LevelSetVar_i[0]+a1*LevelSetVar_j[0];
-    
+  
 	if (implicit) {
 		val_Jacobian_i[0][0] = a0;
 		val_Jacobian_j[0][0] = a1;
-        
-        for (iDim = 0; iDim < nDim; iDim++) {
-            dqij_dvi[iDim] = 0.5 * Normal[iDim]/DensityInc_i;
-            dqij_dvj[iDim] = 0.5 * Normal[iDim]/DensityInc_j;
-            if ( q_ij >= 0.0 ) {
-                dabsqij_dvi[iDim] = dqij_dvi[iDim];
-                dabsqij_dvj[iDim] = dqij_dvj[iDim];
-            }
-            else {
-                dabsqij_dvi[iDim] = -dqij_dvi[iDim];
-                dabsqij_dvj[iDim] = -dqij_dvj[iDim];
-            }
-            da0_dvi[iDim] = 0.5 * (dqij_dvi[iDim] + dabsqij_dvi[iDim]);
-            da1_dvi[iDim] = 0.5 * (dqij_dvi[iDim] - dabsqij_dvi[iDim]);
-            
-            da0_dvj[iDim] = 0.5 * (dqij_dvj[iDim] + dabsqij_dvj[iDim]);
-            da1_dvj[iDim] = 0.5 * (dqij_dvj[iDim] - dabsqij_dvj[iDim]);
-        }
-        
-        val_JacobianMeanFlow_i[0][0] = 0.0; // No pressure contribution;
-        for (iDim = 0; iDim < nDim; iDim++) {
-            val_JacobianMeanFlow_i[0][iDim+1] = da0_dvi[iDim]*LevelSetVar_i[0]+da1_dvi[iDim]*LevelSetVar_j[0];
-            val_JacobianMeanFlow_j[0][iDim+1] = da0_dvj[iDim]*LevelSetVar_i[0]+da1_dvj[iDim]*LevelSetVar_j[0];
-        }
-    }
+    
+//    for (iDim = 0; iDim < nDim; iDim++) {
+//      dqij_dvi[iDim] = 0.5 * Normal[iDim]/DensityInc_i;
+//      dqij_dvj[iDim] = 0.5 * Normal[iDim]/DensityInc_j;
+//      if ( q_ij >= 0.0 ) {
+//        dabsqij_dvi[iDim] = dqij_dvi[iDim];
+//        dabsqij_dvj[iDim] = dqij_dvj[iDim];
+//      }
+//      else {
+//        dabsqij_dvi[iDim] = -dqij_dvi[iDim];
+//        dabsqij_dvj[iDim] = -dqij_dvj[iDim];
+//      }
+//      da0_dvi[iDim] = 0.5 * (dqij_dvi[iDim] + dabsqij_dvi[iDim]);
+//      da1_dvi[iDim] = 0.5 * (dqij_dvi[iDim] - dabsqij_dvi[iDim]);
+//      
+//      da0_dvj[iDim] = 0.5 * (dqij_dvj[iDim] + dabsqij_dvj[iDim]);
+//      da1_dvj[iDim] = 0.5 * (dqij_dvj[iDim] - dabsqij_dvj[iDim]);
+//    }
+//    
+//    val_JacobianMeanFlow_i[0][0] = 0.0; // No pressure contribution;
+//    for (iDim = 0; iDim < nDim; iDim++) {
+//      val_JacobianMeanFlow_i[0][iDim+1] = da0_dvi[iDim]*LevelSetVar_i[0]+da1_dvi[iDim]*LevelSetVar_j[0];
+//      val_JacobianMeanFlow_j[0][iDim+1] = da0_dvj[iDim]*LevelSetVar_i[0]+da1_dvj[iDim]*LevelSetVar_j[0];
+//    }
+    
+  }
 }
 
 CUpwLin_AdjLevelSet::CUpwLin_AdjLevelSet(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
@@ -2122,7 +2128,7 @@ void CUpwLin_AdjTurb::SetResidual (double *val_residual, double **val_Jacobian_i
 	}
 }
 
-CUpwLin_AdjDiscTurb::CUpwLin_AdjDiscTurb() {
+CUpwLin_AdjDiscTurb::CUpwLin_AdjDiscTurb(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
 }
 
@@ -2131,6 +2137,19 @@ CUpwLin_AdjDiscTurb::~CUpwLin_AdjDiscTurb(void) {
 }
 
 void CUpwLin_AdjDiscTurb::SetResidual () {
+
+
+}
+
+CUpwLin_AdjDiscTurbSA::CUpwLin_AdjDiscTurbSA(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+
+}
+
+CUpwLin_AdjDiscTurbSA::~CUpwLin_AdjDiscTurbSA(void) {
+
+}
+
+void CUpwLin_AdjDiscTurbSA::SetResidual (double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
 
 
 }
@@ -2387,7 +2406,7 @@ void CUpwSca_AdjTurb::SetResidual (double *val_residual_i, double *val_residual_
 	}
 }
 
-CUpwSca_AdjDiscTurb::CUpwSca_AdjDiscTurb() {
+CUpwSca_AdjDiscTurb::CUpwSca_AdjDiscTurb(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config)  {
 
 }
 
@@ -2400,18 +2419,508 @@ void CUpwSca_AdjDiscTurb::SetResidual () {
 
 }
 
-CUpwSca_AdjDiscTurbSA::CUpwSca_AdjDiscTurbSA() {
+CUpwSca_AdjDiscTurbSA::CUpwSca_AdjDiscTurbSA(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config)  {
+    
+    unsigned short nFlowVar = nDim + 2;
+    
+    TurbVar_id = new double[nVar];
+    TurbVar_jd = new double[nVar];
+    val_residual = new double [nVar];
+    val_residuald = new double [nVar];
+    Velocity_i = new double [nDim];
+    Velocity_j = new double [nDim];
+    Velocity_id = new double [nDim];
+    Velocity_jd = new double [nDim];
+    
+    U_id = new double [nFlowVar];
+	U_jd = new double [nFlowVar];
 
 }
 
 CUpwSca_AdjDiscTurbSA::~CUpwSca_AdjDiscTurbSA(void) {
+    
+    delete [] TurbVar_i;
+    delete [] TurbVar_j;
+    delete [] val_residual;
+    delete [] val_residuald;
+    delete [] Velocity_i;
+    delete [] Velocity_j;
+    delete [] Velocity_id;
+    delete [] Velocity_jd;
+    
+    delete [] U_id;
+    delete [] U_jd;
 
 }
 
-void CUpwSca_AdjDiscTurbSA::SetResidual () {
+void CUpwSca_AdjDiscTurbSA::SetResidual (double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
 
+	//unsigned short iVar, jVar;
+	unsigned short iPos, jPos; // iVar, jVar are global and used in SetResidual_ad, so cannot be used here
 
+	unsigned short nTotalVar, nFlowVar;
+	nFlowVar = nDim + 2;
+	nTotalVar = nVar + nFlowVar;
+
+	// U_i sensitivity:
+
+	for (iPos = 0; iPos < nFlowVar; iPos++){
+
+		for (jPos = 0; jPos < nFlowVar; jPos++){
+			U_id[jPos] = 0.0;
+			U_jd[jPos] = 0.0;
+		}
+
+		for (jPos = 0; jPos < nVar; jPos++){
+			TurbVar_id[jPos] = 0.0;
+			TurbVar_jd[jPos] = 0.0;
+			val_residuald[jPos] = 0.0;
+		}
+
+		U_id[iPos] = 1.0;
+        
+//        for (jPos = 0; jPos < nFlowVar; jPos++){
+//			cout << "U_id: " << U_id[jPos] << endl;
+//			cout << "U_jd: " << U_jd[jPos] << endl;
+//		}
+
+		this->SetDirectResidual_ad(val_residual, val_residuald, config);
+
+		for (jPos = 0; jPos < nVar; jPos++) {
+			// Transpose each block: [jPos][iPos] -> [iPos][jPos]
+			val_Jacobian_i[iPos][jPos] = val_residuald[jPos];
+
+		}
+
+//        // TEST AD *****************
+//        for (jPos = 0; jPos < nVar; jPos++) {
+//            cout << "AD: " << val_residuald[jPos] << endl;
+//        }
+//        cout << "--" << endl;
+//        // AD *****************
+	}
+    
+//    // TEST FD *****************
+//    double *temp_U_i, *temp_U_j;
+//    double *temp_TurbVar_i, *temp_TurbVar_j;
+//    temp_U_i = new double[nFlowVar];
+//    temp_U_j = new double[nFlowVar];
+//    temp_TurbVar_i  = new double[nVar];
+//    temp_TurbVar_j =  new double[nVar];
+//    double *temp1_val_residual, *temp2_val_residual;
+//    temp1_val_residual = new double[nVar];
+//    temp2_val_residual = new double[nVar];
+//    
+//    double delta;
+//    
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        temp_U_i[jPos] = U_i[jPos];
+//        temp_U_j[jPos] = U_j[jPos];
+//    }
+//    
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        temp_TurbVar_i[jPos] = TurbVar_i[jPos];
+//        temp_TurbVar_j[jPos] = TurbVar_j[jPos];
+//    }
+//    
+//    for (iPos = 0; iPos < nFlowVar; iPos++){
+//        
+//		for (jPos = 0; jPos < nFlowVar; jPos++){
+//			U_i[jPos] = temp_U_i[jPos];
+//			U_j[jPos] = temp_U_j[jPos];
+//		}
+//        
+//		for (jPos = 0; jPos < nVar; jPos++){
+//			TurbVar_i[jPos] = temp_TurbVar_i[jPos];
+//			TurbVar_j[jPos] = temp_TurbVar_j[jPos];
+//		}
+//        
+//        if (fabs(temp_U_i[iPos] + temp_U_j[iPos]) > 1e-15)
+//            delta = 0.01*(temp_U_i[iPos] + temp_U_j[iPos])/2;
+//        else
+//            delta = 1e-15;
+//        
+//        U_i[iPos] = temp_U_i[iPos] - delta;
+//                
+//		this->SetDirectResidual_ad(temp1_val_residual, val_residuald, config);
+//        
+//        for (jPos = 0; jPos < nFlowVar; jPos++){
+//			U_i[jPos] = temp_U_i[jPos];
+//			U_j[jPos] = temp_U_j[jPos];
+//		}
+//        
+//		for (jPos = 0; jPos < nVar; jPos++){
+//			TurbVar_i[jPos] = temp_TurbVar_i[jPos];
+//			TurbVar_j[jPos] = temp_TurbVar_j[jPos];
+//		}
+//        
+//        U_i[iPos] = temp_U_i[iPos] + delta;
+//        
+//        
+//        
+//		this->SetDirectResidual_ad(temp2_val_residual, val_residuald, config);
+//        
+//        cout << "U_i: " << temp_U_i[iPos] << endl;
+//        
+//        for (jPos = 0; jPos < nVar; jPos++) {
+//            cout << "FD: " << (temp2_val_residual[jPos] - temp1_val_residual[jPos])/(2*delta) << endl;
+//        }
+//	}
+//    delete [] temp_U_i;
+//    delete [] temp_U_j;
+//    delete [] temp_TurbVar_i;
+//    delete [] temp_TurbVar_j;
+//    delete [] temp1_val_residual;
+//    delete [] temp2_val_residual;
+//    cin.get();
+//    // FD *****************
+
+	// TurbVar_i sensitivity
+
+	for (iPos = 0; iPos < nVar; iPos++){
+
+		for (jPos = 0; jPos < nFlowVar; jPos++){
+			U_id[jPos] = 0.0;
+			U_jd[jPos] = 0.0;
+		}
+
+		for (jPos = 0; jPos < nVar; jPos++){
+			TurbVar_id[jPos] = 0.0;
+			TurbVar_jd[jPos] = 0.0;
+			val_residuald[jPos] = 0.0;
+		}
+
+		TurbVar_id[iPos] = 1.0;
+
+		this->SetDirectResidual_ad(val_residual, val_residuald, config);
+
+		for (jPos = 0; jPos < nVar; jPos++) {
+			// Transpose each block: [jPos][iPos] -> [iPos][jPos]
+			val_Jacobian_i[iPos+nFlowVar][jPos] = val_residuald[jPos];
+
+		}
+        
+//      // TEST AD *****************
+//        for (jPos = 0; jPos < nVar; jPos++) {
+//                    cout << "AD: " << val_residuald[jPos] << endl;
+//                }
+//                cout << "--" << endl;
+//      // AD *********
+
+	}
+    
+//    //    // TEST FD *****************
+//        double *temp_U_i, *temp_U_j;
+//        double *temp_TurbVar_i, *temp_TurbVar_j;
+//        temp_U_i = new double[nFlowVar];
+//        temp_U_j = new double[nFlowVar];
+//        temp_TurbVar_i  = new double[nVar];
+//        temp_TurbVar_j =  new double[nVar];
+//        double *temp1_val_residual, *temp2_val_residual;
+//        temp1_val_residual = new double[nVar];
+//        temp2_val_residual = new double[nVar];
+//    
+//        double delta;
+//    
+//        for (jPos = 0; jPos < nFlowVar; jPos++){
+//            temp_U_i[jPos] = U_i[jPos];
+//            temp_U_j[jPos] = U_j[jPos];
+//        }
+//    
+//        for (jPos = 0; jPos < nVar; jPos++){
+//            temp_TurbVar_i[jPos] = TurbVar_i[jPos];
+//            temp_TurbVar_j[jPos] = TurbVar_j[jPos];
+//        }
+//    
+//        for (iPos = 0; iPos < nVar; iPos++){
+//    
+//    		for (jPos = 0; jPos < nFlowVar; jPos++){
+//    			U_i[jPos] = temp_U_i[jPos];
+//    			U_j[jPos] = temp_U_j[jPos];
+//    		}
+//    
+//    		for (jPos = 0; jPos < nVar; jPos++){
+//    			TurbVar_i[jPos] = temp_TurbVar_i[jPos];
+//    			TurbVar_j[jPos] = temp_TurbVar_j[jPos];
+//    		}
+//    
+//            if (fabs(temp_TurbVar_i[iPos] + temp_TurbVar_j[iPos]) > 1e-15)
+//                delta = 0.01*(temp_TurbVar_i[iPos] + temp_TurbVar_j[iPos])/2;
+//            else
+//                delta = 1e-15;
+//    
+//            TurbVar_i[iPos] = temp_TurbVar_i[iPos] - delta;
+//    
+//    		this->SetDirectResidual_ad(temp1_val_residual, val_residuald, config);
+//    
+//            for (jPos = 0; jPos < nFlowVar; jPos++){
+//    			U_i[jPos] = temp_U_i[jPos];
+//    			U_j[jPos] = temp_U_j[jPos];
+//    		}
+//    
+//    		for (jPos = 0; jPos < nVar; jPos++){
+//    			TurbVar_i[jPos] = temp_TurbVar_i[jPos];
+//    			TurbVar_j[jPos] = temp_TurbVar_j[jPos];
+//    		}
+//    
+//            TurbVar_i[iPos] = temp_TurbVar_i[iPos] + delta;
+//    
+//    
+//    
+//    		this->SetDirectResidual_ad(temp2_val_residual, val_residuald, config);
+//    
+//           // cout << "U_i: " << temp_U_i[iPos] << endl;
+//    
+//            for (jPos = 0; jPos < nVar; jPos++) {
+//                cout << "FD: " << (temp2_val_residual[jPos] - temp1_val_residual[jPos])/(2*delta) << endl;
+//            }
+//    	}
+//        delete [] temp_U_i;
+//        delete [] temp_U_j;
+//        delete [] temp_TurbVar_i;
+//        delete [] temp_TurbVar_j;
+//        delete [] temp1_val_residual;
+//        delete [] temp2_val_residual;
+//        cin.get();
+//        // FD ****
+
+	// U_j sensitivity:
+    
+//    double *temp_U_i, *temp_U_j;
+//    temp_U_i = new double[nFlowVar];
+//    temp_U_j = new double[nFlowVar];
+//    
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        temp_U_i[jPos] = U_j[jPos];
+//        temp_U_j[jPos] = U_i[jPos];
+//    }
+//        
+//        for (jPos = 0; jPos < nFlowVar; jPos++){
+//            U_i[jPos] = temp_U_i[jPos];
+//            U_j[jPos] = temp_U_j[jPos];
+//        }
+
+	for (iPos = 0; iPos < nFlowVar; iPos++){
+
+		for (jPos = 0; jPos < nFlowVar; jPos++){
+			U_id[jPos] = 0.0;
+			U_jd[jPos] = 0.0;
+		}
+
+		for (jPos = 0; jPos < nVar; jPos++){
+			TurbVar_id[jPos] = 0.0;
+			TurbVar_jd[jPos] = 0.0;
+			val_residuald[jPos] = 0.0;
+		}
+
+		U_jd[iPos] = 1.0;
+
+		this->SetDirectResidual_ad(val_residual, val_residuald, config);
+
+		for (jPos = 0; jPos < nVar; jPos++) {
+			// Transpose each block: [jPos][iPos] -> [iPos][jPos]
+			val_Jacobian_j[iPos][jPos] = val_residuald[jPos];
+
+		}
+        
+        //        // TEST AD *****************
+//        for (jPos = 0; jPos < nFlowVar; jPos++){
+//			cout << U_jd[jPos] << endl;
+//		}
+//                for (jPos = 0; jPos < nVar; jPos++) {
+//                    cout << "AD: " << val_residuald[jPos] << endl;
+//                }
+               //cout << "--" << endl;
+        //        // AD *****************
+
+	}
+//    cout << "--" << endl;
+    
+//    //    // TEST FD *****************
+//    //    double *temp_U_i, *temp_U_j;
+//        double *temp_TurbVar_i, *temp_TurbVar_j;
+//    //    temp_U_i = new double[nFlowVar];
+//     //   temp_U_j = new double[nFlowVar];
+//        temp_TurbVar_i  = new double[nVar];
+//        temp_TurbVar_j =  new double[nVar];
+//        double *temp1_val_residual, *temp2_val_residual;
+//        temp1_val_residual = new double[nVar];
+//        temp2_val_residual = new double[nVar];
+//    
+//        double delta;
+//    
+////        for (jPos = 0; jPos < nFlowVar; jPos++){
+////            temp_U_i[jPos] = U_j[jPos];
+////            temp_U_j[jPos] = U_i[jPos];
+////        }
+//    
+//        for (jPos = 0; jPos < nVar; jPos++){
+//            temp_TurbVar_i[jPos] = TurbVar_i[jPos];
+//            temp_TurbVar_j[jPos] = TurbVar_j[jPos];
+//        }
+//    
+//        for (iPos = 0; iPos < nFlowVar; iPos++){
+//    
+//    		for (jPos = 0; jPos < nFlowVar; jPos++){
+//    			U_i[jPos] = temp_U_i[jPos];
+//    			U_j[jPos] = temp_U_j[jPos];
+//    		}
+//    
+//    		for (jPos = 0; jPos < nVar; jPos++){
+//    			TurbVar_i[jPos] = temp_TurbVar_i[jPos];
+//    			TurbVar_j[jPos] = temp_TurbVar_j[jPos];
+//    		}
+//    
+//            if (fabs(temp_U_j[iPos] + temp_U_j[iPos]) > 1e-15)
+//                delta = 0.01*(temp_U_j[iPos] + temp_U_j[iPos])/2;
+//            else
+//                delta = 1e-15;
+//    
+//            U_j[iPos] = temp_U_j[iPos] - delta;
+//    
+//    		this->SetDirectResidual_ad(temp1_val_residual, val_residuald, config);
+//    
+//            for (jPos = 0; jPos < nFlowVar; jPos++){
+//    			U_i[jPos] = temp_U_i[jPos];
+//    			U_j[jPos] = temp_U_j[jPos];
+//    		}
+//    
+//    		for (jPos = 0; jPos < nVar; jPos++){
+//    			TurbVar_i[jPos] = temp_TurbVar_i[jPos];
+//    			TurbVar_j[jPos] = temp_TurbVar_j[jPos];
+//    		}
+//    
+//            U_j[iPos] = temp_U_j[iPos] + delta;
+//    
+//    
+//    
+//    		this->SetDirectResidual_ad(temp2_val_residual, val_residuald, config);
+//    
+//            cout << "U_j: " << temp_U_j[iPos] << endl;
+//    
+//            for (jPos = 0; jPos < nVar; jPos++) {
+//                cout << "FD: " << (temp2_val_residual[jPos] - temp1_val_residual[jPos])/(2*delta) << endl;
+//            }
+//    	}
+//        delete [] temp_U_i;
+//        delete [] temp_U_j;
+//        delete [] temp_TurbVar_i;
+//        delete [] temp_TurbVar_j;
+//        delete [] temp1_val_residual;
+//        delete [] temp2_val_residual;
+//        cin.get();
+//    //    // FD *****************
+
+	// TurbVar_j sensitivity
+
+	for (iPos = 0; iPos < nVar; iPos++){
+
+		for (jPos = 0; jPos < nFlowVar; jPos++){
+			U_id[jPos] = 0.0;
+			U_jd[jPos] = 0.0;
+		}
+
+		for (jPos = 0; jPos < nVar; jPos++){
+			TurbVar_id[jPos] = 0.0;
+			TurbVar_jd[jPos] = 0.0;
+			val_residuald[jPos] = 0.0;
+		}
+
+		TurbVar_jd[iPos] = 1.0;
+
+		this->SetDirectResidual_ad(val_residual, val_residuald, config);
+
+		for (jPos = 0; jPos < nVar; jPos++) {
+			// Transpose each block: [jPos][iPos] -> [iPos][jPos]
+			val_Jacobian_j[iPos+nFlowVar][jPos] = val_residuald[jPos];
+
+		}
+        
+//        // TEST AD *****************
+//        for (jPos = 0; jPos < nVar; jPos++) {
+//            cout << "AD: " << val_residuald[jPos] << endl;
+//        }
+//        cout << "--" << endl;
+//        // AD *********
+
+	}
+    
+//    //    // TEST FD *****************
+//    double *temp_U_i, *temp_U_j;
+//    double *temp_TurbVar_i, *temp_TurbVar_j;
+//    temp_U_i = new double[nFlowVar];
+//    temp_U_j = new double[nFlowVar];
+//    temp_TurbVar_i  = new double[nVar];
+//    temp_TurbVar_j =  new double[nVar];
+//    double *temp1_val_residual, *temp2_val_residual;
+//    temp1_val_residual = new double[nVar];
+//    temp2_val_residual = new double[nVar];
+//    
+//    double delta;
+//    
+//    for (jPos = 0; jPos < nFlowVar; jPos++){
+//        temp_U_i[jPos] = U_i[jPos];
+//        temp_U_j[jPos] = U_j[jPos];
+//    }
+//    
+//    for (jPos = 0; jPos < nVar; jPos++){
+//        temp_TurbVar_i[jPos] = TurbVar_i[jPos];
+//        temp_TurbVar_j[jPos] = TurbVar_j[jPos];
+//    }
+//    
+//    for (iPos = 0; iPos < nVar; iPos++){
+//        
+//        for (jPos = 0; jPos < nFlowVar; jPos++){
+//            U_i[jPos] = temp_U_i[jPos];
+//            U_j[jPos] = temp_U_j[jPos];
+//        }
+//        
+//        for (jPos = 0; jPos < nVar; jPos++){
+//            TurbVar_i[jPos] = temp_TurbVar_i[jPos];
+//            TurbVar_j[jPos] = temp_TurbVar_j[jPos];
+//        }
+//        
+//        if (fabs(temp_TurbVar_i[iPos] + temp_TurbVar_j[iPos]) > 1e-15)
+//            delta = 0.01*(temp_TurbVar_i[iPos] + temp_TurbVar_j[iPos])/2;
+//        else
+//            delta = 1e-15;
+//        
+//        TurbVar_j[iPos] = temp_TurbVar_j[iPos] - delta;
+//        
+//        this->SetDirectResidual_ad(temp1_val_residual, val_residuald, config);
+//        
+//        for (jPos = 0; jPos < nFlowVar; jPos++){
+//            U_i[jPos] = temp_U_i[jPos];
+//            U_j[jPos] = temp_U_j[jPos];
+//        }
+//        
+//        for (jPos = 0; jPos < nVar; jPos++){
+//            TurbVar_i[jPos] = temp_TurbVar_i[jPos];
+//            TurbVar_j[jPos] = temp_TurbVar_j[jPos];
+//        }
+//        
+//        TurbVar_j[iPos] = temp_TurbVar_j[iPos] + delta;
+//        
+//        
+//        
+//        this->SetDirectResidual_ad(temp2_val_residual, val_residuald, config);
+//        
+//        // cout << "U_i: " << temp_U_i[iPos] << endl;
+//        
+//        for (jPos = 0; jPos < nVar; jPos++) {
+//            cout << "FD: " << (temp2_val_residual[jPos] - temp1_val_residual[jPos])/(2*delta) << endl;
+//        }
+//    }
+//    delete [] temp_U_i;
+//    delete [] temp_U_j;
+//    delete [] temp_TurbVar_i;
+//    delete [] temp_TurbVar_j;
+//    delete [] temp1_val_residual;
+//    delete [] temp2_val_residual;
+//    cin.get();
+//    // FD ****
 }
+
 
 CCentJST_Flow::CCentJST_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
@@ -2600,6 +3109,7 @@ CCentJSTArtComp_Flow::CCentJSTArtComp_Flow(unsigned short val_nDim, unsigned sho
 
 	/*--- Artifical dissipation part ---*/
 	Param_p = 0.3;
+	Param_Kappa_2 = config->GetKappa_2nd_Flow();
 	Param_Kappa_4 = config->GetKappa_4th_Flow();
 
 	/*--- Allocate some structures ---*/
@@ -4091,7 +4601,6 @@ void CUpwRoe_Plasma::SetResidual(double *val_residual, double **val_Jacobian_i, 
 
 	/*--- Point i, Needs to recompute SoundSpeed / Pressure / Enthalpy in case of 2nd order reconstruction ---*/
 	for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++) {
-		nVar_Species = nDim +2;
 		loc = iSpecies*nVar_Species;
 		Density_i= U_i[loc + 0];
 		sq_vel = 0;
@@ -4282,13 +4791,15 @@ CUpwRoe_Turkel_Plasma::CUpwRoe_Turkel_Plasma(unsigned short val_nDim, unsigned s
 																																														CNumerics(val_nDim, val_nVar,val_nSpecies, val_nDiatomics, val_nMonatomics, config) {
 
 	implicit = (config->GetKind_TimeIntScheme_Plasma() == EULER_IMPLICIT);
-	rotating_frame = config->GetRotating_Frame();
-	grid_movement = config->GetGrid_Movement();
+
 	Beta_min = config->GetminTurkelBeta();
 	Beta_max = config->GetmaxTurkelBeta();
 	nVar_Species = nDim + 2;
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
+	Energy_vib = 0.0;
+	Energy_el = 0.0;
+
 	Diff_U = new double [nVar_Species];
 	Velocity_i = new double [nDim];
 	Velocity_j = new double [nDim];
@@ -4364,7 +4875,7 @@ void CUpwRoe_Turkel_Plasma::SetResidual(double *val_residual, double **val_Jacob
 		UnitaryNormal[iDim] = Normal[iDim]/Area;
 
 	for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++) {
-		loc = (nDim+2)*iSpecies;
+		loc = nVar_Species*iSpecies;
 		/*--- Conserved variables at point i,
         Need to recompute SoundSpeed / Pressure / Enthalpy in
         case of 2nd order reconstruction ---*/
@@ -4376,24 +4887,31 @@ void CUpwRoe_Turkel_Plasma::SetResidual(double *val_residual, double **val_Jacob
 		}
 		Gamma = config->GetSpecies_Gamma(iSpecies);
 		Gamma_Minus_One = Gamma - 1.0;
-		Energy_i     = U_i[loc + nDim+1] / Density_i;
-		SoundSpeed_i = sqrt(Gamma*Gamma_Minus_One*(Energy_i-0.5*sq_vel));
-		Pressure_i   = (SoundSpeed_i * SoundSpeed_i * Density_i) / Gamma;
-		Enthalpy_i   = (U_i[loc + nDim+1] + Pressure_i) / Density_i;
+		Energy_i		= U_i[loc + nDim+1] / Density_i;
+//		Pressure_i	= Gamma_Minus_One*(Energy_i-0.5*sq_vel))*Density_i;
+		Pressure_i  = Gamma_Minus_One*(Energy_i - 0.5*sq_vel - Enthalpy_formation[iSpecies] - Energy_vib - Energy_el)*Density_i;
+		if (Pressure_i < 0.0) Pressure_i = Pressure_Old_i_MS[iSpecies];
+
+		SoundSpeed_i	= sqrt(Pressure_i*Gamma/Density_i);
+		Enthalpy_i		= (U_i[loc + nDim + 1] + Pressure_i) / Density_i;
 
 		/*--- Conserved variables at point j,
         Need to recompute SoundSpeed / Pressure / Enthalpy in
         case of 2nd order reconstruction ---*/
-		Density_j = U_j[loc + 0];
+		Density_j		= U_j[loc + 0];
 		sq_vel = 0;
 		for (iDim = 0; iDim < nDim; iDim++) {
 			Velocity_j[iDim] = U_j[loc + iDim+1] / Density_j;
 			sq_vel += Velocity_j[iDim]*Velocity_j[iDim];
 		}
-		Energy_j     = U_j[loc + nDim+1] / Density_j;
-		SoundSpeed_j = sqrt(Gamma*Gamma_Minus_One*(Energy_j-0.5*sq_vel));
-		Pressure_j   = (SoundSpeed_j * SoundSpeed_j * Density_j) / Gamma;
-		Enthalpy_j   = (U_j[loc + nDim+1] + Pressure_j) / Density_j;
+
+		Energy_j		= U_j[loc + nDim+1] / Density_j;
+//		Pressure_j	= (Gamma_Minus_One*(Energy_j-0.5*sq_vel))*Density_j;
+		Pressure_j  = Gamma_Minus_One*(Energy_j - 0.5*sq_vel - Enthalpy_formation[iSpecies] - Energy_vib - Energy_el)*Density_j;
+		if (Pressure_j < 0.0) Pressure_j= Pressure_Old_j_MS[iSpecies];
+
+		SoundSpeed_j	= sqrt(Pressure_j*Gamma/Density_j);
+		Enthalpy_j		= (U_j[loc + nDim+1] + Pressure_j) / Density_j;
 
 		/*--- Roe-averaged variables at interface between i & j ---*/
 		R = sqrt(Density_j/Density_i);
@@ -4404,7 +4922,7 @@ void CUpwRoe_Turkel_Plasma::SetResidual(double *val_residual, double **val_Jacob
 			sq_vel += RoeVelocity[iDim]*RoeVelocity[iDim];
 		}
 		RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
-		RoeSoundSpeed = sqrt((Gamma-1.0)*(RoeEnthalpy-0.5*sq_vel));
+		RoeSoundSpeed = sqrt(fabs((Gamma-1)*(RoeEnthalpy-0.5*sq_vel)));
 		RoePressure = RoeDensity/Gamma*RoeSoundSpeed*RoeSoundSpeed;
 
 		/*--- Compute Proj_flux_tensor_i ---*/
@@ -4427,7 +4945,6 @@ void CUpwRoe_Turkel_Plasma::SetResidual(double *val_residual, double **val_Jacob
 			double local_Mach = sqrt(sq_vel)/RoeSoundSpeed;
 			Beta 		    = max(Beta_min,min(local_Mach,Beta_max));
 		}
-
 
 		Beta2 				   = Beta*Beta;
 		one_m_Betasqr 		   = 1.0 - Beta2;  // 1-Beta*Beta

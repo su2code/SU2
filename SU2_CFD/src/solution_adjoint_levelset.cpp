@@ -2,7 +2,7 @@
  * \file solution_adjoint_levelset.cpp
  * \brief Main subrotuines for solving the level set problem.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -39,8 +39,9 @@ CAdjLevelSetSolution::CAdjLevelSetSolution(CGeometry *geometry, CConfig *config)
 	nVar = 1;
 	
 	/*--- Define some auxiliar vector related with the residual ---*/
-	Residual = new double[nVar]; Residual_Max = new double[nVar];
+	Residual = new double[nVar]; Residual_RMS = new double[nVar]; 
 	Residual_i = new double[nVar]; Residual_j = new double[nVar];
+  Residual_Max = new double[nVar]; Point_Max = new unsigned long[nVar];
 	
 	/*--- Define some auxiliar vector related with the solution ---*/
 	Solution = new double[nVar];
@@ -92,13 +93,10 @@ CAdjLevelSetSolution::CAdjLevelSetSolution(CGeometry *geometry, CConfig *config)
 			cvector[iVar] = new double [nDim];
 	}
 	
-	/*--- levelset_Inf at the infinity ---*/
-	levelset_Inf = 0.0;
-	
 	/*--- Restart the solution from file information ---*/
 	if (!restart) {
 		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-			node[iPoint] = new CAdjLevelSetVariable(levelset_Inf, nDim, nVar, config);
+			node[iPoint] = new CAdjLevelSetVariable(0.0, nDim, nVar, config);
 		}
 	}
 	else {
@@ -224,7 +222,7 @@ CAdjLevelSetSolution::~CAdjLevelSetSolution(void) {
 	
 }
 
-void CAdjLevelSetSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iRKStep) {
+void CAdjLevelSetSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 	unsigned long iPoint;
 	
 	bool implicit = (config->GetKind_TimeIntScheme_AdjLevelSet() == EULER_IMPLICIT);
@@ -239,7 +237,7 @@ void CAdjLevelSetSolution::Preprocessing(CGeometry *geometry, CSolution **soluti
 	if (implicit)
 		Jacobian.SetValZero();
 	
-	if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry);
+	if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
 	if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
 }
 
@@ -355,8 +353,8 @@ void CAdjLevelSetSolution::Upwind_Residual(CGeometry *geometry, CSolution **solu
 	bool high_order_diss = (config->GetKind_Upwind_LevelSet() == SCALAR_UPWIND_2ND);
 	
 	if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-		solution_container[FLOW_SOL]->SetSolution_Gradient_GG(geometry);
-		SetSolution_Gradient_GG(geometry);
+		solution_container[FLOW_SOL]->SetSolution_Gradient_GG(geometry, config);
+		SetSolution_Gradient_GG(geometry, config);
 		
 	}
 	if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
@@ -469,7 +467,7 @@ void CAdjLevelSetSolution::Source_Template(CGeometry *geometry, CSolution **solu
 
 
 void CAdjLevelSetSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short val_marker) {
-	unsigned long iPoint, iVertex, Point_Normal;
+	unsigned long iPoint, iVertex;
 	unsigned short iVar, iDim;
 	double *U_domain, *U_wall, *LevelSet_domain, *LevelSet_wall;
 	
@@ -485,18 +483,14 @@ void CAdjLevelSetSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **soluti
 		
 		/*--- If the node belong to the domain ---*/
 		if (geometry->node[iPoint]->GetDomain()) {
-			
-			/*--- Compute closest normal neighbor ---*/
-			Point_Normal = geometry->vertex[val_marker][iVertex]->GetClosest_Neighbor();
-			
+						
 			for (iVar = 0; iVar < solution_container[FLOW_SOL]->GetnVar(); iVar++) {
 				U_domain[iVar] = solution_container[FLOW_SOL]->node[iPoint]->GetSolution(iVar);
 				U_wall[iVar] = solution_container[FLOW_SOL]->node[iPoint]->GetSolution(iVar);
 			}
 			
 			LevelSet_domain[0] = node[iPoint]->GetSolution(0);
-//			LevelSet_wall[0] = node[Point_Normal]->GetSolution(0);
-			LevelSet_wall[0] = 0.0;
+			LevelSet_wall[0] = node[iPoint]->GetSolution(0);
 			
 			/*--- Set the normal vector ---*/
 			geometry->vertex[val_marker][iVertex]->GetNormal(Vector);
@@ -564,115 +558,46 @@ void CAdjLevelSetSolution::BC_Far_Field(CGeometry *geometry, CSolution **solutio
 }
 
 void CAdjLevelSetSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
-	unsigned long iPoint, iVertex, Point_Normal;
-	unsigned short iVar, iDim;
-	double *U_domain, *U_inlet, *LevelSet_domain, *LevelSet_inlet;
+	unsigned long iPoint, iVertex;
 	
-	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-	
-	U_domain = new double[solution_container[FLOW_SOL]->GetnVar()]; 
-	U_inlet = new double[solution_container[FLOW_SOL]->GetnVar()];
-	LevelSet_domain = new double[nVar];
-	LevelSet_inlet = new double[nVar];
+	bool implicit = (config->GetKind_TimeIntScheme_AdjLevelSet() == EULER_IMPLICIT);
 	
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 		
-		/*--- If the node belong to the domain ---*/
-		if (geometry->node[iPoint]->GetDomain()) {
-			
-			/*--- Compute closest normal neighbor ---*/
-			Point_Normal = geometry->vertex[val_marker][iVertex]->GetClosest_Neighbor();
-			
-			/*--- Interpolated solution interior to the inlet ---*/
-			for (iVar = 0; iVar < solution_container[FLOW_SOL]->GetnVar(); iVar++)
-				U_domain[iVar] = solution_container[FLOW_SOL]->node[iPoint]->GetSolution(iVar);
-			
-			U_inlet[0] = solution_container[FLOW_SOL]->node[Point_Normal]->GetSolution(0);
-			for (iDim = 0; iDim < nDim; iDim++)
-				U_inlet[iDim+1] = solution_container[FLOW_SOL]->GetVelocity_Inf(iDim)*solution_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
-			U_inlet[nDim] = solution_container[FLOW_SOL]->node[Point_Normal]->GetSolution(nDim); 
-			
-			LevelSet_domain[0] = node[iPoint]->GetSolution(0);
-//			LevelSet_inlet[0] = node[Point_Normal]->GetSolution(0);
-			LevelSet_inlet[0] = 0.0;
-			
-			/*--- Set the normal vector ---*/
-			geometry->vertex[val_marker][iVertex]->GetNormal(Vector);
-			for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = -Vector[iDim];
-			conv_solver->SetNormal(Vector);
-			
-			conv_solver->SetConservative(U_domain, U_inlet);
-			conv_solver->SetLevelSetVar(LevelSet_domain, LevelSet_inlet);
-			conv_solver->SetDensityInc(solution_container[FLOW_SOL]->node[iPoint]->GetDensityInc(), solution_container[FLOW_SOL]->node[iPoint]->GetDensityInc());
-			conv_solver->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
-			
-			node[iPoint]->AddRes_Conv(Residual);
-			
-			if (implicit) Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
-			
-		}
+		/*--- Set the solution to the original value ---*/
+		Solution[0] = node[iPoint]->GetSolution(0);
+		
+		node[iPoint]->SetSolution_Old(Solution);
+		node[iPoint]->SetResidualZero();
+		node[iPoint]->Set_ResConv_Zero();
+		node[iPoint]->Set_ResSour_Zero();
+		
+		/*--- Includes 1 in the diagonal ---*/
+		if (implicit)
+			Jacobian.DeleteValsRowi(iPoint);
 	}
 }
 
 void CAdjLevelSetSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
-	unsigned long iPoint, iVertex, Point_Normal;
-	unsigned short iVar, iDim;
-	double *U_domain, *U_outlet, Pressure, *LevelSet_domain, *LevelSet_outlet;
-	double Density, yFreeSurface, PressFreeSurface;
-	double Froude, yCoord;
+	unsigned long iPoint, iVertex;
 	
-	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-	bool gravity = config->GetGravityForce();
-	
-	U_domain = new double[solution_container[FLOW_SOL]->GetnVar()]; 
-	U_outlet = new double[solution_container[FLOW_SOL]->GetnVar()];
-	LevelSet_domain = new double[1];
-	LevelSet_outlet = new double[1];
+	bool implicit = (config->GetKind_TimeIntScheme_AdjLevelSet() == EULER_IMPLICIT);
 	
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 		
-		/*--- If the node belong to the domain ---*/
-		if (geometry->node[iPoint]->GetDomain()) {
-			
-			/*--- Compute closest normal neighbor ---*/
-			Point_Normal = geometry->vertex[val_marker][iVertex]->GetClosest_Neighbor();
-			
-			for (iVar = 0; iVar < solution_container[FLOW_SOL]->GetnVar(); iVar++)
-				U_domain[iVar] = solution_container[FLOW_SOL]->node[iPoint]->GetSolution(iVar);
-			
-			yFreeSurface = config->GetFreeSurface_Zero();
-			PressFreeSurface = solution_container[FLOW_SOL]->GetPressure_Inf();
-			Density = solution_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
-			Froude = config->GetFroude();
-			yCoord = geometry->node[iPoint]->GetCoord(1);
-			if (gravity) Pressure = PressFreeSurface + Density*((yFreeSurface-yCoord)/(Froude*Froude));
-			else Pressure = PressFreeSurface;
-			
-			U_outlet[0] = Pressure;
-			for (iDim = 0; iDim < nDim; iDim++)
-				U_outlet[iDim+1] = solution_container[FLOW_SOL]->node[Point_Normal]->GetSolution(iDim+1); 
-			
-			LevelSet_domain[0] = node[iPoint]->GetSolution(0);
-//			LevelSet_outlet[0] = node[Point_Normal]->GetSolution(0);
-			LevelSet_outlet[0] = 0.0;
-			
-			/*--- Set the normal vector ---*/
-			geometry->vertex[val_marker][iVertex]->GetNormal(Vector);
-			for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = -Vector[iDim];
-			conv_solver->SetNormal(Vector);
-			
-			conv_solver->SetConservative(U_domain, U_outlet);
-			conv_solver->SetLevelSetVar(LevelSet_domain, LevelSet_outlet);
-			conv_solver->SetDensityInc(solution_container[FLOW_SOL]->node[iPoint]->GetDensityInc(), solution_container[FLOW_SOL]->node[iPoint]->GetDensityInc());
-			conv_solver->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
-			
-			node[iPoint]->AddRes_Conv(Residual);
-			
-			if (implicit) Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
-			
-		}
+		/*--- Set the solution to the original value ---*/
+		Solution[0] = node[iPoint]->GetSolution(0);
+		
+		node[iPoint]->SetSolution_Old(Solution);
+		node[iPoint]->SetResidualZero();
+		node[iPoint]->Set_ResConv_Zero();
+		node[iPoint]->Set_ResSour_Zero();
+		
+		/*--- Includes 1 in the diagonal ---*/
+		if (implicit)
+			Jacobian.DeleteValsRowi(iPoint);
 	}
 }
 
@@ -786,7 +711,7 @@ void CAdjLevelSetSolution::MPI_Send_Receive(CGeometry ***geometry, CSolution ***
 
 void CAdjLevelSetSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
 																		 CConfig *config, unsigned short val_marker) {
-	unsigned long iPoint, iVertex, Point_Normal;
+	unsigned long iPoint, iVertex;
 	unsigned short iVar, iDim;
 	double *U_domain, *U_wall, *LevelSet_domain, *LevelSet_wall;
 	
@@ -802,17 +727,14 @@ void CAdjLevelSetSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solutio
 		
 		/*--- If the node belong to the domain ---*/
 		if (geometry->node[iPoint]->GetDomain()) {
-			
-			/*--- Compute closest normal neighbor ---*/
-			Point_Normal = geometry->vertex[val_marker][iVertex]->GetClosest_Neighbor();
-			
+						
 			for (iVar = 0; iVar < solution_container[FLOW_SOL]->GetnVar(); iVar++) {
 				U_domain[iVar] = solution_container[FLOW_SOL]->node[iPoint]->GetSolution(iVar);
 				U_wall[iVar] = solution_container[FLOW_SOL]->node[iPoint]->GetSolution(iVar);
 			}
 						
 			LevelSet_domain[0] = node[iPoint]->GetSolution(0);
-			LevelSet_wall[0] = node[Point_Normal]->GetSolution(0);
+			LevelSet_wall[0] = node[iPoint]->GetSolution(0);
 			
 			/*--- Set the normal vector ---*/
 			geometry->vertex[val_marker][iVertex]->GetNormal(Vector);
@@ -837,8 +759,9 @@ void CAdjLevelSetSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolutio
 	double Delta = 0.0, *local_Residual, Vol;
 	
 	/*--- Set maximum residual to zero ---*/
-	SetRes_Max(0,0.0);
-	
+  SetRes_RMS(0, 0.0);
+  SetRes_Max(0, 0.0, 0);
+  
 	/*--- Build implicit system ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
 		local_Residual = node[iPoint]->GetResidual();
@@ -852,8 +775,15 @@ void CAdjLevelSetSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolutio
 		/*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 		rhs[iPoint] = -local_Residual[0];
 		xsol[iPoint] = 0.0;
-		AddRes_Max( 0, local_Residual[0]*local_Residual[0]*Vol );
+		AddRes_RMS(0, local_Residual[0]*local_Residual[0]);
+    AddRes_Max(0, fabs(local_Residual[0]), geometry->node[iPoint]->GetGlobalIndex());
 	}
+  
+  /*--- Initialize residual and solution at the ghost points ---*/
+  for (iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
+    rhs[iPoint] = 0.0;
+    xsol[iPoint] = 0.0;
+  }
 	
 	/*--- Solve the system, note that if it is a unsteady problem, the linear system must be converged ---*/
 	Jacobian.LU_SGSIteration(rhs, xsol, geometry, config);
@@ -864,65 +794,11 @@ void CAdjLevelSetSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolutio
 		node[iPoint]->AddSolution(0, xsol[iPoint]);
 	}
 	
-#ifdef NO_MPI
-	/*--- Compute the norm-2 of the residual ---*/
-	SetRes_Max(0, sqrt(GetRes_Max(0)));
-#endif
-	
-}
-
-void CAdjLevelSetSolution::ExplicitEuler_Iteration(CGeometry *geometry, CSolution **solution_container, CConfig *config) {
-	double *Residual, Vol, Delta, *Coord;
-	unsigned long iPoint;
-	
-	/*--- Set maximum residual to zero ---*/
-	SetRes_Max(0, 0.0);
-	
-	/*--- Update the solution ---*/
-	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-		Vol = geometry->node[iPoint]->GetVolume();
-		Coord = geometry->node[iPoint]->GetCoord();
-
-		Delta = node[iPoint]->GetDelta_Time() / Vol;
-		
-		Residual = node[iPoint]->GetResidual();
-		node[iPoint]->AddSolution(0, - Residual[0]*Delta);
-
-		AddRes_Max( 0, Residual[0]*Residual[0]*Vol );	
-	}
-	
-#ifdef NO_MPI
-	/*--- Compute the norm-2 of the residual ---*/
-	SetRes_Max( 0, sqrt(GetRes_Max(0)) );
-#endif
-	
-}
-
-void CAdjLevelSetSolution::ExplicitRK_Iteration(CGeometry *geometry, CSolution **solution_container, 
-																					CConfig *config, unsigned short iRKStep) {
-	double *Residual, Vol, Delta;
-	unsigned long iPoint;
-	double RK_AlphaCoeff = config->Get_Alpha_RKStep(iRKStep);
-	
-	/*--- Set maximum residual to zero ---*/
-	SetRes_Max(0, 0.0);
-	
-	/*--- Update the solution ---*/
-	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-		Vol = geometry->node[iPoint]->GetVolume();
-
-		Delta = node[iPoint]->GetDelta_Time() / Vol;
-		
-		Residual = node[iPoint]->GetResidual();
-		node[iPoint]->AddSolution(0, - Residual[0]*Delta*RK_AlphaCoeff);
-
-		AddRes_Max( 0, Residual[0]*Residual[0]*Vol );
-	}
-	
-#ifdef NO_MPI
-	/*--- Compute the norm-2 of the residual ---*/
-	SetRes_Max( 0, sqrt(GetRes_Max(0)) );
-#endif
+  /*--- MPI solution ---*/
+  SetSolution_MPI(geometry, config);
+  
+  /*--- Compute the root mean square residual ---*/
+  SetResidual_RMS(geometry, config);
 	
 }
 

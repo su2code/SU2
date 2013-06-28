@@ -5,7 +5,7 @@
  * semi-automatically using python, Tapenade and some minor requirement
  * to add in small bits of code/comments
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -59,6 +59,104 @@ void CSourcePieceWise_AdjDiscTurbSA::SetDirectResidual_ad(double *val_residual, 
 
 //SU2_DIFF START CSourcePieceWise_TurbSA__SetResidual
 
+    double result1;
+    double result1d;
+    double x2;
+    double x2d;
+    double x1;
+    double x1d;
+    Density_id = U_id[0];
+    Density_i = U_i[0];
+    val_residuald[0] = 0.0;
+    val_residual[0] = 0.0;
+    /*--- Computation of divergence of velocity and vorticity ---*/
+    DivVelocity = 0;
+    for (iDim = 0; iDim < nDim; ++iDim)
+        DivVelocity += PrimVar_Grad_i[iDim + 1][iDim];
+    Vorticityd = (PrimVar_Grad_id[2][0]-PrimVar_Grad_id[1][1])*(PrimVar_Grad_i
+        [2][0]-PrimVar_Grad_i[1][1]) + (PrimVar_Grad_i[2][0]-PrimVar_Grad_i[1]
+        [1])*(PrimVar_Grad_id[2][0]-PrimVar_Grad_id[1][1]);
+    Vorticity = (PrimVar_Grad_i[2][0]-PrimVar_Grad_i[1][1])*(PrimVar_Grad_i[2]
+        [0]-PrimVar_Grad_i[1][1]);
+    if (nDim == 3) {
+        Vorticityd = Vorticityd + (PrimVar_Grad_id[3][1]-PrimVar_Grad_id[2][2]
+            )*(PrimVar_Grad_i[3][1]-PrimVar_Grad_i[2][2]) + (PrimVar_Grad_i[3]
+            [1]-PrimVar_Grad_i[2][2])*(PrimVar_Grad_id[3][1]-PrimVar_Grad_id[2
+            ][2]) + (PrimVar_Grad_id[1][2]-PrimVar_Grad_id[3][0])*(
+            PrimVar_Grad_i[1][2]-PrimVar_Grad_i[3][0]) + (PrimVar_Grad_i[1][2]
+            -PrimVar_Grad_i[3][0])*(PrimVar_Grad_id[1][2]-PrimVar_Grad_id[3][0
+            ]);
+        Vorticity += (PrimVar_Grad_i[3][1]-PrimVar_Grad_i[2][2])*(
+        PrimVar_Grad_i[3][1]-PrimVar_Grad_i[2][2]) + (PrimVar_Grad_i[1][2]-
+        PrimVar_Grad_i[3][0])*(PrimVar_Grad_i[1][2]-PrimVar_Grad_i[3][0]);
+    }
+    Vorticityd = (Vorticity == 0.0 ? 0.0 : Vorticityd/(2.0*sqrt(Vorticity)));
+    Vorticity = sqrt(Vorticity);
+    if (dist_i > 0.0) {
+        /*--- Production term ---*/
+        dist_i_2 = dist_i*dist_i;
+        nud = (Laminar_Viscosity_id*Density_i-Laminar_Viscosity_i*Density_id)/
+            (Density_i*Density_i);
+        nu = Laminar_Viscosity_i/Density_i;
+        Jid = (TurbVar_id[0]*nu-TurbVar_i[0]*nud)/(nu*nu);
+        Ji = TurbVar_i[0]/nu;
+        Ji_2d = Jid*Ji + Ji*Jid;
+        Ji_2 = Ji*Ji;
+        Ji_3d = Ji_2d*Ji + Ji_2*Jid;
+        Ji_3 = Ji_2*Ji;
+        fv1d = (Ji_3d*(Ji_3+cv1_3)-Ji_3*Ji_3d)/((Ji_3+cv1_3)*(Ji_3+cv1_3));
+        fv1 = Ji_3/(Ji_3+cv1_3);
+        fv2d = -((Jid*(1.0+Ji*fv1)-Ji*(Jid*fv1+Ji*fv1d))/((1.0+Ji*fv1)*(1.0+Ji
+            *fv1)));
+        fv2 = 1.0 - Ji/(1.0+Ji*fv1);
+        Omegad = Vorticityd;
+        Omega = Vorticity;
+        x1d = Omegad + (TurbVar_id[0]*fv2+TurbVar_i[0]*fv2d)/(k2*dist_i_2);
+        x1 = Omega + TurbVar_i[0]*fv2/(k2*dist_i_2);
+        if (x1 < TURB_EPS) {
+            Shat = TURB_EPS;
+            Shatd = 0.0;
+        } else {
+            Shatd = x1d;
+            Shat = x1;
+        }
+        val_residuald[0] = cb1*Volume*(Shatd*TurbVar_i[0]+Shat*TurbVar_id[0]);
+        val_residual[0] += cb1*Shat*TurbVar_i[0]*Volume;
+        x2d = (TurbVar_id[0]*Shat*k2*dist_i_2-TurbVar_i[0]*k2*dist_i_2*Shatd)/
+            (Shat*k2*dist_i_2*(Shat*k2*dist_i_2));
+        x2 = TurbVar_i[0]/(Shat*k2*dist_i_2);
+        if (x2 > 10.) {
+            r = 10.;
+            rd = 0.0;
+        } else {
+            rd = x2d;
+            r = x2;
+        }
+        result1d = pow_d(r, rd, 6., &result1);
+        gd = rd + cw2*(result1d-rd);
+        g = r + cw2*(result1-r);
+        g_6d = pow_d(g, gd, 6., &g_6);
+        glimd = pow_d((1.0+cw3_6)/(g_6+cw3_6), -((1.0+cw3_6)*g_6d/((g_6+cw3_6)
+            *(g_6+cw3_6))), 1.0/6.0, &glim);
+        fwd = gd*glim + g*glimd;
+        fw = g*glim;
+        val_residuald[0] = val_residuald[0] - Volume*cw1*((fwd*TurbVar_i[0]+fw
+            *TurbVar_id[0])*TurbVar_i[0]+fw*TurbVar_i[0]*TurbVar_id[0])/
+            dist_i_2;
+        val_residual[0] -= cw1*fw*TurbVar_i[0]*TurbVar_i[0]/dist_i_2*Volume;
+        /*--- Diffusion term ---*/
+        norm2_Grad = 0.0;
+        norm2_Gradd = 0.0;
+        for (iDim = 0; iDim < nDim; ++iDim) {
+            norm2_Gradd = norm2_Gradd + TurbVar_Grad_id[0][iDim]*
+                TurbVar_Grad_i[0][iDim] + TurbVar_Grad_i[0][iDim]*
+                TurbVar_Grad_id[0][iDim];
+            norm2_Grad += TurbVar_Grad_i[0][iDim]*TurbVar_Grad_i[0][iDim];
+        }
+        val_residuald[0] = val_residuald[0] + cb2*Volume*norm2_Gradd/sigma;
+        val_residual[0] += cb2/sigma*norm2_Grad*Volume;
+    } else
+        *val_residuald = 0.0;
 
 
 //SU2_DIFF END CSourcePieceWise_TurbSA__SetResidual

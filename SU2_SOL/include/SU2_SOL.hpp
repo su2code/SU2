@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines of the code SU2_SOL.
  *        The subroutines and functions are in the <i>SU2_SOL.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -30,8 +30,8 @@
 #include <mpi.h>
 #endif
 
-#include "solution_structure.hpp"
-#include "output_structure.hpp"
+#include "../../SU2_CFD/include/solution_structure.hpp"
+#include "../../SU2_CFD/include/output_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
 

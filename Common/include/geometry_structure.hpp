@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>geometry_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -58,13 +58,14 @@ using namespace std;
  * \brief Parent class for defining the geometry of the problem (complete geometry, 
  *        multigrid agglomerated geometry, only boundary geometry, etc..)
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CGeometry {
 protected:
 	unsigned long nPoint,	/*!< \brief Number of points of the mesh. */
 	nPointDomain,						/*!< \brief Number of real points of the mesh. */
 	nPointGhost,					/*!< \brief Number of ghost points of the mesh. */
+  Global_nPoint,	/*!< \brief Total number of nodes in a simulation across all processors (including halos). */
 	Global_nPointDomain,	/*!< \brief Total number of nodes in a simulation across all processors (excluding halos). */
 	nElem,					/*!< \brief Number of elements of the mesh. */
   Global_nElem,	/*!< \brief Total number of elements in a simulation across all processors (all types). */
@@ -110,7 +111,6 @@ public:
 	CVertex*** vertex;		/*!< \brief Boundary Vertex vector (dual grid information). */
 	unsigned long *nVertex;	/*!< \brief Number of vertex for each marker. */
 	unsigned short nCommLevel;		/*!< \brief Number of non-blocking communication levels. */
-	long **CommPattern;	/*!< \brief Define the non-blocking communication pattern. */
 	vector<unsigned long> PeriodicPoint[MAX_NUMBER_PERIODIC][2];			/*!< \brief PeriodicPoint[Periodic bc] and return the point that 
 																			 must be sent [0], and the image point in the periodic bc[1]. */
 	vector<unsigned long> PeriodicElem[MAX_NUMBER_PERIODIC];				/*!< \brief PeriodicElem[Periodic bc] and return the elements that 
@@ -148,7 +148,7 @@ public:
 	/*! 
 	 * \brief Destructor of the class.
 	 */
-	~CGeometry(void);
+	virtual ~CGeometry(void);
 
 	/*! 
 	 * \brief Get number of coordinates.
@@ -207,6 +207,14 @@ public:
 	 */		
 	long FindEdge(unsigned long first_point, unsigned long second_point);
 
+    /*!
+	 * \brief Get the edge index from using the nodes of the edge.
+	 * \param[in] first_point - First point of the edge.
+	 * \param[in] second_point - Second point of the edge.
+	 * \return Index of the edge.
+	 */
+	bool CheckEdge(unsigned long first_point, unsigned long second_point);
+    
 	/*! 
 	 * \brief Get the distance between a plane (defined by three point) and a point.
 	 * \param[in] Coord - Coordinates of the point.
@@ -449,6 +457,12 @@ public:
 	 * \param[in] config - Definition of the particular problem.		 
 	 */
 	virtual void SetColorGrid(CConfig *config);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  virtual void DivideConnectivity(CConfig *config, unsigned short Elem_Type);
 
 	/*! 
 	 * \brief A virtual member.
@@ -599,7 +613,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void FindClosestNeighbor(CConfig *config);
+	virtual void FindNormal_Neighbor(CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
@@ -615,6 +629,12 @@ public:
 	 */
 	virtual unsigned short GetGlobal_to_Local_Marker(unsigned short val_imarker);
 
+  /*!
+	 * \brief A virtual member.
+	 * \returns Total number of nodes in a simulation across all processors (including halos).
+	 */
+	virtual unsigned long GetGlobal_nPoint();
+  
 	/*!
 	 * \brief A virtual member.
 	 * \returns Total number of nodes in a simulation across all processors (excluding halos).
@@ -738,7 +758,7 @@ public:
 	          condition for a natural spline, with zero second derivative on that boundary.
 						Numerical Recipes: The Art of Scientific Computing, Third Edition in C++.
 	 */
-	void SetSpline(vector<double>* x, vector<double>* y, unsigned long n, double yp1, double ypn, vector<double>* y2);
+	void SetSpline(vector<double> &x, vector<double> &y, unsigned long n, double yp1, double ypn, vector<double> &y2);
 	
 	/*!
 	 * \brief Given the arrays xa[1..n] and ya[1..n], which tabulate a function (with the xai’s in order), 
@@ -747,7 +767,7 @@ public:
          	  Numerical Recipes: The Art of Scientific Computing, Third Edition in C++.
 	 * \returns The interpolated value of for x.
 	 */
-	double GetSpline(vector<double>* xa, vector<double>* ya, vector<double>* y2a, unsigned long n, double x);
+	double GetSpline(vector<double> &xa, vector<double> &ya, vector<double> &y2a, unsigned long n, double x);
 	
 };
 
@@ -756,7 +776,7 @@ public:
  * \brief Class for reading a defining the primal grid which is read from the 
  *        grid file in .su2 format.
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CPhysicalGeometry : public CGeometry {
 
@@ -929,7 +949,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.		 
 	 */
 	void SetColorGrid(CConfig *config);
-
+  
 	/*!
 	 * \brief Set the rotational velocity at each grid point.
 	 * \param[in] config - Definition of the particular problem.
@@ -995,8 +1015,14 @@ public:
 	 * \brief Find and store the closest neighbor to a vertex.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void FindClosestNeighbor(CConfig *config);
+	void FindNormal_Neighbor(CConfig *config);
 
+  /*!
+	 * \brief Retrieve total number of nodes in a simulation across all processors (including halos).
+	 * \returns Total number of nodes in a simulation across all processors (including halos).
+	 */
+	unsigned long GetGlobal_nPoint();
+  
 	/*!
 	 * \brief Retrieve total number of nodes in a simulation across all processors (excluding halos).
 	 * \returns Total number of nodes in a simulation across all processors (excluding halos).
@@ -1117,7 +1143,7 @@ public:
  * \brief Class for defining the multigrid geometry, the main delicated part is the 
  *        agglomeration stage, which is done in the declaration.
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CMultiGridGeometry : public CGeometry {
 
@@ -1243,7 +1269,7 @@ public:
 	 * \brief Find and store the closest neighbor to a vertex.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void FindClosestNeighbor(CConfig *config);
+	void FindNormal_Neighbor(CConfig *config);
 
 	/*!
 	 * \brief Indentify geometrical planes in the mesh
@@ -1282,9 +1308,10 @@ public:
  * \brief Class for only defining the boundary of the geometry, this class is only 
  *        used in case we are not interested in the volumetric grid.
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CBoundaryGeometry : public CGeometry {
+  
 public:
 
 	/*! 
@@ -1345,7 +1372,7 @@ public:
  * \class CDomainGeometry
  * \brief Class for defining an especial kind of grid used in the partioning stage.
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CDomainGeometry : public CGeometry {
 	long *Global_to_Local_Point;				/*!< \brief Global-local indexation for the points. */
@@ -1425,7 +1452,7 @@ public:
  * \class CPeriodicGeometry
  * \brief Class for defining a periodic boundary condition.
  * \author T. Economon, F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CPeriodicGeometry : public CGeometry {
 	CPrimalGrid*** newBoundPer;            /*!< \brief Boundary vector for new periodic elements (primal grid information). */
@@ -1478,7 +1505,7 @@ public:
  * \struct CMultiGridQueue
  * \brief Class for a multigrid queue system
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  * \date Aug 12, 2012
  */
 class CMultiGridQueue {

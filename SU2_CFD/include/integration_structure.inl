@@ -2,7 +2,7 @@
  * \file integration_structure.inl
  * \brief In-Line subroutines of the <i>integration_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -52,9 +52,7 @@ inline void CIntegration::SetProlongated_Solution(unsigned short RunTime_EqSyste
 inline void CIntegration::SetRestricted_Residual(CSolution *sol_fine, CSolution *sol_coarse, CGeometry *geo_fine, 
 											     CGeometry *geo_coarse, CConfig *config)  { }
 
-inline void CIntegration::SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolution **sol_fine, CSolution **sol_coarse, 
-												 CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config, unsigned short iMesh, 
-												 bool InclSharedDomain)  { }
+inline void CIntegration::SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolution **sol_fine, CSolution **sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config)  { }
 
 inline void CIntegration::SetRestricted_Gradient(unsigned short RunTime_EqSystem, CSolution **sol_fine, CSolution **sol_coarse, 
 												 CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) { }

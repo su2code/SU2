@@ -4,7 +4,7 @@
  *        each kind of governing equation (direct, adjoint and linearized).
  *        The subroutines and functions are in the <i>variable_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -36,7 +36,7 @@ using namespace std;
  * \class CVariable
  * \brief Main class for defining the variables.
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CVariable {
 protected:
@@ -47,6 +47,7 @@ protected:
 	*Solution_time_n1;			/*!< \brief Solution of the problem at time n-1 for dual-time stepping technique. */
 	double **Gradient;		/*!< \brief Gradient of the solution of the problem. */ 
 	double *Limiter;				/*!< \brief Limiter of the solution of the problem. */
+  double **LimiterPrimitive; /*!< \brief Limiter of the primitive variables. */
 	double *Solution_Max;		/*!< \brief Max solution for limiter computation. */
 	double *Solution_Min;		/*!< \brief Min solution for limiter computation. */
 	double AuxVar;			/*!< \brief Auxiliar variable for gradient computation. */
@@ -71,6 +72,7 @@ protected:
 													 note that this variable cannnot be static, it is possible to 
 													 have different number of nVar in the same problem. */
 
+
 public:
 
 	/*!
@@ -78,6 +80,13 @@ public:
 	 */
 	CVariable(void);
 
+  /*!
+	 * \overload
+	 * \param[in] val_nvar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CVariable(unsigned short val_nvar, CConfig *config);
+  
 	/*!
 	 * \overload 
 	 * \param[in] val_ndim - Number of dimensions of the problem.		 
@@ -587,6 +596,20 @@ public:
 	 * \param[in] val_limiter - Value of the limiter for the index <i>val_var</i>.
 	 */
 	void SetLimiter(unsigned short val_var, double val_limiter);
+  
+  /*!
+	 * \brief Set the value of the limiter.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_limiter - Value of the limiter for the index <i>val_var</i>.
+	 */
+	virtual void SetLimiterPrimitive(unsigned short val_species, unsigned short val_var, double val_limiter);
+  
+  /*!
+	 * \brief Set the value of the limiter.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_limiter - Value of the limiter for the index <i>val_var</i>.
+	 */
+  virtual double GetLimiterPrimitive(unsigned short val_species, unsigned short val_var);
 	
 	/*!
 	 * \brief Set the value of the max solution.
@@ -1158,17 +1181,22 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 */		
-	virtual void SetPrimVar_Incompressible(double Density_Inf, double ArtComp_Factor, bool freesurface);
+	virtual void SetPrimVar_Incompressible(double Density_Inf, double levelset, CConfig *config);
 	
 	/*!
 	 * \brief A virtual member.
 	 */		
-	virtual void SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double ArtComp_Factor, double turb_ke, bool freesurface);
+	virtual void SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double turb_ke, double levelset, CConfig *config);
 	
 	/*!
 	 * \brief A virtual member.
 	 */
 	virtual double GetPrimVar(unsigned short val_var);
+  
+  /*!
+	 * \brief A virtual member.
+	 */
+  virtual void SetPrimVar(unsigned short val_var, double val_prim);
   
   /*!
 	 * \brief A virtual member.
@@ -1396,7 +1424,7 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 */
-	virtual void SetGradient_PrimitiveZero(void);
+	virtual void SetGradient_PrimitiveZero(unsigned short val_primvar);
 
 	/*!
 	 * \brief A virtual member.
@@ -1601,7 +1629,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] ElectricField - ElectricField
 	 */
-	virtual void SetElectricField(double* ElectricField);
+	virtual void SetElectricField(double* val_ElectricField);
 
 	/*!
 	 * \brief A virtual member.
@@ -1619,6 +1647,57 @@ public:
 	 */
 	virtual double GetTimeSpectral_Source(unsigned short val_var);
 
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] kappapsi_Volume - Value of the mean flow hybrid coupling term.
+	 */
+	virtual void SetKappaPsiVolume(double kappapsi_Volume);
+
+	/*!
+	 * \brief A virtual member.
+	 */
+	virtual double GetKappaPsiVolume();
+
+	/*!
+	 * \brief Set the Eddy Viscosity Sensitivity of the problem.
+	 * \param[in] val_EddyViscSens - Eddy Viscosity Sensitivity.
+	 */
+	virtual void SetEddyViscSens(double *val_EddyViscSens, unsigned short numTotalVar);
+
+	/*!
+	 * \brief Get the Eddy Viscosity Sensitivity of the problem.
+	 * \return Pointer to the Eddy Viscosity Sensitivity.
+	 */
+	virtual double *GetEddyViscSens(void);
+};
+
+/*!
+ * \class CBaselineVariable
+ * \brief Main class for defining the variables of a baseline solution from a restart file (for output).
+ * \author F. Palacios, T. Economon.
+ * \version 2.0.3
+ */
+class CBaselineVariable : public CVariable {
+public:
+  
+	/*!
+	 * \brief Constructor of the class.
+	 */
+	CBaselineVariable(void);
+  
+	/*!
+	 * \overload
+	 * \param[in] val_solution - Pointer to the flow value (initialization value).
+	 * \param[in] val_nvar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CBaselineVariable(double *val_solution, unsigned short val_nvar, CConfig *config);
+  
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	virtual ~CBaselineVariable(void);
+  
 };
 
 /*! 
@@ -1626,7 +1705,7 @@ public:
  * \brief Main class for defining the variables of the potential solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CPotentialVariable : public CVariable {
 	double *Charge_Density;
@@ -1695,7 +1774,7 @@ public:
  * \brief Main class for defining the variables of the wave equation solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CWaveVariable : public CVariable {
 protected:
@@ -1777,7 +1856,7 @@ public:
  * \brief Main class for defining the variables of the Heat equation solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CHeatVariable : public CVariable {
 protected:
@@ -1823,7 +1902,7 @@ public:
  * \brief Main class for defining the variables of the FEA equation solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CFEAVariable : public CVariable {
 protected:
@@ -1862,7 +1941,7 @@ public:
  * \brief Main class for defining the variables of the Euler's solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CEulerVariable : public CVariable {
 protected:
@@ -1912,7 +1991,7 @@ public:
 	/*!
 	 * \brief Set to zero the gradient of the primitive variables.
 	 */
-	void SetGradient_PrimitiveZero(void);
+	void SetGradient_PrimitiveZero(unsigned short val_primvar);
 
 	/*!
 	 * \brief Add <i>val_value</i> to the gradient of the primitive variables.
@@ -1991,14 +2070,22 @@ public:
 	/*!
 	 * \brief Set all the primitive variables for incompressible flows.
 	 */
-	void SetPrimVar_Incompressible(double Density_Inf, double ArtComp_Factor, bool freesurface);
+	void SetPrimVar_Incompressible(double Density_Inf, double levelset, CConfig *config);
 	
 	/*!
 	 * \brief Get the primitive variables.
 	 * \param[in] val_var - Index of the variable.
 	 * \return Value of the primitive variable for the index <i>val_var</i>.
 	 */
-	double GetPrimVar(unsigned short val_var);	
+	double GetPrimVar(unsigned short val_var);
+  
+  /*!
+	 * \brief Set the value of the primitive variables.
+	 * \param[in] val_var - Index of the variable.
+   * \param[in] val_var - Index of the variable.
+	 * \return Set the value of the primitive variable for the index <i>val_var</i>.
+	 */
+	void SetPrimVar(unsigned short val_var, double val_prim);
 
 	/*!
 	 * \brief Get the primitive variables of the problem.
@@ -2159,7 +2246,7 @@ public:
  * \brief Main class for defining the variables of the Navier-Stokes' solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CNSVariable : public CEulerVariable {
 private:
@@ -2295,7 +2382,7 @@ public:
 	/*!
 	 * \brief Set all the primitive variables for incompressible flows
 	 */
-	void SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double ArtComp_Factor, double turb_ke, bool freesurface);
+	void SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double turb_ke, double levelset, CConfig *config);
 };
 
 /*! 
@@ -2303,7 +2390,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CTurbVariable : public CVariable {
 protected:
@@ -2347,7 +2434,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.2
+ * \version 2.0.3
  */
 
 class CTurbSAVariable : public CTurbVariable {
@@ -2393,7 +2480,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.2
+ * \version 2.0.3
  */
 
 class CTransLMVariable : public CTurbVariable {
@@ -2429,7 +2516,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.2
+ * \version 2.0.3
  */
 
 class CTurbSSTVariable : public CTurbVariable {
@@ -2491,7 +2578,7 @@ public:
  * \brief Main class for defining the variables of the adjoint potential solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CAdjPotentialVariable : public CVariable {
 private:
@@ -2526,7 +2613,7 @@ public:
  * \brief Main class for defining the variables of the adjoint Euler solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CAdjEulerVariable : public CVariable {
 protected:
@@ -2644,9 +2731,11 @@ public:
  * \brief Main class for defining the variables of the adjoint Navier-Stokes solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CAdjNSVariable : public CAdjEulerVariable {	
+private:
+	double kappapsi_Volume;
 public:
 
 	/*!
@@ -2732,6 +2821,17 @@ public:
 	 * \brief Set the value of the force projection vector on the old solution vector.
 	 */
 	void SetVelSolutionDVector(void);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] kappapsi_Volume - Value of the mean flow hybrid coupling term.
+	 */
+	void SetKappaPsiVolume(double kappapsi_Volume);
+
+	/*!
+	 * \brief A virtual member.
+	 */
+	double GetKappaPsiVolume(void);
 };
 
 /*! 
@@ -2739,7 +2839,7 @@ public:
  * \brief Main class for defining the variables of the adjoint turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CAdjTurbVariable : public CVariable {
 protected:
@@ -2748,6 +2848,7 @@ protected:
 	 	 	 	 	 	 	 	 to mean flow and turbulence vars. */
 	double **dFT_dUTvar; 	/*!< \brief Sensitivity of boundary flux
 		 	 	 	 	 	 	 	 to mean flow and turbulence vars. */
+	double *EddyViscSens;    /*!< \brief Eddy Viscosity Sensitivity. */
 
 public:
 
@@ -2763,12 +2864,24 @@ public:
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.	 
 	 */		
-	CAdjTurbVariable(double val_psinu_inf, unsigned short val_ndim, unsigned short val_nvar, unsigned short nNeigh, CConfig *config);
+	CAdjTurbVariable(double val_psinu_inf, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
 
 	/*!
 	 * \brief Destructor of the class. 
 	 */		
 	~CAdjTurbVariable(void);
+
+	/*!
+	 * \brief Set the Eddy Viscosity Sensitivity of the problem.
+	 * \param[in] val_EddyViscSens - Eddy Viscosity Sensitivity.
+	 */
+	void SetEddyViscSens(double *val_EddyViscSens, unsigned short numTotalVar);
+
+	/*!
+	 * \brief Get the Eddy Viscosity Sensitivity of the problem.
+	 * \return Pointer to the Eddy Viscosity Sensitivity.
+	 */
+	double *GetEddyViscSens(void);
 };
 
 /*! 
@@ -2776,7 +2889,7 @@ public:
  * \brief Main class for defining the variables of the linearized potential equation.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CLinPotentialVariable : public CVariable {
 public:	
@@ -2787,7 +2900,7 @@ public:
  * \brief Main class for defining the variables of the linearized Euler's equations.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CLinEulerVariable : public CVariable {
 private:
@@ -2864,7 +2977,7 @@ public:
  * \brief Main class for defining the variables of the linearized Navier-Stokes' equations.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CLinNSVariable : public CLinEulerVariable {
 public:
@@ -2873,7 +2986,7 @@ public:
 /*!
  * \class CPlasmaVariable
  * \brief Main class for defining the variables of the Plasma solver.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CPlasmaVariable : public CVariable {
 protected:	
@@ -2966,7 +3079,7 @@ public:
 	 * \brief Set to zero the gradient of the primitive variables.
    * \param[in] iSpecies - Species index.
 	 */
-	void SetGradient_PrimitiveZero(void);
+	void SetGradient_PrimitiveZero(unsigned short val_primvar);
 
 	/*!
 	 * \param[in] val_delta_time - Value of the time step
@@ -3024,6 +3137,20 @@ public:
 	 * \return Value of the primitive variables gradient.
 	 */
 	double **GetGradient_Primitive(unsigned short val_species);
+  
+  /*!
+	 * \brief Set the value of the limiter.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_limiter - Value of the limiter for the index <i>val_var</i>.
+	 */
+  void SetLimiterPrimitive(unsigned short val_species, unsigned short val_var, double val_limiter);
+  
+  /*!
+	 * \brief Set the value of the limiter.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_limiter - Value of the limiter for the index <i>val_var</i>.
+	 */
+  double GetLimiterPrimitive(unsigned short val_species, unsigned short val_var);
 
 	/*!
 	 * \brief Set the value of the pressure.
@@ -3276,7 +3403,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] ElectricField - ElectricField
 	 */
-	void SetElectricField(double* ElectricField);
+	void SetElectricField(double* val_ElectricField);
 
 	/*!
 	 * \brief A virtual member.
@@ -3309,7 +3436,7 @@ public:
  * \brief Main class for defining the variables of the Level Set.
  * \ingroup LevelSet_Model
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CLevelSetVariable : public CVariable {
 protected:
@@ -3361,7 +3488,7 @@ public:
  * \brief Main class for defining the variables of the Level Set.
  * \ingroup LevelSet_Model
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CAdjLevelSetVariable : public CVariable {
 public:
@@ -3399,7 +3526,7 @@ public:
  * \brief Main class for defining the variables of the adjoint Euler solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CAdjPlasmaVariable : public CVariable {
 protected:
@@ -3490,7 +3617,7 @@ public:
  * \brief Main class for defining the variables of the potential solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CTemplateVariable : public CVariable {
 public:

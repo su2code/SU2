@@ -5,7 +5,7 @@
  *        <i>solution_direct.cpp</i>, <i>solution_adjoint.cpp</i>, and 
  *        <i>solution_linearized.cpp</i> files.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -50,7 +50,7 @@ using namespace std;
  * \brief Main class for defining the PDE solution, it requires 
  * a child class for each particular solver (Euler, Navier-Stokes, Plasma, etc.) 
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CSolution {
 protected:
@@ -62,11 +62,13 @@ protected:
 	double Gamma_Minus_One;				/*!< \brief Fluids's Gamma - 1.0  . */
 	double Max_Delta_Time,	/*!< \brief Maximum value of the delta time for all the control volumes. */
 	Min_Delta_Time;					/*!< \brief Minimum value of the delta time for all the control volumes. */
-	double *Residual_Max,	/*!< \brief Vector with the maximal residual for each variable. */
+	double *Residual_RMS,	/*!< \brief Vector with the mean residual for each variable. */
+  *Residual_Max,        /*!< \brief Vector with the maximal residual for each variable. */
 	*Residual,						/*!< \brief Auxiliary nVar vector. */
 	*Residual_i,					/*!< \brief Auxiliary nVar vector for storing the residual at point i. */
 	*Residual_j;					/*!< \brief Auxiliary nVar vector for storing the residual at point j. */
-	double *Solution,		/*!< \brief Auxiliary nVar vector. */ 
+  unsigned long *Point_Max; /*!< \brief Vector with the maximal residual for each variable. */
+	double *Solution,		/*!< \brief Auxiliary nVar vector. */
 	*Solution_i,				/*!< \brief Auxiliary nVar vector for storing the solution at point i. */ 
 	*Solution_j;				/*!< \brief Auxiliary nVar vector for storing the solution at point j. */ 
 	double *Vector,	/*!< \brief Auxiliary nDim vector. */ 
@@ -96,6 +98,8 @@ protected:
 	CSparseMatrix StiffMatrix; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations, and grid movement. */
 	CSparseMatrix Jacobian; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
     CSparseMatrix JacobianMeanFlow; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
+    //CSparseMatrix DirectJacobian; /*!< \brief Sparse Jacobian structure for direct, discrete part of hybrid computation. */
+    //CSparseMatrix DirectBCJacobian; /*!< \brief Sparse Jacobian structure for direct, discrete boundary conditions part of hybrid computation. */
 
 	/*--- Move this to the child classes ---*/
 	double **StiffMatrix_Elem,			/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices (TODO move to plasma child classes). */
@@ -107,13 +111,16 @@ protected:
 	nDiatomics;											/*! \brief Number of diatomic species in the flow (TODO move to plasma child classes). */
 
 public:
-    double *xsol;		/*!< \brief vector to store iterative solution of implicit linear system. */
+  double *xsol;		/*!< \brief vector to store iterative solution of implicit linear system. */
 	double *xres;		/*!< \brief vector to store iterative residual of implicit linear system. */
 	double *rhs;		/*!< \brief right hand side of implicit linear system. */
-    
+  
 	CVariable** node;	/*!< \brief Vector which the define the variables for each problem. */
+  
+  CSparseMatrix DirectJacobian; /*!< \brief Sparse Jacobian structure for direct, discrete part of hybrid computation. */
+  CSparseMatrix DirectBCJacobian; /*!< \brief Sparse Jacobian structure for direct, discrete boundary conditions part of hybrid computation. */
 
-	/*! 
+	/*!
 	 * \brief Constructor of the class. 
 	 */
 	CSolution(void);
@@ -123,11 +130,36 @@ public:
 	 */
 	virtual ~CSolution(void);
 
+  /*!
+	 * \brief Set number of linear solver iterations.
+	 * \param[in] val_iterlinsolver - Number of linear iterations.
+	 */
+	void SetIterLinSolver(unsigned short val_iterlinsolver);
+  
 	/*!
 	 * \brief Set number of linear solver iterations.
 	 * \param[in] val_iterlinsolver - Number of linear iterations.
 	 */	
-	void SetIterLinSolver(unsigned short val_iterlinsolver);
+	virtual void SetSolution_MPI(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief Set the value of the max residual and RMS residual.
+	 * \param[in] val_iterlinsolver - Number of linear iterations.
+	 */
+	void SetResidual_RMS(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief Set number of linear solver iterations.
+	 * \param[in] val_iterlinsolver - Number of linear iterations.
+	 */
+	virtual void SetSolution_Old_MPI(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief Impose the send-receive boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  virtual void SetSolution_Limiter_MPI(CGeometry *geometry, CConfig *config);
 
 	/*!
 	 * \brief Get number of linear solver iterations.
@@ -204,21 +236,49 @@ public:
 	 * \param[in] val_var - Index of the variable.
 	 * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
 	 */
-	void SetRes_Max(unsigned short val_var, double val_residual);
+	void SetRes_RMS(unsigned short val_var, double val_residual);
 
 	/*! 
 	 * \brief Adds the maximal residual, this is useful for the convergence history.
 	 * \param[in] val_var - Index of the variable.
 	 * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
 	 */
-	void AddRes_Max(unsigned short val_var, double val_residual);
+	void AddRes_RMS(unsigned short val_var, double val_residual);
 
 	/*!
 	 * \brief Get the maximal residual, this is useful for the convergence history.
 	 * \param[in] val_var - Index of the variable.
 	 * \return Value of the biggest residual for the variable in the position <i>val_var</i>.
 	 */
+	double GetRes_RMS(unsigned short val_var);
+  
+  /*!
+	 * \brief Set the maximal residual, this is useful for the convergence history.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
+	 */
+	void SetRes_Max(unsigned short val_var, double val_residual, unsigned long val_point);
+  
+	/*!
+	 * \brief Adds the maximal residual, this is useful for the convergence history.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
+	 */
+	void AddRes_Max(unsigned short val_var, double val_residual, unsigned long val_point);
+  
+	/*!
+	 * \brief Get the maximal residual, this is useful for the convergence history.
+	 * \param[in] val_var - Index of the variable.
+	 * \return Value of the biggest residual for the variable in the position <i>val_var</i>.
+	 */
 	double GetRes_Max(unsigned short val_var);
+  
+  /*!
+	 * \brief Get the maximal residual, this is useful for the convergence history.
+	 * \param[in] val_var - Index of the variable.
+	 * \return Value of the biggest residual for the variable in the position <i>val_var</i>.
+	 */
+	unsigned long GetPoint_Max(unsigned short val_var);
 
 	/*!
 	 * \brief Set Value of the residual if there is a grid movement.
@@ -251,7 +311,7 @@ public:
 	 * \brief Compute the Green-Gauss gradient of the solution.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 */
-	void SetSolution_Gradient_GG(CGeometry *geometry);
+	void SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config);
 
 	/*!
 	 * \brief Compute the Least Squares gradient of the solution.
@@ -259,6 +319,13 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config);
+
+  /*!
+	 * \brief MPI gradients.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  void SetSolution_Gradient_MPI(CGeometry *geometry, CConfig *config);
 
 	/*!
 	 * \brief Compute the Least Squares gradient of the solution on the profile surface.
@@ -293,15 +360,6 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 */
 	void Set_OldSolution(CGeometry *geometry);
-
-	/*!
-	 * \brief Creates a copy of the solution in <i>OldSolution</i> to do a residual computation starting 
-	 *        with a interpolated solution, not the original one (this is useful in the multigrid cycle).
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] index - If greater that 0 means copy from <i>Solution</i> to <i>OldSolution</i>; 
-	 *            Otherwise means the reverse.
-	 */
-	void Set_MultiSolution(CGeometry *geometry, short index);
 
     /*!
 	 * \brief Initializes space matrix system.
@@ -365,7 +423,7 @@ public:
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 */
 	virtual void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver,
-			CConfig *config, unsigned short iRKStep);
+			CConfig *config, unsigned short iMesh, unsigned short iRKStep);
 
 	/*!
 	 * \brief A virtual member.
@@ -374,13 +432,42 @@ public:
 	 */
 	virtual void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config);
 
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void SetUndivided_Laplacian_MPI(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void SetMax_Eigenvalue(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void SetMax_Eigenvalue_MPI(CGeometry *geometry, CConfig *config);
+  
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solution_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetDissipation_Switch(CGeometry *geometry, CSolution **solution_container, CConfig *config);
+	virtual void SetDissipation_Switch(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solution_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void SetDissipation_Switch_MPI(CGeometry *geometry, CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
@@ -753,6 +840,20 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void SetPrimVar_Gradient_MPI(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void SetPrimVar_Limiter_MPI(CGeometry *geometry, CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
@@ -1014,6 +1115,24 @@ public:
 	 * \return Value of the torque coefficient (moment in the -x direction, inviscid + viscous contribution).
 	 */
 	virtual double GetTotal_CQ(void);
+    
+    /*!
+	 * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
+	 * \return Value of the drag coefficient (inviscid + viscous contribution).
+	 */
+	virtual double Get_PressureDrag(void);
+    
+    /*!
+	 * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
+	 * \return Value of the drag coefficient (inviscid + viscous contribution).
+	 */
+	virtual double Get_ViscDrag(void);
+    
+    /*!
+	 * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
+	 * \return Value of the drag coefficient (inviscid + viscous contribution).
+	 */
+	virtual double Get_MagnetDrag(void);
 
 	/*!
 	 * \brief A virtual member.
@@ -1200,7 +1319,35 @@ public:
 	 * \return Value of the heat transfer coefficient.
 	 */
 	virtual double GetHeatTransferCoeff(unsigned short val_marker, unsigned short val_vertex);
-	
+    
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \param[in] val_iSpecies - index of the chemical species 
+	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+	 * \return Value of the heat transfer coefficient.
+	 */
+	virtual double GetHeatTransferCoeff(unsigned short val_marker, unsigned short val_iSpecies, unsigned short val_vertex);    
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \param[in] val_iSpecies - index of the chemical species
+	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+	 * \return Value of the heat transfer coefficient.
+	 */
+	virtual double GetViscForce(unsigned short val_marker, unsigned short val_iSpecies, unsigned short iDim, unsigned short val_vertex);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \param[in] val_iSpecies - index of the chemical species
+	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+	 * \return Value of the heat transfer coefficient.
+	 */
+	virtual double GetPressureForce(unsigned short val_marker, unsigned short val_iSpecies, unsigned short iDim, unsigned short val_vertex);
+
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -1503,7 +1650,16 @@ public:
 	 */
 	virtual void GetRestart(CGeometry *geometry, CConfig *config, unsigned short val_iZone);
 
-	/*! 
+  /*!
+	 * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] data_container - Container holding the output variable data.
+   * \param[in] nOutput_Vars - Number of output variables being stored.
+	 */
+	virtual void SetVolume_Output(CConfig *config, CGeometry *geometry, double **data_container, unsigned short nOutput_Vars);
+  
+	/*!
 	 * \brief Gauss method for solving a linear system.
 	 * \param[in] A - Matrix Ax = b.
 	 * \param[in] rhs - Right hand side.
@@ -1513,12 +1669,55 @@ public:
 
 };
 
+/*!
+ * \class CBaselineSolution
+ * \brief Main class for defining a baseline solution from a restart file (for output).
+ * \author F. Palacios, T. Economon.
+ * \version 2.0.3
+ */
+class CBaselineSolution : public CSolution {
+public:
+  
+	/*!
+	 * \brief Constructor of the class.
+	 */
+	CBaselineSolution(void);
+  
+	/*!
+	 * \overload
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CBaselineSolution(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+  
+  /*!
+	 * \brief Impose the send-receive boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetSolution_MPI(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief Load a solution from a restart file.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_iZone - Current zone in the mesh.
+	 */
+	void GetRestart(CGeometry *geometry, CConfig *config, unsigned short val_iZone);
+  
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	virtual ~CBaselineSolution(void);
+  
+};
+
 /*! 
  * \class CEulerSolution
  * \brief Main class for defining the Euler's flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CEulerSolution : public CSolution {
 protected:
@@ -1626,6 +1825,27 @@ public:
 	 */
 	virtual ~CEulerSolution(void);
 
+  /*!
+	 * \brief Impose the send-receive boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetSolution_MPI(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief Impose the send-receive boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetSolution_Old_MPI(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief Impose the send-receive boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  virtual void SetSolution_Limiter_MPI(CGeometry *geometry, CConfig *config);
+  
 	/*!
 	 * \brief Compute the density at the inlet.
 	 * \return Value of the density at the infinity.
@@ -1797,8 +2017,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config,
-			unsigned short iRKStep);
+	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep);
 
 	/*!
 	 * \brief Compute a pressure sensor switch.
@@ -1806,7 +2025,15 @@ public:
 	 * \param[in] solution_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetDissipation_Switch(CGeometry *geometry, CSolution **solution_container, CConfig *config);
+	void SetDissipation_Switch(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief Parallelization of SetDissipation_Switch.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solution_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetDissipation_Switch_MPI(CGeometry *geometry, CConfig *config);
 
 	/*!
 	 * \brief Compute the gradient of the primitive variables using Green-Gauss method, 
@@ -1823,6 +2050,14 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief Compute the gradient of the primitive variables using a Least-Squares method,
+	 *        and stores the result in the <i>Gradient_Primitive</i> variable.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetPrimVar_Gradient_MPI(CGeometry *geometry, CConfig *config);
 
 	/*!
 	 * \brief Compute the limiter of the primitive variables.
@@ -1844,6 +2079,27 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief Parallelization of Undivided Laplacian.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetUndivided_Laplacian_MPI(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief Compute the max eigenvalue.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetMax_Eigenvalue(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief Parallelization of the Max eigenvalue.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetMax_Eigenvalue_MPI(CGeometry *geometry, CConfig *config);
 
 	/*!
 	 * \brief Impose via the residual the Euler wall boundary condition.
@@ -1855,16 +2111,6 @@ public:
 	 */
 	void BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
 			unsigned short val_marker);
-
-	/*!
-	 * \brief Do the send-receive communications in the MPI parallelization.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_mesh - Index of the mesh in multigrid computations.
-	 */
-	void MPI_Send_Receive(CGeometry ***geometry, CSolution ****solution_container,
-			CConfig **config, unsigned short iMGLevel, unsigned short iZone);
 
 	/*!
 	 * \brief Impose the far-field boundary condition using characteristics.
@@ -2256,6 +2502,15 @@ public:
 	 */
 	void GetRestart(CGeometry *geometry, CConfig *config, unsigned short val_iZone);
 
+  /*!
+	 * \brief Load the output data container with the variables to be written to the volume solution file.
+   * \param[in] config - Definition of the particular problem.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] data_container - Container holding the output variable data.
+   * \param[in] nOutput_Vars - Number of output variables being stored.
+	 */
+	void SetVolume_Output(CConfig *config, CGeometry *geometry, double **data_container, unsigned short nOutput_Vars);
+  
 	/*! 
 	 * \brief Set the initial condition for the Euler Equations.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -2272,7 +2527,7 @@ public:
  * \brief Main class for defining the Navier-Stokes flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CNSSolution : public CEulerSolution {
 private:
@@ -2350,8 +2605,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config,
-			unsigned short iRKStep);
+	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep);
 
 	/*!
 	 * \brief Impose the Navier-Stokes boundary condition (strong).
@@ -2450,7 +2704,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CTurbSolution : public CSolution {
 protected:
@@ -2476,15 +2730,19 @@ public:
 	 */
 	CTurbSolution(CConfig *config);
 
-	/*!
+  /*!
 	 * \brief Impose the send-receive boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_mesh - Index of the mesh in multigrid computations.
 	 */
-	void MPI_Send_Receive(CGeometry ***geometry, CSolution ****solution_container,
-			CConfig **config, unsigned short iMGLevel, unsigned short iZone);
+	void SetSolution_MPI(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief Impose the send-receive boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  void SetSolution_Limiter_MPI(CGeometry *geometry, CConfig *config);
 
 	/*!
 	 * \brief Impose the Symmetry Plane boundary condition.
@@ -2514,7 +2772,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 
-	void CalcGradient_GG(double *U_i, double **U_js, unsigned long nNeigh,
+	void CalcGradient_GG(double *val_U_i, double **val_U_js, unsigned short nNeigh, unsigned short numVar,
 			double **Normals, double **grad_U_i, CConfig *config, CGeometry *geometry, unsigned long iPoint);
 
 	/*!
@@ -2533,7 +2791,7 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 */
-	void CalcPrimVar_Compressible(double Gamma, double Gas_Constant, double turb_ke,
+	void CalcPrimVar_Compressible(double *val_Vars, double Gamma, double Gas_Constant, unsigned short numVar, double turb_ke,
 			 double* Primitive, CConfig *config);
 
 	/*!
@@ -2557,7 +2815,6 @@ public:
 	virtual void CalcEddyViscosity(double *val_FlowVars, double val_laminar_viscosity,
 			double *val_TurbVar, double *val_eddy_viscosity);
 
-
 //	/*!
 //	 * \brief Alternative MUSCL reconstruction of solution. Required for discrete adjoint
 //	 * \param[in] val_grad_U_i - Solution gradient at i.
@@ -2577,7 +2834,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.2
+ * \version 2.0.3
  */
 
 class CTurbSASolution: public CTurbSolution {
@@ -2609,8 +2866,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config,
-			unsigned short iRKStep);
+	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep);
 
 	/*!
 	 * \brief A virtual member.
@@ -2743,7 +2999,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.2
+ * \version 2.0.3
  */
 
 class CTransLMSolution: public CTurbSolution {
@@ -2781,8 +3037,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config,
-			unsigned short iRKStep);
+	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep);
 
 	/*!
 	 * \brief A virtual member.
@@ -2920,7 +3175,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Campos, F. Palacios, T. Economon
- * \version 2.0.2
+ * \version 2.0.3
  */
 
 class CTurbSSTSolution: public CTurbSolution {
@@ -2954,8 +3209,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolution **solution_container,
-			CNumerics **solver, CConfig *config, unsigned short iRKStep);
+	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep);
 
 	/*!
 	 * \brief Computes the eddy viscosity.
@@ -3082,7 +3336,7 @@ public:
  * \brief Main class for defining the Euler's adjoint flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CAdjEulerSolution : public CSolution {
 protected:
@@ -3103,6 +3357,7 @@ protected:
 	double *p1_Und_Lapl,	/*!< \brief Auxiliary variable for the undivided Laplacians. */
 	*p2_Und_Lapl;			/*!< \brief Auxiliary variable for the undivided Laplacians. */ 
 	bool space_centered;  /*!< \brief True if space centered scheeme used. */
+  double **Jacobian_Axisymmetric; /*!< \brief Storage for axisymmetric Jacobian. */
 
 public:
 
@@ -3123,6 +3378,13 @@ public:
 	 */
 	virtual ~CAdjEulerSolution(void);
 
+  /*!
+	 * \brief Impose the send-receive boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetSolution_MPI(CGeometry *geometry, CConfig *config);
+  
 	/*! 
 	 * \brief Created the force projection vector for adjoint boundary conditions.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -3228,6 +3490,13 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief Parallelization of Undivided Laplacian.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetUndivided_Laplacian_MPI(CGeometry *geometry, CConfig *config);
 
 	/*!
 	 * \brief Compute the sensor for higher order dissipation control in rotating problems.
@@ -3235,7 +3504,15 @@ public:
 	 * \param[in] solution_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetDissipation_Switch(CGeometry *geometry, CSolution **solution_container, CConfig *config);
+	void SetDissipation_Switch(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solution_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetDissipation_Switch_MPI(CGeometry *geometry, CConfig *config);
 
 	/*!
 	 * \brief Impose via the residual the adjoint Euler wall boundary condition.
@@ -3269,16 +3546,6 @@ public:
 	 */
 	void BC_NearField_Boundary(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
 			unsigned short val_marker);
-
-	/*!
-	 * \brief Impose the send-receive boundary condition.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_mesh - Index of the mesh in multigrid computations.
-	 */
-	void MPI_Send_Receive(CGeometry ***geometry, CSolution ****solution_container,
-			CConfig **config, unsigned short iMGLevel, unsigned short iZone);
 
 	/*!
 	 * \brief Impose via the residual the adjoint symmetry boundary condition.
@@ -3400,7 +3667,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iRKStep);
+	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep);
 
 	/*!
 	 * \brief Compute the inviscid sensitivity of the functional.
@@ -3485,6 +3752,12 @@ public:
 	void SetResidual_DualTime(CGeometry *geometry, CSolution **solution_container, CConfig *config, 
 			unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
 
+	/*!
+	 * \brief Get the value of kappapsi_Volume
+	 * \return kappapsi_Volume
+	 */
+	double GetKappaPsiVolume(void);
+
 };
 
 /*! 
@@ -3492,9 +3765,11 @@ public:
  * \brief Main class for defining the Navier-Stokes' adjoint flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CAdjNSSolution : public CAdjEulerSolution {
+private:
+
 public:
 
 	/*! 
@@ -3532,7 +3807,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iRKStep);
+	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep);
 
 	/*!
 	 * \brief Compute the viscous sensitivity of the functional.
@@ -3566,28 +3841,6 @@ public:
 	void Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CNumerics *second_solver,
 			CConfig *config, unsigned short iMesh);
 
-	/*!
-	 * \brief Source term computation.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iMesh - Index of the mesh in multigrid computations.
-	 */
-	void Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
-			CConfig *config, unsigned short iMesh);
-
-	/*!
-	 * \brief Conservative source term computation.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iMesh - Index of the mesh in multigrid computations.
-	 */
-	void SourceConserv_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
-			CConfig *config, unsigned short iMesh);
-
 };
 
 /*! 
@@ -3595,13 +3848,20 @@ public:
  * \brief Main class for defining the adjoint turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CAdjTurbSolution : public CSolution {
 private:
 	double PsiNu_Inf,	/*!< \brief PsiNu variable at the infinity. */
 	*FlowSolution_i,	/*!< \brief Store the flow solution at point i. */
 	*FlowSolution_j;	/*!< \brief Store the flow solution at point j. */
+
+	double *Jacobian_mui,
+	*Jacobian_muj;
+
+	double ***Jacobian_gradi,
+	***Jacobian_gradj;
+
 
 public:
 
@@ -3651,8 +3911,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config,
-			unsigned short iRKStep);
+	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep);
 
 	/*! 
 	 * \brief Compute the spatial integration using a upwind scheme.
@@ -3717,6 +3976,72 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void ImplicitEuler_Iteration(CGeometry *geometry, CSolution **solution_container, CConfig *config);
+
+
+	/*!
+	 * \brief Alternative Green Gauss calculation of gradient of solution. Required for discrete adjoint
+	 */
+
+	void CalcGradient_GG_ad(double *val_U_i, double *val_U_id, double **val_U_js, double **val_U_jsd,
+			unsigned short nNeigh, unsigned short numVar, double **Normals, double **grad_U_i, double **grad_U_id, CConfig *config,
+			CGeometry *geometry, unsigned long iPoint);
+
+	/*!
+	 * \brief Alternative Least Squares calculation of gradient of solution. Required for discrete adjoint
+	 */
+	void CalcGradient_LS_ad(double *val_U_i, double *val_U_id, double **val_U_js, double **val_U_jsd,
+			unsigned short nNeigh, double *coords_i, double **coords_js, double **grad_U_i, double **grad_U_id,
+			CConfig *config);
+
+	/*!
+	 * \brief A virtual member.
+	 */
+	void CalcPrimVar_Compressible_ad(double *val_Vars, double *val_Varsd, double Gamma, double Gas_Constant, unsigned short numVar,
+			double turb_ke, double* Primitive, double* Primitived, CConfig *config);
+
+	/*!
+	 * \brief Calculate the laminar viscosity (used for AD).
+	 */
+	void CalcLaminarViscosity_ad(double *val_U_i, double *val_U_id,
+			double *val_laminar_viscosity_i, double *val_laminar_viscosity_id, CConfig *config);
+
+	/*!
+	 * \brief Calculate the eddy viscosity (used for AD).
+	 * THIS MAY BE IN THE WRONG PLACE
+	 */
+	void CalcEddyViscosity_ad(double *val_FlowVars, double *val_FlowVarsd,
+			double val_laminar_viscosity, double val_laminar_viscosityd,
+			double *val_TurbVar, double *val_TurbVard, double *val_eddy_viscosity, double *val_eddy_viscosityd,
+			CConfig *config);
+
+	/*!
+	 * \brief Convert sensitivity to Laminar Viscosity to sensitivity to flow vars.
+	 */
+	void ConvertSensMu_to_SensU(double *val_Vars, double val_Laminar_Viscosity_i,
+			double **val_Jacobian, double *val_Jacobian_mu,
+			unsigned short numVar, unsigned short numTotalVar, unsigned short numEqn, CConfig *config);
+
+	/*!
+	 * \brief Convert sensitivity to Primitive vars to sensitivity to flow vars.
+	 */
+	void ConvertSensPrimVar_to_SensU(double *val_Vars, double **val_Jacobian,
+			unsigned short numVar, CConfig *config);
+
+	/*!
+	 * \brief Convert sensitivity to Primitive gradient to sensitivity to Primitive.
+	 */
+	void ConvertSensGradPrimVar_to_SensPrimVar(double *val_Vars_i, double **val_Vars_ks,
+			double **val_Jacobian_i, double ***val_Jacobian_gradi,
+			unsigned long iPoint, short kNode, double **Normals,
+			unsigned short numTotalVar, unsigned short nNeigh, unsigned short numEqn, CGeometry *geometry, CConfig *config);
+
+	/*!
+	 * \brief Calculate Eddy Visc Sens.
+	 */
+	void CalcEddyViscSens(double *val_U_i, double val_Laminar_Viscosity_i,
+				double *val_TurbVar_i, double *EddyViscSens, unsigned short nFlowVar, CConfig *config);
+
+
 };
 
 /*! 
@@ -3724,7 +4049,7 @@ public:
  * \brief Main class for defining the linearized Euler solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CLinEulerSolution : public CSolution {
 private:
@@ -3828,7 +4153,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iRKStep);
+	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep);
 
 	/*!
 	 * \brief Compute the linearization of the pressure forces and all the adimensional coefficients.
@@ -3999,7 +4324,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iRKStep);
+	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep);
 
 	/*!
 	 * \brief Source term computation.
@@ -4118,7 +4443,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iRKStep);
+	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep);
 
 	/*!
 	 * \brief Source term computation.
@@ -4282,7 +4607,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iRKStep);
+	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep);
 
 	/*!
 	 * \brief Source term computation.
@@ -4431,7 +4756,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iRKStep);
+	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep);
 
 	/*!
 	 * \brief A virtual member.
@@ -4530,13 +4855,12 @@ public:
  * \brief Main class for defining the level set solver.
  * \ingroup LevelSet_Model
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CLevelSetSolution : public CSolution {
 protected:
 	double *FlowSolution_i,	/*!< \brief Store the flow solution at point i. */
-	*FlowSolution_j;		/*!< \brief Store the flow solution at point j. */
-	double levelset_Inf,
+	*FlowSolution_j,		/*!< \brief Store the flow solution at point j. */
 	Total_CFreeSurface;			/*!< \brief Total Free Surface coefficient for all the boundaries. */
 
 public:
@@ -4558,21 +4882,24 @@ public:
 	 */
 	virtual ~CLevelSetSolution(void);
 
+  /*!
+	 * \brief Impose the send-receive boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetSolution_MPI(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief Impose the send-receive boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  void SetSolution_Limiter_MPI(CGeometry *geometry, CConfig *config);
+  
 	/*! 
 	 * \brief Constructor of the class. 
 	 */
 	CLevelSetSolution(CConfig *config);
-
-	/*!
-	 * \brief Compute the time step for solving the Level Set equations.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iMesh - Index of the mesh in multigrid computations.
-	 * \param[in] Iteration - Index of the current iteration.
-	 */
-	void SetTime_Step(CGeometry *geometry, CSolution **solution_container, CConfig *config, 
-			unsigned short iMesh, unsigned long Iteration);
 
 	/*!
 	 * \brief Provide the total (inviscid + viscous) non dimensional Free Surface coefficient.
@@ -4585,16 +4912,6 @@ public:
 	 * \param[in] val_cfreesurface - Value of the Free Surface coefficient.
 	 */
 	void SetTotal_CFreeSurface(double val_cfreesurface);
-
-	/*!
-	 * \brief Impose the send-receive boundary condition.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_mesh - Index of the mesh in multigrid computations.
-	 */
-	void MPI_Send_Receive(CGeometry ***geometry, CSolution ****solution_container,
-			CConfig **config, unsigned short iMGLevel, unsigned short iZone);
 
 	/*!
 	 * \brief Impose the Symmetry Plane boundary condition.
@@ -4622,8 +4939,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config,
-			unsigned short iRKStep);
+	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep);
 
 	/*!
 	 * \brief Compute the spatial integration using a upwind scheme.
@@ -4645,17 +4961,6 @@ public:
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
 	void Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CNumerics *second_solver,
-			CConfig *config, unsigned short iMesh);
-
-	/*!
-	 * \brief Source term computation.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iMesh - Index of the mesh in multigrid computations.
-	 */
-	void Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
 			CConfig *config, unsigned short iMesh);
 
 	/*!
@@ -4739,13 +5044,12 @@ public:
  * \brief Main class for defining the level set solver.
  * \ingroup LevelSet_Model
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CAdjLevelSetSolution : public CSolution {
 protected:
 	double *FlowSolution_i,	/*!< \brief Store the flow solution at point i. */
-	*FlowSolution_j;		/*!< \brief Store the flow solution at point j. */
-	double levelset_Inf,
+	*FlowSolution_j,		/*!< \brief Store the flow solution at point j. */
 	Total_CFreeSurface;			/*!< \brief Total Free Surface coefficient for all the boundaries. */
 
 public:
@@ -4805,14 +5109,6 @@ public:
 			unsigned short val_marker);
 
 	/*!
-	 * \brief Update the solution using the explicit Euler scheme.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ExplicitEuler_Iteration(CGeometry *geometry, CSolution **solution_container, CConfig *config);
-
-	/*!
 	 * \brief Update the solution using an implicit solver.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solution_container - Container vector with all the solutions.
@@ -4821,24 +5117,13 @@ public:
 	void ImplicitEuler_Iteration(CGeometry *geometry, CSolution **solution_container, CConfig *config);
 
 	/*!
-	 * \brief Update the solution using a Runge-Kutta scheme.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-	 */
-	void ExplicitRK_Iteration(CGeometry *geometry, CSolution **solution_container, CConfig *config, 
-			unsigned short iRKStep);
-
-	/*!
 	 * \brief Restart residual and compute gradients.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solution_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config,
-			unsigned short iRKStep);
+	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep);
 
 	/*!
 	 * \brief Compute the spatial integration using a upwind scheme.
@@ -4942,7 +5227,7 @@ public:
  * \brief Main class for defining the template model solver.
  * \ingroup Template_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CTemplateSolution : public CSolution {
 private:
@@ -4973,7 +5258,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iRKStep);
+	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep);
 
 	/*!
 	 * \brief Compute the time step for solving the Euler equations.
@@ -5150,7 +5435,7 @@ public:
  * \class CPlasmaSolution
  * \brief Main class for defining the plasma solver.
  * \author ADL Stanford.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CPlasmaSolution : public CSolution {
 protected:
@@ -5167,9 +5452,12 @@ protected:
 	double Molar_Mass; /*!< \brief Molar mass of each chemical constituent [kg/kmol].*/
 	double *Gas_Composition; /*!< \brief Initial mass fraction of each gas constituent. */
 	double **CSkinFriction;	/*!< \brief Skin friction coefficient for each boundary and vertex. */
-	double **CHeatTransfer;	/*!< \brief Heat Transfer coefficient for each boundary and vertex. */
+	double ***CHeatTransfer;	/*!< \brief Heat Transfer coefficient for each boundary and vertex. */
 	double **CPressure;		/*!< \brief Pressure coefficient for each boundary and vertex. */
-
+    double ****CViscForce;  /*!< \brief Viscous Forces for each boundary and vertex. */
+    double ****CPressForce; /*!< \brief Pressure Forces for each boundary and vertex. */
+    
+    
 	double *Density_Inf;		/*!< \brief Density of all species at the infinity. */
 	double *Temperature_Inf;		/*!< \brief Temperature of all species at the infinity. */
 	double *Mach_Inf;			/*!< \brief Mach number of all fluids at the infinity. */
@@ -5198,6 +5486,9 @@ protected:
 	double *PrimVar_i;			/*!< \brief Auxiliary vector for storing the solution at point i. */
 	double *PrimVar_j;			/*!< \brief Auxiliary vector for storing the solution at point j. */
 	double **Precon_Mat_inv; /*!< \brief Auxiliary vector for storing the inverse of Roe-turkel preconditioner. */
+    double ***PrimGrad_i, ***PrimGrad_j, **PrimGradLimiter_i, **PrimGradLimiter_j;
+  double ***PrimVar_max, ***PrimVar_min;
+  
 
 	double *Residual_Chemistry,	/*!< \brief Auxiliary vector for storing the residual from the chemistry source terms. */
 	*Residual_ElecForce,	/*!< \brief Auxiliary vector for storing the electrostatic force source terms. */
@@ -5246,7 +5537,11 @@ protected:
 	Total_CQ,		/*!< \brief Total torque coefficient for all the boundaries. */
 	Total_CEquivArea,			/*!< \brief Total Equivalent Area coefficient for all the boundaries. */
 	Total_CNearFieldOF;			/*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
-
+    
+    double PressureDrag, /*!< \brief Total Pressure Drag coefficient for all the boundaries. */
+    ViscDrag,           /*!< \brief Total Visc Drag coefficient for all the boundaries. */
+    MagnetDrag;         /*!< \brief Total Magnet Drag coefficient for all the boundaries. */
+    
 	double AllBound_CDrag_Inv,	/*!< \brief Total drag coefficient (inviscid contribution) for all the boundaries. */
 	AllBound_CLift_Inv,			/*!< \brief Total lift coefficient (inviscid contribution) for all the boundaries. */
 	AllBound_CSideForce_Inv,			/*!< \brief Total sideforce coefficient (inviscid contribution) for all the boundaries. */
@@ -5399,7 +5694,25 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \return Value of the heat transfer coefficient.
 	 */
-	double GetHeatTransferCoeff(unsigned short val_marker, unsigned short val_vertex);
+	double GetHeatTransferCoeff(unsigned short val_marker, unsigned short val_iSpecies, unsigned short val_vertex);
+
+	/*!
+	 * \brief Compute Viscous Forces
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \param[in] val_iSpecies - index of the chemical species
+	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+	 * \return Value of the heat transfer coefficient.
+	 */
+	double GetViscForce(unsigned short val_marker, unsigned short val_iSpecies, unsigned short iDim, unsigned short val_vertex);
+
+	/*!
+	 * \brief Compute Pressure Forces
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \param[in] val_iSpecies - index of the chemical species
+	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+	 * \return Value of the heat transfer coefficient.
+	 */
+	double GetPressureForce(unsigned short val_marker, unsigned short val_iSpecies, unsigned short iDim, unsigned short val_vertex);
 
 	/*!
 	 * \brief Compute the time step for solving the Euler equations.
@@ -5471,6 +5784,9 @@ public:
 	void Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
 			CConfig *config, unsigned short iMesh);
 
+  
+  void SetSolution_MPI(CGeometry *geometry, CConfig *config);
+  
 	/*!
 	 * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -5478,8 +5794,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config,
-			unsigned short iRKStep);
+	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep);
 
 	/*!
 	 * \brief Compute a pressure sensor switch.
@@ -5487,7 +5802,7 @@ public:
 	 * \param[in] solution_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetDissipation_Switch(CGeometry *geometry, CSolution **solution_container, CConfig *config);
+	void SetDissipation_Switch(CGeometry *geometry, CConfig *config);
 
 	/*!
 	 * \brief Compute the gradient of the primitive variables using Green-Gauss method,
@@ -5496,6 +5811,14 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief Compute the gradient of the primitive variables using Green-Gauss method,
+	 *        and stores the result in the <i>Gradient_Primitive</i> variable.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  void SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *config, unsigned long iVertex, unsigned short val_marker, double *val_PrimVar_i);
 
 	/*!
 	 * \brief Compute the gradient of the primitive variables using a Least-Squares method,
@@ -5504,6 +5827,26 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief Compute the gradient of the primitive variables using a Least-Squares method,
+	 *        and stores the result in the <i>Gradient_Primitive</i> variable.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config, unsigned long iPoint, double *val_PrimVar_i);
+
+  /*!
+   * \brief Send the gradient of the primitive variables to the other processors
+   */
+  void SetPrimVar_Gradient_MPI(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetPrimVar_Limiter_MPI(CGeometry *geometry, CConfig *config);
   
   void SetPrimVar_Limiter(CGeometry *geometry, CConfig *config);
 
@@ -5667,24 +6010,6 @@ public:
 			CConfig *config, unsigned short val_marker) ;
 
 	/*!
-	 * \brief Update the solution using a Runge-Kutta scheme.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-	 */
-	void ExplicitRK_Iteration(CGeometry *geometry, CSolution **solution_container, CConfig *config,
-			unsigned short iRKStep);
-
-	/*!
-	 * \brief Update the solution using the explicit Euler scheme.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ExplicitEuler_Iteration(CGeometry *geometry, CSolution **solution_container, CConfig *config);
-
-	/*!
 	 * \brief Update the solution using an implicit Euler scheme.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solution_container - Container vector with all the solutions.
@@ -5764,7 +6089,25 @@ public:
 	 * \return Value of the integrated surface heat flux.
 	 */
 	double GetTotal_CQ(void);
-
+    
+    /*!
+	 * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
+	 * \return Value of the drag coefficient (inviscid + viscous contribution).
+	 */
+	double Get_PressureDrag(void);
+    
+    /*!
+	 * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
+	 * \return Value of the drag coefficient (inviscid + viscous contribution).
+	 */
+	double Get_ViscDrag(void);
+    
+    /*!
+	 * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
+	 * \return Value of the drag coefficient (inviscid + viscous contribution).
+	 */
+	double Get_MagnetDrag(void);
+    
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] solver1_geometry - Geometrical definition of the problem.
@@ -5783,7 +6126,7 @@ public:
  * \brief Main class for defining the Euler's adjoint flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.2
+ * \version 2.0.3
  */
 class CAdjPlasmaSolution : public CSolution {
 protected:
@@ -5966,7 +6309,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iRKStep);
+	void Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep);
 
 	/*!
 	 * \brief Compute the inviscid sensitivity of the functional.

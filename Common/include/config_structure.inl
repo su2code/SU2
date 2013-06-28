@@ -2,7 +2,7 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.2
+ * \version 2.0.3
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -37,7 +37,11 @@ inline double CConfig::GetTimeSpectral_Period(void) { return TimeSpectral_Period
 
 inline void CConfig::SetExtIter(unsigned long val_iter) { ExtIter = val_iter; }
 
+inline void CConfig::SetIntIter(unsigned long val_iter) { IntIter = val_iter; }
+
 inline unsigned long CConfig::GetExtIter(void) { return ExtIter; }
+
+inline unsigned long CConfig::GetIntIter(void) { return IntIter; }
 
 inline unsigned long CConfig::GetUnst_nIntIter(void) { return Unst_nIntIter; }
 
@@ -60,8 +64,6 @@ inline double CConfig::GetFreeSurface_Damping_Coeff(void) { return FreeSurface_D
 inline double CConfig::GetFreeSurface_Damping_Length(void) { return FreeSurface_Damping_Length; }
 
 inline double CConfig::GetFreeSurface_Outlet(void) { return FreeSurface_Outlet; }
-
-inline double CConfig::GetFreeSurface_Inlet(void) { return FreeSurface_Inlet; }
 
 inline double CConfig::GetRatioViscosity(void) { return RatioViscosity; }
 
@@ -189,8 +191,6 @@ inline double CConfig::GetLength_Reynolds(void) { return Length_Reynolds; }
 
 inline double CConfig::GetConversion_Factor(void) { return Conversion_Factor; }
 
-inline double CConfig::GetPrimGrad_Threshold(void) { return PrimGrad_Threshold; }
-
 inline unsigned short CConfig::GetnStartUpIter(void) { return nStartUpIter; }
 
 inline double *CConfig::GetRefOriginMoment(void) { return RefOriginMoment; }
@@ -264,7 +264,7 @@ inline unsigned long CConfig::GetWrt_Sol_Freq(void) { return Wrt_Sol_Freq; }
 
 inline unsigned long CConfig::GetWrt_Con_Freq(void) { return Wrt_Con_Freq; }
 
-inline unsigned long CConfig::GetWrt_Lin_Con_Freq(void) { return Wrt_Lin_Con_Freq; }
+inline unsigned long CConfig::GetWrt_Con_Freq_DualTime(void) { return Wrt_Con_Freq_DualTime; }
 
 inline bool CConfig::GetWrt_Unsteady(void) { return Wrt_Unsteady; }
 
@@ -287,6 +287,12 @@ inline void CConfig::SetMotion_Origin_X(unsigned short val_iZone, double val_ori
 inline void CConfig::SetMotion_Origin_Y(unsigned short val_iZone, double val_origin) { Motion_Origin_Y[val_iZone] = val_origin; }
 
 inline void CConfig::SetMotion_Origin_Z(unsigned short val_iZone, double val_origin) { Motion_Origin_Z[val_iZone] = val_origin; }
+
+inline double CConfig::GetTranslation_Rate_X(unsigned short val_iZone) { return  Translation_Rate_X[val_iZone]; }
+
+inline double CConfig::GetTranslation_Rate_Y(unsigned short val_iZone) { return  Translation_Rate_Y[val_iZone]; }
+
+inline double CConfig::GetTranslation_Rate_Z(unsigned short val_iZone) { return  Translation_Rate_Z[val_iZone]; }
 
 inline double CConfig::GetRotation_Rate_X(unsigned short val_iZone) { return  Rotation_Rate_X[val_iZone]; }
 
@@ -616,8 +622,6 @@ inline bool CConfig::GetRestart_Euler2Plasma(void) { return Restart_Euler2Plasma
 
 inline bool CConfig::GetRestart_Flow(void) { return Restart_Flow; }
 
-inline bool CConfig::GetBlockDiagonalJacobian(void) { return Block_Diagonal_Jacobian; }
-
 inline bool CConfig::GetFullMG(void) { return FullMG; }
 
 inline bool CConfig::GetEquivArea(void) { return EquivArea; }
@@ -874,6 +878,10 @@ inline bool CConfig::GetWrt_Sol_Tec_ASCII(void) { return Wrt_Sol_Tec_ASCII; }
 
 inline bool CConfig::GetWrt_Sol_Tec_Binary(void) { return Wrt_Sol_Tec_Binary; }
 
+inline unsigned short CConfig::GetnOutput_Vars_Vol(void) { return nOutput_Vars_Vol; }
+
+inline unsigned short CConfig::GetOutput_Vars_Vol(unsigned short val_index) { return Output_Vars_Vol[val_index]; }
+
 inline bool CConfig::GetRelative_Motion(void) { return Relative_Motion; }
 
 inline double* CConfig::GetAeroelastic_np1(void) {return Aeroelastic_np1; }
@@ -883,6 +891,14 @@ inline double* CConfig::GetAeroelastic_n(void) {return Aeroelastic_n; }
 inline double* CConfig::GetAeroelastic_n1(void) {return Aeroelastic_n1; }
 
 inline void CConfig::SetAeroelastic_np1(unsigned short val_index, double val) {Aeroelastic_np1[val_index] = val;}
+
+inline double CConfig::GetAeroelastic_plunge(void) {return Aeroelastic_plunge;}
+
+inline double CConfig::GetAeroelastic_pitch(void) {return Aeroelastic_pitch;}
+
+inline void CConfig::SetAeroelastic_plunge(double val) {Aeroelastic_plunge = val;}
+
+inline void CConfig::SetAeroelastic_pitch(double val) {Aeroelastic_pitch = val;}
 
 inline void CConfig::SetAeroelastic_n1(void) {
     for (unsigned short i=0; i<4; i++)
