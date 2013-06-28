@@ -1,0 +1,79 @@
+
+Copyright 1998, Regents of the University of Minnesota.
+METIS was written by George Karypis (karypis@cs.umn.edu)
+
+Introduction ------------------------------------------------------------
+
+METIS is a software package for partitioning unstructured graphs, partitioning 
+meshes, and computing fill-reducing orderings of sparse matrices. 
+The documentation of METIS can be found in the Doc/manual.ps file.
+
+METIS is written in ANSI C and should compile on Unix systems that have
+a ANSI C compiler. It has been extensively tested on the following
+architectures:
+
+   AIX 
+   SunOS 
+   Solaris 
+   IRIX 
+   Unicos
+   Linux
+   HP-UX
+   FreeBSD
+
+
+Installation Instructions -----------------------------------------------
+
+In order to build METIS you need
+  (a) a C compiler that is ANSI compatible 
+  (b) make 
+
+Edit the file Makefile.in that resides in the same directory as this file 
+according to the requirements of your system. In particular you may need
+to modify the following:
+  1. The CC variable, to be the name of the ANSI C compiler 
+     in your system. The GNU C compiler (gcc) will do. 
+  2. The settings for the AR and RANLIB variables that are suitable for
+     you system. Note that some systems do not have 'ranlib' but they use
+     'ar -ts' instead, or it is not needed all together. 
+  3. You can use COPTIONS and LDOPTIONS to provide additional command line
+     options that are required by your compiler and linker.
+
+
+After saving the modified Makefile.in, type 'make' at the prompt. This will
+build all of METIS's stand-alone programs, METIS's library, and a program that
+tests the various partitioning algorithms.
+Upon successful completion, make creates the following 11 files:
+
+  pmetis, 
+  kmetis, 
+  oemetis, 
+  onmetis, 
+  partnmesh, 
+  partdmesh, 
+  mesh2nodal,
+  mesh2dual,
+  graphchk,
+  libmetis.a
+  Graphs/mtest
+
+Please read the instructions in the file Graphs/0README on how to go and
+test the various programs.
+
+
+Contact Information -----------------------------------------------------
+
+If you have any comments, suggestions, or bug reports, please send them
+to metis@cs.umn.edu.
+
+Any bug fixes and upgrades of the METIS packages is available on WWW at
+URL: http://www.cs.umn.edu/~metis
+or
+URL: http://www.cs.umn.edu/~karypis/metis
+
+
+George Karypis
+Sun Sep 20 13:18:36 CDT 1998
+
+
+

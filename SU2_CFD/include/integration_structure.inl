@@ -3,7 +3,7 @@
  * \brief In-Line subroutines of the <i>integration_structure.hpp</i> file.
  * \author Current Development: Stanford University.
  *         Original Structure: CADES 1.0 (2009).
- * \version 1.0.
+ * \version 1.1.
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -69,5 +69,4 @@ inline void CIntegration::SetSingleGrid_Solver(CGeometry **geometry, CSolution *
 
 inline void CIntegration::SetPotential_Solver(CGeometry **geometry, CSolution ***solution_container, CNumerics ****solver_container, 
 										      CConfig *config, unsigned short RunTime_EqSystem, unsigned short iMesh) { }
-						  
-inline void CIntegration::SetEikonal_Solver(CGeometry **geometry, CSolution ***solution_container, CConfig *config) { }
+

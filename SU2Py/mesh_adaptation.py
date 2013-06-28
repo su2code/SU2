@@ -4,7 +4,7 @@
 #  \brief Python script for doing the grid adaptation using the SU2 suite.
 #  \author Current Development: Stanford University.
 #          Original Structure: CADES 1.0 (2009).
-#  \version 1.0.
+#  \version 1.1.
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -29,25 +29,32 @@ from optparse import OptionParser
 parser = OptionParser()
 parser.add_option("-f", "--file", dest="filename",
                   help="read config from FILE", metavar="FILE")
+parser.add_option("-p", "--partitions", dest="partitions", default=1,
+                  help="number of PARTITIONS", metavar="PARTITIONS")
+parser.add_option("-c", "--cycle", dest="cycle", default=1,
+                  help="number of CYCLE adaptations", metavar="CYCLE")
 parser.add_option("-o", "--overwrite", dest="overwrite", default=False,
                   help="OVERWRITE_MESH the output mesh with the adapted one", metavar="OVERWRITE_MESH")
 
 (options, args)=parser.parse_args()
 
+if int(options.partitions) == 1:
+    parallel = False
+else : parallel = True
+cycles = int(options.cycle)
+
 # Read the kind of grid adaptation and number of cycles
 for line in open(options.filename):
     if "KIND_ADAPT=" in line:
         adapt_kind = line.split("=")[1].strip()
-    elif "CYCLE_ADAPT=" in line:
-        cycles = line.split("=")[1]
 
 # General parameters
 Config_MAC_file = "config_MAC_" + options.filename
 Config_CFD_file = "config_CFD_" + options.filename
-Mesh_MAC_file = "mesh_MAC_" + options.filename.replace(".cfg",".dpl")
+Mesh_MAC_file = "mesh_MAC_" + options.filename.replace(".cfg",".su2")
 
 # Parameters for the grid adaptation
-mesh_finest = "mesh_finest.dpl"
+mesh_finest = "mesh_finest.su2"
 restart_flow_finest = "restart_flow_finest.dat"
 restart_lin_finest = "restart_lin_finest.dat"
 restart_adj_finest = "restart_adj_finest.dat"
@@ -89,7 +96,8 @@ for iAdaptCycle in range(int(cycles)):
         else: output_file.write(line)
 
     output_file.close()
-    os.system ("./SU2_CFD " + Config_CFD_file)
+    if parallel: os.system ("parallel_computation.py -p %s -f %s -o True" % (int(options.partitions), Config_CFD_file))
+    else: os.system ("SU2_CFD " + Config_CFD_file)
 
     # Change the parameters to do the first adjoint simulation
     # In this case we don't store anything, at the first iteration we use the
@@ -113,7 +121,8 @@ for iAdaptCycle in range(int(cycles)):
             else: output_file.write(line)
 
         output_file.close()
-        os.system ("./SU2_CFD " + Config_CFD_file)
+        if parallel: os.system ("parallel_computation.py -p %s -f %s -o True" % (int(options.partitions), Config_CFD_file))
+        else: os.system ("SU2_CFD " + Config_CFD_file)
 
     # Change the parameters to do the first linear simulation (in case it is necessary)
     # In this case we don't store anything, at the first iteration we use the
@@ -137,7 +146,8 @@ for iAdaptCycle in range(int(cycles)):
             else: output_file.write(line)
 
         output_file.close()
-        os.system ("./SU2_CFD " + Config_CFD_file)
+        if parallel: os.system ("parallel_computation.py -p %s -f %s -o True" % (int(options.partitions), Config_CFD_file))
+        else: os.system ("SU2_CFD " + Config_CFD_file)
 
     # Change the parameters to do a direct and adjoint iteration over a fine grid
     # We will use the following files names:
@@ -166,7 +176,7 @@ for iAdaptCycle in range(int(cycles)):
             else: output_file.write(line)
 
         output_file.close()
-        os.system ("./SU2_MAC " + Config_MAC_file)
+        os.system ("SU2_MAC " + Config_MAC_file)
 
         # Create the fine grid and extrapolate the adjoint solution
         # from the coarse to the fine grid and store the extrapolated solution.
@@ -190,7 +200,7 @@ for iAdaptCycle in range(int(cycles)):
             else: output_file.write(line)
 
         output_file.close()
-        os.system ("./SU2_MAC " + Config_MAC_file)
+        os.system ("SU2_MAC " + Config_MAC_file)
 
         # Create the fine grid and extrapolate the linear solution
         # from the coarse to the fine grid and store the extrapolated solution.
@@ -213,7 +223,7 @@ for iAdaptCycle in range(int(cycles)):
                 else: output_file.write(line)
 
             output_file.close()
-            os.system ("./SU2_MAC " + Config_MAC_file)
+            os.system ("SU2_MAC " + Config_MAC_file)
 
         # Change the parameters to do one iteration of the flow solver on the finest grid
         # Allways restart with the interpolated solution and store the residual in the 
@@ -250,7 +260,8 @@ for iAdaptCycle in range(int(cycles)):
             else: output_file.write(line)
 
         output_file.close()
-        os.system ("./SU2_CFD " + Config_CFD_file)
+        if parallel: os.system ("parallel_computation.py -p %s -f %s -o True" % (int(options.partitions), Config_CFD_file))
+        else: os.system ("SU2_CFD " + Config_CFD_file)
 
         # Change the parameters to do one iteration of the adjoint solver on the finest grid
         # Allways restart with the interpolated solution and store the residual in the 
@@ -284,7 +295,8 @@ for iAdaptCycle in range(int(cycles)):
                 output_file.write("MG_CORRECTION_SMOOTH= ( 0 )\n")
             else: output_file.write(line)
         output_file.close()
-        os.system ("./SU2_CFD " + Config_CFD_file)
+        if parallel: os.system ("parallel_computation.py -p %s -f %s -o True" % (int(options.partitions), Config_CFD_file))
+        else: os.system ("SU2_CFD " + Config_CFD_file)
 
         # Change the parameters to do one iteration of the linear solver on the finest grid
         # Allways restart with the interpolated solution and store the residual in the 
@@ -315,7 +327,8 @@ for iAdaptCycle in range(int(cycles)):
                     output_file.write("MGCYCLE= 0 \n")
                 else: output_file.write(line)
             output_file.close()
-            os.system ("./SU2_CFD " + Config_CFD_file)
+            if parallel: os.system ("parallel_computation.py -p %s -f %s -o True" % (int(options.partitions), Config_CFD_file))
+            else: os.system ("SU2_CFD " + Config_CFD_file)
 
     # Once we have all the solutions files to write
     # the adaptation estimator, we perform the adaptation
@@ -348,7 +361,7 @@ for iAdaptCycle in range(int(cycles)):
 
         output_file.close()
         
-        os.system ("./SU2_MAC " + Config_MAC_file)
+        os.system ("SU2_MAC " + Config_MAC_file)
 
 if options.overwrite: os.rename(Mesh_MAC_file, original_mesh_file)
 

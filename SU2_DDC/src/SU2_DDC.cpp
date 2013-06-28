@@ -3,7 +3,7 @@
  * \brief Main file of Domain Decomposition Code (SU2_DDC).
  * \author Current Development: Stanford University.
  *         Original Structure: CADES 1.0 (2009).
- * \version 1.0.
+ * \version 1.1.
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -23,28 +23,33 @@
  */
 
 #include "../include/SU2_DDC.hpp"
-
 using namespace std;
 
 int main(int argc, char *argv[]) {
 	
-	unsigned short iDomain;
-	char buffer_su2[8], buffer_vtk[8]; 
+	unsigned short iDomain, nZone = 1;
+	char buffer_su2[8], buffer_vtk[8], buffer_plt[8]; 
 	string MeshFile;
-	
-	/*--- Definition of the Class for the definition of the problem ---*/
-	CConfig *config;
+
+	/*--- Definition of some important class ---*/
+	CConfig *config = NULL;
+	CSurfaceMovement *surface_mov = NULL;
+	CFreeFormChunk** chunk = NULL;
+
+	/*--- Definition of the config problem ---*/
 	if (argc == 2) config = new CConfig(argv[1], SU2_DDC);
 	else {
 		char grid_file[200];
 		strcpy (grid_file, "default.cfg");
 		config = new CConfig(grid_file, SU2_DDC);
 	}
-	
+  
 	/*--- Definition of the Class for the geometry ---*/
 	CGeometry *geometry; geometry = new CGeometry;
-	
-	geometry = new CPhysicalGeometry(config, config->GetMesh_FileName(), config->GetMesh_FileFormat());
+  geometry = new CPhysicalGeometry(config, config->GetMesh_FileName(), config->GetMesh_FileFormat(), DOMAIN_0, nZone);
+  	
+  /*--- Perform the non-dimensionalization, in case any values are needed ---*/
+  config->SetNondimensionalization(geometry->GetnDim(), MASTER_NODE, nZone);
 
 	cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
 	
@@ -58,16 +63,23 @@ int main(int argc, char *argv[]) {
 	
 	/*--- Create the edge structure ---*/
 	cout << "Identifying edges and vertices." <<endl; 
-	geometry->SetEdges(); geometry->SetVertex(config); 
+	geometry->SetEdges(); geometry->SetVertex(config); geometry->SetCG();
 	
-	/*--- Compute center of gravity ---*/
-	cout << "Computing centers of gravity." << endl;
-	geometry->SetCG();
-  
 	/*--- Create the control volume structures ---*/
 	cout << "Setting the control volume structure." << endl; 
-	geometry->SetControlVolume(config, ALLOCATE);
-	geometry->SetBoundControlVolume(config, ALLOCATE);
+	geometry->SetControlVolume(config, ALLOCATE); geometry->SetBoundControlVolume(config, ALLOCATE);
+	
+	/*--- Definition and initialization of the surface deformation class ---*/
+	surface_mov = new CSurfaceMovement();
+	surface_mov->CopyBoundary(geometry, config);
+	
+	/*--- Definition of the FFD deformation class ---*/
+	unsigned short nChunk = MAX_NUMBER_CHUNCK;
+	chunk = new CFreeFormChunk*[nChunk];
+	
+	/*--- Read the FFD information fron the grid file (3D problems)---*/
+	if (geometry->GetnDim() == 3)
+		surface_mov->ReadFFDInfo(config, geometry, chunk, config->GetMesh_FileName());
 	
 	/*--- Set domains for parallel computation (if any) ---*/
 	if (config->GetnDomain() > 1) {
@@ -76,7 +88,7 @@ int main(int argc, char *argv[]) {
 		geometry->SetColorGrid(config, config->GetnDomain());
 		geometry->SetSendReceive(config, config->GetnDomain());
 		
-		/*--- Write .su2 and .vtk format ---*/
+		/*--- Write the new subgrid ---*/
 		CGeometry **domain; domain = new CGeometry *[config->GetnDomain()];
 		MeshFile = config->GetMesh_FileName();
 		MeshFile.erase (MeshFile.end()-4, MeshFile.end());
@@ -85,17 +97,31 @@ int main(int argc, char *argv[]) {
 			domain[iDomain] = new CDomainGeometry(geometry, config, iDomain);
 			domain[iDomain]->SetSendReceive(geometry, config, iDomain);
 			
+			/*--- Write tecplot and paraview files ---*/
 			if (config->GetVisualize_Partition()) {
-				sprintf (buffer_vtk, "_%d.vtk", int(iDomain+1));
-				string MeshFile_vtk = MeshFile + buffer_vtk;
-				char *cstr_vtk = strdup(MeshFile_vtk.c_str());
-				domain[iDomain]->SetParaView(cstr_vtk);
+				if(config->GetOutput_FileFormat() == PARAVIEW) {
+					sprintf (buffer_vtk, "_%d.vtk", int(iDomain+1));
+					string MeshFile_vtk = MeshFile + buffer_vtk;
+					char *cstr_vtk = strdup(MeshFile_vtk.c_str());
+					domain[iDomain]->SetParaView(cstr_vtk);
+				}
+				if(config->GetOutput_FileFormat() == TECPLOT) {
+					sprintf (buffer_plt, "_%d.plt", int(iDomain+1));
+					string MeshFile_plt = MeshFile + buffer_plt;
+					char *cstr_plt = strdup(MeshFile_plt.c_str());
+					domain[iDomain]->SetTecPlot(cstr_plt);
+				}
 			}
 			
+			/*--- Write .su2 file ---*/
 			sprintf (buffer_su2, "_%d.su2", int(iDomain+1));
 			string MeshFile_su2 = MeshFile + buffer_su2;
 			char *cstr_su2 = strdup(MeshFile_su2.c_str());
 			domain[iDomain]->SetMeshFile(config, cstr_su2);
+			
+			/*--- Write the FFD information (3D problems)---*/
+			if (geometry->GetnDim() == 3)
+				surface_mov->WriteFFDInfo(geometry, domain[iDomain], config, chunk, cstr_su2);
 			
 		}		
 		

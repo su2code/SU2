@@ -3,7 +3,7 @@
  * \brief In-Line subroutines of the <i>geometry_structure.hpp</i> file.
  * \author Current Development: Stanford University.
  *         Original Structure: CADES 1.0 (2009).
- * \version 1.0.
+ * \version 1.1.
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -23,6 +23,10 @@
  */
  
 #pragma once
+
+inline long CGeometry::GetGlobal_to_Local_Point(long val_ipoint) { return 0; }
+
+inline unsigned short CGeometry::GetGlobal_to_Local_Marker(unsigned short val_imarker) { return 0; }
 
 inline void CGeometry::SetLockheedGrid(CConfig *config) { }
 
@@ -88,6 +92,8 @@ inline void CGeometry::SetMarker_Tag(unsigned short val_marker, string val_index
 
 inline void CGeometry::SetnPoint(unsigned long val_npoint) { nPoint = val_npoint; }
 
+inline void CGeometry::SetnPointDomain(unsigned long val_npoint) { nPointDomain = val_npoint; }
+
 inline void CGeometry::SetnElem(unsigned long val_nelem) { nElem = val_nelem; }
 
 inline void CGeometry::SetnDim(unsigned short val_ndim) { nDim = val_ndim; }
@@ -130,10 +136,18 @@ inline void CGeometry::SetMeshFile_IntSurface(CConfig *config, string val_mesh_o
 
 inline void CGeometry::SetBoundParaView(CConfig *config, char mesh_filename[200]) { }
 
-inline void CGeometry::SetBoundTecplot(CConfig *config, char mesh_filename[200]) { }
+inline void CGeometry::SetBoundTecPlot(CConfig *config, char mesh_filename[200]) { }
 
-inline void CGeometry::SetBoundSensitivity(string val_filename) { }
+inline void CGeometry::FindSharpEdges(CConfig *config) { }
+
+inline void CGeometry::FindClosestNeighbor(CConfig *config) { }
+
+inline void CGeometry::SetBoundSensitivity(CConfig *config) { }
 
 inline void CPhysicalGeometry::SetPsuP(CGeometry *geometry) { CGeometry::SetPsuP(geometry); } 
 
 inline void CMultiGridGeometry::SetPsuP(void) { CGeometry::SetPsuP(); }
+
+inline long CDomainGeometry::GetGlobal_to_Local_Point(long val_ipoint) { return Global_to_Local_Point[val_ipoint]; }
+
+inline unsigned short CDomainGeometry::GetGlobal_to_Local_Marker(unsigned short val_imarker) { return Global_to_Local_Marker[val_imarker]; }

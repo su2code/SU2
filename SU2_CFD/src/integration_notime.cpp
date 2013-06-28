@@ -3,7 +3,7 @@
  * \brief No time stepping methods for integration a PDE without time.
  * \author Current Development: Stanford University.
  *         Original Structure: CADES 1.0 (2009).
- * \version 1.0.
+ * \version 1.1.
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -33,24 +33,19 @@ void CPotentialIntegration::SetPotential_Solver(CGeometry **geometry, CSolution 
 	
 	unsigned short SolContainer_Position = config->GetContainerPosition(RunTime_EqSystem);
 	
-	Space_Integration(geometry[iMesh], solution_container[iMesh], solver_container[iMesh][SolContainer_Position], config, iMesh, 0, RunTime_EqSystem);
-	Solving_Linear_System(geometry[iMesh], solution_container[iMesh][SolContainer_Position], solution_container[iMesh], config, iMesh);
+	/*--- Send-Receive boundary conditions ---*/
+	solution_container[iMesh][SolContainer_Position]->MPI_Send_Receive(geometry[iMesh], solution_container[iMesh], config, iMesh);
 	
+	/*--- Do some preprocessing stuff ---*/
+	solution_container[iMesh][SolContainer_Position]->Preprocessing(geometry[iMesh], solution_container[iMesh], config, 0);
+
+	/*--- Space integration ---*/
+	Space_Integration(geometry[iMesh], solution_container[iMesh], solver_container[iMesh][SolContainer_Position], config, iMesh, 0, RunTime_EqSystem);
+
+	/*--- Solve the linear system ---*/
+	Solving_Linear_System(geometry[iMesh], solution_container[iMesh][SolContainer_Position], solution_container[iMesh], config, iMesh);
+
+	/*--- Recompute the gradient ---*/
 	solution_container[iMesh][SolContainer_Position]->SetSolution_Gradient_GG(geometry[iMesh]);
 	
-}
-
-CEikonalIntegration::CEikonalIntegration(CConfig *config) : CIntegration(config) { }
-
-CEikonalIntegration::~CEikonalIntegration(void) { }
-
-void CEikonalIntegration::SetEikonal_Solver(CGeometry **geometry, CSolution ***solution_container, CConfig *config) {
-	
-#ifdef EIKONAL_FEM
-	/*--- FEM-solver of Eikonal equation, only 2D ---*/
-	solution_container[MESH_0][EIKONAL_SOL]->FEMEikonalSolver(geometry[MESH_0], config);
-#else
-	/*--- Brute-force computation of distances (non-exact) ---*/
-	solution_container[MESH_0][EIKONAL_SOL]->SetDistance(geometry[MESH_0], config);
-#endif
 }

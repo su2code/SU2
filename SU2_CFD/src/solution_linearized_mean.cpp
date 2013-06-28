@@ -3,7 +3,7 @@
  * \brief Main subrotuines for solving linearized problems (Euler, Navier-Stokes, etc.).
  * \author Current Development: Stanford University.
  *         Original Structure: CADES 1.0 (2009).
- * \version 1.0.
+ * \version 1.1.
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -44,7 +44,7 @@ CLinEulerSolution::CLinEulerSolution(CGeometry *geometry, CConfig *config) : CSo
 	/*--- Define some auxiliar vector related with the residual ---*/
 	Residual = new double[nVar];	Residual_Max = new double[nVar];
 	Residual_i = new double[nVar];	Residual_j = new double[nVar];
-	Res_Conv = new double[nVar];	Res_Visc = new double[nVar];
+	Res_Conv = new double[nVar];	Res_Visc = new double[nVar]; Res_Sour = new double[nVar];
 	
 	/*--- Define some auxiliar vector related with the solution ---*/
 	Solution   = new double[nVar];
@@ -60,7 +60,7 @@ CLinEulerSolution::CLinEulerSolution(CGeometry *geometry, CConfig *config) : CSo
 		for (iVar = 0; iVar < nVar; iVar++) {
 			Jacobian_i[iVar] = new double [nVar]; Jacobian_j[iVar] = new double [nVar]; }
 		/*--- Initialization of the structure of the whole Jacobian ---*/
-		InitializeJacobianStructure(geometry, config);
+		Initialize_Jacobian_Structure(geometry, config);
 		xsol = new double [geometry->GetnPoint()*nVar];
 		rhs = new double [geometry->GetnPoint()*nVar];
 	}
@@ -138,6 +138,7 @@ CLinEulerSolution::~CLinEulerSolution(void) {
 	delete [] Residual_i; delete [] Residual_j;
 	delete [] Res_Conv_i; delete [] Res_Visc_i;
 	delete [] Res_Conv_j; delete [] Res_Visc_j;
+	delete [] Res_Sour_i; delete [] Res_Sour_j;
 	delete [] Solution; 
 	delete [] Solution_i; delete [] Solution_j;
 	delete [] Vector_i; delete [] Vector_j;
@@ -257,7 +258,7 @@ void CLinEulerSolution::SetUndivided_Laplacian(CGeometry *geometry, CConfig *con
 	delete [] Diff;
 }
 
-void CLinEulerSolution::RungeKutta_Iteration(CGeometry *geometry, CSolution **solution_container, 
+void CLinEulerSolution::ExplicitRK_Iteration(CGeometry *geometry, CSolution **solution_container, 
 											CConfig *config, unsigned short iRKStep) {
 	double *Residual, Vol, Delta, *TruncationError;
 	unsigned short iVar;
@@ -279,9 +280,12 @@ void CLinEulerSolution::RungeKutta_Iteration(CGeometry *geometry, CSolution **so
 			}
 		}
 	
+#ifdef NO_MPI
 	/*--- Compute the norm-2 of the residual ---*/
 	for (iVar = 0; iVar < nVar; iVar++)
 		SetRes_Max( iVar, sqrt(GetRes_Max(iVar)) );
+#endif
+
 }
 
 void CLinEulerSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CConfig *config, 
@@ -292,6 +296,7 @@ void CLinEulerSolution::Preprocessing(CGeometry *geometry, CSolution **solution_
 	/*--- Residual inicialization ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
 		node[iPoint]->Set_ResConv_Zero();
+		node[iPoint]->Set_ResSour_Zero();
 		if ((config->Get_Beta_RKStep(iRKStep) != 0) || implicit)
 			node[iPoint]->Set_ResVisc_Zero();
 	}
@@ -375,7 +380,7 @@ void CLinEulerSolution::Inviscid_DeltaForces(CGeometry *geometry, CSolution **so
 }
 
 
-void CLinEulerSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short val_marker) {
+void CLinEulerSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short val_marker) {
 	unsigned short iDim, iVar;
 	unsigned long iVertex, iPoint;
 	double phi, a1, a2, sqvel, d, *Face_Normal, *U, dS, VelxDeltaRhoVel, Energy, Rho, 
@@ -602,584 +607,7 @@ void CLinEulerSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_c
 	}
 }
 
-void CLinEulerSolution::BC_Send_Receive(CGeometry *geometry, CSolution **solution_container, CConfig *config, 
-										unsigned short val_marker, unsigned short val_mesh) {
-#ifndef NO_MPI
-	unsigned short iVar;
-	unsigned long iVertex, Point;
-	double *Linearized_Var, *Linearized_Undivided_Laplacian = NULL, **Linearized_Grad = NULL;
-	short SendRecv = config->GetMarker_All_SendRecv(val_marker);
-	
-	/*--- Send information  ---*/
-	if (SendRecv > 0) {
-		
-		/*--- Upwind scheme ---*/
-		if (config->GetKind_ConvNumScheme() == SPACE_UPWIND) {
-			double Buffer_Send_DeltaU[geometry->nVertex[val_marker]][nVar];
-			double Buffer_Send_DeltaUx[geometry->nVertex[val_marker]][nVar];
-			double Buffer_Send_DeltaUy[geometry->nVertex[val_marker]][nVar];
-			double Buffer_Send_DeltaUz[geometry->nVertex[val_marker]][nVar];
-			unsigned long nBuffer = geometry->nVertex[val_marker]*nVar;
-			int send_to = SendRecv;
-			
-			for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-				Point = geometry->vertex[val_marker][iVertex]->GetNode();
-				Linearized_Var = node[Point]->GetSolution();
-				if (val_mesh == MESH_0) Linearized_Grad = node[Point]->GetGradient();
-				
-				for (iVar = 0; iVar < nVar; iVar++) {
-					Buffer_Send_DeltaU[iVertex][iVar] = Linearized_Var[iVar];
-					if (val_mesh == MESH_0) {
-						Buffer_Send_DeltaUx[iVertex][iVar] = Linearized_Grad[iVar][0];					
-						Buffer_Send_DeltaUy[iVertex][iVar] = Linearized_Grad[iVar][1];
-						if (nDim == 3) Buffer_Send_DeltaUz[iVertex][iVar] = Linearized_Grad[iVar][2];
-					}
-				}
-			}
-			
-			MPI::COMM_WORLD.Bsend(&Buffer_Send_DeltaU,nBuffer,MPI::DOUBLE,send_to, 0);
-			if (val_mesh == MESH_0) {
-				MPI::COMM_WORLD.Bsend(&Buffer_Send_DeltaUx,nBuffer,MPI::DOUBLE,send_to, 1);
-				MPI::COMM_WORLD.Bsend(&Buffer_Send_DeltaUy,nBuffer,MPI::DOUBLE,send_to, 2);
-				if (nDim == 3) MPI::COMM_WORLD.Bsend(&Buffer_Send_DeltaUz,nBuffer,MPI::DOUBLE,send_to, 3);
-			}
-		}
-		
-		/*--- Centered scheme ---*/
-		if (config->GetKind_ConvNumScheme() == SPACE_CENTRED) {
-			
-			double Buffer_Send_DeltaU[geometry->nVertex[val_marker]][nVar];
-			double Buffer_Send_Undivided_Laplacian[geometry->nVertex[val_marker]][nVar];
-			unsigned long nBuffer_Vector = geometry->nVertex[val_marker]*nVar;
-			int send_to = SendRecv;
-			
-			for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-				Point = geometry->vertex[val_marker][iVertex]->GetNode();
-				Linearized_Var = node[Point]->GetSolution();
-				if (val_mesh == MESH_0) Linearized_Undivided_Laplacian = node[Point]->GetUnd_Lapl();
-				for (iVar = 0; iVar < nVar; iVar++) {
-					Buffer_Send_DeltaU[iVertex][iVar] = Linearized_Var[iVar];
-					if (val_mesh == MESH_0) Buffer_Send_Undivided_Laplacian[iVertex][iVar] = Linearized_Undivided_Laplacian[iVar];					
-				}
-			}
-			
-			MPI::COMM_WORLD.Bsend(&Buffer_Send_DeltaU,nBuffer_Vector,MPI::DOUBLE,send_to, 0);
-			if (val_mesh == MESH_0) MPI::COMM_WORLD.Bsend(&Buffer_Send_Undivided_Laplacian,nBuffer_Vector,MPI::DOUBLE,send_to, 1);
-			
-		}
-	}
-	
-	/*--- Receive information  ---*/
-	if (SendRecv < 0) {
-		/*--- Upwind scheme (Not validated)---*/
-		if (config->GetKind_ConvNumScheme() == SPACE_UPWIND) {
-			double Buffer_Receive_DeltaU[geometry->nVertex[val_marker]][nVar];
-			double Buffer_Receive_DeltaUx[geometry->nVertex[val_marker]][nVar];
-			double Buffer_Receive_DeltaUy[geometry->nVertex[val_marker]][nVar];
-			double Buffer_Receive_DeltaUz[geometry->nVertex[val_marker]][nVar];
-			unsigned long nBuffer = geometry->nVertex[val_marker]*nVar;
-			int receive_from = abs(SendRecv);
-			
-			MPI::COMM_WORLD.Recv(&Buffer_Receive_DeltaU,nBuffer,MPI::DOUBLE,receive_from, 0);
-			if (val_mesh == MESH_0) {
-				MPI::COMM_WORLD.Recv(&Buffer_Receive_DeltaUx,nBuffer,MPI::DOUBLE,receive_from, 1);
-				MPI::COMM_WORLD.Recv(&Buffer_Receive_DeltaUy,nBuffer,MPI::DOUBLE,receive_from, 2);
-				if (nDim == 3) MPI::COMM_WORLD.Recv(&Buffer_Receive_DeltaUz,nBuffer,MPI::DOUBLE,receive_from, 3);
-			}
-			
-			for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-				Point = geometry->vertex[val_marker][iVertex]->GetNode();	
-				for (iVar = 0; iVar < nVar; iVar++) {
-					node[Point]->SetSolution(iVar, Buffer_Receive_DeltaU[iVertex][iVar]);
-					if (val_mesh == MESH_0) {
-						node[Point]->SetGradient(iVar, 0, Buffer_Receive_DeltaUx[iVertex][iVar]);
-						node[Point]->SetGradient(iVar, 1, Buffer_Receive_DeltaUy[iVertex][iVar]);
-						if (nDim == 3) node[Point]->SetGradient(iVar, 2, Buffer_Receive_DeltaUz[iVertex][iVar]);
-					}
-					if (config->GetKind_TimeIntScheme_LinFlow() == EULER_IMPLICIT)
-						Jacobian.DeleteValsRowi(Point*nVar+iVar);
-				}
-				if (config->GetKind_TimeIntScheme_LinFlow() == EULER_IMPLICIT) {
-					node[Point]->Set_ResConv_Zero();
-					node[Point]->Set_ResVisc_Zero();
-					node[Point]->SetResidualZero();
-					node[Point]->SetTruncationErrorZero();
-				}
-			}
-		}
-		
-		/*--- Centered scheme ---*/
-		if (config->GetKind_ConvNumScheme() == SPACE_CENTRED) {
-			double Buffer_Receive_DeltaU[geometry->nVertex[val_marker]][nVar];
-			double Buffer_Receive_Undivided_Laplacian[geometry->nVertex[val_marker]][nVar];
-			unsigned long nBuffer_Vector = geometry->nVertex[val_marker]*nVar;
-			int receive_from = abs(SendRecv);
-			
-			MPI::COMM_WORLD.Recv(&Buffer_Receive_DeltaU,nBuffer_Vector,MPI::DOUBLE,receive_from, 0);
-			if (val_mesh == MESH_0) MPI::COMM_WORLD.Recv(&Buffer_Receive_Undivided_Laplacian,nBuffer_Vector,MPI::DOUBLE,receive_from, 1);
-			
-			for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-				Point = geometry->vertex[val_marker][iVertex]->GetNode();
-				for (iVar = 0; iVar < nVar; iVar++) {
-					node[Point]->SetSolution(iVar, Buffer_Receive_DeltaU[iVertex][iVar]);
-					if (val_mesh == MESH_0) node[Point]->SetUndivided_Laplacian(iVar, Buffer_Receive_Undivided_Laplacian[iVertex][iVar]);
-					if (config->GetKind_TimeIntScheme_LinFlow() == EULER_IMPLICIT)
-						Jacobian.DeleteValsRowi(Point*nVar+iVar);
-				}
-				if (config->GetKind_TimeIntScheme_LinFlow() == EULER_IMPLICIT) {
-					node[Point]->Set_ResConv_Zero();
-					node[Point]->Set_ResVisc_Zero();
-					node[Point]->SetResidualZero();
-					node[Point]->SetTruncationErrorZero();
-				}
-			}
-		}			
-		
-	}
-#endif
+void CLinEulerSolution::MPI_Send_Receive(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short val_mesh) {
+
 }
 
-void CLinEulerSolution::BC_InterProcessor(CGeometry *geometry, CSolution **solution_container, CConfig *config, 
-																				unsigned short val_marker, unsigned short val_mesh) {
-#ifndef NO_MPI
-	unsigned short iVar;
-	unsigned long iVertex, Point;
-	double *Linearized_Var, *Linearized_Undivided_Laplacian = NULL, **Linearized_Grad = NULL;
-	short SendRecv = config->GetMarker_All_SendRecv(val_marker);
-	
-	/*--- Send information  ---*/
-	if (SendRecv > 0) {
-		
-		/*--- Upwind scheme ---*/
-		if (config->GetKind_ConvNumScheme() == SPACE_UPWIND) {
-			double Buffer_Send_DeltaU[geometry->nVertex[val_marker]][nVar];
-			double Buffer_Send_DeltaUx[geometry->nVertex[val_marker]][nVar];
-			double Buffer_Send_DeltaUy[geometry->nVertex[val_marker]][nVar];
-			double Buffer_Send_DeltaUz[geometry->nVertex[val_marker]][nVar];
-			unsigned long nBuffer = geometry->nVertex[val_marker]*nVar;
-			int send_to = SendRecv;
-			
-			for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-				Point = geometry->vertex[val_marker][iVertex]->GetNode();
-				Linearized_Var = node[Point]->GetSolution();
-				if (val_mesh == MESH_0) Linearized_Grad = node[Point]->GetGradient();
-				
-				for (iVar = 0; iVar < nVar; iVar++) {
-					Buffer_Send_DeltaU[iVertex][iVar] = Linearized_Var[iVar];
-					if (val_mesh == MESH_0) {
-						Buffer_Send_DeltaUx[iVertex][iVar] = Linearized_Grad[iVar][0];					
-						Buffer_Send_DeltaUy[iVertex][iVar] = Linearized_Grad[iVar][1];
-						if (nDim == 3) Buffer_Send_DeltaUz[iVertex][iVar] = Linearized_Grad[iVar][2];
-					}
-				}
-			}
-			
-			MPI::COMM_WORLD.Bsend(&Buffer_Send_DeltaU,nBuffer,MPI::DOUBLE,send_to, 0);
-			if (val_mesh == MESH_0) {
-				MPI::COMM_WORLD.Bsend(&Buffer_Send_DeltaUx,nBuffer,MPI::DOUBLE,send_to, 1);
-				MPI::COMM_WORLD.Bsend(&Buffer_Send_DeltaUy,nBuffer,MPI::DOUBLE,send_to, 2);
-				if (nDim == 3) MPI::COMM_WORLD.Bsend(&Buffer_Send_DeltaUz,nBuffer,MPI::DOUBLE,send_to, 3);
-			}
-		}
-		
-		/*--- Centered scheme ---*/
-		if (config->GetKind_ConvNumScheme() == SPACE_CENTRED) {
-			
-			double Buffer_Send_DeltaU[geometry->nVertex[val_marker]][nVar];
-			double Buffer_Send_Undivided_Laplacian[geometry->nVertex[val_marker]][nVar];
-			unsigned long nBuffer_Vector = geometry->nVertex[val_marker]*nVar;
-			int send_to = SendRecv;
-			
-			for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-				Point = geometry->vertex[val_marker][iVertex]->GetNode();
-				Linearized_Var = node[Point]->GetSolution();
-				if (val_mesh == MESH_0) Linearized_Undivided_Laplacian = node[Point]->GetUnd_Lapl();
-				for (iVar = 0; iVar < nVar; iVar++) {
-					Buffer_Send_DeltaU[iVertex][iVar] = Linearized_Var[iVar];
-					if (val_mesh == MESH_0) Buffer_Send_Undivided_Laplacian[iVertex][iVar] = Linearized_Undivided_Laplacian[iVar];					
-				}
-			}
-			
-			MPI::COMM_WORLD.Bsend(&Buffer_Send_DeltaU,nBuffer_Vector,MPI::DOUBLE,send_to, 0);
-			if (val_mesh == MESH_0) MPI::COMM_WORLD.Bsend(&Buffer_Send_Undivided_Laplacian,nBuffer_Vector,MPI::DOUBLE,send_to, 1);
-			
-		}
-	}
-	
-	/*--- Receive information  ---*/
-	if (SendRecv < 0) {
-		/*--- Upwind scheme (Not validated)---*/
-		if (config->GetKind_ConvNumScheme() == SPACE_UPWIND) {
-			double Buffer_Receive_DeltaU[geometry->nVertex[val_marker]][nVar];
-			double Buffer_Receive_DeltaUx[geometry->nVertex[val_marker]][nVar];
-			double Buffer_Receive_DeltaUy[geometry->nVertex[val_marker]][nVar];
-			double Buffer_Receive_DeltaUz[geometry->nVertex[val_marker]][nVar];
-			unsigned long nBuffer = geometry->nVertex[val_marker]*nVar;
-			int receive_from = abs(SendRecv);
-			
-			MPI::COMM_WORLD.Recv(&Buffer_Receive_DeltaU,nBuffer,MPI::DOUBLE,receive_from, 0);
-			if (val_mesh == MESH_0) {
-				MPI::COMM_WORLD.Recv(&Buffer_Receive_DeltaUx,nBuffer,MPI::DOUBLE,receive_from, 1);
-				MPI::COMM_WORLD.Recv(&Buffer_Receive_DeltaUy,nBuffer,MPI::DOUBLE,receive_from, 2);
-				if (nDim == 3) MPI::COMM_WORLD.Recv(&Buffer_Receive_DeltaUz,nBuffer,MPI::DOUBLE,receive_from, 3);
-			}
-			
-			for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-				Point = geometry->vertex[val_marker][iVertex]->GetNode();	
-				for (iVar = 0; iVar < nVar; iVar++) {
-					node[Point]->SetSolution(iVar, Buffer_Receive_DeltaU[iVertex][iVar]);
-					if (val_mesh == MESH_0) {
-						node[Point]->SetGradient(iVar, 0, Buffer_Receive_DeltaUx[iVertex][iVar]);
-						node[Point]->SetGradient(iVar, 1, Buffer_Receive_DeltaUy[iVertex][iVar]);
-						if (nDim == 3) node[Point]->SetGradient(iVar, 2, Buffer_Receive_DeltaUz[iVertex][iVar]);
-					}
-					if (config->GetKind_TimeIntScheme_LinFlow() == EULER_IMPLICIT)
-						Jacobian.DeleteValsRowi(Point*nVar+iVar);
-				}
-				if (config->GetKind_TimeIntScheme_LinFlow() == EULER_IMPLICIT) {
-					node[Point]->Set_ResConv_Zero();
-					node[Point]->Set_ResVisc_Zero();
-					node[Point]->SetResidualZero();
-					node[Point]->SetTruncationErrorZero();
-				}
-			}
-		}
-		
-		/*--- Centered scheme ---*/
-		if (config->GetKind_ConvNumScheme() == SPACE_CENTRED) {
-			double Buffer_Receive_DeltaU[geometry->nVertex[val_marker]][nVar];
-			double Buffer_Receive_Undivided_Laplacian[geometry->nVertex[val_marker]][nVar];
-			unsigned long nBuffer_Vector = geometry->nVertex[val_marker]*nVar;
-			int receive_from = abs(SendRecv);
-			
-			MPI::COMM_WORLD.Recv(&Buffer_Receive_DeltaU,nBuffer_Vector,MPI::DOUBLE,receive_from, 0);
-			if (val_mesh == MESH_0) MPI::COMM_WORLD.Recv(&Buffer_Receive_Undivided_Laplacian,nBuffer_Vector,MPI::DOUBLE,receive_from, 1);
-			
-			for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-				Point = geometry->vertex[val_marker][iVertex]->GetNode();
-				for (iVar = 0; iVar < nVar; iVar++) {
-					node[Point]->SetSolution(iVar, Buffer_Receive_DeltaU[iVertex][iVar]);
-					if (val_mesh == MESH_0) node[Point]->SetUndivided_Laplacian(iVar, Buffer_Receive_Undivided_Laplacian[iVertex][iVar]);
-					if (config->GetKind_TimeIntScheme_LinFlow() == EULER_IMPLICIT)
-						Jacobian.DeleteValsRowi(Point*nVar+iVar);
-				}
-				if (config->GetKind_TimeIntScheme_LinFlow() == EULER_IMPLICIT) {
-					node[Point]->Set_ResConv_Zero();
-					node[Point]->Set_ResVisc_Zero();
-					node[Point]->SetResidualZero();
-					node[Point]->SetTruncationErrorZero();
-				}
-			}
-		}			
-		
-	}
-#endif
-}
-
-CLinElectricSolution::CLinElectricSolution(void) : CSolution() { }
-
-CLinElectricSolution::~CLinElectricSolution(void) {
-	
-	unsigned short iVar, iDim;
-	
-	delete [] Residual;
-	delete [] Residual_Max;
-	delete [] Solution;
-	
-	if (nDim == 2) {
-		for (iVar = 0; iVar < 3; iVar++)
-			delete [] StiffMatrix_Elem[iVar];
-	}
-	
-	if (nDim == 3) {
-		for (iVar = 0; iVar < 4; iVar++)
-			delete [] StiffMatrix_Elem[iVar];
-	}
-	
-	delete [] StiffMatrix_Elem;
-	delete [] StiffMatrix_Node;
-	delete [] xsol;
-	delete [] rhs;
-	
-	// Computation of gradients by least-squares
-	for (iDim = 0; iDim < this->nDim; iDim++)
-		delete [] Smatrix[iDim];
-	delete [] Smatrix;
-	
-	for (iVar = 0; iVar < nVar; iVar++)
-		delete [] cvector[iVar];
-	delete [] cvector;
-	
-}
-
-CLinElectricSolution::CLinElectricSolution(CGeometry *geometry, CConfig *config) : CSolution() {
-	
-	unsigned long nPoint;
-	unsigned short nMarker;
-	
-	nPoint = geometry->GetnPoint();
-	nDim = geometry->GetnDim();
-	nMarker = config->GetnMarker_All(); 
-	node = new CVariable*[nPoint];
-	nVar = 1;		
-	Gamma = config->GetGamma();
-	Gamma_Minus_One = Gamma - 1.0;
-	
-	Residual = new double[nVar];
-	Residual_Max = new double[nVar];
-	Solution = new double[nVar];
-	
-	
-	// - - - - STRUCTURES FOR SOLVING THE LINEAR SYSTEM - - - - - - 
-	// Point to point stiffness matrix
-	if (nDim == 2) {
-		StiffMatrix_Elem = new double* [3];
-		for (unsigned short iVar = 0; iVar < 3; iVar++) {
-			StiffMatrix_Elem[iVar] = new double [3];
-		}
-	}
-	
-	if (nDim == 3) {
-		StiffMatrix_Elem = new double* [4];
-		for (unsigned short iVar = 0; iVar < 4; iVar++) {
-			StiffMatrix_Elem[iVar] = new double [4];
-		}
-	}	
-	
-	StiffMatrix_Node = new double* [1];
-	for (unsigned short iVar = 0; iVar < 1; iVar++) {
-		StiffMatrix_Node[iVar] = new double [1];
-	}
-	
-	// Initialization of the structure of the whole Jacobian
-	InitializeStiffMatrixStructure(geometry, config);
-	xsol = new double [nPoint*nVar];
-	xres = new double [nPoint*nVar];
-	rhs = new double [nPoint*nVar];
-	
-	// - - - - STRUCTURES LEAST SQUARES GRADIENTS - - - - - - - 
-	// Computation of gradients by least squares
-	Smatrix = new double* [nDim]; // S matrix := inv(R)*traspose(inv(R))
-	for (unsigned short iDim = 0; iDim < nDim; iDim++)
-		Smatrix[iDim] = new double [nDim];
-	
-	cvector = new double* [nVar]; // c vector := transpose(WA)*(Wb)
-	for (unsigned short iVar = 0; iVar < nVar; iVar++)
-		cvector[iVar] = new double [nDim];
-	
-	
-	// - - - - INITIALIZATION - - - - - - - 
-	for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
-		node[iPoint] = new CPotentialVariable(0.0, nDim, nVar, config);
-	
-	bool restart = config->GetRestart();
-	
-	if (!restart) {
-		for (unsigned long iPoint=0; iPoint < nPoint; iPoint++)
-			node[iPoint] = new CPotentialVariable(0.0, nDim, nVar, config);
-	}
-	else {
-		string mesh_filename = config->GetSolution_LinFileName();
-		ifstream restart_file;	// definition of file
-		
-		char *cstr; cstr = new char [mesh_filename.size()+1];
-		strcpy (cstr, mesh_filename.c_str());
-		restart_file.open(cstr, ios::in);	// Open the file
-		if (restart_file.fail()) {
-			cout << "There is no linear restart file!!" << endl;
-			cout << "Press any key to exit..." << endl;
-			cin.get();
-			exit(1);
-		}
-		unsigned long index;
-		string text_line;	// definition of the text line
-		
-		for(unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-			getline(restart_file,text_line);
-			istringstream point_line(text_line);
-			point_line >> index >> Solution[0];
-			node[iPoint] = new CPotentialVariable(Solution[0], nDim, nVar, config);
-		}
-		restart_file.close();
-	}		
-	
-}
-
-void CLinElectricSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iRKStep) {
-	unsigned long iPoint;
-	
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++)
-		node[iPoint]->SetResidualZero(); // Inicialize the residual vector
-	StiffMatrix.SetValZero();
-}
-
-void CLinElectricSolution::Solve_LinearSystem(CGeometry *geometry, CSolution **solution_container, CConfig *config, 
-											  unsigned short iMesh) {
-	
-	
-	unsigned long iPoint, nPoint = geometry->GetnPoint();
-	unsigned short iVar = 0, iter = 0;
-	double norm;
-	
-	// Build lineal system
-	for (iPoint = 0; iPoint < nPoint; iPoint++) {		
-		rhs[iPoint] = node[iPoint]->GetResidual(iVar);
-		xsol[iPoint] = node[iPoint]->GetSolution(iVar);
-	}
-	
-	// Solve the system
-	norm = 1; iter = 0;
-	
-	while (norm > config->GetCauchy_Eps()) {
-		iter++;
-		norm = StiffMatrix.SGSIteration(rhs,xsol);
-		if (iter == config->GetnExtIter()) break;		
-	}
-	
-	SetRes_Max(0, norm);
-	
-	// Update solution
-	for (iPoint = 0; iPoint < nPoint; iPoint++)
-		node[iPoint]->SetSolution(0,xsol[iPoint]);
-	
-}
-
-void CLinElectricSolution::Compute_Residual(CGeometry *geometry, CSolution **solution_container, CConfig *config, 
-											unsigned short iMesh) {
-	
-	unsigned long iPoint;
-	unsigned short iVar = 0;
-	
-	// Build lineal system
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {		
-		rhs[iPoint] = node[iPoint]->GetResidual(iVar);
-		xsol[iPoint] = node[iPoint]->GetSolution(iVar);
-		xres[iPoint] = 0.0;
-	}
-	
-	StiffMatrix.MatrixVectorProduct(xsol,xres);
-	
-	// Update residual
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-		node[iPoint]->SetResidual(0,xres[iPoint]-rhs[iPoint]);
-	
-	SetResidual_Smoothing(geometry, 10, 10.0);
-	
-}
-
-void CLinElectricSolution::SourcePieceWise_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
-												  CConfig *config, unsigned short iMesh) {
-	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, iPoint;
-	double *Coord_i, *Coord_j, *Coord_2, a[3], b[3], Area_Local;
-	unsigned short iDim, iNode;
-	
-	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-		
-		Point_0 = geometry->elem[iElem]->GetNode(0);
-		Point_1 = geometry->elem[iElem]->GetNode(1);
-		Point_2 = geometry->elem[iElem]->GetNode(2);
-		
-		Coord_i = geometry->node[Point_0]->GetCoord();
-		Coord_j = geometry->node[Point_1]->GetCoord();
-		Coord_2 = geometry->node[Point_2]->GetCoord();
-		
-		for (iDim=0; iDim < nDim; iDim++) {
-			a[iDim] = Coord_i[iDim]-Coord_2[iDim];
-			b[iDim] = Coord_j[iDim]-Coord_2[iDim];
-		}
-		
-		Area_Local = 0.5*fabs(a[0]*b[1]-a[1]*b[0])/3.0;
-		
-		for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
-			iPoint = geometry->elem[iElem]->GetNode(iNode);
-			solver->SetCoord(geometry->node[iPoint]->GetCoord(), NULL, NULL, NULL);
-			solver->SetVolume(Area_Local);
-			solver->SetResidual(Residual, config);
-			node[iPoint]->AddResidual(Residual);		
-		}
-		
-	}
-}
-
-void CLinElectricSolution::Galerkin_Method(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
-										   CConfig *config, unsigned short iMesh) {
-	
-	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3 = 0;
-	double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3= NULL;
-	
-	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-		
-		/*--- Points in edge ---*/
-		Point_0 = geometry->elem[iElem]->GetNode(0);
-		Point_1 = geometry->elem[iElem]->GetNode(1);
-		Point_2 = geometry->elem[iElem]->GetNode(2);
-		if (nDim == 3) Point_3 = geometry->elem[iElem]->GetNode(3);
-		
-		/*--- Points coordinates ---*/
-		Coord_0 = geometry->node[Point_0]->GetCoord();
-		Coord_1 = geometry->node[Point_1]->GetCoord();
-		Coord_2 = geometry->node[Point_2]->GetCoord();
-		if (nDim == 3) Coord_3 = geometry->node[Point_3]->GetCoord();
-		
-		if (nDim == 2) solver->SetCoord(Coord_0, Coord_1, Coord_2);
-		if (nDim == 3) solver->SetCoord(Coord_0, Coord_1, Coord_2, Coord_3);
-		
-		solver->SetResidual(StiffMatrix_Elem, config);
-		
-		if (nDim == 2) {
-			StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][0]; StiffMatrix.AddBlock(Point_0,Point_0,StiffMatrix_Node);			
-			StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][1]; StiffMatrix.AddBlock(Point_0,Point_1,StiffMatrix_Node);			
-			StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][2]; StiffMatrix.AddBlock(Point_0,Point_2,StiffMatrix_Node);			
-			StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][0]; StiffMatrix.AddBlock(Point_1,Point_0,StiffMatrix_Node);			
-			StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][1]; StiffMatrix.AddBlock(Point_1,Point_1,StiffMatrix_Node);		
-			StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][2]; StiffMatrix.AddBlock(Point_1,Point_2,StiffMatrix_Node);			
-			StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][0]; StiffMatrix.AddBlock(Point_2,Point_0,StiffMatrix_Node);			
-			StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][1]; StiffMatrix.AddBlock(Point_2,Point_1,StiffMatrix_Node);			
-			StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][2]; StiffMatrix.AddBlock(Point_2,Point_2,StiffMatrix_Node);			
-		}
-		
-		if (nDim == 3) {
-			StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][0]; StiffMatrix.AddBlock(Point_0,Point_0,StiffMatrix_Node);			
-			StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][1]; StiffMatrix.AddBlock(Point_0,Point_1,StiffMatrix_Node);			
-			StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][2]; StiffMatrix.AddBlock(Point_0,Point_2,StiffMatrix_Node);			
-			StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][3]; StiffMatrix.AddBlock(Point_0,Point_3,StiffMatrix_Node);			
-			StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][0]; StiffMatrix.AddBlock(Point_1,Point_0,StiffMatrix_Node);			
-			StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][1]; StiffMatrix.AddBlock(Point_1,Point_1,StiffMatrix_Node);		
-			StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][2]; StiffMatrix.AddBlock(Point_1,Point_2,StiffMatrix_Node);			
-			StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][3]; StiffMatrix.AddBlock(Point_1,Point_3,StiffMatrix_Node);
-			StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][0]; StiffMatrix.AddBlock(Point_2,Point_0,StiffMatrix_Node);			
-			StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][1]; StiffMatrix.AddBlock(Point_2,Point_1,StiffMatrix_Node);			
-			StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][2]; StiffMatrix.AddBlock(Point_2,Point_2,StiffMatrix_Node);			
-			StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][3]; StiffMatrix.AddBlock(Point_2,Point_3,StiffMatrix_Node);
-			StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][0]; StiffMatrix.AddBlock(Point_3,Point_0,StiffMatrix_Node);			
-			StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][1]; StiffMatrix.AddBlock(Point_3,Point_1,StiffMatrix_Node);			
-			StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][2]; StiffMatrix.AddBlock(Point_3,Point_2,StiffMatrix_Node);			
-			StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][3]; StiffMatrix.AddBlock(Point_3,Point_3,StiffMatrix_Node);
-		}
-	}
-}
-
-void CLinElectricSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short val_marker) {
-	unsigned long Point, iVertex;
-	
-	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-		Point = geometry->vertex[val_marker][iVertex]->GetNode();
-		Solution[0]= 0.0;
-		node[Point]->SetSolution(Solution);
-		node[Point]->SetResidual(Solution);
-		StiffMatrix.DeleteValsRowi(Point); // & includes 1 in the diagonal
-	}
-	
-}
-
-void CLinElectricSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short val_marker) {
-	unsigned long Point, iVertex;
-	
-	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-		Point = geometry->vertex[val_marker][iVertex]->GetNode();
-		Solution[0]= 0.0;
-		node[Point]->SetSolution(Solution);
-		node[Point]->SetResidual(Solution);
-		StiffMatrix.DeleteValsRowi(Point); // & includes 1 in the diagonal
-	}
-}

@@ -4,7 +4,7 @@
  *        The subroutines and functions are in the <i>SU2_DDC.cpp</i> file.
  * \author Current Development: Stanford University.
  *         Original Structure: CADES 1.0 (2009).
- * \version 1.0.
+ * \version 1.1.
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -25,11 +25,13 @@
 
 #pragma once
 
-#include "../../Common/include/geometry_structure.hpp"
-#include "../../Common/include/config_structure.hpp"
 #include <cstdlib>
 #include <iostream>
 #include <iomanip>
 #include <cmath>
+
+#include "../../Common/include/geometry_structure.hpp"
+#include "../../Common/include/config_structure.hpp"
+#include "../../Common/include/grid_movement_structure.hpp"
 
 using namespace std;

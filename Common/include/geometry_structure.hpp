@@ -4,7 +4,7 @@
  *        The subroutines and functions are in the <i>geometry_structure.cpp</i> file.
  * \author Current Development: Stanford University.
  *         Original Structure: CADES 1.0 (2009).
- * \version 1.0.
+ * \version 1.1.
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -59,7 +59,7 @@ using namespace std;
  * \brief Parent class for defining the geometry of the problem (complete geometry, 
  *        multigrid agglomerated geometry, only boundary geometry, etc..)
  * \author F. Palacios.
- * \version 1.0.
+ * \version 1.1.
  */
 class CGeometry {
 protected:
@@ -165,6 +165,16 @@ public:
 	long FindEdge(unsigned long first_point, unsigned long second_point);
 	
 	/*! 
+	 * \brief Get the distance between a plane (defined by three point) and a point.
+	 * \param[in] Coord - Coordinates of the point.
+	 * \param[in] iCoord - Coordinates of the first point that defines the plane.
+	 * \param[in] jCoord - Coordinates of the second point that defines the plane.
+	 * \param[in] kCoord - Coordinates of the third point that defines the plane.
+	 * \return Signed distance.
+	 */		
+	double Point2Plane_Distance(double *Coord, double *iCoord, double *jCoord, double *kCoord);
+
+	/*! 
 	 * \brief Create a file for testing the geometry.
 	 */		
 	void TestGeometry(void);
@@ -214,6 +224,12 @@ public:
 	 * \param[in] val_npoint - Number of grid points.
 	 */	
 	void SetnPoint(unsigned long val_npoint);
+	
+	/*! 
+	 * \brief Set the number of grid points in the domain.
+	 * \param[in] val_npoint - Number of grid points in the domain.
+	 */	
+	void SetnPointDomain(unsigned long val_npoint);
 	
 	/*! 
 	 * \brief Set the number of grid elements.
@@ -357,7 +373,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.		 
 	 * \param[in] mesh_filename - Name of the file where the paraview information is going to be stored.
 	 */
-	virtual void SetBoundTecplot(CConfig *config, char mesh_filename[200]);
+	virtual void SetBoundTecPlot(CConfig *config, char mesh_filename[200]);
 	
 	/*! 
 	 * \brief A virtual member.
@@ -402,7 +418,8 @@ public:
 	/*! 
 	 * \brief A virtual member.
 	 * \param[in] val_nSmooth - Number of smoothing iterations.
-	 * \param[in] val_smooth_coeff - Relaxation factor.		 
+	 * \param[in] val_smooth_coeff - Relaxation factor.
+	 * \param[in] config - Definition of the particular problem.
 	 */	
 	virtual void SetCoord_Smoothing(unsigned short val_nSmooth, double val_smooth_coeff, CConfig *config);
 	
@@ -460,10 +477,9 @@ public:
 	
 	/*! 
 	 * \brief A virtual member.
-	 * \param[in] val_filename - Name of the file with the sensitivity information, be careful 
-	 *            because as input file we don't use a .su2, in this case we use a .csv file.
+	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetBoundSensitivity(string val_filename);
+	virtual void SetBoundSensitivity(CConfig *config);
 	
 	/*! 
 	 * \brief A virtual member.
@@ -478,6 +494,32 @@ public:
 	 */
   virtual void SetRotationalVelocity(CConfig *config);
   
+  /*! 
+	 * \brief A virtual member.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  virtual void FindSharpEdges(CConfig *config);
+	
+	/*! 
+	 * \brief A virtual member.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  virtual void FindClosestNeighbor(CConfig *config);
+	
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] val_ipoint - Global point.
+	 * \returns Local index that correspond with the global index.
+	 */
+	virtual long GetGlobal_to_Local_Point(long val_ipoint);
+	
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] val_ipoint - Global marker.
+	 * \returns Local marker that correspond with the global index.
+	 */
+	virtual unsigned short GetGlobal_to_Local_Marker(unsigned short val_imarker);
+	
 };
 
 /*! 
@@ -485,7 +527,7 @@ public:
  * \brief Class for reading a defining the primal grid which is read from the 
  *        grid file in .su2 format.
  * \author F. Palacios.
- * \version 1.0.
+ * \version 1.1.
  */
 class CPhysicalGeometry : public CGeometry {
 public:
@@ -502,8 +544,10 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_mesh_filename - Name of the file with the grid information.
 	 * \param[in] val_format - Format of the file with the grid information.
+   * \param[in] val_iDomain - Domain to be read from the grid file.
+   * \param[in] val_nDomain - Total number of domains in the grid file.
 	 */
-	CPhysicalGeometry(CConfig *config, string val_mesh_filename, unsigned short val_format);
+	CPhysicalGeometry(CConfig *config, string val_mesh_filename, unsigned short val_format, unsigned short val_iDomain, unsigned short val_nDomain);
 	
 	/*! 
 	 * \brief Destructor of the class.
@@ -629,7 +673,15 @@ public:
 	 * \param[in] mesh_filename - Name of the file where the Tecplot 
 	 *            information is going to be stored.
 	 */
-	void SetBoundTecplot(CConfig *config, char mesh_filename[200]);
+	void SetBoundTecPlot(CConfig *config, char mesh_filename[200]);
+
+	/*! 
+	 * \brief Set the output file for boundaries in STL CAD format
+	 * \param[in] config - Definition of the particular problem.		 
+	 * \param[in] mesh_filename - Name of the file where the STL 
+	 *            information is going to be stored.
+	 */
+	void SetBoundSTL(CConfig *config, char mesh_filename[200]);
 	
 	/*! 
 	 * \brief Check the volume element orientation.
@@ -699,6 +751,18 @@ public:
 	 * \param[out] statistics - Information about the grid quality, statistics[0] = (r/R)_min, statistics[1] = (r/R)_ave.		 
 	 */	
 	void GetQualityStatistics(double *statistics);
+  
+  /*! 
+	 * \brief Find and store all vertices on a sharp corner in the geometry.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  void FindSharpEdges(CConfig *config);
+	
+	/*! 
+	 * \brief Find and store the closest neighbor to a vertex.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  void FindClosestNeighbor(CConfig *config);
 	
 };
 
@@ -707,7 +771,7 @@ public:
  * \brief Class for defining the multigrid geometry, the main delicated part is the 
  *        agglomeration stage, which is done in the declaration.
  * \author F. Palacios.
- * \version 1.0.
+ * \version 1.1.
  */
 class CMultiGridGeometry : public CGeometry {
 public:
@@ -802,6 +866,12 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
   void SetRotationalVelocity(CConfig *config);
+	
+	/*! 
+	 * \brief Find and store the closest neighbor to a vertex.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  void FindClosestNeighbor(CConfig *config);
   
 };
 
@@ -810,7 +880,7 @@ public:
  * \brief Class for only defining the boundary of the geometry, this class is only 
  *        used in case we are not interested in the volumetric grid.
  * \author F. Palacios.
- * \version 1.0.
+ * \version 1.1.
  */
 class CBoundaryGeometry : public CGeometry {
 public:
@@ -842,11 +912,10 @@ public:
 	void SetBoundControlVolume(CConfig *config, unsigned short action);
 	
 	/*! 
-	 * \brief Read the sensitivity froman input file.
-	 * \param[in] val_filename - Name of the file with the sensitivity information, be careful 
-	 *            because as input file we don't use a .su2, in this case we use a .csv file.
+	 * \brief Read the sensitivity from an input file.
+	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetBoundSensitivity(string val_filename);
+	void SetBoundSensitivity(CConfig *config);
 	
 	/*! 
 	 * \brief Set the output file for boundaries in Paraview
@@ -861,12 +930,13 @@ public:
  * \class CDomainGeometry
  * \brief Class for defining an especial kind of grid used in the partioning stage.
  * \author F. Palacios.
- * \version 1.0.
+ * \version 1.1.
  */
 class CDomainGeometry : public CGeometry {
-	long *global_local_index;				/*!< \brief Global-local indexation for the points. */
-	unsigned short *global_local_marker;	/*!< \brief Global-local marker. */
-	unsigned long *local_global_index;				/*!< \brief Local-global indexation for the points. */
+	long *Global_to_Local_Point;				/*!< \brief Global-local indexation for the points. */
+	unsigned long *Local_to_Global_Point;				/*!< \brief Local-global indexation for the points. */
+	unsigned short *Local_to_Global_Marker;	/*!< \brief Local to Global marker. */
+	unsigned short *Global_to_Local_Marker;	/*!< \brief Global to Local marker. */
 
 public:
 	
@@ -919,13 +989,28 @@ public:
 	 * \param[in] val_mesh_out_filename - Name of the output file.
 	 */
 	void SetMeshFile(CConfig *config, string val_mesh_out_filename);
+	
+	/*!
+	 * \brief Get the local index that correspond with the global numbering index.
+	 * \param[in] val_ipoint - Global point.
+	 * \returns Local index that correspond with the global index.
+	 */
+	long GetGlobal_to_Local_Point(long val_ipoint);
+	
+	/*!
+	 * \brief Get the local marker that correspond with the global marker.
+	 * \param[in] val_ipoint - Global marker.
+	 * \returns Local marker that correspond with the global index.
+	 */
+	unsigned short GetGlobal_to_Local_Marker(unsigned short val_imarker);
+
 };
 
 /*! 
  * \class CPeriodicGeometry
  * \brief Class for defining a periodic boundary condition.
  * \author T. Economon, F. Palacios.
- * \version 1.0.
+ * \version 1.1.
  */
 class CPeriodicGeometry : public CGeometry {
   CPrimalGrid*** newBoundPer;            /*!< \brief Boundary vector for new periodic elements (primal grid information). */

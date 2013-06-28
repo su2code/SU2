@@ -3,7 +3,7 @@
  * \brief Main subroutines for grid adaptation.
  * \author Current Development: Stanford University.
  *         Original Structure: CADES 1.0 (2009).
- * \version 1.0.
+ * \version 1.1.
  */
 
 #include "../include/grid_adaptation_structure.hpp"
@@ -14,8 +14,7 @@ CGridAdaptation::CGridAdaptation(CGeometry *geometry, CConfig *config) {
 	unsigned long iPoint;
 	
 	nDim = geometry->GetnDim();
-	if ( config->GetKind_Solver() == POTENTIAL_FLOW || config->GetKind_Solver() == ELECTRIC_POTENTIAL 
-		|| config->GetKind_Solver() == ADJ_ELECTRIC_POTENTIAL || config->GetKind_Solver() == LIN_ELECTRIC_POTENTIAL) nVar = 1;
+	if (config->GetKind_Solver() == ELECTRIC_POTENTIAL) nVar = 1;
 	else nVar = geometry->GetnDim()+2;
 	ConsVar_Sol = new double* [geometry->GetnPoint()];
 	AdjVar_Sol = new double* [geometry->GetnPoint()];
@@ -177,6 +176,12 @@ void CGridAdaptation::GetAdjSolution(CGeometry *geometry, CConfig *config) {
 	if (config->GetKind_ObjFunc() == MOMENT_Z_COEFFICIENT) sprintf (buffer, "_cmz.dat"); 
 	if (config->GetKind_ObjFunc() == EFFICIENCY) sprintf (buffer, "_eff.dat"); 
 	if (config->GetKind_ObjFunc() == ELECTRIC_CHARGE) sprintf (buffer, "_cc.dat"); 
+  if (config->GetKind_ObjFunc() == FORCE_X_COEFFICIENT) sprintf (buffer, "_cfx.dat"); 
+	if (config->GetKind_ObjFunc() == FORCE_Y_COEFFICIENT) sprintf (buffer, "_cfy.dat"); 
+	if (config->GetKind_ObjFunc() == FORCE_Z_COEFFICIENT) sprintf (buffer, "_cfz.dat"); 
+  if (config->GetKind_ObjFunc() == THRUST_COEFFICIENT) sprintf (buffer, "_ct.dat"); 
+	if (config->GetKind_ObjFunc() == TORQUE_COEFFICIENT) sprintf (buffer, "_cq.dat"); 
+	if (config->GetKind_ObjFunc() == FIGURE_OF_MERIT) sprintf (buffer, "_merit.dat"); 
 	strcat(cstr, buffer);
 	
 	restart_file.open(cstr, ios::in);
@@ -248,6 +253,10 @@ void CGridAdaptation::GetAdjResidual(CGeometry *geometry, CConfig *config){
 	if (config->GetKind_ObjFunc() == MOMENT_Z_COEFFICIENT) sprintf (buffer, "_cmz.dat"); 
 	if (config->GetKind_ObjFunc() == EFFICIENCY) sprintf (buffer, "_eff.dat"); 
 	if (config->GetKind_ObjFunc() == ELECTRIC_CHARGE) sprintf (buffer, "_ec.dat"); 
+  if (config->GetKind_ObjFunc() == FORCE_X_COEFFICIENT) sprintf (buffer, "_cfx.dat"); 
+	if (config->GetKind_ObjFunc() == FORCE_Y_COEFFICIENT) sprintf (buffer, "_cfy.dat"); 
+	if (config->GetKind_ObjFunc() == FORCE_Z_COEFFICIENT) sprintf (buffer, "_cfz.dat");
+//  if (config->GetKind_ObjFunc() == ROTOR_EFFICIENCY) sprintf (buffer, "_rot_eff.dat");
 	strcat(cstr, buffer);
 	
 	restart_file.open(cstr, ios::in);
@@ -1695,7 +1704,7 @@ void CGridAdaptation::SetHomothetic_Adaptation(CGeometry *geometry, CPhysicalGeo
 					}
 					
 					if (config->GetMarker_All_Boundary(iMarker) == FAR_FIELD) {
-	/*					if ((config->GetAnalytical_Surface() == NACA0012_AIRFOIL) || 
+						if ((config->GetAnalytical_Surface() == NACA0012_AIRFOIL) || 
 								(config->GetAnalytical_Surface() == NACA4412_AIRFOIL) ||
 								(config->GetAnalytical_Surface() == BIPARABOLIC)) {
 							double x_Circle, y_Circle, radius = 20.0;
@@ -1704,7 +1713,7 @@ void CGridAdaptation::SetHomothetic_Adaptation(CGeometry *geometry, CPhysicalGeo
 
 							geo_adapt->node[ip_01]->SetCoord(0, x_Circle);
 							geo_adapt->node[ip_01]->SetCoord(1, y_Circle);
-						}*/
+						}
 						if (config->GetAnalytical_Surface() == CYLINDER) {
 							double x_Circle, y_Circle, radius = 15.0;
 							x_Circle = abs(radius * cos(atan(Coord[1]/Coord[0])))*Coord[0]/abs(Coord[0]+1E-16);
@@ -1816,6 +1825,7 @@ void CGridAdaptation::SetHomothetic_Adaptation(CGeometry *geometry, CPhysicalGeo
 	
 	geo_adapt->SetnElem(nElem_new);
 	geo_adapt->SetnPoint(nPoint_new);
+	geo_adapt->SetnPointDomain(nPoint_new);
 	geo_adapt->SetnDim(nDim);
 		
 	for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
@@ -1982,6 +1992,7 @@ void CGridAdaptation::SetDomain_Interface(CGeometry *geometry, CPhysicalGeometry
 	geo_adapt->SetnElem_Storage(geometry->GetnElem_Storage());
 	geo_adapt->SetnElem(geometry->GetnElem());
 	geo_adapt->SetnPoint(geometry->GetnPoint());
+	geo_adapt->SetnPointDomain(geometry->GetnPoint());
 	geo_adapt->SetnDim(geometry->GetnDim());
 	
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem ++) {
@@ -2418,6 +2429,10 @@ void CGridAdaptation::SetReStart_AdjSolution(CGeometry *geometry, CConfig *confi
 	if (config->GetKind_ObjFunc() == MOMENT_Z_COEFFICIENT) sprintf (buffer, "_cmz.dat"); 
 	if (config->GetKind_ObjFunc() == EFFICIENCY) sprintf (buffer, "_eff.dat"); 
 	if (config->GetKind_ObjFunc() == ELECTRIC_CHARGE) sprintf (buffer, "_cc.dat"); 
+  if (config->GetKind_ObjFunc() == FORCE_X_COEFFICIENT) sprintf (buffer, "_cfx.dat"); 
+	if (config->GetKind_ObjFunc() == FORCE_Y_COEFFICIENT) sprintf (buffer, "_cfy.dat"); 
+	if (config->GetKind_ObjFunc() == FORCE_Z_COEFFICIENT) sprintf (buffer, "_cfz.dat");
+//  if (config->GetKind_ObjFunc() == ROTOR_EFFICIENCY) sprintf (buffer, "_rot_eff.dat");
 	strcat(cstr, buffer);
 	
 	ofstream restart_adjfile;

@@ -4,7 +4,7 @@
  *        The subroutines and functions are in the <i>dual_grid_structure.cpp</i> file.
  * \author Current Development: Stanford University.
  *         Original Structure: CADES 1.0 (2009).
- * \version 1.0.
+ * \version 1.1.
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -38,7 +38,7 @@ using namespace std;
  * \brief Class for controlling the dual volume definition. The dual volume is compose by 
  *        three main elements: points, edges, and vertices.
  * \author F. Palacios.
- * \version 1.0.
+ * \version 1.1.
  */
 class CDualGrid{
 protected:
@@ -73,15 +73,17 @@ public:
 	 * \param[in] val_coord_Edge_CG - Coordinates of the centre of gravity of the edge.
 	 * \param[in] val_coord_FaceElem_CG - Coordinates of the centre of gravity of the face of an element.
 	 * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.
+   * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG,double *val_coord_Elem_CG) = 0;
+	virtual void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG,double *val_coord_Elem_CG, CConfig *config) = 0;
 	
 	/*! 
 	 * \overload
 	 * \param[in] val_coord_Edge_CG - Coordinates of the centre of gravity of the edge.
 	 * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.
+   * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG) = 0;
+	virtual void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG, CConfig *config) = 0;
 	
 	/*! 
 	 * \brief A pure virtual member.
@@ -121,7 +123,7 @@ public:
  * \class CPoint
  * \brief Class for point definition (including control volume definition).
  * \author F. Palacios.
- * \version 1.0.
+ * \version 1.1.
  */
 class CPoint : public CDualGrid {
 private:
@@ -542,13 +544,13 @@ public:
 	 * \brief This function does nothing (it comes from a pure virtual function, that implies the 
 	 *        definition of the function in all the derived classes).
 	 */
-	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG);
+	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG, CConfig *config);
 	
 	/*! 
 	 * \brief This function does nothing (it comes from a pure virtual function, that implies the 
 	 *        definition of the function in all the derived classes).
 	 */
-	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG);
+	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG, CConfig *config);
 
 	/*! 
 	 * \brief This function does nothing (it comes from a pure virtual function, that implies the 
@@ -591,13 +593,14 @@ public:
  * \class CEdge
  * \brief Class for defining an edge (core of an edge based code).
  * \author F. Palacios.
- * \version 1.0.
+ * \version 1.1.
  */
 class CEdge : public CDualGrid {
 private:
 	double *Coord_CG;			/*!< \brief Center-of-gravity of the element. */
 	unsigned long *Nodes;		/*!< \brief Vector to store the global nodes of an element. */
 	double *Normal;				/*!< \brief Normal al elemento y coordenadas de su centro de gravedad. */
+  double Rot_Flux;     /*!< \brief The exactly integrated rotational volume flux. */
 
 public:
 		
@@ -665,18 +668,20 @@ public:
 	 * \param[in] val_coord_Edge_CG - Coordinates of the centre of gravity of the edge.
 	 * \param[in] val_coord_FaceElem_CG - Coordinates of the centre of gravity of the face of an element.
 	 * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.
-	 * \return Compute the normal (dimensional) to the face that makes the contorl volume boundaries.
+   * \param[in] config - Definition of the particular problem.
+	 * \return Compute the normal (dimensional) to the face that makes the control volume boundaries.
 	 */
-	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG);
+	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG, CConfig *config);
 	
 	/*!
 	 * \overload
 	 * \brief Set the face that correspond to an edge.
 	 * \param[in] val_coord_Edge_CG - Coordinates of the centre of gravity of the edge.
-	 * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.		 
+	 * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.
+   * \param[in] config - Definition of the particular problem.
 	 * \return Compute the normal (dimensional) to the face that makes the contorl volume boundaries.
 	 */
-	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG);
+	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG, CConfig *config);
 	
 	/*! 
 	 * \brief Copy the the normal vector of a face.
@@ -719,13 +724,24 @@ public:
 	 *        definition of the function in all the derived classes).
 	 */
 	void SetCoord(double *val_coord);
+  
+  /*! 
+	 * \brief Get the exact integral of the rotational volume flux.
+	 * \return Value of the exactly integrated rotational volume flux.
+	 */
+	double GetRotFlux(void);
+  
+  /*! 
+	 * \brief Add contribution to the exact integral of the rotational volume flux.
+	 */
+	void AddRotFlux(double val_rot_flux);
 };
 
 /*! 
  * \class CVertex
  * \brief Class for vertex definition (equivalent to edges, but for the boundaries).
  * \author F. Palacios.
- * \version 1.0.
+ * \version 1.1.
  */
 class CVertex : public CDualGrid {
 private:
@@ -738,7 +754,9 @@ private:
 	short Chunk;			/*!< \brief In the Free Form Technique, this inditated the chunck in which the vertex is. */
 	long PeriodicPoint[2];			/*!< \brief Store the periodic point of a boundary (iProcessor, iPoint) */
 	short Rotation_Type;			/*!< \brief Type of rotation associated to the vertex (MPI and periodic) */
-	
+  double Rot_Flux;     /*!< \brief The exactly integrated rotational volume flux. */
+  bool Sharp_Corner;     /*!< \brief Flag to mark vertices at sharp corners of the surfaces. */
+	unsigned long Closest_Neighbor; /*!< \brief Index of the closest neighbor. */
 public:
 
 	/*! 
@@ -770,17 +788,19 @@ public:
 	 * \param[in] val_coord_Edge_CG - Coordinates of the centre of gravity of the edge.
 	 * \param[in] val_coord_FaceElem_CG - Coordinates of the centre of gravity of the face of an element.
 	 * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.
+   * \param[in] config - Definition of the particular problem.
 	 * \return Compute the normal (dimensional) to the face that makes the vertex.
 	 */
-	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG);
+	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG, CConfig *config);
 	
 	/*! 
 	 * \overload
 	 * \param[in] val_coord_Edge_CG - Coordinates of the centre of gravity of the edge.
-	 * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.		 
+	 * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.
+   * \param[in] config - Definition of the particular problem.
 	 * \return Compute the normal (dimensional) to the face that makes the vertex.
 	 */
-	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG);
+	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG, CConfig *config);
 	
 	/*! 
 	 * \brief Copy the the normal vector of a face.
@@ -914,6 +934,42 @@ public:
 	 * \return Value of the periodic point of a vertex, and the domain.
 	 */
 	long *GetPeriodicPointDomain(void);	
+  
+  /*! 
+	 * \brief Get the exact integral of the rotational volume flux.
+	 * \return Value of the exactly integrated rotational volume flux.
+	 */
+	double GetRotFlux(void);
+  
+  /*! 
+	 * \brief Add contribution to the exact integral of the rotational volume flux.
+	 */
+	void AddRotFlux(double val_rot_flux);
+  
+  /*! 
+	 * \brief Set the boolean for a corner vertex.
+	 * \param[in] val_sharp_corner - <code>TRUE</code> if this vertex sits on a sharp corner; otherwise <code>FALSE</code>.
+	 */
+	void SetSharp_Corner(bool val_sharp_corner);
+	
+	/*! 
+	 * \brief Get the value of an auxiliar variable for gradient computation.
+	 * \return <code>TRUE</code> if this vertex sits on a sharp corner; otherwise <code>FALSE</code>.
+	 */
+	bool GetSharp_Corner(void);
+	
+	/*! 
+	 * \brief Set the index of the closest neighbor to a point on the boundaries.
+	 * \param[in] val_closest_neighbor - Index of the closest neighbor.
+	 */
+	void SetClosest_Neighbor(unsigned long val_closest_neighbor);
+	
+	/*! 
+	 * \brief Get the value of the closest neighbor.
+	 * \return Index of the closest neighbor.
+	 */
+	unsigned long GetClosest_Neighbor(void);
+	
 };
 
 #include "dual_grid_structure.inl"

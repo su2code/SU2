@@ -23,14 +23,14 @@
  */
 
 #include "../include/SU2_GDC.hpp"
-
 using namespace std;
 
 int main(int argc, char *argv[]) {
 	
 	/*--- Variable definitions ---*/
 	char file_name[200];
-	
+  unsigned short nZone = 1;
+
 	/*-- Definition of the Class for the definition of the problem ---*/
 	CConfig *config;
 	if (argc == 2) config = new CConfig(argv[1], SU2_GDC);
@@ -42,8 +42,11 @@ int main(int argc, char *argv[]) {
 	/*-- Definition of the Class for the geometry ---*/
 	CGeometry *geometry; 
 	geometry = new CGeometry;
-	geometry = new CPhysicalGeometry(config, config->GetMesh_FileName(), config->GetMesh_FileFormat());
+	geometry = new CPhysicalGeometry(config, config->GetMesh_FileName(), config->GetMesh_FileFormat(), DOMAIN_0, nZone);
 	
+  /*--- Perform the non-dimensionalization, in case any values are needed ---*/
+  config->SetNondimensionalization(geometry->GetnDim(), MASTER_NODE, nZone);
+  
 	cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
 	
 	/*--- Compute elements surrounding points, points surrounding points, and elements surronding elements ---*/

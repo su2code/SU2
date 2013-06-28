@@ -4,7 +4,7 @@
  *        The subroutines and functions are in the <i>sparse_structure.cpp</i> file.
  * \author Current Development: Stanford University.
  *         Original Structure: CADES 1.0 (2009).
- * \version 1.0.
+ * \version 1.1.
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -29,6 +29,7 @@
 #include <cmath>
 
 #include "config_structure.hpp"
+#include "geometry_structure.hpp"
 #include "linear_solvers_structure.hpp"
 
 using namespace std;
@@ -38,7 +39,7 @@ using namespace std;
  * \brief Main class for defining sparse matrices-by-blocks 
           with compressed row format.
  * \author A. Bueno.
- * \version 1.0.
+ * \version 1.1.
  */
 class CSparseMatrix {
 private:
@@ -53,19 +54,21 @@ private:
 	double *prod_row_vector;   /*!< \brief Internal array to store the product of a matrix-by-blocks "row" with a vector. */
 	double *aux_vector;		   /*!< \brief Auxilar array to store intermediate results. */	
 	double *invM;              /*!< \brief Inverse of (Jacobi) preconditioner. */
-	
+	unsigned short nSub_blocks; /*!< \brief  Number of sub-blocks in the nVar*nVar block structure */
+	unsigned short *Sub_block_sizes;		/*!< \brief  Size of each sub-block in the nVar*nVar block structure */
+	bool blockDiagonalJacobian; /*!< \brief flag if the Jacobian has a block diagonal structure like in multi species flow */
 public:
-	
+
 	/*! 
 	 * \brief Constructor of the class. 
 	 */
 	CSparseMatrix(void);
-	
+
 	/*! 
 	 * \brief Destructor of the class. 
 	 */
 	~CSparseMatrix(void);
-	
+
 	/*! 
 	 * \brief Assings values to the sparse-matrix structure. 
 	 * \param[in] val_nPoint - Number of points in the nPoint x nPoint block structure
@@ -74,33 +77,36 @@ public:
 	 * \param[in] val_col_ind - Column index for each of the elements in val().
 	 * \param[in] val_nnz - Number of possible nonzero entries in the matrix.
 	 * \param[in] preconditioner - If <code>TRUE</code> then it use a preconditioner.
+	 * \param[in] blockDiagonal - If <code>TRUE</code> then modified Gauss Elimination is used for matrix inversion.
+	 * \param[in] nSub_blocks - Number of sub-blocks in the nVar*nVar block structure.
+	 * \param[in] Sub_block_sizes -Size of each sub-block in the nVar*nVar block structure.
 	 */
 	void SetIndexes(unsigned long val_nPoint, unsigned short val_nVar, unsigned long* val_row_ptr, 
-					unsigned long* val_col_ind, unsigned long val_nnz, bool preconditioner);
-	
+			unsigned long* val_col_ind, unsigned long val_nnz, bool preconditioner, bool blockDiagonal, unsigned short nSub_blocks,  unsigned short *Sub_block_sizes);
+
 	/*! 
 	 * \brief Sets to zero all the entries of the sparse matrix. 
 	 */
 	void SetValZero(void);
-	
+
 	/*! 
 	 * \brief Scales the entries of the sparse matrix. 
 	 * \param[in] val_scale - Factor of scaling.
 	 */
 	void ScaleVals(double val_scale);
-	
+
 	/*! 
 	 * \brief Copies the block (i,j) of the matrix-by-blocks structure in the internal variable *block.
 	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
 	 * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
 	 */
 	void GetBlock(unsigned long block_i, unsigned long block_j);
-	
+
 	/*! 
 	 * \brief Displays the content of the internal variable <i>*block</i> (for debug purposes).
 	 */
 	void DisplayBlock(void);
-	
+
 	/*! 
 	 * \brief Adds the specified block to the sparse matrix. 
 	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
@@ -108,7 +114,7 @@ public:
 	 * \param[in] **val_block - Block to add to A(i,j).
 	 */
 	void AddBlock(unsigned long block_i, unsigned long block_j, double **val_block);
-	
+
 	/*! 
 	 * \brief Subtracts the specified block to the sparse matrix. 
 	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
@@ -116,7 +122,7 @@ public:
 	 * \param[in] **val_block - Block to subtract to A(i,j).
 	 */
 	void SubtractBlock(unsigned long block_i, unsigned long block_j, double **val_block);
-	
+
 	/*! 
 	 * \brief Adds the specified value to the diagonal of the (i,i) subblock 
 	 *        of the matrix-by-blocks structure. 
@@ -124,20 +130,30 @@ public:
 	 * \param[in] val_val - Value to add to the diagonal elements of A(i,i).
 	 */
 	void AddVal2Diag(unsigned long block_i, double val_val);
-	
+
 	/*! 
+	 * \brief Adds the specified value to the diagonal of the (i,i) subblock
+	 *        of the matrix-by-blocks structure.
+	 * \param[in] block_i - Index of the block in the matrix-by-blocks structure.
+	 * \param[in] *val_val - Values to add to the diagonal elements of A(i,i).
+	 * \param[in] num_dim - number of dimensions
+	 *
+	 */
+	void AddVal2Diag(unsigned long block_i, double* val_val, unsigned short num_dim);
+
+	/*!
 	 * \brief Deletes the values of the row i of the sparse matrix.
 	 * \param[in] i - Index of the row.
 	 */
 	void DeleteValsRowi(unsigned long i);
-	
+
 	/*! 
 	 * \brief Returns the sum of the row i.
 	 * \param[in] i - Index of the row.
 	 * \return The sum of the row i.
 	 */
 	double SumAbsRowi(unsigned long i);
-	
+
 	/*! 
 	 * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i,i) subblock and rhs. 
 	 * \param[in] block_i - Index of the (i,i) subblock in the matrix-by-blocks structure.
@@ -145,7 +161,7 @@ public:
 	 * \return Solution of the linear system (overwritten on rhs).
 	 */
 	void Gauss_Elimination(unsigned long block_i, double* rhs);
-	
+
 	/*! 
 	 * \fn void CSparseMatrix::ProdBlockVector(unsigned long block_i, unsigned long block_j, double* vec);
 	 * \brief Performs the product of the block (i,j) by vector vec. 
@@ -155,7 +171,7 @@ public:
 	 * \return Product of A(i,j) by vector *vec (stored at *prod_block_vector).
 	 */
 	void ProdBlockVector(unsigned long block_i, unsigned long block_j, double* vec);
-	
+
 	/*! 
 	 * \brief Performs the product of i-th row of the upper part of a sparse matrix by a vector.
 	 * \param[in] vec - Vector to be multiplied by the upper part of the sparse matrix A.
@@ -163,7 +179,7 @@ public:
 	 * \return prod Result of the product U(A)*vec (stored at *prod_row_vector).
 	 */
 	void UpperProduct(double* vec, unsigned long row_i);
-	
+
 	/*! 
 	 * \brief Performs the product of i-th row of the lower part of a sparse matrix by a vector.
 	 * \param[in] vec - Vector to be multiplied by the lower part of the sparse matrix A.
@@ -171,7 +187,7 @@ public:
 	 * \return prod Result of the product L(A)*vec (stored at *prod_row_vector).
 	 */
 	void LowerProduct(double* vec, unsigned long row_i);
-	
+
 	/*! 
 	 * \brief Performs the product of i-th row of the diagonal part of a sparse matrix by a vector.
 	 * \param[in] vec - Vector to be multiplied by the diagonal part of the sparse matrix A.
@@ -179,21 +195,23 @@ public:
 	 * \return prod Result of the product D(A)*vec (stored at *prod_row_vector).
 	 */
 	void DiagonalProduct(double* vec, unsigned long row_i);
-	
+
 	/*! 
 	 * \brief Performs a single LU-Symmetric Gauss Seidel (SGS) iteration over vector x (overwriten on x_n).
 	 * \param[in] b - RHS of the equation.
-	 * \param[in] x_n - Approximate solution at iteration (1). 
+	 * \param[in] x_n - Approximate solution at iteration (1).
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
 	 */
-	void LU_SGSIteration(double* b, double* x_n);
+	void LU_SGSIteration(double* b, double* x_n, CGeometry *geometry, CConfig *config);
 
 	/*! 
-	 * \brief Performs a Symmetric Gauss Seidel (SGS) iteration over vector x (overwriten on x_n).
-	 * \param[in] b - RHS of the equation.
-	 * \param[in] x_n - Approximate solution at iteration (n). 
-	 * \return Norm of the residual at iteration (n+1). 
+	 * \brief Send receive the solution using MPI.
+	 * \param[in] x_n - Solution..
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
 	 */
-	double SGSIteration(double* b, double* x_n);
+	void SendReceive_Solution(double* x, CGeometry *geometry, CConfig *config);
 	
 	/*! 
 	 * \brief Solves the linear system Ax = b using the Symmetric Gauss Seidel (SGS) algorithm. 
@@ -202,9 +220,11 @@ public:
 	 * \param[in] tol - Tolerance in order to stop the iterative proccess.
 	 * \param[in] max_it - Maximum number of iterations.
 	 * \param[in] monitoring - Boolean variable in order to monitore the convergence proccess.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
 	 * \return Approximate solution to the linear system Ax = b with tolerance tol (overwritten on x_i).
 	 */
-	void SGSSolution(double* b, double* x_i, double tol, int max_it, bool monitoring);
+	void SGSSolution(double* b, double* x_i, double tol, int max_it, bool monitoring, CGeometry *geometry, CConfig *config);
 	
 	/*! 
 	 * \brief Performs the product of i-th row of a sparse matrix by a vector.
@@ -213,33 +233,22 @@ public:
 	 * \return Result of the product (stored at *prod_row_vector).
 	 */
 	void RowProduct(double* vec, unsigned long row_i);
-	
+
 	/*!
 	 * \brief Performs the product of a sparse matrix by a vector.
 	 * \param[in] vec - Vector to be multiplied by the sparse matrix A.
 	 * \param[out] prod - Result of the product.
 	 * \return Result of the product A*vec.
 	 */
-	void MatrixVectorProduct(double* vec, double* prod);
+	void MatrixVectorProduct(double* vec, double* prod, double nPoint);
 
 	/*!
 	 * \brief Performs the product of a sparse matrix by a CSysVector.
 	 * \param[in] vec - CSysVector to be multiplied by the sparse matrix A.
 	 * \param[out] prod - Result of the product.
 	 */
-  void MatrixVectorProduct(const CSysVector & vec, CSysVector & prod);
-	
-	/*! 
-	 * \brief Solves the linear system Ax = b using the Conjugate Gradient (CG) algorithm. 
-	 * \param[in] b - RHS of the equation.
-	 * \param[in] x_i - Initial candidate for the solution (x_i is overwritten).
-	 * \param[in] tol - Tolerance in order to stop the iterative proccess.
-	 * \param[in] max_it - Maximum number of iterations.
-	 * \param[in] monitoring - Boolean variable in order to monitore the convergence proccess.
-	 * \return Approximate solution to the linear system Ax = b with tolerance tol (overwritten on x_i).
-	 */
-	void CGSolution(double* b, double* x_i, double tol, int max_it, bool monitoring);
-	
+	void MatrixVectorProduct(const CSysVector & vec, CSysVector & prod);
+
 	/*! 
 	 * \brief Solves the linear system Ax = b using a preconditioned Conjugate Gradient (CG) algorithm. 
 	 * \param[in] b - RHS of the equation.
@@ -247,8 +256,24 @@ public:
 	 * \param[in] tol - Tolerance in order to stop the iterative proccess.
 	 * \param[in] max_it - Maximum number of iterations.
 	 * \param[in] monitoring - Boolean variable in order to monitore the convergence proccess.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
 	 */
-	void PreconditionedCGSolution(double* b, double* x_i, double tol, int max_it, bool monitoring); 
+	void CGSolution(double* b, double* x_i, double tol, int max_it, bool monitoring, 
+																CGeometry *geometry, CConfig *config); 
+	
+	/*! 
+	 * \brief Solves the linear system Ax = b using a preconditioned BCGSTAB algorithm. 
+	 * \param[in] b - RHS of the equation.
+	 * \param[in] x_i - Initial candidate for the solution (x_i is overwritten).
+	 * \param[in] tol - Tolerance in order to stop the iterative proccess.
+	 * \param[in] max_it - Maximum number of iterations.
+	 * \param[in] monitoring - Boolean variable in order to monitore the convergence proccess.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void BCGSTABSolution(double* b, double* x_i, double tol, int max_it, bool monitoring, 
+											CGeometry *geometry, CConfig *config); 
 	
 	/*! 
 	 * \brief Inverse diagonal block. 
@@ -256,18 +281,18 @@ public:
 	 * \param[out] invBlock - Inverse block.
 	 */
 	void InverseDiagonalBlock(unsigned long block_i, double **invBlock);
-	
+
 	/*! 
 	 * \brief Bouild the Jacobi preconditioner. 
 	 */
 	void BuildJacobiPreconditioner(void);
-	
+
 	/*! 
 	 * \brief Multiply the preconditioner by a vector. 
 	 * \param[in] vec - Vector to be multiplied by the preconditioner.
 	 * \param[out] prod - Result of the product A*vec.
 	 */
-	void PrecondVectorProduct(double* vec, double* prod);
+	void PrecondVectorProduct(double* vec, double* prod, double nPoint);
 
 	/*! 
 	 * \brief Multiply CSysVector by the preconditioner
@@ -283,27 +308,27 @@ public:
  */
 class CSparseMatrixVectorProduct : public CMatrixVectorProduct {
 private:
-  CSparseMatrix* sparse_matrix; /*!< \brief pointer to matrix that defines the product. */
+	CSparseMatrix* sparse_matrix; /*!< \brief pointer to matrix that defines the product. */
 
- public:
+public:
 
-  /*!
-   * \brief constructor of the class
-   * \param[in] matrix_ref - matrix reference that will be used to define the products
-   */
-  CSparseMatrixVectorProduct(CSparseMatrix & matrix_ref);
+	/*!
+	 * \brief constructor of the class
+	 * \param[in] matrix_ref - matrix reference that will be used to define the products
+	 */
+	CSparseMatrixVectorProduct(CSparseMatrix & matrix_ref);
 
-  /*!
-   * \brief destructor of the class
-   */
-  ~CSparseMatrixVectorProduct(){}
+	/*!
+	 * \brief destructor of the class
+	 */
+	~CSparseMatrixVectorProduct(){}
 
-  /*!
-   * \brief operator that defines the CSparseMatrix-CSysVector product
-   * \param[in] u - CSysVector that is being multiplied by the sparse matrix
-   * \param[out] v - CSysVector that is the result of the product
-   */
-  void operator()(const CSysVector & u, CSysVector & v) const;
+	/*!
+	 * \brief operator that defines the CSparseMatrix-CSysVector product
+	 * \param[in] u - CSysVector that is being multiplied by the sparse matrix
+	 * \param[out] v - CSysVector that is the result of the product
+	 */
+	void operator()(const CSysVector & u, CSysVector & v) const;
 };
 
 /*!
@@ -312,27 +337,27 @@ private:
  */
 class CSparseMatrixPreconditioner : public CPreconditioner {
 private:
-  CSparseMatrix* sparse_matrix; /*!< \brief pointer to matrix that defines the preconditioner. */
+	CSparseMatrix* sparse_matrix; /*!< \brief pointer to matrix that defines the preconditioner. */
 
- public:
+public:
 
-  /*!
-   * \brief constructor of the class
-   * \param[in] matrix_ref - matrix reference that will be used to define the preconditioner
-   */
-  CSparseMatrixPreconditioner(CSparseMatrix & matrix_ref);
+	/*!
+	 * \brief constructor of the class
+	 * \param[in] matrix_ref - matrix reference that will be used to define the preconditioner
+	 */
+	CSparseMatrixPreconditioner(CSparseMatrix & matrix_ref);
 
-  /*!
-   * \brief destructor of the class
-   */
-  ~CSparseMatrixPreconditioner() {}
+	/*!
+	 * \brief destructor of the class
+	 */
+	~CSparseMatrixPreconditioner() {}
 
-  /*!
-   * \brief operator that defines the preconditioner operation
-   * \param[in] u - CSysVector that is being preconditioned
-   * \param[out] v - CSysVector that is the result of the preconditioning
-   */
-  void operator()(const CSysVector & u, CSysVector & v) const;
+	/*!
+	 * \brief operator that defines the preconditioner operation
+	 * \param[in] u - CSysVector that is being preconditioned
+	 * \param[out] v - CSysVector that is the result of the preconditioning
+	 */
+	void operator()(const CSysVector & u, CSysVector & v) const;
 };
 
 /*!
@@ -340,24 +365,24 @@ private:
  * \brief specialization of preconditioner that does nothing (leaves vector unchanged)
  */
 class CIdentityPreconditioner : public CPreconditioner {
- public:
-  
-  /*!
-   * \brief default constructor of the class
-   */
-  CIdentityPreconditioner() {}
+public:
 
-  /*!
-   * \brief destructor of the class
-   */
-  ~CIdentityPreconditioner() {}
+	/*!
+	 * \brief default constructor of the class
+	 */
+	CIdentityPreconditioner() {}
 
-  /*!
-   * \brief operator that defines the preconditioner operation
-   * \param[in] u - CSysVector that is being preconditioned
-   * \param[out] v - CSysVector that is the result of the preconditioning
-   */
-  void operator()(const CSysVector & u, CSysVector & v) const;
+	/*!
+	 * \brief destructor of the class
+	 */
+	~CIdentityPreconditioner() {}
+
+	/*!
+	 * \brief operator that defines the preconditioner operation
+	 * \param[in] u - CSysVector that is being preconditioned
+	 * \param[out] v - CSysVector that is the result of the preconditioning
+	 */
+	void operator()(const CSysVector & u, CSysVector & v) const;
 };
 
 #include "sparse_structure.inl"

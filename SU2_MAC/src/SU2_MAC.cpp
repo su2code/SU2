@@ -3,7 +3,7 @@
  * \brief Main file of Mesh Adaptation Code (SU2_MAC).
  * \author Current Development: Stanford University.
  *         Original Structure: CADES 1.0 (2009).
- * \version 1.0.
+ * \version 1.1.
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -23,14 +23,14 @@
  */
 
 #include "../include/SU2_MAC.hpp"
-
 using namespace std;
 
 int main(int argc, char *argv[]) {
 	
 	/*--- Variable definitions ---*/
 	char file_name[200];
-	
+  unsigned short nZone = 1;
+
 	/*-- Definition of the Class for the definition of the problem ---*/
 	CConfig *config;
 	if (argc == 2) config = new CConfig(argv[1], SU2_MAC);
@@ -42,8 +42,11 @@ int main(int argc, char *argv[]) {
 	/*-- Definition of the Class for the geometry ---*/
 	CGeometry *geometry; 
 	geometry = new CGeometry;
-	geometry = new CPhysicalGeometry(config, config->GetMesh_FileName(), config->GetMesh_FileFormat());
+	geometry = new CPhysicalGeometry(config, config->GetMesh_FileName(), config->GetMesh_FileFormat(), DOMAIN_0, nZone);
 	
+  /*--- Perform the non-dimensionalization, in case any values are needed ---*/
+  config->SetNondimensionalization(geometry->GetnDim(), MASTER_NODE, nZone);
+  
 	cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
 	
 	/*--- Compute elements surrounding points, points surrounding points, and elements surronding elements ---*/
@@ -75,7 +78,7 @@ int main(int argc, char *argv[]) {
 		if ((config->GetKind_Adaptation() != NONE) && (config->GetKind_Adaptation() != FULL) 
 				&& (config->GetKind_Adaptation() != WAKE) && (config->GetKind_Adaptation() != TWOPHASE) 
 				&& (config->GetKind_Adaptation() != SMOOTHING) && (config->GetKind_Adaptation() != HORIZONTAL_PLANE) 
-				&& (config->GetKind_Adaptation() != CURVE_SURFACE) 
+				&& (config->GetKind_Adaptation() != CURVE_SURFACE) && (config->GetKind_Adaptation() != DOUBLE_SURFACE)
 				&& (config->GetKind_Adaptation() != SUPERSONIC_SHOCK)) 
 			grid_adaptation->GetFlowSolution(geometry, config);
 		
@@ -101,7 +104,7 @@ int main(int argc, char *argv[]) {
 			case HORIZONTAL_PLANE:
 				grid_adaptation->SetNearField_Refinement(geometry, config);
 				break;
-			case CURVE_SURFACE:
+			case CURVE_SURFACE: case DOUBLE_SURFACE:
 				break;
 			case FULL_FLOW: 
 				grid_adaptation->SetComplete_Refinement(geometry, 1);
@@ -151,12 +154,17 @@ int main(int argc, char *argv[]) {
 				cout << "The adaptation is not defined" << endl;
 		}
 		
-		/*-- Perform a grid adaptation (not for curve surface identification) ---*/
+		/*--- Perform an homothetic adaptation of the grid ---*/
 		CPhysicalGeometry *geo_adapt; geo_adapt = new CPhysicalGeometry;
-		if (config->GetKind_Adaptation() != CURVE_SURFACE)
+		if ((config->GetKind_Adaptation() != CURVE_SURFACE) && 
+				(config->GetKind_Adaptation() != DOUBLE_SURFACE)) {
 			grid_adaptation->SetHomothetic_Adaptation(geometry, geo_adapt, config);
-		else
+		}
+		
+		/*--- Identify the nearfield surface using the main lines of the grid ---*/
+		if (config->GetKind_Adaptation() == CURVE_SURFACE) {
 			grid_adaptation->SetDomain_Interface(geometry, geo_adapt, config);
+		}
 		
 		/*--- Smooth the numerical grid coordinates ---*/
 		if (config->GetSmoothNumGrid()) {
@@ -190,21 +198,31 @@ int main(int argc, char *argv[]) {
 			strcpy (file_name, "adapted_grid.plt");		
 			geo_adapt->SetTecPlot(file_name);
 			strcpy (file_name, "adapted_surface.plt");
-			geo_adapt->SetBoundTecplot(config,file_name);
+			geo_adapt->SetBoundTecPlot(config,file_name);
+		}
+		
+		/*--- Write adapted grid ---*/
+		cout << "Write the mesh file." << endl;
+		if ((config->GetKind_Adaptation() != HORIZONTAL_PLANE) 
+				&& (config->GetKind_Adaptation() != CURVE_SURFACE) 
+				&& (config->GetKind_Adaptation() != DOUBLE_SURFACE)) {
+			/*--- Write the new adapted grid, including the modified boundaries surfaces ---*/
+			geo_adapt->SetMeshFile(config, config->GetMesh_Out_FileName());
+		}
+		else {
+			/*--- Write the new grid, including two nearfield boundaries ---*/
+			if ((config->GetKind_Adaptation() == HORIZONTAL_PLANE) 
+					&& (config->GetKind_Adaptation() == CURVE_SURFACE))
+				geo_adapt->SetMeshFile_IntSurface(config, config->GetMesh_Out_FileName());
+			if (config->GetKind_Adaptation() == DOUBLE_SURFACE)
+				geometry->SetMeshFile_IntSurface(config, config->GetMesh_Out_FileName());
 		}
 
-		/*--- Write adapted grid ---*/
-		if ((config->GetKind_Adaptation() != HORIZONTAL_PLANE) && (config->GetKind_Adaptation() != CURVE_SURFACE))
-			geo_adapt->SetMeshFile(config, config->GetMesh_Out_FileName());
-		else
-			geo_adapt->SetMeshFile_IntSurface(config, config->GetMesh_Out_FileName());
-
-		
 		/*--- Write the restart file ---*/
 		if ((config->GetKind_Adaptation() != SMOOTHING) && (config->GetKind_Adaptation() != FULL) && 
 				(config->GetKind_Adaptation() != WAKE) && (config->GetKind_Adaptation() != TWOPHASE) && 
 				(config->GetKind_Adaptation() != HORIZONTAL_PLANE) && (config->GetKind_Adaptation() != CURVE_SURFACE) && 
-				(config->GetKind_Adaptation() != SUPERSONIC_SHOCK))
+				(config->GetKind_Adaptation() != SUPERSONIC_SHOCK) && (config->GetKind_Adaptation() != DOUBLE_SURFACE))
 			grid_adaptation->SetReStart_FlowSolution(geometry, config, config->GetReStart_FlowFileName());
 		
 		if ((config->GetKind_Adaptation() == GRAD_FLOW_ADJ) || (config->GetKind_Adaptation() == GRAD_ADJOINT) 

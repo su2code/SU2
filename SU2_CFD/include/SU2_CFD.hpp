@@ -4,7 +4,7 @@
  *        The subroutines and functions are in the <i>SU2_CFD.cpp</i> file.
  * \author Current Development: Stanford University.
  *         Original Structure: CADES 1.0 (2009).
- * \version 1.0.
+ * \version 1.1.
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -36,6 +36,7 @@
 #include "output_structure.hpp"
 #include "numerics_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
+#include "../../Common/include/grid_movement_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
 #include "../include/definition_structure.hpp"
 

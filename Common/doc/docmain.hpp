@@ -3,7 +3,7 @@
  * \brief This file contains documentation for Doxygen and does not have any significance with respect to C++.
  * \author Current Development: Stanford University.
  *         Original Structure: CADES 1.0 (2009).
- * \version 1.0.
+ * \version 1.1.
  */
 
 /*! 
@@ -20,7 +20,7 @@
  * 
  * The following technical documentation describes the structure and details of the source code for developers. 
  * To read the more general documentation, including an introduction to the suite, user and developer guides and the latest 
- * releases for downloading, please click <A HREF="http://adl.stanford.edu/confluence/display/SUSQUARED/SU2+Home">here</A>.
+ * releases for downloading, please click <A HREF="http://adl.stanford.edu/docs/display/SUSQUARED/SU2+Home">here</A>.
  *
  */
 

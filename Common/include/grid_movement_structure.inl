@@ -3,7 +3,23 @@
  * \brief In-Line subroutines of the <i>grid_movement_structure.hpp</i> file.
  * \author Current Development: Stanford University.
  *         Original Structure: CADES 1.0 (2009).
- * \version 1.0.
+ * \version 1.1.
+ *
+ * Stanford University Unstructured (SU2) Code
+ * Copyright (C) 2012 Aerospace Design Laboratory
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
  
 #pragma once
@@ -38,8 +54,10 @@ inline void  CFreeFormChunk::SetCoordCornerPoints(double *val_coord, unsigned sh
 }
 
 inline void CFreeFormChunk::SetCoordControlPoints(double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree) {
-	for (unsigned short iDim = 0; iDim < nDim; iDim++) 
-		Coord_Control_Points[iDegree][jDegree][kDegree][iDim] = val_coord[iDim];
+	for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+			Coord_Control_Points[iDegree][jDegree][kDegree][iDim] = val_coord[iDim];
+			Coord_Control_Points_Copy[iDegree][jDegree][kDegree][iDim] = Coord_Control_Points[iDegree][jDegree][kDegree][iDim];
+		}
 }
 
 inline void CFreeFormChunk::SetCoordCornerPoints(double val_xcoord, double val_ycoord, double val_zcoord, unsigned short val_icornerpoints) {
@@ -51,6 +69,14 @@ inline void CFreeFormChunk::SetCoordCornerPoints(double val_xcoord, double val_y
 inline void CFreeFormChunk::SetControlPoints(unsigned short *val_index, double *movement) {
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
 		Coord_Control_Points[val_index[0]][val_index[1]][val_index[2]][iDim] += movement[iDim];
+}
+
+inline void CFreeFormChunk::SetOriginalControlPoints() {
+	for (unsigned short iDegree = 0; iDegree <= lDegree; iDegree++)
+		for (unsigned short jDegree = 0; jDegree <= mDegree; jDegree++)
+			for (unsigned short kDegree = 0; kDegree <= nDegree; kDegree++)
+				for (unsigned short iDim = 0; iDim < nDim; iDim++)
+					Coord_Control_Points[iDegree][jDegree][kDegree][iDim] = Coord_Control_Points_Copy[iDegree][jDegree][kDegree][iDim];
 }
 
 inline void CFreeFormChunk::CrossProduct (double *v1, double *v2, double *v3) {

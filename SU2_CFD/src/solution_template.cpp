@@ -3,7 +3,7 @@
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author Current Development: Stanford University.
  *         Original Structure: CADES 1.0 (2009).
- * \version 1.0.
+ * \version 1.1.
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -32,7 +32,7 @@ CTemplateSolution::~CTemplateSolution(void) { }
 
 void CTemplateSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iRKStep) { }
 
-void CTemplateSolution::SetTime_Step(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iMesh) { }
+void CTemplateSolution::SetTime_Step(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iMesh, unsigned long Iteration) { }
 
 void CTemplateSolution::Centred_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
 																				 CConfig *config, unsigned short iMesh, unsigned short iRKStep) { }
@@ -40,13 +40,13 @@ void CTemplateSolution::Centred_Residual(CGeometry *geometry, CSolution **soluti
 void CTemplateSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
 																				CConfig *config, unsigned short iMesh) { }
 
-void CTemplateSolution::SourcePieceWise_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+void CTemplateSolution::Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
 																								 CConfig *config, unsigned short iMesh) { }
 
 void CTemplateSolution::Solve_LinearSystem(CGeometry *geometry, CSolution **solution_container, CConfig *config, 
 																					 unsigned short iMesh) { }
 
-void CTemplateSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CConfig *config, 
+void CTemplateSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
 																			unsigned short val_marker) { }
 
 void CTemplateSolution::BC_NS_Wall(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short val_marker) { }
@@ -65,7 +65,7 @@ void CTemplateSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_c
 
 void CTemplateSolution::BC_Custom(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short val_marker) { }
 
-void CTemplateSolution::RungeKutta_Iteration(CGeometry *geometry, CSolution **solution_container, 
+void CTemplateSolution::ExplicitRK_Iteration(CGeometry *geometry, CSolution **solution_container, 
 																						 CConfig *config, unsigned short iRKStep) { }
 
 void CTemplateSolution::ExplicitEuler_Iteration(CGeometry *geometry, CSolution **solution_container, CConfig *config) { }

@@ -3,7 +3,7 @@
  * \brief In-Line subroutines of the <i>numerics_structure.hpp</i> file.
  * \author Current Development: Stanford University.
  *         Original Structure: CADES 1.0 (2009).
- * \version 1.0.
+ * \version 1.1.
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -28,6 +28,8 @@ inline void CNumerics::SetResidual(double *val_residual, CConfig *config) { }
 
 inline void CNumerics::SetResidual(double *val_residual_i, double *val_residual_j) { }
 
+inline void CNumerics::SetResidual(double *val_residual_i, double *val_residual_j, CConfig *config) { }
+
 inline void CNumerics::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, 
                                    CConfig *config) { }
 
@@ -44,8 +46,26 @@ inline void CNumerics::SetResidual(double *val_resconv_i, double *val_resvisc_i,
 								   CConfig *config) { }
 							
 inline void CNumerics::SetResidual(double **val_stiffmatrix_elem, CConfig *config) { }
+
+inline void CNumerics::GetEq_Rxn_Coefficients(double **EqnRxnConstants, CConfig *config) { };
 														
 inline void CNumerics::SetResidual(double *val_residual, double **val_Jacobian_i, CConfig *config) { }
+
+inline void CNumerics::SetResidual_Chemistry(double *val_residual, CConfig *config) { }
+
+inline void CNumerics::SetJacobian_Chemistry(double **val_Jacobian_i, CConfig *config) { }
+
+inline void CNumerics::SetResidual_ElecForce(double *val_residual, CConfig *config) { }
+
+inline void CNumerics::SetJacobian_ElecForce(double **val_Jacobian_i, CConfig *config) { }
+
+inline void CNumerics::SetResidual_MomentumExch(double *val_residual, CConfig *config) { }
+
+inline void CNumerics::SetJacobian_MomentumExch(double **val_Jacobian_i, CConfig *config) { }
+
+inline void CNumerics::SetResidual_EnergyExch(double *val_residual, double *val_residual_ElecForce, CConfig *config) { }
+
+inline void CNumerics::SetJacobian_EnergyExch(double **val_Jacobian_i, CConfig *config) { }
 
 inline void CNumerics::SetUndivided_Laplacian(double *val_und_lapl_i, double *val_und_lapl_j) {
 	Und_Lapl_i = val_und_lapl_i; 
@@ -71,6 +91,16 @@ inline void CNumerics::SetConservative(double *val_u_0, double *val_u_1, double 
 inline void CNumerics::SetLaminarViscosity(double val_lam_viscosity_i, double val_lam_viscosity_j) {
 	Laminar_Viscosity_i = val_lam_viscosity_i;
 	Laminar_Viscosity_j = val_lam_viscosity_j;
+}
+
+inline void CNumerics::SetLaminarViscosity(double val_lam_viscosity_i, double val_lam_viscosity_j, unsigned short iSpecies) {
+	Laminar_Viscosity_MultipleSpecies_i[iSpecies] = val_lam_viscosity_i;
+	Laminar_Viscosity_MultipleSpecies_j[iSpecies] = val_lam_viscosity_j;
+}
+
+inline void CNumerics::SetEddyViscosity(double val_eddy_viscosity_i, double val_eddy_viscosity_j, unsigned short iSpecies) {
+	Eddy_Viscosity_MultipleSpecies_i[iSpecies] = val_eddy_viscosity_i;
+	Eddy_Viscosity_MultipleSpecies_j[iSpecies] = val_eddy_viscosity_j;
 }
 
 inline void CNumerics::SetEddyViscosity(double val_eddy_viscosity_i, double val_eddy_viscosity_j) {
@@ -116,10 +146,6 @@ inline void CNumerics::SetLevelSetVar(double *val_levelsetvar_i, double *val_lev
 inline void CNumerics::SetLevelSetVarGradient(double **val_levelsetvar_grad_i, double **val_levelsetvar_grad_j) {
 	LevelSetVar_Grad_i = val_levelsetvar_grad_i;
 	LevelSetVar_Grad_j = val_levelsetvar_grad_j;
-}
-
-inline void CNumerics::SetF1blending(double val_F1) {
-	F1 = val_F1;	
 }
 
 inline void CNumerics::SetPrimVarGradient(double **val_primvar_grad_i, double **val_primvar_grad_j) {
@@ -171,6 +197,8 @@ inline void CNumerics::SetRotVel(double *val_rotvel_i, double *val_rotvel_j) {
 	RotVel_i = val_rotvel_i;
 	RotVel_j = val_rotvel_j;
 }
+
+inline void CNumerics::SetRotFlux(double val_rot_flux) { Rot_Flux = val_rot_flux; }
 
 inline void CNumerics::SetPressure(double val_pressure_i, double val_pressure_j) {
 	Pressure_i = val_pressure_i;
@@ -227,6 +255,11 @@ inline void CNumerics::SetTemperature(double val_temp_i, double val_temp_j) {
 	Temp_j = val_temp_j;
 }
 
+inline void CNumerics::SetTemperature_TR(double* val_temp_i, double* val_temp_j) {
+	Temp_tr_i = val_temp_i;
+	Temp_tr_j = val_temp_j;
+}
+
 inline void CNumerics::SetAuxVarGrad(double *val_auxvargrad_i, double *val_auxvargrad_j) {
 	AuxVar_Grad_i = val_auxvargrad_i;
 	AuxVar_Grad_j = val_auxvargrad_j;
@@ -235,3 +268,16 @@ inline void CNumerics::SetAuxVarGrad(double *val_auxvargrad_i, double *val_auxva
 inline void CNumerics::SetNormal(double *val_normal) { Normal = val_normal; }
 
 inline void CNumerics::SetVolume(double val_volume) { Volume = val_volume; }
+
+inline void CSourcePieceWise_TurbSST::SetF1blending(double val_F1_i, double val_F1_j){ 
+	F1_i = val_F1_i; 
+	F1_j = val_F1_j;
+}
+
+inline void CSourcePieceWise_TurbSST::SetStrainMag(double val_StrainMag_i, double val_StrainMag_j){
+	StrainMag = val_StrainMag_i;
+}
+
+inline void CSourcePieceWise_TurbSST::SetCrossDiff(double val_CDkw_i, double val_CDkw_j){
+	CDkw = val_CDkw_i;
+}			

@@ -3,7 +3,7 @@
  * \brief Main subrotuines for solving adjoint problems (Euler, Navier-Stokes, etc.).
  * \author Current Development: Stanford University.
  *         Original Structure: CADES 1.0 (2009).
- * \version 1.0.
+ * \version 1.1.
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -76,7 +76,7 @@ CAdjTurbSolution::CAdjTurbSolution(CGeometry *geometry, CConfig *config) : CSolu
 	}
 
 	/*--- Initialization of the structure of the whole Jacobian ---*/
-	InitializeJacobianStructure(geometry, config);
+	Initialize_Jacobian_Structure(geometry, config);
 	xsol = new double [nPoint*nVar];
 	rhs  = new double [nPoint*nVar];
 
@@ -120,6 +120,13 @@ CAdjTurbSolution::CAdjTurbSolution(CGeometry *geometry, CConfig *config) : CSolu
 		if (config->GetKind_ObjFunc() == ELECTRIC_CHARGE) sprintf (buffer, "_ec.dat");
 		if (config->GetKind_ObjFunc() == EQUIVALENT_AREA) sprintf (buffer, "_ea.dat"); 
 		if (config->GetKind_ObjFunc() == NEARFIELD_PRESSURE) sprintf (buffer, "_nfp.dat"); 
+    if (config->GetKind_ObjFunc() == FORCE_X_COEFFICIENT) sprintf (buffer, "_cfx.dat"); 
+		if (config->GetKind_ObjFunc() == FORCE_Y_COEFFICIENT) sprintf (buffer, "_cfy.dat"); 
+		if (config->GetKind_ObjFunc() == FORCE_Z_COEFFICIENT) sprintf (buffer, "_cfz.dat"); 
+    if (config->GetKind_ObjFunc() == THRUST_COEFFICIENT) sprintf (buffer, "_ct.dat"); 
+    if (config->GetKind_ObjFunc() == TORQUE_COEFFICIENT) sprintf (buffer, "_cq.dat");
+    if (config->GetKind_ObjFunc() == FIGURE_OF_MERIT) sprintf (buffer, "_merit.dat");
+    if (config->GetKind_ObjFunc() == FREESURFACE) sprintf (buffer, "_fs.dat");
 		strcat(cstr, buffer);
 		ifstream restart_file;
 		restart_file.open(cstr, ios::in);
@@ -230,20 +237,6 @@ void CAdjTurbSolution::Preprocessing(CGeometry *geometry, CSolution **solution_c
 			break;
 	}
 
-	/*--- Other Gradients ---*/
-	bool OneShot = ((config->GetKind_Solver() == ONE_SHOT_ADJ_EULER) || (config->GetKind_Solver() == ONE_SHOT_ADJ_NAVIER_STOKES));
-	if (OneShot) {
-		switch (config->GetKind_Gradient_Method()) {
-			case GREEN_GAUSS : 
-				solution_container[FLOW_SOL]->SetPrimVar_Gradient_GG(geometry, config); // Caution: in primitive variables
-				solution_container[TURB_SOL]->SetSolution_Gradient_GG(geometry); 
-				break;
-			case LEAST_SQUARES : case WEIGHTED_LEAST_SQUARES : 
-				solution_container[FLOW_SOL]->SetPrimVar_Gradient_LS(geometry, config); // Caution: in primitive variables
-				solution_container[TURB_SOL]->SetSolution_Gradient_LS(geometry, config);
-				break;
-		}
-	}
 }
 
 void CAdjTurbSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short iMesh) {
@@ -259,7 +252,7 @@ void CAdjTurbSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution
 		if (config->GetKind_Gradient_Method() == GREEN_GAUSS) solution_container[FLOW_SOL]->SetSolution_Gradient_GG(geometry);
 		if ((config->GetKind_Gradient_Method() == LEAST_SQUARES) || 
 			(config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)) solution_container[FLOW_SOL]->SetSolution_Gradient_LS(geometry, config);
-		if (config->GetKind_SlopeLimit_AdjTurb() == VENKATAKRISHNAN) SetSolution_Limiter(geometry, config);
+		if (config->GetKind_SlopeLimit() == VENKATAKRISHNAN) SetSolution_Limiter(geometry, config);
 	}
 
 	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -304,7 +297,7 @@ void CAdjTurbSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution
 			/*--- Adjoint turbulent variables using gradient reconstruction ---*/
 			Gradient_i = node[iPoint]->GetGradient(); 
 			Gradient_j = node[jPoint]->GetGradient(); 
-			if (config->GetKind_SlopeLimit_AdjTurb() != NONE) {
+			if (config->GetKind_SlopeLimit() != NONE) {
 				Limiter_i = node[iPoint]->GetLimiter();				
 				Limiter_j = node[jPoint]->GetLimiter();
 			}
@@ -314,7 +307,7 @@ void CAdjTurbSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution
 					Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
 					Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
 				}
-				if (config->GetKind_SlopeLimit_AdjTurb() == NONE) {
+				if (config->GetKind_SlopeLimit() == NONE) {
 					Solution_i[iVar] = TurbPsi_i[iVar] + Project_Grad_i;
 					Solution_j[iVar] = TurbPsi_j[iVar] + Project_Grad_j;
 				}
@@ -396,7 +389,7 @@ void CAdjTurbSolution::Viscous_Residual(CGeometry *geometry, CSolution **solutio
 	}
 }
 
-void CAdjTurbSolution::SourcePieceWise_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+void CAdjTurbSolution::Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
 											   CConfig *config, unsigned short iMesh) {
 
 	unsigned long iPoint;
@@ -434,7 +427,7 @@ void CAdjTurbSolution::SourcePieceWise_Residual(CGeometry *geometry, CSolution *
 
 		// Set volume and distances to the surface
 		solver->SetVolume(geometry->node[iPoint]->GetVolume());
-		solver->SetDistance(solution_container[EIKONAL_SOL]->node[iPoint]->GetSolution(0), 0.0);
+		solver->SetDistance(geometry->node[iPoint]->GetWallDistance(), 0.0);
 
 		// Add and Subtract Residual
 		solver->SetResidual(Residual, Jacobian_ii, NULL, config);
@@ -504,14 +497,17 @@ void CAdjTurbSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **
 			rhs[total_index] = -local_Residual[iVar];
 			xsol[total_index] = 0.0;
 
-			/*--- Set maximum residual for each variable ---*/
+#ifdef NO_MPI
+			/*--- Compute the norm-2 of the residual ---*/
 			if (fabs(rhs[total_index]) > GetRes_Max(iVar))
 				SetRes_Max(iVar, fabs(rhs[total_index]));
+#endif
+			
 		}
 	}
 
 	/*--- Solve the system ---*/
-	Jacobian.LU_SGSIteration(rhs, xsol);
+	Jacobian.LU_SGSIteration(rhs, xsol, geometry, config);
 
 	/*--- Update solution (system written in terms of increments) ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {

@@ -3,7 +3,7 @@
  * \brief Main classes for defining the dual grid (points, vertex, and edges).
  * \author Current Development: Stanford University.
  *         Original Structure: CADES 1.0 (2009).
- * \version 1.0.
+ * \version 1.1.
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -239,6 +239,9 @@ CEdge::CEdge(unsigned long val_iPoint, unsigned long val_jPoint,unsigned short v
 		Normal[iDim] = 0.0;
 	}
 	
+  /*--- In case there is rotation, initialize volume flux to zero ---*/
+  Rot_Flux = 0.0;
+  
 	Nodes[0] = val_iPoint; 
 	Nodes[1] = val_jPoint;
 
@@ -293,7 +296,7 @@ double CEdge::GetVolume(double *val_coord_Edge_CG, double *val_coord_Elem_CG, do
 	return Local_Volume;
 }
 
-void CEdge::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG) {
+void CEdge::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG, CConfig *config) {
 	unsigned short iDim;
 	double vec_a[3], vec_b[3], Dim_Normal[3];
 
@@ -308,10 +311,42 @@ void CEdge::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem
 	
 	Normal[0] += Dim_Normal[0]; 
 	Normal[1] += Dim_Normal[1];		
-	Normal[2] += Dim_Normal[2];			
+	Normal[2] += Dim_Normal[2];	
+  
+  /*--- Perform exact integration for rotating volume flux and store ---*/
+	if (config->GetRotating_Frame()) {
+    unsigned short iDim;
+    double RotVel[3], Distance[3], *Origin, *Omega, L_Ref;
+    double Sub_Face_CG[3] = {0.0, 0.0, 0.0};
+    
+    /*--- Locate the sub-edge CG ---*/
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Sub_Face_CG[iDim] = (1.0/3.0)*(val_coord_Elem_CG[iDim]+val_coord_FaceElem_CG[iDim]+val_coord_Edge_CG[iDim]);
+    }
+    
+    Origin = config->GetRotAxisOrigin();
+    Omega  = config->GetOmega_FreeStreamND();
+    L_Ref  = config->GetLength_Ref(); // should always be 1
+    
+    /*--- Calculate non-dim. distance fron rotation center ---*/
+    Distance[0] = (Sub_Face_CG[0]-Origin[0])/L_Ref;
+    Distance[1] = (Sub_Face_CG[1]-Origin[1])/L_Ref;
+    Distance[2] = (Sub_Face_CG[2]-Origin[2])/L_Ref;
+    
+    /*--- Calculate the angular velocity as omega X r ---*/
+    RotVel[0] = Omega[1]*(Distance[2]) - Omega[2]*(Distance[1]);
+    RotVel[1] = Omega[2]*(Distance[0]) - Omega[0]*(Distance[2]);
+    RotVel[2] = Omega[0]*(Distance[1]) - Omega[1]*(Distance[0]);
+    
+    /*--- Dot rotational velocity with local face normal and store 
+     the contribution for this edge ---*/
+		for (iDim = 0; iDim < nDim; iDim ++) 
+			Rot_Flux += RotVel[iDim]*Dim_Normal[iDim];
+	}
+  
 }
 
-void CEdge::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG) {
+void CEdge::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG, CConfig *config) {
 	double Dim_Normal[2];
 
 	Dim_Normal[0] = val_coord_Elem_CG[1]-val_coord_Edge_CG[1];
@@ -319,6 +354,38 @@ void CEdge::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG)
 	
 	Normal[0] += Dim_Normal[0]; 
 	Normal[1] += Dim_Normal[1];
+  
+  /*--- Perform exact integration for rotating volume flux and store ---*/
+	if (config->GetRotating_Frame()) {
+    unsigned short iDim;
+    double RotVel[3], Distance[3], *Origin, *Omega, L_Ref;
+    double Sub_Face_CG[3] = {0.0, 0.0, 0.0};
+    
+    /*--- Locate the sub-edge CG ---*/
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Sub_Face_CG[iDim] = 0.5*(val_coord_Elem_CG[iDim]+val_coord_Edge_CG[iDim]);
+    }
+    
+    Origin = config->GetRotAxisOrigin();
+    Omega  = config->GetOmega_FreeStreamND();
+    L_Ref  = config->GetLength_Ref(); // should always be 1
+    
+    /*--- Calculate non-dim. distance fron rotation center ---*/
+    Distance[0] = (Sub_Face_CG[0]-Origin[0])/L_Ref;
+    Distance[1] = (Sub_Face_CG[1]-Origin[1])/L_Ref;
+    Distance[2] = (Sub_Face_CG[2]-Origin[2])/L_Ref;
+    
+    /*--- Calculate the angular velocity as omega X r ---*/
+    RotVel[0] = Omega[1]*(Distance[2]) - Omega[2]*(Distance[1]);
+    RotVel[1] = Omega[2]*(Distance[0]) - Omega[0]*(Distance[2]);
+    RotVel[2] = Omega[0]*(Distance[1]) - Omega[1]*(Distance[0]);
+    
+    /*--- Dot rotational velocity with local face normal and store 
+     the contribution for this edge ---*/
+		for (iDim = 0; iDim < nDim; iDim ++) 
+			Rot_Flux += RotVel[iDim]*Dim_Normal[iDim];
+	}
+  
 }
 
 CVertex::CVertex(unsigned long val_point, unsigned short val_nDim) : CDualGrid(val_nDim) {
@@ -332,6 +399,12 @@ CVertex::CVertex(unsigned long val_point, unsigned short val_nDim) : CDualGrid(v
 	Nodes[0] = val_point;
 	for (iDim = 0; iDim < nDim; iDim ++) Normal[iDim] = 0.0;
 	
+  /*--- In case there is rotation, initialize volume flux to zero ---*/
+  Rot_Flux = 0.0;
+  
+  /*--- By default, assume this vertex does not sit on a sharp corner ---*/
+  Sharp_Corner = false;
+  
 	/*--- Initializate the structure for free form deformation 
 	 (to know if a vertex velong to a chunk) ---*/
 	Chunk = -1;
@@ -342,7 +415,7 @@ CVertex::~CVertex() {
 	delete [] Nodes;	
 }
 
-void CVertex::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG) {
+void CVertex::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG, CConfig *config) {
 	double vec_a[3], vec_b[3], Dim_Normal[3];
 	unsigned short iDim;
 
@@ -357,10 +430,42 @@ void CVertex::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceEl
 		
 	Normal[0] += Dim_Normal[0]; 
 	Normal[1] += Dim_Normal[1];	
-	Normal[2] += Dim_Normal[2];			
+	Normal[2] += Dim_Normal[2];	
+  
+  /*--- Perform exact integration for rotating volume flux and store ---*/
+	if (config->GetRotating_Frame()) {
+    unsigned short iDim;
+    double RotVel[3], Distance[3], *Origin, *Omega, L_Ref;
+    double Sub_Face_CG[3] = {0.0, 0.0, 0.0};
+    
+    /*--- Locate the sub-edge CG ---*/
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Sub_Face_CG[iDim] = (1.0/3.0)*(val_coord_Elem_CG[iDim]+val_coord_FaceElem_CG[iDim]+val_coord_Edge_CG[iDim]);
+    }
+    
+    Origin = config->GetRotAxisOrigin();
+    Omega  = config->GetOmega_FreeStreamND();
+    L_Ref  = config->GetLength_Ref(); // should always be 1
+    
+    /*--- Calculate non-dim. distance fron rotation center ---*/
+    Distance[0] = (Sub_Face_CG[0]-Origin[0])/L_Ref;
+    Distance[1] = (Sub_Face_CG[1]-Origin[1])/L_Ref;
+    Distance[2] = (Sub_Face_CG[2]-Origin[2])/L_Ref;
+    
+    /*--- Calculate the angular velocity as omega X r ---*/
+    RotVel[0] = Omega[1]*(Distance[2]) - Omega[2]*(Distance[1]);
+    RotVel[1] = Omega[2]*(Distance[0]) - Omega[0]*(Distance[2]);
+    RotVel[2] = Omega[0]*(Distance[1]) - Omega[1]*(Distance[0]);
+    
+    /*--- Dot rotational velocity with local face normal and store 
+     the contribution for this edge ---*/
+		for (iDim = 0; iDim < nDim; iDim ++) 
+			Rot_Flux += RotVel[iDim]*Dim_Normal[iDim];
+	}
+  
 }
 
-void CVertex::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG) {
+void CVertex::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG, CConfig *config) {
 	double Dim_Normal[2];
 
 	Dim_Normal[0] = val_coord_Elem_CG[1]-val_coord_Edge_CG[1];
@@ -368,6 +473,38 @@ void CVertex::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_C
 
 	Normal[0] += Dim_Normal[0]; 
 	Normal[1] += Dim_Normal[1];
+  
+  /*--- Perform exact integration for rotating volume flux and store ---*/
+	if (config->GetRotating_Frame()) {
+    unsigned short iDim;
+    double RotVel[3], Distance[3], *Origin, *Omega, L_Ref;
+    double Sub_Face_CG[3] = {0.0, 0.0, 0.0};
+    
+    /*--- Locate the sub-edge CG ---*/
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Sub_Face_CG[iDim] = 0.5*(val_coord_Elem_CG[iDim]+val_coord_Edge_CG[iDim]);
+    }
+    
+    Origin = config->GetRotAxisOrigin();
+    Omega  = config->GetOmega_FreeStreamND();
+    L_Ref  = config->GetLength_Ref(); // should always be 1
+    
+    /*--- Calculate non-dim. distance fron rotation center ---*/
+    Distance[0] = (Sub_Face_CG[0]-Origin[0])/L_Ref;
+    Distance[1] = (Sub_Face_CG[1]-Origin[1])/L_Ref;
+    Distance[2] = (Sub_Face_CG[2]-Origin[2])/L_Ref;
+    
+    /*--- Calculate the angular velocity as omega X r ---*/
+    RotVel[0] = Omega[1]*(Distance[2]) - Omega[2]*(Distance[1]);
+    RotVel[1] = Omega[2]*(Distance[0]) - Omega[0]*(Distance[2]);
+    RotVel[2] = Omega[0]*(Distance[1]) - Omega[1]*(Distance[0]);
+    
+    /*--- Dot rotational velocity with local face normal and store 
+     the contribution for this edge ---*/
+		for (iDim = 0; iDim < nDim; iDim ++) 
+			Rot_Flux += RotVel[iDim]*Dim_Normal[iDim];
+	}
+  
 }
 
 void CVertex::AddNormal(double *val_face_normal) {

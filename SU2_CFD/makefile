@@ -13,10 +13,11 @@ SRC_COMMON=		$(SU2_HOME)/Common/src
 INCLUDES_COMMON=	$(INC_COMMON)/config_structure.hpp $(INC_COMMON)/dual_grid_structure.hpp \
 			$(INC_COMMON)/geometry_structure.hpp $(INC_COMMON)/primal_grid_structure.hpp \
 			$(INC_COMMON)/sparse_structure.hpp $(INC_COMMON)/linear_solvers_structure.hpp \
-			$(INC_COMMON)/option_structure.hpp
+			$(INC_COMMON)/option_structure.hpp $(INC_COMMON)/grid_movement_structure.hpp
 SOURCES_COMMON=		$(SRC_COMMON)/config_structure.cpp $(SRC_COMMON)/dual_grid_structure.cpp \
 			$(SRC_COMMON)/geometry_structure.cpp $(SRC_COMMON)/primal_grid_structure.cpp \
-			$(SRC_COMMON)/sparse_structure.cpp $(SRC_COMMON)/linear_solvers_structure.cpp
+			$(SRC_COMMON)/sparse_structure.cpp $(SRC_COMMON)/linear_solvers_structure.cpp \
+      $(SRC_COMMON)/grid_movement_structure.cpp
 
 SRC_CFD=		$(SU2_HOME)/$(MAIN)/src
 INC_CFD=		$(SU2_HOME)/$(MAIN)/include

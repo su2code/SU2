@@ -4,7 +4,7 @@
  *        The subroutines and functions are in the <i>primal_grid_structure.cpp</i> file.
  * \author Current Development: Stanford University.
  *         Original Structure: CADES 1.0 (2009).
- * \version 1.0.
+ * \version 1.1.
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -38,7 +38,7 @@ using namespace std;
  * \brief Class for primal grid element definition. The primal grid is 
  *        directly read from the .su2 file, and can be 2 o 3 dimensional.
  * \author F. Palacios.
- * \version 1.0.
+ * \version 1.1.
  */
 class CPrimalGrid {
 protected:
@@ -260,7 +260,7 @@ public:
  * \brief Class for vertex element definition. This kind 
  *        of element is used in the parallelization stuff.
  * \author F. Palacios.
- * \version 1.0.
+ * \version 1.1.
  */
 class CVertexMPI : public CPrimalGrid {
 private:
@@ -365,7 +365,7 @@ public:
  * \class CLine
  * \brief Class for line element definition.
  * \author F. Palacios.
- * \version 1.0.
+ * \version 1.1.
  */
 class CLine : public CPrimalGrid {
 private:
@@ -480,7 +480,7 @@ public:
  * \class CTriangle
  * \brief Class for triangle element definition.
  * \author F. Palacios.
- * \version 1.0.
+ * \version 1.1.
  */
 class CTriangle : public CPrimalGrid {
 private:
@@ -597,7 +597,7 @@ public:
  * \class CRectangle
  * \brief Class for rectangle element definition.
  * \author F. Palacios.
- * \version 1.0.
+ * \version 1.1.
  */
 class CRectangle : public CPrimalGrid {
 private:
@@ -714,7 +714,7 @@ public:
  * \class CTetrahedron
  * \brief Class for tetrahedron element definition.
  * \author F. Palacios.
- * \version 1.0.
+ * \version 1.1.
  */
 class CTetrahedron : public CPrimalGrid {
 private:
@@ -817,7 +817,7 @@ public:
  * \class CHexahedron
  * \brief Class for hexahedron element definition.
  * \author F. Palacios.
- * \version 1.0.
+ * \version 1.1.
  */
 class CHexahedron : public CPrimalGrid {
 private:
@@ -927,7 +927,7 @@ public:
  * \class CWedge
  * \brief Class for wedge element definition.
  * \author F. Palacios.
- * \version 1.0.
+ * \version 1.1.
  */
 class CWedge : public CPrimalGrid {
 private:
@@ -1033,7 +1033,7 @@ public:
  * \class CPyramid
  * \brief Class for pyramid element definition.
  * \author F. Palacios.
- * \version 1.0.
+ * \version 1.1.
  */
 class CPyramid : public CPrimalGrid {
 private:

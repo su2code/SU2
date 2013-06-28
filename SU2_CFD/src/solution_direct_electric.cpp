@@ -1,9 +1,9 @@
 /*!
- * \file solution_direct_reacting_diatomic.cpp
+ * \file solution_direct_electric.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author Current Development: Stanford University.
  *         Original Structure: CADES 1.0 (2009).
- * \version 1.0.
+ * \version 1.1.
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -66,7 +66,7 @@ CElectricSolution::CElectricSolution(CGeometry *geometry, CConfig *config) : CSo
 	}
 
 	// Initialization of the structure of the whole Jacobian
-	InitializeStiffMatrixStructure(geometry, config);
+	Initialize_StiffMatrix_Structure(geometry, config);
 	xsol = new double [nPoint*nVar];
 	xres = new double [nPoint*nVar];
 	rhs = new double [nPoint*nVar];
@@ -112,7 +112,11 @@ CElectricSolution::CElectricSolution(CGeometry *geometry, CConfig *config) : CSo
 			node[iPoint] = new CPotentialVariable(Solution[0], nDim, nVar, config);
 		}
 		restart_file.close();
-	}	
+	}
+	if (config->GetKind_Solver() == NS_PLASMA) {
+		for (unsigned long iPoint=0; iPoint < nPoint; iPoint++)
+			node[iPoint] = new CPotentialVariable(0.0, nDim, nVar, config);
+	}
 }
 
 CElectricSolution::~CElectricSolution(void) {
@@ -172,7 +176,7 @@ void CElectricSolution::Solve_LinearSystem(CGeometry *geometry, CSolution **solu
 	unsigned long iPoint;
 	unsigned short iVar = 0;
 	double norm = 1E6;
-	unsigned long iter_max = 100000;
+	unsigned long iter_max = 10000;
 
 	/*--- Build lineal system ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {		
@@ -194,7 +198,7 @@ void CElectricSolution::Solve_LinearSystem(CGeometry *geometry, CSolution **solu
 	 delete mat_vec;
 	 delete precond;*/
 
-	StiffMatrix.CGSolution(rhs, xsol, 1E-14, iter_max, true);
+	StiffMatrix.CGSolution(rhs, xsol, 1E-14, iter_max, true, geometry, config);
 	SetRes_Max(0, norm);
 	/*--- Update solution ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
@@ -216,28 +220,30 @@ void CElectricSolution::Compute_Residual(CGeometry *geometry, CSolution **soluti
 		xres[iPoint] = 0.0;
 	}
 
-	StiffMatrix.MatrixVectorProduct(xsol,xres);
+	StiffMatrix.MatrixVectorProduct(xsol,xres, geometry->GetnPointDomain());
 
 	// Update residual
-	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
+	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
 		node[iPoint]->SetResidual(0,xres[iPoint]-rhs[iPoint]);
 
+	}
 	SetResidual_Smoothing(geometry, 10, 10.0);
-
 }
 
-void CElectricSolution::SourcePieceWise_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+void CElectricSolution::Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
 		CConfig *config, unsigned short iMesh) {
+
 	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0;
 	double a[3], b[3], Area_Local;
-	double Local_Delta_Time_0, Local_Delta_Time_1, Local_Delta_Time_2, Local_Delta_Time;
+//	double Local_Delta_Time;
 	double **Gradient_0, **Gradient_1, **Gradient_2;
 	double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL;
 	unsigned short iDim;
-	double Lambda_iFluid;
-	double  dx, u, c;
+	double  dt;
+//	double  dx, u, c;
+	bool MultipleTimeSteps = (config->MultipleTimeSteps());
 
-	if (nDim !=3) {
+	if (config->GetElectricSolver()) {
 		for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
 
 			Point_0 = geometry->elem[iElem]->GetNode(0);
@@ -261,27 +267,24 @@ void CElectricSolution::SourcePieceWise_Residual(CGeometry *geometry, CSolution 
 
 			solver->SetVolume(Area_Local);
 
-			Lambda_iFluid = max(solution_container[PLASMA_SOL]->node[Point_0]->GetMax_Lambda_Inv(0), solution_container[PLASMA_SOL]->node[Point_0]->GetMax_Lambda_Inv(1));
-			Lambda_iFluid = max(solution_container[PLASMA_SOL]->node[Point_0]->GetMax_Lambda_Inv(2), Lambda_iFluid);
-			Local_Delta_Time_0 = config->GetCFL(iMesh)*Area_Local / Lambda_iFluid;
+			if (!MultipleTimeSteps)
+				dt = solution_container[PLASMA_SOL]->node[Point_0]->GetDelta_Time();
 
-			Lambda_iFluid = max(solution_container[PLASMA_SOL]->node[Point_1]->GetMax_Lambda_Inv(0), solution_container[PLASMA_SOL]->node[Point_1]->GetMax_Lambda_Inv(1));
-			Lambda_iFluid = max(solution_container[PLASMA_SOL]->node[Point_1]->GetMax_Lambda_Inv(2), Lambda_iFluid);
-			Local_Delta_Time_1 = config->GetCFL(iMesh)*Area_Local / Lambda_iFluid;
+			else {
+				dt = max(solution_container[PLASMA_SOL]->node[Point_0]->GetDelta_Time(0),solution_container[PLASMA_SOL]->node[Point_0]->GetDelta_Time(1));
+				dt = max (dt, solution_container[PLASMA_SOL]->node[Point_0]->GetDelta_Time(2));
+			}
+			//cout << " dt = " << dt << endl;
 
-			Lambda_iFluid = max(solution_container[PLASMA_SOL]->node[Point_2]->GetMax_Lambda_Inv(0), solution_container[PLASMA_SOL]->node[Point_2]->GetMax_Lambda_Inv(1));
-			Lambda_iFluid = max(solution_container[PLASMA_SOL]->node[Point_2]->GetMax_Lambda_Inv(2), Lambda_iFluid);
-			Local_Delta_Time_2 = config->GetCFL(iMesh)*Area_Local / Lambda_iFluid;
-
-			Local_Delta_Time   = (Local_Delta_Time_0 + Local_Delta_Time_1 + Local_Delta_Time_2 ) / 3.0;
-
-			u = 4800;
-			c = 87110;
-			c = 800;
-			dx = 0.004/81;
-			Local_Delta_Time = config->GetCFL(iMesh) * dx/(u+c);
+			/*		u = 4800;
+		c = 87110;
+		c = 800;
+		dx = 0.004/81;
+		Local_Delta_Time = config->GetCFL(iMesh) * dx/(u+c);
+				solver->SetTimeStep(Local_Delta_Time);
+			 */
 			if (nDim == 2) solver->SetCoord(Coord_0, Coord_1, Coord_2);
-			solver->SetTimeStep(Local_Delta_Time);
+			solver->SetTimeStep(dt);
 			solver->SetConservative(solution_container[PLASMA_SOL]->node[Point_0]->GetSolution(), solution_container[PLASMA_SOL]->node[Point_1]->GetSolution(), solution_container[PLASMA_SOL]->node[Point_2]->GetSolution());
 			solver->SetConsVarGradient(Gradient_0, Gradient_1, Gradient_2 );
 			solver->SetResidual(Source_Vector, config);
@@ -291,61 +294,57 @@ void CElectricSolution::SourcePieceWise_Residual(CGeometry *geometry, CSolution 
 			node[Point_2]->AddResidual(Source_Vector[2]);
 
 		}
-
 		for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+			if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE) {
 
-			Point_0 = geometry->elem[iElem]->GetNode(3);
-			Point_1 = geometry->elem[iElem]->GetNode(1);
-			Point_2 = geometry->elem[iElem]->GetNode(2);
+				Point_0 = geometry->elem[iElem]->GetNode(3);
+				Point_1 = geometry->elem[iElem]->GetNode(0);
+				Point_2 = geometry->elem[iElem]->GetNode(2);
 
-			Coord_0 = geometry->node[Point_0]->GetCoord();
-			Coord_1 = geometry->node[Point_1]->GetCoord();
-			Coord_2 = geometry->node[Point_2]->GetCoord();
+				Coord_0 = geometry->node[Point_0]->GetCoord();
+				Coord_1 = geometry->node[Point_1]->GetCoord();
+				Coord_2 = geometry->node[Point_2]->GetCoord();
 
-			for (iDim=0; iDim < nDim; iDim++) {
-				a[iDim] = Coord_0[iDim]-Coord_2[iDim];
-				b[iDim] = Coord_1[iDim]-Coord_2[iDim];
-			}
+				for (iDim=0; iDim < nDim; iDim++) {
+					a[iDim] = Coord_0[iDim]-Coord_2[iDim];
+					b[iDim] = Coord_1[iDim]-Coord_2[iDim];
+				}
 
-			Area_Local = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
+				Area_Local = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
 
-			Gradient_0 = solution_container[PLASMA_SOL]->node[Point_0]->GetGradient();
-			Gradient_1 = solution_container[PLASMA_SOL]->node[Point_1]->GetGradient();
-			Gradient_2 = solution_container[PLASMA_SOL]->node[Point_2]->GetGradient();
+				Gradient_0 = solution_container[PLASMA_SOL]->node[Point_0]->GetGradient();
+				Gradient_1 = solution_container[PLASMA_SOL]->node[Point_1]->GetGradient();
+				Gradient_2 = solution_container[PLASMA_SOL]->node[Point_2]->GetGradient();
 
-			solver->SetVolume(Area_Local);
+				solver->SetVolume(Area_Local);
 
-			Lambda_iFluid = max(solution_container[PLASMA_SOL]->node[Point_0]->GetMax_Lambda_Inv(0), solution_container[PLASMA_SOL]->node[Point_0]->GetMax_Lambda_Inv(1));
-			Lambda_iFluid = max(solution_container[PLASMA_SOL]->node[Point_0]->GetMax_Lambda_Inv(2), Lambda_iFluid);
-			Local_Delta_Time_0 = config->GetCFL(iMesh)*Area_Local / Lambda_iFluid;
-
-			Lambda_iFluid = max(solution_container[PLASMA_SOL]->node[Point_1]->GetMax_Lambda_Inv(0), solution_container[PLASMA_SOL]->node[Point_1]->GetMax_Lambda_Inv(1));
-			Lambda_iFluid = max(solution_container[PLASMA_SOL]->node[Point_1]->GetMax_Lambda_Inv(2), Lambda_iFluid);
-			Local_Delta_Time_1 = config->GetCFL(iMesh)*Area_Local / Lambda_iFluid;
-
-			Lambda_iFluid = max(solution_container[PLASMA_SOL]->node[Point_2]->GetMax_Lambda_Inv(0), solution_container[PLASMA_SOL]->node[Point_2]->GetMax_Lambda_Inv(1));
-			Lambda_iFluid = max(solution_container[PLASMA_SOL]->node[Point_2]->GetMax_Lambda_Inv(2), Lambda_iFluid);
-			Local_Delta_Time_2 = config->GetCFL(iMesh)*Area_Local / Lambda_iFluid;
-
-			Local_Delta_Time   = (Local_Delta_Time_0 + Local_Delta_Time_1 + Local_Delta_Time_2 ) / 3.0;
-
-			u = 4800;
+				/*		u = 4800;
 			c = 87110;
 			c = 732.0;
 			dx = 0.004/81;
 			Local_Delta_Time = config->GetCFL(iMesh) * dx/(u+c);
-			if (nDim == 2) solver->SetCoord(Coord_0, Coord_1, Coord_2);
 			solver->SetTimeStep(Local_Delta_Time);
-			solver->SetConservative(solution_container[PLASMA_SOL]->node[Point_0]->GetSolution(), solution_container[PLASMA_SOL]->node[Point_1]->GetSolution(), solution_container[PLASMA_SOL]->node[Point_2]->GetSolution());
-			solver->SetConsVarGradient(Gradient_0, Gradient_1, Gradient_2 );
-			solver->SetResidual(Source_Vector, config);
-			node[Point_0]->AddResidual(Source_Vector[0]);
-			node[Point_1]->AddResidual(Source_Vector[1]);
-			node[Point_2]->AddResidual(Source_Vector[2]);
+				 */
 
+				if (!MultipleTimeSteps)
+					dt = solution_container[PLASMA_SOL]->node[Point_0]->GetDelta_Time();
+
+				else {
+					dt = max(solution_container[PLASMA_SOL]->node[Point_0]->GetDelta_Time(0), solution_container[PLASMA_SOL]->node[Point_0]->GetDelta_Time(1));
+					dt = max (dt, solution_container[PLASMA_SOL]->node[Point_0]->GetDelta_Time(2));
+				}
+				//cout << " dt = " << dt << endl;
+				if (nDim == 2) solver->SetCoord(Coord_0, Coord_1, Coord_2);
+				solver->SetTimeStep(dt);
+				solver->SetConservative(solution_container[PLASMA_SOL]->node[Point_0]->GetSolution(), solution_container[PLASMA_SOL]->node[Point_1]->GetSolution(), solution_container[PLASMA_SOL]->node[Point_2]->GetSolution());
+				solver->SetConsVarGradient(Gradient_0, Gradient_1, Gradient_2 );
+				solver->SetResidual(Source_Vector, config);
+				node[Point_0]->AddResidual(Source_Vector[0]);
+				node[Point_1]->AddResidual(Source_Vector[1]);
+				node[Point_2]->AddResidual(Source_Vector[2]);
+			}
 		}
 	}
-
 }
 
 void CElectricSolution::Galerkin_Method(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
@@ -381,56 +380,89 @@ void CElectricSolution::Galerkin_Method(CGeometry *geometry, CSolution **solutio
 	}
 
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+		if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE) {
 
-		Point_0 = geometry->elem[iElem]->GetNode(3);
-		Point_1 = geometry->elem[iElem]->GetNode(1);
-		Point_2 = geometry->elem[iElem]->GetNode(2);
+			Point_0 = geometry->elem[iElem]->GetNode(3);
+			Point_1 = geometry->elem[iElem]->GetNode(0);
+			Point_2 = geometry->elem[iElem]->GetNode(2);
 
-		Coord_0 = geometry->node[Point_0]->GetCoord();
-		Coord_1 = geometry->node[Point_1]->GetCoord();
-		Coord_2 = geometry->node[Point_2]->GetCoord();
+			Coord_0 = geometry->node[Point_0]->GetCoord();
+			Coord_1 = geometry->node[Point_1]->GetCoord();
+			Coord_2 = geometry->node[Point_2]->GetCoord();
 
-		solver->SetCoord(Coord_0, Coord_1, Coord_2);
+			solver->SetCoord(Coord_0, Coord_1, Coord_2);
 
-		solver->SetResidual(StiffMatrix_Elem, config);
+			solver->SetResidual(StiffMatrix_Elem, config);
 
-		StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][0]; StiffMatrix.AddBlock(Point_0,Point_0,StiffMatrix_Node);			
-		StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][1]; StiffMatrix.AddBlock(Point_0,Point_1,StiffMatrix_Node);			
-		StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][2]; StiffMatrix.AddBlock(Point_0,Point_2,StiffMatrix_Node);			
-		StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][0]; StiffMatrix.AddBlock(Point_1,Point_0,StiffMatrix_Node);			
-		StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][1]; StiffMatrix.AddBlock(Point_1,Point_1,StiffMatrix_Node);		
-		StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][2]; StiffMatrix.AddBlock(Point_1,Point_2,StiffMatrix_Node);			
-		StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][0]; StiffMatrix.AddBlock(Point_2,Point_0,StiffMatrix_Node);			
-		StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][1]; StiffMatrix.AddBlock(Point_2,Point_1,StiffMatrix_Node);			
-		StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][2]; StiffMatrix.AddBlock(Point_2,Point_2,StiffMatrix_Node);			
+			StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][0]; StiffMatrix.AddBlock(Point_0,Point_0,StiffMatrix_Node);
+			StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][1]; StiffMatrix.AddBlock(Point_0,Point_1,StiffMatrix_Node);
+			StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][2]; StiffMatrix.AddBlock(Point_0,Point_2,StiffMatrix_Node);
+			StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][0]; StiffMatrix.AddBlock(Point_1,Point_0,StiffMatrix_Node);
+			StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][1]; StiffMatrix.AddBlock(Point_1,Point_1,StiffMatrix_Node);
+			StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][2]; StiffMatrix.AddBlock(Point_1,Point_2,StiffMatrix_Node);
+			StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][0]; StiffMatrix.AddBlock(Point_2,Point_0,StiffMatrix_Node);
+			StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][1]; StiffMatrix.AddBlock(Point_2,Point_1,StiffMatrix_Node);
+			StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][2]; StiffMatrix.AddBlock(Point_2,Point_2,StiffMatrix_Node);
+
+		}
 
 	}
-}
-
-void CElectricSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short val_marker) {
-	/*	unsigned long Point, iVertex;
-
-	 for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-	 Point = geometry->vertex[val_marker][iVertex]->GetNode();
-	 Solution[0]= 0.0;
-	 node[Point]->SetSolution(Solution);
-	 node[Point]->SetResidual(Solution);
-	 StiffMatrix.DeleteValsRowi(Point); // & includes 1 in the diagonal
-	 }*/
 
 }
+
+void CElectricSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short val_marker) {
+	unsigned long Point, iVertex;
+
+	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+		Point = geometry->vertex[val_marker][iVertex]->GetNode();
+		Solution[0]= 0;
+		node[Point]->SetSolution(Solution);
+		node[Point]->SetResidual(Solution);
+		StiffMatrix.DeleteValsRowi(Point); // & includes 1 in the diagonal
+	}
+
+
+}
+
+void CElectricSolution::BC_NS_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short val_marker) {
+	unsigned long Point, iVertex;
+
+	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+		Point = geometry->vertex[val_marker][iVertex]->GetNode();
+		Solution[0]= 0;
+		node[Point]->SetSolution(Solution);
+		node[Point]->SetResidual(Solution);
+		StiffMatrix.DeleteValsRowi(Point); // & includes 1 in the diagonal
+	}
+
+}
+
 
 void CElectricSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
 		unsigned short val_marker) {
-	/*	unsigned long iPoint, iVertex;
+/*	unsigned long Point, iVertex;
 
 	 for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 	 iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-	 Solution[0]= 0;
+	 Solution[0]= 0.0;
 	 node[iPoint]->SetSolution(Solution);
 	 node[iPoint]->SetResidual(Solution);
 	 StiffMatrix.DeleteValsRowi(iPoint); // & includes 1 in the diagonal
-	 }*/
+	 }
+	 */
+}
+
+void CElectricSolution::BC_Neumann(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+		unsigned short val_marker) {
+	unsigned long Point, iVertex;
+
+	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+		Point = geometry->vertex[val_marker][iVertex]->GetNode();
+		Solution[0]= 0;
+		node[Point]->SetSolution(Solution);
+		node[Point]->SetResidual(Solution);
+		StiffMatrix.DeleteValsRowi(Point); // & includes 1 in the diagonal
+	}
 
 }
 
@@ -461,4 +493,17 @@ void CElectricSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_conta
 	 */
 }
 
+void CElectricSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+		unsigned short val_marker) {
+/*	unsigned long Point, iVertex;
+
+	 for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+	 iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+	 Solution[0]= 0.0;
+	 node[iPoint]->SetSolution(Solution);
+	 node[iPoint]->SetResidual(Solution);
+	 StiffMatrix.DeleteValsRowi(iPoint); // & includes 1 in the diagonal
+	 }
+	 */
+}
 

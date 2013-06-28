@@ -6,7 +6,23 @@
  *        the <i>grid_movement_structure.cpp</i> file.
  * \author Current Development: Stanford University.
  *         Original Structure: CADES 1.0 (2009).
- * \version 1.0.
+ * \version 1.1.
+ *
+ * Stanford University Unstructured (SU2) Code
+ * Copyright (C) 2012 Aerospace Design Laboratory
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #pragma once
@@ -27,7 +43,7 @@ using namespace std;
  * \brief Class for moving the surface and volumetric 
  *        numerical grid (2D and 3D problems).
  * \author F. Palacios.
- * \version 1.0.
+ * \version 1.1.
  */
 class CGridMovement {
 public:
@@ -47,7 +63,7 @@ public:
  * \class CFreeFormChunk
  * \brief Class for defining the free form chunk structure.
  * \author F. Palacios & A. Galdran.
- * \version 1.0.
+ * \version 1.1.
  */
 class CFreeFormChunk : public CGridMovement {
 public:
@@ -56,6 +72,7 @@ public:
 	nControlPoints;					/*!< \brief Number of control points of the chunk. */
 	double **Coord_Corner_Points,	/*!< \brief Coordinates of the corner points. */
 	****Coord_Control_Points,		/*!< \brief Coordinates of the control points. */
+	****Coord_Control_Points_Copy,		/*!< \brief Coordinates of the control points (copy). */
 	****Coord_SupportCP;			/*!< \brief Coordinates of the support control points. */
 	unsigned short lOrder,	/*!< \brief Order of the chunk in the i direction. */
 	mOrder,					/*!< \brief Order of the chunk in the j direction. */
@@ -194,16 +211,23 @@ public:
 	void SetControlPoints(unsigned short *val_index, double *movement);
 	
 	/*! 
+	 * \brief Set the original value of the control points.
+	 */	
+	void SetOriginalControlPoints(void);
+	
+	/*! 
 	 * \brief Set the paraview file of the FFD chuck structure.
 	 * \param[in] chunk_filename - Name of the output file with the FFD chunk structure.
+	 * \param[in] new_file - New file or add to the existing file.
 	 */		
-	void SetParaView(char chunk_filename[200]);
+	void SetParaView(char chunk_filename[200], bool new_file);
 	
 	/*! 
 	 * \brief Set the tecplot file of the FFD chuck structure.
 	 * \param[in] chunk_filename - Name of the output file with the FFD chunk structure.
+	 * \param[in] new_file - New file or add to the existing file.
 	 */		
-	void SetTecplot(char chunk_filename[200]);
+	void SetTecplot(char chunk_filename[200], bool new_file);
 	
 	/*! 
 	 * \brief Set the cartesian coords of a point in R^3 and convert them to the parametric coords of
@@ -258,14 +282,23 @@ public:
 	double GetBernstein(unsigned short val_n, unsigned short val_i, double val_t);
 	
 	/*! 
-	 * \brief Get the binomial coefficient n over i, defined as n!/(i!(n-i)!)
+	 * \brief Get the binomial coefficient n over i, defined as n!/(m!(n-m)!)
 	 * \note If the denominator is 0, the value is 1.
 	 * \param[in] n - Upper coefficient.
-	 * \param[in] i - Lower coefficient.
-	 * \return Value of the binomial coefficient n over i.
+	 * \param[in] m - Lower coefficient.
+	 * \return Value of the binomial coefficient n over m.
 	 */		
-	unsigned short Binomial(unsigned short n, unsigned short i);
+	unsigned short Binomial(unsigned short n, unsigned short m);
 	
+	/*! 
+	 * \brief Get the binomial (optimized) coefficient n over m, defined as n!/(m!(n-m)!)
+	 * \note If the denominator is 0, the value is 1.
+	 * \param[in] n - Upper coefficient.
+	 * \param[in] m - Lower coefficient.
+	 * \return Value of the binomial coefficient n over m.
+	 */		
+	unsigned long BinomialOpt(unsigned long n, unsigned long m);
+
 	/*! 
 	 * \brief The Factorial Number n! is defined as n!=n*(n-1)*...*2*1.
 	 * \param[in] n - Index of the factorial.
@@ -293,7 +326,6 @@ public:
 	
 	/*! 
 	 * \brief Set, at each vertex, the index of the free form chunk that contains the vertex.
-	 * \attention This subroutine only works for boxes
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iChunk - Index of the chunk.
@@ -457,7 +489,7 @@ public:
  * \class CVolumetricMovement
  * \brief Class for moving the volumetric numerical grid.
  * \author F. Palacios, and A. Bueno.
- * \version 1.0.
+ * \version 1.1.
  */
 class CVolumetricMovement : public CGridMovement {
 protected:
@@ -488,8 +520,8 @@ protected:
 	bkden,		/*!< \brief Variables for conjugate gradient resolution. */
 	bknum;		/*!< \brief Variables for conjugate gradient resolution. */
 	double err;	/*!< \brief Norm of the residual in the resolution. */
-	double vec_a[2],	/*!< \brief ___________. */
-	vec_b[2];			/*!< \brief ___________. */
+	double vec_a[3],	/*!< \brief ___________. */
+	vec_b[3];			/*!< \brief ___________. */
 	double Dim_Normal[3];	/*!< \brief ___________. */
 	unsigned long nElem;	/*!< \brief ___________. */
 	unsigned long **nodes;	/*!< \brief ___________. */	
@@ -522,14 +554,6 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 */	
 	void Set3DMatrix_Structure(CGeometry *geometry);		
-
-	/*! 
-	 * \brief __________________________
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iter ______________.
-	 */
-	void SetBoundary_Flutter(CGeometry *geometry, CConfig *config, unsigned long iter);
 
 	/*! 
 	 * \brief __________________________
@@ -618,7 +642,7 @@ public:
 	 * \brief Initialize the stiff matrix for grid movement using spring analogy
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 */
-	void InitializeStiffMatrixStructure(CGeometry *geometry);
+	void Initialize_StiffMatrix_Structure(CGeometry *geometry);
 	
 	/*! 
 	 * \brief Compute the stiffness matrix for grid deformation using spring analogy.
@@ -681,13 +705,13 @@ public:
  * \class CSurfaceMovement
  * \brief Class for moving the surface numerical grid.
  * \author F. Palacios.
- * \version 1.0.
+ * \version 1.1.
  */
 class CSurfaceMovement : public CGridMovement {
 protected:
-	unsigned short nChunk;	/*!< \brief ___________. */
-	bool ChunkDefinition;	/*!< \brief ___________. */
-	
+	unsigned short nChunk;	/*!< \brief Number of FFD chunks. */
+	bool ChunkDefinition;	/*!< \brief If the FFD chunk has been defined in the input file. */
+
 public:
 	
 	/*! 
@@ -705,8 +729,9 @@ public:
 	 * \param[in] boundary - Geometry of the boundary.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iDV - Index of the design variable.
+	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */
-	void SetHicksHenne(CGeometry *boundary, CConfig *config, unsigned short iDV);
+	void SetHicksHenne(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
 	
 	/*! 
 	 * \brief Set a NACA 4 digits airfoil family for airfoil deformation.
@@ -723,20 +748,52 @@ public:
 	void SetParabolic(CGeometry *boundary, CConfig *config);
 	
 	/*! 
+	 * \brief Set a obstacle in a channel.
+	 * \param[in] boundary - Geometry of the boundary.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetObstacle(CGeometry *boundary, CConfig *config);
+	
+	/*! 
+	 * \brief Stretch one side of a channel.
+	 * \param[in] boundary - Geometry of the boundary.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetStretch(CGeometry *boundary, CConfig *config);
+	
+	/*! 
 	 * \brief Set a rotation for surface movement.
 	 * \param[in] boundary - Geometry of the boundary.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iDV - Index of the design variable.
+	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */
-	void SetRotation(CGeometry *boundary, CConfig *config, unsigned short iDV);
+	void SetRotation(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
+  
+  /*! 
+	 * \brief __________________________
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iter ______________.
+	 */
+	void SetBoundary_Flutter2D(CGeometry *geometry, CConfig *config, unsigned long iter);
+	
+	/*! 
+	 * \brief __________________________
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iter ______________.
+	 */
+	void SetBoundary_Flutter3D(CGeometry *geometry, CConfig *config, CFreeFormChunk **chunk, unsigned long iter);	
 	
 	/*! 
 	 * \brief Set a displacement for surface movement.
 	 * \param[in] boundary - Geometry of the boundary.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iDV - Index of the design variable.
+	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */
-	void SetDisplacement(CGeometry *boundary, CConfig *config, unsigned short iDV);
+	void SetDisplacement(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
 	
 	/*! 
 	 * \brief Copy the boundary coordinates to each vertex.
@@ -768,8 +825,9 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] chunk - Array with all the free forms chunks of the computation.
 	 * \param[in] iDV - Index of the design variable.
+	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */		
-	void SetFFDCPChange(CGeometry *geometry, CConfig *config, CFreeFormChunk **chunk, unsigned short iDV);
+	void SetFFDCPChange(CGeometry *geometry, CConfig *config, CFreeFormChunk **chunk, unsigned short iDV, bool ResetDef);
 	
 	/*! 
 	 * \brief Set a camber deformation of the Free From box using the control point position.
@@ -777,8 +835,9 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] chunk - Array with all the free forms chunks of the computation.
 	 * \param[in] iDV - Index of the design variable.
+	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */		
-	void SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeFormChunk **chunk, unsigned short iDV);
+	void SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeFormChunk **chunk, unsigned short iDV, bool ResetDef);
 	
 	/*! 
 	 * \brief Set a thickness deformation of the Free From box using the control point position.
@@ -786,8 +845,9 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] chunk - Array with all the free forms chunks of the computation.
 	 * \param[in] iDV - Index of the design variable.
+	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */		
-	void SetFFDThickness(CGeometry *geometry, CConfig *config, CFreeFormChunk **chunk, unsigned short iDV);
+	void SetFFDThickness(CGeometry *geometry, CConfig *config, CFreeFormChunk **chunk, unsigned short iDV, bool ResetDef);
 	
 	/*! 
 	 * \brief Set a volume deformation of the Free From box using the control point position.
@@ -795,8 +855,9 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] chunk - Array with all the free forms chunks of the computation.
 	 * \param[in] iDV - Index of the design variable.
+	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */		
-	void SetFFDVolume(CGeometry *geometry, CConfig *config, CFreeFormChunk **chunk, unsigned short iDV);
+	void SetFFDVolume(CGeometry *geometry, CConfig *config, CFreeFormChunk **chunk, unsigned short iDV, bool ResetDef);
 	
 	/*! 
 	 * \brief Set a dihedral angle deformation of the Free From box using the control point position.
@@ -804,8 +865,9 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] chunk - Array with all the free forms chunks of the computation.
 	 * \param[in] iDV - Index of the design variable.
+	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */		
-	void SetFFDDihedralAngle(CGeometry *geometry, CConfig *config, CFreeFormChunk **chunk, unsigned short iDV);
+	void SetFFDDihedralAngle(CGeometry *geometry, CConfig *config, CFreeFormChunk **chunk, unsigned short iDV, bool ResetDef);
 	
 	/*! 
 	 * \brief Set a twist angle deformation of the Free From box using the control point position.
@@ -813,8 +875,9 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] chunk - Array with all the free forms chunks of the computation.
 	 * \param[in] iDV - Index of the design variable.
+	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */		
-	void SetFFDTwistAngle(CGeometry *geometry, CConfig *config, CFreeFormChunk **chunk, unsigned short iDV);
+	void SetFFDTwistAngle(CGeometry *geometry, CConfig *config, CFreeFormChunk **chunk, unsigned short iDV, bool ResetDef);
 	
 	/*! 
 	 * \brief Set a rotation angle deformation of the Free From box using the control point position.
@@ -822,8 +885,9 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] chunk - Array with all the free forms chunks of the computation.
 	 * \param[in] iDV - Index of the design variable.
+	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */		
-	void SetFFDRotation(CGeometry *geometry, CConfig *config, CFreeFormChunk **chunk, unsigned short iDV);
+	void SetFFDRotation(CGeometry *geometry, CConfig *config, CFreeFormChunk **chunk, unsigned short iDV, bool ResetDef);
 	
 	/*! 
 	 * \brief Read the free form information from the grid input file.
@@ -840,10 +904,19 @@ public:
 	 * \brief Write the Free Form information in the DPL file.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] chunk - ______________.
-	 * \param[in] val_mesh_filename - ______________.
+	 * \param[in] chunk - Array with all the free forms chunks of the computation.
+	 * \param[in] val_mesh_filename - Name of the grid output file.
 	 */		
 	void WriteFFDInfo(CGeometry *geometry, CConfig *config, CFreeFormChunk **chunk, string val_mesh_filename);
+	
+	/*! 
+	 * \brief Write the Free Form information in the DPL file.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] chunk - Array with all the free forms chunks of the computation.
+	 * \param[in] val_mesh_filename - Name of the grid output file.
+	 */		
+	void WriteFFDInfo(CGeometry *geometry, CGeometry *domain, CConfig *config, CFreeFormChunk **chunk, string val_mesh_filename);
 	
 	/*! 
 	 * \brief Get information about if there is a complete chunk definition, or it is necessary to 
@@ -854,7 +927,7 @@ public:
 	
 	/*! 
 	 * \brief Obtain the number of chunks.
-	 * \return __________.
+	 * \return Number of FFD chunks.
 	 */		
 	unsigned short GetnChunk(void);
 	

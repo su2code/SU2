@@ -1,9 +1,9 @@
-#!/usr/bin/python
+#!/usr/bin/python 
 
 ## \file build_SU2.py
 #  \brief Python script for automated building of the SU2 suite.
 #  \author Thomas D. Economon
-#  \version 1.0.2
+#  \version 1.1.
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -195,13 +195,13 @@ print "-------------------------------------------------------------------------
 
 # Build instructions based on operating system.
 if options.operatingsys == "macosx":
-  
+
   if options.clean:
-    
+
     # Perform cleaning for Mac OS X.
     print '\n  Cleaning SU2 on Mac OS X.'
     print '  Setting environment variable SU2_HOME=' + su2_home
-    
+
     # Clean SU2_CFD
     if build_cfd:
       print '\n  Cleaning SU2_CFD...\n'
@@ -210,7 +210,7 @@ if options.operatingsys == "macosx":
       os.system('make clean')
       os.chdir(su2_home + '/SU2Py')
       os.system('rm -f SU2_CFD')
-    
+
     # Clean SU2_DDC
     if build_ddc:
       print '\n  Cleaning METIS & SU2_DDC...\n'
@@ -221,15 +221,33 @@ if options.operatingsys == "macosx":
       os.system('make clean')
       os.chdir(su2_home + '/SU2Py')
       os.system('rm -f SU2_DDC')
-  
+
+    # Clean SU2_MDC
+    if build_mdc:
+      print '\n  Cleaning SU2_MDC...\n'
+      os.chdir(su2_home + '/SU2_MDC')
+      os.system('cp ./config/makefile.darwin.gcc4.2.1.in ./makefile.in')
+      os.system('make clean')
+      os.chdir(su2_home + '/SU2Py')
+      os.system('rm -f SU2_MDC')
+
+    # Clean SU2_GPC
+    if build_gpc:
+      print '\n  Cleaning SU2_GPC...\n'
+      os.chdir(su2_home + '/SU2_GPC')
+      os.system('cp ./config/makefile.darwin.gcc4.2.1.in ./makefile.in')
+      os.system('make clean')
+      os.chdir(su2_home + '/SU2Py')
+      os.system('rm -f SU2_GPC')   
+
   elif options.parallel:
-    
+
     # Build parallel version for Mac OS X.
     print '\n  Building a parallel version of SU2 on Mac OS X.'
     print '  Setting environment variable SU2_HOME=' + su2_home
     if options.cgns:
       print '  Building against the CGNS library.'
-    
+
     # Build SU2_CFD
     if build_cfd:
       print '\n  Compiling SU2_CFD...\n'
@@ -240,39 +258,7 @@ if options.operatingsys == "macosx":
       if options.cgns:
         print '\n!!! Warning: SU2_CFD does not yet support parallel CGNS. Option ignored. !!!\n'
       os.system('make all')
-    
-    # Build SU2_DDC
-    if build_ddc:
-      print '\n  Compiling METIS & SU2_DDC...\n'
-      os.chdir(su2_home + '/metis-4.0.3')
-      os.system('make')
-      os.chdir(su2_home + '/SU2_DDC')
-      os.system('cp ./config/makefile.darwin.gcc4.2.1.in ./makefile.in')
-      if options.compiler != False:
-        set_compiler(options.compiler, 'makefile.in')
-      if options.cgns:
-        print '\n!!! Warning: SU2_DDC does not yet support CGNS. Option ignored. !!!\n'
-      os.system('make all')    
-  
-  else:
-    
-    # Build serial version for Mac OS X.
-    print '\n  Building a serial version of SU2 on Mac OS X.'
-    print '  Setting environment variable SU2_HOME=' + su2_home
-    if options.cgns:
-      print '  Building against the CGNS library.'
-    
-    # Build SU2_CFD
-    if build_cfd:
-      print '\n  Compiling SU2_CFD...\n'
-      os.chdir(su2_home + '/SU2_CFD')
-      os.system('cp ./config/makefile.darwin.gcc4.2.1.in ./makefile.in')
-      if options.compiler != False:
-        set_compiler(options.compiler, 'makefile.in')
-      if options.cgns:
-        set_cgns('makefile.in',options.inc_cgns, options.lib_cgns)
-      os.system('make all')
-    
+
     # Build SU2_DDC
     if build_ddc:
       print '\n  Compiling METIS & SU2_DDC...\n'
@@ -286,14 +272,90 @@ if options.operatingsys == "macosx":
         print '\n!!! Warning: SU2_DDC does not yet support CGNS. Option ignored. !!!\n'
       os.system('make all')
 
+    # Build SU2_MDC
+    if build_mdc:
+      print '\n  Compiling SU2_MDC...\n'
+      os.chdir(su2_home + '/SU2_MDC')
+      os.system('cp ./config/makefile.darwin.gcc4.2.1.in ./makefile.in')
+      if options.compiler != False:
+        set_compiler(options.compiler, 'makefile.in')
+      if options.cgns:
+        print '\n!!! Warning: SU2_MDC does not yet support parallel CGNS. Option ignored. !!!\n'
+      os.system('make all')
+
+    # Build SU2_GPC
+    if build_gpc:
+      print '\n  Compiling SU2_GPC...\n'
+      os.chdir(su2_home + '/SU2_GPC')
+      os.system('cp ./config/makefile.darwin.gcc4.2.1.in ./makefile.in')
+      if options.compiler != False:
+        set_compiler(options.compiler, 'makefile.in')
+      if options.cgns:
+        print '\n!!! Warning: SU2_GPC does not yet support parallel CGNS. Option ignored. !!!\n'
+      os.system('make all')
+      
+  else:
+
+    # Build serial version for Mac OS X.
+    print '\n  Building a serial version of SU2 on Mac OS X.'
+    print '  Setting environment variable SU2_HOME=' + su2_home
+    if options.cgns:
+      print '  Building against the CGNS library.'
+
+    # Build SU2_CFD
+    if build_cfd:
+      print '\n  Compiling SU2_CFD...\n'
+      os.chdir(su2_home + '/SU2_CFD')
+      os.system('cp ./config/makefile.darwin.gcc4.2.1.in ./makefile.in')
+      if options.compiler != False:
+        set_compiler(options.compiler, 'makefile.in')
+      if options.cgns:
+        set_cgns('makefile.in',options.inc_cgns, options.lib_cgns)
+      os.system('make all')
+
+    # Build SU2_DDC
+    if build_ddc:
+      print '\n  Compiling METIS & SU2_DDC...\n'
+      os.chdir(su2_home + '/metis-4.0.3')
+      os.system('make')
+      os.chdir(su2_home + '/SU2_DDC')
+      os.system('cp ./config/makefile.darwin.gcc4.2.1.in ./makefile.in')
+      if options.compiler != False:
+        set_compiler(options.compiler, 'makefile.in')
+      if options.cgns:
+        print '\n!!! Warning: SU2_DDC does not yet support CGNS. Option ignored. !!!\n'
+      os.system('make all')
+
+    # Build SU2_MDC
+    if build_mdc:
+      print '\n  Compiling SU2_MDC...\n'
+      os.chdir(su2_home + '/SU2_MDC')
+      os.system('cp ./config/makefile.darwin.gcc4.2.1.in ./makefile.in')
+      if options.compiler != False:
+        set_compiler(options.compiler, 'makefile.in')
+      if options.cgns:
+        print '\n!!! Warning: SU2_MDC does not yet support CGNS. Option ignored. !!!\n'  
+      os.system('make all')
+
+    # Build SU2_GPC
+    if build_gpc:
+      print '\n  Compiling SU2_GPC...\n'
+      os.chdir(su2_home + '/SU2_GPC')
+      os.system('cp ./config/makefile.darwin.gcc4.2.1.in ./makefile.in')
+      if options.compiler != False:
+        set_compiler(options.compiler, 'makefile.in')
+      if options.cgns:
+        print '\n!!! Warning: SU2_GPC does not yet support CGNS. Option ignored. !!!\n'  
+      os.system('make all')
+
 elif options.operatingsys == "redhat":
-  
+
   if options.clean:
-    
+
     # Perform cleaning for Linux Redhat.
     print '\n  Cleaning SU2 on Linux Redhat.'
     print '  Setting environment variable SU2_HOME=' + su2_home
-    
+
     # Clean SU2_CFD
     if build_cfd:
       print '\n  Cleaning SU2_CFD...\n'
@@ -302,7 +364,7 @@ elif options.operatingsys == "redhat":
       os.system('make clean')
       os.chdir(su2_home + '/SU2Py')
       os.system('rm -f SU2_CFD')
-    
+
     # Clean SU2_DDC
     if build_ddc:
       print '\n  Cleaning METIS & SU2_DDC...\n'
@@ -313,15 +375,33 @@ elif options.operatingsys == "redhat":
       os.system('make clean')
       os.chdir(su2_home + '/SU2Py')
       os.system('rm -f SU2_DDC')
-  
+
+    # Clean SU2_MDC
+    if build_mdc:
+      print '\n  Cleaning SU2_MDC...\n'
+      os.chdir(su2_home + '/SU2_MDC')
+      os.system('cp ./config/makefile.redhat.gcc4.1.2.in ./makefile.in')
+      os.system('make clean')
+      os.chdir(su2_home + '/SU2Py')
+      os.system('rm -f SU2_MDC')
+
+    # Clean SU2_GPC
+    if build_gpc:
+      print '\n  Cleaning SU2_GPC...\n'
+      os.chdir(su2_home + '/SU2_GPC')
+      os.system('cp ./config/makefile.redhat.gcc4.1.2.in ./makefile.in')
+      os.system('make clean')
+      os.chdir(su2_home + '/SU2Py')
+      os.system('rm -f SU2_GPC')   
+
   elif options.parallel:
-    
+
     # Build parallel version for Linux Redhat.
     print '\n  Building a parallel version of SU2 on Linux Redhat.'
     print '  Setting environment variable SU2_HOME=' + su2_home
     if options.cgns:
       print '  Building against the CGNS library.'
-    
+
     # Build SU2_CFD
     if build_cfd:
       print '\n  Compiling SU2_CFD...\n'
@@ -332,7 +412,7 @@ elif options.operatingsys == "redhat":
       if options.cgns:
         print '\n!!! Warning: SU2_CFD does not yet support parallel CGNS. Option ignored. !!!\n'
       os.system('make all')
-    
+
     # Build SU2_DDC
     if build_ddc:
       print '\n  Compiling METIS & SU2_DDC...\n'
@@ -345,13 +425,35 @@ elif options.operatingsys == "redhat":
       if options.cgns:
         print '\n!!! Warning: SU2_DDC does not yet support CGNS. Option ignored. !!!\n'
       os.system('make all')
-  
+
+    # Build SU2_MDC
+    if build_mdc:
+      print '\n  Compiling SU2_MDC...\n'
+      os.chdir(su2_home + '/SU2_MDC')
+      os.system('cp ./config/makefile.redhat.gcc4.1.2.in ./makefile.in')
+      if options.compiler != False:
+        set_compiler(options.compiler, 'makefile.in')
+      if options.cgns:
+        print '\n!!! Warning: SU2_MDC does not yet support parallel CGNS. Option ignored. !!!\n'
+      os.system('make all')
+
+    # Build SU2_GPC
+    if build_gpc:
+      print '\n  Compiling SU2_GPC...\n'
+      os.chdir(su2_home + '/SU2_GPC')
+      os.system('cp ./config/makefile.redhat.gcc4.1.2.in ./makefile.in')
+      if options.compiler != False:
+        set_compiler(options.compiler, 'makefile.in')
+      if options.cgns:
+        print '\n!!! Warning: SU2_GPC does not yet support parallel CGNS. Option ignored. !!!\n'
+      os.system('make all')   
+
   else:
-    
+
     # Build serial version for Linux Redhat.
     print '\n  Building a serial version of SU2 on Linux Redhat.'
     print '  Setting environment variable SU2_HOME=' + su2_home
-    
+
     # Build SU2_CFD
     if build_cfd:
       print '\n  Compiling SU2_CFD...\n'
@@ -362,7 +464,7 @@ elif options.operatingsys == "redhat":
       if options.cgns:
         set_cgns('makefile.in',options.inc_cgns, options.lib_cgns)
       os.system('make all')
-    
+
     # Build SU2_DDC
     if build_ddc:
       print '\n  Compiling METIS & SU2_DDC...\n'
@@ -376,8 +478,30 @@ elif options.operatingsys == "redhat":
         print '\n!!! Warning: SU2_DDC does not yet support CGNS. Option ignored. !!!\n'
       os.system('make all')
 
+    # Build SU2_MDC
+    if build_mdc:
+      print '\n  Compiling SU2_MDC...\n'
+      os.chdir(su2_home + '/SU2_MDC')
+      os.system('cp ./config/makefile.redhat.gcc4.1.2.in ./makefile.in')
+      if options.compiler != False:
+        set_compiler(options.compiler, 'makefile.in')
+      if options.cgns:
+        print '\n!!! Warning: SU2_MDC does not yet support CGNS. Option ignored. !!!\n'
+      os.system('make all')
+
+    # Build SU2_GPC
+    if build_gpc:
+      print '\n  Compiling SU2_GPC...\n'
+      os.chdir(su2_home + '/SU2_GPC')
+      os.system('cp ./config/makefile.redhat.gcc4.1.2.in ./makefile.in')
+      if options.compiler != False:
+        set_compiler(options.compiler, 'makefile.in')
+      if options.cgns:
+        print '\n!!! Warning: SU2_GPC does not yet support CGNS. Option ignored. !!!\n'
+      os.system('make all')  
+
 else:
-  
+
   print '\n!!! Error: Unrecognized operating system !!!'
   print '      Options are: macosx, redhat           \n'
   exit(1)
@@ -386,7 +510,7 @@ else:
 # Build/Clean all other codes which don't depend on OS.
 
 if options.clean:
-  
+
   # Clean SU2_GDC
   if build_gdc:
     print '\n  Cleaning SU2_GDC...\n'
@@ -394,15 +518,7 @@ if options.clean:
     os.system('make clean')
     os.chdir(su2_home + '/SU2Py')
     os.system('rm -f SU2_GDC')
-  
-  # Clean SU2_GPC
-  if build_gpc:
-    print '\n  Cleaning SU2_GPC...\n'
-    os.chdir(su2_home + '/SU2_GPC')
-    os.system('make clean')
-    os.chdir(su2_home + '/SU2Py')
-    os.system('rm -f SU2_GPC')
-  
+
   # Clean SU2_MAC
   if build_mac:
     print '\n  Cleaning SU2_MAC...\n'
@@ -410,15 +526,7 @@ if options.clean:
     os.system('make clean')
     os.chdir(su2_home + '/SU2Py')
     os.system('rm -f SU2_MAC')
-  
-  # Clean SU2_MDC
-  if build_mdc:
-    print '\n  Cleaning SU2_MDC...\n'
-    os.chdir(su2_home + '/SU2_MDC')
-    os.system('make clean')
-    os.chdir(su2_home + '/SU2Py')
-    os.system('rm -f SU2_MDC')
-  
+
   # Clean SU2_PBC
   if build_pbc:
     print '\n  Cleaning SU2_PBC...\n'
@@ -426,11 +534,11 @@ if options.clean:
     os.system('make clean')
     os.chdir(su2_home + '/SU2Py')
     os.system('rm -f SU2_PBC')
-  
+
   print '\n  Clean complete.\n\n'
 
 else:
-  
+
   # Build SU2_GDC
   if build_gdc:
     print '\n  Compiling SU2_GDC...\n'
@@ -441,18 +549,7 @@ else:
     if options.cgns:
       print '\n!!! Warning: SU2_GDC does not yet support CGNS. Option ignored. !!!\n'
     os.system('make all')
-  
-  # Build SU2_GPC
-  if build_gpc:
-    print '\n  Compiling SU2_GPC...\n'
-    os.chdir(su2_home + '/SU2_GPC')
-    os.system('cp ./config/makefile.in ./makefile.in')
-    if options.compiler != False:
-      set_compiler(options.compiler, 'makefile.in')
-    if options.cgns:
-      print '\n!!! Warning: SU2_GPC does not yet support CGNS. Option ignored. !!!\n'
-    os.system('make all')
-  
+
   # Build SU2_MAC
   if build_mac:
     print '\n  Compiling SU2_MAC...\n'
@@ -463,18 +560,7 @@ else:
     if options.cgns:
       print '\n!!! Warning: SU2_MAC does not yet support CGNS. Option ignored. !!!\n'
     os.system('make all')
-  
-  # Build SU2_MDC
-  if build_mdc:
-    print '\n  Compiling SU2_MDC...\n'
-    os.chdir(su2_home + '/SU2_MDC')
-    os.system('cp ./config/makefile.in ./makefile.in')
-    if options.compiler != False:
-      set_compiler(options.compiler, 'makefile.in')
-    if options.cgns:
-      print '\n!!! Warning: SU2_MDC does not yet support CGNS. Option ignored. !!!\n'
-    os.system('make all')
-  
+
   # Build SU2_PBC
   if build_pbc:
     print '\n  Compiling SU2_PBC...\n'
@@ -485,6 +571,5 @@ else:
     if options.cgns:
       print '\n!!! Warning: SU2_PBC does not yet support CGNS. Option ignored. !!!\n'
     os.system('make all')
-  
-  print '\n  Build complete. Products can be found in ' + su2_home + '/SU2Py.\n\n'
 
+  print '\n  Build complete. Products can be found in ' + su2_home + '/SU2Py.\n\n'

@@ -3,7 +3,7 @@
  * \brief In-Line subroutines of the <i>dual_grid_structure.hpp</i> file.
  * \author Current Development: Stanford University.
  *         Original Structure: CADES 1.0 (2009).
- * \version 1.0.
+ * \version 1.1.
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -165,9 +165,9 @@ inline void CPoint::SetWallDistance(double val_distance) { WallDistance = val_di
 
 inline double CPoint::GetWallDistance(void) { return WallDistance; }
 
-inline void CPoint::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG) { }
+inline void CPoint::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG, CConfig *config) { }
 
-inline void CPoint::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG) { }
+inline void CPoint::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG, CConfig *config) { }
 
 inline void  CPoint::GetNormal(double *val_normal) { }
 
@@ -211,6 +211,10 @@ inline double *CEdge::GetCoord(void) { return NULL; }
 
 inline void CEdge::SetCoord(double *val_coord) { }
 
+inline double CEdge::GetRotFlux(void) { return Rot_Flux; }
+
+inline void CEdge::AddRotFlux(double val_rot_flux) { Rot_Flux += val_rot_flux; }
+
 inline unsigned short CVertex::GetnNodes() { return 1; }
 
 inline unsigned long CVertex::GetNode() { return Nodes[0]; }
@@ -223,7 +227,7 @@ inline double *CVertex::GetCoord(void) { return CarCoord; }
 
 inline double *CVertex::GetParCoord(void) { return ParCoord; }
 
-inline void CVertex::SetAuxVar(double val_auxvar) {Aux_Var = val_auxvar; }
+inline void CVertex::SetAuxVar(double val_auxvar) { Aux_Var = val_auxvar; }
 
 inline double CVertex::GetAuxVar(void) { return Aux_Var; }
 
@@ -280,3 +284,17 @@ inline void CVertex::SetZeroValues(void) {
 	for (unsigned short iDim = 0; iDim < nDim; iDim ++) 
 		Normal[iDim] = 0.0; 
 }
+
+inline double CVertex::GetRotFlux(void) { return Rot_Flux; }
+
+inline void CVertex::AddRotFlux(double val_rot_flux) { Rot_Flux += val_rot_flux; }
+
+inline bool CVertex::GetSharp_Corner(void) { return Sharp_Corner; }
+
+inline void CVertex::SetSharp_Corner(bool val_sharp_corner) { Sharp_Corner = val_sharp_corner; }
+
+inline unsigned long CVertex::GetClosest_Neighbor(void) { return Closest_Neighbor; }
+
+inline void CVertex::SetClosest_Neighbor(unsigned long val_closest_neighbor) { Closest_Neighbor = val_closest_neighbor; }
+
+

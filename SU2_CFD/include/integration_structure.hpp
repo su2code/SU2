@@ -5,7 +5,7 @@
  *        <i>integration_time.cpp</i>, and <i>integration_notime.cpp</i> files.
  * \author Current Development: Stanford University.
  *         Original Structure: CADES 1.0 (2009).
- * \version 1.0.
+ * \version 1.1.
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -43,7 +43,7 @@ using namespace std;
  * \brief Main class for doing the space integration, time integration, and monitoring 
  *        of a system of Partial Differential Equations (PDE).
  * \author F. Palacios.
- * \version 1.0.
+ * \version 1.1.
  */
 class CIntegration {
 protected:
@@ -96,6 +96,17 @@ public:
 						  unsigned short iRKStep, unsigned short RunTime_EqSystem, unsigned long Iteration);
 	
 	/*! 
+	 * \brief Initialize the adjoint solution using the primal problem.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solution_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+	 * \param[in] Iteration - Current iteration.
+	 */
+	void Adjoint_Setup(CGeometry **geometry, CSolution ***solution_container, CConfig *config, 
+								unsigned short RunTime_EqSystem, unsigned long Iteration);
+	
+	/*! 
 	 * \brief Numerical method for solving a non-time depending equation, like the potential equation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solution - Solution of the problem.
@@ -114,7 +125,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] Iteration - Current iteration.
 	 */
-	void SetTwoPhase_Solver(CGeometry **geometry, CSolution ***solution_container, CNumerics ****solver_container, 
+	void SetFreeSurface_Solver(CGeometry **geometry, CSolution ***solution_container, CNumerics ****solver_container, 
 													 CConfig *config, unsigned long Iteration);
 	
 	/*! 
@@ -318,20 +329,13 @@ public:
 	virtual void SetPotential_Solver(CGeometry **geometry, CSolution ***solution_container, CNumerics ****solver_container, 
 								  CConfig *config, unsigned short RunTime_EqSystem, unsigned short iMesh);
 	
-	/*! 
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void SetEikonal_Solver(CGeometry **geometry, CSolution ***solution_container, CConfig *config);
 };
 
 /*! 
  * \class CMultiGridIntegration
  * \brief Class for doing the numerical integration using a multigrid method.
  * \author F. Palacios.
- * \version 1.0.
+ * \version 1.1.
  */
 class CMultiGridIntegration : public CIntegration {
 public:
@@ -491,7 +495,7 @@ public:
  * \class CSingleGridIntegration
  * \brief Class for doing the numerical integration of the turbulence model.
  * \author A. Bueno.
- * \version 1.0.
+ * \version 1.1.
  */
 class CSingleGridIntegration : public CIntegration {
 public:
@@ -524,7 +528,7 @@ public:
  * \class CPotentialIntegration
  * \brief Class for doing the numerical integration of the potential equation.
  * \author F. Palacios.
- * \version 1.0.
+ * \version 1.1.
  */
 class CPotentialIntegration : public CIntegration {
 public:
@@ -551,35 +555,6 @@ public:
 	 */
 	void SetPotential_Solver(CGeometry **geometry, CSolution ***solution_container, CNumerics ****solver_container, 
 						  CConfig *config, unsigned short RunTime_EqSystem, unsigned short iMesh);
-};
-
-/*! 
- * \class CEikonalIntegration
- * \brief Class for doing the numerical integration of the Eikonal equation.
- * \author F. Palacios.
- * \version 1.0.
- */
-class CEikonalIntegration : public CIntegration {
-public:
-	
-	/*! 
-	 * \brief Constructor of the class.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CEikonalIntegration(CConfig *config);
-	
-	/*! 
-	 * \brief Destructor of the class. 
-	 */
-	~CEikonalIntegration(void);
-	
-	/*! 
-	 * \brief Do the numerical integration of the Eikonal equation. 
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetEikonal_Solver(CGeometry **geometry, CSolution ***solution_container, CConfig *config);
 };
 
 #include "integration_structure.inl"

@@ -3,7 +3,7 @@
  * \brief Definition of the solution fields.
  * \author Current Development: Stanford University.
  *         Original Structure: CADES 1.0 (2009).
- * \version 1.0.
+ * \version 1.1.
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -29,6 +29,7 @@ CLinEulerVariable::CLinEulerVariable(void) : CVariable() {}
 CLinEulerVariable::~CLinEulerVariable(void) {
 	delete [] Res_Conv;
 	delete [] Res_Visc;
+	delete [] Res_Sour;
 	delete [] Residual_Sum;
 	delete [] Residual_Old;
 	delete [] Undivided_Laplacian;
@@ -49,6 +50,7 @@ CLinEulerVariable::CLinEulerVariable(double *val_solution, unsigned short val_nd
 	// Allocate structures
 	Res_Conv = new double [nVar];
 	Res_Visc = new double [nVar];
+	Res_Sour = new double [nVar];
 	Residual_Sum = new double [nVar];
 	Residual_Old = new double [nVar];
 	Res_Visc_RK = new double* [nVar];
@@ -84,6 +86,7 @@ CLinEulerVariable::CLinEulerVariable(double val_deltarho, double *val_deltavel,
 	// Allocate structures
 	Res_Conv = new double [nVar];
 	Res_Visc = new double [nVar];
+	Res_Sour = new double [nVar];
 	Residual_Sum = new double [nVar];
 	Residual_Old = new double [nVar];
 	Res_Visc_RK = new double* [nVar];

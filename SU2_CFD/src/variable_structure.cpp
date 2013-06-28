@@ -3,7 +3,7 @@
  * \brief Definition of the solution fields.
  * \author Current Development: Stanford University.
  *         Original Structure: CADES 1.0 (2009).
- * \version 1.0.
+ * \version 1.1.
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -82,6 +82,10 @@ void CVariable::SubtractUnd_Lapl(double *val_und_lapl) {
 		Undivided_Laplacian[iVar] -= val_und_lapl[iVar];
 }
 
+void CVariable::SubtractUnd_Lapl(unsigned short val_var, double val_und_lapl) {
+	Undivided_Laplacian[val_var] -= val_und_lapl;
+}
+
 void CVariable::SetUnd_LaplZero(void) {
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		Undivided_Laplacian[iVar] = 0.0;
@@ -158,6 +162,11 @@ void CVariable::SetRes_Visc(double *val_residual) {
 		Res_Visc[iVar] = val_residual[iVar];
 }
 
+void CVariable::SetRes_Sour(double *val_residual) {
+	for (unsigned short iVar = 0; iVar < nVar; iVar++)
+		Res_Sour[iVar] = val_residual[iVar];
+}
+
 void CVariable::SetRes_Visc_RK(double *val_residual, unsigned short iRKStep) {
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		Res_Visc_RK[iVar][iRKStep] = val_residual[iVar];
@@ -193,6 +202,11 @@ void CVariable::Set_ResVisc_Zero(void) {
 		Res_Visc[iVar] = 0.0;
 }
 
+void CVariable::Set_ResSour_Zero(void) {
+	for (unsigned short iVar = 0; iVar < nVar; iVar++)
+		Res_Sour[iVar] = 0.0;
+}
+
 void CVariable::SetVelResidualZero(void) {
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
 		Residual[iDim+1] = 0.0;
@@ -203,15 +217,47 @@ void CVariable::SetVel_ResVisc_Zero(void) {
 		Res_Visc[iDim+1] = 0.0;
 }
 
+void CVariable::SetVel_ResSour_Zero(void) {
+	for (unsigned short iDim = 0; iDim < nDim; iDim++)
+		Res_Sour[iDim+1] = 0.0;
+}
+
+void CVariable::SetVel_ResVisc_Zero(unsigned short iSpecies) {
+	unsigned short loc = (nDim+2)*iSpecies;
+
+	for (unsigned short iDim = 0; iDim < nDim; iDim++)
+		Res_Visc[loc + iDim+1] = 0.0;
+}
+
+void CVariable::SetVel_ResSour_Zero(unsigned short iSpecies) {
+	unsigned short loc = (nDim+2)*iSpecies;
+	
+	for (unsigned short iDim = 0; iDim < nDim; iDim++)
+		Res_Sour[loc + iDim+1] = 0.0;
+}
+
 void CVariable::SetVel_ResConv_Zero(void) {
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
 		Res_Conv[iDim+1] = 0.0;
+}
+
+void CVariable::SetVel_ResConv_Zero(unsigned short iSpecies) {
+	unsigned short loc = (nDim+2)*iSpecies;
+	for (unsigned short iDim = 0; iDim < nDim; iDim++)
+		Res_Conv[loc + iDim+1] = 0.0;
 }
 
 void CVariable::SetVelTruncationErrorZero(void) {
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
 		TruncationError[iDim+1] = 0.0;
 }
+
+void CVariable::SetVelTruncationErrorZero(unsigned short iSpecies) {
+	unsigned short loc = (nDim+2)*iSpecies;
+	for (unsigned short iDim = 0; iDim < nDim; iDim++)
+		TruncationError[loc + iDim+1] = 0.0;
+}
+
 
 void CVariable::SetVelSolutionZero(void) {
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)

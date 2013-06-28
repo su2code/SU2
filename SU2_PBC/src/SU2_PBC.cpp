@@ -3,7 +3,7 @@
  * \brief Main file of Periodic Boundary Code (SU2_PBC).
  * \author Current Development: Stanford University.
  *         Original Structure: CADES 1.0 (2009).
- * \version 1.0.
+ * \version 1.1.
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -23,14 +23,14 @@
  */
 
 #include "../include/SU2_PBC.hpp"
-
 using namespace std;
 
 int main(int argc, char *argv[]) {
 	
 	char buffer_vtk[100]; 
 	string MeshFile;
-	
+	unsigned short nZone = 1;
+  
 	/*--- Definition of the class for the definition of the problem ---*/
 	CConfig *config;
 	if (argc == 2) config = new CConfig(argv[1], SU2_PBC);
@@ -39,10 +39,13 @@ int main(int argc, char *argv[]) {
 		strcpy (grid_file, "default.cfg");
 		config = new CConfig(grid_file, SU2_PBC);
 	}
-	
+
 	/*--- Definition of the class for the geometry ---*/
 	CGeometry *geometry; geometry = new CGeometry;
-	geometry = new CPhysicalGeometry(config, config->GetMesh_FileName(), config->GetMesh_FileFormat());
+	geometry = new CPhysicalGeometry(config, config->GetMesh_FileName(), config->GetMesh_FileFormat(), DOMAIN_0, nZone);
+  
+  /*--- Perform the non-dimensionalization, in case any values are needed ---*/
+  config->SetNondimensionalization(geometry->GetnDim(), MASTER_NODE, nZone);
   
 	cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
 	

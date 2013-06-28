@@ -2,7 +2,7 @@
  * \file linear_solvers_structure.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author Current Development: Stanford University.
- * \version 1.0.
+ * \version 1.1.
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -450,14 +450,14 @@ void CSysSolve::writeHeader(ostream & os, const std::string & solver,
   std::ios_base::fmtflags old_fmt;
   old_fmt = os.setf(ios::scientific, ios::floatfield);
 
-  os << "# " << solver << " residual history" << endl;
+  /* os << "# " << solver << " residual history" << endl;
   os << "# " << "residual tolerance target = " 
      << std::setw(10) << std::setprecision(4) << restol << endl;
   os << "# " << "initial residual norm     = " 
      << std::setw(10) << std::setprecision(4) << resinit << endl;
-  os << std::setw(6) << "# iter" << std::setw(12) << "rel. res." << endl;
+  os << std::setw(6) << "# iter" << std::setw(12) << "rel. res." << endl; */
   
-  os.setf(old_fmt, ios::floatfield);  
+  os.setf(old_fmt, ios::floatfield);
 }
 
 void CSysSolve::writeHistory(ostream & os, const int & iter, 
@@ -523,8 +523,6 @@ void CSysSolve::ConjugateGradient(const CSysVector & b, CSysVector & x, CMatrixV
     alpha = r_dot_z / alpha;
 
     // update solution and residual: 
-    // x = x + alpha * p
-    // r = r - alpha * Ap
     x.Plus_AX(alpha, p);
     r.Plus_AX(-alpha, A_p);
 

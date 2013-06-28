@@ -2,8 +2,15 @@
 # Makefile.in for SU2_DDC
 # Platform: darwin10.gcc4.2.1
 # Author: F. Palacios
-# Version: 1.0
-# 
+# Version: 1.0 
+#
+# For METIS 5.0.2, add the -DMETIS_5 directive to the CXXFLAGS below,
+# build METIS 5 with cmake on your machine, and set the appropriate
+# paths to your METIS 5 distribution in the INC_METIS & LIB_METIS
+# variables below. Note that the automated python build script will 
+# NOT build METIS 5 automatically as it does for METIS 4 currently.
+# METIS 4 is assumed by default.
+#
 
 CXX= c++
 CXXFLAGS= -O3 -Wall -frerun-cse-after-loop -fomit-frame-pointer \

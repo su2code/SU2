@@ -4,7 +4,7 @@
  *        The subroutines and functions are in the <i>definition_structure.cpp</i> file.
  * \author Current Development: Stanford University.
  *         Original Structure: CADES 1.0 (2009).
- * \version 1.0.
+ * \version 1.1.
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -41,22 +41,46 @@
 using namespace std;
 
 /*! 
- * \brief Definition of all the different solver possibilities and allocate the solutions.
- * \param[in] solver_container - Description of the numerical method (the way in which the equations are solved).
+ * \brief Gets the number of domains in the mesh file
+ * \param[in] config - Definition of the particular problem.
+ * \param[in] val_mesh_filename - Name of the file with the grid information.
+ * \param[in] val_format - Format of the file with the grid information.
+ * \return Total number of domains in the grid file.
+ */
+unsigned short GetnDomain(CConfig *config, string val_mesh_filename, unsigned short val_format);
+
+/*! 
+ * \brief Definition and allocation of all solution classes.
  * \param[in] solution_container - Container vector with all the solutions.
+ * \param[in] geometry - Geometrical definition of the problem.
+ * \param[in] config - Definition of the particular problem.
+ */
+void Solution_Definition(CSolution ***solution_container, CGeometry **geometry, CConfig *config);
+
+/*! 
+ * \brief Definition and allocation of all integration classes.
  * \param[in] integration_container - Container vector with all the integration methods.
  * \param[in] geometry - Geometrical definition of the problem.
  * \param[in] config - Definition of the particular problem.
  */
-void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_container, CIntegration **integration_container, 
-					   CGeometry **geometry, CConfig *config);
+void Integration_Definition(CIntegration **integration_container, CGeometry **geometry, CConfig *config);
+
+/*! 
+ * \brief Definition and allocation of all solver classes.
+ * \param[in] solver_container - Description of the numerical method (the way in which the equations are solved).
+ * \param[in] solution_container - Container vector with all the solutions.
+ * \param[in] geometry - Geometrical definition of the problem.
+ * \param[in] config - Definition of the particular problem.
+ */
+void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_container, CGeometry **geometry, CConfig *config);
 
 /*! 
  * \brief Do the geometrical preprocessing.
  * \param[in] geometry - Geometrical definition of the problem.
  * \param[in] config - Definition of the particular problem.
+ * \param[in] val_nDomain - Total number of domains in the grid file.
  */
-void Geometrical_Definition(CGeometry **geometry, CConfig *config);
+void Geometrical_Definition(CGeometry ***geometry, CConfig *config, unsigned short val_nDomain);
 
 /*!
  * \brief Deallocation of the pointers solver_container, solution_container, integration_container, geometry, output, config.

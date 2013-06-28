@@ -3,7 +3,7 @@
  * \brief Header file for the adaptation subroutines.
  * \author Current Development: Stanford University.
  *         Original Structure: CADES 1.0 (2009).
- * \version 1.0.
+ * \version 1.1.
  */
 
 #pragma once

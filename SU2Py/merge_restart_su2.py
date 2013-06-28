@@ -4,7 +4,7 @@
 #  \brief Python script for merging of the solution files.
 #  \author Current Development: Stanford University.
 #          Original Structure: CADES 1.0 (2009).
-#  \version 1.0.
+#  \version 1.1.
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -39,25 +39,31 @@ parser.add_option("-t", "--timestep", dest="timestep", default=0,
 incompressible_formulation = "NO"
 
 for line in open(options.filename):
-    if "MATH_PROBLEM" in line:
+    if "MATH_PROBLEM=" in line:
         math_problem = line.split("=")[1].strip()
-    elif "MESH_FILENAME" in line:
+    elif "MESH_FILENAME=" in line:
         mesh_filename = line.split("=")[1].strip()
-    elif "RESTART_FLOW_FILENAME" in line:
+    elif "RESTART_FLOW_FILENAME=" in line:
         restart_flow_filename = line.split("=")[1].strip()
-    elif "CADJ_OBJFUNC" in line:
+    elif "CADJ_OBJFUNC=" in line:
         cadj_objfunc = line.split("=")[1].strip()
         if cadj_objfunc == "DRAG" : adj_prefix = "cd" 
-	elif cadj_objfunc == "LIFT" : adj_prefix = "cl"
-	elif cadj_objfunc == "SIDEFORCE" : adj_prefix = "csf"
-	elif cadj_objfunc == "PRESSURE" : adj_prefix = "cp" 
-	elif cadj_objfunc == "MOMENT_X" : adj_prefix = "cmx"
-	elif cadj_objfunc == "MOMENT_Y" : adj_prefix = "cmy"
-	elif cadj_objfunc == "MOMENT_Z" : adj_prefix = "cmz"
-	elif cadj_objfunc == "EFFICIENCY" : adj_prefix = "eff"
-	elif cadj_objfunc == "EQUIVALENT_AREA" : adj_prefix = "ea"
-	elif cadj_objfunc == "NEARFIELD_PRESSURE" : adj_prefix = "nfp"
-    elif "RESTART_ADJ_FILENAME" in line:
+        elif cadj_objfunc == "LIFT" : adj_prefix = "cl"
+        elif cadj_objfunc == "SIDEFORCE" : adj_prefix = "csf"
+        elif cadj_objfunc == "PRESSURE" : adj_prefix = "cp" 
+        elif cadj_objfunc == "MOMENT_X" : adj_prefix = "cmx"
+        elif cadj_objfunc == "MOMENT_Y" : adj_prefix = "cmy"
+        elif cadj_objfunc == "MOMENT_Z" : adj_prefix = "cmz"
+        elif cadj_objfunc == "EFFICIENCY" : adj_prefix = "eff"
+        elif cadj_objfunc == "EQUIVALENT_AREA" : adj_prefix = "ea"
+        elif cadj_objfunc == "NEARFIELD_PRESSURE" : adj_prefix = "nfp"
+        elif cadj_objfunc == "FORCE_X" : adj_prefix = "cfx"
+        elif cadj_objfunc == "FORCE_Y" : adj_prefix = "cfy"
+        elif cadj_objfunc == "FORCE_Z" : adj_prefix = "cfz"
+        elif cadj_objfunc == "THRUST" : adj_prefix = "ct"
+        elif cadj_objfunc == "TORQUE" : adj_prefix = "cq"
+        elif cadj_objfunc == "FIGURE_OF_MERIT" : adj_prefix = "merit"
+    elif "RESTART_ADJ_FILENAME=" in line:
         restart_adj_filename = line.split("=")[1].strip()
         
 # Read the total number of points from the different grid partitions, and save the global index.
@@ -103,9 +109,8 @@ for domain in range(int(options.partitions)):
         
     for list_points in range(local_point):
         line = input_file.readline()
-        solution = line.replace("\t"," ").partition(" ")[2]
+        solution = line.replace("\t"," ").split(None,1)[1]
         iPoint = int(line.strip().replace("\t"," ").split(" ")[0])
-#        print Local2Global[iPoint], iPoint, npoint
         Solution[Local2Global[iPoint]] = solution
     input_file.close()
 
