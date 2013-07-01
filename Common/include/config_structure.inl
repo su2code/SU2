@@ -782,6 +782,8 @@ inline double CConfig::GetOrderMagResidual(void) { return OrderMagResidual; }
 
 inline double CConfig::GetMinLogResidual(void) { return MinLogResidual; }
 
+inline double CConfig::GetDamp_Engine_Inlet(void) { return Damp_Engine_Inlet; }
+
 inline double CConfig::GetDamp_Res_Restric(void) { return Damp_Res_Restric; }
 
 inline double CConfig::GetDamp_Correc_Prolong(void) { return Damp_Correc_Prolong; }

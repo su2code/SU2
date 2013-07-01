@@ -69,6 +69,3 @@ inline void CIntegration::SetPotential_Solver(CGeometry ***geometry, CSolution *
                                               CConfig **config, unsigned short RunTime_EqSystem, unsigned short iMesh, unsigned short iZone) { }
                                               
 inline void CIntegration::Smooth_Solution(unsigned short RunTime_EqSystem, CSolution **solution, CGeometry *geometry, unsigned short val_nSmooth, double val_smooth_coeff, CConfig *config) { }
-
-inline void CIntegration::Smooth_PrimVar(CSolution **solution, CGeometry *geometry, CConfig *config) { }
-

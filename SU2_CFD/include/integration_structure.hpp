@@ -317,15 +317,6 @@ public:
 	 */
 	virtual void Smooth_Solution(unsigned short RunTime_EqSystem, CSolution **solution, CGeometry *geometry,
                        unsigned short val_nSmooth, double val_smooth_coeff, CConfig *config);
-  
-  /*!
-	 * \brief A virtual member.
-	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-	 * \param[in] solution - Container vector with all the solutions on the finest grid.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void Smooth_PrimVar(CSolution **solution, CGeometry *geometry, CConfig *config);
 
 };
 
@@ -336,6 +327,8 @@ public:
  * \version 2.0.5
  */
 class CMultiGridIntegration : public CIntegration {
+protected:
+    
 public:
 	
 	/*! 
@@ -398,7 +391,7 @@ public:
 	 * \param[in] geo_coarse - Geometrical definition of the coarse grid.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetProlongated_Solution(unsigned short RunTime_EqSystem, CSolution **sol_fine, CSolution **sol_coarse, 
+	void SetProlongated_Solution(unsigned short RunTime_EqSystem, CSolution *sol_fine, CSolution *sol_coarse, 
 								 CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
 	
 	/*! 
@@ -409,7 +402,7 @@ public:
 	 * \param[in] geo_coarse - Geometrical definition of the coarse grid.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void GetProlongated_Correction(CSolution *sol_fine, CSolution *sol_coarse, CGeometry *geo_fine, 
+	void GetProlongated_Correction(unsigned short RunTime_EqSystem, CSolution *sol_fine, CSolution *sol_coarse, CGeometry *geo_fine, 
 																 CGeometry *geo_coarse, CConfig *config);
 	
 	/*! 
@@ -421,7 +414,7 @@ public:
 	 * \param[in] val_smooth_coeff - Relaxation factor.		 
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SmoothProlongated_Correction(unsigned short RunTime_EqSystem, CSolution **solution, CGeometry *geometry,
+	void SmoothProlongated_Correction(unsigned short RunTime_EqSystem, CSolution *solution, CGeometry *geometry,
 																		 unsigned short val_nSmooth, double val_smooth_coeff, CConfig *config);
   
   /*!
@@ -433,17 +426,8 @@ public:
 	 * \param[in] val_smooth_coeff - Relaxation factor.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void Smooth_Solution(unsigned short RunTime_EqSystem, CSolution **solution, CGeometry *geometry,
+	void Smooth_Solution(unsigned short RunTime_EqSystem, CSolution *solution, CGeometry *geometry,
                                     unsigned short val_nSmooth, double val_smooth_coeff, CConfig *config);
-  
-  /*!
-	 * \brief Do an implicit smoothing of the primitive variables.
-	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-	 * \param[in] solution - Container vector with all the solutions on the finest grid.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void Smooth_PrimVar(CSolution **solution, CGeometry *geometry, CConfig *config);
 
 	/*!
 	 * \brief Set the value of the corrected fine grid solution.
@@ -475,7 +459,7 @@ public:
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] InclSharedDomain - Include the shared domain in the interpolation.
 	 */
-	void SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolution **sol_fine, CSolution **sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
+	void SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolution *sol_fine, CSolution *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
 	
 	/*! 
 	 * \brief Compute the gradient in coarse grid using the fine grid information. 

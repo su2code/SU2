@@ -909,7 +909,6 @@ void CTurbSASolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_
 	if (high_order_diss) {
 		if (config->GetKind_Gradient_Method() == GREEN_GAUSS) solution_container[FLOW_SOL]->SetSolution_Gradient_GG(geometry, config);
 		if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) solution_container[FLOW_SOL]->SetSolution_Gradient_LS(geometry, config);
-		if (limiter) solution_container[FLOW_SOL]->SetSolution_Limiter(geometry, config);
 	}
 
 	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {

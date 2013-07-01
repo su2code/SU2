@@ -119,7 +119,7 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	/* DESCRIPTION: Specify transition model */
 	AddEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, "NONE");
 	/* DESCRIPTION: Engine subsonic intake region */
-	AddSpecialOption("ENGINE_INTAKE", Engine_Intake, SetBoolOption, false);
+	AddSpecialOption("SUBSONIC_NACELLE_INFLOW", Engine_Intake, SetBoolOption, false);
   
 	/*--- options related to various boundary markers ---*/
 	/* CONFIG_CATEGORY: Boundary Markers */
@@ -211,7 +211,9 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddMarkerOption("MARKER_FWH", nMarker_FWH, Marker_FWH);
 	/* DESCRIPTION: Observer boundary marker(s) */
 	AddMarkerOption("MARKER_OBSERVER", nMarker_Observer, Marker_Observer);
-
+	/* DESCRIPTION: Damping factor for engine inlet condition */
+	AddScalarOption("DAMP_NACELLE_INFLOW", Damp_Engine_Inlet, 0.1);
+    
 	/*--- options related to grid adaptation ---*/
 	/* CONFIG_CATEGORY: Grid adaptation */
 
