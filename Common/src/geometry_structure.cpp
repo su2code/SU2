@@ -8948,51 +8948,51 @@ void CDomainGeometry::SetDomainSerial(CGeometry *geometry, CConfig *config, unsi
 }
 
 void CDomainGeometry::SetSendReceive(CConfig *config) {
-  
+    
 #ifndef NO_MPI
-  
+    
 	unsigned short Counter_Send, Counter_Receive, iMarkerSend, iMarkerReceive;
 	unsigned long iVertex, LocalNode;
-  
-  unsigned long  nVertexDomain[MAX_NUMBER_MARKER], iPoint, jPoint, iElem;
+    
+    unsigned long  nVertexDomain[MAX_NUMBER_MARKER], iPoint, jPoint, iElem;
 	unsigned short iNode, iDomain, jDomain, jNode;
 	vector<unsigned long>::iterator it;
-
-  int rank = MPI::COMM_WORLD.Get_rank();
+    
+    int rank = MPI::COMM_WORLD.Get_rank();
 	int size = MPI::COMM_WORLD.Get_size();
-  
+    
 	int nDomain = size;
-  
-  /*--- Loop over the all the points of the element
+    
+    /*--- Loop over the all the points of the element
 	 to find the points with different colours, and create the send/received list ---*/
 	for (iElem = 0; iElem < nElem; iElem++) {
 		for (iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
 			iPoint = elem[iElem]->GetNode(iNode);
-      iDomain = node[iPoint]->GetColor();
-      
-      if (iDomain == rank) {
-        for(jNode = 0; jNode < elem[iElem]->GetnNodes(); jNode++) {
-          jPoint = elem[iElem]->GetNode(jNode);
-          jDomain = node[jPoint]->GetColor();
-          
-          /*--- If different color and connected by an edge, then we add them to the list ---*/
-          if (iDomain != jDomain) {
+            iDomain = node[iPoint]->GetColor();
             
-            /*--- We send from iDomain to jDomain the value of iPoint, we save the
-             global value becuase we need to sort the lists ---*/
-            SendDomainLocal[jDomain].push_back(Local_to_Global_Point[iPoint]);
-            /*--- We send from jDomain to iDomain the value of jPoint, we save the
-             global value becuase we need to sort the lists ---*/
-            ReceivedDomainLocal[jDomain].push_back(Local_to_Global_Point[jPoint]);
-            
-          }
-        }
-      }
+            if (iDomain == rank) {
+                for(jNode = 0; jNode < elem[iElem]->GetnNodes(); jNode++) {
+                    jPoint = elem[iElem]->GetNode(jNode);
+                    jDomain = node[jPoint]->GetColor();
+                    
+                    /*--- If different color and connected by an edge, then we add them to the list ---*/
+                    if (iDomain != jDomain) {
+                        
+                        /*--- We send from iDomain to jDomain the value of iPoint, we save the
+                         global value becuase we need to sort the lists ---*/
+                        SendDomainLocal[jDomain].push_back(Local_to_Global_Point[iPoint]);
+                        /*--- We send from jDomain to iDomain the value of jPoint, we save the
+                         global value becuase we need to sort the lists ---*/
+                        ReceivedDomainLocal[jDomain].push_back(Local_to_Global_Point[jPoint]);
+                        
+                    }
+                }
+            }
 		}
 	}
-  
-  /*--- Sort the points that must be sended and delete repeated points, note
-   that the sortering should be done with the global point (not the local) ---*/
+    
+    /*--- Sort the points that must be sended and delete repeated points, note
+     that the sortering should be done with the global point (not the local) ---*/
 	for (iDomain = 0; iDomain < nDomain; iDomain++) {
 		sort( SendDomainLocal[iDomain].begin(), SendDomainLocal[iDomain].end());
 		it = unique( SendDomainLocal[iDomain].begin(), SendDomainLocal[iDomain].end());
@@ -9000,69 +9000,69 @@ void CDomainGeometry::SetSendReceive(CConfig *config) {
 	}
 	
 	/*--- Sort the points that must be received and delete repeated points, note
-   that the sortering should be done with the global point (not the local) ---*/
+     that the sortering should be done with the global point (not the local) ---*/
 	for (iDomain = 0; iDomain < nDomain; iDomain++) {
 		sort( ReceivedDomainLocal[iDomain].begin(), ReceivedDomainLocal[iDomain].end());
 		it = unique( ReceivedDomainLocal[iDomain].begin(), ReceivedDomainLocal[iDomain].end());
 		ReceivedDomainLocal[iDomain].resize( it - ReceivedDomainLocal[iDomain].begin() );
 	}
-  
-  /*--- Create Global to Local Point array, note that the array is smaller (Max_GlobalPoint) than the total 
-   number of points in the simulation  ---*/
-  Max_GlobalPoint = 0;
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    if (Local_to_Global_Point[iPoint] > Max_GlobalPoint)
-      Max_GlobalPoint = Local_to_Global_Point[iPoint];
-  }
-  Global_to_Local_Point =  new long[Max_GlobalPoint+1]; // +1 to include the bigger point.
-  
-  /*--- Initialization of the array with -1 this is important for the FFD ---*/
-  for (iPoint = 0; iPoint < Max_GlobalPoint+1; iPoint++)
-    Global_to_Local_Point[iPoint] = -1;
-  
-  /*--- Set the value of some of the points ---*/
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
-    Global_to_Local_Point[Local_to_Global_Point[iPoint]] = iPoint;
     
-  /*--- Add the new MPI send receive boundaries, reset the transformation, and save the local value ---*/
+    /*--- Create Global to Local Point array, note that the array is smaller (Max_GlobalPoint) than the total
+     number of points in the simulation  ---*/
+    Max_GlobalPoint = 0;
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+        if (Local_to_Global_Point[iPoint] > Max_GlobalPoint)
+            Max_GlobalPoint = Local_to_Global_Point[iPoint];
+    }
+    Global_to_Local_Point =  new long[Max_GlobalPoint+1]; // +1 to include the bigger point.
+    
+    /*--- Initialization of the array with -1 this is important for the FFD ---*/
+    for (iPoint = 0; iPoint < Max_GlobalPoint+1; iPoint++)
+        Global_to_Local_Point[iPoint] = -1;
+    
+    /*--- Set the value of some of the points ---*/
+    for (iPoint = 0; iPoint < nPoint; iPoint++)
+        Global_to_Local_Point[Local_to_Global_Point[iPoint]] = iPoint;
+    
+    /*--- Add the new MPI send receive boundaries, reset the transformation, and save the local value ---*/
 	for (iDomain = 0; iDomain < nDomain; iDomain++) {
 		if (SendDomainLocal[iDomain].size() != 0) {
 			nVertexDomain[nMarker] = SendDomainLocal[iDomain].size();
-      for (iVertex = 0; iVertex < nVertexDomain[nMarker]; iVertex++) {
-        SendDomainLocal[iDomain][iVertex] = Global_to_Local_Point[SendDomainLocal[iDomain][iVertex]];
-        SendTransfLocal[iDomain].push_back(0);
-      }
-      nElem_Bound[nMarker] = nVertexDomain[nMarker];
-      bound[nMarker] = new CPrimalGrid*[nElem_Bound[nMarker]];
+            for (iVertex = 0; iVertex < nVertexDomain[nMarker]; iVertex++) {
+                SendDomainLocal[iDomain][iVertex] = Global_to_Local_Point[SendDomainLocal[iDomain][iVertex]];
+                SendTransfLocal[iDomain].push_back(0);
+            }
+            nElem_Bound[nMarker] = nVertexDomain[nMarker];
+            bound[nMarker] = new CPrimalGrid*[nElem_Bound[nMarker]];
 			nMarker++;
 		}
-  }
-  
-  /*--- Add the new MPI receive boundaries, reset the transformation, and save the local value ---*/
-  for (iDomain = 0; iDomain < nDomain; iDomain++) {
+    }
+    
+    /*--- Add the new MPI receive boundaries, reset the transformation, and save the local value ---*/
+    for (iDomain = 0; iDomain < nDomain; iDomain++) {
  		if (ReceivedDomainLocal[iDomain].size() != 0) {
 			nVertexDomain[nMarker] = ReceivedDomainLocal[iDomain].size();
-      for (iVertex = 0; iVertex < nVertexDomain[nMarker]; iVertex++) {
-        ReceivedDomainLocal[iDomain][iVertex] = Global_to_Local_Point[ReceivedDomainLocal[iDomain][iVertex]];
-        ReceivedTransfLocal[iDomain].push_back(0);
-      }
-      nElem_Bound[nMarker] = nVertexDomain[nMarker];
-      bound[nMarker] = new CPrimalGrid*[nElem_Bound[nMarker]];
+            for (iVertex = 0; iVertex < nVertexDomain[nMarker]; iVertex++) {
+                ReceivedDomainLocal[iDomain][iVertex] = Global_to_Local_Point[ReceivedDomainLocal[iDomain][iVertex]];
+                ReceivedTransfLocal[iDomain].push_back(0);
+            }
+            nElem_Bound[nMarker] = nVertexDomain[nMarker];
+            bound[nMarker] = new CPrimalGrid*[nElem_Bound[nMarker]];
 			nMarker++;
 		}
-  }
-  
+    }
+    
 	/*--- First compute the Send/Receive boundaries ---*/
 	Counter_Send = 0; 	Counter_Receive = 0;
 	for (iDomain = 0; iDomain < nDomain; iDomain++)
 		if (SendDomainLocal[iDomain].size() != 0) Counter_Send++;
-  
+    
 	for (iDomain = 0; iDomain < nDomain; iDomain++)
 		if (ReceivedDomainLocal[iDomain].size() != 0) Counter_Receive++;
-  
+    
 	iMarkerSend = nMarker - Counter_Send - Counter_Receive;
 	iMarkerReceive = nMarker - Counter_Receive;
-  
+    
 	/*--- First we do the send ---*/
 	for (iDomain = 0; iDomain < nDomain; iDomain++) {
 		if (SendDomainLocal[iDomain].size() != 0) {
@@ -9075,7 +9075,7 @@ void CDomainGeometry::SetSendReceive(CConfig *config) {
 			iMarkerSend++;
 		}
 	}
-  
+    
 	/*--- Second we do the receive ---*/
 	for (iDomain = 0; iDomain < nDomain; iDomain++) {
 		if (ReceivedDomainLocal[iDomain].size() != 0) {
@@ -9088,34 +9088,33 @@ void CDomainGeometry::SetSendReceive(CConfig *config) {
 			iMarkerReceive++;
 		}
 	}
-  
+    
 #endif
-  
+    
 }
 
-void CDomainGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename, unsigned short val_domain) {
-  
+void CDomainGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename) {
 	unsigned long iElem, iPoint, iElem_Bound;
 	unsigned short iMarker, iNodes, iDim, iPeriodic, nPeriodic = 0;
 	double *center, *angles, *transl;
 	ofstream output_file;
 	string Grid_Marker;
-  
+    
 	char *cstr = new char [val_mesh_out_filename.size()+1];
 	strcpy (cstr, val_mesh_out_filename.c_str());
-  
+    
 	output_file.open(cstr, ios::out);
-  
+    
 	output_file << "NDIME= " << nDim << endl;
 	output_file << "NELEM= " << nElem << endl;
-  
+    
 	for (iElem = 0; iElem < nElem; iElem++) {
 		output_file << elem[iElem]->GetVTK_Type();
 		for (iNodes = 0; iNodes < elem[iElem]->GetnNodes(); iNodes++)
 			output_file << "\t" << elem[iElem]->GetNode(iNodes);
 		output_file << "\t"<<iElem<<endl;
 	}
-
+    
 	output_file << "NPOIN= " << nPoint << "\t" << nPointDomain <<endl;
 	output_file.precision(15);
 	for (iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -9124,7 +9123,7 @@ void CDomainGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename,
 		output_file << "\t" << iPoint << "\t" << Local_to_Global_Point[iPoint] << endl;
 	}
 	
-	output_file << "NMARK= " << nMarker << endl;
+    output_file << "NMARK= " << nMarker << endl;
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
 		if (bound[iMarker][0]->GetVTK_Type() != VERTEX) {
 			Grid_Marker = config->GetMarker_All_Tag(Local_to_Global_Marker[iMarker]);
@@ -9138,44 +9137,181 @@ void CDomainGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename,
 				iNodes = bound[iMarker][iElem_Bound]->GetnNodes()-1;
 				output_file << bound[iMarker][iElem_Bound]->GetNode(iNodes) << endl;
 			}
+        }
     }
-		else {
-      output_file << "MARKER_TAG= SEND_RECEIVE" << endl;
-      output_file << "MARKER_ELEMS= " << nElem_Bound[iMarker]<< endl;
-      if (Marker_All_SendRecv[iMarker] > 0) output_file << "SEND_TO= " << Marker_All_SendRecv[iMarker] << endl;
-      if (Marker_All_SendRecv[iMarker] < 0) output_file << "SEND_TO= " << Marker_All_SendRecv[iMarker] << endl;
-      
-      for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-        output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
-        output_file << bound[iMarker][iElem_Bound]->GetNode(0) << "\t";
-        output_file << bound[iMarker][iElem_Bound]->GetRotation_Type() << "\t";
-        output_file << bound[iMarker][iElem_Bound]->GetMatching_Zone() << endl;
-      }
-    }
-  }
 
+    
+    
+#ifndef NO_MPI
+    
+	unsigned long BufferSize;
+    unsigned short iCommLevel, jDomain, iDomain, nDomain;
+    long *CommPattern;
+
+    /*--- Sort the boundaries for non-blocking communications ---*/
+    int rank = MPI::COMM_WORLD.Get_rank();
+	int size = MPI::COMM_WORLD.Get_size();
+    nDomain = size+1;
+
+    bool *Buffer_Send_Connections = new bool[nDomain];
+    bool *Buffer_Receive_Connections = new bool[nDomain*size];
+
+    for (iDomain = 1; iDomain < nDomain; iDomain++)
+        Buffer_Send_Connections[iDomain] = 0;
+    
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+		if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
+            if (Marker_All_SendRecv[iMarker] > 0) {
+                Buffer_Send_Connections[Marker_All_SendRecv[iMarker]] = 1;
+            }
+        }
+    }
+    
+    MPI::COMM_WORLD.Gather(Buffer_Send_Connections, nDomain, MPI::BOOL, Buffer_Receive_Connections, nDomain, MPI::BOOL, MASTER_NODE);
+    
+    BufferSize = nDomain*MAX_COMM_LEVEL;
+    CommPattern = new long [BufferSize];
+
+    if (rank == MASTER_NODE) {
+        
+        nCommLevel = MAX_COMM_LEVEL;
+        
+        for (iCommLevel = 0; iCommLevel < nCommLevel; iCommLevel++) {
+            for (iDomain = 1; iDomain < nDomain; iDomain++) {
+                CommPattern[iDomain*nDomain+iCommLevel] = -1;
+            }
+        }
+        
+        /*--- Create a non-blocking communication pattern ---*/
+        nCommLevel = 0; iCommLevel = 0;
+        for (iDomain = 1; iDomain < nDomain; iDomain++) {
+            for (jDomain = iDomain; jDomain < nDomain; jDomain++) {
+                if (Buffer_Receive_Connections[(iDomain-1)*nDomain + jDomain] != 0) {
+                    iCommLevel = 0;
+                    for (;;) {
+                        if ((CommPattern[iDomain*nDomain+iCommLevel] == -1) &&
+                            (CommPattern[jDomain*nDomain+iCommLevel] == -1)) {
+                            CommPattern[iDomain*nDomain+iCommLevel] = jDomain;
+                            CommPattern[jDomain*nDomain+iCommLevel] = iDomain;
+                            break;
+                        }
+                        else {
+                            iCommLevel++;
+                            nCommLevel = max(nCommLevel, iCommLevel);
+                        }
+                    }
+                }
+            }
+        }
+        nCommLevel++;
+        
+    }
+ 
+    MPI::COMM_WORLD.Bcast (CommPattern, BufferSize, MPI::LONG, MASTER_NODE);
+    MPI::COMM_WORLD.Bcast (&nCommLevel, 1, MPI::LONG, MASTER_NODE);
+
+//    if (rank == MASTER_NODE) {
+//        cout << "Communication levels: " << nCommLevel <<"."<< endl;
+//        for (iCommLevel = 0; iCommLevel < nCommLevel; iCommLevel++) {
+//            cout <<"Level "<< iCommLevel+1 <<")\t";
+//            for (iDomain = 1; iDomain < nDomain; iDomain++) {
+//                if (CommPattern[iDomain*nDomain+iCommLevel] != -1) cout << CommPattern[iDomain*nDomain+iCommLevel] <<"\t";
+//                else cout <<"\t";
+//                
+//            }
+//            cout << endl;
+//        }
+//        cout << endl;
+//    }
+        
+    /*--- Write MPI boundaries, there must be a particular
+	 sortering based in non-blocking communications, the writting
+	 whould be done in pairs, first send and then receive ---*/
+	for (iCommLevel = 0; iCommLevel < nCommLevel; iCommLevel++) {
+        
+        iDomain = CommPattern[(rank+1)*nDomain+iCommLevel];
+        
+        for (iMarker = 0; iMarker < nMarker; iMarker++) {
+            if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
+                
+                if (Marker_All_SendRecv[iMarker] == iDomain) {
+                    output_file << "MARKER_TAG= SEND_RECEIVE" << endl;
+                    output_file << "MARKER_ELEMS= " << nElem_Bound[iMarker]<< endl;
+                    output_file << "SEND_TO= " << Marker_All_SendRecv[iMarker] << endl;
+                    
+                    for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
+                        output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
+                        output_file << bound[iMarker][iElem_Bound]->GetNode(0) << "\t";
+                        output_file << bound[iMarker][iElem_Bound]->GetRotation_Type() << "\t";
+                        output_file << bound[iMarker][iElem_Bound]->GetMatching_Zone() << endl;
+                    }
+                }
+            }
+        }
+        
+        for (iMarker = 0; iMarker < nMarker; iMarker++) {
+            if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
+                
+                if (Marker_All_SendRecv[iMarker] == -iDomain) {
+                    output_file << "MARKER_TAG= SEND_RECEIVE" << endl;
+                    output_file << "MARKER_ELEMS= " << nElem_Bound[iMarker]<< endl;
+                    output_file << "SEND_TO= " << Marker_All_SendRecv[iMarker] << endl;
+                    
+                    for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
+                        output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
+                        output_file << bound[iMarker][iElem_Bound]->GetNode(0) << "\t";
+                        output_file << bound[iMarker][iElem_Bound]->GetRotation_Type() << "\t";
+                        output_file << bound[iMarker][iElem_Bound]->GetMatching_Zone() << endl;
+                    }
+                }
+            }
+        }
+        
+    }
+    
+#else
+    
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+		if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
+            output_file << "MARKER_TAG= SEND_RECEIVE" << endl;
+            output_file << "MARKER_ELEMS= " << nElem_Bound[iMarker]<< endl;
+            if (Marker_All_SendRecv[iMarker] > 0) output_file << "SEND_TO= " << Marker_All_SendRecv[iMarker] << endl;
+            if (Marker_All_SendRecv[iMarker] < 0) output_file << "SEND_TO= " << Marker_All_SendRecv[iMarker] << endl;
+            
+            for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
+                output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
+                output_file << bound[iMarker][iElem_Bound]->GetNode(0) << "\t";
+                output_file << bound[iMarker][iElem_Bound]->GetRotation_Type() << "\t";
+                output_file << bound[iMarker][iElem_Bound]->GetMatching_Zone() << endl;
+            }
+        }
+    }
+    
+#endif
+
+    
 	/*--- Get the total number of periodic transformations ---*/
 	nPeriodic = config->GetnPeriodicIndex();
 	output_file << "NPERIODIC= " << nPeriodic << endl;
-  
+    
 	/*--- From iPeriodic obtain the iMarker ---*/
 	for (iPeriodic = 0; iPeriodic < nPeriodic; iPeriodic++) {
-    
+        
 		/*--- Retrieve the supplied periodic information. ---*/
 		center = config->GetPeriodicCenter(iPeriodic);
 		angles = config->GetPeriodicRotation(iPeriodic);
 		transl = config->GetPeriodicTranslate(iPeriodic);
-    
+        
 		output_file << "PERIODIC_INDEX= " << iPeriodic << endl;
 		output_file << center[0] << "\t" << center[1] << "\t" << center[2] << endl;
 		output_file << angles[0] << "\t" << angles[1] << "\t" << angles[2] << endl;
 		output_file << transl[0] << "\t" << transl[1] << "\t" << transl[2] << endl;
-    
+        
 	}
-  
+    
 	output_file.close();
-  
-  delete[] cstr;
+    
+    delete[] cstr;
 }
 
 void CDomainGeometry::SetParaView(char mesh_filename[200]) {

@@ -125,7 +125,7 @@ int main(int argc, char *argv[]) {
     sprintf (buffer_su2, "_%d.su2", int(rank+1));
     string MeshFile_su2 = MeshFile + buffer_su2;
     char *cstr_su2 = strdup(MeshFile_su2.c_str());
-    domain->SetMeshFile(config, cstr_su2, rank);
+    domain->SetMeshFile(config, cstr_su2);
     
 #ifndef NO_MPI
     MPI::COMM_WORLD.Barrier();

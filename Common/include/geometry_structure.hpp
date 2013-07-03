@@ -539,19 +539,12 @@ public:
 	 */	
 	virtual void SetMeshFile(CConfig *config, string val_mesh_out_filename);
   
-  /*!
+    /*!
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_mesh_out_filename - Name of the output file.
 	 */
 	virtual void SetMeshFile(CGeometry *geometry, CConfig *config, string val_mesh_out_filename);
-	
-	/*! 
-	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_mesh_out_filename - Name of the output file.
-	 */	
-	virtual void SetMeshFile(CConfig *config, string val_mesh_out_filename, unsigned short val_domain);
 
 	/*! 
 	 * \brief A virtual member.
@@ -1552,7 +1545,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.		 
 	 * \param[in] val_mesh_out_filename - Name of the output file.
 	 */
-	void SetMeshFile(CConfig *config, string val_mesh_out_filename, unsigned short val_domain);
+	void SetMeshFile(CConfig *config, string val_mesh_out_filename);
 
 	/*!
 	 * \brief Get the local index that correspond with the global numbering index.

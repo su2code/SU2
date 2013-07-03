@@ -177,8 +177,6 @@ inline void CGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename
 
 inline void CGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string val_mesh_out_filename) { }
 
-inline void CGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename, unsigned short val_domain) { }
-
 inline void CGeometry::SetMeshFile_IntSurface(CConfig *config, string val_mesh_out_filename) { }
 
 inline void CGeometry::SetBoundParaView(CConfig *config, char mesh_filename[200]) { }
