@@ -303,7 +303,7 @@ void CTransLMSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **
   }
 
   /*--- MPI solution ---*/
-  SetSolution_MPI(geometry, config);
+  Set_MPI_Solution(geometry, config);
   
   /*--- Compute the root mean square residual ---*/
   SetResidual_RMS(geometry, config);

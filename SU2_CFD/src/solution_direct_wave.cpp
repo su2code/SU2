@@ -946,7 +946,7 @@ void CWaveSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **sol
 	}
 	
   /*--- MPI solution ---*/
-  SetSolution_MPI(geometry, config);
+  Set_MPI_Solution(geometry, config);
   
   /*--- Compute the root mean square residual ---*/
   SetResidual_RMS(geometry, config);

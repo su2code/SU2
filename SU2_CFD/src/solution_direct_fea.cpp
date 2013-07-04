@@ -862,72 +862,6 @@ void CFEASolution::BC_Load(CGeometry *geometry, CSolution **solution_container, 
 	
 }
 
-void CFEASolution::MPI_Send_Receive(CGeometry ***geometry, CSolution ****solution_container,
-                                    CConfig **config, unsigned short iMGLevel, unsigned short iZone) {
-	
-#ifndef NO_MPI
-	unsigned short iVar, iMarker;
-	double *Displacement_Var;
-	unsigned long iVertex, iPoint;
-	
-	/*--- Send-Receive boundary conditions ---*/
-	for (iMarker = 0; iMarker < config[iZone]->GetnMarker_All(); iMarker++)
-		if (config[iZone]->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) {
-			
-			short SendRecv = config[iZone]->GetMarker_All_SendRecv(iMarker);
-			unsigned long nVertex = geometry[iZone][iMGLevel]->nVertex[iMarker];
-			
-			/*--- Send information  ---*/
-			if (SendRecv > 0) {
-				/*--- Dimensionalization ---*/
-				unsigned long nBuffer_Scalar = nVertex*nVar;
-				
-				int send_to = SendRecv-1;
-				
-				double *Buffer_Send_Displacement = new double [nBuffer_Scalar];
-				
-				for (iVertex = 0; iVertex < geometry[iZone][iMGLevel]->nVertex[iMarker]; iVertex++) {
-					iPoint = geometry[iZone][iMGLevel]->vertex[iMarker][iVertex]->GetNode();
-					
-					Displacement_Var = node[iPoint]->GetSolution();
-					
-					for (iVar = 0; iVar < nVar; iVar++)
-						Buffer_Send_Displacement[iVar*nVertex+iVertex] = Displacement_Var[iVar];
-					
-				}
-				
-				MPI::COMM_WORLD.Bsend(Buffer_Send_Displacement,nBuffer_Scalar,MPI::DOUBLE,send_to, 0);
-				
-				delete[] Buffer_Send_Displacement;
-				
-			}
-			
-			/*--- Receive information  ---*/
-			if (SendRecv < 0) {
-				
-				/*--- Dimensionalization ---*/
-				unsigned long nBuffer_Scalar = nVertex*nVar;
-				
-				int receive_from = abs(SendRecv)-1;
-				
-				double *Buffer_Receive_Displacement = new double [nBuffer_Scalar];
-				
-				MPI::COMM_WORLD.Recv(Buffer_Receive_Displacement,nBuffer_Scalar,MPI::DOUBLE,receive_from, 0);
-				
-				for (iVertex = 0; iVertex < nVertex; iVertex++) {
-					iPoint = geometry[iZone][iMGLevel]->vertex[iMarker][iVertex]->GetNode();
-					for (iVar = 0; iVar < nVar; iVar++)
-						node[iPoint]->SetSolution(iVar, Buffer_Receive_Displacement[iVar*nVertex+iVertex]);
-										
-				}
-				
-				delete[] Buffer_Receive_Displacement;
-				
-			}
-		}
-#endif
-}
-
 void CFEASolution::Postprocessing(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iMesh) {
 
 	/*--- Compute the gradient of the displacement ---*/
@@ -1180,7 +1114,7 @@ void CFEASolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **solu
 	SetTotal_CFEA(Norm);
 	
   /*--- MPI solution ---*/
-  SetSolution_MPI(geometry, config);
+  Set_MPI_Solution(geometry, config);
   
   /*--- Compute the root mean square residual ---*/
   SetResidual_RMS(geometry, config);

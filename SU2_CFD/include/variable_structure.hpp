@@ -690,14 +690,14 @@ public:
 	 * \brief Get the undivided laplacian of the solution.
 	 * \return Pointer to the undivided laplacian vector.
 	 */
-	double *GetUnd_Lapl(void);
+	double *GetUndivided_Laplacian(void);
 
 	/*!
 	 * \brief Get the undivided laplacian of the solution.
 	 * \param[in] val_var - Variable of the undivided laplacian.
 	 * \return Value of the undivided laplacian vector.
 	 */
-	double GetUnd_Lapl(unsigned short val_var);
+	double GetUndivided_Laplacian(unsigned short val_var);
 
 	/*!
 	 * \brief A virtual member.

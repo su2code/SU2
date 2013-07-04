@@ -32,9 +32,6 @@ void CPotentialIntegration::SetPotential_Solver(CGeometry ***geometry, CSolution
 	
 	unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
 
-	/*--- Send-Receive boundary conditions ---*/
-	solution_container[iZone][iMesh][SolContainer_Position]->MPI_Send_Receive(geometry, solution_container, config, iMesh, iZone);
-
 	/*--- Do some preprocessing stuff ---*/
 	solution_container[iZone][iMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iMesh], solution_container[iZone][iMesh], solver_container[iZone][iMesh][SolContainer_Position],config[iZone], iMesh, 0, RunTime_EqSystem);
 

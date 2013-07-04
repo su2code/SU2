@@ -239,7 +239,7 @@ CAdjPlasmaSolution::CAdjPlasmaSolution(CGeometry *geometry, CConfig *config) : C
 	else space_centered = false;
   
   /*--- Send solution information using MPI ---*/
-  SetSolution_MPI(geometry, config);
+  Set_MPI_Solution(geometry, config);
   
 }
 
@@ -289,7 +289,7 @@ CAdjPlasmaSolution::~CAdjPlasmaSolution(void) {
 }
 
 
-void CAdjPlasmaSolution::SetSolution_MPI(CGeometry *geometry, CConfig *config) {
+void CAdjPlasmaSolution::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
   
 	unsigned short iVar, iMarker, iPeriodic_Index, iSpecies, loc;
 	unsigned long iVertex, iPoint, nVertex, nBuffer_Vector;
@@ -434,7 +434,137 @@ void CAdjPlasmaSolution::SetSolution_MPI(CGeometry *geometry, CConfig *config) {
 	delete [] newSolution;
 }
 
-
+void CAdjPlasmaSolution::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config) {
+	unsigned short iVar, iDim, iMarker, iPeriodic_Index;
+	unsigned long iVertex, iPoint, nVertex, nBuffer_VectorGrad;
+	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi,
+	sinPsi, **newGradient = NULL, *Buffer_Receive_UGrad = NULL;
+	short SendRecv;
+	int send_to, receive_from;
+    
+#ifndef NO_MPI
+    
+    MPI::COMM_WORLD.Barrier();
+	double *Buffer_Send_UGrad = NULL;
+    
+#endif
+    
+	newGradient = new double* [nVar];
+	for (iVar = 0; iVar < nVar; iVar++)
+		newGradient[iVar] = new double[3];
+    
+	/*--- Send-Receive boundary conditions ---*/
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+		if (config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) {
+			SendRecv = config->GetMarker_All_SendRecv(iMarker);
+			nVertex = geometry->nVertex[iMarker];
+			nBuffer_VectorGrad = nVertex*nVar*nDim;
+			send_to = SendRecv-1;
+			receive_from = abs(SendRecv)-1;
+            
+#ifndef NO_MPI
+            
+			/*--- Send information using MPI  ---*/
+			if (SendRecv > 0) {
+                Buffer_Send_UGrad = new double[nBuffer_VectorGrad];
+				for (iVertex = 0; iVertex < nVertex; iVertex++) {
+					iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+                    for (iVar = 0; iVar < nVar; iVar++)
+                        for (iDim = 0; iDim < nDim; iDim++)
+                            Buffer_Send_UGrad[iDim*nVar*nVertex+iVar*nVertex+iVertex] = node[iPoint]->GetGradient(iVar,iDim);
+				}
+                MPI::COMM_WORLD.Bsend(Buffer_Send_UGrad, nBuffer_VectorGrad, MPI::DOUBLE, send_to, 0); delete [] Buffer_Send_UGrad;
+			}
+            
+#endif
+            
+			/*--- Receive information  ---*/
+			if (SendRecv < 0) {
+                Buffer_Receive_UGrad = new double [nBuffer_VectorGrad];
+                
+#ifdef NO_MPI
+                
+				/*--- Receive information without MPI ---*/
+				for (iVertex = 0; iVertex < nVertex; iVertex++) {
+                    iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+                    for (iVar = 0; iVar < nVar; iVar++)
+                        for (iDim = 0; iDim < nDim; iDim++)
+                            Buffer_Receive_UGrad[iDim*nVar*nVertex+iVar*nVertex+iVertex] = node[iPoint]->GetGradient(iVar,iDim);
+				}
+                
+#else
+                
+                MPI::COMM_WORLD.Recv(Buffer_Receive_UGrad, nBuffer_VectorGrad, MPI::DOUBLE, receive_from, 0);
+                
+#endif
+                
+				/*--- Do the coordinate transformation ---*/
+				for (iVertex = 0; iVertex < nVertex; iVertex++) {
+                    
+					/*--- Find point and its type of transformation ---*/
+					iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+					iPeriodic_Index = geometry->vertex[iMarker][iVertex]->GetRotation_Type();
+                    
+					/*--- Retrieve the supplied periodic information. ---*/
+					angles = config->GetPeriodicRotation(iPeriodic_Index);
+                    
+					/*--- Store angles separately for clarity. ---*/
+					theta    = angles[0];   phi    = angles[1]; psi    = angles[2];
+					cosTheta = cos(theta);  cosPhi = cos(phi);  cosPsi = cos(psi);
+					sinTheta = sin(theta);  sinPhi = sin(phi);  sinPsi = sin(psi);
+                    
+					/*--- Compute the rotation matrix. Note that the implicit
+					 ordering is rotation about the x-axis, y-axis,
+					 then z-axis. Note that this is the transpose of the matrix
+					 used during the preprocessing stage. ---*/
+					rotMatrix[0][0] = cosPhi*cosPsi; rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi; rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+					rotMatrix[0][1] = cosPhi*sinPsi; rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi; rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+					rotMatrix[0][2] = -sinPhi; rotMatrix[1][2] = sinTheta*cosPhi; rotMatrix[2][2] = cosTheta*cosPhi;
+                    
+                    for (iVar = 0; iVar < nVar; iVar++)
+                        for (iDim = 0; iDim < nDim; iDim++)
+                            newGradient[iVar][iDim] = Buffer_Receive_UGrad[iDim*nVar*nVertex+iVar*nVertex+iVertex];
+                    
+                    /*--- Need to rotate the gradients for all conserved variables. ---*/
+                    for (iVar = 0; iVar < nVar; iVar++) {
+                        if (nDim == 2) {
+                            newGradient[iVar][0] = rotMatrix[0][0]*Buffer_Receive_UGrad[0*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[0][1]*Buffer_Receive_UGrad[1*nVar*nVertex+iVar*nVertex+iVertex];
+                            newGradient[iVar][1] = rotMatrix[1][0]*Buffer_Receive_UGrad[0*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[1][1]*Buffer_Receive_UGrad[1*nVar*nVertex+iVar*nVertex+iVertex];
+                        }
+                        else {
+                            newGradient[iVar][0] = rotMatrix[0][0]*Buffer_Receive_UGrad[0*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[0][1]*Buffer_Receive_UGrad[1*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[0][2]*Buffer_Receive_UGrad[2*nVar*nVertex+iVar*nVertex+iVertex];
+                            newGradient[iVar][1] = rotMatrix[1][0]*Buffer_Receive_UGrad[0*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[1][1]*Buffer_Receive_UGrad[1*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[1][2]*Buffer_Receive_UGrad[2*nVar*nVertex+iVar*nVertex+iVertex];
+                            newGradient[iVar][2] = rotMatrix[2][0]*Buffer_Receive_UGrad[0*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[2][1]*Buffer_Receive_UGrad[1*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[2][2]*Buffer_Receive_UGrad[2*nVar*nVertex+iVar*nVertex+iVertex];
+                        }
+                    }
+                    
+                    /*--- Copy transformed gradients back into buffer. ---*/
+                    for (iVar = 0; iVar < nVar; iVar++)
+                        for (iDim = 0; iDim < nDim; iDim++)
+                            Buffer_Receive_UGrad[iDim*nVar*nVertex+iVar*nVertex+iVertex] = newGradient[iVar][iDim];
+                    
+                    
+					/*--- Store the received information ---*/
+                    for (iVar = 0; iVar < nVar; iVar++)
+                        for (iDim = 0; iDim < nDim; iDim++)
+                            node[iPoint]->SetGradient(iVar, iDim, Buffer_Receive_UGrad[iDim*nVar*nVertex+iVar*nVertex+iVertex]);
+				}
+                delete [] Buffer_Receive_UGrad;
+			}
+		}
+	}
+    
+	for (iVar = 0; iVar < nVar; iVar++)
+		delete [] newGradient[iVar];
+	delete [] newGradient;
+    
+#ifndef NO_MPI
+    
+    MPI::COMM_WORLD.Barrier();
+    
+#endif
+    
+}
 
 void CAdjPlasmaSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
@@ -873,7 +1003,7 @@ void CAdjPlasmaSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution 
 				node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*xsol[iPoint*nVar+iVar]);
 	
   /*--- MPI solution ---*/
-  SetSolution_MPI(geometry, config);
+  Set_MPI_Solution(geometry, config);
   
   /*--- Compute the root mean square residual ---*/
   SetResidual_RMS(geometry, config);
@@ -1339,257 +1469,4 @@ void CAdjPlasmaSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_
 	delete [] Normal;
 	delete [] U_domain; delete [] U_infty;
 	delete [] Psi_domain; delete [] Psi_infty;
-}
-
-void CAdjPlasmaSolution::MPI_Send_Receive(CGeometry ***geometry, CSolution ****solution_container,
-                                          CConfig **config, unsigned short iMGLevel, unsigned short iZone) {
-	unsigned short iVar, iMarker;
-	unsigned long iVertex, iPoint;
-	double *Adjoint_Var; //, *Adjoint_Undivided_Laplacian = NULL;
-	
-	/*--- Send-Receive boundary conditions ---*/
-	for (iMarker = 0; iMarker < config[iZone]->GetnMarker_All(); iMarker++)
-		if (config[iZone]->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) {
-			
-			short SendRecv = config[iZone]->GetMarker_All_SendRecv(iMarker);
-			unsigned long nVertex = geometry[iZone][iMGLevel]->nVertex[iMarker];
-			
-			/*--- Send information  ---*/
-			if (SendRecv > 0) {
-				
-				/*--- Sending only occurs with MPI ---*/
-#ifndef NO_MPI
-				
-				double **Adjoint_Grad = NULL;
-				unsigned long nBuffer_Vector = geometry[iZone][iMGLevel]->nVertex[iMarker]*nVar;
-				unsigned long nBuffer_Scalar = geometry[iZone][iMGLevel]->nVertex[iMarker];
-				
-				int send_to = SendRecv-1;
-				
-				/*--- Inviscid part ---*/
-				double *Buffer_Send_Psi = new double[nBuffer_Vector];
-				
-				/*--- Upwind scheme ---*/
-				if (config[iZone]->GetKind_ConvNumScheme() == SPACE_UPWIND) {
-					
-					double *Buffer_Send_Psix = NULL, *Buffer_Send_Psiy = NULL, *Buffer_Send_Psiz = NULL;
-					Buffer_Send_Psix = new double[nBuffer_Vector];
-					Buffer_Send_Psiy = new double[nBuffer_Vector];
-					Buffer_Send_Psiz = new double[nBuffer_Vector];
-					
-					for (iVertex = 0; iVertex < nVertex; iVertex++) {
-						iPoint = geometry[iZone][iMGLevel]->vertex[iMarker][iVertex]->GetNode();
-						Adjoint_Var = node[iPoint]->GetSolution();
-						Adjoint_Grad = node[iPoint]->GetGradient();
-						for (iVar = 0; iVar < nVar; iVar++) {
-							Buffer_Send_Psi[iVar*nVertex+iVertex] = Adjoint_Var[iVar];
-							Buffer_Send_Psix[iVar*nVertex+iVertex] = Adjoint_Grad[iVar][0];					
-							Buffer_Send_Psiy[iVar*nVertex+iVertex] = Adjoint_Grad[iVar][1];
-							if (nDim == 3) Buffer_Send_Psiz[iVar*nVertex+iVertex] = Adjoint_Grad[iVar][2];
-						}
-					}
-					
-					MPI::COMM_WORLD.Bsend(Buffer_Send_Psi,nBuffer_Vector,MPI::DOUBLE,send_to, 0);
-					MPI::COMM_WORLD.Bsend(Buffer_Send_Psix,nBuffer_Vector,MPI::DOUBLE,send_to, 1);
-					MPI::COMM_WORLD.Bsend(Buffer_Send_Psiy,nBuffer_Vector,MPI::DOUBLE,send_to, 2);
-					if (nDim == 3) MPI::COMM_WORLD.Bsend(Buffer_Send_Psiz,nBuffer_Vector,MPI::DOUBLE,send_to, 3);
-					
-					if (iMGLevel == MESH_0) {
-						delete [] Buffer_Send_Psix;
-						delete [] Buffer_Send_Psiy;
-						delete [] Buffer_Send_Psiz;
-					}
-				}
-				
-				/*--- Centered scheme ---*/
-				if (config[iZone]->GetKind_ConvNumScheme() == SPACE_CENTERED) {
-					
-					double *Buffer_Send_Undivided_Laplacian = NULL, *Buffer_Send_Sensor = NULL;
-					Buffer_Send_Undivided_Laplacian = new double[nBuffer_Vector];
-					Buffer_Send_Sensor = new double [nBuffer_Scalar];
-					
-					for (iVertex = 0; iVertex < nVertex; iVertex++) {
-						iPoint = geometry[iZone][iMGLevel]->vertex[iMarker][iVertex]->GetNode();
-						Adjoint_Var = node[iPoint]->GetSolution();
-	//					Adjoint_Undivided_Laplacian = node[iPoint]->GetUnd_Lapl();
-						for (iVar = 0; iVar < nVar; iVar++) {
-							Buffer_Send_Psi[iVar*nVertex+iVertex] = Adjoint_Var[iVar];
-//							Buffer_Send_Undivided_Laplacian[iVar*nVertex+iVertex] = Adjoint_Undivided_Laplacian[iVar];					
-						}
-//						Buffer_Send_Sensor[iVertex] = node[iPoint]->GetSensor();
-					}
-					
-					MPI::COMM_WORLD.Bsend(Buffer_Send_Psi,nBuffer_Vector,MPI::DOUBLE,send_to, 0);
-//					MPI::COMM_WORLD.Bsend(Buffer_Send_Undivided_Laplacian,nBuffer_Vector,MPI::DOUBLE,send_to, 1);
-//					MPI::COMM_WORLD.Bsend(Buffer_Send_Sensor, nBuffer_Scalar, MPI::DOUBLE, send_to, 2);
-					
-					delete [] Buffer_Send_Undivided_Laplacian;
-					delete [] Buffer_Send_Sensor;
-				}
-				
-				delete [] Buffer_Send_Psi;
-				
-#endif
-			}
-			
-			/*--- Receive information  ---*/
-			if (SendRecv < 0) {
-				
-				double rotMatrix[3][3], *angles;
-				double theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi;
-				unsigned short iPeriodic_Index;
-				
-				double *newSolution = new double [nVar];
-				
-				int receive_from = abs(SendRecv)-1;
-				unsigned long nBuffer_Vector = geometry[iZone][iMGLevel]->nVertex[iMarker]*nVar;
-				unsigned long nBuffer_Scalar = geometry[iZone][iMGLevel]->nVertex[iMarker];
-				
-				/*--- Inviscid part ---*/
-				double *Buffer_Receive_Psi = new double [nBuffer_Vector];
-				
-				/*--- Upwind scheme ---*/
-				if (config[iZone]->GetKind_ConvNumScheme() == SPACE_UPWIND) {
-					
-					double *Buffer_Receive_Psix = NULL, *Buffer_Receive_Psiy = NULL, *Buffer_Receive_Psiz = NULL;
-					if (iMGLevel == MESH_0) {
-						Buffer_Receive_Psix = new double [nBuffer_Vector];
-						Buffer_Receive_Psiy = new double [nBuffer_Vector];
-						Buffer_Receive_Psiz = new double [nBuffer_Vector];
-					}
-					
-#ifdef NO_MPI
-					cout << "Upwinding for periodic boundaries in serial not yet supported." << endl;
-					cout << "Press any key to exit..." << endl;
-					cin.get();
-					exit(0);
-#else
-					MPI::COMM_WORLD.Recv(Buffer_Receive_Psi,nBuffer_Vector,MPI::DOUBLE,receive_from, 0);
-					if (iMGLevel == MESH_0) {
-						MPI::COMM_WORLD.Recv(Buffer_Receive_Psix,nBuffer_Vector,MPI::DOUBLE,receive_from, 1);
-						MPI::COMM_WORLD.Recv(Buffer_Receive_Psiy,nBuffer_Vector,MPI::DOUBLE,receive_from, 2);
-						if (nDim == 3) MPI::COMM_WORLD.Recv(Buffer_Receive_Psiz,nBuffer_Vector,MPI::DOUBLE,receive_from, 3);
-					}
-#endif
-					
-					/*--- Store the received information ---*/
-					for (iVertex = 0; iVertex < nVertex; iVertex++) {
-						iPoint = geometry[iZone][iMGLevel]->vertex[iMarker][iVertex]->GetNode();				
-						for (iVar = 0; iVar < nVar; iVar++) {
-							node[iPoint]->SetSolution(iVar, Buffer_Receive_Psi[iVar*nVertex+iVertex]);
-							if (iMGLevel == MESH_0) {
-								node[iPoint]->SetGradient(iVar, 0, Buffer_Receive_Psix[iVar*nVertex+iVertex]);
-								node[iPoint]->SetGradient(iVar, 1, Buffer_Receive_Psiy[iVar*nVertex+iVertex]);
-								if (nDim == 3) node[iPoint]->SetGradient(iVar, 2, Buffer_Receive_Psiz[iVar*nVertex+iVertex]);
-							}
-						}
-					}
-					
-					if (iMGLevel == MESH_0) {
-						delete [] Buffer_Receive_Psix;
-						delete [] Buffer_Receive_Psiy;
-						delete [] Buffer_Receive_Psiz;
-					}
-					
-				}
-				
-				/*--- Centered scheme ---*/
-				if (config[iZone]->GetKind_ConvNumScheme() == SPACE_CENTERED) {
-					
-					double *Buffer_Receive_Undivided_Laplacian = NULL, *Buffer_Receive_Sensor = NULL;
-					if (iMGLevel == MESH_0) {
-						Buffer_Receive_Undivided_Laplacian = new double [nBuffer_Vector];
-						Buffer_Receive_Sensor = new double [nBuffer_Scalar];
-					}			
-					
-#ifdef NO_MPI
-					/*--- Allow for periodic boundaries to use SEND_RECEIVE in serial.
-					 Serial computations will only use the BC in receive mode, as
-					 the proc will always be sending information to itself. ---*/
-					
-					/*--- Retrieve the donor information from the matching marker ---*/
-					unsigned short donor_marker= 1;
-					unsigned long donorPoint;
-					for (unsigned short iMark = 0; iMark < config[iZone]->GetnMarker_All(); iMark++){
-						if (config[iZone]->GetMarker_All_SendRecv(iMark)-1 == receive_from) donor_marker = iMark;
-					}
-					
-					/*--- Get the information from the donor directly. This is a serial
-					 computation with access to all nodes. Note that there is an
-					 implicit ordering in the list. ---*/
-					for (iVertex = 0; iVertex < geometry[iZone][iMGLevel]->nVertex[iMarker]; iVertex++) {
-						
-						/*--- Get the specific donor point for this vertex ---*/
-						donorPoint = geometry[iZone][iMGLevel]->vertex[donor_marker][iVertex]->GetNode();
-						
-						/*--- Get the solution from the donor and store it in the buffer.
-						 This is essentially a dummy send/receive. ---*/
-						Adjoint_Var = node[donorPoint]->GetSolution();
-//						Adjoint_Undivided_Laplacian = node[donorPoint]->GetUnd_Lapl();
-						for (iVar = 0; iVar < nVar; iVar++) {
-							Buffer_Receive_Psi[iVar*nVertex+iVertex] = Adjoint_Var[iVar];
-//							Buffer_Receive_Undivided_Laplacian[iVar*nVertex+iVertex] = Adjoint_Undivided_Laplacian[iVar];					
-						}
-//						Buffer_Receive_Sensor[iVertex] = node[donorPoint]->GetSensor();
-					}
-#else
-					MPI::COMM_WORLD.Recv(Buffer_Receive_Psi,nBuffer_Vector,MPI::DOUBLE,receive_from, 0);
-//					MPI::COMM_WORLD.Recv(Buffer_Receive_Undivided_Laplacian,nBuffer_Vector,MPI::DOUBLE,receive_from, 1);
-//					MPI::COMM_WORLD.Recv(Buffer_Receive_Sensor,nBuffer_Scalar,MPI::DOUBLE,receive_from, 2);
-#endif
-					
-					for (iVertex = 0; iVertex < geometry[iZone][iMGLevel]->nVertex[iMarker]; iVertex++) {
-						
-						/*--- Get the current point and its Send/Receive type. ---*/
-						iPoint = geometry[iZone][iMGLevel]->vertex[iMarker][iVertex]->GetNode();
-						iPeriodic_Index = geometry[iZone][iMGLevel]->vertex[iMarker][iVertex]->GetRotation_Type();
-						
-						/*--- Retrieve the supplied periodic information. ---*/
-						angles = config[iZone]->GetPeriodicRotation(iPeriodic_Index);
-						
-						/*--- Store angles separately for clarity. ---*/
-						theta    = angles[0];   phi    = angles[1]; psi    = angles[2];
-						cosTheta = cos(theta);  cosPhi = cos(phi);  cosPsi = cos(psi);
-						sinTheta = sin(theta);  sinPhi = sin(phi);  sinPsi = sin(psi);
-						
-						/*--- Compute the rotation matrix. Note that the implicit
-						 ordering is rotation about the x-axis, y-axis,
-						 then z-axis. Note that this is the transpose of the matrix
-						 used during the preprocessing stage. ---*/
-						rotMatrix[0][0] = cosPhi*cosPsi; rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi; rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-						rotMatrix[0][1] = cosPhi*sinPsi; rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi; rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-						rotMatrix[0][2] = -sinPhi; rotMatrix[1][2] = sinTheta*cosPhi; rotMatrix[2][2] = cosTheta*cosPhi;
-						
-						/*--- Copy solution before performing transformation. ---*/
-						for (iVar = 0; iVar < nVar; iVar++) newSolution[iVar] = Buffer_Receive_Psi[iVar*nVertex+iVertex];
-						
-						/*--- Rotate the adjoint velocity components. ---*/
-						if (nDim == 2) {
-							newSolution[1] = rotMatrix[0][0]*Buffer_Receive_Psi[1*nVertex+iVertex] + rotMatrix[0][1]*Buffer_Receive_Psi[2*nVertex+iVertex];
-							newSolution[2] = rotMatrix[1][0]*Buffer_Receive_Psi[1*nVertex+iVertex] + rotMatrix[1][1]*Buffer_Receive_Psi[2*nVertex+iVertex];
-						} 
-						else {
-							newSolution[1] = rotMatrix[0][0]*Buffer_Receive_Psi[1*nVertex+iVertex] + rotMatrix[0][1]*Buffer_Receive_Psi[2*nVertex+iVertex] + rotMatrix[0][2]*Buffer_Receive_Psi[3*nVertex+iVertex];
-							newSolution[2] = rotMatrix[1][0]*Buffer_Receive_Psi[1*nVertex+iVertex] + rotMatrix[1][1]*Buffer_Receive_Psi[2*nVertex+iVertex] + rotMatrix[1][2]*Buffer_Receive_Psi[3*nVertex+iVertex];
-							newSolution[3] = rotMatrix[2][0]*Buffer_Receive_Psi[1*nVertex+iVertex] + rotMatrix[2][1]*Buffer_Receive_Psi[2*nVertex+iVertex] + rotMatrix[2][2]*Buffer_Receive_Psi[3*nVertex+iVertex];
-						}
-						
-						/*--- Copy transformed solution back into buffer. ---*/
-						for (iVar = 0; iVar < nVar; iVar++) Buffer_Receive_Psi[iVar*nVertex+iVertex] = newSolution[iVar];
-						
-						/*--- Set the solution for this point ---*/
-						for (iVar = 0; iVar < nVar; iVar++) {
-							node[iPoint]->SetSolution(iVar, Buffer_Receive_Psi[iVar*nVertex+iVertex]);
-//							node[iPoint]->SetUndivided_Laplacian(iVar, Buffer_Receive_Undivided_Laplacian[iVar*nVertex+iVertex]);
-						}
-//						node[iPoint]->SetSensor(Buffer_Receive_Sensor[iVertex]);
-						
-					}
-					delete [] Buffer_Receive_Undivided_Laplacian;
-					delete [] Buffer_Receive_Sensor;
-				}
-				delete [] Buffer_Receive_Psi;
-				delete [] newSolution;
-			}
-		}
 }

@@ -49,11 +49,13 @@ inline unsigned short CSolution::GetnMonatomics(void) { return 0; }
 
 inline unsigned short CSolution::GetnDiatomics(void) { return 0; }
 
-inline void CSolution::SetSolution_MPI(CGeometry *geometry, CConfig *config) { }
+inline void CSolution::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolution::SetSolution_Old_MPI(CGeometry *geometry, CConfig *config) { }
+inline void CSolution::Set_MPI_Solution(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolution::SetSolution_Limiter_MPI(CGeometry *geometry, CConfig *config) { }
+inline void CSolution::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) { }
+
+inline void CSolution::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config) { }
 
 inline unsigned short CSolution::GetIterLinSolver(void) { return IterLinSolver; }
 
@@ -96,7 +98,7 @@ inline void CSolution::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *conf
 
 inline void CSolution::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolution::SetPrimVar_Gradient_MPI(CGeometry *geometry, CConfig *config) { }
+inline void CSolution::Set_MPI_PrimVar_Gradient(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolution::SetPrimVar_Limiter_MPI(CGeometry *geometry, CConfig *config) { }
 
@@ -327,9 +329,6 @@ inline void CSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solutio
 inline void CSolution::BC_Dirichlet(CGeometry *geometry, CSolution **solution_container, CConfig *config, 
 								  unsigned short val_marker) { }
 
-inline void CSolution::MPI_Send_Receive(CGeometry ***geometry, CSolution ****solution_container,
-                                        CConfig **config, unsigned short iMGLevel, unsigned short iZone) { }
-
 inline void CSolution::BC_Interface_Boundary(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, 
 									CConfig *config, unsigned short val_marker) { }
                   
@@ -392,15 +391,15 @@ inline void CSolution::Preprocessing(CGeometry *geometry, CSolution **solution_c
 
 inline void CSolution::SetDissipation_Switch(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolution::SetDissipation_Switch_MPI(CGeometry *geometry, CConfig *config) { }
+inline void CSolution::Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolution::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolution::SetUndivided_Laplacian_MPI(CGeometry *geometry, CConfig *config) { }
+inline void CSolution::Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolution::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolution::SetMax_Eigenvalue_MPI(CGeometry *geometry, CConfig *config) { }
+inline void CSolution::Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolution::Inviscid_Forces(CGeometry *geometry, CConfig *config) { }
 

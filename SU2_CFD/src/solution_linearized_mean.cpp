@@ -229,7 +229,7 @@ void CLinEulerSolution::Centered_Residual(CGeometry *geometry, CSolution **solut
 
 		/*--- Undivided laplacian ---*/
 		if (high_order_diss) 
-			solver->SetUndivided_Laplacian(node[iPoint]->GetUnd_Lapl(),node[jPoint]->GetUnd_Lapl());
+			solver->SetUndivided_Laplacian(node[iPoint]->GetUndivided_Laplacian(),node[jPoint]->GetUndivided_Laplacian());
 		
 		/*--- Compute residual ---*/
 		solver->SetResidual(Res_Conv, Res_Visc, Jacobian_i, Jacobian_j, config);
@@ -279,7 +279,7 @@ void CLinEulerSolution::ExplicitRK_Iteration(CGeometry *geometry, CSolution **so
 		}
 	
   /*--- MPI solution ---*/
-  SetSolution_MPI(geometry, config);
+  Set_MPI_Solution(geometry, config);
   
   /*--- Compute the root mean square residual ---*/
   SetResidual_RMS(geometry, config);
@@ -600,9 +600,3 @@ void CLinEulerSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_c
 		}
 	}
 }
-
-void CLinEulerSolution::MPI_Send_Receive(CGeometry ***geometry, CSolution ****solution_container,
-                                         CConfig **config, unsigned short iMGLevel, unsigned short iZone) {
-
-}
-

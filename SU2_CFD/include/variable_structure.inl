@@ -67,9 +67,9 @@ inline double *CVariable::GetSolution_time_n1(void) { return Solution_time_n1; }
 
 inline double CVariable::GetAuxVar(void) { return AuxVar; }
 
-inline double *CVariable::GetUnd_Lapl(void) { return Undivided_Laplacian; }
+inline double *CVariable::GetUndivided_Laplacian(void) { return Undivided_Laplacian; }
 
-inline double CVariable::GetUnd_Lapl(unsigned short val_var) { return Undivided_Laplacian[val_var]; }
+inline double CVariable::GetUndivided_Laplacian(unsigned short val_var) { return Undivided_Laplacian[val_var]; }
 
 inline void CVariable::AddSolution(unsigned short val_var, double val_solution) {Solution[val_var] = Solution_Old[val_var] + val_solution; }
 
