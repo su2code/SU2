@@ -190,15 +190,15 @@ void CIntegration::Adjoint_Setup(CGeometry ***geometry, CSolution ****solution_c
 
 }
 
-void CIntegration::Time_Integration(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iRKStep, 
-		unsigned short RunTime_EqSystem, unsigned long Iteration) {
+void CIntegration::Time_Integration(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iRKStep,
+                                    unsigned short RunTime_EqSystem, unsigned long Iteration) {
 	unsigned short MainSolution = config->GetContainerPosition(RunTime_EqSystem);
-
-
+    
+    
 	if ((config->IsAdjoint()) || (config->GetKind_Adjoint() != DISCRETE)) {
-
-			/*--- Perform the time integration ---*/
-			switch (config->GetKind_TimeIntScheme()) {
+        
+        /*--- Perform the time integration ---*/
+        switch (config->GetKind_TimeIntScheme()) {
 			case (RUNGE_KUTTA_EXPLICIT):
 				solution_container[MainSolution]->ExplicitRK_Iteration(geometry, solution_container, config, iRKStep);
 				break;
@@ -206,13 +206,14 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolution **solution_co
 				solution_container[MainSolution]->ExplicitEuler_Iteration(geometry, solution_container, config);
 				break;
 			case (EULER_IMPLICIT):
-					solution_container[MainSolution]->ImplicitEuler_Iteration(geometry, solution_container, config);
+                solution_container[MainSolution]->ImplicitEuler_Iteration(geometry, solution_container, config);
 				break;
 		}
-
+        
 	} else {
 		solution_container[MainSolution]->Solve_LinearSystem(geometry, solution_container, config);
 	}
+    
 }
 
 void CIntegration::Solving_Linear_System(CGeometry *geometry, CSolution *solution, CSolution **solution_container, CConfig *config, 

@@ -2713,31 +2713,31 @@ void CEulerSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **so
 	unsigned short iVar, jVar;
 	unsigned long iPoint, total_index, IterLinSol = 0;
 	double Delta, *local_Res_TruncError, Vol;
-
+    
 	bool adjoint = ((config->GetKind_Solver() == ADJ_EULER) || (config->GetKind_Solver() == ADJ_NAVIER_STOKES) ||
-			(config->GetKind_Solver() == ADJ_RANS) || (config->GetKind_Solver() == ADJ_FREE_SURFACE_EULER) ||
-			(config->GetKind_Solver() == ADJ_FREE_SURFACE_NAVIER_STOKES) || (config->GetKind_Solver() == ADJ_FREE_SURFACE_RANS) ||
-			(config->GetKind_Solver() == ADJ_PLASMA_EULER) || (config->GetKind_Solver() == ADJ_PLASMA_NAVIER_STOKES) ||
-			(config->GetKind_Solver() == ADJ_AEROACOUSTIC_EULER));
-
+                    (config->GetKind_Solver() == ADJ_RANS) || (config->GetKind_Solver() == ADJ_FREE_SURFACE_EULER) ||
+                    (config->GetKind_Solver() == ADJ_FREE_SURFACE_NAVIER_STOKES) || (config->GetKind_Solver() == ADJ_FREE_SURFACE_RANS) ||
+                    (config->GetKind_Solver() == ADJ_PLASMA_EULER) || (config->GetKind_Solver() == ADJ_PLASMA_NAVIER_STOKES) ||
+                    (config->GetKind_Solver() == ADJ_AEROACOUSTIC_EULER));
+    
 	/*--- Set maximum residual to zero ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
 		SetRes_RMS(iVar, 0.0);
 		SetRes_Max(iVar, 0.0, 0);
 	}
-
+    
 	/*--- Build implicit system ---*/
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
+        
 		/*--- Read the residual ---*/
 		local_Res_TruncError = node[iPoint]->GetResTruncError();
-
+        
 		/*--- Read the volume ---*/
 		Vol = geometry->node[iPoint]->GetVolume();
-
+        
 		/*--- Modify matrix diagonal to assure diagonal dominance ---*/
 		Delta = Vol / node[iPoint]->GetDelta_Time();
-
+        
 		if (roe_turkel) {
 			SetPreconditioner(config, iPoint);
 			for (iVar = 0; iVar < nVar; iVar ++ )
@@ -2748,16 +2748,17 @@ void CEulerSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **so
 		else {
 			Jacobian.AddVal2Diag(iPoint, Delta);
 		}
-
+        
 		/*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 		for (iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar + iVar;
 			xres[total_index] = - (xres[total_index] + local_Res_TruncError[iVar]);
+            xsol[total_index] = 0.0;
 			AddRes_RMS(iVar, xres[total_index]*xres[total_index]);
 			AddRes_Max(iVar, fabs(xres[total_index]), geometry->node[iPoint]->GetGlobalIndex());
 		}
 	}
-
+    
 	/*--- Initialize residual and solution at the ghost points ---*/
 	for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
 		for (iVar = 0; iVar < nVar; iVar++) {
@@ -2766,25 +2767,25 @@ void CEulerSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **so
 			xsol[total_index] = 0.0;
 		}
 	}
-
+    
 	/*--- Solve the linear system (Stationary iterative methods) ---*/
 	if (config->GetKind_Linear_Solver() == SYM_GAUSS_SEIDEL)
 		Jacobian.SGSSolution(xres, xsol, config->GetLinear_Solver_Error(),
-				config->GetLinear_Solver_Iter(), false, geometry, config);
-
+                             config->GetLinear_Solver_Iter(), false, geometry, config);
+    
 	if (config->GetKind_Linear_Solver() == LU_SGS)
 		Jacobian.LU_SGSIteration(xres, xsol, geometry, config);
-
+    
 	/*--- Solve the linear system (Krylov subspace methods) ---*/
 	if ((config->GetKind_Linear_Solver() == BCGSTAB) ||
-			(config->GetKind_Linear_Solver() == GMRES)) {
-
+        (config->GetKind_Linear_Solver() == GMRES)) {
+        
 		CSysVector rhs_vec(nPoint, nPointDomain, nVar, xres);
 		CSysVector sol_vec(nPoint, nPointDomain, nVar, xsol);
-
+        
 		CMatrixVectorProduct* mat_vec = new CSparseMatrixVectorProduct(Jacobian);
-		CSolutionSendReceive* sol_mpi = new CSparseMatrixSolMPI(Jacobian, geometry, config);
-
+		CSolutionSendReceive* sol_mpi = new CSparseMatrixSolMPI(Jacobian, geometry, config); // To be removed...
+        
 		CPreconditioner* precond = NULL;
 		if (config->GetKind_Linear_Solver_Prec() == JACOBI) {
 			Jacobian.BuildJacobiPreconditioner();
@@ -2796,27 +2797,27 @@ void CEulerSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **so
 		}
 		else if (config->GetKind_Linear_Solver_Prec() == NO_PREC)
 			precond = new CIdentityPreconditioner();
-
+        
 		CSysSolve system;
 		if (config->GetKind_Linear_Solver() == BCGSTAB)
 			IterLinSol = system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetLinear_Solver_Error(),
-					config->GetLinear_Solver_Iter(), false);
+                                        config->GetLinear_Solver_Iter(), false);
 		else if (config->GetKind_Linear_Solver() == GMRES)
 			IterLinSol = system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetLinear_Solver_Error(),
-					config->GetLinear_Solver_Iter(), false);
-
+                                      config->GetLinear_Solver_Iter(), false);
+        
 		/*--- The the number of iterations of the linear solver ---*/
 		SetIterLinSolver(IterLinSol);
-
+        
 		/*--- Copy the solution to the array ---*/
 		sol_vec.CopyToArray(xsol);
-
+        
 		/*--- dealocate memory ---*/
 		delete mat_vec;
 		delete precond;
 		delete sol_mpi;
 	}
-
+    
 	/*--- Update solution (system written in terms of increments) ---*/
 	if (!adjoint) {
 		for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -2825,13 +2826,13 @@ void CEulerSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **so
 			}
 		}
 	}
-
+    
 	/*--- MPI solution ---*/
 	SetSolution_MPI(geometry, config);
-
+    
 	/*--- Compute the root mean square residual ---*/
 	SetResidual_RMS(geometry, config);
-
+    
 }
 
 void CEulerSolution::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *config) {

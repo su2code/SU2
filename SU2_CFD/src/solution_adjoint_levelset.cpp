@@ -786,9 +786,9 @@ void CAdjLevelSetSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolutio
 	double Delta = 0.0, Vol;
 	
 	/*--- Set maximum residual to zero ---*/
-  SetRes_RMS(0, 0.0);
-  SetRes_Max(0, 0.0, 0);
-  
+    SetRes_RMS(0, 0.0);
+    SetRes_Max(0, 0.0, 0);
+    
 	/*--- Build implicit system ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
 		
@@ -797,42 +797,42 @@ void CAdjLevelSetSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolutio
 		
 		/*--- Modify matrix diagonal to assure diagonal dominance ---*/
 		Delta = Vol / solution_container[FLOW_SOL]->node[iPoint]->GetDelta_Time();
-    
+        
 		Jacobian.AddVal2Diag(iPoint,Delta);
-    
-		/*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/    
+        
+		/*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 		xres[iPoint] = -xres[iPoint];
 		xsol[iPoint] = 0.0;
 		AddRes_RMS(0, xres[iPoint]*xres[iPoint]);
-    AddRes_Max(0, fabs(xres[iPoint]), geometry->node[iPoint]->GetGlobalIndex());
+        AddRes_Max(0, fabs(xres[iPoint]), geometry->node[iPoint]->GetGlobalIndex());
 	}
-  
-  /*--- Initialize residual and solution at the ghost points ---*/
-  for (iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
-    xres[iPoint] = 0.0;
-    xsol[iPoint] = 0.0;
-  }
+    
+    /*--- Initialize residual and solution at the ghost points ---*/
+    for (iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
+        xres[iPoint] = 0.0;
+        xsol[iPoint] = 0.0;
+    }
 	
-  /*--- Solve the linear system (Stationary iterative methods) ---*/
+    /*--- Solve the linear system (Stationary iterative methods) ---*/
 	if (config->GetKind_Linear_Solver() == SYM_GAUSS_SEIDEL)
 		Jacobian.SGSSolution(xres, xsol, config->GetLinear_Solver_Error(),
-												 config->GetLinear_Solver_Iter(), false, geometry, config);
+                             config->GetLinear_Solver_Iter(), false, geometry, config);
 	
 	if (config->GetKind_Linear_Solver() == LU_SGS)
-    Jacobian.LU_SGSIteration(xres, xsol, geometry, config);
+        Jacobian.LU_SGSIteration(xres, xsol, geometry, config);
 	
 	/*--- Solve the linear system (Krylov subspace methods) ---*/
 	if ((config->GetKind_Linear_Solver() == BCGSTAB) ||
-			(config->GetKind_Linear_Solver() == GMRES)) {
+        (config->GetKind_Linear_Solver() == GMRES)) {
 		
 		CSysVector rhs_vec((const unsigned int)geometry->GetnPoint(),
-                       (const unsigned int)geometry->GetnPointDomain(), nVar, xres);
+                           (const unsigned int)geometry->GetnPointDomain(), nVar, xres);
 		CSysVector sol_vec((const unsigned int)geometry->GetnPoint(),
-                       (const unsigned int)geometry->GetnPointDomain(), nVar, xsol);
+                           (const unsigned int)geometry->GetnPointDomain(), nVar, xsol);
 		
 		CMatrixVectorProduct* mat_vec = new CSparseMatrixVectorProduct(Jacobian);
 		CSolutionSendReceive* sol_mpi = new CSparseMatrixSolMPI(Jacobian, geometry, config);
-    
+        
 		CPreconditioner* precond = NULL;
 		if (config->GetKind_Linear_Solver_Prec() == JACOBI) {
 			Jacobian.BuildJacobiPreconditioner();
@@ -848,10 +848,10 @@ void CAdjLevelSetSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolutio
 		CSysSolve system;
 		if (config->GetKind_Linear_Solver() == BCGSTAB)
 			system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetLinear_Solver_Error(),
-										 config->GetLinear_Solver_Iter(), false);
+                           config->GetLinear_Solver_Iter(), false);
 		else if (config->GetKind_Linear_Solver() == GMRES)
 			system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetLinear_Solver_Error(),
-                   config->GetLinear_Solver_Iter(), false);
+                         config->GetLinear_Solver_Iter(), false);
 		
 		sol_vec.CopyToArray(xsol);
 		delete mat_vec;
@@ -863,13 +863,13 @@ void CAdjLevelSetSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolutio
 	 scalar equations which includes the density ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
 		node[iPoint]->AddSolution(0, config->GetLinear_Solver_Relax()*xsol[iPoint]);
-  
-  /*--- MPI solution ---*/
-  SetSolution_MPI(geometry, config);
-  
-  /*--- Compute the root mean square residual ---*/
-  SetResidual_RMS(geometry, config);
-  
+    
+    /*--- MPI solution ---*/
+    SetSolution_MPI(geometry, config);
+    
+    /*--- Compute the root mean square residual ---*/
+    SetResidual_RMS(geometry, config);
+    
 }
 
 void CAdjLevelSetSolution::SetResidual_DualTime(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
