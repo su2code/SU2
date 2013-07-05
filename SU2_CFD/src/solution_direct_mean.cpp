@@ -2932,6 +2932,7 @@ void CEulerSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **so
 		for (iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar + iVar;
 			xres[total_index] = - (xres[total_index] + local_Res_TruncError[iVar]);
+            xsol[total_index] = 0.0;
 			AddRes_RMS(iVar, xres[total_index]*xres[total_index]);
 			AddRes_Max(iVar, fabs(xres[total_index]), geometry->node[iPoint]->GetGlobalIndex());
 		}
@@ -2945,7 +2946,7 @@ void CEulerSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **so
 			xsol[total_index] = 0.0;
 		}
 	}
-
+    
 	/*--- Solve the linear system (Stationary iterative methods) ---*/
 	if (config->GetKind_Linear_Solver() == SYM_GAUSS_SEIDEL)
 		Jacobian.SGSSolution(xres, xsol, config->GetLinear_Solver_Error(),
@@ -2973,8 +2974,9 @@ void CEulerSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **so
 			Jacobian.BuildJacobiPreconditioner();
 			precond = new CLineletPreconditioner(Jacobian);
 		}
-		else if (config->GetKind_Linear_Solver_Prec() == NO_PREC)
+		else if (config->GetKind_Linear_Solver_Prec() == NO_PREC) {
 			precond = new CIdentityPreconditioner();
+        }
 
 		CSysSolve system;
 		if (config->GetKind_Linear_Solver() == BCGSTAB)

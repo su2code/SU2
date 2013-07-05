@@ -347,11 +347,17 @@ double dotProd(const CSysVector & u, const CSysVector & v) {
   for (unsigned int i = 0; i < u.nElmDomain; i++) 
     loc_prod += u.vec_val[i]*v.vec_val[i];
   double prod = 0.0;
+    
 #ifndef NO_MPI
+    
   MPI::COMM_WORLD.Allreduce(&loc_prod, &prod, 1, MPI::DOUBLE, MPI::SUM);
+    
 #else
+    
   prod = loc_prod;
+    
 #endif
+    
   return prod;
 }
 
@@ -692,51 +698,54 @@ unsigned long CSysSolve::GMRES(const CSysVector & b, CSysVector & x, CMatrixVect
 }
 
 unsigned long CSysSolve::BCGSTAB(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
-                                  CPreconditioner & precond, CSolutionSendReceive & sol_mpi, double tol, unsigned long m, bool monitoring) {
+                                 CPreconditioner & precond, CSolutionSendReceive & sol_mpi, double tol, unsigned long m, bool monitoring) {
 	
-  int rank = 0;
+    int rank = 0;
+    
 #ifndef NO_MPI
+    
 	rank = MPI::COMM_WORLD.Get_rank();
+    
 #endif
-  
-  /*--- Check the subspace size ---*/
-  if (m < 1) {
-    if (rank == 0) cerr << "CSysSolve::BCGSTAB: illegal value for subspace size, m = " << m << endl;
-    throw(-1);
-  }
+    
+    /*--- Check the subspace size ---*/
+    if (m < 1) {
+        if (rank == 0) cerr << "CSysSolve::BCGSTAB: illegal value for subspace size, m = " << m << endl;
+        throw(-1);
+    }
 	
-  CSysVector r(b);
-  CSysVector r_0(b);
-  CSysVector p(b);
+    CSysVector r(b);
+    CSysVector r_0(b);
+    CSysVector p(b);
 	CSysVector v(b);
-  CSysVector s(b);
+    CSysVector s(b);
 	CSysVector t(b);
 	CSysVector phat(b);
 	CSysVector shat(b);
-  CSysVector A_x(b);
-
-  /*--- Calculate the initial residual, compute norm, and check if system is already solved ---*/
+    CSysVector A_x(b);
+    
+    /*--- Calculate the initial residual, compute norm, and check if system is already solved ---*/
 	mat_vec(x,A_x); sol_mpi(A_x);
-  r -= A_x; r_0 = r; // recall, r holds b initially
-  double norm_r = r.norm();  
-  double norm0 = b.norm();
-  if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
-    if (rank == 0) cout << "CSysSolve::BCGSTAB(): system solved by initial guess." << endl;
-    return 0;
-  }  
+    r -= A_x; r_0 = r; // recall, r holds b initially
+    double norm_r = r.norm();
+    double norm0 = b.norm();
+    if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
+        if (rank == 0) cout << "CSysSolve::BCGSTAB(): system solved by initial guess." << endl;
+        return 0;
+    }
 	
 	/*--- Initialization ---*/
-  double alpha = 1.0, beta = 1.0, omega = 1.0, rho = 1.0, rho_prime = 1.0;
+    double alpha = 1.0, beta = 1.0, omega = 1.0, rho = 1.0, rho_prime = 1.0;
 	
-  /*--- Output header information including initial residual ---*/
-  int i = 0;
-  if ((monitoring) && (rank == 0)) {
-    writeHeader("BCGSTAB", tol, norm_r);
-    writeHistory(i, norm_r, norm0);
-  }
+    /*--- Output header information including initial residual ---*/
+    int i = 0;
+    if ((monitoring) && (rank == 0)) {
+        writeHeader("BCGSTAB", tol, norm_r);
+        writeHistory(i, norm_r, norm0);
+    }
 	
-  /*---  Loop over all search directions ---*/
-  for (i = 0; i < m; i++) {
+    /*---  Loop over all search directions ---*/
+    for (i = 0; i < m; i++) {
 		
 		/*--- Compute rho_prime ---*/
 		rho_prime = rho;
@@ -755,47 +764,47 @@ unsigned long CSysSolve::BCGSTAB(const CSysVector & b, CSysVector & x, CMatrixVe
 		/*--- Preconditioning step ---*/
 		precond(p, phat); sol_mpi(phat);
 		mat_vec(phat, v); sol_mpi(v);
-
+        
 		/*--- Calculate step-length alpha ---*/
-    double r_0_v = dotProd(r_0, v);
-    alpha = rho / r_0_v;
-			
+        double r_0_v = dotProd(r_0, v);
+        alpha = rho / r_0_v;
+        
 		/*--- s_{i} = r_{i-1} - alpha * v_{i} ---*/
 		s.Equals_AX_Plus_BY(1.0, r, -alpha, v);
 		
 		/*--- Preconditioning step ---*/
 		precond(s, shat); sol_mpi(shat);
 		mat_vec(shat, t); sol_mpi(t);
-
+        
 		/*--- Calculate step-length omega ---*/
-    omega = dotProd(t, s) / dotProd(t, t);
-
+        omega = dotProd(t, s) / dotProd(t, t);
+        
 		/*--- Update solution and residual: ---*/
-    x.Plus_AX(alpha, phat); x.Plus_AX(omega, shat);
+        x.Plus_AX(alpha, phat); x.Plus_AX(omega, shat);
 		r.Equals_AX_Plus_BY(1.0, s, -omega, t);
-
-    /*--- Check if solution has converged, else output the relative residual if necessary ---*/
-    norm_r = r.norm();
-    if (norm_r < tol*norm0) break;
-    if ((monitoring) && ((i+1) % 50 == 0) && (rank == 0)) writeHistory(i+1, norm_r, norm0);
-
-  }
+        
+        /*--- Check if solution has converged, else output the relative residual if necessary ---*/
+        norm_r = r.norm();
+        if (norm_r < tol*norm0) break;
+        if ((monitoring) && ((i+1) % 50 == 0) && (rank == 0)) writeHistory(i+1, norm_r, norm0);
+        
+    }
 	
-  /*--- Recalculate final residual (this should be optional) ---*/
-	mat_vec(x, A_x);
-  r = b; r -= A_x;
-  double true_res = r.norm();
-  
-  if ((monitoring) && (rank == 0)) {
-    cout << "# BCGSTAB final (true) residual:" << endl;
-    cout << "# iteration = " << i << ": |res|/|res0| = "  << true_res/norm0 << endl;
-  }
+    /*--- Recalculate final residual (this should be optional) ---*/
+	mat_vec(x, A_x); sol_mpi(A_x);
+    r = b; r -= A_x;
+    double true_res = r.norm();
+    
+    if ((monitoring) && (rank == 0)) {
+        cout << "# BCGSTAB final (true) residual:" << endl;
+        cout << "# iteration = " << i << ": |res|/|res0| = "  << true_res/norm0 << endl;
+    }
 	
-  if ((fabs(true_res - norm_r) > tol*10.0) && (rank == 0)) {
-    cout << "# WARNING in CSysSolve::BCGSTAB(): " << endl;
-    cout << "# true residual norm and calculated residual norm do not agree." << endl;
-    cout << "# true_res - calc_res = " << true_res <<" "<< norm_r << endl;
-  }
+    if ((fabs(true_res - norm_r) > tol*10.0) && (rank == 0)) {
+        cout << "# WARNING in CSysSolve::BCGSTAB(): " << endl;
+        cout << "# true residual norm and calculated residual norm do not agree." << endl;
+        cout << "# true_res - calc_res = " << true_res <<" "<< norm_r << endl;
+    }
 	
 	return i;
 }

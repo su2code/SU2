@@ -514,8 +514,9 @@ void CHeatSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **sol
 			Jacobian.BuildJacobiPreconditioner();
 			precond = new CLineletPreconditioner(Jacobian);
 		}
-		else if (config->GetKind_Linear_Solver_Prec() == NO_PREC) 
+		else if (config->GetKind_Linear_Solver_Prec() == NO_PREC) {
 			precond = new CIdentityPreconditioner();
+        }
 		
 		CSysSolve system;
 		if (config->GetKind_Linear_Solver() == BCGSTAB)
