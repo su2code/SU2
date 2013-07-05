@@ -1676,51 +1676,51 @@ void CAdjTurbSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **
 	unsigned short iVar;
 	unsigned long iPoint, total_index;
 	double Delta, Vol;
-
+    
 	/*--- Set maximum residual to zero ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
 		SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
-
+        SetRes_Max(iVar, 0.0, 0);
+    }
+    
 	/*--- Build implicit system ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    
-    /*--- Read the volume ---*/
+        
+        /*--- Read the volume ---*/
 		Vol = geometry->node[iPoint]->GetVolume();
-    
+        
 		/*--- Modify matrix diagonal to assure diagonal dominance ---*/
 		Delta = Vol/(solution_container[FLOW_SOL]->node[iPoint]->GetDelta_Time() + EPS);
         
         /*--- Further modify matrix diagonal ---*/
         Delta *= 1/config->GetAdjTurb_CFLRedCoeff();
-    
+        
 		Jacobian.AddVal2Diag(iPoint,Delta);
-    
-    /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
+        
+        /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 		for (iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar+iVar;
 			xres[total_index] = -xres[total_index];
 			xsol[total_index] = 0.0;
-      AddRes_RMS(iVar, xres[total_index]*xres[total_index]);
-      AddRes_Max(iVar, fabs(xres[total_index]), geometry->node[iPoint]->GetGlobalIndex());
+            AddRes_RMS(iVar, xres[total_index]*xres[total_index]);
+            AddRes_Max(iVar, fabs(xres[total_index]), geometry->node[iPoint]->GetGlobalIndex());
 		}
 	}
-  
-  /*--- Initialize residual and solution at the ghost points ---*/
-  for (iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar + iVar;
-      xres[total_index] = 0.0;
-      xsol[total_index] = 0.0;
+    
+    /*--- Initialize residual and solution at the ghost points ---*/
+    for (iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
+        for (iVar = 0; iVar < nVar; iVar++) {
+            total_index = iPoint*nVar + iVar;
+            xres[total_index] = 0.0;
+            xsol[total_index] = 0.0;
+        }
     }
-  }
-  
+    
 	/*--- Solve the system ---*/
-  //if (config->GetKind_AdjTurb_Linear_Solver() == LU_SGS)
-  if (config->GetKind_Linear_Solver() == LU_SGS)
-      Jacobian.LU_SGSIteration(xres, xsol, geometry, config);
-  
+    //if (config->GetKind_AdjTurb_Linear_Solver() == LU_SGS)
+    if (config->GetKind_Linear_Solver() == LU_SGS)
+        Jacobian.LU_SGSIteration(xres, xsol, geometry, config);
+    
 	/*--- Solve the linear system (Krylov subspace methods) ---*/
 	//if ((config->GetKind_AdjTurb_Linear_Solver() == BCGSTAB) ||
     //    (config->GetKind_AdjTurb_Linear_Solver() == GMRES)) {
@@ -1756,23 +1756,23 @@ void CAdjTurbSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **
         if (config->GetKind_Linear_Solver() == BCGSTAB)
 			system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetAdjTurb_Linear_Error(),
                            config->GetAdjTurb_Linear_Iter(), false);
-            //system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetLinear_Solver_Error(),
-            //           config->GetLinear_Solver_Iter(), false);
+        //system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetLinear_Solver_Error(),
+        //           config->GetLinear_Solver_Iter(), false);
 		//else if (config->GetKind_AdjTurb_Linear_Solver() == GMRES)
         else if (config->GetKind_Linear_Solver() == GMRES)
 			system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetAdjTurb_Linear_Error(),
-                                 config->GetAdjTurb_Linear_Iter(), false); ///this -> # iterations needed to converge... or make true for output
-            //system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetLinear_Solver_Error(),
-            //                 config->GetLinear_Solver_Iter(), false); ///this -> # iterations needed to converge... or make true for output
-            //system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetLinear_Solver_Error(),
-            //                 40, false); ///this -> # iterations needed to converge... or make true for output
+                         config->GetAdjTurb_Linear_Iter(), false); ///this -> # iterations needed to converge... or make true for output
+        //system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetLinear_Solver_Error(),
+        //                 config->GetLinear_Solver_Iter(), false); ///this -> # iterations needed to converge... or make true for output
+        //system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetLinear_Solver_Error(),
+        //                 40, false); ///this -> # iterations needed to converge... or make true for output
         
 		sol_vec.CopyToArray(xsol);
-		delete mat_vec; 
+		delete mat_vec;
 		delete precond;
 		delete sol_mpi;
 	}
-
+    
 	/*--- Update solution (system written in terms of increments) ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
 		for (iVar = 0; iVar < nVar; iVar++)
@@ -1787,7 +1787,7 @@ void CAdjTurbSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **
   
   /*--- Compute the root mean square residual ---*/
   SetResidual_RMS(geometry, config);
-  
+
 }
 
 void CAdjTurbSolution::ConvertSensMu_to_SensU(double *val_Vars, double val_Laminar_Viscosity,

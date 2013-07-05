@@ -2263,19 +2263,19 @@ void CPlasmaSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **s
 	unsigned long iPoint, total_index, IterLinSol = 0;
 	double Delta, *local_Res_TruncError, Vol;
 	bool MultipleTimeSteps = (config->MultipleTimeSteps());
-
+    
 	/*--- Set maximum residual to zero ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
 		SetRes_RMS(iVar, 0.0);
 		SetRes_Max(iVar, 0.0, 0);
 	}
-
+    
 	/*--- Build implicit system ---*/
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
+        
 		local_Res_TruncError = node[iPoint]->GetResTruncError();
 		Vol = geometry->node[iPoint]->GetVolume();
-
+        
 		for (iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar+iVar;
 			/*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
@@ -2284,7 +2284,7 @@ void CPlasmaSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **s
 			AddRes_RMS(iVar, xres[total_index]*xres[total_index]);
 			AddRes_Max(iVar, fabs(xres[total_index]), geometry->node[iPoint]->GetGlobalIndex());
 		}
-
+        
 		if (roe_turkel) {
 			SetPreconditioner(config, iPoint);
 			for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -2292,7 +2292,7 @@ void CPlasmaSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **s
 				else Delta = Vol/(node[iPoint]->GetDelta_Time());
 				if ( iSpecies < nDiatomics ) { loc = (nDim+3)*iSpecies; nVar_Species = (nDim+3);}
 				else { loc = (nDim+3)*nDiatomics + (nDim+2)*(iSpecies-nDiatomics); nVar_Species = (nDim+2);}
-
+                
 				for (iVar = 0; iVar < nVar_Species; iVar ++ )
 					for (unsigned short jVar = 0; jVar < nVar_Species; jVar ++ )
 						Precon_Mat_inv[loc + iVar][loc + jVar] = Delta*Precon_Mat_inv[loc + iVar][loc + jVar];
@@ -2300,7 +2300,7 @@ void CPlasmaSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **s
 			Jacobian.AddBlock(iPoint, iPoint, Precon_Mat_inv);
 		}
 		else {
-
+            
 			if (!MultipleTimeSteps) {
 				Delta = Vol/(node[iPoint]->GetDelta_Time());
 				Jacobian.AddVal2Diag(iPoint,Delta);
@@ -2313,7 +2313,7 @@ void CPlasmaSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **s
 			}
 		}
 	}
-
+    
 	/*--- Initialize residual and solution at the ghost points ---*/
 	for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
 		for (iVar = 0; iVar < nVar; iVar++) {
@@ -2322,25 +2322,25 @@ void CPlasmaSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **s
 			xsol[total_index] = 0.0;
 		}
 	}
-
+    
 	/*--- Solve the linear system (Stationary iterative methods) ---*/
 	if (config->GetKind_Linear_Solver() == SYM_GAUSS_SEIDEL)
 		Jacobian.SGSSolution(xres, xsol, config->GetLinear_Solver_Error(),
-				config->GetLinear_Solver_Iter(), false, geometry, config);
-
+                             config->GetLinear_Solver_Iter(), false, geometry, config);
+    
 	if (config->GetKind_Linear_Solver() == LU_SGS)
 		Jacobian.LU_SGSIteration(xres, xsol, geometry, config);
-
+    
 	/*--- Solve the linear system (Krylov subspace methods) ---*/
 	if ((config->GetKind_Linear_Solver() == BCGSTAB) ||
-			(config->GetKind_Linear_Solver() == GMRES)) {
-
+        (config->GetKind_Linear_Solver() == GMRES)) {
+        
 		CSysVector rhs_vec(nPoint, nPointDomain, nVar, xres);
 		CSysVector sol_vec(nPoint, nPointDomain, nVar, xsol);
-
+        
 		CMatrixVectorProduct* mat_vec = new CSparseMatrixVectorProduct(Jacobian);
 		CSolutionSendReceive* sol_mpi = new CSparseMatrixSolMPI(Jacobian, geometry, config);
-
+        
 		CPreconditioner* precond = NULL;
 		if (config->GetKind_Linear_Solver_Prec() == JACOBI) {
 			Jacobian.BuildJacobiPreconditioner();
@@ -2357,36 +2357,36 @@ void CPlasmaSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **s
 		CSysSolve system;
 		if (config->GetKind_Linear_Solver() == BCGSTAB)
 			IterLinSol = system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetLinear_Solver_Error(),
-					config->GetLinear_Solver_Iter(), true);
+                                        config->GetLinear_Solver_Iter(), true);
 		else if (config->GetKind_Linear_Solver() == GMRES)
 			IterLinSol = system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetLinear_Solver_Error(),
-					config->GetLinear_Solver_Iter(), true);
-
+                                      config->GetLinear_Solver_Iter(), true);
+        
 		/*--- The the number of iterations of the linear solver ---*/
 		SetIterLinSolver(IterLinSol);
-
+        
 		/*--- Copy the solution to the array ---*/
 		sol_vec.CopyToArray(xsol);
-
+        
 		/*--- dealocate memory ---*/
 		delete mat_vec;
 		delete precond;
 		delete sol_mpi;
 	}
-
+    
 	/*--- Update solution (system written in terms of increments) ---*/
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 		for (iVar = 0; iVar < nVar; iVar++) {
 			node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*xsol[iPoint*nVar+iVar]);
 		}
 	}
-
+    
 	/*--- MPI solution ---*/
 	Set_MPI_Solution(geometry, config);
 
 	/*--- Compute the root mean square residual ---*/
 	SetResidual_RMS(geometry, config);
-
+    
 }
 
 
