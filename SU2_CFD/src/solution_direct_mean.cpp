@@ -6606,37 +6606,32 @@ void CNSSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_con
                 
 				if (nDim == 2) {
 					Flux_Tensor[0][0] = 0.0;
-					Flux_Tensor[1][0] = 0.0;//tau[0][0];
-					Flux_Tensor[2][0] = 0.0;//tau[0][1];
-					//Flux_Tensor[3][0] = tau[0][0]*val_primvar[1] + tau[0][1]*val_primvar[2];
+					Flux_Tensor[1][0] = 0.0;
+					Flux_Tensor[2][0] = 0.0;
 					Flux_Tensor[3][0] = tau[0][0]*Grid_Vel[0] + tau[0][1]*Grid_Vel[1];
                     
 					Flux_Tensor[0][1] = 0.0;
-					Flux_Tensor[1][1] = 0.0;//tau[1][0];
-					Flux_Tensor[2][1] = 0.0;//tau[1][1];
-					//Flux_Tensor[3][1] = tau[1][0]*val_primvar[1] + tau[1][1]*val_primvar[2];
+					Flux_Tensor[1][1] = 0.0;
+					Flux_Tensor[2][1] = 0.0;
 					Flux_Tensor[3][1] = tau[1][0]*Grid_Vel[0] + tau[1][1]*Grid_Vel[1];
                     
 				} else {
 					Flux_Tensor[0][0] = 0.0;
-					Flux_Tensor[1][0] = 0.0;//tau[0][0];
-					Flux_Tensor[2][0] = 0.0;//tau[0][1];
-					Flux_Tensor[3][0] = 0.0;//tau[0][2];
-					//Flux_Tensor[4][0] = tau[0][0]*val_primvar[1] + tau[0][1]*val_primvar[2] + tau[0][2]*val_primvar[3];
+					Flux_Tensor[1][0] = 0.0;
+					Flux_Tensor[2][0] = 0.0;
+					Flux_Tensor[3][0] = 0.0;
 					Flux_Tensor[4][0] = tau[0][0]*Grid_Vel[0] + tau[0][1]*Grid_Vel[1] + tau[0][2]*Grid_Vel[2];
                     
 					Flux_Tensor[0][1] = 0.0;
-					Flux_Tensor[1][1] = 0.0;//tau[1][0];
-					Flux_Tensor[2][1] = 0.0;//tau[1][1];
-					Flux_Tensor[3][1] = 0.0;//tau[1][2];
-					//Flux_Tensor[4][1] = tau[1][0]*val_primvar[1] + tau[1][1]*val_primvar[2] + tau[1][2]*val_primvar[3];
+					Flux_Tensor[1][1] = 0.0;
+					Flux_Tensor[2][1] = 0.0;
+					Flux_Tensor[3][1] = 0.0;
 					Flux_Tensor[4][1] = tau[1][0]*Grid_Vel[0] + tau[1][1]*Grid_Vel[1] + tau[1][2]*Grid_Vel[2];
                     
 					Flux_Tensor[0][2] = 0.0;
-					Flux_Tensor[1][2] = 0.0;//tau[2][0];
-					Flux_Tensor[2][2] = 0.0;//tau[2][1];
-					Flux_Tensor[3][2] = 0.0;//tau[2][2];
-					//Flux_Tensor[4][2] = tau[2][0]*val_primvar[1] + tau[2][1]*val_primvar[2] + tau[2][2]*val_primvar[3];
+					Flux_Tensor[1][2] = 0.0;
+					Flux_Tensor[2][2] = 0.0;
+					Flux_Tensor[3][2] = 0.0;
 					Flux_Tensor[4][2] = tau[2][0]*Grid_Vel[0] + tau[2][1]*Grid_Vel[1] + tau[2][2]*Grid_Vel[2];
 				}
                 
