@@ -37,7 +37,7 @@ using namespace std;
  * \class CSparseMatrix
  * \brief Main class for defining sparse matrices-by-blocks 
           with compressed row format.
- * \author A. Bueno.
+ * \author A. Bueno, F. Palacios.
  * \version 2.0.5
  */
 class CSparseMatrix {
@@ -253,14 +253,6 @@ public:
 	 */
 	void SendReceive_Solution(double* x, CGeometry *geometry, CConfig *config);
 	
-	/*!
-	 * \brief Send receive the solution using MPI.
-	 * \param[in] vec - CSysVector to be multiplied by the sparse matrix A.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SendReceive_Solution(CSysVector & vec, CGeometry *geometry, CConfig *config);
-	
 	/*! 
 	 * \brief Solves the linear system Ax = b using the Symmetric Gauss Seidel (SGS) algorithm. 
 	 * \param[in] b - RHS of the equation.
@@ -295,7 +287,7 @@ public:
 	 * \param[in] vec - CSysVector to be multiplied by the sparse matrix A.
 	 * \param[out] prod - Result of the product.
 	 */
-	void MatrixVectorProduct(const CSysVector & vec, CSysVector & prod);
+	void MatrixVectorProduct(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config);
 	
 	/*!
 	 * \brief Performs the product of two block matrices.
@@ -348,14 +340,21 @@ public:
 	 * \param[in] vec - CSysVector to be multiplied by the preconditioner.
 	 * \param[out] prod - Result of the product A*vec.
 	 */
-	void ComputeJacobiPreconditioner(const CSysVector & vec, CSysVector & prod);
+	void ComputeJacobiPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config);
 	
 	/*! 
 	 * \brief Multiply CSysVector by the preconditioner
 	 * \param[in] vec - CSysVector to be multiplied by the preconditioner.
 	 * \param[out] prod - Result of the product A*vec.
 	 */
-	void ComputeLineletPreconditioner(const CSysVector & vec, CSysVector & prod);
+	void ComputeLineletPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config);
+    
+    /*!
+	 * \brief Multiply CSysVector by the preconditioner
+	 * \param[in] vec - CSysVector to be multiplied by the preconditioner.
+	 * \param[out] prod - Result of the product A*vec.
+	 */
+	void ComputeIdentityPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config);
 
 	/*!
 	 * \brief Write the header of the history file.
@@ -374,19 +373,6 @@ public:
 	void SetLin_Sol_History_Iter(ofstream *LinConvHist_file, CConfig *config, unsigned long iExtIter, double linear_residual);
 	
 	/*! 
-	 * \brief Solves the linear system Ax = b using a preconditioned Conjugate Gradient (CG) algorithm. 
-	 * \param[in] b - RHS of the equation.
-	 * \param[in] x_i - Initial candidate for the solution (x_i is overwritten).
-	 * \param[in] tol - Tolerance in order to stop the iterative proccess.
-	 * \param[in] max_it - Maximum number of iterations.
-	 * \param[in] monitoring - Boolean variable in order to monitore the convergence proccess.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void CGSolution(double* b, double* x_i, double tol, int max_it, bool monitoring, 
-									CGeometry *geometry, CConfig *config);
-	
-	/*! 
 	 * \brief Multiply the preconditioner by a vector. 
 	 * \param[in] vec - Vector to be multiplied by the preconditioner.
 	 * \param[out] prod - Result of the product A*vec.
@@ -402,14 +388,16 @@ public:
 class CSparseMatrixVectorProduct : public CMatrixVectorProduct {
 private:
 	CSparseMatrix* sparse_matrix; /*!< \brief pointer to matrix that defines the product. */
-
+	CGeometry* geometry; /*!< \brief pointer to matrix that defines the geometry. */
+	CConfig* config; /*!< \brief pointer to matrix that defines the config. */
+    
 public:
 
 	/*!
 	 * \brief constructor of the class
 	 * \param[in] matrix_ref - matrix reference that will be used to define the products
 	 */
-	CSparseMatrixVectorProduct(CSparseMatrix & matrix_ref);
+	CSparseMatrixVectorProduct(CSparseMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref);
 
 	/*!
 	 * \brief destructor of the class
@@ -425,42 +413,14 @@ public:
 };
 
 /*!
- * \class CSparseMatrixSolMPI
- * \brief specialization of matrix-vector product that uses CSparseMatrix class
- */
-class CSparseMatrixSolMPI : public CSolutionSendReceive {
-private:
-	CSparseMatrix* sparse_matrix; /*!< \brief pointer to matrix that defines the product. */
-	CGeometry* geometry; /*!< \brief pointer to matrix that defines the geometry. */
-	CConfig* config; /*!< \brief pointer to matrix that defines the config. */
-	
-public:
-	
-	/*!
-	 * \brief constructor of the class
-	 * \param[in] matrix_ref - matrix reference that will be used to define the products
-	 */
-	CSparseMatrixSolMPI(CSparseMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref);
-	
-	/*!
-	 * \brief destructor of the class
-	 */
-	CSparseMatrixSolMPI(){}
-	
-	/*!
-	 * \brief operator that defines the CSparseMatrix-CSysVector product
-	 * \param[in] u - CSysVector that is being multiplied by the sparse matrix
-	 */
-	void operator()(CSysVector & u) const;
-};
-
-/*!
  * \class CJacobiPreconditioner
  * \brief specialization of preconditioner that uses CSparseMatrix class
  */
 class CJacobiPreconditioner : public CPreconditioner {
 private:
 	CSparseMatrix* sparse_matrix; /*!< \brief pointer to matrix that defines the preconditioner. */
+	CGeometry* geometry; /*!< \brief pointer to matrix that defines the geometry. */
+	CConfig* config; /*!< \brief pointer to matrix that defines the config. */
 
 public:
 
@@ -468,7 +428,7 @@ public:
 	 * \brief constructor of the class
 	 * \param[in] matrix_ref - matrix reference that will be used to define the preconditioner
 	 */
-	CJacobiPreconditioner(CSparseMatrix & matrix_ref);
+	CJacobiPreconditioner(CSparseMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref);
 
 	/*!
 	 * \brief destructor of the class
@@ -490,14 +450,16 @@ public:
 class CLineletPreconditioner : public CPreconditioner {
 private:
 	CSparseMatrix* sparse_matrix; /*!< \brief pointer to matrix that defines the preconditioner. */
-	
+    CGeometry* geometry; /*!< \brief pointer to matrix that defines the geometry. */
+	CConfig* config; /*!< \brief pointer to matrix that defines the config. */
+    
 public:
 	
 	/*!
 	 * \brief constructor of the class
 	 * \param[in] matrix_ref - matrix reference that will be used to define the preconditioner
 	 */
-	CLineletPreconditioner(CSparseMatrix & matrix_ref);
+	CLineletPreconditioner(CSparseMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref);
 	
 	/*!
 	 * \brief destructor of the class
@@ -514,15 +476,19 @@ public:
 
 /*!
  * \class CIdentityPreconditioner
- * \brief specialization of preconditioner that does nothing (leaves vector unchanged)
+ * \brief specialization of preconditioner that uses CSparseMatrix class (MPI).
  */
 class CIdentityPreconditioner : public CPreconditioner {
+    CSparseMatrix* sparse_matrix; /*!< \brief pointer to matrix that defines the preconditioner. */
+    CGeometry* geometry; /*!< \brief pointer to matrix that defines the geometry. */
+	CConfig* config; /*!< \brief pointer to matrix that defines the config. */
+    
 public:
 
 	/*!
 	 * \brief default constructor of the class
 	 */
-	CIdentityPreconditioner() {}
+	CIdentityPreconditioner(CSparseMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref);
 
 	/*!
 	 * \brief destructor of the class

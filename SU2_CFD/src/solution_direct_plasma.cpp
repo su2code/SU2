@@ -2338,28 +2338,27 @@ void CPlasmaSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **s
 		CSysVector rhs_vec(nPoint, nPointDomain, nVar, xres);
 		CSysVector sol_vec(nPoint, nPointDomain, nVar, xsol);
         
-		CMatrixVectorProduct* mat_vec = new CSparseMatrixVectorProduct(Jacobian);
-		CSolutionSendReceive* sol_mpi = new CSparseMatrixSolMPI(Jacobian, geometry, config);
-        
+		CMatrixVectorProduct* mat_vec = new CSparseMatrixVectorProduct(Jacobian, geometry, config);
+
 		CPreconditioner* precond = NULL;
 		if (config->GetKind_Linear_Solver_Prec() == JACOBI) {
 			Jacobian.BuildJacobiPreconditioner();
-			precond = new CJacobiPreconditioner(Jacobian);
+			precond = new CJacobiPreconditioner(Jacobian, geometry, config);
 		}
 		else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
 			Jacobian.BuildJacobiPreconditioner();
-			precond = new CLineletPreconditioner(Jacobian);
+			precond = new CLineletPreconditioner(Jacobian, geometry, config);
 		}
 		else if (config->GetKind_Linear_Solver_Prec() == NO_PREC) {
-			precond = new CIdentityPreconditioner();
+			precond = new CIdentityPreconditioner(Jacobian, geometry, config);
         }
 
 		CSysSolve system;
 		if (config->GetKind_Linear_Solver() == BCGSTAB)
-			IterLinSol = system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetLinear_Solver_Error(),
+			IterLinSol = system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, config->GetLinear_Solver_Error(),
                                         config->GetLinear_Solver_Iter(), true);
 		else if (config->GetKind_Linear_Solver() == GMRES)
-			IterLinSol = system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetLinear_Solver_Error(),
+			IterLinSol = system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, config->GetLinear_Solver_Error(),
                                       config->GetLinear_Solver_Iter(), true);
         
 		/*--- The the number of iterations of the linear solver ---*/
@@ -2371,7 +2370,6 @@ void CPlasmaSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **s
 		/*--- dealocate memory ---*/
 		delete mat_vec;
 		delete precond;
-		delete sol_mpi;
 	}
     
 	/*--- Update solution (system written in terms of increments) ---*/

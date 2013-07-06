@@ -34,8 +34,10 @@ inline void CSparseMatrix::ScaleVals(double val_scale) {
 }
 
 
-inline CSparseMatrixVectorProduct::CSparseMatrixVectorProduct(CSparseMatrix & matrix_ref) {
+inline CSparseMatrixVectorProduct::CSparseMatrixVectorProduct(CSparseMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
   sparse_matrix = &matrix_ref;
+  geometry = geometry_ref;
+  config = config_ref;  
 }
 
 inline void CSparseMatrixVectorProduct::operator()(const CSysVector & u, CSysVector & v) const {
@@ -44,11 +46,13 @@ inline void CSparseMatrixVectorProduct::operator()(const CSysVector & u, CSysVec
     cerr << "pointer to sparse matrix is NULL." << endl;
     throw(-1);
   }
-  sparse_matrix->MatrixVectorProduct(u, v);
+  sparse_matrix->MatrixVectorProduct(u, v, geometry, config);
 }
 
-inline CJacobiPreconditioner::CJacobiPreconditioner(CSparseMatrix & matrix_ref) {
+inline CJacobiPreconditioner::CJacobiPreconditioner(CSparseMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
   sparse_matrix = &matrix_ref;
+    geometry = geometry_ref;
+  config = config_ref;  
 }
 
 inline void CJacobiPreconditioner::operator()(const CSysVector & u, CSysVector & v) const {
@@ -57,37 +61,35 @@ inline void CJacobiPreconditioner::operator()(const CSysVector & u, CSysVector &
     cerr << "pointer to sparse matrix is NULL." << endl;
     throw(-1);
   }
-  sparse_matrix->ComputeJacobiPreconditioner(u, v);
+  sparse_matrix->ComputeJacobiPreconditioner(u, v, geometry, config);
 }
 
-inline CLineletPreconditioner::CLineletPreconditioner(CSparseMatrix & matrix_ref) {
+inline CLineletPreconditioner::CLineletPreconditioner(CSparseMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
   sparse_matrix = &matrix_ref;
+      geometry = geometry_ref;
+  config = config_ref;  
 }
 
 inline void CLineletPreconditioner::operator()(const CSysVector & u, CSysVector & v) const {
   if (sparse_matrix == NULL) {
-    cerr << "CJacobiPreconditioner::operator()(const CSysVector &, CSysVector &): " << endl; 
+    cerr << "CLineletPreconditioner::operator()(const CSysVector &, CSysVector &): " << endl; 
     cerr << "pointer to sparse matrix is NULL." << endl;
     throw(-1);
   }
-  sparse_matrix->ComputeLineletPreconditioner(u, v);
+  sparse_matrix->ComputeLineletPreconditioner(u, v, geometry, config);
+}
+
+inline CIdentityPreconditioner::CIdentityPreconditioner(CSparseMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
+    sparse_matrix = &matrix_ref;
+    geometry = geometry_ref;
+    config = config_ref;  
 }
 
 inline void CIdentityPreconditioner::operator()(const CSysVector & u, CSysVector & v) const {
-  v = u;
-}
-
-inline CSparseMatrixSolMPI::CSparseMatrixSolMPI(CSparseMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
-  sparse_matrix = &matrix_ref;
-  geometry = geometry_ref;
-  config = config_ref;
-}
-
-inline void CSparseMatrixSolMPI::operator()(CSysVector & u) const {
   if (sparse_matrix == NULL) {
-    cerr << "CSparseMatrixSolMPI::operator()(CSysVector &): " << endl; 
+    cerr << "CIdentityPreconditioner::operator()(const CSysVector &, CSysVector &): " << endl; 
     cerr << "pointer to sparse matrix is NULL." << endl;
     throw(-1);
   }
-  sparse_matrix->SendReceive_Solution(u, geometry, config);
+  sparse_matrix->ComputeIdentityPreconditioner(u, v, geometry, config);
 }
