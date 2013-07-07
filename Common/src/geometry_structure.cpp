@@ -4476,14 +4476,15 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
 #ifndef NO_METIS
   
 	unsigned long iPoint, iElem, iElem_Triangle, iElem_Tetrahedron, nElem_Triangle,
-	nElem_Tetrahedron;
+	nElem_Tetrahedron, kPoint, jPoint, iVertex;
+    unsigned short iMarker, iMaxColor = 0, iColor, MaxColor = 0, iNode, jNode;
 	int ne = 0, nn, *elmnts = NULL, etype, *epart = NULL, *npart = NULL, numflag, nparts, edgecut, *eptr;
-  
-  int rank = MPI::COMM_WORLD.Get_rank();
+    
+    int rank = MPI::COMM_WORLD.Get_rank();
 	int size = MPI::COMM_WORLD.Get_size();
-  
+    
 	unsigned short nDomain = size;
-      
+    
 	nElem_Triangle = 0;
 	nElem_Tetrahedron = 0;
 	for (iElem = 0; iElem < GetnElem(); iElem++) {
@@ -4494,7 +4495,7 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
 		if (elem[iElem]->GetVTK_Type() == PYRAMID) nElem_Tetrahedron = nElem_Tetrahedron + 2;
 		if (elem[iElem]->GetVTK_Type() == WEDGE) nElem_Tetrahedron = nElem_Tetrahedron + 3;
 	}
-  
+    
 	if (GetnDim() == 2) {
 		ne = nElem_Triangle;
 		elmnts = new int [ne*3];
@@ -4505,7 +4506,7 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
 		elmnts = new int [ne*4];
 		etype = 2;
 	}
-  
+    
 	nn = nPoint;
 	numflag = 0;
 	nparts = nDomain;
@@ -4517,7 +4518,7 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
 		cout << "Press any key to exit..." << endl;
 		cin.get(); exit(1);
 	}
-  
+    
 	iElem_Triangle = 0; iElem_Tetrahedron = 0;
 	for (iElem = 0; iElem < GetnElem(); iElem++) {
 		if (elem[iElem]->GetVTK_Type() == TRIANGLE) {
@@ -4617,7 +4618,7 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
 	/*--- Add final value to element pointer array ---*/
 	if (GetnDim() == 2) eptr[ne] = 3*ne;
 	else eptr[ne] = 4*ne;
-  
+    
 #ifdef METIS_5
 	/*--- Calling METIS 5.0.2 ---*/
 	int options[METIS_NOPTIONS];
@@ -4630,13 +4631,63 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
 	METIS_PartMeshNodal(&ne, &nn, elmnts, &etype, &numflag, &nparts, &edgecut, epart, npart);
 	cout << "Finished partitioning using METIS 4.0.3. ("  << edgecut << " edge cuts)." << endl;
 #endif
-  
+    
 	for (iPoint = 0; iPoint < nPoint; iPoint++)
 		node[iPoint]->SetColor(npart[iPoint]);
-  
+    
+    
+    /*--- Dealing with nacelle inflow/exhaust, a particular partitioning is done ---*/
+    unsigned long *RepColor = new unsigned long[nDomain];
+    
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        
+        for (iColor = 0; iColor < nDomain; iColor++)
+            RepColor[iColor] = 0;
+        MaxColor = 0;
+        
+        if ((config->GetMarker_All_Boundary(iMarker) == NACELLE_INFLOW) ||
+            (config->GetMarker_All_Boundary(iMarker) == NACELLE_EXHAUST)) {
+            
+            for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+                iPoint = vertex[iMarker][iVertex]->GetNode();
+                RepColor[int(node[iPoint]->GetColor())]++;
+                for (iNode = 0; iNode < node[iPoint]->GetnPoint(); iNode++) {
+                    jPoint = node[iPoint]->GetPoint(iNode);
+                    RepColor[int(node[jPoint]->GetColor())]++;
+                    for (jNode = 0; jNode < node[jPoint]->GetnPoint(); jNode++) {
+                        kPoint = node[jPoint]->GetPoint(jNode);
+                        RepColor[int(node[kPoint]->GetColor())]++;
+                    }
+                }
+            }
+            
+            for (iColor = 0; iColor < nDomain; iColor++)
+                if (RepColor[iColor] > MaxColor) {
+                    MaxColor = RepColor[iColor];
+                    iMaxColor = iColor;
+                }
+            
+            for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+                iPoint = vertex[iMarker][iVertex]->GetNode();
+                node[iPoint]->SetColor(iMaxColor);
+                for (iNode = 0; iNode < node[iPoint]->GetnPoint(); iNode++) {
+                    jPoint = node[iPoint]->GetPoint(iNode);
+                    node[jPoint]->SetColor(iMaxColor);
+                    for (jNode = 0; jNode < node[jPoint]->GetnPoint(); jNode++) {
+                        kPoint = node[jPoint]->GetPoint(jNode);
+                        node[kPoint]->SetColor(iMaxColor);
+                    }
+                }
+            }
+        }
+    }
+    
+    delete[] RepColor;
+
+    
 	delete[] epart;
 	delete[] npart;
-  
+
 #endif
 #endif
   
