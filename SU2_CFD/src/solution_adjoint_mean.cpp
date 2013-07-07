@@ -2307,12 +2307,7 @@ void CAdjEulerSolution::Inviscid_Sensitivity(CGeometry *geometry, CSolution **so
 	bool rotating_frame = config->GetRotating_Frame();
 	bool incompressible = config->GetIncompressible();
 	bool grid_movement  = config->GetGrid_Movement();
-  bool levelset = ((config->GetKind_Solver() == FREE_SURFACE_EULER) ||
-                   (config->GetKind_Solver() == ADJ_FREE_SURFACE_EULER) ||
-                   (config->GetKind_Solver() == FREE_SURFACE_NAVIER_STOKES) ||
-                   (config->GetKind_Solver() == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
-                   (config->GetKind_Solver() == FREE_SURFACE_RANS) ||
-                   (config->GetKind_Solver() == ADJ_FREE_SURFACE_RANS));
+    bool freesurface = config->GetFreeSurface();
   
 	/*--- Initialize sensitivities to zero ---*/
 	Total_Sens_Geo = 0.0; Total_Sens_Mach = 0.0; Total_Sens_AoA = 0.0;
@@ -2409,7 +2404,7 @@ void CAdjEulerSolution::Inviscid_Sensitivity(CGeometry *geometry, CSolution **so
 
             /*--- Compute additional term in the surface sensitivity for
              free surface problem. ---*/
-            if (levelset) {
+            if (freesurface) {
               LevelSet = solution_container[LEVELSET_SOL]->node[iPoint]->GetSolution(0);
               Target_LevelSet = geometry->node[iPoint]->GetCoord(nDim-1);
               d_press += 0.5*(Target_LevelSet - LevelSet)*(Target_LevelSet - LevelSet);
@@ -3892,12 +3887,7 @@ void CAdjEulerSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_conta
 	bool incompressible = config->GetIncompressible();
 	bool grid_movement = config->GetGrid_Movement();
 	bool rotating_frame = config->GetRotating_Frame();
-	bool levelset = ((config->GetKind_Solver() == FREE_SURFACE_EULER) ||
-                   (config->GetKind_Solver() == ADJ_FREE_SURFACE_EULER) ||
-                   (config->GetKind_Solver() == FREE_SURFACE_NAVIER_STOKES) ||
-                   (config->GetKind_Solver() == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
-                   (config->GetKind_Solver() == FREE_SURFACE_RANS) ||
-                   (config->GetKind_Solver() == ADJ_FREE_SURFACE_RANS));
+    bool freesurface = config->GetFreeSurface();
 	string Marker_Tag = config->GetMarker_All_Tag(val_marker);
 
 	double *Normal = new double[nDim];
@@ -3952,7 +3942,7 @@ void CAdjEulerSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_conta
         
 				/*--- The y/z velocity is interpolated due to the
          free surface effect on the pressure ---*/
-				if (levelset) U_inlet[nDim] = solution_container[FLOW_SOL]->node[iPoint]->GetSolution(nDim);
+				if (freesurface) U_inlet[nDim] = solution_container[FLOW_SOL]->node[iPoint]->GetSolution(nDim);
         
 				/*--- Adjoint solution at the inlet ---*/
 				Psi_inlet[0] = node[iPoint]->GetSolution(0);
@@ -4220,17 +4210,13 @@ void CAdjEulerSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_cont
 	bool incompressible = config->GetIncompressible();
 	bool rotating_frame = config->GetRotating_Frame();
 	bool grid_movement  = config->GetGrid_Movement();
-  double FreeSurface_Zero = config->GetFreeSurface_Zero();
+    double FreeSurface_Zero = config->GetFreeSurface_Zero();
 	double PressFreeSurface = solution_container[FLOW_SOL]->GetPressure_Inf();
-  double epsilon          = config->GetFreeSurface_Thickness();
-  double RatioDensity     = config->GetRatioDensity();
-  double Froude           = config->GetFroude();
-	bool levelset = ((config->GetKind_Solver() == FREE_SURFACE_EULER) ||
-                   (config->GetKind_Solver() == ADJ_FREE_SURFACE_EULER) ||
-                   (config->GetKind_Solver() == FREE_SURFACE_NAVIER_STOKES) ||
-                   (config->GetKind_Solver() == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
-                   (config->GetKind_Solver() == FREE_SURFACE_RANS) ||
-                   (config->GetKind_Solver() == ADJ_FREE_SURFACE_RANS));
+    double epsilon          = config->GetFreeSurface_Thickness();
+    double RatioDensity     = config->GetRatioDensity();
+    double Froude           = config->GetFroude();
+    bool freesurface = config->GetFreeSurface();
+
   
 	string Marker_Tag = config->GetMarker_All_Tag(val_marker);
 
@@ -4267,7 +4253,7 @@ void CAdjEulerSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_cont
 			/*--- Construct the flow & adjoint states at the outlet ---*/
 			if (incompressible) {
 
-        if (levelset) {
+        if (freesurface) {
           
 //          /*--- Flow solution at the boundary ---*/
 //          Density_Outlet = solution_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
@@ -4489,7 +4475,7 @@ void CAdjEulerSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_cont
 
 }
 
-void CAdjEulerSolution::BC_NacelleInflow(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
+void CAdjEulerSolution::BC_Nacelle_Inflow(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
 
 	/*--- Local variables and initialization. ---*/
 	double *Normal, *U_domain, *U_inflow, *Psi_domain, *Psi_inflow;
@@ -4615,7 +4601,7 @@ void CAdjEulerSolution::BC_NacelleInflow(CGeometry *geometry, CSolution **soluti
 
 }
 
-void CAdjEulerSolution::BC_NacelleExhaust(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
+void CAdjEulerSolution::BC_Nacelle_Exhaust(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
 
 	/*--- Local variables and initialization. ---*/
 	unsigned long iVertex, iPoint;
@@ -5676,13 +5662,9 @@ void CAdjNSSolution::Viscous_Sensitivity(CGeometry *geometry, CSolution **soluti
   
 	double Gas_Constant = config->GetGas_ConstantND();
 	bool incompressible = config->GetIncompressible();
-  bool rotating_frame = config->GetRotating_Frame();
-  bool levelset = ((config->GetKind_Solver() == FREE_SURFACE_EULER) ||
-                   (config->GetKind_Solver() == ADJ_FREE_SURFACE_EULER) ||
-                   (config->GetKind_Solver() == FREE_SURFACE_NAVIER_STOKES) ||
-                   (config->GetKind_Solver() == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
-                   (config->GetKind_Solver() == FREE_SURFACE_RANS) ||
-                   (config->GetKind_Solver() == ADJ_FREE_SURFACE_RANS));
+    bool rotating_frame = config->GetRotating_Frame();
+    bool freesurface = config->GetFreeSurface();
+
   
 	cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   
@@ -5908,7 +5890,7 @@ void CAdjNSSolution::Viscous_Sensitivity(CGeometry *geometry, CSolution **soluti
             
             /*--- Compute additional term in the surface sensitivity for
              free surface problem. ---*/
-            if (levelset) {
+            if (freesurface) {
               LevelSet = solution_container[LEVELSET_SOL]->node[iPoint]->GetSolution(0);
               Target_LevelSet = geometry->node[iPoint]->GetCoord(nDim-1);
               sigma_partial += 0.5*(Target_LevelSet - LevelSet)*(Target_LevelSet - LevelSet);

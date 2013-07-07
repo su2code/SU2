@@ -101,10 +101,10 @@ void CIntegration::Space_Integration(CGeometry *geometry, CSolution **solution_c
 				solution_container[MainSolution]->BC_Sym_Plane(geometry, solution_container, solver[CONV_BOUND_TERM], solver[VISC_BOUND_TERM], config, iMarker);
 				break;
       case NACELLE_EXHAUST:
-				solution_container[MainSolution]->BC_NacelleExhaust(geometry, solution_container, solver[CONV_BOUND_TERM], solver[VISC_BOUND_TERM], config, iMarker);
+				solution_container[MainSolution]->BC_Nacelle_Exhaust(geometry, solution_container, solver[CONV_BOUND_TERM], solver[VISC_BOUND_TERM], config, iMarker);
 				break;
 			case NACELLE_INFLOW:
-				solution_container[MainSolution]->BC_NacelleInflow(geometry, solution_container, solver[CONV_BOUND_TERM], solver[VISC_BOUND_TERM], config, iMarker);
+				solution_container[MainSolution]->BC_Nacelle_Inflow(geometry, solution_container, solver[CONV_BOUND_TERM], solver[VISC_BOUND_TERM], config, iMarker);
 				break;
 			case INTERFACE_BOUNDARY:
 				solution_container[MainSolution]->BC_Interface_Boundary(geometry, solution_container, solver[CONV_BOUND_TERM], config, iMarker);
@@ -195,7 +195,7 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolution **solution_co
 	unsigned short MainSolution = config->GetContainerPosition(RunTime_EqSystem);
     
     
-	if ((config->IsAdjoint()) || (config->GetKind_Adjoint() != DISCRETE)) {
+	if ((config->GetAdjoint()) || (config->GetKind_Adjoint() != DISCRETE)) {
         
         /*--- Perform the time integration ---*/
         switch (config->GetKind_TimeIntScheme()) {

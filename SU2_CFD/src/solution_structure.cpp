@@ -1413,7 +1413,7 @@ CBaselineSolution::CBaselineSolution(CGeometry *geometry, CConfig *config, unsig
   string filename;
   
   /*--- Retrieve filename from config ---*/
-	if (config->IsAdjoint())
+	if (config->GetAdjoint())
 		filename = config->GetSolution_AdjFileName();
 	else
 		filename = config->GetSolution_FlowFileName();
@@ -1422,7 +1422,7 @@ CBaselineSolution::CBaselineSolution(CGeometry *geometry, CConfig *config, unsig
 	filename.erase(filename.end()-4, filename.end());
   
 	/*--- The adjoint problem requires a particular extension. ---*/
-	if (config->IsAdjoint()) {
+	if (config->GetAdjoint()) {
 		switch (Kind_ObjFunc) {
       case DRAG_COEFFICIENT:      AdjExt = "_cd";   break;
       case LIFT_COEFFICIENT:      AdjExt = "_cl";   break;
@@ -1700,7 +1700,7 @@ void CBaselineSolution::GetRestart(CGeometry *geometry, CConfig *config, unsigne
   unsigned short iField;
   
   /*--- Retrieve filename from config ---*/
-	if (config->IsAdjoint())
+	if (config->GetAdjoint())
 		filename = config->GetSolution_AdjFileName();
 	else
 		filename = config->GetSolution_FlowFileName();
@@ -1709,7 +1709,7 @@ void CBaselineSolution::GetRestart(CGeometry *geometry, CConfig *config, unsigne
 	filename.erase(filename.end()-4, filename.end());
   
 	/*--- The adjoint problem requires a particular extension. ---*/
-	if (config->IsAdjoint()) {
+	if (config->GetAdjoint()) {
 		switch (Kind_ObjFunc) {
       case DRAG_COEFFICIENT:      AdjExt = "_cd";   break;
       case LIFT_COEFFICIENT:      AdjExt = "_cl";   break;

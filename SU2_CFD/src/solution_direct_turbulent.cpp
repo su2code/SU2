@@ -1291,17 +1291,11 @@ void CTurbSASolution::BC_Inlet(CGeometry *geometry, CSolution **solution_contain
 	double Two_Gamma_M1 = 2.0/Gamma_Minus_One;
 	double Gas_Constant = config->GetGas_ConstantND();
 	double *Normal = new double[nDim];
-  
+    
 	bool rotating_frame = config->GetRotating_Frame();
 	bool grid_movement  = config->GetGrid_Movement();
 	bool incompressible = config->GetIncompressible();
-	bool levelset = ((config->GetKind_Solver() == FREE_SURFACE_EULER) ||
-                   (config->GetKind_Solver() == ADJ_FREE_SURFACE_EULER) ||
-                   (config->GetKind_Solver() == FREE_SURFACE_NAVIER_STOKES) ||
-                   (config->GetKind_Solver() == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
-                   (config->GetKind_Solver() == FREE_SURFACE_RANS) ||
-                   (config->GetKind_Solver() == ADJ_FREE_SURFACE_RANS));
-  
+    bool freesurface = config->GetFreeSurface();
 	string Marker_Tag = config->GetMarker_All_Tag(val_marker);
   
 	/*--- Loop over all the vertices on this boundary marker ---*/
@@ -1344,7 +1338,7 @@ void CTurbSASolution::BC_Inlet(CGeometry *geometry, CSolution **solution_contain
         
 				/*--- The y/z velocity is interpolated due to the
          free surface effect on the pressure ---*/
-				if (levelset) FlowSolution_j[nDim] = solution_container[FLOW_SOL]->node[iPoint]->GetSolution(nDim);
+				if (freesurface) FlowSolution_j[nDim] = solution_container[FLOW_SOL]->node[iPoint]->GetSolution(nDim);
         
 			}
 			else {
@@ -1681,7 +1675,7 @@ void CTurbSASolution::BC_Outlet(CGeometry *geometry, CSolution **solution_contai
 
 }
 
-void CTurbSASolution::BC_NacelleInflow(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
+void CTurbSASolution::BC_Nacelle_Inflow(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
 	unsigned long iPoint, iVertex, Point_Normal;
 	unsigned short iDim;
   
@@ -1765,7 +1759,7 @@ void CTurbSASolution::BC_NacelleInflow(CGeometry *geometry, CSolution **solution
   
 }
 
-void CTurbSASolution::BC_NacelleExhaust(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
+void CTurbSASolution::BC_Nacelle_Exhaust(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
 	unsigned short iVar, iDim;
 	unsigned long iVertex, iPoint, Point_Normal;
 	double P_Total, T_Total, Velocity[3];

@@ -1489,7 +1489,7 @@ void CVolumetricMovement::SetRigidRotation(CGeometry *geometry, CConfig *config,
 	double cosPhi, sinPhi, cosPsi, sinPsi;
 	double DEG2RAD = PI_NUMBER/180.0;
 	bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
-	bool adjoint = config->IsAdjoint();
+	bool adjoint = config->GetAdjoint();
   double motion_ramp = config->GetMotion_Ramp(iter);
 
 	/*--- Problem dimension and physical time step ---*/
@@ -1630,7 +1630,7 @@ void CVolumetricMovement::SetRigidPitching(CGeometry *geometry, CConfig *config,
   unsigned short nDim = geometry->GetnDim();
   unsigned long iPoint;
   bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
-  bool adjoint = config->IsAdjoint();
+  bool adjoint = config->GetAdjoint();
 	double motion_ramp = config->GetMotion_Ramp(iter);
   
   /*--- Retrieve values from the config file ---*/
@@ -1787,7 +1787,7 @@ void CVolumetricMovement::SetRigidPlunging(CGeometry *geometry, CConfig *config,
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint;
   bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
-  bool adjoint = config->IsAdjoint();
+  bool adjoint = config->GetAdjoint();
 	double motion_ramp = config->GetMotion_Ramp(iter);
   
   /*--- Retrieve values from the config file ---*/
@@ -1913,7 +1913,7 @@ void CVolumetricMovement::SetRigidTranslation(CGeometry *geometry, CConfig *conf
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint;
   bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
-  bool adjoint = config->IsAdjoint();
+  bool adjoint = config->GetAdjoint();
 	
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();

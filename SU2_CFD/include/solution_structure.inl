@@ -355,10 +355,10 @@ inline void CSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_conta
 inline void CSolution::BC_Supersonic_Inlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, 
 										 CConfig *config, unsigned short val_marker) { }
 
-inline void CSolution::BC_NacelleInflow(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, 
+inline void CSolution::BC_Nacelle_Inflow(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, 
 										  CConfig *config, unsigned short val_marker) { }
 											
-inline void CSolution::BC_NacelleExhaust(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, 
+inline void CSolution::BC_Nacelle_Exhaust(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, 
 										  CConfig *config, unsigned short val_marker) { }
 																						
 inline void CSolution::BC_Neumann(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, 

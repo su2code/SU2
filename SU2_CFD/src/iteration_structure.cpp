@@ -1058,7 +1058,7 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
                       CSolution ***solution_container, CConfig *config_container, unsigned short iZone, unsigned long ExtIter)   {
   
 	unsigned short Kind_Grid_Movement = config_container->GetKind_GridMovement(iZone);
-  bool adjoint = config_container->IsAdjoint();
+  bool adjoint = config_container->GetAdjoint();
 	bool time_spectral = (config_container->GetUnsteady_Simulation() == TIME_SPECTRAL);
   
 	/*--- For a time-spectral case, set "iteration number" to the zone number,
@@ -1302,7 +1302,7 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolution ****solution_con
 	unsigned short nVar = solution_container[ZONE_0][MESH_0][FLOW_SOL]->GetnVar();
 	unsigned long iPoint;
 	bool implicit = (config_container[ZONE_0]->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-	bool adjoint = (config_container[ZONE_0]->IsAdjoint());
+	bool adjoint = (config_container[ZONE_0]->GetAdjoint());
 	if (adjoint) {
 		implicit = (config_container[ZONE_0]->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
 	}
