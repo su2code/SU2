@@ -57,6 +57,7 @@ protected:
 	unsigned short IterLinSolver;	/*!< \brief Linear solver iterations. */
 	unsigned short nVar,					/*!< \brief Number of variables of the problem. */
     nPrimVar,                     /*!< \brief Number of primitive variables of the problem. */
+    nPrimVarGrad,                    /*!< \brief Number of primitive variables of the problem in the gradient computation. */
 	nDim;													/*!< \brief Number of dimensions of the problem. */
 	unsigned long nPoint;					/*!< \brief Number of points of the computational grid. */
     unsigned long nPointDomain; 	/*!< \brief Number of points of the computational grid. */
