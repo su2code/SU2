@@ -396,7 +396,7 @@ int main(int argc, char *argv[]) {
 	}
 	
   
-	if ((config_container[ZONE_0]->IsAdjoint()) && (config_container[ZONE_0]->GetShow_Adj_Sens())) {
+	if ((config_container[ZONE_0]->GetAdjoint()) && (config_container[ZONE_0]->GetShow_Adj_Sens())) {
     
 		cout << endl;
 		cout << "Adjoint-derived sensitivities:" << endl;

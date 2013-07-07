@@ -3930,7 +3930,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short va
                          config->GetGrid_Movement()));
   
 	/*--- Retrieve filename from config ---*/
-	if (config->IsAdjoint())
+	if (config->GetAdjoint())
 		filename = config->GetRestart_AdjFileName();
 	else
 		filename = config->GetRestart_FlowFileName();
@@ -3939,7 +3939,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short va
 	filename.erase(filename.end()-4, filename.end());
 
 	/*--- The adjoint problem requires a particular extension. ---*/
-	if (config->IsAdjoint()) {
+	if (config->GetAdjoint()) {
 		switch (Kind_ObjFunc) {
 		case DRAG_COEFFICIENT:      AdjExt = "_cd";   break;
 		case LIFT_COEFFICIENT:      AdjExt = "_cl";   break;

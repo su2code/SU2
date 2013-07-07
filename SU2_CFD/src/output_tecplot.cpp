@@ -36,20 +36,20 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
   bool *SurfacePoint = NULL;
   
 	bool grid_movement  = config->GetGrid_Movement();
-	bool isAdjoint = config->IsAdjoint();
+	bool Adjoint = config->GetAdjoint();
     
 	char cstr[200], buffer[50];
 	string filename;
     
 	/*--- Write file name with extension ---*/
   if (surf_sol) {
-    if (isAdjoint)
+    if (Adjoint)
       filename = config->GetSurfAdjCoeff_FileName();
     else
       filename = config->GetSurfFlowCoeff_FileName();
   }
   else {
-    if (isAdjoint)
+    if (Adjoint)
       filename = config->GetAdj_FileName();
     else
       filename = config->GetFlow_FileName();

@@ -60,13 +60,14 @@ private:
 	double* Hold_GridFixed_Coord; /*!< \brief Coordinates of the box to hold fixed the nbumerical grid */
 	unsigned short ConvCriteria;	/*!< \brief Kind of convergence criteria. */
 	bool Adjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
+    Viscous,                /*!< \brief Flag to know if the code is solving a viscous problem. */
 	EquivArea,				/*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
 	FlowRate,				/*!< \brief Flag to know if the code is going to compute and plot the flow rate. */
 	OneShot,				/*!< \brief Flag to know if the code is solving a one shot problem. */
 	Linearized,				/*!< \brief Flag to know if the code is solving a linearized problem. */
 	Grid_Movement,			/*!< \brief Flag to know if there is grid movement. */
 	Rotating_Frame,			/*!< \brief Flag to know if there is a rotating frame. */
-	FreeSurface,        /*!< \brief Flag to know if we are solving a freesurface problem. */
+	FreeSurface,            /*!< \brief Flag to know if we are solving a freesurface problem. */
 	Incompressible,			/*!< \brief Flag to know if we are using the incompressible formulation. */
 	AdiabaticWall,			/*!< \brief Flag to know if we are using the Adiabatic Wall. */
 	IsothermalWall,			/*!< \brief Flag to know if we are using the Isothermal Wall. */
@@ -3805,7 +3806,13 @@ public:
 	 * \brief Determines if problem is adjoint
 	 * \return true if Adjoint
 	 */
-	bool IsAdjoint(void);
+	bool GetAdjoint(void);
+    
+    /*!
+	 * \brief Determines if problem is viscous
+	 * \return true if Viscous
+	 */
+	bool GetViscous(void);
 
 	/*!
 	 * \brief Provides the index of the solution in the container.
