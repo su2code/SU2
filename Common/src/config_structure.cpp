@@ -212,7 +212,7 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	/* DESCRIPTION: Observer boundary marker(s) */
 	AddMarkerOption("MARKER_OBSERVER", nMarker_Observer, Marker_Observer);
 	/* DESCRIPTION: Damping factor for engine inlet condition */
-	AddScalarOption("DAMP_NACELLE_INFLOW", Damp_Engine_Inlet, 0.1);
+	AddScalarOption("DAMP_NACELLE_INFLOW", Damp_Nacelle_Inflow, 0.1);
     
 	/*--- options related to grid adaptation ---*/
 	/* CONFIG_CATEGORY: Grid adaptation */

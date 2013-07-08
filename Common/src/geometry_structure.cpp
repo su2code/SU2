@@ -3174,7 +3174,7 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
 
 	unsigned short iMarker, iDim;
 	unsigned long iVertex, iPoint, pPoint = 0, jVertex, jPoint;
-	double *Coord_i, Coord_j[3], dist = 0.0, mindist, maxdist;
+	double *Coord_i, Coord_j[3], dist = 0.0, mindist, maxdist_local, maxdist_global;
 	int iProcessor, pProcessor = 0;
 	unsigned long nLocalVertex_NearField = 0, nGlobalVertex_NearField = 0, MaxLocalVertex_NearField = 0;
 
@@ -3236,9 +3236,11 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
 	MPI::COMM_WORLD.Allgather(Buffer_Send_Point, nBuffer_Point, MPI::UNSIGNED_LONG, Buffer_Receive_Point, nBuffer_Point, MPI::UNSIGNED_LONG);
 
 	/*--- Compute the closest point to a Near-Field boundary point ---*/
-	maxdist = 0.0;
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+	maxdist_local = 0.0;
+    maxdist_global = 0.0;
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 		if (config->GetMarker_All_Boundary(iMarker) == NEARFIELD_BOUNDARY) {
+            
 			for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
 				iPoint = vertex[iMarker][iVertex]->GetNode();
 				if (node[iPoint]->GetDomain()) {
@@ -3264,7 +3266,7 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
 						}
 
 					/*--- Store the value of the pair ---*/
-					maxdist = max(maxdist, mindist);
+					maxdist_local = max(maxdist_local, mindist);
 					vertex[iMarker][iVertex]->SetDonorPoint(pPoint, pProcessor);
 
 					if (mindist > epsilon) {
@@ -3273,13 +3275,18 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
 						cout << "   Bad match for point " << iPoint << ".\tNearest";
 						cout << " donor distance: " << scientific << mindist << ".";
 						vertex[iMarker][iVertex]->SetDonorPoint(iPoint);
-						maxdist = min(maxdist, 0.0);
+						maxdist_local = min(maxdist_local, 0.0);
 					}
 
 				}
 			}
-			cout <<"Node rank: "<<rank<<". The max distance between points is: " << maxdist <<"."<< endl;
+            
 		}
+    }
+    
+    MPI::COMM_WORLD.Reduce(&maxdist_local, &maxdist_global, 1, MPI::DOUBLE, MPI::MAX, MASTER_NODE);
+    if (rank == MASTER_NODE) cout <<"The max distance between points is: " << maxdist_global <<"."<< endl;
+
 
 	delete[] Buffer_Send_Coord;
 	delete[] Buffer_Send_Point;
@@ -3347,7 +3354,7 @@ void CPhysicalGeometry::MatchInterface(CConfig *config) {
 
 	unsigned short iMarker, iDim;
 	unsigned long iVertex, iPoint, pPoint = 0, jVertex, jPoint;
-	double *Coord_i, Coord_j[3], dist = 0.0, mindist, maxdist;
+	double *Coord_i, Coord_j[3], dist = 0.0, mindist, maxdist_local, maxdist_global;
 	int iProcessor, pProcessor = 0;
 	unsigned long nLocalVertex_Interface = 0, nGlobalVertex_Interface = 0, MaxLocalVertex_Interface = 0;
 
@@ -3409,8 +3416,8 @@ void CPhysicalGeometry::MatchInterface(CConfig *config) {
 	MPI::COMM_WORLD.Allgather(Buffer_Send_Point, nBuffer_Point, MPI::UNSIGNED_LONG, Buffer_Receive_Point, nBuffer_Point, MPI::UNSIGNED_LONG);
 
 	/*--- Compute the closest point to a Near-Field boundary point ---*/
-	maxdist = 0.0;
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+	maxdist_local = 0.0;
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 		if (config->GetMarker_All_Boundary(iMarker) == INTERFACE_BOUNDARY) {
 			for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
 				iPoint = vertex[iMarker][iVertex]->GetNode();
@@ -3437,7 +3444,7 @@ void CPhysicalGeometry::MatchInterface(CConfig *config) {
 						}
 
 					/*--- Store the value of the pair ---*/
-					maxdist = max(maxdist, mindist);
+					maxdist_local = max(maxdist_local, mindist);
 					vertex[iMarker][iVertex]->SetDonorPoint(pPoint, pProcessor);
 
 					if (mindist > epsilon) {
@@ -3446,13 +3453,16 @@ void CPhysicalGeometry::MatchInterface(CConfig *config) {
 						cout << "   Bad match for point " << iPoint << ".\tNearest";
 						cout << " donor distance: " << scientific << mindist << ".";
 						vertex[iMarker][iVertex]->SetDonorPoint(iPoint);
-						maxdist = min(maxdist, 0.0);
+						maxdist_local = min(maxdist_local, 0.0);
 					}
 
 				}
 			}
-			cout << "Node rank: "<< rank << ". The max distance between points is: " << maxdist <<"."<< endl;
 		}
+    }
+
+    MPI::COMM_WORLD.Reduce(&maxdist_local, &maxdist_global, 1, MPI::DOUBLE, MPI::MAX, MASTER_NODE);
+    if (rank == MASTER_NODE) cout <<"The max distance between points is: " << maxdist_global <<"."<< endl;
 
 	delete[] Buffer_Send_Coord;
 	delete[] Buffer_Send_Point;

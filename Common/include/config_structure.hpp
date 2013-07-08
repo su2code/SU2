@@ -91,7 +91,7 @@ private:
 	Show_Adj_Sens; /*!< \brief Flag for outputting sensitivities on exit */
 	bool Visualize_Partition;	/*!< \brief Flag to visualize each partition in the DDM. */
 	bool Visualize_Deformation;	/*!< \brief Flag to visualize the deformation in the MDC. */
-    double Damp_Engine_Inlet;	/*!< \brief Damping factor for the engine inlet. */
+    double Damp_Nacelle_Inflow;	/*!< \brief Damping factor for the engine inlet. */
 	double Damp_Res_Restric,	/*!< \brief Damping factor for the residual restriction. */
 	Damp_Correc_Prolong; /*!< \brief Damping factor for the correction prolongation. */
 	double Position_Plane; /*!< \brief Position of the Near-Field (y coordinate 2D, and z coordinate 3D). */
@@ -3867,7 +3867,7 @@ public:
 	 * \brief Value of the damping factor for the engine inlet bc.
 	 * \return Value of the damping factor.
 	 */
-	double GetDamp_Engine_Inlet(void);
+	double GetDamp_Nacelle_Inflow(void);
     
 	/*! 
 	 * \brief Value of the damping factor for the residual restriction.

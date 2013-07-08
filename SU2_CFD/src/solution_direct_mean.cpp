@@ -3421,22 +3421,26 @@ void CEulerSolution::GetNacelle_Properties(CGeometry *geometry, CConfig *config,
 
     }
 
-    
-    if ((rank == MASTER_NODE) && (iMesh == MESH_0)) {
+    bool write_heads = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*20)) == 0));
+    if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads) {
         
+        cout.precision(4);
+        cout.setf(ios::fixed,ios::floatfield);
+        
+        cout << endl << "---------------------------- Engine properties --------------------------" << endl;
         for (iMarker_NacelleInflow = 0; iMarker_NacelleInflow < nMarker_NacelleInflow; iMarker_NacelleInflow++) {
-            cout << endl << "FanFace_MarkerTag: " << config->GetMarker_NacelleInflow(iMarker_NacelleInflow) << endl;
-            cout << "FanFace_MassFlow: " << FanFace_MassFlow_Total[iMarker_NacelleInflow] << endl;
-            cout << "FanFace_Mach: " << FanFace_Mach_Total[iMarker_NacelleInflow] << endl;
-            cout << "FanFace_Pressure: " << FanFace_Pressure_Total[iMarker_NacelleInflow] << endl;
-            cout << "FanFace_Area_Total: " << FanFace_Area_Total[iMarker_NacelleInflow] << endl;
+            cout << "Nacelle inflow ("<< config->GetMarker_NacelleInflow(iMarker_NacelleInflow)
+            << "): MassFlow: " << FanFace_MassFlow_Total[iMarker_NacelleInflow]
+            << ", Mach: " << FanFace_Mach_Total[iMarker_NacelleInflow]
+            << ", Area: " << FanFace_Area_Total[iMarker_NacelleInflow] <<"."<< endl;
         }
         
         for (iMarker_NacelleExhaust = 0; iMarker_NacelleExhaust < nMarker_NacelleExhaust; iMarker_NacelleExhaust++) {
-            cout << endl << "Exhaust_MarkerTag: " << config->GetMarker_NacelleExhaust(iMarker_NacelleExhaust) << endl;
-            cout << "Exhaust_MassFlow: " << Exhaust_MassFlow_Total[iMarker_NacelleExhaust] << endl;
-            cout << "Exhaust_Area_Total: " << Exhaust_Area_Total[iMarker_NacelleExhaust] << endl;
+            cout << "Nacelle exhaust ("<< config->GetMarker_NacelleExhaust(iMarker_NacelleExhaust)
+            << "): MassFlow: " << Exhaust_MassFlow_Total[iMarker_NacelleExhaust]
+            << ", Area: " << Exhaust_Area_Total[iMarker_NacelleExhaust] <<"."<< endl;
         }
+        cout << "-------------------------------------------------------------------------" << endl;
         
     }
     
@@ -4438,7 +4442,7 @@ void CEulerSolution::BC_Nacelle_Inflow(CGeometry *geometry, CSolution **solution
 	double Pressure, P_Fan, Velocity[3], Velocity2, Entropy, Target_FanFace_Mach = 0.0, Density, Energy,
     Riemann, Area, UnitaryNormal[3], Vn, SoundSpeed, Vn_Exit, P_Fan_inc, P_Fan_old, M_Fan_old;
     
-	double DampingFactor = config->GetDamp_Engine_Inlet();
+	double DampingFactor = config->GetDamp_Nacelle_Inflow();
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 	bool viscous              = config->GetViscous();
     double Gas_Constant = config->GetGas_ConstantND();
