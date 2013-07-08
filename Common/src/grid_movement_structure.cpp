@@ -3416,9 +3416,8 @@ void CSurfaceMovement::SetBoundary_Flutter2D(CGeometry *geometry, CConfig *confi
   unsigned short iDim, iMarker;
   unsigned short nDim = geometry->GetnDim();
   unsigned long iPoint, iVertex;
-  bool adjoint = ((config->GetKind_Solver() == ADJ_EULER) || 
-                  (config->GetKind_Solver() == ADJ_NAVIER_STOKES) ||
-                  (config->GetKind_Solver() == ADJ_RANS));
+  bool adjoint = config->GetAdjoint();
+    
 #ifndef NO_MPI
 	int rank = MPI::COMM_WORLD.Get_rank();
 #else
@@ -3494,9 +3493,8 @@ void CSurfaceMovement::SetBoundary_Flutter3D(CGeometry *geometry, CConfig *confi
   double time_new, time_old;
   unsigned short iDim;
   unsigned short nDim = geometry->GetnDim();
-  bool adjoint = ((config->GetKind_Solver() == ADJ_EULER) || 
-                  (config->GetKind_Solver() == ADJ_NAVIER_STOKES) ||
-                  (config->GetKind_Solver() == ADJ_RANS));
+  bool adjoint = config->GetAdjoint();
+    
 #ifndef NO_MPI
 	int rank = MPI::COMM_WORLD.Get_rank();
 #else
@@ -3593,9 +3591,7 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
   string motion_filename, UnstExt, text_line;
   ifstream motion_file;
   bool unsteady = config->GetUnsteady_Simulation();
-  bool adjoint = ((config->GetKind_Solver() == ADJ_EULER) || 
-                  (config->GetKind_Solver() == ADJ_NAVIER_STOKES) ||
-                  (config->GetKind_Solver() == ADJ_RANS));
+  bool adjoint = config->GetAdjoint();
   
 	/*--- Load stuff from config ---*/
   
