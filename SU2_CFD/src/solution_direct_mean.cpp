@@ -3275,7 +3275,7 @@ void CEulerSolution::GetNacelle_Properties(CGeometry *geometry, CConfig *config,
                     
                     MassFlow = 0.0;
                     for (iDim = 0; iDim < nDim; iDim++)
-                        MassFlow = Vector[iDim]*node[iPoint]->GetSolution(iDim+1);
+                        MassFlow += Vector[iDim]*node[iPoint]->GetSolution(iDim+1);
                     
                     /*--- Compute the mass Exhaust_MassFlow ---*/
                     Exhaust_MassFlow[iMarker] += MassFlow;

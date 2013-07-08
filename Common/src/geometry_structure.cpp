@@ -4636,55 +4636,6 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
 		node[iPoint]->SetColor(npart[iPoint]);
     
     
-    /*--- Dealing with nacelle inflow/exhaust, a particular partitioning is done ---*/
-    unsigned long *RepColor = new unsigned long[nDomain];
-    
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        
-        for (iColor = 0; iColor < nDomain; iColor++)
-            RepColor[iColor] = 0;
-        MaxColor = 0;
-        
-        if ((config->GetMarker_All_Boundary(iMarker) == NACELLE_INFLOW) ||
-            (config->GetMarker_All_Boundary(iMarker) == NACELLE_EXHAUST)) {
-            
-            for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-                iPoint = vertex[iMarker][iVertex]->GetNode();
-                RepColor[int(node[iPoint]->GetColor())]++;
-                for (iNode = 0; iNode < node[iPoint]->GetnPoint(); iNode++) {
-                    jPoint = node[iPoint]->GetPoint(iNode);
-                    RepColor[int(node[jPoint]->GetColor())]++;
-                    for (jNode = 0; jNode < node[jPoint]->GetnPoint(); jNode++) {
-                        kPoint = node[jPoint]->GetPoint(jNode);
-                        RepColor[int(node[kPoint]->GetColor())]++;
-                    }
-                }
-            }
-            
-            for (iColor = 0; iColor < nDomain; iColor++)
-                if (RepColor[iColor] > MaxColor) {
-                    MaxColor = RepColor[iColor];
-                    iMaxColor = iColor;
-                }
-            
-            for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-                iPoint = vertex[iMarker][iVertex]->GetNode();
-                node[iPoint]->SetColor(iMaxColor);
-                for (iNode = 0; iNode < node[iPoint]->GetnPoint(); iNode++) {
-                    jPoint = node[iPoint]->GetPoint(iNode);
-                    node[jPoint]->SetColor(iMaxColor);
-                    for (jNode = 0; jNode < node[jPoint]->GetnPoint(); jNode++) {
-                        kPoint = node[jPoint]->GetPoint(jNode);
-                        node[kPoint]->SetColor(iMaxColor);
-                    }
-                }
-            }
-        }
-    }
-    
-    delete[] RepColor;
-
-    
 	delete[] epart;
 	delete[] npart;
 

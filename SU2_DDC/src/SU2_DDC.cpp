@@ -61,7 +61,6 @@ int main(int argc, char *argv[]) {
         /*--- Definition of the Class for the geometry ---*/
         geometry = new CPhysicalGeometry(config, config->GetMesh_FileName(), config->GetMesh_FileFormat(), ZONE_0, nZone);
         
-        geometry->SetVertex(config); // Add because the nacelle bc... remove!
     }
     
 #ifndef NO_MPI
