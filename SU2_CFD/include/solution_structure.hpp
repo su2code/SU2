@@ -1840,6 +1840,7 @@ protected:
 	*FanFace_Pressure,	/*!< \brief Fan face pressure for each boundary. */
 	*FanFace_Mach,	/*!< \brief Fan face mach number for each boundary. */
 	*FanFace_Area,	/*!< \brief Boundary total area. */
+    *Exhaust_Area,	/*!< \brief Boundary total area. */
     FanFace_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
     Exhaust_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
 	FanFace_Pressure_Total,	/*!< \brief Fan face pressure for each boundary. */

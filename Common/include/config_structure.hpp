@@ -195,8 +195,10 @@ private:
 	double *Inlet_Temperature;    /*!< \brief Specified temperatures for a supersonic inlet boundaries. */
 	double *Inlet_Pressure;    /*!< \brief Specified static pressures for supersonic inlet boundaries. */
 	double **Inlet_Velocity;  /*!< \brief Specified flow velocity vectors for supersonic inlet boundaries. */
+	double *FanFace_Mach_Target;    /*!< \brief Specified fan face mach for nacelle boundaries. */
 	double *FanFace_Mach;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-	double *Outlet_Pressure;    /*!< \brief Specified back pressures (static) for outlet boundaries. */
+	double *FanFace_Pressure;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+    double *Outlet_Pressure;    /*!< \brief Specified back pressures (static) for outlet boundaries. */
 	double *Isothermal_Temperature; /*!< \brief Specified isothermal wall temperatures (static). */
 	double *Heat_Flux;  /*!< \brief Specified wall heat fluxes. */
 	double *Displ_Value;    /*!< \brief Specified displacement for displacement boundaries. */
@@ -1587,6 +1589,18 @@ public:
 	 * \return Total number of boundary markers.
 	 */		
 	unsigned short GetnMarker_All(void);
+    
+    /*!
+	 * \brief Get the total number of boundary markers.
+	 * \return Total number of boundary markers.
+	 */
+	unsigned short GetnMarker_NacelleInflow(void);
+    
+    /*!
+	 * \brief Get the total number of boundary markers.
+	 * \return Total number of boundary markers.
+	 */
+	unsigned short GetnMarker_NacelleExhaust(void);
 
 	/*! 
 	 * \brief Stores the number of marker in the simulation.
@@ -1768,6 +1782,22 @@ public:
 	 */		
 	string GetMarker_All_Tag(unsigned short val_marker);
 
+	/*!
+	 * \brief Get the index of the surface defined in the geometry file.
+	 * \param[in] val_marker - Value of the marker in which we are interested.
+	 * \return Value of the index that is in the geometry file for the surface that
+	 *         has the marker <i>val_marker</i>.
+	 */
+	string GetMarker_NacelleInflow(unsigned short val_marker);
+    
+	/*!
+	 * \brief Get the index of the surface defined in the geometry file.
+	 * \param[in] val_marker - Value of the marker in which we are interested.
+	 * \return Value of the index that is in the geometry file for the surface that
+	 *         has the marker <i>val_marker</i>.
+	 */
+	string GetMarker_NacelleExhaust(unsigned short val_marker);
+    
 	/*! 
 	 * \brief Get the tag if the iMarker defined in the geometry file.
 	 * \param[in] val_tag - Value of the tag in which we are interested.
@@ -4168,8 +4198,36 @@ public:
 	 * \param[in] val_index - Index corresponding to the outlet boundary.
 	 * \return The outlet pressure.
 	 */
-	double GetFanFace_Mach(string val_marker);
+	double GetFanFace_Mach_Target(string val_marker);
 
+    /*!
+	 * \brief Get the back pressure (static) at an outlet boundary.
+	 * \param[in] val_index - Index corresponding to the outlet boundary.
+	 * \return The outlet pressure.
+	 */
+	double GetFanFace_Mach(string val_marker);
+    
+    /*!
+	 * \brief Get the back pressure (static) at an outlet boundary.
+	 * \param[in] val_index - Index corresponding to the outlet boundary.
+	 * \return The outlet pressure.
+	 */
+	void SetFanFace_Mach(unsigned short val_imarker, double val_fanface_mach);
+    
+    /*!
+	 * \brief Get the back pressure (static) at an outlet boundary.
+	 * \param[in] val_index - Index corresponding to the outlet boundary.
+	 * \return The outlet pressure.
+	 */
+	double GetFanFace_Pressure(string val_marker);
+    
+    /*!
+	 * \brief Get the back pressure (static) at an outlet boundary.
+	 * \param[in] val_index - Index corresponding to the outlet boundary.
+	 * \return The outlet pressure.
+	 */
+	void SetFanFace_Pressure(unsigned short val_imarker, double val_fanface_pressure);
+    
 	/*!
 	 * \brief Get the displacement value at an displacement boundary.
 	 * \param[in] val_index - Index corresponding to the displacement boundary.

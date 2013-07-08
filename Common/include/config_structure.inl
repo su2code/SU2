@@ -23,6 +23,10 @@
 
 #pragma once
 
+inline void CConfig::SetFanFace_Mach(unsigned short val_imarker, double val_fanface_mach) { FanFace_Mach[val_imarker] = val_fanface_mach; }
+
+inline void CConfig::SetFanFace_Pressure(unsigned short val_imarker, double val_fanface_pressure) { FanFace_Pressure[val_imarker] = val_fanface_pressure; }
+
 inline unsigned short CConfig::GetKind_SU2(void) { return Kind_SU2; }
 
 inline bool CConfig::GetAdjoint(void) { return Adjoint; }
@@ -652,6 +656,10 @@ inline void CConfig::SetnMarker_All(unsigned short val_nmarker) { nMarker_All = 
 
 inline string CConfig::GetMarker_All_Tag(unsigned short val_marker) { return Marker_All_Tag[val_marker]; }
 
+inline string CConfig::GetMarker_NacelleInflow(unsigned short val_marker) { return Marker_NacelleInflow[val_marker]; }
+
+inline string CConfig::GetMarker_NacelleExhaust(unsigned short val_marker) { return Marker_NacelleExhaust[val_marker]; }
+
 inline unsigned short CConfig::GetTag_Marker_All(string val_tag) {
 	for (unsigned short iMarker = 0; iMarker < nMarker_All; iMarker++) {
 		if (val_tag == Marker_All_Tag[iMarker])
@@ -694,7 +702,11 @@ inline unsigned short CConfig::GetMarker_All_Plotting(unsigned short val_marker)
 
 inline unsigned short CConfig::GetMarker_All_Moving(unsigned short val_marker) { return Marker_All_Moving[val_marker]; }
 
-inline unsigned short CConfig::GetnMarker_All(void) {	return nMarker_All; }
+inline unsigned short CConfig::GetnMarker_All(void) { return nMarker_All; }
+
+inline unsigned short CConfig::GetnMarker_NacelleInflow(void) {	return nMarker_NacelleInflow; }
+
+inline unsigned short CConfig::GetnMarker_NacelleExhaust(void) { return nMarker_NacelleExhaust; }
 
 inline string CConfig::GetMesh_FileName(void) { return Mesh_FileName; }
 
