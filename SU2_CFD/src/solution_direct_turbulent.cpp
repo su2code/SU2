@@ -239,11 +239,7 @@ void CTurbSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **sol
 	unsigned long iPoint, total_index;
 	double Delta, Vol, density_old, density;
     
-    bool adjoint = ((config->GetKind_Solver() == ADJ_EULER) || (config->GetKind_Solver() == ADJ_NAVIER_STOKES) ||
-                    (config->GetKind_Solver() == ADJ_RANS) || (config->GetKind_Solver() == ADJ_FREE_SURFACE_EULER) ||
-                    (config->GetKind_Solver() == ADJ_FREE_SURFACE_NAVIER_STOKES) || (config->GetKind_Solver() == ADJ_FREE_SURFACE_RANS) ||
-                    (config->GetKind_Solver() == ADJ_PLASMA_EULER) || (config->GetKind_Solver() == ADJ_PLASMA_NAVIER_STOKES) ||
-                    (config->GetKind_Solver() == ADJ_AEROACOUSTIC_EULER));
+    bool adjoint = config->GetAdjoint();
     
 	/*--- Set maximum residual to zero ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
@@ -1060,8 +1056,7 @@ void CTurbSASolution::Source_Residual(CGeometry *geometry, CSolution **solution_
 	bool incompressible = config->GetIncompressible();
 	bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
 	bool transition = (config->GetKind_Trans_Model() == LM);
-	bool freesurface = ((config->GetKind_Solver() == FREE_SURFACE_RANS) ||
-                      (config->GetKind_Solver() == ADJ_FREE_SURFACE_RANS));
+	bool freesurface = config->GetFreeSurface();
   double epsilon          = config->GetFreeSurface_Thickness();
   
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {

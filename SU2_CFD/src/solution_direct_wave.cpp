@@ -642,7 +642,7 @@ void CWaveSolution::BC_Observer(CGeometry *geometry,
                                 CConfig   *config, 
                                 unsigned short val_marker) {
   
-	bool adjoint = (config->GetKind_Solver() == ADJ_AEROACOUSTIC_EULER);
+	bool adjoint = config->GetAdjoint();
   
   /*--- This boundary condition only applies to the adjoint problem ---*/
   

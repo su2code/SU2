@@ -110,7 +110,9 @@ inline double CSolution::GetCLift_Inv(unsigned short val_marker) { return 0; }
 
 inline double CSolution::GetCDrag_Inv(unsigned short val_marker) { return 0; }
 
-inline double CSolution::GetMassFlow_Rate(unsigned short val_marker) { return 0; }
+inline double CSolution::GetFanFace_MassFlow(unsigned short val_marker) { return 0; }
+
+inline double CSolution::GetExhaust_MassFlow(unsigned short val_marker) { return 0; }
 
 inline double CSolution::GetFanFace_Pressure(unsigned short val_marker) { return 0; }
 
@@ -375,6 +377,8 @@ inline void CSolution::BC_FWH(CGeometry *geometry, CSolution **solution_containe
    
 inline void CSolution::BC_Observer(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
             unsigned short val_marker) { }
+            
+inline void CSolution::GetNacelle_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh) { }
                          
 inline void CSolution::SetTime_Step(CGeometry *geometry, CSolution **solution_container, CConfig *config, 
 							        unsigned short iMesh, unsigned long Iteration) { }	
@@ -510,7 +514,9 @@ inline double CEulerSolution::GetCLift_Inv(unsigned short val_marker) { return C
 
 inline double CEulerSolution::GetCDrag_Inv(unsigned short val_marker) { return CDrag_Inv[val_marker]; }
 
-inline double CEulerSolution::GetMassFlow_Rate(unsigned short val_marker) { return MassFlow_Rate[val_marker]; }
+inline double CEulerSolution::GetFanFace_MassFlow(unsigned short val_marker) { return FanFace_MassFlow[val_marker]; }
+
+inline double CEulerSolution::GetExhaust_MassFlow(unsigned short val_marker) { return Exhaust_MassFlow[val_marker]; }
 
 inline double CEulerSolution::GetFanFace_Pressure(unsigned short val_marker) { return FanFace_Pressure[val_marker]; }
 
