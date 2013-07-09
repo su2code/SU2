@@ -3127,350 +3127,369 @@ void CPhysicalGeometry::SetBoundControlVolume(CConfig *config, unsigned short ac
 
 void CPhysicalGeometry::MatchNearField(CConfig *config) {
 	double epsilon = 1e-1;
-
+    
+    unsigned short nMarker_NearfieldBound = config->GetnMarker_NearFieldBound();
+    
+    if (nMarker_NearfieldBound != 0) {
 #ifdef NO_MPI
-
-	unsigned short iMarker, jMarker;
-	unsigned long iVertex, iPoint, jVertex, jPoint = 0, pPoint = 0;
-	double *Coord_i, *Coord_j, dist = 0.0, mindist, maxdist;
-
-	cout << "Set Near-Field boundary conditions (if any). " <<endl; 
-
-	maxdist = 0.0;
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		if (config->GetMarker_All_Boundary(iMarker) == NEARFIELD_BOUNDARY) {
-			for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-				iPoint = vertex[iMarker][iVertex]->GetNode();
-				Coord_i = node[iPoint]->GetCoord();
-
-				mindist = 1e10;
-				for (jMarker = 0; jMarker < config->GetnMarker_All(); jMarker++)
-					if ((config->GetMarker_All_Boundary(jMarker) == NEARFIELD_BOUNDARY) && (iMarker != jMarker))
-						for (jVertex = 0; jVertex < nVertex[jMarker]; jVertex++) {
-							jPoint = vertex[jMarker][jVertex]->GetNode();
-							Coord_j = node[jPoint]->GetCoord();
-							if (nDim == 2) dist = sqrt(pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0));
-							if (nDim == 3) dist = sqrt(pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0) + pow(Coord_j[2]-Coord_i[2],2.0));
-							if (dist < mindist) { mindist = dist; pPoint = jPoint; }
-						}
-				maxdist = max(maxdist, mindist);
-				vertex[iMarker][iVertex]->SetDonorPoint(pPoint);
-
-				if (mindist > epsilon) {
-					cout.precision(10);
-					cout << endl;
-					cout << "   Bad match for point " << iPoint << ".\tNearest";
-					cout << " donor distance: " << scientific << mindist << ".";
-					vertex[iMarker][iVertex]->SetDonorPoint(iPoint);
-					maxdist = min(maxdist, 0.0);
-				}
-			}
-			cout <<"The max distance between points is: " << maxdist <<"."<< endl;
-		}
-
+        
+        unsigned short iMarker, jMarker;
+        unsigned long iVertex, iPoint, jVertex, jPoint = 0, pPoint = 0;
+        double *Coord_i, *Coord_j, dist = 0.0, mindist, maxdist;
+        
+        cout << "Set Near-Field boundary conditions. " <<endl;
+        
+        maxdist = 0.0;
+        for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+            if (config->GetMarker_All_Boundary(iMarker) == NEARFIELD_BOUNDARY) {
+                for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+                    iPoint = vertex[iMarker][iVertex]->GetNode();
+                    Coord_i = node[iPoint]->GetCoord();
+                    
+                    mindist = 1e10;
+                    for (jMarker = 0; jMarker < config->GetnMarker_All(); jMarker++)
+                        if ((config->GetMarker_All_Boundary(jMarker) == NEARFIELD_BOUNDARY) && (iMarker != jMarker))
+                            for (jVertex = 0; jVertex < nVertex[jMarker]; jVertex++) {
+                                jPoint = vertex[jMarker][jVertex]->GetNode();
+                                Coord_j = node[jPoint]->GetCoord();
+                                if (nDim == 2) dist = sqrt(pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0));
+                                if (nDim == 3) dist = sqrt(pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0) + pow(Coord_j[2]-Coord_i[2],2.0));
+                                if (dist < mindist) { mindist = dist; pPoint = jPoint; }
+                            }
+                    maxdist = max(maxdist, mindist);
+                    vertex[iMarker][iVertex]->SetDonorPoint(pPoint);
+                    
+                    if (mindist > epsilon) {
+                        cout.precision(10);
+                        cout << endl;
+                        cout << "   Bad match for point " << iPoint << ".\tNearest";
+                        cout << " donor distance: " << scientific << mindist << ".";
+                        vertex[iMarker][iVertex]->SetDonorPoint(iPoint);
+                        maxdist = min(maxdist, 0.0);
+                    }
+                }
+                cout <<"The max distance between points is: " << maxdist <<"."<< endl;
+            }
+        
 #else
-
-	MPI::COMM_WORLD.Barrier();
-
-	unsigned short iMarker, iDim;
-	unsigned long iVertex, iPoint, pPoint = 0, jVertex, jPoint;
-	double *Coord_i, Coord_j[3], dist = 0.0, mindist, maxdist;
-	int iProcessor, pProcessor = 0;
-	unsigned long nLocalVertex_NearField = 0, nGlobalVertex_NearField = 0, MaxLocalVertex_NearField = 0;
-
-	int rank = MPI::COMM_WORLD.Get_rank();
-	int nProcessor = MPI::COMM_WORLD.Get_size();
-
-	unsigned long *Buffer_Send_nVertex = new unsigned long [1];
-	unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
-
-	if (rank == MASTER_NODE) cout << "Set Near-Field boundary conditions (if any)." <<endl; 
-
-	/*--- Compute the number of vertex that have nearfield boundary condition
-	 without including the ghost nodes ---*/
-	nLocalVertex_NearField = 0;
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		if (config->GetMarker_All_Boundary(iMarker) == NEARFIELD_BOUNDARY)
-			for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
-				iPoint = vertex[iMarker][iVertex]->GetNode();
-				if (node[iPoint]->GetDomain()) nLocalVertex_NearField ++;
-			}
-
-	Buffer_Send_nVertex[0] = nLocalVertex_NearField;
-
-	/*--- Send Near-Field vertex information --*/
-	MPI::COMM_WORLD.Allreduce(&nLocalVertex_NearField, &nGlobalVertex_NearField, 1, MPI::UNSIGNED_LONG, MPI::SUM); 	
-	MPI::COMM_WORLD.Allreduce(&nLocalVertex_NearField, &MaxLocalVertex_NearField, 1, MPI::UNSIGNED_LONG, MPI::MAX); 	
-	MPI::COMM_WORLD.Allgather(Buffer_Send_nVertex, 1, MPI::UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI::UNSIGNED_LONG);
-
-	double *Buffer_Send_Coord = new double [MaxLocalVertex_NearField*nDim];
-	unsigned long *Buffer_Send_Point = new unsigned long [MaxLocalVertex_NearField];
-
-	double *Buffer_Receive_Coord = new double [nProcessor*MaxLocalVertex_NearField*nDim];
-	unsigned long *Buffer_Receive_Point = new unsigned long [nProcessor*MaxLocalVertex_NearField];
-
-	unsigned long nBuffer_Coord = MaxLocalVertex_NearField*nDim;
-	unsigned long nBuffer_Point = MaxLocalVertex_NearField;
-
-	for (iVertex = 0; iVertex < MaxLocalVertex_NearField; iVertex++) {
-		Buffer_Send_Point[iVertex] = 0;
-		for (iDim = 0; iDim < nDim; iDim++)
-			Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
-	}
-
-	/*--- Copy coordinates and point to the auxiliar vector --*/
-	nLocalVertex_NearField = 0;
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		if (config->GetMarker_All_Boundary(iMarker) == NEARFIELD_BOUNDARY)
-			for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
-				iPoint = vertex[iMarker][iVertex]->GetNode();
-				if (node[iPoint]->GetDomain()) {
-					Buffer_Send_Point[nLocalVertex_NearField] = iPoint;
-					for (iDim = 0; iDim < nDim; iDim++)
-						Buffer_Send_Coord[nLocalVertex_NearField*nDim+iDim] = node[iPoint]->GetCoord(iDim);
-					nLocalVertex_NearField++;
-				}
-			}
-
-	MPI::COMM_WORLD.Allgather(Buffer_Send_Coord, nBuffer_Coord, MPI::DOUBLE, Buffer_Receive_Coord, nBuffer_Coord, MPI::DOUBLE);
-	MPI::COMM_WORLD.Allgather(Buffer_Send_Point, nBuffer_Point, MPI::UNSIGNED_LONG, Buffer_Receive_Point, nBuffer_Point, MPI::UNSIGNED_LONG);
-
-	/*--- Compute the closest point to a Near-Field boundary point ---*/
-	maxdist = 0.0;
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		if (config->GetMarker_All_Boundary(iMarker) == NEARFIELD_BOUNDARY) {
-			for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-				iPoint = vertex[iMarker][iVertex]->GetNode();
-				if (node[iPoint]->GetDomain()) {
-
-					/*--- Coordinates of the boundary point ---*/
-					Coord_i = node[iPoint]->GetCoord(); mindist = 1E6; pProcessor = 0; pPoint = 0;
-
-					/*--- Loop over all the boundaries to find the pair ---*/
-					for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
-						for (jVertex = 0; jVertex < Buffer_Receive_nVertex[iProcessor]; jVertex++) {
-							jPoint = Buffer_Receive_Point[iProcessor*MaxLocalVertex_NearField+jVertex];
-
-							/*--- Compute the distance ---*/
-							dist = 0.0; for (iDim = 0; iDim < nDim; iDim++) {
-								Coord_j[iDim] = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NearField+jVertex)*nDim+iDim];
-								dist += pow(Coord_j[iDim]-Coord_i[iDim],2.0);
-							} dist = sqrt(dist);
-
-							if (((dist < mindist) && (iProcessor != rank)) ||
+        
+        MPI::COMM_WORLD.Barrier();
+        
+        unsigned short iMarker, iDim;
+        unsigned long iVertex, iPoint, pPoint = 0, jVertex, jPoint;
+        double *Coord_i, Coord_j[3], dist = 0.0, mindist, maxdist_local, maxdist_global;
+        int iProcessor, pProcessor = 0;
+        unsigned long nLocalVertex_NearField = 0, nGlobalVertex_NearField = 0, MaxLocalVertex_NearField = 0;
+        
+        int rank = MPI::COMM_WORLD.Get_rank();
+        int nProcessor = MPI::COMM_WORLD.Get_size();
+        
+        unsigned long *Buffer_Send_nVertex = new unsigned long [1];
+        unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
+        
+        if (rank == MASTER_NODE) cout << "Set Near-Field boundary conditions." <<endl;
+        
+        /*--- Compute the number of vertex that have nearfield boundary condition
+         without including the ghost nodes ---*/
+        nLocalVertex_NearField = 0;
+        for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+            if (config->GetMarker_All_Boundary(iMarker) == NEARFIELD_BOUNDARY)
+                for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
+                    iPoint = vertex[iMarker][iVertex]->GetNode();
+                    if (node[iPoint]->GetDomain()) nLocalVertex_NearField ++;
+                }
+        
+        Buffer_Send_nVertex[0] = nLocalVertex_NearField;
+        
+        /*--- Send Near-Field vertex information --*/
+        MPI::COMM_WORLD.Allreduce(&nLocalVertex_NearField, &nGlobalVertex_NearField, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+        MPI::COMM_WORLD.Allreduce(&nLocalVertex_NearField, &MaxLocalVertex_NearField, 1, MPI::UNSIGNED_LONG, MPI::MAX);
+        MPI::COMM_WORLD.Allgather(Buffer_Send_nVertex, 1, MPI::UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI::UNSIGNED_LONG);
+        
+        double *Buffer_Send_Coord = new double [MaxLocalVertex_NearField*nDim];
+        unsigned long *Buffer_Send_Point = new unsigned long [MaxLocalVertex_NearField];
+        
+        double *Buffer_Receive_Coord = new double [nProcessor*MaxLocalVertex_NearField*nDim];
+        unsigned long *Buffer_Receive_Point = new unsigned long [nProcessor*MaxLocalVertex_NearField];
+        
+        unsigned long nBuffer_Coord = MaxLocalVertex_NearField*nDim;
+        unsigned long nBuffer_Point = MaxLocalVertex_NearField;
+        
+        for (iVertex = 0; iVertex < MaxLocalVertex_NearField; iVertex++) {
+            Buffer_Send_Point[iVertex] = 0;
+            for (iDim = 0; iDim < nDim; iDim++)
+                Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
+        }
+        
+        /*--- Copy coordinates and point to the auxiliar vector --*/
+        nLocalVertex_NearField = 0;
+        for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+            if (config->GetMarker_All_Boundary(iMarker) == NEARFIELD_BOUNDARY)
+                for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
+                    iPoint = vertex[iMarker][iVertex]->GetNode();
+                    if (node[iPoint]->GetDomain()) {
+                        Buffer_Send_Point[nLocalVertex_NearField] = iPoint;
+                        for (iDim = 0; iDim < nDim; iDim++)
+                            Buffer_Send_Coord[nLocalVertex_NearField*nDim+iDim] = node[iPoint]->GetCoord(iDim);
+                        nLocalVertex_NearField++;
+                    }
+                }
+        
+        MPI::COMM_WORLD.Allgather(Buffer_Send_Coord, nBuffer_Coord, MPI::DOUBLE, Buffer_Receive_Coord, nBuffer_Coord, MPI::DOUBLE);
+        MPI::COMM_WORLD.Allgather(Buffer_Send_Point, nBuffer_Point, MPI::UNSIGNED_LONG, Buffer_Receive_Point, nBuffer_Point, MPI::UNSIGNED_LONG);
+        
+        /*--- Compute the closest point to a Near-Field boundary point ---*/
+        maxdist_local = 0.0;
+        maxdist_global = 0.0;
+        for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+            if (config->GetMarker_All_Boundary(iMarker) == NEARFIELD_BOUNDARY) {
+                
+                for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+                    iPoint = vertex[iMarker][iVertex]->GetNode();
+                    if (node[iPoint]->GetDomain()) {
+                        
+                        /*--- Coordinates of the boundary point ---*/
+                        Coord_i = node[iPoint]->GetCoord(); mindist = 1E6; pProcessor = 0; pPoint = 0;
+                        
+                        /*--- Loop over all the boundaries to find the pair ---*/
+                        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
+                            for (jVertex = 0; jVertex < Buffer_Receive_nVertex[iProcessor]; jVertex++) {
+                                jPoint = Buffer_Receive_Point[iProcessor*MaxLocalVertex_NearField+jVertex];
+                                
+                                /*--- Compute the distance ---*/
+                                dist = 0.0; for (iDim = 0; iDim < nDim; iDim++) {
+                                    Coord_j[iDim] = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NearField+jVertex)*nDim+iDim];
+                                    dist += pow(Coord_j[iDim]-Coord_i[iDim],2.0);
+                                } dist = sqrt(dist);
+                                
+                                if (((dist < mindist) && (iProcessor != rank)) ||
 									((dist < mindist) && (iProcessor == rank) && (jPoint != iPoint))) {
-								mindist = dist; pProcessor = iProcessor; pPoint = jPoint; 
-							}
-						}
-
-					/*--- Store the value of the pair ---*/
-					maxdist = max(maxdist, mindist);
-					vertex[iMarker][iVertex]->SetDonorPoint(pPoint, pProcessor);
-
-					if (mindist > epsilon) {
-						cout.precision(10);
-						cout << endl;
-						cout << "   Bad match for point " << iPoint << ".\tNearest";
-						cout << " donor distance: " << scientific << mindist << ".";
-						vertex[iMarker][iVertex]->SetDonorPoint(iPoint);
-						maxdist = min(maxdist, 0.0);
-					}
-
-				}
-			}
-			cout <<"Node rank: "<<rank<<". The max distance between points is: " << maxdist <<"."<< endl;
-		}
-
-	delete[] Buffer_Send_Coord;
-	delete[] Buffer_Send_Point;
-
-	delete[] Buffer_Receive_Coord;
-	delete[] Buffer_Receive_Point;
-
-	delete[] Buffer_Send_nVertex;
-	delete[] Buffer_Receive_nVertex;
-
-
-	MPI::COMM_WORLD.Barrier();
-
+                                    mindist = dist; pProcessor = iProcessor; pPoint = jPoint; 
+                                }
+                            }
+                        
+                        /*--- Store the value of the pair ---*/
+                        maxdist_local = max(maxdist_local, mindist);
+                        vertex[iMarker][iVertex]->SetDonorPoint(pPoint, pProcessor);
+                        
+                        if (mindist > epsilon) {
+                            cout.precision(10);
+                            cout << endl;
+                            cout << "   Bad match for point " << iPoint << ".\tNearest";
+                            cout << " donor distance: " << scientific << mindist << ".";
+                            vertex[iMarker][iVertex]->SetDonorPoint(iPoint);
+                            maxdist_local = min(maxdist_local, 0.0);
+                        }
+                        
+                    }
+                }
+                
+            }
+        }
+        
+        MPI::COMM_WORLD.Reduce(&maxdist_local, &maxdist_global, 1, MPI::DOUBLE, MPI::MAX, MASTER_NODE);
+        if (rank == MASTER_NODE) cout <<"The max distance between points is: " << maxdist_global <<"."<< endl;
+        
+        
+        delete[] Buffer_Send_Coord;
+        delete[] Buffer_Send_Point;
+        
+        delete[] Buffer_Receive_Coord;
+        delete[] Buffer_Receive_Point;
+        
+        delete[] Buffer_Send_nVertex;
+        delete[] Buffer_Receive_nVertex;
+        
+        
+        MPI::COMM_WORLD.Barrier();
+        
 #endif
-
+        
+    }
+    
 }
 
 void CPhysicalGeometry::MatchInterface(CConfig *config) {
 	double epsilon = 1.5e-1;
-
+    
+    unsigned short nMarker_InterfaceBound = config->GetnMarker_InterfaceBound();
+    
+    if (nMarker_InterfaceBound != 0) {
 #ifdef NO_MPI
-
-	unsigned short iMarker, jMarker;
-	unsigned long iVertex, iPoint, jVertex, jPoint = 0, pPoint = 0;
-	double *Coord_i, *Coord_j, dist = 0.0, mindist, maxdist;
-
-	cout << "Set Interface boundary conditions (if any)." << endl; 
-
-	maxdist = 0.0;
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		if (config->GetMarker_All_Boundary(iMarker) == INTERFACE_BOUNDARY) {
-			for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-				iPoint = vertex[iMarker][iVertex]->GetNode();
-				Coord_i = node[iPoint]->GetCoord();
-
-				mindist = 1E6;
-				for (jMarker = 0; jMarker < config->GetnMarker_All(); jMarker++)
-					if ((config->GetMarker_All_Boundary(jMarker) == INTERFACE_BOUNDARY) && (iMarker != jMarker))
-						for (jVertex = 0; jVertex < nVertex[jMarker]; jVertex++) {
-							jPoint = vertex[jMarker][jVertex]->GetNode();
-							Coord_j = node[jPoint]->GetCoord();
-							if (nDim == 2) dist = sqrt(pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0));
-							if (nDim == 3) dist = sqrt(pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0) + pow(Coord_j[2]-Coord_i[2],2.0));
-							if (dist < mindist) {mindist = dist; pPoint = jPoint;}
-						}
-				maxdist = max(maxdist, mindist);
-				vertex[iMarker][iVertex]->SetDonorPoint(pPoint);
-
-				if (mindist > epsilon) {
-					cout.precision(10);
-					cout << endl;
-					cout << "   Bad match for point " << iPoint << ".\tNearest";
-					cout << " donor distance: " << scientific << mindist << ".";
-					vertex[iMarker][iVertex]->SetDonorPoint(iPoint);
-					maxdist = min(maxdist, 0.0);
-				}
-
-			}
-			cout <<"The max distance between points is: " << maxdist <<"."<< endl;
-		}
-
+        
+        unsigned short iMarker, jMarker;
+        unsigned long iVertex, iPoint, jVertex, jPoint = 0, pPoint = 0;
+        double *Coord_i, *Coord_j, dist = 0.0, mindist, maxdist;
+        
+        cout << "Set Interface boundary conditions." << endl;
+        
+        maxdist = 0.0;
+        for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+            if (config->GetMarker_All_Boundary(iMarker) == INTERFACE_BOUNDARY) {
+                for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+                    iPoint = vertex[iMarker][iVertex]->GetNode();
+                    Coord_i = node[iPoint]->GetCoord();
+                    
+                    mindist = 1E6;
+                    for (jMarker = 0; jMarker < config->GetnMarker_All(); jMarker++)
+                        if ((config->GetMarker_All_Boundary(jMarker) == INTERFACE_BOUNDARY) && (iMarker != jMarker))
+                            for (jVertex = 0; jVertex < nVertex[jMarker]; jVertex++) {
+                                jPoint = vertex[jMarker][jVertex]->GetNode();
+                                Coord_j = node[jPoint]->GetCoord();
+                                if (nDim == 2) dist = sqrt(pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0));
+                                if (nDim == 3) dist = sqrt(pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0) + pow(Coord_j[2]-Coord_i[2],2.0));
+                                if (dist < mindist) {mindist = dist; pPoint = jPoint;}
+                            }
+                    maxdist = max(maxdist, mindist);
+                    vertex[iMarker][iVertex]->SetDonorPoint(pPoint);
+                    
+                    if (mindist > epsilon) {
+                        cout.precision(10);
+                        cout << endl;
+                        cout << "   Bad match for point " << iPoint << ".\tNearest";
+                        cout << " donor distance: " << scientific << mindist << ".";
+                        vertex[iMarker][iVertex]->SetDonorPoint(iPoint);
+                        maxdist = min(maxdist, 0.0);
+                    }
+                    
+                }
+                cout <<"The max distance between points is: " << maxdist <<"."<< endl;
+            }
+        
 #else
-
-	MPI::COMM_WORLD.Barrier();
-
-	unsigned short iMarker, iDim;
-	unsigned long iVertex, iPoint, pPoint = 0, jVertex, jPoint;
-	double *Coord_i, Coord_j[3], dist = 0.0, mindist, maxdist;
-	int iProcessor, pProcessor = 0;
-	unsigned long nLocalVertex_Interface = 0, nGlobalVertex_Interface = 0, MaxLocalVertex_Interface = 0;
-
-	int rank = MPI::COMM_WORLD.Get_rank();
-	int nProcessor = MPI::COMM_WORLD.Get_size();
-
-	unsigned long *Buffer_Send_nVertex = new unsigned long [1];
-	unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
-
-	if (rank == MASTER_NODE) cout << "Set Interface boundary conditions (if any)." <<endl; 
-
-	/*--- Compute the number of vertex that have nearfield boundary condition
-	 without including the ghost nodes ---*/
-	nLocalVertex_Interface = 0;
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		if (config->GetMarker_All_Boundary(iMarker) == INTERFACE_BOUNDARY)
-			for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
-				iPoint = vertex[iMarker][iVertex]->GetNode();
-				if (node[iPoint]->GetDomain()) nLocalVertex_Interface ++;
-			}
-
-	Buffer_Send_nVertex[0] = nLocalVertex_Interface;
-
-	/*--- Send Interface vertex information --*/
-	MPI::COMM_WORLD.Allreduce(&nLocalVertex_Interface, &nGlobalVertex_Interface, 1, MPI::UNSIGNED_LONG, MPI::SUM); 	
-	MPI::COMM_WORLD.Allreduce(&nLocalVertex_Interface, &MaxLocalVertex_Interface, 1, MPI::UNSIGNED_LONG, MPI::MAX); 	
-	MPI::COMM_WORLD.Allgather(Buffer_Send_nVertex, 1, MPI::UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI::UNSIGNED_LONG);
-
-	double *Buffer_Send_Coord = new double [MaxLocalVertex_Interface*nDim];
-	unsigned long *Buffer_Send_Point = new unsigned long [MaxLocalVertex_Interface];
-
-	double *Buffer_Receive_Coord = new double [nProcessor*MaxLocalVertex_Interface*nDim];
-	unsigned long *Buffer_Receive_Point = new unsigned long [nProcessor*MaxLocalVertex_Interface];
-
-	unsigned long nBuffer_Coord = MaxLocalVertex_Interface*nDim;
-	unsigned long nBuffer_Point = MaxLocalVertex_Interface;
-
-	for (iVertex = 0; iVertex < MaxLocalVertex_Interface; iVertex++) {
-		Buffer_Send_Point[iVertex] = 0;
-		for (iDim = 0; iDim < nDim; iDim++)
-			Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
-	}
-
-	/*--- Copy coordinates and point to the auxiliar vector --*/
-	nLocalVertex_Interface = 0;
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		if (config->GetMarker_All_Boundary(iMarker) == INTERFACE_BOUNDARY)
-			for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
-				iPoint = vertex[iMarker][iVertex]->GetNode();
-				if (node[iPoint]->GetDomain()) {
-					Buffer_Send_Point[nLocalVertex_Interface] = iPoint;
-					for (iDim = 0; iDim < nDim; iDim++)
-						Buffer_Send_Coord[nLocalVertex_Interface*nDim+iDim] = node[iPoint]->GetCoord(iDim);
-					nLocalVertex_Interface++;
-				}
-			}
-
-	MPI::COMM_WORLD.Allgather(Buffer_Send_Coord, nBuffer_Coord, MPI::DOUBLE, Buffer_Receive_Coord, nBuffer_Coord, MPI::DOUBLE);
-	MPI::COMM_WORLD.Allgather(Buffer_Send_Point, nBuffer_Point, MPI::UNSIGNED_LONG, Buffer_Receive_Point, nBuffer_Point, MPI::UNSIGNED_LONG);
-
-	/*--- Compute the closest point to a Near-Field boundary point ---*/
-	maxdist = 0.0;
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		if (config->GetMarker_All_Boundary(iMarker) == INTERFACE_BOUNDARY) {
-			for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-				iPoint = vertex[iMarker][iVertex]->GetNode();
-				if (node[iPoint]->GetDomain()) {
-
-					/*--- Coordinates of the boundary point ---*/
-					Coord_i = node[iPoint]->GetCoord(); mindist = 1E6; pProcessor = 0; pPoint = 0;
-
-					/*--- Loop over all the boundaries to find the pair ---*/
-					for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
-						for (jVertex = 0; jVertex < Buffer_Receive_nVertex[iProcessor]; jVertex++) {
-							jPoint = Buffer_Receive_Point[iProcessor*MaxLocalVertex_Interface+jVertex];
-
-							/*--- Compute the distance ---*/
-							dist = 0.0; for (iDim = 0; iDim < nDim; iDim++) {
-								Coord_j[iDim] = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_Interface+jVertex)*nDim+iDim];
-								dist += pow(Coord_j[iDim]-Coord_i[iDim],2.0);
-							} dist = sqrt(dist);
-
-							if (((dist < mindist) && (iProcessor != rank)) ||
+        
+        MPI::COMM_WORLD.Barrier();
+        
+        unsigned short iMarker, iDim;
+        unsigned long iVertex, iPoint, pPoint = 0, jVertex, jPoint;
+        double *Coord_i, Coord_j[3], dist = 0.0, mindist, maxdist_local, maxdist_global;
+        int iProcessor, pProcessor = 0;
+        unsigned long nLocalVertex_Interface = 0, nGlobalVertex_Interface = 0, MaxLocalVertex_Interface = 0;
+        
+        int rank = MPI::COMM_WORLD.Get_rank();
+        int nProcessor = MPI::COMM_WORLD.Get_size();
+        
+        unsigned long *Buffer_Send_nVertex = new unsigned long [1];
+        unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
+        
+        if (rank == MASTER_NODE) cout << "Set Interface boundary conditions (if any)." <<endl;
+        
+        /*--- Compute the number of vertex that have nearfield boundary condition
+         without including the ghost nodes ---*/
+        nLocalVertex_Interface = 0;
+        for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+            if (config->GetMarker_All_Boundary(iMarker) == INTERFACE_BOUNDARY)
+                for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
+                    iPoint = vertex[iMarker][iVertex]->GetNode();
+                    if (node[iPoint]->GetDomain()) nLocalVertex_Interface ++;
+                }
+        
+        Buffer_Send_nVertex[0] = nLocalVertex_Interface;
+        
+        /*--- Send Interface vertex information --*/
+        MPI::COMM_WORLD.Allreduce(&nLocalVertex_Interface, &nGlobalVertex_Interface, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+        MPI::COMM_WORLD.Allreduce(&nLocalVertex_Interface, &MaxLocalVertex_Interface, 1, MPI::UNSIGNED_LONG, MPI::MAX);
+        MPI::COMM_WORLD.Allgather(Buffer_Send_nVertex, 1, MPI::UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI::UNSIGNED_LONG);
+        
+        double *Buffer_Send_Coord = new double [MaxLocalVertex_Interface*nDim];
+        unsigned long *Buffer_Send_Point = new unsigned long [MaxLocalVertex_Interface];
+        
+        double *Buffer_Receive_Coord = new double [nProcessor*MaxLocalVertex_Interface*nDim];
+        unsigned long *Buffer_Receive_Point = new unsigned long [nProcessor*MaxLocalVertex_Interface];
+        
+        unsigned long nBuffer_Coord = MaxLocalVertex_Interface*nDim;
+        unsigned long nBuffer_Point = MaxLocalVertex_Interface;
+        
+        for (iVertex = 0; iVertex < MaxLocalVertex_Interface; iVertex++) {
+            Buffer_Send_Point[iVertex] = 0;
+            for (iDim = 0; iDim < nDim; iDim++)
+                Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
+        }
+        
+        /*--- Copy coordinates and point to the auxiliar vector --*/
+        nLocalVertex_Interface = 0;
+        for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+            if (config->GetMarker_All_Boundary(iMarker) == INTERFACE_BOUNDARY)
+                for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
+                    iPoint = vertex[iMarker][iVertex]->GetNode();
+                    if (node[iPoint]->GetDomain()) {
+                        Buffer_Send_Point[nLocalVertex_Interface] = iPoint;
+                        for (iDim = 0; iDim < nDim; iDim++)
+                            Buffer_Send_Coord[nLocalVertex_Interface*nDim+iDim] = node[iPoint]->GetCoord(iDim);
+                        nLocalVertex_Interface++;
+                    }
+                }
+        
+        MPI::COMM_WORLD.Allgather(Buffer_Send_Coord, nBuffer_Coord, MPI::DOUBLE, Buffer_Receive_Coord, nBuffer_Coord, MPI::DOUBLE);
+        MPI::COMM_WORLD.Allgather(Buffer_Send_Point, nBuffer_Point, MPI::UNSIGNED_LONG, Buffer_Receive_Point, nBuffer_Point, MPI::UNSIGNED_LONG);
+        
+        /*--- Compute the closest point to a Near-Field boundary point ---*/
+        maxdist_local = 0.0;
+        for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+            if (config->GetMarker_All_Boundary(iMarker) == INTERFACE_BOUNDARY) {
+                for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+                    iPoint = vertex[iMarker][iVertex]->GetNode();
+                    if (node[iPoint]->GetDomain()) {
+                        
+                        /*--- Coordinates of the boundary point ---*/
+                        Coord_i = node[iPoint]->GetCoord(); mindist = 1E6; pProcessor = 0; pPoint = 0;
+                        
+                        /*--- Loop over all the boundaries to find the pair ---*/
+                        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
+                            for (jVertex = 0; jVertex < Buffer_Receive_nVertex[iProcessor]; jVertex++) {
+                                jPoint = Buffer_Receive_Point[iProcessor*MaxLocalVertex_Interface+jVertex];
+                                
+                                /*--- Compute the distance ---*/
+                                dist = 0.0; for (iDim = 0; iDim < nDim; iDim++) {
+                                    Coord_j[iDim] = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_Interface+jVertex)*nDim+iDim];
+                                    dist += pow(Coord_j[iDim]-Coord_i[iDim],2.0);
+                                } dist = sqrt(dist);
+                                
+                                if (((dist < mindist) && (iProcessor != rank)) ||
 									((dist < mindist) && (iProcessor == rank) && (jPoint != iPoint))) {
-								mindist = dist; pProcessor = iProcessor; pPoint = jPoint; 
-							}
-						}
-
-					/*--- Store the value of the pair ---*/
-					maxdist = max(maxdist, mindist);
-					vertex[iMarker][iVertex]->SetDonorPoint(pPoint, pProcessor);
-
-					if (mindist > epsilon) {
-						cout.precision(10);
-						cout << endl;
-						cout << "   Bad match for point " << iPoint << ".\tNearest";
-						cout << " donor distance: " << scientific << mindist << ".";
-						vertex[iMarker][iVertex]->SetDonorPoint(iPoint);
-						maxdist = min(maxdist, 0.0);
-					}
-
-				}
-			}
-			cout << "Node rank: "<< rank << ". The max distance between points is: " << maxdist <<"."<< endl;
-		}
-
-	delete[] Buffer_Send_Coord;
-	delete[] Buffer_Send_Point;
-
-	delete[] Buffer_Receive_Coord;
-	delete[] Buffer_Receive_Point;
-
-	delete[] Buffer_Send_nVertex;
-	delete[] Buffer_Receive_nVertex;
-
-
-	MPI::COMM_WORLD.Barrier();
-
+                                    mindist = dist; pProcessor = iProcessor; pPoint = jPoint; 
+                                }
+                            }
+                        
+                        /*--- Store the value of the pair ---*/
+                        maxdist_local = max(maxdist_local, mindist);
+                        vertex[iMarker][iVertex]->SetDonorPoint(pPoint, pProcessor);
+                        
+                        if (mindist > epsilon) {
+                            cout.precision(10);
+                            cout << endl;
+                            cout << "   Bad match for point " << iPoint << ".\tNearest";
+                            cout << " donor distance: " << scientific << mindist << ".";
+                            vertex[iMarker][iVertex]->SetDonorPoint(iPoint);
+                            maxdist_local = min(maxdist_local, 0.0);
+                        }
+                        
+                    }
+                }
+            }
+        }
+        
+        MPI::COMM_WORLD.Reduce(&maxdist_local, &maxdist_global, 1, MPI::DOUBLE, MPI::MAX, MASTER_NODE);
+        if (rank == MASTER_NODE) cout <<"The max distance between points is: " << maxdist_global <<"."<< endl;
+        
+        delete[] Buffer_Send_Coord;
+        delete[] Buffer_Send_Point;
+        
+        delete[] Buffer_Receive_Coord;
+        delete[] Buffer_Receive_Point;
+        
+        delete[] Buffer_Send_nVertex;
+        delete[] Buffer_Receive_nVertex;
+        
+        
+        MPI::COMM_WORLD.Barrier();
+        
 #endif
-
+        
+    }
 }
 
-void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CConfig *config_donor, 
+void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CConfig *config_donor,
 		unsigned short val_iZone, unsigned short val_nZone) {
 
 #ifdef NO_MPI
@@ -4476,14 +4495,15 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
 #ifndef NO_METIS
   
 	unsigned long iPoint, iElem, iElem_Triangle, iElem_Tetrahedron, nElem_Triangle,
-	nElem_Tetrahedron;
+	nElem_Tetrahedron, kPoint, jPoint, iVertex;
+    unsigned short iMarker, iMaxColor = 0, iColor, MaxColor = 0, iNode, jNode;
 	int ne = 0, nn, *elmnts = NULL, etype, *epart = NULL, *npart = NULL, numflag, nparts, edgecut, *eptr;
-  
-  int rank = MPI::COMM_WORLD.Get_rank();
+    
+    int rank = MPI::COMM_WORLD.Get_rank();
 	int size = MPI::COMM_WORLD.Get_size();
-  
+    
 	unsigned short nDomain = size;
-      
+    
 	nElem_Triangle = 0;
 	nElem_Tetrahedron = 0;
 	for (iElem = 0; iElem < GetnElem(); iElem++) {
@@ -4494,7 +4514,7 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
 		if (elem[iElem]->GetVTK_Type() == PYRAMID) nElem_Tetrahedron = nElem_Tetrahedron + 2;
 		if (elem[iElem]->GetVTK_Type() == WEDGE) nElem_Tetrahedron = nElem_Tetrahedron + 3;
 	}
-  
+    
 	if (GetnDim() == 2) {
 		ne = nElem_Triangle;
 		elmnts = new int [ne*3];
@@ -4505,7 +4525,7 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
 		elmnts = new int [ne*4];
 		etype = 2;
 	}
-  
+    
 	nn = nPoint;
 	numflag = 0;
 	nparts = nDomain;
@@ -4517,7 +4537,7 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
 		cout << "Press any key to exit..." << endl;
 		cin.get(); exit(1);
 	}
-  
+    
 	iElem_Triangle = 0; iElem_Tetrahedron = 0;
 	for (iElem = 0; iElem < GetnElem(); iElem++) {
 		if (elem[iElem]->GetVTK_Type() == TRIANGLE) {
@@ -4617,7 +4637,7 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
 	/*--- Add final value to element pointer array ---*/
 	if (GetnDim() == 2) eptr[ne] = 3*ne;
 	else eptr[ne] = 4*ne;
-  
+    
 #ifdef METIS_5
 	/*--- Calling METIS 5.0.2 ---*/
 	int options[METIS_NOPTIONS];
@@ -4630,13 +4650,14 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
 	METIS_PartMeshNodal(&ne, &nn, elmnts, &etype, &numflag, &nparts, &edgecut, epart, npart);
 	cout << "Finished partitioning using METIS 4.0.3. ("  << edgecut << " edge cuts)." << endl;
 #endif
-  
+    
 	for (iPoint = 0; iPoint < nPoint; iPoint++)
 		node[iPoint]->SetColor(npart[iPoint]);
-  
+    
+    
 	delete[] epart;
 	delete[] npart;
-  
+
 #endif
 #endif
   

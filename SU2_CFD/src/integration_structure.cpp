@@ -39,14 +39,14 @@ CIntegration::~CIntegration(void) {
 	delete [] Cauchy_Serie;
 }
 
-void CIntegration::Space_Integration(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, 
-		CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
+void CIntegration::Space_Integration(CGeometry *geometry, CSolution **solution_container, CNumerics **solver,
+                                     CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 	unsigned short iMarker;
-
+    
 	unsigned short MainSolution = config->GetContainerPosition(RunTime_EqSystem);
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  
+    bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                      (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+    
 	/*--- Compute inviscid residuals ---*/
 	switch (config->GetKind_ConvNumScheme()) {
 		case SPACE_CENTERED:
@@ -56,29 +56,29 @@ void CIntegration::Space_Integration(CGeometry *geometry, CSolution **solution_c
 			solution_container[MainSolution]->Upwind_Residual(geometry, solution_container, solver[CONV_TERM], config, iMesh);
 			break;
 	}
-
-
+    
+    
 	/*--- Compute viscous residuals ---*/
 	switch (config->GetKind_ViscNumScheme()) {
-	case AVG_GRAD: case AVG_GRAD_CORRECTED:
-		solution_container[MainSolution]->Viscous_Residual(geometry, solution_container, solver[VISC_TERM], config, iMesh, iRKStep);
-		break;
-	case GALERKIN:
-		solution_container[MainSolution]->Galerkin_Method(geometry, solution_container, solver[VISC_TERM], config, iMesh);
-		break;
+        case AVG_GRAD: case AVG_GRAD_CORRECTED:
+            solution_container[MainSolution]->Viscous_Residual(geometry, solution_container, solver[VISC_TERM], config, iMesh, iRKStep);
+            break;
+        case GALERKIN:
+            solution_container[MainSolution]->Galerkin_Method(geometry, solution_container, solver[VISC_TERM], config, iMesh);
+            break;
 	}
-
+    
 	/*--- Compute source term residuals ---*/
 	switch (config->GetKind_SourNumScheme()) {
-	case PIECEWISE_CONSTANT:
-		solution_container[MainSolution]->Source_Residual(geometry, solution_container, solver[SOURCE_FIRST_TERM], solver[SOURCE_SECOND_TERM], config, iMesh);
-		break;
-	}	
-
+        case PIECEWISE_CONSTANT:
+            solution_container[MainSolution]->Source_Residual(geometry, solution_container, solver[SOURCE_FIRST_TERM], solver[SOURCE_SECOND_TERM], config, iMesh);
+            break;
+	}
+    
 	/*--- Add viscous and convective residuals, and compute the Dual Time Source term ---*/
 	if (dual_time)
 		solution_container[MainSolution]->SetResidual_DualTime(geometry, solution_container, config, iRKStep, iMesh, RunTime_EqSystem);
-
+    
 	/*--- Weak boundary conditions ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 		switch (config->GetMarker_All_Boundary(iMarker)) {
@@ -88,9 +88,9 @@ void CIntegration::Space_Integration(CGeometry *geometry, CSolution **solution_c
 			case INLET_FLOW:
 				solution_container[MainSolution]->BC_Inlet(geometry, solution_container, solver[CONV_BOUND_TERM], solver[VISC_BOUND_TERM], config, iMarker);
 				break;
-      case SUPERSONIC_INLET:
+            case SUPERSONIC_INLET:
 				solution_container[MainSolution]->BC_Supersonic_Inlet(geometry, solution_container, solver[CONV_BOUND_TERM], solver[VISC_BOUND_TERM], config, iMarker);
-        break;
+                break;
 			case OUTLET_FLOW:
 				solution_container[MainSolution]->BC_Outlet(geometry, solution_container, solver[CONV_BOUND_TERM], solver[VISC_BOUND_TERM], config, iMarker);
 				break;
@@ -100,7 +100,7 @@ void CIntegration::Space_Integration(CGeometry *geometry, CSolution **solution_c
 			case SYMMETRY_PLANE:
 				solution_container[MainSolution]->BC_Sym_Plane(geometry, solution_container, solver[CONV_BOUND_TERM], solver[VISC_BOUND_TERM], config, iMarker);
 				break;
-      case NACELLE_EXHAUST:
+            case NACELLE_EXHAUST:
 				solution_container[MainSolution]->BC_Nacelle_Exhaust(geometry, solution_container, solver[CONV_BOUND_TERM], solver[VISC_BOUND_TERM], config, iMarker);
 				break;
 			case NACELLE_INFLOW:
@@ -138,15 +138,15 @@ void CIntegration::Space_Integration(CGeometry *geometry, CSolution **solution_c
 				break;
 		}
 	}
-
+    
 	/*--- Strong boundary conditions (Navier-Stokes and Dirichlet type BCs) ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
 		switch (config->GetMarker_All_Boundary(iMarker)) {
-      case ISOTHERMAL:
-        solution_container[MainSolution]->BC_Isothermal_Wall(geometry, solution_container, solver[CONV_BOUND_TERM], solver[VISC_BOUND_TERM], config, iMarker);
+            case ISOTHERMAL:
+                solution_container[MainSolution]->BC_Isothermal_Wall(geometry, solution_container, solver[CONV_BOUND_TERM], solver[VISC_BOUND_TERM], config, iMarker);
 				break;
-      case HEAT_FLUX:
-        solution_container[MainSolution]->BC_HeatFlux_Wall(geometry, solution_container, solver[CONV_BOUND_TERM], solver[VISC_BOUND_TERM], config, iMarker);
+            case HEAT_FLUX:
+                solution_container[MainSolution]->BC_HeatFlux_Wall(geometry, solution_container, solver[CONV_BOUND_TERM], solver[VISC_BOUND_TERM], config, iMarker);
 				break;
 			case DIRICHLET:
 				solution_container[MainSolution]->BC_Dirichlet(geometry, solution_container, config, iMarker);
@@ -155,7 +155,7 @@ void CIntegration::Space_Integration(CGeometry *geometry, CSolution **solution_c
 				solution_container[MainSolution]->BC_Custom(geometry, solution_container, solver[CONV_BOUND_TERM], config, iMarker);
 				break;
 		}
-
+    
 }
 
 void CIntegration::Adjoint_Setup(CGeometry ***geometry, CSolution ****solution_container, CConfig **config,

@@ -4340,7 +4340,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
 	levelset_resid[1000], adj_levelset_resid[1000], wave_coeff[1000], fea_coeff[1000], wave_resid[1000],
 	fea_resid[1000], end[1000];
 	double dummy = 0.0;
-	unsigned short iVar, iMarker;
+	unsigned short iVar;
   
 	unsigned long LinSolvIter = 0;
 	double timeiter = double(timeused)/double(iExtIter+1);
@@ -4358,29 +4358,13 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
   for (unsigned short iMarker = 0; iMarker < config[val_iZone]->GetnMarker_All(); iMarker++)
     if (config[val_iZone]->GetMarker_All_Boundary(iMarker) == ISOTHERMAL) isothermal = true;
   
-  
-//	bool flow = ((config[val_iZone]->GetKind_Solver() == EULER) || (config[val_iZone]->GetKind_Solver() == NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == RANS) ||
-//               (config[val_iZone]->GetKind_Solver() == FREE_SURFACE_EULER) || (config[val_iZone]->GetKind_Solver() == FREE_SURFACE_NAVIER_STOKES) ||
-//               (config[val_iZone]->GetKind_Solver() == FREE_SURFACE_RANS) || (config[val_iZone]->GetKind_Solver() == FLUID_STRUCTURE_EULER) ||
-//               (config[val_iZone]->GetKind_Solver() == FLUID_STRUCTURE_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == FLUID_STRUCTURE_RANS) ||
-//               (config[val_iZone]->GetKind_Solver() == AEROACOUSTIC_EULER) || (config[val_iZone]->GetKind_Solver() == AEROACOUSTIC_NAVIER_STOKES) ||
-//               (config[val_iZone]->GetKind_Solver() == AEROACOUSTIC_RANS) || (config[val_iZone]->GetKind_Solver() == ADJ_EULER) ||
-//               (config[val_iZone]->GetKind_Solver() == ADJ_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS) ||
-//               (config[val_iZone]->GetKind_Solver() == ADJ_FREE_SURFACE_EULER) || (config[val_iZone]->GetKind_Solver() == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
-//               (config[val_iZone]->GetKind_Solver() == ADJ_FREE_SURFACE_RANS) || (config[val_iZone]->GetKind_Solver() == ADJ_AEROACOUSTIC_EULER));
-	bool turbulent = ((config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS) ||
+  	bool turbulent = ((config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS) ||
                     (config[val_iZone]->GetKind_Solver() == FREE_SURFACE_RANS) || (config[val_iZone]->GetKind_Solver() == ADJ_FREE_SURFACE_RANS) ||
                     (config[val_iZone]->GetKind_Solver() == FLUID_STRUCTURE_RANS));
-	bool adjoint = ((config[val_iZone]->GetKind_Solver() == ADJ_EULER) || (config[val_iZone]->GetKind_Solver() == ADJ_NAVIER_STOKES) ||
-                  (config[val_iZone]->GetKind_Solver() == ADJ_RANS) || (config[val_iZone]->GetKind_Solver() == ADJ_FREE_SURFACE_EULER) ||
-                  (config[val_iZone]->GetKind_Solver() == ADJ_FREE_SURFACE_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == ADJ_FREE_SURFACE_RANS) ||
-                  (config[val_iZone]->GetKind_Solver() == ADJ_PLASMA_EULER) || (config[val_iZone]->GetKind_Solver() == ADJ_PLASMA_NAVIER_STOKES) ||
-                  (config[val_iZone]->GetKind_Solver() == ADJ_AEROACOUSTIC_EULER));
+	bool adjoint = config[val_iZone]->GetAdjoint();
 	bool fluid_structure = ((config[val_iZone]->GetKind_Solver() == FLUID_STRUCTURE_EULER) || (config[val_iZone]->GetKind_Solver() == FLUID_STRUCTURE_NAVIER_STOKES) ||
                           (config[val_iZone]->GetKind_Solver() == FLUID_STRUCTURE_RANS));
-	bool free_surface = ((config[val_iZone]->GetKind_Solver() == FREE_SURFACE_EULER) || (config[val_iZone]->GetKind_Solver() == FREE_SURFACE_NAVIER_STOKES) ||
-                       (config[val_iZone]->GetKind_Solver() == FREE_SURFACE_RANS) || (config[val_iZone]->GetKind_Solver() == ADJ_FREE_SURFACE_EULER) ||
-                       (config[val_iZone]->GetKind_Solver() == ADJ_FREE_SURFACE_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == ADJ_FREE_SURFACE_RANS));
+    bool freesurface = config[val_iZone]->GetFreeSurface();
 	bool aeroacoustic = ((config[val_iZone]->GetKind_Solver() == AEROACOUSTIC_EULER) || (config[val_iZone]->GetKind_Solver() == AEROACOUSTIC_NAVIER_STOKES) ||
                        (config[val_iZone]->GetKind_Solver() == AEROACOUSTIC_RANS));
 	bool wave = (config[val_iZone]->GetKind_Solver() == WAVE_EQUATION);
@@ -4421,7 +4405,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
   if (wave) nVar_Wave = 2;
   if (fea) nVar_FEA = nDim;
   if (plasma) nVar_Plasma = config[val_iZone]->GetnMonatomics()*(nDim+2) + config[val_iZone]->GetnDiatomics()*(nDim+3);
-  if (free_surface) nVar_LevelSet = 1;
+  if (freesurface) nVar_LevelSet = 1;
   
   /*--- Adjoint problem variables ---*/
   if (compressible) nVar_AdjFlow = nDim+2; else nVar_AdjFlow = nDim+1;
@@ -4431,7 +4415,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
       case SST: nVar_AdjTurb = 2; break;
     }
   if (plasma) nVar_AdjPlasma = config[val_iZone]->GetnMonatomics()*(nDim+2) + config[val_iZone]->GetnDiatomics()*(nDim+3);
-  if (free_surface) nVar_AdjLevelSet = 1;
+  if (freesurface) nVar_AdjLevelSet = 1;
   
   /*--- Other vectors ---*/
   nVar_Force = 18; nVar_Time = 3;
@@ -4491,7 +4475,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
       Total_CFz += solution_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFz();
       Total_CEff += solution_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CEff();
       
-      if (free_surface) {
+      if (freesurface) {
         Total_CFreeSurface += solution_container[val_iZone][FinestMesh][LEVELSET_SOL]->GetTotal_CFreeSurface();
       }
       
@@ -4530,7 +4514,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
       sbuf_force[7] += solution_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFy();
       sbuf_force[8] += solution_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFz();
       
-      if (free_surface) {
+      if (freesurface) {
         sbuf_force[9] += solution_container[val_iZone][FinestMesh][LEVELSET_SOL]->GetTotal_CFreeSurface();
       }
       
@@ -4575,7 +4559,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
       }
       
       /*--- Free Surface residual ---*/
-      if (free_surface) {
+      if (freesurface) {
         for (iVar = 0; iVar < nVar_LevelSet; iVar++)
           residual_levelset[iVar] = solution_container[val_iZone][FinestMesh][LEVELSET_SOL]->GetRes_RMS(iVar);
       }
@@ -4625,7 +4609,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
             }
         
         /*--- Adjoint level set residuals ---*/
-        if (free_surface) {
+        if (freesurface) {
           for (iVar = 0; iVar < nVar_AdjLevelSet; iVar++)
             residual_adjlevelset[iVar] = solution_container[val_iZone][FinestMesh][ADJLEVELSET_SOL]->GetRes_RMS(iVar);
         }
@@ -4747,7 +4731,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
     Total_CFx = rbuf_force[6];    Total_CFy = rbuf_force[7];    Total_CFz = rbuf_force[8];
     Total_CEff = rbuf_force[0]/(rbuf_force[1]+EPS);
     
-    if (free_surface) Total_CFreeSurface = rbuf_force[9];
+    if (freesurface) Total_CFreeSurface = rbuf_force[9];
     if (fluid_structure) Total_CFEA = rbuf_force[9];
     if (aeroacoustic) Total_CWave = rbuf_force[9];
     if (wave) Total_CWave = rbuf_force[9];
@@ -4818,29 +4802,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
 #ifndef NO_MPI
     MPI::COMM_WORLD.Barrier();
 #endif
-    if (write_heads) {
-      switch (config[val_iZone]->GetKind_Solver()) {
-        case EULER : case NAVIER_STOKES: case RANS:
-          for (iMarker = 0; iMarker < config[val_iZone]->GetnMarker_All(); iMarker++) {
-            switch (config[val_iZone]->GetMarker_All_Boundary(iMarker)) {
-							case NACELLE_EXHAUST:
-								cout << "Exhaust surface: "<< config[val_iZone]->GetMarker_All_Tag(iMarker) << ". Mass flow rate: "
-								<< solution_container[ZONE_0][FinestMesh][FLOW_SOL]->GetMassFlow_Rate(iMarker) << "."<<endl;
-								break;
-							case NACELLE_INFLOW:
-								cout << "Inflow surface: "<< config[val_iZone]->GetMarker_All_Tag(iMarker) << ". Mass flow rate: "
-								<< solution_container[ZONE_0][FinestMesh][FLOW_SOL]->GetMassFlow_Rate(iMarker)
-								<< ". Fan face Mach: " << solution_container[ZONE_0][FinestMesh][FLOW_SOL]->GetFanFace_Mach(iMarker) <<"."<<endl;
-								break;
-            }
-          }
-          break;
-      }
-    }
-#ifndef NO_MPI
-    MPI::COMM_WORLD.Barrier();
-#endif
-    
+     
     /*--- Output using only the master node ---*/
     if (rank == MASTER_NODE) {
       
@@ -4878,7 +4840,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
             if (rotating_frame)
               sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx,
                        Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_CMerit, Total_CT, Total_CQ);
-            if (free_surface) {
+            if (freesurface) {
               sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy,
                        Total_CFz, Total_CEff, Total_CFreeSurface);
             }
@@ -4913,7 +4875,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
             }
             
             /*--- Free surface residual ---*/
-            if (free_surface) {
+            if (freesurface) {
               sprintf (levelset_resid, ", %12.10f", log10 (residual_levelset[0]));
             }
             
@@ -4950,7 +4912,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                       sprintf (adj_turb_resid, ", %12.10f", log10 (residual_adjturbulent[0]));
               
               /*--- Adjoint free surface residuals ---*/
-              if (free_surface) sprintf (adj_levelset_resid, ", %12.10f", log10 (residual_adjlevelset[0]));
+              if (freesurface) sprintf (adj_levelset_resid, ", %12.10f", log10 (residual_adjlevelset[0]));
             }
             
             break;

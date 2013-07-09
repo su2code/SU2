@@ -532,7 +532,6 @@ CAdjLevelSetVariable::CAdjLevelSetVariable(void) : CVariable() {}
 
 CAdjLevelSetVariable::CAdjLevelSetVariable(unsigned short val_ndim, unsigned short val_nvar, CConfig *config)
 : CVariable(val_ndim, val_nvar, config) {
-	unsigned short iVar;
 	
 	/*--- Allocate residual structures ---*/
 	Residual_Sum = new double [nVar]; Residual_Old = new double [nVar];
@@ -544,7 +543,6 @@ CAdjLevelSetVariable::CAdjLevelSetVariable(unsigned short val_ndim, unsigned sho
 
 CAdjLevelSetVariable::CAdjLevelSetVariable(double val_levelset, unsigned short val_ndim, unsigned short val_nvar, CConfig *config)
 : CVariable(val_ndim, val_nvar,config) {
-	unsigned short iVar;
 	
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
@@ -566,7 +564,6 @@ CAdjLevelSetVariable::CAdjLevelSetVariable(double val_levelset, unsigned short v
 }
 
 CAdjLevelSetVariable::~CAdjLevelSetVariable(void) {
-	unsigned short iVar;
 	
 	delete [] Residual_Sum; delete [] Residual_Old;
 	if (Limiter != NULL) delete [] Limiter;

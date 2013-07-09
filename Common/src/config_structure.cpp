@@ -197,7 +197,7 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddMarkerOutlet("MARKER_HEATFLUX", nMarker_HeatFlux, Marker_HeatFlux, Heat_Flux);
 	/* DESCRIPTION: Nacelle inflow boundary marker(s)
      Format: ( nacelle inflow marker, fan face Mach, ... ) */
-	AddMarkerOutlet("MARKER_NACELLE_INFLOW", nMarker_NacelleInflow, Marker_NacelleInflow, FanFace_Mach);
+	AddMarkerOutlet("MARKER_NACELLE_INFLOW", nMarker_NacelleInflow, Marker_NacelleInflow, FanFace_Mach_Target);
 	/* DESCRIPTION: Nacelle exhaust boundary marker(s)
      Format: (nacelle exhaust marker, total nozzle temp, total nozzle pressure, ... )*/
 	AddMarkerInlet("MARKER_NACELLE_EXHAUST", nMarker_NacelleExhaust, Marker_NacelleExhaust, Nozzle_Ttotal, Nozzle_Ptotal);
@@ -212,7 +212,7 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	/* DESCRIPTION: Observer boundary marker(s) */
 	AddMarkerOption("MARKER_OBSERVER", nMarker_Observer, Marker_Observer);
 	/* DESCRIPTION: Damping factor for engine inlet condition */
-	AddScalarOption("DAMP_NACELLE_INFLOW", Damp_Engine_Inlet, 0.1);
+	AddScalarOption("DAMP_NACELLE_INFLOW", Damp_Nacelle_Inflow, 0.1);
     
 	/*--- options related to grid adaptation ---*/
 	/* CONFIG_CATEGORY: Grid adaptation */
@@ -2424,7 +2424,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 	Marker_Config_Designing = new unsigned short[nMarker_Config];
 	Marker_Config_PerBound = new unsigned short[nMarker_Config];
 	Marker_Config_Sliding = new unsigned short[nMarker_Config];
-
+    
 	for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++) {
 		Marker_Config_Tag[iMarker_Config] = "NONE";
 		Marker_Config_Boundary[iMarker_Config] = 0;
@@ -2493,9 +2493,14 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 		iMarker_Config++;
 	}
 
+    FanFace_Mach = new double[nMarker_NacelleInflow];
+    FanFace_Pressure = new double[nMarker_NacelleInflow];
+
 	for (iMarker_NacelleInflow = 0; iMarker_NacelleInflow < nMarker_NacelleInflow; iMarker_NacelleInflow++) {
 		Marker_Config_Tag[iMarker_Config] = Marker_NacelleInflow[iMarker_NacelleInflow];
 		Marker_Config_Boundary[iMarker_Config] = NACELLE_INFLOW;
+        FanFace_Mach[iMarker_NacelleInflow] = 0.0;
+        FanFace_Pressure[iMarker_NacelleInflow] = 0.0;
 		iMarker_Config++;
 	}
 
@@ -5133,6 +5138,20 @@ double CConfig::GetWall_HeatFlux(string val_marker) {
 	for (iMarker_HeatFlux = 0; iMarker_HeatFlux < nMarker_HeatFlux; iMarker_HeatFlux++)
 		if (Marker_HeatFlux[iMarker_HeatFlux] == val_marker) break;
 	return Heat_Flux[iMarker_HeatFlux];
+}
+
+double CConfig::GetFanFace_Mach_Target(string val_marker) {
+	unsigned short iMarker_NacelleInflow;
+	for (iMarker_NacelleInflow = 0; iMarker_NacelleInflow < nMarker_NacelleInflow; iMarker_NacelleInflow++)
+		if (Marker_NacelleInflow[iMarker_NacelleInflow] == val_marker) break;
+	return FanFace_Mach_Target[iMarker_NacelleInflow];
+}
+
+double CConfig::GetFanFace_Pressure(string val_marker) {
+	unsigned short iMarker_NacelleInflow;
+	for (iMarker_NacelleInflow = 0; iMarker_NacelleInflow < nMarker_NacelleInflow; iMarker_NacelleInflow++)
+		if (Marker_NacelleInflow[iMarker_NacelleInflow] == val_marker) break;
+	return FanFace_Pressure[iMarker_NacelleInflow];
 }
 
 double CConfig::GetFanFace_Mach(string val_marker) {

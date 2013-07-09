@@ -1073,7 +1073,14 @@ public:
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
 	 * \return Value of the mass flow rate on the surface <i>val_marker</i>.
 	 */
-	virtual double GetMassFlow_Rate(unsigned short val_marker);
+	virtual double GetFanFace_MassFlow(unsigned short val_marker);
+    
+    /*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \return Value of the mass flow rate on the surface <i>val_marker</i>.
+	 */
+	virtual double GetExhaust_MassFlow(unsigned short val_marker);
     
 	/*!
 	 * \brief A virtual member.
@@ -1718,6 +1725,13 @@ public:
 	 */
 	virtual unsigned short GetnDiatomics(void);
     
+    /*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solution - Container vector with all the solutions.
+	 */
+	virtual void GetNacelle_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+
 };
 
 /*!
@@ -1811,9 +1825,16 @@ protected:
 	**YPlus,		/*!< \brief Yplus for each boundary and vertex. */
 	*ForceInviscid,		/*!< \brief Inviscid force for each boundary. */
 	*MomentInviscid,	/*!< \brief Inviscid moment for each boundary. */
-	*MassFlow_Rate,	/*!< \brief Mass flow rate for each boundary. */
+	*FanFace_MassFlow,	/*!< \brief Mass flow rate for each boundary. */
+	*Exhaust_MassFlow,	/*!< \brief Mass flow rate for each boundary. */
 	*FanFace_Pressure,	/*!< \brief Fan face pressure for each boundary. */
 	*FanFace_Mach,	/*!< \brief Fan face mach number for each boundary. */
+	*FanFace_Area,	/*!< \brief Boundary total area. */
+    *Exhaust_Area,	/*!< \brief Boundary total area. */
+    FanFace_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
+    Exhaust_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
+	FanFace_Pressure_Total,	/*!< \brief Fan face pressure for each boundary. */
+	FanFace_Mach_Total,	/*!< \brief Fan face mach number for each boundary. */
 	InverseDesign;	/*!< \brief Inverse design functional for each boundary. */
 	double AllBound_CDrag_Inv,	/*!< \brief Total drag coefficient (inviscid contribution) for all the boundaries. */
 	AllBound_CLift_Inv,			/*!< \brief Total lift coefficient (inviscid contribution) for all the boundaries. */
@@ -2304,6 +2325,13 @@ public:
 	void ExplicitRK_Iteration(CGeometry *geometry, CSolution **solution_container, CConfig *config,
                               unsigned short iRKStep);
     
+    /*!
+	 * \brief Compute the Fan face Mach number.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solution - Container vector with all the solutions.
+	 */
+	void GetNacelle_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+    
 	/*!
 	 * \brief Update the solution using the explicit Euler scheme.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -2346,7 +2374,14 @@ public:
 	 * \param val_marker Surface where the coeficient is going to be computed.
 	 * \return Value of the mass flow rate on the surface <i>val_marker</i>.
 	 */
-	double GetMassFlow_Rate(unsigned short val_marker);
+	double GetFanFace_MassFlow(unsigned short val_marker);
+    
+    /*!
+	 * \brief Provide the mass flow rate.
+	 * \param val_marker Surface where the coeficient is going to be computed.
+	 * \return Value of the mass flow rate on the surface <i>val_marker</i>.
+	 */
+	double GetExhaust_MassFlow(unsigned short val_marker);
     
 	/*!
 	 * \brief Provide the mass flow rate.

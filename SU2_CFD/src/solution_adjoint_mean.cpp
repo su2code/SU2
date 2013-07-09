@@ -715,12 +715,6 @@ void CAdjEulerSolution::SetForceProj_Vector(CGeometry *geometry, CSolution **sol
     
 	bool rotating_frame = config->GetRotating_Frame();
     bool grid_movement = config->GetGrid_Movement();
-    bool freesurface = ((config->GetKind_Solver() == FREE_SURFACE_EULER) ||
-                        (config->GetKind_Solver() == FREE_SURFACE_NAVIER_STOKES) ||
-                        (config->GetKind_Solver() == FREE_SURFACE_RANS) ||
-                        (config->GetKind_Solver() == ADJ_FREE_SURFACE_EULER) ||
-                        (config->GetKind_Solver() == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
-                        (config->GetKind_Solver() == ADJ_FREE_SURFACE_RANS));
     
 	ForceProj_Vector = new double[nDim];
     
@@ -1214,12 +1208,7 @@ void CAdjEulerSolution::SetInitialCondition(CGeometry **geometry, CSolution ***s
 	double LevelSet, Area_Children, Area_Parent, LevelSet_Fine, *Solution, *Solution_Fine;
   
 	bool restart = config->GetRestart();
-	bool freesurface = ((config->GetKind_Solver() == FREE_SURFACE_EULER) ||
-                      (config->GetKind_Solver() == FREE_SURFACE_NAVIER_STOKES) ||
-                      (config->GetKind_Solver() == FREE_SURFACE_RANS) ||
-                      (config->GetKind_Solver() == ADJ_FREE_SURFACE_EULER) ||
-                      (config->GetKind_Solver() == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
-                      (config->GetKind_Solver() == ADJ_FREE_SURFACE_RANS));
+	bool freesurface = config->GetFreeSurface();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
@@ -1625,7 +1614,7 @@ void CAdjEulerSolution::Source_Residual(CGeometry *geometry, CSolution **solutio
 	bool axisymmetric = config->GetAxisymmetric();
 	bool gravity = (config->GetGravityForce() == YES);
 	bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
-	bool freesurface = ((config->GetKind_Solver() == FREE_SURFACE_EULER) || (config->GetKind_Solver() == FREE_SURFACE_NAVIER_STOKES) || (config->GetKind_Solver() == FREE_SURFACE_RANS) || (config->GetKind_Solver() == ADJ_FREE_SURFACE_EULER) || (config->GetKind_Solver() == ADJ_FREE_SURFACE_NAVIER_STOKES) || (config->GetKind_Solver() == ADJ_FREE_SURFACE_RANS));
+	bool freesurface = config->GetFreeSurface();
 
 	for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
 
@@ -5579,7 +5568,7 @@ void CAdjNSSolution::Source_Residual(CGeometry *geometry, CSolution **solution_c
   unsigned short iVar, iDim;
   
   bool rotating_frame = config->GetRotating_Frame();
-  bool freesurface = ((config->GetKind_Solver() == FREE_SURFACE_EULER) || (config->GetKind_Solver() == FREE_SURFACE_NAVIER_STOKES) || (config->GetKind_Solver() == FREE_SURFACE_RANS) || (config->GetKind_Solver() == ADJ_FREE_SURFACE_EULER) || (config->GetKind_Solver() == ADJ_FREE_SURFACE_NAVIER_STOKES) || (config->GetKind_Solver() == ADJ_FREE_SURFACE_RANS));
+    bool freesurface = config->GetFreeSurface();
   
   for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
 
