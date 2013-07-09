@@ -2842,7 +2842,8 @@ void CEulerSolution::ExplicitRK_Iteration(CGeometry *geometry, CSolution **solut
 
 	/*--- Compute the root mean square residual ---*/
 	SetResidual_RMS(geometry, config);
-
+    
+    
 }
 
 void CEulerSolution::ExplicitEuler_Iteration(CGeometry *geometry, CSolution **solution_container, CConfig *config) {
