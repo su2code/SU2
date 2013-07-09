@@ -192,7 +192,7 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
                                                       CGeometry *geo_coarse, CConfig *config) {
 	unsigned long Point_Fine, Point_Coarse, iVertex;
 	unsigned short Boundary, iMarker, iChildren, iVar;
-    double Area_Parent, Area_Children, *Solution_Fine, *Solution_Coarse, Vector[3];
+    double Area_Parent, Area_Children, *Solution_Fine, *Solution_Coarse;
     
     const unsigned short nVar = sol_coarse->GetnVar();
 

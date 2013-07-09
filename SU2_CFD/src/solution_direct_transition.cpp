@@ -350,7 +350,6 @@ void CTransLMSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution
 void CTransLMSolution::Viscous_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
 																				CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 	unsigned long iEdge, iPoint, jPoint;
-	bool implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
 	
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     

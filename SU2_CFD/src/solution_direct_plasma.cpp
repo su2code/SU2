@@ -877,7 +877,6 @@ void CPlasmaSolution::SetSolution_MPI(CGeometry *geometry, CConfig *config) {
 
 void CPlasmaSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
-	bool implicit = (config->GetKind_TimeIntScheme_Plasma() == EULER_IMPLICIT);
 	bool upwind_2nd = ((config->GetKind_Upwind() == ROE_2ND) || (config->GetKind_Upwind() == AUSM_2ND)
 			|| (config->GetKind_Upwind() == HLLC_2ND) || (config->GetKind_Upwind() == ROE_TURKEL_2ND) || (config->GetKind_Upwind() == SW_2ND) || (config->GetKind_Upwind() == MSW_2ND));
 	bool viscous = (config->GetKind_Solver() == PLASMA_NAVIER_STOKES);

@@ -1618,7 +1618,6 @@ CLevelSetVariable::CLevelSetVariable(void) : CVariable() {}
 
 CLevelSetVariable::CLevelSetVariable(unsigned short val_ndim, unsigned short val_nvar, CConfig *config)
 : CVariable(val_ndim, val_nvar, config) {
-	unsigned short iVar;
 
 	/*--- Allocate residual structures ---*/
 	Residual_Sum = new double [nVar]; Residual_Old = new double [nVar];
@@ -1635,7 +1634,6 @@ CLevelSetVariable::CLevelSetVariable(unsigned short val_ndim, unsigned short val
 
 CLevelSetVariable::CLevelSetVariable(double val_levelset, unsigned short val_ndim, unsigned short val_nvar, CConfig *config)
 : CVariable(val_ndim, val_nvar,config) {
-	unsigned short iVar;
 
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));

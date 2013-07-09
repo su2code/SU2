@@ -4340,7 +4340,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
 	levelset_resid[1000], adj_levelset_resid[1000], wave_coeff[1000], fea_coeff[1000], wave_resid[1000],
 	fea_resid[1000], end[1000];
 	double dummy = 0.0;
-	unsigned short iVar, iMarker;
+	unsigned short iVar;
   
 	unsigned long LinSolvIter = 0;
 	double timeiter = double(timeused)/double(iExtIter+1);
