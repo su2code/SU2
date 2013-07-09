@@ -3304,7 +3304,6 @@ void CEulerSolution::GetNacelle_Properties(CGeometry *geometry, CConfig *config,
     }
     
     /*--- Copy to the appropiate structure ---*/
-    
     unsigned short iMarker_NacelleInflow, iMarker_NacelleExhaust;
     
     unsigned short nMarker_NacelleInflow = config->GetnMarker_NacelleInflow();
@@ -3416,8 +3415,10 @@ void CEulerSolution::GetNacelle_Properties(CGeometry *geometry, CConfig *config,
         if (FanFace_Area_Total[iMarker_NacelleInflow] != 0.0) FanFace_Pressure_Total[iMarker_NacelleInflow] /= FanFace_Area_Total[iMarker_NacelleInflow];
         else FanFace_Pressure_Total[iMarker_NacelleInflow] = 0.0;
         
-        config->SetFanFace_Mach(iMarker_NacelleInflow, FanFace_Mach_Total[iMarker_NacelleInflow]);
-        config->SetFanFace_Pressure(iMarker_NacelleInflow, FanFace_Pressure_Total[iMarker_NacelleInflow]);
+        if (iMesh == MESH_0) {
+            config->SetFanFace_Mach(iMarker_NacelleInflow, FanFace_Mach_Total[iMarker_NacelleInflow]);
+            config->SetFanFace_Pressure(iMarker_NacelleInflow, FanFace_Pressure_Total[iMarker_NacelleInflow]);
+        }
 
     }
 
@@ -3470,7 +3471,7 @@ void CEulerSolution::GetNacelle_Properties(CGeometry *geometry, CConfig *config,
                 
                 /*--- The flow direction is defined by the local velocity on the surface ---*/
                 for (iDim = 0; iDim < nDim; iDim++)
-                    Flow_Dir[iDim] = Solution[iDim+1] / Solution[0];
+                    Flow_Dir[iDim] = node[iPoint]->GetSolution(iDim+1) / node[iPoint]->GetSolution(0);
                 
                 /*--- Dot product of normal and flow direction. ---*/
                 alpha = 0.0;
