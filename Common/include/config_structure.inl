@@ -708,6 +708,10 @@ inline unsigned short CConfig::GetnMarker_NacelleInflow(void) {	return nMarker_N
 
 inline unsigned short CConfig::GetnMarker_NacelleExhaust(void) { return nMarker_NacelleExhaust; }
 
+inline unsigned short CConfig::GetnMarker_InterfaceBound(void) { return nMarker_InterfaceBound; }
+
+inline unsigned short CConfig::GetnMarker_NearFieldBound(void) { return nMarker_NearFieldBound; }
+
 inline string CConfig::GetMesh_FileName(void) { return Mesh_FileName; }
 
 inline string CConfig::GetMesh_Out_FileName(void) { return Mesh_Out_FileName; }

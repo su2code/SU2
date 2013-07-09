@@ -3219,278 +3219,280 @@ void CEulerSolution::GetNacelle_Properties(CGeometry *geometry, CConfig *config,
 	double Pressure, Velocity[3], Velocity2, MassFlow, Density, Energy, Area,
     Mach, SoundSpeed, Flow_Dir[3], alpha;
     
-    int rank = MASTER_NODE;
+    unsigned short nMarker_NacelleInflow = config->GetnMarker_NacelleInflow();
+    unsigned short nMarker_NacelleExhaust = config->GetnMarker_NacelleExhaust();
     
+    if ((nMarker_NacelleInflow != 0) || (nMarker_NacelleExhaust != 0)) {
+        
+        int rank = MASTER_NODE;
 #ifndef NO_MPI
-    
-	rank = MPI::COMM_WORLD.Get_rank();
-    
+        rank = MPI::COMM_WORLD.Get_rank();
 #endif
-    
-	/*--- Compute the numerical fan face Mach number, and the total area of the inflow ---*/
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
         
-        FanFace_MassFlow[iMarker] = 0.0;
-        FanFace_Mach[iMarker] = 0.0;
-        FanFace_Pressure[iMarker] = 0.0;
-        FanFace_Area[iMarker] = 0.0;
-        
-        Exhaust_MassFlow[iMarker] = 0.0;
-        Exhaust_Area[iMarker] = 0.0;
-
-        if (config->GetMarker_All_Boundary(iMarker) == NACELLE_INFLOW) {
+        /*--- Compute the numerical fan face Mach number, and the total area of the inflow ---*/
+        for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
             
-            for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-                iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+            FanFace_MassFlow[iMarker] = 0.0;
+            FanFace_Mach[iMarker] = 0.0;
+            FanFace_Pressure[iMarker] = 0.0;
+            FanFace_Area[iMarker] = 0.0;
+            
+            Exhaust_MassFlow[iMarker] = 0.0;
+            Exhaust_Area[iMarker] = 0.0;
+            
+            if (config->GetMarker_All_Boundary(iMarker) == NACELLE_INFLOW) {
                 
-                if (geometry->node[iPoint]->GetDomain()) {
+                for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+                    iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
                     
-                    geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
-                    
-                    Density = node[iPoint]->GetSolution(0);
-                    Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0;
-                    for (iDim = 0; iDim < nDim; iDim++) {
-                        Area += Vector[iDim]*Vector[iDim];
-                        Velocity[iDim] = node[iPoint]->GetSolution(iDim+1)/Density;
-                        Velocity2 += Velocity[iDim]*Velocity[iDim];
-                        MassFlow -= Vector[iDim]*node[iPoint]->GetSolution(iDim+1);
+                    if (geometry->node[iPoint]->GetDomain()) {
+                        
+                        geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
+                        
+                        Density = node[iPoint]->GetSolution(0);
+                        Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0;
+                        for (iDim = 0; iDim < nDim; iDim++) {
+                            Area += Vector[iDim]*Vector[iDim];
+                            Velocity[iDim] = node[iPoint]->GetSolution(iDim+1)/Density;
+                            Velocity2 += Velocity[iDim]*Velocity[iDim];
+                            MassFlow -= Vector[iDim]*node[iPoint]->GetSolution(iDim+1);
+                        }
+                        
+                        Area       = sqrt (Area);
+                        Energy     = node[iPoint]->GetSolution(nVar-1)/Density;
+                        Pressure   = Gamma_Minus_One*Density*(Energy-0.5*Velocity2);
+                        SoundSpeed = sqrt(Gamma*Pressure/Density);
+                        Mach       = sqrt(Velocity2)/SoundSpeed;
+                        
+                        /*--- Compute the FanFace_MassFlow, FanFace_Pressure, FanFace_Mach, and FanFace_Area ---*/
+                        FanFace_MassFlow[iMarker] += MassFlow;
+                        FanFace_Pressure[iMarker] += Pressure*Area;
+                        FanFace_Mach[iMarker] += Mach*Area;
+                        FanFace_Area[iMarker] += Area;
+                        
                     }
-                    
-                    Area       = sqrt (Area);
-                    Energy     = node[iPoint]->GetSolution(nVar-1)/Density;
-                    Pressure   = Gamma_Minus_One*Density*(Energy-0.5*Velocity2);
-                    SoundSpeed = sqrt(Gamma*Pressure/Density);
-                    Mach       = sqrt(Velocity2)/SoundSpeed;
-                    
-                    /*--- Compute the FanFace_MassFlow, FanFace_Pressure, FanFace_Mach, and FanFace_Area ---*/
-                    FanFace_MassFlow[iMarker] += MassFlow;
-                    FanFace_Pressure[iMarker] += Pressure*Area;
-                    FanFace_Mach[iMarker] += Mach*Area;
-                    FanFace_Area[iMarker] += Area;
-
                 }
+                
+            }
+            
+            if (config->GetMarker_All_Boundary(iMarker) == NACELLE_EXHAUST) {
+                
+                for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+                    iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+                    
+                    if (geometry->node[iPoint]->GetDomain()) {
+                        
+                        geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
+                        
+                        Area = 0.0;
+                        for (iDim = 0; iDim < nDim; iDim++)
+                            Area += Vector[iDim]*Vector[iDim];
+                        
+                        Area = sqrt (Area);
+                        
+                        MassFlow = 0.0;
+                        for (iDim = 0; iDim < nDim; iDim++)
+                            MassFlow += Vector[iDim]*node[iPoint]->GetSolution(iDim+1);
+                        
+                        /*--- Compute the mass Exhaust_MassFlow ---*/
+                        Exhaust_MassFlow[iMarker] += MassFlow;
+                        Exhaust_Area[iMarker] += Area;
+                        
+                    }
+                }
+                
             }
             
         }
         
-        if (config->GetMarker_All_Boundary(iMarker) == NACELLE_EXHAUST) {
+        /*--- Copy to the appropiate structure ---*/
+        unsigned short iMarker_NacelleInflow, iMarker_NacelleExhaust;
+        
+        double FanFace_MassFlow_Local[nMarker_NacelleInflow];
+        double FanFace_Mach_Local[nMarker_NacelleInflow];
+        double FanFace_Pressure_Local[nMarker_NacelleInflow];
+        double FanFace_Area_Local[nMarker_NacelleInflow];
+        
+        double FanFace_MassFlow_Total[nMarker_NacelleInflow];
+        double FanFace_Mach_Total[nMarker_NacelleInflow];
+        double FanFace_Pressure_Total[nMarker_NacelleInflow];
+        double FanFace_Area_Total[nMarker_NacelleInflow];
+        
+        for (iMarker_NacelleInflow = 0; iMarker_NacelleInflow < nMarker_NacelleInflow; iMarker_NacelleInflow++) {
+            FanFace_MassFlow_Local[iMarker_NacelleInflow] = 0.0;
+            FanFace_Mach_Local[iMarker_NacelleInflow] = 0.0;
+            FanFace_Pressure_Local[iMarker_NacelleInflow] = 0.0;
+            FanFace_Area_Local[iMarker_NacelleInflow] = 0.0;
             
-            for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-                iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+            FanFace_MassFlow_Total[iMarker_NacelleInflow] = 0.0;
+            FanFace_Mach_Total[iMarker_NacelleInflow] = 0.0;
+            FanFace_Pressure_Total[iMarker_NacelleInflow] = 0.0;
+            FanFace_Area_Total[iMarker_NacelleInflow] = 0.0;
+        }
+        
+        double Exhaust_MassFlow_Local[nMarker_NacelleExhaust];
+        double Exhaust_Area_Local[nMarker_NacelleExhaust];
+        
+        double Exhaust_MassFlow_Total[nMarker_NacelleExhaust];
+        double Exhaust_Area_Total[nMarker_NacelleExhaust];
+        
+        for (iMarker_NacelleExhaust = 0; iMarker_NacelleExhaust < nMarker_NacelleExhaust; iMarker_NacelleExhaust++) {
+            Exhaust_MassFlow_Local[iMarker_NacelleExhaust] = 0.0;
+            Exhaust_Area_Local[iMarker_NacelleExhaust] = 0.0;
+            
+            Exhaust_MassFlow_Total[iMarker_NacelleExhaust] = 0.0;
+            Exhaust_Area_Total[iMarker_NacelleExhaust] = 0.0;
+        }
+        
+        /*--- Compute the numerical fan face Mach number, and the total area of the inflow ---*/
+        for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+            
+            if (config->GetMarker_All_Boundary(iMarker) == NACELLE_INFLOW) {
                 
-                if (geometry->node[iPoint]->GetDomain()) {
+                /*--- Loop over all the boundaries with nacelle inflow bc ---*/
+                for (iMarker_NacelleInflow = 0; iMarker_NacelleInflow < nMarker_NacelleInflow; iMarker_NacelleInflow++) {
                     
+                    /*--- Add the FanFace_MassFlow, FanFace_Mach, FanFace_Pressure and FanFace_Area to the particular boundary ---*/
+                    if (config->GetMarker_All_Tag(iMarker) == config->GetMarker_NacelleInflow(iMarker_NacelleInflow)) {
+                        FanFace_MassFlow_Local[iMarker_NacelleInflow] += FanFace_MassFlow[iMarker];
+                        FanFace_Mach_Local[iMarker_NacelleInflow] += FanFace_Mach[iMarker];
+                        FanFace_Pressure_Local[iMarker_NacelleInflow] += FanFace_Pressure[iMarker];
+                        FanFace_Area_Local[iMarker_NacelleInflow] += FanFace_Area[iMarker];
+                    }
+                    
+                }
+                
+            }
+            
+            if (config->GetMarker_All_Boundary(iMarker) == NACELLE_EXHAUST) {
+                
+                /*--- Loop over all the boundaries with nacelle inflow bc ---*/
+                for (iMarker_NacelleExhaust= 0; iMarker_NacelleExhaust < nMarker_NacelleExhaust; iMarker_NacelleExhaust++) {
+                    
+                    /*--- Add the Exhaust_MassFlow, and Exhaust_Area to the particular boundary ---*/
+                    if (config->GetMarker_All_Tag(iMarker) == config->GetMarker_NacelleExhaust(iMarker_NacelleExhaust)) {
+                        Exhaust_MassFlow_Local[iMarker_NacelleExhaust] += Exhaust_MassFlow[iMarker];
+                        Exhaust_Area_Local[iMarker_NacelleExhaust] += Exhaust_Area[iMarker];
+                    }
+                    
+                }
+                
+            }
+            
+        }
+        
+#ifndef NO_MPI
+        
+        MPI::COMM_WORLD.Allreduce(FanFace_MassFlow_Local, FanFace_MassFlow_Total, nMarker_NacelleInflow, MPI::DOUBLE, MPI::SUM);
+        MPI::COMM_WORLD.Allreduce(FanFace_Mach_Local, FanFace_Mach_Total, nMarker_NacelleInflow, MPI::DOUBLE, MPI::SUM);
+        MPI::COMM_WORLD.Allreduce(FanFace_Pressure_Local, FanFace_Pressure_Total, nMarker_NacelleInflow, MPI::DOUBLE, MPI::SUM);
+        MPI::COMM_WORLD.Allreduce(FanFace_Area_Local, FanFace_Area_Total, nMarker_NacelleInflow, MPI::DOUBLE, MPI::SUM);
+        
+        MPI::COMM_WORLD.Allreduce(Exhaust_MassFlow_Local, Exhaust_MassFlow_Total, nMarker_NacelleExhaust, MPI::DOUBLE, MPI::SUM);
+        MPI::COMM_WORLD.Allreduce(Exhaust_Area_Local, Exhaust_Area_Total, nMarker_NacelleExhaust, MPI::DOUBLE, MPI::SUM);
+        
+#else
+        
+        for (iMarker_NacelleInflow = 0; iMarker_NacelleInflow < nMarker_NacelleInflow; iMarker_NacelleInflow++) {
+            FanFace_MassFlow_Total[iMarker_NacelleInflow]   = FanFace_MassFlow_Local[iMarker_NacelleInflow];
+            FanFace_Mach_Total[iMarker_NacelleInflow]       = FanFace_Mach_Local[iMarker_NacelleInflow];
+            FanFace_Pressure_Total[iMarker_NacelleInflow]   = FanFace_Pressure_Local[iMarker_NacelleInflow];
+            FanFace_Area_Total[iMarker_NacelleInflow]       = FanFace_Area_Local[iMarker_NacelleInflow];
+        }
+        
+        for (iMarker_NacelleExhaust = 0; iMarker_NacelleExhaust < nMarker_NacelleExhaust; iMarker_NacelleExhaust++) {
+            Exhaust_MassFlow_Total[iMarker_NacelleExhaust]  = Exhaust_MassFlow_Local[iMarker_NacelleExhaust];
+            Exhaust_Area_Total[iMarker_NacelleExhaust]      = Exhaust_Area_Local[iMarker_NacelleExhaust];
+        }
+        
+#endif
+        
+        /*--- Compute the value of FanFace_Area_Total, and FanFace_Pressure_Total, and
+         set the value in the config structure for future use ---*/
+        for (iMarker_NacelleInflow = 0; iMarker_NacelleInflow < nMarker_NacelleInflow; iMarker_NacelleInflow++) {
+            if (FanFace_Area_Total[iMarker_NacelleInflow] != 0.0) FanFace_Mach_Total[iMarker_NacelleInflow] /= FanFace_Area_Total[iMarker_NacelleInflow];
+            else FanFace_Mach_Total[iMarker_NacelleInflow] = 0.0;
+            if (FanFace_Area_Total[iMarker_NacelleInflow] != 0.0) FanFace_Pressure_Total[iMarker_NacelleInflow] /= FanFace_Area_Total[iMarker_NacelleInflow];
+            else FanFace_Pressure_Total[iMarker_NacelleInflow] = 0.0;
+            
+            if (iMesh == MESH_0) {
+                config->SetFanFace_Mach(iMarker_NacelleInflow, FanFace_Mach_Total[iMarker_NacelleInflow]);
+                config->SetFanFace_Pressure(iMarker_NacelleInflow, FanFace_Pressure_Total[iMarker_NacelleInflow]);
+            }
+            
+        }
+        
+        bool write_heads = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*20)) == 0));
+        if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads) {
+            
+            cout.precision(4);
+            cout.setf(ios::fixed,ios::floatfield);
+            
+            cout << endl << "---------------------------- Engine properties --------------------------" << endl;
+            for (iMarker_NacelleInflow = 0; iMarker_NacelleInflow < nMarker_NacelleInflow; iMarker_NacelleInflow++) {
+                cout << "Nacelle inflow ("<< config->GetMarker_NacelleInflow(iMarker_NacelleInflow)
+                << "): MassFlow: " << FanFace_MassFlow_Total[iMarker_NacelleInflow]
+                << ", Mach: " << FanFace_Mach_Total[iMarker_NacelleInflow]
+                << ", Area: " << FanFace_Area_Total[iMarker_NacelleInflow] <<"."<< endl;
+            }
+            
+            for (iMarker_NacelleExhaust = 0; iMarker_NacelleExhaust < nMarker_NacelleExhaust; iMarker_NacelleExhaust++) {
+                cout << "Nacelle exhaust ("<< config->GetMarker_NacelleExhaust(iMarker_NacelleExhaust)
+                << "): MassFlow: " << Exhaust_MassFlow_Total[iMarker_NacelleExhaust]
+                << ", Area: " << Exhaust_Area_Total[iMarker_NacelleExhaust] <<"."<< endl;
+            }
+            cout << "-------------------------------------------------------------------------" << endl;
+            
+        }
+        
+        /*--- Check the flow orientation in the nacelle inflow ---*/
+        for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+            
+            if (config->GetMarker_All_Boundary(iMarker) == NACELLE_INFLOW) {
+                
+                /*--- Loop over all the vertices on this boundary marker ---*/
+                for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+                    
+                    iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+                    
+                    /*--- Normal vector for this vertex (negate for outward convention) ---*/
                     geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
+                    
+                    for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = -Vector[iDim];
                     
                     Area = 0.0;
                     for (iDim = 0; iDim < nDim; iDim++)
                         Area += Vector[iDim]*Vector[iDim];
-                    
                     Area = sqrt (Area);
-
-                    MassFlow = 0.0;
+                    
+                    /*--- Compute unitary vector ---*/
                     for (iDim = 0; iDim < nDim; iDim++)
-                        MassFlow += Vector[iDim]*node[iPoint]->GetSolution(iDim+1);
+                        Vector[iDim] /= Area;
                     
-                    /*--- Compute the mass Exhaust_MassFlow ---*/
-                    Exhaust_MassFlow[iMarker] += MassFlow;
-                    Exhaust_Area[iMarker] += Area;
-
-                }
-            }
-            
-        }
-        
-    }
-    
-    /*--- Copy to the appropiate structure ---*/
-    unsigned short iMarker_NacelleInflow, iMarker_NacelleExhaust;
-    
-    unsigned short nMarker_NacelleInflow = config->GetnMarker_NacelleInflow();
-    double FanFace_MassFlow_Local[nMarker_NacelleInflow];
-    double FanFace_Mach_Local[nMarker_NacelleInflow];
-    double FanFace_Pressure_Local[nMarker_NacelleInflow];
-    double FanFace_Area_Local[nMarker_NacelleInflow];
-    
-    double FanFace_MassFlow_Total[nMarker_NacelleInflow];
-    double FanFace_Mach_Total[nMarker_NacelleInflow];
-    double FanFace_Pressure_Total[nMarker_NacelleInflow];
-    double FanFace_Area_Total[nMarker_NacelleInflow];
-    
-    for (iMarker_NacelleInflow = 0; iMarker_NacelleInflow < nMarker_NacelleInflow; iMarker_NacelleInflow++) {
-        FanFace_MassFlow_Local[iMarker_NacelleInflow] = 0.0;
-        FanFace_Mach_Local[iMarker_NacelleInflow] = 0.0;
-        FanFace_Pressure_Local[iMarker_NacelleInflow] = 0.0;
-        FanFace_Area_Local[iMarker_NacelleInflow] = 0.0;
-        
-        FanFace_MassFlow_Total[iMarker_NacelleInflow] = 0.0;
-        FanFace_Mach_Total[iMarker_NacelleInflow] = 0.0;
-        FanFace_Pressure_Total[iMarker_NacelleInflow] = 0.0;
-        FanFace_Area_Total[iMarker_NacelleInflow] = 0.0;
-    }
-    
-    unsigned short nMarker_NacelleExhaust = config->GetnMarker_NacelleExhaust();
-    double Exhaust_MassFlow_Local[nMarker_NacelleExhaust];
-    double Exhaust_Area_Local[nMarker_NacelleExhaust];
-    
-    double Exhaust_MassFlow_Total[nMarker_NacelleExhaust];
-    double Exhaust_Area_Total[nMarker_NacelleExhaust];
-    
-    for (iMarker_NacelleExhaust = 0; iMarker_NacelleExhaust < nMarker_NacelleExhaust; iMarker_NacelleExhaust++) {
-        Exhaust_MassFlow_Local[iMarker_NacelleExhaust] = 0.0;
-        Exhaust_Area_Local[iMarker_NacelleExhaust] = 0.0;
-        
-        Exhaust_MassFlow_Total[iMarker_NacelleExhaust] = 0.0;
-        Exhaust_Area_Total[iMarker_NacelleExhaust] = 0.0;
-    }
-    
-    /*--- Compute the numerical fan face Mach number, and the total area of the inflow ---*/
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        
-        if (config->GetMarker_All_Boundary(iMarker) == NACELLE_INFLOW) {
-            
-            /*--- Loop over all the boundaries with nacelle inflow bc ---*/
-            for (iMarker_NacelleInflow = 0; iMarker_NacelleInflow < nMarker_NacelleInflow; iMarker_NacelleInflow++) {
-                
-                /*--- Add the FanFace_MassFlow, FanFace_Mach, FanFace_Pressure and FanFace_Area to the particular boundary ---*/
-                if (config->GetMarker_All_Tag(iMarker) == config->GetMarker_NacelleInflow(iMarker_NacelleInflow)) {
-                    FanFace_MassFlow_Local[iMarker_NacelleInflow] += FanFace_MassFlow[iMarker];
-                    FanFace_Mach_Local[iMarker_NacelleInflow] += FanFace_Mach[iMarker];
-                    FanFace_Pressure_Local[iMarker_NacelleInflow] += FanFace_Pressure[iMarker];
-                    FanFace_Area_Local[iMarker_NacelleInflow] += FanFace_Area[iMarker];
-                }
-                
-            }
-            
-        }
-        
-        if (config->GetMarker_All_Boundary(iMarker) == NACELLE_EXHAUST) {
+                    /*--- The flow direction is defined by the local velocity on the surface ---*/
+                    for (iDim = 0; iDim < nDim; iDim++)
+                        Flow_Dir[iDim] = node[iPoint]->GetSolution(iDim+1) / node[iPoint]->GetSolution(0);
+                    
+                    /*--- Dot product of normal and flow direction. ---*/
+                    alpha = 0.0;
+                    for (iDim = 0; iDim < nDim; iDim++)
+                        alpha += Vector[iDim]*Flow_Dir[iDim];
+                    
+                    /*--- Flow in the wrong direction. ---*/
+                    if (alpha < 0.0) {
                         
-            /*--- Loop over all the boundaries with nacelle inflow bc ---*/
-            for (iMarker_NacelleExhaust= 0; iMarker_NacelleExhaust < nMarker_NacelleExhaust; iMarker_NacelleExhaust++) {
-                
-                /*--- Add the Exhaust_MassFlow, and Exhaust_Area to the particular boundary ---*/
-                if (config->GetMarker_All_Tag(iMarker) == config->GetMarker_NacelleExhaust(iMarker_NacelleExhaust)) {
-                    Exhaust_MassFlow_Local[iMarker_NacelleExhaust] += Exhaust_MassFlow[iMarker];
-                    Exhaust_Area_Local[iMarker_NacelleExhaust] += Exhaust_Area[iMarker];
-                }
-                
-            }
-            
-        }
-        
-    }
-    
-#ifndef NO_MPI
-
-    MPI::COMM_WORLD.Allreduce(FanFace_MassFlow_Local, FanFace_MassFlow_Total, nMarker_NacelleInflow, MPI::DOUBLE, MPI::SUM);
-	MPI::COMM_WORLD.Allreduce(FanFace_Mach_Local, FanFace_Mach_Total, nMarker_NacelleInflow, MPI::DOUBLE, MPI::SUM);
-	MPI::COMM_WORLD.Allreduce(FanFace_Pressure_Local, FanFace_Pressure_Total, nMarker_NacelleInflow, MPI::DOUBLE, MPI::SUM);
-	MPI::COMM_WORLD.Allreduce(FanFace_Area_Local, FanFace_Area_Total, nMarker_NacelleInflow, MPI::DOUBLE, MPI::SUM);
-    
-	MPI::COMM_WORLD.Allreduce(Exhaust_MassFlow_Local, Exhaust_MassFlow_Total, nMarker_NacelleExhaust, MPI::DOUBLE, MPI::SUM);
-    MPI::COMM_WORLD.Allreduce(Exhaust_Area_Local, Exhaust_Area_Total, nMarker_NacelleExhaust, MPI::DOUBLE, MPI::SUM);
-
-#else
-
-    for (iMarker_NacelleInflow = 0; iMarker_NacelleInflow < nMarker_NacelleInflow; iMarker_NacelleInflow++) {
-        FanFace_MassFlow_Total[iMarker_NacelleInflow]   = FanFace_MassFlow_Local[iMarker_NacelleInflow];
-        FanFace_Mach_Total[iMarker_NacelleInflow]       = FanFace_Mach_Local[iMarker_NacelleInflow];
-        FanFace_Pressure_Total[iMarker_NacelleInflow]   = FanFace_Pressure_Local[iMarker_NacelleInflow];
-        FanFace_Area_Total[iMarker_NacelleInflow]       = FanFace_Area_Local[iMarker_NacelleInflow];
-    }
-    
-    for (iMarker_NacelleExhaust = 0; iMarker_NacelleExhaust < nMarker_NacelleExhaust; iMarker_NacelleExhaust++) {
-        Exhaust_MassFlow_Total[iMarker_NacelleExhaust]  = Exhaust_MassFlow_Local[iMarker_NacelleExhaust];
-        Exhaust_Area_Total[iMarker_NacelleExhaust]      = Exhaust_Area_Local[iMarker_NacelleExhaust];
-    }
-
-#endif
-    
-    /*--- Compute the value of FanFace_Area_Total, and FanFace_Pressure_Total, and 
-     set the value in the config structure for future use ---*/
-    for (iMarker_NacelleInflow = 0; iMarker_NacelleInflow < nMarker_NacelleInflow; iMarker_NacelleInflow++) {
-        if (FanFace_Area_Total[iMarker_NacelleInflow] != 0.0) FanFace_Mach_Total[iMarker_NacelleInflow] /= FanFace_Area_Total[iMarker_NacelleInflow];
-        else FanFace_Mach_Total[iMarker_NacelleInflow] = 0.0;
-        if (FanFace_Area_Total[iMarker_NacelleInflow] != 0.0) FanFace_Pressure_Total[iMarker_NacelleInflow] /= FanFace_Area_Total[iMarker_NacelleInflow];
-        else FanFace_Pressure_Total[iMarker_NacelleInflow] = 0.0;
-        
-        if (iMesh == MESH_0) {
-            config->SetFanFace_Mach(iMarker_NacelleInflow, FanFace_Mach_Total[iMarker_NacelleInflow]);
-            config->SetFanFace_Pressure(iMarker_NacelleInflow, FanFace_Pressure_Total[iMarker_NacelleInflow]);
-        }
-
-    }
-
-    bool write_heads = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*20)) == 0));
-    if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads) {
-        
-        cout.precision(4);
-        cout.setf(ios::fixed,ios::floatfield);
-        
-        cout << endl << "---------------------------- Engine properties --------------------------" << endl;
-        for (iMarker_NacelleInflow = 0; iMarker_NacelleInflow < nMarker_NacelleInflow; iMarker_NacelleInflow++) {
-            cout << "Nacelle inflow ("<< config->GetMarker_NacelleInflow(iMarker_NacelleInflow)
-            << "): MassFlow: " << FanFace_MassFlow_Total[iMarker_NacelleInflow]
-            << ", Mach: " << FanFace_Mach_Total[iMarker_NacelleInflow]
-            << ", Area: " << FanFace_Area_Total[iMarker_NacelleInflow] <<"."<< endl;
-        }
-        
-        for (iMarker_NacelleExhaust = 0; iMarker_NacelleExhaust < nMarker_NacelleExhaust; iMarker_NacelleExhaust++) {
-            cout << "Nacelle exhaust ("<< config->GetMarker_NacelleExhaust(iMarker_NacelleExhaust)
-            << "): MassFlow: " << Exhaust_MassFlow_Total[iMarker_NacelleExhaust]
-            << ", Area: " << Exhaust_Area_Total[iMarker_NacelleExhaust] <<"."<< endl;
-        }
-        cout << "-------------------------------------------------------------------------" << endl;
-        
-    }
-    
-    /*--- Check the flow orientation in the nacelle inflow ---*/
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        
-        if (config->GetMarker_All_Boundary(iMarker) == NACELLE_INFLOW) {
-            
-            /*--- Loop over all the vertices on this boundary marker ---*/
-            for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-                
-                iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-                
-                /*--- Normal vector for this vertex (negate for outward convention) ---*/
-                geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
-                
-                for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = -Vector[iDim];
-                
-                Area = 0.0;
-                for (iDim = 0; iDim < nDim; iDim++)
-                    Area += Vector[iDim]*Vector[iDim];
-                Area = sqrt (Area);
-                
-                /*--- Compute unitary vector ---*/
-                for (iDim = 0; iDim < nDim; iDim++)
-                    Vector[iDim] /= Area;
-                
-                /*--- The flow direction is defined by the local velocity on the surface ---*/
-                for (iDim = 0; iDim < nDim; iDim++)
-                    Flow_Dir[iDim] = node[iPoint]->GetSolution(iDim+1) / node[iPoint]->GetSolution(0);
-                
-                /*--- Dot product of normal and flow direction. ---*/
-                alpha = 0.0;
-                for (iDim = 0; iDim < nDim; iDim++)
-                    alpha += Vector[iDim]*Flow_Dir[iDim];
-                
-                /*--- Flow in the wrong direction. ---*/
-                if (alpha < 0.0) {
-                    
-                    /*--- Copy the old solution ---*/
-                    for (iVar = 0; iVar < nVar; iVar++)
-                        node[iPoint]->SetSolution(iVar, node[iPoint]->GetSolution_Old(iVar));
+                        /*--- Copy the old solution ---*/
+                        for (iVar = 0; iVar < nVar; iVar++)
+                            node[iPoint]->SetSolution(iVar, node[iPoint]->GetSolution_Old(iVar));
+                        
+                    }
                     
                 }
-                
             }
         }
+        
     }
-
+    
 }
 
 void CEulerSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container,

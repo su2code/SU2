@@ -1601,8 +1601,20 @@ public:
 	 * \return Total number of boundary markers.
 	 */
 	unsigned short GetnMarker_NacelleExhaust(void);
+    
+    /*!
+	 * \brief Get the total number of boundary markers.
+	 * \return Total number of boundary markers.
+	 */
+	unsigned short GetnMarker_NearFieldBound(void);
+    
+    /*!
+	 * \brief Get the total number of boundary markers.
+	 * \return Total number of boundary markers.
+	 */
+	unsigned short GetnMarker_InterfaceBound(void);
 
-	/*! 
+	/*!
 	 * \brief Stores the number of marker in the simulation.
 	 * \param[in] val_nmarker - Number of markers of the problem.
 	 */	
