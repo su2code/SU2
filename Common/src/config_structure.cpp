@@ -1425,7 +1425,19 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		exit(1);
 	}
 
-	if ((Kind_Solver == PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_EULER) || 
+    /*--- Set a flag for viscous simulations ---*/
+    Viscous = ((Kind_Solver == NAVIER_STOKES) ||
+               (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) ||
+               (Kind_Solver == PLASMA_NAVIER_STOKES) ||
+               (Kind_Solver == ADJ_NAVIER_STOKES) ||
+               (Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
+               (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES) ||
+               (Kind_Solver == RANS) ||
+               (Kind_Solver == FREE_SURFACE_RANS) ||
+               (Kind_Solver == ADJ_RANS) ||
+               (Kind_Solver == ADJ_FREE_SURFACE_RANS));
+    
+	if ((Kind_Solver == PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_EULER) ||
 			(Kind_Solver == PLASMA_NAVIER_STOKES) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
 		unsigned short iSpecies, jSpecies, iReaction, ii;
 		double sum, conversionFact;
@@ -2350,7 +2362,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
 
 	/*--- Some discrete adjoint requirements ---*/
-	if ((IsAdjoint() && (GetKind_Adjoint() == DISCRETE)) && (Kind_Solver==ADJ_EULER||ADJ_NAVIER_STOKES||ADJ_RANS)) {
+	if ((GetAdjoint() && (GetKind_Adjoint() == DISCRETE)) && (Kind_Solver==ADJ_EULER||ADJ_NAVIER_STOKES||ADJ_RANS)) {
 		SetnExtIter(1);
 		SetMGLevels(0);
 	}
@@ -5184,14 +5196,9 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 	double Alpha = AoA*PI_NUMBER/180.0;
 	double Beta  = AoS*PI_NUMBER/180.0;
 	double Gamma_Minus_One = Gamma - 1.0;
-
-	bool Viscous = ((Kind_Solver == RANS || Kind_Solver == NAVIER_STOKES || Kind_Solver == FREE_SURFACE_NAVIER_STOKES || Kind_Solver == FREE_SURFACE_RANS) ||
-			(Kind_Solver == ADJ_RANS || Kind_Solver == ADJ_NAVIER_STOKES || Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES || Kind_Solver == ADJ_FREE_SURFACE_RANS));
 	bool Compressible = (!Incompressible);
 	bool Unsteady = (Unsteady_Simulation != NO);
 	bool turbulent = (Kind_Solver == RANS);
-
-
 
 #ifdef oldFar
 	if (Unsteady_Farfield && Unsteady) {

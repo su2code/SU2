@@ -25,7 +25,9 @@
 
 inline unsigned short CConfig::GetKind_SU2(void) { return Kind_SU2; }
 
-inline bool CConfig::IsAdjoint(void) { return Adjoint; }
+inline bool CConfig::GetAdjoint(void) { return Adjoint; }
+
+inline bool CConfig::GetViscous(void) { return Viscous; }
 
 inline unsigned short CConfig::GetKind_Adjoint(void) { return Kind_Adjoint; }
 

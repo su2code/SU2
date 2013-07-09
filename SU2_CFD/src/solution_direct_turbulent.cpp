@@ -238,121 +238,121 @@ void CTurbSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **sol
 	unsigned short iVar;
 	unsigned long iPoint, total_index;
 	double Delta, Vol, density_old, density;
-
-  bool adjoint = ((config->GetKind_Solver() == ADJ_EULER) || (config->GetKind_Solver() == ADJ_NAVIER_STOKES) ||
-                  (config->GetKind_Solver() == ADJ_RANS) || (config->GetKind_Solver() == ADJ_FREE_SURFACE_EULER) ||
-                  (config->GetKind_Solver() == ADJ_FREE_SURFACE_NAVIER_STOKES) || (config->GetKind_Solver() == ADJ_FREE_SURFACE_RANS) ||
-                  (config->GetKind_Solver() == ADJ_PLASMA_EULER) || (config->GetKind_Solver() == ADJ_PLASMA_NAVIER_STOKES) ||
-                  (config->GetKind_Solver() == ADJ_AEROACOUSTIC_EULER));
-  
+    
+    bool adjoint = ((config->GetKind_Solver() == ADJ_EULER) || (config->GetKind_Solver() == ADJ_NAVIER_STOKES) ||
+                    (config->GetKind_Solver() == ADJ_RANS) || (config->GetKind_Solver() == ADJ_FREE_SURFACE_EULER) ||
+                    (config->GetKind_Solver() == ADJ_FREE_SURFACE_NAVIER_STOKES) || (config->GetKind_Solver() == ADJ_FREE_SURFACE_RANS) ||
+                    (config->GetKind_Solver() == ADJ_PLASMA_EULER) || (config->GetKind_Solver() == ADJ_PLASMA_NAVIER_STOKES) ||
+                    (config->GetKind_Solver() == ADJ_AEROACOUSTIC_EULER));
+    
 	/*--- Set maximum residual to zero ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
 		SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
-  
+        SetRes_Max(iVar, 0.0, 0);
+    }
+    
 	/*--- Build implicit system ---*/
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    
-    /*--- Read the volume ---*/
+        
+        /*--- Read the volume ---*/
 		Vol = geometry->node[iPoint]->GetVolume();
-
+        
 		/*--- Modify matrix diagonal to assure diagonal dominance ---*/
 		Delta = Vol / (config->GetTurb_CFLRedCoeff()*solution_container[FLOW_SOL]->node[iPoint]->GetDelta_Time());
 		Jacobian.AddVal2Diag(iPoint,Delta);
-
-    /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
+        
+        /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 		for (iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar+iVar;
 			xres[total_index] = - xres[total_index];
 			xsol[total_index] = 0.0;
 			AddRes_RMS(iVar, xres[total_index]*xres[total_index]);
-      AddRes_Max(iVar, fabs(xres[total_index]), geometry->node[iPoint]->GetGlobalIndex());
+            AddRes_Max(iVar, fabs(xres[total_index]), geometry->node[iPoint]->GetGlobalIndex());
 		}
 	}
-  
-  /*--- Initialize residual and solution at the ghost points ---*/
-  for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar + iVar;
-      xres[total_index] = 0.0;
-      xsol[total_index] = 0.0;
+    
+    /*--- Initialize residual and solution at the ghost points ---*/
+    for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
+        for (iVar = 0; iVar < nVar; iVar++) {
+            total_index = iPoint*nVar + iVar;
+            xres[total_index] = 0.0;
+            xsol[total_index] = 0.0;
+        }
     }
-  }
-  
+    
 	/*--- Solve the linear system (Stationary iterative methods) ---*/
-	if (config->GetKind_Linear_Solver() == SYM_GAUSS_SEIDEL) 
-		Jacobian.SGSSolution(xres, xsol, config->GetLinear_Solver_Error(), 
-				config->GetLinear_Solver_Iter(), false, geometry, config);
-
-	if (config->GetKind_Linear_Solver() == LU_SGS) 
+	if (config->GetKind_Linear_Solver() == SYM_GAUSS_SEIDEL)
+		Jacobian.SGSSolution(xres, xsol, config->GetLinear_Solver_Error(),
+                             config->GetLinear_Solver_Iter(), false, geometry, config);
+    
+	if (config->GetKind_Linear_Solver() == LU_SGS)
 		Jacobian.LU_SGSIteration(xres, xsol, geometry, config);
-
+    
 	/*--- Solve the linear system (Krylov subspace methods) ---*/
-	if ((config->GetKind_Linear_Solver() == BCGSTAB) || 
-			(config->GetKind_Linear_Solver() == GMRES)) {
-
+	if ((config->GetKind_Linear_Solver() == BCGSTAB) ||
+        (config->GetKind_Linear_Solver() == GMRES)) {
+        
 		CSysVector rhs_vec(nPoint, nPointDomain, nVar, xres);
 		CSysVector sol_vec(nPoint, nPointDomain, nVar, xsol);
-
+        
 		CMatrixVectorProduct* mat_vec = new CSparseMatrixVectorProduct(Jacobian);
 		CSolutionSendReceive* sol_mpi = new CSparseMatrixSolMPI(Jacobian, geometry, config);
-
+        
 		CPreconditioner* precond = NULL;
 		if (config->GetKind_Linear_Solver_Prec() == JACOBI) {
 			Jacobian.BuildJacobiPreconditioner();
-			precond = new CJacobiPreconditioner(Jacobian);			
+			precond = new CJacobiPreconditioner(Jacobian);
 		}
 		else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
 			Jacobian.BuildJacobiPreconditioner();
 			precond = new CLineletPreconditioner(Jacobian);
 		}
-		else if (config->GetKind_Linear_Solver_Prec() == NO_PREC) 
+		else if (config->GetKind_Linear_Solver_Prec() == NO_PREC)
 			precond = new CIdentityPreconditioner();
-
+        
 		CSysSolve system;
 		if (config->GetKind_Linear_Solver() == BCGSTAB)
-			system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetLinear_Solver_Error(), 
-					config->GetLinear_Solver_Iter(), false);
+			system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetLinear_Solver_Error(),
+                           config->GetLinear_Solver_Iter(), false);
 		else if (config->GetKind_Linear_Solver() == GMRES)
-			system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetLinear_Solver_Error(), 
-					config->GetLinear_Solver_Iter(), false);
-
+			system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetLinear_Solver_Error(),
+                         config->GetLinear_Solver_Iter(), false);
+        
 		sol_vec.CopyToArray(xsol);
-		delete mat_vec; 
-		delete precond;  
+		delete mat_vec;
+		delete precond;
 		delete sol_mpi;
 	}
-
+    
 	/*--- Update solution (system written in terms of increments) ---*/
 	switch (config->GetKind_Turb_Model()){
-    case SA:
-      if (!adjoint) {
-        for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-          for (iVar = 0; iVar < nVar; iVar++)
-            node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*xsol[iPoint*nVar+iVar]);
-      }
-      break;
-    case SST:
-      if (!adjoint) {
-        for (iPoint = 0; iPoint < nPointDomain; iPoint++){
-          density_old = solution_container[FLOW_SOL]->node[iPoint]->GetSolution_Old(0);
-          density     = solution_container[FLOW_SOL]->node[iPoint]->GetSolution(0);
-          
-          for (iVar = 0; iVar < nVar; iVar++)
-            node[iPoint]->AddConservativeSolution(iVar, config->GetLinear_Solver_Relax()*xsol[iPoint*nVar+iVar],
-                                                  density, density_old, lowerlimit[iVar], upperlimit[iVar]);
-        }
-      }
-      break;
+        case SA:
+            if (!adjoint) {
+                for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+                    for (iVar = 0; iVar < nVar; iVar++)
+                        node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*xsol[iPoint*nVar+iVar]);
+            }
+            break;
+        case SST:
+            if (!adjoint) {
+                for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+                    density_old = solution_container[FLOW_SOL]->node[iPoint]->GetSolution_Old(0);
+                    density     = solution_container[FLOW_SOL]->node[iPoint]->GetSolution(0);
+                    
+                    for (iVar = 0; iVar < nVar; iVar++)
+                        node[iPoint]->AddConservativeSolution(iVar, config->GetLinear_Solver_Relax()*xsol[iPoint*nVar+iVar],
+                                                              density, density_old, lowerlimit[iVar], upperlimit[iVar]);
+                }
+            }
+            break;
 	}
-
-  /*--- MPI solution ---*/
-  SetSolution_MPI(geometry, config);
-  
-  /*--- Compute the root mean square residual ---*/
-  SetResidual_RMS(geometry, config);
-
+    
+    /*--- MPI solution ---*/
+    SetSolution_MPI(geometry, config);
+    
+    /*--- Compute the root mean square residual ---*/
+    SetResidual_RMS(geometry, config);
+    
 }
 
 void CTurbSolution::CalcGradient_GG(double *val_U_i, double **val_U_js, unsigned short nNeigh, unsigned short numVar,
@@ -1291,17 +1291,11 @@ void CTurbSASolution::BC_Inlet(CGeometry *geometry, CSolution **solution_contain
 	double Two_Gamma_M1 = 2.0/Gamma_Minus_One;
 	double Gas_Constant = config->GetGas_ConstantND();
 	double *Normal = new double[nDim];
-  
+    
 	bool rotating_frame = config->GetRotating_Frame();
 	bool grid_movement  = config->GetGrid_Movement();
 	bool incompressible = config->GetIncompressible();
-	bool levelset = ((config->GetKind_Solver() == FREE_SURFACE_EULER) ||
-                   (config->GetKind_Solver() == ADJ_FREE_SURFACE_EULER) ||
-                   (config->GetKind_Solver() == FREE_SURFACE_NAVIER_STOKES) ||
-                   (config->GetKind_Solver() == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
-                   (config->GetKind_Solver() == FREE_SURFACE_RANS) ||
-                   (config->GetKind_Solver() == ADJ_FREE_SURFACE_RANS));
-  
+    bool freesurface = config->GetFreeSurface();
 	string Marker_Tag = config->GetMarker_All_Tag(val_marker);
   
 	/*--- Loop over all the vertices on this boundary marker ---*/
@@ -1344,7 +1338,7 @@ void CTurbSASolution::BC_Inlet(CGeometry *geometry, CSolution **solution_contain
         
 				/*--- The y/z velocity is interpolated due to the
          free surface effect on the pressure ---*/
-				if (levelset) FlowSolution_j[nDim] = solution_container[FLOW_SOL]->node[iPoint]->GetSolution(nDim);
+				if (freesurface) FlowSolution_j[nDim] = solution_container[FLOW_SOL]->node[iPoint]->GetSolution(nDim);
         
 			}
 			else {
@@ -1681,7 +1675,7 @@ void CTurbSASolution::BC_Outlet(CGeometry *geometry, CSolution **solution_contai
 
 }
 
-void CTurbSASolution::BC_NacelleInflow(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
+void CTurbSASolution::BC_Nacelle_Inflow(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
 	unsigned long iPoint, iVertex, Point_Normal;
 	unsigned short iDim;
   
@@ -1765,7 +1759,7 @@ void CTurbSASolution::BC_NacelleInflow(CGeometry *geometry, CSolution **solution
   
 }
 
-void CTurbSASolution::BC_NacelleExhaust(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
+void CTurbSASolution::BC_Nacelle_Exhaust(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
 	unsigned short iVar, iDim;
 	unsigned long iVertex, iPoint, Point_Normal;
 	double P_Total, T_Total, Velocity[3];
