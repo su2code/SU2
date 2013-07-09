@@ -2445,7 +2445,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **so
 	unsigned short nVar_First = 0, nVar_Second = 0, nVar_Third = 0, iVar_Eddy = 0;
 	unsigned short iVar_GridVel = 0, iVar_PressMach = 0, iVar_Density = 0, iVar_TempLam = 0,
   iVar_Tempv = 0,iVar_MagF = 0, iVar_EF =0, iVar_Temp = 0, iVar_Lam =0, iVar_Mach = 0, iVar_Press = 0,
-  iVar_ViscCoeffs = 0, iVar_Sens = 0;
+  iVar_ViscCoeffs = 0, iVar_Sens = 0, iVar_Coords = 0;
   
 	unsigned long iPoint = 0, jPoint = 0, iVertex = 0, iMarker = 0;
   
@@ -2537,6 +2537,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **so
   
 	/*--- Add the grid velocity to the restart file for the unsteady adjoint ---*/
 	if (grid_movement) {
+    iVar_Coords = nVar_Total;
+		if (geometry->GetnDim() == 2) nVar_Total += 2;
+		else if (geometry->GetnDim() == 3) nVar_Total += 3;
 		iVar_GridVel = nVar_Total;
 		if (geometry->GetnDim() == 2) nVar_Total += 2;
 		else if (geometry->GetnDim() == 3) nVar_Total += 3;
@@ -2619,7 +2622,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **so
 	}
   
 	/*--- In case there is grid movement ---*/
-	double *Grid_Vel;
+	double *Grid_Vel, *Coordinates;
   
   /*--- First, loop through the mesh in order to find and store the
    value of the coefficient of pressure at any surface nodes. They
@@ -2721,6 +2724,11 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **so
       /*--- For unsteady problems with grid movement, write the mesh velocities
        also, in case we need them for the unsteady adjoint. ---*/
       if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady() && grid_movement) {
+        Coordinates = geometry->node[iPoint]->GetCoord();
+        for (unsigned short iDim = 0; iDim < geometry->GetnDim(); iDim++) {
+          Data[jVar][jPoint] = Coordinates[iDim];
+          jVar++;
+        }
         Grid_Vel = geometry->node[iPoint]->GetGridVel();
         for (unsigned short iDim = 0; iDim < geometry->GetnDim(); iDim++) {
           Data[jVar][jPoint] = Grid_Vel[iDim];
@@ -3049,6 +3057,63 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **so
    we are reusing the same temporary buffers from above for efficiency.
    Also, in the future more routines like this could be used to write
    an arbitrary number of additional variables to the file. ---*/
+  
+  /*--- First, collect the x, y, & z's is there is grid motion. ---*/
+  
+  if (grid_movement) {
+    
+		/*--- Loop over this partition to collect the current variable ---*/
+		jPoint = 0; double *Coordinates;
+		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      
+      /*--- Check for halos & write only if requested ---*/
+      
+      if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
+        
+        /*--- Load buffers with the three grid velocity components. ---*/
+        Coordinates = geometry->node[iPoint]->GetCoord();
+        Buffer_Send_Var[jPoint] = Coordinates[0];
+        Buffer_Send_Res[jPoint] = Coordinates[1];
+        if (geometry->GetnDim() == 3) Buffer_Send_Vol[jPoint] = Coordinates[2];
+        jPoint++;
+      }
+    }
+    
+		/*--- Gather the data on the master node. ---*/
+		MPI::COMM_WORLD.Barrier();
+		MPI::COMM_WORLD.Gather(Buffer_Send_Var, nBuffer_Scalar, MPI::DOUBLE,
+                           Buffer_Recv_Var, nBuffer_Scalar, MPI::DOUBLE,
+                           MASTER_NODE);
+		MPI::COMM_WORLD.Gather(Buffer_Send_Res, nBuffer_Scalar, MPI::DOUBLE,
+                           Buffer_Recv_Res, nBuffer_Scalar, MPI::DOUBLE,
+                           MASTER_NODE);
+		if (geometry->GetnDim() == 3) {
+			MPI::COMM_WORLD.Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI::DOUBLE,
+                             Buffer_Recv_Vol, nBuffer_Scalar, MPI::DOUBLE,
+                             MASTER_NODE);
+		}
+    
+		/*--- The master node unpacks and sorts this variable by global index ---*/
+		if (rank == MASTER_NODE) {
+			jPoint = 0; iVar = iVar_Coords;
+			for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+				for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
+          
+					/*--- Get global index, then loop over each variable and store ---*/
+					iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
+					Data[iVar][iGlobal_Index]   = Buffer_Recv_Var[jPoint];
+					Data[iVar+1][iGlobal_Index] = Buffer_Recv_Res[jPoint];
+					if (geometry->GetnDim() == 3)
+						Data[iVar+2][iGlobal_Index] = Buffer_Recv_Vol[jPoint];
+					jPoint++;
+				}
+				/*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+				jPoint = (iProcessor+1)*nBuffer_Scalar;
+			}
+		}
+	}
+  
+  /*--- Now get the grid velocity from each point ---*/
   
 	if (grid_movement) {
     
@@ -4011,6 +4076,11 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short va
 
   /*--- Add names for any extra variables (this will need to be adjusted). ---*/
 	if (grid_movement) {
+    if (nDim == 2) {
+      restart_file << ", \"x\", \"y\"";
+    } else {
+      restart_file << ", \"x\", \"y\", \"z\"";
+    }
     if (nDim == 2) {
       restart_file << ", \"Grid_Velx\", \"Grid_Vely\"";
     } else {
