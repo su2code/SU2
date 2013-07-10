@@ -1254,7 +1254,7 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 				for (iDim = 0; iDim < nDim; iDim++) {
 					total_index = iPoint*nDim + iDim;
 					rhs[total_index]  = VarCoord[iDim] * VarIncrement;
-					usol[total_index] = VarCoord[iDim] * VarIncrement;
+					usol[total_index] = 0.0;
           StiffMatrix.DeleteValsRowi(total_index);
 				}
 			}
@@ -1436,8 +1436,8 @@ void CVolumetricMovement::FEAMethod(CGeometry *geometry, CConfig *config, bool U
   
   CSysSolve system;
 //  IterLinSol = system.ConjugateGradient(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, NumError, 200, true);
-    IterLinSol = system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, NumError, 300, true);
-//    IterLinSol = system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, NumError, 300, true);
+//    IterLinSol = system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, NumError, 300, true);
+    IterLinSol = system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, NumError, 300, true);
   
   /*--- Copy the solution to the array ---*/
   sol_vec.CopyToArray(usol);

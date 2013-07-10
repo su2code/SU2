@@ -1438,7 +1438,7 @@ void CEulerSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_c
 			&& ((iMesh == MESH_0) || low_fidelity));
 	bool incompressible = config->GetIncompressible();
 	bool rotating_frame = config->GetRotating_Frame();
-	bool gravity = config->GetGravityForce();
+//	bool gravity = config->GetGravityForce();
 	bool grid_movement = config->GetGrid_Movement();
 	bool limiter = ((config->GetKind_SlopeLimit_Flow() != NONE) && !low_fidelity);
 
@@ -1448,9 +1448,10 @@ void CEulerSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_c
 		iPoint = geometry->edge[iEdge]->GetNode(0); jPoint = geometry->edge[iEdge]->GetNode(1);
 		solver->SetNormal(geometry->edge[iEdge]->GetNormal());
 
-		/*--- Set conservative variables w/o reconstruction ---*/
-		U_i = node[iPoint]->GetSolution(); U_j = node[jPoint]->GetSolution();
-		solver->SetConservative(U_i, U_j);
+    /*--- Set a copy of the conservative variables w/o reconstruction, just in case the
+     2nd order reconstruction fails ---*/
+    U_i = node[iPoint]->GetSolution(); U_j = node[jPoint]->GetSolution();
+    solver->SetConservative_ZeroOrder(U_i, U_j);
 
 		/*--- Roe Turkel preconditioning ---*/
 		if (roe_turkel) {
@@ -1471,7 +1472,7 @@ void CEulerSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_c
 			solver->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[jPoint]->GetGridVel());
 
 		/*--- High order reconstruction using MUSCL strategy ---*/
-		if (high_order_diss && !gravity) {
+		if (high_order_diss) {
 
 			for (iDim = 0; iDim < nDim; iDim++) {
 				Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
@@ -1499,65 +1500,71 @@ void CEulerSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_c
 
 			/*--- Set conservative variables with reconstruction ---*/
 			solver->SetConservative(Solution_i, Solution_j);
-		}
+      
+		} else {
+      
+      /*--- Set conservative variables without reconstruction ---*/
+      solver->SetConservative(U_i, U_j);
+      
+    }
 
-		if (gravity) {
-
-			/*--- The zero order reconstruction includes the gradient of the hydrostatic pressure constribution ---*/
-			YDistance = 0.5*(geometry->node[jPoint]->GetCoord(nDim-1)-geometry->node[iPoint]->GetCoord(nDim-1));
-			GradHidrosPress = node[iPoint]->GetDensityInc()/(config->GetFroude()*config->GetFroude());
-			Solution_i[0] = U_i[0] - GradHidrosPress*YDistance;
-			GradHidrosPress = node[jPoint]->GetDensityInc()/(config->GetFroude()*config->GetFroude());
-			Solution_j[0] = U_j[0] + GradHidrosPress*YDistance;
-
-			/*--- No reconstruction for the velocities ---*/
-			for (iVar = 1; iVar < nVar; iVar++) {
-				Solution_i[iVar] = U_i[iVar];
-				Solution_j[iVar] = U_j[iVar];
-			}
-
-			/*--- Set conservative variables with reconstruction only for the pressure ---*/
-			solver->SetConservative(Solution_i, Solution_j);
-
-			if (high_order_diss) {
-
-				for (iDim = 0; iDim < nDim; iDim++) {
-					Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
-					Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
-				}
-
-				Gradient_i = node[iPoint]->GetGradient(); Gradient_j = node[jPoint]->GetGradient();
-				if (limiter) { Limiter_j = node[jPoint]->GetLimiter(); Limiter_i = node[iPoint]->GetLimiter(); }
-
-				for (iVar = 0; iVar < nVar; iVar++) {
-					Project_Grad_i = 0; Project_Grad_j = 0;
-					for (iDim = 0; iDim < nDim; iDim++) {
-						Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
-						Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
-					}
-					if (limiter) {
-						/*--- Note that the pressure reconstruction always includes the hydrostatic gradient,
-             and limits the kinematic contribution ---*/
-						if (iVar == 0) {
-							Solution_i[iVar] = Solution_i[iVar] + Limiter_i[iVar]*(U_i[iVar] + Project_Grad_i - Solution_i[iVar]);
-							Solution_j[iVar] = Solution_j[iVar] + Limiter_j[iVar]*(U_j[iVar] + Project_Grad_j - Solution_j[iVar]);
-						}
-						else {
-							Solution_i[iVar] = U_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
-							Solution_j[iVar] = U_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
-						}
-					}
-					else {
-						Solution_i[iVar] = U_i[iVar] + Project_Grad_i;
-						Solution_j[iVar] = U_j[iVar] + Project_Grad_j;
-					}
-				}
-
-				/*--- Set conservative variables with reconstruction ---*/
-				solver->SetConservative(Solution_i, Solution_j);
-			}
-
-		}
+//		if (gravity) {
+//
+//			/*--- The zero order reconstruction includes the gradient of the hydrostatic pressure constribution ---*/
+//			YDistance = 0.5*(geometry->node[jPoint]->GetCoord(nDim-1)-geometry->node[iPoint]->GetCoord(nDim-1));
+//			GradHidrosPress = node[iPoint]->GetDensityInc()/(config->GetFroude()*config->GetFroude());
+//			Solution_i[0] = U_i[0] - GradHidrosPress*YDistance;
+//			GradHidrosPress = node[jPoint]->GetDensityInc()/(config->GetFroude()*config->GetFroude());
+//			Solution_j[0] = U_j[0] + GradHidrosPress*YDistance;
+//
+//			/*--- No reconstruction for the velocities ---*/
+//			for (iVar = 1; iVar < nVar; iVar++) {
+//				Solution_i[iVar] = U_i[iVar];
+//				Solution_j[iVar] = U_j[iVar];
+//			}
+//
+//			/*--- Set conservative variables with reconstruction only for the pressure ---*/
+//			solver->SetConservative(Solution_i, Solution_j);
+//
+//			if (high_order_diss) {
+//
+//				for (iDim = 0; iDim < nDim; iDim++) {
+//					Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
+//					Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
+//				}
+//
+//				Gradient_i = node[iPoint]->GetGradient(); Gradient_j = node[jPoint]->GetGradient();
+//				if (limiter) { Limiter_j = node[jPoint]->GetLimiter(); Limiter_i = node[iPoint]->GetLimiter(); }
+//
+//				for (iVar = 0; iVar < nVar; iVar++) {
+//					Project_Grad_i = 0; Project_Grad_j = 0;
+//					for (iDim = 0; iDim < nDim; iDim++) {
+//						Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
+//						Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
+//					}
+//					if (limiter) {
+//						/*--- Note that the pressure reconstruction always includes the hydrostatic gradient,
+//             and limits the kinematic contribution ---*/
+//						if (iVar == 0) {
+//							Solution_i[iVar] = Solution_i[iVar] + Limiter_i[iVar]*(U_i[iVar] + Project_Grad_i - Solution_i[iVar]);
+//							Solution_j[iVar] = Solution_j[iVar] + Limiter_j[iVar]*(U_j[iVar] + Project_Grad_j - Solution_j[iVar]);
+//						}
+//						else {
+//							Solution_i[iVar] = U_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
+//							Solution_j[iVar] = U_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
+//						}
+//					}
+//					else {
+//						Solution_i[iVar] = U_i[iVar] + Project_Grad_i;
+//						Solution_j[iVar] = U_j[iVar] + Project_Grad_j;
+//					}
+//				}
+//
+//				/*--- Set conservative variables with reconstruction ---*/
+//				solver->SetConservative(Solution_i, Solution_j);
+//			}
+//
+//		}
 
 		/*--- Set the density and beta w/o reconstruction (incompressible flows) ---*/
 		if (incompressible) {
