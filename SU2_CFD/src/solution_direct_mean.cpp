@@ -1121,7 +1121,7 @@ void CEulerSolution::Preprocessing(CGeometry *geometry, CSolution **solution_con
 	bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
 	bool center_jst = center && (config->GetKind_Centered_Flow() == JST);
 	bool low_fidelity = (config->GetLowFidelitySim() && (iMesh == MESH_1));
-	bool limiter = ((config->GetKind_SlopeLimit() != NONE) && !low_fidelity);
+	bool limiter = ((config->GetKind_SlopeLimit_Flow() != NONE) && !low_fidelity);
 	bool incompressible = config->GetIncompressible();
 	double Gas_Constant = config->GetGas_ConstantND();
     bool jouleheating = config->GetJouleHeating();
@@ -1153,7 +1153,7 @@ void CEulerSolution::Preprocessing(CGeometry *geometry, CSolution **solution_con
 		if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
         
 		/*--- Limiter computation ---*/
-		if (limiter) SetSolution_Limiter(geometry, config);
+		if ((limiter) && (iMesh == MESH_0)) SetSolution_Limiter(geometry, config);
 	}
     
 	/*--- Artificial dissipation ---*/
@@ -1440,7 +1440,7 @@ void CEulerSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_c
 	bool rotating_frame = config->GetRotating_Frame();
 	bool gravity = config->GetGravityForce();
 	bool grid_movement = config->GetGrid_Movement();
-	bool limiter = ((config->GetKind_SlopeLimit() != NONE) && !low_fidelity);
+	bool limiter = ((config->GetKind_SlopeLimit_Flow() != NONE) && !low_fidelity);
 
 	for(iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
@@ -6148,7 +6148,7 @@ void CNSSolution::Preprocessing(CGeometry *geometry, CSolution **solution_contai
                        || (config->GetKind_Upwind_Flow() == HLLC_2ND) || (config->GetKind_Upwind_Flow() == ROE_TURKEL_2ND));
 	bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
 	bool center_jst = center && config->GetKind_Centered_Flow() == JST;
-	bool limiter = (config->GetKind_SlopeLimit() != NONE);
+	bool limiter = (config->GetKind_SlopeLimit_Flow() != NONE);
 	bool incompressible = config->GetIncompressible();
 	double Gas_Constant = config->GetGas_ConstantND();
 	unsigned short turb_model = config->GetKind_Turb_Model();
@@ -6191,7 +6191,7 @@ void CNSSolution::Preprocessing(CGeometry *geometry, CSolution **solution_contai
 		if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
         
 		/*--- Limiter computation ---*/
-		if (limiter) SetSolution_Limiter(geometry, config);
+		if ((limiter) && (iMesh == MESH_0)) SetSolution_Limiter(geometry, config);
 	}
     
 	/*--- Artificial dissipation ---*/
