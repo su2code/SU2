@@ -378,8 +378,14 @@ void Solution_Definition(CSolution ***solution_container, CGeometry **geometry, 
 			solution_container[iMGlevel][FLOW_SOL] = new CNSSolution(geometry[iMGlevel], config, iMGlevel);
 		}
 		if (turbulent) {
-			if (spalart_allmaras) solution_container[iMGlevel][TURB_SOL] = new CTurbSASolution(geometry[iMGlevel], config, iMGlevel);
-			else if (menter_sst) solution_container[iMGlevel][TURB_SOL] = new CTurbSSTSolution(geometry[iMGlevel], config, iMGlevel);
+			if (spalart_allmaras) {
+                solution_container[iMGlevel][TURB_SOL] = new CTurbSASolution(geometry[iMGlevel], config, iMGlevel);
+                solution_container[iMGlevel][TURB_SOL]->Postprocessing(geometry[iMGlevel], solution_container[iMGlevel], config, iMGlevel);
+            }
+			else if (menter_sst) {
+                solution_container[iMGlevel][TURB_SOL] = new CTurbSSTSolution(geometry[iMGlevel], config, iMGlevel);
+//                solution_container[iMGlevel][TURB_SOL]->Postprocessing(geometry[iMGlevel], solution_container[iMGlevel], config, iMGlevel);
+            }
 			if (transition) solution_container[iMGlevel][TRANS_SOL] = new CTransLMSolution(geometry[iMGlevel], config, iMGlevel);
 		}
 		if (electric) {
