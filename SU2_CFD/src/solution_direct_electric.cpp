@@ -124,7 +124,7 @@ CElectricSolution::~CElectricSolution(void) {
 	delete [] cvector;
 }
 
-void CElectricSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver,
+void CElectricSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container,
 																			CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
 

@@ -715,7 +715,7 @@ CTurbSASolution::CTurbSASolution(CGeometry *geometry, CConfig *config, unsigned 
 	Factor_nu_Inf = config->GetNuFactor_FreeStream();
 	nu_tilde_Inf  = Factor_nu_Inf*Viscosity_Inf/Density_Inf;
     
-	/*--- Eddy viscosity ---*/
+	/*--- Eddy viscosity at the infinity ---*/
 	double Ji, Ji_3, fv1, cv1_3 = 7.1*7.1*7.1;
 	double muT_Inf;
 	Ji = nu_tilde_Inf/Viscosity_Inf*Density_Inf;
@@ -792,7 +792,7 @@ CTurbSASolution::CTurbSASolution(CGeometry *geometry, CConfig *config, unsigned 
 		for(iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
 			node[iPoint] = new CTurbSAVariable(Solution[0], muT_Inf, nDim, nVar, config);
 		}
-        
+    
 		/*--- Close the restart file ---*/
 		restart_file.close();
         
@@ -809,7 +809,7 @@ CTurbSASolution::~CTurbSASolution(void) {
 
 }
 
-void CTurbSASolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
+void CTurbSASolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
 
 	for (iPoint = 0; iPoint < nPoint; iPoint ++) {
@@ -2418,20 +2418,19 @@ CTurbSSTSolution::CTurbSSTSolution(CGeometry *geometry, CConfig *config, unsigne
         Initialize_SparseMatrix_Structure(&Jacobian, nVar, nVar, geometry, config);
         xsol = new double [nPoint*nVar];
         xres = new double [nPoint*nVar];
-        
-		/*--- Computation of gradients by least squares ---*/
-		if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-			/*--- S matrix := inv(R)*traspose(inv(R)) ---*/
-			Smatrix = new double* [nDim];
-			for (iDim = 0; iDim < nDim; iDim++)
-				Smatrix[iDim] = new double [nDim];
-			/*--- c vector := transpose(WA)*(Wb) ---*/
-			cvector = new double* [nVar];
-			for (iVar = 0; iVar < nVar; iVar++)
-				cvector[iVar] = new double [nDim];
-		}
-        
 	}
+  
+  /*--- Computation of gradients by least squares ---*/
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+    /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
+    Smatrix = new double* [nDim];
+    for (iDim = 0; iDim < nDim; iDim++)
+      Smatrix[iDim] = new double [nDim];
+    /*--- c vector := transpose(WA)*(Wb) ---*/
+    cvector = new double* [nVar];
+    for (iVar = 0; iVar < nVar; iVar++)
+      cvector[iVar] = new double [nDim];
+  }
     
 	/* --- Initialize value for model constants --- */
 	constants = new double[10];
@@ -2473,7 +2472,7 @@ CTurbSSTSolution::CTurbSSTSolution(CGeometry *geometry, CConfig *config, unsigne
 	kine_Inf  = 3.0/2.0*(VelMag*VelMag*Intensity*Intensity);
 	omega_Inf = rhoInf*kine_Inf/(muLamInf*viscRatio);
     
-	/*--- Eddy viscosity, initialized without stress limiter ---*/
+	/*--- Eddy viscosity, initialized without stress limiter at the infinity ---*/
 	muT_Inf = rhoInf*kine_Inf/omega_Inf;
     
 	/*--- Restart the solution from file information ---*/
@@ -2523,18 +2522,15 @@ CTurbSSTSolution::CTurbSSTSolution(CGeometry *geometry, CConfig *config, unsigne
 			if (iPoint_Local >= 0) {
                 
 				if (incompressible) {
-					if (nDim == 2) point_line >> index >> rhoInf >> dull_val >> dull_val >> Solution[0] >> Solution[1];
-					if (nDim == 3) point_line >> index >> rhoInf >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1];
+					if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1];
+					if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1];
 				}
 				else {
-					if (nDim == 2) point_line >> index >> rhoInf >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1];
-					if (nDim == 3) point_line >> index >> rhoInf >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1];
+					if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1];
+					if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1];
 				}
                 
-				/*--- Eddy viscosity, initialized without stress limiter ---*/
-				muT_Inf = rhoInf*Solution[0]/Solution[1];
-                
-				/*--- Instantiate the solution at this node ---*/
+				/*--- Instantiate the solution at this node, note that the muT_Inf should recomputed ---*/
 				node[iPoint_Local] = new CTurbSSTVariable(Solution[0], Solution[1], muT_Inf, nDim, nVar, constants, config);
 			}
 			iPoint_Global++;
@@ -2565,7 +2561,7 @@ CTurbSSTSolution::~CTurbSSTSolution(void) {
   
 }
 
-void CTurbSSTSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
+void CTurbSSTSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
 
 	for (iPoint = 0; iPoint < nPoint; iPoint ++){
@@ -2596,20 +2592,18 @@ void CTurbSSTSolution::Postprocessing(CGeometry *geometry, CSolution **solution_
 
 	bool incompressible = config->GetIncompressible();
 
-	// Compute mean flow gradients
-	if (config->GetKind_Gradient_Method() == GREEN_GAUSS)
+	/*--- Compute mean flow and turbulence gradients ---*/
+	if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
 		solution_container[FLOW_SOL]->SetPrimVar_Gradient_GG(geometry, config);
-	if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)
-		solution_container[FLOW_SOL]->SetPrimVar_Gradient_LS(geometry, config);
-
-	// Compute turbulence variable gradients
-	if (config->GetKind_Gradient_Method() == GREEN_GAUSS)
-		SetSolution_Gradient_GG(geometry, config);
-	if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)
-		SetSolution_Gradient_LS(geometry, config);
+    SetSolution_Gradient_GG(geometry, config);
+  }
+	if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+    SetSolution_Gradient_LS(geometry, config);
+    solution_container[FLOW_SOL]->SetPrimVar_Gradient_LS(geometry, config);
+  }
 
 	for (iPoint = 0; iPoint < nPoint; iPoint ++) {
-		// Compute vorticity and rate of strain magnitude
+		/*--- Compute vorticity and rate of strain magnitude ---*/
 		solution_container[FLOW_SOL]->node[iPoint]->SetVorticity();
 		vorticity[0] = solution_container[FLOW_SOL]->node[iPoint]->GetVorticity(0);
 		vorticity[1] = solution_container[FLOW_SOL]->node[iPoint]->GetVorticity(1);
@@ -2619,7 +2613,7 @@ void CTurbSSTSolution::Postprocessing(CGeometry *geometry, CSolution **solution_
 		solution_container[FLOW_SOL]->node[iPoint]->SetStrainMag();
 		strMag = solution_container[FLOW_SOL]->node[iPoint]->GetStrainMag();
 
-		// Compute blending functions and cross diffusion
+		/*--- Compute blending functions and cross diffusion ---*/
 		if (incompressible) {
 			rho  = solution_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
 			mu   = solution_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc();
@@ -2633,7 +2627,7 @@ void CTurbSSTSolution::Postprocessing(CGeometry *geometry, CSolution **solution_
 		node[iPoint]->SetBlendingFunc(mu,dist,rho);
 		F2 = node[iPoint]->GetF2blending();
 
-		// Compute the eddy viscosity
+		/*--- Compute the eddy viscosity ---*/
 		kine  = node[iPoint]->GetSolution(0);
 		omega = node[iPoint]->GetSolution(1);
 
@@ -2643,7 +2637,7 @@ void CTurbSSTSolution::Postprocessing(CGeometry *geometry, CSolution **solution_
 		muT = min(max(rho*kine*zeta,0.0),1.0);
 		node[iPoint]->SetmuT(muT);
 	}
-    
+  
 }
 
 void CTurbSSTSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short iMesh) {

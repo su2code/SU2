@@ -370,7 +370,7 @@ void Solution_Definition(CSolution ***solution_container, CGeometry **geometry, 
 			solution_container[iMGlevel][TEMPLATE_SOL] = new CTemplateSolution(geometry[iMGlevel], config);
 		}
 
-		/*--- Allocate solution for direct problem ---*/
+		/*--- Allocate solution for direct problem, and run the preprocessing and postprocessing ---*/
 		if (euler) {
 			solution_container[iMGlevel][FLOW_SOL] = new CEulerSolution(geometry[iMGlevel], config, iMGlevel);
 		}
@@ -379,14 +379,18 @@ void Solution_Definition(CSolution ***solution_container, CGeometry **geometry, 
 		}
 		if (turbulent) {
 			if (spalart_allmaras) {
-                solution_container[iMGlevel][TURB_SOL] = new CTurbSASolution(geometry[iMGlevel], config, iMGlevel);
-                solution_container[iMGlevel][TURB_SOL]->Postprocessing(geometry[iMGlevel], solution_container[iMGlevel], config, iMGlevel);
-            }
+        solution_container[iMGlevel][TURB_SOL] = new CTurbSASolution(geometry[iMGlevel], config, iMGlevel);
+        solution_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solution_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS);
+        solution_container[iMGlevel][TURB_SOL]->Postprocessing(geometry[iMGlevel], solution_container[iMGlevel], config, iMGlevel);
+      }
 			else if (menter_sst) {
-                solution_container[iMGlevel][TURB_SOL] = new CTurbSSTSolution(geometry[iMGlevel], config, iMGlevel);
-//                solution_container[iMGlevel][TURB_SOL]->Postprocessing(geometry[iMGlevel], solution_container[iMGlevel], config, iMGlevel);
-            }
-			if (transition) solution_container[iMGlevel][TRANS_SOL] = new CTransLMSolution(geometry[iMGlevel], config, iMGlevel);
+        solution_container[iMGlevel][TURB_SOL] = new CTurbSSTSolution(geometry[iMGlevel], config, iMGlevel);
+        solution_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solution_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS);
+        solution_container[iMGlevel][TURB_SOL]->Postprocessing(geometry[iMGlevel], solution_container[iMGlevel], config, iMGlevel);
+      }
+			if (transition) {
+        solution_container[iMGlevel][TRANS_SOL] = new CTransLMSolution(geometry[iMGlevel], config, iMGlevel);
+      }
 		}
 		if (electric) {
 			solution_container[iMGlevel][ELEC_SOL] = new CElectricSolution(geometry[iMGlevel], config);

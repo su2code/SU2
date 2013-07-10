@@ -1164,7 +1164,7 @@ void CAdjEulerSolution::SetInitialCondition(CGeometry **geometry, CSolution ***s
   
 }
 
-void CAdjEulerSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
+void CAdjEulerSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
   
   /*--- Retrieve information about the spatial and temporal integration for the
@@ -5263,7 +5263,7 @@ CAdjNSSolution::~CAdjNSSolution(void) {
 }
 
 
-void CAdjNSSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
+void CAdjNSSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
     
   /*--- Retrieve information about the spatial and temporal integration for the

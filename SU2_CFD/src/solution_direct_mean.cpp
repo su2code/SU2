@@ -64,15 +64,18 @@ CEulerSolution::CEulerSolution(void) : CSolution() {
 }
 
 CEulerSolution::CEulerSolution(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolution() {
-
-	unsigned long iPoint, index;
+	unsigned long iPoint, index, counter_local = 0, counter_global = 0;
 	unsigned short iVar, iDim, iMarker;
+  double Density, Velocity2, Pressure, Temperature;
+
 	unsigned short nZone = geometry->GetnZone();
 	bool restart = (config->GetRestart() || config->GetRestart_Flow());
 	bool incompressible = config->GetIncompressible();
+  double Gas_Constant = config->GetGas_ConstantND();
 	bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
 			(config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
 	roe_turkel = false;
+  
 	int rank = MASTER_NODE;
 #ifndef NO_MPI
 	rank = MPI::COMM_WORLD.Get_rank();
@@ -375,6 +378,43 @@ CEulerSolution::CEulerSolution(CGeometry *geometry, CConfig *config, unsigned sh
 		delete [] Global2Local;
 	}
 
+  /*--- Check that the initial solution is physical ---*/
+  counter_local = 0;
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    
+    Density = node[iPoint]->GetSolution(0);
+    Velocity2 = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      Velocity2 += (node[iPoint]->GetSolution(iDim+1)/Density)*(node[iPoint]->GetSolution(iDim+1)/Density);
+    Pressure    = Gamma_Minus_One*Density*(node[iPoint]->GetSolution(nDim+1)/Density-0.5*Velocity2);
+    Temperature = Pressure / ( Gas_Constant * Density);
+    if ((Pressure < 0.0) || (Temperature < 0.0)) {
+      Solution[0] = Density_Inf;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Solution[iDim+1] = Velocity_Inf[iDim]*Density_Inf;
+      Solution[nDim+1] = Energy_Inf*Density_Inf;
+      
+      node[iPoint]->SetSolution(Solution);
+      node[iPoint]->SetSolution_Old(Solution);
+      
+      counter_local++;
+    }
+    
+  }
+  
+#ifndef NO_MPI
+  
+  MPI::COMM_WORLD.Reduce(&counter_local, &counter_global, 1, MPI::UNSIGNED_LONG, MPI::SUM, MASTER_NODE);
+  
+#else
+  
+  counter_global = counter_local;
+  
+#endif
+  
+  
+  if ((rank == MASTER_NODE) && (counter_global != 0)) cout << "Warning. The original solution contains "<< counter_global << " points that are not physical." << endl;
+  
 	/*--- Define solver parameters needed for execution of destructor ---*/
 	if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED ) space_centered = true;
 	else space_centered = false;
@@ -1069,7 +1109,7 @@ void CEulerSolution::SetInitialCondition(CGeometry **geometry, CSolution ***solu
     
 }
 
-void CEulerSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
+void CEulerSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
 	double levelset;
     
@@ -5705,9 +5745,10 @@ CNSSolution::CNSSolution(void) : CEulerSolution() {
 }
 
 CNSSolution::CNSSolution(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CEulerSolution() {
-	unsigned long iPoint, index;
+	unsigned long iPoint, index, counter_local = 0, counter_global = 0;
 	unsigned short iVar, iDim, iMarker;
-    
+  double Density, Velocity2, Pressure, Temperature;
+  
 	unsigned short nZone = geometry->GetnZone();
 	bool restart = (config->GetRestart() || config->GetRestart_Flow());
 	bool incompressible = config->GetIncompressible();
@@ -6001,33 +6042,42 @@ CNSSolution::CNSSolution(CGeometry *geometry, CConfig *config, unsigned short iM
 		delete [] Global2Local;
 	}
     
-    /*--- Check that the initial solution is physical ---*/
-    double Density, Velocity2, Pressure, Temperature;
-    unsigned long counter = 0;
+  /*--- Check that the initial solution is physical ---*/
+  counter_local = 0;
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
     
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-        
-        Density = node[iPoint]->GetSolution(0);
-        Velocity2 = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-            Velocity2 += (node[iPoint]->GetSolution(iDim+1)/Density)*(node[iPoint]->GetSolution(iDim+1)/Density);
-        Pressure    = Gamma_Minus_One*Density*(node[iPoint]->GetSolution(nDim+1)/Density-0.5*Velocity2);
-        Temperature = Pressure / ( Gas_Constant * Density);
-        if ((Pressure < 0.0) || (Temperature < 0.0)) {
-            Solution[0] = Density_Inf;
-            for (iDim = 0; iDim < nDim; iDim++)
-                Solution[iDim+1] = Velocity_Inf[iDim]*Density_Inf;
-            Solution[nDim+1] = Energy_Inf*Density_Inf;
- 
-            node[iPoint]->SetSolution(Solution);
-            node[iPoint]->SetSolution_Old(Solution);
-            
-            counter++;
-        }
-        
+    Density = node[iPoint]->GetSolution(0);
+    Velocity2 = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      Velocity2 += (node[iPoint]->GetSolution(iDim+1)/Density)*(node[iPoint]->GetSolution(iDim+1)/Density);
+    Pressure    = Gamma_Minus_One*Density*(node[iPoint]->GetSolution(nDim+1)/Density-0.5*Velocity2);
+    Temperature = Pressure / ( Gas_Constant * Density);
+    if ((Pressure < 0.0) || (Temperature < 0.0)) {
+      Solution[0] = Density_Inf;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Solution[iDim+1] = Velocity_Inf[iDim]*Density_Inf;
+      Solution[nDim+1] = Energy_Inf*Density_Inf;
+      
+      node[iPoint]->SetSolution(Solution);
+      node[iPoint]->SetSolution_Old(Solution);
+      
+      counter_local++;
     }
     
-    if (counter != 0) cout << "Warning. The original solution contains "<< counter << " points that are not physical." << endl;
+  }
+  
+#ifndef NO_MPI
+
+  MPI::COMM_WORLD.Reduce(&counter_local, &counter_global, 1, MPI::UNSIGNED_LONG, MPI::SUM, MASTER_NODE);
+
+#else
+
+  counter_global = counter_local;
+  
+#endif
+
+  
+    if ((rank == MASTER_NODE) && (counter_global != 0)) cout << "Warning. The original solution contains "<< counter_global << " points that are not physical." << endl;
     
 	/*--- For incompressible solver set the initial values for the density and viscosity,
 	 unless a freesurface problem, this must be constant during the computation ---*/
@@ -6087,7 +6137,7 @@ CNSSolution::~CNSSolution(void) {
 
 }
 
-void CNSSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
+void CNSSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
 	double levelset;
     

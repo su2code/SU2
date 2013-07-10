@@ -392,7 +392,7 @@ inline void CSolution::Centered_Residual(CGeometry *geometry, CSolution **soluti
 inline void CSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, 
 									   CConfig *config, unsigned short iMesh) { }
 
-inline void CSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) { }
+inline void CSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) { }
 
 inline void CSolution::SetDissipation_Switch(CGeometry *geometry, CConfig *config) { }
 
