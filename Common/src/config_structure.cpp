@@ -992,6 +992,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
 	Kind_SU2 = val_software;
 
+  /*--- Divide grid if runnning SU2_MDC ---*/
+  if (Kind_SU2 == SU2_MDC) Divide_Element = true;
+   
 	/*--- Identification of free-surface problem, this problems are always unsteady and incompressible. ---*/
 	if (FreeSurface) {
 		Incompressible = true;

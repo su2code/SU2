@@ -546,13 +546,13 @@ public:
 	 */
 	virtual void SetMeshFile(CGeometry *geometry, CConfig *config, string val_mesh_out_filename);
 
-	/*! 
+  /*!
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_mesh_out_filename - Name of the output file.
-	 */	
-	virtual void SetMeshFile_IntSurface(CConfig *config, string val_mesh_out_filename);
-
+	 */
+	virtual void SetMeshFile(CConfig *config, string val_mesh_out_filename, string val_mesh_in_filename);
+  
 	/*! 
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
@@ -1057,13 +1057,13 @@ public:
 	 * \param[in] val_mesh_out_filename - Name of the output file.
 	 */	
 	void SetMeshFile(CConfig *config, string val_mesh_out_filename);
-
-	/*! 
-	 * \brief Write the .su2 file, with an internal surface
+  
+  /*!
+	 * \brief Write the .su2 file, with new domain coordinates
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_mesh_out_filename - Name of the output file.
-	 */	
-	void SetMeshFile_IntSurface(CConfig *config, string val_mesh_out_filename);
+	 */
+	void SetMeshFile(CConfig *config, string val_mesh_out_filename, string val_mesh_in_filename);
 
 	/*! 
 	 * \brief Create a 2D mesh using a 3D mesh with symmetries.

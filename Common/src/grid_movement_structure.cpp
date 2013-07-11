@@ -1255,6 +1255,8 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 					total_index = iPoint*nDim + iDim;
 					rhs[total_index]  = VarCoord[iDim] * VarIncrement;
 					usol[total_index] = 0.0;
+          if (config->GetKind_GridDef_Method() == SPRING)
+            usol[total_index] = VarCoord[iDim] * VarIncrement;
           StiffMatrix.DeleteValsRowi(total_index);
 				}
 			}
@@ -1384,81 +1386,79 @@ void CVolumetricMovement::FEAMethod(CGeometry *geometry, CConfig *config, bool U
    equations hold only for small deformation. ---*/
   
   for (iFEA = 0; iFEA < config->GetFEA_Iter(); iFEA++) {
-  
-	StiffMatrix.SetValZero();
-	
-  /*--- Compute the stiffness matrix entries for all elements in the
-   mesh using a finite element method discretization of the linear
-   elasticity equations. Transfer element stiffnesses to point-to-point. ---*/
-  
-	MinLength = SetFEAMethodContributions_Elem(geometry);
-	
-  /*--- Print a warning if error tolerance is larger than min length ---*/
-	NumError = config->GetGridDef_Error();
-	if (NumError > MinLength) {
-    cout << "Warning: The error tol. is greater than the minimum edge length.\n" << endl;
-    cout << "NumError: " << NumError <<"." << "  MinLength: " << MinLength << "." << endl;
-  }
-  
-  /*--- Initialize the solution and r.h.s. vectors to zero ---*/
     
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-		for (iDim = 0; iDim < nDim; iDim++) {
-			total_index = iPoint*nDim + iDim;
-			rhs[total_index]  = 0.0;
-      usol[total_index] = 0.0;
-		}
-  }
-	
-  /*--- Set the boundary displacements (as prescribed by the design variable
-   perturbations controlling the surface shape) as a Dirichlet BC. ---*/
-  
-	SetBoundaryDisplacements(geometry, config);
-  
-  /*--- Fix the location of any points in the domain, if requested. ---*/
-  
-	if (config->GetHold_GridFixed())
-		SetDomainDisplacements(geometry, config);
-  
-  /*--- Solve the linear system (Krylov subspace methods) ---*/
-  
-  CSysVector rhs_vec((const unsigned int)geometry->GetnPoint(),
-                     (const unsigned int)geometry->GetnPointDomain(), nDim, rhs);
-  CSysVector sol_vec((const unsigned int)geometry->GetnPoint(),
-                     (const unsigned int)geometry->GetnPointDomain(), nDim, usol);
-  
-  CMatrixVectorProduct* mat_vec = new CSparseMatrixVectorProduct(StiffMatrix);
-  CSolutionSendReceive* sol_mpi = new CSparseMatrixSolMPI(StiffMatrix, geometry, config);
-  
-  CPreconditioner* precond = NULL;
-  StiffMatrix.BuildJacobiPreconditioner();
-  precond = new CJacobiPreconditioner(StiffMatrix);
-  
-  CSysSolve system;
-//  IterLinSol = system.ConjugateGradient(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, NumError, 200, true);
-//    IterLinSol = system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, NumError, 900, true);
+    StiffMatrix.SetValZero();
+    
+    /*--- Compute the stiffness matrix entries for all elements in the
+     mesh using a finite element method discretization of the linear
+     elasticity equations. Transfer element stiffnesses to point-to-point. ---*/
+    
+    MinLength = SetFEAMethodContributions_Elem(geometry);
+    
+    /*--- Print a warning if error tolerance is larger than min length ---*/
+    NumError = config->GetGridDef_Error();
+    if (NumError > MinLength) {
+      cout << "Warning: The error tol. is greater than the minimum edge length.\n" << endl;
+      cout << "NumError: " << NumError <<"." << "  MinLength: " << MinLength << "." << endl;
+    }
+    
+    /*--- Initialize the solution and r.h.s. vectors to zero ---*/
+    
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        total_index = iPoint*nDim + iDim;
+        rhs[total_index]  = 0.0;
+        usol[total_index] = 0.0;
+      }
+    }
+    
+    /*--- Set the boundary displacements (as prescribed by the design variable
+     perturbations controlling the surface shape) as a Dirichlet BC. ---*/
+    
+    SetBoundaryDisplacements(geometry, config);
+    
+    /*--- Fix the location of any points in the domain, if requested. ---*/
+    
+    if (config->GetHold_GridFixed())
+      SetDomainDisplacements(geometry, config);
+    
+    /*--- Solve the linear system (Krylov subspace methods) ---*/
+    
+    CSysVector rhs_vec((const unsigned int)geometry->GetnPoint(),
+                       (const unsigned int)geometry->GetnPointDomain(), nDim, rhs);
+    CSysVector sol_vec((const unsigned int)geometry->GetnPoint(),
+                       (const unsigned int)geometry->GetnPointDomain(), nDim, usol);
+    
+    CMatrixVectorProduct* mat_vec = new CSparseMatrixVectorProduct(StiffMatrix);
+    CSolutionSendReceive* sol_mpi = new CSparseMatrixSolMPI(StiffMatrix, geometry, config);
+    
+    CPreconditioner* precond = NULL;
+    StiffMatrix.BuildJacobiPreconditioner();
+    precond = new CJacobiPreconditioner(StiffMatrix);
+    
+    CSysSolve system;
     IterLinSol = system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, NumError, 500, true);
-  
-  /*--- Copy the solution to the array ---*/
-  sol_vec.CopyToArray(usol);
-  
-  /*--- Deallocate memory needed by the Krylov linear solver ---*/
-  
-  delete mat_vec;
-  delete precond;
-  delete sol_mpi;
-  
-  /*--- Update the grid coordinates for all nodes using the solution
-   of the linear system (usol contains the x, y, z displacements). ---*/
-  
-  UpdateGridCoord(geometry, config);
+    
+    /*--- Copy the solution to the array ---*/
+    sol_vec.CopyToArray(usol);
+    
+    /*--- Deallocate memory needed by the Krylov linear solver ---*/
+    
+    delete mat_vec;
+    delete precond;
+    delete sol_mpi;
+    
+    /*--- Update the grid coordinates for all nodes using the solution
+     of the linear system (usol contains the x, y, z displacements). ---*/
+    
+    UpdateGridCoord(geometry, config);
     
     if (UpdateGeo) {
       geometry->SetCG();
       geometry->SetControlVolume(config, UPDATE);
       geometry->SetBoundControlVolume(config, UPDATE);
     }
-  
+    
   }
   
   /*--- Perform a grid quality check after deformation. ---*/

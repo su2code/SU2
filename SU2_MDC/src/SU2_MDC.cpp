@@ -26,7 +26,7 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
 	unsigned short iChunk, nZone = 1, iDV, iLevel, iChild, iParent, jChunk, iZone;
-	char buffer_char[50], out_file[200], grid_file[200];
+	char buffer_char[50], out_file[200], in_file[200], grid_file[200];
 	int rank = MASTER_NODE, size = 1, iExtIter = 0;
 	string ChunkTag;
 	
@@ -402,9 +402,13 @@ int main(int argc, char *argv[]) {
   if (nZone == 1) {
     if (size > 1) sprintf (buffer_char, "_%d.su2", rank+1);
     else sprintf (buffer_char, ".su2");
+    
     string str = config[ZONE_0]->GetMesh_Out_FileName();
     str.erase (str.end()-4, str.end()); strcpy (out_file, str.c_str()); strcat(out_file, buffer_char);
-    geometry[ZONE_0]->SetMeshFile(config[ZONE_0], out_file);
+    
+    str = config[ZONE_0]->GetMesh_FileName();
+    str.erase (str.end()-4, str.end()); strcpy (in_file, str.c_str()); strcat(in_file, buffer_char);
+    geometry[ZONE_0]->SetMeshFile(config[ZONE_0], out_file, in_file);
 	}
 	else {
 		/*--- Call special write routine for more than one zone. ---*/

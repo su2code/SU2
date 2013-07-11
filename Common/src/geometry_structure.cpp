@@ -553,13 +553,12 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
         if (nDim == 3) elem = new CPrimalGrid*[6*nElem];
       }
       
-      unsigned short IndirectionPrism[6][6], CT_FromVTK_Prism[6], CT_ToVTK_Prism[7], IndirectionHexa[9][9];
+      unsigned short IndirectionPrism[6][6], CT_FromVTK_Prism[6], IndirectionHexa[9][9];
       unsigned short temp, zero, one, two, three, four, five, six, seven, eight, iNode, smallestNode = 0, lookupindex;
       unsigned long smallest;
 
       /*--- Indirection matrix for dividing prisms into tets, using vtk format, and conversion table for local numbering of prisms in vtk format ---*/
       CT_FromVTK_Prism[0] = 1;  CT_FromVTK_Prism[1] = 3;  CT_FromVTK_Prism[2] = 2;  CT_FromVTK_Prism[3] = 4;  CT_FromVTK_Prism[4] = 6;  CT_FromVTK_Prism[5] = 5;
-      CT_ToVTK_Prism[1] = 0;    CT_ToVTK_Prism[3] = 1;    CT_ToVTK_Prism[2] = 2;    CT_ToVTK_Prism[4] = 3;    CT_ToVTK_Prism[6] = 4;    CT_ToVTK_Prism[5] = 5;
       
       IndirectionPrism[0][0] = 0; IndirectionPrism[0][1] = 2; IndirectionPrism[0][2] = 1; IndirectionPrism[0][3] = 3; IndirectionPrism[0][4] = 5; IndirectionPrism[0][5] = 4;
       IndirectionPrism[1][0] = 2; IndirectionPrism[1][1] = 1; IndirectionPrism[1][2] = 0; IndirectionPrism[1][3] = 5; IndirectionPrism[1][4] = 4; IndirectionPrism[1][5] = 3;
@@ -4121,114 +4120,204 @@ void CPhysicalGeometry::SetMeshFile (CConfig *config, string val_mesh_out_filena
 	output_file.close();
 }
 
-void CPhysicalGeometry::SetMeshFile_IntSurface(CConfig *config, string val_mesh_out_filename) {
-	unsigned long iElem, iPoint, iElem_Bound, TestPoint;
-	unsigned short iMarker, iNodes, iDim, NearFieldMarker = 0;
+void CPhysicalGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename, string val_mesh_in_filename) {
+	unsigned long iElem, iPoint, iElem_Bound, nElem_, nElem_Bound_, vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4], vnodes_tetra[4], vnodes_hexa[8], vnodes_wedge[6], vnodes_pyramid[5];
+	unsigned short iMarker, iDim, nDim, iChar, iPeriodic, nPeriodic = 0, VTK_Type, nDim_;
+  char *cstr;
+	double *center, *angles, *transl;
 	ofstream output_file;
-	string Grid_Marker;
-	char *cstr;
+  ifstream input_file;
+	string Grid_Marker, text_line, Marker_Tag;
+  string::size_type position;
 
-	/*--- Identify the surface that must be doubled ---*/
-	NearFieldMarker = nMarker-1;
-
-	cstr = new char [val_mesh_out_filename.size()+1];
+  
+	/*--- Open output_file .su2 grid file ---*/
+  cstr = new char [val_mesh_out_filename.size()+1];
 	strcpy (cstr, val_mesh_out_filename.c_str());
-
-	/*--- Open .su2 grid file ---*/
-	output_file.open(cstr, ios::out);
-
-	/*--- Create a list that for each point of the inner surface gives you the 
-	 equivalent point from the outer surface ---*/
-	long *LowerPoint = new long[nPoint];
-	for (iPoint = 0; iPoint < nPoint; iPoint++) LowerPoint[iPoint] = -1;
-
-	for (iElem_Bound = 0; iElem_Bound < nElem_Bound[NearFieldMarker]; iElem_Bound++)
-		for (iNodes = 0; iNodes < bound[NearFieldMarker][iElem_Bound]->GetnNodes(); iNodes++) {
-			iPoint = bound[NearFieldMarker][iElem_Bound]->GetNode(iNodes);
-			if (LowerPoint[iPoint] == -1) {
-				LowerPoint[iPoint] = 0;
-			}
-		}
-
-	/*--- Write dimension, number of elements and number of points ---*/
-	output_file << "NDIME=" << nDim << endl;
-
-	bool *InnerElement = new bool[nElem];
-	for (iElem = 0; iElem < nElem; iElem++)
-		InnerElement[iElem] = false;		
-
-	output_file << "NELEM=" << nElem << endl;	
-	for (iElem = 0; iElem < nElem; iElem++) {
-		output_file << elem[iElem]->GetVTK_Type();
-
-		/*--- Test to identify inner points from outer points ---*/
-		bool InnerSide = true;
-
-		/*--- Identification of the inner, and outer domain ---*/
-		for (iNodes = 0; iNodes < elem[iElem]->GetnNodes(); iNodes++) {
-			TestPoint = elem[iElem]->GetNode(iNodes);
-			if (LowerPoint[TestPoint] != -1) {
-				/*--- There are two combinations (0,1,4,5) and (2,3,6,7) ---*/
-				if (iNodes == 2) InnerSide = false;
-			}
-		}
-
-		if (InnerSide) InnerElement[iElem] = true;
-
-		for (iNodes = 0; iNodes < elem[iElem]->GetnNodes(); iNodes++)
-			output_file << "\t" << elem[iElem]->GetNode(iNodes);
-		output_file << "\t"<<iElem<<endl;			
-	}
-
-	output_file << "NPOIN=" << nPoint << endl;
 	output_file.precision(15);
-	for (iPoint = 0; iPoint < nPoint; iPoint++) {
-		for (iDim = 0; iDim < nDim; iDim++)
-			output_file << scientific << "\t" << node[iPoint]->GetCoord(iDim) ;
-		output_file << "\t" << iPoint << endl;
-	}
+	output_file.open(cstr, ios::out);
+    
+  /*--- Open input_file .su2 grid file ---*/
+  cstr = new char [val_mesh_in_filename.size()+1];
+	strcpy (cstr, val_mesh_in_filename.c_str());
+  input_file.open(cstr, ios::out);
+  
+  /*--- Read grid file with format SU2 ---*/
+  while (getline (input_file, text_line)) {
+    
+    /*--- Read the dimension of the problem ---*/
+    position = text_line.find ("NDIME=",0);
+    if (position != string::npos) {
+      text_line.erase (0,6); nDim_ = atoi(text_line.c_str());
+      output_file << "NDIME= " << nDim_ << endl;
+    }
+    
+    /*--- Read the information about inner elements ---*/
+    position = text_line.find ("NELEM=",0);
+    if (position != string::npos) {
+      text_line.erase (0,6); nElem_ = atoi(text_line.c_str());
+      output_file << "NELEM= " << nElem_ << endl;
+      
+      
+      /*--- Loop over all the volumetric elements ---*/
+      for (iElem = 0; iElem < nElem_;  iElem++) {
+        getline(input_file, text_line);
+        istringstream elem_line(text_line);
+        
+        elem_line >> VTK_Type;
+        output_file << VTK_Type;
 
-	/*--- Write the boundary elements ---*/
-	output_file << "NMARK=" << nMarker+1 << endl;
-
-	for (iMarker = 0; iMarker < nMarker-1; iMarker++) {
-		Grid_Marker = config->GetMarker_All_Tag(iMarker);
-		output_file << "MARKER_TAG=" << Grid_Marker <<endl;
-		output_file << "MARKER_ELEMS=" << nElem_Bound[iMarker]<< endl;
-
-		for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-			output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
-			for (iNodes = 0; iNodes < bound[iMarker][iElem_Bound]->GetnNodes(); iNodes++)
-				output_file << bound[iMarker][iElem_Bound]->GetNode(iNodes) << "\t" ;
-			output_file	<< endl;
+        switch(VTK_Type) {
+          case TRIANGLE:
+            elem_line >> vnodes_triangle[0]; elem_line >> vnodes_triangle[1]; elem_line >> vnodes_triangle[2];
+            output_file << "\t" << vnodes_triangle[0] << "\t" << vnodes_triangle[1] << "\t" << vnodes_triangle[2] << endl;
+            break;
+          case RECTANGLE:
+            elem_line >> vnodes_quad[0]; elem_line >> vnodes_quad[1]; elem_line >> vnodes_quad[2]; elem_line >> vnodes_quad[3];
+            output_file << "\t" << vnodes_quad[0] << "\t" << vnodes_quad[1] << "\t" << vnodes_quad[2] << "\t" << vnodes_quad[3] << endl;
+             break;
+          case TETRAHEDRON:
+            elem_line >> vnodes_tetra[0]; elem_line >> vnodes_tetra[1]; elem_line >> vnodes_tetra[2]; elem_line >> vnodes_tetra[3];
+            output_file << "\t" << vnodes_tetra[0] << "\t" << vnodes_tetra[1] << "\t" << vnodes_tetra[2] << "\t" << vnodes_tetra[3] << endl;
+            break;
+          case HEXAHEDRON:
+            elem_line >> vnodes_hexa[0]; elem_line >> vnodes_hexa[1]; elem_line >> vnodes_hexa[2];
+            elem_line >> vnodes_hexa[3]; elem_line >> vnodes_hexa[4]; elem_line >> vnodes_hexa[5];
+            elem_line >> vnodes_hexa[6]; elem_line >> vnodes_hexa[7];
+            output_file << "\t" << vnodes_hexa[0] << "\t" << vnodes_hexa[1] << "\t" << vnodes_hexa[2] << "\t" << vnodes_hexa[3] << "\t" << vnodes_hexa[4] << "\t" << vnodes_hexa[5] << "\t" << vnodes_hexa[6] << "\t" << vnodes_hexa[7] << endl;
+            break;
+          case WEDGE:
+            elem_line >> vnodes_wedge[0]; elem_line >> vnodes_wedge[1]; elem_line >> vnodes_wedge[2];
+            elem_line >> vnodes_wedge[3]; elem_line >> vnodes_wedge[4]; elem_line >> vnodes_wedge[5];
+            output_file << "\t" << vnodes_wedge[0] << "\t" << vnodes_wedge[1] << "\t" << vnodes_wedge[2] << "\t" << vnodes_wedge[3] << "\t" << vnodes_wedge[4] << "\t" << vnodes_wedge[5] << endl;
+            break;
+          case PYRAMID:
+            elem_line >> vnodes_pyramid[0]; elem_line >> vnodes_pyramid[1]; elem_line >> vnodes_pyramid[2];
+            elem_line >> vnodes_pyramid[3]; elem_line >> vnodes_pyramid[4];
+            output_file << "\t" << vnodes_pyramid[0] << "\t" << vnodes_pyramid[1] << "\t" << vnodes_pyramid[2] << "\t" << vnodes_pyramid[3] << "\t" << vnodes_pyramid[4] << endl;
+            break;
+        }
+      }
+    }
+    
+    /*--- Coordinates ---*/
+    position = text_line.find ("NPOIN=",0);
+    if (position != string::npos) {
+      
+      /*--- Skip the lines about the points ---*/
+      for (iPoint = 0; iPoint < nPoint+1;  iPoint++) {
+        getline(input_file, text_line);
+      }
+      
+      /*--- Add the new coordinates ---*/
+      output_file << "NPOIN= " << nPoint << "\t" << nPointDomain << endl;
+      output_file.precision(15);
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+        for (iDim = 0; iDim < nDim; iDim++)
+          output_file << scientific << "\t" << node[iPoint]->GetCoord(iDim) ;
+#ifdef NO_MPI
+        output_file << "\t" << iPoint << endl;
+#else
+        output_file << "\t" << iPoint << "\t" << node[iPoint]->GetGlobalIndex() << endl;
+#endif
+      }
+      
+    }
+    
+    /*--- Write the physical boundaries ---*/
+    position = text_line.find ("NMARK=",0);
+    if (position != string::npos) {
+      text_line.erase (0,6); nMarker = atoi(text_line.c_str());
+      output_file << "NMARK= " << nMarker << endl;
+      
+      for (iMarker = 0 ; iMarker < nMarker; iMarker++) {
+        
+        getline (input_file,text_line);
+        text_line.erase (0,11);
+        string::size_type position;
+        for (iChar = 0; iChar < 20; iChar++) {
+          position = text_line.find( " ", 0 );
+          if(position != string::npos) text_line.erase (position,1);
+          position = text_line.find( "\r", 0 );
+          if(position != string::npos) text_line.erase (position,1);
+          position = text_line.find( "\n", 0 );
+          if(position != string::npos) text_line.erase (position,1);
+        }
+        Marker_Tag = text_line.c_str();
+        
+        if (Marker_Tag != "SEND_RECEIVE") {
+          
+          getline (input_file, text_line);
+          
+          text_line.erase (0,13); nElem_Bound_ = atoi(text_line.c_str());
+          output_file << "MARKER_TAG= " << Marker_Tag << endl;
+          output_file << "MARKER_ELEMS= " << nElem_Bound_<< endl;
+          
+          for (iElem_Bound = 0; iElem_Bound < nElem_Bound_; iElem_Bound++) {
+            getline(input_file, text_line);
+            istringstream bound_line(text_line);
+            bound_line >> VTK_Type;
+            
+            output_file << VTK_Type ;
+            
+            switch(VTK_Type) {
+              case LINE:
+                bound_line >> vnodes_edge[0]; bound_line >> vnodes_edge[1];
+                output_file << "\t" << vnodes_edge[0] << "\t" << vnodes_edge[1] << endl;
+              case TRIANGLE:
+                bound_line >> vnodes_triangle[0]; bound_line >> vnodes_triangle[1]; bound_line >> vnodes_triangle[2];
+                output_file << "\t" << vnodes_triangle[0] << "\t" << vnodes_triangle[1] << "\t" << vnodes_triangle[2] << endl;
+              case RECTANGLE:
+                bound_line >> vnodes_quad[0]; bound_line >> vnodes_quad[1]; bound_line >> vnodes_quad[2]; bound_line >> vnodes_quad[3];
+                output_file << "\t" << vnodes_quad[0] << "\t" << vnodes_quad[1] << "\t" << vnodes_quad[2] << "\t" << vnodes_quad[3] << endl;
+                break;
+                
+            }
+          }
+        }
+      }
+    }
+    
+  }
+  
+  /*--- Write the send/receive boundaries ---*/
+	for (iMarker = 0; iMarker < nMarker; iMarker++) {
+		if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
+			output_file << "MARKER_TAG= SEND_RECEIVE" << endl;
+			output_file << "MARKER_ELEMS= " << nElem_Bound[iMarker]<< endl;
+			if (config->GetMarker_All_SendRecv(iMarker) > 0) output_file << "SEND_TO= " << config->GetMarker_All_SendRecv(iMarker) << endl;
+			if (config->GetMarker_All_SendRecv(iMarker) < 0) output_file << "SEND_TO= " << config->GetMarker_All_SendRecv(iMarker) << endl;
+      
+			for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
+				output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" <<
+        bound[iMarker][iElem_Bound]->GetNode(0) << "\t" <<
+        bound[iMarker][iElem_Bound]->GetRotation_Type() << "\t" <<
+        bound[iMarker][iElem_Bound]->GetMatching_Zone()<< endl;
+			}
+      
 		}
 	}
-
-	/*--- We add the boundary that corresponf with the lower side ---*/
-	output_file << "MARKER_TAG=" << config->GetPlaneTag(0) << endl;
-	output_file << "MARKER_ELEMS=" << int(nElem_Bound[NearFieldMarker]/2)<< endl;
-	for (iElem_Bound = 0; iElem_Bound < nElem_Bound[NearFieldMarker]; iElem_Bound++) {
-		unsigned long DomainElement = bound[NearFieldMarker][iElem_Bound]->GetDomainElement();
-		if (InnerElement[DomainElement]) {		
-			output_file << bound[NearFieldMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
-			for (iNodes = 0; iNodes < bound[iMarker][iElem_Bound]->GetnNodes(); iNodes++)
-				output_file << bound[iMarker][iElem_Bound]->GetNode(iNodes) << "\t" ;
-			output_file	<< endl;
-		}
+  
+	/*--- Get the total number of periodic transformations ---*/
+	nPeriodic = config->GetnPeriodicIndex();
+	output_file << "NPERIODIC= " << nPeriodic << endl;
+  
+	/*--- From iPeriodic obtain the iMarker ---*/
+	for (iPeriodic = 0; iPeriodic < nPeriodic; iPeriodic++) {
+    
+		/*--- Retrieve the supplied periodic information. ---*/
+		center = config->GetPeriodicCenter(iPeriodic);
+		angles = config->GetPeriodicRotation(iPeriodic);
+		transl = config->GetPeriodicTranslate(iPeriodic);
+    
+		output_file << "PERIODIC_INDEX= " << iPeriodic << endl;
+		output_file << center[0] << "\t" << center[1] << "\t" << center[2] << endl;
+		output_file << angles[0] << "\t" << angles[1] << "\t" << angles[2] << endl;
+		output_file << transl[0] << "\t" << transl[1] << "\t" << transl[2] << endl;
+    
 	}
-
-	output_file << "MARKER_TAG=" << config->GetPlaneTag(1) << endl;
-	output_file << "MARKER_ELEMS=" << int(nElem_Bound[NearFieldMarker]/2)<< endl;
-	for (iElem_Bound = 0; iElem_Bound < nElem_Bound[NearFieldMarker]; iElem_Bound++) {
-		unsigned long DomainElement = bound[NearFieldMarker][iElem_Bound]->GetDomainElement();
-		if (!InnerElement[DomainElement]) {		
-			output_file << bound[NearFieldMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
-			for (iNodes = 0; iNodes < bound[iMarker][iElem_Bound]->GetnNodes(); iNodes++)
-				output_file << bound[iMarker][iElem_Bound]->GetNode(iNodes) << "\t" ;
-			output_file	<< endl;
-		}
-	}
-
+  
+  
 	output_file.close();
 }
 
