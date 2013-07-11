@@ -647,16 +647,16 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
               unsigned long index1, index2;
               unsigned short code1 = 0, code2 = 0, code3 = 0;
               
-              index1 = min(vnodes_wedge[two], vnodes_wedge[seven]);
-              index2 = min(vnodes_wedge[three], vnodes_wedge[six]);
+              index1 = min(vnodes_hexa[two], vnodes_hexa[seven]);
+              index2 = min(vnodes_hexa[three], vnodes_hexa[six]);
               if (index1 < index2) code1 = 1;
               
-              index1 = min(vnodes_wedge[four], vnodes_wedge[seven]);
-              index2 = min(vnodes_wedge[three], vnodes_wedge[eight]);
+              index1 = min(vnodes_hexa[four], vnodes_hexa[seven]);
+              index2 = min(vnodes_hexa[three], vnodes_hexa[eight]);
               if (index1 < index2) code2 = 1;
               
-              index1 = min(vnodes_wedge[five], vnodes_wedge[seven]);
-              index2 = min(vnodes_wedge[six], vnodes_wedge[eight]);
+              index1 = min(vnodes_hexa[five], vnodes_hexa[seven]);
+              index2 = min(vnodes_hexa[six], vnodes_hexa[eight]);
               if (index1 < index2) code3 = 1;
               
               /*--- Rotation of 120 degrees ---*/
