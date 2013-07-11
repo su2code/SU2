@@ -96,11 +96,8 @@ int main(int argc, char *argv[]) {
 	geometry[ZONE_0]->SetBoundVolume();
 	geometry[ZONE_0]->Check_Orientation(config[ZONE_0]);
   
-  /*--- Use a special preprocessing for FEA grid deformation ---*/
-  if (config[ZONE_0]->GetKind_GridDef_Method() == FEA)
-    geometry[ZONE_0]->SetPsuP_FEA();
-  else
-    geometry[ZONE_0]->SetPsuP();
+  /*--- Point preprocessing ---*/
+  geometry[ZONE_0]->SetPsuP();
   
 	/*--- Create the edge structure ---*/
 	if (rank == MASTER_NODE) cout << "Identify edges and vertices." <<endl;
