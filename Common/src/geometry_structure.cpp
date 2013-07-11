@@ -550,27 +550,38 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
       else {
         if (size == 1) cout << "Dividing elements into triangles or tetrahedra." << endl;
         if (nDim == 2) elem = new CPrimalGrid*[2*nElem];
-        if (nDim == 3) elem = new CPrimalGrid*[5*nElem];
+        if (nDim == 3) elem = new CPrimalGrid*[6*nElem];
       }
       
-      /*--- Indirection matrix for dividing prisms into tets ---*/
-      unsigned short inDirection[6][6], conversionTable[6];
-      unsigned short zero, one, two, three, four, five, iNode, smallestNode = 0, lookupindex;
-      inDirection[0][0] = 0; inDirection[0][1] = 2; inDirection[0][2] = 1; inDirection[0][3] = 3; inDirection[0][4] = 5; inDirection[0][5] = 4;
-      inDirection[1][0] = 2; inDirection[1][1] = 1; inDirection[1][2] = 0; inDirection[1][3] = 5; inDirection[1][4] = 4; inDirection[1][5] = 3;
-      inDirection[2][0] = 1; inDirection[2][1] = 0; inDirection[2][2] = 2; inDirection[2][3] = 4; inDirection[2][4] = 3; inDirection[2][5] = 5;
-      inDirection[3][0] = 3; inDirection[3][1] = 4; inDirection[3][2] = 5; inDirection[3][3] = 0; inDirection[3][4] = 1; inDirection[3][5] = 2;
-      inDirection[4][0] = 5; inDirection[4][1] = 3; inDirection[4][2] = 4; inDirection[4][3] = 2; inDirection[4][4] = 0; inDirection[4][5] = 1;
-      inDirection[5][0] = 4; inDirection[5][1] = 5; inDirection[5][2] = 3; inDirection[5][3] = 1; inDirection[5][4] = 2; inDirection[5][5] = 0;
+      unsigned short IndirectionPrism[6][6], CT_FromVTK_Prism[6], CT_ToVTK_Prism[7], IndirectionHexa[8][8], CT_FromVTK_Hexa[8], CT_ToVTK_Hexa[9];
+      unsigned short temp, zero, one, two, three, four, five, six, seven, eight, iNode, smallestNode = 0, lookupindex;
+      unsigned long smallest;
+
+      /*--- Indirection matrix for dividing prisms into tets, using vtk format, and conversion table for local numbering of prisms in vtk format ---*/
+      CT_FromVTK_Prism[0] = 1;  CT_FromVTK_Prism[1] = 3;  CT_FromVTK_Prism[2] = 2;  CT_FromVTK_Prism[3] = 4;  CT_FromVTK_Prism[4] = 6;  CT_FromVTK_Prism[5] = 5;
+      CT_ToVTK_Prism[1] = 0;    CT_ToVTK_Prism[3] = 1;    CT_ToVTK_Prism[2] = 2;    CT_ToVTK_Prism[4] = 3;    CT_ToVTK_Prism[6] = 4;    CT_ToVTK_Prism[5] = 5;
       
-      /*--- Conversion table for local numbering of prisms in vtk format ---*/
-      conversionTable[0] = 1;
-      conversionTable[1] = 3;
-      conversionTable[2] = 2;
-      conversionTable[3] = 4;
-      conversionTable[4] = 6;
-      conversionTable[5] = 5;
+      IndirectionPrism[0][0] = 0; IndirectionPrism[0][1] = 2; IndirectionPrism[0][2] = 1; IndirectionPrism[0][3] = 3; IndirectionPrism[0][4] = 5; IndirectionPrism[0][5] = 4;
+      IndirectionPrism[1][0] = 2; IndirectionPrism[1][1] = 1; IndirectionPrism[1][2] = 0; IndirectionPrism[1][3] = 5; IndirectionPrism[1][4] = 4; IndirectionPrism[1][5] = 3;
+      IndirectionPrism[2][0] = 1; IndirectionPrism[2][1] = 0; IndirectionPrism[2][2] = 2; IndirectionPrism[2][3] = 4; IndirectionPrism[2][4] = 3; IndirectionPrism[2][5] = 5;
+      IndirectionPrism[3][0] = 3; IndirectionPrism[3][1] = 4; IndirectionPrism[3][2] = 5; IndirectionPrism[3][3] = 0; IndirectionPrism[3][4] = 1; IndirectionPrism[3][5] = 2;
+      IndirectionPrism[4][0] = 5; IndirectionPrism[4][1] = 3; IndirectionPrism[4][2] = 4; IndirectionPrism[4][3] = 2; IndirectionPrism[4][4] = 0; IndirectionPrism[4][5] = 1;
+      IndirectionPrism[5][0] = 4; IndirectionPrism[5][1] = 5; IndirectionPrism[5][2] = 3; IndirectionPrism[5][3] = 1; IndirectionPrism[5][4] = 2; IndirectionPrism[5][5] = 0;
       
+      /*--- Indirection matrix for dividing hexahedron into tets, and conversion table for local numbering of hexahedron in vtk format ---*/
+      CT_FromVTK_Hexa[0] = 1; CT_FromVTK_Hexa[1] = 2; CT_FromVTK_Hexa[2] = 3; CT_FromVTK_Hexa[3] = 4; CT_FromVTK_Hexa[4] = 5; CT_FromVTK_Hexa[5] = 6; CT_FromVTK_Hexa[6] = 7; CT_FromVTK_Hexa[7] = 8;
+      CT_ToVTK_Hexa[1] = 0;   CT_ToVTK_Hexa[2] = 1;   CT_ToVTK_Hexa[3] = 2;   CT_ToVTK_Hexa[4] = 3;   CT_ToVTK_Hexa[5] = 4;   CT_ToVTK_Hexa[6] = 5;   CT_ToVTK_Hexa[7] = 6;   CT_ToVTK_Hexa[8] = 7;
+
+      IndirectionHexa[0][0] = 1; IndirectionHexa[0][1] = 2; IndirectionHexa[0][2] = 3; IndirectionHexa[0][3] = 4; IndirectionHexa[0][4] = 5; IndirectionHexa[0][5] = 6; IndirectionHexa[0][6] = 7; IndirectionHexa[0][7] = 8;
+      IndirectionHexa[1][0] = 2; IndirectionHexa[1][1] = 1; IndirectionHexa[1][2] = 5; IndirectionHexa[1][3] = 6; IndirectionHexa[1][4] = 3; IndirectionHexa[1][5] = 4; IndirectionHexa[1][6] = 8; IndirectionHexa[1][7] = 7;
+      IndirectionHexa[2][0] = 3; IndirectionHexa[2][1] = 2; IndirectionHexa[2][2] = 6; IndirectionHexa[2][3] = 7; IndirectionHexa[2][4] = 4; IndirectionHexa[2][5] = 1; IndirectionHexa[2][6] = 5; IndirectionHexa[2][7] = 8;
+      IndirectionHexa[3][0] = 4; IndirectionHexa[3][1] = 1; IndirectionHexa[3][2] = 2; IndirectionHexa[3][3] = 3; IndirectionHexa[3][4] = 8; IndirectionHexa[3][5] = 5; IndirectionHexa[3][6] = 6; IndirectionHexa[3][7] = 7;
+      IndirectionHexa[4][0] = 5; IndirectionHexa[4][1] = 1; IndirectionHexa[4][2] = 4; IndirectionHexa[4][3] = 8; IndirectionHexa[4][4] = 6; IndirectionHexa[4][5] = 2; IndirectionHexa[4][6] = 3; IndirectionHexa[4][7] = 7;
+      IndirectionHexa[5][0] = 6; IndirectionHexa[5][1] = 2; IndirectionHexa[5][2] = 1; IndirectionHexa[5][3] = 5; IndirectionHexa[5][4] = 7; IndirectionHexa[5][5] = 3; IndirectionHexa[5][6] = 4; IndirectionHexa[5][7] = 8;
+      IndirectionHexa[6][0] = 7; IndirectionHexa[6][1] = 3; IndirectionHexa[6][2] = 2; IndirectionHexa[6][3] = 6; IndirectionHexa[6][4] = 8; IndirectionHexa[6][5] = 4; IndirectionHexa[6][6] = 1; IndirectionHexa[6][7] = 5;
+      IndirectionHexa[7][0] = 8; IndirectionHexa[7][1] = 4; IndirectionHexa[7][2] = 3; IndirectionHexa[7][3] = 7; IndirectionHexa[7][4] = 5; IndirectionHexa[7][5] = 1; IndirectionHexa[7][6] = 2; IndirectionHexa[7][7] = 6;
+      
+
       /*--- Loop over all the volumetric elements ---*/
       while (ielem_div < nElem) {
         getline(mesh_file,text_line);
@@ -603,64 +614,167 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
             elem_line >> vnodes_hexa[0]; elem_line >> vnodes_hexa[1]; elem_line >> vnodes_hexa[2];
             elem_line >> vnodes_hexa[3]; elem_line >> vnodes_hexa[4]; elem_line >> vnodes_hexa[5];
             elem_line >> vnodes_hexa[6]; elem_line >> vnodes_hexa[7];
+            
             if (!config->GetDivide_Element()) {
-              elem[ielem] = new CHexahedron(vnodes_hexa[0],vnodes_hexa[1],vnodes_hexa[2],vnodes_hexa[3],vnodes_hexa[4],vnodes_hexa[5],vnodes_hexa[6],vnodes_hexa[7]);
-              ielem++; nelem_hexa++; }
+              
+              elem[ielem] = new CHexahedron(vnodes_hexa[0], vnodes_hexa[1], vnodes_hexa[2], vnodes_hexa[3],
+                                            vnodes_hexa[4], vnodes_hexa[5], vnodes_hexa[6], vnodes_hexa[7]);
+              ielem++; nelem_hexa++;
+              
+            }
             else {
-              elem[ielem] = new CTetrahedron(vnodes_hexa[0],vnodes_hexa[1],vnodes_hexa[2],vnodes_hexa[5]);
-              ielem++; nelem_tetra++;
-              elem[ielem] = new CTetrahedron(vnodes_hexa[0],vnodes_hexa[2],vnodes_hexa[7],vnodes_hexa[5]);
-              ielem++; nelem_tetra++;
-              elem[ielem] = new CTetrahedron(vnodes_hexa[0],vnodes_hexa[2],vnodes_hexa[3],vnodes_hexa[7]);
-              ielem++; nelem_tetra++;
-              elem[ielem] = new CTetrahedron(vnodes_hexa[0],vnodes_hexa[5],vnodes_hexa[7],vnodes_hexa[4]);
-              ielem++; nelem_tetra++;
-              elem[ielem] = new CTetrahedron(vnodes_hexa[2],vnodes_hexa[7],vnodes_hexa[5],vnodes_hexa[6]);
-              ielem++; nelem_tetra++;	}
+              
+              smallest = vnodes_hexa[0]; smallestNode = 0;
+              for (iNode = 1; iNode < 8; iNode ++) {
+                if ( smallest > vnodes_hexa[iNode]) {
+                  smallest = vnodes_hexa[iNode];
+                  smallestNode = iNode;
+                }
+              }
+              
+              lookupindex = (CT_FromVTK_Hexa[smallestNode] - 1);
+              one  = CT_ToVTK_Hexa[IndirectionHexa[lookupindex][0]];
+              two  = CT_ToVTK_Hexa[IndirectionHexa[lookupindex][1]];
+              three  = CT_ToVTK_Hexa[IndirectionHexa[lookupindex][2]];
+              four = CT_ToVTK_Hexa[IndirectionHexa[lookupindex][3]];
+              five = CT_ToVTK_Hexa[IndirectionHexa[lookupindex][4]];
+              six = CT_ToVTK_Hexa[IndirectionHexa[lookupindex][5]];
+              seven = CT_ToVTK_Hexa[IndirectionHexa[lookupindex][6]];
+              eight = CT_ToVTK_Hexa[IndirectionHexa[lookupindex][7]];
+
+              unsigned long index1, index2;
+              unsigned short code1 = 0, code2 = 0, code3 = 0;
+              
+              index1 = min(vnodes_wedge[two], vnodes_wedge[seven]);
+              index2 = min(vnodes_wedge[three], vnodes_wedge[six]);
+              if (index1 < index2) code1 = 1;
+              
+              index1 = min(vnodes_wedge[four], vnodes_wedge[seven]);
+              index2 = min(vnodes_wedge[three], vnodes_wedge[eight]);
+              if (index1 < index2) code2 = 1;
+              
+              index1 = min(vnodes_wedge[five], vnodes_wedge[seven]);
+              index2 = min(vnodes_wedge[six], vnodes_wedge[eight]);
+              if (index1 < index2) code3 = 1;
+              
+              /*--- Rotation of 120 degrees ---*/
+              if ((!code1 && !code2 && code3) || (code1 && code2 && !code3)) {
+                temp = two; two = five; five = four; four = temp;
+                temp = six; six = eight; eight = three; three = temp;
+              }
+              
+              /*--- Rotation of 240 degrees ---*/
+              if ((!code1 && code2 && !code3) || (code1 && !code2 && code3)) {
+                temp = two; two = four; four = five; five = temp;
+                temp = six; six = three; three = eight; eight = temp;
+              }
+                            
+              if ((code1 + code2 + code3) == 0) {
+                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[two], vnodes_hexa[three], vnodes_hexa[six]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[three], vnodes_hexa[eight], vnodes_hexa[six]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[three], vnodes_hexa[four], vnodes_hexa[eight]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[six], vnodes_hexa[eight], vnodes_hexa[five]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[three], vnodes_hexa[eight], vnodes_hexa[six], vnodes_hexa[seven]);
+                ielem++; nelem_tetra++;
+              }
+              if ((code1 + code2 + code3) == 1) {
+                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[six], vnodes_hexa[eight], vnodes_hexa[five]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[two], vnodes_hexa[eight], vnodes_hexa[six]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[two], vnodes_hexa[seven], vnodes_hexa[eight], vnodes_hexa[six]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[eight], vnodes_hexa[three], vnodes_hexa[four]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[eight], vnodes_hexa[two], vnodes_hexa[three]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[two], vnodes_hexa[eight], vnodes_hexa[seven], vnodes_hexa[three]);
+                ielem++; nelem_tetra++;
+              }
+              if ((code1 + code2 + code3) == 2) {
+                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[five], vnodes_hexa[six], vnodes_hexa[seven]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[four], vnodes_hexa[eight], vnodes_hexa[seven]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[eight], vnodes_hexa[five], vnodes_hexa[seven]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[two], vnodes_hexa[three], vnodes_hexa[six]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[four], vnodes_hexa[seven], vnodes_hexa[three]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[six], vnodes_hexa[three]);
+                ielem++; nelem_tetra++;
+              }
+              if ((code1 + code2 + code3) == 3) {
+                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[three], vnodes_hexa[four], vnodes_hexa[seven]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[four], vnodes_hexa[eight], vnodes_hexa[seven]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[eight], vnodes_hexa[five], vnodes_hexa[seven]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[six], vnodes_hexa[seven], vnodes_hexa[five]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[two], vnodes_hexa[six], vnodes_hexa[seven], vnodes_hexa[one]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[two], vnodes_hexa[seven], vnodes_hexa[three], vnodes_hexa[one]);
+                ielem++; nelem_tetra++;
+              }
+            
+            }
             ielem_div++;
             break;
           case WEDGE:
             elem_line >> vnodes_wedge[0]; elem_line >> vnodes_wedge[1]; elem_line >> vnodes_wedge[2];
             elem_line >> vnodes_wedge[3]; elem_line >> vnodes_wedge[4]; elem_line >> vnodes_wedge[5];
+            
             if (!config->GetDivide_Element()) {
+              
               elem[ielem] = new CWedge(vnodes_wedge[0],vnodes_wedge[1],vnodes_wedge[2],vnodes_wedge[3],vnodes_wedge[4],vnodes_wedge[5]);
-              ielem++; nelem_wedge++; }
+              ielem++; nelem_wedge++;
+              
+            }
             else {
-              /* ---Reference: How to subdivide pyramids, prisms and hexahedra into tetrahedra by Julien Dompierre */
-              unsigned long smallest = 9999999;
-              for (iNode = 0; iNode < 6; iNode ++) {
+              
+              smallest = vnodes_wedge[0]; smallestNode = 0;
+              for (iNode = 1; iNode < 6; iNode ++) {
                 if ( smallest > vnodes_wedge[iNode]) {
                   smallest = vnodes_wedge[iNode];
                   smallestNode = iNode;
                 }
               }
-              lookupindex = conversionTable[smallestNode] - 1;
-              zero  = inDirection[lookupindex][0]; one  = inDirection[lookupindex][1]; two  = inDirection[lookupindex][2];
-              three = inDirection[lookupindex][3]; four = inDirection[lookupindex][4]; five = inDirection[lookupindex][5];
+              
+              lookupindex = (CT_FromVTK_Prism[smallestNode] - 1);
+              zero  = IndirectionPrism[lookupindex][0]; one  = IndirectionPrism[lookupindex][1]; two  = IndirectionPrism[lookupindex][2];
+              three = IndirectionPrism[lookupindex][3]; four = IndirectionPrism[lookupindex][4]; five = IndirectionPrism[lookupindex][5];
               
               unsigned long index1, index2;
               bool division1 = false;
               index1 = min(vnodes_wedge[one], vnodes_wedge[five]);
               index2 = min(vnodes_wedge[two], vnodes_wedge[four]);
-              if(index1 < index2) division1 = true;
+              if (index1 < index2) division1 = true;
               
               if (division1) {
-                elem[ielem] = new CTetrahedron(vnodes_wedge[zero],vnodes_wedge[one],vnodes_wedge[two],vnodes_wedge[five]);
+                elem[ielem] = new CTetrahedron(vnodes_wedge[zero], vnodes_wedge[one], vnodes_wedge[two], vnodes_wedge[five]);
                 ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_wedge[zero],vnodes_wedge[one],vnodes_wedge[five],vnodes_wedge[four]);
+                elem[ielem] = new CTetrahedron(vnodes_wedge[zero], vnodes_wedge[one], vnodes_wedge[five], vnodes_wedge[four]);
                 ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_wedge[zero],vnodes_wedge[four],vnodes_wedge[five],vnodes_wedge[three]);
+                elem[ielem] = new CTetrahedron(vnodes_wedge[zero], vnodes_wedge[four], vnodes_wedge[five], vnodes_wedge[three]);
                 ielem++; nelem_tetra++;
               }
               else {
-                elem[ielem] = new CTetrahedron(vnodes_wedge[zero],vnodes_wedge[one],vnodes_wedge[two],vnodes_wedge[four]);
+                elem[ielem] = new CTetrahedron(vnodes_wedge[zero], vnodes_wedge[one], vnodes_wedge[two], vnodes_wedge[four]);
                 ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_wedge[zero],vnodes_wedge[four],vnodes_wedge[two],vnodes_wedge[five]);
+                elem[ielem] = new CTetrahedron(vnodes_wedge[zero], vnodes_wedge[four], vnodes_wedge[two], vnodes_wedge[five]);
                 ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_wedge[zero],vnodes_wedge[four],vnodes_wedge[five],vnodes_wedge[three]);
+                elem[ielem] = new CTetrahedron(vnodes_wedge[zero], vnodes_wedge[four], vnodes_wedge[five], vnodes_wedge[three]);
                 ielem++; nelem_tetra++;
               }
             }
+            
             ielem_div++;
             break;
           case PYRAMID:
@@ -897,10 +1011,43 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
                 bound_line >> vnodes_triangle[0]; bound_line >> vnodes_triangle[1]; bound_line >> vnodes_triangle[2];
                 bound[iMarker][ielem] = new CTriangle(vnodes_triangle[0],vnodes_triangle[1],vnodes_triangle[2],3);
                 ielem++; nelem_triangle_bound++; break;
+                
               case RECTANGLE:
+                
                 bound_line >> vnodes_quad[0]; bound_line >> vnodes_quad[1]; bound_line >> vnodes_quad[2]; bound_line >> vnodes_quad[3];
-                bound[iMarker][ielem] = new CRectangle(vnodes_quad[0],vnodes_quad[1],vnodes_quad[2],vnodes_quad[3],3);
-                ielem++; nelem_quad_bound++; break;
+                
+                if (!config->GetDivide_Element()) {
+                  
+                  bound[iMarker][ielem] = new CRectangle(vnodes_quad[0],vnodes_quad[1],vnodes_quad[2],vnodes_quad[3],3);
+                  ielem++; nelem_quad_bound++;
+                  
+                }
+                else {
+                  
+                  unsigned long index1, index2;
+                  bool division1 = false;
+                  index1 = min(vnodes_quad[0], vnodes_quad[2]);
+                  index2 = min(vnodes_quad[1], vnodes_quad[3]);
+                  if (index1 < index2) division1 = true;
+                  
+                  if (division1) {
+                    bound[iMarker][ielem] = new CTriangle(vnodes_quad[0], vnodes_quad[2], vnodes_quad[1], 3);
+                    ielem++; nelem_triangle_bound++;
+                    bound[iMarker][ielem] = new CTriangle(vnodes_quad[3], vnodes_quad[2], vnodes_quad[0], 3);
+                    ielem++; nelem_triangle_bound++;
+                  }
+                  else {
+                    bound[iMarker][ielem] = new CTriangle(vnodes_quad[2], vnodes_quad[1], vnodes_quad[3], 3);
+                    ielem++; nelem_triangle_bound++;
+                    bound[iMarker][ielem] = new CTriangle(vnodes_quad[1], vnodes_quad[0], vnodes_quad[3], 3);
+                    ielem++; nelem_triangle_bound++;
+                  }
+                  
+                }
+                
+                break;
+
+                
             }
           }
           nElem_Bound_Storage[iMarker] = nelem_edge_bound*3 + nelem_triangle_bound*4 + nelem_quad_bound*5;

@@ -2806,7 +2806,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 	cout << "Input mesh file name: " << Mesh_FileName << endl;
 
-	if (Divide_Element) cout << "Divide elements into triangles and tetrahedra." << endl;
+	if (Divide_Element) cout << "Divide grid elements into triangles and tetrahedra." << endl;
 
 	if (val_software == SU2_GPC) {
 		cout << "Input sensitivity file name: " << SurfAdjCoeff_FileName << "." << endl;

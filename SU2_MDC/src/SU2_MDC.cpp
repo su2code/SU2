@@ -381,8 +381,7 @@ int main(int argc, char *argv[]) {
 	if (rank == MASTER_NODE)
 		cout << "End and write output files." << endl;
 	
-	if (config[ZONE_0]->GetVisualize_Deformation() &&
-			(config[ZONE_0]->GetDesign_Variable(0) != NO_DEFORMATION)) {
+	if (config[ZONE_0]->GetVisualize_Deformation()) {
 		if(config[ZONE_0]->GetOutput_FileFormat() == PARAVIEW) {
 			if (size > 1) sprintf (buffer_char, "_%d.vtk", rank+1);
 			else sprintf (buffer_char, ".vtk");
