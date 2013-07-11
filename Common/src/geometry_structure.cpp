@@ -591,10 +591,14 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
         
         switch(VTK_Type) {
           case TRIANGLE:
+            
             elem_line >> vnodes_triangle[0]; elem_line >> vnodes_triangle[1]; elem_line >> vnodes_triangle[2];
             elem[ielem] = new CTriangle(vnodes_triangle[0],vnodes_triangle[1],vnodes_triangle[2],nDim);
-            ielem_div++; ielem++; nelem_triangle++; break;
+            ielem_div++; ielem++; nelem_triangle++;
+            break;
+            
           case RECTANGLE:
+            
             elem_line >> vnodes_quad[0]; elem_line >> vnodes_quad[1]; elem_line >> vnodes_quad[2]; elem_line >> vnodes_quad[3];
             if (!config->GetDivide_Element()) {
               elem[ielem] = new CRectangle(vnodes_quad[0],vnodes_quad[1],vnodes_quad[2],vnodes_quad[3],nDim);
@@ -606,21 +610,24 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
               ielem++; nelem_triangle++; }
             ielem_div++;
             break;
+            
           case TETRAHEDRON:
+            
             elem_line >> vnodes_tetra[0]; elem_line >> vnodes_tetra[1]; elem_line >> vnodes_tetra[2]; elem_line >> vnodes_tetra[3];
             elem[ielem] = new CTetrahedron(vnodes_tetra[0],vnodes_tetra[1],vnodes_tetra[2],vnodes_tetra[3]);
-            ielem_div++; ielem++; nelem_tetra++; break;
+            ielem_div++; ielem++; nelem_tetra++;
+            break;
+            
           case HEXAHEDRON:
+            
             elem_line >> vnodes_hexa[0]; elem_line >> vnodes_hexa[1]; elem_line >> vnodes_hexa[2];
             elem_line >> vnodes_hexa[3]; elem_line >> vnodes_hexa[4]; elem_line >> vnodes_hexa[5];
             elem_line >> vnodes_hexa[6]; elem_line >> vnodes_hexa[7];
             
             if (!config->GetDivide_Element()) {
-              
               elem[ielem] = new CHexahedron(vnodes_hexa[0], vnodes_hexa[1], vnodes_hexa[2], vnodes_hexa[3],
                                             vnodes_hexa[4], vnodes_hexa[5], vnodes_hexa[6], vnodes_hexa[7]);
               ielem++; nelem_hexa++;
-              
             }
             else {
               
@@ -727,7 +734,9 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
             }
             ielem_div++;
             break;
+            
           case WEDGE:
+            
             elem_line >> vnodes_wedge[0]; elem_line >> vnodes_wedge[1]; elem_line >> vnodes_wedge[2];
             elem_line >> vnodes_wedge[3]; elem_line >> vnodes_wedge[4]; elem_line >> vnodes_wedge[5];
             
@@ -748,16 +757,20 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
               }
               
               lookupindex = (CT_FromVTK_Prism[smallestNode] - 1);
-              zero  = IndirectionPrism[lookupindex][0]; one  = IndirectionPrism[lookupindex][1]; two  = IndirectionPrism[lookupindex][2];
-              three = IndirectionPrism[lookupindex][3]; four = IndirectionPrism[lookupindex][4]; five = IndirectionPrism[lookupindex][5];
+              zero  = IndirectionPrism[lookupindex][0];
+              one  = IndirectionPrism[lookupindex][1];
+              two  = IndirectionPrism[lookupindex][2];
+              three = IndirectionPrism[lookupindex][3];
+              four = IndirectionPrism[lookupindex][4];
+              five = IndirectionPrism[lookupindex][5];
               
               unsigned long index1, index2;
-              bool division1 = false;
+              bool division = false;
               index1 = min(vnodes_wedge[one], vnodes_wedge[five]);
               index2 = min(vnodes_wedge[two], vnodes_wedge[four]);
-              if (index1 < index2) division1 = true;
+              if (index1 < index2) division = true;
               
-              if (division1) {
+              if (division) {
                 elem[ielem] = new CTetrahedron(vnodes_wedge[zero], vnodes_wedge[one], vnodes_wedge[two], vnodes_wedge[five]);
                 ielem++; nelem_tetra++;
                 elem[ielem] = new CTetrahedron(vnodes_wedge[zero], vnodes_wedge[one], vnodes_wedge[five], vnodes_wedge[four]);
@@ -778,17 +791,39 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
             ielem_div++;
             break;
           case PYRAMID:
+            
             elem_line >> vnodes_pyramid[0]; elem_line >> vnodes_pyramid[1]; elem_line >> vnodes_pyramid[2];
             elem_line >> vnodes_pyramid[3]; elem_line >> vnodes_pyramid[4];
+            
             if (!config->GetDivide_Element()) {
+              
               elem[ielem] = new CPyramid(vnodes_pyramid[0],vnodes_pyramid[1],vnodes_pyramid[2],vnodes_pyramid[3],vnodes_pyramid[4]);
               ielem++; nelem_pyramid++;
+              
             }
             else {
-              elem[ielem] = new CTetrahedron(vnodes_pyramid[0],vnodes_pyramid[1],vnodes_pyramid[2],vnodes_pyramid[4]);
-              ielem++; nelem_tetra++;
-              elem[ielem] = new CTetrahedron(vnodes_pyramid[0],vnodes_pyramid[2],vnodes_pyramid[3],vnodes_pyramid[4]);
-              ielem++; nelem_tetra++; }
+              
+              unsigned long index1, index2;
+              bool division = false;
+              index1 = min(vnodes_pyramid[0], vnodes_pyramid[2]);
+              index2 = min(vnodes_pyramid[1], vnodes_pyramid[3]);
+              if (index1 < index2) division = true;
+              
+              if (division) {
+                elem[ielem] = new CTetrahedron(vnodes_pyramid[0], vnodes_pyramid[1], vnodes_pyramid[2], vnodes_pyramid[4]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_pyramid[0], vnodes_pyramid[2], vnodes_pyramid[3], vnodes_pyramid[4]);
+                ielem++; nelem_tetra++;
+              }
+              else {
+                elem[ielem] = new CTetrahedron(vnodes_pyramid[1], vnodes_pyramid[2], vnodes_pyramid[3], vnodes_pyramid[4]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_pyramid[1], vnodes_pyramid[3], vnodes_pyramid[0], vnodes_pyramid[4]);
+                ielem++; nelem_tetra++;
+              }
+              
+            }
+            
             ielem_div++;
             break;
         }
