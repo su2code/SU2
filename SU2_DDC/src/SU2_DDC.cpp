@@ -139,10 +139,18 @@ int main(int argc, char *argv[]) {
         
         /*--- Write the FFD information (3D problems)---*/
         if (domain->GetnDim() == 3) {
-            
-            if (rank == MASTER_NODE)
+          
+#ifndef NO_MPI
+          MPI::COMM_WORLD.Barrier();
+#endif
+      
+          if (rank == MASTER_NODE)
                 cout << endl <<"---------------------- Read and write FFD information -------------------" << endl;
-            
+      
+#ifndef NO_MPI
+          MPI::COMM_WORLD.Barrier();
+#endif
+          
             chunk = new CFreeFormChunk*[nChunk];
             surface_mov = new CSurfaceMovement();
             surface_mov->ReadFFDInfo(domain, config, chunk, config->GetMesh_FileName(), false);
