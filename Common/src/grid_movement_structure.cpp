@@ -495,101 +495,101 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
         AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
 			}
       
-      /*--- Divide hexehedra into 5 tetrahedra ---*/
-			if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON) {
-
-				/*--- Tetrahedron 1, nodes: [0,1,2,5] ---*/
-				Point_0 = geometry->elem[iElem]->GetNode(0);
-				Point_1 = geometry->elem[iElem]->GetNode(1);
-				Point_2 = geometry->elem[iElem]->GetNode(2);
-				Point_3 = geometry->elem[iElem]->GetNode(5);
-        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        
-				/*--- Tetrahedron 2, nodes: [0,2,7,5] ---*/
-				Point_0 = geometry->elem[iElem]->GetNode(0);
-				Point_1 = geometry->elem[iElem]->GetNode(2);
-				Point_2 = geometry->elem[iElem]->GetNode(7);
-				Point_3 = geometry->elem[iElem]->GetNode(5);
-        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        
-				/*--- Tetrahedron 3, nodes: [0,2,3,7] ---*/
-				Point_0 = geometry->elem[iElem]->GetNode(0);
-				Point_1 = geometry->elem[iElem]->GetNode(7);
-				Point_2 = geometry->elem[iElem]->GetNode(2);
-				Point_3 = geometry->elem[iElem]->GetNode(3);
-        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        
-				/*--- Tetrahedron 4, nodes: [0,5,7,4] ---*/
-				Point_0 = geometry->elem[iElem]->GetNode(4);
-				Point_1 = geometry->elem[iElem]->GetNode(7);
-				Point_2 = geometry->elem[iElem]->GetNode(5);
-				Point_3 = geometry->elem[iElem]->GetNode(0);
-        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        
-				/*--- Tetrahedron 5, nodes: [2,7,5,6] ---*/
-				Point_0 = geometry->elem[iElem]->GetNode(2);
-				Point_1 = geometry->elem[iElem]->GetNode(6);
-				Point_2 = geometry->elem[iElem]->GetNode(5);
-				Point_3 = geometry->elem[iElem]->GetNode(7);
-        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        
-			}
-
-      /*--- Divide prisms into 3 tetrahedra ---*/
-      if (geometry->elem[iElem]->GetVTK_Type() == WEDGE) {
-        
-        /*--- Tetrahedron 1, nodes: [2,1,0,4] ---*/
-				Point_0 = geometry->elem[iElem]->GetNode(2);
-				Point_1 = geometry->elem[iElem]->GetNode(1);
-				Point_2 = geometry->elem[iElem]->GetNode(0);
-				Point_3 = geometry->elem[iElem]->GetNode(4);
-        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        
-				/*--- Tetrahedron 2, nodes: [3,4,5,0]  ---*/
-				Point_0 = geometry->elem[iElem]->GetNode(3);
-				Point_1 = geometry->elem[iElem]->GetNode(4);
-				Point_2 = geometry->elem[iElem]->GetNode(5);
-				Point_3 = geometry->elem[iElem]->GetNode(0);
-        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        
-        /*--- Tetrahedron 2, nodes: [5,2,0,4]  ---*/
-				Point_0 = geometry->elem[iElem]->GetNode(5);
-				Point_1 = geometry->elem[iElem]->GetNode(2);
-				Point_2 = geometry->elem[iElem]->GetNode(0);
-				Point_3 = geometry->elem[iElem]->GetNode(4);
-        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        
-        
-      }
-    
-      /*--- Divide pyramids into 2 tetrahedra ---*/
-      if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID) {
-      
-        /*--- Tetrahedron 1, nodes: [0,1,2,4] ---*/
-				Point_0 = geometry->elem[iElem]->GetNode(0);
-				Point_1 = geometry->elem[iElem]->GetNode(1);
-				Point_2 = geometry->elem[iElem]->GetNode(2);
-				Point_3 = geometry->elem[iElem]->GetNode(4);
-        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        
-				/*--- Tetrahedron 2, nodes: [0,2,3,4]  ---*/
-				Point_0 = geometry->elem[iElem]->GetNode(0);
-				Point_1 = geometry->elem[iElem]->GetNode(2);
-				Point_2 = geometry->elem[iElem]->GetNode(3);
-				Point_3 = geometry->elem[iElem]->GetNode(4);
-        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        
-      }
+//      /*--- Divide hexehedra into 5 tetrahedra ---*/
+//			if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON) {
+//
+//				/*--- Tetrahedron 1, nodes: [0,1,2,5] ---*/
+//				Point_0 = geometry->elem[iElem]->GetNode(0);
+//				Point_1 = geometry->elem[iElem]->GetNode(1);
+//				Point_2 = geometry->elem[iElem]->GetNode(2);
+//				Point_3 = geometry->elem[iElem]->GetNode(5);
+//        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        
+//				/*--- Tetrahedron 2, nodes: [0,2,7,5] ---*/
+//				Point_0 = geometry->elem[iElem]->GetNode(0);
+//				Point_1 = geometry->elem[iElem]->GetNode(2);
+//				Point_2 = geometry->elem[iElem]->GetNode(7);
+//				Point_3 = geometry->elem[iElem]->GetNode(5);
+//        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        
+//				/*--- Tetrahedron 3, nodes: [0,2,3,7] ---*/
+//				Point_0 = geometry->elem[iElem]->GetNode(0);
+//				Point_1 = geometry->elem[iElem]->GetNode(7);
+//				Point_2 = geometry->elem[iElem]->GetNode(2);
+//				Point_3 = geometry->elem[iElem]->GetNode(3);
+//        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        
+//				/*--- Tetrahedron 4, nodes: [0,5,7,4] ---*/
+//				Point_0 = geometry->elem[iElem]->GetNode(4);
+//				Point_1 = geometry->elem[iElem]->GetNode(7);
+//				Point_2 = geometry->elem[iElem]->GetNode(5);
+//				Point_3 = geometry->elem[iElem]->GetNode(0);
+//        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        
+//				/*--- Tetrahedron 5, nodes: [2,7,5,6] ---*/
+//				Point_0 = geometry->elem[iElem]->GetNode(2);
+//				Point_1 = geometry->elem[iElem]->GetNode(6);
+//				Point_2 = geometry->elem[iElem]->GetNode(5);
+//				Point_3 = geometry->elem[iElem]->GetNode(7);
+//        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        
+//			}
+//
+//      /*--- Divide prisms into 3 tetrahedra ---*/
+//      if (geometry->elem[iElem]->GetVTK_Type() == WEDGE) {
+//        
+//        /*--- Tetrahedron 1, nodes: [2,1,0,4] ---*/
+//				Point_0 = geometry->elem[iElem]->GetNode(2);
+//				Point_1 = geometry->elem[iElem]->GetNode(1);
+//				Point_2 = geometry->elem[iElem]->GetNode(0);
+//				Point_3 = geometry->elem[iElem]->GetNode(4);
+//        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        
+//				/*--- Tetrahedron 2, nodes: [3,4,5,0]  ---*/
+//				Point_0 = geometry->elem[iElem]->GetNode(3);
+//				Point_1 = geometry->elem[iElem]->GetNode(4);
+//				Point_2 = geometry->elem[iElem]->GetNode(5);
+//				Point_3 = geometry->elem[iElem]->GetNode(0);
+//        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        
+//        /*--- Tetrahedron 2, nodes: [5,2,0,4]  ---*/
+//				Point_0 = geometry->elem[iElem]->GetNode(5);
+//				Point_1 = geometry->elem[iElem]->GetNode(2);
+//				Point_2 = geometry->elem[iElem]->GetNode(0);
+//				Point_3 = geometry->elem[iElem]->GetNode(4);
+//        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        
+//        
+//      }
+//    
+//      /*--- Divide pyramids into 2 tetrahedra ---*/
+//      if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID) {
+//      
+//        /*--- Tetrahedron 1, nodes: [0,1,2,4] ---*/
+//				Point_0 = geometry->elem[iElem]->GetNode(0);
+//				Point_1 = geometry->elem[iElem]->GetNode(1);
+//				Point_2 = geometry->elem[iElem]->GetNode(2);
+//				Point_3 = geometry->elem[iElem]->GetNode(4);
+//        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        
+//				/*--- Tetrahedron 2, nodes: [0,2,3,4]  ---*/
+//				Point_0 = geometry->elem[iElem]->GetNode(0);
+//				Point_1 = geometry->elem[iElem]->GetNode(2);
+//				Point_2 = geometry->elem[iElem]->GetNode(3);
+//				Point_3 = geometry->elem[iElem]->GetNode(4);
+//        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        
+//      }
     
     }
 	}
@@ -1244,7 +1244,7 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 		}
 	}
   
-	/*--- Set the known displacements, note that some points of the moving surfaces 
+	/*--- Set the known displacements, note that some points of the moving surfaces
    could be on on the symmetry plane, we should specify DeleteValsRowi again (just in case) ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 		if (config->GetMarker_All_Moving(iMarker) == YES)  {
@@ -1255,6 +1255,8 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 					total_index = iPoint*nDim + iDim;
 					rhs[total_index]  = VarCoord[iDim] * VarIncrement;
 					usol[total_index] = 0.0;
+          if (config->GetKind_GridDef_Method() == SPRING)
+            usol[total_index] = VarCoord[iDim] * VarIncrement;
           StiffMatrix.DeleteValsRowi(total_index);
 				}
 			}
@@ -1384,81 +1386,79 @@ void CVolumetricMovement::FEAMethod(CGeometry *geometry, CConfig *config, bool U
    equations hold only for small deformation. ---*/
   
   for (iFEA = 0; iFEA < config->GetFEA_Iter(); iFEA++) {
-  
-	StiffMatrix.SetValZero();
-	
-  /*--- Compute the stiffness matrix entries for all elements in the
-   mesh using a finite element method discretization of the linear
-   elasticity equations. Transfer element stiffnesses to point-to-point. ---*/
-  
-	MinLength = SetFEAMethodContributions_Elem(geometry);
-	
-  /*--- Print a warning if error tolerance is larger than min length ---*/
-	NumError = config->GetGridDef_Error();
-	if (NumError > MinLength) {
-    cout << "Warning: The error tol. is greater than the minimum edge length.\n" << endl;
-    cout << "NumError: " << NumError <<"." << "  MinLength: " << MinLength << "." << endl;
-  }
-  
-  /*--- Initialize the solution and r.h.s. vectors to zero ---*/
     
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-		for (iDim = 0; iDim < nDim; iDim++) {
-			total_index = iPoint*nDim + iDim;
-			rhs[total_index]  = 0.0;
-      usol[total_index] = 0.0;
-		}
-  }
-	
-  /*--- Set the boundary displacements (as prescribed by the design variable
-   perturbations controlling the surface shape) as a Dirichlet BC. ---*/
-  
-	SetBoundaryDisplacements(geometry, config);
-  
-  /*--- Fix the location of any points in the domain, if requested. ---*/
-  
-	if (config->GetHold_GridFixed())
-		SetDomainDisplacements(geometry, config);
-  
-  /*--- Solve the linear system (Krylov subspace methods) ---*/
-  
-  CSysVector rhs_vec((const unsigned int)geometry->GetnPoint(),
-                     (const unsigned int)geometry->GetnPointDomain(), nDim, rhs);
-  CSysVector sol_vec((const unsigned int)geometry->GetnPoint(),
-                     (const unsigned int)geometry->GetnPointDomain(), nDim, usol);
-  
-  CMatrixVectorProduct* mat_vec = new CSparseMatrixVectorProduct(StiffMatrix);
-  CSolutionSendReceive* sol_mpi = new CSparseMatrixSolMPI(StiffMatrix, geometry, config);
-  
-  CPreconditioner* precond = NULL;
-  StiffMatrix.BuildJacobiPreconditioner();
-  precond = new CJacobiPreconditioner(StiffMatrix);
-  
-  CSysSolve system;
-//  IterLinSol = system.ConjugateGradient(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, NumError, 200, true);
-//    IterLinSol = system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, NumError, 300, true);
-    IterLinSol = system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, NumError, 300, true);
-  
-  /*--- Copy the solution to the array ---*/
-  sol_vec.CopyToArray(usol);
-  
-  /*--- Deallocate memory needed by the Krylov linear solver ---*/
-  
-  delete mat_vec;
-  delete precond;
-  delete sol_mpi;
-  
-  /*--- Update the grid coordinates for all nodes using the solution
-   of the linear system (usol contains the x, y, z displacements). ---*/
-  
-  UpdateGridCoord(geometry, config);
+    StiffMatrix.SetValZero();
+    
+    /*--- Compute the stiffness matrix entries for all elements in the
+     mesh using a finite element method discretization of the linear
+     elasticity equations. Transfer element stiffnesses to point-to-point. ---*/
+    
+    MinLength = SetFEAMethodContributions_Elem(geometry);
+    
+    /*--- Print a warning if error tolerance is larger than min length ---*/
+    NumError = config->GetGridDef_Error();
+    if (NumError > MinLength) {
+      cout << "Warning: The error tol. is greater than the minimum edge length.\n" << endl;
+      cout << "NumError: " << NumError <<"." << "  MinLength: " << MinLength << "." << endl;
+    }
+    
+    /*--- Initialize the solution and r.h.s. vectors to zero ---*/
+    
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        total_index = iPoint*nDim + iDim;
+        rhs[total_index]  = 0.0;
+        usol[total_index] = 0.0;
+      }
+    }
+    
+    /*--- Set the boundary displacements (as prescribed by the design variable
+     perturbations controlling the surface shape) as a Dirichlet BC. ---*/
+    
+    SetBoundaryDisplacements(geometry, config);
+    
+    /*--- Fix the location of any points in the domain, if requested. ---*/
+    
+    if (config->GetHold_GridFixed())
+      SetDomainDisplacements(geometry, config);
+    
+    /*--- Solve the linear system (Krylov subspace methods) ---*/
+    
+    CSysVector rhs_vec((const unsigned int)geometry->GetnPoint(),
+                       (const unsigned int)geometry->GetnPointDomain(), nDim, rhs);
+    CSysVector sol_vec((const unsigned int)geometry->GetnPoint(),
+                       (const unsigned int)geometry->GetnPointDomain(), nDim, usol);
+    
+    CMatrixVectorProduct* mat_vec = new CSparseMatrixVectorProduct(StiffMatrix);
+    CSolutionSendReceive* sol_mpi = new CSparseMatrixSolMPI(StiffMatrix, geometry, config);
+    
+    CPreconditioner* precond = NULL;
+    StiffMatrix.BuildJacobiPreconditioner();
+    precond = new CJacobiPreconditioner(StiffMatrix);
+    
+    CSysSolve system;
+    IterLinSol = system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, NumError, 500, true);
+    
+    /*--- Copy the solution to the array ---*/
+    sol_vec.CopyToArray(usol);
+    
+    /*--- Deallocate memory needed by the Krylov linear solver ---*/
+    
+    delete mat_vec;
+    delete precond;
+    delete sol_mpi;
+    
+    /*--- Update the grid coordinates for all nodes using the solution
+     of the linear system (usol contains the x, y, z displacements). ---*/
+    
+    UpdateGridCoord(geometry, config);
     
     if (UpdateGeo) {
       geometry->SetCG();
       geometry->SetControlVolume(config, UPDATE);
       geometry->SetBoundControlVolume(config, UPDATE);
     }
-  
+    
   }
   
   /*--- Perform a grid quality check after deformation. ---*/
