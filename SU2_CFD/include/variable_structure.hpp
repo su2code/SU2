@@ -3434,6 +3434,455 @@ public:
 	double *GetIntBoundary_Jump(void);
 };
 
+/*!
+ * \class CEulerVariable
+ * \brief Main class for defining the variables of the Euler's solver.
+ * \ingroup Euler_Equations
+ * \author F. Palacios.
+ * \version 2.0.5
+ */
+class CTNE2EulerVariable : public CVariable {
+protected:
+	double Velocity2;			/*!< \brief Square of the velocity vector. */
+	double *TS_Source;		/*!< \brief Time spectral source term. */
+	double Precond_Beta;	/*!< \brief Low Mach number preconditioner value, Beta. */
+	double *B_Field;		/*! < \brief Magnetic field value */
+  
+	/*--- Primitive variable definition ---*/
+	double *Primitive;	/*!< \brief Primitive variables (T,vx,vy,vz,P,rho,h,c) in compressible flows. */
+	double **Gradient_Primitive;	/*!< \brief Gradient of the primitive variables (T,vx,vy,vz,P,rho). */
+  double *Limiter_Primitive;    /*!< \brief Limiter of the primitive variables (T,vx,vy,vz,P,rho). */
+  
+public:
+  
+	/*!
+	 * \brief Constructor of the class.
+	 */
+	CTNE2EulerVariable(void);
+  
+	/*!
+	 * \overload
+	 * \param[in] val_density - Value of the flow density (initialization value).
+	 * \param[in] val_velocity - Value of the flow velocity (initialization value).
+	 * \param[in] val_energy - Value of the flow energy (initialization value).
+	 * \param[in] val_ndim - Number of dimensions of the problem.
+	 * \param[in] val_nvar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CTNE2EulerVariable(double val_density, double *val_velocity, double val_energy, unsigned short val_ndim,
+                 unsigned short val_nvar, CConfig *config);
+  
+	/*!
+	 * \overload
+	 * \param[in] val_solution - Pointer to the flow value (initialization value).
+	 * \param[in] val_ndim - Number of dimensions of the problem.
+	 * \param[in] val_nvar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CTNE2EulerVariable(double *val_solution, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+  
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	virtual ~CTNE2EulerVariable(void);
+  
+	/*!
+	 * \brief Set to zero the gradient of the primitive variables.
+	 */
+	void SetGradient_PrimitiveZero(unsigned short val_primvar);
+  
+	/*!
+	 * \brief Add <i>val_value</i> to the gradient of the primitive variables.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_dim - Index of the dimension.
+	 * \param[in] val_value - Value to add to the gradient of the primitive variables.
+	 */
+	void AddGradient_Primitive(unsigned short val_var, unsigned short val_dim, double val_value);
+  
+	/*!
+	 * \brief Subtract <i>val_value</i> to the gradient of the primitive variables.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_dim - Index of the dimension.
+	 * \param[in] val_value - Value to subtract to the gradient of the primitive variables.
+	 */
+	void SubtractGradient_Primitive(unsigned short val_var, unsigned short val_dim, double val_value);
+  
+	/*!
+	 * \brief Get the value of the primitive variables gradient.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_dim - Index of the dimension.
+	 * \return Value of the primitive variables gradient.
+	 */
+	double GetGradient_Primitive(unsigned short val_var, unsigned short val_dim);
+  
+	/*!
+	 * \brief Set the gradient of the primitive variables.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_dim - Index of the dimension.
+	 * \param[in] val_value - Value of the gradient.
+	 */
+	void SetGradient_Primitive(unsigned short val_var, unsigned short val_dim, double val_value);
+  
+	/*!
+	 * \brief Get the value of the primitive variables gradient.
+	 * \return Value of the primitive variables gradient.
+	 */
+	double **GetGradient_Primitive(void);
+  
+	/*!
+	 * \brief Set the value of the velocity*velocity for the incompressible solver.
+	 */
+	void SetVelocityInc2(void);
+  
+	/*!
+	 * \brief Set the value of the pressure for the incompressible solver.
+	 */
+	void SetPressureInc(double val_pressure);
+  
+	/*!
+	 * \brief Set the value of the velocity*velocity.
+	 */
+	void SetVelocity2(void);
+  
+	/*!
+	 * \brief Set the value of the pressure.
+	 */
+	bool SetPressure(double Gamma);
+  
+	/*!
+	 * \brief Set the value of the speed of the sound.
+	 * \param[in] Gamma - Value of Gamma.
+	 */
+	bool SetSoundSpeed(double Gamma);
+  
+	/*!
+	 * \brief Set the value of the enthalpy.
+	 */
+	void SetEnthalpy(void);
+	
+	/*!
+	 * \brief Set all the primitive variables for compressible flows.
+	 */
+	void SetPrimVar_Compressible(double Gamma, double Gas_Constant);
+	
+	/*!
+	 * \brief Set all the primitive variables for incompressible flows.
+	 */
+	void SetPrimVar_Incompressible(double Density_Inf, double levelset, CConfig *config);
+	
+	/*!
+	 * \brief Get the primitive variables.
+	 * \param[in] val_var - Index of the variable.
+	 * \return Value of the primitive variable for the index <i>val_var</i>.
+	 */
+	double GetPrimVar(unsigned short val_var);
+  
+  /*!
+	 * \brief Set the value of the primitive variables.
+	 * \param[in] val_var - Index of the variable.
+   * \param[in] val_var - Index of the variable.
+	 * \return Set the value of the primitive variable for the index <i>val_var</i>.
+	 */
+	void SetPrimVar(unsigned short val_var, double val_prim);
+  
+  /*!
+	 * \brief Set the value of the primitive variables.
+	 * \param[in] val_prim - Primitive variables.
+	 * \return Set the value of the primitive variable for the index <i>val_var</i>.
+	 */
+	void SetPrimVar(double *val_prim);
+  
+	/*!
+	 * \brief Get the primitive variables of the problem.
+	 * \return Pointer to the primitive variable vector.
+	 */
+	double *GetPrimVar(void);
+	
+	/*!
+	 * \brief Set the value of the density for the incompressible flows.
+	 */
+	void SetDensityInc(double val_densityinc);
+  
+	/*!
+	 * \brief Set the value of the beta coeffient for incompressible flows.
+	 */
+	void SetBetaInc2(double val_betainc2);
+  
+	/*!
+	 * \brief Set the value of the temperature.
+	 * \param[in] Gas_Constant - Value of Gas Constant
+	 */
+	bool SetTemperature(double Gas_Constant);
+  
+	/*!
+	 * \brief Get the norm 2 of the velocity.
+	 * \return Norm 2 of the velocity vector.
+	 */
+	double GetVelocity2(void);
+  
+	/*!
+	 * \brief Get the flow pressure.
+	 * \return Value of the flow pressure.
+	 */
+	double GetPressure(bool val_incomp);
+	/*!
+	 * \brief Get the speed of the sound.
+	 * \return Value of speed of the sound.
+	 */
+	double GetSoundSpeed(void);
+  
+	/*!
+	 * \brief Get the value of density for the incompressible flow
+	 * \return Value of beta squared.
+	 */
+	double GetDensityInc(void);
+  
+	/*!
+	 * \brief Get the value of beta squared for the incompressible flow
+	 * \return Value of beta squared.
+	 */
+	double GetBetaInc2(void);
+  
+	/*!
+	 * \brief Get the enthalpy of the flow.
+	 * \return Value of the enthalpy of the flow.
+	 */
+	double GetEnthalpy(void);
+  
+	/*!
+	 * \brief Get the density of the flow.
+	 * \return Value of the density of the flow.
+	 */
+	double GetDensity(void);
+  
+	/*!
+	 * \brief Get the energy of the flow.
+	 * \return Value of the energy of the flow.
+	 */
+	double GetEnergy(void);
+  
+	/*!
+	 * \brief Get the temperature of the flow.
+	 * \return Value of the temperature of the flow.
+	 */
+	double GetTemperature(void);
+  
+	/*!
+	 * \brief Get the velocity of the flow.
+	 * \param[in] val_dim - Index of the dimension.
+	 * \return Value of the velocity for the dimension <i>val_dim</i>.
+	 */
+	double GetVelocity(unsigned short val_dim, bool val_incomp);
+  
+	/*!
+	 * \brief Get the projected velocity in a unitary vector direction (compressible solver).
+	 * \param[in] val_vector - Direction of projection.
+	 * \return Value of the projected velocity.
+	 */
+	double GetProjVel(double *val_vector);
+  
+	/*!
+	 * \brief Get the projected velocity in a unitary vector direction (incompressible solver).
+	 * \param[in] val_vector - Direction of projection.
+	 * \return Value of the projected velocity.
+	 */
+	double GetProjVelInc(double *val_vector);
+  
+	/*!
+	 * \brief Set the velocity vector from the solution.
+	 * \param[in] val_velocity - Pointer to the velocity.
+	 */
+	void SetVelocity(double *val_velocity, bool val_incomp);
+  
+	/*!
+	 * \brief Set the velocity vector from the old solution.
+	 * \param[in] val_velocity - Pointer to the velocity.
+	 */
+	void SetVelocity_Old(double *val_velocity, bool val_incomp);
+  
+	/*!
+	 * \brief Set the time spectral source term.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_solution - Value of the time spectral source term. for the index <i>val_var</i>.
+	 */
+	void SetTimeSpectral_Source(unsigned short val_var, double val_source);
+  
+	/*!
+	 * \brief Get the time spectral source term.
+	 * \param[in] val_var - Index of the variable.
+	 * \return Value of the time spectral source term for the index <i>val_var</i>.
+	 */
+	double GetTimeSpectral_Source(unsigned short val_var);
+  
+	/*!
+	 * \brief Get the value of the preconditioner Beta.
+	 * \return Value of the low Mach preconditioner variable Beta
+	 */
+	double GetPreconditioner_Beta();
+  
+	/*!
+	 * \brief Set the value of the preconditioner Beta.
+	 * \param[in] Value of the low Mach preconditioner variable Beta
+	 */
+	void SetPreconditioner_Beta(double val_Beta);
+  
+	/*!
+	 * \brief Get the value of the magnetic field
+	 * \param[out] Value of the magnetic field
+	 */
+	double* GetMagneticField();
+  
+	/*!
+	 * \brief Set the value of the magnetic field
+	 * \param[in] Value of the magnetic field
+	 */
+	void SetMagneticField(double* val_B);
+};
+
+/*!
+ * \class CNSVariable
+ * \brief Main class for defining the variables of the Navier-Stokes' solver.
+ * \ingroup Navier_Stokes_Equations
+ * \author F. Palacios.
+ * \version 2.0.5
+ */
+class CTNE2NSVariable : public CTNE2EulerVariable {
+private:
+	double Prandtl_Lam;       /*!< \brief Laminar Prandtl number. */
+	double Prandtl_Turb;      /*!< \brief Turbulent Prandtl number. */
+	double Temperature_Ref;   /*!< \brief Reference temperature of the fluid. */
+	double Viscosity_Ref;     /*!< \brief Reference viscosity of the fluid. */
+	double Viscosity_Inf;     /*!< \brief Viscosity of the fluid at the infinity. */
+	double LaminarViscosity;	/*!< \brief Viscosity of the fluid. */
+	double LaminarViscosityInc;	/*!< \brief Viscosity of the fluid (incompressible flows). */
+	double EddyViscosity;		/*!< \brief Eddy viscosity of the fluid. */
+	double Vorticity[3];		/*!< \brief Vorticity of the fluid. */
+	double StrainMag;           /*!< \brief Magnitude of rate of strain tensor. */
+public:
+  
+	/*!
+	 * \brief Constructor of the class.
+	 */
+	CTNE2NSVariable(void);
+  
+	/*!
+	 * \overload
+	 * \param[in] val_density - Value of the flow density (initialization value).
+	 * \param[in] val_velocity - Value of the flow velocity (initialization value).
+	 * \param[in] val_energy - Value of the flow energy (initialization value).
+	 * \param[in] val_ndim - Number of dimensions of the problem.
+	 * \param[in] val_nvar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CTNE2NSVariable(double val_density, double *val_velocity,
+              double val_energy, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+  
+	/*!
+	 * \overload
+	 * \param[in] val_solution - Pointer to the flow value (initialization value).
+	 * \param[in] val_ndim - Number of dimensions of the problem.
+	 * \param[in] val_nvar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CTNE2NSVariable(double *val_solution, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+  
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CTNE2NSVariable(void);
+  
+	/*!
+	 * \brief Set the laminar viscosity.
+	 */
+	void SetLaminarViscosity();
+  
+	/*!
+	 * \overload
+	 * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
+	 */
+	void SetLaminarViscosity(double val_laminar_viscosity);
+  
+	/*!
+	 * \overload
+	 * \param[in] val_laminar_viscosity_inc - Value of the laminar viscosity (incompressible flows).
+	 */
+	void SetLaminarViscosityInc(double val_laminar_viscosity_inc);
+  
+	/*!
+	 * \brief Set the vorticity value.
+	 */
+	void SetVorticity(void);
+  
+	/*!
+	 * \brief Set the rate of strain magnitude.
+	 */
+	void SetStrainMag(void);
+  
+	/*!
+	 * \brief Set the eddy viscosity.
+	 * \param[in] val_Kind_Turb_Model - Kind of turbulence model.
+	 * \param[in] Turb_Solution - Solution of the turbulence model.
+	 */
+	void SetEddyViscosity(unsigned short val_Kind_Turb_Model, CVariable *Turb_Solution);
+  
+	/*!
+	 * \overload
+	 * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
+	 */
+	void SetEddyViscosity(double val_eddy_viscosity);
+  
+	/*!
+	 * \brief Get the laminar viscosity of the flow.
+	 * \return Value of the laminar viscosity of the flow.
+	 */
+	double GetLaminarViscosity(void);
+  
+	/*!
+	 * \brief Get the laminar viscosity of the incompressible flow.
+	 * \return Value of the laminar viscosity of the incompressible flow.
+	 */
+	double GetLaminarViscosityInc(void);
+  
+	/*!
+	 * \brief Get the eddy viscosity of the flow.
+	 * \return The eddy viscosity of the flow.
+	 */
+	double GetEddyViscosity(void);
+  
+	/*!
+	 * \brief Set the temperature at the wall
+	 */
+	void SetWallTemperature(double temperature_wall);
+  
+	/*!
+	 * \brief Get the value of the vorticity.
+	 * \param[in] val_dim - Index of the dimension.
+	 * \return Value of the vorticity.
+	 */
+	double GetVorticity(unsigned short val_dim);
+  
+	/*!
+	 * \brief Get the value of the magnitude of rate of strain.
+	 * \return Value of the rate of strain magnitude.
+	 */
+	double GetStrainMag(void);
+  
+	/*!
+	 * \brief Set the value of pressure.
+	 */
+	bool SetPressure(double Gamma, double turb_ke);
+	
+	/*!
+	 * \brief Set all the primitive variables for compressible flows
+	 */
+	void SetPrimVar_Compressible(double Gamma, double Gas_Constant, double turb_ke);
+	
+	/*!
+	 * \brief Set all the primitive variables for incompressible flows
+	 */
+	void SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double turb_ke, double levelset, CConfig *config);
+};
+
 /*! 
  * \class CTemplateVariable
  * \brief Main class for defining the variables of the potential solver.

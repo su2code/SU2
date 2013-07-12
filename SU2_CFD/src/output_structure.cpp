@@ -4371,6 +4371,8 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
 	bool fea = (config[val_iZone]->GetKind_Solver() == LINEAR_ELASTICITY);
 	bool plasma = ((config[val_iZone]->GetKind_Solver() == PLASMA_EULER) || (config[val_iZone]->GetKind_Solver() == PLASMA_NAVIER_STOKES) ||
                  (config[val_iZone]->GetKind_Solver() == ADJ_PLASMA_EULER) || (config[val_iZone]->GetKind_Solver() == ADJ_PLASMA_NAVIER_STOKES));
+	bool TNE2 = ((config[val_iZone]->GetKind_Solver() == TNE2_EULER) || (config[val_iZone]->GetKind_Solver() == TNE2_NAVIER_STOKES) ||
+                 (config[val_iZone]->GetKind_Solver() == ADJ_TNE2_EULER) || (config[val_iZone]->GetKind_Solver() == ADJ_TNE2_NAVIER_STOKES));
   
 	/*--- Initialize variables to store information from all domains (direct solution) ---*/
   double Total_CLift = 0.0, Total_CDrag = 0.0, Total_CSideForce = 0.0, Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0,
@@ -4382,8 +4384,8 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
   double Total_Sens_Press = 0.0, Total_Sens_Temp = 0.0;
   
   /*--- Residual arrays ---*/
-  double *residual_flow = NULL, *residual_turbulent = NULL, *residual_transition = NULL, *residual_levelset = NULL, *residual_plasma = NULL;
-  double *residual_adjflow = NULL, *residual_adjturbulent = NULL, *residual_adjlevelset = NULL, *residual_adjplasma = NULL;
+  double *residual_flow = NULL, *residual_TNE2 = NULL, *residual_turbulent = NULL, *residual_transition = NULL, *residual_levelset = NULL, *residual_plasma = NULL;
+  double *residual_adjflow = NULL, *residual_adjTNE2 = NULL, *residual_adjturbulent = NULL, *residual_adjlevelset = NULL, *residual_adjplasma = NULL;
   double *residual_wave = NULL; double *residual_fea = NULL;
   
   /*--- Forces arrays ---*/
@@ -4391,11 +4393,12 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
   unsigned long *sbuf_time = NULL, *rbuf_time = NULL;
   
   /*--- Initialize number of variables ---*/
-  unsigned short nVar_Flow = 0, nVar_LevelSet = 0, nVar_Turb = 0, nVar_Trans = 0, nVar_Wave = 0, nVar_FEA = 0, nVar_Plasma = 0,
-  nVar_AdjFlow = 0, nVar_AdjPlasma = 0, nVar_AdjLevelSet = 0, nVar_AdjTurb = 0, nVar_Force = 0, nVar_Time = 0;
+  unsigned short nVar_Flow = 0, nVar_TNE2 = 0, nVar_LevelSet = 0, nVar_Turb = 0, nVar_Trans = 0, nVar_Wave = 0, nVar_FEA = 0, nVar_Plasma = 0,
+  nVar_AdjFlow = 0, nVar_AdjTNE2 = 0, nVar_AdjPlasma = 0, nVar_AdjLevelSet = 0, nVar_AdjTurb = 0, nVar_Force = 0, nVar_Time = 0;
   
   /*--- Direct problem variables ---*/
   if (compressible) nVar_Flow = nDim+2; else nVar_Flow = nDim+1;
+  if (TNE2) nVar_TNE2 = nDim+2;
   if (turbulent)
     switch (config[val_iZone]->GetKind_Turb_Model()){
       case SA:	nVar_Turb = 1; break;

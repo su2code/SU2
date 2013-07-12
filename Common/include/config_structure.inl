@@ -440,6 +440,8 @@ inline unsigned short CConfig::GetKind_Upwind(void) { return Kind_Upwind; }
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_Flow(void) { return Kind_TimeIntScheme_Flow; }
 
+inline unsigned short CConfig::GetKind_TimeIntScheme_TNE2(void) { return Kind_TimeIntScheme_TNE2; }
+
 inline unsigned short CConfig::GetKind_TimeIntScheme_Plasma(void) { return Kind_TimeIntScheme_Plasma; }
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_AdjPlasma(void) { return Kind_TimeIntScheme_AdjPlasma; }
@@ -449,6 +451,8 @@ inline unsigned short CConfig::GetKind_TimeIntScheme_Wave(void) { return Kind_Ti
 inline unsigned short CConfig::GetKind_TimeIntScheme_FEA(void) { return Kind_TimeIntScheme_FEA; }
 
 inline unsigned short CConfig::GetKind_ConvNumScheme_Flow(void) { return Kind_ConvNumScheme_Flow; }
+
+inline unsigned short CConfig::GetKind_ConvNumScheme_TNE2(void) { return Kind_ConvNumScheme_TNE2; }
 
 inline unsigned short CConfig::GetKind_ConvNumScheme_Plasma(void) { return Kind_ConvNumScheme_Plasma; }
 
@@ -461,6 +465,8 @@ inline unsigned short CConfig::GetKind_ConvNumScheme_AdjLevelSet(void) { return 
 inline unsigned short CConfig::GetKind_ConvNumScheme_Template(void) { return Kind_ConvNumScheme_Template; }
 
 inline unsigned short CConfig::GetKind_ViscNumScheme_Flow(void) { return Kind_ViscNumScheme_Flow; }
+
+inline unsigned short CConfig::GetKind_ViscNumScheme_TNE2(void) { return Kind_ViscNumScheme_TNE2; }
 
 inline unsigned short CConfig::GetKind_SourNumScheme_LevelSet(void) { return Kind_SourNumScheme_LevelSet; }
 
@@ -479,6 +485,8 @@ inline unsigned short CConfig::GetKind_ViscNumScheme_AdjPlasma(void) { return Ki
 inline unsigned short CConfig::GetKind_ViscNumScheme_Template(void) { return Kind_ViscNumScheme_Template; }
 
 inline unsigned short CConfig::GetKind_SourNumScheme_Flow(void) { return Kind_SourNumScheme_Flow; }
+
+inline unsigned short CConfig::GetKind_SourNumScheme_TNE2(void) { return Kind_SourNumScheme_TNE2; }
 
 inline unsigned short CConfig::GetKind_SourNumScheme_Plasma(void) { return Kind_SourNumScheme_Plasma; }
 
@@ -506,6 +514,8 @@ inline unsigned short CConfig::GetKind_SlopeLimit(void) { return Kind_SlopeLimit
 
 inline unsigned short CConfig::GetKind_SlopeLimit_Flow(void) { return Kind_SlopeLimit_Flow; }
 
+inline unsigned short CConfig::GetKind_SlopeLimit_TNE2(void) { return Kind_SlopeLimit_TNE2; }
+
 inline unsigned short CConfig::GetKind_SlopeLimit_Plasma(void) { return Kind_SlopeLimit_Plasma; }
 
 inline unsigned short CConfig::GetKind_SlopeLimit_AdjPlasma(void) { return Kind_SlopeLimit_AdjPlasma; }
@@ -521,6 +531,8 @@ inline unsigned short CConfig::GetKind_SlopeLimit_AdjTurb(void) { return Kind_Sl
 inline unsigned short CConfig::GetKind_SlopeLimit_AdjFlow(void) { return Kind_SlopeLimit_AdjFlow; }
 
 inline unsigned short CConfig::GetKind_Upwind_Flow(void) { return Kind_Upwind_Flow; }
+
+inline unsigned short CConfig::GetKind_Upwind_TNE2(void) { return Kind_Upwind_TNE2; }
 
 inline unsigned short CConfig::GetKind_Upwind_LevelSet(void) { return Kind_Upwind_LevelSet; }
 

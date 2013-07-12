@@ -261,6 +261,7 @@ private:
 	Kind_AdjTurb_Linear_Prec,		/*!< \brief Preconditioner of the turbulent adjoint linear solver. */
 	Kind_SlopeLimit,				/*!< \brief Global slope limiter. */
 	Kind_SlopeLimit_Flow,		/*!< \brief Slope limiter for flow equations.*/
+	Kind_SlopeLimit_TNE2,		/*!< \brief Slope limiter for flow equations.*/
 	Kind_SlopeLimit_Turb,		/*!< \brief Slope limiter for the turbulence equation.*/
 	Kind_SlopeLimit_LevelSet,		/*!< \brief Slope limiter for the level set equation.*/
 	Kind_SlopeLimit_AdjLevelSet,		/*!< \brief Slope limiter for the adjoint level set equation.*/
@@ -270,6 +271,7 @@ private:
 	Kind_SlopeLimit_AdjFlow,	/*!< \brief Slope limiter for the adjoint equation.*/
 	Kind_TimeNumScheme,			/*!< \brief Global explicit or implicit time integration. */
 	Kind_TimeIntScheme_Flow,	/*!< \brief Time integration for the flow equations. */
+	Kind_TimeIntScheme_TNE2,	/*!< \brief Time integration for the flow equations. */
 	Kind_TimeIntScheme_AdjFlow,		/*!< \brief Time integration for the adjoint flow equations. */
 	Kind_TimeIntScheme_LinFlow,		/*!< \brief Time integration for the linearized flow equations. */
 	Kind_TimeIntScheme_Turb,	/*!< \brief Time integration for the turbulence model. */
@@ -282,6 +284,7 @@ private:
 	Kind_TimeIntScheme_FEA,	/*!< \brief Time integration for the FEA equations. */
 	Kind_ConvNumScheme,			/*!< \brief Global definition of the convective term. */
 	Kind_ConvNumScheme_Flow,	/*!< \brief Centered or upwind scheme for the flow equations. */
+	Kind_ConvNumScheme_TNE2,	/*!< \brief Centered or upwind scheme for the flow equations. */
 	Kind_ConvNumScheme_AdjFlow,		/*!< \brief Centered or upwind scheme for the adjoint flow equations. */
 	Kind_ConvNumScheme_LinFlow,		/*!< \brief Centered or upwind scheme for the linearized flow equations. */
 	Kind_ConvNumScheme_Turb,	/*!< \brief Centered or upwind scheme for the turbulence model. */
@@ -293,6 +296,7 @@ private:
 	Kind_ConvNumScheme_Template,	/*!< \brief Centered or upwind scheme for the level set equation. */
 	Kind_ViscNumScheme,			/*!< \brief Global definition of the viscous term. */
 	Kind_ViscNumScheme_Flow,	/*!< \brief Viscous scheme for the flow equations. */
+	Kind_ViscNumScheme_TNE2,	/*!< \brief Viscous scheme for the flow equations. */
 	Kind_ViscNumScheme_AdjFlow,		/*!< \brief Viscous scheme for the adjoint flow equations. */
 	Kind_ViscNumScheme_LinFlow,		/*!< \brief Viscous scheme for the linearized flow equations. */
 	Kind_ViscNumScheme_Turb,	/*!< \brief Viscous scheme for the turbulence model. */
@@ -306,6 +310,7 @@ private:
 	Kind_ViscNumScheme_Template,	/*!< \brief Viscous scheme for the template. */
 	Kind_SourNumScheme,			/*!< \brief Global definition of the source term. */
 	Kind_SourNumScheme_Flow,	/*!< \brief Source numerical scheme for the flow equations. */
+	Kind_SourNumScheme_TNE2,	/*!< \brief Source numerical scheme for the flow equations. */
 	Kind_SourNumScheme_AdjFlow,		/*!< \brief Source numerical scheme for the adjoint flow equations. */
 	Kind_SourNumScheme_LinFlow,		/*!< \brief Source numerical scheme for the linearized flow equations. */
 	Kind_SourNumScheme_Turb,	/*!< \brief Source numerical scheme for the turbulence model. */
@@ -332,6 +337,7 @@ private:
 	Kind_Centered_Template,		/*!< \brief Centered scheme for the template model. */
 	Kind_Upwind,				/*!< \brief Upwind scheme. */
 	Kind_Upwind_Flow,			/*!< \brief Upwind scheme for the flow equations. */
+	Kind_Upwind_TNE2,			/*!< \brief Upwind scheme for the flow equations. */
 	Kind_Upwind_LevelSet,			/*!< \brief Upwind scheme for the level set equations. */
 	Kind_Upwind_AdjLevelSet,			/*!< \brief Upwind scheme for the level set equations. */
 	Kind_Upwind_AdjFlow,			/*!< \brief Upwind scheme for the adjoint flow equations. */
@@ -2177,6 +2183,15 @@ public:
 	 * \return Kind of integration scheme for the flow equations.
 	 */
 	unsigned short GetKind_TimeIntScheme_Flow(void);
+  
+  /*!
+	 * \brief Get the kind of integration scheme (explicit or implicit)
+	 *        for the flow equations.
+	 * \note This value is obtained from the config file, and it is constant
+	 *       during the computation.
+	 * \return Kind of integration scheme for the flow equations.
+	 */
+	unsigned short GetKind_TimeIntScheme_TNE2(void);
 
 	/*! 
 	 * \brief Get the kind of integration scheme (explicit or implicit) 
@@ -2231,6 +2246,15 @@ public:
 	 * \return Kind of convective numerical scheme for the flow equations.
 	 */		
 	unsigned short GetKind_ConvNumScheme_Flow(void);
+  
+  /*!
+	 * \brief Get the kind of convective numerical scheme for the flow
+	 *        equations (centered or upwind).
+	 * \note This value is obtained from the config file, and it is constant
+	 *       during the computation.
+	 * \return Kind of convective numerical scheme for the flow equations.
+	 */
+	unsigned short GetKind_ConvNumScheme_TNE2(void);
 
 	/*! 
 	 * \brief Get the kind of convective numerical scheme for the plasma 
@@ -2286,6 +2310,16 @@ public:
 	 * \return Kind of viscous numerical scheme for the flow equations.
 	 */		
 	unsigned short GetKind_ViscNumScheme_Flow(void);
+  
+  /*!
+	 * \brief Get the kind of viscous numerical scheme for the flow
+	 *        equations (Galerkin, Average of gradients, Average of gradients
+	 *        with correction).
+	 * \note This value is obtained from the config file, and it is constant
+	 *       during the computation.
+	 * \return Kind of viscous numerical scheme for the flow equations.
+	 */
+	unsigned short GetKind_ViscNumScheme_TNE2(void);
 
 	/*!
 	 * \brief Get the kind of viscous numerical scheme for the level set
@@ -2357,6 +2391,14 @@ public:
 	 * \return Kind of source term for the flow equations.
 	 */			
 	unsigned short GetKind_SourNumScheme_Flow(void);
+  
+  /*!
+	 * \brief Get the kind of source term for the flow equations.
+	 * \note This value is obtained from the config file, and it is constant
+	 *       during the computation.
+	 * \return Kind of source term for the flow equations.
+	 */
+	unsigned short GetKind_SourNumScheme_TNE2(void);
 
 	/*! 
 	 * \brief Get the kind of source term for the plasma equations.
@@ -2445,6 +2487,14 @@ public:
 	 * \return Kind of upwind convective numerical scheme for the flow equations.
 	 */
 	unsigned short GetKind_Upwind_Flow(void);
+  
+  /*!
+	 * \brief Get the kind of upwind convective numerical scheme for the flow equations.
+	 * \note This value is obtained from the config file, and it is constant
+	 *       during the computation.
+	 * \return Kind of upwind convective numerical scheme for the flow equations.
+	 */
+	unsigned short GetKind_Upwind_TNE2(void);
 
 	/*! 
 	 * \brief Get the kind of upwind convective numerical scheme for the level set equation.
@@ -2489,6 +2539,12 @@ public:
 	 * \return Method for limiting the spatial gradients solving the flow equations.
 	 */		
 	unsigned short GetKind_SlopeLimit_Flow(void);
+  
+  /*!
+	 * \brief Get the method for limiting the spatial gradients.
+	 * \return Method for limiting the spatial gradients solving the flow equations.
+	 */
+	unsigned short GetKind_SlopeLimit_TNE2(void);
 
 	/*! 
 	 * \brief Get the method for limiting the spatial gradients.

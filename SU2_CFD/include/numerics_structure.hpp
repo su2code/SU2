@@ -6733,4 +6733,97 @@ public:
 	void SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
 };
 
+/*!
+ * \class CUpwRoe_Flow
+ * \brief Class for solving an approximate Riemann solver of Roe for the flow equations.
+ * \ingroup ConvDiscr
+ * \author A. Bueno (UPM) & F. Palacios (Stanford University).
+ * \version 2.0.5
+ */
+class CUpwRoe_TNE2 : public CNumerics {
+private:
+	bool implicit, rotating_frame, grid_movement;
+	double *Diff_U;
+	double *Velocity_i, *Velocity_j, *RoeVelocity;
+	double *Proj_flux_tensor_i, *Proj_flux_tensor_j;
+	double *delta_wave, *delta_vel;
+	double *Lambda, *Epsilon;
+	double **P_Tensor, **invP_Tensor;
+	double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
+	Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
+	ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel, delta_p, delta_rho;
+	unsigned short iDim, iVar, jVar, kVar;
+  
+public:
+  
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CUpwRoe_TNE2(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CUpwRoe_TNE2(void);
+  
+	/*!
+	 * \brief Compute the Roe's flux between two nodes i and j.
+	 * \param[out] val_residual - Pointer to the total residual.
+	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
+};
+
+/*!
+ * \class CUpwAUSM_TNE2
+ * \brief Class for solving an approximate Riemann AUSM.
+ * \ingroup ConvDiscr
+ * \author F. Palacios
+ * \version 2.0.5
+ */
+class CUpwAUSM_TNE2 : public CNumerics {
+private:
+	bool implicit;
+	double *Diff_U;
+	double *Velocity_i, *Velocity_j, *RoeVelocity;
+	double *Proj_flux_tensor_i, *Proj_flux_tensor_j;
+	double *delta_wave, *delta_vel;
+	double *Lambda, *Epsilon;
+	double **P_Tensor, **invP_Tensor;
+	double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
+	Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
+	ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel, delta_p, delta_rho;
+	unsigned short iDim, iVar, jVar, kVar;
+  
+public:
+  
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CUpwAUSM_TNE2(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CUpwAUSM_TNE2(void);
+  
+	/*!
+	 * \brief Compute the Roe's flux between two nodes i and j.
+	 * \param[out] val_residual - Pointer to the total residual.
+	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
+};
+
+
 #include "numerics_structure.inl"

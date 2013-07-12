@@ -4584,6 +4584,24 @@ void CConfig::SetGlobalParam(unsigned short val_solver, unsigned short val_syste
 			SetKind_TimeIntScheme(GetKind_TimeIntScheme_Turb());
 		}
 		break;
+    case TNE2_EULER:
+      if (val_system == RUNTIME_FLOW_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_TNE2(), NONE,
+                              GetKind_Upwind_TNE2(), GetKind_SlopeLimit_TNE2());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_TNE2());
+        SetKind_ViscNumScheme(NONE);
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_TNE2());
+      }
+      break;
+    case TNE2_NAVIER_STOKES:
+      if (val_system == RUNTIME_FLOW_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_TNE2(), NONE,
+                              GetKind_Upwind_TNE2(), GetKind_SlopeLimit_TNE2());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_TNE2());
+        SetKind_ViscNumScheme(GetKind_ViscNumScheme_TNE2());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_TNE2());
+      }
+      break;
 	case PLASMA_EULER:
 		if (val_system == RUNTIME_PLASMA_SYS) {
 			SetKind_ConvNumScheme(GetKind_ConvNumScheme_Plasma(), GetKind_Centered_Plasma(),

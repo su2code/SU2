@@ -208,9 +208,11 @@ enum ENUM_SOLVER {
 	ADJ_PLASMA_NAVIER_STOKES = 26,	/*!< \brief Definition of the adjoint plasma solver. */
 	ADJ_PLASMA_EULER = 27,	/*!< \brief Definition of the adjoint plasma solver. */
 	ADJ_AEROACOUSTIC_EULER = 28,			/*!< \brief Definition of the adjoint aeroacoustic Euler solver. */
-	TEMPLATE_SOLVER = 30                  /*!< \brief Definition of template solver. */
-
-
+	TEMPLATE_SOLVER = 30,                  /*!< \brief Definition of template solver. */
+  TNE2_EULER = 31,
+  TNE2_NAVIER_STOKES = 32,
+  ADJ_TNE2_EULER = 33,
+  ADJ_TNE2_NAVIER_STOKES = 34
 };
 /* BEGIN_CONFIG_ENUMS */
 static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVER>
@@ -224,6 +226,10 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("ADJ_RANS", ADJ_RANS )
 ("LIN_EULER", LIN_EULER)
 ("LIN_NAVIER_STOKES", LIN_NAVIER_STOKES)
+("TNE2_EULER", TNE2_EULER)
+("TNE2_NAVIER_STOKES", TNE2_NAVIER_STOKES)
+("ADJ_TNE2_EULER", ADJ_TNE2_EULER)
+("ADJ_TNE2_NAVIER_STOKES", ADJ_TNE2_NAVIER_STOKES)
 ("PLASMA_NAVIER_STOKES", PLASMA_NAVIER_STOKES)
 ("PLASMA_EULER", PLASMA_EULER)
 ("FREE_SURFACE_EULER", FREE_SURFACE_EULER)
@@ -283,6 +289,10 @@ enum RUNTIME_TYPE {
 const int FLOW_SOL = 0;		/*!< \brief Position of the mean flow solution in the solution container array. */
 const int ADJFLOW_SOL = 1;	/*!< \brief Position of the continuous adjoint flow solution in the solution container array. */
 const int LINFLOW_SOL = 1;	/*!< \brief Position of the linearized flow solution in the solution container array. */
+
+const int TNE2_SOL = 0;		/*!< \brief Position of the mean flow solution in the solution container array. */
+const int ADJTNE2_SOL = 1;	/*!< \brief Position of the continuous adjoint flow solution in the solution container array. */
+const int LINTNE2_SOL = 1;	/*!< \brief Position of the linearized flow solution in the solution container array. */
 
 const int TURB_SOL = 2;		/*!< \brief Position of the turbulence model solution in the solution container array. */
 const int ADJTURB_SOL = 3;	/*!< \brief Position of the continuous adjoint turbulence solution in the solution container array. */
