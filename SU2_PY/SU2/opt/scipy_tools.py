@@ -36,7 +36,7 @@ from numpy.linalg import norm
 #  Scipy SLSQP
 # -------------------------------------------------------------------
 
-def scipy_slsqp(project,x0=None,xb=None,its=100):
+def scipy_slsqp(project,x0=None,xb=None,its=100,grads=True):
     """ result = scipy_slsqp(project,x0=[],xb=[],its=100)
     
         Runs the Scipy implementation of SLSQP with 
@@ -55,8 +55,15 @@ def scipy_slsqp(project,x0=None,xb=None,its=100):
     # import scipy optimizer
     from scipy.optimize import fmin_slsqp
 
+    # handle input cases
     if x0 is None: x0 = []
     if xb is None: xb = []
+    
+    # gradients?
+    if project.config.GRADIENT_METHOD == 'NONE': 
+        obj_df    = None
+        con_dceq  = None
+        con_dcieq = None
     
     # number of design variables
     n_dv = len( project.config['DEFINITION_DV']['KIND'] )

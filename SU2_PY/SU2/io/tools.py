@@ -391,7 +391,7 @@ def get_dvID( kindName ):
     try: 
         return id_map[ kindName ]
     except KeyError: 
-        raise Exception('Unrecognized Design Variable Name')
+        raise Exception('Unrecognized Design Variable Name: %s' , kindName)
 #: def get_dvID()
   
   
