@@ -59,11 +59,20 @@ def scipy_slsqp(project,x0=None,xb=None,its=100,grads=True):
     if x0 is None: x0 = []
     if xb is None: xb = []
     
-    # gradients?
+    # function handles
+    func           = obj_f
+    f_eqcons       = con_ceq
+    f_ieqcons      = con_cieq 
+    
+    # gradient handles
     if project.config.GRADIENT_METHOD == 'NONE': 
-        obj_df    = None
-        con_dceq  = None
-        con_dcieq = None
+        fprime         = None
+        fprime_eqcons  = None
+        fprime_ieqcons = None
+    else:
+        fprime         = obj_df
+        fprime_eqcons  = con_dceq
+        fprime_ieqcons = con_dcieq        
     
     # number of design variables
     n_dv = len( project.config['DEFINITION_DV']['KIND'] )
