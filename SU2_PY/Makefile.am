@@ -38,6 +38,7 @@ nobase_dist_mypkg_DATA= \
     SU2/eval/gradients.py \
     SU2/eval/__init__.py \
     SU2/io/config.py \
+    SU2/io/config_options.py \
     SU2/io/data.py \
     SU2/io/filelock.py \
     SU2/io/redirect.py \
