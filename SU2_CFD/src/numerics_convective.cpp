@@ -75,31 +75,6 @@ CUpwRoe_Flow::~CUpwRoe_Flow(void) {
 }
 
 void CUpwRoe_Flow::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
-	//************************************************//
-	// Please do not delete //SU2_CPP2C comment lines //
-	//************************************************//
-
-	//SU2_CPP2C START CUpwRoe_Flow::SetResidual
-	//SU2_CPP2C CALL_LIST START
-	//SU2_CPP2C INVARS *U_i *U_j
-	//SU2_CPP2C OUTVARS *val_residual
-	//SU2_CPP2C VARS DOUBLE *Normal Gamma Gamma_Minus_One
-	//SU2_CPP2C CALL_LIST END
-
-	//SU2_CPP2C DEFINE nDim nVar
-
-	//SU2_CPP2C DECL_LIST START
-	//SU2_CPP2C VARS INT SCALAR iDim iVar jVar
-	//SU2_CPP2C VARS DOUBLE SCALAR Area sq_vel
-	//SU2_CPP2C VARS DOUBLE SCALAR Density_i Energy_i SoundSpeed_i Pressure_i Enthalpy_i
-	//SU2_CPP2C VARS DOUBLE SCALAR Density_j Energy_j SoundSpeed_j Pressure_j Enthalpy_j
-	//SU2_CPP2C VARS DOUBLE SCALAR R RoeDensity RoeEnthalpy RoeSoundSpeed
-	//SU2_CPP2C VARS DOUBLE SCALAR ProjVelocity ProjVelocity_i ProjVelocity_j
-	//SU2_CPP2C VARS DOUBLE SCALAR proj_delta_vel delta_p delta_rho
-	//SU2_CPP2C VARS DOUBLE MATRIX SIZE=nDim UnitaryNormal Velocity_i Velocity_j RoeVelocity delta_vel
-	//SU2_CPP2C VARS DOUBLE MATRIX SIZE=nVar Lambda delta_wave Proj_flux_tensor_i Proj_flux_tensor_j
-	//SU2_CPP2C VARS DOUBLE MATRIX SIZE=nVar SIZE=nVar P_Tensor
-	//SU2_CPP2C DECL_LIST END
 
 	/*--- Face area (norm or the normal vector) ---*/
 	Area = 0;
@@ -123,6 +98,22 @@ void CUpwRoe_Flow::SetResidual(double *val_residual, double **val_Jacobian_i, do
 	Energy_i     = U_i[nDim+1] / Density_i;
 	Pressure_i   = (Gamma_Minus_One*(Energy_i-0.5*sq_vel))*Density_i;
 
+  /*--- If it is not a physical solution, then 
+   use the zero order reconstruction ---*/
+  if ((Density_i < 0.0) || (Pressure_i < 0.0)) {
+    for (iVar = 0; iVar < nVar; iVar++)
+      U_i[iVar] = UZeroOrder_i[iVar];
+    
+    Density_i = U_i[0];
+    sq_vel = 0;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Velocity_i[iDim] = U_i[iDim+1] / Density_i;
+      sq_vel += Velocity_i[iDim]*Velocity_i[iDim];
+    }
+    Energy_i     = U_i[nDim+1] / Density_i;
+    Pressure_i   = (Gamma_Minus_One*(Energy_i-0.5*sq_vel))*Density_i;
+  }
+  
 	SoundSpeed_i = sqrt(Pressure_i*Gamma/Density_i);
 	Enthalpy_i   = (U_i[nDim+1] + Pressure_i) / Density_i;
 
@@ -138,6 +129,22 @@ void CUpwRoe_Flow::SetResidual(double *val_residual, double **val_Jacobian_i, do
 	Energy_j     = U_j[nDim+1] / Density_j;
 	Pressure_j   = (Gamma_Minus_One*(Energy_j-0.5*sq_vel))*Density_j;
 
+  /*--- If it is not a physical solution, then
+   use the zero order reconstruction ---*/
+  if ((Density_j < 0.0) || (Pressure_j < 0.0)) {
+    for (iVar = 0; iVar < nVar; iVar++)
+      U_j[iVar] = UZeroOrder_j[iVar];
+
+    Density_j = U_j[0];
+    sq_vel = 0;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Velocity_j[iDim] = U_j[iDim+1] / Density_j;
+      sq_vel += Velocity_j[iDim]*Velocity_j[iDim];
+    }
+    Energy_j     = U_j[nDim+1] / Density_j;
+    Pressure_j   = (Gamma_Minus_One*(Energy_j-0.5*sq_vel))*Density_j;
+  }
+  
 	SoundSpeed_j = sqrt(Pressure_j*Gamma/Density_j);
 	Enthalpy_j   = (U_j[nDim+1] + Pressure_j) / Density_j;
 
@@ -153,25 +160,13 @@ void CUpwRoe_Flow::SetResidual(double *val_residual, double **val_Jacobian_i, do
 	RoeSoundSpeed = sqrt((Gamma-1)*(RoeEnthalpy-0.5*sq_vel));
 
 	/*--- Compute Proj_flux_tensor_i ---*/
-	//SU2_CPP2C SUBROUTINE START GetInviscidProjFlux
 	GetInviscidProjFlux(&Density_i, Velocity_i, &Pressure_i, &Enthalpy_i, Normal, Proj_flux_tensor_i);
-	//SU2_CPP2C SUBROUTINE LOCATION numerics_structure.cpp
-	//SU2_CPP2C SUBROUTINE VARS Density_i Velocity_i Pressure_i Enthalpy_i Proj_flux_tensor_i Normal
-	//SU2_CPP2C SUBROUTINE END
 
 	/*--- Compute Proj_flux_tensor_j ---*/
-	//SU2_CPP2C SUBROUTINE START GetInviscidProjFlux
 	GetInviscidProjFlux(&Density_j, Velocity_j, &Pressure_j, &Enthalpy_j, Normal, Proj_flux_tensor_j);
-	//SU2_CPP2C SUBROUTINE LOCATION numerics_structure.cpp
-	//SU2_CPP2C SUBROUTINE VARS Density_j Velocity_j Pressure_j Enthalpy_j Proj_flux_tensor_j Normal
-	//SU2_CPP2C SUBROUTINE END
 
 	/*--- Compute P and Lambda (do it with the Normal) ---*/
-	//SU2_CPP2C SUBROUTINE START GetPMatrix
 	GetPMatrix(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitaryNormal, P_Tensor);
-	//SU2_CPP2C SUBROUTINE LOCATION numerics_structure.cpp
-	//SU2_CPP2C SUBROUTINE VARS RoeDensity RoeVelocity RoeSoundSpeed P_Tensor UnitaryNormal
-	//SU2_CPP2C SUBROUTINE END
 
 	ProjVelocity = 0.0; ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
 	for (iDim = 0; iDim < nDim; iDim++) {
@@ -180,7 +175,6 @@ void CUpwRoe_Flow::SetResidual(double *val_residual, double **val_Jacobian_i, do
 		ProjVelocity_j += Velocity_j[iDim]*UnitaryNormal[iDim];
 	}
 
-	//SU2_CPP2C COMMENT START
 	/*--- Adjustment for a rotating frame ---*/
 	if (rotating_frame) {
 		ProjVelocity   -= Rot_Flux/Area;
@@ -200,8 +194,6 @@ void CUpwRoe_Flow::SetResidual(double *val_residual, double **val_Jacobian_i, do
 		ProjVelocity_i -= ProjGridVel;
 		ProjVelocity_j -= ProjGridVel;
 	}
-	//SU2_CPP2C COMMENT END
-
 
 	/*--- Flow eigenvalues and entropy correctors ---*/
 	for (iDim = 0; iDim < nDim; iDim++)
@@ -226,9 +218,7 @@ void CUpwRoe_Flow::SetResidual(double *val_residual, double **val_Jacobian_i, do
 	for (iVar = 0; iVar < nVar; iVar++)
 		Lambda[iVar] = fabs(Lambda[iVar]);
 
-	//SU2_CPP2C COMMENT START
 	if (!implicit) {
-		//SU2_CPP2C COMMENT END
 
 		/*--- Compute wave amplitudes (characteristics) ---*/
 		proj_delta_vel = 0.0;
@@ -260,8 +250,6 @@ void CUpwRoe_Flow::SetResidual(double *val_residual, double **val_Jacobian_i, do
 				val_residual[iVar] -= 0.5*Lambda[jVar]*delta_wave[jVar]*P_Tensor[iVar][jVar]*Area;
 		}
 
-		//SU2_CPP2C COMMENT START
-
 		/*--- Flux contribution for a rotating frame ---*/
 		if (rotating_frame) {
 			ProjVelocity = Rot_Flux;
@@ -279,8 +267,6 @@ void CUpwRoe_Flow::SetResidual(double *val_residual, double **val_Jacobian_i, do
 				val_residual[iVar] -= ProjVelocity * 0.5*(U_i[iVar]+U_j[iVar]);
 			}
 		}
-		//SU2_CPP2C COMMENT END
-		//SU2_CPP2C COMMENT START
 	} 
 	else {
 
@@ -335,9 +321,7 @@ void CUpwRoe_Flow::SetResidual(double *val_residual, double **val_Jacobian_i, do
 		}
 
 	}
-	//SU2_CPP2C COMMENT END
 
-	//SU2_CPP2C END CUpwRoe_Flow::SetResidual
 }
 
 CUpwRoePrim_Flow::CUpwRoePrim_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {

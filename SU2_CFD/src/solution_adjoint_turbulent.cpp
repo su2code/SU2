@@ -634,7 +634,7 @@ void CAdjTurbSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_co
 	}
 }
 
-void CAdjTurbSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
+void CAdjTurbSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 
 	for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
 		Set_Residual_Zero(iPoint); // Initialize the residual vector

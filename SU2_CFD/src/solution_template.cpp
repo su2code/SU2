@@ -29,7 +29,7 @@ CTemplateSolution::CTemplateSolution(CGeometry *geometry, CConfig *config) : CSo
 
 CTemplateSolution::~CTemplateSolution(void) { }
 
-void CTemplateSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) { }
+void CTemplateSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) { }
 
 void CTemplateSolution::SetTime_Step(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iMesh, unsigned long Iteration) { }
 

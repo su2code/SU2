@@ -178,7 +178,6 @@ CWaveSolution::~CWaveSolution(void) {
 
 void CWaveSolution::Preprocessing(CGeometry *geometry, 
                                   CSolution **solution_container,
-                                  CNumerics **solver,
                                   CConfig   *config,
                                   unsigned short iMesh,
                                   unsigned short iRKStep,

@@ -147,6 +147,11 @@ inline void CNumerics::SetConservative(double *val_u_i, double *val_u_j) {
 	U_j = val_u_j;
 }
 
+inline void CNumerics::SetConservative_ZeroOrder(double *val_u_i, double *val_u_j) {
+	UZeroOrder_i = val_u_i;
+	UZeroOrder_j = val_u_j;
+}
+
 inline void CNumerics::SetPrimitive(double *val_v_i, double *val_v_j) {
 	V_i = val_v_i;
 	V_j = val_v_j;

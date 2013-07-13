@@ -495,101 +495,101 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
         AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
 			}
       
-      /*--- Divide hexehedra into 5 tetrahedra ---*/
-			if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON) {
-
-				/*--- Tetrahedron 1, nodes: [0,1,2,5] ---*/
-				Point_0 = geometry->elem[iElem]->GetNode(0);
-				Point_1 = geometry->elem[iElem]->GetNode(1);
-				Point_2 = geometry->elem[iElem]->GetNode(2);
-				Point_3 = geometry->elem[iElem]->GetNode(5);
-        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        
-				/*--- Tetrahedron 2, nodes: [0,2,7,5] ---*/
-				Point_0 = geometry->elem[iElem]->GetNode(0);
-				Point_1 = geometry->elem[iElem]->GetNode(2);
-				Point_2 = geometry->elem[iElem]->GetNode(7);
-				Point_3 = geometry->elem[iElem]->GetNode(5);
-        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        
-				/*--- Tetrahedron 3, nodes: [0,2,3,7] ---*/
-				Point_0 = geometry->elem[iElem]->GetNode(0);
-				Point_1 = geometry->elem[iElem]->GetNode(7);
-				Point_2 = geometry->elem[iElem]->GetNode(2);
-				Point_3 = geometry->elem[iElem]->GetNode(3);
-        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        
-				/*--- Tetrahedron 4, nodes: [0,5,7,4] ---*/
-				Point_0 = geometry->elem[iElem]->GetNode(4);
-				Point_1 = geometry->elem[iElem]->GetNode(7);
-				Point_2 = geometry->elem[iElem]->GetNode(5);
-				Point_3 = geometry->elem[iElem]->GetNode(0);
-        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        
-				/*--- Tetrahedron 5, nodes: [2,7,5,6] ---*/
-				Point_0 = geometry->elem[iElem]->GetNode(2);
-				Point_1 = geometry->elem[iElem]->GetNode(6);
-				Point_2 = geometry->elem[iElem]->GetNode(5);
-				Point_3 = geometry->elem[iElem]->GetNode(7);
-        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        
-			}
-
-      /*--- Divide prisms into 3 tetrahedra ---*/
-      if (geometry->elem[iElem]->GetVTK_Type() == WEDGE) {
-        
-        /*--- Tetrahedron 1, nodes: [2,1,0,4] ---*/
-				Point_0 = geometry->elem[iElem]->GetNode(2);
-				Point_1 = geometry->elem[iElem]->GetNode(1);
-				Point_2 = geometry->elem[iElem]->GetNode(0);
-				Point_3 = geometry->elem[iElem]->GetNode(4);
-        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        
-				/*--- Tetrahedron 2, nodes: [3,4,5,0]  ---*/
-				Point_0 = geometry->elem[iElem]->GetNode(3);
-				Point_1 = geometry->elem[iElem]->GetNode(4);
-				Point_2 = geometry->elem[iElem]->GetNode(5);
-				Point_3 = geometry->elem[iElem]->GetNode(0);
-        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        
-        /*--- Tetrahedron 2, nodes: [5,2,0,4]  ---*/
-				Point_0 = geometry->elem[iElem]->GetNode(5);
-				Point_1 = geometry->elem[iElem]->GetNode(2);
-				Point_2 = geometry->elem[iElem]->GetNode(0);
-				Point_3 = geometry->elem[iElem]->GetNode(4);
-        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        
-        
-      }
-    
-      /*--- Divide pyramids into 2 tetrahedra ---*/
-      if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID) {
-      
-        /*--- Tetrahedron 1, nodes: [0,1,2,4] ---*/
-				Point_0 = geometry->elem[iElem]->GetNode(0);
-				Point_1 = geometry->elem[iElem]->GetNode(1);
-				Point_2 = geometry->elem[iElem]->GetNode(2);
-				Point_3 = geometry->elem[iElem]->GetNode(4);
-        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        
-				/*--- Tetrahedron 2, nodes: [0,2,3,4]  ---*/
-				Point_0 = geometry->elem[iElem]->GetNode(0);
-				Point_1 = geometry->elem[iElem]->GetNode(2);
-				Point_2 = geometry->elem[iElem]->GetNode(3);
-				Point_3 = geometry->elem[iElem]->GetNode(4);
-        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        
-      }
+//      /*--- Divide hexehedra into 5 tetrahedra ---*/
+//			if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON) {
+//
+//				/*--- Tetrahedron 1, nodes: [0,1,2,5] ---*/
+//				Point_0 = geometry->elem[iElem]->GetNode(0);
+//				Point_1 = geometry->elem[iElem]->GetNode(1);
+//				Point_2 = geometry->elem[iElem]->GetNode(2);
+//				Point_3 = geometry->elem[iElem]->GetNode(5);
+//        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        
+//				/*--- Tetrahedron 2, nodes: [0,2,7,5] ---*/
+//				Point_0 = geometry->elem[iElem]->GetNode(0);
+//				Point_1 = geometry->elem[iElem]->GetNode(2);
+//				Point_2 = geometry->elem[iElem]->GetNode(7);
+//				Point_3 = geometry->elem[iElem]->GetNode(5);
+//        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        
+//				/*--- Tetrahedron 3, nodes: [0,2,3,7] ---*/
+//				Point_0 = geometry->elem[iElem]->GetNode(0);
+//				Point_1 = geometry->elem[iElem]->GetNode(7);
+//				Point_2 = geometry->elem[iElem]->GetNode(2);
+//				Point_3 = geometry->elem[iElem]->GetNode(3);
+//        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        
+//				/*--- Tetrahedron 4, nodes: [0,5,7,4] ---*/
+//				Point_0 = geometry->elem[iElem]->GetNode(4);
+//				Point_1 = geometry->elem[iElem]->GetNode(7);
+//				Point_2 = geometry->elem[iElem]->GetNode(5);
+//				Point_3 = geometry->elem[iElem]->GetNode(0);
+//        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        
+//				/*--- Tetrahedron 5, nodes: [2,7,5,6] ---*/
+//				Point_0 = geometry->elem[iElem]->GetNode(2);
+//				Point_1 = geometry->elem[iElem]->GetNode(6);
+//				Point_2 = geometry->elem[iElem]->GetNode(5);
+//				Point_3 = geometry->elem[iElem]->GetNode(7);
+//        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        
+//			}
+//
+//      /*--- Divide prisms into 3 tetrahedra ---*/
+//      if (geometry->elem[iElem]->GetVTK_Type() == WEDGE) {
+//        
+//        /*--- Tetrahedron 1, nodes: [2,1,0,4] ---*/
+//				Point_0 = geometry->elem[iElem]->GetNode(2);
+//				Point_1 = geometry->elem[iElem]->GetNode(1);
+//				Point_2 = geometry->elem[iElem]->GetNode(0);
+//				Point_3 = geometry->elem[iElem]->GetNode(4);
+//        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        
+//				/*--- Tetrahedron 2, nodes: [3,4,5,0]  ---*/
+//				Point_0 = geometry->elem[iElem]->GetNode(3);
+//				Point_1 = geometry->elem[iElem]->GetNode(4);
+//				Point_2 = geometry->elem[iElem]->GetNode(5);
+//				Point_3 = geometry->elem[iElem]->GetNode(0);
+//        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        
+//        /*--- Tetrahedron 2, nodes: [5,2,0,4]  ---*/
+//				Point_0 = geometry->elem[iElem]->GetNode(5);
+//				Point_1 = geometry->elem[iElem]->GetNode(2);
+//				Point_2 = geometry->elem[iElem]->GetNode(0);
+//				Point_3 = geometry->elem[iElem]->GetNode(4);
+//        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        
+//        
+//      }
+//    
+//      /*--- Divide pyramids into 2 tetrahedra ---*/
+//      if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID) {
+//      
+//        /*--- Tetrahedron 1, nodes: [0,1,2,4] ---*/
+//				Point_0 = geometry->elem[iElem]->GetNode(0);
+//				Point_1 = geometry->elem[iElem]->GetNode(1);
+//				Point_2 = geometry->elem[iElem]->GetNode(2);
+//				Point_3 = geometry->elem[iElem]->GetNode(4);
+//        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        
+//				/*--- Tetrahedron 2, nodes: [0,2,3,4]  ---*/
+//				Point_0 = geometry->elem[iElem]->GetNode(0);
+//				Point_1 = geometry->elem[iElem]->GetNode(2);
+//				Point_2 = geometry->elem[iElem]->GetNode(3);
+//				Point_3 = geometry->elem[iElem]->GetNode(4);
+//        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+//        
+//      }
     
     }
 	}
@@ -1244,7 +1244,7 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 		}
 	}
   
-	/*--- Set the known displacements, note that some points of the moving surfaces 
+	/*--- Set the known displacements, note that some points of the moving surfaces
    could be on on the symmetry plane, we should specify DeleteValsRowi again (just in case) ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 		if (config->GetMarker_All_Moving(iMarker) == YES)  {
@@ -1254,7 +1254,9 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 				for (iDim = 0; iDim < nDim; iDim++) {
 					total_index = iPoint*nDim + iDim;
 					rhs[total_index]  = VarCoord[iDim] * VarIncrement;
-					usol[total_index] = VarCoord[iDim] * VarIncrement;
+					usol[total_index] = 0.0;
+          if (config->GetKind_GridDef_Method() == SPRING)
+            usol[total_index] = VarCoord[iDim] * VarIncrement;
           StiffMatrix.DeleteValsRowi(total_index);
 				}
 			}
@@ -1398,6 +1400,7 @@ void CVolumetricMovement::FEAMethod(CGeometry *geometry, CConfig *config, bool U
 
     /*--- Initialize the global stiffness matrix structure for the mesh ---*/
 	Initialize_StiffMatrix_Structure(nDim, geometry);
+
     
     /*--- Loop over the total number of FEA iterations. The surface
      deformation can be divided into increments, as the linear elasticity

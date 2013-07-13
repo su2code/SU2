@@ -120,7 +120,9 @@ public:
 	double Rot_Flux; /*!< \brief Exact rotating volume flux for an edge. */
 	double *U_i,		/*!< \brief Vector of conservative variables at point i. */
 	*U_id,		/*!< \brief Vector of derivative of conservative variables at point i. */
+  *UZeroOrder_i,  /*!< \brief Vector of conservative variables at point i without reconstruction. */
 	*U_j,				/*!< \brief Vector of conservative variables at point j. */
+  *UZeroOrder_j,  /*!< \brief Vector of conservative variables at point j without reconstruction. */
 	*U_jd,				/*!< \brief Vector of derivative of conservative variables at point j. */
 	*U_0,				/*!< \brief Vector of conservative variables at node 0. */
 	*U_1,				/*!< \brief Vector of conservative variables at node 1. */
@@ -278,6 +280,13 @@ public:
 	 * \param[in] val_u_j - Value of the conservative variable at point j.
 	 */
 	void SetConservative(double *val_u_i, double *val_u_j);
+  
+  /*!
+	 * \brief Set the value of the conservative variables withour reconstruction.
+	 * \param[in] val_u_i - Value of the conservative variable at point i.
+	 * \param[in] val_u_j - Value of the conservative variable at point j.
+	 */
+	void SetConservative_ZeroOrder(double *val_u_i, double *val_u_j);
 
 	/*! 
 	 * \brief Set the value of the primitive variables.

@@ -1296,7 +1296,7 @@ void CAdjEulerSolution::SetInitialCondition(CGeometry **geometry, CSolution ***s
   
 }
 
-void CAdjEulerSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
+void CAdjEulerSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
   
   /*--- Retrieve information about the spatial and temporal integration for the
@@ -4723,11 +4723,9 @@ void CAdjEulerSolution::BC_Nacelle_Inflow(CGeometry *geometry, CSolution **solut
 }
 
 void CAdjEulerSolution::BC_Nacelle_Exhaust(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
-
-	/*--- Local variables and initialization. ---*/
 	unsigned long iVertex, iPoint;
 	double P_Total, T_Total, Velocity[3];
-	double Velocity2, H_Total, Temperature, Riemann, Enthalpy;
+	double Velocity2, H_Total, Temperature, Riemann, Enthalpy, Area, UnitaryNormal[3];
 	double Pressure, Density, Energy, Mach2;
 	double SoundSpeed2, SoundSpeed_Total2, SoundSpeed, Vel_Mag;
 	double alpha, aa, bb, cc, dd;
@@ -4737,7 +4735,6 @@ void CAdjEulerSolution::BC_Nacelle_Exhaust(CGeometry *geometry, CSolution **solu
 	double *Normal, *U_domain, *U_exhaust, *Psi_domain, *Psi_exhaust;
 
 	bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-
 	string Marker_Tag = config->GetMarker_All_Tag(val_marker);
 
 	Normal = new double[nDim];
@@ -4755,7 +4752,7 @@ void CAdjEulerSolution::BC_Nacelle_Exhaust(CGeometry *geometry, CSolution **solu
 			geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
 			for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
-			double Area = 0.0; double UnitaryNormal[3];
+			Area = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++)
 				Area += Normal[iDim]*Normal[iDim];
 			Area = sqrt (Area);
@@ -4766,7 +4763,7 @@ void CAdjEulerSolution::BC_Nacelle_Exhaust(CGeometry *geometry, CSolution **solu
 			/*--- Current solution at this boundary node ---*/
 			for (iVar = 0; iVar < nVar; iVar++)
 				U_domain[iVar] = solution_container[FLOW_SOL]->node[iPoint]->GetSolution(iVar);
-
+      
 			/*--- Subsonic inflow: there is one outgoing characteristic (u-c),
 			 therefore we can specify all but one state variable at the inlet.
 			 The outgoing Riemann invariant provides the final piece of info. ---*/
@@ -4850,22 +4847,11 @@ void CAdjEulerSolution::BC_Nacelle_Exhaust(CGeometry *geometry, CSolution **solu
 			/*--- Using pressure, density, & velocity, compute the energy ---*/
 			Energy = Pressure/(Density*Gamma_Minus_One)+0.5*Velocity2;
 
-			/*--- Using pressure, density, & energy, compute the enthalpy ---*/
-			Enthalpy = (Energy*Density + Pressure) / Density;
-
 			/*--- Conservative variables, using the derived quantities ---*/
 			U_exhaust[0] = Density;
-			U_exhaust[1] = Velocity[0]*Density;
-			U_exhaust[2] = Velocity[1]*Density;
-			U_exhaust[3] = Energy*Density;
-			if (nDim == 3) {
-				U_exhaust[3] = Velocity[2]*Density;
-				U_exhaust[4] = Energy*Density;
-			}
-
-			/*--- Flow solution at the wall ---*/
-			for (iVar = 0; iVar < nVar; iVar++)
-				U_domain[iVar] = solution_container[FLOW_SOL]->node[iPoint]->GetSolution(iVar);
+      for (iDim = 0; iDim < nDim; iDim++)
+        U_exhaust[iDim+1] = Velocity[iDim]*Density;
+			U_exhaust[nDim+1] = Energy*Density;
 
 			conv_solver->SetConservative(U_domain, U_exhaust);
 			conv_solver->SetSoundSpeed(solution_container[FLOW_SOL]->node[iPoint]->GetSoundSpeed(), SoundSpeed);
@@ -4877,7 +4863,7 @@ void CAdjEulerSolution::BC_Nacelle_Exhaust(CGeometry *geometry, CSolution **solu
 
 			/*--- Adjoint flow solution at the exhaust ---*/
 			for (iVar = 0; iVar < nVar; iVar++)
-				Psi_exhaust[iVar] = 0.0;
+				Psi_exhaust[iVar] = node[iPoint]->GetSolution(iVar);
 
 			conv_solver->SetAdjointVar(Psi_domain, Psi_exhaust);
 
@@ -5395,7 +5381,7 @@ CAdjNSSolution::~CAdjNSSolution(void) {
 }
 
 
-void CAdjNSSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
+void CAdjNSSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
     
   /*--- Retrieve information about the spatial and temporal integration for the

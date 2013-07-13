@@ -33,7 +33,7 @@ void CPotentialIntegration::SetPotential_Solver(CGeometry ***geometry, CSolution
 	unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
 
 	/*--- Do some preprocessing stuff ---*/
-	solution_container[iZone][iMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iMesh], solution_container[iZone][iMesh], solver_container[iZone][iMesh][SolContainer_Position],config[iZone], iMesh, 0, RunTime_EqSystem);
+	solution_container[iZone][iMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iMesh], solution_container[iZone][iMesh], config[iZone], iMesh, 0, RunTime_EqSystem);
 
 	/*--- Space integration ---*/
 	Space_Integration(geometry[iZone][iMesh], solution_container[iZone][iMesh], solver_container[iZone][iMesh][SolContainer_Position], config[iZone], iMesh, 0, RunTime_EqSystem);
