@@ -86,20 +86,20 @@ def scipy_slsqp(project,x0=None,xb=None,its=100,grads=True):
     x0 = [ x0[i]/dv_scl for i,dv_scl in enumerate(dv_scales) ]    
         
     # Run Optimizer
-    outputs = fmin_slsqp( x0             = x0         , 
-                          func           = obj_f      , 
-                          f_eqcons       = con_ceq    , 
-                          f_ieqcons      = con_cieq   , 
-                          fprime         = obj_df     ,
-                          fprime_eqcons  = con_dceq   , 
-                          fprime_ieqcons = con_dcieq  , 
-                          args           = (project,) , 
-                          bounds         = xb         ,
-                          iter           = its        ,
-                          iprint         = 2          ,
-                          full_output    = 1          ,
-                          acc            = 1e-10      ,
-                          epsilon        = 1.0e-06     )
+    outputs = fmin_slsqp( x0             = x0             , 
+                          func           = func           , 
+                          f_eqcons       = f_eqcons       , 
+                          f_ieqcons      = f_ieqcons      ,
+                          fprime         = fprime         ,
+                          fprime_eqcons  = fprime_eqcons  , 
+                          fprime_ieqcons = fprime_ieqcons , 
+                          args           = (project,)     , 
+                          bounds         = xb             ,
+                          iter           = its            ,
+                          iprint         = 2              ,
+                          full_output    = 1              ,
+                          acc            = 1e-10          ,
+                          epsilon        = 1.0e-06         )
     
     # Done
     return outputs
