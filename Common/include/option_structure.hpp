@@ -681,19 +681,6 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("MIN_THICKNESS", MIN_THICKNESS);
 
 /*!
- * \brief types (Continuous/Discrete) of objective functions
- */
-enum ENUM_OBJECTIVE_TYPE {
-	FORCE_OBJ= 1, 	/*!< \brief Force dependent objective function. */
-	NON_FORCE_OBJ = 2 	/*!< \brief Non-force dependent objective function. */
-
-};
-
-static const map<string, ENUM_OBJECTIVE_TYPE> ObjectiveType_Map = CCreateMap<string, ENUM_OBJECTIVE_TYPE>
-("FORCE", FORCE_OBJ)
-("NON_FORCE", NON_FORCE_OBJ);
-
-/*!
  * \brief types of Continuous equations
  */
 enum ENUM_CONTINUOUS_EQNS {

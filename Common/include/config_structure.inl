@@ -57,6 +57,8 @@ inline string CConfig::GetPlaneTag(unsigned short index) { return PlaneTag[index
 
 inline double CConfig::GetEA_IntLimit(unsigned short index) { return EA_IntLimit[index]; }
 
+inline double CConfig::GetAdjointLimit(void) { return AdjointLimit; }
+
 inline double *CConfig::GetHold_GridFixed_Coord(void) { return Hold_GridFixed_Coord; }
 
 inline double CConfig::GetMaxDimension(void) { return MaxDimension; }
@@ -627,8 +629,6 @@ inline unsigned short CConfig::GetKind_ObjFunc(void) {return Kind_ObjFunc; }
 inline unsigned short CConfig::GetKind_GeoObjFunc(void) {return Kind_GeoObjFunc; }
 
 inline unsigned short CConfig::GetKind_SensSmooth(void) {return Kind_SensSmooth; }
-
-inline unsigned short CConfig::GetKind_ObjFuncType(void) {return Kind_ObjFuncType; }
 
 inline unsigned short CConfig::GetContinuous_Eqns(void) {return Continuous_Eqns; }
 

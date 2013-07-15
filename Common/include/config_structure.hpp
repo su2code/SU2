@@ -57,6 +57,7 @@ private:
 	Omega_Mag;						/*!< \brief Angular velocity magnitude for rotational frame problem. */
 	double MinLogResidual; /*!< \brief Minimum value of the log residual. */
 	double* EA_IntLimit; /*!< \brief Integration limits of the Equivalent Area computation */
+  double AdjointLimit; /*!< \brief Adjoint variable limit */
 	double* Hold_GridFixed_Coord; /*!< \brief Coordinates of the box to hold fixed the nbumerical grid */
 	unsigned short ConvCriteria;	/*!< \brief Kind of convergence criteria. */
 	bool Adjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
@@ -106,7 +107,6 @@ private:
 	unsigned short Kind_ObjFunc;	/*!< \brief Kind of objective function. */
 	unsigned short Kind_GeoObjFunc;	/*!< \brief Kind of geometrical objective function. */
 	unsigned short Kind_SensSmooth;	/*!< \brief Kind of sensitivity smoothing technique. */
-	unsigned short Kind_ObjFuncType;	/*!< \brief Type of objective function. */
 	unsigned short Continuous_Eqns;	/*!< \brief Which equations to treat continuously (Hybrid adjoint) */
 	unsigned short Discrete_Eqns;	/*!< \brief Which equations to treat discretely (Hybrid adjoint). */
 	unsigned short *Design_Variable; /*!< \brief Kind of design variable. */
@@ -940,6 +940,12 @@ public:
 	 * \return Integration limits for the equivalent area computation.
 	 */
 	double GetEA_IntLimit(unsigned short index);
+  
+  /*!
+	 * \brief Get the limit value for the adjoint variables.
+	 * \return Limit value for the adjoint variables.
+	 */
+	double GetAdjointLimit(void);
 
 	/*! 
 	 * \brief Get the the coordinates where of the box where the grid is going to be deformed.
@@ -2940,13 +2946,6 @@ public:
 	 * \return Kind of sensitivity smoothing technique.
 	 */
 	unsigned short GetKind_SensSmooth(void);
-
-	/*!
-	 * \brief Get the type of objective function. There are two options: Continuous or Discrete
-	 * \note The objective function will determine the boundary condition of the adjoint problem.
-	 * \return Type of objective function.
-	 */
-	unsigned short GetKind_ObjFuncType(void);
 
 	/*!
 	 * \brief Get equations to be treated continuously. There are several options: Euler, Navier Stokes

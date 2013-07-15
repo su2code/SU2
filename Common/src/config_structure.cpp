@@ -573,6 +573,8 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddEnumOption("ADJOINT_TYPE", Kind_Adjoint, Adjoint_Map,"CONTINUOUS");
 	/* DESCRIPTION: Reduction factor of the CFL coefficient in the adjoint problem */
 	AddScalarOption("ADJ_CFL_REDUCTION", Adj_CFLRedCoeff, 0.8);
+  /* DESCRIPTION: Limit value for the adjoint variable */
+	AddScalarOption("ADJ_LIMIT", AdjointLimit, 1E6);
 	/* DESCRIPTION: Adjoint problem boundary condition */
 	AddEnumOption("ADJ_OBJFUNC", Kind_ObjFunc, Objective_Map, "DRAG");
 	/* DESCRIPTION: Geometrical objective function */
@@ -583,8 +585,6 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddScalarOption("DRAG_IN_SONICBOOM", WeightCd, 0.0);
 	/* DESCRIPTION: Sensitivity smoothing  */
 	AddEnumOption("SENS_SMOOTHING", Kind_SensSmooth, Sens_Smoothing_Map, "NONE");
-	/* DESCRIPTION: Objective function type */
-	AddEnumOption("ADJ_OBJFUNC_TYPE", Kind_ObjFuncType, ObjectiveType_Map,"FORCE");
 	/* DESCRIPTION: Continuous governing equation set  */
 	AddEnumOption("CONTINUOUS_EQNS", Continuous_Eqns, ContinuousEqns_Map, "EULER");
 	/* DESCRIPTION: Discrete governing equation set */
@@ -2775,7 +2775,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		if (RefAreaCoeff == 0) cout << "The reference length/area will be computed using y(2D) or z(3D) projection." <<endl;
 		else cout << "The reference length/area (force coefficient) is " << RefAreaCoeff << "." <<endl;
 		cout << "The reference length (moment computation) is " << RefLengthMoment << "." <<endl;
-		cout << "Reference origin (moment computation) is (" <<RefOriginMoment[0]<<", "<<RefOriginMoment[1]<<", "<<RefOriginMoment[1]<<")."<< endl;
+		cout << "Reference origin (moment computation) is (" <<RefOriginMoment[0]<<", "<<RefOriginMoment[1]<<", "<<RefOriginMoment[2]<<")."<< endl;
 
     cout << "Surface(s) where the force coefficients are evaluated: ";
 		for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++) {
