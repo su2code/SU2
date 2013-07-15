@@ -28,7 +28,6 @@ CTNE2EulerSolution::CTNE2EulerSolution(void) : CSolution() {
 	/*--- Array initialization ---*/
 	Velocity_Inlet = NULL;
 	Velocity_Outlet = NULL;
-	Velocity_Back = NULL;
 	CDrag_Inv = NULL;
 	CLift_Inv = NULL;
 	CSideForce_Inv = NULL;
@@ -39,27 +38,13 @@ CTNE2EulerSolution::CTNE2EulerSolution(void) : CSolution() {
 	CFy_Inv = NULL;
 	CFz_Inv = NULL;
 	CEff_Inv = NULL;
-	CMerit_Inv = NULL;
-	CT_Inv = NULL;
-	CQ_Inv = NULL;
-	CEquivArea_Inv = NULL;
-	CNearFieldOF_Inv = NULL;
 	ForceInviscid = NULL;
 	MomentInviscid = NULL;
-	FanFace_MassFlow = NULL;
-	FanFace_Pressure = NULL;
-	FanFace_Mach = NULL;
-  FanFace_Area = NULL;
-  Exhaust_MassFlow = NULL;
-  Exhaust_Area = NULL;
-	p1_Und_Lapl = NULL;
-	p2_Und_Lapl = NULL;
 	PrimVar_i = NULL;
 	PrimVar_j = NULL;
 	Precon_Mat_inv = NULL;
 	CPressure = NULL;
 	CHeatTransfer = NULL;
-	YPlus = NULL;
   
 }
 
@@ -70,7 +55,6 @@ CTNE2EulerSolution::CTNE2EulerSolution(CGeometry *geometry, CConfig *config, uns
   
 	unsigned short nZone = geometry->GetnZone();
 	bool restart = (config->GetRestart() || config->GetRestart_Flow());
-	bool incompressible = config->GetIncompressible();
   double Gas_Constant = config->GetGas_ConstantND();
 	bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
@@ -84,7 +68,6 @@ CTNE2EulerSolution::CTNE2EulerSolution(CGeometry *geometry, CConfig *config, uns
 	/*--- Array initialization ---*/
 	Velocity_Inlet = NULL;
 	Velocity_Outlet = NULL;
-	Velocity_Back = NULL;
 	CDrag_Inv = NULL;
 	CLift_Inv = NULL;
 	CSideForce_Inv = NULL;
@@ -95,27 +78,13 @@ CTNE2EulerSolution::CTNE2EulerSolution(CGeometry *geometry, CConfig *config, uns
 	CFy_Inv = NULL;
 	CFz_Inv = NULL;
 	CEff_Inv = NULL;
-	CMerit_Inv = NULL;
-	CT_Inv = NULL;
-	CQ_Inv = NULL;
-	CEquivArea_Inv = NULL;
-	CNearFieldOF_Inv = NULL;
 	ForceInviscid = NULL;
 	MomentInviscid = NULL;
-	FanFace_MassFlow = NULL;
-  Exhaust_MassFlow = NULL;
-  Exhaust_Area = NULL;
-	FanFace_Pressure = NULL;
-	FanFace_Mach = NULL;
-  FanFace_Area = NULL;
-	p1_Und_Lapl = NULL;
-	p2_Und_Lapl = NULL;
 	PrimVar_i = NULL;
 	PrimVar_j = NULL;
 	Precon_Mat_inv = NULL;
 	CPressure = NULL;
 	CHeatTransfer = NULL;
-	YPlus = NULL;
   
 	/*--- Set the gamma value ---*/
 	Gamma = config->GetGamma();
@@ -152,12 +121,6 @@ CTNE2EulerSolution::CTNE2EulerSolution(CGeometry *geometry, CConfig *config, uns
 	Vector   = new double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector[iDim]   = 0.0;
 	Vector_i = new double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_i[iDim] = 0.0;
 	Vector_j = new double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_j[iDim] = 0.0;
-  
-	/*--- Define some auxiliary vectors related to the undivided lapalacian ---*/
-	if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) {
-		p1_Und_Lapl = new double [nPoint];
-		p2_Und_Lapl = new double [nPoint];
-	}
   
 	if ((config->GetKind_Upwind_Flow() == ROE_TURKEL_2ND) || (config->GetKind_Upwind_Flow() == ROE_TURKEL_1ST)) {
 		Precon_Mat_inv = new double* [nVar];
@@ -222,29 +185,11 @@ CTNE2EulerSolution::CTNE2EulerSolution(CGeometry *geometry, CConfig *config, uns
 	CFy_Inv          = new double[nMarker];
 	CFz_Inv          = new double[nMarker];
   
-	/*--- Rotational coefficients ---*/
-	CMerit_Inv       = new double[nMarker];
-	CT_Inv           = new double[nMarker];
-	CQ_Inv           = new double[nMarker];
-  
-	/*--- Supersonic coefficients ---*/
-	CEquivArea_Inv   = new double[nMarker];
-	CNearFieldOF_Inv = new double[nMarker];
-  
-	/*--- Nacelle simulation ---*/
-	FanFace_MassFlow  = new double[nMarker];
-  Exhaust_MassFlow  = new double[nMarker];
-  Exhaust_Area  = new double[nMarker];
-	FanFace_Pressure  = new double[nMarker];
-	FanFace_Mach  = new double[nMarker];
-  FanFace_Area = new double[nMarker];
-  
 	/*--- Init total coefficients ---*/
 	Total_CDrag = 0.0;  Total_CLift = 0.0;      Total_CSideForce = 0.0;
 	Total_CMx = 0.0;    Total_CMy = 0.0;        Total_CMz = 0.0;
-	Total_CEff = 0.0;   Total_CEquivArea = 0.0; Total_CNearFieldOF = 0.0;
+	Total_CEff = 0.0;
 	Total_CFx = 0.0;    Total_CFy = 0.0;        Total_CFz = 0.0;
-	Total_CT = 0.0;     Total_CQ = 0.0;         Total_CMerit = 0.0;
   Total_Maxq = 0.0;
   
 	/*--- Read farfield conditions ---*/
@@ -263,16 +208,6 @@ CTNE2EulerSolution::CTNE2EulerSolution(CGeometry *geometry, CConfig *config, uns
 		Energy_Inf   = config->GetEnergy_FreeStreamND_Time(0);
 		Mach_Inf     = config->GetMach_FreeStreamND_Time(0);
     
-	}
-  
-	/*--- Initializate fan face pressure, fan face mach number, and mass flow rate ---*/
-	for (iMarker = 0; iMarker < nMarker; iMarker++) {
-		FanFace_MassFlow[iMarker] = 0.0;
-    Exhaust_MassFlow[iMarker] = 0.0;
-		FanFace_Mach[iMarker] = Mach_Inf;
-		FanFace_Pressure[iMarker] = Pressure_Inf;
-    FanFace_Area[iMarker] = 0.0;
-    Exhaust_Area[iMarker] = 0.0;
 	}
   
 	/*--- Inlet/Outlet boundary conditions, using infinity values ---*/
@@ -352,14 +287,8 @@ CTNE2EulerSolution::CTNE2EulerSolution(CGeometry *geometry, CConfig *config, uns
        will be returned and used to instantiate the vars. ---*/
 			iPoint_Local = Global2Local[iPoint_Global];
 			if (iPoint_Local >= 0) {
-				if (incompressible) {
-					if (nDim == 2) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2];
-					if (nDim == 3) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-				}
-				else {
 					if (nDim == 2) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
 					if (nDim == 3) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
-				}
 				node[iPoint_Local] = new CEulerVariable(Solution, nDim, nVar, config);
 			}
 			iPoint_Global++;
@@ -415,13 +344,6 @@ CTNE2EulerSolution::CTNE2EulerSolution(CGeometry *geometry, CConfig *config, uns
   
   if ((rank == MASTER_NODE) && (counter_global != 0)) cout << "Warning. The original solution contains "<< counter_global << " points that are not physical." << endl;
   
-	/*--- Define solver parameters needed for execution of destructor ---*/
-	if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED ) space_centered = true;
-	else space_centered = false;
-  
-	if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) euler_implicit = true;
-	else euler_implicit = false;
-  
 	if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
 	else least_squares = false;
   
@@ -436,7 +358,6 @@ CTNE2EulerSolution::~CTNE2EulerSolution(void) {
 	/*--- Array initialization ---*/
 	if (Velocity_Inlet != NULL) delete [] Velocity_Inlet;
 	if (Velocity_Outlet != NULL) delete [] Velocity_Outlet;
-	if (Velocity_Back != NULL) delete [] Velocity_Back;
 	if (CDrag_Inv != NULL) delete [] CDrag_Inv;
 	if (CLift_Inv != NULL) delete [] CLift_Inv;
 	if (CSideForce_Inv != NULL) delete [] CSideForce_Inv;
@@ -447,21 +368,8 @@ CTNE2EulerSolution::~CTNE2EulerSolution(void) {
 	if (CFy_Inv != NULL) delete [] CFy_Inv;
 	if (CFz_Inv != NULL) delete [] CFz_Inv;
 	if (CEff_Inv != NULL) delete [] CEff_Inv;
-	if (CMerit_Inv != NULL) delete [] CMerit_Inv;
-	if (CT_Inv != NULL) delete [] CT_Inv;
-	if (CQ_Inv != NULL) delete [] CQ_Inv;
-	if (CEquivArea_Inv != NULL) delete [] CEquivArea_Inv;
-	if (CNearFieldOF_Inv != NULL) delete [] CNearFieldOF_Inv;
 	if (ForceInviscid != NULL) delete [] ForceInviscid;
 	if (MomentInviscid != NULL) delete [] MomentInviscid;
-	if (FanFace_MassFlow != NULL) delete [] FanFace_MassFlow;
-	if (Exhaust_MassFlow != NULL) delete [] Exhaust_MassFlow;
-  if (Exhaust_Area != NULL) delete [] Exhaust_Area;
-	if (FanFace_Pressure != NULL) delete [] FanFace_Pressure;
-	if (FanFace_Mach != NULL) delete [] FanFace_Mach;
-  if (FanFace_Area != NULL) delete [] FanFace_Area;
-	if (p1_Und_Lapl != NULL) delete [] p1_Und_Lapl;
-	if (p2_Und_Lapl != NULL) delete [] p2_Und_Lapl;
 	if (PrimVar_i != NULL) delete [] PrimVar_i;
 	if (PrimVar_j != NULL) delete [] PrimVar_j;
   
@@ -482,13 +390,6 @@ CTNE2EulerSolution::~CTNE2EulerSolution(void) {
 			delete CHeatTransfer[iMarker];
 		}
 		delete [] CHeatTransfer;
-	}
-  
-	if (YPlus != NULL) {
-		for (iMarker = 0; iMarker < nMarker; iMarker++) {
-			delete YPlus[iMarker];
-		}
-		delete [] YPlus;
 	}
   
 }
@@ -858,183 +759,12 @@ void CTNE2EulerSolution::SetInitialCondition(CGeometry **geometry, CSolution ***
   
 	bool restart = (config->GetRestart() || config->GetRestart_Flow());
 	unsigned short nDim = geometry[MESH_0]->GetnDim();
-	bool freesurface = config->GetFreeSurface();
 	bool rans = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == ADJ_RANS) ||
                (config->GetKind_Solver() == FREE_SURFACE_RANS) || (config->GetKind_Solver() == ADJ_FREE_SURFACE_RANS));
 	bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
-	if (freesurface) {
     
-		for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++) {
-      
-			for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-        
-				/*--- Set initial boundary condition at iter 0 ---*/
-				if ((ExtIter == 0) && (!restart)) {
-          
-					/*--- Compute the level set value in all the MG levels (basic case, distance to
-           the Y/Z plane, and interpolate the solution to the coarse levels ---*/
-					if (iMesh == MESH_0) {
-						XCoord = geometry[iMesh]->node[iPoint]->GetCoord(0);
-						YCoord = geometry[iMesh]->node[iPoint]->GetCoord(1);
-						if (nDim == 2) LevelSet = YCoord - config->GetFreeSurface_Zero();
-						else {
-							ZCoord = geometry[iMesh]->node[iPoint]->GetCoord(2);
-							LevelSet = ZCoord - config->GetFreeSurface_Zero();
-						}
-						solution_container[iMesh][LEVELSET_SOL]->node[iPoint]->SetSolution(0, LevelSet);
-					}
-					else {
-						Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
-						LevelSet = 0.0;
-						for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
-							Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
-							Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
-							LevelSet_Fine = solution_container[iMesh-1][LEVELSET_SOL]->node[Point_Fine]->GetSolution(0);
-							LevelSet += LevelSet_Fine*Area_Children/Area_Parent;
-						}
-						solution_container[iMesh][LEVELSET_SOL]->node[iPoint]->SetSolution(0, LevelSet);
-					}
-          
-					/*--- Compute the flow solution using the level set value. ---*/
-					epsilon = config->GetFreeSurface_Thickness();
-					Heaviside = 0.0;
-					if (LevelSet < -epsilon) Heaviside = 1.0;
-					if (fabs(LevelSet) <= epsilon) Heaviside = 1.0 - (0.5*(1.0+(LevelSet/epsilon)+(1.0/PI_NUMBER)*sin(PI_NUMBER*LevelSet/epsilon)));
-					if (LevelSet > epsilon) Heaviside = 0.0;
-          
-					/*--- Set the value of the incompressible density for free surface flows (density ratio g/l) ---*/
-					lambda = config->GetRatioDensity();
-					DensityInc = (lambda + (1.0 - lambda)*Heaviside)*config->GetDensity_FreeStreamND();
-					solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetDensityInc(DensityInc);
-          
-					/*--- Set the value of the incompressible viscosity for free surface flows (viscosity ratio g/l) ---*/
-					lambda = config->GetRatioViscosity();
-					ViscosityInc = (lambda + (1.0 - lambda)*Heaviside)*config->GetViscosity_FreeStreamND();
-					solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetLaminarViscosityInc(ViscosityInc);
-          
-					/*--- Set the value of the incompressible viscosity for free surface flows (viscosity ratio g/l) ---*/
-					//          if (rans && (iMesh == MESH_0)) {
-					//            Factor_nu = config->GetNuFactor_FreeStream();
-					//            nu_tilde = Factor_nu*ViscosityInc/DensityInc;
-					//            solution_container[iMesh][TURB_SOL]->node[iPoint]->SetSolution(0, nu_tilde);
-					//          }
-          
-					/*--- Update solution with the new pressure ---*/
-					yFreeSurface = config->GetFreeSurface_Zero();
-					PressFreeSurface = solution_container[iMesh][FLOW_SOL]->GetPressure_Inf();
-					DensityFreeSurface = solution_container[iMesh][FLOW_SOL]->GetDensity_Inf();
-					Density = solution_container[iMesh][FLOW_SOL]->node[iPoint]->GetDensityInc();
-					Froude = config->GetFroude();
-					yCoord = geometry[iMesh]->node[iPoint]->GetCoord(nDim-1);
-					Pressure = PressFreeSurface + Density*((yFreeSurface-yCoord)/(Froude*Froude));
-					solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(0, Pressure);
-          
-					/*--- Update solution with the new velocity ---*/
-					Velx = solution_container[iMesh][FLOW_SOL]->GetVelocity_Inf(0);
-					Vely = solution_container[iMesh][FLOW_SOL]->GetVelocity_Inf(1);
-					RhoVelx = Velx * Density; RhoVely = Vely * Density;
-					solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(1, RhoVelx);
-					solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(2, RhoVely);
-					if (nDim == 3) {
-						Velz = solution_container[iMesh][FLOW_SOL]->GetVelocity_Inf(2);
-						RhoVelz = Velz * Density;
-						solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(3, RhoVelz);
-					}
-          
-				}
-        
-			}
-      
-			/*--- Set the MPI communication ---*/
-			solution_container[iMesh][FLOW_SOL]->SetSolution_MPI(geometry[iMesh], config);
-			solution_container[iMesh][LEVELSET_SOL]->SetSolution_MPI(geometry[iMesh], config);
-      
-      /*--- Set the primitive variables for the level set equation ---*/
-      solution_container[iMesh][LEVELSET_SOL]->SetLevelSet_Distance(geometry[iMesh], config, true, false);
-      
-			/*--- The value of the solution for the first iteration of the dual time ---*/
-			for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-				if ((ExtIter == 0) && (dual_time)) {
-					solution_container[iMesh][LEVELSET_SOL]->node[iPoint]->Set_Solution_time_n();
-					solution_container[iMesh][LEVELSET_SOL]->node[iPoint]->Set_Solution_time_n1();
-				}
-			}
-      
-		}
-    
-	}
-  
-  if (config->GetEngine_Intake()) {
-    
-		for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++) {
-      
-			for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-        
-				/*--- Set initial boundary condition at iter 0 ---*/
-				if ((ExtIter == 0) && (!restart)) {
-          
-					double *Coord = geometry[iMesh]->node[iPoint]->GetCoord();
-          
-          double Mach = 0.40;
-          double Alpha = config->GetAoA()*PI_NUMBER/180.0;
-          double Beta  = config->GetAoS()*PI_NUMBER/180.0;
-          double Gamma_Minus_One = Gamma - 1.0;
-          double Gas_Constant = config->GetGas_ConstantND();
-          double Temperature_FreeStream = config->GetTemperature_FreeStream();
-          double Mach2Vel_FreeStream = sqrt(Gamma*Gas_Constant*Temperature_FreeStream);
-          double Velocity_FreeStream[3] = {0.0, 0.0, 0.0};
-          double Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0};
-          
-          Velocity_FreeStream[0] = cos(Alpha)*cos(Beta)*Mach*Mach2Vel_FreeStream;
-          Velocity_FreeStream[1] = sin(Beta)*Mach*Mach2Vel_FreeStream;
-          Velocity_FreeStream[2] = sin(Alpha)*cos(Beta)*Mach*Mach2Vel_FreeStream;
-          
-          double ModVel_FreeStream = 0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            ModVel_FreeStream += Velocity_FreeStream[iDim]*Velocity_FreeStream[iDim];
-          ModVel_FreeStream = sqrt(ModVel_FreeStream);
-          
-          double Viscosity_FreeStream = 1.853E-5*(pow(Temperature_FreeStream/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_FreeStream+110.3));
-          double Density_FreeStream   = config->GetReynolds()*Viscosity_FreeStream/(ModVel_FreeStream*config->GetLength_Reynolds());
-          double Pressure_FreeStream  = Density_FreeStream*Gas_Constant*Temperature_FreeStream;
-          
-          double Density_FreeStreamND  = Density_FreeStream/config->GetDensity_Ref();
-          double Pressure_FreeStreamND = Pressure_FreeStream/config->GetPressure_Ref();
-          
-          for (iDim = 0; iDim < nDim; iDim++)
-            Velocity_FreeStreamND[iDim] = Velocity_FreeStream[iDim]/config->GetVelocity_Ref();
-          
-          double ModVel_FreeStreamND = 0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            ModVel_FreeStreamND += Velocity_FreeStreamND[iDim]*Velocity_FreeStreamND[iDim];
-          ModVel_FreeStreamND = sqrt(ModVel_FreeStreamND);
-          
-          double Energy_FreeStreamND = Pressure_FreeStreamND/(Density_FreeStreamND*Gamma_Minus_One)+0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
-          
-          
-          if (((Coord[0] >= 16.0) && (Coord[0] <= 20.0)) &&
-              ((Coord[1] >= 0.0) && (Coord[1] <= 0.7)) &&
-              ((Coord[2] >= 2.5) && (Coord[2] <= 4.0))) {
-            
-            solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(0, Density_FreeStreamND);
-            for (iDim = 0; iDim < nDim; iDim++)
-              solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(iDim+1, Velocity_FreeStreamND[iDim]);
-            solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(nVar-1, Energy_FreeStreamND);
-            
-          }
-          
-				}
-			}
-      
-			/*--- Set the MPI communication ---*/
-			solution_container[iMesh][FLOW_SOL]->SetSolution_MPI(geometry[iMesh], config);
-      
-		}
-    
-	}
-  
 	/*--- If restart solution, then interpolate the flow solution to
    all the multigrid levels, this is important with the dual time strategy ---*/
 	if (restart) {
@@ -1083,16 +813,6 @@ void CTNE2EulerSolution::SetInitialCondition(CGeometry **geometry, CSolution ***
 		Energy_Inf   = config->GetEnergy_FreeStreamND_Time(ExtIter);
 		Mach_Inf     = config->GetMach_FreeStreamND_Time(ExtIter);
     
-		/*--- Initializate fan face pressure, fan face mach number, and mass flow rate ---*/
-		for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
-			FanFace_MassFlow[iMarker] = 0.0;
-      Exhaust_MassFlow[iMarker] = 0.0;
-      Exhaust_Area[iMarker] = 0.0;
-			FanFace_Mach[iMarker] = Mach_Inf;
-			FanFace_Pressure[iMarker] = Pressure_Inf;
-      FanFace_Area[iMarker] = 0.0;
-		}
-    
 		/*--- Inlet/Outlet boundary conditions, using infinity values ---*/
 		Density_Inlet = Density_Inf;		Density_Outlet = Density_Inf;
 		Pressure_Inlet = Pressure_Inf;	Pressure_Outlet = Pressure_Inf;
@@ -1113,7 +833,6 @@ void CTNE2EulerSolution::Preprocessing(CGeometry *geometry, CSolution **solution
 	unsigned long iPoint;
 	double levelset;
   
-	bool freesurface = config->GetFreeSurface();
 	bool adjoint = config->GetAdjoint();
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 	bool upwind_2nd = ((config->GetKind_Upwind_Flow() == ROE_2ND) || (config->GetKind_Upwind_Flow() == AUSM_2ND)
@@ -1122,7 +841,6 @@ void CTNE2EulerSolution::Preprocessing(CGeometry *geometry, CSolution **solution
 	bool center_jst = center && (config->GetKind_Centered_Flow() == JST);
 	bool low_fidelity = (config->GetLowFidelitySim() && (iMesh == MESH_1));
 	bool limiter = ((config->GetKind_SlopeLimit_Flow() != NONE) && !low_fidelity);
-	bool incompressible = config->GetIncompressible();
 	double Gas_Constant = config->GetGas_ConstantND();
   bool jouleheating = config->GetJouleHeating();
   
@@ -1134,13 +852,9 @@ void CTNE2EulerSolution::Preprocessing(CGeometry *geometry, CSolution **solution
   
 	for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
-		if (freesurface) levelset = solution_container[LEVELSET_SOL]->node[iPoint]->GetPrimVar(0);
-		else levelset = 0.0;
-    
 		/*--- Set the primitive variables incompressible (dens, vx, vy, vz, beta)
      and compressible (temp, vx, vy, vz, press, dens, enthal, sos)---*/
-		if (incompressible) node[iPoint]->SetPrimVar_Incompressible(Density_Inf, levelset, config);
-		else node[iPoint]->SetPrimVar_Compressible(Gamma, Gas_Constant);
+		node[iPoint]->SetPrimVar_Compressible(Gamma, Gas_Constant);
     
 		/*--- Initialize the convective residual vector ---*/
 		Set_Residual_Zero(iPoint);
@@ -1179,7 +893,6 @@ void CTNE2EulerSolution::SetTime_Step(CGeometry *geometry, CSolution **solution_
   
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 	bool rotating_frame = config->GetRotating_Frame();
-	bool incompressible = config->GetIncompressible();
 	bool grid_movement = config->GetGrid_Movement();
 	bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
@@ -1201,16 +914,8 @@ void CTNE2EulerSolution::SetTime_Step(CGeometry *geometry, CSolution **solution_
 		Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
     
 		/*--- Mean Values ---*/
-		if (incompressible) {
-			Mean_ProjVel = 0.5 * (node[iPoint]->GetProjVelInc(Normal) + node[jPoint]->GetProjVelInc(Normal));
-			Mean_BetaInc2 = 0.5 * (node[iPoint]->GetBetaInc2() + node[jPoint]->GetBetaInc2());
-			Mean_DensityInc = 0.5 * (node[iPoint]->GetDensityInc() + node[jPoint]->GetDensityInc());
-			Mean_SoundSpeed = sqrt(Mean_ProjVel*Mean_ProjVel + (Mean_BetaInc2/Mean_DensityInc)*Area*Area);
-		}
-		else {
 			Mean_ProjVel = 0.5 * (node[iPoint]->GetProjVel(Normal) + node[jPoint]->GetProjVel(Normal));
 			Mean_SoundSpeed = 0.5 * (node[iPoint]->GetSoundSpeed() + node[jPoint]->GetSoundSpeed()) * Area;
-		}
     
 		/*--- Adjustment for a rotating frame ---*/
 		if (rotating_frame) {
@@ -1253,16 +958,8 @@ void CTNE2EulerSolution::SetTime_Step(CGeometry *geometry, CSolution **solution_
 			Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
       
 			/*--- Mean Values ---*/
-			if (incompressible) {
-				Mean_ProjVel = node[iPoint]->GetProjVelInc(Normal);
-				Mean_BetaInc2 = node[iPoint]->GetBetaInc2();
-				Mean_DensityInc = node[iPoint]->GetDensityInc();
-				Mean_SoundSpeed = sqrt(Mean_ProjVel*Mean_ProjVel + (Mean_BetaInc2/Mean_DensityInc)*Area*Area);
-			}
-			else {
 				Mean_ProjVel = node[iPoint]->GetProjVel(Normal);
 				Mean_SoundSpeed = node[iPoint]->GetSoundSpeed() * Area;
-			}
       
 			/*--- Adjustment for a rotating frame ---*/
 			if (rotating_frame) {
@@ -1364,7 +1061,6 @@ void CTNE2EulerSolution::Upwind_Residual(CGeometry *geometry, CSolution **soluti
 	bool high_order_diss = (((config->GetKind_Upwind_Flow() == ROE_2ND) || (config->GetKind_Upwind_Flow() == AUSM_2ND)
                            || (config->GetKind_Upwind_Flow() == HLLC_2ND) || (config->GetKind_Upwind_Flow() == ROE_TURKEL_2ND))
                           && ((iMesh == MESH_0) || low_fidelity));
-	bool incompressible = config->GetIncompressible();
 	bool rotating_frame = config->GetRotating_Frame();
   //	bool gravity = config->GetGravityForce();
 	bool grid_movement = config->GetGrid_Movement();
@@ -1436,71 +1132,6 @@ void CTNE2EulerSolution::Upwind_Residual(CGeometry *geometry, CSolution **soluti
       
     }
     
-    //		if (gravity) {
-    //
-    //			/*--- The zero order reconstruction includes the gradient of the hydrostatic pressure constribution ---*/
-    //			YDistance = 0.5*(geometry->node[jPoint]->GetCoord(nDim-1)-geometry->node[iPoint]->GetCoord(nDim-1));
-    //			GradHidrosPress = node[iPoint]->GetDensityInc()/(config->GetFroude()*config->GetFroude());
-    //			Solution_i[0] = U_i[0] - GradHidrosPress*YDistance;
-    //			GradHidrosPress = node[jPoint]->GetDensityInc()/(config->GetFroude()*config->GetFroude());
-    //			Solution_j[0] = U_j[0] + GradHidrosPress*YDistance;
-    //
-    //			/*--- No reconstruction for the velocities ---*/
-    //			for (iVar = 1; iVar < nVar; iVar++) {
-    //				Solution_i[iVar] = U_i[iVar];
-    //				Solution_j[iVar] = U_j[iVar];
-    //			}
-    //
-    //			/*--- Set conservative variables with reconstruction only for the pressure ---*/
-    //			solver->SetConservative(Solution_i, Solution_j);
-    //
-    //			if (high_order_diss) {
-    //
-    //				for (iDim = 0; iDim < nDim; iDim++) {
-    //					Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
-    //					Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
-    //				}
-    //
-    //				Gradient_i = node[iPoint]->GetGradient(); Gradient_j = node[jPoint]->GetGradient();
-    //				if (limiter) { Limiter_j = node[jPoint]->GetLimiter(); Limiter_i = node[iPoint]->GetLimiter(); }
-    //
-    //				for (iVar = 0; iVar < nVar; iVar++) {
-    //					Project_Grad_i = 0; Project_Grad_j = 0;
-    //					for (iDim = 0; iDim < nDim; iDim++) {
-    //						Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
-    //						Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
-    //					}
-    //					if (limiter) {
-    //						/*--- Note that the pressure reconstruction always includes the hydrostatic gradient,
-    //             and limits the kinematic contribution ---*/
-    //						if (iVar == 0) {
-    //							Solution_i[iVar] = Solution_i[iVar] + Limiter_i[iVar]*(U_i[iVar] + Project_Grad_i - Solution_i[iVar]);
-    //							Solution_j[iVar] = Solution_j[iVar] + Limiter_j[iVar]*(U_j[iVar] + Project_Grad_j - Solution_j[iVar]);
-    //						}
-    //						else {
-    //							Solution_i[iVar] = U_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
-    //							Solution_j[iVar] = U_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
-    //						}
-    //					}
-    //					else {
-    //						Solution_i[iVar] = U_i[iVar] + Project_Grad_i;
-    //						Solution_j[iVar] = U_j[iVar] + Project_Grad_j;
-    //					}
-    //				}
-    //
-    //				/*--- Set conservative variables with reconstruction ---*/
-    //				solver->SetConservative(Solution_i, Solution_j);
-    //			}
-    //
-    //		}
-    
-		/*--- Set the density and beta w/o reconstruction (incompressible flows) ---*/
-		if (incompressible) {
-			solver->SetBetaInc2(node[iPoint]->GetBetaInc2(), node[jPoint]->GetBetaInc2());
-			solver->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[jPoint]->GetCoord());
-			solver->SetDensityInc(node[iPoint]->GetDensityInc(), node[jPoint]->GetDensityInc());
-		}
-    
 		/*--- Compute the residual ---*/
 		solver->SetResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
     
@@ -1533,7 +1164,6 @@ void CTNE2EulerSolution::Source_Residual(CGeometry *geometry, CSolution **soluti
 	unsigned long iPoint;
 	bool rotating_frame = config->GetRotating_Frame();
 	bool axisymmetric = config->GetAxisymmetric();
-	bool incompressible = config->GetIncompressible();
 	bool gravity = (config->GetGravityForce() == YES);
 	bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
 	bool magnet = (config->GetMagnetic_Force() == YES);
@@ -1581,14 +1211,6 @@ void CTNE2EulerSolution::Source_Residual(CGeometry *geometry, CSolution **soluti
 			/*--- Set solution  ---*/
 			solver->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
       
-			if (incompressible) {
-				/*--- Set incompressible density  ---*/
-				solver->SetDensityInc(node[iPoint]->GetDensityInc(), node[iPoint]->GetDensityInc());
-        
-				/*--- Set beta squared  ---*/
-				solver->SetBetaInc2(node[iPoint]->GetBetaInc2(), node[iPoint]->GetBetaInc2());
-			}
-      
 			/*--- Set control volume ---*/
 			solver->SetVolume(geometry->node[iPoint]->GetVolume());
       
@@ -1614,9 +1236,6 @@ void CTNE2EulerSolution::Source_Residual(CGeometry *geometry, CSolution **soluti
       
 			/*--- Set solution  ---*/
 			solver->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
-      
-			/*--- Set incompressible density  ---*/
-      if (incompressible) solver->SetDensityInc(node[iPoint]->GetDensityInc(), node[iPoint]->GetDensityInc());
       
 			/*--- Set control volume ---*/
 			solver->SetVolume(geometry->node[iPoint]->GetVolume());
@@ -1764,7 +1383,6 @@ void CTNE2EulerSolution::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 	double *Origin         = config->GetRefOriginMoment();
 	//double Pressure_Inf    = config->GetPressure_FreeStreamND();
 	//double *Velocity_Inf   = config->GetVelocity_FreeStreamND();
-	bool incompressible    = config->GetIncompressible();
   
 	/*--- If we have a rotating frame problem or an unsteady problem with
    mesh motion, use special reference values for the force coefficients.
@@ -1800,14 +1418,12 @@ void CTNE2EulerSolution::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 	Total_CDrag = 0.0; Total_CLift = 0.0;  Total_CSideForce = 0.0;
 	Total_CMx = 0.0;   Total_CMy = 0.0;    Total_CMz = 0.0;
 	Total_CFx = 0.0;   Total_CFy = 0.0;    Total_CFz = 0.0;
-	Total_CEff = 0.0;  Total_CMerit = 0.0; Total_CNearFieldOF = 0.0;
-	Total_CT = 0.0;    Total_CQ = 0.0;     Total_Q = 0.0;
+	Total_CEff = 0.0;  Total_Q = 0.0;
   Total_Maxq = 0.0;
 	AllBound_CDrag_Inv = 0.0;        AllBound_CLift_Inv = 0.0;  AllBound_CSideForce_Inv = 0.0;
 	AllBound_CMx_Inv = 0.0;          AllBound_CMy_Inv = 0.0;    AllBound_CMz_Inv = 0.0;
 	AllBound_CFx_Inv = 0.0;          AllBound_CFy_Inv = 0.0;    AllBound_CFz_Inv = 0.0;
-	AllBound_CEff_Inv = 0.0;         AllBound_CMerit_Inv = 0.0; AllBound_CQ_Inv = 0.0;
-	AllBound_CNearFieldOF_Inv = 0.0; AllBound_CT_Inv = 0.0;
+	AllBound_CEff_Inv = 0.0; 
   
 	/*--- Loop over the Euler and Navier-Stokes markers ---*/
 	factor = 1.0 / (0.5*RefDensity*RefAreaCoeff*RefVel2);
@@ -1825,7 +1441,7 @@ void CTNE2EulerSolution::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
       
 			for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-				Pressure = node[iPoint]->GetPressure(incompressible);
+				Pressure = node[iPoint]->GetPressure(false);
         
 				CPressure[iMarker][iVertex] = (Pressure - RefPressure)*factor*RefAreaCoeff;
         
@@ -1872,23 +1488,15 @@ void CTNE2EulerSolution::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 						CMy_Inv[iMarker]          = 0.0;
 						CMz_Inv[iMarker]          = MomentInviscid[2];
 						CEff_Inv[iMarker]         = CLift_Inv[iMarker]/(CDrag_Inv[iMarker]+config->GetCteViscDrag()+EPS);
-						CNearFieldOF_Inv[iMarker] = 0.0;
 						CFx_Inv[iMarker]          = ForceInviscid[0];
 						CFy_Inv[iMarker]          = ForceInviscid[1];
 						CFz_Inv[iMarker]          = 0.0;
-						CT_Inv[iMarker]           = -CFx_Inv[iMarker];
-						CQ_Inv[iMarker]           = -CMz_Inv[iMarker];
-						CMerit_Inv[iMarker]       = 0.0;
 					}
 					else {
 						CDrag_Inv[iMarker] = 0.0; CLift_Inv[iMarker] = 0.0; CSideForce_Inv[iMarker] = 0.0;
 						CMx_Inv[iMarker] = 0.0; CMy_Inv[iMarker] = 0.0; CMz_Inv[iMarker] = 0.0;
 						CFx_Inv[iMarker] = 0.0; CFy_Inv[iMarker] = 0.0; CFz_Inv[iMarker] = 0.0;
 						CEff_Inv[iMarker] = 0.0;
-						CNearFieldOF_Inv[iMarker] = NFPressOF;
-						CT_Inv[iMarker] = 0.0;
-						CQ_Inv[iMarker] = 0.0;
-						CMerit_Inv[iMarker] = 0.0;
 					}
 				}
 				if (nDim == 3) {
@@ -1900,25 +1508,16 @@ void CTNE2EulerSolution::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 						CMy_Inv[iMarker] = MomentInviscid[1];
 						CMz_Inv[iMarker] = MomentInviscid[2];
 						CEff_Inv[iMarker] = CLift_Inv[iMarker]/(CDrag_Inv[iMarker]+config->GetCteViscDrag()+EPS);
-						CNearFieldOF_Inv[iMarker] = 0.0;
 						CFx_Inv[iMarker] = ForceInviscid[0];
 						CFy_Inv[iMarker] = ForceInviscid[1];
 						CFz_Inv[iMarker] = ForceInviscid[2];
-						CT_Inv[iMarker] = -CFz_Inv[iMarker];
-						CQ_Inv[iMarker] = -CMz_Inv[iMarker];
-						/*--- For now, define the FM as a simple rotor efficiency ---*/
-						//CMerit_Inv[iMarker] = CT_Inv[iMarker]*sqrt(fabs(CT_Inv[iMarker]))/(sqrt(2.0)*CQ_Inv[iMarker]);
-						CMerit_Inv[iMarker] = CT_Inv[iMarker]/CQ_Inv[iMarker];
+
 					}
 					else {
 						CDrag_Inv[iMarker] = 0.0; CLift_Inv[iMarker] = 0.0; CSideForce_Inv[iMarker] = 0.0;
 						CMx_Inv[iMarker] = 0.0; CMy_Inv[iMarker] = 0.0; CMz_Inv[iMarker] = 0.0;
 						CFx_Inv[iMarker] = 0.0; CFy_Inv[iMarker] = 0.0; CFz_Inv[iMarker] = 0.0;
 						CEff_Inv[iMarker] = 0.0;
-						CNearFieldOF_Inv[iMarker] = NFPressOF;
-						CT_Inv[iMarker] = 0.0;
-						CQ_Inv[iMarker] = 0.0;
-						CMerit_Inv[iMarker] = 0.0;
 					}
 				}
         
@@ -1929,13 +1528,9 @@ void CTNE2EulerSolution::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 				AllBound_CMy_Inv += CMy_Inv[iMarker];
 				AllBound_CMz_Inv += CMz_Inv[iMarker];
 				AllBound_CEff_Inv += CEff_Inv[iMarker];
-				AllBound_CNearFieldOF_Inv += CNearFieldOF_Inv[iMarker];
 				AllBound_CFx_Inv += CFx_Inv[iMarker];
 				AllBound_CFy_Inv += CFy_Inv[iMarker];
 				AllBound_CFz_Inv += CFz_Inv[iMarker];
-				AllBound_CT_Inv += CT_Inv[iMarker];
-				AllBound_CQ_Inv += CQ_Inv[iMarker];
-				AllBound_CMerit_Inv += CMerit_Inv[iMarker];
 			}
 		}
 	}
@@ -1947,13 +1542,10 @@ void CTNE2EulerSolution::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 	Total_CMy += AllBound_CMy_Inv;
 	Total_CMz += AllBound_CMz_Inv;
 	Total_CEff += AllBound_CEff_Inv;
-	Total_CNearFieldOF += AllBound_CNearFieldOF_Inv;
 	Total_CFx += AllBound_CFx_Inv;
 	Total_CFy += AllBound_CFy_Inv;
 	Total_CFz += AllBound_CFz_Inv;
-	Total_CT += AllBound_CT_Inv;
-	Total_CQ += AllBound_CQ_Inv;
-	Total_CMerit += AllBound_CMerit_Inv;
+
 }
 
 void CTNE2EulerSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **solution_container, CConfig *config) {
@@ -2083,11 +1675,8 @@ void CTNE2EulerSolution::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *co
 	unsigned short iDim, iVar, iMarker, nPrimVar;
 	double *PrimVar_Vertex, *PrimVar_i, *PrimVar_j, PrimVar_Average,
 	Partial_Gradient, Partial_Res, *Normal;
-  
-	bool incompressible = config->GetIncompressible();
-  
-	if (incompressible) nPrimVar = nDim+2;
-	else nPrimVar = nDim+3;
+    
+	nPrimVar = nDim+3;
   
 	/*--- Gradient primitive variables compressible (temp, vx, vy, vz, P, rho)
    Gradient primitive variables incompressible (rho, vx, vy, vz, beta) ---*/
@@ -2164,11 +1753,8 @@ void CTNE2EulerSolution::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *co
 	unsigned long iPoint, jPoint;
 	double *PrimVar_i, *PrimVar_j, *Coord_i, *Coord_j, r11, r12, r13, r22, r23, r23_a,
 	r23_b, r33, weight, product;
-  
-	bool incompressible = config->GetIncompressible();
-  
-	if (incompressible) nPrimVar = nDim+2;
-	else nPrimVar = nDim+3;
+    
+	nPrimVar = nDim+3;
   
 	/*--- Gradient primitive variables compressible (temp, vx, vy, vz, P, rho)
    Gradient primitive variables incompressible (rho, vx, vy, vz, beta) ---*/
@@ -2286,11 +1872,8 @@ void CTNE2EulerSolution::SetPrimVar_Gradient_MPI(CGeometry *geometry, CConfig *c
 	double *Buffer_Send_VGrad = NULL;
   
 #endif
-  
-	bool incompressible = config->GetIncompressible();
-  
-	if (incompressible) nPrimVar = nDim+2;
-	else nPrimVar = nDim+3;
+    
+	nPrimVar = nDim+3;
   
 	newGradient = new double* [nPrimVar];
 	for (iVar = 0; iVar < nPrimVar; iVar++)
@@ -2470,7 +2053,6 @@ void CTNE2EulerSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 	bool rotating_frame = config->GetRotating_Frame();
 	bool grid_movement  = config->GetGrid_Movement();
-	bool incompressible = config->GetIncompressible();
   
 	/*--- Loop over all the vertices on this boundary marker ---*/
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -2487,13 +2069,12 @@ void CTNE2EulerSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution
 			for (iDim = 0; iDim < nDim; iDim++) UnitaryNormal[iDim] = -Normal[iDim]/Area;
       
 			/*--- Set the residual using the pressure ---*/
-			if (incompressible) Pressure = node[iPoint]->GetSolution(0);
-			else Pressure = node[iPoint]->GetPressure(incompressible);
+			Pressure = node[iPoint]->GetPressure(false);
       
 			Residual[0] = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++)
 				Residual[iDim+1] = Pressure*UnitaryNormal[iDim]*Area;
-			if (!incompressible) Residual[nVar-1] = 0.0;
+			Residual[nVar-1] = 0.0;
       
 			/*--- Adjustment to energy equation for a rotating frame ---*/
 			if (rotating_frame) {
@@ -2515,17 +2096,6 @@ void CTNE2EulerSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution
       
 			/*--- Form Jacobians for implicit computations ---*/
 			if (implicit) {
-				if (incompressible)  {
-					Density = node[iPoint]->GetDensityInc();
-					for (iVar = 0; iVar < nVar; iVar++) {
-						for (jVar = 0; jVar < nVar; jVar++)
-							Jacobian_i[iVar][jVar] = 0.0;
-					}
-					for (iDim = 0; iDim < nDim; iDim++)
-						Jacobian_i[iDim+1][0] = -Normal[iDim];
-					Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
-				}
-				else {
 					a2 = Gamma-1.0;
 					phi = 0.5*a2*node[iPoint]->GetVelocity2();
           
@@ -2536,7 +2106,7 @@ void CTNE2EulerSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution
 					for (iDim = 0; iDim < nDim; iDim++) {
 						Jacobian_i[iDim+1][0] = -phi*Normal[iDim];
 						for (jDim = 0; jDim < nDim; jDim++)
-							Jacobian_i[iDim+1][jDim+1] = a2*node[iPoint]->GetVelocity(jDim, incompressible)*Normal[iDim];
+							Jacobian_i[iDim+1][jDim+1] = a2*node[iPoint]->GetVelocity(jDim, false)*Normal[iDim];
 						Jacobian_i[iDim+1][nDim+1] = -a2*Normal[iDim];
 					}
 					if (grid_movement) {
@@ -2545,17 +2115,16 @@ void CTNE2EulerSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution
 						for (iDim = 0; iDim < nDim; iDim++)
 							ProjGridVel += GridVel[iDim]*UnitaryNormal[iDim]*Area;
 						for (jDim = 0; jDim < nDim; jDim++)
-							Jacobian_i[nDim+1][jDim+1] = a2*node[iPoint]->GetVelocity(jDim, incompressible)*ProjGridVel;
+							Jacobian_i[nDim+1][jDim+1] = a2*node[iPoint]->GetVelocity(jDim, false)*ProjGridVel;
 						Jacobian_i[nDim+1][nDim+1] = -a2*ProjGridVel;
 					}
 					if (rotating_frame) {
 						Rot_Flux = -geometry->vertex[val_marker][iVertex]->GetRotFlux();
 						for (jDim = 0; jDim < nDim; jDim++)
-							Jacobian_i[nDim+1][jDim+1] = a2*node[iPoint]->GetVelocity(jDim, incompressible)*Rot_Flux;
+							Jacobian_i[nDim+1][jDim+1] = a2*node[iPoint]->GetVelocity(jDim, false)*Rot_Flux;
 						Jacobian_i[nDim+1][nDim+1] = -a2*Rot_Flux;
 					}
 					Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
-				}
 			}
 		}
 	}
@@ -2571,16 +2140,13 @@ void CTNE2EulerSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_
 	bool implicit           = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 	bool rotating_frame     = config->GetRotating_Frame();
 	bool grid_movement      = config->GetGrid_Movement();
-	bool incompressible     = config->GetIncompressible();
 	bool gravity            = config->GetGravityForce();
-	double FreeSurface_Zero = config->GetFreeSurface_Zero();
 	double PressFreeSurface = GetPressure_Inf();
 	double Froude           = config->GetFroude();
   double Gas_Constant       = config->GetGas_ConstantND();
 	bool viscous              = config->GetViscous();
   
-  if (incompressible) nPrimVar = nDim+2;
-	else nPrimVar = nDim+3;
+  nPrimVar = nDim+3;
   
 	double *U_domain = new double[nVar]; double *U_infty = new double[nVar];
   double *V_domain = new double[nPrimVar]; double *V_infty = new double[nPrimVar];
@@ -2606,24 +2172,6 @@ void CTNE2EulerSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_
 			for (iVar = 0; iVar < nPrimVar; iVar++) V_domain[iVar] = node[iPoint]->GetPrimVar(iVar);
       
 			/*--- Construct solution state at infinity (farfield) ---*/
-			if (incompressible) {
-        
-				Density = node[iPoint]->GetDensityInc();
-				Height = geometry->node[iPoint]->GetCoord(nDim-1);
-				Coord = geometry->node[iPoint]->GetCoord();
-				if (gravity) Pressure = PressFreeSurface + Density*(FreeSurface_Zero-Height)/(Froude*Froude);
-				else Pressure = PressFreeSurface;
-        
-				U_infty[0] = Pressure;
-				for (iDim = 0; iDim < nDim; iDim++)
-					U_infty[iDim+1] = GetVelocity_Inf(iDim)*Density;
-        
-				V_infty[0] = Density;
-				for (iDim = 0; iDim < nDim; iDim++)
-					V_infty[iDim+1] = GetVelocity_Inf(iDim);
-        
-			} else {
-        
 				U_infty[0] = GetDensity_Inf();
 				for (iDim = 0; iDim < nDim; iDim++)
 					U_infty[iDim+1] = GetDensity_Velocity_Inf(iDim);
@@ -2634,17 +2182,10 @@ void CTNE2EulerSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_
 					V_infty[iDim+1] = GetVelocity_Inf(iDim);
 				V_infty[nDim+1] = GetPressure_Inf();
 				V_infty[nDim+2] = GetDensity_Inf();
-        
-			}
+
       
 			/*--- Set various quantities in the solver class ---*/
 			conv_solver->SetConservative(U_domain, U_infty);
-      
-			if (incompressible) {
-				conv_solver->SetDensityInc(node[iPoint]->GetDensityInc(), node[iPoint]->GetDensityInc());
-				conv_solver->SetBetaInc2(node[iPoint]->GetBetaInc2(), node[iPoint]->GetBetaInc2());
-				conv_solver->SetCoord(Coord, Coord);
-			}
       
 			if (rotating_frame) {
 				conv_solver->SetRotVel(geometry->node[iPoint]->GetRotVel(), geometry->node[iPoint]->GetRotVel());
@@ -2680,8 +2221,7 @@ void CTNE2EulerSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_
 				visc_solver->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
         
 				/*--- Laminar and eddy viscosity ---*/
-				if (incompressible) visc_solver->SetLaminarViscosity(node[iPoint]->GetLaminarViscosityInc(), node[iPoint]->GetLaminarViscosityInc());
-				else visc_solver->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(), node[iPoint]->GetLaminarViscosity());
+				visc_solver->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(), node[iPoint]->GetLaminarViscosity());
 				visc_solver->SetEddyViscosity(node[iPoint]->GetEddyViscosity(), node[iPoint]->GetEddyViscosity());
         
 				/*--- Turbulent kinetic energy ---*/
@@ -2721,17 +2261,14 @@ void CTNE2EulerSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_cont
 	bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 	bool rotating_frame       = config->GetRotating_Frame();
 	bool grid_movement        = config->GetGrid_Movement();
-	bool incompressible       = config->GetIncompressible();
 	double Two_Gamma_M1       = 2.0/Gamma_Minus_One;
 	double Gas_Constant       = config->GetGas_ConstantND();
 	unsigned short Kind_Inlet = config->GetKind_Inlet();
 	string Marker_Tag         = config->GetMarker_All_Tag(val_marker);
 	bool viscous              = config->GetViscous();
-	bool freesurface = config->GetFreeSurface();
   bool gravity = (config->GetGravityForce());
   
-  if (incompressible) nPrimVar = nDim+2;
-	else nPrimVar = nDim+3;
+  nPrimVar = nDim+3;
   
 	double *U_domain = new double[nVar];      double *U_inlet = new double[nVar];
 	double *V_domain = new double[nPrimVar];  double *V_inlet = new double[nPrimVar];
@@ -2764,27 +2301,6 @@ void CTNE2EulerSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_cont
       for (iVar = 0; iVar < nPrimVar; iVar++) V_domain[iVar] = node[iPoint]->GetPrimVar(iVar);
       
 			/*--- Build the fictitious intlet state based on characteristics ---*/
-			if (incompressible) {
-        
-				/*--- Pressure and density using the internal value ---*/
-				U_inlet[0] = node[iPoint]->GetSolution(0);
-				Density_Inlet = node[iPoint]->GetDensityInc();
-        V_inlet[0] = node[iPoint]->GetDensityInc();
-        
-				/*--- The velocity is computed from the infinity values ---*/
-				for (iDim = 0; iDim < nDim; iDim++) {
-					U_inlet[iDim+1] = GetVelocity_Inf(iDim)*Density_Inlet;
-          V_inlet[iDim+1] = GetVelocity_Inf(iDim);
-        }
-        
-				/*--- The y/z velocity is interpolated due to the
-         free surface effect on the pressure ---*/
-				if (freesurface) {
-          U_inlet[nDim] = node[iPoint]->GetSolution(nDim);
-          V_inlet[nDim] = node[iPoint]->GetPrimVar(nDim);
-        }
-        
-			} else {
         
 				/*--- Subsonic inflow: there is one outgoing characteristic (u-c),
          therefore we can specify all but one state variable at the inlet.
@@ -2904,8 +2420,8 @@ void CTNE2EulerSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_cont
             
             /*--- Get primitives from current inlet state. ---*/
             for (iDim = 0; iDim < nDim; iDim++)
-              Velocity[iDim] = node[iPoint]->GetVelocity(iDim, incompressible);
-            Pressure    = node[iPoint]->GetPressure(incompressible);
+              Velocity[iDim] = node[iPoint]->GetVelocity(iDim, false);
+            Pressure    = node[iPoint]->GetPressure(false);
             SoundSpeed2 = Gamma*Pressure/U_domain[0];
             
             /*--- Compute the acoustic Riemann invariant that is extrapolated
@@ -2943,16 +2459,10 @@ void CTNE2EulerSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_cont
             
             break;
 				}
-			}
       
 			/*--- Set various quantities in the solver class ---*/
 			conv_solver->SetConservative(U_domain, U_inlet);
       
-			if (incompressible) {
-				conv_solver->SetDensityInc(node[iPoint]->GetDensityInc(), Density_Inlet);
-				conv_solver->SetBetaInc2(node[iPoint]->GetBetaInc2(), node[iPoint]->GetBetaInc2());
-				conv_solver->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
-			}
 			if (rotating_frame) {
 				conv_solver->SetRotVel(geometry->node[iPoint]->GetRotVel(), geometry->node[iPoint]->GetRotVel());
 				conv_solver->SetRotFlux(-geometry->vertex[val_marker][iVertex]->GetRotFlux());
@@ -2985,8 +2495,7 @@ void CTNE2EulerSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_cont
 				visc_solver->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
         
 				/*--- Laminar and eddy viscosity ---*/
-				if (incompressible) visc_solver->SetLaminarViscosity(node[iPoint]->GetLaminarViscosityInc(), node[iPoint]->GetLaminarViscosityInc());
-				else visc_solver->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(), node[iPoint]->GetLaminarViscosity());
+				visc_solver->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(), node[iPoint]->GetLaminarViscosity());
 				visc_solver->SetEddyViscosity(node[iPoint]->GetEddyViscosity(), node[iPoint]->GetEddyViscosity());
         
 				/*--- Turbulent kinetic energy ---*/
@@ -3025,10 +2534,8 @@ void CTNE2EulerSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_con
   
 	bool implicit           = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   double Gas_Constant     = config->GetGas_ConstantND();
-	bool incompressible     = config->GetIncompressible();
 	bool rotating_frame     = config->GetRotating_Frame();
 	bool grid_movement      = config->GetGrid_Movement();
-	double FreeSurface_Zero = config->GetFreeSurface_Zero();
 	double PressFreeSurface = GetPressure_Inf();
 	double Froude           = config->GetFroude();
 	double epsilon          = config->GetFreeSurface_Thickness();
@@ -3038,8 +2545,7 @@ void CTNE2EulerSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_con
   bool freesurface = config->GetFreeSurface();
   bool gravity = (config->GetGravityForce());
   
-  if (incompressible) nPrimVar = nDim+2;
-	else nPrimVar = nDim+3;
+  nPrimVar = nDim+3;
   
 	double *U_domain = new double[nVar];      double *U_outlet = new double[nVar];
   double *V_domain = new double[nPrimVar];  double *V_outlet = new double[nPrimVar];
@@ -3072,45 +2578,6 @@ void CTNE2EulerSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_con
       for (iVar = 0; iVar < nPrimVar; iVar++) V_domain[iVar] = node[iPoint]->GetPrimVar(iVar);
       
 			/*--- Build the fictitious intlet state based on characteristics ---*/
-			if (incompressible) {
-        
-        
-				if (freesurface) {
-          
-					/*--- Density computation at the exit using the level set function ---*/
-					Height = geometry->node[iPoint]->GetCoord(nDim-1);
-					LevelSet = Height - FreeSurface_Zero;
-          
-					/*--- Pressure computation the density at the exit (imposed) ---*/
-					if (LevelSet < -epsilon) Density_Outlet = config->GetDensity_FreeStreamND();
-					if (LevelSet > epsilon) Density_Outlet = RatioDensity*config->GetDensity_FreeStreamND();
-					U_outlet[0] = PressFreeSurface + Density_Outlet*((FreeSurface_Zero-Height)/(Froude*Froude));
-          V_domain[0] = Density_Outlet;
-          
-					/*--- Neumman condition in the interface for the pressure and density ---*/
-					if (fabs(LevelSet) <= epsilon) {
-						U_outlet[0] = node[Point_Normal]->GetSolution(0);
-						Density_Outlet = node[Point_Normal]->GetDensityInc();
-            V_domain[0] = Density_Outlet;
-					}
-          
-				} else {
-          
-					/*--- Imposed pressure and density ---*/
-					Density_Outlet = GetDensity_Inf();
-					U_outlet[0] = GetPressure_Inf();
-          V_domain[0] = Density_Outlet;
-          
-				}
-        
-				/*--- Neumman condition for the velocity ---*/
-				for (iDim = 0; iDim < nDim; iDim++) {
-					U_outlet[iDim+1] = node[Point_Normal]->GetSolution(iDim+1);
-          V_outlet[iDim+1] = node[Point_Normal]->GetPrimVar(iDim+1);
-        }
-        
-			}
-			else {
         
 				/*--- Retrieve the specified back pressure for this outlet. ---*/
         if (gravity) P_Exit = config->GetOutlet_Pressure(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;
@@ -3180,17 +2647,11 @@ void CTNE2EulerSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_con
 					V_outlet[nDim+1] = Pressure;
           V_outlet[nDim+2] = Density;
           
-				}
 			}
       
 			/*--- Set various quantities in the solver class ---*/
 			conv_solver->SetConservative(U_domain, U_outlet);
       
-			if (incompressible) {
-				conv_solver->SetDensityInc(node[iPoint]->GetDensityInc(), Density_Outlet);
-				conv_solver->SetBetaInc2(node[iPoint]->GetBetaInc2(), node[iPoint]->GetBetaInc2());
-				conv_solver->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
-			}
 			if (rotating_frame) {
 				conv_solver->SetRotVel(geometry->node[iPoint]->GetRotVel(), geometry->node[iPoint]->GetRotVel());
 				conv_solver->SetRotFlux(-geometry->vertex[val_marker][iVertex]->GetRotFlux());
@@ -3223,8 +2684,7 @@ void CTNE2EulerSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_con
 				visc_solver->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
         
 				/*--- Laminar and eddy viscosity ---*/
-				if (incompressible) visc_solver->SetLaminarViscosity(node[iPoint]->GetLaminarViscosityInc(), node[iPoint]->GetLaminarViscosityInc());
-				else visc_solver->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(), node[iPoint]->GetLaminarViscosity());
+				visc_solver->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(), node[iPoint]->GetLaminarViscosity());
 				visc_solver->SetEddyViscosity(node[iPoint]->GetEddyViscosity(), node[iPoint]->GetEddyViscosity());
         
 				/*--- Turbulent kinetic energy ---*/
@@ -3263,12 +2723,10 @@ void CTNE2EulerSolution::BC_Supersonic_Inlet(CGeometry *geometry, CSolution **so
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 	bool rotating_frame = config->GetRotating_Frame();
 	bool grid_movement  = config->GetGrid_Movement();
-	bool incompressible = config->GetIncompressible();
 	bool viscous              = config->GetViscous();
 	string Marker_Tag = config->GetMarker_All_Tag(val_marker);
   
-  if (incompressible) nPrimVar = nDim+2;
-	else nPrimVar = nDim+3;
+  nPrimVar = nDim+3;
   
   double *U_inlet = new double[nVar]; double *U_domain = new double[nVar];
   double *V_inlet = new double[nPrimVar]; double *V_domain = new double[nPrimVar];
@@ -3339,14 +2797,7 @@ void CTNE2EulerSolution::BC_Supersonic_Inlet(CGeometry *geometry, CSolution **so
 			/*--- Set various quantities in the solver class ---*/
 			conv_solver->SetNormal(Normal);
 			conv_solver->SetConservative(U_domain, U_inlet);
-			if (incompressible) {
-				conv_solver->SetDensityInc(node[iPoint]->GetDensityInc(),
-                                   node[iPoint]->GetDensityInc());
-				conv_solver->SetBetaInc2(node[iPoint]->GetBetaInc2(),
-                                 node[iPoint]->GetBetaInc2());
-				conv_solver->SetCoord(geometry->node[iPoint]->GetCoord(),
-                              geometry->node[iPoint]->GetCoord());
-			}
+
 			if (rotating_frame) {
 				conv_solver->SetRotVel(geometry->node[iPoint]->GetRotVel(),
                                geometry->node[iPoint]->GetRotVel());
@@ -3410,7 +2861,6 @@ void CTNE2EulerSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_
 	double Pressure, *Normal, Density;
   
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-	bool incompressible = config->GetIncompressible();
   
 	/*--- Loop over all the vertices ---*/
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -3430,31 +2880,19 @@ void CTNE2EulerSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_
 			for (iDim = 0; iDim < nDim; iDim++)
 				UnitaryNormal[iDim] = -Normal[iDim]/Area;
       
-			if (incompressible) Pressure = node[iPoint]->GetSolution(0);
-			else Pressure = node[iPoint]->GetPressure(incompressible);
+			Pressure = node[iPoint]->GetPressure(false);
       
 			/*--- Set the residual using the pressure ---*/
 			Residual[0] = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++)
 				Residual[iDim+1] = Pressure*UnitaryNormal[iDim]*Area;
-			if (!incompressible) Residual[nVar-1] = 0.0;
+			Residual[nVar-1] = 0.0;
       
 			/*--- Add value to the residual ---*/
 			AddResidual(iPoint, Residual);
       
 			/*--- In case we are doing a implicit computation ---*/
 			if (implicit) {
-				if (incompressible)  {
-					Density = node[iPoint]->GetDensityInc();
-					for (iVar = 0; iVar < nVar; iVar++) {
-						for (jVar = 0; jVar < nVar; jVar++)
-							Jacobian_i[iVar][jVar] = 0.0;
-					}
-					for (iDim = 0; iDim < nDim; iDim++)
-						Jacobian_i[iDim+1][0] = -Normal[iDim];
-					Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
-				}
-				else {
 					double a2 = Gamma-1.0;
 					double phi = 0.5*a2*node[iPoint]->GetVelocity2();
           
@@ -3465,11 +2903,10 @@ void CTNE2EulerSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_
 					for (iDim = 0; iDim < nDim; iDim++) {
 						Jacobian_i[iDim+1][0] = -phi*Normal[iDim];
 						for (unsigned short jDim = 0; jDim < nDim; jDim++)
-							Jacobian_i[iDim+1][jDim+1] = a2*node[iPoint]->GetVelocity(jDim, incompressible)*Normal[iDim];
+							Jacobian_i[iDim+1][jDim+1] = a2*node[iPoint]->GetVelocity(jDim, false)*Normal[iDim];
 						Jacobian_i[iDim+1][nDim+1] = -a2*Normal[iDim];
 					}
 					Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
-				}
 			}
 		}
 	}
@@ -3485,7 +2922,6 @@ void CTNE2EulerSolution::SetResidual_DualTime(CGeometry *geometry, CSolution **s
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 	bool FlowEq = (RunTime_EqSystem == RUNTIME_FLOW_SYS);
 	bool AdjEq = (RunTime_EqSystem == RUNTIME_ADJFLOW_SYS);
-	bool incompressible = config->GetIncompressible();
 	bool Grid_Movement = config->GetGrid_Movement();
   
 	/*--- loop over points ---*/
@@ -3519,9 +2955,7 @@ void CTNE2EulerSolution::SetResidual_DualTime(CGeometry *geometry, CSolution **s
 				Residual[iVar] = ( 3.0*U_time_nP1[iVar]*Volume_nP1 - 4.0*U_time_n[iVar]*Volume_n
                           +  1.0*U_time_nM1[iVar]*Volume_nM1 ) / (2.0*TimeStep);
 		}
-    
-		if (incompressible && (FlowEq || AdjEq)) Residual[0] = 0.0;
-    
+        
 		/*--- Add Residual ---*/
 		AddResidual(iPoint, Residual);
     
@@ -3535,7 +2969,6 @@ void CTNE2EulerSolution::SetResidual_DualTime(CGeometry *geometry, CSolution **s
 				if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
 					Jacobian_i[iVar][iVar] = (Volume_nP1*3.0)/(2.0*TimeStep);
 			}
-			if (incompressible && (FlowEq || AdjEq)) Jacobian_i[0][0] = 0.0;
 			Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 		}
 	}
@@ -3555,7 +2988,6 @@ void CTNE2EulerSolution::GetRestart(CGeometry *geometry, CConfig *config, unsign
 	char buffer[50];
 	string UnstExt, text_line;
 	ifstream restart_file;
-	bool incompressible = config->GetIncompressible();
 	bool grid_movement = config->GetGrid_Movement();
 	unsigned short nZone = geometry->GetnZone();
   
@@ -3650,14 +3082,8 @@ void CTNE2EulerSolution::GetRestart(CGeometry *geometry, CConfig *config, unsign
 		iPoint_Local = Global2Local[iPoint_Global];
 		if (iPoint_Local >= 0) {
       
-			if (incompressible) {
-				if (nDim == 2) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2];
-				if (nDim == 3) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-			}
-			else {
 				if (nDim == 2) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
 				if (nDim == 3) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
-			}
       
 			node[iPoint_Local]->SetSolution(Solution);
       
@@ -3763,9 +3189,7 @@ CTNE2NSSolution::CTNE2NSSolution(void) : CTNE2EulerSolution() {
 	CFy_Visc = NULL;
 	CFz_Visc = NULL;
 	CEff_Visc = NULL;
-	CMerit_Visc = NULL;
-	CT_Visc = NULL;
-	CQ_Visc = NULL;
+
 	ForceViscous = NULL;
 	MomentViscous = NULL;
 	CSkinFriction = NULL;
@@ -3779,7 +3203,6 @@ CTNE2NSSolution::CTNE2NSSolution(CGeometry *geometry, CConfig *config, unsigned 
   
 	unsigned short nZone = geometry->GetnZone();
 	bool restart = (config->GetRestart() || config->GetRestart_Flow());
-	bool incompressible = config->GetIncompressible();
   double Gas_Constant = config->GetGas_ConstantND();
   
 	/*--- Array initialization ---*/
@@ -3792,9 +3215,6 @@ CTNE2NSSolution::CTNE2NSSolution(CGeometry *geometry, CConfig *config, unsigned 
 	CFy_Visc = NULL;
 	CFz_Visc = NULL;
 	CEff_Visc = NULL;
-	CMerit_Visc = NULL;
-	CT_Visc = NULL;
-	CQ_Visc = NULL;
   Q_Visc = NULL;
   Maxq_Visc = NULL;
 	ForceViscous = NULL;
@@ -3812,8 +3232,7 @@ CTNE2NSSolution::CTNE2NSSolution(CGeometry *geometry, CConfig *config, unsigned 
   
 	/*--- Define geometry constants in the solver structure ---*/
 	nDim = geometry->GetnDim();
-	if (incompressible) { nVar = nDim + 1; nPrimVar = nDim+2; nPrimVarGrad = nDim+2; }
-	else { nVar = nDim + 2; nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
+	nVar = nDim + 2; nPrimVar = nDim+5; nPrimVarGrad = nDim+3;
 	nMarker = config->GetnMarker_All();
 	nPoint = geometry->GetnPoint();
 	nPointDomain = geometry->GetnPointDomain();
@@ -3841,12 +3260,6 @@ CTNE2NSSolution::CTNE2NSSolution(CGeometry *geometry, CConfig *config, unsigned 
 	Vector   = new double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector[iDim]   = 0.0;
 	Vector_i = new double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_i[iDim] = 0.0;
 	Vector_j = new double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_j[iDim] = 0.0;
-  
-	/*--- Define some auxiliar vector related with the undivided lapalacian computation ---*/
-	if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) {
-		p1_Und_Lapl = new double [nPoint];
-		p2_Und_Lapl = new double [nPoint];
-	}
   
 	if ((config->GetKind_Upwind_Flow() == ROE_TURKEL_2ND) || (config->GetKind_Upwind_Flow() == ROE_TURKEL_1ST)) {
 		Precon_Mat_inv = new double* [nVar];
@@ -3899,11 +3312,6 @@ CTNE2NSSolution::CTNE2NSSolution(CGeometry *geometry, CConfig *config, unsigned 
 	for (iMarker = 0; iMarker < nMarker; iMarker++)
 		CHeatTransfer[iMarker] = new double [geometry->nVertex[iMarker]];
   
-	/*--- Y plus in all the markers ---*/
-	YPlus = new double* [nMarker];
-	for (iMarker = 0; iMarker < nMarker; iMarker++)
-		YPlus[iMarker] = new double [geometry->nVertex[iMarker]];
-  
 	/*--- Skin friction in all the markers ---*/
 	CSkinFriction = new double* [nMarker];
 	for (iMarker = 0; iMarker < nMarker; iMarker++)
@@ -3923,29 +3331,12 @@ CTNE2NSSolution::CTNE2NSSolution(CGeometry *geometry, CConfig *config, unsigned 
 	CFy_Inv = new double[nMarker];
 	CFz_Inv = new double[nMarker];
   
-	/*--- Rotational coefficients ---*/
-	CMerit_Inv = new double[nMarker];
-	CT_Inv = new double[nMarker];
-	CQ_Inv = new double[nMarker];
-  
-	/*--- Supersonic coefficients ---*/
-	CEquivArea_Inv = new double[nMarker];
-	CNearFieldOF_Inv = new double[nMarker];
-  
-	/*--- Nacelle simulation ---*/
-	FanFace_MassFlow  = new double[nMarker];
-	Exhaust_MassFlow  = new double[nMarker];
-  Exhaust_Area  = new double[nMarker];
-	FanFace_Pressure  = new double[nMarker];
-	FanFace_Mach  = new double[nMarker];
-  FanFace_Area = new double[nMarker];
-  
 	/*--- Init total coefficients ---*/
 	Total_CDrag = 0.0;	Total_CLift = 0.0;			Total_CSideForce = 0.0;
 	Total_CMx = 0.0;		Total_CMy = 0.0;				Total_CMz = 0.0;
-	Total_CEff = 0.0;		Total_CEquivArea = 0.0; Total_CNearFieldOF = 0.0;
-	Total_CFx = 0.0;		Total_CFy = 0.0;				Total_CFz = 0.0; Total_CMerit = 0.0;
-	Total_CT = 0.0;			Total_CQ = 0.0;         Total_Q = 0.0;
+	Total_CEff = 0.0;
+	Total_CFx = 0.0;		Total_CFy = 0.0;				Total_CFz = 0.0;
+  Total_Q = 0.0;
   Total_Maxq = 0.0;
   
 	ForceViscous = new double[3];
@@ -3959,9 +3350,6 @@ CTNE2NSSolution::CTNE2NSSolution(CGeometry *geometry, CConfig *config, unsigned 
 	CFx_Visc = new double[nMarker];
 	CFy_Visc = new double[nMarker];
 	CFz_Visc = new double[nMarker];
-	CMerit_Visc = new double[nMarker];
-	CT_Visc = new double[nMarker];
-	CQ_Visc = new double[nMarker];
   Q_Visc = new double[nMarker];
   Maxq_Visc = new double[nMarker];
   
@@ -3974,15 +3362,6 @@ CTNE2NSSolution::CTNE2NSSolution(CGeometry *geometry, CConfig *config, unsigned 
 	Mach_Inf      = config->GetMach_FreeStreamND();
 	Prandtl_Lam   = config->GetPrandtl_Lam();
 	Prandtl_Turb  = config->GetPrandtl_Turb();
-  
-	/*--- Initializate Fan Face Pressure ---*/
-	for (iMarker = 0; iMarker < nMarker; iMarker++) {
-		FanFace_MassFlow[iMarker] = 0.0;
-		Exhaust_MassFlow[iMarker] = 0.0;
-    Exhaust_Area[iMarker] = 0.0;
-		FanFace_Pressure[iMarker] = Pressure_Inf;
-		FanFace_Mach[iMarker] = Mach_Inf;
-	}
   
 	/*--- Inlet/Outlet boundary conditions, using infinity values ---*/
 	Density_Inlet = Density_Inf;		Density_Outlet = Density_Inf;
@@ -4044,14 +3423,8 @@ CTNE2NSSolution::CTNE2NSSolution(CGeometry *geometry, CConfig *config, unsigned 
        will be returned and used to instantiate the vars. ---*/
 			iPoint_Local = Global2Local[iPoint_Global];
 			if (iPoint_Local >= 0) {
-				if (incompressible) {
-					if (nDim == 2) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2];
-					if (nDim == 3) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-				}
-				else {
 					if (nDim == 2) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
 					if (nDim == 3) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
-				}
 				node[iPoint_Local] = new CNSVariable(Solution, nDim, nVar, config);
 			}
 			iPoint_Global++;
@@ -4107,23 +3480,7 @@ CTNE2NSSolution::CTNE2NSSolution(CGeometry *geometry, CConfig *config, unsigned 
   
   if ((rank == MASTER_NODE) && (counter_global != 0)) cout << "Warning. The original solution contains "<< counter_global << " points that are not physical." << endl;
   
-	/*--- For incompressible solver set the initial values for the density and viscosity,
-	 unless a freesurface problem, this must be constant during the computation ---*/
-	if (incompressible) {
-		for (iPoint = 0; iPoint < nPoint; iPoint++) {
-			node[iPoint]->SetDensityInc(Density_Inf);
-			node[iPoint]->SetLaminarViscosityInc(Viscosity_Inf);
-		}
-	}
-  
 	/*--- Define solver parameters needed for execution of destructor ---*/
-	if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED)
-		space_centered = true;
-	else space_centered = false;
-  
-	if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) euler_implicit = true;
-	else euler_implicit = false;
-  
 	if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
 	else least_squares = false;
   
@@ -4148,9 +3505,6 @@ CTNE2NSSolution::~CTNE2NSSolution(void) {
 	if (CFy_Visc != NULL) delete [] CFy_Visc;
 	if (CFz_Visc != NULL) delete [] CFz_Visc;
 	if (CEff_Visc != NULL) delete [] CEff_Visc;
-	if (CMerit_Visc != NULL) delete [] CMerit_Visc;
-	if (CT_Visc != NULL) delete [] CT_Visc;
-	if (CQ_Visc != NULL) delete [] CQ_Visc;
   if (Q_Visc != NULL) delete [] Q_Visc;
   if (Maxq_Visc != NULL) delete [] Maxq_Visc;
 	if (ForceViscous != NULL) delete [] ForceViscous;
@@ -4170,14 +3524,12 @@ void CTNE2NSSolution::Preprocessing(CGeometry *geometry, CSolution **solution_co
 	double levelset;
   
 	bool adjoint = config->GetAdjoint();
-	bool freesurface = config->GetFreeSurface();
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 	bool upwind_2nd = ((config->GetKind_Upwind_Flow() == ROE_2ND) || (config->GetKind_Upwind_Flow() == AUSM_2ND)
                      || (config->GetKind_Upwind_Flow() == HLLC_2ND) || (config->GetKind_Upwind_Flow() == ROE_TURKEL_2ND));
 	bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
 	bool center_jst = center && config->GetKind_Centered_Flow() == JST;
 	bool limiter = (config->GetKind_SlopeLimit_Flow() != NONE);
-	bool incompressible = config->GetIncompressible();
 	double Gas_Constant = config->GetGas_ConstantND();
 	unsigned short turb_model = config->GetKind_Turb_Model();
 	bool tkeNeeded = (turb_model == SST);
@@ -4194,13 +3546,9 @@ void CTNE2NSSolution::Preprocessing(CGeometry *geometry, CSolution **solution_co
     
 		if (tkeNeeded) turb_ke = solution_container[TURB_SOL]->node[iPoint]->GetSolution(0);
     
-		if (freesurface) levelset = solution_container[LEVELSET_SOL]->node[iPoint]->GetPrimVar(0);
-		else levelset = 0.0;
-    
 		/*--- Set the primitive variables incompressible (dens, vx, vy, vz, beta)
      and compressible (temp, vx, vy, vz, press, dens, enthal, sos)---*/
-		if (incompressible) node[iPoint]->SetPrimVar_Incompressible(Density_Inf, Viscosity_Inf, turb_ke, levelset, config);
-		else node[iPoint]->SetPrimVar_Compressible(Gamma, Gas_Constant, turb_ke);
+		node[iPoint]->SetPrimVar_Compressible(Gamma, Gas_Constant, turb_ke);
     
 		/*--- Set the value of the eddy viscosity ---*/
 		if (turb_model != NONE)
@@ -4249,7 +3597,6 @@ void CTNE2NSSolution::SetTime_Step(CGeometry *geometry, CSolution **solution_con
   
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 	bool rotating_frame = config->GetRotating_Frame();
-	bool incompressible = config->GetIncompressible();
 	bool grid_movement = config->GetGrid_Movement();
 	double turb_model = config->GetKind_Turb_Model();
 	bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -4280,16 +3627,8 @@ void CTNE2NSSolution::SetTime_Step(CGeometry *geometry, CSolution **solution_con
 		Area = 0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
     
 		/*--- Mean Values ---*/
-		if (incompressible) {
-			Mean_ProjVel = 0.5 * (node[iPoint]->GetProjVelInc(Normal) + node[jPoint]->GetProjVelInc(Normal));
-			Mean_BetaInc2 = 0.5 * (node[iPoint]->GetBetaInc2() + node[jPoint]->GetBetaInc2());
-			Mean_DensityInc = 0.5 * (node[iPoint]->GetDensityInc() + node[jPoint]->GetDensityInc());
-			Mean_SoundSpeed = sqrt(Mean_ProjVel*Mean_ProjVel + (Mean_BetaInc2/Mean_DensityInc)*Area*Area);
-		}
-		else {
 			Mean_ProjVel = 0.5 * (node[iPoint]->GetProjVel(Normal) + node[jPoint]->GetProjVel(Normal));
 			Mean_SoundSpeed = 0.5 * (node[iPoint]->GetSoundSpeed() + node[jPoint]->GetSoundSpeed()) * Area;
-		}
     
 		/*--- Contribution due to a rotating frame ---*/
 		if (rotating_frame) {
@@ -4321,16 +3660,9 @@ void CTNE2NSSolution::SetTime_Step(CGeometry *geometry, CSolution **solution_con
 		if (geometry->node[jPoint]->GetDomain()) node[jPoint]->AddMax_Lambda_Inv(Lambda);
     
 		/*--- Viscous contribution ---*/
-		if (incompressible) {
-			Mean_LaminarVisc = 0.5*(node[iPoint]->GetLaminarViscosityInc() + node[jPoint]->GetLaminarViscosityInc());
-			Mean_EddyVisc    = 0.5*(node[iPoint]->GetEddyViscosity() + node[jPoint]->GetEddyViscosity());
-			Mean_Density     = 0.5*(node[iPoint]->GetDensityInc() + node[jPoint]->GetDensityInc());
-		}
-		else {
 			Mean_LaminarVisc = 0.5*(node[iPoint]->GetLaminarViscosity() + node[jPoint]->GetLaminarViscosity());
 			Mean_EddyVisc    = 0.5*(node[iPoint]->GetEddyViscosity() + node[jPoint]->GetEddyViscosity());
 			Mean_Density     = 0.5*(node[iPoint]->GetSolution(0) + node[jPoint]->GetSolution(0));
-		}
     
 		Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc + Mean_EddyVisc);
 		Lambda_2 = (1.0 + (Prandtl_Lam/Prandtl_Turb)*(Mean_EddyVisc/Mean_LaminarVisc))*(Gamma*Mean_LaminarVisc/Prandtl_Lam);
@@ -4351,16 +3683,8 @@ void CTNE2NSSolution::SetTime_Step(CGeometry *geometry, CSolution **solution_con
 			Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
       
 			/*--- Mean Values ---*/
-			if (incompressible) {
-				Mean_ProjVel = node[iPoint]->GetProjVelInc(Normal);
-				Mean_BetaInc2 = node[iPoint]->GetBetaInc2();
-				Mean_DensityInc = node[iPoint]->GetDensityInc();
-				Mean_SoundSpeed = sqrt(Mean_ProjVel*Mean_ProjVel + (Mean_BetaInc2/Mean_DensityInc)*Area*Area);
-			}
-			else {
 				Mean_ProjVel = node[iPoint]->GetProjVel(Normal);
 				Mean_SoundSpeed = node[iPoint]->GetSoundSpeed() * Area;
-			}
       
 			/*--- Contribution due to a rotating frame ---*/
 			if (rotating_frame) {
@@ -4387,16 +3711,9 @@ void CTNE2NSSolution::SetTime_Step(CGeometry *geometry, CSolution **solution_con
 			}
       
 			/*--- Viscous contribution ---*/
-			if (incompressible) {
-				Mean_LaminarVisc = 0.5*(node[iPoint]->GetLaminarViscosityInc() + node[jPoint]->GetLaminarViscosityInc());
-				Mean_EddyVisc    = 0.5*(node[iPoint]->GetEddyViscosity() + node[jPoint]->GetEddyViscosity());
-				Mean_Density     = 0.5*(node[iPoint]->GetDensityInc() + node[jPoint]->GetDensityInc());
-			}
-			else {
 				Mean_LaminarVisc = node[iPoint]->GetLaminarViscosity();
 				Mean_EddyVisc    = node[iPoint]->GetEddyViscosity();
 				Mean_Density     = node[iPoint]->GetSolution(0);
-			}
       
 			Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc + Mean_EddyVisc);
 			Lambda_2 = (1.0 + (Prandtl_Lam/Prandtl_Turb)*(Mean_EddyVisc/Mean_LaminarVisc))*(Gamma*Mean_LaminarVisc/Prandtl_Lam);
@@ -4474,7 +3791,6 @@ void CTNE2NSSolution::Viscous_Residual(CGeometry *geometry, CSolution **solution
 	unsigned long iPoint, jPoint, iEdge;
   
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-	bool incompressible = config->GetIncompressible();
   
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
@@ -4489,12 +3805,7 @@ void CTNE2NSSolution::Viscous_Residual(CGeometry *geometry, CSolution **solution
     solver->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[jPoint]->GetGradient_Primitive());
     
     /*--- Laminar and eddy viscosity ---*/
-    if (incompressible) {
-      solver->SetDensityInc(node[iPoint]->GetDensityInc(), node[jPoint]->GetDensityInc());
-      solver->SetLaminarViscosity(node[iPoint]->GetLaminarViscosityInc(), node[jPoint]->GetLaminarViscosityInc());
-    }
-    else
-      solver->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(), node[jPoint]->GetLaminarViscosity());
+  solver->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(), node[jPoint]->GetLaminarViscosity());
     
     solver->SetEddyViscosity(node[iPoint]->GetEddyViscosity(), node[jPoint]->GetEddyViscosity());
     
@@ -4537,8 +3848,6 @@ void CTNE2NSSolution::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   
 	bool rotating_frame = config->GetRotating_Frame();
 	bool grid_movement  = config->GetGrid_Movement();
-	bool incompressible = config->GetIncompressible();
-  
   
 	/*--- If we have a rotating frame problem or an unsteady problem with
    mesh motion, use special reference values for the force coefficients.
@@ -4577,8 +3886,8 @@ void CTNE2NSSolution::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 	AllBound_CDrag_Visc = 0.0; AllBound_CLift_Visc = 0.0;
 	AllBound_CMx_Visc = 0.0; AllBound_CMy_Visc = 0.0; AllBound_CMz_Visc = 0.0;
 	AllBound_CFx_Visc = 0.0; AllBound_CFy_Visc = 0.0; AllBound_CFz_Visc = 0.0;
-	AllBound_CEff_Visc = 0.0; AllBound_CMerit_Visc = 0.0;
-	AllBound_CT_Visc = 0.0; AllBound_CQ_Visc = 0.0; AllBound_Q_Visc = 0.0;  AllBound_Maxq_Visc = 0.0;
+	AllBound_CEff_Visc = 0.0;
+	AllBound_Q_Visc = 0.0;  AllBound_Maxq_Visc = 0.0;
   
 	/*--- Vector and variables initialization ---*/
 	UnitaryNormal      = new double [nDim];
@@ -4609,14 +3918,8 @@ void CTNE2NSSolution::Viscous_Forces(CGeometry *geometry, CConfig *config) {
         
 				Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 				Grad_PrimVar = node[iPoint]->GetGradient_Primitive();
-				if (incompressible) {
-					Viscosity = node[iPoint]->GetLaminarViscosityInc();
-					Density = node[iPoint]->GetDensityInc();
-				}
-				else {
 					Viscosity = node[iPoint]->GetLaminarViscosity();
 					Density = node[iPoint]->GetDensity();
-				}
         
 				Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
 				for (iDim = 0; iDim < nDim; iDim++) {
@@ -4644,7 +3947,7 @@ void CTNE2NSSolution::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 				WallShearStress = sqrt(WallShearStress);
         
 				/*--- Compute wall shear stress (using mu(delta u/delta y) ---*/
-				for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] = node[iPointNormal]->GetVelocity(iDim, incompressible);
+				for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] = node[iPointNormal]->GetVelocity(iDim, false);
 				VelNormal = 0.0; for (iDim = 0; iDim < nDim; iDim++) VelNormal += Vel[iDim] * UnitaryNormal[iDim];
 				for (iDim = 0; iDim < nDim; iDim++) VelTang[iDim] = Vel[iDim] - VelNormal*UnitaryNormal[iDim];
 				VelTangMod = 0.0; for (iDim = 0; iDim < nDim; iDim++) VelTangMod += VelTang[iDim]*VelTang[iDim]; VelTangMod = sqrt(VelTangMod);
@@ -4657,7 +3960,6 @@ void CTNE2NSSolution::Viscous_Forces(CGeometry *geometry, CConfig *config) {
         
 				/*--- Compute y+ and non-dimensional velocity ---*/
 				FrictionVel = sqrt(fabs(WallShearStress)/Density);
-				YPlus[iMarker][iVertex] = WallDistMod*FrictionVel/(Viscosity/Density);
         
 				/*--- Compute heat flux on the wall ---*/
 				GradTemperature = 0.0; for (iDim = 0; iDim < nDim; iDim++) GradTemperature +=  Grad_PrimVar[0][iDim]*(-Normal[iDim]);
@@ -4696,10 +3998,7 @@ void CTNE2NSSolution::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 					CFx_Visc[iMarker] = ForceViscous[0];
 					CFy_Visc[iMarker] = ForceViscous[1];
 					CFz_Visc[iMarker] = 0.0;
-					CT_Visc[iMarker] = -CFx_Visc[iMarker];
-					CQ_Visc[iMarker] = -CMz_Visc[iMarker];
           Q_Visc[iMarker]  = HeatLoad;
-					CMerit_Visc[iMarker] = 0.0;
 				}
 				if (nDim == 3) {
 					CDrag_Visc[iMarker] =  ForceViscous[0]*cos(Alpha)*cos(Beta) + ForceViscous[1]*sin(Beta) + ForceViscous[2]*sin(Alpha)*cos(Beta);
@@ -4711,10 +4010,7 @@ void CTNE2NSSolution::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 					CFx_Visc[iMarker] = ForceViscous[0];
 					CFy_Visc[iMarker] = ForceViscous[1];
 					CFz_Visc[iMarker] = ForceViscous[2];
-					CT_Visc[iMarker] = -CFz_Visc[iMarker];
-					CQ_Visc[iMarker] = -CMz_Visc[iMarker];
           Q_Visc[iMarker] = HeatLoad;
-					CMerit_Visc[iMarker] = CT_Visc[iMarker]/CQ_Visc[iMarker];
 				}
         
 				AllBound_CDrag_Visc += CDrag_Visc[iMarker];
@@ -4726,12 +4022,9 @@ void CTNE2NSSolution::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 				AllBound_CFx_Visc += CFx_Visc[iMarker];
 				AllBound_CFy_Visc += CFy_Visc[iMarker];
 				AllBound_CFz_Visc += CFz_Visc[iMarker];
-				AllBound_CT_Visc += CT_Visc[iMarker];
-				AllBound_CQ_Visc += CQ_Visc[iMarker];
         AllBound_Q_Visc += Q_Visc[iMarker];
         if (Maxq_Visc[iMarker] > AllBound_Maxq_Visc)
           AllBound_Maxq_Visc = Maxq_Visc[iMarker];
-				AllBound_CMerit_Visc += CMerit_Visc[iMarker];
 			}
 		}
 	}
@@ -4744,11 +4037,8 @@ void CTNE2NSSolution::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 	Total_CFx += AllBound_CFx_Visc;
 	Total_CFy += AllBound_CFy_Visc;
 	Total_CFz += AllBound_CFz_Visc;
-	Total_CT += AllBound_CT_Visc;
-	Total_CQ += AllBound_CQ_Visc;
   Total_Q += AllBound_Q_Visc;
   Total_Maxq = AllBound_Maxq_Visc;
-	Total_CMerit += AllBound_CMerit_Visc;
   
 	for (iDim = 0; iDim < nDim; iDim++)
 		delete [] Tau[iDim];
@@ -4768,7 +4058,6 @@ void CTNE2NSSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution
 	double *Grid_Vel, *Rot_Vel, *Normal, Area;
   
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-	bool incompressible = config->GetIncompressible();
 	bool grid_movement  = config->GetGrid_Movement();
 	bool rotating_frame = config->GetRotating_Frame();
   
@@ -4813,7 +4102,7 @@ void CTNE2NSSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution
 			}
       
 			/*--- Set the residual, truncation error, and velocity value ---*/
-			node[iPoint]->SetVelocity_Old(Vector, incompressible);
+			node[iPoint]->SetVelocity_Old(Vector, false);
 			SetVel_Residual_Zero(iPoint);
 			node[iPoint]->SetVel_ResTruncError_Zero();
       
@@ -4823,7 +4112,7 @@ void CTNE2NSSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution
 			/*--- Flux contribution due to a rotating frame (energy equation) ---*/
 			if (rotating_frame) {
 				double ProjRotVel = -geometry->vertex[val_marker][iVertex]->GetRotFlux();
-				Res_Conv[nDim+1] = node[iPoint]->GetPressure(incompressible)*ProjRotVel;
+				Res_Conv[nDim+1] = node[iPoint]->GetPressure(false)*ProjRotVel;
 			}
       
 			/*--- Flux contribution due to grid motion (energy equation) ---*/
@@ -4832,7 +4121,7 @@ void CTNE2NSSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution
 				Grid_Vel = geometry->node[iPoint]->GetGridVel();
 				for (iDim = 0; iDim < nDim; iDim++)
 					ProjGridVel += Grid_Vel[iDim]*(-1.0)*Normal[iDim];
-				Res_Conv[nDim+1] = node[iPoint]->GetPressure(incompressible)*ProjGridVel;
+				Res_Conv[nDim+1] = node[iPoint]->GetPressure(false)*ProjGridVel;
 			}
       
 			/*--- Viscous contribution for moving walls ---*/
@@ -4944,7 +4233,6 @@ void CTNE2NSSolution::BC_Isothermal_Wall(CGeometry *geometry, CSolution **soluti
 	double Laminar_Viscosity, Eddy_Viscosity, Thermal_Conductivity, Gas_Constant, cp;
 	double Theta;
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-	bool incompressible = config->GetIncompressible();
 	bool grid_movement = config->GetGrid_Movement();
 	bool rotating_frame = config->GetRotating_Frame();
   
@@ -5013,7 +4301,7 @@ void CTNE2NSSolution::BC_Isothermal_Wall(CGeometry *geometry, CSolution **soluti
 			}
       
 			/*--- Set the residual, truncation error and velocity value on the boundary ---*/
-			node[iPoint]->SetVelocity_Old(Vector, incompressible);
+			node[iPoint]->SetVelocity_Old(Vector, false);
 			SetVel_Residual_Zero(iPoint);
 			node[iPoint]->SetVel_ResTruncError_Zero();
       

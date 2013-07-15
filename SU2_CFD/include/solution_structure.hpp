@@ -6729,10 +6729,10 @@ public:
 };
 
 /*!
- * \class CEulerSolution
- * \brief Main class for defining the Euler's flow solver.
+ * \class CTNE2EulerSolution
+ * \brief Main class for defining the TNE2 Euler's flow solver.
  * \ingroup Euler_Equations
- * \author F. Palacios.
+ * \author S. R. Copeland, F. Palacios.
  * \version 2.0.5
  */
 class CTNE2EulerSolution : public CSolution {
@@ -6743,19 +6743,15 @@ protected:
 	Density_Inf,	/*!< \brief Density at the infinity. */
 	Density_Inlet,		/*!< \brief Density at the inlet. */
 	Density_Outlet,		/*!< \brief Density at the outlet. */
-	Density_Back,		/*!< \brief Density at infinity behind the Shock. */
 	Energy_Inf,			/*!< \brief Energy at the infinity. */
 	Energy_Inlet,		/*!< \brief Energy at the inlet. */
 	Energy_Outlet,		/*!< \brief Energy at the outlet. */
-	Energy_Back,		/*!< \brief Energy at the infinity behind the Shock. */
 	Pressure_Inf,		/*!< \brief Pressure at the infinity. */
 	Pressure_Inlet,		/*!< \brief Pressure at the inlet. */
 	Pressure_Outlet,	/*!< \brief Pressure at the outlet. */
-	Pressure_Back,		/*!< \brief Pressure at the infinity behind the Shock. */
 	*Velocity_Inf,		/*!< \brief Flow Velocity vector at the infinity. */
 	*Velocity_Inlet,	/*!< \brief Flow Velocity vector at the inlet. */
-	*Velocity_Outlet,	/*!< \brief Flow Velocity vector at the outlet. */
-	*Velocity_Back;		/*!< \brief Flow Velocity vector at the infinity behind the Shock. */
+	*Velocity_Outlet;	/*!< \brief Flow Velocity vector at the outlet. */
 	double *CDrag_Inv,	/*!< \brief Drag coefficient (inviscid contribution) for each boundary. */
 	*CLift_Inv,			/*!< \brief Lift coefficient (inviscid contribution) for each boundary. */
 	*CSideForce_Inv,		/*!< \brief Sideforce coefficient (inviscid contribution) for each boundary. */
@@ -6766,27 +6762,10 @@ protected:
 	*CFy_Inv,			/*!< \brief y Force coefficient (inviscid contribution) for each boundary. */
 	*CFz_Inv,			/*!< \brief z Force coefficient (inviscid contribution) for each boundary. */
 	*CEff_Inv,				/*!< \brief Efficiency (Cl/Cd) (inviscid contribution) for each boundary. */
-	*CMerit_Inv,				/*!< \brief Rotor Figure of Merit (inviscid contribution) for each boundary. */
-	*CT_Inv,			/*!< \brief Thrust coefficient (force in -x direction, inviscid contribution) for each boundary. */
-	*CQ_Inv,			/*!< \brief Torque coefficient (moment in -x direction, inviscid contribution) for each boundary. */
-	*CEquivArea_Inv,				/*!< \brief Equivalent area (inviscid contribution) for each boundary. */
-	*CNearFieldOF_Inv,				/*!< \brief Near field pressure (inviscid contribution) for each boundary. */
 	**CPressure,		/*!< \brief Pressure coefficient for each boundary and vertex. */
 	**CHeatTransfer,		/*!< \brief Heat transfer coefficient for each boundary and vertex. */
-	**YPlus,		/*!< \brief Yplus for each boundary and vertex. */
 	*ForceInviscid,		/*!< \brief Inviscid force for each boundary. */
-	*MomentInviscid,	/*!< \brief Inviscid moment for each boundary. */
-	*FanFace_MassFlow,	/*!< \brief Mass flow rate for each boundary. */
-	*Exhaust_MassFlow,	/*!< \brief Mass flow rate for each boundary. */
-	*FanFace_Pressure,	/*!< \brief Fan face pressure for each boundary. */
-	*FanFace_Mach,	/*!< \brief Fan face mach number for each boundary. */
-	*FanFace_Area,	/*!< \brief Boundary total area. */
-  *Exhaust_Area,	/*!< \brief Boundary total area. */
-  FanFace_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
-  Exhaust_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
-	FanFace_Pressure_Total,	/*!< \brief Fan face pressure for each boundary. */
-	FanFace_Mach_Total,	/*!< \brief Fan face mach number for each boundary. */
-	InverseDesign;	/*!< \brief Inverse design functional for each boundary. */
+	*MomentInviscid;	/*!< \brief Inviscid moment for each boundary. */
 	double AllBound_CDrag_Inv,	/*!< \brief Total drag coefficient (inviscid contribution) for all the boundaries. */
 	AllBound_CLift_Inv,			/*!< \brief Total lift coefficient (inviscid contribution) for all the boundaries. */
 	AllBound_CSideForce_Inv,			/*!< \brief Total sideforce coefficient (inviscid contribution) for all the boundaries. */
@@ -6796,12 +6775,7 @@ protected:
 	AllBound_CFx_Inv,			/*!< \brief Total x force coefficient (inviscid contribution) for all the boundaries. */
 	AllBound_CFy_Inv,			/*!< \brief Total y force coefficient (inviscid contribution) for all the boundaries. */
 	AllBound_CFz_Inv,			/*!< \brief Total z force coefficient (inviscid contribution) for all the boundaries. */
-	AllBound_CEff_Inv,			/*!< \brief Efficient coefficient (inviscid contribution) for all the boundaries. */
-	AllBound_CMerit_Inv,			/*!< \brief Rotor Figure of Merit (inviscid contribution) for all the boundaries. */
-	AllBound_CT_Inv,			/*!< \brief Total thrust coefficient (inviscid contribution) for all the boundaries. */
-	AllBound_CQ_Inv,			/*!< \brief Total torque coefficient (inviscid contribution) for all the boundaries. */
-	AllBound_CEquivArea_Inv,			/*!< \brief equivalent area coefficient (inviscid contribution) for all the boundaries. */
-	AllBound_CNearFieldOF_Inv;			/*!< \brief Near-Field press coefficient (inviscid contribution) for all the boundaries. */
+	AllBound_CEff_Inv;			/*!< \brief Efficient coefficient (inviscid contribution) for all the boundaries. */
 	double Total_CDrag, /*!< \brief Total drag coefficient for all the boundaries. */
 	Total_CLift,		/*!< \brief Total lift coefficient for all the boundaries. */
 	Total_CSideForce,		/*!< \brief Total sideforce coefficient for all the boundaries. */
@@ -6812,22 +6786,13 @@ protected:
 	Total_CFy,			/*!< \brief Total y force coefficient for all the boundaries. */
 	Total_CFz,			/*!< \brief Total z force coefficient for all the boundaries. */
 	Total_CEff,			/*!< \brief Total efficiency coefficient for all the boundaries. */
-	Total_CMerit,			/*!< \brief Total rotor Figure of Merit for all the boundaries. */
-	Total_CT,		/*!< \brief Total thrust coefficient for all the boundaries. */
-	Total_CQ,		/*!< \brief Total torque coefficient for all the boundaries. */
-  Total_Q,    /*!< \brief Total heat load for all the boundaries. */
-  Total_Maxq, /*!< \brief Maximum heat flux on all boundaries. */
-	Total_CEquivArea,			/*!< \brief Total Equivalent Area coefficient for all the boundaries. */
-	Total_CNearFieldOF;			/*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
-	double *p1_Und_Lapl,	/*!< \brief Auxiliary variable for the undivided Laplacians. */
-	*p2_Und_Lapl;			/*!< \brief Auxiliary variable for the undivided Laplacians. */
+  Total_Q,        /*!< \brief Total heat load for all the boundaries. */
+  Total_Maxq;     /*!< \brief Maximum heat flux on all boundaries. */
 	double *PrimVar_i,	/*!< \brief Auxiliary vector for storing the solution at point i. */
 	*PrimVar_j;			/*!< \brief Auxiliary vector for storing the solution at point j. */
 	double **Precon_Mat_inv; /*!< \brief Auxiliary vector for storing the inverse of Roe-turkel preconditioner. */
 	unsigned long nMarker;				/*!< \brief Total number of markers using the grid information. */
-	bool space_centered,  /*!< \brief True if space centered scheeme used. */
-	euler_implicit,			/*!< \brief True if euler implicit scheme used. */
-	roe_turkel,         /*!< \brief True if computing preconditioning matrix for roe-turkel method. */
+	bool roe_turkel,         /*!< \brief True if computing preconditioning matrix for roe-turkel method. */
 	least_squares;        /*!< \brief True if computing gradients by least squares. */
 	double Gamma;									/*!< \brief Fluid's Gamma constant (ratio of specific heats). */
 	double Gamma_Minus_One;				/*!< \brief Fluids's Gamma - 1.0  . */
@@ -6917,12 +6882,6 @@ public:
 	double GetDensity_Inf(void);
   
 	/*!
-	 * \brief Compute the density at infinity  behind the Shock.
-	 * \return Value of the density at infinity behind the Shock .
-	 */
-	double GetDensity_Back(void);
-  
-	/*!
 	 * \brief Compute 2-norm of the velocity at the infinity.
 	 * \return Value of the 2-norm of the velocity at the infinity.
 	 */
@@ -6935,22 +6894,10 @@ public:
 	double GetDensity_Energy_Inf(void);
   
 	/*!
-	 * \brief Compute the density multiply by energy at infinity behind the Shock.
-	 * \return Value of the density multiply by  energy at infinity behind the Shock.
-	 */
-	double GetDensity_Energy_Back(void);
-  
-	/*!
 	 * \brief Compute the pressure at the infinity.
 	 * \return Value of the pressure at the infinity.
 	 */
 	double GetPressure_Inf(void);
-  
-	/*!
-	 * \brief Compute the pressure at infinity behind the Shock.
-	 * \return Value of the pressure at infinity behind the Shock.
-	 */
-	double GetPressure_Back(void);
   
 	/*!
 	 * \brief Compute the density multiply by velocity at the infinity.
@@ -6960,25 +6907,11 @@ public:
 	double GetDensity_Velocity_Inf(unsigned short val_dim);
   
 	/*!
-	 * \brief Compute the density multiply by velocity at infinity  behind the Shock.
-	 * \param[in] val_dim - Index of the velocity vector.
-	 * \return Value of the density multiply by the velocity at infinity  behind the Shock.
-	 */
-	double GetDensity_Velocity_Back(unsigned short val_dim);
-  
-	/*!
 	 * \brief Get the velocity at the infinity.
 	 * \param[in] val_dim - Index of the velocity vector.
 	 * \return Value of the velocity at the infinity.
 	 */
 	double GetVelocity_Inf(unsigned short val_dim);
-  
-	/*!
-	 * \brief Get the velocity at infinity behind the Shock.
-	 * \param[in] val_dim - Index of the velocity vector.
-	 * \return Value of the velocity at the Shock.
-	 */
-	double GetVelocity_Back(unsigned short val_dim);
   
 	/*!
 	 * \brief Compute the time step for solving the Euler equations.
@@ -7157,34 +7090,6 @@ public:
 	double GetCDrag_Inv(unsigned short val_marker);
   
 	/*!
-	 * \brief Provide the mass flow rate.
-	 * \param val_marker Surface where the coeficient is going to be computed.
-	 * \return Value of the mass flow rate on the surface <i>val_marker</i>.
-	 */
-	double GetFanFace_MassFlow(unsigned short val_marker);
-  
-  /*!
-	 * \brief Provide the mass flow rate.
-	 * \param val_marker Surface where the coeficient is going to be computed.
-	 * \return Value of the mass flow rate on the surface <i>val_marker</i>.
-	 */
-	double GetExhaust_MassFlow(unsigned short val_marker);
-  
-	/*!
-	 * \brief Provide the mass flow rate.
-	 * \param val_marker Surface where the coeficient is going to be computed.
-	 * \return Value of the fan face pressure on the surface <i>val_marker</i>.
-	 */
-	double GetFanFace_Pressure(unsigned short val_marker);
-  
-	/*!
-	 * \brief Provide the mass flow rate.
-	 * \param val_marker Surface where the coeficient is going to be computed.
-	 * \return Value of the fan face mach on the surface <i>val_marker</i>.
-	 */
-	double GetFanFace_Mach(unsigned short val_marker);
-  
-	/*!
 	 * \brief Provide the non dimensional sideforce coefficient (inviscid contribution).
 	 * \param val_marker Surface where the coeficient is going to be computed.
 	 * \return Value of the sideforce coefficient (inviscid contribution) on the surface <i>val_marker</i>.
@@ -7209,30 +7114,6 @@ public:
 	 * \return Value of the efficiency coefficient (inviscid + viscous contribution).
 	 */
 	double GetTotal_CEff(void);
-  
-	/*!
-	 * \brief Provide the total (inviscid + viscous) non dimensional Equivalent Area coefficient.
-	 * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
-	 */
-	double GetTotal_CEquivArea(void);
-  
-	/*!
-	 * \brief Provide the total (inviscid + viscous) non dimensional Near-Field pressure coefficient.
-	 * \return Value of the NearField pressure coefficient (inviscid + viscous contribution).
-	 */
-	double GetTotal_CNearFieldOF(void);
-  
-	/*!
-	 * \brief Set the value of the Equivalent Area coefficient.
-	 * \param[in] val_cequivarea - Value of the Equivalent Area coefficient.
-	 */
-	void SetTotal_CEquivArea(double val_cequivarea);
-  
-	/*!
-	 * \brief Set the value of the Near-Field pressure oefficient.
-	 * \param[in] val_cnearfieldpress - Value of the Near-Field pressure coefficient.
-	 */
-	void SetTotal_CNearFieldOF(double val_cnearfieldpress);
   
 	/*!
 	 * \brief Store the total (inviscid + viscous) non dimensional lift coefficient.
@@ -7288,24 +7169,6 @@ public:
 	 */
 	double GetTotal_CFz(void);
   
-	/*!
-	 * \brief Provide the total (inviscid + viscous) non dimensional thrust coefficient.
-	 * \return Value of the rotor efficiency coefficient (inviscid + viscous contribution).
-	 */
-	double GetTotal_CT(void);
-  
-	/*!
-	 * \brief Store the total (inviscid + viscous) non dimensional thrust coefficient.
-	 * \param[in] val_Total_CT - Value of the total thrust coefficient.
-	 */
-	void SetTotal_CT(double val_Total_CT);
-  
-	/*!
-	 * \brief Provide the total (inviscid + viscous) non dimensional torque coefficient.
-	 * \return Value of the rotor efficiency coefficient (inviscid + viscous contribution).
-	 */
-	double GetTotal_CQ(void);
-  
   /*!
 	 * \brief Provide the total heat load.
 	 * \return Value of the heat load (viscous contribution).
@@ -7318,12 +7181,6 @@ public:
 	 */
 	double GetTotal_MaxQ(void);
   
-	/*!
-	 * \brief Store the total (inviscid + viscous) non dimensional torque coefficient.
-	 * \param[in] val_Total_CQ - Value of the total torque coefficient.
-	 */
-	void SetTotal_CQ(double val_Total_CQ);
-  
   /*!
 	 * \brief Store the total heat load.
 	 * \param[in] val_Total_Q - Value of the heat load.
@@ -7335,12 +7192,6 @@ public:
 	 * \param[in] val_Total_Q - Value of the heat load.
 	 */
 	void SetTotal_MaxQ(double val_Total_MaxQ);
-  
-	/*!
-	 * \brief Provide the total (inviscid + viscous) non dimensional rotor Figure of Merit.
-	 * \return Value of the rotor efficiency coefficient (inviscid + viscous contribution).
-	 */
-	double GetTotal_CMerit(void);
   
 	/*!
 	 * \brief Store the total (inviscid + viscous) non dimensional drag coefficient.
@@ -7421,10 +7272,10 @@ public:
 };
 
 /*!
- * \class CNSSolution
- * \brief Main class for defining the Navier-Stokes flow solver.
+ * \class CTNE2NSSolution
+ * \brief Main class for defining the TNE2 Navier-Stokes flow solver.
  * \ingroup Navier_Stokes_Equations
- * \author F. Palacios.
+ * \author S. R. Copeland, F. Palacios.
  * \version 2.0.5
  */
 class CTNE2NSSolution : public CTNE2EulerSolution {
@@ -7441,9 +7292,6 @@ private:
 	*CFy_Visc,			/*!< \brief Force y coefficient (viscous contribution) for each boundary. */
 	*CFz_Visc,			/*!< \brief Force z coefficient (viscous contribution) for each boundary. */
 	*CEff_Visc,			/*!< \brief Efficiency (Cl/Cd) (Viscous contribution) for each boundary. */
-	*CMerit_Visc,			/*!< \brief Rotor Figure of Merit (Viscous contribution) for each boundary. */
-	*CT_Visc,		/*!< \brief Thrust coefficient (viscous contribution) for each boundary. */
-	*CQ_Visc,		/*!< \brief Torque coefficient (viscous contribution) for each boundary. */
   *Q_Visc,		/*!< \brief Heat load (viscous contribution) for each boundary. */
   *Maxq_Visc, /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
   
@@ -7459,9 +7307,6 @@ private:
 	AllBound_CFx_Visc,			/*!< \brief Force x coefficient (inviscid contribution) for all the boundaries. */
 	AllBound_CFy_Visc,			/*!< \brief Force y coefficient (inviscid contribution) for all the boundaries. */
 	AllBound_CFz_Visc,			/*!< \brief Force z coefficient (inviscid contribution) for all the boundaries. */
-	AllBound_CMerit_Visc,			/*!< \brief Rotor Figure of Merit coefficient (Viscous contribution) for all the boundaries. */
-	AllBound_CT_Visc,		/*!< \brief Thrust coefficient (viscous contribution) for all the boundaries. */
-	AllBound_CQ_Visc,		/*!< \brief Torque coefficient (viscous contribution) for all the boundaries. */
   AllBound_Q_Visc,		/*!< \brief Heat load (viscous contribution) for all the boundaries. */
   AllBound_Maxq_Visc; /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
   
@@ -7592,14 +7437,7 @@ public:
 	 * \return Value of the heat transfer coefficient.
 	 */
 	double GetHeatTransferCoeff(unsigned short val_marker, unsigned short val_vertex);
-	
-	/*!
-	 * \brief Get the y plus.
-	 * \param[in] val_marker - Surface marker where the coefficient is computed.
-	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-	 * \return Value of the y plus.
-	 */
-	double GetYPlus(unsigned short val_marker, unsigned short val_vertex);
+
 };
 
 #include "solution_structure.inl"

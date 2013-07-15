@@ -3435,18 +3435,16 @@ public:
 };
 
 /*!
- * \class CEulerVariable
- * \brief Main class for defining the variables of the Euler's solver.
+ * \class CTNE2EulerVariable
+ * \brief Main class for defining the variables of the TNE2 Euler's solver.
  * \ingroup Euler_Equations
- * \author F. Palacios.
+ * \author S. R. Copeland, F. Palacios.
  * \version 2.0.5
  */
 class CTNE2EulerVariable : public CVariable {
 protected:
 	double Velocity2;			/*!< \brief Square of the velocity vector. */
-	double *TS_Source;		/*!< \brief Time spectral source term. */
 	double Precond_Beta;	/*!< \brief Low Mach number preconditioner value, Beta. */
-	double *B_Field;		/*! < \brief Magnetic field value */
   
 	/*--- Primitive variable definition ---*/
 	double *Primitive;	/*!< \brief Primitive variables (T,vx,vy,vz,P,rho,h,c) in compressible flows. */
@@ -3535,11 +3533,6 @@ public:
 	void SetVelocityInc2(void);
   
 	/*!
-	 * \brief Set the value of the pressure for the incompressible solver.
-	 */
-	void SetPressureInc(double val_pressure);
-  
-	/*!
 	 * \brief Set the value of the velocity*velocity.
 	 */
 	void SetVelocity2(void);
@@ -3564,11 +3557,6 @@ public:
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
 	void SetPrimVar_Compressible(double Gamma, double Gas_Constant);
-	
-	/*!
-	 * \brief Set all the primitive variables for incompressible flows.
-	 */
-	void SetPrimVar_Incompressible(double Density_Inf, double levelset, CConfig *config);
 	
 	/*!
 	 * \brief Get the primitive variables.
@@ -3597,16 +3585,6 @@ public:
 	 * \return Pointer to the primitive variable vector.
 	 */
 	double *GetPrimVar(void);
-	
-	/*!
-	 * \brief Set the value of the density for the incompressible flows.
-	 */
-	void SetDensityInc(double val_densityinc);
-  
-	/*!
-	 * \brief Set the value of the beta coeffient for incompressible flows.
-	 */
-	void SetBetaInc2(double val_betainc2);
   
 	/*!
 	 * \brief Set the value of the temperature.
@@ -3630,18 +3608,6 @@ public:
 	 * \return Value of speed of the sound.
 	 */
 	double GetSoundSpeed(void);
-  
-	/*!
-	 * \brief Get the value of density for the incompressible flow
-	 * \return Value of beta squared.
-	 */
-	double GetDensityInc(void);
-  
-	/*!
-	 * \brief Get the value of beta squared for the incompressible flow
-	 * \return Value of beta squared.
-	 */
-	double GetBetaInc2(void);
   
 	/*!
 	 * \brief Get the enthalpy of the flow.
@@ -3682,13 +3648,6 @@ public:
 	double GetProjVel(double *val_vector);
   
 	/*!
-	 * \brief Get the projected velocity in a unitary vector direction (incompressible solver).
-	 * \param[in] val_vector - Direction of projection.
-	 * \return Value of the projected velocity.
-	 */
-	double GetProjVelInc(double *val_vector);
-  
-	/*!
 	 * \brief Set the velocity vector from the solution.
 	 * \param[in] val_velocity - Pointer to the velocity.
 	 */
@@ -3699,20 +3658,6 @@ public:
 	 * \param[in] val_velocity - Pointer to the velocity.
 	 */
 	void SetVelocity_Old(double *val_velocity, bool val_incomp);
-  
-	/*!
-	 * \brief Set the time spectral source term.
-	 * \param[in] val_var - Index of the variable.
-	 * \param[in] val_solution - Value of the time spectral source term. for the index <i>val_var</i>.
-	 */
-	void SetTimeSpectral_Source(unsigned short val_var, double val_source);
-  
-	/*!
-	 * \brief Get the time spectral source term.
-	 * \param[in] val_var - Index of the variable.
-	 * \return Value of the time spectral source term for the index <i>val_var</i>.
-	 */
-	double GetTimeSpectral_Source(unsigned short val_var);
   
 	/*!
 	 * \brief Get the value of the preconditioner Beta.
@@ -3726,24 +3671,13 @@ public:
 	 */
 	void SetPreconditioner_Beta(double val_Beta);
   
-	/*!
-	 * \brief Get the value of the magnetic field
-	 * \param[out] Value of the magnetic field
-	 */
-	double* GetMagneticField();
-  
-	/*!
-	 * \brief Set the value of the magnetic field
-	 * \param[in] Value of the magnetic field
-	 */
-	void SetMagneticField(double* val_B);
 };
 
 /*!
- * \class CNSVariable
- * \brief Main class for defining the variables of the Navier-Stokes' solver.
+ * \class CTNE2NSVariable
+ * \brief Main class for defining the variables of the TNE2 Navier-Stokes' solver.
  * \ingroup Navier_Stokes_Equations
- * \author F. Palacios.
+ * \author S. R. Copeland, F. Palacios.
  * \version 2.0.5
  */
 class CTNE2NSVariable : public CTNE2EulerVariable {
@@ -3757,7 +3691,7 @@ private:
 	double LaminarViscosityInc;	/*!< \brief Viscosity of the fluid (incompressible flows). */
 	double EddyViscosity;		/*!< \brief Eddy viscosity of the fluid. */
 	double Vorticity[3];		/*!< \brief Vorticity of the fluid. */
-	double StrainMag;           /*!< \brief Magnitude of rate of strain tensor. */
+  
 public:
   
 	/*!
@@ -3803,20 +3737,9 @@ public:
 	void SetLaminarViscosity(double val_laminar_viscosity);
   
 	/*!
-	 * \overload
-	 * \param[in] val_laminar_viscosity_inc - Value of the laminar viscosity (incompressible flows).
-	 */
-	void SetLaminarViscosityInc(double val_laminar_viscosity_inc);
-  
-	/*!
 	 * \brief Set the vorticity value.
 	 */
 	void SetVorticity(void);
-  
-	/*!
-	 * \brief Set the rate of strain magnitude.
-	 */
-	void SetStrainMag(void);
   
 	/*!
 	 * \brief Set the eddy viscosity.
@@ -3862,12 +3785,6 @@ public:
 	double GetVorticity(unsigned short val_dim);
   
 	/*!
-	 * \brief Get the value of the magnitude of rate of strain.
-	 * \return Value of the rate of strain magnitude.
-	 */
-	double GetStrainMag(void);
-  
-	/*!
 	 * \brief Set the value of pressure.
 	 */
 	bool SetPressure(double Gamma, double turb_ke);
@@ -3876,11 +3793,7 @@ public:
 	 * \brief Set all the primitive variables for compressible flows
 	 */
 	void SetPrimVar_Compressible(double Gamma, double Gas_Constant, double turb_ke);
-	
-	/*!
-	 * \brief Set all the primitive variables for incompressible flows
-	 */
-	void SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double turb_ke, double levelset, CConfig *config);
+  
 };
 
 /*! 

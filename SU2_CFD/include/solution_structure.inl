@@ -749,8 +749,6 @@ inline double CTNE2EulerSolution::GetDensity_Velocity_Outlet(unsigned short val_
 
 inline double CTNE2EulerSolution::GetDensity_Inf(void) { return Density_Inf; }
 
-inline double CTNE2EulerSolution::GetDensity_Back(void) { return Density_Back; }
-
 inline double CTNE2EulerSolution::GetModVelocity_Inf(void) { 
 	double Vel2 = 0; 
 	for (unsigned short iDim = 0; iDim < nDim; iDim++) 
@@ -760,31 +758,17 @@ inline double CTNE2EulerSolution::GetModVelocity_Inf(void) {
 
 inline double CTNE2EulerSolution::GetDensity_Energy_Inf(void) { return Density_Inf*Energy_Inf; }
 
-inline double CTNE2EulerSolution::GetDensity_Energy_Back(void) { return Density_Back*Energy_Back; }
-
 inline double CTNE2EulerSolution::GetDensity_Velocity_Inf(unsigned short val_dim) { return Density_Inf*Velocity_Inf[val_dim]; }
-
-inline double CTNE2EulerSolution::GetDensity_Velocity_Back(unsigned short val_dim) { return Density_Back*Velocity_Back[val_dim]; }
 
 inline double CTNE2EulerSolution::GetVelocity_Inf(unsigned short val_dim) { return Velocity_Inf[val_dim]; }
 
 inline double CTNE2EulerSolution::GetPressure_Inf(void) { return Pressure_Inf; }
-
-inline double CTNE2EulerSolution::GetPressure_Back(void) { return Pressure_Back; }
 
 inline double CTNE2EulerSolution::GetCPressure(unsigned short val_marker, unsigned short val_vertex) { return CPressure[val_marker][val_vertex]; }
 
 inline double CTNE2EulerSolution::GetCLift_Inv(unsigned short val_marker) { return CLift_Inv[val_marker]; }
 
 inline double CTNE2EulerSolution::GetCDrag_Inv(unsigned short val_marker) { return CDrag_Inv[val_marker]; }
-
-inline double CTNE2EulerSolution::GetFanFace_MassFlow(unsigned short val_marker) { return FanFace_MassFlow[val_marker]; }
-
-inline double CTNE2EulerSolution::GetExhaust_MassFlow(unsigned short val_marker) { return Exhaust_MassFlow[val_marker]; }
-
-inline double CTNE2EulerSolution::GetFanFace_Pressure(unsigned short val_marker) { return FanFace_Pressure[val_marker]; }
-
-inline double CTNE2EulerSolution::GetFanFace_Mach(unsigned short val_marker) { return FanFace_Mach[val_marker]; }
 
 inline double CTNE2EulerSolution::GetCSideForce_Inv(unsigned short val_marker) { return CSideForce_Inv[val_marker]; }
 
@@ -810,31 +794,13 @@ inline double CTNE2EulerSolution::GetTotal_CSideForce() { return Total_CSideForc
 
 inline double CTNE2EulerSolution::GetTotal_CEff() { return Total_CEff; }
 
-inline double CTNE2EulerSolution::GetTotal_CT() { return Total_CT; }
-
-inline void CTNE2EulerSolution::SetTotal_CT(double val_Total_CT) { Total_CT = val_Total_CT; }
-
-inline double CTNE2EulerSolution::GetTotal_CQ() { return Total_CQ; }
-
 inline double CTNE2EulerSolution::GetTotal_Q() { return Total_Q; }
 
 inline double CTNE2EulerSolution::GetTotal_MaxQ() { return Total_Maxq; }
 
-inline void CTNE2EulerSolution::SetTotal_CQ(double val_Total_CQ) { Total_CQ = val_Total_CQ; }
-
 inline void CTNE2EulerSolution::SetTotal_Q(double val_Total_Q) { Total_Q = val_Total_Q; }
 
 inline void CTNE2EulerSolution::SetTotal_MaxQ(double val_Total_MaxQ) { Total_Maxq = val_Total_MaxQ; }
-
-inline double CTNE2EulerSolution::GetTotal_CMerit() { return Total_CMerit; }
-
-inline double CTNE2EulerSolution::GetTotal_CEquivArea() { return Total_CEquivArea; }
-
-inline double CTNE2EulerSolution::GetTotal_CNearFieldOF() { return Total_CNearFieldOF; }
-
-inline void CTNE2EulerSolution::SetTotal_CEquivArea(double cequivarea) { Total_CEquivArea = cequivarea; }
-
-inline void CTNE2EulerSolution::SetTotal_CNearFieldOF(double cnearfieldpress) { Total_CNearFieldOF = cnearfieldpress; }
 
 inline void CTNE2EulerSolution::SetTotal_CLift(double val_Total_CLift) { Total_CLift = val_Total_CLift; }
 
@@ -861,8 +827,3 @@ inline double CTNE2NSSolution::GetAllBound_CDrag_Visc() { return AllBound_CDrag_
 inline double CTNE2NSSolution::GetCSkinFriction(unsigned short val_marker, unsigned short val_vertex) { return CSkinFriction[val_marker][val_vertex]; }
 
 inline double CTNE2NSSolution::GetHeatTransferCoeff(unsigned short val_marker, unsigned short val_vertex) { return CHeatTransfer[val_marker][val_vertex]; }
-
-inline double CTNE2NSSolution::GetYPlus(unsigned short val_marker, unsigned short val_vertex) { return YPlus[val_marker][val_vertex]; }
-
-
-

@@ -1766,8 +1766,6 @@ CHeatVariable::~CHeatVariable(void) {
 CTNE2EulerVariable::CTNE2EulerVariable(void) : CVariable() {
   
   /*--- Array initialization ---*/
-	TS_Source = NULL;
-  B_Field = NULL;
 	Primitive = NULL;
 	Gradient_Primitive = NULL;
 	Limiter_Primitive = NULL;
@@ -1786,8 +1784,6 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_density, double *val_velocity,
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
   /*--- Array initialization ---*/
-	TS_Source = NULL;
-  B_Field = NULL;
 	Primitive = NULL;
 	Gradient_Primitive = NULL;
 	Limiter_Primitive = NULL;
@@ -1869,15 +1865,6 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_density, double *val_velocity,
 		}
 	}
   
-	/*--- Allocate space for the time spectral source terms ---*/
-	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-		TS_Source = new double[nVar];
-		for (iVar = 0; iVar < nVar; iVar++) TS_Source[iVar] = 0.0;
-	}
-  
-	/*--- Allocate auxiliar vector for magnetic field ---*/
-	if (magnet) B_Field = new double [3];
-  
 	/*--- Allocate auxiliar vector for free surface source term ---*/
 	if (freesurface) Grad_AuxVar = new double [nDim];
   
@@ -1910,8 +1897,6 @@ CTNE2EulerVariable::CTNE2EulerVariable(double *val_solution, unsigned short val_
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
   /*--- Array initialization ---*/
-	TS_Source = NULL;
-  B_Field = NULL;
 	Primitive = NULL;
 	Gradient_Primitive = NULL;
   Limiter_Primitive = NULL;
@@ -1964,16 +1949,6 @@ CTNE2EulerVariable::CTNE2EulerVariable(double *val_solution, unsigned short val_
 		}
 	}
   
-	/*--- Allocate space for the time spectral source terms ---*/
-	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-		TS_Source = new double[nVar];
-		for (iVar = 0; iVar < nVar; iVar++)
-			TS_Source[iVar] = 0.0;
-	}
-  
-	/*--- Allocate auxiliar vector for magnetic field ---*/
-	if (magnet) B_Field = new double [3];
-  
 	/*--- Allocate auxiliar vector for free surface source term ---*/
 	if (freesurface) Grad_AuxVar = new double [nDim];
   
@@ -2002,8 +1977,6 @@ CTNE2EulerVariable::CTNE2EulerVariable(double *val_solution, unsigned short val_
 CTNE2EulerVariable::~CTNE2EulerVariable(void) {
 	unsigned short iVar;
   
-	if (B_Field           != NULL) delete [] B_Field;
-	if (TS_Source         != NULL) delete [] TS_Source;
   if (Primitive         != NULL) delete [] Primitive;
   if (Limiter_Primitive != NULL) delete [] Limiter_Primitive;
   
@@ -2030,17 +2003,6 @@ double CTNE2EulerVariable::GetProjVel(double *val_vector) {
 	ProjVel = 0.0;
 	for (iDim = 0; iDim < nDim; iDim++)
 		ProjVel += Solution[iDim+1]*val_vector[iDim]/Solution[0];
-  
-	return ProjVel;
-}
-
-double CTNE2EulerVariable::GetProjVelInc(double *val_vector) {
-	double ProjVel;
-	unsigned short iDim;
-  
-	ProjVel = 0.0;
-	for (iDim = 0; iDim < nDim; iDim++)
-		ProjVel += Primitive[iDim+1]*val_vector[iDim];
   
 	return ProjVel;
 }
@@ -2075,41 +2037,6 @@ void CTNE2EulerVariable::SetPrimVar_Compressible(double Gamma, double Gas_Consta
 	for (iDim = 0; iDim < nDim; iDim++)
 		Primitive[iDim+1] = Solution[iDim+1] / Solution[0];
 	Primitive[nDim+2] = Solution[0];
-  
-}
-
-void CTNE2EulerVariable::SetPrimVar_Incompressible(double Density_Inf, double levelset, CConfig *config) {
-	unsigned short iDim;
-  double epsilon, Heaviside, lambda, DensityInc;
-  
-  double ArtComp_Factor = config->GetArtComp_Factor();
-  bool freesurface = config->GetFreeSurface();
-  
-  /*--- Set the value of the density ---*/
-	if (!freesurface) {
-		SetDensityInc(Density_Inf);
-  }
-  else {
-    epsilon = config->GetFreeSurface_Thickness();
-    Heaviside = 0.0;
-    if (levelset < -epsilon) Heaviside = 1.0;
-    if (fabs(levelset) <= epsilon) Heaviside = 1.0 - (0.5*(1.0+(levelset/epsilon)+(1.0/PI_NUMBER)*sin(PI_NUMBER*levelset/epsilon)));
-    if (levelset > epsilon) Heaviside = 0.0;
-    
-    lambda = config->GetRatioDensity();
-    DensityInc = (lambda + (1.0 - lambda)*Heaviside)*config->GetDensity_FreeStreamND();
-		SetDensityInc(DensityInc);
-  }
-  
-  /*--- Set the value of the velocity squared (requires density) ---*/
-	SetVelocityInc2();
-  
-  /*--- Set the value of the artificial compressibility factor ---*/
-  SetBetaInc2(ArtComp_Factor);
-  
-  /*--- Set the value of the velocity ---*/
-  for (iDim = 0; iDim < nDim; iDim++)
-    Primitive[iDim+1] = Solution[iDim+1] / Primitive[0];
   
 }
 
@@ -2181,21 +2108,6 @@ void CTNE2NSVariable::SetVorticity(void) {
   
 }
 
-void CTNE2NSVariable::SetStrainMag(void) {
-	double div = Gradient_Primitive[1][0] + Gradient_Primitive[2][1] + Gradient_Primitive[3][2];
-	StrainMag = 0.0;
-	// add diagonals
-	StrainMag += pow(Gradient_Primitive[1][0] - 1.0/3.0*div,2.0);
-	StrainMag += pow(Gradient_Primitive[2][1] - 1.0/3.0*div,2.0);
-	StrainMag += pow(Gradient_Primitive[3][2] - 1.0/3.0*div,2.0);
-	// add off diagonals
-	StrainMag += 2.0*pow(0.5*(Gradient_Primitive[1][1]+Gradient_Primitive[2][0]),2.0);
-	StrainMag += 2.0*pow(0.5*(Gradient_Primitive[1][2]+Gradient_Primitive[3][0]),2.0);
-	StrainMag += 2.0*pow(0.5*(Gradient_Primitive[2][2]+Gradient_Primitive[3][1]),2.0);
-  
-	StrainMag = sqrt(2.0*StrainMag);
-}
-
 void CTNE2NSVariable::SetPrimVar_Compressible(double Gamma, double Gas_Constant, double turb_ke) {
 	unsigned short iDim, iVar;
   bool check_dens = false, check_press = false, check_sos = false, check_temp = false;
@@ -2227,45 +2139,5 @@ void CTNE2NSVariable::SetPrimVar_Compressible(double Gamma, double Gas_Constant,
 	for (iDim = 0; iDim < nDim; iDim++)
 		Primitive[iDim+1] = Solution[iDim+1] / Solution[0];
 	Primitive[nDim+2] = Solution[0];
-  
-}
-
-void CTNE2NSVariable::SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double turb_ke, double levelset, CConfig *config) {
-	unsigned short iDim;
-  double epsilon, Heaviside, lambda, DensityInc, ViscosityInc;
-  
-	double ArtComp_Factor = config->GetArtComp_Factor();
-  bool freesurface = config->GetFreeSurface();
-  
-  /*--- Set the value of the density and viscosity ---*/
-	if (!freesurface) {
-		SetDensityInc(Density_Inf);
-		SetLaminarViscosityInc(Viscosity_Inf);
-  }
-  else {
-    epsilon = config->GetFreeSurface_Thickness();
-    Heaviside = 0.0;
-    if (levelset < -epsilon) Heaviside = 1.0;
-    if (fabs(levelset) <= epsilon) Heaviside = 1.0 - (0.5*(1.0+(levelset/epsilon)+(1.0/PI_NUMBER)*sin(PI_NUMBER*levelset/epsilon)));
-    if (levelset > epsilon) Heaviside = 0.0;
-    
-    lambda = config->GetRatioDensity();
-    DensityInc = (lambda + (1.0 - lambda)*Heaviside)*config->GetDensity_FreeStreamND();
-		SetDensityInc(DensityInc);
-    
-    lambda = config->GetRatioViscosity();
-    ViscosityInc = (lambda + (1.0 - lambda)*Heaviside)*config->GetViscosity_FreeStreamND();
-    SetLaminarViscosityInc(ViscosityInc);
-  }
-  
-  /*--- Set the value of the velocity squared (requires density) ---*/
-	SetVelocityInc2();
-  
-  /*--- Set the value of the artificial compressibility factor ---*/
-  SetBetaInc2(ArtComp_Factor);
-  
-  /*--- Set the value of the velocity ---*/
-	for (iDim = 0; iDim < nDim; iDim++)
-		Primitive[iDim+1] = Solution[iDim+1] / GetDensityInc();
   
 }

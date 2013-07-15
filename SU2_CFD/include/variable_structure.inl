@@ -756,10 +756,6 @@ inline double *CAdjTurbVariable::GetEddyViscSens(void) { return EddyViscSens; }
 
 inline double CTNE2EulerVariable::GetDensity(void) { return Solution[0]; }
 
-inline double CTNE2EulerVariable::GetDensityInc(void) { return Primitive[0]; }
-
-inline double CTNE2EulerVariable::GetBetaInc2(void) { return Primitive[nDim+1]; }
-
 inline double CTNE2EulerVariable::GetEnergy(void) { return Solution[nVar-1]/Solution[0]; };
 
 inline double CTNE2EulerVariable::GetEnthalpy(void) { return Primitive[nDim+3]; }
@@ -783,10 +779,6 @@ return velocity;
 inline double CTNE2EulerVariable::GetVelocity2(void) { return Velocity2; }
 
 inline void CTNE2EulerVariable::SetEnthalpy(void) { Primitive[nDim+3] = (Solution[nVar-1] + Primitive[nDim+1]) / Solution[0]; }
-
-inline void CTNE2EulerVariable::SetDensityInc(double val_density) { Primitive[0] = val_density; }
-
-inline void CTNE2EulerVariable::SetBetaInc2(double val_betainc2) { Primitive[nDim+1] = val_betainc2; }
 
 inline bool CTNE2EulerVariable::SetSoundSpeed(double Gamma) {
    double radical = Gamma*Primitive[nDim+1]/Solution[0];
@@ -829,8 +821,6 @@ inline void CTNE2EulerVariable::SetVelocity2(void) { Velocity2 = 0.0; for (unsig
 
 inline void CTNE2EulerVariable::SetVelocityInc2(void) { Velocity2 = 0.0; for (unsigned short iDim = 0; iDim < nDim; iDim++) Velocity2 += (Solution[iDim+1]/Primitive[0])*(Solution[iDim+1]/Primitive[0]); }
 
-inline void CTNE2EulerVariable::SetPressureInc(double val_pressure) { Solution[0] = val_pressure; }
-
 inline void CTNE2EulerVariable::SetVelocity_Old(double *val_velocity, bool val_incomp) { 
 	if (val_incomp) {
 		for (unsigned short iDim = 0; iDim < nDim; iDim++)	
@@ -852,10 +842,6 @@ inline void CTNE2EulerVariable::SetGradient_Primitive(unsigned short val_var, un
 
 inline double **CTNE2EulerVariable::GetGradient_Primitive(void) { return Gradient_Primitive; }
 
-inline void CTNE2EulerVariable::SetTimeSpectral_Source(unsigned short val_var, double val_source) { TS_Source[val_var] = val_source; }
-
-inline double CTNE2EulerVariable::GetTimeSpectral_Source(unsigned short val_var) { return TS_Source[val_var]; }
-
 inline double CTNE2EulerVariable::GetPreconditioner_Beta() { return Precond_Beta; }
 
 inline void CTNE2EulerVariable::SetPreconditioner_Beta(double val_Beta) { Precond_Beta = val_Beta; }
@@ -866,10 +852,6 @@ inline bool CTNE2EulerVariable::SetPressure(double Gamma) {
    else return true;
 }
 
-inline void CTNE2EulerVariable::SetMagneticField( double* val_B) { B_Field[0] = val_B[0]; B_Field[1] = val_B[1];B_Field[2] = val_B[2];}
-
-inline double* CTNE2EulerVariable::GetMagneticField() { return B_Field;}
-
 inline double CTNE2NSVariable::GetEddyViscosity(void) { return EddyViscosity; }
 
 inline double CTNE2NSVariable::GetLaminarViscosity(void) { return LaminarViscosity; }
@@ -878,11 +860,7 @@ inline double CTNE2NSVariable::GetLaminarViscosityInc(void) { return LaminarVisc
 
 inline double CTNE2NSVariable::GetVorticity(unsigned short val_dim) { return Vorticity[val_dim]; }
 
-inline double CTNE2NSVariable::GetStrainMag(void) { return StrainMag; }
-
 inline void CTNE2NSVariable::SetLaminarViscosity(double val_laminar_viscosity) { LaminarViscosity = val_laminar_viscosity; }
-
-inline void CTNE2NSVariable::SetLaminarViscosityInc(double val_laminar_viscosity_inc) { LaminarViscosityInc = val_laminar_viscosity_inc; }
 
 inline void CTNE2NSVariable::SetEddyViscosity(double val_eddy_viscosity) { EddyViscosity = val_eddy_viscosity; }
 
