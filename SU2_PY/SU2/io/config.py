@@ -27,6 +27,7 @@ import os, sys, shutil, copy
 import numpy as np
 from ..util import bunch, ordered_bunch, switch
 from .tools import *
+from config_options import *
 
 try:
     from collections import OrderedDict
@@ -252,34 +253,10 @@ class Config(ordered_bunch):
         return output
 #: class Config
 
-class OptionError(Exception):
-    pass
 
-class Option(object):
-    
-    def __init__(self):
-        self.val = ""
 
-    def __get__(self):
-        return self.val
 
-    def __set__(self,newval):
-        self.val = newval
 
-#: class Option
-
-class MathProblem(Option):
-
-    def __init__(self,*args,**kwarg):
-        super(MathProblem,self).__init__(*args,**kwarg)
-        self.validoptions = ['DIRECT','ADJOINT','LINEARIZED']
-
-    def __set__(self,newval):
-        if not self.newval in self.validoptions:
-            raise OptionError("Invalid option. Valid options are: %s"%self.validoptions)
-        super(MathProblem,self).__set__(newval)
-
-#: class MathProblem
 
 
 # -------------------------------------------------------------------
