@@ -2864,8 +2864,15 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void Set_MPI_Solution(CGeometry *geometry, CConfig *config);
-    
-    /*!
+  
+  /*!
+	 * \brief Impose the send-receive boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config);
+  
+  /*!
 	 * \brief Impose the send-receive boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
@@ -3617,7 +3624,14 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
-    
+  
+  /*!
+	 * \brief Impose the send-receive boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config);
+  
 	/*!
 	 * \brief Created the force projection vector for adjoint boundary conditions.
 	 * \param[in] geometry - Geometrical definition of the problem.

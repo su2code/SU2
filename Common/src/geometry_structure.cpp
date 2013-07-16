@@ -9451,22 +9451,22 @@ void CDomainGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename)
 	double *center, *angles, *transl;
 	ofstream output_file;
 	string Grid_Marker;
-    
+  
+  /*--- Open the output file ---*/
 	char *cstr = new char [val_mesh_out_filename.size()+1];
 	strcpy (cstr, val_mesh_out_filename.c_str());
-    
 	output_file.open(cstr, ios::out);
-    
+  
 	output_file << "NDIME= " << nDim << endl;
 	output_file << "NELEM= " << nElem << endl;
-    
+  
 	for (iElem = 0; iElem < nElem; iElem++) {
 		output_file << elem[iElem]->GetVTK_Type();
 		for (iNodes = 0; iNodes < elem[iElem]->GetnNodes(); iNodes++)
 			output_file << "\t" << elem[iElem]->GetNode(iNodes);
 		output_file << "\t"<<iElem<<endl;
 	}
-    
+  
 	output_file << "NPOIN= " << nPoint << "\t" << nPointDomain <<endl;
 	output_file.precision(15);
 	for (iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -9475,7 +9475,7 @@ void CDomainGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename)
 		output_file << "\t" << iPoint << "\t" << Local_to_Global_Point[iPoint] << endl;
 	}
 	
-    output_file << "NMARK= " << nMarker << endl;
+  output_file << "NMARK= " << nMarker << endl;
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
 		if (bound[iMarker][0]->GetVTK_Type() != VERTEX) {
 			Grid_Marker = config->GetMarker_All_Tag(Local_to_Global_Marker[iMarker]);
@@ -9489,178 +9489,98 @@ void CDomainGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename)
 				iNodes = bound[iMarker][iElem_Bound]->GetnNodes()-1;
 				output_file << bound[iMarker][iElem_Bound]->GetNode(iNodes) << endl;
 			}
-        }
     }
-    
+  }
+  
 #ifndef NO_MPI
-    
-	unsigned long BufferSize;
-    unsigned short iCommLevel, jDomain, iDomain, nDomain;
-    long *CommPattern;
-    
-    /*--- Sort the boundaries for non-blocking communications ---*/
-    int rank = MPI::COMM_WORLD.Get_rank();
-	int size = MPI::COMM_WORLD.Get_size();
-    nDomain = size+1;
-    
-    bool *Buffer_Send_Connections = new bool[nDomain];
-    bool *Buffer_Receive_Connections = new bool[nDomain*size];
-    
-    for (iDomain = 1; iDomain < nDomain; iDomain++)
-        Buffer_Send_Connections[iDomain] = 0;
+  
+  /*--- Send after receive in the .su2 file ---*/
+  unsigned short iDomain, nDomain;
+  int size = MPI::COMM_WORLD.Get_size();
+  nDomain = size+1;
+  
+  for (iDomain = 0; iDomain < nDomain; iDomain++) {
+
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
+        
+        if (Marker_All_SendRecv[iMarker] == iDomain) {
+          output_file << "MARKER_TAG= SEND_RECEIVE" << endl;
+          output_file << "MARKER_ELEMS= " << nElem_Bound[iMarker]<< endl;
+          output_file << "SEND_TO= " << Marker_All_SendRecv[iMarker] << endl;
+          
+          for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
+            output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
+            output_file << bound[iMarker][iElem_Bound]->GetNode(0) << "\t";
+            output_file << bound[iMarker][iElem_Bound]->GetRotation_Type() << "\t";
+            output_file << bound[iMarker][iElem_Bound]->GetMatching_Zone() << endl;
+          }
+        }
+      }
+    }
     
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-		if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
-            if (Marker_All_SendRecv[iMarker] > 0) {
-                Buffer_Send_Connections[Marker_All_SendRecv[iMarker]] = 1;
-            }
+      if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
+        
+        if (Marker_All_SendRecv[iMarker] == -iDomain) {
+          output_file << "MARKER_TAG= SEND_RECEIVE" << endl;
+          output_file << "MARKER_ELEMS= " << nElem_Bound[iMarker]<< endl;
+          output_file << "SEND_TO= " << Marker_All_SendRecv[iMarker] << endl;
+          
+          for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
+            output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
+            output_file << bound[iMarker][iElem_Bound]->GetNode(0) << "\t";
+            output_file << bound[iMarker][iElem_Bound]->GetRotation_Type() << "\t";
+            output_file << bound[iMarker][iElem_Bound]->GetMatching_Zone() << endl;
+          }
         }
+      }
     }
     
-    MPI::COMM_WORLD.Gather(Buffer_Send_Connections, nDomain, MPI::BOOL, Buffer_Receive_Connections, nDomain, MPI::BOOL, MASTER_NODE);
-    
-    BufferSize = nDomain*MAX_COMM_LEVEL;
-    CommPattern = new long [BufferSize];
-    
-    if (rank == MASTER_NODE) {
-        
-        nCommLevel = MAX_COMM_LEVEL;
-        
-        for (iCommLevel = 0; iCommLevel < nCommLevel; iCommLevel++) {
-            for (iDomain = 1; iDomain < nDomain; iDomain++) {
-                CommPattern[iDomain*nDomain+iCommLevel] = -1;
-            }
-        }
-        
-        /*--- Create a non-blocking communication pattern ---*/
-        nCommLevel = 0; iCommLevel = 0;
-        for (iDomain = 1; iDomain < nDomain; iDomain++) {
-            for (jDomain = iDomain; jDomain < nDomain; jDomain++) {
-                if (Buffer_Receive_Connections[(iDomain-1)*nDomain + jDomain] != 0) {
-                    iCommLevel = 0;
-                    for (;;) {
-                        if ((CommPattern[iDomain*nDomain+iCommLevel] == -1) &&
-                            (CommPattern[jDomain*nDomain+iCommLevel] == -1)) {
-                            CommPattern[iDomain*nDomain+iCommLevel] = jDomain;
-                            CommPattern[jDomain*nDomain+iCommLevel] = iDomain;
-                            break;
-                        }
-                        else {
-                            iCommLevel++;
-                            nCommLevel = max(nCommLevel, iCommLevel);
-                        }
-                    }
-                }
-            }
-        }
-        nCommLevel++;
-        
-    }
-    
-    MPI::COMM_WORLD.Bcast (CommPattern, BufferSize, MPI::LONG, MASTER_NODE);
-    MPI::COMM_WORLD.Bcast (&nCommLevel, 1, MPI::LONG, MASTER_NODE);
-    
-    //    if (rank == MASTER_NODE) {
-    //        cout << "Communication levels: " << nCommLevel <<"."<< endl;
-    //        for (iCommLevel = 0; iCommLevel < nCommLevel; iCommLevel++) {
-    //            cout <<"Level "<< iCommLevel+1 <<")\t";
-    //            for (iDomain = 1; iDomain < nDomain; iDomain++) {
-    //                if (CommPattern[iDomain*nDomain+iCommLevel] != -1) cout << CommPattern[iDomain*nDomain+iCommLevel] <<"\t";
-    //                else cout <<"\t";
-    //
-    //            }
-    //            cout << endl;
-    //        }
-    //        cout << endl;
-    //    }
-    
-    /*--- Write MPI boundaries, there must be a particular
-	 sortering based in non-blocking communications, the writting
-	 whould be done in pairs, first send and then receive ---*/
-	for (iCommLevel = 0; iCommLevel < nCommLevel; iCommLevel++) {
-        
-        iDomain = CommPattern[(rank+1)*nDomain+iCommLevel];
-        
-        for (iMarker = 0; iMarker < nMarker; iMarker++) {
-            if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
-                
-                if (Marker_All_SendRecv[iMarker] == iDomain) {
-                    output_file << "MARKER_TAG= SEND_RECEIVE" << endl;
-                    output_file << "MARKER_ELEMS= " << nElem_Bound[iMarker]<< endl;
-                    output_file << "SEND_TO= " << Marker_All_SendRecv[iMarker] << endl;
-                    
-                    for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-                        output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
-                        output_file << bound[iMarker][iElem_Bound]->GetNode(0) << "\t";
-                        output_file << bound[iMarker][iElem_Bound]->GetRotation_Type() << "\t";
-                        output_file << bound[iMarker][iElem_Bound]->GetMatching_Zone() << endl;
-                    }
-                }
-            }
-        }
-        
-        for (iMarker = 0; iMarker < nMarker; iMarker++) {
-            if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
-                
-                if (Marker_All_SendRecv[iMarker] == -iDomain) {
-                    output_file << "MARKER_TAG= SEND_RECEIVE" << endl;
-                    output_file << "MARKER_ELEMS= " << nElem_Bound[iMarker]<< endl;
-                    output_file << "SEND_TO= " << Marker_All_SendRecv[iMarker] << endl;
-                    
-                    for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-                        output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
-                        output_file << bound[iMarker][iElem_Bound]->GetNode(0) << "\t";
-                        output_file << bound[iMarker][iElem_Bound]->GetRotation_Type() << "\t";
-                        output_file << bound[iMarker][iElem_Bound]->GetMatching_Zone() << endl;
-                    }
-                }
-            }
-        }
-        
-    }
-    
+  }
+  
 #else
-    
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
 		if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
-            output_file << "MARKER_TAG= SEND_RECEIVE" << endl;
-            output_file << "MARKER_ELEMS= " << nElem_Bound[iMarker]<< endl;
-            if (Marker_All_SendRecv[iMarker] > 0) output_file << "SEND_TO= " << Marker_All_SendRecv[iMarker] << endl;
-            if (Marker_All_SendRecv[iMarker] < 0) output_file << "SEND_TO= " << Marker_All_SendRecv[iMarker] << endl;
-            
-            for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-                output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
-                output_file << bound[iMarker][iElem_Bound]->GetNode(0) << "\t";
-                output_file << bound[iMarker][iElem_Bound]->GetRotation_Type() << "\t";
-                output_file << bound[iMarker][iElem_Bound]->GetMatching_Zone() << endl;
-            }
-        }
+      output_file << "MARKER_TAG= SEND_RECEIVE" << endl;
+      output_file << "MARKER_ELEMS= " << nElem_Bound[iMarker]<< endl;
+      if (Marker_All_SendRecv[iMarker] > 0) output_file << "SEND_TO= " << Marker_All_SendRecv[iMarker] << endl;
+      if (Marker_All_SendRecv[iMarker] < 0) output_file << "SEND_TO= " << Marker_All_SendRecv[iMarker] << endl;
+      
+      for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
+        output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
+        output_file << bound[iMarker][iElem_Bound]->GetNode(0) << "\t";
+        output_file << bound[iMarker][iElem_Bound]->GetRotation_Type() << "\t";
+        output_file << bound[iMarker][iElem_Bound]->GetMatching_Zone() << endl;
+      }
     }
-    
+  }
+  
 #endif
-    
+  
 	/*--- Get the total number of periodic transformations ---*/
 	nPeriodic = config->GetnPeriodicIndex();
 	output_file << "NPERIODIC= " << nPeriodic << endl;
-    
+  
 	/*--- From iPeriodic obtain the iMarker ---*/
 	for (iPeriodic = 0; iPeriodic < nPeriodic; iPeriodic++) {
-        
+    
 		/*--- Retrieve the supplied periodic information. ---*/
 		center = config->GetPeriodicCenter(iPeriodic);
 		angles = config->GetPeriodicRotation(iPeriodic);
 		transl = config->GetPeriodicTranslate(iPeriodic);
-        
+    
 		output_file << "PERIODIC_INDEX= " << iPeriodic << endl;
 		output_file << center[0] << "\t" << center[1] << "\t" << center[2] << endl;
 		output_file << angles[0] << "\t" << angles[1] << "\t" << angles[2] << endl;
 		output_file << transl[0] << "\t" << transl[1] << "\t" << transl[2] << endl;
-        
+    
 	}
-    
+  
 	output_file.close();
-    
-    delete[] cstr;
+  
+  delete[] cstr;
 }
 
 void CDomainGeometry::SetParaView(char mesh_filename[200]) {
