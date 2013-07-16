@@ -1776,10 +1776,6 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_density, double *val_velocity,
                                unsigned short val_nvar, CConfig *config) : CVariable(val_ndim, val_nvar, config) {
 	unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
   
-	bool Incompressible = config->GetIncompressible();
-	bool freesurface = config->GetFreeSurface();
-	bool magnet = (config->GetMagnetic_Force() == YES);
-  bool low_fidelity = config->GetLowFidelitySim();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
@@ -1789,8 +1785,7 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_density, double *val_velocity,
 	Limiter_Primitive = NULL;
   
   /*--- Allocate and initialize the primitive variables and gradients ---*/
-  if (Incompressible) { nPrimVar = nDim+2; nPrimVarGrad = nDim+2; }
-  else { nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
+  nPrimVar = nDim+5; nPrimVarGrad = nDim+3;
   
 	/*--- Allocate residual structures ---*/
 	Res_TruncError = new double [nVar];
@@ -1803,7 +1798,7 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_density, double *val_velocity,
 	for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++)
 		nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
   
-	if ((nMGSmooth > 0) || low_fidelity || freesurface) {
+	if (nMGSmooth > 0) {
 		Residual_Sum = new double [nVar];
 		Residual_Old = new double [nVar];
 	}
@@ -1824,15 +1819,6 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_density, double *val_velocity,
 	}
   
 	/*--- Solution and old solution initialization ---*/
-	if (Incompressible) {
-		Solution[0] = config->GetPressure_FreeStreamND();
-		Solution_Old[0] = config->GetPressure_FreeStreamND();
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Solution[iDim+1] = val_velocity[iDim]*config->GetDensity_FreeStreamND();
-			Solution_Old[iDim+1] = val_velocity[iDim]*config->GetDensity_FreeStreamND();
-		}
-	}
-	else {
 		Solution[0] = val_density;
 		Solution_Old[0] = val_density;
 		for (iDim = 0; iDim < nDim; iDim++) {
@@ -1841,19 +1827,9 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_density, double *val_velocity,
 		}
 		Solution[nVar-1] = val_density*val_energy;
 		Solution_Old[nVar-1] = val_density*val_energy;
-	}
   
 	/*--- Allocate and initialize solution for dual time strategy ---*/
 	if (dual_time) {
-		if (Incompressible) {
-			Solution_time_n[0] = config->GetPressure_FreeStreamND();
-			Solution_time_n1[0] = config->GetPressure_FreeStreamND();
-			for (iDim = 0; iDim < nDim; iDim++) {
-				Solution_time_n[iDim+1] = val_velocity[iDim]*config->GetDensity_FreeStreamND();
-				Solution_time_n1[iDim+1] = val_velocity[iDim]*config->GetDensity_FreeStreamND();
-			}
-		}
-		else {
 			Solution_time_n[0] = val_density;
 			Solution_time_n1[0] = val_density;
 			for (iDim = 0; iDim < nDim; iDim++) {
@@ -1862,11 +1838,7 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_density, double *val_velocity,
 			}
 			Solution_time_n[nVar-1] = val_density*val_energy;
 			Solution_time_n1[nVar-1] = val_density*val_energy;
-		}
 	}
-  
-	/*--- Allocate auxiliar vector for free surface source term ---*/
-	if (freesurface) Grad_AuxVar = new double [nDim];
   
   /*--- Incompressible flow, primitive variables nDim+2, (rho,vx,vy,vz,beta),
    compressible flow, primitive variables nDim+5, (T,vx,vy,vz,P,rho,h,c) ---*/
@@ -1889,10 +1861,6 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_density, double *val_velocity,
 CTNE2EulerVariable::CTNE2EulerVariable(double *val_solution, unsigned short val_ndim, unsigned short val_nvar, CConfig *config) : CVariable(val_ndim, val_nvar, config) {
 	unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
   
-	bool Incompressible = config->GetIncompressible();
-	bool freesurface = config->GetFreeSurface();
-	bool magnet = (config->GetMagnetic_Force() == YES);
-  bool low_fidelity = config->GetLowFidelitySim();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
@@ -1912,7 +1880,7 @@ CTNE2EulerVariable::CTNE2EulerVariable(double *val_solution, unsigned short val_
 	for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++)
 		nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
   
-	if ((nMGSmooth > 0) || low_fidelity) {
+	if (nMGSmooth > 0) {
 		Residual_Sum = new double [nVar];
 		Residual_Old = new double [nVar];
 	}
@@ -1949,12 +1917,8 @@ CTNE2EulerVariable::CTNE2EulerVariable(double *val_solution, unsigned short val_
 		}
 	}
   
-	/*--- Allocate auxiliar vector for free surface source term ---*/
-	if (freesurface) Grad_AuxVar = new double [nDim];
-  
 	/*--- Allocate and initialize the primitive variables and gradients ---*/
-  if (Incompressible) { nPrimVar = nDim+2; nPrimVarGrad = nDim+2; }
-  else { nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
+  nPrimVar = nDim+5; nPrimVarGrad = nDim+3;
   
   /*--- Incompressible flow, primitive variables nDim+2, (rho,vx,vy,vz,beta)
    compressible flow, primitive variables nDim+5, (T,vx,vy,vz,P,rho,h,c) ---*/
@@ -2050,7 +2014,6 @@ CTNE2NSVariable::CTNE2NSVariable(double val_density, double *val_velocity, doubl
 	Viscosity_Ref   = config->GetViscosity_Ref();
 	Viscosity_Inf   = config->GetViscosity_FreeStreamND();
 	Prandtl_Lam     = config->GetPrandtl_Lam();
-	Prandtl_Turb    = config->GetPrandtl_Turb();
   
 }
 
@@ -2061,7 +2024,7 @@ CTNE2NSVariable::CTNE2NSVariable(double *val_solution, unsigned short val_ndim,
 	Viscosity_Ref   = config->GetViscosity_Ref();
 	Viscosity_Inf   = config->GetViscosity_FreeStreamND();
 	Prandtl_Lam     = config->GetPrandtl_Lam();
-	Prandtl_Turb    = config->GetPrandtl_Turb();
+
 }
 
 CTNE2NSVariable::~CTNE2NSVariable(void) { }
@@ -2073,17 +2036,6 @@ void CTNE2NSVariable::SetLaminarViscosity() {
 	Temperature_Dim = Primitive[0]*Temperature_Ref;
 	LaminarViscosity = 1.853E-5*(pow(Temperature_Dim/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_Dim+110.3));
 	LaminarViscosity = LaminarViscosity/Viscosity_Ref;
-  
-}
-
-void CTNE2NSVariable::SetEddyViscosity(unsigned short val_Kind_Turb_Model, CVariable *Turb_Solution) {
-  
-	switch (val_Kind_Turb_Model) {
-    case NONE :
-      EddyViscosity = 0.0;                     break;
-    case SA : case SST :
-      EddyViscosity = Turb_Solution->GetmuT(); break;
-	}
   
 }
 

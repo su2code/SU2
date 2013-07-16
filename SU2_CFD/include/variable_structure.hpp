@@ -3683,13 +3683,10 @@ public:
 class CTNE2NSVariable : public CTNE2EulerVariable {
 private:
 	double Prandtl_Lam;       /*!< \brief Laminar Prandtl number. */
-	double Prandtl_Turb;      /*!< \brief Turbulent Prandtl number. */
 	double Temperature_Ref;   /*!< \brief Reference temperature of the fluid. */
 	double Viscosity_Ref;     /*!< \brief Reference viscosity of the fluid. */
 	double Viscosity_Inf;     /*!< \brief Viscosity of the fluid at the infinity. */
 	double LaminarViscosity;	/*!< \brief Viscosity of the fluid. */
-	double LaminarViscosityInc;	/*!< \brief Viscosity of the fluid (incompressible flows). */
-	double EddyViscosity;		/*!< \brief Eddy viscosity of the fluid. */
 	double Vorticity[3];		/*!< \brief Vorticity of the fluid. */
   
 public:
@@ -3742,35 +3739,10 @@ public:
 	void SetVorticity(void);
   
 	/*!
-	 * \brief Set the eddy viscosity.
-	 * \param[in] val_Kind_Turb_Model - Kind of turbulence model.
-	 * \param[in] Turb_Solution - Solution of the turbulence model.
-	 */
-	void SetEddyViscosity(unsigned short val_Kind_Turb_Model, CVariable *Turb_Solution);
-  
-	/*!
-	 * \overload
-	 * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
-	 */
-	void SetEddyViscosity(double val_eddy_viscosity);
-  
-	/*!
 	 * \brief Get the laminar viscosity of the flow.
 	 * \return Value of the laminar viscosity of the flow.
 	 */
 	double GetLaminarViscosity(void);
-  
-	/*!
-	 * \brief Get the laminar viscosity of the incompressible flow.
-	 * \return Value of the laminar viscosity of the incompressible flow.
-	 */
-	double GetLaminarViscosityInc(void);
-  
-	/*!
-	 * \brief Get the eddy viscosity of the flow.
-	 * \return The eddy viscosity of the flow.
-	 */
-	double GetEddyViscosity(void);
   
 	/*!
 	 * \brief Set the temperature at the wall

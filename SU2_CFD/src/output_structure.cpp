@@ -4026,9 +4026,17 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short va
       (Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
     restart_file << ", \"Pressure\", \"Pressure_Coefficient\", \"Mach\"";
   }
+  
+  if (Kind_Solver == TNE2_EULER) {
+    restart_file << ", \"Pressure\", \"Pressure_Coefficient\", \"Mach\"";
+  }
 
   if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
       (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    restart_file << ", \"Temperature\", \"Laminar_Viscosity\", \"Skin_Friction_Coefficient\", \"Heat_Transfer\", \"Y_Plus\"";
+  }
+  
+  if (Kind_Solver == TNE2_NAVIER_STOKES) {
     restart_file << ", \"Temperature\", \"Laminar_Viscosity\", \"Skin_Friction_Coefficient\", \"Heat_Transfer\", \"Y_Plus\"";
   }
 
@@ -4250,6 +4258,13 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
 		if (turbulent) ConvHist_file[0] << turb_resid;
 		ConvHist_file[0] << end;
 		break;
+      
+    case TNE2_EULER : case TNE2_NAVIER_STOKES:
+      ConvHist_file[0] << begin << flow_coeff;
+      if (isothermal) ConvHist_file[0] << heat_coeff;
+      ConvHist_file[0] << flow_resid;
+      ConvHist_file[0] << end;
+      break;
 
 	case FREE_SURFACE_EULER: case FREE_SURFACE_NAVIER_STOKES: case FREE_SURFACE_RANS:
 		ConvHist_file[0] << begin << flow_coeff << free_surface_coeff;
@@ -4412,6 +4427,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
   
   /*--- Adjoint problem variables ---*/
   if (compressible) nVar_AdjFlow = nDim+2; else nVar_AdjFlow = nDim+1;
+  if (TNE2) nVar_AdjTNE2 = nDim+2;
   if (turbulent)
     switch (config[val_iZone]->GetKind_Turb_Model()){
       case SA:	nVar_AdjTurb = 1; break;
@@ -4432,6 +4448,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
   
   /*--- Allocate memory for the residual ---*/
   residual_flow = new double[nVar_Flow];
+  residual_TNE2 = new double[nVar_TNE2];
   residual_turbulent = new double[nVar_Turb];
   residual_transition = new double[nVar_Trans];
   residual_plasma = new double[nVar_Plasma];
@@ -4440,6 +4457,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
   residual_fea = new double[nVar_FEA];
   
   residual_adjflow = new double[nVar_AdjFlow];
+  residual_adjTNE2 = new double[nVar_AdjTNE2];
   residual_adjturbulent = new double[nVar_AdjTurb];
   residual_adjplasma = new double[nVar_AdjPlasma];
   residual_adjlevelset = new double[nVar_AdjLevelSet];
@@ -4615,6 +4633,74 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
         if (freesurface) {
           for (iVar = 0; iVar < nVar_AdjLevelSet; iVar++)
             residual_adjlevelset[iVar] = solution_container[val_iZone][FinestMesh][ADJLEVELSET_SOL]->GetRes_RMS(iVar);
+        }
+        
+      }
+      
+      break;
+      
+    case TNE2_EULER:  case TNE2_NAVIER_STOKES:
+      
+      /*--- Flow solution coefficients (serial) ---*/
+      Total_CLift += solution_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_CLift();
+      Total_CDrag += solution_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_CDrag();
+      Total_CSideForce += solution_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_CSideForce();
+      Total_CMx += solution_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_CMx();
+      Total_CMy += solution_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_CMy();
+      Total_CMz += solution_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_CMz();
+      Total_CFx += solution_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_CFx();
+      Total_CFy += solution_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_CFy();
+      Total_CFz += solution_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_CFz();
+      Total_CEff += solution_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_CEff();
+            
+      if (isothermal) {
+        Total_Q += solution_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_Q();
+        Total_MaxQ += solution_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_MaxQ();
+      }
+      
+      /*--- Flow solution coefficients (parallel) ---*/
+      sbuf_force[0] += solution_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_CLift();
+      sbuf_force[1] += solution_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_CDrag();
+      sbuf_force[2] += solution_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_CSideForce();
+      sbuf_force[3] += solution_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_CMx();
+      sbuf_force[4] += solution_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_CMy();
+      sbuf_force[5] += solution_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_CMz();
+      sbuf_force[6] += solution_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_CFx();
+      sbuf_force[7] += solution_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_CFy();
+      sbuf_force[8] += solution_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_CFz();
+            
+      if (isothermal) {
+        sbuf_force[12] += solution_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_Q();
+        sbuf_force[13] += solution_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_MaxQ();
+      }
+      
+      /*--- Flow Residuals ---*/
+      for (iVar = 0; iVar < nVar_TNE2; iVar++)
+        residual_flow[iVar] = solution_container[val_iZone][FinestMesh][TNE2_SOL]->GetRes_RMS(iVar);
+                  
+      /*--- Iterations of the linear solver ---*/
+      LinSolvIter = (unsigned long) solution_container[val_iZone][FinestMesh][TNE2_SOL]->GetIterLinSolver();
+      
+      /*--- Adjoint solver ---*/
+      if (adjoint) {
+        
+        /*--- Adjoint solution coefficients (serial) ---*/
+        Total_Sens_Geo  = solution_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetTotal_Sens_Geo();
+        Total_Sens_Mach = solution_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetTotal_Sens_Mach();
+        Total_Sens_AoA  = solution_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetTotal_Sens_AoA();
+        Total_Sens_Press = solution_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetTotal_Sens_Press();
+        Total_Sens_Temp  = solution_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetTotal_Sens_Temp();
+        
+        /*--- Adjoint solution coefficients (parallel) ---*/
+        sbuf_force[0] = solution_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetTotal_Sens_Geo();
+        sbuf_force[1] = solution_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetTotal_Sens_Mach();
+        sbuf_force[2] = solution_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetTotal_Sens_AoA();
+        sbuf_force[3] = solution_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetTotal_Sens_Press();
+        sbuf_force[4] = solution_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetTotal_Sens_Temp();
+        
+        /*--- Adjoint flow residuals ---*/
+        for (iVar = 0; iVar < nVar_AdjFlow; iVar++) {
+          residual_adjTNE2[iVar] = solution_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetRes_RMS(iVar);
         }
         
       }
@@ -4920,6 +5006,42 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
             
             break;
             
+          case TNE2_EULER : case TNE2_NAVIER_STOKES:
+            
+            /*--- Direct coefficients ---*/
+            sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
+                     Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy,
+                     Total_CFz, Total_CEff);
+            if (isothermal)
+              sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy,
+                       Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_Q, Total_MaxQ);
+            
+            /*--- Flow residual ---*/
+            if (nDim == 2) {
+              sprintf (flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), dummy );
+            }
+            else {
+              sprintf (flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), log10 (residual_flow[4]) );
+            }
+                        
+            if (adjoint) {
+              
+              /*--- Adjoint coefficients ---*/
+              sprintf (adjoint_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, 0.0", Total_Sens_Geo, Total_Sens_Mach, Total_Sens_AoA, Total_Sens_Press, Total_Sens_Temp);
+              
+              /*--- Adjoint flow residuals ---*/
+              if (nDim == 2) {
+                sprintf (adj_flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, 0.0", log10 (residual_adjflow[0]),log10 (residual_adjflow[1]),log10 (residual_adjflow[2]),log10 (residual_adjflow[3]) );
+                
+              }
+              else {
+                sprintf (adj_flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_adjflow[0]),log10 (residual_adjflow[1]),log10 (residual_adjflow[2]),log10 (residual_adjflow[3]), log10 (residual_adjflow[4]) );
+              }
+              
+            }
+            
+            break;
+
           case PLASMA_EULER : case ADJ_PLASMA_EULER : case PLASMA_NAVIER_STOKES: case ADJ_PLASMA_NAVIER_STOKES:
             unsigned short iSpecies, loc;
             
@@ -5034,6 +5156,18 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
             
             cout << "   Res[Press]" << "     Res[Dist]" << "   CLift(Total)" << "     CLevelSet" << endl;
             
+            break;
+            
+          case TNE2_EULER :                  case TNE2_NAVIER_STOKES:
+            
+            /*--- Visualize the maximum residual ---*/
+            cout << endl << " Maximum residual: " << log10(solution_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_Max(0))
+            <<", located at point "<< solution_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max(0) << "." << endl;
+            
+            if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
+            else cout << endl << " IntIter" << " ExtIter";
+            
+            cout << "     Res[Rho]" << "     Res[RhoE]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
             break;
             
           case RANS : case FLUID_STRUCTURE_RANS: case AEROACOUSTIC_RANS:
@@ -5213,7 +5347,27 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
           else { cout.width(15); cout << Total_CLift; cout.width(15); cout << Total_CDrag; }
           cout << endl;
           break;
+    
+        case TNE2_EULER : case TNE2_NAVIER_STOKES:
           
+          if (!DualTime_Iteration) {
+            ConvHist_file[0] << begin << direct_coeff << flow_resid;
+            ConvHist_file[0] << end;
+            ConvHist_file[0].flush();
+          }
+          
+          cout.precision(6);
+          cout.setf(ios::fixed,ios::floatfield);
+          cout.width(13); cout << log10(residual_flow[0]);
+          if (!fluid_structure && !aeroacoustic && !equiv_area) {
+              if (nDim == 2 ) { cout.width(14); cout << log10(residual_flow[3]); }
+              else { cout.width(14); cout << log10(residual_flow[4]); }
+          }
+          
+          cout.width(15); cout << Total_CLift; cout.width(15); cout << Total_CDrag;
+          cout << endl;
+          break;
+
         case RANS :
           
           if (!DualTime_Iteration) {
@@ -5426,6 +5580,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
     }
     
     delete [] residual_flow;
+    delete [] residual_TNE2;
     delete [] residual_levelset;
     delete [] residual_plasma;
     delete [] residual_turbulent;
@@ -5434,6 +5589,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
     delete [] residual_fea;
     
     delete [] residual_adjflow;
+    delete [] residual_adjTNE2;
     delete [] residual_adjlevelset;
     delete [] residual_adjplasma;
     delete [] residual_adjturbulent;
@@ -5493,6 +5649,11 @@ void COutput::SetResult_Files(CSolution ****solution_container, CGeometry ***geo
 
 			if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][MESH_0], solution_container[iZone][MESH_0][FLOW_SOL], iExtIter);
 			break;
+        
+      case TNE2_EULER : case TNE2_NAVIER_STOKES :
+        
+//        if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][MESH_0], solution_container[iZone][MESH_0][FLOW_SOL], iExtIter);
+        break;
 
 		case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS : case ADJ_FREE_SURFACE_EULER : case ADJ_FREE_SURFACE_NAVIER_STOKES: case ADJ_FREE_SURFACE_RANS:
 			if (Wrt_Csv) SetSurfaceCSV_Adjoint(config[iZone], geometry[iZone][MESH_0], solution_container[iZone][MESH_0][ADJFLOW_SOL], solution_container[iZone][MESH_0][FLOW_SOL], iExtIter, iZone);

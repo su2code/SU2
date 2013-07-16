@@ -326,6 +326,7 @@ private:
 	Kind_SourNumScheme_Template,	/*!< \brief Source numerical scheme for the template. */
 	Kind_Centered,				/*!< \brief Centered scheme. */
 	Kind_Centered_Flow,			/*!< \brief Centered scheme for the flow equations. */
+	Kind_Centered_TNE2,			/*!< \brief Centered scheme for the flow equations. */
 	Kind_Centered_LevelSet,			/*!< \brief Centered scheme for the level set equation. */
 	Kind_Centered_AdjLevelSet,			/*!< \brief Centered scheme for the level set equation. */
 	Kind_Centered_AdjFlow,			/*!< \brief Centered scheme for the adjoint flow equations. */

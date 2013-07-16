@@ -852,17 +852,11 @@ inline bool CTNE2EulerVariable::SetPressure(double Gamma) {
    else return true;
 }
 
-inline double CTNE2NSVariable::GetEddyViscosity(void) { return EddyViscosity; }
-
 inline double CTNE2NSVariable::GetLaminarViscosity(void) { return LaminarViscosity; }
-
-inline double CTNE2NSVariable::GetLaminarViscosityInc(void) { return LaminarViscosityInc; }
 
 inline double CTNE2NSVariable::GetVorticity(unsigned short val_dim) { return Vorticity[val_dim]; }
 
 inline void CTNE2NSVariable::SetLaminarViscosity(double val_laminar_viscosity) { LaminarViscosity = val_laminar_viscosity; }
-
-inline void CTNE2NSVariable::SetEddyViscosity(double val_eddy_viscosity) { EddyViscosity = val_eddy_viscosity; }
 
 inline void CTNE2NSVariable::SetWallTemperature(double Temperature_Wall ) { Primitive[0] = Temperature_Wall; }
 

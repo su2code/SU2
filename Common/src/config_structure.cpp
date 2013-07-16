@@ -260,6 +260,8 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddScalarOption("TIME_INSTANCES", nTimeInstances, 1);
 	/* DESCRIPTION: Time discretization */
 	AddEnumOption("TIME_DISCRE_FLOW", Kind_TimeIntScheme_Flow, Time_Int_Map, "RUNGE-KUTTA_EXPLICIT");
+  /* DESCRIPTION: Time discretization */
+	AddEnumOption("TIME_DISCRE_TNE2", Kind_TimeIntScheme_TNE2, Time_Int_Map, "EULER_IMPLICIT");
 	/* DESCRIPTION: Time discretization */
 	AddEnumOption("TIME_DISCRE_LEVELSET", Kind_TimeIntScheme_LevelSet, Time_Int_Map, "RUNGE-KUTTA_EXPLICIT");
 	/* DESCRIPTION: Time discretization */
@@ -459,6 +461,8 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 
 	/* DESCRIPTION: Slope limiter */
 	AddEnumOption("SLOPE_LIMITER_FLOW", Kind_SlopeLimit_Flow, Limiter_Map, "NONE");
+  /* DESCRIPTION: Slope limiter */
+	AddEnumOption("SLOPE_LIMITER_TNE2", Kind_SlopeLimit_TNE2, Limiter_Map, "NONE");
 	/* DESCRIPTION: Slope limiter */
 	AddEnumOption("SLOPE_LIMITER_ADJFLOW", Kind_SlopeLimit_AdjFlow, Limiter_Map, "NONE");
 	/* DESCRIPTION: Slope limiter */
@@ -477,6 +481,8 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddScalarOption("LIMITER_COEFF", LimiterCoeff, 0.3);
 	/* DESCRIPTION: Convective numerical method */
 	AddConvectOption("CONV_NUM_METHOD_FLOW", Kind_ConvNumScheme_Flow, Kind_Centered_Flow, Kind_Upwind_Flow);
+  /* DESCRIPTION: Convective numerical method */
+	AddConvectOption("CONV_NUM_METHOD_TNE2", Kind_ConvNumScheme_TNE2, Kind_Centered_TNE2, Kind_Upwind_TNE2);
 	/* DESCRIPTION: Convective numerical method */
 	AddConvectOption("CONV_NUM_METHOD_LEVELSET", Kind_ConvNumScheme_LevelSet, Kind_Centered_LevelSet, Kind_Upwind_LevelSet);
 	/* DESCRIPTION: Convective numerical method */
@@ -497,6 +503,8 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddEnumOption("NUM_METHOD_GRAD", Kind_Gradient_Method, Gradient_Map, "GREEN_GAUSS");
 	/* DESCRIPTION: Viscous numerical method */
 	AddEnumOption("VISC_NUM_METHOD_FLOW", Kind_ViscNumScheme_Flow, Viscous_Map, "NONE");
+  /* DESCRIPTION: Viscous numerical method */
+	AddEnumOption("VISC_NUM_METHOD_TNE2", Kind_ViscNumScheme_TNE2, Viscous_Map, "NONE");
 	/* DESCRIPTION: Viscous numerical method */
 	AddEnumOption("VISC_NUM_METHOD_WAVE", Kind_ViscNumScheme_Wave, Viscous_Map, "GALERKIN");
 	/* DESCRIPTION: Viscous numerical method */
@@ -507,6 +515,8 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddEnumOption("SOUR_NUM_METHOD_FEA", Kind_SourNumScheme_FEA, Source_Map, "NONE");
 	/* DESCRIPTION: Source term numerical method */
 	AddEnumOption("SOUR_NUM_METHOD_FLOW", Kind_SourNumScheme_Flow, Source_Map, "NONE");
+  /* DESCRIPTION: Source term numerical method */
+	AddEnumOption("SOUR_NUM_METHOD_TNE2", Kind_SourNumScheme_TNE2, Source_Map, "NONE");
 	/* DESCRIPTION: Source term numerical method */
 	AddEnumOption("SOUR_NUM_METHOD_LEVELSET", Kind_SourNumScheme_LevelSet, Source_Map, "NONE");
 	/* DESCRIPTION: Viscous numerical method */
@@ -1355,11 +1365,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
 	if (Adjoint) {
 		if (Kind_Solver == EULER) Kind_Solver = ADJ_EULER;
+		if (Kind_Solver == TNE2_EULER) Kind_Solver = ADJ_TNE2_EULER;
 		if (Kind_Solver == FREE_SURFACE_EULER) Kind_Solver = ADJ_FREE_SURFACE_EULER;
 		if (Kind_Solver == AEROACOUSTIC_EULER) Kind_Solver = ADJ_AEROACOUSTIC_EULER;
 		if (Kind_Solver == PLASMA_EULER) Kind_Solver = ADJ_PLASMA_EULER;
 		if (Kind_Solver == PLASMA_NAVIER_STOKES) Kind_Solver = ADJ_PLASMA_NAVIER_STOKES;
 		if (Kind_Solver == NAVIER_STOKES) Kind_Solver = ADJ_NAVIER_STOKES;
+		if (Kind_Solver == TNE2_NAVIER_STOKES) Kind_Solver = ADJ_TNE2_NAVIER_STOKES;
 		if (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) Kind_Solver = ADJ_FREE_SURFACE_NAVIER_STOKES;
 		if (Kind_Solver == FREE_SURFACE_RANS) Kind_Solver = ADJ_FREE_SURFACE_RANS;
 		if (Kind_Solver == RANS) Kind_Solver = ADJ_RANS;
@@ -2645,6 +2657,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		case NAVIER_STOKES:
 			if (Incompressible) cout << "Incompressible Laminar Navier-Stokes equations." << endl;
 			else cout << "Compressible Laminar Navier-Stokes' equations." << endl; break;
+    case TNE2_EULER:
+        cout << "Compressible TNE2 Euler equations." << endl; break;
+    case TNE2_NAVIER_STOKES:
+        cout << "Compressible TNE2 Laminar Navier-Stokes' equations." << endl; break;
 		case RANS:
 			if (Incompressible) cout << "Incompressible RANS equations." << endl;
 			else cout << "Compressible RANS equations." << endl;
@@ -2700,6 +2716,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 					cout << "Continuous Navier-Stokes adjoint equations with frozen (laminar) viscosity." << endl;
 				else
 					cout << "Continuous Navier-Stokes adjoint equations." << endl;
+				break;
+      case ADJ_TNE2_EULER: cout << "Continuous TNE2 Euler adjoint equations." << endl; break;
+			case ADJ_TNE2_NAVIER_STOKES:
+					cout << "Continuous TNE2 Navier-Stokes adjoint equations with frozen (laminar) viscosity." << endl;
 				break;
 			case ADJ_RANS:
 				if (Kind_Adjoint == CONTINUOUS) {
@@ -3040,6 +3060,37 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			}
 		}
 
+    if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
+			if (Kind_ConvNumScheme_TNE2 == SPACE_UPWIND) {
+				if (Kind_Upwind_TNE2 == ROE_1ST) cout << "1st order Roe solver for the flow inviscid terms."<< endl;
+				if (Kind_Upwind_TNE2 == ROE_TURKEL_1ST) cout << "1st order Roe-Turkel solver for the flow inviscid terms."<< endl;
+				if (Kind_Upwind_TNE2 == AUSM_1ST)	cout << "1st order AUSM solver for the flow inviscid terms."<< endl;
+				if (Kind_Upwind_TNE2 == HLLC_1ST)	cout << "1st order HLLC solver for the flow inviscid terms."<< endl;
+				if (Kind_Upwind_TNE2 == SW_1ST)	cout << "1st order Steger-Warming solver for the flow inviscid terms."<< endl;
+				if (Kind_Upwind_TNE2 == MSW_1ST)	cout << "1st order Modified Steger-Warming solver for the flow inviscid terms."<< endl;
+			}
+			if ((Kind_ConvNumScheme_TNE2 == SPACE_UPWIND) &&
+					((Kind_Upwind_TNE2 == ROE_2ND) || (Kind_Upwind_Flow == AUSM_2ND) || (Kind_Upwind_Flow == HLLC_2ND)
+           || (Kind_Upwind_TNE2 == SW_2ND) || (Kind_Upwind_Flow == MSW_2ND) || (Kind_Upwind_Flow == ROE_TURKEL_2ND))) {
+            if (Kind_Upwind_TNE2 == ROE_2ND) cout << "2nd order Roe solver for the flow inviscid terms."<< endl;
+            if (Kind_Upwind_TNE2 == ROE_TURKEL_2ND) cout << "2nd order Roe-Turkel solver for the flow inviscid terms."<< endl;
+            if (Kind_Upwind_TNE2 == AUSM_2ND) cout << "2nd order AUSM solver for the flow inviscid terms."<< endl;
+            if (Kind_Upwind_TNE2 == HLLC_2ND) cout << "2nd order HLLC solver for the flow inviscid terms."<< endl;
+            if (Kind_Upwind_TNE2 == SW_2ND) cout << "2nd order Steger-Warming solver for the flow inviscid terms."<< endl;
+            if (Kind_Upwind_TNE2 == MSW_2ND) cout << "2nd order Modified Steger-Warming solver for the flow inviscid terms."<< endl;
+            switch (Kind_SlopeLimit_TNE2) {
+              case NONE: cout << "Without slope-limiting method." << endl; break;
+              case VENKATAKRISHNAN:
+                cout << "Venkatakrishnan slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+                break;
+              case MINMOD:
+                cout << "Minmod slope-limiting method." << endl;
+                break;
+            }
+          }
+		}
+    
 		if ((Kind_Solver == PLASMA_EULER) || (Kind_Solver == PLASMA_NAVIER_STOKES)) {
 			if (Kind_ConvNumScheme_Plasma == SPACE_CENTERED) {
 				if (Kind_Centered_Plasma == JST)
@@ -3123,6 +3174,14 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			case AVG_GRAD_CORRECTED: cout << "Average of gradients with correction (viscous flow terms)." << endl; break;
 			}
 		}
+    
+    if (Kind_Solver == TNE2_NAVIER_STOKES) {
+			switch (Kind_ViscNumScheme_TNE2) {
+        case AVG_GRAD: cout << "Average of gradients (viscous flow terms)." << endl; break;
+        case AVG_GRAD_CORRECTED: cout << "Average of gradients with correction (viscous flow terms)." << endl; break;
+			}
+		}
+    
 		if (Kind_Solver == PLASMA_NAVIER_STOKES) {
 			switch (Kind_ViscNumScheme_Plasma) {
 			case AVG_GRAD: cout << "Average of gradients (1st order) for computation of viscous flow terms." << endl; break;
@@ -3259,6 +3318,37 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 					break;
 				}
 				break;
+			}
+		}
+    
+    if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
+			switch (Kind_TimeIntScheme_TNE2) {
+        case EULER_IMPLICIT:
+          cout << "Euler implicit method for the flow equations." << endl;
+          switch (Kind_Linear_Solver) {
+            case LU_SGS:
+              cout << "A LU - symmetric Gauss-Seidel iteration is used for solving the linear system." << endl;
+              break;
+            case SYM_GAUSS_SEIDEL:
+              cout << "A symmetric Gauss-Seidel method is used for solving the linear system." << endl;
+              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<<endl;
+              cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<<endl;
+              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
+              break;
+            case BCGSTAB:
+              cout << "A precond. BCGSTAB is used for solving the linear system." << endl;
+              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<<endl;
+              cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<<endl;
+              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
+              break;
+            case GMRES:
+              cout << "A precond. GMRES is used for solving the linear system." << endl;
+              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<<endl;
+              cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<<endl;
+              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
+              break;
+          }
+          break;
 			}
 		}
 
