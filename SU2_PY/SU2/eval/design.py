@@ -492,4 +492,7 @@ def touch(config,state):
     state.set_timestamp()
     
 def skip(config,state):
+    """ SU2.eval.skip(config,state)
+        does nothing
+    """
     pass
