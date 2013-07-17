@@ -49,9 +49,9 @@ CEulerSolution::CEulerSolution(void) : CSolution() {
 	FanFace_MassFlow = NULL;
 	FanFace_Pressure = NULL;
 	FanFace_Mach = NULL;
-    FanFace_Area = NULL;
-    Exhaust_MassFlow = NULL;
-    Exhaust_Area = NULL;
+  FanFace_Area = NULL;
+  Exhaust_MassFlow = NULL;
+  Exhaust_Area = NULL;
 	p1_Und_Lapl = NULL;
 	p2_Und_Lapl = NULL;
 	PrimVar_i = NULL;
@@ -103,11 +103,11 @@ CEulerSolution::CEulerSolution(CGeometry *geometry, CConfig *config, unsigned sh
 	ForceInviscid = NULL;
 	MomentInviscid = NULL;
 	FanFace_MassFlow = NULL;
-    Exhaust_MassFlow = NULL;
-    Exhaust_Area = NULL;
+  Exhaust_MassFlow = NULL;
+  Exhaust_Area = NULL;
 	FanFace_Pressure = NULL;
 	FanFace_Mach = NULL;
-    FanFace_Area = NULL;
+  FanFace_Area = NULL;
 	p1_Und_Lapl = NULL;
 	p2_Und_Lapl = NULL;
 	PrimVar_i = NULL;
@@ -233,11 +233,11 @@ CEulerSolution::CEulerSolution(CGeometry *geometry, CConfig *config, unsigned sh
 
 	/*--- Nacelle simulation ---*/
 	FanFace_MassFlow  = new double[nMarker];
-    Exhaust_MassFlow  = new double[nMarker];
-    Exhaust_Area  = new double[nMarker];
+  Exhaust_MassFlow  = new double[nMarker];
+  Exhaust_Area  = new double[nMarker];
 	FanFace_Pressure  = new double[nMarker];
 	FanFace_Mach  = new double[nMarker];
-    FanFace_Area = new double[nMarker];
+  FanFace_Area = new double[nMarker];
 
 	/*--- Init total coefficients ---*/
 	Total_CDrag = 0.0;  Total_CLift = 0.0;      Total_CSideForce = 0.0;
@@ -403,13 +403,9 @@ CEulerSolution::CEulerSolution(CGeometry *geometry, CConfig *config, unsigned sh
   }
   
 #ifndef NO_MPI
-  
   MPI::COMM_WORLD.Reduce(&counter_local, &counter_global, 1, MPI::UNSIGNED_LONG, MPI::SUM, MASTER_NODE);
-  
 #else
-  
   counter_global = counter_local;
-  
 #endif
   
   
@@ -456,10 +452,10 @@ CEulerSolution::~CEulerSolution(void) {
 	if (MomentInviscid != NULL) delete [] MomentInviscid;
 	if (FanFace_MassFlow != NULL) delete [] FanFace_MassFlow;
 	if (Exhaust_MassFlow != NULL) delete [] Exhaust_MassFlow;
-    if (Exhaust_Area != NULL) delete [] Exhaust_Area;
+  if (Exhaust_Area != NULL) delete [] Exhaust_Area;
 	if (FanFace_Pressure != NULL) delete [] FanFace_Pressure;
 	if (FanFace_Mach != NULL) delete [] FanFace_Mach;
-    if (FanFace_Area != NULL) delete [] FanFace_Area;
+  if (FanFace_Area != NULL) delete [] FanFace_Area;
 	if (p1_Und_Lapl != NULL) delete [] p1_Und_Lapl;
 	if (p2_Und_Lapl != NULL) delete [] p2_Und_Lapl;
 	if (PrimVar_i != NULL) delete [] PrimVar_i;
