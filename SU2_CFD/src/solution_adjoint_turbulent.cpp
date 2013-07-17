@@ -1740,6 +1740,10 @@ void CAdjTurbSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **
 			Jacobian.BuildJacobiPreconditioner();
 			precond = new CJacobiPreconditioner(Jacobian, geometry, config);
 		}
+      //else if (config->GetKind_AdjTurb_Linear_Prec() == LUSGS) {
+        else if (config->GetKind_Linear_Solver_Prec() == LUSGS) {
+          precond = new CLUSGSPreconditioner(Jacobian, geometry, config);
+        }
 		//else if (config->GetKind_AdjTurb_Linear_Prec() == LINELET) {
         else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
 			Jacobian.BuildJacobiPreconditioner();

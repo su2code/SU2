@@ -969,13 +969,16 @@ void CAdjLevelSetSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolutio
 			Jacobian.BuildJacobiPreconditioner();
 			precond = new CJacobiPreconditioner(Jacobian, geometry, config);
 		}
+    else if (config->GetKind_Linear_Solver_Prec() == LUSGS) {
+			precond = new CLUSGSPreconditioner(Jacobian, geometry, config);
+		}
 		else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
 			Jacobian.BuildJacobiPreconditioner();
 			precond = new CLineletPreconditioner(Jacobian, geometry, config);
 		}
 		else if (config->GetKind_Linear_Solver_Prec() == NO_PREC) {
 			precond = new CIdentityPreconditioner(Jacobian, geometry, config);
-        }
+    }
 		
 		CSysSolve system;
 		if (config->GetKind_Linear_Solver() == BCGSTAB)

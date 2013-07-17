@@ -2346,13 +2346,16 @@ void CAdjEulerSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution *
 			Jacobian.BuildJacobiPreconditioner();
 			precond = new CJacobiPreconditioner(Jacobian, geometry, config);
 		}
+    else if (config->GetKind_Linear_Solver_Prec() == LUSGS) {
+			precond = new CLUSGSPreconditioner(Jacobian, geometry, config);
+		}
 		else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
 			Jacobian.BuildJacobiPreconditioner();
 			precond = new CLineletPreconditioner(Jacobian, geometry, config);
 		}
 		else if (config->GetKind_Linear_Solver_Prec() == NO_PREC) {
 			precond = new CIdentityPreconditioner(Jacobian, geometry, config);
-        }
+    }
 
 		CSysSolve system;
 		if (config->GetKind_Linear_Solver() == BCGSTAB)
@@ -2494,13 +2497,16 @@ void CAdjEulerSolution::Solve_LinearSystem(CGeometry *geometry, CSolution **solu
 			Jacobian.BuildJacobiPreconditioner();
 			precond = new CJacobiPreconditioner(Jacobian, geometry, config);
 		}
+    else if (config->GetKind_Linear_Solver_Prec() == LUSGS) {
+			precond = new CLUSGSPreconditioner(Jacobian, geometry, config);
+		}
 		else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
 			Jacobian.BuildJacobiPreconditioner();
 			precond = new CLineletPreconditioner(Jacobian, geometry, config);
 		}
 		else if (config->GetKind_Linear_Solver_Prec() == NO_PREC) {
 			precond = new CIdentityPreconditioner(Jacobian, geometry, config);
-        }
+    }
 
 		CSysSolve system;
 		if (config->GetKind_Linear_Solver() == BCGSTAB)

@@ -279,8 +279,21 @@ void CSparseMatrix::ProdBlockVector(unsigned long block_i, unsigned long block_j
 	unsigned long j = block_j*nVar;
 	unsigned short iVar, jVar;
 
-	GetBlock(block_i,block_j);
+	GetBlock(block_i, block_j);
 
+	for (iVar = 0; iVar < nVar; iVar++) {
+		prod_block_vector[iVar] = 0;
+		for (jVar = 0; jVar < nVar; jVar++)
+			prod_block_vector[iVar] += block[iVar*nVar+jVar]*vec[j+jVar];
+	}
+}
+
+void CSparseMatrix::ProdBlockVector(unsigned long block_i, unsigned long block_j, CSysVector & vec) {
+	unsigned long j = block_j*nVar;
+	unsigned short iVar, jVar;
+  
+	GetBlock(block_i, block_j);
+  
 	for (iVar = 0; iVar < nVar; iVar++) {
 		prod_block_vector[iVar] = 0;
 		for (jVar = 0; jVar < nVar; jVar++)
@@ -294,6 +307,21 @@ void CSparseMatrix::UpperProduct(double* vec, unsigned long row_i) {
 	for (iVar = 0; iVar < nVar; iVar++)
 		prod_row_vector[iVar] = 0;
 
+	for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
+		if (col_ind[index] > row_i) {
+			ProdBlockVector(row_i, col_ind[index], vec);
+			for (iVar = 0; iVar < nVar; iVar++)
+				prod_row_vector[iVar] += prod_block_vector[iVar];
+		}
+	}
+}
+
+void CSparseMatrix::UpperProduct(CSysVector & vec, unsigned long row_i) {
+	unsigned long iVar, index;
+  
+	for (iVar = 0; iVar < nVar; iVar++)
+		prod_row_vector[iVar] = 0;
+  
 	for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
 		if (col_ind[index] > row_i) {
 			ProdBlockVector(row_i, col_ind[index], vec);
@@ -319,12 +347,43 @@ void CSparseMatrix::LowerProduct(double* vec, unsigned long row_i) {
   
 }
 
+void CSparseMatrix::LowerProduct(CSysVector & vec, unsigned long row_i) {
+	unsigned long iVar, index;
+  
+	for (iVar = 0; iVar < nVar; iVar++)
+		prod_row_vector[iVar] = 0;
+  
+	for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
+		if (col_ind[index] < row_i) {
+			ProdBlockVector(row_i, col_ind[index], vec);
+			for (iVar = 0; iVar < nVar; iVar++)
+				prod_row_vector[iVar] += prod_block_vector[iVar];
+		}
+	}
+  
+}
+
 void CSparseMatrix::DiagonalProduct(double* vec, unsigned long row_i) {
 	unsigned long iVar, index;
 
 	for (iVar = 0; iVar < nVar; iVar++)
 		prod_row_vector[iVar] = 0;
 
+	for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
+		if (col_ind[index] == row_i) {
+			ProdBlockVector(row_i,col_ind[index],vec);
+			for (iVar = 0; iVar < nVar; iVar++)
+				prod_row_vector[iVar] += prod_block_vector[iVar];
+		}
+	}
+}
+
+void CSparseMatrix::DiagonalProduct(CSysVector & vec, unsigned long row_i) {
+	unsigned long iVar, index;
+  
+	for (iVar = 0; iVar < nVar; iVar++)
+		prod_row_vector[iVar] = 0;
+  
 	for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
 		if (col_ind[index] == row_i) {
 			ProdBlockVector(row_i,col_ind[index],vec);
@@ -878,6 +937,44 @@ void CSparseMatrix::ComputeJacobiPreconditioner(const CSysVector & vec, CSysVect
     
 	}
 	
+}
+
+void CSparseMatrix::ComputeLUSGSPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {
+  unsigned long iPoint, iVar;
+  
+  /*--- There are two approaches to the parallelization (AIAA-2000-0927):
+   1. Use a special scheduling algorithm which enables data parallelism by regrouping edges. This method has the advantage of producing exactly the same result as the single processor case, but it suffers from severe overhead penalties for parallel loop initiation, heavy interprocessor communications and poor load balance.
+   2. Split the computational domain into several nonoverlapping regions according to the number of processors, and apply the SGS method inside of each region with (or without) some special interprocessor boundary treatment. This approach may suffer from convergence degradation but takes advantage of minimal parallelization overhead and good load balance. ---*/
+	
+	/*--- First part of the symmetric iteration: (D+L).x* = b ---*/
+	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+		LowerProduct(prod, iPoint);                                        // Compute L.x*
+		for (iVar = 0; iVar < nVar; iVar++)
+			aux_vector[iVar] = vec[iPoint*nVar+iVar] - prod_row_vector[iVar]; // Compute aux_vector = b - L.x*
+		Gauss_Elimination(iPoint, aux_vector);                            // Solve D.x* = aux_vector
+		for (iVar = 0; iVar < nVar; iVar++)
+			prod[iPoint*nVar+iVar] = aux_vector[iVar];                       // Assesing x* = solution
+	}
+  
+//	/*--- Inner send-receive operation the solution vector ---*/
+//	SendReceive_Solution(prod, geometry, config);
+	
+	/*--- Second part of the symmetric iteration: (D+U).x_(1) = D.x* ---*/
+	for (iPoint = nPointDomain-1; (int)iPoint >= 0; iPoint--) {
+		DiagonalProduct(prod, iPoint);                 // Compute D.x*
+		for (iVar = 0; iVar < nVar; iVar++)
+			aux_vector[iVar] = prod_row_vector[iVar];   // Compute aux_vector = D.x*
+		UpperProduct(prod, iPoint);                    // Compute U.x_(n+1)
+		for (iVar = 0; iVar < nVar; iVar++)
+			aux_vector[iVar] -= prod_row_vector[iVar];  // Compute aux_vector = D.x*-U.x_(n+1)
+		Gauss_Elimination(iPoint, aux_vector);        // Solve D.x* = aux_vector
+		for (iVar = 0; iVar < nVar; iVar++)
+			prod[iPoint*nVar + iVar] = aux_vector[iVar]; // Assesing x_(1) = solution
+	}
+  
+//  /*--- Final send-receive operation the solution vector (redundant in CFD simulations) ---*/
+//	SendReceive_Solution(x_n, geometry, config);
+  
 }
 
 void CSparseMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {
