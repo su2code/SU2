@@ -379,37 +379,33 @@ CEulerSolution::CEulerSolution(CGeometry *geometry, CConfig *config, unsigned sh
 	}
 
   /*--- Check that the initial solution is physical ---*/
-  counter_local = 0;
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    
-    Density = node[iPoint]->GetSolution(0);
-    Velocity2 = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      Velocity2 += (node[iPoint]->GetSolution(iDim+1)/Density)*(node[iPoint]->GetSolution(iDim+1)/Density);
-    Pressure    = Gamma_Minus_One*Density*(node[iPoint]->GetSolution(nDim+1)/Density-0.5*Velocity2);
-    Temperature = Pressure / ( Gas_Constant * Density);
-    if ((Pressure < 0.0) || (Temperature < 0.0)) {
-      Solution[0] = Density_Inf;
+  if (!incompressible) {
+    counter_local = 0;
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      Density = node[iPoint]->GetSolution(0);
+      Velocity2 = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
-        Solution[iDim+1] = Velocity_Inf[iDim]*Density_Inf;
-      Solution[nDim+1] = Energy_Inf*Density_Inf;
-      
-      node[iPoint]->SetSolution(Solution);
-      node[iPoint]->SetSolution_Old(Solution);
-      
-      counter_local++;
+        Velocity2 += (node[iPoint]->GetSolution(iDim+1)/Density)*(node[iPoint]->GetSolution(iDim+1)/Density);
+      Pressure    = Gamma_Minus_One*Density*(node[iPoint]->GetSolution(nDim+1)/Density-0.5*Velocity2);
+      Temperature = Pressure / ( Gas_Constant * Density);
+      if ((Pressure < 0.0) || (Temperature < 0.0)) {
+        Solution[0] = Density_Inf;
+        for (iDim = 0; iDim < nDim; iDim++)
+          Solution[iDim+1] = Velocity_Inf[iDim]*Density_Inf;
+        Solution[nDim+1] = Energy_Inf*Density_Inf;
+        node[iPoint]->SetSolution(Solution);
+        node[iPoint]->SetSolution_Old(Solution);
+        counter_local++;
+      }
     }
-    
-  }
-  
 #ifndef NO_MPI
-  MPI::COMM_WORLD.Reduce(&counter_local, &counter_global, 1, MPI::UNSIGNED_LONG, MPI::SUM, MASTER_NODE);
+    MPI::COMM_WORLD.Reduce(&counter_local, &counter_global, 1, MPI::UNSIGNED_LONG, MPI::SUM, MASTER_NODE);
 #else
-  counter_global = counter_local;
+    counter_global = counter_local;
 #endif
-  
-  
-  if ((rank == MASTER_NODE) && (counter_global != 0)) cout << "Warning. The original solution contains "<< counter_global << " points that are not physical." << endl;
+    if ((rank == MASTER_NODE) && (counter_global != 0))
+      cout << "Warning. The original solution contains "<< counter_global << " points that are not physical." << endl;
+  }
   
 	/*--- Define solver parameters needed for execution of destructor ---*/
 	if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED ) space_centered = true;
@@ -6180,44 +6176,36 @@ CNSSolution::CNSSolution(CGeometry *geometry, CConfig *config, unsigned short iM
 		/*--- Free memory needed for the transformation ---*/
 		delete [] Global2Local;
 	}
-    
+  
   /*--- Check that the initial solution is physical ---*/
-  counter_local = 0;
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    
-    Density = node[iPoint]->GetSolution(0);
-    Velocity2 = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      Velocity2 += (node[iPoint]->GetSolution(iDim+1)/Density)*(node[iPoint]->GetSolution(iDim+1)/Density);
-    Pressure    = Gamma_Minus_One*Density*(node[iPoint]->GetSolution(nDim+1)/Density-0.5*Velocity2);
-    Temperature = Pressure / ( Gas_Constant * Density);
-    if ((Pressure < 0.0) || (Temperature < 0.0)) {
-      Solution[0] = Density_Inf;
+  if (!incompressible) {
+    counter_local = 0;
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      Density = node[iPoint]->GetSolution(0);
+      Velocity2 = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
-        Solution[iDim+1] = Velocity_Inf[iDim]*Density_Inf;
-      Solution[nDim+1] = Energy_Inf*Density_Inf;
-      
-      node[iPoint]->SetSolution(Solution);
-      node[iPoint]->SetSolution_Old(Solution);
-      
-      counter_local++;
+        Velocity2 += (node[iPoint]->GetSolution(iDim+1)/Density)*(node[iPoint]->GetSolution(iDim+1)/Density);
+      Pressure    = Gamma_Minus_One*Density*(node[iPoint]->GetSolution(nDim+1)/Density-0.5*Velocity2);
+      Temperature = Pressure / ( Gas_Constant * Density);
+      if ((Pressure < 0.0) || (Temperature < 0.0)) {
+        Solution[0] = Density_Inf;
+        for (iDim = 0; iDim < nDim; iDim++)
+          Solution[iDim+1] = Velocity_Inf[iDim]*Density_Inf;
+        Solution[nDim+1] = Energy_Inf*Density_Inf;
+        node[iPoint]->SetSolution(Solution);
+        node[iPoint]->SetSolution_Old(Solution);
+        counter_local++;
+      }
     }
-    
+#ifndef NO_MPI
+    MPI::COMM_WORLD.Reduce(&counter_local, &counter_global, 1, MPI::UNSIGNED_LONG, MPI::SUM, MASTER_NODE);
+#else
+    counter_global = counter_local;
+#endif
+    if ((rank == MASTER_NODE) && (counter_global != 0))
+      cout << "Warning. The original solution contains "<< counter_global << " points that are not physical." << endl;
   }
   
-#ifndef NO_MPI
-
-  MPI::COMM_WORLD.Reduce(&counter_local, &counter_global, 1, MPI::UNSIGNED_LONG, MPI::SUM, MASTER_NODE);
-
-#else
-
-  counter_global = counter_local;
-  
-#endif
-
-  
-    if ((rank == MASTER_NODE) && (counter_global != 0)) cout << "Warning. The original solution contains "<< counter_global << " points that are not physical." << endl;
-    
 	/*--- For incompressible solver set the initial values for the density and viscosity,
 	 unless a freesurface problem, this must be constant during the computation ---*/
 	if (incompressible) {
