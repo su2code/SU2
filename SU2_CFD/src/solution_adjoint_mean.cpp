@@ -2324,52 +2324,40 @@ void CAdjEulerSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution *
         }
     }
     
-	/*--- Solve the linear system (Stationary iterative methods) ---*/
-	if (config->GetKind_Linear_Solver() == SYM_GAUSS_SEIDEL)
-		Jacobian.SGSSolution(xres, xsol, config->GetLinear_Solver_Error(),
-                             config->GetLinear_Solver_Iter(), false, geometry, config);
-    
-	if (config->GetKind_Linear_Solver() == LU_SGS)
-		Jacobian.LU_SGSIteration(xres, xsol, geometry, config);
-    
-	/*--- Solve the linear system (Krylov subspace methods) ---*/
-	if ((config->GetKind_Linear_Solver() == BCGSTAB) ||
-        (config->GetKind_Linear_Solver() == GMRES)) {
-        
-		CSysVector rhs_vec(nPoint, nPointDomain, nVar, xres);
-		CSysVector sol_vec(nPoint, nPointDomain, nVar, xsol);
-        
-		CMatrixVectorProduct* mat_vec = new CSparseMatrixVectorProduct(Jacobian, geometry, config);
-
-		CPreconditioner* precond = NULL;
-		if (config->GetKind_Linear_Solver_Prec() == JACOBI) {
-			Jacobian.BuildJacobiPreconditioner();
-			precond = new CJacobiPreconditioner(Jacobian, geometry, config);
-		}
-    else if (config->GetKind_Linear_Solver_Prec() == LUSGS) {
-			precond = new CLUSGSPreconditioner(Jacobian, geometry, config);
-		}
-		else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-			Jacobian.BuildJacobiPreconditioner();
-			precond = new CLineletPreconditioner(Jacobian, geometry, config);
-		}
-		else if (config->GetKind_Linear_Solver_Prec() == NO_PREC) {
-			precond = new CIdentityPreconditioner(Jacobian, geometry, config);
-    }
-
-		CSysSolve system;
-		if (config->GetKind_Linear_Solver() == BCGSTAB)
-			system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, config->GetLinear_Solver_Error(),
-                           config->GetLinear_Solver_Iter(), false);
-		else if (config->GetKind_Linear_Solver() == GMRES)
-			system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, config->GetLinear_Solver_Error(),
-                         config->GetLinear_Solver_Iter(), false);
-        
-		sol_vec.CopyToArray(xsol);
-		delete mat_vec;
-		delete precond;
-	}
-    
+	/*--- Solve the linear system (Krylov subspace methods) ---*/        
+  CSysVector rhs_vec(nPoint, nPointDomain, nVar, xres);
+  CSysVector sol_vec(nPoint, nPointDomain, nVar, xsol);
+  
+  CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
+  
+  CPreconditioner* precond = NULL;
+  if (config->GetKind_Linear_Solver_Prec() == JACOBI) {
+    Jacobian.BuildJacobiPreconditioner();
+    precond = new CJacobiPreconditioner(Jacobian, geometry, config);
+  }
+  else if (config->GetKind_Linear_Solver_Prec() == LUSGS) {
+    precond = new CLUSGSPreconditioner(Jacobian, geometry, config);
+  }
+  else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
+    Jacobian.BuildJacobiPreconditioner();
+    precond = new CLineletPreconditioner(Jacobian, geometry, config);
+  }
+  else if (config->GetKind_Linear_Solver_Prec() == NO_PREC) {
+    precond = new CIdentityPreconditioner(Jacobian, geometry, config);
+  }
+  
+  CSysSolve system;
+  if (config->GetKind_Linear_Solver() == BCGSTAB)
+    system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, config->GetLinear_Solver_Error(),
+                   config->GetLinear_Solver_Iter(), false);
+  else if (config->GetKind_Linear_Solver() == GMRES)
+    system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, config->GetLinear_Solver_Error(),
+                 config->GetLinear_Solver_Iter(), false);
+  
+  sol_vec.CopyToArray(xsol);
+  delete mat_vec;
+  delete precond;
+  
 	/*--- Update solution (system written in terms of increments) ---*/
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++)
 		for (iVar = 0; iVar < nVar; iVar++)
@@ -2398,129 +2386,40 @@ void CAdjEulerSolution::Solve_LinearSystem(CGeometry *geometry, CSolution **solu
 			xsol[total_index] = 0.0;
 		}
 	}
-	/*
-// output grid for MATLAB:
-		ofstream grid_file;
-		grid_file.open("discrete_mesh.txt", ios:: out);
-		for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-			grid_file << geometry->node[iPoint]->GetCoord(0) << " "
-					<< geometry->node[iPoint]->GetCoord(1) << endl;
-		}
-		grid_file.close();
-
-// output obj function for MATLAB:
-		ofstream objfunc_file;
-		objfunc_file.open("discrete_source.txt", ios:: out);
-		for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-			for (iVar = 0; iVar < nVar; iVar++) {
-				total_index = iPoint*nVar+iVar;
-				objfunc_file << rhs[total_index] << endl;
-			}
-		}
-		objfunc_file.close();
-
-// output Jacobain for MATLAB:
-		unsigned long jPoint, total_i_index, total_j_index;
-		unsigned short jVar, iPos, jPos;
-		double **full_jacobian;
-		double **jacobian_block;
-		full_jacobian = new double*[nPointDomain*nVar];
-		for(iPoint = 0; iPoint < nPointDomain*nVar; iPoint++)
-			full_jacobian[iPoint] = new double[nPointDomain*nVar];
-		jacobian_block = new double*[nVar];
-		for(iPos = 0; iPos < nVar; iPos++)
-			jacobian_block[iPos] = new double[nVar];
-		ofstream jacobian_file;
-		jacobian_file.open("discrete_jacobian.txt", ios::out);
-		for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-			for (iPos = 0; iPos < nVar; iPos++) {
-				total_i_index = iPoint*nVar+iPos;
-				for (jPoint = 0; jPoint < nPointDomain; jPoint++) {
-					if(iPoint == jPoint) {
-						Jacobian.GetBlock(iPoint, jPoint);
-						Jacobian.ReturnBlock(jacobian_block);
-						for (jPos = 0; jPos < nVar; jPos++) {
-							total_j_index = jPoint*nVar+jPos;
-							full_jacobian[total_i_index][total_j_index] = jacobian_block[iPos][jPos];
-						}
-					}else if(geometry->FindEdge(iPoint, jPoint) != -1) {
-						Jacobian.GetBlock(iPoint, jPoint);
-						Jacobian.ReturnBlock(jacobian_block);
-						for (jPos = 0; jPos < nVar; jPos++) {
-							total_j_index = jPoint*nVar+jPos;
-							full_jacobian[total_i_index][total_j_index] = jacobian_block[iPos][jPos];
-						}
-					}else{
-						for (jPos = 0; jPos < nVar; jPos++) {
-							total_j_index = jPoint*nVar+jPos;
-							full_jacobian[total_i_index][total_j_index] = 0.0;
-						}
-					}
-				}
-			}
-		}
-
-		for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-			for (iVar = 0; iVar < nVar; iVar++) {
-				total_i_index = iPoint*nVar+iVar;
-				for (jPoint = 0; jPoint < nPointDomain; jPoint++) {
-					for (jVar = 0; jVar < nVar; jVar++) {
-						total_j_index = jPoint*nVar+jVar;
-
-						jacobian_file << full_jacobian[total_i_index][total_j_index] << " ";
-					}
-				}
-				jacobian_file << endl;
-			}
-		}
-		jacobian_file.close();
-	 */
-	/*--- Solve the linear system (Stationary iterative methods) ---*/
-	if (config->GetKind_Linear_Solver() == SYM_GAUSS_SEIDEL)
-		Jacobian.SGSSolution(xres, xsol, config->GetLinear_Solver_Error(),
-				config->GetLinear_Solver_Iter(), true, geometry, config);
-
-	if (config->GetKind_Linear_Solver() == LU_SGS)
-		Jacobian.LU_SGSIteration(xres, xsol, geometry, config);
 
 	/*--- Solve the linear system (Krylov subspace methods) ---*/
-	if ((config->GetKind_Linear_Solver() == BCGSTAB) ||
-			(config->GetKind_Linear_Solver() == GMRES)) {
-
-		CSysVector rhs_vec(nPoint, nPointDomain, nVar, xres);
-		CSysVector sol_vec(nPoint, nPointDomain, nVar, xsol);
-
-		CMatrixVectorProduct* mat_vec = new CSparseMatrixVectorProduct(Jacobian, geometry, config);
-
-		CPreconditioner* precond = NULL;
-		if (config->GetKind_Linear_Solver_Prec() == JACOBI) {
-			Jacobian.BuildJacobiPreconditioner();
-			precond = new CJacobiPreconditioner(Jacobian, geometry, config);
-		}
-    else if (config->GetKind_Linear_Solver_Prec() == LUSGS) {
-			precond = new CLUSGSPreconditioner(Jacobian, geometry, config);
-		}
-		else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-			Jacobian.BuildJacobiPreconditioner();
-			precond = new CLineletPreconditioner(Jacobian, geometry, config);
-		}
-		else if (config->GetKind_Linear_Solver_Prec() == NO_PREC) {
-			precond = new CIdentityPreconditioner(Jacobian, geometry, config);
-    }
-
-		CSysSolve system;
-		if (config->GetKind_Linear_Solver() == BCGSTAB)
-			system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, config->GetLinear_Solver_Error(),
-					config->GetLinear_Solver_Iter(), true);
-		else if (config->GetKind_Linear_Solver() == GMRES)
-			system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, config->GetLinear_Solver_Error(),
-					config->GetLinear_Solver_Iter(), true);
-
-		sol_vec.CopyToArray(xsol);
-		delete mat_vec;
-		delete precond;
-
-	}
+  CSysVector rhs_vec(nPoint, nPointDomain, nVar, xres);
+  CSysVector sol_vec(nPoint, nPointDomain, nVar, xsol);
+  
+  CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
+  
+  CPreconditioner* precond = NULL;
+  if (config->GetKind_Linear_Solver_Prec() == JACOBI) {
+    Jacobian.BuildJacobiPreconditioner();
+    precond = new CJacobiPreconditioner(Jacobian, geometry, config);
+  }
+  else if (config->GetKind_Linear_Solver_Prec() == LUSGS) {
+    precond = new CLUSGSPreconditioner(Jacobian, geometry, config);
+  }
+  else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
+    Jacobian.BuildJacobiPreconditioner();
+    precond = new CLineletPreconditioner(Jacobian, geometry, config);
+  }
+  else if (config->GetKind_Linear_Solver_Prec() == NO_PREC) {
+    precond = new CIdentityPreconditioner(Jacobian, geometry, config);
+  }
+  
+  CSysSolve system;
+  if (config->GetKind_Linear_Solver() == BCGSTAB)
+    system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, config->GetLinear_Solver_Error(),
+                   config->GetLinear_Solver_Iter(), true);
+  else if (config->GetKind_Linear_Solver() == GMRES)
+    system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, config->GetLinear_Solver_Error(),
+                 config->GetLinear_Solver_Iter(), true);
+  
+  sol_vec.CopyToArray(xsol);
+  delete mat_vec;
+  delete precond;
 
 	/*--- Update solution (system written in terms of increments) ---*/
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++)

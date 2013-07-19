@@ -1,6 +1,6 @@
 /*!
- * \file sparse_structure.inl
- * \brief In-Line subroutines of the <i>sparse_structure.hpp</i> file.
+ * \file matrix_structure.inl
+ * \brief In-Line subroutines of the <i>matrix_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
  * \version 2.0.5
  *
@@ -23,35 +23,34 @@
  
 #pragma once
 
-inline void CSparseMatrix::SetValZero(void) { 
+inline void CSysMatrix::SetValZero(void) { 
 	for (unsigned long index = 0; index < nnz*nVar*nEqn; index++) 
 		matrix[index] = 0.0;
 }
 
-inline void CSparseMatrix::ScaleVals(double val_scale) { 
+inline void CSysMatrix::ScaleVals(double val_scale) { 
 	for (unsigned long index = 0; index < nnz*nVar*nVar; index++) 
 		matrix[index] *= val_scale; 
 }
 
-
-inline CSparseMatrixVectorProduct::CSparseMatrixVectorProduct(CSparseMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
+inline CSysMatrixVectorProduct::CSysMatrixVectorProduct(CSysMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
   sparse_matrix = &matrix_ref;
   geometry = geometry_ref;
   config = config_ref;  
 }
 
-inline void CSparseMatrixVectorProduct::operator()(const CSysVector & u, CSysVector & v) const {
+inline void CSysMatrixVectorProduct::operator()(const CSysVector & u, CSysVector & v) const {
   if (sparse_matrix == NULL) {
-    cerr << "CSparseMatrixVectorProduct::operator()(const CSysVector &, CSysVector &): " << endl; 
+    cerr << "CSysMatrixVectorProduct::operator()(const CSysVector &, CSysVector &): " << endl; 
     cerr << "pointer to sparse matrix is NULL." << endl;
     throw(-1);
   }
   sparse_matrix->MatrixVectorProduct(u, v, geometry, config);
 }
 
-inline CJacobiPreconditioner::CJacobiPreconditioner(CSparseMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
+inline CJacobiPreconditioner::CJacobiPreconditioner(CSysMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
   sparse_matrix = &matrix_ref;
-    geometry = geometry_ref;
+  geometry = geometry_ref;
   config = config_ref;  
 }
 
@@ -64,7 +63,7 @@ inline void CJacobiPreconditioner::operator()(const CSysVector & u, CSysVector &
   sparse_matrix->ComputeJacobiPreconditioner(u, v, geometry, config);
 }
 
-inline CLUSGSPreconditioner::CLUSGSPreconditioner(CSparseMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
+inline CLUSGSPreconditioner::CLUSGSPreconditioner(CSysMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
   sparse_matrix = &matrix_ref;
       geometry = geometry_ref;
   config = config_ref;  
@@ -79,9 +78,9 @@ inline void CLUSGSPreconditioner::operator()(const CSysVector & u, CSysVector & 
   sparse_matrix->ComputeLUSGSPreconditioner(u, v, geometry, config);
 }
 
-inline CLineletPreconditioner::CLineletPreconditioner(CSparseMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
+inline CLineletPreconditioner::CLineletPreconditioner(CSysMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
   sparse_matrix = &matrix_ref;
-      geometry = geometry_ref;
+  geometry = geometry_ref;
   config = config_ref;  
 }
 
@@ -94,7 +93,7 @@ inline void CLineletPreconditioner::operator()(const CSysVector & u, CSysVector 
   sparse_matrix->ComputeLineletPreconditioner(u, v, geometry, config);
 }
 
-inline CIdentityPreconditioner::CIdentityPreconditioner(CSparseMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
+inline CIdentityPreconditioner::CIdentityPreconditioner(CSysMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
     sparse_matrix = &matrix_ref;
     geometry = geometry_ref;
     config = config_ref;  

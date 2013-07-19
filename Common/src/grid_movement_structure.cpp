@@ -1362,7 +1362,7 @@ void CVolumetricMovement::SpringMethod(CGeometry *geometry, CConfig *config, boo
     CSysVector rhs_vec(nPoint, nPointDomain, nDim, rhs);
     CSysVector sol_vec(nPoint, nPointDomain, nDim, usol);
     
-    CMatrixVectorProduct* mat_vec = new CSparseMatrixVectorProduct(StiffMatrix, geometry, config);
+    CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
 
     CPreconditioner* precond = NULL;
     StiffMatrix.BuildJacobiPreconditioner();
@@ -1443,7 +1443,7 @@ void CVolumetricMovement::FEAMethod(CGeometry *geometry, CConfig *config, bool U
     CSysVector rhs_vec(nPoint, nPointDomain, nDim, rhs);
     CSysVector sol_vec(nPoint, nPointDomain, nDim, usol);
     
-    CMatrixVectorProduct* mat_vec = new CSparseMatrixVectorProduct(StiffMatrix, geometry, config);
+    CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
     
     CPreconditioner* precond = NULL;
 //    StiffMatrix.BuildJacobiPreconditioner();

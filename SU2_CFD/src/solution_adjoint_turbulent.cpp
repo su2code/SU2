@@ -1716,74 +1716,52 @@ void CAdjTurbSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **
         }
     }
     
-	/*--- Solve the system ---*/
-    //if (config->GetKind_AdjTurb_Linear_Solver() == LU_SGS)
-    if (config->GetKind_Linear_Solver() == LU_SGS)
-        Jacobian.LU_SGSIteration(xres, xsol, geometry, config);
-    
 	/*--- Solve the linear system (Krylov subspace methods) ---*/
-	//if ((config->GetKind_AdjTurb_Linear_Solver() == BCGSTAB) ||
-    //    (config->GetKind_AdjTurb_Linear_Solver() == GMRES)) {
-    if ((config->GetKind_Linear_Solver() == BCGSTAB) ||
-        (config->GetKind_Linear_Solver() == GMRES)) {
-        
-		CSysVector rhs_vec((const unsigned int)geometry->GetnPoint(),
-                           (const unsigned int)geometry->GetnPointDomain(), nVar, xres);
-		CSysVector sol_vec((const unsigned int)geometry->GetnPoint(),
-                           (const unsigned int)geometry->GetnPointDomain(), nVar, xsol);
-        
-		CMatrixVectorProduct* mat_vec = new CSparseMatrixVectorProduct(Jacobian, geometry, config);
-
-		CPreconditioner* precond = NULL;
-		//if (config->GetKind_AdjTurb_Linear_Prec() == JACOBI) {
-        if (config->GetKind_Linear_Solver_Prec() == JACOBI) {
-			Jacobian.BuildJacobiPreconditioner();
-			precond = new CJacobiPreconditioner(Jacobian, geometry, config);
-		}
-      //else if (config->GetKind_AdjTurb_Linear_Prec() == LUSGS) {
-        else if (config->GetKind_Linear_Solver_Prec() == LUSGS) {
-          precond = new CLUSGSPreconditioner(Jacobian, geometry, config);
-        }
-		//else if (config->GetKind_AdjTurb_Linear_Prec() == LINELET) {
-        else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-			Jacobian.BuildJacobiPreconditioner();
-			precond = new CLineletPreconditioner(Jacobian, geometry, config);
-		}
-		//else if (config->GetKind_AdjTurb_Linear_Prec() == NO_PREC)
-        else if (config->GetKind_Linear_Solver_Prec() == NO_PREC) {
-			precond = new CIdentityPreconditioner(Jacobian, geometry, config);
-        }
-        
-		CSysSolve system;
-		//if (config->GetKind_AdjTurb_Linear_Solver() == BCGSTAB)
-        if (config->GetKind_Linear_Solver() == BCGSTAB)
-			system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, config->GetAdjTurb_Linear_Error(),
-                           config->GetAdjTurb_Linear_Iter(), false);
-        //system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, config->GetLinear_Solver_Error(),
-        //           config->GetLinear_Solver_Iter(), false);
-		//else if (config->GetKind_AdjTurb_Linear_Solver() == GMRES)
-        else if (config->GetKind_Linear_Solver() == GMRES)
-			system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, config->GetAdjTurb_Linear_Error(),
-                         config->GetAdjTurb_Linear_Iter(), false); ///this -> # iterations needed to converge... or make true for output
-        //system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, config->GetLinear_Solver_Error(),
-        //                 config->GetLinear_Solver_Iter(), false); ///this -> # iterations needed to converge... or make true for output
-        //system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, config->GetLinear_Solver_Error(),
-        //                 40, false); ///this -> # iterations needed to converge... or make true for output
-        
-		sol_vec.CopyToArray(xsol);
-		delete mat_vec;
-		delete precond;
-	}
-    
+  CSysVector rhs_vec((const unsigned int)geometry->GetnPoint(),
+                     (const unsigned int)geometry->GetnPointDomain(), nVar, xres);
+  CSysVector sol_vec((const unsigned int)geometry->GetnPoint(),
+                     (const unsigned int)geometry->GetnPointDomain(), nVar, xsol);
+  
+  CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
+  
+  CPreconditioner* precond = NULL;
+  if (config->GetKind_Linear_Solver_Prec() == JACOBI) {
+    Jacobian.BuildJacobiPreconditioner();
+    precond = new CJacobiPreconditioner(Jacobian, geometry, config);
+  }
+  else if (config->GetKind_Linear_Solver_Prec() == LUSGS) {
+    precond = new CLUSGSPreconditioner(Jacobian, geometry, config);
+  }
+  else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
+    Jacobian.BuildJacobiPreconditioner();
+    precond = new CLineletPreconditioner(Jacobian, geometry, config);
+  }
+  //else if (config->GetKind_AdjTurb_Linear_Prec() == NO_PREC)
+  else if (config->GetKind_Linear_Solver_Prec() == NO_PREC) {
+    precond = new CIdentityPreconditioner(Jacobian, geometry, config);
+  }
+  
+  CSysSolve system;
+  if (config->GetKind_Linear_Solver() == BCGSTAB)
+    system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, config->GetAdjTurb_Linear_Error(),
+                   config->GetAdjTurb_Linear_Iter(), false);
+  else if (config->GetKind_Linear_Solver() == GMRES)
+    system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, config->GetAdjTurb_Linear_Error(),
+                 config->GetAdjTurb_Linear_Iter(), false); ///this -> # iterations needed to converge... or make true for output
+  
+  sol_vec.CopyToArray(xsol);
+  delete mat_vec;
+  delete precond;
+  
 	/*--- Update solution (system written in terms of increments) ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
 		for (iVar = 0; iVar < nVar; iVar++)
 			if (config->GetKind_Adjoint() == CONTINUOUS)
-                node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*xsol[iPoint*nVar+iVar]);
-            else if (config->GetKind_Adjoint() == HYBRID)
-                node[iPoint]->SetSolution(iVar,xsol[iPoint*nVar+iVar]);
+        node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*xsol[iPoint*nVar+iVar]);
+      else if (config->GetKind_Adjoint() == HYBRID)
+        node[iPoint]->SetSolution(iVar,xsol[iPoint*nVar+iVar]);
 	}
-    
+  
   /*--- MPI solution ---*/
   Set_MPI_Solution(geometry, config);
   

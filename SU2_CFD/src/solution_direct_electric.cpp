@@ -153,7 +153,7 @@ void CElectricSolution::Solve_LinearSystem(CGeometry *geometry, CSolution **solu
 	CSysVector sol_vec((const unsigned int)geometry->GetnPoint(),
 			(const unsigned int)geometry->GetnPointDomain(), nVar, xsol);
 
-	CMatrixVectorProduct* mat_vec = new CSparseMatrixVectorProduct(StiffMatrix, geometry, config);
+	CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
 
 	StiffMatrix.BuildJacobiPreconditioner();
 

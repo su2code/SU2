@@ -39,7 +39,8 @@
 #include "variable_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
-#include "../../Common/include/sparse_structure.hpp"
+#include "../../Common/include/matrix_structure.hpp"
+#include "../../Common/include/vector_structure.hpp"
 #include "../../Common/include/linear_solvers_structure.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
 
@@ -92,16 +93,16 @@ protected:
 	double **Smatrix,	/*!< \brief Auxiliary structure for computing gradients by least-squares */
 	**cvector;			 /*!< \brief Auxiliary structure for computing gradients by least-squares */
     
-	CSparseMatrix StiffMatrix; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations, and grid movement. */
-	CSparseMatrix Jacobian; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
+	CSysMatrix StiffMatrix; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations, and grid movement. */
+	CSysMatrix Jacobian; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
     
 public:
     double *xsol;		/*!< \brief vector to store iterative solution of implicit linear system. */
 	double *xres;		/*!< \brief vector to store iterative residual of implicit linear system. */
 	CVariable** node;	/*!< \brief Vector which the define the variables for each problem. */
     
-    CSparseMatrix DirectJacobian; /*!< \brief Sparse Jacobian structure for direct, discrete part of hybrid computation (TODO move to the right place). */
-    CSparseMatrix DirectBCJacobian; /*!< \brief Sparse Jacobian structure for direct, discrete boundary conditions part of hybrid computation (TODO move to the right place). */
+    CSysMatrix DirectJacobian; /*!< \brief Sparse Jacobian structure for direct, discrete part of hybrid computation (TODO move to the right place). */
+    CSysMatrix DirectBCJacobian; /*!< \brief Sparse Jacobian structure for direct, discrete boundary conditions part of hybrid computation (TODO move to the right place). */
     
 	/*!
 	 * \brief Constructor of the class.
@@ -403,7 +404,7 @@ public:
      * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-    void Initialize_SparseMatrix_Structure(CSparseMatrix *SparseMatrix, unsigned short nVar, unsigned short nEqn, CGeometry *geometry, CConfig *config);
+    void Initialize_SparseMatrix_Structure(CSysMatrix *SparseMatrix, unsigned short nVar, unsigned short nEqn, CGeometry *geometry, CConfig *config);
     
 	/*!
 	 * \brief A virtual member.
@@ -3370,11 +3371,11 @@ public:
 	void ImplicitEuler_Iteration(CGeometry *geometry, CSolution **solution_container, CConfig *config);
     
 	// Another set of matrix structures for the Lm equations
-	CSparseMatrix JacobianItmc; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
+	CSysMatrix JacobianItmc; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
 	double *xsolItmc;		/*!< \brief vector to store iterative solution of implicit linear system. */
 	double *xresItmc;		/*!< \brief vector to store iterative residual of implicit linear system. */
 	double *rhsItmc;		/*!< \brief right hand side of implicit linear system. */
-	CSparseMatrix JacobianReth; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
+	CSysMatrix JacobianReth; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
 	double *xsolReth;		/*!< \brief vector to store iterative solution of implicit linear system. */
 	double *xresReth;		/*!< \brief vector to store iterative residual of implicit linear system. */
 	double *rhsReth;		/*!< \brief right hand side of implicit linear system. */
@@ -4662,8 +4663,8 @@ private:
 	double AllBound_CWave;	/*!< \brief Total wave strength for all the boundaries. */
 	double Total_CWave; /*!< \brief Total wave strength for all the boundaries. */
     
-    CSparseMatrix StiffMatrixSpace; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
-	CSparseMatrix StiffMatrixTime;	/*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
+    CSysMatrix StiffMatrixSpace; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
+	CSysMatrix StiffMatrixTime;	/*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
     
     double **StiffMatrix_Elem,			/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
 	**StiffMatrix_Node;							/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
@@ -4844,8 +4845,8 @@ private:
 	double AllBound_CHeat;	/*!< \brief Total Heat strength for all the boundaries. */
 	double Total_CHeat; /*!< \brief Total Heat strength for all the boundaries. */
     
-    CSparseMatrix StiffMatrixSpace; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
-	CSparseMatrix StiffMatrixTime;	/*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
+    CSysMatrix StiffMatrixSpace; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
+	CSysMatrix StiffMatrixTime;	/*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
     
     double **StiffMatrix_Elem,			/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
 	**StiffMatrix_Node;							/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
@@ -4989,8 +4990,8 @@ class CFEASolution : public CSolution {
 private:
 	double  Total_CFEA;			/*!< \brief Total FEA coefficient for all the boundaries. */
     
-    CSparseMatrix StiffMatrixSpace; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
-	CSparseMatrix StiffMatrixTime;	/*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
+    CSysMatrix StiffMatrixSpace; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
+	CSysMatrix StiffMatrixTime;	/*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
     
     double **StiffMatrix_Elem,			/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
 	**StiffMatrix_Node;							/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */

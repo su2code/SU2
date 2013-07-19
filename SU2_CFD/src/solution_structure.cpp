@@ -282,7 +282,7 @@ void CSolution::SetGrid_Movement_Residual (CGeometry *geometry, CConfig *config)
 	}
 }
 
-void CSolution::Initialize_SparseMatrix_Structure(CSparseMatrix *SparseMatrix, unsigned short nVar, unsigned short nEqn, CGeometry *geometry, CConfig *config) {
+void CSolution::Initialize_SparseMatrix_Structure(CSysMatrix *SparseMatrix, unsigned short nVar, unsigned short nEqn, CGeometry *geometry, CConfig *config) {
 	unsigned long iPoint, *row_ptr, *col_ind, *vneighs, index, nnz;
 	unsigned short iNeigh, nNeigh, Max_nNeigh;
   

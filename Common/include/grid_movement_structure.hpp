@@ -28,7 +28,8 @@
 
 #include "geometry_structure.hpp"
 #include "config_structure.hpp"
-#include "sparse_structure.hpp"
+#include "matrix_structure.hpp"
+#include "vector_structure.hpp"
 #include "linear_solvers_structure.hpp"
 
 #include <iostream>
@@ -663,7 +664,7 @@ protected:
 	double *x;							/*!< \brief ___________. */
 	double tol;			/*!< \brief Error tolerance (total and per point) in the resolution. */
 	unsigned short nDim;		/*!< \brief ___________. */
-	CSparseMatrix StiffMatrix; /*!< \brief Matrix to store the point-to-point stiffness. */
+	CSysMatrix StiffMatrix; /*!< \brief Matrix to store the point-to-point stiffness. */
 	double *rhs,		/*!< \brief rhs (forces). */
 	*usol;					/*!< \brief u (displacements). */
 
