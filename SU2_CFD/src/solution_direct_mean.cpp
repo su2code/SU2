@@ -168,7 +168,9 @@ CEulerSolution::CEulerSolution(CGeometry *geometry, CConfig *config, unsigned sh
 
   xsol = new double [nPoint*nVar];
   xres = new double [nPoint*nVar];
-  
+  LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
+  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+
 	/*--- Jacobians and vector structures for implicit computations ---*/
 	if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) {
 
@@ -182,7 +184,7 @@ CEulerSolution::CEulerSolution(CGeometry *geometry, CConfig *config, unsigned sh
 
 		/*--- Initialization of the structure for the global Jacobian ---*/
 		if (rank == MASTER_NODE) cout << "Initialize jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
-		Initialize_SparseMatrix_Structure(&Jacobian, nVar, nVar, geometry, config);
+		Jacobian.Initialize(nVar, nVar, geometry, config);
 
 	} else {
 		if (rank == MASTER_NODE)
@@ -5968,7 +5970,7 @@ CNSSolution::CNSSolution(CGeometry *geometry, CConfig *config, unsigned short iM
 		}
 		/*--- Initialization of the structure of the whole Jacobian ---*/
 		if (rank == MASTER_NODE) cout << "Initialize jacobian structure (Navier-Stokes). MG level: " << iMesh <<"." << endl;
-		Initialize_SparseMatrix_Structure(&Jacobian, nVar, nVar, geometry, config);
+		Jacobian.Initialize(nVar, nVar, geometry, config);
 	} else {
 		if (rank == MASTER_NODE)
 			cout << "Explicit scheme. No jacobian structure (Navier-Stokes). MG level: " << iMesh <<"." << endl;

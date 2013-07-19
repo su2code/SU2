@@ -940,7 +940,7 @@ CTurbSASolution::CTurbSASolution(CGeometry *geometry, CConfig *config, unsigned 
         
         /*--- Initialization of the structure of the whole Jacobian ---*/
         if (rank == MASTER_NODE) cout << "Initialize jacobian structure (SA model)." << endl;
-        Initialize_SparseMatrix_Structure(&Jacobian, nVar, nVar, geometry, config);
+        Jacobian.Initialize(nVar, nVar, geometry, config);
         xsol = new double [nPoint*nVar];
         xres = new double [nPoint*nVar];
         
@@ -2666,7 +2666,7 @@ CTurbSSTSolution::CTurbSSTSolution(CGeometry *geometry, CConfig *config, unsigne
         
         /*--- Initialization of the structure of the whole Jacobian ---*/
         if (rank == MASTER_NODE) cout << "Initialize jacobian structure (SST model)." << endl;
-        Initialize_SparseMatrix_Structure(&Jacobian, nVar, nVar, geometry, config);
+        Jacobian.Initialize(nVar, nVar, geometry, config);
         xsol = new double [nPoint*nVar];
         xres = new double [nPoint*nVar];
 	}

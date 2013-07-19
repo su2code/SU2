@@ -95,7 +95,7 @@ CLevelSetSolution::CLevelSetSolution(CGeometry *geometry, CConfig *config, unsig
       
       /*--- Initialization of the structure of the whole Jacobian ---*/
       if (rank == MASTER_NODE) cout << "Initialize jacobian structure (Level Set). MG level: 0." << endl;
-      Initialize_SparseMatrix_Structure(&Jacobian, nVar, nVar, geometry, config);
+      Jacobian.Initialize(nVar, nVar, geometry, config);
       
     }
     

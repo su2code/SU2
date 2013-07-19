@@ -66,6 +66,11 @@ private:
 public:
   
   /*!
+   * \brief default constructor of the class.
+   */
+  CSysVector(void);
+  
+  /*!
    * \brief constructor of the class.
    * \param[in] size - number of elements locally
    * \param[in] val - default value for elements
@@ -78,8 +83,7 @@ public:
    * \param[in] numVar - number of variables in each block
    * \param[in] val - default value for elements
    */
-  CSysVector(const unsigned int & numBlk, const unsigned int & numBlkDomain, const unsigned short & numVar,
-             const double & val = 0.0);
+  CSysVector(const unsigned int & numBlk, const unsigned int & numBlkDomain, const unsigned short & numVar, const double & val = 0.0);
   
   /*!
    * \brief copy constructor of the class.
@@ -108,6 +112,14 @@ public:
    * \brief class destructor
    */
   virtual ~CSysVector();
+  
+  /*!
+   * \brief Initialize the class.
+   * \param[in] numBlk - number of blocks locally
+   * \param[in] numVar - number of variables in each block
+   * \param[in] val - default value for elements
+   */
+  void Initialize(const unsigned int & numBlk, const unsigned int & numBlkDomain, const unsigned short & numVar, const double & val = 0.0);
   
   /*!
    * \brief return the number of local elements in the CSysVector

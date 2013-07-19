@@ -54,6 +54,53 @@ CSysMatrix::~CSysMatrix(void) {
   
 }
 
+void CSysMatrix::Initialize(unsigned short nVar, unsigned short nEqn, CGeometry *geometry, CConfig *config) {
+	unsigned long iPoint, *row_ptr, *col_ind, *vneighs, index, nnz;
+	unsigned short iNeigh, nNeigh, Max_nNeigh;
+  
+  unsigned long nPoint = geometry->GetnPoint();
+  unsigned long nPointDomain = geometry->GetnPointDomain();
+	bool preconditioner = false;
+  
+  if (config->GetKind_Linear_Solver_Prec() != NO_PREC) preconditioner = true;
+  
+	/*--- Don't delete *row_ptr, *col_ind because they are asigned to the Jacobian structure. ---*/
+	row_ptr = new unsigned long [nPoint+1];
+	row_ptr[0] = 0;
+	for (iPoint = 0; iPoint < nPoint; iPoint++)
+		row_ptr[iPoint+1] = row_ptr[iPoint]+(geometry->node[iPoint]->GetnPoint()+1); // +1 -> to include diagonal element
+	nnz = row_ptr[nPoint];
+  
+	col_ind = new unsigned long [nnz];
+  
+  Max_nNeigh = 0;
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+		nNeigh = geometry->node[iPoint]->GetnPoint();
+    if (nNeigh > Max_nNeigh) Max_nNeigh = nNeigh;
+  }
+	vneighs = new unsigned long [Max_nNeigh+1]; // +1 -> to include diagonal
+  
+	for (iPoint = 0; iPoint < nPoint; iPoint++) {
+		nNeigh = geometry->node[iPoint]->GetnPoint();
+		for (iNeigh = 0; iNeigh < nNeigh; iNeigh++)
+			vneighs[iNeigh] = geometry->node[iPoint]->GetPoint(iNeigh);
+		vneighs[nNeigh] = iPoint;
+		sort(vneighs,vneighs+nNeigh+1);
+		index = row_ptr[iPoint];
+		for (iNeigh = 0; iNeigh <= nNeigh; iNeigh++) {
+			col_ind[index] = vneighs[iNeigh];
+			index++;
+		}
+	}
+  
+	SetIndexes(nPoint, nPointDomain, nVar, nEqn, row_ptr, col_ind, nnz, preconditioner);
+  
+  if (config->GetKind_Linear_Solver_Prec() == LINELET)
+    BuildLineletPreconditioner(geometry, config);
+  
+	delete[] vneighs;
+}
+
 void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDomain, unsigned short val_nVar, unsigned short val_nEq, unsigned long* val_row_ptr, unsigned long* val_col_ind, unsigned long val_nnz, bool preconditioner) {
   
 	nPoint = val_nPoint;              // Assign number of points in the mesh

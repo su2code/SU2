@@ -65,7 +65,7 @@ CElectricSolution::CElectricSolution(CGeometry *geometry, CConfig *config) : CSo
 	}
 
 	/*--- Initialization of the structure of the whole Jacobian ---*/
-	Initialize_SparseMatrix_Structure(&StiffMatrix, nVar, nVar, geometry, config);
+	StiffMatrix.Initialize(nVar, nVar, geometry, config);
 
   /*--- Solution and residual vectors ---*/
   xsol = new double [nPoint*nVar];

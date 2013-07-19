@@ -181,7 +181,7 @@ CPlasmaSolution::CPlasmaSolution(CGeometry *geometry, CConfig *config) : CSoluti
 		}
 
 		/*--- Initialization of the structure of the whole Jacobian ---*/
-		Initialize_SparseMatrix_Structure(&Jacobian, nVar, nVar, geometry, config);
+		Jacobian.Initialize(nVar, nVar, geometry, config);
     
 	}
 

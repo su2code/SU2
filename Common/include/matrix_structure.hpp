@@ -71,6 +71,16 @@ public:
 	 */
 	~CSysMatrix(void);
   
+  
+  /*!
+	 * \brief Initializes space matrix system.
+	 * \param[in] nVar - Number of variables.
+	 * \param[in] nEqn - Number of equations.
+   * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  void Initialize(unsigned short nVar, unsigned short nEqn, CGeometry *geometry, CConfig *config);
+  
   /*!
 	 * \brief Assings values to the sparse-matrix structure.
 	 * \param[in] val_nPoint - Number of points in the nPoint x nPoint block structure

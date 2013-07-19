@@ -128,7 +128,7 @@ CAdjEulerSolution::CAdjEulerSolution(CGeometry *geometry, CConfig *config, unsig
     
     if (rank == MASTER_NODE)
       cout << "Initialize jacobian structure (Adjoint Euler). MG level: " << iMesh <<"." << endl;
-		Initialize_SparseMatrix_Structure(&Jacobian, nVar, nVar, geometry, config);
+		Jacobian.Initialize(nVar, nVar, geometry, config);
 
     if (axisymmetric) {
       Jacobian_Axisymmetric = new double* [nVar];
@@ -151,7 +151,7 @@ CAdjEulerSolution::CAdjEulerSolution(CGeometry *geometry, CConfig *config, unsig
 			Jacobian_j[iVar] = new double [nVar];
 		}
 
-		Initialize_SparseMatrix_Structure(&Jacobian, nVar, nVar, geometry, config);
+		Jacobian.Initialize(nVar, nVar, geometry, config);
 		xsol = new double [nPoint*nVar];
 		xres = new double [nPoint*nVar];
 	}
@@ -5252,7 +5252,7 @@ CAdjNSSolution::CAdjNSSolution(CGeometry *geometry, CConfig *config, unsigned sh
 		}
     if (rank == MASTER_NODE)
       cout << "Initialize jacobian structure (Adjoint N-S). MG level: " << iMesh <<"." << endl;
-		Initialize_SparseMatrix_Structure(&Jacobian, nVar, nVar, geometry, config);
+		Jacobian.Initialize(nVar, nVar, geometry, config);
 
   } else {
       if (rank == MASTER_NODE)

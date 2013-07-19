@@ -95,7 +95,7 @@ CAdjPlasmaSolution::CAdjPlasmaSolution(CGeometry *geometry, CConfig *config) : C
 			for (iVar = 0; iVar < nVar; iVar++)
 				Jacobian_Axisymmetric[iVar] = new double[nVar];
 		}
-		Initialize_SparseMatrix_Structure(&Jacobian, nVar, nVar, geometry, config);
+		Jacobian.Initialize(nVar, nVar, geometry, config);
 	}
 
 	/*--- Computation of gradients by least squares ---*/

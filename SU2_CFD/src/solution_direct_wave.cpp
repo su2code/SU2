@@ -55,9 +55,9 @@ CWaveSolution::CWaveSolution(CGeometry *geometry,
 	}
   
 	/*--- Initialization of matrix structures ---*/
-	Initialize_SparseMatrix_Structure(&StiffMatrixSpace, nVar, nVar, geometry, config);
-	Initialize_SparseMatrix_Structure(&StiffMatrixTime, nVar, nVar, geometry, config);
-	Initialize_SparseMatrix_Structure(&Jacobian, nVar, nVar, geometry, config);
+	StiffMatrixSpace.Initialize(nVar, nVar, geometry, config);
+	StiffMatrixTime.Initialize(nVar, nVar, geometry, config);
+	Jacobian.Initialize(nVar, nVar, geometry, config);
   
   /*--- Initialization of linear solver structures ---*/
 	xsol = new double [nPoint*nVar];

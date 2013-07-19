@@ -59,7 +59,7 @@ CLinEulerSolution::CLinEulerSolution(CGeometry *geometry, CConfig *config) : CSo
 		for (iVar = 0; iVar < nVar; iVar++) {
 			Jacobian_i[iVar] = new double [nVar]; Jacobian_j[iVar] = new double [nVar]; }
 		/*--- Initialization of the structure of the whole Jacobian ---*/
-		Initialize_SparseMatrix_Structure(&Jacobian, nVar, nVar, geometry, config);
+		Jacobian.Initialize(nVar, nVar, geometry, config);
 		xsol = new double [geometry->GetnPoint()*nVar];
 		xres = new double [geometry->GetnPoint()*nVar];
 	}

@@ -106,19 +106,19 @@ CAdjTurbSolution::CAdjTurbSolution(CGeometry *geometry, CConfig *config) : CSolu
     
     
 	/*--- Initialization of the structure of the whole Jacobian ---*/
-	Initialize_SparseMatrix_Structure(&Jacobian, nVar, nVar, geometry, config);
+	Jacobian.Initialize(nVar, nVar, geometry, config);
     Jacobian.SetValZero();
 	xsol = new double [nPoint*nVar];
 	xres = new double [nPoint*nVar];
 
 	/*--- Initialization of discrete sparse Jacobian for Hybrid ---*/
 	// nVar = # turb vars, nTotalVar = # turb vars + # flow vars
-	Initialize_SparseMatrix_Structure(&DirectJacobian, nTotalVar, nVar, geometry, config);
+	DirectJacobian.Initialize(nTotalVar, nVar, geometry, config);
 	DirectJacobian.SetValZero();
 
 	/*--- Initialization of discrete sparse Jacobian for Hybrid BC ---*/
 	// nVar = # turb vars, nTotalVar = # turb vars + # flow vars
-	Initialize_SparseMatrix_Structure(&DirectBCJacobian, nTotalVar, nVar, geometry, config);
+	DirectBCJacobian.Initialize(nTotalVar, nVar, geometry, config);
 	DirectBCJacobian.SetValZero();
 
 	/*--- Computation of gradients by least squares ---*/

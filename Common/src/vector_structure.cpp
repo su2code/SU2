@@ -23,30 +23,30 @@
 
 #include "../include/vector_structure.hpp"
 
+CSysVector::CSysVector(void) {
+  
+  vec_val = NULL;
+  
+}
+
 CSysVector::CSysVector(const unsigned int & size, const double & val) {
   
-  /*--- Check for invalid size, then allocate memory and initialize
-   values ---*/
-  if ( (size <= 0) || (size >= UINT_MAX) ) {
+  nElm = size; nElmDomain = size;
+  nBlk = nElm; nBlkDomain = nElmDomain;
+  nVar = 1;
+  
+  /*--- Check for invalid size, then allocate memory and initialize values ---*/
+  if ( (nElm <= 0) || (nElm >= UINT_MAX) ) {
     cerr << "CSysVector::CSysVector(unsigned int,double): "
     << "invalid input: size = " << size << endl;
     throw(-1);
   }
-  nElm = size;
-	nElmDomain = size;
-  
-  nBlk = nElm;
-	nBlkDomain = nElmDomain;
-  
-  nVar = 1;
+
   vec_val = new double[nElm];
   for (unsigned int i = 0; i < nElm; i++)
     vec_val[i] = val;
   
 #ifndef NO_MPI
-	// TODO(J. Hicken): the following should probably be a static
-  // element of the class, otherwise it would be too expensive to call
-  // each time a new CSysVector is created
   myrank = MPI::COMM_WORLD.Get_rank();
   unsigned long nElmLocal = (unsigned long)nElm;
   MPI::COMM_WORLD.Allreduce(&nElmLocal, &nElmGlobal, 1, MPI::UNSIGNED_LONG, MPI::SUM);
@@ -56,22 +56,18 @@ CSysVector::CSysVector(const unsigned int & size, const double & val) {
 
 CSysVector::CSysVector(const unsigned int & numBlk, const unsigned int & numBlkDomain, const unsigned short & numVar,
                        const double & val) {
-	
-  /*--- Check for invalid input, then allocate memory and initialize
-   values ---*/
-  nElm = numBlk*numVar;
-  nElmDomain = numBlkDomain*numVar;
+
+  nElm = numBlk*numVar; nElmDomain = numBlkDomain*numVar;
+  nBlk = numBlk; nBlkDomain = numBlkDomain;
+  nVar = numVar;
   
+  /*--- Check for invalid input, then allocate memory and initialize values ---*/
   if ( (nElm <= 0) || (nElm >= UINT_MAX) ) {
     cerr << "CSysVector::CSysVector(unsigned int,unsigned int,double): "
     << "invalid input: numBlk, numVar = " << numBlk << "," << numVar << endl;
     throw(-1);
   }
 	
-  nBlk = numBlk;
-  nBlkDomain = numBlkDomain;
-  
-  nVar = numVar;
   vec_val = new double[nElm];
   for (unsigned int i = 0; i < nElm; i++)
     vec_val[i] = val;
@@ -81,28 +77,14 @@ CSysVector::CSysVector(const unsigned int & numBlk, const unsigned int & numBlkD
   unsigned long nElmLocal = (unsigned long)nElm;
   MPI::COMM_WORLD.Allreduce(&nElmLocal, &nElmGlobal, 1, MPI::UNSIGNED_LONG, MPI::SUM);
 #endif
-}
-
-CSysVector::~CSysVector() {
-  delete [] vec_val;
-  nElm = -1;
-	nElmDomain = -1;
-  nBlk = -1;
-  nBlkDomain = -1;
-  nVar = -1;
-#ifndef NO_MPI
-  myrank = -1;
-#endif
+  
 }
 
 CSysVector::CSysVector(const CSysVector & u) {
   
-  /*--- Copy size information, allocate memory, and initialize
-   values ---*/
-  nElm = u.nElm;
-	nElmDomain = u.nElmDomain;
-  nBlk = u.nBlk;
-	nBlkDomain = u.nBlkDomain;
+  /*--- Copy size information, allocate memory, and initialize values ---*/
+  nElm = u.nElm; nElmDomain = u.nElmDomain;
+  nBlk = u.nBlk; nBlkDomain = u.nBlkDomain;
   nVar = u.nVar;
   
   vec_val = new double[nElm];
@@ -113,26 +95,22 @@ CSysVector::CSysVector(const CSysVector & u) {
   myrank = u.myrank;
   nElmGlobal = u.nElmGlobal;
 #endif
+  
 }
 
 CSysVector::CSysVector(const unsigned int & size, const double* u_array) {
   
-  /*--- Check for invalid size, then allocate memory and initialize
-   values ---*/
-  if ( (size <= 0) || (size >= UINT_MAX) ) {
+  nElm = size; nElmDomain = size;
+  nBlk = nElm; nBlkDomain = nElmDomain;
+  nVar = 1;
+  
+  /*--- Check for invalid size, then allocate memory and initialize values ---*/
+  if ( (nElm <= 0) || (nElm >= UINT_MAX) ) {
     cerr << "CSysVector::CSysVector(unsigned int, double*): "
     << "invalid input: size = " << size << endl;
     throw(-1);
   }
-  nElm = size;
-	nElmDomain = size;
-  
-  nBlk = nElm;
-  nBlkDomain = nElmDomain;
-	
-	nBlkDomain = nElmDomain;
-  
-  nVar = 1;
+
   vec_val = new double[nElm];
   for (unsigned int i = 0; i < nElm; i++)
     vec_val[i] = u_array[i];
@@ -147,21 +125,18 @@ CSysVector::CSysVector(const unsigned int & size, const double* u_array) {
 
 CSysVector::CSysVector(const unsigned int & numBlk, const unsigned int & numBlkDomain, const unsigned short & numVar,
                        const double* u_array) {
+
+  nElm = numBlk*numVar; nElmDomain = numBlkDomain*numVar;
+  nBlk = numBlk; nBlkDomain = numBlkDomain;
+  nVar = numVar;
   
-  /*--- check for invalid input, then allocate memory and initialize
-   values ---*/
-  nElm = numBlk*numVar;
-  nElmDomain = numBlkDomain*numVar;
-  
+  /*--- check for invalid input, then allocate memory and initialize values ---*/
   if ( (nElm <= 0) || (nElm >= UINT_MAX) ) {
     cerr << "CSysVector::CSysVector(unsigned int,unsigned int,double*): "
     << "invalid input: numBlk, numVar = " << numBlk << "," << numVar << endl;
     throw(-1);
   }
-  nBlk = numBlk;
-	nBlkDomain = numBlkDomain;
-  
-  nVar = numVar;
+
   vec_val = new double[nElm];
   for (unsigned int i = 0; i < nElm; i++)
     vec_val[i] = u_array[i];
@@ -171,6 +146,44 @@ CSysVector::CSysVector(const unsigned int & numBlk, const unsigned int & numBlkD
   unsigned long nElmLocal = (unsigned long)nElm;
   MPI::COMM_WORLD.Allreduce(&nElmLocal, &nElmGlobal, 1, MPI::UNSIGNED_LONG, MPI::SUM);
 #endif
+  
+}
+
+CSysVector::~CSysVector() {
+  delete [] vec_val;
+  nElm = -1;
+	nElmDomain = -1;
+  nBlk = -1;
+  nBlkDomain = -1;
+  nVar = -1;
+#ifndef NO_MPI
+  myrank = -1;
+#endif
+}
+
+void CSysVector::Initialize(const unsigned int & numBlk, const unsigned int & numBlkDomain, const unsigned short & numVar, const double & val) {
+  
+  nElm = numBlk*numVar; nElmDomain = numBlkDomain*numVar;
+  nBlk = numBlk; nBlkDomain = numBlkDomain;
+  nVar = numVar;
+  
+  /*--- Check for invalid input, then allocate memory and initialize values ---*/
+  if ( (nElm <= 0) || (nElm >= UINT_MAX) ) {
+    cerr << "CSysVector::CSysVector(unsigned int,unsigned int,double): "
+    << "invalid input: numBlk, numVar = " << numBlk << "," << numVar << endl;
+    throw(-1);
+  }
+	
+  vec_val = new double[nElm];
+  for (unsigned int i = 0; i < nElm; i++)
+    vec_val[i] = val;
+  
+#ifndef NO_MPI
+  myrank = MPI::COMM_WORLD.Get_rank();
+  unsigned long nElmLocal = (unsigned long)nElm;
+  MPI::COMM_WORLD.Allreduce(&nElmLocal, &nElmGlobal, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+#endif
+  
 }
 
 void CSysVector::Equals_AX(const double & a, CSysVector & x) {

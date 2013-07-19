@@ -92,18 +92,23 @@ protected:
     
 	double **Smatrix,	/*!< \brief Auxiliary structure for computing gradients by least-squares */
 	**cvector;			 /*!< \brief Auxiliary structure for computing gradients by least-squares */
-    
-	CSysMatrix StiffMatrix; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations, and grid movement. */
+
+  CSysVector LinSysSol;		/*!< \brief vector to store iterative solution of implicit linear system. */
+  CSysVector LinSysRes;		/*!< \brief vector to store iterative residual of implicit linear system. */
 	CSysMatrix Jacobian; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
-    
+
+	CSysMatrix StiffMatrix; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations, and grid movement. */
+
 public:
-    double *xsol;		/*!< \brief vector to store iterative solution of implicit linear system. */
+  
+  double *xsol;		/*!< \brief vector to store iterative solution of implicit linear system. */
 	double *xres;		/*!< \brief vector to store iterative residual of implicit linear system. */
+  
 	CVariable** node;	/*!< \brief Vector which the define the variables for each problem. */
-    
-    CSysMatrix DirectJacobian; /*!< \brief Sparse Jacobian structure for direct, discrete part of hybrid computation (TODO move to the right place). */
-    CSysMatrix DirectBCJacobian; /*!< \brief Sparse Jacobian structure for direct, discrete boundary conditions part of hybrid computation (TODO move to the right place). */
-    
+  
+  CSysMatrix DirectJacobian; /*!< \brief Sparse Jacobian structure for direct, discrete part of hybrid computation (TODO move to the right place). */
+  CSysMatrix DirectBCJacobian; /*!< \brief Sparse Jacobian structure for direct, discrete boundary conditions part of hybrid computation (TODO move to the right place). */
+  
 	/*!
 	 * \brief Constructor of the class.
 	 */
@@ -395,16 +400,6 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 */
 	void Set_OldSolution(CGeometry *geometry);
-    
-    /*!
-	 * \brief Initializes space matrix system.
-	 * \param[in] SparseMatrix - _______________________________________.
-	 * \param[in] nVar - Number of variables.
-	 * \param[in] nEqn - Number of equations.
-     * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-    void Initialize_SparseMatrix_Structure(CSysMatrix *SparseMatrix, unsigned short nVar, unsigned short nEqn, CGeometry *geometry, CConfig *config);
     
 	/*!
 	 * \brief A virtual member.
