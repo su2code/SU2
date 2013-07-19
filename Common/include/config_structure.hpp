@@ -356,7 +356,6 @@ private:
 	double Linear_Solver_Relax;		/*!< \brief Relaxation coefficient of the linear solver. */
 	double AdjTurb_Linear_Error;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
 	unsigned short AdjTurb_Linear_Iter;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
-	bool Linear_Solver_Hist;		/*!< \brief Whether or not to output linear solver history to file */
 	double* Kappa_Flow,           /*!< \brief Numerical dissipation coefficients for the flow equations. */
 	*Kappa_AdjFlow,                  /*!< \brief Numerical dissipation coefficients for the adjoint equations. */
 	*Kappa_LinFlow;                  /*!< \brief Numerical dissipation coefficients for the linearized equations. */
@@ -2054,12 +2053,6 @@ public:
 	 * \return relaxation coefficient of the linear solver for the implicit formulation.
 	 */
 	double GetLinear_Solver_Relax(void);
-
-	/*!
-	 * \brief Get whether or not to output linear solver histry to file.
-	 * \return true or false.
-	 */
-	bool GetLinear_Solver_Hist(void);
 
 	/*!
 	 * \brief Get the kind of solver for the implicit solver.

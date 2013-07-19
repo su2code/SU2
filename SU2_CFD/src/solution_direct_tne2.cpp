@@ -56,8 +56,7 @@ CTNE2EulerSolution::CTNE2EulerSolution(CGeometry *geometry, CConfig *config, uns
 	unsigned short nZone = geometry->GetnZone();
 	bool restart = (config->GetRestart() || config->GetRestart_Flow());
   double Gas_Constant = config->GetGas_ConstantND();
-	bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+	
 	roe_turkel = false;
   
 	int rank = MASTER_NODE;
@@ -92,8 +91,8 @@ CTNE2EulerSolution::CTNE2EulerSolution(CGeometry *geometry, CConfig *config, uns
   
 	/*--- Define geometry constants in the solver structure ---*/
 	nDim = geometry->GetnDim();
-	nSpe = 1 ;
-	nVar = nSpe + nDim + 2; nPrimVar = nSpe + nDim + 6; nPrimVarGrad = nSpe + nDim + 4;
+	nSpecies = config->GetnSpecies();
+	nVar = nSpecies + nDim + 2; nPrimVar = nSpecies + nDim + 6; nPrimVarGrad = nSpecies + nDim + 4;
 	nMarker = config->GetnMarker_All();
 	nPoint = geometry->GetnPoint();
 	nPointDomain = geometry->GetnPointDomain();
@@ -161,8 +160,8 @@ CTNE2EulerSolution::CTNE2EulerSolution(CGeometry *geometry, CConfig *config, uns
 			Smatrix[iDim] = new double [nDim];
     
 		/*--- c vector := transpose(WA)*(Wb) ---*/
-		cvector = new double* [nDim+3];
-		for (iVar = 0; iVar < nDim+3; iVar++)
+		cvector = new double* [nPrimVarGrad];
+		for (iVar = 0; iVar < nPrimVarGrad; iVar++)
 			cvector[iVar] = new double [nDim];
 	}
   
@@ -200,28 +199,6 @@ CTNE2EulerSolution::CTNE2EulerSolution(CGeometry *geometry, CConfig *config, uns
 	Mach_Inf           = config->GetMach_FreeStreamND();
   MassFrac_Inf       = config->GetMassFrac_FreeStream();
   Temperature_ve_Inf = config->GetTemperature_ve_FreeStream();
-  
-	if (dual_time && config->GetUnsteady_Farfield()) {
-    
-		/*--- Read farfield conditions ---*/
-		Density_Inf  = config->GetDensity_FreeStreamND_Time(0);
-		Pressure_Inf = config->GetPressure_FreeStreamND_Time(0);
-		Velocity_Inf = config->GetVelocity_FreeStreamND_Time(0);
-		Energy_Inf   = config->GetEnergy_FreeStreamND_Time(0);
-		Mach_Inf     = config->GetMach_FreeStreamND_Time(0);
-    
-	}
-  
-	/*--- Inlet/Outlet boundary conditions, using infinity values ---*/
-	Density_Inlet  = Density_Inf;		     Density_Outlet = Density_Inf;
-	Pressure_Inlet = Pressure_Inf;	    Pressure_Outlet = Pressure_Inf;
-	Energy_Inlet   = Energy_Inf;		    	Energy_Outlet = Energy_Inf;
-	Mach_Inlet     = Mach_Inf;				    	Mach_Outlet = Mach_Inf;
-	Velocity_Inlet = new double [nDim]; Velocity_Outlet = new double [nDim];
-	for (iDim = 0; iDim < nDim; iDim++) {
-		Velocity_Inlet[iDim] = Velocity_Inf[iDim];
-		Velocity_Outlet[iDim] = Velocity_Inf[iDim];
-	}
   
 	/*--- Check for a restart and set up the variables at each node
    appropriately. Coarse multigrid levels will be intitially set to
@@ -350,7 +327,7 @@ CTNE2EulerSolution::CTNE2EulerSolution(CGeometry *geometry, CConfig *config, uns
 	else least_squares = false;
   
 	/*--- MPI solution ---*/
-	SetSolution_MPI(geometry, config);
+	Set_MPI_Solution(geometry, config);
   
 }
 
@@ -396,7 +373,7 @@ CTNE2EulerSolution::~CTNE2EulerSolution(void) {
   
 }
 
-void CTNE2EulerSolution::SetSolution_MPI(CGeometry *geometry, CConfig *config) {
+void CTNE2EulerSolution::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
 	unsigned short iVar, iMarker, iPeriodic_Index;
 	unsigned long iVertex, iPoint, nVertex, nBuffer_Vector;
 	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi, *newSolution = NULL, *Buffer_Receive_U = NULL;
@@ -515,7 +492,7 @@ void CTNE2EulerSolution::SetSolution_MPI(CGeometry *geometry, CConfig *config) {
   
 }
 
-void CTNE2EulerSolution::SetSolution_Old_MPI(CGeometry *geometry, CConfig *config) {
+void CTNE2EulerSolution::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) {
 	unsigned short iVar, iMarker, iPeriodic_Index;
 	unsigned long iVertex, iPoint, nVertex, nBuffer_Vector;
 	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi, *newSolution = NULL, *Buffer_Receive_U = NULL;
@@ -634,7 +611,7 @@ void CTNE2EulerSolution::SetSolution_Old_MPI(CGeometry *geometry, CConfig *confi
   
 }
 
-void CTNE2EulerSolution::SetSolution_Limiter_MPI(CGeometry *geometry, CConfig *config) {
+void CTNE2EulerSolution::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config) {
 	unsigned short iVar, iMarker, iPeriodic_Index;
 	unsigned long iVertex, iPoint, nVertex, nBuffer_Vector;
 	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi, *newLimit = NULL, *Buffer_Receive_Limit = NULL;
@@ -754,76 +731,6 @@ void CTNE2EulerSolution::SetSolution_Limiter_MPI(CGeometry *geometry, CConfig *c
   
 }
 
-void CTNE2EulerSolution::SetInitialCondition(CGeometry **geometry, CSolution ***solution_container, CConfig *config, unsigned long ExtIter) {
-	unsigned long iPoint, Point_Fine;
-	unsigned short iMesh, iChildren, iVar;
-	double Area_Children, Area_Parent, *Solution_Fine, *Solution;
-  
-	bool restart = (config->GetRestart() || config->GetRestart_Flow());
-	unsigned short nDim = geometry[MESH_0]->GetnDim();
-	bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  
-  
-	/*--- If restart solution, then interpolate the flow solution to
-   all the multigrid levels, this is important with the dual time strategy ---*/
-	if (restart) {
-		Solution = new double[nVar];
-		for (iMesh = 1; iMesh <= config->GetMGLevels(); iMesh++) {
-			for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-				Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
-				for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
-				for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
-					Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
-					Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
-					Solution_Fine = solution_container[iMesh-1][FLOW_SOL]->node[Point_Fine]->GetSolution();
-					for (iVar = 0; iVar < nVar; iVar++) {
-						Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
-					}
-				}
-				solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(Solution);
-        
-			}
-			solution_container[iMesh][FLOW_SOL]->SetSolution_MPI(geometry[iMesh], config);
-		}
-		delete [] Solution;
-	}
-  
-  
-	/*--- The value of the solution for the first iteration of the dual time ---*/
-	for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++) {
-		for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-			if ((ExtIter == 0) && (dual_time)) {
-				solution_container[iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n();
-				solution_container[iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n1();
-			}
-		}
-	}
-  
-	if (dual_time && config->GetUnsteady_Farfield()) {
-    
-		/*--- Read farfield conditions ---*/
-		Density_Inf  = config->GetDensity_FreeStreamND_Time(ExtIter);
-		Pressure_Inf = config->GetPressure_FreeStreamND_Time(ExtIter);
-		Velocity_Inf = config->GetVelocity_FreeStreamND_Time(ExtIter);
-		Energy_Inf   = config->GetEnergy_FreeStreamND_Time(ExtIter);
-		Mach_Inf     = config->GetMach_FreeStreamND_Time(ExtIter);
-    
-		/*--- Inlet/Outlet boundary conditions, using infinity values ---*/
-		Density_Inlet = Density_Inf;		Density_Outlet = Density_Inf;
-		Pressure_Inlet = Pressure_Inf;	Pressure_Outlet = Pressure_Inf;
-		Energy_Inlet = Energy_Inf;			Energy_Outlet = Energy_Inf;
-		Mach_Inlet = Mach_Inf;					Mach_Outlet = Mach_Inf;
-		Velocity_Inlet  = new double [nDim]; Velocity_Outlet = new double [nDim];
-		for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-			Velocity_Inlet[iDim] = Velocity_Inf[iDim];
-			Velocity_Outlet[iDim] = Velocity_Inf[iDim];
-		}
-    
-	}
-  
-  
-}
 
 void CTNE2EulerSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;

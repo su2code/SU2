@@ -1327,9 +1327,12 @@ void CVolumetricMovement::UpdateGridCoord(CGeometry *geometry, CConfig *config) 
 
 void CVolumetricMovement::SpringMethod(CGeometry *geometry, CConfig *config, bool UpdateGeo) {
 	double MinLength, NumError;
-	unsigned long iPoint, total_index;
+	unsigned long iPoint, total_index, IterLinSol;
 	unsigned short iDim, nDim = geometry->GetnDim();
-
+    
+    unsigned long nPoint = geometry->GetnPoint();
+    unsigned long nPointDomain = geometry->GetnPointDomain();
+    
 	Initialize_StiffMatrix_Structure(nDim, geometry);
 	
 	StiffMatrix.SetValZero();
@@ -1342,49 +1345,66 @@ void CVolumetricMovement::SpringMethod(CGeometry *geometry, CConfig *config, boo
 			rhs[total_index]  = 0.0;
 			usol[total_index] = 0.0;
 		}
-  }
+    }
 	
 	SetBoundaryDisplacements(geometry, config);
-  
+    
 	if (config->GetHold_GridFixed())
 		SetDomainDisplacements(geometry, config);
 	
 	NumError = config->GetGridDef_Error();
-	if (NumError > MinLength) { 
-		cout << "The numerical error is greater than the length of the smallest edge! MinLength: " << MinLength <<"."<<endl;	
-		cin.get(); 
-	}
-    	
-	StiffMatrix.CGSolution(rhs, usol, NumError, 999999, true, geometry, config);
-	
-  UpdateGridCoord(geometry, config);
-  
+    if (NumError > MinLength) {
+        cout << "Warning: The error tol. is greater than the minimum edge length.\n" << endl;
+        cout << "NumError: " << NumError <<"." << "  MinLength: " << MinLength << "." << endl;
+    }
+    
+    /*--- Solve the linear system (Krylov subspace methods) ---*/
+    CSysVector rhs_vec(nPoint, nPointDomain, nDim, rhs);
+    CSysVector sol_vec(nPoint, nPointDomain, nDim, usol);
+    
+    CMatrixVectorProduct* mat_vec = new CSparseMatrixVectorProduct(StiffMatrix, geometry, config);
+
+    CPreconditioner* precond = NULL;
+    StiffMatrix.BuildJacobiPreconditioner();
+    precond = new CJacobiPreconditioner(StiffMatrix, geometry, config);
+    
+    CSysSolve system;
+    IterLinSol = system.ConjugateGradient(rhs_vec, sol_vec, *mat_vec, *precond, NumError, 300, true);
+    
+    /*--- Copy the solution to the array ---*/
+    sol_vec.CopyToArray(usol);
+    
+    /*--- Deallocate memory needed by the Krylov linear solver ---*/
+    delete mat_vec;
+    delete precond;
+    
+    UpdateGridCoord(geometry, config);
+    
 	if (UpdateGeo) {
 		geometry->SetCG();
 		geometry->SetControlVolume(config, UPDATE);
 		geometry->SetBoundControlVolume(config, UPDATE);
 	}
-  
+    
 	Deallocate_StiffMatrix_Structure(geometry);
-
+    
 }
 
 void CVolumetricMovement::FEAMethod(CGeometry *geometry, CConfig *config, bool UpdateGeo) {
-	
-  /*--- Local variables ---*/
-  
   unsigned short iDim;
 	unsigned long iPoint, total_index, IterLinSol, iFEA;
   double MinLength, NumError;
   
-  /*--- Initialize the global stiffness matrix structure for the mesh ---*/
+  unsigned long nPoint = geometry->GetnPoint();
+  unsigned long nPointDomain = geometry->GetnPointDomain();
   
+  /*--- Initialize the global stiffness matrix structure for the mesh ---*/
 	Initialize_StiffMatrix_Structure(nDim, geometry);
+  
   
   /*--- Loop over the total number of FEA iterations. The surface
    deformation can be divided into increments, as the linear elasticity
    equations hold only for small deformation. ---*/
-  
   for (iFEA = 0; iFEA < config->GetFEA_Iter(); iFEA++) {
     
     StiffMatrix.SetValZero();
@@ -1403,7 +1423,6 @@ void CVolumetricMovement::FEAMethod(CGeometry *geometry, CConfig *config, bool U
     }
     
     /*--- Initialize the solution and r.h.s. vectors to zero ---*/
-    
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
       for (iDim = 0; iDim < nDim; iDim++) {
         total_index = iPoint*nDim + iDim;
@@ -1414,43 +1433,36 @@ void CVolumetricMovement::FEAMethod(CGeometry *geometry, CConfig *config, bool U
     
     /*--- Set the boundary displacements (as prescribed by the design variable
      perturbations controlling the surface shape) as a Dirichlet BC. ---*/
-    
     SetBoundaryDisplacements(geometry, config);
     
     /*--- Fix the location of any points in the domain, if requested. ---*/
-    
     if (config->GetHold_GridFixed())
       SetDomainDisplacements(geometry, config);
     
     /*--- Solve the linear system (Krylov subspace methods) ---*/
+    CSysVector rhs_vec(nPoint, nPointDomain, nDim, rhs);
+    CSysVector sol_vec(nPoint, nPointDomain, nDim, usol);
     
-    CSysVector rhs_vec((const unsigned int)geometry->GetnPoint(),
-                       (const unsigned int)geometry->GetnPointDomain(), nDim, rhs);
-    CSysVector sol_vec((const unsigned int)geometry->GetnPoint(),
-                       (const unsigned int)geometry->GetnPointDomain(), nDim, usol);
-    
-    CMatrixVectorProduct* mat_vec = new CSparseMatrixVectorProduct(StiffMatrix);
-    CSolutionSendReceive* sol_mpi = new CSparseMatrixSolMPI(StiffMatrix, geometry, config);
+    CMatrixVectorProduct* mat_vec = new CSparseMatrixVectorProduct(StiffMatrix, geometry, config);
     
     CPreconditioner* precond = NULL;
-    StiffMatrix.BuildJacobiPreconditioner();
-    precond = new CJacobiPreconditioner(StiffMatrix);
+//    StiffMatrix.BuildJacobiPreconditioner();
+//    precond = new CJacobiPreconditioner(StiffMatrix, geometry, config);
+    precond = new CLUSGSPreconditioner(StiffMatrix, geometry, config);
     
     CSysSolve system;
-    IterLinSol = system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, NumError, 500, true);
+//    IterLinSol = system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, NumError, 300, true);
+    IterLinSol = system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, NumError, 300, true);
     
     /*--- Copy the solution to the array ---*/
     sol_vec.CopyToArray(usol);
     
     /*--- Deallocate memory needed by the Krylov linear solver ---*/
-    
     delete mat_vec;
     delete precond;
-    delete sol_mpi;
     
     /*--- Update the grid coordinates for all nodes using the solution
      of the linear system (usol contains the x, y, z displacements). ---*/
-    
     UpdateGridCoord(geometry, config);
     
     if (UpdateGeo) {
@@ -4712,7 +4724,7 @@ double *CFreeFormChunk::GetParametricCoord_Iterative(double *xyz, double *guess,
 			param_coord[iDim] += Indep_Term[iDim];
 		
 		/*--- If the gradient is small, we have converged ---*/
-		if ((abs(Indep_Term[0]) < tol) && (abs(Indep_Term[1]) < tol) && (abs(Indep_Term[2]) < tol))	break;
+		if ((fabs(Indep_Term[0]) < tol) && (fabs(Indep_Term[1]) < tol) && (fabs(Indep_Term[2]) < tol))	break;
 		NormError = sqrt(Indep_Term[0]*Indep_Term[0] + Indep_Term[1]*Indep_Term[1] + Indep_Term[2]*Indep_Term[2]);
 		MinNormError = min(NormError, MinNormError);
 		
@@ -4734,7 +4746,7 @@ double *CFreeFormChunk::GetParametricCoord_Iterative(double *xyz, double *guess,
 	}
 	
 	/*--- There is no convergence of the point inversion algorithm ---*/
-	if ((abs(Indep_Term[0]) > tol) || (abs(Indep_Term[1]) > tol) || (abs(Indep_Term[2]) > tol)) 
+	if ((fabs(Indep_Term[0]) > tol) || (fabs(Indep_Term[1]) > tol) || (fabs(Indep_Term[2]) > tol))
 		cout << "No Convergence Detected After " << iter << " Iterations" << endl;
 	
 	for (iDim = 0; iDim < nDim; iDim++) 

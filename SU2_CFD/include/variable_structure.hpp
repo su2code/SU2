@@ -690,14 +690,14 @@ public:
 	 * \brief Get the undivided laplacian of the solution.
 	 * \return Pointer to the undivided laplacian vector.
 	 */
-	double *GetUnd_Lapl(void);
+	double *GetUndivided_Laplacian(void);
 
 	/*!
 	 * \brief Get the undivided laplacian of the solution.
 	 * \param[in] val_var - Variable of the undivided laplacian.
 	 * \return Value of the undivided laplacian vector.
 	 */
-	double GetUnd_Lapl(unsigned short val_var);
+	double GetUndivided_Laplacian(unsigned short val_var);
 
 	/*!
 	 * \brief A virtual member.
@@ -1040,11 +1040,12 @@ public:
 	 * \param[in] Gamma - Ratio of Specific heats
 	 */
 	virtual bool SetPressure(double Gamma);
-
+  
 	/*!
 	 * \brief A virtual member.
+	 * \param[in] Gamma - Ratio of Specific heats
 	 */
-	virtual void SetPressure(CConfig *config);
+	virtual bool SetPressure(CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
@@ -2981,7 +2982,7 @@ public:
 	/*!
 	 * \brief Set the value of the pressure.
 	 */
-	void SetPressure(CConfig *config);
+	bool SetPressure(CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
@@ -3450,7 +3451,7 @@ public:
 class CTNE2EulerVariable : public CVariable {
 protected:
   bool ionization;       /*!< \brief Presence of charged species in gas mixture. */
-  unsigned short nSpe;  /*!< \brief Number of species in the gas mixture. */
+  unsigned short nSpecies;  /*!< \brief Number of species in the gas mixture. */
 	double Velocity2;			/*!< \brief Square of the velocity vector. */
 	double Precond_Beta;	/*!< \brief Low Mach number preconditioner value, Beta. */
   
@@ -3545,9 +3546,9 @@ public:
 	void SetVelocity2(void);
   
 	/*!
-	 * \brief Set the value of the pressure.
+	 * \brief Set the value of the pressure.  Requires T&Tve calculation.
 	 */
-	bool SetPressure(double Temperature, double Temperature_ve);
+	bool SetPressure(CConfig *config);
   
 	/*!
 	 * \brief Set the value of the speed of the sound.

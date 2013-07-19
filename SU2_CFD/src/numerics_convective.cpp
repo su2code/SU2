@@ -100,7 +100,7 @@ void CUpwRoe_Flow::SetResidual(double *val_residual, double **val_Jacobian_i, do
 
   /*--- If it is not a physical solution, then 
    use the zero order reconstruction ---*/
-  if ((Density_i < 0.0) || (Pressure_i < 0.0)) {
+  if (((Density_i < 0.0) || (Pressure_i < 0.0)) &&  UZeroOrder_i != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)
       U_i[iVar] = UZeroOrder_i[iVar];
     
@@ -131,7 +131,7 @@ void CUpwRoe_Flow::SetResidual(double *val_residual, double **val_Jacobian_i, do
 
   /*--- If it is not a physical solution, then
    use the zero order reconstruction ---*/
-  if ((Density_j < 0.0) || (Pressure_j < 0.0)) {
+  if (((Density_j < 0.0) || (Pressure_j < 0.0)) &&  UZeroOrder_j != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)
       U_j[iVar] = UZeroOrder_j[iVar];
 
@@ -149,7 +149,7 @@ void CUpwRoe_Flow::SetResidual(double *val_residual, double **val_Jacobian_i, do
 	Enthalpy_j   = (U_j[nDim+1] + Pressure_j) / Density_j;
 
 	/*--- Roe-averaged variables at interface between i & j ---*/
-	R = sqrt(abs(Density_j/Density_i));
+	R = sqrt(fabs(Density_j/Density_i));
 	RoeDensity = R*Density_i;
 	sq_vel = 0;
 	for (iDim = 0; iDim < nDim; iDim++) { 
@@ -403,7 +403,7 @@ void CUpwRoePrim_Flow::SetResidual(double *val_residual, double **val_Jacobian_i
 	Enthalpy_j = V_j[nDim+3];
 
 	/*--- Roe-averaged variables at interface between i & j ---*/
-	R = sqrt(abs(Density_j/Density_i));
+	R = sqrt(fabs(Density_j/Density_i));
 	RoeDensity = R*Density_i;
 	sq_vel = 0;
 	for (iDim = 0; iDim < nDim; iDim++) { 

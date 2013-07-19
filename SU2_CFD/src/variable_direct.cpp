@@ -1154,7 +1154,7 @@ void CPlasmaVariable::SetSoundSpeed(CConfig *config) {
 	}
 }
 
-void CPlasmaVariable::SetPressure(CConfig *config) {
+bool CPlasmaVariable::SetPressure(CConfig *config) {
 
 	unsigned short loc = 0, iSpecies, iDim;
 	double Gamma, Enthalpy_formation;
@@ -1179,6 +1179,8 @@ void CPlasmaVariable::SetPressure(CConfig *config) {
 		Primitive[iSpecies][nDim+2] = (Gamma-1.0) * Density * (Energy - 0.5*Vel2 - Enthalpy_formation - Energy_vib - Energy_el);
 
 	}
+  if (Primitive[iSpecies][nDim+2] >= 0.0) return true;
+  else return false;
 }
 
 void CPlasmaVariable::SetTemperature_tr(CConfig *config) {
@@ -1773,15 +1775,12 @@ CTNE2EulerVariable::CTNE2EulerVariable(void) : CVariable() {
 }
 
 CTNE2EulerVariable::CTNE2EulerVariable(double val_density, double *val_massfrac, double *val_velocity, double val_temperature, double val_temperature_ve, unsigned short val_ndim, unsigned short val_nvar, CConfig *config) : CVariable(val_ndim, val_nvar, config) {
-	unsigned short iVar, iDim, iSpe, iMesh, nMGSmooth = 0;
+	unsigned short iVar, iDim, iSpecies, iMesh, nMGSmooth = 0;
   unsigned short nDim;
   double energy, energy_v, energy_e, energy_ve, energy_formation, sqvel;
   double *molar_mass, *theta_v, *rotation_modes, *temperature_ref, *enthalpy_formation;
   
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  
-  ionization = ((config->GetKind_GasModel() == AIR7) || (config->GetKind_GasModel() == AIR7));
+  ionization = ((config->GetKind_GasModel() == AIR7) || (config->GetKind_GasModel() == ARGON));
   
   /*--- Array initialization ---*/
 	Primitive = NULL;
@@ -1790,7 +1789,7 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_density, double *val_massfrac,
   
   /*--- Acquire parameters from the config class ---*/
   nDim               = val_ndim;
-  nSpe               = config->GetnSpecies();
+  nSpecies           = config->GetnSpecies();
   molar_mass         = config->GetMolar_Mass();
   theta_v            = config->GetCharVibTemp();
   rotation_modes     = config->GetRotationModes();
@@ -1799,7 +1798,7 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_density, double *val_massfrac,
   
   
   /*--- Allocate and initialize the primitive variables and gradients ---*/
-  nPrimVar = nSpe+nDim+6; nPrimVarGrad = nSpe+nDim+4;
+  nPrimVar = nSpecies+nDim+6; nPrimVarGrad = nSpecies+nDim+4;
   
 	/*--- Allocate residual structures ---*/
 	Res_TruncError = new double [nVar];
@@ -1817,9 +1816,7 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_density, double *val_massfrac,
 		Residual_Old = new double [nVar];
 	}
   
-	/*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
-	if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED)
-		Undivided_Laplacian = new double [nVar];
+	/*--- Allocate limiter (upwind)---*/
 	if ((config->GetKind_ConvNumScheme_Flow() == SPACE_UPWIND) &&
 			(config->GetKind_SlopeLimit_Flow() != NONE)) {
 		Limiter      = new double [nVar];
@@ -1838,51 +1835,35 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_density, double *val_massfrac,
   energy_ve = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
     sqvel += val_velocity[iDim]*val_velocity[iDim];
-  for (iSpe = 0; iSpe < nSpe; iSpe++) {
-    energy_v  =  UNIVERSAL_GAS_CONSTANT/molar_mass[iSpe]
-               * theta_v[iSpe] / ( exp(theta_v[iSpe]/val_temperature_ve) -1.0 );
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    energy_v  =  UNIVERSAL_GAS_CONSTANT/molar_mass[iSpecies]
+               * theta_v[iSpecies] / ( exp(theta_v[iSpecies]/val_temperature_ve) -1.0 );
     energy_e = 0.0;
-    energy_formation = enthalpy_formation[iSpe] - UNIVERSAL_GAS_CONSTANT/molar_mass[iSpe]*temperature_ref[iSpe];
-    energy +=  (3.0/2.0 + rotation_modes[iSpe]/2.0) * (val_temperature - temperature_ref[iSpe])
+    energy_formation = enthalpy_formation[iSpecies] - UNIVERSAL_GAS_CONSTANT/molar_mass[iSpecies]*temperature_ref[iSpecies];
+    energy +=  (3.0/2.0 + rotation_modes[iSpecies]/2.0) * (val_temperature - temperature_ref[iSpecies])
              + energy_v + energy_e + energy_formation + 0.5*sqvel;
     energy_ve += energy_v + energy_e;
   }
   if (ionization) {
-    iSpe = nSpe - 1;
-    energy_formation = enthalpy_formation[iSpe] - UNIVERSAL_GAS_CONSTANT/molar_mass[iSpe]*temperature_ref[iSpe];
-    energy          -= (3.0/2.0) * (val_temperature-temperature_ref[iSpe]) + energy_formation + 0.5*sqvel;
-    energy_ve       += (3.0/2.0) * (val_temperature-temperature_ref[iSpe]) + energy_formation + 0.5*sqvel;
+    iSpecies = nSpecies - 1;
+    energy_formation = enthalpy_formation[iSpecies] - UNIVERSAL_GAS_CONSTANT/molar_mass[iSpecies]*temperature_ref[iSpecies];
+    energy          -= (3.0/2.0) * (val_temperature-temperature_ref[iSpecies]) + energy_formation + 0.5*sqvel;
+    energy_ve       += (3.0/2.0) * (val_temperature-temperature_ref[iSpecies]) + energy_formation + 0.5*sqvel;
   }
   
 	/*--- Solution and old solution initialization ---*/
-  for (iSpe = 0; iSpe < nSpe; iSpe++) {
-    Solution[iSpe]  = val_density*val_massfrac[iSpe];
-    Solution_Old[0] = val_density*val_massfrac[iSpe];
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    Solution[iSpecies] = val_density*val_massfrac[iSpecies];
+    Solution_Old[0]    = val_density*val_massfrac[iSpecies];
   }
   for (iDim = 0; iDim < nDim; iDim++) {
-    Solution[nSpe+iDim+1]     = val_density*val_velocity[iDim];
-    Solution_Old[nSpe+iDim+1] = val_density*val_velocity[iDim];
+    Solution[nSpecies+iDim+1]     = val_density*val_velocity[iDim];
+    Solution_Old[nSpecies+iDim+1] = val_density*val_velocity[iDim];
   }
-  Solution[nSpe+nDim+1]     = val_density*energy;
-  Solution_Old[nSpe+nDim+1] = val_density*energy;
-  Solution[nSpe+nDim+2]     = val_density*energy_ve;
-  Solution_Old[nSpe+nDim+2] = val_density*energy_ve;
-  
-	/*--- Allocate and initialize solution for dual time strategy ---*/
-	if (dual_time) {
-    for (iSpe = 0; iSpe < nSpe; iSpe++) {
-			Solution_time_n[iSpe]  = val_density*val_massfrac[iSpe];
-			Solution_time_n1[iSpe] = val_density*val_massfrac[iSpe];
-    }
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Solution_time_n[nSpe+iDim+1]  = val_density*val_velocity[iDim];
-      Solution_time_n1[nSpe+iDim+1] = val_density*val_velocity[iDim];
-    }
-    Solution_time_n[nSpe+nDim+1]  = val_density*energy;
-    Solution_time_n1[nSpe+nDim+1] = val_density*energy;
-    Solution_time_n[nSpe+nDim+2]  = val_density*energy_ve;
-    Solution_time_n1[nSpe+nDim+2] = val_density*energy_ve;
-	}
+  Solution[nSpecies+nDim+1]     = val_density*energy;
+  Solution_Old[nSpecies+nDim+1] = val_density*energy;
+  Solution[nSpecies+nDim+2]     = val_density*energy_ve;
+  Solution_Old[nSpecies+nDim+2] = val_density*energy_ve;
   
   /*--- Primitive variables: nSpe+nDim+6 (rho1,...,rhoNs,T,Tve,vx,vy,vz,P,rho,h,c) ---*/
   Primitive = new double [nPrimVar];
@@ -1925,9 +1906,7 @@ CTNE2EulerVariable::CTNE2EulerVariable(double *val_solution, unsigned short val_
 		Residual_Old = new double [nVar];
 	}
   
-	/*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
-	if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED)
-		Undivided_Laplacian = new double [nVar];
+	/*--- Allocate limiter (upwind)---*/
 	if ((config->GetKind_ConvNumScheme_Flow() == SPACE_UPWIND) &&
 			(config->GetKind_SlopeLimit_Flow() != NONE)) {
 		Limiter = new double [nVar];
@@ -1946,20 +1925,9 @@ CTNE2EulerVariable::CTNE2EulerVariable(double *val_solution, unsigned short val_
 		Solution_Old[iVar] = val_solution[iVar];
 	}
   
-	/*--- Allocate and initializate solution for dual time strategy ---*/
-	if (dual_time) {
-		Solution_time_n = new double [nVar];
-		Solution_time_n1 = new double [nVar];
-    
-		for (iVar = 0; iVar < nVar; iVar++) {
-			Solution_time_n[iVar] = val_solution[iVar];
-			Solution_time_n1[iVar] = val_solution[iVar];
-		}
-	}
-  
 	/*--- Allocate and initialize the primitive variables and gradients ---*/
-  nSpe = config->GetnSpecies();
-  nPrimVar = nSpe+nDim+6; nPrimVarGrad = nSpe+nDim+4;
+  nSpecies = config->GetnSpecies();
+  nPrimVar = nSpecies+nDim+6; nPrimVarGrad = nSpecies+nDim+4;
   
   /*--- Primitive variables nSpe+nDim+6, (rho1,...,rhoNs,T,Tve,vx,vy,vz,P,rho,h,c) ---*/
   Primitive = new double [nPrimVar];
@@ -1973,8 +1941,6 @@ CTNE2EulerVariable::CTNE2EulerVariable(double *val_solution, unsigned short val_
     for (iDim = 0; iDim < nDim; iDim++)
       Gradient_Primitive[iVar][iDim] = 0.0;
   }
-  
-  
 }
 
 CTNE2EulerVariable::~CTNE2EulerVariable(void) {
@@ -1986,7 +1952,6 @@ CTNE2EulerVariable::~CTNE2EulerVariable(void) {
   if (Res_TruncError != NULL) delete [] Res_TruncError;
   if (Residual_Old   != NULL) delete [] Residual_Old;
   if (Residual_Sum   != NULL) delete [] Residual_Sum;
-  if (Undivided_Laplacian != NULL) delete [] Undivided_Laplacian;
   if (Limiter != NULL) delete [] Limiter;
   if (Solution_Max != NULL) delete [] Solution_Max;
   if (Solution_Min != NULL) delete [] Solution_Min;
@@ -2010,20 +1975,20 @@ void CTNE2EulerVariable::SetGradient_PrimitiveZero(unsigned short val_primvar) {
 
 double CTNE2EulerVariable::GetProjVel(double *val_vector) {
 	double ProjVel, density;
-	unsigned short iDim, iSpe;
+	unsigned short iDim, iSpecies;
   
 	ProjVel = 0.0;
   density = 0.0;
-  for (iSpe = 0; iSpe < nSpe; iSpe++)
-    density += Solution[iSpe];
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    density += Solution[iSpecies];
 	for (iDim = 0; iDim < nDim; iDim++)
-		ProjVel += Solution[nSpe+iDim+1]*val_vector[iDim]/density;
+		ProjVel += Solution[nSpecies+iDim+1]*val_vector[iDim]/density;
   
 	return ProjVel;
 }
 
 inline bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
-  unsigned short iSpe, iDim;
+  unsigned short iSpecies, iDim;
   double rho, rhoe, rhoev, rhoeform, rhoeref, rhoCvtr, sqvel;
   double *hf, *Tref, *rotmodes, *molarmass;
   
@@ -2033,55 +1998,67 @@ inline bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   rotmodes  = config->GetRotationModes();
   molarmass = config->GetMolar_Mass();
   
-  rhoe     = Solution[nSpe+nDim+1];
-  rhoev    = Solution[nSpe+nDim+2];
+  rhoe     = Solution[nSpecies+nDim+1];
+  rhoev    = Solution[nSpecies+nDim+2];
   rho      = 0.0;
   rhoeform = 0.0;
   rhoeref  = 0.0;
   rhoCvtr  = 0.0;
-  for (iSpe = 0; iSpe < nSpe; iSpe++) {
-    rho += Solution[iSpe];
-    rhoeform += Solution[iSpe] * (hf[iSpe] - UNIVERSAL_GAS_CONSTANT/molarmass[iSpe]*Tref[iSpe]);
-    rhoeref  +=  Solution[iSpe] * (3.0/2.0 + rotmodes[iSpe]/2.0)
-            * UNIVERSAL_GAS_CONSTANT/molarmass[iSpe]*Tref[iSpe];
-    rhoCvtr +=  Solution[iSpe] * (3.0/2.0 + rotmodes[iSpe]/2.0)
-              * UNIVERSAL_GAS_CONSTANT/molarmass[iSpe];
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    rho += Solution[iSpecies];
+    rhoeform += Solution[iSpecies] * (hf[iSpecies] - UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies]*Tref[iSpecies]);
+    rhoeref  +=  Solution[iSpecies] * (3.0/2.0 + rotmodes[iSpecies]/2.0)
+            * UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies]*Tref[iSpecies];
+    rhoCvtr +=  Solution[iSpecies] * (3.0/2.0 + rotmodes[iSpecies]/2.0)
+              * UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies];
   }
   if (ionization) {
-    iSpe = nSpe-1;
-    rhoCvtr    -=  Solution[iSpe] * (3.0/2.0 + rotmodes[iSpe]/2.0)
-                 * UNIVERSAL_GAS_CONSTANT/molarmass[iSpe];
-    rhoeref    -=  Solution[iSpe] * (3.0/2.0 + rotmodes[iSpe]/2.0)
-                 * UNIVERSAL_GAS_CONSTANT/molarmass[iSpe]*Tref[iSpe];
+    iSpecies = nSpecies-1;
+    rhoCvtr    -=  Solution[iSpecies] * (3.0/2.0 + rotmodes[iSpecies]/2.0)
+                 * UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies];
+    rhoeref    -=  Solution[iSpecies] * (3.0/2.0 + rotmodes[iSpecies]/2.0)
+                 * UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies]*Tref[iSpecies];
   }
   sqvel = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
-    sqvel += (Solution[nSpe+iDim+1]/rho) * (Solution[nSpe+iDim+1]/rho);
+    sqvel += (Solution[nSpecies+iDim+1]/rho) * (Solution[nSpecies+iDim+1]/rho);
   
   /*--- Assign translational-rotational temperature ---*/
-  Primitive[nSpe+1] = (rhoe - rhoev - rhoeform + rhoeref - 0.5*rho*sqvel) / rhoCvtr;
+  Primitive[nSpecies+1] = (rhoe - rhoev - rhoeform + rhoeref - 0.5*rho*sqvel) / rhoCvtr;
   
-  /*--- Assign vibrational-electronic temperature ---*/
-  Primitive[nSpe+2] = 
-  
-  if (Primitive[0] > 0.0) return false;
+  if (Primitive[nSpecies+1] > 0.0) return false;
   else return true;
 }
 
-bool CTNE2EulerVariable::SetPressure(double Temperature, double Temperature_ve) {
+bool CTNE2EulerVariable::SetPressure(CConfig *config) {
+  unsigned short iSpecies;
+  double *molarmass;
+  double P;
   
-  //Primitive[nSpe+nDim+1] = (Gamma-1.0)*Solution[0]*(Solution[nVar-1]/Solution[0]-0.5*Velocity2);
-  if (Primitive[nDim+1] > 0.0) return false;
+  molarmass = config->GetMolar_Mass();
+  P = 0.0;
+  for(iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    P += Solution[iSpecies]*UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies] * Primitive[nSpecies+1];
+  }
+  if (ionization) {
+    iSpecies = nSpecies - 1;
+    P -= Solution[iSpecies]*UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies] * Primitive[nSpecies+1];
+    P += Solution[iSpecies]*UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies] * Primitive[nSpecies+2];
+  }
+  
+  Primitive[nSpecies+nDim+2] = P;
+  
+  if (Primitive[nSpecies+nDim+2] > 0.0) return false;
   else return true;
 }
 
 void CTNE2EulerVariable::SetPrimVar_Compressible(double Gamma, double Gas_Constant) {
-	unsigned short iDim, iVar, iSpe;
+	unsigned short iDim, iVar, iSpecies;
   bool check_dens = false, check_press = false, check_sos = false, check_temp = false;
   
 	SetVelocity2();                               // Compute the modulus of the velocity.
-  for (iSpe = 0; iSpe < nSpe; iSpe++)
-    check_dens = ((Solution[iSpe] < 0.0) || check_dens);  // Check the density
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    check_dens = ((Solution[iSpecies] < 0.0) || check_dens);  // Check the density
   check_temp  = SetTemperature(config);
 	check_press = SetPressure(Temperature, Temperature_ve);	// Requires T & Tve computation.
 	check_sos = SetSoundSpeed(Gamma);             // Requires pressure computation.
@@ -2100,7 +2077,7 @@ void CTNE2EulerVariable::SetPrimVar_Compressible(double Gamma, double Gas_Consta
     check_temp = SetTemperature(Gas_Constant);
     
   }
-  
+  // Primitive variables [rho1,...,rhoNs,T,Tve,u,v,w,P,rho,h,c]
   SetEnthalpy();                                // Requires pressure computation.
   
 	for (iDim = 0; iDim < nDim; iDim++)

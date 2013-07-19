@@ -183,9 +183,6 @@ void CIntegration::Adjoint_Setup(CGeometry ***geometry, CSolution ****solution_c
 						geometry[iZone][iMGLevel], geometry[iZone][iMGLevel+1], config[iZone]);
 			}
 
-			/*--- Send-Receive flow solution conditions ---*/
-			solution_container[iZone][iMGLevel][FLOW_SOL]->MPI_Send_Receive(geometry, solution_container, config, iMGLevel, iZone);
-
 		}
 
 }
