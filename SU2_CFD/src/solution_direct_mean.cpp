@@ -1671,8 +1671,7 @@ void CEulerSolution::Preprocessing(CGeometry *geometry, CSolution **solution_con
 	bool low_fidelity = (config->GetLowFidelitySim() && (iMesh == MESH_1));
 	bool limiter = ((config->GetKind_SlopeLimit_Flow() != NONE) && !low_fidelity);
 	bool incompressible = config->GetIncompressible();
-	double Gas_Constant = config->GetGas_ConstantND();
-    bool jouleheating = config->GetJouleHeating();
+  bool jouleheating = config->GetJouleHeating();
     
     /*--- Compute nacelle inflow and exhaust properties ---*/
     GetNacelle_Properties(geometry, config, iMesh);
@@ -1688,7 +1687,7 @@ void CEulerSolution::Preprocessing(CGeometry *geometry, CSolution **solution_con
 		/*--- Set the primitive variables incompressible (dens, vx, vy, vz, beta)
          and compressible (temp, vx, vy, vz, press, dens, enthal, sos)---*/
 		if (incompressible) node[iPoint]->SetPrimVar_Incompressible(Density_Inf, levelset, config);
-		else node[iPoint]->SetPrimVar_Compressible(Gamma, Gas_Constant);
+		else node[iPoint]->SetPrimVar_Compressible(config);
         
 		/*--- Initialize the convective residual vector ---*/
 		LinSysRes.SetBlock_Zero(iPoint);
@@ -6261,11 +6260,10 @@ void CNSSolution::Preprocessing(CGeometry *geometry, CSolution **solution_contai
 	bool center_jst = center && config->GetKind_Centered_Flow() == JST;
 	bool limiter = (config->GetKind_SlopeLimit_Flow() != NONE);
 	bool incompressible = config->GetIncompressible();
-	double Gas_Constant = config->GetGas_ConstantND();
 	unsigned short turb_model = config->GetKind_Turb_Model();
 	bool tkeNeeded = (turb_model == SST);
 	double turb_ke = 0.0;
-    bool jouleheating = config->GetJouleHeating();
+  bool jouleheating = config->GetJouleHeating();
     
     /*--- Compute nacelle inflow and exhaust properties ---*/
     GetNacelle_Properties(geometry, config, iMesh);
@@ -6283,7 +6281,7 @@ void CNSSolution::Preprocessing(CGeometry *geometry, CSolution **solution_contai
 		/*--- Set the primitive variables incompressible (dens, vx, vy, vz, beta)
          and compressible (temp, vx, vy, vz, press, dens, enthal, sos)---*/
 		if (incompressible) node[iPoint]->SetPrimVar_Incompressible(Density_Inf, Viscosity_Inf, turb_ke, levelset, config);
-		else node[iPoint]->SetPrimVar_Compressible(Gamma, Gas_Constant, turb_ke);
+		else node[iPoint]->SetPrimVar_Compressible(config, turb_ke);
         
 		/*--- Set the value of the eddy viscosity ---*/
 		if (turb_model != NONE)
