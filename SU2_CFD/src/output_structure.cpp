@@ -5207,7 +5207,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
             cout.precision(4);
             cout.setf(ios::scientific,ios::floatfield);
             cout << Total_CNearFieldOF; }
-          else { cout.width(15); cout << Total_CLift; cout.width(15); cout << Total_CDrag; }
+          else { cout.width(15); cout << min(1000.0,max(-1000.0, Total_CLift)); cout.width(15); cout << min(1000.0,max(-1000.0, Total_CDrag)); }
           cout << endl;
           break;
           
@@ -5234,7 +5234,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
           if (transition) { cout.width(14); cout << log10(residual_transition[0]); cout.width(14); cout << log10(residual_transition[1]); }
       
           if (rotating_frame  && nDim == 3 ) { cout.width(15); cout << Total_CT; cout.width(15); cout << Total_CQ; }
-          else { cout.width(15); cout << Total_CLift; cout.width(15); cout << Total_CDrag; }
+          else { cout.width(15); cout << min(1000.0,max(-1000.0, Total_CLift)); cout.width(15); cout << min(1000.0,max(-1000.0, Total_CDrag)); }
           cout << endl;
           break;
           

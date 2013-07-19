@@ -41,26 +41,26 @@ CSparseMatrix::CSparseMatrix(void) {
 
 CSparseMatrix::~CSparseMatrix(void) {
   
-	if (matrix != NULL) delete [] matrix;
-	if (row_ptr != NULL) delete [] row_ptr;
-	if (col_ind != NULL) delete [] col_ind;
-	if (block != NULL) delete [] block;
-	if (prod_block_vector != NULL) delete [] prod_block_vector;
-	if (prod_row_vector != NULL) delete [] prod_row_vector;
-	if (aux_vector != NULL) delete [] aux_vector;
-  if (invM != NULL) delete [] invM;
-  if (LineletBool != NULL) delete [] LineletBool;
-  if (LineletPoint != NULL) delete [] LineletPoint;
+	if (matrix != NULL)             delete [] matrix;
+	if (row_ptr != NULL)            delete [] row_ptr;
+	if (col_ind != NULL)            delete [] col_ind;
+	if (block != NULL)              delete [] block;
+	if (prod_block_vector != NULL)  delete [] prod_block_vector;
+	if (prod_row_vector != NULL)    delete [] prod_row_vector;
+	if (aux_vector != NULL)         delete [] aux_vector;
+  if (invM != NULL)               delete [] invM;
+  if (LineletBool != NULL)        delete [] LineletBool;
+  if (LineletPoint != NULL)       delete [] LineletPoint;
 
 }
 
 void CSparseMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDomain, unsigned short val_nVar, unsigned short val_nEq, unsigned long* val_row_ptr, unsigned long* val_col_ind, unsigned long val_nnz, bool preconditioner) {
     
-	nPoint = val_nPoint;                // Assign number of points in the mesh
-	nPointDomain = val_nPointDomain;	// Assign number of points in the mesh
-	nVar = val_nVar;                    // Assign number of vars in each block system
-	nEqn = val_nEq;                    // Assign number of eqns in each block system
-	nnz = val_nnz;                      // Assign number of possible non zero blocks
+	nPoint = val_nPoint;              // Assign number of points in the mesh
+	nPointDomain = val_nPointDomain;  // Assign number of points in the mesh
+	nVar = val_nVar;                  // Assign number of vars in each block system
+	nEqn = val_nEq;                   // Assign number of eqns in each block system
+	nnz = val_nnz;                    // Assign number of possible non zero blocks
 	row_ptr = val_row_ptr;
 	col_ind = val_col_ind;
 	
@@ -206,34 +206,38 @@ double CSparseMatrix::SumAbsRowi(unsigned long i) {
 void CSparseMatrix::Gauss_Elimination(unsigned long block_i, double* rhs) {
 	unsigned short jVar, kVar;
 	short iVar;
-	double weight;
-    
+	double weight, aux;
+  
 	GetBlock(block_i, block_i);
-    
-	if (nVar == 1)
-		rhs[0] /= (block[0]+EPS);
+  
+	if (nVar == 1) {
+    if (fabs(block[0]) < EPS) cout <<"Gauss' elimination error, value:" << abs(block[0]) << "." << endl;
+		rhs[0] /= block[0];
+  }
 	else {
-        
-        /*--- Transform system in Upper Matrix ---*/
-        for (iVar = 1; iVar < (short)nVar; iVar++) {
-            for (jVar = 0; jVar < iVar; jVar++) {
-                weight = block[iVar*nVar+jVar]/(block[jVar*nVar+jVar]+EPS*EPS);
-                for (kVar = jVar; kVar < nVar; kVar++)
-                    block[iVar*nVar+kVar] -= weight*block[jVar*nVar+kVar];
-                rhs[iVar] -= weight*rhs[jVar];
-            }
-        }
-        
-        /*--- Backwards substitution ---*/
-        double aux;
-        rhs[nVar-1] = rhs[nVar-1]/(block[nVar*nVar-1]+EPS*EPS);
-        for (iVar = nVar-2; iVar >= 0; iVar--) {
-            aux = 0;
-            for (jVar = iVar+1; jVar < nVar; jVar++)
-                aux += block[iVar*nVar+jVar]*rhs[jVar];
-            rhs[iVar] = (rhs[iVar]-aux)/(block[iVar*nVar+iVar]+EPS*EPS);
-            if (iVar == 0) break;
-        }
+    
+    /*--- Transform system in Upper Matrix ---*/
+    for (iVar = 1; iVar < (short)nVar; iVar++) {
+      for (jVar = 0; jVar < iVar; jVar++) {
+        if (fabs(block[jVar*nVar+jVar]) < EPS) cout <<"Gauss' elimination error, value:" << fabs(block[jVar*nVar+jVar]) << "." << endl;
+        weight = block[iVar*nVar+jVar] / block[jVar*nVar+jVar];
+        for (kVar = jVar; kVar < nVar; kVar++)
+          block[iVar*nVar+kVar] -= weight*block[jVar*nVar+kVar];
+        rhs[iVar] -= weight*rhs[jVar];
+      }
+    }
+    
+    /*--- Backwards substitution ---*/
+    if (fabs(block[nVar*nVar-1]) < EPS) cout <<"Gauss' elimination error, value:" << fabs(block[nVar*nVar-1]) << "." << endl;
+    rhs[nVar-1] = rhs[nVar-1] / block[nVar*nVar-1];
+    for (iVar = nVar-2; iVar >= 0; iVar--) {
+      aux = 0.0;
+      for (jVar = iVar+1; jVar < nVar; jVar++)
+        aux += block[iVar*nVar+jVar]*rhs[jVar];
+      if (fabs(block[iVar*nVar+iVar]) < EPS) cout <<"Gauss' elimination error, value:" << fabs(block[iVar*nVar+iVar]) << "." << endl;
+      rhs[iVar] = (rhs[iVar]-aux) / block[iVar*nVar+iVar];
+      if (iVar == 0) break;
+    }
 	}
 }
 
@@ -241,20 +245,25 @@ void CSparseMatrix::Gauss_Elimination(double* Block, double* rhs) {
 	unsigned short jVar, kVar;
 	short iVar;
 	double weight;
-	
-	/*--- Copy block matrix, note that the original matrix 
+  double aux;
+
+	/*--- Copy block matrix, note that the original matrix
 	 is modified by the algorithm---*/
 	for (kVar = 0; kVar < nVar; kVar++)
 		for (jVar = 0; jVar < nVar; jVar++)
 			block[kVar*nVar+jVar] = Block[kVar*nVar+jVar];
-
-	if (nVar == 1)
-		rhs[0] /= (block[0]+EPS*EPS);
-	else {			
+  
+  
+	if (nVar == 1) {
+    if (fabs(block[0]) < EPS) cout <<"Gauss' elimination error." << endl;
+		rhs[0] /= block[0];
+  }
+	else {
 		/*--- Transform system in Upper Matrix ---*/
 		for (iVar = 1; iVar < (short)nVar; iVar++) {
 			for (jVar = 0; jVar < iVar; jVar++) {
-				weight = block[iVar*nVar+jVar]/(block[jVar*nVar+jVar]+EPS*EPS);
+        if (fabs(block[jVar*nVar+jVar]) < EPS) cout <<"Gauss' elimination error." << endl;
+				weight = block[iVar*nVar+jVar] / block[jVar*nVar+jVar];
 				for (kVar = jVar; kVar < nVar; kVar++)
 					block[iVar*nVar+kVar] -= weight*block[jVar*nVar+kVar];
 				rhs[iVar] -= weight*rhs[jVar];
@@ -262,13 +271,14 @@ void CSparseMatrix::Gauss_Elimination(double* Block, double* rhs) {
 		}
 		
 		/*--- Backwards substitution ---*/
-		double aux;
-		rhs[nVar-1] = rhs[nVar-1]/(block[nVar*nVar-1]+EPS*EPS);
+    if (fabs(block[nVar*nVar-1]) < EPS) cout <<"Gauss' elimination error." << endl;
+		rhs[nVar-1] = rhs[nVar-1] / block[nVar*nVar-1];
 		for (iVar = nVar-2; iVar >= 0; iVar--) {
-			aux = 0;
+			aux = 0.0;
 			for (jVar = iVar+1; jVar < nVar; jVar++)
 				aux += block[iVar*nVar+jVar]*rhs[jVar];
-			rhs[iVar] = (rhs[iVar]-aux)/(block[iVar*nVar+iVar]+EPS*EPS);
+      if (fabs(block[iVar*nVar+iVar]) < EPS) cout <<"Gauss' elimination error." << endl;
+			rhs[iVar] = (rhs[iVar]-aux) / block[iVar*nVar+iVar];
 			if (iVar == 0) break;
 		}
 	}
@@ -1167,53 +1177,4 @@ void CSparseMatrix::SetLin_Sol_History_Header(ofstream *LinConvHist_file, CConfi
 	}
 
 
-}
-
-void CSparseMatrix::SetLin_Sol_History_Iter(ofstream *LinConvHist_file, CConfig *config,
-		unsigned long iExtIter, double linear_resid) {
-
-	/*--- WARNING: These buffers have hard-coded lengths. Note that you
-	 may have to adjust them to be larger if adding more entries. ---*/
-	char begin[200], end[200];
-
-	bool write_heads = ((iExtIter % (config->GetWrt_Con_Freq()*20)) == 0);
-
-
-	/*--- Write the begining of the history file ---*/
-	sprintf (begin, "%12d", int(iExtIter));
-
-	/*--- Write the end of the history file ---*/
-	sprintf (end, "\n");
-
-	if (write_heads) {
-		cout << endl << " Iter" << "     Residual" << endl;
-	}
-
-	/*--- Write the solution on the screen and history file ---*/
-
-	LinConvHist_file[0] << begin << linear_resid;
-	LinConvHist_file[0] << end;
-
-	cout.precision(6);
-	cout.setf(ios::fixed,ios::floatfield);
-	cout.width(5); cout << iExtIter;
-	cout.width(13); cout << linear_resid;
-
-	cout << endl;
-
-	cout.unsetf(ios::fixed);
-	
-}
-
-void CSparseMatrix::PrecondVectorProduct(double* vec, double* prod, double nPoint) {
-	unsigned long iPoint, iVar, jVar;
-	
-	for (iPoint = 0; iPoint < nPoint; iPoint++) {
-		for (iVar = 0; iVar < nVar; iVar++) {
-			prod[iPoint*nVar+iVar] = 0;
-			for (jVar = 0; jVar < nVar; jVar++)
-				prod[iPoint*nVar+iVar] += invM[iPoint*nVar*nVar+iVar*nVar+jVar]*vec[iPoint*nVar+jVar];
-		}
-	}
-	
 }

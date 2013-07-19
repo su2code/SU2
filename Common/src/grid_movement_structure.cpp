@@ -4724,7 +4724,7 @@ double *CFreeFormChunk::GetParametricCoord_Iterative(double *xyz, double *guess,
 			param_coord[iDim] += Indep_Term[iDim];
 		
 		/*--- If the gradient is small, we have converged ---*/
-		if ((abs(Indep_Term[0]) < tol) && (abs(Indep_Term[1]) < tol) && (abs(Indep_Term[2]) < tol))	break;
+		if ((fabs(Indep_Term[0]) < tol) && (fabs(Indep_Term[1]) < tol) && (fabs(Indep_Term[2]) < tol))	break;
 		NormError = sqrt(Indep_Term[0]*Indep_Term[0] + Indep_Term[1]*Indep_Term[1] + Indep_Term[2]*Indep_Term[2]);
 		MinNormError = min(NormError, MinNormError);
 		
@@ -4746,7 +4746,7 @@ double *CFreeFormChunk::GetParametricCoord_Iterative(double *xyz, double *guess,
 	}
 	
 	/*--- There is no convergence of the point inversion algorithm ---*/
-	if ((abs(Indep_Term[0]) > tol) || (abs(Indep_Term[1]) > tol) || (abs(Indep_Term[2]) > tol)) 
+	if ((fabs(Indep_Term[0]) > tol) || (fabs(Indep_Term[1]) > tol) || (fabs(Indep_Term[2]) > tol))
 		cout << "No Convergence Detected After " << iter << " Iterations" << endl;
 	
 	for (iDim = 0; iDim < nDim; iDim++) 

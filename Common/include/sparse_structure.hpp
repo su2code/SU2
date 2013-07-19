@@ -411,22 +411,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetLin_Sol_History_Header(ofstream *LinConvHist_file, CConfig *config);
-
-	/*!
-	 * \brief Write the history file and the convergence on the screen for serial computations.
-	 * \param[in] LinConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iExtIter - Current external iteration.
-	 * \param[in] linear_resid - Current linear residual.
-	 */
-	void SetLin_Sol_History_Iter(ofstream *LinConvHist_file, CConfig *config, unsigned long iExtIter, double linear_residual);
-	
-	/*! 
-	 * \brief Multiply the preconditioner by a vector. 
-	 * \param[in] vec - Vector to be multiplied by the preconditioner.
-	 * \param[out] prod - Result of the product A*vec.
-	 */
-	void PrecondVectorProduct(double* vec, double* prod, double nPoint);
 	
 };
 
