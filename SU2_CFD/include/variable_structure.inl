@@ -255,9 +255,9 @@ inline void CVariable::SetEddyViscosity(unsigned short val_Kind_Turb_Model, CVar
 
 inline void CVariable::SetEnthalpy(void) { }
 
-inline void CVariable::SetPrimVar_Compressible(double Gamma, double Gas_Constant) { }
+inline void CVariable::SetPrimVar_Compressible(CConfig *config) { }
 
-inline void CVariable::SetPrimVar_Compressible(double Gamma, double Gas_Constant, double turb_ke) { }
+inline void CVariable::SetPrimVar_Compressible(CConfig *config, double turb_ke) { }
 
 inline void CVariable::SetPrimVar_Incompressible(double Density_Inf, double levelset, CConfig *config) { }
 
