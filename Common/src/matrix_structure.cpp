@@ -54,16 +54,10 @@ CSysMatrix::~CSysMatrix(void) {
   
 }
 
-void CSysMatrix::Initialize(unsigned short nVar, unsigned short nEqn, CGeometry *geometry, CConfig *config) {
+void CSysMatrix::Initialize(unsigned long nPoint, unsigned long nPointDomain, unsigned short nVar, unsigned short nEqn, CGeometry *geometry) {
 	unsigned long iPoint, *row_ptr, *col_ind, *vneighs, index, nnz;
 	unsigned short iNeigh, nNeigh, Max_nNeigh;
-  
-  unsigned long nPoint = geometry->GetnPoint();
-  unsigned long nPointDomain = geometry->GetnPointDomain();
-	bool preconditioner = false;
-  
-  if (config->GetKind_Linear_Solver_Prec() != NO_PREC) preconditioner = true;
-  
+    
 	/*--- Don't delete *row_ptr, *col_ind because they are asigned to the Jacobian structure. ---*/
 	row_ptr = new unsigned long [nPoint+1];
 	row_ptr[0] = 0;
@@ -93,15 +87,12 @@ void CSysMatrix::Initialize(unsigned short nVar, unsigned short nEqn, CGeometry 
 		}
 	}
   
-	SetIndexes(nPoint, nPointDomain, nVar, nEqn, row_ptr, col_ind, nnz, preconditioner);
-  
-  if (config->GetKind_Linear_Solver_Prec() == LINELET)
-    BuildLineletPreconditioner(geometry, config);
+	SetIndexes(nPoint, nPointDomain, nVar, nEqn, row_ptr, col_ind, nnz);
   
 	delete[] vneighs;
 }
 
-void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDomain, unsigned short val_nVar, unsigned short val_nEq, unsigned long* val_row_ptr, unsigned long* val_col_ind, unsigned long val_nnz, bool preconditioner) {
+void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDomain, unsigned short val_nVar, unsigned short val_nEq, unsigned long* val_row_ptr, unsigned long* val_col_ind, unsigned long val_nnz) {
   
 	nPoint = val_nPoint;              // Assign number of points in the mesh
 	nPointDomain = val_nPointDomain;  // Assign number of points in the mesh
@@ -117,8 +108,7 @@ void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDo
 	prod_row_vector = new double [nVar]; //correct?
 	aux_vector = new double [nVar]; //correct?
 	
-	if (preconditioner)
-		invM = new double [nPoint*nVar*nEqn];	// Reserve memory for the values of the inverse of the preconditioner
+  invM = new double [nPoint*nVar*nEqn];	// Reserve memory for the values of the inverse of the preconditioner
   
 }
 
@@ -332,7 +322,7 @@ void CSysMatrix::Gauss_Elimination(double* Block, double* rhs) {
 	
 }
 
-void CSysMatrix::ProdBlockVector(unsigned long block_i, unsigned long block_j, double* vec) {
+void CSysMatrix::ProdBlockVector(unsigned long block_i, unsigned long block_j, const CSysVector & vec) {
 	unsigned long j = block_j*nVar;
 	unsigned short iVar, jVar;
   
@@ -342,34 +332,6 @@ void CSysMatrix::ProdBlockVector(unsigned long block_i, unsigned long block_j, d
 		prod_block_vector[iVar] = 0;
 		for (jVar = 0; jVar < nVar; jVar++)
 			prod_block_vector[iVar] += block[iVar*nVar+jVar]*vec[j+jVar];
-	}
-}
-
-void CSysMatrix::ProdBlockVector(unsigned long block_i, unsigned long block_j, CSysVector & vec) {
-	unsigned long j = block_j*nVar;
-	unsigned short iVar, jVar;
-  
-	GetBlock(block_i, block_j);
-  
-	for (iVar = 0; iVar < nVar; iVar++) {
-		prod_block_vector[iVar] = 0;
-		for (jVar = 0; jVar < nVar; jVar++)
-			prod_block_vector[iVar] += block[iVar*nVar+jVar]*vec[j+jVar];
-	}
-}
-
-void CSysMatrix::UpperProduct(double* vec, unsigned long row_i) {
-	unsigned long iVar, index;
-  
-	for (iVar = 0; iVar < nVar; iVar++)
-		prod_row_vector[iVar] = 0;
-  
-	for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-		if (col_ind[index] > row_i) {
-			ProdBlockVector(row_i, col_ind[index], vec);
-			for (iVar = 0; iVar < nVar; iVar++)
-				prod_row_vector[iVar] += prod_block_vector[iVar];
-		}
 	}
 }
 
@@ -388,22 +350,6 @@ void CSysMatrix::UpperProduct(CSysVector & vec, unsigned long row_i) {
 	}
 }
 
-void CSysMatrix::LowerProduct(double* vec, unsigned long row_i) {
-	unsigned long iVar, index;
-  
-	for (iVar = 0; iVar < nVar; iVar++)
-		prod_row_vector[iVar] = 0;
-  
-	for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-		if (col_ind[index] < row_i) {
-			ProdBlockVector(row_i, col_ind[index], vec);
-			for (iVar = 0; iVar < nVar; iVar++)
-				prod_row_vector[iVar] += prod_block_vector[iVar];
-		}
-	}
-  
-}
-
 void CSysMatrix::LowerProduct(CSysVector & vec, unsigned long row_i) {
 	unsigned long iVar, index;
   
@@ -420,21 +366,6 @@ void CSysMatrix::LowerProduct(CSysVector & vec, unsigned long row_i) {
   
 }
 
-void CSysMatrix::DiagonalProduct(double* vec, unsigned long row_i) {
-	unsigned long iVar, index;
-  
-	for (iVar = 0; iVar < nVar; iVar++)
-		prod_row_vector[iVar] = 0;
-  
-	for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-		if (col_ind[index] == row_i) {
-			ProdBlockVector(row_i,col_ind[index],vec);
-			for (iVar = 0; iVar < nVar; iVar++)
-				prod_row_vector[iVar] += prod_block_vector[iVar];
-		}
-	}
-}
-
 void CSysMatrix::DiagonalProduct(CSysVector & vec, unsigned long row_i) {
 	unsigned long iVar, index;
   
@@ -448,88 +379,6 @@ void CSysMatrix::DiagonalProduct(CSysVector & vec, unsigned long row_i) {
 				prod_row_vector[iVar] += prod_block_vector[iVar];
 		}
 	}
-}
-
-void CSysMatrix::SendReceive_Solution(double* x, CGeometry *geometry, CConfig *config) {
-  unsigned short iVar, iMarker, MarkerS, MarkerR;
-	unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-	double *Buffer_Receive = NULL, *Buffer_Send = NULL;
-	int send_to, receive_from;
-  
-#ifndef NO_MPI
-  MPI::Status status;
-  MPI::Request send_request, recv_request;
-#endif
-  
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    
-		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
-        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-			
-			MarkerS = iMarker;  MarkerR = iMarker+1;
-      
-      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
-			receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-			
-			nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
-			nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
-      
-      /*--- Allocate Receive and send buffers  ---*/
-      Buffer_Receive = new double [nBufferR_Vector];
-      Buffer_Send = new double[nBufferS_Vector];
-      
-      /*--- Copy the solution that should be sended ---*/
-      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Send[iVertex*nVar+iVar] = x[iPoint*nVar+iVar];
-      }
-      
-#ifndef NO_MPI
-      
-      //      /*--- Send/Receive using non-blocking communications ---*/
-      //      send_request = MPI::COMM_WORLD.Isend(Buffer_Send, nBufferS_Vector, MPI::DOUBLE, 0, send_to);
-      //      recv_request = MPI::COMM_WORLD.Irecv(Buffer_Receive, nBufferR_Vector, MPI::DOUBLE, 0, receive_from);
-      //      send_request.Wait(status);
-      //      recv_request.Wait(status);
-      
-      /*--- Send/Receive information using Sendrecv ---*/
-      MPI::COMM_WORLD.Sendrecv(Buffer_Send, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
-                               Buffer_Receive, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
-      
-#else
-      
-      /*--- Receive information without MPI ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Receive[iVar*nVertexR+iVertex] = Buffer_Send[iVar*nVertexR+iVertex];
-      }
-      
-#endif
-      
-      /*--- Deallocate send buffer ---*/
-      delete [] Buffer_Send;
-      
-      /*--- Do the coordinate transformation ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        
-        /*--- Find point and its type of transformation ---*/
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-        
-        /*--- Copy transformed conserved variables back into buffer. ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-          x[iPoint*nVar+iVar] = Buffer_Receive[iVertex*nVar+iVar];
-        
-      }
-      
-      /*--- Deallocate receive buffer ---*/
-      delete [] Buffer_Receive;
-      
-    }
-    
-	}
-  
 }
 
 void CSysMatrix::SendReceive_Solution(CSysVector & x, CGeometry *geometry, CConfig *config) {
@@ -614,27 +463,28 @@ void CSysMatrix::SendReceive_Solution(CSysVector & x, CGeometry *geometry, CConf
   
 }
 
-void CSysMatrix::RowProduct(double* vec, unsigned long row_i) {
+void CSysMatrix::RowProduct(const CSysVector & vec, unsigned long row_i) {
 	unsigned long iVar, index;
   
 	for (iVar = 0; iVar < nVar; iVar++)
 		prod_row_vector[iVar] = 0;
   
 	for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-		ProdBlockVector(row_i,col_ind[index],vec);
+		ProdBlockVector(row_i, col_ind[index], vec);
 		for (iVar = 0; iVar < nVar; iVar++)
 			prod_row_vector[iVar] += prod_block_vector[iVar];
 	}
 }
 
-void CSysMatrix::MatrixVectorProduct(double* vec, double* prod) {
+void CSysMatrix::MatrixVectorProduct(const CSysVector & vec, CSysVector & prod) {
 	unsigned long iPoint, iVar;
-  
-	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 		RowProduct(vec, iPoint);
 		for (iVar = 0; iVar < nVar; iVar++)
 			prod[iPoint*nVar+iVar] = prod_row_vector[iVar];
 	}
+  
 }
 
 void CSysMatrix::MatrixVectorProduct(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {

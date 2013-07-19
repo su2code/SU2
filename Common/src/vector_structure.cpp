@@ -345,6 +345,51 @@ void CSysVector::CopyToArray(double* u_array) {
     u_array[i] = vec_val[i];
 }
 
+void CSysVector::AddBlock(unsigned long val_ipoint, double *val_residual) {
+  unsigned short iVar;
+  
+  for (iVar = 0; iVar < nVar; iVar++)
+    vec_val[val_ipoint*nVar+iVar] += val_residual[iVar];
+}
+
+void CSysVector::SubtractBlock(unsigned long val_ipoint, double *val_residual) {
+  unsigned short iVar;
+  
+  for (iVar = 0; iVar < nVar; iVar++)
+    vec_val[val_ipoint*nVar+iVar] -= val_residual[iVar];
+}
+
+void CSysVector::SetBlock(unsigned long val_ipoint, double *val_residual) {
+  unsigned short iVar;
+  
+  for (iVar = 0; iVar < nVar; iVar++)
+    vec_val[val_ipoint*nVar+iVar] = val_residual[iVar];
+}
+
+void CSysVector::SetBlock(unsigned long val_ipoint, unsigned short val_var, double val_residual) {
+
+  vec_val[val_ipoint*nVar+val_var] = val_residual;
+}
+
+void CSysVector::SetBlock_Zero(unsigned long val_ipoint) {
+  unsigned short iVar;
+
+  for (iVar = 0; iVar < nVar; iVar++)
+    vec_val[val_ipoint*nVar+iVar] = 0.0;
+}
+
+void CSysVector::SetBlock_Zero(unsigned long val_ipoint, unsigned short val_var) {
+    vec_val[val_ipoint*nVar+val_var] = 0.0;
+}
+
+double CSysVector::GetBlock(unsigned long val_ipoint, unsigned short val_var) {
+  return vec_val[val_ipoint*nVar + val_var];
+}
+
+double *CSysVector::GetBlock(unsigned long val_ipoint) {
+  return &vec_val[val_ipoint*nVar];
+}
+
 double dotProd(const CSysVector & u, const CSysVector & v) {
   
   /*--- check for consistent sizes ---*/

@@ -72,8 +72,8 @@ CLevelSetSolution::CLevelSetSolution(CGeometry *geometry, CConfig *config, unsig
     FlowSolution_i = new double[nDim+1]; for (iVar = 0; iVar < nDim+1; iVar++) FlowSolution_i[iVar]  = 0.0;
     FlowSolution_j = new double[nDim+1]; for (iVar = 0; iVar < nDim+1; iVar++) FlowSolution_j[iVar]  = 0.0;
     
-    xsol = new double [nPoint*nVar];
-    xres = new double [nPoint*nVar];
+    LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
+    LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
     
     /*--- Jacobians and vector structures for implicit computations ---*/
     if (config->GetKind_TimeIntScheme_LevelSet() == EULER_IMPLICIT) {
@@ -95,8 +95,9 @@ CLevelSetSolution::CLevelSetSolution(CGeometry *geometry, CConfig *config, unsig
       
       /*--- Initialization of the structure of the whole Jacobian ---*/
       if (rank == MASTER_NODE) cout << "Initialize jacobian structure (Level Set). MG level: 0." << endl;
-      Jacobian.Initialize(nVar, nVar, geometry, config);
-      
+      Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
+      if (config->GetKind_Linear_Solver_Prec() == LINELET)
+        Jacobian.BuildLineletPreconditioner(geometry, config);
     }
     
     /*--- Computation of gradients by least squares ---*/
@@ -503,7 +504,7 @@ void CLevelSetSolution::Preprocessing(CGeometry *geometry, CSolution **solution_
     bool limiter = (config->GetKind_SlopeLimit() != NONE);
     
 	for (iPoint = 0; iPoint < nPoint; iPoint ++) {
-		Set_Residual_Zero(iPoint);
+		LinSysRes.SetBlock_Zero(iPoint);
 	}
 	
 	/*--- Implicit part ---*/
@@ -588,8 +589,8 @@ void CLevelSetSolution::Upwind_Residual(CGeometry *geometry, CSolution **solutio
 		/*--- Add and subtract Residual ---*/
 		solver->SetResidual(Residual, Jacobian_i, Jacobian_j, Jacobian_MeanFlow_i, Jacobian_MeanFlow_j, config);
 		
-		AddResidual(iPoint, Residual);
-		SubtractResidual(jPoint, Residual);
+		LinSysRes.AddBlock(iPoint, Residual);
+		LinSysRes.SubtractBlock(jPoint, Residual);
 		
 		/*--- Implicit part ---*/
 		if (implicit) {
@@ -625,7 +626,7 @@ void CLevelSetSolution::Source_Residual(CGeometry *geometry, CSolution **solutio
 		Residual[0] = Vol*(levelset-z)*DampingFactor;
 		Jacobian_i[0][0] = Vol*DampingFactor;
 		
-		AddResidual(iPoint, Residual);
+		LinSysRes.AddBlock(iPoint, Residual);
 		if (implicit)
 			Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 	}
@@ -678,7 +679,7 @@ void CLevelSetSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_c
 			conv_solver->SetLevelSetVar(LevelSet_domain, LevelSet_wall);
       conv_solver->SetResidual(Residual, Jacobian_i, Jacobian_j, Jacobian_MeanFlow_i, Jacobian_MeanFlow_j, config);
 			
-			AddResidual(iPoint, Residual);
+			LinSysRes.AddBlock(iPoint, Residual);
 			
 			if (implicit) {
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
@@ -710,7 +711,7 @@ void CLevelSetSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_c
 		Solution[0] = node[iPoint]->GetSolution(0);
 		
 		node[iPoint]->SetSolution_Old(Solution);
-		Set_Residual_Zero(iPoint);
+		LinSysRes.SetBlock_Zero(iPoint);
 		
 		/*--- Includes 1 in the diagonal ---*/
 		if (implicit)
@@ -761,7 +762,7 @@ void CLevelSetSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_conta
 			conv_solver->SetLevelSetVar(LevelSet_domain, LevelSet_mirror);
             conv_solver->SetResidual(Residual, Jacobian_i, Jacobian_j, Jacobian_MeanFlow_i, Jacobian_MeanFlow_j, config);
 			
-			AddResidual(iPoint, Residual);
+			LinSysRes.AddBlock(iPoint, Residual);
 			
 			if (implicit) {
                 Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
@@ -790,7 +791,7 @@ void CLevelSetSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_cont
 		Solution[0] = node[iPoint]->GetSolution(0);
 		
 		node[iPoint]->SetSolution_Old(Solution);
-		Set_Residual_Zero(iPoint);
+		LinSysRes.SetBlock_Zero(iPoint);
 		
 		/*--- Includes 1 in the diagonal ---*/
 		if (implicit)
@@ -819,22 +820,19 @@ void CLevelSetSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution *
 		Jacobian.AddVal2Diag(iPoint,Delta);
         
 		/*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
-		xres[iPoint] = -xres[iPoint];
-		xsol[iPoint] = 0.0;
-		AddRes_RMS(0, xres[iPoint]*xres[iPoint]);
-        AddRes_Max(0, fabs(xres[iPoint]), geometry->node[iPoint]->GetGlobalIndex());
+		LinSysRes[iPoint] = -LinSysRes[iPoint];
+		LinSysSol[iPoint] = 0.0;
+		AddRes_RMS(0, LinSysRes[iPoint]*LinSysRes[iPoint]);
+        AddRes_Max(0, fabs(LinSysRes[iPoint]), geometry->node[iPoint]->GetGlobalIndex());
 	}
 	
     /*--- Initialize residual and solution at the ghost points ---*/
     for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-        xres[iPoint] = 0.0;
-        xsol[iPoint] = 0.0;
+        LinSysRes[iPoint] = 0.0;
+        LinSysSol[iPoint] = 0.0;
     }
 	
 	/*--- Solve the linear system (Krylov subspace methods) ---*/
-  CSysVector rhs_vec(nPoint, nPointDomain, nVar, xres);
-  CSysVector sol_vec(nPoint, nPointDomain, nVar, xsol);
-  
   CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
   
   CPreconditioner* precond = NULL;
@@ -843,33 +841,28 @@ void CLevelSetSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution *
     precond = new CJacobiPreconditioner(Jacobian, geometry, config);
   }
   else if (config->GetKind_Linear_Solver_Prec() == LUSGS) {
-    Jacobian.BuildJacobiPreconditioner();
     precond = new CLUSGSPreconditioner(Jacobian, geometry, config);
   }
   else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
     Jacobian.BuildJacobiPreconditioner();
     precond = new CLineletPreconditioner(Jacobian, geometry, config);
   }
-  else if (config->GetKind_Linear_Solver_Prec() == NO_PREC) {
-    precond = new CIdentityPreconditioner(Jacobian, geometry, config);
-  }
   
   CSysSolve system;
   if (config->GetKind_Linear_Solver() == BCGSTAB)
-    system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, config->GetLinear_Solver_Error(),
+    system.BCGSTAB(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(),
                    config->GetLinear_Solver_Iter(), false);
   else if (config->GetKind_Linear_Solver() == GMRES)
-    system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, config->GetLinear_Solver_Error(),
+    system.GMRES(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(),
                  config->GetLinear_Solver_Iter(), false);
   
-  sol_vec.CopyToArray(xsol);
   delete mat_vec;
   delete precond;
 	
 	/*--- Update solution (system written in terms of increments), be careful with the update of the
 	 scalar equations which includes the density ---*/
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-		node[iPoint]->AddSolution(0, config->GetLinear_Solver_Relax()*xsol[iPoint]);
+		node[iPoint]->AddSolution(0, config->GetLinear_Solver_Relax()*LinSysSol[iPoint]);
     
     /*--- MPI solution ---*/
     Set_MPI_Solution(geometry, config);
@@ -1149,7 +1142,7 @@ void CLevelSetSolution::SetResidual_DualTime(CGeometry *geometry, CSolution **so
                      +  1.0*U_time_nM1[0]*Volume_nM1 ) / (2.0*TimeStep);
 				
 		/*--- Add Residual ---*/
-		AddResidual(iPoint, Residual);
+		LinSysRes.AddBlock(iPoint, Residual);
 		
 		if (implicit) {
       Jacobian_i[0][0] = 0.0;

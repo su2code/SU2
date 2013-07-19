@@ -27,10 +27,11 @@ CFEASolution::CFEASolution(void) : CSolution() { }
 
 CFEASolution::CFEASolution(CGeometry *geometry, CConfig *config) : CSolution() {
 
-	unsigned long nPoint, iPoint;
+	unsigned long iPoint;
 	unsigned short nMarker, iVar, NodesElement;
   
-	nPoint  = geometry->GetnPoint();
+  nPoint = geometry->GetnPoint();
+  nPointDomain = geometry->GetnPointDomain();
 	nDim    = geometry->GetnDim();
 	nMarker = config->GetnMarker_All(); 
 	node    = new CVariable*[nPoint];
@@ -56,13 +57,15 @@ CFEASolution::CFEASolution(CGeometry *geometry, CConfig *config) : CSolution() {
 	}
 
 	/*--- Initialization of matrix structures ---*/
-  StiffMatrixSpace.Initialize(nVar, nVar, geometry, config);
-	StiffMatrixTime.Initialize(nVar, nVar, geometry, config);
-  Jacobian.Initialize(nVar, nVar, geometry, config);
+  StiffMatrixSpace.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
+	StiffMatrixTime.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
+  Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
+  if (config->GetKind_Linear_Solver_Prec() == LINELET)
+    Jacobian.BuildLineletPreconditioner(geometry, config);
 
   /*--- Initialization of linear solver structures ---*/
-	xsol = new double [nPoint*nVar];
-	xres = new double [nPoint*nVar];
+  LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
+  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
 
 	/*--- Computation of gradients by least squares ---*/
 	Smatrix = new double* [nDim];
@@ -168,9 +171,6 @@ CFEASolution::~CFEASolution(void) {
 
 	delete [] StiffMatrix_Elem;
 	delete [] StiffMatrix_Node;
-	
-	delete [] xsol;
-	delete [] xres;
 
 	/*--- Computation of gradients by least-squares ---*/
 	for (iDim = 0; iDim < nDim; iDim++)
@@ -187,7 +187,7 @@ void CFEASolution::Preprocessing(CGeometry *geometry, CSolution **solution_conta
 	
   /*--- Set residuals to zero ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
-		Set_Residual_Zero(iPoint);
+		LinSysRes.SetBlock_Zero(iPoint);
 	}
 	
 	/*--- Set matrix entries to zero ---*/
@@ -358,13 +358,13 @@ void CFEASolution::Source_Residual(CGeometry *geometry, CSolution **solution_con
 			}
 			
 			Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = ElemResidual[0]; Residual[3] = ElemResidual[1]; 
-//			node[Point_0]->AddResidual(Residual);
+//			node[Point_0]->LinSysRes.AddBlock(Residual);
 
 			Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = ElemResidual[2]; Residual[3] = ElemResidual[3]; 
-//			node[Point_1]->AddResidual(Residual);
+//			node[Point_1]->LinSysRes.AddBlock(Residual);
 			
 			Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = ElemResidual[4]; Residual[3] = ElemResidual[5]; 
-//			node[Point_2]->AddResidual(Residual);
+//			node[Point_2]->LinSysRes.AddBlock(Residual);
 			
 		}
 		
@@ -384,19 +384,19 @@ void CFEASolution::Source_Residual(CGeometry *geometry, CSolution **solution_con
 
 			Residual[0] = 0.0;							Residual[1] = 0.0;							Residual[2] = 0.0;
 			Residual[3] = ElemResidual[0];	Residual[4] = ElemResidual[1];	Residual[5] = ElemResidual[2];
-//			node[Point_0]->AddResidual(Residual);
+//			node[Point_0]->LinSysRes.AddBlock(Residual);
 			
 			Residual[0] = 0.0;							Residual[1] = 0.0;							Residual[2] = 0.0;
 			Residual[3] = ElemResidual[3];	Residual[4] = ElemResidual[4];	Residual[5] = ElemResidual[5]; 
-//			node[Point_1]->AddResidual(Residual);
+//			node[Point_1]->LinSysRes.AddBlock(Residual);
 			
 			Residual[0] = 0.0;							Residual[1] = 0.0;							Residual[2] = 0.0;
 			Residual[3] = ElemResidual[6];	Residual[4] = ElemResidual[7];	Residual[5] = ElemResidual[8]; 
-//			node[Point_2]->AddResidual(Residual);
+//			node[Point_2]->LinSysRes.AddBlock(Residual);
 			
 			Residual[0] = 0.0;							Residual[1] = 0.0;							Residual[2] = 0.0;
 			Residual[3] = ElemResidual[9];	Residual[4] = ElemResidual[10];	Residual[5] = ElemResidual[11]; 
-//			node[Point_3]->AddResidual(Residual);
+//			node[Point_3]->LinSysRes.AddBlock(Residual);
 			
 		}
 		
@@ -604,18 +604,18 @@ void CFEASolution::Galerkin_Method(CGeometry *geometry, CSolution **solution_con
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
 		for (iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar+iVar;
-			xsol[total_index] = node[iPoint]->GetSolution(iVar);
-			xres[total_index] = 0.0;
+			LinSysSol[total_index] = node[iPoint]->GetSolution(iVar);
+			LinSysRes[total_index] = 0.0;
 		}
 	
-	StiffMatrixSpace.MatrixVectorProduct(xsol, xres);
+	StiffMatrixSpace.MatrixVectorProduct(LinSysSol, LinSysRes);
 	
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
 		for (iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar+iVar;
-			Residual[iVar] = xres[total_index];
+			Residual[iVar] = LinSysRes[total_index];
 		}
-		SubtractResidual(iPoint, Residual);
+		LinSysRes.SubtractBlock(iPoint, Residual);
 	} 
 }
 
@@ -640,8 +640,8 @@ void CFEASolution::BC_Displacement(CGeometry *geometry, CSolution **solution_con
 		
 		node[iPoint]->SetSolution(Solution);
 		node[iPoint]->SetSolution_Old(Solution);
-    SetResidual(iPoint, Residual);
-		SetResidual(iPoint, Residual);
+    LinSysRes.SetBlock(iPoint, Residual);
+		LinSysRes.SetBlock(iPoint, Residual);
     for (iVar = 0; iVar < nVar; iVar++) {
       total_index = iPoint*nVar+iVar;
       Jacobian.DeleteValsRowi(total_index);
@@ -702,24 +702,24 @@ void CFEASolution::BC_FlowLoad(CGeometry *geometry, CSolution **solution_contain
 		if (nDim == 2) {
 			Residual[0] = 0.0; Residual[1] = 0.0; 
 			Residual[2] = (1.0/2.0)*Press_Elem*Normal_Elem[0]; Residual[3] = (1.0/2.0)*Press_Elem*Normal_Elem[1];
-			AddResidual(Point_0, Residual);
+			LinSysRes.AddBlock(Point_0, Residual);
 			
 			Residual[0] = 0.0; Residual[1] = 0.0; 
 			Residual[2] = (1.0/2.0)*Press_Elem*Normal_Elem[0]; Residual[3] = (1.0/2.0)*Press_Elem*Normal_Elem[1];
-			AddResidual(Point_1, Residual);
+			LinSysRes.AddBlock(Point_1, Residual);
 		}
 		else {
 			Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = 0.0; 
 			Residual[3] = (1.0/3.0)*Press_Elem*Normal_Elem[0]; Residual[4] = (1.0/3.0)*Press_Elem*Normal_Elem[1]; Residual[5] = (1.0/3.0)*Press_Elem*Normal_Elem[2];
-			AddResidual(Point_0, Residual);
+			LinSysRes.AddBlock(Point_0, Residual);
 			
 			Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = 0.0; 
 			Residual[3] = (1.0/3.0)*Press_Elem*Normal_Elem[0]; Residual[4] = (1.0/3.0)*Press_Elem*Normal_Elem[1]; Residual[5] = (1.0/3.0)*Press_Elem*Normal_Elem[2];
-			AddResidual(Point_1, Residual);
+			LinSysRes.AddBlock(Point_1, Residual);
 			
 			Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = 0.0; 
 			Residual[3] = (1.0/3.0)*Press_Elem*Normal_Elem[0]; Residual[4] = (1.0/3.0)*Press_Elem*Normal_Elem[1]; Residual[5] = (1.0/3.0)*Press_Elem*Normal_Elem[2];
-			AddResidual(Point_2, Residual);
+			LinSysRes.AddBlock(Point_2, Residual);
 		}
 		
 	/*
@@ -748,10 +748,10 @@ void CFEASolution::BC_FlowLoad(CGeometry *geometry, CSolution **solution_contain
 			}
 			
 			Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = Vector_BoundElem[0]; Residual[3] = Vector_BoundElem[1];
-			node[Point_0]->AddResidual(Residual);
+			node[Point_0]->LinSysRes.AddBlock(Residual);
 			
 			Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = Vector_BoundElem[2]; Residual[3] = Vector_BoundElem[3];
-			node[Point_1]->AddResidual(Residual);
+			node[Point_1]->LinSysRes.AddBlock(Residual);
 			
 		}
 
@@ -779,13 +779,13 @@ void CFEASolution::BC_FlowLoad(CGeometry *geometry, CSolution **solution_contain
 			}
 			
 			Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = 0.0; Residual[3] = Vector_BoundElem[0]; Residual[4] = Vector_BoundElem[1]; Residual[5] = Vector_BoundElem[2];
-			node[Point_0]->AddResidual(Residual);
+			node[Point_0]->LinSysRes.AddBlock(Residual);
 			
 			Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = 0.0; Residual[3] = Vector_BoundElem[3]; Residual[4] = Vector_BoundElem[4]; Residual[5] = Vector_BoundElem[5];
-			node[Point_1]->AddResidual(Residual);
+			node[Point_1]->LinSysRes.AddBlock(Residual);
 			
 			Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = 0.0; Residual[3] = Vector_BoundElem[6]; Residual[4] = Vector_BoundElem[7]; Residual[5] = Vector_BoundElem[8];
-			node[Point_2]->AddResidual(Residual);
+			node[Point_2]->LinSysRes.AddBlock(Residual);
 						
 		}
 	 */
@@ -837,24 +837,24 @@ void CFEASolution::BC_Load(CGeometry *geometry, CSolution **solution_container, 
 		if (nDim == 2) {
 			Residual[0] = 0.0; Residual[1] = 0.0; 
 			Residual[2] = (1.0/2.0)*TotalLoad*Length_Elem; Residual[3] = 0.0;
-			AddResidual(Point_0, Residual);
+			LinSysRes.AddBlock(Point_0, Residual);
 			
 			Residual[0] = 0.0; Residual[1] = 0.0; 
 			Residual[2] = (1.0/2.0)*TotalLoad*Length_Elem; Residual[3] = 0.0;
-			AddResidual(Point_1, Residual);
+			LinSysRes.AddBlock(Point_1, Residual);
 		}
 		else {
 			Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = 0.0; 
 			Residual[3] = 0.0; Residual[4] = 0.0; Residual[5] = (1.0/3.0)*TotalLoad*Area_Elem;
-			AddResidual(Point_0, Residual);
+			LinSysRes.AddBlock(Point_0, Residual);
 			
 			Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = 0.0; 
 			Residual[3] = 0.0; Residual[4] = 0.0; Residual[5] = (1.0/3.0)*TotalLoad*Area_Elem;
-			AddResidual(Point_1, Residual);
+			LinSysRes.AddBlock(Point_1, Residual);
 			
 			Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = 0.0; 
 			Residual[3] = 0.0; Residual[4] = 0.0; Residual[5] = (1.0/3.0)*TotalLoad*Area_Elem;
-			AddResidual(Point_2, Residual);
+			LinSysRes.AddBlock(Point_2, Residual);
 		}
 		
 
@@ -1005,21 +1005,21 @@ void CFEASolution::SetResidual_DualTime(CGeometry *geometry, CSolution **solutio
 		/*--- Compute Residual ---*/
 		for(iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar+iVar;
-			xres[total_index] = 0.0;
+			LinSysRes[total_index] = 0.0;
 			if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-				xsol[total_index] = ( U_time_nP1[iVar] - U_time_n[iVar] );
+				LinSysSol[total_index] = ( U_time_nP1[iVar] - U_time_n[iVar] );
 			if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
-				xsol[total_index] = ( U_time_nP1[iVar] - (4.0/3.0)*U_time_n[iVar] + (1.0/3.0)*U_time_nM1[iVar] );
+				LinSysSol[total_index] = ( U_time_nP1[iVar] - (4.0/3.0)*U_time_n[iVar] + (1.0/3.0)*U_time_nM1[iVar] );
 		}
 	}
 	
-	StiffMatrixTime.MatrixVectorProduct(xsol, xres);		
+	StiffMatrixTime.MatrixVectorProduct(LinSysSol, LinSysRes);
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
 		for (iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar+iVar;
-			Residual[iVar] = xres[total_index];
+			Residual[iVar] = LinSysRes[total_index];
 		}
-		SubtractResidual(iPoint, Residual);
+		LinSysRes.SubtractBlock(iPoint, Residual);
 	}
 	
 }
@@ -1042,9 +1042,9 @@ void CFEASolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **solu
 		/*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 		for (iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar+iVar;
-			xsol[total_index] = 0.0;
-			AddRes_RMS(iVar, xres[total_index]*xres[total_index]);
-            AddRes_Max(iVar, fabs(xres[total_index]), geometry->node[iPoint]->GetGlobalIndex());
+			LinSysSol[total_index] = 0.0;
+			AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
+            AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex());
 		}
 	}
     
@@ -1052,17 +1052,12 @@ void CFEASolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **solu
     for (iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
         for (iVar = 0; iVar < nVar; iVar++) {
             total_index = iPoint*nVar + iVar;
-            xres[total_index] = 0.0;
-            xsol[total_index] = 0.0;
+            LinSysRes[total_index] = 0.0;
+            LinSysSol[total_index] = 0.0;
         }
     }
 	
 	/*--- Solve the linear system (Krylov subspace methods) ---*/
-  CSysVector rhs_vec((const unsigned int)geometry->GetnPoint(),
-                     (const unsigned int)geometry->GetnPointDomain(), nVar, xres);
-  CSysVector sol_vec((const unsigned int)geometry->GetnPoint(),
-                     (const unsigned int)geometry->GetnPointDomain(), nVar, xsol);
-  
   CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
   
   CPreconditioner* precond = NULL;
@@ -1077,18 +1072,14 @@ void CFEASolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **solu
     Jacobian.BuildJacobiPreconditioner();
     precond = new CLineletPreconditioner(Jacobian, geometry, config);
   }
-  else if (config->GetKind_Linear_Solver_Prec() == NO_PREC) {
-    precond = new CIdentityPreconditioner(Jacobian, geometry, config);
-  }
   
   CSysSolve system;
   
   if (config->GetKind_Linear_Solver() == BCGSTAB)
-    system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, config->GetLinear_Solver_Error(), config->GetLinear_Solver_Iter(), true);
+    system.BCGSTAB(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(), config->GetLinear_Solver_Iter(), true);
   else if (config->GetKind_Linear_Solver() == GMRES)
-    system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, config->GetLinear_Solver_Error(), config->GetLinear_Solver_Iter(), true);
+    system.GMRES(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(), config->GetLinear_Solver_Iter(), true);
   
-  sol_vec.CopyToArray(xsol);
   delete mat_vec;
   delete precond;
   
@@ -1096,8 +1087,8 @@ void CFEASolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **solu
 	Norm = 0.0;
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
 		for (iVar = 0; iVar < nVar; iVar++) {
-			node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*xsol[iPoint*nVar+iVar]);
-			Norm += xsol[iPoint*nVar+iVar]*xsol[iPoint*nVar+iVar];
+			node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*LinSysSol[iPoint*nVar+iVar]);
+			Norm += LinSysSol[iPoint*nVar+iVar]*LinSysSol[iPoint*nVar+iVar];
 		}
 	}
 	Norm = sqrt(Norm);

@@ -342,7 +342,7 @@ void CVolumetricMovement::Initialize_StiffMatrix_Structure(unsigned short nVar, 
 	/*--- solve with preconditioned conjugate gradient method ---*/
 	bool preconditioner = true; 
 
-	StiffMatrix.SetIndexes(nPoint, nPointDomain, nVar, nVar, row_ptr, col_ind, nnz, preconditioner);
+	StiffMatrix.SetIndexes(nPoint, nPointDomain, nVar, nVar, row_ptr, col_ind, nnz);
 
 	/*--- Set StiffMatrix entries to zero ---*/
 	StiffMatrix.SetValZero();
@@ -1359,8 +1359,8 @@ void CVolumetricMovement::SpringMethod(CGeometry *geometry, CConfig *config, boo
     }
     
     /*--- Solve the linear system (Krylov subspace methods) ---*/
-    CSysVector rhs_vec(nPoint, nPointDomain, nDim, rhs);
-    CSysVector sol_vec(nPoint, nPointDomain, nDim, usol);
+    CSysVector LinSysRes(nPoint, nPointDomain, nDim, rhs);
+    CSysVector LinSysSol(nPoint, nPointDomain, nDim, usol);
     
     CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
 
@@ -1369,10 +1369,7 @@ void CVolumetricMovement::SpringMethod(CGeometry *geometry, CConfig *config, boo
     precond = new CJacobiPreconditioner(StiffMatrix, geometry, config);
     
     CSysSolve system;
-    IterLinSol = system.ConjugateGradient(rhs_vec, sol_vec, *mat_vec, *precond, NumError, 300, true);
-    
-    /*--- Copy the solution to the array ---*/
-    sol_vec.CopyToArray(usol);
+    IterLinSol = system.ConjugateGradient(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 300, true);
     
     /*--- Deallocate memory needed by the Krylov linear solver ---*/
     delete mat_vec;
@@ -1440,8 +1437,8 @@ void CVolumetricMovement::FEAMethod(CGeometry *geometry, CConfig *config, bool U
       SetDomainDisplacements(geometry, config);
     
     /*--- Solve the linear system (Krylov subspace methods) ---*/
-    CSysVector rhs_vec(nPoint, nPointDomain, nDim, rhs);
-    CSysVector sol_vec(nPoint, nPointDomain, nDim, usol);
+    CSysVector LinSysRes(nPoint, nPointDomain, nDim, rhs);
+    CSysVector LinSysSol(nPoint, nPointDomain, nDim, usol);
     
     CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
     
@@ -1451,11 +1448,8 @@ void CVolumetricMovement::FEAMethod(CGeometry *geometry, CConfig *config, bool U
     precond = new CLUSGSPreconditioner(StiffMatrix, geometry, config);
     
     CSysSolve system;
-//    IterLinSol = system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, NumError, 300, true);
-    IterLinSol = system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, NumError, 300, true);
-    
-    /*--- Copy the solution to the array ---*/
-    sol_vec.CopyToArray(usol);
+//    IterLinSol = system.BCGSTAB(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 300, true);
+    IterLinSol = system.GMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 300, true);
     
     /*--- Deallocate memory needed by the Krylov linear solver ---*/
     delete mat_vec;

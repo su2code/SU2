@@ -93,17 +93,14 @@ protected:
 	double **Smatrix,	/*!< \brief Auxiliary structure for computing gradients by least-squares */
 	**cvector;			 /*!< \brief Auxiliary structure for computing gradients by least-squares */
 
+public:
+  
   CSysVector LinSysSol;		/*!< \brief vector to store iterative solution of implicit linear system. */
   CSysVector LinSysRes;		/*!< \brief vector to store iterative residual of implicit linear system. */
 	CSysMatrix Jacobian; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
-
+  
 	CSysMatrix StiffMatrix; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations, and grid movement. */
 
-public:
-  
-  double *xsol;		/*!< \brief vector to store iterative solution of implicit linear system. */
-	double *xres;		/*!< \brief vector to store iterative residual of implicit linear system. */
-  
 	CVariable** node;	/*!< \brief Vector which the define the variables for each problem. */
   
   CSysMatrix DirectJacobian; /*!< \brief Sparse Jacobian structure for direct, discrete part of hybrid computation (TODO move to the right place). */
@@ -118,70 +115,8 @@ public:
 	 * \brief Destructor of the class.
 	 */
 	virtual ~CSolution(void);
-    
-    /*!
-	 * \brief Subtract val_residual to the residual.
-	 * \param[in] val_ipoint - index of the point where subtract the residual.
-     * \param[in] val_residual - Value to subtract to the residual.
-	 */
-    void SubtractResidual(unsigned long val_ipoint, double *val_residual);
-    
-    /*!
-	 * \brief Add val_residual to the residual.
-	 * \param[in] val_ipoint - index of the point where add the residual.
-     * \param[in] val_residual - Value to add to the residual.
-	 */
-    void AddResidual(unsigned long val_ipoint, double *val_residual);
-    
-    /*!
-	 * \brief Set val_residual to the residual.
-	 * \param[in] val_ipoint - index of the point where set the residual.
-     * \param[in] val_var - inde of the residual to be set.
-     * \param[in] val_residual - Value to set to the residual.
-	 */
-    void SetResidual(unsigned long val_ipoint, unsigned short val_var, double val_residual);
-    
-    /*!
-	 * \brief Set val_residual to the residual.
-	 * \param[in] val_ipoint - index of the point where set the residual.
-     * \param[in] val_residual - Value to set to the residual.
-	 */
-    void SetResidual(unsigned long val_ipoint, double *val_residual);
-    
-    /*!
-	 * \brief Set the residual to zero.
-	 * \param[in] val_ipoint - index of the point where set the residual.
-	 */
-    void Set_Residual_Zero(unsigned long val_ipoint);
-    
-    /*!
-	 * \brief Set the velocity residual to zero.
-	 * \param[in] val_ipoint - index of the point where set the residual.
-	 */
-    void SetVel_Residual_Zero(unsigned long val_ipoint);
-    
-    /*!
-	 * \brief Set the energy residual to zero.
-	 * \param[in] val_ipoint - index of the point where set the residual.
-	 */
-    void SetEnergy_Residual_Zero(unsigned long val_ipoint);
-	
-    /*!
-	 * \brief Get the value of the residual.
-	 * \param[in] val_ipoint - index of the point where set the residual.
-     * \return Pointer to the residual.
-	 */
-    double *GetResidual(unsigned long val_ipoint);
-	
-    /*!
-	 * \brief Get the value of the residual.
-	 * \param[in] val_ipoint - index of the point where set the residual.
-     * \param[in] val_var - inde of the residual to be set.
-     * \return Value of the residual.
-	 */
-    double GetResidual(unsigned long val_ipoint, unsigned short val_var);
-    
-    /*!
+     
+  /*!
 	 * \brief Set number of linear solver iterations.
 	 * \param[in] val_iterlinsolver - Number of linear iterations.
 	 */
@@ -210,7 +145,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-    virtual void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
+  virtual void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
     
 	/*!
 	 * \brief Get number of linear solver iterations.
@@ -3367,12 +3302,12 @@ public:
     
 	// Another set of matrix structures for the Lm equations
 	CSysMatrix JacobianItmc; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
-	double *xsolItmc;		/*!< \brief vector to store iterative solution of implicit linear system. */
-	double *xresItmc;		/*!< \brief vector to store iterative residual of implicit linear system. */
+	double *LinSysSolItmc;		/*!< \brief vector to store iterative solution of implicit linear system. */
+	double *LinSysResItmc;		/*!< \brief vector to store iterative residual of implicit linear system. */
 	double *rhsItmc;		/*!< \brief right hand side of implicit linear system. */
 	CSysMatrix JacobianReth; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
-	double *xsolReth;		/*!< \brief vector to store iterative solution of implicit linear system. */
-	double *xresReth;		/*!< \brief vector to store iterative residual of implicit linear system. */
+	double *LinSysSolReth;		/*!< \brief vector to store iterative solution of implicit linear system. */
+	double *LinSysResReth;		/*!< \brief vector to store iterative residual of implicit linear system. */
 	double *rhsReth;		/*!< \brief right hand side of implicit linear system. */
 };
 

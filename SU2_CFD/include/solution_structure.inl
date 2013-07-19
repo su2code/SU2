@@ -23,24 +23,6 @@
 
 #pragma once
 
-inline void CSolution::AddResidual(unsigned long val_ipoint, double *val_residual) { for (unsigned short iVar = 0; iVar < nVar; iVar++) xres[val_ipoint*nVar+iVar] += val_residual[iVar]; }
-
-inline void CSolution::SubtractResidual(unsigned long val_ipoint, double *val_residual) { for (unsigned short iVar = 0; iVar < nVar; iVar++) xres[val_ipoint*nVar+iVar] -= val_residual[iVar]; }
-
-inline void CSolution::SetResidual(unsigned long val_ipoint, double *val_residual) { for (unsigned short iVar = 0; iVar < nVar; iVar++) xres[val_ipoint*nVar+iVar] = val_residual[iVar]; }
-
-inline void CSolution::SetResidual(unsigned long val_ipoint, unsigned short val_var, double val_residual) { xres[val_ipoint*nVar+val_var] = val_residual; } 
-
-inline void CSolution::Set_Residual_Zero(unsigned long val_ipoint) { for (unsigned short iVar = 0; iVar < nVar; iVar++) xres[val_ipoint*nVar+iVar] = 0.0; }
-
-inline void CSolution::SetVel_Residual_Zero(unsigned long val_ipoint) { for (unsigned short iDim = 0; iDim < nDim; iDim++) xres[val_ipoint*nVar+iDim+1] = 0.0; }
-
-inline void CSolution::SetEnergy_Residual_Zero(unsigned long val_ipoint) { xres[val_ipoint*nVar+nDim+1] = 0.0; }
-
-inline double CSolution::GetResidual(unsigned long val_ipoint, unsigned short val_var) { return xres[val_ipoint*nVar + val_var]; }
-
-inline double *CSolution::GetResidual(unsigned long val_ipoint) { return &xres[val_ipoint*nVar]; }
-
 inline void CSolution::SetIterLinSolver(unsigned short val_iterlinsolver) { IterLinSolver = val_iterlinsolver; }
 
 inline unsigned short CSolution::GetnSpecies(void) { return 0; }

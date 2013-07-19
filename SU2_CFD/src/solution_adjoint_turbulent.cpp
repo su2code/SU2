@@ -26,7 +26,7 @@
 CAdjTurbSolution::CAdjTurbSolution(void) : CSolution() {}
 
 CAdjTurbSolution::CAdjTurbSolution(CGeometry *geometry, CConfig *config) : CSolution() {
-	unsigned long iPoint, nPoint = geometry->GetnPoint();
+	unsigned long iPoint;
 	unsigned short nMarker, iDim, iVar;//, nNeigh;
 
 	nDim = geometry->GetnDim();
@@ -43,7 +43,10 @@ CAdjTurbSolution::CAdjTurbSolution(CGeometry *geometry, CConfig *config) : CSolu
 			nVar = 2;		
 			break;
 	}
-    
+  
+  nPoint = geometry->GetnPoint();
+  nPointDomain = geometry->GetnPointDomain();
+  
     unsigned short nTotalVar = nVar + (nDim + 2); //nTotalVar = # turb vars + # flow vars
 
 	Residual   = new double [nVar]; Residual_RMS = new double[nVar];
@@ -106,19 +109,25 @@ CAdjTurbSolution::CAdjTurbSolution(CGeometry *geometry, CConfig *config) : CSolu
     
     
 	/*--- Initialization of the structure of the whole Jacobian ---*/
-	Jacobian.Initialize(nVar, nVar, geometry, config);
+	Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
+  if (config->GetKind_Linear_Solver_Prec() == LINELET)
+    Jacobian.BuildLineletPreconditioner(geometry, config);
     Jacobian.SetValZero();
-	xsol = new double [nPoint*nVar];
-	xres = new double [nPoint*nVar];
+  LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
+  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
 
 	/*--- Initialization of discrete sparse Jacobian for Hybrid ---*/
 	// nVar = # turb vars, nTotalVar = # turb vars + # flow vars
-	DirectJacobian.Initialize(nTotalVar, nVar, geometry, config);
+	DirectJacobian.Initialize(nPoint, nPointDomain, nTotalVar, nVar, geometry);
+  if (config->GetKind_Linear_Solver_Prec() == LINELET)
+    Jacobian.BuildLineletPreconditioner(geometry, config);
 	DirectJacobian.SetValZero();
 
 	/*--- Initialization of discrete sparse Jacobian for Hybrid BC ---*/
 	// nVar = # turb vars, nTotalVar = # turb vars + # flow vars
-	DirectBCJacobian.Initialize(nTotalVar, nVar, geometry, config);
+	DirectBCJacobian.Initialize(nPoint, nPointDomain, nTotalVar, nVar, geometry);
+  if (config->GetKind_Linear_Solver_Prec() == LINELET)
+    Jacobian.BuildLineletPreconditioner(geometry, config);
 	DirectBCJacobian.SetValZero();
 
 	/*--- Computation of gradients by least squares ---*/
@@ -502,10 +511,10 @@ void CAdjTurbSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solutio
         if (config->GetExtIter() == 0) {
             for (iVar = 0; iVar < nVar; iVar++)
                 Residual[iVar] = EPS;
-            //node[Point]->AddResidual(Residual);
-            Set_Residual_Zero(Point);
+            //node[Point]->LinSysRes.AddBlock(Residual);
+            LinSysRes.SetBlock_Zero(Point);
         } else
-            Set_Residual_Zero(Point);
+            LinSysRes.SetBlock_Zero(Point);
 //		node[Point]->SetRes_TruncErrorZero();
 		Jacobian.DeleteValsRowi(Point); // & includes 1 in the diagonal
 	}
@@ -536,7 +545,7 @@ void CAdjTurbSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solutio
 
 		Solution[0] = node[Point]->GetSolution(0) - 2.0*Vol_i*flux/normal2;
 		node[Point]->SetSolution_Old(Solution);
-		node[Point]->Set_Residual_Zero();
+		node[Point]->LinSysRes.SetBlock_Zero();
 //		node[Point]->SetRes_TruncErrorZero();
 		Jacobian.DeleteValsRowi(Point); // & includes 1 in the diagonal
 	}
@@ -626,7 +635,7 @@ void CAdjTurbSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_co
 
 				/*--- Add Residuals and Jacobians ---*/
 				conv_solver->SetResidual(Residual, Jacobian_ii, NULL, config);
-				AddResidual(Point, Residual);
+				LinSysRes.AddBlock(Point, Residual);
 				Jacobian.AddBlock(Point, Point, Jacobian_ii);
 			}
 
@@ -637,7 +646,7 @@ void CAdjTurbSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_co
 void CAdjTurbSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 
 	for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-		Set_Residual_Zero(iPoint); // Initialize the residual vector
+		LinSysRes.SetBlock_Zero(iPoint); // Initialize the residual vector
     
     if ((config->GetKind_Adjoint() != HYBRID) || ((config->GetKind_Adjoint() == HYBRID) && (config->GetExtIter() == 0)))
         Jacobian.SetValZero();
@@ -785,8 +794,8 @@ void CAdjTurbSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution
 				solver->SetResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 
 				/*--- Add and Subtract Residual ---*/
-				AddResidual(iPoint, Residual_i);
-				AddResidual(jPoint, Residual_j);
+				LinSysRes.AddBlock(iPoint, Residual_i);
+				LinSysRes.AddBlock(jPoint, Residual_j);
 				Jacobian.AddBlock(iPoint,iPoint,Jacobian_ii);
 				Jacobian.AddBlock(iPoint,jPoint,Jacobian_ij);
 				Jacobian.AddBlock(jPoint,iPoint,Jacobian_ji);
@@ -835,8 +844,8 @@ void CAdjTurbSolution::Viscous_Residual(CGeometry *geometry, CSolution **solutio
       
       // Add and Subtract Residual (CONSERVATIVE FORM)
       solver->SetResidual(Residual, Jacobian_ii, Jacobian_jj, config);
-      AddResidual(iPoint, Residual);
-      SubtractResidual(jPoint, Residual);
+      LinSysRes.AddBlock(iPoint, Residual);
+      LinSysRes.SubtractBlock(jPoint, Residual);
       Jacobian.AddBlock(iPoint,iPoint,Jacobian_ii);
       Jacobian.AddBlock(iPoint,jPoint,Jacobian_jj);
       Jacobian.SubtractBlock(jPoint,iPoint,Jacobian_ii);
@@ -844,8 +853,8 @@ void CAdjTurbSolution::Viscous_Residual(CGeometry *geometry, CSolution **solutio
       
       /*		// Add and Subtract Residual (NON-CONSERVATIVE FORM)
 			 solver->SetResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
-			 AddResidual(iPoint, Residual_i);
-			 AddResidual(jPoint, Residual_j);
+			 LinSysRes.AddBlock(iPoint, Residual_i);
+			 LinSysRes.AddBlock(jPoint, Residual_j);
 			 Jacobian.AddBlock(iPoint,iPoint,Jacobian_ii);
 			 Jacobian.AddBlock(iPoint,jPoint,Jacobian_ij);
 			 Jacobian.AddBlock(jPoint,iPoint,Jacobian_ji);
@@ -1222,8 +1231,8 @@ void CAdjTurbSolution::Viscous_Residual(CGeometry *geometry, CSolution **solutio
         
       }
       
-      AddResidual(iPoint, Residual_i);
-      AddResidual(jPoint, Residual_j);
+      LinSysRes.AddBlock(iPoint, Residual_i);
+      LinSysRes.AddBlock(jPoint, Residual_j);
       
       for (unsigned short iVar = 0; iVar<nTotalVar; iVar++){
         delete [] DJ_ij[iVar];
@@ -1284,7 +1293,7 @@ void CAdjTurbSolution::Source_Residual(CGeometry *geometry, CSolution **solution
 
 			// Add and Subtract Residual
 			solver->SetResidual(Residual, Jacobian_ii, NULL, config);
-			AddResidual(iPoint, Residual);
+			LinSysRes.AddBlock(iPoint, Residual);
 			Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);
             
         /*--- Set up discrete system of Hybrid Adjoint --*/
@@ -1576,7 +1585,7 @@ void CAdjTurbSolution::Source_Residual(CGeometry *geometry, CSolution **solution
 
 			}
             
-            AddResidual(iPoint, Residual);
+            LinSysRes.AddBlock(iPoint, Residual);
 
 			for (unsigned short iVar = 0; iVar<nTotalVar; iVar++){
 				delete [] DJ_ii[iVar];
@@ -1618,8 +1627,8 @@ void CAdjTurbSolution::Source_Residual(CGeometry *geometry, CSolution **solution
 		// Add and Subtract Residual
 		//solver->SetResidual(Residual, Jacobian_ii, Jacobian_jj, config);
 		second_solver->SetResidual(Residual, Jacobian_ii, Jacobian_jj, config);
-		AddResidual(iPoint, Residual);
-		SubtractResidual(jPoint, Residual);
+		LinSysRes.AddBlock(iPoint, Residual);
+		LinSysRes.SubtractBlock(jPoint, Residual);
 		Jacobian.AddBlock(iPoint,iPoint,Jacobian_ii);
 		Jacobian.AddBlock(iPoint,jPoint,Jacobian_jj);
 		Jacobian.SubtractBlock(jPoint,iPoint,Jacobian_ii);
@@ -1663,8 +1672,8 @@ void CAdjTurbSolution::SourceConserv_Residual(CGeometry *geometry, CSolution **s
 //
 //		// Add and Subtract Residual
 //		solver->SetResidual(Residual, Jacobian_ii, Jacobian_jj, config);
-//		AddResidual(iPoint, Residual);
-//		SubtractResidual(jPoint, Residual);
+//		LinSysRes.AddBlock(iPoint, Residual);
+//		LinSysRes.SubtractBlock(jPoint, Residual);
 //		Jacobian.AddBlock(iPoint,iPoint,Jacobian_ii);
 //		Jacobian.AddBlock(iPoint,jPoint,Jacobian_jj);
 //		Jacobian.SubtractBlock(jPoint,iPoint,Jacobian_ii);
@@ -1700,10 +1709,10 @@ void CAdjTurbSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **
         /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 		for (iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar+iVar;
-			xres[total_index] = -xres[total_index];
-			xsol[total_index] = 0.0;
-            AddRes_RMS(iVar, xres[total_index]*xres[total_index]);
-            AddRes_Max(iVar, fabs(xres[total_index]), geometry->node[iPoint]->GetGlobalIndex());
+			LinSysRes[total_index] = -LinSysRes[total_index];
+			LinSysSol[total_index] = 0.0;
+            AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
+            AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex());
 		}
 	}
     
@@ -1711,17 +1720,12 @@ void CAdjTurbSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **
     for (iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
         for (iVar = 0; iVar < nVar; iVar++) {
             total_index = iPoint*nVar + iVar;
-            xres[total_index] = 0.0;
-            xsol[total_index] = 0.0;
+            LinSysRes[total_index] = 0.0;
+            LinSysSol[total_index] = 0.0;
         }
     }
     
 	/*--- Solve the linear system (Krylov subspace methods) ---*/
-  CSysVector rhs_vec((const unsigned int)geometry->GetnPoint(),
-                     (const unsigned int)geometry->GetnPointDomain(), nVar, xres);
-  CSysVector sol_vec((const unsigned int)geometry->GetnPoint(),
-                     (const unsigned int)geometry->GetnPointDomain(), nVar, xsol);
-  
   CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
   
   CPreconditioner* precond = NULL;
@@ -1736,20 +1740,15 @@ void CAdjTurbSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **
     Jacobian.BuildJacobiPreconditioner();
     precond = new CLineletPreconditioner(Jacobian, geometry, config);
   }
-  //else if (config->GetKind_AdjTurb_Linear_Prec() == NO_PREC)
-  else if (config->GetKind_Linear_Solver_Prec() == NO_PREC) {
-    precond = new CIdentityPreconditioner(Jacobian, geometry, config);
-  }
   
   CSysSolve system;
   if (config->GetKind_Linear_Solver() == BCGSTAB)
-    system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, config->GetAdjTurb_Linear_Error(),
+    system.BCGSTAB(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetAdjTurb_Linear_Error(),
                    config->GetAdjTurb_Linear_Iter(), false);
   else if (config->GetKind_Linear_Solver() == GMRES)
-    system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, config->GetAdjTurb_Linear_Error(),
+    system.GMRES(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetAdjTurb_Linear_Error(),
                  config->GetAdjTurb_Linear_Iter(), false); ///this -> # iterations needed to converge... or make true for output
   
-  sol_vec.CopyToArray(xsol);
   delete mat_vec;
   delete precond;
   
@@ -1757,9 +1756,9 @@ void CAdjTurbSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
 		for (iVar = 0; iVar < nVar; iVar++)
 			if (config->GetKind_Adjoint() == CONTINUOUS)
-        node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*xsol[iPoint*nVar+iVar]);
+        node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*LinSysSol[iPoint*nVar+iVar]);
       else if (config->GetKind_Adjoint() == HYBRID)
-        node[iPoint]->SetSolution(iVar,xsol[iPoint*nVar+iVar]);
+        node[iPoint]->SetSolution(iVar,LinSysSol[iPoint*nVar+iVar]);
 	}
   
   /*--- MPI solution ---*/

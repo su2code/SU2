@@ -53,8 +53,8 @@ CSolution::CSolution(void) {
 	Jacobian_jj = NULL;
 	Smatrix = NULL;
 	cvector = NULL;
-  xsol = NULL;
-	xres = NULL;
+  LinSysSol = NULL;
+	LinSysRes = NULL;
   node = NULL;
 
 }
@@ -82,8 +82,8 @@ CSolution::~CSolution(void) {
 	if (Res_Visc_i != NULL) delete [] Res_Visc_i;
 	if (Res_Visc_j != NULL) delete [] Res_Visc_j;
 	if (Res_Sour_j != NULL) delete [] Res_Sour_j;
-  if (xsol != NULL) delete [] xsol;
-	if (xres != NULL) delete [] xres;
+  if (LinSysSol != NULL) delete [] LinSysSol;
+	if (LinSysRes != NULL) delete [] LinSysRes;
 	if (rhs != NULL) delete [] rhs;
   
 	if (Jacobian_i != NULL) {
@@ -250,8 +250,8 @@ void CSolution::SetGrid_Movement_Residual (CGeometry *geometry, CConfig *config)
 		for (unsigned short iVar = 0; iVar < nVar; iVar++)
 			Residual[iVar] = ProjGridVel*Solution[iVar];
 
-		SubtractResidual(iPoint, Residual);
-		AddResidual(jPoint, Residual);
+		LinSysRes.SubtractBlock(iPoint, Residual);
+		LinSysRes.AddBlock(jPoint, Residual);
 
 	}
 
@@ -277,7 +277,7 @@ void CSolution::SetGrid_Movement_Residual (CGeometry *geometry, CConfig *config)
 			for (unsigned short iVar = 0; iVar < nVar; iVar++)
 				Residual[iVar] = ProjGridVel*Solution[iVar];
 
-			AddResidual(Point, Residual);
+			LinSysRes.AddBlock(Point, Residual);
 		}
 	}
 }

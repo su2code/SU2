@@ -2703,17 +2703,17 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **so
       /*--- Residual (first, second and third system of equations) ---*/
       if (config->GetWrt_Residuals()) {
         for (iVar = 0; iVar < nVar_First; iVar++) {
-          Data[jVar][jPoint] = solution[FirstIndex]->GetResidual(iPoint, iVar);
+          Data[jVar][jPoint] = solution[FirstIndex]->LinSysRes.GetBlock(iPoint, iVar);
           jVar++;
         }
         
         for (iVar = 0; iVar < nVar_Second; iVar++) {
-          Data[jVar][jPoint] = solution[SecondIndex]->GetResidual(iPoint, iVar);
+          Data[jVar][jPoint] = solution[SecondIndex]->LinSysRes.GetBlock(iPoint, iVar);
           jVar++;
         }
         
         for (iVar = 0; iVar < nVar_Third; iVar++) {
-          Data[jVar][jPoint] = solution[ThirdIndex]->GetResidual(iPoint, iVar);
+          Data[jVar][jPoint] = solution[ThirdIndex]->LinSysRes.GetBlock(iPoint, iVar);
           jVar++;
         }
       }
@@ -2998,7 +2998,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolution **so
         /*--- Get this variable into the temporary send buffer. ---*/
         Buffer_Send_Var[jPoint] = solution[CurrentIndex]->node[iPoint]->GetSolution(jVar);
         if (config->GetWrt_Residuals()) {
-          Buffer_Send_Res[jPoint] = solution[CurrentIndex]->GetResidual(iPoint, jVar);
+          Buffer_Send_Res[jPoint] = solution[CurrentIndex]->LinSysRes.GetBlock(iPoint, jVar);
         }
         
         /*--- Only send/recv the volumes & global indices during the first loop ---*/

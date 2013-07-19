@@ -41,6 +41,8 @@ CAdjPlasmaSolution::CAdjPlasmaSolution(CGeometry *geometry, CConfig *config) : C
 	nDiatomics  = config->GetnDiatomics();
 	nSpecies    = config->GetnSpecies();
 	nVar        = nMonatomics*(nDim+2) + nDiatomics*(nDim+3);
+  nPoint = geometry->GetnPoint();
+  nPointDomain = geometry->GetnPointDomain();
 	node = new CVariable*[geometry->GetnPoint()];
 
 	/*--- Define some auxiliary vectors related to the residual ---*/
@@ -66,8 +68,8 @@ CAdjPlasmaSolution::CAdjPlasmaSolution(CGeometry *geometry, CConfig *config) : C
 //  Vector = new double[nDim];
 	Vector_i = new double[nDim]; Vector_j = new double[nDim];
 
-  xsol = new double [geometry->GetnPoint()*nVar];
-  xres = new double [geometry->GetnPoint()*nVar];
+  LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
+  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
   
 	/*--- Jacobians and vector structures for implicit computations ---*/
 	if (config->GetKind_TimeIntScheme_Plasma() == EULER_IMPLICIT) {
@@ -95,7 +97,9 @@ CAdjPlasmaSolution::CAdjPlasmaSolution(CGeometry *geometry, CConfig *config) : C
 			for (iVar = 0; iVar < nVar; iVar++)
 				Jacobian_Axisymmetric[iVar] = new double[nVar];
 		}
-		Jacobian.Initialize(nVar, nVar, geometry, config);
+		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
+    if (config->GetKind_Linear_Solver_Prec() == LINELET)
+      Jacobian.BuildLineletPreconditioner(geometry, config);
 	}
 
 	/*--- Computation of gradients by least squares ---*/
@@ -261,7 +265,6 @@ CAdjPlasmaSolution::~CAdjPlasmaSolution(void) {
 	delete [] Solution_i; delete [] Solution_j;
 //  delete [] Vector;
 	delete [] Vector_i; delete [] Vector_j;
-	delete [] xsol; delete [] xres;
 	delete [] Sens_Geo; delete [] Sens_Mach;
 	delete [] Sens_AoA; delete [] Sens_Press;
 	delete [] Sens_Temp; delete [] Phi_Inf;
@@ -579,7 +582,7 @@ void CAdjPlasmaSolution::Preprocessing(CGeometry *geometry, CSolution **solution
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
 		
 		/*--- Initialize the convective residual vector ---*/
-		Set_Residual_Zero(iPoint);
+		LinSysRes.SetBlock_Zero(iPoint);
 		
 	}
   
@@ -707,10 +710,10 @@ void CAdjPlasmaSolution::Centered_Residual(CGeometry *geometry, CSolution **solu
 //		cout << Res_Visc_j[0] <<" "<< Res_Visc_j[1] <<" "<< Res_Visc_j[2] <<" "<< Res_Visc_j[3] <<" "<< Res_Visc_j[4] <<" "<< Res_Visc_j[5] <<" "<< Res_Visc_j[6] <<" "<< Res_Visc_j[7] <<endl;
 
 		/*--- Update convective and artificial dissipation residuals ---*/
-		SubtractResidual(iPoint, Res_Conv_i);
-		SubtractResidual(jPoint, Res_Conv_j);
-    SubtractResidual(iPoint, Res_Visc_i);
-    SubtractResidual(jPoint, Res_Visc_j);
+		LinSysRes.SubtractBlock(iPoint, Res_Conv_i);
+		LinSysRes.SubtractBlock(jPoint, Res_Conv_j);
+    LinSysRes.SubtractBlock(iPoint, Res_Visc_i);
+    LinSysRes.SubtractBlock(jPoint, Res_Visc_j);
 		
 		/*--- Implicit contribution to the residual ---*/
 		if (implicit) {
@@ -786,8 +789,8 @@ void CAdjPlasmaSolution::Upwind_Residual(CGeometry *geometry, CSolution **soluti
 		solver->SetResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 		
 		/*--- Add and Subtract Residual ---*/
-		SubtractResidual(iPoint, Residual_i);
-		SubtractResidual(jPoint, Residual_j);
+		LinSysRes.SubtractBlock(iPoint, Residual_i);
+		LinSysRes.SubtractBlock(jPoint, Residual_j);
 		
     /*--- Implicit contribution to the residual ---*/
 		if (implicit) {
@@ -857,7 +860,7 @@ void CAdjPlasmaSolution::Source_Residual(CGeometry *geometry, CSolution **soluti
           Jacobian_ii[iVar][jVar] = Jacobian_Axisymmetric[jVar][iVar];
         }
       }
-      AddResidual(iPoint, Residual_Axisymmetric);
+      LinSysRes.AddBlock(iPoint, Residual_Axisymmetric);
       if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);	
     }
     
@@ -869,7 +872,7 @@ void CAdjPlasmaSolution::Source_Residual(CGeometry *geometry, CSolution **soluti
         Jacobian_ii[iVar][jVar] = Jacobian_Chemistry[jVar][iVar];
       }
     }
-    SubtractResidual(iPoint, Residual_Chemistry);
+    LinSysRes.SubtractBlock(iPoint, Residual_Chemistry);
     if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);	
     
     /*--- Momentum exchange source terms ---*/
@@ -880,7 +883,7 @@ void CAdjPlasmaSolution::Source_Residual(CGeometry *geometry, CSolution **soluti
         Jacobian_ii[iVar][jVar] = Jacobian_MomentumExch[jVar][iVar];
       }
     }
-    SubtractResidual(iPoint, Residual_MomentumExch);
+    LinSysRes.SubtractBlock(iPoint, Residual_MomentumExch);
     if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
     
     /*--- Energy exchange source terms ---*/
@@ -891,7 +894,7 @@ void CAdjPlasmaSolution::Source_Residual(CGeometry *geometry, CSolution **soluti
         Jacobian_ii[iVar][jVar] = Jacobian_EnergyExch[jVar][iVar];
       }
     }
-    SubtractResidual(iPoint, Residual_EnergyExch);
+    LinSysRes.SubtractBlock(iPoint, Residual_EnergyExch);
     if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
   }
 }
@@ -936,10 +939,10 @@ void CAdjPlasmaSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution 
         for (iVar = 0; iVar < nVar; iVar++) {
             total_index = iPoint*nVar+iVar;
             /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
-            xres[total_index] = -(xres[total_index]+local_Res_TruncError[iVar]);
-            xsol[total_index] = 0.0;
-            AddRes_RMS(iVar, xres[total_index]*xres[total_index]);
-            AddRes_Max(iVar, fabs(xres[total_index]), geometry->node[iPoint]->GetGlobalIndex());
+            LinSysRes[total_index] = -(LinSysRes[total_index]+local_Res_TruncError[iVar]);
+            LinSysSol[total_index] = 0.0;
+            AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
+            AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex());
         }
     }
     
@@ -947,17 +950,12 @@ void CAdjPlasmaSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution 
     for (iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
         for (iVar = 0; iVar < nVar; iVar++) {
             total_index = iPoint*nVar + iVar;
-            xres[total_index] = 0.0;
-            xsol[total_index] = 0.0;
+            LinSysRes[total_index] = 0.0;
+            LinSysSol[total_index] = 0.0;
         }
     }
 	
-	/*--- Solve the linear system (Krylov subspace methods) ---*/		
-  CSysVector rhs_vec((const unsigned int)geometry->GetnPoint(),
-                     (const unsigned int)geometry->GetnPointDomain(), nVar, xres);
-  CSysVector sol_vec((const unsigned int)geometry->GetnPoint(),
-                     (const unsigned int)geometry->GetnPointDomain(), nVar, xsol);
-  
+	/*--- Solve the linear system (Krylov subspace methods) ---*/
   CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
   
   CPreconditioner* precond = NULL;
@@ -972,26 +970,22 @@ void CAdjPlasmaSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution 
     Jacobian.BuildJacobiPreconditioner();
     precond = new CLineletPreconditioner(Jacobian, geometry, config);
   }
-  else if (config->GetKind_Linear_Solver_Prec() == NO_PREC) {
-    precond = new CIdentityPreconditioner(Jacobian, geometry, config);
-  }
   
   CSysSolve system;
   if (config->GetKind_Linear_Solver() == BCGSTAB)
-    system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, config->GetLinear_Solver_Error(),
+    system.BCGSTAB(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(),
                    config->GetLinear_Solver_Iter(), false);
   else if (config->GetKind_Linear_Solver() == GMRES)
-    system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, config->GetLinear_Solver_Error(),
+    system.GMRES(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(),
                  config->GetLinear_Solver_Iter(), false);
   
-  sol_vec.CopyToArray(xsol);
   delete mat_vec;
   delete precond;
 	
 	/*--- Update solution (system written in terms of increments) ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
 		for (iVar = 0; iVar < nVar; iVar++)
-            node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*xsol[iPoint*nVar+iVar]);
+            node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*LinSysSol[iPoint*nVar+iVar]);
 	
     /*--- MPI solution ---*/
     Set_MPI_Solution(geometry, config);
@@ -1233,7 +1227,7 @@ void CAdjPlasmaSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution
         }        
 			}			
 			/*--- Update residual ---*/
-			SubtractResidual(iPoint, Residual);
+			LinSysRes.SubtractBlock(iPoint, Residual);
 			Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
 		}
 	}	
@@ -1385,7 +1379,7 @@ void CAdjPlasmaSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_
         }
 			}
 			/*--- Update residual ---*/
-			SubtractResidual(iPoint, Residual);
+			LinSysRes.SubtractBlock(iPoint, Residual);
 			Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
 		}
 	}
@@ -1449,7 +1443,7 @@ void CAdjPlasmaSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_
 			conv_solver->SetResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 			
 			/*--- Add and Subtract Residual ---*/
-			SubtractResidual(iPoint, Residual_i);
+			LinSysRes.SubtractBlock(iPoint, Residual_i);
 			
 			/*--- Implicit contribution to the residual ---*/
 			if (implicit) 

@@ -92,18 +92,3 @@ inline void CLineletPreconditioner::operator()(const CSysVector & u, CSysVector 
   }
   sparse_matrix->ComputeLineletPreconditioner(u, v, geometry, config);
 }
-
-inline CIdentityPreconditioner::CIdentityPreconditioner(CSysMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
-    sparse_matrix = &matrix_ref;
-    geometry = geometry_ref;
-    config = config_ref;  
-}
-
-inline void CIdentityPreconditioner::operator()(const CSysVector & u, CSysVector & v) const {
-  if (sparse_matrix == NULL) {
-    cerr << "CIdentityPreconditioner::operator()(const CSysVector &, CSysVector &): " << endl; 
-    cerr << "pointer to sparse matrix is NULL." << endl;
-    throw(-1);
-  }
-  sparse_matrix->ComputeIdentityPreconditioner(u, v, geometry, config);
-}

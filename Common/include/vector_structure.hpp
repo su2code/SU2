@@ -262,6 +262,63 @@ public:
   void CopyToArray(double* u_array);
   
   /*!
+	 * \brief Subtract val_residual to the residual.
+	 * \param[in] val_ipoint - index of the point where subtract the residual.
+   * \param[in] val_residual - Value to subtract to the residual.
+	 */
+  void SubtractBlock(unsigned long val_ipoint, double *val_residual);
+  
+  /*!
+	 * \brief Add val_residual to the residual.
+	 * \param[in] val_ipoint - index of the point where add the residual.
+   * \param[in] val_residual - Value to add to the residual.
+	 */
+  void AddBlock(unsigned long val_ipoint, double *val_residual);
+  
+  /*!
+	 * \brief Set val_residual to the residual.
+	 * \param[in] val_ipoint - index of the point where set the residual.
+   * \param[in] val_var - inde of the residual to be set.
+   * \param[in] val_residual - Value to set to the residual.
+	 */
+  void SetBlock(unsigned long val_ipoint, unsigned short val_var, double val_residual);
+  
+  /*!
+	 * \brief Set val_residual to the residual.
+	 * \param[in] val_ipoint - index of the point where set the residual.
+   * \param[in] val_residual - Value to set to the residual.
+	 */
+  void SetBlock(unsigned long val_ipoint, double *val_residual);
+  
+  /*!
+	 * \brief Set the residual to zero.
+	 * \param[in] val_ipoint - index of the point where set the residual.
+	 */
+  void SetBlock_Zero(unsigned long val_ipoint);
+  
+  /*!
+	 * \brief Set the velocity residual to zero.
+	 * \param[in] val_ipoint - index of the point where set the residual.
+	 */
+  void SetBlock_Zero(unsigned long val_ipoint, unsigned short val_var);
+	
+  /*!
+	 * \brief Get the value of the residual.
+	 * \param[in] val_ipoint - index of the point where set the residual.
+   * \return Pointer to the residual.
+	 */
+  double *GetBlock(unsigned long val_ipoint);
+	
+  /*!
+	 * \brief Get the value of the residual.
+	 * \param[in] val_ipoint - index of the point where set the residual.
+   * \param[in] val_var - inde of the residual to be set.
+   * \return Value of the residual.
+	 */
+  double GetBlock(unsigned long val_ipoint, unsigned short val_var);
+  
+  
+  /*!
    * \brief dot-product between two CSysVectors
    * \param[in] u - first CSysVector in dot product
    * \param[in] v - second CSysVector in dot product
