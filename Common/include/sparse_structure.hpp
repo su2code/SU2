@@ -281,12 +281,20 @@ public:
 
 	/*! 
 	 * \brief Send receive the solution using MPI.
-	 * \param[in] x_n - Solution..
+	 * \param[in] x - Solution..
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SendReceive_Solution(double* x, CGeometry *geometry, CConfig *config);
 	
+  /*!
+	 * \brief Send receive the solution using MPI.
+	 * \param[in] x - Solution..
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SendReceive_Solution(CSysVector & x, CGeometry *geometry, CConfig *config);
+  
 	/*! 
 	 * \brief Solves the linear system Ax = b using the Symmetric Gauss Seidel (SGS) algorithm. 
 	 * \param[in] b - RHS of the equation.

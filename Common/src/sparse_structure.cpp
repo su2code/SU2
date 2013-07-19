@@ -208,10 +208,10 @@ void CSparseMatrix::Gauss_Elimination(unsigned long block_i, double* rhs) {
 	short iVar;
 	double weight;
     
-	GetBlock(block_i,block_i);
+	GetBlock(block_i, block_i);
     
 	if (nVar == 1)
-		rhs[0] /= (block[0]+EPS*EPS);
+		rhs[0] /= (block[0]+EPS);
 	else {
         
         /*--- Transform system in Upper Matrix ---*/
@@ -475,6 +475,88 @@ void CSparseMatrix::SendReceive_Solution(double* x, CGeometry *geometry, CConfig
   
 }
 
+void CSparseMatrix::SendReceive_Solution(CSysVector & x, CGeometry *geometry, CConfig *config) {
+  unsigned short iVar, iMarker, MarkerS, MarkerR;
+	unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
+	double *Buffer_Receive = NULL, *Buffer_Send = NULL;
+	int send_to, receive_from;
+  
+#ifndef NO_MPI
+  MPI::Status status;
+  MPI::Request send_request, recv_request;
+#endif
+  
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    
+		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+			
+			MarkerS = iMarker;  MarkerR = iMarker+1;
+      
+      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
+			receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
+			
+			nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
+			nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
+      
+      /*--- Allocate Receive and send buffers  ---*/
+      Buffer_Receive = new double [nBufferR_Vector];
+      Buffer_Send = new double[nBufferS_Vector];
+      
+      /*--- Copy the solution that should be sended ---*/
+      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
+        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
+        for (iVar = 0; iVar < nVar; iVar++)
+          Buffer_Send[iVertex*nVar+iVar] = x[iPoint*nVar+iVar];
+      }
+      
+#ifndef NO_MPI
+      
+      //      /*--- Send/Receive using non-blocking communications ---*/
+      //      send_request = MPI::COMM_WORLD.Isend(Buffer_Send, nBufferS_Vector, MPI::DOUBLE, 0, send_to);
+      //      recv_request = MPI::COMM_WORLD.Irecv(Buffer_Receive, nBufferR_Vector, MPI::DOUBLE, 0, receive_from);
+      //      send_request.Wait(status);
+      //      recv_request.Wait(status);
+      
+      /*--- Send/Receive information using Sendrecv ---*/
+      MPI::COMM_WORLD.Sendrecv(Buffer_Send, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
+                               Buffer_Receive, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
+      
+#else
+      
+      /*--- Receive information without MPI ---*/
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
+        for (iVar = 0; iVar < nVar; iVar++)
+          Buffer_Receive[iVar*nVertexR+iVertex] = Buffer_Send[iVar*nVertexR+iVertex];
+      }
+      
+#endif
+      
+      /*--- Deallocate send buffer ---*/
+      delete [] Buffer_Send;
+      
+      /*--- Do the coordinate transformation ---*/
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        
+        /*--- Find point and its type of transformation ---*/
+        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
+        
+        /*--- Copy transformed conserved variables back into buffer. ---*/
+        for (iVar = 0; iVar < nVar; iVar++)
+          x[iPoint*nVar+iVar] = Buffer_Receive[iVertex*nVar+iVar];
+        
+      }
+      
+      /*--- Deallocate receive buffer ---*/
+      delete [] Buffer_Receive;
+      
+    }
+    
+	}
+  
+}
+
 void CSparseMatrix::RowProduct(double* vec, unsigned long row_i) {
 	unsigned long iVar, index;
 
@@ -499,11 +581,7 @@ void CSparseMatrix::MatrixVectorProduct(double* vec, double* prod) {
 }
 
 void CSparseMatrix::MatrixVectorProduct(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {
-	unsigned long prod_begin, vec_begin, mat_begin, index, iVar, jVar, row_i, iVertex, iPoint, nVertexS,
-  nVertexR, nBufferS_Vector, nBufferR_Vector;
-  unsigned short iMarker, MarkerS, MarkerR;
-	double *Buffer_Receive = NULL, *Buffer_Send = NULL;
-	int send_to, receive_from;
+	unsigned long prod_begin, vec_begin, mat_begin, index, iVar, jVar, row_i;
   
 #ifndef NO_MPI
   MPI::Status status;
@@ -537,75 +615,7 @@ void CSparseMatrix::MatrixVectorProduct(const CSysVector & vec, CSysVector & pro
 	}
   
   /*--- MPI Parallelization ---*/
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    
-		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
-        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-			
-			MarkerS = iMarker;  MarkerR = iMarker+1;
-      
-      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
-			receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-			
-			nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
-			nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
-      
-      /*--- Allocate Receive and send buffers  ---*/
-      Buffer_Receive = new double [nBufferR_Vector];
-      Buffer_Send = new double[nBufferS_Vector];
-      
-      /*--- Copy the solution that should be sended ---*/
-      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Send[iVertex*nVar+iVar] = prod[(const unsigned int)(iPoint*nVar+iVar)];
-      }
-      
-#ifndef NO_MPI
-      
-//      /*--- Send/Receive using non-blocking communications ---*/
-//      send_request = MPI::COMM_WORLD.Isend(Buffer_Send, nBufferS_Vector, MPI::DOUBLE, 0, send_to);
-//      recv_request = MPI::COMM_WORLD.Irecv(Buffer_Receive, nBufferR_Vector, MPI::DOUBLE, 0, receive_from);
-//      send_request.Wait(status);
-//      recv_request.Wait(status);
-      
-      /*--- Send/Receive information using Sendrecv ---*/
-      MPI::COMM_WORLD.Sendrecv(Buffer_Send, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
-                               Buffer_Receive, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
-      
-#else
-      
-      /*--- Receive information without MPI ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Receive[iVar*nVertexR+iVertex] = Buffer_Send[iVar*nVertexR+iVertex];
-      }
-      
-#endif
-      
-      /*--- Deallocate send buffer ---*/
-      delete [] Buffer_Send;
-      
-      /*--- Do the coordinate transformation ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        
-        /*--- Find point and its type of transformation ---*/
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-        
-        /*--- Copy transformed conserved variables back into buffer. ---*/
-        for (iVar = 0; iVar < nVar; iVar++) {
-          prod[(const unsigned int)(iPoint*nVar+iVar)] = Buffer_Receive[iVertex*nVar+iVar];
-        }
-        
-      }
-      
-      /*--- Deallocate receive buffer ---*/
-      delete [] Buffer_Receive;
-      
-    }
-    
-	}
+	SendReceive_Solution(prod, geometry, config);
   
 }
 
@@ -663,7 +673,6 @@ void CSparseMatrix::InverseBlock(double *Block, double *invBlock) {
 }
 
 void CSparseMatrix::InverseDiagonalBlock(unsigned long block_i, double **invBlock) {
-
 	unsigned long iVar, jVar;
 
 	for (iVar = 0; iVar < nVar; iVar++) {
@@ -730,10 +739,7 @@ void CSparseMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConfig *con
 	
 	if (nLinelet == 0) {
 		cout << " No linelet structure. Jacobi preconditioner will be used" << endl;
-        //if (config->GetContainerPosition(RunTime_EqSystem) != ADJTURB_SOL)
-            config->SetKind_Linear_Solver_Prec(JACOBI);
-        //else
-        //    config->SetKind_AdjTurb_Linear_Prec(JACOBI);
+    config->SetKind_Linear_Solver_Prec(JACOBI);
 	}
 	else {
 		
@@ -847,16 +853,7 @@ void CSparseMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConfig *con
 }
 
 void CSparseMatrix::ComputeJacobiPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {
-	unsigned long iPoint, iVar, jVar, iVertex, nVertexS,
-  nVertexR, nBufferS_Vector, nBufferR_Vector;
-  unsigned short iMarker, MarkerS, MarkerR;
-	double *Buffer_Receive = NULL, *Buffer_Send = NULL;
-	int send_to, receive_from;
-	
-#ifndef NO_MPI
-  MPI::Status status;
-  MPI::Request send_request, recv_request;
-#endif
+	unsigned long iPoint, iVar, jVar;
   
 	for (iPoint = 0; iPoint < nPoint; iPoint++) {
 		for (iVar = 0; iVar < nVar; iVar++) {
@@ -866,77 +863,6 @@ void CSparseMatrix::ComputeJacobiPreconditioner(const CSysVector & vec, CSysVect
 		}
 	}
   
-  /*--- MPI Parallelization ---*/
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    
-		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
-        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-			
-			MarkerS = iMarker;  MarkerR = iMarker+1;
-      
-      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
-			receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-			
-			nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
-			nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
-      
-      /*--- Allocate Receive and send buffers  ---*/
-      Buffer_Receive = new double [nBufferR_Vector];
-      Buffer_Send = new double[nBufferS_Vector];
-      
-      /*--- Copy the solution that should be sended ---*/
-      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Send[iVertex*nVar+iVar] = prod[(const unsigned int)(iPoint*nVar+iVar)];
-      }
-      
-#ifndef NO_MPI
-      
-//      /*--- Send/Receive using non-blocking communications ---*/
-//      send_request = MPI::COMM_WORLD.Isend(Buffer_Send, nBufferS_Vector, MPI::DOUBLE, 0, send_to);
-//      recv_request = MPI::COMM_WORLD.Irecv(Buffer_Receive, nBufferR_Vector, MPI::DOUBLE, 0, receive_from);
-//      send_request.Wait(status);
-//      recv_request.Wait(status);
-      
-      /*--- Send/Receive information using Sendrecv ---*/
-      MPI::COMM_WORLD.Sendrecv(Buffer_Send, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
-                               Buffer_Receive, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
-      
-#else
-      
-      /*--- Receive information without MPI ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Receive[iVar*nVertexR+iVertex] = Buffer_Send[iVar*nVertexR+iVertex];
-      }
-      
-#endif
-      
-      /*--- Deallocate send buffer ---*/
-      delete [] Buffer_Send;
-      
-      /*--- Do the coordinate transformation ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        
-        /*--- Find point and its type of transformation ---*/
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-        
-        /*--- Copy transformed conserved variables back into buffer. ---*/
-        for (iVar = 0; iVar < nVar; iVar++) {
-          prod[(const unsigned int)(iPoint*nVar+iVar)] = Buffer_Receive[iVertex*nVar+iVar];
-        }
-        
-      }
-      
-      /*--- Deallocate receive buffer ---*/
-      delete [] Buffer_Receive;
-      
-    }
-    
-	}
-	
 }
 
 void CSparseMatrix::ComputeLUSGSPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {
@@ -956,8 +882,8 @@ void CSparseMatrix::ComputeLUSGSPreconditioner(const CSysVector & vec, CSysVecto
 			prod[iPoint*nVar+iVar] = aux_vector[iVar];                       // Assesing x* = solution
 	}
   
-//	/*--- Inner send-receive operation the solution vector ---*/
-//	SendReceive_Solution(prod, geometry, config);
+	/*--- Inner send-receive operation the solution vector ---*/
+	SendReceive_Solution(prod, geometry, config);
 	
 	/*--- Second part of the symmetric iteration: (D+U).x_(1) = D.x* ---*/
 	for (iPoint = nPointDomain-1; (int)iPoint >= 0; iPoint--) {
@@ -972,17 +898,13 @@ void CSparseMatrix::ComputeLUSGSPreconditioner(const CSysVector & vec, CSysVecto
 			prod[iPoint*nVar + iVar] = aux_vector[iVar]; // Assesing x_(1) = solution
 	}
   
-//  /*--- Final send-receive operation the solution vector (redundant in CFD simulations) ---*/
-//	SendReceive_Solution(x_n, geometry, config);
+  /*--- Final send-receive operation the solution vector (redundant in CFD simulations) ---*/
+	SendReceive_Solution(prod, geometry, config);
   
 }
 
 void CSparseMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {
-	unsigned long iVar, jVar, nElem = 0, iLinelet, im1Point, iPoint, ip1Point, iElem, iVertex, nVertexS,
-  nVertexR, nBufferS_Vector, nBufferR_Vector;
-  unsigned short iMarker, MarkerS, MarkerR;
-	double *Buffer_Receive = NULL, *Buffer_Send = NULL;
-	int send_to, receive_from;
+	unsigned long iVar, jVar, nElem = 0, iLinelet, im1Point, iPoint, ip1Point, iElem;
 	long iElemLoop;
 	
 #ifndef NO_MPI
@@ -1084,89 +1006,12 @@ void CSparseMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVec
 	}
   
   /*--- MPI Parallelization ---*/
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    
-		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
-        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-			
-			MarkerS = iMarker;  MarkerR = iMarker+1;
-      
-      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
-			receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-			
-			nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
-			nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
-      
-      /*--- Allocate Receive and send buffers  ---*/
-      Buffer_Receive = new double [nBufferR_Vector];
-      Buffer_Send = new double[nBufferS_Vector];
-      
-      /*--- Copy the solution that should be sended ---*/
-      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Send[iVertex*nVar+iVar] = prod[(const unsigned int)(iPoint*nVar+iVar)];
-      }
-      
-#ifndef NO_MPI
-      
-//      /*--- Send/Receive using non-blocking communications ---*/
-//      send_request = MPI::COMM_WORLD.Isend(Buffer_Send, nBufferS_Vector, MPI::DOUBLE, 0, send_to);
-//      recv_request = MPI::COMM_WORLD.Irecv(Buffer_Receive, nBufferR_Vector, MPI::DOUBLE, 0, receive_from);
-//      send_request.Wait(status);
-//      recv_request.Wait(status);
-      
-      /*--- Send/Receive information using Sendrecv ---*/
-      MPI::COMM_WORLD.Sendrecv(Buffer_Send, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
-                               Buffer_Receive, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
-      
-#else
-      
-      /*--- Receive information without MPI ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Receive[iVar*nVertexR+iVertex] = Buffer_Send[iVar*nVertexR+iVertex];
-      }
-      
-#endif
-      
-      /*--- Deallocate send buffer ---*/
-      delete [] Buffer_Send;
-      
-      /*--- Do the coordinate transformation ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        
-        /*--- Find point and its type of transformation ---*/
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-        
-        /*--- Copy transformed conserved variables back into buffer. ---*/
-        for (iVar = 0; iVar < nVar; iVar++) {
-          prod[(const unsigned int)(iPoint*nVar+iVar)] = Buffer_Receive[iVertex*nVar+iVar];
-        }
-        
-      }
-      
-      /*--- Deallocate receive buffer ---*/
-      delete [] Buffer_Receive;
-      
-    }
-    
-	}
+	SendReceive_Solution(prod, geometry, config);
   
 }
 
 void CSparseMatrix::ComputeIdentityPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {
-	unsigned long iPoint, iVar, iVertex, nVertexS,
-  nVertexR, nBufferS_Vector, nBufferR_Vector;
-  unsigned short iMarker, MarkerS, MarkerR;
-	double *Buffer_Receive = NULL, *Buffer_Send = NULL;
-	int send_to, receive_from;
-	
-#ifndef NO_MPI
-  MPI::Status status;
-  MPI::Request send_request, recv_request;
-#endif
+	unsigned long iPoint, iVar;
   
 	for (iPoint = 0; iPoint < nPoint; iPoint++) {
 		for (iVar = 0; iVar < nVar; iVar++) {
@@ -1175,75 +1020,7 @@ void CSparseMatrix::ComputeIdentityPreconditioner(const CSysVector & vec, CSysVe
 	}
   
   /*--- MPI Parallelization ---*/
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    
-		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
-        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-			
-			MarkerS = iMarker;  MarkerR = iMarker+1;
-      
-      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
-			receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-			
-			nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
-			nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
-      
-      /*--- Allocate Receive and send buffers  ---*/
-      Buffer_Receive = new double [nBufferR_Vector];
-      Buffer_Send = new double[nBufferS_Vector];
-      
-      /*--- Copy the solution that should be sended ---*/
-      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Send[iVertex*nVar+iVar] = prod[(const unsigned int)(iPoint*nVar+iVar)];
-      }
-      
-#ifndef NO_MPI
-      
-//      /*--- Send/Receive using non-blocking communications ---*/
-//      send_request = MPI::COMM_WORLD.Isend(Buffer_Send, nBufferS_Vector, MPI::DOUBLE, 0, send_to);
-//      recv_request = MPI::COMM_WORLD.Irecv(Buffer_Receive, nBufferR_Vector, MPI::DOUBLE, 0, receive_from);
-//      send_request.Wait(status);
-//      recv_request.Wait(status);
-      
-      /*--- Send/Receive information using Sendrecv ---*/
-      MPI::COMM_WORLD.Sendrecv(Buffer_Send, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
-                               Buffer_Receive, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
-      
-#else
-      
-      /*--- Receive information without MPI ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Receive[iVar*nVertexR+iVertex] = Buffer_Send[iVar*nVertexR+iVertex];
-      }
-      
-#endif
-      
-      /*--- Deallocate send buffer ---*/
-      delete [] Buffer_Send;
-      
-      /*--- Do the coordinate transformation ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        
-        /*--- Find point and its type of transformation ---*/
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-        
-        /*--- Copy transformed conserved variables back into buffer. ---*/
-        for (iVar = 0; iVar < nVar; iVar++) {
-          prod[(const unsigned int)(iPoint*nVar+iVar)] = Buffer_Receive[iVertex*nVar+iVar];
-        }
-        
-      }
-      
-      /*--- Deallocate receive buffer ---*/
-      delete [] Buffer_Receive;
-      
-    }
-    
-	}
+	SendReceive_Solution(prod, geometry, config);
   
 }
 
