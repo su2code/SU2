@@ -345,7 +345,8 @@ enum ENUM_GASMODEL {
 	O2 = 4,
 	N2 = 5,
 	AIR5 = 6,
-	ARGON_SID = 7
+	ARGON_SID = 7,
+  ONESPECIES = 8
 
 };
 static const map<string, ENUM_GASMODEL> GasModel_Map = CCreateMap<string, ENUM_GASMODEL>
@@ -356,7 +357,8 @@ static const map<string, ENUM_GASMODEL> GasModel_Map = CCreateMap<string, ENUM_G
 ("O2", O2)
 ("N2", N2)
 ("AIR-5", AIR5)
-("ARGON-SID",ARGON_SID);
+("ARGON-SID",ARGON_SID)
+("ONESPECIES", ONESPECIES);
 
 /*!
  * \brief types of unsteady mesh motion

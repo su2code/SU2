@@ -751,7 +751,9 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	/* DESCRIPTION: Free-stream density (1.2886 Kg/m^3 (air), 998.2 Kg/m^3 (water)) */
 	AddScalarOption("FREESTREAM_DENSITY", Density_FreeStream, -1.0);
 	/* DESCRIPTION: Free-stream temperature (273.15 K by default) */
-	AddScalarOption("FREESTREAM_TEMPERATURE", Temperature_FreeStream, 273.15);
+	AddScalarOption("FREESTREAM_TEMPERATURE", Temperature_FreeStream, 273.15);  
+  /* DESCRIPTION: Free-stream vibrational-electronic temperature (273.15 K by default) */
+	AddScalarOption("FREESTREAM_TEMPERATURE_VE", Temperature_ve_FreeStream, 273.15);
 	/* DESCRIPTION: Free-stream viscosity (1.853E-5 Ns/m^2 (air), 0.798E-3 Ns/m^2 (water)) */
 	AddScalarOption("FREESTREAM_VISCOSITY", Viscosity_FreeStream, -1.0);
 	/* DESCRIPTION:  */
@@ -762,6 +764,11 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddScalarOption("FREESTREAM_NU_FACTOR", NuFactor_FreeStream, 3.0);
 	/* DESCRIPTION:  */
 	AddScalarOption("FREESTREAM_TURB2LAMVISCRATIO", Turb2LamViscRatio_FreeStream, 10.0);
+  /* DESCRIPTION: Species mass fractions for the 2-temperature model */
+  double *default_massfrac;
+  default_massfrac = new double[1];
+  default_massfrac[0] = 1.0;
+  AddArrayOption("FREESTREAM_MASS_FRACTION", 1, MassFrac_FreeStream, default_massfrac);
 	/* DESCRIPTION: Laminar Prandtl number (0.72 (air), only for compressible flows) */
 	AddScalarOption("PRANDTL_LAM", Prandtl_Lam, 0.72);
 	/* DESCRIPTION: Turbulent Prandtl number (0.9 (air), only for compressible flows) */
@@ -1451,7 +1458,67 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
                (Kind_Solver == FREE_SURFACE_RANS) ||
                (Kind_Solver == ADJ_RANS) ||
                (Kind_Solver == ADJ_FREE_SURFACE_RANS));
+  
+  if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
+		unsigned short iSpe, jSpe, iRxn, ii;
+		double sum, conversionFact;
+		double GammaMonatomic, GammaDiatomic;
+		if (val_izone == ZONE_1 ) {
+			Divide_Element = true;
+			Restart_FlowFileName = "restart_phi.dat";
+			SurfFlowCoeff_FileName = "surface_phi.dat";
+		}
     
+		switch (Kind_GasModel) {
+      case ONESPECIES:
+        /*--- Define parameters of the gas model ---*/
+        nMonatomics = 1;
+        nDiatomics = 0;
+        nSpecies = nMonatomics + nDiatomics;
+        
+        /*--- Allocate vectors for gas properties ---*/
+        Molar_Mass         = new double[nSpecies];
+        CharVibTemp        = new double[nSpecies];
+        RotationModes      = new double[nSpecies];
+        Enthalpy_Formation = new double[nSpecies];
+        Ref_Temperature    = new double[nSpecies];
+        
+        /*--- Assign gas properties ---*/
+        // Rotational modes of energy storage
+        RotationModes[0] = 2.0;
+        // Molar mass [kg/kmol]
+        Molar_Mass[0] = 2.0*14.0067;
+        // Characteristic vibrational temperatures for calculating e_vib [K]
+        CharVibTemp[0] = 3395.0;
+        // Formation enthalpy: (JANAF values, [KJ/Kmol])
+        Enthalpy_Formation[0] = 0.0;					//N2
+        // Reference temperature (JANAF values, [K])
+        Ref_Temperature[0] = 0.0;
+        
+        break;
+      case N2:
+        /*--- Define parameters of the gas model ---*/
+        nMonatomics = 1;
+        nDiatomics = 1;
+        nSpecies = nMonatomics + nDiatomics;
+        
+        /*--- Allocate vectors for gas properties ---*/
+        Molar_Mass         = new double[nSpecies];
+        CharVibTemp        = new double[nSpecies];
+        RotationModes      = new double[nSpecies];
+        Enthalpy_Formation = new double[nSpecies];
+        
+        /*--- Assign gas properties ---*/
+        // Characteristic vibrational temperatures
+        CharVibTemp[0] = 3395.0;
+        CharVibTemp[1] = 0.0;
+        // Formation enthalpy: (JANAF values [KJ/Kmol])
+        Enthalpy_Formation[0] = 0.0;					//N2
+        Enthalpy_Formation[1] = 472.683E3;		//N
+        break;
+    }
+  }
+  
 	if ((Kind_Solver == PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_EULER) ||
 			(Kind_Solver == PLASMA_NAVIER_STOKES) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
 		unsigned short iSpecies, jSpecies, iReaction, ii;

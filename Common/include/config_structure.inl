@@ -151,6 +151,8 @@ inline double CConfig::GetGas_Constant_Ref(void) { return Gas_Constant_Ref; }
 
 inline double CConfig::GetTemperature_FreeStream(void) { return Temperature_FreeStream; }
 
+inline double CConfig::GetTemperature_ve_FreeStream(void) { return Temperature_ve_FreeStream; }
+
 inline double CConfig::GetPrandtl_Lam(void) { return Prandtl_Lam; }
 
 inline double CConfig::GetPrandtl_Turb(void) { return Prandtl_Turb; }
@@ -198,6 +200,8 @@ inline double CConfig::GetIntermittency_FreeStream(void) { return Intermittency_
 inline double CConfig::GetTurbulenceIntensity_FreeStream(void) { return TurbulenceIntensity_FreeStream; }
 
 inline double CConfig::GetTurb2LamViscRatio_FreeStream(void) {return Turb2LamViscRatio_FreeStream;}
+
+inline double* CConfig::GetMassFrac_FreeStream(void) { return MassFrac_FreeStream; }
 
 inline double CConfig::GetLength_Reynolds(void) { return Length_Reynolds; }
 
@@ -362,13 +366,21 @@ inline double CConfig::GetArrheniusTheta(unsigned short iReaction) { return Arrh
 
 inline double CConfig::GetCharVibTemp(unsigned short iSpecies) {return CharVibTemp[iSpecies]; }
 
+inline double* CConfig::GetCharVibTemp() {return CharVibTemp; }
+
+inline double* CConfig::GetRotationModes() { return RotationModes; }
+
+inline double* CConfig::GetRefTemperature() { return Ref_Temperature; }
+
 inline double CConfig::GetParticle_Mass(unsigned short iSpecies) { return Particle_Mass[iSpecies]; } 
 
-inline double CConfig::GetStagnation_B() { return Stagnation_B; } 
+inline double CConfig::GetStagnation_B() { return Stagnation_B; }
 
 inline double CConfig::GetElec_Conductivity() { return Electric_Cond; } 
 
 inline double CConfig::GetDipoleDist() { return DipoleDist; } 
+
+inline double* CConfig::GetMolar_Mass() { return Molar_Mass; } 
 
 inline double CConfig::GetMolar_Mass(unsigned short iSpecies) { return Molar_Mass[iSpecies]; } 
 
@@ -381,6 +393,8 @@ inline double CConfig::GetMolecular_Diameter(unsigned short iSpecies) { return M
 inline int CConfig::GetParticle_ChargeNumber(unsigned short iSpecies) { return Charge_Number[iSpecies]; }
 
 inline double CConfig::GetInitial_Gas_Composition(unsigned short iSpecies) { return Gas_Composition[iSpecies]; }
+
+inline double* CConfig::GetEnthalpy_Formation(void) { return Enthalpy_Formation; }
 
 inline double CConfig::GetEnthalpy_Formation(unsigned short iSpecies) { return Enthalpy_Formation[iSpecies]; }
 

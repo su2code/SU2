@@ -1085,6 +1085,12 @@ public:
 	 * \param[in] Gas_Constant - Value of the Gas Constant
 	 */		
 	virtual bool SetTemperature(double Gas_Constant);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] config - Configuration parameters.
+	 */
+	virtual bool SetTemperature(CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
@@ -1157,7 +1163,7 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 */
-	virtual void SetPressureValue(double val_pressure);	
+	virtual void SetPressureValue(double val_pressure);
 
 	/*!
 	 * \brief A virtual member.
@@ -3443,6 +3449,8 @@ public:
  */
 class CTNE2EulerVariable : public CVariable {
 protected:
+  bool ionization;       /*!< \brief Presence of charged species in gas mixture. */
+  unsigned short nSpe;  /*!< \brief Number of species in the gas mixture. */
 	double Velocity2;			/*!< \brief Square of the velocity vector. */
 	double Precond_Beta;	/*!< \brief Low Mach number preconditioner value, Beta. */
   
@@ -3467,8 +3475,7 @@ public:
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CTNE2EulerVariable(double val_density, double *val_velocity, double val_energy, unsigned short val_ndim,
-                 unsigned short val_nvar, CConfig *config);
+	CTNE2EulerVariable(double val_density, double *val_massfrac, double *val_velocity, double val_temperature, double val_temperature_ve, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
   
 	/*!
 	 * \overload
@@ -3540,7 +3547,7 @@ public:
 	/*!
 	 * \brief Set the value of the pressure.
 	 */
-	bool SetPressure(double Gamma);
+	bool SetPressure(double Temperature, double Temperature_ve);
   
 	/*!
 	 * \brief Set the value of the speed of the sound.
@@ -3586,11 +3593,11 @@ public:
 	 */
 	double *GetPrimVar(void);
   
-	/*!
-	 * \brief Set the value of the temperature.
-	 * \param[in] Gas_Constant - Value of Gas Constant
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] config - Configuration parameters.
 	 */
-	bool SetTemperature(double Gas_Constant);
+	bool SetTemperature(CConfig *config);
   
 	/*!
 	 * \brief Get the norm 2 of the velocity.
@@ -3705,8 +3712,7 @@ public:
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CTNE2NSVariable(double val_density, double *val_velocity,
-              double val_energy, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+	CTNE2NSVariable(double val_density, double *val_massfrac, double *val_velocity, double val_temperature, double val_temperature_ve, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
   
 	/*!
 	 * \overload

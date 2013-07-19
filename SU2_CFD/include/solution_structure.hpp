@@ -6746,12 +6746,15 @@ protected:
 	Energy_Inf,			/*!< \brief Energy at the infinity. */
 	Energy_Inlet,		/*!< \brief Energy at the inlet. */
 	Energy_Outlet,		/*!< \brief Energy at the outlet. */
+  Energy_ve_Inf,  /*!< \brief Vibrational-electronic free stream energy. */
 	Pressure_Inf,		/*!< \brief Pressure at the infinity. */
 	Pressure_Inlet,		/*!< \brief Pressure at the inlet. */
 	Pressure_Outlet,	/*!< \brief Pressure at the outlet. */
 	*Velocity_Inf,		/*!< \brief Flow Velocity vector at the infinity. */
 	*Velocity_Inlet,	/*!< \brief Flow Velocity vector at the inlet. */
-	*Velocity_Outlet;	/*!< \brief Flow Velocity vector at the outlet. */
+	*Velocity_Outlet,	/*!< \brief Flow Velocity vector at the outlet. */
+  *MassFrac_Inf,    /*!< \brief Mass fraction at the free stream. */
+  Temperature_ve_Inf; /*!< \brief Vibrational-electronic energy of the free stream. */
 	double *CDrag_Inv,	/*!< \brief Drag coefficient (inviscid contribution) for each boundary. */
 	*CLift_Inv,			/*!< \brief Lift coefficient (inviscid contribution) for each boundary. */
 	*CSideForce_Inv,		/*!< \brief Sideforce coefficient (inviscid contribution) for each boundary. */

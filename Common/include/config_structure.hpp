@@ -479,7 +479,9 @@ private:
 	double *ArrheniusCoefficient,					/*!< \brief Arrhenius reaction coefficient */
 	*ArrheniusEta,								/*!< \brief Arrhenius reaction temperature exponent */
 	*ArrheniusTheta,							/*!< \brief Arrhenius reaction characteristic temperature */
-	*CharVibTemp;									/*!< \brief Characteristic vibrational temperature for e_vib */
+	*CharVibTemp,									/*!< \brief Characteristic vibrational temperature for e_vib */
+  *RotationModes,				/*!< \brief Rotational modes of energy storage */
+  *Ref_Temperature;   			/*!< \brief Reference temperature for thermodynamic relations */
 	unsigned short nMass,                 /*!< \brief No of particle masses */
 	nTemp,						/*!< \brief No of freestream temperatures specified */
 	nRef_Temperature,   			/*!< \brief No of particle Reference Temperature */
@@ -534,6 +536,8 @@ private:
 	NuFactor_FreeStream,  /*!< \brief Ratio of turbulent to laminar viscosity. */
 	Pressure_FreeStream,     /*!< \brief Total pressure of the fluid.  */
 	Temperature_FreeStream,  /*!< \brief Total temperature of the fluid.  */
+  Temperature_ve_FreeStream,  /*!< \brief Total vibrational-electronic temperature of the fluid.  */
+  *MassFrac_FreeStream, /*!< \brief Mixture mass fractions of the fluid. */
 	Prandtl_Lam,      /*!< \brief Laminar Prandtl number for the gas.  */
 	Prandtl_Turb,     /*!< \brief Turbulent Prandtl number for the gas.  */
 	Length_Ref,       /*!< \brief Reference length for non-dimensionalization. */
@@ -1152,6 +1156,12 @@ public:
 	 * \return Freestream temperature.
 	 */
 	double GetTemperature_FreeStream(void);
+  
+  /*!
+	 * \brief Get the value of the frestream vibrational-electronic temperature.
+	 * \return Freestream temperature.
+	 */
+	double GetTemperature_ve_FreeStream(void);
 
 	/*!
 	 * \brief Get the value of the laminar Prandtl number.
@@ -1333,6 +1343,13 @@ public:
 	 * \return Ratio of turbulent to laminar viscosity ratio.
 	 */
 	double GetTurb2LamViscRatio_FreeStream(void);
+  
+  /*!
+	 * \brief Get the vector of free stream mass fraction values.
+	 * \return Ratio of species mass to mixture mass.
+	 */
+	double* GetMassFrac_FreeStream(void);
+  
 	/*!
 	 * \brief Get the value of the Reynolds length.
 	 * \return Reynolds length.
@@ -3055,7 +3072,25 @@ public:
 	 */
 	double GetArrheniusTheta(unsigned short iReaction);
 
-	/*! 
+	/*!
+	 * \brief Provides the number of rotational modes of energy storage
+	 * \return: Vector of rotational mode count
+	 */
+  double* GetRotationModes(void);
+  
+	/*!
+	 * \brief Provides the characteristic vibrational temperature for calculating e_vib
+	 * \return: Vector of characteristic vibrational temperatures [K]
+	 */
+	double* GetCharVibTemp(void);
+
+  /*!
+	 * \brief Provides the thermodynamic reference temperatures from the JANAF tables
+	 * \return: Vector of reference temperatures [K]
+	 */
+  double* GetRefTemperature(void);
+  
+  /*!
 	 * \brief Provides the characteristic vibrational temperature for calculating e_vib
 	 * \return: The number of chemical reactions, read from input file
 	 */
@@ -3074,6 +3109,12 @@ public:
 	double GetParticle_Mass(unsigned short iSpecies);
 
 	/*!
+	 * \brief Provides the molar mass of each species present in multi species fluid
+	 * \return: Vector of molar mass of each species in kg/kmol
+	 */
+	double* GetMolar_Mass(void);
+	
+  /*!
 	 * \brief Provides the molar mass of each species present in multi species fluid
 	 * \return: Mass of each species in Kg
 	 */
@@ -3116,6 +3157,12 @@ public:
 	 */
 	double GetMixtureMolar_Mass();
 
+  /*!
+	 * \brief Provides the formation enthalpy of the specified species at standard conditions
+	 * \return: Enthalpy of formation
+	 */
+	double* GetEnthalpy_Formation(void);
+  
 	/*!
 	 * \brief Provides the formation enthalpy of the specified species at standard conditions
 	 * \return: Enthalpy of formation

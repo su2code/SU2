@@ -1,6 +1,6 @@
 /*!
- * \file solution_direct_mean.cpp
- * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
+ * \file solution_direct_tne2.cpp
+ * \brief Main subrotuines for solving two-temperature flows in thermochemical nonequilibrium.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
  * \version 2.0.5
  *
@@ -93,7 +93,7 @@ CTNE2EulerSolution::CTNE2EulerSolution(CGeometry *geometry, CConfig *config, uns
 	/*--- Define geometry constants in the solver structure ---*/
 	nDim = geometry->GetnDim();
 	nSpe = 1 ;
-	nVar = nSpe + nDim + 2; nPrimVar = nSpe + nDim + 5; nPrimVarGrad = nSpe + nDim + 3;
+	nVar = nSpe + nDim + 2; nPrimVar = nSpe + nDim + 6; nPrimVarGrad = nSpe + nDim + 4;
 	nMarker = config->GetnMarker_All();
 	nPoint = geometry->GetnPoint();
 	nPointDomain = geometry->GetnPointDomain();
@@ -133,7 +133,7 @@ CTNE2EulerSolution::CTNE2EulerSolution(CGeometry *geometry, CConfig *config, uns
   xres = new double [nPoint*nVar];
   
 	/*--- Jacobians and vector structures for implicit computations ---*/
-	if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) {
+	if (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT) {
     
 		/*--- Block auxiliary Jacobians ---*/
 		Jacobian_i = new double* [nVar];
@@ -193,11 +193,13 @@ CTNE2EulerSolution::CTNE2EulerSolution(CGeometry *geometry, CConfig *config, uns
   Total_Maxq = 0.0;
   
 	/*--- Read farfield conditions ---*/
-	Density_Inf  = config->GetDensity_FreeStreamND();
-	Pressure_Inf = config->GetPressure_FreeStreamND();
-	Velocity_Inf = config->GetVelocity_FreeStreamND();
-	Energy_Inf   = config->GetEnergy_FreeStreamND();
-	Mach_Inf     = config->GetMach_FreeStreamND();
+	Density_Inf        = config->GetDensity_FreeStreamND();
+	Pressure_Inf       = config->GetPressure_FreeStreamND();
+	Velocity_Inf       = config->GetVelocity_FreeStreamND();
+	Energy_Inf         = config->GetEnergy_FreeStreamND();
+	Mach_Inf           = config->GetMach_FreeStreamND();
+  MassFrac_Inf       = config->GetMassFrac_FreeStream();
+  Temperature_ve_Inf = config->GetTemperature_ve_FreeStream();
   
 	if (dual_time && config->GetUnsteady_Farfield()) {
     
@@ -211,11 +213,11 @@ CTNE2EulerSolution::CTNE2EulerSolution(CGeometry *geometry, CConfig *config, uns
 	}
   
 	/*--- Inlet/Outlet boundary conditions, using infinity values ---*/
-	Density_Inlet = Density_Inf;		Density_Outlet = Density_Inf;
-	Pressure_Inlet = Pressure_Inf;	Pressure_Outlet = Pressure_Inf;
-	Energy_Inlet = Energy_Inf;			Energy_Outlet = Energy_Inf;
-	Mach_Inlet = Mach_Inf;					Mach_Outlet = Mach_Inf;
-	Velocity_Inlet  = new double [nDim]; Velocity_Outlet = new double [nDim];
+	Density_Inlet  = Density_Inf;		     Density_Outlet = Density_Inf;
+	Pressure_Inlet = Pressure_Inf;	    Pressure_Outlet = Pressure_Inf;
+	Energy_Inlet   = Energy_Inf;		    	Energy_Outlet = Energy_Inf;
+	Mach_Inlet     = Mach_Inf;				    	Mach_Outlet = Mach_Inf;
+	Velocity_Inlet = new double [nDim]; Velocity_Outlet = new double [nDim];
 	for (iDim = 0; iDim < nDim; iDim++) {
 		Velocity_Inlet[iDim] = Velocity_Inf[iDim];
 		Velocity_Outlet[iDim] = Velocity_Inf[iDim];
@@ -229,7 +231,7 @@ CTNE2EulerSolution::CTNE2EulerSolution(CGeometry *geometry, CConfig *config, uns
     
 		/*--- Restart the solution from infinity ---*/
 		for (iPoint = 0; iPoint < nPoint; iPoint++)
-			node[iPoint] = new CEulerVariable(Density_Inf, Velocity_Inf, Energy_Inf, nDim, nVar, config);
+			node[iPoint] = new CTNE2EulerVariable(Density_Inf, MassFrac_Inf, Velocity_Inf, Energy_Inf, Temperature_ve_Inf, nDim, nVar, config);
 	}
   
 	else {

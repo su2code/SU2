@@ -1027,12 +1027,13 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
       case AVG_GRAD_CORRECTED :
           /*--- Compressible TNE2 ---*/
 //          solver_container[MESH_0][TNE2_SOL][VISC_TERM] = new CAvgGradCorrected_TNE2(nDim, nVar_TNE2, config);
-          for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-//            solver_container[iMGlevel][TNE2_SOL][VISC_TERM] = new CAvgGrad_TNE2(nDim, nVar_TNE2, config);
-          
+          for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+//              solver_container[iMGlevel][TNE2_SOL][VISC_TERM] = new CAvgGrad_TNE2(nDim, nVar_TNE2, config);
+          }
           /*--- Definition of the boundary condition method ---*/
-          for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-//            solver_container[iMGlevel][TNE2_SOL][VISC_BOUND_TERM] = new CAvgGrad_TNE2(nDim, nVar_TNE2, config);
+          for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+//              solver_container[iMGlevel][TNE2_SOL][VISC_BOUND_TERM] = new CAvgGrad_TNE2(nDim, nVar_TNE2, config);
+          }
         break;
       case GALERKIN :
         cout << "Galerkin viscous scheme not implemented." << endl; cin.get(); exit(1);

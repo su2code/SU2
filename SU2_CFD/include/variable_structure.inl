@@ -301,6 +301,8 @@ inline bool CVariable::SetSoundSpeed(double Gamma) { return false; }
 
 inline bool CVariable::SetTemperature(double Gas_Constant) { return false; }
 
+inline bool CVariable::SetTemperature(CConfig *config) { return false; }
+
 inline void CVariable::SetTemperature_tr(CConfig *config) { }
 
 inline void CVariable::SetTemperature_vib(CConfig *config) { }
@@ -789,12 +791,6 @@ inline bool CTNE2EulerVariable::SetSoundSpeed(double Gamma) {
    }
 }
 
-inline bool CTNE2EulerVariable::SetTemperature(double Gas_Constant) {
-   Primitive[0] = Primitive[nDim+1] / ( Gas_Constant * Solution[0]);
-   if (Primitive[0] > 0.0) return false;
-   else return true;
-}
-
 inline double CTNE2EulerVariable::GetPrimVar(unsigned short val_var) { return Primitive[val_var]; }
 
 inline void CTNE2EulerVariable::SetPrimVar(unsigned short val_var, double val_prim) { Primitive[val_var] = val_prim; }
@@ -808,7 +804,7 @@ inline double *CTNE2EulerVariable::GetPrimVar(void) { return Primitive; }
 
 inline void CTNE2EulerVariable::SetVelocity(double *val_velocity, bool val_incomp) {
 	if (val_incomp) {
-		for (unsigned short iDim = 0; iDim < nDim; iDim++) 
+		for (unsigned short iDim = 0; iDim < nDim; iDim++)
 			Solution[iDim+1] = val_velocity[iDim]*Primitive[0]; 
 	}
 	else {
@@ -845,12 +841,6 @@ inline double **CTNE2EulerVariable::GetGradient_Primitive(void) { return Gradien
 inline double CTNE2EulerVariable::GetPreconditioner_Beta() { return Precond_Beta; }
 
 inline void CTNE2EulerVariable::SetPreconditioner_Beta(double val_Beta) { Precond_Beta = val_Beta; }
-
-inline bool CTNE2EulerVariable::SetPressure(double Gamma) {
-   Primitive[nDim+1] = (Gamma-1.0)*Solution[0]*(Solution[nVar-1]/Solution[0]-0.5*Velocity2);
-   if (Primitive[nDim+1] > 0.0) return false;
-   else return true;
-}
 
 inline double CTNE2NSVariable::GetLaminarViscosity(void) { return LaminarViscosity; }
 
