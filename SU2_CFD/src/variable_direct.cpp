@@ -345,10 +345,13 @@ double CEulerVariable::GetProjVelInc(double *val_vector) {
 	return ProjVel;
 }
 
-void CEulerVariable::SetPrimVar_Compressible(double Gamma, double Gas_Constant) {
+void CEulerVariable::SetPrimVar_Compressible(CConfig *config) {
 	unsigned short iDim, iVar;
-    bool check_dens = false, check_press = false, check_sos = false, check_temp = false;
-    
+  bool check_dens = false, check_press = false, check_sos = false, check_temp = false;
+  
+  double Gas_Constant = config->GetGas_ConstantND();
+	double Gamma = config->GetGamma();
+  
 	SetVelocity2();                               // Compute the modulus of the velocity.
     check_dens = (Solution[0] < 0.0);             // Check the density
 	check_press = SetPressure(Gamma);							// Requires Velocity2 computation.
@@ -496,10 +499,13 @@ void CNSVariable::SetStrainMag(void) {
 	StrainMag = sqrt(2.0*StrainMag);
 }
 
-void CNSVariable::SetPrimVar_Compressible(double Gamma, double Gas_Constant, double turb_ke) {
+void CNSVariable::SetPrimVar_Compressible(CConfig *config, double turb_ke) {
 	unsigned short iDim, iVar;
     bool check_dens = false, check_press = false, check_sos = false, check_temp = false;
-    
+  
+  double Gas_Constant = config->GetGas_ConstantND();
+	double Gamma = config->GetGamma();
+  
 	SetVelocity2();                                 // Compute the modulus of the velocity.
     check_dens = (Solution[0] < 0.0);               // Check the density
 	check_press = SetPressure(Gamma, turb_ke);      // Requires Velocity2 computation.
