@@ -57,8 +57,6 @@ CWaveSolution::CWaveSolution(CGeometry *geometry,
 	StiffMatrixSpace.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
 	StiffMatrixTime.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
 	Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
-  if (config->GetKind_Linear_Solver_Prec() == LINELET)
-    Jacobian.BuildLineletPreconditioner(geometry, config);
   
   /*--- Initialization of linear solver structures ---*/
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
@@ -902,6 +900,7 @@ void CWaveSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **sol
   }
   else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
     Jacobian.BuildJacobiPreconditioner();
+    Jacobian.BuildLineletPreconditioner(geometry, config);
     precond = new CLineletPreconditioner(Jacobian, geometry, config);
   }
   

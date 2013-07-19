@@ -110,24 +110,18 @@ CAdjTurbSolution::CAdjTurbSolution(CGeometry *geometry, CConfig *config) : CSolu
     
 	/*--- Initialization of the structure of the whole Jacobian ---*/
 	Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
-  if (config->GetKind_Linear_Solver_Prec() == LINELET)
-    Jacobian.BuildLineletPreconditioner(geometry, config);
-    Jacobian.SetValZero();
+  Jacobian.SetValZero();
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
 
 	/*--- Initialization of discrete sparse Jacobian for Hybrid ---*/
 	// nVar = # turb vars, nTotalVar = # turb vars + # flow vars
 	DirectJacobian.Initialize(nPoint, nPointDomain, nTotalVar, nVar, geometry);
-  if (config->GetKind_Linear_Solver_Prec() == LINELET)
-    Jacobian.BuildLineletPreconditioner(geometry, config);
 	DirectJacobian.SetValZero();
 
 	/*--- Initialization of discrete sparse Jacobian for Hybrid BC ---*/
 	// nVar = # turb vars, nTotalVar = # turb vars + # flow vars
 	DirectBCJacobian.Initialize(nPoint, nPointDomain, nTotalVar, nVar, geometry);
-  if (config->GetKind_Linear_Solver_Prec() == LINELET)
-    Jacobian.BuildLineletPreconditioner(geometry, config);
 	DirectBCJacobian.SetValZero();
 
 	/*--- Computation of gradients by least squares ---*/
@@ -1738,6 +1732,7 @@ void CAdjTurbSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **
   }
   else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
     Jacobian.BuildJacobiPreconditioner();
+    Jacobian.BuildLineletPreconditioner(geometry, config);
     precond = new CLineletPreconditioner(Jacobian, geometry, config);
   }
   

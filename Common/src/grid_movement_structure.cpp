@@ -340,8 +340,6 @@ void CVolumetricMovement::Initialize_StiffMatrix_Structure(unsigned short nVar, 
 	}
 	
 	/*--- solve with preconditioned conjugate gradient method ---*/
-	bool preconditioner = true; 
-
 	StiffMatrix.SetIndexes(nPoint, nPointDomain, nVar, nVar, row_ptr, col_ind, nnz);
 
 	/*--- Set StiffMatrix entries to zero ---*/

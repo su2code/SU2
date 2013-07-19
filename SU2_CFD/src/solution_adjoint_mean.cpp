@@ -129,8 +129,6 @@ CAdjEulerSolution::CAdjEulerSolution(CGeometry *geometry, CConfig *config, unsig
     if (rank == MASTER_NODE)
       cout << "Initialize jacobian structure (Adjoint Euler). MG level: " << iMesh <<"." << endl;
 		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
-    if (config->GetKind_Linear_Solver_Prec() == LINELET)
-      Jacobian.BuildLineletPreconditioner(geometry, config);
 
     if (axisymmetric) {
       Jacobian_Axisymmetric = new double* [nVar];
@@ -154,8 +152,6 @@ CAdjEulerSolution::CAdjEulerSolution(CGeometry *geometry, CConfig *config, unsig
 		}
 
 		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
-    if (config->GetKind_Linear_Solver_Prec() == LINELET)
-      Jacobian.BuildLineletPreconditioner(geometry, config);
     LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
 	}
@@ -2341,6 +2337,7 @@ void CAdjEulerSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution *
   }
   else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
     Jacobian.BuildJacobiPreconditioner();
+    Jacobian.BuildLineletPreconditioner(geometry, config);
     precond = new CLineletPreconditioner(Jacobian, geometry, config);
   }
   
@@ -2397,6 +2394,7 @@ void CAdjEulerSolution::Solve_LinearSystem(CGeometry *geometry, CSolution **solu
   }
   else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
     Jacobian.BuildJacobiPreconditioner();
+    Jacobian.BuildLineletPreconditioner(geometry, config);
     precond = new CLineletPreconditioner(Jacobian, geometry, config);
   }
   
@@ -5243,8 +5241,6 @@ CAdjNSSolution::CAdjNSSolution(CGeometry *geometry, CConfig *config, unsigned sh
     if (rank == MASTER_NODE)
       cout << "Initialize jacobian structure (Adjoint N-S). MG level: " << iMesh <<"." << endl;
 		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
-    if (config->GetKind_Linear_Solver_Prec() == LINELET)
-      Jacobian.BuildLineletPreconditioner(geometry, config);
 
   } else {
       if (rank == MASTER_NODE)

@@ -549,6 +549,7 @@ void CTurbSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **sol
   }
   else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
     Jacobian.BuildJacobiPreconditioner();
+    Jacobian.BuildLineletPreconditioner(geometry, config);
     precond = new CLineletPreconditioner(Jacobian, geometry, config);
   }
   
@@ -933,8 +934,7 @@ CTurbSASolution::CTurbSASolution(CGeometry *geometry, CConfig *config, unsigned 
         /*--- Initialization of the structure of the whole Jacobian ---*/
         if (rank == MASTER_NODE) cout << "Initialize jacobian structure (SA model)." << endl;
         Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
-    if (config->GetKind_Linear_Solver_Prec() == LINELET)
-      Jacobian.BuildLineletPreconditioner(geometry, config);
+
     LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
         
@@ -2661,8 +2661,7 @@ CTurbSSTSolution::CTurbSSTSolution(CGeometry *geometry, CConfig *config, unsigne
         /*--- Initialization of the structure of the whole Jacobian ---*/
         if (rank == MASTER_NODE) cout << "Initialize jacobian structure (SST model)." << endl;
         Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
-    if (config->GetKind_Linear_Solver_Prec() == LINELET)
-      Jacobian.BuildLineletPreconditioner(geometry, config);
+
     LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
 	}

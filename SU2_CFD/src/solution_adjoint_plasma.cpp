@@ -98,8 +98,7 @@ CAdjPlasmaSolution::CAdjPlasmaSolution(CGeometry *geometry, CConfig *config) : C
 				Jacobian_Axisymmetric[iVar] = new double[nVar];
 		}
 		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
-    if (config->GetKind_Linear_Solver_Prec() == LINELET)
-      Jacobian.BuildLineletPreconditioner(geometry, config);
+
 	}
 
 	/*--- Computation of gradients by least squares ---*/
@@ -968,6 +967,7 @@ void CAdjPlasmaSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution 
   }
   else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
     Jacobian.BuildJacobiPreconditioner();
+    Jacobian.BuildLineletPreconditioner(geometry, config);
     precond = new CLineletPreconditioner(Jacobian, geometry, config);
   }
   
