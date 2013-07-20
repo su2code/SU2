@@ -972,12 +972,12 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 */		
-	virtual void SetPrimVar_Compressible(double Gamma, double Gas_Constant);
+	virtual void SetPrimVar_Compressible(CConfig *config);
 	
 	/*!
 	 * \brief A virtual member.
 	 */		
-	virtual void SetPrimVar_Compressible(double Gamma, double Gas_Constant, double turb_ke);
+	virtual void SetPrimVar_Compressible(CConfig *config, double turb_ke);
 	
 	/*!
 	 * \brief A virtual member.
@@ -1871,7 +1871,7 @@ public:
 	/*!
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
-	void SetPrimVar_Compressible(double Gamma, double Gas_Constant);
+	void SetPrimVar_Compressible(CConfig *config);
 	
 	/*!
 	 * \brief Set all the primitive variables for incompressible flows.
@@ -2183,7 +2183,7 @@ public:
 	/*!
 	 * \brief Set all the primitive variables for compressible flows
 	 */
-	void SetPrimVar_Compressible(double Gamma, double Gas_Constant, double turb_ke);
+	void SetPrimVar_Compressible(CConfig *config, double turb_ke);
 	
 	/*!
 	 * \brief Set all the primitive variables for incompressible flows
