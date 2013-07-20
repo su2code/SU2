@@ -298,8 +298,6 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddScalarOption("LINEAR_SOLVER_ITER", Linear_Solver_Iter, 10);
 	/* DESCRIPTION: Relaxation of the linear solver for the implicit formulation */
 	AddScalarOption("LINEAR_SOLVER_RELAX", Linear_Solver_Relax, 1.0);
-	/* DESCRIPTION: Print the linear solver history */
-	AddSpecialOption("LINEAR_SOLVER_HIST", Linear_Solver_Hist, SetBoolOption, false);
 
 	/* DESCRIPTION: Linear solver for the turbulent adjoint systems */
 	AddEnumOption("ADJTURB_LIN_SOLVER", Kind_AdjTurb_Linear_Solver, Linear_Solver_Map, "LU_SGS");

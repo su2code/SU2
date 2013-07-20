@@ -924,11 +924,13 @@ static const map<string, ENUM_SENS_SMOOTHING> Sens_Smoothing_Map = CCreateMap<st
 enum ENUM_LINEAR_SOLVER_PREC {
 	NO_PREC = 0,		/*!< \brief No preconditioner. */
 	JACOBI = 1,		/*!< \brief Jacobi preconditioner. */
-	LINELET = 2		/*!< \brief Line implicit preconditioner. */
+	LUSGS = 2,		/*!< \brief LU SGS preconditioner. */
+	LINELET = 3		/*!< \brief Line implicit preconditioner. */
 };
 static const map<string, ENUM_LINEAR_SOLVER_PREC> Linear_Solver_Prec_Map = CCreateMap<string, ENUM_LINEAR_SOLVER_PREC>
 ("NONE", NO_PREC)
 ("JACOBI", JACOBI)
+("LUSGS", LUSGS)
 ("LINELET", LINELET);
 
 /*!

@@ -185,7 +185,7 @@ public:
 	 * \brief Set number of linear solver iterations.
 	 * \param[in] val_iterlinsolver - Number of linear iterations.
 	 */
-	virtual void SetSolution_MPI(CGeometry *geometry, CConfig *config);
+	virtual void Set_MPI_Solution(CGeometry *geometry, CConfig *config);
     
     /*!
 	 * \brief Set the value of the max residual and RMS residual.
@@ -197,14 +197,14 @@ public:
 	 * \brief Set number of linear solver iterations.
 	 * \param[in] val_iterlinsolver - Number of linear iterations.
 	 */
-	virtual void SetSolution_Old_MPI(CGeometry *geometry, CConfig *config);
+	virtual void Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config);
     
     /*!
 	 * \brief Impose the send-receive boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-    virtual void SetSolution_Limiter_MPI(CGeometry *geometry, CConfig *config);
+    virtual void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
     
 	/*!
 	 * \brief Get number of linear solver iterations.
@@ -352,7 +352,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-    void SetSolution_Gradient_MPI(CGeometry *geometry, CConfig *config);
+    virtual void Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config);
     
     /*!
 	 * \brief Compute the Least Squares gradient of the grid velocity.
@@ -472,7 +472,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetUndivided_Laplacian_MPI(CGeometry *geometry, CConfig *config);
+	virtual void Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfig *config);
     
     /*!
 	 * \brief A virtual member.
@@ -486,7 +486,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetMax_Eigenvalue_MPI(CGeometry *geometry, CConfig *config);
+	virtual void Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *config);
     
 	/*!
 	 * \brief A virtual member.
@@ -502,7 +502,7 @@ public:
 	 * \param[in] solution_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetDissipation_Switch_MPI(CGeometry *geometry, CConfig *config);
+	virtual void Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *config);
     
 	/*!
 	 * \brief A virtual member.
@@ -600,17 +600,7 @@ public:
 	 */
 	virtual void BC_Dirichlet(CGeometry *geometry, CSolution **solution_container, CConfig *config,
                               unsigned short val_marker);
-    
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_mesh - Index of the mesh in multigrid computations.
-	 */
-	virtual void MPI_Send_Receive(CGeometry ***geometry, CSolution ****solution_container,
-                                  CConfig **config, unsigned short iMGLevel, unsigned short iZone);
-    
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -868,7 +858,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetPrimVar_Gradient_MPI(CGeometry *geometry, CConfig *config);
+	virtual void Set_MPI_PrimVar_Gradient(CGeometry *geometry, CConfig *config);
     
     /*!
 	 * \brief A virtual member.
@@ -1770,7 +1760,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetSolution_MPI(CGeometry *geometry, CConfig *config);
+	void Set_MPI_Solution(CGeometry *geometry, CConfig *config);
     
     /*!
 	 * \brief Load a solution from a restart file.
@@ -1915,21 +1905,28 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetSolution_MPI(CGeometry *geometry, CConfig *config);
+	void Set_MPI_Solution(CGeometry *geometry, CConfig *config);
     
     /*!
 	 * \brief Impose the send-receive boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetSolution_Old_MPI(CGeometry *geometry, CConfig *config);
+	void Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config);
     
     /*!
 	 * \brief Impose the send-receive boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-    virtual void SetSolution_Limiter_MPI(CGeometry *geometry, CConfig *config);
+	void Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config);
+    
+    /*!
+	 * \brief Impose the send-receive boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+    virtual void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
     
 	/*!
 	 * \brief Compute the density at the inlet.
@@ -2119,7 +2116,7 @@ public:
 	 * \param[in] solution_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetDissipation_Switch_MPI(CGeometry *geometry, CConfig *config);
+	void Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *config);
     
 	/*!
 	 * \brief Compute the gradient of the primitive variables using Green-Gauss method,
@@ -2143,7 +2140,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetPrimVar_Gradient_MPI(CGeometry *geometry, CConfig *config);
+	void Set_MPI_PrimVar_Gradient(CGeometry *geometry, CConfig *config);
     
 	/*!
 	 * \brief Compute the limiter of the primitive variables.
@@ -2171,7 +2168,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetUndivided_Laplacian_MPI(CGeometry *geometry, CConfig *config);
+	void Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfig *config);
     
     /*!
 	 * \brief Compute the max eigenvalue.
@@ -2185,7 +2182,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetMax_Eigenvalue_MPI(CGeometry *geometry, CConfig *config);
+	void Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *config);
     
 	/*!
 	 * \brief Impose via the residual the Euler wall boundary condition.
@@ -2866,14 +2863,28 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetSolution_MPI(CGeometry *geometry, CConfig *config);
+	void Set_MPI_Solution(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief Impose the send-receive boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief Impose the send-receive boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config);
     
     /*!
 	 * \brief Impose the send-receive boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-    void SetSolution_Limiter_MPI(CGeometry *geometry, CConfig *config);
+    void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
     
 	/*!
 	 * \brief Impose the Symmetry Plane boundary condition.
@@ -3598,14 +3609,28 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetSolution_MPI(CGeometry *geometry, CConfig *config);
+	void Set_MPI_Solution(CGeometry *geometry, CConfig *config);
     
   /*!
 	 * \brief Impose the send-receive boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetSolution_Limiter_MPI(CGeometry *geometry, CConfig *config);
+	void Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config);
+    
+    /*!
+	 * \brief Impose the send-receive boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief Impose the send-receive boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config);
   
   /*!
 	 * \brief Compute the Fan face Mach number.
@@ -3725,7 +3750,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetUndivided_Laplacian_MPI(CGeometry *geometry, CConfig *config);
+	void Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfig *config);
     
 	/*!
 	 * \brief Compute the sensor for higher order dissipation control in rotating problems.
@@ -3741,7 +3766,7 @@ public:
 	 * \param[in] solution_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetDissipation_Switch_MPI(CGeometry *geometry, CConfig *config);
+	void Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *config);
     
 	/*!
 	 * \brief Impose via the residual the adjoint Euler wall boundary condition.
@@ -4137,7 +4162,14 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetSolution_MPI(CGeometry *geometry, CConfig *config);
+	void Set_MPI_Solution(CGeometry *geometry, CConfig *config);
+    
+    /*!
+	 * \brief Impose the send-receive boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config);
     
 	/*!
 	 * \brief Default destructor of the class.
@@ -4390,16 +4422,6 @@ public:
 	 */
 	void BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
                       unsigned short val_marker);
-    
-	/*!
-	 * \brief Impose the send-receive boundary condition.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_mesh - Index of the mesh in multigrid computations.
-	 */
-	void MPI_Send_Receive(CGeometry ***geometry, CSolution ****solution_container,
-                          CConfig **config, unsigned short iMGLevel, unsigned short iZone);
     
 	/*!
 	 * \brief Update the solution using a Runge-Kutta scheme.
@@ -5122,16 +5144,6 @@ public:
 	void SetInitialCondition(CGeometry **geometry, CSolution ***solution_container, CConfig *config, unsigned long ExtIter);
     
 	/*!
-	 * \brief Impose the send-receive boundary condition.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_mesh - Index of the mesh in multigrid computations.
-	 */
-	void MPI_Send_Receive(CGeometry ***geometry, CSolution ****solution_container,
-                          CConfig **config, unsigned short iMGLevel, unsigned short iZone);
-    
-	/*!
 	 * \brief Provide the total (inviscid + viscous) non dimensional FEA coefficient.
 	 * \return Value of the FEA coefficient (inviscid + viscous contribution).
 	 */
@@ -5180,14 +5192,21 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetSolution_MPI(CGeometry *geometry, CConfig *config);
+	void Set_MPI_Solution(CGeometry *geometry, CConfig *config);
     
     /*!
 	 * \brief Impose the send-receive boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-    void SetSolution_Limiter_MPI(CGeometry *geometry, CConfig *config);
+	void Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config);
+    
+    /*!
+	 * \brief Impose the send-receive boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+    void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
     
 	/*!
 	 * \brief Provide the total (inviscid + viscous) non dimensional Free Surface coefficient.
@@ -5370,14 +5389,21 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetSolution_MPI(CGeometry *geometry, CConfig *config);
+	void Set_MPI_Solution(CGeometry *geometry, CConfig *config);
     
     /*!
 	 * \brief Impose the send-receive boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-    void SetSolution_Limiter_MPI(CGeometry *geometry, CConfig *config);
+	void Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config);
+    
+    /*!
+	 * \brief Impose the send-receive boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+    void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
     
 	/*!
 	 * \brief Impose the Symmetry Plane boundary condition.
@@ -6115,8 +6141,19 @@ public:
 	void Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
                          CConfig *config, unsigned short iMesh);
     
+    /*!
+	 * \brief Impose the send-receive boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+    void Set_MPI_Solution(CGeometry *geometry, CConfig *config);
     
-    void SetSolution_MPI(CGeometry *geometry, CConfig *config);
+    /*!
+	 * \brief Impose the send-receive boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config);
     
     /*!
 	 * \brief Get the value of the maximum delta time.
@@ -6185,7 +6222,7 @@ public:
     /*!
      * \brief Send the gradient of the primitive variables to the other processors
      */
-    void SetPrimVar_Gradient_MPI(CGeometry *geometry, CConfig *config);
+    void Set_MPI_PrimVar_Gradient(CGeometry *geometry, CConfig *config);
     
     /*!
 	 * \brief A virtual member.
@@ -6267,16 +6304,6 @@ public:
 	 */
 	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
                           unsigned short val_marker);
-    
-	/*!
-	 * \brief Do the send-receive communications in the MPI parallelization.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_mesh - Index of the mesh in multigrid computations.
-	 */
-	void MPI_Send_Receive(CGeometry ***geometry, CSolution ****solution_container,
-                          CConfig **config, unsigned short iMGLevel, unsigned short iZone);
     
 	/*!
 	 * \brief Impose the far-field boundary condition using characteristics.
@@ -6539,7 +6566,14 @@ public:
      * \param[in] geometry - Geometrical definition of the problem.
      * \param[in] config - Definition of the problem.
      */
-    void SetSolution_MPI(CGeometry *geometry, CConfig *config);
+    void Set_MPI_Solution(CGeometry *geometry, CConfig *config);
+    
+    /*!
+	 * \brief Impose the send-receive boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config);
     
 	/*!
 	 * \brief Created the force projection vector for adjoint boundary conditions.
@@ -6622,16 +6656,6 @@ public:
 	 */
 	void BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
                        unsigned short val_marker);
-    
-	/*!
-	 * \brief Impose the send-receive boundary condition.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_mesh - Index of the mesh in multigrid computations.
-	 */
-	void MPI_Send_Receive(CGeometry ***geometry, CSolution ****solution_container,
-                          CConfig **config, unsigned short iMGLevel, unsigned short iZone);
     
 	/*!
 	 * \brief Impose via the residual the adjoint symmetry boundary condition.

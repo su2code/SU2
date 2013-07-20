@@ -381,7 +381,7 @@ int main(int argc, char *argv[]) {
       if (config_container[ZONE_0]->GetLowFidelitySim()) {
         integration_container[ZONE_0][FLOW_SOL]->SetProlongated_Solution(RUNTIME_FLOW_SYS, solution_container[ZONE_0][MESH_0], solution_container[ZONE_0][MESH_1], geometry_container[ZONE_0][MESH_0], geometry_container[ZONE_0][MESH_1], config_container[ZONE_0]);
         integration_container[ZONE_0][FLOW_SOL]->Smooth_Solution(RUNTIME_FLOW_SYS, solution_container[ZONE_0][MESH_0], geometry_container[ZONE_0][MESH_0], 3, 1.25, config_container[ZONE_0]);
-        solution_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(RUNTIME_FLOW_SYS)]->SetSolution_MPI(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
+        solution_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(RUNTIME_FLOW_SYS)]->Set_MPI_Solution(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
         solution_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(RUNTIME_FLOW_SYS)]->Preprocessing(geometry_container[ZONE_0][MESH_0], solution_container[ZONE_0][MESH_0], config_container[ZONE_0], MESH_0, 0, RUNTIME_FLOW_SYS);
       }
       

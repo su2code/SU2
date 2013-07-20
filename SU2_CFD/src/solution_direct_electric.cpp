@@ -153,22 +153,20 @@ void CElectricSolution::Solve_LinearSystem(CGeometry *geometry, CSolution **solu
 	CSysVector sol_vec((const unsigned int)geometry->GetnPoint(),
 			(const unsigned int)geometry->GetnPointDomain(), nVar, xsol);
 
-	CMatrixVectorProduct* mat_vec = new CSparseMatrixVectorProduct(StiffMatrix);
-	CSolutionSendReceive* sol_mpi = new CSparseMatrixSolMPI(StiffMatrix, geometry, config);
+	CMatrixVectorProduct* mat_vec = new CSparseMatrixVectorProduct(StiffMatrix, geometry, config);
 
 	StiffMatrix.BuildJacobiPreconditioner();
 
 	CPreconditioner* precond = NULL;
 	Jacobian.BuildJacobiPreconditioner();
-	precond = new CJacobiPreconditioner(Jacobian);			
+	precond = new CJacobiPreconditioner(Jacobian, geometry, config);			
 
 	CSysSolve system;
-	system.ConjugateGradient(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, 1E-12, iter_max, true);	
+	system.ConjugateGradient(rhs_vec, sol_vec, *mat_vec, *precond, 1E-12, iter_max, true);	
 
 	sol_vec.CopyToArray(xsol);
 	delete mat_vec; 
 	delete precond;
-	delete sol_mpi;
 
 	SetRes_RMS(0, norm);
 	/*--- Update solution ---*/

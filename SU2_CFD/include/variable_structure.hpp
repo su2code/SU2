@@ -690,14 +690,14 @@ public:
 	 * \brief Get the undivided laplacian of the solution.
 	 * \return Pointer to the undivided laplacian vector.
 	 */
-	double *GetUnd_Lapl(void);
+	double *GetUndivided_Laplacian(void);
 
 	/*!
 	 * \brief Get the undivided laplacian of the solution.
 	 * \param[in] val_var - Variable of the undivided laplacian.
 	 * \return Value of the undivided laplacian vector.
 	 */
-	double GetUnd_Lapl(unsigned short val_var);
+	double GetUndivided_Laplacian(unsigned short val_var);
 
 	/*!
 	 * \brief A virtual member.
@@ -972,7 +972,7 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 */		
-	virtual void SetPrimVar_Compressible(double Gamma, double Gas_Constant);
+	virtual void SetPrimVar_Compressible(CConfig *config);
   
   /*!
 	 * \brief A virtual member.
@@ -982,7 +982,7 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 */		
-	virtual void SetPrimVar_Compressible(double Gamma, double Gas_Constant, double turb_ke);
+	virtual void SetPrimVar_Compressible(CConfig *config, double turb_ke);
 	
 	/*!
 	 * \brief A virtual member.
@@ -1881,7 +1881,7 @@ public:
 	/*!
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
-	void SetPrimVar_Compressible(double Gamma, double Gas_Constant);
+	void SetPrimVar_Compressible(CConfig *config);
 	
 	/*!
 	 * \brief Set all the primitive variables for incompressible flows.
@@ -2193,7 +2193,7 @@ public:
 	/*!
 	 * \brief Set all the primitive variables for compressible flows
 	 */
-	void SetPrimVar_Compressible(double Gamma, double Gas_Constant, double turb_ke);
+	void SetPrimVar_Compressible(CConfig *config, double turb_ke);
 	
 	/*!
 	 * \brief Set all the primitive variables for incompressible flows

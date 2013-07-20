@@ -241,7 +241,7 @@ CAdjTurbSolution::CAdjTurbSolution(CGeometry *geometry, CConfig *config) : CSolu
 	}
   
   /*--- MPI solution ---*/
-  SetSolution_MPI(geometry, config);
+  Set_MPI_Solution(geometry, config);
   
 }
 
@@ -290,7 +290,7 @@ CAdjTurbSolution::~CAdjTurbSolution(void) {
     
 }
 
-void CAdjTurbSolution::SetSolution_MPI(CGeometry *geometry, CConfig *config) {
+void CAdjTurbSolution::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
 	unsigned short iVar, iMarker;
 	unsigned long iVertex, iPoint, nVertex, nBuffer_Vector;
 	double *Buffer_Receive_U = NULL;
@@ -357,6 +357,137 @@ void CAdjTurbSolution::SetSolution_MPI(CGeometry *geometry, CConfig *config) {
 	}
 }
 
+void CAdjTurbSolution::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config) {
+	unsigned short iVar, iDim, iMarker, iPeriodic_Index;
+	unsigned long iVertex, iPoint, nVertex, nBuffer_VectorGrad;
+	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi,
+	sinPsi, **newGradient = NULL, *Buffer_Receive_UGrad = NULL;
+	short SendRecv;
+	int send_to, receive_from;
+    
+#ifndef NO_MPI
+    
+    MPI::COMM_WORLD.Barrier();
+	double *Buffer_Send_UGrad = NULL;
+    
+#endif
+    
+	newGradient = new double* [nVar];
+	for (iVar = 0; iVar < nVar; iVar++)
+		newGradient[iVar] = new double[3];
+    
+	/*--- Send-Receive boundary conditions ---*/
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+		if (config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) {
+			SendRecv = config->GetMarker_All_SendRecv(iMarker);
+			nVertex = geometry->nVertex[iMarker];
+			nBuffer_VectorGrad = nVertex*nVar*nDim;
+			send_to = SendRecv-1;
+			receive_from = abs(SendRecv)-1;
+            
+#ifndef NO_MPI
+            
+			/*--- Send information using MPI  ---*/
+			if (SendRecv > 0) {
+                Buffer_Send_UGrad = new double[nBuffer_VectorGrad];
+				for (iVertex = 0; iVertex < nVertex; iVertex++) {
+					iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+                    for (iVar = 0; iVar < nVar; iVar++)
+                        for (iDim = 0; iDim < nDim; iDim++)
+                            Buffer_Send_UGrad[iDim*nVar*nVertex+iVar*nVertex+iVertex] = node[iPoint]->GetGradient(iVar,iDim);
+				}
+                MPI::COMM_WORLD.Bsend(Buffer_Send_UGrad, nBuffer_VectorGrad, MPI::DOUBLE, send_to, 0); delete [] Buffer_Send_UGrad;
+			}
+            
+#endif
+            
+			/*--- Receive information  ---*/
+			if (SendRecv < 0) {
+                Buffer_Receive_UGrad = new double [nBuffer_VectorGrad];
+                
+#ifdef NO_MPI
+                
+				/*--- Receive information without MPI ---*/
+				for (iVertex = 0; iVertex < nVertex; iVertex++) {
+                    iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+                    for (iVar = 0; iVar < nVar; iVar++)
+                        for (iDim = 0; iDim < nDim; iDim++)
+                            Buffer_Receive_UGrad[iDim*nVar*nVertex+iVar*nVertex+iVertex] = node[iPoint]->GetGradient(iVar,iDim);
+				}
+                
+#else
+                
+                MPI::COMM_WORLD.Recv(Buffer_Receive_UGrad, nBuffer_VectorGrad, MPI::DOUBLE, receive_from, 0);
+                
+#endif
+                
+				/*--- Do the coordinate transformation ---*/
+				for (iVertex = 0; iVertex < nVertex; iVertex++) {
+                    
+					/*--- Find point and its type of transformation ---*/
+					iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+					iPeriodic_Index = geometry->vertex[iMarker][iVertex]->GetRotation_Type();
+                    
+					/*--- Retrieve the supplied periodic information. ---*/
+					angles = config->GetPeriodicRotation(iPeriodic_Index);
+                    
+					/*--- Store angles separately for clarity. ---*/
+					theta    = angles[0];   phi    = angles[1]; psi    = angles[2];
+					cosTheta = cos(theta);  cosPhi = cos(phi);  cosPsi = cos(psi);
+					sinTheta = sin(theta);  sinPhi = sin(phi);  sinPsi = sin(psi);
+                    
+					/*--- Compute the rotation matrix. Note that the implicit
+					 ordering is rotation about the x-axis, y-axis,
+					 then z-axis. Note that this is the transpose of the matrix
+					 used during the preprocessing stage. ---*/
+					rotMatrix[0][0] = cosPhi*cosPsi; rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi; rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+					rotMatrix[0][1] = cosPhi*sinPsi; rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi; rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+					rotMatrix[0][2] = -sinPhi; rotMatrix[1][2] = sinTheta*cosPhi; rotMatrix[2][2] = cosTheta*cosPhi;
+                    
+                    for (iVar = 0; iVar < nVar; iVar++)
+                        for (iDim = 0; iDim < nDim; iDim++)
+                            newGradient[iVar][iDim] = Buffer_Receive_UGrad[iDim*nVar*nVertex+iVar*nVertex+iVertex];
+                    
+                    /*--- Need to rotate the gradients for all conserved variables. ---*/
+                    for (iVar = 0; iVar < nVar; iVar++) {
+                        if (nDim == 2) {
+                            newGradient[iVar][0] = rotMatrix[0][0]*Buffer_Receive_UGrad[0*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[0][1]*Buffer_Receive_UGrad[1*nVar*nVertex+iVar*nVertex+iVertex];
+                            newGradient[iVar][1] = rotMatrix[1][0]*Buffer_Receive_UGrad[0*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[1][1]*Buffer_Receive_UGrad[1*nVar*nVertex+iVar*nVertex+iVertex];
+                        }
+                        else {
+                            newGradient[iVar][0] = rotMatrix[0][0]*Buffer_Receive_UGrad[0*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[0][1]*Buffer_Receive_UGrad[1*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[0][2]*Buffer_Receive_UGrad[2*nVar*nVertex+iVar*nVertex+iVertex];
+                            newGradient[iVar][1] = rotMatrix[1][0]*Buffer_Receive_UGrad[0*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[1][1]*Buffer_Receive_UGrad[1*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[1][2]*Buffer_Receive_UGrad[2*nVar*nVertex+iVar*nVertex+iVertex];
+                            newGradient[iVar][2] = rotMatrix[2][0]*Buffer_Receive_UGrad[0*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[2][1]*Buffer_Receive_UGrad[1*nVar*nVertex+iVar*nVertex+iVertex] + rotMatrix[2][2]*Buffer_Receive_UGrad[2*nVar*nVertex+iVar*nVertex+iVertex];
+                        }
+                    }
+                    
+                    /*--- Copy transformed gradients back into buffer. ---*/
+                    for (iVar = 0; iVar < nVar; iVar++)
+                        for (iDim = 0; iDim < nDim; iDim++)
+                            Buffer_Receive_UGrad[iDim*nVar*nVertex+iVar*nVertex+iVertex] = newGradient[iVar][iDim];
+                    
+                    
+					/*--- Store the received information ---*/
+                    for (iVar = 0; iVar < nVar; iVar++)
+                        for (iDim = 0; iDim < nDim; iDim++)
+                            node[iPoint]->SetGradient(iVar, iDim, Buffer_Receive_UGrad[iDim*nVar*nVertex+iVar*nVertex+iVertex]);
+				}
+                delete [] Buffer_Receive_UGrad;
+			}
+		}
+	}
+    
+	for (iVar = 0; iVar < nVar; iVar++)
+		delete [] newGradient[iVar];
+	delete [] newGradient;
+    
+#ifndef NO_MPI
+    
+    MPI::COMM_WORLD.Barrier();
+    
+#endif
+    
+}
 
 void CAdjTurbSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
 
@@ -1601,44 +1732,47 @@ void CAdjTurbSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **
 		CSysVector sol_vec((const unsigned int)geometry->GetnPoint(),
                            (const unsigned int)geometry->GetnPointDomain(), nVar, xsol);
         
-		CMatrixVectorProduct* mat_vec = new CSparseMatrixVectorProduct(Jacobian);
-		CSolutionSendReceive* sol_mpi = new CSparseMatrixSolMPI(Jacobian, geometry, config);
-        
+		CMatrixVectorProduct* mat_vec = new CSparseMatrixVectorProduct(Jacobian, geometry, config);
+
 		CPreconditioner* precond = NULL;
 		//if (config->GetKind_AdjTurb_Linear_Prec() == JACOBI) {
         if (config->GetKind_Linear_Solver_Prec() == JACOBI) {
 			Jacobian.BuildJacobiPreconditioner();
-			precond = new CJacobiPreconditioner(Jacobian);
+			precond = new CJacobiPreconditioner(Jacobian, geometry, config);
 		}
+      //else if (config->GetKind_AdjTurb_Linear_Prec() == LUSGS) {
+        else if (config->GetKind_Linear_Solver_Prec() == LUSGS) {
+          precond = new CLUSGSPreconditioner(Jacobian, geometry, config);
+        }
 		//else if (config->GetKind_AdjTurb_Linear_Prec() == LINELET) {
         else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
 			Jacobian.BuildJacobiPreconditioner();
-			precond = new CLineletPreconditioner(Jacobian);
+			precond = new CLineletPreconditioner(Jacobian, geometry, config);
 		}
 		//else if (config->GetKind_AdjTurb_Linear_Prec() == NO_PREC)
-        else if (config->GetKind_Linear_Solver_Prec() == NO_PREC)
-			precond = new CIdentityPreconditioner();
+        else if (config->GetKind_Linear_Solver_Prec() == NO_PREC) {
+			precond = new CIdentityPreconditioner(Jacobian, geometry, config);
+        }
         
 		CSysSolve system;
 		//if (config->GetKind_AdjTurb_Linear_Solver() == BCGSTAB)
         if (config->GetKind_Linear_Solver() == BCGSTAB)
-			system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetAdjTurb_Linear_Error(),
+			system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, config->GetAdjTurb_Linear_Error(),
                            config->GetAdjTurb_Linear_Iter(), false);
-        //system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetLinear_Solver_Error(),
+        //system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, config->GetLinear_Solver_Error(),
         //           config->GetLinear_Solver_Iter(), false);
 		//else if (config->GetKind_AdjTurb_Linear_Solver() == GMRES)
         else if (config->GetKind_Linear_Solver() == GMRES)
-			system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetAdjTurb_Linear_Error(),
+			system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, config->GetAdjTurb_Linear_Error(),
                          config->GetAdjTurb_Linear_Iter(), false); ///this -> # iterations needed to converge... or make true for output
-        //system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetLinear_Solver_Error(),
+        //system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, config->GetLinear_Solver_Error(),
         //                 config->GetLinear_Solver_Iter(), false); ///this -> # iterations needed to converge... or make true for output
-        //system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, *sol_mpi, config->GetLinear_Solver_Error(),
+        //system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, config->GetLinear_Solver_Error(),
         //                 40, false); ///this -> # iterations needed to converge... or make true for output
         
 		sol_vec.CopyToArray(xsol);
 		delete mat_vec;
 		delete precond;
-		delete sol_mpi;
 	}
     
 	/*--- Update solution (system written in terms of increments) ---*/
@@ -1650,12 +1784,12 @@ void CAdjTurbSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **
                 node[iPoint]->SetSolution(iVar,xsol[iPoint*nVar+iVar]);
 	}
     
-    /*--- MPI solution ---*/
-    SetSolution_MPI(geometry, config);
-    
-    /*--- Compute the root mean square residual ---*/
-    SetResidual_RMS(geometry, config);
-    
+  /*--- MPI solution ---*/
+  Set_MPI_Solution(geometry, config);
+  
+  /*--- Compute the root mean square residual ---*/
+  SetResidual_RMS(geometry, config);
+
 }
 
 void CAdjTurbSolution::ConvertSensMu_to_SensU(double *val_Vars, double val_Laminar_Viscosity,
