@@ -4321,45 +4321,6 @@ void CPhysicalGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filenam
 	output_file.close();
 }
 
-void CPhysicalGeometry::SetParaView(char mesh_filename[200]) {
-	unsigned long iElem, iPoint;
-	unsigned short iNode, iDim;
-	ofstream para_file;
-
-	para_file.open(mesh_filename, ios::out);
-
-	para_file << "# vtk DataFile Version 2.0" << endl;
-	para_file << "Visualization of the volumetric grid" << endl;
-	para_file << "ASCII" << endl;
-	para_file << "DATASET UNSTRUCTURED_GRID" << endl;
-	para_file << "POINTS " << nPoint << " float" << endl;
-
-	para_file.precision(15);
-
-	for(iPoint = 0; iPoint < nPoint; iPoint++) {
-		for(iDim = 0; iDim < nDim; iDim++)
-			para_file << scientific << node[iPoint]->GetCoord(iDim) << "\t";
-		if (nDim == 2) para_file << "0.0";
-		para_file << "\n";
-	}	 
-
-	para_file << "CELLS " << nElem << "\t" << nElem_Storage << endl;
-	for(iElem = 0; iElem < nElem; iElem++) {
-		para_file << elem[iElem]->GetnNodes() << "\t";
-		for(iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
-			if (iNode == elem[iElem]->GetnNodes()-1) para_file << elem[iElem]->GetNode(iNode) << "\n";			
-			else para_file << elem[iElem]->GetNode(iNode) << "\t";			
-		}
-	}	
-
-	para_file << "CELL_TYPES " << nElem << endl;
-	for(iElem=0; iElem < nElem; iElem++) {
-		para_file << elem[iElem]->GetVTK_Type() << endl;
-	}
-	para_file.close();
-
-}
-
 void CPhysicalGeometry::SetTecPlot(char mesh_filename[200]) {
 	unsigned long iElem, iPoint;
 	unsigned short iDim;
@@ -4577,80 +4538,6 @@ bool CPhysicalGeometry::FindFace(unsigned long first_elem, unsigned long second_
 
 }
 
-void CPhysicalGeometry::SetBoundParaView (CConfig *config, char mesh_filename[200]) {
-	ofstream Paraview_File;
-	unsigned long iPoint, Total_nElem_Bound, Total_nElem_Bound_Storage, iElem, *PointSurface = NULL, nPointSurface = 0;
-	unsigned short Coord_i, iMarker, iNode;
-
-	/*--- It is important to do a renumering to don't add points 
-	 that do not belong to the surfaces ---*/
-	PointSurface = new unsigned long[nPoint];
-	for (iPoint = 0; iPoint < nPoint; iPoint++)
-		if (node[iPoint]->GetBoundary()) {
-			PointSurface[iPoint] = nPointSurface;
-			nPointSurface++;
-		}
-
-	/*--- Open the paraview file ---*/
-	Paraview_File.open(mesh_filename, ios::out);
-
-	/*--- Write the header of the file ---*/
-	Paraview_File << "# vtk DataFile Version 2.0" << endl;
-	Paraview_File << "Visualization of the surface grid (using local numbering)" << endl;
-	Paraview_File << "ASCII" << endl;
-	Paraview_File << "DATASET UNSTRUCTURED_GRID" << endl;
-	Paraview_File << "POINTS " << nPointSurface << " float" << endl;
-
-	/*--- Only write the coordiantes of the points that are on the surfaces ---*/
-	if (nDim == 3) {
-		for(iPoint = 0; iPoint < nPoint; iPoint++)
-			if (node[iPoint]->GetBoundary()) {
-				for(Coord_i = 0; Coord_i < nDim-1; Coord_i++)
-					Paraview_File << node[iPoint]->GetCoord(Coord_i) << "\t";
-				Paraview_File << node[iPoint]->GetCoord(nDim-1) << "\n";
-			}
-	}
-	else {
-		for(iPoint = 0; iPoint < nPoint; iPoint++)
-			if (node[iPoint]->GetBoundary()){
-				for(Coord_i = 0; Coord_i < nDim; Coord_i++)
-					Paraview_File << node[iPoint]->GetCoord(Coord_i) << "\t";
-				Paraview_File << "0.0\n";
-			}
-	}
-
-	/*--- Compute the total number of elements ---*/
-	Total_nElem_Bound = 0; Total_nElem_Bound_Storage = 0;
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		if (config->GetMarker_All_Plotting(iMarker) == YES) {
-			Total_nElem_Bound += nElem_Bound[iMarker];
-			Total_nElem_Bound_Storage += nElem_Bound_Storage[iMarker];
-		}
-
-	/*--- Write the cells using the new numbering ---*/
-	Paraview_File << "CELLS " << Total_nElem_Bound << "\t" << Total_nElem_Bound_Storage << endl;
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) 
-		if (config->GetMarker_All_Plotting(iMarker) == YES) 
-			for(iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
-				Paraview_File << bound[iMarker][iElem]->GetnNodes() << "\t";
-				for(iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes()-1; iNode++)
-					Paraview_File << PointSurface[bound[iMarker][iElem]->GetNode(iNode)] << "\t";			
-				Paraview_File << PointSurface[bound[iMarker][iElem]->GetNode(bound[iMarker][iElem]->GetnNodes()-1)] << "\n";
-			}
-
-	Paraview_File << "CELL_TYPES " << Total_nElem_Bound << endl;
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) 
-		if (config->GetMarker_All_Plotting(iMarker) == YES) 
-			for(iElem = 0; iElem < nElem_Bound[iMarker]; iElem++)
-				Paraview_File << bound[iMarker][iElem]->GetVTK_Type() << endl;
-
-	Paraview_File << "POINT_DATA " << nPointSurface << endl;
-
-	/*--- Dealocate memory and close the file ---*/
-	delete[] PointSurface;
-	Paraview_File.close();
-}
-
 void CPhysicalGeometry::SetBoundTecPlot (CConfig *config, char mesh_filename[200]) {
 	ofstream Tecplot_File;
 	unsigned long iPoint, Total_nElem_Bound, iElem, *PointSurface = NULL, nPointSurface = 0;
@@ -4672,7 +4559,7 @@ void CPhysicalGeometry::SetBoundTecPlot (CConfig *config, char mesh_filename[200
 			Total_nElem_Bound += nElem_Bound[iMarker];
 		}
 
-	/*--- Open the paraview file ---*/
+	/*--- Open the tecplot file ---*/
 	Tecplot_File.open(mesh_filename, ios::out);
 	Tecplot_File << "TITLE = \"Visualization of the surface grid\"" << endl;
 
@@ -7713,61 +7600,6 @@ void CBoundaryGeometry::SetBoundSensitivity(CConfig *config) {
 	delete[] Point2Vertex;
 }
 
-void CBoundaryGeometry::SetBoundParaView (CConfig *config, char mesh_filename[200]) {
-	ofstream Paraview_File;
-	unsigned long iPoint, Total_nElem_Bound, Total_nElem_Bound_Storage, iElem;
-	unsigned short Coord_i, iMarker, iNode;
-
-	Paraview_File.open(mesh_filename, ios::out);
-
-	Paraview_File << "# vtk DataFile Version 2.0" << endl;
-	Paraview_File << "Visualization of the surface grid" << endl;
-	Paraview_File << "ASCII" << endl;
-	Paraview_File << "DATASET UNSTRUCTURED_GRID" << endl;
-	Paraview_File << "POINTS " << nPoint << " float" << endl;
-
-	if (nDim == 3) {
-		for(iPoint = 0; iPoint < nPoint; iPoint++) {
-			for(Coord_i = 0; Coord_i < nDim-1; Coord_i++)
-				Paraview_File << node[iPoint]->GetCoord(Coord_i) << "\t";
-			Paraview_File << node[iPoint]->GetCoord(nDim-1) << "\n";
-		}
-	}
-	else {
-		for(iPoint = 0; iPoint < nPoint; iPoint++) {
-			for(Coord_i = 0; Coord_i < nDim; Coord_i++)
-				Paraview_File << node[iPoint]->GetCoord(Coord_i) << "\t";
-			Paraview_File << "0.0\n";
-		}
-	}
-
-
-	Total_nElem_Bound = 0; Total_nElem_Bound_Storage = 0;
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		if (config->GetMarker_All_Plotting(iMarker) == YES) {
-			Total_nElem_Bound += nElem_Bound[iMarker];
-			Total_nElem_Bound_Storage += nElem_Bound_Storage[iMarker];
-		}
-
-	Paraview_File << "CELLS " << Total_nElem_Bound << "\t" << Total_nElem_Bound_Storage << endl;
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) 
-		if (config->GetMarker_All_Plotting(iMarker) == YES) 
-			for(iElem = 0; iElem<nElem_Bound[iMarker]; iElem++) {
-				Paraview_File << bound[iMarker][iElem]->GetnNodes() << "\t";
-				for(iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes()-1; iNode++)
-					Paraview_File << bound[iMarker][iElem]->GetNode(iNode) << "\t";			
-				Paraview_File << bound[iMarker][iElem]->GetNode(bound[iMarker][iElem]->GetnNodes()-1) << "\n";
-			}
-
-	Paraview_File << "CELL_TYPES " << Total_nElem_Bound << endl;
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) 
-		if (config->GetMarker_All_Plotting(iMarker) == YES) 
-			for(iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) 
-				Paraview_File << bound[iMarker][iElem]->GetVTK_Type() << endl;
-
-	Paraview_File.close();
-}
-
 double CBoundaryGeometry::GetMaxThickness(CConfig *config, bool original_surface) {
 	unsigned short iMarker;
 	unsigned long iVertex, jVertex, n;
@@ -9583,41 +9415,6 @@ void CDomainGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename)
   delete[] cstr;
 }
 
-void CDomainGeometry::SetParaView(char mesh_filename[200]) {
-  
-	ofstream para_file;
-	para_file.open(mesh_filename, ios::out);
-  
-	para_file << "# vtk DataFile Version 2.0" << endl;
-	para_file << "Visualization of the volumetric grid" << endl;
-	para_file << "ASCII" << endl;
-	para_file << "DATASET UNSTRUCTURED_GRID" << endl;
-	para_file << "POINTS " << nPoint << " float" << endl;
-  
-	para_file.precision(15);
-  
-	for(unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-		for(unsigned short iDim = 0; iDim < nDim; iDim++)
-			para_file << scientific << node[iPoint]->GetCoord(iDim) << "\t";
-		if (nDim == 2) para_file << "0.0";
-		para_file << "\n";
-	}
-  
-	para_file << "CELLS " << nElem << "\t" << nElem_Storage << endl;
-	for(unsigned long iElem=0; iElem < nElem; iElem++) {
-		para_file << elem[iElem]->GetnNodes() << "\t";
-		for(unsigned short iNode=0; iNode < elem[iElem]->GetnNodes(); iNode++)
-			para_file << elem[iElem]->GetNode(iNode) << "\t";
-		para_file << "\n";
-	}
-  
-	para_file << "CELL_TYPES " << nElem << endl;
-	for(unsigned long iElem=0; iElem < nElem; iElem++) {
-		para_file << elem[iElem]->GetVTK_Type() << endl;
-	}
-	para_file.close();
-}
-
 void CDomainGeometry::SetTecPlot(char mesh_filename[200]) {
 	unsigned long iElem, iPoint;
 	unsigned short iDim;
@@ -9684,58 +9481,6 @@ void CDomainGeometry::SetTecPlot(char mesh_filename[200]) {
   
 	Tecplot_File.close();
 
-}
-
-void CDomainGeometry::SetBoundParaView (CConfig *config, char mesh_filename[200]) {
-	ofstream para_file;
-	para_file.open(mesh_filename, ios::out);
-  
-	para_file << "# vtk DataFile Version 2.0" << endl;
-	para_file << "Visualization of the surface grid" << endl;
-	para_file << "ASCII" << endl;
-	para_file << "DATASET UNSTRUCTURED_GRID" << endl;
-	para_file << "POINTS " << nPoint << " float" << endl;
-  
-	for(unsigned long iPoint = 0; iPoint<nPoint; iPoint++) {
-		for(unsigned short Coord_i = 0; Coord_i < 3; Coord_i++)
-			para_file << node[iPoint]->GetCoord(Coord_i) << "\t";
-		para_file << "\n";
-	}
-  
-	unsigned long Total_nElem_Bound = 0;
-	unsigned long Total_nElem_Bound_Storage = 0;
-	for (unsigned short iMarker=0; iMarker < config->GetnMarker_All(); iMarker++) {
-		unsigned short Boundary = config->GetMarker_All_Boundary(iMarker);
-		if ((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL)) {
-			Total_nElem_Bound += nElem_Bound[iMarker];
-			Total_nElem_Bound_Storage += nElem_Bound_Storage[iMarker];
-		}
-	}
-  
-	para_file << "CELLS " << Total_nElem_Bound << "\t" << Total_nElem_Bound_Storage << endl;
-	for (unsigned short iMarker=0; iMarker < config->GetnMarker_All(); iMarker++) {
-		unsigned short Boundary = config->GetMarker_All_Boundary(iMarker);
-		if ((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL)) {
-			for(unsigned long ielem=0; ielem<nElem_Bound[iMarker]; ielem++) {
-				para_file << bound[iMarker][ielem]->GetnNodes() << "\t";
-				for(unsigned short inode=0; inode<bound[iMarker][ielem]->GetnNodes(); inode++)
-					para_file << bound[iMarker][ielem]->GetNode(inode) << "\t";
-				para_file << "\n";
-			}
-		}
-	}
-  
-	para_file << "CELL_TYPES " << Total_nElem_Bound << endl;
-	for (unsigned short iMarker=0; iMarker < config->GetnMarker_All(); iMarker++) {
-		unsigned short Boundary = config->GetMarker_All_Boundary(iMarker);
-		if ((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL)) {
-			for(unsigned long ielem=0; ielem <nElem_Bound[iMarker]; ielem++) {
-				para_file << bound[iMarker][ielem]->GetVTK_Type() << endl;
-			}
-		}
-	}
-  
-	para_file.close();
 }
 
 CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) {
@@ -10258,45 +10003,6 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
 
 
 	output_file.close();
-
-}
-
-void CPeriodicGeometry::SetParaView(char mesh_filename[200]) {
-	unsigned long iElem, iPoint;
-	unsigned short iNode, iDim;
-	ofstream para_file;
-
-	para_file.open(mesh_filename, ios::out);
-
-	para_file << "# vtk DataFile Version 2.0" << endl;
-	para_file << "Visualization of the volumetric grid" << endl;
-	para_file << "ASCII" << endl;
-	para_file << "DATASET UNSTRUCTURED_GRID" << endl;
-	para_file << "POINTS " << nPoint << " float" << endl;
-
-	para_file.precision(15);
-
-	for(iPoint = 0; iPoint < nPoint; iPoint++) {
-		for(iDim = 0; iDim < nDim; iDim++)
-			para_file << scientific << node[iPoint]->GetCoord(iDim) << "\t";
-		if (nDim == 2) para_file << "0.0";
-		para_file << "\n";
-	}	 
-
-	para_file << "CELLS " << nElem << "\t" << nElem_Storage << endl;
-	for(iElem = 0; iElem < nElem; iElem++) {
-		para_file << elem[iElem]->GetnNodes() << "\t";
-		for(iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
-			if (iNode == elem[iElem]->GetnNodes()-1) para_file << elem[iElem]->GetNode(iNode) << "\n";			
-			else para_file << elem[iElem]->GetNode(iNode) << "\t";			
-		}
-	}	
-
-	para_file << "CELL_TYPES " << nElem << endl;
-	for(iElem=0; iElem < nElem; iElem++) {
-		para_file << elem[iElem]->GetVTK_Type() << endl;
-	}
-	para_file.close();
 
 }
 

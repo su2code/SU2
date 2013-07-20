@@ -124,12 +124,6 @@ int main(int argc, char *argv[]) {
   
 	/*--- Output original computational grids ---*/
 	if (config[ZONE_0]->GetVisualize_Deformation()) {
-		if(config[ZONE_0]->GetOutput_FileFormat() == PARAVIEW) {
-			if (size > 1) sprintf (buffer_char, "_%d.vtk", rank+1);
-			else sprintf (buffer_char, ".vtk");
-			strcpy (out_file, "original_volumetric_grid"); strcat(out_file, buffer_char); geometry[ZONE_0]->SetParaView(out_file);
-			strcpy (out_file, "original_surface_grid"); strcat(out_file, buffer_char); geometry[ZONE_0]->SetBoundParaView(config[ZONE_0], out_file);
-		}
 		if(config[ZONE_0]->GetOutput_FileFormat() == TECPLOT) {
 			if (size > 1) sprintf (buffer_char, "_%d.plt", rank+1);
 			else sprintf (buffer_char, ".plt");
@@ -257,16 +251,9 @@ int main(int argc, char *argv[]) {
     /*--- Output original FFD chunk ---*/
     if (rank == MASTER_NODE) {
       for (iChunk = 0; iChunk < surface_mov->GetnChunk(); iChunk++) {
-        if(config[ZONE_0]->GetOutput_FileFormat() == PARAVIEW) {
-          sprintf (buffer_char, "original_chunk.vtk");
-          if (iChunk == 0) chunk[iChunk]->SetParaView(buffer_char, true);
-          else chunk[iChunk]->SetParaView(buffer_char, false);
-        }
-        if(config[ZONE_0]->GetOutput_FileFormat() == TECPLOT) {
-          sprintf (buffer_char, "original_chunk.plt");
-          if (iChunk == 0) chunk[iChunk]->SetTecplot(buffer_char, true);
-          else chunk[iChunk]->SetTecplot(buffer_char, false);
-        }
+        sprintf (buffer_char, "original_chunk.plt");
+        if (iChunk == 0) chunk[iChunk]->SetTecplot(buffer_char, true);
+        else chunk[iChunk]->SetTecplot(buffer_char, false);
       }
     }
     
@@ -332,18 +319,9 @@ int main(int argc, char *argv[]) {
       /*--- Output the deformed chunks ---*/
       if (rank == MASTER_NODE) {
         for (iChunk = 0; iChunk < surface_mov->GetnChunk(); iChunk++) {
-          if (config[ZONE_0]->GetDesign_Variable(0) != NO_DEFORMATION) {
-            if(config[ZONE_0]->GetOutput_FileFormat() == PARAVIEW) {
-              sprintf (buffer_char, "deformed_chunk.vtk");
-              if (iChunk == 0) chunk[iChunk]->SetParaView(buffer_char, true);
-              else chunk[iChunk]->SetParaView(buffer_char, false);
-            }
-            if(config[ZONE_0]->GetOutput_FileFormat() == TECPLOT) {
-              sprintf (buffer_char, "deformed_chunk.plt");
-              if (iChunk == 0) chunk[iChunk]->SetTecplot(buffer_char, true);
-              else chunk[iChunk]->SetTecplot(buffer_char, false);
-            }
-          }
+          sprintf (buffer_char, "deformed_chunk.plt");
+          if (iChunk == 0) chunk[iChunk]->SetTecplot(buffer_char, true);
+          else chunk[iChunk]->SetTecplot(buffer_char, false);
         }
       }
       
@@ -379,12 +357,6 @@ int main(int argc, char *argv[]) {
 		cout << "End and write output files." << endl;
 	
 	if (config[ZONE_0]->GetVisualize_Deformation()) {
-		if(config[ZONE_0]->GetOutput_FileFormat() == PARAVIEW) {
-			if (size > 1) sprintf (buffer_char, "_%d.vtk", rank+1);
-			else sprintf (buffer_char, ".vtk");
-			strcpy (out_file, "deformed_volumetric_grid"); strcat(out_file, buffer_char); geometry[ZONE_0]->SetParaView(out_file);
-			strcpy (out_file, "deformed_surface_grid"); strcat(out_file, buffer_char); geometry[ZONE_0]->SetBoundParaView(config[ZONE_0], out_file);
-		}
 		if(config[ZONE_0]->GetOutput_FileFormat() == TECPLOT) {
 			if (size > 1) sprintf (buffer_char, "_%d.plt", rank+1);
 			else sprintf (buffer_char, ".plt");

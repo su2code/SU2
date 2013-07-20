@@ -273,8 +273,8 @@ public:
    * \param[in] val_nZone - Total number of zones.
 	 */
 	void SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
-  
-	/*! 
+    
+	/*!
 	 * \brief Write Tecplot binary results file.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] geometry - Geometrical definition of the problem.

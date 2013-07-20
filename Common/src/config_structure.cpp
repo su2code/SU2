@@ -110,7 +110,7 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddSpecialOption("RESTART_PLASMA_FROM_EULER", Restart_Euler2Plasma, SetBoolOption, false);
 	/* DESCRIPTION: Specify number of domain partitions */
 	AddScalarOption("NUMBER_PART", nDomain, 0);
-	/* DESCRIPTION: Write a tecplot/paraview file for each partition */
+	/* DESCRIPTION: Write a tecplot file for each partition */
 	AddSpecialOption("VISUALIZE_PART", Visualize_Partition, SetBoolOption, false);
 	/* DESCRIPTION: Divide rectangles into triangles */
 	AddSpecialOption("DIVIDE_ELEMENTS", Divide_Element, SetBoolOption, false);
@@ -601,7 +601,7 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	/* CONFIG_CATEGORY: Input/output files and formats */
 
 	/* DESCRIPTION: Output file format */
-	AddEnumOption("OUTPUT_FORMAT", Output_FileFormat, Output_Map, "PARAVIEW");
+	AddEnumOption("OUTPUT_FORMAT", Output_FileFormat, Output_Map, "TECPLOT");
 	/* DESCRIPTION: Mesh input file format */
 	AddEnumOption("MESH_FORMAT", Mesh_FileFormat, Input_Map, "SU2");
 	/* DESCRIPTION: Convert a CGNS mesh to SU2 format */
@@ -3480,7 +3480,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		}
 
 		switch (Output_FileFormat) {
-		case PARAVIEW: cout << "The output file format is Paraview (.vtk)." << endl; break;
 		case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
 		case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
 		case CGNS_SOL: cout << "The output file format is CGNS (.cgns)." << endl; break;
@@ -3511,7 +3510,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 	if (val_software == SU2_SOL) {
 		switch (Output_FileFormat) {
-		case PARAVIEW: cout << "The output file format is Paraview (.vtk)." << endl; break;
 		case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
 		case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
 		case CGNS_SOL: cout << "The output file format is CGNS (.cgns)." << endl; break;

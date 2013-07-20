@@ -1149,7 +1149,6 @@ void CSparseMatrix::SetLin_Sol_History_Header(ofstream *LinConvHist_file, CConfi
 
 	/*--- Write file name with extension ---*/
 	strcpy (cstr, config->GetLin_Conv_FileName().data());
-	if (config->GetOutput_FileFormat() == PARAVIEW)  sprintf (buffer, ".csv");
 	if (config->GetOutput_FileFormat() == TECPLOT)  sprintf (buffer, ".plt");
 	strcat(cstr,buffer);
 

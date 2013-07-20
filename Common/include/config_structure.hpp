@@ -1015,13 +1015,13 @@ public:
 	double GetFreeSurface_Outlet(void);
 
 	/*! 
-	 * \brief Creates a paraview file to visualize the partition made by the DDM software.
+	 * \brief Creates a tecplot file to visualize the partition made by the DDC software.
 	 * \return <code>TRUE</code> if the partition is going to be plotted; otherwise <code>FALSE</code>.
 	 */
 	bool GetVisualize_Partition(void);
 
 	/*! 
-	 * \brief Creates a paraview file to visualize the deformation made by the MDC software.
+	 * \brief Creates a teot file to visualize the deformation made by the MDC software.
 	 * \return <code>TRUE</code> if the deformation is going to be plotted; otherwise <code>FALSE</code>.
 	 */
 	bool GetVisualize_Deformation(void);

@@ -793,16 +793,14 @@ const int CGNS_STRING_SIZE = 33;/*!< \brief Length of strings used in the CGNS f
  * \brief type of solution output file formats
  */
 enum ENUM_OUTPUT {
-	PARAVIEW = 1, 		/*!< \brief Paraview format for the solution output. */
-	TECPLOT = 2,  		/*!< \brief Tecplot format for the solution output. */
-	EXCEL = 3,			/*!< \brief Excel format for the solution output. */
-	CSV = 4,			/*!< \brief Comma-separated values format for the solution output. */
-	STL = 5,				/*!< \brief STL CAD format for the solution output. */
-  TECPLOT_BINARY = 6,  		/*!< \brief Tecplot binary format for the solution output. */
-	CGNS_SOL = 7  		/*!< \brief CGNS format for the solution output. */
+	TECPLOT = 1,  		/*!< \brief Tecplot format for the solution output. */
+	EXCEL = 2,			/*!< \brief Excel format for the solution output. */
+	CSV = 3,			/*!< \brief Comma-separated values format for the solution output. */
+	STL = 4,				/*!< \brief STL CAD format for the solution output. */
+  TECPLOT_BINARY = 5,  		/*!< \brief Tecplot binary format for the solution output. */
+	CGNS_SOL = 6  		/*!< \brief CGNS format for the solution output. */
 };
 static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPUT>
-("PARAVIEW", PARAVIEW)
 ("TECPLOT", TECPLOT)
 ("EXCEL", EXCEL)
 ("CSV", CSV)
