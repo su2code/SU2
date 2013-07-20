@@ -902,18 +902,14 @@ enum ENUM_LINEAR_SOLVER {
 	STEEPEST_DESCENT = 1,		/*!< \brief Steepest descent method for point inversion algoritm (Free-Form). */
 	NEWTON = 2,			/*!< \brief Newton method for point inversion algorithm (Free-Form). */
 	QUASI_NEWTON = 3,		/*!< \brief Quasi Newton method for point inversion algorithm (Free-Form). */
-	SYM_GAUSS_SEIDEL = 4,		/*!< \brief Symmetric Gauss-Seidel method for grid deformation. */
-	CONJUGATE_GRADIENT = 5,	/*!< \brief Preconditionated conjugate gradient method for grid deformation. */
-	GMRES = 6,    	/*!< \brief Flexible Generalized Minimal RESidual method. */
-	LU_SGS = 7,		/*!< \brief LU - Symmetric Gauss-Seidel method (main solver). */
-	BCGSTAB = 8	/*!< \brief BCGSTAB - Biconjugate Gradient Stabilized Method (main solver). */
+	CONJUGATE_GRADIENT = 4,	/*!< \brief Preconditionated conjugate gradient method for grid deformation. */
+	GMRES = 5,    	/*!< \brief Flexible Generalized Minimal RESidual method. */
+	BCGSTAB = 6	/*!< \brief BCGSTAB - Biconjugate Gradient Stabilized Method (main solver). */
 };
 static const map<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = CCreateMap<string, ENUM_LINEAR_SOLVER>
 ("STEEPEST_DESCENT", STEEPEST_DESCENT)
 ("NEWTON", NEWTON)
 ("QUASI_NEWTON", QUASI_NEWTON)
-("SYM_GAUSS_SEIDEL", SYM_GAUSS_SEIDEL)
-("LU_SGS", LU_SGS)
 ("CONJUGATE_GRADIENT", CONJUGATE_GRADIENT)
 ("BCGSTAB", BCGSTAB)
 ("GMRES", GMRES);

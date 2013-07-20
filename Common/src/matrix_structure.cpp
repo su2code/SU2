@@ -87,7 +87,11 @@ void CSysMatrix::Initialize(unsigned long nPoint, unsigned long nPointDomain, un
 		}
 	}
   
+  /*--- Set the indices in the in the sparce matrix structure ---*/
 	SetIndexes(nPoint, nPointDomain, nVar, nEqn, row_ptr, col_ind, nnz);
+  
+  /*--- Initialization to zero ---*/
+  SetValZero();
   
 	delete[] vneighs;
 }
@@ -104,9 +108,9 @@ void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDo
 	
 	matrix = new double [nnz*nVar*nEqn];	// Reserve memory for the values of the matrix
 	block = new double [nVar*nEqn];
-	prod_block_vector = new double [nEqn]; //correct?
-	prod_row_vector = new double [nVar]; //correct?
-	aux_vector = new double [nVar]; //correct?
+	prod_block_vector = new double [nEqn];
+	prod_row_vector = new double [nVar];
+	aux_vector = new double [nVar];
 	
   invM = new double [nPoint*nVar*nEqn];	// Reserve memory for the values of the inverse of the preconditioner
   

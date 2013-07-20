@@ -57,19 +57,19 @@ class CSolution {
 protected:
 	unsigned short IterLinSolver;	/*!< \brief Linear solver iterations. */
 	unsigned short nVar,					/*!< \brief Number of variables of the problem. */
-    nPrimVar,                     /*!< \brief Number of primitive variables of the problem. */
-    nPrimVarGrad,                    /*!< \brief Number of primitive variables of the problem in the gradient computation. */
+  nPrimVar,                     /*!< \brief Number of primitive variables of the problem. */
+  nPrimVarGrad,                    /*!< \brief Number of primitive variables of the problem in the gradient computation. */
 	nDim;													/*!< \brief Number of dimensions of the problem. */
 	unsigned long nPoint;					/*!< \brief Number of points of the computational grid. */
-    unsigned long nPointDomain; 	/*!< \brief Number of points of the computational grid. */
+  unsigned long nPointDomain; 	/*!< \brief Number of points of the computational grid. */
 	double Max_Delta_Time,	/*!< \brief Maximum value of the delta time for all the control volumes. */
 	Min_Delta_Time;					/*!< \brief Minimum value of the delta time for all the control volumes. */
 	double *Residual_RMS,	/*!< \brief Vector with the mean residual for each variable. */
-    *Residual_Max,        /*!< \brief Vector with the maximal residual for each variable. */
+  *Residual_Max,        /*!< \brief Vector with the maximal residual for each variable. */
 	*Residual,						/*!< \brief Auxiliary nVar vector. */
 	*Residual_i,					/*!< \brief Auxiliary nVar vector for storing the residual at point i. */
 	*Residual_j;					/*!< \brief Auxiliary nVar vector for storing the residual at point j. */
-    unsigned long *Point_Max; /*!< \brief Vector with the maximal residual for each variable. */
+  unsigned long *Point_Max; /*!< \brief Vector with the maximal residual for each variable. */
 	double *Solution,		/*!< \brief Auxiliary nVar vector. */
 	*Solution_i,				/*!< \brief Auxiliary nVar vector for storing the solution at point i. */
 	*Solution_j;				/*!< \brief Auxiliary nVar vector for storing the solution at point j. */
@@ -89,7 +89,7 @@ protected:
 	**Jacobian_ij,			  /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
 	**Jacobian_ji,			  /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
 	**Jacobian_jj;			  /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
-    
+  
 	double **Smatrix,	/*!< \brief Auxiliary structure for computing gradients by least-squares */
 	**cvector;			 /*!< \brief Auxiliary structure for computing gradients by least-squares */
 

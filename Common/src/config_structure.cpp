@@ -289,9 +289,9 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	/* CONFIG_CATEGORY: Linear solver definition */
 
 	/* DESCRIPTION: Linear solver for the implicit, mesh deformation, or discrete adjoint systems */
-	AddEnumOption("LINEAR_SOLVER", Kind_Linear_Solver, Linear_Solver_Map, "LU_SGS");
+	AddEnumOption("LINEAR_SOLVER", Kind_Linear_Solver, Linear_Solver_Map, "GMRES");
 	/* DESCRIPTION: Preconditioner for the Krylov linear solvers */
-	AddEnumOption("LINEAR_SOLVER_PREC", Kind_Linear_Solver_Prec, Linear_Solver_Prec_Map, "JACOBI");
+	AddEnumOption("LINEAR_SOLVER_PREC", Kind_Linear_Solver_Prec, Linear_Solver_Prec_Map, "LUSGS");
 	/* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
 	AddScalarOption("LINEAR_SOLVER_ERROR", Linear_Solver_Error, 1E-5);
 	/* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
@@ -300,7 +300,7 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddScalarOption("LINEAR_SOLVER_RELAX", Linear_Solver_Relax, 1.0);
 
 	/* DESCRIPTION: Linear solver for the turbulent adjoint systems */
-	AddEnumOption("ADJTURB_LIN_SOLVER", Kind_AdjTurb_Linear_Solver, Linear_Solver_Map, "LU_SGS");
+	AddEnumOption("ADJTURB_LIN_SOLVER", Kind_AdjTurb_Linear_Solver, Linear_Solver_Map, "GMRES");
 	/* DESCRIPTION: Preconditioner for the turbulent adjoint Krylov linear solvers */
 	AddEnumOption("ADJTURB_LIN_PREC", Kind_AdjTurb_Linear_Prec, Linear_Solver_Prec_Map, "JACOBI");
 	/* DESCRIPTION: Minimum error threshold for the turbulent adjoint linear solver for the implicit formulation */
@@ -3234,15 +3234,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			case EULER_IMPLICIT:
 				cout << "Euler implicit method for the flow equations." << endl;
 				switch (Kind_Linear_Solver) {
-				case LU_SGS:
-					cout << "A LU - symmetric Gauss-Seidel iteration is used for solving the linear system." << endl;
-					break;
-				case SYM_GAUSS_SEIDEL:
-					cout << "A symmetric Gauss-Seidel method is used for solving the linear system." << endl;
-					cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<<endl;
-					cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<<endl;
-					cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
-					break;
 				case BCGSTAB:
 					cout << "A precond. BCGSTAB is used for solving the linear system." << endl;
 					cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<<endl;

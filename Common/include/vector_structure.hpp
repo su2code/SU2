@@ -1,6 +1,6 @@
 /*!
  * \file vector_structure.hpp
- * \brief Headers for the classes related to linear solvers (LU_SGS, CG, GMRES, etc)
+ * \brief Headers for the classes related to linear solvers (CG, GMRES, etc)
  *        The subroutines and functions are in the <i>linear_solvers_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
  * \version 2.0.5

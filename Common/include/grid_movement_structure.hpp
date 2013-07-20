@@ -661,12 +661,14 @@ public:
 class CVolumetricMovement : public CGridMovement {
 protected:
 
-	double *x;							/*!< \brief ___________. */
-	double tol;			/*!< \brief Error tolerance (total and per point) in the resolution. */
-	unsigned short nDim;		/*!< \brief ___________. */
-	CSysMatrix StiffMatrix; /*!< \brief Matrix to store the point-to-point stiffness. */
-	double *rhs,		/*!< \brief rhs (forces). */
-	*usol;					/*!< \brief u (displacements). */
+	unsigned short nDim;		/*!< \brief Number of dimensions. */
+	unsigned short nVar;		/*!< \brief Number of variables. */
+	unsigned long nPoint;		/*!< \brief Number of points. */
+	unsigned long nPointDomain;		/*!< \brief Number of points in the domain. */
+
+  CSysMatrix StiffMatrix; /*!< \brief Matrix to store the point-to-point stiffness. */
+  CSysVector LinSysSol;
+  CSysVector LinSysRes;
 
 public:
 
@@ -685,13 +687,6 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetBoundary_Smooth(CGeometry *geometry, CConfig *config);
-	
-	/*! 
-	 * \brief __________________________
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
 	void SetSolution_Smoothing(CGeometry *geometry, CConfig *config);
 	
 	/*! 
@@ -700,26 +695,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void UpdateMultiGrid(CGeometry **geometry, CConfig *config);
-	
-	/*! 
-	 * \brief __________________________
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_filename ______________.
-	 */
-	void GetBoundary(CGeometry *geometry, CConfig *config, string val_filename);
-	
-	/*! 
-	 * \brief Initialize the stiff matrix for grid movement using spring analogy
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 */
-	void Initialize_StiffMatrix_Structure(unsigned short nVar, CGeometry *geometry);
-	
-	/*! 
-	 * \brief Deallocate the stiff matrix for grid movement using spring analogy
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 */
-	void Deallocate_StiffMatrix_Structure(CGeometry *geometry);	
 	
 	/*! 
 	 * \brief Compute the stiffness matrix for grid deformation using spring analogy.
