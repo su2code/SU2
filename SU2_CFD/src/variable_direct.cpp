@@ -361,6 +361,9 @@ void CEulerVariable::SetPrimVar_Compressible(CConfig *config) {
   /*--- Check that the solution has a physical meaning ---*/
   if (check_dens || check_press || check_sos || check_temp) {
     
+    /*--- Output to control the convergence ---*/
+    cout << "Negative density, pressure, sos, or temperature. Using old solution." << endl;
+
     /*--- Copy the old solution ---*/
     for (iVar = 0; iVar < nVar; iVar++)
       Solution[iVar] = Solution_Old[iVar];
@@ -501,39 +504,42 @@ void CNSVariable::SetStrainMag(void) {
 
 void CNSVariable::SetPrimVar_Compressible(CConfig *config, double turb_ke) {
 	unsigned short iDim, iVar;
-    bool check_dens = false, check_press = false, check_sos = false, check_temp = false;
+  bool check_dens = false, check_press = false, check_sos = false, check_temp = false;
   
   double Gas_Constant = config->GetGas_ConstantND();
 	double Gamma = config->GetGamma();
   
 	SetVelocity2();                                 // Compute the modulus of the velocity.
-    check_dens = (Solution[0] < 0.0);               // Check the density
+  check_dens = (Solution[0] < 0.0);               // Check the density
 	check_press = SetPressure(Gamma, turb_ke);      // Requires Velocity2 computation.
 	check_sos = SetSoundSpeed(Gamma);               // Requires pressure computation.
 	check_temp = SetTemperature(Gas_Constant);      // Requires pressure computation.
+  
+  /*--- Check that the solution has a physical meaning ---*/
+  if (check_dens || check_press || check_sos || check_temp) {
     
-    /*--- Check that the solution has a physical meaning ---*/
-    if (check_dens || check_press || check_sos || check_temp) {
-        
-        /*--- Copy the old solution ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-            Solution[iVar] = Solution_Old[iVar];
-        
-        /*--- Recompute the primitive variables ---*/
-        SetVelocity2();
-        check_press = SetPressure(Gamma, turb_ke);
-        check_sos = SetSoundSpeed(Gamma);
-        check_temp = SetTemperature(Gas_Constant);
-        
-    }
+    /*--- Output to control the convergence ---*/
+    cout << "Negative density, pressure, sos, or temperature. Using old solution." << endl;
     
+    /*--- Copy the old solution ---*/
+    for (iVar = 0; iVar < nVar; iVar++)
+      Solution[iVar] = Solution_Old[iVar];
+    
+    /*--- Recompute the primitive variables ---*/
+    SetVelocity2();
+    check_press = SetPressure(Gamma, turb_ke);
+    check_sos = SetSoundSpeed(Gamma);
+    check_temp = SetTemperature(Gas_Constant);
+    
+  }
+  
 	SetEnthalpy();                                  // Requires pressure computation.
 	SetLaminarViscosity();                          // Requires temperature computation.
-    
+  
 	for (iDim = 0; iDim < nDim; iDim++)
 		Primitive[iDim+1] = Solution[iDim+1] / Solution[0];
 	Primitive[nDim+2] = Solution[0];
-    
+  
 }
 
 void CNSVariable::SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double turb_ke, double levelset, CConfig *config) {

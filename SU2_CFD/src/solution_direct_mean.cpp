@@ -3609,14 +3609,14 @@ void CEulerSolution::GetNacelle_Properties(CGeometry *geometry, CConfig *config,
       cout << endl << "---------------------------- Engine properties --------------------------" << endl;
       for (iMarker_NacelleInflow = 0; iMarker_NacelleInflow < nMarker_NacelleInflow; iMarker_NacelleInflow++) {
         cout << "Nacelle inflow ("<< config->GetMarker_NacelleInflow(iMarker_NacelleInflow)
-        << "): MassFlow: " << FanFace_MassFlow_Total[iMarker_NacelleInflow]
+        << "): MassFlow (kg/s): " << FanFace_MassFlow_Total[iMarker_NacelleInflow] * config->GetDensity_Ref() * config->GetVelocity_Ref()
         << ", Mach: " << FanFace_Mach_Total[iMarker_NacelleInflow]
         << ", Area: " << FanFace_Area_Total[iMarker_NacelleInflow] <<"."<< endl;
       }
       
       for (iMarker_NacelleExhaust = 0; iMarker_NacelleExhaust < nMarker_NacelleExhaust; iMarker_NacelleExhaust++) {
-        cout << "Nacelle exhaust ("<< config->GetMarker_NacelleExhaust(iMarker_NacelleExhaust)
-        << "): MassFlow: " << Exhaust_MassFlow_Total[iMarker_NacelleExhaust]
+        cout << "Nacelle exhaust ("<< config->GetMarker_NacelleExhaust(iMarker_NacelleExhaust) 
+        << "): MassFlow (kg/s): " << Exhaust_MassFlow_Total[iMarker_NacelleExhaust] * config->GetDensity_Ref() * config->GetVelocity_Ref()
         << ", Area: " << Exhaust_Area_Total[iMarker_NacelleExhaust] <<"."<< endl;
       }
       cout << "-------------------------------------------------------------------------" << endl;
@@ -4641,8 +4641,9 @@ void CEulerSolution::BC_Nacelle_Inflow(CGeometry *geometry, CSolution **solution
 	Target_FanFace_Mach = config->GetFanFace_Mach_Target(Marker_Tag);
   
 	/*--- Retrieve the old fan face pressure and mach number in the nacelle (this has been computed in a preprocessing). ---*/
-  P_Fan_old = config->GetFanFace_Pressure(Marker_Tag);
+  P_Fan_old = config->GetFanFace_Pressure(Marker_Tag);  // Note that has been computed by the code (non-dimensional).
   M_Fan_old = config->GetFanFace_Mach(Marker_Tag);
+
   
 	/*--- Compute the Pressure increment ---*/
 	P_Fan_inc = ((M_Fan_old/Target_FanFace_Mach) - 1.0) * config->GetPressure_FreeStreamND();
@@ -4778,7 +4779,7 @@ void CEulerSolution::BC_Nacelle_Inflow(CGeometry *geometry, CSolution **solution
 void CEulerSolution::BC_Nacelle_Exhaust(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
 	unsigned short iVar, iDim, nPrimVar;
 	unsigned long iVertex, iPoint, Point_Normal;
-	double P_Total, T_Total, Velocity[3], Velocity2, H_Total, Temperature, Riemann, Area, UnitaryNormal[3], Pressure, Density, Energy, Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag, alpha, aa, bb, cc, dd, Flow_Dir[3];
+	double P_Exhaust, T_Exhaust, Velocity[3], Velocity2, H_Exhaust, Temperature, Riemann, Area, UnitaryNormal[3], Pressure, Density, Energy, Mach2, SoundSpeed2, SoundSpeed_Exhaust2, Vel_Mag, alpha, aa, bb, cc, dd, Flow_Dir[3];
   
 	double Gas_Constant = config->GetGas_ConstantND();
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -4825,12 +4826,12 @@ void CEulerSolution::BC_Nacelle_Exhaust(CGeometry *geometry, CSolution **solutio
 			 The outgoing Riemann invariant provides the final piece of info. ---*/
       
 			/*--- Retrieve the specified total conditions for this inlet. ---*/
-			P_Total  = config->GetNozzle_Ptotal(Marker_Tag);
-			T_Total  = config->GetNozzle_Ttotal(Marker_Tag);
+			P_Exhaust  = config->GetNozzle_Ptotal(Marker_Tag);
+			T_Exhaust  = config->GetNozzle_Ttotal(Marker_Tag);
       
 			/*--- Non-dim. the inputs if necessary. ---*/
-			P_Total /= config->GetPressure_Ref();
-			T_Total /= config->GetTemperature_Ref();
+			P_Exhaust /= config->GetPressure_Ref();
+			T_Exhaust /= config->GetTemperature_Ref();
       
 			/*--- Store primitives and set some variables for clarity. ---*/
 			Density = U_domain[0];
@@ -4841,7 +4842,7 @@ void CEulerSolution::BC_Nacelle_Exhaust(CGeometry *geometry, CSolution **solutio
 			}
 			Energy      = U_domain[nVar-1]/Density;
 			Pressure    = Gamma_Minus_One*Density*(Energy-0.5*Velocity2);
-			H_Total     = (Gamma*Gas_Constant/Gamma_Minus_One)*T_Total;
+			H_Exhaust     = (Gamma*Gas_Constant/Gamma_Minus_One)*T_Exhaust;
 			SoundSpeed2 = Gamma*Pressure/Density;
       
 			/*--- Compute the acoustic Riemann invariant that is extrapolated
@@ -4851,7 +4852,7 @@ void CEulerSolution::BC_Nacelle_Exhaust(CGeometry *geometry, CSolution **solutio
 				Riemann += Velocity[iDim]*UnitaryNormal[iDim];
       
 			/*--- Total speed of sound ---*/
-			SoundSpeed_Total2 = Gamma_Minus_One*(H_Total - (Energy + Pressure/Density)+0.5*Velocity2) + SoundSpeed2;
+			SoundSpeed_Exhaust2 = Gamma_Minus_One*(H_Exhaust - (Energy + Pressure/Density)+0.5*Velocity2) + SoundSpeed2;
       
 			/*--- The flow direction is defined by the surface normal ---*/
 			for (iDim = 0; iDim < nDim; iDim++)
@@ -4866,7 +4867,7 @@ void CEulerSolution::BC_Nacelle_Exhaust(CGeometry *geometry, CSolution **solutio
 			/*--- Coefficients in the quadratic equation for the velocity ---*/
 			aa =  1.0 + 0.5*Gamma_Minus_One*alpha*alpha;
 			bb = -1.0*Gamma_Minus_One*alpha*Riemann;
-			cc =  0.5*Gamma_Minus_One*Riemann*Riemann - 2.0*SoundSpeed_Total2/Gamma_Minus_One;
+			cc =  0.5*Gamma_Minus_One*Riemann*Riemann - 2.0*SoundSpeed_Exhaust2/Gamma_Minus_One;
       
 			/*--- Solve quadratic equation for velocity magnitude. Value must
 			 be positive, so the choice of root is clear. ---*/
@@ -4877,14 +4878,14 @@ void CEulerSolution::BC_Nacelle_Exhaust(CGeometry *geometry, CSolution **solutio
 			Velocity2 = Vel_Mag*Vel_Mag;
       
 			/*--- Compute speed of sound from total speed of sound eqn. ---*/
-			SoundSpeed2 = SoundSpeed_Total2 - 0.5*Gamma_Minus_One*Velocity2;
+			SoundSpeed2 = SoundSpeed_Exhaust2 - 0.5*Gamma_Minus_One*Velocity2;
       
 			/*--- Mach squared (cut between 0-1), use to adapt velocity ---*/
 			Mach2 = Velocity2/SoundSpeed2;
 			Mach2 = min(1.0,Mach2);
 			Velocity2   = Mach2*SoundSpeed2;
 			Vel_Mag     = sqrt(Velocity2);
-			SoundSpeed2 = SoundSpeed_Total2 - 0.5*Gamma_Minus_One*Velocity2;
+			SoundSpeed2 = SoundSpeed_Exhaust2 - 0.5*Gamma_Minus_One*Velocity2;
       
 			/*--- Compute new velocity vector at the inlet ---*/
 			for (iDim = 0; iDim < nDim; iDim++)
@@ -4894,7 +4895,7 @@ void CEulerSolution::BC_Nacelle_Exhaust(CGeometry *geometry, CSolution **solutio
 			Temperature = SoundSpeed2/(Gamma*Gas_Constant);
       
 			/*--- Static pressure using isentropic relation at a point ---*/
-			Pressure = P_Total*pow((Temperature/T_Total),Gamma/Gamma_Minus_One);
+			Pressure = P_Exhaust*pow((Temperature/T_Exhaust),Gamma/Gamma_Minus_One);
       
 			/*--- Density at the inlet from the gas law ---*/
 			Density = Pressure/(Gas_Constant*Temperature);

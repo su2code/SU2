@@ -377,12 +377,11 @@ int main(int argc, char *argv[]) {
     
     string str = config[ZONE_0]->GetMesh_Out_FileName();
     str.erase (str.end()-4, str.end()); strcpy (out_file, str.c_str()); strcat(out_file, buffer_char);
-    geometry[ZONE_0]->SetMeshFile(config[ZONE_0], out_file);
-  
-/*--- Verify SetMeshFile(config[ZONE_0], out_file, in_file) ---*/
-//    str = config[ZONE_0]->GetMesh_FileName();
-//    str.erase (str.end()-4, str.end()); strcpy (in_file, str.c_str()); strcat(in_file, buffer_char);
-//    geometry[ZONE_0]->SetMeshFile(config[ZONE_0], out_file, in_file);
+    
+    str = config[ZONE_0]->GetMesh_FileName();    
+    strcpy (in_file, str.c_str());
+    
+    geometry[ZONE_0]->SetMeshFile(config[ZONE_0], out_file, in_file);
 	}
 	else {
 		/*--- Call special write routine for more than one zone. ---*/

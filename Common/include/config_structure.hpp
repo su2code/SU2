@@ -4280,12 +4280,6 @@ public:
 	void SetNondimensionalization(unsigned short val_nDim, unsigned short val_iZone);
 
 	/*! 
-	 * \brief Deep copy in config class.
-	 * \param[in] copy - Original class to be copied.
-	 */	
-	void DeepCopy(CConfig *copy);
-
-	/*! 
 	 * \brief Config file postprocessing.
 	 */	
 	void SetPostprocessing(unsigned short val_software, unsigned short val_izone);	
