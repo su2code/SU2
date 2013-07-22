@@ -433,27 +433,14 @@ public:
 
 	/*! 
 	 * \brief A virtual member.
-	 * \param[in] config_filename - Name of the file where the paraview information is going to be stored.
-	 */
-	virtual void SetParaView(char config_filename[200]);
-
-	/*! 
-	 * \brief A virtual member.
-	 * \param[in] config_filename - Name of the file where the paraview information is going to be stored.
+	 * \param[in] config_filename - Name of the file where the tecplot information is going to be stored.
 	 */
 	virtual void SetTecPlot(char config_filename[200]);
 
 	/*! 
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.		 
-	 * \param[in] mesh_filename - Name of the file where the paraview information is going to be stored.
-	 */
-	virtual void SetBoundParaView(CConfig *config, char mesh_filename[200]);
-
-	/*! 
-	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.		 
-	 * \param[in] mesh_filename - Name of the file where the paraview information is going to be stored.
+	 * \param[in] mesh_filename - Name of the file where the tecplot information is going to be stored.
 	 */
 	virtual void SetBoundTecPlot(CConfig *config, char mesh_filename[200]);
 
@@ -976,26 +963,11 @@ public:
 	void SetBoundControlVolume(CConfig *config, unsigned short action);
 
 	/*! 
-	 * \brief Set the Paraview file.
-	 * \param[in] config_filename - Name of the file where the Paraview 
-	 *            information is going to be stored.
-	 */
-	void SetParaView(char config_filename[200]);
-
-	/*! 
 	 * \brief Set the Tecplot file.
 	 * \param[in] config_filename - Name of the file where the Tecplot 
 	 *            information is going to be stored.
 	 */
 	void SetTecPlot(char config_filename[200]);
-
-	/*! 
-	 * \brief Set the output file for boundaries in Paraview
-	 * \param[in] config - Definition of the particular problem.		 
-	 * \param[in] mesh_filename - Name of the file where the Paraview 
-	 *            information is going to be stored.
-	 */
-	void SetBoundParaView(CConfig *config, char mesh_filename[200]);
 
 	/*! 
 	 * \brief Set the output file for boundaries in Tecplot
@@ -1432,14 +1404,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetBoundSensitivity(CConfig *config);
-
-	/*! 
-	 * \brief Set the output file for boundaries in Paraview
-	 * \param[in] config - Definition of the particular problem.		 
-	 * \param[in] mesh_filename - Name of the file where the Paraview 
-	 *            information is going to be stored.
-	 */
-	void SetBoundParaView(CConfig *config, char mesh_filename[200]);
 	
 	/*! 
 	 * \brief Find the maximum thickness of the airfoil.
@@ -1519,26 +1483,11 @@ public:
 	void SetSendReceive(CConfig *config);
 
 	/*! 
-	 * \brief Set the Paraview file.
-	 * \param[in] config_filename - Name of the file where the Paraview 
-	 *            information is going to be stored.
-	 */
-	void SetParaView(char config_filename[200]);
-
-	/*! 
 	 * \brief Set the Tecplot file.
 	 * \param[in] config_filename - Name of the file where the Tecplot
 	 *            information is going to be stored.
 	 */
 	void SetTecPlot(char config_filename[200]);
-
-	/*! 
-	 * \brief Set the output file for boundaries in Paraview
-	 * \param[in] config - Definition of the particular problem.		 
-	 * \param[in] mesh_filename - Name of the file where the Paraview
-	 *            information is going to be stored.
-	 */
-	void SetBoundParaView(CConfig *config, char mesh_filename[200]);
 
 	/*! 
 	 * \brief Write the .su2 file.
@@ -1595,15 +1544,8 @@ public:
 	void SetPeriodicBoundary(CGeometry *geometry, CConfig *config);
 
 	/*! 
-	 * \brief Set the Paraview file.
-	 * \param[in] config_filename - Name of the file where the Paraview 
-	 *            information is going to be stored.
-	 */
-	void SetParaView(char config_filename[200]);
-
-	/*! 
 	 * \brief Set the Tecplot file.
-	 * \param[in] config_filename - Name of the file where the Paraview 
+	 * \param[in] config_filename - Name of the file where the Tecplot 
 	 *            information is going to be stored.
 	 */
 	void SetTecPlot(char config_filename[200]);

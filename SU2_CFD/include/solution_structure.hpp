@@ -3535,14 +3535,14 @@ public:
 	 */
 	virtual ~CAdjEulerSolution(void);
     
-    /*!
+  /*!
 	 * \brief Impose the send-receive boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void Set_MPI_Solution(CGeometry *geometry, CConfig *config);
     
-    /*!
+  /*!
 	 * \brief Impose the send-receive boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
@@ -3562,6 +3562,13 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief Compute the Fan face Mach number.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solution - Container vector with all the solutions.
+	 */
+	void GetNacelle_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh);
   
 	/*!
 	 * \brief Created the force projection vector for adjoint boundary conditions.

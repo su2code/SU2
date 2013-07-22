@@ -250,16 +250,9 @@ int main(int argc, char *argv[]) {
     /*--- Output original FFD chunk ---*/
     if (rank == MASTER_NODE) {
       for (iChunk = 0; iChunk < surface_mov->GetnChunk(); iChunk++) {
-        if(config[ZONE_0]->GetOutput_FileFormat() == PARAVIEW) {
-          sprintf (buffer_char, "original_chunk.vtk");
-          if (iChunk == 0) chunk[iChunk]->SetParaView(buffer_char, true);
-          else chunk[iChunk]->SetParaView(buffer_char, false);
-        }
-        if(config[ZONE_0]->GetOutput_FileFormat() == TECPLOT) {
-          sprintf (buffer_char, "original_chunk.plt");
-          if (iChunk == 0) chunk[iChunk]->SetTecplot(buffer_char, true);
-          else chunk[iChunk]->SetTecplot(buffer_char, false);
-        }
+        sprintf (buffer_char, "original_chunk.plt");
+        if (iChunk == 0) chunk[iChunk]->SetTecplot(buffer_char, true);
+        else chunk[iChunk]->SetTecplot(buffer_char, false);
       }
     }
     
@@ -325,18 +318,9 @@ int main(int argc, char *argv[]) {
       /*--- Output the deformed chunks ---*/
       if (rank == MASTER_NODE) {
         for (iChunk = 0; iChunk < surface_mov->GetnChunk(); iChunk++) {
-          if (config[ZONE_0]->GetDesign_Variable(0) != NO_DEFORMATION) {
-            if(config[ZONE_0]->GetOutput_FileFormat() == PARAVIEW) {
-              sprintf (buffer_char, "deformed_chunk.vtk");
-              if (iChunk == 0) chunk[iChunk]->SetParaView(buffer_char, true);
-              else chunk[iChunk]->SetParaView(buffer_char, false);
-            }
-            if(config[ZONE_0]->GetOutput_FileFormat() == TECPLOT) {
-              sprintf (buffer_char, "deformed_chunk.plt");
-              if (iChunk == 0) chunk[iChunk]->SetTecplot(buffer_char, true);
-              else chunk[iChunk]->SetTecplot(buffer_char, false);
-            }
-          }
+          sprintf (buffer_char, "deformed_chunk.plt");
+          if (iChunk == 0) chunk[iChunk]->SetTecplot(buffer_char, true);
+          else chunk[iChunk]->SetTecplot(buffer_char, false);
         }
       }
       
@@ -392,12 +376,12 @@ int main(int argc, char *argv[]) {
     
     string str = config[ZONE_0]->GetMesh_Out_FileName();
     str.erase (str.end()-4, str.end()); strcpy (out_file, str.c_str()); strcat(out_file, buffer_char);
-    geometry[ZONE_0]->SetMeshFile(config[ZONE_0], out_file);
+
+    str = config[ZONE_0]->GetMesh_FileName();    
+    strcpy (in_file, str.c_str());
     
-/*--- Verify SetMeshFile(config[ZONE_0], out_file, in_file) ---*/
-//    str = config[ZONE_0]->GetMesh_FileName();
-//    str.erase (str.end()-4, str.end()); strcpy (in_file, str.c_str()); strcat(in_file, buffer_char);
-//    geometry[ZONE_0]->SetMeshFile(config[ZONE_0], out_file, in_file);
+    geometry[ZONE_0]->SetMeshFile(config[ZONE_0], out_file, in_file);
+
 	}
 	else {
 		/*--- Call special write routine for more than one zone. ---*/

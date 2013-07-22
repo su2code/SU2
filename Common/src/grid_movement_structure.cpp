@@ -1145,6 +1145,7 @@ void CVolumetricMovement::SpringMethod(CGeometry *geometry, CConfig *config, boo
 		SetDomainDisplacements(geometry, config);
 	
 	NumError = config->GetGridDef_Error();
+
   if (NumError > MinLength) {
     cout << "Warning: The error tol. is greater than the minimum edge length.\n" << endl;
     cout << "NumError: " << NumError <<"." << "  MinLength: " << MinLength << "." << endl;
@@ -4207,47 +4208,6 @@ void CFreeFormChunk::SetSupportCPChange(CFreeFormChunk *chunk) {
 				movement[2] = car_coord_new[2] - car_coord_old[2]; 
 				chunk->SetControlPoints(index, movement);
 			}
-}
-
-void CFreeFormChunk::SetParaView (char chunk_filename[200], bool new_file) {
-	ofstream chunk_file;
-	unsigned short iCornerPoints, iDim, iControlPoints, iDegree, jDegree, kDegree;
-		
-	if (new_file) chunk_file.open(chunk_filename, ios::out);
-	else chunk_file.open(chunk_filename, ios::out | ios::app);
-	
-	chunk_file << "# vtk DataFile Version 2.0" << endl;
-	chunk_file << "Visualization of the FFD box" << endl;
-	chunk_file << "ASCII" << endl;
-	chunk_file << "DATASET UNSTRUCTURED_GRID" << endl;
-	chunk_file << "POINTS " << nCornerPoints + nControlPoints << " float" << endl;
-	
-	chunk_file.precision(15);
-	
-	for(iCornerPoints = 0; iCornerPoints < nCornerPoints; iCornerPoints++) {
-		for(iDim = 0; iDim < nDim; iDim++)
-			chunk_file << scientific << Coord_Corner_Points[iCornerPoints][iDim] << "\t";
-		chunk_file << "\n";
-	}
-	for (iDegree = 0; iDegree <= lDegree; iDegree++)
-		for (jDegree = 0; jDegree <= mDegree; jDegree++)
-			for (kDegree = 0; kDegree <= nDegree; kDegree++) {
-				for(iDim = 0; iDim < nDim; iDim++)
-					chunk_file << scientific << Coord_Control_Points[iDegree][jDegree][kDegree][iDim] << "\t";
-				chunk_file << "\n";
-			}
-	
-	chunk_file << "CELLS " << 1 + nControlPoints << "\t" << (8+1) + (1+1) * nControlPoints << endl;
-	chunk_file << "8 0 1 2 3 4 5 6 7" << endl;
-	for (iControlPoints = 0; iControlPoints < nControlPoints; iControlPoints++)
-		chunk_file << "1 " << iControlPoints + 8 << endl;
-	
-	chunk_file << "CELL_TYPES " << 1 + nControlPoints<< endl;
-	chunk_file << "12" << endl;
-	for (iControlPoints = 0; iControlPoints < nControlPoints; iControlPoints++)
-		chunk_file << "1" << endl;
-	
-	chunk_file.close();
 }
 
 void CFreeFormChunk::SetTecplot(char chunk_filename[200], bool new_file) {

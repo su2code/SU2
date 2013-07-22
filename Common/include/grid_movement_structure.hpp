@@ -371,13 +371,6 @@ public:
 	void SetOriginalControlPoints(void);
 	
 	/*! 
-	 * \brief Set the paraview file of the FFD chuck structure.
-	 * \param[in] chunk_filename - Name of the output file with the FFD chunk structure.
-	 * \param[in] new_file - New file or add to the existing file.
-	 */		
-	void SetParaView(char chunk_filename[200], bool new_file);
-	
-	/*! 
 	 * \brief Set the tecplot file of the FFD chuck structure.
 	 * \param[in] chunk_filename - Name of the output file with the FFD chunk structure.
 	 * \param[in] new_file - New file or add to the existing file.

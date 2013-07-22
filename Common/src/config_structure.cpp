@@ -110,7 +110,7 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddSpecialOption("RESTART_PLASMA_FROM_EULER", Restart_Euler2Plasma, SetBoolOption, false);
 	/* DESCRIPTION: Specify number of domain partitions */
 	AddScalarOption("NUMBER_PART", nDomain, 0);
-	/* DESCRIPTION: Write a tecplot/paraview file for each partition */
+	/* DESCRIPTION: Write a tecplot file for each partition */
 	AddSpecialOption("VISUALIZE_PART", Visualize_Partition, SetBoolOption, false);
 	/* DESCRIPTION: Divide rectangles into triangles */
 	AddSpecialOption("DIVIDE_ELEMENTS", Divide_Element, SetBoolOption, false);
@@ -571,6 +571,8 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddEnumOption("ADJOINT_TYPE", Kind_Adjoint, Adjoint_Map,"CONTINUOUS");
 	/* DESCRIPTION: Reduction factor of the CFL coefficient in the adjoint problem */
 	AddScalarOption("ADJ_CFL_REDUCTION", Adj_CFLRedCoeff, 0.8);
+  /* DESCRIPTION: Limit value for the adjoint variable */
+	AddScalarOption("ADJ_LIMIT", AdjointLimit, 1E6);
 	/* DESCRIPTION: Adjoint problem boundary condition */
 	AddEnumOption("ADJ_OBJFUNC", Kind_ObjFunc, Objective_Map, "DRAG");
 	/* DESCRIPTION: Geometrical objective function */
@@ -581,8 +583,6 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddScalarOption("DRAG_IN_SONICBOOM", WeightCd, 0.0);
 	/* DESCRIPTION: Sensitivity smoothing  */
 	AddEnumOption("SENS_SMOOTHING", Kind_SensSmooth, Sens_Smoothing_Map, "NONE");
-	/* DESCRIPTION: Objective function type */
-	AddEnumOption("ADJ_OBJFUNC_TYPE", Kind_ObjFuncType, ObjectiveType_Map,"FORCE");
 	/* DESCRIPTION: Continuous governing equation set  */
 	AddEnumOption("CONTINUOUS_EQNS", Continuous_Eqns, ContinuousEqns_Map, "EULER");
 	/* DESCRIPTION: Discrete governing equation set */
@@ -601,7 +601,7 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	/* CONFIG_CATEGORY: Input/output files and formats */
 
 	/* DESCRIPTION: Output file format */
-	AddEnumOption("OUTPUT_FORMAT", Output_FileFormat, Output_Map, "PARAVIEW");
+	AddEnumOption("OUTPUT_FORMAT", Output_FileFormat, Output_Map, "TECPLOT");
 	/* DESCRIPTION: Mesh input file format */
 	AddEnumOption("MESH_FORMAT", Mesh_FileFormat, Input_Map, "SU2");
 	/* DESCRIPTION: Convert a CGNS mesh to SU2 format */
@@ -2773,7 +2773,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		if (RefAreaCoeff == 0) cout << "The reference length/area will be computed using y(2D) or z(3D) projection." <<endl;
 		else cout << "The reference length/area (force coefficient) is " << RefAreaCoeff << "." <<endl;
 		cout << "The reference length (moment computation) is " << RefLengthMoment << "." <<endl;
-		cout << "Reference origin (moment computation) is (" <<RefOriginMoment[0]<<", "<<RefOriginMoment[1]<<", "<<RefOriginMoment[1]<<")."<< endl;
+		cout << "Reference origin (moment computation) is (" <<RefOriginMoment[0]<<", "<<RefOriginMoment[1]<<", "<<RefOriginMoment[2]<<")."<< endl;
 
     cout << "Surface(s) where the force coefficients are evaluated: ";
 		for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++) {
@@ -3471,7 +3471,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		}
 
 		switch (Output_FileFormat) {
-		case PARAVIEW: cout << "The output file format is Paraview (.vtk)." << endl; break;
 		case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
 		case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
 		case CGNS_SOL: cout << "The output file format is CGNS (.cgns)." << endl; break;
@@ -3502,7 +3501,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 	if (val_software == SU2_SOL) {
 		switch (Output_FileFormat) {
-		case PARAVIEW: cout << "The output file format is Paraview (.vtk)." << endl; break;
 		case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
 		case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
 		case CGNS_SOL: cout << "The output file format is CGNS (.cgns)." << endl; break;
@@ -5196,13 +5194,13 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 	double Velocity_Reynolds;
 	unsigned short iDim;
 	int rank = MASTER_NODE;
-
+  
 #ifndef NO_MPI
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
-
+  
 	Velocity_FreeStreamND = new double[val_nDim];
-
+  
 	/*--- Local variables and memory allocation ---*/
 	double Alpha = AoA*PI_NUMBER/180.0;
 	double Beta  = AoS*PI_NUMBER/180.0;
@@ -5210,91 +5208,7 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 	bool Compressible = (!Incompressible);
 	bool Unsteady = (Unsteady_Simulation != NO);
 	bool turbulent = (Kind_Solver == RANS);
-
-#ifdef oldFar
-	if (Unsteady_Farfield && Unsteady) {
-		double time;
-		unsigned long iter, ext_Iter;
-		string text_line;
-
-		Density_FreeStreamND_Time   = new double  [nExtIter];
-		Pressure_FreeStreamND_Time  = new double  [nExtIter];
-		Mach_Inf_Time 				= new double  [nExtIter];
-		Energy_FreeStreamND_Time    = new double  [nExtIter];
-		Velocity_FreeStreamND_Time  = new double* [nExtIter];
-		for (iter = 0; iter < nExtIter; iter ++) {
-			Velocity_FreeStreamND_Time[iter]  = new double [val_nDim];
-			for (iDim = 0; iDim < val_nDim; iDim ++)
-				Velocity_FreeStreamND_Time[iter][iDim] = 0.0;
-		}
-
-
-		ifstream farfield_file;
-		string filename = GetFarfield_FileName();
-		farfield_file.open(filename.data(), ios::in);
-
-		/*--- In case there is no restart file ---*/
-		if (farfield_file.fail()) {
-			cout << "There is no farfield bounadry data file!!" << endl;
-			cout << "Press any key to exit..." << endl;
-			cin.get(); exit(1);
-		}
-		ext_Iter = 0;
-		/*--- The first line is the header ---*/
-		getline (farfield_file, text_line);
-
-		while (getline (farfield_file,text_line) && ext_Iter < nExtIter ) {
-			istringstream point_line(text_line);
-
-			/*--- First value is the point index, then the conservative vars. ---*/
-			point_line >> time;
-			point_line >> Temperature_FreeStream;
-			point_line >> Mach;
-			point_line >> Pressure_FreeStream;
-
-			Mach2Vel_FreeStream = sqrt(Gamma*Gas_Constant*Temperature_FreeStream);
-
-			/*--- Compute the Free Stream velocity, using the Mach number ---*/
-			if (val_nDim == 2) {
-				Velocity_FreeStream[0] = cos(Alpha)*Mach*Mach2Vel_FreeStream;
-				Velocity_FreeStream[1] = sin(Alpha)*Mach*Mach2Vel_FreeStream;
-			}
-			if (val_nDim == 3) {
-				Velocity_FreeStream[0] = cos(Alpha)*cos(Beta)*Mach*Mach2Vel_FreeStream;
-				Velocity_FreeStream[1] = sin(Beta)*Mach*Mach2Vel_FreeStream;
-				Velocity_FreeStream[2] = sin(Alpha)*cos(Beta)*Mach*Mach2Vel_FreeStream;
-			}
-
-			Velocity_Ref = sqrt(Pressure_Ref/Density_Ref);
-
-			for (iDim = 0; iDim < val_nDim; iDim++)
-				Velocity_FreeStreamND_Time[ext_Iter][iDim] = Velocity_FreeStream[iDim]/Velocity_Ref;
-
-			Density_FreeStream  = Pressure_FreeStream/(Gas_Constant*Temperature_FreeStream);
-			Density_FreeStreamND_Time[ext_Iter]  	= Density_FreeStream/Density_Ref;
-			Pressure_FreeStreamND_Time[ext_Iter] 	= Pressure_FreeStream/Pressure_Ref;
-			Mach_Inf_Time[ext_Iter]				    = Mach;
-
-			ModVel_FreeStreamND = 0;
-			for (iDim = 0; iDim < val_nDim; iDim++)
-				ModVel_FreeStreamND += Velocity_FreeStreamND_Time[ext_Iter][iDim]*Velocity_FreeStreamND_Time[ext_Iter][iDim];
-			ModVel_FreeStreamND    = sqrt(ModVel_FreeStreamND);
-			Energy_FreeStreamND_Time[ext_Iter]    = Pressure_FreeStreamND_Time[ext_Iter]/(Density_FreeStreamND_Time[ext_Iter]*Gamma_Minus_One)+0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
-
-			ext_Iter = ext_Iter +1;
-		}
-
-		/*--- Close the restart file ---*/
-		farfield_file.close();
-
-	}
-
-
-#endif
-
-
-
-
+  
 	if (Unsteady_Farfield && Unsteady) {
 		double time, time_ext;
 		unsigned long iter, n;
@@ -5302,30 +5216,30 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 		double temp_Temperature, temp_Mach, temp_Pressure, Derivative_Begin, Derivative_End;
 		vector<double> Time_Spline, Temperature_Spline, Mach_Spline, Pressure_Spline;
 		vector<double> Temperature2_Spline, Mach2_Spline, Pressure2_Spline;
-
+    
 		ifstream farfield_file;
 		string filename = GetFarfield_FileName();
 		farfield_file.open(filename.data(), ios::in);
-
+    
 		/*--- In case there is no restart file ---*/
 		if (farfield_file.fail()) {
 			cout << "There is no farfield bounadry data file!!" << endl;
 			cout << "Press any key to exit..." << endl;
 			cin.get(); exit(1);
 		}
-
+    
 		/*--- The first line is the header ---*/
 		getline (farfield_file, text_line);
-
+    
 		while (getline (farfield_file,text_line) ) {
 			istringstream point_line(text_line);
-
+      
 			/*--- First value is the point index, then the conservative vars. ---*/
 			point_line >> time;
 			point_line >> temp_Temperature;// Temperature_FreeStream;
 			point_line >> temp_Mach; // Mach
 			point_line >> temp_Pressure;// Pressure_FreeStream;
-
+      
 			/*--- Spline interpolation, dummy function ---*/
 			Time_Spline.push_back(time);
 			Temperature_Spline.push_back(temp_Temperature);
@@ -5333,32 +5247,31 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 			Pressure_Spline.push_back(temp_Pressure);
 			cout << " pressure = " << temp_Pressure << endl;
 		}
-
+    
 		/*--- Close the restart file ---*/
 		farfield_file.close();
-
+    
 		/*--- Create the spline ---*/
 		n = Time_Spline.size();
 		Temperature2_Spline.resize(n);
 		Mach2_Spline.resize(n);
 		Pressure2_Spline.resize(n);
-
+    
 		Derivative_Begin = (Temperature_Spline[1]-Temperature_Spline[0])/(Time_Spline[1]-Time_Spline[0]);
 		Derivative_End = (Temperature_Spline[n-1]-Temperature_Spline[n-2])/(Time_Spline[n-1]-Time_Spline[n-2]);
 		SetSpline(Time_Spline, Temperature_Spline, n, Derivative_Begin, Derivative_End, Temperature2_Spline);
-
-
+    
+    
 		Derivative_Begin = (Mach_Spline[1]-Mach_Spline[0])/(Time_Spline[1]-Time_Spline[0]);
 		Derivative_End = (Mach_Spline[n-1]-Mach_Spline[n-2])/(Time_Spline[n-1]-Time_Spline[n-2]);
 		SetSpline(Time_Spline, Mach_Spline, n, Derivative_Begin, Derivative_End, Mach2_Spline);
-
-
+    
+    
 		Derivative_Begin = (Pressure_Spline[1]-Pressure_Spline[0])/(Time_Spline[1]-Time_Spline[0]);
 		Derivative_End = (Pressure_Spline[n-1]-Pressure_Spline[n-2])/(Time_Spline[n-1]-Time_Spline[n-2]);
 		SetSpline(Time_Spline, Pressure_Spline, n, Derivative_Begin, Derivative_End, Pressure2_Spline);
-
+    
 		/*--- Allocate arrays to store time dependent farfield information ---*/
-
 		Density_FreeStreamND_Time   = new double  [nExtIter];
 		Pressure_FreeStreamND_Time  = new double  [nExtIter];
 		Mach_Inf_Time 				= new double  [nExtIter];
@@ -5369,21 +5282,21 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 			for (iDim = 0; iDim < val_nDim; iDim ++)
 				Velocity_FreeStreamND_Time[iter][iDim] = 0.0;
 		}
-
+    
 		/*--- Loop over all external time instances to store the time dependent values ---*/
-
+    
 		for (iter = 0; iter < nExtIter; iter ++) {
-
+      
 			time_ext =  iter*Delta_UnstTime;
-
+      
 			/*--- Get the interpolated values at current time step ---*/
 			Temperature_FreeStream = GetSpline(Time_Spline, Temperature_Spline, Temperature2_Spline, n, time_ext);
 			Mach = GetSpline(Time_Spline, Mach_Spline, Mach2_Spline, n, time_ext);
 			Pressure_FreeStream = GetSpline(Time_Spline, Pressure_Spline, Pressure2_Spline, n, time_ext);
-
-
+      
+      
 			Mach2Vel_FreeStream = sqrt(Gamma*Gas_Constant*Temperature_FreeStream);
-
+      
 			/*--- Compute the Free Stream velocity, using the Mach number ---*/
 			if (val_nDim == 2) {
 				Velocity_FreeStream[0] = cos(Alpha)*Mach*Mach2Vel_FreeStream;
@@ -5394,30 +5307,30 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 				Velocity_FreeStream[1] = sin(Beta)*Mach*Mach2Vel_FreeStream;
 				Velocity_FreeStream[2] = sin(Alpha)*cos(Beta)*Mach*Mach2Vel_FreeStream;
 			}
-
+      
 			Velocity_Ref = sqrt(Pressure_Ref/Density_Ref);
-
+      
 			for (iDim = 0; iDim < val_nDim; iDim++)
 				Velocity_FreeStreamND_Time[iter][iDim] = Velocity_FreeStream[iDim]/Velocity_Ref;
-
+      
 			Density_FreeStream  				= Pressure_FreeStream/(Gas_Constant*Temperature_FreeStream);
 			Density_FreeStreamND_Time[iter]  	= Density_FreeStream/Density_Ref;
 			Pressure_FreeStreamND_Time[iter] 	= Pressure_FreeStream/Pressure_Ref;
 			Mach_Inf_Time[iter]				    = Mach;
-
+      
 			ModVel_FreeStreamND = 0;
 			for (iDim = 0; iDim < val_nDim; iDim++)
 				ModVel_FreeStreamND += Velocity_FreeStreamND_Time[iter][iDim]*Velocity_FreeStreamND_Time[iter][iDim];
 			ModVel_FreeStreamND    	 = sqrt(ModVel_FreeStreamND);
 			Energy_FreeStreamND_Time[iter]    = Pressure_FreeStreamND_Time[iter]/(Density_FreeStreamND_Time[iter]*Gamma_Minus_One)+0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
 		}
-
+    
 	}
-
+  
 	if (Compressible) {
-
+    
 		Mach2Vel_FreeStream = sqrt(Gamma*Gas_Constant*Temperature_FreeStream);
-
+    
 		/*--- Compute the Free Stream velocity, using the Mach number ---*/
 		if (val_nDim == 2) {
 			Velocity_FreeStream[0] = cos(Alpha)*Mach*Mach2Vel_FreeStream;
@@ -5428,25 +5341,25 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 			Velocity_FreeStream[1] = sin(Beta)*Mach*Mach2Vel_FreeStream;
 			Velocity_FreeStream[2] = sin(Alpha)*cos(Beta)*Mach*Mach2Vel_FreeStream;
 		}
-
+    
 		/*--- Compute the modulus of the free stream velocity ---*/
 		ModVel_FreeStream = 0;
 		for (iDim = 0; iDim < val_nDim; iDim++)
 			ModVel_FreeStream += Velocity_FreeStream[iDim]*Velocity_FreeStream[iDim];
 		ModVel_FreeStream = sqrt(ModVel_FreeStream);
-
+    
 		if (Viscous) {
-
+      
 			/*--- First, check if there is mesh motion. If yes, use the Mach
-             number relative to the body to initialize the flow. ---*/
+       number relative to the body to initialize the flow. ---*/
 			if (Rotating_Frame || Grid_Movement)
 				Velocity_Reynolds = Mach_Motion*Mach2Vel_FreeStream;
 			else
 				Velocity_Reynolds = ModVel_FreeStream;
-
+      
 			/*--- For viscous flows, pressure will be computed from a density
-             that is found from the Reynolds number. The viscosity is computed
-             from the dimensional version of Sutherland's law ---*/
+       that is found from the Reynolds number. The viscosity is computed
+       from the dimensional version of Sutherland's law ---*/
 			Viscosity_FreeStream = 1.853E-5*(pow(Temperature_FreeStream/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_FreeStream+110.3));
 			Density_FreeStream   = Reynolds*Viscosity_FreeStream/(Velocity_Reynolds*Length_Reynolds);
 			Pressure_FreeStream  = Density_FreeStream*Gas_Constant*Temperature_FreeStream;
@@ -5457,29 +5370,29 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 		}
 		/*-- Compute the freestream energy. ---*/
 		Energy_FreeStream = Pressure_FreeStream/(Density_FreeStream*Gamma_Minus_One)+0.5*ModVel_FreeStream*ModVel_FreeStream;
-
+    
 		/*--- Additional reference values defined by Pref, Tref, RHOref. By definition,
 		 Lref is one because we have converted the grid to meters.---*/
-		Length_Ref = 1.0;
-		Velocity_Ref = sqrt(Pressure_Ref/Density_Ref);
+		Length_Ref         = 1.0;
+		Velocity_Ref      = sqrt(Pressure_Ref/Density_Ref);
 		Time_Ref          = Length_Ref/Velocity_Ref;
 		Omega_Ref         = Velocity_Ref/Length_Ref;
 		Force_Ref         = Velocity_Ref*Velocity_Ref/Length_Ref;
 		Gas_Constant_Ref  = Velocity_Ref*Velocity_Ref/Temperature_Ref;
 		Viscosity_Ref     = Density_Ref*Velocity_Ref*Length_Ref;
-		Froude = ModVel_FreeStream/sqrt(STANDART_GRAVITY*Length_Ref);
-
+		Froude            = ModVel_FreeStream/sqrt(STANDART_GRAVITY*Length_Ref);
+    
 	}
-
+  
 	else {
-
+    
 		/*--- Reference length = 1 (by default)
-         Reference density = liquid density or freestream
-         Reference viscosity = liquid viscosity or freestream
-         Reference velocity = liquid velocity or freestream
-         Reference pressure = Reference density * Reference velocity * Reference velocity
-         Reynolds number based on the liquid or reference viscosity ---*/
-
+     Reference density = liquid density or freestream
+     Reference viscosity = liquid viscosity or freestream
+     Reference velocity = liquid velocity or freestream
+     Reference pressure = Reference density * Reference velocity * Reference velocity
+     Reynolds number based on the liquid or reference viscosity ---*/
+    
 		Pressure_FreeStream = 0.0;
 		Length_Ref = 1.0;
 		Density_Ref = Density_FreeStream;
@@ -5489,35 +5402,35 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 		ModVel_FreeStream = sqrt(ModVel_FreeStream);
 		Velocity_Ref = ModVel_FreeStream;
 		Pressure_Ref = Density_Ref*(Velocity_Ref*Velocity_Ref);
-
+    
 		if (Viscous) {
 			Reynolds = Density_Ref*Velocity_Ref*Length_Ref / Viscosity_FreeStream;
 			Viscosity_Ref = Viscosity_FreeStream * Reynolds;
 		}
-
+    
 		/*--- Compute mach number ---*/
 		Mach = ModVel_FreeStream / sqrt(Bulk_Modulus/Density_FreeStream);
 		if (val_nDim == 2) AoA = atan(Velocity_FreeStream[1]/Velocity_FreeStream[0])*180.0/PI_NUMBER;
 		else AoA = atan(Velocity_FreeStream[2]/Velocity_FreeStream[0])*180.0/PI_NUMBER;
 		if (val_nDim == 2) AoS = 0.0;
 		else AoS = asin(Velocity_FreeStream[1]/ModVel_FreeStream)*180.0/PI_NUMBER;
-
+    
 		Froude = ModVel_FreeStream/sqrt(STANDART_GRAVITY*Length_Ref);
-
+    
 		Time_Ref = Length_Ref/Velocity_Ref;
-
+    
 	}
-
+  
 	/*--- Divide by reference values, to compute the non-dimensional free-stream values ---*/
 	Pressure_FreeStreamND = Pressure_FreeStream/Pressure_Ref;
 	Density_FreeStreamND  = Density_FreeStream/Density_Ref;
-
+  
 	for (iDim = 0; iDim < val_nDim; iDim++)
 		Velocity_FreeStreamND[iDim] = Velocity_FreeStream[iDim]/Velocity_Ref;
 	Temperature_FreeStreamND = Temperature_FreeStream/Temperature_Ref;
-
+  
 	Gas_ConstantND = Gas_Constant/Gas_Constant_Ref;
-
+  
 	/*--- Perform non-dim. for rotating terms ---*/
 	Omega_Mag = 0.0;
 	for (iDim = 0; iDim < 3; iDim++) {
@@ -5525,7 +5438,7 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 		Omega_Mag += Omega[iDim]*Omega[iDim];
 	}
 	Omega_Mag = sqrt(Omega_Mag)/Omega_Ref;
-
+  
 	ModVel_FreeStreamND = 0;
 	for (iDim = 0; iDim < val_nDim; iDim++)
 		ModVel_FreeStreamND += Velocity_FreeStreamND[iDim]*Velocity_FreeStreamND[iDim];
@@ -5534,17 +5447,17 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 	Viscosity_FreeStreamND = Viscosity_FreeStream / Viscosity_Ref;
 	Total_UnstTimeND = Total_UnstTime / Time_Ref;
 	Delta_UnstTimeND = Delta_UnstTime / Time_Ref;
-
+  
 	double kine_Inf  = 3.0/2.0*(ModVel_FreeStreamND*ModVel_FreeStreamND*TurbulenceIntensity_FreeStream*TurbulenceIntensity_FreeStream);
 	double omega_Inf = Density_FreeStreamND*kine_Inf/(Viscosity_FreeStreamND*Turb2LamViscRatio_FreeStream);
-
+  
 	/*--- Write output to the console if this is the master node and first domain ---*/
 	if ((rank == MASTER_NODE) && (val_iZone == 0)) {
-
+    
 		cout << endl <<"---------------- Flow & Non-dimensionalization information ---------------" << endl;
-
+    
 		cout.precision(6);
-
+    
 		if (Compressible) {
 			if (Viscous) {
 				cout << "Viscous flow: Computing pressure using the ideal gas law" << endl;
@@ -5565,10 +5478,10 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 			if (Viscous) cout << "Reynolds number: " << Reynolds << ", computed using free-stream values."<<endl;
 			cout << "Only dimensional computation, the grid should be dimensional." << endl;
 		}
-
+    
 		cout <<"--Input conditions:"<< endl;
 		cout << "Grid conversion factor to meters: " << Conversion_Factor << endl;
-
+    
 		if (Compressible) {
 			cout << "Ratio of specific heats: " << Gamma           << endl;
 			cout << "Specific gas constant (J/(kg.K)): "   << Gas_Constant  << endl;
@@ -5577,7 +5490,7 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 			cout << "Bulk modulus (N/m^2): "						<< Bulk_Modulus    << endl;
 			cout << "Artificial compressibility factor (N/m^2): "						<< ArtComp_Factor    << endl;
 		}
-
+    
 		cout << "Freestream pressure (N/m^2): "          << Pressure_FreeStream    << endl;
 		if (Compressible)
 			cout << "Freestream temperature (K): "       << Temperature_FreeStream << endl;
@@ -5589,15 +5502,15 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 			cout << "Freestream velocity (m/s): (" << Velocity_FreeStream[0] << ",";
 			cout << Velocity_FreeStream[1] << "," << Velocity_FreeStream[2] << ")";
 		}
-
+    
 		cout << " -> Modulus: "					 << ModVel_FreeStream << endl;
-
+    
 		if (Compressible)
 			cout << "Freestream energy (kg.m/s^2): "					 << Energy_FreeStream << endl;
-
+    
 		if (Viscous)
 			cout << "Freestream viscosity (N.s/m^2): "				 << Viscosity_FreeStream << endl;
-
+    
 		if (Rotating_Frame) {
 			cout << "Freestream rotation (rad/s): (" << Omega[0];
 			cout << "," << Omega[1] << "," << Omega[2] << ")" << endl;
@@ -5605,11 +5518,11 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 		if (Unsteady) {
 			cout << "Total time (s): " << Total_UnstTime << ". Time step (s): " << Delta_UnstTime << endl;
 		}
-
+    
 		/*--- Print out reference values. ---*/
 		cout <<"--Reference values:"<< endl;
 		cout << "Reference pressure (N/m^2): "      << Pressure_Ref    << endl;
-
+    
 		if (Compressible) {
 			cout << "Reference temperature (K): "   << Temperature_Ref << endl;
 			cout << "Reference energy (kg.m/s^2): "       << Energy_FreeStream/Energy_FreeStreamND     << endl;
@@ -5619,13 +5532,13 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 		}
 		cout << "Reference density (kg/m^3): "       << Density_Ref     << endl;
 		cout << "Reference velocity (m/s): "       << Velocity_Ref     << endl;
-
+    
 		if (Viscous)
 			cout << "Reference viscosity (N.s/m^2): "       << Viscosity_Ref     << endl;
-
+    
 		if (Unsteady)
 			cout << "Reference time (s): "        << Time_Ref      << endl;
-
+    
 		/*--- Print out resulting non-dim values here. ---*/
 		cout << "--Resulting non-dimensional state:" << endl;
 		cout << "Mach number (non-dimensional): " << Mach << endl;
@@ -5635,7 +5548,7 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 		}
 		cout << "Froude number (non-dimensional): " << Froude << endl;
 		cout << "Lenght of the baseline wave (non-dimensional): " << 2.0*PI_NUMBER*Froude*Froude << endl;
-
+    
 		if (Compressible) {
 			cout << "Negative pressure, temperature or density is not allowed!" << endl;
 			cout << "Specific gas constant (non-dimensional): "   << Gas_Constant << endl;
@@ -5651,18 +5564,18 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 			cout << Velocity_FreeStreamND[1] << "," << Velocity_FreeStreamND[2] << ")";
 		}
 		cout << " -> Modulus: "					 << ModVel_FreeStreamND << endl;
-
+    
 		if (turbulent){
 			cout << "Free-stream turb. kinetic energy (non-dimensional): " << kine_Inf << endl;
 			cout << "Free-stream specific dissipation (non-dimensional): " << omega_Inf << endl;
 		}
-
+    
 		if (Compressible)
 			cout << "Freestream energy (non-dimensional): "					 << Energy_FreeStreamND << endl;
-
+    
 		if (Viscous)
 			cout << "Freestream viscosity (non-dimensional): " << Viscosity_FreeStreamND << endl;
-
+    
 		if (Rotating_Frame) {
 			cout << "Freestream rotation (non-dimensional): (" << Omega_FreeStreamND[0];
 			cout << "," << Omega_FreeStreamND[1] << "," << Omega_FreeStreamND[2] << ")" << endl;
@@ -5674,11 +5587,8 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 		if (Mach <= 0.0) cout << "Force coefficients computed using reference values." << endl;
 		else cout << "Force coefficients computed using freestream values." << endl;
 	}
-
+  
 }
-
-void CConfig::DeepCopy(CConfig *copy) { }
-
 
 void CConfig::SetSpline(vector<double> &x, vector<double> &y, unsigned long n, double yp1, double ypn, vector<double> &y2) {
 	unsigned long i, k;

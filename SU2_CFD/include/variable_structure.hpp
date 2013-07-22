@@ -973,6 +973,11 @@ public:
 	 * \brief A virtual member.
 	 */		
 	virtual void SetPrimVar_Compressible(CConfig *config);
+  
+  /*!
+	 * \brief A virtual member.
+	 */
+	virtual void SetPrimVar_Compressible(double val_adjlimit);
 	
 	/*!
 	 * \brief A virtual member.
@@ -983,6 +988,11 @@ public:
 	 * \brief A virtual member.
 	 */		
 	virtual void SetPrimVar_Incompressible(double Density_Inf, double levelset, CConfig *config);
+  
+  /*!
+	 * \brief A virtual member.
+	 */
+	virtual void SetPrimVar_Incompressible(double val_adjlimit);
 	
 	/*!
 	 * \brief A virtual member.
@@ -2483,6 +2493,16 @@ public:
 	 */	
 	virtual ~CAdjEulerVariable(void);
 
+  /*!
+	 * \brief Set all the primitive variables for compressible flows.
+	 */
+	void SetPrimVar_Compressible(double val_adjlimit);
+  
+  /*!
+	 * \brief Set all the primitive variables for compressible flows.
+	 */
+	void SetPrimVar_Incompressible(double val_adjlimit);
+  
 	/*!
 	 * \brief Set the value of the adjoint velocity.
 	 * \param[in] val_phi - Value of the adjoint velocity.
