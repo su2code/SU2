@@ -1985,7 +1985,7 @@ void CEulerSolution::Centered_Residual(CGeometry *geometry, CSolution **solution
 void CEulerSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
 		CConfig *config, unsigned short iMesh) {
 	double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, 
-	*U_i, *U_j, sqvel, *Limiter_i = NULL, *Limiter_j = NULL, YDistance, GradHidrosPress;
+	*U_i, *U_j, sqvel, *Limiter_i = NULL, *Limiter_j = NULL;
 	unsigned long iEdge, iPoint, jPoint;
 	unsigned short iDim, iVar;
 
@@ -2067,6 +2067,7 @@ void CEulerSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_c
     }
 
 //		if (gravity) {
+//      double YDistance, GradHidrosPress;
 //
 //			/*--- The zero order reconstruction includes the gradient of the hydrostatic pressure constribution ---*/
 //			YDistance = 0.5*(geometry->node[jPoint]->GetCoord(nDim-1)-geometry->node[iPoint]->GetCoord(nDim-1));
@@ -3094,8 +3095,8 @@ void CEulerSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **so
     Jacobian.BuildJacobiPreconditioner();
     precond = new CJacobiPreconditioner(Jacobian, geometry, config);
   }
-  else if (config->GetKind_Linear_Solver_Prec() == LUSGS) {
-    precond = new CLUSGSPreconditioner(Jacobian, geometry, config);
+  else if (config->GetKind_Linear_Solver_Prec() == LU_SGS) {
+    precond = new CLU_SGSPreconditioner(Jacobian, geometry, config);
   }
   else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
     Jacobian.BuildJacobiPreconditioner();
@@ -3107,8 +3108,8 @@ void CEulerSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **so
   if (config->GetKind_Linear_Solver() == BCGSTAB)
     IterLinSol = system.BCGSTAB(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(),
                                 config->GetLinear_Solver_Iter(), false);
-  else if (config->GetKind_Linear_Solver() == GMRES)
-    IterLinSol = system.GMRES(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(),
+  else if (config->GetKind_Linear_Solver() == FGMRES)
+    IterLinSol = system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(),
                               config->GetLinear_Solver_Iter(), false);
   
   /*--- The the number of iterations of the linear solver ---*/

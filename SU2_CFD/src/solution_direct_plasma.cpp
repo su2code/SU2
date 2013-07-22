@@ -2329,8 +2329,8 @@ void CPlasmaSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **s
     Jacobian.BuildJacobiPreconditioner();
     precond = new CJacobiPreconditioner(Jacobian, geometry, config);
   }
-  else if (config->GetKind_Linear_Solver_Prec() == LUSGS) {
-    precond = new CLUSGSPreconditioner(Jacobian, geometry, config);
+  else if (config->GetKind_Linear_Solver_Prec() == LU_SGS) {
+    precond = new CLU_SGSPreconditioner(Jacobian, geometry, config);
   }
   else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
     Jacobian.BuildJacobiPreconditioner();
@@ -2342,8 +2342,8 @@ void CPlasmaSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **s
   if (config->GetKind_Linear_Solver() == BCGSTAB)
     IterLinSol = system.BCGSTAB(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(),
                                 config->GetLinear_Solver_Iter(), true);
-  else if (config->GetKind_Linear_Solver() == GMRES)
-    IterLinSol = system.GMRES(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(),
+  else if (config->GetKind_Linear_Solver() == FGMRES)
+    IterLinSol = system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(),
                               config->GetLinear_Solver_Iter(), true);
   
   /*--- The the number of iterations of the linear solver ---*/
@@ -4496,7 +4496,7 @@ void CPlasmaSolution::BC_Neumann(CGeometry *geometry, CSolution **solution_conta
 void CPlasmaSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
 	unsigned long iVertex, iPoint, Point_Normal, iSpecies, loc;
 	unsigned short iVar, iDim;
-	double *U_domain, *U_infty, **V_domain, **V_infty;
+	double *U_domain, *U_infty, **V_infty;
   double Gas_constant, Gamma, Vel2, energy_vib, energy_el, Char_temp_vib, Molar_mass;
   
   bool viscous = (config->GetKind_Solver() == PLASMA_NAVIER_STOKES);

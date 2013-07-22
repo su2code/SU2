@@ -1152,7 +1152,7 @@ void CVolumetricMovement::SpringMethod(CGeometry *geometry, CConfig *config, boo
   }
   
   CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
-  CPreconditioner* precond = new CLUSGSPreconditioner(StiffMatrix, geometry, config);
+  CPreconditioner* precond = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
   
   CSysSolve system;
   IterLinSol = system.ConjugateGradient(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 300, true);
@@ -1217,11 +1217,11 @@ void CVolumetricMovement::FEAMethod(CGeometry *geometry, CConfig *config, bool U
       SetDomainDisplacements(geometry, config);
     
     CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
-    CPreconditioner* precond = new CLUSGSPreconditioner(StiffMatrix, geometry, config);
+    CPreconditioner* precond = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
     
     CSysSolve system;
 //    IterLinSol = system.BCGSTAB(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 300, true);
-    IterLinSol = system.GMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 300, true);
+    IterLinSol = system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 300, true);
     
     /*--- Deallocate memory needed by the Krylov linear solver ---*/
     delete mat_vec;

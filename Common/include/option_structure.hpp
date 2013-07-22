@@ -888,7 +888,7 @@ enum ENUM_LINEAR_SOLVER {
 	NEWTON = 2,			/*!< \brief Newton method for point inversion algorithm (Free-Form). */
 	QUASI_NEWTON = 3,		/*!< \brief Quasi Newton method for point inversion algorithm (Free-Form). */
 	CONJUGATE_GRADIENT = 4,	/*!< \brief Preconditionated conjugate gradient method for grid deformation. */
-	GMRES = 5,    	/*!< \brief Flexible Generalized Minimal RESidual method. */
+	FGMRES = 5,    	/*!< \brief Flexible Generalized Minimal Residual method. */
 	BCGSTAB = 6	/*!< \brief BCGSTAB - Biconjugate Gradient Stabilized Method (main solver). */
 };
 static const map<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = CCreateMap<string, ENUM_LINEAR_SOLVER>
@@ -897,7 +897,7 @@ static const map<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = CCreateMap<stri
 ("QUASI_NEWTON", QUASI_NEWTON)
 ("CONJUGATE_GRADIENT", CONJUGATE_GRADIENT)
 ("BCGSTAB", BCGSTAB)
-("GMRES", GMRES);
+("FGMRES", FGMRES);
 
 /*!
  * \brief types of sensitivity smoothing
@@ -917,12 +917,12 @@ static const map<string, ENUM_SENS_SMOOTHING> Sens_Smoothing_Map = CCreateMap<st
  */
 enum ENUM_LINEAR_SOLVER_PREC {
 	JACOBI = 1,		/*!< \brief Jacobi preconditioner. */
-	LUSGS = 2,		/*!< \brief LU SGS preconditioner. */
+	LU_SGS = 2,		/*!< \brief LU SGS preconditioner. */
 	LINELET = 3		/*!< \brief Line implicit preconditioner. */
 };
 static const map<string, ENUM_LINEAR_SOLVER_PREC> Linear_Solver_Prec_Map = CCreateMap<string, ENUM_LINEAR_SOLVER_PREC>
 ("JACOBI", JACOBI)
-("LUSGS", LUSGS)
+("LU_SGS", LU_SGS)
 ("LINELET", LINELET);
 
 /*!

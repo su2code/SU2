@@ -239,7 +239,7 @@ unsigned long CSysSolve::ConjugateGradient(const CSysVector & b, CSysVector & x,
   
 }
 
-unsigned long CSysSolve::GMRES(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
+unsigned long CSysSolve::FGMRES(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
                                CPreconditioner & precond, double tol, unsigned long m, bool monitoring) {
 	
   int rank = 0;
@@ -249,13 +249,13 @@ unsigned long CSysSolve::GMRES(const CSysVector & b, CSysVector & x, CMatrixVect
   
   /*---  Check the subspace size ---*/
   if (m < 1) {
-    if (rank == 0) cerr << "CSysSolve::GMRES: illegal value for subspace size, m = " << m << endl;
+    if (rank == 0) cerr << "CSysSolve::FGMRES: illegal value for subspace size, m = " << m << endl;
     throw(-1);
   }
   
   /*---  Check the subspace size ---*/
   if (m > 1000) {
-    if (rank == 0) cerr << "CSysSolve::GMRES: illegal value for subspace size (too high), m = " << m << endl;
+    if (rank == 0) cerr << "CSysSolve::FGMRES: illegal value for subspace size (too high), m = " << m << endl;
     throw(-1);
   }
   
@@ -281,7 +281,7 @@ unsigned long CSysSolve::GMRES(const CSysVector & b, CSysVector & x, CMatrixVect
   double beta = w[0].norm();
   if ( (beta < tol*norm0) || (beta < eps) ) {
     /*---  System is already solved ---*/
-    if (rank == 0) cout << "CSysSolve::GMRES(): system solved by initial guess." << endl;
+    if (rank == 0) cout << "CSysSolve::FGMRES(): system solved by initial guess." << endl;
     return 0;
   }
   
@@ -300,7 +300,7 @@ unsigned long CSysSolve::GMRES(const CSysVector & b, CSysVector & x, CMatrixVect
   /*---  Output header information including initial residual ---*/
   int i = 0;
   if ((monitoring) && (rank == 0)) {
-    writeHeader("GMRES", tol, beta);
+    writeHeader("FGMRES", tol, beta);
     writeHistory(i, beta, norm0);
   }
   
@@ -347,13 +347,13 @@ unsigned long CSysSolve::GMRES(const CSysVector & b, CSysVector & x, CMatrixVect
   double res = w[0].norm();
   
   if ((monitoring) && (rank == 0)) {
-    cout << "# GMRES final (true) residual:" << endl;
+    cout << "# FGMRES final (true) residual:" << endl;
     cout << "# iteration = " << i << ": |res|/|res0| = " << res/norm0 << endl;
   }
   
   if (fabs(res - beta) > tol*10.0) {
     if (rank == 0) {
-      cout << "# WARNING in CSysSolve::GMRES(): " << endl;
+      cout << "# WARNING in CSysSolve::FGMRES(): " << endl;
       cout << "# true residual norm and calculated residual norm do not agree." << endl;
       cout << "# res - beta = " << res - beta << endl;
     }

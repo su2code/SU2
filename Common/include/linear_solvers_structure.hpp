@@ -1,6 +1,6 @@
 /*!
  * \file linear_solvers_structure.hpp
- * \brief Headers for the classes related to linear solvers (CG, GMRES, etc)
+ * \brief Headers for the classes related to linear solvers (CG, FGMRES, etc)
  *        The subroutines and functions are in the <i>linear_solvers_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
  * \version 2.0.5
@@ -167,7 +167,7 @@ public:
    * \param[in] m - maximum size of the search subspace
    * \param[in] monitoring - turn on priting residuals from solver to screen.
    */
-  unsigned long GMRES(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
+  unsigned long FGMRES(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
                       CPreconditioner & precond, double tol,
                       unsigned long m, bool monitoring);
 	

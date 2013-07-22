@@ -289,9 +289,9 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	/* CONFIG_CATEGORY: Linear solver definition */
 
 	/* DESCRIPTION: Linear solver for the implicit, mesh deformation, or discrete adjoint systems */
-	AddEnumOption("LINEAR_SOLVER", Kind_Linear_Solver, Linear_Solver_Map, "GMRES");
+	AddEnumOption("LINEAR_SOLVER", Kind_Linear_Solver, Linear_Solver_Map, "FGMRES");
 	/* DESCRIPTION: Preconditioner for the Krylov linear solvers */
-	AddEnumOption("LINEAR_SOLVER_PREC", Kind_Linear_Solver_Prec, Linear_Solver_Prec_Map, "LUSGS");
+	AddEnumOption("LINEAR_SOLVER_PREC", Kind_Linear_Solver_Prec, Linear_Solver_Prec_Map, "LU_SGS");
 	/* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
 	AddScalarOption("LINEAR_SOLVER_ERROR", Linear_Solver_Error, 1E-5);
 	/* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
@@ -300,7 +300,7 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddScalarOption("LINEAR_SOLVER_RELAX", Linear_Solver_Relax, 1.0);
 
 	/* DESCRIPTION: Linear solver for the turbulent adjoint systems */
-	AddEnumOption("ADJTURB_LIN_SOLVER", Kind_AdjTurb_Linear_Solver, Linear_Solver_Map, "GMRES");
+	AddEnumOption("ADJTURB_LIN_SOLVER", Kind_AdjTurb_Linear_Solver, Linear_Solver_Map, "FGMRES");
 	/* DESCRIPTION: Preconditioner for the turbulent adjoint Krylov linear solvers */
 	AddEnumOption("ADJTURB_LIN_PREC", Kind_AdjTurb_Linear_Prec, Linear_Solver_Prec_Map, "JACOBI");
 	/* DESCRIPTION: Minimum error threshold for the turbulent adjoint linear solver for the implicit formulation */
@@ -3240,8 +3240,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 					cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<<endl;
 					cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
 					break;
-				case GMRES:
-					cout << "A precond. GMRES is used for solving the linear system." << endl;
+				case FGMRES:
+					cout << "A precond. FGMRES is used for solving the linear system." << endl;
 					cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<<endl;
 					cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<<endl;
 					cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;

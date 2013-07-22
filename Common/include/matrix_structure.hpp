@@ -334,7 +334,7 @@ public:
 	 * \param[in] vec - CSysVector to be multiplied by the preconditioner.
 	 * \param[out] prod - Result of the product A*vec.
 	 */
-	void ComputeLUSGSPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config);
+	void ComputeLU_SGSPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config);
   
 	/*!
 	 * \brief Multiply CSysVector by the preconditioner
@@ -415,10 +415,10 @@ public:
 };
 
 /*!
- * \class CLUSGSPreconditioner
+ * \class CLU_SGSPreconditioner
  * \brief specialization of preconditioner that uses CSysMatrix class
  */
-class CLUSGSPreconditioner : public CPreconditioner {
+class CLU_SGSPreconditioner : public CPreconditioner {
 private:
 	CSysMatrix* sparse_matrix; /*!< \brief pointer to matrix that defines the preconditioner. */
   CGeometry* geometry; /*!< \brief pointer to matrix that defines the geometry. */
@@ -430,12 +430,12 @@ public:
 	 * \brief constructor of the class
 	 * \param[in] matrix_ref - matrix reference that will be used to define the preconditioner
 	 */
-	CLUSGSPreconditioner(CSysMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref);
+	CLU_SGSPreconditioner(CSysMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref);
 	
 	/*!
 	 * \brief destructor of the class
 	 */
-	~CLUSGSPreconditioner() {}
+	~CLU_SGSPreconditioner() {}
 	
 	/*!
 	 * \brief operator that defines the preconditioner operation

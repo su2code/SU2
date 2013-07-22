@@ -1727,8 +1727,8 @@ void CAdjTurbSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **
     Jacobian.BuildJacobiPreconditioner();
     precond = new CJacobiPreconditioner(Jacobian, geometry, config);
   }
-  else if (config->GetKind_Linear_Solver_Prec() == LUSGS) {
-    precond = new CLUSGSPreconditioner(Jacobian, geometry, config);
+  else if (config->GetKind_Linear_Solver_Prec() == LU_SGS) {
+    precond = new CLU_SGSPreconditioner(Jacobian, geometry, config);
   }
   else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
     Jacobian.BuildJacobiPreconditioner();
@@ -1740,8 +1740,8 @@ void CAdjTurbSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **
   if (config->GetKind_Linear_Solver() == BCGSTAB)
     system.BCGSTAB(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetAdjTurb_Linear_Error(),
                    config->GetAdjTurb_Linear_Iter(), false);
-  else if (config->GetKind_Linear_Solver() == GMRES)
-    system.GMRES(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetAdjTurb_Linear_Error(),
+  else if (config->GetKind_Linear_Solver() == FGMRES)
+    system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetAdjTurb_Linear_Error(),
                  config->GetAdjTurb_Linear_Iter(), false); ///this -> # iterations needed to converge... or make true for output
   
   delete mat_vec;

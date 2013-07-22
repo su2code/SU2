@@ -1063,8 +1063,8 @@ void CFEASolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **solu
     Jacobian.BuildJacobiPreconditioner();
     precond = new CJacobiPreconditioner(Jacobian, geometry, config);
   }
-  else if (config->GetKind_Linear_Solver_Prec() == LUSGS) {
-    precond = new CLUSGSPreconditioner(Jacobian, geometry, config);
+  else if (config->GetKind_Linear_Solver_Prec() == LU_SGS) {
+    precond = new CLU_SGSPreconditioner(Jacobian, geometry, config);
   }
   else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
     Jacobian.BuildJacobiPreconditioner();
@@ -1076,8 +1076,8 @@ void CFEASolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **solu
   
   if (config->GetKind_Linear_Solver() == BCGSTAB)
     system.BCGSTAB(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(), config->GetLinear_Solver_Iter(), true);
-  else if (config->GetKind_Linear_Solver() == GMRES)
-    system.GMRES(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(), config->GetLinear_Solver_Iter(), true);
+  else if (config->GetKind_Linear_Solver() == FGMRES)
+    system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(), config->GetLinear_Solver_Iter(), true);
   
   delete mat_vec;
   delete precond;
