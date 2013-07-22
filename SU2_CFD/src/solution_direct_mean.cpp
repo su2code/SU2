@@ -1514,75 +1514,86 @@ void CEulerSolution::SetInitialCondition(CGeometry **geometry, CSolution ***solu
         
 	}
     
-    if (config->GetEngine_Intake()) {
-        
-		for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++) {
-            
-			for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-                
-				/*--- Set initial boundary condition at iter 0 ---*/
-				if ((ExtIter == 0) && (!restart)) {
-                    
-					double *Coord = geometry[iMesh]->node[iPoint]->GetCoord();
-                    
-                    double Mach = 0.40;
-                    double Alpha = config->GetAoA()*PI_NUMBER/180.0;
-                    double Beta  = config->GetAoS()*PI_NUMBER/180.0;
-                    double Gamma_Minus_One = Gamma - 1.0;
-                    double Gas_Constant = config->GetGas_ConstantND();
-                    double Temperature_FreeStream = config->GetTemperature_FreeStream();
-                    double Mach2Vel_FreeStream = sqrt(Gamma*Gas_Constant*Temperature_FreeStream);
-                    double Velocity_FreeStream[3] = {0.0, 0.0, 0.0};
-                    double Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0};
-                    
-                    Velocity_FreeStream[0] = cos(Alpha)*cos(Beta)*Mach*Mach2Vel_FreeStream;
-                    Velocity_FreeStream[1] = sin(Beta)*Mach*Mach2Vel_FreeStream;
-                    Velocity_FreeStream[2] = sin(Alpha)*cos(Beta)*Mach*Mach2Vel_FreeStream;
-                    
-                    double ModVel_FreeStream = 0;
-                    for (iDim = 0; iDim < nDim; iDim++)
-                        ModVel_FreeStream += Velocity_FreeStream[iDim]*Velocity_FreeStream[iDim];
-                    ModVel_FreeStream = sqrt(ModVel_FreeStream);
-                    
-                    double Viscosity_FreeStream = 1.853E-5*(pow(Temperature_FreeStream/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_FreeStream+110.3));
-                    double Density_FreeStream   = config->GetReynolds()*Viscosity_FreeStream/(ModVel_FreeStream*config->GetLength_Reynolds());
-                    double Pressure_FreeStream  = Density_FreeStream*Gas_Constant*Temperature_FreeStream;
-                    
-                    double Density_FreeStreamND  = Density_FreeStream/config->GetDensity_Ref();
-                    double Pressure_FreeStreamND = Pressure_FreeStream/config->GetPressure_Ref();
-                    
-                    for (iDim = 0; iDim < nDim; iDim++)
-                        Velocity_FreeStreamND[iDim] = Velocity_FreeStream[iDim]/config->GetVelocity_Ref();
-                    
-                    double ModVel_FreeStreamND = 0;
-                    for (iDim = 0; iDim < nDim; iDim++)
-                        ModVel_FreeStreamND += Velocity_FreeStreamND[iDim]*Velocity_FreeStreamND[iDim];
-                    ModVel_FreeStreamND = sqrt(ModVel_FreeStreamND);
-                    
-                    double Energy_FreeStreamND = Pressure_FreeStreamND/(Density_FreeStreamND*Gamma_Minus_One)+0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
-                    
-                    
-                    if (((Coord[0] >= 16.0) && (Coord[0] <= 20.0)) &&
-                        ((Coord[1] >= 0.0) && (Coord[1] <= 0.7)) &&
-                        ((Coord[2] >= 2.5) && (Coord[2] <= 4.0))) {
-                        
-                        solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(0, Density_FreeStreamND);
-                        for (iDim = 0; iDim < nDim; iDim++)
-                            solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(iDim+1, Velocity_FreeStreamND[iDim]);
-                        solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(nVar-1, Energy_FreeStreamND);
-                        
-                    }
-                    
-				}
-			}
-            
-			/*--- Set the MPI communication ---*/
-			solution_container[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
-            
-		}
-        
-	}
+  if (config->GetEngine_Intake()) {
     
+    /*--- Set initial boundary condition at iteration 0 ---*/
+    if ((ExtIter == 0) && (!restart)) {
+      
+      double *Coord = geometry[iMesh]->node[iPoint]->GetCoord();
+      double Velocity_FreeStream[3] = {0.0, 0.0, 0.0}, Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0}, Viscosity_FreeStream, Density_FreeStream, Pressure_FreeStream, Density_FreeStreamND, Pressure_FreeStreamND, ModVel_FreeStreamND, Energy_FreeStreamND, ModVel_FreeStream;
+      
+      double Mach = 0.40;
+      double Alpha = config->GetAoA()*PI_NUMBER/180.0;
+      double Beta  = config->GetAoS()*PI_NUMBER/180.0;
+      double Gamma_Minus_One = Gamma - 1.0;
+      double Gas_Constant = config->GetGas_ConstantND();
+      double Temperature_FreeStream = config->GetTemperature_FreeStream();
+      double Mach2Vel_FreeStream = sqrt(Gamma*Gas_Constant*Temperature_FreeStream);
+      
+      for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++) {
+        
+        for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+          
+          Velocity_FreeStream[0] = cos(Alpha)*cos(Beta)*Mach*Mach2Vel_FreeStream;
+          Velocity_FreeStream[1] = sin(Beta)*Mach*Mach2Vel_FreeStream;
+          Velocity_FreeStream[2] = sin(Alpha)*cos(Beta)*Mach*Mach2Vel_FreeStream;
+          
+          ModVel_FreeStream = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            ModVel_FreeStream += Velocity_FreeStream[iDim]*Velocity_FreeStream[iDim];
+          ModVel_FreeStream = sqrt(ModVel_FreeStream);
+          
+          if (config->GetViscous()) {
+            Viscosity_FreeStream = 1.853E-5*(pow(Temperature_FreeStream/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_FreeStream+110.3));
+            Density_FreeStream   = config->GetReynolds()*Viscosity_FreeStream/(ModVel_FreeStream*config->GetLength_Reynolds());
+            Pressure_FreeStream  = Density_FreeStream*Gas_Constant*Temperature_FreeStream;
+          }
+          else {
+            Pressure_FreeStream  = config->GetPressure_FreeStream();
+            Density_FreeStream  = Pressure_FreeStream/(Gas_Constant*Temperature_FreeStream);
+          }
+          
+          Density_FreeStreamND  = Density_FreeStream/config->GetDensity_Ref();
+          Pressure_FreeStreamND = Pressure_FreeStream/config->GetPressure_Ref();
+          
+          for (iDim = 0; iDim < nDim; iDim++)
+            Velocity_FreeStreamND[iDim] = Velocity_FreeStream[iDim]/config->GetVelocity_Ref();
+          
+          ModVel_FreeStreamND = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            ModVel_FreeStreamND += Velocity_FreeStreamND[iDim]*Velocity_FreeStreamND[iDim];
+          ModVel_FreeStreamND = sqrt(ModVel_FreeStreamND);
+          
+          Energy_FreeStreamND = Pressure_FreeStreamND/(Density_FreeStreamND*Gamma_Minus_One)+0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
+          
+          
+          if (((Coord[0] >= 16.0) && (Coord[0] <= 20.0)) &&
+              ((Coord[1] >= 0.0) && (Coord[1] <= 0.7)) &&
+              ((Coord[2] >= 2.5) && (Coord[2] <= 4.0))) {
+            
+            solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(0, Density_FreeStreamND);
+            for (iDim = 0; iDim < nDim; iDim++)
+              solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(iDim+1, Velocity_FreeStreamND[iDim]);
+            solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(nVar-1, Energy_FreeStreamND);
+            
+            solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution_Old(0, Density_FreeStreamND);
+            for (iDim = 0; iDim < nDim; iDim++)
+              solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution_Old(iDim+1, Velocity_FreeStreamND[iDim]);
+            solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution_Old(nVar-1, Energy_FreeStreamND);
+          }
+          
+				}
+        
+        /*--- Set the MPI communication ---*/
+        solution_container[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+        solution_container[iMesh][FLOW_SOL]->Set_MPI_Solution_Old(geometry[iMesh], config);
+
+			}
+      
+		}
+    
+	}
+  
 	/*--- If restart solution, then interpolate the flow solution to
      all the multigrid levels, this is important with the dual time strategy ---*/
 	if (restart) {
