@@ -29,8 +29,10 @@ libSU2_a_SOURCES = ../src/config_structure.hpp \
 		../src/option_structure.hpp \
 		../src/primal_grid_structure.hpp \
 		../src/primal_grid_structure.inl \
-		../src/sparse_structure.hpp \
-		../src/sparse_structure.inl \
+		../src/vector_structure.hpp \
+		../src/vector_structure.inl \
+	       ../src/matrix_structure.hpp \
+	       ../src/matrix_structure.inl \
 		../src/config_structure.cpp \
 		../src/dual_grid_structure.cpp \
 		../src/geometry_structure.cpp \
@@ -38,7 +40,8 @@ libSU2_a_SOURCES = ../src/config_structure.hpp \
 		../src/grid_movement_structure.cpp \
 		../src/linear_solvers_structure.cpp \
 		../src/primal_grid_structure.cpp \
-		../src/sparse_structure.cpp
+	       ../src/vector_structure.cpp \
+		../src/matrix_structure.cpp
 
 libSU2_a_CXXFLAGS = 
 libSU2_a_LIBADD =

@@ -72,8 +72,7 @@ int main(int argc, char *argv[]) {
     }
     
 #ifndef NO_MPI
-    /*--- Change the name of the input-output files for the
-     parallel computation ---*/
+    /*--- Change the name of the input-output files for the parallel computation ---*/
     config[iZone]->SetFileNameDomain(rank+1);
 #endif
     
@@ -86,7 +85,7 @@ int main(int argc, char *argv[]) {
 	if (rank == MASTER_NODE)
 		cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
   
-	/*--- Compute elements surrounding points, points surrounding points, 
+	/*--- Compute elements surrounding points, points surrounding points,
    and elements surrounding elements ---*/
 	if (rank == MASTER_NODE) cout << "Setting local point and element connectivity." <<endl;
 	geometry[ZONE_0]->SetEsuP();
@@ -124,12 +123,6 @@ int main(int argc, char *argv[]) {
   
 	/*--- Output original computational grids ---*/
 	if (config[ZONE_0]->GetVisualize_Deformation()) {
-		if(config[ZONE_0]->GetOutput_FileFormat() == PARAVIEW) {
-			if (size > 1) sprintf (buffer_char, "_%d.vtk", rank+1);
-			else sprintf (buffer_char, ".vtk");
-			strcpy (out_file, "original_volumetric_grid"); strcat(out_file, buffer_char); geometry[ZONE_0]->SetParaView(out_file);
-			strcpy (out_file, "original_surface_grid"); strcat(out_file, buffer_char); geometry[ZONE_0]->SetBoundParaView(config[ZONE_0], out_file);
-		}
 		if(config[ZONE_0]->GetOutput_FileFormat() == TECPLOT) {
 			if (size > 1) sprintf (buffer_char, "_%d.plt", rank+1);
 			else sprintf (buffer_char, ".plt");
@@ -379,12 +372,6 @@ int main(int argc, char *argv[]) {
 		cout << "End and write output files." << endl;
 	
 	if (config[ZONE_0]->GetVisualize_Deformation()) {
-		if(config[ZONE_0]->GetOutput_FileFormat() == PARAVIEW) {
-			if (size > 1) sprintf (buffer_char, "_%d.vtk", rank+1);
-			else sprintf (buffer_char, ".vtk");
-			strcpy (out_file, "deformed_volumetric_grid"); strcat(out_file, buffer_char); geometry[ZONE_0]->SetParaView(out_file);
-			strcpy (out_file, "deformed_surface_grid"); strcat(out_file, buffer_char); geometry[ZONE_0]->SetBoundParaView(config[ZONE_0], out_file);
-		}
 		if(config[ZONE_0]->GetOutput_FileFormat() == TECPLOT) {
 			if (size > 1) sprintf (buffer_char, "_%d.plt", rank+1);
 			else sprintf (buffer_char, ".plt");
@@ -406,7 +393,7 @@ int main(int argc, char *argv[]) {
     string str = config[ZONE_0]->GetMesh_Out_FileName();
     str.erase (str.end()-4, str.end()); strcpy (out_file, str.c_str()); strcat(out_file, buffer_char);
     geometry[ZONE_0]->SetMeshFile(config[ZONE_0], out_file);
-  
+    
 /*--- Verify SetMeshFile(config[ZONE_0], out_file, in_file) ---*/
 //    str = config[ZONE_0]->GetMesh_FileName();
 //    str.erase (str.end()-4, str.end()); strcpy (in_file, str.c_str()); strcat(in_file, buffer_char);
