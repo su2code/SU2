@@ -53,8 +53,6 @@ CSolution::CSolution(void) {
 	Jacobian_jj = NULL;
 	Smatrix = NULL;
 	cvector = NULL;
-  LinSysSol = NULL;
-	LinSysRes = NULL;
   node = NULL;
 
 }
@@ -82,8 +80,6 @@ CSolution::~CSolution(void) {
 	if (Res_Visc_i != NULL) delete [] Res_Visc_i;
 	if (Res_Visc_j != NULL) delete [] Res_Visc_j;
 	if (Res_Sour_j != NULL) delete [] Res_Sour_j;
-  if (LinSysSol != NULL) delete [] LinSysSol;
-	if (LinSysRes != NULL) delete [] LinSysRes;
 	if (rhs != NULL) delete [] rhs;
   
 	if (Jacobian_i != NULL) {

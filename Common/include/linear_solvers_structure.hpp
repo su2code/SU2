@@ -158,7 +158,7 @@ public:
                                   unsigned long m, bool monitoring);
 	
   /*!
-   * \brief Flexible Generalized Minimal RESidual method
+   * \brief Flexible Generalized Minimal Residual method
    * \param[in] b - the right hand size vector
    * \param[in,out] x - on entry the intial guess, on exit the solution
    * \param[in] mat_vec - object that defines matrix-vector product
