@@ -1,6 +1,6 @@
 /*!
- * \file linear_solvers_structure.inl
- * \brief inline subroutines of the <i>linear_solvers_structure.hpp</i> file.
+ * \file vector_structure.inl
+ * \brief inline subroutines of the <i>vector_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
  * \version 2.0.5
  *
@@ -23,10 +23,22 @@
 
 #pragma once
 
-inline double CSysSolve::sign(const double & x, const double & y) const {
-  if (y == 0.0)
-    return 0.0;
-  else {
-    return (y < 0 ? -fabs(x) : fabs(x));
-  }
+inline unsigned int CSysVector::GetLocSize() const { return nElm; }
+
+inline unsigned long CSysVector::GetSize() const {
+#ifndef NO_MPI
+  return nElmGlobal;
+#else
+  return (unsigned long)nElm;
+#endif
 }
+
+inline unsigned short CSysVector::GetNVar() const { return nVar; }
+
+inline unsigned int CSysVector::GetNBlk() const { return nBlk; }
+
+inline unsigned int CSysVector::GetNBlkDomain() const { return nBlkDomain; }
+
+inline double & CSysVector::operator[](const unsigned int & i) { return vec_val[i]; }
+
+inline const double & CSysVector::operator[](const unsigned int & i) const { return vec_val[i]; }

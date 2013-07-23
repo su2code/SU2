@@ -23,24 +23,6 @@
 
 #pragma once
 
-inline void CSolution::AddResidual(unsigned long val_ipoint, double *val_residual) { for (unsigned short iVar = 0; iVar < nVar; iVar++) xres[val_ipoint*nVar+iVar] += val_residual[iVar]; }
-
-inline void CSolution::SubtractResidual(unsigned long val_ipoint, double *val_residual) { for (unsigned short iVar = 0; iVar < nVar; iVar++) xres[val_ipoint*nVar+iVar] -= val_residual[iVar]; }
-
-inline void CSolution::SetResidual(unsigned long val_ipoint, double *val_residual) { for (unsigned short iVar = 0; iVar < nVar; iVar++) xres[val_ipoint*nVar+iVar] = val_residual[iVar]; }
-
-inline void CSolution::SetResidual(unsigned long val_ipoint, unsigned short val_var, double val_residual) { xres[val_ipoint*nVar+val_var] = val_residual; } 
-
-inline void CSolution::Set_Residual_Zero(unsigned long val_ipoint) { for (unsigned short iVar = 0; iVar < nVar; iVar++) xres[val_ipoint*nVar+iVar] = 0.0; }
-
-inline void CSolution::SetVel_Residual_Zero(unsigned long val_ipoint) { for (unsigned short iDim = 0; iDim < nDim; iDim++) xres[val_ipoint*nVar+iDim+1] = 0.0; }
-
-inline void CSolution::SetEnergy_Residual_Zero(unsigned long val_ipoint) { xres[val_ipoint*nVar+nDim+1] = 0.0; }
-
-inline double CSolution::GetResidual(unsigned long val_ipoint, unsigned short val_var) { return xres[val_ipoint*nVar + val_var]; }
-
-inline double *CSolution::GetResidual(unsigned long val_ipoint) { return &xres[val_ipoint*nVar]; }
-
 inline void CSolution::SetIterLinSolver(unsigned short val_iterlinsolver) { IterLinSolver = val_iterlinsolver; }
 
 inline unsigned short CSolution::GetnSpecies(void) { return 0; }
@@ -71,8 +53,6 @@ inline void CSolution::SetFEA_Load(CSolution ***flow_solution, CGeometry **fea_g
 inline void CSolution::SetInitialCondition(CGeometry **geometry, CSolution ***solution_container, CConfig *config, unsigned long ExtIter) { }
 
 inline void CSolution::GetRestart(CGeometry *geometry, CConfig *config, unsigned short val_iZone) { }
-
-inline void CSolution::SetVolume_Output(CConfig *config, CGeometry *geometry, double **data_container, unsigned short nOutput_Vars) { }
   
 inline void CSolution::SetNoise_Source(CSolution ***flow_solution, CGeometry **wave_geometry, CConfig *wave_config) { }
 

@@ -57,6 +57,7 @@ private:
 	Omega_Mag;						/*!< \brief Angular velocity magnitude for rotational frame problem. */
 	double MinLogResidual; /*!< \brief Minimum value of the log residual. */
 	double* EA_IntLimit; /*!< \brief Integration limits of the Equivalent Area computation */
+  double AdjointLimit; /*!< \brief Adjoint variable limit */
 	double* Hold_GridFixed_Coord; /*!< \brief Coordinates of the box to hold fixed the nbumerical grid */
 	unsigned short ConvCriteria;	/*!< \brief Kind of convergence criteria. */
 	bool Adjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
@@ -107,7 +108,6 @@ private:
 	unsigned short Kind_ObjFunc;	/*!< \brief Kind of objective function. */
 	unsigned short Kind_GeoObjFunc;	/*!< \brief Kind of geometrical objective function. */
 	unsigned short Kind_SensSmooth;	/*!< \brief Kind of sensitivity smoothing technique. */
-	unsigned short Kind_ObjFuncType;	/*!< \brief Type of objective function. */
 	unsigned short Continuous_Eqns;	/*!< \brief Which equations to treat continuously (Hybrid adjoint) */
 	unsigned short Discrete_Eqns;	/*!< \brief Which equations to treat discretely (Hybrid adjoint). */
 	unsigned short *Design_Variable; /*!< \brief Kind of design variable. */
@@ -448,7 +448,6 @@ private:
 	AdjWave_FileName,					/*!< \brief Adjoint wave variables output file. */
 	Residual_FileName,				/*!< \brief Residual variables output file. */
 	Conv_FileName,					/*!< \brief Convergence history output file. */
-	Lin_Conv_FileName,				/*!< \brief Linear Solver Convergence history output file. */
 	Restart_FlowFileName,			/*!< \brief Restart file for flow variables. */
 	Restart_WaveFileName,			/*!< \brief Restart file for wave variables. */
 	Restart_HeatFileName,			/*!< \brief Restart file for heat variables. */
@@ -474,8 +473,6 @@ private:
 	Wrt_Csv_Sol,                /*!< \brief Write a surface comma-separated values solution file */
 	Wrt_Residuals,              /*!< \brief Write residuals to solution file */
   Wrt_Halo;                   /*!< \brief Write rind layers in solution files */
-	unsigned short nOutput_Vars_Vol, /*!< \brief No. of output variables specified for the volume solution file. */
-	*Output_Vars_Vol;                  /*!< \brief List of output variables specified for the volume solution file. */
 	double *ArrheniusCoefficient,					/*!< \brief Arrhenius reaction coefficient */
 	*ArrheniusEta,								/*!< \brief Arrhenius reaction temperature exponent */
 	*ArrheniusTheta,							/*!< \brief Arrhenius reaction characteristic temperature */
@@ -951,6 +948,12 @@ public:
 	 * \return Integration limits for the equivalent area computation.
 	 */
 	double GetEA_IntLimit(unsigned short index);
+  
+  /*!
+	 * \brief Get the limit value for the adjoint variables.
+	 * \return Limit value for the adjoint variables.
+	 */
+	double GetAdjointLimit(void);
 
 	/*! 
 	 * \brief Get the the coordinates where of the box where the grid is going to be deformed.
@@ -1021,13 +1024,13 @@ public:
 	double GetFreeSurface_Outlet(void);
 
 	/*! 
-	 * \brief Creates a paraview file to visualize the partition made by the DDM software.
+	 * \brief Creates a tecplot file to visualize the partition made by the DDC software.
 	 * \return <code>TRUE</code> if the partition is going to be plotted; otherwise <code>FALSE</code>.
 	 */
 	bool GetVisualize_Partition(void);
 
 	/*! 
-	 * \brief Creates a paraview file to visualize the deformation made by the MDC software.
+	 * \brief Creates a teot file to visualize the deformation made by the MDC software.
 	 * \return <code>TRUE</code> if the deformation is going to be plotted; otherwise <code>FALSE</code>.
 	 */
 	bool GetVisualize_Deformation(void);
@@ -1789,19 +1792,6 @@ public:
 	 * \return <code>TRUE</code> means that rind layers will be written to the solution file.
 	 */
 	bool GetWrt_Halo(void);
-  
-	/*!
-	 * \brief Get the number of volume output variables.
-	 * \return Number of volume output variables.
-	 */
-	unsigned short GetnOutput_Vars_Vol(void);
-
-	/*!
-	 * \brief Get the volume output variable.
-	 * \param[in] val_index - Index of the output variable.
-	 * \return Type of volume output variable.
-	 */
-	unsigned short GetOutput_Vars_Vol(unsigned short val_index);
 
 	/*!
 	 * \brief Get the alpha (convective) coefficients for the Runge-Kutta integration scheme.
@@ -3010,13 +3000,6 @@ public:
 	unsigned short GetKind_SensSmooth(void);
 
 	/*!
-	 * \brief Get the type of objective function. There are two options: Continuous or Discrete
-	 * \note The objective function will determine the boundary condition of the adjoint problem.
-	 * \return Type of objective function.
-	 */
-	unsigned short GetKind_ObjFuncType(void);
-
-	/*!
 	 * \brief Get equations to be treated continuously. There are several options: Euler, Navier Stokes
 	 * \return Continuous equations.
 	 */
@@ -3208,11 +3191,9 @@ public:
 	bool GetRestart(void);
 
 	/*!
-	 * \brief Provides the restart information.
-	 * \return Restart information, if <code>TRUE</code> then the code will use the Euler solution as restart for the plasma problem.
-	 */		
-	bool GetRestart_Euler2Plasma(void);
-
+	 * \brief Provides the number of varaibles.
+	 * \return Number of variables.
+	 */
 	unsigned short GetnVar(void);
 
 	/*! 
@@ -3308,12 +3289,6 @@ public:
 	 * \return Name of the file with convergence history of the problem.
 	 */
 	string GetConv_FileName(void);
-
-	/*!
-	 * \brief Get the name of the file with the linear solver convergence history of the problem.
-	 * \return Name of the file with linear solver convergence history of the problem.
-	 */
-	string GetLin_Conv_FileName(void);
 
 	/*! 
 	 * \brief Get the name of the file with the flow variables.
@@ -4389,12 +4364,6 @@ public:
 	 * \param[in] val_iZone - Current grid domain number.
 	 */	
 	void SetNondimensionalization(unsigned short val_nDim, unsigned short val_iZone);
-
-	/*! 
-	 * \brief Deep copy in config class.
-	 * \param[in] copy - Original class to be copied.
-	 */	
-	void DeepCopy(CConfig *copy);
 
 	/*! 
 	 * \brief Config file postprocessing.

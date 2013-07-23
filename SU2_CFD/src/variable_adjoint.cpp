@@ -279,6 +279,40 @@ void CAdjEulerVariable::SetTheta(double val_density, double *val_velocity, doubl
 		Theta += val_density*val_velocity[iDim]*Solution[iDim+1];
 }
 
+void CAdjEulerVariable::SetPrimVar_Compressible(double val_adjlimit) {
+	unsigned short iVar;
+  bool check_dens = false;
+  
+  check_dens = (fabs(Solution[0]) > val_adjlimit);             // Check the adjoint density
+  
+  /*--- Check that the solution has a physical meaning ---*/
+  if (check_dens) {
+    
+    /*--- Copy the old solution ---*/
+    for (iVar = 0; iVar < nVar; iVar++)
+      Solution[iVar] = Solution_Old[iVar];
+     
+  }
+  
+}
+
+void CAdjEulerVariable::SetPrimVar_Incompressible(double val_adjlimit) {
+  unsigned short iVar;
+  bool check_press = false;
+  
+  check_press = (fabs(Solution[0]) > val_adjlimit);             // Check the adjoint pressure
+  
+  /*--- Check that the solution has a physical meaning ---*/
+  if (check_press) {
+    
+    /*--- Copy the old solution ---*/
+    for (iVar = 0; iVar < nVar; iVar++)
+      Solution[iVar] = Solution_Old[iVar];
+    
+  }
+  
+}
+
 CAdjNSVariable::CAdjNSVariable(void) : CAdjEulerVariable() { }
 
 CAdjNSVariable::CAdjNSVariable(double *val_solution, unsigned short val_ndim, 

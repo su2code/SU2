@@ -258,23 +258,21 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
 				solution_container[iZone][MESH_0][FLOW_SOL]->SetPrimVar_Gradient_LS(geometry_container[iZone][MESH_0], config_container[iZone]);
       
 			/*--- Set contribution from cost function for boundary conditions ---*/
-			if (config_container[iZone]->GetKind_ObjFuncType() == FORCE_OBJ) {
-				for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
-          
-					/*--- Set the value of the non-dimensional coefficients in the coarse levels, using the fine level solution ---*/
-					solution_container[iZone][iMesh][FLOW_SOL]->SetTotal_CDrag(solution_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CDrag());
-					solution_container[iZone][iMesh][FLOW_SOL]->SetTotal_CLift(solution_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CLift());
-					solution_container[iZone][iMesh][FLOW_SOL]->SetTotal_CT(solution_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CT());
-					solution_container[iZone][iMesh][FLOW_SOL]->SetTotal_CQ(solution_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CQ());
-          
-					/*--- Compute the adjoint boundary condition on Euler walls ---*/
-					solution_container[iZone][iMesh][ADJFLOW_SOL]->SetForceProj_Vector(geometry_container[iZone][iMesh], solution_container[iZone][iMesh], config_container[iZone]);
-          
-					/*--- Set the internal boundary condition on nearfield surfaces ---*/
-					if ((config_container[iZone]->GetKind_ObjFunc() == EQUIVALENT_AREA) || (config_container[iZone]->GetKind_ObjFunc() == NEARFIELD_PRESSURE))
-						solution_container[iZone][iMesh][ADJFLOW_SOL]->SetIntBoundary_Jump(geometry_container[iZone][iMesh], solution_container[iZone][iMesh], config_container[iZone]);
-				}
-			}
+      for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
+        
+        /*--- Set the value of the non-dimensional coefficients in the coarse levels, using the fine level solution ---*/
+        solution_container[iZone][iMesh][FLOW_SOL]->SetTotal_CDrag(solution_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CDrag());
+        solution_container[iZone][iMesh][FLOW_SOL]->SetTotal_CLift(solution_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CLift());
+        solution_container[iZone][iMesh][FLOW_SOL]->SetTotal_CT(solution_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CT());
+        solution_container[iZone][iMesh][FLOW_SOL]->SetTotal_CQ(solution_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CQ());
+        
+        /*--- Compute the adjoint boundary condition on Euler walls ---*/
+        solution_container[iZone][iMesh][ADJFLOW_SOL]->SetForceProj_Vector(geometry_container[iZone][iMesh], solution_container[iZone][iMesh], config_container[iZone]);
+        
+        /*--- Set the internal boundary condition on nearfield surfaces ---*/
+        if ((config_container[iZone]->GetKind_ObjFunc() == EQUIVALENT_AREA) || (config_container[iZone]->GetKind_ObjFunc() == NEARFIELD_PRESSURE))
+          solution_container[iZone][iMesh][ADJFLOW_SOL]->SetIntBoundary_Jump(geometry_container[iZone][iMesh], solution_container[iZone][iMesh], config_container[iZone]);
+      }
 		}
 
 		/*--- Set the value of the internal iteration ---*/
@@ -426,12 +424,10 @@ void AdjPlasmaIteration(COutput *output, CIntegration ***integration_container, 
 		/*--- Plasma equations ---*/
 		if (config_container[ZONE_0]->GetKind_Solver() == ADJ_PLASMA_EULER) config_container[ZONE_0]->SetGlobalParam(ADJ_PLASMA_EULER, RUNTIME_PLASMA_SYS, ExtIter);
 		if (config_container[ZONE_0]->GetKind_Solver() == ADJ_PLASMA_NAVIER_STOKES) config_container[ZONE_0]->SetGlobalParam(ADJ_PLASMA_NAVIER_STOKES, RUNTIME_PLASMA_SYS, ExtIter);
-		integration_container[ZONE_0][PLASMA_SOL]->SetMultiGrid_Solver(geometry_container, solution_container, solver_container, 
-				config_container, RUNTIME_PLASMA_SYS, ExtIter, ZONE_0);
-		if(config_container[ZONE_0]->GetKind_ObjFuncType() == FORCE_OBJ)
-			solution_container[ZONE_0][MESH_0][ADJPLASMA_SOL]->SetForceProj_Vector(geometry_container[ZONE_0][MESH_0], solution_container[ZONE_0][MESH_0],
-					config_container[ZONE_0]);
-
+		integration_container[ZONE_0][PLASMA_SOL]->SetMultiGrid_Solver(geometry_container, solution_container, solver_container,
+                                                                   config_container, RUNTIME_PLASMA_SYS, ExtIter, ZONE_0);
+    solution_container[ZONE_0][MESH_0][ADJPLASMA_SOL]->SetForceProj_Vector(geometry_container[ZONE_0][MESH_0], solution_container[ZONE_0][MESH_0], config_container[ZONE_0]);
+    
 	}
 
 	/*--- Adjoint Plasma equations ---*/
@@ -594,14 +590,12 @@ void AdjFreeSurfaceIteration(COutput *output, CIntegration ***integration_contai
 				solution_container[iZone][MESH_0][FLOW_SOL]->SetPrimVar_Gradient_LS(geometry_container[iZone][MESH_0], config_container[iZone]);
 
 			/*--- Set contribution from cost function for boundary conditions ---*/
-			if (config_container[iZone]->GetKind_ObjFuncType() == FORCE_OBJ) {
-				for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
-					solution_container[iZone][iMesh][FLOW_SOL]->SetTotal_CDrag(solution_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CDrag());
-					solution_container[iZone][iMesh][FLOW_SOL]->SetTotal_CLift(solution_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CLift());
-					solution_container[iZone][iMesh][ADJFLOW_SOL]->SetForceProj_Vector(geometry_container[iZone][iMesh], solution_container[iZone][iMesh], config_container[iZone]);
-				}
+      for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
+        solution_container[iZone][iMesh][FLOW_SOL]->SetTotal_CDrag(solution_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CDrag());
+        solution_container[iZone][iMesh][FLOW_SOL]->SetTotal_CLift(solution_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CLift());
+        solution_container[iZone][iMesh][ADJFLOW_SOL]->SetForceProj_Vector(geometry_container[iZone][iMesh], solution_container[iZone][iMesh], config_container[iZone]);
       }
-
+      
 		}
 
 		/*--- Set the value of the internal iteration ---*/
@@ -973,16 +967,15 @@ void AdjAeroacousticIteration(COutput *output, CIntegration ***integration_conta
 		solution_container[ZONE_0][MESH_0][FLOW_SOL]->SetPrimVar_Gradient_LS(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
 
 	/*--- Set contribution from cost function for boundary conditions ---*/
-	if(config_container[ZONE_0]->GetKind_ObjFuncType() == FORCE_OBJ)
-		for (iMesh = 0; iMesh <= config_container[ZONE_0]->GetMGLevels(); iMesh++) {
-			solution_container[ZONE_0][iMesh][FLOW_SOL]->SetTotal_CDrag(solution_container[ZONE_0][MESH_0][FLOW_SOL]->GetTotal_CDrag());
-			solution_container[ZONE_0][iMesh][FLOW_SOL]->SetTotal_CLift(solution_container[ZONE_0][MESH_0][FLOW_SOL]->GetTotal_CLift());
-			solution_container[ZONE_0][iMesh][FLOW_SOL]->SetTotal_CT(solution_container[ZONE_0][MESH_0][FLOW_SOL]->GetTotal_CT());
-			solution_container[ZONE_0][iMesh][FLOW_SOL]->SetTotal_CQ(solution_container[ZONE_0][MESH_0][FLOW_SOL]->GetTotal_CQ());
-			solution_container[ZONE_0][iMesh][ADJFLOW_SOL]->SetForceProj_Vector(geometry_container[ZONE_0][iMesh], solution_container[ZONE_0][iMesh], config_container[ZONE_0]);
-			if ((config_container[ZONE_0]->GetKind_ObjFunc() == EQUIVALENT_AREA) || (config_container[ZONE_0]->GetKind_ObjFunc() == NEARFIELD_PRESSURE))
-				solution_container[ZONE_0][iMesh][ADJFLOW_SOL]->SetIntBoundary_Jump(geometry_container[ZONE_0][iMesh], solution_container[ZONE_0][iMesh], config_container[ZONE_0]);
-		}
+  for (iMesh = 0; iMesh <= config_container[ZONE_0]->GetMGLevels(); iMesh++) {
+    solution_container[ZONE_0][iMesh][FLOW_SOL]->SetTotal_CDrag(solution_container[ZONE_0][MESH_0][FLOW_SOL]->GetTotal_CDrag());
+    solution_container[ZONE_0][iMesh][FLOW_SOL]->SetTotal_CLift(solution_container[ZONE_0][MESH_0][FLOW_SOL]->GetTotal_CLift());
+    solution_container[ZONE_0][iMesh][FLOW_SOL]->SetTotal_CT(solution_container[ZONE_0][MESH_0][FLOW_SOL]->GetTotal_CT());
+    solution_container[ZONE_0][iMesh][FLOW_SOL]->SetTotal_CQ(solution_container[ZONE_0][MESH_0][FLOW_SOL]->GetTotal_CQ());
+    solution_container[ZONE_0][iMesh][ADJFLOW_SOL]->SetForceProj_Vector(geometry_container[ZONE_0][iMesh], solution_container[ZONE_0][iMesh], config_container[ZONE_0]);
+    if ((config_container[ZONE_0]->GetKind_ObjFunc() == EQUIVALENT_AREA) || (config_container[ZONE_0]->GetKind_ObjFunc() == NEARFIELD_PRESSURE))
+      solution_container[ZONE_0][iMesh][ADJFLOW_SOL]->SetIntBoundary_Jump(geometry_container[ZONE_0][iMesh], solution_container[ZONE_0][iMesh], config_container[ZONE_0]);
+  }
 
 	/*--- Set the value of the internal iteration ---*/
 	IntIter = ExtIter;

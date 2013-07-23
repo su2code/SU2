@@ -257,9 +257,9 @@ int main(int argc, char *argv[]) {
 				case MOMENT_X_COEFFICIENT :
 					if (iDV == 0) Gradient_file << "Moment x coeff. grad. using cont. adj." << endl;
 					cout << "Moment x coefficient gradient: "<< Gradient << "." << endl; break;
-				case MOMENT_Y_COEFFICIENT :
+				case MOMENT_Y_COEFFICIENT : // Check the change in the sign!!
 					if (iDV == 0) Gradient_file << "Moment y coeff. grad. using cont. adj." << endl;
-					cout << "Moment y coefficient gradient: "<< Gradient << "." << endl; break;
+					cout << "Moment y coefficient gradient: "<< -Gradient << "." << endl; break;
 				case MOMENT_Z_COEFFICIENT :
 					if (iDV == 0) Gradient_file << "Moment z coeff. grad. using cont. adj." << endl;
 					cout << "Moment z coefficient gradient: "<< Gradient << "." << endl; break;

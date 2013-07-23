@@ -27,11 +27,10 @@ CWaveSolution::CWaveSolution(void) : CSolution() { }
 
 CWaveSolution::CWaveSolution(CGeometry *geometry, 
                              CConfig *config) : CSolution() {
-  
-	unsigned long nPoint;
 	unsigned short nMarker, iVar;
   
-	nPoint  = geometry->GetnPoint();
+  nPoint = geometry->GetnPoint();
+  nPointDomain = geometry->GetnPointDomain();
 	nDim    = geometry->GetnDim();
 	nMarker = config->GetnMarker_All(); 
 	node    = new CVariable*[nPoint];
@@ -55,13 +54,13 @@ CWaveSolution::CWaveSolution(CGeometry *geometry,
 	}
   
 	/*--- Initialization of matrix structures ---*/
-	Initialize_SparseMatrix_Structure(&StiffMatrixSpace, nVar, nVar, geometry, config);
-	Initialize_SparseMatrix_Structure(&StiffMatrixTime, nVar, nVar, geometry, config);
-	Initialize_SparseMatrix_Structure(&Jacobian, nVar, nVar, geometry, config);
+	StiffMatrixSpace.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
+	StiffMatrixTime.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
+	Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
   
   /*--- Initialization of linear solver structures ---*/
-	xsol = new double [nPoint*nVar];
-	xres = new double [nPoint*nVar];
+  LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
+  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
   
   /* Wave strength coefficient for all of the markers */
   
@@ -170,9 +169,6 @@ CWaveSolution::~CWaveSolution(void) {
   
 	delete [] StiffMatrix_Elem;
 	delete [] StiffMatrix_Node;
-	
-	delete [] xsol;
-	delete [] xres;
   
 }
 
@@ -186,7 +182,7 @@ void CWaveSolution::Preprocessing(CGeometry *geometry,
   /* Set residuals and matrix entries to zero */
   
 	for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
-    Set_Residual_Zero(iPoint);
+    LinSysRes.SetBlock_Zero(iPoint);
 	}
 	
   /* Zero out the entries in the various matrices */
@@ -310,9 +306,9 @@ void CWaveSolution::Source_Residual(CGeometry *geometry,
       Res_Sour[1] = Noise_Total;
       
       /* CHECK SIGN!!! */
-      SubtractResidual(Point_0, Res_Sour);
-      SubtractResidual(Point_1, Res_Sour);
-      SubtractResidual(Point_2, Res_Sour);
+      LinSysRes.SubtractBlock(Point_0, Res_Sour);
+      LinSysRes.SubtractBlock(Point_1, Res_Sour);
+      LinSysRes.SubtractBlock(Point_2, Res_Sour);
       
     }
     
@@ -352,9 +348,9 @@ void CWaveSolution::Source_Residual(CGeometry *geometry,
     Res_Sour[1] = eps*(1.0/3.0)*Sponge_1;
     
     /* Set sponge source terms */
-    SubtractResidual(Point_0, Res_Sour);
-    SubtractResidual(Point_1, Res_Sour);
-    SubtractResidual(Point_2, Res_Sour);
+    LinSysRes.SubtractBlock(Point_0, Res_Sour);
+    LinSysRes.SubtractBlock(Point_1, Res_Sour);
+    LinSysRes.SubtractBlock(Point_2, Res_Sour);
     
 	}
   
@@ -441,18 +437,18 @@ void CWaveSolution::Galerkin_Method(CGeometry *geometry,
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
 		for (iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar+iVar;
-			xsol[total_index] = node[iPoint]->GetSolution(iVar);
-			xres[total_index] = 0.0;
+			LinSysSol[total_index] = node[iPoint]->GetSolution(iVar);
+			LinSysRes[total_index] = 0.0;
 		}
 	
-	StiffMatrixSpace.MatrixVectorProduct(xsol, xres);
+	StiffMatrixSpace.MatrixVectorProduct(LinSysSol, LinSysRes);
 	
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
 		for (iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar+iVar;
-			Residual[iVar] = xres[total_index];
+			Residual[iVar] = LinSysRes[total_index];
 		}
-		SubtractResidual(iPoint, Residual);
+		LinSysRes.SubtractBlock(iPoint, Residual);
 	}
   
   
@@ -596,8 +592,8 @@ void CWaveSolution::BC_Euler_Wall(CGeometry *geometry,
 		}
 		node[iPoint]->SetSolution(Solution);
 		node[iPoint]->SetSolution_Old(Solution);
-    SetResidual(iPoint, Residual);
-		SetResidual(iPoint, Residual);
+    LinSysRes.SetBlock(iPoint, Residual);
+		LinSysRes.SetBlock(iPoint, Residual);
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       total_index = iPoint*nVar+iVar;
       Jacobian.DeleteValsRowi(total_index);
@@ -692,11 +688,11 @@ void CWaveSolution::BC_Observer(CGeometry *geometry,
       if (nDim == 2) {
         Residual[0] = 0.0; 
         Residual[1] = (1.0/2.0)*bcn*Length_Elem; 
-        AddResidual(Point_0, Residual);
+        LinSysRes.AddBlock(Point_0, Residual);
         
         Residual[0] = 0.0;
         Residual[1] = (1.0/2.0)*bcn*Length_Elem;
-        AddResidual(Point_1, Residual);
+        LinSysRes.AddBlock(Point_1, Residual);
       }
       else {
         /*--- do nothing for now - only in 2-D ---*/
@@ -838,22 +834,22 @@ void CWaveSolution::SetResidual_DualTime(CGeometry *geometry, CSolution **soluti
 		/*--- Compute Residual ---*/
 		for(iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar+iVar;
-			xres[total_index] = 0.0;
+			LinSysRes[total_index] = 0.0;
 			if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-				xsol[total_index] = (U_time_nP1[iVar] - U_time_n[iVar]);
+				LinSysSol[total_index] = (U_time_nP1[iVar] - U_time_n[iVar]);
 			if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
-				xsol[total_index] = (U_time_nP1[iVar] - (4.0/3.0)*U_time_n[iVar] +  (1.0/3.0)*U_time_nM1[iVar]);
+				LinSysSol[total_index] = (U_time_nP1[iVar] - (4.0/3.0)*U_time_n[iVar] +  (1.0/3.0)*U_time_nM1[iVar]);
 		}
 	}
 	
-	StiffMatrixTime.MatrixVectorProduct(xsol, xres);		
+	StiffMatrixTime.MatrixVectorProduct(LinSysSol, LinSysRes);
   
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
 		for (iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar+iVar;
-			Residual[iVar] = xres[total_index];
+			Residual[iVar] = LinSysRes[total_index];
 		}
-		SubtractResidual(iPoint, Residual);
+		LinSysRes.SubtractBlock(iPoint, Residual);
 	}
 	
 }
@@ -876,9 +872,9 @@ void CWaveSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **sol
 		/*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 		for (iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar+iVar;
-			xsol[total_index] = 0.0;
-			AddRes_RMS(iVar, xres[total_index]*xres[total_index]);
-            AddRes_Max(iVar, fabs(xres[total_index]), geometry->node[iPoint]->GetGlobalIndex());
+			LinSysSol[total_index] = 0.0;
+			AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
+            AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex());
 		}
 	}
     
@@ -886,64 +882,43 @@ void CWaveSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **sol
     for (iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
         for (iVar = 0; iVar < nVar; iVar++) {
             total_index = iPoint*nVar + iVar;
-            xres[total_index] = 0.0;
-            xsol[total_index] = 0.0;
+            LinSysRes[total_index] = 0.0;
+            LinSysSol[total_index] = 0.0;
         }
     }
-    
-	/*--- Solve the linear system (Stationary iterative methods) ---*/
-	if (config->GetKind_Linear_Solver() == SYM_GAUSS_SEIDEL)
-		Jacobian.SGSSolution(xres, xsol, config->GetLinear_Solver_Error(),
-                             config->GetLinear_Solver_Iter(), false, geometry, config);
-	
-	if (config->GetKind_Linear_Solver() == LU_SGS)
-        Jacobian.LU_SGSIteration(xres, xsol, geometry, config);
 	
 	/*--- Solve the linear system (Krylov subspace methods) ---*/
-	if ((config->GetKind_Linear_Solver() == BCGSTAB) ||
-        (config->GetKind_Linear_Solver() == GMRES)) {
-		
-		CSysVector rhs_vec((const unsigned int)geometry->GetnPoint(),
-                           (const unsigned int)geometry->GetnPointDomain(), nVar, xres);
-		CSysVector sol_vec((const unsigned int)geometry->GetnPoint(),
-                           (const unsigned int)geometry->GetnPointDomain(), nVar, xsol);
-		
-		CMatrixVectorProduct* mat_vec = new CSparseMatrixVectorProduct(Jacobian, geometry, config);
-
-		CPreconditioner* precond = NULL;
-		if (config->GetKind_Linear_Solver_Prec() == JACOBI) {
-			Jacobian.BuildJacobiPreconditioner();
-			precond = new CJacobiPreconditioner(Jacobian, geometry, config);
-		}
-    else if (config->GetKind_Linear_Solver_Prec() == LUSGS) {
-			Jacobian.BuildJacobiPreconditioner();
-			precond = new CLUSGSPreconditioner(Jacobian, geometry, config);
-		}
-		else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-			Jacobian.BuildJacobiPreconditioner();
-			precond = new CLineletPreconditioner(Jacobian, geometry, config);
-		}
-		else if (config->GetKind_Linear_Solver_Prec() == NO_PREC) {
-			precond = new CIdentityPreconditioner(Jacobian, geometry, config);
-    }
-		
-		CSysSolve system;
-		if (config->GetKind_Linear_Solver() == BCGSTAB)
-			system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, config->GetLinear_Solver_Error(),
-                           config->GetLinear_Solver_Iter(), false);
-		else if (config->GetKind_Linear_Solver() == GMRES)
-			system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, config->GetLinear_Solver_Error(),
-                         config->GetLinear_Solver_Iter(), false);
-		
-		sol_vec.CopyToArray(xsol);
-		delete mat_vec;
-		delete precond;
-	}
+  CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
+  
+  CPreconditioner* precond = NULL;
+  if (config->GetKind_Linear_Solver_Prec() == JACOBI) {
+    Jacobian.BuildJacobiPreconditioner();
+    precond = new CJacobiPreconditioner(Jacobian, geometry, config);
+  }
+  else if (config->GetKind_Linear_Solver_Prec() == LU_SGS) {
+    precond = new CLU_SGSPreconditioner(Jacobian, geometry, config);
+  }
+  else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
+    Jacobian.BuildJacobiPreconditioner();
+    Jacobian.BuildLineletPreconditioner(geometry, config);
+    precond = new CLineletPreconditioner(Jacobian, geometry, config);
+  }
+  
+  CSysSolve system;
+  if (config->GetKind_Linear_Solver() == BCGSTAB)
+    system.BCGSTAB(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(),
+                   config->GetLinear_Solver_Iter(), false);
+  else if (config->GetKind_Linear_Solver() == FGMRES)
+    system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(),
+                 config->GetLinear_Solver_Iter(), false);
+  
+  delete mat_vec;
+  delete precond;
 	
 	/*--- Update solution (system written in terms of increments) ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
 		for (iVar = 0; iVar < nVar; iVar++) {
-			node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*xsol[iPoint*nVar+iVar]);
+			node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*LinSysSol[iPoint*nVar+iVar]);
 		}
 	}
 	

@@ -53,8 +53,6 @@ CSolution::CSolution(void) {
 	Jacobian_jj = NULL;
 	Smatrix = NULL;
 	cvector = NULL;
-  xsol = NULL;
-	xres = NULL;
   node = NULL;
 
 }
@@ -82,8 +80,6 @@ CSolution::~CSolution(void) {
 	if (Res_Visc_i != NULL) delete [] Res_Visc_i;
 	if (Res_Visc_j != NULL) delete [] Res_Visc_j;
 	if (Res_Sour_j != NULL) delete [] Res_Sour_j;
-  if (xsol != NULL) delete [] xsol;
-	if (xres != NULL) delete [] xres;
 	if (rhs != NULL) delete [] rhs;
   
 	if (Jacobian_i != NULL) {
@@ -250,8 +246,8 @@ void CSolution::SetGrid_Movement_Residual (CGeometry *geometry, CConfig *config)
 		for (unsigned short iVar = 0; iVar < nVar; iVar++)
 			Residual[iVar] = ProjGridVel*Solution[iVar];
 
-		SubtractResidual(iPoint, Residual);
-		AddResidual(jPoint, Residual);
+		LinSysRes.SubtractBlock(iPoint, Residual);
+		LinSysRes.AddBlock(jPoint, Residual);
 
 	}
 
@@ -277,56 +273,9 @@ void CSolution::SetGrid_Movement_Residual (CGeometry *geometry, CConfig *config)
 			for (unsigned short iVar = 0; iVar < nVar; iVar++)
 				Residual[iVar] = ProjGridVel*Solution[iVar];
 
-			AddResidual(Point, Residual);
+			LinSysRes.AddBlock(Point, Residual);
 		}
 	}
-}
-
-void CSolution::Initialize_SparseMatrix_Structure(CSparseMatrix *SparseMatrix, unsigned short nVar, unsigned short nEqn, CGeometry *geometry, CConfig *config) {
-	unsigned long iPoint, *row_ptr, *col_ind, *vneighs, index, nnz;
-	unsigned short iNeigh, nNeigh, Max_nNeigh;
-  
-  unsigned long nPoint = geometry->GetnPoint();
-  unsigned long nPointDomain = geometry->GetnPointDomain();
-	bool preconditioner = false;
-  
-  if (config->GetKind_Linear_Solver_Prec() != NO_PREC) preconditioner = true;
-  
-	/*--- Don't delete *row_ptr, *col_ind because they are asigned to the Jacobian structure. ---*/
-	row_ptr = new unsigned long [nPoint+1];
-	row_ptr[0] = 0;
-	for (iPoint = 0; iPoint < nPoint; iPoint++)
-		row_ptr[iPoint+1] = row_ptr[iPoint]+(geometry->node[iPoint]->GetnPoint()+1); // +1 -> to include diagonal element
-	nnz = row_ptr[nPoint];
-  
-	col_ind = new unsigned long [nnz];
-  
-  Max_nNeigh = 0;
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-		nNeigh = geometry->node[iPoint]->GetnPoint();
-    if (nNeigh > Max_nNeigh) Max_nNeigh = nNeigh;
-  }
-	vneighs = new unsigned long [Max_nNeigh+1]; // +1 -> to include diagonal 
-  
-	for (iPoint = 0; iPoint < nPoint; iPoint++) {
-		nNeigh = geometry->node[iPoint]->GetnPoint();
-		for (iNeigh = 0; iNeigh < nNeigh; iNeigh++)
-			vneighs[iNeigh] = geometry->node[iPoint]->GetPoint(iNeigh);
-		vneighs[nNeigh] = iPoint;
-		sort(vneighs,vneighs+nNeigh+1);
-		index = row_ptr[iPoint];
-		for (iNeigh = 0; iNeigh <= nNeigh; iNeigh++) {
-			col_ind[index] = vneighs[iNeigh];
-			index++;
-		}
-	}
-  
-	SparseMatrix->SetIndexes(nPoint, nPointDomain, nVar, nEqn, row_ptr, col_ind, nnz, preconditioner);
-  
-  if (config->GetKind_Linear_Solver_Prec() == LINELET)
-    SparseMatrix->BuildLineletPreconditioner(geometry, config);
-  
-	delete[] vneighs;
 }
 
 void CSolution::SetAuxVar_Gradient_GG(CGeometry *geometry) {

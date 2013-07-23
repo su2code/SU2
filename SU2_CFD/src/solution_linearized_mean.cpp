@@ -37,6 +37,9 @@ CLinEulerSolution::CLinEulerSolution(CGeometry *geometry, CConfig *config) : CSo
 	/*--- Define geometry constans in the solver structure ---*/
 	nDim = geometry->GetnDim();
 	nVar = geometry->GetnDim()+2;
+  nPoint = geometry->GetnPoint();
+  nPointDomain = geometry->GetnPointDomain();
+  
 	node = new CVariable*[geometry->GetnPoint()];
 	
 	/*--- Define some auxiliar vector related with the residual ---*/
@@ -59,9 +62,10 @@ CLinEulerSolution::CLinEulerSolution(CGeometry *geometry, CConfig *config) : CSo
 		for (iVar = 0; iVar < nVar; iVar++) {
 			Jacobian_i[iVar] = new double [nVar]; Jacobian_j[iVar] = new double [nVar]; }
 		/*--- Initialization of the structure of the whole Jacobian ---*/
-		Initialize_SparseMatrix_Structure(&Jacobian, nVar, nVar, geometry, config);
-		xsol = new double [geometry->GetnPoint()*nVar];
-		xres = new double [geometry->GetnPoint()*nVar];
+		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
+
+    LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
+    LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
 	}
 	
 	/*--- Computation of gradients by least squares ---*/
@@ -179,7 +183,6 @@ CLinEulerSolution::~CLinEulerSolution(void) {
 	delete [] Solution; 
 	delete [] Solution_i; delete [] Solution_j;
 	delete [] Vector_i; delete [] Vector_j;
-	delete [] xsol; delete [] xres;
 	delete [] DeltaForceInviscid; delete [] DeltaVel_Inf;
 	delete [] CDeltaDrag_Inv; delete [] CDeltaLift_Inv;
 	
@@ -235,10 +238,10 @@ void CLinEulerSolution::Centered_Residual(CGeometry *geometry, CSolution **solut
 		solver->SetResidual(Res_Conv, Res_Visc, Jacobian_i, Jacobian_j, config);
 		
 		/*--- Update convective and artificial dissipation residuals ---*/
-		AddResidual(iPoint, Res_Conv);
-		SubtractResidual(jPoint, Res_Conv);
-    AddResidual(iPoint, Res_Visc);
-    SubtractResidual(jPoint, Res_Visc);
+		LinSysRes.AddBlock(iPoint, Res_Conv);
+		LinSysRes.SubtractBlock(jPoint, Res_Conv);
+    LinSysRes.AddBlock(iPoint, Res_Visc);
+    LinSysRes.SubtractBlock(jPoint, Res_Visc);
 
 		/*--- Set implicit stuff ---*/
 		if (implicit) {
@@ -270,7 +273,7 @@ void CLinEulerSolution::ExplicitRK_Iteration(CGeometry *geometry, CSolution **so
 			Vol = geometry->node[iPoint]->GetVolume();
 			Delta = solution_container[FLOW_SOL]->node[iPoint]->GetDelta_Time() / Vol;
 			Res_TruncError = node[iPoint]->GetResTruncError();
-			Residual = GetResidual(iPoint);
+			Residual = LinSysRes.GetBlock(iPoint);
 			for (iVar = 0; iVar < nVar; iVar++) {
 				node[iPoint]->AddSolution(iVar, -(Residual[iVar]+Res_TruncError[iVar])*Delta*RK_AlphaCoeff);
 				AddRes_RMS(iVar, Residual[iVar]*Residual[iVar]);
@@ -291,7 +294,7 @@ void CLinEulerSolution::Preprocessing(CGeometry *geometry, CSolution **solution_
 	
 	/*--- Residual inicialization ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
-		Set_Residual_Zero(iPoint);
+		LinSysRes.SetBlock_Zero(iPoint);
 	}
 	
 	/*--- Inicialize the jacobian matrices ---*/
@@ -424,7 +427,7 @@ void CLinEulerSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_
 				Residual[iVar] = dS * Residual[iVar];
 			
 			/*--- Add value to the residual ---*/
-			AddResidual(iPoint, Residual);
+			LinSysRes.AddBlock(iPoint, Residual);
 		}
 	}
 	
@@ -595,7 +598,7 @@ void CLinEulerSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_c
 					Residual[iVar] +=Jac_Matrix[iVar][jVar]*DeltaU_update[jVar]*dS;
 			}
 			
-			AddResidual(iPoint, Residual);
+			LinSysRes.AddBlock(iPoint, Residual);
 			
 		}
 	}

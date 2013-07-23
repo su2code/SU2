@@ -1,5 +1,5 @@
 /*!
- * \file sparse_structure.cpp
+ * \file matrix_structure.cpp
  * \brief Main subroutines for doing the sparse structures.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
  * \version 2.0.5
@@ -21,10 +21,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/sparse_structure.hpp"
+#include "../include/matrix_structure.hpp"
 
-CSparseMatrix::CSparseMatrix(void) {
-
+CSysMatrix::CSysMatrix(void) {
+  
   /*--- Array initialization ---*/
 	matrix            = NULL;
 	row_ptr           = NULL;
@@ -36,10 +36,10 @@ CSparseMatrix::CSparseMatrix(void) {
   invM              = NULL;
   LineletBool       = NULL;
   LineletPoint      = NULL;
-
+  
 }
 
-CSparseMatrix::~CSparseMatrix(void) {
+CSysMatrix::~CSysMatrix(void) {
   
 	if (matrix != NULL)             delete [] matrix;
 	if (row_ptr != NULL)            delete [] row_ptr;
@@ -51,11 +51,53 @@ CSparseMatrix::~CSparseMatrix(void) {
   if (invM != NULL)               delete [] invM;
   if (LineletBool != NULL)        delete [] LineletBool;
   if (LineletPoint != NULL)       delete [] LineletPoint;
-
+  
 }
 
-void CSparseMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDomain, unsigned short val_nVar, unsigned short val_nEq, unsigned long* val_row_ptr, unsigned long* val_col_ind, unsigned long val_nnz, bool preconditioner) {
+void CSysMatrix::Initialize(unsigned long nPoint, unsigned long nPointDomain, unsigned short nVar, unsigned short nEqn, CGeometry *geometry) {
+	unsigned long iPoint, *row_ptr, *col_ind, *vneighs, index, nnz;
+	unsigned short iNeigh, nNeigh, Max_nNeigh;
     
+	/*--- Don't delete *row_ptr, *col_ind because they are asigned to the Jacobian structure. ---*/
+	row_ptr = new unsigned long [nPoint+1];
+	row_ptr[0] = 0;
+	for (iPoint = 0; iPoint < nPoint; iPoint++)
+		row_ptr[iPoint+1] = row_ptr[iPoint]+(geometry->node[iPoint]->GetnPoint()+1); // +1 -> to include diagonal element
+	nnz = row_ptr[nPoint];
+  
+	col_ind = new unsigned long [nnz];
+  
+  Max_nNeigh = 0;
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+		nNeigh = geometry->node[iPoint]->GetnPoint();
+    if (nNeigh > Max_nNeigh) Max_nNeigh = nNeigh;
+  }
+	vneighs = new unsigned long [Max_nNeigh+1]; // +1 -> to include diagonal
+  
+	for (iPoint = 0; iPoint < nPoint; iPoint++) {
+		nNeigh = geometry->node[iPoint]->GetnPoint();
+		for (iNeigh = 0; iNeigh < nNeigh; iNeigh++)
+			vneighs[iNeigh] = geometry->node[iPoint]->GetPoint(iNeigh);
+		vneighs[nNeigh] = iPoint;
+		sort(vneighs,vneighs+nNeigh+1);
+		index = row_ptr[iPoint];
+		for (iNeigh = 0; iNeigh <= nNeigh; iNeigh++) {
+			col_ind[index] = vneighs[iNeigh];
+			index++;
+		}
+	}
+  
+  /*--- Set the indices in the in the sparce matrix structure ---*/
+	SetIndexes(nPoint, nPointDomain, nVar, nEqn, row_ptr, col_ind, nnz);
+  
+  /*--- Initialization to zero ---*/
+  SetValZero();
+  
+	delete[] vneighs;
+}
+
+void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDomain, unsigned short val_nVar, unsigned short val_nEq, unsigned long* val_row_ptr, unsigned long* val_col_ind, unsigned long val_nnz) {
+  
 	nPoint = val_nPoint;              // Assign number of points in the mesh
 	nPointDomain = val_nPointDomain;  // Assign number of points in the mesh
 	nVar = val_nVar;                  // Assign number of vars in each block system
@@ -66,16 +108,15 @@ void CSparseMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPoin
 	
 	matrix = new double [nnz*nVar*nEqn];	// Reserve memory for the values of the matrix
 	block = new double [nVar*nEqn];
-	prod_block_vector = new double [nEqn]; //correct?
-	prod_row_vector = new double [nVar]; //correct?
-	aux_vector = new double [nVar]; //correct?
+	prod_block_vector = new double [nEqn];
+	prod_row_vector = new double [nVar];
+	aux_vector = new double [nVar];
 	
-	if (preconditioner)
-		invM = new double [nPoint*nVar*nEqn];	// Reserve memory for the values of the inverse of the preconditioner
-        
+  invM = new double [nPoint*nVar*nEqn];	// Reserve memory for the values of the inverse of the preconditioner
+  
 }
 
-void CSparseMatrix::GetBlock(unsigned long block_i, unsigned long block_j) {
+void CSysMatrix::GetBlock(unsigned long block_i, unsigned long block_j) {
 	unsigned long step = 0, index, iVar;
 	
 	for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
@@ -88,7 +129,7 @@ void CSparseMatrix::GetBlock(unsigned long block_i, unsigned long block_j) {
 	}
 }
 
-void CSparseMatrix::DisplayBlock(void) {
+void CSysMatrix::DisplayBlock(void) {
 	unsigned short iVar, jVar;
 	
 	for (iVar = 0; iVar < nVar; iVar++) {
@@ -98,14 +139,14 @@ void CSparseMatrix::DisplayBlock(void) {
 	}
 }
 
-void CSparseMatrix::ReturnBlock(double **val_block) {
+void CSysMatrix::ReturnBlock(double **val_block) {
 	unsigned short iVar, jVar;
 	for (iVar = 0; iVar < nVar; iVar++)
 		for (jVar = 0; jVar < nEqn; jVar++)
 			val_block[iVar][jVar] = block[iVar*nEqn+jVar];
 }
 
-void CSparseMatrix::AddBlock(unsigned long block_i, unsigned long block_j, double **val_block) {
+void CSysMatrix::AddBlock(unsigned long block_i, unsigned long block_j, double **val_block) {
 	unsigned long iVar, jVar, index, step = 0;
 	
 	for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
@@ -119,7 +160,7 @@ void CSparseMatrix::AddBlock(unsigned long block_i, unsigned long block_j, doubl
 	}
 }
 
-void CSparseMatrix::SubtractBlock(unsigned long block_i, unsigned long block_j, double **val_block) {
+void CSysMatrix::SubtractBlock(unsigned long block_i, unsigned long block_j, double **val_block) {
 	unsigned long iVar, jVar, index, step = 0;
 	
 	for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
@@ -133,7 +174,7 @@ void CSparseMatrix::SubtractBlock(unsigned long block_i, unsigned long block_j, 
 	}
 }
 
-void CSparseMatrix::AddVal2Diag(unsigned long block_i, double val_matrix) {
+void CSysMatrix::AddVal2Diag(unsigned long block_i, double val_matrix) {
 	unsigned long step = 0, iVar, index;
 	
 	for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
@@ -146,7 +187,7 @@ void CSparseMatrix::AddVal2Diag(unsigned long block_i, double val_matrix) {
 	}
 }
 
-void CSparseMatrix::AddVal2Diag(unsigned long block_i,  double* val_matrix, unsigned short num_dim) {
+void CSysMatrix::AddVal2Diag(unsigned long block_i,  double* val_matrix, unsigned short num_dim) {
 	unsigned long step = 0, iVar, iSpecies;
 	
 	for (unsigned long index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
@@ -161,7 +202,7 @@ void CSparseMatrix::AddVal2Diag(unsigned long block_i,  double* val_matrix, unsi
 	}
 }
 
-void CSparseMatrix::AddVal2Diag(unsigned long block_i,  double* val_matrix, unsigned short val_nDim, unsigned short val_nDiatomics) {
+void CSysMatrix::AddVal2Diag(unsigned long block_i,  double* val_matrix, unsigned short val_nDim, unsigned short val_nDiatomics) {
 	unsigned long step = 0, iVar, iSpecies;
 	
 	for (unsigned long index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
@@ -178,11 +219,11 @@ void CSparseMatrix::AddVal2Diag(unsigned long block_i,  double* val_matrix, unsi
 }
 
 
-void CSparseMatrix::DeleteValsRowi(unsigned long i) {
+void CSysMatrix::DeleteValsRowi(unsigned long i) {
 	unsigned long block_i = i/nVar;
 	unsigned long row = i - block_i*nVar;
 	unsigned long index, iVar;
-
+  
 	for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
 		for (iVar = 0; iVar < nVar; iVar++)
 			matrix[index*nVar*nVar+row*nVar+iVar] = 0.0; // Delete row values in the block
@@ -191,19 +232,19 @@ void CSparseMatrix::DeleteValsRowi(unsigned long i) {
 	}
 }
 
-double CSparseMatrix::SumAbsRowi(unsigned long i) {
+double CSysMatrix::SumAbsRowi(unsigned long i) {
 	unsigned long block_i = i/nVar;
 	unsigned long row = i - block_i*nVar;
-
+  
 	double sum = 0;
 	for (unsigned long index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++)
 		for (unsigned long iVar = 0; iVar < nVar; iVar ++)
 			sum += fabs(matrix[index*nVar*nVar+row*nVar+iVar]);
-
+  
 	return sum;
 }
 
-void CSparseMatrix::Gauss_Elimination(unsigned long block_i, double* rhs) {
+void CSysMatrix::Gauss_Elimination(unsigned long block_i, double* rhs) {
 	unsigned short jVar, kVar;
 	short iVar;
 	double weight, aux;
@@ -241,12 +282,12 @@ void CSparseMatrix::Gauss_Elimination(unsigned long block_i, double* rhs) {
 	}
 }
 
-void CSparseMatrix::Gauss_Elimination(double* Block, double* rhs) {
+void CSysMatrix::Gauss_Elimination(double* Block, double* rhs) {
 	unsigned short jVar, kVar;
 	short iVar;
 	double weight;
   double aux;
-
+  
 	/*--- Copy block matrix, note that the original matrix
 	 is modified by the algorithm---*/
 	for (kVar = 0; kVar < nVar; kVar++)
@@ -285,20 +326,7 @@ void CSparseMatrix::Gauss_Elimination(double* Block, double* rhs) {
 	
 }
 
-void CSparseMatrix::ProdBlockVector(unsigned long block_i, unsigned long block_j, double* vec) {
-	unsigned long j = block_j*nVar;
-	unsigned short iVar, jVar;
-
-	GetBlock(block_i, block_j);
-
-	for (iVar = 0; iVar < nVar; iVar++) {
-		prod_block_vector[iVar] = 0;
-		for (jVar = 0; jVar < nVar; jVar++)
-			prod_block_vector[iVar] += block[iVar*nVar+jVar]*vec[j+jVar];
-	}
-}
-
-void CSparseMatrix::ProdBlockVector(unsigned long block_i, unsigned long block_j, CSysVector & vec) {
+void CSysMatrix::ProdBlockVector(unsigned long block_i, unsigned long block_j, const CSysVector & vec) {
 	unsigned long j = block_j*nVar;
 	unsigned short iVar, jVar;
   
@@ -311,22 +339,7 @@ void CSparseMatrix::ProdBlockVector(unsigned long block_i, unsigned long block_j
 	}
 }
 
-void CSparseMatrix::UpperProduct(double* vec, unsigned long row_i) {
-	unsigned long iVar, index;
-
-	for (iVar = 0; iVar < nVar; iVar++)
-		prod_row_vector[iVar] = 0;
-
-	for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-		if (col_ind[index] > row_i) {
-			ProdBlockVector(row_i, col_ind[index], vec);
-			for (iVar = 0; iVar < nVar; iVar++)
-				prod_row_vector[iVar] += prod_block_vector[iVar];
-		}
-	}
-}
-
-void CSparseMatrix::UpperProduct(CSysVector & vec, unsigned long row_i) {
+void CSysMatrix::UpperProduct(CSysVector & vec, unsigned long row_i) {
 	unsigned long iVar, index;
   
 	for (iVar = 0; iVar < nVar; iVar++)
@@ -341,23 +354,7 @@ void CSparseMatrix::UpperProduct(CSysVector & vec, unsigned long row_i) {
 	}
 }
 
-void CSparseMatrix::LowerProduct(double* vec, unsigned long row_i) {
-	unsigned long iVar, index;
-
-	for (iVar = 0; iVar < nVar; iVar++)
-		prod_row_vector[iVar] = 0;
-
-	for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-		if (col_ind[index] < row_i) {
-			ProdBlockVector(row_i, col_ind[index], vec);
-			for (iVar = 0; iVar < nVar; iVar++)
-				prod_row_vector[iVar] += prod_block_vector[iVar];
-		}
-	}
-  
-}
-
-void CSparseMatrix::LowerProduct(CSysVector & vec, unsigned long row_i) {
+void CSysMatrix::LowerProduct(CSysVector & vec, unsigned long row_i) {
 	unsigned long iVar, index;
   
 	for (iVar = 0; iVar < nVar; iVar++)
@@ -373,22 +370,7 @@ void CSparseMatrix::LowerProduct(CSysVector & vec, unsigned long row_i) {
   
 }
 
-void CSparseMatrix::DiagonalProduct(double* vec, unsigned long row_i) {
-	unsigned long iVar, index;
-
-	for (iVar = 0; iVar < nVar; iVar++)
-		prod_row_vector[iVar] = 0;
-
-	for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-		if (col_ind[index] == row_i) {
-			ProdBlockVector(row_i,col_ind[index],vec);
-			for (iVar = 0; iVar < nVar; iVar++)
-				prod_row_vector[iVar] += prod_block_vector[iVar];
-		}
-	}
-}
-
-void CSparseMatrix::DiagonalProduct(CSysVector & vec, unsigned long row_i) {
+void CSysMatrix::DiagonalProduct(CSysVector & vec, unsigned long row_i) {
 	unsigned long iVar, index;
   
 	for (iVar = 0; iVar < nVar; iVar++)
@@ -403,89 +385,7 @@ void CSparseMatrix::DiagonalProduct(CSysVector & vec, unsigned long row_i) {
 	}
 }
 
-void CSparseMatrix::SendReceive_Solution(double* x, CGeometry *geometry, CConfig *config) {
-  unsigned short iVar, iMarker, MarkerS, MarkerR;
-	unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-	double *Buffer_Receive = NULL, *Buffer_Send = NULL;
-	int send_to, receive_from;
-  
-#ifndef NO_MPI
-  MPI::Status status;
-  MPI::Request send_request, recv_request;
-#endif
-  
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    
-		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
-        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-			
-			MarkerS = iMarker;  MarkerR = iMarker+1;
-      
-      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
-			receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-			
-			nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
-			nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
-      
-      /*--- Allocate Receive and send buffers  ---*/
-      Buffer_Receive = new double [nBufferR_Vector];
-      Buffer_Send = new double[nBufferS_Vector];
-      
-      /*--- Copy the solution that should be sended ---*/
-      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Send[iVertex*nVar+iVar] = x[iPoint*nVar+iVar];
-      }
-      
-#ifndef NO_MPI
-      
-//      /*--- Send/Receive using non-blocking communications ---*/
-//      send_request = MPI::COMM_WORLD.Isend(Buffer_Send, nBufferS_Vector, MPI::DOUBLE, 0, send_to);
-//      recv_request = MPI::COMM_WORLD.Irecv(Buffer_Receive, nBufferR_Vector, MPI::DOUBLE, 0, receive_from);
-//      send_request.Wait(status);
-//      recv_request.Wait(status);
-      
-      /*--- Send/Receive information using Sendrecv ---*/
-      MPI::COMM_WORLD.Sendrecv(Buffer_Send, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
-                               Buffer_Receive, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
-      
-#else
-      
-      /*--- Receive information without MPI ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Receive[iVar*nVertexR+iVertex] = Buffer_Send[iVar*nVertexR+iVertex];
-      }
-      
-#endif
-      
-      /*--- Deallocate send buffer ---*/
-      delete [] Buffer_Send;
-      
-      /*--- Do the coordinate transformation ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        
-        /*--- Find point and its type of transformation ---*/
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-        
-        /*--- Copy transformed conserved variables back into buffer. ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-          x[iPoint*nVar+iVar] = Buffer_Receive[iVertex*nVar+iVar];
-        
-      }
-      
-      /*--- Deallocate receive buffer ---*/
-      delete [] Buffer_Receive;
-      
-    }
-    
-	}
-  
-}
-
-void CSparseMatrix::SendReceive_Solution(CSysVector & x, CGeometry *geometry, CConfig *config) {
+void CSysMatrix::SendReceive_Solution(CSysVector & x, CGeometry *geometry, CConfig *config) {
   unsigned short iVar, iMarker, MarkerS, MarkerR;
 	unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
 	double *Buffer_Receive = NULL, *Buffer_Send = NULL;
@@ -567,30 +467,31 @@ void CSparseMatrix::SendReceive_Solution(CSysVector & x, CGeometry *geometry, CC
   
 }
 
-void CSparseMatrix::RowProduct(double* vec, unsigned long row_i) {
+void CSysMatrix::RowProduct(const CSysVector & vec, unsigned long row_i) {
 	unsigned long iVar, index;
-
+  
 	for (iVar = 0; iVar < nVar; iVar++)
 		prod_row_vector[iVar] = 0;
-
+  
 	for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-		ProdBlockVector(row_i,col_ind[index],vec);
+		ProdBlockVector(row_i, col_ind[index], vec);
 		for (iVar = 0; iVar < nVar; iVar++)
 			prod_row_vector[iVar] += prod_block_vector[iVar];
 	}
 }
 
-void CSparseMatrix::MatrixVectorProduct(double* vec, double* prod) {
+void CSysMatrix::MatrixVectorProduct(const CSysVector & vec, CSysVector & prod) {
 	unsigned long iPoint, iVar;
 
-	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 		RowProduct(vec, iPoint);
 		for (iVar = 0; iVar < nVar; iVar++)
 			prod[iPoint*nVar+iVar] = prod_row_vector[iVar];
 	}
+  
 }
 
-void CSparseMatrix::MatrixVectorProduct(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {
+void CSysMatrix::MatrixVectorProduct(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {
 	unsigned long prod_begin, vec_begin, mat_begin, index, iVar, jVar, row_i;
   
 #ifndef NO_MPI
@@ -598,14 +499,14 @@ void CSparseMatrix::MatrixVectorProduct(const CSysVector & vec, CSysVector & pro
   MPI::Request send_request, recv_request;
 #endif
   
-	/*--- Some checks for consistency between CSparseMatrix and the CSysVectors ---*/
+	/*--- Some checks for consistency between CSysMatrix and the CSysVectors ---*/
 	if ( (nVar != vec.GetNVar()) || (nVar != prod.GetNVar()) ) {
-		cerr << "CSparseMatrix::MatrixVectorProduct(const CSysVector&, CSysVector): "
+		cerr << "CSysMatrix::MatrixVectorProduct(const CSysVector&, CSysVector): "
     << "nVar values incompatible." << endl;
 		throw(-1);
 	}
 	if ( (nPoint != vec.GetNBlk()) || (nPoint != prod.GetNBlk()) ) {
-		cerr << "CSparseMatrix::MatrixVectorProduct(const CSysVector&, CSysVector): "
+		cerr << "CSysMatrix::MatrixVectorProduct(const CSysVector&, CSysVector): "
     << "nPoint and nBlk values incompatible." << endl;
 		throw(-1);
 	}
@@ -629,7 +530,7 @@ void CSparseMatrix::MatrixVectorProduct(const CSysVector & vec, CSysVector & pro
   
 }
 
-void CSparseMatrix::GetMultBlockBlock(double *c, double *a, double *b) {
+void CSysMatrix::GetMultBlockBlock(double *c, double *a, double *b) {
 	unsigned long iVar, jVar, kVar;
 	
 	for(iVar = 0; iVar < nVar; iVar++)
@@ -640,7 +541,7 @@ void CSparseMatrix::GetMultBlockBlock(double *c, double *a, double *b) {
 		}
 }
 
-void CSparseMatrix::GetMultBlockVector(double *c, double *a, double *b) {
+void CSysMatrix::GetMultBlockVector(double *c, double *a, double *b) {
 	unsigned long iVar, jVar;
 	
 	for(iVar = 0; iVar < nVar; iVar++) {
@@ -650,24 +551,24 @@ void CSparseMatrix::GetMultBlockVector(double *c, double *a, double *b) {
 	}
 }
 
-void CSparseMatrix::GetSubsBlock(double *c, double *a, double *b) {
+void CSysMatrix::GetSubsBlock(double *c, double *a, double *b) {
 	unsigned long iVar, jVar;
 	
-	for(iVar = 0; iVar < nVar; iVar++) 
+	for(iVar = 0; iVar < nVar; iVar++)
 		for(jVar = 0; jVar < nVar; jVar++)
 			c[iVar*nVar+jVar] = a[iVar*nVar+jVar] - b[iVar*nVar+jVar];
 }
 
-void CSparseMatrix::GetSubsVector(double *c, double *a, double *b) {
+void CSysMatrix::GetSubsVector(double *c, double *a, double *b) {
 	unsigned long iVar;
 	
-	for(iVar = 0; iVar < nVar; iVar++) 
+	for(iVar = 0; iVar < nVar; iVar++)
 		c[iVar] = a[iVar] - b[iVar];
 }
 
-void CSparseMatrix::InverseBlock(double *Block, double *invBlock) {
+void CSysMatrix::InverseBlock(double *Block, double *invBlock) {
 	unsigned long iVar, jVar;
-		
+  
 	for (iVar = 0; iVar < nVar; iVar++) {
 		for (jVar = 0; jVar < nVar; jVar++)
 			aux_vector[jVar] = 0.0;
@@ -677,54 +578,54 @@ void CSparseMatrix::InverseBlock(double *Block, double *invBlock) {
 		Gauss_Elimination(Block, aux_vector);
 		
 		for (jVar = 0; jVar < nVar; jVar++)
-			invBlock[jVar*nVar+iVar] = aux_vector[jVar];			
+			invBlock[jVar*nVar+iVar] = aux_vector[jVar];
 	}
 	
 }
 
-void CSparseMatrix::InverseDiagonalBlock(unsigned long block_i, double **invBlock) {
+void CSysMatrix::InverseDiagonalBlock(unsigned long block_i, double **invBlock) {
 	unsigned long iVar, jVar;
-
+  
 	for (iVar = 0; iVar < nVar; iVar++) {
 		for (jVar = 0; jVar < nVar; jVar++)
 			aux_vector[jVar] = 0.0;
 		aux_vector[iVar] = 1.0;
-
+    
 		/*--- Compute the i-th column of the inverse matrix ---*/
 		Gauss_Elimination(block_i, aux_vector);
 		for (jVar = 0; jVar < nVar; jVar++)
 			invBlock[jVar][iVar] = aux_vector[jVar];
 	}
-
+  
 }
 
-void CSparseMatrix::BuildJacobiPreconditioner(void) {
+void CSysMatrix::BuildJacobiPreconditioner(void) {
 	unsigned long iPoint, iVar, jVar;
 	double **invBlock;
-
+  
 	/*--- Small nVar x nVar matrix for intermediate computations ---*/
 	invBlock = new double* [nVar];
 	for (iVar = 0; iVar < nVar; iVar++)
 		invBlock[iVar] = new double [nVar];
-
+  
 	/*--- Compute Jacobi Preconditioner ---*/
 	for (iPoint = 0; iPoint < nPoint; iPoint++) {
-
+    
 		/*--- Compute the inverse of the diagonal block ---*/
 		InverseDiagonalBlock(iPoint, invBlock);
-
+    
 		/*--- Set the inverse of the matrix to the invM structure (which is a vector) ---*/
 		for (iVar = 0; iVar < nVar; iVar++)
 			for (jVar = 0; jVar < nVar; jVar++)
 				invM[iPoint*nVar*nVar+iVar*nVar+jVar] = invBlock[iVar][jVar];
 	}
-
+  
 	for (iVar = 0; iVar < nVar; iVar++)
 		delete [] invBlock[iVar];
 	delete [] invBlock;
 }
 
-void CSparseMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConfig *config) {
+void CSysMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConfig *config) {
 	
 	/*--- Identify the linelets of the grid ---*/
 	bool *check_Point, add_point;
@@ -732,8 +633,8 @@ void CSparseMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConfig *con
 	unsigned short iMarker, iNode, ExtraLines = 100;
 	double alpha = 0.9, weight, max_weight, *normal, area, volume_iPoint, volume_jPoint, MeanPoints;
 	
-	check_Point = new bool [geometry->GetnPoint()]; 
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) 
+	check_Point = new bool [geometry->GetnPoint()];
+	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
 		check_Point[iPoint] = true;
 	
 	/*--- Memory allocation --*/
@@ -790,7 +691,7 @@ void CSparseMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConfig *con
 						if (geometry->GetnDim() == 3) area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]+normal[2]*normal[2]);
 						else area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]);
 						volume_iPoint = geometry->node[iPoint]->GetVolume();
-						volume_jPoint = geometry->node[jPoint]->GetVolume();		
+						volume_jPoint = geometry->node[jPoint]->GetVolume();
 						weight = 0.5*area*((1.0/volume_iPoint)+(1.0/volume_jPoint));
 						max_weight = max(max_weight, weight);
 					}
@@ -806,9 +707,9 @@ void CSparseMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConfig *con
 					if (geometry->GetnDim() == 3) area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]+normal[2]*normal[2]);
 					else area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]);
 					volume_iPoint = geometry->node[iPoint]->GetVolume();
-					volume_jPoint = geometry->node[jPoint]->GetVolume();		
+					volume_jPoint = geometry->node[jPoint]->GetVolume();
 					weight = 0.5*area*((1.0/volume_iPoint)+(1.0/volume_jPoint));
-					if (((check_Point[jPoint]) && (weight/max_weight > alpha) && (geometry->node[jPoint]->GetDomain())) && 
+					if (((check_Point[jPoint]) && (weight/max_weight > alpha) && (geometry->node[jPoint]->GetDomain())) &&
 							((index_Point == 0) || ((index_Point > 0) && (jPoint != LineletPoint[iLinelet][index_Point-1])))) {
 						add_point = true;
 						next_Point = jPoint;
@@ -817,7 +718,7 @@ void CSparseMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConfig *con
 				}
 				
 				/*--- We have arrived to a isotropic zone, the normal linelet is stopped ---*/
-				if (counter > 1) add_point = false;			
+				if (counter > 1) add_point = false;
 				
 				/*--- Add a typical point to the linelet ---*/
 				if (add_point) {
@@ -840,7 +741,7 @@ void CSparseMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConfig *con
 			iLinelet++;
 		} while (iLinelet < nLinelet);
 		
-		delete [] check_Point; 
+		delete [] check_Point;
 		
 		MeanPoints = 0.0;
 		for (iLinelet = 0; iLinelet < nLinelet; iLinelet++)
@@ -862,7 +763,7 @@ void CSparseMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConfig *con
 	}
 }
 
-void CSparseMatrix::ComputeJacobiPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {
+void CSysMatrix::ComputeJacobiPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {
 	unsigned long iPoint, iVar, jVar;
   
 	for (iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -875,7 +776,7 @@ void CSparseMatrix::ComputeJacobiPreconditioner(const CSysVector & vec, CSysVect
   
 }
 
-void CSparseMatrix::ComputeLUSGSPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {
+void CSysMatrix::ComputeLU_SGSPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {
   unsigned long iPoint, iVar;
   
   /*--- There are two approaches to the parallelization (AIAA-2000-0927):
@@ -913,7 +814,7 @@ void CSparseMatrix::ComputeLUSGSPreconditioner(const CSysVector & vec, CSysVecto
   
 }
 
-void CSparseMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {
+void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {
 	unsigned long iVar, jVar, nElem = 0, iLinelet, im1Point, iPoint, ip1Point, iElem;
 	long iElemLoop;
 	
@@ -1020,7 +921,7 @@ void CSparseMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVec
   
 }
 
-void CSparseMatrix::ComputeIdentityPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {
+void CSysMatrix::ComputeIdentityPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {
 	unsigned long iPoint, iVar;
   
 	for (iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -1032,149 +933,4 @@ void CSparseMatrix::ComputeIdentityPreconditioner(const CSysVector & vec, CSysVe
   /*--- MPI Parallelization ---*/
 	SendReceive_Solution(prod, geometry, config);
   
-}
-
-void CSparseMatrix::LU_SGSIteration(double* b, double* x_n, CGeometry *geometry, CConfig *config) {
-	unsigned long iPoint, iVar;
-  
-  /*--- There are two approaches to the parallelization (AIAA-2000-0927):
-   1. Use a special scheduling algorithm which enables data parallelism by regrouping edges. This method has the advantage of producing exactly the same result as the single processor case, but it suffers from severe overhead penalties for parallel loop initiation, heavy interprocessor communications and poor load balance.
-   2. Split the computational domain into several nonoverlapping regions according to the number of processors, and apply the SGS method inside of each region with (or without) some special interprocessor boundary treatment. This approach may suffer from convergence degradation but takes advantage of minimal parallelization overhead and good load balance. ---*/
-	
-	/*--- First part of the symmetric iteration: (D+L).x* = b ---*/
-	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-		LowerProduct(x_n, iPoint);                                        // Compute L.x*
-		for (iVar = 0; iVar < nVar; iVar++)
-			aux_vector[iVar] = b[iPoint*nVar+iVar] - prod_row_vector[iVar]; // Compute aux_vector = b - L.x*
-		Gauss_Elimination(iPoint, aux_vector);                            // Solve D.x* = aux_vector
-		for (iVar = 0; iVar < nVar; iVar++)
-			x_n[iPoint*nVar+iVar] = aux_vector[iVar];                       // Assesing x* = solution
-	}
-
-	/*--- Inner send-receive operation the solution vector ---*/
-	SendReceive_Solution(x_n, geometry, config);
-	
-	/*--- Second part of the symmetric iteration: (D+U).x_(1) = D.x* ---*/
-	for (iPoint = nPointDomain-1; (int)iPoint >= 0; iPoint--) {
-		DiagonalProduct(x_n, iPoint);                 // Compute D.x*
-		for (iVar = 0; iVar < nVar; iVar++)
-			aux_vector[iVar] = prod_row_vector[iVar];   // Compute aux_vector = D.x*
-		UpperProduct(x_n, iPoint);                    // Compute U.x_(n+1)
-		for (iVar = 0; iVar < nVar; iVar++)
-			aux_vector[iVar] -= prod_row_vector[iVar];  // Compute aux_vector = D.x*-U.x_(n+1)
-		Gauss_Elimination(iPoint, aux_vector);        // Solve D.x* = aux_vector
-		for (iVar = 0; iVar < nVar; iVar++)
-			x_n[iPoint*nVar + iVar] = aux_vector[iVar]; // Assesing x_(1) = solution
-	}
-  
-  /*--- Final send-receive operation the solution vector (redundant in CFD simulations) ---*/
-	SendReceive_Solution(x_n, geometry, config);
-
-}
-
-void CSparseMatrix::SGSSolution(double* b, double* x_i, double tol, int max_it, 
-		bool monitoring, CGeometry *geometry, CConfig *config) {
-	int iter;
-	unsigned long iPoint, iVar;
-	double norm_1 = 0.0, norm_2 = 0.0, norm = 0.0, my_norm;
-
-#ifndef NO_MPI
-	int rank = MPI::COMM_WORLD.Get_rank();
-#else
-	int rank = MASTER_NODE;
-#endif
-
-	for (iter = 0; iter < max_it; iter++) {
-
-		norm_1 = 0.0; norm_2 = 0.0;
-
-		/*--- First part of the symmetric iteration: (D+L).x* = b-U.x_n ---*/
-		for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-			UpperProduct(x_i,iPoint);  // compute U.x_n (result written in prod_row_vector)
-			for (iVar = 0; iVar < nVar; iVar++)
-				aux_vector[iVar] = b[iPoint*nVar+iVar] - prod_row_vector[iVar]; // compute aux_vector = b-U.x_n
-			LowerProduct(x_i,iPoint);  // compute L.x* (idem)
-			for (iVar = 0; iVar < nVar; iVar++)
-				aux_vector[iVar] -= prod_row_vector[iVar]; // compute aux_vector = b-U.x_n-L.x*
-			Gauss_Elimination(iPoint, aux_vector); // solve D.x* = aux_vector
-			for (iVar = 0; iVar < nVar; iVar++) {
-				norm_1 += (x_i[iPoint*nVar+iVar]-aux_vector[iVar])*(x_i[iPoint*nVar+iVar]-aux_vector[iVar]);
-				x_i[iPoint*nVar+iVar] = aux_vector[iVar]; // assesing x* = solution
-			}
-		}
-		norm_1 = sqrt(norm_1);
-
-		/*--- Send-Receive the solution vector (MPI) ---*/
-		SendReceive_Solution(x_i, geometry, config);
-
-		/*--- Second part of the symmetric iteration: (D+U).x_(n+1) = b-L.x* ---*/
-		for (iPoint = nPointDomain-1; (int)iPoint >= 0; iPoint--) {
-			LowerProduct(x_i,iPoint);  // compute L.x* (result written in prod_row_vector)
-			for (iVar = 0; iVar < nVar; iVar++)
-				aux_vector[iVar] = b[iPoint*nVar+iVar] - prod_row_vector[iVar]; // compute aux_vector = b-L.x*
-			UpperProduct(x_i,iPoint);  // compute U.x_(n+1) (idem)
-			for (iVar = 0; iVar < nVar; iVar++)
-				aux_vector[iVar] -= prod_row_vector[iVar]; // compute aux_vector = b-L.x*-U.x_(n+1)
-			Gauss_Elimination(iPoint, aux_vector); // solve D.x_(n+1) = aux_vector
-			for (iVar = 0; iVar < nVar; iVar++) {
-				norm_2 += (x_i[iPoint*nVar+iVar]-aux_vector[iVar])*(x_i[iPoint*nVar+iVar]-aux_vector[iVar]);
-				x_i[iPoint*nVar+iVar] = aux_vector[iVar]; // assesing x* = solution
-			}
-			if (iPoint == 0) break;
-		}
-		norm_2 = sqrt(norm_2);
-
-		my_norm = (norm_1+norm_2);
-
-#ifndef NO_MPI
-		MPI::COMM_WORLD.Allreduce(&my_norm, &norm, 1, MPI::DOUBLE, MPI::MIN); 
-#else
-		norm = my_norm;
-#endif
-
-		if ((monitoring == true) && (iter%1 == 0) && (rank == MASTER_NODE) && (iter > 0))
-			cout << "SGS-Solution:: Iteration = " << iter << " ; Norm of the residual: " << norm << endl;
-
-		if (norm < tol) break;
-
-	}
-
-	if ((monitoring == true) && (rank == MASTER_NODE) && (iter%100 == 0))
-		cout << "SGS-Solution => Iter: " << iter << " | Norm Res: " << norm << endl;
-	return;
-}
-
-void CSparseMatrix::SetLin_Sol_History_Header(ofstream *LinConvHist_file, CConfig *config) {
-	char cstr[200], buffer[50];
-
-	/*--- Write file name with extension ---*/
-	strcpy (cstr, config->GetLin_Conv_FileName().data());
-	if (config->GetOutput_FileFormat() == PARAVIEW)  sprintf (buffer, ".csv");
-	if (config->GetOutput_FileFormat() == TECPLOT)  sprintf (buffer, ".plt");
-	strcat(cstr,buffer);
-
-	LinConvHist_file->open(cstr, ios::out);
-	LinConvHist_file->precision(15);
-
-	char begin[]= "\"Iteration\"";
-
-	char lin_resid[]= ",\"Residual\"";
-
-	char end[]= "\n";
-
-	if (config->GetOutput_FileFormat() == TECPLOT) {
-		char title[]= "TITLE = \"SU2 Simulation\"";
-		char variables[]= "VARIABLES = ";
-		LinConvHist_file[0] << title << endl;
-		LinConvHist_file[0] << variables;
-	}
-
-	LinConvHist_file[0] << begin << lin_resid << end;
-
-	if (config->GetOutput_FileFormat() == TECPLOT) {
-		char zone[]= "ZONE T= \"Linear solver convergence history\"";
-		LinConvHist_file[0] << zone << endl;
-	}
-
-
 }

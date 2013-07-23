@@ -57,6 +57,8 @@ inline string CConfig::GetPlaneTag(unsigned short index) { return PlaneTag[index
 
 inline double CConfig::GetEA_IntLimit(unsigned short index) { return EA_IntLimit[index]; }
 
+inline double CConfig::GetAdjointLimit(void) { return AdjointLimit; }
+
 inline double *CConfig::GetHold_GridFixed_Coord(void) { return Hold_GridFixed_Coord; }
 
 inline double CConfig::GetMaxDimension(void) { return MaxDimension; }
@@ -654,8 +656,6 @@ inline unsigned short CConfig::GetKind_GeoObjFunc(void) {return Kind_GeoObjFunc;
 
 inline unsigned short CConfig::GetKind_SensSmooth(void) {return Kind_SensSmooth; }
 
-inline unsigned short CConfig::GetKind_ObjFuncType(void) {return Kind_ObjFuncType; }
-
 inline unsigned short CConfig::GetContinuous_Eqns(void) {return Continuous_Eqns; }
 
 inline unsigned short CConfig::GetDiscrete_Eqns(void) {return Discrete_Eqns; }
@@ -663,8 +663,6 @@ inline unsigned short CConfig::GetDiscrete_Eqns(void) {return Discrete_Eqns; }
 inline unsigned short CConfig::GetUnsteady_Simulation(void) { return Unsteady_Simulation; }
 
 inline bool CConfig::GetRestart(void) {	return Restart; }
-
-inline bool CConfig::GetRestart_Euler2Plasma(void) { return Restart_Euler2Plasma; }
 
 inline bool CConfig::GetRestart_Flow(void) { return Restart_Flow; }
 
@@ -747,8 +745,6 @@ inline unsigned short CConfig::GetMesh_FileFormat(void) { return Mesh_FileFormat
 inline unsigned short CConfig::GetOutput_FileFormat(void) { return Output_FileFormat; }
 
 inline string CConfig::GetConv_FileName(void) { return Conv_FileName; }
-
-inline string CConfig::GetLin_Conv_FileName(void) { return Lin_Conv_FileName; }
 
 inline string CConfig::GetSolution_FlowFileName(void) { return Solution_FlowFileName; }
 
@@ -953,10 +949,6 @@ inline bool CConfig::GetWrt_Sol_Tec_Binary(void) { return Wrt_Sol_Tec_Binary; }
 inline bool CConfig::GetWrt_Residuals(void) { return Wrt_Residuals; }
 
 inline bool CConfig::GetWrt_Halo(void) { return Wrt_Halo; }
-
-inline unsigned short CConfig::GetnOutput_Vars_Vol(void) { return nOutput_Vars_Vol; }
-
-inline unsigned short CConfig::GetOutput_Vars_Vol(unsigned short val_index) { return Output_Vars_Vol[val_index]; }
 
 inline bool CConfig::GetRelative_Motion(void) { return Relative_Motion; }
 

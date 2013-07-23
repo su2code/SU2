@@ -40,6 +40,9 @@ CTransLMSolution::CTransLMSolution(CGeometry *geometry, CConfig *config, unsigne
 	
 	/*--- Define geometry constans in the solver structure ---*/
 	nDim = geometry->GetnDim();
+  nPoint = geometry->GetnPoint();
+  nPointDomain = geometry->GetnPointDomain();
+  
 	node = new CVariable*[geometry->GetnPoint()];
 	
 	/*--- Dimension of the problem --> 2 Transport equations (intermittency,Reth) ---*/
@@ -63,8 +66,8 @@ CTransLMSolution::CTransLMSolution(CGeometry *geometry, CConfig *config, unsigne
 		/*--- Define some auxiliar vector related with the flow solution ---*/
 		FlowSolution_i = new double [nDim+2]; FlowSolution_j = new double [nDim+2];
 		
-    xsol = new double [geometry->GetnPoint()*nVar];
-    xres = new double [geometry->GetnPoint()*nVar];
+    LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
+    LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
     
 		/*--- Jacobians and vector structures for implicit computations ---*/
 		if (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT) {
@@ -77,8 +80,8 @@ CTransLMSolution::CTransLMSolution(CGeometry *geometry, CConfig *config, unsigne
 				Jacobian_j[iVar] = new double [nVar];
 			}
 			/*--- Initialization of the structure of the whole Jacobian ---*/
-			Initialize_SparseMatrix_Structure(&Jacobian, nVar, nVar, geometry, config);
-
+			Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
+      
 		}
 	
 	/*--- Computation of gradients by least squares ---*/
@@ -179,8 +182,6 @@ CTransLMSolution::~CTransLMSolution(void){
 	}
 	delete [] Jacobian_i; delete [] Jacobian_j;
 	
-	delete [] xsol; delete [] xres;
-	
 	for (iDim = 0; iDim < this->nDim; iDim++)
 		delete [] Smatrix[iDim];
 	delete [] Smatrix;
@@ -194,7 +195,7 @@ void CTransLMSolution::Preprocessing(CGeometry *geometry, CSolution **solution_c
 	unsigned long iPoint;
 
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++)
-		Set_Residual_Zero(iPoint);
+		LinSysRes.SetBlock_Zero(iPoint);
   Jacobian.SetValZero();
 
 	if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
@@ -233,10 +234,10 @@ void CTransLMSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **
             total_index = iPoint*nVar+iVar;
             
             /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
-            xres[total_index] = -xres[total_index];
-            xsol[total_index] = 0.0;
-            AddRes_RMS(iVar, xres[total_index]*xres[total_index]*Vol);
-            AddRes_Max(iVar, fabs(xres[total_index]), geometry->node[iPoint]->GetGlobalIndex());
+            LinSysRes[total_index] = -LinSysRes[total_index];
+            LinSysSol[total_index] = 0.0;
+            AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]*Vol);
+            AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex());
         }
     }
     
@@ -244,65 +245,43 @@ void CTransLMSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **
     for (iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
         for (iVar = 0; iVar < nVar; iVar++) {
             total_index = iPoint*nVar + iVar;
-            xres[total_index] = 0.0;
-            xsol[total_index] = 0.0;
+            LinSysRes[total_index] = 0.0;
+            LinSysSol[total_index] = 0.0;
         }
     }
-    
-	/*--- Solve the linear system (Stationary iterative methods) ---*/
-	if (config->GetKind_Linear_Solver() == SYM_GAUSS_SEIDEL)
-		Jacobian.SGSSolution(xres, xsol, config->GetLinear_Solver_Error(),
-                             config->GetLinear_Solver_Iter(), false, geometry, config);
-	
-	if (config->GetKind_Linear_Solver() == LU_SGS)
-        Jacobian.LU_SGSIteration(xres, xsol, geometry, config);
 	
 	/*--- Solve the linear system (Krylov subspace methods) ---*/
-	if ((config->GetKind_Linear_Solver() == BCGSTAB) ||
-        (config->GetKind_Linear_Solver() == GMRES)) {
-		
-		CSysVector rhs_vec((const unsigned int)geometry->GetnPoint(),
-                           (const unsigned int)geometry->GetnPointDomain(), nVar, xres);
-		CSysVector sol_vec((const unsigned int)geometry->GetnPoint(),
-                           (const unsigned int)geometry->GetnPointDomain(), nVar, xsol);
-		
-		CMatrixVectorProduct* mat_vec = new CSparseMatrixVectorProduct(Jacobian, geometry, config);
-
-		CPreconditioner* precond = NULL;
-		if (config->GetKind_Linear_Solver_Prec() == JACOBI) {
-			Jacobian.BuildJacobiPreconditioner();
-			precond = new CJacobiPreconditioner(Jacobian, geometry, config);
-		}
-    else if (config->GetKind_Linear_Solver_Prec() == LUSGS) {
-			Jacobian.BuildJacobiPreconditioner();
-			precond = new CLUSGSPreconditioner(Jacobian, geometry, config);
-		}
-		else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-			Jacobian.BuildJacobiPreconditioner();
-			precond = new CLineletPreconditioner(Jacobian, geometry, config);
-		}
-		else if (config->GetKind_Linear_Solver_Prec() == NO_PREC) {
-			precond = new CIdentityPreconditioner(Jacobian, geometry, config);
-		}
-        
-		CSysSolve system;
-		if (config->GetKind_Linear_Solver() == BCGSTAB)
-			system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, config->GetLinear_Solver_Error(),
-                           config->GetLinear_Solver_Iter(), false);
-		else if (config->GetKind_Linear_Solver() == GMRES)
-			system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, config->GetLinear_Solver_Error(),
-                         config->GetLinear_Solver_Iter(), false);
-		
-		sol_vec.CopyToArray(xsol);
-		delete mat_vec;
-		delete precond;
-        
-	}
-	
+  CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
+  
+  CPreconditioner* precond = NULL;
+  if (config->GetKind_Linear_Solver_Prec() == JACOBI) {
+    Jacobian.BuildJacobiPreconditioner();
+    precond = new CJacobiPreconditioner(Jacobian, geometry, config);
+  }
+  else if (config->GetKind_Linear_Solver_Prec() == LU_SGS) {
+    precond = new CLU_SGSPreconditioner(Jacobian, geometry, config);
+  }
+  else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
+    Jacobian.BuildJacobiPreconditioner();
+    Jacobian.BuildLineletPreconditioner(geometry, config);
+    precond = new CLineletPreconditioner(Jacobian, geometry, config);
+  }
+  
+  CSysSolve system;
+  if (config->GetKind_Linear_Solver() == BCGSTAB)
+    system.BCGSTAB(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(),
+                   config->GetLinear_Solver_Iter(), false);
+  else if (config->GetKind_Linear_Solver() == FGMRES)
+    system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(),
+                 config->GetLinear_Solver_Iter(), false);
+  
+  delete mat_vec;
+  delete precond;
+  
 	/*--- Update solution (system written in terms of increments) ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
         for (iVar = 0; iVar < nVar; iVar++)
-            node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*xsol[iPoint*nVar+iVar]);
+            node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*LinSysSol[iPoint*nVar+iVar]);
     }
     
     /*--- MPI solution ---*/
@@ -336,8 +315,8 @@ void CTransLMSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution
 
     /*--- Add and subtract Residual ---*/
     solver->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
-    AddResidual(iPoint, Residual);
-    SubtractResidual(jPoint, Residual);
+    LinSysRes.AddBlock(iPoint, Residual);
+    LinSysRes.SubtractBlock(jPoint, Residual);
 
     /*--- Implicit part ---*/
     Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
@@ -389,8 +368,8 @@ void CTransLMSolution::Viscous_Residual(CGeometry *geometry, CSolution **solutio
     solver->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
     
     /*--- Add and subtract residual, and update Jacobians ---*/
-    SubtractResidual(iPoint, Residual);
-    AddResidual(jPoint, Residual);
+    LinSysRes.SubtractBlock(iPoint, Residual);
+    LinSysRes.AddBlock(jPoint, Residual);
     
     Jacobian.SubtractBlock(iPoint,iPoint,Jacobian_i);
     Jacobian.SubtractBlock(iPoint,jPoint,Jacobian_j);
@@ -437,7 +416,7 @@ void CTransLMSolution::Source_Residual(CGeometry *geometry, CSolution **solution
     node[iPoint]->SetGammaSep(gamma_sep);
 
 		/*--- Subtract residual and the jacobian ---*/
-		SubtractResidual(iPoint, Residual);
+		LinSysRes.SubtractBlock(iPoint, Residual);
     Jacobian.SubtractBlock(iPoint,iPoint,Jacobian_i);
 
 	}
@@ -490,7 +469,7 @@ void CTransLMSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solutio
 //      cout << "Returned from BC call of SetResidual: -AA" << endl;
 //      cout << "Residual[0] = " << Residual[0] << endl;
 //      cout << "Residual[1] = " << Residual[1] << endl;
-      AddResidual(iPoint, Residual);
+      LinSysRes.AddBlock(iPoint, Residual);
 
 //      cout << "Implicit part -AA" << endl;
 			/*--- Jacobian contribution for implicit integration ---*/
@@ -511,7 +490,7 @@ void CTransLMSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solutio
 //      Solution[0] = 0.0;
 //      Solution[1] = 0.0;
 //			node[iPoint]->SetSolution_Old(Solution);
-//			Set_Residual_Zero(iPoint);
+//			LinSysRes.SetBlock_Zero(iPoint);
 //
 //			/*--- includes 1 in the diagonal ---*/
 //      for (iVar = 0; iVar < nVar; iVar++) {
@@ -538,7 +517,7 @@ void CTransLMSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_co
       Solution[0] = Intermittency_Inf;
       Solution[1] = REth_Inf;
 			node[iPoint]->SetSolution_Old(Solution);
-			Set_Residual_Zero(iPoint);
+			LinSysRes.SetBlock_Zero(iPoint);
 
 			/*--- includes 1 in the diagonal ---*/
       for (iVar = 0; iVar < nVar; iVar++) {

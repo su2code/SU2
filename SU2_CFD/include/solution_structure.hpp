@@ -39,7 +39,8 @@
 #include "variable_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
-#include "../../Common/include/sparse_structure.hpp"
+#include "../../Common/include/matrix_structure.hpp"
+#include "../../Common/include/vector_structure.hpp"
 #include "../../Common/include/linear_solvers_structure.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
 
@@ -56,19 +57,19 @@ class CSolution {
 protected:
 	unsigned short IterLinSolver;	/*!< \brief Linear solver iterations. */
 	unsigned short nVar,					/*!< \brief Number of variables of the problem. */
-    nPrimVar,                     /*!< \brief Number of primitive variables of the problem. */
-    nPrimVarGrad,                    /*!< \brief Number of primitive variables of the problem in the gradient computation. */
+  nPrimVar,                     /*!< \brief Number of primitive variables of the problem. */
+  nPrimVarGrad,                    /*!< \brief Number of primitive variables of the problem in the gradient computation. */
 	nDim;													/*!< \brief Number of dimensions of the problem. */
 	unsigned long nPoint;					/*!< \brief Number of points of the computational grid. */
-    unsigned long nPointDomain; 	/*!< \brief Number of points of the computational grid. */
+  unsigned long nPointDomain; 	/*!< \brief Number of points of the computational grid. */
 	double Max_Delta_Time,	/*!< \brief Maximum value of the delta time for all the control volumes. */
 	Min_Delta_Time;					/*!< \brief Minimum value of the delta time for all the control volumes. */
 	double *Residual_RMS,	/*!< \brief Vector with the mean residual for each variable. */
-    *Residual_Max,        /*!< \brief Vector with the maximal residual for each variable. */
+  *Residual_Max,        /*!< \brief Vector with the maximal residual for each variable. */
 	*Residual,						/*!< \brief Auxiliary nVar vector. */
 	*Residual_i,					/*!< \brief Auxiliary nVar vector for storing the residual at point i. */
 	*Residual_j;					/*!< \brief Auxiliary nVar vector for storing the residual at point j. */
-    unsigned long *Point_Max; /*!< \brief Vector with the maximal residual for each variable. */
+  unsigned long *Point_Max; /*!< \brief Vector with the maximal residual for each variable. */
 	double *Solution,		/*!< \brief Auxiliary nVar vector. */
 	*Solution_i,				/*!< \brief Auxiliary nVar vector for storing the solution at point i. */
 	*Solution_j;				/*!< \brief Auxiliary nVar vector for storing the solution at point j. */
@@ -88,21 +89,23 @@ protected:
 	**Jacobian_ij,			  /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
 	**Jacobian_ji,			  /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
 	**Jacobian_jj;			  /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
-    
+  
 	double **Smatrix,	/*!< \brief Auxiliary structure for computing gradients by least-squares */
 	**cvector;			 /*!< \brief Auxiliary structure for computing gradients by least-squares */
-    
-	CSparseMatrix StiffMatrix; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations, and grid movement. */
-	CSparseMatrix Jacobian; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
-    
+
 public:
-    double *xsol;		/*!< \brief vector to store iterative solution of implicit linear system. */
-	double *xres;		/*!< \brief vector to store iterative residual of implicit linear system. */
+  
+  CSysVector LinSysSol;		/*!< \brief vector to store iterative solution of implicit linear system. */
+  CSysVector LinSysRes;		/*!< \brief vector to store iterative residual of implicit linear system. */
+	CSysMatrix Jacobian; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
+  
+	CSysMatrix StiffMatrix; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations, and grid movement. */
+
 	CVariable** node;	/*!< \brief Vector which the define the variables for each problem. */
-    
-    CSparseMatrix DirectJacobian; /*!< \brief Sparse Jacobian structure for direct, discrete part of hybrid computation (TODO move to the right place). */
-    CSparseMatrix DirectBCJacobian; /*!< \brief Sparse Jacobian structure for direct, discrete boundary conditions part of hybrid computation (TODO move to the right place). */
-    
+  
+  CSysMatrix DirectJacobian; /*!< \brief Sparse Jacobian structure for direct, discrete part of hybrid computation (TODO move to the right place). */
+  CSysMatrix DirectBCJacobian; /*!< \brief Sparse Jacobian structure for direct, discrete boundary conditions part of hybrid computation (TODO move to the right place). */
+  
 	/*!
 	 * \brief Constructor of the class.
 	 */
@@ -112,70 +115,8 @@ public:
 	 * \brief Destructor of the class.
 	 */
 	virtual ~CSolution(void);
-    
-    /*!
-	 * \brief Subtract val_residual to the residual.
-	 * \param[in] val_ipoint - index of the point where subtract the residual.
-     * \param[in] val_residual - Value to subtract to the residual.
-	 */
-    void SubtractResidual(unsigned long val_ipoint, double *val_residual);
-    
-    /*!
-	 * \brief Add val_residual to the residual.
-	 * \param[in] val_ipoint - index of the point where add the residual.
-     * \param[in] val_residual - Value to add to the residual.
-	 */
-    void AddResidual(unsigned long val_ipoint, double *val_residual);
-    
-    /*!
-	 * \brief Set val_residual to the residual.
-	 * \param[in] val_ipoint - index of the point where set the residual.
-     * \param[in] val_var - inde of the residual to be set.
-     * \param[in] val_residual - Value to set to the residual.
-	 */
-    void SetResidual(unsigned long val_ipoint, unsigned short val_var, double val_residual);
-    
-    /*!
-	 * \brief Set val_residual to the residual.
-	 * \param[in] val_ipoint - index of the point where set the residual.
-     * \param[in] val_residual - Value to set to the residual.
-	 */
-    void SetResidual(unsigned long val_ipoint, double *val_residual);
-    
-    /*!
-	 * \brief Set the residual to zero.
-	 * \param[in] val_ipoint - index of the point where set the residual.
-	 */
-    void Set_Residual_Zero(unsigned long val_ipoint);
-    
-    /*!
-	 * \brief Set the velocity residual to zero.
-	 * \param[in] val_ipoint - index of the point where set the residual.
-	 */
-    void SetVel_Residual_Zero(unsigned long val_ipoint);
-    
-    /*!
-	 * \brief Set the energy residual to zero.
-	 * \param[in] val_ipoint - index of the point where set the residual.
-	 */
-    void SetEnergy_Residual_Zero(unsigned long val_ipoint);
-	
-    /*!
-	 * \brief Get the value of the residual.
-	 * \param[in] val_ipoint - index of the point where set the residual.
-     * \return Pointer to the residual.
-	 */
-    double *GetResidual(unsigned long val_ipoint);
-	
-    /*!
-	 * \brief Get the value of the residual.
-	 * \param[in] val_ipoint - index of the point where set the residual.
-     * \param[in] val_var - inde of the residual to be set.
-     * \return Value of the residual.
-	 */
-    double GetResidual(unsigned long val_ipoint, unsigned short val_var);
-    
-    /*!
+     
+  /*!
 	 * \brief Set number of linear solver iterations.
 	 * \param[in] val_iterlinsolver - Number of linear iterations.
 	 */
@@ -204,7 +145,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-    virtual void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
+  virtual void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
     
 	/*!
 	 * \brief Get number of linear solver iterations.
@@ -394,16 +335,6 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 */
 	void Set_OldSolution(CGeometry *geometry);
-    
-    /*!
-	 * \brief Initializes space matrix system.
-	 * \param[in] SparseMatrix - _______________________________________.
-	 * \param[in] nVar - Number of variables.
-	 * \param[in] nEqn - Number of equations.
-     * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-    void Initialize_SparseMatrix_Structure(CSparseMatrix *SparseMatrix, unsigned short nVar, unsigned short nEqn, CGeometry *geometry, CConfig *config);
     
 	/*!
 	 * \brief A virtual member.
@@ -1693,15 +1624,6 @@ public:
 	 */
 	virtual void GetRestart(CGeometry *geometry, CConfig *config, unsigned short val_iZone);
     
-    /*!
-	 * \brief A virtual member.
-     * \param[in] config - Definition of the particular problem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] data_container - Container holding the output variable data.
-     * \param[in] nOutput_Vars - Number of output variables being stored.
-	 */
-	virtual void SetVolume_Output(CConfig *config, CGeometry *geometry, double **data_container, unsigned short nOutput_Vars);
-    
 	/*!
 	 * \brief Gauss method for solving a linear system.
 	 * \param[in] A - Matrix Ax = b.
@@ -2623,15 +2545,6 @@ public:
 	 */
 	void GetRestart(CGeometry *geometry, CConfig *config, unsigned short val_iZone);
     
-    /*!
-	 * \brief Load the output data container with the variables to be written to the volume solution file.
-     * \param[in] config - Definition of the particular problem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] data_container - Container holding the output variable data.
-     * \param[in] nOutput_Vars - Number of output variables being stored.
-	 */
-	void SetVolume_Output(CConfig *config, CGeometry *geometry, double **data_container, unsigned short nOutput_Vars);
-    
 	/*!
 	 * \brief Set the initial condition for the Euler Equations.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -3370,13 +3283,13 @@ public:
 	void ImplicitEuler_Iteration(CGeometry *geometry, CSolution **solution_container, CConfig *config);
     
 	// Another set of matrix structures for the Lm equations
-	CSparseMatrix JacobianItmc; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
-	double *xsolItmc;		/*!< \brief vector to store iterative solution of implicit linear system. */
-	double *xresItmc;		/*!< \brief vector to store iterative residual of implicit linear system. */
+	CSysMatrix JacobianItmc; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
+	double *LinSysSolItmc;		/*!< \brief vector to store iterative solution of implicit linear system. */
+	double *LinSysResItmc;		/*!< \brief vector to store iterative residual of implicit linear system. */
 	double *rhsItmc;		/*!< \brief right hand side of implicit linear system. */
-	CSparseMatrix JacobianReth; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
-	double *xsolReth;		/*!< \brief vector to store iterative solution of implicit linear system. */
-	double *xresReth;		/*!< \brief vector to store iterative residual of implicit linear system. */
+	CSysMatrix JacobianReth; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
+	double *LinSysSolReth;		/*!< \brief vector to store iterative solution of implicit linear system. */
+	double *LinSysResReth;		/*!< \brief vector to store iterative residual of implicit linear system. */
 	double *rhsReth;		/*!< \brief right hand side of implicit linear system. */
 };
 
@@ -3604,14 +3517,14 @@ public:
 	 */
 	virtual ~CAdjEulerSolution(void);
     
-    /*!
+  /*!
 	 * \brief Impose the send-receive boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void Set_MPI_Solution(CGeometry *geometry, CConfig *config);
     
-    /*!
+  /*!
 	 * \brief Impose the send-receive boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
@@ -3631,6 +3544,13 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief Compute the Fan face Mach number.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solution - Container vector with all the solutions.
+	 */
+	void GetNacelle_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh);
   
 	/*!
 	 * \brief Created the force projection vector for adjoint boundary conditions.
@@ -4662,8 +4582,8 @@ private:
 	double AllBound_CWave;	/*!< \brief Total wave strength for all the boundaries. */
 	double Total_CWave; /*!< \brief Total wave strength for all the boundaries. */
     
-    CSparseMatrix StiffMatrixSpace; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
-	CSparseMatrix StiffMatrixTime;	/*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
+    CSysMatrix StiffMatrixSpace; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
+	CSysMatrix StiffMatrixTime;	/*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
     
     double **StiffMatrix_Elem,			/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
 	**StiffMatrix_Node;							/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
@@ -4844,8 +4764,8 @@ private:
 	double AllBound_CHeat;	/*!< \brief Total Heat strength for all the boundaries. */
 	double Total_CHeat; /*!< \brief Total Heat strength for all the boundaries. */
     
-    CSparseMatrix StiffMatrixSpace; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
-	CSparseMatrix StiffMatrixTime;	/*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
+    CSysMatrix StiffMatrixSpace; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
+	CSysMatrix StiffMatrixTime;	/*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
     
     double **StiffMatrix_Elem,			/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
 	**StiffMatrix_Node;							/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
@@ -4989,8 +4909,8 @@ class CFEASolution : public CSolution {
 private:
 	double  Total_CFEA;			/*!< \brief Total FEA coefficient for all the boundaries. */
     
-    CSparseMatrix StiffMatrixSpace; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
-	CSparseMatrix StiffMatrixTime;	/*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
+    CSysMatrix StiffMatrixSpace; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
+	CSysMatrix StiffMatrixTime;	/*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
     
     double **StiffMatrix_Elem,			/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
 	**StiffMatrix_Node;							/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */

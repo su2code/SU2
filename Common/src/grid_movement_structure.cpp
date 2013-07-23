@@ -40,112 +40,6 @@ CVolumetricMovement::~CVolumetricMovement(void) {
 
 }
 
-void CVolumetricMovement::SetBoundary_Smooth(CGeometry *geometry, CConfig *config) {
-	unsigned short iMarker, Boundary, iDim;
-	unsigned long iVertex, Point;
-	double smooth_coeff = 15.0;
-	unsigned short nSmooth = 1000;
-	unsigned long jVertex;
-	tol = config->GetGridDef_Error();
-	double **Coordinate_Old = NULL, **Coordinate_Sum = NULL, **Coordinate = NULL;
-
-	for (iMarker=0; iMarker < config->GetnMarker_All(); iMarker++) {
-		Boundary = config->GetMarker_All_Boundary(iMarker);
-		switch(Boundary) {
-      case EULER_WALL: case HEAT_FLUX: case ISOTHERMAL:
-			Coordinate_Old = new double* [geometry->nVertex[iMarker]];
-			Coordinate_Sum = new double* [geometry->nVertex[iMarker]];
-			Coordinate = new double* [geometry->nVertex[iMarker]];
-			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-				Coordinate_Old[iVertex] = new double [geometry->GetnDim()];
-				Coordinate_Sum[iVertex] = new double [geometry->GetnDim()];
-				Coordinate[iVertex] = new double [geometry->GetnDim()];
-			}
-
-			for(iVertex = 0; iVertex<geometry->nVertex[iMarker]; iVertex++) {
-				unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-				for(iDim = 0; iDim < geometry->GetnDim(); iDim++) {
-					Coordinate_Old[iVertex][iDim] = geometry->node[iPoint]->GetCoord(iDim);
-					Coordinate[iVertex][iDim] = geometry->node[iPoint]->GetCoord(iDim);
-				}
-			}
-
-			for (unsigned short iSmooth = 0; iSmooth < nSmooth; iSmooth++) {
-			double max_error = 0;
-
-				for(iVertex = 0; iVertex<geometry->nVertex[iMarker]; iVertex++)
-					for(iDim = 0; iDim < geometry->GetnDim(); iDim++)
-						Coordinate_Sum[iVertex][iDim] = 0.0;
-
-				for(iVertex = 0; iVertex<geometry->nVertex[iMarker]; iVertex++) {
-					unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-					for (unsigned short iNeighbor = 0; iNeighbor < geometry->node[iPoint]->GetnPoint(); iNeighbor++) {
-						unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeighbor);
-						if (geometry->node[jPoint]->GetBoundary()) {
-							for(jVertex = 0; jVertex<geometry->nVertex[iMarker]; jVertex++) {
-								unsigned long kPoint = geometry->vertex[iMarker][jVertex]->GetNode();
-								if (kPoint==jPoint) break;
-							}
-							for(iDim = 0; iDim < geometry->GetnDim(); iDim++) 
-								Coordinate_Sum[iVertex][iDim] += Coordinate[jVertex][iDim];
-						}
-					}
-				}
-
-
-				for(unsigned long iVertex = 0; iVertex<geometry->nVertex[iMarker]; iVertex++) {
-					const double nneigh = 2.0; //Para 2D
-
-					double error_x = 
-						Coordinate[iVertex][0] - (Coordinate_Old[iVertex][0] 
-						+ smooth_coeff*Coordinate_Sum[iVertex][0])/(1.0 + smooth_coeff*nneigh);
-
-					double error_y = 
-						Coordinate[iVertex][1] - (Coordinate_Old[iVertex][1] 
-						+ smooth_coeff*Coordinate_Sum[iVertex][1])/(1.0 + smooth_coeff*nneigh);
-
-					double total_error = sqrt (error_x*error_x+error_y*error_y);
-
-					if (max_error < total_error) max_error = total_error;
-
-					for(iDim = 0; iDim < geometry->GetnDim(); iDim++)
-						Coordinate[iVertex][iDim] =(Coordinate_Old[iVertex][iDim] 
-							+ smooth_coeff*Coordinate_Sum[iVertex][iDim])/(1.0 + smooth_coeff*nneigh);
-				}
-
-				if (max_error < tol) break;
-
-			}
-
-			break;
-		}
-	}
-
-
-	for (iMarker=0; iMarker < config->GetnMarker_All(); iMarker++) {
-		Boundary = config->GetMarker_All_Boundary(iMarker);
-		switch(Boundary) {
-		case EULER_WALL: case HEAT_FLUX: case ISOTHERMAL:
-			for(iVertex = 0; iVertex<geometry->nVertex[iMarker]; iVertex++) {
-				Point = geometry->vertex[iMarker][iVertex]->GetNode();
-				x[2*Point] = Coordinate[iVertex][0]-geometry->node[Point]->GetCoord(0);
-				x[2*Point+1] = Coordinate[iVertex][1]-geometry->node[Point]->GetCoord(1);
-			}
-			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-				delete [] Coordinate_Old[iVertex];
-				delete [] Coordinate_Sum[iVertex];
-				delete [] Coordinate[iVertex];
-			}
-			delete [] Coordinate_Old;
-			delete [] Coordinate_Sum;
-			delete [] Coordinate;
-			break;
-
-		}	
-	}
-
-}
-
 void CVolumetricMovement::SetSolution_Smoothing(CGeometry *geometry, CConfig *config) {
 	unsigned long val_nSmooth = 1;
 	double val_smooth_coeff = 0.25;
@@ -269,98 +163,6 @@ void CVolumetricMovement::UpdateMultiGrid(CGeometry **geometry, CConfig *config)
 	}
 	delete [] GridVel;
 }
-
-void CVolumetricMovement::GetBoundary(CGeometry *geometry, CConfig *config, string val_filename) {
-
-	unsigned long Point, iVertex;
-	double xCoord, *Normal, Proj_Def;
-	unsigned short iMarker, Boundary;
-
-	ofstream Surface_file;
-	char *cstr; cstr = new char [val_filename.size()+1];
-	strcpy (cstr, val_filename.c_str());
-	Surface_file.open(cstr, ios::out);
-
-	Surface_file <<  "\"x_coord\",\"Deformation_x\",\"Deformation_y\",\"Projected_Def\" " << endl;
-
-	for (iMarker=0; iMarker < config->GetnMarker_All(); iMarker++) {
-		Boundary = config->GetMarker_All_Boundary(iMarker);
-		switch(Boundary) {
-		case EULER_WALL: case HEAT_FLUX: case ISOTHERMAL:
-			for(iVertex = 0; iVertex<geometry->nVertex[iMarker]; iVertex++) {
-				Point = geometry->vertex[iMarker][iVertex]->GetNode();
-				Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-				Proj_Def = x[2*Point]*Normal[0]+x[2*Point+1]*Normal[1];
-				xCoord = geometry->node[Point]->GetCoord(0);
-				Surface_file << xCoord << "," << x[2*Point] << "," << x[2*Point+1] << "," << Proj_Def << endl;
-			}
-			break;
-		}	
-	}
-}
-
-
-void CVolumetricMovement::Initialize_StiffMatrix_Structure(unsigned short nVar, CGeometry *geometry) {
-	unsigned long iPoint, nPoint = geometry->GetnPoint(), nPointDomain = geometry->GetnPointDomain();
-  unsigned long *row_ptr, *col_ind, *vneighs, index, nnz;
-	unsigned short iNeigh, nNeigh, Max_nNeigh;
-  
-	row_ptr = new unsigned long [nPoint+1];
-	
-	/*--- +1 -> to include diagonal element	---*/
-	row_ptr[0] = 0;
-	for (iPoint = 0; iPoint < nPoint; iPoint++)
-		row_ptr[iPoint+1] = row_ptr[iPoint]+(geometry->node[iPoint]->GetnPoint()+1); // +1 -> to include diagonal 
-	nnz = row_ptr[nPoint]; 
-	
-	col_ind = new unsigned long [nnz];
-  
-  Max_nNeigh = 0;
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-		nNeigh = geometry->node[iPoint]->GetnPoint();
-    if (nNeigh > Max_nNeigh) Max_nNeigh = nNeigh;
-  }
-	vneighs = new unsigned long [Max_nNeigh+1]; // +1 -> to include diagonal 
-  
-	/*--- Neighbors to point iPoint to include relation of the point with 
-	 itself (matrix diagonal) ---*/
-	for (iPoint = 0; iPoint < nPoint; iPoint++) {
-		nNeigh = geometry->node[iPoint]->GetnPoint();
-		
-		for (iNeigh = 0; iNeigh < nNeigh; iNeigh++)
-			vneighs[iNeigh] = geometry->node[iPoint]->GetPoint(iNeigh);
-		
-		vneighs[nNeigh] = iPoint;
-		sort(vneighs, vneighs+nNeigh+1);
-		index = row_ptr[iPoint];
-		for (iNeigh = 0; iNeigh <= nNeigh; iNeigh++) {
-			col_ind[index] = vneighs[iNeigh];
-			index++;
-		}
-	}
-	
-	/*--- solve with preconditioned conjugate gradient method ---*/
-	bool preconditioner = true; 
-
-	StiffMatrix.SetIndexes(nPoint, nPointDomain, nVar, nVar, row_ptr, col_ind, nnz, preconditioner);
-
-	/*--- Set StiffMatrix entries to zero ---*/
-	StiffMatrix.SetValZero();
-
-	rhs  = new double [geometry->GetnPoint() * nVar];
-	usol = new double [geometry->GetnPoint() * nVar];
-	
-	/*--- Don't delete *row_ptr, *col_ind because they are asigned to the Jacobian structure ---*/
-	delete[] vneighs;
-}
-
-void CVolumetricMovement::Deallocate_StiffMatrix_Structure(CGeometry *geometry) {
-	
-	delete[] rhs;
-	delete[] usol;
-	
-}
-
 
 double CVolumetricMovement::SetSpringMethodContributions_Edges(CGeometry *geometry) {
 	unsigned short iDim, jDim, nDim = geometry->GetnDim();
@@ -1209,8 +1011,8 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 				for (iDim = 0; iDim < nDim; iDim++) {
 					total_index = iPoint*nDim + iDim;
-					rhs[total_index]  = 0.0;
-					usol[total_index] = 0.0;
+					LinSysRes[total_index]  = 0.0;
+					LinSysSol[total_index] = 0.0;
           StiffMatrix.DeleteValsRowi(total_index);
 				}
 			}
@@ -1237,8 +1039,8 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 				total_index = iPoint*nDim + axis;
-				rhs[total_index] = 0.0;
-				usol[total_index] = 0.0;
+				LinSysRes[total_index] = 0.0;
+				LinSysSol[total_index] = 0.0;
 				StiffMatrix.DeleteValsRowi(total_index);
 			}
 		}
@@ -1253,10 +1055,8 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 				VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
 				for (iDim = 0; iDim < nDim; iDim++) {
 					total_index = iPoint*nDim + iDim;
-					rhs[total_index]  = VarCoord[iDim] * VarIncrement;
-					usol[total_index] = 0.0;
-          if (config->GetKind_GridDef_Method() == SPRING)
-            usol[total_index] = VarCoord[iDim] * VarIncrement;
+					LinSysRes[total_index] = VarCoord[iDim] * VarIncrement;
+					LinSysSol[total_index] = VarCoord[iDim] * VarIncrement;
           StiffMatrix.DeleteValsRowi(total_index);
 				}
 			}
@@ -1270,8 +1070,8 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 				for (iDim = 0; iDim < nDim; iDim++) {
 					total_index = iPoint*nDim + iDim;
-					rhs[total_index]  = 0.0;
-					usol[total_index] = 0.0;
+					LinSysRes[total_index] = 0.0;
+					LinSysSol[total_index] = 0.0;
           StiffMatrix.DeleteValsRowi(total_index);
 				}
 			}
@@ -1301,8 +1101,8 @@ void CVolumetricMovement::SetDomainDisplacements(CGeometry *geometry, CConfig *c
 		for (iDim = 0; iDim < nDim; iDim++) {
 			if ((Coord[iDim] < MinCoordValues[iDim]) || (Coord[iDim] > MaxCoordValues[iDim])) {
 				total_index = iPoint*nDim + iDim;
-				rhs[total_index]  = 0.0;
-				usol[total_index] = 0.0;
+				LinSysRes[total_index]  = 0.0;
+				LinSysSol[total_index] = 0.0;
 				StiffMatrix.DeleteValsRowi(total_index);
 			}
 		}
@@ -1312,95 +1112,80 @@ void CVolumetricMovement::SetDomainDisplacements(CGeometry *geometry, CConfig *c
 void CVolumetricMovement::UpdateGridCoord(CGeometry *geometry, CConfig *config) {
 	unsigned long iPoint, total_index;
 	double new_coord;
-
-	unsigned short iDim, nDim = geometry->GetnDim();
-	unsigned long nPoint = geometry->GetnPoint();
+	unsigned short iDim;
   
 	for (iPoint = 0; iPoint < nPoint; iPoint++)
 		for (iDim = 0; iDim < nDim; iDim++) {
 			total_index = iPoint*nDim + iDim;
-			new_coord = geometry->node[iPoint]->GetCoord(iDim) + usol[total_index];
+			new_coord = geometry->node[iPoint]->GetCoord(iDim) + LinSysSol[total_index];
 			if (fabs(new_coord) < EPS*EPS) new_coord = 0.0;
 			geometry->node[iPoint]->SetCoord(iDim, new_coord);
 		}
+  
 }
 
 void CVolumetricMovement::SpringMethod(CGeometry *geometry, CConfig *config, bool UpdateGeo) {
 	double MinLength, NumError;
-	unsigned long iPoint, total_index, IterLinSol;
-	unsigned short iDim, nDim = geometry->GetnDim();
-    
-    unsigned long nPoint = geometry->GetnPoint();
-    unsigned long nPointDomain = geometry->GetnPointDomain();
-    
-	Initialize_StiffMatrix_Structure(nDim, geometry);
-	
-	StiffMatrix.SetValZero();
+	unsigned long IterLinSol;
+  
+  nPoint = geometry->GetnPoint();
+  nPointDomain = geometry->GetnPointDomain();
+  nDim = geometry->GetnDim();
+  nVar = geometry->GetnDim();
+  
+  LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
+  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+  StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
 	
 	MinLength = SetSpringMethodContributions_Edges(geometry);
-	
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-		for (iDim = 0; iDim < nDim; iDim++) {
-			total_index = iPoint*nDim + iDim;
-			rhs[total_index]  = 0.0;
-			usol[total_index] = 0.0;
-		}
-    }
-	
+		
 	SetBoundaryDisplacements(geometry, config);
-    
+  
 	if (config->GetHold_GridFixed())
 		SetDomainDisplacements(geometry, config);
 	
 	NumError = config->GetGridDef_Error();
-    if (NumError > MinLength) {
-        cout << "Warning: The error tol. is greater than the minimum edge length.\n" << endl;
-        cout << "NumError: " << NumError <<"." << "  MinLength: " << MinLength << "." << endl;
-    }
-    
-    /*--- Solve the linear system (Krylov subspace methods) ---*/
-    CSysVector rhs_vec(nPoint, nPointDomain, nDim, rhs);
-    CSysVector sol_vec(nPoint, nPointDomain, nDim, usol);
-    
-    CMatrixVectorProduct* mat_vec = new CSparseMatrixVectorProduct(StiffMatrix, geometry, config);
 
-    CPreconditioner* precond = NULL;
-    StiffMatrix.BuildJacobiPreconditioner();
-    precond = new CJacobiPreconditioner(StiffMatrix, geometry, config);
-    
-    CSysSolve system;
-    IterLinSol = system.ConjugateGradient(rhs_vec, sol_vec, *mat_vec, *precond, NumError, 300, true);
-    
-    /*--- Copy the solution to the array ---*/
-    sol_vec.CopyToArray(usol);
-    
-    /*--- Deallocate memory needed by the Krylov linear solver ---*/
-    delete mat_vec;
-    delete precond;
-    
-    UpdateGridCoord(geometry, config);
-    
+  if (NumError > MinLength) {
+    cout << "Warning: The error tol. is greater than the minimum edge length.\n" << endl;
+    cout << "NumError: " << NumError <<"." << "  MinLength: " << MinLength << "." << endl;
+  }
+  
+  CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
+  CPreconditioner* precond = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
+  
+  CSysSolve system;
+  IterLinSol = system.ConjugateGradient(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 300, true);
+  
+  UpdateGridCoord(geometry, config);
+  
 	if (UpdateGeo) {
 		geometry->SetCG();
 		geometry->SetControlVolume(config, UPDATE);
 		geometry->SetBoundControlVolume(config, UPDATE);
 	}
-    
-	Deallocate_StiffMatrix_Structure(geometry);
-    
+  
+  /*--- Deallocate vector. ---*/
+  delete mat_vec;
+  delete precond;
+  LinSysSol.~CSysVector();
+  LinSysRes.~CSysVector();
+  StiffMatrix.~CSysMatrix();
+  
 }
 
 void CVolumetricMovement::FEAMethod(CGeometry *geometry, CConfig *config, bool UpdateGeo) {
-  unsigned short iDim;
-	unsigned long iPoint, total_index, IterLinSol, iFEA;
+	unsigned long IterLinSol, iFEA;
   double MinLength, NumError;
   
-  unsigned long nPoint = geometry->GetnPoint();
-  unsigned long nPointDomain = geometry->GetnPointDomain();
+  nPoint = geometry->GetnPoint();
+  nPointDomain = geometry->GetnPointDomain();
+  nDim = geometry->GetnDim();
+  nVar = geometry->GetnDim();
   
-  /*--- Initialize the global stiffness matrix structure for the mesh ---*/
-	Initialize_StiffMatrix_Structure(nDim, geometry);
-  
+  LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
+  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+  StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
   
   /*--- Loop over the total number of FEA iterations. The surface
    deformation can be divided into increments, as the linear elasticity
@@ -1422,14 +1207,6 @@ void CVolumetricMovement::FEAMethod(CGeometry *geometry, CConfig *config, bool U
       cout << "NumError: " << NumError <<"." << "  MinLength: " << MinLength << "." << endl;
     }
     
-    /*--- Initialize the solution and r.h.s. vectors to zero ---*/
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        total_index = iPoint*nDim + iDim;
-        rhs[total_index]  = 0.0;
-        usol[total_index] = 0.0;
-      }
-    }
     
     /*--- Set the boundary displacements (as prescribed by the design variable
      perturbations controlling the surface shape) as a Dirichlet BC. ---*/
@@ -1439,23 +1216,12 @@ void CVolumetricMovement::FEAMethod(CGeometry *geometry, CConfig *config, bool U
     if (config->GetHold_GridFixed())
       SetDomainDisplacements(geometry, config);
     
-    /*--- Solve the linear system (Krylov subspace methods) ---*/
-    CSysVector rhs_vec(nPoint, nPointDomain, nDim, rhs);
-    CSysVector sol_vec(nPoint, nPointDomain, nDim, usol);
-    
-    CMatrixVectorProduct* mat_vec = new CSparseMatrixVectorProduct(StiffMatrix, geometry, config);
-    
-    CPreconditioner* precond = NULL;
-//    StiffMatrix.BuildJacobiPreconditioner();
-//    precond = new CJacobiPreconditioner(StiffMatrix, geometry, config);
-    precond = new CLUSGSPreconditioner(StiffMatrix, geometry, config);
+    CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
+    CPreconditioner* precond = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
     
     CSysSolve system;
-//    IterLinSol = system.BCGSTAB(rhs_vec, sol_vec, *mat_vec, *precond, NumError, 300, true);
-    IterLinSol = system.GMRES(rhs_vec, sol_vec, *mat_vec, *precond, NumError, 300, true);
-    
-    /*--- Copy the solution to the array ---*/
-    sol_vec.CopyToArray(usol);
+//    IterLinSol = system.BCGSTAB(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 300, true);
+    IterLinSol = system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 300, true);
     
     /*--- Deallocate memory needed by the Krylov linear solver ---*/
     delete mat_vec;
@@ -1474,13 +1240,13 @@ void CVolumetricMovement::FEAMethod(CGeometry *geometry, CConfig *config, bool U
   }
   
   /*--- Perform a grid quality check after deformation. ---*/
-  
   CheckFEA_Grid(geometry);
   
-  /*--- Deallocate memory for the global stiffness matrix and exit. ---*/
-  
-	Deallocate_StiffMatrix_Structure(geometry);
-  
+  /*--- Deallocate vector. ---*/
+  LinSysSol.~CSysVector();
+  LinSysRes.~CSysVector();
+  StiffMatrix.~CSysMatrix();
+
 }
 
 void CVolumetricMovement::SetRigidRotation(CGeometry *geometry, CConfig *config,
@@ -4442,47 +4208,6 @@ void CFreeFormChunk::SetSupportCPChange(CFreeFormChunk *chunk) {
 				movement[2] = car_coord_new[2] - car_coord_old[2]; 
 				chunk->SetControlPoints(index, movement);
 			}
-}
-
-void CFreeFormChunk::SetParaView (char chunk_filename[200], bool new_file) {
-	ofstream chunk_file;
-	unsigned short iCornerPoints, iDim, iControlPoints, iDegree, jDegree, kDegree;
-		
-	if (new_file) chunk_file.open(chunk_filename, ios::out);
-	else chunk_file.open(chunk_filename, ios::out | ios::app);
-	
-	chunk_file << "# vtk DataFile Version 2.0" << endl;
-	chunk_file << "Visualization of the FFD box" << endl;
-	chunk_file << "ASCII" << endl;
-	chunk_file << "DATASET UNSTRUCTURED_GRID" << endl;
-	chunk_file << "POINTS " << nCornerPoints + nControlPoints << " float" << endl;
-	
-	chunk_file.precision(15);
-	
-	for(iCornerPoints = 0; iCornerPoints < nCornerPoints; iCornerPoints++) {
-		for(iDim = 0; iDim < nDim; iDim++)
-			chunk_file << scientific << Coord_Corner_Points[iCornerPoints][iDim] << "\t";
-		chunk_file << "\n";
-	}
-	for (iDegree = 0; iDegree <= lDegree; iDegree++)
-		for (jDegree = 0; jDegree <= mDegree; jDegree++)
-			for (kDegree = 0; kDegree <= nDegree; kDegree++) {
-				for(iDim = 0; iDim < nDim; iDim++)
-					chunk_file << scientific << Coord_Control_Points[iDegree][jDegree][kDegree][iDim] << "\t";
-				chunk_file << "\n";
-			}
-	
-	chunk_file << "CELLS " << 1 + nControlPoints << "\t" << (8+1) + (1+1) * nControlPoints << endl;
-	chunk_file << "8 0 1 2 3 4 5 6 7" << endl;
-	for (iControlPoints = 0; iControlPoints < nControlPoints; iControlPoints++)
-		chunk_file << "1 " << iControlPoints + 8 << endl;
-	
-	chunk_file << "CELL_TYPES " << 1 + nControlPoints<< endl;
-	chunk_file << "12" << endl;
-	for (iControlPoints = 0; iControlPoints < nControlPoints; iControlPoints++)
-		chunk_file << "1" << endl;
-	
-	chunk_file.close();
 }
 
 void CFreeFormChunk::SetTecplot(char chunk_filename[200], bool new_file) {

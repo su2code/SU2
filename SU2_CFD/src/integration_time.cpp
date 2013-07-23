@@ -237,7 +237,7 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
 	for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
 		for (iChildren = 0; iChildren < geo_coarse->node[Point_Coarse]->GetnChildren_CV(); iChildren++) {
 			Point_Fine = geo_coarse->node[Point_Coarse]->GetChildren_CV(iChildren);
-			sol_fine->SetResidual(Point_Fine, sol_coarse->node[Point_Coarse]->GetSolution_Old());
+			sol_fine->LinSysRes.SetBlock(Point_Fine, sol_coarse->node[Point_Coarse]->GetSolution_Old());
 		}
     }
     
@@ -258,7 +258,7 @@ void CMultiGridIntegration::SmoothProlongated_Correction (unsigned short RunTime
 		Residual = new double [nVar];
         
 		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-			Residual_Old = solution->GetResidual(iPoint);
+			Residual_Old = solution->LinSysRes.GetBlock(iPoint);
 			solution->node[iPoint]->SetResidual_Old(Residual_Old);
 		}
         
@@ -272,8 +272,8 @@ void CMultiGridIntegration::SmoothProlongated_Correction (unsigned short RunTime
 				iPoint = geometry->edge[iEdge]->GetNode(0);
 				jPoint = geometry->edge[iEdge]->GetNode(1);
                 
-				Residual_i = solution->GetResidual(iPoint);
-				Residual_j = solution->GetResidual(jPoint);
+				Residual_i = solution->LinSysRes.GetBlock(iPoint);
+				Residual_j = solution->LinSysRes.GetBlock(jPoint);
                 
 				/*--- Accumulate nearest neighbor Residual to Res_sum for each variable ---*/
 				solution->node[iPoint]->AddResidual_Sum(Residual_j);
@@ -289,7 +289,7 @@ void CMultiGridIntegration::SmoothProlongated_Correction (unsigned short RunTime
 					Residual[iVar] =(Residual_Old[iVar] + val_smooth_coeff*Residual_Sum[iVar])
                     /(1.0 + val_smooth_coeff*double(nneigh));
 				}
-				solution->SetResidual(iPoint, Residual);
+				solution->LinSysRes.SetBlock(iPoint, Residual);
 			}
             
 			/*--- Copy boundary values ---*/
@@ -297,7 +297,7 @@ void CMultiGridIntegration::SmoothProlongated_Correction (unsigned short RunTime
 				for(iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 					iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 					Residual_Old = solution->node[iPoint]->GetResidual_Old();
-					solution->SetResidual(iPoint, Residual_Old);
+					solution->LinSysRes.SetBlock(iPoint, Residual_Old);
 				}
 		}
         
@@ -378,7 +378,7 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolution *sol_fine, CGeom
 	double *Solution = new double [nVar];
     
 	for (Point_Fine = 0; Point_Fine < geo_fine->GetnPointDomain(); Point_Fine++) {
-		Residual_Fine = sol_fine->GetResidual(Point_Fine);
+		Residual_Fine = sol_fine->LinSysRes.GetBlock(Point_Fine);
 		Solution_Fine = sol_fine->node[Point_Fine]->GetSolution();
 		for (iVar = 0; iVar < nVar; iVar++) {
             /*--- Prevent a fine grid divergence due to a coarse grid divergence ---*/
@@ -418,11 +418,11 @@ void CMultiGridIntegration::SetForcing_Term(CSolution *sol_fine, CSolution *sol_
     
 	for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
 		sol_coarse->node[Point_Coarse]->SetRes_TruncErrorZero();
-        
+    
 		for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
 		for (iChildren = 0; iChildren < geo_coarse->node[Point_Coarse]->GetnChildren_CV(); iChildren++) {
 			Point_Fine = geo_coarse->node[Point_Coarse]->GetChildren_CV(iChildren);
-			Residual_Fine = sol_fine->GetResidual(Point_Fine);
+			Residual_Fine = sol_fine->LinSysRes.GetBlock(Point_Fine);
 			for (iVar = 0; iVar < nVar; iVar++)
 				Residual[iVar] += config->GetDamp_Res_Restric()*Residual_Fine[iVar];
 		}
@@ -440,7 +440,7 @@ void CMultiGridIntegration::SetForcing_Term(CSolution *sol_fine, CSolution *sol_
 	}
     
 	for(Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
-		sol_coarse->node[Point_Coarse]->SubtractRes_TruncError(sol_coarse->GetResidual(Point_Coarse));
+		sol_coarse->node[Point_Coarse]->SubtractRes_TruncError(sol_coarse->LinSysRes.GetBlock(Point_Coarse));
 	}
     
 	delete [] Residual;
@@ -450,7 +450,7 @@ void CMultiGridIntegration::SetResidual_Term(CGeometry *geometry, CSolution *sol
 	unsigned long iPoint;
     
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
-		solution->AddResidual(iPoint, solution->node[iPoint]->GetResTruncError());
+		solution->LinSysRes.AddBlock(iPoint, solution->node[iPoint]->GetResTruncError());
     
 }
 
@@ -458,7 +458,7 @@ void CMultiGridIntegration::SetRestricted_Residual(CSolution *sol_fine, CSolutio
 	unsigned long iVertex, Point_Fine, Point_Coarse;
 	unsigned short iMarker, iVar, iChildren;
 	double *Residual_Fine;
-    
+  
 	const unsigned short nVar = sol_coarse->GetnVar();
     
 	double *Residual = new double[nVar];
@@ -469,7 +469,7 @@ void CMultiGridIntegration::SetRestricted_Residual(CSolution *sol_fine, CSolutio
 		for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
 		for (iChildren = 0; iChildren < geo_coarse->node[Point_Coarse]->GetnChildren_CV(); iChildren++) {
 			Point_Fine = geo_coarse->node[Point_Coarse]->GetChildren_CV(iChildren);
-			Residual_Fine = sol_fine->GetResidual(Point_Fine);
+			Residual_Fine = sol_fine->LinSysRes.GetBlock(Point_Fine);
 			for (iVar = 0; iVar < nVar; iVar++)
 				Residual[iVar] += Residual_Fine[iVar];
 		}
