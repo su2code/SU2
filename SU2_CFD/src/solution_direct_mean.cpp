@@ -133,15 +133,15 @@ CEulerSolution::CEulerSolution(CGeometry *geometry, CConfig *config, unsigned sh
 	node = new CVariable*[nPoint];
 
 	/*--- Define some auxiliary vectors related to the residual ---*/
-	Residual      = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]      = 0.0;
-	Residual_RMS  = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
-	Residual_Max  = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
-	Point_Max  = new unsigned long[nVar]; for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]  = 0;
-	Residual_i    = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]    = 0.0;
-	Residual_j    = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]    = 0.0;
-	Res_Conv      = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Conv[iVar]      = 0.0;
-	Res_Visc      = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Visc[iVar]      = 0.0;
-	Res_Sour      = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Sour[iVar]      = 0.0;
+	Residual      = new double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]      = 0.0;
+	Residual_RMS  = new double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
+	Residual_Max  = new double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
+	Point_Max     = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]     = 0;
+	Residual_i    = new double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]    = 0.0;
+	Residual_j    = new double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]    = 0.0;
+	Res_Conv      = new double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Res_Conv[iVar]      = 0.0;
+	Res_Visc      = new double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Res_Visc[iVar]      = 0.0;
+	Res_Sour      = new double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Res_Sour[iVar]      = 0.0;
 
 	/*--- Define some auxiliary vectors related to the solution ---*/
 	Solution   = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution[iVar]   = 0.0;
@@ -426,36 +426,36 @@ CEulerSolution::~CEulerSolution(void) {
 	unsigned short iVar, iMarker;
 
 	/*--- Array initialization ---*/
-	if (Velocity_Inlet != NULL) delete [] Velocity_Inlet;
-	if (Velocity_Outlet != NULL) delete [] Velocity_Outlet;
-	if (Velocity_Back != NULL) delete [] Velocity_Back;
-	if (CDrag_Inv != NULL) delete [] CDrag_Inv;
-	if (CLift_Inv != NULL) delete [] CLift_Inv;
-	if (CSideForce_Inv != NULL) delete [] CSideForce_Inv;
-	if (CMx_Inv != NULL) delete [] CMx_Inv;
-	if (CMy_Inv != NULL) delete [] CMy_Inv;
-	if (CMz_Inv != NULL) delete [] CMz_Inv;
-	if (CFx_Inv != NULL) delete [] CFx_Inv;
-	if (CFy_Inv != NULL) delete [] CFy_Inv;
-	if (CFz_Inv != NULL) delete [] CFz_Inv;
-	if (CEff_Inv != NULL) delete [] CEff_Inv;
-	if (CMerit_Inv != NULL) delete [] CMerit_Inv;
-	if (CT_Inv != NULL) delete [] CT_Inv;
-	if (CQ_Inv != NULL) delete [] CQ_Inv;
-	if (CEquivArea_Inv != NULL) delete [] CEquivArea_Inv;
+	if (Velocity_Inlet != NULL)   delete [] Velocity_Inlet;
+	if (Velocity_Outlet != NULL)  delete [] Velocity_Outlet;
+	if (Velocity_Back != NULL)    delete [] Velocity_Back;
+	if (CDrag_Inv != NULL)        delete [] CDrag_Inv;
+	if (CLift_Inv != NULL)        delete [] CLift_Inv;
+	if (CSideForce_Inv != NULL)   delete [] CSideForce_Inv;
+	if (CMx_Inv != NULL)          delete [] CMx_Inv;
+	if (CMy_Inv != NULL)          delete [] CMy_Inv;
+	if (CMz_Inv != NULL)          delete [] CMz_Inv;
+	if (CFx_Inv != NULL)          delete [] CFx_Inv;
+	if (CFy_Inv != NULL)          delete [] CFy_Inv;
+	if (CFz_Inv != NULL)          delete [] CFz_Inv;
+	if (CEff_Inv != NULL)         delete [] CEff_Inv;
+	if (CMerit_Inv != NULL)       delete [] CMerit_Inv;
+	if (CT_Inv != NULL)           delete [] CT_Inv;
+	if (CQ_Inv != NULL)           delete [] CQ_Inv;
+	if (CEquivArea_Inv != NULL)   delete [] CEquivArea_Inv;
 	if (CNearFieldOF_Inv != NULL) delete [] CNearFieldOF_Inv;
-	if (ForceInviscid != NULL) delete [] ForceInviscid;
-	if (MomentInviscid != NULL) delete [] MomentInviscid;
+	if (ForceInviscid != NULL)    delete [] ForceInviscid;
+	if (MomentInviscid != NULL)   delete [] MomentInviscid;
 	if (FanFace_MassFlow != NULL) delete [] FanFace_MassFlow;
 	if (Exhaust_MassFlow != NULL) delete [] Exhaust_MassFlow;
-  if (Exhaust_Area != NULL) delete [] Exhaust_Area;
+  if (Exhaust_Area != NULL)     delete [] Exhaust_Area;
 	if (FanFace_Pressure != NULL) delete [] FanFace_Pressure;
-	if (FanFace_Mach != NULL) delete [] FanFace_Mach;
-  if (FanFace_Area != NULL) delete [] FanFace_Area;
-	if (p1_Und_Lapl != NULL) delete [] p1_Und_Lapl;
-	if (p2_Und_Lapl != NULL) delete [] p2_Und_Lapl;
-	if (PrimVar_i != NULL) delete [] PrimVar_i;
-	if (PrimVar_j != NULL) delete [] PrimVar_j;
+	if (FanFace_Mach != NULL)     delete [] FanFace_Mach;
+  if (FanFace_Area != NULL)     delete [] FanFace_Area;
+	if (p1_Und_Lapl != NULL)      delete [] p1_Und_Lapl;
+	if (p2_Und_Lapl != NULL)      delete [] p2_Und_Lapl;
+	if (PrimVar_i != NULL)        delete [] PrimVar_i;
+	if (PrimVar_j != NULL)        delete [] PrimVar_j;
 
 	if (Precon_Mat_inv != NULL) {
 		for (iVar = 0; iVar < nVar; iVar ++)
@@ -5797,51 +5797,6 @@ void CEulerSolution::GetRestart(CGeometry *geometry, CConfig *config, unsigned s
 	/*--- Free memory needed for the transformation ---*/
 	delete [] Global2Local;
 
-}
-
-
-void CEulerSolution::SetVolume_Output(CConfig *config, CGeometry *geometry, double **data_container, unsigned short nOutput_Vars) {
-
-#ifdef DEBUG_TDE
-
-	unsigned short iVar;
-	unsigned long iPoint;
-
-	/*--- Add up total number of output variables to be written. ---*/
-	nOutput_Vars = nVar;
-
-	for (iVar = 0; iVar < config->GetnOutput_Vars_Vol(); iVar++ ) {
-
-		switch(config->GetOutput_Vars_Vol(iVar)) {
-		case PRESSURE:
-			nOutput_Vars++;
-			break;
-		case MACH:
-			nOutput_Vars++;
-			break;
-		}
-
-	}
-
-	// NEEDS TO BE MAX NUMBER OF POINTS ON ANY PARTITION ?
-	data_container = new double*[nOutput_Vars];
-	for (iVar = 0; iVar < nOutput_Vars; iVar++ ) {
-		data_container[iVar] = new double[nPointDomain];
-	}
-
-	for (iVar = 0; iVar < config->GetnOutput_Vars_Vol(); iVar++ ) {
-
-		switch(config->GetOutput_Vars_Vol(iVar)) {
-		case PRESSURE:
-			nOutput_Vars++;
-			break;
-		case MACH:
-			nOutput_Vars++;
-			break;
-		}
-
-	}
-#endif
 }
 
 CNSSolution::CNSSolution(void) : CEulerSolution() {

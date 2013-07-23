@@ -36,7 +36,6 @@ CPlasmaSolution::CPlasmaSolution(CGeometry *geometry, CConfig *config) : CSoluti
 	double Vel2 = 0.0;
 
 	restart = (config->GetRestart() || config->GetRestart_Flow());
-	restart_from_Euler = config->GetRestart_Euler2Plasma();
 	implicit = config->GetKind_TimeIntScheme_Plasma() == EULER_IMPLICIT;
 	centered_scheme = config->GetKind_ConvNumScheme_Plasma() == SPACE_CENTERED;
 	axisymmetric = config->GetAxisymmetric();

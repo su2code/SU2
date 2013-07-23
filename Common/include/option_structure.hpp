@@ -1242,15 +1242,27 @@ public:
 	 * \param[in] value - a set of strings used to define the option
 	 */
 	void SetValue(const vector<string> & value) {
+    
+    int rank = MASTER_NODE;
+#ifndef NO_MPI
+    rank = MPI::COMM_WORLD.Get_rank();
+#endif
+    
 		typename map<string,Tenum>::const_iterator it;
 		if (ref_dim_ == NULL) {
 			// this is a scalar enum option
 			it = Tmap_->find(StringToUpperCase(value[0]));
 			if (it == Tmap_->end()) {
-				cerr << "Error in CEnumOptionRef::SetValue(const vector<string> &): "
-						<< "cannot find value " << value[0] << " in given map."
-						<< endl;
-				throw(-1);
+        if (rank == MASTER_NODE) {
+          cerr << "ERROR: Cannot find value " << value[0] << " in given map." << endl;
+          cerr << "Please check the name of the variable in the config file." << endl;
+        }
+#ifdef NO_MPI
+        exit(1);
+#else
+        MPI::COMM_WORLD.Abort(1);
+        MPI::Finalize();
+#endif
 			}
 			*(*ref_) = it->second;
 		} else {
@@ -1260,10 +1272,16 @@ public:
 			for (unsigned short i = 0; i < *ref_dim_; i++) {
 				it = Tmap_->find(StringToUpperCase(value[i]));
 				if (it == Tmap_->end()) {
-					cerr << "Error in CEnumOptionRef::SetValue(const vector<string> &): "
-							<< "cannot find value " << value[i] << " in given map."
-							<< endl;
-					throw(-1);
+          if (rank == MASTER_NODE) {
+            cerr << "ERROR: Cannot find value " << value[i] << " in given map." << endl;
+            cerr << "Please check the name of the variable in the config file." << endl;
+          }
+#ifdef NO_MPI
+          exit(1);
+#else
+          MPI::COMM_WORLD.Abort(1);
+          MPI::Finalize();
+#endif
 				}
 				(*ref_)[i] = it->second;
 			}

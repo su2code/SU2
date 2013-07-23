@@ -108,8 +108,6 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddSpecialOption("RESTART_SOL", Restart, SetBoolOption, false);
 	/* DESCRIPTION: Restart a Plasma solution from an Euler native solution file */
 	AddSpecialOption("RESTART_PLASMA_FROM_EULER", Restart_Euler2Plasma, SetBoolOption, false);
-	/* DESCRIPTION: Specify number of domain partitions */
-	AddScalarOption("NUMBER_PART", nDomain, 0);
 	/* DESCRIPTION: Write a tecplot file for each partition */
 	AddSpecialOption("VISUALIZE_PART", Visualize_Partition, SetBoolOption, false);
 	/* DESCRIPTION: Divide rectangles into triangles */
@@ -302,7 +300,7 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	/* DESCRIPTION: Linear solver for the turbulent adjoint systems */
 	AddEnumOption("ADJTURB_LIN_SOLVER", Kind_AdjTurb_Linear_Solver, Linear_Solver_Map, "FGMRES");
 	/* DESCRIPTION: Preconditioner for the turbulent adjoint Krylov linear solvers */
-	AddEnumOption("ADJTURB_LIN_PREC", Kind_AdjTurb_Linear_Prec, Linear_Solver_Prec_Map, "JACOBI");
+	AddEnumOption("ADJTURB_LIN_PREC", Kind_AdjTurb_Linear_Prec, Linear_Solver_Prec_Map, "LU_SGS");
 	/* DESCRIPTION: Minimum error threshold for the turbulent adjoint linear solver for the implicit formulation */
 	AddScalarOption("ADJTURB_LIN_ERROR", AdjTurb_Linear_Error, 1E-5);
 	/* DESCRIPTION: Maximum number of iterations of the turbulent adjoint linear solver for the implicit formulation */
@@ -612,8 +610,6 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddScalarOption("MESH_OUT_FILENAME", Mesh_Out_FileName, string("mesh_out.su2"));
 	/* DESCRIPTION: Output file convergence history (w/o extension) */
 	AddScalarOption("CONV_FILENAME", Conv_FileName, string("history"));
-	/* DESCRIPTION: Output file linear solver history (w/o extension)  */
-	AddScalarOption("LIN_CONV_FILENAME", Lin_Conv_FileName, string("lin_history"));
 	/* DESCRIPTION: Restart flow input file */
 	AddScalarOption("SOLUTION_FLOW_FILENAME", Solution_FlowFileName, string("solution_flow.dat"));
 	/* DESCRIPTION: Restart flow input file */
@@ -674,8 +670,6 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddSpecialOption("WRT_SOL_TEC_ASCII", Wrt_Sol_Tec_ASCII, SetBoolOption, true);
 	/* DESCRIPTION: Write a Tecplot binary volume solution file */
 	AddSpecialOption("WRT_SOL_TEC_BINARY", Wrt_Sol_Tec_Binary, SetBoolOption, false);
-	/* DESCRIPTION: List of output variables for the volume solution */
-	AddEnumListOption("OUTPUT_VARS_VOL", nOutput_Vars_Vol, Output_Vars_Vol, Output_Vars_Map);
 	/* DESCRIPTION: Output residual info to solution/restart file */
 	AddSpecialOption("WRT_RESIDUALS", Wrt_Residuals, SetBoolOption, false);
   /* DESCRIPTION: Output the rind layers in the solution files */
@@ -926,7 +920,6 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 			it = param.find(option_name);
 			if (it != param.end()) {
 				param[option_name]->SetValue(option_value);
-				//				cout << option_name << ": value = "; param[option_name]->WriteValue();
 			} else {
 				if ( !GetPython_Option(option_name) && (rank == MASTER_NODE) )
 					cout << "WARNING: unrecognized option in the config. file: " << option_name << "." << endl;
@@ -3235,13 +3228,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				cout << "Euler implicit method for the flow equations." << endl;
 				switch (Kind_Linear_Solver) {
 				case BCGSTAB:
-					cout << "A precond. BCGSTAB is used for solving the linear system." << endl;
+					cout << "BCGSTAB is used for solving the linear system." << endl;
 					cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<<endl;
 					cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<<endl;
 					cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
 					break;
 				case FGMRES:
-					cout << "A precond. FGMRES is used for solving the linear system." << endl;
+					cout << "FGMRES is used for solving the linear system." << endl;
 					cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<<endl;
 					cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<<endl;
 					cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;

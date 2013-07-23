@@ -1624,15 +1624,6 @@ public:
 	 */
 	virtual void GetRestart(CGeometry *geometry, CConfig *config, unsigned short val_iZone);
     
-    /*!
-	 * \brief A virtual member.
-     * \param[in] config - Definition of the particular problem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] data_container - Container holding the output variable data.
-     * \param[in] nOutput_Vars - Number of output variables being stored.
-	 */
-	virtual void SetVolume_Output(CConfig *config, CGeometry *geometry, double **data_container, unsigned short nOutput_Vars);
-    
 	/*!
 	 * \brief Gauss method for solving a linear system.
 	 * \param[in] A - Matrix Ax = b.
@@ -2553,15 +2544,6 @@ public:
 	 * \param[in] val_iZone - Current zone in the mesh.
 	 */
 	void GetRestart(CGeometry *geometry, CConfig *config, unsigned short val_iZone);
-    
-    /*!
-	 * \brief Load the output data container with the variables to be written to the volume solution file.
-     * \param[in] config - Definition of the particular problem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] data_container - Container holding the output variable data.
-     * \param[in] nOutput_Vars - Number of output variables being stored.
-	 */
-	void SetVolume_Output(CConfig *config, CGeometry *geometry, double **data_container, unsigned short nOutput_Vars);
     
 	/*!
 	 * \brief Set the initial condition for the Euler Equations.

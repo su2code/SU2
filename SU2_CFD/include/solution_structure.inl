@@ -53,8 +53,6 @@ inline void CSolution::SetFEA_Load(CSolution ***flow_solution, CGeometry **fea_g
 inline void CSolution::SetInitialCondition(CGeometry **geometry, CSolution ***solution_container, CConfig *config, unsigned long ExtIter) { }
 
 inline void CSolution::GetRestart(CGeometry *geometry, CConfig *config, unsigned short val_iZone) { }
-
-inline void CSolution::SetVolume_Output(CConfig *config, CGeometry *geometry, double **data_container, unsigned short nOutput_Vars) { }
   
 inline void CSolution::SetNoise_Source(CSolution ***flow_solution, CGeometry **wave_geometry, CConfig *wave_config) { }
 

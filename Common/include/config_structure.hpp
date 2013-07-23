@@ -440,7 +440,6 @@ private:
 	AdjWave_FileName,					/*!< \brief Adjoint wave variables output file. */
 	Residual_FileName,				/*!< \brief Residual variables output file. */
 	Conv_FileName,					/*!< \brief Convergence history output file. */
-	Lin_Conv_FileName,				/*!< \brief Linear Solver Convergence history output file. */
 	Restart_FlowFileName,			/*!< \brief Restart file for flow variables. */
 	Restart_WaveFileName,			/*!< \brief Restart file for wave variables. */
 	Restart_HeatFileName,			/*!< \brief Restart file for heat variables. */
@@ -466,8 +465,6 @@ private:
 	Wrt_Csv_Sol,                /*!< \brief Write a surface comma-separated values solution file */
 	Wrt_Residuals,              /*!< \brief Write residuals to solution file */
   Wrt_Halo;                   /*!< \brief Write rind layers in solution files */
-	unsigned short nOutput_Vars_Vol, /*!< \brief No. of output variables specified for the volume solution file. */
-	*Output_Vars_Vol;                  /*!< \brief List of output variables specified for the volume solution file. */
 	double *ArrheniusCoefficient,					/*!< \brief Arrhenius reaction coefficient */
 	*ArrheniusEta,								/*!< \brief Arrhenius reaction temperature exponent */
 	*ArrheniusTheta,							/*!< \brief Arrhenius reaction characteristic temperature */
@@ -1770,19 +1767,6 @@ public:
 	 * \return <code>TRUE</code> means that rind layers will be written to the solution file.
 	 */
 	bool GetWrt_Halo(void);
-  
-	/*!
-	 * \brief Get the number of volume output variables.
-	 * \return Number of volume output variables.
-	 */
-	unsigned short GetnOutput_Vars_Vol(void);
-
-	/*!
-	 * \brief Get the volume output variable.
-	 * \param[in] val_index - Index of the output variable.
-	 * \return Type of volume output variable.
-	 */
-	unsigned short GetOutput_Vars_Vol(unsigned short val_index);
 
 	/*!
 	 * \brief Get the alpha (convective) coefficients for the Runge-Kutta integration scheme.
@@ -3102,11 +3086,9 @@ public:
 	bool GetRestart(void);
 
 	/*!
-	 * \brief Provides the restart information.
-	 * \return Restart information, if <code>TRUE</code> then the code will use the Euler solution as restart for the plasma problem.
-	 */		
-	bool GetRestart_Euler2Plasma(void);
-
+	 * \brief Provides the number of varaibles.
+	 * \return Number of variables.
+	 */
 	unsigned short GetnVar(void);
 
 	/*! 
@@ -3197,12 +3179,6 @@ public:
 	 * \return Name of the file with convergence history of the problem.
 	 */
 	string GetConv_FileName(void);
-
-	/*!
-	 * \brief Get the name of the file with the linear solver convergence history of the problem.
-	 * \return Name of the file with linear solver convergence history of the problem.
-	 */
-	string GetLin_Conv_FileName(void);
 
 	/*! 
 	 * \brief Get the name of the file with the flow variables.
