@@ -2959,9 +2959,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		case DRAG_COEFFICIENT: cout << "Drag objective function." << endl; break;
 		case LIFT_COEFFICIENT: cout << "Lift objective function." << endl; break;
 		case SIDEFORCE_COEFFICIENT: cout << "Side force objective function." << endl; break;
-		case MOMENT_X_COEFFICIENT: cout << "Pitching moment objective function." << endl; break;
-		case MOMENT_Y_COEFFICIENT: cout << "Rolling moment objective function." << endl; break;
-		case MOMENT_Z_COEFFICIENT: cout << "Yawing moment objective function." << endl; break;
+		case MOMENT_X_COEFFICIENT: cout << "Mx objective function." << endl; break;
+		case MOMENT_Y_COEFFICIENT: cout << "My objective function." << endl; break;
+		case MOMENT_Z_COEFFICIENT: cout << "Mz objective function." << endl; break;
 		case EFFICIENCY: cout << "Efficiency objective function." << endl; break;
 		case PRESSURE_COEFFICIENT: cout << "Pressure objective function." << endl; break;
 		case EQUIVALENT_AREA:

@@ -1047,29 +1047,29 @@ void CAdjEulerSolution::SetForceProj_Vector(CGeometry *geometry, CSolution **sol
 	double RefLengthMoment  = config->GetRefLengthMoment();
 	double *RefOriginMoment = config->GetRefOriginMoment();
 	double RefVel2, RefDensity;
-    
+  
 	bool rotating_frame = config->GetRotating_Frame();
-    bool grid_movement = config->GetGrid_Movement();
-    
+  bool grid_movement = config->GetGrid_Movement();
+  
 	ForceProj_Vector = new double[nDim];
-    
+  
 	/*--- If we have a rotating frame problem or an unsteady problem with
-     mesh motion, use special reference values for the force coefficients.
-     Otherwise, use the freestream values, which is the standard convention. ---*/
+   mesh motion, use special reference values for the force coefficients.
+   Otherwise, use the freestream values, which is the standard convention. ---*/
 	if (rotating_frame || grid_movement) {
-        double Gas_Constant = config->GetGas_ConstantND();
-        double Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
-        double Mach_Motion = config->GetMach_Motion();
+    double Gas_Constant = config->GetGas_ConstantND();
+    double Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
+    double Mach_Motion = config->GetMach_Motion();
 		RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
-    } else {
+  } else {
 		double *Velocity_Inf = config->GetVelocity_FreeStreamND();
 		RefVel2 = 0.0;
 		for (iDim = 0; iDim < nDim; iDim++)
 			RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
 	}
-    
-    RefDensity  = config->GetDensity_FreeStreamND();
-    
+  
+  RefDensity  = config->GetDensity_FreeStreamND();
+  
 	/*--- In parallel computations the Cd, and Cl must be recomputed using all the processors ---*/
 #ifdef NO_MPI
 	C_d = solution_container[FLOW_SOL]->GetTotal_CDrag();
@@ -1092,7 +1092,7 @@ void CAdjEulerSolution::SetForceProj_Vector(CGeometry *geometry, CSolution **sol
 	delete [] sbuf_force;
 	delete [] rbuf_force;
 #endif
-    
+  
 	/*--- Compute coefficients needed for objective function evaluation. ---*/
 	C_d += config->GetCteViscDrag();
 	double C_p    = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
@@ -1100,148 +1100,148 @@ void CAdjEulerSolution::SetForceProj_Vector(CGeometry *geometry, CSolution **sol
 	double CLCD2  = C_l / (C_d*C_d);
 	double invCQ  = 1.0/C_q;
 	double CTRCQ2 = C_t/(RefLengthMoment*C_q*C_q);
-    
+  
 	x_origin = RefOriginMoment[0]; y_origin = RefOriginMoment[1]; z_origin = RefOriginMoment[2];
-    
+  
 	for (iMarker = 0; iMarker < nMarker; iMarker++)
 		if ((config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE) &&
-            (config->GetMarker_All_Monitoring(iMarker) == YES))
+        (config->GetMarker_All_Monitoring(iMarker) == YES))
 			for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-                
+        
 				x = geometry->node[iPoint]->GetCoord(0);
 				y = geometry->node[iPoint]->GetCoord(1);
 				if (nDim == 3) z = geometry->node[iPoint]->GetCoord(2);
-                
+        
 				Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 				switch (config->GetKind_ObjFunc()) {
-                    case DRAG_COEFFICIENT :
-                        if (nDim == 2) { ForceProj_Vector[0] = C_p*cos(Alpha); ForceProj_Vector[1] = C_p*sin(Alpha); }
-                        if (nDim == 3) { ForceProj_Vector[0] = C_p*cos(Alpha)*cos(Beta); ForceProj_Vector[1] = C_p*sin(Beta); ForceProj_Vector[2] = C_p*sin(Alpha)*cos(Beta); }
-                        break;
-                    case LIFT_COEFFICIENT :
-                        if (nDim == 2) { ForceProj_Vector[0] = -C_p*sin(Alpha); ForceProj_Vector[1] = C_p*cos(Alpha); }
-                        if (nDim == 3) { ForceProj_Vector[0] = -C_p*sin(Alpha); ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = C_p*cos(Alpha); }
-                        break;
-                    case SIDEFORCE_COEFFICIENT :
-                        if (nDim == 2) { cout << "This functional is not possible in 2D!!" << endl;
-                            cout << "Press any key to exit..." << endl; cin.get(); exit(1);
-                        }
-                        if (nDim == 3) { ForceProj_Vector[0] = -C_p*sin(Beta) * cos(Alpha); ForceProj_Vector[1] = C_p*cos(Beta); ForceProj_Vector[2] = -C_p*sin(Beta) * sin(Alpha); }
-                        break;
-                    case PRESSURE_COEFFICIENT :
-                        if (nDim == 2) {
-                            Area = sqrt(Normal[0]*Normal[0] + Normal[1]*Normal[1]);
-                            ForceProj_Vector[0] = -C_p*Normal[0]/Area; ForceProj_Vector[1] = -C_p*Normal[1]/Area;
-                        }
-                        if (nDim == 3) {
-                            Area = sqrt(Normal[0]*Normal[0] + Normal[1]*Normal[1] + Normal[2]*Normal[2]);
-                            ForceProj_Vector[0] = -C_p*Normal[0]/Area; ForceProj_Vector[1] = -C_p*Normal[1]/Area; ForceProj_Vector[2] = -C_p*Normal[2]/Area;
-                        }
-                        break;
-                    case MOMENT_X_COEFFICIENT :
-                        if (nDim == 2) { cout << "This functional is not possible in 2D!!" << endl;
-                            cout << "Press any key to exit..." << endl; cin.get(); exit(1);
-                        }
-                        if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = -C_p*(z - z_origin)/RefLengthMoment; ForceProj_Vector[2] = C_p*(y - y_origin)/RefLengthMoment; }
-                        break;
-                    case MOMENT_Y_COEFFICIENT :
-                        if (nDim == 2) { cout << "This functional is not possible in 2D!!" << endl;
-                            cout << "Press any key to exit..." << endl;
-                            cin.get(); exit(1);
-                        }
-                        if (nDim == 3) { ForceProj_Vector[0] = -C_p*(z - z_origin)/RefLengthMoment; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = C_p*(x - x_origin)/RefLengthMoment; }
-                        break;
-                    case MOMENT_Z_COEFFICIENT :
-                        if (nDim == 2) { ForceProj_Vector[0] = -C_p*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = C_p*(x - x_origin)/RefLengthMoment; }
-                        if (nDim == 3) { ForceProj_Vector[0] = -C_p*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = C_p*(x - x_origin)/RefLengthMoment; ForceProj_Vector[2] = 0; }
-                        break;
-                    case EFFICIENCY :
-                        if (nDim == 2) { ForceProj_Vector[0] = -C_p*(invCD*sin(Alpha)+CLCD2*cos(Alpha));
-                            ForceProj_Vector[1] = C_p*(invCD*cos(Alpha)-CLCD2*sin(Alpha)); }
-                        if (nDim == 3) { ForceProj_Vector[0] = -C_p*(invCD*sin(Alpha)+CLCD2*cos(Alpha)*cos(Beta));
-                            ForceProj_Vector[1] = -C_p*CLCD2*sin(Beta);
-                            ForceProj_Vector[2] = C_p*(invCD*cos(Alpha)-CLCD2*sin(Alpha)*cos(Beta)); }
-                        break;
-                    case EQUIVALENT_AREA :
-                        WDrag = config->GetWeightCd();
-                        if (nDim == 2) { ForceProj_Vector[0] = C_p*cos(Alpha)*WDrag; ForceProj_Vector[1] = C_p*sin(Alpha)*WDrag; }
-                        if (nDim == 3) { ForceProj_Vector[0] = C_p*cos(Alpha)*cos(Beta)*WDrag; ForceProj_Vector[1] = C_p*sin(Beta)*WDrag; ForceProj_Vector[2] = C_p*sin(Alpha)*cos(Beta)*WDrag; }
-                        break;
-                    case NEARFIELD_PRESSURE :
-                        WDrag = config->GetWeightCd();
-                        if (nDim == 2) { ForceProj_Vector[0] = C_p*cos(Alpha)*WDrag; ForceProj_Vector[1] = C_p*sin(Alpha)*WDrag; }
-                        if (nDim == 3) { ForceProj_Vector[0] = C_p*cos(Alpha)*cos(Beta)*WDrag; ForceProj_Vector[1] = C_p*sin(Beta)*WDrag; ForceProj_Vector[2] = C_p*sin(Alpha)*cos(Beta)*WDrag; }
-                        break;
-                    case FORCE_X_COEFFICIENT :
-                        if (nDim == 2) { ForceProj_Vector[0] = C_p; ForceProj_Vector[1] = 0.0; }
-                        if (nDim == 3) { ForceProj_Vector[0] = C_p; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 0.0; }
-                        break;
-                    case FORCE_Y_COEFFICIENT :
-                        if (nDim == 2) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = C_p; }
-                        if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = C_p; ForceProj_Vector[2] = 0.0; }
-                        break;
-                    case FORCE_Z_COEFFICIENT :
-                        if (nDim == 2) {cout << "This functional is not possible in 2D!!" << endl;
-                            cout << "Press any key to exit..." << endl;
-                            cin.get(); exit(1);
-                        }
-                        if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = C_p; }
-                        break;
-                    case THRUST_COEFFICIENT :
-                        if (nDim == 2) {cout << "This functional is not possible in 2D!!" << endl;
-                            cout << "Press any key to exit..." << endl;
-                            cin.get(); exit(1);
-                        }
-                        if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = C_p; }
-                        break;
-                    case TORQUE_COEFFICIENT :
-                        if (nDim == 2) { ForceProj_Vector[0] = C_p*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = -C_p*(x - x_origin)/RefLengthMoment; }
-                        if (nDim == 3) { ForceProj_Vector[0] = C_p*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = -C_p*(x - x_origin)/RefLengthMoment; ForceProj_Vector[2] = 0; }
-                        break;
-                    case FIGURE_OF_MERIT :
-                        if (nDim == 2) {cout << "This functional is not possible in 2D!!" << endl;
-                            cout << "Press any key to exit..." << endl;
-                            cin.get(); exit(1);
-                        }
-                        if (nDim == 3) {
-                            ForceProj_Vector[0] = -C_p*invCQ;
-                            ForceProj_Vector[1] = -C_p*CTRCQ2*(z - z_origin);
-                            ForceProj_Vector[2] =  C_p*CTRCQ2*(y - y_origin);
-                        }
-                        break;
-                    case FREE_SURFACE :
-                        if (nDim == 2) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; }
-                        if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 0.0; }
-                        break;
-                    case NOISE:
-                        if (nDim == 2) { ForceProj_Vector[0] = 0.0;
-                            ForceProj_Vector[1] = 0.0; }
-                        if (nDim == 3) { ForceProj_Vector[0] = 0.0;
-                            ForceProj_Vector[1] = 0.0;
-                            ForceProj_Vector[2] = 0.0; }
-                        break;
-                    case HEAT_LOAD:
-                        if (nDim == 2) { ForceProj_Vector[0] = 0.0;
-                            ForceProj_Vector[1] = 0.0; }
-                        if (nDim == 3) { ForceProj_Vector[0] = 0.0;
-                            ForceProj_Vector[1] = 0.0;
-                            ForceProj_Vector[2] = 0.0; }
-                        break;
+          case DRAG_COEFFICIENT :
+            if (nDim == 2) { ForceProj_Vector[0] = C_p*cos(Alpha); ForceProj_Vector[1] = C_p*sin(Alpha); }
+            if (nDim == 3) { ForceProj_Vector[0] = C_p*cos(Alpha)*cos(Beta); ForceProj_Vector[1] = C_p*sin(Beta); ForceProj_Vector[2] = C_p*sin(Alpha)*cos(Beta); }
+            break;
+          case LIFT_COEFFICIENT :
+            if (nDim == 2) { ForceProj_Vector[0] = -C_p*sin(Alpha); ForceProj_Vector[1] = C_p*cos(Alpha); }
+            if (nDim == 3) { ForceProj_Vector[0] = -C_p*sin(Alpha); ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = C_p*cos(Alpha); }
+            break;
+          case SIDEFORCE_COEFFICIENT :
+            if (nDim == 2) { cout << "This functional is not possible in 2D!!" << endl;
+              cout << "Press any key to exit..." << endl; cin.get(); exit(1);
+            }
+            if (nDim == 3) { ForceProj_Vector[0] = -C_p*sin(Beta) * cos(Alpha); ForceProj_Vector[1] = C_p*cos(Beta); ForceProj_Vector[2] = -C_p*sin(Beta) * sin(Alpha); }
+            break;
+          case PRESSURE_COEFFICIENT :
+            if (nDim == 2) {
+              Area = sqrt(Normal[0]*Normal[0] + Normal[1]*Normal[1]);
+              ForceProj_Vector[0] = -C_p*Normal[0]/Area; ForceProj_Vector[1] = -C_p*Normal[1]/Area;
+            }
+            if (nDim == 3) {
+              Area = sqrt(Normal[0]*Normal[0] + Normal[1]*Normal[1] + Normal[2]*Normal[2]);
+              ForceProj_Vector[0] = -C_p*Normal[0]/Area; ForceProj_Vector[1] = -C_p*Normal[1]/Area; ForceProj_Vector[2] = -C_p*Normal[2]/Area;
+            }
+            break;
+          case MOMENT_X_COEFFICIENT :
+            if (nDim == 2) { cout << "This functional is not possible in 2D!!" << endl;
+              cout << "Press any key to exit..." << endl; cin.get(); exit(1);
+            }
+            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = -C_p*(z - z_origin)/RefLengthMoment; ForceProj_Vector[2] = C_p*(y - y_origin)/RefLengthMoment; }
+            break;
+          case MOMENT_Y_COEFFICIENT :
+            if (nDim == 2) { cout << "This functional is not possible in 2D!!" << endl;
+              cout << "Press any key to exit..." << endl;
+              cin.get(); exit(1);
+            }
+            if (nDim == 3) { ForceProj_Vector[0] = -C_p*(z - z_origin)/RefLengthMoment; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = C_p*(x - x_origin)/RefLengthMoment; }
+            break;
+          case MOMENT_Z_COEFFICIENT :
+            if (nDim == 2) { ForceProj_Vector[0] = -C_p*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = C_p*(x - x_origin)/RefLengthMoment; }
+            if (nDim == 3) { ForceProj_Vector[0] = -C_p*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = C_p*(x - x_origin)/RefLengthMoment; ForceProj_Vector[2] = 0; }
+            break;
+          case EFFICIENCY :
+            if (nDim == 2) { ForceProj_Vector[0] = -C_p*(invCD*sin(Alpha)+CLCD2*cos(Alpha));
+              ForceProj_Vector[1] = C_p*(invCD*cos(Alpha)-CLCD2*sin(Alpha)); }
+            if (nDim == 3) { ForceProj_Vector[0] = -C_p*(invCD*sin(Alpha)+CLCD2*cos(Alpha)*cos(Beta));
+              ForceProj_Vector[1] = -C_p*CLCD2*sin(Beta);
+              ForceProj_Vector[2] = C_p*(invCD*cos(Alpha)-CLCD2*sin(Alpha)*cos(Beta)); }
+            break;
+          case EQUIVALENT_AREA :
+            WDrag = config->GetWeightCd();
+            if (nDim == 2) { ForceProj_Vector[0] = C_p*cos(Alpha)*WDrag; ForceProj_Vector[1] = C_p*sin(Alpha)*WDrag; }
+            if (nDim == 3) { ForceProj_Vector[0] = C_p*cos(Alpha)*cos(Beta)*WDrag; ForceProj_Vector[1] = C_p*sin(Beta)*WDrag; ForceProj_Vector[2] = C_p*sin(Alpha)*cos(Beta)*WDrag; }
+            break;
+          case NEARFIELD_PRESSURE :
+            WDrag = config->GetWeightCd();
+            if (nDim == 2) { ForceProj_Vector[0] = C_p*cos(Alpha)*WDrag; ForceProj_Vector[1] = C_p*sin(Alpha)*WDrag; }
+            if (nDim == 3) { ForceProj_Vector[0] = C_p*cos(Alpha)*cos(Beta)*WDrag; ForceProj_Vector[1] = C_p*sin(Beta)*WDrag; ForceProj_Vector[2] = C_p*sin(Alpha)*cos(Beta)*WDrag; }
+            break;
+          case FORCE_X_COEFFICIENT :
+            if (nDim == 2) { ForceProj_Vector[0] = C_p; ForceProj_Vector[1] = 0.0; }
+            if (nDim == 3) { ForceProj_Vector[0] = C_p; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 0.0; }
+            break;
+          case FORCE_Y_COEFFICIENT :
+            if (nDim == 2) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = C_p; }
+            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = C_p; ForceProj_Vector[2] = 0.0; }
+            break;
+          case FORCE_Z_COEFFICIENT :
+            if (nDim == 2) {cout << "This functional is not possible in 2D!!" << endl;
+              cout << "Press any key to exit..." << endl;
+              cin.get(); exit(1);
+            }
+            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = C_p; }
+            break;
+          case THRUST_COEFFICIENT :
+            if (nDim == 2) {cout << "This functional is not possible in 2D!!" << endl;
+              cout << "Press any key to exit..." << endl;
+              cin.get(); exit(1);
+            }
+            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = C_p; }
+            break;
+          case TORQUE_COEFFICIENT :
+            if (nDim == 2) { ForceProj_Vector[0] = C_p*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = -C_p*(x - x_origin)/RefLengthMoment; }
+            if (nDim == 3) { ForceProj_Vector[0] = C_p*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = -C_p*(x - x_origin)/RefLengthMoment; ForceProj_Vector[2] = 0; }
+            break;
+          case FIGURE_OF_MERIT :
+            if (nDim == 2) {cout << "This functional is not possible in 2D!!" << endl;
+              cout << "Press any key to exit..." << endl;
+              cin.get(); exit(1);
+            }
+            if (nDim == 3) {
+              ForceProj_Vector[0] = -C_p*invCQ;
+              ForceProj_Vector[1] = -C_p*CTRCQ2*(z - z_origin);
+              ForceProj_Vector[2] =  C_p*CTRCQ2*(y - y_origin);
+            }
+            break;
+          case FREE_SURFACE :
+            if (nDim == 2) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; }
+            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 0.0; }
+            break;
+          case NOISE:
+            if (nDim == 2) { ForceProj_Vector[0] = 0.0;
+              ForceProj_Vector[1] = 0.0; }
+            if (nDim == 3) { ForceProj_Vector[0] = 0.0;
+              ForceProj_Vector[1] = 0.0;
+              ForceProj_Vector[2] = 0.0; }
+            break;
+          case HEAT_LOAD:
+            if (nDim == 2) { ForceProj_Vector[0] = 0.0;
+              ForceProj_Vector[1] = 0.0; }
+            if (nDim == 3) { ForceProj_Vector[0] = 0.0;
+              ForceProj_Vector[1] = 0.0;
+              ForceProj_Vector[2] = 0.0; }
+            break;
 				}
-                
+        
 				/*--- Store the force projection vector at this node ---*/
 				node[iPoint]->SetForceProj_Vector(ForceProj_Vector);
-                
+        
 			}
-    
+  
 	delete [] ForceProj_Vector;
 }
 
 void CAdjEulerSolution::SetIntBoundary_Jump(CGeometry *geometry, CSolution **solution_container, CConfig *config) {
 	unsigned short iMarker, iVar, jVar, kVar, jc, jrjc, jrjcm1, jrjcp1, jr, jm, jrm1, jrjr, jrp1, jmjm, iDim, jDim;
 	unsigned long iVertex, iPoint, iPointNearField, nPointNearField = 0;
-	double factor = 1.0, AngleDouble, data, aux, *IntBound_Vector, *coord, u, v, sq_vel, *FlowSolution, A[5][5], M[5][5], AM[5][5], b[5], WeightSB, sum, MinDist = 1E6, 
+	double factor = 1.0, AngleDouble, data, aux, *IntBound_Vector, *coord, u, v, sq_vel, *FlowSolution, A[5][5], M[5][5], AM[5][5], b[5], WeightSB, sum, MinDist = 1E6,
 			Dist, DerivativeOF = 0.0, *Normal;
 	short iPhiAngle = 0, IndexNF_inv[180], iColumn;
 	ifstream index_file;
@@ -1254,8 +1254,8 @@ void CAdjEulerSolution::SetIntBoundary_Jump(CGeometry *geometry, CSolution **sol
 
 	IntBound_Vector = new double [nVar];
 
-	/*--- If equivalent area objective function, read the value of 
-	 the derivative from a file, this is a preprocess of the direct solution ---*/ 
+	/*--- If equivalent area objective function, read the value of
+	 the derivative from a file, this is a preprocess of the direct solution ---*/
 
 	if (config->GetKind_ObjFunc() == EQUIVALENT_AREA) {
 
