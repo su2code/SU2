@@ -50,11 +50,12 @@ CTNE2EulerSolution::CTNE2EulerSolution(void) : CSolution() {
 
 CTNE2EulerSolution::CTNE2EulerSolution(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolution() {
 	unsigned long iPoint, index, counter_local = 0, counter_global = 0;
-	unsigned short iVar, iDim, iMarker;
+	unsigned short iVar, iDim, iMarker, iSpecies;
   double Density, Velocity2, Pressure, Temperature;
   
 	unsigned short nZone = geometry->GetnZone();
 	bool restart = (config->GetRestart() || config->GetRestart_Flow());
+  bool check_temp, check_press;
   double Gas_Constant = config->GetGas_ConstantND();
 	
 	roe_turkel = false;
@@ -199,6 +200,7 @@ CTNE2EulerSolution::CTNE2EulerSolution(CGeometry *geometry, CConfig *config, uns
 	Mach_Inf           = config->GetMach_FreeStreamND();
   MassFrac_Inf       = config->GetMassFrac_FreeStream();
   Temperature_ve_Inf = config->GetTemperature_ve_FreeStream();
+  Temperature_Inf    = config->GetTemperature_FreeStream();
   
 	/*--- Check for a restart and set up the variables at each node
    appropriately. Coarse multigrid levels will be intitially set to
@@ -208,7 +210,7 @@ CTNE2EulerSolution::CTNE2EulerSolution(CGeometry *geometry, CConfig *config, uns
     
 		/*--- Restart the solution from infinity ---*/
 		for (iPoint = 0; iPoint < nPoint; iPoint++)
-			node[iPoint] = new CTNE2EulerVariable(Density_Inf, MassFrac_Inf, Velocity_Inf, Energy_Inf, Temperature_ve_Inf, nDim, nVar, config);
+			node[iPoint] = new CTNE2EulerVariable(Density_Inf, MassFrac_Inf, Velocity_Inf, Temperature_Inf, Temperature_ve_Inf, nDim, nVar, config);
 	}
   
 	else {
@@ -266,9 +268,11 @@ CTNE2EulerSolution::CTNE2EulerSolution(CGeometry *geometry, CConfig *config, uns
        will be returned and used to instantiate the vars. ---*/
 			iPoint_Local = Global2Local[iPoint_Global];
 			if (iPoint_Local >= 0) {
-        if (nDim == 2) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-        if (nDim == 3) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
-				node[iPoint_Local] = new CEulerVariable(Solution, nDim, nVar, config);
+        point_line >> index;
+        for (iVar = 0; iVar < nVar; iVar++)
+          point_line >> Solution[iVar];
+        
+				node[iPoint_Local] = new CTNE2EulerVariable(Solution, nDim, nVar, config);
 			}
 			iPoint_Global++;
 		}
@@ -277,7 +281,7 @@ CTNE2EulerSolution::CTNE2EulerSolution(CGeometry *geometry, CConfig *config, uns
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
 		for(iPoint = nPointDomain; iPoint < nPoint; iPoint++)
-			node[iPoint] = new CEulerVariable(Solution, nDim, nVar, config);
+			node[iPoint] = new CTNE2EulerVariable(Solution, nDim, nVar, config);
     
 		/*--- Close the restart file ---*/
 		restart_file.close();
@@ -288,19 +292,55 @@ CTNE2EulerSolution::CTNE2EulerSolution(CGeometry *geometry, CConfig *config, uns
   
   /*--- Check that the initial solution is physical ---*/
   counter_local = 0;
+  
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    
+    node[iPoint]->SetDensity();
+    node[iPoint]->SetVelocity2();
+    check_temp = node[iPoint]->SetTemperature(config);
+    check_press = node[iPoint]->SetPressure(config);
     
     Density = node[iPoint]->GetSolution(0);
     Velocity2 = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      Velocity2 += (node[iPoint]->GetSolution(iDim+1)/Density)*(node[iPoint]->GetSolution(iDim+1)/Density);
-    Pressure    = Gamma_Minus_One*Density*(node[iPoint]->GetSolution(nDim+1)/Density-0.5*Velocity2);
-    Temperature = Pressure / ( Gas_Constant * Density);
-    if ((Pressure < 0.0) || (Temperature < 0.0)) {
-      Solution[0] = Density_Inf;
+    if (check_temp || check_press) {
+      double *molar_mass, *theta_v, *rotation_modes, *temperature_ref, *enthalpy_formation;
+      double sqvel, energy, energy_ve, energy_v, energy_e, energy_formation;
+      
+      /*--- Calculate energy ---*/
+      molar_mass         = config->GetMolar_Mass();
+      theta_v            = config->GetCharVibTemp();
+      rotation_modes     = config->GetRotationModes();
+      temperature_ref    = config->GetRefTemperature();
+      enthalpy_formation = config->GetEnthalpy_Formation();
+      sqvel     = 0.0;
+      energy    = 0.0;
+      energy_ve = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
-        Solution[iDim+1] = Velocity_Inf[iDim]*Density_Inf;
-      Solution[nDim+1] = Energy_Inf*Density_Inf;
+        sqvel += Velocity_Inf[iDim]*Velocity_Inf[iDim];
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+        energy_v  =  UNIVERSAL_GAS_CONSTANT/molar_mass[iSpecies]
+                   * theta_v[iSpecies] / ( exp(theta_v[iSpecies]/Temperature_ve_Inf) -1.0 );
+        energy_e = 0.0;
+        energy_formation =  enthalpy_formation[iSpecies]
+                          - UNIVERSAL_GAS_CONSTANT/molar_mass[iSpecies]*temperature_ref[iSpecies];
+        energy +=  (3.0/2.0 + rotation_modes[iSpecies]/2.0) * (Temperature_Inf - temperature_ref[iSpecies])
+                 + energy_v + energy_e + energy_formation + 0.5*sqvel;
+        energy_ve += energy_v + energy_e;
+      }
+      if (config->GetIonization()) {
+        iSpecies = nSpecies - 1;
+        energy_formation = enthalpy_formation[iSpecies] - UNIVERSAL_GAS_CONSTANT/molar_mass[iSpecies]*temperature_ref[iSpecies];
+        energy          -= (3.0/2.0) * (Temperature_Inf-temperature_ref[iSpecies]) + energy_formation + 0.5*sqvel;
+        energy_ve       += (3.0/2.0) * (Temperature_ve_Inf-temperature_ref[iSpecies]) + energy_formation + 0.5*sqvel;
+      }
+      
+      
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        Solution[iSpecies] = Density_Inf*MassFrac_Inf[iSpecies];
+      for (iDim = 0; iDim < nDim; iDim++)
+        Solution[nSpecies+iDim] = Velocity_Inf[iDim]*Density_Inf;
+      Solution[nSpecies+nDim]   = Density_Inf*energy;
+      Solution[nSpecies+nDim+1] = Density_Inf*energy_ve;
       
       node[iPoint]->SetSolution(Solution);
       node[iPoint]->SetSolution_Old(Solution);

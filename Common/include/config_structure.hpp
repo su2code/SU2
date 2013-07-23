@@ -88,7 +88,8 @@ private:
 	Frozen_Visc,			/*!< \brief Flag for adjoint problem with/without frozen viscosity. */
 	Hold_GridFixed,	/*!< \brief Flag hold fixed some part of the mesh during the deformation. */
 	Axisymmetric, /*!< \brief Flag for axisymmetric calculations */
-	Show_Adj_Sens; /*!< \brief Flag for outputting sensitivities on exit */
+	Show_Adj_Sens, /*!< \brief Flag for outputting sensitivities on exit */
+  ionization;  /*!< \brief Flag for determining if free electron gas is in the mixture */
 	bool Visualize_Partition;	/*!< \brief Flag to visualize each partition in the DDM. */
 	bool Visualize_Deformation;	/*!< \brief Flag to visualize the deformation in the MDC. */
     double Damp_Nacelle_Inflow;	/*!< \brief Damping factor for the engine inlet. */
@@ -3221,6 +3222,11 @@ public:
 	 */
 
 	bool GetRestart_Flow(void);
+  
+  /*!
+   * \brief Indicates whether electron gas is present in the gas mixture.
+   */
+  bool GetIonization(void);
 
 	/*! 
 	 * \brief Information about doing a full multigrid strategy (start in the coarse level).

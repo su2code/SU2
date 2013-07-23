@@ -286,6 +286,8 @@ inline bool CConfig::GetWrt_Unsteady(void) { return Wrt_Unsteady; }
 
 inline bool CConfig::GetLowFidelitySim(void) { return LowFidelitySim; }
 
+inline bool CConfig::GetIonization(void) { return ionization; }
+
 inline unsigned short CConfig::GetKind_Solver(void) { return Kind_Solver; }
 
 inline unsigned short CConfig::GetKind_GasModel(void) { return Kind_GasModel; }

@@ -291,11 +291,13 @@ inline bool CVariable::SetPressure(double Gamma, double turb_ke) { return false;
 
 inline void CVariable::SetPressure() { }
 
+inline void CVariable::SetDensity() { }
+
 inline void CVariable::SetDeltaPressure(double *val_velocity, double Gamma) { }
 
 inline void CVariable::SetSoundSpeed(CConfig *config) { }
 
-inline void CVariable::SetSoundSpeed() { }
+inline bool CVariable::SetSoundSpeed() { false; }
 
 inline bool CVariable::SetSoundSpeed(double Gamma) { return false; }
 
@@ -782,15 +784,6 @@ inline double CTNE2EulerVariable::GetVelocity2(void) { return Velocity2; }
 
 inline void CTNE2EulerVariable::SetEnthalpy(void) { Primitive[nDim+3] = (Solution[nVar-1] + Primitive[nDim+1]) / Solution[0]; }
 
-inline bool CTNE2EulerVariable::SetSoundSpeed(double Gamma) {
-   double radical = Gamma*Primitive[nDim+1]/Solution[0];
-   if (radical < 0.0) return true;
-   else {
-      Primitive[nDim+4] = sqrt(radical);
-      return false;
-   }
-}
-
 inline double CTNE2EulerVariable::GetPrimVar(unsigned short val_var) { return Primitive[val_var]; }
 
 inline void CTNE2EulerVariable::SetPrimVar(unsigned short val_var, double val_prim) { Primitive[val_var] = val_prim; }
@@ -801,19 +794,6 @@ inline void CTNE2EulerVariable::SetPrimVar(double *val_prim) {
 }
 
 inline double *CTNE2EulerVariable::GetPrimVar(void) { return Primitive; }
-
-inline void CTNE2EulerVariable::SetVelocity(double *val_velocity, bool val_incomp) {
-	if (val_incomp) {
-		for (unsigned short iDim = 0; iDim < nDim; iDim++)
-			Solution[iDim+1] = val_velocity[iDim]*Primitive[0]; 
-	}
-	else {
-		for (unsigned short iDim = 0; iDim < nDim; iDim++) 
-			Solution[iDim+1] = val_velocity[iDim]*Solution[0]; 
-	}
-}
-
-inline void CTNE2EulerVariable::SetVelocity2(void) { Velocity2 = 0.0; for (unsigned short iDim = 0; iDim < nDim; iDim++) Velocity2 += Solution[iDim+1]*Solution[iDim+1]/(Solution[0]*Solution[0]); }
 
 inline void CTNE2EulerVariable::SetVelocityInc2(void) { Velocity2 = 0.0; for (unsigned short iDim = 0; iDim < nDim; iDim++) Velocity2 += (Solution[iDim+1]/Primitive[0])*(Solution[iDim+1]/Primitive[0]); }
 

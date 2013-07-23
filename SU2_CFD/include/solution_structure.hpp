@@ -6778,7 +6778,8 @@ protected:
 	*Velocity_Inlet,	/*!< \brief Flow Velocity vector at the inlet. */
 	*Velocity_Outlet,	/*!< \brief Flow Velocity vector at the outlet. */
   *MassFrac_Inf,    /*!< \brief Mass fraction at the free stream. */
-  Temperature_ve_Inf; /*!< \brief Vibrational-electronic energy of the free stream. */
+  Temperature_Inf, /*!< \brief Translational-rotational temperature of the free stream. */
+  Temperature_ve_Inf; /*!< \brief Vibrational-electronic temperature of the free stream. */
 	double *CDrag_Inv,	/*!< \brief Drag coefficient (inviscid contribution) for each boundary. */
 	*CLift_Inv,			/*!< \brief Lift coefficient (inviscid contribution) for each boundary. */
 	*CSideForce_Inv,		/*!< \brief Sideforce coefficient (inviscid contribution) for each boundary. */

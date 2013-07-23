@@ -1458,9 +1458,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
                (Kind_Solver == ADJ_FREE_SURFACE_RANS));
   
   if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
-		unsigned short iSpe, jSpe, iRxn, ii;
-		double sum, conversionFact;
-		double GammaMonatomic, GammaDiatomic;
+
 		if (val_izone == ZONE_1 ) {
 			Divide_Element = true;
 			Restart_FlowFileName = "restart_phi.dat";
@@ -1471,8 +1469,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       case ONESPECIES:
         /*--- Define parameters of the gas model ---*/
         nMonatomics = 1;
-        nDiatomics = 0;
-        nSpecies = nMonatomics + nDiatomics;
+        nDiatomics  = 0;
+        nSpecies    = nMonatomics + nDiatomics;
+        ionization  = false;
         
         /*--- Allocate vectors for gas properties ---*/
         Molar_Mass         = new double[nSpecies];
@@ -1497,8 +1496,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       case N2:
         /*--- Define parameters of the gas model ---*/
         nMonatomics = 1;
-        nDiatomics = 1;
-        nSpecies = nMonatomics + nDiatomics;
+        nDiatomics  = 1;
+        nSpecies    = nMonatomics + nDiatomics;
+        ionization  = false;
         
         /*--- Allocate vectors for gas properties ---*/
         Molar_Mass         = new double[nSpecies];

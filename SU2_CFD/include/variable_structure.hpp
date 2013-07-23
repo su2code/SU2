@@ -1056,6 +1056,11 @@ public:
 	 * \brief A virtual member.
 	 */
 	virtual void SetPressure(void);
+  
+  /*!
+	 * \brief A virtual member.
+	 */
+	virtual void SetDensity(void);
 
 	/*!
 	 * \brief A virtual member.
@@ -1079,7 +1084,7 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 */		
-	virtual void SetSoundSpeed(void);
+	virtual bool SetSoundSpeed(void);
 
 	/*!
 	 * \brief A virtual member.
@@ -3545,6 +3550,11 @@ public:
 	 */
 	void SetVelocity2(void);
   
+  /*!
+	 * \brief Set the value of the mixture density.
+	 */
+	void SetDensity(void);
+  
 	/*!
 	 * \brief Set the value of the pressure.  Requires T&Tve calculation.
 	 */
@@ -3554,7 +3564,7 @@ public:
 	 * \brief Set the value of the speed of the sound.
 	 * \param[in] Gamma - Value of Gamma.
 	 */
-	bool SetSoundSpeed(double Gamma);
+	bool SetSoundSpeed(void);
   
 	/*!
 	 * \brief Set the value of the enthalpy.
@@ -3564,7 +3574,7 @@ public:
 	/*!
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
-	void SetPrimVar_Compressible(double Gamma, double Gas_Constant);
+	void SetPrimVar_Compressible(CConfig *config);
 	
 	/*!
 	 * \brief Get the primitive variables.
