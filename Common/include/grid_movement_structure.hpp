@@ -58,65 +58,74 @@ public:
 	 * \brief Destructor of the class. 
 	 */
 	~CGridMovement(void);
+  
+  
+  /*!
+	 * \brief A pure virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void SetSurface_Deformation(CGeometry *geometry, CConfig *config);
+  
 };
 
 /*! 
- * \class CFreeFormChunk
- * \brief Class for defining the free form chunk structure.
+ * \class CFreeFormDefBox
+ * \brief Class for defining the free form FFDBox structure.
  * \author F. Palacios & A. Galdran.
  * \version 2.0.5
  */
-class CFreeFormChunk : public CGridMovement {
+class CFreeFormDefBox : public CGridMovement {
 public:
 	unsigned short nDim;						/*!< \brief Number of dimensions of the problem. */
-	unsigned short nCornerPoints,		/*!< \brief Number of corner points of the chunk. */
-	nControlPoints;									/*!< \brief Number of control points of the chunk. */
+	unsigned short nCornerPoints,		/*!< \brief Number of corner points of the FFDBox. */
+	nControlPoints;									/*!< \brief Number of control points of the FFDBox. */
 	double **Coord_Corner_Points,		/*!< \brief Coordinates of the corner points. */
 	****Coord_Control_Points,				/*!< \brief Coordinates of the control points. */
 	****ParCoord_Control_Points,		/*!< \brief Coordinates of the control points. */
 	****Coord_Control_Points_Copy,	/*!< \brief Coordinates of the control points (copy). */
 	****Coord_SupportCP;						/*!< \brief Coordinates of the support control points. */
-	unsigned short lOrder,	/*!< \brief Order of the chunk in the i direction. */
-	mOrder,									/*!< \brief Order of the chunk in the j direction. */
-	nOrder;									/*!< \brief Order of the chunk in the k direction. */
-	unsigned short lDegree, /*!< \brief Degree of the chunk in the i direction. */
-	mDegree,								/*!< \brief Degree of the chunk in the j direction. */
-	nDegree;								/*!< \brief Degree of the chunk in the k direction. */
+	unsigned short lOrder,	/*!< \brief Order of the FFDBox in the i direction. */
+	mOrder,									/*!< \brief Order of the FFDBox in the j direction. */
+	nOrder;									/*!< \brief Order of the FFDBox in the k direction. */
+	unsigned short lDegree, /*!< \brief Degree of the FFDBox in the i direction. */
+	mDegree,								/*!< \brief Degree of the FFDBox in the j direction. */
+	nDegree;								/*!< \brief Degree of the FFDBox in the k direction. */
 	double *param_coord, *param_coord_,	/*!< \brief Parametric coordinates of a point. */
 	*cart_coord, *cart_coord_;			/*!< \brief Cartesian coordinates of a point. */
 	double *gradient;			/*!< \brief Gradient of the point inversion process. */
-	double MaxCoord[3];		/*!< \brief Maximum coordinates of the chunk. */
-	double MinCoord[3];		/*!< \brief Minimum coordinates of the chunk. */
-	string Tag;						/*!< \brief Tag to identify the chunk. */
+	double MaxCoord[3];		/*!< \brief Maximum coordinates of the FFDBox. */
+	double MinCoord[3];		/*!< \brief Minimum coordinates of the FFDBox. */
+	string Tag;						/*!< \brief Tag to identify the FFDBox. */
 	unsigned short Level;								/*!< \brief Nested level of the FFD box. */
-	vector<double> CartesianCoord[3];		/*!< \brief Vector with all the cartesian coordinates in the FFD chunk. */
-	vector<double> ParametricCoord[3];	/*!< \brief Vector with all the parametrics coordinates in the FFD chunk. */
-	vector<unsigned short> MarkerIndex;	/*!< \brief Vector with all markers in the FFD chunk. */
-	vector<unsigned long> VertexIndex;	/*!< \brief Vector with all vertex index in the FFD chunk. */
-	vector<unsigned long> PointIndex;		/*!< \brief Vector with all points index in the FFD chunk. */
-	unsigned long nSurfacePoint;				/*!< \brief Number of surfaces in the FFD chunk. */
-	vector<string> ParentChunk;					/*!< \brief Vector with all the parent FFD chunk. */
-	vector<string> ChildChunk;					/*!< \brief Vector with all the child FFD chunk. */
+	vector<double> CartesianCoord[3];		/*!< \brief Vector with all the cartesian coordinates in the FFD FFDBox. */
+	vector<double> ParametricCoord[3];	/*!< \brief Vector with all the parametrics coordinates in the FFD FFDBox. */
+	vector<unsigned short> MarkerIndex;	/*!< \brief Vector with all markers in the FFD FFDBox. */
+	vector<unsigned long> VertexIndex;	/*!< \brief Vector with all vertex index in the FFD FFDBox. */
+	vector<unsigned long> PointIndex;		/*!< \brief Vector with all points index in the FFD FFDBox. */
+	unsigned long nSurfacePoint;				/*!< \brief Number of surfaces in the FFD FFDBox. */
+	vector<string> ParentFFDBox;					/*!< \brief Vector with all the parent FFD FFDBox. */
+	vector<string> ChildFFDBox;					/*!< \brief Vector with all the child FFD FFDBox. */
 	
 public:
 	
 	/*! 
 	 * \brief Constructor of the class.
 	 */
-	CFreeFormChunk(void);
+	CFreeFormDefBox(void);
 	
 	/*! 
 	 * \overload
-	 * \param[in] val_lDegree - Degree of the chunk in the i direction.
-	 * \param[in] val_mDegree - Degree of the chunk in the j direction.
-	 * \param[in] val_nDegree - Degree of the chunk in the k direction.
+	 * \param[in] val_lDegree - Degree of the FFDBox in the i direction.
+	 * \param[in] val_mDegree - Degree of the FFDBox in the j direction.
+	 * \param[in] val_nDegree - Degree of the FFDBox in the k direction.
 	 */	
-	CFreeFormChunk(unsigned short val_lDegree, unsigned short val_mDegree, unsigned short val_nDegree);
+	CFreeFormDefBox(unsigned short val_lDegree, unsigned short val_mDegree, unsigned short val_nDegree);
 
 	/*! 
 	 * \brief Destructor of the class. 
 	 */
-	~CFreeFormChunk(void);
+	~CFreeFormDefBox(void);
 	
 	/*! 
 	 * \brief Add to the vector of markers a new marker.
@@ -149,16 +158,16 @@ public:
 	void Set_ParametricCoord(double *val_coord);
 	
 	/*! 
-	 * \brief Add to the vector of parent chunks a new FFD chunk.
-	 * \param[in] val_iParentChunk - New parent chunk in the vector.
+	 * \brief Add to the vector of parent FFDBoxs a new FFD FFDBox.
+	 * \param[in] val_iParentFFDBox - New parent FFDBox in the vector.
 	 */	
-	void SetParentChunk(string val_iParentChunk);
+	void SetParentFFDBox(string val_iParentFFDBox);
 	
 	/*! 
-	 * \brief Add to the vector of child chunks a new FFD chunk.
-	 * \param[in] val_iChildChunk - New child chunk in the vector.
+	 * \brief Add to the vector of child FFDBoxs a new FFD FFDBox.
+	 * \param[in] val_iChildFFDBox - New child FFDBox in the vector.
 	 */	
-	void SetChildChunk(string val_iChildChunk);
+	void SetChildFFDBox(string val_iChildFFDBox);
 	
 	/*! 
 	 * \brief _______________.
@@ -218,38 +227,38 @@ public:
 	
 	/*! 
 	 * \brief _______________.
-	 * \param[in] GetnParentChunk - _______________.
+	 * \param[in] GetnParentFFDBox - _______________.
 	 * \return _______________.
 	 */	
-	unsigned short GetnParentChunk(void);
+	unsigned short GetnParentFFDBox(void);
 	
 	/*! 
 	 * \brief _______________.
-	 * \param[in] GetnChildChunk - _______________.
+	 * \param[in] GetnChildFFDBox - _______________.
 	 * \return _______________.
 	 */	
-	unsigned short GetnChildChunk(void);
+	unsigned short GetnChildFFDBox(void);
 	
 	/*! 
 	 * \brief _______________.
-	 * \param[in] val_ParentChunk - _______________.
+	 * \param[in] val_ParentFFDBox - _______________.
 	 * \return _______________.
 	 */	
-	string GetParentChunkTag(unsigned short val_ParentChunk);
+	string GetParentFFDBoxTag(unsigned short val_ParentFFDBox);
 	
 	/*! 
 	 * \brief _______________.
-	 * \param[in] val_ChildChunk - _______________.
+	 * \param[in] val_ChildFFDBox - _______________.
 	 * \return _______________.
 	 */	
-	string GetChildChunkTag(unsigned short val_ChildChunk);
+	string GetChildFFDBoxTag(unsigned short val_ChildFFDBox);
 	
 	/*! 
-	 * \brief Change the the position of the corners of the unitary chunk, 
-	 *        and find the position of the control points for the chunk
-	 * \param[in] chunk - Original chunk where we want to compute the control points.
+	 * \brief Change the the position of the corners of the unitary FFDBox, 
+	 *        and find the position of the control points for the FFDBox
+	 * \param[in] FFDBox - Original FFDBox where we want to compute the control points.
 	 */	
-	void SetSupportCPChange(CFreeFormChunk *chunk);
+	void SetSupportCPChange(CFreeFormDefBox *FFDBox);
 	
 	/*! 
 	 * \brief Set the number of corner points.
@@ -276,7 +285,7 @@ public:
 	unsigned long GetnSurfacePoints(void);
 	
 	/*! 
-	 * \brief Set the corner point for the unitary chunk.
+	 * \brief Set the corner point for the unitary FFDBox.
 	 */	
 	void SetUnitCornerPoints(void);
 	
@@ -299,18 +308,18 @@ public:
 	/*! 
 	 * \brief Set the coordinates of the control points.
 	 * \param[in] val_coord - Coordinates of the control point.
-	 * \param[in] iDegree - Index of the chunk, i direction.
-	 * \param[in] jDegree - Index of the chunk, j direction.
-	 * \param[in] kDegree - Index of the chunk, k direction.
+	 * \param[in] iDegree - Index of the FFDBox, i direction.
+	 * \param[in] jDegree - Index of the FFDBox, j direction.
+	 * \param[in] kDegree - Index of the FFDBox, k direction.
 	 */	
 	void SetCoordControlPoints(double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree);	
 
 	/*! 
 	 * \brief Set the coordinates of the control points.
 	 * \param[in] val_coord - Coordinates of the control point.
-	 * \param[in] iDegree - Index of the chunk, i direction.
-	 * \param[in] jDegree - Index of the chunk, j direction.
-	 * \param[in] kDegree - Index of the chunk, k direction.
+	 * \param[in] iDegree - Index of the FFDBox, i direction.
+	 * \param[in] jDegree - Index of the FFDBox, j direction.
+	 * \param[in] kDegree - Index of the FFDBox, k direction.
 	 */	
 	void SetParCoordControlPoints(double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree);	
 	
@@ -354,9 +363,9 @@ public:
 	
 	/*! 
 	 * \brief Set the control points of the final chuck in a unitary hexahedron free form.
-	 * \param[in] chunk - Original chunk where we want to compute the control points.
+	 * \param[in] FFDBox - Original FFDBox where we want to compute the control points.
 	 */	
-	void SetSupportCP(CFreeFormChunk *chunk);
+	void SetSupportCP(CFreeFormDefBox *FFDBox);
 
 	/*! 
 	 * \brief Set the new value of the coordinates of the control points.
@@ -372,10 +381,10 @@ public:
 	
 	/*! 
 	 * \brief Set the tecplot file of the FFD chuck structure.
-	 * \param[in] chunk_filename - Name of the output file with the FFD chunk structure.
+	 * \param[in] FFDBox_filename - Name of the output file with the FFD FFDBox structure.
 	 * \param[in] new_file - New file or add to the existing file.
 	 */		
-	void SetTecplot(char chunk_filename[200], bool new_file);
+	void SetTecplot(char FFDBox_filename[200], bool new_file);
 	
 	/*! 
 	 * \brief Set the cartesian coords of a point in R^3 and convert them to the parametric coords of
@@ -455,28 +464,28 @@ public:
 	unsigned short Factorial(unsigned short n);
 	
 	/*! 
-	 * \brief Get the order in the l direction of the FFD chunk.
-	 * \return Order in the l direction of the FFD chunk.
+	 * \brief Get the order in the l direction of the FFD FFDBox.
+	 * \return Order in the l direction of the FFD FFDBox.
 	 */		
 	unsigned short GetlOrder(void);
 	
 	/*! 
-	 * \brief Get the order in the m direction of the FFD chunk.
-	 * \return Order in the m direction of the FFD chunk.
+	 * \brief Get the order in the m direction of the FFD FFDBox.
+	 * \return Order in the m direction of the FFD FFDBox.
 	 */		
 	unsigned short GetmOrder(void);
 	
 	/*! 
-	 * \brief Get the order in the n direction of the FFD chunk.
-	 * \return Order in the n direction of the FFD chunk.
+	 * \brief Get the order in the n direction of the FFD FFDBox.
+	 * \return Order in the n direction of the FFD FFDBox.
 	 */		
 	unsigned short GetnOrder(void);
 	
 	/*! 
-	 * \brief Set, at each vertex, the index of the free form chunk that contains the vertex.
+	 * \brief Set, at each vertex, the index of the free form FFDBox that contains the vertex.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iChunk - Index of the chunk.
+	 * \param[in] iFFDBox - Index of the FFDBox.
 	 */		
 	bool GetPointFFD(CGeometry *geometry, CConfig *config, unsigned long iPoint);
 	
@@ -484,9 +493,9 @@ public:
 	 * \brief Set the zone of the computational domain that is going to be deformed.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iChunk - Index of the chunk.
+	 * \param[in] iFFDBox - Index of the FFDBox.
 	 */		
-	void SetDeformationZone(CGeometry *geometry, CConfig *config, unsigned short iChunk);
+	void SetDeformationZone(CGeometry *geometry, CConfig *config, unsigned short iFFDBox);
 	
 	/*! 
 	 * \brief The "order" derivative of the i-th Bernstein polynomial of degree n, evaluated at t, 
@@ -621,26 +630,26 @@ public:
 	void Gauss_Elimination(double** A, double* rhs, unsigned short nVar);
 	
 	/*! 
-	 * \brief Set the tag that identify a chunk.
+	 * \brief Set the tag that identify a FFDBox.
 	 * \param[in] val_tag - value of the tag.
 	 */	
 	void SetTag(string val_tag);
 	
 	/*! 
-	 * \brief Get the tag that identify a chunk.
-	 * \return Value of the tag that identigy the chunk.
+	 * \brief Get the tag that identify a FFDBox.
+	 * \return Value of the tag that identigy the FFDBox.
 	 */	
 	string GetTag(void);
 	
 	/*! 
-	 * \brief Set the nested level of the chunk.
+	 * \brief Set the nested level of the FFDBox.
 	 * \param[in] val_level - value of the level.
 	 */	
 	void SetLevel(unsigned short val_level);
 	
 	/*! 
-	 * \brief Get the nested level of the chunk.
-	 * \return Value of the nested level of the the chunk.
+	 * \brief Get the nested level of the FFDBox.
+	 * \return Value of the nested level of the the FFDBox.
 	 */	
 	unsigned short GetLevel(void);
 };
@@ -674,13 +683,6 @@ public:
 	 * \brief Destructor of the class. 
 	 */
 	~CVolumetricMovement(void);
-	
-	/*! 
-	 * \brief __________________________
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetSolution_Smoothing(CGeometry *geometry, CConfig *config);
 	
 	/*! 
 	 * \brief __________________________
@@ -871,21 +873,13 @@ public:
 	 */
   void SetUpTypicalSectionWingModel(double (&PHI)[2][2],double (&lambda)[2], CConfig *config);
   
-	/*!
-	 * \brief Grid deformation using the spring analogy method.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] UpdateGeo - Update geometry.
-	 */
-	void SpringMethod(CGeometry *geometry, CConfig *config, bool UpdateGeo);
-  
   /*!
 	 * \brief Grid deformation using the spring analogy method.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] UpdateGeo - Update geometry.
 	 */
-	void FEAMethod(CGeometry *geometry, CConfig *config, bool UpdateGeo);
+	void SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo);
   
   /*!
 	 * \brief Compute the determinant of a 3 by 3 matrix.
@@ -904,9 +898,10 @@ public:
  */
 class CSurfaceMovement : public CGridMovement {
 protected:
-	unsigned short nChunk;	/*!< \brief Number of FFD chunks. */
-	unsigned short nLevel;	/*!< \brief Level of the FFD chunks (parent/child). */
-	bool ChunkDefinition;	/*!< \brief If the FFD chunk has been defined in the input file. */
+  CFreeFormDefBox** FFDBox;	/*!< \brief Definition of the Free Form Deformation Box. */
+	unsigned short nFFDBox;	/*!< \brief Number of FFD FFDBoxs. */
+	unsigned short nLevel;	/*!< \brief Level of the FFD FFDBoxs (parent/child). */
+	bool FFDBoxDefinition;	/*!< \brief If the FFD FFDBox has been defined in the input file. */
 
 public:
 	
@@ -1009,7 +1004,7 @@ public:
 	 * \param[in] iter - Current physical time iteration.
 	 */
 	void SetBoundary_Flutter3D(CGeometry *geometry, CConfig *config, 
-                             CFreeFormChunk **chunk, unsigned long iter);	
+                             CFreeFormDefBox **FFDBox, unsigned long iter);	
 	
   /*! 
 	 * \brief Set the collective pitch for a blade surface movement.
@@ -1044,118 +1039,125 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void CopyBoundary(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief Set the surface/boundary deformation.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetSurface_Deformation(CGeometry *geometry, CConfig *config);
 	
 	/*! 
 	 * \brief Compute the parametric coordinates of a grid point using a point inversion strategy
-	 *        in the free form chunk.
+	 *        in the free form FFDBox.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] chunk - Array with all the free forms chunks of the computation.
+	 * \param[in] FFDBox - Array with all the free forms FFDBoxs of the computation.
 	 */		
-	void SetParametricCoord(CGeometry *geometry, CConfig *config, CFreeFormChunk *chunk, unsigned short iChunk);
+	void SetParametricCoord(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox);
 	
 	/*! 
 	 * \brief Update the parametric coordinates of a grid point using a point inversion strategy
-	 *        in the free form chunk.
+	 *        in the free form FFDBox.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] chunk - Array with all the free forms chunks of the computation.
+	 * \param[in] FFDBox - Array with all the free forms FFDBoxs of the computation.
 	 */		
-	void UpdateParametricCoord(CGeometry *geometry, CConfig *config, CFreeFormChunk *chunk, unsigned short iChunk);
+	void UpdateParametricCoord(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox);
 	
 	/*! 
 	 * \brief _____________________.
 	 * \param[in] geometry - _____________________.
 	 * \param[in] config - _____________________.
-	 * \param[in] chunk - _____________________.
+	 * \param[in] FFDBox - _____________________.
 	 */	
-	void SetParametricCoordCP(CGeometry *geometry, CConfig *config, CFreeFormChunk *ChunkParent, CFreeFormChunk *ChunkChild);
+	void SetParametricCoordCP(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBoxParent, CFreeFormDefBox *FFDBoxChild);
 	
 	/*! 
 	 * \brief _____________________.
 	 * \param[in] geometry - _____________________.
 	 * \param[in] config - _____________________.
-	 * \param[in] chunk - _____________________.
+	 * \param[in] FFDBox - _____________________.
 	 */	
-	void GetCartesianCoordCP(CGeometry *geometry, CConfig *config, CFreeFormChunk *ChunkParent, CFreeFormChunk *ChunkChild);
+	void GetCartesianCoordCP(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBoxParent, CFreeFormDefBox *FFDBoxChild);
 
 	/*! 
 	 * \brief Recompute the cartesian coordinates using the control points position.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] chunk - Array with all the free forms chunks of the computation.
+	 * \param[in] FFDBox - Array with all the free forms FFDBoxs of the computation.
 	 */		
-	void SetCartesianCoord(CGeometry *geometry, CConfig *config, CFreeFormChunk *chunk, unsigned short iChunk);
+	void SetCartesianCoord(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox);
 	
 	/*! 
 	 * \brief Set the deformation of the Free From box using the control point position.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] chunk - Array with all the free forms chunks of the computation.
+	 * \param[in] FFDBox - Array with all the free forms FFDBoxs of the computation.
 	 * \param[in] iDV - Index of the design variable.
 	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */		
-	void SetFFDCPChange(CGeometry *geometry, CConfig *config, CFreeFormChunk *chunk, unsigned short iChunk, unsigned short iDV, bool ResetDef);
+	void SetFFDCPChange(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, unsigned short iDV, bool ResetDef);
 	
 	/*! 
 	 * \brief Set a camber deformation of the Free From box using the control point position.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] chunk - Array with all the free forms chunks of the computation.
+	 * \param[in] FFDBox - Array with all the free forms FFDBoxs of the computation.
 	 * \param[in] iDV - Index of the design variable.
 	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */		
-	void SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeFormChunk *chunk, unsigned short iChunk, unsigned short iDV, bool ResetDef);
+	void SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, unsigned short iDV, bool ResetDef);
 	
 	/*! 
 	 * \brief Set a thickness deformation of the Free From box using the control point position.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] chunk - Array with all the free forms chunks of the computation.
+	 * \param[in] FFDBox - Array with all the free forms FFDBoxs of the computation.
 	 * \param[in] iDV - Index of the design variable.
 	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */		
-	void SetFFDThickness(CGeometry *geometry, CConfig *config, CFreeFormChunk *chunk, unsigned short iChunk, unsigned short iDV, bool ResetDef);
+	void SetFFDThickness(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, unsigned short iDV, bool ResetDef);
 	
 	/*! 
 	 * \brief Set a volume deformation of the Free From box using the control point position.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] chunk - Array with all the free forms chunks of the computation.
+	 * \param[in] FFDBox - Array with all the free forms FFDBoxs of the computation.
 	 * \param[in] iDV - Index of the design variable.
 	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */		
-	void SetFFDVolume(CGeometry *geometry, CConfig *config, CFreeFormChunk *chunk, unsigned short iChunk, unsigned short iDV, bool ResetDef);
+	void SetFFDVolume(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, unsigned short iDV, bool ResetDef);
 	
 	/*! 
 	 * \brief Set a dihedral angle deformation of the Free From box using the control point position.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] chunk - Array with all the free forms chunks of the computation.
+	 * \param[in] FFDBox - Array with all the free forms FFDBoxs of the computation.
 	 * \param[in] iDV - Index of the design variable.
 	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */		
-	void SetFFDDihedralAngle(CGeometry *geometry, CConfig *config, CFreeFormChunk *chunk, unsigned short iChunk, unsigned short iDV, bool ResetDef);
+	void SetFFDDihedralAngle(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, unsigned short iDV, bool ResetDef);
 	
 	/*! 
 	 * \brief Set a twist angle deformation of the Free From box using the control point position.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] chunk - Array with all the free forms chunks of the computation.
+	 * \param[in] FFDBox - Array with all the free forms FFDBoxs of the computation.
 	 * \param[in] iDV - Index of the design variable.
 	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */		
-	void SetFFDTwistAngle(CGeometry *geometry, CConfig *config, CFreeFormChunk *chunk, unsigned short iChunk, unsigned short iDV, bool ResetDef);
+	void SetFFDTwistAngle(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, unsigned short iDV, bool ResetDef);
 	
 	/*! 
 	 * \brief Set a rotation angle deformation of the Free From box using the control point position.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] chunk - Array with all the free forms chunks of the computation.
+	 * \param[in] FFDBox - Array with all the free forms FFDBoxs of the computation.
 	 * \param[in] iDV - Index of the design variable.
 	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */		
-	void SetFFDRotation(CGeometry *geometry, CConfig *config, CFreeFormChunk *chunk, unsigned short iChunk, unsigned short iDV, bool ResetDef);
+	void SetFFDRotation(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, unsigned short iDV, bool ResetDef);
 	
 	/*! 
 	 * \brief Read the free form information from the grid input file.
@@ -1163,33 +1165,33 @@ public:
 	 *       coordinates information, the code will compute that information.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] chunk - Array with all the free forms chunks of the computation.
+	 * \param[in] FFDBox - Array with all the free forms FFDBoxs of the computation.
 	 * \param[in] val_mesh_filename - Name of the grid input file.
    * \param[in] val_vertex - With vertex information.
 	 */		
-	void ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFormChunk **chunk, string val_mesh_filename, bool val_fullmesh);
+	void ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFormDefBox **FFDBox, string val_mesh_filename, bool val_fullmesh);
 	
 	/*! 
 	 * \brief Write the Free Form information in the SU2 file.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] chunk - Array with all the free forms chunks of the computation.
+	 * \param[in] FFDBox - Array with all the free forms FFDBoxs of the computation.
 	 * \param[in] val_mesh_filename - Name of the grid output file.
 	 */		
-	void WriteFFDInfo(CGeometry *geometry, CConfig *config, CFreeFormChunk **chunk, string val_mesh_filename, bool val_fullmesh);
+	void WriteFFDInfo(CGeometry *geometry, CConfig *config, string val_mesh_filename, bool val_fullmesh);
 	
 	/*! 
-	 * \brief Get information about if there is a complete chunk definition, or it is necessary to 
+	 * \brief Get information about if there is a complete FFDBox definition, or it is necessary to 
 	 *        compute the parametric coordinates.
 	 * \return <code>TRUE</code> if the input grid file has a complete information; otherwise <code>FALSE</code>.
 	 */		
-	bool GetChunkDefinition(void);
+	bool GetFFDBoxDefinition(void);
 	
 	/*! 
-	 * \brief Obtain the number of chunks.
-	 * \return Number of FFD chunks.
+	 * \brief Obtain the number of FFDBoxs.
+	 * \return Number of FFD FFDBoxs.
 	 */		
-	unsigned short GetnChunk(void);
+	unsigned short GetnFFDBox(void);
 	
 	/*! 
 	 * \brief Obtain the number of levels.

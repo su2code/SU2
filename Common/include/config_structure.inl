@@ -418,8 +418,6 @@ inline unsigned short CConfig::GetAdjTurb_Linear_Iter(void) { return AdjTurb_Lin
 
 inline double CConfig::GetAdjTurb_CFLRedCoeff(void) { return AdjTurb_CFLRedCoeff; }
 
-inline double CConfig::GetGridDef_Error(void) { return GridDef_Error; }
-
 inline unsigned long CConfig::GetFEA_Iter(void) { return FEA_Iter; }
 
 inline unsigned short CConfig::GetKind_Adaptation(void) { return Kind_Adaptation; }

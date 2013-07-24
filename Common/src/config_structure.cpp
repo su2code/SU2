@@ -865,8 +865,6 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddArrayOption("HOLD_GRID_FIXED_COORD", 6, Hold_GridFixed_Coord, default_vec_6d);
 	/* DESCRIPTION: Grid deformation technique */
 	AddEnumOption("GRID_DEFORM_METHOD", Kind_GridDef_Method, Deform_Map, "SPRING");
-	/* DESCRIPTION: Maximum error in the grid deformation */
-	AddScalarOption("GRID_DEFORM_ERROR", GridDef_Error, 1E-14);
 	/* DESCRIPTION: Visualize the deformation */
 	AddSpecialOption("VISUALIZE_DEFORMATION", Visualize_Deformation, SetBoolOption, false);
 	/* DESCRIPTION: Number of iterations for FEA mesh deformation (surface deformation increments) */
@@ -2829,7 +2827,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case SPRING: cout << "Grid deformation using a classical spring method." << endl; break;
       case FEA: cout << "Grid deformation using a linear elasticity method." << endl; break;
 		}
-		cout << "Convergence criteria of the linear solver: "<< GridDef_Error <<"."<<endl;
 
 		if (Design_Variable[0] != NO_DEFORMATION && Design_Variable[0] != SURFACE_FILE) {
 			if (Hold_GridFixed == YES) cout << "Hold some regions of the mesh fixed (hardcode implementation)." <<endl;
