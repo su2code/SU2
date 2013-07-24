@@ -1144,7 +1144,7 @@ void CPlasmaVariable::SetVelocity2() {
 	}
 }
 
-void CPlasmaVariable::SetSoundSpeed(CConfig *config) {
+bool CPlasmaVariable::SetSoundSpeed(CConfig *config) {
 
 	unsigned short loc = 0, iSpecies;
 	double Gamma, Enthalpy_formation;
@@ -1164,6 +1164,8 @@ void CPlasmaVariable::SetSoundSpeed(CConfig *config) {
 		Enthalpy_formation = config->GetEnthalpy_Formation(iSpecies);
 		Primitive[iSpecies][nDim+5] = sqrt(fabs(Gamma*(Gamma - 1.0)*(Energy - 0.5*Velocity2[iSpecies] - Energy_vib - Energy_el - Enthalpy_formation)));
 	}
+  
+  return true;
 }
 
 bool CPlasmaVariable::SetPressure(CConfig *config) {
@@ -1893,9 +1895,6 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_density, double *val_massfrac,
 CTNE2EulerVariable::CTNE2EulerVariable(double *val_solution, unsigned short val_ndim, unsigned short val_nvar, CConfig *config) : CVariable(val_ndim, val_nvar, config) {
 	unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
   
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  
   /*--- Array initialization ---*/
 	Primitive = NULL;
 	Gradient_Primitive = NULL;
@@ -2068,7 +2067,11 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   /*--- Assign translational-rotational temperature ---*/
   Primitive[nSpecies] = (rhoe - rhoev - rhoeform + rhoeref - 0.5*rho*sqvel) / rhoCvtr;
   
-  if (Primitive[nSpecies] > 0.0) return false;
+  /*--- Assign vibrational-rotational temperature ---*/
+  //NOTE:  NOT CORRECT!!!  NEED TO SOLVE FOR TVE PROPERLY!!!
+  Primitive[nSpecies+1] = Primitive[nSpecies];
+  
+  if ((Primitive[nSpecies] > 0.0) && (Primitive[nSpecies+1])) return false;
   else return true;
 }
 
@@ -2094,13 +2097,35 @@ bool CTNE2EulerVariable::SetPressure(CConfig *config) {
   else return true;
 }
 
-bool CTNE2EulerVariable::SetSoundSpeed(void) {
-  double radical;
+bool CTNE2EulerVariable::SetSoundSpeed(CConfig *config) {
+  unsigned short iSpecies;
+  double dPdrhoE, rhoCvtr, conc, radical;
+  double *molarmass, *rotmodes;
   
-  radical = Gamma*Primitive[nSpecies+nDim+2]/Primitive[nSpecies+nDim+3];
+  molarmass = config->GetMolar_Mass();
+  rotmodes  = config->GetRotationModes();
+  
+  rhoCvtr = 0.0;
+  conc    = 0.0;
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    rhoCvtr +=  Solution[iSpecies] * (3.0/2.0 + rotmodes[iSpecies]/2.0)
+              * UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies];
+    conc    += Solution[iSpecies] / molarmass[iSpecies];
+  }
+  if (ionization) {
+    iSpecies = nSpecies-1;
+    rhoCvtr -=  Solution[iSpecies] * (3.0/2.0 + rotmodes[iSpecies]/2.0)
+              * UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies];
+    conc    -= Solution[iSpecies] / molarmass[iSpecies];
+  }
+  dPdrhoE = UNIVERSAL_GAS_CONSTANT/rhoCvtr * conc;
+  
+  /*--- Calculate a^2 using Gnoffo definition (NASA TP 2867) ---*/
+  radical = (1.0 + dPdrhoE) * Primitive[nSpecies+nDim+2]/Primitive[nSpecies+nDim+3];
+
   if (radical < 0.0) return true;
   else {
-    Primitive[nSpecies+nDim+4] = sqrt(radical);
+    Primitive[nSpecies+nDim+5] = sqrt(radical);
     return false;
   }
 }
@@ -2109,13 +2134,15 @@ void CTNE2EulerVariable::SetPrimVar_Compressible(CConfig *config) {
 	unsigned short iDim, iVar, iSpecies;
   bool check_dens = false, check_press = false, check_sos = false, check_temp = false;
   
-  SetDensity();               // Compute mixture density
-	SetVelocity2();             // Compute the modulus of the velocity (req. mixture density).
+  /*--- Primitive variables [rho1,...,rhoNs,T,Tve,u,v,w,P,rho,h,c] ---*/
+  
+  SetDensity();                             // Compute mixture density
+	SetVelocity2();                           // Compute the modulus of the velocity (req. mixture density).
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     check_dens = ((Solution[iSpecies] < 0.0) || check_dens);  // Check the density
-  check_temp  = SetTemperature(config);   // Compute temperatures
-	check_press = SetPressure(config);      // Requires T & Tve computation.
-	check_sos = SetSoundSpeed(Gamma);       // Requires pressure computation.
+  check_temp  = SetTemperature(config);     // Compute temperatures (T & Tve)
+ 	check_press = SetPressure(config);        // Requires T & Tve computation.
+	check_sos   = SetSoundSpeed(config);      // Requires density & pressure computation.
   
   /*--- Check that the solution has a physical meaning ---*/
   if (check_dens || check_press || check_sos || check_temp) {
@@ -2125,19 +2152,17 @@ void CTNE2EulerVariable::SetPrimVar_Compressible(CConfig *config) {
       Solution[iVar] = Solution_Old[iVar];
     
     /*--- Recompute the primitive variables ---*/
-    SetVelocity2();
-    check_press = SetPressure(Gamma);
-    check_sos = SetSoundSpeed(Gamma);
-    check_temp = SetTemperature(Gas_Constant);
-    
+    SetDensity();                           // Compute mixture density
+    SetVelocity2();                         // Compute square of the velocity (req. mixture density).
+    check_temp  = SetTemperature(config);   // Compute temperatures (T & Tve)
+    check_press = SetPressure(config);      // Requires T & Tve computation.
+    check_sos   = SetSoundSpeed(config);    // Requires density & pressure computation.
   }
-  // Primitive variables [rho1,...,rhoNs,T,Tve,u,v,w,P,rho,h,c]
-  SetEnthalpy();                                // Requires pressure computation.
+  SetEnthalpy();                            // Requires density & pressure computation.
   
+  /*--- Calculate velocities (req. density calculation) ---*/
 	for (iDim = 0; iDim < nDim; iDim++)
-		Primitive[iDim+1] = Solution[iDim+1] / Solution[0];
-	Primitive[nDim+2] = Solution[0];
-  
+		Primitive[nSpecies+iDim+2] = Solution[nSpecies+iDim] / Primitive[nSpecies+nDim+3];
 }
 
 CTNE2NSVariable::CTNE2NSVariable(void) : CTNE2EulerVariable() { }
@@ -2194,15 +2219,46 @@ void CTNE2NSVariable::SetVorticity(void) {
   
 }
 
-void CTNE2NSVariable::SetPrimVar_Compressible(double Gamma, double Gas_Constant, double turb_ke) {
-	unsigned short iDim, iVar;
+bool CTNE2NSVariable::SetPressure(CConfig *config) {
+  
+  /////////////////////////////////////////////////////////
+  // SUBTRACT TURBULENT KINETIC ENERGY FROM PRESSURE???? //
+  /////////////////////////////////////////////////////////
+  
+  unsigned short iSpecies;
+  double *molarmass;
+  double P;
+  
+  molarmass = config->GetMolar_Mass();
+  P = 0.0;
+  for(iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    P += Solution[iSpecies]*UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies] * Primitive[nSpecies];
+  }
+  if (ionization) {
+    iSpecies = nSpecies - 1;
+    P -= Solution[iSpecies]*UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies] * Primitive[nSpecies];
+    P += Solution[iSpecies]*UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies] * Primitive[nSpecies+1];
+  }
+  
+  Primitive[nSpecies+nDim+2] = P;
+  
+  if (Primitive[nSpecies+nDim+2] > 0.0) return false;
+  else return true;
+}
+
+void CTNE2NSVariable::SetPrimVar_Compressible(CConfig *config) {
+	unsigned short iDim, iVar, iSpecies;
   bool check_dens = false, check_press = false, check_sos = false, check_temp = false;
   
-	SetVelocity2();                                 // Compute the modulus of the velocity.
-  check_dens = (Solution[0] < 0.0);               // Check the density
-	check_press = SetPressure(Gamma, turb_ke);      // Requires Velocity2 computation.
-	check_sos = SetSoundSpeed(Gamma);               // Requires pressure computation.
-	check_temp = SetTemperature(Gas_Constant);      // Requires pressure computation.
+  /*--- Primitive variables [rho1,...,rhoNs,T,Tve,u,v,w,P,rho,h,c] ---*/
+  
+  SetDensity();                             // Compute mixture density
+	SetVelocity2();                           // Compute the modulus of the velocity (req. mixture density).
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    check_dens = ((Solution[iSpecies] < 0.0) || check_dens);  // Check the density
+  check_temp  = SetTemperature(config);     // Compute temperatures (T & Tve)
+ 	check_press = SetPressure(config);        // Requires T & Tve computation.
+	check_sos   = SetSoundSpeed(config);      // Requires density & pressure computation.
   
   /*--- Check that the solution has a physical meaning ---*/
   if (check_dens || check_press || check_sos || check_temp) {
@@ -2212,18 +2268,17 @@ void CTNE2NSVariable::SetPrimVar_Compressible(double Gamma, double Gas_Constant,
       Solution[iVar] = Solution_Old[iVar];
     
     /*--- Recompute the primitive variables ---*/
-    SetVelocity2();
-    check_press = SetPressure(Gamma, turb_ke);
-    check_sos = SetSoundSpeed(Gamma);
-    check_temp = SetTemperature(Gas_Constant);
-    
+    SetDensity();                           // Compute mixture density
+    SetVelocity2();                         // Compute square of the velocity (req. mixture density).
+    check_temp  = SetTemperature(config);   // Compute temperatures (T & Tve)
+    check_press = SetPressure(config);      // Requires T & Tve computation.
+    check_sos   = SetSoundSpeed(config);    // Requires density & pressure computation.
   }
+  SetEnthalpy();                            // Requires density & pressure computation.
+  SetLaminarViscosity();                    // Requires temperature computation.
   
-	SetEnthalpy();                                  // Requires pressure computation.
-	SetLaminarViscosity();                          // Requires temperature computation.
-  
+  /*--- Calculate velocities (req. density calculation) ---*/
 	for (iDim = 0; iDim < nDim; iDim++)
-		Primitive[iDim+1] = Solution[iDim+1] / Solution[0];
-	Primitive[nDim+2] = Solution[0];
+		Primitive[nSpecies+iDim+2] = Solution[nSpecies+iDim] / Primitive[nSpecies+nDim+3];
   
 }

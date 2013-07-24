@@ -816,6 +816,12 @@ public:
 	 * \return Value of the temperature.
 	 */		
 	virtual double GetTemperature(void);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \return Value of the vibrational-electronic temperature.
+	 */
+	virtual double GetTemperature_ve(void);
 
 	/*!
 	 * \brief Overloaded for plasma equations
@@ -853,6 +859,12 @@ public:
 	 * \return Pressure of Fluid val_species
 	 */	
 	virtual double GetPressure(unsigned short val_species);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \return Pressure of gas mixture
+	 */
+	virtual double GetPressure(void);
 
 	/*!
 	 * \brief A virtual member.
@@ -1089,7 +1101,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] config - Configuration parameters.
 	 */		
-	virtual void SetSoundSpeed(CConfig *config);
+	virtual bool SetSoundSpeed(CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
@@ -3121,7 +3133,7 @@ public:
 	 * \brief Calculate the speed of sound of all the fluids
 	 * \return Value of speed of the sound of all the fluids
 	 */
-	void SetSoundSpeed(CConfig *config);
+	bool SetSoundSpeed(CConfig *config);
 
 	/*!
 	 * \brief Set the laminar viscosity.
@@ -3561,11 +3573,6 @@ public:
 	double **GetGradient_Primitive(void);
   
 	/*!
-	 * \brief Set the value of the velocity*velocity for the incompressible solver.
-	 */
-	void SetVelocityInc2(void);
-  
-	/*!
 	 * \brief Set the value of the velocity*velocity.
 	 */
 	void SetVelocity2(void);
@@ -3584,7 +3591,7 @@ public:
 	 * \brief Set the value of the speed of the sound.
 	 * \param[in] Gamma - Value of Gamma.
 	 */
-	bool SetSoundSpeed(void);
+	bool SetSoundSpeed(CConfig *config);
   
 	/*!
 	 * \brief Set the value of the enthalpy.
@@ -3640,7 +3647,7 @@ public:
 	 * \brief Get the flow pressure.
 	 * \return Value of the flow pressure.
 	 */
-	double GetPressure(bool val_incomp);
+	double GetPressure(void);
 	/*!
 	 * \brief Get the speed of the sound.
 	 * \return Value of speed of the sound.
@@ -3670,6 +3677,12 @@ public:
 	 * \return Value of the temperature of the flow.
 	 */
 	double GetTemperature(void);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \return Value of the vibrational-electronic temperature.
+	 */
+	double GetTemperature_ve(void);
   
 	/*!
 	 * \brief Get the velocity of the flow.
@@ -3796,12 +3809,12 @@ public:
 	/*!
 	 * \brief Set the value of pressure.
 	 */
-	bool SetPressure(double Gamma, double turb_ke);
+	bool SetPressure(CConfig *config);
 	
 	/*!
 	 * \brief Set all the primitive variables for compressible flows
 	 */
-	void SetPrimVar_Compressible(double Gamma, double Gas_Constant, double turb_ke);
+	void SetPrimVar_Compressible(CConfig *config);
   
 };
 

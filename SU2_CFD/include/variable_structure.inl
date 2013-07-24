@@ -213,6 +213,8 @@ inline double CVariable::GetSoundSpeed(unsigned short val_var) { return 0; }
 
 inline double CVariable::GetTemperature(void) { return 0; }
 
+inline double CVariable::GetTemperature_ve(void) { return 0; }
+
 inline double CVariable::GetTemperature_tr(unsigned short val_iSpecies) { return 0; }
 
 inline double CVariable::GetTemperature_vib(unsigned short val_iSpecies) { return 0; }
@@ -299,7 +301,7 @@ inline void CVariable::SetDensity() { }
 
 inline void CVariable::SetDeltaPressure(double *val_velocity, double Gamma) { }
 
-inline void CVariable::SetSoundSpeed(CConfig *config) { }
+inline bool CVariable::SetSoundSpeed(CConfig *config) { return false; }
 
 inline bool CVariable::SetSoundSpeed() { false; }
 
@@ -762,31 +764,29 @@ inline double *CVariable::GetEddyViscSens(void) { return NULL; }
 
 inline double *CAdjTurbVariable::GetEddyViscSens(void) { return EddyViscSens; }
 
-inline double CTNE2EulerVariable::GetDensity(void) { return Solution[0]; }
+inline double CTNE2EulerVariable::GetDensity(void) { return Primitive[nSpecies+nDim+3]; }
 
-inline double CTNE2EulerVariable::GetEnergy(void) { return Solution[nVar-1]/Solution[0]; };
+inline double CTNE2EulerVariable::GetEnergy(void) { return Solution[nSpecies+nDim]/Primitive[nSpecies+nDim+3]; };
 
-inline double CTNE2EulerVariable::GetEnthalpy(void) { return Primitive[nDim+3]; }
+inline double CTNE2EulerVariable::GetEnthalpy(void) { return Primitive[nSpecies+nDim+4]; }
 
-inline double CTNE2EulerVariable::GetPressure(bool val_incomp) { 
-   if (val_incomp) return Solution[0];
-   else return Primitive[nDim+1]; 
-}
+inline double CTNE2EulerVariable::GetPressure(void) { return Primitive[nSpecies+nDim+2]; }
 
-inline double CTNE2EulerVariable::GetSoundSpeed(void) { return Primitive[nDim+4]; }
+inline double CTNE2EulerVariable::GetSoundSpeed(void) { return Primitive[nSpecies+nDim+5]; }
 
-inline double CTNE2EulerVariable::GetTemperature(void) { return Primitive[0]; }
+inline double CTNE2EulerVariable::GetTemperature(void) { return Primitive[nSpecies]; }
+
+inline double CTNE2EulerVariable::GetTemperature_ve(void) { return Primitive[nSpecies+1]; }
 
 inline double CTNE2EulerVariable::GetVelocity(unsigned short val_dim, bool val_incomp) {
 double velocity;
-   if (val_incomp) velocity = Solution[val_dim+1]/Primitive[0];
-   else velocity = Solution[val_dim+1]/Solution[0]; 
+   velocity = Solution[nSpecies+val_dim]/Primitive[nSpecies+nDim+3]; 
 return velocity;
 }
 
 inline double CTNE2EulerVariable::GetVelocity2(void) { return Velocity2; }
 
-inline void CTNE2EulerVariable::SetEnthalpy(void) { Primitive[nDim+3] = (Solution[nVar-1] + Primitive[nDim+1]) / Solution[0]; }
+inline void CTNE2EulerVariable::SetEnthalpy(void) { Primitive[nSpecies+nDim+4] = (Solution[nSpecies+nDim] + Primitive[nSpecies+nDim+2]) / Primitive[nSpecies+nDim+3]; }
 
 inline double CTNE2EulerVariable::GetPrimVar(unsigned short val_var) { return Primitive[val_var]; }
 
@@ -799,17 +799,10 @@ inline void CTNE2EulerVariable::SetPrimVar(double *val_prim) {
 
 inline double *CTNE2EulerVariable::GetPrimVar(void) { return Primitive; }
 
-inline void CTNE2EulerVariable::SetVelocityInc2(void) { Velocity2 = 0.0; for (unsigned short iDim = 0; iDim < nDim; iDim++) Velocity2 += (Solution[iDim+1]/Primitive[0])*(Solution[iDim+1]/Primitive[0]); }
+inline void CTNE2EulerVariable::SetVelocity_Old(double *val_velocity, bool val_incomp) {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Solution_Old[nSpecies+iDim] = val_velocity[iDim]*Primitive[nSpecies+nDim+3];
 
-inline void CTNE2EulerVariable::SetVelocity_Old(double *val_velocity, bool val_incomp) { 
-	if (val_incomp) {
-		for (unsigned short iDim = 0; iDim < nDim; iDim++)	
-			Solution_Old[iDim+1] = val_velocity[iDim]*Primitive[0];
-	}
-	else {
-		for (unsigned short iDim = 0; iDim < nDim; iDim++)	
-			Solution_Old[iDim+1] = val_velocity[iDim]*Solution[0]; 
-	}
 }
 
 inline void CTNE2EulerVariable::AddGradient_Primitive(unsigned short val_var, unsigned short val_dim, double val_value) { Gradient_Primitive[val_var][val_dim] += val_value; }
@@ -832,10 +825,5 @@ inline double CTNE2NSVariable::GetVorticity(unsigned short val_dim) { return Vor
 
 inline void CTNE2NSVariable::SetLaminarViscosity(double val_laminar_viscosity) { LaminarViscosity = val_laminar_viscosity; }
 
-inline void CTNE2NSVariable::SetWallTemperature(double Temperature_Wall ) { Primitive[0] = Temperature_Wall; }
+inline void CTNE2NSVariable::SetWallTemperature(double Temperature_Wall ) { Primitive[nSpecies] = Temperature_Wall; }
 
-inline bool CTNE2NSVariable::SetPressure(double Gamma, double turb_ke) {
-   Primitive[nDim+1] = (Gamma-1.0)*Solution[0]*(Solution[nVar-1]/Solution[0]-0.5*Velocity2 - turb_ke);
-   if (Primitive[nDim+1] > 0.0) return false;
-   else return true;
-}

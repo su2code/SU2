@@ -3378,20 +3378,14 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
             case LU_SGS:
               cout << "A LU - symmetric Gauss-Seidel iteration is used for solving the linear system." << endl;
               break;
-            case SYM_GAUSS_SEIDEL:
-              cout << "A symmetric Gauss-Seidel method is used for solving the linear system." << endl;
-              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<<endl;
-              cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<<endl;
-              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
-              break;
             case BCGSTAB:
-              cout << "A precond. BCGSTAB is used for solving the linear system." << endl;
+              cout << "BCGSTAB is used for solving the linear system." << endl;
               cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<<endl;
               cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<<endl;
               cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
               break;
-            case GMRES:
-              cout << "A precond. GMRES is used for solving the linear system." << endl;
+            case FGMRES:
+              cout << "FGMRES is used for solving the linear system." << endl;
               cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<<endl;
               cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<<endl;
               cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;

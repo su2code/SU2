@@ -6734,25 +6734,26 @@ public:
 };
 
 /*!
- * \class CUpwRoe_Flow
- * \brief Class for solving an approximate Riemann solver of Roe for the flow equations.
+ * \class CUpwRoe_TNE2
+ * \brief Class for evaluating the Riemann problem using Roe's scheme for a two-temperature model.
  * \ingroup ConvDiscr
- * \author A. Bueno (UPM) & F. Palacios (Stanford University).
+ * \author S. R. Copeland (Stanford University)
  * \version 2.0.5
  */
 class CUpwRoe_TNE2 : public CNumerics {
 private:
-	bool implicit, rotating_frame, grid_movement;
+	bool implicit, ionization;
 	double *Diff_U;
+  double *Density_i, *Density_j, *RoeDensity;
 	double *Velocity_i, *Velocity_j, *RoeVelocity;
 	double *Proj_flux_tensor_i, *Proj_flux_tensor_j;
 	double *delta_wave, *delta_vel;
 	double *Lambda, *Epsilon;
 	double **P_Tensor, **invP_Tensor;
-	double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-	Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
+	double sq_vel, Proj_ModJac_Tensor_ij, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
+	Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeEnthalpy, RoeSoundSpeed,
 	ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel, delta_p, delta_rho;
-	unsigned short iDim, iVar, jVar, kVar;
+	unsigned short nSpecies, nVar, nDim;
   
 public:
   
