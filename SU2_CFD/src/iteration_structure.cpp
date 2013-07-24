@@ -25,7 +25,7 @@
 
 void MeanFlowIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
 		CSolution ****solution_container, CNumerics *****solver_container, CConfig **config_container,
-		CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk) {
+		CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
 
 	double Physical_dt, Physical_t;
 	unsigned short iMesh; // Index for multi-grid level
@@ -46,7 +46,7 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
 		/*--- Dynamic mesh update ---*/
 		if ((config_container[iZone]->GetGrid_Movement()) && (!time_spectral) && (config_container[ZONE_0]->GetKind_GridMovement(ZONE_0) != AEROELASTIC))
 			SetGrid_Movement(geometry_container[iZone], surface_movement[iZone],
-					grid_movement[iZone], chunk[iZone], solution_container[iZone], config_container[iZone], iZone, ExtIter);
+					grid_movement[iZone], FFDBox[iZone], solution_container[iZone], config_container[iZone], iZone, ExtIter);
 	}
 
 	/*--- If any relative motion between zones was found, perform a search
@@ -134,7 +134,7 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
 				/*--- Call if AEROELASTIC motion was specified ---*/
 				if ((config_container[ZONE_0]->GetGrid_Movement()) && (config_container[ZONE_0]->GetKind_GridMovement(ZONE_0) == AEROELASTIC)) {
 					SetGrid_Movement(geometry_container[iZone], surface_movement[iZone],
-                                     grid_movement[iZone], chunk[iZone], solution_container[iZone], config_container[iZone], iZone, IntIter);
+                                     grid_movement[iZone], FFDBox[iZone], solution_container[iZone], config_container[iZone], iZone, IntIter);
                     /* If unsteady step converged, write out the plunge and pitch for that step */
                     int rank = MASTER_NODE;
                     #ifndef NO_MPI
@@ -184,7 +184,7 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
 
 void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
 		CSolution ****solution_container, CNumerics *****solver_container, CConfig **config_container,
-		CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk) {
+		CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
 	double Physical_dt, Physical_t;
 	unsigned short iMesh, iZone;
   
@@ -205,7 +205,7 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
 		/*--- Dynamic mesh update ---*/
 		if (config_container[iZone]->GetGrid_Movement() && !time_spectral)
 			SetGrid_Movement(geometry_container[iZone], surface_movement[iZone],
-					grid_movement[iZone], chunk[iZone], solution_container[iZone], config_container[iZone], iZone, ExtIter);
+					grid_movement[iZone], FFDBox[iZone], solution_container[iZone], config_container[iZone], iZone, ExtIter);
 	}
 	/*--- If any relative motion between zones was found, perform a search
    and interpolation for any sliding interfaces before the next timestep. ---*/
@@ -336,7 +336,7 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
 
 void PlasmaIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
 		CSolution ****solution_container, CNumerics *****solver_container, CConfig **config_container,
-		CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk) {
+		CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
 
 	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
@@ -406,7 +406,7 @@ void PlasmaIteration(COutput *output, CIntegration ***integration_container, CGe
 
 void AdjPlasmaIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
 		CSolution ****solution_container, CNumerics *****solver_container, CConfig **config_container,
-		CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk) {
+		CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
   
 	int rank = MASTER_NODE;
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
@@ -439,7 +439,7 @@ void AdjPlasmaIteration(COutput *output, CIntegration ***integration_container, 
 
 void FreeSurfaceIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
                           CSolution ****solution_container, CNumerics *****solver_container, CConfig **config_container,
-                          CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk) {
+                          CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
 	double Physical_dt, Physical_t;
 	unsigned short iMesh, iZone;
   
@@ -536,7 +536,7 @@ void FreeSurfaceIteration(COutput *output, CIntegration ***integration_container
 
 void AdjFreeSurfaceIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
 		CSolution ****solution_container, CNumerics *****solver_container, CConfig **config_container,
-		CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk) {
+		CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
 
 	double Physical_dt, Physical_t;
 	unsigned short iMesh, iZone;
@@ -669,7 +669,7 @@ void AdjFreeSurfaceIteration(COutput *output, CIntegration ***integration_contai
 
 void WaveIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
 		CSolution ****solution_container, CNumerics *****solver_container, CConfig **config_container,
-		CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk) {
+		CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
 
 	double Physical_dt, Physical_t;
 	unsigned short iMesh, iZone;
@@ -721,7 +721,7 @@ void WaveIteration(COutput *output, CIntegration ***integration_container, CGeom
 
 void FEAIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
 		CSolution ****solution_container, CNumerics *****solver_container, CConfig **config_container,
-		CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk) {
+		CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
 	double Physical_dt, Physical_t;
 	unsigned short iMesh, iZone;
 	int rank = MASTER_NODE;
@@ -776,7 +776,7 @@ void FEAIteration(COutput *output, CIntegration ***integration_container, CGeome
 
 void FluidStructureIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
 		CSolution ****solution_container, CNumerics *****solver_container, CConfig **config_container,
-		CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk) {
+		CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
 	double Physical_dt, Physical_t;
 	unsigned short iMesh;
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
@@ -857,7 +857,7 @@ void FluidStructureIteration(COutput *output, CIntegration ***integration_contai
 
 void AeroacousticIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
 		CSolution ****solution_container, CNumerics *****solver_container, CConfig **config_container,
-		CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk) {
+		CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
 	double Physical_dt, Physical_t;
 	unsigned short iMesh;
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
@@ -920,7 +920,7 @@ void AeroacousticIteration(COutput *output, CIntegration ***integration_containe
 		/*--- Perform mesh motion for flow problem only, if necessary ---*/
 		if (config_container[ZONE_0]->GetGrid_Movement())
 			SetGrid_Movement(geometry_container[ZONE_0], surface_movement[ZONE_0],
-					grid_movement[ZONE_0], chunk[ZONE_0], solution_container[ZONE_0], config_container[ZONE_0], ZONE_0, ExtIter);
+					grid_movement[ZONE_0], FFDBox[ZONE_0], solution_container[ZONE_0], config_container[ZONE_0], ZONE_0, ExtIter);
 
 		/*--- Set the value of the global convergence criteria ---*/
 		Physical_dt = config_container[ZONE_0]->GetDelta_UnstTime();
@@ -933,7 +933,7 @@ void AeroacousticIteration(COutput *output, CIntegration ***integration_containe
 
 void AdjAeroacousticIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
 		CSolution ****solution_container, CNumerics *****solver_container, CConfig **config_container,
-		CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk) {
+		CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
 	double Physical_dt, Physical_t;
 	unsigned short iMesh;
 	int rank = MASTER_NODE;
@@ -1038,7 +1038,7 @@ void AdjAeroacousticIteration(COutput *output, CIntegration ***integration_conta
 		/*--- Perform mesh motion, if necessary ---*/
 		if (config_container[ZONE_0]->GetGrid_Movement())
 			SetGrid_Movement(geometry_container[ZONE_0], surface_movement[ZONE_0],
-					grid_movement[ZONE_0], chunk[ZONE_0], solution_container[ZONE_0],config_container[ZONE_0], ZONE_0, ExtIter);
+					grid_movement[ZONE_0], FFDBox[ZONE_0], solution_container[ZONE_0],config_container[ZONE_0], ZONE_0, ExtIter);
 
 		Physical_dt = config_container[ZONE_0]->GetDelta_UnstTime(); Physical_t  = (ExtIter+1)*Physical_dt;
 		if (Physical_t >=  config_container[ZONE_0]->GetTotal_UnstTime()) integration_container[ZONE_0][ADJFLOW_SOL]->SetConvergence(true);
@@ -1047,7 +1047,7 @@ void AdjAeroacousticIteration(COutput *output, CIntegration ***integration_conta
 }
 
 void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_movement,
-                      CVolumetricMovement *grid_movement, CFreeFormChunk **chunk,
+                      CVolumetricMovement *grid_movement, CFreeFormDefBox **FFDBox,
                       CSolution ***solution_container, CConfig *config_container, unsigned short iZone, unsigned long ExtIter)   {
   
 	unsigned short Kind_Grid_Movement = config_container->GetKind_GridMovement(iZone);
@@ -1127,7 +1127,7 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
       /*--- Volume grid deformation ---*/
       if (rank == MASTER_NODE)
         cout << "Deforming the volume grid using the spring analogy." << endl;
-      grid_movement->SpringMethod(geometry_container[MESH_0], config_container, true);
+      grid_movement->SetVolume_Deformation(geometry_container[MESH_0], config_container, true);
       
       /*--- Update the multigrid structure after moving the finest grid ---*/
       for (unsigned short iMGlevel = 1; iMGlevel <= config_container->GetMGLevels(); iMGlevel++) {
@@ -1166,12 +1166,12 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
       if (geometry_container[MESH_0]->GetnDim() == 2)
         surface_movement->SetBoundary_Flutter2D(geometry_container[MESH_0], config_container, ExtIter);
       else
-        surface_movement->SetBoundary_Flutter3D(geometry_container[MESH_0], config_container, chunk, ExtIter);
+        surface_movement->SetBoundary_Flutter3D(geometry_container[MESH_0], config_container, FFDBox, ExtIter);
       
       /*--- Volume grid deformation ---*/
       if (rank == MASTER_NODE)
         cout << "Deforming the volume grid using the spring analogy." << endl;
-      grid_movement->SpringMethod(geometry_container[MESH_0], config_container, true);
+      grid_movement->SetVolume_Deformation(geometry_container[MESH_0], config_container, true);
       
       /*--- Update the multigrid structure after moving the finest grid ---*/
       for (unsigned short iMGlevel = 1; iMGlevel <= config_container->GetMGLevels(); iMGlevel++) {

@@ -148,8 +148,6 @@ unsigned long CSysSolve::ConjugateGradient(const CSysVector & b, CSysVector & x,
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
   
-  if (rank == 0) cout << endl;
-
   /*--- Check the subspace size ---*/
   if (m < 1) {
     if (rank == 0) cerr << "CSysSolve::ConjugateGradient: illegal value for subspace size, m = " << m << endl;
@@ -226,7 +224,7 @@ unsigned long CSysSolve::ConjugateGradient(const CSysVector & b, CSysVector & x,
   
   if ((monitoring) && (rank == 0))  {
     cout << "# Conjugate Gradient final (true) residual:" << endl;
-    cout << "# iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << endl;
+    cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << endl;
   }
   
 //  /*--- Recalculate final residual (this should be optional) ---*/
@@ -243,8 +241,6 @@ unsigned long CSysSolve::ConjugateGradient(const CSysVector & b, CSysVector & x,
 //    }
 //  }
 	
-  if (rank == 0) cout << endl;
-
 	return i;
   
 }
@@ -257,8 +253,6 @@ unsigned long CSysSolve::FGMRES(const CSysVector & b, CSysVector & x, CMatrixVec
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
   
-  if (rank == 0) cout << endl;
-
   /*---  Check the subspace size ---*/
   if (m < 1) {
     if (rank == 0) cerr << "CSysSolve::FGMRES: illegal value for subspace size, m = " << m << endl;
@@ -354,16 +348,16 @@ unsigned long CSysSolve::FGMRES(const CSysVector & b, CSysVector & x, CMatrixVec
     /*---  Output the relative residual if necessary ---*/
     if ((((monitoring) && (rank == 0)) && ((i+1) % 5 == 0)) && (rank == 0)) writeHistory(i+1, beta, norm0);
   }
-  
+
   /*---  Solve the least-squares system and update solution ---*/
-  solveReduced(i,H,g,y);
+  solveReduced(i, H, g, y);
   for (int k = 0; k < i; k++) {
     x.Plus_AX(y[k], z[k]);
   }
   
   if ((monitoring) && (rank == 0)) {
     cout << "# FGMRES final (true) residual:" << endl;
-    cout << "# iteration = " << i << ": |res|/|res0| = " << beta/norm0 << endl;
+    cout << "# Iteration = " << i << ": |res|/|res0| = " << beta/norm0 << endl;
   }
   
 //  /*---  Recalculate final (neg.) residual (this should be optional) ---*/
@@ -379,8 +373,6 @@ unsigned long CSysSolve::FGMRES(const CSysVector & b, CSysVector & x, CMatrixVec
 //    }
 //  }
 	
-  if (rank == 0) cout << endl;
-
 	return i;
   
 }
@@ -393,8 +385,6 @@ unsigned long CSysSolve::BCGSTAB(const CSysVector & b, CSysVector & x, CMatrixVe
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
   
-  if (rank == 0) cout << endl;
-
   /*--- Check the subspace size ---*/
   if (m < 1) {
     if (rank == 0) cerr << "CSysSolve::BCGSTAB: illegal value for subspace size, m = " << m << endl;
@@ -487,7 +477,7 @@ unsigned long CSysSolve::BCGSTAB(const CSysVector & b, CSysVector & x, CMatrixVe
 	  
   if ((monitoring) && (rank == 0)) {
     cout << "# BCGSTAB final (true) residual:" << endl;
-    cout << "# iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << endl;
+    cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << endl;
   }
 	
 //  /*--- Recalculate final residual (this should be optional) ---*/
@@ -501,7 +491,5 @@ unsigned long CSysSolve::BCGSTAB(const CSysVector & b, CSysVector & x, CMatrixVe
 //    cout << "# true_res - calc_res = " << true_res <<" "<< norm_r << endl;
 //  }
 	
-  if (rank == 0) cout << endl;
-
 	return i;
 }

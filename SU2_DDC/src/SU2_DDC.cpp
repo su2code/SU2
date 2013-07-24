@@ -32,7 +32,6 @@ int main(int argc, char *argv[]) {
   
   int rank = MASTER_NODE;
   int size = 1;
-  unsigned short nChunk = MAX_NUMBER_CHUNK;
   
 #ifndef NO_MPI
 	/*--- MPI initialization, and buffer setting ---*/
@@ -50,7 +49,7 @@ int main(int argc, char *argv[]) {
 	CConfig *config = NULL;
   CGeometry *geometry = NULL;
 	CSurfaceMovement *surface_mov = NULL;
-	CFreeFormChunk** chunk = NULL;
+	CFreeFormDefBox** FFDBox = NULL;
   
 	/*--- Definition of the config problem ---*/
 	if (argc == 2) { config = new CConfig(argv[1], SU2_DDC, ZONE_0, nZone, VERB_HIGH); }
@@ -143,10 +142,10 @@ int main(int argc, char *argv[]) {
       MPI::COMM_WORLD.Barrier();
 #endif
       
-      chunk = new CFreeFormChunk*[nChunk];
+      FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
       surface_mov = new CSurfaceMovement();
-      surface_mov->ReadFFDInfo(domain, config, chunk, config->GetMesh_FileName(), false);
-      surface_mov->WriteFFDInfo(domain, config, chunk, cstr_su2, false);
+      surface_mov->ReadFFDInfo(domain, config, FFDBox, config->GetMesh_FileName(), false);
+      surface_mov->WriteFFDInfo(domain, config, FFDBox, cstr_su2);
       
     }
     

@@ -1178,7 +1178,16 @@ public:
 	 * \param[in] FFDBox - Array with all the free forms FFDBoxs of the computation.
 	 * \param[in] val_mesh_filename - Name of the grid output file.
 	 */		
-	void WriteFFDInfo(CGeometry *geometry, CConfig *config, string val_mesh_filename, bool val_fullmesh);
+	void WriteFFDInfo(CGeometry *geometry, CConfig *config, string val_mesh_filename);
+  
+  /*!
+	 * \brief Write the Free Form information in the SU2 file.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] FFDBox - Array with all the free forms FFDBoxs of the computation.
+	 * \param[in] val_mesh_filename - Name of the grid output file.
+	 */
+	void WriteFFDInfo(CGeometry *geometry, CConfig *config, CFreeFormDefBox **FFDBox, string val_mesh_filename);
 	
 	/*! 
 	 * \brief Get information about if there is a complete FFDBox definition, or it is necessary to 

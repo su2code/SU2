@@ -204,7 +204,7 @@ void SetSingleZone_MeshFile(CPhysicalGeometry *geometry, CConfig *config, CSurfa
   geometry->SetMeshFile(config, out_file, in_file);
   
   if (geometry->GetnDim() == 3)
-		surface_mov->WriteFFDInfo(geometry, config, out_file, true);
+		surface_mov->WriteFFDInfo(geometry, config, out_file);
   
 }
 

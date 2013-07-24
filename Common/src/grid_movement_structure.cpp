@@ -131,6 +131,11 @@ double CVolumetricMovement::SetSpringMethodContributions_Edges(CGeometry *geomet
 	delete [] Unit_Vector;
 	delete [] Edge_Vector;
 	
+#ifndef NO_MPI
+  double MinLength_Local = MinLength;
+  MPI::COMM_WORLD.Allreduce(&MinLength_Local, &MinLength, 1, MPI::DOUBLE, MPI::MIN);
+#endif
+  
 	return MinLength;
 }
 
@@ -224,6 +229,11 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
   }
   
   delete [] Edge_Vector;
+  
+#ifndef NO_MPI
+  double MinLength_Local = MinLength;
+  MPI::COMM_WORLD.Allreduce(&MinLength_Local, &MinLength, 1, MPI::DOUBLE, MPI::MIN);
+#endif
   
 	return MinLength;
 }
@@ -808,6 +818,11 @@ void CVolumetricMovement::UpdateGridCoord(CGeometry *geometry, CConfig *config) 
 void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo) {
 	unsigned long IterLinSol, iFEA;
   double MinLength, NumError;
+  int rank = MASTER_NODE;
+	
+#ifndef NO_MPI
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
   
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
@@ -847,8 +862,11 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     CPreconditioner* precond = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
     
     CSysSolve system;
+    
+    if (rank == MASTER_NODE) cout << endl;
     if (config->GetKind_GridDef_Method() == FEA) IterLinSol = system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 300, true);
     if (config->GetKind_GridDef_Method() == SPRING) IterLinSol = system.ConjugateGradient(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 300, true);
+    if (rank == MASTER_NODE) cout << endl;
 
     /*--- Deallocate memory needed by the Krylov linear solver ---*/
     delete mat_vec;
@@ -1834,7 +1852,6 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
 #ifndef NO_MPI
 	/*--- MPI initialization, and buffer setting ---*/
 	rank = MPI::COMM_WORLD.Get_rank();
-	size = MPI::COMM_WORLD.Get_size();
 #endif
   
   /*--- Arbitrary definition of surface coordinates from file. ---*/
@@ -3743,7 +3760,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 
 }
 
-void CSurfaceMovement::WriteFFDInfo(CGeometry *geometry, CConfig *config, string val_mesh_filename, bool val_fullmesh) {
+void CSurfaceMovement::WriteFFDInfo(CGeometry *geometry, CConfig *config, string val_mesh_filename) {
 	ofstream mesh_file;
 	unsigned short iOrder, jOrder, kOrder, iFFDBox, iCornerPoints, iMarker, iParentFFDBox, iChildFFDBox;
 	unsigned long iVertex, iPoint, iSurfacePoints;
@@ -3758,21 +3775,21 @@ void CSurfaceMovement::WriteFFDInfo(CGeometry *geometry, CConfig *config, string
 	
 	for (iFFDBox = 0 ; iFFDBox < nFFDBox; iFFDBox++) {
 		
-		mesh_file << "FFDBox_TAG= " << FFDBox[iFFDBox]->GetTag() << endl;
-		mesh_file << "FFDBox_LEVEL= " << FFDBox[iFFDBox]->GetLevel() << endl;
+		mesh_file << "CHUNK_TAG= " << FFDBox[iFFDBox]->GetTag() << endl;
+		mesh_file << "CHUNK_LEVEL= " << FFDBox[iFFDBox]->GetLevel() << endl;
 
-		mesh_file << "FFDBox_DEGREE_I= " << FFDBox[iFFDBox]->GetlOrder()-1 << endl;
-		mesh_file << "FFDBox_DEGREE_J= " << FFDBox[iFFDBox]->GetmOrder()-1 << endl;
-		mesh_file << "FFDBox_DEGREE_K= " << FFDBox[iFFDBox]->GetnOrder()-1 << endl;
+		mesh_file << "CHUNK_DEGREE_I= " << FFDBox[iFFDBox]->GetlOrder()-1 << endl;
+		mesh_file << "CHUNK_DEGREE_J= " << FFDBox[iFFDBox]->GetmOrder()-1 << endl;
+		mesh_file << "CHUNK_DEGREE_K= " << FFDBox[iFFDBox]->GetnOrder()-1 << endl;
 		
-		mesh_file << "FFDBox_PARENTS= " << FFDBox[iFFDBox]->GetnParentFFDBox() << endl;
+		mesh_file << "CHUNK_PARENTS= " << FFDBox[iFFDBox]->GetnParentFFDBox() << endl;
 		for (iParentFFDBox = 0; iParentFFDBox < FFDBox[iFFDBox]->GetnParentFFDBox(); iParentFFDBox++)
 			mesh_file << FFDBox[iFFDBox]->GetParentFFDBoxTag(iParentFFDBox) << endl;
-		mesh_file << "FFDBox_CHILDREN= " << FFDBox[iFFDBox]->GetnChildFFDBox() << endl;
+		mesh_file << "CHUNK_CHILDREN= " << FFDBox[iFFDBox]->GetnChildFFDBox() << endl;
 		for (iChildFFDBox = 0; iChildFFDBox < FFDBox[iFFDBox]->GetnChildFFDBox(); iChildFFDBox++)
 			mesh_file << FFDBox[iFFDBox]->GetChildFFDBoxTag(iChildFFDBox) << endl;
 		
-		mesh_file << "FFDBox_CORNER_POINTS= " << FFDBox[iFFDBox]->GetnCornerPoints() << endl;
+		mesh_file << "CHUNK_CORNER_POINTS= " << FFDBox[iFFDBox]->GetnCornerPoints() << endl;
 		for (iCornerPoints = 0; iCornerPoints < FFDBox[iFFDBox]->GetnCornerPoints(); iCornerPoints++) {
 			double *coord = FFDBox[iFFDBox]->GetCoordCornerPoints(iCornerPoints);
 			mesh_file << coord[0] << "\t" << coord[1] << "\t" << coord[2] << endl;
@@ -3780,46 +3797,94 @@ void CSurfaceMovement::WriteFFDInfo(CGeometry *geometry, CConfig *config, string
 
 		/*--- No FFD definition ---*/
 		if (FFDBox[iFFDBox]->GetnControlPoints() == 0) {
-			mesh_file << "FFDBox_CONTROL_POINTS= 0" << endl;
-			mesh_file << "FFDBox_SURFACE_POINTS= 0" << endl;				
+			mesh_file << "CHUNK_CONTROL_POINTS= 0" << endl;
+			mesh_file << "CHUNK_SURFACE_POINTS= 0" << endl;				
 		}
 		else {
-			mesh_file << "FFDBox_CONTROL_POINTS= " << FFDBox[iFFDBox]->GetnControlPoints() << endl;
+			mesh_file << "CHUNK_CONTROL_POINTS= " << FFDBox[iFFDBox]->GetnControlPoints() << endl;
 			for (iOrder = 0; iOrder < FFDBox[iFFDBox]->GetlOrder(); iOrder++)
 				for (jOrder = 0; jOrder < FFDBox[iFFDBox]->GetmOrder(); jOrder++)
 					for (kOrder = 0; kOrder < FFDBox[iFFDBox]->GetnOrder(); kOrder++) {
 						double *coord = FFDBox[iFFDBox]->GetCoordControlPoints(iOrder, jOrder, kOrder);
 						mesh_file << iOrder << "\t" << jOrder << "\t" << kOrder << "\t" << coord[0] << "\t" << coord[1] << "\t" << coord[2] << endl;
 					}
-			
-      if (val_fullmesh) {
-        mesh_file << "FFDBox_SURFACE_POINTS= " << FFDBox[iFFDBox]->GetnSurfacePoint() << endl;
-        for (iSurfacePoints = 0; iSurfacePoints < FFDBox[iFFDBox]->GetnSurfacePoint(); iSurfacePoints++) {
-          iMarker = FFDBox[iFFDBox]->Get_MarkerIndex(iSurfacePoints);
-          iVertex = FFDBox[iFFDBox]->Get_VertexIndex(iSurfacePoints);
-          iPoint = FFDBox[iFFDBox]->Get_PointIndex(iSurfacePoints);
-          double *parcoord = FFDBox[iFFDBox]->Get_ParametricCoord(iSurfacePoints);
-          mesh_file << scientific << config->GetMarker_All_Tag(iMarker) << "\t" << iPoint << "\t" << parcoord[0] << "\t" << parcoord[1] << "\t" << parcoord[2] << endl;
-        }
+      mesh_file << "CHUNK_SURFACE_POINTS= " << FFDBox[iFFDBox]->GetnSurfacePoint() << endl;
+      for (iSurfacePoints = 0; iSurfacePoints < FFDBox[iFFDBox]->GetnSurfacePoint(); iSurfacePoints++) {
+        iMarker = FFDBox[iFFDBox]->Get_MarkerIndex(iSurfacePoints);
+        iVertex = FFDBox[iFFDBox]->Get_VertexIndex(iSurfacePoints);
+        iPoint = FFDBox[iFFDBox]->Get_PointIndex(iSurfacePoints);
+        double *parcoord = FFDBox[iFFDBox]->Get_ParametricCoord(iSurfacePoints);
+        mesh_file << scientific << config->GetMarker_All_Tag(iMarker) << "\t" << iPoint << "\t" << parcoord[0] << "\t" << parcoord[1] << "\t" << parcoord[2] << endl;
       }
-      else {
-        
-        /*--- Compute the number of points on the new surfaces, note that we are not
-         adding the new ghost points (receive), which eventually are also inside the chunck ---*/
-       unsigned long nSurfacePoint = 0;
-        for (iSurfacePoints = 0; iSurfacePoints < FFDBox[iFFDBox]->GetnSurfacePoint(); iSurfacePoints++) {
-          iPoint = FFDBox[iFFDBox]->Get_PointIndex(iSurfacePoints);
-          if ((geometry->GetGlobal_to_Local_Point(iPoint) != -1) && (iPoint <= geometry->GetMax_GlobalPoint())) nSurfacePoint++;
-        }
+		}
+	}
+	mesh_file.close();
+}
 
-        mesh_file << "FFDBox_SURFACE_POINTS= " << nSurfacePoint << endl;
-        for (iSurfacePoints = 0; iSurfacePoints < FFDBox[iFFDBox]->GetnSurfacePoint(); iSurfacePoints++) {
-          iMarker = FFDBox[iFFDBox]->Get_MarkerIndex(iSurfacePoints);
-          iPoint = FFDBox[iFFDBox]->Get_PointIndex(iSurfacePoints);
-          if ((geometry->GetGlobal_to_Local_Point(iPoint) != -1) && (iPoint <= geometry->GetMax_GlobalPoint())) {
-            double *parCoord = FFDBox[iFFDBox]->Get_ParametricCoord(iSurfacePoints);
-            mesh_file << scientific << config->GetMarker_All_Tag(iMarker) << "\t" << geometry->GetGlobal_to_Local_Point(iPoint) << "\t" << parCoord[0] << "\t" << parCoord[1] << "\t" << parCoord[2] << endl;
-          }
+void CSurfaceMovement::WriteFFDInfo(CGeometry *geometry, CConfig *config, CFreeFormDefBox **FFDBox, string val_mesh_filename) {
+	ofstream mesh_file;
+	unsigned short iOrder, jOrder, kOrder, iFFDBox, iCornerPoints, iMarker, iParentFFDBox, iChildFFDBox;
+	unsigned long iVertex, iPoint, iSurfacePoints;
+	char *cstr = new char [val_mesh_filename.size()+1];
+	strcpy (cstr, val_mesh_filename.c_str());
+	
+	mesh_file.precision(15);
+	mesh_file.open(cstr, ios::out | ios::app);
+	
+	mesh_file << "NCHUNK= " << nFFDBox << endl;
+	mesh_file << "NLEVEL= " << nLevel << endl;
+	
+	for (iFFDBox = 0 ; iFFDBox < nFFDBox; iFFDBox++) {
+		
+		mesh_file << "CHUNK_TAG= " << FFDBox[iFFDBox]->GetTag() << endl;
+		mesh_file << "CHUNK_LEVEL= " << FFDBox[iFFDBox]->GetLevel() << endl;
+    
+		mesh_file << "CHUNK_DEGREE_I= " << FFDBox[iFFDBox]->GetlOrder()-1 << endl;
+		mesh_file << "CHUNK_DEGREE_J= " << FFDBox[iFFDBox]->GetmOrder()-1 << endl;
+		mesh_file << "CHUNK_DEGREE_K= " << FFDBox[iFFDBox]->GetnOrder()-1 << endl;
+		
+		mesh_file << "CHUNK_PARENTS= " << FFDBox[iFFDBox]->GetnParentFFDBox() << endl;
+		for (iParentFFDBox = 0; iParentFFDBox < FFDBox[iFFDBox]->GetnParentFFDBox(); iParentFFDBox++)
+			mesh_file << FFDBox[iFFDBox]->GetParentFFDBoxTag(iParentFFDBox) << endl;
+		mesh_file << "CHUNK_CHILDREN= " << FFDBox[iFFDBox]->GetnChildFFDBox() << endl;
+		for (iChildFFDBox = 0; iChildFFDBox < FFDBox[iFFDBox]->GetnChildFFDBox(); iChildFFDBox++)
+			mesh_file << FFDBox[iFFDBox]->GetChildFFDBoxTag(iChildFFDBox) << endl;
+		
+		mesh_file << "CHUNK_CORNER_POINTS= " << FFDBox[iFFDBox]->GetnCornerPoints() << endl;
+		for (iCornerPoints = 0; iCornerPoints < FFDBox[iFFDBox]->GetnCornerPoints(); iCornerPoints++) {
+			double *coord = FFDBox[iFFDBox]->GetCoordCornerPoints(iCornerPoints);
+			mesh_file << coord[0] << "\t" << coord[1] << "\t" << coord[2] << endl;
+		}
+    
+		/*--- No FFD definition ---*/
+		if (FFDBox[iFFDBox]->GetnControlPoints() == 0) {
+			mesh_file << "CHUNK_CONTROL_POINTS= 0" << endl;
+			mesh_file << "CHUNK_SURFACE_POINTS= 0" << endl;
+		}
+		else {
+			mesh_file << "CHUNK_CONTROL_POINTS= " << FFDBox[iFFDBox]->GetnControlPoints() << endl;
+			for (iOrder = 0; iOrder < FFDBox[iFFDBox]->GetlOrder(); iOrder++)
+				for (jOrder = 0; jOrder < FFDBox[iFFDBox]->GetmOrder(); jOrder++)
+					for (kOrder = 0; kOrder < FFDBox[iFFDBox]->GetnOrder(); kOrder++) {
+						double *coord = FFDBox[iFFDBox]->GetCoordControlPoints(iOrder, jOrder, kOrder);
+						mesh_file << iOrder << "\t" << jOrder << "\t" << kOrder << "\t" << coord[0] << "\t" << coord[1] << "\t" << coord[2] << endl;
+					}
+      
+      /*--- Compute the number of points on the new surfaces, note that we are not
+       adding the new ghost points (receive), which eventually are also inside the chunck ---*/
+      unsigned long nSurfacePoint = 0;
+      for (iSurfacePoints = 0; iSurfacePoints < FFDBox[iFFDBox]->GetnSurfacePoint(); iSurfacePoints++) {
+        iPoint = FFDBox[iFFDBox]->Get_PointIndex(iSurfacePoints);
+        if ((geometry->GetGlobal_to_Local_Point(iPoint) != -1) && (iPoint <= geometry->GetMax_GlobalPoint())) nSurfacePoint++;
+      }
+      
+      mesh_file << "CHUNK_SURFACE_POINTS= " << nSurfacePoint << endl;
+      for (iSurfacePoints = 0; iSurfacePoints < FFDBox[iFFDBox]->GetnSurfacePoint(); iSurfacePoints++) {
+        iMarker = FFDBox[iFFDBox]->Get_MarkerIndex(iSurfacePoints);
+        iPoint = FFDBox[iFFDBox]->Get_PointIndex(iSurfacePoints);
+        if ((geometry->GetGlobal_to_Local_Point(iPoint) != -1) && (iPoint <= geometry->GetMax_GlobalPoint())) {
+          double *parCoord = FFDBox[iFFDBox]->Get_ParametricCoord(iSurfacePoints);
+          mesh_file << scientific << config->GetMarker_All_Tag(iMarker) << "\t" << geometry->GetGlobal_to_Local_Point(iPoint) << "\t" << parCoord[0] << "\t" << parCoord[1] << "\t" << parCoord[2] << endl;
         }
       }
 			

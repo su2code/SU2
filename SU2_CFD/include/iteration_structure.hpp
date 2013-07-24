@@ -49,12 +49,12 @@ using namespace std;
  * \param[in] config_container - Definition of the particular problem.
  * \param[in] surface_movement - Surface movement classes of the problem.
  * \param[in] grid_movement - Volume grid movement classes of the problem.
- * \param[in] chunk - FFD chunks of the problem.
+ * \param[in] FFDBox - FFD FFDBoxs of the problem.
  * \param[in] ExtIter - Current physical time iteration number.
  */
 void MeanFlowIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
 											 CSolution ****solution_container, CNumerics *****solver_container, CConfig **config_container, 
-											 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk);
+											 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);
 
 /*! 
  * \brief ________________________.
@@ -66,12 +66,12 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
  * \param[in] config_container - Definition of the particular problem.
  * \param[in] surface_movement - Surface movement classes of the problem.
  * \param[in] grid_movement - Volume grid movement classes of the problem.
- * \param[in] chunk - FFD chunks of the problem.
+ * \param[in] FFDBox - FFD FFDBoxs of the problem.
  * \param[in] ExtIter - Current physical time iteration number.
  */
 void PlasmaIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
 										 CSolution ****solution_container, CNumerics *****solver_container, CConfig **config_container, 
-										 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk);
+										 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);
 
 /*! 
  * \brief ________________________.
@@ -83,12 +83,12 @@ void PlasmaIteration(COutput *output, CIntegration ***integration_container, CGe
  * \param[in] config_container - Definition of the particular problem.
  * \param[in] surface_movement - Surface movement classes of the problem.
  * \param[in] grid_movement - Volume grid movement classes of the problem.
- * \param[in] chunk - FFD chunks of the problem.
+ * \param[in] FFDBox - FFD FFDBoxs of the problem.
  * \param[in] ExtIter - Current physical time iteration number.
  */
 void FreeSurfaceIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
 													CSolution ****solution_container, CNumerics *****solver_container, CConfig **config_container, 
-													CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk);
+													CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);
 
 /*! 
  * \brief ________________________.
@@ -100,12 +100,12 @@ void FreeSurfaceIteration(COutput *output, CIntegration ***integration_container
  * \param[in] config_container - Definition of the particular problem.
  * \param[in] surface_movement - Surface movement classes of the problem.
  * \param[in] grid_movement - Volume grid movement classes of the problem.
- * \param[in] chunk - FFD chunks of the problem.
+ * \param[in] FFDBox - FFD FFDBoxs of the problem.
  * \param[in] ExtIter - Current physical time iteration number.
  */
 void FluidStructureIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
 														 CSolution ****solution_container, CNumerics *****solver_container, CConfig **config_container, 
-														 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk);
+														 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);
 
 /*! 
  * \brief ________________________.
@@ -117,12 +117,12 @@ void FluidStructureIteration(COutput *output, CIntegration ***integration_contai
  * \param[in] config_container - Definition of the particular problem.
  * \param[in] surface_movement - Surface movement classes of the problem.
  * \param[in] grid_movement - Volume grid movement classes of the problem.
- * \param[in] chunk - FFD chunks of the problem.
+ * \param[in] FFDBox - FFD FFDBoxs of the problem.
  * \param[in] ExtIter - Current physical time iteration number.
  */
 void AeroacousticIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
 													 CSolution ****solution_container, CNumerics *****solver_container, CConfig **config_container, 
-													 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk);
+													 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);
 
 /*! 
  * \brief ________________________.
@@ -134,12 +134,12 @@ void AeroacousticIteration(COutput *output, CIntegration ***integration_containe
  * \param[in] config_container - Definition of the particular problem.
  * \param[in] surface_movement - Surface movement classes of the problem.
  * \param[in] grid_movement - Volume grid movement classes of the problem.
- * \param[in] chunk - FFD chunks of the problem.
+ * \param[in] FFDBox - FFD FFDBoxs of the problem.
  * \param[in] ExtIter - Current physical time iteration number.
  */
 void WaveIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
 									 CSolution ****solution_container, CNumerics *****solver_container, CConfig **config_container, 
-									 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk);
+									 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);
 
 /*! 
  * \brief ________________________.
@@ -151,12 +151,12 @@ void WaveIteration(COutput *output, CIntegration ***integration_container, CGeom
  * \param[in] config_container - Definition of the particular problem.
  * \param[in] surface_movement - Surface movement classes of the problem.
  * \param[in] grid_movement - Volume grid movement classes of the problem.
- * \param[in] chunk - FFD chunks of the problem.
+ * \param[in] FFDBox - FFD FFDBoxs of the problem.
  * \param[in] ExtIter - Current physical time iteration number.
  */
 void FEAIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
 									CSolution ****solution_container, CNumerics *****solver_container, CConfig **config_container, 
-									CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk);
+									CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);
 
 /*! 
  * \brief ________________________.
@@ -168,12 +168,12 @@ void FEAIteration(COutput *output, CIntegration ***integration_container, CGeome
  * \param[in] config_container - Definition of the particular problem.
  * \param[in] surface_movement - Surface movement classes of the problem.
  * \param[in] grid_movement - Volume grid movement classes of the problem.
- * \param[in] chunk - FFD chunks of the problem.
+ * \param[in] FFDBox - FFD FFDBoxs of the problem.
  * \param[in] ExtIter - Current physical time iteration number.
  */
 void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
 													CSolution ****solution_container, CNumerics *****solver_container, CConfig **config_container, 
-													CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk);
+													CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);
 
 /*! 
  * \brief ________________________.
@@ -185,12 +185,12 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
  * \param[in] config_container - Definition of the particular problem.
  * \param[in] surface_movement - Surface movement classes of the problem.
  * \param[in] grid_movement - Volume grid movement classes of the problem.
- * \param[in] chunk - FFD chunks of the problem.
+ * \param[in] FFDBox - FFD FFDBoxs of the problem.
  * \param[in] ExtIter - Current physical time iteration number.
  */
 void AdjPlasmaIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
 												CSolution ****solution_container, CNumerics *****solver_container, CConfig **config_container, 
-												CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk);
+												CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);
 
 /*! 
  * \brief ________________________.
@@ -202,12 +202,12 @@ void AdjPlasmaIteration(COutput *output, CIntegration ***integration_container, 
  * \param[in] config_container - Definition of the particular problem.
  * \param[in] surface_movement - Surface movement classes of the problem.
  * \param[in] grid_movement - Volume grid movement classes of the problem.
- * \param[in] chunk - FFD chunks of the problem.
+ * \param[in] FFDBox - FFD FFDBoxs of the problem.
  * \param[in] ExtIter - Current physical time iteration number.
  */
 void AdjFreeSurfaceIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
 														 CSolution ****solution_container, CNumerics *****solver_container, CConfig **config_container, 
-														 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk);
+														 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);
 
 /*! 
  * \brief ________________________.
@@ -219,12 +219,12 @@ void AdjFreeSurfaceIteration(COutput *output, CIntegration ***integration_contai
  * \param[in] config_container - Definition of the particular problem.
  * \param[in] surface_movement - Surface movement classes of the problem.
  * \param[in] grid_movement - Volume grid movement classes of the problem.
- * \param[in] chunk - FFD chunks of the problem.
+ * \param[in] FFDBox - FFD FFDBoxs of the problem.
  * \param[in] ExtIter - Current physical time iteration number.
  */
 void AdjAeroacousticIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
 															CSolution ****solution_container, CNumerics *****solver_container, CConfig **config_container, 
-															CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormChunk*** chunk);
+															CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);
 
 /*! 
  * \brief Updates the positions and grid velocities for dynamic meshes between physical time steps.
@@ -232,14 +232,14 @@ void AdjAeroacousticIteration(COutput *output, CIntegration ***integration_conta
  * \param[in] geometry - Geometrical definition of the problem.
  * \param[in] surface_movement - Surface movement classes of the problem.
  * \param[in] grid_movement - Volume grid movement classes of the problem.
- * \param[in] chunk - FFD chunks of the problem.
+ * \param[in] FFDBox - FFD FFDBoxs of the problem.
  * \param[in] solution_container - Container vector with all the solutions.
  * \param[in] config - Definition of the particular problem.
  * \param[in] iZone - Index of the zone.
  * \param[in] ExtIter - Current physical time iteration number.
  */
 void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_movement, 
-                      CVolumetricMovement *grid_movement, CFreeFormChunk **chunk,
+                      CVolumetricMovement *grid_movement, CFreeFormDefBox **FFDBox,
                       CSolution ***solution_container, CConfig *config_container, unsigned short iZone, unsigned long ExtIter);
 
 /*!
