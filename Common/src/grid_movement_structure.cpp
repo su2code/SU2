@@ -848,7 +848,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     if (config->GetKind_GridDef_Method() == FEA)  MinLength = SetFEAMethodContributions_Elem(geometry);
 
     /*--- Compute the tolerance of the linear solver using MinLength ---*/
-    NumError = MinLength * 1E-6;
+    NumError = MinLength * 1E-2;
     
     /*--- Set the boundary displacements (as prescribed by the design variable
      perturbations controlling the surface shape) as a Dirichlet BC. ---*/
