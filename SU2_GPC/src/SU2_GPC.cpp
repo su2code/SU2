@@ -27,7 +27,7 @@ using namespace std;
 int main(int argc, char *argv[]) {	
   
   /*--- Local variables ---*/
-	unsigned short iMarker, iDim, iDV, iChunk, nZone = 1;
+	unsigned short iMarker, iDim, iDV, iFFDBox, nZone = 1;
 	unsigned long iVertex, iPoint;
 	double delta_eps, my_Gradient, Gradient, *Normal, dS;
   double *VarCoord, Sensitivity;
@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
 #endif
 	
 	/*--- Pointer to different structures that will be used throughout the entire code ---*/
-	CFreeFormChunk** chunk = NULL;
+	CFreeFormDefBox** FFDBox = NULL;
 	CConfig *config = NULL;
 	CGeometry *boundary = NULL;
 	CSurfaceMovement *surface_mov = NULL;
@@ -99,8 +99,8 @@ int main(int argc, char *argv[]) {
 	surface_mov = new CSurfaceMovement();
 	
 	/*--- Definition of the FFD deformation class ---*/
-	unsigned short nChunk = MAX_NUMBER_CHUNK;
-	chunk = new CFreeFormChunk*[nChunk];
+	unsigned short nFFDBox = MAX_NUMBER_FFD;
+	FFDBox = new CFreeFormDefBox*[nFFDBox];
 	
 	if (rank == MASTER_NODE) 
 		cout << endl <<"---------- Start gradient evaluation using surface sensitivity ----------" << endl;
@@ -153,10 +153,10 @@ int main(int argc, char *argv[]) {
             cout << "Read the FFD information from mesh file." << endl;
           
           /*--- Read the FFD information from the grid file ---*/
-          surface_mov->ReadFFDInfo(boundary, config, chunk, config->GetMesh_FileName(), true);
+          surface_mov->ReadFFDInfo(boundary, config, FFDBox, config->GetMesh_FileName(), true);
           
-          /*--- If the chunk was not defined in the input file ---*/
-          if (!surface_mov->GetChunkDefinition() && (rank == MASTER_NODE)) {
+          /*--- If the FFDBox was not defined in the input file ---*/
+          if (!surface_mov->GetFFDBoxDefinition() && (rank == MASTER_NODE)) {
             cout << "The input grid doesn't have the entire FFD information!" << endl;
             cout << "Press any key to exit..." << endl;
             cin.get();
@@ -173,20 +173,20 @@ int main(int argc, char *argv[]) {
         }
         
         /*--- Apply the control point change ---*/
-        for (iChunk = 0; iChunk < surface_mov->GetnChunk(); iChunk++) {
+        for (iFFDBox = 0; iFFDBox < surface_mov->GetnFFDBox(); iFFDBox++) {
           
           switch ( config->GetDesign_Variable(iDV) ) {
-            case FFD_CONTROL_POINT : surface_mov->SetFFDCPChange(boundary, config, chunk[iChunk], iChunk, iDV, true); break;
-            case FFD_DIHEDRAL_ANGLE : surface_mov->SetFFDDihedralAngle(boundary, config, chunk[iChunk], iChunk, iDV, true); break;
-            case FFD_TWIST_ANGLE : surface_mov->SetFFDTwistAngle(boundary, config, chunk[iChunk], iChunk, iDV, true); break;
-            case FFD_ROTATION : surface_mov->SetFFDRotation(boundary, config, chunk[iChunk], iChunk, iDV, true); break;
-            case FFD_CAMBER : surface_mov->SetFFDCamber(boundary, config, chunk[iChunk], iChunk, iDV, true); break;
-            case FFD_THICKNESS : surface_mov->SetFFDThickness(boundary, config, chunk[iChunk], iChunk, iDV, true); break;
-            case FFD_VOLUME : surface_mov->SetFFDVolume(boundary, config, chunk[iChunk], iChunk, iDV, true); break;
+            case FFD_CONTROL_POINT : surface_mov->SetFFDCPChange(boundary, config, FFDBox[iFFDBox], iFFDBox, iDV, true); break;
+            case FFD_DIHEDRAL_ANGLE : surface_mov->SetFFDDihedralAngle(boundary, config, FFDBox[iFFDBox], iFFDBox, iDV, true); break;
+            case FFD_TWIST_ANGLE : surface_mov->SetFFDTwistAngle(boundary, config, FFDBox[iFFDBox], iFFDBox, iDV, true); break;
+            case FFD_ROTATION : surface_mov->SetFFDRotation(boundary, config, FFDBox[iFFDBox], iFFDBox, iDV, true); break;
+            case FFD_CAMBER : surface_mov->SetFFDCamber(boundary, config, FFDBox[iFFDBox], iFFDBox, iDV, true); break;
+            case FFD_THICKNESS : surface_mov->SetFFDThickness(boundary, config, FFDBox[iFFDBox], iFFDBox, iDV, true); break;
+            case FFD_VOLUME : surface_mov->SetFFDVolume(boundary, config, FFDBox[iFFDBox], iFFDBox, iDV, true); break;
           }
           
           /*--- Recompute cartesian coordinates using the new control points position ---*/
-          surface_mov->SetCartesianCoord(boundary, config, chunk[iChunk], iChunk);
+          surface_mov->SetCartesianCoord(boundary, config, FFDBox[iFFDBox], iFFDBox);
         }
       }
 			
@@ -257,9 +257,9 @@ int main(int argc, char *argv[]) {
 				case MOMENT_X_COEFFICIENT :
 					if (iDV == 0) Gradient_file << "Moment x coeff. grad. using cont. adj." << endl;
 					cout << "Moment x coefficient gradient: "<< Gradient << "." << endl; break;
-				case MOMENT_Y_COEFFICIENT : // Check the change in the sign!!
+				case MOMENT_Y_COEFFICIENT :
 					if (iDV == 0) Gradient_file << "Moment y coeff. grad. using cont. adj." << endl;
-					cout << "Moment y coefficient gradient: "<< -Gradient << "." << endl; break;
+					cout << "Moment y coefficient gradient: "<< Gradient << "." << endl; break;
 				case MOMENT_Z_COEFFICIENT :
 					if (iDV == 0) Gradient_file << "Moment z coeff. grad. using cont. adj." << endl;
 					cout << "Moment z coefficient gradient: "<< Gradient << "." << endl; break;

@@ -51,3 +51,11 @@ unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CCo
  * \param[in] nZone - Number of zones in the mesh.
  */
 void SetMultiZone_MeshFile(CPhysicalGeometry **geometry, CConfig **config, unsigned short nZone);
+
+/*!
+ * \brief Write a single-zone mesh file after deforming the mesh using SU2_MDC.
+ * \param[in] geometry - Multi-zone physical geometry container.
+ * \param[in] config - Definition of the particular problem.
+ * \param[in] surface_mov - durface information including FFD box.
+ */
+void SetSingleZone_MeshFile(CPhysicalGeometry *geometry, CConfig *config, CSurfaceMovement *surface_mov);
