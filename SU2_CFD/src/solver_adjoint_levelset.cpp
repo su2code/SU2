@@ -23,7 +23,7 @@
 
 #include "../include/solver_structure.hpp"
 
-CAdjLevelSetSolution::CAdjLevelSetSolution(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolution() {
+CAdjLevelSetSolver::CAdjLevelSetSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
 	unsigned short iVar, iDim;
 	unsigned long iPoint, index;
 	double dull_val;
@@ -222,9 +222,9 @@ CAdjLevelSetSolution::CAdjLevelSetSolution(CGeometry *geometry, CConfig *config,
   
 }
 
-CAdjLevelSetSolution::~CAdjLevelSetSolution(void) { }
+CAdjLevelSetSolver::~CAdjLevelSetSolver(void) { }
 
-void CAdjLevelSetSolution::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
+void CAdjLevelSetSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
 	unsigned short iMarker;
 	unsigned long iVertex, iPoint, nVertex, nBuffer_Vector;
 	double *Buffer_Receive_U = NULL;
@@ -291,7 +291,7 @@ void CAdjLevelSetSolution::Set_MPI_Solution(CGeometry *geometry, CConfig *config
 	}
 }
 
-void CAdjLevelSetSolution::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config) {
+void CAdjLevelSetSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config) {
 	unsigned short iVar, iDim, iMarker, iPeriodic_Index;
 	unsigned long iVertex, iPoint, nVertex, nBuffer_VectorGrad;
 	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi,
@@ -423,7 +423,7 @@ void CAdjLevelSetSolution::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfi
     
 }
 
-void CAdjLevelSetSolution::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config) {
+void CAdjLevelSetSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config) {
 	unsigned short iMarker;
 	unsigned long iVertex, iPoint, nVertex, nBuffer_Vector;
 	double *Buffer_Receive_Limit = NULL;
@@ -498,7 +498,7 @@ void CAdjLevelSetSolution::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig
   
 }
 
-void CAdjLevelSetSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
+void CAdjLevelSetSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
 	
 	bool implicit = (config->GetKind_TimeIntScheme_AdjLevelSet() == EULER_IMPLICIT);
@@ -518,7 +518,7 @@ void CAdjLevelSetSolution::Preprocessing(CGeometry *geometry, CSolution **soluti
   
 }
 
-void CAdjLevelSetSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
+void CAdjLevelSetSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
 	double *LevelSet_var_i, *LevelSet_var_j, *U_i, *U_j, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, DensityInc_i, DensityInc_j;
 	unsigned long iEdge, iPoint, jPoint;
 	unsigned short iDim, iVar;
@@ -533,8 +533,8 @@ void CAdjLevelSetSolution::Upwind_Residual(CGeometry *geometry, CSolution **solu
 		numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
 		
 		/*--- Conservative variables w/o reconstruction ---*/
-		U_i = solution_container[FLOW_SOL]->node[iPoint]->GetSolution();
-		U_j = solution_container[FLOW_SOL]->node[jPoint]->GetSolution();
+		U_i = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
+		U_j = solver_container[FLOW_SOL]->node[jPoint]->GetSolution();
 		numerics->SetConservative(U_i, U_j);
 		
 		/*--- Level Set variables w/o reconstruction ---*/
@@ -543,8 +543,8 @@ void CAdjLevelSetSolution::Upwind_Residual(CGeometry *geometry, CSolution **solu
 		numerics->SetLevelSetVar(LevelSet_var_i, LevelSet_var_j);
 		
 		/*--- Set the value of the density ---*/
-		DensityInc_i = solution_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
-		DensityInc_j = solution_container[FLOW_SOL]->node[jPoint]->GetDensityInc();
+		DensityInc_i = solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
+		DensityInc_j = solver_container[FLOW_SOL]->node[jPoint]->GetDensityInc();
 		numerics->SetDensityInc(DensityInc_i, DensityInc_j);
 				
 		if (high_order_diss) {
@@ -586,7 +586,7 @@ void CAdjLevelSetSolution::Upwind_Residual(CGeometry *geometry, CSolution **solu
 	}
 }
 
-void CAdjLevelSetSolution::Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CNumerics *second_numerics,
+void CAdjLevelSetSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
 																								 CConfig *config, unsigned short iMesh) {
 	unsigned short iVar, iDim;
 	unsigned long iPoint;
@@ -604,20 +604,20 @@ void CAdjLevelSetSolution::Source_Residual(CGeometry *geometry, CSolution **solu
 		Vol = geometry->node[iPoint]->GetVolume();
 
     /*--- Direct problem quantities ---*/
-		DiffLevelSet = solution_container[LEVELSET_SOL]->node[iPoint]->GetDiffLevelSet();
-		LevelSet = solution_container[LEVELSET_SOL]->node[iPoint]->GetSolution(0);
-		MeanFlow = solution_container[FLOW_SOL]->node[iPoint]->GetSolution();
-    Density = solution_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
+		DiffLevelSet = solver_container[LEVELSET_SOL]->node[iPoint]->GetDiffLevelSet();
+		LevelSet = solver_container[LEVELSET_SOL]->node[iPoint]->GetSolution(0);
+		MeanFlow = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
+    Density = solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
     
     /*--- Adjoint problem quantities ---*/
-		AdjMeanFlow = solution_container[ADJFLOW_SOL]->node[iPoint]->GetSolution();
-    AdjLevelSetGradient = solution_container[ADJLEVELSET_SOL]->node[iPoint]->GetGradient();
-    AdjMeanFlowGradient = solution_container[ADJFLOW_SOL]->node[iPoint]->GetGradient();
+		AdjMeanFlow = solver_container[ADJFLOW_SOL]->node[iPoint]->GetSolution();
+    AdjLevelSetGradient = solver_container[ADJLEVELSET_SOL]->node[iPoint]->GetGradient();
+    AdjMeanFlowGradient = solver_container[ADJFLOW_SOL]->node[iPoint]->GetGradient();
     
     /*--- Projected adjoint velocity ---*/
     ProjAdj = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
-      Velocity[iDim] = solution_container[FLOW_SOL]->node[iPoint]->GetVelocity(iDim, incompressible);
+      Velocity[iDim] = solver_container[FLOW_SOL]->node[iPoint]->GetVelocity(iDim, incompressible);
       ProjAdj += Velocity[iDim]*AdjLevelSetGradient[0][iDim];
     }
     
@@ -645,7 +645,7 @@ void CAdjLevelSetSolution::Source_Residual(CGeometry *geometry, CSolution **solu
     /*--- Projected flux derivative ---*/
     ProjFlux = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
-      for (iVar = 0; iVar < solution_container[FLOW_SOL]->GetnVar(); iVar++) {
+      for (iVar = 0; iVar < solver_container[FLOW_SOL]->GetnVar(); iVar++) {
         ProjFlux += AdjMeanFlowGradient[iVar][iDim]*dFc_dRho[iDim][iVar];
       }
     }
@@ -661,17 +661,17 @@ void CAdjLevelSetSolution::Source_Residual(CGeometry *geometry, CSolution **solu
 	
 }
 
-void CAdjLevelSetSolution::Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) { }
+void CAdjLevelSetSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) { }
 
-void CAdjLevelSetSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+void CAdjLevelSetSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 	unsigned long iPoint, iVertex, Point_Normal;
 	unsigned short iVar, iDim;
 	double *U_domain, *U_wall, *LevelSet_domain, *LevelSet_wall;
 	
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 	
-	U_domain = new double[solution_container[FLOW_SOL]->GetnVar()]; 
-	U_wall = new double[solution_container[FLOW_SOL]->GetnVar()];
+	U_domain = new double[solver_container[FLOW_SOL]->GetnVar()]; 
+	U_wall = new double[solver_container[FLOW_SOL]->GetnVar()];
 	LevelSet_domain = new double[1];
 	LevelSet_wall = new double[1];
 	
@@ -683,9 +683,9 @@ void CAdjLevelSetSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **soluti
 		/*--- If the node belong to the domain ---*/
 		if (geometry->node[iPoint]->GetDomain()) {
 						
-			for (iVar = 0; iVar < solution_container[FLOW_SOL]->GetnVar(); iVar++) {
-				U_domain[iVar] = solution_container[FLOW_SOL]->node[Point_Normal]->GetSolution(iVar);
-				U_wall[iVar] = solution_container[FLOW_SOL]->node[iPoint]->GetSolution(iVar);
+			for (iVar = 0; iVar < solver_container[FLOW_SOL]->GetnVar(); iVar++) {
+				U_domain[iVar] = solver_container[FLOW_SOL]->node[Point_Normal]->GetSolution(iVar);
+				U_wall[iVar] = solver_container[FLOW_SOL]->node[iPoint]->GetSolution(iVar);
 			}
 			
 			LevelSet_domain[0] = node[Point_Normal]->GetSolution(0);
@@ -698,7 +698,7 @@ void CAdjLevelSetSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **soluti
 			
 			numerics->SetConservative(U_wall, U_wall);
 			numerics->SetLevelSetVar(LevelSet_wall, LevelSet_wall);
-			numerics->SetDensityInc(solution_container[FLOW_SOL]->node[iPoint]->GetDensityInc(), solution_container[FLOW_SOL]->node[iPoint]->GetDensityInc());
+			numerics->SetDensityInc(solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc(), solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc());
       numerics->SetResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);	
 			
 			LinSysRes.AddBlock(iPoint, Residual_i);
@@ -709,7 +709,7 @@ void CAdjLevelSetSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **soluti
 	}
 }
 
-void CAdjLevelSetSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+void CAdjLevelSetSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                                         CConfig *config, unsigned short val_marker) {
 	unsigned long iPoint, iVertex, Point_Normal;
 	unsigned short iVar, iDim;
@@ -717,8 +717,8 @@ void CAdjLevelSetSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solutio
 	
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 	
-	U_domain = new double[solution_container[FLOW_SOL]->GetnVar()];
-	U_wall = new double[solution_container[FLOW_SOL]->GetnVar()];
+	U_domain = new double[solver_container[FLOW_SOL]->GetnVar()];
+	U_wall = new double[solver_container[FLOW_SOL]->GetnVar()];
 	LevelSet_domain = new double[1];
 	LevelSet_wall = new double[1];
 	
@@ -730,9 +730,9 @@ void CAdjLevelSetSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solutio
 		/*--- If the node belong to the domain ---*/
 		if (geometry->node[iPoint]->GetDomain()) {
       
-			for (iVar = 0; iVar < solution_container[FLOW_SOL]->GetnVar(); iVar++) {
-				U_domain[iVar] = solution_container[FLOW_SOL]->node[Point_Normal]->GetSolution(iVar);
-				U_wall[iVar] = solution_container[FLOW_SOL]->node[iPoint]->GetSolution(iVar);
+			for (iVar = 0; iVar < solver_container[FLOW_SOL]->GetnVar(); iVar++) {
+				U_domain[iVar] = solver_container[FLOW_SOL]->node[Point_Normal]->GetSolution(iVar);
+				U_wall[iVar] = solver_container[FLOW_SOL]->node[iPoint]->GetSolution(iVar);
 			}
 			
 			LevelSet_domain[0] = node[Point_Normal]->GetSolution(0);
@@ -745,7 +745,7 @@ void CAdjLevelSetSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solutio
 			
 			conv_numerics->SetConservative(U_wall, U_wall);
 			conv_numerics->SetLevelSetVar(LevelSet_wall, LevelSet_wall);
-			conv_numerics->SetDensityInc(solution_container[FLOW_SOL]->node[iPoint]->GetDensityInc(), solution_container[FLOW_SOL]->node[iPoint]->GetDensityInc());
+			conv_numerics->SetDensityInc(solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc(), solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc());
       conv_numerics->SetResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 			
 			LinSysRes.AddBlock(iPoint, Residual_i);
@@ -756,15 +756,15 @@ void CAdjLevelSetSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solutio
 	}
 }
 
-void CAdjLevelSetSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CAdjLevelSetSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned long iPoint, iVertex, Point_Normal;
 	unsigned short iVar, iDim;
 	double *U_domain, *U_wall, *LevelSet_domain, *LevelSet_wall;
 	
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 	
-	U_domain = new double[solution_container[FLOW_SOL]->GetnVar()];
-	U_wall = new double[solution_container[FLOW_SOL]->GetnVar()];
+	U_domain = new double[solver_container[FLOW_SOL]->GetnVar()];
+	U_wall = new double[solver_container[FLOW_SOL]->GetnVar()];
 	LevelSet_domain = new double[1];
 	LevelSet_wall = new double[1];
 	
@@ -776,9 +776,9 @@ void CAdjLevelSetSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **sol
 		/*--- If the node belong to the domain ---*/
 		if (geometry->node[iPoint]->GetDomain()) {
       
-			for (iVar = 0; iVar < solution_container[FLOW_SOL]->GetnVar(); iVar++) {
-				U_domain[iVar] = solution_container[FLOW_SOL]->node[Point_Normal]->GetSolution(iVar);
-				U_wall[iVar] = solution_container[FLOW_SOL]->node[iPoint]->GetSolution(iVar);
+			for (iVar = 0; iVar < solver_container[FLOW_SOL]->GetnVar(); iVar++) {
+				U_domain[iVar] = solver_container[FLOW_SOL]->node[Point_Normal]->GetSolution(iVar);
+				U_wall[iVar] = solver_container[FLOW_SOL]->node[iPoint]->GetSolution(iVar);
 			}
 			
 			LevelSet_domain[0] = node[Point_Normal]->GetSolution(0);
@@ -791,7 +791,7 @@ void CAdjLevelSetSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **sol
 			
 			conv_numerics->SetConservative(U_wall, U_wall);
 			conv_numerics->SetLevelSetVar(LevelSet_wall, LevelSet_wall);
-			conv_numerics->SetDensityInc(solution_container[FLOW_SOL]->node[iPoint]->GetDensityInc(), solution_container[FLOW_SOL]->node[iPoint]->GetDensityInc());
+			conv_numerics->SetDensityInc(solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc(), solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc());
       conv_numerics->SetResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 			
 			LinSysRes.AddBlock(iPoint, Residual_i);
@@ -802,15 +802,15 @@ void CAdjLevelSetSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **sol
 	}
 }
 
-void CAdjLevelSetSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CAdjLevelSetSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned long iPoint, iVertex, Point_Normal;
 	unsigned short iVar, iDim;
 	double *U_domain, *U_wall, *LevelSet_domain, *LevelSet_wall;
 	
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 	
-	U_domain = new double[solution_container[FLOW_SOL]->GetnVar()];
-	U_wall = new double[solution_container[FLOW_SOL]->GetnVar()];
+	U_domain = new double[solver_container[FLOW_SOL]->GetnVar()];
+	U_wall = new double[solver_container[FLOW_SOL]->GetnVar()];
 	LevelSet_domain = new double[1];
 	LevelSet_wall = new double[1];
 	
@@ -822,9 +822,9 @@ void CAdjLevelSetSolution::BC_Far_Field(CGeometry *geometry, CSolution **solutio
 		/*--- If the node belong to the domain ---*/
 		if (geometry->node[iPoint]->GetDomain()) {
       
-			for (iVar = 0; iVar < solution_container[FLOW_SOL]->GetnVar(); iVar++) {
-				U_domain[iVar] = solution_container[FLOW_SOL]->node[Point_Normal]->GetSolution(iVar);
-				U_wall[iVar] = solution_container[FLOW_SOL]->node[iPoint]->GetSolution(iVar);
+			for (iVar = 0; iVar < solver_container[FLOW_SOL]->GetnVar(); iVar++) {
+				U_domain[iVar] = solver_container[FLOW_SOL]->node[Point_Normal]->GetSolution(iVar);
+				U_wall[iVar] = solver_container[FLOW_SOL]->node[iPoint]->GetSolution(iVar);
 			}
 			
 			LevelSet_domain[0] = node[Point_Normal]->GetSolution(0);
@@ -837,7 +837,7 @@ void CAdjLevelSetSolution::BC_Far_Field(CGeometry *geometry, CSolution **solutio
 			
 			conv_numerics->SetConservative(U_wall, U_wall);
 			conv_numerics->SetLevelSetVar(LevelSet_wall, LevelSet_wall);
-			conv_numerics->SetDensityInc(solution_container[FLOW_SOL]->node[iPoint]->GetDensityInc(), solution_container[FLOW_SOL]->node[iPoint]->GetDensityInc());
+			conv_numerics->SetDensityInc(solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc(), solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc());
       conv_numerics->SetResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 			
 			LinSysRes.AddBlock(iPoint, Residual_i);
@@ -848,15 +848,15 @@ void CAdjLevelSetSolution::BC_Far_Field(CGeometry *geometry, CSolution **solutio
 	}
 }
 
-void CAdjLevelSetSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CAdjLevelSetSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned long iPoint, iVertex, Point_Normal;
 	unsigned short iVar, iDim;
 	double *U_domain, *U_wall, *LevelSet_domain, *LevelSet_wall;
 	
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 	
-	U_domain = new double[solution_container[FLOW_SOL]->GetnVar()];
-	U_wall = new double[solution_container[FLOW_SOL]->GetnVar()];
+	U_domain = new double[solver_container[FLOW_SOL]->GetnVar()];
+	U_wall = new double[solver_container[FLOW_SOL]->GetnVar()];
 	LevelSet_domain = new double[1];
 	LevelSet_wall = new double[1];
 	
@@ -868,9 +868,9 @@ void CAdjLevelSetSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_co
 		/*--- If the node belong to the domain ---*/
 		if (geometry->node[iPoint]->GetDomain()) {
       
-			for (iVar = 0; iVar < solution_container[FLOW_SOL]->GetnVar(); iVar++) {
-				U_domain[iVar] = solution_container[FLOW_SOL]->node[Point_Normal]->GetSolution(iVar);
-				U_wall[iVar] = solution_container[FLOW_SOL]->node[iPoint]->GetSolution(iVar);
+			for (iVar = 0; iVar < solver_container[FLOW_SOL]->GetnVar(); iVar++) {
+				U_domain[iVar] = solver_container[FLOW_SOL]->node[Point_Normal]->GetSolution(iVar);
+				U_wall[iVar] = solver_container[FLOW_SOL]->node[iPoint]->GetSolution(iVar);
 			}
 			
 			LevelSet_domain[0] = node[Point_Normal]->GetSolution(0);
@@ -883,7 +883,7 @@ void CAdjLevelSetSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_co
 			
 			conv_numerics->SetConservative(U_wall, U_wall);
 			conv_numerics->SetLevelSetVar(LevelSet_wall, LevelSet_wall);
-			conv_numerics->SetDensityInc(solution_container[FLOW_SOL]->node[iPoint]->GetDensityInc(), solution_container[FLOW_SOL]->node[iPoint]->GetDensityInc());
+			conv_numerics->SetDensityInc(solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc(), solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc());
       conv_numerics->SetResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 			
 			LinSysRes.AddBlock(iPoint, Residual_i);
@@ -894,7 +894,7 @@ void CAdjLevelSetSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_co
 	}
 }
 
-void CAdjLevelSetSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CAdjLevelSetSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned long iPoint, iVertex;
 	
 	bool implicit = (config->GetKind_TimeIntScheme_AdjLevelSet() == EULER_IMPLICIT);
@@ -914,7 +914,7 @@ void CAdjLevelSetSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_c
 	}
 }
 
-void CAdjLevelSetSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **solution_container, CConfig *config) {
+void CAdjLevelSetSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 	unsigned long iPoint;
 	double Delta = 0.0, Vol;
 	
@@ -929,7 +929,7 @@ void CAdjLevelSetSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolutio
 		Vol = geometry->node[iPoint]->GetVolume();
 		
 		/*--- Modify matrix diagonal to assure diagonal dominance ---*/
-		Delta = Vol / solution_container[FLOW_SOL]->node[iPoint]->GetDelta_Time();
+		Delta = Vol / solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time();
         
 		Jacobian.AddVal2Diag(iPoint,Delta);
         
@@ -986,7 +986,7 @@ void CAdjLevelSetSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolutio
   
 }
 
-void CAdjLevelSetSolution::SetResidual_DualTime(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
+void CAdjLevelSetSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
 	double *U_time_nM1, *U_time_n, *U_time_nP1, Volume_nM1, Volume_n, Volume_nP1, TimeStep;
 	

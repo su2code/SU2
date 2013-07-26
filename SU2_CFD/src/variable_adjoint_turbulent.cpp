@@ -51,53 +51,11 @@ CAdjTurbVariable::CAdjTurbVariable(double val_psinu_inf, unsigned short val_ndim
   
 	if (config->GetKind_SlopeLimit() != NONE) Limiter = new double [nVar];
   
-	// Hybrid adjoint
-  //	if (config->GetKind_Adjoint() == HYBRID) {
-  //		unsigned short totalnVar;
-  //		totalnVar = nDim + 2 + nVar;
-  //	// Allocate
-  //		dmuT_dUTvar = new double [totalnVar];
-  //		dRTstar_dUTvar = new double* [nNeigh+1];
-  //		for (unsigned short iNeigh = 0; iNeigh < (nNeigh+1); iNeigh++) {
-  //			dRTstar_dUTvar[iNeigh] = new double [totalnVar];
-  //		}
-  //
-  //		dFT_dUTvar = new double* [nNeigh+1]; // In theory only needed at boundaries
-  //		for (unsigned short iNeigh = 0; iNeigh < (nNeigh+1); iNeigh++) {
-  //			dFT_dUTvar[iNeigh] = new double [totalnVar];
-  //		}
-  //	// Initialise
-  //		for (unsigned short iVar = 0; iVar < totalnVar; iVar++) {
-  //			dmuT_dUTvar[iVar] = 0.0;
-  //		}
-  //		for (unsigned short iNeigh = 0; iNeigh < (nNeigh+1); iNeigh++) {
-  //			for (unsigned short iVar = 0; iVar < totalnVar; iVar++) {
-  //				dRTstar_dUTvar[iNeigh][iVar] = 0.0;
-  //				dFT_dUTvar[iNeigh][iVar] = 0.0;
-  //			}
-  //		}
-  //	}
-  
-	if (config->GetKind_Adjoint() == HYBRID) {
-		unsigned short nTotalVar;
-		nTotalVar = nDim + 2 + nVar;
-		EddyViscSens = new double[nTotalVar];
-    for (unsigned short iVar = 0; iVar < nTotalVar; iVar++)
-      EddyViscSens[iVar] = 0.0;
-	}
-  
 }
 
 CAdjTurbVariable::~CAdjTurbVariable(void) {
   
 	if (dmuT_dUTvar   != NULL) delete [] dmuT_dUTvar;
 	if (EddyViscSens  != NULL) delete [] EddyViscSens;
-  
-  //	if (dRTstar_dUTvar != NULL) {
-  //    delete [] dRTstar_dUTvar;
-  //  }
-  //	if (dFT_dUTvar != NULL) {
-  //    delete [] dFT_dUTvar;
-  //  }
   
 }

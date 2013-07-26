@@ -23,9 +23,9 @@
 
 #include "../include/solver_structure.hpp"
 
-CFEASolution::CFEASolution(void) : CSolution() { }
+CFEASolver::CFEASolver(void) : CSolver() { }
 
-CFEASolution::CFEASolution(CGeometry *geometry, CConfig *config) : CSolution() {
+CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
 	unsigned long iPoint;
 	unsigned short nMarker, iVar, NodesElement;
@@ -150,7 +150,7 @@ CFEASolution::CFEASolution(CGeometry *geometry, CConfig *config) : CSolution() {
 
 }
 
-CFEASolution::~CFEASolution(void) {
+CFEASolver::~CFEASolver(void) {
 
 	unsigned short iVar, iDim, NodesElement;
 
@@ -180,7 +180,7 @@ CFEASolution::~CFEASolution(void) {
 	delete [] cvector;
 }
 
-void CFEASolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
+void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
 	
   /*--- Set residuals to zero ---*/
@@ -195,7 +195,7 @@ void CFEASolution::Preprocessing(CGeometry *geometry, CSolution **solution_conta
 
 }
 
-void CFEASolution::Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CNumerics *second_numerics,
+void CFEASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
 																	 CConfig *config, unsigned short iMesh) {
 		
 	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3 = 0;
@@ -406,12 +406,12 @@ void CFEASolution::Source_Residual(CGeometry *geometry, CSolution **solution_con
 
 }
 
-void CFEASolution::Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
+void CFEASolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
 																	 CConfig *config, unsigned short iMesh) {
 
 }
 
-void CFEASolution::Galerkin_Method(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
+void CFEASolver::Galerkin_Method(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
 		CConfig *config, unsigned short iMesh) {
 
 	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3 = 0, iPoint, total_index;
@@ -617,7 +617,7 @@ void CFEASolution::Galerkin_Method(CGeometry *geometry, CSolution **solution_con
 	} 
 }
 
-void CFEASolution::BC_Displacement(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config, 
+void CFEASolver::BC_Displacement(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 																	 unsigned short val_marker) {
 	unsigned long iPoint, iVertex, total_index;
 	unsigned short iVar;
@@ -647,7 +647,7 @@ void CFEASolution::BC_Displacement(CGeometry *geometry, CSolution **solution_con
 	}
 }
 
-void CFEASolution::BC_FlowLoad(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config, 
+void CFEASolver::BC_FlowLoad(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 													 unsigned short val_marker) {
 	
 	double a[3], b[3], Press_0 = 0.0, Press_1 = 0.0, Press_2 = 0.0, Press_Elem;
@@ -792,7 +792,7 @@ void CFEASolution::BC_FlowLoad(CGeometry *geometry, CSolution **solution_contain
 	
 }
 
-void CFEASolution::BC_Load(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config, 
+void CFEASolver::BC_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 															 unsigned short val_marker) {
 	
 	double a[3], b[3];
@@ -860,7 +860,7 @@ void CFEASolution::BC_Load(CGeometry *geometry, CSolution **solution_container, 
 	
 }
 
-void CFEASolution::Postprocessing(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iMesh) {
+void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
 
 	/*--- Compute the gradient of the displacement ---*/
 	if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
@@ -868,7 +868,7 @@ void CFEASolution::Postprocessing(CGeometry *geometry, CSolution **solution_cont
 
 }
 
-void CFEASolution::SetResidual_DualTime(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iRKStep, 
+void CFEASolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep, 
 																		 unsigned short iMesh, unsigned short RunTime_EqSystem) {
 	
 	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3 = 0;
@@ -1022,7 +1022,7 @@ void CFEASolution::SetResidual_DualTime(CGeometry *geometry, CSolution **solutio
 	
 }
 
-void CFEASolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **solution_container, CConfig *config) {
+void CFEASolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 	
     unsigned short iVar;
 	unsigned long iPoint, total_index;
@@ -1101,7 +1101,7 @@ void CFEASolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **solu
 
 }
 
-void CFEASolution::SetInitialCondition(CGeometry **geometry, CSolution ***solution_container, CConfig *config, unsigned long ExtIter) {
+void CFEASolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
 	unsigned long iPoint;
   
 	bool restart = (config->GetRestart() || config->GetRestart_Flow());
@@ -1136,7 +1136,7 @@ void CFEASolution::SetInitialCondition(CGeometry **geometry, CSolution ***soluti
 	}
 }
 
-void CFEASolution::SetFEA_Load(CSolution ***flow_solution, CGeometry **fea_geometry, CGeometry **flow_geometry, 
+void CFEASolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry, CGeometry **flow_geometry, 
 															 CConfig *fea_config, CConfig *flow_config) {
 	unsigned short iMarker;
 	unsigned long iVertex, iPoint;

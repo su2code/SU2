@@ -162,7 +162,7 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format) {
 
 
 
-void Geometrical_Definition(CGeometry ***geometry, CConfig **config, unsigned short val_nZone) {
+void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned short val_nZone) {
 
 
 	unsigned short iMGlevel, iZone;
@@ -267,7 +267,7 @@ void Geometrical_Definition(CGeometry ***geometry, CConfig **config, unsigned sh
 
 }
 
-void Solution_Definition(CSolution ***solution_container, CGeometry **geometry, CConfig *config, unsigned short iZone) {
+void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry, CConfig *config, unsigned short iZone) {
 
 	unsigned short iMGlevel;
 	bool euler, ns, plasma_euler, plasma_ns,
@@ -361,73 +361,73 @@ void Solution_Definition(CSolution ***solution_container, CGeometry **geometry, 
 		//if (config->GetElectricSolver()) electric  = true;
 	}
 
-	/*--- Definition of the Class for the solution: solution_container[DOMAIN][MESH_LEVEL][EQUATION]. Note that euler, ns
+	/*--- Definition of the Class for the solution: solver_container[DOMAIN][MESH_LEVEL][EQUATION]. Note that euler, ns
    and potential are incompatible, they use the same position in sol container ---*/
 	for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
 
 		/*--- Allocate solution for a template problem ---*/
 		if (template_solver) {
-			solution_container[iMGlevel][TEMPLATE_SOL] = new CTemplateSolution(geometry[iMGlevel], config);
+			solver_container[iMGlevel][TEMPLATE_SOL] = new CTemplateSolver(geometry[iMGlevel], config);
 		}
 
 		/*--- Allocate solution for direct problem, and run the preprocessing and postprocessing ---*/
 		if (euler) {
-			solution_container[iMGlevel][FLOW_SOL] = new CEulerSolution(geometry[iMGlevel], config, iMGlevel);
+			solver_container[iMGlevel][FLOW_SOL] = new CEulerSolver(geometry[iMGlevel], config, iMGlevel);
 		}
 		if (ns) {
-			solution_container[iMGlevel][FLOW_SOL] = new CNSSolution(geometry[iMGlevel], config, iMGlevel);
+			solver_container[iMGlevel][FLOW_SOL] = new CNSSolver(geometry[iMGlevel], config, iMGlevel);
 		}
 		if (turbulent) {
 			if (spalart_allmaras) {
-        solution_container[iMGlevel][TURB_SOL] = new CTurbSASolution(geometry[iMGlevel], config, iMGlevel);
-        solution_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solution_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS);
-        solution_container[iMGlevel][TURB_SOL]->Postprocessing(geometry[iMGlevel], solution_container[iMGlevel], config, iMGlevel);
+        solver_container[iMGlevel][TURB_SOL] = new CTurbSASolver(geometry[iMGlevel], config, iMGlevel);
+        solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS);
+        solver_container[iMGlevel][TURB_SOL]->Postprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel);
       }
 			else if (menter_sst) {
-        solution_container[iMGlevel][TURB_SOL] = new CTurbSSTSolution(geometry[iMGlevel], config, iMGlevel);
-        solution_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solution_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS);
-        solution_container[iMGlevel][TURB_SOL]->Postprocessing(geometry[iMGlevel], solution_container[iMGlevel], config, iMGlevel);
+        solver_container[iMGlevel][TURB_SOL] = new CTurbSSTSolver(geometry[iMGlevel], config, iMGlevel);
+        solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS);
+        solver_container[iMGlevel][TURB_SOL]->Postprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel);
       }
 			if (transition) {
-        solution_container[iMGlevel][TRANS_SOL] = new CTransLMSolution(geometry[iMGlevel], config, iMGlevel);
+        solver_container[iMGlevel][TRANS_SOL] = new CTransLMSolver(geometry[iMGlevel], config, iMGlevel);
       }
 		}
 		if (electric) {
-			solution_container[iMGlevel][ELEC_SOL] = new CElectricSolution(geometry[iMGlevel], config);
+			solver_container[iMGlevel][ELEC_SOL] = new CElectricSolver(geometry[iMGlevel], config);
 		}
 		if (plasma_euler || plasma_ns) {
-			solution_container[iMGlevel][PLASMA_SOL] = new CPlasmaSolution(geometry[iMGlevel], config);
+			solver_container[iMGlevel][PLASMA_SOL] = new CPlasmaSolver(geometry[iMGlevel], config);
 		}
 		if (levelset) {
-			solution_container[iMGlevel][LEVELSET_SOL] = new CLevelSetSolution(geometry[iMGlevel], config, iMGlevel);
+			solver_container[iMGlevel][LEVELSET_SOL] = new CLevelSetSolver(geometry[iMGlevel], config, iMGlevel);
 		}		
 		if (wave) {
-			solution_container[iMGlevel][WAVE_SOL] = new CWaveSolution(geometry[iMGlevel], config);
+			solver_container[iMGlevel][WAVE_SOL] = new CWaveSolver(geometry[iMGlevel], config);
 		}
 		if (fea) {
-			solution_container[iMGlevel][FEA_SOL] = new CFEASolution(geometry[iMGlevel], config);
+			solver_container[iMGlevel][FEA_SOL] = new CFEASolver(geometry[iMGlevel], config);
 		}
 
 		/*--- Allocate solution for adjoint problem ---*/
 		if (adj_euler) {
-			solution_container[iMGlevel][ADJFLOW_SOL] = new CAdjEulerSolution(geometry[iMGlevel], config, iMGlevel);
+			solver_container[iMGlevel][ADJFLOW_SOL] = new CAdjEulerSolver(geometry[iMGlevel], config, iMGlevel);
 		}
 		if (adj_ns) {
-			solution_container[iMGlevel][ADJFLOW_SOL] = new CAdjNSSolution(geometry[iMGlevel], config, iMGlevel);
+			solver_container[iMGlevel][ADJFLOW_SOL] = new CAdjNSSolver(geometry[iMGlevel], config, iMGlevel);
 		}
 		if (adj_turb) {
-			solution_container[iMGlevel][ADJTURB_SOL] = new CAdjTurbSolution(geometry[iMGlevel], config);
+			solver_container[iMGlevel][ADJTURB_SOL] = new CAdjTurbSolver(geometry[iMGlevel], config);
 		}
 		if (adj_levelset) {
-			solution_container[iMGlevel][ADJLEVELSET_SOL] = new CAdjLevelSetSolution(geometry[iMGlevel], config, iMGlevel);
+			solver_container[iMGlevel][ADJLEVELSET_SOL] = new CAdjLevelSetSolver(geometry[iMGlevel], config, iMGlevel);
 		}
 		if (adj_plasma_euler || adj_plasma_ns) {
-			solution_container[iMGlevel][ADJPLASMA_SOL] = new CAdjPlasmaSolution(geometry[iMGlevel], config);
+			solver_container[iMGlevel][ADJPLASMA_SOL] = new CAdjPlasmaSolver(geometry[iMGlevel], config);
 		}
 
 		/*--- Allocate solution for linear problem (at the moment we use the same scheme as the adjoint problem) ---*/
 		if (lin_euler) {
-			solution_container[iMGlevel][LINFLOW_SOL] = new CLinEulerSolution(geometry[iMGlevel], config);
+			solver_container[iMGlevel][LINFLOW_SOL] = new CLinEulerSolver(geometry[iMGlevel], config);
 		}
 		if (lin_ns) {
 			cout <<"Equation not implemented." << endl; cin.get(); break;
@@ -438,7 +438,7 @@ void Solution_Definition(CSolution ***solution_container, CGeometry **geometry, 
 }
 
 
-void Integration_Definition(CIntegration **integration_container, CGeometry **geometry, CConfig *config, unsigned short iZone) {
+void Integration_Preprocessing(CIntegration **integration_container, CGeometry **geometry, CConfig *config, unsigned short iZone) {
 
 	bool euler, ns, plasma_euler, plasma_ns, plasma_monatomic, plasma_diatomic, levelset, adj_plasma_euler, adj_plasma_ns,
 	adj_euler, lin_euler, adj_ns, lin_ns, turbulent, adj_turb, lin_turb, electric, wave, fea, spalart_allmaras, menter_sst, template_solver, adj_levelset, transition;
@@ -560,7 +560,7 @@ void Integration_Definition(CIntegration **integration_container, CGeometry **ge
 }
 
 
-void Solver_Definition(CNumerics ****numerics_container, CSolution ***solution_container, CGeometry **geometry, 
+void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_container, CGeometry **geometry, 
 		CConfig *config, unsigned short iZone) {
 
 	unsigned short iMGlevel, iSol, nDim, nVar_Template = 0, nVar_Flow = 0, nVar_Trans = 0, nVar_Adj_Flow = 0, nVar_Plasma = 0,
@@ -645,7 +645,7 @@ void Solver_Definition(CNumerics ****numerics_container, CSolution ***solution_c
 	if (turbulent)
 		switch (config->GetKind_Turb_Model()){
 		case SA: spalart_allmaras = true; break;
-		case SST: menter_sst = true; constants = solution_container[MESH_0][TURB_SOL]->GetConstants(); break;
+		case SST: menter_sst = true; constants = solver_container[MESH_0][TURB_SOL]->GetConstants(); break;
 		default: cout << "Specified turbulence model unavailable or none selected" << endl; cin.get(); break;
 		}
 
@@ -664,33 +664,33 @@ void Solver_Definition(CNumerics ****numerics_container, CSolution ***solution_c
 	}
 
 	/*--- Number of variables for the template ---*/
-	if (template_solver) nVar_Flow = solution_container[MESH_0][FLOW_SOL]->GetnVar();
+	if (template_solver) nVar_Flow = solver_container[MESH_0][FLOW_SOL]->GetnVar();
 
 	/*--- Number of variables for direct problem ---*/
-	if (euler)				nVar_Flow = solution_container[MESH_0][FLOW_SOL]->GetnVar();
-	if (ns)	nVar_Flow = solution_container[MESH_0][FLOW_SOL]->GetnVar();
-	if (turbulent)		nVar_Turb = solution_container[MESH_0][TURB_SOL]->GetnVar();
-	if (transition)		nVar_Trans = solution_container[MESH_0][TRANS_SOL]->GetnVar();
-	if (electric)			nVar_Elec = solution_container[MESH_0][ELEC_SOL]->GetnVar();
+	if (euler)				nVar_Flow = solver_container[MESH_0][FLOW_SOL]->GetnVar();
+	if (ns)	nVar_Flow = solver_container[MESH_0][FLOW_SOL]->GetnVar();
+	if (turbulent)		nVar_Turb = solver_container[MESH_0][TURB_SOL]->GetnVar();
+	if (transition)		nVar_Trans = solver_container[MESH_0][TRANS_SOL]->GetnVar();
+	if (electric)			nVar_Elec = solver_container[MESH_0][ELEC_SOL]->GetnVar();
 	if (plasma_euler || plasma_ns)	{ 
-		nVar_Plasma = solution_container[MESH_0][PLASMA_SOL]->GetnVar();
-		nSpecies    = solution_container[MESH_0][PLASMA_SOL]->GetnSpecies();
-		nDiatomics  = solution_container[MESH_0][PLASMA_SOL]->GetnDiatomics();
-		nMonatomics = solution_container[MESH_0][PLASMA_SOL]->GetnMonatomics();
+		nVar_Plasma = solver_container[MESH_0][PLASMA_SOL]->GetnVar();
+		nSpecies    = solver_container[MESH_0][PLASMA_SOL]->GetnSpecies();
+		nDiatomics  = solver_container[MESH_0][PLASMA_SOL]->GetnDiatomics();
+		nMonatomics = solver_container[MESH_0][PLASMA_SOL]->GetnMonatomics();
 	}
-	if (levelset)		nVar_LevelSet = solution_container[MESH_0][LEVELSET_SOL]->GetnVar();
-	if (wave)				nVar_Wave = solution_container[MESH_0][WAVE_SOL]->GetnVar();
-	if (fea)				nVar_FEA = solution_container[MESH_0][FEA_SOL]->GetnVar();
+	if (levelset)		nVar_LevelSet = solver_container[MESH_0][LEVELSET_SOL]->GetnVar();
+	if (wave)				nVar_Wave = solver_container[MESH_0][WAVE_SOL]->GetnVar();
+	if (fea)				nVar_FEA = solver_container[MESH_0][FEA_SOL]->GetnVar();
 
 	/*--- Number of variables for adjoint problem ---*/
-	if (adj_euler)  	nVar_Adj_Flow = solution_container[MESH_0][ADJFLOW_SOL]->GetnVar();
-	if (adj_ns)			  nVar_Adj_Flow = solution_container[MESH_0][ADJFLOW_SOL]->GetnVar();
-	if (adj_turb)		  nVar_Adj_Turb = solution_container[MESH_0][ADJTURB_SOL]->GetnVar();
-	if (adj_levelset)	nVar_Adj_LevelSet = solution_container[MESH_0][ADJLEVELSET_SOL]->GetnVar();
-	if (adj_plasma_euler || adj_plasma_ns)		nVar_Adj_Plasma = solution_container[MESH_0][ADJPLASMA_SOL]->GetnVar();
+	if (adj_euler)  	nVar_Adj_Flow = solver_container[MESH_0][ADJFLOW_SOL]->GetnVar();
+	if (adj_ns)			  nVar_Adj_Flow = solver_container[MESH_0][ADJFLOW_SOL]->GetnVar();
+	if (adj_turb)		  nVar_Adj_Turb = solver_container[MESH_0][ADJTURB_SOL]->GetnVar();
+	if (adj_levelset)	nVar_Adj_LevelSet = solver_container[MESH_0][ADJLEVELSET_SOL]->GetnVar();
+	if (adj_plasma_euler || adj_plasma_ns)		nVar_Adj_Plasma = solver_container[MESH_0][ADJPLASMA_SOL]->GetnVar();
 
 	/*--- Number of variables for the linear problem ---*/
-	if (lin_euler)	nVar_Lin_Flow = solution_container[MESH_0][LINFLOW_SOL]->GetnVar();
+	if (lin_euler)	nVar_Lin_Flow = solver_container[MESH_0][LINFLOW_SOL]->GetnVar();
 
 	/*--- Number of dimensions ---*/
 	nDim = geometry[MESH_0]->GetnDim();

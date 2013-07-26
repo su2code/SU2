@@ -56,6 +56,6 @@ void SetMultiZone_MeshFile(CPhysicalGeometry **geometry, CConfig **config, unsig
  * \brief Write a single-zone mesh file after deforming the mesh using SU2_MDC.
  * \param[in] geometry - Multi-zone physical geometry container.
  * \param[in] config - Definition of the particular problem.
- * \param[in] surface_mov - durface information including FFD box.
+ * \param[in] surface_movement - durface information including FFD box.
  */
-void SetSingleZone_MeshFile(CPhysicalGeometry *geometry, CConfig *config, CSurfaceMovement *surface_mov);
+void SetSingleZone_MeshFile(CPhysicalGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement);

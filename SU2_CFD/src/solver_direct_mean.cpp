@@ -23,7 +23,7 @@
 
 #include "../include/solver_structure.hpp"
 
-CEulerSolution::CEulerSolution(void) : CSolution() {
+CEulerSolver::CEulerSolver(void) : CSolver() {
 
 	/*--- Array initialization ---*/
 	Velocity_Inlet = NULL;
@@ -63,7 +63,7 @@ CEulerSolution::CEulerSolution(void) : CSolution() {
 
 }
 
-CEulerSolution::CEulerSolution(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolution() {
+CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
 	unsigned long iPoint, index, counter_local = 0, counter_global = 0;
 	unsigned short iVar, iDim, iMarker;
   double Density, Velocity2, Pressure, Temperature;
@@ -422,7 +422,7 @@ CEulerSolution::CEulerSolution(CGeometry *geometry, CConfig *config, unsigned sh
 
 }
 
-CEulerSolution::~CEulerSolution(void) {
+CEulerSolver::~CEulerSolver(void) {
 	unsigned short iVar, iMarker;
 
 	/*--- Array initialization ---*/
@@ -485,7 +485,7 @@ CEulerSolution::~CEulerSolution(void) {
 
 }
 
-void CEulerSolution::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
+void CEulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
 	unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR;
 	unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
 	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi, *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
@@ -607,7 +607,7 @@ void CEulerSolution::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
   
 }
 
-void CEulerSolution::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) {
+void CEulerSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) {
 	unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR;
 	unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
 	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
@@ -729,7 +729,7 @@ void CEulerSolution::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) 
 	}
 }
 
-void CEulerSolution::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config) {
+void CEulerSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config) {
 	unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR;
 	unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
 	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
@@ -851,7 +851,7 @@ void CEulerSolution::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *conf
 	}
 }
 
-void CEulerSolution::Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfig *config) {
+void CEulerSolver::Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfig *config) {
 	unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR;
 	unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
 	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
@@ -974,7 +974,7 @@ void CEulerSolution::Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfig *c
   
 }
 
-void CEulerSolution::Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *config) {
+void CEulerSolver::Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *config) {
 	unsigned short iMarker, MarkerS, MarkerR, *Buffer_Receive_Neighbor = NULL, *Buffer_Send_Neighbor = NULL;
 	unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
 	double *Buffer_Receive_Lambda = NULL, *Buffer_Send_Lambda = NULL;
@@ -1065,7 +1065,7 @@ void CEulerSolution::Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *config)
 	}
 }
 
-void CEulerSolution::Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *config) {
+void CEulerSolver::Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *config) {
 	unsigned short iMarker, MarkerS, MarkerR;
 	unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
 	double *Buffer_Receive_Lambda = NULL, *Buffer_Send_Lambda = NULL;
@@ -1141,7 +1141,7 @@ void CEulerSolution::Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *co
 	}
 }
 
-void CEulerSolution::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config) {
+void CEulerSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config) {
 	unsigned short iVar, iDim, iMarker, iPeriodic_Index, MarkerS, MarkerR;
 	unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
 	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
@@ -1270,7 +1270,7 @@ void CEulerSolution::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *con
   
 }
 
-void CEulerSolution::Set_MPI_PrimVar_Gradient(CGeometry *geometry, CConfig *config) {
+void CEulerSolver::Set_MPI_PrimVar_Gradient(CGeometry *geometry, CConfig *config) {
 	unsigned short iVar, iDim, iMarker, iPeriodic_Index, MarkerS, MarkerR;
 	unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
 	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
@@ -1399,7 +1399,7 @@ void CEulerSolution::Set_MPI_PrimVar_Gradient(CGeometry *geometry, CConfig *conf
   
 }
 
-void CEulerSolution::SetInitialCondition(CGeometry **geometry, CSolution ***solution_container, CConfig *config, unsigned long ExtIter) {
+void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
 	unsigned long iPoint, Point_Fine;
 	unsigned short iMesh, iChildren, iVar, iDim;
 	double Density, Pressure, yFreeSurface, PressFreeSurface, Froude, yCoord, Velx, Vely, Velz, RhoVelx, RhoVely, RhoVelz, XCoord, YCoord, ZCoord, DensityInc, ViscosityInc, Heaviside, LevelSet, lambda, DensityFreeSurface, Area_Children, Area_Parent, LevelSet_Fine, epsilon, *Solution_Fine, *Solution; //, Factor_nu, nu_tilde;
@@ -1431,7 +1431,7 @@ void CEulerSolution::SetInitialCondition(CGeometry **geometry, CSolution ***solu
 							ZCoord = geometry[iMesh]->node[iPoint]->GetCoord(2);
 							LevelSet = ZCoord - config->GetFreeSurface_Zero();
 						}
-						solution_container[iMesh][LEVELSET_SOL]->node[iPoint]->SetSolution(0, LevelSet);
+						solver_container[iMesh][LEVELSET_SOL]->node[iPoint]->SetSolution(0, LevelSet);
 					}
 					else {
 						Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
@@ -1439,10 +1439,10 @@ void CEulerSolution::SetInitialCondition(CGeometry **geometry, CSolution ***solu
 						for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
 							Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
 							Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
-							LevelSet_Fine = solution_container[iMesh-1][LEVELSET_SOL]->node[Point_Fine]->GetSolution(0);
+							LevelSet_Fine = solver_container[iMesh-1][LEVELSET_SOL]->node[Point_Fine]->GetSolution(0);
 							LevelSet += LevelSet_Fine*Area_Children/Area_Parent;
 						}
-						solution_container[iMesh][LEVELSET_SOL]->node[iPoint]->SetSolution(0, LevelSet);
+						solver_container[iMesh][LEVELSET_SOL]->node[iPoint]->SetSolution(0, LevelSet);
 					}
                     
 					/*--- Compute the flow solution using the level set value. ---*/
@@ -1455,40 +1455,40 @@ void CEulerSolution::SetInitialCondition(CGeometry **geometry, CSolution ***solu
 					/*--- Set the value of the incompressible density for free surface flows (density ratio g/l) ---*/
 					lambda = config->GetRatioDensity();
 					DensityInc = (lambda + (1.0 - lambda)*Heaviside)*config->GetDensity_FreeStreamND();
-					solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetDensityInc(DensityInc);
+					solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetDensityInc(DensityInc);
                     
 					/*--- Set the value of the incompressible viscosity for free surface flows (viscosity ratio g/l) ---*/
 					lambda = config->GetRatioViscosity();
 					ViscosityInc = (lambda + (1.0 - lambda)*Heaviside)*config->GetViscosity_FreeStreamND();
-					solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetLaminarViscosityInc(ViscosityInc);
+					solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetLaminarViscosityInc(ViscosityInc);
                     
 					/*--- Set the value of the incompressible viscosity for free surface flows (viscosity ratio g/l) ---*/
 					//          if (rans && (iMesh == MESH_0)) {
 					//            Factor_nu = config->GetNuFactor_FreeStream();
 					//            nu_tilde = Factor_nu*ViscosityInc/DensityInc;
-					//            solution_container[iMesh][TURB_SOL]->node[iPoint]->SetSolution(0, nu_tilde);
+					//            solver_container[iMesh][TURB_SOL]->node[iPoint]->SetSolution(0, nu_tilde);
 					//          }
                     
 					/*--- Update solution with the new pressure ---*/
 					yFreeSurface = config->GetFreeSurface_Zero();
-					PressFreeSurface = solution_container[iMesh][FLOW_SOL]->GetPressure_Inf();
-					DensityFreeSurface = solution_container[iMesh][FLOW_SOL]->GetDensity_Inf();
-					Density = solution_container[iMesh][FLOW_SOL]->node[iPoint]->GetDensityInc();
+					PressFreeSurface = solver_container[iMesh][FLOW_SOL]->GetPressure_Inf();
+					DensityFreeSurface = solver_container[iMesh][FLOW_SOL]->GetDensity_Inf();
+					Density = solver_container[iMesh][FLOW_SOL]->node[iPoint]->GetDensityInc();
 					Froude = config->GetFroude();
 					yCoord = geometry[iMesh]->node[iPoint]->GetCoord(nDim-1);
 					Pressure = PressFreeSurface + Density*((yFreeSurface-yCoord)/(Froude*Froude));
-					solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(0, Pressure);
+					solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(0, Pressure);
                     
 					/*--- Update solution with the new velocity ---*/
-					Velx = solution_container[iMesh][FLOW_SOL]->GetVelocity_Inf(0);
-					Vely = solution_container[iMesh][FLOW_SOL]->GetVelocity_Inf(1);
+					Velx = solver_container[iMesh][FLOW_SOL]->GetVelocity_Inf(0);
+					Vely = solver_container[iMesh][FLOW_SOL]->GetVelocity_Inf(1);
 					RhoVelx = Velx * Density; RhoVely = Vely * Density;
-					solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(1, RhoVelx);
-					solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(2, RhoVely);
+					solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(1, RhoVelx);
+					solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(2, RhoVely);
 					if (nDim == 3) {
-						Velz = solution_container[iMesh][FLOW_SOL]->GetVelocity_Inf(2);
+						Velz = solver_container[iMesh][FLOW_SOL]->GetVelocity_Inf(2);
 						RhoVelz = Velz * Density;
-						solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(3, RhoVelz);
+						solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(3, RhoVelz);
 					}
                     
 				}
@@ -1496,17 +1496,17 @@ void CEulerSolution::SetInitialCondition(CGeometry **geometry, CSolution ***solu
 			}
             
 			/*--- Set the MPI communication ---*/
-			solution_container[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
-			solution_container[iMesh][LEVELSET_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+			solver_container[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+			solver_container[iMesh][LEVELSET_SOL]->Set_MPI_Solution(geometry[iMesh], config);
             
             /*--- Set the primitive variables for the level set equation ---*/
-            solution_container[iMesh][LEVELSET_SOL]->SetLevelSet_Distance(geometry[iMesh], config, true, false);
+            solver_container[iMesh][LEVELSET_SOL]->SetLevelSet_Distance(geometry[iMesh], config, true, false);
             
 			/*--- The value of the solution for the first iteration of the dual time ---*/
 			for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
 				if ((ExtIter == 0) && (dual_time)) {
-					solution_container[iMesh][LEVELSET_SOL]->node[iPoint]->Set_Solution_time_n();
-					solution_container[iMesh][LEVELSET_SOL]->node[iPoint]->Set_Solution_time_n1();
+					solver_container[iMesh][LEVELSET_SOL]->node[iPoint]->Set_Solution_time_n();
+					solver_container[iMesh][LEVELSET_SOL]->node[iPoint]->Set_Solution_time_n1();
 				}
 			}
             
@@ -1571,22 +1571,22 @@ void CEulerSolution::SetInitialCondition(CGeometry **geometry, CSolution ***solu
               ((Coord[1] >= 0.0) && (Coord[1] <= 0.7)) &&
               ((Coord[2] >= 2.5) && (Coord[2] <= 4.0))) {
             
-            solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(0, Density_FreeStreamND);
+            solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(0, Density_FreeStreamND);
             for (iDim = 0; iDim < nDim; iDim++)
-              solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(iDim+1, Velocity_FreeStreamND[iDim]);
-            solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(nVar-1, Energy_FreeStreamND);
+              solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(iDim+1, Velocity_FreeStreamND[iDim]);
+            solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(nVar-1, Energy_FreeStreamND);
             
-            solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution_Old(0, Density_FreeStreamND);
+            solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution_Old(0, Density_FreeStreamND);
             for (iDim = 0; iDim < nDim; iDim++)
-              solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution_Old(iDim+1, Velocity_FreeStreamND[iDim]);
-            solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution_Old(nVar-1, Energy_FreeStreamND);
+              solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution_Old(iDim+1, Velocity_FreeStreamND[iDim]);
+            solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution_Old(nVar-1, Energy_FreeStreamND);
           }
           
 				}
         
         /*--- Set the MPI communication ---*/
-        solution_container[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
-        solution_container[iMesh][FLOW_SOL]->Set_MPI_Solution_Old(geometry[iMesh], config);
+        solver_container[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+        solver_container[iMesh][FLOW_SOL]->Set_MPI_Solution_Old(geometry[iMesh], config);
 
 			}
       
@@ -1605,15 +1605,15 @@ void CEulerSolution::SetInitialCondition(CGeometry **geometry, CSolution ***solu
 				for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
 					Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
 					Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
-					Solution_Fine = solution_container[iMesh-1][FLOW_SOL]->node[Point_Fine]->GetSolution();
+					Solution_Fine = solver_container[iMesh-1][FLOW_SOL]->node[Point_Fine]->GetSolution();
 					for (iVar = 0; iVar < nVar; iVar++) {
 						Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
 					}
 				}
-				solution_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(Solution);
+				solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(Solution);
                 
 			}
-			solution_container[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+			solver_container[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
 		}
 		delete [] Solution;
 	}
@@ -1623,11 +1623,11 @@ void CEulerSolution::SetInitialCondition(CGeometry **geometry, CSolution ***solu
 	for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++) {
 		for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
 			if ((ExtIter == 0) && (dual_time)) {
-				solution_container[iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n();
-				solution_container[iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n1();
+				solver_container[iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n();
+				solver_container[iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n1();
 				if (rans) {
-					solution_container[iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n();
-					solution_container[iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n1();
+					solver_container[iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n();
+					solver_container[iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n1();
 				}
 			}
 		}
@@ -1668,7 +1668,7 @@ void CEulerSolution::SetInitialCondition(CGeometry **geometry, CSolution ***solu
     
 }
 
-void CEulerSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
+void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
 	double levelset;
   
@@ -1692,7 +1692,7 @@ void CEulerSolution::Preprocessing(CGeometry *geometry, CSolution **solution_con
   
 	for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
-		if (freesurface) levelset = solution_container[LEVELSET_SOL]->node[iPoint]->GetPrimVar(0);
+		if (freesurface) levelset = solver_container[LEVELSET_SOL]->node[iPoint]->GetPrimVar(0);
 		else levelset = 0.0;
     
 		/*--- Set the primitive variables incompressible (dens, vx, vy, vz, beta)
@@ -1728,7 +1728,7 @@ void CEulerSolution::Preprocessing(CGeometry *geometry, CSolution **solution_con
   
 }
 
-void CEulerSolution::SetTime_Step(CGeometry *geometry, CSolution **solution_container, CConfig *config,
+void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
 		unsigned short iMesh, unsigned long Iteration) {
 	double *Normal, Area, Vol, Mean_SoundSpeed, Mean_ProjVel, Mean_BetaInc2, Lambda, Local_Delta_Time, Mean_DensityInc,
 	Global_Delta_Time = 1E6, Global_Delta_UnstTimeND, ProjVel, ProjVel_i, ProjVel_j;
@@ -1910,7 +1910,7 @@ void CEulerSolution::SetTime_Step(CGeometry *geometry, CSolution **solution_cont
 
 }
 
-void CEulerSolution::Centered_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, 
+void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
 		CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 	unsigned long iEdge, iPoint, jPoint;
 
@@ -1982,7 +1982,7 @@ void CEulerSolution::Centered_Residual(CGeometry *geometry, CSolution **solution
 	}
 }
 
-void CEulerSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
+void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
 		CConfig *config, unsigned short iMesh) {
 	double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, 
 	*U_i, *U_j, sqvel, *Limiter_i = NULL, *Limiter_j = NULL;
@@ -2157,7 +2157,7 @@ void CEulerSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_c
 
 }
 
-void CEulerSolution::Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CNumerics *second_numerics,
+void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
 		CConfig *config, unsigned short iMesh) {
   
 	unsigned short iVar;
@@ -2379,7 +2379,7 @@ void CEulerSolution::Source_Residual(CGeometry *geometry, CSolution **solution_c
 	}
 }
 
-void CEulerSolution::Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
+void CEulerSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
 		CConfig *config, unsigned short iMesh) {
 
 	/* This method should be used to call any new source terms for a particular problem*/
@@ -2393,7 +2393,7 @@ void CEulerSolution::Source_Template(CGeometry *geometry, CSolution **solution_c
 
 }
 
-void CEulerSolution::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
+void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
 	double *Normal, Area, Mean_SoundSpeed, Mean_ProjVel, Mean_BetaInc2, Lambda, Mean_DensityInc,
 	ProjVel, ProjVel_i, ProjVel_j;
 	unsigned long iEdge, iVertex, iPoint, jPoint;
@@ -2514,7 +2514,7 @@ void CEulerSolution::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
 
 }
 
-void CEulerSolution::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) {
+void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) {
 	unsigned long iPoint, jPoint, iEdge;
 	double Pressure_i = 0, Pressure_j = 0, *Diff;
 	unsigned short iVar;
@@ -2625,7 +2625,7 @@ void CEulerSolution::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config
 
 }
 
-void CEulerSolution::SetDissipation_Switch(CGeometry *geometry, CConfig *config) {
+void CEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config) {
 	unsigned long iEdge, iPoint, jPoint;
 	double Pressure_i, Pressure_j;
 
@@ -2743,7 +2743,7 @@ void CEulerSolution::SetDissipation_Switch(CGeometry *geometry, CConfig *config)
 
 }
 
-void CEulerSolution::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
+void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 	unsigned long iVertex, iPoint;
 	unsigned short iDim, iMarker, Boundary, Monitoring;
 	double Pressure, *Normal = NULL, dist[3], *Coord, Face_Area, PressInviscid;
@@ -2951,7 +2951,7 @@ void CEulerSolution::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 	Total_CMerit += AllBound_CMerit_Inv;
 }
 
-void CEulerSolution::ExplicitRK_Iteration(CGeometry *geometry, CSolution **solution_container,
+void CEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
 		CConfig *config, unsigned short iRKStep) {
 	double *Residual, *Res_TruncError, Vol, Delta, Res;
 	unsigned short iVar;
@@ -2993,7 +2993,7 @@ void CEulerSolution::ExplicitRK_Iteration(CGeometry *geometry, CSolution **solut
     
 }
 
-void CEulerSolution::ExplicitEuler_Iteration(CGeometry *geometry, CSolution **solution_container, CConfig *config) {
+void CEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 	double *local_Residual, *local_Res_TruncError, Vol, Delta, Res;
 	unsigned short iVar;
 	unsigned long iPoint;
@@ -3032,7 +3032,7 @@ void CEulerSolution::ExplicitEuler_Iteration(CGeometry *geometry, CSolution **so
 
 }
 
-void CEulerSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **solution_container, CConfig *config) {
+void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 	unsigned short iVar, jVar;
 	unsigned long iPoint, total_index, IterLinSol = 0;
 	double Delta, *local_Res_TruncError, Vol;
@@ -3136,7 +3136,7 @@ void CEulerSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **so
     
 }
 
-void CEulerSolution::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *config) {
+void CEulerSolver::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *config) {
 	unsigned long iPoint, jPoint, iEdge, iVertex;
 	unsigned short iDim, iVar, iMarker, nPrimVar;
 	double *PrimVar_Vertex, *PrimVar_i, *PrimVar_j, PrimVar_Average,
@@ -3217,7 +3217,7 @@ void CEulerSolution::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *config
 
 }
 
-void CEulerSolution::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
+void CEulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
 	unsigned short iVar, iDim, jDim, iNeigh, nPrimVar;
 	unsigned long iPoint, jPoint;
 	double *PrimVar_i, *PrimVar_j, *Coord_i, *Coord_j, r11, r12, r13, r22, r23, r23_a,
@@ -3330,9 +3330,9 @@ void CEulerSolution::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config
 
 }
 
-void CEulerSolution::SetPrimVar_Limiter(CGeometry *geometry, CConfig *config) { }
+void CEulerSolver::SetPrimVar_Limiter(CGeometry *geometry, CConfig *config) { }
 
-void CEulerSolution::SetPreconditioner(CConfig *config, unsigned short iPoint) {
+void CEulerSolver::SetPreconditioner(CConfig *config, unsigned short iPoint) {
 	unsigned short iDim, jDim, iVar, jVar;
 	double Beta, local_Mach, Beta2, rho, enthalpy, soundspeed, sq_vel;
 	double *U_i = NULL;
@@ -3382,7 +3382,7 @@ void CEulerSolution::SetPreconditioner(CConfig *config, unsigned short iPoint) {
 
 }
 
-void CEulerSolution::GetNacelle_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh) {
+void CEulerSolver::GetNacelle_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh) {
 	unsigned short iDim, iMarker, iVar;
 	unsigned long iVertex, iPoint;
 	double Pressure, Velocity[3], Velocity2, MassFlow, Density, Energy, Area,
@@ -3664,7 +3664,7 @@ void CEulerSolution::GetNacelle_Properties(CGeometry *geometry, CConfig *config,
   
 }
 
-void CEulerSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container,
+void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
 		CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 	unsigned short iDim, iVar, jVar, jDim;
 	unsigned long iPoint, iVertex;
@@ -3766,7 +3766,7 @@ void CEulerSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_con
 
 }
 
-void CEulerSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_container,
+void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
                                   CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned short iVar, iDim, nPrimVar;
 	unsigned long iVertex, iPoint, Point_Normal;
@@ -3890,7 +3890,7 @@ void CEulerSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_cont
                 
 				/*--- Turbulent kinetic energy ---*/
 				if (config->GetKind_Turb_Model() == SST)
-					visc_numerics->SetTurbKineticEnergy(solution_container[TURB_SOL]->node[iPoint]->GetSolution(0), solution_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+					visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
                 
 				/*--- Compute and update residual ---*/
 				visc_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
@@ -3914,7 +3914,7 @@ void CEulerSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_cont
     
 }
 
-void CEulerSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_container,
+void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
                               CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned short iVar, iDim, nPrimVar;
 	unsigned long iVertex, iPoint, Point_Normal;
@@ -4195,7 +4195,7 @@ void CEulerSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_containe
                 
 				/*--- Turbulent kinetic energy ---*/
 				if (config->GetKind_Turb_Model() == SST)
-					visc_numerics->SetTurbKineticEnergy(solution_container[TURB_SOL]->node[iPoint]->GetSolution(0), solution_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+					visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
                 
 				/*--- Compute and update residual ---*/
 				visc_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
@@ -4219,7 +4219,7 @@ void CEulerSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_containe
     
 }
 
-void CEulerSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_container,
+void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
                                CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned short iVar, iDim, nPrimVar;
 	unsigned long iVertex, iPoint, Point_Normal;
@@ -4433,7 +4433,7 @@ void CEulerSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_contain
                 
 				/*--- Turbulent kinetic energy ---*/
 				if (config->GetKind_Turb_Model() == SST)
-					visc_numerics->SetTurbKineticEnergy(solution_container[TURB_SOL]->node[iPoint]->GetSolution(0), solution_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+					visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
                 
 				/*--- Compute and update residual ---*/
 				visc_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
@@ -4457,7 +4457,7 @@ void CEulerSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_contain
     
 }
 
-void CEulerSolution::BC_Supersonic_Inlet(CGeometry *geometry, CSolution **solution_container,
+void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container,
                                          CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned short iDim, iVar, nPrimVar;
 	unsigned long iVertex, iPoint, Point_Normal;
@@ -4585,7 +4585,7 @@ void CEulerSolution::BC_Supersonic_Inlet(CGeometry *geometry, CSolution **soluti
                 
 				/*--- Turbulent kinetic energy ---*/
 				if (config->GetKind_Turb_Model() == SST)
-					visc_numerics->SetTurbKineticEnergy(solution_container[TURB_SOL]->node[iPoint]->GetSolution(0), solution_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+					visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
                 
 				/*--- Compute and update residual ---*/
 				visc_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
@@ -4608,7 +4608,7 @@ void CEulerSolution::BC_Supersonic_Inlet(CGeometry *geometry, CSolution **soluti
     
 }
 
-void CEulerSolution::BC_Nacelle_Inflow(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CEulerSolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned short iVar, iDim, nPrimVar;
 	unsigned long iVertex, iPoint, Point_Normal;
 	double Pressure, P_Fan, Velocity[3], Velocity2, Entropy, Target_FanFace_Mach = 0.0, Density, Energy,
@@ -4744,7 +4744,7 @@ void CEulerSolution::BC_Nacelle_Inflow(CGeometry *geometry, CSolution **solution
         
 				/*--- Turbulent kinetic energy ---*/
 				if (config->GetKind_Turb_Model() == SST)
-					visc_numerics->SetTurbKineticEnergy(solution_container[TURB_SOL]->node[iPoint]->GetSolution(0), solution_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+					visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
         
 				/*--- Compute and update residual ---*/
 				visc_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
@@ -4767,7 +4767,7 @@ void CEulerSolution::BC_Nacelle_Inflow(CGeometry *geometry, CSolution **solution
   
 }
 
-void CEulerSolution::BC_Nacelle_Exhaust(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CEulerSolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned short iVar, iDim, nPrimVar;
 	unsigned long iVertex, iPoint, Point_Normal;
 	double P_Exhaust, T_Exhaust, Velocity[3], Velocity2, H_Exhaust, Temperature, Riemann, Area, UnitaryNormal[3], Pressure, Density, Energy, Mach2, SoundSpeed2, SoundSpeed_Exhaust2, Vel_Mag, alpha, aa, bb, cc, dd, Flow_Dir[3];
@@ -4936,7 +4936,7 @@ void CEulerSolution::BC_Nacelle_Exhaust(CGeometry *geometry, CSolution **solutio
         
 				/*--- Turbulent kinetic energy ---*/
 				if (config->GetKind_Turb_Model() == SST)
-					visc_numerics->SetTurbKineticEnergy(solution_container[TURB_SOL]->node[iPoint]->GetSolution(0), solution_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+					visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
         
 				/*--- Compute and update residual ---*/
 				visc_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
@@ -4959,7 +4959,7 @@ void CEulerSolution::BC_Nacelle_Exhaust(CGeometry *geometry, CSolution **solutio
   
 }
 
-void CEulerSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned long iPoint, iVertex;
 	unsigned short iDim, iVar, jVar;
 	double Pressure, *Normal, Density;
@@ -5030,7 +5030,7 @@ void CEulerSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_cont
 	}
 }
 
-void CEulerSolution::BC_Interface_Boundary(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
+void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
 		CConfig *config, unsigned short val_marker) {
 	unsigned long iVertex, iPoint, jPoint;
 	unsigned short iVar, iDim;
@@ -5152,7 +5152,7 @@ void CEulerSolution::BC_Interface_Boundary(CGeometry *geometry, CSolution **solu
 
 }
 
-void CEulerSolution::BC_NearField_Boundary(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
+void CEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
 		CConfig *config, unsigned short val_marker) {
 	unsigned long iVertex, iPoint, jPoint;
 	unsigned short iVar, iDim;
@@ -5277,7 +5277,7 @@ void CEulerSolution::BC_NearField_Boundary(CGeometry *geometry, CSolution **solu
 
 }
 
-void CEulerSolution::BC_Dirichlet(CGeometry *geometry, CSolution **solution_container,
+void CEulerSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solver_container,
 		CConfig *config, unsigned short val_marker) {
 	unsigned long iVertex, iPoint, jPoint, total_index;
 	unsigned short iVar;
@@ -5389,7 +5389,7 @@ void CEulerSolution::BC_Dirichlet(CGeometry *geometry, CSolution **solution_cont
 
 }
 
-void CEulerSolution::BC_Custom(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+void CEulerSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 	unsigned long iVertex, iPoint;
 	unsigned short iVar, iDim;
 	double *U_domain, press, tempe, velo[3], b, rho, L, V, psi, Vpsi, theta, xx, yy;
@@ -5467,7 +5467,7 @@ void CEulerSolution::BC_Custom(CGeometry *geometry, CSolution **solution_contain
 	}
 }
 
-void CEulerSolution::SetResidual_DualTime(CGeometry *geometry, CSolution **solution_container, CConfig *config,
+void CEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
 		unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
 	unsigned short iVar, jVar;
 	unsigned long iPoint;
@@ -5534,8 +5534,8 @@ void CEulerSolution::SetResidual_DualTime(CGeometry *geometry, CSolution **solut
 
 }
 
-void CEulerSolution::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement,
-		CConfig *flow_config, CConfig *fea_config, CGeometry **fea_geometry, CSolution ***fea_solution) {
+void CEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement,
+		CConfig *flow_config, CConfig *fea_config, CGeometry **fea_geometry, CSolver ***fea_solution) {
 	unsigned short iMarker, iDim;
 	unsigned long iVertex, iPoint;
 	double *Coord, VarCoord[3];
@@ -5635,7 +5635,7 @@ void CEulerSolution::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetric
 
 }
 
-void CEulerSolution::GetRestart(CGeometry *geometry, CConfig *config, unsigned short val_iZone) {
+void CEulerSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned short val_iZone) {
 
 	int rank = MASTER_NODE;
 #ifndef NO_MPI
@@ -5799,7 +5799,7 @@ void CEulerSolution::GetRestart(CGeometry *geometry, CConfig *config, unsigned s
 
 }
 
-CNSSolution::CNSSolution(void) : CEulerSolution() {
+CNSSolver::CNSSolver(void) : CEulerSolver() {
 
 	/*--- Array initialization ---*/
 	CDrag_Visc = NULL;
@@ -5820,7 +5820,7 @@ CNSSolution::CNSSolution(void) : CEulerSolution() {
 
 }
 
-CNSSolution::CNSSolution(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CEulerSolution() {
+CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CEulerSolver() {
 	unsigned long iPoint, index, counter_local = 0, counter_global = 0;
 	unsigned short iVar, iDim, iMarker;
   double Density, Velocity2, Pressure, Temperature;
@@ -6177,7 +6177,7 @@ CNSSolution::CNSSolution(CGeometry *geometry, CConfig *config, unsigned short iM
 
 }
 
-CNSSolution::~CNSSolution(void) {
+CNSSolver::~CNSSolver(void) {
 	unsigned short iMarker;
 
 	if (CDrag_Visc != NULL) delete [] CDrag_Visc;
@@ -6206,7 +6206,7 @@ CNSSolution::~CNSSolution(void) {
 
 }
 
-void CNSSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
+void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
 	double levelset;
     
@@ -6232,9 +6232,9 @@ void CNSSolution::Preprocessing(CGeometry *geometry, CSolution **solution_contai
     
 	for (iPoint = 0; iPoint < nPoint; iPoint ++) {
         
-		if (tkeNeeded) turb_ke = solution_container[TURB_SOL]->node[iPoint]->GetSolution(0);
+		if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
         
-		if (freesurface) levelset = solution_container[LEVELSET_SOL]->node[iPoint]->GetPrimVar(0);
+		if (freesurface) levelset = solver_container[LEVELSET_SOL]->node[iPoint]->GetPrimVar(0);
 		else levelset = 0.0;
         
 		/*--- Set the primitive variables incompressible (dens, vx, vy, vz, beta)
@@ -6244,7 +6244,7 @@ void CNSSolution::Preprocessing(CGeometry *geometry, CSolution **solution_contai
         
 		/*--- Set the value of the eddy viscosity ---*/
 		if (turb_model != NONE)
-			node[iPoint]->SetEddyViscosity(config->GetKind_Turb_Model(), solution_container[TURB_SOL]->node[iPoint]);
+			node[iPoint]->SetEddyViscosity(config->GetKind_Turb_Model(), solver_container[TURB_SOL]->node[iPoint]);
 		else
 			node[iPoint]->SetEddyViscosity(NONE, NULL);
         
@@ -6280,7 +6280,7 @@ void CNSSolution::Preprocessing(CGeometry *geometry, CSolution **solution_contai
     
 }
 
-void CNSSolution::SetTime_Step(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iMesh, unsigned long Iteration) {
+void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned long Iteration) {
 	double Mean_BetaInc2, *Normal, Area, Vol, Mean_SoundSpeed, Mean_ProjVel, Lambda, Local_Delta_Time, Local_Delta_Time_Visc, Mean_DensityInc,
 	Global_Delta_Time = 1E6, Mean_LaminarVisc, Mean_EddyVisc, Mean_Density, Lambda_1, Lambda_2, K_v = 0.25, Global_Delta_UnstTimeND;
 	unsigned long iEdge, iVertex, iPoint = 0, jPoint = 0;
@@ -6304,7 +6304,7 @@ void CNSSolution::SetTime_Step(CGeometry *geometry, CSolution **solution_contain
 
 		/*--- Set the value of the eddy viscosity ---*/
 		if (turb_model != NONE)
-			node[iPoint]->SetEddyViscosity(config->GetKind_Turb_Model(), solution_container[TURB_SOL]->node[iPoint]);
+			node[iPoint]->SetEddyViscosity(config->GetKind_Turb_Model(), solver_container[TURB_SOL]->node[iPoint]);
 		else
 			node[iPoint]->SetEddyViscosity(NONE, NULL);
 	}
@@ -6509,7 +6509,7 @@ void CNSSolution::SetTime_Step(CGeometry *geometry, CSolution **solution_contain
 
 }
 
-void CNSSolution::Viscous_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
+void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                    CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 	unsigned long iPoint, jPoint, iEdge;
   
@@ -6540,8 +6540,8 @@ void CNSSolution::Viscous_Residual(CGeometry *geometry, CSolution **solution_con
     
     /*--- Turbulent kinetic energy ---*/
     if (config->GetKind_Turb_Model() == SST)
-      numerics->SetTurbKineticEnergy(solution_container[TURB_SOL]->node[iPoint]->GetSolution(0),
-                                   solution_container[TURB_SOL]->node[jPoint]->GetSolution(0));
+      numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
+                                   solver_container[TURB_SOL]->node[jPoint]->GetSolution(0));
     
     /*--- Compute and update residual ---*/
     numerics->SetResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
@@ -6560,7 +6560,7 @@ void CNSSolution::Viscous_Residual(CGeometry *geometry, CSolution **solution_con
   
 }
 
-void CNSSolution::Viscous_Forces(CGeometry *geometry, CConfig *config) {
+void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 	unsigned long iVertex, iPoint, iPointNormal;
 	unsigned short Boundary, Monitoring, iMarker, iDim, jDim;
 	double **Tau, Delta, Viscosity, **Grad_PrimVar, div_vel, *Normal, *TauElem, MomentDist[3], WallDist[3],
@@ -6798,7 +6798,7 @@ void CNSSolution::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 	delete [] TauElem;
 }
 
-void CNSSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
     
 	/*--- Local variables ---*/
 	unsigned short iDim, iVar;
@@ -6904,7 +6904,7 @@ void CNSSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_con
                 
 				/*--- Turbulent kinetic energy ---*/
 				if (config->GetKind_Turb_Model() == SST)
-					val_turb_ke = solution_container[TURB_SOL]->node[iPoint]->GetSolution(0);
+					val_turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
 				else
 					val_turb_ke = 0.0;
                 
@@ -6976,7 +6976,7 @@ void CNSSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_con
 	}
 }
 
-void CNSSolution::BC_Isothermal_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
     
 	unsigned long iVertex, iPoint, Point_Normal, total_index;
 	unsigned short iVar, jVar, iDim;

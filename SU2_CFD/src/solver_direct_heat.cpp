@@ -23,10 +23,10 @@
 
 #include "../include/solver_structure.hpp"
 
-CHeatSolution::CHeatSolution(void) : CSolution() { }
+CHeatSolver::CHeatSolver(void) : CSolver() { }
 
-CHeatSolution::CHeatSolution(CGeometry *geometry, 
-                             CConfig *config) : CSolution() {
+CHeatSolver::CHeatSolver(CGeometry *geometry, 
+                             CConfig *config) : CSolver() {
   
 	unsigned short nMarker, iVar;
   
@@ -152,7 +152,7 @@ CHeatSolution::CHeatSolution(CGeometry *geometry,
   
 }
 
-CHeatSolution::~CHeatSolution(void) {
+CHeatSolver::~CHeatSolver(void) {
   
 	unsigned short iVar;
   
@@ -172,8 +172,8 @@ CHeatSolution::~CHeatSolution(void) {
 
 }
 
-void CHeatSolution::Preprocessing(CGeometry *geometry, 
-                                  CSolution **solution_container,
+void CHeatSolver::Preprocessing(CGeometry *geometry, 
+                                  CSolver **solver_container,
                                   CConfig   *config, 
                                   unsigned short iMesh,
                                   unsigned short iRKStep,
@@ -193,21 +193,21 @@ void CHeatSolution::Preprocessing(CGeometry *geometry,
   
 }
 
-void CHeatSolution::Source_Residual(CGeometry *geometry, 
-                                    CSolution **solution_container, 
+void CHeatSolver::Source_Residual(CGeometry *geometry, 
+                                    CSolver **solver_container, 
                                     CNumerics *numerics, CNumerics *second_numerics,
                                     CConfig   *config, 
                                     unsigned short iMesh) { }
 
 
-void CHeatSolution::Source_Template(CGeometry *geometry,
-                                    CSolution **solution_container,
+void CHeatSolver::Source_Template(CGeometry *geometry,
+                                    CSolver **solver_container,
                                     CNumerics *numerics,
                                     CConfig   *config,
                                     unsigned short iMesh) { }
 
-void CHeatSolution::Galerkin_Method(CGeometry *geometry, 
-                                    CSolution **solution_container, 
+void CHeatSolver::Galerkin_Method(CGeometry *geometry, 
+                                    CSolver **solver_container, 
                                     CNumerics *numerics,
                                     CConfig   *config, 
                                     unsigned short iMesh) {
@@ -294,8 +294,8 @@ void CHeatSolution::Galerkin_Method(CGeometry *geometry,
 }
 
 
-void CHeatSolution::BC_Euler_Wall(CGeometry *geometry, 
-                                  CSolution **solution_container, 
+void CHeatSolver::BC_Euler_Wall(CGeometry *geometry, 
+                                  CSolver **solver_container, 
                                   CNumerics *numerics, 
                                   CConfig   *config, 
 																	unsigned short val_marker) {
@@ -339,10 +339,10 @@ void CHeatSolution::BC_Euler_Wall(CGeometry *geometry,
   
 }
 
-void CHeatSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics,
+void CHeatSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                  CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
 
-void CHeatSolution::SetResidual_DualTime(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iRKStep, 
+void CHeatSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep, 
                                         unsigned short iMesh, unsigned short RunTime_EqSystem) {
 	
 	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0;
@@ -449,7 +449,7 @@ void CHeatSolution::SetResidual_DualTime(CGeometry *geometry, CSolution **soluti
 }
 
 
-void CHeatSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **solution_container, CConfig *config) {
+void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
     unsigned short iVar;
 	unsigned long iPoint, total_index;
     
@@ -523,7 +523,7 @@ void CHeatSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **sol
   
 }
 
-void CHeatSolution::SetTime_Matrix(CGeometry *geometry, 
+void CHeatSolver::SetTime_Matrix(CGeometry *geometry, 
                                    CConfig   *config) {
   
   
@@ -678,7 +678,7 @@ void CHeatSolution::SetTime_Matrix(CGeometry *geometry,
 	}
 }
 
-void CHeatSolution::GetRestart(CGeometry *geometry, CConfig *config) {
+void CHeatSolver::GetRestart(CGeometry *geometry, CConfig *config) {
   
 #ifndef NO_MPI
 	int rank = MPI::COMM_WORLD.Get_rank();

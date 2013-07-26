@@ -23,7 +23,7 @@
 
 #include "../include/solver_structure.hpp"
 
-CLevelSetSolution::CLevelSetSolution(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolution() {
+CLevelSetSolver::CLevelSetSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
 	unsigned short iVar, iDim;
 	unsigned long iPoint, index;
 	double dull_val, levelset = 0.0, XCoord = 0.0, YCoord = 0.0, ZCoord = 0.0;
@@ -218,9 +218,9 @@ CLevelSetSolution::CLevelSetSolution(CGeometry *geometry, CConfig *config, unsig
   
 }
 
-CLevelSetSolution::~CLevelSetSolution(void) { }
+CLevelSetSolver::~CLevelSetSolver(void) { }
 
-void CLevelSetSolution::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
+void CLevelSetSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
 	unsigned short iMarker;
 	unsigned long iVertex, iPoint, nVertex, nBuffer_Vector;
 	double *Buffer_Receive_U = NULL;
@@ -287,7 +287,7 @@ void CLevelSetSolution::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
 	}
 }
 
-void CLevelSetSolution::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config) {
+void CLevelSetSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config) {
 	unsigned short iMarker;
 	unsigned long iVertex, iPoint, nVertex, nBuffer_Vector;
 	double *Buffer_Receive_Limit = NULL;
@@ -362,7 +362,7 @@ void CLevelSetSolution::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *c
   
 }
 
-void CLevelSetSolution::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config) {
+void CLevelSetSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config) {
 	unsigned short iVar, iDim, iMarker, iPeriodic_Index;
 	unsigned long iVertex, iPoint, nVertex, nBuffer_VectorGrad;
 	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi,
@@ -494,7 +494,7 @@ void CLevelSetSolution::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *
     
 }
 
-void CLevelSetSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
+void CLevelSetSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
 	
 	bool implicit = (config->GetKind_TimeIntScheme_LevelSet() == EULER_IMPLICIT);
@@ -518,7 +518,7 @@ void CLevelSetSolution::Preprocessing(CGeometry *geometry, CSolution **solution_
     
 }
 
-void CLevelSetSolution::Postprocessing(CGeometry *geometry, CSolution **solution_container, CConfig *config,
+void CLevelSetSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                        unsigned short iMesh) {
   bool output, reevaluation;
 
@@ -533,7 +533,7 @@ void CLevelSetSolution::Postprocessing(CGeometry *geometry, CSolution **solution
     
 }
 
-void CLevelSetSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
+void CLevelSetSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
 	double *LevelSet_i, *LevelSet_j, *Limiter_i = NULL, *Limiter_j = NULL, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j;
 	unsigned long iEdge, iPoint, jPoint;
 	unsigned short iDim;
@@ -549,7 +549,7 @@ void CLevelSetSolution::Upwind_Residual(CGeometry *geometry, CSolution **solutio
 		numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
 		
 		/*--- Primitive variables w/o reconstruction at time n (density, vel)---*/
-    numerics->SetPrimitive(solution_container[FLOW_SOL]->node[iPoint]->GetPrimVar(), solution_container[FLOW_SOL]->node[jPoint]->GetPrimVar());
+    numerics->SetPrimitive(solver_container[FLOW_SOL]->node[iPoint]->GetPrimVar(), solver_container[FLOW_SOL]->node[jPoint]->GetPrimVar());
     
 		/*--- Level Set variables w/o reconstruction ---*/
 		LevelSet_i = node[iPoint]->GetSolution(); LevelSet_j = node[jPoint]->GetSolution();
@@ -600,7 +600,7 @@ void CLevelSetSolution::Upwind_Residual(CGeometry *geometry, CSolution **solutio
 	}
 }
 
-void CLevelSetSolution::Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CNumerics *second_numerics, CConfig *config, unsigned short iMesh) {
+void CLevelSetSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics, CConfig *config, unsigned short iMesh) {
 	unsigned long iPoint;
 	double Vol, x_o, x_od, x, z, levelset, DampingFactor;
     
@@ -630,10 +630,10 @@ void CLevelSetSolution::Source_Residual(CGeometry *geometry, CSolution **solutio
 	}
 }
 
-void CLevelSetSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+void CLevelSetSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 }
 
-void CLevelSetSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+void CLevelSetSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
 																		 CConfig *config, unsigned short val_marker) {
 	unsigned long iPoint, iVertex, Point_Normal;
 	unsigned short iVar, iDim;
@@ -658,8 +658,8 @@ void CLevelSetSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_c
 		if (geometry->node[iPoint]->GetDomain()) {
       
 			for (iVar = 0; iVar < nDim+1; iVar++) {
-				V_domain[iVar] = solution_container[FLOW_SOL]->node[Point_Normal]->GetPrimVar(iVar);
-				V_wall[iVar] = solution_container[FLOW_SOL]->node[iPoint]->GetPrimVar(iVar);
+				V_domain[iVar] = solver_container[FLOW_SOL]->node[Point_Normal]->GetPrimVar(iVar);
+				V_wall[iVar] = solver_container[FLOW_SOL]->node[iPoint]->GetPrimVar(iVar);
         V_mirror[iVar] = 2.0*V_wall[iVar] - V_domain[iVar];
 			}
       
@@ -694,10 +694,10 @@ void CLevelSetSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_c
   delete[] LevelSet_mirror;
 }
 
-void CLevelSetSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CLevelSetSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 }
 
-void CLevelSetSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CLevelSetSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned long iPoint, iVertex;
 	
 	bool implicit = (config->GetKind_TimeIntScheme_LevelSet() == EULER_IMPLICIT);
@@ -717,7 +717,7 @@ void CLevelSetSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_c
 	}
 }
 
-void CLevelSetSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CLevelSetSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned long iPoint, iVertex, Point_Normal;
 	unsigned short iVar, iDim;
 	double *V_domain, *V_wall, *V_mirror, *LevelSet_domain, *LevelSet_wall, *LevelSet_mirror;
@@ -741,8 +741,8 @@ void CLevelSetSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_conta
 		if (geometry->node[iPoint]->GetDomain()) {
             
 			for (iVar = 0; iVar < nDim+1; iVar++) {
-				V_domain[iVar] = solution_container[FLOW_SOL]->node[Point_Normal]->GetPrimVar(iVar);
-				V_wall[iVar] = solution_container[FLOW_SOL]->node[iPoint]->GetPrimVar(iVar);
+				V_domain[iVar] = solver_container[FLOW_SOL]->node[Point_Normal]->GetPrimVar(iVar);
+				V_wall[iVar] = solver_container[FLOW_SOL]->node[iPoint]->GetPrimVar(iVar);
                 V_mirror[iVar] = 2.0*V_wall[iVar] - V_domain[iVar];
 			}
             
@@ -777,7 +777,7 @@ void CLevelSetSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_conta
     delete[] LevelSet_mirror;
 }
 
-void CLevelSetSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CLevelSetSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned long iPoint, iVertex;
 	
 	bool implicit = (config->GetKind_TimeIntScheme_LevelSet() == EULER_IMPLICIT);
@@ -798,7 +798,7 @@ void CLevelSetSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_cont
     
 }
 
-void CLevelSetSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **solution_container, CConfig *config) {
+void CLevelSetSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 	unsigned long iPoint;
 	double Delta = 0.0, Vol;
 	
@@ -813,7 +813,7 @@ void CLevelSetSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution *
 		Vol = geometry->node[iPoint]->GetVolume();
 		
 		/*--- Modify matrix diagonal to assure diagonal dominance ---*/
-		Delta = Vol / (config->GetLevelSet_CFLRedCoeff()*solution_container[FLOW_SOL]->node[iPoint]->GetDelta_Time());
+		Delta = Vol / (config->GetLevelSet_CFLRedCoeff()*solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time());
         
 		Jacobian.AddVal2Diag(iPoint,Delta);
         
@@ -871,7 +871,7 @@ void CLevelSetSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution *
 
 }
 
-void CLevelSetSolution::SetLevelSet_Distance(CGeometry *geometry, CConfig *config, bool Initialization, bool WriteLevelSet) {
+void CLevelSetSolver::SetLevelSet_Distance(CGeometry *geometry, CConfig *config, bool Initialization, bool WriteLevelSet) {
 	double *coord = NULL, dist2, *iCoord = NULL, *jCoord = NULL, *U_i = NULL, *U_j = NULL,
     **Coord_LevelSet = NULL, *xCoord = NULL, *yCoord = NULL, *zCoord = NULL, auxCoordx, auxCoordy,
     auxCoordz, FreeSurface, volume, LevelSetDiff_Squared, LevelSetDiff, dist, Min_dist;
@@ -1103,7 +1103,7 @@ void CLevelSetSolution::SetLevelSet_Distance(CGeometry *geometry, CConfig *confi
     
 }
 
-void CLevelSetSolution::SetResidual_DualTime(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
+void CLevelSetSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
 	double *U_time_nM1, *U_time_n, *U_time_nP1, Volume_nM1, Volume_n, Volume_nP1, TimeStep;
 	

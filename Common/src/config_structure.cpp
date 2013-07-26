@@ -2697,13 +2697,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 					else
 						cout << "Continuous RANS adjoint equations." << endl;
 				}
-				else if (Kind_Adjoint == HYBRID) {
-					if (Frozen_Visc)
-						cout << "Hybrid RANS adjoint equations with no turbulent -> mean flow coupling." << endl;
-					else
-						cout << "Hybrid RANS adjoint equations." << endl;
-				}
-
 
 				break;
 			case LIN_EULER: cout << "Linearized Euler equations." << endl; break;

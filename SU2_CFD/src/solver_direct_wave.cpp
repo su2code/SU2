@@ -23,10 +23,10 @@
 
 #include "../include/solver_structure.hpp"
 
-CWaveSolution::CWaveSolution(void) : CSolution() { }
+CWaveSolver::CWaveSolver(void) : CSolver() { }
 
-CWaveSolution::CWaveSolution(CGeometry *geometry, 
-                             CConfig *config) : CSolution() {
+CWaveSolver::CWaveSolver(CGeometry *geometry, 
+                             CConfig *config) : CSolver() {
 	unsigned short nMarker, iVar;
   
   nPoint = geometry->GetnPoint();
@@ -152,7 +152,7 @@ CWaveSolution::CWaveSolution(CGeometry *geometry,
   
 }
 
-CWaveSolution::~CWaveSolution(void) {
+CWaveSolver::~CWaveSolver(void) {
   
 	unsigned short iVar;
   
@@ -172,8 +172,8 @@ CWaveSolution::~CWaveSolution(void) {
   
 }
 
-void CWaveSolution::Preprocessing(CGeometry *geometry, 
-                                  CSolution **solution_container,
+void CWaveSolver::Preprocessing(CGeometry *geometry, 
+                                  CSolver **solver_container,
                                   CConfig   *config,
                                   unsigned short iMesh,
                                   unsigned short iRKStep,
@@ -193,8 +193,8 @@ void CWaveSolution::Preprocessing(CGeometry *geometry,
   
 }
 
-void CWaveSolution::Source_Residual(CGeometry *geometry, 
-                                    CSolution **solution_container, 
+void CWaveSolver::Source_Residual(CGeometry *geometry, 
+                                    CSolver **solver_container, 
                                     CNumerics *numerics, CNumerics *second_numerics,
                                     CConfig   *config, 
                                     unsigned short iMesh) {
@@ -357,16 +357,16 @@ void CWaveSolution::Source_Residual(CGeometry *geometry,
 }
 
 
-void CWaveSolution::Source_Template(CGeometry *geometry,
-                                    CSolution **solution_container,
+void CWaveSolver::Source_Template(CGeometry *geometry,
+                                    CSolver **solver_container,
                                     CNumerics *numerics,
                                     CConfig   *config,
                                     unsigned short iMesh) {
 
 }
 
-void CWaveSolution::Galerkin_Method(CGeometry *geometry, 
-                                    CSolution **solution_container, 
+void CWaveSolver::Galerkin_Method(CGeometry *geometry, 
+                                    CSolver **solver_container, 
                                     CNumerics *numerics,
                                     CConfig   *config, 
                                     unsigned short iMesh) {
@@ -455,7 +455,7 @@ void CWaveSolution::Galerkin_Method(CGeometry *geometry,
   
 }
 
-void CWaveSolution::SetNoise_Source(CSolution ***flow_solution, CGeometry **wave_geometry, CConfig *wave_config) {
+void CWaveSolver::SetNoise_Source(CSolver ***flow_solution, CGeometry **wave_geometry, CConfig *wave_config) {
 	unsigned short iDim, jDim, iMarker;
 	unsigned long iVertex, iPoint, iPoint_Donor;
 	double Thickness_Noise, Loading_Noise, Quadrupole_Noise;
@@ -557,8 +557,8 @@ void CWaveSolution::SetNoise_Source(CSolution ***flow_solution, CGeometry **wave
 	
 }
 
-void CWaveSolution::BC_Euler_Wall(CGeometry *geometry, 
-                                  CSolution **solution_container, 
+void CWaveSolver::BC_Euler_Wall(CGeometry *geometry, 
+                                  CSolver **solver_container, 
                                   CNumerics *numerics, 
                                   CConfig   *config, 
 																	unsigned short val_marker) {
@@ -602,7 +602,7 @@ void CWaveSolution::BC_Euler_Wall(CGeometry *geometry,
   
 }
 
-void CWaveSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_container, 
+void CWaveSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, 
                                  CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, 
                                  unsigned short val_marker) {
 	
@@ -631,8 +631,8 @@ void CWaveSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_conta
   
 }
 
-void CWaveSolution::BC_Observer(CGeometry *geometry, 
-                                CSolution **solution_container, 
+void CWaveSolver::BC_Observer(CGeometry *geometry, 
+                                CSolver **solver_container, 
                                 CNumerics *numerics, 
                                 CConfig   *config, 
                                 unsigned short val_marker) {
@@ -703,7 +703,7 @@ void CWaveSolution::BC_Observer(CGeometry *geometry,
   
 }
 
-void CWaveSolution::Wave_Strength(CGeometry *geometry, CConfig *config) {
+void CWaveSolver::Wave_Strength(CGeometry *geometry, CConfig *config) {
 	
   unsigned long iPoint, iVertex;
   unsigned short iMarker, Boundary, Monitoring;
@@ -748,7 +748,7 @@ void CWaveSolution::Wave_Strength(CGeometry *geometry, CConfig *config) {
   
 }
 
-void CWaveSolution::SetResidual_DualTime(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iRKStep, 
+void CWaveSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep, 
                                         unsigned short iMesh, unsigned short RunTime_EqSystem) {
 	
 	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0;
@@ -855,7 +855,7 @@ void CWaveSolution::SetResidual_DualTime(CGeometry *geometry, CSolution **soluti
 }
 
 
-void CWaveSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **solution_container, CConfig *config) {
+void CWaveSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 	
     unsigned short iVar;
 	unsigned long iPoint, total_index;
@@ -931,7 +931,7 @@ void CWaveSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **sol
 }
 
 
-void CWaveSolution::SetSpace_Matrix(CGeometry *geometry, 
+void CWaveSolver::SetSpace_Matrix(CGeometry *geometry, 
                                     CConfig   *config) {
   
 //  /* Local variables and initialization */
@@ -997,7 +997,7 @@ void CWaveSolution::SetSpace_Matrix(CGeometry *geometry,
   
 }
 
-void CWaveSolution::SetTime_Matrix(CGeometry *geometry, 
+void CWaveSolver::SetTime_Matrix(CGeometry *geometry, 
                                    CConfig   *config) {
   
   
@@ -1152,7 +1152,7 @@ void CWaveSolution::SetTime_Matrix(CGeometry *geometry,
 	}
 }
 
-void CWaveSolution::GetRestart(CGeometry *geometry, CConfig *config) {
+void CWaveSolver::GetRestart(CGeometry *geometry, CConfig *config) {
   
 #ifndef NO_MPI
 	int rank = MPI::COMM_WORLD.Get_rank();

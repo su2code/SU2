@@ -251,7 +251,7 @@ inline void CVariable::SetObjFuncSource(double *val_ObjFuncSource) { }
 
 inline void CVariable::SetIntBoundary_Jump(double *val_IntBoundary_Jump) { }
 
-inline void CVariable::SetEddyViscosity(unsigned short val_Kind_Turb_Model, CVariable *Turb_Solution) { }
+inline void CVariable::SetEddyViscosity(unsigned short val_Kind_Turb_Model, CVariable *TurbVariable) { }
 
 inline void CVariable::SetEnthalpy(void) { }
 

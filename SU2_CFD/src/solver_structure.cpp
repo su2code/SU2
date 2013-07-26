@@ -23,7 +23,7 @@
 
 #include "../include/solver_structure.hpp"
 
-CSolution::CSolution(void) {
+CSolver::CSolver(void) {
 
   /*--- Array initialization ---*/
 	Residual_RMS = NULL;
@@ -57,7 +57,7 @@ CSolution::CSolution(void) {
 
 }
 
-CSolution::~CSolution(void) {
+CSolver::~CSolver(void) {
 /*  unsigned short iVar, iDim;
   unsigned long iPoint;
   
@@ -148,7 +148,7 @@ CSolution::~CSolution(void) {
   
 }
 
-void CSolution::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
+void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   unsigned short iVar;
 
 #ifdef NO_MPI
@@ -211,7 +211,7 @@ void CSolution::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   
 }
 
-void CSolution::SetGrid_Movement_Residual (CGeometry *geometry, CConfig *config) {
+void CSolver::SetGrid_Movement_Residual (CGeometry *geometry, CConfig *config) {
 
 	unsigned short nDim = geometry->GetnDim();
 	unsigned short nVar = GetnVar();
@@ -278,7 +278,7 @@ void CSolution::SetGrid_Movement_Residual (CGeometry *geometry, CConfig *config)
 	}
 }
 
-void CSolution::SetAuxVar_Gradient_GG(CGeometry *geometry) {
+void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry) {
 
 	//	Internal variables
 	unsigned long Point = 0, iPoint = 0, jPoint = 0, iEdge, iVertex;
@@ -328,7 +328,7 @@ void CSolution::SetAuxVar_Gradient_GG(CGeometry *geometry) {
 		}	
 }
 
-void CSolution::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
+void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
 
 	unsigned short iDim, jDim, iNeigh;
 	unsigned short nDim = geometry->GetnDim();
@@ -426,7 +426,7 @@ void CSolution::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
 	delete [] cvector;
 }
 
-void CSolution::SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config) {
+void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config) {
 	unsigned long Point = 0, iPoint = 0, jPoint = 0, iEdge, iVertex;
 	unsigned short iVar, iDim, iMarker;
 	double *Solution_Vertex, *Solution_i, *Solution_j, Solution_Average, **Gradient, DualArea, 
@@ -486,7 +486,7 @@ void CSolution::SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config) {
   
 }
 
-void CSolution::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
+void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
 	unsigned short iDim, jDim, iVar, iNeigh;
 	unsigned long iPoint, jPoint;
 	double *Coord_i, *Coord_j, *Solution_i, *Solution_j,
@@ -592,7 +592,7 @@ void CSolution::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
   
 }
 
-void CSolution::SetRotVel_Gradient(CGeometry *geometry, CConfig *config) {
+void CSolver::SetRotVel_Gradient(CGeometry *geometry, CConfig *config) {
 	unsigned short iDim, jDim, iVar, iNeigh;
 	unsigned long iPoint, jPoint;
 	double *Coord_i, *Coord_j, *Solution_i, *Solution_j, Smatrix[3][3],
@@ -700,7 +700,7 @@ void CSolution::SetRotVel_Gradient(CGeometry *geometry, CConfig *config) {
   
 }
 
-void CSolution::SetSurface_Gradient(CGeometry *geometry, CConfig *config) {
+void CSolver::SetSurface_Gradient(CGeometry *geometry, CConfig *config) {
 	unsigned short iDim, jDim, iVar, iNeigh, iMarker, Boundary;
 	unsigned short nDim = geometry->GetnDim();
 	unsigned long iPoint, jPoint, iVertex;
@@ -824,7 +824,7 @@ void CSolution::SetSurface_Gradient(CGeometry *geometry, CConfig *config) {
 	delete [] Smatrix;
 }
 
-void CSolution::SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config) {
+void CSolver::SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config) {
 
 	unsigned short iDim, jDim, iNeigh, iMarker, Boundary;
 	unsigned short nDim = geometry->GetnDim();
@@ -940,7 +940,7 @@ void CSolution::SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config)
 	delete [] Smatrix;
 }
 
-void CSolution::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
+void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
 		
 	unsigned long iEdge, iPoint, jPoint;
 	unsigned short iVar, iDim;
@@ -1090,7 +1090,7 @@ void CSolution::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
 	
 }
 
-void CSolution::SetPressureLaplacian(CGeometry *geometry, double *PressureLaplacian) {
+void CSolver::SetPressureLaplacian(CGeometry *geometry, double *PressureLaplacian) {
 
 	unsigned long Point = 0, iPoint = 0, jPoint = 0, iEdge, iVertex;
 	unsigned short iMarker, iVar;
@@ -1173,7 +1173,7 @@ void CSolution::SetPressureLaplacian(CGeometry *geometry, double *PressureLaplac
 	
 }
 
-void CSolution::Gauss_Elimination(double** A, double* rhs, unsigned long nVar) {
+void CSolver::Gauss_Elimination(double** A, double* rhs, unsigned long nVar) {
 	unsigned long jVar, kVar, iVar;
 	double weight, aux;
 	
@@ -1201,9 +1201,9 @@ void CSolution::Gauss_Elimination(double** A, double* rhs, unsigned long nVar) {
 	}
 }
 
-CBaselineSolution::CBaselineSolution(void) : CSolution() { }
+CBaselineSolver::CBaselineSolver(void) : CSolver() { }
 
-CBaselineSolution::CBaselineSolution(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolution() {
+CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
@@ -1379,7 +1379,7 @@ CBaselineSolution::CBaselineSolution(CGeometry *geometry, CConfig *config, unsig
   
 }
 
-void CBaselineSolution::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
+void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
 	unsigned short iVar, iMarker, iPeriodic_Index;
 	unsigned long iVertex, iPoint, nVertex, nBuffer_Vector;
 	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi,
@@ -1499,7 +1499,7 @@ void CBaselineSolution::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
   
 }
 
-void CBaselineSolution::GetRestart(CGeometry *geometry, CConfig *config, unsigned short val_iZone) {
+void CBaselineSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned short val_iZone) {
   
 	int rank = MASTER_NODE;
 #ifndef NO_MPI
@@ -1654,4 +1654,4 @@ void CBaselineSolution::GetRestart(CGeometry *geometry, CConfig *config, unsigne
   
 }
 
-CBaselineSolution::~CBaselineSolution(void) { }
+CBaselineSolver::~CBaselineSolver(void) { }

@@ -23,9 +23,9 @@
 
 #include "../include/solver_structure.hpp"
 
-CElectricSolution::CElectricSolution(void) : CSolution() { }
+CElectricSolver::CElectricSolver(void) : CSolver() { }
 
-CElectricSolution::CElectricSolution(CGeometry *geometry, CConfig *config) : CSolution() {
+CElectricSolver::CElectricSolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
 	unsigned long nPoint;
 	unsigned short nMarker;
@@ -88,7 +88,7 @@ CElectricSolution::CElectricSolution(CGeometry *geometry, CConfig *config) : CSo
 
 }
 
-CElectricSolution::~CElectricSolution(void) {
+CElectricSolver::~CElectricSolver(void) {
 
 	unsigned short iVar, iDim;
 
@@ -123,7 +123,7 @@ CElectricSolution::~CElectricSolution(void) {
 	delete [] cvector;
 }
 
-void CElectricSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container,
+void CElectricSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container,
 																			CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
 
@@ -133,7 +133,7 @@ void CElectricSolution::Preprocessing(CGeometry *geometry, CSolution **solution_
 	StiffMatrix.SetValZero();
 }
 
-void CElectricSolution::Solve_LinearSystem(CGeometry *geometry, CSolution **solution_container, 
+void CElectricSolver::Solve_LinearSystem(CGeometry *geometry, CSolver **solver_container, 
 		CConfig *config, unsigned short iMesh) {
 	unsigned long iPoint;
 	unsigned short iVar = 0;
@@ -170,7 +170,7 @@ void CElectricSolution::Solve_LinearSystem(CGeometry *geometry, CSolution **solu
 
 }
 
-void CElectricSolution::Compute_Residual(CGeometry *geometry, CSolution **solution_container, CConfig *config, 
+void CElectricSolver::Compute_Residual(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
 		unsigned short iMesh) {
 
 	unsigned long iPoint;
@@ -195,7 +195,7 @@ void CElectricSolution::Compute_Residual(CGeometry *geometry, CSolution **soluti
  * \brief Source terms of the electric solver
  * \author A. Lonkar
  */
-void CElectricSolution::Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CNumerics *second_numerics,
+void CElectricSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
 		CConfig *config, unsigned short iMesh) {
 
 	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3 = 0;
@@ -342,7 +342,7 @@ void CElectricSolution::Source_Residual(CGeometry *geometry, CSolution **solutio
 	}
 }
 
-void CElectricSolution::Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
+void CElectricSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
 		CConfig *config, unsigned short iMesh) {
 }
 
@@ -352,8 +352,8 @@ void CElectricSolution::Source_Template(CGeometry *geometry, CSolution **solutio
  * \brief Copy solution from solver 1 into solver 2
  * \author A. Lonkar
  */
-void CElectricSolution::Copy_Zone_Solution(CSolution ***solver1_solution, CGeometry **solver1_geometry, CConfig *solver1_config,
-		CSolution ***solver2_solution, CGeometry **solver2_geometry, CConfig *solver2_config) {
+void CElectricSolver::Copy_Zone_Solution(CSolver ***solver1_solution, CGeometry **solver1_geometry, CConfig *solver1_config,
+		CSolver ***solver2_solution, CGeometry **solver2_geometry, CConfig *solver2_config) {
 	unsigned long iPoint;
 	unsigned short iDim;
 	double neg_EFvalue;
@@ -373,7 +373,7 @@ void CElectricSolution::Copy_Zone_Solution(CSolution ***solver1_solution, CGeome
  * \brief calculate the element stiffness matrix
  * \author A. Lonkar
  */
-void CElectricSolution::Galerkin_Method(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
+void CElectricSolver::Galerkin_Method(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
 		CConfig *config, unsigned short iMesh) {
 
 	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3 = 0;
@@ -506,7 +506,7 @@ void CElectricSolution::Galerkin_Method(CGeometry *geometry, CSolution **solutio
  * \brief Assemble the Global stiffness matrix
  * \author A. Lonkar
  */
-void CElectricSolution::AddStiffMatrix(double **StiffMatrix_Elem, unsigned long Point_0, unsigned long Point_1,unsigned long Point_2, unsigned long Point_3) {
+void CElectricSolver::AddStiffMatrix(double **StiffMatrix_Elem, unsigned long Point_0, unsigned long Point_1,unsigned long Point_2, unsigned long Point_3) {
 
 	if (nDim == 2 ) {
 		StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][0]; StiffMatrix.AddBlock(Point_0,Point_0,StiffMatrix_Node);
@@ -546,7 +546,7 @@ void CElectricSolution::AddStiffMatrix(double **StiffMatrix_Elem, unsigned long 
  * \brief Dirichlet/Neumann boundary condition
  * \author A. Lonkar
  */
-void CElectricSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
+void CElectricSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
 		unsigned short val_marker) {
 	unsigned long Point, iVertex;
 
@@ -568,7 +568,7 @@ void CElectricSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_
  * \brief Dirichlet/Neumann boundary condition
  * \author A. Lonkar
  */
-void CElectricSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+void CElectricSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
 		unsigned short val_marker) {
 	unsigned long Point, iVertex;
 
@@ -590,7 +590,7 @@ void CElectricSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_c
  * \brief Dirichlet/Neumann boundary condition
  * \author A. Lonkar
  */
-void CElectricSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+void CElectricSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
 		unsigned short val_marker) {
 	unsigned long Point, iVertex;
 
@@ -612,7 +612,7 @@ void CElectricSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **soluti
  * \brief Dirichlet/Neumann boundary condition
  * \author A. Lonkar
  */
-void CElectricSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+void CElectricSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
 		unsigned short val_marker) {
 	unsigned long Point, iVertex;
 
@@ -634,7 +634,7 @@ void CElectricSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_cont
  * \brief Dirichlet/Neumann boundary condition
  * \author A. Lonkar
  */
-void CElectricSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+void CElectricSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
 		unsigned short val_marker) {
 	unsigned long Point, iVertex;
 
@@ -656,7 +656,7 @@ void CElectricSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_conta
  * \brief Dirichlet/Neumann boundary condition
  * \author A. Lonkar
  */
-void CElectricSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+void CElectricSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
 		unsigned short val_marker) {
 	unsigned long Point, iVertex;
 

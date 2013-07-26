@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
 	/*--- Pointer to different structures that will be used throughout the entire code ---*/
 	CConfig **config = NULL;
 	CPhysicalGeometry **geometry = NULL;
-	CSurfaceMovement *surface_mov = NULL;
+	CSurfaceMovement *surface_movement = NULL;
   CVolumetricMovement *grid_movement = NULL;
 
   /*--- Definition of the containers per zones ---*/
@@ -122,12 +122,12 @@ int main(int argc, char *argv[]) {
 	if (rank == MASTER_NODE) cout << endl << "------------------------- Surface grid deformation ----------------------" << endl;
   
 	/*--- Definition and initialization of the surface deformation class ---*/
-	surface_mov = new CSurfaceMovement();
-	surface_mov->CopyBoundary(geometry[ZONE_0], config[ZONE_0]);
+	surface_movement = new CSurfaceMovement();
+	surface_movement->CopyBoundary(geometry[ZONE_0], config[ZONE_0]);
   
   /*--- Surface grid deformation ---*/
   if (rank == MASTER_NODE) cout << "Performing the deformation of the surface grid." << endl;
-  surface_mov->SetSurface_Deformation(geometry[ZONE_0], config[ZONE_0]);
+  surface_movement->SetSurface_Deformation(geometry[ZONE_0], config[ZONE_0]);
   
   
 #ifndef NO_MPI
@@ -165,7 +165,7 @@ int main(int argc, char *argv[]) {
 	}
 	
   /*--- Check for multiple zones and call appropriate mesh file export routine. ---*/
-  if (nZone == 1) SetSingleZone_MeshFile(geometry[ZONE_0], config[ZONE_0], surface_mov);
+  if (nZone == 1) SetSingleZone_MeshFile(geometry[ZONE_0], config[ZONE_0], surface_movement);
 	else SetMultiZone_MeshFile(geometry, config, nZone);
 	
 #ifndef NO_MPI
@@ -181,7 +181,7 @@ int main(int argc, char *argv[]) {
 	
 }
 
-void SetSingleZone_MeshFile(CPhysicalGeometry *geometry, CConfig *config, CSurfaceMovement *surface_mov) {
+void SetSingleZone_MeshFile(CPhysicalGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement) {
 	char buffer_char[50], out_file[200], in_file[200];
 	int rank = MASTER_NODE, size = 1;
 	
@@ -204,7 +204,7 @@ void SetSingleZone_MeshFile(CPhysicalGeometry *geometry, CConfig *config, CSurfa
   geometry->SetMeshFile(config, out_file, in_file);
   
   if (geometry->GetnDim() == 3)
-		surface_mov->WriteFFDInfo(geometry, config, out_file);
+		surface_movement->WriteFFDInfo(geometry, config, out_file);
   
 }
 

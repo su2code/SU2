@@ -415,13 +415,13 @@ void CNSVariable::SetLaminarViscosity() {
   
 }
 
-void CNSVariable::SetEddyViscosity(unsigned short val_Kind_Turb_Model, CVariable *Turb_Solution) {
+void CNSVariable::SetEddyViscosity(unsigned short val_Kind_Turb_Model, CVariable *TurbVariable) {
   
 	switch (val_Kind_Turb_Model) {
     case NONE :
       EddyViscosity = 0.0;                     break;
     case SA : case SST :
-      EddyViscosity = Turb_Solution->GetmuT(); break;
+      EddyViscosity = TurbVariable->GetmuT(); break;
 	}
   
 }

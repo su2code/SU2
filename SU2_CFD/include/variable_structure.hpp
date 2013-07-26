@@ -956,7 +956,7 @@ public:
 	 * \param[in] val_Kind_Turb_Model - Kind of turbulence model.
 	 * \param[in] Turb_Solution - Solution of the turbulence model.
 	 */		
-	virtual void SetEddyViscosity(unsigned short val_Kind_Turb_Model, CVariable *Turb_Solution);
+	virtual void SetEddyViscosity(unsigned short val_Kind_Turb_Model, CVariable *TurbVariable);
 
 	/*!
 	 * \brief A virtual member.
@@ -2142,7 +2142,7 @@ public:
 	 * \param[in] val_Kind_Turb_Model - Kind of turbulence model.
 	 * \param[in] Turb_Solution - Solution of the turbulence model.
 	 */
-	void SetEddyViscosity(unsigned short val_Kind_Turb_Model, CVariable *Turb_Solution);
+	void SetEddyViscosity(unsigned short val_Kind_Turb_Model, CVariable *TurbVariable);
 
 	/*!
 	 * \overload
@@ -2628,7 +2628,7 @@ public:
 	 * \param[in] val_Kind_Turb_Model - Kind of turbulence model.
 	 * \param[in] Turb_Solution - Solution of the turbulence model.
 	 */
-	void SetEddyViscosity_Jacobian(unsigned short val_Kind_Turb_Model, CVariable *Turb_Solution);
+	void SetEddyViscosity_Jacobian(unsigned short val_Kind_Turb_Model, CVariable *TurbVariable);
 
 	/*!
 	 * \brief Set the value of the adjoint velocity.

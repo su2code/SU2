@@ -72,48 +72,48 @@ public:
 	/*! 
 	 * \brief Do the space integration of the numerical system.
 	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
+	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Space_Integration(CGeometry *geometry, CSolution **solution_container, CNumerics **numerics, CConfig *config, 
+	void Space_Integration(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config, 
 						   unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
 
 	/*! 
 	 * \brief Do the time integration (explicit or implicit) of the numerical system.
 	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
+	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 * \param[in] Iteration - Current iteration.
 	 */
-	void Time_Integration(CGeometry *geometry, CSolution **solution_container, CConfig *config, 
+	void Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
 						  unsigned short iRKStep, unsigned short RunTime_EqSystem, unsigned long Iteration);
 	
 	/*! 
 	 * \brief Initialize the adjoint solution using the primal problem.
 	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
+	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 * \param[in] Iteration - Current iteration.
 	 */
-	void Adjoint_Setup(CGeometry ***geometry, CSolution ****solution_container, CConfig **config,
+	void Adjoint_Setup(CGeometry ***geometry, CSolver ****solver_container, CConfig **config,
                      unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
 	
 	/*!
 	 * \brief Numerical method for solving a non-time depending equation, like the potential equation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solution - Solution of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
+	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Solving_Linear_System(CGeometry *geometry, CSolution *solution, CSolution **solution_container, 
+	void Solving_Linear_System(CGeometry *geometry, CSolver *solver, CSolver **solver_container, 
 							   CConfig *config, unsigned short iMesh);
 
 	/*! 
@@ -166,24 +166,24 @@ public:
 	 * \param[in] solution - Flow solution.
    * \param[in] config - Definition of the particular problem.
 	 */
-	void SetDualTime_Solver(CGeometry *geometry, CSolution *solution, CConfig *config);
+	void SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config);
 	
 	/*! 
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
+	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 * \param[in] Iteration - Current iteration.
 	 */
-	virtual void SetMultiGrid_Solver(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****numerics_container,
+	virtual void MultiGrid_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
 								  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
 	
 	/*! 
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
+	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
@@ -191,20 +191,20 @@ public:
 	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 * \param[in] Iteration - Current iteration.
 	 */
-	virtual void Multigrid_Iteration(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****numerics_container,
+	virtual void MultiGrid_Cycle(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
 							   CConfig **config, unsigned short iMesh, unsigned short mu, unsigned short RunTime_EqSystem,
 							   unsigned long Iteration, unsigned short iZone);
 	
 	/*! 
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
+	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 * \param[in] Iteration - Current iteration.
 	 * \param[in] monitor - value of the non-dimensional parameters for monitoring the convergence.
 	 */
-	virtual void NonDimensional_Parameters(CGeometry **geometry, CSolution ***solution_container, CNumerics ****numerics_container, 
+	virtual void NonDimensional_Parameters(CGeometry **geometry, CSolver ***solver_container, CNumerics ****numerics_container, 
 																				 CConfig *config, unsigned short FinestMesh, unsigned short RunTime_EqSystem, unsigned long Iteration, 
 																				 double *monitor);
 	
@@ -214,7 +214,7 @@ public:
 	 * \param[in] geo_fine - Geometrical definition of the fine grid.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetProlongated_Correction(CSolution *sol_fine, CGeometry *geo_fine, CConfig *config);
+	virtual void SetProlongated_Correction(CSolver *sol_fine, CGeometry *geo_fine, CConfig *config);
 
 	/*! 
 	 * \brief A virtual member.
@@ -225,7 +225,7 @@ public:
 	 * \param[in] geo_coarse - Geometrical definition of the coarse grid.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetProlongated_Solution(unsigned short RunTime_EqSystem, CSolution **sol_fine, CSolution **sol_coarse, 
+	virtual void SetProlongated_Solution(unsigned short RunTime_EqSystem, CSolver **sol_fine, CSolver **sol_coarse, 
 										 CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
 	
 	/*! 
@@ -236,7 +236,7 @@ public:
 	 * \param[in] geo_coarse - Geometrical definition of the coarse grid.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetRestricted_Residual(CSolution *sol_fine, CSolution *sol_coarse, CGeometry *geo_fine, 
+	virtual void SetRestricted_Residual(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, 
 										CGeometry *geo_coarse, CConfig *config);
 	
 	/*! 
@@ -250,7 +250,7 @@ public:
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] InclSharedDomain - Include the shared domain in the interpolation.
 	 */
-	virtual void SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolution **sol_fine, CSolution **sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
+	virtual void SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver **sol_fine, CSolver **sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
 
 	/*! 
 	 * \brief A virtual member.
@@ -261,7 +261,7 @@ public:
 	 * \param[in] geo_coarse - Geometrical definition of the coarse grid.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetRestricted_Gradient(unsigned short RunTime_EqSystem, CSolution **sol_fine, CSolution **sol_coarse, 
+	virtual void SetRestricted_Gradient(unsigned short RunTime_EqSystem, CSolver **sol_fine, CSolver **sol_coarse, 
 										CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
 	
 	/*! 
@@ -269,7 +269,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] flow - Flow solution.
 	 */
-	virtual void SetResidual_Term(CGeometry *geometry, CSolution *flow);
+	virtual void SetResidual_Term(CGeometry *geometry, CSolver *flow);
 	
 	/*! 
 	 * \brief A virtual member.
@@ -279,31 +279,31 @@ public:
 	 * \param[in] geo_coarse - Geometrical definition of the coarse grid.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetForcing_Term(CSolution *sol_fine, CSolution *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, 
+	virtual void SetForcing_Term(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, 
 								 CConfig *config);
 	
 	/*! 
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
+	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 * \param[in] Iteration - Current iteration.
 	 */
-	virtual void SetSingleGrid_Solver(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****numerics_container,
+	virtual void SingleGrid_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
 								  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
 	
 	/*! 
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
+	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	virtual void SetPotential_Solver(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****numerics_container,
+	virtual void SetPotential_Solver(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
                                    CConfig **config, unsigned short RunTime_EqSystem, unsigned short iMesh, unsigned short iZone);
   
   /*!
@@ -315,7 +315,7 @@ public:
 	 * \param[in] val_smooth_coeff - Relaxation factor.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void Smooth_Solution(unsigned short RunTime_EqSystem, CSolution **solution, CGeometry *geometry,
+	virtual void Smooth_Solution(unsigned short RunTime_EqSystem, CSolver **solver, CGeometry *geometry,
                        unsigned short val_nSmooth, double val_smooth_coeff, CConfig *config);
 
 };
@@ -343,21 +343,21 @@ public:
 	~CMultiGridIntegration(void);
 	
 	/*! 
-	 * \brief This subroutine calls the Multigrid_Iteration and also prepare the multigrid levels and the monitoring.
+	 * \brief This subroutine calls the MultiGrid_Cycle and also prepare the multigrid levels and the monitoring.
 	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
+	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 * \param[in] Iteration - Current iteration.
 	 */
-	void SetMultiGrid_Solver(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****numerics_container,
+	void MultiGrid_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
 							 CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
 	
 	/*! 
 	 * \brief Perform a Full-Approximation Storage (FAS) Multigrid. 
 	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
+	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
@@ -365,20 +365,20 @@ public:
 	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 * \param[in] Iteration - Current iteration.
 	 */
-	void Multigrid_Iteration(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****numerics_container,
+	void MultiGrid_Cycle(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
                      CConfig **config, unsigned short iMesh, unsigned short mu, unsigned short RunTime_EqSystem,
                      unsigned long Iteration, unsigned short iZone);
 	
 	/*! 
 	 * \brief Compute the non-dimensional parameters.
 	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
+	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 * \param[in] Iteration - Current iteration.
 	 * \param[in] monitor - value of the non-dimensional parameters for monitoring the convergence.
 	 */
-	void NonDimensional_Parameters(CGeometry **geometry, CSolution ***solution_container, CNumerics ****numerics_container, 
+	void NonDimensional_Parameters(CGeometry **geometry, CSolver ***solver_container, CNumerics ****numerics_container, 
 																 CConfig *config, unsigned short FinestMesh, unsigned short RunTime_EqSystem, unsigned long Iteration, 
 																 double *monitor);
 
@@ -391,7 +391,7 @@ public:
 	 * \param[in] geo_coarse - Geometrical definition of the coarse grid.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetProlongated_Solution(unsigned short RunTime_EqSystem, CSolution *sol_fine, CSolution *sol_coarse, 
+	void SetProlongated_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, 
 								 CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
 	
 	/*! 
@@ -402,7 +402,7 @@ public:
 	 * \param[in] geo_coarse - Geometrical definition of the coarse grid.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void GetProlongated_Correction(unsigned short RunTime_EqSystem, CSolution *sol_fine, CSolution *sol_coarse, CGeometry *geo_fine, 
+	void GetProlongated_Correction(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, 
 																 CGeometry *geo_coarse, CConfig *config);
 	
 	/*! 
@@ -414,7 +414,7 @@ public:
 	 * \param[in] val_smooth_coeff - Relaxation factor.		 
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SmoothProlongated_Correction(unsigned short RunTime_EqSystem, CSolution *solution, CGeometry *geometry,
+	void SmoothProlongated_Correction(unsigned short RunTime_EqSystem, CSolver *solver, CGeometry *geometry,
 																		 unsigned short val_nSmooth, double val_smooth_coeff, CConfig *config);
   
   /*!
@@ -426,7 +426,7 @@ public:
 	 * \param[in] val_smooth_coeff - Relaxation factor.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void Smooth_Solution(unsigned short RunTime_EqSystem, CSolution *solution, CGeometry *geometry,
+	void Smooth_Solution(unsigned short RunTime_EqSystem, CSolver *solver, CGeometry *geometry,
                                     unsigned short val_nSmooth, double val_smooth_coeff, CConfig *config);
 
 	/*!
@@ -435,7 +435,7 @@ public:
 	 * \param[in] geo_fine - Geometrical definition of the fine grid.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetProlongated_Correction(CSolution *sol_fine, CGeometry *geo_fine, CConfig *config);
+	void SetProlongated_Correction(CSolver *sol_fine, CGeometry *geo_fine, CConfig *config);
 
 	/*! 
 	 * \brief Compute truncation error in the coarse grid using the fine grid information. 
@@ -445,7 +445,7 @@ public:
 	 * \param[in] geo_coarse - Geometrical definition of the coarse grid.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetRestricted_Residual(CSolution *sol_fine, CSolution *sol_coarse, CGeometry *geo_fine, 
+	void SetRestricted_Residual(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, 
 								CGeometry *geo_coarse, CConfig *config);
 
 	/*! 
@@ -459,7 +459,7 @@ public:
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] InclSharedDomain - Include the shared domain in the interpolation.
 	 */
-	void SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolution *sol_fine, CSolution *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
+	void SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
 	
 	/*! 
 	 * \brief Compute the gradient in coarse grid using the fine grid information. 
@@ -470,7 +470,7 @@ public:
 	 * \param[in] geo_coarse - Geometrical definition of the coarse grid.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetRestricted_Gradient(unsigned short RunTime_EqSystem, CSolution **sol_fine, CSolution **sol_coarse, 
+	void SetRestricted_Gradient(unsigned short RunTime_EqSystem, CSolver **sol_fine, CSolver **sol_coarse, 
 								CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
 
 	/*! 
@@ -478,7 +478,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] flow - Flow solution.
 	 */
-	void SetResidual_Term(CGeometry *geometry, CSolution *flow);
+	void SetResidual_Term(CGeometry *geometry, CSolver *flow);
 	
 	/*! 
 	 * \brief Compute the forcing term. 
@@ -488,7 +488,7 @@ public:
 	 * \param[in] geo_coarse - Geometrical definition of the coarse grid.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetForcing_Term(CSolution *sol_fine, CSolution *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, 
+	void SetForcing_Term(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, 
 						 CConfig *config);
 };
 
@@ -515,13 +515,13 @@ public:
 	/*! 
 	 * \brief Do the numerical integration (implicit) of the turbulence solver. 
 	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
+	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 * \param[in] Iteration - Current iteration.
 	 */
-	void SetSingleGrid_Solver(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****numerics_container,
+	void SingleGrid_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
 							 CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
   
   /*!
@@ -535,7 +535,7 @@ public:
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] InclSharedDomain - Include the shared domain in the interpolation.
 	 */
-	void SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolution **sol_fine, CSolution **sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
+	void SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver **sol_fine, CSolver **sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
   
 };
 
@@ -562,13 +562,13 @@ public:
 	/*! 
 	 * \brief Do the numerical integration (Galerkin explicit) of the potential equation. 
 	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
+	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void SetPotential_Solver(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****numerics_container,
+	void SetPotential_Solver(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
                            CConfig **config, unsigned short RunTime_EqSystem, unsigned short iMesh, unsigned short iZone);
 };
 

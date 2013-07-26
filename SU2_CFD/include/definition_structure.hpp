@@ -59,12 +59,12 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format);
 
 /*! 
  * \brief Definition and allocation of all solution classes.
- * \param[in] solution_container - Container vector with all the solutions.
+ * \param[in] solver_container - Container vector with all the solutions.
  * \param[in] geometry - Geometrical definition of the problem.
  * \param[in] config - Definition of the particular problem.
  * \param[in] iZone - Index of the zone.
  */
-void Solution_Definition(CSolution ***solution_container, CGeometry **geometry, CConfig *config, unsigned short iZone);
+void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry, CConfig *config, unsigned short iZone);
 
 /*! 
  * \brief Definition and allocation of all integration classes.
@@ -73,17 +73,17 @@ void Solution_Definition(CSolution ***solution_container, CGeometry **geometry, 
  * \param[in] config - Definition of the particular problem.
  * \param[in] iZone - Index of the zone.
  */
-void Integration_Definition(CIntegration **integration_container, CGeometry **geometry, CConfig *config, unsigned short iZone);
+void Integration_Preprocessing(CIntegration **integration_container, CGeometry **geometry, CConfig *config, unsigned short iZone);
 
 /*! 
  * \brief Definition and allocation of all solver classes.
  * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
- * \param[in] solution_container - Container vector with all the solutions.
+ * \param[in] solver_container - Container vector with all the solutions.
  * \param[in] geometry - Geometrical definition of the problem.
  * \param[in] config - Definition of the particular problem.
  * \param[in] iZone - Index of the zone.
  */
-void Solver_Definition(CNumerics ****numerics_container, CSolution ***solution_container, CGeometry **geometry, CConfig *config, unsigned short iZone);
+void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_container, CGeometry **geometry, CConfig *config, unsigned short iZone);
 
 /*! 
  * \brief Do the geometrical preprocessing.
@@ -91,4 +91,4 @@ void Solver_Definition(CNumerics ****numerics_container, CSolution ***solution_c
  * \param[in] config - Definition of the particular problem.
  * \param[in] val_nZone - Total number of zones.
  */
-void Geometrical_Definition(CGeometry ***geometry, CConfig **config, unsigned short val_nZone);
+void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned short val_nZone);

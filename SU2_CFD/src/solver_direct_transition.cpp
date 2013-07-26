@@ -23,9 +23,9 @@
 
 #include "../include/solver_structure.hpp"
 
-CTransLMSolution::CTransLMSolution(void) : CTurbSolution() {}
+CTransLMSolver::CTransLMSolver(void) : CTurbSolver() {}
 
-CTransLMSolution::CTransLMSolution(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CTurbSolution() {
+CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CTurbSolver() {
 	unsigned short iVar, iDim;
 	unsigned long iPoint, index;
 	double Density_Inf, Viscosity_Inf, tu_Inf, nu_tilde_Inf, Factor_nu_Inf, dull_val, rey, mach;
@@ -34,7 +34,7 @@ CTransLMSolution::CTransLMSolution(CGeometry *geometry, CConfig *config, unsigne
 	string text_line;
 	bool restart = (config->GetRestart() || config->GetRestart_Flow());
 	
-  cout << "Entered constructor for CTransLMSolution -AA\n";
+  cout << "Entered constructor for CTransLMSolver -AA\n";
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
 	
@@ -166,7 +166,7 @@ CTransLMSolution::CTransLMSolution(CGeometry *geometry, CConfig *config, unsigne
 
 }
 
-CTransLMSolution::~CTransLMSolution(void){
+CTransLMSolver::~CTransLMSolver(void){
 	unsigned short iVar, iDim;
 	
 	delete [] Residual; delete [] Residual_Max;
@@ -191,7 +191,7 @@ CTransLMSolution::~CTransLMSolution(void){
 	delete [] cvector;
 }
 
-void CTransLMSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
+void CTransLMSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
 
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++)
@@ -202,14 +202,14 @@ void CTransLMSolution::Preprocessing(CGeometry *geometry, CSolution **solution_c
 	if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
 }
 
-void CTransLMSolution::Postprocessing(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iMesh) {
+void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
 
   /*--- Correction for separation-induced transition, Replace intermittency with gamma_eff ---*/
 	for (unsigned int iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++)
     node[iPoint]->SetGammaEff();
 }
 
-void CTransLMSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **solution_container, CConfig *config) {
+void CTransLMSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 	unsigned short iVar;
 	unsigned long iPoint, total_index;
 	double Delta, Delta_flow, Vol;
@@ -226,7 +226,7 @@ void CTransLMSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **
         Vol = geometry->node[iPoint]->GetVolume();
         
         /*--- Modify matrix diagonal to assure diagonal dominance ---*/
-        Delta_flow = Vol / (solution_container[FLOW_SOL]->node[iPoint]->GetDelta_Time());
+        Delta_flow = Vol / (solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time());
         Delta = Delta_flow;
         Jacobian.AddVal2Diag(iPoint,Delta);
         
@@ -292,7 +292,7 @@ void CTransLMSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **
 
 }
 
-void CTransLMSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
+void CTransLMSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
   double *trans_var_i, *trans_var_j, *U_i, *U_j;
   unsigned long iEdge, iPoint, jPoint;
 
@@ -304,8 +304,8 @@ void CTransLMSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution
     numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
 
     /*--- Conservative variables w/o reconstruction ---*/
-    U_i = solution_container[FLOW_SOL]->node[iPoint]->GetSolution();
-    U_j = solution_container[FLOW_SOL]->node[jPoint]->GetSolution();
+    U_i = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
+    U_j = solver_container[FLOW_SOL]->node[jPoint]->GetSolution();
     numerics->SetConservative(U_i, U_j);
 
     /*--- Transition variables w/o reconstruction ---*/
@@ -329,7 +329,7 @@ void CTransLMSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution
 }
 
 
-void CTransLMSolution::Viscous_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
+void CTransLMSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
 																				CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 	unsigned long iEdge, iPoint, jPoint;
 	
@@ -346,22 +346,22 @@ void CTransLMSolution::Viscous_Residual(CGeometry *geometry, CSolution **solutio
     numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
     
     /*--- Conservative variables w/o reconstruction ---*/
-    numerics->SetConservative(solution_container[FLOW_SOL]->node[iPoint]->GetSolution(),
-                            solution_container[FLOW_SOL]->node[jPoint]->GetSolution());
+    numerics->SetConservative(solver_container[FLOW_SOL]->node[iPoint]->GetSolution(),
+                            solver_container[FLOW_SOL]->node[jPoint]->GetSolution());
     
     /*--- Laminar Viscosity ---*/
-    numerics->SetLaminarViscosity(solution_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(),
-                                solution_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity());
+    numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(),
+                                solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity());
     /*--- Eddy Viscosity ---*/
-    numerics->SetEddyViscosity(solution_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),
-                             solution_container[FLOW_SOL]->node[jPoint]->GetEddyViscosity());
+    numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),
+                             solver_container[FLOW_SOL]->node[jPoint]->GetEddyViscosity());
     
     /*--- Transition variables w/o reconstruction, and its gradients ---*/
     numerics->SetTransVar(node[iPoint]->GetSolution(), node[jPoint]->GetSolution());
     numerics->SetTransVarGradient(node[iPoint]->GetGradient(), node[jPoint]->GetGradient());
     
-    numerics->SetConsVarGradient(solution_container[FLOW_SOL]->node[iPoint]->GetGradient(),
-                               solution_container[FLOW_SOL]->node[jPoint]->GetGradient());
+    numerics->SetConsVarGradient(solver_container[FLOW_SOL]->node[iPoint]->GetGradient(),
+                               solver_container[FLOW_SOL]->node[jPoint]->GetGradient());
     
     
     /*--- Compute residual, and Jacobians ---*/
@@ -379,7 +379,7 @@ void CTransLMSolution::Viscous_Residual(CGeometry *geometry, CSolution **solutio
   }
 }
 
-void CTransLMSolution::Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CNumerics *second_numerics,
+void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
 																			 CConfig *config, unsigned short iMesh) {
   unsigned long iPoint;
   double gamma_sep;
@@ -390,14 +390,14 @@ void CTransLMSolution::Source_Residual(CGeometry *geometry, CSolution **solution
     cout << "\niPoint: " << iPoint << endl;
 		
 		/*--- Conservative variables w/o reconstruction ---*/
-		numerics->SetConservative(solution_container[FLOW_SOL]->node[iPoint]->GetSolution(), NULL);
+		numerics->SetConservative(solver_container[FLOW_SOL]->node[iPoint]->GetSolution(), NULL);
 		
 		/*--- Gradient of the primitive and conservative variables ---*/
-		numerics->SetPrimVarGradient(solution_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(), NULL);
+		numerics->SetPrimVarGradient(solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(), NULL);
 		
 		/*--- Laminar and eddy viscosity ---*/
-		numerics->SetLaminarViscosity(solution_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(), 0.0);
-    numerics->SetEddyViscosity(solution_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),0.0);
+		numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(), 0.0);
+    numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),0.0);
 		
 		/*--- Turbulent variables w/o reconstruction, and its gradient ---*/
 		numerics->SetTransVar(node[iPoint]->GetSolution(), NULL);
@@ -422,11 +422,11 @@ void CTransLMSolution::Source_Residual(CGeometry *geometry, CSolution **solution
 	}
 }
 
-void CTransLMSolution::Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
+void CTransLMSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
 																			 CConfig *config, unsigned short iMesh) {
 }
 
-void CTransLMSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CTransLMSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned long iPoint, iVertex, Point_Normal;
 	unsigned short iVar, iDim;
   int total_index;
@@ -460,7 +460,7 @@ void CTransLMSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solutio
       /*--- Set various quantities in the solver class ---*/
       numerics->SetNormal(Normal);
       numerics->SetTransVar(U_domain,U_wall);
-  		U_i = solution_container[FLOW_SOL]->node[iPoint]->GetSolution();
+  		U_i = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
   		numerics->SetConservative(U_i, U_i);
 
       /*--- Compute the residual using an upwind scheme ---*/
@@ -501,7 +501,7 @@ void CTransLMSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solutio
 //	}
 }
 
-void CTransLMSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CTransLMSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned long iPoint, iVertex;
   int total_index;
   unsigned short iVar;
@@ -529,20 +529,20 @@ void CTransLMSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_co
 
 }
 
-void CTransLMSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+void CTransLMSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
 																unsigned short val_marker) {
 //cout << "BC_Inlet reached -AA" << endl;
-BC_Far_Field(geometry, solution_container, conv_numerics, visc_numerics, config, val_marker);
+BC_Far_Field(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
 }
 
-void CTransLMSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+void CTransLMSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
 																 CConfig *config, unsigned short val_marker) {
 //cout << "BC_Outlet reached -AA" << endl;
-BC_Far_Field(geometry, solution_container, conv_numerics, visc_numerics, config, val_marker);
+BC_Far_Field(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
 }
 
-void CTransLMSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+void CTransLMSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
 																 CConfig *config, unsigned short val_marker) {
 //cout << "BC_Outlet reached -AA" << endl;
-BC_HeatFlux_Wall(geometry, solution_container, conv_numerics, visc_numerics, config, val_marker);
+BC_HeatFlux_Wall(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
 }

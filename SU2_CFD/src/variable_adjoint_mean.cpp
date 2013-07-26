@@ -322,7 +322,7 @@ void SetLaminarViscosity_Jacobian(CConfig *config) {
   //	TDim_Sens = new double[nVar];
   //
   //	for (iVar = 0; iVar < nVar; iVar++)
-  //		U[iVar] = solution_container[FLOW_SOL]->node[iPoint]->GetSolution(iVar);
+  //		U[iVar] = solver_container[FLOW_SOL]->node[iPoint]->GetSolution(iVar);
   //
   //	if (iDim == 2)
   //		Pressure = Gamma_Minus_One*(U[3] - (U[1]*U[1] + U[2]*U[2])/(2*U[0]));
@@ -365,7 +365,7 @@ void SetLaminarViscosity_Jacobian(CConfig *config) {
   
 }
 
-void SetEddyViscosity_Jacobian(unsigned short val_Kind_Turb_Model, CVariable *Turb_Solution) { }
+void SetEddyViscosity_Jacobian(unsigned short val_Kind_Turb_Model, CVariable *TurbVariable) { }
 
 void CAdjNSVariable::SetTheta(double val_density, double *val_velocity, double val_enthalpy) {
 	Theta = val_density*Solution[0];

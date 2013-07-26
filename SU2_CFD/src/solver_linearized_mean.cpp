@@ -23,9 +23,9 @@
 
 #include "../include/solver_structure.hpp"
 
-CLinEulerSolution::CLinEulerSolution(void) : CSolution() { }
+CLinEulerSolver::CLinEulerSolver(void) : CSolver() { }
 
-CLinEulerSolution::CLinEulerSolution(CGeometry *geometry, CConfig *config) : CSolution() {
+CLinEulerSolver::CLinEulerSolver(CGeometry *geometry, CConfig *config) : CSolver() {
 	unsigned long iPoint, index;
 	string text_line, mesh_filename;
 	unsigned short iDim, iVar;
@@ -167,7 +167,7 @@ CLinEulerSolution::CLinEulerSolution(CGeometry *geometry, CConfig *config) : CSo
 	}
 }
 
-CLinEulerSolution::~CLinEulerSolution(void) {
+CLinEulerSolver::~CLinEulerSolver(void) {
 	unsigned short iVar, iDim;
 	
 	for (iVar = 0; iVar < nVar; iVar++) {
@@ -199,7 +199,7 @@ CLinEulerSolution::~CLinEulerSolution(void) {
 	 delete [] node; */
 }
 
-void CLinEulerSolution::Centered_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, 
+void CLinEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
 											 CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 	unsigned long iEdge, iPoint, jPoint;
 	bool implicit = (config->GetKind_TimeIntScheme_LinFlow() == EULER_IMPLICIT);
@@ -219,16 +219,16 @@ void CLinEulerSolution::Centered_Residual(CGeometry *geometry, CSolution **solut
 		numerics->SetLinearizedVar(node[iPoint]->GetSolution(), node[jPoint]->GetSolution());
 
 		/*--- Conservative variables w/o reconstruction ---*/
-		numerics->SetConservative(solution_container[FLOW_SOL]->node[iPoint]->GetSolution(), 
-								solution_container[FLOW_SOL]->node[jPoint]->GetSolution());
+		numerics->SetConservative(solver_container[FLOW_SOL]->node[iPoint]->GetSolution(), 
+								solver_container[FLOW_SOL]->node[jPoint]->GetSolution());
 
 		/*--- SoundSpeed enthalpy and lambda variables w/o reconstruction ---*/
-		numerics->SetSoundSpeed(solution_container[FLOW_SOL]->node[iPoint]->GetSoundSpeed(), 
-							  solution_container[FLOW_SOL]->node[jPoint]->GetSoundSpeed());
-		numerics->SetEnthalpy(solution_container[FLOW_SOL]->node[iPoint]->GetEnthalpy(), 
-							solution_container[FLOW_SOL]->node[jPoint]->GetEnthalpy());
-		numerics->SetLambda(solution_container[FLOW_SOL]->node[iPoint]->GetLambda(), 
-						  solution_container[FLOW_SOL]->node[jPoint]->GetLambda());
+		numerics->SetSoundSpeed(solver_container[FLOW_SOL]->node[iPoint]->GetSoundSpeed(), 
+							  solver_container[FLOW_SOL]->node[jPoint]->GetSoundSpeed());
+		numerics->SetEnthalpy(solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy(), 
+							solver_container[FLOW_SOL]->node[jPoint]->GetEnthalpy());
+		numerics->SetLambda(solver_container[FLOW_SOL]->node[iPoint]->GetLambda(), 
+						  solver_container[FLOW_SOL]->node[jPoint]->GetLambda());
 
 		/*--- Undivided laplacian ---*/
 		if (high_order_diss) 
@@ -253,9 +253,9 @@ void CLinEulerSolution::Centered_Residual(CGeometry *geometry, CSolution **solut
 	}
 }
 
-void CLinEulerSolution::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) { }
+void CLinEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) { }
 
-void CLinEulerSolution::ExplicitRK_Iteration(CGeometry *geometry, CSolution **solution_container, 
+void CLinEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container, 
 											CConfig *config, unsigned short iRKStep) {
 	double *Residual, Vol, Delta, *Res_TruncError;
 	unsigned short iVar;
@@ -271,7 +271,7 @@ void CLinEulerSolution::ExplicitRK_Iteration(CGeometry *geometry, CSolution **so
 	/*--- Update the solution ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
 			Vol = geometry->node[iPoint]->GetVolume();
-			Delta = solution_container[FLOW_SOL]->node[iPoint]->GetDelta_Time() / Vol;
+			Delta = solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time() / Vol;
 			Res_TruncError = node[iPoint]->GetResTruncError();
 			Residual = LinSysRes.GetBlock(iPoint);
 			for (iVar = 0; iVar < nVar; iVar++) {
@@ -289,7 +289,7 @@ void CLinEulerSolution::ExplicitRK_Iteration(CGeometry *geometry, CSolution **so
 
 }
 
-void CLinEulerSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
+void CLinEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
 	
 	/*--- Residual inicialization ---*/
@@ -302,15 +302,15 @@ void CLinEulerSolution::Preprocessing(CGeometry *geometry, CSolution **solution_
 		Jacobian.SetValZero();
 }
 
-void CLinEulerSolution::Inviscid_DeltaForces(CGeometry *geometry, CSolution **solution_container, CConfig *config) {
+void CLinEulerSolver::Inviscid_DeltaForces(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 	unsigned long iVertex, Point;
 	unsigned short iDim, iMarker, Boundary, Monitoring;
 	double  *Face_Normal, dS, DeltaPressure, *Velocity;
 	double Alpha = config->GetAoA()*PI_NUMBER / 180.0;
 	double Beta  = config->GetAoS()*PI_NUMBER / 180.0;
 	double RefAreaCoeff = config->GetRefAreaCoeff();
-	double Density_Inf = solution_container[FLOW_SOL]->GetDensity_Inf();
-	double ModVelocity_Inf = solution_container[FLOW_SOL]->GetModVelocity_Inf();
+	double Density_Inf = solver_container[FLOW_SOL]->GetDensity_Inf();
+	double ModVelocity_Inf = solver_container[FLOW_SOL]->GetModVelocity_Inf();
 	double C_p = 1.0/(0.5*Density_Inf*RefAreaCoeff*ModVelocity_Inf*ModVelocity_Inf);
 	bool incompressible = config->GetIncompressible();
 
@@ -331,15 +331,15 @@ void CLinEulerSolution::Inviscid_DeltaForces(CGeometry *geometry, CSolution **so
 					
 					/*--- Compute pressure on the boundary ---*/
 					for (iDim = 0; iDim < nDim; iDim++) 
-						Velocity[iDim] = solution_container[FLOW_SOL]->node[Point]->GetVelocity(iDim, config->GetIncompressible());
+						Velocity[iDim] = solver_container[FLOW_SOL]->node[Point]->GetVelocity(iDim, config->GetIncompressible());
 					
-					double rho = solution_container[FLOW_SOL]->node[Point]->GetSolution(0) + node[Point]->GetSolution(0);
-					double rhoE = solution_container[FLOW_SOL]->node[Point]->GetSolution(nVar-1) + node[Point]->GetSolution(nVar-1);
-					double Pressure = solution_container[FLOW_SOL]->node[Point]->GetPressure(incompressible);
+					double rho = solver_container[FLOW_SOL]->node[Point]->GetSolution(0) + node[Point]->GetSolution(0);
+					double rhoE = solver_container[FLOW_SOL]->node[Point]->GetSolution(nVar-1) + node[Point]->GetSolution(nVar-1);
+					double Pressure = solver_container[FLOW_SOL]->node[Point]->GetPressure(incompressible);
 					double rhoVel[3];
 					double sqr_vel = 0.0;
 					for (iDim = 0; iDim < nDim; iDim++) {
-						rhoVel[iDim] = solution_container[FLOW_SOL]->node[Point]->GetSolution(iDim+1) + node[Point]->GetSolution(iDim+1);
+						rhoVel[iDim] = solver_container[FLOW_SOL]->node[Point]->GetSolution(iDim+1) + node[Point]->GetSolution(iDim+1);
 						sqr_vel += rhoVel[iDim]*rhoVel[iDim]/(rho*rho);
 					}
 					DeltaPressure = Gamma_Minus_One*rho*(rhoE/rho-0.5*sqr_vel)-Pressure;
@@ -377,7 +377,7 @@ void CLinEulerSolution::Inviscid_DeltaForces(CGeometry *geometry, CSolution **so
 }
 
 
-void CLinEulerSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+void CLinEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 	unsigned short iDim, iVar;
 	unsigned long iVertex, iPoint;
 	double phi, a1, a2, sqvel, d, *Face_Normal, *U, dS, VelxDeltaRhoVel, Energy, Rho, 
@@ -398,7 +398,7 @@ void CLinEulerSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_
 			
 			/*--- Linearized and flow solution ---*/
 			DeltaU = node[iPoint]->GetSolution();
-			U = solution_container[FLOW_SOL]->node[iPoint]->GetSolution();
+			U = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
 			
 			/*--- Value of the linearized velocity projection ---*/
 			d = 0.0;
@@ -436,7 +436,7 @@ void CLinEulerSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_
 	delete [] Delta_RhoVel;
 }
 
-void CLinEulerSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CLinEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned long iVertex, iPoint;
 	unsigned short iVar, jVar, iDim;
 	
@@ -463,16 +463,16 @@ void CLinEulerSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_c
 			
 			/*--- Flow solution at the wall ---*/
 			for (iVar = 0; iVar < nVar; iVar++)
-				U_wall[iVar] = solution_container[FLOW_SOL]->node[iPoint]->GetSolution(iVar);
+				U_wall[iVar] = solver_container[FLOW_SOL]->node[iPoint]->GetSolution(iVar);
 			
 			/*--- Flow Solution at the infinity ---*/
-			U_infty[0] = solution_container[FLOW_SOL]->GetDensity_Inf();
-			U_infty[1] = solution_container[FLOW_SOL]->GetDensity_Velocity_Inf(0);
-			U_infty[2] = solution_container[FLOW_SOL]->GetDensity_Velocity_Inf(1);
-			U_infty[3] = solution_container[FLOW_SOL]->GetDensity_Energy_Inf();
+			U_infty[0] = solver_container[FLOW_SOL]->GetDensity_Inf();
+			U_infty[1] = solver_container[FLOW_SOL]->GetDensity_Velocity_Inf(0);
+			U_infty[2] = solver_container[FLOW_SOL]->GetDensity_Velocity_Inf(1);
+			U_infty[3] = solver_container[FLOW_SOL]->GetDensity_Energy_Inf();
 			if (nDim == 3) {
-				U_infty[3] = solution_container[FLOW_SOL]->GetDensity_Velocity_Inf(2);
-				U_infty[4] = solution_container[FLOW_SOL]->GetDensity_Energy_Inf();
+				U_infty[3] = solver_container[FLOW_SOL]->GetDensity_Velocity_Inf(2);
+				U_infty[4] = solver_container[FLOW_SOL]->GetDensity_Energy_Inf();
 			}
 			
 			/*--- Delta flow solution at the wall ---*/
@@ -496,10 +496,10 @@ void CLinEulerSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_c
 			
 			/*--- Computation of P and inverse P matrix using values at the infinity ---*/
 			double sq_vel = 0.0, vn = 0.0;
-			double rho = solution_container[FLOW_SOL]->node[iPoint]->GetSolution(0);
-			double rhoE = solution_container[FLOW_SOL]->node[iPoint]->GetSolution(nVar-1);
+			double rho = solver_container[FLOW_SOL]->node[iPoint]->GetSolution(0);
+			double rhoE = solver_container[FLOW_SOL]->node[iPoint]->GetSolution(nVar-1);
 			for (iDim = 0; iDim < nDim; iDim++) {
-				velocity[iDim] = solution_container[FLOW_SOL]->node[iPoint]->GetSolution(iDim+1)/rho;
+				velocity[iDim] = solver_container[FLOW_SOL]->node[iPoint]->GetSolution(iDim+1)/rho;
 				sq_vel +=velocity[iDim]*velocity[iDim];
 				vn += velocity[iDim]*kappa[iDim]*dS;
 			}

@@ -23,53 +23,53 @@
 
 #include "../include/solver_structure.hpp"
 
-CTemplateSolution::CTemplateSolution(void) : CSolution() { }
+CTemplateSolver::CTemplateSolver(void) : CSolver() { }
 
-CTemplateSolution::CTemplateSolution(CGeometry *geometry, CConfig *config) : CSolution() { }
+CTemplateSolver::CTemplateSolver(CGeometry *geometry, CConfig *config) : CSolver() { }
 
-CTemplateSolution::~CTemplateSolution(void) { }
+CTemplateSolver::~CTemplateSolver(void) { }
 
-void CTemplateSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) { }
+void CTemplateSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) { }
 
-void CTemplateSolution::SetTime_Step(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iMesh, unsigned long Iteration) { }
+void CTemplateSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned long Iteration) { }
 
-void CTemplateSolution::Centered_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
+void CTemplateSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
 																				 CConfig *config, unsigned short iMesh, unsigned short iRKStep) { }
 
-void CTemplateSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
+void CTemplateSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
 																				CConfig *config, unsigned short iMesh) { }
 
-void CTemplateSolution::Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CNumerics *second_numerics,
+void CTemplateSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
 																								 CConfig *config, unsigned short iMesh) { }
 
-void CTemplateSolution::Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
+void CTemplateSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
 																								 CConfig *config, unsigned short iMesh) { }
 
-void CTemplateSolution::Solve_LinearSystem(CGeometry *geometry, CSolution **solution_container, CConfig *config, 
+void CTemplateSolver::Solve_LinearSystem(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
 																					 unsigned short iMesh) { }
 
-void CTemplateSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config, 
+void CTemplateSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 																			unsigned short val_marker) { }
 
-void CTemplateSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
+void CTemplateSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
 
-void CTemplateSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+void CTemplateSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
 																		 unsigned short val_marker) { }
 
-void CTemplateSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, 
+void CTemplateSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, 
 																 unsigned short val_marker) { }
 
-void CTemplateSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, 
+void CTemplateSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, 
 																	unsigned short val_marker) { }
 
-void CTemplateSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, 
+void CTemplateSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, 
 																		 unsigned short val_marker) { }
 
-void CTemplateSolution::BC_Custom(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) { }
+void CTemplateSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) { }
 
-void CTemplateSolution::ExplicitRK_Iteration(CGeometry *geometry, CSolution **solution_container, 
+void CTemplateSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container, 
 																						 CConfig *config, unsigned short iRKStep) { }
 
-void CTemplateSolution::ExplicitEuler_Iteration(CGeometry *geometry, CSolution **solution_container, CConfig *config) { }
+void CTemplateSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
-void CTemplateSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution **solution_container, CConfig *config) { }
+void CTemplateSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
