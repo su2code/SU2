@@ -866,13 +866,13 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
     	- ROTATION ( x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
     	- OBSTACLE ( Center, Bump size )
       - SPHERICAL ( ControlPoint_Index, Theta_Disp, R_Disp )
-      - FFD_CONTROL_POINT ( Chunk ID, i_Ind, j_Ind, k_Ind, x_Disp, y_Disp, z_Disp )
-    	- FFD_DIHEDRAL_ANGLE ( Chunk ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
-    	- FFD_TWIST_ANGLE ( Chunk ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
-    	- FFD_ROTATION ( Chunk ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
-    	- FFD_CAMBER ( Chunk ID, i_Ind, j_Ind )
-    	- FFD_THICKNESS ( Chunk ID, i_Ind, j_Ind )
-    	- FFD_VOLUME ( Chunk ID, i_Ind, j_Ind ) */
+      - FFD_CONTROL_POINT ( FFDBox ID, i_Ind, j_Ind, k_Ind, x_Disp, y_Disp, z_Disp )
+    	- FFD_DIHEDRAL_ANGLE ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
+    	- FFD_TWIST_ANGLE ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
+    	- FFD_ROTATION ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
+    	- FFD_CAMBER ( FFDBox ID, i_Ind, j_Ind )
+    	- FFD_THICKNESS ( FFDBox ID, i_Ind, j_Ind )
+    	- FFD_VOLUME ( FFDBox ID, i_Ind, j_Ind ) */
 	AddDVParamOption("DV_PARAM", nDV, ParamDV, Design_Variable);
 	/* DESCRIPTION: Hold the grid fixed in a region */
 	AddSpecialOption("HOLD_GRID_FIXED", Hold_GridFixed, SetBoolOption, false);
@@ -882,8 +882,6 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddArrayOption("HOLD_GRID_FIXED_COORD", 6, Hold_GridFixed_Coord, default_vec_6d);
 	/* DESCRIPTION: Grid deformation technique */
 	AddEnumOption("GRID_DEFORM_METHOD", Kind_GridDef_Method, Deform_Map, "SPRING");
-	/* DESCRIPTION: Maximum error in the grid deformation */
-	AddScalarOption("GRID_DEFORM_ERROR", GridDef_Error, 1E-14);
 	/* DESCRIPTION: Visualize the deformation */
 	AddSpecialOption("VISUALIZE_DEFORMATION", Visualize_Deformation, SetBoolOption, false);
 	/* DESCRIPTION: Number of iterations for FEA mesh deformation (surface deformation increments) */
@@ -2916,7 +2914,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case SPRING: cout << "Grid deformation using a classical spring method." << endl; break;
       case FEA: cout << "Grid deformation using a linear elasticity method." << endl; break;
 		}
-		cout << "Convergence criteria of the linear solver: "<< GridDef_Error <<"."<<endl;
 
 		if (Design_Variable[0] != NO_DEFORMATION && Design_Variable[0] != SURFACE_FILE) {
 			if (Hold_GridFixed == YES) cout << "Hold some regions of the mesh fixed (hardcode implementation)." <<endl;

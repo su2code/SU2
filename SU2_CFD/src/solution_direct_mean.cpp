@@ -5560,7 +5560,7 @@ void CEulerSolution::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetric
 			}
 		}
 	}
-	flow_grid_movement->SpringMethod(flow_geometry[MESH_0], flow_config, true);
+	flow_grid_movement->SetVolume_Deformation(flow_geometry[MESH_0], flow_config, true);
 
 #else
 

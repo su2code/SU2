@@ -378,7 +378,6 @@ private:
 	Kappa_1st_Plasma,			/*!< \brief JST 1st order dissipation coefficient for plasma equations (coarse multigrid levels). */
 	Kappa_2nd_Plasma,			/*!< \brief JST 2nd order dissipation coefficient for plasma equations. */
 	Kappa_4th_Plasma;			/*!< \brief JST 4th order dissipation coefficient for plasma equations. */	
-	double GridDef_Error;	/*!< \brief Error of the numerical solver for the linear system of the grid deformation. */
   unsigned long FEA_Iter; /*!< \brief Number of iterations for FEA deformation. */
 	double Mach;		/*!< \brief Mach number. */
 	double Reynolds;	/*!< \brief Reynolds number. */
@@ -2080,12 +2079,6 @@ public:
 	 * \return CFL reduction factor.
 	 */
 	double GetAdjTurb_CFLRedCoeff(void);
-
-	/*!
-	 * \brief Get the error of the solver for deforming the numerical grid (linear system solving).
-	 * \return Numerical error of the solver for deforming the numerical grid (solving the linear system).
-	 */
-	double GetGridDef_Error(void);
   
   /*!
 	 * \brief Get the number of iterations for FEA mesh deformation.

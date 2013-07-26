@@ -548,7 +548,6 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
       /*--- Allocate space for elements ---*/
       if (!config->GetDivide_Element()) elem = new CPrimalGrid*[nElem];
       else {
-        if (size == 1) cout << "Dividing elements into triangles or tetrahedra." << endl;
         if (nDim == 2) elem = new CPrimalGrid*[2*nElem];
         if (nDim == 3) elem = new CPrimalGrid*[6*nElem];
       }
@@ -1071,7 +1070,6 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
           /*--- Allocate space for elements ---*/
           if (!config->GetDivide_Element()) bound[iMarker] = new CPrimalGrid* [nElem_Bound[iMarker]];
           else {
-            if (size == 1) cout << "Dividing elements into triangles or tetrahedra." << endl;
             if (nDim == 2) bound[iMarker] = new CPrimalGrid* [2*nElem_Bound[iMarker]];;
             if (nDim == 3) bound[iMarker] = new CPrimalGrid* [2*nElem_Bound[iMarker]];;
           }

@@ -1140,28 +1140,20 @@ void CAdjEulerSolution::SetForceProj_Vector(CGeometry *geometry, CSolution **sol
             }
             break;
           case MOMENT_X_COEFFICIENT :
-            if (nDim == 2) { cout << "This functional is not possible in 2D!!" << endl;
-              cout << "Press any key to exit..." << endl; cin.get(); exit(1);
-            }
+            if (nDim == 2) { cout << "This functional is not possible in 2D!!" << endl; cout << "Press any key to exit..." << endl; cin.get(); exit(1); }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = -C_p*(z - z_origin)/RefLengthMoment; ForceProj_Vector[2] = C_p*(y - y_origin)/RefLengthMoment; }
             break;
           case MOMENT_Y_COEFFICIENT :
-            if (nDim == 2) { cout << "This functional is not possible in 2D!!" << endl;
-              cout << "Press any key to exit..." << endl;
-              cin.get(); exit(1);
-            }
-            if (nDim == 3) { ForceProj_Vector[0] = -C_p*(z - z_origin)/RefLengthMoment; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = C_p*(x - x_origin)/RefLengthMoment; }
+            if (nDim == 2) { cout << "This functional is not possible in 2D!!" << endl; cout << "Press any key to exit..." << endl; cin.get(); exit(1); }
+            if (nDim == 3) { ForceProj_Vector[0] = C_p*(z - z_origin)/RefLengthMoment; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = -C_p*(x - x_origin)/RefLengthMoment; }
             break;
           case MOMENT_Z_COEFFICIENT :
             if (nDim == 2) { ForceProj_Vector[0] = -C_p*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = C_p*(x - x_origin)/RefLengthMoment; }
             if (nDim == 3) { ForceProj_Vector[0] = -C_p*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = C_p*(x - x_origin)/RefLengthMoment; ForceProj_Vector[2] = 0; }
             break;
           case EFFICIENCY :
-            if (nDim == 2) { ForceProj_Vector[0] = -C_p*(invCD*sin(Alpha)+CLCD2*cos(Alpha));
-              ForceProj_Vector[1] = C_p*(invCD*cos(Alpha)-CLCD2*sin(Alpha)); }
-            if (nDim == 3) { ForceProj_Vector[0] = -C_p*(invCD*sin(Alpha)+CLCD2*cos(Alpha)*cos(Beta));
-              ForceProj_Vector[1] = -C_p*CLCD2*sin(Beta);
-              ForceProj_Vector[2] = C_p*(invCD*cos(Alpha)-CLCD2*sin(Alpha)*cos(Beta)); }
+            if (nDim == 2) { ForceProj_Vector[0] = -C_p*(invCD*sin(Alpha)+CLCD2*cos(Alpha)); ForceProj_Vector[1] = C_p*(invCD*cos(Alpha)-CLCD2*sin(Alpha)); }
+            if (nDim == 3) { ForceProj_Vector[0] = -C_p*(invCD*sin(Alpha)+CLCD2*cos(Alpha)*cos(Beta)); ForceProj_Vector[1] = -C_p*CLCD2*sin(Beta); ForceProj_Vector[2] = C_p*(invCD*cos(Alpha)-CLCD2*sin(Alpha)*cos(Beta)); }
             break;
           case EQUIVALENT_AREA :
             WDrag = config->GetWeightCd();
