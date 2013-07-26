@@ -1543,6 +1543,11 @@ public:
 	 */	
 	CPotentialVariable(double val_potential, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
 
+  /*!
+	 * \brief Destructor of the class.
+	 */
+	~CPotentialVariable(void);
+  
 	/*!
 	 * \brief A virtual member.
 	 */
@@ -1579,10 +1584,6 @@ public:
 	 */
 	void SetPlasmaTimeStep(double dt);
 
-	/*!
-	 * \brief Destructor of the class. 
-	 */	
-	~CPotentialVariable(void);
 };
 
 /*! 
@@ -3291,7 +3292,12 @@ public:
 	 * \param[in] config - Definition of the particular problem.	 
 	 */	
 	CLevelSetVariable(double val_levelset, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
-
+  
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	virtual ~CLevelSetVariable(void);
+  
   /*!
 	 * \brief Get the primitive variables.
 	 * \param[in] val_var - Index of the variable.
@@ -3317,11 +3323,6 @@ public:
 	 * \brief Get the value of theta.
 	 */		
 	double GetDiffLevelSet(void);
-
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	virtual ~CLevelSetVariable(void);
 
 };
 
