@@ -29,7 +29,7 @@
 #endif
 #include <ctime>
 
-#include "solution_structure.hpp"
+#include "solver_structure.hpp"
 #include "integration_structure.hpp"
 #include "output_structure.hpp"
 #include "numerics_structure.hpp"

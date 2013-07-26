@@ -1351,14 +1351,8 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
             case NO_UPWIND : cout << "No upwind scheme." << endl; break;
             case ROE_1ST : case ROE_2ND :
               for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-                if (config->GetKind_Adjoint() == DISCRETE) {
-                  solver_container[iMGlevel][ADJFLOW_SOL][CONV_TERM] = new CUpwRoe_AdjDiscFlow(nDim, nVar_Adj_Flow, config);
-                  solver_container[iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_AdjDiscFlow(nDim, nVar_Adj_Flow, config);
-                }
-                else {
                   solver_container[iMGlevel][ADJFLOW_SOL][CONV_TERM] = new CUpwRoe_AdjFlow(nDim, nVar_Adj_Flow, config);
                   solver_container[iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_AdjFlow(nDim, nVar_Adj_Flow, config);
-                }
               }
               break;
             default : cout << "Upwind scheme not implemented." << endl; cin.get(); break;
@@ -1537,9 +1531,6 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 		case SPACE_UPWIND :
 			for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
 				if (spalart_allmaras) {
-					if (config->GetKind_Adjoint() == HYBRID)
-						solver_container[iMGlevel][ADJTURB_SOL][CONV_TERM] = new CUpwSca_AdjDiscTurbSA(nDim, nVar_Adj_Turb, config);
-					else
 						solver_container[iMGlevel][ADJTURB_SOL][CONV_TERM] = new CUpwSca_AdjTurb(nDim, nVar_Adj_Turb, config);
 				}
 				else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; cin.get();}
@@ -1556,22 +1547,14 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 		case AVG_GRAD :
 			for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
 			if (spalart_allmaras){
-				if (config->GetKind_Adjoint() == HYBRID) {
-					solver_container[iMGlevel][ADJTURB_SOL][VISC_TERM] = new CAvgGrad_AdjDiscTurbSA(nDim, nVar_Adj_Turb, config);
-				}
-				else
-					{cout << "Viscous scheme not implemented." << endl; cin.get();}
+				cout << "Viscous scheme not implemented." << endl; cin.get();
 			}
 			else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; cin.get();}
 			break;
 		case AVG_GRAD_CORRECTED :
 			for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
 				if (spalart_allmaras){
-					if (config->GetKind_Adjoint() == HYBRID) {
-						cout << "Viscous scheme not implemented." << endl; cin.get();
-					}
-					else
-						solver_container[iMGlevel][ADJTURB_SOL][VISC_TERM] = new CAvgGradCorrected_AdjTurb(nDim, nVar_Adj_Turb, config);
+					solver_container[iMGlevel][ADJTURB_SOL][VISC_TERM] = new CAvgGradCorrected_AdjTurb(nDim, nVar_Adj_Turb, config);
 				}
 				else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; cin.get();}
 			break;
@@ -1587,14 +1570,8 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 		case PIECEWISE_CONSTANT :
 			for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
 				if (spalart_allmaras) {
-					if (config->GetKind_Adjoint() == HYBRID) {
-						solver_container[iMGlevel][ADJTURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_AdjDiscTurbSA(nDim, nVar_Adj_Turb, config);
-						//solver_container[iMGlevel][ADJTURB_SOL][SOURCE_SECOND_TERM] = new CSourceConservative_AdjTurb(nDim, nVar_Adj_Turb, config); // not used
-					}
-					else {
 						solver_container[iMGlevel][ADJTURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_AdjTurb(nDim, nVar_Adj_Turb, config);
 						solver_container[iMGlevel][ADJTURB_SOL][SOURCE_SECOND_TERM] = new CSourceConservative_AdjTurb(nDim, nVar_Adj_Turb, config);
-					}
 				}
 				else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; cin.get();}
 			}
@@ -1606,13 +1583,7 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 
 		/*--- Definition of the boundary condition method ---*/
 		for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-			if (spalart_allmaras)
-				if (config->GetKind_Adjoint() == HYBRID) {
-					solver_container[iMGlevel][ADJTURB_SOL][CONV_BOUND_TERM] = new CUpwSca_AdjDiscTurbSA(nDim, nVar_Adj_Turb, config);
-				}
-				else {
-					solver_container[iMGlevel][ADJTURB_SOL][CONV_BOUND_TERM] = new CUpwLin_AdjTurb(nDim, nVar_Adj_Turb, config);
-				}
+			if (spalart_allmaras) solver_container[iMGlevel][ADJTURB_SOL][CONV_BOUND_TERM] = new CUpwLin_AdjTurb(nDim, nVar_Adj_Turb, config);
 			else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; cin.get();}
 		}
 

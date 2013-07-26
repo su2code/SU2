@@ -2874,4 +2874,6 @@ void CNumerics::GetViscousArtCompProjJacs(double val_laminar_viscosity,
 	}
 }
 
+CSourceNothing::CSourceNothing(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) { }
 
+CSourceNothing::~CSourceNothing(void) { }

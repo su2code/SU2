@@ -1,7 +1,6 @@
 /*!
- * \file SU2_CFD.hpp
- * \brief Headers of the main subroutines of the code SU2_CFD.
- *        The subroutines and functions are in the <i>SU2_CFD.cpp</i> file.
+ * \file numerics_direct_heat.cpp
+ * \brief This file contains all the convective term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
  * \version 2.0.5
  *
@@ -22,21 +21,5 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
-#ifndef NO_MPI
-#include <mpi.h>
-#endif
-#include <ctime>
-
-#include "solver_structure.hpp"
-#include "integration_structure.hpp"
-#include "output_structure.hpp"
-#include "numerics_structure.hpp"
-#include "../../Common/include/geometry_structure.hpp"
-#include "../../Common/include/grid_movement_structure.hpp"
-#include "../../Common/include/config_structure.hpp"
-#include "../include/definition_structure.hpp"
-#include "../include/iteration_structure.hpp"
-
-using namespace std;
+#include "../include/numerics_structure.hpp"
+#include <limits>

@@ -31,7 +31,7 @@
 #include <cmath>
 #include <iostream>
 
-#include "solution_structure.hpp"
+#include "solver_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
 

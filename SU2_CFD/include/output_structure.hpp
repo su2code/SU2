@@ -29,7 +29,7 @@
 #include <time.h>
 #include <fstream>
 
-#include "solution_structure.hpp"
+#include "solver_structure.hpp"
 #include "integration_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/config_structure.hpp"

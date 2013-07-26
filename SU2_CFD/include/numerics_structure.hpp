@@ -1732,65 +1732,6 @@ public:
 			double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj,CConfig *config);
 };
 
-
-class CUpwRoe_AdjDiscFlow : public CNumerics {
-private:
-	bool implicit, rotating_frame, grid_movement;
-	double *Velocity_i, *Velocity_j, *RoeVelocity;
-	double *Proj_flux_tensor_i, *Proj_flux_tensor_j;
-	double *delta_wave, *delta_vel;
-	double *Lambda, *Epsilon;
-	double **P_Tensor, **invP_Tensor;
-	double sq_vel, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-	Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
-	ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel, delta_p, delta_rho;
-	unsigned short iDim, iVar, jVar, kVar;
-
-	double *Velocity_id, *Velocity_jd, *RoeVelocityd;
-	double *Proj_flux_tensor_id, *Proj_flux_tensor_jd;
-	double *delta_waved, *delta_veld;
-	double *Lambdad, *Epsilond;
-	double **P_Tensord, **invP_Tensord;
-	double sq_veld, Density_id, Energy_id, SoundSpeed_id, Pressure_id, Enthalpy_id,
-	Density_jd, Energy_jd, SoundSpeed_jd, Pressure_jd, Enthalpy_jd, Rd, RoeDensityd, RoeEnthalpyd, RoeSoundSpeedd,
-	ProjVelocityd, ProjVelocity_id, ProjVelocity_jd, proj_delta_veld, delta_pd, delta_rhod;
-
-	double *val_residual, *val_residuald;
-
-public:
-
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CUpwRoe_AdjDiscFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CUpwRoe_AdjDiscFlow(void);
-
-	/*!
-	 * \brief Compute the adjoint Roe's flux between two nodes i and j.
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i.
-	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node i.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetResidual(double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
-
-	/*!
-	 * \brief Compute the derivative of the Roe's flux between two nodes i and j.
-	 * \param[out] val_residual - value of residual.
-	 * \param[out] val_residual - value of derivative of residual.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetDirectResidual_ad(double *val_residual, double *val_residuald, CConfig *config);
-
-};
-
-
 /*! 
  * \class CUpwRoeArtComp_AdjFlow
  * \brief Class for solving an approximate Riemann solver of Roe 
@@ -1834,47 +1775,6 @@ public:
 	 */
 	void SetResidual(double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii, 
 			double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj,CConfig *config);
-};
-
-/*! 
- * \class CUpwRoeArtComp_AdjDiscFlow
- * \brief Class for solving an approximate Riemann solver of Roe
- *        for the adjoint flow equations.
- * \ingroup ConvDiscr
- * \author F. Palacios.
- * \version 2.0.5
- */
-class CUpwRoeArtComp_AdjDiscFlow : public CNumerics {
-private:
-
-public:
-
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CUpwRoeArtComp_AdjDiscFlow();
-
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CUpwRoeArtComp_AdjDiscFlow(void);
-
-	/*!
-	 * \brief Compute the adjoint Roe's flux between two nodes i and j.
-	 * \param[out] val_residual_i - Pointer to the total residual at point i.
-	 * \param[out] val_residual_j - Pointer to the total residual at point j.
-	 * \param[out] val_Jacobian_ii - Jacobian of the numerical method at node i (implicit computation) from node i.
-	 * \param[out] val_Jacobian_ij - Jacobian of the numerical method at node i (implicit computation) from node j.
-	 * \param[out] val_Jacobian_ji - Jacobian of the numerical method at node j (implicit computation) from node i.
-	 * \param[out] val_Jacobian_jj - Jacobian of the numerical method at node j (implicit computation) from node j.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetResidual();
-
-	void SetDirectResidual_ad();
 };
 
 /*!
@@ -2282,50 +2182,6 @@ public:
 			double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config);
 };
 
-
-/*! 
- * \class CUpwRoe_Plasma
- * \brief Class for solving an approximate Riemann solver of Roe for the plasma equations.
- * \ingroup ConvDiscr
- * \author ADL Stanford
- * \version 2.0.5
- */
-class CUpwRoe_AdjDiscPlasmaDiatomic : public CNumerics {
-private:
-
-public:
-
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] val_nSpecies - Number of species in the problem.
-	 * \param[in] val_nDiatomics - Number of diatomic species in the problem.
-	 * \param[in] val_nMonatomics - Number of monatomic species in the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CUpwRoe_AdjDiscPlasmaDiatomic();
-
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CUpwRoe_AdjDiscPlasmaDiatomic(void);
-
-	/*!
-	 * \brief Compute the Roe's flux between two nodes i and j.
-	 * \param[out] val_residual_i - Pointer to the total residual at node i.
-	 * \param[out] val_residual_j - Pointer to the total residual at node j.
-	 * \param[out] val_Jacobian_ii - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[out] val_Jacobian_ij - Jacobian of the numerical method from node i to node j (implicit computation).
-	 * \param[out] val_Jacobian_ji - Jacobian of the numerical method from node j to node i (implicit computation).
-	 * \param[out] val_Jacobian_jj - Jacobian of the numerical method at node j (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetResidual();
-
-	void SetDirectResidual_ad();
-};
-
 /*!
  * \class CUpwAUSM_Flow
  * \brief Class for solving an approximate Riemann AUSM.
@@ -2540,47 +2396,6 @@ public:
 			double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config);
 };
 
-/*! 
- * \class CUpwLin_AdjDiscLevelSet
- * \brief Class for performing a linear upwind solver for the adjoint Level Set equations.
- * \ingroup ConvDiscr
- * \author F. Palacios.
- * \version 2.0.5
- */
-class CUpwLin_AdjDiscLevelSet : public CNumerics {
-private:
-
-
-public:
-
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CUpwLin_AdjDiscLevelSet();
-
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CUpwLin_AdjDiscLevelSet(void);
-
-	/*!
-	 * \brief Compute the upwind flux between two nodes i and j.
-	 * \param[out] val_residual_i - Pointer to the total residual at node i.
-	 * \param[out] val_residual_j - Pointer to the total residual at node j.
-	 * \param[out] val_Jacobian_ii - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[out] val_Jacobian_ij - Jacobian of the numerical method from node i to node j (implicit computation).
-	 * \param[out] val_Jacobian_ji - Jacobian of the numerical method from node j to node i (implicit computation).
-	 * \param[out] val_Jacobian_jj - Jacobian of the numerical method at node j (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetResidual();
-
-	void SetDirectResidual_ad();
-};
-
 /*!
  * \class CUpwLin_AdjTurb
  * \brief Class for performing a linear upwind solver for the adjoint turbulence equations.
@@ -2615,80 +2430,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetResidual (double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
-};
-
-/*!
- * \class CUpwLin_AdjDiscTurb
- * \brief Class for performing a linear upwind solver for the adjoint turbulence equations.
- * \ingroup ConvDiscr
- * \author A. Bueno.
- * \version 2.0.5
- */
-class CUpwLin_AdjDiscTurb : public CNumerics {
-private:
-
-public:
-
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CUpwLin_AdjDiscTurb(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CUpwLin_AdjDiscTurb(void);
-
-	/*!
-	 * \brief Compute the adjoint upwind flux between two nodes i and j.
-	 * \param[out] val_residual - Pointer to the total residual.
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetResidual();
-
-	void SetDirectResidual_ad();
-};
-
-/*!
- * \class CUpwLin_AdjDiscTurbSA
- * \brief Class for performing a linear upwind solver for the adjoint turbulence equations.
- * \ingroup ConvDiscr
- * \author A. Bueno.
- * \version 2.0.5
- */
-class CUpwLin_AdjDiscTurbSA : public CNumerics {
-private:
-
-public:
-
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CUpwLin_AdjDiscTurbSA(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CUpwLin_AdjDiscTurbSA(void);
-
-	/*!
-	 * \brief Compute the adjoint upwind flux between two nodes i and j.
-	 * \param[out] val_residual - Pointer to the total residual.
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetResidual(double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
-
-	void SetDirectResidual_ad();
 };
 
 /*! 
@@ -2851,104 +2592,6 @@ public:
 			double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config);
 };
 
-/*!
- * \class CUpwSca_AdjDiscTurb
- * \brief Class for doing a scalar upwind solver for the adjoint turbulence equations.
- * \ingroup ConvDiscr
- * \author A. Bueno.
- * \version 2.0.5
- */
-class CUpwSca_AdjDiscTurb : public CNumerics {
-private:
-
-public:
-
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CUpwSca_AdjDiscTurb(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CUpwSca_AdjDiscTurb(void);
-
-	/*!
-	 * \param[out] val_residual_i - Pointer to the total residual at point i.
-	 * \param[out] val_residual_j - Pointer to the total viscosity residual at point j.
-	 * \param[out] val_Jacobian_ii - Jacobian of the numerical method at node i (implicit computation) from node i.
-	 * \param[out] val_Jacobian_ij - Jacobian of the numerical method at node i (implicit computation) from node j.
-	 * \param[out] val_Jacobian_ji - Jacobian of the numerical method at node j (implicit computation) from node i.
-	 * \param[out] val_Jacobian_jj - Jacobian of the numerical method at node j (implicit computation) from node j.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetResidual();
-
-	/*!
-	 * \brief Compute the derivative of the Roe's flux between two nodes i and j.
-	 * \param[out] val_residual - value of residual.
-	 * \param[out] val_residual - value of derivative of residual.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetDirectResidual_ad();
-
-
-};
-
-/*!
- * \class CUpwSca_AdjDiscTurbSA
- * \brief Class for doing a scalar upwind solver for the SA discrete adjoint turbulence equations.
- * \ingroup ConvDiscr
- * \author T. Taylor.
- * \version 2.0.5
- */
-class CUpwSca_AdjDiscTurbSA : public CNumerics {
-private:
-	int iDim;
-	double q_ij, *Velocity_i, *Velocity_j, a0, a1;
-	double Density_id, Density_jd, *Velocity_id, *Velocity_jd, q_ijd, a0d, a1d;
-	double *val_residual, *val_residuald;
-public:
-
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CUpwSca_AdjDiscTurbSA(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CUpwSca_AdjDiscTurbSA(void);
-
-	/*!
-	 * \param[out] val_residual_i - Pointer to the total residual at point i.
-	 * \param[out] val_residual_j - Pointer to the total viscosity residual at point j.
-	 * \param[out] val_Jacobian_ii - Jacobian of the numerical method at node i (implicit computation) from node i.
-	 * \param[out] val_Jacobian_ij - Jacobian of the numerical method at node i (implicit computation) from node j.
-	 * \param[out] val_Jacobian_ji - Jacobian of the numerical method at node j (implicit computation) from node i.
-	 * \param[out] val_Jacobian_jj - Jacobian of the numerical method at node j (implicit computation) from node j.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetResidual(double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
-
-	/*!
-	 * \brief Compute the derivative of the Roe's flux between two nodes i and j.
-	 * \param[out] val_residual - value of residual.
-	 * \param[out] val_residual - value of derivative of residual.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetDirectResidual_ad(double *val_residual, double *val_residuald, CConfig *config);
-
-
-};
-
-
 /*! 
  * \class CCentJST_Flow
  * \brief Class for centered shceme - JST.
@@ -3110,48 +2753,6 @@ public:
 			CConfig *config);
 };
 
-/*! 
- * \class CCentJST_AdjDiscFlow
- * \brief Class for and adjoint centered scheme - JST.
- * \ingroup ConvDiscr
- * \author F. Palacios.
- * \version 2.0.5
- */
-class CCentJST_AdjDiscFlow : public CNumerics {
-private:
-
-public:
-
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CCentJST_AdjDiscFlow();
-
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CCentJST_AdjDiscFlow(void);
-
-	/*!
-	 * \brief Compute the adjoint flow residual using a JST method.
-	 * \param[out] val_resconv_i - Pointer to the convective residual at point i.
-	 * \param[out] val_resvisc_i - Pointer to the artificial viscosity residual at point i.
-	 * \param[out] val_resconv_j - Pointer to the convective residual at point j.
-	 * \param[out] val_resvisc_j - Pointer to the artificial viscosity residual at point j.
-	 * \param[out] val_Jacobian_ii - Jacobian of the numerical method at node i (implicit computation) from node i.
-	 * \param[out] val_Jacobian_ij - Jacobian of the numerical method at node i (implicit computation) from node j.
-	 * \param[out] val_Jacobian_ji - Jacobian of the numerical method at node j (implicit computation) from node i.
-	 * \param[out] val_Jacobian_jj - Jacobian of the numerical method at node j (implicit computation) from node j.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetResidual();
-
-	void SetDirectResidual_ad();
-};
-
 /*!
  * \class CCentJSTArtComp_AdjFlow
  * \brief Class for and adjoint centered scheme - JST.
@@ -3200,49 +2801,6 @@ public:
 	void SetResidual (double *val_resconv_i, double *val_resvisc_i, double *val_resconv_j, double *val_resvisc_j, 
 			double **val_Jacobian_ii, double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj,
 			CConfig *config);
-};
-
-/*!
- * \class CCentJSTArtComp_AdjDiscFlow
- * \brief Class for and adjoint centered scheme - JST.
- * \ingroup ConvDiscr
- * \author F. Palacios.
- * \version 2.0.5
- */
-class CCentJSTArtComp_AdjDiscFlow : public CNumerics {
-private:
-
-
-public:
-
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CCentJSTArtComp_AdjDiscFlow();
-
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CCentJSTArtComp_AdjDiscFlow(void);
-
-	/*!
-	 * \brief Compute the adjoint flow residual using a JST method.
-	 * \param[out] val_resconv_i - Pointer to the convective residual at point i.
-	 * \param[out] val_resvisc_i - Pointer to the artificial viscosity residual at point i.
-	 * \param[out] val_resconv_j - Pointer to the convective residual at point j.
-	 * \param[out] val_resvisc_j - Pointer to the artificial viscosity residual at point j.
-	 * \param[out] val_Jacobian_ii - Jacobian of the numerical method at node i (implicit computation) from node i.
-	 * \param[out] val_Jacobian_ij - Jacobian of the numerical method at node i (implicit computation) from node j.
-	 * \param[out] val_Jacobian_ji - Jacobian of the numerical method at node j (implicit computation) from node i.
-	 * \param[out] val_Jacobian_jj - Jacobian of the numerical method at node j (implicit computation) from node j.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetResidual ();
-
-	void SetDirectResidual_ad();
 };
 
 /*! 
@@ -3451,49 +3009,6 @@ public:
 			CConfig *config);
 };
 
-/*! 
- * \class CCentLax_AdjDiscFlow
- * \brief Class for computing the Lax-Friedrich adjoint centered scheme.
- * \ingroup ConvDiscr
- * \author F. Palacios.
- * \version 2.0.5
- */
-class CCentLax_AdjDiscFlow : public CNumerics {
-private:
-
-
-public:
-
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CCentLax_AdjDiscFlow();
-
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CCentLax_AdjDiscFlow(void);
-
-	/*!
-	 * \brief Compute the adjoint flow residual using a Lax method.
-	 * \param[out] val_resconv_i - Pointer to the convective residual at point i.
-	 * \param[out] val_resvisc_i - Pointer to the artificial viscosity residual at point i.
-	 * \param[out] val_resconv_j - Pointer to the convective residual at point j.
-	 * \param[out] val_resvisc_j - Pointer to the artificial viscosity residual at point j.
-	 * \param[out] val_Jacobian_ii - Jacobian of the numerical method at node i (implicit computation) from node i.
-	 * \param[out] val_Jacobian_ij - Jacobian of the numerical method at node i (implicit computation) from node j.
-	 * \param[out] val_Jacobian_ji - Jacobian of the numerical method at node j (implicit computation) from node i.
-	 * \param[out] val_Jacobian_jj - Jacobian of the numerical method at node j (implicit computation) from node j.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetResidual ();
-
-	void SetDirectResidual_ad();
-};
-
 /*!
  * \class CCentLaxArtComp_AdjFlow
  * \brief Class for computing the Lax-Friedrich adjoint centered scheme.
@@ -3544,48 +3059,6 @@ public:
 	void SetResidual (double *val_resconv_i, double *val_resvisc_i, double *val_resconv_j, double *val_resvisc_j, 
 			double **val_Jacobian_ii, double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj,
 			CConfig *config);
-};
-
-/*!
- * \class CCentLaxArtComp_AdjDiscFlow
- * \brief Class for computing the Lax-Friedrich adjoint centered scheme.
- * \ingroup ConvDiscr
- * \author F. Palacios.
- * \version 2.0.5
- */
-class CCentLaxArtComp_AdjDiscFlow : public CNumerics {
-private:
-
-public:
-
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CCentLaxArtComp_AdjDiscFlow();
-
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CCentLaxArtComp_AdjDiscFlow(void);
-
-	/*!
-	 * \brief Compute the adjoint flow residual using a Lax method.
-	 * \param[out] val_resconv_i - Pointer to the convective residual at point i.
-	 * \param[out] val_resvisc_i - Pointer to the artificial viscosity residual at point i.
-	 * \param[out] val_resconv_j - Pointer to the convective residual at point j.
-	 * \param[out] val_resvisc_j - Pointer to the artificial viscosity residual at point j.
-	 * \param[out] val_Jacobian_ii - Jacobian of the numerical method at node i (implicit computation) from node i.
-	 * \param[out] val_Jacobian_ij - Jacobian of the numerical method at node i (implicit computation) from node j.
-	 * \param[out] val_Jacobian_ji - Jacobian of the numerical method at node j (implicit computation) from node i.
-	 * \param[out] val_Jacobian_jj - Jacobian of the numerical method at node j (implicit computation) from node j.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetResidual ();
-
-	void SetDirectResidual_ad();
 };
 
 /*! 
@@ -3771,66 +3244,6 @@ public:
 	void SetResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config);
 };
 
-
-/*!
- * \class CAvgGrad_AdjDiscTurbSA
- * \brief Class for computing discrete adjoint viscous term using average of gradients (Spalart-Allmaras Turbulence model).
- * \ingroup ViscDiscr
- * \author T. Taylor
- * \version 2.0.5
- */
-class CAvgGrad_AdjDiscTurbSA : public CNumerics {
-private:
-	unsigned short iDim, iVar;
-	double Density_id, Density_jd;
-	double nu_i, nu_j, nu_e;
-	double nu_id, nu_jd, nu_ed;
-	double dist_ij_2;
-	double proj_vector_ij;
-	double sigma;
-	double **Mean_GradTurbVar;
-	double *Proj_Mean_GradTurbVar_Kappa, *Proj_Mean_GradTurbVar_Edge;
-	double *Edge_Vector;
-	double **Mean_GradTurbVard;
-	double *Proj_Mean_GradTurbVar_Kappad, *Proj_Mean_GradTurbVar_Edged;
-	double *Edge_Vectord;
-	double *val_residual, *val_residuald;
-
-public:
-
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CAvgGrad_AdjDiscTurbSA(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CAvgGrad_AdjDiscTurbSA(void);
-
-	/*!
-	 * \brief Compute the viscous turbulence terms residual using an average of gradients.
-	 * \param[out] val_residual - Pointer to the total residual.
-	 * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetResidual(double **val_Jacobian_i, double *val_Jacobian_mui, double ***val_Jacobian_gradi,
-			double **val_Jacobian_j, double *val_Jacobian_muj, double ***val_Jacobian_gradj, CConfig *config);
-
-	/*!
-	 * \brief Compute the derivative of the Roe's flux between two nodes i and j.
-	 * \param[out] val_residual - value of residual.
-	 * \param[out] val_residual - value of derivative of residual.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetDirectResidual_ad(double *val_residual, double *val_residuald, CConfig *config);
-
-};
-
 /*! 
  * \class CAvgGrad_TransLM
  * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
@@ -3966,41 +3379,6 @@ public:
 };
 
 /*!
- * \class CAvgGrad_AdjDiscFlow
- * \brief Class for computing the adjoint viscous terms.
- * \ingroup ViscDiscr
- * \author F. Palacios.
- * \version 2.0.5
- */
-class CAvgGrad_AdjDiscFlow : public CNumerics {
-private:
-
-public:
-
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CAvgGrad_AdjDiscFlow();
-
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CAvgGrad_AdjDiscFlow(void);
-
-	/*!
-	 * \brief Residual computation.
-	 * \param[out] val_residual_i - Pointer to the total residual at point i.
-	 * \param[out] val_residual_j - Pointer to the total residual at point j.
-	 */
-	void SetResidual();
-
-	void SetDirectResidual();
-};
-
-/*!
  * \class CAvgGradArtComp_AdjFlow
  * \brief Class for computing the adjoint viscous terms.
  * \ingroup ViscDiscr
@@ -4037,41 +3415,6 @@ public:
 	void SetResidual(double *val_residual_i, double *val_residual_j,
                    double **val_Jacobian_ii, double **val_Jacobian_ij,
                    double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config);
-};
-
-/*!
- * \class CAvgGradArtComp_AdjDiscFlow
- * \brief Class for computing the adjoint viscous terms.
- * \ingroup ViscDiscr
- * \author F. Palacios.
- * \version 2.0.5
- */
-class CAvgGradArtComp_AdjDiscFlow : public CNumerics {
-private:
-
-public:
-
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CAvgGradArtComp_AdjDiscFlow();
-
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CAvgGradArtComp_AdjDiscFlow(void);
-
-	/*!
-	 * \brief Residual computation.
-	 * \param[out] val_residual_i - Pointer to the total residual at point i.
-	 * \param[out] val_residual_j - Pointer to the total residual at point j.
-	 */
-	void SetResidual();
-
-	void SetDirectResidual_ad();
 };
 
 /*! 
@@ -4355,41 +3698,6 @@ public:
 };
 
 /*!
- * \class CAvgGradCorrected_AdjDiscFlow
- * \brief Class for computing the adjoint viscous terms, including correction.
- * \ingroup ViscDiscr
- * \author A. Bueno.
- * \version 2.0.5
- */
-class CAvgGradCorrected_AdjDiscFlow : public CNumerics {
-private:
-
-public:
-
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CAvgGradCorrected_AdjDiscFlow();
-
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CAvgGradCorrected_AdjDiscFlow(void);
-
-	/*!
-	 * \brief Compute the adjoint flow viscous residual in a non-conservative way using an average of gradients and derivative correction.
-	 * \param[out] val_residual_i - Pointer to the total residual at point i.
-	 * \param[out] val_residual_j - Pointer to the total residual at point j.
-	 */
-	void SetResidual();
-
-	void SetDirectResidual_ad();
-};
-
-/*!
  * \class CAvgGradCorrectedArtComp_AdjFlow
  * \brief Class for computing the adjoint viscous terms, including correction.
  * \ingroup ViscDiscr
@@ -4435,43 +3743,6 @@ public:
 	 */
 	void SetResidual (double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii, double **val_Jacobian_ij, 
 			double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config);
-};
-
-/*!
- * \class CAvgGradCorrectedArtComp_AdjDiscFlow
- * \brief Class for computing the adjoint viscous terms, including correction.
- * \ingroup ViscDiscr
- * \author A. Bueno.
- * \version 2.0.5
- */
-class CAvgGradCorrectedArtComp_AdjDiscFlow : public CNumerics {
-private:
-
-
-public:
-
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CAvgGradCorrectedArtComp_AdjDiscFlow();
-
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CAvgGradCorrectedArtComp_AdjDiscFlow(void);
-
-	/*!
-	 * \brief Compute the adjoint flow viscous residual in a non-conservative way using an average of gradients and derivative correction.
-	 * \param[out] val_residual_i - Pointer to the total residual at point i.
-	 * \param[out] val_residual_j - Pointer to the total residual at point j.
-	 */
-	void SetResidual();
-
-	void SetDirectResidual();
-
 };
 
 /*! 
@@ -4524,44 +3795,6 @@ public:
 	 */
 	void SetResidual(double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii, double **val_Jacobian_ij, 
 			double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config);
-};
-
-/*! 
- * \class CAvgGradCorrected_AdjDiscTurb
- * \brief Class for adjoint turbulent using average of gradients with a correction.
- * \ingroup ViscDiscr
- * \author A. Bueno.
- * \version 2.0.5
- */
-class CAvgGradCorrected_AdjDiscTurb : public CNumerics {
-private:
-
-public:
-
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CAvgGradCorrected_AdjDiscTurb();
-
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CAvgGradCorrected_AdjDiscTurb(void);
-
-	/*!
-	 * \brief Compute the adjoint turbulent residual using average of gradients and a derivative correction.
-	 * \param[out] val_residual - Pointer to the total residual.
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-
-	void SetResidual();
-
-	void SetDirectResidual_ad();
 };
 
 /*!
@@ -5582,41 +4815,6 @@ public:
 
 };
 
-/*! 
- * \class CSourcePieceWise_AdjDiscFlow
- * \brief Class for source term integration in adjoint problem.
- * \ingroup SourceDiscr
- * \author F. Palacios.
- * \version 2.0.5
- */
-class CSourcePieceWise_AdjDiscFlow : public CNumerics {
-private:
-
-public:
-
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CSourcePieceWise_AdjDiscFlow();
-
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CSourcePieceWise_AdjDiscFlow(void);
-
-	/*!
-	 * \brief Source term integration of the flow adjoint equation.
-	 * \param[out] val_residual - Pointer to the total residual.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetResidual ();
-
-	void SetDirectResidual_ad();
-};
-
 /*!
  * \class CSourcePieceWise_AdjTurb
  * \brief Class for source term integration of the adjoint turbulent equation.
@@ -5653,94 +4851,6 @@ public:
 	void SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
 };
 
-/*! 
- * \class CSourcePieceWise_AdjDiscTurb
- * \brief Class for source term integration of the adjoint turbulent equation.
- * \ingroup SourceDiscr
- * \author A. Bueno.
- * \version 2.0.5
- */
-class CSourcePieceWise_AdjDiscTurb : public CNumerics {
-private:
-
-public:
-
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CSourcePieceWise_AdjDiscTurb(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CSourcePieceWise_AdjDiscTurb(void);
-
-	/*!
-	 * \brief Source term integration of the adjoint turbulence equation.
-	 * \param[out] val_residual - Pointer to the total residual.
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetResidual();
-
-	void SetDirectResidual_ad();
-};
-
-/*!
- * \class CSourcePieceWise_AdjDiscTurbSA
- * \brief Class for source term integration of the adjoint turbulent equation.
- * \ingroup SourceDiscr
- * \author T. Taylor.
- * \version 2.0.5
- */
-class CSourcePieceWise_AdjDiscTurbSA : public CNumerics {
-private:
-	int iDim;
-	double cv1_3, k2, cb1, cb2, cw1, cw2, cw3_6, sigma;
-	double DivVelocity, Vorticity, dist_i_2, nu, Ji, Ji_2, Ji_3, fv1, fv2, Omega, Shat;
-	double r, g, g_6, glim, fw, norm2_Grad;
-	double Density_id, Density_jd, Vorticityd, nud, Jid, Ji_2d, Ji_3d, fv1d, fv2d, Omegad, Shatd;
-	double rd, gd, g_6d, glimd, fwd, norm2_Gradd;
-	double *val_residual, *val_residuald;
-
-
-public:
-
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CSourcePieceWise_AdjDiscTurbSA(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CSourcePieceWise_AdjDiscTurbSA(void);
-
-	/*!
-	 * \brief Source term integration of the adjoint turbulence equation.
-	 * \param[out] val_residual - Pointer to the total residual.
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetResidual(double **val_Jacobian_i, double *val_Jacobian_mui, double ***val_Jacobian_gradi, CConfig *config);
-
-	/*!
-	 * \brief Compute the derivative of the source term.
-	 * \param[out] val_residual - value of residual.
-	 * \param[out] val_residual - value of derivative of residual.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetDirectResidual_ad(double *val_residual, double *val_residuald, CConfig *config);
-};
-
 /*!
  * \class CSourcePieceWise_AdjElec
  * \brief Class for source term integration of the adjoint electric potential equation.
@@ -5770,39 +4880,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetResidual(double *val_residual, CConfig *config);
-};
-
-/*! 
- * \class CSourcePieceWise_AdjDiscElec
- * \brief Class for source term integration of the adjoint electric potential equation.
- * \ingroup SourceDiscr
- * \author F. Palacios.
- * \version 2.0.5
- */
-class CSourcePieceWise_AdjDiscElec : public CNumerics {
-public:
-
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CSourcePieceWise_AdjDiscElec();
-
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CSourcePieceWise_AdjDiscElec(void);
-
-	/*!
-	 * \brief Source term integration of the adjoint electric potential equation.
-	 * \param[out] val_residual - Pointer to the total residual.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetResidual();
-
-	void SetDirectResidual_ad();
 };
 
 /*!
@@ -5865,39 +4942,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetResidual(double *val_residual, CConfig *config);
-};
-
-/*! 
- * \class CSourcePieceWise_AdjDiscLevelSet
- * \brief Class for source term integration of the adjoint level set equation.
- * \ingroup SourceDiscr
- * \author F. Palacios.
- * \version 2.0.5
- */
-class CSourcePieceWise_AdjDiscLevelSet : public CNumerics {
-public:
-
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CSourcePieceWise_AdjDiscLevelSet();
-
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CSourcePieceWise_AdjDiscLevelSet(void);
-
-	/*!
-	 * \brief Source term integration of the adjoint electric potential equation.
-	 * \param[out] val_residual - Pointer to the total residual.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetResidual();
-
-	void SetDirectResidual_ad();
 };
 
 /*!
@@ -6089,13 +5133,6 @@ public:
 	 */
 	void SetResidual_Axisymmetric(double *val_residual, CConfig *config);
 
-	/*!
-	 * \brief Residual for source term integration.
-	 * \param[out] val_residual - Pointer to the source residual containing chemistry terms.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetResidual_Axisymmetric_ad(double *val_residual, double *val_residuald, CConfig *config);
-
 	/*! 
 	 * \brief Calculation of axisymmetric source term Jacobian
 	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
@@ -6109,13 +5146,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetResidual_Chemistry(double *val_residual,CConfig *config);
-
-	/*! 
-	 * \brief Automatically differentiated residual for source term integration.
-	 * \param[out] val_residual - Pointer to the source residual containing chemistry terms.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetResidual_Chemistry_ad(double *val_residual, double *val_residuald, CConfig *config);
 
 	/*! 
 	 * \brief Calculation of chemistry source term Jacobian
@@ -6146,13 +5176,6 @@ public:
 	void SetResidual_MomentumExch(double *val_residual, CConfig *config);
 
 	/*! 
-	 * \brief Residual for source term integration.
-	 * \param[out] val_residual - Pointer to the source residual containing momentum exchange terms.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetResidual_MomentumExch_ad(double *val_residual, double *val_residuald, CConfig *config);
-
-	/*! 
 	 * \brief Calculation of momentum exchange source term Jacobian
 	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
 	 * \param[in] config - Definition of the particular problem.
@@ -6165,13 +5188,6 @@ public:
 	 * \param[out] val_residual - Residual of the source terms.
 	 */
 	void SetResidual_EnergyExch(double *val_residual, CConfig *config);
-
-	/*!
-	 * \brief Residual for calculating derivatives of the energy exchange terms using automatic differentiation.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[out] val_residual - Residual of the source terms.
-	 */
-	void SetResidual_EnergyExch_ad(double *val_residual, double *val_residuald, CConfig *config);
 
 	/*! 
 	 * \brief Calculation of energy exchange source term Jacobian
@@ -6241,43 +5257,6 @@ public:
 	void SetResidual(double *val_residual, CConfig *config);
 };
 
-/*! 
- * \class CSourceConservative_AdjDiscFlow
- * \brief Class for source term integration in adjoint problem using a conservative scheme.
- * \ingroup SourceDiscr
- * \author F. Palacios.
- * \version 2.0.5
- */
-class CSourceConservative_AdjDiscFlow : public CNumerics {
-private:
-	double *Velocity, *Residual_i, *Residual_j, *Mean_Residual;
-	double **Mean_PrimVar_Grad;
-
-public:
-
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CSourceConservative_AdjDiscFlow();
-
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CSourceConservative_AdjDiscFlow(void);
-
-	/*!
-	 * \brief Source term integration using a conservative scheme.
-	 * \param[out] val_residual - Pointer to the total residual.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetResidual();
-
-	void SetDirectResidual_ad();
-};
-
 /*!
  * \class CSourceConservative_AdjTurb
  * \brief Class for source term integration in adjoint turbulent problem using a conservative scheme.
@@ -6309,41 +5288,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
-};
-
-/*!
- * \class CSourceConservative_AdjDiscTurb
- * \brief Class for source term integration in adjoint turbulent problem using a conservative scheme.
- * \ingroup SourceDiscr
- * \author A. Bueno.
- * \version 2.0.5
- */
-class CSourceConservative_AdjDiscTurb : public CNumerics {
-public:
-
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CSourceConservative_AdjDiscTurb();
-
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CSourceConservative_AdjDiscTurb(void);
-
-	/*!
-	 * \brief Source term integration using a conservative scheme.
-	 * \param[out] val_residual - Pointer to the total residual.
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetResidual();
-
-	void SetDirectResidual_ad();
 };
 
 /*! 
@@ -6408,39 +5352,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetResidual(double *val_residual, double **val_Jacobian_i, CConfig *config);
-};
-
-/*! 
- * \class CSourceRotatingFrame_AdjDiscFlow
- * \brief Source term class for rotating frame adjoint.
- * \ingroup SourceDiscr
- * \author T. Economon.
- * \version 2.0.5
- */
-class CSourceRotatingFrame_AdjDiscFlow : public CNumerics {
-public:
-
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CSourceRotatingFrame_AdjDiscFlow();
-
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CSourceRotatingFrame_AdjDiscFlow(void);
-
-	/*!
-	 * \brief Residual of the adjoint rotating frame source term.
-	 * \param[out] val_residual - Pointer to the total residual.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetResidual();
-
-	void SetDirectResidual_ad();
 };
 
 /*!

@@ -19,8 +19,8 @@ ___bin_SU2_SOL_SOURCES = ../include/SU2_SOL.hpp \
 		../../SU2_CFD/src/output_structure.cpp \
 		../../SU2_CFD/src/output_cgns.cpp \
 		../../SU2_CFD/src/output_tecplot.cpp \
-		../../SU2_CFD/include/solution_structure.hpp \
-                ../../SU2_CFD/src/solution_structure.cpp \
+		../../SU2_CFD/include/solver_structure.hpp \
+                ../../SU2_CFD/src/solver_structure.cpp \
                 ../../SU2_CFD/include/variable_structure.hpp \
                 ../../SU2_CFD/src/variable_structure.cpp \
                 ../../SU2_CFD/src/variable_direct.cpp
