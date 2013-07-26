@@ -2,7 +2,7 @@
  * \file solution_direct_plasma.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -1390,7 +1390,7 @@ void CPlasmaSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_cont
 
 
 			/*--- Compute residuals ---*/
-			numerics->SetResidual(Res_Conv, Res_Visc, Jacobian_i, Jacobian_j, config);
+			numerics->ComputeResidual(Res_Conv, Res_Visc, Jacobian_i, Jacobian_j, config);
 
 			/*--- Update convective and artificial dissipation residuals ---*/
 			LinSysRes.AddBlock(iPoint, Res_Conv);
@@ -1462,7 +1462,7 @@ void CPlasmaSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contai
 		}
 
 		/*--- Compute the residual ---*/
-		numerics->SetResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
+		numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
 
 		/*--- Update residual value ---*/
 		LinSysRes.AddBlock(iPoint, Res_Conv);
@@ -1533,7 +1533,7 @@ void CPlasmaSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_conta
     }
     
     /*--- Compute and update residual ---*/
-    numerics->SetResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
+    numerics->ComputeResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
     
     LinSysRes.SubtractBlock(iPoint, Res_Visc);
     LinSysRes.AddBlock(jPoint, Res_Visc);
@@ -1614,7 +1614,7 @@ void CPlasmaSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 
 		/*--- Compute Residual ---*/
 		if (config->GetKind_GasModel() == ARGON) {
-			numerics->SetResidual(Residual, Jacobian_i, config);
+			numerics->ComputeResidual(Residual, Jacobian_i, config);
 
 			if (magnet && nDim == 3) {
 				node[iPoint]->SetMagneticField(numerics->GetMagneticField());
@@ -1634,32 +1634,32 @@ void CPlasmaSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 
 			/*--- Axisymmetric source terms ---*/
 			if (axisymmetric) {
-				numerics->SetResidual_Axisymmetric(Residual_Axisymmetric, config);
+				numerics->ComputeResidual_Axisymmetric(Residual_Axisymmetric, config);
 				numerics->SetJacobian_Axisymmetric(Jacobian_Axisymmetric, config);
 				LinSysRes.AddBlock(iPoint, Residual_Axisymmetric);
 				if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_Axisymmetric);
 			}
 
 			/*--- Chemistry source terms ---*/
-			numerics->SetResidual_Chemistry(Residual_Chemistry, config);
+			numerics->ComputeResidual_Chemistry(Residual_Chemistry, config);
 			numerics->SetJacobian_Chemistry(Jacobian_Chemistry, config);
 			LinSysRes.SubtractBlock(iPoint, Residual_Chemistry);
 			if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_Chemistry);
 
 			/*--- Electric force source terms ---*/
-			/*		numerics->SetResidual_ElecForce(Residual_ElecForce, config);
+			/*		numerics->ComputeResidual_ElecForce(Residual_ElecForce, config);
 			 numerics->SetJacobian_ElecForce(Jacobian_ElecForce, config);
 			 LinSysRes.SubtractBlock(iPoint, Residual_ElecForce);
 			 if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ElecForce);*/
 
 			/*--- Momentum exchange source terms ---*/
-			numerics->SetResidual_MomentumExch(Residual_MomentumExch, config);
+			numerics->ComputeResidual_MomentumExch(Residual_MomentumExch, config);
 			numerics->SetJacobian_MomentumExch(Jacobian_MomentumExch, config);
 			LinSysRes.SubtractBlock(iPoint, Residual_MomentumExch);
 			if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_MomentumExch);
 
 			/*--- Energy exchange source terms ---*/
-			numerics->SetResidual_EnergyExch(Residual_EnergyExch, config);
+			numerics->ComputeResidual_EnergyExch(Residual_EnergyExch, config);
 			numerics->SetJacobian_EnergyExch(Jacobian_EnergyExch, config);
 			LinSysRes.SubtractBlock(iPoint, Residual_EnergyExch);
 			if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_EnergyExch);
@@ -4210,7 +4210,7 @@ void CPlasmaSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
 
 			/*--- Compute the residual using an upwind scheme ---*/
 			conv_numerics->SetConservative(U_domain, U_update);
-			conv_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+			conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 			LinSysRes.AddBlock(iPoint, Residual);
 
 			/*--- In case we are doing a implicit computation ---*/
@@ -4421,7 +4421,7 @@ void CPlasmaSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
 				for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = -Vector[iDim];
 				conv_numerics->SetNormal(Vector);
 				conv_numerics->SetConservative(U_domain, U_outlet);
-				conv_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+				conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 				Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 
 			}
@@ -4555,7 +4555,7 @@ void CPlasmaSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container
 
 			/*--- Compute the residual using an upwind scheme ---*/
 			conv_numerics->SetConservative(U_domain, U_infty);
-			conv_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+			conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 			LinSysRes.AddBlock(iPoint, Residual);
 
 			/*--- In case we are doing a implicit computation ---*/
@@ -4592,7 +4592,7 @@ void CPlasmaSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container
         }
         
         /*--- Compute and update residual ---*/
-        visc_numerics->SetResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
+        visc_numerics->ComputeResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
         LinSysRes.SubtractBlock(iPoint, Res_Visc);
         
         /*--- Update Jacobians for implicit calculations ---*/

@@ -2,7 +2,7 @@
  * \file solution_direct_electric.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -248,7 +248,7 @@ void CElectricSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 				numerics->SetTimeStep(dt);
 				numerics->SetChargeDensity(node[Point_0]->GetChargeDensity(), node[Point_1]->GetChargeDensity(), node[Point_2]->GetChargeDensity(), node[Point_3]->GetChargeDensity());
 				numerics->SetConsVarGradient(Gradient_0, Gradient_1, Gradient_2 );
-				numerics->SetResidual_MacCormack(Source_Vector, config);
+				numerics->ComputeResidual_MacCormack(Source_Vector, config);
 
 				LinSysRes.AddBlock(Point_0, &Source_Vector[0]);
 				LinSysRes.AddBlock(Point_1, &Source_Vector[1]);
@@ -290,7 +290,7 @@ void CElectricSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 					numerics->SetTimeStep(dt);
 					numerics->SetChargeDensity(node[Point_0]->GetChargeDensity(), node[Point_1]->GetChargeDensity(), node[Point_2]->GetChargeDensity(), node[Point_3]->GetChargeDensity());
 					numerics->SetConsVarGradient(Gradient_0, Gradient_1, Gradient_2 );
-					numerics->SetResidual_MacCormack(Source_Vector, config);
+					numerics->ComputeResidual_MacCormack(Source_Vector, config);
 					LinSysRes.AddBlock(Point_0, &Source_Vector[0]);
 					LinSysRes.AddBlock(Point_1, &Source_Vector[1]);
 					LinSysRes.AddBlock(Point_2, &Source_Vector[2]);
@@ -329,9 +329,9 @@ void CElectricSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 					Gradient_3 = node[Point_3]->GetPlasmaRhoUGradient();
 					numerics->SetCoord(Coord_0, Coord_1, Coord_2, Coord_3);
 					numerics->SetConsVarGradient(Gradient_0, Gradient_1, Gradient_2, Gradient_3 );
-					numerics->SetResidual_MacCormack(Source_Vector, config);
+					numerics->ComputeResidual_MacCormack(Source_Vector, config);
 				}
-				else numerics->SetResidual(Source_Vector, config);
+				else numerics->ComputeResidual(Source_Vector, config);
 
 				LinSysRes.AddBlock(Point_0, &Source_Vector[0]);
 				LinSysRes.AddBlock(Point_1, &Source_Vector[1]);
@@ -390,7 +390,7 @@ void CElectricSolver::Galerkin_Method(CGeometry *geometry, CSolver **solver_cont
 			Coord_2 = geometry->node[Point_2]->GetCoord();
 
 			numerics->SetCoord(Coord_0, Coord_1, Coord_2);
-			numerics->SetResidual(StiffMatrix_Elem, config);
+			numerics->ComputeResidual(StiffMatrix_Elem, config);
 			AddStiffMatrix(StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
 		}
 
@@ -406,7 +406,7 @@ void CElectricSolver::Galerkin_Method(CGeometry *geometry, CSolver **solver_cont
 				Coord_2 = geometry->node[Point_2]->GetCoord();
 
 				numerics->SetCoord(Coord_0, Coord_1, Coord_2);
-				numerics->SetResidual(StiffMatrix_Elem, config);
+				numerics->ComputeResidual(StiffMatrix_Elem, config);
 				AddStiffMatrix(StiffMatrix_Elem,Point_0, Point_1, Point_2, Point_3);
 			}
 		}
@@ -424,7 +424,7 @@ void CElectricSolver::Galerkin_Method(CGeometry *geometry, CSolver **solver_cont
 				Point_3 = geometry->elem[iElem]->GetNode(3);	Coord_3 = geometry->node[Point_3]->GetCoord();
 
 				numerics->SetCoord(Coord_0, Coord_1, Coord_2, Coord_3);
-				numerics->SetResidual(StiffMatrix_Elem, config);
+				numerics->ComputeResidual(StiffMatrix_Elem, config);
 				AddStiffMatrix(StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
 			}
 
@@ -437,7 +437,7 @@ void CElectricSolver::Galerkin_Method(CGeometry *geometry, CSolver **solver_cont
 				Point_3 = geometry->elem[iElem]->GetNode(6);	Coord_3 = geometry->node[Point_3]->GetCoord();
 
 				numerics->SetCoord(Coord_0, Coord_1, Coord_2, Coord_3);
-				numerics->SetResidual(StiffMatrix_Elem, config);
+				numerics->ComputeResidual(StiffMatrix_Elem, config);
 				AddStiffMatrix(StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
 				/******************/
 
@@ -448,7 +448,7 @@ void CElectricSolver::Galerkin_Method(CGeometry *geometry, CSolver **solver_cont
 				Point_3 = geometry->elem[iElem]->GetNode(6);	Coord_3 = geometry->node[Point_3]->GetCoord();
 
 				numerics->SetCoord(Coord_0, Coord_1, Coord_2, Coord_3);
-				numerics->SetResidual(StiffMatrix_Elem, config);
+				numerics->ComputeResidual(StiffMatrix_Elem, config);
 				AddStiffMatrix(StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
 				/******************/
 
@@ -459,7 +459,7 @@ void CElectricSolver::Galerkin_Method(CGeometry *geometry, CSolver **solver_cont
 				Point_3 = geometry->elem[iElem]->GetNode(6);	Coord_3 = geometry->node[Point_3]->GetCoord();
 
 				numerics->SetCoord(Coord_0, Coord_1, Coord_2, Coord_3);
-				numerics->SetResidual(StiffMatrix_Elem, config);
+				numerics->ComputeResidual(StiffMatrix_Elem, config);
 				AddStiffMatrix(StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
 				/******************/
 
@@ -470,7 +470,7 @@ void CElectricSolver::Galerkin_Method(CGeometry *geometry, CSolver **solver_cont
 				Point_3 = geometry->elem[iElem]->GetNode(4);	Coord_3 = geometry->node[Point_3]->GetCoord();
 
 				numerics->SetCoord(Coord_0, Coord_1, Coord_2, Coord_3);
-				numerics->SetResidual(StiffMatrix_Elem, config);
+				numerics->ComputeResidual(StiffMatrix_Elem, config);
 				AddStiffMatrix(StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
 				/******************/
 
@@ -481,7 +481,7 @@ void CElectricSolver::Galerkin_Method(CGeometry *geometry, CSolver **solver_cont
 				Point_3 = geometry->elem[iElem]->GetNode(0);	Coord_3 = geometry->node[Point_3]->GetCoord();
 
 				numerics->SetCoord(Coord_0, Coord_1, Coord_2, Coord_3);
-				numerics->SetResidual(StiffMatrix_Elem, config);
+				numerics->ComputeResidual(StiffMatrix_Elem, config);
 				AddStiffMatrix(StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
 				/******************/
 
@@ -492,7 +492,7 @@ void CElectricSolver::Galerkin_Method(CGeometry *geometry, CSolver **solver_cont
 				Point_3 = geometry->elem[iElem]->GetNode(0);	Coord_3 = geometry->node[Point_3]->GetCoord();
 
 				numerics->SetCoord(Coord_0, Coord_1, Coord_2, Coord_3);
-				numerics->SetResidual(StiffMatrix_Elem, config);
+				numerics->ComputeResidual(StiffMatrix_Elem, config);
 				AddStiffMatrix(StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
 				/******************/
 			}

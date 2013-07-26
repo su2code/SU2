@@ -2,7 +2,7 @@
  * \file numerics_adjoint_electric.cpp
  * \brief This file contains all the convective term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -32,6 +32,6 @@ CSourcePieceWise_AdjElec::CSourcePieceWise_AdjElec(unsigned short val_nDim, unsi
 
 CSourcePieceWise_AdjElec::~CSourcePieceWise_AdjElec(void) { }
 
-void CSourcePieceWise_AdjElec::SetResidual(double *val_residual, CConfig *config) {
+void CSourcePieceWise_AdjElec::ComputeResidual(double *val_residual, CConfig *config) {
 	val_residual[0] = Volume*sin(PI_NUMBER*Coord_i[0])*sin(PI_NUMBER*Coord_i[1]);
 }

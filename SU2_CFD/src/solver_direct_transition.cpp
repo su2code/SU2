@@ -2,7 +2,7 @@
  * \file solution_direct_turbulent.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -314,7 +314,7 @@ void CTransLMSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
     numerics->SetTransVar(trans_var_i,trans_var_j);
 
     /*--- Add and subtract Residual ---*/
-    numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+    numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
     LinSysRes.AddBlock(iPoint, Residual);
     LinSysRes.SubtractBlock(jPoint, Residual);
 
@@ -365,7 +365,7 @@ void CTransLMSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
     
     
     /*--- Compute residual, and Jacobians ---*/
-    numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+    numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
     
     /*--- Add and subtract residual, and update Jacobians ---*/
     LinSysRes.SubtractBlock(iPoint, Residual);
@@ -410,7 +410,7 @@ void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 		numerics->SetDistance(geometry->node[iPoint]->GetWallDistance(), 0.0);
 		
 		/*--- Compute the source term ---*/
-		numerics->SetResidual_TransLM(Residual, Jacobian_i, NULL, config, gamma_sep);
+		numerics->ComputeResidual_TransLM(Residual, Jacobian_i, NULL, config, gamma_sep);
 		
     /*-- Store gamma_sep in variable class --*/
     node[iPoint]->SetGammaSep(gamma_sep);
@@ -465,7 +465,7 @@ void CTransLMSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Compute the residual using an upwind scheme ---*/
 //      cout << "BC calling SetResidual: -AA" << endl;
-      numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+      numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 //      cout << "Returned from BC call of SetResidual: -AA" << endl;
 //      cout << "Residual[0] = " << Residual[0] << endl;
 //      cout << "Residual[1] = " << Residual[1] << endl;

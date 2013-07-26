@@ -2,7 +2,7 @@
  * \file solution_adjoint_mean.cpp
  * \brief Main subrotuines for solving adjoint problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -1737,7 +1737,7 @@ void CAdjEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
 		}
 
 		/*--- Compute residuals ---*/				
-		numerics->SetResidual(Res_Conv_i, Res_Visc_i, Res_Conv_j, Res_Visc_j, 
+		numerics->ComputeResidual(Res_Conv_i, Res_Visc_i, Res_Conv_j, Res_Visc_j, 
 				Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 
 		/*--- Update convective and artificial dissipation residuals ---*/
@@ -1846,9 +1846,9 @@ void CAdjEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
 		/*--- Compute the residual---*/
 		if (config->GetKind_Adjoint() == DISCRETE)
-			numerics->SetResidual(Jacobian_i, Jacobian_j, config);
+			numerics->ComputeResidual(Jacobian_i, Jacobian_j, config);
 		else
-			numerics->SetResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+			numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 
 		/*--- Add and Subtract Residual ---*/
 		if (config->GetKind_Adjoint() == DISCRETE) {
@@ -1970,7 +1970,7 @@ void CAdjEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 			numerics->SetRotVel(geometry->node[iPoint]->GetRotVel(), geometry->node[iPoint]->GetRotVel());
 
 			/*--- Compute Residual ---*/
-			numerics->SetResidual(Residual, Jacobian_i, config);
+			numerics->ComputeResidual(Residual, Jacobian_i, config);
 
 			/*--- Add Residual ---*/
 			LinSysRes.AddBlock(iPoint, Residual);
@@ -2025,7 +2025,7 @@ void CAdjEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 			numerics->SetCoord(geometry->node[iPoint]->GetCoord(),geometry->node[iPoint]->GetCoord());
 
 			/*--- Compute Source term Residual ---*/
-			numerics->SetResidual(Residual, Jacobian_i, config);
+			numerics->ComputeResidual(Residual, Jacobian_i, config);
 
 			/*--- Add Residual ---*/
 			LinSysRes.AddBlock(iPoint, Residual);
@@ -2755,7 +2755,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
               }
               
               /*--- Compute the upwind flux ---*/
-              numerics->SetResidual(Jacobian_i, Jacobian_j, config);
+              numerics->ComputeResidual(Jacobian_i, Jacobian_j, config);
               
             }
             
@@ -3619,7 +3619,7 @@ void CAdjEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solve
 			numerics->SetAdjointVar(Psi_i, Psi_j);
 
 			/*--- Compute residual ---*/			
-			numerics->SetResidual(Res_Conv_i, Res_Conv_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+			numerics->ComputeResidual(Res_Conv_i, Res_Conv_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 
 			LinSysRes.SubtractBlock(iPoint, Res_Conv_i);
 
@@ -3700,7 +3700,7 @@ void CAdjEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solve
 			numerics->SetAdjointVar(Psi_i, Psi_j);
 
 			/*--- Compute residual ---*/			
-			numerics->SetResidual(Res_Conv_i, Res_Conv_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+			numerics->ComputeResidual(Res_Conv_i, Res_Conv_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 			LinSysRes.SubtractBlock(iPoint, Res_Conv_i);
 		}
 	}
@@ -3787,7 +3787,7 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
 			}
 
 			/*--- Compute residual ---*/			
-			numerics->SetResidual(Res_Conv_i, Res_Conv_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+			numerics->ComputeResidual(Res_Conv_i, Res_Conv_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 
 			LinSysRes.SubtractBlock(iPoint, Res_Conv_i);
 
@@ -3911,7 +3911,7 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
 			}
 
 			/*--- Compute residual ---*/			
-			numerics->SetResidual(Res_Conv_i, Res_Conv_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+			numerics->ComputeResidual(Res_Conv_i, Res_Conv_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 			LinSysRes.SubtractBlock(iPoint, Res_Conv_i);
 		}
 	}
@@ -4008,9 +4008,9 @@ void CAdjEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
 			/*--- Compute the upwind flux ---*/
 			if (config->GetKind_Adjoint() == DISCRETE)
-				conv_numerics->SetResidual(Jacobian_i, Jacobian_j, config);
+				conv_numerics->ComputeResidual(Jacobian_i, Jacobian_j, config);
 			else
-				conv_numerics->SetResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+				conv_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 
 			/*--- Add and Subtract Residual ---*/
 			if(config->GetKind_Adjoint() == DISCRETE) {
@@ -4333,7 +4333,7 @@ void CAdjEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, 
 						geometry->node[iPoint]->GetGridVel());
 
       /*--- Compute the residual using an upwind scheme ---*/
-			conv_numerics->SetResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij,
+			conv_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij,
                                Jacobian_ji, Jacobian_jj, config);
 
 			/*--- Add and Subtract Residual ---*/
@@ -4616,7 +4616,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 				conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
 						geometry->node[iPoint]->GetGridVel());
 
-			conv_numerics->SetResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij,
+			conv_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij,
 					Jacobian_ji, Jacobian_jj, config);
 
 			/*--- Add and Subtract Residual ---*/
@@ -4743,7 +4743,7 @@ void CAdjEulerSolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_co
 			conv_numerics->SetNormal(Normal);
 
 			/*--- Compute the residual ---*/
-			conv_numerics->SetResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+			conv_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 
 			/*--- Add and Subtract Residual ---*/
 			LinSysRes.SubtractBlock(iPoint, Residual_i);
@@ -4908,7 +4908,7 @@ void CAdjEulerSolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_c
 			conv_numerics->SetNormal(Normal);
 
 			/*--- Compute the residual ---*/
-			conv_numerics->SetResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+			conv_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 
 			/*--- Add and Subtract Residual ---*/
 			LinSysRes.SubtractBlock(iPoint, Residual_i);
@@ -5536,7 +5536,7 @@ void CAdjNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
 					solver_container[FLOW_SOL]->node[jPoint]->GetEddyViscosity());
 
 			/*--- Compute residual in a non-conservative way, and update ---*/
-			numerics->SetResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+			numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
       
       /*--- Update adjoint viscous residual ---*/
 			LinSysRes.SubtractBlock(iPoint, Residual_i);
@@ -5606,7 +5606,7 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 		}
 
 		/*--- Compute residual ---*/
-		numerics->SetResidual(Residual, config);
+		numerics->ComputeResidual(Residual, config);
     
     /*--- Add and substract to the residual ---*/
 		LinSysRes.AddBlock(iPoint, Residual);
@@ -5631,7 +5631,7 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 			second_numerics->SetRotVel(geometry->node[iPoint]->GetRotVel(), geometry->node[iPoint]->GetRotVel());
       
 			/*--- Compute Residual ---*/
-			second_numerics->SetResidual(Residual, Jacobian_i, config);
+			second_numerics->ComputeResidual(Residual, Jacobian_i, config);
       
 			/*--- Add Residual ---*/
 			LinSysRes.AddBlock(iPoint, Residual);
@@ -5691,7 +5691,7 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 //      
 //      /*--- Add and Subtract Residual ---*/
 //      for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
-//      second_numerics->SetResidual(Residual, config);
+//      second_numerics->ComputeResidual(Residual, config);
 //      LinSysRes.AddBlock(iPoint, Residual);
 //      LinSysRes.SubtractBlock(jPoint, Residual);
 //    }

@@ -2,7 +2,7 @@
  * \file numerics_linearized_mean.cpp
  * \brief This file contains all the convective term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -74,7 +74,7 @@ CCentJST_LinFlow::~CCentJST_LinFlow(void) {
 	delete [] Jacobian_j;
 }
 
-void CCentJST_LinFlow::SetResidual (double *val_resconv, double *val_resvisc, double **val_Jacobian_i,
+void CCentJST_LinFlow::ComputeResidual (double *val_resconv, double *val_resvisc, double **val_Jacobian_i,
                                     double **val_Jacobian_j, CConfig *config) {
   
 	/*--- Mean Values of the linealized variables ---*/
@@ -201,7 +201,7 @@ CCentLax_LinFlow::~CCentLax_LinFlow(void) {
 	delete [] Jacobian_j;
 }
 
-void CCentLax_LinFlow::SetResidual (double *val_resconv, double *val_resvisc, double **val_Jacobian_i,
+void CCentLax_LinFlow::ComputeResidual (double *val_resconv, double *val_resvisc, double **val_Jacobian_i,
                                     double **val_Jacobian_j, CConfig *config) {
   
 	/*--- Mean Values of the linealized variables ---*/

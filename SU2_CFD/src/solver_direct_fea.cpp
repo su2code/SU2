@@ -2,7 +2,7 @@
  * \file solution_direct_fea.cpp
  * \brief Main subrotuines for solving the FEA equation.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -439,7 +439,7 @@ void CFEASolver::Galerkin_Method(CGeometry *geometry, CSolver **solver_container
 		if (nDim == 2) numerics->SetCoord(Coord_0, Coord_1, Coord_2);
 		if (nDim == 3) numerics->SetCoord(Coord_0, Coord_1, Coord_2, Coord_3);
 		
-		numerics->SetResidual(StiffMatrix_Elem, config);
+		numerics->ComputeResidual(StiffMatrix_Elem, config);
     
 		for (iVar = 0; iVar < nVar; iVar++)
 			for (jVar = 0; jVar < nVar; jVar++)

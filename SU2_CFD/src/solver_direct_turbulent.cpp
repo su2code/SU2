@@ -2,7 +2,7 @@
  * \file solution_direct_turbulent.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -1197,7 +1197,7 @@ void CTurbSASolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contai
 		}
 
 		/*--- Add and subtract Residual ---*/
-		numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+		numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 		LinSysRes.AddBlock(iPoint, Residual);
 		LinSysRes.SubtractBlock(jPoint, Residual);
 
@@ -1251,7 +1251,7 @@ void CTurbSASolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_conta
     numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[jPoint]->GetGradient());
     
     /*--- Compute residual, and Jacobians ---*/
-    numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+    numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
     
     /*--- Add and subtract residual, and update Jacobians ---*/
     LinSysRes.SubtractBlock(iPoint, Residual);
@@ -1309,7 +1309,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 		numerics->SetDistance(geometry->node[iPoint]->GetWallDistance(), 0.0);
 
 		/*--- Compute the source term ---*/
-		numerics->SetResidual(Residual, Jacobian_i, NULL, config);
+		numerics->ComputeResidual(Residual, Jacobian_i, NULL, config);
 
     /*--- Don't add source term in the interface or air ---*/
     if (freesurface) {
@@ -1481,7 +1481,7 @@ void CTurbSASolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container
 			conv_numerics->SetNormal(Normal);
 
 			/*--- Compute residuals and jacobians ---*/
-			conv_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+			conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 
 			/*--- Add residuals and jacobians ---*/
 			LinSysRes.AddBlock(iPoint, Residual);
@@ -1737,7 +1737,7 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
                                 geometry->node[iPoint]->GetGridVel());
       
 			/*--- Compute the residual using an upwind scheme ---*/
-      conv_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
       LinSysRes.AddBlock(iPoint, Residual);
       
       /*--- Jacobian contribution for implicit integration ---*/
@@ -1770,7 +1770,7 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
 			visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
       
 			/*--- Compute residual, and Jacobians ---*/
-			visc_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+			visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
       
 			/*--- Subtract residual, and update Jacobians ---*/
 			LinSysRes.SubtractBlock(iPoint, Residual);
@@ -1841,7 +1841,7 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
 						geometry->node[iPoint]->GetGridVel());
 
 			/*--- Compute the residual using an upwind scheme ---*/
-			conv_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+			conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 			LinSysRes.AddBlock(iPoint, Residual);
 
 			/*--- Jacobian contribution for implicit integration ---*/
@@ -1875,7 +1875,7 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
 			visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
       
 			/*--- Compute residual, and Jacobians ---*/
-			visc_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+			visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
       
 			/*--- Subtract residual, and update Jacobians ---*/
 			LinSysRes.SubtractBlock(iPoint, Residual);
@@ -1925,7 +1925,7 @@ void CTurbSASolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_cont
 			conv_numerics->SetNormal(Normal);
       
 			/*--- Compute the residual using an upwind scheme ---*/
-			conv_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+			conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 			LinSysRes.AddBlock(iPoint, Residual);
       
 			/*--- Jacobian contribution for implicit integration ---*/
@@ -1959,7 +1959,7 @@ void CTurbSASolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_cont
 			visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
       
 			/*--- Compute residual, and Jacobians ---*/
-			visc_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+			visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
       
 			/*--- Subtract residual, and update Jacobians ---*/
 			LinSysRes.SubtractBlock(iPoint, Residual);
@@ -2119,7 +2119,7 @@ void CTurbSASolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_con
 			conv_numerics->SetNormal(Normal);
       
 			/*--- Compute the residual using an upwind scheme ---*/
-      conv_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
       LinSysRes.AddBlock(iPoint, Residual);
       
       /*--- Jacobian contribution for implicit integration ---*/
@@ -2152,7 +2152,7 @@ void CTurbSASolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_con
 			visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
       
 			/*--- Compute residual, and Jacobians ---*/
-			visc_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+			visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
       
 			/*--- Subtract residual, and update Jacobians ---*/
 			LinSysRes.SubtractBlock(iPoint, Residual);
@@ -2210,7 +2210,7 @@ void CTurbSASolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_
 				numerics->SetNormal(Vector);
         
 				/*--- Add Residuals and Jacobians ---*/
-				numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+				numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 				LinSysRes.AddBlock(iPoint, Residual);
 				Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
         
@@ -2311,7 +2311,7 @@ void CTurbSASolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_
 					Vector[iDim] = -Vector[iDim];
 				numerics->SetNormal(Vector);
         
-				numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+				numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 				LinSysRes.AddBlock(iPoint, Residual);
 				Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
         
@@ -2372,7 +2372,7 @@ void CTurbSASolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_
 				numerics->SetNormal(Vector);
         
 				/*--- Add Residuals and Jacobians ---*/
-				numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+				numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 				LinSysRes.AddBlock(iPoint, Residual);
 				Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
         
@@ -2473,7 +2473,7 @@ void CTurbSASolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_
 					Vector[iDim] = -Vector[iDim];
 				numerics->SetNormal(Vector);
         
-				numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+				numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 				LinSysRes.AddBlock(iPoint, Residual);
 				Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
         
@@ -2968,7 +2968,7 @@ void CTurbSSTSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
 		}
 
 		/*--- Add and subtract Residual ---*/
-		numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+		numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 		LinSysRes.AddBlock(iPoint, Residual);
 		LinSysRes.SubtractBlock(jPoint, Residual);
 
@@ -3026,7 +3026,7 @@ void CTurbSSTSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
     numerics->SetF1blending(node[iPoint]->GetF1blending(),node[jPoint]->GetF1blending());
     
     /*--- Compute residual, and Jacobians ---*/
-    numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+    numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
     
     /*--- Add and subtract residual, and update Jacobians ---*/
     LinSysRes.SubtractBlock(iPoint, Residual);
@@ -3087,7 +3087,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 		numerics->SetCrossDiff(node[iPoint]->GetCrossDiff(),0.0);
 
 		/*--- Compute the source term ---*/
-		numerics->SetResidual(Residual, Jacobian_i, NULL, config);
+		numerics->ComputeResidual(Residual, Jacobian_i, NULL, config);
 
 		/*--- Subtract residual and the jacobian ---*/
 		LinSysRes.SubtractBlock(iPoint, Residual);
@@ -3228,7 +3228,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 			conv_numerics->SetNormal(Normal);
 
 			/*--- Compute residuals and jacobians ---*/
-			conv_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+			conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 
 			/*--- Add residuals and jacobians ---*/
 			LinSysRes.AddBlock(iPoint, Residual);
@@ -3489,7 +3489,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
 				conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
 
 			/*--- Compute the residual using an upwind scheme ---*/
-			conv_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+			conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 			LinSysRes.AddBlock(iPoint, Residual);
 
 			/*--- Jacobian contribution for implicit integration ---*/
@@ -3557,7 +3557,7 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
 				conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
 
 			/*--- Compute the residual using an upwind scheme ---*/
-			conv_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+			conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 			LinSysRes.AddBlock(iPoint, Residual);
 
 			/*--- Jacobian contribution for implicit integration ---*/

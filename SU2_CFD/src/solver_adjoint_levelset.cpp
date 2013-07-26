@@ -2,7 +2,7 @@
  * \file solution_adjoint_levelset.cpp
  * \brief Main subrotuines for solving the level set problem.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -569,7 +569,7 @@ void CAdjLevelSetSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
       
 		}
 		
-		numerics->SetResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);	
+		numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);	
 		
 		/*--- Add and subtract Residual ---*/
 		LinSysRes.AddBlock(iPoint, Residual_i);
@@ -699,7 +699,7 @@ void CAdjLevelSetSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_con
 			numerics->SetConservative(U_wall, U_wall);
 			numerics->SetLevelSetVar(LevelSet_wall, LevelSet_wall);
 			numerics->SetDensityInc(solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc(), solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc());
-      numerics->SetResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);	
+      numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);	
 			
 			LinSysRes.AddBlock(iPoint, Residual_i);
 			
@@ -746,7 +746,7 @@ void CAdjLevelSetSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_cont
 			conv_numerics->SetConservative(U_wall, U_wall);
 			conv_numerics->SetLevelSetVar(LevelSet_wall, LevelSet_wall);
 			conv_numerics->SetDensityInc(solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc(), solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc());
-      conv_numerics->SetResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+      conv_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 			
 			LinSysRes.AddBlock(iPoint, Residual_i);
 			
@@ -792,7 +792,7 @@ void CAdjLevelSetSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_
 			conv_numerics->SetConservative(U_wall, U_wall);
 			conv_numerics->SetLevelSetVar(LevelSet_wall, LevelSet_wall);
 			conv_numerics->SetDensityInc(solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc(), solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc());
-      conv_numerics->SetResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+      conv_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 			
 			LinSysRes.AddBlock(iPoint, Residual_i);
 			
@@ -838,7 +838,7 @@ void CAdjLevelSetSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_cont
 			conv_numerics->SetConservative(U_wall, U_wall);
 			conv_numerics->SetLevelSetVar(LevelSet_wall, LevelSet_wall);
 			conv_numerics->SetDensityInc(solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc(), solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc());
-      conv_numerics->SetResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+      conv_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 			
 			LinSysRes.AddBlock(iPoint, Residual_i);
 			
@@ -884,7 +884,7 @@ void CAdjLevelSetSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_containe
 			conv_numerics->SetConservative(U_wall, U_wall);
 			conv_numerics->SetLevelSetVar(LevelSet_wall, LevelSet_wall);
 			conv_numerics->SetDensityInc(solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc(), solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc());
-      conv_numerics->SetResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+      conv_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 			
 			LinSysRes.AddBlock(iPoint, Residual_i);
 			

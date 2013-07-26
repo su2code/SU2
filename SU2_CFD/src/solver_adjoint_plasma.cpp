@@ -2,7 +2,7 @@
  * \file solution_adjoint_plasma.cpp
  * \brief Main subrotuines for solving adjoint problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -702,7 +702,7 @@ void CAdjPlasmaSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
     }
 				
 		/*--- Compute residuals ---*/
-		numerics->SetResidual(Res_Conv_i, Res_Visc_i, Res_Conv_j, Res_Visc_j, 
+		numerics->ComputeResidual(Res_Conv_i, Res_Visc_i, Res_Conv_j, Res_Visc_j, 
 												Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 				
 //		cout << Res_Visc_i[0] <<" "<< Res_Visc_i[1] <<" "<< Res_Visc_i[2] <<" "<< Res_Visc_i[3] <<" "<< Res_Visc_i[4] <<" "<< Res_Visc_i[5] <<" "<< Res_Visc_i[6] <<" "<< Res_Visc_i[7] <<endl;
@@ -785,7 +785,7 @@ void CAdjPlasmaSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
 			numerics->SetAdjointVar(Solution_i, Solution_j);
 		}
 		
-		numerics->SetResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+		numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 		
 		/*--- Add and Subtract Residual ---*/
 		LinSysRes.SubtractBlock(iPoint, Residual_i);
@@ -1440,7 +1440,7 @@ void CAdjPlasmaSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
 			conv_numerics->SetAdjointVar(Psi_domain, Psi_infty);
 			
 			/*--- Compute the upwind flux ---*/
-			conv_numerics->SetResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+			conv_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 			
 			/*--- Add and Subtract Residual ---*/
 			LinSysRes.SubtractBlock(iPoint, Residual_i);

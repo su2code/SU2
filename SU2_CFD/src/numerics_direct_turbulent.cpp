@@ -2,7 +2,7 @@
  * \file numerics_direct_turbulent.cpp
  * \brief This file contains all the convective term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -44,13 +44,13 @@ CUpwSca_TurbSA::~CUpwSca_TurbSA(void) {
 	delete [] Velocity_j;
 }
 
-void CUpwSca_TurbSA::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CUpwSca_TurbSA::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
 	//************************************************//
 	// Please do not delete //SU2_CPP2C comment lines //
 	//************************************************//
   
-	//SU2_CPP2C START CUpwSca_TurbSA::SetResidual
+	//SU2_CPP2C START CUpwSca_TurbSA::ComputeResidual
 	//SU2_CPP2C CALL_LIST START
 	//SU2_CPP2C INVARS *U_i *U_j *TurbVar_i *TurbVar_j
 	//SU2_CPP2C OUTVARS *val_residual
@@ -115,7 +115,7 @@ void CUpwSca_TurbSA::SetResidual(double *val_residual, double **val_Jacobian_i, 
 	}
 	//SU2_CPP2C COMMENT END
   
-	//SU2_CPP2C END CUpwSca_TurbSA::SetResidual
+	//SU2_CPP2C END CUpwSca_TurbSA::ComputeResidual
   
 }
 
@@ -139,7 +139,7 @@ CUpwSca_TurbSST::~CUpwSca_TurbSST(void) {
 	delete [] Velocity_j;
 }
 
-void CUpwSca_TurbSST::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CUpwSca_TurbSST::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
 	if (incompressible) {
 		Density_i = DensityInc_i;
@@ -216,13 +216,13 @@ CAvgGrad_TurbSA::~CAvgGrad_TurbSA(void) {
 	delete [] Mean_GradTurbVar;
 }
 
-void CAvgGrad_TurbSA::SetResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) {
+void CAvgGrad_TurbSA::ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) {
   
 	//************************************************//
 	// Please do not delete //SU2_CPP2C comment lines //
 	//************************************************//
   
-	//SU2_CPP2C START CAvgGrad_TurbSA::SetResidual
+	//SU2_CPP2C START CAvgGrad_TurbSA::ComputeResidual
 	//SU2_CPP2C CALL_LIST START
 	//SU2_CPP2C INVARS *U_i *U_j Laminar_Viscosity_i Laminar_Viscosity_j *TurbVar_i *TurbVar_j **TurbVar_Grad_i **TurbVar_Grad_j
 	//SU2_CPP2C OUTVARS *val_residual
@@ -297,7 +297,7 @@ void CAvgGrad_TurbSA::SetResidual(double *val_residual, double **Jacobian_i, dou
 	}
 	//SU2_CPP2C COMMENT END
   
-	//SU2_CPP2C END CAvgGrad_TurbSA::SetResidual
+	//SU2_CPP2C END CAvgGrad_TurbSA::ComputeResidual
   
 }
 
@@ -331,7 +331,7 @@ CAvgGrad_TurbSST::~CAvgGrad_TurbSST(void) {
 	delete [] Mean_GradTurbVar;
 }
 
-void CAvgGrad_TurbSST::SetResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) {
+void CAvgGrad_TurbSST::ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) {
   
 	/*--- Compute mean effective viscosity ---*/
 	diff_i = Laminar_Viscosity_i + Eddy_Viscosity_i;
@@ -399,7 +399,7 @@ CAvgGradCorrected_TurbSA::~CAvgGradCorrected_TurbSA(void) {
 	delete [] Mean_GradTurbVar;
 }
 
-void CAvgGradCorrected_TurbSA::SetResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) {
+void CAvgGradCorrected_TurbSA::ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) {
   
 	if (incompressible) {
 		Density_i = DensityInc_i;
@@ -485,7 +485,7 @@ CAvgGradCorrected_TurbSST::~CAvgGradCorrected_TurbSST(void) {
 	delete [] Mean_GradTurbVar;
 }
 
-void CAvgGradCorrected_TurbSST::SetResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) {
+void CAvgGradCorrected_TurbSST::ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) {
   
 	double sigma_kine_i, sigma_kine_j, sigma_omega_i, sigma_omega_j;
 	double diff_i_kine, diff_i_omega, diff_j_kine, diff_j_omega;
@@ -571,12 +571,12 @@ CSourcePieceWise_TurbSA::CSourcePieceWise_TurbSA(unsigned short val_nDim, unsign
 
 CSourcePieceWise_TurbSA::~CSourcePieceWise_TurbSA(void) { }
 
-void CSourcePieceWise_TurbSA::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
 	//************************************************//
 	// Please do not delete //SU2_CPP2C comment lines //
 	//************************************************//
   
-	//SU2_CPP2C START CSourcePieceWise_TurbSA::SetResidual
+	//SU2_CPP2C START CSourcePieceWise_TurbSA::ComputeResidual
 	//SU2_CPP2C CALL_LIST START
 	//SU2_CPP2C INVARS *U_i **PrimVar_Grad_i Laminar_Viscosity_i *TurbVar_i **TurbVar_Grad_i
 	//SU2_CPP2C OUTVARS *val_residual
@@ -692,7 +692,7 @@ void CSourcePieceWise_TurbSA::SetResidual(double *val_residual, double **val_Jac
 	//SU2_CPP2C COMMENT START
 	//SU2_CPP2C COMMENT END
   
-	//SU2_CPP2C END CSourcePieceWise_TurbSA::SetResidual
+	//SU2_CPP2C END CSourcePieceWise_TurbSA::ComputeResidual
   
 }
 
@@ -717,13 +717,13 @@ CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim, unsi
 
 CSourcePieceWise_TurbSST::~CSourcePieceWise_TurbSST(void) { }
 
-void CSourcePieceWise_TurbSST::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CSourcePieceWise_TurbSST::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
 	//************************************************//
 	// Please do not delete //SU2_CPP2C comment lines //
 	//************************************************//
   
-	//SU2_CPP2C START CSourcePieceWise_TurbSST::SetResidual
+	//SU2_CPP2C START CSourcePieceWise_TurbSST::ComputeResidual
 	//SU2_CPP2C CALL_LIST START
 	//SU2_CPP2C INVARS *val_U_i
 	//SU2_CPP2C OUTVARS *val_laminar_viscosity_i
@@ -781,6 +781,6 @@ void CSourcePieceWise_TurbSST::SetResidual(double *val_residual, double **val_Ja
 		//SU2_CPP2C COMMENT END
 	}
   
-	//SU2_CPP2C END CSourcePieceWise_TurbSST::SetResidual
+	//SU2_CPP2C END CSourcePieceWise_TurbSST::ComputeResidual
   
 }

@@ -2,7 +2,7 @@
  * \file numerics_direct_fea.cpp
  * \brief This file contains all the convective term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -33,7 +33,7 @@ CGalerkin_FEA::CGalerkin_FEA(unsigned short val_nDim, unsigned short val_nVar, C
 
 CGalerkin_FEA::~CGalerkin_FEA(void) { }
 
-void CGalerkin_FEA::SetResidual(double **val_stiffmatrix_elem, CConfig *config) {
+void CGalerkin_FEA::ComputeResidual(double **val_stiffmatrix_elem, CConfig *config) {
   
 	double a[4], b[4], c[4], d[4], Area, B_Matrix[6][12], BT_Matrix[12][6], D_Matrix[6][6], Aux_Matrix[12][6];
 	unsigned short iDim, iVar, jVar, kVar;

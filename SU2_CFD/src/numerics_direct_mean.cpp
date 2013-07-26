@@ -2,7 +2,7 @@
  * \file numerics_direct_mean.cpp
  * \brief This file contains all the convective term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -75,7 +75,7 @@ CUpwRoe_Flow::~CUpwRoe_Flow(void) {
   
 }
 
-void CUpwRoe_Flow::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CUpwRoe_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
 	/*--- Face area (norm or the normal vector) ---*/
 	Area = 0;
@@ -375,7 +375,7 @@ CUpwRoePrim_Flow::~CUpwRoePrim_Flow(void) {
   
 }
 
-void CUpwRoePrim_Flow::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CUpwRoePrim_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
 	/*--- Face area (norm or the normal vector) ---*/
 	Area = 0;
@@ -624,7 +624,7 @@ CUpwRoe_Turkel_Flow::~CUpwRoe_Turkel_Flow(void) {
   
 }
 
-void CUpwRoe_Turkel_Flow::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CUpwRoe_Turkel_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
 	double r_hat, s_hat, t_hat, rhoB2a2, sqr_one_m_Betasqr_Lam1;
 	double Beta2, one_m_Betasqr, one_p_Betasqr, sqr_two_Beta_c_Area;
@@ -829,7 +829,7 @@ CUpwRoeArtComp_Flow::~CUpwRoeArtComp_Flow(void) {
   
 }
 
-void CUpwRoeArtComp_Flow::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CUpwRoeArtComp_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
 	/*--- Compute face area ---*/
 	Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
@@ -962,7 +962,7 @@ CUpwAUSM_Flow::~CUpwAUSM_Flow(void) {
   
 }
 
-void CUpwAUSM_Flow::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CUpwAUSM_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
 	Area = 0;
 	for (iDim = 0; iDim < nDim; iDim++)
@@ -1140,7 +1140,7 @@ CUpwHLLC_Flow::~CUpwHLLC_Flow(void) {
   
 }
 
-void CUpwHLLC_Flow::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CUpwHLLC_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
 	Area = 0;
 	for (iDim = 0; iDim < nDim; iDim++)
@@ -1348,7 +1348,7 @@ CCentJST_Flow::~CCentJST_Flow(void) {
 	delete [] Proj_flux_tensor;
 }
 
-void CCentJST_Flow::SetResidual(double *val_resconv, double *val_resvisc, double **val_Jacobian_i, double **val_Jacobian_j,
+void CCentJST_Flow::ComputeResidual(double *val_resconv, double *val_resvisc, double **val_Jacobian_i, double **val_Jacobian_j,
                                 CConfig *config) {
   
 	/*--- Density, velocity and energy at points i and j ---*/
@@ -1523,7 +1523,7 @@ CCentJSTArtComp_Flow::~CCentJSTArtComp_Flow(void) {
 	delete [] Proj_flux_tensor;
 }
 
-void CCentJSTArtComp_Flow::SetResidual(double *val_resconv, double *val_resvisc,
+void CCentJSTArtComp_Flow::ComputeResidual(double *val_resconv, double *val_resvisc,
                                        double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
 	/*--- Conservative variables at point i and j ---*/
@@ -1636,7 +1636,7 @@ CCentLax_Flow::~CCentLax_Flow(void) {
   
 }
 
-void CCentLax_Flow::SetResidual(double *val_resconv, double *val_resvisc, double **val_Jacobian_i, double **val_Jacobian_j,
+void CCentLax_Flow::ComputeResidual(double *val_resconv, double *val_resvisc, double **val_Jacobian_i, double **val_Jacobian_j,
                                 CConfig *config) {
   
 	/*--- Evaluate points 0 and 1 ---*/
@@ -1832,7 +1832,7 @@ CCentLaxArtComp_Flow::~CCentLaxArtComp_Flow(void) {
   
 }
 
-void CCentLaxArtComp_Flow::SetResidual(double *val_resconv, double *val_resvisc, double **val_Jacobian_i, double **val_Jacobian_j,
+void CCentLaxArtComp_Flow::ComputeResidual(double *val_resconv, double *val_resvisc, double **val_Jacobian_i, double **val_Jacobian_j,
                                        CConfig *config) {
   
 	/*--- Conservative variables at point i and j ---*/
@@ -1941,12 +1941,12 @@ CAvgGrad_Flow::~CAvgGrad_Flow(void) {
 	delete [] Mean_GradPrimVar;
 }
 
-void CAvgGrad_Flow::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CAvgGrad_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
 	//************************************************//
 	// Please do not delete //SU2_CPP2C comment lines //
 	//************************************************//
   
-	//SU2_CPP2C START CAvgGrad_Flow::SetResidual
+	//SU2_CPP2C START CAvgGrad_Flow::ComputeResidual
 	//SU2_CPP2C CALL_LIST START
 	//SU2_CPP2C INVARS *U_i *U_j **PrimVar_Grad_i **PrimVar_Grad_j
 	//SU2_CPP2C INVARS Laminar_Viscosity_i Laminar_Viscosity_j Eddy_Viscosity_i Eddy_Viscosity_j
@@ -2019,7 +2019,7 @@ void CAvgGrad_Flow::SetResidual(double *val_residual, double **val_Jacobian_i, d
   
 	//SU2_CPP2C COMMENT END
   
-	//SU2_CPP2C END CAvgGrad_Flow::SetResidual
+	//SU2_CPP2C END CAvgGrad_Flow::ComputeResidual
 }
 
 CAvgGradArtComp_Flow::CAvgGradArtComp_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
@@ -2048,7 +2048,7 @@ CAvgGradArtComp_Flow::~CAvgGradArtComp_Flow(void) {
 	delete [] Mean_GradPrimVar;
 }
 
-void CAvgGradArtComp_Flow::SetResidual(double *val_residual, double **val_Jacobian_i,
+void CAvgGradArtComp_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i,
                                        double **val_Jacobian_j, CConfig *config) {
   
 	/*--- Normalized normal vector ---*/
@@ -2127,7 +2127,7 @@ CAvgGradCorrected_Flow::~CAvgGradCorrected_Flow(void) {
 	delete [] Mean_GradPrimVar;
 }
 
-void CAvgGradCorrected_Flow::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CAvgGradCorrected_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
 	/*--- Normalized normal vector ---*/
 	Area = 0;
@@ -2211,7 +2211,7 @@ CAvgGradCorrectedArtComp_Flow::~CAvgGradCorrectedArtComp_Flow(void) {
 	delete [] Mean_GradPrimVar;
 }
 
-void CAvgGradCorrectedArtComp_Flow::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CAvgGradCorrectedArtComp_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
 	/*--- Normalized normal vector ---*/
 	Area = 0.0;
@@ -2274,7 +2274,7 @@ CSourcePieceWise_Gravity::CSourcePieceWise_Gravity(unsigned short val_nDim, unsi
 
 CSourcePieceWise_Gravity::~CSourcePieceWise_Gravity(void) { }
 
-void CSourcePieceWise_Gravity::SetResidual(double *val_residual, CConfig *config) {
+void CSourcePieceWise_Gravity::ComputeResidual(double *val_residual, CConfig *config) {
 	unsigned short iVar;
   
 	for (iVar = 0; iVar < nVar; iVar++)
@@ -2307,7 +2307,7 @@ CSourceRotatingFrame_Flow::CSourceRotatingFrame_Flow(unsigned short val_nDim, un
 
 CSourceRotatingFrame_Flow::~CSourceRotatingFrame_Flow(void) { }
 
-void CSourceRotatingFrame_Flow::SetResidual(double *val_residual, double **val_Jacobian_i, CConfig *config) {
+void CSourceRotatingFrame_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, CConfig *config) {
   
 	double CrossProduct[3], vel[3] = {0,0,0};
   
@@ -2348,7 +2348,7 @@ CSourceAxisymmetric_Flow::CSourceAxisymmetric_Flow(unsigned short val_nDim, unsi
 
 CSourceAxisymmetric_Flow::~CSourceAxisymmetric_Flow(void) { }
 
-void CSourceAxisymmetric_Flow::SetResidual(double *val_residual, double **Jacobian_i, CConfig *config) {
+void CSourceAxisymmetric_Flow::ComputeResidual(double *val_residual, double **Jacobian_i, CConfig *config) {
   
 	double yinv, Pressure_i, Enthalpy_i, Velocity_i, sq_vel;
 	unsigned short iDim;
@@ -2422,7 +2422,7 @@ CSource_JouleHeating::~CSource_JouleHeating(void) {
   
 }
 
-void CSource_JouleHeating::SetResidual(double *val_residual, double **val_Jacobian_i, CConfig *config) {
+void CSource_JouleHeating::ComputeResidual(double *val_residual, double **val_Jacobian_i, CConfig *config) {
   
 	double Current = 100.0;//config->GetCurrent();
 	for (unsigned short iVar = 0; iVar < nVar; iVar ++) {

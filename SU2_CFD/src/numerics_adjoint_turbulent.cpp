@@ -2,7 +2,7 @@
  * \file numerics_adjoint_turbulent.cpp
  * \brief This file contains all the convective term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -36,7 +36,7 @@ CUpwLin_AdjTurb::~CUpwLin_AdjTurb(void) {
 	delete [] Velocity_i;
 }
 
-void CUpwLin_AdjTurb::SetResidual (double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CUpwLin_AdjTurb::ComputeResidual (double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
 	bool implicit = (config->GetKind_TimeIntScheme_AdjTurb() == EULER_IMPLICIT);
   
 	/*--- Non-conservative term  -->  -\nabla \psi_\mu  B^{cv}
@@ -76,7 +76,7 @@ CUpwSca_AdjTurb::~CUpwSca_AdjTurb(void) {
 	delete [] Velocity_j;
 }
 
-void CUpwSca_AdjTurb::SetResidual (double *val_residual_i, double *val_residual_j,
+void CUpwSca_AdjTurb::ComputeResidual (double *val_residual_i, double *val_residual_j,
                                    double **val_Jacobian_ii, double **val_Jacobian_ij,
                                    double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config) {
   
@@ -131,7 +131,7 @@ CAvgGradCorrected_AdjTurb::~CAvgGradCorrected_AdjTurb(void) {
 	delete [] Mean_GradTurbPsi;
 }
 
-void CAvgGradCorrected_AdjTurb::SetResidual (double *val_residual, double **val_Jacobian_i,
+void CAvgGradCorrected_AdjTurb::ComputeResidual (double *val_residual, double **val_Jacobian_i,
                                              double **val_Jacobian_j, CConfig *config) {
   
 	bool implicit = (config->GetKind_TimeIntScheme_AdjTurb() == EULER_IMPLICIT);
@@ -183,7 +183,7 @@ void CAvgGradCorrected_AdjTurb::SetResidual (double *val_residual, double **val_
 	}
 }
 
-void CAvgGradCorrected_AdjTurb::SetResidual (double *val_residual_i, double *val_residual_j,
+void CAvgGradCorrected_AdjTurb::ComputeResidual (double *val_residual_i, double *val_residual_j,
                                              double **val_Jacobian_ii, double **val_Jacobian_ij,
                                              double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config) {
   
@@ -259,7 +259,7 @@ CSourcePieceWise_AdjTurb::~CSourcePieceWise_AdjTurb(void) {
 	delete [] tau;
 }
 
-void CSourcePieceWise_AdjTurb::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CSourcePieceWise_AdjTurb::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
 	unsigned short iDim, jDim;
 	bool implicit = (config->GetKind_TimeIntScheme_AdjTurb() == EULER_IMPLICIT);
   
@@ -403,7 +403,7 @@ CSourceConservative_AdjTurb::CSourceConservative_AdjTurb(unsigned short val_nDim
 CSourceConservative_AdjTurb::~CSourceConservative_AdjTurb(void) {
 }
 
-void CSourceConservative_AdjTurb::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CSourceConservative_AdjTurb::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
 	/*--- SOURCE term  -->  \nabla ( \psi_\mu \B7 E^{s} )
 	 E^{s} = 2 c_{b2}/\sigma \nabla \hat{nu} ---*/

@@ -2,7 +2,7 @@
  * \file numerics_adjoint_mean.cpp
  * \brief This file contains all the convective term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -75,7 +75,7 @@ CUpwRoe_AdjFlow::~CUpwRoe_AdjFlow(void) {
   
 }
 
-void CUpwRoe_AdjFlow::SetResidual (double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii,
+void CUpwRoe_AdjFlow::ComputeResidual (double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii,
                                    double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj,CConfig *config) {
   
 	/*--- Compute the area ---*/
@@ -369,7 +369,7 @@ CUpwRoeArtComp_AdjFlow::~CUpwRoeArtComp_AdjFlow(void) {
   
 }
 
-void CUpwRoeArtComp_AdjFlow::SetResidual (double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii,
+void CUpwRoeArtComp_AdjFlow::ComputeResidual (double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii,
                                           double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj,CConfig *config) {
   
 	/*--- Compute face area ---*/
@@ -495,7 +495,7 @@ CCentJST_AdjFlow::~CCentJST_AdjFlow(void) {
 	delete [] MeanPhi;
 }
 
-void CCentJST_AdjFlow::SetResidual (double *val_resconv_i, double *val_resvisc_i, double *val_resconv_j, double *val_resvisc_j,
+void CCentJST_AdjFlow::ComputeResidual (double *val_resconv_i, double *val_resvisc_i, double *val_resconv_j, double *val_resvisc_j,
                                     double **val_Jacobian_ii, double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj,
                                     CConfig *config) {
   
@@ -754,7 +754,7 @@ CCentJSTArtComp_AdjFlow::~CCentJSTArtComp_AdjFlow(void) {
   
 }
 
-void CCentJSTArtComp_AdjFlow::SetResidual (double *val_resconv_i, double *val_resvisc_i, double *val_resconv_j, double *val_resvisc_j,
+void CCentJSTArtComp_AdjFlow::ComputeResidual (double *val_resconv_i, double *val_resvisc_i, double *val_resconv_j, double *val_resvisc_j,
                                            double **val_Jacobian_ii, double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj,
                                            CConfig *config) {
   
@@ -862,7 +862,7 @@ CCentLax_AdjFlow::~CCentLax_AdjFlow(void) {
   
 }
 
-void CCentLax_AdjFlow::SetResidual (double *val_resconv_i, double *val_resvisc_i, double *val_resconv_j, double *val_resvisc_j,
+void CCentLax_AdjFlow::ComputeResidual (double *val_resconv_i, double *val_resvisc_i, double *val_resconv_j, double *val_resvisc_j,
                                     double **val_Jacobian_ii, double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj,
                                     CConfig *config) {
   
@@ -1121,7 +1121,7 @@ CCentLaxArtComp_AdjFlow::~CCentLaxArtComp_AdjFlow(void) {
   
 }
 
-void CCentLaxArtComp_AdjFlow::SetResidual (double *val_resconv_i, double *val_resvisc_i, double *val_resconv_j, double *val_resvisc_j,
+void CCentLaxArtComp_AdjFlow::ComputeResidual (double *val_resconv_i, double *val_resvisc_i, double *val_resconv_j, double *val_resvisc_j,
                                            double **val_Jacobian_ii, double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj,
                                            CConfig *config) {
   
@@ -1232,7 +1232,7 @@ CAvgGrad_AdjFlow::~CAvgGrad_AdjFlow(void) {
 		delete [] Mean_GradPhi[iDim];
 }
 
-void CAvgGrad_AdjFlow::SetResidual(double *val_residual_i, double *val_residual_j,
+void CAvgGrad_AdjFlow::ComputeResidual(double *val_residual_i, double *val_residual_j,
                                    double **val_Jacobian_ii, double **val_Jacobian_ij,
                                    double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config) {
 	unsigned short iDim, jDim, iVar, jVar;
@@ -1678,7 +1678,7 @@ CAvgGradCorrected_AdjFlow::~CAvgGradCorrected_AdjFlow(void) {
 	delete [] Mean_GradPsiE;
 }
 
-void CAvgGradCorrected_AdjFlow::SetResidual(double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii, double **val_Jacobian_ij,
+void CAvgGradCorrected_AdjFlow::ComputeResidual(double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii, double **val_Jacobian_ij,
                                             double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config) {
   
 	unsigned short iVar, jVar, iDim, jDim;
@@ -2113,7 +2113,7 @@ CAvgGradCorrectedArtComp_AdjFlow::~CAvgGradCorrectedArtComp_AdjFlow(void) {
   delete [] Mean_GradPhi;
 }
 
-void CAvgGradCorrectedArtComp_AdjFlow::SetResidual(double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii, double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config) {
+void CAvgGradCorrectedArtComp_AdjFlow::ComputeResidual(double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii, double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config) {
   unsigned short iVar, jVar, iDim, jDim;
   double ViscDens_i, ViscDens_j, dist_ij_2;
   
@@ -2207,7 +2207,7 @@ void CAvgGradCorrectedArtComp_AdjFlow::SetResidual(double *val_residual_i, doubl
   }
 }
 
-void CAvgGradArtComp_AdjFlow::SetResidual(double *val_residual_i, double *val_residual_j,
+void CAvgGradArtComp_AdjFlow::ComputeResidual(double *val_residual_i, double *val_residual_j,
                                           double **val_Jacobian_ii, double **val_Jacobian_ij,
                                           double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config) {
   unsigned short iVar, jVar, iDim, jDim;
@@ -2337,7 +2337,7 @@ CSourceViscous_AdjFlow::~CSourceViscous_AdjFlow(void) {
 	delete [] Sigma_5_vec;
 }
 
-void CSourceViscous_AdjFlow::SetResidual (double *val_residual, CConfig *config) {
+void CSourceViscous_AdjFlow::ComputeResidual (double *val_residual, CConfig *config) {
   
 	unsigned short iDim, jDim;
 	double Density = U_i[0];
@@ -2614,7 +2614,7 @@ CSourceConservative_AdjFlow::~CSourceConservative_AdjFlow(void) {
 	delete [] Mean_PrimVar_Grad;
 }
 
-void CSourceConservative_AdjFlow::SetResidual (double *val_residual, CConfig *config) {
+void CSourceConservative_AdjFlow::ComputeResidual (double *val_residual, CConfig *config) {
 	unsigned short iDim, jDim, iVar;
 	double rho, nu, Ji, fv1, fv2, Omega, Shat, dist_sq, Ji_2, Ji_3, one_o_oneplusJifv1;
 	double r, g, g_6, glim, dfw_g, dg_r, dr_nuhat, dr_Shat, Ms_coeff, invOmega;
@@ -2748,7 +2748,7 @@ CSourceRotatingFrame_AdjFlow::CSourceRotatingFrame_AdjFlow(unsigned short val_nD
 
 CSourceRotatingFrame_AdjFlow::~CSourceRotatingFrame_AdjFlow(void) { }
 
-void CSourceRotatingFrame_AdjFlow::SetResidual(double *val_residual, double **val_Jacobian_i, CConfig *config) {
+void CSourceRotatingFrame_AdjFlow::ComputeResidual(double *val_residual, double **val_Jacobian_i, CConfig *config) {
   
 	unsigned short iDim;
 	double phi[3] = {0,0,0};
@@ -2780,7 +2780,7 @@ CSourceAxisymmetric_AdjFlow::CSourceAxisymmetric_AdjFlow(unsigned short val_nDim
 
 CSourceAxisymmetric_AdjFlow::~CSourceAxisymmetric_AdjFlow(void) { }
 
-void CSourceAxisymmetric_AdjFlow::SetResidual(double *val_residual, double **Jacobian_ii, CConfig *config) {
+void CSourceAxisymmetric_AdjFlow::ComputeResidual(double *val_residual, double **Jacobian_ii, CConfig *config) {
   
   double yinv;
   double Jacobian_Axisymmetric[4][4];

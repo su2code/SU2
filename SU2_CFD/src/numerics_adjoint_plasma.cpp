@@ -2,7 +2,7 @@
  * \file numerics_adjoint_plasma.cpp
  * \brief This file contains all the convective term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -165,7 +165,7 @@ CUpwRoe_AdjPlasmaDiatomic::~CUpwRoe_AdjPlasmaDiatomic(void) {
   
 }
 
-void CUpwRoe_AdjPlasmaDiatomic::SetResidual(double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii,
+void CUpwRoe_AdjPlasmaDiatomic::ComputeResidual(double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii,
                                             double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config) {
   
   double Gamma, Vel2, hf;
@@ -416,7 +416,7 @@ CUpwSW_AdjPlasmaDiatomic::~CUpwSW_AdjPlasmaDiatomic(void) {
 	delete [] Proj_ModJac_Tensor;
 }
 
-void CUpwSW_AdjPlasmaDiatomic::SetResidual(double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii,
+void CUpwSW_AdjPlasmaDiatomic::ComputeResidual(double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii,
                                            double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config) {
   
 	unsigned short iSpecies,  loc = 0;
@@ -805,7 +805,7 @@ CCentLax_AdjPlasmaDiatomic::~CCentLax_AdjPlasmaDiatomic(void) {
   
 }
 
-void CCentLax_AdjPlasmaDiatomic::SetResidual(double *val_resconv_i, double *val_resvisc_i, double *val_resconv_j, double *val_resvisc_j,
+void CCentLax_AdjPlasmaDiatomic::ComputeResidual(double *val_resconv_i, double *val_resvisc_i, double *val_resconv_j, double *val_resvisc_j,
                                              double **val_Jacobian_ii, double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj,
                                              CConfig *config) {
   

@@ -2,7 +2,7 @@
  * \file solution_direct_heat.cpp
  * \brief Main subrotuines for solving the heat equation.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -230,7 +230,7 @@ void CHeatSolver::Galerkin_Method(CGeometry *geometry,
     
 		numerics->SetCoord(Coord_0, Coord_1, Coord_2);
     
-		numerics->SetResidual(StiffMatrix_Elem, config);
+		numerics->ComputeResidual(StiffMatrix_Elem, config);
     
     /*--- Compute the square of the Heat speed ---*/
 		Thermal_Diffusivity  = config->GetThermalDiffusivity();

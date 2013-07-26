@@ -2,7 +2,7 @@
  * \file numerics_template.cpp
  * \brief This file contains all the convective term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -71,7 +71,7 @@ CConvective_Template::~CConvective_Template(void) {
   delete [] invP_Tensor;
 }
 
-void CConvective_Template::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CConvective_Template::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
   Area = 0;
   for (iDim = 0; iDim < nDim; iDim++)
@@ -219,10 +219,10 @@ CSource_Template::~CSource_Template(void) {
   
 }
 
-void CSource_Template::SetResidual(double *val_residual, double **val_Jacobian_i, CConfig *config) {}
+void CSource_Template::ComputeResidual(double *val_residual, double **val_Jacobian_i, CConfig *config) {}
 
 CViscous_Template::CViscous_Template(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) { }
 
 CViscous_Template::~CViscous_Template(void) { }
 
-void CViscous_Template::SetResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) { }
+void CViscous_Template::ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) { }

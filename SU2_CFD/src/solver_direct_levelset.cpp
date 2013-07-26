@@ -2,7 +2,7 @@
  * \file solution_direct_levelset.cpp
  * \brief Main subrotuines for solving the level set problem.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -585,7 +585,7 @@ void CLevelSetSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 		}
 		
 		/*--- Add and subtract Residual ---*/
-		numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, Jacobian_MeanFlow_i, Jacobian_MeanFlow_j, config);
+		numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, Jacobian_MeanFlow_i, Jacobian_MeanFlow_j, config);
 		
 		LinSysRes.AddBlock(iPoint, Residual);
 		LinSysRes.SubtractBlock(jPoint, Residual);
@@ -675,7 +675,7 @@ void CLevelSetSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
 			conv_numerics->SetPrimitive(V_wall, V_wall);
       
 			conv_numerics->SetLevelSetVar(LevelSet_domain, LevelSet_wall);
-      conv_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, Jacobian_MeanFlow_i, Jacobian_MeanFlow_j, config);
+      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, Jacobian_MeanFlow_i, Jacobian_MeanFlow_j, config);
 			
 			LinSysRes.AddBlock(iPoint, Residual);
 			
@@ -758,7 +758,7 @@ void CLevelSetSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, 
 			conv_numerics->SetPrimitive(V_wall, V_mirror);
             
 			conv_numerics->SetLevelSetVar(LevelSet_domain, LevelSet_mirror);
-            conv_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, Jacobian_MeanFlow_i, Jacobian_MeanFlow_j, config);
+            conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, Jacobian_MeanFlow_i, Jacobian_MeanFlow_j, config);
 			
 			LinSysRes.AddBlock(iPoint, Residual);
 			

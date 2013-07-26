@@ -2,7 +2,7 @@
  * \file numerics_direct_levelset.cpp
  * \brief This file contains all the convective term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -39,7 +39,7 @@ CUpwLin_LevelSet::~CUpwLin_LevelSet(void) {
   
 }
 
-void CUpwLin_LevelSet::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j,
+void CUpwLin_LevelSet::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j,
                                    double **val_JacobianMeanFlow_i, double **val_JacobianMeanFlow_j, CConfig *config) {
 	unsigned short iDim; //, jDim;
 	double a0, a1, q_ij, Velocity_i[3], Velocity_j[3]; //, dqij_dvi[3], dqij_dvj[3], dabsqij_dvi[3], dabsqij_dvj[3], da0_dvi[3], da0_dvj[3], da1_dvi[3], da1_dvj[3];
@@ -100,7 +100,7 @@ CSourcePieceWise_FreeSurface::CSourcePieceWise_FreeSurface(unsigned short val_nD
 
 CSourcePieceWise_FreeSurface::~CSourcePieceWise_FreeSurface(void) { }
 
-void CSourcePieceWise_FreeSurface::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CSourcePieceWise_FreeSurface::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
 	unsigned short iVar;
   
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -146,5 +146,5 @@ CSourcePieceWise_LevelSet::CSourcePieceWise_LevelSet(unsigned short val_nDim, un
 
 CSourcePieceWise_LevelSet::~CSourcePieceWise_LevelSet(void) { }
 
-void CSourcePieceWise_LevelSet::SetResidual(double *val_residual, CConfig *config) {}
+void CSourcePieceWise_LevelSet::ComputeResidual(double *val_residual, CConfig *config) {}
 

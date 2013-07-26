@@ -2,7 +2,7 @@
  * \file numerics_direct_transition.cpp
  * \brief This file contains all the convective term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -44,7 +44,7 @@ CUpwLin_TransLM::~CUpwLin_TransLM(void) {
 	delete [] Velocity_j;
 }
 
-void CUpwLin_TransLM::SetResidual (double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CUpwLin_TransLM::ComputeResidual (double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
   
 	Density_i = U_i[0];
@@ -91,7 +91,7 @@ CUpwSca_TransLM::~CUpwSca_TransLM(void) {
 	delete [] Velocity_j;
 }
 
-void CUpwSca_TransLM::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CUpwSca_TransLM::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
 	q_ij = 0;
 	for (iDim = 0; iDim < nDim; iDim++) {
@@ -149,7 +149,7 @@ CAvgGrad_TransLM::~CAvgGrad_TransLM(void) {
 	delete [] Mean_GradTransVar;
 }
 
-void CAvgGrad_TransLM::SetResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) {
+void CAvgGrad_TransLM::ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) {
   
   double Density_Grad_i[nDim], Density_Grad_j[nDim], Conservative_Grad_i[nDim], Conservative_Grad_j[nDim];
   double Primitive_Grad_i[nDim], Primitive_Grad_j[nDim];
@@ -250,7 +250,7 @@ CAvgGradCorrected_TransLM::~CAvgGradCorrected_TransLM(void) {
 	delete [] Mean_GradTurbVar;
 }
 
-void CAvgGradCorrected_TransLM::SetResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) {
+void CAvgGradCorrected_TransLM::ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) {
   
   //	switch (config->GetKind_Turb_Model()) {
   //	case SA :
@@ -331,12 +331,12 @@ CSourcePieceWise_TransLM::CSourcePieceWise_TransLM(unsigned short val_nDim, unsi
 
 CSourcePieceWise_TransLM::~CSourcePieceWise_TransLM(void) { }
 
-void CSourcePieceWise_TransLM::SetResidual_TransLM(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config, double &gamma_sep) {
+void CSourcePieceWise_TransLM::ComputeResidual_TransLM(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config, double &gamma_sep) {
 	//************************************************//
 	// Please do not delete //SU2_CPP2C comment lines //
 	//************************************************//
   
-	//SU2_CPP2C START CSourcePieceWise_TransLM::SetResidual_TransLM
+	//SU2_CPP2C START CSourcePieceWise_TransLM::ComputeResidual_TransLM
 	//SU2_CPP2C CALL_LIST START
 	//SU2_CPP2C INVARS *TransVar_i
 	//SU2_CPP2C OUTVARS *val_residual
@@ -525,22 +525,22 @@ void CSourcePieceWise_TransLM::SetResidual_TransLM(double *val_residual, double 
     
 		/*--- Implicit part ---*/
     TransVar_id[0] = 1.0; TransVar_id[1] = 0.0;
-    CSourcePieceWise_TransLM__SetResidual_TransLM_d(TransVar_i, TransVar_id, val_residual, val_residuald, config);
+    CSourcePieceWise_TransLM__ComputeResidual_TransLM_d(TransVar_i, TransVar_id, val_residual, val_residuald, config);
     val_Jacobian_i[0][0] = val_residuald[0];
     val_Jacobian_i[1][0] = val_residuald[1];
     
     TransVar_id[0] = 0.0; TransVar_id[1] = 1.0;
-    CSourcePieceWise_TransLM__SetResidual_TransLM_d(TransVar_i, TransVar_id, val_residual, val_residuald, config);
+    CSourcePieceWise_TransLM__ComputeResidual_TransLM_d(TransVar_i, TransVar_id, val_residual, val_residuald, config);
     val_Jacobian_i[0][1] = val_residuald[0];
     val_Jacobian_i[1][1] = val_residuald[1];
     
 	  //SU2_CPP2C COMMENT END
 	}
-  //SU2_CPP2C END CSourcePieceWise_TransLM::SetResidual_TransLM
+  //SU2_CPP2C END CSourcePieceWise_TransLM::ComputeResidual_TransLM
 }
 
 
-void CSourcePieceWise_TransLM::CSourcePieceWise_TransLM__SetResidual_TransLM_d(double *TransVar_i, double *TransVar_id, double *val_residual, double *val_residuald, CConfig *config)
+void CSourcePieceWise_TransLM::CSourcePieceWise_TransLM__ComputeResidual_TransLM_d(double *TransVar_i, double *TransVar_id, double *val_residual, double *val_residuald, CConfig *config)
 {
   double rey_tc, flen, re_v, strain, f_onset1, f_onset2, f_onset3, f_onset,
   f_turb, tu;

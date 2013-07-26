@@ -2,7 +2,7 @@
  * \file numerics_direct_plasma.cpp
  * \brief This file contains all the convective term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -65,7 +65,7 @@ CUpwRoe_Plasma::CUpwRoe_Plasma(unsigned short val_nDim, unsigned short val_nVar,
 	}
 }
 
-void CUpwRoe_Plasma::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CUpwRoe_Plasma::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
 	unsigned short iSpecies,  loc = 0;
 	Area = 0;
@@ -331,7 +331,7 @@ CUpwRoe_Turkel_Plasma::~CUpwRoe_Turkel_Plasma(void) {
   
 }
 
-void CUpwRoe_Turkel_Plasma::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CUpwRoe_Turkel_Plasma::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
 	double r_hat, s_hat, t_hat, rhoB2a2, sqr_one_m_Betasqr_Lam1;
 	double Beta2, one_m_Betasqr, one_p_Betasqr, sqr_two_Beta_c_Area;
@@ -611,7 +611,7 @@ CUpwRoe_PlasmaDiatomic::~CUpwRoe_PlasmaDiatomic(void) {
 	delete [] invP_Tensor;
 }
 
-void CUpwRoe_PlasmaDiatomic::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CUpwRoe_PlasmaDiatomic::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
 	unsigned short iSpecies,  loc = 0;
 	Area = 0;
@@ -865,7 +865,7 @@ CUpwSW_PlasmaDiatomic::~CUpwSW_PlasmaDiatomic(void) {
 	delete [] invP_Tensor;
 }
 
-void CUpwSW_PlasmaDiatomic::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CUpwSW_PlasmaDiatomic::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
 	unsigned short iSpecies,  loc = 0;
 	double epsilon;
@@ -1149,7 +1149,7 @@ CUpwMSW_PlasmaDiatomic::~CUpwMSW_PlasmaDiatomic(void) {
 	delete [] invP_Tensor;
 }
 
-void CUpwMSW_PlasmaDiatomic::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CUpwMSW_PlasmaDiatomic::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
 	unsigned short iSpecies,  loc = 0;
 	double epsilon, alpha, w, dp, onemw;
@@ -1377,7 +1377,7 @@ CUpwHLLC_PlasmaDiatomic::~CUpwHLLC_PlasmaDiatomic(void) {
   
 }
 
-void CUpwHLLC_PlasmaDiatomic::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CUpwHLLC_PlasmaDiatomic::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
 	Area = 0;
 	for (iDim = 0; iDim < nDim; iDim++)
@@ -1630,7 +1630,7 @@ CCentJST_Plasma::~CCentJST_Plasma(void) {
   
 }
 
-void CCentJST_Plasma::SetResidual(double *val_resconv, double *val_resvisc, double **val_Jacobian_i, double **val_Jacobian_j,
+void CCentJST_Plasma::ComputeResidual(double *val_resconv, double *val_resvisc, double **val_Jacobian_i, double **val_Jacobian_j,
                                   CConfig *config) {
   
   
@@ -1831,7 +1831,7 @@ CCentJST_PlasmaDiatomic::~CCentJST_PlasmaDiatomic(void) {
   
 }
 
-void CCentJST_PlasmaDiatomic::SetResidual(double *val_resconv, double *val_resvisc, double **val_Jacobian_i, double **val_Jacobian_j,
+void CCentJST_PlasmaDiatomic::ComputeResidual(double *val_resconv, double *val_resvisc, double **val_Jacobian_i, double **val_Jacobian_j,
                                           CConfig *config) {
   
   
@@ -2044,7 +2044,7 @@ CCentLax_PlasmaDiatomic::~CCentLax_PlasmaDiatomic(void) {
   
 }
 
-void CCentLax_PlasmaDiatomic::SetResidual(double *val_resconv, double *val_resvisc, double **val_Jacobian_i, double **val_Jacobian_j,
+void CCentLax_PlasmaDiatomic::ComputeResidual(double *val_resconv, double *val_resvisc, double **val_Jacobian_i, double **val_Jacobian_j,
                                           CConfig *config) {
   
 	/*--- Conservative variables at point i and 1 ---*/
@@ -2238,7 +2238,7 @@ CAvgGrad_Plasma::~CAvgGrad_Plasma(void) {
   delete [] Mean_Thermal_Conductivity_vib;
 }
 
-void CAvgGrad_Plasma::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CAvgGrad_Plasma::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
 	unsigned short loc, iVar, jVar, nVar_species, iSpecies;
   
@@ -2347,7 +2347,7 @@ CAvgGradCorrected_Plasma::~CAvgGradCorrected_Plasma(void) {
 	delete [] Edge_Vector;
 }
 
-void CAvgGradCorrected_Plasma::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CAvgGradCorrected_Plasma::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
 	unsigned short loc, iVar, nVar_species, iSpecies;
   
@@ -2665,7 +2665,7 @@ CSourcePieceWise_Plasma::~CSourcePieceWise_Plasma(void) {
   
 }
 
-void CSourcePieceWise_Plasma::SetResidual(double *val_residual, double **val_Jacobian_i, CConfig *config) {
+void CSourcePieceWise_Plasma::ComputeResidual(double *val_residual, double **val_Jacobian_i, CConfig *config) {
   
 	tol = 1E-60;
 	double zero = 1E-15;
@@ -3284,12 +3284,12 @@ void CSourcePieceWise_Plasma::SetResidual(double *val_residual, double **val_Jac
 	}
 }
 
-void CSourcePieceWise_Plasma::SetResidual_Axisymmetric(double *val_residual, CConfig *config) {
+void CSourcePieceWise_Plasma::ComputeResidual_Axisymmetric(double *val_residual, CConfig *config) {
 	//************************************************//
 	// Please do not delete //SU2_CPP2C comment lines //
 	//************************************************//
   
-	//SU2_CPP2C START CSourcePieceWise_Plasma::SetResidual_Axisymmetric
+	//SU2_CPP2C START CSourcePieceWise_Plasma::ComputeResidual_Axisymmetric
 	//SU2_CPP2C CALL_LIST START
 	//SU2_CPP2C INVARS *U_i
 	//SU2_CPP2C OUTVARS *val_residual
@@ -3330,7 +3330,7 @@ void CSourcePieceWise_Plasma::SetResidual_Axisymmetric(double *val_residual, CCo
 		if (iSpecies < nDiatomics)
 			val_residual[loc+4] = yinv*Volume*U_i[loc+4]*U_i[loc+2]/U_i[loc+0];
 	}
-	//SU2_CPP2C END CSourcePieceWise_Plasma::SetResidual_Axisymmetric
+	//SU2_CPP2C END CSourcePieceWise_Plasma::ComputeResidual_Axisymmetric
 }
 
 
@@ -3352,7 +3352,7 @@ void CSourcePieceWise_Plasma::SetJacobian_Axisymmetric(double **val_Jacobian_i, 
 		for (iVar = 0; iVar < nVar; iVar++) {
 			for (jVar = 0; jVar < nVar; jVar++) U_id[jVar] = 0.0;
 			U_id[iVar] = 1.0;
-			SetResidual_Axisymmetric_ad(Residual_Baseline, Residual_New, config);
+			ComputeResidual_Axisymmetric_ad(Residual_Baseline, Residual_New, config);
 			for (jVar = 0; jVar < nVar; jVar++)
 				val_Jacobian_i[jVar][iVar] = Residual_New[jVar];
 		}
@@ -3363,7 +3363,7 @@ void CSourcePieceWise_Plasma::SetJacobian_Axisymmetric(double **val_Jacobian_i, 
 		double FDEpsilon;
     
 		/*--- Compute the baseline line residual ---*/
-		SetResidual_Axisymmetric(Residual_Baseline, config);
+		ComputeResidual_Axisymmetric(Residual_Baseline, config);
     
 		/*--- Compute forward finite differences ---*/
 		for (iVar = 0; iVar < nVar; iVar++) {
@@ -3374,7 +3374,7 @@ void CSourcePieceWise_Plasma::SetJacobian_Axisymmetric(double **val_Jacobian_i, 
 			/*--- Recompute the residual, perturbation in the iVar component of the solution ---*/
 			U_i[iVar] = U_Baseline[iVar] + FDEpsilon;
 			for (jVar = 0; jVar < nVar; jVar++) Residual_New[jVar] = 0.0;
-			SetResidual_Axisymmetric(Residual_New, config);
+			ComputeResidual_Axisymmetric(Residual_New, config);
       
 			/*--- Undo the change in U_i to keep constant the solution ---*/
 			U_i[iVar] = U_i[iVar] - FDEpsilon;
@@ -3406,7 +3406,7 @@ void CSourcePieceWise_Plasma::SetJacobian_Chemistry(double **val_Jacobian_i, CCo
 		for (iVar = 0; iVar < nVar; iVar++) {
 			for (jVar = 0; jVar < nVar; jVar++) U_id[jVar] = 0.0;
 			U_id[iVar] = 1.0;
-			SetResidual_Chemistry_ad(Residual_Baseline, Residual_New, config);
+			ComputeResidual_Chemistry_ad(Residual_Baseline, Residual_New, config);
 			for (jVar = 0; jVar < nVar; jVar++)
 				val_Jacobian_i[jVar][iVar] = Residual_New[jVar];
 		}
@@ -3417,7 +3417,7 @@ void CSourcePieceWise_Plasma::SetJacobian_Chemistry(double **val_Jacobian_i, CCo
 		double FDEpsilon;
     
 		/*--- Compute the baseline line residual ---*/
-		SetResidual_Chemistry(Residual_Baseline, config);
+		ComputeResidual_Chemistry(Residual_Baseline, config);
     
 		/*--- Compute forward finite differences ---*/
 		for (iVar = 0; iVar < nVar; iVar++) {
@@ -3428,7 +3428,7 @@ void CSourcePieceWise_Plasma::SetJacobian_Chemistry(double **val_Jacobian_i, CCo
 			/*--- Recompute the residual, perturbation in the iVar component of the solution ---*/
 			U_i[iVar] = U_Baseline[iVar] + FDEpsilon;
 			for (jVar = 0; jVar < nVar; jVar++) Residual_New[jVar] = 0.0;
-			SetResidual_Chemistry(Residual_New, config);
+			ComputeResidual_Chemistry(Residual_New, config);
       
 			/*--- Undo the change in U_i to keep constant the solution ---*/
 			U_i[iVar] = U_i[iVar] - FDEpsilon;
@@ -3493,12 +3493,12 @@ void CSourcePieceWise_Plasma::GetEq_Rxn_Coefficients(double **EqRxnConstants, CC
 	}
 }
 
-void CSourcePieceWise_Plasma::SetResidual_Chemistry(double *val_residual, CConfig *config) {
+void CSourcePieceWise_Plasma::ComputeResidual_Chemistry(double *val_residual, CConfig *config) {
 	//************************************************//
 	// Please do not delete //SU2_CPP2C comment lines //
 	//************************************************//
   
-	//SU2_CPP2C START CSourcePieceWise_Plasma::SetResidual_Chemistry
+	//SU2_CPP2C START CSourcePieceWise_Plasma::ComputeResidual_Chemistry
 	//SU2_CPP2C CALL_LIST START
 	//SU2_CPP2C INVARS *U_i
 	//SU2_CPP2C OUTVARS *val_residual
@@ -3625,7 +3625,7 @@ void CSourcePieceWise_Plasma::SetResidual_Chemistry(double *val_residual, CConfi
 			val_residual[iLoc+2+nDim] = w_dot[iSpecies] * U_i[iLoc+2+nDim]/U_i[iLoc] * Volume;
 		}
 	}
-	//SU2_CPP2C END CSourcePieceWise_Plasma::SetResidual_Chemistry
+	//SU2_CPP2C END CSourcePieceWise_Plasma::ComputeResidual_Chemistry
 }
 
 
@@ -3645,7 +3645,7 @@ void CSourcePieceWise_Plasma::SetJacobian_ElecForce(double **val_Jacobian_i, CCo
   
 	/*--- Compute the baseline line residual ---*/
   
-	SetResidual_ElecForce(Residual_Baseline, config);
+	ComputeResidual_ElecForce(Residual_Baseline, config);
   
 	/*--- Compute forward finite differences ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
@@ -3656,7 +3656,7 @@ void CSourcePieceWise_Plasma::SetJacobian_ElecForce(double **val_Jacobian_i, CCo
 		/*--- Recompute the residual, perturbation in the iVar component of the solution ---*/
 		U_i[iVar] = U_Baseline[iVar] + FDEpsilon;
 		for (jVar = 0; jVar < nVar; jVar++) Residual_New[jVar] = 0.0;
-		SetResidual_ElecForce(Residual_New, config);
+		ComputeResidual_ElecForce(Residual_New, config);
     
 		/*--- Undo the change in U_i to keep constant the solution ---*/
 		U_i[iVar] = U_i[iVar] - FDEpsilon;
@@ -3668,7 +3668,7 @@ void CSourcePieceWise_Plasma::SetJacobian_ElecForce(double **val_Jacobian_i, CCo
 	}
 }
 
-void CSourcePieceWise_Plasma::SetResidual_ElecForce(double *val_residual, CConfig *config) {
+void CSourcePieceWise_Plasma::ComputeResidual_ElecForce(double *val_residual, CConfig *config) {
   
 }
 
@@ -3688,7 +3688,7 @@ void CSourcePieceWise_Plasma::SetJacobian_MomentumExch(double **val_Jacobian_i, 
 		for (iVar = 0; iVar < nVar; iVar++) {
 			for (jVar = 0; jVar < nVar; jVar++) U_id[jVar] = 0.0;
 			U_id[iVar] = 1.0;
-			SetResidual_MomentumExch_ad(Residual_Baseline, Residual_New, config);
+			ComputeResidual_MomentumExch_ad(Residual_Baseline, Residual_New, config);
 			for (jVar = 0; jVar < nVar; jVar++)
 				val_Jacobian_i[jVar][iVar] = Residual_New[jVar];
 		}
@@ -3700,7 +3700,7 @@ void CSourcePieceWise_Plasma::SetJacobian_MomentumExch(double **val_Jacobian_i, 
 		double FDEpsilon;
     
 		/*--- Compute the baseline line residual ---*/
-		SetResidual_MomentumExch(Residual_Baseline, config);
+		ComputeResidual_MomentumExch(Residual_Baseline, config);
     
 		/*--- Compute forward finite differences ---*/
 		for (iVar = 0; iVar < nVar; iVar++) {
@@ -3711,7 +3711,7 @@ void CSourcePieceWise_Plasma::SetJacobian_MomentumExch(double **val_Jacobian_i, 
 			/*--- Recompute the residual, perturbation in the iVar component of the solution ---*/
 			U_i[iVar] = U_Baseline[iVar] + FDEpsilon;
 			for (jVar = 0; jVar < nVar; jVar++) Residual_New[jVar] = 0.0;
-			SetResidual_MomentumExch(Residual_New, config);
+			ComputeResidual_MomentumExch(Residual_New, config);
       
 			/*--- Undo the change in U_i to keep constant the solution ---*/
 			U_i[iVar] = U_i[iVar] - FDEpsilon;
@@ -3724,12 +3724,12 @@ void CSourcePieceWise_Plasma::SetJacobian_MomentumExch(double **val_Jacobian_i, 
 	}
 }
 
-void CSourcePieceWise_Plasma::SetResidual_MomentumExch(double *val_residual, CConfig *config) {
+void CSourcePieceWise_Plasma::ComputeResidual_MomentumExch(double *val_residual, CConfig *config) {
 	//************************************************//
 	// Please do not delete //SU2_CPP2C comment lines //
 	//************************************************//
   
-	//SU2_CPP2C START CSourcePieceWise_Plasma::SetResidual_MomentumExch
+	//SU2_CPP2C START CSourcePieceWise_Plasma::ComputeResidual_MomentumExch
 	//SU2_CPP2C CALL_LIST START
 	//SU2_CPP2C INVARS *U_i
 	//SU2_CPP2C OUTVARS *val_residual
@@ -3795,7 +3795,7 @@ void CSourcePieceWise_Plasma::SetResidual_MomentumExch(double *val_residual, CCo
 			val_residual[iLoc+nDim + 1] += P[iSpecies][iDim]* U_i[iLoc+1+iDim]/U_i[iLoc+0] * Volume;
 		}
 	}
-	//SU2_CPP2C END CSourcePieceWise_Plasma::SetResidual_MomentumExch
+	//SU2_CPP2C END CSourcePieceWise_Plasma::ComputeResidual_MomentumExch
 }
 
 
@@ -3815,7 +3815,7 @@ void CSourcePieceWise_Plasma::SetJacobian_EnergyExch(double **val_Jacobian_i, CC
 		for (iVar = 0; iVar < nVar; iVar++) {
 			for (jVar = 0; jVar < nVar; jVar++) U_id[jVar] = 0.0;
 			U_id[iVar] = 1.0;
-			SetResidual_EnergyExch_ad(Residual_Baseline, Residual_New, config);
+			ComputeResidual_EnergyExch_ad(Residual_Baseline, Residual_New, config);
 			for (jVar = 0; jVar < nVar; jVar++)
 				val_Jacobian_i[jVar][iVar] = Residual_New[jVar];
 		}
@@ -3826,7 +3826,7 @@ void CSourcePieceWise_Plasma::SetJacobian_EnergyExch(double **val_Jacobian_i, CC
 		double FDEpsilon;
     
 		/*--- Compute the baseline line residual ---*/
-		SetResidual_EnergyExch(Residual_Baseline, config);
+		ComputeResidual_EnergyExch(Residual_Baseline, config);
     
 		/*--- Compute forward finite differences ---*/
 		for (iVar = 0; iVar < nVar; iVar++) {
@@ -3837,7 +3837,7 @@ void CSourcePieceWise_Plasma::SetJacobian_EnergyExch(double **val_Jacobian_i, CC
 			/*--- Recompute the residual, perturbation in the iVar component of the solution ---*/
 			U_i[iVar] = U_Baseline[iVar] + FDEpsilon;
 			for (jVar = 0; jVar < nVar; jVar++) Residual_New[jVar] = 0.0;
-			SetResidual_EnergyExch(Residual_New, config);
+			ComputeResidual_EnergyExch(Residual_New, config);
       
 			/*--- Undo the change in U_i to keep constant the solution ---*/
 			U_i[iVar] = U_i[iVar] - FDEpsilon;
@@ -3851,12 +3851,12 @@ void CSourcePieceWise_Plasma::SetJacobian_EnergyExch(double **val_Jacobian_i, CC
 }
 
 
-void CSourcePieceWise_Plasma::SetResidual_EnergyExch(double *val_residual, CConfig *config) {
+void CSourcePieceWise_Plasma::ComputeResidual_EnergyExch(double *val_residual, CConfig *config) {
 	//************************************************//
 	// Please do not delete //SU2_CPP2C comment lines //
 	//************************************************//
   
-	//SU2_CPP2C START CSourcePieceWise_Plasma::SetResidual_EnergyExch
+	//SU2_CPP2C START CSourcePieceWise_Plasma::ComputeResidual_EnergyExch
 	//SU2_CPP2C CALL_LIST START
 	//SU2_CPP2C INVARS *U_i
 	//SU2_CPP2C OUTVARS *val_residual
@@ -3975,7 +3975,7 @@ void CSourcePieceWise_Plasma::SetResidual_EnergyExch(double *val_residual, CConf
 			val_residual[jLoc+nDim+1] -= q_tr_vs*U_i[jLoc+0]/Molecular_Mass[jSpecies]*Volume;
 		}
 	}
-	//SU2_CPP2C END CSourcePieceWise_Plasma::SetResidual_EnergyExch
+	//SU2_CPP2C END CSourcePieceWise_Plasma::ComputeResidual_EnergyExch
 }
 
 
@@ -4025,7 +4025,7 @@ CSource_Magnet::~CSource_Magnet(void) {
 	delete []   velocity;
 }
 
-void CSource_Magnet::SetResidual(double *val_residual, double **val_Jacobian_i, CConfig *config) {
+void CSource_Magnet::ComputeResidual(double *val_residual, double **val_Jacobian_i, CConfig *config) {
   
 	double mdotr, distance, rpower5, rcubed;
 	double r1,m1,n1,l1,e1;

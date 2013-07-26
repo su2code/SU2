@@ -2,7 +2,7 @@
  * \file numerics_direct_electric.cpp
  * \brief This file contains all the convective term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -32,7 +32,7 @@ CGalerkin_Flow::CGalerkin_Flow(unsigned short val_nDim, unsigned short val_nVar,
 
 CGalerkin_Flow::~CGalerkin_Flow(void) { }
 
-void CGalerkin_Flow::SetResidual(double **val_stiffmatrix_elem, CConfig *config) {
+void CGalerkin_Flow::ComputeResidual(double **val_stiffmatrix_elem, CConfig *config) {
   
 	double a[4], b[4], c[4], d[4], Area, B_Matrix[4][4];
 	unsigned short iVar, jVar;
@@ -146,7 +146,7 @@ CSourcePieceWise_Elec::CSourcePieceWise_Elec(unsigned short val_nDim, unsigned s
 
 CSourcePieceWise_Elec::~CSourcePieceWise_Elec(void) { }
 
-void CSourcePieceWise_Elec::SetResidual_MacCormack(double *val_residual, CConfig *config) {
+void CSourcePieceWise_Elec::ComputeResidual_MacCormack(double *val_residual, CConfig *config) {
   
 	if (config->GetKind_GasModel() == ARGON) {
 		double Kai_n, Kai_np1 = 0.0, ne, np;
@@ -332,7 +332,7 @@ void CSourcePieceWise_Elec::SetResidual_MacCormack(double *val_residual, CConfig
 	}
 }
 
-void CSourcePieceWise_Elec::SetResidual(double *val_residual, CConfig *config) {
+void CSourcePieceWise_Elec::ComputeResidual(double *val_residual, CConfig *config) {
   
 	if (config->GetKind_GasModel() == ARGON) {
 		double Kai_n, ne, np;

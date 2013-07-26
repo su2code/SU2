@@ -2,7 +2,7 @@
  * \file numerics_adjoint_levelset.cpp
  * \brief This file contains all the convective term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -39,7 +39,7 @@ CUpwLin_AdjLevelSet::~CUpwLin_AdjLevelSet(void) {
   
 }
 
-void CUpwLin_AdjLevelSet::SetResidual (double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii,
+void CUpwLin_AdjLevelSet::ComputeResidual (double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii,
                                        double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config)  {
   
   unsigned short iDim;
@@ -70,5 +70,5 @@ CSourcePieceWise_AdjLevelSet::CSourcePieceWise_AdjLevelSet(unsigned short val_nD
 
 CSourcePieceWise_AdjLevelSet::~CSourcePieceWise_AdjLevelSet(void) { }
 
-void CSourcePieceWise_AdjLevelSet::SetResidual(double *val_residual, CConfig *config) {}
+void CSourcePieceWise_AdjLevelSet::ComputeResidual(double *val_residual, CConfig *config) {}
 
