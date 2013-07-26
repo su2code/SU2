@@ -195,20 +195,20 @@ void CHeatSolution::Preprocessing(CGeometry *geometry,
 
 void CHeatSolution::Source_Residual(CGeometry *geometry, 
                                     CSolution **solution_container, 
-                                    CNumerics *solver, CNumerics *second_solver,
+                                    CNumerics *numerics, CNumerics *second_numerics,
                                     CConfig   *config, 
                                     unsigned short iMesh) { }
 
 
 void CHeatSolution::Source_Template(CGeometry *geometry,
                                     CSolution **solution_container,
-                                    CNumerics *solver,
+                                    CNumerics *numerics,
                                     CConfig   *config,
                                     unsigned short iMesh) { }
 
 void CHeatSolution::Galerkin_Method(CGeometry *geometry, 
                                     CSolution **solution_container, 
-                                    CNumerics *solver,
+                                    CNumerics *numerics,
                                     CConfig   *config, 
                                     unsigned short iMesh) {
   
@@ -228,9 +228,9 @@ void CHeatSolution::Galerkin_Method(CGeometry *geometry,
 		Coord_1 = geometry->node[Point_1]->GetCoord();
 		Coord_2 = geometry->node[Point_2]->GetCoord();
     
-		solver->SetCoord(Coord_0, Coord_1, Coord_2);
+		numerics->SetCoord(Coord_0, Coord_1, Coord_2);
     
-		solver->SetResidual(StiffMatrix_Elem, config);
+		numerics->SetResidual(StiffMatrix_Elem, config);
     
     /*--- Compute the square of the Heat speed ---*/
 		Thermal_Diffusivity  = config->GetThermalDiffusivity();
@@ -296,7 +296,7 @@ void CHeatSolution::Galerkin_Method(CGeometry *geometry,
 
 void CHeatSolution::BC_Euler_Wall(CGeometry *geometry, 
                                   CSolution **solution_container, 
-                                  CNumerics *solver, 
+                                  CNumerics *numerics, 
                                   CConfig   *config, 
 																	unsigned short val_marker) {
 	
@@ -339,8 +339,8 @@ void CHeatSolution::BC_Euler_Wall(CGeometry *geometry,
   
 }
 
-void CHeatSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver,
-                                 CNumerics *visc_solver, CConfig *config, unsigned short val_marker) { }
+void CHeatSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics,
+                                 CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
 
 void CHeatSolution::SetResidual_DualTime(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iRKStep, 
                                         unsigned short iMesh, unsigned short RunTime_EqSystem) {

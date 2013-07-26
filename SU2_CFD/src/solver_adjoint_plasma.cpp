@@ -658,7 +658,7 @@ void CAdjPlasmaSolution::SetForceProj_Vector(CGeometry *geometry, CSolution **so
 	delete [] ForceProj_Vector;
 }
 
-void CAdjPlasmaSolution::Centered_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+void CAdjPlasmaSolution::Centered_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
 																			 CConfig *config, unsigned short iMesh, unsigned short iRKStep) { 	
 	unsigned long iEdge, iPoint, jPoint;
 	
@@ -671,38 +671,38 @@ void CAdjPlasmaSolution::Centered_Residual(CGeometry *geometry, CSolution **solu
 		iPoint = geometry->edge[iEdge]->GetNode(0);
 		jPoint = geometry->edge[iEdge]->GetNode(1);
 		
-		solver->SetNormal(geometry->edge[iEdge]->GetNormal());
+		numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
 		
-		solver->SetNeighbor(geometry->node[iPoint]->GetnNeighbor(), geometry->node[jPoint]->GetnNeighbor());
+		numerics->SetNeighbor(geometry->node[iPoint]->GetnNeighbor(), geometry->node[jPoint]->GetnNeighbor());
 		
 		/*--- Adjoint variables w/o reconstruction ---*/
-		solver->SetAdjointVar(node[iPoint]->GetSolution(), node[jPoint]->GetSolution());
+		numerics->SetAdjointVar(node[iPoint]->GetSolution(), node[jPoint]->GetSolution());
 		
 		/*--- Set conservative variables w/o reconstruction ---*/
-		solver->SetConservative(solution_container[PLASMA_SOL]->node[iPoint]->GetSolution(), 
+		numerics->SetConservative(solution_container[PLASMA_SOL]->node[iPoint]->GetSolution(), 
 														solution_container[PLASMA_SOL]->node[jPoint]->GetSolution());
 		
 		
 		for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++) {
-			solver->SetPressure(solution_container[PLASMA_SOL]->node[iPoint]->GetPressure(iSpecies), 
+			numerics->SetPressure(solution_container[PLASMA_SOL]->node[iPoint]->GetPressure(iSpecies), 
 													solution_container[PLASMA_SOL]->node[jPoint]->GetPressure(iSpecies), iSpecies);
-			solver->SetSoundSpeed(solution_container[PLASMA_SOL]->node[iPoint]->GetSoundSpeed(iSpecies), 
+			numerics->SetSoundSpeed(solution_container[PLASMA_SOL]->node[iPoint]->GetSoundSpeed(iSpecies), 
 														solution_container[PLASMA_SOL]->node[jPoint]->GetSoundSpeed(iSpecies),iSpecies);
-			solver->SetEnthalpy(solution_container[PLASMA_SOL]->node[iPoint]->GetEnthalpy(iSpecies), 
+			numerics->SetEnthalpy(solution_container[PLASMA_SOL]->node[iPoint]->GetEnthalpy(iSpecies), 
 													solution_container[PLASMA_SOL]->node[jPoint]->GetEnthalpy(iSpecies),iSpecies);
 
       switch (config->GetKind_ConvNumScheme_Plasma()) {
         case SPACE_CENTERED:
-          solver->SetLambda(solution_container[PLASMA_SOL]->node[iPoint]->GetLambda(iSpecies), solution_container[PLASMA_SOL]->node[jPoint]->GetLambda(iSpecies),iSpecies);
+          numerics->SetLambda(solution_container[PLASMA_SOL]->node[iPoint]->GetLambda(iSpecies), solution_container[PLASMA_SOL]->node[jPoint]->GetLambda(iSpecies),iSpecies);
           break;
         case SPACE_UPWIND:
-          solver->SetLambda(solution_container[PLASMA_SOL]->node[iPoint]->GetMax_Lambda_Inv(iSpecies), solution_container[PLASMA_SOL]->node[jPoint]->GetMax_Lambda_Inv(iSpecies),iSpecies);
+          numerics->SetLambda(solution_container[PLASMA_SOL]->node[iPoint]->GetMax_Lambda_Inv(iSpecies), solution_container[PLASMA_SOL]->node[jPoint]->GetMax_Lambda_Inv(iSpecies),iSpecies);
           break;
       }
     }
 				
 		/*--- Compute residuals ---*/
-		solver->SetResidual(Res_Conv_i, Res_Visc_i, Res_Conv_j, Res_Visc_j, 
+		numerics->SetResidual(Res_Conv_i, Res_Visc_i, Res_Conv_j, Res_Visc_j, 
 												Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 				
 //		cout << Res_Visc_i[0] <<" "<< Res_Visc_i[1] <<" "<< Res_Visc_i[2] <<" "<< Res_Visc_i[3] <<" "<< Res_Visc_i[4] <<" "<< Res_Visc_i[5] <<" "<< Res_Visc_i[6] <<" "<< Res_Visc_i[7] <<endl;
@@ -724,7 +724,7 @@ void CAdjPlasmaSolution::Centered_Residual(CGeometry *geometry, CSolution **solu
 	}
 }
 
-void CAdjPlasmaSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, 
+void CAdjPlasmaSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, 
 																				 CConfig *config, unsigned short iMesh) {
 	double *Psi_i, *Psi_j, *U_i, *U_j;
   double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j;
@@ -742,16 +742,16 @@ void CAdjPlasmaSolution::Upwind_Residual(CGeometry *geometry, CSolution **soluti
 		/*--- Points in edge and normal vectors ---*/
 		iPoint = geometry->edge[iEdge]->GetNode(0);
 		jPoint = geometry->edge[iEdge]->GetNode(1);
-		solver->SetNormal(geometry->edge[iEdge]->GetNormal());
+		numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
 
 		/*--- Adjoint variables w/o reconstruction ---*/
 		Psi_i = node[iPoint]->GetSolution(); Psi_j = node[jPoint]->GetSolution();
-		solver->SetAdjointVar(Psi_i, Psi_j);
+		numerics->SetAdjointVar(Psi_i, Psi_j);
 		
 		/*--- Conservative variables w/o reconstruction ---*/
 		U_i = solution_container[PLASMA_SOL]->node[iPoint]->GetSolution();
 		U_j = solution_container[PLASMA_SOL]->node[jPoint]->GetSolution();
-		solver->SetConservative(U_i, U_j);
+		numerics->SetConservative(U_i, U_j);
     
     
     if ((high_order_diss) && (config->GetKind_Adjoint() != DISCRETE) ) {
@@ -782,10 +782,10 @@ void CAdjPlasmaSolution::Upwind_Residual(CGeometry *geometry, CSolution **soluti
 					Solution_j[iVar] = U_j[iVar] + Project_Grad_j*Limiter_j[iVar];
 				}
 			}
-			solver->SetAdjointVar(Solution_i, Solution_j);
+			numerics->SetAdjointVar(Solution_i, Solution_j);
 		}
 		
-		solver->SetResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+		numerics->SetResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 		
 		/*--- Add and Subtract Residual ---*/
 		LinSysRes.SubtractBlock(iPoint, Residual_i);
@@ -801,7 +801,7 @@ void CAdjPlasmaSolution::Upwind_Residual(CGeometry *geometry, CSolution **soluti
 	}
 }
 
-void CAdjPlasmaSolution::Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CNumerics *second_solver,
+void CAdjPlasmaSolution::Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CNumerics *second_numerics,
 																				 CConfig *config, unsigned short iMesh) {
 	
 	unsigned short iVar, jVar;
@@ -835,24 +835,24 @@ void CAdjPlasmaSolution::Source_Residual(CGeometry *geometry, CSolution **soluti
 		}
     
     /*--- Set y coordinate ---*/
-    solver->SetCoord(geometry->node[iPoint]->GetCoord(),geometry->node[iPoint]->GetCoord());
+    numerics->SetCoord(geometry->node[iPoint]->GetCoord(),geometry->node[iPoint]->GetCoord());
     
     /*--- Set solution  ---*/
-    solver->SetConservative(solution_container[PLASMA_SOL]->node[iPoint]->GetSolution(), solution_container[PLASMA_SOL]->node[iPoint]->GetSolution());
+    numerics->SetConservative(solution_container[PLASMA_SOL]->node[iPoint]->GetSolution(), solution_container[PLASMA_SOL]->node[iPoint]->GetSolution());
     
     /*--- Set control volume ---*/
-    solver->SetVolume(geometry->node[iPoint]->GetVolume());
+    numerics->SetVolume(geometry->node[iPoint]->GetVolume());
     
     /*--- Set all primitive variables and gradients ---*/
-		solver->SetPrimitive(solution_container[PLASMA_SOL]->node[iPoint]->GetPrimVar_Plasma(), solution_container[PLASMA_SOL]->node[iPoint]->GetPrimVar_Plasma());
-		solver->SetPrimVarGradient(solution_container[PLASMA_SOL]->node[iPoint]->GetGradient_Primitive_Plasma(),solution_container[PLASMA_SOL]->node[iPoint]->GetGradient_Primitive_Plasma());
+		numerics->SetPrimitive(solution_container[PLASMA_SOL]->node[iPoint]->GetPrimVar_Plasma(), solution_container[PLASMA_SOL]->node[iPoint]->GetPrimVar_Plasma());
+		numerics->SetPrimVarGradient(solution_container[PLASMA_SOL]->node[iPoint]->GetGradient_Primitive_Plasma(),solution_container[PLASMA_SOL]->node[iPoint]->GetGradient_Primitive_Plasma());
     
     /*--- Load auxiliary vector with local adjoint variables ---*/
     Psi_i = node[iPoint]->GetSolution();		    
     
     /*--- Axisymmetric source terms ---*/
     if (axisymmetric) {
-      solver->SetJacobian_Axisymmetric(Jacobian_Axisymmetric, config);			
+      numerics->SetJacobian_Axisymmetric(Jacobian_Axisymmetric, config);			
       for (iVar = 0; iVar < nVar; iVar ++) {
         for (jVar = 0; jVar < nVar; jVar++) {
           Residual_Axisymmetric[iVar] += Jacobian_Axisymmetric[jVar][iVar]*Psi_i[jVar];
@@ -864,7 +864,7 @@ void CAdjPlasmaSolution::Source_Residual(CGeometry *geometry, CSolution **soluti
     }
     
     /*--- Chemistry source terms ---*/
-    solver->SetJacobian_Chemistry(Jacobian_Chemistry, config);
+    numerics->SetJacobian_Chemistry(Jacobian_Chemistry, config);
     for (iVar = 0; iVar < nVar; iVar ++) {
       for (jVar = 0; jVar < nVar; jVar++) {
         Residual_Chemistry[iVar] += Jacobian_Chemistry[jVar][iVar]*Psi_i[jVar];
@@ -875,7 +875,7 @@ void CAdjPlasmaSolution::Source_Residual(CGeometry *geometry, CSolution **soluti
     if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);	
     
     /*--- Momentum exchange source terms ---*/
-    solver->SetJacobian_MomentumExch(Jacobian_MomentumExch, config);			
+    numerics->SetJacobian_MomentumExch(Jacobian_MomentumExch, config);			
     for (iVar = 0; iVar < nVar; iVar ++) {
       for (jVar = 0; jVar < nVar; jVar++) {
         Residual_MomentumExch[iVar] += Jacobian_MomentumExch[jVar][iVar]*Psi_i[jVar];
@@ -886,7 +886,7 @@ void CAdjPlasmaSolution::Source_Residual(CGeometry *geometry, CSolution **soluti
     if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
     
     /*--- Energy exchange source terms ---*/
-    solver->SetJacobian_EnergyExch(Jacobian_EnergyExch, config);
+    numerics->SetJacobian_EnergyExch(Jacobian_EnergyExch, config);
     for (iVar = 0; iVar < nVar; iVar ++) {
       for (jVar = 0; jVar < nVar; jVar++) {
         Residual_EnergyExch[iVar] += Jacobian_EnergyExch[jVar][iVar]*Psi_i[jVar];
@@ -898,7 +898,7 @@ void CAdjPlasmaSolution::Source_Residual(CGeometry *geometry, CSolution **soluti
   }
 }
 
-void CAdjPlasmaSolution::Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+void CAdjPlasmaSolution::Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
 																				 CConfig *config, unsigned short iMesh) {
 }
 
@@ -996,7 +996,7 @@ void CAdjPlasmaSolution::ImplicitEuler_Iteration(CGeometry *geometry, CSolution 
     delete [] Species_Delta;
 }
 
-void CAdjPlasmaSolution::Inviscid_Sensitivity(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config) {
+void CAdjPlasmaSolution::Inviscid_Sensitivity(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config) {
   unsigned long iVertex, iPoint, Neigh;
 	//unsigned short iPos, jPos;
 	unsigned short iDim, iMarker, iNeigh;
@@ -1083,7 +1083,7 @@ void CAdjPlasmaSolution::Inviscid_Sensitivity(CGeometry *geometry, CSolution **s
   }
 }
 
-void CAdjPlasmaSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short val_marker) {
+void CAdjPlasmaSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 	
 	unsigned long iVertex, iPoint;
 	double *d, *Normal, *U, *Psi_Aux, ProjVel, bcn, Area, *UnitaryNormal, *Coord, Gamma_Minus_One;
@@ -1237,7 +1237,7 @@ void CAdjPlasmaSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution
   delete [] dPdrhou;
 }
 
-void CAdjPlasmaSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, 
+void CAdjPlasmaSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
 																		 CConfig *config, unsigned short val_marker) {
 	
 	unsigned long iVertex, iPoint;
@@ -1389,8 +1389,8 @@ void CAdjPlasmaSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_
   delete [] dPdrhou;
 }
 
-void CAdjPlasmaSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver,
-                                      CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
+void CAdjPlasmaSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics,
+                                      CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned long iVertex, iPoint;
 	unsigned short iVar, iDim;
 	double *Normal, *U_domain, *U_infty, *Psi_domain, *Psi_infty;
@@ -1412,7 +1412,7 @@ void CAdjPlasmaSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_
 			/*--- Set the normal vector ---*/
 			geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
 			for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-			conv_solver->SetNormal(Normal);
+			conv_numerics->SetNormal(Normal);
 			
 			/*--- Flow solution at the wall ---*/
 			for (iVar = 0; iVar < nVar; iVar++)
@@ -1430,17 +1430,17 @@ void CAdjPlasmaSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_
           U_infty[loc+nDim+2] = solution_container[PLASMA_SOL]->GetDensity_Energy_vib_Inf(iSpecies);          
 			}      
 			
-			conv_solver->SetConservative(U_domain, U_infty);
+			conv_numerics->SetConservative(U_domain, U_infty);
 
 			/*--- Adjoint flow solution at the farfield ---*/
 			for (iVar = 0; iVar < nVar; iVar++) {
 				Psi_domain[iVar] = node[iPoint]->GetSolution(iVar);
 				Psi_infty[iVar] = 0.0;
 			}
-			conv_solver->SetAdjointVar(Psi_domain, Psi_infty);
+			conv_numerics->SetAdjointVar(Psi_domain, Psi_infty);
 			
 			/*--- Compute the upwind flux ---*/
-			conv_solver->SetResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+			conv_numerics->SetResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 			
 			/*--- Add and Subtract Residual ---*/
 			LinSysRes.SubtractBlock(iPoint, Residual_i);

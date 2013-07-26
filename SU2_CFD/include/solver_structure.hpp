@@ -366,7 +366,7 @@ public:
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 */
-	virtual void Centered_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	virtual void Centered_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                                    CConfig *config, unsigned short iMesh, unsigned short iRKStep);
     
 	/*!
@@ -377,7 +377,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	virtual void Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	virtual void Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                                  CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -443,7 +443,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	virtual void BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                                unsigned short val_marker);
     
 	/*!
@@ -454,7 +454,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_Displacement(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	virtual void BC_Displacement(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                                  unsigned short val_marker);
     
 	/*!
@@ -465,7 +465,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_FlowLoad(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	virtual void BC_FlowLoad(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                              unsigned short val_marker);
     
 	/*!
@@ -476,7 +476,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_Load(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	virtual void BC_Load(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                          unsigned short val_marker);
     
 	/*!
@@ -487,7 +487,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_Interface_Boundary(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	virtual void BC_Interface_Boundary(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                                        unsigned short val_marker);
     
 	/*!
@@ -498,7 +498,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_NearField_Boundary(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	virtual void BC_NearField_Boundary(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                                        unsigned short val_marker);
     
 	/*!
@@ -509,7 +509,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_Isothermal_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	virtual void BC_Isothermal_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                                     unsigned short val_marker);
     
 	/*!
@@ -520,7 +520,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker);
+	virtual void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
     
 	/*!
 	 * \brief A virtual member.
@@ -540,7 +540,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_Neumann(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	virtual void BC_Neumann(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                             unsigned short val_marker);
     
 	/*!
@@ -551,7 +551,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	virtual void BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                               unsigned short val_marker);
     
 	/*!
@@ -562,7 +562,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker);
+	virtual void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
     
 	/*!
 	 * \brief A virtual member.
@@ -572,7 +572,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_Inlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver,
+	virtual void BC_Inlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                           CConfig *config, unsigned short val_marker);
     
 	/*!
@@ -584,7 +584,7 @@ public:
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
 	virtual void BC_Supersonic_Inlet(CGeometry *geometry, CSolution **solution_container,
-                                     CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker);
+                                     CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
     
 	/*!
 	 * \brief A virtual member.
@@ -602,7 +602,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_Custom(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	virtual void BC_Custom(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                            CConfig *config, unsigned short val_marker);
     
 	/*!
@@ -613,7 +613,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_Outlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver,
+	virtual void BC_Outlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                            CConfig *config, unsigned short val_marker);
     
 	/*!
@@ -624,7 +624,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_Nacelle_Inflow(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker);
+	virtual void BC_Nacelle_Inflow(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
     
 	/*!
 	 * \brief A virtual member.
@@ -634,7 +634,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_Nacelle_Exhaust(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker);
+	virtual void BC_Nacelle_Exhaust(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
     
 	/*!
 	 * \brief A virtual member.
@@ -644,7 +644,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_Dielectric(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	virtual void BC_Dielectric(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                                CConfig *config, unsigned short val_marker);
     
 	/*!
@@ -655,7 +655,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_Electrode(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	virtual void BC_Electrode(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                               CConfig *config, unsigned short val_marker);
     
 	/*!
@@ -666,7 +666,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_FWH(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	virtual void BC_FWH(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                         unsigned short val_marker);
     
 	/*!
@@ -677,7 +677,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_Observer(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	virtual void BC_Observer(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                              unsigned short val_marker);
     
 	/*!
@@ -814,7 +814,7 @@ public:
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 */
-	virtual void Viscous_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	virtual void Viscous_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                                   CConfig *config, unsigned short iMesh, unsigned short iRKStep);
     
 	/*!
@@ -825,7 +825,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	virtual void Galerkin_Method(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	virtual void Galerkin_Method(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                                  CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -842,7 +842,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	virtual void Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CNumerics *second_solver,
+	virtual void Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CNumerics *second_numerics,
                                  CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -853,7 +853,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	virtual void Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	virtual void Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                                  CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -864,7 +864,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	virtual void SourceConserv_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	virtual void SourceConserv_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                                         CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -875,7 +875,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	virtual void Charge_Dist_SourceTerm(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	virtual void Charge_Dist_SourceTerm(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                                         CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -958,7 +958,7 @@ public:
 	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void Inviscid_Sensitivity(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config);
+	virtual void Inviscid_Sensitivity(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config);
     
 	/*!
 	 * \brief A virtual member.
@@ -967,7 +967,7 @@ public:
 	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void Smooth_Sensitivity(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config);
+	virtual void Smooth_Sensitivity(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config);
     
 	/*!
 	 * \brief A virtual member.
@@ -976,7 +976,7 @@ public:
 	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void Viscous_Sensitivity(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config);
+	virtual void Viscous_Sensitivity(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config);
     
 	/*!
 	 * \brief A virtual member.
@@ -1613,7 +1613,7 @@ public:
 	 * \param[in] flow_geometry - Geometrical definition for the flow problem.
 	 * \param[in] flow_config - Definition of the particular problem.
 	 */
-	virtual void SetAeroacoustic_Coupling(CSolution ***wave_solution, CSolution ***flow_solution, CNumerics *solver,
+	virtual void SetAeroacoustic_Coupling(CSolution ***wave_solution, CSolution ***flow_solution, CNumerics *numerics,
                                           CGeometry **flow_geometry, CConfig *flow_config);
     
 	/*!
@@ -1978,7 +1978,7 @@ public:
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 */
-	void Centered_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void Centered_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                            CConfig *config, unsigned short iMesh, unsigned short iRKStep);
     
 	/*!
@@ -1989,7 +1989,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                          CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -2000,7 +2000,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CNumerics *second_solver,
+	void Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CNumerics *second_numerics,
                          CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -2011,7 +2011,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                          CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -2114,7 +2114,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                        unsigned short val_marker);
     
 	/*!
@@ -2125,7 +2125,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver,
+	void BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                       CConfig *config, unsigned short val_marker);
     
 	/*!
@@ -2136,7 +2136,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker);
+	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
     
 	/*!
 	 * \brief Impose the interface boundary condition using the residual.
@@ -2146,7 +2146,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Interface_Boundary(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void BC_Interface_Boundary(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                                CConfig *config, unsigned short val_marker);
     
 	/*!
@@ -2157,7 +2157,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_NearField_Boundary(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void BC_NearField_Boundary(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                                CConfig *config, unsigned short val_marker);
     
 	/*!
@@ -2178,7 +2178,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Inlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver,
+	void BC_Inlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                   CConfig *config, unsigned short val_marker);
     
 	/*!
@@ -2190,7 +2190,7 @@ public:
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
 	void BC_Supersonic_Inlet(CGeometry *geometry, CSolution **solution_container,
-                             CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker);
+                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
     
 	/*!
 	 * \brief Impose the dirichlet boundary condition.
@@ -2200,7 +2200,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Custom(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void BC_Custom(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                    CConfig *config, unsigned short val_marker);
     
 	/*!
@@ -2212,7 +2212,7 @@ public:
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
      
 	 */
-	void BC_Outlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver,
+	void BC_Outlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                    CConfig *config, unsigned short val_marker);
     
 	/*!
@@ -2223,7 +2223,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Nacelle_Inflow(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver,
+	void BC_Nacelle_Inflow(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                           CConfig *config, unsigned short val_marker);
     
 	/*!
@@ -2234,7 +2234,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Nacelle_Exhaust(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver,
+	void BC_Nacelle_Exhaust(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                            CConfig *config, unsigned short val_marker);
     
 	/*!
@@ -2655,7 +2655,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker);
+	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
     
     /*!
 	 * \brief Impose the Navier-Stokes boundary condition (strong).
@@ -2665,7 +2665,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Isothermal_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_Isothermal_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                             unsigned short val_marker);
     
 	/*!
@@ -2710,7 +2710,7 @@ public:
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 */
-	void Viscous_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void Viscous_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                           CConfig *config, unsigned short iMesh, unsigned short iRKStep);
     
 	/*!
@@ -2807,7 +2807,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker);
+	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
     
     /*!
 	 * \brief Impose via the residual the Euler wall boundary condition.
@@ -2817,7 +2817,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                        unsigned short val_marker);
     
 	/*!
@@ -2954,7 +2954,7 @@ public:
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
     
-	void Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                          unsigned short iMesh);
     
 	/*!
@@ -2966,7 +2966,7 @@ public:
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 */
-	void Viscous_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void Viscous_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                           CConfig *config, unsigned short iMesh, unsigned short iRKStep);
     
 	/*!
@@ -2977,7 +2977,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CNumerics *second_solver,
+	void Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CNumerics *second_numerics,
                          CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -2988,7 +2988,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                          CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -2999,7 +2999,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                           unsigned short val_marker);
     
     /*!
@@ -3010,7 +3010,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Isothermal_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_Isothermal_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                             unsigned short val_marker);
     
 	/*!
@@ -3021,7 +3021,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                       unsigned short val_marker);
     
 	/*!
@@ -3032,7 +3032,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Inlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_Inlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                   unsigned short val_marker);
     
 	/*!
@@ -3044,7 +3044,7 @@ public:
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
     
-	void BC_Outlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_Outlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                    unsigned short val_marker);
     
     /*!
@@ -3055,7 +3055,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Nacelle_Inflow(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver,
+	void BC_Nacelle_Inflow(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                           CConfig *config, unsigned short val_marker);
     
 	/*!
@@ -3066,7 +3066,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Nacelle_Exhaust(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver,
+	void BC_Nacelle_Exhaust(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                            CConfig *config, unsigned short val_marker);
     
     /*!
@@ -3077,7 +3077,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Interface_Boundary(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void BC_Interface_Boundary(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                                CConfig *config, unsigned short val_marker);
     
 	/*!
@@ -3088,7 +3088,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_NearField_Boundary(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void BC_NearField_Boundary(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                                CConfig *config, unsigned short val_marker);
     
 	/*!
@@ -3181,7 +3181,7 @@ public:
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
     
-	void Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                          unsigned short iMesh);
     
 	/*!
@@ -3193,7 +3193,7 @@ public:
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 */
-	void Viscous_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void Viscous_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                           CConfig *config, unsigned short iMesh, unsigned short iRKStep);
     
 	/*!
@@ -3204,7 +3204,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CNumerics *second_solver,
+	void Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CNumerics *second_numerics,
                          CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -3215,7 +3215,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                          CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -3226,7 +3226,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                           unsigned short val_marker);
     
 	/*!
@@ -3237,7 +3237,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                       unsigned short val_marker);
     
 	/*!
@@ -3248,7 +3248,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Inlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_Inlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                   unsigned short val_marker);
     
 	/*!
@@ -3260,7 +3260,7 @@ public:
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
     
-	void BC_Outlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_Outlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                    unsigned short val_marker);
     
 	/*!
@@ -3272,7 +3272,7 @@ public:
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
     
-	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                       unsigned short val_marker);
 	/*!
 	 * \brief Update the solution using an implicit solver.
@@ -3354,7 +3354,7 @@ public:
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
 	void Upwind_Residual(CGeometry *geometry, CSolution **solution_container,
-                         CNumerics *solver, CConfig *config, unsigned short iMesh);
+                         CNumerics *numerics, CConfig *config, unsigned short iMesh);
     
 	/*!
 	 * \brief Compute the viscous residuals for the turbulent equation.
@@ -3365,7 +3365,7 @@ public:
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 */
-	void Viscous_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void Viscous_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                           CConfig *config, unsigned short iMesh, unsigned short iRKStep);
     
 	/*!
@@ -3376,7 +3376,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CNumerics *second_solver,
+	void Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CNumerics *second_numerics,
                          CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -3387,7 +3387,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                          CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -3398,7 +3398,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                           unsigned short val_marker);
     
     /*!
@@ -3409,7 +3409,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Isothermal_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_Isothermal_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                             unsigned short val_marker);
     
 	/*!
@@ -3420,7 +3420,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                       unsigned short val_marker);
     
 	/*!
@@ -3431,7 +3431,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Inlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_Inlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                   unsigned short val_marker);
     
 	/*!
@@ -3443,7 +3443,7 @@ public:
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
     
-	void BC_Outlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_Outlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                    unsigned short val_marker);
     
 	/*!
@@ -3596,7 +3596,7 @@ public:
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 */
-	void Centered_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void Centered_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                            unsigned short iMesh, unsigned short iRKStep);
     
 	/*!
@@ -3607,7 +3607,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                          unsigned short iMesh);
     
 	/*!
@@ -3618,7 +3618,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CNumerics *second_solver,
+	void Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CNumerics *second_numerics,
                          CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -3629,7 +3629,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                          CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -3640,7 +3640,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	//void SourceObjFunc_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	//void SourceObjFunc_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
 	//	CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -3689,7 +3689,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                        unsigned short val_marker);
     
 	/*!
@@ -3700,7 +3700,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Interface_Boundary(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_Interface_Boundary(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                                unsigned short val_marker);
     
 	/*!
@@ -3711,7 +3711,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_NearField_Boundary(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_NearField_Boundary(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                                unsigned short val_marker);
     
 	/*!
@@ -3722,7 +3722,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                       unsigned short val_marker);
     
 	/*!
@@ -3733,7 +3733,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                       unsigned short val_marker);
     
 	/*!
@@ -3744,7 +3744,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Inlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_Inlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                   unsigned short val_marker);
     
 	/*!
@@ -3755,7 +3755,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Outlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_Outlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                    unsigned short val_marker);
     
 	/*!
@@ -3766,7 +3766,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Nacelle_Inflow(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver,
+	void BC_Nacelle_Inflow(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                           CConfig *config, unsigned short val_marker);
     
 	/*!
@@ -3777,7 +3777,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Nacelle_Exhaust(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver,
+	void BC_Nacelle_Exhaust(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                            CConfig *config, unsigned short val_marker);
     
 	/*!
@@ -3788,7 +3788,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_FWH(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_FWH(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                 unsigned short val_marker);
     
 	/*!
@@ -3798,7 +3798,7 @@ public:
 	 * \param[in] flow_geometry - Geometrical definition for the flow problem.
 	 * \param[in] flow_config - Definition of the particular problem.
 	 */
-	void SetAeroacoustic_Coupling(CSolution ***wave_solution,  CSolution ***flow_solution, CNumerics *solver,
+	void SetAeroacoustic_Coupling(CSolution ***wave_solution,  CSolution ***flow_solution, CNumerics *numerics,
                                   CGeometry **flow_geometry, CConfig *flow_config);
     
 	/*!
@@ -3844,7 +3844,7 @@ public:
 	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void Inviscid_Sensitivity(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config);
+	void Inviscid_Sensitivity(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config);
     
 	/*!
 	 * \brief Smooth the inviscid sensitivity of the functional.
@@ -3853,7 +3853,7 @@ public:
 	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void Smooth_Sensitivity(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config);
+	void Smooth_Sensitivity(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config);
     
 	/*!
 	 * \brief Get the shape sensitivity coefficient.
@@ -3973,7 +3973,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                           unsigned short val_marker);
     
     /*!
@@ -3984,7 +3984,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Isothermal_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker);
+	void BC_Isothermal_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
     
 	/*!
 	 * \brief Restart residual and compute gradients.
@@ -4003,7 +4003,7 @@ public:
 	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void Viscous_Sensitivity(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config);
+	void Viscous_Sensitivity(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config);
     
 	/*!
 	 * \brief Compute the viscous residuals for the adjoint equation.
@@ -4014,7 +4014,7 @@ public:
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 */
-	void Viscous_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void Viscous_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                           CConfig *config, unsigned short iMesh, unsigned short iRKStep);
     
 	/*!
@@ -4025,7 +4025,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CNumerics *second_solver,
+	void Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CNumerics *second_numerics,
                          CConfig *config, unsigned short iMesh);
     
 };
@@ -4097,7 +4097,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                           unsigned short val_marker);
     
 	/*!
@@ -4108,7 +4108,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                       unsigned short val_marker);
     
 	/*!
@@ -4129,7 +4129,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                          unsigned short iMesh);
     
 	/*!
@@ -4141,7 +4141,7 @@ public:
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 */
-	void Viscous_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void Viscous_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                           unsigned short iMesh, unsigned short iRKStep);
     
 	/*!
@@ -4152,7 +4152,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CNumerics *second_solver,
+	void Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CNumerics *second_numerics,
                          CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -4163,7 +4163,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                          CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -4174,7 +4174,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void SourceConserv_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void SourceConserv_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                                 CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -4239,7 +4239,7 @@ public:
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 */
-	void Centered_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void Centered_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                            unsigned short iMesh, unsigned short iRKStep);
     
 	/*!
@@ -4257,7 +4257,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                        unsigned short val_marker);
     
 	/*!
@@ -4268,7 +4268,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                       unsigned short val_marker);
     
 	/*!
@@ -4368,7 +4368,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Galerkin_Method(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void Galerkin_Method(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                          unsigned short iMesh);
     
 	/*!
@@ -4404,7 +4404,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker);
+	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
     
 	/*!
 	 * \brief Impose via the residual the Euler wall boundary condition.
@@ -4414,7 +4414,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                        unsigned short val_marker);
     
 	/*!
@@ -4425,7 +4425,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                           unsigned short val_marker);
     
 	/*!
@@ -4436,7 +4436,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Outlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver,
+	void BC_Outlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                    CConfig *config, unsigned short val_marker) ;
 	/*!
 	 * \brief Impose the inlet boundary condition.
@@ -4446,7 +4446,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Inlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver,
+	void BC_Inlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                   CConfig *config, unsigned short val_marker) ;
     
 	/*!
@@ -4457,7 +4457,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver,
+	void BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                       CConfig *config, unsigned short val_marker);
     
 	/*!
@@ -4478,7 +4478,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CNumerics *second_solver,
+	void Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CNumerics *second_numerics,
                          CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -4489,7 +4489,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                          CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -4550,7 +4550,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Galerkin_Method(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void Galerkin_Method(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                          unsigned short iMesh);
     
 	/*!
@@ -4561,7 +4561,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                        unsigned short val_marker);
     
 	/*!
@@ -4572,7 +4572,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                       unsigned short val_marker);
     
 	/*!
@@ -4583,7 +4583,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Observer(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_Observer(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                      unsigned short val_marker) ;
     
 	/*!
@@ -4604,7 +4604,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CNumerics *second_solver,
+	void Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CNumerics *second_numerics,
                          CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -4615,7 +4615,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                          CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -4732,7 +4732,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Galerkin_Method(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void Galerkin_Method(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                          unsigned short iMesh);
     
 	/*!
@@ -4743,7 +4743,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                        unsigned short val_marker);
     
 	/*!
@@ -4754,7 +4754,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                       unsigned short val_marker);
     
 	/*!
@@ -4775,7 +4775,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CNumerics *second_solver,
+	void Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CNumerics *second_numerics,
                          CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -4786,7 +4786,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                          CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -4877,7 +4877,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Galerkin_Method(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void Galerkin_Method(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                          unsigned short iMesh);
     
 	/*!
@@ -4888,7 +4888,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Displacement(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_Displacement(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                          unsigned short val_marker);
     
 	/*!
@@ -4899,7 +4899,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_FlowLoad(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_FlowLoad(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                      unsigned short val_marker);
     
 	/*!
@@ -4910,7 +4910,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Load(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_Load(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                  unsigned short val_marker);
     
 	/*!
@@ -4940,7 +4940,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CNumerics *second_solver,
+	void Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CNumerics *second_numerics,
                          CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -4951,7 +4951,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                          CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -5076,7 +5076,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                       unsigned short val_marker);
     
 	/*!
@@ -5115,7 +5115,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                          unsigned short iMesh);
     
 	/*!
@@ -5126,7 +5126,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CNumerics *second_solver,
+	void Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CNumerics *second_numerics,
                          CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -5137,7 +5137,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                        unsigned short val_marker);
     
 	/*!
@@ -5148,7 +5148,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                           unsigned short val_marker);
     
 	/*!
@@ -5159,7 +5159,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                       unsigned short val_marker);
     
 	/*!
@@ -5170,7 +5170,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Inlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_Inlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                   unsigned short val_marker);
     
 	/*!
@@ -5181,7 +5181,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Outlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_Outlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                    unsigned short val_marker);
     
 	/*!
@@ -5261,7 +5261,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                       unsigned short val_marker);
     
 	/*!
@@ -5290,7 +5290,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                          unsigned short iMesh);
     
 	/*!
@@ -5301,7 +5301,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CNumerics *second_solver,
+	void Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CNumerics *second_numerics,
                          CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -5312,7 +5312,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                          CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -5323,7 +5323,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                        unsigned short val_marker);
     
 	/*!
@@ -5334,7 +5334,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                           unsigned short val_marker);
     
 	/*!
@@ -5345,7 +5345,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                       unsigned short val_marker);
     
 	/*!
@@ -5356,7 +5356,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Inlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_Inlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                   unsigned short val_marker);
     
 	/*!
@@ -5367,7 +5367,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Outlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_Outlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                    unsigned short val_marker);
     
 	/*!
@@ -5443,7 +5443,7 @@ public:
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 */
-	void Centered_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void Centered_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                            CConfig *config, unsigned short iMesh, unsigned short iRKStep);
     
 	/*!
@@ -5454,7 +5454,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                          CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -5465,7 +5465,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CNumerics *second_solver,
+	void Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CNumerics *second_numerics,
                          CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -5476,7 +5476,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                          CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -5497,7 +5497,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                        unsigned short val_marker);
     
 	/*!
@@ -5508,7 +5508,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                           unsigned short val_marker);
     
 	/*!
@@ -5519,7 +5519,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                       unsigned short val_marker);
     
 	/*!
@@ -5530,7 +5530,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Inlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_Inlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                   unsigned short val_marker);
     
 	/*!
@@ -5541,7 +5541,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Outlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_Outlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                    unsigned short val_marker);
     
 	/*!
@@ -5552,7 +5552,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                       unsigned short val_marker);
     
 	/*!
@@ -5563,7 +5563,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Custom(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void BC_Custom(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                    CConfig *config, unsigned short val_marker);
     
 	/*!
@@ -5939,7 +5939,7 @@ public:
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 */
-	void Centered_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void Centered_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                            CConfig *config, unsigned short iMesh, unsigned short iRKStep);
     
     
@@ -5951,7 +5951,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                          CConfig *config, unsigned short iMesh);
     
     
@@ -5964,7 +5964,7 @@ public:
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 */
-	void Viscous_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void Viscous_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                           CConfig *config, unsigned short iMesh, unsigned short iRKStep);
     
 	/*!
@@ -5975,7 +5975,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CNumerics *second_solver,
+	void Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CNumerics *second_numerics,
                          CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -5986,7 +5986,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                          CConfig *config, unsigned short iMesh);
     
     /*!
@@ -6103,7 +6103,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker);
+	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
     
 	/*!
 	 * \brief Impose via the residual the Euler wall boundary condition.
@@ -6113,7 +6113,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+	void BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
                        unsigned short val_marker);
     
 	/*!
@@ -6139,7 +6139,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Isothermal_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_Isothermal_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                             unsigned short val_marker);
     
 	/*!
@@ -6150,7 +6150,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config,
+	void BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                           unsigned short val_marker);
     
 	/*!
@@ -6161,7 +6161,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Neumann(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void BC_Neumann(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                     CConfig *config, unsigned short val_marker);
     
 	/*!
@@ -6172,7 +6172,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver,
+	void BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                       CConfig *config, unsigned short val_marker);
     
 	/*!
@@ -6183,7 +6183,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Electrode(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void BC_Electrode(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                       CConfig *config, unsigned short val_marker);
     
 	/*!
@@ -6195,7 +6195,7 @@ public:
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
      
 	 */
-	void BC_Dielectric(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void BC_Dielectric(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                        CConfig *config, unsigned short val_marker);
     
 	/*!
@@ -6206,7 +6206,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Outlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver,
+	void BC_Outlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                    CConfig *config, unsigned short val_marker) ;
 	/*!
 	 * \brief Impose the inlet boundary condition.
@@ -6216,7 +6216,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Inlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver,
+	void BC_Inlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                   CConfig *config, unsigned short val_marker) ;
     
 	/*!
@@ -6458,7 +6458,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
+	void Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config, 
                          unsigned short iMesh);
     
 	/*!
@@ -6469,7 +6469,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Centered_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void Centered_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                            CConfig *config, unsigned short iMesh, unsigned short iRKStep);
     
 	/*!
@@ -6480,7 +6480,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CNumerics *second_solver,
+	void Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CNumerics *second_numerics,
                          CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -6491,7 +6491,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+	void Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                          CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -6502,7 +6502,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
+	void BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config, 
                        unsigned short val_marker);
     
 	/*!
@@ -6513,7 +6513,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, 
+	void BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, 
                       unsigned short val_marker);
     
 	/*!
@@ -6524,7 +6524,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, 
+	void BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, 
                       unsigned short val_marker);
     
 	/*!
@@ -6552,7 +6552,7 @@ public:
 	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void Inviscid_Sensitivity(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config);
+	void Inviscid_Sensitivity(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config);
     
 	/*!
 	 * \brief Get the shape sensitivity coefficient.

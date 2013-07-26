@@ -84,27 +84,27 @@ int main(int argc, char *argv[]) {
 	CIntegration ***integration_container = NULL;
 	CGeometry ***geometry_container       = NULL;
 	CSolution ****solution_container      = NULL;
-	CNumerics *****solver_container       = NULL;
+	CNumerics *****numerics_container     = NULL;
 	CConfig **config_container            = NULL;
 	CSurfaceMovement **surface_movement   = NULL;
 	CVolumetricMovement **grid_movement   = NULL;
-	CFreeFormDefBox*** FFDBox           = NULL;
+	CFreeFormDefBox*** FFDBox             = NULL;
 	
 	/*--- Definition of the containers per zones ---*/
 	solution_container    = new CSolution***[MAX_ZONES];
 	integration_container = new CIntegration**[MAX_ZONES];
-	solver_container      = new CNumerics****[MAX_ZONES];
+	numerics_container    = new CNumerics****[MAX_ZONES];
 	config_container      = new CConfig*[MAX_ZONES];
 	geometry_container    = new CGeometry **[MAX_ZONES];
 	surface_movement      = new CSurfaceMovement *[MAX_ZONES];
 	grid_movement         = new CVolumetricMovement *[MAX_ZONES];
-	FFDBox             = new CFreeFormDefBox**[MAX_ZONES];
+	FFDBox                = new CFreeFormDefBox**[MAX_ZONES];
   
   /*--- Array initialization ---*/
   for (iZone = 0; iZone < MAX_ZONES; iZone++) {
     solution_container[iZone]     = NULL;
     integration_container[iZone]  = NULL;
-    solver_container[iZone]       = NULL;
+    numerics_container[iZone]       = NULL;
     config_container[iZone]       = NULL;
     geometry_container[iZone]     = NULL;
     surface_movement[iZone]       = NULL;
@@ -185,9 +185,9 @@ int main(int argc, char *argv[]) {
 		MPI::COMM_WORLD.Barrier();
 #endif
     
-		/*--- Definition of the numerical method class (solver_container[#ZONES][#MG_GRIDS][#EQ_SYSTEMS][#EQ_TERMS]) ---*/
-		solver_container[iZone] = new CNumerics***[config_container[iZone]->GetMGLevels()+1];
-		Solver_Definition(solver_container[iZone], solution_container[iZone], geometry_container[iZone], config_container[iZone], iZone);
+		/*--- Definition of the numerical method class (numerics_container[#ZONES][#MG_GRIDS][#EQ_SYSTEMS][#EQ_TERMS]) ---*/
+		numerics_container[iZone] = new CNumerics***[config_container[iZone]->GetMGLevels()+1];
+		Solver_Definition(numerics_container[iZone], solution_container[iZone], geometry_container[iZone], config_container[iZone], iZone);
     
 #ifndef NO_MPI
 		/*--- Synchronization point after the solver definition subroutine ---*/
@@ -262,68 +262,68 @@ int main(int argc, char *argv[]) {
         
 			case EULER: case NAVIER_STOKES: case RANS:
 				MeanFlowIteration(output, integration_container, geometry_container,
-													solution_container, solver_container, config_container,
+													solution_container, numerics_container, config_container,
 													surface_movement, grid_movement, FFDBox);
 				break;
 				
 			case PLASMA_EULER: case PLASMA_NAVIER_STOKES:
 				PlasmaIteration(output, integration_container, geometry_container,
-												solution_container, solver_container, config_container,
+												solution_container, numerics_container, config_container,
 												surface_movement, grid_movement, FFDBox);
 				break;
 				
 			case FREE_SURFACE_EULER: case FREE_SURFACE_NAVIER_STOKES: case FREE_SURFACE_RANS:
 				FreeSurfaceIteration(output, integration_container, geometry_container,
-														 solution_container, solver_container, config_container,
+														 solution_container, numerics_container, config_container,
 														 surface_movement, grid_movement, FFDBox);
 				break;
 				
 			case FLUID_STRUCTURE_EULER: case FLUID_STRUCTURE_NAVIER_STOKES:
 				FluidStructureIteration(output, integration_container, geometry_container,
-																solution_container, solver_container, config_container,
+																solution_container, numerics_container, config_container,
 																surface_movement, grid_movement, FFDBox);
 				break;
 				
 			case AEROACOUSTIC_EULER: case AEROACOUSTIC_NAVIER_STOKES:
 				AeroacousticIteration(output, integration_container, geometry_container,
-															solution_container, solver_container, config_container,
+															solution_container, numerics_container, config_container,
 															surface_movement, grid_movement, FFDBox);
 				break;
 				
 			case WAVE_EQUATION:
 				WaveIteration(output, integration_container, geometry_container,
-											solution_container, solver_container, config_container,
+											solution_container, numerics_container, config_container,
 											surface_movement, grid_movement, FFDBox);
 				break;
 				
 			case LINEAR_ELASTICITY:
 				FEAIteration(output, integration_container, geometry_container,
-										 solution_container, solver_container, config_container,
+										 solution_container, numerics_container, config_container,
 										 surface_movement, grid_movement, FFDBox);
 				break;
 				
 				
 			case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
 				AdjMeanFlowIteration(output, integration_container, geometry_container,
-														 solution_container, solver_container, config_container,
+														 solution_container, numerics_container, config_container,
 														 surface_movement, grid_movement, FFDBox);
 				break;
 				
 			case ADJ_PLASMA_EULER: case ADJ_PLASMA_NAVIER_STOKES:
 				AdjPlasmaIteration(output, integration_container, geometry_container,
-													 solution_container, solver_container, config_container,
+													 solution_container, numerics_container, config_container,
 													 surface_movement, grid_movement, FFDBox);
 				break;
 				
 			case ADJ_FREE_SURFACE_EULER: case ADJ_FREE_SURFACE_NAVIER_STOKES: case ADJ_FREE_SURFACE_RANS:
 				AdjFreeSurfaceIteration(output, integration_container, geometry_container,
-																solution_container, solver_container, config_container,
+																solution_container, numerics_container, config_container,
 																surface_movement, grid_movement, FFDBox);
 				break;
         
 			case ADJ_AEROACOUSTIC_EULER:
 				AdjAeroacousticIteration(output, integration_container, geometry_container,
-																 solution_container, solver_container, config_container,
+																 solution_container, numerics_container, config_container,
 																 surface_movement, grid_movement, FFDBox);
 				break;
 		}

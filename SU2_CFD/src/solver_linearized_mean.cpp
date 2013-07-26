@@ -199,7 +199,7 @@ CLinEulerSolution::~CLinEulerSolution(void) {
 	 delete [] node; */
 }
 
-void CLinEulerSolution::Centered_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, 
+void CLinEulerSolution::Centered_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, 
 											 CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 	unsigned long iEdge, iPoint, jPoint;
 	bool implicit = (config->GetKind_TimeIntScheme_LinFlow() == EULER_IMPLICIT);
@@ -212,30 +212,30 @@ void CLinEulerSolution::Centered_Residual(CGeometry *geometry, CSolution **solut
 		/*--- Points in edge, normal, and neighbors---*/
 		iPoint = geometry->edge[iEdge]->GetNode(0);
 		jPoint = geometry->edge[iEdge]->GetNode(1);
-		solver->SetNormal(geometry->edge[iEdge]->GetNormal());
-		solver->SetNeighbor(geometry->node[iPoint]->GetnNeighbor(), geometry->node[jPoint]->GetnNeighbor());
+		numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+		numerics->SetNeighbor(geometry->node[iPoint]->GetnNeighbor(), geometry->node[jPoint]->GetnNeighbor());
 
 		/*--- Linearized variables w/o reconstruction ---*/
-		solver->SetLinearizedVar(node[iPoint]->GetSolution(), node[jPoint]->GetSolution());
+		numerics->SetLinearizedVar(node[iPoint]->GetSolution(), node[jPoint]->GetSolution());
 
 		/*--- Conservative variables w/o reconstruction ---*/
-		solver->SetConservative(solution_container[FLOW_SOL]->node[iPoint]->GetSolution(), 
+		numerics->SetConservative(solution_container[FLOW_SOL]->node[iPoint]->GetSolution(), 
 								solution_container[FLOW_SOL]->node[jPoint]->GetSolution());
 
 		/*--- SoundSpeed enthalpy and lambda variables w/o reconstruction ---*/
-		solver->SetSoundSpeed(solution_container[FLOW_SOL]->node[iPoint]->GetSoundSpeed(), 
+		numerics->SetSoundSpeed(solution_container[FLOW_SOL]->node[iPoint]->GetSoundSpeed(), 
 							  solution_container[FLOW_SOL]->node[jPoint]->GetSoundSpeed());
-		solver->SetEnthalpy(solution_container[FLOW_SOL]->node[iPoint]->GetEnthalpy(), 
+		numerics->SetEnthalpy(solution_container[FLOW_SOL]->node[iPoint]->GetEnthalpy(), 
 							solution_container[FLOW_SOL]->node[jPoint]->GetEnthalpy());
-		solver->SetLambda(solution_container[FLOW_SOL]->node[iPoint]->GetLambda(), 
+		numerics->SetLambda(solution_container[FLOW_SOL]->node[iPoint]->GetLambda(), 
 						  solution_container[FLOW_SOL]->node[jPoint]->GetLambda());
 
 		/*--- Undivided laplacian ---*/
 		if (high_order_diss) 
-			solver->SetUndivided_Laplacian(node[iPoint]->GetUndivided_Laplacian(),node[jPoint]->GetUndivided_Laplacian());
+			numerics->SetUndivided_Laplacian(node[iPoint]->GetUndivided_Laplacian(),node[jPoint]->GetUndivided_Laplacian());
 		
 		/*--- Compute residual ---*/
-		solver->SetResidual(Res_Conv, Res_Visc, Jacobian_i, Jacobian_j, config);
+		numerics->SetResidual(Res_Conv, Res_Visc, Jacobian_i, Jacobian_j, config);
 		
 		/*--- Update convective and artificial dissipation residuals ---*/
 		LinSysRes.AddBlock(iPoint, Res_Conv);
@@ -377,7 +377,7 @@ void CLinEulerSolution::Inviscid_DeltaForces(CGeometry *geometry, CSolution **so
 }
 
 
-void CLinEulerSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short val_marker) {
+void CLinEulerSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 	unsigned short iDim, iVar;
 	unsigned long iVertex, iPoint;
 	double phi, a1, a2, sqvel, d, *Face_Normal, *U, dS, VelxDeltaRhoVel, Energy, Rho, 
@@ -436,7 +436,7 @@ void CLinEulerSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_
 	delete [] Delta_RhoVel;
 }
 
-void CLinEulerSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
+void CLinEulerSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned long iVertex, iPoint;
 	unsigned short iVar, jVar, iDim;
 	
@@ -524,8 +524,8 @@ void CLinEulerSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_c
 				invP_Matrix[iVar] = new double [nVar];
 			}
 			
-			conv_solver->GetPMatrix_inv(&rho, velocity, &c, kappa, invP_Matrix);
-			conv_solver->GetPMatrix(&rho, velocity, &c, kappa, P_Matrix);
+			conv_numerics->GetPMatrix_inv(&rho, velocity, &c, kappa, invP_Matrix);
+			conv_numerics->GetPMatrix(&rho, velocity, &c, kappa, P_Matrix);
 			
 			/*--- computation of characteristics variables at the wall ---*/			
 			for (iVar=0; iVar < nVar; iVar++) {
@@ -591,7 +591,7 @@ void CLinEulerSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_c
 			for (iVar = 0; iVar < nVar; iVar++) {
 				Jac_Matrix[iVar] = new double [nVar];
 			}			
-			conv_solver->GetInviscidProjJac(velocity, &energy, kappa, 1.0, Jac_Matrix);
+			conv_numerics->GetInviscidProjJac(velocity, &energy, kappa, 1.0, Jac_Matrix);
 			for (iVar = 0; iVar < nVar; iVar++) {
 				Residual[iVar] = 0;
 				for (jVar=0; jVar < nVar; jVar++)

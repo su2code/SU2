@@ -195,7 +195,7 @@ void CFEASolution::Preprocessing(CGeometry *geometry, CSolution **solution_conta
 
 }
 
-void CFEASolution::Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CNumerics *second_solver,
+void CFEASolution::Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CNumerics *second_numerics,
 																	 CConfig *config, unsigned short iMesh) {
 		
 	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3 = 0;
@@ -406,12 +406,12 @@ void CFEASolution::Source_Residual(CGeometry *geometry, CSolution **solution_con
 
 }
 
-void CFEASolution::Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+void CFEASolution::Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
 																	 CConfig *config, unsigned short iMesh) {
 
 }
 
-void CFEASolution::Galerkin_Method(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+void CFEASolution::Galerkin_Method(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
 		CConfig *config, unsigned short iMesh) {
 
 	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3 = 0, iPoint, total_index;
@@ -436,10 +436,10 @@ void CFEASolution::Galerkin_Method(CGeometry *geometry, CSolution **solution_con
 		}
 		/*--- Modification of the goemtry due to the current displacement (Value of the solution) ---*/
 		
-		if (nDim == 2) solver->SetCoord(Coord_0, Coord_1, Coord_2);
-		if (nDim == 3) solver->SetCoord(Coord_0, Coord_1, Coord_2, Coord_3);
+		if (nDim == 2) numerics->SetCoord(Coord_0, Coord_1, Coord_2);
+		if (nDim == 3) numerics->SetCoord(Coord_0, Coord_1, Coord_2, Coord_3);
 		
-		solver->SetResidual(StiffMatrix_Elem, config);
+		numerics->SetResidual(StiffMatrix_Elem, config);
     
 		for (iVar = 0; iVar < nVar; iVar++)
 			for (jVar = 0; jVar < nVar; jVar++)
@@ -617,7 +617,7 @@ void CFEASolution::Galerkin_Method(CGeometry *geometry, CSolution **solution_con
 	} 
 }
 
-void CFEASolution::BC_Displacement(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
+void CFEASolution::BC_Displacement(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config, 
 																	 unsigned short val_marker) {
 	unsigned long iPoint, iVertex, total_index;
 	unsigned short iVar;
@@ -647,7 +647,7 @@ void CFEASolution::BC_Displacement(CGeometry *geometry, CSolution **solution_con
 	}
 }
 
-void CFEASolution::BC_FlowLoad(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
+void CFEASolution::BC_FlowLoad(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config, 
 													 unsigned short val_marker) {
 	
 	double a[3], b[3], Press_0 = 0.0, Press_1 = 0.0, Press_2 = 0.0, Press_Elem;
@@ -792,7 +792,7 @@ void CFEASolution::BC_FlowLoad(CGeometry *geometry, CSolution **solution_contain
 	
 }
 
-void CFEASolution::BC_Load(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
+void CFEASolution::BC_Load(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config, 
 															 unsigned short val_marker) {
 	
 	double a[3], b[3];

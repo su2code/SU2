@@ -195,7 +195,7 @@ void CWaveSolution::Preprocessing(CGeometry *geometry,
 
 void CWaveSolution::Source_Residual(CGeometry *geometry, 
                                     CSolution **solution_container, 
-                                    CNumerics *solver, CNumerics *second_solver,
+                                    CNumerics *numerics, CNumerics *second_numerics,
                                     CConfig   *config, 
                                     unsigned short iMesh) {
 
@@ -359,7 +359,7 @@ void CWaveSolution::Source_Residual(CGeometry *geometry,
 
 void CWaveSolution::Source_Template(CGeometry *geometry,
                                     CSolution **solution_container,
-                                    CNumerics *solver,
+                                    CNumerics *numerics,
                                     CConfig   *config,
                                     unsigned short iMesh) {
 
@@ -367,7 +367,7 @@ void CWaveSolution::Source_Template(CGeometry *geometry,
 
 void CWaveSolution::Galerkin_Method(CGeometry *geometry, 
                                     CSolution **solution_container, 
-                                    CNumerics *solver,
+                                    CNumerics *numerics,
                                     CConfig   *config, 
                                     unsigned short iMesh) {
   
@@ -387,9 +387,9 @@ void CWaveSolution::Galerkin_Method(CGeometry *geometry,
 		Coord_1 = geometry->node[Point_1]->GetCoord();
 		Coord_2 = geometry->node[Point_2]->GetCoord();
     
-		solver->SetCoord(Coord_0, Coord_1, Coord_2);
+		numerics->SetCoord(Coord_0, Coord_1, Coord_2);
     
-		solver->SetResidual(StiffMatrix_Elem, config);
+		numerics->SetResidual(StiffMatrix_Elem, config);
     
     /*--- Compute the square of the wave speed ---*/
 		wave_speed_2 = config->GetWaveSpeed()*config->GetWaveSpeed();
@@ -559,7 +559,7 @@ void CWaveSolution::SetNoise_Source(CSolution ***flow_solution, CGeometry **wave
 
 void CWaveSolution::BC_Euler_Wall(CGeometry *geometry, 
                                   CSolution **solution_container, 
-                                  CNumerics *solver, 
+                                  CNumerics *numerics, 
                                   CConfig   *config, 
 																	unsigned short val_marker) {
 	
@@ -603,7 +603,7 @@ void CWaveSolution::BC_Euler_Wall(CGeometry *geometry,
 }
 
 void CWaveSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_container, 
-                                 CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, 
+                                 CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, 
                                  unsigned short val_marker) {
 	
   
@@ -633,7 +633,7 @@ void CWaveSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_conta
 
 void CWaveSolution::BC_Observer(CGeometry *geometry, 
                                 CSolution **solution_container, 
-                                CNumerics *solver, 
+                                CNumerics *numerics, 
                                 CConfig   *config, 
                                 unsigned short val_marker) {
   
@@ -950,9 +950,9 @@ void CWaveSolution::SetSpace_Matrix(CGeometry *geometry,
 //		Coord_1 = geometry->node[Point_1]->GetCoord();
 //		Coord_2 = geometry->node[Point_2]->GetCoord();
 //    
-//		solver->SetCoord(Coord_0, Coord_1, Coord_2);
+//		numerics->SetCoord(Coord_0, Coord_1, Coord_2);
 //    
-//		solver->SetResidual(StiffMatrix_Elem, config);
+//		numerics->SetResidual(StiffMatrix_Elem, config);
 //    
 //    /*--- Compute the square of the wave speed ---*/
 //		wave_speed_2 = config->GetWaveSpeed()*config->GetWaveSpeed();

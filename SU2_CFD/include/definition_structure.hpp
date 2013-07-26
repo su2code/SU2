@@ -77,13 +77,13 @@ void Integration_Definition(CIntegration **integration_container, CGeometry **ge
 
 /*! 
  * \brief Definition and allocation of all solver classes.
- * \param[in] solver_container - Description of the numerical method (the way in which the equations are solved).
+ * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
  * \param[in] solution_container - Container vector with all the solutions.
  * \param[in] geometry - Geometrical definition of the problem.
  * \param[in] config - Definition of the particular problem.
  * \param[in] iZone - Index of the zone.
  */
-void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_container, CGeometry **geometry, CConfig *config, unsigned short iZone);
+void Solver_Definition(CNumerics ****numerics_container, CSolution ***solution_container, CGeometry **geometry, CConfig *config, unsigned short iZone);
 
 /*! 
  * \brief Do the geometrical preprocessing.

@@ -1349,7 +1349,7 @@ void CPlasmaSolution::SetResidual_DualTime(CGeometry *geometry, CSolution **solu
 
 
 
-void CPlasmaSolution::Centered_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+void CPlasmaSolution::Centered_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
 		CConfig *config, unsigned short iMesh, unsigned short iRKStep) { 	unsigned long iEdge, iPoint, jPoint;
 
 		bool implicit = (config->GetKind_TimeIntScheme_Plasma() == EULER_IMPLICIT);
@@ -1367,30 +1367,30 @@ void CPlasmaSolution::Centered_Residual(CGeometry *geometry, CSolution **solutio
 			/*--- Points in edge, set normal vectors, and number of neighbors ---*/
 			iPoint = geometry->edge[iEdge]->GetNode(0);
 			jPoint = geometry->edge[iEdge]->GetNode(1);
-			solver->SetNormal(geometry->edge[iEdge]->GetNormal());
-			solver->SetNeighbor(geometry->node[iPoint]->GetnNeighbor(), geometry->node[jPoint]->GetnNeighbor());
+			numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+			numerics->SetNeighbor(geometry->node[iPoint]->GetnNeighbor(), geometry->node[jPoint]->GetnNeighbor());
 
 			/*--- Set conservative variables w/o reconstruction ---*/
-			solver->SetConservative(node[iPoint]->GetSolution(), node[jPoint]->GetSolution());
+			numerics->SetConservative(node[iPoint]->GetSolution(), node[jPoint]->GetSolution());
 
 			for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++) {
-				solver->SetPressure(node[iPoint]->GetPressure(iSpecies), node[jPoint]->GetPressure(iSpecies), iSpecies);
-				solver->SetSoundSpeed(node[iPoint]->GetSoundSpeed(iSpecies), node[jPoint]->GetSoundSpeed(iSpecies),iSpecies);
-				solver->SetEnthalpy(node[iPoint]->GetEnthalpy(iSpecies), node[jPoint]->GetEnthalpy(iSpecies),iSpecies);
-				solver->SetLambda(node[iPoint]->GetLambda(iSpecies), node[jPoint]->GetLambda(iSpecies),iSpecies);
+				numerics->SetPressure(node[iPoint]->GetPressure(iSpecies), node[jPoint]->GetPressure(iSpecies), iSpecies);
+				numerics->SetSoundSpeed(node[iPoint]->GetSoundSpeed(iSpecies), node[jPoint]->GetSoundSpeed(iSpecies),iSpecies);
+				numerics->SetEnthalpy(node[iPoint]->GetEnthalpy(iSpecies), node[jPoint]->GetEnthalpy(iSpecies),iSpecies);
+				numerics->SetLambda(node[iPoint]->GetLambda(iSpecies), node[jPoint]->GetLambda(iSpecies),iSpecies);
 			}
 
 
 			if (high_order_diss) {
-				solver->SetUndivided_Laplacian(node[iPoint]->GetUndivided_Laplacian(), node[jPoint]->GetUndivided_Laplacian());
+				numerics->SetUndivided_Laplacian(node[iPoint]->GetUndivided_Laplacian(), node[jPoint]->GetUndivided_Laplacian());
 				for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++) {
-					solver->SetSensor(node[iPoint]->GetSensor(iSpecies), node[jPoint]->GetSensor(iSpecies), iSpecies);
+					numerics->SetSensor(node[iPoint]->GetSensor(iSpecies), node[jPoint]->GetSensor(iSpecies), iSpecies);
 				}
 			}
 
 
 			/*--- Compute residuals ---*/
-			solver->SetResidual(Res_Conv, Res_Visc, Jacobian_i, Jacobian_j, config);
+			numerics->SetResidual(Res_Conv, Res_Visc, Jacobian_i, Jacobian_j, config);
 
 			/*--- Update convective and artificial dissipation residuals ---*/
 			LinSysRes.AddBlock(iPoint, Res_Conv);
@@ -1410,7 +1410,7 @@ void CPlasmaSolution::Centered_Residual(CGeometry *geometry, CSolution **solutio
 }
 
 
-void CPlasmaSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+void CPlasmaSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
 		CConfig *config, unsigned short iMesh) {
 
 	double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, *Limiter_i = NULL, *Limiter_j = NULL, *U_i, *U_j;
@@ -1424,13 +1424,13 @@ void CPlasmaSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_
 		/*--- Points in edge and normal vectors ---*/
 		iPoint = geometry->edge[iEdge]->GetNode(0);
 		jPoint = geometry->edge[iEdge]->GetNode(1);
-		solver->SetNormal(geometry->edge[iEdge]->GetNormal());
+		numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
 
 		/*--- Set conservative variables w/o reconstruction ---*/
 		U_i = node[iPoint]->GetSolution();
 		U_j = node[jPoint]->GetSolution();
 
-		solver->SetConservative(U_i, U_j);
+		numerics->SetConservative(U_i, U_j);
 
 		if (high_order_diss) {
 			for (iDim = 0; iDim < nDim; iDim++) {
@@ -1458,11 +1458,11 @@ void CPlasmaSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_
 					Solution_j[iVar] = U_j[iVar] + Project_Grad_j*Limiter_j[iVar];
 				}
 			}
-			solver->SetConservative(Solution_i, Solution_j);
+			numerics->SetConservative(Solution_i, Solution_j);
 		}
 
 		/*--- Compute the residual ---*/
-		solver->SetResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
+		numerics->SetResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
 
 		/*--- Update residual value ---*/
 		LinSysRes.AddBlock(iPoint, Res_Conv);
@@ -1478,7 +1478,7 @@ void CPlasmaSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_
 	}
 }
 
-void CPlasmaSolution::Viscous_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+void CPlasmaSolution::Viscous_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                                        CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 	unsigned long iPoint, jPoint, iVar, iEdge, iDim;
 	unsigned short iSpecies, nPrimVar;
@@ -1496,8 +1496,8 @@ void CPlasmaSolution::Viscous_Residual(CGeometry *geometry, CSolution **solution
     /*--- Points, coordinates and normal vector in edge ---*/
     iPoint = geometry->edge[iEdge]->GetNode(0);
     jPoint = geometry->edge[iEdge]->GetNode(1);
-    solver->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[jPoint]->GetCoord());
-    solver->SetNormal(geometry->edge[iEdge]->GetNormal());
+    numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[jPoint]->GetCoord());
+    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
     
     
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -1521,19 +1521,19 @@ void CPlasmaSolution::Viscous_Residual(CGeometry *geometry, CSolution **solution
     }
     
     /*--- Acquire primitive variables and gradients from the CPlasmaVariable class ---*/
-    solver->SetPrimitive(node[iPoint]->GetPrimVar_Plasma(), node[jPoint]->GetPrimVar_Plasma());
-    solver->SetPrimVarGradient(PrimGrad_i, PrimGrad_j);
+    numerics->SetPrimitive(node[iPoint]->GetPrimVar_Plasma(), node[jPoint]->GetPrimVar_Plasma());
+    numerics->SetPrimVarGradient(PrimGrad_i, PrimGrad_j);
     
     /*--- Pass transport coefficients from the variable to the numerics class ---*/
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++) {
-      solver->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(iSpecies), node[jPoint]->GetLaminarViscosity(iSpecies), iSpecies);
-      solver->SetEddyViscosity(node[iPoint]->GetEddyViscosity(iSpecies), node[jPoint]->GetEddyViscosity(iSpecies), iSpecies);
-      solver->SetThermalConductivity(node[iPoint]->GetThermalConductivity(iSpecies), node[jPoint]->GetThermalConductivity(iSpecies), iSpecies);
-      solver->SetThermalConductivity_vib(node[iPoint]->GetThermalConductivity_vib(iSpecies), node[jPoint]->GetThermalConductivity_vib(iSpecies), iSpecies);
+      numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(iSpecies), node[jPoint]->GetLaminarViscosity(iSpecies), iSpecies);
+      numerics->SetEddyViscosity(node[iPoint]->GetEddyViscosity(iSpecies), node[jPoint]->GetEddyViscosity(iSpecies), iSpecies);
+      numerics->SetThermalConductivity(node[iPoint]->GetThermalConductivity(iSpecies), node[jPoint]->GetThermalConductivity(iSpecies), iSpecies);
+      numerics->SetThermalConductivity_vib(node[iPoint]->GetThermalConductivity_vib(iSpecies), node[jPoint]->GetThermalConductivity_vib(iSpecies), iSpecies);
     }
     
     /*--- Compute and update residual ---*/
-    solver->SetResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
+    numerics->SetResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
     
     LinSysRes.SubtractBlock(iPoint, Res_Visc);
     LinSysRes.AddBlock(jPoint, Res_Visc);
@@ -1549,7 +1549,7 @@ void CPlasmaSolution::Viscous_Residual(CGeometry *geometry, CSolution **solution
   
 }
 
-void CPlasmaSolution::Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CNumerics *second_solver,
+void CPlasmaSolution::Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CNumerics *second_numerics,
 		CConfig *config, unsigned short iMesh) {
 	unsigned short iVar, jVar, iSpecies, iDim;
 	unsigned long iPoint;
@@ -1588,20 +1588,20 @@ void CPlasmaSolution::Source_Residual(CGeometry *geometry, CSolution **solution_
 		}
 
 		if (config->GetElectricSolver()) {
-			solver->SetElecField(node[iPoint]->GetElectricField());
+			numerics->SetElecField(node[iPoint]->GetElectricField());
 		}
 
 		/*--- Set y coordinate ---*/
-		solver->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
+		numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
 
 		/*--- Set solution  ---*/
-		solver->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
+		numerics->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
 
 		/*--- Set control volume ---*/
-		solver->SetVolume(geometry->node[iPoint]->GetVolume());
+		numerics->SetVolume(geometry->node[iPoint]->GetVolume());
 
 		//        double time = node[iPoint]->GetDelta_Time();
-		//	solver->SetTimeStep(node[iPoint]->GetDelta_Time());
+		//	numerics->SetTimeStep(node[iPoint]->GetDelta_Time());
 
 		//        node[iPoint]->GetDelta_Time()
 		//        [ELEC_SOL]->node[iPoint]->SetChargeDensity
@@ -1609,19 +1609,19 @@ void CPlasmaSolution::Source_Residual(CGeometry *geometry, CSolution **solution_
 		//     node[iPoint]->SetDelta_Time(node[iPoint]->GetDelta_Time());
 
 		/*--- Acquire primitive variables and gradients from the CPlasmaVariable class ---*/
-		solver->SetPrimitive(node[iPoint]->GetPrimVar_Plasma(), node[iPoint]->GetPrimVar_Plasma());
-		solver->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive_Plasma(),node[iPoint]->GetGradient_Primitive_Plasma());
+		numerics->SetPrimitive(node[iPoint]->GetPrimVar_Plasma(), node[iPoint]->GetPrimVar_Plasma());
+		numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive_Plasma(),node[iPoint]->GetGradient_Primitive_Plasma());
 
 		/*--- Compute Residual ---*/
 		if (config->GetKind_GasModel() == ARGON) {
-			solver->SetResidual(Residual, Jacobian_i, config);
+			numerics->SetResidual(Residual, Jacobian_i, config);
 
 			if (magnet && nDim == 3) {
-				node[iPoint]->SetMagneticField(solver->GetMagneticField());
+				node[iPoint]->SetMagneticField(numerics->GetMagneticField());
 				vol = geometry->node[iPoint]->GetVolume();
 				for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++) {
 					for ( iDim = 0; iDim < nDim; iDim ++)
-						Mag_Force[iDim] += solver->GetMagneticForce(iSpecies, iDim)*vol;
+						Mag_Force[iDim] += numerics->GetMagneticForce(iSpecies, iDim)*vol;
 				}
 			}
 
@@ -1634,33 +1634,33 @@ void CPlasmaSolution::Source_Residual(CGeometry *geometry, CSolution **solution_
 
 			/*--- Axisymmetric source terms ---*/
 			if (axisymmetric) {
-				solver->SetResidual_Axisymmetric(Residual_Axisymmetric, config);
-				solver->SetJacobian_Axisymmetric(Jacobian_Axisymmetric, config);
+				numerics->SetResidual_Axisymmetric(Residual_Axisymmetric, config);
+				numerics->SetJacobian_Axisymmetric(Jacobian_Axisymmetric, config);
 				LinSysRes.AddBlock(iPoint, Residual_Axisymmetric);
 				if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_Axisymmetric);
 			}
 
 			/*--- Chemistry source terms ---*/
-			solver->SetResidual_Chemistry(Residual_Chemistry, config);
-			solver->SetJacobian_Chemistry(Jacobian_Chemistry, config);
+			numerics->SetResidual_Chemistry(Residual_Chemistry, config);
+			numerics->SetJacobian_Chemistry(Jacobian_Chemistry, config);
 			LinSysRes.SubtractBlock(iPoint, Residual_Chemistry);
 			if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_Chemistry);
 
 			/*--- Electric force source terms ---*/
-			/*		solver->SetResidual_ElecForce(Residual_ElecForce, config);
-			 solver->SetJacobian_ElecForce(Jacobian_ElecForce, config);
+			/*		numerics->SetResidual_ElecForce(Residual_ElecForce, config);
+			 numerics->SetJacobian_ElecForce(Jacobian_ElecForce, config);
 			 LinSysRes.SubtractBlock(iPoint, Residual_ElecForce);
 			 if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ElecForce);*/
 
 			/*--- Momentum exchange source terms ---*/
-			solver->SetResidual_MomentumExch(Residual_MomentumExch, config);
-			solver->SetJacobian_MomentumExch(Jacobian_MomentumExch, config);
+			numerics->SetResidual_MomentumExch(Residual_MomentumExch, config);
+			numerics->SetJacobian_MomentumExch(Jacobian_MomentumExch, config);
 			LinSysRes.SubtractBlock(iPoint, Residual_MomentumExch);
 			if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_MomentumExch);
 
 			/*--- Energy exchange source terms ---*/
-			solver->SetResidual_EnergyExch(Residual_EnergyExch, config);
-			solver->SetJacobian_EnergyExch(Jacobian_EnergyExch, config);
+			numerics->SetResidual_EnergyExch(Residual_EnergyExch, config);
+			numerics->SetJacobian_EnergyExch(Jacobian_EnergyExch, config);
 			LinSysRes.SubtractBlock(iPoint, Residual_EnergyExch);
 			if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_EnergyExch);
 		}
@@ -1668,7 +1668,7 @@ void CPlasmaSolution::Source_Residual(CGeometry *geometry, CSolution **solution_
 
 }
 
-void CPlasmaSolution::Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+void CPlasmaSolution::Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
 		CConfig *config, unsigned short iMesh) {
 
 }
@@ -3247,7 +3247,7 @@ void CPlasmaSolution::SetPreconditioner(CConfig *config, unsigned short iPoint) 
 }
 
 
-void CPlasmaSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short val_marker) {
+void CPlasmaSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 	unsigned long iPoint, iVertex;
 	unsigned short iDim, iSpecies, iVar, loc;
 	double Pressure, *Normal;
@@ -3347,7 +3347,7 @@ void CPlasmaSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_co
 	}
 }
 
-void CPlasmaSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
+void CPlasmaSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned long iVertex, iPoint,jPoint, total_index, Point_Normal = 0, iNeigh;
 	unsigned short iVar, iDim, iSpecies, loc, jVar;
 	double *Normal, *Coord_i, *Coord_j, *U_i, *U_j;
@@ -3690,7 +3690,7 @@ void CPlasmaSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution
 	}
 }
 
-//void CPlasmaSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
+//void CPlasmaSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 //	//Comment: This implementation allows for a specified wall heat flux (typically zero).
 //
 //	unsigned long iVertex, iPoint, total_index;
@@ -3731,7 +3731,7 @@ void CPlasmaSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution
 //	}
 //}
 
-void CPlasmaSolution::BC_Isothermal_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
+void CPlasmaSolution::BC_Isothermal_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
 	unsigned long iVertex, iPoint, Point_Normal;
 	unsigned short iSpecies, iVar, jVar, iDim, jDim, loc, nVarSpecies;
@@ -4038,11 +4038,11 @@ void CPlasmaSolution::BC_Isothermal_Wall(CGeometry *geometry, CSolution **soluti
 }
 
 
-void CPlasmaSolution::BC_Electrode(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short val_marker) {
+void CPlasmaSolution::BC_Electrode(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
 }
 
-void CPlasmaSolution::BC_Dielectric(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short val_marker) {
+void CPlasmaSolution::BC_Dielectric(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
 }
 
@@ -4053,7 +4053,7 @@ void CPlasmaSolution::BC_Dielectric(CGeometry *geometry, CSolution **solution_co
  * \author A. Lonkar
  */
 
-void CPlasmaSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
+void CPlasmaSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned long iVertex, iPoint;
 	unsigned short iSpecies, loc = 0;
 	unsigned short iVar, jVar, iDim;
@@ -4137,8 +4137,8 @@ void CPlasmaSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_contain
 				c[iSpecies] = sqrt(fabs(Gamma*Gamma_Minus_One*(rhoE[iSpecies]/rho[iSpecies]-0.5*sq_vel)));
 			}
 
-			conv_solver->GetPMatrix_inv(rho, velocity, c, kappa, invP_Matrix);
-			conv_solver->GetPMatrix(rho, velocity, c, kappa, P_Matrix);
+			conv_numerics->GetPMatrix_inv(rho, velocity, c, kappa, invP_Matrix);
+			conv_numerics->GetPMatrix(rho, velocity, c, kappa, P_Matrix);
 
 			/*--- computation of characteristics variables at the infinity ---*/
 			for (iVar=0; iVar < nVar; iVar++) {
@@ -4206,11 +4206,11 @@ void CPlasmaSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_contain
 			/*--- Residual computation ---*/
 			geometry->vertex[val_marker][iVertex]->GetNormal(Vector);
 			for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = -Vector[iDim];
-			conv_solver->SetNormal(Vector);
+			conv_numerics->SetNormal(Vector);
 
 			/*--- Compute the residual using an upwind scheme ---*/
-			conv_solver->SetConservative(U_domain, U_update);
-			conv_solver->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+			conv_numerics->SetConservative(U_domain, U_update);
+			conv_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
 			LinSysRes.AddBlock(iPoint, Residual);
 
 			/*--- In case we are doing a implicit computation ---*/
@@ -4244,7 +4244,7 @@ void CPlasmaSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_contain
  * \author A. Lonkar
  */
 
-void CPlasmaSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
+void CPlasmaSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
 	unsigned long iVertex, iPoint;
 	unsigned short iSpecies, loc = 0;
@@ -4324,8 +4324,8 @@ void CPlasmaSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_contai
 				Gamma_Minus_One = Gamma - 1.0;
 				c[iSpecies] = sqrt(fabs(Gamma*Gamma_Minus_One*(rhoE[iSpecies]/rho[iSpecies]-0.5*sq_vel)));
 			}
-			conv_solver->GetPMatrix_inv(rho, velocity, c, UnitaryNormal, invP_Matrix);
-			conv_solver->GetPMatrix(rho, velocity, c, UnitaryNormal, P_Matrix);
+			conv_numerics->GetPMatrix_inv(rho, velocity, c, UnitaryNormal, invP_Matrix);
+			conv_numerics->GetPMatrix(rho, velocity, c, UnitaryNormal, P_Matrix);
 
 			/*--- computation of characteristics variables at the wall ---*/
 			for (iVar=0; iVar < nVar; iVar++) {
@@ -4409,7 +4409,7 @@ void CPlasmaSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_contai
 				enthalpy[iSpecies] = (rhoE[iSpecies] + pressure[iSpecies]) / rho[iSpecies];
 			}
 
-			conv_solver->GetInviscidProjFlux(rho, velocity, pressure, enthalpy, UnitaryNormal, Residual);
+			conv_numerics->GetInviscidProjFlux(rho, velocity, pressure, enthalpy, UnitaryNormal, Residual);
 
 			for	(iVar = 0; iVar < nVar; iVar++)
 				Residual[iVar] = Residual[iVar]*Area;
@@ -4419,9 +4419,9 @@ void CPlasmaSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_contai
 			if (implicit) {
 				geometry->vertex[val_marker][iVertex]->GetNormal(Vector);
 				for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = -Vector[iDim];
-				conv_solver->SetNormal(Vector);
-				conv_solver->SetConservative(U_domain, U_outlet);
-				conv_solver->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+				conv_numerics->SetNormal(Vector);
+				conv_numerics->SetConservative(U_domain, U_outlet);
+				conv_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
 				Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 
 			}
@@ -4450,7 +4450,7 @@ void CPlasmaSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_contai
  * \brief Neumann Boundary Condition
  * \author A. Lonkar
  */
-void CPlasmaSolution::BC_Neumann(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short val_marker) {
+void CPlasmaSolution::BC_Neumann(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
 	unsigned long iVertex, iPoint, Point_Normal, total_index;
 	unsigned short iVar;
@@ -4492,7 +4492,7 @@ void CPlasmaSolution::BC_Neumann(CGeometry *geometry, CSolution **solution_conta
  * \brief Far field boundary condition
  * \author A. Lonkar
  */
-void CPlasmaSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
+void CPlasmaSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned long iVertex, iPoint, Point_Normal, iSpecies, loc;
 	unsigned short iVar, iDim;
 	double *U_domain, *U_infty, **V_infty;
@@ -4551,11 +4551,11 @@ void CPlasmaSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_con
 			/*--- Set the normal vector ---*/
 			geometry->vertex[val_marker][iVertex]->GetNormal(Vector);
 			for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = -Vector[iDim];
-			conv_solver->SetNormal(Vector);
+			conv_numerics->SetNormal(Vector);
 
 			/*--- Compute the residual using an upwind scheme ---*/
-			conv_solver->SetConservative(U_domain, U_infty);
-			conv_solver->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+			conv_numerics->SetConservative(U_domain, U_infty);
+			conv_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
 			LinSysRes.AddBlock(iPoint, Residual);
 
 			/*--- In case we are doing a implicit computation ---*/
@@ -4568,8 +4568,8 @@ void CPlasmaSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_con
         Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
         
         /*--- Points, coordinates and normal vector in edge ---*/
-        visc_solver->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
-        visc_solver->SetNormal(Vector);
+        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+        visc_numerics->SetNormal(Vector);
         
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
           for (iVar = 0 ; iVar < nPrimVar; iVar++) {
@@ -4580,19 +4580,19 @@ void CPlasmaSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_con
         }
         
         /*--- Acquire primitive variables and gradients from the CPlasmaVariable class ---*/
-        visc_solver->SetPrimitive(node[iPoint]->GetPrimVar_Plasma(), V_infty);
-        visc_solver->SetPrimVarGradient(PrimGrad_i, PrimGrad_i);
+        visc_numerics->SetPrimitive(node[iPoint]->GetPrimVar_Plasma(), V_infty);
+        visc_numerics->SetPrimVarGradient(PrimGrad_i, PrimGrad_i);
         
         /*--- Pass transport coefficients from the variable to the numerics class ---*/
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++) {
-          visc_solver->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(iSpecies), node[iPoint]->GetLaminarViscosity(iSpecies), iSpecies);
-          visc_solver->SetEddyViscosity(node[iPoint]->GetEddyViscosity(iSpecies), node[iPoint]->GetEddyViscosity(iSpecies), iSpecies);
-          visc_solver->SetThermalConductivity(node[iPoint]->GetThermalConductivity(iSpecies), node[iPoint]->GetThermalConductivity(iSpecies), iSpecies);
-          visc_solver->SetThermalConductivity_vib(node[iPoint]->GetThermalConductivity_vib(iSpecies), node[iPoint]->GetThermalConductivity_vib(iSpecies), iSpecies);
+          visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(iSpecies), node[iPoint]->GetLaminarViscosity(iSpecies), iSpecies);
+          visc_numerics->SetEddyViscosity(node[iPoint]->GetEddyViscosity(iSpecies), node[iPoint]->GetEddyViscosity(iSpecies), iSpecies);
+          visc_numerics->SetThermalConductivity(node[iPoint]->GetThermalConductivity(iSpecies), node[iPoint]->GetThermalConductivity(iSpecies), iSpecies);
+          visc_numerics->SetThermalConductivity_vib(node[iPoint]->GetThermalConductivity_vib(iSpecies), node[iPoint]->GetThermalConductivity_vib(iSpecies), iSpecies);
         }
         
         /*--- Compute and update residual ---*/
-        visc_solver->SetResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
+        visc_numerics->SetResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
         LinSysRes.SubtractBlock(iPoint, Res_Visc);
         
         /*--- Update Jacobians for implicit calculations ---*/
@@ -4612,7 +4612,7 @@ void CPlasmaSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_con
  * \author A. Lonkar.  Modified by S. R. Copeland
  */
 
-void CPlasmaSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
+void CPlasmaSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned long iPoint, iVertex;
 	unsigned short iDim, iSpecies, iVar, loc;
 	double Pressure, *Normal;

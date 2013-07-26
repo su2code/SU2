@@ -79,7 +79,7 @@ public:
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Space_Integration(CGeometry *geometry, CSolution **solution_container, CNumerics **solver, CConfig *config, 
+	void Space_Integration(CGeometry *geometry, CSolution **solution_container, CNumerics **numerics, CConfig *config, 
 						   unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
 
 	/*! 
@@ -172,26 +172,26 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solution_container - Container vector with all the solutions.
-	 * \param[in] solver_container - Description of the numerical method (the way in which the equations are solved).
+	 * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 * \param[in] Iteration - Current iteration.
 	 */
-	virtual void SetMultiGrid_Solver(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****solver_container,
+	virtual void SetMultiGrid_Solver(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****numerics_container,
 								  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
 	
 	/*! 
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solution_container - Container vector with all the solutions.
-	 * \param[in] solver_container - Description of the numerical method (the way in which the equations are solved).
+	 * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] mu - Variable for controlling the kind of multigrid algorithm.	 
 	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 * \param[in] Iteration - Current iteration.
 	 */
-	virtual void Multigrid_Iteration(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****solver_container,
+	virtual void Multigrid_Iteration(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****numerics_container,
 							   CConfig **config, unsigned short iMesh, unsigned short mu, unsigned short RunTime_EqSystem,
 							   unsigned long Iteration, unsigned short iZone);
 	
@@ -204,7 +204,7 @@ public:
 	 * \param[in] Iteration - Current iteration.
 	 * \param[in] monitor - value of the non-dimensional parameters for monitoring the convergence.
 	 */
-	virtual void NonDimensional_Parameters(CGeometry **geometry, CSolution ***solution_container, CNumerics ****solver_container, 
+	virtual void NonDimensional_Parameters(CGeometry **geometry, CSolution ***solution_container, CNumerics ****numerics_container, 
 																				 CConfig *config, unsigned short FinestMesh, unsigned short RunTime_EqSystem, unsigned long Iteration, 
 																				 double *monitor);
 	
@@ -286,24 +286,24 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solution_container - Container vector with all the solutions.
-	 * \param[in] solver_container - Description of the numerical method (the way in which the equations are solved).
+	 * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 * \param[in] Iteration - Current iteration.
 	 */
-	virtual void SetSingleGrid_Solver(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****solver_container,
+	virtual void SetSingleGrid_Solver(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****numerics_container,
 								  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
 	
 	/*! 
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solution_container - Container vector with all the solutions.
-	 * \param[in] solver_container - Description of the numerical method (the way in which the equations are solved).
+	 * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	virtual void SetPotential_Solver(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****solver_container,
+	virtual void SetPotential_Solver(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****numerics_container,
                                    CConfig **config, unsigned short RunTime_EqSystem, unsigned short iMesh, unsigned short iZone);
   
   /*!
@@ -346,26 +346,26 @@ public:
 	 * \brief This subroutine calls the Multigrid_Iteration and also prepare the multigrid levels and the monitoring.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solution_container - Container vector with all the solutions.
-	 * \param[in] solver_container - Description of the numerical method (the way in which the equations are solved).
+	 * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 * \param[in] Iteration - Current iteration.
 	 */
-	void SetMultiGrid_Solver(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****solver_container,
+	void SetMultiGrid_Solver(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****numerics_container,
 							 CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
 	
 	/*! 
 	 * \brief Perform a Full-Approximation Storage (FAS) Multigrid. 
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solution_container - Container vector with all the solutions.
-	 * \param[in] solver_container - Description of the numerical method (the way in which the equations are solved).
+	 * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 * \param[in] mu - Variable for controlling the kind of multigrid algorithm.	 
 	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 * \param[in] Iteration - Current iteration.
 	 */
-	void Multigrid_Iteration(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****solver_container,
+	void Multigrid_Iteration(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****numerics_container,
                      CConfig **config, unsigned short iMesh, unsigned short mu, unsigned short RunTime_EqSystem,
                      unsigned long Iteration, unsigned short iZone);
 	
@@ -378,7 +378,7 @@ public:
 	 * \param[in] Iteration - Current iteration.
 	 * \param[in] monitor - value of the non-dimensional parameters for monitoring the convergence.
 	 */
-	void NonDimensional_Parameters(CGeometry **geometry, CSolution ***solution_container, CNumerics ****solver_container, 
+	void NonDimensional_Parameters(CGeometry **geometry, CSolution ***solution_container, CNumerics ****numerics_container, 
 																 CConfig *config, unsigned short FinestMesh, unsigned short RunTime_EqSystem, unsigned long Iteration, 
 																 double *monitor);
 
@@ -516,12 +516,12 @@ public:
 	 * \brief Do the numerical integration (implicit) of the turbulence solver. 
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solution_container - Container vector with all the solutions.
-	 * \param[in] solver_container - Description of the numerical method (the way in which the equations are solved).
+	 * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 * \param[in] Iteration - Current iteration.
 	 */
-	void SetSingleGrid_Solver(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****solver_container,
+	void SetSingleGrid_Solver(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****numerics_container,
 							 CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
   
   /*!
@@ -563,12 +563,12 @@ public:
 	 * \brief Do the numerical integration (Galerkin explicit) of the potential equation. 
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solution_container - Container vector with all the solutions.
-	 * \param[in] solver_container - Description of the numerical method (the way in which the equations are solved).
+	 * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void SetPotential_Solver(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****solver_container,
+	void SetPotential_Solver(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****numerics_container,
                            CConfig **config, unsigned short RunTime_EqSystem, unsigned short iMesh, unsigned short iZone);
 };
 

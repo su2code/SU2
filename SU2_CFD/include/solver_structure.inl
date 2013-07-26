@@ -56,17 +56,17 @@ inline void CSolution::GetRestart(CGeometry *geometry, CConfig *config, unsigned
   
 inline void CSolution::SetNoise_Source(CSolution ***flow_solution, CGeometry **wave_geometry, CConfig *wave_config) { }
 
-inline void CSolution::SetAeroacoustic_Coupling(CSolution ***wave_solution, CSolution ***flow_solution, CNumerics *solver, CGeometry **flow_geometry, CConfig *flow_config) { }
+inline void CSolution::SetAeroacoustic_Coupling(CSolution ***wave_solution, CSolution ***flow_solution, CNumerics *numerics, CGeometry **flow_geometry, CConfig *flow_config) { }
 
 inline void CSolution::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement, CConfig *flow_config, CConfig *fea_config, CGeometry **fea_geometry, CSolution ***fea_solution) { }
 
 inline void CSolution::SetCSensitivity(unsigned short val_marker, unsigned short val_vertex, double val_sensitivity) { }
 
-inline void CSolution::Inviscid_Sensitivity(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config) { }
+inline void CSolution::Inviscid_Sensitivity(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config) { }
 
-inline void CSolution::Smooth_Sensitivity(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config) { }
+inline void CSolution::Smooth_Sensitivity(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config) { }
 
-inline void CSolution::Viscous_Sensitivity(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config) { }
+inline void CSolution::Viscous_Sensitivity(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config) { }
 
 inline double CSolution::GetPhi_Inf(unsigned short val_dim) { return 0; }
 
@@ -215,24 +215,24 @@ inline double CSolution::GetPressureForce(unsigned short val_marker, unsigned sh
 inline double CSolution::GetYPlus(unsigned short val_marker, unsigned short val_vertex) { return 0; }
 
 inline void CSolution::Viscous_Residual(CGeometry *geometry, CSolution **solution_container, 
-                                        CNumerics *solver, CConfig *config, unsigned short iMesh, unsigned short iRKstep) { }
+                                        CNumerics *numerics, CConfig *config, unsigned short iMesh, unsigned short iRKstep) { }
 
-inline void CSolution::Galerkin_Method(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, 
+inline void CSolution::Galerkin_Method(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, 
 									   CConfig *config, unsigned short iMesh) { }
 									   
 inline void CSolution::AddStiffMatrix(double ** StiffMatrix_Elem, unsigned long Point_0, unsigned long Point_1, unsigned long Point_2, unsigned long Point_3) { }
 									   
 inline void CSolution::Source_Residual(CGeometry *geometry, CSolution **solution_container, 
-												  CNumerics *solver, CNumerics *second_solver, CConfig *config, unsigned short iMesh) { }
+												  CNumerics *numerics, CNumerics *second_numerics, CConfig *config, unsigned short iMesh) { }
 									   
 inline void CSolution::Source_Template(CGeometry *geometry, CSolution **solution_container, 
-												  CNumerics *solver, CConfig *config, unsigned short iMesh) { }
+												  CNumerics *numerics, CConfig *config, unsigned short iMesh) { }
 												  
 inline void CSolution::SourceConserv_Residual(CGeometry *geometry, CSolution **solution_container, 
-											   CNumerics *solver, CConfig *config, unsigned short iMesh) { }
+											   CNumerics *numerics, CConfig *config, unsigned short iMesh) { }
 
 inline void CSolution::Charge_Dist_SourceTerm(CGeometry *geometry, CSolution **solution_container, 
-											  CNumerics *solver, CConfig *config, unsigned short iMesh) { }
+											  CNumerics *numerics, CConfig *config, unsigned short iMesh) { }
 
 inline double CSolution::GetTotal_Sens_Geo() { return 0; }
 
@@ -292,69 +292,69 @@ inline double CSolution::GetDensity_Energy_Inlet(unsigned short val_Fluid) { ret
 
 inline double* CSolution::GetConstants() {return NULL;}
 
-inline void CSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
+inline void CSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config, 
 									 unsigned short val_marker) { }
 									 
-inline void CSolution::BC_Displacement(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
+inline void CSolution::BC_Displacement(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config, 
 									 unsigned short val_marker) { }
 									 									 
-inline void CSolution::BC_FlowLoad(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
+inline void CSolution::BC_FlowLoad(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config, 
 									 unsigned short val_marker) { }
 									 
-inline void CSolution::BC_Load(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
+inline void CSolution::BC_Load(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config, 
 									 unsigned short val_marker) { }
                   
-inline void CSolution::BC_Isothermal_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) { }
+inline void CSolution::BC_Isothermal_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
                   
-inline void CSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) { }
+inline void CSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
 									
 inline void CSolution::BC_Dirichlet(CGeometry *geometry, CSolution **solution_container, CConfig *config, 
 								  unsigned short val_marker) { }
 
-inline void CSolution::BC_Interface_Boundary(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, 
+inline void CSolution::BC_Interface_Boundary(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, 
 									CConfig *config, unsigned short val_marker) { }
                   
-inline void CSolution::BC_NearField_Boundary(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, 
+inline void CSolution::BC_NearField_Boundary(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, 
 									CConfig *config, unsigned short val_marker) { }
 										
-inline void CSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, 
+inline void CSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
 								    CConfig *config, unsigned short val_marker) { }
 
-inline void CSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, 
+inline void CSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
 									CConfig *config, unsigned short val_marker) { }
 									
-inline void CSolution::BC_Custom(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, 
+inline void CSolution::BC_Custom(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, 
 										 CConfig *config, unsigned short val_marker) { }
 										 
-inline void CSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, 
+inline void CSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
 										 CConfig *config, unsigned short val_marker) { }
                      
-inline void CSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, 
+inline void CSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
 										  CConfig *config, unsigned short val_marker) { }
                       
                       
-inline void CSolution::BC_Supersonic_Inlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, 
+inline void CSolution::BC_Supersonic_Inlet(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
 										 CConfig *config, unsigned short val_marker) { }
 
-inline void CSolution::BC_Nacelle_Inflow(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, 
+inline void CSolution::BC_Nacelle_Inflow(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
 										  CConfig *config, unsigned short val_marker) { }
 											
-inline void CSolution::BC_Nacelle_Exhaust(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, 
+inline void CSolution::BC_Nacelle_Exhaust(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
 										  CConfig *config, unsigned short val_marker) { }
 																						
-inline void CSolution::BC_Neumann(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, 
+inline void CSolution::BC_Neumann(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, 
 										  CConfig *config, unsigned short val_marker) { }
 								  
-inline void CSolution::BC_Dielectric(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, 
+inline void CSolution::BC_Dielectric(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, 
 									 CConfig *config, unsigned short val_marker) { }
 									 										  
-inline void CSolution::BC_Electrode(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, 
+inline void CSolution::BC_Electrode(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, 
 									CConfig *config, unsigned short val_marker) { }
 
-inline void CSolution::BC_FWH(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config,
+inline void CSolution::BC_FWH(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config,
               unsigned short val_marker) { }
    
-inline void CSolution::BC_Observer(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, 
+inline void CSolution::BC_Observer(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config, 
             unsigned short val_marker) { }
             
 inline void CSolution::GetNacelle_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh) { }
@@ -365,10 +365,10 @@ inline void CSolution::SetTime_Step(CGeometry *geometry, CSolution **solution_co
 inline void CSolution::Postprocessing(CGeometry *geometry, CSolution **solution_container, CConfig *config, 
 							        unsigned short iMesh) { }								        
 
-inline void CSolution::Centered_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, 
+inline void CSolution::Centered_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, 
 										CConfig *config, unsigned short iMesh, unsigned short iRKStep) { }
 
-inline void CSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, 
+inline void CSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, 
 									   CConfig *config, unsigned short iMesh) { }
 
 inline void CSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) { }

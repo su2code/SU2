@@ -27,7 +27,7 @@ CPotentialIntegration::CPotentialIntegration(CConfig *config) : CIntegration(con
 
 CPotentialIntegration::~CPotentialIntegration(void) { }
 
-void CPotentialIntegration::SetPotential_Solver(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****solver_container,
+void CPotentialIntegration::SetPotential_Solver(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****numerics_container,
                                                 CConfig **config, unsigned short RunTime_EqSystem, unsigned short iMesh, unsigned short iZone) {
 	
 	unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
@@ -36,7 +36,7 @@ void CPotentialIntegration::SetPotential_Solver(CGeometry ***geometry, CSolution
 	solution_container[iZone][iMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iMesh], solution_container[iZone][iMesh], config[iZone], iMesh, 0, RunTime_EqSystem);
 
 	/*--- Space integration ---*/
-	Space_Integration(geometry[iZone][iMesh], solution_container[iZone][iMesh], solver_container[iZone][iMesh][SolContainer_Position], config[iZone], iMesh, 0, RunTime_EqSystem);
+	Space_Integration(geometry[iZone][iMesh], solution_container[iZone][iMesh], numerics_container[iZone][iMesh][SolContainer_Position], config[iZone], iMesh, 0, RunTime_EqSystem);
 
 	/*--- Solve the linear system ---*/
 	Solving_Linear_System(geometry[iZone][iMesh], solution_container[iZone][iMesh][SolContainer_Position], solution_container[iZone][iMesh], config[iZone], iMesh);

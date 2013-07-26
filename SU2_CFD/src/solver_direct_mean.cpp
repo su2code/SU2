@@ -1910,7 +1910,7 @@ void CEulerSolution::SetTime_Step(CGeometry *geometry, CSolution **solution_cont
 
 }
 
-void CEulerSolution::Centered_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, 
+void CEulerSolution::Centered_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, 
 		CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 	unsigned long iEdge, iPoint, jPoint;
 
@@ -1925,46 +1925,46 @@ void CEulerSolution::Centered_Residual(CGeometry *geometry, CSolution **solution
 
 		/*--- Points in edge, set normal vectors, and number of neighbors ---*/
 		iPoint = geometry->edge[iEdge]->GetNode(0); jPoint = geometry->edge[iEdge]->GetNode(1);
-		solver->SetNormal(geometry->edge[iEdge]->GetNormal());
-		solver->SetNeighbor(geometry->node[iPoint]->GetnNeighbor(), geometry->node[jPoint]->GetnNeighbor());
+		numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+		numerics->SetNeighbor(geometry->node[iPoint]->GetnNeighbor(), geometry->node[jPoint]->GetnNeighbor());
 
 		/*--- Set conservative variables w/o reconstruction ---*/
-		solver->SetConservative(node[iPoint]->GetSolution(), node[jPoint]->GetSolution());
+		numerics->SetConservative(node[iPoint]->GetSolution(), node[jPoint]->GetSolution());
 
 		/*--- Set some precomputed flow cuantities ---*/
 		if (incompressible) {
-			solver->SetDensityInc(node[iPoint]->GetDensityInc(), node[jPoint]->GetDensityInc());
-			solver->SetBetaInc2(node[iPoint]->GetBetaInc2(), node[jPoint]->GetBetaInc2());
-			solver->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[jPoint]->GetCoord());
+			numerics->SetDensityInc(node[iPoint]->GetDensityInc(), node[jPoint]->GetDensityInc());
+			numerics->SetBetaInc2(node[iPoint]->GetBetaInc2(), node[jPoint]->GetBetaInc2());
+			numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[jPoint]->GetCoord());
 		}
 		else {
-			solver->SetPressure(node[iPoint]->GetPressure(incompressible), node[jPoint]->GetPressure(incompressible));
-			solver->SetSoundSpeed(node[iPoint]->GetSoundSpeed(), node[jPoint]->GetSoundSpeed());
-			solver->SetEnthalpy(node[iPoint]->GetEnthalpy(), node[jPoint]->GetEnthalpy());
+			numerics->SetPressure(node[iPoint]->GetPressure(incompressible), node[jPoint]->GetPressure(incompressible));
+			numerics->SetSoundSpeed(node[iPoint]->GetSoundSpeed(), node[jPoint]->GetSoundSpeed());
+			numerics->SetEnthalpy(node[iPoint]->GetEnthalpy(), node[jPoint]->GetEnthalpy());
 		}
 
 		/*--- Set the largest convective eigenvalue ---*/
-		solver->SetLambda(node[iPoint]->GetLambda(), node[jPoint]->GetLambda());
+		numerics->SetLambda(node[iPoint]->GetLambda(), node[jPoint]->GetLambda());
 
 		/*--- Set undivided laplacian an pressure based sensor ---*/
 		if ((high_order_diss || low_fidelity)) {
-			solver->SetUndivided_Laplacian(node[iPoint]->GetUndivided_Laplacian(), node[jPoint]->GetUndivided_Laplacian());
-			solver->SetSensor(node[iPoint]->GetSensor(), node[jPoint]->GetSensor()); 
+			numerics->SetUndivided_Laplacian(node[iPoint]->GetUndivided_Laplacian(), node[jPoint]->GetUndivided_Laplacian());
+			numerics->SetSensor(node[iPoint]->GetSensor(), node[jPoint]->GetSensor()); 
 		}
 
 		/*--- Rotational Frame ---*/
 		if (rotating_frame) {
-			solver->SetRotVel(geometry->node[iPoint]->GetRotVel(), geometry->node[jPoint]->GetRotVel());
-			solver->SetRotFlux(geometry->edge[iEdge]->GetRotFlux());
+			numerics->SetRotVel(geometry->node[iPoint]->GetRotVel(), geometry->node[jPoint]->GetRotVel());
+			numerics->SetRotFlux(geometry->edge[iEdge]->GetRotFlux());
 		}
 
 		/*--- Grid Movement ---*/
 		if (grid_movement) {
-			solver->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[jPoint]->GetGridVel());
+			numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[jPoint]->GetGridVel());
 		}
 
 		/*--- Compute residuals, and jacobians ---*/
-		solver->SetResidual(Res_Conv, Res_Visc, Jacobian_i, Jacobian_j, config);
+		numerics->SetResidual(Res_Conv, Res_Visc, Jacobian_i, Jacobian_j, config);
 
 		/*--- Update convective and artificial dissipation residuals ---*/
 		LinSysRes.AddBlock(iPoint, Res_Conv);
@@ -1982,7 +1982,7 @@ void CEulerSolution::Centered_Residual(CGeometry *geometry, CSolution **solution
 	}
 }
 
-void CEulerSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+void CEulerSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
 		CConfig *config, unsigned short iMesh) {
 	double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, 
 	*U_i, *U_j, sqvel, *Limiter_i = NULL, *Limiter_j = NULL;
@@ -2004,30 +2004,30 @@ void CEulerSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_c
 
 		/*--- Points in edge and normal vectors ---*/
 		iPoint = geometry->edge[iEdge]->GetNode(0); jPoint = geometry->edge[iEdge]->GetNode(1);
-		solver->SetNormal(geometry->edge[iEdge]->GetNormal());
+		numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
 
     /*--- Set a copy of the conservative variables w/o reconstruction, just in case the
      2nd order reconstruction fails ---*/
     U_i = node[iPoint]->GetSolution(); U_j = node[jPoint]->GetSolution();
-    solver->SetConservative_ZeroOrder(U_i, U_j);
+    numerics->SetConservative_ZeroOrder(U_i, U_j);
 
 		/*--- Roe Turkel preconditioning ---*/
 		if (roe_turkel) {
 			sqvel = 0.0;
 			for (iDim = 0; iDim < nDim; iDim ++)
 				sqvel += config->GetVelocity_FreeStream()[iDim]*config->GetVelocity_FreeStream()[iDim];
-			solver->SetVelocity2_Inf(sqvel);
+			numerics->SetVelocity2_Inf(sqvel);
 		}
 
 		/*--- Rotating frame ---*/
 		if (rotating_frame) {
-			solver->SetRotVel(geometry->node[iPoint]->GetRotVel(), geometry->node[jPoint]->GetRotVel());
-			solver->SetRotFlux(geometry->edge[iEdge]->GetRotFlux());
+			numerics->SetRotVel(geometry->node[iPoint]->GetRotVel(), geometry->node[jPoint]->GetRotVel());
+			numerics->SetRotFlux(geometry->edge[iEdge]->GetRotFlux());
 		}
 
 		/*--- Grid Movement ---*/
 		if (grid_movement)
-			solver->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[jPoint]->GetGridVel());
+			numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[jPoint]->GetGridVel());
 
 		/*--- High order reconstruction using MUSCL strategy ---*/
 		if (high_order_diss) {
@@ -2057,12 +2057,12 @@ void CEulerSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_c
 			}
 
 			/*--- Set conservative variables with reconstruction ---*/
-			solver->SetConservative(Solution_i, Solution_j);
+			numerics->SetConservative(Solution_i, Solution_j);
       
 		} else {
       
       /*--- Set conservative variables without reconstruction ---*/
-      solver->SetConservative(U_i, U_j);
+      numerics->SetConservative(U_i, U_j);
       
     }
 
@@ -2083,7 +2083,7 @@ void CEulerSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_c
 //			}
 //
 //			/*--- Set conservative variables with reconstruction only for the pressure ---*/
-//			solver->SetConservative(Solution_i, Solution_j);
+//			numerics->SetConservative(Solution_i, Solution_j);
 //
 //			if (high_order_diss) {
 //
@@ -2120,20 +2120,20 @@ void CEulerSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_c
 //				}
 //
 //				/*--- Set conservative variables with reconstruction ---*/
-//				solver->SetConservative(Solution_i, Solution_j);
+//				numerics->SetConservative(Solution_i, Solution_j);
 //			}
 //
 //		}
 
 		/*--- Set the density and beta w/o reconstruction (incompressible flows) ---*/
 		if (incompressible) {
-			solver->SetBetaInc2(node[iPoint]->GetBetaInc2(), node[jPoint]->GetBetaInc2());
-			solver->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[jPoint]->GetCoord());
-			solver->SetDensityInc(node[iPoint]->GetDensityInc(), node[jPoint]->GetDensityInc());
+			numerics->SetBetaInc2(node[iPoint]->GetBetaInc2(), node[jPoint]->GetBetaInc2());
+			numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[jPoint]->GetCoord());
+			numerics->SetDensityInc(node[iPoint]->GetDensityInc(), node[jPoint]->GetDensityInc());
 		}
 
 		/*--- Compute the residual ---*/
-		solver->SetResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
+		numerics->SetResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
 
 		/*--- Update residual value ---*/
 		LinSysRes.AddBlock(iPoint, Res_Conv);
@@ -2149,15 +2149,15 @@ void CEulerSolution::Upwind_Residual(CGeometry *geometry, CSolution **solution_c
 
 		/*--- Roe Turkel preconditioning, set the value of beta ---*/
 		if (roe_turkel) {
-			node[iPoint]->SetPreconditioner_Beta(solver->GetPrecond_Beta());
-			node[jPoint]->SetPreconditioner_Beta(solver->GetPrecond_Beta());
+			node[iPoint]->SetPreconditioner_Beta(numerics->GetPrecond_Beta());
+			node[jPoint]->SetPreconditioner_Beta(numerics->GetPrecond_Beta());
 		}
 
 	}
 
 }
 
-void CEulerSolution::Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CNumerics *second_solver,
+void CEulerSolution::Source_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CNumerics *second_numerics,
 		CConfig *config, unsigned short iMesh) {
   
 	unsigned short iVar;
@@ -2179,16 +2179,16 @@ void CEulerSolution::Source_Residual(CGeometry *geometry, CSolution **solution_c
 		for (iPoint = 0; iPoint < nPointDomain; iPoint++) { 
 
 			/*--- Set solution  ---*/
-			solver->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
+			numerics->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
 
 			/*--- Set control volume ---*/
-			solver->SetVolume(geometry->node[iPoint]->GetVolume());
+			numerics->SetVolume(geometry->node[iPoint]->GetVolume());
 
 			/*--- Set rotational velocity ---*/
-			solver->SetRotVel(geometry->node[iPoint]->GetRotVel(), geometry->node[iPoint]->GetRotVel());
+			numerics->SetRotVel(geometry->node[iPoint]->GetRotVel(), geometry->node[iPoint]->GetRotVel());
 
 			/*--- Compute Residual ---*/
-			solver->SetResidual(Residual, Jacobian_i, config);
+			numerics->SetResidual(Residual, Jacobian_i, config);
 
 			/*--- Add Residual ---*/
 			LinSysRes.AddBlock(iPoint, Residual);
@@ -2210,24 +2210,24 @@ void CEulerSolution::Source_Residual(CGeometry *geometry, CSolution **solution_c
 		for (iPoint = 0; iPoint < nPointDomain; iPoint++) { 
 
 			/*--- Set solution  ---*/
-			solver->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
+			numerics->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
 
 			if (incompressible) {
 				/*--- Set incompressible density  ---*/
-				solver->SetDensityInc(node[iPoint]->GetDensityInc(), node[iPoint]->GetDensityInc());
+				numerics->SetDensityInc(node[iPoint]->GetDensityInc(), node[iPoint]->GetDensityInc());
 
 				/*--- Set beta squared  ---*/
-				solver->SetBetaInc2(node[iPoint]->GetBetaInc2(), node[iPoint]->GetBetaInc2());
+				numerics->SetBetaInc2(node[iPoint]->GetBetaInc2(), node[iPoint]->GetBetaInc2());
 			}
 
 			/*--- Set control volume ---*/
-			solver->SetVolume(geometry->node[iPoint]->GetVolume());
+			numerics->SetVolume(geometry->node[iPoint]->GetVolume());
 
 			/*--- Set y coordinate ---*/
-			solver->SetCoord(geometry->node[iPoint]->GetCoord(),geometry->node[iPoint]->GetCoord());
+			numerics->SetCoord(geometry->node[iPoint]->GetCoord(),geometry->node[iPoint]->GetCoord());
 
 			/*--- Compute Source term Residual ---*/
-			solver->SetResidual(Residual, Jacobian_i, config);
+			numerics->SetResidual(Residual, Jacobian_i, config);
 
 			/*--- Add Residual ---*/
 			LinSysRes.AddBlock(iPoint, Residual);
@@ -2244,16 +2244,16 @@ void CEulerSolution::Source_Residual(CGeometry *geometry, CSolution **solution_c
 		for (iPoint = 0; iPoint < nPointDomain; iPoint++) { 
 
 			/*--- Set solution  ---*/
-			solver->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
+			numerics->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
       
 			/*--- Set incompressible density  ---*/
-      if (incompressible) solver->SetDensityInc(node[iPoint]->GetDensityInc(), node[iPoint]->GetDensityInc());
+      if (incompressible) numerics->SetDensityInc(node[iPoint]->GetDensityInc(), node[iPoint]->GetDensityInc());
 
 			/*--- Set control volume ---*/
-			solver->SetVolume(geometry->node[iPoint]->GetVolume());
+			numerics->SetVolume(geometry->node[iPoint]->GetVolume());
 
 			/*--- Compute Source term Residual ---*/
-			solver->SetResidual(Residual, config);
+			numerics->SetResidual(Residual, config);
       
 			/*--- Add Residual ---*/
 			LinSysRes.AddBlock(iPoint, Residual);
@@ -2293,19 +2293,19 @@ void CEulerSolution::Source_Residual(CGeometry *geometry, CSolution **solution_c
 		for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
 			/*--- Set the coordinate ---*/
-			solver->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
+			numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
 
 			/*--- Set solution  ---*/
-			solver->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
+			numerics->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
 
 			/*--- Set control volume ---*/
-			solver->SetVolume(geometry->node[iPoint]->GetVolume());
+			numerics->SetVolume(geometry->node[iPoint]->GetVolume());
 
 			/*--- Compute Residual ---*/
-			solver->SetResidual(Residual, Jacobian_i, config);
+			numerics->SetResidual(Residual, Jacobian_i, config);
 
 			LinSysRes.SubtractBlock(iPoint, Residual);
-			if (nDim ==3) node[iPoint]->SetMagneticField(solver->GetMagneticField());
+			if (nDim ==3) node[iPoint]->SetMagneticField(numerics->GetMagneticField());
 			if (implicit)
 				Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
 
@@ -2333,41 +2333,41 @@ void CEulerSolution::Source_Residual(CGeometry *geometry, CSolution **solution_c
 					jPoint = Plane_points[iPlane][iVertex-1];
 
 					/*--- Set solution  ---*/
-					solver->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
+					numerics->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
 
 					/*--- Set control volume ---*/
-					solver->SetVolume(geometry->node[iPoint]->GetVolume());
+					numerics->SetVolume(geometry->node[iPoint]->GetVolume());
 
 					/*--- Set the coordinate ---*/
-					solver->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[jPoint]->GetCoord());
+					numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[jPoint]->GetCoord());
 
 					/*--- Set electrical conductivity  ---*/
-					solver->SetElec_Cond();
+					numerics->SetElec_Cond();
 
 					/*--- Sum over points to get the integral  ---*/
-					integral +=solver->GetElec_CondIntegral();
+					integral +=numerics->GetElec_CondIntegral();
 				}
 
 				/*--- Set the integral  ---*/
-				solver->SetElec_CondIntegralsqr(integral*integral);
+				numerics->SetElec_CondIntegralsqr(integral*integral);
 
 				for (unsigned short iVertex = 0; iVertex < Xcoord_plane[iPlane].size(); iVertex++) {
 					iPoint = Plane_points[iPlane][iVertex];
 
 					/*--- Set solution  ---*/
-					solver->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
+					numerics->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
 
 					/*--- Set control volume ---*/
-					solver->SetVolume(geometry->node[iPoint]->GetVolume());
+					numerics->SetVolume(geometry->node[iPoint]->GetVolume());
 
 					/*--- Set the coordinate ---*/
-					solver->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
+					numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
 
 					/*--- Set electrical conductivity  ---*/
-					solver->SetElec_Cond();
+					numerics->SetElec_Cond();
 
 					/*--- Compute Residual ---*/
-					solver->SetResidual(Residual, Jacobian_i, config);
+					numerics->SetResidual(Residual, Jacobian_i, config);
 					//					for (iVar = 0; iVar < nVar; iVar++)
 					//						cout << Residual[iVar] << ", ";
 					//					cout << endl;
@@ -2379,7 +2379,7 @@ void CEulerSolution::Source_Residual(CGeometry *geometry, CSolution **solution_c
 	}
 }
 
-void CEulerSolution::Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+void CEulerSolution::Source_Template(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
 		CConfig *config, unsigned short iMesh) {
 
 	/* This method should be used to call any new source terms for a particular problem*/
@@ -3665,7 +3665,7 @@ void CEulerSolution::GetNacelle_Properties(CGeometry *geometry, CConfig *config,
 }
 
 void CEulerSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_container,
-		CNumerics *solver, CConfig *config, unsigned short val_marker) {
+		CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 	unsigned short iDim, iVar, jVar, jDim;
 	unsigned long iPoint, iVertex;
 	double Pressure, *Normal = NULL, *GridVel = NULL, Area, UnitaryNormal[3], Rot_Flux,
@@ -3767,7 +3767,7 @@ void CEulerSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution_con
 }
 
 void CEulerSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_container,
-                                  CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
+                                  CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned short iVar, iDim, nPrimVar;
 	unsigned long iVertex, iPoint, Point_Normal;
 	double Pressure, Density, Height, *Coord;
@@ -3803,7 +3803,7 @@ void CEulerSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_cont
 			/*--- Normal vector for this vertex (negate for outward convention) ---*/
 			geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
 			for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-			conv_solver->SetNormal(Normal);
+			conv_numerics->SetNormal(Normal);
             
 			/*--- Retrieve solution at the farfield boundary node ---*/
 			for (iVar = 0; iVar < nVar; iVar++) U_domain[iVar] = node[iPoint]->GetSolution(iVar);
@@ -3842,25 +3842,25 @@ void CEulerSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_cont
 			}
             
 			/*--- Set various quantities in the solver class ---*/
-			conv_solver->SetConservative(U_domain, U_infty);
+			conv_numerics->SetConservative(U_domain, U_infty);
             
 			if (incompressible) {
-				conv_solver->SetDensityInc(node[iPoint]->GetDensityInc(), node[iPoint]->GetDensityInc());
-				conv_solver->SetBetaInc2(node[iPoint]->GetBetaInc2(), node[iPoint]->GetBetaInc2());
-				conv_solver->SetCoord(Coord, Coord);
+				conv_numerics->SetDensityInc(node[iPoint]->GetDensityInc(), node[iPoint]->GetDensityInc());
+				conv_numerics->SetBetaInc2(node[iPoint]->GetBetaInc2(), node[iPoint]->GetBetaInc2());
+				conv_numerics->SetCoord(Coord, Coord);
 			}
             
 			if (rotating_frame) {
-				conv_solver->SetRotVel(geometry->node[iPoint]->GetRotVel(), geometry->node[iPoint]->GetRotVel());
-				conv_solver->SetRotFlux(-geometry->vertex[val_marker][iVertex]->GetRotFlux());
+				conv_numerics->SetRotVel(geometry->node[iPoint]->GetRotVel(), geometry->node[iPoint]->GetRotVel());
+				conv_numerics->SetRotFlux(-geometry->vertex[val_marker][iVertex]->GetRotFlux());
 			}
             
 			if (grid_movement) {
-				conv_solver->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+				conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
 			}
             
 			/*--- Compute the convective residual residual using an upwind scheme ---*/
-			conv_solver->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+			conv_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
 			LinSysRes.AddBlock(iPoint, Residual);
             
 			/*--- Jacobian contribution for implicit integration ---*/
@@ -3869,31 +3869,31 @@ void CEulerSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_cont
             
 			/*--- Roe Turkel preconditioning, set the value of beta ---*/
 			if ((config->GetKind_Upwind() == ROE_TURKEL_2ND) || (config->GetKind_Upwind() == ROE_TURKEL_1ST)) {
-				node[iPoint]->SetPreconditioner_Beta(conv_solver->GetPrecond_Beta());
+				node[iPoint]->SetPreconditioner_Beta(conv_numerics->GetPrecond_Beta());
 			}
             
 			/*--- Viscous contribution ---*/
 			if (viscous) {
                 
 				/*--- Set the normal vector and the coordinates ---*/
-				visc_solver->SetNormal(Normal);
-				visc_solver->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+				visc_numerics->SetNormal(Normal);
+				visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
                 
 				/*--- Primitive variables, and gradient ---*/
-				visc_solver->SetPrimitive(V_domain, V_infty);
-				visc_solver->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+				visc_numerics->SetPrimitive(V_domain, V_infty);
+				visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
                 
 				/*--- Laminar and eddy viscosity ---*/
-				if (incompressible) visc_solver->SetLaminarViscosity(node[iPoint]->GetLaminarViscosityInc(), node[iPoint]->GetLaminarViscosityInc());
-				else visc_solver->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(), node[iPoint]->GetLaminarViscosity());
-				visc_solver->SetEddyViscosity(node[iPoint]->GetEddyViscosity(), node[iPoint]->GetEddyViscosity());
+				if (incompressible) visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosityInc(), node[iPoint]->GetLaminarViscosityInc());
+				else visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(), node[iPoint]->GetLaminarViscosity());
+				visc_numerics->SetEddyViscosity(node[iPoint]->GetEddyViscosity(), node[iPoint]->GetEddyViscosity());
                 
 				/*--- Turbulent kinetic energy ---*/
 				if (config->GetKind_Turb_Model() == SST)
-					visc_solver->SetTurbKineticEnergy(solution_container[TURB_SOL]->node[iPoint]->GetSolution(0), solution_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+					visc_numerics->SetTurbKineticEnergy(solution_container[TURB_SOL]->node[iPoint]->GetSolution(0), solution_container[TURB_SOL]->node[iPoint]->GetSolution(0));
                 
 				/*--- Compute and update residual ---*/
-				visc_solver->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+				visc_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
 				LinSysRes.SubtractBlock(iPoint, Residual);
                 
 				/*--- Jacobian contribution for implicit integration ---*/
@@ -3915,7 +3915,7 @@ void CEulerSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_cont
 }
 
 void CEulerSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_container,
-                              CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
+                              CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned short iVar, iDim, nPrimVar;
 	unsigned long iVertex, iPoint, Point_Normal;
 	double P_Total, T_Total, Velocity[3], Velocity2, H_Total, Temperature, Riemann,
@@ -3954,7 +3954,7 @@ void CEulerSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_containe
 			/*--- Normal vector for this vertex (negate for outward convention) ---*/
 			geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
 			for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-			conv_solver->SetNormal(Normal);
+			conv_numerics->SetNormal(Normal);
             
 			Area = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
@@ -4150,22 +4150,22 @@ void CEulerSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_containe
 			}
             
 			/*--- Set various quantities in the solver class ---*/
-			conv_solver->SetConservative(U_domain, U_inlet);
+			conv_numerics->SetConservative(U_domain, U_inlet);
             
 			if (incompressible) {
-				conv_solver->SetDensityInc(node[iPoint]->GetDensityInc(), Density_Inlet);
-				conv_solver->SetBetaInc2(node[iPoint]->GetBetaInc2(), node[iPoint]->GetBetaInc2());
-				conv_solver->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
+				conv_numerics->SetDensityInc(node[iPoint]->GetDensityInc(), Density_Inlet);
+				conv_numerics->SetBetaInc2(node[iPoint]->GetBetaInc2(), node[iPoint]->GetBetaInc2());
+				conv_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
 			}
 			if (rotating_frame) {
-				conv_solver->SetRotVel(geometry->node[iPoint]->GetRotVel(), geometry->node[iPoint]->GetRotVel());
-				conv_solver->SetRotFlux(-geometry->vertex[val_marker][iVertex]->GetRotFlux());
+				conv_numerics->SetRotVel(geometry->node[iPoint]->GetRotVel(), geometry->node[iPoint]->GetRotVel());
+				conv_numerics->SetRotFlux(-geometry->vertex[val_marker][iVertex]->GetRotFlux());
 			}
 			if (grid_movement)
-				conv_solver->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+				conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
             
 			/*--- Compute the residual using an upwind scheme ---*/
-			conv_solver->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+			conv_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
 			LinSysRes.AddBlock(iPoint, Residual);
             
 			/*--- Jacobian contribution for implicit integration ---*/
@@ -4174,31 +4174,31 @@ void CEulerSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_containe
             
 			/*--- Roe Turkel preconditioning, set the value of beta ---*/
 			if ((config->GetKind_Upwind() == ROE_TURKEL_2ND) || (config->GetKind_Upwind() == ROE_TURKEL_1ST)) {
-				node[iPoint]->SetPreconditioner_Beta(conv_solver->GetPrecond_Beta());
+				node[iPoint]->SetPreconditioner_Beta(conv_numerics->GetPrecond_Beta());
 			}
             
 			/*--- Viscous contribution ---*/
 			if (viscous) {
                 
 				/*--- Set the normal vector and the coordinates ---*/
-				visc_solver->SetNormal(Normal);
-				visc_solver->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+				visc_numerics->SetNormal(Normal);
+				visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
                 
 				/*--- Primitive variables, and gradient ---*/
-				visc_solver->SetPrimitive(V_domain, V_inlet);
-				visc_solver->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+				visc_numerics->SetPrimitive(V_domain, V_inlet);
+				visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
                 
 				/*--- Laminar and eddy viscosity ---*/
-				if (incompressible) visc_solver->SetLaminarViscosity(node[iPoint]->GetLaminarViscosityInc(), node[iPoint]->GetLaminarViscosityInc());
-				else visc_solver->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(), node[iPoint]->GetLaminarViscosity());
-				visc_solver->SetEddyViscosity(node[iPoint]->GetEddyViscosity(), node[iPoint]->GetEddyViscosity());
+				if (incompressible) visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosityInc(), node[iPoint]->GetLaminarViscosityInc());
+				else visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(), node[iPoint]->GetLaminarViscosity());
+				visc_numerics->SetEddyViscosity(node[iPoint]->GetEddyViscosity(), node[iPoint]->GetEddyViscosity());
                 
 				/*--- Turbulent kinetic energy ---*/
 				if (config->GetKind_Turb_Model() == SST)
-					visc_solver->SetTurbKineticEnergy(solution_container[TURB_SOL]->node[iPoint]->GetSolution(0), solution_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+					visc_numerics->SetTurbKineticEnergy(solution_container[TURB_SOL]->node[iPoint]->GetSolution(0), solution_container[TURB_SOL]->node[iPoint]->GetSolution(0));
                 
 				/*--- Compute and update residual ---*/
-				visc_solver->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+				visc_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
 				LinSysRes.SubtractBlock(iPoint, Residual);
                 
 				/*--- Jacobian contribution for implicit integration ---*/
@@ -4220,7 +4220,7 @@ void CEulerSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_containe
 }
 
 void CEulerSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_container,
-                               CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
+                               CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned short iVar, iDim, nPrimVar;
 	unsigned long iVertex, iPoint, Point_Normal;
 	double LevelSet, Density_Outlet, Pressure, P_Exit, Velocity[3],
@@ -4262,7 +4262,7 @@ void CEulerSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_contain
 			/*--- Normal vector for this vertex (negate for outward convention) ---*/
 			geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
 			for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-			conv_solver->SetNormal(Normal);
+			conv_numerics->SetNormal(Normal);
             
 			Area = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
@@ -4388,22 +4388,22 @@ void CEulerSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_contain
 			}
             
 			/*--- Set various quantities in the solver class ---*/
-			conv_solver->SetConservative(U_domain, U_outlet);
+			conv_numerics->SetConservative(U_domain, U_outlet);
             
 			if (incompressible) {
-				conv_solver->SetDensityInc(node[iPoint]->GetDensityInc(), Density_Outlet);
-				conv_solver->SetBetaInc2(node[iPoint]->GetBetaInc2(), node[iPoint]->GetBetaInc2());
-				conv_solver->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
+				conv_numerics->SetDensityInc(node[iPoint]->GetDensityInc(), Density_Outlet);
+				conv_numerics->SetBetaInc2(node[iPoint]->GetBetaInc2(), node[iPoint]->GetBetaInc2());
+				conv_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
 			}
 			if (rotating_frame) {
-				conv_solver->SetRotVel(geometry->node[iPoint]->GetRotVel(), geometry->node[iPoint]->GetRotVel());
-				conv_solver->SetRotFlux(-geometry->vertex[val_marker][iVertex]->GetRotFlux());
+				conv_numerics->SetRotVel(geometry->node[iPoint]->GetRotVel(), geometry->node[iPoint]->GetRotVel());
+				conv_numerics->SetRotFlux(-geometry->vertex[val_marker][iVertex]->GetRotFlux());
 			}
 			if (grid_movement)
-				conv_solver->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+				conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
             
 			/*--- Compute the residual using an upwind scheme ---*/
-			conv_solver->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+			conv_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
 			LinSysRes.AddBlock(iPoint, Residual);
             
 			/*--- Jacobian contribution for implicit integration ---*/
@@ -4412,31 +4412,31 @@ void CEulerSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_contain
             
 			/*--- Roe Turkel preconditioning, set the value of beta ---*/
 			if ((config->GetKind_Upwind() == ROE_TURKEL_2ND) || (config->GetKind_Upwind() == ROE_TURKEL_1ST)) {
-				node[iPoint]->SetPreconditioner_Beta(conv_solver->GetPrecond_Beta());
+				node[iPoint]->SetPreconditioner_Beta(conv_numerics->GetPrecond_Beta());
 			}
             
 			/*--- Viscous contribution ---*/
 			if (viscous) {
                 
 				/*--- Set the normal vector and the coordinates ---*/
-				visc_solver->SetNormal(Normal);
-				visc_solver->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+				visc_numerics->SetNormal(Normal);
+				visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
                 
 				/*--- Primitive variables, and gradient ---*/
-				visc_solver->SetPrimitive(V_domain, V_outlet);
-				visc_solver->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+				visc_numerics->SetPrimitive(V_domain, V_outlet);
+				visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
                 
 				/*--- Laminar and eddy viscosity ---*/
-				if (incompressible) visc_solver->SetLaminarViscosity(node[iPoint]->GetLaminarViscosityInc(), node[iPoint]->GetLaminarViscosityInc());
-				else visc_solver->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(), node[iPoint]->GetLaminarViscosity());
-				visc_solver->SetEddyViscosity(node[iPoint]->GetEddyViscosity(), node[iPoint]->GetEddyViscosity());
+				if (incompressible) visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosityInc(), node[iPoint]->GetLaminarViscosityInc());
+				else visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(), node[iPoint]->GetLaminarViscosity());
+				visc_numerics->SetEddyViscosity(node[iPoint]->GetEddyViscosity(), node[iPoint]->GetEddyViscosity());
                 
 				/*--- Turbulent kinetic energy ---*/
 				if (config->GetKind_Turb_Model() == SST)
-					visc_solver->SetTurbKineticEnergy(solution_container[TURB_SOL]->node[iPoint]->GetSolution(0), solution_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+					visc_numerics->SetTurbKineticEnergy(solution_container[TURB_SOL]->node[iPoint]->GetSolution(0), solution_container[TURB_SOL]->node[iPoint]->GetSolution(0));
                 
 				/*--- Compute and update residual ---*/
-				visc_solver->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+				visc_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
 				LinSysRes.SubtractBlock(iPoint, Residual);
                 
 				/*--- Jacobian contribution for implicit integration ---*/
@@ -4458,7 +4458,7 @@ void CEulerSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_contain
 }
 
 void CEulerSolution::BC_Supersonic_Inlet(CGeometry *geometry, CSolution **solution_container,
-                                         CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
+                                         CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned short iDim, iVar, nPrimVar;
 	unsigned long iVertex, iPoint, Point_Normal;
 	double Density, Pressure, Temperature, Energy, *Velocity, Velocity2;
@@ -4541,27 +4541,27 @@ void CEulerSolution::BC_Supersonic_Inlet(CGeometry *geometry, CSolution **soluti
 				UnitaryNormal[iDim] = Normal[iDim]/Area;
             
 			/*--- Set various quantities in the solver class ---*/
-			conv_solver->SetNormal(Normal);
-			conv_solver->SetConservative(U_domain, U_inlet);
+			conv_numerics->SetNormal(Normal);
+			conv_numerics->SetConservative(U_domain, U_inlet);
 			if (incompressible) {
-				conv_solver->SetDensityInc(node[iPoint]->GetDensityInc(),
+				conv_numerics->SetDensityInc(node[iPoint]->GetDensityInc(),
                                            node[iPoint]->GetDensityInc());
-				conv_solver->SetBetaInc2(node[iPoint]->GetBetaInc2(),
+				conv_numerics->SetBetaInc2(node[iPoint]->GetBetaInc2(),
                                          node[iPoint]->GetBetaInc2());
-				conv_solver->SetCoord(geometry->node[iPoint]->GetCoord(),
+				conv_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
                                       geometry->node[iPoint]->GetCoord());
 			}
 			if (rotating_frame) {
-				conv_solver->SetRotVel(geometry->node[iPoint]->GetRotVel(),
+				conv_numerics->SetRotVel(geometry->node[iPoint]->GetRotVel(),
                                        geometry->node[iPoint]->GetRotVel());
-				conv_solver->SetRotFlux(-geometry->vertex[val_marker][iVertex]->GetRotFlux());
+				conv_numerics->SetRotFlux(-geometry->vertex[val_marker][iVertex]->GetRotFlux());
 			}
 			if (grid_movement)
-				conv_solver->SetGridVel(geometry->node[iPoint]->GetGridVel(),
+				conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
                                         geometry->node[iPoint]->GetGridVel());
             
 			/*--- Compute the residual using an upwind scheme ---*/
-			conv_solver->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+			conv_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
 			LinSysRes.AddBlock(iPoint, Residual);
             
 			/*--- Jacobian contribution for implicit integration ---*/
@@ -4572,23 +4572,23 @@ void CEulerSolution::BC_Supersonic_Inlet(CGeometry *geometry, CSolution **soluti
 			if (viscous) {
                 
 				/*--- Set the normal vector and the coordinates ---*/
-				visc_solver->SetNormal(Normal);
-				visc_solver->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+				visc_numerics->SetNormal(Normal);
+				visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
                 
 				/*--- Primitive variables, and gradient ---*/
-				visc_solver->SetPrimitive(V_domain, V_inlet);
-				visc_solver->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+				visc_numerics->SetPrimitive(V_domain, V_inlet);
+				visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
                 
 				/*--- Laminar and eddy viscosity ---*/
-				visc_solver->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(), node[iPoint]->GetLaminarViscosity());
-				visc_solver->SetEddyViscosity(node[iPoint]->GetEddyViscosity(), node[iPoint]->GetEddyViscosity());
+				visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(), node[iPoint]->GetLaminarViscosity());
+				visc_numerics->SetEddyViscosity(node[iPoint]->GetEddyViscosity(), node[iPoint]->GetEddyViscosity());
                 
 				/*--- Turbulent kinetic energy ---*/
 				if (config->GetKind_Turb_Model() == SST)
-					visc_solver->SetTurbKineticEnergy(solution_container[TURB_SOL]->node[iPoint]->GetSolution(0), solution_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+					visc_numerics->SetTurbKineticEnergy(solution_container[TURB_SOL]->node[iPoint]->GetSolution(0), solution_container[TURB_SOL]->node[iPoint]->GetSolution(0));
                 
 				/*--- Compute and update residual ---*/
-				visc_solver->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+				visc_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
 				LinSysRes.SubtractBlock(iPoint, Residual);
                 
 				/*--- Jacobian contribution for implicit integration ---*/
@@ -4608,7 +4608,7 @@ void CEulerSolution::BC_Supersonic_Inlet(CGeometry *geometry, CSolution **soluti
     
 }
 
-void CEulerSolution::BC_Nacelle_Inflow(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
+void CEulerSolution::BC_Nacelle_Inflow(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned short iVar, iDim, nPrimVar;
 	unsigned long iVertex, iPoint, Point_Normal;
 	double Pressure, P_Fan, Velocity[3], Velocity2, Entropy, Target_FanFace_Mach = 0.0, Density, Energy,
@@ -4716,11 +4716,11 @@ void CEulerSolution::BC_Nacelle_Inflow(CGeometry *geometry, CSolution **solution
       V_inflow[nDim+2] = Density;
       
 			/*--- Set various quantities in the solver class ---*/
-			conv_solver->SetNormal(Normal);
-			conv_solver->SetConservative(U_domain, U_inflow);
+			conv_numerics->SetNormal(Normal);
+			conv_numerics->SetConservative(U_domain, U_inflow);
       
 			/*--- Compute the residual using an upwind scheme ---*/
-			conv_solver->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+			conv_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
 			LinSysRes.AddBlock(iPoint, Residual);
             
 			/*--- Jacobian contribution for implicit integration ---*/
@@ -4731,23 +4731,23 @@ void CEulerSolution::BC_Nacelle_Inflow(CGeometry *geometry, CSolution **solution
 			if (viscous) {
         
 				/*--- Set the normal vector and the coordinates ---*/
-				visc_solver->SetNormal(Normal);
-				visc_solver->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+				visc_numerics->SetNormal(Normal);
+				visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
         
 				/*--- Primitive variables, and gradient ---*/
-				visc_solver->SetPrimitive(V_domain, V_inflow);
-				visc_solver->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+				visc_numerics->SetPrimitive(V_domain, V_inflow);
+				visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
         
 				/*--- Laminar and eddy viscosity ---*/
-				visc_solver->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(), node[iPoint]->GetLaminarViscosity());
-				visc_solver->SetEddyViscosity(node[iPoint]->GetEddyViscosity(), node[iPoint]->GetEddyViscosity());
+				visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(), node[iPoint]->GetLaminarViscosity());
+				visc_numerics->SetEddyViscosity(node[iPoint]->GetEddyViscosity(), node[iPoint]->GetEddyViscosity());
         
 				/*--- Turbulent kinetic energy ---*/
 				if (config->GetKind_Turb_Model() == SST)
-					visc_solver->SetTurbKineticEnergy(solution_container[TURB_SOL]->node[iPoint]->GetSolution(0), solution_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+					visc_numerics->SetTurbKineticEnergy(solution_container[TURB_SOL]->node[iPoint]->GetSolution(0), solution_container[TURB_SOL]->node[iPoint]->GetSolution(0));
         
 				/*--- Compute and update residual ---*/
-				visc_solver->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+				visc_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
 				LinSysRes.SubtractBlock(iPoint, Residual);
                 
 				/*--- Jacobian contribution for implicit integration ---*/
@@ -4767,7 +4767,7 @@ void CEulerSolution::BC_Nacelle_Inflow(CGeometry *geometry, CSolution **solution
   
 }
 
-void CEulerSolution::BC_Nacelle_Exhaust(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
+void CEulerSolution::BC_Nacelle_Exhaust(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned short iVar, iDim, nPrimVar;
 	unsigned long iVertex, iPoint, Point_Normal;
 	double P_Exhaust, T_Exhaust, Velocity[3], Velocity2, H_Exhaust, Temperature, Riemann, Area, UnitaryNormal[3], Pressure, Density, Energy, Mach2, SoundSpeed2, SoundSpeed_Exhaust2, Vel_Mag, alpha, aa, bb, cc, dd, Flow_Dir[3];
@@ -4908,11 +4908,11 @@ void CEulerSolution::BC_Nacelle_Exhaust(CGeometry *geometry, CSolution **solutio
 			V_exhaust[nDim+2] = Density;
       
 			/*--- Set various quantities in the solver class ---*/
-			conv_solver->SetNormal(Normal);
-			conv_solver->SetConservative(U_domain, U_exhaust);
+			conv_numerics->SetNormal(Normal);
+			conv_numerics->SetConservative(U_domain, U_exhaust);
       
 			/*--- Compute the residual using an upwind scheme ---*/
-			conv_solver->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+			conv_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
 			LinSysRes.AddBlock(iPoint, Residual);
       
 			/*--- Jacobian contribution for implicit integration ---*/
@@ -4923,23 +4923,23 @@ void CEulerSolution::BC_Nacelle_Exhaust(CGeometry *geometry, CSolution **solutio
 			if (viscous) {
         
 				/*--- Set the normal vector and the coordinates ---*/
-				visc_solver->SetNormal(Normal);
-				visc_solver->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+				visc_numerics->SetNormal(Normal);
+				visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
         
 				/*--- Primitive variables, and gradient ---*/
-				visc_solver->SetPrimitive(V_domain, V_exhaust);
-				visc_solver->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+				visc_numerics->SetPrimitive(V_domain, V_exhaust);
+				visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
         
 				/*--- Laminar and eddy viscosity ---*/
-				visc_solver->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(), node[iPoint]->GetLaminarViscosity());
-				visc_solver->SetEddyViscosity(node[iPoint]->GetEddyViscosity(), node[iPoint]->GetEddyViscosity());
+				visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(), node[iPoint]->GetLaminarViscosity());
+				visc_numerics->SetEddyViscosity(node[iPoint]->GetEddyViscosity(), node[iPoint]->GetEddyViscosity());
         
 				/*--- Turbulent kinetic energy ---*/
 				if (config->GetKind_Turb_Model() == SST)
-					visc_solver->SetTurbKineticEnergy(solution_container[TURB_SOL]->node[iPoint]->GetSolution(0), solution_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+					visc_numerics->SetTurbKineticEnergy(solution_container[TURB_SOL]->node[iPoint]->GetSolution(0), solution_container[TURB_SOL]->node[iPoint]->GetSolution(0));
         
 				/*--- Compute and update residual ---*/
-				visc_solver->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+				visc_numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
 				LinSysRes.SubtractBlock(iPoint, Residual);
         
 				/*--- Jacobian contribution for implicit integration ---*/
@@ -4959,7 +4959,7 @@ void CEulerSolution::BC_Nacelle_Exhaust(CGeometry *geometry, CSolution **solutio
   
 }
 
-void CEulerSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
+void CEulerSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned long iPoint, iVertex;
 	unsigned short iDim, iVar, jVar;
 	double Pressure, *Normal, Density;
@@ -5030,7 +5030,7 @@ void CEulerSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_cont
 	}
 }
 
-void CEulerSolution::BC_Interface_Boundary(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+void CEulerSolution::BC_Interface_Boundary(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
 		CConfig *config, unsigned short val_marker) {
 	unsigned long iVertex, iPoint, jPoint;
 	unsigned short iVar, iDim;
@@ -5056,16 +5056,16 @@ void CEulerSolution::BC_Interface_Boundary(CGeometry *geometry, CSolution **solu
 				}
 
 				/*--- Set Conservative Variables ---*/
-				solver->SetConservative(Solution_i, Solution_j);
+				numerics->SetConservative(Solution_i, Solution_j);
 
 				/*--- Set the normal vector ---*/
 				geometry->vertex[val_marker][iVertex]->GetNormal(Vector);
 				for (iDim = 0; iDim < nDim; iDim++)
 					Vector[iDim] = -Vector[iDim];
-				solver->SetNormal(Vector);
+				numerics->SetNormal(Vector);
 
 				/*--- Add Residuals and Jacobians ---*/
-				solver->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+				numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
 				LinSysRes.AddBlock(iPoint, Residual);
 				if (implicit) Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
 
@@ -5131,14 +5131,14 @@ void CEulerSolution::BC_Interface_Boundary(CGeometry *geometry, CSolution **solu
 					Solution_j[iVar] = Buffer_Receive_U[iVar];
 				}
 
-				solver->SetConservative(Solution_i, Solution_j);
+				numerics->SetConservative(Solution_i, Solution_j);
 
 				geometry->vertex[val_marker][iVertex]->GetNormal(Vector);
 				for (iDim = 0; iDim < nDim; iDim++)
 					Vector[iDim] = -Vector[iDim];
-				solver->SetNormal(Vector);
+				numerics->SetNormal(Vector);
 
-				solver->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+				numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
 				LinSysRes.AddBlock(iPoint, Residual);
 				if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 			}
@@ -5152,7 +5152,7 @@ void CEulerSolution::BC_Interface_Boundary(CGeometry *geometry, CSolution **solu
 
 }
 
-void CEulerSolution::BC_NearField_Boundary(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+void CEulerSolution::BC_NearField_Boundary(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
 		CConfig *config, unsigned short val_marker) {
 	unsigned long iVertex, iPoint, jPoint;
 	unsigned short iVar, iDim;
@@ -5178,16 +5178,16 @@ void CEulerSolution::BC_NearField_Boundary(CGeometry *geometry, CSolution **solu
 				}
 
 				/*--- Set Conservative Variables ---*/
-				solver->SetConservative(Solution_i, Solution_j);
+				numerics->SetConservative(Solution_i, Solution_j);
 
 				/*--- Set the normal vector ---*/
 				geometry->vertex[val_marker][iVertex]->GetNormal(Vector);
 				for (iDim = 0; iDim < nDim; iDim++)
 					Vector[iDim] = -Vector[iDim];
-				solver->SetNormal(Vector);
+				numerics->SetNormal(Vector);
 
 				/*--- Add Residuals and Jacobians ---*/
-				solver->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+				numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
 				LinSysRes.AddBlock(iPoint, Residual);
 				if (implicit) Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
 			}
@@ -5254,16 +5254,16 @@ void CEulerSolution::BC_NearField_Boundary(CGeometry *geometry, CSolution **solu
 				}
 
 				/*--- Set Conservative Variables ---*/
-				solver->SetConservative(Solution_i, Solution_j);
+				numerics->SetConservative(Solution_i, Solution_j);
 
 				/*--- Set Normal ---*/
 				geometry->vertex[val_marker][iVertex]->GetNormal(Vector);
 				for (iDim = 0; iDim < nDim; iDim++)
 					Vector[iDim] = -Vector[iDim];
-				solver->SetNormal(Vector);
+				numerics->SetNormal(Vector);
 
 				/*--- Add Residuals and Jacobians ---*/
-				solver->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+				numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
 				LinSysRes.AddBlock(iPoint, Residual);
 				if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 			}
@@ -5389,7 +5389,7 @@ void CEulerSolution::BC_Dirichlet(CGeometry *geometry, CSolution **solution_cont
 
 }
 
-void CEulerSolution::BC_Custom(CGeometry *geometry, CSolution **solution_container, CNumerics *solver, CConfig *config, unsigned short val_marker) {
+void CEulerSolution::BC_Custom(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 	unsigned long iVertex, iPoint;
 	unsigned short iVar, iDim;
 	double *U_domain, press, tempe, velo[3], b, rho, L, V, psi, Vpsi, theta, xx, yy;
@@ -5452,11 +5452,11 @@ void CEulerSolution::BC_Custom(CGeometry *geometry, CSolution **solution_contain
 			/*--- Set the normal vector ---*/
 			geometry->vertex[val_marker][iVertex]->GetNormal(Vector);
 			for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = -Vector[iDim];
-			solver->SetNormal(Vector);
+			numerics->SetNormal(Vector);
 
 			/*--- Compute the residual using an upwind scheme ---*/
-			solver->SetConservative(U_domain, Solution);
-			solver->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
+			numerics->SetConservative(U_domain, Solution);
+			numerics->SetResidual(Residual, Jacobian_i, Jacobian_j, config);
 			LinSysRes.AddBlock(iPoint, Residual);
 
 			/*--- In case we are doing a implicit computation ---*/
@@ -6509,7 +6509,7 @@ void CNSSolution::SetTime_Step(CGeometry *geometry, CSolution **solution_contain
 
 }
 
-void CNSSolution::Viscous_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *solver,
+void CNSSolution::Viscous_Residual(CGeometry *geometry, CSolution **solution_container, CNumerics *numerics,
                                    CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 	unsigned long iPoint, jPoint, iEdge;
   
@@ -6521,30 +6521,30 @@ void CNSSolution::Viscous_Residual(CGeometry *geometry, CSolution **solution_con
     /*--- Points, coordinates and normal vector in edge ---*/
     iPoint = geometry->edge[iEdge]->GetNode(0);
     jPoint = geometry->edge[iEdge]->GetNode(1);
-    solver->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[jPoint]->GetCoord());
-    solver->SetNormal(geometry->edge[iEdge]->GetNormal());
+    numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[jPoint]->GetCoord());
+    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
     
     /*--- Primitive variables, and gradient ---*/
-    solver->SetPrimitive(node[iPoint]->GetPrimVar(), node[jPoint]->GetPrimVar());
-    solver->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[jPoint]->GetGradient_Primitive());
+    numerics->SetPrimitive(node[iPoint]->GetPrimVar(), node[jPoint]->GetPrimVar());
+    numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[jPoint]->GetGradient_Primitive());
     
     /*--- Laminar and eddy viscosity ---*/
     if (incompressible) {
-      solver->SetDensityInc(node[iPoint]->GetDensityInc(), node[jPoint]->GetDensityInc());
-      solver->SetLaminarViscosity(node[iPoint]->GetLaminarViscosityInc(), node[jPoint]->GetLaminarViscosityInc());
+      numerics->SetDensityInc(node[iPoint]->GetDensityInc(), node[jPoint]->GetDensityInc());
+      numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosityInc(), node[jPoint]->GetLaminarViscosityInc());
     }
     else
-      solver->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(), node[jPoint]->GetLaminarViscosity());
+      numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(), node[jPoint]->GetLaminarViscosity());
     
-    solver->SetEddyViscosity(node[iPoint]->GetEddyViscosity(), node[jPoint]->GetEddyViscosity());
+    numerics->SetEddyViscosity(node[iPoint]->GetEddyViscosity(), node[jPoint]->GetEddyViscosity());
     
     /*--- Turbulent kinetic energy ---*/
     if (config->GetKind_Turb_Model() == SST)
-      solver->SetTurbKineticEnergy(solution_container[TURB_SOL]->node[iPoint]->GetSolution(0),
+      numerics->SetTurbKineticEnergy(solution_container[TURB_SOL]->node[iPoint]->GetSolution(0),
                                    solution_container[TURB_SOL]->node[jPoint]->GetSolution(0));
     
     /*--- Compute and update residual ---*/
-    solver->SetResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
+    numerics->SetResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
     
     LinSysRes.SubtractBlock(iPoint, Res_Visc);
     LinSysRes.AddBlock(jPoint, Res_Visc);
@@ -6798,7 +6798,7 @@ void CNSSolution::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 	delete [] TauElem;
 }
 
-void CNSSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
+void CNSSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
     
 	/*--- Local variables ---*/
 	unsigned short iDim, iVar;
@@ -6976,7 +6976,7 @@ void CNSSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution_con
 	}
 }
 
-void CNSSolution::BC_Isothermal_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_solver, CNumerics *visc_solver, CConfig *config, unsigned short val_marker) {
+void CNSSolution::BC_Isothermal_Wall(CGeometry *geometry, CSolution **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
     
 	unsigned long iVertex, iPoint, Point_Normal, total_index;
 	unsigned short iVar, jVar, iDim;

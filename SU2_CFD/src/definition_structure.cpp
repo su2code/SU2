@@ -560,7 +560,7 @@ void Integration_Definition(CIntegration **integration_container, CGeometry **ge
 }
 
 
-void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_container, CGeometry **geometry, 
+void Solver_Definition(CNumerics ****numerics_container, CSolution ***solution_container, CGeometry **geometry, 
 		CConfig *config, unsigned short iZone) {
 
 	unsigned short iMGlevel, iSol, nDim, nVar_Template = 0, nVar_Flow = 0, nVar_Trans = 0, nVar_Adj_Flow = 0, nVar_Plasma = 0,
@@ -695,11 +695,11 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 	/*--- Number of dimensions ---*/
 	nDim = geometry[MESH_0]->GetnDim();
 
-	/*--- Definition of the Class for the numerical method: solver_container[MESH_LEVEL][EQUATION][EQ_TERM] ---*/
+	/*--- Definition of the Class for the numerical method: numerics_container[MESH_LEVEL][EQUATION][EQ_TERM] ---*/
 	for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-		solver_container[iMGlevel] = new CNumerics** [MAX_SOLS];
+		numerics_container[iMGlevel] = new CNumerics** [MAX_SOLS];
 		for (iSol = 0; iSol < MAX_SOLS; iSol++)
-			solver_container[iMGlevel][iSol] = new CNumerics* [MAX_TERMS];
+			numerics_container[iMGlevel][iSol] = new CNumerics* [MAX_TERMS];
 	}
 
 	/*--- Solver definition for the template problem ---*/
@@ -709,7 +709,7 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 		switch (config->GetKind_ConvNumScheme_Template()) {
 		case SPACE_CENTERED : case SPACE_UPWIND :
 			for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-				solver_container[iMGlevel][TEMPLATE_SOL][CONV_TERM] = new CConvective_Template(nDim, nVar_Template, config);
+				numerics_container[iMGlevel][TEMPLATE_SOL][CONV_TERM] = new CConvective_Template(nDim, nVar_Template, config);
 			break;
 		default : cout << "Convective scheme not implemented (template_solver)." << endl; cin.get(); break;
 		}
@@ -718,7 +718,7 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 		switch (config->GetKind_ViscNumScheme_Template()) {
 		case AVG_GRAD : case AVG_GRAD_CORRECTED : case GALERKIN :
 			for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-				solver_container[iMGlevel][TEMPLATE_SOL][VISC_TERM] = new CViscous_Template(nDim, nVar_Template, config);
+				numerics_container[iMGlevel][TEMPLATE_SOL][VISC_TERM] = new CViscous_Template(nDim, nVar_Template, config);
 			break;
 		default : cout << "Viscous scheme not implemented." << endl; cin.get(); break;
 		}
@@ -727,14 +727,14 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 		switch (config->GetKind_SourNumScheme_Template()) {
 		case PIECEWISE_CONSTANT :
 			for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-				solver_container[iMGlevel][TEMPLATE_SOL][SOURCE_FIRST_TERM] = new CSource_Template(nDim, nVar_Template, config);
+				numerics_container[iMGlevel][TEMPLATE_SOL][SOURCE_FIRST_TERM] = new CSource_Template(nDim, nVar_Template, config);
 			break;
 		default : cout << "Source term not implemented." << endl; cin.get(); break;
 		}
 
 		/*--- Definition of the boundary condition method ---*/
 		for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-			solver_container[iMGlevel][TEMPLATE_SOL][CONV_BOUND_TERM] = new CConvective_Template(nDim, nVar_Template, config);	
+			numerics_container[iMGlevel][TEMPLATE_SOL][CONV_BOUND_TERM] = new CConvective_Template(nDim, nVar_Template, config);	
 		}
 
 	}
@@ -753,40 +753,40 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 				/*--- Incompressible flow, use artificial compressibility method ---*/
 				switch (config->GetKind_Centered_Flow()) {
 				case NO_CENTERED : cout << "No centered scheme." << endl; break;
-				case LAX : solver_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentLaxArtComp_Flow(nDim, nVar_Flow, config); break;
-				case JST : solver_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentJSTArtComp_Flow(nDim, nVar_Flow, config); break;
+				case LAX : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentLaxArtComp_Flow(nDim, nVar_Flow, config); break;
+				case JST : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentJSTArtComp_Flow(nDim, nVar_Flow, config); break;
 				default : cout << "Centered scheme not implemented." << endl; cin.get(); break;
 				}
 				for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-					solver_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CCentLaxArtComp_Flow(nDim,nVar_Flow, config);
+					numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CCentLaxArtComp_Flow(nDim,nVar_Flow, config);
 
 				/*--- Definition of the boundary condition method ---*/
 				for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-					solver_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoeArtComp_Flow(nDim, nVar_Flow, config);
+					numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoeArtComp_Flow(nDim, nVar_Flow, config);
 
 			}
 			else {
 				/*--- Compressible flow ---*/
 				switch (config->GetKind_Centered_Flow()) {
 				case NO_CENTERED : cout << "No centered scheme." << endl; break;
-				case LAX : solver_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentLax_Flow(nDim,nVar_Flow, config); break;
-				case JST : solver_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentJST_Flow(nDim,nVar_Flow, config); break;
+				case LAX : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentLax_Flow(nDim,nVar_Flow, config); break;
+				case JST : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentJST_Flow(nDim,nVar_Flow, config); break;
 				default : cout << "Centered scheme not implemented." << endl; cin.get(); break;
 				}
 
         if (!config->GetLowFidelitySim()) {
           for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-            solver_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CCentLax_Flow(nDim, nVar_Flow, config);
+            numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CCentLax_Flow(nDim, nVar_Flow, config);
         }
         else {
-          solver_container[MESH_1][FLOW_SOL][CONV_TERM] = new CCentJST_Flow(nDim, nVar_Flow, config);
+          numerics_container[MESH_1][FLOW_SOL][CONV_TERM] = new CCentJST_Flow(nDim, nVar_Flow, config);
           for (iMGlevel = 2; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-            solver_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CCentLax_Flow(nDim, nVar_Flow, config);
+            numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CCentLax_Flow(nDim, nVar_Flow, config);
         }
 
 				/*--- Definition of the boundary condition method ---*/
 				for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-					solver_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_Flow(nDim, nVar_Flow, config);
+					numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_Flow(nDim, nVar_Flow, config);
 
 			}
 			break;
@@ -797,8 +797,8 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 				case NO_UPWIND : cout << "No upwind scheme." << endl; break;
 				case ROE_1ST : case ROE_2ND :
 					for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-						solver_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwRoeArtComp_Flow(nDim, nVar_Flow, config);
-						solver_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoeArtComp_Flow(nDim, nVar_Flow, config);
+						numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwRoeArtComp_Flow(nDim, nVar_Flow, config);
+						numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoeArtComp_Flow(nDim, nVar_Flow, config);
 					}
 					break;
 				default : cout << "Upwind scheme not implemented." << endl; cin.get(); break;
@@ -811,29 +811,29 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 				case NO_UPWIND : cout << "No upwind scheme." << endl; break;
 				case ROE_1ST : case ROE_2ND :
 					for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-						solver_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwRoe_Flow(nDim, nVar_Flow, config);
-						solver_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_Flow(nDim, nVar_Flow, config);
+						numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwRoe_Flow(nDim, nVar_Flow, config);
+						numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_Flow(nDim, nVar_Flow, config);
 					}
 					break;
 
 				case AUSM_1ST : case AUSM_2ND :
 					for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-						solver_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwAUSM_Flow(nDim, nVar_Flow, config);
-						solver_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwAUSM_Flow(nDim, nVar_Flow, config);
+						numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwAUSM_Flow(nDim, nVar_Flow, config);
+						numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwAUSM_Flow(nDim, nVar_Flow, config);
 					}
 					break;
 
 				case ROE_TURKEL_1ST : case ROE_TURKEL_2ND :
 					for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-						solver_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwRoe_Turkel_Flow(nDim, nVar_Flow, config);
-						solver_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_Turkel_Flow(nDim, nVar_Flow, config);
+						numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwRoe_Turkel_Flow(nDim, nVar_Flow, config);
+						numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_Turkel_Flow(nDim, nVar_Flow, config);
 					}
 					break;
 
 				case HLLC_1ST : case HLLC_2ND :
 					for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-						solver_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwHLLC_Flow(nDim, nVar_Flow, config);
-						solver_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwHLLC_Flow(nDim, nVar_Flow, config);
+						numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwHLLC_Flow(nDim, nVar_Flow, config);
+						numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwHLLC_Flow(nDim, nVar_Flow, config);
 					}
 					break;
 
@@ -856,38 +856,38 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 			if (incompressible) {
 				/*--- Incompressible flow, use artificial compressibility method ---*/
 				for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-					solver_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGradArtComp_Flow(nDim, nVar_Flow, config);
-          solver_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGradArtComp_Flow(nDim, nVar_Flow, config);
+					numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGradArtComp_Flow(nDim, nVar_Flow, config);
+          numerics_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGradArtComp_Flow(nDim, nVar_Flow, config);
         }
 			}
 			else {
 				/*--- Compressible flow ---*/
 				for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-					solver_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
-          solver_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
+					numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
+          numerics_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
         }
 			}
 			break;
 		case AVG_GRAD_CORRECTED :
 			if (incompressible) {
 				/*--- Incompressible flow, use artificial compressibility method ---*/
-				solver_container[MESH_0][FLOW_SOL][VISC_TERM] = new CAvgGradCorrectedArtComp_Flow(nDim, nVar_Flow, config);
+				numerics_container[MESH_0][FLOW_SOL][VISC_TERM] = new CAvgGradCorrectedArtComp_Flow(nDim, nVar_Flow, config);
 				for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-					solver_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGradArtComp_Flow(nDim, nVar_Flow, config);
+					numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGradArtComp_Flow(nDim, nVar_Flow, config);
         
         /*--- Definition of the boundary condition method ---*/
 				for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-					solver_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGradArtComp_Flow(nDim, nVar_Flow, config);
+					numerics_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGradArtComp_Flow(nDim, nVar_Flow, config);
 			}
 			else {
 				/*--- Compressible flow ---*/
-				solver_container[MESH_0][FLOW_SOL][VISC_TERM] = new CAvgGradCorrected_Flow(nDim, nVar_Flow, config);
+				numerics_container[MESH_0][FLOW_SOL][VISC_TERM] = new CAvgGradCorrected_Flow(nDim, nVar_Flow, config);
 				for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-					solver_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
+					numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
         
         /*--- Definition of the boundary condition method ---*/
 				for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-					solver_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
+					numerics_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
 			}
 			break;
 		case GALERKIN :
@@ -907,19 +907,19 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 			for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
 
 				if (config->GetRotating_Frame() == YES)
-					solver_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceRotatingFrame_Flow(nDim, nVar_Flow, config);
+					numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceRotatingFrame_Flow(nDim, nVar_Flow, config);
 				else if (config->GetAxisymmetric() == YES)
-					solver_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceAxisymmetric_Flow(nDim,nVar_Flow, config);
+					numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceAxisymmetric_Flow(nDim,nVar_Flow, config);
 				else if (config->GetGravityForce() == YES)
-					solver_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_Gravity(nDim, nVar_Flow, config);
+					numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_Gravity(nDim, nVar_Flow, config);
 				else if (config->GetMagnetic_Force() == YES)
-					solver_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSource_Magnet(nDim, nVar_Flow, config);
+					numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSource_Magnet(nDim, nVar_Flow, config);
 				else if (config->GetJouleHeating() == YES)
-					solver_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSource_JouleHeating(nDim, nVar_Flow, config);
+					numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSource_JouleHeating(nDim, nVar_Flow, config);
 				else
-					solver_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Flow, config);
+					numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Flow, config);
 
-				solver_container[iMGlevel][FLOW_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Flow, config);
+				numerics_container[iMGlevel][FLOW_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Flow, config);
 			}
 
 			break;
@@ -939,8 +939,8 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 			break;
 		case SPACE_UPWIND :
 			for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++){
-				if (spalart_allmaras) solver_container[iMGlevel][TURB_SOL][CONV_TERM] = new CUpwSca_TurbSA(nDim, nVar_Turb, config);
-				else if (menter_sst) solver_container[iMGlevel][TURB_SOL][CONV_TERM] = new CUpwSca_TurbSST(nDim, nVar_Turb, config);
+				if (spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][CONV_TERM] = new CUpwSca_TurbSA(nDim, nVar_Turb, config);
+				else if (menter_sst) numerics_container[iMGlevel][TURB_SOL][CONV_TERM] = new CUpwSca_TurbSST(nDim, nVar_Turb, config);
 			}
 			break;
 		default :
@@ -954,14 +954,14 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 			break;
 		case AVG_GRAD :
 			for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++){
-				if (spalart_allmaras) solver_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGrad_TurbSA(nDim, nVar_Turb, config);
-				else if (menter_sst) solver_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGrad_TurbSST(nDim, nVar_Turb, config);
+				if (spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGrad_TurbSA(nDim, nVar_Turb, config);
+				else if (menter_sst) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGrad_TurbSST(nDim, nVar_Turb, config);
 			}
 			break;
 		case AVG_GRAD_CORRECTED :
 			for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++){
-				if (spalart_allmaras) solver_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGradCorrected_TurbSA(nDim, nVar_Turb, config);
-				else if (menter_sst) solver_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGradCorrected_TurbSST(nDim, nVar_Turb, constants, config);
+				if (spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGradCorrected_TurbSA(nDim, nVar_Turb, config);
+				else if (menter_sst) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGradCorrected_TurbSST(nDim, nVar_Turb, constants, config);
 			}
 			break;
 		case GALERKIN :
@@ -978,9 +978,9 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 			break;
 		case PIECEWISE_CONSTANT :
 			for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-				if (spalart_allmaras) solver_container[iMGlevel][TURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TurbSA(nDim, nVar_Turb, config);
-				else if (menter_sst) solver_container[iMGlevel][TURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TurbSST(nDim, nVar_Turb, constants, config);
-				solver_container[iMGlevel][TURB_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Turb, config);
+				if (spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TurbSA(nDim, nVar_Turb, config);
+				else if (menter_sst) numerics_container[iMGlevel][TURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TurbSST(nDim, nVar_Turb, constants, config);
+				numerics_container[iMGlevel][TURB_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Turb, config);
 			}
 			break;
 		default :
@@ -991,12 +991,12 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 		/*--- Definition of the boundary condition method ---*/
 		for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++){
 			if (spalart_allmaras) {
-        solver_container[iMGlevel][TURB_SOL][CONV_BOUND_TERM] = new CUpwSca_TurbSA(nDim, nVar_Turb, config);
-        solver_container[iMGlevel][TURB_SOL][VISC_BOUND_TERM] = new CAvgGrad_TurbSA(nDim, nVar_Turb, config);
+        numerics_container[iMGlevel][TURB_SOL][CONV_BOUND_TERM] = new CUpwSca_TurbSA(nDim, nVar_Turb, config);
+        numerics_container[iMGlevel][TURB_SOL][VISC_BOUND_TERM] = new CAvgGrad_TurbSA(nDim, nVar_Turb, config);
       }
 			else if (menter_sst) {
-        solver_container[iMGlevel][TURB_SOL][CONV_BOUND_TERM] = new CUpwSca_TurbSST(nDim, nVar_Turb, config);
-        solver_container[iMGlevel][TURB_SOL][VISC_BOUND_TERM] = new CAvgGrad_TurbSST(nDim, nVar_Turb, config);
+        numerics_container[iMGlevel][TURB_SOL][CONV_BOUND_TERM] = new CUpwSca_TurbSST(nDim, nVar_Turb, config);
+        numerics_container[iMGlevel][TURB_SOL][VISC_BOUND_TERM] = new CAvgGrad_TurbSST(nDim, nVar_Turb, config);
       }
 		}
 	}
@@ -1010,7 +1010,7 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 			break;
 		case SPACE_UPWIND :
 			for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++){
-				solver_container[iMGlevel][TRANS_SOL][CONV_TERM] = new CUpwSca_TransLM(nDim, nVar_Trans, config);
+				numerics_container[iMGlevel][TRANS_SOL][CONV_TERM] = new CUpwSca_TransLM(nDim, nVar_Trans, config);
 			}
 			break;
 		default :
@@ -1024,12 +1024,12 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 			break;
 		case AVG_GRAD :
 			for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++){
-				solver_container[iMGlevel][TRANS_SOL][VISC_TERM] = new CAvgGrad_TransLM(nDim, nVar_Trans, config);
+				numerics_container[iMGlevel][TRANS_SOL][VISC_TERM] = new CAvgGrad_TransLM(nDim, nVar_Trans, config);
 			}
 			break;
 		case AVG_GRAD_CORRECTED :
 			for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++){
-				solver_container[iMGlevel][TRANS_SOL][VISC_TERM] = new CAvgGradCorrected_TransLM(nDim, nVar_Trans, config);
+				numerics_container[iMGlevel][TRANS_SOL][VISC_TERM] = new CAvgGradCorrected_TransLM(nDim, nVar_Trans, config);
 			}
 			break;
 		case GALERKIN :
@@ -1046,8 +1046,8 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 			break;
 		case PIECEWISE_CONSTANT :
 			for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-				solver_container[iMGlevel][TRANS_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TransLM(nDim, nVar_Trans, config);
-				solver_container[iMGlevel][TRANS_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Trans, config);
+				numerics_container[iMGlevel][TRANS_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TransLM(nDim, nVar_Trans, config);
+				numerics_container[iMGlevel][TRANS_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Trans, config);
 			}
 			break;
 		default :
@@ -1057,7 +1057,7 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 
 		/*--- Definition of the boundary condition method ---*/
 		for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++){
-			solver_container[iMGlevel][TRANS_SOL][CONV_BOUND_TERM] = new CUpwLin_TransLM(nDim, nVar_Trans, config);
+			numerics_container[iMGlevel][TRANS_SOL][CONV_BOUND_TERM] = new CUpwLin_TransLM(nDim, nVar_Trans, config);
 		}
 	}
 
@@ -1076,12 +1076,12 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 				for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
 					switch (config->GetKind_GasModel()) {
 					case ARGON:
-						solver_container[iMGlevel][PLASMA_SOL][CONV_TERM]  = new CUpwRoe_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-						solver_container[iMGlevel][PLASMA_SOL][CONV_BOUND_TERM] = new CUpwRoe_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
+						numerics_container[iMGlevel][PLASMA_SOL][CONV_TERM]  = new CUpwRoe_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
+						numerics_container[iMGlevel][PLASMA_SOL][CONV_BOUND_TERM] = new CUpwRoe_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
 						break;
 					case O2: case N2:	case AIR5:	case AIR7: case ARGON_SID:
-						solver_container[iMGlevel][PLASMA_SOL][CONV_TERM]  = new CUpwRoe_PlasmaDiatomic(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-						solver_container[iMGlevel][PLASMA_SOL][CONV_BOUND_TERM] = new CUpwRoe_PlasmaDiatomic(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
+						numerics_container[iMGlevel][PLASMA_SOL][CONV_TERM]  = new CUpwRoe_PlasmaDiatomic(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
+						numerics_container[iMGlevel][PLASMA_SOL][CONV_BOUND_TERM] = new CUpwRoe_PlasmaDiatomic(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
 						break;
 					}
 				}
@@ -1090,8 +1090,8 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 				for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
 					switch (config->GetKind_GasModel()) {
 					case O2 : case N2 : case AIR5 : case AIR7 : case ARGON_SID:
-						solver_container[iMGlevel][PLASMA_SOL][CONV_TERM]  = new CUpwHLLC_PlasmaDiatomic(nDim, nVar_Flow, config);
-						solver_container[iMGlevel][PLASMA_SOL][CONV_BOUND_TERM] = new CUpwHLLC_PlasmaDiatomic(nDim, nVar_Flow, config);
+						numerics_container[iMGlevel][PLASMA_SOL][CONV_TERM]  = new CUpwHLLC_PlasmaDiatomic(nDim, nVar_Flow, config);
+						numerics_container[iMGlevel][PLASMA_SOL][CONV_BOUND_TERM] = new CUpwHLLC_PlasmaDiatomic(nDim, nVar_Flow, config);
 						break;
 					default:
 						cout << "HLLC Upwind scheme not implemented for the selected gas chemistry model..." << endl; cin.get(); break;
@@ -1100,16 +1100,16 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 				break;
 			case ROE_TURKEL_1ST : case ROE_TURKEL_2ND :
 				for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-					solver_container[iMGlevel][PLASMA_SOL][CONV_TERM]  = new CUpwRoe_Turkel_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-					solver_container[iMGlevel][PLASMA_SOL][CONV_BOUND_TERM] = new CUpwRoe_Turkel_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
+					numerics_container[iMGlevel][PLASMA_SOL][CONV_TERM]  = new CUpwRoe_Turkel_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
+					numerics_container[iMGlevel][PLASMA_SOL][CONV_BOUND_TERM] = new CUpwRoe_Turkel_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
 				}
 				break;
 			case SW_1ST : case SW_2ND :
 				for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
 					switch (config->GetKind_GasModel()) {
 					case O2 : case N2 : case AIR5 : case AIR7 : case ARGON_SID:
-						solver_container[iMGlevel][PLASMA_SOL][CONV_TERM]  = new CUpwSW_PlasmaDiatomic(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-						solver_container[iMGlevel][PLASMA_SOL][CONV_BOUND_TERM] = new CUpwSW_PlasmaDiatomic(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
+						numerics_container[iMGlevel][PLASMA_SOL][CONV_TERM]  = new CUpwSW_PlasmaDiatomic(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
+						numerics_container[iMGlevel][PLASMA_SOL][CONV_BOUND_TERM] = new CUpwSW_PlasmaDiatomic(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
 						break;
 					default:
 						cout << "Steger-Warming Upwind scheme not implemented for the selected gas chemistry model..." << endl; cin.get(); break;
@@ -1120,8 +1120,8 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
           for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
             switch (config->GetKind_GasModel()) {
               case O2 : case N2 : case AIR5 : case AIR7 : case ARGON_SID:
-                solver_container[iMGlevel][PLASMA_SOL][CONV_TERM]  = new CUpwMSW_PlasmaDiatomic(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-                solver_container[iMGlevel][PLASMA_SOL][CONV_BOUND_TERM] = new CUpwMSW_PlasmaDiatomic(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
+                numerics_container[iMGlevel][PLASMA_SOL][CONV_TERM]  = new CUpwMSW_PlasmaDiatomic(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
+                numerics_container[iMGlevel][PLASMA_SOL][CONV_BOUND_TERM] = new CUpwMSW_PlasmaDiatomic(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
                 break;
               default:
                 cout << "Modified Steger-Warming Upwind scheme not implemented for the selected gas chemistry model..." << endl; cin.get(); break;
@@ -1138,12 +1138,12 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 					case JST:
 						switch (config->GetKind_GasModel()) {
 						case ARGON:
-							solver_container[iMGlevel][PLASMA_SOL][CONV_TERM] = new CCentJST_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-							solver_container[iMGlevel][PLASMA_SOL][CONV_BOUND_TERM] = new CUpwRoe_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
+							numerics_container[iMGlevel][PLASMA_SOL][CONV_TERM] = new CCentJST_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
+							numerics_container[iMGlevel][PLASMA_SOL][CONV_BOUND_TERM] = new CUpwRoe_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
 							break;
 						case O2: case N2: case AIR5: case AIR7: case ARGON_SID:
-							solver_container[iMGlevel][PLASMA_SOL][CONV_TERM] = new CCentJST_PlasmaDiatomic(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-							solver_container[iMGlevel][PLASMA_SOL][CONV_BOUND_TERM] = new CUpwRoe_PlasmaDiatomic(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
+							numerics_container[iMGlevel][PLASMA_SOL][CONV_TERM] = new CCentJST_PlasmaDiatomic(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
+							numerics_container[iMGlevel][PLASMA_SOL][CONV_BOUND_TERM] = new CUpwRoe_PlasmaDiatomic(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
 							break;
 						default:
 							break;
@@ -1156,8 +1156,8 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 								cout << "Not implemented..." << endl; cin.get();
 								break;
 							case O2: case N2: case AIR5: case AIR7: case ARGON_SID:
-								solver_container[iMGlevel][PLASMA_SOL][CONV_TERM] = new CCentLax_PlasmaDiatomic(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-								solver_container[iMGlevel][PLASMA_SOL][CONV_BOUND_TERM] = new CUpwRoe_PlasmaDiatomic(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
+								numerics_container[iMGlevel][PLASMA_SOL][CONV_TERM] = new CCentLax_PlasmaDiatomic(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
+								numerics_container[iMGlevel][PLASMA_SOL][CONV_BOUND_TERM] = new CUpwRoe_PlasmaDiatomic(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
 								break;
 							default:
 								break;
@@ -1175,14 +1175,14 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 				break;
 			case AVG_GRAD :
           for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-            solver_container[iMGlevel][PLASMA_SOL][VISC_TERM] = new CAvgGrad_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics,config);
-            solver_container[iMGlevel][PLASMA_SOL][VISC_BOUND_TERM] = new CAvgGrad_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics,config);
+            numerics_container[iMGlevel][PLASMA_SOL][VISC_TERM] = new CAvgGrad_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics,config);
+            numerics_container[iMGlevel][PLASMA_SOL][VISC_BOUND_TERM] = new CAvgGrad_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics,config);
           }
 				break;
 			case AVG_GRAD_CORRECTED :
           for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-            solver_container[iMGlevel][PLASMA_SOL][VISC_TERM] = new CAvgGradCorrected_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics,config);
-            solver_container[iMGlevel][PLASMA_SOL][VISC_BOUND_TERM] = new CAvgGrad_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics,config);
+            numerics_container[iMGlevel][PLASMA_SOL][VISC_TERM] = new CAvgGradCorrected_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics,config);
+            numerics_container[iMGlevel][PLASMA_SOL][VISC_BOUND_TERM] = new CAvgGrad_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics,config);
           }
 				break;
 			default :
@@ -1198,24 +1198,24 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 		case PIECEWISE_CONSTANT :
 			for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
 				if (config->GetKind_GasModel() == ARGON)
-					solver_container[iMGlevel][PLASMA_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
+					numerics_container[iMGlevel][PLASMA_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
 				if (config->GetKind_GasModel() == AIR7) {
-					solver_container[iMGlevel][PLASMA_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
+					numerics_container[iMGlevel][PLASMA_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
 				}
 				if (config->GetKind_GasModel() == AIR21)
 					cout << "ERROR: 21 Species air gas chemistry model not implemented!!!" << endl;
 				if (config->GetKind_GasModel() == O2)
-					solver_container[iMGlevel][PLASMA_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
+					numerics_container[iMGlevel][PLASMA_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
 				if (config->GetKind_GasModel() == N2)
-					solver_container[iMGlevel][PLASMA_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
+					numerics_container[iMGlevel][PLASMA_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
 				if (config->GetKind_GasModel() == AIR5) 
-					solver_container[iMGlevel][PLASMA_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
+					numerics_container[iMGlevel][PLASMA_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
 				if (config->GetKind_GasModel() == ARGON_SID)
-					solver_container[iMGlevel][PLASMA_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
+					numerics_container[iMGlevel][PLASMA_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
 
 
 
-				solver_container[iMGlevel][PLASMA_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Plasma, config);
+				numerics_container[iMGlevel][PLASMA_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Plasma, config);
 			}
 			break;
 		default :
@@ -1230,7 +1230,7 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 		/*--- Definition of the viscous scheme for each equation and mesh level ---*/
 		switch (config->GetKind_ViscNumScheme_Elec()) {
 		case GALERKIN :
-			solver_container[MESH_0][ELEC_SOL][VISC_TERM] = new CGalerkin_Flow(nDim, nVar_Elec, config);
+			numerics_container[MESH_0][ELEC_SOL][VISC_TERM] = new CGalerkin_Flow(nDim, nVar_Elec, config);
 			break;
 		default : cout << "Viscous scheme not implemented." << endl; cin.get(); break;
 		}
@@ -1240,8 +1240,8 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 		case NONE :
 			break;
 		case PIECEWISE_CONSTANT :
-			solver_container[MESH_0][ELEC_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_Elec(nDim, nVar_Elec, config);
-			solver_container[MESH_0][ELEC_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Elec, config);
+			numerics_container[MESH_0][ELEC_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_Elec(nDim, nVar_Elec, config);
+			numerics_container[MESH_0][ELEC_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Elec, config);
 			break;
 		default :
 			cout << "Source term not implemented." << endl; cin.get();
@@ -1260,7 +1260,7 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 				switch (config->GetKind_Upwind_LevelSet()) {
           case SCALAR_UPWIND_1ST : case SCALAR_UPWIND_2ND :
             for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-              solver_container[iMGlevel][LEVELSET_SOL][CONV_TERM] = new CUpwLin_LevelSet(nDim, nVar_LevelSet, config);
+              numerics_container[iMGlevel][LEVELSET_SOL][CONV_TERM] = new CUpwLin_LevelSet(nDim, nVar_LevelSet, config);
             }
             break;
           default :
@@ -1273,7 +1273,7 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
     
 		/*--- Definition of the boundary condition method ---*/
 		for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-			solver_container[iMGlevel][LEVELSET_SOL][CONV_BOUND_TERM] = new CUpwLin_LevelSet(nDim, nVar_LevelSet, config);
+			numerics_container[iMGlevel][LEVELSET_SOL][CONV_BOUND_TERM] = new CUpwLin_LevelSet(nDim, nVar_LevelSet, config);
 		}
     
 		/*--- Definition of the source term integration scheme for each equation and mesh level ---*/
@@ -1282,7 +1282,7 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
         break;
       case PIECEWISE_CONSTANT :
         for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-          solver_container[iMGlevel][LEVELSET_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_LevelSet(nDim, nVar_LevelSet, config);
+          numerics_container[iMGlevel][LEVELSET_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_LevelSet(nDim, nVar_LevelSet, config);
         break;
       default :
         cout << "Source term not implemented." << endl; cin.get();
@@ -1303,32 +1303,32 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
           /*--- Incompressible flow, use artificial compressibility method ---*/
           switch (config->GetKind_Centered_AdjFlow()) {
             case NO_CENTERED : cout << "No centered scheme." << endl; break;
-            case LAX : solver_container[MESH_0][ADJFLOW_SOL][CONV_TERM] = new CCentLaxArtComp_AdjFlow(nDim, nVar_Adj_Flow, config); break;
+            case LAX : numerics_container[MESH_0][ADJFLOW_SOL][CONV_TERM] = new CCentLaxArtComp_AdjFlow(nDim, nVar_Adj_Flow, config); break;
             case JST : cout << "Centered scheme not implemented." << endl; cin.get(); break;
             default : cout << "Centered scheme not implemented." << endl; cin.get(); break;
           }
           for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-            solver_container[iMGlevel][ADJFLOW_SOL][CONV_TERM] = new CCentLaxArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
+            numerics_container[iMGlevel][ADJFLOW_SOL][CONV_TERM] = new CCentLaxArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
           
           /*--- Definition of the boundary condition method ---*/
           for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-            solver_container[iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM] = new CUpwRoeArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
+            numerics_container[iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM] = new CUpwRoeArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
           
         }
         else {
           /*--- Compressible flow ---*/
           switch (config->GetKind_Centered_AdjFlow()) {
             case NO_CENTERED : cout << "No centered scheme." << endl; break;
-            case LAX : solver_container[MESH_0][ADJFLOW_SOL][CONV_TERM] = new CCentLax_AdjFlow(nDim, nVar_Adj_Flow, config); break;
-            case JST : solver_container[MESH_0][ADJFLOW_SOL][CONV_TERM] = new CCentJST_AdjFlow(nDim, nVar_Adj_Flow, config); break;
+            case LAX : numerics_container[MESH_0][ADJFLOW_SOL][CONV_TERM] = new CCentLax_AdjFlow(nDim, nVar_Adj_Flow, config); break;
+            case JST : numerics_container[MESH_0][ADJFLOW_SOL][CONV_TERM] = new CCentJST_AdjFlow(nDim, nVar_Adj_Flow, config); break;
             default : cout << "Centered scheme not implemented." << endl; cin.get(); break;
           }
           for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-            solver_container[iMGlevel][ADJFLOW_SOL][CONV_TERM] = new CCentLax_AdjFlow(nDim, nVar_Adj_Flow, config);
+            numerics_container[iMGlevel][ADJFLOW_SOL][CONV_TERM] = new CCentLax_AdjFlow(nDim, nVar_Adj_Flow, config);
           
           /*--- Definition of the boundary condition method ---*/
           for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-            solver_container[iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_AdjFlow(nDim, nVar_Adj_Flow, config);
+            numerics_container[iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_AdjFlow(nDim, nVar_Adj_Flow, config);
         }
         break;
       case SPACE_UPWIND :
@@ -1338,8 +1338,8 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
             case NO_UPWIND : cout << "No upwind scheme." << endl; break;
             case ROE_1ST : case ROE_2ND :
               for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-                solver_container[iMGlevel][ADJFLOW_SOL][CONV_TERM] = new CUpwRoeArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
-                solver_container[iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM] = new CUpwRoeArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
+                numerics_container[iMGlevel][ADJFLOW_SOL][CONV_TERM] = new CUpwRoeArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
+                numerics_container[iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM] = new CUpwRoeArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
               }
               break;
             default : cout << "Upwind scheme not implemented." << endl; cin.get(); break;
@@ -1351,8 +1351,8 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
             case NO_UPWIND : cout << "No upwind scheme." << endl; break;
             case ROE_1ST : case ROE_2ND :
               for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-                  solver_container[iMGlevel][ADJFLOW_SOL][CONV_TERM] = new CUpwRoe_AdjFlow(nDim, nVar_Adj_Flow, config);
-                  solver_container[iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_AdjFlow(nDim, nVar_Adj_Flow, config);
+                  numerics_container[iMGlevel][ADJFLOW_SOL][CONV_TERM] = new CUpwRoe_AdjFlow(nDim, nVar_Adj_Flow, config);
+                  numerics_container[iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_AdjFlow(nDim, nVar_Adj_Flow, config);
               }
               break;
             default : cout << "Upwind scheme not implemented." << endl; cin.get(); break;
@@ -1373,30 +1373,30 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
         if (incompressible) {
           /*--- Incompressible flow, use artificial compressibility method ---*/
           for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-            solver_container[iMGlevel][ADJFLOW_SOL][VISC_TERM] = new CAvgGradArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
+            numerics_container[iMGlevel][ADJFLOW_SOL][VISC_TERM] = new CAvgGradArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
         }
         else {
           /*--- Compressible flow ---*/
           for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-            solver_container[iMGlevel][ADJFLOW_SOL][VISC_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
-            solver_container[iMGlevel][ADJFLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
+            numerics_container[iMGlevel][ADJFLOW_SOL][VISC_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
+            numerics_container[iMGlevel][ADJFLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
           }
         }
         break;
       case AVG_GRAD_CORRECTED :
         if (incompressible) {
           /*--- Incompressible flow, use artificial compressibility method ---*/
-          solver_container[MESH_0][ADJFLOW_SOL][VISC_TERM] = new CAvgGradCorrectedArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
+          numerics_container[MESH_0][ADJFLOW_SOL][VISC_TERM] = new CAvgGradCorrectedArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
           for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-            solver_container[iMGlevel][ADJFLOW_SOL][VISC_TERM] = new CAvgGradArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
+            numerics_container[iMGlevel][ADJFLOW_SOL][VISC_TERM] = new CAvgGradArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
         }
         else {
           /*--- Compressible flow ---*/
-          solver_container[MESH_0][ADJFLOW_SOL][VISC_TERM] = new CAvgGradCorrected_AdjFlow(nDim, nVar_Adj_Flow, config);
-          solver_container[MESH_0][ADJFLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
+          numerics_container[MESH_0][ADJFLOW_SOL][VISC_TERM] = new CAvgGradCorrected_AdjFlow(nDim, nVar_Adj_Flow, config);
+          numerics_container[MESH_0][ADJFLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
           for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-            solver_container[iMGlevel][ADJFLOW_SOL][VISC_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
-            solver_container[iMGlevel][ADJFLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
+            numerics_container[iMGlevel][ADJFLOW_SOL][VISC_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
+            numerics_container[iMGlevel][ADJFLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
           }
           
         }
@@ -1415,25 +1415,25 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
           
           /*--- Note that RANS is incompatible with Axisymmetric or Rotational (Fix it!) ---*/ 
           if ((adj_ns) && (!incompressible)) {
-            solver_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceViscous_AdjFlow(nDim, nVar_Adj_Flow, config);
+            numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceViscous_AdjFlow(nDim, nVar_Adj_Flow, config);
             if (config->GetRotating_Frame() == YES)
-              solver_container[iMGlevel][ADJFLOW_SOL][SOURCE_SECOND_TERM] = new CSourceRotatingFrame_AdjFlow(nDim, nVar_Adj_Flow, config);
+              numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_SECOND_TERM] = new CSourceRotatingFrame_AdjFlow(nDim, nVar_Adj_Flow, config);
             else
-              solver_container[iMGlevel][ADJFLOW_SOL][SOURCE_SECOND_TERM] = new CSourceConservative_AdjFlow(nDim, nVar_Adj_Flow, config);
+              numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_SECOND_TERM] = new CSourceConservative_AdjFlow(nDim, nVar_Adj_Flow, config);
 
           }
           else {
             if (config->GetRotating_Frame() == YES)
-              solver_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceRotatingFrame_AdjFlow(nDim, nVar_Adj_Flow, config);
+              numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceRotatingFrame_AdjFlow(nDim, nVar_Adj_Flow, config);
             else
-              solver_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Adj_Flow, config);
+              numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Adj_Flow, config);
 
             if (config->GetAxisymmetric() == YES)
-              solver_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceAxisymmetric_AdjFlow(nDim, nVar_Adj_Flow, config);
+              numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceAxisymmetric_AdjFlow(nDim, nVar_Adj_Flow, config);
             else
-              solver_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Adj_Flow, config);
+              numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Adj_Flow, config);
             
-            solver_container[iMGlevel][ADJFLOW_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Adj_Flow, config);
+            numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Adj_Flow, config);
           }
         
         }
@@ -1457,22 +1457,22 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 			case NO_UPWIND : cout << "No upwind scheme." << endl; break;
 			case ROE_1ST :
 				for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-					solver_container[iMGlevel][ADJPLASMA_SOL][CONV_TERM] = new CUpwRoe_AdjPlasmaDiatomic(nDim, nVar_Adj_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-					solver_container[iMGlevel][ADJPLASMA_SOL][CONV_BOUND_TERM] = new CUpwRoe_AdjPlasmaDiatomic(nDim, nVar_Adj_Plasma, nSpecies, nDiatomics, nMonatomics, config);
+					numerics_container[iMGlevel][ADJPLASMA_SOL][CONV_TERM] = new CUpwRoe_AdjPlasmaDiatomic(nDim, nVar_Adj_Plasma, nSpecies, nDiatomics, nMonatomics, config);
+					numerics_container[iMGlevel][ADJPLASMA_SOL][CONV_BOUND_TERM] = new CUpwRoe_AdjPlasmaDiatomic(nDim, nVar_Adj_Plasma, nSpecies, nDiatomics, nMonatomics, config);
 				}
 				break;
 			case SW_1ST:
 				for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-					solver_container[iMGlevel][ADJPLASMA_SOL][CONV_TERM] = new CUpwSW_AdjPlasmaDiatomic(nDim, nVar_Adj_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-					solver_container[iMGlevel][ADJPLASMA_SOL][CONV_BOUND_TERM] = new CUpwSW_AdjPlasmaDiatomic(nDim, nVar_Adj_Plasma, nSpecies, nDiatomics, nMonatomics, config);
+					numerics_container[iMGlevel][ADJPLASMA_SOL][CONV_TERM] = new CUpwSW_AdjPlasmaDiatomic(nDim, nVar_Adj_Plasma, nSpecies, nDiatomics, nMonatomics, config);
+					numerics_container[iMGlevel][ADJPLASMA_SOL][CONV_BOUND_TERM] = new CUpwSW_AdjPlasmaDiatomic(nDim, nVar_Adj_Plasma, nSpecies, nDiatomics, nMonatomics, config);
 				}
 				break;
 			}
 			break;
 			case SPACE_CENTERED :
 				for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-					solver_container[iMGlevel][ADJPLASMA_SOL][CONV_TERM] = new CCentLax_AdjPlasmaDiatomic(nDim, nVar_Adj_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-					solver_container[iMGlevel][ADJPLASMA_SOL][CONV_BOUND_TERM] = new CUpwRoe_AdjPlasmaDiatomic(nDim, nVar_Adj_Plasma, nSpecies, nDiatomics, nMonatomics, config);
+					numerics_container[iMGlevel][ADJPLASMA_SOL][CONV_TERM] = new CCentLax_AdjPlasmaDiatomic(nDim, nVar_Adj_Plasma, nSpecies, nDiatomics, nMonatomics, config);
+					numerics_container[iMGlevel][ADJPLASMA_SOL][CONV_BOUND_TERM] = new CUpwRoe_AdjPlasmaDiatomic(nDim, nVar_Adj_Plasma, nSpecies, nDiatomics, nMonatomics, config);
 				}
 				break;
 			default :
@@ -1487,7 +1487,7 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 			break;
 		case PIECEWISE_CONSTANT :
 			for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-				solver_container[iMGlevel][ADJPLASMA_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_Plasma(nDim, nVar_Adj_Plasma, nSpecies, nDiatomics, nMonatomics, config);
+				numerics_container[iMGlevel][ADJPLASMA_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_Plasma(nDim, nVar_Adj_Plasma, nSpecies, nDiatomics, nMonatomics, config);
 			}
 			break;
 		default :
@@ -1505,12 +1505,12 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 			break;
 		case SPACE_CENTERED :
 			switch (config->GetKind_Centered_LinFlow()) {
-			case LAX : solver_container[MESH_0][LINFLOW_SOL][CONV_TERM] = new CCentLax_LinFlow(nDim, nVar_Lin_Flow, config); break;
-			case JST : solver_container[MESH_0][LINFLOW_SOL][CONV_TERM] = new CCentJST_LinFlow(nDim, nVar_Lin_Flow, config); break;
+			case LAX : numerics_container[MESH_0][LINFLOW_SOL][CONV_TERM] = new CCentLax_LinFlow(nDim, nVar_Lin_Flow, config); break;
+			case JST : numerics_container[MESH_0][LINFLOW_SOL][CONV_TERM] = new CCentJST_LinFlow(nDim, nVar_Lin_Flow, config); break;
 			default : cout << "Centered scheme not implemented." << endl; cin.get(); break;
 			}
 			for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-				solver_container[iMGlevel][LINFLOW_SOL][CONV_TERM] = new CCentLax_LinFlow(nDim, nVar_Lin_Flow, config);
+				numerics_container[iMGlevel][LINFLOW_SOL][CONV_TERM] = new CCentLax_LinFlow(nDim, nVar_Lin_Flow, config);
 			break;
 			default :
 				cout << "Convective scheme not implemented (lin_euler)." << endl; cin.get();
@@ -1519,7 +1519,7 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 
 		/*--- Definition of the boundary condition method ---*/
 		for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-			solver_container[iMGlevel][LINFLOW_SOL][CONV_BOUND_TERM] = new CCentLax_LinFlow(nDim, nVar_Lin_Flow, config);
+			numerics_container[iMGlevel][LINFLOW_SOL][CONV_BOUND_TERM] = new CCentLax_LinFlow(nDim, nVar_Lin_Flow, config);
 	}
 
 	/*--- Solver definition for the turbulent adjoint problem ---*/
@@ -1531,7 +1531,7 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 		case SPACE_UPWIND :
 			for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
 				if (spalart_allmaras) {
-						solver_container[iMGlevel][ADJTURB_SOL][CONV_TERM] = new CUpwSca_AdjTurb(nDim, nVar_Adj_Turb, config);
+						numerics_container[iMGlevel][ADJTURB_SOL][CONV_TERM] = new CUpwSca_AdjTurb(nDim, nVar_Adj_Turb, config);
 				}
 				else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; cin.get();}
 			break;
@@ -1554,7 +1554,7 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 		case AVG_GRAD_CORRECTED :
 			for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
 				if (spalart_allmaras){
-					solver_container[iMGlevel][ADJTURB_SOL][VISC_TERM] = new CAvgGradCorrected_AdjTurb(nDim, nVar_Adj_Turb, config);
+					numerics_container[iMGlevel][ADJTURB_SOL][VISC_TERM] = new CAvgGradCorrected_AdjTurb(nDim, nVar_Adj_Turb, config);
 				}
 				else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; cin.get();}
 			break;
@@ -1570,8 +1570,8 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 		case PIECEWISE_CONSTANT :
 			for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
 				if (spalart_allmaras) {
-						solver_container[iMGlevel][ADJTURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_AdjTurb(nDim, nVar_Adj_Turb, config);
-						solver_container[iMGlevel][ADJTURB_SOL][SOURCE_SECOND_TERM] = new CSourceConservative_AdjTurb(nDim, nVar_Adj_Turb, config);
+						numerics_container[iMGlevel][ADJTURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_AdjTurb(nDim, nVar_Adj_Turb, config);
+						numerics_container[iMGlevel][ADJTURB_SOL][SOURCE_SECOND_TERM] = new CSourceConservative_AdjTurb(nDim, nVar_Adj_Turb, config);
 				}
 				else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; cin.get();}
 			}
@@ -1583,7 +1583,7 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 
 		/*--- Definition of the boundary condition method ---*/
 		for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-			if (spalart_allmaras) solver_container[iMGlevel][ADJTURB_SOL][CONV_BOUND_TERM] = new CUpwLin_AdjTurb(nDim, nVar_Adj_Turb, config);
+			if (spalart_allmaras) numerics_container[iMGlevel][ADJTURB_SOL][CONV_BOUND_TERM] = new CUpwLin_AdjTurb(nDim, nVar_Adj_Turb, config);
 			else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; cin.get();}
 		}
 
@@ -1606,8 +1606,8 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 				case NO_UPWIND : cout << "No upwind scheme." << endl; cin.get(); break;
 				case SCALAR_UPWIND_1ST : case SCALAR_UPWIND_2ND :
 					for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-						solver_container[iMGlevel][ADJLEVELSET_SOL][CONV_TERM] = new CUpwLin_AdjLevelSet(nDim, nVar_Adj_LevelSet, config);
-						solver_container[iMGlevel][ADJLEVELSET_SOL][CONV_BOUND_TERM] = new CUpwLin_AdjLevelSet(nDim, nVar_Adj_LevelSet, config);
+						numerics_container[iMGlevel][ADJLEVELSET_SOL][CONV_TERM] = new CUpwLin_AdjLevelSet(nDim, nVar_Adj_LevelSet, config);
+						numerics_container[iMGlevel][ADJLEVELSET_SOL][CONV_BOUND_TERM] = new CUpwLin_AdjLevelSet(nDim, nVar_Adj_LevelSet, config);
 					}
 					break;
 				default : cout << "Upwind scheme not implemented." << endl; cin.get(); break;
@@ -1622,7 +1622,7 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 			break;
 		case PIECEWISE_CONSTANT :
 			for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-				solver_container[iMGlevel][ADJLEVELSET_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_AdjLevelSet(nDim, nVar_Turb, config);
+				numerics_container[iMGlevel][ADJLEVELSET_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_AdjLevelSet(nDim, nVar_Turb, config);
 			break;
 		default :
 			cout << "Source term not implemented." << endl; cin.get();
@@ -1644,7 +1644,7 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 			cout << "Viscous scheme not implemented." << endl; cin.get();
 			break;
 		case GALERKIN :
-			solver_container[MESH_0][WAVE_SOL][VISC_TERM] = new CGalerkin_Flow(nDim, nVar_Wave, config);
+			numerics_container[MESH_0][WAVE_SOL][VISC_TERM] = new CGalerkin_Flow(nDim, nVar_Wave, config);
 			break;
 		default :
 			cout << "Viscous scheme not implemented." << endl; cin.get();
@@ -1674,7 +1674,7 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 			cout << "Viscous scheme not implemented." << endl; cin.get();
 			break;
 		case GALERKIN :
-			solver_container[MESH_0][FEA_SOL][VISC_TERM] = new CGalerkin_FEA(nDim, nVar_Wave, config);
+			numerics_container[MESH_0][FEA_SOL][VISC_TERM] = new CGalerkin_FEA(nDim, nVar_Wave, config);
 			break;
 		default :
 			cout << "Viscous scheme not implemented." << endl; cin.get();

@@ -33,14 +33,14 @@ inline bool CIntegration::GetConvergence_OneShot(void) { return Convergence_OneS
 
 inline void CIntegration::SetConvergence(bool value) { Convergence = value; }
 
-inline void CIntegration::SetMultiGrid_Solver(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****solver_container, 
+inline void CIntegration::SetMultiGrid_Solver(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****numerics_container, 
 											  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) { }
 	
-inline void CIntegration::Multigrid_Iteration(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****solver_container,
+inline void CIntegration::Multigrid_Iteration(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****numerics_container,
 							   CConfig **config, unsigned short iMesh, unsigned short mu, unsigned short RunTime_EqSystem,
 							   unsigned long Iteration, unsigned short iZone) { }
 										
-inline void CIntegration::NonDimensional_Parameters(CGeometry **geometry, CSolution ***solution_container, CNumerics ****solver_container, 
+inline void CIntegration::NonDimensional_Parameters(CGeometry **geometry, CSolution ***solution_container, CNumerics ****numerics_container, 
 																											CConfig *config, unsigned short FinestMesh, unsigned short RunTime_EqSystem, unsigned long Iteration, 
 																											double *monitor) { }
 	
@@ -62,10 +62,10 @@ inline void CIntegration::SetResidual_Term(CGeometry *geometry, CSolution *flow)
 inline void CIntegration::SetForcing_Term(CSolution *sol_fine, CSolution *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, 
 										  CConfig *config) { }
 
-inline void CIntegration::SetSingleGrid_Solver(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****solver_container, 
+inline void CIntegration::SetSingleGrid_Solver(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****numerics_container, 
 											  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) { }
 
-inline void CIntegration::SetPotential_Solver(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****solver_container, 
+inline void CIntegration::SetPotential_Solver(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****numerics_container, 
                                               CConfig **config, unsigned short RunTime_EqSystem, unsigned short iMesh, unsigned short iZone) { }
                                               
 inline void CIntegration::Smooth_Solution(unsigned short RunTime_EqSystem, CSolution **solution, CGeometry *geometry, unsigned short val_nSmooth, double val_smooth_coeff, CConfig *config) { }
