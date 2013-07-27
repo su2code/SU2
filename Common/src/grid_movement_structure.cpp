@@ -792,7 +792,7 @@ void CVolumetricMovement::SetDomainDisplacements(CGeometry *geometry, CConfig *c
 		for (iDim = 0; iDim < nDim; iDim++) {
 			if ((Coord[iDim] < MinCoordValues[iDim]) || (Coord[iDim] > MaxCoordValues[iDim])) {
 				total_index = iPoint*nDim + iDim;
-				LinSysRes[total_index]  = 0.0;
+				LinSysRes[total_index] = 0.0;
 				LinSysSol[total_index] = 0.0;
 				StiffMatrix.DeleteValsRowi(total_index);
 			}
@@ -858,9 +858,16 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     if (config->GetHold_GridFixed())
       SetDomainDisplacements(geometry, config);
     
+    /*--- Check the MPI in the boundaries to be sure that the 
+     residual an solution have the same values in receptor and donor. ---*/
+    StiffMatrix.SendReceive_Solution(LinSysSol, geometry, config);
+    StiffMatrix.SendReceive_Solution(LinSysRes, geometry, config);
+    
+    /*--- Definition of the preconditioner and the matrix vector multiplication ---*/
     CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
     CPreconditioner* precond = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
     
+    /*--- Linear solver class ---*/
     CSysSolve system;
     
     if (rank == MASTER_NODE) cout << endl;
@@ -3523,7 +3530,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 	ifstream mesh_file;
 	double coord[3];
 	unsigned short degree[3], iFFDBox, iCornerPoints, iControlPoints, iMarker, iDegree, jDegree, kDegree, iChar, LevelFFDBox, nParentFFDBox, iParentFFDBox, nChildFFDBox, iChildFFDBox, nMarker;
-	unsigned long iSurfacePoints, iPoint, jPoint, iVertex, nVertex, nPoint, iElem = 0, nElem;
+	unsigned long iSurfacePoints, iPoint, jPoint, iVertex, nVertex, nPoint, iElem = 0, nElem, my_nSurfPoints, nSurfPoints;
 
   int rank = MASTER_NODE;
 
@@ -3704,22 +3711,9 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 				
 				getline (mesh_file,text_line);
 				text_line.erase (0,19); nSurfacePoints[iFFDBox] = atoi(text_line.c_str());
-				
-				unsigned long my_nSurfPoints = nSurfacePoints[iFFDBox];
-				unsigned long nSurfPoints = 0;
-				
-#ifndef NO_MPI
-        if (config->GetKind_SU2() != SU2_DDC)
-          MPI::COMM_WORLD.Allreduce(&my_nSurfPoints, &nSurfPoints, 1, MPI::UNSIGNED_LONG, MPI::SUM);
-        else
-          nSurfPoints = my_nSurfPoints;
-#else
-				nSurfPoints = my_nSurfPoints;
-#endif
-				
-				if (rank == MASTER_NODE) cout << "Surface points: " << nSurfPoints <<"."<<endl;
         
 				/*--- The the surface points parametric coordinates ---*/
+        my_nSurfPoints = 0;
 				for (iSurfacePoints = 0; iSurfacePoints < nSurfacePoints[iFFDBox]; iSurfacePoints++) {
 					getline(mesh_file,text_line); istringstream FFDBox_line(text_line);
 					FFDBox_line >> iTag; FFDBox_line >> iPoint;
@@ -3735,8 +3729,12 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
                 FFDBox[iFFDBox]->Set_PointIndex(iPoint);
                 FFDBox[iFFDBox]->Set_ParametricCoord(coord);
                 FFDBox[iFFDBox]->Set_CartesianCoord(geometry->node[iPoint]->GetCoord());
+                my_nSurfPoints++;
               }
             }
+            /*--- It is possible to remove some points in the FFD that are
+             not associated with surface vertices, this is the case of send receive
+             points that are on the surface, but the surface is not in the domain ---*/
 					}
           else {  // Without vertices information (partitioning).
             FFDBox[iFFDBox]->Set_MarkerIndex(iMarker);
@@ -3744,6 +3742,19 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
             FFDBox[iFFDBox]->Set_ParametricCoord(coord);
           }
 				}
+        
+        nSurfacePoints[iFFDBox] = my_nSurfPoints;
+        nSurfPoints = 0;
+#ifndef NO_MPI
+        if (config->GetKind_SU2() != SU2_DDC)
+          MPI::COMM_WORLD.Allreduce(&my_nSurfPoints, &nSurfPoints, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+        else
+          nSurfPoints = my_nSurfPoints;
+#else
+				nSurfPoints = my_nSurfPoints;
+#endif
+				
+				if (rank == MASTER_NODE) cout << "Surface points: " << nSurfPoints <<"."<<endl;
         
 			}
 			
