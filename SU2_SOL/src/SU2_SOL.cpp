@@ -2,7 +2,7 @@
  * \file SU2_SOL.cpp
  * \brief Main file for the solution export/conversion code (SU2_SOL).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -48,11 +48,11 @@ int main(int argc, char *argv[]) {
 	/*--- Pointer to different structures that will be used throughout the entire code ---*/
 	COutput *output = NULL;
 	CGeometry **geometry = NULL;
-	CSolution **solution = NULL;
+	CSolver **solver = NULL;
 	CConfig **config = NULL;
 	
 	/*--- Definition of the containers per zones ---*/
-	solution = new CSolution*[MAX_ZONES];
+	solver = new CSolver*[MAX_ZONES];
 	config = new CConfig*[MAX_ZONES];
 	geometry = new CGeometry *[MAX_ZONES];
 	
@@ -134,14 +134,14 @@ int main(int argc, char *argv[]) {
           
           /*--- Either instantiate the solution class or load a restart file. ---*/
           if (iExtIter == 0)
-            solution[iZone] = new CBaselineSolution(geometry[iZone], config[iZone], MESH_0);
+            solver[iZone] = new CBaselineSolver(geometry[iZone], config[iZone], MESH_0);
           else
-            solution[iZone]->GetRestart(geometry[iZone], config[iZone], MESH_0);
+            solver[iZone]->GetRestart(geometry[iZone], config[iZone], MESH_0);
         }
         
         if (rank == MASTER_NODE)
           cout << "Writing the volume solution for time step " << iExtIter << "." << endl;
-        output->SetBaselineResult_Files(solution, geometry, config, iExtIter, nZone);
+        output->SetBaselineResult_Files(solver, geometry, config, iExtIter, nZone);
       }
       
       iExtIter++;
@@ -154,18 +154,18 @@ int main(int argc, char *argv[]) {
     
     for (iZone = 0; iZone < nZone; iZone++) {
       /*--- Definition of the solution class ---*/
-      solution[iZone] = new CBaselineSolution(geometry[iZone], config[iZone], MESH_0);      
+      solver[iZone] = new CBaselineSolver(geometry[iZone], config[iZone], MESH_0);      
     }
     
-    output->SetBaselineResult_Files(solution, geometry, config, 0, nZone);
+    output->SetBaselineResult_Files(solver, geometry, config, 0, nZone);
     
   }
   
   /*--- Deallocate the solution and output objects. ---*/
   //  for (iZone = 0; iZone < nZone; iZone++) {
-  //    delete [] solution[iZone];
+  //    delete [] solver[iZone];
   //  }
-  //  delete solution;
+  //  delete solver;
   //  delete output;
   
   

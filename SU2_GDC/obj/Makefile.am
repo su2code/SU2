@@ -18,12 +18,7 @@ ___bin_SU2_GDC_SOURCES = ../include/SU2_GDC.hpp \
 		../../SU2_CFD/include/output_structure.hpp \
 		../../SU2_CFD/src/output_structure.cpp \
 		../../SU2_CFD/src/output_cgns.cpp \
-		../../SU2_CFD/src/output_tecplot.cpp \
-		../../SU2_CFD/include/solution_structure.hpp \
-                ../../SU2_CFD/src/solution_structure.cpp \
-                ../../SU2_CFD/include/variable_structure.hpp \
-                ../../SU2_CFD/src/variable_structure.cpp \
-                ../../SU2_CFD/src/variable_direct.cpp
+		../../SU2_CFD/src/output_tecplot.cpp
 		
 ___bin_SU2_GDC_CXXFLAGS =
 ___bin_SU2_GDC_LDADD = ../../Common/lib/libSU2.a

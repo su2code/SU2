@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines of the code SU2_MDC.
  *        The subroutines and functions are in the <i>SU2_MDC.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -56,6 +56,6 @@ void SetMultiZone_MeshFile(CPhysicalGeometry **geometry, CConfig **config, unsig
  * \brief Write a single-zone mesh file after deforming the mesh using SU2_MDC.
  * \param[in] geometry - Multi-zone physical geometry container.
  * \param[in] config - Definition of the particular problem.
- * \param[in] surface_mov - durface information including FFD box.
+ * \param[in] surface_movement - durface information including FFD box.
  */
-void SetSingleZone_MeshFile(CPhysicalGeometry *geometry, CConfig *config, CSurfaceMovement *surface_mov);
+void SetSingleZone_MeshFile(CPhysicalGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement);
