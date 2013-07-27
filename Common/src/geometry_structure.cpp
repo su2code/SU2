@@ -1342,11 +1342,13 @@ void CPhysicalGeometry::CGNS_Format(CConfig *config, string val_mesh_filename, u
   
   /*--- Throw error if not in serial mode. ---*/
 #ifndef NO_MPI
-  cout << "Parallel support with CGNS format not yet implemented!!" << endl;
-  cout << "Press any key to exit..." << endl;
-  cin.get();
-  MPI::COMM_WORLD.Abort(1);
-  MPI::Finalize();
+  if (size > 1) {
+    cout << "Parallel support with CGNS format not yet implemented!!" << endl;
+    cout << "Press any key to exit..." << endl;
+    cin.get();
+    MPI::COMM_WORLD.Abort(1);
+    MPI::Finalize();
+  }
 #endif
   
   /*--- Check whether the supplied file is truly a CGNS file. ---*/
