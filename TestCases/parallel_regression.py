@@ -190,7 +190,7 @@ if __name__=="__main__":
   '''This program runs SU^2 and ensures that the output matches specified values. This will be used to do nightly checks to make sure nothing is broken. '''
 
   # Build SU2_CFD in parallel using autoconf
-  os.system('./configure --prefix=$SU2_HOME --with-MPI=mpicxx --with-Metis-lib=/home/ale11/tools/metis-5.0.1/lib --with-Metis-include=/home/ale11/tools/metis-5.0.1/include --with-metis-version=5 CXXFLAGS="-O3"')
+  os.system('./configure --prefix=$SU2_HOME --with-MPI=mpicxx --with-Metis-lib=/home/ale11/tools/metis-5.0.1/lib --with-Metis-include=/home/ale11/tools/metis-5.0.1/include --with-Metis-version=5 CXXFLAGS="-O3"')
   os.system('make clean')
   os.system('make install')
 
