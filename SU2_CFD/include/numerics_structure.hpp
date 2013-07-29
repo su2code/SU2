@@ -816,6 +816,19 @@ public:
 	 */
 	void GetInviscidProjFlux(double *val_density, double *val_velocity, double *val_pressure, double *val_enthalpy, 
 			double *val_normal, double *val_Proj_Flux);
+  
+  /*!
+	 * \brief Compute the projected inviscid flux vector.
+	 * \param[in] val_density - Pointer to the density.
+	 * \param[in] val_velocity - Pointer to the velocity.
+	 * \param[in] val_pressure - Pointer to the pressure.
+	 * \param[in] val_enthalpy - Pointer to the enthalpy.
+   * \param[in] val_energy_ve - Pointer to the vibrational-electronic energy.
+	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+	 * \param[out] val_Proj_Flux - Pointer to the projected flux.
+	 */
+	void GetInviscidProjFlux(double *val_density, double *val_velocity, double *val_pressure, double *val_enthalpy,
+                           double *val_energy_ve, double *val_normal, double *val_Proj_Flux);
 
 	/*! 
 	 * \brief Compute the projected inviscid flux vector.
@@ -941,9 +954,27 @@ public:
 	 */
 	void GetInviscidProjJac(double **val_velocity, double *val_energy, double *val_normal, 
 			double val_scale, double **val_Proj_Jac_tensor);
+  
+	/*!
+	 * \overload
+	 * \brief Compute the projection of the inviscid Jacobian matrices for the two-temperature model.
+   * \param[in] val_density - Vector of species densities.
+	 * \param[in] val_velocity - Pointer to the velocity.
+	 * \param[in] val_enthalpy - Value of the enthalpy.
+   * \param[in] val_energy_ve - Pointer to the vibrational-electronic energy.
+   * \param[in] val_dPdrhos - Vector of partial derivatives of pressure w.r.t. species density.
+   * \param[in] val_dPdrhoE - Partial derivative of pressure w.r.t. rho*E.
+   * \param[in] val_dPdrhoEve - Partial derivative of pressure w.r.t. rho*Eve.
+	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+	 * \param[in] val_scale - Scale of the projection.
+	 * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
+	 */
+  void GetInviscidProjJac(double *val_density, double *val_velocity, double *val_enthalpy,
+                          double *val_energy_ve, double *val_dPdrhos, double val_dPdrhoE,
+                          double val_dPdrhoEve, double *val_normal, double val_scale,
+                          double **val_Proj_Jac_Tensor);
 
-
-	/*! 
+	/*!
 	 * \overload
 	 * \brief Compute the projection of the inviscid Jacobian matrices.
 	 * \param[in] val_velocity Pointer to the velocity.
@@ -1039,10 +1070,32 @@ public:
 	 */
 	void GetPMatrix(double *val_density, double **val_velocity, double *val_soundspeed, 
 			double *val_normal, double **val_p_tensor);
-
-	/*! 
+  
+  /*!
 	 * \overload
-	 * \brief Computation of the matrix P, this matrix diagonalizes the conservative Jacobians in 
+	 * \brief Computation of the matrix P, this matrix diagonalizes the conservative Jacobians
+	 *        in the form $P^{-1}(A.Normal)P=Lambda$.
+	 * \param[in] val_density - Vector of species density values.
+	 * \param[in] val_velocity - Value of the velocity.
+   * \param[in] val_enthalpy - Value of the enthalpy.
+   * \param[in] val_energy_ve - Value of the vibrational-electronic energy.
+	 * \param[in] val_soundspeed - Value of the sound speed.
+   * \param[in] val_dPdrhos - Vector of partial derivative of pressure w.r.t. species densities.
+   * \param[in] val_dPdrhoE - Partial derivative of pressure w.r.t. $\rho E$.
+   * \param[in] val_dPdrhoEve - Partial derivative of pressure w.r.t. $\rho E_{ve}$.
+	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[in] l - Tangential vector to face.
+   * \param[in] m - Tangential vector to face (mutually orthogonal to val_normal & l).
+	 * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
+	 */
+  void GetPMatrix(double *val_density, double *val_velocity, double *val_enthalpy,
+                  double *val_energy_ve, double *val_soundspeed, double *val_dPdrhos,
+                  double val_dPdrhoE, double val_dPdrhoEve, double *val_normal,
+                  double *l, double *m, double **val_p_tensor);
+  
+	/*!
+	 * \overload
+	 * \brief Computation of the matrix P, this matrix diagonalizes the conservative Jacobians in
 	 *        the form $P^{-1}(A.Normal)P=Lambda$.
 	 * \param[in] val_density - Value of the density.
 	 * \param[in] val_velocity - Value of the velocity.
@@ -1143,6 +1196,24 @@ public:
 	void GetPMatrix_inv(double *val_density, double **val_velocity, double *val_soundspeed, 
 			double *val_normal, double **val_invp_tensor);
 
+  /*!
+	 * \overload
+	 * \brief Computation of the matrix P^{-1}, this matrix diagonalizes the conservative Jacobians
+	 *        in the form $P^{-1}(A.Normal)P=Lambda$.
+	 * \param[in] val_density - Vector of species density values.
+	 * \param[in] val_velocity - Value of the velocity.
+   * \param[in] val_energy_ve - Value of the vibrational-electronic energy.
+	 * \param[in] val_soundspeed - Value of the sound speed.
+   * \param[in] val_dPdrhos - Vector of partial derivative of pressure w.r.t. species densities.
+   * \param[in] val_dPdrhoE - Partial derivative of pressure w.r.t. $\rho E$.
+   * \param[in] val_dPdrhoEve - Partial derivative of pressure w.r.t. $\rho E_{ve}$.
+	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[in] l - Tangential vector to face.
+   * \param[in] m - Tangential vector to face (mutually orthogonal to val_normal & l).
+	 * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
+	 */
+  void GetPMatrix_inv(double *val_density, double *val_velocity, double *val_energy_ve, double *val_soundspeed, double *val_dPdrhos, double val_dPdrhoE, double val_dPdrhoEve, double *val_normal, double *l, double *m, double **val_invp_tensor);
+  
 	/*! 
 	 * \overload
 	 * \brief Computation of the matrix P^{-1}, this matrix diagonalize the conservative Jacobians 
@@ -6747,13 +6818,17 @@ private:
   double *Density_i, *Density_j, *RoeDensity;
 	double *Velocity_i, *Velocity_j, *RoeVelocity;
 	double *Proj_flux_tensor_i, *Proj_flux_tensor_j;
-	double *delta_wave, *delta_vel;
 	double *Lambda, *Epsilon;
 	double **P_Tensor, **invP_Tensor;
-	double sq_vel, Proj_ModJac_Tensor_ij, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-	Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeEnthalpy, RoeSoundSpeed,
-	ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel, delta_p, delta_rho;
-	unsigned short nSpecies, nVar, nDim;
+  double Energy_i, Energy_j, Energy_ve_i, Energy_ve_j, RoeEnergy_ve;
+  double Enthalpy_i, Enthalpy_j, RoeEnthalpy;
+  double SoundSpeed_i, SoundSpeed_j, RoeSoundSpeed;
+  double Pressure_i, Pressure_j, RoePressure;
+  double Temperature_i, Temperature_j, Temperature_ve_i, Temperature_ve_j, RoeTemperature_ve;
+  double ProjVelocity, ProjVelocity_i, ProjVelocity_j;
+	double sq_vel, Proj_ModJac_Tensor_ij, R;
+  double *dPdrhos, *l, *m;
+ 	unsigned short nSpecies, nVar, nDim;
   
 public:
   
@@ -6824,6 +6899,65 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
+};
+
+
+/*!
+ * \class CCentLax_Flow
+ * \brief Class for computing the Lax-Friedrich centered scheme.
+ * \ingroup ConvDiscr
+ * \author F. Palacios.
+ * \version 2.0.5
+ */
+class CCentLax_TNE2 : public CNumerics {
+private:
+	unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
+	double *Diff_U; /*!< \brief Difference of conservative variables. */
+  double *Density_i, *Density_j, *MeanDensity; /*!< \brief Species densities. */
+	double *Velocity_i, *Velocity_j, *MeanVelocity; /*!< \brief Velocity at i & j. */
+  double ProjVelocity, ProjVelocity_i, ProjVelocity_j;  /*!< \brief Projected velocities. */
+	double Energy_i, Energy_j;  /*!< \brief Energy at i & j. */
+  double Energy_ve_i, Energy_ve_j, MeanEnergy_ve; /*!< \brief Vib-elec. energy at i & j. */
+  double Temperature_i, Temperature_j, MeanTemperature;  /*!< \brief Temperature at i & j. */
+  double Temperature_ve_i, Temperature_ve_j, MeanTemperature_ve; /*!< \brief Vib-elec. energy at i & j. */
+	double *Proj_flux_tensor;  /*!< \brief Projected inviscid flux tensor. */
+	double sq_vel_i, sq_vel_j;   /*!< \brief Modulus of the velocity. */
+	double MeanPressure, MeanEnthalpy, MeanEnergy; /*!< \brief Mean values of primitive variables. */
+	double Param_p, Param_Kappa_0; /*!< \brief Artificial dissipation parameters. */
+	double Local_Lambda_i, Local_Lambda_j, MeanLambda; /*!< \brief Local eigenvalues. */
+	double Phi_i, Phi_j, sc0, StretchingFactor; /*!< \brief Streching parameters. */
+	double Epsilon_0, cte; /*!< \brief Artificial dissipation values. */
+  double *dPdrhos, dPdrhoE, dPdrhoEve; /*!< \brief Partial derivative of pressure w.r.t. conserved quantities. */
+	bool implicit; /*!< \brief Implicit time integration. */
+  bool ionization;  /*!< \brief Charged species with the mixture. */
+	bool stretching;
+  unsigned short nSpecies, nVar, nDim;
+  
+public:
+  
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimension of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CCentLax_TNE2(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CCentLax_TNE2(void);
+  
+	/*!
+	 * \brief Compute the flow residual using a Lax method.
+	 * \param[out] val_resconv - Pointer to the convective residual.
+	 * \param[out] val_resvisc - Pointer to the artificial viscosity residual.
+	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetResidual(double *val_resconv, double *val_resvisc, double **val_Jacobian_i, double **val_Jacobian_j,
+                   CConfig *config);
 };
 
 

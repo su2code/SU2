@@ -7208,15 +7208,6 @@ public:
 	 */
 	void SetVolume_Output(CConfig *config, CGeometry *geometry, double **data_container, unsigned short nOutput_Vars);
   
-	/*!
-	 * \brief Set the initial condition for the Euler Equations.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] ExtIter - External iteration.
-	 */
-	void SetInitialCondition(CGeometry **geometry, CSolution ***solution_container, CConfig *config, unsigned long ExtIter);
-  
 };
 
 /*!

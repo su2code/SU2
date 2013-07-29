@@ -201,6 +201,8 @@ inline double CVariable::GetEnthalpy(unsigned short iSpecies) { return 0; }
 
 inline double CVariable::GetPressure(bool val_incomp) { return 0; }
 
+inline double CVariable::GetPressure(void) { return 0; }
+
 inline double CVariable::GetDeltaPressure(void) { return 0; }
 
 inline double CVariable::GetProjVel(double *val_vector) { return 0; }

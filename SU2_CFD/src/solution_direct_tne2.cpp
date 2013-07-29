@@ -51,12 +51,11 @@ CTNE2EulerSolution::CTNE2EulerSolution(void) : CSolution() {
 CTNE2EulerSolution::CTNE2EulerSolution(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolution() {
 	unsigned long iPoint, index, counter_local = 0, counter_global = 0;
 	unsigned short iVar, iDim, iMarker, iSpecies;
-  double Density, Velocity2, Pressure, Temperature;
+  double Density, Velocity2;
   
 	unsigned short nZone = geometry->GetnZone();
 	bool restart = (config->GetRestart() || config->GetRestart_Flow());
   bool check_temp, check_press;
-  double Gas_Constant = config->GetGas_ConstantND();
 	
 	roe_turkel = false;
   
@@ -122,7 +121,7 @@ CTNE2EulerSolution::CTNE2EulerSolution(CGeometry *geometry, CConfig *config, uns
 	Vector_i = new double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_i[iDim] = 0.0;
 	Vector_j = new double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_j[iDim] = 0.0;
   
-	if ((config->GetKind_Upwind_Flow() == ROE_TURKEL_2ND) || (config->GetKind_Upwind_Flow() == ROE_TURKEL_1ST)) {
+	if ((config->GetKind_Upwind_TNE2() == ROE_TURKEL_2ND) || (config->GetKind_Upwind_TNE2() == ROE_TURKEL_1ST)) {
 		Precon_Mat_inv = new double* [nVar];
 		for (iVar = 0; iVar < nVar; iVar ++)
 			Precon_Mat_inv[iVar] = new double[nVar];
@@ -775,10 +774,10 @@ void CTNE2EulerSolution::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *
 void CTNE2EulerSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
   
-	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-	bool upwind_2nd = ((config->GetKind_Upwind_Flow() == ROE_2ND) || (config->GetKind_Upwind_Flow() == AUSM_2ND)
-                     || (config->GetKind_Upwind_Flow() == HLLC_2ND) || (config->GetKind_Upwind_Flow() == ROE_TURKEL_2ND));
-	bool limiter = (config->GetKind_SlopeLimit_Flow() != NONE);
+	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+	bool upwind_2nd = ((config->GetKind_Upwind_TNE2() == ROE_2ND) || (config->GetKind_Upwind_TNE2() == AUSM_2ND)
+                     || (config->GetKind_Upwind_TNE2() == HLLC_2ND) || (config->GetKind_Upwind_TNE2() == ROE_TURKEL_2ND));
+	bool limiter = (config->GetKind_SlopeLimit_TNE2() != NONE);
 	double Gas_Constant = config->GetGas_ConstantND();
   
 	for (iPoint = 0; iPoint < nPoint; iPoint ++) {
@@ -812,7 +811,7 @@ void CTNE2EulerSolution::SetTime_Step(CGeometry *geometry, CSolution **solution_
 	unsigned long iEdge, iVertex, iPoint, jPoint;
 	unsigned short iDim, iMarker;
   
-	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
 	bool grid_movement = config->GetGrid_Movement();
 	bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
@@ -955,12 +954,12 @@ void CTNE2EulerSolution::Upwind_Residual(CGeometry *geometry, CSolution **soluti
 	unsigned long iEdge, iPoint, jPoint;
 	unsigned short iDim, iVar;
   
-	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-	bool high_order_diss = (((config->GetKind_Upwind_Flow() == ROE_2ND) || (config->GetKind_Upwind_Flow() == AUSM_2ND)
-                           || (config->GetKind_Upwind_Flow() == HLLC_2ND) || (config->GetKind_Upwind_Flow() == ROE_TURKEL_2ND))
+	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+	bool high_order_diss = (((config->GetKind_Upwind_TNE2() == ROE_2ND) || (config->GetKind_Upwind_TNE2() == AUSM_2ND)
+                           || (config->GetKind_Upwind_TNE2() == HLLC_2ND) || (config->GetKind_Upwind_TNE2() == ROE_TURKEL_2ND))
                           && (iMesh == MESH_0));
 	bool grid_movement = config->GetGrid_Movement();
-	bool limiter = (config->GetKind_SlopeLimit_Flow() != NONE);
+	bool limiter = (config->GetKind_SlopeLimit_TNE2() != NONE);
   
 	for(iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
@@ -980,10 +979,6 @@ void CTNE2EulerSolution::Upwind_Residual(CGeometry *geometry, CSolution **soluti
 				sqvel += config->GetVelocity_FreeStream()[iDim]*config->GetVelocity_FreeStream()[iDim];
 			solver->SetVelocity2_Inf(sqvel);
 		}
-    
-		/*--- Grid Movement ---*/
-		if (grid_movement)
-			solver->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[jPoint]->GetGridVel());
     
 		/*--- High order reconstruction using MUSCL strategy ---*/
 		if (high_order_diss) {
@@ -1063,7 +1058,7 @@ void CTNE2EulerSolution::Source_Residual(CGeometry *geometry, CSolution **soluti
   
 	if (axisymmetric) {
     
-		bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+		bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
 		/*--- Zero out Jacobian structure ---*/
 		if (implicit) {
 			for (iVar = 0; iVar < nVar; iVar ++)
@@ -1096,7 +1091,7 @@ void CTNE2EulerSolution::Source_Residual(CGeometry *geometry, CSolution **soluti
 	}
   
 	if (magnet) {
-		bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+		bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
 		for (iVar = 0; iVar < nVar; iVar ++)
 			for (unsigned short jVar = 0; jVar < nVar; jVar ++)
 				Jacobian_i[iVar][jVar] = 0.0;
@@ -1125,7 +1120,7 @@ void CTNE2EulerSolution::Source_Residual(CGeometry *geometry, CSolution **soluti
   
   if (jouleheating) {
 		double arc_column_extent = 2.30581;
-		bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+		bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
 		for (iVar = 0; iVar < nVar; iVar ++)
 			for (unsigned short jVar = 0; jVar < nVar; jVar ++)
 				Jacobian_i[iVar][jVar] = 0.0;
@@ -1842,7 +1837,7 @@ void CTNE2EulerSolution::BC_Euler_Wall(CGeometry *geometry, CSolution **solution
 	double Pressure, *Normal = NULL, *GridVel = NULL, Area, UnitaryNormal[3],
   ProjGridVel = 0.0, a2, phi;
   
-	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
 	bool grid_movement  = config->GetGrid_Movement();
   
 	/*--- Loop over all the vertices on this boundary marker ---*/
@@ -1916,7 +1911,7 @@ void CTNE2EulerSolution::BC_Far_Field(CGeometry *geometry, CSolution **solution_
 	unsigned short iVar, iDim, nPrimVar;
 	unsigned long iVertex, iPoint, Point_Normal;
   
-	bool implicit           = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+	bool implicit           = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
 	bool grid_movement      = config->GetGrid_Movement();
   double Gas_Constant       = config->GetGas_ConstantND();
 	bool viscous              = config->GetViscous();
@@ -2023,7 +2018,7 @@ void CTNE2EulerSolution::BC_Inlet(CGeometry *geometry, CSolution **solution_cont
 	Pressure, Density, Energy, *Flow_Dir, Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag,
 	alpha, aa, bb, cc, dd, Area, UnitaryNormal[3];
   
-	bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+	bool implicit             = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
 	bool grid_movement        = config->GetGrid_Movement();
 	double Two_Gamma_M1       = 2.0/Gamma_Minus_One;
 	double Gas_Constant       = config->GetGas_ConstantND();
@@ -2285,7 +2280,7 @@ void CTNE2EulerSolution::BC_Outlet(CGeometry *geometry, CSolution **solution_con
 	Velocity2, Entropy, Density, Energy, Riemann, Vn, SoundSpeed, Mach_Exit, Vn_Exit,
 	Area, UnitaryNormal[3];
   
-	bool implicit           = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+	bool implicit           = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   double Gas_Constant     = config->GetGas_ConstantND();
 	bool grid_movement      = config->GetGrid_Movement();
 	string Marker_Tag       = config->GetMarker_All_Tag(val_marker);
@@ -2456,7 +2451,7 @@ void CTNE2EulerSolution::BC_Supersonic_Inlet(CGeometry *geometry, CSolution **so
 	double Density, Pressure, Temperature, Energy, *Velocity, Velocity2;
 	double Gas_Constant = config->GetGas_ConstantND();
   
-	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
 	bool grid_movement  = config->GetGrid_Movement();
 	bool viscous              = config->GetViscous();
 	string Marker_Tag = config->GetMarker_All_Tag(val_marker);
@@ -2585,7 +2580,7 @@ void CTNE2EulerSolution::BC_Sym_Plane(CGeometry *geometry, CSolution **solution_
 	unsigned short iDim, iVar;
 	double Pressure, *Normal;
   
-	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   
 	/*--- Loop over all the vertices ---*/
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -2644,7 +2639,7 @@ void CTNE2EulerSolution::SetResidual_DualTime(CGeometry *geometry, CSolution **s
 	double *U_time_nM1, *U_time_n, *U_time_nP1;
 	double Volume_nM1, Volume_n, Volume_nP1, TimeStep;
   
-	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
 	bool Grid_Movement = config->GetGrid_Movement();
   
 	/*--- loop over points ---*/
@@ -2984,7 +2979,7 @@ CTNE2NSSolution::CTNE2NSSolution(CGeometry *geometry, CConfig *config, unsigned 
 	Vector_i = new double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_i[iDim] = 0.0;
 	Vector_j = new double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_j[iDim] = 0.0;
   
-	if ((config->GetKind_Upwind_Flow() == ROE_TURKEL_2ND) || (config->GetKind_Upwind_Flow() == ROE_TURKEL_1ST)) {
+	if ((config->GetKind_Upwind_TNE2() == ROE_TURKEL_2ND) || (config->GetKind_Upwind_TNE2() == ROE_TURKEL_1ST)) {
 		Precon_Mat_inv = new double* [nVar];
 		for (iVar = 0; iVar < nVar; iVar ++)
 			Precon_Mat_inv[iVar] = new double[nVar];
@@ -2994,7 +2989,7 @@ CTNE2NSSolution::CTNE2NSSolution(CGeometry *geometry, CConfig *config, unsigned 
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
   
 	/*--- Jacobians and vector structures for implicit computations ---*/
-	if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) {
+	if (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT) {
     
 		/*--- Point to point Jacobians ---*/
 		Jacobian_i = new double* [nVar];
@@ -3207,8 +3202,8 @@ CTNE2NSSolution::CTNE2NSSolution(CGeometry *geometry, CConfig *config, unsigned 
 	if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
 	else least_squares = false;
   
-	if ((config->GetKind_Upwind_Flow() == ROE_TURKEL_2ND) ||
-      (config->GetKind_Upwind_Flow() == ROE_TURKEL_1ST)) roe_turkel = true;
+	if ((config->GetKind_Upwind_TNE2() == ROE_TURKEL_2ND) ||
+      (config->GetKind_Upwind_TNE2() == ROE_TURKEL_1ST)) roe_turkel = true;
 	else roe_turkel = false;
   
 	/*--- MPI solution ---*/
@@ -3245,10 +3240,10 @@ CTNE2NSSolution::~CTNE2NSSolution(void) {
 void CTNE2NSSolution::Preprocessing(CGeometry *geometry, CSolution **solution_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
   
-	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-	bool upwind_2nd = ((config->GetKind_Upwind_Flow() == ROE_2ND) || (config->GetKind_Upwind_Flow() == AUSM_2ND)
-                     || (config->GetKind_Upwind_Flow() == HLLC_2ND) || (config->GetKind_Upwind_Flow() == ROE_TURKEL_2ND));
-	bool limiter = (config->GetKind_SlopeLimit_Flow() != NONE);
+	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+	bool upwind_2nd = ((config->GetKind_Upwind_TNE2() == ROE_2ND) || (config->GetKind_Upwind_TNE2() == AUSM_2ND)
+                     || (config->GetKind_Upwind_TNE2() == HLLC_2ND) || (config->GetKind_Upwind_TNE2() == ROE_TURKEL_2ND));
+	bool limiter = (config->GetKind_SlopeLimit_TNE2() != NONE);
 	double Gas_Constant = config->GetGas_ConstantND();
   
 	for (iPoint = 0; iPoint < nPoint; iPoint ++) {
@@ -3287,7 +3282,7 @@ void CTNE2NSSolution::SetTime_Step(CGeometry *geometry, CSolution **solution_con
 	unsigned short iDim, iMarker;
 	double ProjVel, ProjVel_i, ProjVel_j;
   
-	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
 	bool grid_movement = config->GetGrid_Movement();
 	bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
@@ -3451,7 +3446,7 @@ void CTNE2NSSolution::Viscous_Residual(CGeometry *geometry, CSolution **solution
                                        CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 	unsigned long iPoint, jPoint, iEdge;
   
-	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
@@ -3698,7 +3693,7 @@ void CTNE2NSSolution::BC_HeatFlux_Wall(CGeometry *geometry, CSolution **solution
 	double Wall_HeatFlux;
 	double *Grid_Vel, *Normal, Area;
   
-	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
 	bool grid_movement  = config->GetGrid_Movement();
   
 	/*--- Identify the boundary by string name ---*/
@@ -3853,7 +3848,7 @@ void CTNE2NSSolution::BC_Isothermal_Wall(CGeometry *geometry, CSolution **soluti
 	double Density, Vel2, Energy;
 	double Laminar_Viscosity, Thermal_Conductivity, Gas_Constant, cp;
 	double Theta;
-	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
 	bool grid_movement = config->GetGrid_Movement();
   
 	Point_Normal = 0;

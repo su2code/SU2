@@ -962,7 +962,7 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
 		}
 
 	}
-
+  
   /*--- Solver definition for the Potential, Euler, Navier-Stokes problems ---*/
 	if ((tne2_euler) || (tne2_ns)) {
     
@@ -972,8 +972,21 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
         cout << "No convective scheme." << endl; cin.get();
         break;
         
+      case SPACE_CENTERED :
+        /*--- Compressible two-temperature flow ---*/
+        switch (config->GetKind_Centered_Flow()) {
+          case NO_CENTERED : cout << "No centered scheme." << endl; break;
+          case LAX :
+            for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+              solver_container[iMGlevel][TNE2_SOL][CONV_TERM] = new CCentLax_TNE2(nDim,nVar_Flow, config); break;
+              solver_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] = new CCentLax_TNE2(nDim, nVar_Flow, config);
+            }
+          default : cout << "Centered scheme not implemented." << endl; cin.get(); break;
+        }
+        break;
+        
       case SPACE_UPWIND :
-          /*--- Compressible TNE2 ---*/
+          /*--- Compressible two-temperature flow ---*/
           switch (config->GetKind_Upwind_TNE2()) {
             case NO_UPWIND : cout << "No upwind scheme." << endl; break;
             case ROE_1ST : case ROE_2ND :
