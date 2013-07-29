@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Many of the classes in this file are templated, and therefore must
  * be declared and defined here; to keep all elements together, there
@@ -283,7 +283,8 @@ enum RUNTIME_TYPE {
 	RUNTIME_LINFLOW_SYS = 10,		/*!< \brief One-physics case, the code is solving the linear equations is being solved (Euler and Navier-Stokes). */
 	RUNTIME_MULTIGRID_SYS = 14,   	/*!< \brief Full Approximation Storage Multigrid system of equations. */
 	RUNTIME_ADJPLASMA_SYS = 19,		/*!< \brief One-physics case, the code is solving the plasma equations. */
-	RUNTIME_TRANS_SYS = 22			/*!< \brief One-physics case, the code is solving the turbulence model. */
+	RUNTIME_TRANS_SYS = 22,			/*!< \brief One-physics case, the code is solving the turbulence model. */
+  RUNTIME_TNE2_SYS = 23  /*!< \brief One-physics case, the code is solving the two-temperature model. */
 };
 
 const int FLOW_SOL = 0;		/*!< \brief Position of the mean flow solution in the solution container array. */

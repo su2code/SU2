@@ -5,7 +5,7 @@
  *        technique definition). The subroutines and functions are in 
  *        the <i>grid_movement_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -44,7 +44,7 @@ using namespace std;
  * \brief Class for moving the surface and volumetric 
  *        numerical grid (2D and 3D problems).
  * \author F. Palacios.
- * \version 2.0.5
+ * \version 2.0.6
  */
 class CGridMovement {
 public:
@@ -73,7 +73,7 @@ public:
  * \class CFreeFormDefBox
  * \brief Class for defining the free form FFDBox structure.
  * \author F. Palacios & A. Galdran.
- * \version 2.0.5
+ * \version 2.0.6
  */
 class CFreeFormDefBox : public CGridMovement {
 public:
@@ -658,7 +658,7 @@ public:
  * \class CVolumetricMovement
  * \brief Class for moving the volumetric numerical grid.
  * \author F. Palacios, A. Bueno, T. Economon, S. Padron.
- * \version 2.0.5
+ * \version 2.0.6
  */
 class CVolumetricMovement : public CGridMovement {
 protected:
@@ -894,7 +894,7 @@ public:
  * \class CSurfaceMovement
  * \brief Class for moving the surface numerical grid.
  * \author F. Palacios.
- * \version 2.0.5
+ * \version 2.0.6
  */
 class CSurfaceMovement : public CGridMovement {
 protected:

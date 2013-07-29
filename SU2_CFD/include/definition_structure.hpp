@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines used by SU2_CFD.
  *        The subroutines and functions are in the <i>definition_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -29,7 +29,7 @@
 #endif
 #include <ctime>
 
-#include "solution_structure.hpp"
+#include "solver_structure.hpp"
 #include "integration_structure.hpp"
 #include "output_structure.hpp"
 #include "numerics_structure.hpp"
@@ -59,12 +59,12 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format);
 
 /*! 
  * \brief Definition and allocation of all solution classes.
- * \param[in] solution_container - Container vector with all the solutions.
+ * \param[in] solver_container - Container vector with all the solutions.
  * \param[in] geometry - Geometrical definition of the problem.
  * \param[in] config - Definition of the particular problem.
  * \param[in] iZone - Index of the zone.
  */
-void Solution_Definition(CSolution ***solution_container, CGeometry **geometry, CConfig *config, unsigned short iZone);
+void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry, CConfig *config, unsigned short iZone);
 
 /*! 
  * \brief Definition and allocation of all integration classes.
@@ -73,17 +73,17 @@ void Solution_Definition(CSolution ***solution_container, CGeometry **geometry, 
  * \param[in] config - Definition of the particular problem.
  * \param[in] iZone - Index of the zone.
  */
-void Integration_Definition(CIntegration **integration_container, CGeometry **geometry, CConfig *config, unsigned short iZone);
+void Integration_Preprocessing(CIntegration **integration_container, CGeometry **geometry, CConfig *config, unsigned short iZone);
 
 /*! 
  * \brief Definition and allocation of all solver classes.
- * \param[in] solver_container - Description of the numerical method (the way in which the equations are solved).
- * \param[in] solution_container - Container vector with all the solutions.
+ * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+ * \param[in] solver_container - Container vector with all the solutions.
  * \param[in] geometry - Geometrical definition of the problem.
  * \param[in] config - Definition of the particular problem.
  * \param[in] iZone - Index of the zone.
  */
-void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_container, CGeometry **geometry, CConfig *config, unsigned short iZone);
+void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_container, CGeometry **geometry, CConfig *config, unsigned short iZone);
 
 /*! 
  * \brief Do the geometrical preprocessing.
@@ -91,4 +91,4 @@ void Solver_Definition(CNumerics ****solver_container, CSolution ***solution_con
  * \param[in] config - Definition of the particular problem.
  * \param[in] val_nZone - Total number of zones.
  */
-void Geometrical_Definition(CGeometry ***geometry, CConfig **config, unsigned short val_nZone);
+void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned short val_nZone);

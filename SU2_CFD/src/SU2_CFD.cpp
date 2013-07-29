@@ -2,7 +2,7 @@
  * \file SU2_CFD.cpp
  * \brief Main file of Computational Fluid Dynamics Code (SU2_CFD).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -83,33 +83,33 @@ int main(int argc, char *argv[]) {
 	COutput *output                       = NULL;
 	CIntegration ***integration_container = NULL;
 	CGeometry ***geometry_container       = NULL;
-	CSolution ****solution_container      = NULL;
-	CNumerics *****solver_container       = NULL;
+	CSolver ****solver_container          = NULL;
+	CNumerics *****numerics_container     = NULL;
 	CConfig **config_container            = NULL;
 	CSurfaceMovement **surface_movement   = NULL;
 	CVolumetricMovement **grid_movement   = NULL;
-	CFreeFormDefBox*** FFDBox           = NULL;
+	CFreeFormDefBox*** FFDBox             = NULL;
 	
 	/*--- Definition of the containers per zones ---*/
-	solution_container    = new CSolution***[MAX_ZONES];
+	solver_container      = new CSolver***[MAX_ZONES];
 	integration_container = new CIntegration**[MAX_ZONES];
-	solver_container      = new CNumerics****[MAX_ZONES];
+	numerics_container    = new CNumerics****[MAX_ZONES];
 	config_container      = new CConfig*[MAX_ZONES];
 	geometry_container    = new CGeometry **[MAX_ZONES];
 	surface_movement      = new CSurfaceMovement *[MAX_ZONES];
 	grid_movement         = new CVolumetricMovement *[MAX_ZONES];
-	FFDBox             = new CFreeFormDefBox**[MAX_ZONES];
+	FFDBox                = new CFreeFormDefBox**[MAX_ZONES];
   
   /*--- Array initialization ---*/
   for (iZone = 0; iZone < MAX_ZONES; iZone++) {
-    solution_container[iZone]     = NULL;
-    integration_container[iZone]  = NULL;
     solver_container[iZone]       = NULL;
+    integration_container[iZone]  = NULL;
+    numerics_container[iZone]     = NULL;
     config_container[iZone]       = NULL;
     geometry_container[iZone]     = NULL;
     surface_movement[iZone]       = NULL;
     grid_movement[iZone]          = NULL;
-    FFDBox[iZone]              = NULL;
+    FFDBox[iZone]                 = NULL;
   }
 	
 	/*--- Check the number of zones and dimensions in the mesh file ---*/
@@ -144,7 +144,7 @@ int main(int argc, char *argv[]) {
     cout << endl <<"------------------------- Geometry preprocessing ------------------------" << endl;
   
   /*--- Definition of the geometry (edge based structure) for all Zones ---*/
-  Geometrical_Definition(geometry_container, config_container, nZone);
+  Geometrical_Preprocessing(geometry_container, config_container, nZone);
   
 #ifndef NO_MPI
   /*--- Synchronization point after the geometrical definition subroutine ---*/
@@ -156,17 +156,17 @@ int main(int argc, char *argv[]) {
   
   for (iZone = 0; iZone < nZone; iZone++) {
     
-    /*--- Definition of the solution class (solution_container[#ZONES][#MG_GRIDS][#EQ_SYSTEMS]) ---*/
-    solution_container[iZone] = new CSolution** [config_container[iZone]->GetMGLevels()+1];
+    /*--- Definition of the solution class (solver_container[#ZONES][#MG_GRIDS][#EQ_SYSTEMS]) ---*/
+    solver_container[iZone] = new CSolver** [config_container[iZone]->GetMGLevels()+1];
     for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++)
-      solution_container[iZone][iMesh] = NULL;
+      solver_container[iZone][iMesh] = NULL;
 
     for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
-      solution_container[iZone][iMesh] = new CSolution* [MAX_SOLS];
+      solver_container[iZone][iMesh] = new CSolver* [MAX_SOLS];
       for (iSol = 0; iSol < MAX_SOLS; iSol++)
-        solution_container[iZone][iMesh][iSol] = NULL;
+        solver_container[iZone][iMesh][iSol] = NULL;
     }
-    Solution_Definition(solution_container[iZone], geometry_container[iZone], config_container[iZone], iZone);
+    Solver_Preprocessing(solver_container[iZone], geometry_container[iZone], config_container[iZone], iZone);
 		
 #ifndef NO_MPI
 		/*--- Synchronization point after the solution definition subroutine ---*/
@@ -178,16 +178,16 @@ int main(int argc, char *argv[]) {
     
 		/*--- Definition of the integration class (integration_container[#ZONES][#EQ_SYSTEMS]) ---*/
 		integration_container[iZone] = new CIntegration*[MAX_SOLS];
-		Integration_Definition(integration_container[iZone], geometry_container[iZone], config_container[iZone], iZone);
+		Integration_Preprocessing(integration_container[iZone], geometry_container[iZone], config_container[iZone], iZone);
     
 #ifndef NO_MPI
 		/*--- Synchronization point after the integration definition subroutine ---*/
 		MPI::COMM_WORLD.Barrier();
 #endif
     
-		/*--- Definition of the numerical method class (solver_container[#ZONES][#MG_GRIDS][#EQ_SYSTEMS][#EQ_TERMS]) ---*/
-		solver_container[iZone] = new CNumerics***[config_container[iZone]->GetMGLevels()+1];
-		Solver_Definition(solver_container[iZone], solution_container[iZone], geometry_container[iZone], config_container[iZone], iZone);
+		/*--- Definition of the numerical method class (numerics_container[#ZONES][#MG_GRIDS][#EQ_SYSTEMS][#EQ_TERMS]) ---*/
+		numerics_container[iZone] = new CNumerics***[config_container[iZone]->GetMGLevels()+1];
+		Numerics_Preprocessing(numerics_container[iZone], solver_container[iZone], geometry_container[iZone], config_container[iZone], iZone);
     
 #ifndef NO_MPI
 		/*--- Synchronization point after the solver definition subroutine ---*/
@@ -218,7 +218,7 @@ int main(int argc, char *argv[]) {
 			surface_movement[iZone]->CopyBoundary(geometry_container[iZone][MESH_0], config_container[iZone]);
 			if (config_container[iZone]->GetUnsteady_Simulation() == TIME_SPECTRAL)
 				SetGrid_Movement(geometry_container[iZone], surface_movement[iZone],
-                         grid_movement[iZone], FFDBox[iZone], solution_container[iZone], config_container[iZone], iZone, 0);
+                         grid_movement[iZone], FFDBox[iZone], solver_container[iZone], config_container[iZone], iZone, 0);
       
       
 		}
@@ -262,68 +262,74 @@ int main(int argc, char *argv[]) {
         
 			case EULER: case NAVIER_STOKES: case RANS:
 				MeanFlowIteration(output, integration_container, geometry_container,
-													solution_container, solver_container, config_container,
+													solver_container, numerics_container, config_container,
 													surface_movement, grid_movement, FFDBox);
 				break;
+        
+      case TNE2_EULER: case TNE2_NAVIER_STOKES:
+        TNE2Iteration(output, integration_container, geometry_container,
+                      solver_container, numerics_container, config_container,
+                      surface_movement, grid_movement, FFDBox);
+        break;
 				
 			case PLASMA_EULER: case PLASMA_NAVIER_STOKES:
 				PlasmaIteration(output, integration_container, geometry_container,
-												solution_container, solver_container, config_container,
+												solver_container, numerics_container, config_container,
 												surface_movement, grid_movement, FFDBox);
 				break;
 				
 			case FREE_SURFACE_EULER: case FREE_SURFACE_NAVIER_STOKES: case FREE_SURFACE_RANS:
 				FreeSurfaceIteration(output, integration_container, geometry_container,
-														 solution_container, solver_container, config_container,
+														 solver_container, numerics_container, config_container,
 														 surface_movement, grid_movement, FFDBox);
 				break;
 				
 			case FLUID_STRUCTURE_EULER: case FLUID_STRUCTURE_NAVIER_STOKES:
 				FluidStructureIteration(output, integration_container, geometry_container,
-																solution_container, solver_container, config_container,
+																solver_container, numerics_container, config_container,
 																surface_movement, grid_movement, FFDBox);
 				break;
 				
 			case AEROACOUSTIC_EULER: case AEROACOUSTIC_NAVIER_STOKES:
 				AeroacousticIteration(output, integration_container, geometry_container,
-															solution_container, solver_container, config_container,
+															solver_container, numerics_container, config_container,
 															surface_movement, grid_movement, FFDBox);
 				break;
 				
 			case WAVE_EQUATION:
 				WaveIteration(output, integration_container, geometry_container,
-											solution_container, solver_container, config_container,
+											solver_container, numerics_container, config_container,
 											surface_movement, grid_movement, FFDBox);
 				break;
 				
 			case LINEAR_ELASTICITY:
 				FEAIteration(output, integration_container, geometry_container,
-										 solution_container, solver_container, config_container,
+										 solver_container, numerics_container, config_container,
 										 surface_movement, grid_movement, FFDBox);
 				break;
 				
 				
 			case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
 				AdjMeanFlowIteration(output, integration_container, geometry_container,
-														 solution_container, solver_container, config_container,
+														 solver_container, numerics_container, config_container,
 														 surface_movement, grid_movement, FFDBox);
 				break;
 				
 			case ADJ_PLASMA_EULER: case ADJ_PLASMA_NAVIER_STOKES:
 				AdjPlasmaIteration(output, integration_container, geometry_container,
-													 solution_container, solver_container, config_container,
+													 solver_container, numerics_container, config_container,
 													 surface_movement, grid_movement, FFDBox);
 				break;
 				
 			case ADJ_FREE_SURFACE_EULER: case ADJ_FREE_SURFACE_NAVIER_STOKES: case ADJ_FREE_SURFACE_RANS:
 				AdjFreeSurfaceIteration(output, integration_container, geometry_container,
-																solution_container, solver_container, config_container,
+																solver_container, numerics_container, config_container,
 																surface_movement, grid_movement, FFDBox);
 				break;
         
 			case ADJ_AEROACOUSTIC_EULER:
 				AdjAeroacousticIteration(output, integration_container, geometry_container,
-																 solution_container, solver_container, config_container,
+																 solver_container, numerics_container, config_container,
 																 surface_movement, grid_movement, FFDBox);
 				break;
 		}
@@ -339,13 +345,13 @@ int main(int argc, char *argv[]) {
     /*--- Evaluate and plot the equivalent area, and flow rate ---*/
     if (config_container[ZONE_0]->GetKind_Solver() == EULER) {
       if (config_container[ZONE_0]->GetEquivArea() == YES)
-        output->SetEquivalentArea(solution_container[ZONE_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
+        output->SetEquivalentArea(solver_container[ZONE_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
       if (config_container[ZONE_0]->GetFlowRate() == YES)
-        output->SetFlowRate(solution_container[ZONE_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
+        output->SetFlowRate(solver_container[ZONE_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
     }
     
 		/*--- Convergence history for serial and parallel computation ---*/
-    output->SetConvergence_History(&ConvHist_file, geometry_container, solution_container, config_container, integration_container, false, TimeUsed, ZONE_0);
+    output->SetConvergence_History(&ConvHist_file, geometry_container, solver_container, config_container, integration_container, false, TimeUsed, ZONE_0);
     
 		/*--- Convergence criteria ---*/
 		switch (config_container[ZONE_0]->GetKind_Solver()) {
@@ -379,13 +385,13 @@ int main(int argc, char *argv[]) {
       
       /*--- The low fidelity simulation requires an interpolation to the finest grid ---*/
       if (config_container[ZONE_0]->GetLowFidelitySim()) {
-        integration_container[ZONE_0][FLOW_SOL]->SetProlongated_Solution(RUNTIME_FLOW_SYS, solution_container[ZONE_0][MESH_0], solution_container[ZONE_0][MESH_1], geometry_container[ZONE_0][MESH_0], geometry_container[ZONE_0][MESH_1], config_container[ZONE_0]);
-        integration_container[ZONE_0][FLOW_SOL]->Smooth_Solution(RUNTIME_FLOW_SYS, solution_container[ZONE_0][MESH_0], geometry_container[ZONE_0][MESH_0], 3, 1.25, config_container[ZONE_0]);
-        solution_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(RUNTIME_FLOW_SYS)]->Set_MPI_Solution(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
-        solution_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(RUNTIME_FLOW_SYS)]->Preprocessing(geometry_container[ZONE_0][MESH_0], solution_container[ZONE_0][MESH_0], config_container[ZONE_0], MESH_0, 0, RUNTIME_FLOW_SYS);
+        integration_container[ZONE_0][FLOW_SOL]->SetProlongated_Solution(RUNTIME_FLOW_SYS, solver_container[ZONE_0][MESH_0], solver_container[ZONE_0][MESH_1], geometry_container[ZONE_0][MESH_0], geometry_container[ZONE_0][MESH_1], config_container[ZONE_0]);
+        integration_container[ZONE_0][FLOW_SOL]->Smooth_Solution(RUNTIME_FLOW_SYS, solver_container[ZONE_0][MESH_0], geometry_container[ZONE_0][MESH_0], 3, 1.25, config_container[ZONE_0]);
+        solver_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(RUNTIME_FLOW_SYS)]->Set_MPI_Solution(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
+        solver_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(RUNTIME_FLOW_SYS)]->Preprocessing(geometry_container[ZONE_0][MESH_0], solver_container[ZONE_0][MESH_0], config_container[ZONE_0], MESH_0, 0, RUNTIME_FLOW_SYS);
       }
       
-			output->SetResult_Files(solution_container, geometry_container, config_container, ExtIter, nZone);
+			output->SetResult_Files(solver_container, geometry_container, config_container, ExtIter, nZone);
 		}
     
 		/*--- Stop criteria	---*/
@@ -400,11 +406,11 @@ int main(int argc, char *argv[]) {
     
 		cout << endl;
 		cout << "Adjoint-derived sensitivities:" << endl;
-		cout << "Surface sensitivity = " << solution_container[ZONE_0][MESH_0][ADJFLOW_SOL]->GetTotal_Sens_Geo() << endl;
-		cout << "Mach number sensitivity = " << solution_container[ZONE_0][MESH_0][ADJFLOW_SOL]->GetTotal_Sens_Mach() << endl;
-		cout << "Angle of attack sensitivity = " << solution_container[ZONE_0][MESH_0][ADJFLOW_SOL]->GetTotal_Sens_AoA() << endl;
-		cout << "Pressure sensitivity = " << solution_container[ZONE_0][MESH_0][ADJFLOW_SOL]->GetTotal_Sens_Press() << endl;
-		cout << "Temperature sensitivity = " << solution_container[ZONE_0][MESH_0][ADJFLOW_SOL]->GetTotal_Sens_Temp() << endl;
+		cout << "Surface sensitivity = " << solver_container[ZONE_0][MESH_0][ADJFLOW_SOL]->GetTotal_Sens_Geo() << endl;
+		cout << "Mach number sensitivity = " << solver_container[ZONE_0][MESH_0][ADJFLOW_SOL]->GetTotal_Sens_Mach() << endl;
+		cout << "Angle of attack sensitivity = " << solver_container[ZONE_0][MESH_0][ADJFLOW_SOL]->GetTotal_Sens_AoA() << endl;
+		cout << "Pressure sensitivity = " << solver_container[ZONE_0][MESH_0][ADJFLOW_SOL]->GetTotal_Sens_Press() << endl;
+		cout << "Temperature sensitivity = " << solver_container[ZONE_0][MESH_0][ADJFLOW_SOL]->GetTotal_Sens_Temp() << endl;
 		cout << endl;
     
 	}
@@ -419,15 +425,15 @@ int main(int argc, char *argv[]) {
 //  for (iZone = 0; iZone < nZone; iZone++) {
 //    for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
 //      for (iSol = 0; iSol < MAX_SOLS; iSol++) {
-//        if (solution_container[iZone][iMesh][iSol] != NULL) {
-//          delete solution_container[iZone][iMesh][iSol];
+//        if (solver_container[iZone][iMesh][iSol] != NULL) {
+//          delete solver_container[iZone][iMesh][iSol];
 //        }
 //      }
-//      delete solution_container[iZone][iMesh];
+//      delete solver_container[iZone][iMesh];
 //    }
-//    delete solution_container[iZone];
+//    delete solver_container[iZone];
 //  }
-//  delete [] solution_container;
+//  delete [] solver_container;
 //  if (rank == MASTER_NODE) cout <<"Solution container, deallocated." << endl;
 
   /*--- Geometry deallocation ---*/

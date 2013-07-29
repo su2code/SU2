@@ -2,7 +2,7 @@
  * \file SU2_GDC.cpp
  * \brief Main file of the Geometry Definition Code (SU2_GDC).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
