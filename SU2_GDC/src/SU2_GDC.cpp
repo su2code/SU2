@@ -35,12 +35,7 @@ int main(int argc, char *argv[]) {
 	
 #ifndef NO_MPI
 	/*--- MPI initialization, and buffer setting ---*/
-	void *buffer, *old_buffer;
-	int bufsize;
-	bufsize = MAX_MPI_BUFFER;
-	buffer = new char[bufsize];
 	MPI::Init(argc,argv);
-	MPI::Attach_buffer(buffer, bufsize);
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
 	
@@ -81,6 +76,19 @@ int main(int argc, char *argv[]) {
 	if (rank == MASTER_NODE) cout << "Set boundary control volume structure." << endl; 
 	boundary->SetBoundControlVolume(config, ALLOCATE);
 	
+  /*--- Create airfoil structure ---*/
+	if (rank == MASTER_NODE) cout << "Set the airfoil section." << endl;
+  double Plane_P0[3] = {0.0, 5.0, 0.0}, Plane_Normal[3] = {0.0, 1.0, 0.0};
+  vector<double> Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil;
+	boundary->ComputeAirfoil_Section(Plane_P0, Plane_Normal, config, Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil);
+  boundary->ComputeMax_Thickness(Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil);
+
+	/*--- End solver ---*/
+	if (rank == MASTER_NODE)
+		cout << endl <<"------------------------- Exit Success (SU2_GDC) ------------------------" << endl << endl;
+  
+	return EXIT_SUCCESS;
+
 	/*--- Evaluate objective function ---*/
 	switch (config->GetKind_GeoObjFunc()) {
 		case MAX_THICKNESS :
@@ -202,9 +210,6 @@ int main(int argc, char *argv[]) {
 	
 #ifndef NO_MPI
 	/*--- Finalize MPI parallelization ---*/	
-	old_buffer = buffer;
-	MPI::Detach_buffer(old_buffer);
-	//	delete [] buffer;
 	MPI::Finalize();
 #endif
 	

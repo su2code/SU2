@@ -599,6 +599,19 @@ public:
   /*!
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, CConfig *config,
+                                       vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  virtual double ComputeMax_Thickness(vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] config - Definition of the particular problem.
    * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
    * \returns The minimum value of the airfoil thickness.
 	 */
@@ -1412,7 +1425,20 @@ public:
    * \returns The maximum value of the airfoil thickness.
 	 */
   double GetMaxThickness(CConfig *config, bool original_surface);
+  
+	/*!
+	 * \brief Compute the sections of a wing.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, CConfig *config,
+                              vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil);
 	
+  /*!
+	 * \brief Compute the sections of a wing.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  double ComputeMax_Thickness(vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil);
+
   /*!
 	 * \brief Find the minimum thickness of the airfoil.
 	 * \param[in] config - Definition of the particular problem.
@@ -1437,6 +1463,17 @@ public:
 	 */
   double GetClearance(CConfig *config, bool original_surface);
 	
+  /*!
+	 * \brief Compute the intersection between a segment and a plane.
+   * \param[in] Segment_P0 - Definition of the particular problem.
+	 * \param[in] Segment_P1 - Definition of the particular problem.
+	 * \param[in] Plane_P0 - Definition of the particular problem.
+	 * \param[in] Plane_Normal - Definition of the particular problem.
+   * \param[in] Intersection - Definition of the particular problem.
+   * \returns If the intersection has has been successful.
+	 */
+  unsigned short ComputeSegmentPlane_Intersection(double *Segment_P0, double *Segment_P1, double *Plane_P0, double *Plane_Normal, double *Intersection);
+
 };
 
 /*! 

@@ -7604,6 +7604,229 @@ void CBoundaryGeometry::SetBoundSensitivity(CConfig *config) {
 	delete[] Point2Vertex;
 }
 
+void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, CConfig *config,
+                                               vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil) {
+  unsigned short iMarker, iNode, jNode;
+	unsigned long iPoint, jPoint, iElem, MaxX_Point, MinDist_Point, Airfoil_Point, nPoint_Section, iPoint_Section;
+  unsigned short iDim, intersect;
+  double Segment_P0[3] = {0.0, 0.0, 0.0}, Segment_P1[3] = {0.0, 0.0, 0.0}, Intersection[3] = {0.0, 0.0, 0.0}, MaxX_Coord, MinDist_Value, Dist_Value,
+  Airfoil_Tangent[3] = {0.0, 0.0, 0.0}, Segment[3] = {0.0, 0.0, 0.0}, Length, Angle_Value, MinDist_Angle;
+  vector<double> Xcoord, Ycoord, Zcoord;
+  vector<double>::iterator it;
+
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    if (config->GetMarker_All_Moving(iMarker) == YES) {
+      for (iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
+        
+        /*--- Find the intersection of the triangle with the plane ---*/
+        for(iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
+          iPoint = bound[iMarker][iElem]->GetNode(iNode);
+          
+          for(jNode = 0; jNode < bound[iMarker][iElem]->GetnNeighbor_Nodes(iNode); jNode++) {
+            jPoint = bound[iMarker][iElem]->GetNode(bound[iMarker][iElem]->GetNeighbor_Nodes(iNode, jNode));
+            
+            if (jPoint > iPoint) {
+
+              for (iDim = 0; iDim < 3; iDim++) {
+                Segment_P0[iDim] = node[iPoint]->GetCoord(iDim);
+                Segment_P1[iDim] = node[jPoint]->GetCoord(iDim);
+              }
+              
+              intersect = ComputeSegmentPlane_Intersection(Segment_P0, Segment_P1, Plane_P0, Plane_Normal, Intersection);
+              
+              if (intersect == 1) {
+                Xcoord.push_back(Intersection[0]);
+                Ycoord.push_back(Intersection[1]);
+                Zcoord.push_back(Intersection[2]);
+              }
+              
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  /*--- Remove duplicated points (if any) ---*/
+  for (iNode = 0; iNode < Xcoord.size(); iNode++) {
+    for (jNode = iNode; jNode < Xcoord.size(); jNode++) {
+      Segment[0] = Xcoord[jNode] - Xcoord[iNode];
+      Segment[1] = Ycoord[jNode] - Ycoord[iNode];
+      Segment[2] = Zcoord[jNode] - Zcoord[iNode];
+      Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+      if ((iNode != jNode) && (Dist_Value < EPS)) {
+        Xcoord.erase (Xcoord.begin() + jNode);
+        Ycoord.erase (Ycoord.begin() + jNode);
+        Zcoord.erase (Zcoord.begin() + jNode);
+      }
+    }
+  }
+  
+  /*--- Total number of points in the section ---*/
+  nPoint_Section = (Xcoord.size() - 1);
+  
+  /*--- Find the trailing edge ---*/
+  MaxX_Point = 0; MaxX_Coord = Xcoord[0];
+  for (iNode = 1; iNode < Xcoord.size(); iNode++) {
+    if (Xcoord[iNode] > MaxX_Coord) { MaxX_Point = iNode; MaxX_Coord = Xcoord[iNode]; }
+  }
+  
+  /*--- Add the trailing edge to the list ---*/
+  Xcoord_Airfoil.push_back(Xcoord[MaxX_Point]); Ycoord_Airfoil.push_back(Ycoord[MaxX_Point]); Zcoord_Airfoil.push_back(Zcoord[MaxX_Point]);
+  
+  /*--- Remove MaxX_Point from the list ---*/
+  Xcoord.erase (Xcoord.begin() + MaxX_Point); Ycoord.erase (Ycoord.begin() + MaxX_Point); Zcoord.erase (Zcoord.begin() + MaxX_Point);
+
+  for (iPoint_Section = 1; iPoint_Section < nPoint_Section; iPoint_Section++) {
+    
+    /*--- Find the closest point ---*/
+    Airfoil_Point = Xcoord_Airfoil.size() - 1;
+    MinDist_Point = 0;
+    MinDist_Value = sqrt(pow(Xcoord_Airfoil[Airfoil_Point] - Xcoord[0], 2.0) +
+                         pow(Ycoord_Airfoil[Airfoil_Point] - Ycoord[0], 2.0) +
+                         pow(Zcoord_Airfoil[Airfoil_Point] - Zcoord[0], 2.0));
+    
+    if (Airfoil_Point > 0) {
+      Airfoil_Tangent[0] = Xcoord_Airfoil[Airfoil_Point] - Xcoord_Airfoil[Airfoil_Point-1];
+      Airfoil_Tangent[1] = Ycoord_Airfoil[Airfoil_Point] - Ycoord_Airfoil[Airfoil_Point-1];
+      Airfoil_Tangent[2] = Zcoord_Airfoil[Airfoil_Point] - Zcoord_Airfoil[Airfoil_Point-1];
+      Length = sqrt(pow(Airfoil_Tangent[0], 2.0) + pow(Airfoil_Tangent[1], 2.0) + pow(Airfoil_Tangent[2], 2.0));
+      Airfoil_Tangent[0] /= Length; Airfoil_Tangent[1] /= Length; Airfoil_Tangent[2] /= Length;
+    }
+    else { Airfoil_Tangent[0] = 0.0; Airfoil_Tangent[1] = 0.0; Airfoil_Tangent[2] = 0.0; }
+        
+    /*--- Compute the min distance ---*/
+    for (iNode = 1; iNode < Xcoord.size(); iNode++) {
+      
+      Segment[0] = Xcoord[iNode] - Xcoord_Airfoil[Airfoil_Point];
+      Segment[1] = Ycoord[iNode] - Ycoord_Airfoil[Airfoil_Point];
+      Segment[2] = Zcoord[iNode] - Zcoord_Airfoil[Airfoil_Point];
+      Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+      Segment[0] /= Dist_Value; Segment[1] /= Dist_Value; Segment[2] /= Dist_Value;
+
+      if (Airfoil_Point == 0) Angle_Value = 0.0;
+      else Angle_Value = acos(Airfoil_Tangent[0]*Segment[0] + Airfoil_Tangent[1]*Segment[1] + Airfoil_Tangent[2]*Segment[2]) * 180 / PI_NUMBER;      
+      if ((Dist_Value < MinDist_Value) && (Angle_Value < 15.0)) { MinDist_Point = iNode; MinDist_Value = Dist_Value; MinDist_Angle = Angle_Value; }
+    }
+    
+    /*--- Add the min distance to the list ---*/
+    Xcoord_Airfoil.push_back(Xcoord[MinDist_Point]); Ycoord_Airfoil.push_back(Ycoord[MinDist_Point]); Zcoord_Airfoil.push_back(Zcoord[MinDist_Point]);
+    
+    /*--- Remove MinDist_Point from the list ---*/
+    Xcoord.erase (Xcoord.begin() + MinDist_Point); Ycoord.erase (Ycoord.begin() + MinDist_Point); Zcoord.erase (Zcoord.begin() + MinDist_Point);
+  
+  }
+  
+  ofstream Tecplot_File;
+  Tecplot_File.open("Airfoild_Section.plt", ios::out);
+	Tecplot_File << "TITLE = \"Airfoil section\"" << endl;
+  Tecplot_File << "VARIABLES = \"NodeID\",\"x\",\"y\",\"z\" " << endl;
+  for (iNode = 0; iNode < Xcoord_Airfoil.size(); iNode++) {
+    Tecplot_File << iNode << " "<< Xcoord_Airfoil[iNode] <<" "<< Ycoord_Airfoil[iNode] <<" "<< Zcoord_Airfoil[iNode] << endl;
+  }
+  Tecplot_File.close();
+
+}
+
+unsigned short CBoundaryGeometry::ComputeSegmentPlane_Intersection(double *Segment_P0, double *Segment_P1, double *Plane_P0, double *Plane_Normal, double *Intersection) {
+  double u[3], w[3], Denominator, Numerator, sI;
+  unsigned short iDim;
+  
+  for (iDim = 0; iDim < 3; iDim++) {
+    u[iDim] = Segment_P1[iDim] - Segment_P0[iDim];
+    w[iDim] = Plane_P0[iDim] - Segment_P0[iDim];
+  }
+
+  Numerator = Plane_Normal[0]*w[0] + Plane_Normal[1]*w[1] + Plane_Normal[2]*w[2];
+  Denominator = Plane_Normal[0]*u[0] + Plane_Normal[1]*u[1] + Plane_Normal[2]*u[2];
+
+  if (fabs(Denominator) < EPS) return 0;   // Segment lies in plane or no intersection.
+
+  sI = Numerator / Denominator;
+  
+  if (sI < 0.0 || sI > 1.0) return 0; // No intersection.
+  
+  for (iDim = 0; iDim < 3; iDim++)
+    Intersection[iDim] = Segment_P0[iDim] + sI * u[iDim];
+  
+  
+  // Check that the intersection is in the segment
+  for (iDim = 0; iDim < 3; iDim++) {
+    u[iDim] = Segment_P0[iDim] - Intersection[iDim];
+    w[iDim] = Segment_P1[iDim] - Intersection[iDim];
+  }
+  
+  Denominator = Plane_Normal[0]*u[0] + Plane_Normal[1]*u[1] + Plane_Normal[2]*u[2];
+  Numerator = Plane_Normal[0]*w[0] + Plane_Normal[1]*w[1] + Plane_Normal[2]*w[2];
+
+  sI = Numerator * Denominator;
+  
+  if (sI > 0.0) return 3; // Intersection outside the segment.
+  else return 1;
+
+}
+
+double CBoundaryGeometry::ComputeMax_Thickness(vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil) {
+	unsigned long iVertex, jVertex, n;
+	double *Coord, Normal[3], Tangent[3], *VarCoord = NULL, auxXCoord, auxYCoord, yp1, ypn, MaxThickness;
+	vector<double> Xcoord, Ycoord, Y2coord;
+  
+	/*--- Identify upper and lower side --*/
+	for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+    Tangent[0] = Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[iVertex-1];
+    Tangent[1] = Ycoord_Airfoil[iVertex] - Ycoord_Airfoil[iVertex-1];
+    Tangent[2] = Zcoord_Airfoil[iVertex] - Zcoord_Airfoil[iVertex-1];
+
+    Normal[0] = -Tangent[2];
+    Normal[1] = 0.0;
+    Normal[2] = Tangent[0];
+
+    if (Normal[1] > 0) {
+      Xcoord.push_back(Coord[0]);
+      Ycoord.push_back(Coord[1]);
+    }
+  }
+  
+	n = Xcoord.size();
+  
+	/*--- Order the arrays using the y component ---*/
+	for (iVertex = 0; iVertex < Xcoord.size(); iVertex++)
+		for (jVertex = 0; jVertex < Xcoord.size() - 1 - iVertex; jVertex++)
+			if (Xcoord[jVertex] > Xcoord[jVertex+1]) {
+				auxXCoord = Xcoord[jVertex]; Xcoord[jVertex] = Xcoord[jVertex+1]; Xcoord[jVertex+1] = auxXCoord;
+				auxYCoord = Ycoord[jVertex]; Ycoord[jVertex] = Ycoord[jVertex+1]; Ycoord[jVertex+1] = auxYCoord;
+			}
+  
+	yp1=(Ycoord[1]-Ycoord[0])/(Xcoord[1]-Xcoord[0]);
+	ypn=(Ycoord[n-1]-Ycoord[n-2])/(Xcoord[n-1]-Xcoord[n-2]);
+	Y2coord.resize(n+1);
+	SetSpline(Xcoord, Ycoord, n, yp1, ypn, Y2coord);
+  
+	/*--- Compute the max thickness --*/
+	MaxThickness = 0.0;
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+		for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
+			if (config->GetMarker_All_Moving(iMarker) == YES) {
+				Coord = vertex[iMarker][iVertex]->GetCoord();
+				if (original_surface == false) VarCoord = vertex[iMarker][iVertex]->GetVarCoord();
+				Normal = vertex[iMarker][iVertex]->GetNormal();
+				if (Normal[1] < 0) {						// Lower side
+					if (original_surface == true)
+						MaxThickness = max(MaxThickness, fabs(Coord[1]) + fabs(GetSpline(Xcoord, Ycoord, Y2coord, n, Coord[0])));
+					if (original_surface == false)
+						MaxThickness = max(MaxThickness, fabs(Coord[1]+VarCoord[1]) + fabs(GetSpline(Xcoord, Ycoord, Y2coord, n, Coord[0]+VarCoord[0])));
+				}
+			}
+  
+	Xcoord.clear();
+	Ycoord.clear();
+	Y2coord.clear();
+  
+	return MaxThickness;
+
+}
+
+
 double CBoundaryGeometry::GetMaxThickness(CConfig *config, bool original_surface) {
 	unsigned short iMarker;
 	unsigned long iVertex, jVertex, n;
