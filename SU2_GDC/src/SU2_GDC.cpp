@@ -78,10 +78,10 @@ int main(int argc, char *argv[]) {
 	
   /*--- Create airfoil structure ---*/
 	if (rank == MASTER_NODE) cout << "Set the airfoil section." << endl;
-  double Plane_P0[3] = {0.0, 5.0, 0.0}, Plane_Normal[3] = {0.0, 1.0, 0.0};
+  double Plane_P0[3] = {0.0, 9.0, 0.0}, Plane_Normal[3] = {0.0, 1.0, 0.0};
   vector<double> Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil;
 	boundary->ComputeAirfoil_Section(Plane_P0, Plane_Normal, config, Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil);
-  boundary->ComputeMax_Thickness(Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil);
+  boundary->ComputeMax_Thickness(Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil, Plane_Normal);
 
 	/*--- End solver ---*/
 	if (rank == MASTER_NODE)

@@ -607,7 +607,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-  virtual double ComputeMax_Thickness(vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil);
+  virtual double ComputeMax_Thickness(vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, double *Plane_Normal);
   
   /*!
 	 * \brief A virtual member.
@@ -1437,7 +1437,7 @@ public:
 	 * \brief Compute the sections of a wing.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-  double ComputeMax_Thickness(vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil);
+  double ComputeMax_Thickness(vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, double *Plane_Normal);
 
   /*!
 	 * \brief Find the minimum thickness of the airfoil.
