@@ -50,13 +50,11 @@ CTNE2EulerSolver::CTNE2EulerSolver(void) : CSolver() {
 
 CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
 	unsigned long iPoint, index, counter_local = 0, counter_global = 0;
-	unsigned short iVar, iDim, iMarker, iSpecies;
+	unsigned short iVar, iDim, iMarker, iSpecies, nZone;
   double Density, Velocity2;
-  
-	unsigned short nZone = geometry->GetnZone();
-	bool restart = (config->GetRestart() || config->GetRestart_Flow());
-  bool check_temp, check_press;
+	bool restart, check_temp, check_press;
 	
+  restart = (config->GetRestart() || config->GetRestart_Flow());
 	roe_turkel = false;
   
 	int rank = MASTER_NODE;
@@ -89,15 +87,23 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
   
-	/*--- Define geometry constants in the solver structure ---*/
-	nDim = geometry->GetnDim();
-	nSpecies = config->GetnSpecies();
-	nVar = nSpecies + nDim + 2; nPrimVar = nSpecies + nDim + 6; nPrimVarGrad = nSpecies + nDim + 4;
-	nMarker = config->GetnMarker_All();
-	nPoint = geometry->GetnPoint();
+	/*--- Define constants in the solver structure ---*/
+	nSpecies     = config->GetnSpecies();
+	nMarker      = config->GetnMarker_All();
+	nPoint       = geometry->GetnPoint();
 	nPointDomain = geometry->GetnPointDomain();
+  nZone        = geometry->GetnZone();
+  nDim         = geometry->GetnDim();
   
-	/*--- Allocate the node variables ---*/
+  /*--- Set size of the conserved and primitive vectors ---*/
+  //     U: [rho1, ..., rhoNs, rhou, rhov, rhow, rhoe, rhoeve]^T
+  //     V: [rho1, ..., rhoNs, T, Tve, u, v, w, P, rho, h, a, rhoCvtr, rhoCvve]^T
+  // GradV: [rho1, ..., rhoNs, T, Tve, u, v, w, P]^T
+  nVar         = nSpecies + nDim + 2;
+  nPrimVar     = nSpecies + nDim + 8;
+  nPrimVarGrad = nSpecies + nDim + 3;
+  
+	/*--- Allocate a CVariable array for each node of the mesh ---*/
 	node = new CVariable*[nPoint];
   
 	/*--- Define some auxiliary vectors related to the residual ---*/
@@ -131,10 +137,8 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
   
-	/*--- Jacobians and vector structures for implicit computations ---*/
+	/*--- Allocate Jacobians for implicit time-stepping ---*/
 	if (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT) {
-    
-		/*--- Block auxiliary Jacobians ---*/
 		Jacobian_i = new double* [nVar];
 		Jacobian_j = new double* [nVar];
 		for (iVar = 0; iVar < nVar; iVar++) {
@@ -151,7 +155,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
 			cout << "Explicit scheme. No jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
 	}
   
-	/*--- Computation of gradients by least squares ---*/
+	/*--- Allocate arrays for gradient computation by least squares ---*/
 	if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
     
 		/*--- S matrix := inv(R)*traspose(inv(R)) ---*/
@@ -165,7 +169,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
 			cvector[iVar] = new double [nDim];
 	}
   
-	/*--- Forces definition and coefficient in all the markers ---*/
+	/*--- Allocate force & coefficient arrays for mesh markers (boundaries) ---*/
 	CPressure = new double* [nMarker];
 	for (iMarker = 0; iMarker < nMarker; iMarker++)
 		CPressure[iMarker] = new double [geometry->nVertex[iMarker]];
@@ -184,7 +188,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
 	CFy_Inv          = new double[nMarker];
 	CFz_Inv          = new double[nMarker];
   
-	/*--- Init total coefficients ---*/
+	/*--- Initialize total coefficients ---*/
 	Total_CDrag = 0.0;  Total_CLift = 0.0;      Total_CSideForce = 0.0;
 	Total_CMx = 0.0;    Total_CMy = 0.0;        Total_CMz = 0.0;
 	Total_CEff = 0.0;
@@ -207,9 +211,11 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
    the solution from the finest mesh to the coarser levels. ---*/
 	if (!restart || geometry->GetFinestMGLevel() == false || nZone > 1) {
     
-		/*--- Restart the solution from infinity ---*/
+		/*--- Initialize using freestream values ---*/
 		for (iPoint = 0; iPoint < nPoint; iPoint++)
-			node[iPoint] = new CTNE2EulerVariable(Density_Inf, MassFrac_Inf, Velocity_Inf, Temperature_Inf, Temperature_ve_Inf, nDim, nVar, config);
+			node[iPoint] = new CTNE2EulerVariable(Density_Inf, MassFrac_Inf, Velocity_Inf,
+                                            Temperature_Inf, Temperature_ve_Inf, nDim,
+                                            nVar, nPrimVar, nPrimVarGrad, config);
 	}
   
 	else {
@@ -271,7 +277,8 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
         for (iVar = 0; iVar < nVar; iVar++)
           point_line >> Solution[iVar];
         
-				node[iPoint_Local] = new CTNE2EulerVariable(Solution, nDim, nVar, config);
+				node[iPoint_Local] = new CTNE2EulerVariable(Solution, nDim, nVar, nPrimVar,
+                                                    nPrimVarGrad, config);
 			}
 			iPoint_Global++;
 		}
@@ -280,7 +287,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
 		for(iPoint = nPointDomain; iPoint < nPoint; iPoint++)
-			node[iPoint] = new CTNE2EulerVariable(Solution, nDim, nVar, config);
+			node[iPoint] = new CTNE2EulerVariable(Solution, nDim, nVar, nPrimVar, nPrimVarGrad, config);
     
 		/*--- Close the restart file ---*/
 		restart_file.close();
@@ -949,97 +956,47 @@ void CTNE2EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_cont
 
 void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_container, CNumerics *numerics,
                                          CConfig *config, unsigned short iMesh) {
-	double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j,
-	*U_i, *U_j, sqvel, *Limiter_i = NULL, *Limiter_j = NULL;
+	double *U_i, *U_j, *V_i, *V_j;
 	unsigned long iEdge, iPoint, jPoint;
-	unsigned short iDim, iVar;
   
 	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
-	bool high_order_diss = (((config->GetKind_Upwind_TNE2() == ROE_2ND) || (config->GetKind_Upwind_TNE2() == AUSM_2ND)
-                           || (config->GetKind_Upwind_TNE2() == HLLC_2ND) || (config->GetKind_Upwind_TNE2() == ROE_TURKEL_2ND))
+	bool high_order_diss = (((config->GetKind_Upwind_TNE2() == ROE_2ND)  ||
+                           (config->GetKind_Upwind_TNE2() == AUSM_2ND) ||
+                           (config->GetKind_Upwind_TNE2() == HLLC_2ND) ||
+                           (config->GetKind_Upwind_TNE2() == ROE_TURKEL_2ND))
                           && (iMesh == MESH_0));
-	bool grid_movement = config->GetGrid_Movement();
 	bool limiter = (config->GetKind_SlopeLimit_TNE2() != NONE);
+  
+  if (high_order_diss) cout << "WARNING!!! Upwind_Residual: 2nd order accuracy not in place!" << endl;
+  if (limiter) cout << "WARNING!!! Upwind_Residual: Limiter not in place!" << endl;
   
 	for(iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
-		/*--- Points in edge and normal vectors ---*/
+		/*--- Retrieve node numbers and pass edge normal to CNumerics ---*/
 		iPoint = geometry->edge[iEdge]->GetNode(0); jPoint = geometry->edge[iEdge]->GetNode(1);
 		numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
     
-    /*--- Set a copy of the conservative variables w/o reconstruction, just in case the
-     2nd order reconstruction fails ---*/
+    /*--- Pass conserved and primitive variables from CVariable to CNumerics class ---*/
     U_i = node[iPoint]->GetSolution(); U_j = node[jPoint]->GetSolution();
-    numerics->SetConservative_ZeroOrder(U_i, U_j);
-    
-		/*--- Roe Turkel preconditioning ---*/
-		if (roe_turkel) {
-			sqvel = 0.0;
-			for (iDim = 0; iDim < nDim; iDim ++)
-				sqvel += config->GetVelocity_FreeStream()[iDim]*config->GetVelocity_FreeStream()[iDim];
-			numerics->SetVelocity2_Inf(sqvel);
-		}
-    
-		/*--- High order reconstruction using MUSCL strategy ---*/
-		if (high_order_diss) {
-      
-			for (iDim = 0; iDim < nDim; iDim++) {
-				Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
-				Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
-			}
-      
-			Gradient_i = node[iPoint]->GetGradient(); Gradient_j = node[jPoint]->GetGradient();
-			if (limiter) { Limiter_j = node[jPoint]->GetLimiter(); Limiter_i = node[iPoint]->GetLimiter(); }
-      
-			for (iVar = 0; iVar < nVar; iVar++) {
-				Project_Grad_i = 0; Project_Grad_j = 0;
-				for (iDim = 0; iDim < nDim; iDim++) {
-					Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
-					Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
-				}
-				if (limiter) {
-					Solution_i[iVar] = U_i[iVar] + Project_Grad_i*Limiter_i[iVar];
-					Solution_j[iVar] = U_j[iVar] + Project_Grad_j*Limiter_j[iVar];
-				}
-				else {
-					Solution_i[iVar] = U_i[iVar] + Project_Grad_i;
-					Solution_j[iVar] = U_j[iVar] + Project_Grad_j;
-				}
-			}
-      
-			/*--- Set conservative variables with reconstruction ---*/
-			numerics->SetConservative(Solution_i, Solution_j);
-      
-		} else {
-      
-      /*--- Set conservative variables without reconstruction ---*/
-      numerics->SetConservative(U_i, U_j);
-      
-    }
+    V_i = node[iPoint]->GetPrimVar(); V_j = node[jPoint]->GetPrimVar();
+    numerics->SetPrimitive(V_i, V_j);
+    numerics->SetConservative(U_i, U_j);
     
 		/*--- Compute the residual ---*/
 		numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
     
-		/*--- Update residual value ---*/
+		/*--- Update the residual values ---*/
 		LinSysRes.AddBlock(iPoint, Res_Conv);
 		LinSysRes.SubtractBlock(jPoint, Res_Conv);
     
-		/*--- Set implicit jacobians ---*/
+		/*--- Update the implicit Jacobian ---*/
 		if (implicit) {
 			Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 			Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
 			Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
 			Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
 		}
-    
-		/*--- Roe Turkel preconditioning, set the value of beta ---*/
-		if (roe_turkel) {
-			node[iPoint]->SetPreconditioner_Beta(numerics->GetPrecond_Beta());
-			node[jPoint]->SetPreconditioner_Beta(numerics->GetPrecond_Beta());
-		}
-    
 	}
-  
 }
 
 void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_container, CNumerics *numerics,

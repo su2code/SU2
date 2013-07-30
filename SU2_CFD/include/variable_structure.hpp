@@ -3496,7 +3496,11 @@ protected:
 	/*--- Primitive variable definition ---*/
 	double *Primitive;	/*!< \brief Primitive variables (T,vx,vy,vz,P,rho,h,c) in compressible flows. */
 	double **Gradient_Primitive;	/*!< \brief Gradient of the primitive variables (T,vx,vy,vz,P,rho). */
-  double *Limiter_Primitive;    /*!< \brief Limiter of the primitive variables (T,vx,vy,vz,P,rho). */
+  double *Limiter_Primitive;    /*!< \brief Limiter of the primitive variables (T,vx,vy,vz,P,rho). */  
+  
+  unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
+  RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
+
   
 public:
   
@@ -3511,10 +3515,15 @@ public:
 	 * \param[in] val_velocity - Value of the flow velocity (initialization value).
 	 * \param[in] val_energy - Value of the flow energy (initialization value).
 	 * \param[in] val_ndim - Number of dimensions of the problem.
-	 * \param[in] val_nvar - Number of variables of the problem.
+	 * \param[in] val_nvar - Number of conserved variables.
+   * \param[in] val_nvarprim - Number of primitive variables.
+   * \param[in] val_nvarprimgrad - Number of primitive gradient variables.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CTNE2EulerVariable(double val_density, double *val_massfrac, double *val_velocity, double val_temperature, double val_temperature_ve, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+	CTNE2EulerVariable(double val_density, double *val_massfrac, double *val_velocity,
+                     double val_temperature, double val_temperature_ve, unsigned short val_ndim,
+                     unsigned short val_nvar, unsigned short val_nvarprim,
+                     unsigned short val_nvarprimgrad, CConfig *config);
   
 	/*!
 	 * \overload
@@ -3523,7 +3532,8 @@ public:
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CTNE2EulerVariable(double *val_solution, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+	CTNE2EulerVariable(double *val_solution, unsigned short val_ndim, unsigned short val_nvar,
+                     unsigned short val_nvarprim, unsigned short val_nvarprimgrad, CConfig *config);
   
 	/*!
 	 * \brief Destructor of the class.
@@ -3598,6 +3608,11 @@ public:
 	 * \brief Set the value of the enthalpy.
 	 */
 	void SetEnthalpy(void);
+  
+  /*!
+   * \brief Sets gas mixture quantities (\f$\rho C^{trans-rot}_v\f$ & \f$\rho C^{vib-el}_v\f$)
+   */
+  void SetGasProperties(CConfig *config);
 	
 	/*!
 	 * \brief Set all the primitive variables for compressible flows.
@@ -3754,19 +3769,28 @@ public:
 	 * \param[in] val_velocity - Value of the flow velocity (initialization value).
 	 * \param[in] val_energy - Value of the flow energy (initialization value).
 	 * \param[in] val_ndim - Number of dimensions of the problem.
-	 * \param[in] val_nvar - Number of variables of the problem.
+	 * \param[in] val_nvar - Number of conserved variables.
+   * \param[in] val_nvarprim - Number of primitive variables.
+   * \param[in] val_nvarprimgrad - Number of primitive gradient variables.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CTNE2NSVariable(double val_density, double *val_massfrac, double *val_velocity, double val_temperature, double val_temperature_ve, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+	CTNE2NSVariable(double val_density, double *val_massfrac, double *val_velocity,
+                  double val_temperature, double val_temperature_ve, unsigned short val_ndim,
+                  unsigned short val_nvar, unsigned short val_nvarprim,
+                  unsigned short val_nvarprimgrad, CConfig *config);
   
 	/*!
 	 * \overload
 	 * \param[in] val_solution - Pointer to the flow value (initialization value).
 	 * \param[in] val_ndim - Number of dimensions of the problem.
-	 * \param[in] val_nvar - Number of variables of the problem.
+	 * \param[in] val_nvar - Number of conserved variables.
+   * \param[in] val_nvarprim - Number of primitive variables.
+   * \param[in] val_nvarprimgrad - Number of primitive gradient variables.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CTNE2NSVariable(double *val_solution, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+	CTNE2NSVariable(double *val_solution, unsigned short val_ndim, unsigned short val_nvar,
+                  unsigned short val_nvarprim, unsigned short val_nvarprimgrad,
+                  CConfig *config);
   
 	/*!
 	 * \brief Destructor of the class.

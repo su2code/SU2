@@ -96,7 +96,6 @@ void CUpwRoe_TNE2::ComputeResidual(double *val_residual, double **val_Jacobian_i
   double DensityMix_i, DensityMix_j, DensityEnergyForm, DensityEnergyRef;
   double DensityCvtr, DensityCvve, conc;
   double dPdrhoE, dPdrhoEve;
-  bool zero_order;
   
   /*--- Face area (norm or the normal vector) ---*/
 	Area = 0;
@@ -108,231 +107,27 @@ void CUpwRoe_TNE2::ComputeResidual(double *val_residual, double **val_Jacobian_i
 	for (iDim = 0; iDim < nDim; iDim++)
 		UnitaryNormal[iDim] = Normal[iDim]/Area;
   
-  /*--- Load variables from the config class --*/
-  hf        = config->GetEnthalpy_Formation();
-  Tref      = config->GetRefTemperature();
-  rotmodes  = config->GetRotationModes();
-  molarmass = config->GetMolar_Mass();
-  charvibtemp = config->GetCharVibTemp();
-  
-	/*--- Conserved variables at point i,
-   Need to recompute SoundSpeed / Pressure / Enthalpy in
-   case of 2nd order reconstruction ---*/
-  DensityMix_i      = 0.0;
-  DensityEnergyRef  = 0.0;
-  DensityEnergyForm = 0.0;
-  DensityCvtr       = 0.0;
-  conc              = 0.0;
+  /*--- Pull stored primitive variables ---*/
+  // Primitives: [rho1,...,rhoNs, T, Tve, u, v, w, P, rho, h, c]
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    Density_i[iSpecies] = U_i[iSpecies];
-    DensityMix_i       += U_i[iSpecies];
-    DensityEnergyForm  += U_i[iSpecies] * (hf[iSpecies] - UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies]*Tref[iSpecies]);
-    DensityEnergyRef   +=  U_i[iSpecies] * (3.0/2.0 + rotmodes[iSpecies]/2.0)
-    * UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies]*Tref[iSpecies];
-    DensityCvtr        +=  U_i[iSpecies] * (3.0/2.0 + rotmodes[iSpecies]/2.0)
-    * UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies];
-    conc               += U_i[iSpecies] / molarmass[iSpecies];
-    if (Density_i[iSpecies] < 0.0) zero_order = true;
+    Density_i[iSpecies] = V_i[iSpecies];
+    Density_j[iSpecies] = V_j[iSpecies];
   }
-  if (ionization) {
-    iSpecies = nSpecies-1;
-    DensityEnergyRef   -=  U_i[iSpecies] * (3.0/2.0 + rotmodes[iSpecies]/2.0)
-    * UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies]*Tref[iSpecies];
-    DensityCvtr        -=  U_i[iSpecies] * (3.0/2.0 + rotmodes[iSpecies]/2.0)
-    * UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies];
-    conc               -= U_i[iSpecies] / molarmass[iSpecies];
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Velocity_i[iDim] = V_i[nSpecies+2+iDim];
+    Velocity_j[iDim] = V_j[nSpecies+2+iDim];
   }
-	sq_vel = 0;
-	for (iDim = 0; iDim < nDim; iDim++) {
-		Velocity_i[iDim] = U_i[nSpecies+iDim] / DensityMix_i;
-		sq_vel          += Velocity_i[iDim]*Velocity_i[iDim];
-	}
-  Temperature_i    = (U_i[nSpecies+nDim] - U_i[nSpecies+nDim+1] - DensityEnergyForm
-                      + DensityEnergyRef - 0.5*DensityMix_i*sq_vel) / DensityCvtr;
-  Temperature_ve_i = Temperature_i;
+  Pressure_i       = V_i[nSpecies+nDim+2];
+  Pressure_j       = V_j[nSpecies+nDim+2];
+  Enthalpy_i       = V_i[nSpecies+nDim+4];
+  Enthalpy_j       = V_j[nSpecies+nDim+4];
+  Temperature_i    = V_i[nSpecies];
+  Temperature_j    = V_j[nSpecies];
+  Temperature_ve_i = V_i[nSpecies+1];
+  Temperature_ve_j = V_j[nSpecies+1];
+  DensityMix_i     = V_i[nSpecies+3];
+  DensityMix_j     = V_j[nSpecies+3];
   
-	Energy_i     = U_i[nSpecies+nDim] / DensityMix_i;
-  Energy_ve_i  = U_i[nSpecies+nDim+1] / DensityMix_i;
-  
-  Pressure_i = 0.0;
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    Pressure_i += U_i[iSpecies] * UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies] * Temperature_i;
-  if (ionization) {
-    iSpecies = nSpecies - 1;
-    Pressure_i -= U_i[iSpecies] * UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies] * Temperature_i;
-    Pressure_i += U_i[iSpecies] * UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies] * Temperature_ve_i;
-  }
-  if (Pressure_i < 0.0) zero_order = true;
-  
-  dPdrhoE = UNIVERSAL_GAS_CONSTANT/DensityCvtr * conc;
-  SoundSpeed_i = sqrt((1.0 + dPdrhoE) * Pressure_i/DensityMix_i);
-  Enthalpy_i = (U_i[nSpecies+nDim] + Pressure_i) / DensityMix_i;
-  
-  
-  /*--- If it is not a physical solution, then
-   use the zero order reconstruction ---*/
-  if (zero_order) {
-    for (iVar = 0; iVar < nVar; iVar++)
-      U_i[iVar] = UZeroOrder_i[iVar];
-    
-    DensityMix_i      = 0.0;
-    DensityEnergyRef  = 0.0;
-    DensityEnergyForm = 0.0;
-    DensityCvtr       = 0.0;
-    conc              = 0.0;
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-      Density_i[iSpecies] = U_i[iSpecies];
-      DensityMix_i       += U_i[iSpecies];
-      DensityEnergyForm  += U_i[iSpecies] * (hf[iSpecies] - UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies]*Tref[iSpecies]);
-      DensityEnergyRef   +=  U_i[iSpecies] * (3.0/2.0 + rotmodes[iSpecies]/2.0)
-      * UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies]*Tref[iSpecies];
-      DensityCvtr        +=  U_i[iSpecies] * (3.0/2.0 + rotmodes[iSpecies]/2.0)
-      * UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies];
-      conc               += U_i[iSpecies] / molarmass[iSpecies];
-    }
-    if (ionization) {
-      iSpecies = nSpecies-1;
-      DensityEnergyRef   -=  U_i[iSpecies] * (3.0/2.0 + rotmodes[iSpecies]/2.0)
-      * UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies]*Tref[iSpecies];
-      DensityCvtr        -=  U_i[iSpecies] * (3.0/2.0 + rotmodes[iSpecies]/2.0)
-      * UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies];
-      conc               -= U_i[iSpecies] / molarmass[iSpecies];
-    }
-    sq_vel = 0;
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Velocity_i[iDim] = U_i[nSpecies+iDim] / DensityMix_i;
-      sq_vel          += Velocity_i[iDim]*Velocity_i[iDim];
-    }
-    Temperature_i    = (U_i[nSpecies+nDim] - U_i[nSpecies+nDim+1] - DensityEnergyForm
-                        + DensityEnergyRef - 0.5*DensityMix_i*sq_vel) / DensityCvtr;
-    Temperature_ve_i = Temperature_i;
-    
-    Energy_i     = U_i[nSpecies+nDim] / DensityMix_i;
-    Energy_ve_i  = U_i[nSpecies+nDim+1] / DensityMix_i;
-    
-    Pressure_i = 0.0;
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      Pressure_i += U_i[iSpecies] * UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies] * Temperature_i;
-    if (ionization) {
-      iSpecies = nSpecies - 1;
-      Pressure_i -= U_i[iSpecies] * UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies] * Temperature_i;
-      Pressure_i += U_i[iSpecies] * UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies] * Temperature_ve_i;
-    }
-    
-    dPdrhoE = UNIVERSAL_GAS_CONSTANT/DensityCvtr * conc;
-    SoundSpeed_i = sqrt((1.0 + dPdrhoE) * Pressure_i/DensityMix_i);
-    Enthalpy_i = (U_i[nSpecies+nDim] + Pressure_i) / DensityMix_i;
-  }
-  
-	/*--- Conserved variables at point j,
-   Need to recompute SoundSpeed / Pressure / Enthalpy in
-   case of 2nd order reconstruction ---*/
-  zero_order        = false;
-  DensityMix_j      = 0.0;
-  DensityEnergyRef  = 0.0;
-  DensityEnergyForm = 0.0;
-  DensityCvtr       = 0.0;
-  conc              = 0.0;
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    Density_j[iSpecies] = U_j[iSpecies];
-    DensityMix_i       += U_j[iSpecies];
-    DensityEnergyForm  += U_j[iSpecies] * (hf[iSpecies] - UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies]*Tref[iSpecies]);
-    DensityEnergyRef   +=  U_j[iSpecies] * (3.0/2.0 + rotmodes[iSpecies]/2.0)
-    * UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies]*Tref[iSpecies];
-    DensityCvtr        +=  U_j[iSpecies] * (3.0/2.0 + rotmodes[iSpecies]/2.0)
-    * UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies];
-    conc               += U_j[iSpecies] / molarmass[iSpecies];
-    if (Density_j[iSpecies] < 0.0) zero_order = true;
-  }
-  if (ionization) {
-    iSpecies = nSpecies-1;
-    DensityEnergyRef   -=  U_j[iSpecies] * (3.0/2.0 + rotmodes[iSpecies]/2.0)
-    * UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies]*Tref[iSpecies];
-    DensityCvtr        -=  U_j[iSpecies] * (3.0/2.0 + rotmodes[iSpecies]/2.0)
-    * UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies];
-    conc               -= U_j[iSpecies] / molarmass[iSpecies];
-  }
-	sq_vel = 0;
-	for (iDim = 0; iDim < nDim; iDim++) {
-		Velocity_j[iDim] = U_j[nSpecies+iDim] / DensityMix_j;
-		sq_vel          += Velocity_j[iDim]*Velocity_j[iDim];
-	}
-  Temperature_j    = (U_j[nSpecies+nDim] - U_j[nSpecies+nDim+1] - DensityEnergyForm
-                      + DensityEnergyRef - 0.5*DensityMix_j*sq_vel) / DensityCvtr;
-  Temperature_ve_j = Temperature_j;
-  
-	Energy_j     = U_j[nSpecies+nDim] / DensityMix_j;
-  Energy_ve_j  = U_j[nSpecies+nDim+1] / DensityMix_j;
-  
-  Pressure_j = 0.0;
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    Pressure_j += U_j[iSpecies] * UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies] * Temperature_j;
-  if (ionization) {
-    iSpecies = nSpecies - 1;
-    Pressure_j -= U_j[iSpecies] * UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies] * Temperature_j;
-    Pressure_j += U_j[iSpecies] * UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies] * Temperature_ve_j;
-  }
-  if (Pressure_j < 0.0) zero_order = true;
-  
-  dPdrhoE = UNIVERSAL_GAS_CONSTANT/DensityCvtr * conc;
-  SoundSpeed_j = sqrt((1.0 + dPdrhoE) * Pressure_j/DensityMix_j);
-  Enthalpy_j = (U_j[nSpecies+nDim] + Pressure_j) / DensityMix_j;
-  
-  
-  /*--- If it is not a physical solution, then
-   use the zero order reconstruction ---*/
-  if (zero_order) {
-    for (iVar = 0; iVar < nVar; iVar++)
-      U_i[iVar] = UZeroOrder_i[iVar];
-    
-    DensityMix_j      = 0.0;
-    DensityEnergyRef  = 0.0;
-    DensityEnergyForm = 0.0;
-    DensityCvtr       = 0.0;
-    conc              = 0.0;
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-      Density_j[iSpecies] = U_j[iSpecies];
-      DensityMix_j       += U_j[iSpecies];
-      DensityEnergyForm  += U_j[iSpecies] * (hf[iSpecies] - UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies]*Tref[iSpecies]);
-      DensityEnergyRef   +=  U_j[iSpecies] * (3.0/2.0 + rotmodes[iSpecies]/2.0)
-      * UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies]*Tref[iSpecies];
-      DensityCvtr        +=  U_j[iSpecies] * (3.0/2.0 + rotmodes[iSpecies]/2.0)
-      * UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies];
-      conc               += U_j[iSpecies] / molarmass[iSpecies];
-    }
-    if (ionization) {
-      iSpecies = nSpecies-1;
-      DensityEnergyRef   -=  U_j[iSpecies] * (3.0/2.0 + rotmodes[iSpecies]/2.0)
-      * UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies]*Tref[iSpecies];
-      DensityCvtr        -=  U_j[iSpecies] * (3.0/2.0 + rotmodes[iSpecies]/2.0)
-      * UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies];
-      conc               -= U_j[iSpecies] / molarmass[iSpecies];
-    }
-    sq_vel = 0;
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Velocity_j[iDim] = U_j[nSpecies+iDim] / DensityMix_j;
-      sq_vel          += Velocity_j[iDim]*Velocity_j[iDim];
-    }
-    Temperature_j    = (U_j[nSpecies+nDim] - U_j[nSpecies+nDim+1] - DensityEnergyForm
-                        + DensityEnergyRef - 0.5*DensityMix_j*sq_vel) / DensityCvtr;
-    Temperature_ve_j = Temperature_j;
-    
-    Energy_j     = U_j[nSpecies+nDim] / DensityMix_j;
-    Energy_ve_j  = U_j[nSpecies+nDim+1] / DensityMix_j;
-    
-    Pressure_j = 0.0;
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      Pressure_j += U_j[iSpecies] * UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies] * Temperature_j;
-    if (ionization) {
-      iSpecies = nSpecies - 1;
-      Pressure_j -= U_j[iSpecies] * UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies] * Temperature_j;
-      Pressure_j += U_j[iSpecies] * UNIVERSAL_GAS_CONSTANT/molarmass[iSpecies] * Temperature_ve_j;
-    }
-    
-    dPdrhoE = UNIVERSAL_GAS_CONSTANT/DensityCvtr * conc;
-    SoundSpeed_j = sqrt((1.0 + dPdrhoE) * Pressure_j/DensityMix_j);
-    Enthalpy_j = (U_j[nSpecies+nDim] + Pressure_j) / DensityMix_j;
-  }
   
   /*--- Roe-averaged variables at interface between i & j ---*/
   dPdrhoE = 0.0;
