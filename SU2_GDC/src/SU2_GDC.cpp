@@ -78,13 +78,18 @@ int main(int argc, char *argv[]) {
 	
   /*--- Create airfoil structure ---*/
 	if (rank == MASTER_NODE) cout << "Set the airfoil section." << endl;
-  double Plane_P0[3] = {0.0, 9.0, 0.0}, Plane_Normal[3] = {0.0, 1.0, 0.0};
+  double Plane_P0[3] = {0.0, 0.0, 0.0}, Plane_Normal[3] = {0.0, 1.0, 0.0}, Max_Thickness;
   vector<double> Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil;
-  double Relative_AoA, Max_Thickness;
-	boundary->ComputeAirfoil_Section(Plane_P0, Plane_Normal, config, Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil);
-  Relative_AoA = boundary->ComputeCamber_Line(Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil, Plane_Normal);
-  Max_Thickness = boundary->Compute_Thickness(Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil, Plane_Normal, Relative_AoA);
+  unsigned short iPlane, nPlane = 15;
+//  double MinPlane = 1.0, MaxPlane = 14.0;
+  double MinPlane = 1.4, MaxPlane = 4.0;
 
+  for (iPlane = 0; iPlane < nPlane; iPlane++) {
+    Plane_P0[1] = MinPlane + iPlane*(MaxPlane - MinPlane)/double(nPlane-1);
+    boundary->ComputeAirfoil_Section(Plane_P0, Plane_Normal, iPlane, config, Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil);
+    Max_Thickness = boundary->Compute_MaxThickness(Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil, Plane_Normal);
+  }
+   
 	/*--- End solver ---*/
 	if (rank == MASTER_NODE)
 		cout << endl <<"------------------------- Exit Success (SU2_GDC) ------------------------" << endl << endl;

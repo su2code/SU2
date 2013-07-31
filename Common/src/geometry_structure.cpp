@@ -336,18 +336,21 @@ double CGeometry::GetSpline(vector<double>&xa, vector<double>&ya, vector<double>
 	unsigned long klo, khi, k;
 	double h, b, a, y;
   
-	klo=1;										// We will find the right place in the table by means of
-	khi=n;										// bisection. This is optimal if sequential calls to this
+  if (x < xa[0]) x = xa[0];       // Clip max and min values
+  if (x > xa[n-1]) x = xa[n-1];
+
+	klo = 1;										// We will find the right place in the table by means of
+	khi = n;										// bisection. This is optimal if sequential calls to this
 	while (khi-klo > 1) {			// routine are at random values of x. If sequential calls
-		k=(khi+klo) >> 1;				// are in order, and closely spaced, one would do better
-		if (xa[k-1] > x) khi=k;		// to store previous values of klo and khi and test if
+		k = (khi+klo) >> 1;				// are in order, and closely spaced, one would do better
+		if (xa[k-1] > x) khi = k;		// to store previous values of klo and khi and test if
 		else klo=k;							// they remain appropriate on the next call.
 	}								// klo and khi now bracket the input value of x
-	h=xa[khi-1]-xa[klo-1];
-	if (h == 0.0) cout << "Bad xa input to routine splint" << endl;	// The xa’s must be dis-
-	a=(xa[khi-1]-x)/h;																					      // tinct.
-	b=(x-xa[klo-1])/h;				// Cubic spline polynomial is now evaluated.
-	y=a*ya[klo-1]+b*ya[khi-1]+((a*a*a-a)*y2a[klo-1]+(b*b*b-b)*y2a[khi-1])*(h*h)/6.0;
+	h = xa[khi-1] - xa[klo-1];
+	if (h == 0.0) cout << "Bad xa input to routine splint" << endl;	// The xa’s must be distinct.
+	a = (xa[khi-1]-x)/h;
+	b = (x-xa[klo-1])/h;				// Cubic spline polynomial is now evaluated.
+	y = a*ya[klo-1]+b*ya[khi-1]+((a*a*a-a)*y2a[klo-1]+(b*b*b-b)*y2a[khi-1])*(h*h)/6.0;
   
 	return y;
 }
@@ -7604,16 +7607,23 @@ void CBoundaryGeometry::SetBoundSensitivity(CConfig *config) {
 	delete[] Point2Vertex;
 }
 
-void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, CConfig *config,
-                                               vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil) {
+void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, unsigned short Section, CConfig *config,
+                                               vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil,
+                                               vector<double> &Zcoord_Airfoil) {
   unsigned short iMarker, iNode, jNode;
-	unsigned long iPoint, jPoint, iElem, MaxX_Point, MinDist_Point, Airfoil_Point, nPoint_Section, iPoint_Section;
+	unsigned long iPoint, jPoint, iElem, MaxX_Point, MinDist_Point, Airfoil_Point, nPoint_Section, iPoint_Section, iVertex, jVertex, n;
   unsigned short iDim, intersect;
   double Segment_P0[3] = {0.0, 0.0, 0.0}, Segment_P1[3] = {0.0, 0.0, 0.0}, Intersection[3] = {0.0, 0.0, 0.0}, MaxX_Coord, MinDist_Value, Dist_Value,
-  Airfoil_Tangent[3] = {0.0, 0.0, 0.0}, Segment[3] = {0.0, 0.0, 0.0}, Length, Angle_Value, MinDist_Angle;
-  vector<double> Xcoord, Ycoord, Zcoord;
+  Airfoil_Tangent[3] = {0.0, 0.0, 0.0}, Segment[3] = {0.0, 0.0, 0.0}, Length, Angle_Value, MinDist_Angle, Normal[3], Tangent[3], BiNormal[3], auxXCoord,
+  auxYCoord, auxZCoord, zp1, zpn, Camber_Line;
+  vector<double> Xcoord, Ycoord, Zcoord, Z2coord, Xcoord_Normal, Ycoord_Normal, Zcoord_Normal, Xcoord_Camber, Ycoord_Camber, Zcoord_Camber;
   vector<double>::iterator it;
-
+  double MaxAngle = 25;
+  
+  Xcoord_Airfoil.clear();
+	Ycoord_Airfoil.clear();
+	Zcoord_Airfoil.clear();
+  
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     if (config->GetMarker_All_Moving(iMarker) == YES) {
       for (iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
@@ -7706,7 +7716,7 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
 
       if (Airfoil_Point == 0) Angle_Value = 0.0;
       else Angle_Value = acos(Airfoil_Tangent[0]*Segment[0] + Airfoil_Tangent[1]*Segment[1] + Airfoil_Tangent[2]*Segment[2]) * 180 / PI_NUMBER;      
-      if ((Dist_Value < MinDist_Value) && (Angle_Value < 15.0)) { MinDist_Point = iNode; MinDist_Value = Dist_Value; MinDist_Angle = Angle_Value; }
+      if ((Dist_Value < MinDist_Value) && (Angle_Value < MaxAngle)) { MinDist_Point = iNode; MinDist_Value = Dist_Value; MinDist_Angle = Angle_Value; }
     }
     
     /*--- Add the min distance to the list ---*/
@@ -7717,61 +7727,6 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
   
   }
   
-//  ofstream Tecplot_File;
-//  Tecplot_File.open("Airfoil_Section.plt", ios::out);
-//	Tecplot_File << "TITLE = \"Airfoil section\"" << endl;
-//  Tecplot_File << "VARIABLES = \"NodeID\",\"x\",\"y\",\"z\" " << endl;
-//  for (iNode = 0; iNode < Xcoord_Airfoil.size(); iNode++) {
-//    Tecplot_File << iNode << " "<< Xcoord_Airfoil[iNode] <<" "<< Ycoord_Airfoil[iNode] <<" "<< Zcoord_Airfoil[iNode] << endl;
-//  }
-//  Tecplot_File.close();
-
-}
-
-unsigned short CBoundaryGeometry::ComputeSegmentPlane_Intersection(double *Segment_P0, double *Segment_P1, double *Plane_P0, double *Plane_Normal, double *Intersection) {
-  double u[3], w[3], Denominator, Numerator, sI;
-  unsigned short iDim;
-  
-  for (iDim = 0; iDim < 3; iDim++) {
-    u[iDim] = Segment_P1[iDim] - Segment_P0[iDim];
-    w[iDim] = Plane_P0[iDim] - Segment_P0[iDim];
-  }
-
-  Numerator = Plane_Normal[0]*w[0] + Plane_Normal[1]*w[1] + Plane_Normal[2]*w[2];
-  Denominator = Plane_Normal[0]*u[0] + Plane_Normal[1]*u[1] + Plane_Normal[2]*u[2];
-
-  if (fabs(Denominator) < EPS) return 0;   // Segment lies in plane or no intersection.
-
-  sI = Numerator / Denominator;
-  
-  if (sI < 0.0 || sI > 1.0) return 0; // No intersection.
-  
-  for (iDim = 0; iDim < 3; iDim++)
-    Intersection[iDim] = Segment_P0[iDim] + sI * u[iDim];
-  
-  
-  // Check that the intersection is in the segment
-  for (iDim = 0; iDim < 3; iDim++) {
-    u[iDim] = Segment_P0[iDim] - Intersection[iDim];
-    w[iDim] = Segment_P1[iDim] - Intersection[iDim];
-  }
-  
-  Denominator = Plane_Normal[0]*u[0] + Plane_Normal[1]*u[1] + Plane_Normal[2]*u[2];
-  Numerator = Plane_Normal[0]*w[0] + Plane_Normal[1]*w[1] + Plane_Normal[2]*w[2];
-
-  sI = Numerator * Denominator;
-  
-  if (sI > 0.0) return 3; // Intersection outside the segment.
-  else return 1;
-
-}
-
-double CBoundaryGeometry::ComputeCamber_Line(vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil,
-                                               double *Plane_Normal) {
-	unsigned long iVertex, jVertex, n, MaxCamber_Point, MinCamber_Point;
-	double Normal[3], Tangent[3], BiNormal[3], auxXCoord, auxYCoord, auxZCoord, zp1, zpn, MaxThickness_Value, MaxThickness_Location, Thickness, Length, Camber_Line, MaxCamber_Coord, MinCamber_Coord, Relative_AoA;
-	vector<double> Xcoord, Ycoord, Zcoord, Z2coord, Xcoord_Normal, Ycoord_Normal, Zcoord_Normal, Xcoord_Camber, Ycoord_Camber, Zcoord_Camber;
-
 	/*--- Identify upper and lower side, and store the value of the normal --*/
 	for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
     Tangent[0] = Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[iVertex-1];
@@ -7789,7 +7744,7 @@ double CBoundaryGeometry::ComputeCamber_Line(vector<double> &Xcoord_Airfoil, vec
     Normal[0] = Tangent[1]*BiNormal[2] - Tangent[2]*BiNormal[1];
     Normal[1] = Tangent[2]*BiNormal[0] - Tangent[0]*BiNormal[2];
     Normal[2] = Tangent[0]*BiNormal[1] - Tangent[1]*BiNormal[0];
-
+    
     Xcoord_Normal.push_back(Normal[0]); Ycoord_Normal.push_back(Normal[1]); Zcoord_Normal.push_back(Normal[2]);
     
     if (Normal[2] >= 0.0) {
@@ -7818,7 +7773,7 @@ double CBoundaryGeometry::ComputeCamber_Line(vector<double> &Xcoord_Airfoil, vec
 	Z2coord.resize(n+1);
 	SetSpline(Xcoord, Zcoord, n, zp1, zpn, Z2coord);
   
-	/*--- Compute the max thickness --*/
+	/*--- Compute the camber--*/
   for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
     if (Zcoord_Normal[iVertex] < 0.0) {
       Camber_Line = 0.5 * (Zcoord_Airfoil[iVertex] + GetSpline(Xcoord, Zcoord, Z2coord, n, Xcoord_Airfoil[iVertex]));
@@ -7827,51 +7782,93 @@ double CBoundaryGeometry::ComputeCamber_Line(vector<double> &Xcoord_Airfoil, vec
       Zcoord_Camber.push_back(Camber_Line);
     }
   }
-  
+
 //  ofstream Tecplot_File;
-//  Tecplot_File.open("Airfoil_Section.plt", ios::out);
-//	Tecplot_File << "TITLE = \"Airfoil section\"" << endl;
-//  Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\",\"Camber_x\",\"Camber_y\",\"Camber_z\" " << endl;
+//  if (Section == 0) Tecplot_File.open("Airfoil_Section.plt", ios::out);
+//  else Tecplot_File.open("Airfoil_Section.plt", ios::app);
+//  if (Section == 0) {
+//    Tecplot_File << "TITLE = \"Airfoil section\"" << endl;
+//    Tecplot_File << "VARIABLES = \"x\",\"y\",\"Lower_z\",\"Upper_z\",\"Camber_z\"" << endl;
+//  }
 //  for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
 //    if (Zcoord_Normal[iVertex] < 0.0)
 //      Tecplot_File << Xcoord_Airfoil[iVertex] <<" "<< Ycoord_Airfoil[iVertex] <<" "<< Zcoord_Airfoil[iVertex] <<" "<<
-//      Xcoord_Camber[iVertex] <<" "<< Ycoord_Camber[iVertex] <<" "<< Zcoord_Camber[iVertex]  << endl;
+//      GetSpline(Xcoord, Zcoord, Z2coord, n, Xcoord_Airfoil[iVertex]) <<" "<< Zcoord_Camber[iVertex]  << endl;
 //  }
 //  Tecplot_File.close();
+
+  ofstream Tecplot_File;
+  if (Section == 0) Tecplot_File.open("Airfoil_Section.plt", ios::out);
+  else Tecplot_File.open("Airfoil_Section.plt", ios::app);
+  if (Section == 0) {
+    Tecplot_File << "TITLE = \"Airfoil section\"" << endl;
+    Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\"" << endl;
+  }
+  for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+    Tecplot_File << Xcoord_Airfoil[iVertex] <<" "<< Ycoord_Airfoil[iVertex] <<" "<< Zcoord_Airfoil[iVertex] << endl;
+  }
+  Tecplot_File.close();
   
-//  MaxCamber_Point = 0; MaxCamber_Coord = Xcoord[0];
-//  MinCamber_Point = 0; MinCamber_Coord = Xcoord[0];
-//  for (iVertex = 1; iVertex < Xcoord_Camber.size(); iVertex++) {
-//    if (Xcoord[iVertex] > MaxCamber_Coord) { MaxCamber_Point = iVertex; MaxCamber_Coord = Xcoord[iVertex]; }
-//    if (Xcoord[iVertex] < MinCamber_Coord) { MinCamber_Point = iVertex; MinCamber_Coord = Xcoord[iVertex]; }
-//  }
-//  
-//  Relative_AoA = atan((Zcoord_Camber[MinCamber_Point] - Zcoord_Camber[MaxCamber_Point]) / (Xcoord_Camber[MaxCamber_Point] - Xcoord_Camber[MinCamber_Point]))*180/PI_NUMBER;
+}
+
+unsigned short CBoundaryGeometry::ComputeSegmentPlane_Intersection(double *Segment_P0, double *Segment_P1, double *Plane_P0, double *Plane_Normal, double *Intersection) {
+  double u[3], w[3], Denominator, Numerator, sI;
+  unsigned short iDim;
   
-  /*--- Find the leading and trailing edges and compute the angle of attack ---*/
-  MaxCamber_Point = 0;
-  for (iVertex = 1; iVertex < Xcoord_Normal.size(); iVertex++) {
-    if (Zcoord_Normal[iVertex]*Zcoord_Normal[iVertex-1] < 0.0) { MinCamber_Point = iVertex; }
+  for (iDim = 0; iDim < 3; iDim++) {
+    u[iDim] = Segment_P1[iDim] - Segment_P0[iDim];
+    w[iDim] = Plane_P0[iDim] - Segment_P0[iDim];
+  }
+
+  Numerator = Plane_Normal[0]*w[0] + Plane_Normal[1]*w[1] + Plane_Normal[2]*w[2];
+  Denominator = Plane_Normal[0]*u[0] + Plane_Normal[1]*u[1] + Plane_Normal[2]*u[2];
+
+  if (fabs(Denominator) < EPS) return 0;   // Segment lies in plane or no intersection.
+
+  sI = Numerator / Denominator;
+  
+  if (sI < 0.0 || sI > 1.0) return 0; // No intersection.
+  
+  for (iDim = 0; iDim < 3; iDim++)
+    Intersection[iDim] = Segment_P0[iDim] + sI * u[iDim];
+  
+  
+  /*--- Check that the intersection is in the segment ---*/
+  for (iDim = 0; iDim < 3; iDim++) {
+    u[iDim] = Segment_P0[iDim] - Intersection[iDim];
+    w[iDim] = Segment_P1[iDim] - Intersection[iDim];
   }
   
-  Relative_AoA = atan((Zcoord_Airfoil[MinCamber_Point] - Zcoord_Airfoil[MaxCamber_Point]) / (Xcoord_Airfoil[MaxCamber_Point] - Xcoord_Airfoil[MinCamber_Point]))*180/PI_NUMBER;
-    
-  cout << "Relative angle of attack: " << Relative_AoA << "deg." << endl;
+  Denominator = Plane_Normal[0]*u[0] + Plane_Normal[1]*u[1] + Plane_Normal[2]*u[2];
+  Numerator = Plane_Normal[0]*w[0] + Plane_Normal[1]*w[1] + Plane_Normal[2]*w[2];
 
-	Xcoord.clear();
-	Ycoord.clear();
-	Zcoord.clear();
-	Z2coord.clear();
+  sI = Numerator * Denominator;
   
-	return Relative_AoA;
+  if (sI > 0.0) return 3; // Intersection outside the segment.
+  else return 1;
 
 }
 
-double CBoundaryGeometry::Compute_Thickness(vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, double *Plane_Normal, double Relative_AoA) {
+double CBoundaryGeometry::Compute_MaxThickness(vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, double *Plane_Normal) {
 	unsigned long iVertex, jVertex, n;
 	double Normal[3], Tangent[3], BiNormal[3], auxXCoord, auxYCoord, auxZCoord, zp1, zpn, MaxThickness_Value, MaxThickness_Location, Thickness, Length, Xcoord_Trailing, Ycoord_Trailing, Zcoord_Trailing, ValCos, ValSin, XValue, ZValue;
 	vector<double> Xcoord, Ycoord, Zcoord, Z2coord, Xcoord_Normal, Ycoord_Normal, Zcoord_Normal, Xcoord_Airfoil_, Ycoord_Airfoil_, Zcoord_Airfoil_;
+  unsigned long TrailingPoint, LeadingPoint;
+	double MaxDistance, Distance, Relative_AoA;
   
+  /*--- Find the leading and trailing edges and compute the angle of attack ---*/
+  MaxDistance = 0.0; TrailingPoint = 0;
+  for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+    
+    Distance = sqrt(pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[TrailingPoint], 2.0) +
+                    pow(Ycoord_Airfoil[iVertex] - Ycoord_Airfoil[TrailingPoint], 2.0) +
+                    pow(Zcoord_Airfoil[iVertex] - Zcoord_Airfoil[TrailingPoint], 2.0));
+    
+    if (MaxDistance < Distance) { MaxDistance = Distance; LeadingPoint = iVertex; }
+  }
+  
+  Relative_AoA = atan((Zcoord_Airfoil[LeadingPoint] - Zcoord_Airfoil[TrailingPoint]) / (Xcoord_Airfoil[TrailingPoint] - Xcoord_Airfoil[LeadingPoint]))*180/PI_NUMBER;
+    
   /*--- Translate to the origin ---*/
   Xcoord_Trailing = Xcoord_Airfoil[0];
   Ycoord_Trailing = Ycoord_Airfoil[0];
@@ -7937,8 +7934,8 @@ double CBoundaryGeometry::Compute_Thickness(vector<double> &Xcoord_Airfoil, vect
     }
   }
   
-	zp1=(Zcoord[1]-Zcoord[0])/(Xcoord[1]-Xcoord[0]);
-	zpn=(Zcoord[n-1]-Zcoord[n-2])/(Xcoord[n-1]-Xcoord[n-2]);
+	zp1 = (Zcoord[1]-Zcoord[0])/(Xcoord[1]-Xcoord[0]);
+	zpn = (Zcoord[n-1]-Zcoord[n-2])/(Xcoord[n-1]-Xcoord[n-2]);
 	Z2coord.resize(n+1);
 	SetSpline(Xcoord, Zcoord, n, zp1, zpn, Z2coord);
   
@@ -7950,27 +7947,11 @@ double CBoundaryGeometry::Compute_Thickness(vector<double> &Xcoord_Airfoil, vect
       if (Thickness > MaxThickness_Value) { MaxThickness_Value = Thickness; MaxThickness_Location = Xcoord_Airfoil_[iVertex]; }
     }
   }
-  
-  
-  ofstream Tecplot_File;
-  Tecplot_File.open("Airfoil_Section.plt", ios::out);
-	Tecplot_File << "TITLE = \"Airfoil section\"" << endl;
-  Tecplot_File << "VARIABLES = \"NodeID\",\"x\",\"y\",\"z\",\"Spline_z\" " << endl;
-  for (iVertex = 0; iVertex < Xcoord_Airfoil_.size(); iVertex++) {
-    if (Zcoord_Normal[iVertex] < 0.0)
-      Tecplot_File << iVertex << " "<< Xcoord_Airfoil_[iVertex] <<" "<< Ycoord_Airfoil_[iVertex] <<" "<< Zcoord_Airfoil_[iVertex] <<" "<< GetSpline(Xcoord, Zcoord, Z2coord, n, Xcoord_Airfoil_[iVertex]) << endl;
-  }
-  Tecplot_File.close();
-  
-  
-  cout << "MaxThickness: " << MaxThickness_Value << ". Located in: " <<  MaxThickness_Location << "." << endl;
-	Xcoord.clear();
-	Ycoord.clear();
-	Zcoord.clear();
-	Z2coord.clear();
+
+  cout << "Relative AoA: " << Relative_AoA << "deg. MaxThickness: " << MaxThickness_Value << "." << endl;
   
 	return MaxThickness_Value;
-  
+
 }
 
 

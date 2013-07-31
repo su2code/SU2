@@ -600,18 +600,15 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, CConfig *config,
-                                       vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil);
-  
-  virtual double ComputeCamber_Line(vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil,
-                     double *Plane_Normal);
+	virtual void ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, unsigned short Section, CConfig *config,
+                                      vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil);
   
   /*!
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-  virtual double Compute_Thickness(vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil,
-                                      double *Plane_Normal, double Relative_AoA);
+  virtual double Compute_MaxThickness(vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil,
+                                      double *Plane_Normal);
   
   /*!
 	 * \brief A virtual member.
@@ -1434,18 +1431,15 @@ public:
 	 * \brief Compute the sections of a wing.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, CConfig *config,
+	void ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, unsigned short Section, CConfig *config,
                               vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil);
-	
-  double ComputeCamber_Line(vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil,
-                           double *Plane_Normal);
-  
+
   /*!
 	 * \brief Compute the sections of a wing.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-  double Compute_Thickness(vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil,
-                              double *Plane_Normal, double Relative_AoA);
+  double Compute_MaxThickness(vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil,
+                              double *Plane_Normal);
 
   /*!
 	 * \brief Find the minimum thickness of the airfoil.
