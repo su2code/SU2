@@ -1273,10 +1273,9 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
 		filename.append(UnstExt);
 	}
   
-	/*--- For the unsteady adjoint, we integrate backwards through
-   physical time, so load in the direct solution files in reverse. ---*/
+	/*--- Naming the solution files for unsteady/time-spectral cases. ---*/
 	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-		flowIter = val_iZone;
+		val_iZone   = config->GetExtIter();
 		if (int(val_iZone) < 10) sprintf (buffer, "_0000%d.dat", int(val_iZone));
 		if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) sprintf (buffer, "_000%d.dat", int(val_iZone));
 		if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) sprintf (buffer, "_00%d.dat", int(val_iZone));
@@ -1559,10 +1558,9 @@ void CBaselineSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned 
 		filename.append(UnstExt);
 	}
   
-	/*--- For the unsteady adjoint, we integrate backwards through
-   physical time, so load in the direct solution files in reverse. ---*/
+	/*--- Naming the solution files for unsteady/time-spectral cases. ---*/
 	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-		flowIter = val_iZone;
+		val_iZone   = config->GetExtIter();
 		if (int(val_iZone) < 10) sprintf (buffer, "_0000%d.dat", int(val_iZone));
 		if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) sprintf (buffer, "_000%d.dat", int(val_iZone));
 		if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) sprintf (buffer, "_00%d.dat", int(val_iZone));

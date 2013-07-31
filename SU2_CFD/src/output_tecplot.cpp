@@ -103,6 +103,11 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
 	}
     
 	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+
+		/*--- SU2_SOL requires different names. It is only called for parallel cases. ---*/
+		if (config->GetKind_SU2() == SU2_SOL) {
+			val_iZone = iExtIter;
+		}
 		if (int(val_iZone) < 10) sprintf (buffer, "_0000%d.dat", int(val_iZone));
 		if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) sprintf (buffer, "_000%d.dat", int(val_iZone));
 		if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) sprintf (buffer, "_00%d.dat", int(val_iZone));
@@ -264,15 +269,21 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
   
   /*--- Write the header ---*/
   Tecplot_File << "ZONE ";
-	if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady())
+	if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
 		Tecplot_File << "STRANDID="<<int(iExtIter+1)<<", SOLUTIONTIME="<<config->GetDelta_UnstTime()*iExtIter<<", ";
-  
+	} else if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+		/*--- Compute period of oscillation & compute time interval using nTimeInstances ---*/
+		double period = config->GetTimeSpectral_Period();
+		double deltaT = period/(double)(config->GetnTimeInstances());
+		Tecplot_File << "STRANDID="<<int(iExtIter+1)<<", SOLUTIONTIME="<<deltaT*iExtIter<<", ";
+	}
+
 	if (nDim == 2) {
-    if (surf_sol) Tecplot_File << "NODES= "<< nSurf_Poin <<", ELEMENTS= "<< nSurf_Elem <<", DATAPACKING=POINT, ZONETYPE=FELINESEG"<< endl;
-    else Tecplot_File << "NODES= "<< nGlobal_Poin <<", ELEMENTS= "<< nGlobal_Elem <<", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
+		if (surf_sol) Tecplot_File << "NODES= "<< nSurf_Poin <<", ELEMENTS= "<< nSurf_Elem <<", DATAPACKING=POINT, ZONETYPE=FELINESEG"<< endl;
+		else Tecplot_File << "NODES= "<< nGlobal_Poin <<", ELEMENTS= "<< nGlobal_Elem <<", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
 	} else {
-    if (surf_sol) Tecplot_File << "NODES= "<< nSurf_Poin<<", ELEMENTS= "<< nSurf_Elem <<", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
-    else Tecplot_File << "NODES= "<< nGlobal_Poin <<", ELEMENTS= "<< nGlobal_Elem <<", DATAPACKING=POINT, ZONETYPE=FEBRICK"<< endl;
+		if (surf_sol) Tecplot_File << "NODES= "<< nSurf_Poin<<", ELEMENTS= "<< nSurf_Elem <<", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
+		else Tecplot_File << "NODES= "<< nGlobal_Poin <<", ELEMENTS= "<< nGlobal_Elem <<", DATAPACKING=POINT, ZONETYPE=FEBRICK"<< endl;
 	}
   
 	/*--- Write surface and volumetric solution data. ---*/

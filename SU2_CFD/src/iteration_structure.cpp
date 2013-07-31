@@ -1766,21 +1766,8 @@ void SetTimeSpectral_Velocities(CGeometry ***geometry_container,
 
 	double angular_interval = 2.0*PI_NUMBER/(double)(nZone);
 	double *Coord;
-//	double Omega[3], Ampl[3];
 	unsigned long iPoint;
-	// double DEG2RAD = PI_NUMBER/180.0;
-	//	int rank = MASTER_NODE;
 
-//	/*--- rotational velocity ---*/
-//	Omega[0]  = config_container[ZONE_0]->GetPitching_Omega_X(ZONE_0)/config_container[ZONE_0]->GetOmega_Ref();
-//	Omega[1]  = config_container[ZONE_0]->GetPitching_Omega_Y(ZONE_0)/config_container[ZONE_0]->GetOmega_Ref();
-//	Omega[2]  = config_container[ZONE_0]->GetPitching_Omega_Z(ZONE_0)/config_container[ZONE_0]->GetOmega_Ref();
-//	double Omega_mag = sqrt(pow(Omega[0],2)+pow(Omega[1],2)+pow(Omega[2],2));
-//
-//	/*--- amplitude of motion ---*/
-//	Ampl[0]   = config_container[ZONE_0]->GetPitching_Ampl_X(ZONE_0)*DEG2RAD;
-//	Ampl[1]   = config_container[ZONE_0]->GetPitching_Ampl_Y(ZONE_0)*DEG2RAD;
-//	Ampl[2]   = config_container[ZONE_0]->GetPitching_Ampl_Z(ZONE_0)*DEG2RAD;
 
 	/*--- Compute period of oscillation & compute time interval using nTimeInstances ---*/
 	double period = config_container[ZONE_0]->GetTimeSpectral_Period();
