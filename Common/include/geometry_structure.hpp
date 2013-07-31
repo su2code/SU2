@@ -603,11 +603,15 @@ public:
 	virtual void ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, CConfig *config,
                                        vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil);
   
+  virtual double ComputeCamber_Line(vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil,
+                     double *Plane_Normal);
+  
   /*!
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-  virtual double ComputeMax_Thickness(vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, double *Plane_Normal);
+  virtual double Compute_Thickness(vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil,
+                                      double *Plane_Normal, double Relative_AoA);
   
   /*!
 	 * \brief A virtual member.
@@ -1433,11 +1437,15 @@ public:
 	void ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, CConfig *config,
                               vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil);
 	
+  double ComputeCamber_Line(vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil,
+                           double *Plane_Normal);
+  
   /*!
 	 * \brief Compute the sections of a wing.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-  double ComputeMax_Thickness(vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, double *Plane_Normal);
+  double Compute_Thickness(vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil,
+                              double *Plane_Normal, double Relative_AoA);
 
   /*!
 	 * \brief Find the minimum thickness of the airfoil.

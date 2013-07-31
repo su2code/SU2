@@ -186,7 +186,11 @@ inline double CGeometry::GetMaxThickness(CConfig *config, bool original_surface)
 inline void CGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, CConfig *config,
                                        vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil) { }
 
-inline double CGeometry::ComputeMax_Thickness(vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, double *Plane_Normal) { return 0; }
+inline double CGeometry::ComputeCamber_Line(vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, 
+double *Plane_Normal) { return 0; }
+
+inline double CGeometry::Compute_Thickness(vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, 
+double *Plane_Normal, double Relative_AoA) { return 0; }
   
 inline double CGeometry::GetMinThickness(CConfig *config, bool original_surface) { return 0; }
 

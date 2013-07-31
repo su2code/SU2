@@ -80,8 +80,10 @@ int main(int argc, char *argv[]) {
 	if (rank == MASTER_NODE) cout << "Set the airfoil section." << endl;
   double Plane_P0[3] = {0.0, 9.0, 0.0}, Plane_Normal[3] = {0.0, 1.0, 0.0};
   vector<double> Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil;
+  double Relative_AoA, Max_Thickness;
 	boundary->ComputeAirfoil_Section(Plane_P0, Plane_Normal, config, Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil);
-  boundary->ComputeMax_Thickness(Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil, Plane_Normal);
+  Relative_AoA = boundary->ComputeCamber_Line(Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil, Plane_Normal);
+  Max_Thickness = boundary->Compute_Thickness(Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil, Plane_Normal, Relative_AoA);
 
 	/*--- End solver ---*/
 	if (rank == MASTER_NODE)

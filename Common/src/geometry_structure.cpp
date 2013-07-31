@@ -7766,10 +7766,11 @@ unsigned short CBoundaryGeometry::ComputeSegmentPlane_Intersection(double *Segme
 
 }
 
-double CBoundaryGeometry::ComputeMax_Thickness(vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, double *Plane_Normal) {
-	unsigned long iVertex, jVertex, n;
-	double Normal[3], Tangent[3], BiNormal[3], auxXCoord, auxYCoord, auxZCoord, zp1, zpn, MaxThickness_Value, MaxThickness_Location, Thickness, Length;
-	vector<double> Xcoord, Ycoord, Zcoord, Z2coord, Xcoord_Normal, Ycoord_Normal, Zcoord_Normal;
+double CBoundaryGeometry::ComputeCamber_Line(vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil,
+                                               double *Plane_Normal) {
+	unsigned long iVertex, jVertex, n, MaxCamber_Point, MinCamber_Point;
+	double Normal[3], Tangent[3], BiNormal[3], auxXCoord, auxYCoord, auxZCoord, zp1, zpn, MaxThickness_Value, MaxThickness_Location, Thickness, Length, Camber_Line, MaxCamber_Coord, MinCamber_Coord, Relative_AoA;
+	vector<double> Xcoord, Ycoord, Zcoord, Z2coord, Xcoord_Normal, Ycoord_Normal, Zcoord_Normal, Xcoord_Camber, Ycoord_Camber, Zcoord_Camber;
 
 	/*--- Identify upper and lower side, and store the value of the normal --*/
 	for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
@@ -7818,11 +7819,135 @@ double CBoundaryGeometry::ComputeMax_Thickness(vector<double> &Xcoord_Airfoil, v
 	SetSpline(Xcoord, Zcoord, n, zp1, zpn, Z2coord);
   
 	/*--- Compute the max thickness --*/
-	MaxThickness_Value = 0.0; MaxThickness_Location = 0.0;
   for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
     if (Zcoord_Normal[iVertex] < 0.0) {
-      Thickness = fabs(Zcoord_Airfoil[iVertex]) + fabs(GetSpline(Xcoord, Zcoord, Z2coord, n, Xcoord_Airfoil[iVertex]));
-      if (Thickness > MaxThickness_Value) { MaxThickness_Value = Thickness; MaxThickness_Location = Xcoord_Airfoil[iVertex]; }
+      Camber_Line = 0.5 * (Zcoord_Airfoil[iVertex] + GetSpline(Xcoord, Zcoord, Z2coord, n, Xcoord_Airfoil[iVertex]));
+      Xcoord_Camber.push_back(Xcoord_Airfoil[iVertex]);
+      Ycoord_Camber.push_back(Ycoord_Airfoil[iVertex]);
+      Zcoord_Camber.push_back(Camber_Line);
+    }
+  }
+  
+//  ofstream Tecplot_File;
+//  Tecplot_File.open("Airfoil_Section.plt", ios::out);
+//	Tecplot_File << "TITLE = \"Airfoil section\"" << endl;
+//  Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\",\"Camber_x\",\"Camber_y\",\"Camber_z\" " << endl;
+//  for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+//    if (Zcoord_Normal[iVertex] < 0.0)
+//      Tecplot_File << Xcoord_Airfoil[iVertex] <<" "<< Ycoord_Airfoil[iVertex] <<" "<< Zcoord_Airfoil[iVertex] <<" "<<
+//      Xcoord_Camber[iVertex] <<" "<< Ycoord_Camber[iVertex] <<" "<< Zcoord_Camber[iVertex]  << endl;
+//  }
+//  Tecplot_File.close();
+  
+//  MaxCamber_Point = 0; MaxCamber_Coord = Xcoord[0];
+//  MinCamber_Point = 0; MinCamber_Coord = Xcoord[0];
+//  for (iVertex = 1; iVertex < Xcoord_Camber.size(); iVertex++) {
+//    if (Xcoord[iVertex] > MaxCamber_Coord) { MaxCamber_Point = iVertex; MaxCamber_Coord = Xcoord[iVertex]; }
+//    if (Xcoord[iVertex] < MinCamber_Coord) { MinCamber_Point = iVertex; MinCamber_Coord = Xcoord[iVertex]; }
+//  }
+//  
+//  Relative_AoA = atan((Zcoord_Camber[MinCamber_Point] - Zcoord_Camber[MaxCamber_Point]) / (Xcoord_Camber[MaxCamber_Point] - Xcoord_Camber[MinCamber_Point]))*180/PI_NUMBER;
+  
+  /*--- Find the leading and trailing edges and compute the angle of attack ---*/
+  MaxCamber_Point = 0;
+  for (iVertex = 1; iVertex < Xcoord_Normal.size(); iVertex++) {
+    if (Zcoord_Normal[iVertex]*Zcoord_Normal[iVertex-1] < 0.0) { MinCamber_Point = iVertex; }
+  }
+  
+  Relative_AoA = atan((Zcoord_Airfoil[MinCamber_Point] - Zcoord_Airfoil[MaxCamber_Point]) / (Xcoord_Airfoil[MaxCamber_Point] - Xcoord_Airfoil[MinCamber_Point]))*180/PI_NUMBER;
+    
+  cout << "Relative angle of attack: " << Relative_AoA << "deg." << endl;
+
+	Xcoord.clear();
+	Ycoord.clear();
+	Zcoord.clear();
+	Z2coord.clear();
+  
+	return Relative_AoA;
+
+}
+
+double CBoundaryGeometry::Compute_Thickness(vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, double *Plane_Normal, double Relative_AoA) {
+	unsigned long iVertex, jVertex, n;
+	double Normal[3], Tangent[3], BiNormal[3], auxXCoord, auxYCoord, auxZCoord, zp1, zpn, MaxThickness_Value, MaxThickness_Location, Thickness, Length, Xcoord_Trailing, Ycoord_Trailing, Zcoord_Trailing, ValCos, ValSin, XValue, ZValue;
+	vector<double> Xcoord, Ycoord, Zcoord, Z2coord, Xcoord_Normal, Ycoord_Normal, Zcoord_Normal, Xcoord_Airfoil_, Ycoord_Airfoil_, Zcoord_Airfoil_;
+  
+  /*--- Translate to the origin ---*/
+  Xcoord_Trailing = Xcoord_Airfoil[0];
+  Ycoord_Trailing = Ycoord_Airfoil[0];
+  Zcoord_Trailing = Zcoord_Airfoil[0];
+  
+  for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+    Xcoord_Airfoil_.push_back(Xcoord_Airfoil[iVertex] - Xcoord_Trailing);
+    Ycoord_Airfoil_.push_back(Ycoord_Airfoil[iVertex] - Ycoord_Trailing);
+    Zcoord_Airfoil_.push_back(Zcoord_Airfoil[iVertex] - Zcoord_Trailing);
+  }
+  
+  /*--- Rotate the airfoil ---*/
+  ValCos = cos(Relative_AoA*PI_NUMBER/180.0);
+  ValSin = sin(Relative_AoA*PI_NUMBER/180.0);
+  
+  for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+    XValue = Xcoord_Airfoil_[iVertex];
+    ZValue = Zcoord_Airfoil_[iVertex];
+
+    Xcoord_Airfoil_[iVertex] = XValue*ValCos - ZValue*ValSin;
+    Zcoord_Airfoil_[iVertex] = ZValue*ValCos + XValue*ValSin;
+    
+  }
+  
+	/*--- Identify upper and lower side, and store the value of the normal --*/
+	for (iVertex = 1; iVertex < Xcoord_Airfoil_.size(); iVertex++) {
+    Tangent[0] = Xcoord_Airfoil_[iVertex] - Xcoord_Airfoil_[iVertex-1];
+    Tangent[1] = Ycoord_Airfoil_[iVertex] - Ycoord_Airfoil_[iVertex-1];
+    Tangent[2] = Zcoord_Airfoil_[iVertex] - Zcoord_Airfoil_[iVertex-1];
+    Length = sqrt(pow(Tangent[0], 2.0) + pow(Tangent[1], 2.0) + pow(Tangent[2], 2.0));
+    Tangent[0] /= Length; Tangent[1] /= Length; Tangent[2] /= Length;
+    
+    BiNormal[0] = Plane_Normal[0];
+    BiNormal[1] = Plane_Normal[1];
+    BiNormal[2] = Plane_Normal[2];
+    Length = sqrt(pow(BiNormal[0], 2.0) + pow(BiNormal[1], 2.0) + pow(BiNormal[2], 2.0));
+    BiNormal[0] /= Length; BiNormal[1] /= Length; BiNormal[2] /= Length;
+    
+    Normal[0] = Tangent[1]*BiNormal[2] - Tangent[2]*BiNormal[1];
+    Normal[1] = Tangent[2]*BiNormal[0] - Tangent[0]*BiNormal[2];
+    Normal[2] = Tangent[0]*BiNormal[1] - Tangent[1]*BiNormal[0];
+    
+    Xcoord_Normal.push_back(Normal[0]); Ycoord_Normal.push_back(Normal[1]); Zcoord_Normal.push_back(Normal[2]);
+    
+    if (Normal[2] >= 0.0) {
+      Xcoord.push_back(Xcoord_Airfoil_[iVertex]);
+      Ycoord.push_back(Ycoord_Airfoil_[iVertex]);
+      Zcoord.push_back(Zcoord_Airfoil_[iVertex]);
+    }
+    
+  }
+  
+	n = Xcoord.size();
+  
+	/*--- Order the arrays using the X component ---*/
+	for (iVertex = 0; iVertex < Xcoord.size(); iVertex++) {
+		for (jVertex = 0; jVertex < Xcoord.size() - 1 - iVertex; jVertex++) {
+			if (Xcoord[jVertex] > Xcoord[jVertex+1]) {
+				auxXCoord = Xcoord[jVertex]; Xcoord[jVertex] = Xcoord[jVertex+1]; Xcoord[jVertex+1] = auxXCoord;
+				auxYCoord = Ycoord[jVertex]; Ycoord[jVertex] = Ycoord[jVertex+1]; Ycoord[jVertex+1] = auxYCoord;
+				auxZCoord = Zcoord[jVertex]; Zcoord[jVertex] = Zcoord[jVertex+1]; Zcoord[jVertex+1] = auxZCoord;
+			}
+    }
+  }
+  
+	zp1=(Zcoord[1]-Zcoord[0])/(Xcoord[1]-Xcoord[0]);
+	zpn=(Zcoord[n-1]-Zcoord[n-2])/(Xcoord[n-1]-Xcoord[n-2]);
+	Z2coord.resize(n+1);
+	SetSpline(Xcoord, Zcoord, n, zp1, zpn, Z2coord);
+  
+	/*--- Compute the max thickness --*/
+	MaxThickness_Value = 0.0; MaxThickness_Location = 0.0;
+  for (iVertex = 0; iVertex < Xcoord_Airfoil_.size(); iVertex++) {
+    if (Zcoord_Normal[iVertex] < 0.0) {
+      Thickness = fabs(Zcoord_Airfoil_[iVertex]) + fabs(GetSpline(Xcoord, Zcoord, Z2coord, n, Xcoord_Airfoil_[iVertex]));
+      if (Thickness > MaxThickness_Value) { MaxThickness_Value = Thickness; MaxThickness_Location = Xcoord_Airfoil_[iVertex]; }
     }
   }
   
@@ -7831,17 +7956,11 @@ double CBoundaryGeometry::ComputeMax_Thickness(vector<double> &Xcoord_Airfoil, v
   Tecplot_File.open("Airfoil_Section.plt", ios::out);
 	Tecplot_File << "TITLE = \"Airfoil section\"" << endl;
   Tecplot_File << "VARIABLES = \"NodeID\",\"x\",\"y\",\"z\",\"Spline_z\" " << endl;
-  for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+  for (iVertex = 0; iVertex < Xcoord_Airfoil_.size(); iVertex++) {
     if (Zcoord_Normal[iVertex] < 0.0)
-      Tecplot_File << iVertex << " "<< Xcoord_Airfoil[iVertex] <<" "<< Ycoord_Airfoil[iVertex] <<" "<< Zcoord_Airfoil[iVertex] <<" "<< GetSpline(Xcoord, Zcoord, Z2coord, n, Xcoord_Airfoil[iVertex]) << endl;
+      Tecplot_File << iVertex << " "<< Xcoord_Airfoil_[iVertex] <<" "<< Ycoord_Airfoil_[iVertex] <<" "<< Zcoord_Airfoil_[iVertex] <<" "<< GetSpline(Xcoord, Zcoord, Z2coord, n, Xcoord_Airfoil_[iVertex]) << endl;
   }
   Tecplot_File.close();
-  
-  
-  
-  
-  
-  
   
   
   cout << "MaxThickness: " << MaxThickness_Value << ". Located in: " <<  MaxThickness_Location << "." << endl;
@@ -7851,7 +7970,7 @@ double CBoundaryGeometry::ComputeMax_Thickness(vector<double> &Xcoord_Airfoil, v
 	Z2coord.clear();
   
 	return MaxThickness_Value;
-
+  
 }
 
 
