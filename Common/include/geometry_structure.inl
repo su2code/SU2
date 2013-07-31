@@ -183,11 +183,10 @@ inline void CGeometry::FindSharpEdges(CConfig *config) { }
 
 inline double CGeometry::GetMaxThickness(CConfig *config, bool original_surface) { return 0; }
 
-inline void CGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, unsigned short Section, CConfig *config,
+inline void CGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config,
                                        vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil) { }
 
-inline double CGeometry::Compute_MaxThickness(vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, 
-double *Plane_Normal) { return 0; }
+inline double CGeometry::Compute_MaxThickness(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil) { return 0; }
   
 inline double CGeometry::GetMinThickness(CConfig *config, bool original_surface) { return 0; }
 

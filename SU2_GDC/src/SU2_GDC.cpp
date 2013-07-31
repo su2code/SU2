@@ -24,7 +24,7 @@
 #include "../include/SU2_GDC.hpp"
 using namespace std;
 
-int main(int argc, char *argv[]) {	
+int main(int argc, char *argv[]) {
   
   /*--- Local variables ---*/
 	unsigned short iDV, nZone = 1;
@@ -54,7 +54,7 @@ int main(int argc, char *argv[]) {
 	}
 	
 #ifndef NO_MPI
-	/*--- Change the name of the input-output files for the 
+	/*--- Change the name of the input-output files for the
 	 parallel computation ---*/
 	config->SetFileNameDomain(rank+1);
 #endif
@@ -69,58 +69,65 @@ int main(int argc, char *argv[]) {
 		cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
 	
   /*--- Boundary geometry preprocessing ---*/
-	if (rank == MASTER_NODE) cout << "Identify vertices." <<endl; 
+	if (rank == MASTER_NODE) cout << "Identify vertices." <<endl;
 	boundary->SetVertex();
 	
 	/*--- Create the control volume structures ---*/
-	if (rank == MASTER_NODE) cout << "Set boundary control volume structure." << endl; 
+	if (rank == MASTER_NODE) cout << "Set boundary control volume structure." << endl;
 	boundary->SetBoundControlVolume(config, ALLOCATE);
 	
-  /*--- Create airfoil structure ---*/
-	if (rank == MASTER_NODE) cout << "Set the airfoil section." << endl;
-  double Plane_P0[3] = {0.0, 0.0, 0.0}, Plane_Normal[3] = {0.0, 1.0, 0.0}, Max_Thickness;
-  vector<double> Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil;
-  unsigned short iPlane, nPlane = 15;
-//  double MinPlane = 1.0, MaxPlane = 14.0;
-  double MinPlane = 1.4, MaxPlane = 4.0;
 
-  for (iPlane = 0; iPlane < nPlane; iPlane++) {
-    Plane_P0[1] = MinPlane + iPlane*(MaxPlane - MinPlane)/double(nPlane-1);
-    boundary->ComputeAirfoil_Section(Plane_P0, Plane_Normal, iPlane, config, Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil);
-    Max_Thickness = boundary->Compute_MaxThickness(Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil, Plane_Normal);
+  /*--- Evaluate objective function ---*/
+  if (boundary->GetnDim() == 2) {
+    
+    switch (config->GetKind_GeoObjFunc()) {
+      case MAX_THICKNESS :
+        ObjectiveFunc = boundary->GetMaxThickness(config, true);
+        cout << "Maximum thickness: "<< ObjectiveFunc << "." << endl;
+        break;
+      case MIN_THICKNESS :
+        ObjectiveFunc = boundary->GetMinThickness(config, true);
+        cout << "Minimum thickness: "<< ObjectiveFunc << "." << endl;
+        break;
+      case TOTAL_VOLUME :
+        ObjectiveFunc = boundary->GetTotalVolume(config, true);
+        cout << "Total volume: "<< ObjectiveFunc << "." << endl;
+        break;
+      case CLEARANCE :
+        ObjectiveFunc = boundary->GetClearance(config, true);
+        cout << "Clearance: "<< ObjectiveFunc << "." << endl;
+        break;
+    }
+    
   }
-   
-	/*--- End solver ---*/
-	if (rank == MASTER_NODE)
-		cout << endl <<"------------------------- Exit Success (SU2_GDC) ------------------------" << endl << endl;
-  
-	return EXIT_SUCCESS;
-
-	/*--- Evaluate objective function ---*/
-	switch (config->GetKind_GeoObjFunc()) {
-		case MAX_THICKNESS :
-			ObjectiveFunc = boundary->GetMaxThickness(config, true);
-			cout << "Maximum thickness: "<< ObjectiveFunc << "." << endl; 
-			break;
-    case MIN_THICKNESS :
-			ObjectiveFunc = boundary->GetMinThickness(config, true);
-			cout << "Minimum thickness: "<< ObjectiveFunc << "." << endl;
-			break;
-		case TOTAL_VOLUME :
-			ObjectiveFunc = boundary->GetTotalVolume(config, true);
-			cout << "Total volume: "<< ObjectiveFunc << "." << endl; 
-			break;
-    case CLEARANCE :
-			ObjectiveFunc = boundary->GetClearance(config, true);
-			cout << "Clearance: "<< ObjectiveFunc << "." << endl;
-			break;
-	}
+  else if (boundary->GetnDim() == 3) {
+    
+    /*--- Create airfoil structure ---*/
+    if (rank == MASTER_NODE) cout << "Set the airfoil section." << endl;
+    double Plane_P0[3] = {0.0, 0.0, 0.0}, Plane_Normal[3] = {0.0, 1.0, 0.0}, Max_Thickness[100];
+    vector<double> Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil;
+    unsigned short iPlane, nPlane = 10;
+    double MinPlane = 1.5, MaxPlane = 3.5;
+    
+    for (iPlane = 0; iPlane < nPlane; iPlane++) {
+      Plane_P0[1] = MinPlane + iPlane*(MaxPlane - MinPlane)/double(nPlane-1);
+      boundary->ComputeAirfoil_Section(Plane_P0, Plane_Normal, iPlane, config, Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil);
+      Max_Thickness[iPlane] = boundary->Compute_MaxThickness(Plane_P0, Plane_Normal, iPlane, Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil);
+    }
+    
+    switch (config->GetKind_GeoObjFunc()) {
+      case MAX_THICKNESS :
+        ObjectiveFunc = Max_Thickness[5];
+        break;
+    }
+    
+  }
 	
 	/*--- Write the objective function in a external file ---*/
 	if (rank == MASTER_NODE) {
 		cstr = new char [config->GetObjFunc_Eval_FileName().size()+1];
 		strcpy (cstr, config->GetObjFunc_Eval_FileName().c_str());
-		ObjFunc_file.open(cstr, ios::out);		
+		ObjFunc_file.open(cstr, ios::out);
 		ObjFunc_file << ObjectiveFunc << endl;
 		ObjFunc_file.close();
 	}
@@ -134,7 +141,7 @@ int main(int argc, char *argv[]) {
 		unsigned short nFFDBox = MAX_NUMBER_FFD;
 		FFDBox = new CFreeFormDefBox*[nFFDBox];
 		
-		if (rank == MASTER_NODE) 
+		if (rank == MASTER_NODE)
 			cout << endl <<"---------- Start gradient evaluation using finite differences -----------" << endl;
 		
 		/*--- Write the gradient in a external file ---*/
@@ -177,7 +184,7 @@ int main(int argc, char *argv[]) {
 						delta_eps = config->GetDV_Value_New(iDV);
 						Gradient = (ObjectiveFunc_New - ObjectiveFunc) / (delta_eps + EPS);
 						if (iDV == 0) Gradient_file << "Max thickness grad. using fin. dif." << endl;
-						cout << "Max thickness gradient: "<< Gradient << "." << endl; 
+						cout << "Max thickness gradient: "<< Gradient << "." << endl;
 						break;
           case MIN_THICKNESS :
 						ObjectiveFunc_New = boundary->GetMinThickness(config, false);
@@ -191,7 +198,7 @@ int main(int argc, char *argv[]) {
 						delta_eps = config->GetDV_Value_New(iDV);
 						Gradient = (ObjectiveFunc_New - ObjectiveFunc) / (delta_eps + EPS);
 						if (iDV == 0) Gradient_file << "Total volume grad. using fin. dif." << endl;
-						cout << "Total volume gradient: "<< Gradient << "." << endl; 
+						cout << "Total volume gradient: "<< Gradient << "." << endl;
 						break;
           case CLEARANCE :
 						ObjectiveFunc_New = boundary->GetClearance(config, false);
@@ -211,19 +218,19 @@ int main(int argc, char *argv[]) {
 		
 		if (rank == MASTER_NODE)
 			Gradient_file.close();
-						
+    
 	}
 	
 	
 #ifndef NO_MPI
-	/*--- Finalize MPI parallelization ---*/	
+	/*--- Finalize MPI parallelization ---*/
 	MPI::Finalize();
 #endif
 	
 	/*--- End solver ---*/
-	if (rank == MASTER_NODE) 
+	if (rank == MASTER_NODE)
 		cout << endl <<"------------------------- Exit Success (SU2_GDC) ------------------------" << endl << endl;
-		
+  
 	return EXIT_SUCCESS;
 	
 }
