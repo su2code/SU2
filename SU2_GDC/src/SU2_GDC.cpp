@@ -2,7 +2,7 @@
  * \file SU2_GDC.cpp
  * \brief Main file of the Geometry Definition Code (SU2_GDC).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
 #endif
 	
 	/*--- Pointer to different structures that will be used throughout the entire code ---*/
-	CFreeFormChunk** chunk = NULL;
+	CFreeFormDefBox** FFDBox = NULL;
 	CConfig *config = NULL;
 	CGeometry *boundary = NULL;
 	CSurfaceMovement *surface_mov = NULL;
@@ -116,8 +116,8 @@ int main(int argc, char *argv[]) {
 		surface_mov = new CSurfaceMovement();
 		
 		/*--- Definition of the FFD deformation class ---*/
-		unsigned short nChunk = MAX_NUMBER_CHUNK;
-		chunk = new CFreeFormChunk*[nChunk];
+		unsigned short nFFDBox = MAX_NUMBER_FFD;
+		FFDBox = new CFreeFormDefBox*[nFFDBox];
 		
 		if (rank == MASTER_NODE) 
 			cout << endl <<"---------- Start gradient evaluation using finite differences -----------" << endl;

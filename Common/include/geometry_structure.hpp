@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>geometry_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -57,7 +57,7 @@ using namespace std;
  * \brief Parent class for defining the geometry of the problem (complete geometry, 
  *        multigrid agglomerated geometry, only boundary geometry, etc..)
  * \author F. Palacios.
- * \version 2.0.5
+ * \version 2.0.6
  */
 class CGeometry {
 protected:
@@ -433,27 +433,14 @@ public:
 
 	/*! 
 	 * \brief A virtual member.
-	 * \param[in] config_filename - Name of the file where the paraview information is going to be stored.
-	 */
-	virtual void SetParaView(char config_filename[200]);
-
-	/*! 
-	 * \brief A virtual member.
-	 * \param[in] config_filename - Name of the file where the paraview information is going to be stored.
+	 * \param[in] config_filename - Name of the file where the tecplot information is going to be stored.
 	 */
 	virtual void SetTecPlot(char config_filename[200]);
 
 	/*! 
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.		 
-	 * \param[in] mesh_filename - Name of the file where the paraview information is going to be stored.
-	 */
-	virtual void SetBoundParaView(CConfig *config, char mesh_filename[200]);
-
-	/*! 
-	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.		 
-	 * \param[in] mesh_filename - Name of the file where the paraview information is going to be stored.
+	 * \param[in] mesh_filename - Name of the file where the tecplot information is going to be stored.
 	 */
 	virtual void SetBoundTecPlot(CConfig *config, char mesh_filename[200]);
 
@@ -546,13 +533,13 @@ public:
 	 */
 	virtual void SetMeshFile(CGeometry *geometry, CConfig *config, string val_mesh_out_filename);
 
-	/*! 
+  /*!
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_mesh_out_filename - Name of the output file.
-	 */	
-	virtual void SetMeshFile_IntSurface(CConfig *config, string val_mesh_out_filename);
-
+	 */
+	virtual void SetMeshFile(CConfig *config, string val_mesh_out_filename, string val_mesh_in_filename);
+  
 	/*! 
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
@@ -812,7 +799,7 @@ public:
  * \brief Class for reading a defining the primal grid which is read from the 
  *        grid file in .su2 format.
  * \author F. Palacios.
- * \version 2.0.5
+ * \version 2.0.6
  */
 class CPhysicalGeometry : public CGeometry {
 
@@ -976,26 +963,11 @@ public:
 	void SetBoundControlVolume(CConfig *config, unsigned short action);
 
 	/*! 
-	 * \brief Set the Paraview file.
-	 * \param[in] config_filename - Name of the file where the Paraview 
-	 *            information is going to be stored.
-	 */
-	void SetParaView(char config_filename[200]);
-
-	/*! 
 	 * \brief Set the Tecplot file.
 	 * \param[in] config_filename - Name of the file where the Tecplot 
 	 *            information is going to be stored.
 	 */
 	void SetTecPlot(char config_filename[200]);
-
-	/*! 
-	 * \brief Set the output file for boundaries in Paraview
-	 * \param[in] config - Definition of the particular problem.		 
-	 * \param[in] mesh_filename - Name of the file where the Paraview 
-	 *            information is going to be stored.
-	 */
-	void SetBoundParaView(CConfig *config, char mesh_filename[200]);
 
 	/*! 
 	 * \brief Set the output file for boundaries in Tecplot
@@ -1057,13 +1029,13 @@ public:
 	 * \param[in] val_mesh_out_filename - Name of the output file.
 	 */	
 	void SetMeshFile(CConfig *config, string val_mesh_out_filename);
-
-	/*! 
-	 * \brief Write the .su2 file, with an internal surface
+  
+  /*!
+	 * \brief Write the .su2 file, with new domain coordinates
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_mesh_out_filename - Name of the output file.
-	 */	
-	void SetMeshFile_IntSurface(CConfig *config, string val_mesh_out_filename);
+	 */
+	void SetMeshFile(CConfig *config, string val_mesh_out_filename, string val_mesh_in_filename);
 
 	/*! 
 	 * \brief Create a 2D mesh using a 3D mesh with symmetries.
@@ -1230,7 +1202,7 @@ public:
  * \brief Class for defining the multigrid geometry, the main delicated part is the 
  *        agglomeration stage, which is done in the declaration.
  * \author F. Palacios.
- * \version 2.0.5
+ * \version 2.0.6
  */
 class CMultiGridGeometry : public CGeometry {
 
@@ -1395,7 +1367,7 @@ public:
  * \brief Class for only defining the boundary of the geometry, this class is only 
  *        used in case we are not interested in the volumetric grid.
  * \author F. Palacios.
- * \version 2.0.5
+ * \version 2.0.6
  */
 class CBoundaryGeometry : public CGeometry {
   
@@ -1432,14 +1404,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetBoundSensitivity(CConfig *config);
-
-	/*! 
-	 * \brief Set the output file for boundaries in Paraview
-	 * \param[in] config - Definition of the particular problem.		 
-	 * \param[in] mesh_filename - Name of the file where the Paraview 
-	 *            information is going to be stored.
-	 */
-	void SetBoundParaView(CConfig *config, char mesh_filename[200]);
 	
 	/*! 
 	 * \brief Find the maximum thickness of the airfoil.
@@ -1479,7 +1443,7 @@ public:
  * \class CDomainGeometry
  * \brief Class for defining an especial kind of grid used in the partioning stage.
  * \author F. Palacios.
- * \version 2.0.5
+ * \version 2.0.6
  */
 class CDomainGeometry : public CGeometry {
 	long *Global_to_Local_Point;				/*!< \brief Global-local indexation for the points. */
@@ -1519,26 +1483,11 @@ public:
 	void SetSendReceive(CConfig *config);
 
 	/*! 
-	 * \brief Set the Paraview file.
-	 * \param[in] config_filename - Name of the file where the Paraview 
-	 *            information is going to be stored.
-	 */
-	void SetParaView(char config_filename[200]);
-
-	/*! 
 	 * \brief Set the Tecplot file.
 	 * \param[in] config_filename - Name of the file where the Tecplot
 	 *            information is going to be stored.
 	 */
 	void SetTecPlot(char config_filename[200]);
-
-	/*! 
-	 * \brief Set the output file for boundaries in Paraview
-	 * \param[in] config - Definition of the particular problem.		 
-	 * \param[in] mesh_filename - Name of the file where the Paraview
-	 *            information is going to be stored.
-	 */
-	void SetBoundParaView(CConfig *config, char mesh_filename[200]);
 
 	/*! 
 	 * \brief Write the .su2 file.
@@ -1567,7 +1516,7 @@ public:
  * \class CPeriodicGeometry
  * \brief Class for defining a periodic boundary condition.
  * \author T. Economon, F. Palacios.
- * \version 2.0.5
+ * \version 2.0.6
  */
 class CPeriodicGeometry : public CGeometry {
 	CPrimalGrid*** newBoundPer;            /*!< \brief Boundary vector for new periodic elements (primal grid information). */
@@ -1595,15 +1544,8 @@ public:
 	void SetPeriodicBoundary(CGeometry *geometry, CConfig *config);
 
 	/*! 
-	 * \brief Set the Paraview file.
-	 * \param[in] config_filename - Name of the file where the Paraview 
-	 *            information is going to be stored.
-	 */
-	void SetParaView(char config_filename[200]);
-
-	/*! 
 	 * \brief Set the Tecplot file.
-	 * \param[in] config_filename - Name of the file where the Paraview 
+	 * \param[in] config_filename - Name of the file where the Tecplot 
 	 *            information is going to be stored.
 	 */
 	void SetTecPlot(char config_filename[200]);
@@ -1620,7 +1562,7 @@ public:
  * \struct CMultiGridQueue
  * \brief Class for a multigrid queue system
  * \author F. Palacios.
- * \version 2.0.5
+ * \version 2.0.6
  * \date Aug 12, 2012
  */
 class CMultiGridQueue {

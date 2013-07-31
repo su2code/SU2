@@ -2,7 +2,7 @@
  * \file variable_structure.inl
  * \brief In-Line subroutines of the <i>variable_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -67,9 +67,9 @@ inline double *CVariable::GetSolution_time_n1(void) { return Solution_time_n1; }
 
 inline double CVariable::GetAuxVar(void) { return AuxVar; }
 
-inline double *CVariable::GetUnd_Lapl(void) { return Undivided_Laplacian; }
+inline double *CVariable::GetUndivided_Laplacian(void) { return Undivided_Laplacian; }
 
-inline double CVariable::GetUnd_Lapl(unsigned short val_var) { return Undivided_Laplacian[val_var]; }
+inline double CVariable::GetUndivided_Laplacian(unsigned short val_var) { return Undivided_Laplacian[val_var]; }
 
 inline void CVariable::AddSolution(unsigned short val_var, double val_solution) {Solution[val_var] = Solution_Old[val_var] + val_solution; }
 
@@ -251,17 +251,21 @@ inline void CVariable::SetObjFuncSource(double *val_ObjFuncSource) { }
 
 inline void CVariable::SetIntBoundary_Jump(double *val_IntBoundary_Jump) { }
 
-inline void CVariable::SetEddyViscosity(unsigned short val_Kind_Turb_Model, CVariable *Turb_Solution) { }
+inline void CVariable::SetEddyViscosity(unsigned short val_Kind_Turb_Model, CVariable *TurbVariable) { }
 
 inline void CVariable::SetEnthalpy(void) { }
 
-inline void CVariable::SetPrimVar_Compressible(double Gamma, double Gas_Constant) { }
+inline void CVariable::SetPrimVar_Compressible(CConfig *config) { }
 
-inline void CVariable::SetPrimVar_Compressible(double Gamma, double Gas_Constant, double turb_ke) { }
+inline void CVariable::SetPrimVar_Compressible(double val_adjlimit) { }
+
+inline void CVariable::SetPrimVar_Compressible(CConfig *config, double turb_ke) { }
 
 inline void CVariable::SetPrimVar_Incompressible(double Density_Inf, double levelset, CConfig *config) { }
 
 inline void CVariable::SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double turb_ke, double levelset, CConfig *config) { }
+
+inline void CVariable::SetPrimVar_Incompressible(double val_adjlimit) { }
 
 inline double CVariable::GetPrimVar(unsigned short val_var) { return 0; }
 

@@ -2,7 +2,7 @@
  * \file numerics_structure.inl
  * \brief In-Line subroutines of the <i>numerics_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -27,76 +27,76 @@ inline double CNumerics::Determinant_3x3(double A00, double A01, double A02, dou
 	return A00*(A11*A22-A12*A21) - A01*(A10*A22-A12*A20) + A02*(A10*A21-A11*A20);
 }
 
-inline void CNumerics::SetResidual(double *val_residual, CConfig *config) { }
+inline void CNumerics::ComputeResidual(double *val_residual, CConfig *config) { }
 
-inline void CNumerics::SetResidual_MacCormack(double *val_residual, CConfig *config) { }
+inline void CNumerics::ComputeResidual_MacCormack(double *val_residual, CConfig *config) { }
 
-inline void CNumerics::SetResidual(double *val_residual_i, double *val_residual_j) { }
+inline void CNumerics::ComputeResidual(double *val_residual_i, double *val_residual_j) { }
 
-inline void CNumerics::SetResidual(double *val_residual_i, double *val_residual_j, CConfig *config) { }
+inline void CNumerics::ComputeResidual(double *val_residual_i, double *val_residual_j, CConfig *config) { }
 
-inline void CNumerics::SetResidual(double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) { }
+inline void CNumerics::ComputeResidual(double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) { }
 
-inline void CNumerics::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, 
+inline void CNumerics::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, 
                                    CConfig *config) { }
 
-inline void CNumerics::SetResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j,
+inline void CNumerics::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j,
                                    double **val_JacobianMeanFlow_i, double **val_JacobianMeanFlow_j, CConfig *config) { }
 
-inline void CNumerics::SetResidual(double *val_resconv, double *val_resvisc, double **val_Jacobian_i, 
+inline void CNumerics::ComputeResidual(double *val_resconv, double *val_resvisc, double **val_Jacobian_i, 
 								   double **val_Jacobian_j, CConfig *config) { }
 
-inline void CNumerics::SetResidual(double *val_residual_i, double *val_residual_j, 
+inline void CNumerics::ComputeResidual(double *val_residual_i, double *val_residual_j, 
 								   double **val_Jacobian_ii, double **val_Jacobian_ij, 
 								   double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config) { }
 							
-inline void CNumerics::SetResidual(double *val_resconv_i, double *val_resvisc_i, double *val_resconv_j, 
+inline void CNumerics::ComputeResidual(double *val_resconv_i, double *val_resvisc_i, double *val_resconv_j, 
 								   double *val_resvisc_j, double **val_Jacobian_ii, double **val_Jacobian_ij, 
 								   double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config) { }
 							
-inline void CNumerics::SetResidual(double **val_stiffmatrix_elem, CConfig *config) { }
+inline void CNumerics::ComputeResidual(double **val_stiffmatrix_elem, CConfig *config) { }
 
 inline void CNumerics::GetEq_Rxn_Coefficients(double **EqnRxnConstants, CConfig *config) { };
 														
-inline void CNumerics::SetResidual(double *val_residual, double **val_Jacobian_i, CConfig *config) { }
+inline void CNumerics::ComputeResidual(double *val_residual, double **val_Jacobian_i, CConfig *config) { }
 
-inline void CNumerics::SetResidual_TransLM(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config, double &gamma_sep) {}
+inline void CNumerics::ComputeResidual_TransLM(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config, double &gamma_sep) {}
 
-inline void CNumerics::SetResidual_Axisymmetric(double *val_residual, CConfig *config) { }
+inline void CNumerics::ComputeResidual_Axisymmetric(double *val_residual, CConfig *config) { }
 
-inline void CNumerics::SetResidual_Axisymmetric_ad(double *val_residual, double *val_residuald, CConfig *config) { }
+inline void CNumerics::ComputeResidual_Axisymmetric_ad(double *val_residual, double *val_residuald, CConfig *config) { }
 
 inline void CNumerics::SetJacobian_Axisymmetric(double **val_Jacobian_i, CConfig *config) { }
 
-inline void CNumerics::SetResidual_Chemistry(double *val_residual, CConfig *config) { }
+inline void CNumerics::ComputeResidual_Chemistry(double *val_residual, CConfig *config) { }
 
-inline void CNumerics::SetResidual_Chemistry_ad(double *val_residual, double *val_residuald, CConfig *config) { }
+inline void CNumerics::ComputeResidual_Chemistry_ad(double *val_residual, double *val_residuald, CConfig *config) { }
 
-inline void CNumerics::SetResidual_Chemistry(double *val_residual, double **val_Jacobian, CConfig *config) { }
+inline void CNumerics::ComputeResidual_Chemistry(double *val_residual, double **val_Jacobian, CConfig *config) { }
 
 inline void CNumerics::SetJacobian_Chemistry(double **val_Jacobian_i, CConfig *config) { }
 
-inline void CNumerics::SetResidual_ElecForce(double *val_residual, CConfig *config) { }
+inline void CNumerics::ComputeResidual_ElecForce(double *val_residual, CConfig *config) { }
 
-inline void CNumerics::SetResidual_ElecForce(double *val_residual, double **val_Jacobian, CConfig *config) { }
+inline void CNumerics::ComputeResidual_ElecForce(double *val_residual, double **val_Jacobian, CConfig *config) { }
 
 inline void CNumerics::SetJacobian_ElecForce(double **val_Jacobian_i, CConfig *config) { }
 
-inline void CNumerics::SetResidual_MomentumExch(double *val_residual, CConfig *config) { }
+inline void CNumerics::ComputeResidual_MomentumExch(double *val_residual, CConfig *config) { }
 
-inline void CNumerics::SetResidual_MomentumExch_ad(double *val_residual, double *val_residuald, CConfig *config) { }
+inline void CNumerics::ComputeResidual_MomentumExch_ad(double *val_residual, double *val_residuald, CConfig *config) { }
 
-inline void CNumerics::SetResidual_MomentumExch(double *val_residual, double **val_Jacobian, CConfig *config) { }
+inline void CNumerics::ComputeResidual_MomentumExch(double *val_residual, double **val_Jacobian, CConfig *config) { }
 
 inline void CNumerics::SetJacobian_MomentumExch(double **val_Jacobian_i, CConfig *config) { }
 
-inline void CNumerics::SetResidual_EnergyExch(double *val_residual, double **val_Jacobian, CConfig *config) { }
+inline void CNumerics::ComputeResidual_EnergyExch(double *val_residual, double **val_Jacobian, CConfig *config) { }
 
-inline void CNumerics::SetResidual_EnergyExch(double *val_residual, double *val_residual_ElecForce, double **val_Jacobian, CConfig *config) { }
+inline void CNumerics::ComputeResidual_EnergyExch(double *val_residual, double *val_residual_ElecForce, double **val_Jacobian, CConfig *config) { }
 
-inline void CNumerics::SetResidual_EnergyExch(double *val_residual, CConfig *config) { }
+inline void CNumerics::ComputeResidual_EnergyExch(double *val_residual, CConfig *config) { }
 
-inline void CNumerics::SetResidual_EnergyExch_ad(double *val_residual, double *val_residuald, CConfig *config) { }
+inline void CNumerics::ComputeResidual_EnergyExch_ad(double *val_residual, double *val_residuald, CConfig *config) { }
 
 inline void CNumerics::SetJacobian_EnergyExch(double **val_Jacobian_i, CConfig *config) { }
 
@@ -145,6 +145,11 @@ inline void CCentLax_AdjPlasmaDiatomic::SetSensor( double val_sensor_i, double v
 inline void CNumerics::SetConservative(double *val_u_i, double *val_u_j) {
 	U_i = val_u_i;
 	U_j = val_u_j;
+}
+
+inline void CNumerics::SetConservative_ZeroOrder(double *val_u_i, double *val_u_j) {
+	UZeroOrder_i = val_u_i;
+	UZeroOrder_j = val_u_j;
 }
 
 inline void CNumerics::SetPrimitive(double *val_v_i, double *val_v_j) {
@@ -542,7 +547,7 @@ inline void CNumerics::SetKappaPsiVolume(double val_kappapsi_Volume) {}
 
 inline void CSourceViscous_AdjFlow::SetKappaPsiVolume(double val_kappapsi_Volume) { kappapsi_Volume = val_kappapsi_Volume;}
 
-inline void CNumerics::SetResidual(double **val_Jacobian_i, double *val_Jacobian_mui, double ***val_Jacobian_gradi, CConfig *config) { }
+inline void CNumerics::ComputeResidual(double **val_Jacobian_i, double *val_Jacobian_mui, double ***val_Jacobian_gradi, CConfig *config) { }
 
-inline void CNumerics::SetResidual(double **val_Jacobian_i, double *val_Jacobian_mui, double ***val_Jacobian_gradi, 
+inline void CNumerics::ComputeResidual(double **val_Jacobian_i, double *val_Jacobian_mui, double ***val_Jacobian_gradi, 
 									double **val_Jacobian_j, double *val_Jacobian_muj, double ***val_Jacobian_gradj, CConfig *config) { }

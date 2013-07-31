@@ -2,7 +2,7 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -22,6 +22,10 @@
  */
 
 #pragma once
+
+inline void CConfig::SetFanFace_Mach(unsigned short val_imarker, double val_fanface_mach) { FanFace_Mach[val_imarker] = val_fanface_mach; }
+
+inline void CConfig::SetFanFace_Pressure(unsigned short val_imarker, double val_fanface_pressure) { FanFace_Pressure[val_imarker] = val_fanface_pressure; }
 
 inline unsigned short CConfig::GetKind_SU2(void) { return Kind_SU2; }
 
@@ -52,6 +56,8 @@ inline unsigned short CConfig::GetMaxChildren(void) { return MaxChildren; }
 inline string CConfig::GetPlaneTag(unsigned short index) { return PlaneTag[index]; }
 
 inline double CConfig::GetEA_IntLimit(unsigned short index) { return EA_IntLimit[index]; }
+
+inline double CConfig::GetAdjointLimit(void) { return AdjointLimit; }
 
 inline double *CConfig::GetHold_GridFixed_Coord(void) { return Hold_GridFixed_Coord; }
 
@@ -400,8 +406,6 @@ inline unsigned long CConfig::GetLinear_Solver_Iter(void) { return Linear_Solver
 
 inline double CConfig::GetLinear_Solver_Relax(void) { return Linear_Solver_Relax; }
 
-inline bool CConfig::GetLinear_Solver_Hist(void) { return Linear_Solver_Hist; }
-
 inline unsigned short CConfig::GetKind_AdjTurb_Linear_Solver(void) { return Kind_AdjTurb_Linear_Solver; }
 
 inline unsigned short CConfig::GetKind_AdjTurb_Linear_Prec(void) { return Kind_AdjTurb_Linear_Prec; }
@@ -413,8 +417,6 @@ inline double CConfig::GetAdjTurb_Linear_Error(void) { return AdjTurb_Linear_Err
 inline unsigned short CConfig::GetAdjTurb_Linear_Iter(void) { return AdjTurb_Linear_Iter; }
 
 inline double CConfig::GetAdjTurb_CFLRedCoeff(void) { return AdjTurb_CFLRedCoeff; }
-
-inline double CConfig::GetGridDef_Error(void) { return GridDef_Error; }
 
 inline unsigned long CConfig::GetFEA_Iter(void) { return FEA_Iter; }
 
@@ -624,8 +626,6 @@ inline unsigned short CConfig::GetKind_GeoObjFunc(void) {return Kind_GeoObjFunc;
 
 inline unsigned short CConfig::GetKind_SensSmooth(void) {return Kind_SensSmooth; }
 
-inline unsigned short CConfig::GetKind_ObjFuncType(void) {return Kind_ObjFuncType; }
-
 inline unsigned short CConfig::GetContinuous_Eqns(void) {return Continuous_Eqns; }
 
 inline unsigned short CConfig::GetDiscrete_Eqns(void) {return Discrete_Eqns; }
@@ -633,8 +633,6 @@ inline unsigned short CConfig::GetDiscrete_Eqns(void) {return Discrete_Eqns; }
 inline unsigned short CConfig::GetUnsteady_Simulation(void) { return Unsteady_Simulation; }
 
 inline bool CConfig::GetRestart(void) {	return Restart; }
-
-inline bool CConfig::GetRestart_Euler2Plasma(void) { return Restart_Euler2Plasma; }
 
 inline bool CConfig::GetRestart_Flow(void) { return Restart_Flow; }
 
@@ -651,6 +649,10 @@ inline double CConfig::GetPitching_Amplitude(void) { return Pitching_Amplitude; 
 inline void CConfig::SetnMarker_All(unsigned short val_nmarker) { nMarker_All = val_nmarker; }
 
 inline string CConfig::GetMarker_All_Tag(unsigned short val_marker) { return Marker_All_Tag[val_marker]; }
+
+inline string CConfig::GetMarker_NacelleInflow(unsigned short val_marker) { return Marker_NacelleInflow[val_marker]; }
+
+inline string CConfig::GetMarker_NacelleExhaust(unsigned short val_marker) { return Marker_NacelleExhaust[val_marker]; }
 
 inline unsigned short CConfig::GetTag_Marker_All(string val_tag) {
 	for (unsigned short iMarker = 0; iMarker < nMarker_All; iMarker++) {
@@ -694,7 +696,15 @@ inline unsigned short CConfig::GetMarker_All_Plotting(unsigned short val_marker)
 
 inline unsigned short CConfig::GetMarker_All_Moving(unsigned short val_marker) { return Marker_All_Moving[val_marker]; }
 
-inline unsigned short CConfig::GetnMarker_All(void) {	return nMarker_All; }
+inline unsigned short CConfig::GetnMarker_All(void) { return nMarker_All; }
+
+inline unsigned short CConfig::GetnMarker_NacelleInflow(void) {	return nMarker_NacelleInflow; }
+
+inline unsigned short CConfig::GetnMarker_NacelleExhaust(void) { return nMarker_NacelleExhaust; }
+
+inline unsigned short CConfig::GetnMarker_InterfaceBound(void) { return nMarker_InterfaceBound; }
+
+inline unsigned short CConfig::GetnMarker_NearFieldBound(void) { return nMarker_NearFieldBound; }
 
 inline string CConfig::GetMesh_FileName(void) { return Mesh_FileName; }
 
@@ -705,8 +715,6 @@ inline unsigned short CConfig::GetMesh_FileFormat(void) { return Mesh_FileFormat
 inline unsigned short CConfig::GetOutput_FileFormat(void) { return Output_FileFormat; }
 
 inline string CConfig::GetConv_FileName(void) { return Conv_FileName; }
-
-inline string CConfig::GetLin_Conv_FileName(void) { return Lin_Conv_FileName; }
 
 inline string CConfig::GetSolution_FlowFileName(void) { return Solution_FlowFileName; }
 
@@ -784,7 +792,7 @@ inline double CConfig::GetOrderMagResidual(void) { return OrderMagResidual; }
 
 inline double CConfig::GetMinLogResidual(void) { return MinLogResidual; }
 
-inline double CConfig::GetDamp_Engine_Inlet(void) { return Damp_Engine_Inlet; }
+inline double CConfig::GetDamp_Nacelle_Inflow(void) { return Damp_Nacelle_Inflow; }
 
 inline double CConfig::GetDamp_Res_Restric(void) { return Damp_Res_Restric; }
 
@@ -911,10 +919,6 @@ inline bool CConfig::GetWrt_Sol_Tec_Binary(void) { return Wrt_Sol_Tec_Binary; }
 inline bool CConfig::GetWrt_Residuals(void) { return Wrt_Residuals; }
 
 inline bool CConfig::GetWrt_Halo(void) { return Wrt_Halo; }
-
-inline unsigned short CConfig::GetnOutput_Vars_Vol(void) { return nOutput_Vars_Vol; }
-
-inline unsigned short CConfig::GetOutput_Vars_Vol(unsigned short val_index) { return Output_Vars_Vol[val_index]; }
 
 inline bool CConfig::GetRelative_Motion(void) { return Relative_Motion; }
 

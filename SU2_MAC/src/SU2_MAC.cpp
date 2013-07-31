@@ -2,7 +2,7 @@
  * \file SU2_MAC.cpp
  * \brief Main file of Mesh Adaptation Code (SU2_MAC).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
 	/*--- Variable definitions ---*/
 	char file_name[200];
   unsigned short nZone = 1;
-
+  
 #ifndef NO_MPI
 	MPI::Init(argc, argv);
 #endif
@@ -49,19 +49,19 @@ int main(int argc, char *argv[]) {
 	cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
 	
 	/*--- Compute elements surrounding points, points surrounding points, and elements surronding elements ---*/
-	cout << "Setting local point and element connectivity." <<endl; 
+	cout << "Setting local point and element connectivity." <<endl;
 	geometry->SetEsuP(); geometry->SetPsuP(); geometry->SetEsuE();
 	
 	/*--- Check the orientation before computing geometrical quantities ---*/
-	cout << "Check numerical grid orientation." <<endl; 
+	cout << "Check numerical grid orientation." <<endl;
 	geometry->SetBoundVolume(); geometry->Check_Orientation(config);
 	
 	/*--- Create the edge structure ---*/
-	cout << "Identify faces, edges and vertices." <<endl; 
+	cout << "Identify faces, edges and vertices." <<endl;
 	geometry->SetFaces(); geometry->SetEdges(); geometry->SetVertex(config); geometry->SetCG();
 	
 	/*--- Create the control volume structures ---*/
-	cout << "Set control volume structure." << endl; 
+	cout << "Set control volume structure." << endl;
 	geometry->SetControlVolume(config, ALLOCATE); geometry->SetBoundControlVolume(config, ALLOCATE);
 	
 	/*--- Set the near-field and interface boundary conditions  ---*/
@@ -69,17 +69,17 @@ int main(int argc, char *argv[]) {
 	
 	if (config->GetKind_Adaptation() != NONE) {
 		
-		cout << endl <<"--------------------- Start numerical grid adaptation -------------------" << endl;	
+		cout << endl <<"--------------------- Start numerical grid adaptation -------------------" << endl;
 		
 		/*-- Definition of the Class for grid adaptation ---*/
-		CGridAdaptation *grid_adaptation; 
+		CGridAdaptation *grid_adaptation;
 		grid_adaptation = new CGridAdaptation(geometry, config);
 		
-		/*--- Read the flow solution and/or the adjoint solution 
+		/*--- Read the flow solution and/or the adjoint solution
 		 and choose the elements to adapt ---*/
-		if ((config->GetKind_Adaptation() != NONE) && (config->GetKind_Adaptation() != FULL) 
-				&& (config->GetKind_Adaptation() != WAKE) && (config->GetKind_Adaptation() != TWOPHASE) 
-				&& (config->GetKind_Adaptation() != SMOOTHING) && (config->GetKind_Adaptation() != SUPERSONIC_SHOCK)) 
+		if ((config->GetKind_Adaptation() != NONE) && (config->GetKind_Adaptation() != FULL)
+				&& (config->GetKind_Adaptation() != WAKE) && (config->GetKind_Adaptation() != TWOPHASE)
+				&& (config->GetKind_Adaptation() != SMOOTHING) && (config->GetKind_Adaptation() != SUPERSONIC_SHOCK))
 			grid_adaptation->GetFlowSolution(geometry, config);
 		
 		switch (config->GetKind_Adaptation()) {
@@ -101,7 +101,7 @@ int main(int argc, char *argv[]) {
 			case SUPERSONIC_SHOCK:
 				grid_adaptation->SetSupShock_Refinement(geometry, config);
 				break;
-			case FULL_FLOW: 
+			case FULL_FLOW:
 				grid_adaptation->SetComplete_Refinement(geometry, 1);
 				break;
 			case FULL_ADJOINT:
@@ -111,7 +111,7 @@ int main(int argc, char *argv[]) {
 			case FULL_LINEAR:
 				grid_adaptation->GetLinSolution(geometry, config);
 				grid_adaptation->SetComplete_Refinement(geometry, 1);
-				break;			
+				break;
 			case GRAD_FLOW:
 				grid_adaptation->SetIndicator_Flow(geometry, config, 1);
 				break;
@@ -126,13 +126,13 @@ int main(int argc, char *argv[]) {
 			case COMPUTABLE:
 				grid_adaptation->GetAdjSolution(geometry, config);
 				grid_adaptation->GetFlowResidual(geometry, config);
-				grid_adaptation->SetIndicator_Computable(geometry, config);			
+				grid_adaptation->SetIndicator_Computable(geometry, config);
 				break;
 			case REMAINING:
 				cout << "Adaptation method not implemented."<< endl;
 				cout << "Press any key to exit..." << endl;
 				cin.get();
-				exit(1);	
+				exit(1);
 				break;
 			case ROBUST:
 				grid_adaptation->GetFlowResidual(geometry, config);
@@ -154,7 +154,7 @@ int main(int argc, char *argv[]) {
 		cout << "Homothetic grid adaptation" << endl;
 		if (geometry->GetnDim() == 2) grid_adaptation->SetHomothetic_Adaptation2D(geometry, geo_adapt, config);
 		if (geometry->GetnDim() == 3) grid_adaptation->SetHomothetic_Adaptation3D(geometry, geo_adapt, config);
-
+    
 		/*--- Smooth the numerical grid coordinates ---*/
 		if (config->GetSmoothNumGrid()) {
 			cout << "Preprocessing for doing the implicit smoothing." << endl;
@@ -166,70 +166,50 @@ int main(int argc, char *argv[]) {
 		}
 		
 		/*--- Original and adapted grid ---*/
-		if (config->GetOutput_FileFormat() == PARAVIEW)  {
-			strcpy (file_name, "original_grid.vtk");
-			geometry->SetParaView(file_name);
-		}
-		if (config->GetOutput_FileFormat() == TECPLOT) {
-			strcpy (file_name, "original_grid.plt");
-			geometry->SetTecPlot(file_name); 
-		}
-			
+    strcpy (file_name, "original_grid.plt");
+    geometry->SetTecPlot(file_name);
+    
 		/*--- Write the adaptation sensor ---*/
 		grid_adaptation->WriteAdaptSensor(geometry, file_name);
 		
-		if (config->GetOutput_FileFormat() == PARAVIEW) {
-			strcpy (file_name, "adapted_grid.vtk");
-			geo_adapt->SetParaView(file_name);
-			strcpy (file_name, "adapted_surface.vtk");
-			geo_adapt->SetBoundParaView(config,file_name);
-		}
-		if (config->GetOutput_FileFormat() == TECPLOT) {
-			strcpy (file_name, "adapted_grid.plt");		
-			geo_adapt->SetTecPlot(file_name);
-			strcpy (file_name, "adapted_surface.plt");
-			geo_adapt->SetBoundTecPlot(config,file_name);
-		}
+    strcpy (file_name, "adapted_grid.plt");
+    geo_adapt->SetTecPlot(file_name);
+    strcpy (file_name, "adapted_surface.plt");
+    geo_adapt->SetBoundTecPlot(config,file_name);
 		
 		/*--- Write the new adapted grid, including the modified boundaries surfaces ---*/
 		geo_adapt->SetMeshFile(config, config->GetMesh_Out_FileName());
-
-
+    
+    
 		/*--- Write the restart file ---*/
-		if ((config->GetKind_Adaptation() != SMOOTHING) && (config->GetKind_Adaptation() != FULL) && 
-				(config->GetKind_Adaptation() != WAKE) && (config->GetKind_Adaptation() != TWOPHASE) && 
+		if ((config->GetKind_Adaptation() != SMOOTHING) && (config->GetKind_Adaptation() != FULL) &&
+				(config->GetKind_Adaptation() != WAKE) && (config->GetKind_Adaptation() != TWOPHASE) &&
 				(config->GetKind_Adaptation() != SUPERSONIC_SHOCK))
 			grid_adaptation->SetRestart_FlowSolution(config, config->GetRestart_FlowFileName());
 		
-		if ((config->GetKind_Adaptation() == GRAD_FLOW_ADJ) || (config->GetKind_Adaptation() == GRAD_ADJOINT) 
-				|| (config->GetKind_Adaptation() == FULL_ADJOINT) || (config->GetKind_Adaptation() == ROBUST) 
-				|| (config->GetKind_Adaptation() == COMPUTABLE) || (config->GetKind_Adaptation() == COMPUTABLE_ROBUST) || 
+		if ((config->GetKind_Adaptation() == GRAD_FLOW_ADJ) || (config->GetKind_Adaptation() == GRAD_ADJOINT)
+				|| (config->GetKind_Adaptation() == FULL_ADJOINT) || (config->GetKind_Adaptation() == ROBUST)
+				|| (config->GetKind_Adaptation() == COMPUTABLE) || (config->GetKind_Adaptation() == COMPUTABLE_ROBUST) ||
 				(config->GetKind_Adaptation() == REMAINING))
-			grid_adaptation->SetRestart_AdjSolution(config, config->GetRestart_AdjFileName());		
+			grid_adaptation->SetRestart_AdjSolution(config, config->GetRestart_AdjFileName());
 		
 		if ((config->GetKind_Adaptation() == FULL_LINEAR) || (config->GetKind_Adaptation() == COMPUTABLE_ROBUST)) {
 			grid_adaptation->SetRestart_LinSolution(config, config->GetRestart_LinFileName());
 		}
 	}
 	else {
-		if (config->GetOutput_FileFormat() == PARAVIEW) {
-			strcpy (file_name, "original_grid.vtk");
-			geometry->SetParaView(file_name);
-		}
-		if (config->GetOutput_FileFormat() == TECPLOT) {
-			strcpy (file_name, "original_grid.plt");
-			geometry->SetTecPlot(file_name);
-		}
+    strcpy (file_name, "original_grid.plt");
+    geometry->SetTecPlot(file_name);
 		geometry->SetMeshFile (config, config->GetMesh_Out_FileName());
 	}
-
+  
 #ifndef NO_MPI
 	MPI::Finalize();
 #endif
 	
 	/*--- End solver ---*/
 	cout << endl <<"------------------------- Exit Success (SU2_MAC) ------------------------" << endl << endl;
-		
+  
 	return EXIT_SUCCESS;
 }
 

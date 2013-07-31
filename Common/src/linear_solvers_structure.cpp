@@ -2,7 +2,7 @@
  * \file linear_solvers_structure.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author Current Development: Stanford University.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -23,350 +23,15 @@
 
 #include "../include/linear_solvers_structure.hpp"
 
-CSysVector::CSysVector(const unsigned int & size, const double & val) {
-
-  /*--- Check for invalid size, then allocate memory and initialize
-        values ---*/
-  if ( (size <= 0) || (size >= UINT_MAX) ) {
-    cerr << "CSysVector::CSysVector(unsigned int,double): " 
-	 << "invalid input: size = " << size << endl;
-    throw(-1);
-  }
-  nElm = size;
-	nElmDomain = size;
-
-  nBlk = nElm;
-	nBlkDomain = nElmDomain;
-
-  nVar = 1;
-  vec_val = new double[nElm];
-  for (unsigned int i = 0; i < nElm; i++)
-    vec_val[i] = val;
-
-#ifndef NO_MPI
-	// TODO(J. Hicken): the following should probably be a static
-  // element of the class, otherwise it would be too expensive to call
-  // each time a new CSysVector is created
-  myrank = MPI::COMM_WORLD.Get_rank();
-  unsigned long nElmLocal = (unsigned long)nElm;
-  MPI::COMM_WORLD.Allreduce(&nElmLocal, &nElmGlobal, 1, MPI::UNSIGNED_LONG, MPI::SUM);
-#endif
-
-}
-
-CSysVector::CSysVector(const unsigned int & numBlk, const unsigned int & numBlkDomain, const unsigned short & numVar, 
-		 const double & val) {
-	
-  /*--- Check for invalid input, then allocate memory and initialize
-        values ---*/
-  nElm = numBlk*numVar;
-  nElmDomain = numBlkDomain*numVar;
-
-  if ( (nElm <= 0) || (nElm >= UINT_MAX) ) {
-    cerr << "CSysVector::CSysVector(unsigned int,unsigned int,double): " 
-	 << "invalid input: numBlk, numVar = " << numBlk << "," << numVar << endl;
-    throw(-1);
-  }
-	
-  nBlk = numBlk;
-  nBlkDomain = numBlkDomain;
-
-  nVar = numVar;
-  vec_val = new double[nElm];
-  for (unsigned int i = 0; i < nElm; i++)
-    vec_val[i] = val;
-
-#ifndef NO_MPI
-  myrank = MPI::COMM_WORLD.Get_rank();
-  unsigned long nElmLocal = (unsigned long)nElm;
-  MPI::COMM_WORLD.Allreduce(&nElmLocal, &nElmGlobal, 1, MPI::UNSIGNED_LONG, MPI::SUM);
-#endif
-}
-
-CSysVector::~CSysVector() {
-  delete [] vec_val;
-  nElm = -1;
-	nElmDomain = -1;
-  nBlk = -1;
-  nBlkDomain = -1;
-  nVar = -1;
-#ifndef NO_MPI
-  myrank = -1;
-#endif
-}
-
-CSysVector::CSysVector(const CSysVector & u) {
-
-  /*--- Copy size information, allocate memory, and initialize
-        values ---*/
-  nElm = u.nElm;
-	nElmDomain = u.nElmDomain;
-  nBlk = u.nBlk;	
-	nBlkDomain = u.nBlkDomain;
-  nVar = u.nVar;
-  vec_val = new double[nElm];
-  for (unsigned int i = 0; i < nElm; i++)
-    vec_val[i] = u.vec_val[i];
-
-#ifndef NO_MPI
-  myrank = u.myrank;
-  nElmGlobal = u.nElmGlobal;
-#endif
-}
-
-CSysVector::CSysVector(const unsigned int & size, const double* u_array) {
-
-  /*--- Check for invalid size, then allocate memory and initialize
-        values ---*/
-  if ( (size <= 0) || (size >= UINT_MAX) ) {
-    cerr << "CSysVector::CSysVector(unsigned int, double*): " 
-	 << "invalid input: size = " << size << endl;
-    throw(-1);
-  }
-  nElm = size;
-	nElmDomain = size;
-
-  nBlk = nElm;
-  nBlkDomain = nElmDomain;
-	
-	nBlkDomain = nElmDomain;
-
-  nVar = 1;
-  vec_val = new double[nElm];
-  for (unsigned int i = 0; i < nElm; i++)
-    vec_val[i] = u_array[i];
-
-#ifndef NO_MPI
-  myrank = MPI::COMM_WORLD.Get_rank();
-  unsigned long nElmLocal = (unsigned long)nElm;
-  MPI::COMM_WORLD.Allreduce(&nElmLocal, &nElmGlobal, 1, MPI::UNSIGNED_LONG, MPI::SUM);
-#endif
-  
-}
-
-CSysVector::CSysVector(const unsigned int & numBlk, const unsigned int & numBlkDomain, const unsigned short & numVar, 
-		 const double* u_array) {
-
-  /*--- check for invalid input, then allocate memory and initialize
-        values ---*/
-  nElm = numBlk*numVar;
-  nElmDomain = numBlkDomain*numVar;
-
-  if ( (nElm <= 0) || (nElm >= UINT_MAX) ) {
-    cerr << "CSysVector::CSysVector(unsigned int,unsigned int,double*): " 
-	 << "invalid input: numBlk, numVar = " << numBlk << "," << numVar << endl;
-    throw(-1);
-  }
-  nBlk = numBlk;
-	nBlkDomain = numBlkDomain;
-
-  nVar = numVar;
-  vec_val = new double[nElm];
-  for (unsigned int i = 0; i < nElm; i++)
-    vec_val[i] = u_array[i];
-
-#ifndef NO_MPI
-  myrank = MPI::COMM_WORLD.Get_rank();
-  unsigned long nElmLocal = (unsigned long)nElm;
-  MPI::COMM_WORLD.Allreduce(&nElmLocal, &nElmGlobal, 1, MPI::UNSIGNED_LONG, MPI::SUM);
-#endif
-}
-
-void CSysVector::Equals_AX(const double & a, CSysVector & x) {
-  /*--- check that *this and x are compatible ---*/
-  if (nElm != x.nElm) {
-    cerr << "CSysVector::Equals_AX(): " << "sizes do not match";
-    throw(-1);
-  }
-  for (unsigned int i = 0; i < nElm; i++)
-    vec_val[i] = a * x.vec_val[i];
-}
-
-void CSysVector::Plus_AX(const double & a, CSysVector & x) {
-  /*--- check that *this and x are compatible ---*/
-  if (nElm != x.nElm) {
-    cerr << "CSysVector::Plus_AX(): " 
-	 << "sizes do not match";
-    throw(-1);
-  }
-  for (unsigned int i = 0; i < nElm; i++)
-    vec_val[i] += a * x.vec_val[i];
-}
-
-void CSysVector::Equals_AX_Plus_BY(const double & a, CSysVector & x, const double & b, CSysVector & y) {
-  /*--- check that *this, x and y are compatible ---*/
-  if ((nElm != x.nElm) || (nElm != y.nElm)) {
-    cerr << "CSysVector::Equals_AX_Plus_BY(): " << "sizes do not match";
-    throw(-1);
-  }
-  for (unsigned int i = 0; i < nElm; i++)
-    vec_val[i] = a * x.vec_val[i] + b * y.vec_val[i];
-}
-
-CSysVector & CSysVector::operator=(const CSysVector & u) {
-
-  /*--- check if self-assignment, otherwise perform deep copy ---*/
-  if (this == &u) return *this;
-  
-  delete [] vec_val; // in case the size is different
-  nElm = u.nElm;
-  nElmDomain = u.nElmDomain;
-
-  nBlk = u.nBlk;
-	nBlkDomain = u.nBlkDomain;
-
-  nVar = u.nVar;
-  vec_val = new double[nElm];
-  for (unsigned int i = 0; i < nElm; i++)
-    vec_val[i] = u.vec_val[i];
-
-#ifndef NO_MPI
-  myrank = u.myrank;
-  nElmGlobal = u.nElmGlobal;
-#endif
-
-  return *this;
-}
-
-CSysVector & CSysVector::operator=(const double & val) {
-  for (unsigned int i = 0; i < nElm; i++)
-    vec_val[i] = val;
-  return *this;
-}
-
-CSysVector CSysVector::operator+(const CSysVector & u) const {
-
-  /*--- Use copy constructor and compound addition-assignment ---*/
-  CSysVector sum(*this);
-  sum += u;
-  return sum;
-}
-
-CSysVector & CSysVector::operator+=(const CSysVector & u) {
-  
-  /*--- Check for consistent sizes, then add elements ---*/
-  if (nElm != u.nElm) {
-    cerr << "CSysVector::operator+=(CSysVector): " << "sizes do not match";
-    throw(-1);
-  }
-  for (unsigned int i = 0; i < nElm; i++) 
-    vec_val[i] += u.vec_val[i];
-  return *this;
-}
-
-CSysVector CSysVector::operator-(const CSysVector & u) const {
-
-  /*--- Use copy constructor and compound subtraction-assignment ---*/
-  CSysVector diff(*this);
-  diff -= u;
-  return diff;
-}
-
-CSysVector & CSysVector::operator-=(const CSysVector & u) {
-  
-  /*--- Check for consistent sizes, then subtract elements ---*/
-  if (nElm != u.nElm) {
-    cerr << "CSysVector::operator-=(CSysVector): " << "sizes do not match";
-    throw(-1);
-  }
-  for (unsigned int i = 0; i < nElm; i++) 
-    vec_val[i] -= u.vec_val[i];
-  return *this;
-}
-
-CSysVector CSysVector::operator*(const double & val) const {
-  
-  /*--- use copy constructor and compound scalar
-        multiplication-assignment ---*/
-  CSysVector prod(*this);
-  prod *= val;
-  return prod;
-}
-
-CSysVector operator*(const double & val, const CSysVector & u) {
-
-  /*--- use copy constructor and compound scalar
-        multiplication-assignment ---*/
-  CSysVector prod(u);
-  prod *= val;
-  return prod;
-}
-
-CSysVector & CSysVector::operator*=(const double & val) {
-
-  for (unsigned int i = 0; i < nElm; i++) 
-    vec_val[i] *= val;
-  return *this;
-}
-
-CSysVector CSysVector::operator/(const double & val) const {
-  
-  /*--- use copy constructor and compound scalar
-        division-assignment ---*/
-  CSysVector quotient(*this);
-  quotient /= val;
-  return quotient;
-}
-
-CSysVector & CSysVector::operator/=(const double & val) {
-
-  for (unsigned int i = 0; i < nElm; i++) 
-    vec_val[i] /= val;
-  return *this;
-}
-
-double CSysVector::norm() const {
-
-  /*--- just call dotProd on this*, then sqrt ---*/
-  double val = dotProd(*this,*this);
-  if (val < 0.0) {
-    cerr << "CSysVector::norm(): " << "inner product of CSysVector is negative";
-    throw(-1);
-  }
-  return sqrt(val);
-}
-
-void CSysVector::CopyToArray(double* u_array) {
-
-  for (unsigned int i = 0; i < nElm; i++)
-    u_array[i] = vec_val[i];
-}
-
-double dotProd(const CSysVector & u, const CSysVector & v) {
-
-  /*--- check for consistent sizes ---*/
-  if (u.nElm != v.nElm) {
-    cerr << "CSysVector friend dotProd(CSysVector,CSysVector): " 
-	 << "CSysVector sizes do not match";
-    throw(-1);
-  }
-
-  /*--- find local inner product and, if a parallel run, sum over all
-        processors (we use nElemDomain instead of nElem) ---*/
-  double loc_prod = 0.0;
-  for (unsigned int i = 0; i < u.nElmDomain; i++) 
-    loc_prod += u.vec_val[i]*v.vec_val[i];
-  double prod = 0.0;
-#ifndef NO_MPI
-  MPI::COMM_WORLD.Allreduce(&loc_prod, &prod, 1, MPI::DOUBLE, MPI::SUM);
-#else
-  prod = loc_prod;
-#endif
-  return prod;
-}
-
-// ======================================================================
-// start of routines for CSysSolve class
-
 void CSysSolve::applyGivens(const double & s, const double & c, double & h1, double & h2) {
-
+  
   double temp = c*h1 + s*h2;
   h2 = c*h2 - s*h1;
   h1 = temp;
 }
 
 void CSysSolve::generateGivens(double & dx, double & dy, double & s, double & c) {
-
+  
   if ( (dx == 0.0) && (dy == 0.0) ) {
     c = 1.0;
     s = 0.0;
@@ -394,9 +59,9 @@ void CSysSolve::generateGivens(double & dx, double & dy, double & s, double & c)
   dy = 0.0;
 }
 
-void CSysSolve::solveReduced(const int & n, const vector<vector<double> > & Hsbg, 
-			     const vector<double> & rhs, vector<double> & x) {
-  // initialize... 
+void CSysSolve::solveReduced(const int & n, const vector<vector<double> > & Hsbg,
+                             const vector<double> & rhs, vector<double> & x) {
+  // initialize...
   for (int i = 0; i < n; i++)
     x[i] = rhs[i];
   // ... and backsolve
@@ -409,11 +74,11 @@ void CSysSolve::solveReduced(const int & n, const vector<vector<double> > & Hsbg
 }
 
 void CSysSolve::modGramSchmidt(int i, vector<vector<double> > & Hsbg, vector<CSysVector> & w) {
-
+  
   // parameter for reorthonormalization
-  static const double reorth = 0.98; 
-
-  // get the norm of the vector being orthogonalized, and find the 
+  static const double reorth = 0.98;
+  
+  // get the norm of the vector being orthogonalized, and find the
   // threshold for re-orthogonalization
   double nrm = dotProd(w[i+1],w[i+1]);
   double thr = nrm*reorth;
@@ -422,13 +87,13 @@ void CSysSolve::modGramSchmidt(int i, vector<vector<double> > & Hsbg, vector<CSy
     cerr << "CSysSolve::modGramSchmidt: dotProd(w[i+1],w[i+1]) < 0.0" << endl;
     throw(-1);
   }
-  else if (nrm != nrm) { 
+  else if (nrm != nrm) {
     // this is intended to catch if nrm = NaN, but some optimizations
     // may mess it up (according to posts on stackoverflow.com)
     cerr << "CSysSolve::modGramSchmidt: w[i+1] = NaN" << endl;
     throw(-1);
   }
-
+  
   // begin main Gram-Schmidt loop
   for (int k = 0; k < i+1; k++) {
     double prod = dotProd(w[i+1],w[k]);
@@ -441,13 +106,13 @@ void CSysSolve::modGramSchmidt(int i, vector<vector<double> > & Hsbg, vector<CSy
       Hsbg[k][i] += prod;
       w[i+1].Plus_AX(-prod, w[k]);
     }
-
+    
     // update the norm and check its size
     nrm -= Hsbg[k][i]*Hsbg[k][i];
     if (nrm < 0.0) nrm = 0.0;
     thr = nrm*reorth;
   }
-
+  
   // test the resulting vector
   nrm = w[i+1].norm();
   Hsbg[i+1][i] = nrm;
@@ -456,119 +121,132 @@ void CSysSolve::modGramSchmidt(int i, vector<vector<double> > & Hsbg, vector<CSy
     cerr << "CSysSolve::modGramSchmidt: w[i+1] linearly dependent on w[0:i]" << endl;
     throw(-1);
   }
-
+  
   // scale the resulting vector
   w[i+1] /= nrm;
 }
 
 void CSysSolve::writeHeader(const string & solver, const double & restol, const double & resinit) {
-			
-  cout << "=> " << solver << " residual history" << endl;
-  cout << "=> " << "residual tolerance target = " << restol << endl;
-  cout << "=> " << "initial residual norm     = " << resinit << endl;
+  
+  cout << "# " << solver << " residual history" << endl;
+  cout << "# Residual tolerance target = " << restol << endl;
+  cout << "# Initial residual norm     = " << resinit << endl;
   
 }
 
 void CSysSolve::writeHistory(const int & iter, const double & res, const double & resinit) {
-
+  
   cout << "     " << iter << "     " << res/resinit << endl;
-
+  
 }
 
 unsigned long CSysSolve::ConjugateGradient(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
-                                  CPreconditioner & precond, CSolutionSendReceive & sol_mpi, double tol, unsigned long m, bool monitoring) {
+                                           CPreconditioner & precond, double tol, unsigned long m, bool monitoring) {
 	
+  int rank = 0;
+#ifndef NO_MPI
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+  
   /*--- Check the subspace size ---*/
   if (m < 1) {
-    cerr << "CSysSolve::ConjugateGradient: illegal value for subspace size, m = " << m << endl;
-    throw(-1);
+    if (rank == 0) cerr << "CSysSolve::ConjugateGradient: illegal value for subspace size, m = " << m << endl;
+#ifdef NO_MPI
+    exit(1);
+#else
+    MPI::COMM_WORLD.Abort(1);
+    MPI::Finalize();
+#endif
   }
-
+  
   CSysVector r(b);
   CSysVector A_p(b);
-
+  
   /*--- Calculate the initial residual, compute norm, and check if system is already solved ---*/
-  mat_vec(x,A_p); sol_mpi(A_p);
-
+  mat_vec(x,A_p);
+  
   r -= A_p; // recall, r holds b initially
-  double norm_r = r.norm();  
+  double norm_r = r.norm();
   double norm0 = b.norm();
   if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
-    cout << "CSysSolve::ConjugateGradient(): system solved by initial guess." << endl;
+    if (rank == 0) cout << "CSysSolve::ConjugateGradient(): system solved by initial guess." << endl;
     return 0;
-  }  
-
+  }
+  
   double alpha, beta, r_dot_z;
   CSysVector z(r);
-  precond(r, z); sol_mpi(z);
-
+  precond(r, z);
   CSysVector p(z);
-
+  
+  /*--- Set the norm to the initial initial residual value ---*/
+  norm0 = norm_r;
+  
   /*--- Output header information including initial residual ---*/
   int i = 0;
-//  if (monitoring) {
-//    writeHeader("CG", tol, norm_r);
-//    writeHistory(i, norm_r, norm0);
-//  }
-
+  if ((monitoring) && (rank == 0))  {
+    writeHeader("CG", tol, norm_r);
+    writeHistory(i, norm_r, norm0);
+  }
+  
   /*---  Loop over all search directions ---*/
   for (i = 0; i < m; i++) {
-
+    
     /*--- Apply matrix to p to build Krylov subspace ---*/
-    mat_vec(p, A_p); sol_mpi(A_p);
-
+    mat_vec(p, A_p);
+    
     /*--- Calculate step-length alpha ---*/
     r_dot_z = dotProd(r, z);
     alpha = dotProd(A_p, p);
     alpha = r_dot_z / alpha;
-
+    
     /*--- Update solution and residual: ---*/
     x.Plus_AX(alpha, p);
     r.Plus_AX(-alpha, A_p);
-
+    
     /*--- Check if solution has converged, else output the relative residual if necessary ---*/
     norm_r = r.norm();
     if (norm_r < tol*norm0) break;
-    //if ((monitoring) && ((i+1) % 1 == 0)) writeHistory(i+1, norm_r, norm0);
- 
+    if (((monitoring) && (rank == 0)) && ((i+1) % 5 == 0)) writeHistory(i+1, norm_r, norm0);
+    
     precond(r, z);
-		sol_mpi(z);
-
-    /*--- Calculate Gram-Schmidt coefficient beta, 
+    
+    /*--- Calculate Gram-Schmidt coefficient beta,
 		 beta = dotProd(r_{i+1}, z_{i+1}) / dotProd(r_{i}, z_{i}) ---*/
     beta = 1.0 / r_dot_z;
     r_dot_z = dotProd(r, z);
     beta *= r_dot_z;
-
+    
     /*--- Gram-Schmidt orthogonalization; p = beta *p + z ---*/
     p.Equals_AX_Plus_BY(beta, p, 1.0, z);
   }
-
-  /*--- Recalculate final residual (this should be optional) ---*/
-  mat_vec(x, A_p); sol_mpi(A_p);
-
-  r = b;
-  r -= A_p;
-
-  double true_res = r.norm();
   
-//  if (monitoring) {
-//    cout << "# Conjugate Gradient final (true) residual:" << endl;
-//    cout << "# iteration = " << i << ": |res|/|res0| = "  << true_res/norm0 << endl;
-//  }
 
-  if (fabs(true_res - norm_r) > tol*10.0) {
-    cout << "# WARNING in CSysSolve::ConjugateGradient(): " << endl;
-    cout << "# true residual norm and calculated residual norm do not agree." << endl;
-    cout << "# true_res - calc_res = " << true_res - norm_r << endl;
+  
+  if ((monitoring) && (rank == 0))  {
+    cout << "# Conjugate Gradient final (true) residual:" << endl;
+    cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << endl;
   }
+  
+//  /*--- Recalculate final residual (this should be optional) ---*/
+//  mat_vec(x, A_p);
+//  r = b;
+//  r -= A_p;
+//  double true_res = r.norm();
+//  
+//  if (fabs(true_res - norm_r) > tol*10.0) {
+//    if (rank == 0) {
+//      cout << "# WARNING in CSysSolve::ConjugateGradient(): " << endl;
+//      cout << "# true residual norm and calculated residual norm do not agree." << endl;
+//      cout << "# true_res - calc_res = " << true_res - norm_r << endl;
+//    }
+//  }
 	
 	return i;
-
+  
 }
 
-unsigned long CSysSolve::GMRES(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
-                              CPreconditioner & precond, CSolutionSendReceive & sol_mpi, double tol, unsigned long m, bool monitoring) {
+unsigned long CSysSolve::FGMRES(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
+                               CPreconditioner & precond, double tol, unsigned long m, bool monitoring) {
 	
   int rank = 0;
 #ifndef NO_MPI
@@ -577,122 +255,130 @@ unsigned long CSysSolve::GMRES(const CSysVector & b, CSysVector & x, CMatrixVect
   
   /*---  Check the subspace size ---*/
   if (m < 1) {
-    if (rank == 0) cerr << "CSysSolve::GMRES: illegal value for subspace size, m = " << m << endl;
-    throw(-1);
+    if (rank == 0) cerr << "CSysSolve::FGMRES: illegal value for subspace size, m = " << m << endl;
+#ifdef NO_MPI
+    exit(1);
+#else
+    MPI::COMM_WORLD.Abort(1);
+    MPI::Finalize();
+#endif
   }
-  
+
   /*---  Check the subspace size ---*/
   if (m > 1000) {
-    if (rank == 0) cerr << "CSysSolve::GMRES: illegal value for subspace size (too high), m = " << m << endl;
-    throw(-1);
+    if (rank == 0) cerr << "CSysSolve::FGMRES: illegal value for subspace size (too high), m = " << m << endl;
+#ifdef NO_MPI
+    exit(1);
+#else
+    MPI::COMM_WORLD.Abort(1);
+    MPI::Finalize();
+#endif
   }
   
   /*---  Define various arrays
 	 Note: elements in w and z are initialized to x to avoid creating
 	 a temporary CSysVector object for the copy constructor ---*/
-  vector<CSysVector> w(m+1,x);
-  vector<CSysVector> z(m+1,x);
-  vector<double> g(m+1,0.0);
-  vector<double> sn(m+1,0.0);
-  vector<double> cs(m+1,0.0);
-  vector<double> y(m,0.0);
-  vector<vector<double> > H(m+1,vector<double>(m,0.0));
+  vector<CSysVector> w(m+1, x);
+  vector<CSysVector> z(m+1, x);
+  vector<double> g(m+1, 0.0);
+  vector<double> sn(m+1, 0.0);
+  vector<double> cs(m+1, 0.0);
+  vector<double> y(m, 0.0);
+  vector<vector<double> > H(m+1, vector<double>(m, 0.0));
   
   /*---  Calculate the norm of the rhs vector ---*/
   double norm0 = b.norm();
-
+  
   /*---  Calculate the initial residual (actually the negative residual)
 	 and compute its norm ---*/
-  mat_vec(x,w[0]); sol_mpi(w[0]);
+  mat_vec(x,w[0]);
   w[0] -= b;
-
-  double beta = w[0].norm();  
+  
+  double beta = w[0].norm();
+  
   if ( (beta < tol*norm0) || (beta < eps) ) {
     /*---  System is already solved ---*/
-    if (rank == 0) cout << "CSysSolve::GMRES(): system solved by initial guess." << endl;
+    if (rank == 0) cout << "CSysSolve::FGMRES(): system solved by initial guess." << endl;
     return 0;
   }
-
-	if ((monitoring) && (rank == 0))  {
-		cout << "beta " << beta << endl;
-		cout << "eps*norm0 " << eps*norm0 << endl;
-	}
-
+  
   /*---  Normalize residual to get w_{0} (the negative sign is because w[0]
 	 holds the negative residual, as mentioned above) ---*/
   w[0] /= -beta;
   
   /*---  Initialize the RHS of the reduced system ---*/
   g[0] = beta;
+  
+  /*--- Set the norm to the initial initial residual value ---*/
+  norm0 = beta;
 
   /*---  Output header information including initial residual ---*/
   int i = 0;
   if ((monitoring) && (rank == 0)) {
-    writeHeader("GMRES", tol, beta);
+    writeHeader("FGMRES", tol, beta);
     writeHistory(i, beta, norm0);
   }
-
+  
   /*---  Loop over all serach directions ---*/
   for (i = 0; i < m; i++) {
     
     /*---  Check if solution has converged ---*/
     if (beta < tol*norm0) break;
-
+    
     /*---  Precondition the CSysVector w[i] and store result in z[i] ---*/
-    precond(w[i],z[i]); sol_mpi(z[i]);
-
+    precond(w[i], z[i]);
+    
     /*---  Add to Krylov subspace ---*/
-    mat_vec(z[i],w[i+1]); sol_mpi(w[i+1]);
-
+    mat_vec(z[i], w[i+1]);
+    
     /*---  Modified Gram-Schmidt orthogonalization ---*/
-    modGramSchmidt(i,H,w);
-
+    modGramSchmidt(i, H, w);
+    
     /*---  Apply old Givens rotations to new column of the Hessenberg matrix
 		 then generate the new Givens rotation matrix and apply it to
 		 the last two elements of H[:][i] and g ---*/
     for (int k = 0; k < i; k++)
-      applyGivens(sn[k],cs[k],H[k][i],H[k+1][i]);
-    generateGivens(H[i][i],H[i+1][i],sn[i],cs[i]);
-    applyGivens(sn[i],cs[i],g[i],g[i+1]);
-
+      applyGivens(sn[k], cs[k], H[k][i], H[k+1][i]);
+    generateGivens(H[i][i], H[i+1][i], sn[i], cs[i]);
+    applyGivens(sn[i], cs[i], g[i], g[i+1]);
+    
     /*---  Set L2 norm of residual and check if solution has converged ---*/
     beta = fabs(g[i+1]);
-
+    
     /*---  Output the relative residual if necessary ---*/
-    if (((monitoring) && ((i+1) % 50 == 0)) && (rank == 0)) writeHistory(i+1, beta, norm0);
+    if ((((monitoring) && (rank == 0)) && ((i+1) % 5 == 0)) && (rank == 0)) writeHistory(i+1, beta, norm0);
   }
 
   /*---  Solve the least-squares system and update solution ---*/
-  solveReduced(i,H,g,y);
+  solveReduced(i, H, g, y);
   for (int k = 0; k < i; k++) {
     x.Plus_AX(y[k], z[k]);
   }
   
-  /*---  Recalculate final (neg.) residual (this should be optional) ---*/
-  mat_vec(x,w[0]); sol_mpi(w[0]);
-  w[0] -= b;
-
-  double res = w[0].norm();
-  
   if ((monitoring) && (rank == 0)) {
-    cout << "# GMRES final (true) residual:" << endl;
-    cout << "# iteration = " << i << ": |res|/|res0| = " << res/norm0 << endl;
+    cout << "# FGMRES final (true) residual:" << endl;
+    cout << "# Iteration = " << i << ": |res|/|res0| = " << beta/norm0 << endl;
   }
-
-  if (fabs(res - beta) > tol*10.0) {
-    if (rank == 0) {
-      cout << "# WARNING in CSysSolve::GMRES(): " << endl;
-      cout << "# true residual norm and calculated residual norm do not agree." << endl;
-      cout << "# res - beta = " << res - beta << endl;
-    }
-  }
+  
+//  /*---  Recalculate final (neg.) residual (this should be optional) ---*/
+//  mat_vec(x, w[0]);
+//  w[0] -= b;
+//  double res = w[0].norm();
+//  
+//  if (fabs(res - beta) > tol*10) {
+//    if (rank == 0) {
+//      cout << "# WARNING in CSysSolve::FGMRES(): " << endl;
+//      cout << "# true residual norm and calculated residual norm do not agree." << endl;
+//      cout << "# res - beta = " << res - beta << endl;
+//    }
+//  }
 	
 	return i;
-
+  
 }
 
 unsigned long CSysSolve::BCGSTAB(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
-                                  CPreconditioner & precond, CSolutionSendReceive & sol_mpi, double tol, unsigned long m, bool monitoring) {
+                                 CPreconditioner & precond, double tol, unsigned long m, bool monitoring) {
 	
   int rank = 0;
 #ifndef NO_MPI
@@ -702,7 +388,12 @@ unsigned long CSysSolve::BCGSTAB(const CSysVector & b, CSysVector & x, CMatrixVe
   /*--- Check the subspace size ---*/
   if (m < 1) {
     if (rank == 0) cerr << "CSysSolve::BCGSTAB: illegal value for subspace size, m = " << m << endl;
-    throw(-1);
+#ifdef NO_MPI
+    exit(1);
+#else
+    MPI::COMM_WORLD.Abort(1);
+    MPI::Finalize();
+#endif
   }
 	
   CSysVector r(b);
@@ -714,20 +405,23 @@ unsigned long CSysSolve::BCGSTAB(const CSysVector & b, CSysVector & x, CMatrixVe
 	CSysVector phat(b);
 	CSysVector shat(b);
   CSysVector A_x(b);
-
+  
   /*--- Calculate the initial residual, compute norm, and check if system is already solved ---*/
-	mat_vec(x,A_x); sol_mpi(A_x);
+	mat_vec(x,A_x);
   r -= A_x; r_0 = r; // recall, r holds b initially
-  double norm_r = r.norm();  
+  double norm_r = r.norm();
   double norm0 = b.norm();
   if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
     if (rank == 0) cout << "CSysSolve::BCGSTAB(): system solved by initial guess." << endl;
     return 0;
-  }  
+  }
 	
 	/*--- Initialization ---*/
   double alpha = 1.0, beta = 1.0, omega = 1.0, rho = 1.0, rho_prime = 1.0;
 	
+  /*--- Set the norm to the initial initial residual value ---*/
+  norm0 = norm_r;
+  
   /*--- Output header information including initial residual ---*/
   int i = 0;
   if ((monitoring) && (rank == 0)) {
@@ -753,50 +447,49 @@ unsigned long CSysSolve::BCGSTAB(const CSysVector & b, CSysVector & x, CMatrixVe
 		p.Plus_AX(1.0, r);
 		
 		/*--- Preconditioning step ---*/
-		precond(p, phat); sol_mpi(phat);
-		mat_vec(phat, v); sol_mpi(v);
-
+		precond(p, phat);
+		mat_vec(phat, v);
+    
 		/*--- Calculate step-length alpha ---*/
     double r_0_v = dotProd(r_0, v);
     alpha = rho / r_0_v;
-			
+    
 		/*--- s_{i} = r_{i-1} - alpha * v_{i} ---*/
 		s.Equals_AX_Plus_BY(1.0, r, -alpha, v);
 		
 		/*--- Preconditioning step ---*/
-		precond(s, shat); sol_mpi(shat);
-		mat_vec(shat, t); sol_mpi(t);
-
+		precond(s, shat);
+		mat_vec(shat, t);
+    
 		/*--- Calculate step-length omega ---*/
     omega = dotProd(t, s) / dotProd(t, t);
-
+    
 		/*--- Update solution and residual: ---*/
     x.Plus_AX(alpha, phat); x.Plus_AX(omega, shat);
 		r.Equals_AX_Plus_BY(1.0, s, -omega, t);
-
+    
     /*--- Check if solution has converged, else output the relative residual if necessary ---*/
     norm_r = r.norm();
     if (norm_r < tol*norm0) break;
-    if ((monitoring) && ((i+1) % 50 == 0) && (rank == 0)) writeHistory(i+1, norm_r, norm0);
-
+    if (((monitoring) && (rank == 0)) && ((i+1) % 5 == 0) && (rank == 0)) writeHistory(i+1, norm_r, norm0);
+    
   }
-	
-  /*--- Recalculate final residual (this should be optional) ---*/
-	mat_vec(x, A_x);
-  r = b; r -= A_x;
-  double true_res = r.norm();
-  
+	  
   if ((monitoring) && (rank == 0)) {
     cout << "# BCGSTAB final (true) residual:" << endl;
-    cout << "# iteration = " << i << ": |res|/|res0| = "  << true_res/norm0 << endl;
+    cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << endl;
   }
 	
-  if ((fabs(true_res - norm_r) > tol*10.0) && (rank == 0)) {
-    cout << "# WARNING in CSysSolve::BCGSTAB(): " << endl;
-    cout << "# true residual norm and calculated residual norm do not agree." << endl;
-    cout << "# true_res - calc_res = " << true_res <<" "<< norm_r << endl;
-  }
+//  /*--- Recalculate final residual (this should be optional) ---*/
+//	mat_vec(x, A_x);
+//  r = b; r -= A_x;
+//  double true_res = r.norm();
+//  
+//  if ((fabs(true_res - norm_r) > tol*10.0) && (rank == 0)) {
+//    cout << "# WARNING in CSysSolve::BCGSTAB(): " << endl;
+//    cout << "# true residual norm and calculated residual norm do not agree." << endl;
+//    cout << "# true_res - calc_res = " << true_res <<" "<< norm_r << endl;
+//  }
 	
 	return i;
 }
-

@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -29,7 +29,7 @@
 #include <time.h>
 #include <fstream>
 
-#include "solution_structure.hpp"
+#include "solver_structure.hpp"
 #include "integration_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
@@ -49,7 +49,7 @@ using namespace std;
  * \brief Class for writing the flow, adjoint and linearized solver 
  *        solution (including the history solution, and parallel stuff).
  * \author F. Palacios, T. Economon, M. Colonno.
- * \version 2.0.5
+ * \version 2.0.6
  */
 class COutput {
 
@@ -105,46 +105,46 @@ public:
 
 	/*! 
 	 * \brief Writes and organizes the all the output files, except the history one, for serial computations.
-	 * \param[in] solution_container - Container vector with all the solutions.
+	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iExtIter - Current external (time) iteration.
 	 * \param[in] val_iZone - Total number of domains in the grid file.
    * \param[in] val_nZone - Total number of domains in the grid file.
 	 */
-	void SetResult_Files(CSolution ****solution_container, CGeometry ***geometry, CConfig **config, 
+	void SetResult_Files(CSolver ****solver_container, CGeometry ***geometry, CConfig **config, 
 											 unsigned long iExtIter, unsigned short val_nZone);
 	
   /*!
 	 * \brief Writes and organizes the all the output files, except the history one, for serial computations.
-	 * \param[in] solution_container - Container vector with all the solutions.
+	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iExtIter - Current external (time) iteration.
 	 * \param[in] val_iZone - Total number of domains in the grid file.
    * \param[in] val_nZone - Total number of domains in the grid file.
 	 */
-	void SetBaselineResult_Files(CSolution **solution, CGeometry **geometry, CConfig **config,
+	void SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CConfig **config,
                                unsigned long iExtIter, unsigned short val_nZone);
   
 	/*! 
 	 * \brief Writes equivalent area.
-	 * \param[in] solution_container - Container vector with all the solutions.
+	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iExtIter - Current external (time) iteration.
 	 */
-	void SetEquivalentArea(CSolution *solution_container, CGeometry *geometry, CConfig *config, 
+	void SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, CConfig *config, 
 			unsigned long iExtIter);
 	
 	/*!
 	 * \brief Writes mass flow rate.
-	 * \param[in] solution_container - Container vector with all the solutions.
+	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iExtIter - Current external (time) iteration.
 	 */
-	void SetFlowRate(CSolution *solution_container, CGeometry *geometry, CConfig *config,
+	void SetFlowRate(CSolver *solver_container, CGeometry *geometry, CConfig *config,
                    unsigned long iExtIter);
 	
 	/*! 
@@ -154,7 +154,7 @@ public:
 	 * \param[in] FlowSolution - Flow solution.
 	 * \param[in] iExtIter - Current external (time) iteration.
 	 */
-	void SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry, CSolution *FlowSolution, unsigned long iExtIter);
+	void SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry, CSolver *FlowSolver, unsigned long iExtIter);
 
 	/*! 
 	 * \brief Create and write the file with the adjoint coefficients on the surface for serial computations.
@@ -165,7 +165,7 @@ public:
 	 * \param[in] iExtIter - Current external (time) iteration.
 	 * \param[in] val_iZone - Current zone number in the grid file.
 	 */
-	void SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolution *AdjSolution, CSolution *FlowSolution, unsigned long iExtIter, unsigned short val_iZone);
+	void SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolver *AdjSolver, CSolver *FlowSolution, unsigned long iExtIter, unsigned short val_iZone);
 
 	/*! 
 	 * \brief Create and write the file with linearized coefficient on the surface for serial computations
@@ -175,7 +175,7 @@ public:
 	 * \param[in] val_filename - Name of the output file.
 	 * \param[in] iExtIter - Current external (time) iteration.
 	 */
-	void SetSurfaceCSV_Linearized(CConfig *config, CGeometry *geometry, CSolution *LinSolution, string val_filename, unsigned long iExtIter);
+	void SetSurfaceCSV_Linearized(CConfig *config, CGeometry *geometry, CSolver *LinSolution, string val_filename, unsigned long iExtIter);
 
   /*!
 	 * \brief Merge the geometry into a data structure used for output file writing.
@@ -215,7 +215,7 @@ public:
 	 * \param[in] solution - Flow, adjoint or linearized solution.
 	 * \param[in] val_nZone - iZone index.
 	 */
-	void MergeSolution(CConfig *config, CGeometry *geometry, CSolution **solution, unsigned short val_iZone);
+	void MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
 
   /*!
 	 * \brief Merge the solution into a data structure used for output file writing.
@@ -224,7 +224,7 @@ public:
 	 * \param[in] solution - Flow, adjoint or linearized solution.
 	 * \param[in] val_nZone - iZone index.
 	 */
-	void MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolution *solution, unsigned short val_iZone);
+	void MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolver *solver, unsigned short val_iZone);
   
   /*!
 	 * \brief Write a native SU2 restart file.
@@ -273,8 +273,8 @@ public:
    * \param[in] val_nZone - Total number of zones.
 	 */
 	void SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
-  
-	/*! 
+    
+	/*!
 	 * \brief Write Tecplot binary results file.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -352,14 +352,14 @@ public:
 	 * \brief Write the history file and the convergence on the screen for serial computations.
 	 * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
 	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution_container - Container vector with all the solutions.
+	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] integration - Generic subroutines for space integration, time integration, and monitoring.
 	 * \param[in] iExtIter - Current external (time) iteration.
 	 * \param[in] timeused - Current number of clock tick in the computation (related with total time).
 	 * \param[in] val_nZone - iZone index.
 	 */
-	void SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geometry, CSolution ****solution_container, CConfig **config,
+	void SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geometry, CSolver ****solver_container, CConfig **config,
                               CIntegration ***integration, bool DualTime, unsigned long timeused, unsigned short val_iZone);
 
 };

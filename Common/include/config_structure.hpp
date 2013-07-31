@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -45,7 +45,7 @@ using namespace std;
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
  * \author F. Palacios.
- * \version 2.0.5
+ * \version 2.0.6
  */
 class CConfig {
 private:
@@ -57,6 +57,7 @@ private:
 	Omega_Mag;						/*!< \brief Angular velocity magnitude for rotational frame problem. */
 	double MinLogResidual; /*!< \brief Minimum value of the log residual. */
 	double* EA_IntLimit; /*!< \brief Integration limits of the Equivalent Area computation */
+  double AdjointLimit; /*!< \brief Adjoint variable limit */
 	double* Hold_GridFixed_Coord; /*!< \brief Coordinates of the box to hold fixed the nbumerical grid */
 	unsigned short ConvCriteria;	/*!< \brief Kind of convergence criteria. */
 	bool Adjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
@@ -91,7 +92,7 @@ private:
 	Show_Adj_Sens; /*!< \brief Flag for outputting sensitivities on exit */
 	bool Visualize_Partition;	/*!< \brief Flag to visualize each partition in the DDM. */
 	bool Visualize_Deformation;	/*!< \brief Flag to visualize the deformation in the MDC. */
-    double Damp_Engine_Inlet;	/*!< \brief Damping factor for the engine inlet. */
+    double Damp_Nacelle_Inflow;	/*!< \brief Damping factor for the engine inlet. */
 	double Damp_Res_Restric,	/*!< \brief Damping factor for the residual restriction. */
 	Damp_Correc_Prolong; /*!< \brief Damping factor for the correction prolongation. */
 	double Position_Plane; /*!< \brief Position of the Near-Field (y coordinate 2D, and z coordinate 3D). */
@@ -106,7 +107,6 @@ private:
 	unsigned short Kind_ObjFunc;	/*!< \brief Kind of objective function. */
 	unsigned short Kind_GeoObjFunc;	/*!< \brief Kind of geometrical objective function. */
 	unsigned short Kind_SensSmooth;	/*!< \brief Kind of sensitivity smoothing technique. */
-	unsigned short Kind_ObjFuncType;	/*!< \brief Type of objective function. */
 	unsigned short Continuous_Eqns;	/*!< \brief Which equations to treat continuously (Hybrid adjoint) */
 	unsigned short Discrete_Eqns;	/*!< \brief Which equations to treat discretely (Hybrid adjoint). */
 	unsigned short *Design_Variable; /*!< \brief Kind of design variable. */
@@ -195,8 +195,10 @@ private:
 	double *Inlet_Temperature;    /*!< \brief Specified temperatures for a supersonic inlet boundaries. */
 	double *Inlet_Pressure;    /*!< \brief Specified static pressures for supersonic inlet boundaries. */
 	double **Inlet_Velocity;  /*!< \brief Specified flow velocity vectors for supersonic inlet boundaries. */
+	double *FanFace_Mach_Target;    /*!< \brief Specified fan face mach for nacelle boundaries. */
 	double *FanFace_Mach;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-	double *Outlet_Pressure;    /*!< \brief Specified back pressures (static) for outlet boundaries. */
+	double *FanFace_Pressure;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+    double *Outlet_Pressure;    /*!< \brief Specified back pressures (static) for outlet boundaries. */
 	double *Isothermal_Temperature; /*!< \brief Specified isothermal wall temperatures (static). */
 	double *Heat_Flux;  /*!< \brief Specified wall heat fluxes. */
 	double *Displ_Value;    /*!< \brief Specified displacement for displacement boundaries. */
@@ -347,7 +349,6 @@ private:
 	double Linear_Solver_Relax;		/*!< \brief Relaxation coefficient of the linear solver. */
 	double AdjTurb_Linear_Error;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
 	unsigned short AdjTurb_Linear_Iter;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
-	bool Linear_Solver_Hist;		/*!< \brief Whether or not to output linear solver history to file */
 	double* Kappa_Flow,           /*!< \brief Numerical dissipation coefficients for the flow equations. */
 	*Kappa_AdjFlow,                  /*!< \brief Numerical dissipation coefficients for the adjoint equations. */
 	*Kappa_LinFlow;                  /*!< \brief Numerical dissipation coefficients for the linearized equations. */
@@ -369,7 +370,6 @@ private:
 	Kappa_1st_Plasma,			/*!< \brief JST 1st order dissipation coefficient for plasma equations (coarse multigrid levels). */
 	Kappa_2nd_Plasma,			/*!< \brief JST 2nd order dissipation coefficient for plasma equations. */
 	Kappa_4th_Plasma;			/*!< \brief JST 4th order dissipation coefficient for plasma equations. */	
-	double GridDef_Error;	/*!< \brief Error of the numerical solver for the linear system of the grid deformation. */
   unsigned long FEA_Iter; /*!< \brief Number of iterations for FEA deformation. */
 	double Mach;		/*!< \brief Mach number. */
 	double Reynolds;	/*!< \brief Reynolds number. */
@@ -439,7 +439,6 @@ private:
 	AdjWave_FileName,					/*!< \brief Adjoint wave variables output file. */
 	Residual_FileName,				/*!< \brief Residual variables output file. */
 	Conv_FileName,					/*!< \brief Convergence history output file. */
-	Lin_Conv_FileName,				/*!< \brief Linear Solver Convergence history output file. */
 	Restart_FlowFileName,			/*!< \brief Restart file for flow variables. */
 	Restart_WaveFileName,			/*!< \brief Restart file for wave variables. */
 	Restart_HeatFileName,			/*!< \brief Restart file for heat variables. */
@@ -465,8 +464,6 @@ private:
 	Wrt_Csv_Sol,                /*!< \brief Write a surface comma-separated values solution file */
 	Wrt_Residuals,              /*!< \brief Write residuals to solution file */
   Wrt_Halo;                   /*!< \brief Write rind layers in solution files */
-	unsigned short nOutput_Vars_Vol, /*!< \brief No. of output variables specified for the volume solution file. */
-	*Output_Vars_Vol;                  /*!< \brief List of output variables specified for the volume solution file. */
 	double *ArrheniusCoefficient,					/*!< \brief Arrhenius reaction coefficient */
 	*ArrheniusEta,								/*!< \brief Arrhenius reaction temperature exponent */
 	*ArrheniusTheta,							/*!< \brief Arrhenius reaction characteristic temperature */
@@ -938,6 +935,12 @@ public:
 	 * \return Integration limits for the equivalent area computation.
 	 */
 	double GetEA_IntLimit(unsigned short index);
+  
+  /*!
+	 * \brief Get the limit value for the adjoint variables.
+	 * \return Limit value for the adjoint variables.
+	 */
+	double GetAdjointLimit(void);
 
 	/*! 
 	 * \brief Get the the coordinates where of the box where the grid is going to be deformed.
@@ -1008,13 +1011,13 @@ public:
 	double GetFreeSurface_Outlet(void);
 
 	/*! 
-	 * \brief Creates a paraview file to visualize the partition made by the DDM software.
+	 * \brief Creates a tecplot file to visualize the partition made by the DDC software.
 	 * \return <code>TRUE</code> if the partition is going to be plotted; otherwise <code>FALSE</code>.
 	 */
 	bool GetVisualize_Partition(void);
 
 	/*! 
-	 * \brief Creates a paraview file to visualize the deformation made by the MDC software.
+	 * \brief Creates a teot file to visualize the deformation made by the MDC software.
 	 * \return <code>TRUE</code> if the deformation is going to be plotted; otherwise <code>FALSE</code>.
 	 */
 	bool GetVisualize_Deformation(void);
@@ -1587,8 +1590,32 @@ public:
 	 * \return Total number of boundary markers.
 	 */		
 	unsigned short GetnMarker_All(void);
+    
+    /*!
+	 * \brief Get the total number of boundary markers.
+	 * \return Total number of boundary markers.
+	 */
+	unsigned short GetnMarker_NacelleInflow(void);
+    
+    /*!
+	 * \brief Get the total number of boundary markers.
+	 * \return Total number of boundary markers.
+	 */
+	unsigned short GetnMarker_NacelleExhaust(void);
+    
+    /*!
+	 * \brief Get the total number of boundary markers.
+	 * \return Total number of boundary markers.
+	 */
+	unsigned short GetnMarker_NearFieldBound(void);
+    
+    /*!
+	 * \brief Get the total number of boundary markers.
+	 * \return Total number of boundary markers.
+	 */
+	unsigned short GetnMarker_InterfaceBound(void);
 
-	/*! 
+	/*!
 	 * \brief Stores the number of marker in the simulation.
 	 * \param[in] val_nmarker - Number of markers of the problem.
 	 */	
@@ -1739,19 +1766,6 @@ public:
 	 * \return <code>TRUE</code> means that rind layers will be written to the solution file.
 	 */
 	bool GetWrt_Halo(void);
-  
-	/*!
-	 * \brief Get the number of volume output variables.
-	 * \return Number of volume output variables.
-	 */
-	unsigned short GetnOutput_Vars_Vol(void);
-
-	/*!
-	 * \brief Get the volume output variable.
-	 * \param[in] val_index - Index of the output variable.
-	 * \return Type of volume output variable.
-	 */
-	unsigned short GetOutput_Vars_Vol(unsigned short val_index);
 
 	/*!
 	 * \brief Get the alpha (convective) coefficients for the Runge-Kutta integration scheme.
@@ -1768,6 +1782,22 @@ public:
 	 */		
 	string GetMarker_All_Tag(unsigned short val_marker);
 
+	/*!
+	 * \brief Get the index of the surface defined in the geometry file.
+	 * \param[in] val_marker - Value of the marker in which we are interested.
+	 * \return Value of the index that is in the geometry file for the surface that
+	 *         has the marker <i>val_marker</i>.
+	 */
+	string GetMarker_NacelleInflow(unsigned short val_marker);
+    
+	/*!
+	 * \brief Get the index of the surface defined in the geometry file.
+	 * \param[in] val_marker - Value of the marker in which we are interested.
+	 * \return Value of the index that is in the geometry file for the surface that
+	 *         has the marker <i>val_marker</i>.
+	 */
+	string GetMarker_NacelleExhaust(unsigned short val_marker);
+    
 	/*! 
 	 * \brief Get the tag if the iMarker defined in the geometry file.
 	 * \param[in] val_tag - Value of the tag in which we are interested.
@@ -1990,12 +2020,6 @@ public:
 	double GetLinear_Solver_Relax(void);
 
 	/*!
-	 * \brief Get whether or not to output linear solver histry to file.
-	 * \return true or false.
-	 */
-	bool GetLinear_Solver_Hist(void);
-
-	/*!
 	 * \brief Get the kind of solver for the implicit solver.
 	 * \return Numerical solver for implicit formulation (solving the linear system).
 	 */
@@ -2030,12 +2054,6 @@ public:
 	 * \return CFL reduction factor.
 	 */
 	double GetAdjTurb_CFLRedCoeff(void);
-
-	/*!
-	 * \brief Get the error of the solver for deforming the numerical grid (linear system solving).
-	 * \return Numerical error of the solver for deforming the numerical grid (solving the linear system).
-	 */
-	double GetGridDef_Error(void);
   
   /*!
 	 * \brief Get the number of iterations for FEA mesh deformation.
@@ -2900,13 +2918,6 @@ public:
 	unsigned short GetKind_SensSmooth(void);
 
 	/*!
-	 * \brief Get the type of objective function. There are two options: Continuous or Discrete
-	 * \note The objective function will determine the boundary condition of the adjoint problem.
-	 * \return Type of objective function.
-	 */
-	unsigned short GetKind_ObjFuncType(void);
-
-	/*!
 	 * \brief Get equations to be treated continuously. There are several options: Euler, Navier Stokes
 	 * \return Continuous equations.
 	 */
@@ -3068,11 +3079,9 @@ public:
 	bool GetRestart(void);
 
 	/*!
-	 * \brief Provides the restart information.
-	 * \return Restart information, if <code>TRUE</code> then the code will use the Euler solution as restart for the plasma problem.
-	 */		
-	bool GetRestart_Euler2Plasma(void);
-
+	 * \brief Provides the number of varaibles.
+	 * \return Number of variables.
+	 */
 	unsigned short GetnVar(void);
 
 	/*! 
@@ -3163,12 +3172,6 @@ public:
 	 * \return Name of the file with convergence history of the problem.
 	 */
 	string GetConv_FileName(void);
-
-	/*!
-	 * \brief Get the name of the file with the linear solver convergence history of the problem.
-	 * \return Name of the file with linear solver convergence history of the problem.
-	 */
-	string GetLin_Conv_FileName(void);
 
 	/*! 
 	 * \brief Get the name of the file with the flow variables.
@@ -3837,7 +3840,7 @@ public:
 	 * \brief Value of the damping factor for the engine inlet bc.
 	 * \return Value of the damping factor.
 	 */
-	double GetDamp_Engine_Inlet(void);
+	double GetDamp_Nacelle_Inflow(void);
     
 	/*! 
 	 * \brief Value of the damping factor for the residual restriction.
@@ -4168,8 +4171,36 @@ public:
 	 * \param[in] val_index - Index corresponding to the outlet boundary.
 	 * \return The outlet pressure.
 	 */
-	double GetFanFace_Mach(string val_marker);
+	double GetFanFace_Mach_Target(string val_marker);
 
+    /*!
+	 * \brief Get the back pressure (static) at an outlet boundary.
+	 * \param[in] val_index - Index corresponding to the outlet boundary.
+	 * \return The outlet pressure.
+	 */
+	double GetFanFace_Mach(string val_marker);
+    
+    /*!
+	 * \brief Get the back pressure (static) at an outlet boundary.
+	 * \param[in] val_index - Index corresponding to the outlet boundary.
+	 * \return The outlet pressure.
+	 */
+	void SetFanFace_Mach(unsigned short val_imarker, double val_fanface_mach);
+    
+    /*!
+	 * \brief Get the back pressure (static) at an outlet boundary.
+	 * \param[in] val_index - Index corresponding to the outlet boundary.
+	 * \return The outlet pressure.
+	 */
+	double GetFanFace_Pressure(string val_marker);
+    
+    /*!
+	 * \brief Get the back pressure (static) at an outlet boundary.
+	 * \param[in] val_index - Index corresponding to the outlet boundary.
+	 * \return The outlet pressure.
+	 */
+	void SetFanFace_Pressure(unsigned short val_imarker, double val_fanface_pressure);
+    
 	/*!
 	 * \brief Get the displacement value at an displacement boundary.
 	 * \param[in] val_index - Index corresponding to the displacement boundary.
@@ -4216,12 +4247,6 @@ public:
 	 * \param[in] val_iZone - Current grid domain number.
 	 */	
 	void SetNondimensionalization(unsigned short val_nDim, unsigned short val_iZone);
-
-	/*! 
-	 * \brief Deep copy in config class.
-	 * \param[in] copy - Original class to be copied.
-	 */	
-	void DeepCopy(CConfig *copy);
 
 	/*! 
 	 * \brief Config file postprocessing.

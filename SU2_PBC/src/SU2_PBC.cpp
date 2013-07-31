@@ -2,7 +2,7 @@
  * \file SU2_PBC.cpp
  * \brief Main file of Periodic Boundary Code (SU2_PBC).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
 	geometry->SetEsuP(); geometry->SetPsuP(); geometry->SetEsuE();
 	
 	/*--- Check the orientation before computing geometrical quantities ---*/
-	cout << "Checking the numerical grid orientation." <<endl; 
+	cout << "Checking the numerical grid orientation." <<endl;
 	geometry->SetBoundVolume(); geometry->Check_Orientation(config);
 	
 	/*--- Create the edge structure ---*/
@@ -79,10 +79,7 @@ int main(int argc, char *argv[]) {
 	geometry->SetPeriodicBoundary(config);
 	
   /*--- Original grid for debugging purposes ---*/
-	if(config->GetOutput_FileFormat() == PARAVIEW) {
-		strcpy (buffer_vtk, "periodic_original.vtk"); geometry->SetParaView(buffer_vtk);	}
- 	if(config->GetOutput_FileFormat() == TECPLOT) {
-		strcpy (buffer_plt, "periodic_original.plt"); geometry->SetTecPlot(buffer_plt);	}
+  strcpy (buffer_plt, "periodic_original.plt"); geometry->SetTecPlot(buffer_plt);
  
 	/*--- Create a new grid with the right periodic boundary ---*/
 	CGeometry *periodic; periodic = new CPeriodicGeometry(geometry, config);
@@ -90,10 +87,7 @@ int main(int argc, char *argv[]) {
 	periodic->SetMeshFile(geometry, config, config->GetMesh_Out_FileName());
 	
 	/*--- Output of the grid for debuging purposes ---*/
-	if(config->GetOutput_FileFormat() == PARAVIEW) {
-		strcpy (buffer_vtk, "periodic_halo.vtk"); periodic->SetParaView(buffer_vtk);	}
-	if(config->GetOutput_FileFormat() == TECPLOT) {
-		strcpy (buffer_plt, "periodic_halo.plt"); periodic->SetTecPlot(buffer_plt);	}
+  strcpy (buffer_plt, "periodic_halo.plt"); periodic->SetTecPlot(buffer_plt);
 	
 #ifndef NO_MPI
 	MPI::Finalize();

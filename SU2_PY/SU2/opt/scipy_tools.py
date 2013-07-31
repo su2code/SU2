@@ -3,7 +3,7 @@
 ## \file scipy_tools.py
 #  \brief tools for interfacing with scipy
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.5
+#  \version 2.0.6
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -36,7 +36,7 @@ from numpy.linalg import norm
 #  Scipy SLSQP
 # -------------------------------------------------------------------
 
-def scipy_slsqp(project,x0=None,xb=None,its=100):
+def scipy_slsqp(project,x0=None,xb=None,its=100,grads=True):
     """ result = scipy_slsqp(project,x0=[],xb=[],its=100)
     
         Runs the Scipy implementation of SLSQP with 
@@ -55,8 +55,24 @@ def scipy_slsqp(project,x0=None,xb=None,its=100):
     # import scipy optimizer
     from scipy.optimize import fmin_slsqp
 
+    # handle input cases
     if x0 is None: x0 = []
     if xb is None: xb = []
+    
+    # function handles
+    func           = obj_f
+    f_eqcons       = con_ceq
+    f_ieqcons      = con_cieq 
+    
+    # gradient handles
+    if project.config.GRADIENT_METHOD == 'NONE': 
+        fprime         = None
+        fprime_eqcons  = None
+        fprime_ieqcons = None
+    else:
+        fprime         = obj_df
+        fprime_eqcons  = con_dceq
+        fprime_ieqcons = con_dcieq        
     
     # number of design variables
     n_dv = len( project.config['DEFINITION_DV']['KIND'] )
@@ -70,20 +86,20 @@ def scipy_slsqp(project,x0=None,xb=None,its=100):
     x0 = [ x0[i]/dv_scl for i,dv_scl in enumerate(dv_scales) ]    
         
     # Run Optimizer
-    outputs = fmin_slsqp( x0             = x0         , 
-                          func           = obj_f      , 
-                          f_eqcons       = con_ceq    , 
-                          f_ieqcons      = con_cieq   , 
-                          fprime         = obj_df     ,
-                          fprime_eqcons  = con_dceq   , 
-                          fprime_ieqcons = con_dcieq  , 
-                          args           = (project,) , 
-                          bounds         = xb         ,
-                          iter           = its        ,
-                          iprint         = 2          ,
-                          full_output    = 1          ,
-                          acc            = 1e-10      ,
-                          epsilon        = 1.0e-06     )
+    outputs = fmin_slsqp( x0             = x0             , 
+                          func           = func           , 
+                          f_eqcons       = f_eqcons       , 
+                          f_ieqcons      = f_ieqcons      ,
+                          fprime         = fprime         ,
+                          fprime_eqcons  = fprime_eqcons  , 
+                          fprime_ieqcons = fprime_ieqcons , 
+                          args           = (project,)     , 
+                          bounds         = xb             ,
+                          iter           = its            ,
+                          iprint         = 2              ,
+                          full_output    = 1              ,
+                          acc            = 1e-10          ,
+                          epsilon        = 1.0e-06         )
     
     # Done
     return outputs

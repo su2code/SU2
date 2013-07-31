@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2013 Aerospace Design Laboratory
@@ -36,20 +36,20 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
   bool *SurfacePoint = NULL;
   
 	bool grid_movement  = config->GetGrid_Movement();
-	bool Adjoint = config->GetAdjoint();
+	bool adjoint = config->GetAdjoint();
     
 	char cstr[200], buffer[50];
 	string filename;
     
 	/*--- Write file name with extension ---*/
   if (surf_sol) {
-    if (Adjoint)
+    if (adjoint)
       filename = config->GetSurfAdjCoeff_FileName();
     else
       filename = config->GetSurfFlowCoeff_FileName();
   }
   else {
-    if (Adjoint)
+    if (adjoint)
       filename = config->GetAdj_FileName();
     else
       filename = config->GetFlow_FileName();

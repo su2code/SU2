@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Many of the classes in this file are templated, and therefore must
  * be declared and defined here; to keep all elements together, there
@@ -103,7 +103,7 @@ const unsigned int MAX_PROCESSORS = 1000;	/*!< \brief Maximum number of processo
 const unsigned int MAX_PARAMETERS = 10;		/*!< \brief Maximum number of parameters for a design variable definition. */
 const unsigned int MAX_INDEX_VALUE = 100;	/*!< \brief Maximum value for a marker index. */
 const unsigned int MAX_NUMBER_MARKER = 200;	/*!< \brief Maximum number of domains. */
-const unsigned int MAX_NUMBER_CHUNK = 10;	/*!< \brief Maximum number of chunks for the FFD. */
+const unsigned int MAX_NUMBER_FFD = 10;	/*!< \brief Maximum number of FFDBoxs for the FFD. */
 const unsigned int MAX_SOLS = 6;		/*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 6;		/*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 30; /*!< \brief Maximum number of zones. */
@@ -681,19 +681,6 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("MIN_THICKNESS", MIN_THICKNESS);
 
 /*!
- * \brief types (Continuous/Discrete) of objective functions
- */
-enum ENUM_OBJECTIVE_TYPE {
-	FORCE_OBJ= 1, 	/*!< \brief Force dependent objective function. */
-	NON_FORCE_OBJ = 2 	/*!< \brief Non-force dependent objective function. */
-
-};
-
-static const map<string, ENUM_OBJECTIVE_TYPE> ObjectiveType_Map = CCreateMap<string, ENUM_OBJECTIVE_TYPE>
-("FORCE", FORCE_OBJ)
-("NON_FORCE", NON_FORCE_OBJ);
-
-/*!
  * \brief types of Continuous equations
  */
 enum ENUM_CONTINUOUS_EQNS {
@@ -806,16 +793,14 @@ const int CGNS_STRING_SIZE = 33;/*!< \brief Length of strings used in the CGNS f
  * \brief type of solution output file formats
  */
 enum ENUM_OUTPUT {
-	PARAVIEW = 1, 		/*!< \brief Paraview format for the solution output. */
-	TECPLOT = 2,  		/*!< \brief Tecplot format for the solution output. */
-	EXCEL = 3,			/*!< \brief Excel format for the solution output. */
-	CSV = 4,			/*!< \brief Comma-separated values format for the solution output. */
-	STL = 5,				/*!< \brief STL CAD format for the solution output. */
-  TECPLOT_BINARY = 6,  		/*!< \brief Tecplot binary format for the solution output. */
-	CGNS_SOL = 7  		/*!< \brief CGNS format for the solution output. */
+	TECPLOT = 1,  		/*!< \brief Tecplot format for the solution output. */
+	EXCEL = 2,			/*!< \brief Excel format for the solution output. */
+	CSV = 3,			/*!< \brief Comma-separated values format for the solution output. */
+	STL = 4,				/*!< \brief STL CAD format for the solution output. */
+  TECPLOT_BINARY = 5,  		/*!< \brief Tecplot binary format for the solution output. */
+	CGNS_SOL = 6  		/*!< \brief CGNS format for the solution output. */
 };
 static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPUT>
-("PARAVIEW", PARAVIEW)
 ("TECPLOT", TECPLOT)
 ("EXCEL", EXCEL)
 ("CSV", CSV)
@@ -902,21 +887,17 @@ enum ENUM_LINEAR_SOLVER {
 	STEEPEST_DESCENT = 1,		/*!< \brief Steepest descent method for point inversion algoritm (Free-Form). */
 	NEWTON = 2,			/*!< \brief Newton method for point inversion algorithm (Free-Form). */
 	QUASI_NEWTON = 3,		/*!< \brief Quasi Newton method for point inversion algorithm (Free-Form). */
-	SYM_GAUSS_SEIDEL = 4,		/*!< \brief Symmetric Gauss-Seidel method for grid deformation. */
-	CONJUGATE_GRADIENT = 5,	/*!< \brief Preconditionated conjugate gradient method for grid deformation. */
-	GMRES = 6,    	/*!< \brief Flexible Generalized Minimal RESidual method. */
-	LU_SGS = 7,		/*!< \brief LU - Symmetric Gauss-Seidel method (main solver). */
-	BCGSTAB = 8	/*!< \brief BCGSTAB - Biconjugate Gradient Stabilized Method (main solver). */
+	CONJUGATE_GRADIENT = 4,	/*!< \brief Preconditionated conjugate gradient method for grid deformation. */
+	FGMRES = 5,    	/*!< \brief Flexible Generalized Minimal Residual method. */
+	BCGSTAB = 6	/*!< \brief BCGSTAB - Biconjugate Gradient Stabilized Method (main solver). */
 };
 static const map<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = CCreateMap<string, ENUM_LINEAR_SOLVER>
 ("STEEPEST_DESCENT", STEEPEST_DESCENT)
 ("NEWTON", NEWTON)
 ("QUASI_NEWTON", QUASI_NEWTON)
-("SYM_GAUSS_SEIDEL", SYM_GAUSS_SEIDEL)
-("LU_SGS", LU_SGS)
 ("CONJUGATE_GRADIENT", CONJUGATE_GRADIENT)
 ("BCGSTAB", BCGSTAB)
-("GMRES", GMRES);
+("FGMRES", FGMRES);
 
 /*!
  * \brief types of sensitivity smoothing
@@ -935,13 +916,13 @@ static const map<string, ENUM_SENS_SMOOTHING> Sens_Smoothing_Map = CCreateMap<st
  * \brief types of preconditioners for the linear solver
  */
 enum ENUM_LINEAR_SOLVER_PREC {
-	NO_PREC = 0,		/*!< \brief No preconditioner. */
 	JACOBI = 1,		/*!< \brief Jacobi preconditioner. */
-	LINELET = 2		/*!< \brief Line implicit preconditioner. */
+	LU_SGS = 2,		/*!< \brief LU SGS preconditioner. */
+	LINELET = 3		/*!< \brief Line implicit preconditioner. */
 };
 static const map<string, ENUM_LINEAR_SOLVER_PREC> Linear_Solver_Prec_Map = CCreateMap<string, ENUM_LINEAR_SOLVER_PREC>
-("NONE", NO_PREC)
 ("JACOBI", JACOBI)
+("LU_SGS", LU_SGS)
 ("LINELET", LINELET);
 
 /*!
@@ -1261,15 +1242,27 @@ public:
 	 * \param[in] value - a set of strings used to define the option
 	 */
 	void SetValue(const vector<string> & value) {
+    
+    int rank = MASTER_NODE;
+#ifndef NO_MPI
+    rank = MPI::COMM_WORLD.Get_rank();
+#endif
+    
 		typename map<string,Tenum>::const_iterator it;
 		if (ref_dim_ == NULL) {
 			// this is a scalar enum option
 			it = Tmap_->find(StringToUpperCase(value[0]));
 			if (it == Tmap_->end()) {
-				cerr << "Error in CEnumOptionRef::SetValue(const vector<string> &): "
-						<< "cannot find value " << value[0] << " in given map."
-						<< endl;
-				throw(-1);
+        if (rank == MASTER_NODE) {
+          cerr << "ERROR: Cannot find value " << value[0] << " in given map." << endl;
+          cerr << "Please check the name of the variable in the config file." << endl;
+        }
+#ifdef NO_MPI
+        exit(1);
+#else
+        MPI::COMM_WORLD.Abort(1);
+        MPI::Finalize();
+#endif
 			}
 			*(*ref_) = it->second;
 		} else {
@@ -1279,10 +1272,16 @@ public:
 			for (unsigned short i = 0; i < *ref_dim_; i++) {
 				it = Tmap_->find(StringToUpperCase(value[i]));
 				if (it == Tmap_->end()) {
-					cerr << "Error in CEnumOptionRef::SetValue(const vector<string> &): "
-							<< "cannot find value " << value[i] << " in given map."
-							<< endl;
-					throw(-1);
+          if (rank == MASTER_NODE) {
+            cerr << "ERROR: Cannot find value " << value[i] << " in given map." << endl;
+            cerr << "Please check the name of the variable in the config file." << endl;
+          }
+#ifdef NO_MPI
+          exit(1);
+#else
+          MPI::COMM_WORLD.Abort(1);
+          MPI::Finalize();
+#endif
 				}
 				(*ref_)[i] = it->second;
 			}

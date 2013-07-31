@@ -2,7 +2,7 @@
  * \file integration_notime.cpp
  * \brief No time stepping methods for integration a PDE without time.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -27,25 +27,22 @@ CPotentialIntegration::CPotentialIntegration(CConfig *config) : CIntegration(con
 
 CPotentialIntegration::~CPotentialIntegration(void) { }
 
-void CPotentialIntegration::SetPotential_Solver(CGeometry ***geometry, CSolution ****solution_container, CNumerics *****solver_container,
+void CPotentialIntegration::SetPotential_Solver(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
                                                 CConfig **config, unsigned short RunTime_EqSystem, unsigned short iMesh, unsigned short iZone) {
 	
 	unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
 
-	/*--- Send-Receive boundary conditions ---*/
-	solution_container[iZone][iMesh][SolContainer_Position]->MPI_Send_Receive(geometry, solution_container, config, iMesh, iZone);
-
 	/*--- Do some preprocessing stuff ---*/
-	solution_container[iZone][iMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iMesh], solution_container[iZone][iMesh], solver_container[iZone][iMesh][SolContainer_Position],config[iZone], iMesh, 0, RunTime_EqSystem);
+	solver_container[iZone][iMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iMesh], solver_container[iZone][iMesh], config[iZone], iMesh, 0, RunTime_EqSystem);
 
 	/*--- Space integration ---*/
-	Space_Integration(geometry[iZone][iMesh], solution_container[iZone][iMesh], solver_container[iZone][iMesh][SolContainer_Position], config[iZone], iMesh, 0, RunTime_EqSystem);
+	Space_Integration(geometry[iZone][iMesh], solver_container[iZone][iMesh], numerics_container[iZone][iMesh][SolContainer_Position], config[iZone], iMesh, 0, RunTime_EqSystem);
 
 	/*--- Solve the linear system ---*/
-	Solving_Linear_System(geometry[iZone][iMesh], solution_container[iZone][iMesh][SolContainer_Position], solution_container[iZone][iMesh], config[iZone], iMesh);
+	Solving_Linear_System(geometry[iZone][iMesh], solver_container[iZone][iMesh][SolContainer_Position], solver_container[iZone][iMesh], config[iZone], iMesh);
 
 	/*--- Compute the gradient ---*/
-	if (config[iZone]->GetKind_Gradient_Method() == GREEN_GAUSS) solution_container[iZone][iMesh][SolContainer_Position]->SetSolution_Gradient_GG(geometry[iZone][iMesh], config[iZone]);
-	if (config[iZone]->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) solution_container[iZone][iMesh][SolContainer_Position]->SetSolution_Gradient_LS(geometry[iZone][iMesh], config[iZone]);
+	if (config[iZone]->GetKind_Gradient_Method() == GREEN_GAUSS) solver_container[iZone][iMesh][SolContainer_Position]->SetSolution_Gradient_GG(geometry[iZone][iMesh], config[iZone]);
+	if (config[iZone]->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) solver_container[iZone][iMesh][SolContainer_Position]->SetSolution_Gradient_LS(geometry[iZone][iMesh], config[iZone]);
 
 }

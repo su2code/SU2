@@ -2,7 +2,7 @@
  * \file geometry_structure.inl
  * \brief In-Line subroutines of the <i>geometry_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -169,17 +169,13 @@ inline void CGeometry::SetBoundControlVolume(CConfig *config, unsigned short act
 
 inline void CGeometry::SetBoundControlVolume(CConfig *config, CGeometry *geometry, unsigned short action) { }
 
-inline void CGeometry::SetParaView(char config_filename[200]) { }
-
 inline void CGeometry::SetTecPlot(char config_filename[200]) { }
 
 inline void CGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename) { }
 
 inline void CGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string val_mesh_out_filename) { }
 
-inline void CGeometry::SetMeshFile_IntSurface(CConfig *config, string val_mesh_out_filename) { }
-
-inline void CGeometry::SetBoundParaView(CConfig *config, char mesh_filename[200]) { }
+inline void CGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename, string val_mesh_in_filename) { }
 
 inline void CGeometry::SetBoundTecPlot(CConfig *config, char mesh_filename[200]) { }
 

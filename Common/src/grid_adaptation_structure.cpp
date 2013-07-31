@@ -2,7 +2,7 @@
  * \file grid_adaptation_structure.cpp
  * \brief Main subroutines for grid adaptation.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  */
 
 #include "../include/grid_adaptation_structure.hpp"
@@ -377,7 +377,7 @@ void CGridAdaptation::SetSupShock_Refinement(CGeometry *geometry, CConfig *confi
 			Coordx = geometry->node[iPoint]->GetCoord(0);
 			Coordy = geometry->node[iPoint]->GetCoord(1);
 			if (Coordy < 0.0)
-			if ((Coordx > abs(Coordy/tan(mu_2))-0.25) && (Coordx < abs(Coordy/tan(mu_1))+1.25)) {
+			if ((Coordx > fabs(Coordy/tan(mu_2))-0.25) && (Coordx < fabs(Coordy/tan(mu_1))+1.25)) {
 				geometry->elem[iElem]->SetDivide (true);
 			}
 		}

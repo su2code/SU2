@@ -2,7 +2,7 @@
  * \file geometry_structure.cpp
  * \brief Main subroutines for creating the primal grid and multigrid structure.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -548,29 +548,35 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
       /*--- Allocate space for elements ---*/
       if (!config->GetDivide_Element()) elem = new CPrimalGrid*[nElem];
       else {
-        if (size == 1) cout << "Dividing elements into triangles or tetrahedra." << endl;
         if (nDim == 2) elem = new CPrimalGrid*[2*nElem];
-        if (nDim == 3) elem = new CPrimalGrid*[5*nElem];
+        if (nDim == 3) elem = new CPrimalGrid*[6*nElem];
       }
       
-      /*--- Indirection matrix for dividing prisms into tets ---*/
-      unsigned short inDirection[6][6], conversionTable[6];
-      unsigned short zero, one, two, three, four, five, iNode, smallestNode = 0, lookupindex;
-      inDirection[0][0] = 0; inDirection[0][1] = 2; inDirection[0][2] = 1; inDirection[0][3] = 3; inDirection[0][4] = 5; inDirection[0][5] = 4;
-      inDirection[1][0] = 2; inDirection[1][1] = 1; inDirection[1][2] = 0; inDirection[1][3] = 5; inDirection[1][4] = 4; inDirection[1][5] = 3;
-      inDirection[2][0] = 1; inDirection[2][1] = 0; inDirection[2][2] = 2; inDirection[2][3] = 4; inDirection[2][4] = 3; inDirection[2][5] = 5;
-      inDirection[3][0] = 3; inDirection[3][1] = 4; inDirection[3][2] = 5; inDirection[3][3] = 0; inDirection[3][4] = 1; inDirection[3][5] = 2;
-      inDirection[4][0] = 5; inDirection[4][1] = 3; inDirection[4][2] = 4; inDirection[4][3] = 2; inDirection[4][4] = 0; inDirection[4][5] = 1;
-      inDirection[5][0] = 4; inDirection[5][1] = 5; inDirection[5][2] = 3; inDirection[5][3] = 1; inDirection[5][4] = 2; inDirection[5][5] = 0;
+      unsigned short IndirectionPrism[6][6], CT_FromVTK_Prism[6], IndirectionHexa[9][9];
+      unsigned short temp, zero, one, two, three, four, five, six, seven, eight, iNode, smallestNode = 0, lookupindex;
+      unsigned long smallest;
+
+      /*--- Indirection matrix for dividing prisms into tets, using vtk format, and conversion table for local numbering of prisms in vtk format ---*/
+      CT_FromVTK_Prism[0] = 1;  CT_FromVTK_Prism[1] = 3;  CT_FromVTK_Prism[2] = 2;  CT_FromVTK_Prism[3] = 4;  CT_FromVTK_Prism[4] = 6;  CT_FromVTK_Prism[5] = 5;
       
-      /*--- Conversion table for local numbering of prisms in vtk format ---*/
-      conversionTable[0] = 1;
-      conversionTable[1] = 3;
-      conversionTable[2] = 2;
-      conversionTable[3] = 4;
-      conversionTable[4] = 6;
-      conversionTable[5] = 5;
+      IndirectionPrism[0][0] = 0; IndirectionPrism[0][1] = 2; IndirectionPrism[0][2] = 1; IndirectionPrism[0][3] = 3; IndirectionPrism[0][4] = 5; IndirectionPrism[0][5] = 4;
+      IndirectionPrism[1][0] = 2; IndirectionPrism[1][1] = 1; IndirectionPrism[1][2] = 0; IndirectionPrism[1][3] = 5; IndirectionPrism[1][4] = 4; IndirectionPrism[1][5] = 3;
+      IndirectionPrism[2][0] = 1; IndirectionPrism[2][1] = 0; IndirectionPrism[2][2] = 2; IndirectionPrism[2][3] = 4; IndirectionPrism[2][4] = 3; IndirectionPrism[2][5] = 5;
+      IndirectionPrism[3][0] = 3; IndirectionPrism[3][1] = 4; IndirectionPrism[3][2] = 5; IndirectionPrism[3][3] = 0; IndirectionPrism[3][4] = 1; IndirectionPrism[3][5] = 2;
+      IndirectionPrism[4][0] = 5; IndirectionPrism[4][1] = 3; IndirectionPrism[4][2] = 4; IndirectionPrism[4][3] = 2; IndirectionPrism[4][4] = 0; IndirectionPrism[4][5] = 1;
+      IndirectionPrism[5][0] = 4; IndirectionPrism[5][1] = 5; IndirectionPrism[5][2] = 3; IndirectionPrism[5][3] = 1; IndirectionPrism[5][4] = 2; IndirectionPrism[5][5] = 0;
       
+      /*--- Indirection matrix for dividing hexahedron into tets ---*/
+      IndirectionHexa[1][1] = 1; IndirectionHexa[1][2] = 2; IndirectionHexa[1][3] = 3; IndirectionHexa[1][4] = 4; IndirectionHexa[1][5] = 5; IndirectionHexa[1][6] = 6; IndirectionHexa[1][7] = 7; IndirectionHexa[1][8] = 8;
+      IndirectionHexa[2][1] = 2; IndirectionHexa[2][2] = 1; IndirectionHexa[2][3] = 5; IndirectionHexa[2][4] = 6; IndirectionHexa[2][5] = 3; IndirectionHexa[2][6] = 4; IndirectionHexa[2][7] = 8; IndirectionHexa[2][8] = 7;
+      IndirectionHexa[3][1] = 3; IndirectionHexa[3][2] = 2; IndirectionHexa[3][3] = 6; IndirectionHexa[3][4] = 7; IndirectionHexa[3][5] = 4; IndirectionHexa[3][6] = 1; IndirectionHexa[3][7] = 5; IndirectionHexa[3][8] = 8;
+      IndirectionHexa[4][1] = 4; IndirectionHexa[4][2] = 1; IndirectionHexa[4][3] = 2; IndirectionHexa[4][4] = 3; IndirectionHexa[4][5] = 8; IndirectionHexa[4][6] = 5; IndirectionHexa[4][7] = 6; IndirectionHexa[4][8] = 7;
+      IndirectionHexa[5][1] = 5; IndirectionHexa[5][2] = 1; IndirectionHexa[5][3] = 4; IndirectionHexa[5][4] = 8; IndirectionHexa[5][5] = 6; IndirectionHexa[5][6] = 2; IndirectionHexa[5][7] = 3; IndirectionHexa[5][8] = 7;
+      IndirectionHexa[6][1] = 6; IndirectionHexa[6][2] = 2; IndirectionHexa[6][3] = 1; IndirectionHexa[6][4] = 5; IndirectionHexa[6][5] = 7; IndirectionHexa[6][6] = 3; IndirectionHexa[6][7] = 4; IndirectionHexa[6][8] = 8;
+      IndirectionHexa[7][1] = 7; IndirectionHexa[7][2] = 3; IndirectionHexa[7][3] = 2; IndirectionHexa[7][4] = 6; IndirectionHexa[7][5] = 8; IndirectionHexa[7][6] = 4; IndirectionHexa[7][7] = 1; IndirectionHexa[7][8] = 5;
+      IndirectionHexa[8][1] = 8; IndirectionHexa[8][2] = 4; IndirectionHexa[8][3] = 3; IndirectionHexa[8][4] = 7; IndirectionHexa[8][5] = 5; IndirectionHexa[8][6] = 1; IndirectionHexa[8][7] = 2; IndirectionHexa[8][8] = 6;
+      
+
       /*--- Loop over all the volumetric elements ---*/
       while (ielem_div < nElem) {
         getline(mesh_file,text_line);
@@ -580,10 +586,14 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
         
         switch(VTK_Type) {
           case TRIANGLE:
+            
             elem_line >> vnodes_triangle[0]; elem_line >> vnodes_triangle[1]; elem_line >> vnodes_triangle[2];
             elem[ielem] = new CTriangle(vnodes_triangle[0],vnodes_triangle[1],vnodes_triangle[2],nDim);
-            ielem_div++; ielem++; nelem_triangle++; break;
+            ielem_div++; ielem++; nelem_triangle++;
+            break;
+            
           case RECTANGLE:
+            
             elem_line >> vnodes_quad[0]; elem_line >> vnodes_quad[1]; elem_line >> vnodes_quad[2]; elem_line >> vnodes_quad[3];
             if (!config->GetDivide_Element()) {
               elem[ielem] = new CRectangle(vnodes_quad[0],vnodes_quad[1],vnodes_quad[2],vnodes_quad[3],nDim);
@@ -595,86 +605,273 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
               ielem++; nelem_triangle++; }
             ielem_div++;
             break;
+            
           case TETRAHEDRON:
+            
             elem_line >> vnodes_tetra[0]; elem_line >> vnodes_tetra[1]; elem_line >> vnodes_tetra[2]; elem_line >> vnodes_tetra[3];
             elem[ielem] = new CTetrahedron(vnodes_tetra[0],vnodes_tetra[1],vnodes_tetra[2],vnodes_tetra[3]);
-            ielem_div++; ielem++; nelem_tetra++; break;
+            ielem_div++; ielem++; nelem_tetra++;
+            break;
+            
           case HEXAHEDRON:
+            
             elem_line >> vnodes_hexa[0]; elem_line >> vnodes_hexa[1]; elem_line >> vnodes_hexa[2];
             elem_line >> vnodes_hexa[3]; elem_line >> vnodes_hexa[4]; elem_line >> vnodes_hexa[5];
             elem_line >> vnodes_hexa[6]; elem_line >> vnodes_hexa[7];
+            
             if (!config->GetDivide_Element()) {
-              elem[ielem] = new CHexahedron(vnodes_hexa[0],vnodes_hexa[1],vnodes_hexa[2],vnodes_hexa[3],vnodes_hexa[4],vnodes_hexa[5],vnodes_hexa[6],vnodes_hexa[7]);
-              ielem++; nelem_hexa++; }
+              elem[ielem] = new CHexahedron(vnodes_hexa[0], vnodes_hexa[1], vnodes_hexa[2], vnodes_hexa[3],
+                                            vnodes_hexa[4], vnodes_hexa[5], vnodes_hexa[6], vnodes_hexa[7]);
+              ielem++; nelem_hexa++;
+            }
             else {
-              elem[ielem] = new CTetrahedron(vnodes_hexa[0],vnodes_hexa[1],vnodes_hexa[2],vnodes_hexa[5]);
-              ielem++; nelem_tetra++;
-              elem[ielem] = new CTetrahedron(vnodes_hexa[0],vnodes_hexa[2],vnodes_hexa[7],vnodes_hexa[5]);
-              ielem++; nelem_tetra++;
-              elem[ielem] = new CTetrahedron(vnodes_hexa[0],vnodes_hexa[2],vnodes_hexa[3],vnodes_hexa[7]);
-              ielem++; nelem_tetra++;
-              elem[ielem] = new CTetrahedron(vnodes_hexa[0],vnodes_hexa[5],vnodes_hexa[7],vnodes_hexa[4]);
-              ielem++; nelem_tetra++;
-              elem[ielem] = new CTetrahedron(vnodes_hexa[2],vnodes_hexa[7],vnodes_hexa[5],vnodes_hexa[6]);
-              ielem++; nelem_tetra++;	}
+              
+              smallest = vnodes_hexa[0]; smallestNode = 0;
+              for (iNode = 1; iNode < 8; iNode ++) {
+                if ( smallest > vnodes_hexa[iNode]) {
+                  smallest = vnodes_hexa[iNode];
+                  smallestNode = iNode;
+                }
+              }
+                            
+              one  = IndirectionHexa[smallestNode+1][1] - 1;
+              two  = IndirectionHexa[smallestNode+1][2] - 1;
+              three  = IndirectionHexa[smallestNode+1][3] - 1;
+              four = IndirectionHexa[smallestNode+1][4] - 1;
+              five = IndirectionHexa[smallestNode+1][5] - 1;
+              six = IndirectionHexa[smallestNode+1][6] - 1;
+              seven = IndirectionHexa[smallestNode+1][7] - 1;
+              eight = IndirectionHexa[smallestNode+1][8] - 1;
+
+              unsigned long index1, index2;
+              unsigned short code1 = 0, code2 = 0, code3 = 0;
+              
+              index1 = min(vnodes_hexa[two], vnodes_hexa[seven]);
+              index2 = min(vnodes_hexa[three], vnodes_hexa[six]);
+              if (index1 < index2) code1 = 1;
+              
+              index1 = min(vnodes_hexa[four], vnodes_hexa[seven]);
+              index2 = min(vnodes_hexa[three], vnodes_hexa[eight]);
+              if (index1 < index2) code2 = 1;
+              
+              index1 = min(vnodes_hexa[five], vnodes_hexa[seven]);
+              index2 = min(vnodes_hexa[six], vnodes_hexa[eight]);
+              if (index1 < index2) code3 = 1;
+              
+              /*--- Rotation of 120 degrees ---*/
+              if ((!code1 && !code2 && code3) || (code1 && code2 && !code3)) {
+                temp = two; two = five; five = four; four = temp;
+                temp = six; six = eight; eight = three; three = temp;
+              }
+              
+              /*--- Rotation of 240 degrees ---*/
+              if ((!code1 && code2 && !code3) || (code1 && !code2 && code3)) {
+                temp = two; two = four; four = five; five = temp;
+                temp = six; six = three; three = eight; eight = temp;
+              }
+              
+
+              if ((code1 + code2 + code3) == 0) {
+                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[two], vnodes_hexa[three], vnodes_hexa[six]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[three], vnodes_hexa[eight], vnodes_hexa[six]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[three], vnodes_hexa[four], vnodes_hexa[eight]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[six], vnodes_hexa[eight], vnodes_hexa[five]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[three], vnodes_hexa[eight], vnodes_hexa[six], vnodes_hexa[seven]);
+                ielem++; nelem_tetra++;
+              }
+              if ((code1 + code2 + code3) == 1) {
+                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[six], vnodes_hexa[eight], vnodes_hexa[five]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[two], vnodes_hexa[eight], vnodes_hexa[six]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[two], vnodes_hexa[seven], vnodes_hexa[eight], vnodes_hexa[six]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[eight], vnodes_hexa[three], vnodes_hexa[four]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[eight], vnodes_hexa[two], vnodes_hexa[three]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[two], vnodes_hexa[eight], vnodes_hexa[seven], vnodes_hexa[three]);
+                ielem++; nelem_tetra++;
+                
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[six], vnodes_hexa[eight], vnodes_hexa[five]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[two], vnodes_hexa[seven], vnodes_hexa[six]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[eight], vnodes_hexa[six]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[eight], vnodes_hexa[three], vnodes_hexa[four]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[eight], vnodes_hexa[seven], vnodes_hexa[three]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[two], vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[three]);
+//                ielem++; nelem_tetra++;
+
+              }
+              if ((code1 + code2 + code3) == 2) {
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[five], vnodes_hexa[six], vnodes_hexa[seven]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[four], vnodes_hexa[eight], vnodes_hexa[seven]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[eight], vnodes_hexa[five], vnodes_hexa[seven]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[two], vnodes_hexa[three], vnodes_hexa[six]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[four], vnodes_hexa[seven], vnodes_hexa[three]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[six], vnodes_hexa[three]);
+//                ielem++; nelem_tetra++;
+                
+                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[three], vnodes_hexa[four], vnodes_hexa[seven]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[five], vnodes_hexa[seven], vnodes_hexa[eight]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[four], vnodes_hexa[eight]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[two], vnodes_hexa[three], vnodes_hexa[six]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[five], vnodes_hexa[six]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[three], vnodes_hexa[seven], vnodes_hexa[six]);
+                ielem++; nelem_tetra++;
+              }
+              if ((code1 + code2 + code3) == 3) {
+                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[three], vnodes_hexa[four], vnodes_hexa[seven]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[four], vnodes_hexa[eight], vnodes_hexa[seven]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[eight], vnodes_hexa[five], vnodes_hexa[seven]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[six], vnodes_hexa[seven], vnodes_hexa[five]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[two], vnodes_hexa[six], vnodes_hexa[seven], vnodes_hexa[one]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_hexa[two], vnodes_hexa[seven], vnodes_hexa[three], vnodes_hexa[one]);
+                ielem++; nelem_tetra++;
+                
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[two], vnodes_hexa[seven], vnodes_hexa[six]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[eight], vnodes_hexa[five]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[six], vnodes_hexa[seven], vnodes_hexa[five]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[two], vnodes_hexa[three]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[eight], vnodes_hexa[seven], vnodes_hexa[four]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[three], vnodes_hexa[four]);
+//                ielem++; nelem_tetra++;
+                
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[two], vnodes_hexa[seven], vnodes_hexa[six]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[two], vnodes_hexa[three], vnodes_hexa[seven]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[three], vnodes_hexa[four], vnodes_hexa[seven]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[six], vnodes_hexa[seven], vnodes_hexa[five]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[four], vnodes_hexa[eight]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[eight], vnodes_hexa[five]);
+//                ielem++; nelem_tetra++;
+              }
+            
+            }
             ielem_div++;
             break;
+            
           case WEDGE:
+            
             elem_line >> vnodes_wedge[0]; elem_line >> vnodes_wedge[1]; elem_line >> vnodes_wedge[2];
             elem_line >> vnodes_wedge[3]; elem_line >> vnodes_wedge[4]; elem_line >> vnodes_wedge[5];
+            
             if (!config->GetDivide_Element()) {
+              
               elem[ielem] = new CWedge(vnodes_wedge[0],vnodes_wedge[1],vnodes_wedge[2],vnodes_wedge[3],vnodes_wedge[4],vnodes_wedge[5]);
-              ielem++; nelem_wedge++; }
+              ielem++; nelem_wedge++;
+              
+            }
             else {
-              /* ---Reference: How to subdivide pyramids, prisms and hexahedra into tetrahedra by Julien Dompierre */
-              unsigned long smallest = 9999999;
-              for (iNode = 0; iNode < 6; iNode ++) {
+              
+              smallest = vnodes_wedge[0]; smallestNode = 0;
+              for (iNode = 1; iNode < 6; iNode ++) {
                 if ( smallest > vnodes_wedge[iNode]) {
                   smallest = vnodes_wedge[iNode];
                   smallestNode = iNode;
                 }
               }
-              lookupindex = conversionTable[smallestNode] - 1;
-              zero  = inDirection[lookupindex][0]; one  = inDirection[lookupindex][1]; two  = inDirection[lookupindex][2];
-              three = inDirection[lookupindex][3]; four = inDirection[lookupindex][4]; five = inDirection[lookupindex][5];
+              
+              lookupindex = (CT_FromVTK_Prism[smallestNode] - 1);
+              zero  = IndirectionPrism[lookupindex][0];
+              one  = IndirectionPrism[lookupindex][1];
+              two  = IndirectionPrism[lookupindex][2];
+              three = IndirectionPrism[lookupindex][3];
+              four = IndirectionPrism[lookupindex][4];
+              five = IndirectionPrism[lookupindex][5];
               
               unsigned long index1, index2;
-              bool division1 = false;
+              bool division = false;
               index1 = min(vnodes_wedge[one], vnodes_wedge[five]);
               index2 = min(vnodes_wedge[two], vnodes_wedge[four]);
-              if(index1 < index2) division1 = true;
+              if (index1 < index2) division = true;
               
-              if (division1) {
-                elem[ielem] = new CTetrahedron(vnodes_wedge[zero],vnodes_wedge[one],vnodes_wedge[two],vnodes_wedge[five]);
+              if (division) {
+                elem[ielem] = new CTetrahedron(vnodes_wedge[zero], vnodes_wedge[one], vnodes_wedge[two], vnodes_wedge[five]);
                 ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_wedge[zero],vnodes_wedge[one],vnodes_wedge[five],vnodes_wedge[four]);
+                elem[ielem] = new CTetrahedron(vnodes_wedge[zero], vnodes_wedge[one], vnodes_wedge[five], vnodes_wedge[four]);
                 ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_wedge[zero],vnodes_wedge[four],vnodes_wedge[five],vnodes_wedge[three]);
+                elem[ielem] = new CTetrahedron(vnodes_wedge[zero], vnodes_wedge[four], vnodes_wedge[five], vnodes_wedge[three]);
                 ielem++; nelem_tetra++;
               }
               else {
-                elem[ielem] = new CTetrahedron(vnodes_wedge[zero],vnodes_wedge[one],vnodes_wedge[two],vnodes_wedge[four]);
+                elem[ielem] = new CTetrahedron(vnodes_wedge[zero], vnodes_wedge[one], vnodes_wedge[two], vnodes_wedge[four]);
                 ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_wedge[zero],vnodes_wedge[four],vnodes_wedge[two],vnodes_wedge[five]);
+                elem[ielem] = new CTetrahedron(vnodes_wedge[zero], vnodes_wedge[four], vnodes_wedge[two], vnodes_wedge[five]);
                 ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_wedge[zero],vnodes_wedge[four],vnodes_wedge[five],vnodes_wedge[three]);
+                elem[ielem] = new CTetrahedron(vnodes_wedge[zero], vnodes_wedge[four], vnodes_wedge[five], vnodes_wedge[three]);
                 ielem++; nelem_tetra++;
               }
             }
+            
             ielem_div++;
             break;
           case PYRAMID:
+            
             elem_line >> vnodes_pyramid[0]; elem_line >> vnodes_pyramid[1]; elem_line >> vnodes_pyramid[2];
             elem_line >> vnodes_pyramid[3]; elem_line >> vnodes_pyramid[4];
+            
             if (!config->GetDivide_Element()) {
+              
               elem[ielem] = new CPyramid(vnodes_pyramid[0],vnodes_pyramid[1],vnodes_pyramid[2],vnodes_pyramid[3],vnodes_pyramid[4]);
               ielem++; nelem_pyramid++;
+              
             }
             else {
-              elem[ielem] = new CTetrahedron(vnodes_pyramid[0],vnodes_pyramid[1],vnodes_pyramid[2],vnodes_pyramid[4]);
-              ielem++; nelem_tetra++;
-              elem[ielem] = new CTetrahedron(vnodes_pyramid[0],vnodes_pyramid[2],vnodes_pyramid[3],vnodes_pyramid[4]);
-              ielem++; nelem_tetra++; }
+              
+              unsigned long index1, index2;
+              bool division = false;
+              index1 = min(vnodes_pyramid[0], vnodes_pyramid[2]);
+              index2 = min(vnodes_pyramid[1], vnodes_pyramid[3]);
+              if (index1 < index2) division = true;
+              
+              if (division) {
+                elem[ielem] = new CTetrahedron(vnodes_pyramid[0], vnodes_pyramid[1], vnodes_pyramid[2], vnodes_pyramid[4]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_pyramid[0], vnodes_pyramid[2], vnodes_pyramid[3], vnodes_pyramid[4]);
+                ielem++; nelem_tetra++;
+              }
+              else {
+                elem[ielem] = new CTetrahedron(vnodes_pyramid[1], vnodes_pyramid[2], vnodes_pyramid[3], vnodes_pyramid[4]);
+                ielem++; nelem_tetra++;
+                elem[ielem] = new CTetrahedron(vnodes_pyramid[1], vnodes_pyramid[3], vnodes_pyramid[0], vnodes_pyramid[4]);
+                ielem++; nelem_tetra++;
+              }
+              
+            }
+            
             ielem_div++;
             break;
         }
@@ -868,7 +1065,14 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
           text_line.erase (0,13); nElem_Bound[iMarker] = atoi(text_line.c_str());
           if (size == 1)
             cout << nElem_Bound[iMarker]  << " boundary elements in index "<< iMarker <<" (Marker = " <<Marker_Tag<< ")." << endl;
-          bound[iMarker] = new CPrimalGrid* [nElem_Bound[iMarker]];
+          
+          
+          /*--- Allocate space for elements ---*/
+          if (!config->GetDivide_Element()) bound[iMarker] = new CPrimalGrid* [nElem_Bound[iMarker]];
+          else {
+            if (nDim == 2) bound[iMarker] = new CPrimalGrid* [2*nElem_Bound[iMarker]];;
+            if (nDim == 3) bound[iMarker] = new CPrimalGrid* [2*nElem_Bound[iMarker]];;
+          }
           
           nelem_edge_bound = 0; nelem_triangle_bound = 0; nelem_quad_bound = 0; ielem = 0;
           for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
@@ -893,18 +1097,53 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
                 bound_line >> vnodes_edge[0]; bound_line >> vnodes_edge[1];
                 bound[iMarker][ielem] = new CLine(vnodes_edge[0],vnodes_edge[1],2);
                 ielem++; nelem_edge_bound++; break;
+                
               case TRIANGLE:
                 bound_line >> vnodes_triangle[0]; bound_line >> vnodes_triangle[1]; bound_line >> vnodes_triangle[2];
                 bound[iMarker][ielem] = new CTriangle(vnodes_triangle[0],vnodes_triangle[1],vnodes_triangle[2],3);
                 ielem++; nelem_triangle_bound++; break;
+                
               case RECTANGLE:
+                
                 bound_line >> vnodes_quad[0]; bound_line >> vnodes_quad[1]; bound_line >> vnodes_quad[2]; bound_line >> vnodes_quad[3];
-                bound[iMarker][ielem] = new CRectangle(vnodes_quad[0],vnodes_quad[1],vnodes_quad[2],vnodes_quad[3],3);
-                ielem++; nelem_quad_bound++; break;
+                
+                if (!config->GetDivide_Element()) {
+                  
+                  bound[iMarker][ielem] = new CRectangle(vnodes_quad[0],vnodes_quad[1],vnodes_quad[2],vnodes_quad[3],3);
+                  ielem++; nelem_quad_bound++;
+                  
+                }
+                else {
+                  
+                  unsigned long index1, index2;
+                  bool division1 = false;
+                  index1 = min(vnodes_quad[0], vnodes_quad[2]);
+                  index2 = min(vnodes_quad[1], vnodes_quad[3]);
+                  if (index1 < index2) division1 = true;
+                  
+                  if (division1) {
+                    bound[iMarker][ielem] = new CTriangle(vnodes_quad[0], vnodes_quad[2], vnodes_quad[1], 3);
+                    ielem++; nelem_triangle_bound++;
+                    bound[iMarker][ielem] = new CTriangle(vnodes_quad[3], vnodes_quad[2], vnodes_quad[0], 3);
+                    ielem++; nelem_triangle_bound++;
+                  }
+                  else {
+                    bound[iMarker][ielem] = new CTriangle(vnodes_quad[2], vnodes_quad[1], vnodes_quad[3], 3);
+                    ielem++; nelem_triangle_bound++;
+                    bound[iMarker][ielem] = new CTriangle(vnodes_quad[1], vnodes_quad[0], vnodes_quad[3], 3);
+                    ielem++; nelem_triangle_bound++;
+                  }
+                  
+                }
+                
+                break;
+
+                
             }
           }
           nElem_Bound_Storage[iMarker] = nelem_edge_bound*3 + nelem_triangle_bound*4 + nelem_quad_bound*5;
-          
+          if (config->GetDivide_Element()) nElem_Bound[iMarker] = nelem_edge_bound + nelem_triangle_bound + nelem_quad_bound;
+
           /*--- Update config information storing the boundary information in the right place ---*/
           Tag_to_Marker[config->GetMarker_Config_Tag(Marker_Tag)] = Marker_Tag;
           config->SetMarker_All_Tag(iMarker, Marker_Tag);
@@ -1103,11 +1342,13 @@ void CPhysicalGeometry::CGNS_Format(CConfig *config, string val_mesh_filename, u
   
   /*--- Throw error if not in serial mode. ---*/
 #ifndef NO_MPI
-  cout << "Parallel support with CGNS format not yet implemented!!" << endl;
-  cout << "Press any key to exit..." << endl;
-  cin.get();
-  MPI::COMM_WORLD.Abort(1);
-  MPI::Finalize();
+  if (size > 1) {
+    cout << "Parallel support with CGNS format not yet implemented!!" << endl;
+    cout << "Press any key to exit..." << endl;
+    cin.get();
+    MPI::COMM_WORLD.Abort(1);
+    MPI::Finalize();
+  }
 #endif
   
   /*--- Check whether the supplied file is truly a CGNS file. ---*/
@@ -3127,350 +3368,369 @@ void CPhysicalGeometry::SetBoundControlVolume(CConfig *config, unsigned short ac
 
 void CPhysicalGeometry::MatchNearField(CConfig *config) {
 	double epsilon = 1e-1;
-
+    
+    unsigned short nMarker_NearfieldBound = config->GetnMarker_NearFieldBound();
+    
+    if (nMarker_NearfieldBound != 0) {
 #ifdef NO_MPI
-
-	unsigned short iMarker, jMarker;
-	unsigned long iVertex, iPoint, jVertex, jPoint = 0, pPoint = 0;
-	double *Coord_i, *Coord_j, dist = 0.0, mindist, maxdist;
-
-	cout << "Set Near-Field boundary conditions (if any). " <<endl; 
-
-	maxdist = 0.0;
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		if (config->GetMarker_All_Boundary(iMarker) == NEARFIELD_BOUNDARY) {
-			for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-				iPoint = vertex[iMarker][iVertex]->GetNode();
-				Coord_i = node[iPoint]->GetCoord();
-
-				mindist = 1e10;
-				for (jMarker = 0; jMarker < config->GetnMarker_All(); jMarker++)
-					if ((config->GetMarker_All_Boundary(jMarker) == NEARFIELD_BOUNDARY) && (iMarker != jMarker))
-						for (jVertex = 0; jVertex < nVertex[jMarker]; jVertex++) {
-							jPoint = vertex[jMarker][jVertex]->GetNode();
-							Coord_j = node[jPoint]->GetCoord();
-							if (nDim == 2) dist = sqrt(pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0));
-							if (nDim == 3) dist = sqrt(pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0) + pow(Coord_j[2]-Coord_i[2],2.0));
-							if (dist < mindist) { mindist = dist; pPoint = jPoint; }
-						}
-				maxdist = max(maxdist, mindist);
-				vertex[iMarker][iVertex]->SetDonorPoint(pPoint);
-
-				if (mindist > epsilon) {
-					cout.precision(10);
-					cout << endl;
-					cout << "   Bad match for point " << iPoint << ".\tNearest";
-					cout << " donor distance: " << scientific << mindist << ".";
-					vertex[iMarker][iVertex]->SetDonorPoint(iPoint);
-					maxdist = min(maxdist, 0.0);
-				}
-			}
-			cout <<"The max distance between points is: " << maxdist <<"."<< endl;
-		}
-
+        
+        unsigned short iMarker, jMarker;
+        unsigned long iVertex, iPoint, jVertex, jPoint = 0, pPoint = 0;
+        double *Coord_i, *Coord_j, dist = 0.0, mindist, maxdist;
+        
+        cout << "Set Near-Field boundary conditions. " <<endl;
+        
+        maxdist = 0.0;
+        for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+            if (config->GetMarker_All_Boundary(iMarker) == NEARFIELD_BOUNDARY) {
+                for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+                    iPoint = vertex[iMarker][iVertex]->GetNode();
+                    Coord_i = node[iPoint]->GetCoord();
+                    
+                    mindist = 1e10;
+                    for (jMarker = 0; jMarker < config->GetnMarker_All(); jMarker++)
+                        if ((config->GetMarker_All_Boundary(jMarker) == NEARFIELD_BOUNDARY) && (iMarker != jMarker))
+                            for (jVertex = 0; jVertex < nVertex[jMarker]; jVertex++) {
+                                jPoint = vertex[jMarker][jVertex]->GetNode();
+                                Coord_j = node[jPoint]->GetCoord();
+                                if (nDim == 2) dist = sqrt(pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0));
+                                if (nDim == 3) dist = sqrt(pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0) + pow(Coord_j[2]-Coord_i[2],2.0));
+                                if (dist < mindist) { mindist = dist; pPoint = jPoint; }
+                            }
+                    maxdist = max(maxdist, mindist);
+                    vertex[iMarker][iVertex]->SetDonorPoint(pPoint);
+                    
+                    if (mindist > epsilon) {
+                        cout.precision(10);
+                        cout << endl;
+                        cout << "   Bad match for point " << iPoint << ".\tNearest";
+                        cout << " donor distance: " << scientific << mindist << ".";
+                        vertex[iMarker][iVertex]->SetDonorPoint(iPoint);
+                        maxdist = min(maxdist, 0.0);
+                    }
+                }
+                cout <<"The max distance between points is: " << maxdist <<"."<< endl;
+            }
+        
 #else
-
-	MPI::COMM_WORLD.Barrier();
-
-	unsigned short iMarker, iDim;
-	unsigned long iVertex, iPoint, pPoint = 0, jVertex, jPoint;
-	double *Coord_i, Coord_j[3], dist = 0.0, mindist, maxdist;
-	int iProcessor, pProcessor = 0;
-	unsigned long nLocalVertex_NearField = 0, nGlobalVertex_NearField = 0, MaxLocalVertex_NearField = 0;
-
-	int rank = MPI::COMM_WORLD.Get_rank();
-	int nProcessor = MPI::COMM_WORLD.Get_size();
-
-	unsigned long *Buffer_Send_nVertex = new unsigned long [1];
-	unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
-
-	if (rank == MASTER_NODE) cout << "Set Near-Field boundary conditions (if any)." <<endl; 
-
-	/*--- Compute the number of vertex that have nearfield boundary condition
-	 without including the ghost nodes ---*/
-	nLocalVertex_NearField = 0;
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		if (config->GetMarker_All_Boundary(iMarker) == NEARFIELD_BOUNDARY)
-			for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
-				iPoint = vertex[iMarker][iVertex]->GetNode();
-				if (node[iPoint]->GetDomain()) nLocalVertex_NearField ++;
-			}
-
-	Buffer_Send_nVertex[0] = nLocalVertex_NearField;
-
-	/*--- Send Near-Field vertex information --*/
-	MPI::COMM_WORLD.Allreduce(&nLocalVertex_NearField, &nGlobalVertex_NearField, 1, MPI::UNSIGNED_LONG, MPI::SUM); 	
-	MPI::COMM_WORLD.Allreduce(&nLocalVertex_NearField, &MaxLocalVertex_NearField, 1, MPI::UNSIGNED_LONG, MPI::MAX); 	
-	MPI::COMM_WORLD.Allgather(Buffer_Send_nVertex, 1, MPI::UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI::UNSIGNED_LONG);
-
-	double *Buffer_Send_Coord = new double [MaxLocalVertex_NearField*nDim];
-	unsigned long *Buffer_Send_Point = new unsigned long [MaxLocalVertex_NearField];
-
-	double *Buffer_Receive_Coord = new double [nProcessor*MaxLocalVertex_NearField*nDim];
-	unsigned long *Buffer_Receive_Point = new unsigned long [nProcessor*MaxLocalVertex_NearField];
-
-	unsigned long nBuffer_Coord = MaxLocalVertex_NearField*nDim;
-	unsigned long nBuffer_Point = MaxLocalVertex_NearField;
-
-	for (iVertex = 0; iVertex < MaxLocalVertex_NearField; iVertex++) {
-		Buffer_Send_Point[iVertex] = 0;
-		for (iDim = 0; iDim < nDim; iDim++)
-			Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
-	}
-
-	/*--- Copy coordinates and point to the auxiliar vector --*/
-	nLocalVertex_NearField = 0;
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		if (config->GetMarker_All_Boundary(iMarker) == NEARFIELD_BOUNDARY)
-			for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
-				iPoint = vertex[iMarker][iVertex]->GetNode();
-				if (node[iPoint]->GetDomain()) {
-					Buffer_Send_Point[nLocalVertex_NearField] = iPoint;
-					for (iDim = 0; iDim < nDim; iDim++)
-						Buffer_Send_Coord[nLocalVertex_NearField*nDim+iDim] = node[iPoint]->GetCoord(iDim);
-					nLocalVertex_NearField++;
-				}
-			}
-
-	MPI::COMM_WORLD.Allgather(Buffer_Send_Coord, nBuffer_Coord, MPI::DOUBLE, Buffer_Receive_Coord, nBuffer_Coord, MPI::DOUBLE);
-	MPI::COMM_WORLD.Allgather(Buffer_Send_Point, nBuffer_Point, MPI::UNSIGNED_LONG, Buffer_Receive_Point, nBuffer_Point, MPI::UNSIGNED_LONG);
-
-	/*--- Compute the closest point to a Near-Field boundary point ---*/
-	maxdist = 0.0;
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		if (config->GetMarker_All_Boundary(iMarker) == NEARFIELD_BOUNDARY) {
-			for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-				iPoint = vertex[iMarker][iVertex]->GetNode();
-				if (node[iPoint]->GetDomain()) {
-
-					/*--- Coordinates of the boundary point ---*/
-					Coord_i = node[iPoint]->GetCoord(); mindist = 1E6; pProcessor = 0; pPoint = 0;
-
-					/*--- Loop over all the boundaries to find the pair ---*/
-					for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
-						for (jVertex = 0; jVertex < Buffer_Receive_nVertex[iProcessor]; jVertex++) {
-							jPoint = Buffer_Receive_Point[iProcessor*MaxLocalVertex_NearField+jVertex];
-
-							/*--- Compute the distance ---*/
-							dist = 0.0; for (iDim = 0; iDim < nDim; iDim++) {
-								Coord_j[iDim] = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NearField+jVertex)*nDim+iDim];
-								dist += pow(Coord_j[iDim]-Coord_i[iDim],2.0);
-							} dist = sqrt(dist);
-
-							if (((dist < mindist) && (iProcessor != rank)) ||
+        
+        MPI::COMM_WORLD.Barrier();
+        
+        unsigned short iMarker, iDim;
+        unsigned long iVertex, iPoint, pPoint = 0, jVertex, jPoint;
+        double *Coord_i, Coord_j[3], dist = 0.0, mindist, maxdist_local, maxdist_global;
+        int iProcessor, pProcessor = 0;
+        unsigned long nLocalVertex_NearField = 0, nGlobalVertex_NearField = 0, MaxLocalVertex_NearField = 0;
+        
+        int rank = MPI::COMM_WORLD.Get_rank();
+        int nProcessor = MPI::COMM_WORLD.Get_size();
+        
+        unsigned long *Buffer_Send_nVertex = new unsigned long [1];
+        unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
+        
+        if (rank == MASTER_NODE) cout << "Set Near-Field boundary conditions." <<endl;
+        
+        /*--- Compute the number of vertex that have nearfield boundary condition
+         without including the ghost nodes ---*/
+        nLocalVertex_NearField = 0;
+        for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+            if (config->GetMarker_All_Boundary(iMarker) == NEARFIELD_BOUNDARY)
+                for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
+                    iPoint = vertex[iMarker][iVertex]->GetNode();
+                    if (node[iPoint]->GetDomain()) nLocalVertex_NearField ++;
+                }
+        
+        Buffer_Send_nVertex[0] = nLocalVertex_NearField;
+        
+        /*--- Send Near-Field vertex information --*/
+        MPI::COMM_WORLD.Allreduce(&nLocalVertex_NearField, &nGlobalVertex_NearField, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+        MPI::COMM_WORLD.Allreduce(&nLocalVertex_NearField, &MaxLocalVertex_NearField, 1, MPI::UNSIGNED_LONG, MPI::MAX);
+        MPI::COMM_WORLD.Allgather(Buffer_Send_nVertex, 1, MPI::UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI::UNSIGNED_LONG);
+        
+        double *Buffer_Send_Coord = new double [MaxLocalVertex_NearField*nDim];
+        unsigned long *Buffer_Send_Point = new unsigned long [MaxLocalVertex_NearField];
+        
+        double *Buffer_Receive_Coord = new double [nProcessor*MaxLocalVertex_NearField*nDim];
+        unsigned long *Buffer_Receive_Point = new unsigned long [nProcessor*MaxLocalVertex_NearField];
+        
+        unsigned long nBuffer_Coord = MaxLocalVertex_NearField*nDim;
+        unsigned long nBuffer_Point = MaxLocalVertex_NearField;
+        
+        for (iVertex = 0; iVertex < MaxLocalVertex_NearField; iVertex++) {
+            Buffer_Send_Point[iVertex] = 0;
+            for (iDim = 0; iDim < nDim; iDim++)
+                Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
+        }
+        
+        /*--- Copy coordinates and point to the auxiliar vector --*/
+        nLocalVertex_NearField = 0;
+        for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+            if (config->GetMarker_All_Boundary(iMarker) == NEARFIELD_BOUNDARY)
+                for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
+                    iPoint = vertex[iMarker][iVertex]->GetNode();
+                    if (node[iPoint]->GetDomain()) {
+                        Buffer_Send_Point[nLocalVertex_NearField] = iPoint;
+                        for (iDim = 0; iDim < nDim; iDim++)
+                            Buffer_Send_Coord[nLocalVertex_NearField*nDim+iDim] = node[iPoint]->GetCoord(iDim);
+                        nLocalVertex_NearField++;
+                    }
+                }
+        
+        MPI::COMM_WORLD.Allgather(Buffer_Send_Coord, nBuffer_Coord, MPI::DOUBLE, Buffer_Receive_Coord, nBuffer_Coord, MPI::DOUBLE);
+        MPI::COMM_WORLD.Allgather(Buffer_Send_Point, nBuffer_Point, MPI::UNSIGNED_LONG, Buffer_Receive_Point, nBuffer_Point, MPI::UNSIGNED_LONG);
+        
+        /*--- Compute the closest point to a Near-Field boundary point ---*/
+        maxdist_local = 0.0;
+        maxdist_global = 0.0;
+        for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+            if (config->GetMarker_All_Boundary(iMarker) == NEARFIELD_BOUNDARY) {
+                
+                for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+                    iPoint = vertex[iMarker][iVertex]->GetNode();
+                    if (node[iPoint]->GetDomain()) {
+                        
+                        /*--- Coordinates of the boundary point ---*/
+                        Coord_i = node[iPoint]->GetCoord(); mindist = 1E6; pProcessor = 0; pPoint = 0;
+                        
+                        /*--- Loop over all the boundaries to find the pair ---*/
+                        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
+                            for (jVertex = 0; jVertex < Buffer_Receive_nVertex[iProcessor]; jVertex++) {
+                                jPoint = Buffer_Receive_Point[iProcessor*MaxLocalVertex_NearField+jVertex];
+                                
+                                /*--- Compute the distance ---*/
+                                dist = 0.0; for (iDim = 0; iDim < nDim; iDim++) {
+                                    Coord_j[iDim] = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NearField+jVertex)*nDim+iDim];
+                                    dist += pow(Coord_j[iDim]-Coord_i[iDim],2.0);
+                                } dist = sqrt(dist);
+                                
+                                if (((dist < mindist) && (iProcessor != rank)) ||
 									((dist < mindist) && (iProcessor == rank) && (jPoint != iPoint))) {
-								mindist = dist; pProcessor = iProcessor; pPoint = jPoint; 
-							}
-						}
-
-					/*--- Store the value of the pair ---*/
-					maxdist = max(maxdist, mindist);
-					vertex[iMarker][iVertex]->SetDonorPoint(pPoint, pProcessor);
-
-					if (mindist > epsilon) {
-						cout.precision(10);
-						cout << endl;
-						cout << "   Bad match for point " << iPoint << ".\tNearest";
-						cout << " donor distance: " << scientific << mindist << ".";
-						vertex[iMarker][iVertex]->SetDonorPoint(iPoint);
-						maxdist = min(maxdist, 0.0);
-					}
-
-				}
-			}
-			cout <<"Node rank: "<<rank<<". The max distance between points is: " << maxdist <<"."<< endl;
-		}
-
-	delete[] Buffer_Send_Coord;
-	delete[] Buffer_Send_Point;
-
-	delete[] Buffer_Receive_Coord;
-	delete[] Buffer_Receive_Point;
-
-	delete[] Buffer_Send_nVertex;
-	delete[] Buffer_Receive_nVertex;
-
-
-	MPI::COMM_WORLD.Barrier();
-
+                                    mindist = dist; pProcessor = iProcessor; pPoint = jPoint; 
+                                }
+                            }
+                        
+                        /*--- Store the value of the pair ---*/
+                        maxdist_local = max(maxdist_local, mindist);
+                        vertex[iMarker][iVertex]->SetDonorPoint(pPoint, pProcessor);
+                        
+                        if (mindist > epsilon) {
+                            cout.precision(10);
+                            cout << endl;
+                            cout << "   Bad match for point " << iPoint << ".\tNearest";
+                            cout << " donor distance: " << scientific << mindist << ".";
+                            vertex[iMarker][iVertex]->SetDonorPoint(iPoint);
+                            maxdist_local = min(maxdist_local, 0.0);
+                        }
+                        
+                    }
+                }
+                
+            }
+        }
+        
+        MPI::COMM_WORLD.Reduce(&maxdist_local, &maxdist_global, 1, MPI::DOUBLE, MPI::MAX, MASTER_NODE);
+        if (rank == MASTER_NODE) cout <<"The max distance between points is: " << maxdist_global <<"."<< endl;
+        
+        
+        delete[] Buffer_Send_Coord;
+        delete[] Buffer_Send_Point;
+        
+        delete[] Buffer_Receive_Coord;
+        delete[] Buffer_Receive_Point;
+        
+        delete[] Buffer_Send_nVertex;
+        delete[] Buffer_Receive_nVertex;
+        
+        
+        MPI::COMM_WORLD.Barrier();
+        
 #endif
-
+        
+    }
+    
 }
 
 void CPhysicalGeometry::MatchInterface(CConfig *config) {
 	double epsilon = 1.5e-1;
-
+    
+    unsigned short nMarker_InterfaceBound = config->GetnMarker_InterfaceBound();
+    
+    if (nMarker_InterfaceBound != 0) {
 #ifdef NO_MPI
-
-	unsigned short iMarker, jMarker;
-	unsigned long iVertex, iPoint, jVertex, jPoint = 0, pPoint = 0;
-	double *Coord_i, *Coord_j, dist = 0.0, mindist, maxdist;
-
-	cout << "Set Interface boundary conditions (if any)." << endl; 
-
-	maxdist = 0.0;
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		if (config->GetMarker_All_Boundary(iMarker) == INTERFACE_BOUNDARY) {
-			for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-				iPoint = vertex[iMarker][iVertex]->GetNode();
-				Coord_i = node[iPoint]->GetCoord();
-
-				mindist = 1E6;
-				for (jMarker = 0; jMarker < config->GetnMarker_All(); jMarker++)
-					if ((config->GetMarker_All_Boundary(jMarker) == INTERFACE_BOUNDARY) && (iMarker != jMarker))
-						for (jVertex = 0; jVertex < nVertex[jMarker]; jVertex++) {
-							jPoint = vertex[jMarker][jVertex]->GetNode();
-							Coord_j = node[jPoint]->GetCoord();
-							if (nDim == 2) dist = sqrt(pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0));
-							if (nDim == 3) dist = sqrt(pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0) + pow(Coord_j[2]-Coord_i[2],2.0));
-							if (dist < mindist) {mindist = dist; pPoint = jPoint;}
-						}
-				maxdist = max(maxdist, mindist);
-				vertex[iMarker][iVertex]->SetDonorPoint(pPoint);
-
-				if (mindist > epsilon) {
-					cout.precision(10);
-					cout << endl;
-					cout << "   Bad match for point " << iPoint << ".\tNearest";
-					cout << " donor distance: " << scientific << mindist << ".";
-					vertex[iMarker][iVertex]->SetDonorPoint(iPoint);
-					maxdist = min(maxdist, 0.0);
-				}
-
-			}
-			cout <<"The max distance between points is: " << maxdist <<"."<< endl;
-		}
-
+        
+        unsigned short iMarker, jMarker;
+        unsigned long iVertex, iPoint, jVertex, jPoint = 0, pPoint = 0;
+        double *Coord_i, *Coord_j, dist = 0.0, mindist, maxdist;
+        
+        cout << "Set Interface boundary conditions." << endl;
+        
+        maxdist = 0.0;
+        for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+            if (config->GetMarker_All_Boundary(iMarker) == INTERFACE_BOUNDARY) {
+                for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+                    iPoint = vertex[iMarker][iVertex]->GetNode();
+                    Coord_i = node[iPoint]->GetCoord();
+                    
+                    mindist = 1E6;
+                    for (jMarker = 0; jMarker < config->GetnMarker_All(); jMarker++)
+                        if ((config->GetMarker_All_Boundary(jMarker) == INTERFACE_BOUNDARY) && (iMarker != jMarker))
+                            for (jVertex = 0; jVertex < nVertex[jMarker]; jVertex++) {
+                                jPoint = vertex[jMarker][jVertex]->GetNode();
+                                Coord_j = node[jPoint]->GetCoord();
+                                if (nDim == 2) dist = sqrt(pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0));
+                                if (nDim == 3) dist = sqrt(pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0) + pow(Coord_j[2]-Coord_i[2],2.0));
+                                if (dist < mindist) {mindist = dist; pPoint = jPoint;}
+                            }
+                    maxdist = max(maxdist, mindist);
+                    vertex[iMarker][iVertex]->SetDonorPoint(pPoint);
+                    
+                    if (mindist > epsilon) {
+                        cout.precision(10);
+                        cout << endl;
+                        cout << "   Bad match for point " << iPoint << ".\tNearest";
+                        cout << " donor distance: " << scientific << mindist << ".";
+                        vertex[iMarker][iVertex]->SetDonorPoint(iPoint);
+                        maxdist = min(maxdist, 0.0);
+                    }
+                    
+                }
+                cout <<"The max distance between points is: " << maxdist <<"."<< endl;
+            }
+        
 #else
-
-	MPI::COMM_WORLD.Barrier();
-
-	unsigned short iMarker, iDim;
-	unsigned long iVertex, iPoint, pPoint = 0, jVertex, jPoint;
-	double *Coord_i, Coord_j[3], dist = 0.0, mindist, maxdist;
-	int iProcessor, pProcessor = 0;
-	unsigned long nLocalVertex_Interface = 0, nGlobalVertex_Interface = 0, MaxLocalVertex_Interface = 0;
-
-	int rank = MPI::COMM_WORLD.Get_rank();
-	int nProcessor = MPI::COMM_WORLD.Get_size();
-
-	unsigned long *Buffer_Send_nVertex = new unsigned long [1];
-	unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
-
-	if (rank == MASTER_NODE) cout << "Set Interface boundary conditions (if any)." <<endl; 
-
-	/*--- Compute the number of vertex that have nearfield boundary condition
-	 without including the ghost nodes ---*/
-	nLocalVertex_Interface = 0;
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		if (config->GetMarker_All_Boundary(iMarker) == INTERFACE_BOUNDARY)
-			for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
-				iPoint = vertex[iMarker][iVertex]->GetNode();
-				if (node[iPoint]->GetDomain()) nLocalVertex_Interface ++;
-			}
-
-	Buffer_Send_nVertex[0] = nLocalVertex_Interface;
-
-	/*--- Send Interface vertex information --*/
-	MPI::COMM_WORLD.Allreduce(&nLocalVertex_Interface, &nGlobalVertex_Interface, 1, MPI::UNSIGNED_LONG, MPI::SUM); 	
-	MPI::COMM_WORLD.Allreduce(&nLocalVertex_Interface, &MaxLocalVertex_Interface, 1, MPI::UNSIGNED_LONG, MPI::MAX); 	
-	MPI::COMM_WORLD.Allgather(Buffer_Send_nVertex, 1, MPI::UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI::UNSIGNED_LONG);
-
-	double *Buffer_Send_Coord = new double [MaxLocalVertex_Interface*nDim];
-	unsigned long *Buffer_Send_Point = new unsigned long [MaxLocalVertex_Interface];
-
-	double *Buffer_Receive_Coord = new double [nProcessor*MaxLocalVertex_Interface*nDim];
-	unsigned long *Buffer_Receive_Point = new unsigned long [nProcessor*MaxLocalVertex_Interface];
-
-	unsigned long nBuffer_Coord = MaxLocalVertex_Interface*nDim;
-	unsigned long nBuffer_Point = MaxLocalVertex_Interface;
-
-	for (iVertex = 0; iVertex < MaxLocalVertex_Interface; iVertex++) {
-		Buffer_Send_Point[iVertex] = 0;
-		for (iDim = 0; iDim < nDim; iDim++)
-			Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
-	}
-
-	/*--- Copy coordinates and point to the auxiliar vector --*/
-	nLocalVertex_Interface = 0;
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		if (config->GetMarker_All_Boundary(iMarker) == INTERFACE_BOUNDARY)
-			for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
-				iPoint = vertex[iMarker][iVertex]->GetNode();
-				if (node[iPoint]->GetDomain()) {
-					Buffer_Send_Point[nLocalVertex_Interface] = iPoint;
-					for (iDim = 0; iDim < nDim; iDim++)
-						Buffer_Send_Coord[nLocalVertex_Interface*nDim+iDim] = node[iPoint]->GetCoord(iDim);
-					nLocalVertex_Interface++;
-				}
-			}
-
-	MPI::COMM_WORLD.Allgather(Buffer_Send_Coord, nBuffer_Coord, MPI::DOUBLE, Buffer_Receive_Coord, nBuffer_Coord, MPI::DOUBLE);
-	MPI::COMM_WORLD.Allgather(Buffer_Send_Point, nBuffer_Point, MPI::UNSIGNED_LONG, Buffer_Receive_Point, nBuffer_Point, MPI::UNSIGNED_LONG);
-
-	/*--- Compute the closest point to a Near-Field boundary point ---*/
-	maxdist = 0.0;
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		if (config->GetMarker_All_Boundary(iMarker) == INTERFACE_BOUNDARY) {
-			for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-				iPoint = vertex[iMarker][iVertex]->GetNode();
-				if (node[iPoint]->GetDomain()) {
-
-					/*--- Coordinates of the boundary point ---*/
-					Coord_i = node[iPoint]->GetCoord(); mindist = 1E6; pProcessor = 0; pPoint = 0;
-
-					/*--- Loop over all the boundaries to find the pair ---*/
-					for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
-						for (jVertex = 0; jVertex < Buffer_Receive_nVertex[iProcessor]; jVertex++) {
-							jPoint = Buffer_Receive_Point[iProcessor*MaxLocalVertex_Interface+jVertex];
-
-							/*--- Compute the distance ---*/
-							dist = 0.0; for (iDim = 0; iDim < nDim; iDim++) {
-								Coord_j[iDim] = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_Interface+jVertex)*nDim+iDim];
-								dist += pow(Coord_j[iDim]-Coord_i[iDim],2.0);
-							} dist = sqrt(dist);
-
-							if (((dist < mindist) && (iProcessor != rank)) ||
+        
+        MPI::COMM_WORLD.Barrier();
+        
+        unsigned short iMarker, iDim;
+        unsigned long iVertex, iPoint, pPoint = 0, jVertex, jPoint;
+        double *Coord_i, Coord_j[3], dist = 0.0, mindist, maxdist_local, maxdist_global;
+        int iProcessor, pProcessor = 0;
+        unsigned long nLocalVertex_Interface = 0, nGlobalVertex_Interface = 0, MaxLocalVertex_Interface = 0;
+        
+        int rank = MPI::COMM_WORLD.Get_rank();
+        int nProcessor = MPI::COMM_WORLD.Get_size();
+        
+        unsigned long *Buffer_Send_nVertex = new unsigned long [1];
+        unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
+        
+        if (rank == MASTER_NODE) cout << "Set Interface boundary conditions (if any)." <<endl;
+        
+        /*--- Compute the number of vertex that have nearfield boundary condition
+         without including the ghost nodes ---*/
+        nLocalVertex_Interface = 0;
+        for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+            if (config->GetMarker_All_Boundary(iMarker) == INTERFACE_BOUNDARY)
+                for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
+                    iPoint = vertex[iMarker][iVertex]->GetNode();
+                    if (node[iPoint]->GetDomain()) nLocalVertex_Interface ++;
+                }
+        
+        Buffer_Send_nVertex[0] = nLocalVertex_Interface;
+        
+        /*--- Send Interface vertex information --*/
+        MPI::COMM_WORLD.Allreduce(&nLocalVertex_Interface, &nGlobalVertex_Interface, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+        MPI::COMM_WORLD.Allreduce(&nLocalVertex_Interface, &MaxLocalVertex_Interface, 1, MPI::UNSIGNED_LONG, MPI::MAX);
+        MPI::COMM_WORLD.Allgather(Buffer_Send_nVertex, 1, MPI::UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI::UNSIGNED_LONG);
+        
+        double *Buffer_Send_Coord = new double [MaxLocalVertex_Interface*nDim];
+        unsigned long *Buffer_Send_Point = new unsigned long [MaxLocalVertex_Interface];
+        
+        double *Buffer_Receive_Coord = new double [nProcessor*MaxLocalVertex_Interface*nDim];
+        unsigned long *Buffer_Receive_Point = new unsigned long [nProcessor*MaxLocalVertex_Interface];
+        
+        unsigned long nBuffer_Coord = MaxLocalVertex_Interface*nDim;
+        unsigned long nBuffer_Point = MaxLocalVertex_Interface;
+        
+        for (iVertex = 0; iVertex < MaxLocalVertex_Interface; iVertex++) {
+            Buffer_Send_Point[iVertex] = 0;
+            for (iDim = 0; iDim < nDim; iDim++)
+                Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
+        }
+        
+        /*--- Copy coordinates and point to the auxiliar vector --*/
+        nLocalVertex_Interface = 0;
+        for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+            if (config->GetMarker_All_Boundary(iMarker) == INTERFACE_BOUNDARY)
+                for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
+                    iPoint = vertex[iMarker][iVertex]->GetNode();
+                    if (node[iPoint]->GetDomain()) {
+                        Buffer_Send_Point[nLocalVertex_Interface] = iPoint;
+                        for (iDim = 0; iDim < nDim; iDim++)
+                            Buffer_Send_Coord[nLocalVertex_Interface*nDim+iDim] = node[iPoint]->GetCoord(iDim);
+                        nLocalVertex_Interface++;
+                    }
+                }
+        
+        MPI::COMM_WORLD.Allgather(Buffer_Send_Coord, nBuffer_Coord, MPI::DOUBLE, Buffer_Receive_Coord, nBuffer_Coord, MPI::DOUBLE);
+        MPI::COMM_WORLD.Allgather(Buffer_Send_Point, nBuffer_Point, MPI::UNSIGNED_LONG, Buffer_Receive_Point, nBuffer_Point, MPI::UNSIGNED_LONG);
+        
+        /*--- Compute the closest point to a Near-Field boundary point ---*/
+        maxdist_local = 0.0;
+        for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+            if (config->GetMarker_All_Boundary(iMarker) == INTERFACE_BOUNDARY) {
+                for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+                    iPoint = vertex[iMarker][iVertex]->GetNode();
+                    if (node[iPoint]->GetDomain()) {
+                        
+                        /*--- Coordinates of the boundary point ---*/
+                        Coord_i = node[iPoint]->GetCoord(); mindist = 1E6; pProcessor = 0; pPoint = 0;
+                        
+                        /*--- Loop over all the boundaries to find the pair ---*/
+                        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
+                            for (jVertex = 0; jVertex < Buffer_Receive_nVertex[iProcessor]; jVertex++) {
+                                jPoint = Buffer_Receive_Point[iProcessor*MaxLocalVertex_Interface+jVertex];
+                                
+                                /*--- Compute the distance ---*/
+                                dist = 0.0; for (iDim = 0; iDim < nDim; iDim++) {
+                                    Coord_j[iDim] = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_Interface+jVertex)*nDim+iDim];
+                                    dist += pow(Coord_j[iDim]-Coord_i[iDim],2.0);
+                                } dist = sqrt(dist);
+                                
+                                if (((dist < mindist) && (iProcessor != rank)) ||
 									((dist < mindist) && (iProcessor == rank) && (jPoint != iPoint))) {
-								mindist = dist; pProcessor = iProcessor; pPoint = jPoint; 
-							}
-						}
-
-					/*--- Store the value of the pair ---*/
-					maxdist = max(maxdist, mindist);
-					vertex[iMarker][iVertex]->SetDonorPoint(pPoint, pProcessor);
-
-					if (mindist > epsilon) {
-						cout.precision(10);
-						cout << endl;
-						cout << "   Bad match for point " << iPoint << ".\tNearest";
-						cout << " donor distance: " << scientific << mindist << ".";
-						vertex[iMarker][iVertex]->SetDonorPoint(iPoint);
-						maxdist = min(maxdist, 0.0);
-					}
-
-				}
-			}
-			cout << "Node rank: "<< rank << ". The max distance between points is: " << maxdist <<"."<< endl;
-		}
-
-	delete[] Buffer_Send_Coord;
-	delete[] Buffer_Send_Point;
-
-	delete[] Buffer_Receive_Coord;
-	delete[] Buffer_Receive_Point;
-
-	delete[] Buffer_Send_nVertex;
-	delete[] Buffer_Receive_nVertex;
-
-
-	MPI::COMM_WORLD.Barrier();
-
+                                    mindist = dist; pProcessor = iProcessor; pPoint = jPoint; 
+                                }
+                            }
+                        
+                        /*--- Store the value of the pair ---*/
+                        maxdist_local = max(maxdist_local, mindist);
+                        vertex[iMarker][iVertex]->SetDonorPoint(pPoint, pProcessor);
+                        
+                        if (mindist > epsilon) {
+                            cout.precision(10);
+                            cout << endl;
+                            cout << "   Bad match for point " << iPoint << ".\tNearest";
+                            cout << " donor distance: " << scientific << mindist << ".";
+                            vertex[iMarker][iVertex]->SetDonorPoint(iPoint);
+                            maxdist_local = min(maxdist_local, 0.0);
+                        }
+                        
+                    }
+                }
+            }
+        }
+        
+        MPI::COMM_WORLD.Reduce(&maxdist_local, &maxdist_global, 1, MPI::DOUBLE, MPI::MAX, MASTER_NODE);
+        if (rank == MASTER_NODE) cout <<"The max distance between points is: " << maxdist_global <<"."<< endl;
+        
+        delete[] Buffer_Send_Coord;
+        delete[] Buffer_Send_Point;
+        
+        delete[] Buffer_Receive_Coord;
+        delete[] Buffer_Receive_Point;
+        
+        delete[] Buffer_Send_nVertex;
+        delete[] Buffer_Receive_nVertex;
+        
+        
+        MPI::COMM_WORLD.Barrier();
+        
 #endif
-
+        
+    }
 }
 
-void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CConfig *config_donor, 
+void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CConfig *config_donor,
 		unsigned short val_iZone, unsigned short val_nZone) {
 
 #ifdef NO_MPI
@@ -3860,154 +4120,211 @@ void CPhysicalGeometry::SetMeshFile (CConfig *config, string val_mesh_out_filena
 	output_file.close();
 }
 
-void CPhysicalGeometry::SetMeshFile_IntSurface(CConfig *config, string val_mesh_out_filename) {
-	unsigned long iElem, iPoint, iElem_Bound, TestPoint;
-	unsigned short iMarker, iNodes, iDim, NearFieldMarker = 0;
+void CPhysicalGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename, string val_mesh_in_filename) {
+	unsigned long iElem, iPoint, iElem_Bound, nElem_, nElem_Bound_, vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4], vnodes_tetra[4], vnodes_hexa[8], vnodes_wedge[6], vnodes_pyramid[5], vnodes_vertex;
+	unsigned short iMarker, iDim, iChar, iPeriodic, nPeriodic = 0, VTK_Type, nDim_, nMarker_, transform, matching_zone = 0;
+  char *cstr;
+	double *center, *angles, *transl;
+  long SendRecv;
 	ofstream output_file;
-	string Grid_Marker;
-	char *cstr;
-
-	/*--- Identify the surface that must be doubled ---*/
-	NearFieldMarker = nMarker-1;
-
-	cstr = new char [val_mesh_out_filename.size()+1];
+  ifstream input_file;
+	string Grid_Marker, text_line, Marker_Tag;
+  string::size_type position;
+  
+	/*--- Open output_file .su2 grid file ---*/
+  cstr = new char [val_mesh_out_filename.size()+1];
 	strcpy (cstr, val_mesh_out_filename.c_str());
-
-	/*--- Open .su2 grid file ---*/
-	output_file.open(cstr, ios::out);
-
-	/*--- Create a list that for each point of the inner surface gives you the 
-	 equivalent point from the outer surface ---*/
-	long *LowerPoint = new long[nPoint];
-	for (iPoint = 0; iPoint < nPoint; iPoint++) LowerPoint[iPoint] = -1;
-
-	for (iElem_Bound = 0; iElem_Bound < nElem_Bound[NearFieldMarker]; iElem_Bound++)
-		for (iNodes = 0; iNodes < bound[NearFieldMarker][iElem_Bound]->GetnNodes(); iNodes++) {
-			iPoint = bound[NearFieldMarker][iElem_Bound]->GetNode(iNodes);
-			if (LowerPoint[iPoint] == -1) {
-				LowerPoint[iPoint] = 0;
-			}
-		}
-
-	/*--- Write dimension, number of elements and number of points ---*/
-	output_file << "NDIME=" << nDim << endl;
-
-	bool *InnerElement = new bool[nElem];
-	for (iElem = 0; iElem < nElem; iElem++)
-		InnerElement[iElem] = false;		
-
-	output_file << "NELEM=" << nElem << endl;	
-	for (iElem = 0; iElem < nElem; iElem++) {
-		output_file << elem[iElem]->GetVTK_Type();
-
-		/*--- Test to identify inner points from outer points ---*/
-		bool InnerSide = true;
-
-		/*--- Identification of the inner, and outer domain ---*/
-		for (iNodes = 0; iNodes < elem[iElem]->GetnNodes(); iNodes++) {
-			TestPoint = elem[iElem]->GetNode(iNodes);
-			if (LowerPoint[TestPoint] != -1) {
-				/*--- There are two combinations (0,1,4,5) and (2,3,6,7) ---*/
-				if (iNodes == 2) InnerSide = false;
-			}
-		}
-
-		if (InnerSide) InnerElement[iElem] = true;
-
-		for (iNodes = 0; iNodes < elem[iElem]->GetnNodes(); iNodes++)
-			output_file << "\t" << elem[iElem]->GetNode(iNodes);
-		output_file << "\t"<<iElem<<endl;			
-	}
-
-	output_file << "NPOIN=" << nPoint << endl;
 	output_file.precision(15);
-	for (iPoint = 0; iPoint < nPoint; iPoint++) {
-		for (iDim = 0; iDim < nDim; iDim++)
-			output_file << scientific << "\t" << node[iPoint]->GetCoord(iDim) ;
-		output_file << "\t" << iPoint << endl;
+	output_file.open(cstr, ios::out);
+    
+  /*--- Open input_file .su2 grid file ---*/
+  cstr = new char [val_mesh_in_filename.size()+1];
+	strcpy (cstr, val_mesh_in_filename.c_str());
+  input_file.open(cstr, ios::out);
+  
+  /*--- Read grid file with format SU2 ---*/
+  while (getline (input_file, text_line)) {
+    
+    /*--- Read the dimension of the problem ---*/
+    position = text_line.find ("NDIME=",0);
+    if (position != string::npos) {
+      text_line.erase (0,6); nDim_ = atoi(text_line.c_str());
+      output_file << "NDIME= " << nDim_ << endl;
+    }
+    
+    /*--- Read the information about inner elements ---*/
+    position = text_line.find ("NELEM=",0);
+    if (position != string::npos) {
+      text_line.erase (0,6); nElem_ = atoi(text_line.c_str());
+      output_file << "NELEM= " << nElem_ << endl;
+      
+      
+      /*--- Loop over all the volumetric elements ---*/
+      for (iElem = 0; iElem < nElem_;  iElem++) {
+        getline(input_file, text_line);
+        istringstream elem_line(text_line);
+        
+        elem_line >> VTK_Type;
+        output_file << VTK_Type;
+
+        switch(VTK_Type) {
+          case TRIANGLE:
+            elem_line >> vnodes_triangle[0]; elem_line >> vnodes_triangle[1]; elem_line >> vnodes_triangle[2];
+            output_file << "\t" << vnodes_triangle[0] << "\t" << vnodes_triangle[1] << "\t" << vnodes_triangle[2] << endl;
+            break;
+          case RECTANGLE:
+            elem_line >> vnodes_quad[0]; elem_line >> vnodes_quad[1]; elem_line >> vnodes_quad[2]; elem_line >> vnodes_quad[3];
+            output_file << "\t" << vnodes_quad[0] << "\t" << vnodes_quad[1] << "\t" << vnodes_quad[2] << "\t" << vnodes_quad[3] << endl;
+             break;
+          case TETRAHEDRON:
+            elem_line >> vnodes_tetra[0]; elem_line >> vnodes_tetra[1]; elem_line >> vnodes_tetra[2]; elem_line >> vnodes_tetra[3];
+            output_file << "\t" << vnodes_tetra[0] << "\t" << vnodes_tetra[1] << "\t" << vnodes_tetra[2] << "\t" << vnodes_tetra[3] << endl;
+            break;
+          case HEXAHEDRON:
+            elem_line >> vnodes_hexa[0]; elem_line >> vnodes_hexa[1]; elem_line >> vnodes_hexa[2];
+            elem_line >> vnodes_hexa[3]; elem_line >> vnodes_hexa[4]; elem_line >> vnodes_hexa[5];
+            elem_line >> vnodes_hexa[6]; elem_line >> vnodes_hexa[7];
+            output_file << "\t" << vnodes_hexa[0] << "\t" << vnodes_hexa[1] << "\t" << vnodes_hexa[2] << "\t" << vnodes_hexa[3] << "\t" << vnodes_hexa[4] << "\t" << vnodes_hexa[5] << "\t" << vnodes_hexa[6] << "\t" << vnodes_hexa[7] << endl;
+            break;
+          case WEDGE:
+            elem_line >> vnodes_wedge[0]; elem_line >> vnodes_wedge[1]; elem_line >> vnodes_wedge[2];
+            elem_line >> vnodes_wedge[3]; elem_line >> vnodes_wedge[4]; elem_line >> vnodes_wedge[5];
+            output_file << "\t" << vnodes_wedge[0] << "\t" << vnodes_wedge[1] << "\t" << vnodes_wedge[2] << "\t" << vnodes_wedge[3] << "\t" << vnodes_wedge[4] << "\t" << vnodes_wedge[5] << endl;
+            break;
+          case PYRAMID:
+            elem_line >> vnodes_pyramid[0]; elem_line >> vnodes_pyramid[1]; elem_line >> vnodes_pyramid[2];
+            elem_line >> vnodes_pyramid[3]; elem_line >> vnodes_pyramid[4];
+            output_file << "\t" << vnodes_pyramid[0] << "\t" << vnodes_pyramid[1] << "\t" << vnodes_pyramid[2] << "\t" << vnodes_pyramid[3] << "\t" << vnodes_pyramid[4] << endl;
+            break;
+        }
+      }
+    }
+    
+    /*--- Coordinates ---*/
+    position = text_line.find ("NPOIN=",0);
+    if (position != string::npos) {
+      
+      /*--- Skip the lines about the points ---*/
+      for (iPoint = 0; iPoint < nPoint;  iPoint++) {
+        getline(input_file, text_line);
+      }
+      
+      /*--- Add the new coordinates ---*/
+      output_file << "NPOIN= " << nPoint << "\t" << nPointDomain << endl;      
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+        for (iDim = 0; iDim < nDim; iDim++)
+          output_file << scientific << node[iPoint]->GetCoord(iDim) << "\t";
+#ifdef NO_MPI
+        output_file << iPoint << endl;
+#else
+        output_file << iPoint << "\t" << node[iPoint]->GetGlobalIndex() << endl;
+#endif
+      }
+      
+    }
+    
+    /*--- Write the physical boundaries ---*/
+    position = text_line.find ("NMARK=",0);
+    if (position != string::npos) {
+      
+      text_line.erase (0,6); nMarker_ = atoi(text_line.c_str());
+      output_file << "NMARK= " << nMarker_ << endl;
+      
+      for (iMarker = 0 ; iMarker < nMarker_; iMarker++) {
+        
+        getline (input_file,text_line);
+        text_line.erase (0,11);
+        string::size_type position;
+        for (iChar = 0; iChar < 20; iChar++) {
+          position = text_line.find( " ", 0 );
+          if(position != string::npos) text_line.erase (position,1);
+          position = text_line.find( "\r", 0 );
+          if(position != string::npos) text_line.erase (position,1);
+          position = text_line.find( "\n", 0 );
+          if(position != string::npos) text_line.erase (position,1);
+        }
+        Marker_Tag = text_line.c_str();
+        
+        /*--- Standart physical boundary ---*/
+        if (Marker_Tag != "SEND_RECEIVE") {
+          
+          getline (input_file, text_line);
+          
+          text_line.erase (0,13); nElem_Bound_ = atoi(text_line.c_str());
+          output_file << "MARKER_TAG= " << Marker_Tag << endl;
+          output_file << "MARKER_ELEMS= " << nElem_Bound_<< endl;
+          
+          for (iElem_Bound = 0; iElem_Bound < nElem_Bound_; iElem_Bound++) {
+            
+            getline(input_file, text_line);
+            istringstream bound_line(text_line);
+            
+            bound_line >> VTK_Type;
+            output_file << VTK_Type;
+            
+            switch(VTK_Type) {
+              case LINE:
+                bound_line >> vnodes_edge[0]; bound_line >> vnodes_edge[1];
+                output_file << "\t" << vnodes_edge[0] << "\t" << vnodes_edge[1] << endl;
+                break;
+              case TRIANGLE:
+                bound_line >> vnodes_triangle[0]; bound_line >> vnodes_triangle[1]; bound_line >> vnodes_triangle[2];
+                output_file << "\t" << vnodes_triangle[0] << "\t" << vnodes_triangle[1] << "\t" << vnodes_triangle[2] << endl;
+                break;
+              case RECTANGLE:
+                bound_line >> vnodes_quad[0]; bound_line >> vnodes_quad[1]; bound_line >> vnodes_quad[2]; bound_line >> vnodes_quad[3];
+                output_file << "\t" << vnodes_quad[0] << "\t" << vnodes_quad[1] << "\t" << vnodes_quad[2] << "\t" << vnodes_quad[3] << endl;
+                break;
+            }
+          }
+          
+        }
+        
+        /*--- Send-Receive boundaries definition ---*/
+        else {
+          output_file << "MARKER_TAG= SEND_RECEIVE" << endl;
+          getline (input_file,text_line);
+          text_line.erase (0,13); nElem_Bound_ = atoi(text_line.c_str());
+          output_file << "MARKER_ELEMS= " << nElem_Bound_ << endl;
+          getline (input_file, text_line); text_line.erase (0,8);
+          SendRecv = atoi(text_line.c_str());
+          output_file << "SEND_TO= " << SendRecv << endl;
+          
+          for (iElem_Bound = 0; iElem_Bound < nElem_Bound_; iElem_Bound++) {
+            getline(input_file,text_line);
+            istringstream bound_line(text_line);
+            bound_line >> VTK_Type; bound_line >> vnodes_vertex; bound_line >> transform;
+            output_file << VTK_Type << "\t" << vnodes_vertex << "\t" << transform << "\t" << matching_zone << endl;
+          }
+        }
+        
+      }
+    }
+  }
+  
+  
+	/*--- Get the total number of periodic transformations ---*/
+	nPeriodic = config->GetnPeriodicIndex();
+	output_file << "NPERIODIC= " << nPeriodic << endl;
+  
+	/*--- From iPeriodic obtain the iMarker ---*/
+	for (iPeriodic = 0; iPeriodic < nPeriodic; iPeriodic++) {
+    
+		/*--- Retrieve the supplied periodic information. ---*/
+		center = config->GetPeriodicCenter(iPeriodic);
+		angles = config->GetPeriodicRotation(iPeriodic);
+		transl = config->GetPeriodicTranslate(iPeriodic);
+    
+		output_file << "PERIODIC_INDEX= " << iPeriodic << endl;
+		output_file << center[0] << "\t" << center[1] << "\t" << center[2] << endl;
+		output_file << angles[0] << "\t" << angles[1] << "\t" << angles[2] << endl;
+		output_file << transl[0] << "\t" << transl[1] << "\t" << transl[2] << endl;
+    
 	}
-
-	/*--- Write the boundary elements ---*/
-	output_file << "NMARK=" << nMarker+1 << endl;
-
-	for (iMarker = 0; iMarker < nMarker-1; iMarker++) {
-		Grid_Marker = config->GetMarker_All_Tag(iMarker);
-		output_file << "MARKER_TAG=" << Grid_Marker <<endl;
-		output_file << "MARKER_ELEMS=" << nElem_Bound[iMarker]<< endl;
-
-		for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-			output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
-			for (iNodes = 0; iNodes < bound[iMarker][iElem_Bound]->GetnNodes(); iNodes++)
-				output_file << bound[iMarker][iElem_Bound]->GetNode(iNodes) << "\t" ;
-			output_file	<< endl;
-		}
-	}
-
-	/*--- We add the boundary that corresponf with the lower side ---*/
-	output_file << "MARKER_TAG=" << config->GetPlaneTag(0) << endl;
-	output_file << "MARKER_ELEMS=" << int(nElem_Bound[NearFieldMarker]/2)<< endl;
-	for (iElem_Bound = 0; iElem_Bound < nElem_Bound[NearFieldMarker]; iElem_Bound++) {
-		unsigned long DomainElement = bound[NearFieldMarker][iElem_Bound]->GetDomainElement();
-		if (InnerElement[DomainElement]) {		
-			output_file << bound[NearFieldMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
-			for (iNodes = 0; iNodes < bound[iMarker][iElem_Bound]->GetnNodes(); iNodes++)
-				output_file << bound[iMarker][iElem_Bound]->GetNode(iNodes) << "\t" ;
-			output_file	<< endl;
-		}
-	}
-
-	output_file << "MARKER_TAG=" << config->GetPlaneTag(1) << endl;
-	output_file << "MARKER_ELEMS=" << int(nElem_Bound[NearFieldMarker]/2)<< endl;
-	for (iElem_Bound = 0; iElem_Bound < nElem_Bound[NearFieldMarker]; iElem_Bound++) {
-		unsigned long DomainElement = bound[NearFieldMarker][iElem_Bound]->GetDomainElement();
-		if (!InnerElement[DomainElement]) {		
-			output_file << bound[NearFieldMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
-			for (iNodes = 0; iNodes < bound[iMarker][iElem_Bound]->GetnNodes(); iNodes++)
-				output_file << bound[iMarker][iElem_Bound]->GetNode(iNodes) << "\t" ;
-			output_file	<< endl;
-		}
-	}
-
+  
+  input_file.close();
 	output_file.close();
-}
-
-void CPhysicalGeometry::SetParaView(char mesh_filename[200]) {
-	unsigned long iElem, iPoint;
-	unsigned short iNode, iDim;
-	ofstream para_file;
-
-	para_file.open(mesh_filename, ios::out);
-
-	para_file << "# vtk DataFile Version 2.0" << endl;
-	para_file << "Visualization of the volumetric grid" << endl;
-	para_file << "ASCII" << endl;
-	para_file << "DATASET UNSTRUCTURED_GRID" << endl;
-	para_file << "POINTS " << nPoint << " float" << endl;
-
-	para_file.precision(15);
-
-	for(iPoint = 0; iPoint < nPoint; iPoint++) {
-		for(iDim = 0; iDim < nDim; iDim++)
-			para_file << scientific << node[iPoint]->GetCoord(iDim) << "\t";
-		if (nDim == 2) para_file << "0.0";
-		para_file << "\n";
-	}	 
-
-	para_file << "CELLS " << nElem << "\t" << nElem_Storage << endl;
-	for(iElem = 0; iElem < nElem; iElem++) {
-		para_file << elem[iElem]->GetnNodes() << "\t";
-		for(iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
-			if (iNode == elem[iElem]->GetnNodes()-1) para_file << elem[iElem]->GetNode(iNode) << "\n";			
-			else para_file << elem[iElem]->GetNode(iNode) << "\t";			
-		}
-	}	
-
-	para_file << "CELL_TYPES " << nElem << endl;
-	for(iElem=0; iElem < nElem; iElem++) {
-		para_file << elem[iElem]->GetVTK_Type() << endl;
-	}
-	para_file.close();
-
+  
 }
 
 void CPhysicalGeometry::SetTecPlot(char mesh_filename[200]) {
@@ -4227,80 +4544,6 @@ bool CPhysicalGeometry::FindFace(unsigned long first_elem, unsigned long second_
 
 }
 
-void CPhysicalGeometry::SetBoundParaView (CConfig *config, char mesh_filename[200]) {
-	ofstream Paraview_File;
-	unsigned long iPoint, Total_nElem_Bound, Total_nElem_Bound_Storage, iElem, *PointSurface = NULL, nPointSurface = 0;
-	unsigned short Coord_i, iMarker, iNode;
-
-	/*--- It is important to do a renumering to don't add points 
-	 that do not belong to the surfaces ---*/
-	PointSurface = new unsigned long[nPoint];
-	for (iPoint = 0; iPoint < nPoint; iPoint++)
-		if (node[iPoint]->GetBoundary()) {
-			PointSurface[iPoint] = nPointSurface;
-			nPointSurface++;
-		}
-
-	/*--- Open the paraview file ---*/
-	Paraview_File.open(mesh_filename, ios::out);
-
-	/*--- Write the header of the file ---*/
-	Paraview_File << "# vtk DataFile Version 2.0" << endl;
-	Paraview_File << "Visualization of the surface grid (using local numbering)" << endl;
-	Paraview_File << "ASCII" << endl;
-	Paraview_File << "DATASET UNSTRUCTURED_GRID" << endl;
-	Paraview_File << "POINTS " << nPointSurface << " float" << endl;
-
-	/*--- Only write the coordiantes of the points that are on the surfaces ---*/
-	if (nDim == 3) {
-		for(iPoint = 0; iPoint < nPoint; iPoint++)
-			if (node[iPoint]->GetBoundary()) {
-				for(Coord_i = 0; Coord_i < nDim-1; Coord_i++)
-					Paraview_File << node[iPoint]->GetCoord(Coord_i) << "\t";
-				Paraview_File << node[iPoint]->GetCoord(nDim-1) << "\n";
-			}
-	}
-	else {
-		for(iPoint = 0; iPoint < nPoint; iPoint++)
-			if (node[iPoint]->GetBoundary()){
-				for(Coord_i = 0; Coord_i < nDim; Coord_i++)
-					Paraview_File << node[iPoint]->GetCoord(Coord_i) << "\t";
-				Paraview_File << "0.0\n";
-			}
-	}
-
-	/*--- Compute the total number of elements ---*/
-	Total_nElem_Bound = 0; Total_nElem_Bound_Storage = 0;
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		if (config->GetMarker_All_Plotting(iMarker) == YES) {
-			Total_nElem_Bound += nElem_Bound[iMarker];
-			Total_nElem_Bound_Storage += nElem_Bound_Storage[iMarker];
-		}
-
-	/*--- Write the cells using the new numbering ---*/
-	Paraview_File << "CELLS " << Total_nElem_Bound << "\t" << Total_nElem_Bound_Storage << endl;
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) 
-		if (config->GetMarker_All_Plotting(iMarker) == YES) 
-			for(iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
-				Paraview_File << bound[iMarker][iElem]->GetnNodes() << "\t";
-				for(iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes()-1; iNode++)
-					Paraview_File << PointSurface[bound[iMarker][iElem]->GetNode(iNode)] << "\t";			
-				Paraview_File << PointSurface[bound[iMarker][iElem]->GetNode(bound[iMarker][iElem]->GetnNodes()-1)] << "\n";
-			}
-
-	Paraview_File << "CELL_TYPES " << Total_nElem_Bound << endl;
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) 
-		if (config->GetMarker_All_Plotting(iMarker) == YES) 
-			for(iElem = 0; iElem < nElem_Bound[iMarker]; iElem++)
-				Paraview_File << bound[iMarker][iElem]->GetVTK_Type() << endl;
-
-	Paraview_File << "POINT_DATA " << nPointSurface << endl;
-
-	/*--- Dealocate memory and close the file ---*/
-	delete[] PointSurface;
-	Paraview_File.close();
-}
-
 void CPhysicalGeometry::SetBoundTecPlot (CConfig *config, char mesh_filename[200]) {
 	ofstream Tecplot_File;
 	unsigned long iPoint, Total_nElem_Bound, iElem, *PointSurface = NULL, nPointSurface = 0;
@@ -4317,67 +4560,87 @@ void CPhysicalGeometry::SetBoundTecPlot (CConfig *config, char mesh_filename[200
 
 	/*--- Compute the total number of elements ---*/
 	Total_nElem_Bound = 0;
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 		if (config->GetMarker_All_Plotting(iMarker) == YES) {
 			Total_nElem_Bound += nElem_Bound[iMarker];
 		}
+  }
 
-	/*--- Open the paraview file ---*/
+	/*--- Open the tecplot file ---*/
 	Tecplot_File.open(mesh_filename, ios::out);
 	Tecplot_File << "TITLE = \"Visualization of the surface grid\"" << endl;
 
-	/*--- Write the header of the file ---*/
-	if (nDim == 2) {
-		Tecplot_File << "VARIABLES = \"x\",\"y\" " << endl;
-		Tecplot_File << "ZONE NODES= "<< nPointSurface <<", ELEMENTS= "<< Total_nElem_Bound <<", DATAPACKING=POINT, ZONETYPE=FELINESEG"<< endl;
-	}
-	if (nDim == 3) {
-		Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\" " << endl;	
-		Tecplot_File << "ZONE NODES= "<< nPointSurface <<", ELEMENTS= "<< Total_nElem_Bound <<", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
-	}
-
-	/*--- Only write the coordiantes of the points that are on the surfaces ---*/
-	if (nDim == 3) {
-		for(iPoint = 0; iPoint < nPoint; iPoint++)
-			if (node[iPoint]->GetBoundary()) {
-				for(Coord_i = 0; Coord_i < nDim-1; Coord_i++)
-					Tecplot_File << node[iPoint]->GetCoord(Coord_i) << "\t";
-				Tecplot_File << node[iPoint]->GetCoord(nDim-1) << "\n";
-			}
-	}
-	else {
-		for(iPoint = 0; iPoint < nPoint; iPoint++)
-			if (node[iPoint]->GetBoundary()){
-				for(Coord_i = 0; Coord_i < nDim; Coord_i++)
-					Tecplot_File << node[iPoint]->GetCoord(Coord_i) << "\t";
-				Tecplot_File << "\n";
-			}
-	}
-
-	/*--- Write the cells using the new numbering ---*/
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) 
-		if (config->GetMarker_All_Plotting(iMarker) == YES) 
-			for(iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
-				if (nDim == 2) {
-					Tecplot_File << PointSurface[bound[iMarker][iElem]->GetNode(0)]+1 << "\t"
-							<< PointSurface[bound[iMarker][iElem]->GetNode(1)]+1 << endl;
-				}
-				if (nDim == 3) {
-					if (bound[iMarker][iElem]->GetnNodes() == 3) {
-						Tecplot_File << PointSurface[bound[iMarker][iElem]->GetNode(0)]+1 << "\t" 
-								<< PointSurface[bound[iMarker][iElem]->GetNode(1)]+1 << "\t"
-								<< PointSurface[bound[iMarker][iElem]->GetNode(2)]+1 << "\t"
-								<< PointSurface[bound[iMarker][iElem]->GetNode(2)]+1 << endl;
-					}
-					if (bound[iMarker][iElem]->GetnNodes() == 4) {
-						Tecplot_File << PointSurface[bound[iMarker][iElem]->GetNode(0)]+1 << "\t" 
-								<< PointSurface[bound[iMarker][iElem]->GetNode(1)]+1 << "\t"
-								<< PointSurface[bound[iMarker][iElem]->GetNode(2)]+1 << "\t"
-								<< PointSurface[bound[iMarker][iElem]->GetNode(3)]+1 << endl;
-					}
-				}
-			}
-
+  if (Total_nElem_Bound != 0) {
+    
+    /*--- Write the header of the file ---*/
+    if (nDim == 2) {
+      Tecplot_File << "VARIABLES = \"x\",\"y\" " << endl;
+      Tecplot_File << "ZONE NODES= "<< nPointSurface <<", ELEMENTS= "<< Total_nElem_Bound <<", DATAPACKING=POINT, ZONETYPE=FELINESEG"<< endl;
+    }
+    if (nDim == 3) {
+      Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\" " << endl;
+      Tecplot_File << "ZONE NODES= "<< nPointSurface <<", ELEMENTS= "<< Total_nElem_Bound <<", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
+    }
+    
+    /*--- Only write the coordiantes of the points that are on the surfaces ---*/
+    if (nDim == 3) {
+      for(iPoint = 0; iPoint < nPoint; iPoint++)
+        if (node[iPoint]->GetBoundary()) {
+          for(Coord_i = 0; Coord_i < nDim-1; Coord_i++)
+            Tecplot_File << node[iPoint]->GetCoord(Coord_i) << " ";
+          Tecplot_File << node[iPoint]->GetCoord(nDim-1) << "\n";
+        }
+    }
+    else {
+      for(iPoint = 0; iPoint < nPoint; iPoint++)
+        if (node[iPoint]->GetBoundary()){
+          for(Coord_i = 0; Coord_i < nDim; Coord_i++)
+            Tecplot_File << node[iPoint]->GetCoord(Coord_i) << " ";
+          Tecplot_File << "\n";
+        }
+    }
+    
+    /*--- Write the cells using the new numbering ---*/
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+      if (config->GetMarker_All_Plotting(iMarker) == YES)
+        for(iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
+          if (nDim == 2) {
+            Tecplot_File << PointSurface[bound[iMarker][iElem]->GetNode(0)]+1 << " "
+            << PointSurface[bound[iMarker][iElem]->GetNode(1)]+1 << endl;
+          }
+          if (nDim == 3) {
+            if (bound[iMarker][iElem]->GetnNodes() == 3) {
+              Tecplot_File << PointSurface[bound[iMarker][iElem]->GetNode(0)]+1 << " "
+              << PointSurface[bound[iMarker][iElem]->GetNode(1)]+1 << " "
+              << PointSurface[bound[iMarker][iElem]->GetNode(2)]+1 << " "
+              << PointSurface[bound[iMarker][iElem]->GetNode(2)]+1 << endl;
+            }
+            if (bound[iMarker][iElem]->GetnNodes() == 4) {
+              Tecplot_File << PointSurface[bound[iMarker][iElem]->GetNode(0)]+1 << " "
+              << PointSurface[bound[iMarker][iElem]->GetNode(1)]+1 << " "
+              << PointSurface[bound[iMarker][iElem]->GetNode(2)]+1 << " "
+              << PointSurface[bound[iMarker][iElem]->GetNode(3)]+1 << endl;
+            }
+          }
+        }
+  }
+  else {
+    /*--- No elements in the surface ---*/
+    if (nDim == 2) {
+      Tecplot_File << "VARIABLES = \"x\",\"y\" " << endl;
+      Tecplot_File << "ZONE NODES= 1, ELEMENTS= 1, DATAPACKING=POINT, ZONETYPE=FELINESEG"<< endl;
+      Tecplot_File << "0.0 0.0"<< endl;
+      Tecplot_File << "1 1"<< endl;
+    }
+    if (nDim == 3) {
+      Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\" " << endl;
+      Tecplot_File << "ZONE NODES= 1, ELEMENTS= 1, DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
+      Tecplot_File << "0.0 0.0 0.0"<< endl;
+      Tecplot_File << "1 1 1 1"<< endl;
+    }
+  }
+  
+  
 	/*--- Dealocate memory and close the file ---*/
 	delete[] PointSurface;
 	Tecplot_File.close();
@@ -4476,14 +4739,15 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
 #ifndef NO_METIS
   
 	unsigned long iPoint, iElem, iElem_Triangle, iElem_Tetrahedron, nElem_Triangle,
-	nElem_Tetrahedron;
+	nElem_Tetrahedron, kPoint, jPoint, iVertex;
+    unsigned short iMarker, iMaxColor = 0, iColor, MaxColor = 0, iNode, jNode;
 	int ne = 0, nn, *elmnts = NULL, etype, *epart = NULL, *npart = NULL, numflag, nparts, edgecut, *eptr;
-  
-  int rank = MPI::COMM_WORLD.Get_rank();
+    
+    int rank = MPI::COMM_WORLD.Get_rank();
 	int size = MPI::COMM_WORLD.Get_size();
-  
+    
 	unsigned short nDomain = size;
-      
+    
 	nElem_Triangle = 0;
 	nElem_Tetrahedron = 0;
 	for (iElem = 0; iElem < GetnElem(); iElem++) {
@@ -4494,7 +4758,7 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
 		if (elem[iElem]->GetVTK_Type() == PYRAMID) nElem_Tetrahedron = nElem_Tetrahedron + 2;
 		if (elem[iElem]->GetVTK_Type() == WEDGE) nElem_Tetrahedron = nElem_Tetrahedron + 3;
 	}
-  
+    
 	if (GetnDim() == 2) {
 		ne = nElem_Triangle;
 		elmnts = new int [ne*3];
@@ -4505,7 +4769,7 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
 		elmnts = new int [ne*4];
 		etype = 2;
 	}
-  
+    
 	nn = nPoint;
 	numflag = 0;
 	nparts = nDomain;
@@ -4517,7 +4781,7 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
 		cout << "Press any key to exit..." << endl;
 		cin.get(); exit(1);
 	}
-  
+    
 	iElem_Triangle = 0; iElem_Tetrahedron = 0;
 	for (iElem = 0; iElem < GetnElem(); iElem++) {
 		if (elem[iElem]->GetVTK_Type() == TRIANGLE) {
@@ -4617,7 +4881,7 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
 	/*--- Add final value to element pointer array ---*/
 	if (GetnDim() == 2) eptr[ne] = 3*ne;
 	else eptr[ne] = 4*ne;
-  
+    
 #ifdef METIS_5
 	/*--- Calling METIS 5.0.2 ---*/
 	int options[METIS_NOPTIONS];
@@ -4630,13 +4894,14 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
 	METIS_PartMeshNodal(&ne, &nn, elmnts, &etype, &numflag, &nparts, &edgecut, epart, npart);
 	cout << "Finished partitioning using METIS 4.0.3. ("  << edgecut << " edge cuts)." << endl;
 #endif
-  
+    
 	for (iPoint = 0; iPoint < nPoint; iPoint++)
 		node[iPoint]->SetColor(npart[iPoint]);
-  
+    
+    
 	delete[] epart;
 	delete[] npart;
-  
+
 #endif
 #endif
   
@@ -7361,61 +7626,6 @@ void CBoundaryGeometry::SetBoundSensitivity(CConfig *config) {
 	delete[] Point2Vertex;
 }
 
-void CBoundaryGeometry::SetBoundParaView (CConfig *config, char mesh_filename[200]) {
-	ofstream Paraview_File;
-	unsigned long iPoint, Total_nElem_Bound, Total_nElem_Bound_Storage, iElem;
-	unsigned short Coord_i, iMarker, iNode;
-
-	Paraview_File.open(mesh_filename, ios::out);
-
-	Paraview_File << "# vtk DataFile Version 2.0" << endl;
-	Paraview_File << "Visualization of the surface grid" << endl;
-	Paraview_File << "ASCII" << endl;
-	Paraview_File << "DATASET UNSTRUCTURED_GRID" << endl;
-	Paraview_File << "POINTS " << nPoint << " float" << endl;
-
-	if (nDim == 3) {
-		for(iPoint = 0; iPoint < nPoint; iPoint++) {
-			for(Coord_i = 0; Coord_i < nDim-1; Coord_i++)
-				Paraview_File << node[iPoint]->GetCoord(Coord_i) << "\t";
-			Paraview_File << node[iPoint]->GetCoord(nDim-1) << "\n";
-		}
-	}
-	else {
-		for(iPoint = 0; iPoint < nPoint; iPoint++) {
-			for(Coord_i = 0; Coord_i < nDim; Coord_i++)
-				Paraview_File << node[iPoint]->GetCoord(Coord_i) << "\t";
-			Paraview_File << "0.0\n";
-		}
-	}
-
-
-	Total_nElem_Bound = 0; Total_nElem_Bound_Storage = 0;
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		if (config->GetMarker_All_Plotting(iMarker) == YES) {
-			Total_nElem_Bound += nElem_Bound[iMarker];
-			Total_nElem_Bound_Storage += nElem_Bound_Storage[iMarker];
-		}
-
-	Paraview_File << "CELLS " << Total_nElem_Bound << "\t" << Total_nElem_Bound_Storage << endl;
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) 
-		if (config->GetMarker_All_Plotting(iMarker) == YES) 
-			for(iElem = 0; iElem<nElem_Bound[iMarker]; iElem++) {
-				Paraview_File << bound[iMarker][iElem]->GetnNodes() << "\t";
-				for(iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes()-1; iNode++)
-					Paraview_File << bound[iMarker][iElem]->GetNode(iNode) << "\t";			
-				Paraview_File << bound[iMarker][iElem]->GetNode(bound[iMarker][iElem]->GetnNodes()-1) << "\n";
-			}
-
-	Paraview_File << "CELL_TYPES " << Total_nElem_Bound << endl;
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) 
-		if (config->GetMarker_All_Plotting(iMarker) == YES) 
-			for(iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) 
-				Paraview_File << bound[iMarker][iElem]->GetVTK_Type() << endl;
-
-	Paraview_File.close();
-}
-
 double CBoundaryGeometry::GetMaxThickness(CConfig *config, bool original_surface) {
 	unsigned short iMarker;
 	unsigned long iVertex, jVertex, n;
@@ -9099,22 +9309,22 @@ void CDomainGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename)
 	double *center, *angles, *transl;
 	ofstream output_file;
 	string Grid_Marker;
-    
+  
+  /*--- Open the output file ---*/
 	char *cstr = new char [val_mesh_out_filename.size()+1];
 	strcpy (cstr, val_mesh_out_filename.c_str());
-    
 	output_file.open(cstr, ios::out);
-    
+  
 	output_file << "NDIME= " << nDim << endl;
 	output_file << "NELEM= " << nElem << endl;
-    
+  
 	for (iElem = 0; iElem < nElem; iElem++) {
 		output_file << elem[iElem]->GetVTK_Type();
 		for (iNodes = 0; iNodes < elem[iElem]->GetnNodes(); iNodes++)
 			output_file << "\t" << elem[iElem]->GetNode(iNodes);
 		output_file << "\t"<<iElem<<endl;
 	}
-    
+  
 	output_file << "NPOIN= " << nPoint << "\t" << nPointDomain <<endl;
 	output_file.precision(15);
 	for (iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -9123,7 +9333,7 @@ void CDomainGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename)
 		output_file << "\t" << iPoint << "\t" << Local_to_Global_Point[iPoint] << endl;
 	}
 	
-    output_file << "NMARK= " << nMarker << endl;
+  output_file << "NMARK= " << nMarker << endl;
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
 		if (bound[iMarker][0]->GetVTK_Type() != VERTEX) {
 			Grid_Marker = config->GetMarker_All_Tag(Local_to_Global_Marker[iMarker]);
@@ -9137,82 +9347,98 @@ void CDomainGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename)
 				iNodes = bound[iMarker][iElem_Bound]->GetnNodes()-1;
 				output_file << bound[iMarker][iElem_Bound]->GetNode(iNodes) << endl;
 			}
+    }
+  }
+  
+#ifndef NO_MPI
+  
+  /*--- Send after receive in the .su2 file ---*/
+  unsigned short iDomain, nDomain;
+  int size = MPI::COMM_WORLD.Get_size();
+  nDomain = size+1;
+  
+  for (iDomain = 0; iDomain < nDomain; iDomain++) {
+
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
+        
+        if (Marker_All_SendRecv[iMarker] == iDomain) {
+          output_file << "MARKER_TAG= SEND_RECEIVE" << endl;
+          output_file << "MARKER_ELEMS= " << nElem_Bound[iMarker]<< endl;
+          output_file << "SEND_TO= " << Marker_All_SendRecv[iMarker] << endl;
+          
+          for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
+            output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
+            output_file << bound[iMarker][iElem_Bound]->GetNode(0) << "\t";
+            output_file << bound[iMarker][iElem_Bound]->GetRotation_Type() << "\t";
+            output_file << bound[iMarker][iElem_Bound]->GetMatching_Zone() << endl;
+          }
         }
+      }
     }
     
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-		if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
-            output_file << "MARKER_TAG= SEND_RECEIVE" << endl;
-            output_file << "MARKER_ELEMS= " << nElem_Bound[iMarker]<< endl;
-            if (Marker_All_SendRecv[iMarker] > 0) output_file << "SEND_TO= " << Marker_All_SendRecv[iMarker] << endl;
-            if (Marker_All_SendRecv[iMarker] < 0) output_file << "SEND_TO= " << Marker_All_SendRecv[iMarker] << endl;
-            
-            for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-                output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
-                output_file << bound[iMarker][iElem_Bound]->GetNode(0) << "\t";
-                output_file << bound[iMarker][iElem_Bound]->GetRotation_Type() << "\t";
-                output_file << bound[iMarker][iElem_Bound]->GetMatching_Zone() << endl;
-            }
+      if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
+        
+        if (Marker_All_SendRecv[iMarker] == -iDomain) {
+          output_file << "MARKER_TAG= SEND_RECEIVE" << endl;
+          output_file << "MARKER_ELEMS= " << nElem_Bound[iMarker]<< endl;
+          output_file << "SEND_TO= " << Marker_All_SendRecv[iMarker] << endl;
+          
+          for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
+            output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
+            output_file << bound[iMarker][iElem_Bound]->GetNode(0) << "\t";
+            output_file << bound[iMarker][iElem_Bound]->GetRotation_Type() << "\t";
+            output_file << bound[iMarker][iElem_Bound]->GetMatching_Zone() << endl;
+          }
         }
+      }
     }
     
+  }
+  
+#else
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+		if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
+      output_file << "MARKER_TAG= SEND_RECEIVE" << endl;
+      output_file << "MARKER_ELEMS= " << nElem_Bound[iMarker]<< endl;
+      if (Marker_All_SendRecv[iMarker] > 0) output_file << "SEND_TO= " << Marker_All_SendRecv[iMarker] << endl;
+      if (Marker_All_SendRecv[iMarker] < 0) output_file << "SEND_TO= " << Marker_All_SendRecv[iMarker] << endl;
+      
+      for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
+        output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
+        output_file << bound[iMarker][iElem_Bound]->GetNode(0) << "\t";
+        output_file << bound[iMarker][iElem_Bound]->GetRotation_Type() << "\t";
+        output_file << bound[iMarker][iElem_Bound]->GetMatching_Zone() << endl;
+      }
+    }
+  }
+  
+#endif
+  
 	/*--- Get the total number of periodic transformations ---*/
 	nPeriodic = config->GetnPeriodicIndex();
 	output_file << "NPERIODIC= " << nPeriodic << endl;
-    
+  
 	/*--- From iPeriodic obtain the iMarker ---*/
 	for (iPeriodic = 0; iPeriodic < nPeriodic; iPeriodic++) {
-        
+    
 		/*--- Retrieve the supplied periodic information. ---*/
 		center = config->GetPeriodicCenter(iPeriodic);
 		angles = config->GetPeriodicRotation(iPeriodic);
 		transl = config->GetPeriodicTranslate(iPeriodic);
-        
+    
 		output_file << "PERIODIC_INDEX= " << iPeriodic << endl;
 		output_file << center[0] << "\t" << center[1] << "\t" << center[2] << endl;
 		output_file << angles[0] << "\t" << angles[1] << "\t" << angles[2] << endl;
 		output_file << transl[0] << "\t" << transl[1] << "\t" << transl[2] << endl;
-        
-	}
     
+	}
+  
 	output_file.close();
-    
-    delete[] cstr;
-}
-
-void CDomainGeometry::SetParaView(char mesh_filename[200]) {
   
-	ofstream para_file;
-	para_file.open(mesh_filename, ios::out);
-  
-	para_file << "# vtk DataFile Version 2.0" << endl;
-	para_file << "Visualization of the volumetric grid" << endl;
-	para_file << "ASCII" << endl;
-	para_file << "DATASET UNSTRUCTURED_GRID" << endl;
-	para_file << "POINTS " << nPoint << " float" << endl;
-  
-	para_file.precision(15);
-  
-	for(unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-		for(unsigned short iDim = 0; iDim < nDim; iDim++)
-			para_file << scientific << node[iPoint]->GetCoord(iDim) << "\t";
-		if (nDim == 2) para_file << "0.0";
-		para_file << "\n";
-	}
-  
-	para_file << "CELLS " << nElem << "\t" << nElem_Storage << endl;
-	for(unsigned long iElem=0; iElem < nElem; iElem++) {
-		para_file << elem[iElem]->GetnNodes() << "\t";
-		for(unsigned short iNode=0; iNode < elem[iElem]->GetnNodes(); iNode++)
-			para_file << elem[iElem]->GetNode(iNode) << "\t";
-		para_file << "\n";
-	}
-  
-	para_file << "CELL_TYPES " << nElem << endl;
-	for(unsigned long iElem=0; iElem < nElem; iElem++) {
-		para_file << elem[iElem]->GetVTK_Type() << endl;
-	}
-	para_file.close();
+  delete[] cstr;
 }
 
 void CDomainGeometry::SetTecPlot(char mesh_filename[200]) {
@@ -9281,58 +9507,6 @@ void CDomainGeometry::SetTecPlot(char mesh_filename[200]) {
   
 	Tecplot_File.close();
 
-}
-
-void CDomainGeometry::SetBoundParaView (CConfig *config, char mesh_filename[200]) {
-	ofstream para_file;
-	para_file.open(mesh_filename, ios::out);
-  
-	para_file << "# vtk DataFile Version 2.0" << endl;
-	para_file << "Visualization of the surface grid" << endl;
-	para_file << "ASCII" << endl;
-	para_file << "DATASET UNSTRUCTURED_GRID" << endl;
-	para_file << "POINTS " << nPoint << " float" << endl;
-  
-	for(unsigned long iPoint = 0; iPoint<nPoint; iPoint++) {
-		for(unsigned short Coord_i = 0; Coord_i < 3; Coord_i++)
-			para_file << node[iPoint]->GetCoord(Coord_i) << "\t";
-		para_file << "\n";
-	}
-  
-	unsigned long Total_nElem_Bound = 0;
-	unsigned long Total_nElem_Bound_Storage = 0;
-	for (unsigned short iMarker=0; iMarker < config->GetnMarker_All(); iMarker++) {
-		unsigned short Boundary = config->GetMarker_All_Boundary(iMarker);
-		if ((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL)) {
-			Total_nElem_Bound += nElem_Bound[iMarker];
-			Total_nElem_Bound_Storage += nElem_Bound_Storage[iMarker];
-		}
-	}
-  
-	para_file << "CELLS " << Total_nElem_Bound << "\t" << Total_nElem_Bound_Storage << endl;
-	for (unsigned short iMarker=0; iMarker < config->GetnMarker_All(); iMarker++) {
-		unsigned short Boundary = config->GetMarker_All_Boundary(iMarker);
-		if ((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL)) {
-			for(unsigned long ielem=0; ielem<nElem_Bound[iMarker]; ielem++) {
-				para_file << bound[iMarker][ielem]->GetnNodes() << "\t";
-				for(unsigned short inode=0; inode<bound[iMarker][ielem]->GetnNodes(); inode++)
-					para_file << bound[iMarker][ielem]->GetNode(inode) << "\t";
-				para_file << "\n";
-			}
-		}
-	}
-  
-	para_file << "CELL_TYPES " << Total_nElem_Bound << endl;
-	for (unsigned short iMarker=0; iMarker < config->GetnMarker_All(); iMarker++) {
-		unsigned short Boundary = config->GetMarker_All_Boundary(iMarker);
-		if ((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL)) {
-			for(unsigned long ielem=0; ielem <nElem_Bound[iMarker]; ielem++) {
-				para_file << bound[iMarker][ielem]->GetVTK_Type() << endl;
-			}
-		}
-	}
-  
-	para_file.close();
 }
 
 CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) {
@@ -9855,45 +10029,6 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
 
 
 	output_file.close();
-
-}
-
-void CPeriodicGeometry::SetParaView(char mesh_filename[200]) {
-	unsigned long iElem, iPoint;
-	unsigned short iNode, iDim;
-	ofstream para_file;
-
-	para_file.open(mesh_filename, ios::out);
-
-	para_file << "# vtk DataFile Version 2.0" << endl;
-	para_file << "Visualization of the volumetric grid" << endl;
-	para_file << "ASCII" << endl;
-	para_file << "DATASET UNSTRUCTURED_GRID" << endl;
-	para_file << "POINTS " << nPoint << " float" << endl;
-
-	para_file.precision(15);
-
-	for(iPoint = 0; iPoint < nPoint; iPoint++) {
-		for(iDim = 0; iDim < nDim; iDim++)
-			para_file << scientific << node[iPoint]->GetCoord(iDim) << "\t";
-		if (nDim == 2) para_file << "0.0";
-		para_file << "\n";
-	}	 
-
-	para_file << "CELLS " << nElem << "\t" << nElem_Storage << endl;
-	for(iElem = 0; iElem < nElem; iElem++) {
-		para_file << elem[iElem]->GetnNodes() << "\t";
-		for(iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
-			if (iNode == elem[iElem]->GetnNodes()-1) para_file << elem[iElem]->GetNode(iNode) << "\n";			
-			else para_file << elem[iElem]->GetNode(iNode) << "\t";			
-		}
-	}	
-
-	para_file << "CELL_TYPES " << nElem << endl;
-	for(iElem=0; iElem < nElem; iElem++) {
-		para_file << elem[iElem]->GetVTK_Type() << endl;
-	}
-	para_file.close();
 
 }
 

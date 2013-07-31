@@ -1,7 +1,7 @@
 ## \file deform.py
 #  \brief python package for deforming meshes
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.5
+#  \version 2.0.6
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -70,7 +70,7 @@ def deform ( config, dv_new=None, dv_old=None ):
     # local copy
     konfig = copy.deepcopy(config)
     
-    # decompose - hack: delay until after deformation - TWL
+    # decompose
     su2decomp(konfig)
     
     # unpack design variables
@@ -100,11 +100,7 @@ def deform ( config, dv_new=None, dv_old=None ):
                     'DV_VALUE_OLD'  : konfig['DV_VALUE_NEW']      ,
                     'DV_VALUE_NEW'  : konfig['DV_VALUE_NEW']      })
     # not modified: config['MESH_OUT_FILENAME']
-    
-    # hack: decompose on super config - TWL
-    #config.DECOMPOSED = False
-    #su2decomp(config)
-    
+        
     # info out
     info = su2io.State()
     info.FILES.MESH = meshname_suffixed

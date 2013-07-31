@@ -2,7 +2,7 @@
  * \file SU2_DDC.cpp
  * \brief Main file of Domain Decomposition Code (SU2_DDC).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -32,16 +32,15 @@ int main(int argc, char *argv[]) {
   
   int rank = MASTER_NODE;
   int size = 1;
-  unsigned short nChunk = MAX_NUMBER_CHUNK;
-
+  
 #ifndef NO_MPI
 	/*--- MPI initialization, and buffer setting ---*/
   static char buffer[MAX_MPI_BUFFER]; // buffer size in bytes
-
+  
   void *ptr;
 	MPI::Init(argc, argv);
 	MPI::Attach_buffer(buffer, MAX_MPI_BUFFER);
-
+  
 	rank = MPI::COMM_WORLD.Get_rank();
 	size = MPI::COMM_WORLD.Get_size();
 #endif
@@ -50,19 +49,19 @@ int main(int argc, char *argv[]) {
 	CConfig *config = NULL;
   CGeometry *geometry = NULL;
 	CSurfaceMovement *surface_mov = NULL;
-	CFreeFormChunk** chunk = NULL;
-
+	CFreeFormDefBox** FFDBox = NULL;
+  
 	/*--- Definition of the config problem ---*/
 	if (argc == 2) { config = new CConfig(argv[1], SU2_DDC, ZONE_0, nZone, VERB_HIGH); }
 	else { strcpy (file_name, "default.cfg"); config = new CConfig(file_name, SU2_DDC, ZONE_0, nZone, VERB_HIGH); }
   
   if (rank == MASTER_NODE) {
-
+    
     /*--- Definition of the Class for the geometry ---*/
     geometry = new CPhysicalGeometry(config, config->GetMesh_FileName(), config->GetMesh_FileFormat(), ZONE_0, nZone);
-    		
-  }
     
+  }
+  
 #ifndef NO_MPI
   MPI::COMM_WORLD.Barrier();
 #endif
@@ -77,17 +76,17 @@ int main(int argc, char *argv[]) {
     if (rank == MASTER_NODE) {
       
       cout << endl <<"------------------------ Divide the numerical grid ----------------------" << endl;
-
+      
       /*--- Color the initial grid and set the send-receive domains ---*/
-      geometry->SetColorGrid(config);      
-
+      geometry->SetColorGrid(config);
+      
     }
-
+    
 #ifndef NO_MPI
     MPI::COMM_WORLD.Barrier();
 #endif
     
-    /*--- Allocate the memory of the current domain, and 
+    /*--- Allocate the memory of the current domain, and
      divide the grid between the nodes ---*/
     CDomainGeometry *domain = new CDomainGeometry(geometry, config);
     
@@ -105,20 +104,12 @@ int main(int argc, char *argv[]) {
     MPI::COMM_WORLD.Barrier();
 #endif
     
-    /*--- Write tecplot and paraview files ---*/
+    /*--- Write tecplot files ---*/
     if (config->GetVisualize_Partition()) {
-      if(config->GetOutput_FileFormat() == PARAVIEW) {
-        sprintf (buffer_vtk, "_%d.vtk", int(rank+1));
-        string MeshFile_vtk = MeshFile + buffer_vtk;
-        char *cstr_vtk = strdup(MeshFile_vtk.c_str());
-        domain->SetParaView(cstr_vtk);
-      }
-      if(config->GetOutput_FileFormat() == TECPLOT) {
-        sprintf (buffer_plt, "_%d.plt", int(rank+1));
-        string MeshFile_plt = MeshFile + buffer_plt;
-        char *cstr_plt = strdup(MeshFile_plt.c_str());
-        domain->SetTecPlot(cstr_plt);
-      }
+      sprintf (buffer_plt, "_%d.dat", int(rank+1));
+      string MeshFile_plt = MeshFile + buffer_plt;
+      char *cstr_plt = strdup(MeshFile_plt.c_str());
+      domain->SetTecPlot(cstr_plt);
     }
     
     /*--- Write .su2 file ---*/
@@ -132,7 +123,7 @@ int main(int argc, char *argv[]) {
 #endif
     
     cout << "Domain " << rank <<": Mesh writing done (" << MeshFile_su2 <<")." << endl;
-
+    
 #ifndef NO_MPI
     MPI::COMM_WORLD.Barrier();
 #endif
@@ -140,24 +131,31 @@ int main(int argc, char *argv[]) {
     /*--- Write the FFD information (3D problems)---*/
     if (domain->GetnDim() == 3) {
       
+#ifndef NO_MPI
+      MPI::COMM_WORLD.Barrier();
+#endif
+      
       if (rank == MASTER_NODE)
         cout << endl <<"---------------------- Read and write FFD information -------------------" << endl;
-
-      chunk = new CFreeFormChunk*[nChunk];
+      
+#ifndef NO_MPI
+      MPI::COMM_WORLD.Barrier();
+#endif
+      
+      FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
       surface_mov = new CSurfaceMovement();
-      surface_mov->ReadFFDInfo(domain, config, chunk, config->GetMesh_FileName(), false);
-      surface_mov->WriteFFDInfo(domain, config, chunk, cstr_su2, false);
+      surface_mov->ReadFFDInfo(domain, config, FFDBox, config->GetMesh_FileName(), false);
+      surface_mov->WriteFFDInfo(domain, config, FFDBox, cstr_su2);
       
     }
     
-    
 #ifndef NO_MPI
-  /*--- Finalize MPI parallelization ---*/
+    /*--- Finalize MPI parallelization ---*/
     MPI::COMM_WORLD.Barrier();
     MPI::Detach_buffer(ptr);
     MPI::Finalize();
 #endif
-
+    
   }
   
 	/*--- End solver ---*/

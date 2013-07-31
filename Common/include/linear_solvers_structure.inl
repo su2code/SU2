@@ -2,7 +2,7 @@
  * \file linear_solvers_structure.inl
  * \brief inline subroutines of the <i>linear_solvers_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.5
+ * \version 2.0.6
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -22,46 +22,6 @@
  */
 
 #pragma once
-
-inline unsigned int CSysVector::GetLocSize() const { return nElm; }
-
-inline unsigned long CSysVector::GetSize() const {
-#ifndef NO_MPI
-  return nElmGlobal;
-#else
-  return (unsigned long)nElm;
-#endif
-}
-
-inline unsigned short CSysVector::GetNVar() const { return nVar; }
-
-inline unsigned int CSysVector::GetNBlk() const { return nBlk; }
-
-inline unsigned int CSysVector::GetNBlkDomain() const { return nBlkDomain; }
-
-inline double & CSysVector::operator[](const unsigned int & i) {
-#ifdef DEBUG
-  /*--- check for invalid index ---*/
-  if ( (i < 0) || (i >= nElm) ) {
-    cerr << "CSysVector::operator[](unsigned int): " 
-	 << "invalid index value: i = " << i << endl;
-    throw(-1);
-  }
-#endif
-  return vec_val[i];
-}
-
-inline const double & CSysVector::operator[](const unsigned int & i) const {
-#ifdef DEBUG
-  /*--- check for invalid index ---*/
-  if ( (i < 0) || (i >= nElm) ) {
-    cerr << "CSysVector::operator[](unsigned int) const: " 
-	 << "invalid index value: i = " << i << endl;
-    throw(-1);
-  }
-#endif
-  return vec_val[i];
-}
 
 inline double CSysSolve::sign(const double & x, const double & y) const {
   if (y == 0.0)
