@@ -146,9 +146,17 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
 			Jacobian_j[iVar] = new double [nVar];
 		}
     
+    cout << "TNE2Solver: " << nSpecies << endl;
+    cout << "TNE2Solver: nPoint: " << nPoint << endl;
+    cout << "TNE2Solver: nPointDomain: " << nPointDomain << endl;
+    cout << "TNE2Solver: nVar: " << nVar << endl;
+    cin.get();
+    
 		/*--- Initialization of the structure for the global Jacobian ---*/
 		if (rank == MASTER_NODE) cout << "Initialize jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
 		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
+    
+    cout << "TNE2Solver: After Jacobian initialization..." << endl;
     
 	} else {
 		if (rank == MASTER_NODE)
@@ -204,6 +212,14 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
   MassFrac_Inf       = config->GetMassFrac_FreeStream();
   Temperature_ve_Inf = config->GetTemperature_ve_FreeStream();
   Temperature_Inf    = config->GetTemperature_FreeStream();
+  
+  cout << "TNE2Solver: After farfield conditions..." << endl;
+  
+  /*--- Create a CVariable that stores the free-stream values ---*/
+  node_infty = new CTNE2EulerVariable(Density_Inf, MassFrac_Inf, Velocity_Inf,
+                                      Temperature_Inf, Temperature_ve_Inf, nDim,
+                                      nVar, nPrimVar, nPrimVarGrad, config);
+  node_infty->SetPrimVar_Compressible(config);
   
 	/*--- Check for a restart and set up the variables at each node
    appropriately. Coarse multigrid levels will be intitially set to
@@ -956,20 +972,36 @@ void CTNE2EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_cont
 
 void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_container, CNumerics *numerics,
                                          CConfig *config, unsigned short iMesh) {
-	double *U_i, *U_j, *V_i, *V_j;
 	unsigned long iEdge, iPoint, jPoint;
+  bool implicit, high_order_diss, limiter;
+  double *U_i, *U_j, *V_i, *V_j;
   
-	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
-	bool high_order_diss = (((config->GetKind_Upwind_TNE2() == ROE_2ND)  ||
-                           (config->GetKind_Upwind_TNE2() == AUSM_2ND) ||
-                           (config->GetKind_Upwind_TNE2() == HLLC_2ND) ||
-                           (config->GetKind_Upwind_TNE2() == ROE_TURKEL_2ND))
-                          && (iMesh == MESH_0));
-	bool limiter = (config->GetKind_SlopeLimit_TNE2() != NONE);
+	/*--- Set booleans based on config settings ---*/
+	implicit        = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+  limiter         = (config->GetKind_SlopeLimit_TNE2() != NONE);
+	high_order_diss = (((config->GetKind_Upwind_TNE2() == ROE_2ND)  ||
+                      (config->GetKind_Upwind_TNE2() == AUSM_2ND) ||
+                      (config->GetKind_Upwind_TNE2() == HLLC_2ND) ||
+                      (config->GetKind_Upwind_TNE2() == ROE_TURKEL_2ND))
+                     && (iMesh == MESH_0));
   
   if (high_order_diss) cout << "WARNING!!! Upwind_Residual: 2nd order accuracy not in place!" << endl;
   if (limiter) cout << "WARNING!!! Upwind_Residual: Limiter not in place!" << endl;
   
+  /*--- Pass structure of the primitive variable vector to CNumerics ---*/
+  //node->GetRhosIndex();
+  
+/*  numerics->SetRhosIndex();
+  numerics->SetRhoIndex();
+  numerics->SetPIndex();
+  numerics->SetTIndex();
+  numerics->SetTveIndex();
+  numerics->SetHIndex();
+  numerics->SetAIndex();
+  numerics->SetCvtrIndex();
+  numerics->SetCvveIndex();*/
+  
+  /*--- Loop over edges and calculate convective fluxes ---*/
 	for(iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
 		/*--- Retrieve node numbers and pass edge normal to CNumerics ---*/
@@ -978,9 +1010,9 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
     
     /*--- Pass conserved and primitive variables from CVariable to CNumerics class ---*/
     U_i = node[iPoint]->GetSolution(); U_j = node[jPoint]->GetSolution();
-    V_i = node[iPoint]->GetPrimVar(); V_j = node[jPoint]->GetPrimVar();
+    V_i = node[iPoint]->GetPrimVar();  V_j = node[jPoint]->GetPrimVar();
     numerics->SetPrimitive(V_i, V_j);
-    numerics->SetConservative(U_i, U_j);
+    numerics->SetConservative(U_i, U_j);    
     
 		/*--- Compute the residual ---*/
 		numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
@@ -1788,74 +1820,128 @@ void CTNE2EulerSolver::SetPreconditioner(CConfig *config, unsigned short iPoint)
 }
 
 void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solution_container,
-                                       CNumerics *numerics, CConfig *config, unsigned short val_marker) {
-	unsigned short iDim, iVar, jDim;
+                                     CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+  unsigned short iDim, jDim, iSpecies, jSpecies, iVar, jVar;
 	unsigned long iPoint, iVertex;
-	double Pressure, *Normal = NULL, *GridVel = NULL, Area, UnitaryNormal[3],
-  ProjGridVel = 0.0, a2, phi;
+  bool implicit;
+  double *Normal, *UnitaryNormal, *Ms, *dPdrhos;
+  double Area, rhoCvtr, rhoCvve, rho_el, Ru;
+  double rho, cs, u, v, w, P, rhoE, rhoEve, conc;
   
-	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
-	bool grid_movement  = config->GetGrid_Movement();
+  /*--- Allocate arrays ---*/
+  UnitaryNormal = new double[3];
   
-	/*--- Loop over all the vertices on this boundary marker ---*/
+  /*--- Set booleans based on configuration options ---*/
+	implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+  
+  /*--- Load parameters from the config class ---*/
+  Ms = config->GetMolar_Mass();
+  
+  /*--- Rename for convenience ---*/
+  Ru = UNIVERSAL_GAS_CONSTANT;
+  
+	/*--- Loop over all the vertices on this boundary (val_marker) ---*/
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
 		/*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 		if (geometry->node[iPoint]->GetDomain()) {
       
-			/*--- Normal vector for this vertex (negate for outward convention) ---*/
+			/*--- Calculate parameters from the geometry ---*/
+      // Note: The vertex normal points out of the geometry by convention,
+      //       so to calculate the influence from the boundary condition
+      //       to the domain, we negate this vector
+      Area   = 0.0;
 			Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-			Area = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
 			Area = sqrt (Area);
 			for (iDim = 0; iDim < nDim; iDim++) UnitaryNormal[iDim] = -Normal[iDim]/Area;
       
-			/*--- Set the residual using the pressure ---*/
-			Pressure = node[iPoint]->GetPressure(false);
+			/*--- Retrieve the pressure on the vertex ---*/
+      P   = node[iPoint]->GetPressure();
       
-			Residual[0] = 0.0;
+      /*--- Apply the flow-tangency b.c. to the convective flux ---*/
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        Residual[iSpecies] = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++)
-				Residual[iDim+1] = Pressure*UnitaryNormal[iDim]*Area;
-			Residual[nVar-1] = 0.0;
-      
-			/*--- Adjustment to energy equation due to grid motion ---*/
-			if (grid_movement) {
-				ProjGridVel = 0.0;
-				GridVel = geometry->node[iPoint]->GetGridVel();
-				for (iDim = 0; iDim < nDim; iDim++)
-					ProjGridVel += GridVel[iDim]*UnitaryNormal[iDim]*Area;
-				Residual[nVar-1] = Pressure*ProjGridVel;
-			}
+				Residual[nSpecies+iDim] = P * UnitaryNormal[iDim] * Area;
+      Residual[nSpecies+nDim]   = 0.0;
+			Residual[nSpecies+nDim+1] = 0.0;
       
 			/*--- Add value to the residual ---*/
 			LinSysRes.AddBlock(iPoint, Residual);
       
-			/*--- Form Jacobians for implicit computations ---*/
+			/*--- If using implicit time-stepping, calculate b.c. contribution to Jacobian ---*/
 			if (implicit) {
-        a2 = Gamma-1.0;
-        phi = 0.5*a2*node[iPoint]->GetVelocity2();
+        rho     = node[iPoint]->GetDensity();
+        u       = node[iPoint]->GetVelocity(0, false);
+        v       = node[iPoint]->GetVelocity(1, false);
+        w       = node[iPoint]->GetVelocity(2, false);
+        rhoCvtr = node[iPoint]->GetRhoCv_tr();
+        rhoCvve = node[iPoint]->GetRhoCv_ve();
+        rhoE    = node[iPoint]->GetSolution(nSpecies+nDim);
+        rhoEve  = node[iPoint]->GetSolution(nSpecies+nDim+1);
         
-        for (iVar = 0; iVar < nVar; iVar++) {
-          Jacobian_i[0][iVar] = 0.0;
-          Jacobian_i[nDim+1][iVar] = 0.0;
-        }
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Jacobian_i[iDim+1][0] = -phi*Normal[iDim];
-          for (jDim = 0; jDim < nDim; jDim++)
-            Jacobian_i[iDim+1][jDim+1] = a2*node[iPoint]->GetVelocity(jDim, false)*Normal[iDim];
-          Jacobian_i[iDim+1][nDim+1] = -a2*Normal[iDim];
-        }
-        if (grid_movement) {
-          ProjGridVel = 0.0;
-          GridVel = geometry->node[iPoint]->GetGridVel();
-          for (iDim = 0; iDim < nDim; iDim++)
-            ProjGridVel += GridVel[iDim]*UnitaryNormal[iDim]*Area;
-          for (jDim = 0; jDim < nDim; jDim++)
-            Jacobian_i[nDim+1][jDim+1] = a2*node[iPoint]->GetVelocity(jDim, false)*ProjGridVel;
-          Jacobian_i[nDim+1][nDim+1] = -a2*ProjGridVel;
+        /*--- If free electrons are present, retrieve the electron gas density ---*/
+        if (config->GetIonization()) rho_el = node[iPoint]->GetMassFraction(nSpecies-1) * rho;
+        else rho_el = 0.0;
+        
+        conc = 0.0;
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          cs    = node[iPoint]->GetMassFraction(iSpecies);
+          conc += cs * rho/Ms[iSpecies];
+          for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+            Jacobian_i[iSpecies][jSpecies] = 0.0;
+          }
+          Jacobian_i[nSpecies][iSpecies]   = dPdrhos[iSpecies] * UnitaryNormal[0];
+          Jacobian_i[nSpecies+1][iSpecies] = dPdrhos[iSpecies] * UnitaryNormal[1];
+          Jacobian_i[nSpecies+2][iSpecies] = dPdrhos[iSpecies] * UnitaryNormal[2];
+          Jacobian_i[nSpecies+3][iSpecies] = 0.0;
+          Jacobian_i[nSpecies+4][iSpecies] = 0.0;
+          
+          Jacobian_i[iSpecies][nSpecies]   = cs * UnitaryNormal[0];
+          Jacobian_i[iSpecies][nSpecies+1] = cs * UnitaryNormal[1];
+          Jacobian_i[iSpecies][nSpecies+2] = cs * UnitaryNormal[2];
+          Jacobian_i[iSpecies][nSpecies+3] = 0.0;
+          Jacobian_i[iSpecies][nSpecies+4] = 0.0;
         }
         
+        Jacobian_i[nSpecies][nSpecies]     = u*UnitaryNormal[0] - (u*Ru*conc/rhoCvtr)*UnitaryNormal[0];
+        Jacobian_i[nSpecies][nSpecies+1]   = u*UnitaryNormal[1] - (v*conc*Ru/rhoCvtr)*UnitaryNormal[0];
+        Jacobian_i[nSpecies][nSpecies+2]   = u*UnitaryNormal[2] - (w*conc*Ru/rhoCvtr)*UnitaryNormal[0];
+        Jacobian_i[nSpecies][nSpecies+3]   = (conc*Ru/rhoCvtr)*UnitaryNormal[0];
+        Jacobian_i[nSpecies][nSpecies+4]   = (-conc*Ru/rhoCvtr + (rho_el/Ms[nSpecies-1])*Ru/rhoCvve)*UnitaryNormal[0];
+        
+        Jacobian_i[nSpecies+1][nSpecies]   = v*UnitaryNormal[0] - (u*Ru*conc/rhoCvtr)*UnitaryNormal[1];
+        Jacobian_i[nSpecies+1][nSpecies+1] = v*UnitaryNormal[1] - (v*conc*Ru/rhoCvtr)*UnitaryNormal[1];
+        Jacobian_i[nSpecies+1][nSpecies+2] = v*UnitaryNormal[2] - (w*conc*Ru/rhoCvtr)*UnitaryNormal[1];
+        Jacobian_i[nSpecies+1][nSpecies+3] = (conc*Ru/rhoCvtr)*UnitaryNormal[1];
+        Jacobian_i[nSpecies+1][nSpecies+4] = (-conc*Ru/rhoCvtr * (rho_el/Ms[nSpecies-1])*Ru/rhoCvve)*UnitaryNormal[1];
+        
+        Jacobian_i[nSpecies+2][nSpecies]   = w*UnitaryNormal[0] - (u*Ru*conc/rhoCvtr)*UnitaryNormal[2];
+        Jacobian_i[nSpecies+2][nSpecies+1] = w*UnitaryNormal[1] - (v*conc*Ru/rhoCvtr)*UnitaryNormal[2];
+        Jacobian_i[nSpecies+2][nSpecies+2] = w*UnitaryNormal[2] - (w*conc*Ru/rhoCvtr)*UnitaryNormal[2];
+        Jacobian_i[nSpecies+2][nSpecies+3] = (conc*Ru/rhoCvtr)*UnitaryNormal[2];
+        Jacobian_i[nSpecies+2][nSpecies+4] = (-conc*Ru/rhoCvtr * (rho_el/Ms[nSpecies-1])*Ru/rhoCvve)*UnitaryNormal[2];
+        
+        Jacobian_i[nSpecies+3][nSpecies]   = (rhoE+P)/rho * UnitaryNormal[0];
+        Jacobian_i[nSpecies+3][nSpecies+1] = (rhoE+P)/rho * UnitaryNormal[1];
+        Jacobian_i[nSpecies+3][nSpecies+2] = (rhoE+P)/rho * UnitaryNormal[2];
+        Jacobian_i[nSpecies+3][nSpecies+3] = 0.0;
+        Jacobian_i[nSpecies+3][nSpecies+4] = 0.0;
+        
+        Jacobian_i[nSpecies+4][nSpecies]   = rhoEve/rho * UnitaryNormal[0];
+        Jacobian_i[nSpecies+4][nSpecies+1] = rhoEve/rho * UnitaryNormal[1];
+        Jacobian_i[nSpecies+4][nSpecies+2] = rhoEve/rho * UnitaryNormal[2];
+        Jacobian_i[nSpecies+4][nSpecies+3] = 0.0;
+        Jacobian_i[nSpecies+4][nSpecies+4] = 0.0;
+        
+        /*--- Integrate over the dual-grid area ---*/
+        for (iVar = 0; iVar < nVar; iVar++)
+          for (jVar = 0; jVar < nVar; jVar++)
+            Jacobian_i[iVar][jVar] = Jacobian_i[iVar][jVar] * Area;
+        
+        /*--- Apply the contribution to the system ---*/
         Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
 			}
 		}
@@ -1864,107 +1950,64 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solution_con
 }
 
 void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_container,
-                                      CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-	unsigned short iVar, iDim, nPrimVar;
+                                    CNumerics *conv_numerics, CNumerics *visc_numerics,
+                                    CConfig *config, unsigned short val_marker) {
+	unsigned short iDim;
 	unsigned long iVertex, iPoint, Point_Normal;
+  bool implicit, viscous;
+  double *U_domain, *V_domain, *U_infty, *V_infty, *Normal;
   
-	bool implicit           = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
-	bool grid_movement      = config->GetGrid_Movement();
-  double Gas_Constant       = config->GetGas_ConstantND();
-	bool viscous              = config->GetViscous();
+  /*--- Set booleans from configuration parameters ---*/
+  implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+	viscous  = config->GetViscous();
   
-  nPrimVar = nDim+3;
+  /*--- Allocate arrays ---*/
+	Normal = new double[nDim];
   
-	double *U_domain = new double[nVar]; double *U_infty = new double[nVar];
-  double *V_domain = new double[nPrimVar]; double *V_infty = new double[nPrimVar];
-	double *Normal = new double[nDim];
-  
-	/*--- Loop over all the vertices on this boundary marker ---*/
+	/*--- Loop over all the vertices on this boundary (val_marker) ---*/
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
 		/*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 		if (geometry->node[iPoint]->GetDomain()) {
       
-			/*--- Index of the closest interior node ---*/
+			/*--- Retrieve index of the closest interior node ---*/
 			Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
       
-			/*--- Normal vector for this vertex (negate for outward convention) ---*/
+			/*--- Pass boundary node normal to CNumerics ---*/
+      // Note: The vertex normal points out of the geometry by convention,
+      //       so to calculate the influence from the boundary condition
+      //       to the domain, we negate this vector
 			geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
 			for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 			conv_numerics->SetNormal(Normal);
       
-			/*--- Retrieve solution at the farfield boundary node ---*/
-			for (iVar = 0; iVar < nVar; iVar++) U_domain[iVar] = node[iPoint]->GetSolution(iVar);
-			for (iVar = 0; iVar < nPrimVar; iVar++) V_domain[iVar] = node[iPoint]->GetPrimVar(iVar);
+			/*--- Retrieve solution at the boundary node & free-stream ---*/
+      U_domain = node[iPoint]->GetSolution();
+      V_domain = node[iPoint]->GetPrimVar();
+      U_infty  = node_infty->GetSolution();
+      V_infty  = node_infty->GetPrimVar();
+			
+      /*--- Pass conserved & primitive variables to CNumerics ---*/
+      conv_numerics->SetConservative(U_domain, U_infty);
+      conv_numerics->SetPrimitive(V_domain, V_infty);
       
-			/*--- Construct solution state at infinity (farfield) ---*/
-      U_infty[0] = GetDensity_Inf();
-      for (iDim = 0; iDim < nDim; iDim++)
-        U_infty[iDim+1] = GetDensity_Velocity_Inf(iDim);
-      U_infty[nDim+1] = GetDensity_Energy_Inf();
-      
-      V_infty[0] = GetPressure_Inf() / ( Gas_Constant * GetDensity_Inf());
-      for (iDim = 0; iDim < nDim; iDim++)
-        V_infty[iDim+1] = GetVelocity_Inf(iDim);
-      V_infty[nDim+1] = GetPressure_Inf();
-      V_infty[nDim+2] = GetDensity_Inf();
-      
-      
-			/*--- Set various quantities in the solver class ---*/
-			conv_numerics->SetConservative(U_domain, U_infty);
-      
-			if (grid_movement) {
-				conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
-			}
-      
-			/*--- Compute the convective residual residual using an upwind scheme ---*/
+			/*--- Compute the convective residual (and Jacobian) ---*/
+      // Note: This uses the specified boundary num. method specified in definition_structure.cpp
 			conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
       LinSysRes.AddBlock(iPoint, Residual);
-      
-			/*--- Jacobian contribution for implicit integration ---*/
 			if (implicit)
 				Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
-			/*--- Roe Turkel preconditioning, set the value of beta ---*/
-			if ((config->GetKind_Upwind() == ROE_TURKEL_2ND) || (config->GetKind_Upwind() == ROE_TURKEL_1ST)) {
-				node[iPoint]->SetPreconditioner_Beta(conv_numerics->GetPrecond_Beta());
-			}
-      
 			/*--- Viscous contribution ---*/
 			if (viscous) {
-        
-				/*--- Set the normal vector and the coordinates ---*/
-				visc_numerics->SetNormal(Normal);
-				visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
-        
-				/*--- Primitive variables, and gradient ---*/
-				visc_numerics->SetPrimitive(V_domain, V_infty);
-				visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
-        
-				/*--- Laminar viscosity ---*/
-				visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(), node[iPoint]->GetLaminarViscosity());
-        
-				/*--- Compute and update residual ---*/
-				visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-        LinSysRes.SubtractBlock(iPoint, Residual);
-        
-				/*--- Jacobian contribution for implicit integration ---*/
-				if (implicit)
-					Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-        
+        cout << "WARNING!!!  BC_Far_Field: Viscous contribution to boundary not implemented!" << endl;
 			}
-      
 		}
 	}
   
 	/*--- Free locally allocated memory ---*/
-	delete [] U_domain;
-	delete [] U_infty;
-  delete [] V_domain;
-	delete [] V_infty;
 	delete [] Normal;
-  
 }
 
 void CTNE2EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_container,
@@ -2533,56 +2576,127 @@ void CTNE2EulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **soluti
 }
 
 void CTNE2EulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  unsigned short iDim, jDim, iSpecies, jSpecies, iVar, jVar;
 	unsigned long iPoint, iVertex;
-	unsigned short iDim, iVar;
-	double Pressure, *Normal;
+  bool implicit;
+  double *Normal, *UnitaryNormal, *Ms, *dPdrhos;
+  double Area, rhoCvtr, rhoCvve, rho_el, Ru, a2, phi;
+  double rho, cs, u, v, w, P, rhoE, rhoEve, conc;
   
-	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+  /*--- Allocate arrays ---*/
+  UnitaryNormal = new double[3];
   
-	/*--- Loop over all the vertices ---*/
+  /*--- Set booleans based on configuration options ---*/
+	implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+  
+  /*--- Load parameters from the config class ---*/
+  Ms = config->GetMolar_Mass();
+  
+  /*--- Rename for convenience ---*/
+  Ru = UNIVERSAL_GAS_CONSTANT;
+  
+	/*--- Loop over all the vertices on this boundary (val_marker) ---*/
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
-		/*--- If the node belong to the domain ---*/
+		/*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 		if (geometry->node[iPoint]->GetDomain()) {
       
-			/*--- Compute the projected residual ---*/
+			/*--- Calculate parameters from the geometry ---*/
+      // Note: The vertex normal points out of the geometry by convention,
+      //       so to calculate the influence from the boundary condition
+      //       to the domain, we negate this vector
+      Area   = 0.0;
 			Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-      
-			double Area = 0.0; double UnitaryNormal[3];
-			for (iDim = 0; iDim < nDim; iDim++)
-				Area += Normal[iDim]*Normal[iDim];
+			for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
 			Area = sqrt (Area);
+			for (iDim = 0; iDim < nDim; iDim++) UnitaryNormal[iDim] = -Normal[iDim]/Area;
       
+			/*--- Retrieve the pressure on the vertex ---*/
+      P   = node[iPoint]->GetPressure();
+      
+      /*--- Apply the flow-tangency b.c. to the convective flux ---*/
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        Residual[iSpecies] = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++)
-				UnitaryNormal[iDim] = -Normal[iDim]/Area;
-      
-			Pressure = node[iPoint]->GetPressure(false);
-      
-			/*--- Set the residual using the pressure ---*/
-			Residual[0] = 0.0;
-			for (iDim = 0; iDim < nDim; iDim++)
-				Residual[iDim+1] = Pressure*UnitaryNormal[iDim]*Area;
-			Residual[nVar-1] = 0.0;
+				Residual[nSpecies+iDim] = P * UnitaryNormal[iDim] * Area;
+      Residual[nSpecies+nDim]   = 0.0;
+			Residual[nSpecies+nDim+1] = 0.0;
       
 			/*--- Add value to the residual ---*/
-      LinSysRes.AddBlock(iPoint, Residual);
+			LinSysRes.AddBlock(iPoint, Residual);
       
-			/*--- In case we are doing a implicit computation ---*/
+			/*--- If using implicit time-stepping, calculate b.c. contribution to Jacobian ---*/
 			if (implicit) {
-        double a2 = Gamma-1.0;
-        double phi = 0.5*a2*node[iPoint]->GetVelocity2();
+        rho     = node[iPoint]->GetDensity();
+        u       = node[iPoint]->GetVelocity(0, false);
+        v       = node[iPoint]->GetVelocity(1, false);
+        w       = node[iPoint]->GetVelocity(2, false);
+        rhoCvtr = node[iPoint]->GetRhoCv_tr();
+        rhoCvve = node[iPoint]->GetRhoCv_ve();
+        rhoE    = node[iPoint]->GetSolution(nSpecies+nDim);
+        rhoEve  = node[iPoint]->GetSolution(nSpecies+nDim+1);
         
-        for (iVar = 0; iVar < nVar; iVar++) {
-          Jacobian_i[0][iVar] = 0.0;
-          Jacobian_i[nDim+1][iVar] = 0.0;
+        /*--- If free electrons are present, retrieve the electron gas density ---*/
+        if (config->GetIonization()) rho_el = node[iPoint]->GetMassFraction(nSpecies-1) * rho;
+        else rho_el = 0.0;
+        
+        conc = 0.0;
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          cs    = node[iPoint]->GetMassFraction(iSpecies);
+          conc += cs * rho/Ms[iSpecies];
+          for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+            Jacobian_i[iSpecies][jSpecies] = 0.0;
+          }
+          Jacobian_i[nSpecies][iSpecies]   = dPdrhos[iSpecies] * UnitaryNormal[0];
+          Jacobian_i[nSpecies+1][iSpecies] = dPdrhos[iSpecies] * UnitaryNormal[1];
+          Jacobian_i[nSpecies+2][iSpecies] = dPdrhos[iSpecies] * UnitaryNormal[2];
+          Jacobian_i[nSpecies+3][iSpecies] = 0.0;
+          Jacobian_i[nSpecies+4][iSpecies] = 0.0;
+          
+          Jacobian_i[iSpecies][nSpecies]   = cs * UnitaryNormal[0];
+          Jacobian_i[iSpecies][nSpecies+1] = cs * UnitaryNormal[1];
+          Jacobian_i[iSpecies][nSpecies+2] = cs * UnitaryNormal[2];
+          Jacobian_i[iSpecies][nSpecies+3] = 0.0;
+          Jacobian_i[iSpecies][nSpecies+4] = 0.0;
         }
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Jacobian_i[iDim+1][0] = -phi*Normal[iDim];
-          for (unsigned short jDim = 0; jDim < nDim; jDim++)
-            Jacobian_i[iDim+1][jDim+1] = a2*node[iPoint]->GetVelocity(jDim, false)*Normal[iDim];
-          Jacobian_i[iDim+1][nDim+1] = -a2*Normal[iDim];
-        }
+        
+        Jacobian_i[nSpecies][nSpecies]     = u*UnitaryNormal[0] - (u*Ru*conc/rhoCvtr)*UnitaryNormal[0];
+        Jacobian_i[nSpecies][nSpecies+1]   = u*UnitaryNormal[1] - (v*conc*Ru/rhoCvtr)*UnitaryNormal[0];
+        Jacobian_i[nSpecies][nSpecies+2]   = u*UnitaryNormal[2] - (w*conc*Ru/rhoCvtr)*UnitaryNormal[0];
+        Jacobian_i[nSpecies][nSpecies+3]   = (conc*Ru/rhoCvtr)*UnitaryNormal[0];
+        Jacobian_i[nSpecies][nSpecies+4]   = (-conc*Ru/rhoCvtr + (rho_el/Ms[nSpecies-1])*Ru/rhoCvve)*UnitaryNormal[0];
+        
+        Jacobian_i[nSpecies+1][nSpecies]   = v*UnitaryNormal[0] - (u*Ru*conc/rhoCvtr)*UnitaryNormal[1];
+        Jacobian_i[nSpecies+1][nSpecies+1] = v*UnitaryNormal[1] - (v*conc*Ru/rhoCvtr)*UnitaryNormal[1];
+        Jacobian_i[nSpecies+1][nSpecies+2] = v*UnitaryNormal[2] - (w*conc*Ru/rhoCvtr)*UnitaryNormal[1];
+        Jacobian_i[nSpecies+1][nSpecies+3] = (conc*Ru/rhoCvtr)*UnitaryNormal[1];
+        Jacobian_i[nSpecies+1][nSpecies+4] = (-conc*Ru/rhoCvtr * (rho_el/Ms[nSpecies-1])*Ru/rhoCvve)*UnitaryNormal[1];
+        
+        Jacobian_i[nSpecies+2][nSpecies]   = w*UnitaryNormal[0] - (u*Ru*conc/rhoCvtr)*UnitaryNormal[2];
+        Jacobian_i[nSpecies+2][nSpecies+1] = w*UnitaryNormal[1] - (v*conc*Ru/rhoCvtr)*UnitaryNormal[2];
+        Jacobian_i[nSpecies+2][nSpecies+2] = w*UnitaryNormal[2] - (w*conc*Ru/rhoCvtr)*UnitaryNormal[2];
+        Jacobian_i[nSpecies+2][nSpecies+3] = (conc*Ru/rhoCvtr)*UnitaryNormal[2];
+        Jacobian_i[nSpecies+2][nSpecies+4] = (-conc*Ru/rhoCvtr * (rho_el/Ms[nSpecies-1])*Ru/rhoCvve)*UnitaryNormal[2];
+        
+        Jacobian_i[nSpecies+3][nSpecies]   = (rhoE+P)/rho * UnitaryNormal[0];
+        Jacobian_i[nSpecies+3][nSpecies+1] = (rhoE+P)/rho * UnitaryNormal[1];
+        Jacobian_i[nSpecies+3][nSpecies+2] = (rhoE+P)/rho * UnitaryNormal[2];
+        Jacobian_i[nSpecies+3][nSpecies+3] = 0.0;
+        Jacobian_i[nSpecies+3][nSpecies+4] = 0.0;
+        
+        Jacobian_i[nSpecies+4][nSpecies]   = rhoEve/rho * UnitaryNormal[0];
+        Jacobian_i[nSpecies+4][nSpecies+1] = rhoEve/rho * UnitaryNormal[1];
+        Jacobian_i[nSpecies+4][nSpecies+2] = rhoEve/rho * UnitaryNormal[2];
+        Jacobian_i[nSpecies+4][nSpecies+3] = 0.0;
+        Jacobian_i[nSpecies+4][nSpecies+4] = 0.0;
+        
+        /*--- Integrate over the dual-grid area ---*/
+        for (iVar = 0; iVar < nVar; iVar++)
+          for (jVar = 0; jVar < nVar; jVar++)
+            Jacobian_i[iVar][jVar] = Jacobian_i[iVar][jVar] * Area;
+        
+        /*--- Apply the contribution to the system ---*/
         Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
 			}
 		}

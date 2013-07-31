@@ -710,6 +710,13 @@ public:
 	 * \return Value of the flow density.
 	 */
 	virtual double GetDensity(unsigned short val_iSpecies);
+  
+  /*!
+	 * \brief A virtual member.
+   * \param[in] val_Species - Index of species s.
+	 * \return Value of the mass fraction of species s.
+	 */
+	virtual double GetMassFraction(unsigned short val_Species);
 
 	/*!
 	 * \brief A virtual member.
@@ -834,6 +841,18 @@ public:
 	 * \param[in] iSpecies - Index of species for desired TR temperature.
 	 */
 	virtual double GetTemperature_vib(unsigned short iSpecies);
+  
+  /*!
+   * \brief A virtual member -- Get the mixture specific heat at constant volume (trans.-rot.).
+   * \return \f$\rho C^{t-r}_{v} \f$
+   */
+  virtual double GetRhoCv_tr(void);
+  
+  /*!
+   * \brief A virtual member -- Get the mixture specific heat at constant volume (vib.-el.).
+   * \return \f$\rho C^{v-e}_{v} \f$
+   */
+  virtual double GetRhoCv_ve(void);
 
 	/*!
 	 * \brief A virtual member.
@@ -1078,6 +1097,17 @@ public:
 	 * \brief A virtual member.
 	 */
 	virtual void SetPressure(void);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] config - Configuration settings
+	 */
+	virtual void SetdPdrhos(CConfig *config);
+  
+  /*!
+	 * \brief A virtual member.
+	 */
+	virtual double *GetdPdrhos(void);  
   
   /*!
 	 * \brief A virtual member.
@@ -3496,7 +3526,8 @@ protected:
 	/*--- Primitive variable definition ---*/
 	double *Primitive;	/*!< \brief Primitive variables (T,vx,vy,vz,P,rho,h,c) in compressible flows. */
 	double **Gradient_Primitive;	/*!< \brief Gradient of the primitive variables (T,vx,vy,vz,P,rho). */
-  double *Limiter_Primitive;    /*!< \brief Limiter of the primitive variables (T,vx,vy,vz,P,rho). */  
+  double *Limiter_Primitive;    /*!< \brief Limiter of the primitive variables (T,vx,vy,vz,P,rho). */
+  double *dPdrhos;      /*!< \brief Partial derivative of pressure w.r.t. species densities. */
   
   unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
   RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
@@ -3614,6 +3645,16 @@ public:
    */
   void SetGasProperties(CConfig *config);
 	
+  /*!
+   * \brief Set partial derivative of pressure w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
+   */
+  void SetdPdrhos(CConfig *config);
+  
+  /*!
+   * \brief Set partial derivative of pressure w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
+   */
+  double *GetdPdrhos(void);
+  
 	/*!
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
@@ -3682,6 +3723,13 @@ public:
 	 */
 	double GetDensity(void);
   
+  /*!
+	 * \brief Get the mass fraction \f$\rho_s / \rho \f$ of species s.
+   * \param[in] val_Species - Index of species s.
+	 * \return Value of the mass fraction of species s.
+	 */
+	double GetMassFraction(unsigned short val_Species);
+  
 	/*!
 	 * \brief Get the energy of the flow.
 	 * \return Value of the energy of the flow.
@@ -3699,6 +3747,18 @@ public:
 	 * \return Value of the vibrational-electronic temperature.
 	 */
 	double GetTemperature_ve(void);
+  
+  /*!
+   * \brief Get the mixture specific heat at constant volume (trans.-rot.).
+   * \return \f$\rho C^{t-r}_{v} \f$
+   */
+  double GetRhoCv_tr(void);
+  
+  /*!
+   * \brief Get the mixture specific heat at constant volume (vib.-el.).
+   * \return \f$\rho C^{v-e}_{v} \f$
+   */
+  double GetRhoCv_ve(void);
   
 	/*!
 	 * \brief Get the velocity of the flow.
@@ -3737,6 +3797,12 @@ public:
 	 * \param[in] Value of the low Mach preconditioner variable Beta
 	 */
 	void SetPreconditioner_Beta(double val_Beta);
+  
+  /*!
+	 * \brief Retrieves the value of the species density in the primitive variable vector.
+	 * \param[in] iRho_s
+	 */
+  unsigned short GetRhosIndex(void);
   
 };
 

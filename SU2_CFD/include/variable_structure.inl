@@ -35,6 +35,8 @@ inline double CVariable::GetDiffLevelSet(void) { return 0; }
 
 inline double CVariable::GetDensityInc(void) { return 0; }
 
+inline double CVariable::GetMassFraction(unsigned short val_Species) { return 0; }
+
 inline double CVariable::GetProjVelInc(double *val_vector) { return 0; }
 
 inline void CVariable::SetSolution(unsigned short val_var, double val_solution) { Solution[val_var] = val_solution; }
@@ -217,6 +219,10 @@ inline double CVariable::GetTemperature(void) { return 0; }
 
 inline double CVariable::GetTemperature_ve(void) { return 0; }
 
+inline double CVariable::GetRhoCv_tr(void) { return 0; }
+
+inline double CVariable::GetRhoCv_ve(void) { return 0; }
+
 inline double CVariable::GetTemperature_tr(unsigned short val_iSpecies) { return 0; }
 
 inline double CVariable::GetTemperature_vib(unsigned short val_iSpecies) { return 0; }
@@ -298,6 +304,10 @@ inline bool CVariable::SetPressure(CConfig *config) { return false; }
 inline bool CVariable::SetPressure(double Gamma, double turb_ke) { return false; }
 
 inline void CVariable::SetPressure() { }
+
+inline void CVariable::SetdPdrhos(CConfig *config) { }
+
+inline double *CVariable::GetdPdrhos() { return NULL; }
 
 inline void CVariable::SetDensity() { }
 
@@ -768,6 +778,10 @@ inline double *CAdjTurbVariable::GetEddyViscSens(void) { return EddyViscSens; }
 
 inline double CTNE2EulerVariable::GetDensity(void) { return Primitive[RHO_INDEX]; }
 
+inline double CTNE2EulerVariable::GetMassFraction(unsigned short val_Species) {
+    return Primitive[RHOS_INDEX+val_Species] / Primitive[RHO_INDEX]; 
+}
+
 inline double CTNE2EulerVariable::GetEnergy(void) { return Solution[nSpecies+nDim]/Primitive[RHO_INDEX]; };
 
 inline double CTNE2EulerVariable::GetEnthalpy(void) { return Primitive[H_INDEX]; }
@@ -780,11 +794,17 @@ inline double CTNE2EulerVariable::GetTemperature(void) { return Primitive[T_INDE
 
 inline double CTNE2EulerVariable::GetTemperature_ve(void) { return Primitive[TVE_INDEX]; }
 
+inline double CTNE2EulerVariable::GetRhoCv_tr(void) { return Primitive[RHOCVTR_INDEX]; }
+
+inline double CTNE2EulerVariable::GetRhoCv_ve(void) { return Primitive[RHOCVVE_INDEX]; }
+
 inline double CTNE2EulerVariable::GetVelocity(unsigned short val_dim, bool val_incomp) {
 double velocity;
    velocity = Solution[nSpecies+val_dim]/Primitive[RHO_INDEX]; 
 return velocity;
 }
+
+inline double *CTNE2EulerVariable::GetdPdrhos(void) { return dPdrhos; }
 
 inline double CTNE2EulerVariable::GetVelocity2(void) { return Velocity2; }
 
@@ -820,6 +840,8 @@ inline double **CTNE2EulerVariable::GetGradient_Primitive(void) { return Gradien
 inline double CTNE2EulerVariable::GetPreconditioner_Beta() { return Precond_Beta; }
 
 inline void CTNE2EulerVariable::SetPreconditioner_Beta(double val_Beta) { Precond_Beta = val_Beta; }
+
+inline unsigned short CTNE2EulerVariable::GetRhosIndex(void) { return RHOS_INDEX; }
 
 inline double CTNE2NSVariable::GetLaminarViscosity(void) { return LaminarViscosity; }
 

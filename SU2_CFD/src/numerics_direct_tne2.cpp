@@ -90,7 +90,6 @@ CUpwRoe_TNE2::~CUpwRoe_TNE2(void) {
 void CUpwRoe_TNE2::ComputeResidual(double *val_residual, double **val_Jacobian_i,
                                    double **val_Jacobian_j, CConfig *config) {
   
-  // NOTE: VIBRATIONAL TEMPERATURES NOT BEING CALCULATED CORRECTLY!!!  Cv-VE NOT INCLUDING ELECTRONIC STATES!!!
   unsigned short iDim, iSpecies, iVar, jVar, kVar;
   double *hf, *Tref, *rotmodes, *molarmass, *charvibtemp;
   double DensityMix_i, DensityMix_j, DensityEnergyForm, DensityEnergyRef;
@@ -121,14 +120,28 @@ void CUpwRoe_TNE2::ComputeResidual(double *val_residual, double **val_Jacobian_i
   Pressure_j       = V_j[nSpecies+nDim+2];
   Enthalpy_i       = V_i[nSpecies+nDim+4];
   Enthalpy_j       = V_j[nSpecies+nDim+4];
+  DensityMix_i     = V_i[nSpecies+3];
+  DensityMix_j     = V_j[nSpecies+3];
+  
   Temperature_i    = V_i[nSpecies];
   Temperature_j    = V_j[nSpecies];
   Temperature_ve_i = V_i[nSpecies+1];
   Temperature_ve_j = V_j[nSpecies+1];
-  DensityMix_i     = V_i[nSpecies+3];
-  DensityMix_j     = V_j[nSpecies+3];
   
   
+  /*--- Compute Proj_flux_tensor_i ---*/
+  GetInviscidProjFlux(Density_i, Velocity_i, &Pressure_i, &Enthalpy_i, &Energy_ve_i, Normal, Proj_flux_tensor_i);
+  
+  /*--- Compute Proj_flux_tensor_j ---*/
+  GetInviscidProjFlux(Density_j, Velocity_j, &Pressure_j, &Enthalpy_j, &Energy_ve_j, Normal, Proj_flux_tensor_j);
+  
+  /*--- Compute projected P, invP, and Lambda ---*/
+  GetPMatrix(RoeDensity, RoeVelocity, &RoeEnthalpy, &RoeEnergy_ve, &RoeSoundSpeed, dPdrhos,
+             dPdrhoE, dPdrhoEve, UnitaryNormal, l, m, P_Tensor);
+  GetPMatrix_inv(RoeDensity, RoeVelocity, &RoeEnergy_ve, &RoeSoundSpeed, dPdrhos,
+                 dPdrhoE, dPdrhoEve, UnitaryNormal, l, m, invP_Tensor);
+  
+  /////////////////////////////
   /*--- Roe-averaged variables at interface between i & j ---*/
   dPdrhoE = 0.0;
   dPdrhoEve = 0.0;

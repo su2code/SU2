@@ -452,7 +452,6 @@ bool CTNE2EulerVariable::SetPressure(CConfig *config) {
   else return true;
 }
 
-
 bool CTNE2EulerVariable::SetSoundSpeed(CConfig *config) {
   
   // NOTE: Requires SetDensity(), SetTemperature(), SetPressure(), & SetGasProperties().
@@ -484,6 +483,53 @@ bool CTNE2EulerVariable::SetSoundSpeed(CConfig *config) {
   if (radical < 0.0) return true;
   else { Primitive[A_INDEX] = sqrt(radical); return false; }
 }
+
+void CTNE2EulerVariable::SetdPdrhos(CConfig *config) {
+
+  // Note: Requires SetDensity(), SetTemperature(), SetPressure(), & SetGasProperties()
+  
+  unsigned short iDim, iSpecies, nHeavy, nEl;
+  double *Ms;
+  double Ru, conc, dPdrhoE, dPdrhoEve, rho_el, sqvel;
+  double T, Tve, E, Eve;
+  
+  /*--- Determine the number of heavy species ---*/
+  if (ionization) {
+    nHeavy = nSpecies-1;
+    nEl    = 1;
+    rho_el = Primitive[RHOS_INDEX+nSpecies-1];
+  } else {
+    nHeavy = nSpecies;
+    nEl    = 0;
+    rho_el = 0.0;
+  }
+  
+  /*--- Read gas mixture properties from config ---*/
+  Ms = config->GetMolar_Mass();
+  
+  /*--- Rename for convenience ---*/
+  Ru  = UNIVERSAL_GAS_CONSTANT;
+  T   = Primitive[T_INDEX];
+  Tve = Primitive[TVE_INDEX];
+  
+  /*--- Pre-compute useful quantities ---*/
+  conc  = 0.0;
+  sqvel = 0.0;
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    conc += Primitive[RHOS_INDEX+iSpecies]/Ms[iSpecies];
+  }
+  for (iDim = 0; iDim < nDim; iDim++)
+    sqvel += Primitive[VEL_INDEX+iDim] * Primitive[VEL_INDEX+iDim];
+  
+  dPdrhoE   =  conc*Ru/Primitive[RHOCVTR_INDEX];
+  dPdrhoEve = -conc*Ru/Primitive[RHOCVTR_INDEX]
+             + rho_el*(Ru/Ms[nSpecies-1])/Primitive[RHOCVVE_INDEX];
+  
+  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+    dPdrhos[iSpecies] = T*Ru/Ms[iSpecies] + 0.5*dPdrhoE*sqvel - dPdrhoE*E - dPdrhoEve*Eve;
+  } 
+}
+
 
 void CTNE2EulerVariable::SetPrimVar_Compressible(CConfig *config) {
 	unsigned short iDim, iVar, iSpecies;

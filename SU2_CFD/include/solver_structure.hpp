@@ -6612,7 +6612,8 @@ public:
  */
 class CTNE2EulerSolver : public CSolver {
 protected:
-  unsigned short nSpecies;	/*!< \brief Number of dimensions of the problem. */
+  unsigned short nSpecies;	/*!< \brief Number of species in the gas mixture. */
+  unsigned short nPrimVar;  /*!< \brief Number of primitive variables. */
 	double Mach_Inf,	/*!< \brief Mach number at the infinity. */
 	Mach_Inlet,		/*!< \brief Mach number at the inlet. */
 	Mach_Outlet,		/*!< \brief Mach number at the outlet. */
@@ -6676,6 +6677,7 @@ protected:
 	least_squares;        /*!< \brief True if computing gradients by least squares. */
 	double Gamma;									/*!< \brief Fluid's Gamma constant (ratio of specific heats). */
 	double Gamma_Minus_One;				/*!< \brief Fluids's Gamma - 1.0  . */
+  CVariable *node_infty;     /*!< \brief CVariable that stores the free-stream values. */
   
 public:
   
