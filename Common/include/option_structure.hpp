@@ -560,11 +560,11 @@ enum GEOMETRY_ACTION {
  * \brief types of action to perform when doing the geometry evaluation
  */
 enum GEOMETRY_MODE {
-	ANALYSIS = 0,     /*!<  \brief Geometrical analysis. */
+	FUNCTION = 0,     /*!<  \brief Geometrical analysis. */
 	GRADIENT = 1      /*!<  \brief Geometrical analysis and gradient using finite differences. */
 };
 static const map<string, GEOMETRY_MODE> GeometryMode_Map = CCreateMap<string, GEOMETRY_MODE>
-("ANALYSIS", ANALYSIS)
+("FUNCTION", FUNCTION)
 ("GRADIENT", GRADIENT);
 
 /*!

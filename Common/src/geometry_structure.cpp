@@ -7632,7 +7632,7 @@ void CBoundaryGeometry::SetBoundSensitivity(CConfig *config) {
 void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config,
                                                vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil,
                                                vector<double> &Zcoord_Airfoil, bool original_surface) {
-  unsigned short iMarker, iNode, jNode, iDim, intersect, iLoop;
+  unsigned short iMarker, iNode, jNode, iDim, intersect;
   long MinDist_Point, MinDistAngle_Point;
 	unsigned long iPoint, jPoint, iElem, Trailing_Point, Airfoil_Point, iVertex, jVertex, n;
   double Segment_P0[3] = {0.0, 0.0, 0.0}, Segment_P1[3] = {0.0, 0.0, 0.0}, Intersection[3] = {0.0, 0.0, 0.0}, Trailing_Coord, MinDist_Value, MinDistAngle_Value, Dist_Value,
@@ -7937,27 +7937,29 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
     }
     
     /*--- Write the output file (tecplot format) ---*/
-    ofstream Tecplot_File;
-    if (iSection == 0) Tecplot_File.open("Airfoil_Sections.plt", ios::out);
-    else Tecplot_File.open("Airfoil_Sections.plt", ios::app);
-    
-    if (iSection == 0) {
-      Tecplot_File << "TITLE = \"Wing airfoil sections\"" << endl;
-      Tecplot_File << "VARIABLES = \"X\",\"Y\",\"Z\"" << endl;
+    if (original_surface == true) {
+      ofstream Tecplot_File;
+      if (iSection == 0) Tecplot_File.open("Airfoil_Sections.plt", ios::out);
+      else Tecplot_File.open("Airfoil_Sections.plt", ios::app);
+      
+      if (iSection == 0) {
+        Tecplot_File << "TITLE = \"Wing airfoil sections\"" << endl;
+        Tecplot_File << "VARIABLES = \"X\",\"Y\",\"Z\"" << endl;
+      }
+      
+      Tecplot_File << "ZONE T=\"SECTION_"<< (iSection+1) << "\", NODES= "<< Xcoord_Airfoil.size() << ", ELEMENTS= " << Xcoord_Airfoil.size()-1 << ", DATAPACKING= POINT, ZONETYPE= FELINESEG" << endl;
+      
+      /*--- Coordinates ---*/
+      for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+        Tecplot_File << Xcoord_Airfoil[iVertex] <<" "<< Ycoord_Airfoil[iVertex] <<" "<< Zcoord_Airfoil[iVertex] << endl;
+      }
+      /*--- Conectivity ---*/
+      for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+        Tecplot_File << iVertex << "\t" << iVertex+1 << "\n";
+      }
+      
+      Tecplot_File.close();
     }
-    
-    Tecplot_File << "ZONE T=\"SECTION_"<< (iSection+1) << "\", NODES= "<< Xcoord_Airfoil.size() << ", ELEMENTS= " << Xcoord_Airfoil.size()-1 << ", DATAPACKING= POINT, ZONETYPE= FELINESEG" << endl;
-    
-    /*--- Coordinates ---*/
-    for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-      Tecplot_File << Xcoord_Airfoil[iVertex] <<" "<< Ycoord_Airfoil[iVertex] <<" "<< Zcoord_Airfoil[iVertex] << endl;
-    }
-    /*--- Conectivity ---*/
-    for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-      Tecplot_File << iVertex << "\t" << iVertex+1 << "\n";
-    }
-    
-    Tecplot_File.close();
     
   }
   
@@ -8005,7 +8007,7 @@ unsigned short CBoundaryGeometry::ComputeSegmentPlane_Intersection(double *Segme
 
 }
 
-double CBoundaryGeometry::Compute_MaxThickness(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil) {
+double CBoundaryGeometry::Compute_MaxThickness(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface) {
 	unsigned long iVertex, jVertex, n;
 	double Normal[3], Tangent[3], BiNormal[3], auxXCoord, auxYCoord, auxZCoord, zp1, zpn, MaxThickness_Value = 0, MaxThickness_Location, Thickness, Length, Xcoord_Trailing, Ycoord_Trailing, Zcoord_Trailing, ValCos, ValSin, XValue, ZValue;
 	vector<double> Xcoord, Ycoord, Zcoord, Z2coord, Xcoord_Normal, Ycoord_Normal, Zcoord_Normal, Xcoord_Airfoil_, Ycoord_Airfoil_, Zcoord_Airfoil_;
@@ -8112,7 +8114,9 @@ double CBoundaryGeometry::Compute_MaxThickness(double *Plane_P0, double *Plane_N
       }
     }
     
-    cout << "Section " << (iSection+1) << ". Plane (yCoord): " << Plane_P0[1] << ". Rel. AoA: " << Relative_AoA << "deg. MaxThickness: " << MaxThickness_Value << "." << endl;
+    if (original_surface == true) {
+      cout << "Section " << (iSection+1) << ". Plane (yCoord): " << Plane_P0[1] << ". Rel. AoA: " << Relative_AoA << "deg. MaxThickness: " << MaxThickness_Value << "." << endl;
+    }
     
   }
   

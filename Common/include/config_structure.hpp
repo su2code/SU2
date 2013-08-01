@@ -448,7 +448,7 @@ private:
 	Adj_FileName,					/*!< \brief Output file with the adjoint variables. */
 	Lin_FileName,					/*!< \brief Output file with the linearized variables. */
 	ObjFunc_Grad_FileName,			/*!< \brief Gradient of the objective function. */
-	ObjFunc_Eval_FileName,			/*!< \brief Objective function. */
+	ObjFunc_Value_FileName,			/*!< \brief Objective function. */
 	SurfFlowCoeff_FileName,			/*!< \brief Output file with the flow variables on the surface. */
 	SurfAdjCoeff_FileName,			/*!< \brief Output file with the adjoint variables on the surface. */
 	SurfLinCoeff_FileName,			/*!< \brief Output file with the linearized variables on the surface. */
@@ -3256,7 +3256,7 @@ public:
 	 * \brief Get the name of the file with the gradient of the objective function.
 	 * \return Name of the file with the gradient of the objective function.
 	 */
-	string GetObjFunc_Eval_FileName(void);
+	string GetObjFunc_Value_FileName(void);
 
 	/*! 
 	 * \brief Get the name of the file with the surface information for the flow problem.

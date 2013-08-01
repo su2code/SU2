@@ -28,9 +28,10 @@ int main(int argc, char *argv[]) {
   
   /*--- Local variables ---*/
 	unsigned short iDV, nZone = 1, iFFDBox, iPlane, nPlane = 5;
-	double ObjectiveFunc, ObjectiveFunc_New, Gradient, delta_eps, Plane_P0[3] = {0.0, 0.0, 0.0}, Plane_Normal[3] = {0.0, 1.0, 0.0}, Max_Thickness[100], MinPlane, MaxPlane;
-  vector<double> Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil;
-
+	double ObjectiveFunc[5], ObjectiveFunc_New[5], Gradient[5], delta_eps, Max_Thickness[100], MinPlane, MaxPlane;
+  vector<double> Xcoord_Airfoil[5], Ycoord_Airfoil[5], Zcoord_Airfoil[5];
+  double Plane_P0[5][3] = {0.0, 0.0, 0.0}, Plane_Normal[5][3];
+  
 	char *cstr;
 	ofstream Gradient_file, ObjFunc_file;
 	int rank = MASTER_NODE;
@@ -66,9 +67,6 @@ int main(int argc, char *argv[]) {
 	/*--- Definition of the Class for the boundary of the geometry ---*/
 	boundary = new CBoundaryGeometry(config, config->GetMesh_FileName(), config->GetMesh_FileFormat());
   
-  /*--- Perform the non-dimensionalization, in case any values are needed ---*/
-  config->SetNondimensionalization(boundary->GetnDim(), ZONE_0);
-  
 	if (rank == MASTER_NODE)
 		cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
 	
@@ -80,66 +78,86 @@ int main(int argc, char *argv[]) {
 	if (rank == MASTER_NODE) cout << "Set boundary control volume structure." << endl;
 	boundary->SetBoundControlVolume(config, ALLOCATE);
 	
-
-  /*--- Evaluate objective function ---*/
-  if (boundary->GetnDim() == 2) {
+	/*--- Create airfoil section structure ---*/
+  if (boundary->GetnDim() == 3) {
     
-    /*--- The 2D geometrical constraints are not defined in parallel ---*/
-    if ((rank == MASTER_NODE) && (size == 1)) {
-      switch (config->GetKind_GeoObjFunc()) {
-        case MAX_THICKNESS :
-          ObjectiveFunc = boundary->GetMaxThickness(config, true);
-          cout << "Maximum thickness: "<< ObjectiveFunc << "." << endl;
-          break;
-        case MIN_THICKNESS :
-          ObjectiveFunc = boundary->GetMinThickness(config, true);
-          cout << "Minimum thickness: "<< ObjectiveFunc << "." << endl;
-          break;
-        case TOTAL_VOLUME :
-          ObjectiveFunc = boundary->GetTotalVolume(config, true);
-          cout << "Total volume: "<< ObjectiveFunc << "." << endl;
-          break;
-        case CLEARANCE :
-          ObjectiveFunc = boundary->GetClearance(config, true);
-          cout << "Clearance: "<< ObjectiveFunc << "." << endl;
-          break;
-      }
-    }
-    else {
-      cout << "The 2D geometrical constraints are not defined in parallel!!!!!" << endl;
-      exit(1);
-    }
+    if (rank == MASTER_NODE) cout << "Set airfoil section structure." << endl;
+    MinPlane = config->GetSection_Limit(0); MaxPlane = config->GetSection_Limit(1);
     
-  }
-  else if (boundary->GetnDim() == 3) {
-    
-    MinPlane = config->GetSection_Limit(0);
-    MaxPlane = config->GetSection_Limit(1);
-
-    /*--- Create airfoil structure and compute the thickness ---*/
     for (iPlane = 0; iPlane < nPlane; iPlane++) {
-      Plane_P0[1] = MinPlane + iPlane*(MaxPlane - MinPlane)/double(nPlane-1);
-      boundary->ComputeAirfoil_Section(Plane_P0, Plane_Normal, iPlane, config, Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil, true);
-      Max_Thickness[iPlane] = boundary->Compute_MaxThickness(Plane_P0, Plane_Normal, iPlane, Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil);
-    }
-    
-    switch (config->GetKind_GeoObjFunc()) {
-      case MAX_THICK_SEC1 : ObjectiveFunc = Max_Thickness[0]; break;
-      case MAX_THICK_SEC2 : ObjectiveFunc = Max_Thickness[1]; break;
-      case MAX_THICK_SEC3 : ObjectiveFunc = Max_Thickness[2]; break;
-      case MAX_THICK_SEC4 : ObjectiveFunc = Max_Thickness[3]; break;
-      case MAX_THICK_SEC5 : ObjectiveFunc = Max_Thickness[4]; break;
+      
+      Plane_P0[iPlane][0] = 0.0;
+      Plane_P0[iPlane][1] = MinPlane + iPlane*(MaxPlane - MinPlane)/double(nPlane-1);
+      Plane_P0[iPlane][2] = 0.0;
+      
+      Plane_Normal[iPlane][0] = 0.0;
+      Plane_Normal[iPlane][1] = 1.0;
+      Plane_Normal[iPlane][2] = 0.0;
+      
+      boundary->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, config,
+                                       Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
     }
     
   }
-	
-	/*--- Write the objective function in a external file ---*/
-	if (rank == MASTER_NODE) {
-		cstr = new char [config->GetObjFunc_Eval_FileName().size()+1];
-		strcpy (cstr, config->GetObjFunc_Eval_FileName().c_str());
+  
+  if (rank == MASTER_NODE) {
+    
+    /*--- Evaluate objective function ---*/
+    if (boundary->GetnDim() == 2) {
+      
+      /*--- The 2D geometrical constraints are not defined in parallel ---*/
+      if (size == 1) {
+        
+        ObjectiveFunc[0] = boundary->GetMaxThickness(config, true);
+        ObjectiveFunc[1] = boundary->GetTotalVolume(config, true);
+        
+        cout << "Maximum thickness: "<< ObjectiveFunc[0] << "." << endl;
+        cout << "Total volume: "<< ObjectiveFunc[1] << "." << endl;
+        
+      }
+      else {
+        cout << "The 2D geometrical constraints are not defined in parallel!!!!!" << endl;
+        exit(1);
+      }
+      
+    }
+    
+    else if (boundary->GetnDim() == 3) {
+      
+      /*--- Evaluate the thickness ---*/
+      for (iPlane = 0; iPlane < nPlane; iPlane++) {
+        Max_Thickness[iPlane] = boundary->Compute_MaxThickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
+      }
+      
+      ObjectiveFunc[0] = Max_Thickness[0];
+      ObjectiveFunc[1] = Max_Thickness[1];
+      ObjectiveFunc[2] = Max_Thickness[2];
+      ObjectiveFunc[3] = Max_Thickness[3];
+      ObjectiveFunc[4] = Max_Thickness[4];
+      
+    }
+    
+    /*--- Write the objective function in a external file ---*/
+    
+		cstr = new char [config->GetObjFunc_Value_FileName().size()+1];
+		strcpy (cstr, config->GetObjFunc_Value_FileName().c_str());
 		ObjFunc_file.open(cstr, ios::out);
-		ObjFunc_file << ObjectiveFunc << endl;
-		ObjFunc_file.close();
+    ObjFunc_file << "TITLE = \"SU2_GDC Simulation\"" << endl;
+    if (boundary->GetnDim() == 2) {
+      ObjFunc_file << "VARIABLES = \"MAX_THICKNESS\",\"TOTAL_VOLUME\"" << endl;
+    }
+    else if (boundary->GetnDim() == 3) {
+      ObjFunc_file << "VARIABLES = \"MAX_THICK_SEC1\",\"MAX_THICK_SEC2\",\"MAX_THICK_SEC3\",\"MAX_THICK_SEC4\",\"MAX_THICK_SEC5\"" << endl;
+    }
+    ObjFunc_file << "ZONE T= \"Geometrical variables (value)\"" << endl;
+    if (boundary->GetnDim() == 2) {
+      ObjFunc_file << ObjectiveFunc[0] <<", "<< ObjectiveFunc[1] << endl;
+    }
+    else if (boundary->GetnDim() == 3) {
+      ObjFunc_file << ObjectiveFunc[0] <<", "<< ObjectiveFunc[1] <<", "<< ObjectiveFunc[2] <<", "<< ObjectiveFunc[3] <<", "<< ObjectiveFunc[4] << endl;
+		}
+    ObjFunc_file.close();
+    
 	}
 	
 	if (config->GetGeometryMode() == GRADIENT) {
@@ -165,16 +183,16 @@ int main(int argc, char *argv[]) {
 			/*--- Bump deformation for 2D problems ---*/
 			if (boundary->GetnDim() == 2) {
 				
-				if (rank == MASTER_NODE)
-					cout << "Perform 2D deformation of the surface." << endl;
-				
-				switch ( config->GetDesign_Variable(iDV) ) {
-					case HICKS_HENNE : surface_mov->SetHicksHenne(boundary, config, iDV, true); break;
-					case DISPLACEMENT : surface_mov->SetDisplacement(boundary, config, iDV, true); break;
-					case ROTATION : surface_mov->SetRotation(boundary, config, iDV, true); break;
-					case NACA_4DIGITS : surface_mov->SetNACA_4Digits(boundary, config); break;
-					case PARABOLIC : surface_mov->SetParabolic(boundary, config); break;
-				}
+        if (rank == MASTER_NODE)
+          cout << "Perform 2D deformation of the surface." << endl;
+        
+        switch ( config->GetDesign_Variable(iDV) ) {
+          case HICKS_HENNE : surface_mov->SetHicksHenne(boundary, config, iDV, true); break;
+          case DISPLACEMENT : surface_mov->SetDisplacement(boundary, config, iDV, true); break;
+          case ROTATION : surface_mov->SetRotation(boundary, config, iDV, true); break;
+          case NACA_4DIGITS : surface_mov->SetNACA_4Digits(boundary, config); break;
+          case PARABOLIC : surface_mov->SetParabolic(boundary, config); break;
+        }
 				
 			}
 			
@@ -224,87 +242,74 @@ int main(int argc, char *argv[]) {
           
         }
         
-        /*--- Create airfoil structure and compute the thickness ---*/
+        /*--- Create airfoil structure ---*/
         for (iPlane = 0; iPlane < nPlane; iPlane++) {
-          Plane_P0[1] = MinPlane + iPlane*(MaxPlane - MinPlane)/double(nPlane-1);
-          boundary->ComputeAirfoil_Section(Plane_P0, Plane_Normal, iPlane, config, Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil, false);
-          Max_Thickness[iPlane] = boundary->Compute_MaxThickness(Plane_P0, Plane_Normal, iPlane, Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil);
+          boundary->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
         }
         
  			}
 			
+      
 			/*--- Compute gradient ---*/
 			if (rank == MASTER_NODE) {
         
-				switch (config->GetKind_GeoObjFunc()) {
-					case MAX_THICKNESS :
-						ObjectiveFunc_New = boundary->GetMaxThickness(config, false);
-						delta_eps = config->GetDV_Value_New(iDV);
-						Gradient = (ObjectiveFunc_New - ObjectiveFunc) / delta_eps;
-						if (iDV == 0) Gradient_file << "Max thickness grad. using fin. dif." << endl;
-						cout << "Max thickness gradient: "<< Gradient << "." << endl;
-						break;
-          case MIN_THICKNESS :
-						ObjectiveFunc_New = boundary->GetMinThickness(config, false);
-						delta_eps = config->GetDV_Value_New(iDV);
-						Gradient = (ObjectiveFunc_New - ObjectiveFunc) / delta_eps;
-						if (iDV == 0) Gradient_file << "Min thickness grad. using fin. dif." << endl;
-						cout << "Min thickness gradient: "<< Gradient << "." << endl;
-						break;
-					case TOTAL_VOLUME :
-						ObjectiveFunc_New = boundary->GetTotalVolume(config, false);
-						delta_eps = config->GetDV_Value_New(iDV);
-						Gradient = (ObjectiveFunc_New - ObjectiveFunc) / delta_eps;
-						if (iDV == 0) Gradient_file << "Total volume grad. using fin. dif." << endl;
-						cout << "Total volume gradient: "<< Gradient << "." << endl;
-						break;
-          case CLEARANCE :
-						ObjectiveFunc_New = boundary->GetClearance(config, false);
-						delta_eps = config->GetDV_Value_New(iDV);
-						Gradient = (ObjectiveFunc_New - ObjectiveFunc) / delta_eps;
-						if (iDV == 0) Gradient_file << "Clearance grad. using fin. dif." << endl;
-						cout << "Clearance gradient: "<< Gradient << "." << endl;
-						break;
-          case MAX_THICK_SEC1 :
-            ObjectiveFunc_New = Max_Thickness[0];
-            delta_eps = config->GetDV_Value_New(iDV);
-            Gradient = (ObjectiveFunc_New - ObjectiveFunc) / delta_eps;
-            if (iDV == 0) Gradient_file << "Max thickness grad. using fin. dif." << endl;
-            cout << "Max thickness gradient (section 1): "<< Gradient << "." << endl;
-            break;
-          case MAX_THICK_SEC2 :
-            ObjectiveFunc_New = Max_Thickness[1];
-            delta_eps = config->GetDV_Value_New(iDV);
-            Gradient = (ObjectiveFunc_New - ObjectiveFunc) / delta_eps;
-            if (iDV == 0) Gradient_file << "Max thickness grad. using fin. dif." << endl;
-            cout << "Max thickness gradient (section 2): "<< Gradient << "." << endl;
-            break;
-          case MAX_THICK_SEC3 :
-            ObjectiveFunc_New = Max_Thickness[2];
-            delta_eps = config->GetDV_Value_New(iDV);
-            Gradient = (ObjectiveFunc_New - ObjectiveFunc) / delta_eps;
-            if (iDV == 0) Gradient_file << "Max thickness grad. using fin. dif." << endl;
-            cout << "Max thickness gradient (section 3): "<< Gradient << "." << endl;
-            break;
-          case MAX_THICK_SEC4 :
-            ObjectiveFunc_New = Max_Thickness[3];
-            delta_eps = config->GetDV_Value_New(iDV);
-            Gradient = (ObjectiveFunc_New - ObjectiveFunc) / delta_eps;
-            if (iDV == 0) Gradient_file << "Max thickness grad. using fin. dif." << endl;
-            cout << "Max thickness gradient (section 4): "<< Gradient << "." << endl;
-            break;
-          case MAX_THICK_SEC5 :
-            ObjectiveFunc_New = Max_Thickness[4];
-            delta_eps = config->GetDV_Value_New(iDV);
-            Gradient = (ObjectiveFunc_New - ObjectiveFunc) / delta_eps;
-            if (iDV == 0) Gradient_file << "Max thickness grad. using fin. dif." << endl;
-            cout << "Max thickness gradient (section 5): "<< Gradient << "." << endl;
-            break;            
-				}
+        delta_eps = config->GetDV_Value_New(iDV);
+
+        if (boundary->GetnDim() == 2) {
+          
+          ObjectiveFunc_New[0] = boundary->GetMaxThickness(config, false);
+          Gradient[0] = (ObjectiveFunc_New[0] - ObjectiveFunc[0]) / delta_eps;
+          
+          ObjectiveFunc_New[2] = boundary->GetTotalVolume(config, false);
+          Gradient[1] = (ObjectiveFunc_New[1] - ObjectiveFunc[1]) / delta_eps;
+          
+          cout << "Max thickness gradient: "<< Gradient[0] << "." << endl;
+          cout << "Total volume gradient: "<< Gradient[1] << "." << endl;
+          
+          if (iDV == 0) {
+            Gradient_file << "TITLE = \"SU2_GDC Simulation\"" << endl;
+            Gradient_file << "VARIABLES = \"MAX_THICKNESS\",\"TOTAL_VOLUME\"" << endl;
+            Gradient_file << "ZONE T= \"Geometrical variables (gradient)\"" << endl;
+          }
+          
+          Gradient_file << Gradient[0] << ", " << Gradient[1] << endl;
+          
+        }
+        else if (boundary->GetnDim() == 3) {
+                    
+          for (iPlane = 0; iPlane < nPlane; iPlane++) {
+            Max_Thickness[iPlane] = boundary->Compute_MaxThickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
+          }
+          
+          ObjectiveFunc_New[0] = Max_Thickness[0];
+          Gradient[0] = (ObjectiveFunc_New[0] - ObjectiveFunc[0]) / delta_eps;
+          ObjectiveFunc_New[1] = Max_Thickness[1];
+          Gradient[1] = (ObjectiveFunc_New[1] - ObjectiveFunc[1]) / delta_eps;
+          ObjectiveFunc_New[2] = Max_Thickness[2];
+          Gradient[2] = (ObjectiveFunc_New[2] - ObjectiveFunc[2]) / delta_eps;
+          ObjectiveFunc_New[3] = Max_Thickness[3];
+          Gradient[3] = (ObjectiveFunc_New[3] - ObjectiveFunc[3]) / delta_eps;
+          ObjectiveFunc_New[4] = Max_Thickness[4];
+          Gradient[4] = (ObjectiveFunc_New[4] - ObjectiveFunc[4]) / delta_eps;
+          
+          cout << "Section 1. MaxThickness gradient: " << Gradient[0] << "." << endl;
+          cout << "Section 2. MaxThickness gradient: " << Gradient[1] << "." << endl;
+          cout << "Section 3. MaxThickness gradient: " << Gradient[2] << "." << endl;
+          cout << "Section 4. MaxThickness gradient: " << Gradient[3] << "." << endl;
+          cout << "Section 5. MaxThickness gradient: " << Gradient[4] << "." << endl;
+          
+          if (iDV == 0) {
+            Gradient_file << "TITLE = \"SU2_GDC Simulation\"" << endl;
+            Gradient_file << "VARIABLES = \"MAX_THICK_SEC1\",\"MAX_THICK_SEC2\",\"MAX_THICK_SEC3\",\"MAX_THICK_SEC4\",\"MAX_THICK_SEC5\"" << endl;
+            Gradient_file << "ZONE T= \"Geometrical variables (gradient)\"" << endl;
+          }
+          
+          Gradient_file << Gradient[0] << ", " << Gradient[1] << ", " << Gradient[2] << ", " << Gradient[3] << ", " << Gradient[4] << endl;
+          
+        }
+ 				
 				
-				Gradient_file << Gradient << endl;
-				
-				cout <<"-------------------------------------------------------------------------" << endl;
+				if (iDV != (config->GetnDV()-1)) cout <<"-------------------------------------------------------------------------" << endl;
 				
 			}
 		}

@@ -579,7 +579,7 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
   default_vec_3d[0] = 0.0; default_vec_3d[1] = 1.0;
 	AddArrayOption("GEO_SECTION_LIMIT", 2, Section_Limit, default_vec_3d);
 	/* DESCRIPTION: Mode of the GDC code (analysis, or gradient) */
-	AddEnumOption("GEO_MODE", GeometryMode, GeometryMode_Map, "ANALYSIS");
+	AddEnumOption("GEO_MODE", GeometryMode, GeometryMode_Map, "FUNCTION");
 	/* DESCRIPTION: Drag weight in sonic boom Objective Function (from 0.0 to 1.0) */
 	AddScalarOption("DRAG_IN_SONICBOOM", WeightCd, 0.0);
 	/* DESCRIPTION: Sensitivity smoothing  */
@@ -644,7 +644,7 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	/* DESCRIPTION: Output objective function gradient */
 	AddScalarOption("GRAD_OBJFUNC_FILENAME", ObjFunc_Grad_FileName, string("of_grad.dat"));
 	/* DESCRIPTION: Output objective function */
-	AddScalarOption("OBJFUNC_FILENAME", ObjFunc_Eval_FileName, string("of_eval.dat"));
+	AddScalarOption("VALUE_OBJFUNC_FILENAME", ObjFunc_Value_FileName, string("of_func.dat"));
 	/* DESCRIPTION: Output file surface flow coefficient (w/o extension) */
 	AddScalarOption("SURFACE_FLOW_FILENAME", SurfFlowCoeff_FileName, string("surface_flow"));
 	/* DESCRIPTION: Output file surface adjoint coefficient (w/o extension) */
