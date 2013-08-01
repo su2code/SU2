@@ -153,8 +153,9 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] FlowSolution - Flow solution.
 	 * \param[in] iExtIter - Current external (time) iteration.
+	 * \param[in] val_iZone - Current zone number in the grid file.
 	 */
-	void SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry, CSolver *FlowSolver, unsigned long iExtIter);
+	void SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry, CSolver *FlowSolver, unsigned long iExtIter, unsigned short val_iZone);
 
 	/*! 
 	 * \brief Create and write the file with the adjoint coefficients on the surface for serial computations.
