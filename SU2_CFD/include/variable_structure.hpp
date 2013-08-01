@@ -1539,6 +1539,60 @@ public:
 	 * \return Pointer to the Eddy Viscosity Sensitivity.
 	 */
 	virtual double *GetEddyViscSens(void);
+  
+  /*!
+   * \brief A virtual member.  Retrieves index of species densities in the TNE2 solver.
+   */
+  virtual unsigned short GetRhosIndex(void);
+  
+  /*!
+	 * \brief Retrieves the value of the species density in the primitive variable vector.
+	 * \param[in] iRho_s
+	 */
+  virtual unsigned short GetRhoIndex(void);
+  
+  /*!
+	 * \brief Retrieves the value of the species density in the primitive variable vector.
+	 * \param[in] iRho_s
+	 */
+  virtual unsigned short GetPIndex(void);
+  
+  /*!
+	 * \brief Retrieves the value of the species density in the primitive variable vector.
+	 * \param[in] iRho_s
+	 */
+  virtual unsigned short GetTIndex(void);
+  
+  /*!
+	 * \brief Retrieves the value of the species density in the primitive variable vector.
+	 * \param[in] iRho_s
+	 */
+  virtual unsigned short GetTveIndex(void);
+  
+  /*!
+	 * \brief Retrieves the value of the species density in the primitive variable vector.
+	 * \param[in] iRho_s
+	 */
+  virtual unsigned short GetHIndex(void);
+  
+  /*!
+	 * \brief Retrieves the value of the species density in the primitive variable vector.
+	 * \param[in] iRho_s
+	 */
+  virtual unsigned short GetAIndex(void);
+  
+  /*!
+	 * \brief Retrieves the value of the species density in the primitive variable vector.
+	 * \param[in] iRho_s
+	 */
+  virtual unsigned short GetRhoCvtrIndex(void);
+  
+  /*!
+	 * \brief Retrieves the value of the species density in the primitive variable vector.
+	 * \param[in] iRho_s
+	 */
+  virtual unsigned short GetRhoCvveIndex(void);
+  
 };
 
 /*!
@@ -3803,6 +3857,54 @@ public:
 	 * \param[in] iRho_s
 	 */
   unsigned short GetRhosIndex(void);
+  
+  /*!
+	 * \brief Retrieves the value of the species density in the primitive variable vector.
+	 * \param[in] iRho_s
+	 */
+  unsigned short GetRhoIndex(void);
+  
+  /*!
+	 * \brief Retrieves the value of the species density in the primitive variable vector.
+	 * \param[in] iRho_s
+	 */
+  unsigned short GetPIndex(void);
+  
+  /*!
+	 * \brief Retrieves the value of the species density in the primitive variable vector.
+	 * \param[in] iRho_s
+	 */
+  unsigned short GetTIndex(void);
+  
+  /*!
+	 * \brief Retrieves the value of the species density in the primitive variable vector.
+	 * \param[in] iRho_s
+	 */
+  unsigned short GetTveIndex(void);
+  
+  /*!
+	 * \brief Retrieves the value of the species density in the primitive variable vector.
+	 * \param[in] iRho_s
+	 */
+  unsigned short GetHIndex(void);
+  
+  /*!
+	 * \brief Retrieves the value of the species density in the primitive variable vector.
+	 * \param[in] iRho_s
+	 */
+  unsigned short GetAIndex(void);
+  
+  /*!
+	 * \brief Retrieves the value of the species density in the primitive variable vector.
+	 * \param[in] iRho_s
+	 */
+  unsigned short GetRhoCvtrIndex(void);
+  
+  /*!
+	 * \brief Retrieves the value of the species density in the primitive variable vector.
+	 * \param[in] iRho_s
+	 */
+  unsigned short GetRhoCvveIndex(void);
   
 };
 

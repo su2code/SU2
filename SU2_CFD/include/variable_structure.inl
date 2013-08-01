@@ -433,6 +433,24 @@ inline double* CVariable::GetElectricField() { return 0;}
 
 inline void CVariable::SetTimeSpectral_Source(unsigned short val_var, double val_source) { }
 
+inline unsigned short CVariable::GetRhosIndex(void) { return 0; }
+
+inline unsigned short CVariable::GetRhoIndex(void) { return 0; }
+
+inline unsigned short CVariable::GetPIndex(void) { return 0; }
+
+inline unsigned short CVariable::GetTIndex(void) { return 0; }
+
+inline unsigned short CVariable::GetTveIndex(void) { return 0; }
+
+inline unsigned short CVariable::GetHIndex(void) { return 0; }
+
+inline unsigned short CVariable::GetAIndex(void) { return 0; }
+
+inline unsigned short CVariable::GetRhoCvtrIndex(void) { return 0; }
+
+inline unsigned short CVariable::GetRhoCvveIndex(void) { return 0; }
+
 inline double CVariable::GetTimeSpectral_Source(unsigned short val_var) { return 0; }
 
 inline double CEulerVariable::GetDensity(void) { return Solution[0]; }
@@ -798,13 +816,13 @@ inline double CTNE2EulerVariable::GetRhoCv_tr(void) { return Primitive[RHOCVTR_I
 
 inline double CTNE2EulerVariable::GetRhoCv_ve(void) { return Primitive[RHOCVVE_INDEX]; }
 
+inline double* CTNE2EulerVariable::GetdPdrhos(void) { return dPdrhos; }
+
 inline double CTNE2EulerVariable::GetVelocity(unsigned short val_dim, bool val_incomp) {
 double velocity;
    velocity = Solution[nSpecies+val_dim]/Primitive[RHO_INDEX]; 
 return velocity;
 }
-
-inline double *CTNE2EulerVariable::GetdPdrhos(void) { return dPdrhos; }
 
 inline double CTNE2EulerVariable::GetVelocity2(void) { return Velocity2; }
 
@@ -842,6 +860,22 @@ inline double CTNE2EulerVariable::GetPreconditioner_Beta() { return Precond_Beta
 inline void CTNE2EulerVariable::SetPreconditioner_Beta(double val_Beta) { Precond_Beta = val_Beta; }
 
 inline unsigned short CTNE2EulerVariable::GetRhosIndex(void) { return RHOS_INDEX; }
+
+inline unsigned short CTNE2EulerVariable::GetRhoIndex(void) { return RHO_INDEX; }
+
+inline unsigned short CTNE2EulerVariable::GetPIndex(void) { return P_INDEX; }
+
+inline unsigned short CTNE2EulerVariable::GetTIndex(void) { return T_INDEX; }
+
+inline unsigned short CTNE2EulerVariable::GetTveIndex(void) { return TVE_INDEX; }
+
+inline unsigned short CTNE2EulerVariable::GetHIndex(void) { return H_INDEX; }
+
+inline unsigned short CTNE2EulerVariable::GetAIndex(void) { return A_INDEX; }
+
+inline unsigned short CTNE2EulerVariable::GetRhoCvtrIndex(void) { return RHOCVTR_INDEX; }
+
+inline unsigned short CTNE2EulerVariable::GetRhoCvveIndex(void) { return RHOCVVE_INDEX; }
 
 inline double CTNE2NSVariable::GetLaminarViscosity(void) { return LaminarViscosity; }
 

@@ -3110,12 +3110,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
 			if (Kind_ConvNumScheme_TNE2 == SPACE_UPWIND) {
-				if (Kind_Upwind_TNE2 == ROE_1ST) cout << "1st order Roe solver for the flow inviscid terms."<< endl;
-				if (Kind_Upwind_TNE2 == ROE_TURKEL_1ST) cout << "1st order Roe-Turkel solver for the flow inviscid terms."<< endl;
-				if (Kind_Upwind_TNE2 == AUSM_1ST)	cout << "1st order AUSM solver for the flow inviscid terms."<< endl;
-				if (Kind_Upwind_TNE2 == HLLC_1ST)	cout << "1st order HLLC solver for the flow inviscid terms."<< endl;
-				if (Kind_Upwind_TNE2 == SW_1ST)	cout << "1st order Steger-Warming solver for the flow inviscid terms."<< endl;
-				if (Kind_Upwind_TNE2 == MSW_1ST)	cout << "1st order Modified Steger-Warming solver for the flow inviscid terms."<< endl;
+				if (Kind_Upwind_TNE2 == ROE_1ST) cout << "1st order Roe solver for the inviscid terms of the two-temperature model."<< endl;
+				if (Kind_Upwind_TNE2 == ROE_TURKEL_1ST) cout << "1st order Roe-Turkel solver for the inviscid terms of the two-temperature model."<< endl;
+				if (Kind_Upwind_TNE2 == AUSM_1ST)	cout << "1st order AUSM solver for the inviscid terms of the two-temperature model."<< endl;
+				if (Kind_Upwind_TNE2 == HLLC_1ST)	cout << "1st order HLLC solver for the inviscid terms of the two-temperature model."<< endl;
+				if (Kind_Upwind_TNE2 == SW_1ST)	cout << "1st order Steger-Warming solver for the inviscid terms of the two-temperature model."<< endl;
+				if (Kind_Upwind_TNE2 == MSW_1ST)	cout << "1st order Modified Steger-Warming solver for the inviscid terms of the two-temperature model."<< endl;
 			}
 			if ((Kind_ConvNumScheme_TNE2 == SPACE_UPWIND) &&
 					((Kind_Upwind_TNE2 == ROE_2ND) || (Kind_Upwind_Flow == AUSM_2ND) || (Kind_Upwind_Flow == HLLC_2ND)
@@ -4706,7 +4706,7 @@ void CConfig::SetGlobalParam(unsigned short val_solver, unsigned short val_syste
 		}
 		break;
     case TNE2_EULER:
-      if (val_system == RUNTIME_FLOW_SYS) {
+      if (val_system == RUNTIME_TNE2_SYS) {
         SetKind_ConvNumScheme(GetKind_ConvNumScheme_TNE2(), NONE,
                               GetKind_Upwind_TNE2(), GetKind_SlopeLimit_TNE2());
         SetKind_SourNumScheme(GetKind_SourNumScheme_TNE2());
@@ -4715,7 +4715,7 @@ void CConfig::SetGlobalParam(unsigned short val_solver, unsigned short val_syste
       }
       break;
     case TNE2_NAVIER_STOKES:
-      if (val_system == RUNTIME_FLOW_SYS) {
+      if (val_system == RUNTIME_TNE2_SYS) {
         SetKind_ConvNumScheme(GetKind_ConvNumScheme_TNE2(), NONE,
                               GetKind_Upwind_TNE2(), GetKind_SlopeLimit_TNE2());
         SetKind_SourNumScheme(GetKind_SourNumScheme_TNE2());

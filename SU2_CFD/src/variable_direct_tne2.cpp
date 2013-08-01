@@ -105,6 +105,9 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_density, double *val_massfrac,
       Gradient_Primitive[iVar][iDim] = 0.0;
   }
   
+  /*--- Allocate partial derivative vectors ---*/
+  dPdrhos = new double [nSpecies];
+  
   /*--- Determine the number of heavy species ---*/
   if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
   else            { nHeavy = nSpecies;   nEl = 0; }  
@@ -235,6 +238,9 @@ CTNE2EulerVariable::CTNE2EulerVariable(double *val_solution, unsigned short val_
       Gradient_Primitive[iVar][iDim] = 0.0;
   }
   
+  /*--- Allocate partial derivative vectors ---*/
+  dPdrhos = new double [nSpecies];
+  
 	/*--- Initialize Solution & Solution_Old vectors ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
 		Solution[iVar]     = val_solution[iVar];
@@ -261,6 +267,7 @@ CTNE2EulerVariable::~CTNE2EulerVariable(void) {
       delete Gradient_Primitive[iVar];
     delete [] Gradient_Primitive;
   }
+  if (dPdrhos != NULL) delete [] dPdrhos;
   
 }
 
@@ -489,9 +496,9 @@ void CTNE2EulerVariable::SetdPdrhos(CConfig *config) {
   // Note: Requires SetDensity(), SetTemperature(), SetPressure(), & SetGasProperties()
   
   unsigned short iDim, iSpecies, nHeavy, nEl;
-  double *Ms;
-  double Ru, conc, dPdrhoE, dPdrhoEve, rho_el, sqvel;
-  double T, Tve, E, Eve;
+  double *Ms, *Tref, *hf, *xi, *thetav;
+  double Ru, rhoCvtr, rhoCvve, Cvtrs, Cvves, rho_el, sqvel;
+  double rho, rhos, rhoEve, T, Tve, ef;
   
   /*--- Determine the number of heavy species ---*/
   if (ionization) {
@@ -505,29 +512,40 @@ void CTNE2EulerVariable::SetdPdrhos(CConfig *config) {
   }
   
   /*--- Read gas mixture properties from config ---*/
-  Ms = config->GetMolar_Mass();
+  Ms   = config->GetMolar_Mass();
+  Tref = config->GetRefTemperature();
+  hf   = config->GetEnthalpy_Formation();
+  xi   = config->GetRotationModes();
+  thetav = config->GetCharVibTemp();
   
   /*--- Rename for convenience ---*/
-  Ru  = UNIVERSAL_GAS_CONSTANT;
-  T   = Primitive[T_INDEX];
-  Tve = Primitive[TVE_INDEX];
+  Ru      = UNIVERSAL_GAS_CONSTANT;
+  T       = Primitive[T_INDEX];
+  Tve     = Primitive[TVE_INDEX];
+  rho     = Primitive[RHO_INDEX];
+  rhoEve  = Solution[nSpecies+nDim+1];
+  rhoCvtr = Primitive[RHOCVTR_INDEX];
+  rhoCvve = Primitive[RHOCVVE_INDEX];
   
   /*--- Pre-compute useful quantities ---*/
-  conc  = 0.0;
   sqvel = 0.0;
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    conc += Primitive[RHOS_INDEX+iSpecies]/Ms[iSpecies];
-  }
   for (iDim = 0; iDim < nDim; iDim++)
     sqvel += Primitive[VEL_INDEX+iDim] * Primitive[VEL_INDEX+iDim];
-  
-  dPdrhoE   =  conc*Ru/Primitive[RHOCVTR_INDEX];
-  dPdrhoEve = -conc*Ru/Primitive[RHOCVTR_INDEX]
-             + rho_el*(Ru/Ms[nSpecies-1])/Primitive[RHOCVVE_INDEX];
-  
+
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-    dPdrhos[iSpecies] = T*Ru/Ms[iSpecies] + 0.5*dPdrhoE*sqvel - dPdrhoE*E - dPdrhoEve*Eve;
-  } 
+    rhos  = Primitive[RHOS_INDEX+iSpecies];
+    ef    = hf[iSpecies] - Ru/Ms[iSpecies]*Tref[iSpecies];
+    Cvtrs = (3.0/2.0 + xi[iSpecies]/2.0)*Ru/Ms[iSpecies];
+    dPdrhos[iSpecies] = T*Ru/Ms[iSpecies] + (rhos/rhoCvtr) * (Ru/Ms[iSpecies])
+                                          * (-Cvtrs*(T-Tref[iSpecies]) - ef + 0.5*sqvel);
+  }
+  for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
+    iSpecies = nSpecies-1;
+    rhos  = Primitive[RHOS_INDEX+iSpecies];
+    Cvves = (3.0/2.0)*Ru/Ms[iSpecies]; // e- contribution to Cvve is it's Cvtr!
+    
+    dPdrhos[iSpecies] = Tve*Ru/Ms[iSpecies] - rhos*(Ru/Ms[iSpecies])*rhoEve*Cvves/(rhoCvve*rhoCvve);
+  }
 }
 
 
@@ -553,7 +571,7 @@ void CTNE2EulerVariable::SetPrimVar_Compressible(CConfig *config) {
  	check_press = SetPressure(config);        // Requires T & Tve computation.
   SetGasProperties(config);                 // Set rhoCvtr and rhoCvve.  Requires Tve.
 	check_sos   = SetSoundSpeed(config);      // Requires density, pressure, rhoCvtr, & rhoCvve.
-  
+  SetdPdrhos(config);                       // Requires density, pressure, rhoCvtr, & rhoCvve.  
   
   /*--- Check that the solution has a physical meaning ---*/
   if (check_dens || check_press || check_sos || check_temp) {

@@ -194,6 +194,10 @@ public:
 	*U_nM1,		/*!< \brief Vector of conservative variables at time n-1. */
 	*U_nP1;		/*!< \brief Vector of conservative variables at time n+1. */
 	double vel2_inf; /*!< \brief value of the square of freestream speed. */
+  double *dPdrhos_i, *dPdrhos_j;
+  
+  unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
+  RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
 
 	/*! 
 	 * \brief Constructor of the class.
@@ -784,6 +788,66 @@ public:
 	 * \param[in] val_volume Volume of the control volume.
 	 */
 	void SetVolume(double val_volume);
+  
+  /*!
+	 * \brief Retrieves the value of the species density in the primitive variable vector.
+	 * \param[in] iRho_s
+	 */
+  void SetRhosIndex(unsigned short val_Index);
+  
+  /*!
+	 * \brief Retrieves the value of the species density in the primitive variable vector.
+	 * \param[in] iRho_s
+	 */
+  void SetRhoIndex(unsigned short val_Index);
+  
+  /*!
+	 * \brief Retrieves the value of the species density in the primitive variable vector.
+	 * \param[in] iRho_s
+	 */
+  void SetPIndex(unsigned short val_Index);
+  
+  /*!
+	 * \brief Retrieves the value of the species density in the primitive variable vector.
+	 * \param[in] iRho_s
+	 */
+  void SetTIndex(unsigned short val_Index);
+  
+  /*!
+	 * \brief Retrieves the value of the species density in the primitive variable vector.
+	 * \param[in] iRho_s
+	 */
+  void SetTveIndex(unsigned short val_Index);
+  
+  /*!
+	 * \brief Retrieves the value of the species density in the primitive variable vector.
+	 * \param[in] iRho_s
+	 */
+  void SetHIndex(unsigned short val_Index);
+  
+  /*!
+	 * \brief Retrieves the value of the species density in the primitive variable vector.
+	 * \param[in] iRho_s
+	 */
+  void SetAIndex(unsigned short val_Index);
+  
+  /*!
+	 * \brief Retrieves the value of the species density in the primitive variable vector.
+	 * \param[in] iRho_s
+	 */
+  void SetRhoCvtrIndex(unsigned short val_Index);
+  
+  /*!
+	 * \brief Retrieves the value of the species density in the primitive variable vector.
+	 * \param[in] iRho_s
+	 */
+  void SetRhoCvveIndex(unsigned short val_Index);
+
+  /*!
+	 * \brief Sets the value of the derivative of pressure w.r.t. species density.
+	 * \param[in] iRho_s
+	 */
+  void SetdPdrhos(double *val_dPdrhos_i, double *val_dPdrhos_j);
 
 	/*! 
 	 * \brief Get the inviscid fluxes.
@@ -5740,9 +5804,6 @@ private:
 	double sq_vel, Proj_ModJac_Tensor_ij, R;
   double *dPdrhos, *l, *m;
  	unsigned short nSpecies, nVar, nDim;
-  
-  unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
-  RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
   
 public:
   

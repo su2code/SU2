@@ -146,17 +146,9 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
 			Jacobian_j[iVar] = new double [nVar];
 		}
     
-    cout << "TNE2Solver: " << nSpecies << endl;
-    cout << "TNE2Solver: nPoint: " << nPoint << endl;
-    cout << "TNE2Solver: nPointDomain: " << nPointDomain << endl;
-    cout << "TNE2Solver: nVar: " << nVar << endl;
-    cin.get();
-    
 		/*--- Initialization of the structure for the global Jacobian ---*/
 		if (rank == MASTER_NODE) cout << "Initialize jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
 		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
-    
-    cout << "TNE2Solver: After Jacobian initialization..." << endl;
     
 	} else {
 		if (rank == MASTER_NODE)
@@ -197,11 +189,11 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
 	CFz_Inv          = new double[nMarker];
   
 	/*--- Initialize total coefficients ---*/
-	Total_CDrag = 0.0;  Total_CLift = 0.0;      Total_CSideForce = 0.0;
-	Total_CMx = 0.0;    Total_CMy = 0.0;        Total_CMz = 0.0;
-	Total_CEff = 0.0;
-	Total_CFx = 0.0;    Total_CFy = 0.0;        Total_CFz = 0.0;
-  Total_Maxq = 0.0;
+	Total_CDrag = 0.0;  Total_CLift = 0.0;  Total_CSideForce = 0.0;
+	Total_CMx   = 0.0;  Total_CMy   = 0.0;  Total_CMz = 0.0;
+	Total_CFx   = 0.0;  Total_CFy   = 0.0;  Total_CFz = 0.0;
+  Total_CEff  = 0.0;
+  Total_Maxq  = 0.0;
   
 	/*--- Read farfield conditions ---*/
 	Density_Inf        = config->GetDensity_FreeStreamND();
@@ -971,7 +963,7 @@ void CTNE2EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_cont
 }
 
 void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_container, CNumerics *numerics,
-                                         CConfig *config, unsigned short iMesh) {
+                                       CConfig *config, unsigned short iMesh) {
 	unsigned long iEdge, iPoint, jPoint;
   bool implicit, high_order_diss, limiter;
   double *U_i, *U_j, *V_i, *V_j;
@@ -989,17 +981,15 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
   if (limiter) cout << "WARNING!!! Upwind_Residual: Limiter not in place!" << endl;
   
   /*--- Pass structure of the primitive variable vector to CNumerics ---*/
-  //node->GetRhosIndex();
-  
-/*  numerics->SetRhosIndex();
-  numerics->SetRhoIndex();
-  numerics->SetPIndex();
-  numerics->SetTIndex();
-  numerics->SetTveIndex();
-  numerics->SetHIndex();
-  numerics->SetAIndex();
-  numerics->SetCvtrIndex();
-  numerics->SetCvveIndex();*/
+  numerics->SetRhosIndex   ( node[0]->GetRhosIndex()    );
+  numerics->SetRhoIndex    ( node[0]->GetRhoIndex()     );
+  numerics->SetPIndex      ( node[0]->GetPIndex()       );
+  numerics->SetTIndex      ( node[0]->GetTIndex()       );
+  numerics->SetTveIndex    ( node[0]->GetTveIndex()     );
+  numerics->SetHIndex      ( node[0]->GetHIndex()       );
+  numerics->SetAIndex      ( node[0]->GetAIndex()       );
+  numerics->SetRhoCvtrIndex( node[0]->GetRhoCvtrIndex() );
+  numerics->SetRhoCvveIndex( node[0]->GetRhoCvveIndex() );
   
   /*--- Loop over edges and calculate convective fluxes ---*/
 	for(iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -1012,7 +1002,10 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
     U_i = node[iPoint]->GetSolution(); U_j = node[jPoint]->GetSolution();
     V_i = node[iPoint]->GetPrimVar();  V_j = node[jPoint]->GetPrimVar();
     numerics->SetPrimitive(V_i, V_j);
-    numerics->SetConservative(U_i, U_j);    
+    numerics->SetConservative(U_i, U_j);
+    
+    /*--- Pass supplementary information to CNumerics ---*/
+    numerics->SetdPdrhos(node[iPoint]->GetdPdrhos(), node[jPoint]->GetdPdrhos());
     
 		/*--- Compute the residual ---*/
 		numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
@@ -1821,7 +1814,7 @@ void CTNE2EulerSolver::SetPreconditioner(CConfig *config, unsigned short iPoint)
 
 void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solution_container,
                                      CNumerics *numerics, CConfig *config, unsigned short val_marker) {
-  unsigned short iDim, jDim, iSpecies, jSpecies, iVar, jVar;
+  unsigned short iDim, iSpecies, jSpecies, iVar, jVar;
 	unsigned long iPoint, iVertex;
   bool implicit;
   double *Normal, *UnitaryNormal, *Ms, *dPdrhos;
@@ -1881,6 +1874,7 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solution_con
         rhoCvve = node[iPoint]->GetRhoCv_ve();
         rhoE    = node[iPoint]->GetSolution(nSpecies+nDim);
         rhoEve  = node[iPoint]->GetSolution(nSpecies+nDim+1);
+        dPdrhos = node[iPoint]->GetdPdrhos();
         
         /*--- If free electrons are present, retrieve the electron gas density ---*/
         if (config->GetIonization()) rho_el = node[iPoint]->GetMassFraction(nSpecies-1) * rho;
@@ -2576,11 +2570,11 @@ void CTNE2EulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **soluti
 }
 
 void CTNE2EulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-  unsigned short iDim, jDim, iSpecies, jSpecies, iVar, jVar;
+  unsigned short iDim, iSpecies, jSpecies, iVar, jVar;
 	unsigned long iPoint, iVertex;
   bool implicit;
   double *Normal, *UnitaryNormal, *Ms, *dPdrhos;
-  double Area, rhoCvtr, rhoCvve, rho_el, Ru, a2, phi;
+  double Area, rhoCvtr, rhoCvve, rho_el, Ru;
   double rho, cs, u, v, w, P, rhoE, rhoEve, conc;
   
   /*--- Allocate arrays ---*/
@@ -2636,6 +2630,7 @@ void CTNE2EulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solution_cont
         rhoCvve = node[iPoint]->GetRhoCv_ve();
         rhoE    = node[iPoint]->GetSolution(nSpecies+nDim);
         rhoEve  = node[iPoint]->GetSolution(nSpecies+nDim+1);
+        dPdrhos = node[iPoint]->GetdPdrhos();
         
         /*--- If free electrons are present, retrieve the electron gas density ---*/
         if (config->GetIonization()) rho_el = node[iPoint]->GetMassFraction(nSpecies-1) * rho;
