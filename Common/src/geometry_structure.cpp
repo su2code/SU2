@@ -7609,16 +7609,18 @@ void CBoundaryGeometry::SetBoundSensitivity(CConfig *config) {
 
 void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config,
                                                vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil,
-                                               vector<double> &Zcoord_Airfoil) {
+                                               vector<double> &Zcoord_Airfoil, bool original_surface) {
   unsigned short iMarker, iNode, jNode, iDim, intersect, iLoop;
   long MinDist_Point, MinDistAngle_Point;
 	unsigned long iPoint, jPoint, iElem, Trailing_Point, Airfoil_Point, iVertex, jVertex, n;
   double Segment_P0[3] = {0.0, 0.0, 0.0}, Segment_P1[3] = {0.0, 0.0, 0.0}, Intersection[3] = {0.0, 0.0, 0.0}, Trailing_Coord, MinDist_Value, MinDistAngle_Value, Dist_Value,
   Airfoil_Tangent[3] = {0.0, 0.0, 0.0}, Segment[3] = {0.0, 0.0, 0.0}, Length, Angle_Value, Normal[3], Tangent[3], BiNormal[3], auxXCoord,
-  auxYCoord, auxZCoord, zp1, zpn, Camber_Line, MaxAngle = 25;
+  auxYCoord, auxZCoord, zp1, zpn, Camber_Line, MaxAngle = 25, *VarCoord = NULL;
   vector<double> Xcoord, Ycoord, Zcoord, Z2coord, Xcoord_Normal, Ycoord_Normal, Zcoord_Normal, Xcoord_Camber, Ycoord_Camber, Zcoord_Camber;
   vector<double>::iterator it;
   int rank = MASTER_NODE;
+  double **Coord_Variation;
+  
   
 #ifndef NO_MPI
 	unsigned long nLocalVertex, nGlobalVertex, MaxLocalVertex, *Buffer_Send_nVertex, *Buffer_Receive_nVertex, nBuffer;
@@ -7631,6 +7633,28 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
   Xcoord_Airfoil.clear();
 	Ycoord_Airfoil.clear();
 	Zcoord_Airfoil.clear();
+  
+  /*--- the grid variation is stored using a vertices information,
+   we should go from vertex to points ---*/
+  if (original_surface == false) {
+    
+    Coord_Variation = new double *[nPoint];
+    for (iPoint = 0; iPoint < nPoint; iPoint++) 
+      Coord_Variation[iPoint] = new double [nDim];
+    
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_Moving(iMarker) == YES) {
+        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+          VarCoord = vertex[iMarker][iVertex]->GetVarCoord();
+          iPoint = vertex[iMarker][iVertex]->GetNode();
+          for (iDim = 0; iDim < nDim; iDim++)
+            Coord_Variation[iPoint][iDim] = VarCoord[iDim];
+        }
+      }
+    }
+    
+  }
+  
   
   /*--- Loop oer all the markers ---*/
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -7647,9 +7671,17 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
             jPoint = bound[iMarker][iElem]->GetNode(jNode);
             
             if (iPoint != jPoint) {
+              
+              
               for (iDim = 0; iDim < nDim; iDim++) {
+                if (original_surface == true) {
                 Segment_P0[iDim] = node[iPoint]->GetCoord(iDim);
                 Segment_P1[iDim] = node[jPoint]->GetCoord(iDim);
+                }
+                else {
+                  Segment_P0[iDim] = node[iPoint]->GetCoord(iDim) + Coord_Variation[iPoint][iDim];
+                  Segment_P1[iDim] = node[jPoint]->GetCoord(iDim) + Coord_Variation[jPoint][iDim];
+                }
               }
               
               intersect = ComputeSegmentPlane_Intersection(Segment_P0, Segment_P1, Plane_P0, Plane_Normal, Intersection);
@@ -7667,6 +7699,15 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
       }
     }
   }
+  
+  if (original_surface == false) {
+    
+    for (iPoint = 0; iPoint < nPoint; iPoint++)
+      delete [] Coord_Variation[iPoint];
+    delete [] Coord_Variation;
+    
+  }
+  
   
 #ifndef NO_MPI
 

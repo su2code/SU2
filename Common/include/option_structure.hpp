@@ -652,7 +652,12 @@ enum ENUM_OBJECTIVE {
   CLEARANCE = 22,       /*!< \brief Clearance. */
   MIN_THICKNESS = 23,       /*!< \brief Minimum thickness. */
   HEAT_LOAD = 24,        /*!< \brief Integrated heat flux (heat load). */
-  MAX_HEAT_FLUX = 25    /*!< \brief Maximum heat flux. */
+  MAX_HEAT_FLUX = 25,    /*!< \brief Maximum heat flux. */
+  MAX_THICK_SEC1 = 26,       /*!< \brief Maximum thickness in section 1. */
+	MAX_THICK_SEC2 = 27,       /*!< \brief Maximum thickness in section 2. */
+	MAX_THICK_SEC3 = 28,       /*!< \brief Maximum thickness in section 3. */
+	MAX_THICK_SEC4 = 29,       /*!< \brief Maximum thickness in section 4. */
+	MAX_THICK_SEC5 = 30       /*!< \brief Maximum thickness in section 5. */
 };
 
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>
@@ -678,7 +683,12 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("TOTAL_VOLUME", TOTAL_VOLUME)
 ("MAX_THICKNESS", MAX_THICKNESS)
 ("CLEARANCE", CLEARANCE)
-("MIN_THICKNESS", MIN_THICKNESS);
+("MIN_THICKNESS", MIN_THICKNESS)
+("MAX_THICK_SEC1", MAX_THICK_SEC1)
+("MAX_THICK_SEC2", MAX_THICK_SEC2)
+("MAX_THICK_SEC3", MAX_THICK_SEC3)
+("MAX_THICK_SEC4", MAX_THICK_SEC4)
+("MAX_THICK_SEC5", MAX_THICK_SEC5);
 
 /*!
  * \brief types of Continuous equations
