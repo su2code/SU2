@@ -28,9 +28,8 @@ int main(int argc, char *argv[]) {
   
   /*--- Local variables ---*/
 	unsigned short iDV, nZone = 1, iFFDBox, iPlane, nPlane = 5;
-	double ObjectiveFunc, ObjectiveFunc_New, Gradient, delta_eps, Plane_P0[3] = {0.0, 0.0, 0.0}, Plane_Normal[3] = {0.0, 1.0, 0.0}, Max_Thickness[100];
+	double ObjectiveFunc, ObjectiveFunc_New, Gradient, delta_eps, Plane_P0[3] = {0.0, 0.0, 0.0}, Plane_Normal[3] = {0.0, 1.0, 0.0}, Max_Thickness[100], MinPlane, MaxPlane;
   vector<double> Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil;
-  double MinPlane = 1.5, MaxPlane = 3.5;
 
 	char *cstr;
 	ofstream Gradient_file, ObjFunc_file;
@@ -114,6 +113,9 @@ int main(int argc, char *argv[]) {
   }
   else if (boundary->GetnDim() == 3) {
     
+    MinPlane = config->GetSection_Limit(0);
+    MaxPlane = config->GetSection_Limit(1);
+
     /*--- Create airfoil structure and compute the thickness ---*/
     for (iPlane = 0; iPlane < nPlane; iPlane++) {
       Plane_P0[1] = MinPlane + iPlane*(MaxPlane - MinPlane)/double(nPlane-1);
@@ -238,63 +240,63 @@ int main(int argc, char *argv[]) {
 					case MAX_THICKNESS :
 						ObjectiveFunc_New = boundary->GetMaxThickness(config, false);
 						delta_eps = config->GetDV_Value_New(iDV);
-						Gradient = (ObjectiveFunc_New - ObjectiveFunc) / (delta_eps + EPS);
+						Gradient = (ObjectiveFunc_New - ObjectiveFunc) / delta_eps;
 						if (iDV == 0) Gradient_file << "Max thickness grad. using fin. dif." << endl;
 						cout << "Max thickness gradient: "<< Gradient << "." << endl;
 						break;
           case MIN_THICKNESS :
 						ObjectiveFunc_New = boundary->GetMinThickness(config, false);
 						delta_eps = config->GetDV_Value_New(iDV);
-						Gradient = (ObjectiveFunc_New - ObjectiveFunc) / (delta_eps + EPS);
+						Gradient = (ObjectiveFunc_New - ObjectiveFunc) / delta_eps;
 						if (iDV == 0) Gradient_file << "Min thickness grad. using fin. dif." << endl;
 						cout << "Min thickness gradient: "<< Gradient << "." << endl;
 						break;
 					case TOTAL_VOLUME :
 						ObjectiveFunc_New = boundary->GetTotalVolume(config, false);
 						delta_eps = config->GetDV_Value_New(iDV);
-						Gradient = (ObjectiveFunc_New - ObjectiveFunc) / (delta_eps + EPS);
+						Gradient = (ObjectiveFunc_New - ObjectiveFunc) / delta_eps;
 						if (iDV == 0) Gradient_file << "Total volume grad. using fin. dif." << endl;
 						cout << "Total volume gradient: "<< Gradient << "." << endl;
 						break;
           case CLEARANCE :
 						ObjectiveFunc_New = boundary->GetClearance(config, false);
 						delta_eps = config->GetDV_Value_New(iDV);
-						Gradient = (ObjectiveFunc_New - ObjectiveFunc) / (delta_eps + EPS);
+						Gradient = (ObjectiveFunc_New - ObjectiveFunc) / delta_eps;
 						if (iDV == 0) Gradient_file << "Clearance grad. using fin. dif." << endl;
 						cout << "Clearance gradient: "<< Gradient << "." << endl;
 						break;
           case MAX_THICK_SEC1 :
             ObjectiveFunc_New = Max_Thickness[0];
             delta_eps = config->GetDV_Value_New(iDV);
-            Gradient = (ObjectiveFunc_New - ObjectiveFunc) / (delta_eps + EPS);
+            Gradient = (ObjectiveFunc_New - ObjectiveFunc) / delta_eps;
             if (iDV == 0) Gradient_file << "Max thickness grad. using fin. dif." << endl;
             cout << "Max thickness gradient (section 1): "<< Gradient << "." << endl;
             break;
           case MAX_THICK_SEC2 :
             ObjectiveFunc_New = Max_Thickness[1];
             delta_eps = config->GetDV_Value_New(iDV);
-            Gradient = (ObjectiveFunc_New - ObjectiveFunc) / (delta_eps + EPS);
+            Gradient = (ObjectiveFunc_New - ObjectiveFunc) / delta_eps;
             if (iDV == 0) Gradient_file << "Max thickness grad. using fin. dif." << endl;
             cout << "Max thickness gradient (section 2): "<< Gradient << "." << endl;
             break;
           case MAX_THICK_SEC3 :
             ObjectiveFunc_New = Max_Thickness[2];
             delta_eps = config->GetDV_Value_New(iDV);
-            Gradient = (ObjectiveFunc_New - ObjectiveFunc) / (delta_eps + EPS);
+            Gradient = (ObjectiveFunc_New - ObjectiveFunc) / delta_eps;
             if (iDV == 0) Gradient_file << "Max thickness grad. using fin. dif." << endl;
             cout << "Max thickness gradient (section 3): "<< Gradient << "." << endl;
             break;
           case MAX_THICK_SEC4 :
             ObjectiveFunc_New = Max_Thickness[3];
             delta_eps = config->GetDV_Value_New(iDV);
-            Gradient = (ObjectiveFunc_New - ObjectiveFunc) / (delta_eps + EPS);
+            Gradient = (ObjectiveFunc_New - ObjectiveFunc) / delta_eps;
             if (iDV == 0) Gradient_file << "Max thickness grad. using fin. dif." << endl;
             cout << "Max thickness gradient (section 4): "<< Gradient << "." << endl;
             break;
           case MAX_THICK_SEC5 :
             ObjectiveFunc_New = Max_Thickness[4];
             delta_eps = config->GetDV_Value_New(iDV);
-            Gradient = (ObjectiveFunc_New - ObjectiveFunc) / (delta_eps + EPS);
+            Gradient = (ObjectiveFunc_New - ObjectiveFunc) / delta_eps;
             if (iDV == 0) Gradient_file << "Max thickness grad. using fin. dif." << endl;
             cout << "Max thickness gradient (section 5): "<< Gradient << "." << endl;
             break;            

@@ -40,7 +40,6 @@ using namespace std;
 
 /*! 
  * \brief Gets the number of zones in the mesh file.
- * \author T. Economon
  * \param[in] val_mesh_filename - Name of the file with the grid information.
  * \param[in] val_format - Format of the file with the grid information.
  * \param[in] config - Definition of the particular problem.

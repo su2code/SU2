@@ -191,7 +191,12 @@ optnames_aero = [ "LIFT"               ,
 # Geometric Optimizer Function Names
 optnames_geo = [ "MAX_THICKNESS"       ,
                  "MIN_THICKNESS"       ,
-                 "TOTAL_VOLUME"         ]
+                 "TOTAL_VOLUME"        ,
+                 "MAX_THICK_SEC1"      ,
+                 "MAX_THICK_SEC2"      ,
+                 "MAX_THICK_SEC3"      ,
+                 "MAX_THICK_SEC4"      ,
+                 "MAX_THICK_SEC5"       ]
 #: optnames_geo
 
 # -------------------------------------------------------------------

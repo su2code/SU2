@@ -1345,11 +1345,13 @@ void CPhysicalGeometry::CGNS_Format(CConfig *config, string val_mesh_filename, u
   
   /*--- Throw error if not in serial mode. ---*/
 #ifndef NO_MPI
-  cout << "Parallel support with CGNS format not yet implemented!!" << endl;
-  cout << "Press any key to exit..." << endl;
-  cin.get();
-  MPI::COMM_WORLD.Abort(1);
-  MPI::Finalize();
+  if (size > 1) {
+    cout << "Parallel support with CGNS format not yet implemented!!" << endl;
+    cout << "Press any key to exit..." << endl;
+    cin.get();
+    MPI::COMM_WORLD.Abort(1);
+    MPI::Finalize();
+  }
 #endif
   
   /*--- Check whether the supplied file is truly a CGNS file. ---*/
@@ -4561,67 +4563,87 @@ void CPhysicalGeometry::SetBoundTecPlot (CConfig *config, char mesh_filename[200
 
 	/*--- Compute the total number of elements ---*/
 	Total_nElem_Bound = 0;
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 		if (config->GetMarker_All_Plotting(iMarker) == YES) {
 			Total_nElem_Bound += nElem_Bound[iMarker];
 		}
+  }
 
 	/*--- Open the tecplot file ---*/
 	Tecplot_File.open(mesh_filename, ios::out);
 	Tecplot_File << "TITLE = \"Visualization of the surface grid\"" << endl;
 
-	/*--- Write the header of the file ---*/
-	if (nDim == 2) {
-		Tecplot_File << "VARIABLES = \"x\",\"y\" " << endl;
-		Tecplot_File << "ZONE NODES= "<< nPointSurface <<", ELEMENTS= "<< Total_nElem_Bound <<", DATAPACKING=POINT, ZONETYPE=FELINESEG"<< endl;
-	}
-	if (nDim == 3) {
-		Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\" " << endl;	
-		Tecplot_File << "ZONE NODES= "<< nPointSurface <<", ELEMENTS= "<< Total_nElem_Bound <<", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
-	}
-
-	/*--- Only write the coordiantes of the points that are on the surfaces ---*/
-	if (nDim == 3) {
-		for(iPoint = 0; iPoint < nPoint; iPoint++)
-			if (node[iPoint]->GetBoundary()) {
-				for(Coord_i = 0; Coord_i < nDim-1; Coord_i++)
-					Tecplot_File << node[iPoint]->GetCoord(Coord_i) << "\t";
-				Tecplot_File << node[iPoint]->GetCoord(nDim-1) << "\n";
-			}
-	}
-	else {
-		for(iPoint = 0; iPoint < nPoint; iPoint++)
-			if (node[iPoint]->GetBoundary()){
-				for(Coord_i = 0; Coord_i < nDim; Coord_i++)
-					Tecplot_File << node[iPoint]->GetCoord(Coord_i) << "\t";
-				Tecplot_File << "\n";
-			}
-	}
-
-	/*--- Write the cells using the new numbering ---*/
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) 
-		if (config->GetMarker_All_Plotting(iMarker) == YES) 
-			for(iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
-				if (nDim == 2) {
-					Tecplot_File << PointSurface[bound[iMarker][iElem]->GetNode(0)]+1 << "\t"
-							<< PointSurface[bound[iMarker][iElem]->GetNode(1)]+1 << endl;
-				}
-				if (nDim == 3) {
-					if (bound[iMarker][iElem]->GetnNodes() == 3) {
-						Tecplot_File << PointSurface[bound[iMarker][iElem]->GetNode(0)]+1 << "\t" 
-								<< PointSurface[bound[iMarker][iElem]->GetNode(1)]+1 << "\t"
-								<< PointSurface[bound[iMarker][iElem]->GetNode(2)]+1 << "\t"
-								<< PointSurface[bound[iMarker][iElem]->GetNode(2)]+1 << endl;
-					}
-					if (bound[iMarker][iElem]->GetnNodes() == 4) {
-						Tecplot_File << PointSurface[bound[iMarker][iElem]->GetNode(0)]+1 << "\t" 
-								<< PointSurface[bound[iMarker][iElem]->GetNode(1)]+1 << "\t"
-								<< PointSurface[bound[iMarker][iElem]->GetNode(2)]+1 << "\t"
-								<< PointSurface[bound[iMarker][iElem]->GetNode(3)]+1 << endl;
-					}
-				}
-			}
-
+  if (Total_nElem_Bound != 0) {
+    
+    /*--- Write the header of the file ---*/
+    if (nDim == 2) {
+      Tecplot_File << "VARIABLES = \"x\",\"y\" " << endl;
+      Tecplot_File << "ZONE NODES= "<< nPointSurface <<", ELEMENTS= "<< Total_nElem_Bound <<", DATAPACKING=POINT, ZONETYPE=FELINESEG"<< endl;
+    }
+    if (nDim == 3) {
+      Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\" " << endl;
+      Tecplot_File << "ZONE NODES= "<< nPointSurface <<", ELEMENTS= "<< Total_nElem_Bound <<", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
+    }
+    
+    /*--- Only write the coordiantes of the points that are on the surfaces ---*/
+    if (nDim == 3) {
+      for(iPoint = 0; iPoint < nPoint; iPoint++)
+        if (node[iPoint]->GetBoundary()) {
+          for(Coord_i = 0; Coord_i < nDim-1; Coord_i++)
+            Tecplot_File << node[iPoint]->GetCoord(Coord_i) << " ";
+          Tecplot_File << node[iPoint]->GetCoord(nDim-1) << "\n";
+        }
+    }
+    else {
+      for(iPoint = 0; iPoint < nPoint; iPoint++)
+        if (node[iPoint]->GetBoundary()){
+          for(Coord_i = 0; Coord_i < nDim; Coord_i++)
+            Tecplot_File << node[iPoint]->GetCoord(Coord_i) << " ";
+          Tecplot_File << "\n";
+        }
+    }
+    
+    /*--- Write the cells using the new numbering ---*/
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+      if (config->GetMarker_All_Plotting(iMarker) == YES)
+        for(iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
+          if (nDim == 2) {
+            Tecplot_File << PointSurface[bound[iMarker][iElem]->GetNode(0)]+1 << " "
+            << PointSurface[bound[iMarker][iElem]->GetNode(1)]+1 << endl;
+          }
+          if (nDim == 3) {
+            if (bound[iMarker][iElem]->GetnNodes() == 3) {
+              Tecplot_File << PointSurface[bound[iMarker][iElem]->GetNode(0)]+1 << " "
+              << PointSurface[bound[iMarker][iElem]->GetNode(1)]+1 << " "
+              << PointSurface[bound[iMarker][iElem]->GetNode(2)]+1 << " "
+              << PointSurface[bound[iMarker][iElem]->GetNode(2)]+1 << endl;
+            }
+            if (bound[iMarker][iElem]->GetnNodes() == 4) {
+              Tecplot_File << PointSurface[bound[iMarker][iElem]->GetNode(0)]+1 << " "
+              << PointSurface[bound[iMarker][iElem]->GetNode(1)]+1 << " "
+              << PointSurface[bound[iMarker][iElem]->GetNode(2)]+1 << " "
+              << PointSurface[bound[iMarker][iElem]->GetNode(3)]+1 << endl;
+            }
+          }
+        }
+  }
+  else {
+    /*--- No elements in the surface ---*/
+    if (nDim == 2) {
+      Tecplot_File << "VARIABLES = \"x\",\"y\" " << endl;
+      Tecplot_File << "ZONE NODES= 1, ELEMENTS= 1, DATAPACKING=POINT, ZONETYPE=FELINESEG"<< endl;
+      Tecplot_File << "0.0 0.0"<< endl;
+      Tecplot_File << "1 1"<< endl;
+    }
+    if (nDim == 3) {
+      Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\" " << endl;
+      Tecplot_File << "ZONE NODES= 1, ELEMENTS= 1, DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
+      Tecplot_File << "0.0 0.0 0.0"<< endl;
+      Tecplot_File << "1 1 1 1"<< endl;
+    }
+  }
+  
+  
 	/*--- Dealocate memory and close the file ---*/
 	delete[] PointSurface;
 	Tecplot_File.close();

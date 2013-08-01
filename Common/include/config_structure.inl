@@ -117,6 +117,8 @@ inline double CConfig::GetSpecies_Gamma(unsigned short val_Species) { return Spe
 
 inline int CConfig::GetCharge_Number(unsigned short val_Species) { return Charge_Number[val_Species]; }
 
+inline double CConfig::GetSection_Limit(unsigned short val_var) { return Section_Limit[val_var]; }
+
 inline int ***CConfig::GetReaction_Map(void) { return Reactions; } 
 
 inline double ***CConfig::GetCollisionIntegral00(void) { return Omega00; }
