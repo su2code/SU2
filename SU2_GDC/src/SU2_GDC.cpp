@@ -27,7 +27,7 @@ using namespace std;
 int main(int argc, char *argv[]) {
   
   /*--- Local variables ---*/
-	unsigned short iDV, nZone = 1, iFFDBox, iPlane, nPlane = 5;
+	unsigned short iDV, nZone = 1, iFFDBox, iPlane, nPlane = 10;
 	double ObjectiveFunc, ObjectiveFunc_New, Gradient, delta_eps, Plane_P0[3] = {0.0, 0.0, 0.0}, Plane_Normal[3] = {0.0, 1.0, 0.0}, Max_Thickness[100], MinPlane, MaxPlane;
   vector<double> Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil;
 

@@ -7639,7 +7639,8 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
   Airfoil_Tangent[3] = {0.0, 0.0, 0.0}, Segment[3] = {0.0, 0.0, 0.0}, Length, Angle_Value, Normal[3], Tangent[3], BiNormal[3], auxXCoord,
   auxYCoord, auxZCoord, zp1, zpn, Camber_Line, MaxAngle = 25, *VarCoord = NULL;
   vector<double> Xcoord, Ycoord, Zcoord, Z2coord, Xcoord_Normal, Ycoord_Normal, Zcoord_Normal, Xcoord_Camber, Ycoord_Camber, Zcoord_Camber;
-  vector<double>::iterator it;
+  vector<unsigned long> Duplicate;
+  vector<unsigned long>::iterator it;
   int rank = MASTER_NODE;
   double **Coord_Variation;
   
@@ -7692,8 +7693,7 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
           for(jNode = 0; jNode < bound[iMarker][iElem]->GetnNodes(); jNode++) {
             jPoint = bound[iMarker][iElem]->GetNode(jNode);
             
-            if (iPoint != jPoint) {
-              
+            if (jPoint > iPoint) {
               
               for (iDim = 0; iDim < nDim; iDim++) {
                 if (original_surface == true) {
@@ -7783,27 +7783,36 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
   
   if (rank == MASTER_NODE) {
     
-    /*--- Remove duplicated points, this algortihm should be repeated ---*/
-    for (iLoop = 0; iLoop < 5; iLoop++) {
-      for (iVertex = 0; iVertex < Xcoord.size(); iVertex++) {
-        for (jVertex = 0; jVertex < Xcoord.size(); jVertex++) {
-          Segment[0] = Xcoord[jVertex] - Xcoord[iVertex];
-          Segment[1] = Ycoord[jVertex] - Ycoord[iVertex];
-          Segment[2] = Zcoord[jVertex] - Zcoord[iVertex];
-          Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-          if ((iVertex != jVertex) && (Dist_Value < 1E-6)) {
-            Xcoord.erase (Xcoord.begin() + jVertex);
-            Ycoord.erase (Ycoord.begin() + jVertex);
-            Zcoord.erase (Zcoord.begin() + jVertex);
-          }
+    /*--- Create a list with the duplicated points ---*/
+    for (iVertex = 0; iVertex < Xcoord.size()-1; iVertex++) {
+      for (jVertex = iVertex+1; jVertex < Xcoord.size(); jVertex++) {
+        Segment[0] = Xcoord[jVertex] - Xcoord[iVertex];
+        Segment[1] = Ycoord[jVertex] - Ycoord[iVertex];
+        Segment[2] = Zcoord[jVertex] - Zcoord[iVertex];
+        Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+        if (Dist_Value < 1E-6) {
+          Duplicate.push_back (jVertex);
         }
       }
+    }
+    
+    sort(Duplicate.begin(), Duplicate.end());
+    it = unique(Duplicate.begin(), Duplicate.end());
+    Duplicate.resize(it - Duplicate.begin());
+    
+    /*--- Remove duplicated points (starting from the back) ---*/
+    for (iVertex = Duplicate.size(); iVertex > 0; iVertex--) {
+      Xcoord.erase (Xcoord.begin() + Duplicate[iVertex-1]);
+      Ycoord.erase (Ycoord.begin() + Duplicate[iVertex-1]);
+      Zcoord.erase (Zcoord.begin() + Duplicate[iVertex-1]);
     }
     
     /*--- Find the trailing edge ---*/
     Trailing_Point = 0; Trailing_Coord = Xcoord[0];
     for (iVertex = 1; iVertex < Xcoord.size(); iVertex++) {
-      if (Xcoord[iVertex] > Trailing_Coord) { Trailing_Point = iVertex; Trailing_Coord = Xcoord[iVertex]; }
+      if (Xcoord[iVertex] > Trailing_Coord) {
+        Trailing_Point = iVertex; Trailing_Coord = Xcoord[iVertex];
+      }
     }
     
     /*--- Add the trailing edge to the list, and remove from the original list ---*/
