@@ -1459,8 +1459,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		switch (Kind_GasModel) {
       case ONESPECIES:
         /*--- Define parameters of the gas model ---*/
-        nMonatomics = 1;
-        nDiatomics  = 0;
+        nMonatomics = 0;
+        nDiatomics  = 1;
         nSpecies    = nMonatomics + nDiatomics;
         ionization  = false;
         
@@ -1475,9 +1475,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         // Rotational modes of energy storage
         RotationModes[0] = 2.0;
         // Molar mass [kg/kmol]
-        Molar_Mass[0] = 2.0*14.0067;
+        Molar_Mass[0] = 14.0067+15.9994;
         // Characteristic vibrational temperatures for calculating e_vib [K]
-        CharVibTemp[0] = 3395.0;
+        CharVibTemp[0] = 0.0;
+        //CharVibTemp[0] = 3395.0;
         // Formation enthalpy: (JANAF values, [KJ/Kmol])
         Enthalpy_Formation[0] = 0.0;					//N2
         // Reference temperature (JANAF values, [K])

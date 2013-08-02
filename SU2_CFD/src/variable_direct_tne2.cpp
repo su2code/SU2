@@ -129,7 +129,7 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_density, double *val_massfrac,
   Eve    = 0.0;                             // Mixture vib-el energy per mass [J/kg]
   
   for (iDim = 0; iDim < nDim; iDim++)
-    sqvel += (Solution[nSpecies+iDim]/rho) * (Solution[nSpecies+iDim]/rho);
+    sqvel += val_velocity[iDim] * val_velocity[iDim];
   
   /*--- Calculate energy (RRHO) from supplied primitive quanitites ---*/
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
@@ -137,7 +137,10 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_density, double *val_massfrac,
     Ef = hf[iSpecies] - Ru/Ms[iSpecies]*Tref[iSpecies];
     
     // Species vibrational energy
-    Ev = Ru/Ms[iSpecies] * thetav[iSpecies] / (exp(thetav[iSpecies]/Tve)-1.0);
+    if (thetav[iSpecies] != 0.0)
+      Ev = Ru/Ms[iSpecies] * thetav[iSpecies] / (exp(thetav[iSpecies]/Tve)-1.0);
+    else
+      Ev = 0.0;
     
     // Species electronic energy
     Ee = 0.0;
@@ -367,7 +370,7 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
     sqvel    += (Solution[nSpecies+iDim]/rho) * (Solution[nSpecies+iDim]/rho);
   
   /*--- Calculate translational-rotational temperature ---*/
-  Primitive[T_INDEX] = (rhoE - rhoEve - rhoE_f + rhoE_ref - 0.5*sqvel) / rhoCvtr;
+  Primitive[T_INDEX] = (rhoE - rhoEve - rhoE_f + rhoE_ref - 0.5*rho*sqvel) / rhoCvtr;
   
   /*--- Calculate vibrational-electronic temperature ---*/
   // NOTE: This is not correct, just a hack solution to get running

@@ -205,8 +205,6 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
   Temperature_ve_Inf = config->GetTemperature_ve_FreeStream();
   Temperature_Inf    = config->GetTemperature_FreeStream();
   
-  cout << "TNE2Solver: After farfield conditions..." << endl;
-  
   /*--- Create a CVariable that stores the free-stream values ---*/
   node_infty = new CTNE2EulerVariable(Density_Inf, MassFrac_Inf, Velocity_Inf,
                                       Temperature_Inf, Temperature_ve_Inf, nDim,
@@ -1958,6 +1956,17 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
   /*--- Allocate arrays ---*/
 	Normal = new double[nDim];
   
+  /*--- Pass structure of the primitive variable vector to CNumerics ---*/
+  conv_numerics->SetRhosIndex   ( node[0]->GetRhosIndex()    );
+  conv_numerics->SetRhoIndex    ( node[0]->GetRhoIndex()     );
+  conv_numerics->SetPIndex      ( node[0]->GetPIndex()       );
+  conv_numerics->SetTIndex      ( node[0]->GetTIndex()       );
+  conv_numerics->SetTveIndex    ( node[0]->GetTveIndex()     );
+  conv_numerics->SetHIndex      ( node[0]->GetHIndex()       );
+  conv_numerics->SetAIndex      ( node[0]->GetAIndex()       );
+  conv_numerics->SetRhoCvtrIndex( node[0]->GetRhoCvtrIndex() );
+  conv_numerics->SetRhoCvveIndex( node[0]->GetRhoCvveIndex() );
+  
 	/*--- Loop over all the vertices on this boundary (val_marker) ---*/
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -1981,10 +1990,31 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
       V_domain = node[iPoint]->GetPrimVar();
       U_infty  = node_infty->GetSolution();
       V_infty  = node_infty->GetPrimVar();
+      
+      unsigned short iVar;
+      cout << "U_infty: " << endl;
+      for (iVar = 0; iVar < nVar; iVar++)
+        cout << U_infty[iVar] << endl;
+      cout << endl << endl << "V_infty: " << endl;
+      for (iVar = 0; iVar < nPrimVar; iVar++)
+        cout << V_infty[iVar] << endl;
+      
+      cout << endl << endl << "U_domain: " << endl;
+      for (iVar = 0; iVar < nVar; iVar++)
+        cout << U_domain[iVar] << endl;
+      cout << endl << endl << "V_domain: " << endl;
+      for (iVar = 0; iVar < nPrimVar; iVar++)
+        cout << V_domain[iVar] << endl;
+      cin.get();
+      
+      
 			
       /*--- Pass conserved & primitive variables to CNumerics ---*/
       conv_numerics->SetConservative(U_domain, U_infty);
       conv_numerics->SetPrimitive(V_domain, V_infty);
+      
+      /*--- Pass supplementary information to CNumerics ---*/
+      conv_numerics->SetdPdrhos(node[iPoint]->GetdPdrhos(), node_infty->GetdPdrhos());
       
 			/*--- Compute the convective residual (and Jacobian) ---*/
       // Note: This uses the specified boundary num. method specified in definition_structure.cpp
