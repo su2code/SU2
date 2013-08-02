@@ -81,7 +81,7 @@ inline void CGeometry::SetPeriodicBoundary(CGeometry *geometry, CConfig *config)
 
 inline void CGeometry::SetSendReceive(CConfig *config) { }
 
-inline void CGeometry::SetWall_Distance(CConfig *config) { }
+inline void CGeometry::ComputeWall_Distance(CConfig *config) { }
 
 inline void CGeometry::SetPositive_ZArea(CConfig *config) { }
 

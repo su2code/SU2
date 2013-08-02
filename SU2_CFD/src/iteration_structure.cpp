@@ -1162,15 +1162,15 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
       
       /*--- Surface grid deformation ---*/
       if (rank == MASTER_NODE)
-        cout << "Updating flutter surfaces locations." << endl;
+        cout << "Updating flutter surface locations." << endl;
       if (geometry_container[MESH_0]->GetnDim() == 2)
-        surface_movement->SetBoundary_Flutter2D(geometry_container[MESH_0], config_container, ExtIter);
+        surface_movement->SetBoundary_Flutter2D(geometry_container[MESH_0], config_container, ExtIter, iZone);
       else
         surface_movement->SetBoundary_Flutter3D(geometry_container[MESH_0], config_container, FFDBox, ExtIter);
       
       /*--- Volume grid deformation ---*/
       if (rank == MASTER_NODE)
-        cout << "Deforming the volume grid using the spring analogy." << endl;
+        cout << "Deforming the volume grid." << endl;
       grid_movement->SetVolume_Deformation(geometry_container[MESH_0], config_container, true);
       
       /*--- Update the multigrid structure after moving the finest grid ---*/
@@ -1184,7 +1184,7 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
       if (!adjoint) {
         /*--- Update grid node velocities on all mesh levels ---*/
         if (rank == MASTER_NODE)
-          cout << "Computing mesh velocities using a finite diff. approx." << endl;
+          cout << "Computing mesh velocities using a finite difference approx." << endl;
         geometry_container[MESH_0]->SetGridVelocity(config_container, ExtIter);
         for (unsigned short iMGlevel = 1; iMGlevel <= config_container->GetMGLevels(); iMGlevel++) {
           /*---Set the grid velocity on the coarser levels ---*/

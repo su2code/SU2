@@ -370,7 +370,7 @@ private:
 	Kappa_1st_Plasma,			/*!< \brief JST 1st order dissipation coefficient for plasma equations (coarse multigrid levels). */
 	Kappa_2nd_Plasma,			/*!< \brief JST 2nd order dissipation coefficient for plasma equations. */
 	Kappa_4th_Plasma;			/*!< \brief JST 4th order dissipation coefficient for plasma equations. */	
-  unsigned long FEA_Iter; /*!< \brief Number of iterations for FEA deformation. */
+  unsigned long GridDef_Iter; /*!< \brief Number of incrememts for grid deformation. */
 	double Mach;		/*!< \brief Mach number. */
 	double Reynolds;	/*!< \brief Reynolds number. */
 	double Froude;	/*!< \brief Froude number. */	
@@ -2056,10 +2056,10 @@ public:
 	double GetAdjTurb_CFLRedCoeff(void);
   
   /*!
-	 * \brief Get the number of iterations for FEA mesh deformation.
-	 * \return Number of iterations for FEA mesh deformation.
+	 * \brief Get the number of increments for mesh deformation.
+	 * \return Number of increments for mesh deformation.
 	 */
-	unsigned long GetFEA_Iter(void);
+	unsigned long GetGridDef_Iter(void);
 
 	/*!
 	 * \brief Get the kind of SU2 software component.

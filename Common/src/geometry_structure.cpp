@@ -2764,85 +2764,109 @@ void CPhysicalGeometry::SetEsuP(void) {
 		}
 }
 
-void CPhysicalGeometry::SetWall_Distance(CConfig *config) {
+void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
+  
 	double *coord, dist2, dist;
 	unsigned short iDim, iMarker;
 	unsigned long iPoint, iVertex, nVertex_SolidWall;
+  
+  int rank = MASTER_NODE;
+#ifndef NO_MPI
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif  
+	if (rank == MASTER_NODE)
+		cout << "Computing wall distances." << endl;
 
 #ifdef NO_MPI
 
-	/*--- identification of the wall points and coordinates ---*/
+	/*--- Compute the total number of nodes on no-slip boundaries ---*/
+  
 	nVertex_SolidWall = 0;
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
 		if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL) ||
-        (config->GetMarker_All_Boundary(iMarker) == EULER_WALL))
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL))
 			nVertex_SolidWall += GetnVertex(iMarker);
 
-	/*--- Allocate vector of boundary coordinates ---*/
+	/*--- Allocate an array to hold boundary node coordinates ---*/
+  
 	double **Coord_bound;
 	Coord_bound = new double* [nVertex_SolidWall];
 	for (iVertex = 0; iVertex < nVertex_SolidWall; iVertex++)
 		Coord_bound[iVertex] = new double [nDim];
 
-	/*--- Get coordinates of the points of the surface ---*/
+	/*--- Retrieve and store the coordinates of the no-slip boundary nodes ---*/
+  
 	nVertex_SolidWall = 0;
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 		if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL) ||
-        (config->GetMarker_All_Boundary(iMarker) == EULER_WALL))
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL))
 			for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
 				iPoint = vertex[iMarker][iVertex]->GetNode();
 				for (iDim = 0; iDim < nDim; iDim++)
 					Coord_bound[nVertex_SolidWall][iDim] = node[iPoint]->GetCoord(iDim);
 				nVertex_SolidWall++;
 			}
-
-	/*--- Get coordinates of the points and compute distances to the surface ---*/
+  }
+  
+	/*--- Loop over all interior mesh nodes and compute the distances to each
+   of the no-slip boundary nodes. Store the minimum distance to the wall for
+   each interior mesh node. ---*/
+  
 	for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
 		coord = node[iPoint]->GetCoord();
-		/*--- Compute the squared distance to the rest of points, and get the minimum ---*/
 		dist = 1E20;
 		for (iVertex = 0; iVertex < nVertex_SolidWall; iVertex++) {
 			dist2 = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++)
-				dist2 += (coord[iDim]-Coord_bound[iVertex][iDim])*(coord[iDim]-Coord_bound[iVertex][iDim]);
+				dist2 += (coord[iDim]-Coord_bound[iVertex][iDim])
+        *(coord[iDim]-Coord_bound[iVertex][iDim]);
 			if (dist2 < dist) dist = dist2;
 		}
 		node[iPoint]->SetWallDistance(sqrt(dist));
 	}
 
-	/*--- Deallocate vector of boundary coordinates ---*/
+	/*--- Deallocate the vector of boundary coordinates. ---*/
+  
 	for (iVertex = 0; iVertex < nVertex_SolidWall; iVertex++)
 		delete[] Coord_bound[iVertex];
 	delete[] Coord_bound;
 
-	cout << "Wall distance computation." << endl;
 
 #else 
+  
+  /*--- Variables and buffers needed for MPI ---*/
+  
 	int iProcessor;
-
-	/*--- Count the number of wall nodes in the whole mesh ---*/
-	unsigned long nLocalVertex_NS = 0, nGlobalVertex_NS = 0, MaxLocalVertex_NS = 0;
-
 	int nProcessor = MPI::COMM_WORLD.Get_size();
 
-	unsigned long *Buffer_Send_nVertex = new unsigned long [1];
+	unsigned long nLocalVertex_NS = 0, nGlobalVertex_NS = 0, MaxLocalVertex_NS = 0;
+	unsigned long *Buffer_Send_nVertex    = new unsigned long [1];
 	unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
 
+  /*--- Count the total number of nodes on no-slip boundaries within the
+   local partition. ---*/
+  
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
 		if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL) ||
-        (config->GetMarker_All_Boundary(iMarker) == EULER_WALL))
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL))
 			nLocalVertex_NS += GetnVertex(iMarker);
 
+  /*--- Communicate to all processors the total number of no-slip boundary 
+   nodes, the maximum number of no-slip boundary nodes on any single single 
+   partition, and the number of no-slip nodes on each partition. ---*/
+  
 	Buffer_Send_nVertex[0] = nLocalVertex_NS;	
+	MPI::COMM_WORLD.Allreduce(&nLocalVertex_NS, &nGlobalVertex_NS,  1,
+                            MPI::UNSIGNED_LONG, MPI::SUM);
+	MPI::COMM_WORLD.Allreduce(&nLocalVertex_NS, &MaxLocalVertex_NS, 1,
+                            MPI::UNSIGNED_LONG, MPI::MAX);
+	MPI::COMM_WORLD.Allgather(Buffer_Send_nVertex, 1, MPI::UNSIGNED_LONG,
+                            Buffer_Receive_nVertex, 1, MPI::UNSIGNED_LONG);
 
-	MPI::COMM_WORLD.Allreduce(&nLocalVertex_NS, &nGlobalVertex_NS, 1, MPI::UNSIGNED_LONG, MPI::SUM); 	
-	MPI::COMM_WORLD.Allreduce(&nLocalVertex_NS, &MaxLocalVertex_NS, 1, MPI::UNSIGNED_LONG, MPI::MAX); 	
-	MPI::COMM_WORLD.Allgather(Buffer_Send_nVertex, 1, MPI::UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI::UNSIGNED_LONG);
-
-	double *Buffer_Send_Coord = new double [MaxLocalVertex_NS*nDim];
+  /*--- Create and initialize to zero some buffers to hold the coordinates 
+   of the boundary nodes that are communicated from each partition (all-to-all). ---*/
+  
+	double *Buffer_Send_Coord    = new double [MaxLocalVertex_NS*nDim];
 	double *Buffer_Receive_Coord = new double [nProcessor*MaxLocalVertex_NS*nDim];
 	unsigned long nBuffer = MaxLocalVertex_NS*nDim;
 
@@ -2850,25 +2874,28 @@ void CPhysicalGeometry::SetWall_Distance(CConfig *config) {
 		for (iDim = 0; iDim < nDim; iDim++)
 			Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
 
+  /*--- Retrieve and store the coordinates of the no-slip boundary nodes on
+   the local partition and broadcast them to all partitions. ---*/
+  
 	nVertex_SolidWall = 0;
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
 		if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL) ||
-        (config->GetMarker_All_Boundary(iMarker) == EULER_WALL))
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL))
 			for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
 				iPoint = vertex[iMarker][iVertex]->GetNode();
 				for (iDim = 0; iDim < nDim; iDim++)
 					Buffer_Send_Coord[nVertex_SolidWall*nDim+iDim] = node[iPoint]->GetCoord(iDim);
 				nVertex_SolidWall++;
 			}
+	MPI::COMM_WORLD.Allgather(Buffer_Send_Coord, nBuffer, MPI::DOUBLE,
+                            Buffer_Receive_Coord, nBuffer, MPI::DOUBLE);
 
-	MPI::COMM_WORLD.Allgather(Buffer_Send_Coord, nBuffer, MPI::DOUBLE, Buffer_Receive_Coord, nBuffer, MPI::DOUBLE);
-
-	/*--- Get coordinates of the points and compute distances to the surface ---*/
+  /*--- Loop over all interior mesh nodes on the local partition and compute 
+   the distances to each of the no-slip boundary nodes in the entire mesh. 
+   Store the minimum distance to the wall for each interior mesh node. ---*/
+  
 	for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
 		coord = node[iPoint]->GetCoord();
-
-		/*--- Compute the squared distance and get the minimum ---*/
 		dist = 1E20;
 		for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
 			for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
@@ -2881,15 +2908,12 @@ void CPhysicalGeometry::SetWall_Distance(CConfig *config) {
 		node[iPoint]->SetWallDistance(sqrt(dist));
 	}
 
+  /*--- Deallocate the buffers needed for the MPI communication. ---*/
+  
 	delete[] Buffer_Send_Coord;
 	delete[] Buffer_Receive_Coord;
 	delete[] Buffer_Send_nVertex;
 	delete[] Buffer_Receive_nVertex;
-
-	int rank = MPI::COMM_WORLD.Get_rank();
-
-	if (rank == MASTER_NODE)
-		cout << "Wall distance computation." << endl;
 
 #endif
 
