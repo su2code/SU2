@@ -8197,7 +8197,7 @@ double CBoundaryGeometry::Compute_Chord(double *Plane_P0, double *Plane_Normal, 
   }
   
 #ifndef NO_MPI
-  MPI::COMM_WORLD.Bcast (&MaxThickness_Value, 1, MPI::DOUBLE, MASTER_NODE);
+  MPI::COMM_WORLD.Bcast (&Chord, 1, MPI::DOUBLE, MASTER_NODE);
   MPI::COMM_WORLD.Barrier();
 #endif
   

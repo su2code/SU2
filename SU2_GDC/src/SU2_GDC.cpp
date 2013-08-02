@@ -118,10 +118,10 @@ int main(int argc, char *argv[]) {
       ObjectiveFunc[6*nPlane+iPlane] = boundary->Compute_Chord(Plane_P0[iPlane], Plane_Normal[iPlane], 0, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
       
       cout << "Maximum thickness: "<< ObjectiveFunc[iPlane] << "." << endl;
-      cout << "Thickness (1/4 chord): "<< ObjectiveFunc[1*nPlane+iPlane] << "." << endl;
-      cout << "Thickness (1/2 chord): "<< ObjectiveFunc[2*nPlane+iPlane] << "." << endl;
-      cout << "Thickness (3/4 chord): "<< ObjectiveFunc[3*nPlane+iPlane] << "." << endl;
-      cout << "Total area: "<< ObjectiveFunc[4*nPlane+iPlane] << "." << endl;
+      cout << "1/4 chord thickness: "<< ObjectiveFunc[1*nPlane+iPlane] << "." << endl;
+      cout << "1/2 chord thickness: "<< ObjectiveFunc[2*nPlane+iPlane] << "." << endl;
+      cout << "3/4 chord thickness: "<< ObjectiveFunc[3*nPlane+iPlane] << "." << endl;
+      cout << "Area: "<< ObjectiveFunc[4*nPlane+iPlane] << "." << endl;
       cout << "Angle of attack: "<< ObjectiveFunc[5*nPlane+iPlane] << "." << endl;
       cout << "Chord: "<< ObjectiveFunc[6*nPlane+iPlane] << "." << endl;
       
@@ -277,10 +277,10 @@ int main(int argc, char *argv[]) {
           Gradient[6*nPlane + iPlane] = (ObjectiveFunc_New[6*nPlane + iPlane] - ObjectiveFunc[6*nPlane + iPlane]) / delta_eps;
           
           cout << "Maximum thickness gradient: "<< Gradient[iPlane] << "." << endl;
-          cout << "Thickness (1/4 chord) gradient: "<< Gradient[1*nPlane + iPlane] << "." << endl;
-          cout << "Thickness (1/2 chord) gradient: "<< Gradient[2*nPlane + iPlane] << "." << endl;
-          cout << "Thickness (3/4 chord) gradient: "<< Gradient[3*nPlane + iPlane] << "." << endl;
-          cout << "Total area gradient: "<< Gradient[4*nPlane + iPlane] << "." << endl;
+          cout << "1/4 chord thickness gradient: "<< Gradient[1*nPlane + iPlane] << "." << endl;
+          cout << "1/2 chord thickness gradient: "<< Gradient[2*nPlane + iPlane] << "." << endl;
+          cout << "3/4 chord thickness gradient: "<< Gradient[3*nPlane + iPlane] << "." << endl;
+          cout << "Area gradient: "<< Gradient[4*nPlane + iPlane] << "." << endl;
           cout << "Angle of attack gradient: "<< Gradient[5*nPlane + iPlane] << "." << endl;
           cout << "Chord gradient: "<< Gradient[6*nPlane + iPlane] << "." << endl;
           
