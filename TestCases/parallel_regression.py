@@ -87,7 +87,7 @@ class testcase:
       start_solver = False
       for line in output:
         if not start_solver: # Don't bother parsing anything before --Start solver ---
-          if line.find('Begin solver') > -1:
+          if line.find('Begin Solver') > -1:
             start_solver=True
         else:   # Found the --Begin solver --- line; parse the input
           raw_data = line.split()
