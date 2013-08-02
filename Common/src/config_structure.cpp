@@ -573,8 +573,6 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddScalarOption("ADJ_LIMIT", AdjointLimit, 1E6);
 	/* DESCRIPTION: Adjoint problem boundary condition */
 	AddEnumOption("ADJ_OBJFUNC", Kind_ObjFunc, Objective_Map, "DRAG");
-	/* DESCRIPTION: Geometrical objective function */
-	AddEnumOption("GEO_PARAM", Kind_GeoObjFunc, Objective_Map, "MAX_THICKNESS");
   /* DESCRIPTION: Definition of the airfoil section */
   default_vec_3d[0] = 0.0; default_vec_3d[1] = 1.0;
 	AddArrayOption("GEO_SECTION_LIMIT", 2, Section_Limit, default_vec_3d);

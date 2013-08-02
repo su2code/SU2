@@ -104,7 +104,6 @@ private:
 	double LimiterCoeff;				/*!< \brief Limiter coefficient */ 
 	unsigned short Kind_Adjoint;	/*!< \brief Kind of adjoint function. */
 	unsigned short Kind_ObjFunc;	/*!< \brief Kind of objective function. */
-	unsigned short Kind_GeoObjFunc;	/*!< \brief Kind of geometrical objective function. */
 	unsigned short Kind_SensSmooth;	/*!< \brief Kind of sensitivity smoothing technique. */
 	unsigned short Continuous_Eqns;	/*!< \brief Which equations to treat continuously (Hybrid adjoint) */
 	unsigned short Discrete_Eqns;	/*!< \brief Which equations to treat discretely (Hybrid adjoint). */
@@ -2910,12 +2909,6 @@ public:
 	 * \return Kind of objective function.
 	 */
 	unsigned short GetKind_ObjFunc(void);
-
-	/*!
-	 * \brief Get the kind of geometrical objective function.
-	 * \return Kind of geometrical objective function.
-	 */
-	unsigned short GetKind_GeoObjFunc(void);
 
 	/*!
 	 * \brief Get the kind of sensitivity smoothing technique.

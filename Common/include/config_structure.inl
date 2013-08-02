@@ -624,8 +624,6 @@ inline void CConfig::SetKind_SourNumScheme(unsigned short val_kind_sournumscheme
 
 inline unsigned short CConfig::GetKind_ObjFunc(void) {return Kind_ObjFunc; }
 
-inline unsigned short CConfig::GetKind_GeoObjFunc(void) {return Kind_GeoObjFunc; }
-
 inline unsigned short CConfig::GetKind_SensSmooth(void) {return Kind_SensSmooth; }
 
 inline unsigned short CConfig::GetContinuous_Eqns(void) {return Continuous_Eqns; }
