@@ -27,7 +27,7 @@ import os, sys, shutil, copy
 from .. import run  as su2run
 from .. import io   as su2io
 from .. import util as su2util
-from .functions import function
+from .functions import function, update_mesh
 from ..io import redirect_folder, redirect_output
 import functions
 
@@ -414,19 +414,18 @@ def findiff( config, state=None, step=1e-4 ):
 # ----------------------------------------------------------------------
 
 def geometry( func_name, config, state=None ):
-    """ val = SU2.eval.gradients.geometry(config,state=None)
+    """ val = SU2.eval.geometry(config,state=None)
     
         Evaluates geometry with the following:
-            SU2.eval.functions.geometry()
-                SU2.run.decompose()
-	        SU2.run.deform()
-                SU2.run.geometry()
+            SU2.run.decompose()
+	    SU2.run.deform()
+            SU2.run.geometry()
         
         Assumptions:
             Config is already setup for deformation.
             Mesh may or may not be deformed.
             Updates config and state by reference.
-            Redundancy if state.GRADIENTS does not have func_name.
+            Redundancy if state.FUNCTIONS does not have func_name.
             
         Executes in:
             ./GEOMETRY
@@ -436,16 +435,81 @@ def geometry( func_name, config, state=None ):
             state     - optional, an SU2 state
         
         Outputs:
-            A Bunch() with keys of objective function names
-            and values of list of floats of gradient values
+            Bunch() of functions with keys of objective function names
+            and values of objective function floats.
     """
     
-    # # RUN GEOMETRY SOLUTION # #
-    if not state.GRADIENTS.has_key(func_name):
-        functions.geometry(func_name,config,state)
+    # ----------------------------------------------------
+    #  Initialize    
+    # ----------------------------------------------------
+    
+    # initialize
+    state = su2io.State(state)
+    if not state.FILES.has_key('MESH'):
+        state.FILES.MESH = config['MESH_FILENAME']
+    special_cases = su2io.get_specialCases(config)
+    
+    # console output
+    if config.get('CONSOLE','VERBOSE') in ['QUIET','CONCISE']:
+        log_geom = 'log_Geometry.out'
+    else:
+        log_geom = None
+    
+    # ----------------------------------------------------    
+    #  Update Mesh
+    # ----------------------------------------------------
+    
+    # does decomposition and deformation
+    info = update_mesh(config,state)    
+    
+    
+    # ----------------------------------------------------    
+    #  Geometry Solution
+    # ----------------------------------------------------    
+    
+    # redundancy check
+    geometry_done = state.GRADIENTS.has_key(func_name)
+    #geometry_done = all( [ state.FUNCTIONS.has_key(key) for key in su2io.optnames_geo ] )
+    if not geometry_done:    
         
-    # return gradient information
-    grads = state.GRADIENTS
-    return copy.deepcopy(grads)
+        # files to pull
+        files = state.FILES
+        pull = []; link = []
+        
+        # files: mesh
+        name = files['MESH']
+        name = su2io.expand_part(name,config)
+        link.extend(name)
+        
+        # update function name
+        ## TODO
+        
+        # output redirection
+        with redirect_folder( 'GEOMETRY', pull, link ) as push:
+            with redirect_output(log_geom):     
+                
+                # setup config
+                config.GEO_PARAM = func_name
+                config.GEO_MODE  = 'GRADIENT'
+                
+                # # RUN GEOMETRY SOLUTION # #
+                info = su2run.geometry(config)
+                state.update(info)
+                
+                # no files to push
+                
+        #: with output redirection
+        
+    #: if not redundant 
+    
+    # return geometry dictionary
+    geom = state['GRADIENTS'] # naive update
+    for key in geom.keys(): 
+        if key not in su2io.optnames_geo: del geom[key]   
+        
+    return copy.deepcopy(geom)
+
+#: def geometry()
+
     
     

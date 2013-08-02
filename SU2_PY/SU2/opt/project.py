@@ -98,10 +98,18 @@ class Project(object):
         
         print 'New Project: %s' % (folder)
         
+        # setup config
         config = copy.deepcopy(config)
-        state  = copy.deepcopy(state)
-        state  = su2io.State(state)
+        
+        # setup state
+        if state is None:
+            state = su2io.State()
+        else:
+            state  = copy.deepcopy(state)
+            state  = su2io.State(state)
         state.find_files(config)
+        if 'MESH' not in state.FILES:
+            raise Exception , 'Could not find mesh file: %s' % config.MESH_FILENAME
         
         self.config  = config      # base config
         self.state   = state       # base state

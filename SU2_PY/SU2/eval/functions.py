@@ -297,6 +297,7 @@ def geometry( func_name, config, state=None ):
                 
                 # setup config
                 config.GEO_PARAM = func_name
+                config.GEO_MODE  = 'FUNCTION'
                 
                 # # RUN GEOMETRY SOLUTION # #
                 info = su2run.geometry(config)
