@@ -342,7 +342,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.		 
 	 */
-	virtual void SetWall_Distance(CConfig *config);
+	virtual void ComputeWall_Distance(CConfig *config);
 
 	/*! 
 	 * \brief A virtual member.
@@ -873,13 +873,13 @@ public:
 			unsigned short &face_second_elem);
 
 	/*! 
-	 * \brief Set elements which surround a point.
+	 * \brief Computes the distance to the nearest no-slip wall for each grid node.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetWall_Distance(CConfig *config);
+	void ComputeWall_Distance(CConfig *config);
 
 	/*! 
-	 * \brief Compute positive z area for adimensionalization.
+	 * \brief Compute surface area (positive z-direction) for force coefficient non-dimensionalization.
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetPositive_ZArea(CConfig *config);

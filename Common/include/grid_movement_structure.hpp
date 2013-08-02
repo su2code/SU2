@@ -752,10 +752,10 @@ public:
                             unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2, unsigned long val_Point_3);
   
   /*!
-	 * \brief Check each of the mesh volumes for quality after performing grid deformation.
+	 * \brief Check for negative volumes (all elements) after performing grid deformation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 */
-	void CheckFEA_Grid(CGeometry *geometry);
+	void CheckDeformed_Grid(CGeometry *geometry);
   
   /*!
 	 * \brief Check for negative volumes for 2-D elements after grid deformation.
@@ -765,7 +765,7 @@ public:
    * \param[in] val_Point_1 - Index value for Node 1 of the current triangle.
    * \param[in] val_Point_2 - Index value for Node 2 of the current triangle.
 	 */
-  void CheckFEA_Elem2D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2);
+  void CheckDeformed_Elem2D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2);
   
   /*!
 	 * \brief Check for negative volumes for 3-D elements after grid deformation.
@@ -776,7 +776,7 @@ public:
    * \param[in] val_Point_2 - Index value for Node 2 of the current tetrahedron.
    * \param[in] val_Point_3 - Index value for Node 3 of the current tetrahedron.
 	 */
-  void CheckFEA_Elem3D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2, unsigned long val_Point_3);
+  void CheckDeformed_Elem3D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2, unsigned long val_Point_3);
   
 	/*!
 	 * \brief Check the boundary vertex that are going to be moved.
@@ -993,9 +993,10 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iter - Current physical time iteration.
+   * \param[in] iZone - Zone number in the mesh.
 	 */
 	void SetBoundary_Flutter2D(CGeometry *geometry, CConfig *config, 
-                             unsigned long iter);
+                             unsigned long iter, unsigned short iZone);
 	
 	/*! 
 	 * \brief Deforms a 3-D flutter/pitching surface during an unsteady simulation.
@@ -1008,7 +1009,6 @@ public:
 	
   /*! 
 	 * \brief Set the collective pitch for a blade surface movement.
-   * \author T. Economon
 	 * \param[in] boundary - Geometry of the boundary.
 	 * \param[in] config - Definition of the particular problem.
 	 */
@@ -1016,7 +1016,6 @@ public:
   
   /*! 
 	 * \brief Set any surface deformationsbased on an input file.
-   * \author T. Economon
 	 * \param[in] boundary - Geometry of the boundary.
 	 * \param[in] config - Definition of the particular problem.
    * \param[in] iZone - Zone number in the mesh.

@@ -201,7 +201,7 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
 		geometry[iZone][MESH_0]->SetBoundControlVolume(config[iZone], ALLOCATE);
 
 		/*--- Identify closest normal neighbor ---*/
-		if (rank == MASTER_NODE) cout << "Searching for closest normal neighbor on the surface." << endl;
+		if (rank == MASTER_NODE) cout << "Searching for the closest normal neighbors to the surfaces." << endl;
 		geometry[iZone][MESH_0]->FindNormal_Neighbor(config[iZone]);
 
 		/*--- For a rotating frame, set the velocity due to rotation at each mesh point ---*/
@@ -224,7 +224,7 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
 		/*--- Loop over all zones at each grid level. ---*/
 		for (iZone = 0; iZone < val_nZone; iZone++) {
 
-			/*--- Create main aglomeration structure (ingluding MPI stuff) ---*/
+			/*--- Create main agglomeration structure (including MPI calls) ---*/
 			geometry[iZone][iMGlevel] = new CMultiGridGeometry(geometry, config, iMGlevel, iZone);
 
 			/*--- Compute points surrounding points. ---*/
