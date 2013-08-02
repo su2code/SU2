@@ -109,12 +109,12 @@ int main(int argc, char *argv[]) {
       cout << "\nSection " << (iPlane+1) << ". Plane (yCoord): " << Plane_P0[iPlane][1] << "." << endl;
       
       ObjectiveFunc[iPlane] = boundary->Compute_MaxThickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
-      ObjectiveFunc[1*nPlane+iPlane] = boundary->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], 0, 0.25, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
-      ObjectiveFunc[2*nPlane+iPlane] = boundary->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], 0, 0.5, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
-      ObjectiveFunc[3*nPlane+iPlane] = boundary->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], 0, 0.75, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
-      ObjectiveFunc[4*nPlane+iPlane] = boundary->Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane], 0, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
-      ObjectiveFunc[5*nPlane+iPlane] = boundary->Compute_AoA(Plane_P0[iPlane], Plane_Normal[iPlane], 0, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
-      ObjectiveFunc[6*nPlane+iPlane] = boundary->Compute_Chord(Plane_P0[iPlane], Plane_Normal[iPlane], 0, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
+      ObjectiveFunc[1*nPlane+iPlane] = boundary->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.25, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
+      ObjectiveFunc[2*nPlane+iPlane] = boundary->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.5, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
+      ObjectiveFunc[3*nPlane+iPlane] = boundary->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.75, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
+      ObjectiveFunc[4*nPlane+iPlane] = boundary->Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
+      ObjectiveFunc[5*nPlane+iPlane] = boundary->Compute_AoA(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
+      ObjectiveFunc[6*nPlane+iPlane] = boundary->Compute_Chord(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
       
       cout << "Maximum thickness: "<< ObjectiveFunc[iPlane] << "." << endl;
       cout << "1/4 chord thickness: "<< ObjectiveFunc[1*nPlane+iPlane] << "." << endl;
@@ -144,7 +144,7 @@ int main(int argc, char *argv[]) {
       for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"AREA_SEC"<< (iPlane+1) << "\", ";
       for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"AOA_SEC"<< (iPlane+1) << "\", ";
       for (iPlane = 0; iPlane < nPlane-1; iPlane++) ObjFunc_file << "\"CHORD_SEC"<< (iPlane+1) << "\", ";
-      ObjFunc_file << "\"CHORD_SEC\""<< (nPlane) << endl;
+      ObjFunc_file << "\"CHORD_SEC"<< (nPlane) << "\"" << endl;
     }
     
     ObjFunc_file << "ZONE T= \"Geometrical variables (value)\"" << endl;
@@ -270,13 +270,13 @@ int main(int argc, char *argv[]) {
           ObjectiveFunc_New[iPlane] = boundary->Compute_MaxThickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
           Gradient[iPlane] = (ObjectiveFunc_New[iPlane] - ObjectiveFunc[iPlane]) / delta_eps;
           
-          ObjectiveFunc_New[1*nPlane + iPlane] = boundary->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], 0, 0.25, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
+          ObjectiveFunc_New[1*nPlane + iPlane] = boundary->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.25, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
           Gradient[1*nPlane + iPlane] = (ObjectiveFunc_New[1*nPlane + iPlane] - ObjectiveFunc[1*nPlane + iPlane]) / delta_eps;
           
-          ObjectiveFunc_New[2*nPlane + iPlane] = boundary->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], 0, 0.5, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
+          ObjectiveFunc_New[2*nPlane + iPlane] = boundary->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.5, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
           Gradient[2*nPlane + iPlane] = (ObjectiveFunc_New[2*nPlane + iPlane] - ObjectiveFunc[2*nPlane + iPlane]) / delta_eps;
           
-          ObjectiveFunc_New[3*nPlane + iPlane] = boundary->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], 0, 0.75, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
+          ObjectiveFunc_New[3*nPlane + iPlane] = boundary->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.75, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
           Gradient[3*nPlane + iPlane] = (ObjectiveFunc_New[3*nPlane + iPlane] - ObjectiveFunc[3*nPlane + iPlane]) / delta_eps;
           
           ObjectiveFunc_New[4*nPlane + iPlane] = boundary->Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
@@ -302,10 +302,10 @@ int main(int argc, char *argv[]) {
           Gradient_file << "TITLE = \"SU2_GDC Simulation\"" << endl;
 
           if (boundary->GetnDim() == 2) {
-            Gradient_file << "VARIABLES = \"MAX_THICKNESS\",\"3/4_THICKNESS\",\"1/2_THICKNESS\",\"1/4_THICKNESS\",\"AREA\",\"AOA\",\"CHORD\"" << endl;
+            Gradient_file << "VARIABLES = \"DESIGN_VARIABLE\",\"MAX_THICKNESS\",\"3/4_THICKNESS\",\"1/2_THICKNESS\",\"1/4_THICKNESS\",\"AREA\",\"AOA\",\"CHORD\"" << endl;
           }
           else if (boundary->GetnDim() == 3) {
-            Gradient_file << "VARIABLES = ";
+            Gradient_file << "VARIABLES = \"DESIGN_VARIABLE\",";
             for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"MAX_THICKNESS_SEC"<< (iPlane+1) << "\", ";
             for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"3/4_THICKNESS_SEC"<< (iPlane+1) << "\", ";
             for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"1/2_THICKNESS_SEC"<< (iPlane+1) << "\", ";
@@ -313,13 +313,14 @@ int main(int argc, char *argv[]) {
             for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"AREA_SEC"<< (iPlane+1) << "\", ";
             for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"AOA_SEC"<< (iPlane+1) << "\", ";
             for (iPlane = 0; iPlane < nPlane-1; iPlane++) Gradient_file << "\"CHORD_SEC"<< (iPlane+1) << "\", ";
-            Gradient_file << "\"CHORD_SEC\""<< (nPlane) << endl;
+            Gradient_file << "\"CHORD_SEC"<< (nPlane) << "\"" << endl;
           }
           
           Gradient_file << "ZONE T= \"Geometrical variables (gradient)\"" << endl;
           
         }
         
+        Gradient_file << (iDV) <<", ";
         for (iPlane = 0; iPlane < nPlane*7-1; iPlane++)
           Gradient_file << Gradient[iPlane] <<", ";
         Gradient_file << Gradient[nPlane*7-1] << endl;
