@@ -28,9 +28,8 @@ int main(int argc, char *argv[]) {
   
   /*--- Local variables ---*/
 	unsigned short iDV, nZone = 1, iFFDBox, iPlane, nPlane = 5;
-	double ObjectiveFunc[50], ObjectiveFunc_New[50], Gradient[50], delta_eps, MinPlane, MaxPlane;
+	double ObjectiveFunc[50], ObjectiveFunc_New[50], Gradient[50], delta_eps, MinPlane, MaxPlane, Plane_P0[5][3], Plane_Normal[5][3];
   vector<double> Xcoord_Airfoil[5], Ycoord_Airfoil[5], Zcoord_Airfoil[5];
-  double Plane_P0[5][3] = {0.0, 0.0, 0.0}, Plane_Normal[5][3];
   
 	char *cstr;
 	ofstream Gradient_file, ObjFunc_file;
@@ -137,13 +136,15 @@ int main(int argc, char *argv[]) {
       ObjFunc_file << "VARIABLES = \"MAX_THICKNESS\",\"3/4_THICKNESS\",\"1/2_THICKNESS\",\"1/4_THICKNESS\",\"AREA\",\"AOA\",\"CHORD\"" << endl;
     }
     else if (boundary->GetnDim() == 3) {
-      ObjFunc_file << "VARIABLES = \"MAX_THICKNESS_SEC1\",\"MAX_THICKNESS_SEC2\",\"MAX_THICKNESS_SEC3\",\"MAX_THICKNESS_SEC4\",\"MAX_THICKNESS_SEC5\",";
-      ObjFunc_file << "\"3/4_THICKNESS_SEC1\",\"3/4_THICKNESS_SEC2\",\"3/4_THICKNESS_SEC3\",\"3/4_THICKNESS_SEC4\",\"3/4_THICKNESS_SEC5\",";
-      ObjFunc_file << "\"1/2_THICKNESS_SEC1\",\"1/2_THICKNESS_SEC2\",\"1/2_THICKNESS_SEC3\",\"1/2_THICKNESS_SEC4\",\"1/2_THICKNESS_SEC5\",";
-      ObjFunc_file << "\"1/4_THICKNESS_SEC1\",\"1/4_THICKNESS_SEC2\",\"1/4_THICKNESS_SEC3\",\"1/4_THICKNESS_SEC4\",\"1/4_THICKNESS_SEC5\",";
-      ObjFunc_file << "\"AREA_SEC1\",\"AREA_SEC2\",\"AREA_SEC3\",\"AREA_SEC4\",\"AREA_SEC5\",";
-      ObjFunc_file << "\"AOA_SEC1\",\"AOA_SEC2\",\"AOA_SEC3\",\"AOA_SEC4\",\"AOA_SEC5\",";
-      ObjFunc_file << "\"CHORD_SEC1\",\"CHORD_SEC2\",\"CHORD_SEC3\",\"CHORD_SEC4\",\"CHORD_SEC5\"" << endl;
+      ObjFunc_file << "VARIABLES = ";
+      for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"MAX_THICKNESS_SEC"<< (iPlane+1) << "\", ";
+      for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"3/4_THICKNESS_SEC"<< (iPlane+1) << "\", ";
+      for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"1/2_THICKNESS_SEC"<< (iPlane+1) << "\", ";
+      for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"1/4_THICKNESS_SEC"<< (iPlane+1) << "\", ";
+      for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"AREA_SEC"<< (iPlane+1) << "\", ";
+      for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"AOA_SEC"<< (iPlane+1) << "\", ";
+      for (iPlane = 0; iPlane < nPlane-1; iPlane++) ObjFunc_file << "\"CHORD_SEC"<< (iPlane+1) << "\", ";
+      ObjFunc_file << "\"CHORD_SEC\""<< (nPlane) << endl;
     }
     
     ObjFunc_file << "ZONE T= \"Geometrical variables (value)\"" << endl;
@@ -244,12 +245,23 @@ int main(int argc, char *argv[]) {
       for (iPlane = 0; iPlane < nPlane; iPlane++) {
         boundary->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
       }
-			
       
 			/*--- Compute gradient ---*/
 			if (rank == MASTER_NODE) {
         
-        delta_eps = config->GetDV_Value_New(iDV);
+        delta_eps = config->GetDV_Value(iDV);
+        
+        if (delta_eps == 0) {
+          cout << "The finite difference steps is zero!!" << endl;
+          cout << "Press any key to exit..." << endl;
+          cin.get();
+#ifdef NO_MPI
+          exit(1);
+#else
+          MPI::COMM_WORLD.Abort(1);
+          MPI::Finalize();
+#endif
+        }
 
         for (iPlane = 0; iPlane < nPlane; iPlane++) {
           
@@ -293,13 +305,15 @@ int main(int argc, char *argv[]) {
             Gradient_file << "VARIABLES = \"MAX_THICKNESS\",\"3/4_THICKNESS\",\"1/2_THICKNESS\",\"1/4_THICKNESS\",\"AREA\",\"AOA\",\"CHORD\"" << endl;
           }
           else if (boundary->GetnDim() == 3) {
-            Gradient_file << "VARIABLES = \"MAX_THICKNESS_SEC1\",\"MAX_THICKNESS_SEC2\",\"MAX_THICKNESS_SEC3\",\"MAX_THICKNESS_SEC4\",\"MAX_THICKNESS_SEC5\",";
-            Gradient_file << "\"3/4_THICKNESS_SEC1\",\"3/4_THICKNESS_SEC2\",\"3/4_THICKNESS_SEC3\",\"3/4_THICKNESS_SEC4\",\"3/4_THICKNESS_SEC5\",";
-            Gradient_file << "\"1/2_THICKNESS_SEC1\",\"1/2_THICKNESS_SEC2\",\"1/2_THICKNESS_SEC3\",\"1/2_THICKNESS_SEC4\",\"1/2_THICKNESS_SEC5\",";
-            Gradient_file << "\"1/4_THICKNESS_SEC1\",\"1/4_THICKNESS_SEC2\",\"1/4_THICKNESS_SEC3\",\"1/4_THICKNESS_SEC4\",\"1/4_THICKNESS_SEC5\",";
-            Gradient_file << "\"AREA_SEC1\",\"AREA_SEC2\",\"AREA_SEC3\",\"AREA_SEC4\",\"AREA_SEC5\",";
-            Gradient_file << "\"AOA_SEC1\",\"AOA_SEC2\",\"AOA_SEC3\",\"AOA_SEC4\",\"AOA_SEC5\",";
-            Gradient_file << "\"CHORD_SEC1\",\"CHORD_SEC2\",\"CHORD_SEC3\",\"CHORD_SEC4\",\"CHORD_SEC5\"" << endl;
+            Gradient_file << "VARIABLES = ";
+            for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"MAX_THICKNESS_SEC"<< (iPlane+1) << "\", ";
+            for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"3/4_THICKNESS_SEC"<< (iPlane+1) << "\", ";
+            for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"1/2_THICKNESS_SEC"<< (iPlane+1) << "\", ";
+            for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"1/4_THICKNESS_SEC"<< (iPlane+1) << "\", ";
+            for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"AREA_SEC"<< (iPlane+1) << "\", ";
+            for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"AOA_SEC"<< (iPlane+1) << "\", ";
+            for (iPlane = 0; iPlane < nPlane-1; iPlane++) Gradient_file << "\"CHORD_SEC"<< (iPlane+1) << "\", ";
+            Gradient_file << "\"CHORD_SEC\""<< (nPlane) << endl;
           }
           
           Gradient_file << "ZONE T= \"Geometrical variables (gradient)\"" << endl;
@@ -313,6 +327,7 @@ int main(int argc, char *argv[]) {
 				if (iDV != (config->GetnDV()-1)) cout <<"-------------------------------------------------------------------------" << endl;
 				
 			}
+
 		}
 		
 		if (rank == MASTER_NODE)

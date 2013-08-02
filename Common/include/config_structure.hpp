@@ -100,8 +100,7 @@ private:
 	unsigned short Unsteady_Simulation;	/*!< \brief Steady or unsteady (time stepping or dual time stepping) computation. */
 	unsigned short nStartUpIter;	/*!< \brief Start up iterations using the fine grid. */
 	double CteViscDrag;		/*!< \brief Constant value of the viscous drag. */
-	double *DV_Value_New,		/*!< \brief Finite difference step for gradient computation. */
-	*DV_Value_Old;		/*!< \brief Previous value of the design variable. */
+	double *DV_Value;		/*!< \brief Previous value of the design variable. */
 	double LimiterCoeff;				/*!< \brief Limiter coefficient */ 
 	unsigned short Kind_Adjoint;	/*!< \brief Kind of adjoint function. */
 	unsigned short Kind_ObjFunc;	/*!< \brief Kind of objective function. */
@@ -3388,14 +3387,7 @@ public:
 	 * \param[in] val_dv - Number of the design variable that we want to read.
 	 * \return Design variable step.
 	 */	
-	double GetDV_Value_New(unsigned short val_dv);
-
-	/*! 
-	 * \brief If we are doing and incremental deformation, this is the origin value.
-	 * \param[in] val_dv - Number of the design variable that we want to read.
-	 * \return Origin value for incremental deformations.
-	 */	
-	double GetDV_Value_Old(unsigned short val_dv);
+	double GetDV_Value(unsigned short val_dv);
 
 	/*! 
 	 * \brief Get information about the grid movement.

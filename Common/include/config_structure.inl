@@ -788,7 +788,7 @@ inline bool CConfig::GetDivide_Element(void) { return Divide_Element; }
 
 inline bool CConfig::GetEngine_Intake(void) { return Engine_Intake; }
 
-inline double CConfig::GetDV_Value_New(unsigned short val_dv) { return DV_Value_New[val_dv]; }
+inline double CConfig::GetDV_Value(unsigned short val_dv) { return DV_Value[val_dv]; }
 
 inline double CConfig::GetOrderMagResidual(void) { return OrderMagResidual; }
 
@@ -815,8 +815,6 @@ inline double *CConfig::GetRotAxisOrigin(void) { return RotAxisOrigin; }
 inline double *CConfig::GetOmega(void) { return Omega; }
 
 inline double CConfig::GetOmegaMag(void) { return Omega_Mag; }
-
-inline double CConfig::GetDV_Value_Old(unsigned short val_dv) { return DV_Value_Old[val_dv]; }
 
 inline bool CConfig::GetGrid_Movement(void) { return Grid_Movement; }
 

@@ -629,14 +629,6 @@ public:
 	 */
 	virtual double Compute_Area(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
   
-  /*!
-	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.
-   * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
-   * \returns The clearance height of the airfoil.
-	 */
-	virtual double Compute_Clearance(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
-	
 	/*! 
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
@@ -1462,14 +1454,6 @@ public:
    * \returns The total volume of the airfoil.
 	 */
   double Compute_Area(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
-  
-  /*!
-	 * \brief Find the clearance height of the airfoil.
-	 * \param[in] config - Definition of the particular problem.
-   * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
-   * \returns The clearance height of the airfoil.
-	 */
-  double Compute_Clearance(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
 	
   /*!
 	 * \brief Compute the intersection between a segment and a plane.

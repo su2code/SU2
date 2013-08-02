@@ -838,10 +838,8 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddEnumListOption("DV_KIND", nDV, Design_Variable, Param_Map);
 	/* DESCRIPTION: Marker of the surface to which we are going apply the shape deformation */
 	AddMarkerOption("DV_MARKER", nMarker_Moving, Marker_Moving);
-	/* DESCRIPTION: Old value of the deformation for incremental deformations */
-	AddListOption("DV_VALUE_OLD", nDV, DV_Value_Old);
 	/* DESCRIPTION: New value of the shape deformation */
-	AddListOption("DV_VALUE_NEW", nDV, DV_Value_New);
+	AddListOption("DV_VALUE", nDV, DV_Value);
 	/* DESCRIPTION: Parameters of the shape deformation
     	- HICKS_HENNE ( Lower Surface (0)/Upper Surface (1)/Only one Surface (2), x_Loc )
       - COSINE_BUMP ( Lower Surface (0)/Upper Surface (1)/Only one Surface (2), x_Loc, Thickness )
@@ -2826,7 +2824,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 		if (Design_Variable[0] != NO_DEFORMATION && Design_Variable[0] != SURFACE_FILE) {
 			if (Hold_GridFixed == YES) cout << "Hold some regions of the mesh fixed (hardcode implementation)." <<endl;
-			cout << "Geo. design var. definition (markers <-> old def., new def. <-> param):" <<endl;
+			cout << "Geo. design var. definition (markers <-> value def. <-> param):" <<endl;
 			for (unsigned short iDV = 0; iDV < nDV; iDV++) {
 				switch (Design_Variable[iDV]) {
 				case NO_DEFORMATION: cout << "There isn't any deformation." ; break;
@@ -2854,7 +2852,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 					if (iMarker_Moving < nMarker_Moving-1) cout << ", ";
 					else cout << " <-> ";
 				}
-				cout << DV_Value_Old[iDV] <<", "<< DV_Value_New[iDV] << " <-> ";
+				cout << DV_Value[iDV] << " <-> ";
 
 				if (Design_Variable[iDV] == NO_DEFORMATION) nParamDV = 0;
 				if (Design_Variable[iDV] == HICKS_HENNE) nParamDV = 2;
@@ -2915,7 +2913,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				if (iMarker_Moving < nMarker_Moving-1) cout << ", ";
 				else cout << " <-> ";
 			}
-			cout << DV_Value_Old[iDV] <<", "<< DV_Value_New[iDV] << " <-> ";
+			cout << DV_Value[iDV] << " <-> ";
 
 			if (Design_Variable[iDV] == NO_DEFORMATION) nParamDV = 0;
 			if (Design_Variable[iDV] == HICKS_HENNE) nParamDV = 2;

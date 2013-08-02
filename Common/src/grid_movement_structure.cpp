@@ -2313,16 +2313,14 @@ void CSurfaceMovement::SetCartesianCoord(CGeometry *geometry, CConfig *config, C
 void CSurfaceMovement::SetFFDCPChange(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, 
 																			unsigned short iDV, bool ResetDef) {
 	
-	double movement[3], Ampl_old, Ampl_new, Ampl;	
+	double movement[3], Ampl;
 	unsigned short design_FFDBox, index[3];
 		
 	design_FFDBox = int(config->GetParamDV(iDV, 0));
 	
 	if (design_FFDBox == iFFDBox) {
 		
-		Ampl_old = config->GetDV_Value_Old(iDV);
-		Ampl_new = config->GetDV_Value_New(iDV);
-		Ampl = Ampl_new-Ampl_old;	
+		Ampl = config->GetDV_Value(iDV);
 		
 		index[0] = int(config->GetParamDV(iDV, 1));
 		index[1] = int(config->GetParamDV(iDV, 2)); 
@@ -2341,7 +2339,7 @@ void CSurfaceMovement::SetFFDCPChange(CGeometry *geometry, CConfig *config, CFre
 
 void CSurfaceMovement::SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, 
 																		unsigned short iDV, bool ResetDef) {
-	double Ampl_old, Ampl_new, Ampl, movement[3];	
+	double Ampl, movement[3];
 	unsigned short design_FFDBox, index[3], kIndex;
 	
 	design_FFDBox = int(config->GetParamDV(iDV, 0));
@@ -2351,9 +2349,7 @@ void CSurfaceMovement::SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeF
 		/*--- Compute the variation of the design variable ---*/
 		for (kIndex = 0; kIndex < 2; kIndex++) {
 						
-			Ampl_old = config->GetDV_Value_Old(iDV);
-			Ampl_new = config->GetDV_Value_New(iDV);
-			Ampl = Ampl_new-Ampl_old;	
+			Ampl = config->GetDV_Value(iDV);
 			
 			design_FFDBox = int(config->GetParamDV(iDV, 0));
 			if (design_FFDBox > nFFDBox) { cout <<"The FFDBox ID is bigger than the number of FFDBoxs!!"<< endl; exit(1); }
@@ -2376,7 +2372,7 @@ void CSurfaceMovement::SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeF
 
 void CSurfaceMovement::SetFFDThickness(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, 
 																			 unsigned short iDV, bool ResetDef) {
-	double Ampl_old, Ampl_new, Ampl, movement[3];	
+	double Ampl, movement[3];
 	unsigned short design_FFDBox, index[3], kIndex;
 		
 	design_FFDBox = int(config->GetParamDV(iDV, 0));
@@ -2386,9 +2382,7 @@ void CSurfaceMovement::SetFFDThickness(CGeometry *geometry, CConfig *config, CFr
 		/*--- Compute the variation of the design variable ---*/
 		for (kIndex = 0; kIndex < 2; kIndex++) {
 			
-			Ampl_old = config->GetDV_Value_Old(iDV);
-			Ampl_new = config->GetDV_Value_New(iDV);
-			Ampl = Ampl_new-Ampl_old;	
+			Ampl = config->GetDV_Value(iDV);
 			
 			design_FFDBox = int(config->GetParamDV(iDV, 0));
 			
@@ -2410,7 +2404,7 @@ void CSurfaceMovement::SetFFDThickness(CGeometry *geometry, CConfig *config, CFr
 
 void CSurfaceMovement::SetFFDVolume(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, 
 																			 unsigned short iDV, bool ResetDef) {
-	double Ampl_old, Ampl_new, Ampl, movement[3]; 
+	double Ampl, movement[3];
 	unsigned short design_FFDBox, index[3];
 			
 	design_FFDBox = int(config->GetParamDV(iDV, 0));
@@ -2418,9 +2412,7 @@ void CSurfaceMovement::SetFFDVolume(CGeometry *geometry, CConfig *config, CFreeF
 	if (design_FFDBox == iFFDBox) {
 		
 		/*--- Compute the variation of the design variable ---*/
-		Ampl_old = config->GetDV_Value_Old(iDV);
-		Ampl_new = config->GetDV_Value_New(iDV);
-		Ampl = Ampl_new-Ampl_old;	
+		Ampl = config->GetDV_Value(iDV);
 				
 		index[0] = int(config->GetParamDV(iDV, 1));
 		index[1] = int(config->GetParamDV(iDV, 2)); 
@@ -2447,9 +2439,7 @@ void CSurfaceMovement::SetFFDDihedralAngle(CGeometry *geometry, CConfig *config,
 	if (design_FFDBox == iFFDBox) {
 		
 		/*--- The angle of rotation. ---*/
-		double theta_old = config->GetDV_Value_Old(iDV)*PI_NUMBER/180.0;
-		double theta_new = config->GetDV_Value_New(iDV)*PI_NUMBER/180.0;
-		double theta = theta_new-theta_old;
+		double theta = config->GetDV_Value(iDV)*PI_NUMBER/180.0;
 		
 		/*--- Change the value of the control point if move is true ---*/
 		for (iOrder = 0; iOrder < FFDBox->GetlOrder(); iOrder++)
@@ -2488,9 +2478,7 @@ void CSurfaceMovement::SetFFDTwistAngle(CGeometry *geometry, CConfig *config, CF
 		double w = config->GetParamDV(iDV, 6)-config->GetParamDV(iDV, 3);
 		
 		/*--- The angle of rotation. ---*/
-		double theta_old = config->GetDV_Value_Old(iDV)*PI_NUMBER/180.0;
-		double theta_new = config->GetDV_Value_New(iDV)*PI_NUMBER/180.0;
-		double theta = theta_new-theta_old;
+		double theta = config->GetDV_Value(iDV)*PI_NUMBER/180.0;
 		
 		/*--- An intermediate value used in computations. ---*/
 		double u2=u*u; double v2=v*v; double w2=w*w;     
@@ -2561,9 +2549,7 @@ void CSurfaceMovement::SetFFDRotation(CGeometry *geometry, CConfig *config, CFre
 		double w = config->GetParamDV(0,6)-config->GetParamDV(0,3);
 		
 		/*--- The angle of rotation. ---*/
-		double theta_old = config->GetDV_Value_Old(0)*PI_NUMBER/180.0;
-		double theta_new = config->GetDV_Value_New(0)*PI_NUMBER/180.0;
-		double theta = theta_new-theta_old;
+		double theta = config->GetDV_Value(0)*PI_NUMBER/180.0;
 		
 		/*--- An intermediate value used in computations. ---*/
 		double u2=u*u; double v2=v*v; double w2=w*w;     
@@ -2618,9 +2604,7 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
 	}
   
 	/*--- Perform multiple airfoil deformation ---*/
-	double Ampl_old = config->GetDV_Value_Old(iDV);
-	double Ampl_new = config->GetDV_Value_New(iDV);
-	double Ampl = Ampl_new-Ampl_old;
+	double Ampl = config->GetDV_Value(iDV);
 	double xk = config->GetParamDV(iDV, 1);
 	const double t2 = 3.0;
   
@@ -2692,9 +2676,7 @@ void CSurfaceMovement::SetSpherical(CGeometry *boundary, CConfig *config, unsign
     
     Theta_Value = config->GetParamDV(iDV, 1);
     Radius_Value = config->GetParamDV(iDV, 2);
-    Value_old = config->GetDV_Value_Old(iDV);
-    Value_new = config->GetDV_Value_New(iDV);
-    Delta = Value_new-Value_old;
+    Delta = config->GetDV_Value(iDV);
     
     Theta_Spline[ControlPoint_Index] += Delta*Theta_Value;
     Radius_Spline[ControlPoint_Index] += Delta*Radius_Value;
@@ -2711,9 +2693,7 @@ void CSurfaceMovement::SetSpherical(CGeometry *boundary, CConfig *config, unsign
       
       Theta_Value = config->GetParamDV(jDV, 1);
       Radius_Value = config->GetParamDV(jDV, 2);
-      Value_old = config->GetDV_Value_Old(jDV);
-      Value_new = config->GetDV_Value_New(jDV);
-      Delta = Value_new-Value_old;
+      Delta = config->GetDV_Value(jDV);
       
       Theta_Spline[ControlPoint_Index] += Delta*Theta_Value;
       Radius_Spline[ControlPoint_Index] += Delta*Radius_Value;
@@ -2804,9 +2784,7 @@ void CSurfaceMovement::SetCosBump(CGeometry *boundary, CConfig *config, unsigned
 	}
   
 	/*--- Perform multiple airfoil deformation ---*/
-	double Ampl_old = config->GetDV_Value_Old(iDV);
-	double Ampl_new = config->GetDV_Value_New(iDV);
-	double Ampl = Ampl_new-Ampl_old;
+	double Ampl = config->GetDV_Value(iDV);
 	double BumpCenter = DesignLoc + config->GetParamDV(iDV, 1)*DesignSize;
 	double BumpSize = config->GetParamDV(iDV, 2);
   
@@ -2879,9 +2857,7 @@ void CSurfaceMovement::SetFourier(CGeometry *boundary, CConfig *config, unsigned
 	}
   
 	/*--- Perform multiple airfoil deformation ---*/
-	double Ampl_old = config->GetDV_Value_Old(iDV);
-	double Ampl_new = config->GetDV_Value_New(iDV);
-	double Ampl = Ampl_new-Ampl_old;
+	double Ampl = config->GetDV_Value(iDV);
   double T = DesignSize;
   double n = int(config->GetParamDV(iDV, 1));
   double omega = 2.0*PI_NUMBER/T;
@@ -2947,9 +2923,7 @@ void CSurfaceMovement::SetDisplacement(CGeometry *boundary, CConfig *config, uns
 	unsigned long iVertex;
 	unsigned short iMarker;
 	double VarCoord[3];
-	double Ampl_old = config->GetDV_Value_Old(0);
-	double Ampl_new = config->GetDV_Value_New(0);
-	double Ampl = Ampl_new-Ampl_old;
+	double Ampl = config->GetDV_Value(0);
 	
 	if (config->GetnDV() != 1) { cout << "This kind of design variable is not prepared for multiple deformations."; cin.get();	}
 	
@@ -2991,9 +2965,7 @@ void CSurfaceMovement::SetRotation(CGeometry *boundary, CConfig *config, unsigne
 	if (boundary->GetnDim() == 3) w = config->GetParamDV(iDV, 5)-config->GetParamDV(iDV, 2);
 	
 	/*--- The angle of rotation. ---*/
-	double theta_old = config->GetDV_Value_Old(iDV)*PI_NUMBER/180.0;
-	double theta_new = config->GetDV_Value_New(iDV)*PI_NUMBER/180.0;
-	double theta = theta_new-theta_old;
+	double theta = config->GetDV_Value(iDV)*PI_NUMBER/180.0;
 	
 	/*--- An intermediate value used in computations. ---*/
 	double u2=u*u; double v2=v*v; double w2=w*w;     
