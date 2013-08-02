@@ -45,6 +45,10 @@ def geometry ( config , step = 1e-3 ):
             Redundant decomposition if config.DECOMPOSED == True
             Performs both function and gradient analysis
                         
+        Inputs:
+            config - an SU2 configuration
+            step   - gradient finite difference step if config.GEO_MODE=GRADIENT
+        
         Outputs:
             info - SU2 State with keys:
                 FUNCTIONS
@@ -62,11 +66,8 @@ def geometry ( config , step = 1e-3 ):
     
     # unpack
     function_name = konfig['GEO_PARAM']
-    func_filename = 'of_eval.dat'
+    func_filename = 'of_func.dat'
     grad_filename = 'of_grad.dat'
-    
-    # does both direct and gradient, very cheap
-    konfig.GEO_MODE  = 'GRADIENT' 
     
     # choose dv values 
     Definition_DV = konfig['DEFINITION_DV']
@@ -85,23 +86,22 @@ def geometry ( config , step = 1e-3 ):
     # Run Solution
     SU2_GDC(konfig)
     
+    # info out
+    info = su2io.State()    
+    
     # get function values
-    func_file = open(func_filename)
-    funcs = float( func_file.readline().strip() )
-    func_file.close()
-    functions = ordered_bunch({function_name : funcs})
+    if konfig.GEO_MODE == 'FUNCTION':
+        functions = su2io.tools.read_plot(func_filename)
+        for key,value in functions.items():
+            functions[key] = value[0]
+        info.FUNCTIONS.update( functions )
     
     # get gradient_values
-    grads = su2io.read_gradients(grad_filename)
-    gradients = ordered_bunch({function_name : grads})
-    
+    if konfig.GEO_MODE == 'GRADIENT':
+        gradients = su2io.tools.read_plot(grad_filename)
+        info.GRADIENTS.update( gradients )
     
     # update super config
     config.update({ 'DECOMPOSED' : konfig['DECOMPOSED'] })
-                    
-    # info out
-    info = su2io.State()
-    info.FUNCTIONS.update( functions )
-    info.GRADIENTS.update( gradients )
     
     return info
