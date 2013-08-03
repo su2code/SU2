@@ -7637,7 +7637,7 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
 	unsigned long iPoint, jPoint, iElem, Trailing_Point, Airfoil_Point, iVertex, jVertex, n;
   double Segment_P0[3] = {0.0, 0.0, 0.0}, Segment_P1[3] = {0.0, 0.0, 0.0}, Intersection[3] = {0.0, 0.0, 0.0}, Trailing_Coord, MinDist_Value, MinDistAngle_Value, Dist_Value,
   Airfoil_Tangent[3] = {0.0, 0.0, 0.0}, Segment[3] = {0.0, 0.0, 0.0}, Length, Angle_Value, Normal[3], Tangent[3], BiNormal[3], auxXCoord,
-  auxYCoord, auxZCoord, zp1, zpn, Camber_Line, MaxAngle = 15, *VarCoord = NULL;
+  auxYCoord, auxZCoord, zp1, zpn, Camber_Line, MaxAngle = 25, *VarCoord = NULL;
   vector<double> Xcoord, Ycoord, Zcoord, Z2coord, Xcoord_Normal, Ycoord_Normal, Zcoord_Normal, Xcoord_Camber, Ycoord_Camber, Zcoord_Camber;
   vector<unsigned long> Duplicate;
   vector<unsigned long>::iterator it;
@@ -7843,7 +7843,7 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
     Xcoord.erase (Xcoord.begin() + MinDist_Point);    Ycoord.erase (Ycoord.begin() + MinDist_Point);    Zcoord.erase (Zcoord.begin() + MinDist_Point);
     
     /*--- General algorithm for the rest of the points ---*/
-    while (Xcoord.size() != 0) {
+    do {
       
       /*--- Last added point in the list ---*/
       Airfoil_Point = Xcoord_Airfoil.size() - 1;
@@ -7856,8 +7856,10 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
       Airfoil_Tangent[0] /= Length; Airfoil_Tangent[1] /= Length; Airfoil_Tangent[2] /= Length;
 
       /*--- Find the closest point with the right slope ---*/
-      MinDist_Value = 1E6;  MinDistAngle_Value = 1E6;
-      MinDist_Point = -1;  MinDistAngle_Point = -1;
+      MinDist_Value = 1E6;
+      MinDistAngle_Value = 1E6;
+      MinDist_Point = -1;
+      MinDistAngle_Point = -1;
       for (iVertex = 0; iVertex < Xcoord.size(); iVertex++) {
         
         Segment[0] = Xcoord[iVertex] - Xcoord_Airfoil[Airfoil_Point];
@@ -7869,20 +7871,21 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
         
         /*--- Compute the angle of the point ---*/
         Segment[0] /= Dist_Value; Segment[1] /= Dist_Value; Segment[2] /= Dist_Value;
+        
         Angle_Value = acos(Airfoil_Tangent[0]*Segment[0] + Airfoil_Tangent[1]*Segment[1] + Airfoil_Tangent[2]*Segment[2]) * 180 / PI_NUMBER;
-
+        
         if (Dist_Value < MinDist_Value) { MinDist_Point = iVertex; MinDist_Value = Dist_Value; }
-        if ((Dist_Value < MinDistAngle_Value) && (Angle_Value < MaxAngle)) { MinDistAngle_Point = iVertex; MinDistAngle_Value = Dist_Value; }
+//        if ((Dist_Value < MinDistAngle_Value) && (Angle_Value < MaxAngle)) { MinDistAngle_Point = iVertex; MinDistAngle_Value = Dist_Value; }
         
       }
-      
+
       if (MinDistAngle_Point != -1) MinDist_Point = MinDistAngle_Point;
       
       /*--- Add and remove the min distance to the list ---*/
       Xcoord_Airfoil.push_back(Xcoord[MinDist_Point]);  Ycoord_Airfoil.push_back(Ycoord[MinDist_Point]);  Zcoord_Airfoil.push_back(Zcoord[MinDist_Point]);
       Xcoord.erase(Xcoord.begin() + MinDist_Point);    Ycoord.erase(Ycoord.begin() + MinDist_Point);    Zcoord.erase(Zcoord.begin() + MinDist_Point);
       
-    }
+    } while (Xcoord.size() != 0);
     
     /*--- Clean the vector before using them again for storing the upper or the lower side ---*/
     Xcoord.clear();
