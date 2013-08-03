@@ -7637,7 +7637,7 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
 	unsigned long iPoint, jPoint, iElem, Trailing_Point, Airfoil_Point, iVertex, jVertex, n;
   double Segment_P0[3] = {0.0, 0.0, 0.0}, Segment_P1[3] = {0.0, 0.0, 0.0}, Intersection[3] = {0.0, 0.0, 0.0}, Trailing_Coord, MinDist_Value, MinDistAngle_Value, Dist_Value,
   Airfoil_Tangent[3] = {0.0, 0.0, 0.0}, Segment[3] = {0.0, 0.0, 0.0}, Length, Angle_Value, Normal[3], Tangent[3], BiNormal[3], auxXCoord,
-  auxYCoord, auxZCoord, zp1, zpn, Camber_Line, MaxAngle = 25, *VarCoord = NULL;
+  auxYCoord, auxZCoord, zp1, zpn, Camber_Line, MaxAngle = 25, *VarCoord = NULL, CosValue;
   vector<double> Xcoord, Ycoord, Zcoord, Z2coord, Xcoord_Normal, Ycoord_Normal, Zcoord_Normal, Xcoord_Camber, Ycoord_Camber, Zcoord_Camber;
   vector<unsigned long> Duplicate;
   vector<unsigned long>::iterator it;
@@ -7816,7 +7816,7 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
       Zcoord.erase (Zcoord.begin() + Duplicate[iVertex-1]);
     }
     
-    /*--- Find the trailing edge ---*/
+     /*--- Find the trailing edge ---*/
     Trailing_Point = 0; Trailing_Coord = Xcoord[0];
     for (iVertex = 1; iVertex < Xcoord.size(); iVertex++) {
       if (Xcoord[iVertex] > Trailing_Coord) {
@@ -7842,7 +7842,7 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
     Xcoord_Airfoil.push_back(Xcoord[MinDist_Point]);  Ycoord_Airfoil.push_back(Ycoord[MinDist_Point]);  Zcoord_Airfoil.push_back(Zcoord[MinDist_Point]);
     Xcoord.erase (Xcoord.begin() + MinDist_Point);    Ycoord.erase (Ycoord.begin() + MinDist_Point);    Zcoord.erase (Zcoord.begin() + MinDist_Point);
     
-    /*--- General algorithm for the rest of the points ---*/
+    /*--- Algorithm for the rest of the points ---*/
     do {
       
       /*--- Last added point in the list ---*/
@@ -7856,10 +7856,8 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
       Airfoil_Tangent[0] /= Length; Airfoil_Tangent[1] /= Length; Airfoil_Tangent[2] /= Length;
 
       /*--- Find the closest point with the right slope ---*/
-      MinDist_Value = 1E6;
-      MinDistAngle_Value = 1E6;
-      MinDist_Point = -1;
-      MinDistAngle_Point = -1;
+      MinDist_Value = 1E6; MinDistAngle_Value = 180;
+      MinDist_Point = -1; MinDistAngle_Point = -1;
       for (iVertex = 0; iVertex < Xcoord.size(); iVertex++) {
         
         Segment[0] = Xcoord[iVertex] - Xcoord_Airfoil[Airfoil_Point];
@@ -7872,14 +7870,19 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
         /*--- Compute the angle of the point ---*/
         Segment[0] /= Dist_Value; Segment[1] /= Dist_Value; Segment[2] /= Dist_Value;
         
-        Angle_Value = acos(Airfoil_Tangent[0]*Segment[0] + Airfoil_Tangent[1]*Segment[1] + Airfoil_Tangent[2]*Segment[2]) * 180 / PI_NUMBER;
+        /*--- Clip the value of the cosine, this is important due to the round errors ---*/
+        CosValue = Airfoil_Tangent[0]*Segment[0] + Airfoil_Tangent[1]*Segment[1] + Airfoil_Tangent[2]*Segment[2];
+        if (CosValue >= 1.0) CosValue = 1.0;
+        if (CosValue <= -1.0) CosValue = -1.0;
+
+        Angle_Value = acos(CosValue) * 180 / PI_NUMBER;
         
         if (Dist_Value < MinDist_Value) { MinDist_Point = iVertex; MinDist_Value = Dist_Value; }
-//        if ((Dist_Value < MinDistAngle_Value) && (Angle_Value < MaxAngle)) { MinDistAngle_Point = iVertex; MinDistAngle_Value = Dist_Value; }
+        if ((Dist_Value < MinDistAngle_Value) && (Angle_Value < MaxAngle)) {MinDistAngle_Point = iVertex; MinDistAngle_Value = Dist_Value;}
         
       }
 
-      if (MinDistAngle_Point != -1) MinDist_Point = MinDistAngle_Point;
+      if ( MinDistAngle_Point != -1) MinDist_Point = MinDistAngle_Point;
       
       /*--- Add and remove the min distance to the list ---*/
       Xcoord_Airfoil.push_back(Xcoord[MinDist_Point]);  Ycoord_Airfoil.push_back(Ycoord[MinDist_Point]);  Zcoord_Airfoil.push_back(Zcoord[MinDist_Point]);
@@ -7888,9 +7891,7 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
     } while (Xcoord.size() != 0);
     
     /*--- Clean the vector before using them again for storing the upper or the lower side ---*/
-    Xcoord.clear();
-    Ycoord.clear();
-    Zcoord.clear();
+    Xcoord.clear(); Ycoord.clear(); Zcoord.clear();
     
     /*--- Identify upper and lower side using the value of the normal vector --*/
     for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
@@ -7982,49 +7983,47 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
 }
 
 unsigned short CBoundaryGeometry::ComputeSegmentPlane_Intersection(double *Segment_P0, double *Segment_P1, double *Plane_P0, double *Plane_Normal, double *Intersection) {
-  double u[3], w[3], Denominator, Numerator, sI;
+  double u[3], v[3], Denominator, Numerator, Aux;
   unsigned short iDim;
   
   for (iDim = 0; iDim < 3; iDim++) {
     u[iDim] = Segment_P1[iDim] - Segment_P0[iDim];
-    w[iDim] = Plane_P0[iDim] - Segment_P0[iDim];
+    v[iDim] = Plane_P0[iDim] - Segment_P0[iDim];
   }
 
-  Numerator = Plane_Normal[0]*w[0] + Plane_Normal[1]*w[1] + Plane_Normal[2]*w[2];
+  Numerator = Plane_Normal[0]*v[0] + Plane_Normal[1]*v[1] + Plane_Normal[2]*v[2];
   Denominator = Plane_Normal[0]*u[0] + Plane_Normal[1]*u[1] + Plane_Normal[2]*u[2];
 
-  if (fabs(Denominator) <= 0.0) return 0;   // Segment lies in plane or no intersection.
+  if (fabs(Denominator) <= 0.0) return 0; // No intersection.
 
-  sI = Numerator / Denominator;
+  Aux = Numerator / Denominator;
   
-  if (sI < 0.0 || sI > 1.0) return 0; // No intersection.
+  if (Aux < 0.0 || Aux > 1.0) return 0; // No intersection.
   
   for (iDim = 0; iDim < 3; iDim++)
-    Intersection[iDim] = Segment_P0[iDim] + sI * u[iDim];
+    Intersection[iDim] = Segment_P0[iDim] + Aux * u[iDim];
   
   
   /*--- Check that the intersection is in the segment ---*/
   for (iDim = 0; iDim < 3; iDim++) {
     u[iDim] = Segment_P0[iDim] - Intersection[iDim];
-    w[iDim] = Segment_P1[iDim] - Intersection[iDim];
+    v[iDim] = Segment_P1[iDim] - Intersection[iDim];
   }
   
   Denominator = Plane_Normal[0]*u[0] + Plane_Normal[1]*u[1] + Plane_Normal[2]*u[2];
-  Numerator = Plane_Normal[0]*w[0] + Plane_Normal[1]*w[1] + Plane_Normal[2]*w[2];
+  Numerator = Plane_Normal[0]*v[0] + Plane_Normal[1]*v[1] + Plane_Normal[2]*v[2];
 
-  sI = Numerator * Denominator;
+  Aux = Numerator * Denominator;
   
-  if (sI > 0.0) return 3; // Intersection outside the segment.
+  if (Aux > 0.0) return 3; // Intersection outside the segment.
   else return 1;
 
 }
 
 double CBoundaryGeometry::Compute_MaxThickness(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface) {
-	unsigned long iVertex, jVertex, n;
-	double Normal[3], Tangent[3], BiNormal[3], auxXCoord, auxYCoord, auxZCoord, zp1, zpn, MaxThickness_Value = 0, MaxThickness_Location, Thickness, Length, Xcoord_Trailing, Ycoord_Trailing, Zcoord_Trailing, ValCos, ValSin, XValue, ZValue;
+	unsigned long iVertex, jVertex, n, Trailing_Point, LeadingPoint;
+	double Normal[3], Tangent[3], BiNormal[3], auxXCoord, auxYCoord, auxZCoord, zp1, zpn, MaxThickness_Value = 0, MaxThickness_Location, Thickness, Length, Xcoord_Trailing, Ycoord_Trailing, Zcoord_Trailing, ValCos, ValSin, XValue, ZValue, MaxDistance, Distance, AoA;
 	vector<double> Xcoord, Ycoord, Zcoord, Z2coord, Xcoord_Normal, Ycoord_Normal, Zcoord_Normal, Xcoord_Airfoil_, Ycoord_Airfoil_, Zcoord_Airfoil_;
-  unsigned long Trailing_Point, LeadingPoint;
-	double MaxDistance, Distance, AoA;
   
   /*--- Find the leading and trailing edges and compute the angle of attack ---*/
   MaxDistance = 0.0; Trailing_Point = 0;
@@ -8122,8 +8121,7 @@ double CBoundaryGeometry::Compute_MaxThickness(double *Plane_P0, double *Plane_N
 }
 
 double CBoundaryGeometry::Compute_AoA(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface) {
-	unsigned long iVertex;
-  unsigned long Trailing_Point, LeadingPoint;
+	unsigned long iVertex, Trailing_Point, LeadingPoint;
 	double MaxDistance, Distance, AoA = 0.0;
   
   /*--- Find the leading and trailing edges and compute the angle of attack ---*/
@@ -8144,8 +8142,7 @@ double CBoundaryGeometry::Compute_AoA(double *Plane_P0, double *Plane_Normal, un
 }
 
 double CBoundaryGeometry::Compute_Chord(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface) {
-	unsigned long iVertex;
-  unsigned long Trailing_Point, LeadingPoint;
+	unsigned long iVertex, Trailing_Point, LeadingPoint;
 	double MaxDistance, Distance, Chord = 0.0;
   
   /*--- Find the leading and trailing edges and compute the angle of attack ---*/
@@ -8159,18 +8156,16 @@ double CBoundaryGeometry::Compute_Chord(double *Plane_P0, double *Plane_Normal, 
     if (MaxDistance < Distance) { MaxDistance = Distance; LeadingPoint = iVertex; }
   }
   
-  Chord = (Xcoord_Airfoil[Trailing_Point] - Xcoord_Airfoil[LeadingPoint]);
+  Chord = MaxDistance;
   
   return Chord;
   
 }
 
 double CBoundaryGeometry::Compute_Thickness(double *Plane_P0, double *Plane_Normal, unsigned short iSection, double Location, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface) {
-	unsigned long iVertex, jVertex, n_Upper, n_Lower;
-	double Thickness_Location, Normal[3], Tangent[3], BiNormal[3], auxXCoord, auxYCoord, auxZCoord, Thickness_Value = 0.0, Length, Xcoord_Trailing, Ycoord_Trailing, Zcoord_Trailing, ValCos, ValSin, XValue, ZValue, zp1, zpn, Chord;
+	unsigned long iVertex, jVertex, n_Upper, n_Lower, Trailing_Point, LeadingPoint;
+	double Thickness_Location, Normal[3], Tangent[3], BiNormal[3], auxXCoord, auxYCoord, auxZCoord, Thickness_Value = 0.0, Length, Xcoord_Trailing, Ycoord_Trailing, Zcoord_Trailing, ValCos, ValSin, XValue, ZValue, zp1, zpn, Chord, MaxDistance, Distance, AoA;
 	vector<double> Xcoord_Upper, Ycoord_Upper, Zcoord_Upper, Z2coord_Upper, Xcoord_Lower, Ycoord_Lower, Zcoord_Lower, Z2coord_Lower, Z2coord, Xcoord_Normal, Ycoord_Normal, Zcoord_Normal, Xcoord_Airfoil_, Ycoord_Airfoil_, Zcoord_Airfoil_;
-  unsigned long Trailing_Point, LeadingPoint;
-	double MaxDistance, Distance, AoA;
   
   /*--- Find the leading and trailing edges and compute the angle of attack ---*/
   MaxDistance = 0.0; Trailing_Point = 0;
@@ -8184,8 +8179,8 @@ double CBoundaryGeometry::Compute_Thickness(double *Plane_P0, double *Plane_Norm
   }
   
   AoA = atan((Zcoord_Airfoil[LeadingPoint] - Zcoord_Airfoil[Trailing_Point]) / (Xcoord_Airfoil[Trailing_Point] - Xcoord_Airfoil[LeadingPoint]))*180/PI_NUMBER;
-  Chord = Xcoord_Airfoil[Trailing_Point] - Xcoord_Airfoil[LeadingPoint];
-  
+  Chord = MaxDistance;
+
   /*--- Translate to the origin ---*/
   Xcoord_Trailing = Xcoord_Airfoil[0];
   Ycoord_Trailing = Ycoord_Airfoil[0];
@@ -8207,7 +8202,6 @@ double CBoundaryGeometry::Compute_Thickness(double *Plane_P0, double *Plane_Norm
     
     Xcoord_Airfoil_[iVertex] = XValue*ValCos - ZValue*ValSin;
     Zcoord_Airfoil_[iVertex] = ZValue*ValCos + XValue*ValSin;
-    
   }
   
   /*--- Identify upper and lower side, and store the value of the normal --*/
@@ -8277,8 +8271,9 @@ double CBoundaryGeometry::Compute_Thickness(double *Plane_P0, double *Plane_Norm
   Z2coord_Lower.resize(n_Lower+1);
   SetSpline(Xcoord_Lower, Zcoord_Lower, n_Lower, zp1, zpn, Z2coord_Lower);
   
-  /*--- Compute coord ---*/
-  Thickness_Location = (Chord*Location) - Xcoord_Trailing;
+  /*--- Compute thickness location ---*/
+  Thickness_Location = - Chord*(1.0-Location);
+
   Thickness_Value = fabs(GetSpline(Xcoord_Upper, Zcoord_Upper, Z2coord_Upper, n_Upper, Thickness_Location)) + fabs(GetSpline(Xcoord_Lower, Zcoord_Lower, Z2coord_Lower, n_Lower, Thickness_Location));
   
   return Thickness_Value;

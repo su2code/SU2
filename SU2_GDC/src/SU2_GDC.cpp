@@ -133,14 +133,14 @@ int main(int argc, char *argv[]) {
     ObjFunc_file << "TITLE = \"SU2_GDC Simulation\"" << endl;
     
     if (boundary->GetnDim() == 2) {
-      ObjFunc_file << "VARIABLES = \"MAX_THICKNESS\",\"3/4_THICKNESS\",\"1/2_THICKNESS\",\"1/4_THICKNESS\",\"AREA\",\"AOA\",\"CHORD\"" << endl;
+      ObjFunc_file << "VARIABLES = \"MAX_THICKNESS\",\"1/4_THICKNESS\",\"1/2_THICKNESS\",\"3/4_THICKNESS\",\"AREA\",\"AOA\",\"CHORD\"" << endl;
     }
     else if (boundary->GetnDim() == 3) {
       ObjFunc_file << "VARIABLES = ";
       for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"MAX_THICKNESS_SEC"<< (iPlane+1) << "\", ";
-      for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"3/4_THICKNESS_SEC"<< (iPlane+1) << "\", ";
-      for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"1/2_THICKNESS_SEC"<< (iPlane+1) << "\", ";
       for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"1/4_THICKNESS_SEC"<< (iPlane+1) << "\", ";
+      for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"1/2_THICKNESS_SEC"<< (iPlane+1) << "\", ";
+      for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"3/4_THICKNESS_SEC"<< (iPlane+1) << "\", ";
       for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"AREA_SEC"<< (iPlane+1) << "\", ";
       for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"AOA_SEC"<< (iPlane+1) << "\", ";
       for (iPlane = 0; iPlane < nPlane-1; iPlane++) ObjFunc_file << "\"CHORD_SEC"<< (iPlane+1) << "\", ";
@@ -302,14 +302,14 @@ int main(int argc, char *argv[]) {
           Gradient_file << "TITLE = \"SU2_GDC Simulation\"" << endl;
 
           if (boundary->GetnDim() == 2) {
-            Gradient_file << "VARIABLES = \"DESIGN_VARIABLE\",\"MAX_THICKNESS\",\"3/4_THICKNESS\",\"1/2_THICKNESS\",\"1/4_THICKNESS\",\"AREA\",\"AOA\",\"CHORD\"" << endl;
+            Gradient_file << "VARIABLES = \"DESIGN_VARIABLE\",\"MAX_THICKNESS\",\"1/4_THICKNESS\",\"1/2_THICKNESS\",\"3/4_THICKNESS\",\"AREA\",\"AOA\",\"CHORD\"" << endl;
           }
           else if (boundary->GetnDim() == 3) {
             Gradient_file << "VARIABLES = \"DESIGN_VARIABLE\",";
             for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"MAX_THICKNESS_SEC"<< (iPlane+1) << "\", ";
-            for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"3/4_THICKNESS_SEC"<< (iPlane+1) << "\", ";
-            for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"1/2_THICKNESS_SEC"<< (iPlane+1) << "\", ";
             for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"1/4_THICKNESS_SEC"<< (iPlane+1) << "\", ";
+            for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"1/2_THICKNESS_SEC"<< (iPlane+1) << "\", ";
+            for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"3/4_THICKNESS_SEC"<< (iPlane+1) << "\", ";
             for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"AREA_SEC"<< (iPlane+1) << "\", ";
             for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"AOA_SEC"<< (iPlane+1) << "\", ";
             for (iPlane = 0; iPlane < nPlane-1; iPlane++) Gradient_file << "\"CHORD_SEC"<< (iPlane+1) << "\", ";
