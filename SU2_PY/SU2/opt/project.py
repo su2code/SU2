@@ -163,7 +163,9 @@ class Project(object):
         
             # start design
             design = self.new_design(konfig)
-            print os.path.join(self.folder,design.folder)
+            
+            if config.get('CONSOLE','VERBOSE') == 'VERBOSE':
+                print os.path.join(self.folder,design.folder)
             timestamp = design.state.tic()
             
             # run design+
