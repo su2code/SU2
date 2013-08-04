@@ -342,7 +342,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.		 
 	 */
-	virtual void SetWall_Distance(CConfig *config);
+	virtual void ComputeWall_Distance(CConfig *config);
 
 	/*! 
 	 * \brief A virtual member.
@@ -587,22 +587,39 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void FindSharpEdges(CConfig *config);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config,
+                                      vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  virtual double Compute_MaxThickness(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
+ 
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  virtual double Compute_AoA(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
 
   /*!
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
-   * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
-   * \returns The maximum value of the airfoil thickness.
 	 */
-	virtual double GetMaxThickness(CConfig *config, bool original_surface);
-  
+  virtual double Compute_Chord(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
+
   /*!
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
    * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
    * \returns The minimum value of the airfoil thickness.
 	 */
-	virtual double GetMinThickness(CConfig *config, bool original_surface);
+	virtual double Compute_Thickness(double *Plane_P0, double *Plane_Normal, unsigned short iSection, double Location, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
 	
 	/*!
 	 * \brief A virtual member.
@@ -610,16 +627,8 @@ public:
    * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
    * \returns The total volume of the airfoil.
 	 */
-	virtual double GetTotalVolume(CConfig *config, bool original_surface);
+	virtual double Compute_Area(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
   
-  /*!
-	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.
-   * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
-   * \returns The clearance height of the airfoil.
-	 */
-	virtual double GetClearance(CConfig *config, bool original_surface);
-	
 	/*! 
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
@@ -873,13 +882,13 @@ public:
 			unsigned short &face_second_elem);
 
 	/*! 
-	 * \brief Set elements which surround a point.
+	 * \brief Computes the distance to the nearest no-slip wall for each grid node.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetWall_Distance(CConfig *config);
+	void ComputeWall_Distance(CConfig *config);
 
 	/*! 
-	 * \brief Compute positive z area for adimensionalization.
+	 * \brief Compute surface area (positive z-direction) for force coefficient non-dimensionalization.
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetPositive_ZArea(CConfig *config);
@@ -1404,22 +1413,39 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetBoundSensitivity(CConfig *config);
-	
-	/*! 
-	 * \brief Find the maximum thickness of the airfoil.
+  
+	/*!
+	 * \brief Compute the sections of a wing.
 	 * \param[in] config - Definition of the particular problem.
-   * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
-   * \returns The maximum value of the airfoil thickness.
 	 */
-  double GetMaxThickness(CConfig *config, bool original_surface);
-	
+	void ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config,
+                              vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
+
+  /*!
+	 * \brief Compute the sections of a wing.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  double Compute_MaxThickness(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
+
+  /*!
+	 * \brief Compute the sections of a wing.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  double Compute_AoA(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
+
+  /*!
+	 * \brief Compute the sections of a wing.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  double Compute_Chord(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
+
   /*!
 	 * \brief Find the minimum thickness of the airfoil.
 	 * \param[in] config - Definition of the particular problem.
    * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
    * \returns The minimum value of the airfoil thickness.
 	 */
-  double GetMinThickness(CConfig *config, bool original_surface);
+  double Compute_Thickness(double *Plane_P0, double *Plane_Normal, unsigned short iSection, double Location, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
   
 	/*! 
 	 * \brief Find the total volume of the airfoil.
@@ -1427,16 +1453,19 @@ public:
    * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
    * \returns The total volume of the airfoil.
 	 */
-  double GetTotalVolume(CConfig *config, bool original_surface);
-  
-  /*!
-	 * \brief Find the clearance height of the airfoil.
-	 * \param[in] config - Definition of the particular problem.
-   * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
-   * \returns The clearance height of the airfoil.
-	 */
-  double GetClearance(CConfig *config, bool original_surface);
+  double Compute_Area(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
 	
+  /*!
+	 * \brief Compute the intersection between a segment and a plane.
+   * \param[in] Segment_P0 - Definition of the particular problem.
+	 * \param[in] Segment_P1 - Definition of the particular problem.
+	 * \param[in] Plane_P0 - Definition of the particular problem.
+	 * \param[in] Plane_Normal - Definition of the particular problem.
+   * \param[in] Intersection - Definition of the particular problem.
+   * \returns If the intersection has has been successful.
+	 */
+  unsigned short ComputeSegmentPlane_Intersection(double *Segment_P0, double *Segment_P1, double *Plane_P0, double *Plane_Normal, double *Intersection);
+
 };
 
 /*! 

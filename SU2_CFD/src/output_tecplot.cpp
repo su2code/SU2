@@ -342,7 +342,6 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
   
 
 	/*--- Write connectivity data. ---*/
-  
   if (surf_sol) {
     
     iNode = 0;

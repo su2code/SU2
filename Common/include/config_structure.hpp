@@ -100,12 +100,10 @@ private:
 	unsigned short Unsteady_Simulation;	/*!< \brief Steady or unsteady (time stepping or dual time stepping) computation. */
 	unsigned short nStartUpIter;	/*!< \brief Start up iterations using the fine grid. */
 	double CteViscDrag;		/*!< \brief Constant value of the viscous drag. */
-	double *DV_Value_New,		/*!< \brief Finite difference step for gradient computation. */
-	*DV_Value_Old;		/*!< \brief Previous value of the design variable. */
+	double *DV_Value;		/*!< \brief Previous value of the design variable. */
 	double LimiterCoeff;				/*!< \brief Limiter coefficient */ 
 	unsigned short Kind_Adjoint;	/*!< \brief Kind of adjoint function. */
 	unsigned short Kind_ObjFunc;	/*!< \brief Kind of objective function. */
-	unsigned short Kind_GeoObjFunc;	/*!< \brief Kind of geometrical objective function. */
 	unsigned short Kind_SensSmooth;	/*!< \brief Kind of sensitivity smoothing technique. */
 	unsigned short Continuous_Eqns;	/*!< \brief Which equations to treat continuously (Hybrid adjoint) */
 	unsigned short Discrete_Eqns;	/*!< \brief Which equations to treat discretely (Hybrid adjoint). */
@@ -349,6 +347,7 @@ private:
 	double Linear_Solver_Relax;		/*!< \brief Relaxation coefficient of the linear solver. */
 	double AdjTurb_Linear_Error;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
 	unsigned short AdjTurb_Linear_Iter;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
+	double *Section_Limit;                  /*!< \brief Airfoil section limit. */
 	double* Kappa_Flow,           /*!< \brief Numerical dissipation coefficients for the flow equations. */
 	*Kappa_AdjFlow,                  /*!< \brief Numerical dissipation coefficients for the adjoint equations. */
 	*Kappa_LinFlow;                  /*!< \brief Numerical dissipation coefficients for the linearized equations. */
@@ -370,7 +369,7 @@ private:
 	Kappa_1st_Plasma,			/*!< \brief JST 1st order dissipation coefficient for plasma equations (coarse multigrid levels). */
 	Kappa_2nd_Plasma,			/*!< \brief JST 2nd order dissipation coefficient for plasma equations. */
 	Kappa_4th_Plasma;			/*!< \brief JST 4th order dissipation coefficient for plasma equations. */	
-  unsigned long FEA_Iter; /*!< \brief Number of iterations for FEA deformation. */
+  unsigned long GridDef_Iter; /*!< \brief Number of incrememts for grid deformation. */
 	double Mach;		/*!< \brief Mach number. */
 	double Reynolds;	/*!< \brief Reynolds number. */
 	double Froude;	/*!< \brief Froude number. */	
@@ -447,7 +446,7 @@ private:
 	Adj_FileName,					/*!< \brief Output file with the adjoint variables. */
 	Lin_FileName,					/*!< \brief Output file with the linearized variables. */
 	ObjFunc_Grad_FileName,			/*!< \brief Gradient of the objective function. */
-	ObjFunc_Eval_FileName,			/*!< \brief Objective function. */
+	ObjFunc_Value_FileName,			/*!< \brief Objective function. */
 	SurfFlowCoeff_FileName,			/*!< \brief Output file with the flow variables on the surface. */
 	SurfAdjCoeff_FileName,			/*!< \brief Output file with the adjoint variables on the surface. */
 	SurfLinCoeff_FileName,			/*!< \brief Output file with the linearized variables on the surface. */
@@ -1047,6 +1046,12 @@ public:
 	 * \return Value of the constant: Charge_Number[val_Species]
 	 */
 	int GetCharge_Number(unsigned short val_Species);
+  
+  /*!
+	 * \brief Get the value of the limits for the sections.
+	 * \return Value of the limits for the sections.
+	 */
+	double GetSection_Limit(unsigned short val_var);
 
 	/*! 
 	 * \brief Get the array that maps chemical consituents to each chemical reaction.
@@ -2056,10 +2061,10 @@ public:
 	double GetAdjTurb_CFLRedCoeff(void);
   
   /*!
-	 * \brief Get the number of iterations for FEA mesh deformation.
-	 * \return Number of iterations for FEA mesh deformation.
+	 * \brief Get the number of increments for mesh deformation.
+	 * \return Number of increments for mesh deformation.
 	 */
-	unsigned long GetFEA_Iter(void);
+	unsigned long GetGridDef_Iter(void);
 
 	/*!
 	 * \brief Get the kind of SU2 software component.
@@ -2906,12 +2911,6 @@ public:
 	unsigned short GetKind_ObjFunc(void);
 
 	/*!
-	 * \brief Get the kind of geometrical objective function.
-	 * \return Kind of geometrical objective function.
-	 */
-	unsigned short GetKind_GeoObjFunc(void);
-
-	/*!
 	 * \brief Get the kind of sensitivity smoothing technique.
 	 * \return Kind of sensitivity smoothing technique.
 	 */
@@ -3249,7 +3248,7 @@ public:
 	 * \brief Get the name of the file with the gradient of the objective function.
 	 * \return Name of the file with the gradient of the objective function.
 	 */
-	string GetObjFunc_Eval_FileName(void);
+	string GetObjFunc_Value_FileName(void);
 
 	/*! 
 	 * \brief Get the name of the file with the surface information for the flow problem.
@@ -3381,14 +3380,7 @@ public:
 	 * \param[in] val_dv - Number of the design variable that we want to read.
 	 * \return Design variable step.
 	 */	
-	double GetDV_Value_New(unsigned short val_dv);
-
-	/*! 
-	 * \brief If we are doing and incremental deformation, this is the origin value.
-	 * \param[in] val_dv - Number of the design variable that we want to read.
-	 * \return Origin value for incremental deformations.
-	 */	
-	double GetDV_Value_Old(unsigned short val_dv);
+	double GetDV_Value(unsigned short val_dv);
 
 	/*! 
 	 * \brief Get information about the grid movement.

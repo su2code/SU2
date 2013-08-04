@@ -17,3 +17,6 @@
 
 # Mac files
 *.DS_Store
+
+# Compiled Makefiles
+Makefile
