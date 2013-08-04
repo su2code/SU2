@@ -221,7 +221,7 @@ if __name__=="__main__":
   naca0012.cfg_dir   = "TestCases/euler/naca0012"
   naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
   naca0012.test_iter = 100
-  naca0012.test_vals = [-3.752127,-3.271487,0.135985,0.067254]
+  naca0012.test_vals = [-3.751378,-3.270814,0.135985,0.067254]
   naca0012.su2_exec  = "SU2_CFD"
   naca0012.timeout   = 1600
   naca0012.tol       = 0.00001
@@ -243,9 +243,9 @@ if __name__=="__main__":
   oneram6.cfg_dir   = "TestCases/euler/oneram6"
   oneram6.cfg_file  = "inv_ONERAM6_JST.cfg"
   oneram6.test_iter = 10
-  oneram6.test_vals = [-2.632425,-2.097062,0.288168,0.016924]
+  oneram6.test_vals = [-2.632092,-2.096791,0.288165,0.016925]
   oneram6.su2_exec  = "SU2_CFD"
-  oneram6.timeout   = 3200
+  oneram6.timeout   = 4800
   oneram6.tol       = 0.00001
   passed4           = oneram6.run_test()
 
@@ -270,7 +270,7 @@ if __name__=="__main__":
   cylinder.cfg_dir   = "TestCases/navierstokes/cylinder"
   cylinder.cfg_file  = "lam_cylinder_JST.cfg"
   cylinder.test_iter = 25
-  cylinder.test_vals = [-9.765050,-8.885748,-0.058173,3.713133]
+  cylinder.test_vals = [-9.756790,-8.884988,-0.058052,3.717570]
   cylinder.su2_exec  = "SU2_CFD"
   cylinder.timeout   = 1600
   cylinder.tol       = 0.00001
@@ -285,7 +285,7 @@ if __name__=="__main__":
   rae2822.cfg_dir   = "TestCases/rans/rae2822"
   rae2822.cfg_file  = "turb_SA_RAE2822.cfg"
   rae2822.test_iter = 100
-  rae2822.test_vals = [-3.559384,-5.452969,0.884876,0.024170] #last 4 columns
+  rae2822.test_vals = [-3.559333,-5.452981,0.884911,0.024170] #last 4 columns
   rae2822.su2_exec  = "SU2_CFD"
   rae2822.timeout   = 1600
   rae2822.tol       = 0.00001
@@ -307,7 +307,7 @@ if __name__=="__main__":
   turb_oneram6.cfg_dir   = "TestCases/rans/oneram6"
   turb_oneram6.cfg_file  = "turb_ONERAM6.cfg"
   turb_oneram6.test_iter = 20
-  turb_oneram6.test_vals = [-4.715435,-11.457931,0.228302,0.114972] #last 4 columns
+  turb_oneram6.test_vals = [-4.715638,-11.468473,0.228186,0.115083]#last 4 columns
   turb_oneram6.su2_exec  = "SU2_CFD"
   turb_oneram6.timeout   = 3200
   turb_oneram6.tol       = 0.00001
@@ -318,7 +318,7 @@ if __name__=="__main__":
   turb_naca0012.cfg_dir   = "TestCases/rans/naca0012"
   turb_naca0012.cfg_file  = "naca0012.cfg"
   turb_naca0012.test_iter = 20
-  turb_naca0012.test_vals = [-8.694561,-9.210106,-0.000034,0.008124] #last 4 columns
+  turb_naca0012.test_vals = [-7.186020,-9.210104,-0.000034,0.008124] #last 4 columns
   turb_naca0012.su2_exec  = "SU2_CFD"
   turb_naca0012.timeout   = 3200
   turb_naca0012.tol       = 0.00001
