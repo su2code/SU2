@@ -238,33 +238,29 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
 	return MinLength;
 }
 
-void CVolumetricMovement::CheckFEA_Grid(CGeometry *geometry) {
+void CVolumetricMovement::CheckDeformed_Grid(CGeometry *geometry) {
 	unsigned long Point_0, Point_1, Point_2, Point_3, iElem;
   
-	/*--- Compute contributions from each element by forming the stiffness matrix (FEA) ---*/
+	/*--- Load up each triangle and tetrahedron to check for negative volumes. ---*/
   
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     
+    /*--- Triangles ---*/
     if (nDim == 2) {
-      
-      /*--- Triangles are loaded directly ---*/
       Point_0 = geometry->elem[iElem]->GetNode(0);
       Point_1 = geometry->elem[iElem]->GetNode(1);
       Point_2 = geometry->elem[iElem]->GetNode(2);
-      CheckFEA_Elem2D(geometry, iElem, Point_0, Point_1, Point_2);
-      
+      CheckDeformed_Elem2D(geometry, iElem, Point_0, Point_1, Point_2);
     }
     
+    /*--- Tetrahedra ---*/
     if (nDim == 3) {
-      
-      /*--- Tetrahedra are loaded directly ---*/
       if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON) {
         Point_0 = geometry->elem[iElem]->GetNode(0);
         Point_1 = geometry->elem[iElem]->GetNode(1);
         Point_2 = geometry->elem[iElem]->GetNode(2);
         Point_3 = geometry->elem[iElem]->GetNode(3);
-        CheckFEA_Elem3D(geometry, iElem, Point_0, Point_1, Point_2, Point_3);
-
+        CheckDeformed_Elem3D(geometry, iElem, Point_0, Point_1, Point_2, Point_3);
 			}
       
     }
@@ -634,8 +630,7 @@ void CVolumetricMovement::AddFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
   
 }
 
-void CVolumetricMovement::CheckFEA_Elem2D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2) {
-  
+void CVolumetricMovement::CheckDeformed_Elem2D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2) {
   
   unsigned short iDim;
   double a[3], b[3], Area, eps = 1e-14;
@@ -651,12 +646,11 @@ void CVolumetricMovement::CheckFEA_Elem2D(CGeometry *geometry, unsigned long val
   
   Area = 0.5*fabs(a[0]*b[1]-a[1]*b[0]) + eps;
   
-  if (Area < 0.0) cout << "Negative Volume for element " << val_iElem << ": " << Area << endl;
+  if (Area < 0.0) cout << "Negative volume for element " << val_iElem << ": " << Area << endl;
   
 }
 
-void CVolumetricMovement::CheckFEA_Elem3D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2, unsigned long val_Point_3) {
-  
+void CVolumetricMovement::CheckDeformed_Elem3D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2, unsigned long val_Point_3) {
   
   unsigned short iDim;
   double r1[3], r2[3], r3[3], CrossProduct[3], Volume;
@@ -678,7 +672,7 @@ void CVolumetricMovement::CheckFEA_Elem3D(CGeometry *geometry, unsigned long val
   
   Volume = (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
-  if (Volume < 0.0) cout << "Negative Volume for element " << val_iElem << ": " << Volume << endl;
+  if (Volume < 0.0) cout << "Negative volume for element " << val_iElem << ": " << Volume << endl;
   
 }
 
@@ -688,11 +682,11 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 	unsigned long iPoint, total_index, iVertex;
 	double *VarCoord, MeanCoord[3], VarIncrement = 1.0;
   
-  /*--- If using the FEA method, impose the surface deflections in increments
-   and solve the linear elasticity equations iteratively with successive
-   small deformations. ---*/
-  if (config->GetKind_GridDef_Method() == FEA)
-    VarIncrement = 1.0/((double)config->GetFEA_Iter());
+  /*--- If requested (no by default) impose the surface deflections in
+   increments and solve the grid deformation equations iteratively with
+   successive small deformations. ---*/
+  
+  VarIncrement = 1.0/((double)config->GetGridDef_Iter());
 	
 	/*--- As initialization, set to zero displacements of all the surfaces except the symmetry
 	 plane and the receive boundaries. ---*/
@@ -816,59 +810,73 @@ void CVolumetricMovement::UpdateGridCoord(CGeometry *geometry, CConfig *config) 
 }
 
 void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo) {
-	unsigned long IterLinSol, iFEA;
+	unsigned long IterLinSol, iGridDef_Iter;
   double MinLength, NumError;
+  
   int rank = MASTER_NODE;
-	
 #ifndef NO_MPI
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
   
+  /*--- Initialize the number of spatial dimensions, length of the state
+   vector (same as spatial dimensions for grid deformation), and grid nodes. ---*/
+  
+  nDim   = geometry->GetnDim();
+  nVar   = geometry->GetnDim();
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
-  nDim = geometry->GetnDim();
-  nVar = geometry->GetnDim();
+  
+  /*--- Initialize matrix, solution, and r.h.s. structures for the linear solver. ---*/
   
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
   StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
   
-  /*--- Loop over the total number of FEA iterations. The surface
-   deformation can be divided into increments, as the linear elasticity
-   equations hold only for small deformation. ---*/
-  for (iFEA = 0; iFEA < config->GetFEA_Iter(); iFEA++) {
+  /*--- Loop over the total number of grid deformation iterations. The surface
+   deformation can be divided into increments to help with stability. In
+   particular, the linear elasticity equations hold only for small deformations. ---*/
+  
+  for (iGridDef_Iter = 0; iGridDef_Iter < config->GetGridDef_Iter(); iGridDef_Iter++) {
     
     StiffMatrix.SetValZero();
     
-    /*--- Compute the stiffness matrix entries for all elements in the
-     mesh using a finite element method discretization of the linear
-     elasticity equations. Transfer element stiffnesses to point-to-point. ---*/
+    /*--- Compute the stiffness matrix entries for all nodes/elements in the
+     mesh. FEA uses a finite element method discretization of the linear
+     elasticity equations (transfers element stiffnesses to point-to-point). ---*/
     
     if (config->GetKind_GridDef_Method() == SPRING) MinLength = SetSpringMethodContributions_Edges(geometry);
-    if (config->GetKind_GridDef_Method() == FEA)  MinLength = SetFEAMethodContributions_Elem(geometry);
+    if (config->GetKind_GridDef_Method() == FEA)    MinLength = SetFEAMethodContributions_Elem(geometry);
 
     /*--- Compute the tolerance of the linear solver using MinLength ---*/
+    
     NumError = MinLength * 1E-2;
     
     /*--- Set the boundary displacements (as prescribed by the design variable
      perturbations controlling the surface shape) as a Dirichlet BC. ---*/
+    
     SetBoundaryDisplacements(geometry, config);
     
     /*--- Fix the location of any points in the domain, if requested. ---*/
+    
     if (config->GetHold_GridFixed())
       SetDomainDisplacements(geometry, config);
     
-    /*--- Check the MPI in the boundaries to be sure that the 
-     residual an solution have the same values in receptor and donor. ---*/
+    /*--- Communicate any prescribed boundary displacements via MPI,
+     so that all nodes have the same solution and r.h.s. entries 
+     across all paritions. ---*/
+    
     StiffMatrix.SendReceive_Solution(LinSysSol, geometry, config);
     StiffMatrix.SendReceive_Solution(LinSysRes, geometry, config);
     
     /*--- Definition of the preconditioner and the matrix vector multiplication ---*/
-    CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
-    CPreconditioner* precond = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
     
+    CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
+    CPreconditioner* precond      = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
+        
     /*--- Linear solver class ---*/
     CSysSolve system;
+    
+    /*--- Solve the linear system ---*/
     
     if (rank == MASTER_NODE) cout << endl;
     if (config->GetKind_GridDef_Method() == FEA) IterLinSol = system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 300, true);
@@ -876,13 +884,14 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     if (rank == MASTER_NODE) cout << endl;
 
     /*--- Deallocate memory needed by the Krylov linear solver ---*/
+    
     delete mat_vec;
     delete precond;
     
-    /*--- Update the grid coordinates for all nodes using the solution
+    /*--- Update the grid coordinates and cell volumes using the solution
      of the linear system (usol contains the x, y, z displacements). ---*/
-    UpdateGridCoord(geometry, config);
     
+    UpdateGridCoord(geometry, config);
     if (UpdateGeo) {
       geometry->SetCG();
       geometry->SetControlVolume(config, UPDATE);
@@ -891,10 +900,12 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     
   }
   
-  /*--- Perform a grid quality check after deformation. ---*/
-  CheckFEA_Grid(geometry);
+  /*--- Check for failed deformation (negative volumes). ---*/
   
-  /*--- Deallocate vector. ---*/
+  CheckDeformed_Grid(geometry);
+  
+  /*--- Deallocate vectors for the linear system. ---*/
+  
   LinSysSol.~CSysVector();
   LinSysRes.~CSysVector();
   StiffMatrix.~CSysMatrix();
@@ -2313,16 +2324,14 @@ void CSurfaceMovement::SetCartesianCoord(CGeometry *geometry, CConfig *config, C
 void CSurfaceMovement::SetFFDCPChange(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, 
 																			unsigned short iDV, bool ResetDef) {
 	
-	double movement[3], Ampl_old, Ampl_new, Ampl;	
+	double movement[3], Ampl;
 	unsigned short design_FFDBox, index[3];
 		
 	design_FFDBox = int(config->GetParamDV(iDV, 0));
 	
 	if (design_FFDBox == iFFDBox) {
 		
-		Ampl_old = config->GetDV_Value_Old(iDV);
-		Ampl_new = config->GetDV_Value_New(iDV);
-		Ampl = Ampl_new-Ampl_old;	
+		Ampl = config->GetDV_Value(iDV);
 		
 		index[0] = int(config->GetParamDV(iDV, 1));
 		index[1] = int(config->GetParamDV(iDV, 2)); 
@@ -2341,7 +2350,7 @@ void CSurfaceMovement::SetFFDCPChange(CGeometry *geometry, CConfig *config, CFre
 
 void CSurfaceMovement::SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, 
 																		unsigned short iDV, bool ResetDef) {
-	double Ampl_old, Ampl_new, Ampl, movement[3];	
+	double Ampl, movement[3];
 	unsigned short design_FFDBox, index[3], kIndex;
 	
 	design_FFDBox = int(config->GetParamDV(iDV, 0));
@@ -2351,9 +2360,7 @@ void CSurfaceMovement::SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeF
 		/*--- Compute the variation of the design variable ---*/
 		for (kIndex = 0; kIndex < 2; kIndex++) {
 						
-			Ampl_old = config->GetDV_Value_Old(iDV);
-			Ampl_new = config->GetDV_Value_New(iDV);
-			Ampl = Ampl_new-Ampl_old;	
+			Ampl = config->GetDV_Value(iDV);
 			
 			design_FFDBox = int(config->GetParamDV(iDV, 0));
 			if (design_FFDBox > nFFDBox) { cout <<"The FFDBox ID is bigger than the number of FFDBoxs!!"<< endl; exit(1); }
@@ -2376,7 +2383,7 @@ void CSurfaceMovement::SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeF
 
 void CSurfaceMovement::SetFFDThickness(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, 
 																			 unsigned short iDV, bool ResetDef) {
-	double Ampl_old, Ampl_new, Ampl, movement[3];	
+	double Ampl, movement[3];
 	unsigned short design_FFDBox, index[3], kIndex;
 		
 	design_FFDBox = int(config->GetParamDV(iDV, 0));
@@ -2386,9 +2393,7 @@ void CSurfaceMovement::SetFFDThickness(CGeometry *geometry, CConfig *config, CFr
 		/*--- Compute the variation of the design variable ---*/
 		for (kIndex = 0; kIndex < 2; kIndex++) {
 			
-			Ampl_old = config->GetDV_Value_Old(iDV);
-			Ampl_new = config->GetDV_Value_New(iDV);
-			Ampl = Ampl_new-Ampl_old;	
+			Ampl = config->GetDV_Value(iDV);
 			
 			design_FFDBox = int(config->GetParamDV(iDV, 0));
 			
@@ -2410,7 +2415,7 @@ void CSurfaceMovement::SetFFDThickness(CGeometry *geometry, CConfig *config, CFr
 
 void CSurfaceMovement::SetFFDVolume(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, 
 																			 unsigned short iDV, bool ResetDef) {
-	double Ampl_old, Ampl_new, Ampl, movement[3]; 
+	double Ampl, movement[3];
 	unsigned short design_FFDBox, index[3];
 			
 	design_FFDBox = int(config->GetParamDV(iDV, 0));
@@ -2418,9 +2423,7 @@ void CSurfaceMovement::SetFFDVolume(CGeometry *geometry, CConfig *config, CFreeF
 	if (design_FFDBox == iFFDBox) {
 		
 		/*--- Compute the variation of the design variable ---*/
-		Ampl_old = config->GetDV_Value_Old(iDV);
-		Ampl_new = config->GetDV_Value_New(iDV);
-		Ampl = Ampl_new-Ampl_old;	
+		Ampl = config->GetDV_Value(iDV);
 				
 		index[0] = int(config->GetParamDV(iDV, 1));
 		index[1] = int(config->GetParamDV(iDV, 2)); 
@@ -2447,9 +2450,7 @@ void CSurfaceMovement::SetFFDDihedralAngle(CGeometry *geometry, CConfig *config,
 	if (design_FFDBox == iFFDBox) {
 		
 		/*--- The angle of rotation. ---*/
-		double theta_old = config->GetDV_Value_Old(iDV)*PI_NUMBER/180.0;
-		double theta_new = config->GetDV_Value_New(iDV)*PI_NUMBER/180.0;
-		double theta = theta_new-theta_old;
+		double theta = config->GetDV_Value(iDV)*PI_NUMBER/180.0;
 		
 		/*--- Change the value of the control point if move is true ---*/
 		for (iOrder = 0; iOrder < FFDBox->GetlOrder(); iOrder++)
@@ -2488,9 +2489,7 @@ void CSurfaceMovement::SetFFDTwistAngle(CGeometry *geometry, CConfig *config, CF
 		double w = config->GetParamDV(iDV, 6)-config->GetParamDV(iDV, 3);
 		
 		/*--- The angle of rotation. ---*/
-		double theta_old = config->GetDV_Value_Old(iDV)*PI_NUMBER/180.0;
-		double theta_new = config->GetDV_Value_New(iDV)*PI_NUMBER/180.0;
-		double theta = theta_new-theta_old;
+		double theta = config->GetDV_Value(iDV)*PI_NUMBER/180.0;
 		
 		/*--- An intermediate value used in computations. ---*/
 		double u2=u*u; double v2=v*v; double w2=w*w;     
@@ -2561,9 +2560,7 @@ void CSurfaceMovement::SetFFDRotation(CGeometry *geometry, CConfig *config, CFre
 		double w = config->GetParamDV(0,6)-config->GetParamDV(0,3);
 		
 		/*--- The angle of rotation. ---*/
-		double theta_old = config->GetDV_Value_Old(0)*PI_NUMBER/180.0;
-		double theta_new = config->GetDV_Value_New(0)*PI_NUMBER/180.0;
-		double theta = theta_new-theta_old;
+		double theta = config->GetDV_Value(0)*PI_NUMBER/180.0;
 		
 		/*--- An intermediate value used in computations. ---*/
 		double u2=u*u; double v2=v*v; double w2=w*w;     
@@ -2618,9 +2615,7 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
 	}
   
 	/*--- Perform multiple airfoil deformation ---*/
-	double Ampl_old = config->GetDV_Value_Old(iDV);
-	double Ampl_new = config->GetDV_Value_New(iDV);
-	double Ampl = Ampl_new-Ampl_old;
+	double Ampl = config->GetDV_Value(iDV);
 	double xk = config->GetParamDV(iDV, 1);
 	const double t2 = 3.0;
   
@@ -2692,9 +2687,7 @@ void CSurfaceMovement::SetSpherical(CGeometry *boundary, CConfig *config, unsign
     
     Theta_Value = config->GetParamDV(iDV, 1);
     Radius_Value = config->GetParamDV(iDV, 2);
-    Value_old = config->GetDV_Value_Old(iDV);
-    Value_new = config->GetDV_Value_New(iDV);
-    Delta = Value_new-Value_old;
+    Delta = config->GetDV_Value(iDV);
     
     Theta_Spline[ControlPoint_Index] += Delta*Theta_Value;
     Radius_Spline[ControlPoint_Index] += Delta*Radius_Value;
@@ -2711,9 +2704,7 @@ void CSurfaceMovement::SetSpherical(CGeometry *boundary, CConfig *config, unsign
       
       Theta_Value = config->GetParamDV(jDV, 1);
       Radius_Value = config->GetParamDV(jDV, 2);
-      Value_old = config->GetDV_Value_Old(jDV);
-      Value_new = config->GetDV_Value_New(jDV);
-      Delta = Value_new-Value_old;
+      Delta = config->GetDV_Value(jDV);
       
       Theta_Spline[ControlPoint_Index] += Delta*Theta_Value;
       Radius_Spline[ControlPoint_Index] += Delta*Radius_Value;
@@ -2804,9 +2795,7 @@ void CSurfaceMovement::SetCosBump(CGeometry *boundary, CConfig *config, unsigned
 	}
   
 	/*--- Perform multiple airfoil deformation ---*/
-	double Ampl_old = config->GetDV_Value_Old(iDV);
-	double Ampl_new = config->GetDV_Value_New(iDV);
-	double Ampl = Ampl_new-Ampl_old;
+	double Ampl = config->GetDV_Value(iDV);
 	double BumpCenter = DesignLoc + config->GetParamDV(iDV, 1)*DesignSize;
 	double BumpSize = config->GetParamDV(iDV, 2);
   
@@ -2879,9 +2868,7 @@ void CSurfaceMovement::SetFourier(CGeometry *boundary, CConfig *config, unsigned
 	}
   
 	/*--- Perform multiple airfoil deformation ---*/
-	double Ampl_old = config->GetDV_Value_Old(iDV);
-	double Ampl_new = config->GetDV_Value_New(iDV);
-	double Ampl = Ampl_new-Ampl_old;
+	double Ampl = config->GetDV_Value(iDV);
   double T = DesignSize;
   double n = int(config->GetParamDV(iDV, 1));
   double omega = 2.0*PI_NUMBER/T;
@@ -2947,9 +2934,7 @@ void CSurfaceMovement::SetDisplacement(CGeometry *boundary, CConfig *config, uns
 	unsigned long iVertex;
 	unsigned short iMarker;
 	double VarCoord[3];
-	double Ampl_old = config->GetDV_Value_Old(0);
-	double Ampl_new = config->GetDV_Value_New(0);
-	double Ampl = Ampl_new-Ampl_old;
+	double Ampl = config->GetDV_Value(0);
 	
 	if (config->GetnDV() != 1) { cout << "This kind of design variable is not prepared for multiple deformations."; cin.get();	}
 	
@@ -2991,9 +2976,7 @@ void CSurfaceMovement::SetRotation(CGeometry *boundary, CConfig *config, unsigne
 	if (boundary->GetnDim() == 3) w = config->GetParamDV(iDV, 5)-config->GetParamDV(iDV, 2);
 	
 	/*--- The angle of rotation. ---*/
-	double theta_old = config->GetDV_Value_Old(iDV)*PI_NUMBER/180.0;
-	double theta_new = config->GetDV_Value_New(iDV)*PI_NUMBER/180.0;
-	double theta = theta_new-theta_old;
+	double theta = config->GetDV_Value(iDV)*PI_NUMBER/180.0;
 	
 	/*--- An intermediate value used in computations. ---*/
 	double u2=u*u; double v2=v*v; double w2=w*w;     
@@ -3033,9 +3016,10 @@ void CSurfaceMovement::SetRotation(CGeometry *boundary, CConfig *config, unsigne
 }
 
 void CSurfaceMovement::SetBoundary_Flutter2D(CGeometry *geometry, CConfig *config, 
-                                             unsigned long iter) {
+                                             unsigned long iter, unsigned short iZone) {
 	
 	double VarCoord[3], omega, w_red, deltaT, ampl, v_inf, *vel;
+  double r[3], rotCoord[3],*Coord, Center[3], Omega[3], Ampl[3], Phase[3];
   double alpha, alpha_new, alpha_old, dx, dy;
   double time_new, time_old;
   double DEG2RAD = PI_NUMBER/180.0;
@@ -3056,6 +3040,20 @@ void CSurfaceMovement::SetBoundary_Flutter2D(CGeometry *geometry, CConfig *confi
   w_red     = config->GetReduced_Frequency();
   ampl      = config->GetPitching_Amplitude();
   
+  /*--- Pitching origin, frequency, and amplitude from config. ---*/
+  Center[0] = config->GetMotion_Origin_X(iZone);
+  Center[1] = config->GetMotion_Origin_Y(iZone);
+  Center[2] = config->GetMotion_Origin_Z(iZone);
+  Omega[0]  = (config->GetPitching_Omega_X(iZone)/config->GetOmega_Ref());
+  Omega[1]  = (config->GetPitching_Omega_Y(iZone)/config->GetOmega_Ref());
+  Omega[2]  = (config->GetPitching_Omega_Z(iZone)/config->GetOmega_Ref());
+  Ampl[0]   = config->GetPitching_Ampl_X(iZone)*DEG2RAD;
+  Ampl[1]   = config->GetPitching_Ampl_Y(iZone)*DEG2RAD;
+  Ampl[2]   = config->GetPitching_Ampl_Z(iZone)*DEG2RAD;
+  Phase[0]   = config->GetPitching_Phase_X(iZone)*DEG2RAD;
+  Phase[1]   = config->GetPitching_Phase_Y(iZone)*DEG2RAD;
+  Phase[2]   = config->GetPitching_Phase_Z(iZone)*DEG2RAD;
+  
   /*--- Compute delta time based on physical time step ---*/
   if (adjoint) {
     /*--- For the unsteady adjoint, we integrate backwards through
@@ -3072,26 +3070,18 @@ void CSurfaceMovement::SetBoundary_Flutter2D(CGeometry *geometry, CConfig *confi
     if (iter != 0) time_old = (static_cast<double>(iter)-1.0)*deltaT;
   }
 	
-  /*--- For now, hard code the origin and chord length. These can be
-   inputs in the config file in the future. ---*/
-  double x_origin = 0.248, y_origin = 0.0;
-	double chord = 1.0;
-  
-  /*--- Compute the freestream velocity for use with the reduced frequency --*/
-  v_inf = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    v_inf += vel[iDim]*vel[iDim];
-  v_inf = sqrt(v_inf);
-  
+  /*--- Set x and y origins from the config file specifications. ---*/
+  double x_origin = Center[0], y_origin = Center[1];
+
   /*--- Update the pitching angle at this time step. Flip sign for
    nose-up positive convention. ---*/
-  omega     = 2.0*w_red*v_inf/chord;
-  alpha_new = ampl*sin(omega*time_new);
-  alpha_old = ampl*sin(omega*time_old);
-  alpha     = -(1E-12 + (alpha_new - alpha_old))*DEG2RAD;
+  omega     = Omega[2];
+  alpha_new = Ampl[2]*sin(omega*time_new);
+  alpha_old = Ampl[2]*sin(omega*time_old);
+  alpha     = -(1E-12 + (alpha_new - alpha_old));
 	
 	if (rank == MASTER_NODE)
-		cout << "New pitching angle (alpha): " << alpha_new << " degrees." << endl;
+		cout << "New pitching angle (alpha): " << alpha_new/DEG2RAD << " degrees." << endl;
   
 	/*--- Store movement and velocity of each node on the pitching surface ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {

@@ -115,7 +115,7 @@ class Config(ordered_bunch):
         try:
             return super(Config,self).__getitem__(k)
         except KeyError:
-            raise KeyError , 'Config parameter not found'
+            raise KeyError , 'Config parameter not found: %s' % k
 
     def unpack_dvs(self,dv_new,dv_old=None):
         """ updates config with design variable vectors
@@ -666,6 +666,11 @@ def dump_config(filename,config):
     ''' dumps a raw config file with all options in config 
         and no comments
     '''
+    
+    # HACK - twl
+    if config.has_key('DV_VALUE_NEW'):
+        config.DV_VALUE = config.DV_VALUE_NEW
+        
     config_file = open(filename,'w')
     # write dummy file
     for key in config.keys():

@@ -125,7 +125,6 @@ def MDC(config):
     
     # must run with rank 1
     processes = konfig['NUMBER_PART']
-    #processes = min([1,processes])  # hack - TWL
     
     the_Command = 'SU2_MDC ' + tempname
     the_Command = build_command( the_Command , processes )
@@ -166,7 +165,6 @@ def GDC(config):
     
     # must run with rank 1
     processes = konfig['NUMBER_PART']
-    processes = min([1,processes])       
         
     the_Command = 'SU2_GDC ' + tempname
     the_Command = build_command( the_Command , processes )
