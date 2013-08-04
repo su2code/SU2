@@ -206,12 +206,12 @@ def aerodynamics( config, state=None ):
             
     #: with output redirection
     
-    # return aerodynamic dictionary
-    aero = state['FUNCTIONS'] 
-    for key in aero.keys(): 
-        if key not in su2io.optnames_aero: del aero[key]
-        
-    return copy.deepcopy(aero)
+    # return output 
+    funcs = su2util.ordered_bunch()
+    for key in su2io.optnames_aero:
+        if state['FUNCTIONS'].has_key(key):
+            funcs[key] = state['FUNCTIONS'][key]
+    return funcs
 
 #: def aerodynamics()
 
@@ -309,12 +309,12 @@ def geometry( func_name, config, state=None ):
         
     #: if not redundant 
     
-    # return geometry dictionary
-    geom = state['FUNCTIONS'] # naive update
-    for key in geom.keys(): 
-        if key not in su2io.optnames_geo: del geom[key]   
-        
-    return copy.deepcopy(geom)
+    # return output 
+    funcs = su2util.ordered_bunch()
+    for key in su2io.optnames_geo:
+        if state['FUNCTIONS'].has_key(key):
+            funcs[key] = state['FUNCTIONS'][key]
+    return funcs
     
 
 #: def geometry()

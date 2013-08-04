@@ -229,8 +229,9 @@ def adjoint( func_name, config, state=None ):
     #: with output redirection
 
     # return output 
-    grads = state['GRADIENTS']
-    return copy.deepcopy(grads)
+    grads = su2util.ordered_bunch()
+    grads[func_name] = state['GRADIENTS'][func_name]
+    return grads
 
 #: def adjoint()
 
@@ -403,8 +404,11 @@ def findiff( config, state=None, step=1e-4 ):
     # remove plot items
     del grads['VARIABLE']
     del grads['FINDIFF_STEP']
+    state.update(grads)
     
-    return copy.deepcopy(grads)
+    # return results
+    grads = copy.deepcopy(grads)
+    return grads
 
 #: def findiff()
 
@@ -502,12 +506,13 @@ def geometry( func_name, config, state=None ):
         
     #: if not redundant 
     
-    # return geometry dictionary
-    geom = state['GRADIENTS'] # naive update
-    for key in geom.keys(): 
-        if key not in su2io.optnames_geo: del geom[key]   
-        
-    return copy.deepcopy(geom)
+
+    # return output 
+    grads = su2util.ordered_bunch()
+    for key in su2io.optnames_geo:
+        if state['GRADIENTS'].has_key(key):
+            grads[key] = state['GRADIENTS'][key]
+    return grads    
 
 #: def geometry()
 
