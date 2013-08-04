@@ -336,18 +336,21 @@ double CGeometry::GetSpline(vector<double>&xa, vector<double>&ya, vector<double>
 	unsigned long klo, khi, k;
 	double h, b, a, y;
   
-	klo=1;										// We will find the right place in the table by means of
-	khi=n;										// bisection. This is optimal if sequential calls to this
+  if (x < xa[0]) x = xa[0];       // Clip max and min values
+  if (x > xa[n-1]) x = xa[n-1];
+
+	klo = 1;										// We will find the right place in the table by means of
+	khi = n;										// bisection. This is optimal if sequential calls to this
 	while (khi-klo > 1) {			// routine are at random values of x. If sequential calls
-		k=(khi+klo) >> 1;				// are in order, and closely spaced, one would do better
-		if (xa[k-1] > x) khi=k;		// to store previous values of klo and khi and test if
+		k = (khi+klo) >> 1;				// are in order, and closely spaced, one would do better
+		if (xa[k-1] > x) khi = k;		// to store previous values of klo and khi and test if
 		else klo=k;							// they remain appropriate on the next call.
 	}								// klo and khi now bracket the input value of x
-	h=xa[khi-1]-xa[klo-1];
-	if (h == 0.0) cout << "Bad xa input to routine splint" << endl;	// The xa’s must be dis-
-	a=(xa[khi-1]-x)/h;																					      // tinct.
-	b=(x-xa[klo-1])/h;				// Cubic spline polynomial is now evaluated.
-	y=a*ya[klo-1]+b*ya[khi-1]+((a*a*a-a)*y2a[klo-1]+(b*b*b-b)*y2a[khi-1])*(h*h)/6.0;
+	h = xa[khi-1] - xa[klo-1];
+	if (h == 0.0) cout << "Bad xa input to routine splint" << endl;	// The xa’s must be distinct.
+	a = (xa[khi-1]-x)/h;
+	b = (x-xa[klo-1])/h;				// Cubic spline polynomial is now evaluated.
+	y = a*ya[klo-1]+b*ya[khi-1]+((a*a*a-a)*y2a[klo-1]+(b*b*b-b)*y2a[khi-1])*(h*h)/6.0;
   
 	return y;
 }
@@ -7650,246 +7653,766 @@ void CBoundaryGeometry::SetBoundSensitivity(CConfig *config) {
 	delete[] Point2Vertex;
 }
 
-double CBoundaryGeometry::GetMaxThickness(CConfig *config, bool original_surface) {
-	unsigned short iMarker;
-	unsigned long iVertex, jVertex, n;
-	double *Coord, *Normal, *VarCoord = NULL, auxXCoord, auxYCoord, yp1, ypn, MaxThickness;
-	vector<double> Xcoord, Ycoord, Y2coord; 
-
-	/*--- Identify upper and lower side --*/
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-			if (config->GetMarker_All_Moving(iMarker) == YES) {
-				Coord = vertex[iMarker][iVertex]->GetCoord();
-				if (original_surface == false) VarCoord = vertex[iMarker][iVertex]->GetVarCoord();
-				Normal = vertex[iMarker][iVertex]->GetNormal();
-				if (Normal[1] > 0) {						// Only the upper side will be interpolated.
-					if (original_surface == true) {
-						Xcoord.push_back(Coord[0]);
-						Ycoord.push_back(Coord[1]);
-					}
-					else {
-						Xcoord.push_back(Coord[0]+VarCoord[0]);
-						Ycoord.push_back(Coord[1]+VarCoord[1]);
-					}
-				}
-			}
-
-	n = Xcoord.size();
-
-	/*--- Order the arrays using the y component ---*/
-	for (iVertex = 0; iVertex < Xcoord.size(); iVertex++)
-		for (jVertex = 0; jVertex < Xcoord.size() - 1 - iVertex; jVertex++)
-			if (Xcoord[jVertex] > Xcoord[jVertex+1]) {
-				auxXCoord = Xcoord[jVertex]; Xcoord[jVertex] = Xcoord[jVertex+1]; Xcoord[jVertex+1] = auxXCoord;
-				auxYCoord = Ycoord[jVertex]; Ycoord[jVertex] = Ycoord[jVertex+1]; Ycoord[jVertex+1] = auxYCoord;
-			}
-
-	yp1=(Ycoord[1]-Ycoord[0])/(Xcoord[1]-Xcoord[0]);
-	ypn=(Ycoord[n-1]-Ycoord[n-2])/(Xcoord[n-1]-Xcoord[n-2]);
-	Y2coord.resize(n+1);
-	SetSpline(Xcoord, Ycoord, n, yp1, ypn, Y2coord);
-
-	/*--- Compute the max thickness --*/
-	MaxThickness = 0.0;
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-			if (config->GetMarker_All_Moving(iMarker) == YES) {
-				Coord = vertex[iMarker][iVertex]->GetCoord();
-				if (original_surface == false) VarCoord = vertex[iMarker][iVertex]->GetVarCoord();
-				Normal = vertex[iMarker][iVertex]->GetNormal();
-				if (Normal[1] < 0) {						// Lower side
-					if (original_surface == true)
-						MaxThickness = max(MaxThickness, fabs(Coord[1]) + fabs(GetSpline(Xcoord, Ycoord, Y2coord, n, Coord[0])));
-					if (original_surface == false)
-						MaxThickness = max(MaxThickness, fabs(Coord[1]+VarCoord[1]) + fabs(GetSpline(Xcoord, Ycoord, Y2coord, n, Coord[0]+VarCoord[0])));
-				}
-			}
-
-	Xcoord.clear();
-	Ycoord.clear();
-	Y2coord.clear();
-
-	return MaxThickness;
-
-}
-
-double CBoundaryGeometry::GetMinThickness(CConfig *config, bool original_surface) {
-	unsigned short iMarker;
-	unsigned long iVertex, jVertex, n_U, n_L;
-	double *Coord, *Normal, *VarCoord = NULL, auxXCoord, auxYCoord, yp1, ypn, MinThickness;
-	vector<double> Xcoord_U, Ycoord_U, Y2coord_U;
-  vector<double> Xcoord_L, Ycoord_L, Y2coord_L;
+void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config,
+                                               vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil,
+                                               vector<double> &Zcoord_Airfoil, bool original_surface) {
+  unsigned short iMarker, iNode, jNode, iDim, intersect;
+  long MinDist_Point, MinDistAngle_Point;
+	unsigned long iPoint, jPoint, iElem, Trailing_Point, Airfoil_Point, iVertex, jVertex, n;
+  double Segment_P0[3] = {0.0, 0.0, 0.0}, Segment_P1[3] = {0.0, 0.0, 0.0}, Intersection[3] = {0.0, 0.0, 0.0}, Trailing_Coord, MinDist_Value, MinDistAngle_Value, Dist_Value,
+  Airfoil_Tangent[3] = {0.0, 0.0, 0.0}, Segment[3] = {0.0, 0.0, 0.0}, Length, Angle_Value, Normal[3], Tangent[3], BiNormal[3], auxXCoord,
+  auxYCoord, auxZCoord, zp1, zpn, Camber_Line, MaxAngle = 25, *VarCoord = NULL, CosValue;
+  vector<double> Xcoord, Ycoord, Zcoord, Z2coord, Xcoord_Normal, Ycoord_Normal, Zcoord_Normal, Xcoord_Camber, Ycoord_Camber, Zcoord_Camber;
+  vector<unsigned long> Duplicate;
+  vector<unsigned long>::iterator it;
+  int rank = MASTER_NODE;
+  double **Coord_Variation;
   
-	/*--- Identify upper and lower side --*/
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-			if (config->GetMarker_All_Moving(iMarker) == YES) {
-				Coord = vertex[iMarker][iVertex]->GetCoord();
-				if (original_surface == false) VarCoord = vertex[iMarker][iVertex]->GetVarCoord();
-				Normal = vertex[iMarker][iVertex]->GetNormal();
-        
-        /*--- Build spline fits of both the upper and lower surfaces so that
-         we can check the thickness at a particular chord location. The name
-         of this routine needs to be changed to something more appropriate. ---*/
-				if (Normal[1] > 0) {						
-					if (original_surface == true) {
-						Xcoord_U.push_back(Coord[0]);
-						Ycoord_U.push_back(Coord[1]);
-					}
-					else {
-						Xcoord_U.push_back(Coord[0]+VarCoord[0]);
-						Ycoord_U.push_back(Coord[1]+VarCoord[1]);
-					}
-				} else {
-          if (original_surface == true) {
-						Xcoord_L.push_back(Coord[0]);
-						Ycoord_L.push_back(Coord[1]);
-					}
-					else {
-						Xcoord_L.push_back(Coord[0]+VarCoord[0]);
-						Ycoord_L.push_back(Coord[1]+VarCoord[1]);
-					}
-        }
-			}
+#ifndef NO_MPI
+	unsigned long nLocalVertex, nGlobalVertex, MaxLocalVertex, *Buffer_Send_nVertex, *Buffer_Receive_nVertex, nBuffer;
+	int nProcessor, iProcessor;
+ 	double *Buffer_Send_Coord, *Buffer_Receive_Coord;
   
-	n_U = Xcoord_U.size();
-  n_L = Xcoord_L.size();
-  
-	/*--- Order the upper arrays using the y component ---*/
-	for (iVertex = 0; iVertex < Xcoord_U.size(); iVertex++)
-		for (jVertex = 0; jVertex < Xcoord_U.size() - 1 - iVertex; jVertex++)
-			if (Xcoord_U[jVertex] > Xcoord_U[jVertex+1]) {
-				auxXCoord = Xcoord_U[jVertex]; Xcoord_U[jVertex] = Xcoord_U[jVertex+1]; Xcoord_U[jVertex+1] = auxXCoord;
-				auxYCoord = Ycoord_U[jVertex]; Ycoord_U[jVertex] = Ycoord_U[jVertex+1]; Ycoord_U[jVertex+1] = auxYCoord;
-			}
-  
-  /*--- Build the upper surface spline ---*/
-	yp1=(Ycoord_U[1]-Ycoord_U[0])/(Xcoord_U[1]-Xcoord_U[0]);
-	ypn=(Ycoord_U[n_U-1]-Ycoord_U[n_U-2])/(Xcoord_U[n_U-1]-Xcoord_U[n_L-2]);
-	Y2coord_U.resize(n_U+1);
-	SetSpline(Xcoord_U, Ycoord_U, n_U, yp1, ypn, Y2coord_U);
-  
-  /*--- Order the lower arrays using the y component ---*/
-	for (iVertex = 0; iVertex < Xcoord_L.size(); iVertex++)
-		for (jVertex = 0; jVertex < Xcoord_L.size() - 1 - iVertex; jVertex++)
-			if (Xcoord_L[jVertex] > Xcoord_L[jVertex+1]) {
-				auxXCoord = Xcoord_L[jVertex]; Xcoord_L[jVertex] = Xcoord_L[jVertex+1]; Xcoord_L[jVertex+1] = auxXCoord;
-				auxYCoord = Ycoord_L[jVertex]; Ycoord_L[jVertex] = Ycoord_L[jVertex+1]; Ycoord_L[jVertex+1] = auxYCoord;
-			}
-  
-  /*--- Build the upper surface spline ---*/
-	yp1=(Ycoord_L[1]-Ycoord_L[0])/(Xcoord_L[1]-Xcoord_L[0]);
-	ypn=(Ycoord_L[n_L-1]-Ycoord_L[n_L-2])/(Xcoord_L[n_L-1]-Xcoord_L[n_L-2]);
-	Y2coord_L.resize(n_L+1);
-	SetSpline(Xcoord_L, Ycoord_L, n_L, yp1, ypn, Y2coord_L);
-  
-	/*--- Compute the thickness at the 3/4 chord point --*/
-  auxXCoord = 0.75;
-  //cout << "Upper Y-Coord @ 3c/4: " << fabs(GetSpline(Xcoord_U, Ycoord_U, Y2coord_U, n_U, auxXCoord)) << endl;
-  //cout << "Lower Y-Coord @ 3c/4: " << GetSpline(Xcoord_L, Ycoord_L, Y2coord_L, n_L, auxXCoord)<< endl;
-  
-  /*--- Upper surface minus lower surface (should prevent surface inversion) ---*/
-  MinThickness = GetSpline(Xcoord_U, Ycoord_U, Y2coord_U, n_U, auxXCoord) - GetSpline(Xcoord_L, Ycoord_L, Y2coord_L, n_L, auxXCoord);
-  
-	Xcoord_U.clear();
-	Ycoord_U.clear();
-	Y2coord_U.clear();
-  
-  Xcoord_L.clear();
-	Ycoord_L.clear();
-	Y2coord_L.clear();
-  
-	return MinThickness;
-  
-}
+  rank = MPI::COMM_WORLD.Get_rank();
+#endif
 
-double CBoundaryGeometry::GetTotalVolume(CConfig *config, bool original_surface) {
-	unsigned short iMarker;
-	unsigned long iVertex, jVertex;
-	double *Coord, *Normal, *VarCoord = NULL, auxXCoord, auxYCoord, TotalVolume;
-	vector<double> Xcoord_Upper, Ycoord_Upper, Xcoord_Lower, Ycoord_Lower; 
-
-	/*--- Identify upper and lower side --*/
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-			if (config->GetMarker_All_Moving(iMarker) == YES) {
-				Coord = vertex[iMarker][iVertex]->GetCoord();
-				if (original_surface == false) VarCoord = vertex[iMarker][iVertex]->GetVarCoord();
-				Normal = vertex[iMarker][iVertex]->GetNormal();
-				if (Normal[1] > 0) {
-					if (original_surface == true) {
-						Xcoord_Upper.push_back(Coord[0]);
-						Ycoord_Upper.push_back(Coord[1]);
-					}
-					else {
-						Xcoord_Upper.push_back(Coord[0]+VarCoord[0]);
-						Ycoord_Upper.push_back(Coord[1]+VarCoord[1]);
-					}
-				}
-				else {
-					if (original_surface == true) {
-						Xcoord_Lower.push_back(Coord[0]);
-						Ycoord_Lower.push_back(Coord[1]);
-					}
-					else {
-						Xcoord_Lower.push_back(Coord[0]+VarCoord[0]);
-						Ycoord_Lower.push_back(Coord[1]+VarCoord[1]);
-					}
-				}
-			}
-
-
-	/*--- Order the arrays using the y component ---*/
-	for (iVertex = 0; iVertex < Xcoord_Upper.size(); iVertex++)
-		for (jVertex = 0; jVertex < Xcoord_Upper.size() - 1 - iVertex; jVertex++)
-			if (Xcoord_Upper[jVertex] > Xcoord_Upper[jVertex+1]) {
-				auxXCoord = Xcoord_Upper[jVertex]; Xcoord_Upper[jVertex] = Xcoord_Upper[jVertex+1]; Xcoord_Upper[jVertex+1] = auxXCoord;
-				auxYCoord = Ycoord_Upper[jVertex]; Ycoord_Upper[jVertex] = Ycoord_Upper[jVertex+1]; Ycoord_Upper[jVertex+1] = auxYCoord;
-			}
-
-	for (iVertex = 0; iVertex < Xcoord_Lower.size(); iVertex++)
-		for (jVertex = 0; jVertex < Xcoord_Lower.size() - 1 - iVertex; jVertex++)
-			if (Xcoord_Lower[jVertex] > Xcoord_Lower[jVertex+1]) {
-				auxXCoord = Xcoord_Lower[jVertex]; Xcoord_Lower[jVertex] = Xcoord_Lower[jVertex+1]; Xcoord_Lower[jVertex+1] = auxXCoord;
-				auxYCoord = Ycoord_Lower[jVertex]; Ycoord_Lower[jVertex] = Ycoord_Lower[jVertex+1]; Ycoord_Lower[jVertex+1] = auxYCoord;
-			}
-
-	/*--- Compute the total volume ---*/
-	TotalVolume = 0.0;
-	for (iVertex = 0; iVertex < Xcoord_Upper.size()-1; iVertex++)
-		TotalVolume += fabs((Xcoord_Upper[iVertex+1] - Xcoord_Upper[iVertex]) * 0.5*(Ycoord_Upper[iVertex+1] + Ycoord_Upper[iVertex]));
-	for (iVertex = 0; iVertex < Xcoord_Lower.size()-1; iVertex++)
-		TotalVolume += fabs((Xcoord_Lower[iVertex+1] - Xcoord_Lower[iVertex]) * 0.5*(Ycoord_Lower[iVertex+1] + Ycoord_Lower[iVertex]));
-
-	return TotalVolume;
-
-}
-
-double CBoundaryGeometry::GetClearance(CConfig *config, bool original_surface) {
-	unsigned short iMarker;
-	unsigned long iVertex;
-	double *Coord, Min_YCoord, *VarCoord;
-
-  Min_YCoord = 1E6;
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-			if (config->GetMarker_All_Moving(iMarker) == YES) {
-				Coord = vertex[iMarker][iVertex]->GetCoord();
-        if (original_surface == false) {
+  Xcoord_Airfoil.clear();
+	Ycoord_Airfoil.clear();
+	Zcoord_Airfoil.clear();
+  
+  /*--- Set the right plane in 2D (note the change in Y-Z plane) ---*/ 
+  if (nDim == 2) {
+    iSection = 0;
+    Plane_P0[0] = 0.0;      Plane_P0[1] = 0.0;      Plane_P0[2] = 0.0;
+    Plane_Normal[0] = 0.0;  Plane_Normal[1] = 1.0;  Plane_Normal[2] = 0.0;
+  }
+  
+  /*--- the grid variation is stored using a vertices information,
+   we should go from vertex to points ---*/
+  if (original_surface == false) {
+    
+    Coord_Variation = new double *[nPoint];
+    for (iPoint = 0; iPoint < nPoint; iPoint++) 
+      Coord_Variation[iPoint] = new double [nDim];
+    
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_Moving(iMarker) == YES) {
+        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
           VarCoord = vertex[iMarker][iVertex]->GetVarCoord();
-          if ((Coord[nDim-1]+VarCoord[nDim-1]) < Min_YCoord) Min_YCoord = Coord[nDim-1]+VarCoord[nDim-1];
-        }
-        else {
-          if ((Coord[nDim-1]) < Min_YCoord) Min_YCoord = Coord[nDim-1];
+          iPoint = vertex[iMarker][iVertex]->GetNode();
+          for (iDim = 0; iDim < nDim; iDim++)
+            Coord_Variation[iPoint][iDim] = VarCoord[iDim];
         }
       }
+    }
+    
+  }
   
-  return Min_YCoord;
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    if (config->GetMarker_All_Moving(iMarker) == YES) {
+      for (iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
+        for(iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
+          iPoint = bound[iMarker][iElem]->GetNode(iNode);
+          for(jNode = 0; jNode < bound[iMarker][iElem]->GetnNodes(); jNode++) {
+            jPoint = bound[iMarker][iElem]->GetNode(jNode);
+            
+            if (jPoint > iPoint) {
+              
+              Segment_P0[0] = 0.0;  Segment_P0[1] = 0.0;  Segment_P0[2] = 0.0;
+              Segment_P1[0] = 0.0;  Segment_P1[1] = 0.0;  Segment_P1[2] = 0.0;
+
+              for (iDim = 0; iDim < nDim; iDim++) {
+                if (original_surface == true) {
+                  Segment_P0[iDim] = node[iPoint]->GetCoord(iDim);
+                  Segment_P1[iDim] = node[jPoint]->GetCoord(iDim);
+                }
+                else {
+                  Segment_P0[iDim] = node[iPoint]->GetCoord(iDim) + Coord_Variation[iPoint][iDim];
+                  Segment_P1[iDim] = node[jPoint]->GetCoord(iDim) + Coord_Variation[jPoint][iDim];
+                }
+              }
+              
+              /*--- In 2D add the points directly (note the change between Y and Z coordinate) ---*/
+              if (nDim == 2) {
+                Xcoord.push_back(Segment_P0[0]);  Xcoord.push_back(Segment_P1[0]);
+                Ycoord.push_back(Segment_P0[2]);  Ycoord.push_back(Segment_P1[2]);
+                Zcoord.push_back(Segment_P0[1]);  Zcoord.push_back(Segment_P1[1]);
+              }
+              /*--- In 3D compute the intersection ---*/
+              else if (nDim == 3) {
+                intersect = ComputeSegmentPlane_Intersection(Segment_P0, Segment_P1, Plane_P0, Plane_Normal, Intersection);
+                if (intersect == 1) {
+                  Xcoord.push_back(Intersection[0]);
+                  Ycoord.push_back(Intersection[1]);
+                  Zcoord.push_back(Intersection[2]);
+                }
+              }
+              
+            }
+            
+          }
+        }
+      }
+    }
+  }
+  
+  if (original_surface == false) {
+    
+    for (iPoint = 0; iPoint < nPoint; iPoint++)
+      delete [] Coord_Variation[iPoint];
+    delete [] Coord_Variation;
+    
+  }
+   
+#ifndef NO_MPI
+
+  /*--- Copy the coordinates of all the points in the plane to the master node ---*/
+	nLocalVertex = 0, nGlobalVertex = 0, MaxLocalVertex = 0;
+  nProcessor = MPI::COMM_WORLD.Get_size();
+
+  Buffer_Send_nVertex = new unsigned long [1];
+	Buffer_Receive_nVertex = new unsigned long [nProcessor];
+  
+  nLocalVertex = Xcoord.size();
+  
+	Buffer_Send_nVertex[0] = nLocalVertex;
+  
+	MPI::COMM_WORLD.Allreduce(&nLocalVertex, &nGlobalVertex, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+	MPI::COMM_WORLD.Allreduce(&nLocalVertex, &MaxLocalVertex, 1, MPI::UNSIGNED_LONG, MPI::MAX);
+	MPI::COMM_WORLD.Allgather(Buffer_Send_nVertex, 1, MPI::UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI::UNSIGNED_LONG);
+  
+	Buffer_Send_Coord = new double [MaxLocalVertex*3];
+	Buffer_Receive_Coord = new double [nProcessor*MaxLocalVertex*3];
+	nBuffer = MaxLocalVertex*3;
+  
+	for (iVertex = 0; iVertex < nLocalVertex; iVertex++) {
+    Buffer_Send_Coord[iVertex*3 + 0] = Xcoord[iVertex];
+    Buffer_Send_Coord[iVertex*3 + 1] = Ycoord[iVertex];
+    Buffer_Send_Coord[iVertex*3 + 2] = Zcoord[iVertex];
+  }
+  
+	MPI::COMM_WORLD.Allgather(Buffer_Send_Coord, nBuffer, MPI::DOUBLE, Buffer_Receive_Coord, nBuffer, MPI::DOUBLE);
+  
+  /*--- Clean the vectors before adding the new vertices only to the master node ---*/
+  Xcoord.clear();
+  Ycoord.clear();
+  Zcoord.clear();
+  
+  /*--- Copy the boundary to the master node vectors ---*/
+  if (rank == MASTER_NODE) {
+    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+      for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
+        Xcoord.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*3 + iVertex*3 + 0] );
+        Ycoord.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*3 + iVertex*3 + 1] );
+        Zcoord.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*3 + iVertex*3 + 2] );
+      }
+    }
+  }
+  
+	delete[] Buffer_Send_Coord;   delete[] Buffer_Receive_Coord;
+	delete[] Buffer_Send_nVertex; delete[] Buffer_Receive_nVertex;
+
+#endif 
+  
+  if (rank == MASTER_NODE) {
+    
+    /*--- Create a list with the duplicated points ---*/
+    for (iVertex = 0; iVertex < Xcoord.size()-1; iVertex++) {
+      for (jVertex = iVertex+1; jVertex < Xcoord.size(); jVertex++) {
+        Segment[0] = Xcoord[jVertex] - Xcoord[iVertex];
+        Segment[1] = Ycoord[jVertex] - Ycoord[iVertex];
+        Segment[2] = Zcoord[jVertex] - Zcoord[iVertex];
+        Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+        if (Dist_Value < 1E-6) {
+          Duplicate.push_back (jVertex);
+        }
+      }
+    }
+    
+    sort(Duplicate.begin(), Duplicate.end());
+    it = unique(Duplicate.begin(), Duplicate.end());
+    Duplicate.resize(it - Duplicate.begin());
+    
+    /*--- Remove duplicated points (starting from the back) ---*/
+    for (iVertex = Duplicate.size(); iVertex > 0; iVertex--) {
+      Xcoord.erase (Xcoord.begin() + Duplicate[iVertex-1]);
+      Ycoord.erase (Ycoord.begin() + Duplicate[iVertex-1]);
+      Zcoord.erase (Zcoord.begin() + Duplicate[iVertex-1]);
+    }
+    
+     /*--- Find the trailing edge ---*/
+    Trailing_Point = 0; Trailing_Coord = Xcoord[0];
+    for (iVertex = 1; iVertex < Xcoord.size(); iVertex++) {
+      if (Xcoord[iVertex] > Trailing_Coord) {
+        Trailing_Point = iVertex; Trailing_Coord = Xcoord[iVertex];
+      }
+    }
+    
+    /*--- Add the trailing edge to the list, and remove from the original list ---*/
+    Xcoord_Airfoil.push_back(Xcoord[Trailing_Point]); Ycoord_Airfoil.push_back(Ycoord[Trailing_Point]); Zcoord_Airfoil.push_back(Zcoord[Trailing_Point]);
+    Xcoord.erase (Xcoord.begin() + Trailing_Point); Ycoord.erase (Ycoord.begin() + Trailing_Point); Zcoord.erase (Zcoord.begin() + Trailing_Point);
+    
+    /*--- Find the next point using the right hand side rule ---*/
+    MinDist_Value = 1E6;
+    for (iVertex = 0; iVertex < Xcoord.size(); iVertex++) {
+      Segment[0] = Xcoord[iVertex] - Xcoord_Airfoil[0];
+      Segment[1] = Ycoord[iVertex] - Ycoord_Airfoil[0];
+      Segment[2] = Zcoord[iVertex] - Zcoord_Airfoil[0];
+      Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+      Segment[0] /= Dist_Value; Segment[1] /= Dist_Value; Segment[2] /= Dist_Value;
+
+      if ((Dist_Value < MinDist_Value) && (Segment[2] > 0.0)) { MinDist_Point = iVertex; MinDist_Value = Dist_Value; }
+    }
+    Xcoord_Airfoil.push_back(Xcoord[MinDist_Point]);  Ycoord_Airfoil.push_back(Ycoord[MinDist_Point]);  Zcoord_Airfoil.push_back(Zcoord[MinDist_Point]);
+    Xcoord.erase (Xcoord.begin() + MinDist_Point);    Ycoord.erase (Ycoord.begin() + MinDist_Point);    Zcoord.erase (Zcoord.begin() + MinDist_Point);
+    
+    /*--- Algorithm for the rest of the points ---*/
+    do {
+      
+      /*--- Last added point in the list ---*/
+      Airfoil_Point = Xcoord_Airfoil.size() - 1;
+      
+      /*--- Compute the slope of the curve ---*/
+      Airfoil_Tangent[0] = Xcoord_Airfoil[Airfoil_Point] - Xcoord_Airfoil[Airfoil_Point-1];
+      Airfoil_Tangent[1] = Ycoord_Airfoil[Airfoil_Point] - Ycoord_Airfoil[Airfoil_Point-1];
+      Airfoil_Tangent[2] = Zcoord_Airfoil[Airfoil_Point] - Zcoord_Airfoil[Airfoil_Point-1];
+      Length = sqrt(pow(Airfoil_Tangent[0], 2.0) + pow(Airfoil_Tangent[1], 2.0) + pow(Airfoil_Tangent[2], 2.0));
+      Airfoil_Tangent[0] /= Length; Airfoil_Tangent[1] /= Length; Airfoil_Tangent[2] /= Length;
+
+      /*--- Find the closest point with the right slope ---*/
+      MinDist_Value = 1E6; MinDistAngle_Value = 180;
+      MinDist_Point = -1; MinDistAngle_Point = -1;
+      for (iVertex = 0; iVertex < Xcoord.size(); iVertex++) {
+        
+        Segment[0] = Xcoord[iVertex] - Xcoord_Airfoil[Airfoil_Point];
+        Segment[1] = Ycoord[iVertex] - Ycoord_Airfoil[Airfoil_Point];
+        Segment[2] = Zcoord[iVertex] - Zcoord_Airfoil[Airfoil_Point];
+        
+        /*--- Compute the distance to each point ---*/
+        Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+        
+        /*--- Compute the angle of the point ---*/
+        Segment[0] /= Dist_Value; Segment[1] /= Dist_Value; Segment[2] /= Dist_Value;
+        
+        /*--- Clip the value of the cosine, this is important due to the round errors ---*/
+        CosValue = Airfoil_Tangent[0]*Segment[0] + Airfoil_Tangent[1]*Segment[1] + Airfoil_Tangent[2]*Segment[2];
+        if (CosValue >= 1.0) CosValue = 1.0;
+        if (CosValue <= -1.0) CosValue = -1.0;
+
+        Angle_Value = acos(CosValue) * 180 / PI_NUMBER;
+        
+        if (Dist_Value < MinDist_Value) { MinDist_Point = iVertex; MinDist_Value = Dist_Value; }
+        if ((Dist_Value < MinDistAngle_Value) && (Angle_Value < MaxAngle)) {MinDistAngle_Point = iVertex; MinDistAngle_Value = Dist_Value;}
+        
+      }
+
+      if ( MinDistAngle_Point != -1) MinDist_Point = MinDistAngle_Point;
+      
+      /*--- Add and remove the min distance to the list ---*/
+      Xcoord_Airfoil.push_back(Xcoord[MinDist_Point]);  Ycoord_Airfoil.push_back(Ycoord[MinDist_Point]);  Zcoord_Airfoil.push_back(Zcoord[MinDist_Point]);
+      Xcoord.erase(Xcoord.begin() + MinDist_Point);    Ycoord.erase(Ycoord.begin() + MinDist_Point);    Zcoord.erase(Zcoord.begin() + MinDist_Point);
+      
+    } while (Xcoord.size() != 0);
+    
+    /*--- Clean the vector before using them again for storing the upper or the lower side ---*/
+    Xcoord.clear(); Ycoord.clear(); Zcoord.clear();
+    
+    /*--- Identify upper and lower side using the value of the normal vector --*/
+    for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+      Tangent[0] = Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[iVertex-1];
+      Tangent[1] = Ycoord_Airfoil[iVertex] - Ycoord_Airfoil[iVertex-1];
+      Tangent[2] = Zcoord_Airfoil[iVertex] - Zcoord_Airfoil[iVertex-1];
+      Length = sqrt(pow(Tangent[0], 2.0) + pow(Tangent[1], 2.0) + pow(Tangent[2], 2.0));
+      Tangent[0] /= Length; Tangent[1] /= Length; Tangent[2] /= Length;
+      
+      BiNormal[0] = Plane_Normal[0];
+      BiNormal[1] = Plane_Normal[1];
+      BiNormal[2] = Plane_Normal[2];
+      Length = sqrt(pow(BiNormal[0], 2.0) + pow(BiNormal[1], 2.0) + pow(BiNormal[2], 2.0));
+      BiNormal[0] /= Length; BiNormal[1] /= Length; BiNormal[2] /= Length;
+      
+      Normal[0] = Tangent[1]*BiNormal[2] - Tangent[2]*BiNormal[1];
+      Normal[1] = Tangent[2]*BiNormal[0] - Tangent[0]*BiNormal[2];
+      Normal[2] = Tangent[0]*BiNormal[1] - Tangent[1]*BiNormal[0];
+      
+      Xcoord_Normal.push_back(Normal[0]); Ycoord_Normal.push_back(Normal[1]); Zcoord_Normal.push_back(Normal[2]);
+      
+      if (Normal[2] >= 0.0) {
+        Xcoord.push_back(Xcoord_Airfoil[iVertex]);
+        Ycoord.push_back(Ycoord_Airfoil[iVertex]);
+        Zcoord.push_back(Zcoord_Airfoil[iVertex]);
+      }
+      
+    }
+    
+    n = Xcoord.size();
+    
+    /*--- Order the arrays using the X component ---*/
+    for (iVertex = 0; iVertex < Xcoord.size(); iVertex++) {
+      for (jVertex = 0; jVertex < Xcoord.size() - 1 - iVertex; jVertex++) {
+        if (Xcoord[jVertex] > Xcoord[jVertex+1]) {
+          auxXCoord = Xcoord[jVertex]; Xcoord[jVertex] = Xcoord[jVertex+1]; Xcoord[jVertex+1] = auxXCoord;
+          auxYCoord = Ycoord[jVertex]; Ycoord[jVertex] = Ycoord[jVertex+1]; Ycoord[jVertex+1] = auxYCoord;
+          auxZCoord = Zcoord[jVertex]; Zcoord[jVertex] = Zcoord[jVertex+1]; Zcoord[jVertex+1] = auxZCoord;
+        }
+      }
+    }
+    
+    zp1=(Zcoord[1]-Zcoord[0]) / (Xcoord[1]-Xcoord[0]);
+    zpn=(Zcoord[n-1]-Zcoord[n-2]) / (Xcoord[n-1]-Xcoord[n-2]);
+    Z2coord.resize(n+1);
+    SetSpline(Xcoord, Zcoord, n, zp1, zpn, Z2coord);
+    
+    /*--- Compute the camber--*/
+    for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+      if (Zcoord_Normal[iVertex] < 0.0) {
+        Camber_Line = 0.5 * (Zcoord_Airfoil[iVertex] + GetSpline(Xcoord, Zcoord, Z2coord, n, Xcoord_Airfoil[iVertex]));
+        Xcoord_Camber.push_back(Xcoord_Airfoil[iVertex]);
+        Ycoord_Camber.push_back(Ycoord_Airfoil[iVertex]);
+        Zcoord_Camber.push_back(Camber_Line);
+      }
+    }
+    
+    /*--- Write the output file (tecplot format) ---*/
+    if (original_surface == true) {
+      ofstream Tecplot_File;
+      if (iSection == 0) Tecplot_File.open("Airfoil_Sections.plt", ios::out);
+      else Tecplot_File.open("Airfoil_Sections.plt", ios::app);
+      
+      if (iSection == 0) {
+        Tecplot_File << "TITLE = \"Wing airfoil sections\"" << endl;
+        Tecplot_File << "VARIABLES = \"X\",\"Y\",\"Z\"" << endl;
+      }
+      
+      Tecplot_File << "ZONE T=\"SECTION_"<< (iSection+1) << "\", NODES= "<< Xcoord_Airfoil.size() << ", ELEMENTS= " << Xcoord_Airfoil.size()-1 << ", DATAPACKING= POINT, ZONETYPE= FELINESEG" << endl;
+      
+      /*--- Coordinates ---*/
+      for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+        Tecplot_File << Xcoord_Airfoil[iVertex] <<" "<< Ycoord_Airfoil[iVertex] <<" "<< Zcoord_Airfoil[iVertex] << endl;
+      }
+      /*--- Conectivity ---*/
+      for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+        Tecplot_File << iVertex << "\t" << iVertex+1 << "\n";
+      }
+      
+      Tecplot_File.close();
+    }
+    
+  }
+   
+#ifndef NO_MPI
+  MPI::COMM_WORLD.Barrier();
+#endif
+  
+}
+
+unsigned short CBoundaryGeometry::ComputeSegmentPlane_Intersection(double *Segment_P0, double *Segment_P1, double *Plane_P0, double *Plane_Normal, double *Intersection) {
+  double u[3], v[3], Denominator, Numerator, Aux;
+  unsigned short iDim;
+  
+  for (iDim = 0; iDim < 3; iDim++) {
+    u[iDim] = Segment_P1[iDim] - Segment_P0[iDim];
+    v[iDim] = Plane_P0[iDim] - Segment_P0[iDim];
+  }
+
+  Numerator = Plane_Normal[0]*v[0] + Plane_Normal[1]*v[1] + Plane_Normal[2]*v[2];
+  Denominator = Plane_Normal[0]*u[0] + Plane_Normal[1]*u[1] + Plane_Normal[2]*u[2];
+
+  if (fabs(Denominator) <= 0.0) return 0; // No intersection.
+
+  Aux = Numerator / Denominator;
+  
+  if (Aux < 0.0 || Aux > 1.0) return 0; // No intersection.
+  
+  for (iDim = 0; iDim < 3; iDim++)
+    Intersection[iDim] = Segment_P0[iDim] + Aux * u[iDim];
+  
+  
+  /*--- Check that the intersection is in the segment ---*/
+  for (iDim = 0; iDim < 3; iDim++) {
+    u[iDim] = Segment_P0[iDim] - Intersection[iDim];
+    v[iDim] = Segment_P1[iDim] - Intersection[iDim];
+  }
+  
+  Denominator = Plane_Normal[0]*u[0] + Plane_Normal[1]*u[1] + Plane_Normal[2]*u[2];
+  Numerator = Plane_Normal[0]*v[0] + Plane_Normal[1]*v[1] + Plane_Normal[2]*v[2];
+
+  Aux = Numerator * Denominator;
+  
+  if (Aux > 0.0) return 3; // Intersection outside the segment.
+  else return 1;
 
 }
 
+double CBoundaryGeometry::Compute_MaxThickness(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface) {
+	unsigned long iVertex, jVertex, n, Trailing_Point, LeadingPoint;
+	double Normal[3], Tangent[3], BiNormal[3], auxXCoord, auxYCoord, auxZCoord, zp1, zpn, MaxThickness_Value = 0, MaxThickness_Location, Thickness, Length, Xcoord_Trailing, Ycoord_Trailing, Zcoord_Trailing, ValCos, ValSin, XValue, ZValue, MaxDistance, Distance, AoA;
+	vector<double> Xcoord, Ycoord, Zcoord, Z2coord, Xcoord_Normal, Ycoord_Normal, Zcoord_Normal, Xcoord_Airfoil_, Ycoord_Airfoil_, Zcoord_Airfoil_;
+  
+  /*--- Find the leading and trailing edges and compute the angle of attack ---*/
+  MaxDistance = 0.0; Trailing_Point = 0;
+  for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+    
+    Distance = sqrt(pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
+                    pow(Ycoord_Airfoil[iVertex] - Ycoord_Airfoil[Trailing_Point], 2.0) +
+                    pow(Zcoord_Airfoil[iVertex] - Zcoord_Airfoil[Trailing_Point], 2.0));
+    
+    if (MaxDistance < Distance) { MaxDistance = Distance; LeadingPoint = iVertex; }
+  }
+  
+  AoA = atan((Zcoord_Airfoil[LeadingPoint] - Zcoord_Airfoil[Trailing_Point]) / (Xcoord_Airfoil[Trailing_Point] - Xcoord_Airfoil[LeadingPoint]))*180/PI_NUMBER;
+  
+  /*--- Translate to the origin ---*/
+  Xcoord_Trailing = Xcoord_Airfoil[0];
+  Ycoord_Trailing = Ycoord_Airfoil[0];
+  Zcoord_Trailing = Zcoord_Airfoil[0];
+  
+  for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+    Xcoord_Airfoil_.push_back(Xcoord_Airfoil[iVertex] - Xcoord_Trailing);
+    Ycoord_Airfoil_.push_back(Ycoord_Airfoil[iVertex] - Ycoord_Trailing);
+    Zcoord_Airfoil_.push_back(Zcoord_Airfoil[iVertex] - Zcoord_Trailing);
+  }
+  
+  /*--- Rotate the airfoil ---*/
+  ValCos = cos(AoA*PI_NUMBER/180.0);
+  ValSin = sin(AoA*PI_NUMBER/180.0);
+  
+  for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+    XValue = Xcoord_Airfoil_[iVertex];
+    ZValue = Zcoord_Airfoil_[iVertex];
+    
+    Xcoord_Airfoil_[iVertex] = XValue*ValCos - ZValue*ValSin;
+    Zcoord_Airfoil_[iVertex] = ZValue*ValCos + XValue*ValSin;
+    
+  }
+  
+  /*--- Identify upper and lower side, and store the value of the normal --*/
+  for (iVertex = 1; iVertex < Xcoord_Airfoil_.size(); iVertex++) {
+    Tangent[0] = Xcoord_Airfoil_[iVertex] - Xcoord_Airfoil_[iVertex-1];
+    Tangent[1] = Ycoord_Airfoil_[iVertex] - Ycoord_Airfoil_[iVertex-1];
+    Tangent[2] = Zcoord_Airfoil_[iVertex] - Zcoord_Airfoil_[iVertex-1];
+    Length = sqrt(pow(Tangent[0], 2.0) + pow(Tangent[1], 2.0) + pow(Tangent[2], 2.0));
+    Tangent[0] /= Length; Tangent[1] /= Length; Tangent[2] /= Length;
+    
+    BiNormal[0] = Plane_Normal[0];
+    BiNormal[1] = Plane_Normal[1];
+    BiNormal[2] = Plane_Normal[2];
+    Length = sqrt(pow(BiNormal[0], 2.0) + pow(BiNormal[1], 2.0) + pow(BiNormal[2], 2.0));
+    BiNormal[0] /= Length; BiNormal[1] /= Length; BiNormal[2] /= Length;
+    
+    Normal[0] = Tangent[1]*BiNormal[2] - Tangent[2]*BiNormal[1];
+    Normal[1] = Tangent[2]*BiNormal[0] - Tangent[0]*BiNormal[2];
+    Normal[2] = Tangent[0]*BiNormal[1] - Tangent[1]*BiNormal[0];
+    
+    Xcoord_Normal.push_back(Normal[0]); Ycoord_Normal.push_back(Normal[1]); Zcoord_Normal.push_back(Normal[2]);
+    
+    if (Normal[2] >= 0.0) {
+      Xcoord.push_back(Xcoord_Airfoil_[iVertex]);
+      Ycoord.push_back(Ycoord_Airfoil_[iVertex]);
+      Zcoord.push_back(Zcoord_Airfoil_[iVertex]);
+    }
+    
+  }
+  
+  /*--- Order the arrays using the X component ---*/
+  for (iVertex = 0; iVertex < Xcoord.size(); iVertex++) {
+    for (jVertex = 0; jVertex < Xcoord.size() - 1 - iVertex; jVertex++) {
+      if (Xcoord[jVertex] > Xcoord[jVertex+1]) {
+        auxXCoord = Xcoord[jVertex]; Xcoord[jVertex] = Xcoord[jVertex+1]; Xcoord[jVertex+1] = auxXCoord;
+        auxYCoord = Ycoord[jVertex]; Ycoord[jVertex] = Ycoord[jVertex+1]; Ycoord[jVertex+1] = auxYCoord;
+        auxZCoord = Zcoord[jVertex]; Zcoord[jVertex] = Zcoord[jVertex+1]; Zcoord[jVertex+1] = auxZCoord;
+      }
+    }
+  }
+  
+  n = Xcoord.size();
+  zp1 = (Zcoord[1]-Zcoord[0])/(Xcoord[1]-Xcoord[0]);
+  zpn = (Zcoord[n-1]-Zcoord[n-2])/(Xcoord[n-1]-Xcoord[n-2]);
+  Z2coord.resize(n+1);
+  SetSpline(Xcoord, Zcoord, n, zp1, zpn, Z2coord);
+  
+  /*--- Compute the max thickness --*/
+  MaxThickness_Value = 0.0; MaxThickness_Location = 0.0;
+  for (iVertex = 0; iVertex < Xcoord_Airfoil_.size(); iVertex++) {
+    if (Zcoord_Normal[iVertex] < 0.0) {
+      Thickness = fabs(Zcoord_Airfoil_[iVertex]) + fabs(GetSpline(Xcoord, Zcoord, Z2coord, n, Xcoord_Airfoil_[iVertex]));
+      if (Thickness > MaxThickness_Value) { MaxThickness_Value = Thickness; MaxThickness_Location = Xcoord_Airfoil_[iVertex]; }
+    }
+  }
+  
+  return MaxThickness_Value;
+  
+}
 
+double CBoundaryGeometry::Compute_AoA(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface) {
+	unsigned long iVertex, Trailing_Point, LeadingPoint;
+	double MaxDistance, Distance, AoA = 0.0;
+  
+  /*--- Find the leading and trailing edges and compute the angle of attack ---*/
+  MaxDistance = 0.0; Trailing_Point = 0;
+  for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+    
+    Distance = sqrt(pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
+                    pow(Ycoord_Airfoil[iVertex] - Ycoord_Airfoil[Trailing_Point], 2.0) +
+                    pow(Zcoord_Airfoil[iVertex] - Zcoord_Airfoil[Trailing_Point], 2.0));
+    
+    if (MaxDistance < Distance) { MaxDistance = Distance; LeadingPoint = iVertex; }
+  }
+  
+  AoA = atan((Zcoord_Airfoil[LeadingPoint] - Zcoord_Airfoil[Trailing_Point]) / (Xcoord_Airfoil[Trailing_Point] - Xcoord_Airfoil[LeadingPoint]))*180/PI_NUMBER;
+  
+  return AoA;
+  
+}
+
+double CBoundaryGeometry::Compute_Chord(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface) {
+	unsigned long iVertex, Trailing_Point, LeadingPoint;
+	double MaxDistance, Distance, Chord = 0.0;
+  
+  /*--- Find the leading and trailing edges and compute the angle of attack ---*/
+  MaxDistance = 0.0; Trailing_Point = 0;
+  for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+    
+    Distance = sqrt(pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
+                    pow(Ycoord_Airfoil[iVertex] - Ycoord_Airfoil[Trailing_Point], 2.0) +
+                    pow(Zcoord_Airfoil[iVertex] - Zcoord_Airfoil[Trailing_Point], 2.0));
+    
+    if (MaxDistance < Distance) { MaxDistance = Distance; LeadingPoint = iVertex; }
+  }
+  
+  Chord = MaxDistance;
+  
+  return Chord;
+  
+}
+
+double CBoundaryGeometry::Compute_Thickness(double *Plane_P0, double *Plane_Normal, unsigned short iSection, double Location, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface) {
+	unsigned long iVertex, jVertex, n_Upper, n_Lower, Trailing_Point, LeadingPoint;
+	double Thickness_Location, Normal[3], Tangent[3], BiNormal[3], auxXCoord, auxYCoord, auxZCoord, Thickness_Value = 0.0, Length, Xcoord_Trailing, Ycoord_Trailing, Zcoord_Trailing, ValCos, ValSin, XValue, ZValue, zp1, zpn, Chord, MaxDistance, Distance, AoA;
+	vector<double> Xcoord_Upper, Ycoord_Upper, Zcoord_Upper, Z2coord_Upper, Xcoord_Lower, Ycoord_Lower, Zcoord_Lower, Z2coord_Lower, Z2coord, Xcoord_Normal, Ycoord_Normal, Zcoord_Normal, Xcoord_Airfoil_, Ycoord_Airfoil_, Zcoord_Airfoil_;
+  
+  /*--- Find the leading and trailing edges and compute the angle of attack ---*/
+  MaxDistance = 0.0; Trailing_Point = 0;
+  for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+    
+    Distance = sqrt(pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
+                    pow(Ycoord_Airfoil[iVertex] - Ycoord_Airfoil[Trailing_Point], 2.0) +
+                    pow(Zcoord_Airfoil[iVertex] - Zcoord_Airfoil[Trailing_Point], 2.0));
+    
+    if (MaxDistance < Distance) { MaxDistance = Distance; LeadingPoint = iVertex; }
+  }
+  
+  AoA = atan((Zcoord_Airfoil[LeadingPoint] - Zcoord_Airfoil[Trailing_Point]) / (Xcoord_Airfoil[Trailing_Point] - Xcoord_Airfoil[LeadingPoint]))*180/PI_NUMBER;
+  Chord = MaxDistance;
+
+  /*--- Translate to the origin ---*/
+  Xcoord_Trailing = Xcoord_Airfoil[0];
+  Ycoord_Trailing = Ycoord_Airfoil[0];
+  Zcoord_Trailing = Zcoord_Airfoil[0];
+  
+  for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+    Xcoord_Airfoil_.push_back(Xcoord_Airfoil[iVertex] - Xcoord_Trailing);
+    Ycoord_Airfoil_.push_back(Ycoord_Airfoil[iVertex] - Ycoord_Trailing);
+    Zcoord_Airfoil_.push_back(Zcoord_Airfoil[iVertex] - Zcoord_Trailing);
+  }
+  
+  /*--- Rotate the airfoil ---*/
+  ValCos = cos(AoA*PI_NUMBER/180.0);
+  ValSin = sin(AoA*PI_NUMBER/180.0);
+  
+  for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+    XValue = Xcoord_Airfoil_[iVertex];
+    ZValue = Zcoord_Airfoil_[iVertex];
+    
+    Xcoord_Airfoil_[iVertex] = XValue*ValCos - ZValue*ValSin;
+    Zcoord_Airfoil_[iVertex] = ZValue*ValCos + XValue*ValSin;
+  }
+  
+  /*--- Identify upper and lower side, and store the value of the normal --*/
+  for (iVertex = 1; iVertex < Xcoord_Airfoil_.size(); iVertex++) {
+    Tangent[0] = Xcoord_Airfoil_[iVertex] - Xcoord_Airfoil_[iVertex-1];
+    Tangent[1] = Ycoord_Airfoil_[iVertex] - Ycoord_Airfoil_[iVertex-1];
+    Tangent[2] = Zcoord_Airfoil_[iVertex] - Zcoord_Airfoil_[iVertex-1];
+    Length = sqrt(pow(Tangent[0], 2.0) + pow(Tangent[1], 2.0) + pow(Tangent[2], 2.0));
+    Tangent[0] /= Length; Tangent[1] /= Length; Tangent[2] /= Length;
+    
+    BiNormal[0] = Plane_Normal[0];
+    BiNormal[1] = Plane_Normal[1];
+    BiNormal[2] = Plane_Normal[2];
+    Length = sqrt(pow(BiNormal[0], 2.0) + pow(BiNormal[1], 2.0) + pow(BiNormal[2], 2.0));
+    BiNormal[0] /= Length; BiNormal[1] /= Length; BiNormal[2] /= Length;
+    
+    Normal[0] = Tangent[1]*BiNormal[2] - Tangent[2]*BiNormal[1];
+    Normal[1] = Tangent[2]*BiNormal[0] - Tangent[0]*BiNormal[2];
+    Normal[2] = Tangent[0]*BiNormal[1] - Tangent[1]*BiNormal[0];
+    
+    Xcoord_Normal.push_back(Normal[0]); Ycoord_Normal.push_back(Normal[1]); Zcoord_Normal.push_back(Normal[2]);
+    
+    if (Normal[2] >= 0.0) {
+      Xcoord_Upper.push_back(Xcoord_Airfoil_[iVertex]);
+      Ycoord_Upper.push_back(Ycoord_Airfoil_[iVertex]);
+      Zcoord_Upper.push_back(Zcoord_Airfoil_[iVertex]);
+    }
+    else {
+      Xcoord_Lower.push_back(Xcoord_Airfoil_[iVertex]);
+      Ycoord_Lower.push_back(Ycoord_Airfoil_[iVertex]);
+      Zcoord_Lower.push_back(Zcoord_Airfoil_[iVertex]);
+    }
+    
+  }
+  
+  /*--- Order the arrays using the X component ---*/
+  for (iVertex = 0; iVertex < Xcoord_Upper.size(); iVertex++) {
+    for (jVertex = 0; jVertex < Xcoord_Upper.size() - 1 - iVertex; jVertex++) {
+      if (Xcoord_Upper[jVertex] > Xcoord_Upper[jVertex+1]) {
+        auxXCoord = Xcoord_Upper[jVertex]; Xcoord_Upper[jVertex] = Xcoord_Upper[jVertex+1]; Xcoord_Upper[jVertex+1] = auxXCoord;
+        auxYCoord = Ycoord_Upper[jVertex]; Ycoord_Upper[jVertex] = Ycoord_Upper[jVertex+1]; Ycoord_Upper[jVertex+1] = auxYCoord;
+        auxZCoord = Zcoord_Upper[jVertex]; Zcoord_Upper[jVertex] = Zcoord_Upper[jVertex+1]; Zcoord_Upper[jVertex+1] = auxZCoord;
+      }
+    }
+  }
+  
+  /*--- Order the arrays using the X component ---*/
+  for (iVertex = 0; iVertex < Xcoord_Lower.size(); iVertex++) {
+    for (jVertex = 0; jVertex < Xcoord_Lower.size() - 1 - iVertex; jVertex++) {
+      if (Xcoord_Lower[jVertex] > Xcoord_Lower[jVertex+1]) {
+        auxXCoord = Xcoord_Lower[jVertex]; Xcoord_Lower[jVertex] = Xcoord_Lower[jVertex+1]; Xcoord_Lower[jVertex+1] = auxXCoord;
+        auxYCoord = Ycoord_Lower[jVertex]; Ycoord_Lower[jVertex] = Ycoord_Lower[jVertex+1]; Ycoord_Lower[jVertex+1] = auxYCoord;
+        auxZCoord = Zcoord_Lower[jVertex]; Zcoord_Lower[jVertex] = Zcoord_Lower[jVertex+1]; Zcoord_Lower[jVertex+1] = auxZCoord;
+      }
+    }
+  }
+  
+  n_Upper = Xcoord_Upper.size();
+  zp1 = (Xcoord_Upper[1]-Xcoord_Upper[0])/(Xcoord_Upper[1]-Xcoord_Upper[0]);
+  zpn = (Xcoord_Upper[n_Upper-1]-Xcoord_Upper[n_Upper-2])/(Xcoord_Upper[n_Upper-1]-Xcoord_Upper[n_Upper-2]);
+  Z2coord_Upper.resize(n_Upper+1);
+  SetSpline(Xcoord_Upper, Zcoord_Upper, n_Upper, zp1, zpn, Z2coord_Upper);
+  
+  n_Lower = Xcoord_Lower.size();
+  zp1 = (Xcoord_Lower[1]-Xcoord_Lower[0])/(Xcoord_Lower[1]-Xcoord_Lower[0]);
+  zpn = (Xcoord_Lower[n_Lower-1]-Xcoord_Lower[n_Lower-2])/(Xcoord_Lower[n_Lower-1]-Xcoord_Lower[n_Lower-2]);
+  Z2coord_Lower.resize(n_Lower+1);
+  SetSpline(Xcoord_Lower, Zcoord_Lower, n_Lower, zp1, zpn, Z2coord_Lower);
+  
+  /*--- Compute thickness location ---*/
+  Thickness_Location = - Chord*(1.0-Location);
+
+  Thickness_Value = fabs(GetSpline(Xcoord_Upper, Zcoord_Upper, Z2coord_Upper, n_Upper, Thickness_Location)) + fabs(GetSpline(Xcoord_Lower, Zcoord_Lower, Z2coord_Lower, n_Lower, Thickness_Location));
+  
+  return Thickness_Value;
+  
+}
+
+double CBoundaryGeometry::Compute_Area(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface) {
+	unsigned long iVertex, jVertex;
+	double Normal[3], Tangent[3], BiNormal[3], auxXCoord, auxYCoord, auxZCoord, Area_Value = 0.0, Length, Xcoord_Trailing, Ycoord_Trailing, Zcoord_Trailing, ValCos, ValSin, XValue, ZValue;
+	vector<double> Xcoord_Upper, Ycoord_Upper, Zcoord_Upper, Xcoord_Lower, Ycoord_Lower, Zcoord_Lower, Z2coord, Xcoord_Normal, Ycoord_Normal, Zcoord_Normal, Xcoord_Airfoil_, Ycoord_Airfoil_, Zcoord_Airfoil_;
+  unsigned long Trailing_Point, LeadingPoint;
+	double MaxDistance, Distance, AoA;
+  
+  /*--- Find the leading and trailing edges and compute the angle of attack ---*/
+  MaxDistance = 0.0; Trailing_Point = 0;
+  for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+    
+    Distance = sqrt(pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
+                    pow(Ycoord_Airfoil[iVertex] - Ycoord_Airfoil[Trailing_Point], 2.0) +
+                    pow(Zcoord_Airfoil[iVertex] - Zcoord_Airfoil[Trailing_Point], 2.0));
+    
+    if (MaxDistance < Distance) { MaxDistance = Distance; LeadingPoint = iVertex; }
+  }
+  
+  AoA = atan((Zcoord_Airfoil[LeadingPoint] - Zcoord_Airfoil[Trailing_Point]) / (Xcoord_Airfoil[Trailing_Point] - Xcoord_Airfoil[LeadingPoint]))*180/PI_NUMBER;
+  
+  /*--- Translate to the origin ---*/
+  Xcoord_Trailing = Xcoord_Airfoil[0];
+  Ycoord_Trailing = Ycoord_Airfoil[0];
+  Zcoord_Trailing = Zcoord_Airfoil[0];
+  
+  for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+    Xcoord_Airfoil_.push_back(Xcoord_Airfoil[iVertex] - Xcoord_Trailing);
+    Ycoord_Airfoil_.push_back(Ycoord_Airfoil[iVertex] - Ycoord_Trailing);
+    Zcoord_Airfoil_.push_back(Zcoord_Airfoil[iVertex] - Zcoord_Trailing);
+  }
+  
+  /*--- Rotate the airfoil ---*/
+  ValCos = cos(AoA*PI_NUMBER/180.0);
+  ValSin = sin(AoA*PI_NUMBER/180.0);
+  
+  for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+    XValue = Xcoord_Airfoil_[iVertex];
+    ZValue = Zcoord_Airfoil_[iVertex];
+    
+    Xcoord_Airfoil_[iVertex] = XValue*ValCos - ZValue*ValSin;
+    Zcoord_Airfoil_[iVertex] = ZValue*ValCos + XValue*ValSin;
+    
+  }
+  
+  /*--- Identify upper and lower side, and store the value of the normal --*/
+  for (iVertex = 1; iVertex < Xcoord_Airfoil_.size(); iVertex++) {
+    Tangent[0] = Xcoord_Airfoil_[iVertex] - Xcoord_Airfoil_[iVertex-1];
+    Tangent[1] = Ycoord_Airfoil_[iVertex] - Ycoord_Airfoil_[iVertex-1];
+    Tangent[2] = Zcoord_Airfoil_[iVertex] - Zcoord_Airfoil_[iVertex-1];
+    Length = sqrt(pow(Tangent[0], 2.0) + pow(Tangent[1], 2.0) + pow(Tangent[2], 2.0));
+    Tangent[0] /= Length; Tangent[1] /= Length; Tangent[2] /= Length;
+    
+    BiNormal[0] = Plane_Normal[0];
+    BiNormal[1] = Plane_Normal[1];
+    BiNormal[2] = Plane_Normal[2];
+    Length = sqrt(pow(BiNormal[0], 2.0) + pow(BiNormal[1], 2.0) + pow(BiNormal[2], 2.0));
+    BiNormal[0] /= Length; BiNormal[1] /= Length; BiNormal[2] /= Length;
+    
+    Normal[0] = Tangent[1]*BiNormal[2] - Tangent[2]*BiNormal[1];
+    Normal[1] = Tangent[2]*BiNormal[0] - Tangent[0]*BiNormal[2];
+    Normal[2] = Tangent[0]*BiNormal[1] - Tangent[1]*BiNormal[0];
+    
+    Xcoord_Normal.push_back(Normal[0]); Ycoord_Normal.push_back(Normal[1]); Zcoord_Normal.push_back(Normal[2]);
+    
+    if (Normal[2] >= 0.0) {
+      Xcoord_Upper.push_back(Xcoord_Airfoil_[iVertex]);
+      Ycoord_Upper.push_back(Ycoord_Airfoil_[iVertex]);
+      Zcoord_Upper.push_back(Zcoord_Airfoil_[iVertex]);
+    }
+    else {
+      Xcoord_Lower.push_back(Xcoord_Airfoil_[iVertex]);
+      Ycoord_Lower.push_back(Ycoord_Airfoil_[iVertex]);
+      Zcoord_Lower.push_back(Zcoord_Airfoil_[iVertex]);
+    }
+    
+  }
+  
+  /*--- Order the arrays using the X component ---*/
+  for (iVertex = 0; iVertex < Xcoord_Upper.size(); iVertex++) {
+    for (jVertex = 0; jVertex < Xcoord_Upper.size() - 1 - iVertex; jVertex++) {
+      if (Xcoord_Upper[jVertex] > Xcoord_Upper[jVertex+1]) {
+        auxXCoord = Xcoord_Upper[jVertex]; Xcoord_Upper[jVertex] = Xcoord_Upper[jVertex+1]; Xcoord_Upper[jVertex+1] = auxXCoord;
+        auxYCoord = Ycoord_Upper[jVertex]; Ycoord_Upper[jVertex] = Ycoord_Upper[jVertex+1]; Ycoord_Upper[jVertex+1] = auxYCoord;
+        auxZCoord = Zcoord_Upper[jVertex]; Zcoord_Upper[jVertex] = Zcoord_Upper[jVertex+1]; Zcoord_Upper[jVertex+1] = auxZCoord;
+      }
+    }
+  }
+  
+  /*--- Order the arrays using the X component ---*/
+  for (iVertex = 0; iVertex < Xcoord_Lower.size(); iVertex++) {
+    for (jVertex = 0; jVertex < Xcoord_Lower.size() - 1 - iVertex; jVertex++) {
+      if (Xcoord_Lower[jVertex] > Xcoord_Lower[jVertex+1]) {
+        auxXCoord = Xcoord_Lower[jVertex]; Xcoord_Lower[jVertex] = Xcoord_Lower[jVertex+1]; Xcoord_Lower[jVertex+1] = auxXCoord;
+        auxYCoord = Ycoord_Lower[jVertex]; Ycoord_Lower[jVertex] = Ycoord_Lower[jVertex+1]; Ycoord_Lower[jVertex+1] = auxYCoord;
+        auxZCoord = Zcoord_Lower[jVertex]; Zcoord_Lower[jVertex] = Zcoord_Lower[jVertex+1]; Zcoord_Lower[jVertex+1] = auxZCoord;
+      }
+    }
+  }
+  
+  /*--- Compute total area ---*/
+  Area_Value = 0.0;
+  for (iVertex = 0; iVertex < Xcoord_Upper.size()-1; iVertex++)
+    Area_Value += fabs((Xcoord_Upper[iVertex+1] - Xcoord_Upper[iVertex]) * 0.5*(Zcoord_Upper[iVertex+1] + Zcoord_Upper[iVertex]));
+  for (iVertex = 0; iVertex < Xcoord_Lower.size()-1; iVertex++)
+    Area_Value += fabs((Xcoord_Lower[iVertex+1] - Xcoord_Lower[iVertex]) * 0.5*(Zcoord_Lower[iVertex+1] + Zcoord_Lower[iVertex]));
+  
+  return Area_Value;
+  
+}
 
 CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
   

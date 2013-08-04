@@ -65,7 +65,7 @@ def scipy_slsqp(project,x0=None,xb=None,its=100,grads=True):
     f_ieqcons      = con_cieq 
     
     # gradient handles
-    if project.config.GRADIENT_METHOD == 'NONE': 
+    if project.config.get('GRADIENT_METHOD','NONE') == 'NONE': 
         fprime         = None
         fprime_eqcons  = None
         fprime_ieqcons = None
@@ -96,7 +96,7 @@ def scipy_slsqp(project,x0=None,xb=None,its=100,grads=True):
                           args           = (project,)     , 
                           bounds         = xb             ,
                           iter           = its            ,
-                          iprint         = 2              ,
+                          iprint         = 1              ,
                           full_output    = 1              ,
                           acc            = 1e-10          ,
                           epsilon        = 1.0e-06         )
