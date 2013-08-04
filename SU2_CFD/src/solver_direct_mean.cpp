@@ -2743,6 +2743,52 @@ void CEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config) {
 
 }
 
+void CEulerSolver::Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config) {
+	unsigned short iPlane, nPlane;
+	double **Plane_P0, **Plane_Normal, MinPlane, MaxPlane;
+  vector<double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil;
+  
+  if (nDim == 3) {
+    nPlane = 15; MinPlane = 0; MaxPlane = 14;
+    
+    Xcoord_Airfoil = new vector<double> [nPlane];
+    Ycoord_Airfoil = new vector<double> [nPlane];
+    Zcoord_Airfoil = new vector<double> [nPlane];
+    
+    Plane_P0 = new double *[nPlane];
+    Plane_Normal = new double *[nPlane];
+    for (iPlane = 0; iPlane < nPlane; iPlane++) {
+      Plane_P0[iPlane] = new double [3];
+      Plane_Normal[iPlane] = new double [3];
+    }
+    
+    for (iPlane = 0; iPlane < nPlane; iPlane++) {
+      
+      Plane_Normal[iPlane][0] = 0.0;    Plane_P0[iPlane][0] = 0.0;
+      Plane_Normal[iPlane][1] = 1.0;    Plane_P0[iPlane][1] = MinPlane + iPlane*(MaxPlane - MinPlane)/double(nPlane-1);
+      Plane_Normal[iPlane][2] = 0.0;    Plane_P0[iPlane][2] = 0.0;
+      
+      geometry->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, config,
+                                       Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
+    }
+    
+    delete [] Xcoord_Airfoil;
+    delete [] Ycoord_Airfoil;
+    delete [] Zcoord_Airfoil;
+
+    for (iPlane = 0; iPlane < nPlane; iPlane++) {
+			delete Plane_Normal[iPlane];
+      delete Plane_P0[iPlane];
+		}
+		delete [] Plane_P0;
+    delete [] Plane_Normal;
+
+  }
+  
+  
+  
+}
+
 void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 	unsigned long iVertex, iPoint;
 	unsigned short iDim, iMarker, Boundary, Monitoring;
