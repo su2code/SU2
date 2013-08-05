@@ -56,6 +56,7 @@ ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
 		../src/output_cgns.cpp \
 		../src/output_structure.cpp \
 		../src/output_tecplot.cpp \
+		../src/output_paraview.cpp \
 		../src/solver_adjoint_levelset.cpp \
 		../src/solver_adjoint_mean.cpp \
 		../src/solver_adjoint_plasma.cpp \

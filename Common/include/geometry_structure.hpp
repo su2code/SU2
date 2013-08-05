@@ -70,7 +70,6 @@ protected:
   Global_nElem,	/*!< \brief Total number of elements in a simulation across all processors (all types). */
 	nEdge,					/*!< \brief Number of edges of the mesh. */
 	nFace,					/*!< \brief Number of faces of the mesh. */
-	nElem_Storage,			/*!< \brief Storage capacity for ParaView format (domain). */
   nelem_edge,             /*!< \brief Number of edges in the mesh. */
   Global_nelem_edge,      /*!< \brief Total number of edges in the mesh across all processors. */
   nelem_triangle,       /*!< \brief Number of triangles in the mesh. */
@@ -306,17 +305,6 @@ public:
 	 */
 	unsigned long GetnElem_Bound_Storage(unsigned short val_marker);
 
-	/*! 
-	 * \brief Set the number of elements in vtk fortmat.
-	 * \param[in] val_nelem_storage - Number of elements
-	 */
-	void SetnElem_Storage(unsigned long val_nelem_storage);
-
-	/*! 
-	 * \brief Get the number of elements in vtk fortmat.
-	 */	
-	unsigned long GetnElem_Storage(void);
-
   /*!
 	 * \brief Get the number of elements in vtk fortmat.
 	 */
@@ -539,15 +527,6 @@ public:
 	 * \param[in] val_mesh_out_filename - Name of the output file.
 	 */
 	virtual void SetMeshFile(CConfig *config, string val_mesh_out_filename, string val_mesh_in_filename);
-  
-	/*! 
-	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] mesh_vtk - Name of the vtk file.
-	 * \param[in] mesh_su2 - Name of the su2 file.
-	 * \param[in] nslices - Number of slices of the 2D configuration.
-	 */	
-	virtual void Set3D_to_2D(CConfig *config, char mesh_vtk[200], char mesh_su2[200], unsigned short nslices);
 
 	/*! 
 	 * \brief A virtual member.
@@ -1045,15 +1024,6 @@ public:
 	 * \param[in] val_mesh_out_filename - Name of the output file.
 	 */
 	void SetMeshFile(CConfig *config, string val_mesh_out_filename, string val_mesh_in_filename);
-
-	/*! 
-	 * \brief Create a 2D mesh using a 3D mesh with symmetries.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] mesh_vtk - Name of the vtk file.
-	 * \param[in] mesh_su2 - Name of the su2 file.
-	 * \param[in] nslices - Number of slices of the 2D configuration.
-	 */	
-	void Set3D_to_2D(CConfig *config, char mesh_vtk[200], char mesh_su2[200], unsigned short nslices);
 
 	/*! 
 	 * \brief Compute some parameters about the grid quality.

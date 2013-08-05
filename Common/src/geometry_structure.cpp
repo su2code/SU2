@@ -879,7 +879,7 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
             break;
         }
       }
-      nElem_Storage = nelem_triangle*4 + nelem_quad*5 + nelem_tetra*5 + nelem_hexa*9 + nelem_wedge*7 + nelem_pyramid*6;
+
       if (config->GetDivide_Element()) nElem = nelem_triangle + nelem_quad + nelem_tetra + nelem_hexa + nelem_wedge + nelem_pyramid;
       
       /*--- Communicate the number of each element type to all processors. ---*/
@@ -1903,7 +1903,7 @@ void CPhysicalGeometry::CGNS_Format(CConfig *config, string val_mesh_filename, u
       }
     }
   }
-  nElem_Storage = nelem_triangle*4 + nelem_quad*5 + nelem_tetra*5 + nelem_hexa*9 + nelem_wedge*7 + nelem_pyramid*6;
+
   if (config->GetDivide_Element()) nElem = nelem_triangle + nelem_quad + nelem_tetra + nelem_hexa + nelem_wedge + nelem_pyramid;
   
   /*--- Retrieve grid conversion factor. The conversion is only
@@ -2228,7 +2228,6 @@ void CPhysicalGeometry::NETCDF_Format(CConfig *config, string val_mesh_filename,
       }
       cout << "finish hexaeders element reading" << endl;
     }
-    nElem_Storage = nelem_tetra*5 + nelem_wedge*7 + nelem_hexa*9;
     
     position = text_line.find ("points_of_surfacetriangles =",0);
     if (position != string::npos) {
@@ -4933,117 +4932,6 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
 #endif
   
 }
-
-void CPhysicalGeometry::Set3D_to_2D (CConfig *config, char mesh_vtk[200], char mesh_su2[200],
-		unsigned short nslices) {
-
-	// nslices: number of (identical) slices in the original 3D model (usually nslices == 1)
-	cout << "CPhysicalGeometry::Set3D_to_2D >> Writing 2D meshes... " ;
-
-	ofstream para_file, su2_file;
-
-	para_file.open(mesh_vtk, ios::out);
-	para_file.precision(15);
-	su2_file.open(mesh_su2, ios::out);
-	su2_file.precision(15);
-
-	double coord[3];
-	const unsigned long nPoint_2D = nPoint/(nslices+1);
-	const unsigned long nElem_2D = nElem/nslices;
-	unsigned short nNodes_2D, nMarker_2D = 0;
-	unsigned short idim, iMarker, Boundary;
-	unsigned long ipoint, ielem;
-
-	para_file << "# vtk DataFile Version 2.0" << endl;
-	para_file << "Visualization of the volumetric grid" << endl;
-	para_file << "ASCII" << endl;
-	para_file << "DATASET UNSTRUCTURED_GRID" << endl;
-	para_file << "POINTS " << nPoint_2D << " float" << endl;
-	su2_file << "NDIME=2" << endl;
-	su2_file << "NPOIN=" << nPoint_2D << endl;
-
-	for (ipoint = 0; ipoint<nPoint_2D; ipoint++) {
-		for (idim = 0; idim < 2; idim++)
-			coord[idim]=node[ipoint]->GetCoord(2*idim);
-		coord[2] = 0.0;
-		for (idim = 0; idim < 3; idim++) {
-			para_file << coord[idim] << "\t";
-			su2_file << coord[idim] << "\t";
-		}
-		para_file << endl;
-		su2_file << ipoint << endl;
-	}
-
-	para_file << "CELLS " << nElem_2D << "\t" <<
-			(nElem_Storage-nElem)/(nslices+1)+nElem_2D << endl;
-	su2_file << "NELEM=" << nElem_2D << endl;
-	for (ielem = 0; ielem < nElem_2D; ielem++) {
-		nNodes_2D = elem[ielem]->GetnNodes()/2;
-		para_file << nNodes_2D << "\t";
-
-		if (elem[ielem]->GetnNodes()==6) su2_file << "5" << "\t";
-		if (elem[ielem]->GetnNodes()==8) su2_file << "9" << "\t";
-
-		if (elem[ielem]->GetNode(0) < nPoint_2D) su2_file << elem[ielem]->GetNode(0) << "\t";
-		if (elem[ielem]->GetNode(1) < nPoint_2D) su2_file << elem[ielem]->GetNode(1) << "\t";
-		if (elem[ielem]->GetNode(2) < nPoint_2D) su2_file << elem[ielem]->GetNode(2) << "\t";
-		if (elem[ielem]->GetNode(3) < nPoint_2D) su2_file << elem[ielem]->GetNode(3) << "\t";
-		if (elem[ielem]->GetNode(4) < nPoint_2D) su2_file << elem[ielem]->GetNode(4) << "\t";
-		if (elem[ielem]->GetNode(5) < nPoint_2D) su2_file << elem[ielem]->GetNode(5) << "\t";
-		if (elem[ielem]->GetNode(6) < nPoint_2D) su2_file << elem[ielem]->GetNode(6) << "\t";
-		if (elem[ielem]->GetNode(7) < nPoint_2D) su2_file << elem[ielem]->GetNode(7) << "\t";
-
-		para_file << endl;
-		su2_file << endl;
-	}	
-
-	para_file << "CELL_TYPES " << nElem_2D << endl;
-	for (ielem = 0; ielem < nElem_2D; ielem++) {
-		switch (elem[ielem]->GetnNodes()/2) {
-		case 3: para_file << "5" << endl; break;
-		case 4: para_file << "9" << endl; break;
-		}
-	}
-
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		Boundary = config->GetMarker_All_Boundary(iMarker);
-		switch(Boundary) {
-		case (SYMMETRY_PLANE):
-																																																																												break;
-		default:
-			nMarker_2D++;
-			break;
-		}	
-	}
-
-	su2_file << "NMARK=" << nMarker_2D << endl;
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		Boundary = config->GetMarker_All_Boundary(iMarker);
-		switch(Boundary) {
-		case (SYMMETRY_PLANE):
-																																																																												break;
-		default:
-			su2_file << "MARKER_TAG=" << config->GetMarker_All_Tag(iMarker) << endl;
-			su2_file << "MARKER_ELEMS=" << nElem_Bound[iMarker] << endl;
-			for (ielem = 0; ielem < nElem_Bound[iMarker]; ielem++) {
-				su2_file << "3" << "\t";
-				if (bound[iMarker][ielem]->GetNode(0) < nPoint_2D) su2_file << bound[iMarker][ielem]->GetNode(0) << "\t";
-				if (bound[iMarker][ielem]->GetNode(1) < nPoint_2D) su2_file << bound[iMarker][ielem]->GetNode(1) << "\t";
-				if (bound[iMarker][ielem]->GetNode(2) < nPoint_2D) su2_file << bound[iMarker][ielem]->GetNode(2) << "\t";
-				if (bound[iMarker][ielem]->GetNode(3) < nPoint_2D) su2_file << bound[iMarker][ielem]->GetNode(3) << "\t";
-
-				su2_file << endl;
-			}
-			break;
-		}	
-	}
-
-	para_file.close();
-	su2_file.close();
-
-	cout << "Completed." << endl;
-}
-
 
 void CPhysicalGeometry::GetQualityStatistics(double *statistics) {
 	unsigned long jPoint, Point_2, Point_3, iElem;
@@ -8937,8 +8825,6 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
         iElem++;
       }
       
-      nElem_Storage = nElemTriangle*4 + nElemRectangle*5 + nElemTetrahedron*5 + nElemHexahedron*9 + nElemWedge*7 + nElemPyramid*6;
-      
       delete[] Buffer_Receive_Triangle;
       delete[] Buffer_Receive_Rectangle;
       delete[] Buffer_Receive_Tetrahedron;
@@ -9270,7 +9156,7 @@ CDomainGeometry::~CDomainGeometry(void) {
 
 void CDomainGeometry::SetDomainSerial(CGeometry *geometry, CConfig *config, unsigned short val_domain) {
 	unsigned long iElemDomain, iPointDomain, iPointGhost, iPointReal, iPointPeriodic,
-	nVertexDomain[MAX_NUMBER_MARKER], iPoint, iElem, iVertex, nElem_Storage = 0,
+	nVertexDomain[MAX_NUMBER_MARKER], iPoint, iElem, iVertex,
 	nelem_edge = 0, nelem_triangle = 0, nelem_quad = 0, nelem_tetra = 0,
 	nelem_hexa = 0, nelem_wedge = 0, nelem_pyramid = 0, nPointPeriodic;
 	long vnodes_global[8], vnodes_local[8], jPoint;
@@ -9442,10 +9328,8 @@ void CDomainGeometry::SetDomainSerial(CGeometry *geometry, CConfig *config, unsi
 			iElemDomain++;
 		}
 	}
-	
-	nElem_Storage = nelem_triangle*4 + nelem_quad*5 + nelem_tetra*5 + nelem_hexa*9 + nelem_wedge*7 + nelem_pyramid*6;
-  
-	SetnElem_Storage(nElem_Storage); SetnElem(nElem); SetnPoint(nPoint);
+	 
+	SetnElem(nElem); SetnPoint(nPoint);
   
 	/*--- Dimensionalization with physical boundaries ---*/
 	nMarkerDomain = 0;
@@ -10250,7 +10134,6 @@ CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) {
     }
   }
 
-	nElem_Storage = nelem_triangle*4 + nelem_quad*5 + nelem_tetra*5 + nelem_hexa*9 + nelem_wedge*7 + nelem_pyramid*6;
 	nElem = geometry->GetnElem() + nElem_new;
 
 	/*--- Add the old points ---*/

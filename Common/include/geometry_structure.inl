@@ -63,8 +63,6 @@ inline unsigned long CGeometry::GetnElemPyra(void) { return 0; }
 
 inline void CGeometry::Check_Orientation(CConfig *config) { }
 
-inline void CGeometry::Set3D_to_2D (CConfig *config, char mesh_vtk[200], char mesh_su2[200], unsigned short nslices) { }
-
 inline void CGeometry::SetColorGrid(CConfig *config) { }
 
 inline void CGeometry::DivideConnectivity(CConfig *config, unsigned short Elem_Type) { }
@@ -112,10 +110,6 @@ inline unsigned short CGeometry::GetnMarker(void) { return nMarker; }
 inline bool CGeometry::GetFinestMGLevel(void) { return FinestMGLevel; }
 
 inline string CGeometry::GetMarker_Tag(unsigned short val_marker) { return Tag_to_Marker[val_marker]; }
-
-inline void CGeometry::SetnElem_Storage(unsigned long val_nelem_storage) { nElem_Storage = val_nelem_storage; }
-
-inline unsigned long CGeometry::GetnElem_Storage(void) { return nElem_Storage; }
 
 inline unsigned long CGeometry::GetMax_GlobalPoint(void) { return Max_GlobalPoint; }
 
