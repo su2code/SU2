@@ -382,6 +382,8 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddEnumOption("TYPE_AEROELASTIC_GRID_MOVEMENT", Aeroelastic_Grid_Movement, Aeroelastic_Movement_Map, "RIGID");
 	/* DESCRIPTION: Type of grid velocities for aeroelastic motion */
 	AddEnumOption("TYPE_AEROELASTIC_GRID_VELOCITY", Aeroelastic_Grid_Velocity, Aeroelastic_Velocity_Map, "FD");
+    /* DESCRIPTION: Apply a wind gust */
+	AddSpecialOption("WIND_GUST", Wind_Gust, SetBoolOption, false);
 
 	/*--- options related to rotating frame problems ---*/
 	/* CONFIG_CATEGORY: Rotating frame */
