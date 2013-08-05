@@ -3453,9 +3453,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		}
 
 		switch (Output_FileFormat) {
-		case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
-		case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
-		case CGNS_SOL: cout << "The output file format is CGNS (.cgns)." << endl; break;
+      case PARAVIEW: cout << "The output file format is Paraview ASCII (.vtk)." << endl; break;
+      case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
+      case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
+      case CGNS_SOL: cout << "The output file format is CGNS (.cgns)." << endl; break;
 		}
 
 		cout << "Convergence history file name: " << Conv_FileName << "." << endl;
@@ -3483,9 +3484,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 	if (val_software == SU2_SOL) {
 		switch (Output_FileFormat) {
-		case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
-		case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
-		case CGNS_SOL: cout << "The output file format is CGNS (.cgns)." << endl; break;
+      case PARAVIEW: cout << "The output file format is Paraview ASCII (.dat)." << endl; break;
+      case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
+      case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
+      case CGNS_SOL: cout << "The output file format is CGNS (.cgns)." << endl; break;
 		}
 		cout << "Flow variables file name: " << Flow_FileName << "." << endl;
 	}
