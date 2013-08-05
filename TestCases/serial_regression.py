@@ -245,7 +245,7 @@ if __name__=="__main__":
   oneram6.test_iter = 10
   oneram6.test_vals = [-2.632092,-2.096791,0.288165,0.016925]
   oneram6.su2_exec  = "SU2_CFD"
-  oneram6.timeout   = 4800
+  oneram6.timeout   = 9600
   oneram6.tol       = 0.00001
   passed4           = oneram6.run_test()
 
@@ -270,7 +270,7 @@ if __name__=="__main__":
   cylinder.cfg_dir   = "TestCases/navierstokes/cylinder"
   cylinder.cfg_file  = "lam_cylinder_JST.cfg"
   cylinder.test_iter = 25
-  cylinder.test_vals = [-9.756790,-8.884988,-0.058052,3.717570]
+  cylinder.test_vals = [-9.757135,-8.885050,-0.058028,3.718076]
   cylinder.su2_exec  = "SU2_CFD"
   cylinder.timeout   = 1600
   cylinder.tol       = 0.00001
