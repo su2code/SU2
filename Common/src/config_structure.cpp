@@ -665,12 +665,6 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddSpecialOption("WRT_CSV_SOL", Wrt_Csv_Sol, SetBoolOption, true);
 	/* DESCRIPTION: Write a restart solution file */
 	AddSpecialOption("WRT_RESTART", Wrt_Restart, SetBoolOption, true);
-	/* DESCRIPTION: Write a CGNS solution file */
-	AddSpecialOption("WRT_SOL_CGNS", Wrt_Sol_CGNS, SetBoolOption, false);
-	/* DESCRIPTION: Write a Tecplot ASCII volume solution file */
-	AddSpecialOption("WRT_SOL_TEC_ASCII", Wrt_Sol_Tec_ASCII, SetBoolOption, true);
-	/* DESCRIPTION: Write a Tecplot binary volume solution file */
-	AddSpecialOption("WRT_SOL_TEC_BINARY", Wrt_Sol_Tec_Binary, SetBoolOption, false);
 	/* DESCRIPTION: Output residual info to solution/restart file */
 	AddSpecialOption("WRT_RESIDUALS", Wrt_Residuals, SetBoolOption, false);
   /* DESCRIPTION: Output the rind layers in the solution files */

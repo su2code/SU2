@@ -908,12 +908,6 @@ inline bool CConfig::GetWrt_Csv_Sol(void) { return Wrt_Csv_Sol; }
 
 inline bool CConfig::GetWrt_Restart(void) { return Wrt_Restart; }
 
-inline bool CConfig::GetWrt_Sol_CGNS(void) { return Wrt_Sol_CGNS; }
-
-inline bool CConfig::GetWrt_Sol_Tec_ASCII(void) { return Wrt_Sol_Tec_ASCII; }
-
-inline bool CConfig::GetWrt_Sol_Tec_Binary(void) { return Wrt_Sol_Tec_Binary; }
-
 inline bool CConfig::GetWrt_Residuals(void) { return Wrt_Residuals; }
 
 inline bool CConfig::GetWrt_Halo(void) { return Wrt_Halo; }

@@ -454,10 +454,7 @@ private:
 	bool CGNS_To_SU2;      		 	/*!< \brief Flag to specify whether a CGNS mesh is converted to SU2 format. */
 	unsigned short nSpecies, 		/*!< \brief No of species present in plasma */
 	nReactions;									/*!< \brief Number of reactions in chemical model. */
-	bool Wrt_Sol_CGNS,               /*!< \brief Write a CGNS volume solution file */
-	Wrt_Sol_Tec_ASCII,          /*!< \brief Write a Tecplot ASCII volume solution file */
-	Wrt_Sol_Tec_Binary,         /*!< \brief Write a Tecplot binary volume solution file */
-	Wrt_Vol_Sol,                /*!< \brief Write a volume solution file */
+	bool Wrt_Vol_Sol,                /*!< \brief Write a volume solution file */
 	Wrt_Srf_Sol,                /*!< \brief Write a surface solution file */
 	Wrt_Restart,                /*!< \brief Write a restart solution file */
 	Wrt_Csv_Sol,                /*!< \brief Write a surface comma-separated values solution file */
@@ -1741,24 +1738,6 @@ public:
 	 * \return <code>TRUE</code> means that a restart solution file will be written.
 	 */
 	bool GetWrt_Restart(void);
-
-	/*!
-	 * \brief Get information about writing a CGNS volume solution file.
-	 * \return <code>TRUE</code> means that a CGNS volume solution file will be written.
-	 */
-	bool GetWrt_Sol_CGNS(void);
-
-	/*!
-	 * \brief Get information about writing a Tecplot ASCII volume solution file.
-	 * \return <code>TRUE</code> means that a Tecplot ASCII volume solution file will be written.
-	 */
-	bool GetWrt_Sol_Tec_ASCII(void);
-
-	/*!
-	 * \brief Get information about writing a Tecplot binary volume solution file.
-	 * \return <code>TRUE</code> means that a Tecplot binary volume solution file will be written.
-	 */
-	bool GetWrt_Sol_Tec_Binary(void);
 
 	/*!
 	 * \brief Get information about writing residuals to volume solution file.
