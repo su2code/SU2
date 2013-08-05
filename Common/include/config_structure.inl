@@ -814,6 +814,8 @@ inline double *CConfig::GetOmega(void) { return Omega; }
 
 inline double CConfig::GetOmegaMag(void) { return Omega_Mag; }
 
+inline bool CConfig::GetWind_Gust(void) { return Wind_Gust; }
+
 inline bool CConfig::GetGrid_Movement(void) { return Grid_Movement; }
 
 inline bool CConfig::GetRotating_Frame(void) { return Rotating_Frame; }

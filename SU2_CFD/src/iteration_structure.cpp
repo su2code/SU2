@@ -55,13 +55,6 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
 		SetSliding_Interfaces(geometry_container, solver_container, config_container, nZone);
     }
     
-    /*--- Apply a Wind Gust ---*/
-    bool Gust = YES;
-    if (Gust && (ExtIter>10)) {
-        FieldVelocityMethod(geometry_container[ZONE_0]);
-    }
-    
-
 	for (iZone = 0; iZone < nZone; iZone++) {
 
 		/*--- Set the value of the internal iteration ---*/
@@ -1053,7 +1046,7 @@ void AdjAeroacousticIteration(COutput *output, CIntegration ***integration_conta
 
 }
 
-void FieldVelocityMethod(CGeometry **geometry_container) {
+void FieldVelocityMethod(CGeometry *geometry) {
     // The Field Velocity Method (VFM) imposes a gust on the flow field via the grid velocities.
     // The method is described in the NASA TM–2012-217771 -
     // Development, Verification and Use of Gust Modeling in the NASA Computational Fluid Dynamics Code FUN3D
@@ -1061,7 +1054,7 @@ void FieldVelocityMethod(CGeometry **geometry_container) {
     // For now I have to set gridmovement to yes in the config file.
     
     unsigned short iDim;
-    unsigned short nDim = geometry_container[MESH_0]->GetnDim();
+    unsigned short nDim = geometry->GetnDim();
     unsigned long iPoint;
     
     double Gust[2] = {0.0,2.0};  //try with airfoil
@@ -1070,15 +1063,13 @@ void FieldVelocityMethod(CGeometry **geometry_container) {
     
     
     /*--- Loop over each node in the volume mesh ---*/
-    for (iPoint = 0; iPoint < geometry_container[MESH_0]->GetnPoint(); iPoint++) {
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
         
         /*--- Set Grid Velocity for the point in the given zone ---*/
         for(iDim = 0; iDim < nDim; iDim++) {
             GridVel[iDim] = -Gust[iDim];    // the gust is the negative of the grid velocity
             /*--- Store grid velocity for this point ---*/
-            geometry_container[MESH_0]->node[iPoint]->SetGridVel(iDim, GridVel[iDim]);
-            
-
+            geometry->node[iPoint]->SetGridVel(iDim, GridVel[iDim]);
             
         }
     }
@@ -1319,6 +1310,14 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
       
       break;
   }
+    
+    /*--- Apply a Wind Gust ---*/
+    
+    if (config_container->GetWind_Gust() && (ExtIter>10)) {
+        FieldVelocityMethod(geometry_container[MESH_0]);
+    }
+    
+    
   
 }
 

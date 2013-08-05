@@ -67,6 +67,7 @@ private:
 	OneShot,				/*!< \brief Flag to know if the code is solving a one shot problem. */
 	Linearized,				/*!< \brief Flag to know if the code is solving a linearized problem. */
 	Grid_Movement,			/*!< \brief Flag to know if there is grid movement. */
+    Wind_Gust,              /*!< \brief Flag to know if there is a wind gust. */
 	Rotating_Frame,			/*!< \brief Flag to know if there is a rotating frame. */
 	FreeSurface,            /*!< \brief Flag to know if we are solving a freesurface problem. */
 	Incompressible,			/*!< \brief Flag to know if we are using the incompressible formulation. */
@@ -4305,6 +4306,12 @@ public:
 	 * \return type of grid velocity computation used.
 	 */
 	unsigned short GetAeroelastic_GridVelocity(void);
+    
+    /*!
+	 * \brief Get information about the wind gust.
+	 * \return <code>TRUE</code> if there is a wind gust; otherwise <code>FALSE</code>.
+	 */
+	bool GetWind_Gust(void);
 
 	/*!
 	 * \brief Given arrays x[1..n] and y[1..n] containing a tabulated function, i.e., yi = f(xi), with
