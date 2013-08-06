@@ -41,7 +41,7 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
     
 	char cstr[200], buffer[50];
 	string filename;
-    
+  
 	/*--- Write file name with extension ---*/
   if (surf_sol) {
     if (adjoint)

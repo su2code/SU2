@@ -310,34 +310,45 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
     for(iElem = 0; iElem < nGlobal_Pyra; iElem++) Paraview_File << "14\t";
   }
   
+  
+  
   /*--- Write the header ---*/
   if (surf_sol) Paraview_File << "\nPOINT_DATA "<< nSurf_Poin <<"\n";
   else Paraview_File << "\nPOINT_DATA "<< nGlobal_Poin <<"\n";
   
   unsigned short VarCounter = 0;
-  for (iVar = 0; iVar < nVar_Consv; iVar++) {
+  
+  if (config->GetKind_SU2() == SU2_SOL) {
     
-    Paraview_File << "\nSCALARS Conservative_" << iVar+1 << " float 1\n";
-    Paraview_File << "LOOKUP_TABLE default\n";
-    
-    for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-      if (surf_sol) {
-        if (LocalIndex[iPoint+1] != 0) {
+    /*--- If SU2_SOL called this routine, we already have a set of output
+     variables with the appropriate string tags stored in the config class. ---*/
+    for (unsigned short iField = 1; iField < config->fields.size(); iField++) {
+      
+      Paraview_File << "\nSCALARS " << config->fields[iField] << " float 1\n";
+      Paraview_File << "LOOKUP_TABLE default\n";
+      
+      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+        if (surf_sol) {
+          if (LocalIndex[iPoint+1] != 0) {
+            /*--- Loop over the vars/residuals and write the values to file ---*/
+            Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+          }
+        } else {
           /*--- Loop over the vars/residuals and write the values to file ---*/
           Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
         }
-      } else {
-        /*--- Loop over the vars/residuals and write the values to file ---*/
-        Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
       }
+      VarCounter++;
+      
     }
-    VarCounter++;
-  }
+    
+  }  
   
-  if (config->GetWrt_Residuals()) {
+  else {
+    
     for (iVar = 0; iVar < nVar_Consv; iVar++) {
       
-      Paraview_File << "\nSCALARS Residual_" << iVar+1 << " float 1\n";
+      Paraview_File << "\nSCALARS Conservative_" << iVar+1 << " float 1\n";
       Paraview_File << "LOOKUP_TABLE default\n";
       
       for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
@@ -353,10 +364,30 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       }
       VarCounter++;
     }
-  }
-  
-  /*--- Add names for any extra variables (this will need to be adjusted). ---*/
-  if (grid_movement) {
+    
+    if (config->GetWrt_Residuals()) {
+      for (iVar = 0; iVar < nVar_Consv; iVar++) {
+        
+        Paraview_File << "\nSCALARS Residual_" << iVar+1 << " float 1\n";
+        Paraview_File << "LOOKUP_TABLE default\n";
+        
+        for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+          if (surf_sol) {
+            if (LocalIndex[iPoint+1] != 0) {
+              /*--- Loop over the vars/residuals and write the values to file ---*/
+              Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+            }
+          } else {
+            /*--- Loop over the vars/residuals and write the values to file ---*/
+            Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+          }
+        }
+        VarCounter++;
+      }
+    }
+    
+    /*--- Add names for any extra variables (this will need to be adjusted). ---*/
+    if (grid_movement) {
       
       Paraview_File << "\nSCALARS Grid_Velx float 1\n";
       Paraview_File << "LOOKUP_TABLE default\n";
@@ -390,9 +421,30 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       }
       VarCounter++;
       
-    if (nDim == 3) {
+      if (nDim == 3) {
+        
+        Paraview_File << "\nSCALARS Grid_Velz float 1\n";
+        Paraview_File << "LOOKUP_TABLE default\n";
+        
+        for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+          if (surf_sol) {
+            if (LocalIndex[iPoint+1] != 0) {
+              /*--- Loop over the vars/residuals and write the values to file ---*/
+              Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+            }
+          } else {
+            /*--- Loop over the vars/residuals and write the values to file ---*/
+            Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+          }
+        }
+        VarCounter++;
+        
+      }
+    }
+    
+    if ((Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
       
-      Paraview_File << "\nSCALARS Grid_Velz float 1\n";
+      Paraview_File << "\nSCALARS Density float 1\n";
       Paraview_File << "LOOKUP_TABLE default\n";
       
       for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
@@ -409,210 +461,191 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       VarCounter++;
       
     }
+    
+    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
+        (Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+      
+      Paraview_File << "\nSCALARS Pressure float 1\n";
+      Paraview_File << "LOOKUP_TABLE default\n";
+      
+      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+        if (surf_sol) {
+          if (LocalIndex[iPoint+1] != 0) {
+            /*--- Loop over the vars/residuals and write the values to file ---*/
+            Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+          }
+        } else {
+          /*--- Loop over the vars/residuals and write the values to file ---*/
+          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+        }
+      }
+      VarCounter++;
+      
+      Paraview_File << "\nSCALARS Pressure_Coefficient float 1\n";
+      Paraview_File << "LOOKUP_TABLE default\n";
+      
+      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+        if (surf_sol) {
+          if (LocalIndex[iPoint+1] != 0) {
+            /*--- Loop over the vars/residuals and write the values to file ---*/
+            Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+          }
+        } else {
+          /*--- Loop over the vars/residuals and write the values to file ---*/
+          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+        }
+      }
+      VarCounter++;
+      
+      Paraview_File << "\nSCALARS Mach float 1\n";
+      Paraview_File << "LOOKUP_TABLE default\n";
+      
+      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+        if (surf_sol) {
+          if (LocalIndex[iPoint+1] != 0) {
+            /*--- Loop over the vars/residuals and write the values to file ---*/
+            Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+          }
+        } else {
+          /*--- Loop over the vars/residuals and write the values to file ---*/
+          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+        }
+      }
+      VarCounter++;
+      
+    }
+    
+    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
+        (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+      
+      Paraview_File << "\nSCALARS Temperature float 1\n";
+      Paraview_File << "LOOKUP_TABLE default\n";
+      
+      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+        if (surf_sol) {
+          if (LocalIndex[iPoint+1] != 0) {
+            /*--- Loop over the vars/residuals and write the values to file ---*/
+            Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+          }
+        } else {
+          /*--- Loop over the vars/residuals and write the values to file ---*/
+          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+        }
+      }
+      VarCounter++;
+      
+      Paraview_File << "\nSCALARS Laminar_Viscosity float 1\n";
+      Paraview_File << "LOOKUP_TABLE default\n";
+      
+      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+        if (surf_sol) {
+          if (LocalIndex[iPoint+1] != 0) {
+            /*--- Loop over the vars/residuals and write the values to file ---*/
+            Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+          }
+        } else {
+          /*--- Loop over the vars/residuals and write the values to file ---*/
+          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+        }
+      }
+      VarCounter++;
+      
+      Paraview_File << "\nSCALARS Skin_Friction_Coefficient float 1\n";
+      Paraview_File << "LOOKUP_TABLE default\n";
+      
+      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+        if (surf_sol) {
+          if (LocalIndex[iPoint+1] != 0) {
+            /*--- Loop over the vars/residuals and write the values to file ---*/
+            Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+          }
+        } else {
+          /*--- Loop over the vars/residuals and write the values to file ---*/
+          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+        }
+      }
+      VarCounter++;
+      
+      Paraview_File << "\nSCALARS Heat_Transfer float 1\n";
+      Paraview_File << "LOOKUP_TABLE default\n";
+      
+      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+        if (surf_sol) {
+          if (LocalIndex[iPoint+1] != 0) {
+            /*--- Loop over the vars/residuals and write the values to file ---*/
+            Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+          }
+        } else {
+          /*--- Loop over the vars/residuals and write the values to file ---*/
+          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+        }
+      }
+      VarCounter++;
+      
+      Paraview_File << "\nSCALARS Y_Plus float 1\n";
+      Paraview_File << "LOOKUP_TABLE default\n";
+      
+      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+        if (surf_sol) {
+          if (LocalIndex[iPoint+1] != 0) {
+            /*--- Loop over the vars/residuals and write the values to file ---*/
+            Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+          }
+        } else {
+          /*--- Loop over the vars/residuals and write the values to file ---*/
+          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+        }
+      }
+      VarCounter++;
+      
+    }
+    
+    if ((Kind_Solver == RANS) || (Kind_Solver == FREE_SURFACE_RANS)) {
+      
+      Paraview_File << "\nSCALARS Eddy_Viscosity float 1\n";
+      Paraview_File << "LOOKUP_TABLE default\n";
+      
+      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+        if (surf_sol) {
+          if (LocalIndex[iPoint+1] != 0) {
+            /*--- Loop over the vars/residuals and write the values to file ---*/
+            Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+          }
+        } else {
+          /*--- Loop over the vars/residuals and write the values to file ---*/
+          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+        }
+      }
+      VarCounter++;
+      
+    }
+    
+    if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) ||
+        (Kind_Solver == ADJ_FREE_SURFACE_EULER) || (Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
+        (Kind_Solver == ADJ_FREE_SURFACE_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
+      
+      Paraview_File << "\nSCALARS Surface_Sensitivity float 1\n";
+      Paraview_File << "LOOKUP_TABLE default\n";
+      
+      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+        if (surf_sol) {
+          if (LocalIndex[iPoint+1] != 0) {
+            /*--- Loop over the vars/residuals and write the values to file ---*/
+            Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+          }
+        } else {
+          /*--- Loop over the vars/residuals and write the values to file ---*/
+          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+        }
+      }
+      VarCounter++;
+      
+    }
+    
   }
   
-  if ((Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
-    
-    Paraview_File << "\nSCALARS Density float 1\n";
-    Paraview_File << "LOOKUP_TABLE default\n";
-    
-    for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-      if (surf_sol) {
-        if (LocalIndex[iPoint+1] != 0) {
-          /*--- Loop over the vars/residuals and write the values to file ---*/
-          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-        }
-      } else {
-        /*--- Loop over the vars/residuals and write the values to file ---*/
-        Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-      }
-    }
-    VarCounter++;
-    
-  }
-  
-  if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
-      (Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
-    
-    Paraview_File << "\nSCALARS Pressure float 1\n";
-    Paraview_File << "LOOKUP_TABLE default\n";
-    
-    for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-      if (surf_sol) {
-        if (LocalIndex[iPoint+1] != 0) {
-          /*--- Loop over the vars/residuals and write the values to file ---*/
-          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-        }
-      } else {
-        /*--- Loop over the vars/residuals and write the values to file ---*/
-        Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-      }
-    }
-    VarCounter++;
-    
-    Paraview_File << "\nSCALARS Pressure_Coefficient float 1\n";
-    Paraview_File << "LOOKUP_TABLE default\n";
-    
-    for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-      if (surf_sol) {
-        if (LocalIndex[iPoint+1] != 0) {
-          /*--- Loop over the vars/residuals and write the values to file ---*/
-          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-        }
-      } else {
-        /*--- Loop over the vars/residuals and write the values to file ---*/
-        Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-      }
-    }
-    VarCounter++;
-    
-    Paraview_File << "\nSCALARS Mach float 1\n";
-    Paraview_File << "LOOKUP_TABLE default\n";
-    
-    for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-      if (surf_sol) {
-        if (LocalIndex[iPoint+1] != 0) {
-          /*--- Loop over the vars/residuals and write the values to file ---*/
-          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-        }
-      } else {
-        /*--- Loop over the vars/residuals and write the values to file ---*/
-        Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-      }
-    }
-    VarCounter++;
-    
-  }
-  
-  if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
-      (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
-    
-    Paraview_File << "\nSCALARS Temperature float 1\n";
-    Paraview_File << "LOOKUP_TABLE default\n";
-    
-    for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-      if (surf_sol) {
-        if (LocalIndex[iPoint+1] != 0) {
-          /*--- Loop over the vars/residuals and write the values to file ---*/
-          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-        }
-      } else {
-        /*--- Loop over the vars/residuals and write the values to file ---*/
-        Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-      }
-    }
-    VarCounter++;
-    
-    Paraview_File << "\nSCALARS Laminar_Viscosity float 1\n";
-    Paraview_File << "LOOKUP_TABLE default\n";
-    
-    for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-      if (surf_sol) {
-        if (LocalIndex[iPoint+1] != 0) {
-          /*--- Loop over the vars/residuals and write the values to file ---*/
-          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-        }
-      } else {
-        /*--- Loop over the vars/residuals and write the values to file ---*/
-        Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-      }
-    }
-    VarCounter++;
-    
-    Paraview_File << "\nSCALARS Skin_Friction_Coefficient float 1\n";
-    Paraview_File << "LOOKUP_TABLE default\n";
-    
-    for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-      if (surf_sol) {
-        if (LocalIndex[iPoint+1] != 0) {
-          /*--- Loop over the vars/residuals and write the values to file ---*/
-          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-        }
-      } else {
-        /*--- Loop over the vars/residuals and write the values to file ---*/
-        Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-      }
-    }
-    VarCounter++;
-    
-    Paraview_File << "\nSCALARS Heat_Transfer float 1\n";
-    Paraview_File << "LOOKUP_TABLE default\n";
-    
-    for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-      if (surf_sol) {
-        if (LocalIndex[iPoint+1] != 0) {
-          /*--- Loop over the vars/residuals and write the values to file ---*/
-          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-        }
-      } else {
-        /*--- Loop over the vars/residuals and write the values to file ---*/
-        Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-      }
-    }
-    VarCounter++;
-    
-    Paraview_File << "\nSCALARS Y_Plus float 1\n";
-    Paraview_File << "LOOKUP_TABLE default\n";
-    
-    for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-      if (surf_sol) {
-        if (LocalIndex[iPoint+1] != 0) {
-          /*--- Loop over the vars/residuals and write the values to file ---*/
-          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-        }
-      } else {
-        /*--- Loop over the vars/residuals and write the values to file ---*/
-        Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-      }
-    }
-    VarCounter++;
-    
-  }
-  
-  if ((Kind_Solver == RANS) || (Kind_Solver == FREE_SURFACE_RANS)) {
-    
-    Paraview_File << "\nSCALARS Eddy_Viscosity float 1\n";
-    Paraview_File << "LOOKUP_TABLE default\n";
-    
-    for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-      if (surf_sol) {
-        if (LocalIndex[iPoint+1] != 0) {
-          /*--- Loop over the vars/residuals and write the values to file ---*/
-          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-        }
-      } else {
-        /*--- Loop over the vars/residuals and write the values to file ---*/
-        Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-      }
-    }
-    VarCounter++;
-    
-  }
-   
-  if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) ||
-      (Kind_Solver == ADJ_FREE_SURFACE_EULER) || (Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
-      (Kind_Solver == ADJ_FREE_SURFACE_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
-    
-    Paraview_File << "\nSCALARS Surface_Sensitivity float 1\n";
-    Paraview_File << "LOOKUP_TABLE default\n";
-    
-    for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-      if (surf_sol) {
-        if (LocalIndex[iPoint+1] != 0) {
-          /*--- Loop over the vars/residuals and write the values to file ---*/
-          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-        }
-      } else {
-        /*--- Loop over the vars/residuals and write the values to file ---*/
-        Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-      }
-    }
-    VarCounter++;
-    
-  }
-
 	Paraview_File.close();
-
+  
   if (surf_sol) delete [] LocalIndex;
-
+  
 }

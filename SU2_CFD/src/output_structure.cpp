@@ -1633,11 +1633,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 	if (SecondIndex != NONE) nVar_Second = solver[SecondIndex]->GetnVar();
 	if (ThirdIndex != NONE) nVar_Third = solver[ThirdIndex]->GetnVar();
 	nVar_Consv = nVar_First + nVar_Second + nVar_Third;
-  if (config->GetWrt_Residuals()) {
-    nVar_Total = 2*nVar_Consv;
-  } else {
-    nVar_Total = nVar_Consv;
-  }
+  
+  if (config->GetWrt_Residuals()) nVar_Total = 2*nVar_Consv;
+  else nVar_Total = nVar_Consv;
   
 	/*--- Add the grid velocity to the restart file for the unsteady adjoint ---*/
 	if (grid_movement) {
