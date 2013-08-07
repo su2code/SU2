@@ -578,15 +578,22 @@ private:
 	*Plunging_Ampl_Y,           /*!< \brief Plunging amplitude in the y-direction. */
 	*Plunging_Ampl_Z;           /*!< \brief Plunging amplitude in the z-direction. */
 	bool Relative_Motion;       /*!< \brief Flag for relative motion between zones (search & interpolate required). */
-	double FreqPlungeAeroelastic; /*!< \brief Plunging natural frequency for Aeroelastic. */
-	double FreqPitchAeroelastic; /*!< \brief Pitch natural frequency for Aeroelastic. */
-	double *Aeroelastic_np1; /*!< \brief Structural source terms used for Aeroelastic computation at time level n+1. */
-	double *Aeroelastic_n; /*!< \brief Structural source terms used for Aeroelastic computation at time level n. */
-	double *Aeroelastic_n1; /*!< \brief Structural Source terms used for Aeroelastic computation at time level n-1. */
-	double Aeroelastic_plunge; /*!< \brief Value of plunging coordinate at the end of an external iteration. */
-	double Aeroelastic_pitch; /*!< \brief Value of pitching coordinate at the end of an external iteration. */
-	unsigned short Aeroelastic_Grid_Movement;	/*!< \brief Type of Aeroelastic grid movement. */
-	unsigned short Aeroelastic_Grid_Velocity;	/*!< \brief Type of Aeroelastic grid velocity. */
+	double *Aeroelastic_np1, /*!< \brief Structural source terms used for Aeroelastic computation at time level n+1. */
+	*Aeroelastic_n, /*!< \brief Structural source terms used for Aeroelastic computation at time level n. */
+	*Aeroelastic_n1; /*!< \brief Structural Source terms used for Aeroelastic computation at time level n-1. */
+    double FreqPlungeAeroelastic, /*!< \brief Plunging natural frequency for Aeroelastic. */
+	FreqPitchAeroelastic, /*!< \brief Pitch natural frequency for Aeroelastic. */
+    Aeroelastic_plunge, /*!< \brief Value of plunging coordinate at the end of an external iteration. */
+	Aeroelastic_pitch; /*!< \brief Value of pitching coordinate at the end of an external iteration. */
+	unsigned short Aeroelastic_Grid_Movement,	/*!< \brief Type of Aeroelastic grid movement. */
+	Aeroelastic_Grid_Velocity,	/*!< \brief Type of Aeroelastic grid velocity. */
+    Gust_Type,	/*!< \brief Type of Gust. */
+    Gust_Dir;   /*!< \brief Direction of the gust */
+    double Gust_WaveLength,     /*!< \brief The gust wavelength. */
+    Gust_Periods,              /*!< \brief Number of gust periods. */
+    Gust_Ampl,                  /*!< \brief Gust amplitude. */
+    Gust_Begin_Time,            /*!< \brief Time at which to begin the gust. */
+    Gust_Begin_Loc;             /*!< \brief Location at which the gust begins. */
 	double *Density_FreeStreamND_Time,
 	*Pressure_FreeStreamND_Time,
 	**Velocity_FreeStreamND_Time,
@@ -4312,6 +4319,44 @@ public:
 	 * \return <code>TRUE</code> if there is a wind gust; otherwise <code>FALSE</code>.
 	 */
 	bool GetWind_Gust(void);
+    
+    /*!
+	 * \brief Get the type of gust to simulate.
+	 * \return type of gust to use for the simulation.
+	 */
+	unsigned short GetGust_Type(void);
+    
+    /*!
+	 * \brief Get the gust direction.
+	 * \return the gust direction.
+	 */
+    unsigned short GetGust_Dir(void);
+
+    /*!
+	 * \brief Value of the gust wavelength.
+	 */
+	double GetGust_WaveLength(void);
+    
+    /*!
+	 * \brief Value of the number of gust periods.
+	 */
+	double GetGust_Periods(void);
+    
+    /*!
+	 * \brief Value of the gust amplitude.
+	 */
+	double GetGust_Ampl(void);
+    
+    /*!
+	 * \brief Value of the time at which to begin the gust.
+	 */
+	double GetGust_Begin_Time(void);
+    
+    /*!
+	 * \brief Value of the location ath which the gust begins.
+	 */
+	double GetGust_Begin_Loc(void);
+
 
 	/*!
 	 * \brief Given arrays x[1..n] and y[1..n] containing a tabulated function, i.e., yi = f(xi), with
