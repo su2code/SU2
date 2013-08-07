@@ -384,6 +384,20 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddEnumOption("TYPE_AEROELASTIC_GRID_VELOCITY", Aeroelastic_Grid_Velocity, Aeroelastic_Velocity_Map, "FD");
     /* DESCRIPTION: Apply a wind gust */
 	AddSpecialOption("WIND_GUST", Wind_Gust, SetBoolOption, false);
+    /* DESCRIPTION: Type of gust */
+	AddEnumOption("GUST_TYPE", Gust_Type, Gust_Type_Map, "NONE");
+    /* DESCRIPTION: Gust wavelenght (meters) */
+    AddScalarOption("GUST_WAVELENGTH", Gust_WaveLength, 0.0);
+    /* DESCRIPTION: Number of gust periods */
+    AddScalarOption("GUST_PERIODS", Gust_Periods, 1.0);
+    /* DESCRIPTION: Gust amplitude (m/s) */
+    AddScalarOption("GUST_AMPL", Gust_Ampl, 0.0);
+    /* DESCRIPTION: Time at which to begin the gust (sec) */
+    AddScalarOption("GUST_BEGIN_TIME", Gust_Begin_Time, 0.0);
+    /* DESCRIPTION: Location at which the gust begins (meters) */
+    AddScalarOption("GUST_BEGIN_LOC", Gust_Begin_Loc, 0.0);
+    /* DESCRIPTION: Direction of the gust X or Y dir */
+    AddEnumOption("GUST_DIR", Gust_Dir, Gust_Dir_Map, "X_DIR");
 
 	/*--- options related to rotating frame problems ---*/
 	/* CONFIG_CATEGORY: Rotating frame */

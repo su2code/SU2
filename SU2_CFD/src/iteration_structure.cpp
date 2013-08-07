@@ -1051,86 +1051,77 @@ void FieldVelocityMethod(CConfig *config, CGeometry *geometry, CSolver **solver_
     // The method is described in the NASA TM–2012-217771 -
     // Development, Verification and Use of Gust Modeling in the NASA Computational Fluid Dynamics Code FUN3D
     
+    // the gust is the negative of the grid velocity
+    
     unsigned short iDim;
     unsigned short nDim = geometry->GetnDim();
     unsigned long iPoint;
+
+    double x, x_gust, gust;
+    double *GridVel;
+    unsigned short Kind_Grid_Movement = config->GetKind_GridMovement(ZONE_0);
     
-    double x0 = -25;
-    double L = 25; // check if L is not zero.
-    double tbegin = 0;
     double Physical_dt = config->GetDelta_UnstTime();
     unsigned long ExtIter = config->GetExtIter();
     double Physical_t = (ExtIter+1)*Physical_dt;
-    double U_gust_amp = 2.31633;
-    double V_gust_amp = 0.0;
-    double U_gust = 0.0;
-    double V_gust = 0.0;
-    double n = 2; //half periods;
-    double Uinf = solver_container[FLOW_SOL]->GetVelocity_Inf(0); // Assumption gust moves at infinity velocity
-
-    unsigned short Kind_Grid_Movement = config->GetKind_GridMovement(ZONE_0);
-    double *GridVel;
     
+    double Uinf = solver_container[FLOW_SOL]->GetVelocity_Inf(0); // Assumption gust moves at infinity velocity
+    
+    /*--- Gust Parameters ---*/
+    unsigned short Gust_Type = config->GetGust_Type();
+    double x0 = config->GetGust_Begin_Loc();        //Location at which the gust begins.
+    double L = config->GetGust_WaveLength();        //Gust size
+    double tbegin = config->GetGust_Begin_Time();   //Physical time at which the gust begins.
+    double gust_amp = config->GetGust_Ampl();       //Gust amplitude
+    double n = config->GetGust_Periods();           //Number of gust periods
+    unsigned short GustDir = config->GetGust_Dir(); //Gust direction
+
+    /*--- Check to make sure gust lenght is not zero or negative ---*/
+    if (L <= 0.0) {
+        cout << "ERROR: The gust length needs to be positive" << endl;
+        exit(1);
+    }
     
     /*--- Loop over each node in the volume mesh ---*/
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
 
+        // Reset the Grid Velocity to zero if there is no grid movement
         if (Kind_Grid_Movement == NO_MOVEMENT) {
             for(iDim = 0; iDim < nDim; iDim++)
                 geometry->node[iPoint]->SetGridVel(iDim, 0.0);
         }
 
+        // Begin applying the gust
         if (Physical_dt > tbegin) {
-            double x = geometry->node[iPoint]->GetCoord()[0]; // x-location of the node
-            double theta = (x - x0 - Uinf*(Physical_t-tbegin))/L;
-            if (theta > 0 && theta < 0.5*n) {
-                U_gust = U_gust_amp*(sin(2*PI_NUMBER*theta));
-                //U_gust = U_gust_amp;
+            x = geometry->node[iPoint]->GetCoord()[0]; // x-location of the node
+            x_gust = (x - x0 - Uinf*(Physical_t-tbegin))/L;
+            // Check if we are in the region where the gust is active
+            if (x_gust > 0 && x_gust < n) {
                 
-                // Density is changing considerably
-                // Velocity doesn't quite get as high as expected
-                // Sign of velocity different. But works for testing.
-                // Try the other validation case.
-                // Reach Exit Boundary
+                /*--- Calculate the specified gust ---*/
+                switch (Gust_Type) {
+                    
+                case TOP_HAT:
+                    gust = gust_amp;
+                    break;
                 
-                double NewGridVel[2];
+                case SINE:
+                    gust = gust_amp*(sin(2*PI_NUMBER*x_gust));
+                    break;
+                }
                 
-                
-                // Check velocity sign.
-                // Check gust is being zeroed out again.
-                
+                // Compute new grid velocity
+                double NewGridVel[2] = {0,0};
                 GridVel = geometry->node[iPoint]->GetGridVel();
-
-//                NewGridVel[0] = GridVel[0] - U_gust;
-//                NewGridVel[1] = GridVel[1] - V_gust;
-                // Shifted the gust to the y direction
-                NewGridVel[0] = GridVel[0] - V_gust;
-                NewGridVel[1] = GridVel[1] - U_gust;
-
+                NewGridVel[GustDir] = GridVel[GustDir] - gust;
+                
+                // Store new grid velocity
                 for(iDim = 0; iDim < nDim; iDim++) {
                     geometry->node[iPoint]->SetGridVel(iDim, NewGridVel[iDim]);
                 }
             }
         }
     }
-    
-//    /*--- Vertical Gust ---*/
-//    double Gust[2] = {0.0,2.31633};  //for Mach 0.3 corresponds to 2 degree gust
-//    double GridVel[2];
-//
-//
-//
-//    /*--- Loop over each node in the volume mesh ---*/
-//    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-//
-//        /*--- Set Grid Velocity for the point in the given zone ---*/
-//        for(iDim = 0; iDim < nDim; iDim++) {
-//            GridVel[iDim] = -Gust[iDim];    // the gust is the negative of the grid velocity
-//            /*--- Store grid velocity for this point ---*/
-//            geometry->node[iPoint]->SetGridVel(iDim, GridVel[iDim]);
-//            
-//        }
-//    }
     
 }
 
