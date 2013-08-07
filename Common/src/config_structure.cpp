@@ -2360,8 +2360,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) {
 
 #ifndef NO_MPI
-	if ((val_software != SU2_DDC) && (val_software != SU2_MAC) && (val_software != SU2_GDC))
+  /*--- Identify the solvers that work in serial ---*/
+	if ((val_software != SU2_DDC) && (val_software != SU2_MAC))
 		nDomain = MPI::COMM_WORLD.Get_size();
+  else
+    nDomain = 1;
 #endif
 
 	/*--- Boundary (marker) treatment ---*/

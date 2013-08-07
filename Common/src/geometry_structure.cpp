@@ -29,7 +29,6 @@ CGeometry::CGeometry(void) {
   nPoint = 0;
 	nElem = 0;
 
-	nElem_Bound_Storage = NULL;
 	nElem_Bound = NULL;
 	Tag_to_Marker = NULL;
 	elem = NULL;
@@ -115,7 +114,6 @@ CGeometry::~CGeometry(void) {
     delete[] newBound;
   }
   
-  if (nElem_Bound_Storage != NULL) delete[] nElem_Bound_Storage;
 	if (nElem_Bound != NULL) delete[] nElem_Bound;
 	if (nVertex != NULL) delete[] nVertex;
 	if (nNewElem_Bound != NULL) delete[] nNewElem_Bound;
@@ -1045,7 +1043,6 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
       config->SetnMarker_All(nMarker);
       bound = new CPrimalGrid**[nMarker];
       nElem_Bound = new unsigned long [nMarker];
-      nElem_Bound_Storage = new unsigned long [nMarker];
       Tag_to_Marker = new string [MAX_INDEX_VALUE];
       
       for (iMarker = 0 ; iMarker < nMarker; iMarker++) {
@@ -1144,7 +1141,6 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
                 
             }
           }
-          nElem_Bound_Storage[iMarker] = nelem_edge_bound*3 + nelem_triangle_bound*4 + nelem_quad_bound*5;
           if (config->GetDivide_Element()) nElem_Bound[iMarker] = nelem_edge_bound + nelem_triangle_bound + nelem_quad_bound;
 
           /*--- Update config information storing the boundary information in the right place ---*/
@@ -1943,7 +1939,6 @@ void CPhysicalGeometry::CGNS_Format(CConfig *config, string val_mesh_filename, u
   config->SetnMarker_All(nMarker);
   bound = new CPrimalGrid**[nMarker];
   nElem_Bound = new unsigned long [nMarker];
-  nElem_Bound_Storage = new unsigned long [nMarker];
   Tag_to_Marker = new string [MAX_INDEX_VALUE];
   
   iMarker = 0;
@@ -1992,7 +1987,6 @@ void CPhysicalGeometry::CGNS_Format(CConfig *config, string val_mesh_filename, u
                 ielem++; nelem_quad++; break;
             }
           }
-          nElem_Bound_Storage[iMarker] = nelem_edge*3 + nelem_triangle*4 + nelem_quad*5;
           
           /*--- Update config information storing the boundary information in the right place ---*/
           Tag_to_Marker[config->GetMarker_Config_Tag(Marker_Tag)] = Marker_Tag;
@@ -2360,7 +2354,6 @@ void CPhysicalGeometry::NETCDF_Format(CConfig *config, string val_mesh_filename,
   }
   
   nElem_Bound = new unsigned long [nMarker];
-  nElem_Bound_Storage = new unsigned long [nMarker];
   
   /*--- Compute the number of element per marker ---*/
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -2397,7 +2390,6 @@ void CPhysicalGeometry::NETCDF_Format(CConfig *config, string val_mesh_filename,
           bound[iMarker][ielem_triangle+ielem_quad] = new CRectangle(vnodes_quad[0],vnodes_quad[1],vnodes_quad[2],vnodes_quad[3],3);
           ielem_quad ++;
         }
-        nElem_Bound_Storage[iMarker] = ielem_triangle*4 + ielem_quad*5;
       }
   }
   
@@ -7089,7 +7081,6 @@ CBoundaryGeometry::CBoundaryGeometry(CConfig *config, string val_mesh_filename, 
 			config->SetnMarker_All(nMarker);
 			bound = new CPrimalGrid**[nMarker];
 			nElem_Bound = new unsigned long [nMarker];
-			nElem_Bound_Storage = new unsigned long [nMarker];
 			Tag_to_Marker = new string [MAX_INDEX_VALUE];
 
 			for (iMarker = 0 ; iMarker < nMarker; iMarker++) {
@@ -7134,7 +7125,6 @@ CBoundaryGeometry::CBoundaryGeometry(CConfig *config, string val_mesh_filename, 
 							ielem++; nelem_quad++; break;
 						}
 					}
-					nElem_Bound_Storage[iMarker] = nelem_edge*3 + nelem_triangle*4 + nelem_quad*5;
 
 					/*--- Update config information storing the boundary information in the right place ---*/
 					Tag_to_Marker[config->GetMarker_Config_Tag(Marker_Tag)] = Marker_Tag;
@@ -8841,8 +8831,6 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       
       for (iMarker = 0; iMarker < nMarker; iMarker++) nElem_Bound[iMarker] = nVertexDomain[iMarker];
       
-      nElem_Bound_Storage = new unsigned long [nMarker+(overhead*size)];
-      
       bound = new CPrimalGrid**[nMarker+(overhead*size)];
       for (iMarker = 0; iMarker < nMarker; iMarker++) bound[iMarker] = new CPrimalGrid* [nElem_Bound[iMarker]];
       
@@ -8873,7 +8861,6 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
           iBoundRectangleTotal++;
         }
         
-        nElem_Bound_Storage[iMarker] = iBoundLine*3 + iBoundTriangle*4 + iBoundRectangle*5;
         Local_to_Global_Marker[iMarker] = Buffer_Receive_Local2Global_Marker[iMarker];
         
       }
@@ -9490,8 +9477,6 @@ void CDomainGeometry::SetDomainSerial(CGeometry *geometry, CConfig *config, unsi
 	for (iMarker = 0; iMarker < nMarkerDomain; iMarker++)
 		SetnElem_Bound(iMarker, nVertexDomain[iMarker]);
   
-	nElem_Bound_Storage = new unsigned long [nMarkerDomain];
-  
 	bound = new CPrimalGrid**[GetnMarker()];
 	for (iMarker = 0; iMarker < GetnMarker(); iMarker++)
 		bound[iMarker] = new CPrimalGrid* [GetnElem_Bound(iMarker)];
@@ -9541,7 +9526,6 @@ void CDomainGeometry::SetDomainSerial(CGeometry *geometry, CConfig *config, unsi
         }
         
         /*--- add the marker and update some structures ---*/
-        nElem_Bound_Storage[nMarkerDomain] = nelem_edge*3 + nelem_triangle*4 + nelem_quad*5;
         Local_to_Global_Marker[nMarkerDomain] = iMarker;
         Global_to_Local_Marker[iMarker] = nMarkerDomain;
         nMarkerDomain++;
