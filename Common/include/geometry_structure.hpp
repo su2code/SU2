@@ -97,7 +97,6 @@ protected:
   unsigned long Max_GlobalPoint;  /*!< \brief Greater global point in the domain local structure. */
 
 public:
-	unsigned long *nElem_Bound_Storage;	/*!< \brief Storage capacity for ParaView format (boundaries, for each marker). */ 
 	unsigned long *nElem_Bound;			/*!< \brief Number of elements of the boundary. */
 	string *Tag_to_Marker;	/*!< \brief If you know the index of the boundary (depend of the 
 							 grid definition), it gives you the maker (where the boundary 
@@ -269,13 +268,6 @@ public:
 	void SetnElem_Bound(unsigned short val_marker, unsigned long val_nelem_bound);
 
 	/*! 
-	 * \brief Set the number of storage for boundary elements.
-	 * \param[in] val_marker - Marker of the boundary.
-	 * \param[in] val_nelem_bound - Number of boundary elements.
-	 */	
-	void SetnElem_Bound_Storage(unsigned short val_marker, unsigned long val_nelem_bound);
-
-	/*! 
 	 * \brief Set the number of grid points.
 	 * \param[in] val_npoint - Number of grid points.
 	 */	
@@ -298,12 +290,6 @@ public:
 	 * \param[in] val_marker - Marker of the boundary.
 	 */
 	unsigned long GetnElem_Bound(unsigned short val_marker);
-
-	/*! 
-	 * \brief Get the number of storage boundary elements.
-	 * \param[in] val_marker - Marker of the boundary.
-	 */
-	unsigned long GetnElem_Bound_Storage(unsigned short val_marker);
 
   /*!
 	 * \brief Get the number of elements in vtk fortmat.
