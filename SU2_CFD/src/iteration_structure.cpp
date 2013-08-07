@@ -1046,33 +1046,91 @@ void AdjAeroacousticIteration(COutput *output, CIntegration ***integration_conta
 
 }
 
-void FieldVelocityMethod(CGeometry *geometry) {
+void FieldVelocityMethod(CConfig *config, CGeometry *geometry, CSolver **solver_container) {
     // The Field Velocity Method (VFM) imposes a gust on the flow field via the grid velocities.
     // The method is described in the NASA TM–2012-217771 -
     // Development, Verification and Use of Gust Modeling in the NASA Computational Fluid Dynamics Code FUN3D
-    
-    // For now I have to set gridmovement to yes in the config file.
     
     unsigned short iDim;
     unsigned short nDim = geometry->GetnDim();
     unsigned long iPoint;
     
-    double Gust[2] = {0.0,2.0};  //try with airfoil
-    double GridVel[2];
-    
+    double x0 = -25;
+    double L = 25; // check if L is not zero.
+    double tbegin = 0;
+    double Physical_dt = config->GetDelta_UnstTime();
+    unsigned long ExtIter = config->GetExtIter();
+    double Physical_t = (ExtIter+1)*Physical_dt;
+    double U_gust_amp = 2.31633;
+    double V_gust_amp = 0.0;
+    double U_gust = 0.0;
+    double V_gust = 0.0;
+    double n = 2; //half periods;
+    double Uinf = solver_container[FLOW_SOL]->GetVelocity_Inf(0); // Assumption gust moves at infinity velocity
+
+    unsigned short Kind_Grid_Movement = config->GetKind_GridMovement(ZONE_0);
+    double *GridVel;
     
     
     /*--- Loop over each node in the volume mesh ---*/
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-        
-        /*--- Set Grid Velocity for the point in the given zone ---*/
-        for(iDim = 0; iDim < nDim; iDim++) {
-            GridVel[iDim] = -Gust[iDim];    // the gust is the negative of the grid velocity
-            /*--- Store grid velocity for this point ---*/
-            geometry->node[iPoint]->SetGridVel(iDim, GridVel[iDim]);
-            
+
+        if (Kind_Grid_Movement == NO_MOVEMENT) {
+            for(iDim = 0; iDim < nDim; iDim++)
+                geometry->node[iPoint]->SetGridVel(iDim, 0.0);
+        }
+
+        if (Physical_dt > tbegin) {
+            double x = geometry->node[iPoint]->GetCoord()[0]; // x-location of the node
+            double theta = (x - x0 - Uinf*(Physical_t-tbegin))/L;
+            if (theta > 0 && theta < 0.5*n) {
+                U_gust = U_gust_amp*(sin(2*PI_NUMBER*theta));
+                //U_gust = U_gust_amp;
+                
+                // Density is changing considerably
+                // Velocity doesn't quite get as high as expected
+                // Sign of velocity different. But works for testing.
+                // Try the other validation case.
+                // Reach Exit Boundary
+                
+                double NewGridVel[2];
+                
+                
+                // Check velocity sign.
+                // Check gust is being zeroed out again.
+                
+                GridVel = geometry->node[iPoint]->GetGridVel();
+
+//                NewGridVel[0] = GridVel[0] - U_gust;
+//                NewGridVel[1] = GridVel[1] - V_gust;
+                // Shifted the gust to the y direction
+                NewGridVel[0] = GridVel[0] - V_gust;
+                NewGridVel[1] = GridVel[1] - U_gust;
+
+                for(iDim = 0; iDim < nDim; iDim++) {
+                    geometry->node[iPoint]->SetGridVel(iDim, NewGridVel[iDim]);
+                }
+            }
         }
     }
+    
+//    /*--- Vertical Gust ---*/
+//    double Gust[2] = {0.0,2.31633};  //for Mach 0.3 corresponds to 2 degree gust
+//    double GridVel[2];
+//
+//
+//
+//    /*--- Loop over each node in the volume mesh ---*/
+//    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+//
+//        /*--- Set Grid Velocity for the point in the given zone ---*/
+//        for(iDim = 0; iDim < nDim; iDim++) {
+//            GridVel[iDim] = -Gust[iDim];    // the gust is the negative of the grid velocity
+//            /*--- Store grid velocity for this point ---*/
+//            geometry->node[iPoint]->SetGridVel(iDim, GridVel[iDim]);
+//            
+//        }
+//    }
     
 }
 
@@ -1091,7 +1149,7 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
 		ExtIter = iZone;
 		Kind_Grid_Movement = config_container->GetKind_GridMovement(ZONE_0);
 	}
-  
+
 	int rank = MASTER_NODE;
 #ifndef NO_MPI
 	rank = MPI::COMM_WORLD.Get_rank();
@@ -1313,8 +1371,8 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
     
     /*--- Apply a Wind Gust ---*/
     
-    if (config_container->GetWind_Gust() && (ExtIter>10)) {
-        FieldVelocityMethod(geometry_container[MESH_0]);
+    if (config_container->GetWind_Gust()) {
+        FieldVelocityMethod(config_container,geometry_container[MESH_0],solver_container[MESH_0]);
     }
     
     
