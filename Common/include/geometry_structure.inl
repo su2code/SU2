@@ -117,11 +117,7 @@ inline void CGeometry::SetnMarker(unsigned short val_nmarker) { nMarker = val_nm
 
 inline void CGeometry::SetnElem_Bound(unsigned short val_marker, unsigned long val_nelem_bound) { nElem_Bound[val_marker]= val_nelem_bound; }
 
-inline void CGeometry::SetnElem_Bound_Storage(unsigned short val_marker, unsigned long val_nelem_bound) { nElem_Bound_Storage[val_marker]= val_nelem_bound; }
-
 inline unsigned long CGeometry::GetnElem_Bound(unsigned short val_marker) { return nElem_Bound[val_marker]; }
-
-inline unsigned long CGeometry::GetnElem_Bound_Storage(unsigned short val_marker) { return nElem_Bound_Storage[val_marker]; }
 
 inline void CGeometry::SetMarker_Tag(unsigned short val_marker, string val_index) { Tag_to_Marker[val_marker] = val_index; }
 
