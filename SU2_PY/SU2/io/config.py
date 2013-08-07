@@ -269,6 +269,10 @@ def read_config(filename):
     # initialize output dictionary
     data_dict = OrderedDict() 
     
+    #hack - twl
+    data_dict['DV_VALUE_NEW'] = []
+    data_dict['DV_VALUE_OLD'] = []
+    
     input_file = open(filename)
     
     # process each line
