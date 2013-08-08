@@ -640,8 +640,6 @@ inline bool CConfig::GetFullMG(void) { return FullMG; }
 
 inline bool CConfig::GetEquivArea(void) { return EquivArea; }
 
-inline bool CConfig::GetFlowRate(void) { return FlowRate; }
-
 inline double CConfig::GetReduced_Frequency(void) { return Reduced_Frequency; }
 
 inline double CConfig::GetPitching_Amplitude(void) { return Pitching_Amplitude; }

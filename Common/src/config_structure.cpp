@@ -679,13 +679,6 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	/* DESCRIPTION: Integration limits of the equivalent area ( xmin, xmax, Dist_NearField ) */
 	AddArrayOption("EA_INT_LIMIT", 3, EA_IntLimit, default_vec_3d);
 
-
-	/*--- options related to flow rate ---*/
-	/* CONFIG_CATEGORY: Flow rate */
-
-	/* DESCRIPTION:  */
-	AddSpecialOption("FLOW_RATE", FlowRate, SetBoolOption, false);
-
 	/*--- options related to the chemical system ---*/
 	/* CONFIG_CATEGORY: Chemical system */
 

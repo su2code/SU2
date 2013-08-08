@@ -4926,38 +4926,6 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
   }
 }
 
-void COutput::SetFlowRate(CSolver *solver_container, CGeometry *geometry, CConfig *config, unsigned long iExtIter) {
-
-	ifstream index_file;
-	int integration_node[100];
-	int nPointFlowRate = 0;
-
-	/*--- Read list of nodes ---*/
-	index_file.open("flowrate_nodes.dat", ios::in);
-	while (index_file.good()) {
-		index_file >> integration_node[nPointFlowRate];
-		nPointFlowRate++;
-	}
-	nPointFlowRate--;
-	index_file.close();
-
-
-	/*--- Perform trapezoid integration ---*/
-	double y1, y2, q1, q2;
-	double integral = 0.0;
-	for (int j=0; j<nPointFlowRate-1; j++) {
-		y1 = geometry->node[integration_node[j]]->GetCoord(1);
-		y2 = geometry->node[integration_node[j+1]]->GetCoord(1);
-		q1 = solver_container->node[integration_node[j]]->GetVelocity(0, config->GetIncompressible());
-		q2 = solver_container->node[integration_node[j+1]]->GetVelocity(0, config->GetIncompressible());
-
-		integral = integral + 0.5*(q1+q2)*(y2-y1);
-	}
-
-	/*--- Store integral in solver_container ---*/
-	solver_container->SetTotal_CEquivArea(integral);  // integral shows up as EquivArea in history
-}
-
 void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, CConfig *config, unsigned long iExtIter) {
 
 	ofstream EquivArea_file, FuncGrad_file;
