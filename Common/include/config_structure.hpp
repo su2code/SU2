@@ -63,7 +63,6 @@ private:
 	bool Adjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
     Viscous,                /*!< \brief Flag to know if the code is solving a viscous problem. */
 	EquivArea,				/*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
-	FlowRate,				/*!< \brief Flag to know if the code is going to compute and plot the flow rate. */
 	OneShot,				/*!< \brief Flag to know if the code is solving a one shot problem. */
 	Linearized,				/*!< \brief Flag to know if the code is solving a linearized problem. */
 	Grid_Movement,			/*!< \brief Flag to know if there is grid movement. */
@@ -3081,12 +3080,6 @@ public:
 	 * \return <code>TRUE</code> or <code>FALSE</code>  depending if we are computing the equivalent area.
 	 */		
 	bool GetEquivArea(void);
-
-	/*! 
-	 * \brief Information about computing and plotting the flow rate.
-	 * \return <code>TRUE</code> or <code>FALSE</code>  depending if we are computing the flow rate.
-	 */		
-	bool GetFlowRate(void);
 
 	/*! 
 	 * \brief Get name of the input grid.

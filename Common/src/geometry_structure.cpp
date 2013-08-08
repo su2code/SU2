@@ -5381,6 +5381,9 @@ void CPhysicalGeometry::FindSharpEdges(CConfig *config) {
 	double dot_product, dihedral_angle, avg_dihedral;
 	double Coord_Vertex_i[3], Coord_Vertex_j[3], Unit_Normal[2][3], area;
 
+  //for computing curvature in 2D using the radius of the circle https://en.wikipedia.org/wiki/Radius
+  
+  
 	/*--- IMPORTANT: Sharp corner angle threshold as a multiple of the average ---*/
 	double angle_threshold = 10.0;
 
