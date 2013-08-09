@@ -1477,8 +1477,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         // Molar mass [kg/kmol]
         Molar_Mass[0] = 14.0067+15.9994;
         // Characteristic vibrational temperatures for calculating e_vib [K]
-        CharVibTemp[0] = 0.0;
-        //CharVibTemp[0] = 3395.0;
+        CharVibTemp[0] = 3395.0;
         // Formation enthalpy: (JANAF values, [KJ/Kmol])
         Enthalpy_Formation[0] = 0.0;					//N2
         // Reference temperature (JANAF values, [K])
@@ -3110,6 +3109,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		}
 
     if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
+      if (Kind_ConvNumScheme_TNE2 == SPACE_CENTERED) {
+        if (Kind_ConvNumScheme_TNE2 == LAX) cout << "Lax-Friedrich convective scheme for the inviscid terms of the two-temperature model." << endl;
+      }
 			if (Kind_ConvNumScheme_TNE2 == SPACE_UPWIND) {
 				if (Kind_Upwind_TNE2 == ROE_1ST) cout << "1st order Roe solver for the inviscid terms of the two-temperature model."<< endl;
 				if (Kind_Upwind_TNE2 == ROE_TURKEL_1ST) cout << "1st order Roe-Turkel solver for the inviscid terms of the two-temperature model."<< endl;
@@ -4708,7 +4710,7 @@ void CConfig::SetGlobalParam(unsigned short val_solver, unsigned short val_syste
 		break;
     case TNE2_EULER:
       if (val_system == RUNTIME_TNE2_SYS) {
-        SetKind_ConvNumScheme(GetKind_ConvNumScheme_TNE2(), NONE,
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_TNE2(), GetKind_Centered_TNE2(),
                               GetKind_Upwind_TNE2(), GetKind_SlopeLimit_TNE2());
         SetKind_SourNumScheme(GetKind_SourNumScheme_TNE2());
         SetKind_ViscNumScheme(NONE);
@@ -4717,7 +4719,7 @@ void CConfig::SetGlobalParam(unsigned short val_solver, unsigned short val_syste
       break;
     case TNE2_NAVIER_STOKES:
       if (val_system == RUNTIME_TNE2_SYS) {
-        SetKind_ConvNumScheme(GetKind_ConvNumScheme_TNE2(), NONE,
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_TNE2(), GetKind_Centered_TNE2(),
                               GetKind_Upwind_TNE2(), GetKind_SlopeLimit_TNE2());
         SetKind_SourNumScheme(GetKind_SourNumScheme_TNE2());
         SetKind_ViscNumScheme(GetKind_ViscNumScheme_TNE2());

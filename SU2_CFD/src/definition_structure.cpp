@@ -699,8 +699,8 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
 	if (euler)				nVar_Flow = solver_container[MESH_0][FLOW_SOL]->GetnVar();
 	if (ns)	          nVar_Flow = solver_container[MESH_0][FLOW_SOL]->GetnVar();
   if (turbulent)		nVar_Turb = solver_container[MESH_0][TURB_SOL]->GetnVar();
-  if (tne2_euler)	  nVar_TNE2 = solver_container[MESH_0][TNE2_SOL]->GetnVar();
-	if (tne2_ns)	    nVar_TNE2 = solver_container[MESH_0][TNE2_SOL]->GetnVar();
+  if (tne2_euler)   nVar_TNE2 = solver_container[MESH_0][TNE2_SOL]->GetnVar();
+  if (tne2_ns)	    nVar_TNE2 = solver_container[MESH_0][TNE2_SOL]->GetnVar();
 	if (transition)		nVar_Trans = solver_container[MESH_0][TRANS_SOL]->GetnVar();
 	if (electric)			nVar_Elec = solver_container[MESH_0][ELEC_SOL]->GetnVar();
 	if (plasma_euler || plasma_ns)	{ 
@@ -974,13 +974,14 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
         
       case SPACE_CENTERED :
         /*--- Compressible two-temperature flow ---*/
-        switch (config->GetKind_Centered_Flow()) {
+        switch (config->GetKind_Centered_TNE2()) {
           case NO_CENTERED : cout << "No centered scheme." << endl; break;
           case LAX :
             for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-              numerics_container[iMGlevel][TNE2_SOL][CONV_TERM]       = new CCentLax_TNE2(nDim,nVar_TNE2, config); break;
-              numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] = new CCentLax_TNE2(nDim, nVar_TNE2, config);
+              numerics_container[iMGlevel][TNE2_SOL][CONV_TERM]       = new CCentLax_TNE2(nDim,nVar_TNE2, config);
+              numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] = new CUpwRoe_TNE2(nDim, nVar_TNE2, config);
             }
+            break;
           default : cout << "Centered scheme not implemented." << endl; cin.get(); break;
         }
         break;
@@ -1063,8 +1064,8 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
       case PIECEWISE_CONSTANT :
         
         for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-          numerics_container[iMGlevel][TNE2_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_TNE2, config);
-          numerics_container[iMGlevel][TNE2_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_TNE2, config);
+          numerics_container[iMGlevel][TNE2_SOL][SOURCE_FIRST_TERM] = new CSource_TNE2(nDim, nVar_TNE2, config);
+          numerics_container[iMGlevel][TNE2_SOL][SOURCE_SECOND_TERM] = new CSource_TNE2(nDim, nVar_TNE2, config);
         }
         
         break;

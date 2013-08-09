@@ -516,6 +516,8 @@ inline unsigned short CConfig::GetKind_SourNumScheme_Elec(void) { return Kind_So
 
 inline unsigned short CConfig::GetKind_Centered_Flow(void) { return Kind_Centered_Flow; }
 
+inline unsigned short CConfig::GetKind_Centered_TNE2(void) { return Kind_Centered_TNE2; }
+
 inline unsigned short CConfig::GetKind_Centered_LevelSet(void) { return Kind_Centered_LevelSet; }
 
 inline unsigned short CConfig::GetKind_Centered_AdjLevelSet(void) { return Kind_Centered_AdjLevelSet; }

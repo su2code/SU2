@@ -818,6 +818,12 @@ public:
 	 * \param[in] iRho_s
 	 */
   void SetTveIndex(unsigned short val_Index);
+
+  /*!
+	 * \brief Retrieves the value of the velocity index in the primitive variable vector.
+	 * \param[in] i(rho*u)
+	 */
+  void SetVelIndex(unsigned short val_Index);
   
   /*!
 	 * \brief Retrieves the value of the species density in the primitive variable vector.
@@ -1473,6 +1479,14 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void SetJacobian_Axisymmetric(double **val_Jacobian_i, CConfig *config);
+  
+  /*!
+	 * \brief Calculation of the translational-vibrational energy exchange source term
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[out] val_residual - residual of the source terms
+	 * \param[out] val_Jacobian_i - Jacobian of the source terms
+	 */
+	virtual void ComputeVibRelaxation(double *val_residual, double **val_Jacobian_i, CConfig *config);
 
 	/*! 
 	 * \overload
@@ -5828,6 +5842,12 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
+  
+  /*!
+	 * \brief Generates an orthonormal basis given a single vector
+	 * \param[in] val_Normal - Normal vector.
+	 */
+  void CreateBasis(double *val_Normal);
 };
 
 /*!
@@ -5933,6 +5953,41 @@ public:
 	 */
 	void ComputeResidual(double *val_resconv, double *val_resvisc, double **val_Jacobian_i, double **val_Jacobian_j,
                        CConfig *config);
+};
+
+/*!
+ * \class CSource_TNE2
+ * \brief Class for two-temperature model source terms.
+ * \ingroup SourceDiscr
+ * \author S. Copeland
+ * \version 2.0.6
+ */
+class CSource_TNE2 : public CNumerics {
+private:
+  bool implicit;
+  double *X; // Mole fraction
+public:
+  
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CSource_TNE2(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CSource_TNE2(void);
+  
+	/*!
+	 * \brief Residual of the rotational frame source term.
+	 * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ComputeVibRelaxation(double *val_residual, double **val_Jacobian_i, CConfig *config);
 };
 
 

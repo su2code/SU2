@@ -2434,6 +2434,14 @@ public:
 	 * \return Kind of center convective numerical scheme for the flow equations.
 	 */
 	unsigned short GetKind_Centered_Flow(void);
+  
+  /*!
+	 * \brief Get the kind of center convective numerical scheme for the two-temperature model.
+	 * \note This value is obtained from the config file, and it is constant
+	 *       during the computation.
+	 * \return Kind of center convective numerical scheme for the flow equations.
+	 */
+	unsigned short GetKind_Centered_TNE2(void);
 
 	/*! 
 	 * \brief Get the kind of center convective numerical scheme for the level set equations.

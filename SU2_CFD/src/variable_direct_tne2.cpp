@@ -32,16 +32,16 @@ CTNE2EulerVariable::CTNE2EulerVariable(void) : CVariable() {
   
 }
 
-CTNE2EulerVariable::CTNE2EulerVariable(double val_density, double *val_massfrac,
-                                       double *val_velocity, double val_temperature,
+CTNE2EulerVariable::CTNE2EulerVariable(double val_pressure, double *val_massfrac,
+                                       double *val_mach, double val_temperature,
                                        double val_temperature_ve, unsigned short val_ndim,
                                        unsigned short val_nvar, unsigned short val_nvarprim,
                                        unsigned short val_nvarprimgrad, CConfig *config) : CVariable(val_ndim, val_nvar,config) {
   
   unsigned short iMesh, iDim, iSpecies, iVar, nDim, nEl, nHeavy, nMGSmooth;
   double *xi, *Ms, *thetav, *hf, *Tref;
-  double E, Eve, Ev, Ee, Ef, T, Tve, rho;
-  double Ru, sqvel;
+  double E, Eve, Ev, Ee, Ef, T, Tve, rho, rhoCvtr;
+  double Ru, sqvel, denom, conc, soundspeed;
   
   nSpecies     = config->GetnSpecies();
   nDim         = val_ndim;
@@ -120,16 +120,31 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_density, double *val_massfrac,
   hf     = config->GetEnthalpy_Formation(); // Formation enthalpy [J/kg]
   
   /*--- Rename & initialize for convenience ---*/
-  Ru     = UNIVERSAL_GAS_CONSTANT;          // Universal gas constant [J/(kmol*K)]
-  rho    = val_density;                     // Mass density [kg/m3]
-  Tve    = val_temperature_ve;              // Vibrational temperature [K]
-  T      = val_temperature;                 // Translational-rotational temperature [K]
-  sqvel  = 0.0;                             // Velocity^2 [m2/s2]
-  E      = 0.0;                             // Mixture total energy per mass [J/kg]
-  Eve    = 0.0;                             // Mixture vib-el energy per mass [J/kg]
+  Ru      = UNIVERSAL_GAS_CONSTANT;         // Universal gas constant [J/(kmol*K)]
+  Tve     = val_temperature_ve;             // Vibrational temperature [K]
+  T       = val_temperature;                // Translational-rotational temperature [K]
+  sqvel   = 0.0;                            // Velocity^2 [m2/s2]
+  E       = 0.0;                            // Mixture total energy per mass [J/kg]
+  Eve     = 0.0;                            // Mixture vib-el energy per mass [J/kg]
+  denom   = 0.0;
+  conc    = 0.0;
+  rhoCvtr = 0.0;
   
+  /*--- Calculate mixture density from supplied primitive quantities ---*/
+  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
+    denom += val_massfrac[iSpecies] * (Ru/Ms[iSpecies]) * T;
+  for (iSpecies = 0; iSpecies < nEl; iSpecies++)
+    denom += val_massfrac[nSpecies-1] * (Ru/Ms[nSpecies-1]) * Tve;
+  rho = val_pressure / denom;
+  
+  /*--- Calculate sound speed and extract velocities ---*/
+  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+    conc += val_massfrac[iSpecies]*rho/Ms[iSpecies];
+    rhoCvtr += rho*val_massfrac[iSpecies] * (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies];
+  }
+  soundspeed = sqrt((1.0 + Ru/rhoCvtr*conc) * val_pressure/rho);
   for (iDim = 0; iDim < nDim; iDim++)
-    sqvel += val_velocity[iDim] * val_velocity[iDim];
+    sqvel += val_mach[iDim]*soundspeed * val_mach[iDim]*soundspeed;
   
   /*--- Calculate energy (RRHO) from supplied primitive quanitites ---*/
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
@@ -162,17 +177,17 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_density, double *val_massfrac,
   
   /*--- Initialize Solution & Solution_Old vectors ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    Solution[iSpecies]     = val_density*val_massfrac[iSpecies];
-    Solution_Old[iSpecies] = val_density*val_massfrac[iSpecies];
+    Solution[iSpecies]     = rho*val_massfrac[iSpecies];
+    Solution_Old[iSpecies] = rho*val_massfrac[iSpecies];
   }
   for (iDim = 0; iDim < nDim; iDim++) {
-    Solution[nSpecies+iDim]     = val_density*val_velocity[iDim];
-    Solution_Old[nSpecies+iDim] = val_density*val_velocity[iDim];
+    Solution[nSpecies+iDim]     = rho*val_mach[iDim]*soundspeed;
+    Solution_Old[nSpecies+iDim] = rho*val_mach[iDim]*soundspeed;
   }
-  Solution[nSpecies+nDim]       = val_density*E;
-  Solution_Old[nSpecies+nDim]   = val_density*E;
-  Solution[nSpecies+nDim+1]     = val_density*Eve;
-  Solution_Old[nSpecies+nDim+1] = val_density*Eve;
+  Solution[nSpecies+nDim]       = rho*E;
+  Solution_Old[nSpecies+nDim]   = rho*E;
+  Solution[nSpecies+nDim+1]     = rho*Eve;
+  Solution_Old[nSpecies+nDim+1] = rho*Eve;
 }
 
 CTNE2EulerVariable::CTNE2EulerVariable(double *val_solution, unsigned short val_ndim,
@@ -332,12 +347,20 @@ void CTNE2EulerVariable::SetVelocity2(void) {
 bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   
   // Note: Requires previous call to SetDensity()
-  // Note: Tve being set to T to get up and running quickly
+  // Note: Missing contribution from electronic energy
   
-  unsigned short iSpecies, iDim, nHeavy, nEl;
+  unsigned short iSpecies, iDim, nHeavy, nEl, iIter, maxIter;
   double *xi, *Ms, *thetav, *hf, *Tref;
-  double rho, rhoE, rhoEve, rhoE_ref, rhoE_f;
-  double Ru, sqvel, rhoCvtr;
+  double rho, rhoE, rhoEve, rhoEve_t, rhoE_ref, rhoE_f;
+  double evs, eels;
+  double Ru, sqvel, rhoCvtr, rhoCvve;
+  double Cvvs, Cves, Tve;
+  double f, df, tol;
+  double exptv, thsqr, thoTve;
+  
+  /*--- Set tolerance for Newton-Raphson method ---*/
+  tol     = 1.0E-4;
+  maxIter = 30;
   
   /*--- Determine the number of heavy species ---*/
   if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
@@ -373,8 +396,58 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   Primitive[T_INDEX] = (rhoE - rhoEve - rhoE_f + rhoE_ref - 0.5*rho*sqvel) / rhoCvtr;
   
   /*--- Calculate vibrational-electronic temperature ---*/
-  // NOTE: This is not correct, just a hack solution to get running
-  Primitive[TVE_INDEX] = Primitive[T_INDEX];
+  // NOTE: Cannot write an expression explicitly in terms of Tve
+  // NOTE: We use Newton-Raphson to iteratively find the value of Tve
+  // NOTE: Use T as an initial guess
+  Tve      = Primitive[T_INDEX];
+  for (iIter = 0; iIter < maxIter; iIter++) {
+    rhoEve_t = 0.0;
+    rhoCvve  = 0.0;
+    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+      if (thetav[iSpecies] != 0.0) {
+        
+        /*--- Rename for convenience ---*/
+        thoTve = thetav[iSpecies]/Tve;
+        exptv = exp(thetav[iSpecies]/Tve);
+        thsqr = thetav[iSpecies]*thetav[iSpecies];
+        
+        /*--- Calculate species energies ---*/
+        evs  = Ru/Ms[iSpecies] * thetav[iSpecies] / (exptv - 1.0);
+        eels = 0;
+        
+        /*--- Calculate species specific heats ---*/
+        Cvvs  = Ru/Ms[iSpecies] * thoTve*thoTve * exptv / ((exptv-1.0)*(exptv-1.0));
+        Cves  = 0.0;
+        
+        /*--- Add contribution ---*/
+        rhoEve_t += Solution[iSpecies] * (evs + eels);
+        rhoCvve  += Solution[iSpecies] * (Cvvs + Cves);
+      }
+    }
+    for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
+      Cves = 3.0/2.0 * Ru/Ms[nSpecies-1];
+      rhoEve_t += Solution[nSpecies-1] * Cves * Tve;
+      rhoCvve += Solution[nSpecies-1] * Cves;
+    }
+    
+    /*--- Determine function f(Tve) and df/dTve ---*/
+    f  = rhoEve - rhoEve_t;
+    df = -rhoCvve;
+    Primitive[TVE_INDEX] = Tve - f/df;
+    
+    /*--- Check for convergence ---*/
+    if (fabs(Primitive[TVE_INDEX]-Tve) < tol) break;
+    if (iIter == maxIter-1) {
+      cout << "WARNING!!! Tve convergence not reached!" << endl;
+      Primitive[TVE_INDEX] = Primitive[T_INDEX];
+    }
+    Tve = Primitive[TVE_INDEX];
+    
+  }
+  
+  /*--- Assign Gas Properties ---*/
+  Primitive[RHOCVTR_INDEX] = rhoCvtr;
+  Primitive[RHOCVVE_INDEX] = rhoCvve;
   
   /*--- Check that the solution is physical ---*/
   if ((Primitive[T_INDEX] > 0.0) && (Primitive[TVE_INDEX])) return false;
@@ -497,11 +570,12 @@ bool CTNE2EulerVariable::SetSoundSpeed(CConfig *config) {
 void CTNE2EulerVariable::SetdPdrhos(CConfig *config) {
 
   // Note: Requires SetDensity(), SetTemperature(), SetPressure(), & SetGasProperties()
+  // Note: Electron energy not included properly.
   
   unsigned short iDim, iSpecies, nHeavy, nEl;
   double *Ms, *Tref, *hf, *xi, *thetav;
-  double Ru, rhoCvtr, rhoCvve, Cvtrs, Cvves, rho_el, sqvel;
-  double rho, rhos, rhoEve, T, Tve, ef;
+  double Ru, rhoCvtr, rhoCvve, Cvtrs, Cvves, rho_el, sqvel, conc;
+  double rho, rhos, rhoEve, T, Tve, evibs, eels, ef;
   
   /*--- Determine the number of heavy species ---*/
   if (ionization) {
@@ -531,23 +605,31 @@ void CTNE2EulerVariable::SetdPdrhos(CConfig *config) {
   rhoCvve = Primitive[RHOCVVE_INDEX];
   
   /*--- Pre-compute useful quantities ---*/
+  conc  = 0.0;
   sqvel = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
     sqvel += Primitive[VEL_INDEX+iDim] * Primitive[VEL_INDEX+iDim];
-
+  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
+    conc += Primitive[RHOS_INDEX+iSpecies]/Ms[iSpecies];
+  
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
     rhos  = Primitive[RHOS_INDEX+iSpecies];
     ef    = hf[iSpecies] - Ru/Ms[iSpecies]*Tref[iSpecies];
     Cvtrs = (3.0/2.0 + xi[iSpecies]/2.0)*Ru/Ms[iSpecies];
-    dPdrhos[iSpecies] = T*Ru/Ms[iSpecies] + (rhos/rhoCvtr) * (Ru/Ms[iSpecies])
-                                          * (-Cvtrs*(T-Tref[iSpecies]) - ef + 0.5*sqvel);
-  }
-  for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
-    iSpecies = nSpecies-1;
-    rhos  = Primitive[RHOS_INDEX+iSpecies];
-    Cvves = (3.0/2.0)*Ru/Ms[iSpecies]; // e- contribution to Cvve is it's Cvtr!
     
-    dPdrhos[iSpecies] = Tve*Ru/Ms[iSpecies] - rhos*(Ru/Ms[iSpecies])*rhoEve*Cvves/(rhoCvve*rhoCvve);
+    dPdrhos[iSpecies] =  T*Ru/Ms[iSpecies]
+                       + Ru*conc/rhoCvtr * (-Cvtrs*(T-Tref[iSpecies]) - ef + 0.5*sqvel);
+  }
+  if (ionization) {
+    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+      evibs = Ru/Ms[iSpecies] * thetav[iSpecies] / (exp(thetav[iSpecies]/Tve) - 1.0);
+      eels  = 0.0;
+      dPdrhos[iSpecies] -= rho_el * Ru/Ms[nSpecies-1] * (evibs - eels)/rhoCvve;
+    }
+    ef = hf[nSpecies-1] - Ru/Ms[nSpecies-1]*Tref[nSpecies-1];
+    dPdrhos[nSpecies-1] =  Ru*conc/rhoCvtr * (-ef + 0.5*sqvel)
+                         + Ru/Ms[nSpecies-1]*Tve
+                         - rho_el*Ru/Ms[nSpecies-1] * (-3.0/2.0 * Ru/Ms[nSpecies-1] * Tve)/rhoCvve;
   }
 }
 
@@ -568,11 +650,14 @@ void CTNE2EulerVariable::SetPrimVar_Compressible(CConfig *config) {
   // GradPrim:  [rho1, ..., rhoNs, T, Tve, u, v, w, P]^T
   SetDensity();                             // Compute species & mixture density
 	SetVelocity2();                           // Compute the square of the velocity (req. mixture density).
+  /*--- Calculate velocities (req. density calculation) ---*/
+	for (iDim = 0; iDim < nDim; iDim++)
+		Primitive[nSpecies+iDim+2] = Solution[nSpecies+iDim] / Primitive[nSpecies+nDim+3];
+  
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     check_dens = ((Solution[iSpecies] < 0.0) || check_dens);  // Check the density
   check_temp  = SetTemperature(config);     // Compute temperatures (T & Tve) (req. mixture density).
  	check_press = SetPressure(config);        // Requires T & Tve computation.
-  SetGasProperties(config);                 // Set rhoCvtr and rhoCvve.  Requires Tve.
 	check_sos   = SetSoundSpeed(config);      // Requires density, pressure, rhoCvtr, & rhoCvve.
   SetdPdrhos(config);                       // Requires density, pressure, rhoCvtr, & rhoCvve.  
   
@@ -591,10 +676,6 @@ void CTNE2EulerVariable::SetPrimVar_Compressible(CConfig *config) {
     check_sos   = SetSoundSpeed(config);    // Requires density & pressure computation.
   }
   SetEnthalpy();                            // Requires density & pressure computation.
-  
-  /*--- Calculate velocities (req. density calculation) ---*/
-	for (iDim = 0; iDim < nDim; iDim++)
-		Primitive[nSpecies+iDim+2] = Solution[nSpecies+iDim] / Primitive[nSpecies+nDim+3];
 }
 
 CTNE2NSVariable::CTNE2NSVariable(void) : CTNE2EulerVariable() { }

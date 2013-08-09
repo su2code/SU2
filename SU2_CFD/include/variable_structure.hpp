@@ -1570,6 +1570,12 @@ public:
   virtual unsigned short GetTveIndex(void);
   
   /*!
+	 * \brief Retrieves the value of the velocity index in the primitive variable vector.
+	 * \param[in] iRho*u
+	 */
+  virtual unsigned short GetVelIndex(void);
+  
+  /*!
 	 * \brief Retrieves the value of the species density in the primitive variable vector.
 	 * \param[in] iRho_s
 	 */
@@ -3605,8 +3611,9 @@ public:
    * \param[in] val_nvarprimgrad - Number of primitive gradient variables.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CTNE2EulerVariable(double val_density, double *val_massfrac, double *val_velocity,
-                     double val_temperature, double val_temperature_ve, unsigned short val_ndim,
+	CTNE2EulerVariable(double val_pressure, double *val_massfrac,
+                     double *val_mach, double val_temperature,
+                     double val_temperature_ve, unsigned short val_ndim,
                      unsigned short val_nvar, unsigned short val_nvarprim,
                      unsigned short val_nvarprimgrad, CConfig *config);
   
@@ -3881,6 +3888,12 @@ public:
 	 * \param[in] iRho_s
 	 */
   unsigned short GetTveIndex(void);
+  
+  /*!
+	 * \brief Retrieves the value of the species density in the primitive variable vector.
+	 * \param[in] iRho*u
+	 */
+  unsigned short GetVelIndex(void);
   
   /*!
 	 * \brief Retrieves the value of the species density in the primitive variable vector.

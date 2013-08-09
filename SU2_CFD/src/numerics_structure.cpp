@@ -65,6 +65,10 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar, CConfig *
 
 	turb_ke_i = 0.0;
 	turb_ke_j = 0.0;
+  
+  if ((config->GetKind_Solver() == TNE2_EULER) || (config->GetKind_Solver() == TNE2_NAVIER_STOKES))
+    nSpecies = nVar - nDim - 2;
+
 
 }
 /* Class overloaded to include multiple fluid equations for plasma */
@@ -533,6 +537,11 @@ void CNumerics::GetInviscidProjJac(double *val_density, double *val_velocity, do
 	unsigned short iDim, iVar, jVar, iSpecies, jSpecies;
   double proj_vel, rho;
   
+  
+  for (iVar = 0; iVar < nVar; iVar++)
+    for (jVar = 0; jVar < nVar; jVar++)
+      val_Proj_Jac_Tensor[iVar][jVar] = 0.0;
+  
   rho = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     rho += val_density[iSpecies];
@@ -540,6 +549,17 @@ void CNumerics::GetInviscidProjJac(double *val_density, double *val_velocity, do
 	for (iDim = 0; iDim < nDim; iDim++) {
 		proj_vel += val_velocity[iDim]*val_normal[iDim];
 	}
+  
+/*  cout << "CNumerics -- InvProjJac: " << endl;
+  cout << "nSpecies: " << nSpecies << endl;
+  cout << "ProjVel: " << proj_vel << endl;
+  cout << "rho: " << rho << endl;
+  cout << "Val Velocity: " << val_velocity[0] << endl;
+  cout << "Enthalpy: " << *val_enthalpy << endl;
+  cout << "dPdrhos: " << val_dPdrhos[0] << endl;
+  cout << "dPdrhoE: " << val_dPdrhoE << endl;
+  cout << "dPdrhoEve: " << val_dPdrhoEve << endl;
+  cin.get();*/
   
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
@@ -562,12 +582,6 @@ void CNumerics::GetInviscidProjJac(double *val_density, double *val_velocity, do
   val_Proj_Jac_Tensor[nSpecies][nSpecies+2]   = -val_dPdrhoE*val_velocity[2]*val_normal[0] + val_velocity[0]*val_normal[2];
   val_Proj_Jac_Tensor[nSpecies][nSpecies+3]   = val_dPdrhoE * val_normal[0];
   val_Proj_Jac_Tensor[nSpecies][nSpecies+4]   = val_dPdrhoEve * val_normal[0];
-  
-  val_Proj_Jac_Tensor[nSpecies+1][nSpecies]   = -val_dPdrhoE*val_velocity[0]*val_normal[1] + val_velocity[1]*val_normal[0];
-  val_Proj_Jac_Tensor[nSpecies+1][nSpecies+1] = -val_dPdrhoE*val_velocity[1]*val_normal[1] + val_velocity[1]*val_normal[1] + proj_vel;
-  val_Proj_Jac_Tensor[nSpecies+1][nSpecies+2] = -val_dPdrhoE*val_velocity[2]*val_normal[1] + val_velocity[1]*val_normal[2];
-  val_Proj_Jac_Tensor[nSpecies+1][nSpecies+3] = val_dPdrhoE * val_normal[1];
-  val_Proj_Jac_Tensor[nSpecies+1][nSpecies+4] = val_dPdrhoEve * val_normal[1];
   
   val_Proj_Jac_Tensor[nSpecies+1][nSpecies]   = -val_dPdrhoE*val_velocity[0]*val_normal[1] + val_velocity[1]*val_normal[0];
   val_Proj_Jac_Tensor[nSpecies+1][nSpecies+1] = -val_dPdrhoE*val_velocity[1]*val_normal[1] + val_velocity[1]*val_normal[1] + proj_vel;
@@ -884,19 +898,25 @@ void CNumerics::GetPMatrix(double *val_density, double *val_velocity, double *va
   
   // P matrix is equivalent to the L matrix in Gnoffo
   
-  unsigned short iSpecies, iDim;
+  unsigned short iSpecies, iDim, iVar, jVar;
 	double sqvel, rho, a2;
   double U, V, W;
   
+  for (iVar = 0; iVar < nVar; iVar++)
+    for (jVar = 0; jVar < nVar; jVar++)
+      val_p_tensor[iVar][jVar] = 0.0;
+  
   /*--- Pre-compute useful quantities ---*/
-  rho = 0.0;
+  sqvel = 0.0;
+  rho   = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     rho += val_density[iSpecies];
   U = 0.0;  V = 0.0;  W = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
-    U += val_velocity[iDim] * val_normal[iDim];
-    V += val_velocity[iDim] * l[iDim];
-    W += val_velocity[iDim] * m[iDim];
+    U     += val_velocity[iDim] * val_normal[iDim];
+    V     += val_velocity[iDim] * l[iDim];
+    W     += val_velocity[iDim] * m[iDim];
+    sqvel += val_velocity[iDim] * val_velocity[iDim];
   }
   a2 = (*val_soundspeed) * (*val_soundspeed);
   
@@ -1467,9 +1487,13 @@ void CNumerics::GetPMatrix_inv(double *val_density, double *val_velocity,
 
 void CNumerics::GetPMatrix_inv(double *val_density, double *val_velocity, double *val_energy_ve, double *val_soundspeed, double *val_dPdrhos, double val_dPdrhoE, double val_dPdrhoEve, double *val_normal, double *l, double *m, double **val_invp_tensor) {
 
-  unsigned short iSpecies, jSpecies, iDim;
+  unsigned short iSpecies, jSpecies, iDim, iVar, jVar;
   double rho, a2;
   double U, V, W;
+  
+  for (iVar = 0; iVar < nVar; iVar++)
+    for (jVar = 0; jVar < nVar; jVar++)
+      val_invp_tensor[iVar][jVar] = 0.0;
   
   /*--- Pre-compute useful quantities ---*/
   rho = 0.0;

@@ -68,6 +68,8 @@ inline void CNumerics::ComputeResidual_Axisymmetric_ad(double *val_residual, dou
 
 inline void CNumerics::SetJacobian_Axisymmetric(double **val_Jacobian_i, CConfig *config) { }
 
+inline void CNumerics::ComputeVibRelaxation(double *val_residual, double **val_Jacobian_i, CConfig *config) { }
+
 inline void CNumerics::ComputeResidual_Chemistry(double *val_residual, CConfig *config) { }
 
 inline void CNumerics::ComputeResidual_Chemistry_ad(double *val_residual, double *val_residuald, CConfig *config) { }
@@ -122,6 +124,8 @@ inline void CNumerics::SetPIndex(unsigned short val_Index) { P_INDEX = val_Index
 inline void CNumerics::SetTIndex(unsigned short val_Index) { T_INDEX = val_Index; }
   
 inline void CNumerics::SetTveIndex(unsigned short val_Index) { TVE_INDEX = val_Index; }
+
+inline void CNumerics::SetVelIndex(unsigned short val_Index) { VEL_INDEX = val_Index; }
   
 inline void CNumerics::SetHIndex(unsigned short val_Index) { H_INDEX = val_Index; }
   

@@ -297,6 +297,41 @@ void CUpwRoe_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i
 			}
 		}
     
+    cout << endl << endl << "Flow Roe Jacobian_i: " << endl;
+    for (iVar = 0; iVar < nVar; iVar++) {
+      for (jVar = 0; jVar < nVar; jVar++) {
+        cout << val_Jacobian_i[iVar][jVar] << "\t";
+      }
+      cout << endl;
+    }
+    cout << endl << endl;
+    
+    cout << endl << endl << "Flow Roe P: " << endl;
+    for (iVar = 0; iVar < nVar; iVar++) {
+      for (jVar = 0; jVar < nVar; jVar++) {
+        cout << P_Tensor[iVar][jVar] << "\t";
+      }
+      cout << endl;
+    }
+    cout << endl << endl;
+    
+    cout << endl << endl << "Flow Roe invP: " << endl;
+    for (iVar = 0; iVar < nVar; iVar++) {
+      for (jVar = 0; jVar < nVar; jVar++) {
+        cout << invP_Tensor[iVar][jVar] << "\t";
+      }
+      cout << endl;
+    }
+    cout << endl << endl;
+    
+    cout << endl << endl << "Flow Lambda: " << endl;
+    for (iVar = 0; iVar < nVar; iVar++) {
+      cout << Lambda[iVar] << endl;
+    }
+    cout << endl << endl;
+    cin.get();
+    
+    
 		/*--- Jacobian contributions due to a rotating frame ---*/
 		if (rotating_frame) {
 			ProjVelocity = Rot_Flux;

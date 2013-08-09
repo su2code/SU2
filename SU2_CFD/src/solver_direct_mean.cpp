@@ -2133,7 +2133,37 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 		}
 
 		/*--- Compute the residual ---*/
+    if (iPoint == 17) {
+      unsigned short iVar;
+      cout << "U_i:" << endl;
+      for (iVar = 0; iVar < nVar; iVar++)
+        cout << U_i[iVar] << endl;
+      cout << endl << endl;
+      cout << "U_j:" << endl;
+      for (iVar = 0; iVar < nVar; iVar++)
+        cout << U_j[iVar] << endl;
+      cout << endl << endl;
+      cin.get();
+    }
 		numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
+
+    if (iPoint == 17) {
+      unsigned short iVar, jVar;
+      cout << "Euler Upwind Residual." << endl;
+      cout << "Residual: " << endl;
+      for (iVar = 0; iVar < nVar; iVar++)
+        cout << Res_Conv[iVar] << endl;
+      
+      cout << endl << endl << "Jacobian: " << endl;
+      for (iVar = 0; iVar < nVar; iVar++) {
+        for (jVar = 0; jVar < nVar; jVar++) {
+          cout << Jacobian_i[iVar][jVar] << "\t";
+        }
+        cout << endl;
+      }
+      cin.get();
+    }
+    
 
 		/*--- Update residual value ---*/
 		LinSysRes.AddBlock(iPoint, Res_Conv);
@@ -3759,6 +3789,20 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
 						Jacobian_i[nDim+1][nDim+1] = -a2*Rot_Flux;
 					}
 					Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
+          
+/*          cout << "EulerSolver::BCEulerWall - " << endl;
+          cout << "Residual: " << endl;
+          for (iVar =0; iVar < nVar; iVar++)
+            cout << Residual[iVar] << endl;
+
+          cout << endl << endl <<  "Jacobian: " << endl;
+          for (iVar =0; iVar < nVar; iVar++) {
+            for (jVar =0; jVar < nVar; jVar++) {
+              cout << Jacobian_i[iVar][jVar] << "\t";
+            }
+            cout << endl;
+          }
+          cin.get();*/
 				}
 			}
 		}
@@ -3993,6 +4037,34 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 			/*--- Jacobian contribution for implicit integration ---*/
 			if (implicit)
 				Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      
+      
+/*      unsigned short iVar, jVar;
+      cout << "Euler BC Far Field: " << endl;
+      cout << "ConsVarDomain: " << endl;
+      for (iVar = 0; iVar < nVar; iVar++)
+        cout << U_domain[iVar] << endl;
+      cout << endl << endl << "PrimVarDomain: " << endl;
+      for (iVar = 0; iVar < nVar+2; iVar++)
+        cout << V_domain[iVar] << endl;
+      cout << endl << endl << "ConsVarInfty: " << endl;
+      for (iVar = 0; iVar < nVar; iVar++)
+        cout << U_infty[iVar] << endl;
+      cout << endl << endl << "PrimVarInfty: " << endl;
+      for (iVar = 0; iVar < nVar+2; iVar++)
+        cout << V_infty[iVar] << endl;
+      
+      cout << endl << endl << "Residual: " << endl;
+      for (iVar = 0; iVar < nVar; iVar++)
+        cout << Residual[iVar] << endl;
+      cout << endl << endl << "Jacobian: " << endl;
+      for (iVar = 0; iVar < nVar; iVar++) {
+        for (jVar = 0; jVar < nVar; jVar++) {
+          cout << Jacobian_i[iVar][jVar] << "\t";
+        }
+        cout << endl;
+      }
+      cin.get();*/
       
 			/*--- Roe Turkel preconditioning, set the value of beta ---*/
 			if ((config->GetKind_Upwind() == ROE_TURKEL_2ND) || (config->GetKind_Upwind() == ROE_TURKEL_1ST)) {

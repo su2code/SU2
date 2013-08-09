@@ -443,6 +443,8 @@ inline unsigned short CVariable::GetTIndex(void) { return 0; }
 
 inline unsigned short CVariable::GetTveIndex(void) { return 0; }
 
+inline unsigned short CVariable::GetVelIndex(void) { return 0; }
+
 inline unsigned short CVariable::GetHIndex(void) { return 0; }
 
 inline unsigned short CVariable::GetAIndex(void) { return 0; }
@@ -868,6 +870,8 @@ inline unsigned short CTNE2EulerVariable::GetPIndex(void) { return P_INDEX; }
 inline unsigned short CTNE2EulerVariable::GetTIndex(void) { return T_INDEX; }
 
 inline unsigned short CTNE2EulerVariable::GetTveIndex(void) { return TVE_INDEX; }
+
+inline unsigned short CTNE2EulerVariable::GetVelIndex(void) { return VEL_INDEX; }
 
 inline unsigned short CTNE2EulerVariable::GetHIndex(void) { return H_INDEX; }
 

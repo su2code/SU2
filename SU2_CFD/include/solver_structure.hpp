@@ -6806,6 +6806,17 @@ public:
 	void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                     unsigned short iMesh, unsigned long Iteration);
   
+  /*!
+	 * \brief Compute the spatial integration using a centered scheme.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] numerics - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iMesh - Index of the mesh in multigrid computations.
+	 */
+  void Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                         CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+  
 	/*!
 	 * \brief Compute the spatial integration using a upwind scheme.
 	 * \param[in] geometry - Geometrical definition of the problem.
