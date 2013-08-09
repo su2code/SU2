@@ -1,5 +1,5 @@
 /*!
- * \file output_structure.cpp
+ * \file output_tecplot.cpp
  * \brief Main subroutines for output solver information.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
  * \version 2.0.6
@@ -22,6 +22,7 @@
  */
 
 #include "../include/output_structure.hpp"
+
 string AssembleVariableNames(bool GridMovement, bool Incompressible, unsigned short KindSolver, unsigned short nVar_Consv, unsigned short dims, unsigned short *NVar);
 
 void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol) {
@@ -40,7 +41,7 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
     
 	char cstr[200], buffer[50];
 	string filename;
-    
+  
 	/*--- Write file name with extension ---*/
   if (surf_sol) {
     if (adjoint)
@@ -57,12 +58,16 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
   
 	if (Kind_Solver == LINEAR_ELASTICITY)
 		filename = config->GetStructure_FileName().c_str();
+  
 	if (Kind_Solver == WAVE_EQUATION)
 		filename = config->GetWave_FileName().c_str();
+  
 	if ((Kind_Solver == WAVE_EQUATION) && (Kind_Solver == ADJ_AEROACOUSTIC_EULER))
 		filename = config->GetAdjWave_FileName().c_str();
+  
 	if (Kind_Solver == ELECTRIC_POTENTIAL)
 		filename = config->GetStructure_FileName().c_str();
+  
 	if (Kind_Solver == PLASMA_EULER) {
 		if (val_iZone == 0) Kind_Solver = PLASMA_EULER;
 		if (val_iZone == 1) Kind_Solver = ELECTRIC_POTENTIAL;
@@ -335,7 +340,6 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
   
 
 	/*--- Write connectivity data. ---*/
-  
   if (surf_sol) {
     
     iNode = 0;

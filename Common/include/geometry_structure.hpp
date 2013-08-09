@@ -70,7 +70,6 @@ protected:
   Global_nElem,	/*!< \brief Total number of elements in a simulation across all processors (all types). */
 	nEdge,					/*!< \brief Number of edges of the mesh. */
 	nFace,					/*!< \brief Number of faces of the mesh. */
-	nElem_Storage,			/*!< \brief Storage capacity for ParaView format (domain). */
   nelem_edge,             /*!< \brief Number of edges in the mesh. */
   Global_nelem_edge,      /*!< \brief Total number of edges in the mesh across all processors. */
   nelem_triangle,       /*!< \brief Number of triangles in the mesh. */
@@ -98,7 +97,6 @@ protected:
   unsigned long Max_GlobalPoint;  /*!< \brief Greater global point in the domain local structure. */
 
 public:
-	unsigned long *nElem_Bound_Storage;	/*!< \brief Storage capacity for ParaView format (boundaries, for each marker). */ 
 	unsigned long *nElem_Bound;			/*!< \brief Number of elements of the boundary. */
 	string *Tag_to_Marker;	/*!< \brief If you know the index of the boundary (depend of the 
 							 grid definition), it gives you the maker (where the boundary 
@@ -270,13 +268,6 @@ public:
 	void SetnElem_Bound(unsigned short val_marker, unsigned long val_nelem_bound);
 
 	/*! 
-	 * \brief Set the number of storage for boundary elements.
-	 * \param[in] val_marker - Marker of the boundary.
-	 * \param[in] val_nelem_bound - Number of boundary elements.
-	 */	
-	void SetnElem_Bound_Storage(unsigned short val_marker, unsigned long val_nelem_bound);
-
-	/*! 
 	 * \brief Set the number of grid points.
 	 * \param[in] val_npoint - Number of grid points.
 	 */	
@@ -299,23 +290,6 @@ public:
 	 * \param[in] val_marker - Marker of the boundary.
 	 */
 	unsigned long GetnElem_Bound(unsigned short val_marker);
-
-	/*! 
-	 * \brief Get the number of storage boundary elements.
-	 * \param[in] val_marker - Marker of the boundary.
-	 */
-	unsigned long GetnElem_Bound_Storage(unsigned short val_marker);
-
-	/*! 
-	 * \brief Set the number of elements in vtk fortmat.
-	 * \param[in] val_nelem_storage - Number of elements
-	 */
-	void SetnElem_Storage(unsigned long val_nelem_storage);
-
-	/*! 
-	 * \brief Get the number of elements in vtk fortmat.
-	 */	
-	unsigned long GetnElem_Storage(void);
 
   /*!
 	 * \brief Get the number of elements in vtk fortmat.
@@ -539,15 +513,6 @@ public:
 	 * \param[in] val_mesh_out_filename - Name of the output file.
 	 */
 	virtual void SetMeshFile(CConfig *config, string val_mesh_out_filename, string val_mesh_in_filename);
-  
-	/*! 
-	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] mesh_vtk - Name of the vtk file.
-	 * \param[in] mesh_su2 - Name of the su2 file.
-	 * \param[in] nslices - Number of slices of the 2D configuration.
-	 */	
-	virtual void Set3D_to_2D(CConfig *config, char mesh_vtk[200], char mesh_su2[200], unsigned short nslices);
 
 	/*! 
 	 * \brief A virtual member.
@@ -587,22 +552,39 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void FindSharpEdges(CConfig *config);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config,
+                                      vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  virtual double Compute_MaxThickness(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
+ 
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  virtual double Compute_AoA(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
 
   /*!
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
-   * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
-   * \returns The maximum value of the airfoil thickness.
 	 */
-	virtual double GetMaxThickness(CConfig *config, bool original_surface);
-  
+  virtual double Compute_Chord(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
+
   /*!
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
    * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
    * \returns The minimum value of the airfoil thickness.
 	 */
-	virtual double GetMinThickness(CConfig *config, bool original_surface);
+	virtual double Compute_Thickness(double *Plane_P0, double *Plane_Normal, unsigned short iSection, double Location, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
 	
 	/*!
 	 * \brief A virtual member.
@@ -610,16 +592,8 @@ public:
    * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
    * \returns The total volume of the airfoil.
 	 */
-	virtual double GetTotalVolume(CConfig *config, bool original_surface);
+	virtual double Compute_Area(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
   
-  /*!
-	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.
-   * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
-   * \returns The clearance height of the airfoil.
-	 */
-	virtual double GetClearance(CConfig *config, bool original_surface);
-	
 	/*! 
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
@@ -1038,15 +1012,6 @@ public:
 	void SetMeshFile(CConfig *config, string val_mesh_out_filename, string val_mesh_in_filename);
 
 	/*! 
-	 * \brief Create a 2D mesh using a 3D mesh with symmetries.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] mesh_vtk - Name of the vtk file.
-	 * \param[in] mesh_su2 - Name of the su2 file.
-	 * \param[in] nslices - Number of slices of the 2D configuration.
-	 */	
-	void Set3D_to_2D(CConfig *config, char mesh_vtk[200], char mesh_su2[200], unsigned short nslices);
-
-	/*! 
 	 * \brief Compute some parameters about the grid quality.
 	 * \param[out] statistics - Information about the grid quality, statistics[0] = (r/R)_min, statistics[1] = (r/R)_ave.		 
 	 */	
@@ -1404,22 +1369,39 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetBoundSensitivity(CConfig *config);
-	
-	/*! 
-	 * \brief Find the maximum thickness of the airfoil.
+  
+	/*!
+	 * \brief Compute the sections of a wing.
 	 * \param[in] config - Definition of the particular problem.
-   * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
-   * \returns The maximum value of the airfoil thickness.
 	 */
-  double GetMaxThickness(CConfig *config, bool original_surface);
-	
+	void ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config,
+                              vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
+
+  /*!
+	 * \brief Compute the sections of a wing.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  double Compute_MaxThickness(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
+
+  /*!
+	 * \brief Compute the sections of a wing.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  double Compute_AoA(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
+
+  /*!
+	 * \brief Compute the sections of a wing.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  double Compute_Chord(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
+
   /*!
 	 * \brief Find the minimum thickness of the airfoil.
 	 * \param[in] config - Definition of the particular problem.
    * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
    * \returns The minimum value of the airfoil thickness.
 	 */
-  double GetMinThickness(CConfig *config, bool original_surface);
+  double Compute_Thickness(double *Plane_P0, double *Plane_Normal, unsigned short iSection, double Location, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
   
 	/*! 
 	 * \brief Find the total volume of the airfoil.
@@ -1427,16 +1409,19 @@ public:
    * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
    * \returns The total volume of the airfoil.
 	 */
-  double GetTotalVolume(CConfig *config, bool original_surface);
-  
-  /*!
-	 * \brief Find the clearance height of the airfoil.
-	 * \param[in] config - Definition of the particular problem.
-   * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
-   * \returns The clearance height of the airfoil.
-	 */
-  double GetClearance(CConfig *config, bool original_surface);
+  double Compute_Area(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
 	
+  /*!
+	 * \brief Compute the intersection between a segment and a plane.
+   * \param[in] Segment_P0 - Definition of the particular problem.
+	 * \param[in] Segment_P1 - Definition of the particular problem.
+	 * \param[in] Plane_P0 - Definition of the particular problem.
+	 * \param[in] Plane_Normal - Definition of the particular problem.
+   * \param[in] Intersection - Definition of the particular problem.
+   * \returns If the intersection has has been successful.
+	 */
+  unsigned short ComputeSegmentPlane_Intersection(double *Segment_P0, double *Segment_P1, double *Plane_P0, double *Plane_Normal, double *Intersection);
+
 };
 
 /*! 

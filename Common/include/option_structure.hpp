@@ -573,11 +573,11 @@ enum GEOMETRY_ACTION {
  * \brief types of action to perform when doing the geometry evaluation
  */
 enum GEOMETRY_MODE {
-	ANALYSIS = 0,     /*!<  \brief Geometrical analysis. */
+	FUNCTION = 0,     /*!<  \brief Geometrical analysis. */
 	GRADIENT = 1      /*!<  \brief Geometrical analysis and gradient using finite differences. */
 };
 static const map<string, GEOMETRY_MODE> GeometryMode_Map = CCreateMap<string, GEOMETRY_MODE>
-("ANALYSIS", ANALYSIS)
+("FUNCTION", FUNCTION)
 ("GRADIENT", GRADIENT);
 
 /*!
@@ -665,7 +665,12 @@ enum ENUM_OBJECTIVE {
   CLEARANCE = 22,       /*!< \brief Clearance. */
   MIN_THICKNESS = 23,       /*!< \brief Minimum thickness. */
   HEAT_LOAD = 24,        /*!< \brief Integrated heat flux (heat load). */
-  MAX_HEAT_FLUX = 25    /*!< \brief Maximum heat flux. */
+  MAX_HEAT_FLUX = 25,    /*!< \brief Maximum heat flux. */
+  MAX_THICK_SEC1 = 26,       /*!< \brief Maximum thickness in section 1. */
+	MAX_THICK_SEC2 = 27,       /*!< \brief Maximum thickness in section 2. */
+	MAX_THICK_SEC3 = 28,       /*!< \brief Maximum thickness in section 3. */
+	MAX_THICK_SEC4 = 29,       /*!< \brief Maximum thickness in section 4. */
+	MAX_THICK_SEC5 = 30       /*!< \brief Maximum thickness in section 5. */
 };
 
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>
@@ -691,7 +696,12 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("TOTAL_VOLUME", TOTAL_VOLUME)
 ("MAX_THICKNESS", MAX_THICKNESS)
 ("CLEARANCE", CLEARANCE)
-("MIN_THICKNESS", MIN_THICKNESS);
+("MIN_THICKNESS", MIN_THICKNESS)
+("MAX_THICK_SEC1", MAX_THICK_SEC1)
+("MAX_THICK_SEC2", MAX_THICK_SEC2)
+("MAX_THICK_SEC3", MAX_THICK_SEC3)
+("MAX_THICK_SEC4", MAX_THICK_SEC4)
+("MAX_THICK_SEC5", MAX_THICK_SEC5);
 
 /*!
  * \brief types of Continuous equations
@@ -811,7 +821,8 @@ enum ENUM_OUTPUT {
 	CSV = 3,			/*!< \brief Comma-separated values format for the solution output. */
 	STL = 4,				/*!< \brief STL CAD format for the solution output. */
   TECPLOT_BINARY = 5,  		/*!< \brief Tecplot binary format for the solution output. */
-	CGNS_SOL = 6  		/*!< \brief CGNS format for the solution output. */
+	CGNS_SOL = 6,  		/*!< \brief CGNS format for the solution output. */
+  PARAVIEW = 7  		/*!< \brief Paraview format for the solution output. */
 };
 static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPUT>
 ("TECPLOT", TECPLOT)
@@ -819,7 +830,8 @@ static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPU
 ("CSV", CSV)
 ("STL", STL)
 ("TECPLOT_BINARY", TECPLOT_BINARY)
-("CGNS", CGNS_SOL);
+("CGNS", CGNS_SOL)
+("PARAVIEW", PARAVIEW);
 
 /*!
  * \brief type of solution output variables
