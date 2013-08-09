@@ -117,6 +117,8 @@ inline double CConfig::GetSpecies_Gamma(unsigned short val_Species) { return Spe
 
 inline int CConfig::GetCharge_Number(unsigned short val_Species) { return Charge_Number[val_Species]; }
 
+inline double CConfig::GetSection_Limit(unsigned short val_var) { return Section_Limit[val_var]; }
+
 inline int ***CConfig::GetReaction_Map(void) { return Reactions; } 
 
 inline double ***CConfig::GetCollisionIntegral00(void) { return Omega00; }
@@ -652,8 +654,6 @@ inline void CConfig::SetKind_SourNumScheme(unsigned short val_kind_sournumscheme
 
 inline unsigned short CConfig::GetKind_ObjFunc(void) {return Kind_ObjFunc; }
 
-inline unsigned short CConfig::GetKind_GeoObjFunc(void) {return Kind_GeoObjFunc; }
-
 inline unsigned short CConfig::GetKind_SensSmooth(void) {return Kind_SensSmooth; }
 
 inline unsigned short CConfig::GetContinuous_Eqns(void) {return Continuous_Eqns; }
@@ -778,7 +778,7 @@ inline string CConfig::GetLin_FileName(void) { return Lin_FileName; }
 
 inline string CConfig::GetObjFunc_Grad_FileName(void) { return ObjFunc_Grad_FileName; }
 
-inline string CConfig::GetObjFunc_Eval_FileName(void) { return ObjFunc_Eval_FileName; }
+inline string CConfig::GetObjFunc_Value_FileName(void) { return ObjFunc_Value_FileName; }
 
 inline string CConfig::GetSurfFlowCoeff_FileName(void) { return SurfFlowCoeff_FileName; }
 
@@ -816,7 +816,7 @@ inline bool CConfig::GetDivide_Element(void) { return Divide_Element; }
 
 inline bool CConfig::GetEngine_Intake(void) { return Engine_Intake; }
 
-inline double CConfig::GetDV_Value_New(unsigned short val_dv) { return DV_Value_New[val_dv]; }
+inline double CConfig::GetDV_Value(unsigned short val_dv) { return DV_Value[val_dv]; }
 
 inline double CConfig::GetOrderMagResidual(void) { return OrderMagResidual; }
 
@@ -843,8 +843,6 @@ inline double *CConfig::GetRotAxisOrigin(void) { return RotAxisOrigin; }
 inline double *CConfig::GetOmega(void) { return Omega; }
 
 inline double CConfig::GetOmegaMag(void) { return Omega_Mag; }
-
-inline double CConfig::GetDV_Value_Old(unsigned short val_dv) { return DV_Value_Old[val_dv]; }
 
 inline bool CConfig::GetGrid_Movement(void) { return Grid_Movement; }
 
@@ -939,12 +937,6 @@ inline bool CConfig::GetWrt_Srf_Sol(void) { return Wrt_Srf_Sol; }
 inline bool CConfig::GetWrt_Csv_Sol(void) { return Wrt_Csv_Sol; }
 
 inline bool CConfig::GetWrt_Restart(void) { return Wrt_Restart; }
-
-inline bool CConfig::GetWrt_Sol_CGNS(void) { return Wrt_Sol_CGNS; }
-
-inline bool CConfig::GetWrt_Sol_Tec_ASCII(void) { return Wrt_Sol_Tec_ASCII; }
-
-inline bool CConfig::GetWrt_Sol_Tec_Binary(void) { return Wrt_Sol_Tec_Binary; }
 
 inline bool CConfig::GetWrt_Residuals(void) { return Wrt_Residuals; }
 

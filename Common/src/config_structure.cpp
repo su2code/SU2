@@ -583,10 +583,11 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddScalarOption("ADJ_LIMIT", AdjointLimit, 1E6);
 	/* DESCRIPTION: Adjoint problem boundary condition */
 	AddEnumOption("ADJ_OBJFUNC", Kind_ObjFunc, Objective_Map, "DRAG");
-	/* DESCRIPTION: Geometrical objective function */
-	AddEnumOption("GEO_PARAM", Kind_GeoObjFunc, Objective_Map, "MAX_THICKNESS");
+  /* DESCRIPTION: Definition of the airfoil section */
+  default_vec_3d[0] = 0.0; default_vec_3d[1] = 1.0;
+	AddArrayOption("GEO_SECTION_LIMIT", 2, Section_Limit, default_vec_3d);
 	/* DESCRIPTION: Mode of the GDC code (analysis, or gradient) */
-	AddEnumOption("GEO_MODE", GeometryMode, GeometryMode_Map, "ANALYSIS");
+	AddEnumOption("GEO_MODE", GeometryMode, GeometryMode_Map, "FUNCTION");
 	/* DESCRIPTION: Drag weight in sonic boom Objective Function (from 0.0 to 1.0) */
 	AddScalarOption("DRAG_IN_SONICBOOM", WeightCd, 0.0);
 	/* DESCRIPTION: Sensitivity smoothing  */
@@ -651,7 +652,7 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	/* DESCRIPTION: Output objective function gradient */
 	AddScalarOption("GRAD_OBJFUNC_FILENAME", ObjFunc_Grad_FileName, string("of_grad.dat"));
 	/* DESCRIPTION: Output objective function */
-	AddScalarOption("OBJFUNC_FILENAME", ObjFunc_Eval_FileName, string("of_eval.dat"));
+	AddScalarOption("VALUE_OBJFUNC_FILENAME", ObjFunc_Value_FileName, string("of_func.dat"));
 	/* DESCRIPTION: Output file surface flow coefficient (w/o extension) */
 	AddScalarOption("SURFACE_FLOW_FILENAME", SurfFlowCoeff_FileName, string("surface_flow"));
 	/* DESCRIPTION: Output file surface adjoint coefficient (w/o extension) */
@@ -674,12 +675,6 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddSpecialOption("WRT_CSV_SOL", Wrt_Csv_Sol, SetBoolOption, true);
 	/* DESCRIPTION: Write a restart solution file */
 	AddSpecialOption("WRT_RESTART", Wrt_Restart, SetBoolOption, true);
-	/* DESCRIPTION: Write a CGNS solution file */
-	AddSpecialOption("WRT_SOL_CGNS", Wrt_Sol_CGNS, SetBoolOption, false);
-	/* DESCRIPTION: Write a Tecplot ASCII volume solution file */
-	AddSpecialOption("WRT_SOL_TEC_ASCII", Wrt_Sol_Tec_ASCII, SetBoolOption, true);
-	/* DESCRIPTION: Write a Tecplot binary volume solution file */
-	AddSpecialOption("WRT_SOL_TEC_BINARY", Wrt_Sol_Tec_Binary, SetBoolOption, false);
 	/* DESCRIPTION: Output residual info to solution/restart file */
 	AddSpecialOption("WRT_RESIDUALS", Wrt_Residuals, SetBoolOption, false);
   /* DESCRIPTION: Output the rind layers in the solution files */
@@ -852,10 +847,8 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddEnumListOption("DV_KIND", nDV, Design_Variable, Param_Map);
 	/* DESCRIPTION: Marker of the surface to which we are going apply the shape deformation */
 	AddMarkerOption("DV_MARKER", nMarker_Moving, Marker_Moving);
-	/* DESCRIPTION: Old value of the deformation for incremental deformations */
-	AddListOption("DV_VALUE_OLD", nDV, DV_Value_Old);
 	/* DESCRIPTION: New value of the shape deformation */
-	AddListOption("DV_VALUE_NEW", nDV, DV_Value_New);
+	AddListOption("DV_VALUE", nDV, DV_Value);
 	/* DESCRIPTION: Parameters of the shape deformation
     	- HICKS_HENNE ( Lower Surface (0)/Upper Surface (1)/Only one Surface (2), x_Loc )
       - COSINE_BUMP ( Lower Surface (0)/Upper Surface (1)/Only one Surface (2), x_Loc, Thickness )
@@ -2446,8 +2439,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) {
 
 #ifndef NO_MPI
-	if ((val_software != SU2_DDC) && (val_software != SU2_MAC) && (val_software != SU2_GDC))
+  /*--- Identify the solvers that work in serial ---*/
+	if ((val_software != SU2_DDC) && (val_software != SU2_MAC))
 		nDomain = MPI::COMM_WORLD.Get_size();
+  else
+    nDomain = 1;
 #endif
 
 	/*--- Boundary (marker) treatment ---*/
@@ -2910,7 +2906,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 		if (Design_Variable[0] != NO_DEFORMATION && Design_Variable[0] != SURFACE_FILE) {
 			if (Hold_GridFixed == YES) cout << "Hold some regions of the mesh fixed (hardcode implementation)." <<endl;
-			cout << "Geo. design var. definition (markers <-> old def., new def. <-> param):" <<endl;
+			cout << "Geo. design var. definition (markers <-> value def. <-> param):" <<endl;
 			for (unsigned short iDV = 0; iDV < nDV; iDV++) {
 				switch (Design_Variable[iDV]) {
 				case NO_DEFORMATION: cout << "There isn't any deformation." ; break;
@@ -2938,7 +2934,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 					if (iMarker_Moving < nMarker_Moving-1) cout << ", ";
 					else cout << " <-> ";
 				}
-				cout << DV_Value_Old[iDV] <<", "<< DV_Value_New[iDV] << " <-> ";
+				cout << DV_Value[iDV] << " <-> ";
 
 				if (Design_Variable[iDV] == NO_DEFORMATION) nParamDV = 0;
 				if (Design_Variable[iDV] == HICKS_HENNE) nParamDV = 2;
@@ -2999,7 +2995,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				if (iMarker_Moving < nMarker_Moving-1) cout << ", ";
 				else cout << " <-> ";
 			}
-			cout << DV_Value_Old[iDV] <<", "<< DV_Value_New[iDV] << " <-> ";
+			cout << DV_Value[iDV] << " <-> ";
 
 			if (Design_Variable[iDV] == NO_DEFORMATION) nParamDV = 0;
 			if (Design_Variable[iDV] == HICKS_HENNE) nParamDV = 2;
@@ -3608,9 +3604,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		}
 
 		switch (Output_FileFormat) {
-		case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
-		case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
-		case CGNS_SOL: cout << "The output file format is CGNS (.cgns)." << endl; break;
+      case PARAVIEW: cout << "The output file format is Paraview ASCII (.vtk)." << endl; break;
+      case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
+      case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
+      case CGNS_SOL: cout << "The output file format is CGNS (.cgns)." << endl; break;
 		}
 
 		cout << "Convergence history file name: " << Conv_FileName << "." << endl;
@@ -3638,9 +3635,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 	if (val_software == SU2_SOL) {
 		switch (Output_FileFormat) {
-		case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
-		case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
-		case CGNS_SOL: cout << "The output file format is CGNS (.cgns)." << endl; break;
+      case PARAVIEW: cout << "The output file format is Paraview ASCII (.dat)." << endl; break;
+      case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
+      case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
+      case CGNS_SOL: cout << "The output file format is CGNS (.cgns)." << endl; break;
 		}
 		cout << "Flow variables file name: " << Flow_FileName << "." << endl;
 	}

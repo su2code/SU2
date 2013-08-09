@@ -101,12 +101,10 @@ private:
 	unsigned short Unsteady_Simulation;	/*!< \brief Steady or unsteady (time stepping or dual time stepping) computation. */
 	unsigned short nStartUpIter;	/*!< \brief Start up iterations using the fine grid. */
 	double CteViscDrag;		/*!< \brief Constant value of the viscous drag. */
-	double *DV_Value_New,		/*!< \brief Finite difference step for gradient computation. */
-	*DV_Value_Old;		/*!< \brief Previous value of the design variable. */
+	double *DV_Value;		/*!< \brief Previous value of the design variable. */
 	double LimiterCoeff;				/*!< \brief Limiter coefficient */ 
 	unsigned short Kind_Adjoint;	/*!< \brief Kind of adjoint function. */
 	unsigned short Kind_ObjFunc;	/*!< \brief Kind of objective function. */
-	unsigned short Kind_GeoObjFunc;	/*!< \brief Kind of geometrical objective function. */
 	unsigned short Kind_SensSmooth;	/*!< \brief Kind of sensitivity smoothing technique. */
 	unsigned short Continuous_Eqns;	/*!< \brief Which equations to treat continuously (Hybrid adjoint) */
 	unsigned short Discrete_Eqns;	/*!< \brief Which equations to treat discretely (Hybrid adjoint). */
@@ -357,6 +355,7 @@ private:
 	double Linear_Solver_Relax;		/*!< \brief Relaxation coefficient of the linear solver. */
 	double AdjTurb_Linear_Error;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
 	unsigned short AdjTurb_Linear_Iter;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
+	double *Section_Limit;                  /*!< \brief Airfoil section limit. */
 	double* Kappa_Flow,           /*!< \brief Numerical dissipation coefficients for the flow equations. */
 	*Kappa_AdjFlow,                  /*!< \brief Numerical dissipation coefficients for the adjoint equations. */
 	*Kappa_LinFlow;                  /*!< \brief Numerical dissipation coefficients for the linearized equations. */
@@ -455,7 +454,7 @@ private:
 	Adj_FileName,					/*!< \brief Output file with the adjoint variables. */
 	Lin_FileName,					/*!< \brief Output file with the linearized variables. */
 	ObjFunc_Grad_FileName,			/*!< \brief Gradient of the objective function. */
-	ObjFunc_Eval_FileName,			/*!< \brief Objective function. */
+	ObjFunc_Value_FileName,			/*!< \brief Objective function. */
 	SurfFlowCoeff_FileName,			/*!< \brief Output file with the flow variables on the surface. */
 	SurfAdjCoeff_FileName,			/*!< \brief Output file with the adjoint variables on the surface. */
 	SurfLinCoeff_FileName,			/*!< \brief Output file with the linearized variables on the surface. */
@@ -463,10 +462,7 @@ private:
 	bool CGNS_To_SU2;      		 	/*!< \brief Flag to specify whether a CGNS mesh is converted to SU2 format. */
 	unsigned short nSpecies, 		/*!< \brief No of species present in plasma */
 	nReactions;									/*!< \brief Number of reactions in chemical model. */
-	bool Wrt_Sol_CGNS,               /*!< \brief Write a CGNS volume solution file */
-	Wrt_Sol_Tec_ASCII,          /*!< \brief Write a Tecplot ASCII volume solution file */
-	Wrt_Sol_Tec_Binary,         /*!< \brief Write a Tecplot binary volume solution file */
-	Wrt_Vol_Sol,                /*!< \brief Write a volume solution file */
+	bool Wrt_Vol_Sol,                /*!< \brief Write a volume solution file */
 	Wrt_Srf_Sol,                /*!< \brief Write a surface solution file */
 	Wrt_Restart,                /*!< \brief Write a restart solution file */
 	Wrt_Csv_Sol,                /*!< \brief Write a surface comma-separated values solution file */
@@ -1059,6 +1055,12 @@ public:
 	 * \return Value of the constant: Charge_Number[val_Species]
 	 */
 	int GetCharge_Number(unsigned short val_Species);
+  
+  /*!
+	 * \brief Get the value of the limits for the sections.
+	 * \return Value of the limits for the sections.
+	 */
+	double GetSection_Limit(unsigned short val_var);
 
 	/*! 
 	 * \brief Get the array that maps chemical consituents to each chemical reaction.
@@ -1761,24 +1763,6 @@ public:
 	 * \return <code>TRUE</code> means that a restart solution file will be written.
 	 */
 	bool GetWrt_Restart(void);
-
-	/*!
-	 * \brief Get information about writing a CGNS volume solution file.
-	 * \return <code>TRUE</code> means that a CGNS volume solution file will be written.
-	 */
-	bool GetWrt_Sol_CGNS(void);
-
-	/*!
-	 * \brief Get information about writing a Tecplot ASCII volume solution file.
-	 * \return <code>TRUE</code> means that a Tecplot ASCII volume solution file will be written.
-	 */
-	bool GetWrt_Sol_Tec_ASCII(void);
-
-	/*!
-	 * \brief Get information about writing a Tecplot binary volume solution file.
-	 * \return <code>TRUE</code> means that a Tecplot binary volume solution file will be written.
-	 */
-	bool GetWrt_Sol_Tec_Binary(void);
 
 	/*!
 	 * \brief Get information about writing residuals to volume solution file.
@@ -2989,12 +2973,6 @@ public:
 	unsigned short GetKind_ObjFunc(void);
 
 	/*!
-	 * \brief Get the kind of geometrical objective function.
-	 * \return Kind of geometrical objective function.
-	 */
-	unsigned short GetKind_GeoObjFunc(void);
-
-	/*!
 	 * \brief Get the kind of sensitivity smoothing technique.
 	 * \return Kind of sensitivity smoothing technique.
 	 */
@@ -3367,7 +3345,7 @@ public:
 	 * \brief Get the name of the file with the gradient of the objective function.
 	 * \return Name of the file with the gradient of the objective function.
 	 */
-	string GetObjFunc_Eval_FileName(void);
+	string GetObjFunc_Value_FileName(void);
 
 	/*! 
 	 * \brief Get the name of the file with the surface information for the flow problem.
@@ -3499,14 +3477,7 @@ public:
 	 * \param[in] val_dv - Number of the design variable that we want to read.
 	 * \return Design variable step.
 	 */	
-	double GetDV_Value_New(unsigned short val_dv);
-
-	/*! 
-	 * \brief If we are doing and incremental deformation, this is the origin value.
-	 * \param[in] val_dv - Number of the design variable that we want to read.
-	 * \return Origin value for incremental deformations.
-	 */	
-	double GetDV_Value_Old(unsigned short val_dv);
+	double GetDV_Value(unsigned short val_dv);
 
 	/*! 
 	 * \brief Get information about the grid movement.
