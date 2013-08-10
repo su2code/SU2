@@ -1056,10 +1056,10 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
     
 		/*--- Update the implicit Jacobian ---*/
 		if (implicit) {
-			Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-			Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
-			Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
-			Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
+//			Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+//			Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
+//			Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
+//			Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
 		}
 	}
 }
@@ -1108,13 +1108,6 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
     
     /*--- Compute vibrational energy relaxation ---*/
     numerics->ComputeVibRelaxation(Residual, Jacobian_i, config);
-    
-/*    if (iPoint == 17) {
-      cout << "Source Residual: " << endl;
-      for (iVar = 0; iVar < nVar; iVar++)
-        cout << Residual[iVar] << endl;
-      cin.get();
-    }*/
     
     /*--- Add Residual (and Jacobian) ---*/
     LinSysRes.SubtractBlock(iPoint, Residual);

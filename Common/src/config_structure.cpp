@@ -1470,7 +1470,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         // Molar mass [kg/kmol]
         Molar_Mass[0] = 14.0067+15.9994;
         // Characteristic vibrational temperatures for calculating e_vib [K]
-        CharVibTemp[0] = 3395.0;
+        //CharVibTemp[0] = 3395.0;
+        CharVibTemp[0] = 1000.0;
         // Formation enthalpy: (JANAF values, [KJ/Kmol])
         Enthalpy_Formation[0] = 0.0;					//N2
         // Reference temperature (JANAF values, [K])

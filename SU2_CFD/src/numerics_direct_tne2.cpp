@@ -372,27 +372,39 @@ void CUpwRoe_TNE2::CreateBasis(double *val_Normal) {
 }
 
 CUpwAUSM_TNE2::CUpwAUSM_TNE2(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+
 	unsigned short iVar;
   
-	implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  /*--- Read configuration parameters ---*/
+	implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  ionization = config->GetIonization();
   
-	Gamma = config->GetGamma();
-	Gamma_Minus_One = Gamma - 1.0;
+  /*--- Define useful constants ---*/
+  nVar     = val_nVar;
+  nDim     = val_nDim;
+  nSpecies = val_nVar - val_nDim - 2;
   
-	Diff_U = new double [nVar];
-	Velocity_i = new double [nDim];
-	Velocity_j = new double [nDim];
+  
+	Diff_U      = new double [nVar];
+  Density_i   = new double [nSpecies];
+  Density_j   = new double [nSpecies];
+  RoeDensity  = new double [nSpecies];
+	Velocity_i  = new double [nDim];
+	Velocity_j  = new double [nDim];
 	RoeVelocity = new double [nDim];
-	delta_vel  = new double [nDim];
-	delta_wave = new double [nVar];
-	Proj_flux_tensor_i = new double [nVar];
+	delta_vel   = new double [nDim];
+	delta_wave  = new double [nVar];
+	Lambda      = new double [nVar];
+	Epsilon     = new double [nVar];
+  dPdrhos     = new double [nSpecies];
+  l           = new double [nDim];
+  m           = new double [nDim];
+  Proj_flux_tensor_i = new double [nVar];
 	Proj_flux_tensor_j = new double [nVar];
-	Lambda = new double [nVar];
-	Epsilon = new double [nVar];
-	P_Tensor = new double* [nVar];
-	invP_Tensor = new double* [nVar];
+	P_Tensor           = new double* [nVar];
+	invP_Tensor        = new double* [nVar];
 	for (iVar = 0; iVar < nVar; iVar++) {
-		P_Tensor[iVar] = new double [nVar];
+		P_Tensor[iVar]    = new double [nVar];
 		invP_Tensor[iVar] = new double [nVar];
 	}
 }
@@ -401,6 +413,9 @@ CUpwAUSM_TNE2::~CUpwAUSM_TNE2(void) {
 	unsigned short iVar;
   
 	delete [] Diff_U;
+  delete [] Density_i;
+  delete [] Density_j;
+  delete [] RoeDensity;
 	delete [] Velocity_i;
 	delete [] Velocity_j;
 	delete [] RoeVelocity;
@@ -410,6 +425,9 @@ CUpwAUSM_TNE2::~CUpwAUSM_TNE2(void) {
 	delete [] Proj_flux_tensor_j;
 	delete [] Lambda;
 	delete [] Epsilon;
+  delete [] dPdrhos;
+  delete [] l;
+  delete [] m;
 	for (iVar = 0; iVar < nVar; iVar++) {
 		delete [] P_Tensor[iVar];
 		delete [] invP_Tensor[iVar];
@@ -420,6 +438,12 @@ CUpwAUSM_TNE2::~CUpwAUSM_TNE2(void) {
 }
 
 void CUpwAUSM_TNE2::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+
+  unsigned short iDim, iVar, jVar, kVar, iSpecies, nHeavy, nEl;
+  double DensityMix_i, DensityMix_j, rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j;
+  double Ru, rho_el, conc, dPdrhoE, dPdrhoEve, *Ms;
+  double Temperature_ve_i, Temperature_ve_j, Energy_ve_i, Energy_ve_j;
+  double RoeTemperature_ve, RoeEnergy_ve, RoePressure;
   
 	Area = 0;
 	for (iDim = 0; iDim < nDim; iDim++)
@@ -429,29 +453,36 @@ void CUpwAUSM_TNE2::ComputeResidual(double *val_residual, double **val_Jacobian_
 	for (iDim = 0; iDim < nDim; iDim++)
 		UnitaryNormal[iDim] = Normal[iDim]/Area;
   
-	/*--- Point i, Needs to recompute SoundSpeed / Pressure / Enthalpy in case of 2nd order reconstruction ---*/
-	Density_i = U_i[0];
-	sq_vel = 0;
-	for (iDim = 0; iDim < nDim; iDim++) {
-		Velocity_i[iDim] = U_i[iDim+1] / Density_i;
-		sq_vel += Velocity_i[iDim]*Velocity_i[iDim];
-	}
-	Energy_i = U_i[nDim+1] / Density_i;
-	SoundSpeed_i = sqrt(Gamma*Gamma_Minus_One*(Energy_i-0.5*sq_vel));
-	Pressure_i = (SoundSpeed_i * SoundSpeed_i * Density_i) / Gamma;
-	Enthalpy_i = (U_i[nDim+1] + Pressure_i) / Density_i;
+  /*--- Determine the number of heavy particle species ---*/
+  if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
+  else            { nHeavy = nSpecies;   nEl = 0; }
   
-	/*--- Point j, Needs to recompute SoundSpeed / Pressure / Enthalpy in case of 2nd order reconstruction ---*/
-	Density_j = U_j[0];
-	sq_vel = 0;
-	for (iDim = 0; iDim < nDim; iDim++) {
-		Velocity_j[iDim] = U_j[iDim+1] / Density_j;
-		sq_vel += Velocity_j[iDim]*Velocity_j[iDim];
-	}
-	Energy_j = U_j[nDim+1] / Density_j;
-	SoundSpeed_j = sqrt(Gamma*Gamma_Minus_One*(Energy_j-0.5*sq_vel));
-	Pressure_j = (SoundSpeed_j * SoundSpeed_j * Density_j) / Gamma;
-	Enthalpy_j = (U_j[nDim+1] + Pressure_j) / Density_j;
+  /*--- Pull stored primitive variables ---*/
+  // Primitives: [rho1,...,rhoNs, T, Tve, u, v, w, P, rho, h, c]
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    Density_i[iSpecies] = V_i[RHOS_INDEX+iSpecies];
+    Density_j[iSpecies] = V_j[RHOS_INDEX+iSpecies];
+  }
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Velocity_i[iDim] = V_i[VEL_INDEX+iDim];
+    Velocity_j[iDim] = V_j[VEL_INDEX+iDim];
+  }
+  Pressure_i       = V_i[P_INDEX];
+  Pressure_j       = V_j[P_INDEX];
+  Enthalpy_i       = V_i[H_INDEX];
+  Enthalpy_j       = V_j[H_INDEX];
+  SoundSpeed_i     = V_i[A_INDEX];
+  SoundSpeed_j     = V_j[A_INDEX];
+  DensityMix_i     = V_i[RHO_INDEX];
+  DensityMix_j     = V_j[RHO_INDEX];
+  Temperature_ve_i = V_i[TVE_INDEX];
+  Temperature_ve_j = V_j[TVE_INDEX];
+  Energy_ve_i      = U_i[nSpecies+nDim+1] / DensityMix_i;
+  Energy_ve_j      = U_j[nSpecies+nDim+1] / DensityMix_j;
+  rhoCvtr_i        = V_i[RHOCVTR_INDEX];
+  rhoCvtr_j        = V_j[RHOCVTR_INDEX];
+  rhoCvve_i        = V_i[RHOCVVE_INDEX];
+  rhoCvve_j        = V_j[RHOCVVE_INDEX];
   
 	/*--- Projected velocities ---*/
 	ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
@@ -484,11 +515,25 @@ void CUpwAUSM_TNE2::ComputeResidual(double *val_residual, double **val_Jacobian_
 	double pF = pLP + pRM;
 	double Phi = fabs(mF);
   
-	val_residual[0] = 0.5*(mF*((Density_i*SoundSpeed_i)+(Density_j*SoundSpeed_j))-Phi*((Density_j*SoundSpeed_j)-(Density_i*SoundSpeed_i)));
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    val_residual[iSpecies] = 0.5*(mF*((Density_i[iSpecies]*SoundSpeed_i)
+                                      +(Density_j[iSpecies]*SoundSpeed_j))
+                                  -Phi*((Density_j[iSpecies]*SoundSpeed_j)
+                                        -(Density_i[iSpecies]*SoundSpeed_i)));
 	for (iDim = 0; iDim < nDim; iDim++)
-		val_residual[iDim+1] = 0.5*(mF*((Density_i*SoundSpeed_i*Velocity_i[iDim])+(Density_j*SoundSpeed_j*Velocity_j[iDim]))
-                                -Phi*((Density_j*SoundSpeed_j*Velocity_j[iDim])-(Density_i*SoundSpeed_i*Velocity_i[iDim])))+UnitaryNormal[iDim]*pF;
-	val_residual[nVar-1] = 0.5*(mF*((Density_i*SoundSpeed_i*Enthalpy_i)+(Density_j*SoundSpeed_j*Enthalpy_j))-Phi*((Density_j*SoundSpeed_j*Enthalpy_j)-(Density_i*SoundSpeed_i*Enthalpy_i)));
+		val_residual[nSpecies+iDim] = 0.5*(mF*((DensityMix_i*SoundSpeed_i*Velocity_i[iDim])
+                                           +(DensityMix_j*SoundSpeed_j*Velocity_j[iDim]))
+                                       -Phi*((DensityMix_j*SoundSpeed_j*Velocity_j[iDim])
+                                             -(DensityMix_i*SoundSpeed_i*Velocity_i[iDim])))
+                                  + UnitaryNormal[iDim]*pF;
+	val_residual[nSpecies+nDim] = 0.5*(mF*((DensityMix_i*SoundSpeed_i*Enthalpy_i)
+                                         +(DensityMix_j*SoundSpeed_j*Enthalpy_j))
+                                     -Phi*((DensityMix_j*SoundSpeed_j*Enthalpy_j)
+                                           -(DensityMix_i*SoundSpeed_i*Enthalpy_i)));
+  val_residual[nSpecies+nDim+1] = 0.5*(mF*((DensityMix_i*SoundSpeed_i*Energy_ve_i)
+                                           +(DensityMix_j*SoundSpeed_j*Energy_ve_j))
+                                       -Phi*((DensityMix_j*SoundSpeed_j*Energy_ve_j)
+                                             -(DensityMix_i*SoundSpeed_i*Energy_ve_i)));
   
 	for (iVar = 0; iVar < nVar; iVar++)
 		val_residual[iVar] *= Area;
@@ -497,39 +542,60 @@ void CUpwAUSM_TNE2::ComputeResidual(double *val_residual, double **val_Jacobian_
   
 	if (implicit) {
     
-		/*--- Promediate Roe variables iPoint and jPoint ---*/
-		R = sqrt(Density_j/Density_i);
-		RoeDensity = R*Density_i;
-		sq_vel = 0;
-		for (iDim = 0; iDim < nDim; iDim++) {
-			RoeVelocity[iDim] = (R*Velocity_j[iDim]+Velocity_i[iDim])/(R+1);
-			sq_vel += RoeVelocity[iDim]*RoeVelocity[iDim];
-		}
-		RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
-		RoeSoundSpeed = sqrt((Gamma-1)*(RoeEnthalpy-0.5*sq_vel));
+    Ru = UNIVERSAL_GAS_CONSTANT;
     
-		/*--- Compute P and Lambda (do it with the Normal) ---*/
-		GetPMatrix(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitaryNormal, P_Tensor);
+    /*--- Read from config ---*/
+    Ms = config->GetMolar_Mass();
     
-		ProjVelocity = 0.0; ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
+    /*--- Calculate Roe variables ---*/
+    R    = sqrt(abs(DensityMix_j/DensityMix_i));
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      RoeDensity[iSpecies] = (R*Density_j[iSpecies] + Density_i[iSpecies]) / (R+1);
+    }
+    for (iDim = 0; iDim < nDim; iDim++) {
+      RoeVelocity[iDim] = (R*Velocity_j[iDim] + Velocity_i[iDim]) / (R+1);
+    }
+    RoeEnthalpy       = (R*Enthalpy_j       + Enthalpy_i)       / (R+1);
+    RoeEnergy_ve      = (R*Energy_ve_j      + Energy_ve_i)      / (R+1);
+    RoeTemperature_ve = (R*Temperature_ve_j + Temperature_ve_i) / (R+1);
+    RoePressure       = (R*Pressure_j       + Pressure_i)       / (R+1);
+    
+    if (ionization) {
+      rho_el   = RoeDensity[nSpecies-1];
+    } else {
+      rho_el   = 0.0;
+    }
+    
+    /*--- Calculate quantities using Roe variables ---*/
+    conc = 0.0;
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      conc   += RoeDensity[iSpecies] / Ms[iSpecies];
+      dPdrhos[iSpecies] = (R*dPdrhos_j[iSpecies] + dPdrhos_i[iSpecies]) / (R+1);
+    }    
+    dPdrhoE   = Ru*(R+1) / (R*rhoCvtr_j+rhoCvtr_i) * conc;
+    dPdrhoEve = -dPdrhoE + rho_el * Ru/Ms[nSpecies-1] * (R+1)/(R*rhoCvve_j+rhoCvve_i);
+    
+    RoeSoundSpeed = sqrt((1.0 + dPdrhoE) * RoePressure/(DensityMix_i*R));
+    
+    /*--- Calculate dual grid tangent vectors for P & invP ---*/
+    CreateBasis(UnitaryNormal);
+    
+		ProjVelocity = 0.0;
 		for (iDim = 0; iDim < nDim; iDim++) {
 			ProjVelocity   += RoeVelocity[iDim]*UnitaryNormal[iDim];
-			ProjVelocity_i += Velocity_i[iDim]*UnitaryNormal[iDim];
-			ProjVelocity_j += Velocity_j[iDim]*UnitaryNormal[iDim];
 		}
     
 		/*--- Flow eigenvalues and Entropy correctors ---*/
 		for (iDim = 0; iDim < nDim; iDim++)
 			Lambda[iDim] = ProjVelocity;
-		Lambda[nVar-2]  = ProjVelocity + RoeSoundSpeed;
+		Lambda[nVar-2] = ProjVelocity + RoeSoundSpeed;
 		Lambda[nVar-1] = ProjVelocity - RoeSoundSpeed;
     
-		/*--- Compute inverse P ---*/
-		GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitaryNormal, invP_Tensor);
-    
-		/*--- Jacobias of the inviscid flux, scale = 0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal ---*/
-		GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, val_Jacobian_i);
-		GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, val_Jacobian_j);
+		/*--- Compute projected P, invP, and Lambda ---*/
+    GetPMatrix(RoeDensity, RoeVelocity, &RoeEnthalpy, &RoeEnergy_ve, &RoeSoundSpeed, dPdrhos,
+               dPdrhoE, dPdrhoEve, UnitaryNormal, l, m, P_Tensor);
+    GetPMatrix_inv(RoeDensity, RoeVelocity, &RoeEnergy_ve, &RoeSoundSpeed, dPdrhos,
+                   dPdrhoE, dPdrhoEve, UnitaryNormal, l, m, invP_Tensor);
     
 		/*--- Diference variables iPoint and jPoint ---*/
 		for (iVar = 0; iVar < nVar; iVar++)
@@ -547,6 +613,41 @@ void CUpwAUSM_TNE2::ComputeResidual(double *val_residual, double **val_Jacobian_
 			}
 		}
 	}
+}
+
+void CUpwAUSM_TNE2::CreateBasis(double *val_Normal) {
+  unsigned short iDim;
+  double modm, modl;
+  
+  /*--- Define l as a vector in the plane normal to the supplied vector ---*/
+  l[0] = 0.0;
+  l[1] = -val_Normal[2];
+  l[2] = val_Normal[1];
+  
+  /*--- Check for the zero vector and re-assign if needed ---*/
+  if (l[0] == 0.0 && l[1] == 0.0 && l[2] == 0.0) {
+    l[0] = -val_Normal[2];
+    l[1] = 0.0;
+    l[2] = val_Normal[0];
+  }
+  
+  /*--- Take vector product of n * l to make m ---*/
+  m[0] = val_Normal[1]*l[2] - val_Normal[2]*l[1];
+	m[1] = val_Normal[2]*l[0] - val_Normal[0]*l[2];
+	m[2] = val_Normal[0]*l[1] - val_Normal[1]*l[0];
+  
+  /*--- Normalize ---*/
+  modm =0 ; modl = 0;
+  for (iDim =0 ; iDim < nDim; iDim++) {
+    modm += m[iDim]*m[iDim];
+    modl += l[iDim]*l[iDim];
+  }
+  modm = sqrt(modm);
+  modl = sqrt(modl);
+  for (iDim =0 ; iDim < nDim; iDim++) {
+    l[iDim] = l[iDim]/modl;
+    m[iDim] = m[iDim]/modm;
+  }
 }
 
 
@@ -861,7 +962,7 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual, double **val_Jacob
       /*--- Rename ---*/
       rhos = V_i[RHOS_INDEX+iSpecies];
       thoT   = thetav[iSpecies]/T;
-      expt   = exp(thetav[iSpecies]);
+      expt   = exp(thetav[iSpecies]/T);
       thoTve = thetav[iSpecies]/Tve;
       exptv = exp(thetav[iSpecies]/Tve);
       
