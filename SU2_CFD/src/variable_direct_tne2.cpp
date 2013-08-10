@@ -188,6 +188,12 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_pressure, double *val_massfrac
   Solution_Old[nSpecies+nDim]   = rho*E;
   Solution[nSpecies+nDim+1]     = rho*Eve;
   Solution_Old[nSpecies+nDim+1] = rho*Eve;
+  
+  /*--- Assign primitive variables ---*/
+  Primitive[T_INDEX]   = val_temperature;
+  Primitive[TVE_INDEX] = val_temperature_ve;
+  Primitive[P_INDEX]   = val_pressure;
+  
 }
 
 CTNE2EulerVariable::CTNE2EulerVariable(double *val_solution, unsigned short val_ndim,
@@ -399,7 +405,7 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   // NOTE: Cannot write an expression explicitly in terms of Tve
   // NOTE: We use Newton-Raphson to iteratively find the value of Tve
   // NOTE: Use T as an initial guess
-  Tve      = Primitive[T_INDEX];
+  Tve      = Primitive[TVE_INDEX];
   for (iIter = 0; iIter < maxIter; iIter++) {
     rhoEve_t = 0.0;
     rhoCvve  = 0.0;

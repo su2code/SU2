@@ -5859,17 +5859,19 @@ public:
  */
 class CUpwAUSM_TNE2 : public CNumerics {
 private:
-	bool implicit;
+	bool implicit, ionization;
 	double *Diff_U;
+  double *Density_i, *Density_j, *RoeDensity;
 	double *Velocity_i, *Velocity_j, *RoeVelocity;
 	double *Proj_flux_tensor_i, *Proj_flux_tensor_j;
 	double *delta_wave, *delta_vel;
 	double *Lambda, *Epsilon;
 	double **P_Tensor, **invP_Tensor;
-	double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-	Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
+	double sq_vel, Proj_ModJac_Tensor_ij, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
+	Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeEnthalpy, RoeSoundSpeed,
 	ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel, delta_p, delta_rho;
-	unsigned short iDim, iVar, jVar, kVar;
+  double *dPdrhos, *l, *m;
+ 	unsigned short nSpecies, nVar, nDim;
   
 public:
   
@@ -5894,6 +5896,12 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
+  
+  /*!
+	 * \brief Generates an orthonormal basis given a single vector
+	 * \param[in] val_Normal - Normal vector.
+	 */
+  void CreateBasis(double *val_Normal);
 };
 
 
