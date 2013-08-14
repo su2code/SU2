@@ -1648,11 +1648,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 	if (SecondIndex != NONE) nVar_Second = solver[SecondIndex]->GetnVar();
 	if (ThirdIndex != NONE) nVar_Third = solver[ThirdIndex]->GetnVar();
 	nVar_Consv = nVar_First + nVar_Second + nVar_Third;
-  if (config->GetWrt_Residuals()) {
-    nVar_Total = 2*nVar_Consv;
-  } else {
-    nVar_Total = nVar_Consv;
-  }
+  
+  if (config->GetWrt_Residuals()) nVar_Total = 2*nVar_Consv;
+  else nVar_Total = nVar_Consv;
   
 	/*--- Add the grid velocity to the restart file for the unsteady adjoint ---*/
 	if (grid_movement) {
@@ -4724,37 +4722,44 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
          executed by the master proc alone (as if in serial). ---*/
 
 		if (rank == MASTER_NODE) {
- 
+      
 			/*--- Write a native restart file ---*/
 			if (Wrt_Rst)
 				SetRestart(config[iZone], geometry[iZone][MESH_0], iZone);
-  
+      
 			if (Wrt_Vol) {
-
+        
 				switch (FileFormat) {
             
-				case TECPLOT:
-
-					/*--- Write a Tecplot ASCII file ---*/
-					SetTecplot_ASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone, false);
-					DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
-					break;
-
-				case TECPLOT_BINARY:
-
-					/*--- Write a Tecplot binary solution file ---*/
-					SetTecplot_Solution(config[iZone], geometry[iZone][MESH_0], iZone);
-					if (dynamic_mesh) DeallocateCoordinates(config[iZone], geometry[iZone][MESH_0]);
-					break;
-
-				case CGNS_SOL:
-
-					/*--- Write a CGNS solution file ---*/
-					SetCGNS_Solution(config[iZone], geometry[iZone][MESH_0], iZone);
-					break;
-
-				default:
-					break;
+          case TECPLOT:
+            
+            /*--- Write a Tecplot ASCII file ---*/
+            SetTecplot_ASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone, false);
+            DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
+            break;
+            
+          case TECPLOT_BINARY:
+            
+            /*--- Write a Tecplot binary solution file ---*/
+            SetTecplot_Solution(config[iZone], geometry[iZone][MESH_0], iZone);
+            if (dynamic_mesh) DeallocateCoordinates(config[iZone], geometry[iZone][MESH_0]);
+            break;
+            
+          case CGNS_SOL:
+            
+            /*--- Write a CGNS solution file ---*/
+            SetCGNS_Solution(config[iZone], geometry[iZone][MESH_0], iZone);
+            break;
+            
+          case PARAVIEW:
+            
+            /*--- Write a Paraview ASCII file ---*/
+            SetParaview_ASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone, false);
+            DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
+            break;
+            
+          default:
+            break;
 				}
         
 			}
@@ -4767,6 +4772,13 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
             
             /*--- Write a Tecplot ASCII file ---*/
             SetTecplot_ASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone, true);
+            DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], true);
+            break;
+            
+          case PARAVIEW:
+            
+            /*--- Write a Paraview ASCII file ---*/
+            SetParaview_ASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone, true);
             DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], true);
             break;
             
@@ -4870,6 +4882,13 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
             SetCGNS_Solution(config[iZone], geometry[iZone], iZone);
             break;
             
+          case PARAVIEW:
+            
+            /*--- Write a Paraview ASCII file ---*/
+            SetParaview_ASCII(config[iZone], geometry[iZone], iZone, val_nZone, false);
+            DeallocateConnectivity(config[iZone], geometry[iZone], false);
+            break;
+            
           default:
             break;
         }
@@ -4886,6 +4905,13 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
             
             /*--- Write a Tecplot ASCII file ---*/
             SetTecplot_ASCII(config[iZone], geometry[iZone], iZone, val_nZone, true);
+            DeallocateConnectivity(config[iZone], geometry[iZone], true);
+            break;
+            
+          case PARAVIEW:
+            
+            /*--- Write a Paraview ASCII file ---*/
+            SetParaview_ASCII(config[iZone], geometry[iZone], iZone, val_nZone, true);
             DeallocateConnectivity(config[iZone], geometry[iZone], true);
             break;
             

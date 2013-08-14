@@ -665,12 +665,6 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddSpecialOption("WRT_CSV_SOL", Wrt_Csv_Sol, SetBoolOption, true);
 	/* DESCRIPTION: Write a restart solution file */
 	AddSpecialOption("WRT_RESTART", Wrt_Restart, SetBoolOption, true);
-	/* DESCRIPTION: Write a CGNS solution file */
-	AddSpecialOption("WRT_SOL_CGNS", Wrt_Sol_CGNS, SetBoolOption, false);
-	/* DESCRIPTION: Write a Tecplot ASCII volume solution file */
-	AddSpecialOption("WRT_SOL_TEC_ASCII", Wrt_Sol_Tec_ASCII, SetBoolOption, true);
-	/* DESCRIPTION: Write a Tecplot binary volume solution file */
-	AddSpecialOption("WRT_SOL_TEC_BINARY", Wrt_Sol_Tec_Binary, SetBoolOption, false);
 	/* DESCRIPTION: Output residual info to solution/restart file */
 	AddSpecialOption("WRT_RESIDUALS", Wrt_Residuals, SetBoolOption, false);
   /* DESCRIPTION: Output the rind layers in the solution files */
@@ -2366,8 +2360,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) {
 
 #ifndef NO_MPI
-	if ((val_software != SU2_DDC) && (val_software != SU2_MAC) && (val_software != SU2_GDC))
+  /*--- Identify the solvers that work in serial ---*/
+	if ((val_software != SU2_DDC) && (val_software != SU2_MAC))
 		nDomain = MPI::COMM_WORLD.Get_size();
+  else
+    nDomain = 1;
 #endif
 
 	/*--- Boundary (marker) treatment ---*/
@@ -3453,9 +3450,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		}
 
 		switch (Output_FileFormat) {
-		case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
-		case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
-		case CGNS_SOL: cout << "The output file format is CGNS (.cgns)." << endl; break;
+      case PARAVIEW: cout << "The output file format is Paraview ASCII (.vtk)." << endl; break;
+      case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
+      case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
+      case CGNS_SOL: cout << "The output file format is CGNS (.cgns)." << endl; break;
 		}
 
 		cout << "Convergence history file name: " << Conv_FileName << "." << endl;
@@ -3483,9 +3481,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 	if (val_software == SU2_SOL) {
 		switch (Output_FileFormat) {
-		case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
-		case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
-		case CGNS_SOL: cout << "The output file format is CGNS (.cgns)." << endl; break;
+      case PARAVIEW: cout << "The output file format is Paraview ASCII (.dat)." << endl; break;
+      case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
+      case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
+      case CGNS_SOL: cout << "The output file format is CGNS (.cgns)." << endl; break;
 		}
 		cout << "Flow variables file name: " << Flow_FileName << "." << endl;
 	}
