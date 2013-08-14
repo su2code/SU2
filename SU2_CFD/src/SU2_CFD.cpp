@@ -56,6 +56,7 @@ using namespace std;
 int main(int argc, char *argv[]) {
 	bool StopCalc = false;
 	unsigned long StartTime, StopTime, TimeUsed = 0, ExtIter = 0;
+    // Add description of iMesh
 	unsigned short iMesh, iZone, iSol, nZone, nDim;
 	ofstream ConvHist_file;
 	char file_name[200];
