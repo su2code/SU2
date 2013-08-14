@@ -1032,34 +1032,151 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
     numerics->SetdPdrhos(node[iPoint]->GetdPdrhos(), node[jPoint]->GetdPdrhos());
     
 		/*--- Compute the residual ---*/
+/*    if (iPoint == 17) {
+      cout << "Test!" << endl;
+    }*/
 		numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
     
-/*    unsigned short iVar;
-    cout << "V_i: " << endl;
-    for (iVar = 0; iVar < nPrimVar; iVar++)
-      cout << V_i[iVar] << endl;
-    cin.get();
+    /////////// TEST JACOBIAN ///////////
+/*    if (iPoint == 17) {
+      unsigned short iVar, jVar;
+      double delta;
+      double **FDJac, *Res_orig;
+      
+      Res_orig = new double[nVar];
+      FDJac = new double*[nVar];
+      for (iVar =0; iVar < nVar; iVar++) {
+        FDJac[iVar] = new double[nVar];
+        Res_orig[iVar] = Res_Conv[iVar];
+      }
+      
+      cout << "Analytic Jacobian: " << endl;
+      for (iVar =0; iVar < nVar; iVar++) {
+        for (jVar = 0; jVar < nVar; jVar++) {
+          cout << Jacobian_i[iVar][jVar] << "\t";
+        }
+        cout << endl;
+      }
+      
+      // Perturb
+      for (iVar =0; iVar < nVar; iVar++) {
+        delta = 1E-8*U_i[iVar];
+        if (delta == 0.0) delta = 1E-8;
+        U_i[iVar] += delta;
+        
+        // Re-calculate primitive quantities & pass to CNumerics
+        node[iPoint]->SetSolution(U_i);
+        node[iPoint]->SetPrimVar_Compressible(config);
+        U_i = node[iPoint]->GetSolution();
+        U_j = node[jPoint]->GetSolution();
+        V_i = node[iPoint]->GetPrimVar();
+        V_j = node[jPoint]->GetPrimVar();
+        numerics->SetPrimitive(V_i, V_j);
+        numerics->SetConservative(U_i, U_j);
+        numerics->SetdPdrhos(node[iPoint]->GetdPdrhos(), node[jPoint]->GetdPdrhos());
+        
+        // Compute residual
+        numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
+        for (jVar = 0; jVar < nVar; jVar++) {
+          FDJac[jVar][iVar] = (Res_Conv[jVar] - Res_orig[jVar])/delta;
+        }
+        
+        // Reset U_i
+        U_i[iVar] -= delta;
+        node[iPoint]->SetSolution(U_i);
+        node[iPoint]->SetPrimVar_Compressible(config);
+      }
+      
+      cout << endl << endl << "FD Jacobian: " << endl;
+      for (iVar =0; iVar < nVar; iVar++) {
+        for (jVar = 0; jVar < nVar; jVar++) {
+          cout << FDJac[iVar][jVar] << "\t";
+        }
+        cout << endl;
+      }
+      
+      cin.get();
+      // Deallocate
+      for (iVar = 0; iVar < nVar; iVar++)
+        delete [] FDJac[iVar];
+      delete[] FDJac;
+      delete[] Res_orig;
+    }*/
+ 
+    /////////// TEST JACOBIAN ///////////
     
-    cout << endl << endl << "V_j: " << endl;
-    for (iVar = 0; iVar < nPrimVar; iVar++)
-      cout << V_j[iVar] << endl;
-    cin.get();
     
-    cout << endl<< endl<< "Convective Residual: " << endl;
-    for (iVar = 0; iVar < nVar; iVar++)
-      cout << Res_Conv[iVar] << endl;
-    cin.get();*/
+    /////////// TEST DERIVATIVES OF SOUNDSPEED!!! ///////////
+
+/*      unsigned short iVar, iSpecies;
+      double delta, FD;
+      double *Ms, *xi, conc, Ru;
+      double rho     = V_i[nSpecies+nDim+3];
+      double rhoCvtr = V_i[nSpecies+nDim+6];
+      double rhoCvve = V_i[nSpecies+nDim+7];
+      double u = V_i[nSpecies+2];
+      double v = V_i[nSpecies+3];
+      double w = V_i[nSpecies+4];
+      double P = V_i[nSpecies+nDim+2];
+      double *dPdrhos, dPdrhoE, dPdrhoEve;
+      double a, a_new;
+      
+      Ru = UNIVERSAL_GAS_CONSTANT;
+      Ms = config->GetMolar_Mass();
+      xi = config->GetRotationModes();
+      conc = 0.0;
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        conc += V_i[iSpecies]/Ms[iSpecies];
+      dPdrhoE = Ru/rhoCvtr * conc;
+      dPdrhoEve = -dPdrhoE;
+      dPdrhos = node[iPoint]->GetdPdrhos();
+      
+      a = V_i[nSpecies+nDim+5];
+      
+      // Perturb
+      iVar = 0;
+      delta = 1E-7*U_i[iVar];
+      U_i[iVar] += delta;
+      
+      // Re-calculate primitive quantities
+      node[iPoint]->SetSolution(U_i);
+      node[iPoint]->SetPrimVar_Compressible(config);
+      
+      a_new = node[iPoint]->GetPrimVar()[nSpecies+nDim+5];
+      
+      // Finite-difference
+      FD = (a_new - a) / delta;
+      
+      // analytic
+      double dadrhos, dadrhou, dadrhov, dadrhow, dadrhoE, dadrhoEve;
+      dadrhos = 1.0/(2.0*a) * (1/rhoCvtr*(Ru/Ms[0] - (3.0/2.0+xi[0]/2.0)*Ru/Ms[0]*dPdrhoE)*P/rho + 1.0/rho*(1.0+dPdrhoE)*(dPdrhos[0] - P/rho));
+      dadrhos = 1.0/(2.0*a*rho) * (1+dPdrhoE)*(dPdrhos[0] - P/rho);
+      
+      dadrhou = -1.0/(2.0*rho*a) * ((1.0+dPdrhoE)*dPdrhoE)*u;
+      dadrhov = -1.0/(2.0*rho*a) * ((1.0+dPdrhoE)*dPdrhoE)*v;
+      dadrhow = -1.0/(2.0*rho*a) * ((1.0+dPdrhoE)*dPdrhoE)*w;
+      dadrhoE = 1.0/(2.0*rho*a) * ((1.0+dPdrhoE)*dPdrhoE);
+      dadrhoEve = 1.0/(2.0*rho*a) * ((1.0+dPdrhoE)*dPdrhoEve);
+      // Reset U
+      U_i[iVar] -= delta;
+      
+      cout << "TNE2Solver Upwind Residual:" << endl;
+      cout << "FD a: " << FD << endl;
+      cout << "Analytic dadrhos: " << dadrhos << endl;
+      cin.get();*/
+    /////////// TEST DERIVATIVES OF SOUNDSPEED!!! ///////////
     
-		/*--- Update the residual values ---*/
+		
+    /*--- Update the residual values ---*/
 		LinSysRes.AddBlock(iPoint, Res_Conv);
 		LinSysRes.SubtractBlock(jPoint, Res_Conv);
     
 		/*--- Update the implicit Jacobian ---*/
 		if (implicit) {
-//			Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-//			Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
-//			Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
-//			Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
+			Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+			Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
+			Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
+			Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
 		}
 	}
 }
