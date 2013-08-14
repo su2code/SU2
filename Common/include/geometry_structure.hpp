@@ -70,7 +70,6 @@ protected:
   Global_nElem,	/*!< \brief Total number of elements in a simulation across all processors (all types). */
 	nEdge,					/*!< \brief Number of edges of the mesh. */
 	nFace,					/*!< \brief Number of faces of the mesh. */
-	nElem_Storage,			/*!< \brief Storage capacity for ParaView format (domain). */
   nelem_edge,             /*!< \brief Number of edges in the mesh. */
   Global_nelem_edge,      /*!< \brief Total number of edges in the mesh across all processors. */
   nelem_triangle,       /*!< \brief Number of triangles in the mesh. */
@@ -98,7 +97,6 @@ protected:
   unsigned long Max_GlobalPoint;  /*!< \brief Greater global point in the domain local structure. */
 
 public:
-	unsigned long *nElem_Bound_Storage;	/*!< \brief Storage capacity for ParaView format (boundaries, for each marker). */ 
 	unsigned long *nElem_Bound;			/*!< \brief Number of elements of the boundary. */
 	string *Tag_to_Marker;	/*!< \brief If you know the index of the boundary (depend of the 
 							 grid definition), it gives you the maker (where the boundary 
@@ -270,13 +268,6 @@ public:
 	void SetnElem_Bound(unsigned short val_marker, unsigned long val_nelem_bound);
 
 	/*! 
-	 * \brief Set the number of storage for boundary elements.
-	 * \param[in] val_marker - Marker of the boundary.
-	 * \param[in] val_nelem_bound - Number of boundary elements.
-	 */	
-	void SetnElem_Bound_Storage(unsigned short val_marker, unsigned long val_nelem_bound);
-
-	/*! 
 	 * \brief Set the number of grid points.
 	 * \param[in] val_npoint - Number of grid points.
 	 */	
@@ -299,23 +290,6 @@ public:
 	 * \param[in] val_marker - Marker of the boundary.
 	 */
 	unsigned long GetnElem_Bound(unsigned short val_marker);
-
-	/*! 
-	 * \brief Get the number of storage boundary elements.
-	 * \param[in] val_marker - Marker of the boundary.
-	 */
-	unsigned long GetnElem_Bound_Storage(unsigned short val_marker);
-
-	/*! 
-	 * \brief Set the number of elements in vtk fortmat.
-	 * \param[in] val_nelem_storage - Number of elements
-	 */
-	void SetnElem_Storage(unsigned long val_nelem_storage);
-
-	/*! 
-	 * \brief Get the number of elements in vtk fortmat.
-	 */	
-	unsigned long GetnElem_Storage(void);
 
   /*!
 	 * \brief Get the number of elements in vtk fortmat.
@@ -539,15 +513,6 @@ public:
 	 * \param[in] val_mesh_out_filename - Name of the output file.
 	 */
 	virtual void SetMeshFile(CConfig *config, string val_mesh_out_filename, string val_mesh_in_filename);
-  
-	/*! 
-	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] mesh_vtk - Name of the vtk file.
-	 * \param[in] mesh_su2 - Name of the su2 file.
-	 * \param[in] nslices - Number of slices of the 2D configuration.
-	 */	
-	virtual void Set3D_to_2D(CConfig *config, char mesh_vtk[200], char mesh_su2[200], unsigned short nslices);
 
 	/*! 
 	 * \brief A virtual member.
@@ -1056,15 +1021,6 @@ public:
 	 * \param[in] val_mesh_out_filename - Name of the output file.
 	 */
 	void SetMeshFile(CConfig *config, string val_mesh_out_filename, string val_mesh_in_filename);
-
-	/*! 
-	 * \brief Create a 2D mesh using a 3D mesh with symmetries.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] mesh_vtk - Name of the vtk file.
-	 * \param[in] mesh_su2 - Name of the su2 file.
-	 * \param[in] nslices - Number of slices of the 2D configuration.
-	 */	
-	void Set3D_to_2D(CConfig *config, char mesh_vtk[200], char mesh_su2[200], unsigned short nslices);
 
 	/*! 
 	 * \brief Compute some parameters about the grid quality.
