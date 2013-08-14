@@ -593,7 +593,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config,
-                                      vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
+                                      vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, vector<double> &point1_Airfoil, vector<double> &point2_Airfoil, bool original_surface);
   
   /*!
 	 * \brief A virtual member.

@@ -2745,48 +2745,221 @@ void CEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config) {
 
 void CEulerSolver::Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config) {
 	unsigned short iPlane, nPlane;
+	unsigned long iSegment;
 	double **Plane_P0, **Plane_Normal, MinPlane, MaxPlane;
-  vector<double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil;
-  
-  if (nDim == 3) {
-    nPlane = 15; MinPlane = 0; MaxPlane = 14;
-    
-    Xcoord_Airfoil = new vector<double> [nPlane];
-    Ycoord_Airfoil = new vector<double> [nPlane];
-    Zcoord_Airfoil = new vector<double> [nPlane];
-    
-    Plane_P0 = new double *[nPlane];
-    Plane_Normal = new double *[nPlane];
-    for (iPlane = 0; iPlane < nPlane; iPlane++) {
-      Plane_P0[iPlane] = new double [3];
-      Plane_Normal[iPlane] = new double [3];
-    }
-    
-    for (iPlane = 0; iPlane < nPlane; iPlane++) {
-      
-      Plane_Normal[iPlane][0] = 0.0;    Plane_P0[iPlane][0] = 0.0;
-      Plane_Normal[iPlane][1] = 1.0;    Plane_P0[iPlane][1] = MinPlane + iPlane*(MaxPlane - MinPlane)/double(nPlane-1);
-      Plane_Normal[iPlane][2] = 0.0;    Plane_P0[iPlane][2] = 0.0;
-      
-      geometry->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, config,
-                                       Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
-    }
-    
-    delete [] Xcoord_Airfoil;
-    delete [] Ycoord_Airfoil;
-    delete [] Zcoord_Airfoil;
+	vector<double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *point1_Airfoil, *point2_Airfoil;
 
-    for (iPlane = 0; iPlane < nPlane; iPlane++) {
+	if (nDim == 3) {
+		nPlane = 15; MinPlane = 0; MaxPlane = 14;
+
+		Xcoord_Airfoil = new vector<double> [nPlane];
+		Ycoord_Airfoil = new vector<double> [nPlane];
+		Zcoord_Airfoil = new vector<double> [nPlane];
+		point1_Airfoil = new vector<double> [nPlane];
+		point2_Airfoil = new vector<double> [nPlane];
+
+		Plane_P0 = new double *[nPlane]; 		// point defining plane
+		Plane_Normal = new double *[nPlane];	// normal defining plane
+		for (iPlane = 0; iPlane < nPlane; iPlane++) {
+			Plane_P0[iPlane] = new double [3];
+			Plane_Normal[iPlane] = new double [3];
+		}
+
+		for (iPlane = 0; iPlane < nPlane; iPlane++) {
+
+			Plane_Normal[iPlane][0] = 0.0;    Plane_P0[iPlane][0] = 0.0;
+			Plane_Normal[iPlane][1] = 1.0;    Plane_P0[iPlane][1] = MinPlane + iPlane*(MaxPlane - MinPlane)/double(nPlane-1);
+			Plane_Normal[iPlane][2] = 0.0;    Plane_P0[iPlane][2] = 0.0;
+
+			// pass in the pressure and bring it back
+			geometry->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, config,
+					Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], point1_Airfoil[iPlane], point2_Airfoil[iPlane], true);
+
+			unsigned long nNodes = Xcoord_Airfoil[iPlane].size();
+			unsigned long iNode;
+
+			/*--- find the node that corresponds to the leading edge ---*/
+			double maxDistance = 0;
+			double distance, chord;
+			double leading_node [3], chord_line [3], q_chord [3];
+			double trailing_node [] = {Xcoord_Airfoil[iPlane].at(0), Ycoord_Airfoil[iPlane].at(0), Zcoord_Airfoil[iPlane].at(0)};
+			double x_node, y_node, z_node;
+			for(iNode = 1; iNode < nNodes; iNodes++) {
+
+				/*--- compute the distance from the trailing edge ---*/
+				x_node = Xcoord_Airfoil[iPlane].at(iNode);
+				y_node = Ycoord_Airfoil[iPlane].at(iNode);
+				z_node = Zcoord_Airfoil[iPlane].at(iNode);
+				distance = sqrt(pow(trailing_node[0]-x_node,2.0) + pow(trailing_node[1]-y_node,2.0) + pow(trailing_node[2]-z_node,2.0));
+
+				/*--- assume the leading edge is the point
+	      farthest away from the trailing edge ---*/
+				if (distance > maxDistance) {
+					maxDistance = distance;
+					leading_node = {x_node, y_node, z_node};
+				}
+			}
+
+			/*--- compute the length of the chord ---*/
+			chord = sqrt(pow(trailing_node[0]-leading_node[0],2.0) + pow(trailing_node[1]-leading_node[1],2.0) + pow(trailing_node[2]-leading_node[2],2.0));
+
+			/*--- define vector pointing from the trailing edge to the leading edge ---*/
+			chord_line = {leading_node[0]-trailing_node[0], leading_node[1]-trailing_node[1], leading_node[2]-trailing_node[2]};
+
+			/*--- find the coordinates of the quarter-chord point
+	    (move three-quarters of the chord
+	     length along the chord line) ---*/
+			q_chord = {trailing_node[0]+0.75*chord_line[0], trailing_node[1]+0.75*chord_line[1], trailing_node[2]+0.75*chord_line[2]};
+
+			/*--- find the vector that points from the trailing node to
+	    the first point along the top of the airfoil surface
+	    (assume that this is always the
+	     second point of the coord vectors.) ---*/
+			double first_line [3];
+			double first_line_x = Xcoord_Airfoil[iPlane].at(1);
+			double first_line_y = Ycoord_Airfoil[iPlane].at(1);
+			double first_line_z = Zcoord_Airfoil[iPlane].at(1);
+			first_line = {first_line_x - trailing_node[0], first_line_y - trailing_node[1], first_line_z - trailing_node[2]};
+
+			/*--- find the vector that lies normal to the plane of the airfoil
+	    (we are assuming, that after a deformation, the plane's normal
+	     will no longer be oriented in the conventional +Y direction.) ---*/
+			double section_normal [3];
+			section_normal[0] = chord_line[1]*first_line[2] - chord_line[2]*first_line[1];
+			section_normal[1] = chord_line[2]*first_line[0] - chord_line[0]*first_line[2];
+			section_normal[2] = chord_line[0]*first_line[1] - chord_line[1]*first_line[0];
+
+			/*--- find the direction of the normal force
+	    (take a cross product between the 
+	     section normal and the chordline) ---*/
+			double normal_line [3];
+			normal_line[0] = section_normal[1]*chord_line[2] - section_normal[2]*chord_line[1];
+			normal_line[1] = section_normal[2]*chord_line[0] - section_normal[0]*chord_line[2];
+			normal_line[2] = section_normal[0]*chord_line[1] - section_normal[1]*chord_line[0];
+
+			/*--- Information about each segment along the airfoil
+	    section will be stored in a structure of type segment_t ---*/      
+			unsigned long nSegments = Xcoord_Airfoil[iPlane].size()-1;
+			struct segment_t {
+				double endpoint1 [3];		// coordinates of the first endpoint
+				double endpoint2 [3];		// coordinates of the second endpoint
+				double length;			// segment length
+				double midpoint [3];		// coordinates of the segment midpoint
+				double normal [3];		// components of the outward-pointing unit normal
+			};
+
+			segment_t *segments; 			// pointer of type segment_t
+			segments = new segment_t[nSegments];	// array of structures
+
+
+			/*--- append the first entry (corresponding to the trailing
+	    point) to the ends of the coord vectors so that we have 
+	    easily identifiable segments all around the airfoil section. ---*/
+			vector<double> Xcoord_around, Ycoord_around, Zcoord_around;
+			Xcoord_around = Xcoord_Airfoil[iPlane];
+			Xcoord_around = Xcoord_around.pushback(Xcoord_Airfoil[iPlane].at(0));
+			Ycoord_around = Ycoord_Airfoil[iPlane];
+			Ycoord_around = Ycoord_around.pushback(Ycoord_Airfoil[iPlane].at(0));
+			Zcoord_around = Zcoord_Airfoil[iPlane];
+			Zcoord_around = Zcoord_around.pushback(Zcoord_Airfoil[iPlane].at(0));
+
+			unsigned long iSegment;
+			for (iSegment = 0; iSegment < nSegment; iSegment++) {
+
+				/*--- coordinates of first endpoint ---*/
+				segments[iSegment].endpoint1[0] = Xcoord_around.at(iSegment);
+				segments[iSegment].endpoint1[1] = Ycoord_around.at(iSegment);
+				segments[iSegment].endpoint1[2] = Zcoord_around.at(iSegment);
+
+				/*--- coordinates of second endpoint ---*/
+				segments[iSegment].endpoint2[0] = Xcoord_around.at(iSegment+1);
+				segments[iSegment].endpoint2[1] = Ycoord_around.at(iSegment+1);
+				segments[iSegment].endpoint2[2] = Zcoord_around.at(iSegment+1);
+
+				/*--- segment length ---*/
+				double deltaX = segments[iSegment].endpoint2[0] - segments[iSegment].endpoint1[0];
+				double deltaY = segments[iSegment].endpoint2[1] - segments[iSegment].endpoint1[1];
+				double deltaZ = segments[iSegment].endpoint2[2] - segments[iSegment].endpoint1[2];
+				segments[iSegment].length = sqrt(pow(deltaX,2.0) + pow(deltaY,2.0) + pow(deltaZ,2.0));
+
+				/*--- coordinates of the segment midpoint ---*/
+				segments[iSegment].midpoint[0] = 0.5*(segments[iSegment].endpoint1[0] + segments[iSegment].endpoint2[0]);
+				segments[iSegment].midpoint[1] = 0.5*(segments[iSegment].endpoint1[1] + segments[iSegment].endpoint2[1]);
+				segments[iSegment].midpoint[2] = 0.5*(segments[iSegment].endpoint1[2] + segments[iSegment].endpoint2[2]);
+
+				/*--- compute the unit "tangent" vector, i.e.
+	      the vector pointing along the segment ---*/
+				double tangent [3];
+				tangent[0] = (1/segments[iSegment].length)*(deltaX);
+				tangent[1] = (1/segments[iSegment].length)*(deltaY);
+				tangent[2] = (1/segments[iSegment].length)*(deltaZ);
+
+				/*--- compute the outward-pointing normal ---*/
+				segments[iSegment].normal[0] = section_normal[1]*tangent[2] - section_normal[2]*tangent[1];
+				segments[iSegment].normal[1] = section_normal[2]*tangent[0] - section_normal[0]*tangent[2];
+				segments[iSegment].normal[2] = section_normal[0]*tangent[1] - section_normal[1]*tangent[0];
+
+				/*--- compute the outward-pointing unit normal ---*/
+				double norm_dot_norm = pow(segments[iSegment].normal[0],2.0) + pow(segments[iSegment].normal[1],2.0) + pow(segments[iSegment].normal[2],2.0);
+				double normal_length = sqrt(norm_dot_norm);
+				segments[iSegment].normal[0] = segments[iSegment].normal[0]/normal_length;
+				segments[iSegment].normal[1] = segments[iSegment].normal[1]/normal_length;
+				segments[iSegment].normal[2] = segments[iSegment].normal[2]/normal_length;
+
+
+			}
+
+			// - get the direction of the freestream (is it always just -x?)
+			//
+			// - for each airfoil
+			// 	- make sure you've gotten back:
+			// 	(a) the number of segments along the airfoil section
+			//	(b) the coordinates of the end points of each segment
+			//	(c) the node number of the end points of each segment
+			//	- find the coordinates of the leading edge
+			//	- find the coordinates of the trailing edge
+			//	- compute the chord length
+			//	- compute a vector going from the trailing edge to the tip
+			//	- find the angle of attack for this airfoil
+			//	- find the vector giving the direction of normal force
+			//	- find the vector giving the direction of chord force
+			//	- compute the quarter chord point (coordinates)
+			//	- get dynamic pressure (assume we're using noncompressible form)
+			// 	- for each segment
+			// 		- compute the length
+			// 		- collect the values of pressure at the two end points
+			// 		- find their average
+			//		- compute the force per unit length carried by the segment
+			//		- find the tangent vector for the segment
+			//		- compute the normal vector for each segment
+			//		- compute the center point of the segment
+			//		- compute the lever-arm vector from the segment center to the quarter-chord point
+			//		- cross the lever arm with the force to get the moment
+			//
+			// - sum across segments to get total normal force, total chord force, total pitching moment
+			// -write to files cl, cd, cm
+		}
+
+
+		delete [] Xcoord_Airfoil;
+		delete [] Ycoord_Airfoil;
+		delete [] Zcoord_Airfoil;
+		delete [] point1_Airfoil;
+		delete [] point2_Airfoil;
+
+		for (iPlane = 0; iPlane < nPlane; iPlane++) {
 			delete Plane_Normal[iPlane];
-      delete Plane_P0[iPlane];
+			delete Plane_P0[iPlane];
 		}
 		delete [] Plane_P0;
-    delete [] Plane_Normal;
+		delete [] Plane_Normal;
 
-  }
-  
-  
-  
+		delete [] segments;
+
+	}
+
+
+
 }
 
 void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
