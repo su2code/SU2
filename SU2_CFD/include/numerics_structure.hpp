@@ -5860,17 +5860,14 @@ public:
 class CUpwAUSM_TNE2 : public CNumerics {
 private:
 	bool implicit, ionization;
-	double *Diff_U;
-  double *Density_i, *Density_j, *RoeDensity;
-	double *Velocity_i, *Velocity_j, *RoeVelocity;
-	double *Proj_flux_tensor_i, *Proj_flux_tensor_j;
-	double *delta_wave, *delta_vel;
-	double *Lambda, *Epsilon;
-	double **P_Tensor, **invP_Tensor;
-	double sq_vel, Proj_ModJac_Tensor_ij, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-	Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeEnthalpy, RoeSoundSpeed,
-	ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel, delta_p, delta_rho;
-  double *dPdrhos, *l, *m;
+	double *FcL, *FcR, *FcLR;
+  double *dmLP, *dmRM, *dpLP, *dpRM;
+  double *daL, *daR;
+  double *rhos_i, *u_i;
+	double *rhos_j, *u_j;
+  double a_i, P_i, h_i, ProjVel_i;
+  double a_j, P_j, h_j, ProjVel_j;
+	double sq_vel, Proj_ModJac_Tensor_ij;
  	unsigned short nSpecies, nVar, nDim;
   
 public:
