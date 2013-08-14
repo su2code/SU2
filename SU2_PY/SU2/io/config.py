@@ -270,8 +270,8 @@ def read_config(filename):
     data_dict = OrderedDict() 
     
     #hack - twl
-    data_dict['DV_VALUE_NEW'] = []
-    data_dict['DV_VALUE_OLD'] = []
+    data_dict['DV_VALUE_NEW'] = [0]
+    data_dict['DV_VALUE_OLD'] = [0]
     
     input_file = open(filename)
     
