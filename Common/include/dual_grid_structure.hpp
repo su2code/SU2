@@ -153,7 +153,8 @@ private:
 	bool Agglomerate;					/*!< \brief This flag indicates if the element has been agglomerated. */
 	bool Move;					/*!< \brief This flag indicates if the point is going to be move in the grid deformation process. */
 	unsigned short color;	/*!< \brief Color of the point in the partitioning strategy. */
-	double WallDistance;	/*!< \brief Distance to the nearest wall. */
+	double Wall_Distance;	/*!< \brief Distance to the nearest wall. */
+  double SharpEdge_Distance;	/*!< \brief Distance to a sharp edge. */
 	unsigned long GlobalIndex;	/*!< \brief Global index in the parallel simulation. */
 	unsigned short nNeighbor;	/*!< \brief Color of the point in the partitioning strategy. */
 
@@ -207,14 +208,26 @@ public:
 	 * \brief Set the value of the distance to the nearest wall.
 	 * \param[in] val_distance - Value of the distance.
 	 */
-	void SetWallDistance(double val_distance);
+	void SetWall_Distance(double val_distance);
+  
+  /*!
+	 * \brief Set the value of the distance to a sharp edge.
+	 * \param[in] val_distance - Value of the distance.
+	 */
+	void SetSharpEdge_Distance(double val_distance);
 	
 	/*! 
 	 * \brief Get the value of the distance to the nearest wall.
 	 * \return Value of the distance to the nearest wall.
 	 */
-	double GetWallDistance(void);
+	double GetWall_Distance(void);
 	
+  /*!
+	 * \brief Get the value of the distance to a sharp edge
+	 * \return Value of the distance to the nearest wall.
+	 */
+	double GetSharpEdge_Distance(void);
+  
 	/*! 
 	 * \brief Set the number of elements that compose the control volume.
 	 * \param[in] val_nElem - Number of elements that make the control volume around a node.
