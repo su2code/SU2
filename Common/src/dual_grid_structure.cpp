@@ -521,7 +521,7 @@ CVertex::CVertex(unsigned long val_point, unsigned short val_nDim) : CDualGrid(v
   Rot_Flux = 0.0;
   
   /*--- By default, assume this vertex does not sit on a sharp corner ---*/
-  Sharp_Corner = false;
+  Curvature = false;
 	
 	/*--- Set to zero the variation of the coordinates ---*/
 	VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;

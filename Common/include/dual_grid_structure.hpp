@@ -832,7 +832,7 @@ private:
 	short Rotation_Type;			/*!< \brief Type of rotation associated with the vertex (MPI and periodic) */
   short Matching_Zone;			/*!< \brief Donor zone associated with the vertex (MPI and sliding) */
   double Rot_Flux;     /*!< \brief The exactly integrated rotational volume flux. */
-  bool Sharp_Corner;     /*!< \brief Flag to mark vertices at sharp corners of the surfaces. */
+  double Curvature;     /*!< \brief Flag to mark vertices at sharp corners of the surfaces. */
 	unsigned long Normal_Neighbor; /*!< \brief Index of the closest neighbor. */
   unsigned long Donor_Elem;   /*!< \brief Store the donor element for interpolation across zones/ */
   double Basis_Function[3]; /*!< \brief Basis function values for interpolation across zones. */
@@ -1047,16 +1047,16 @@ public:
 	void AddRotFlux(double val_rot_flux);
   
   /*! 
-	 * \brief Set the boolean for a corner vertex.
-	 * \param[in] val_sharp_corner - <code>TRUE</code> if this vertex sits on a sharp corner; otherwise <code>FALSE</code>.
+	 * \brief Set the value of the curvature.
+	 * \param[in] val_curvature - Value of the curvature.
 	 */
-	void SetSharp_Corner(bool val_sharp_corner);
+	void SetCurvature(double val_curvature);
 	
 	/*! 
 	 * \brief Get the value of an auxiliar variable for gradient computation.
-	 * \return <code>TRUE</code> if this vertex sits on a sharp corner; otherwise <code>FALSE</code>.
+	 * \return Value of the curvature.
 	 */
-	bool GetSharp_Corner(void);
+	double GetCurvature(void);
 	
 	/*! 
 	 * \brief Set the index of the closest neighbor to a point on the boundaries.
