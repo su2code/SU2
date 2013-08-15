@@ -747,7 +747,7 @@ void CAdjTurbSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     
     // Set volume and distances to the surface
     numerics->SetVolume(geometry->node[iPoint]->GetVolume());
-    numerics->SetDistance(geometry->node[iPoint]->GetWallDistance(), 0.0);
+    numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), 0.0);
     
     // Add and Subtract Residual
     numerics->ComputeResidual(Residual, Jacobian_ii, NULL, config);

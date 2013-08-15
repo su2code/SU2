@@ -193,7 +193,7 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
     
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
         (Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
-      Tecplot_File << ",\"Pressure\",\"Pressure_Coefficient\",\"Mach\"";
+      Tecplot_File << ",\"Pressure\",\"Pressure_Coefficient\",\"Mach\", \"Sharp_Edge_Dist\"";
     }
     
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||

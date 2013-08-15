@@ -462,7 +462,7 @@ void CNSVariable::SetStrainMag(void) {
 	StrainMag = sqrt(2.0*StrainMag);
 }
 
-void CNSVariable::SetPrimVar_Compressible(CConfig *config, double turb_ke) {
+void CNSVariable::SetPrimVar_Compressible(double turb_ke, CConfig *config) {
 	unsigned short iDim, iVar;
   bool check_dens = false, check_press = false, check_sos = false, check_temp = false;
   

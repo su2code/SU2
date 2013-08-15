@@ -977,12 +977,12 @@ public:
   /*!
 	 * \brief A virtual member.
 	 */
-	virtual void SetPrimVar_Compressible(double val_adjlimit);
+	virtual void SetPrimVar_Compressible(bool val_sharpedge_distance, CConfig *config);
 	
 	/*!
 	 * \brief A virtual member.
 	 */		
-	virtual void SetPrimVar_Compressible(CConfig *config, double turb_ke);
+	virtual void SetPrimVar_Compressible(double turb_ke, CConfig *config);
 	
 	/*!
 	 * \brief A virtual member.
@@ -992,7 +992,7 @@ public:
   /*!
 	 * \brief A virtual member.
 	 */
-	virtual void SetPrimVar_Incompressible(double val_adjlimit);
+	virtual void SetPrimVar_Incompressible(bool val_sharpedge_distance, CConfig *config);
 	
 	/*!
 	 * \brief A virtual member.
@@ -2194,7 +2194,7 @@ public:
 	/*!
 	 * \brief Set all the primitive variables for compressible flows
 	 */
-	void SetPrimVar_Compressible(CConfig *config, double turb_ke);
+	void SetPrimVar_Compressible(double turb_ke, CConfig *config);
 	
 	/*!
 	 * \brief Set all the primitive variables for incompressible flows
@@ -2497,12 +2497,12 @@ public:
   /*!
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
-	void SetPrimVar_Compressible(double val_adjlimit);
+	void SetPrimVar_Compressible(bool val_sharpedge_distance, CConfig *config);
   
   /*!
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
-	void SetPrimVar_Incompressible(double val_adjlimit);
+	void SetPrimVar_Incompressible(bool val_sharpedge_distance, CConfig *config);
   
 	/*!
 	 * \brief Set the value of the adjoint velocity.

@@ -2816,7 +2816,7 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
         *(coord[iDim]-Coord_bound[iVertex][iDim]);
 			if (dist2 < dist) dist = dist2;
 		}
-		node[iPoint]->SetWallDistance(sqrt(dist));
+		node[iPoint]->SetWall_Distance(sqrt(dist));
 	}
 
 	/*--- Deallocate the vector of boundary coordinates. ---*/
@@ -2899,7 +2899,7 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
 					(coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NS+iVertex)*nDim+iDim]);
 				if (dist2 < dist) dist = dist2;
 			}
-		node[iPoint]->SetWallDistance(sqrt(dist));
+		node[iPoint]->SetWall_Distance(sqrt(dist));
 	}
 
   /*--- Deallocate the buffers needed for the MPI communication. ---*/
@@ -5380,7 +5380,7 @@ void CPhysicalGeometry::ComputeSurf_Curvature(CConfig *config) {
 	unsigned long Neighbor_Point, Neighbor_Elem, iVertex, iPoint, jPoint;
 	double dot_product, dihedral_angle, avg_dihedral;
 	double Coord_Vertex_i[3], Coord_Vertex_j[3], Unit_Normal[2][3], area;
-  vector<unsigned long> Point_NeighborList, Elem_NeighborList, Point_Triangle;
+  vector<unsigned long> Point_NeighborList, Elem_NeighborList, Point_Triangle, Point_Critical;
   vector<unsigned long>::iterator it;
   double U[3], V[3], W[3], Length_U, Length_V, Length_W, CosValue, Angle_Value;
 
@@ -5591,7 +5591,11 @@ void CPhysicalGeometry::ComputeSurf_Curvature(CConfig *config) {
       }
     }
     
-    /*--- Compute Gauss, mean, max and min principal curvature ---*/
+    /*--- Compute Gauss, mean, max and min principal curvature, 
+     and set the list of critical points ---*/
+    
+    Point_Critical.clear();
+
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iPoint  = vertex[iMarker][iVertex]->GetNode();
@@ -5608,9 +5612,25 @@ void CPhysicalGeometry::ComputeSurf_Curvature(CConfig *config) {
         MaxPrinK = MeanK + sqrt(delta);
         MinPrinK = MeanK - sqrt(delta);
         
-        vertex[iMarker][iVertex]->SetCurvature(MaxPrinK);
-        
+        if (MaxPrinK > 50.0) Point_Critical.push_back(iPoint);
+//
+//        vertex[iMarker][iVertex]->SetCurvature(MaxPrinK);
+//
       }
+    }
+    
+    double *Coord, Dist, Dist2, *CoordSharp;
+    for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
+      Coord = node[iPoint]->GetCoord();
+      Dist = 1E20;
+      for (iVertex = 0; iVertex < Point_Critical.size(); iVertex++) {
+        CoordSharp = node[Point_Critical[iVertex]]->GetCoord();
+        Dist2 = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          Dist2 += (Coord[iDim]-CoordSharp[iDim]) * (Coord[iDim]-CoordSharp[iDim]);
+        if (Dist2 < Dist) Dist = Dist2;
+      }
+      node[iPoint]->SetSharpEdge_Distance(sqrt(Dist));
     }
     
     delete [] Angle_Defect;

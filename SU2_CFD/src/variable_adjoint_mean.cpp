@@ -259,12 +259,14 @@ void CAdjEulerVariable::SetTheta(double val_density, double *val_velocity, doubl
 		Theta += val_density*val_velocity[iDim]*Solution[iDim+1];
 }
 
-void CAdjEulerVariable::SetPrimVar_Compressible(double val_adjlimit) {
+void CAdjEulerVariable::SetPrimVar_Compressible(bool val_sharpedge_distance, CConfig *config) {
 	unsigned short iVar;
   bool check_dens = false;
-  
-  check_dens = (fabs(Solution[0]) > val_adjlimit);             // Check the adjoint density
-  
+  double adj_limit = config->GetAdjointLimit();
+
+  if (val_sharpedge_distance)
+    check_dens = (fabs(Solution[0]) > adj_limit);             // Check the adjoint density
+
   /*--- Check that the solution has a physical meaning ---*/
   if (check_dens) {
     
@@ -276,11 +278,13 @@ void CAdjEulerVariable::SetPrimVar_Compressible(double val_adjlimit) {
   
 }
 
-void CAdjEulerVariable::SetPrimVar_Incompressible(double val_adjlimit) {
+void CAdjEulerVariable::SetPrimVar_Incompressible(bool val_sharpedge_distance, CConfig *config) {
   unsigned short iVar;
   bool check_press = false;
-  
-  check_press = (fabs(Solution[0]) > val_adjlimit);             // Check the adjoint pressure
+  double adj_limit = config->GetAdjointLimit();
+
+  if (val_sharpedge_distance)
+    check_press = (fabs(Solution[0]) > adj_limit);             // Check the adjoint pressure
   
   /*--- Check that the solution has a physical meaning ---*/
   if (check_press) {

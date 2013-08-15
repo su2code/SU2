@@ -257,15 +257,15 @@ inline void CVariable::SetEnthalpy(void) { }
 
 inline void CVariable::SetPrimVar_Compressible(CConfig *config) { }
 
-inline void CVariable::SetPrimVar_Compressible(double val_adjlimit) { }
+inline void CVariable::SetPrimVar_Compressible(bool val_sharpedge_distance, CConfig *config) { }
 
-inline void CVariable::SetPrimVar_Compressible(CConfig *config, double turb_ke) { }
+inline void CVariable::SetPrimVar_Compressible(double turb_ke, CConfig *config) { }
 
 inline void CVariable::SetPrimVar_Incompressible(double Density_Inf, double levelset, CConfig *config) { }
 
 inline void CVariable::SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double turb_ke, double levelset, CConfig *config) { }
 
-inline void CVariable::SetPrimVar_Incompressible(double val_adjlimit) { }
+inline void CVariable::SetPrimVar_Incompressible(bool val_sharpedge_distance, CConfig *config) { }
 
 inline double CVariable::GetPrimVar(unsigned short val_var) { return 0; }
 
