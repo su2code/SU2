@@ -324,9 +324,9 @@ inline double CVertex::GetRotFlux(void) { return Rot_Flux; }
 
 inline void CVertex::AddRotFlux(double val_rot_flux) { Rot_Flux += val_rot_flux; }
 
-inline bool CVertex::GetSharp_Corner(void) { return Sharp_Corner; }
+inline double CVertex::GetCurvature(void) { return Curvature; }
 
-inline void CVertex::SetSharp_Corner(bool val_sharp_corner) { Sharp_Corner = val_sharp_corner; }
+inline void CVertex::SetCurvature(double val_Curvature) { Curvature = val_Curvature; }
 
 inline unsigned long CVertex::GetNormal_Neighbor(void) { return Normal_Neighbor; }
 
