@@ -1487,6 +1487,14 @@ public:
 	 * \param[out] val_Jacobian_i - Jacobian of the source terms
 	 */
 	virtual void ComputeVibRelaxation(double *val_residual, double **val_Jacobian_i, CConfig *config);
+  
+  /*!
+	 * \brief Calculation of the chemistry source term
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[out] val_residual - residual of the source terms
+	 * \param[out] val_Jacobian_i - Jacobian of the source terms
+	 */
+	virtual void ComputeChemistry(double *val_residual, double **val_Jacobian_i, CConfig *config);
 
 	/*! 
 	 * \overload
@@ -5985,6 +5993,14 @@ public:
 	 * \brief Destructor of the class.
 	 */
 	~CSource_TNE2(void);
+  
+  /*!
+	 * \brief Source residual of the chemistry.
+	 * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  void ComputeChemistry(double *val_residual, double **val_Jacobian_i, CConfig *config);
   
 	/*!
 	 * \brief Residual of the rotational frame source term.
