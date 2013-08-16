@@ -1253,6 +1253,8 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
     /*--- Set volume of the dual grid cell ---*/
     numerics->SetVolume(geometry->node[iPoint]->GetVolume());
     
+    numerics->ComputeChemistry(Residual, Jacobian_i, config);
+    
     /*--- Compute vibrational energy relaxation ---*/
     // NOTE: Jacobians de-activated.  Need to take derivatives w.r.t. relaxation time
     numerics->ComputeVibRelaxation(Residual, Jacobian_i, config);

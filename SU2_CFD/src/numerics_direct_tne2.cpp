@@ -967,6 +967,12 @@ CSource_TNE2::~CSource_TNE2(void) {
   
 }
 
+void CSource_TNE2::ComputeChemistry(double *val_residual, double **val_Jacobian_i, CConfig *config) {
+  
+}
+
+
+
 void CSource_TNE2::ComputeVibRelaxation(double *val_residual, double **val_Jacobian_i, CConfig *config) {
   /*--- Translational-rotational & vibrational energy exchange via inelastic collisions ---*/
   // Note: Electronic energy not implemented
