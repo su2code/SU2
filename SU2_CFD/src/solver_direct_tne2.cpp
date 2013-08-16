@@ -53,11 +53,13 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
 	unsigned long iPoint, index, counter_local = 0, counter_global = 0;
 	unsigned short iVar, iDim, iMarker, iSpecies, nZone;
   double *Mvec_Inf;
-  double Density, Velocity2, Alpha, Beta;
-	bool restart, check_temp, check_press;
+  double *Density, Velocity2, Alpha, Beta;
+	bool restart, check_temp, check_press, check_dens, check_sos;
 	
   restart = (config->GetRestart() || config->GetRestart_Flow());
 	roe_turkel = false;
+  
+  Density = new double [nSpecies];
   
 	int rank = MASTER_NODE;
 #ifndef NO_MPI
@@ -310,6 +312,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
 		/*--- Instantiate the variable class with an arbitrary solution
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
+    Solution = node_infty->GetSolution();
 		for(iPoint = nPointDomain; iPoint < nPoint; iPoint++)
 			node[iPoint] = new CTNE2EulerVariable(Solution, nDim, nVar, nPrimVar, nPrimVarGrad, config);
     
@@ -320,11 +323,15 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
 		delete [] Global2Local;
 	}
   
+  /*--- MPI solution ---*/
+	Set_MPI_Solution(geometry, config);
+  
   /*--- Check that the initial solution is physical ---*/
-  counter_local = 0;
+/*  counter_local = 0;
   
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     
+    ///////// OLD
     node[iPoint]->SetDensity();
     node[iPoint]->SetVelocity2();
     check_temp = node[iPoint]->SetTemperature(config);
@@ -334,10 +341,10 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
     Velocity2 = 0.0;
     if (check_temp || check_press) {
       double *molar_mass, *theta_v, *rotation_modes, *temperature_ref, *enthalpy_formation;
-      double sqvel, energy, energy_ve, energy_v, energy_e, energy_formation;
+      double sqvel, energy, energy_ve, energy_v, energy_e, energy_formation;*/
       
       /*--- Calculate energy ---*/
-      molar_mass         = config->GetMolar_Mass();
+/*      molar_mass         = config->GetMolar_Mass();
       theta_v            = config->GetCharVibTemp();
       rotation_modes     = config->GetRotationModes();
       temperature_ref    = config->GetRefTemperature();
@@ -391,8 +398,8 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
 #endif
   
   
-  if ((rank == MASTER_NODE) && (counter_global != 0)) cout << "Warning. The original solution contains "<< counter_global << " points that are not physical." << endl;
-  
+  if ((rank == MASTER_NODE) && (counter_global != 0)) cout << "Warning. The original solution contains "<< counter_global << " points that are not physical." << endl;*/
+
 	if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
 	else least_squares = false;
   
@@ -408,6 +415,7 @@ CTNE2EulerSolver::~CTNE2EulerSolver(void) {
 	unsigned short iVar, iMarker;
   
 	/*--- Array initialization ---*/
+  if (Density != NULL) delete [] Density;
 	if (Velocity_Inlet != NULL) delete [] Velocity_Inlet;
 	if (Velocity_Outlet != NULL) delete [] Velocity_Outlet;
   if (Velocity_Inf != NULL) delete [] Velocity_Inf;
@@ -534,13 +542,19 @@ void CTNE2EulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
           
 					/*--- Rotate the momentum components. ---*/
 					if (nDim == 2) {
-						newSolution[1] = rotMatrix[0][0]*Buffer_Receive_U[1*nVertex+iVertex] + rotMatrix[0][1]*Buffer_Receive_U[2*nVertex+iVertex];
-						newSolution[2] = rotMatrix[1][0]*Buffer_Receive_U[1*nVertex+iVertex] + rotMatrix[1][1]*Buffer_Receive_U[2*nVertex+iVertex];
+						newSolution[nSpecies] = rotMatrix[0][0]*Buffer_Receive_U[nSpecies*nVertex+iVertex] + rotMatrix[0][1]*Buffer_Receive_U[(nSpecies+1)*nVertex+iVertex];
+						newSolution[nSpecies+1] = rotMatrix[1][0]*Buffer_Receive_U[(nSpecies)*nVertex+iVertex] + rotMatrix[1][1]*Buffer_Receive_U[(nSpecies+1)*nVertex+iVertex];
 					}
 					else {
-						newSolution[1] = rotMatrix[0][0]*Buffer_Receive_U[1*nVertex+iVertex] + rotMatrix[0][1]*Buffer_Receive_U[2*nVertex+iVertex] + rotMatrix[0][2]*Buffer_Receive_U[3*nVertex+iVertex];
-						newSolution[2] = rotMatrix[1][0]*Buffer_Receive_U[1*nVertex+iVertex] + rotMatrix[1][1]*Buffer_Receive_U[2*nVertex+iVertex] + rotMatrix[1][2]*Buffer_Receive_U[3*nVertex+iVertex];
-						newSolution[3] = rotMatrix[2][0]*Buffer_Receive_U[1*nVertex+iVertex] + rotMatrix[2][1]*Buffer_Receive_U[2*nVertex+iVertex] + rotMatrix[2][2]*Buffer_Receive_U[3*nVertex+iVertex];
+						newSolution[nSpecies]   =  rotMatrix[0][0]*Buffer_Receive_U[nSpecies*nVertex+iVertex]
+                                     + rotMatrix[0][1]*Buffer_Receive_U[(nSpecies+1)*nVertex+iVertex]
+                                     + rotMatrix[0][2]*Buffer_Receive_U[(nSpecies+2)*nVertex+iVertex];
+						newSolution[nSpecies+1] =  rotMatrix[1][0]*Buffer_Receive_U[(nSpecies)*nVertex+iVertex]
+                                     + rotMatrix[1][1]*Buffer_Receive_U[(nSpecies+1)*nVertex+iVertex]
+                                     + rotMatrix[1][2]*Buffer_Receive_U[(nSpecies+2)*nVertex+iVertex];
+						newSolution[nSpecies+2] =  rotMatrix[2][0]*Buffer_Receive_U[(nSpecies)*nVertex+iVertex]
+                                     + rotMatrix[2][1]*Buffer_Receive_U[(nSpecies+1)*nVertex+iVertex]
+                                     + rotMatrix[2][2]*Buffer_Receive_U[(nSpecies+2)*nVertex+iVertex];
 					}
           
 					/*--- Copy transformed conserved variables back into buffer. ---*/
@@ -653,13 +667,21 @@ void CTNE2EulerSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config
           
 					/*--- Rotate the momentum components. ---*/
 					if (nDim == 2) {
-						newSolution[1] = rotMatrix[0][0]*Buffer_Receive_U[1*nVertex+iVertex] + rotMatrix[0][1]*Buffer_Receive_U[2*nVertex+iVertex];
-						newSolution[2] = rotMatrix[1][0]*Buffer_Receive_U[1*nVertex+iVertex] + rotMatrix[1][1]*Buffer_Receive_U[2*nVertex+iVertex];
+						newSolution[nSpecies]   =  rotMatrix[0][0]*Buffer_Receive_U[(nSpecies)*nVertex+iVertex]
+                                     + rotMatrix[0][1]*Buffer_Receive_U[(nSpecies+1)*nVertex+iVertex];
+						newSolution[nSpecies+1] =  rotMatrix[1][0]*Buffer_Receive_U[(nSpecies)*nVertex+iVertex]
+                                     + rotMatrix[1][1]*Buffer_Receive_U[(nSpecies+1)*nVertex+iVertex];
 					}
 					else {
-						newSolution[1] = rotMatrix[0][0]*Buffer_Receive_U[1*nVertex+iVertex] + rotMatrix[0][1]*Buffer_Receive_U[2*nVertex+iVertex] + rotMatrix[0][2]*Buffer_Receive_U[3*nVertex+iVertex];
-						newSolution[2] = rotMatrix[1][0]*Buffer_Receive_U[1*nVertex+iVertex] + rotMatrix[1][1]*Buffer_Receive_U[2*nVertex+iVertex] + rotMatrix[1][2]*Buffer_Receive_U[3*nVertex+iVertex];
-						newSolution[3] = rotMatrix[2][0]*Buffer_Receive_U[1*nVertex+iVertex] + rotMatrix[2][1]*Buffer_Receive_U[2*nVertex+iVertex] + rotMatrix[2][2]*Buffer_Receive_U[3*nVertex+iVertex];
+						newSolution[nSpecies]   =  rotMatrix[0][0]*Buffer_Receive_U[(nSpecies)*nVertex+iVertex]
+                                     + rotMatrix[0][1]*Buffer_Receive_U[(nSpecies+1)*nVertex+iVertex]
+                                     + rotMatrix[0][2]*Buffer_Receive_U[(nSpecies+2)*nVertex+iVertex];
+						newSolution[nSpecies+1] =  rotMatrix[1][0]*Buffer_Receive_U[(nSpecies)*nVertex+iVertex]
+                                     + rotMatrix[1][1]*Buffer_Receive_U[(nSpecies+1)*nVertex+iVertex]
+                                     + rotMatrix[1][2]*Buffer_Receive_U[(nSpecies+2)*nVertex+iVertex];
+						newSolution[nSpecies+1] =  rotMatrix[2][0]*Buffer_Receive_U[(nSpecies)*nVertex+iVertex]
+                                     + rotMatrix[2][1]*Buffer_Receive_U[(nSpecies+1)*nVertex+iVertex]
+                                     + rotMatrix[2][2]*Buffer_Receive_U[(nSpecies+2)*nVertex+iVertex];
 					}
           
 					/*--- Copy transformed conserved variables back into buffer. ---*/
@@ -772,13 +794,21 @@ void CTNE2EulerSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *co
           
 					/*--- Rotate the momentum components. ---*/
 					if (nDim == 2) {
-						newLimit[1] = rotMatrix[0][0]*Buffer_Receive_Limit[1*nVertex+iVertex] + rotMatrix[0][1]*Buffer_Receive_Limit[2*nVertex+iVertex];
-						newLimit[2] = rotMatrix[1][0]*Buffer_Receive_Limit[1*nVertex+iVertex] + rotMatrix[1][1]*Buffer_Receive_Limit[2*nVertex+iVertex];
+						newLimit[nSpecies]   =  rotMatrix[0][0]*Buffer_Receive_Limit[(nSpecies)*nVertex+iVertex]
+                                  + rotMatrix[0][1]*Buffer_Receive_Limit[(nSpecies+1)*nVertex+iVertex];
+						newLimit[nSpecies+1] =  rotMatrix[1][0]*Buffer_Receive_Limit[(nSpecies)*nVertex+iVertex]
+                                  + rotMatrix[1][1]*Buffer_Receive_Limit[(nSpecies+2)*nVertex+iVertex];
 					}
 					else {
-						newLimit[1] = rotMatrix[0][0]*Buffer_Receive_Limit[1*nVertex+iVertex] + rotMatrix[0][1]*Buffer_Receive_Limit[2*nVertex+iVertex] + rotMatrix[0][2]*Buffer_Receive_Limit[3*nVertex+iVertex];
-						newLimit[2] = rotMatrix[1][0]*Buffer_Receive_Limit[1*nVertex+iVertex] + rotMatrix[1][1]*Buffer_Receive_Limit[2*nVertex+iVertex] + rotMatrix[1][2]*Buffer_Receive_Limit[3*nVertex+iVertex];
-						newLimit[3] = rotMatrix[2][0]*Buffer_Receive_Limit[1*nVertex+iVertex] + rotMatrix[2][1]*Buffer_Receive_Limit[2*nVertex+iVertex] + rotMatrix[2][2]*Buffer_Receive_Limit[3*nVertex+iVertex];
+						newLimit[nSpecies]   =  rotMatrix[0][0]*Buffer_Receive_Limit[(nSpecies)*nVertex+iVertex]
+                                  + rotMatrix[0][1]*Buffer_Receive_Limit[(nSpecies+1)*nVertex+iVertex]
+                                  + rotMatrix[0][2]*Buffer_Receive_Limit[(nSpecies+2)*nVertex+iVertex];
+						newLimit[nSpecies+1] =  rotMatrix[1][0]*Buffer_Receive_Limit[(nSpecies)*nVertex+iVertex]
+                                  + rotMatrix[1][1]*Buffer_Receive_Limit[(nSpecies+1)*nVertex+iVertex]
+                                  + rotMatrix[1][2]*Buffer_Receive_Limit[(nSpecies+2)*nVertex+iVertex];
+						newLimit[nSpecies+1] =  rotMatrix[2][0]*Buffer_Receive_Limit[(nSpecies)*nVertex+iVertex]
+                                  + rotMatrix[2][1]*Buffer_Receive_Limit[(nSpecies+1)*nVertex+iVertex]
+                                  + rotMatrix[2][2]*Buffer_Receive_Limit[(nSpecies+2)*nVertex+iVertex];
 					}
           
 					/*--- Copy transformed conserved variables back into buffer. ---*/
@@ -1224,7 +1254,82 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
     numerics->SetVolume(geometry->node[iPoint]->GetVolume());
     
     /*--- Compute vibrational energy relaxation ---*/
+    // NOTE: Jacobians de-activated.  Need to take derivatives w.r.t. relaxation time
     numerics->ComputeVibRelaxation(Residual, Jacobian_i, config);
+    
+    
+    /////////// TEST JACOBIAN ///////////
+/*    if (iPoint == 17) {
+      unsigned short iVar, jVar;
+      double delta;
+      double *U_i, *V_i;
+      double **FDJac, *Res_orig;
+      
+      Res_orig = new double[nVar];
+      FDJac = new double*[nVar];
+      for (iVar =0; iVar < nVar; iVar++) {
+        FDJac[iVar] = new double[nVar];
+        Res_orig[iVar] = Residual[iVar];
+      }
+      
+      U_i = node[iPoint]->GetSolution();
+      V_i = node[iPoint]->GetPrimVar();
+      
+      cout << "Analytic Jacobian: " << endl;
+      for (iVar =0; iVar < nVar; iVar++) {
+        for (jVar = 0; jVar < nVar; jVar++) {
+          cout << Jacobian_i[iVar][jVar] << "\t";
+        }
+        cout << endl;
+      }
+      
+      // Perturb
+      for (iVar =0; iVar < nVar; iVar++) {
+        delta = 1E-4*U_i[iVar];
+        if (delta == 0.0) delta = 1E-8;
+        U_i[iVar] += delta;
+        
+        // Re-calculate primitive quantities & pass to CNumerics
+        node[iPoint]->SetSolution(U_i);
+        node[iPoint]->SetPrimVar_Compressible(config);
+        U_i = node[iPoint]->GetSolution();
+        V_i = node[iPoint]->GetPrimVar();
+        numerics->SetPrimitive(V_i, V_i);
+        numerics->SetConservative(U_i, U_i);
+        numerics->SetdPdrhos(node[iPoint]->GetdPdrhos(), node[iPoint]->GetdPdrhos());
+        
+        // Compute residual
+        numerics->ComputeVibRelaxation(Residual, Jacobian_i, config);
+        for (jVar = 0; jVar < nVar; jVar++) {
+          FDJac[jVar][iVar] = (Residual[jVar] - Res_orig[jVar])/delta;
+        }
+        
+        // Reset U_i
+        U_i[iVar] -= delta;
+        node[iPoint]->SetSolution(U_i);
+        node[iPoint]->SetPrimVar_Compressible(config);
+      }
+      
+      cout << endl << endl << "FD Jacobian: " << endl;
+      for (iVar =0; iVar < nVar; iVar++) {
+        for (jVar = 0; jVar < nVar; jVar++) {
+          cout << FDJac[iVar][jVar] << "\t";
+        }
+        cout << endl;
+      }
+      
+      cin.get();
+      // Deallocate
+      for (iVar = 0; iVar < nVar; iVar++)
+        delete [] FDJac[iVar];
+      delete[] FDJac;
+      delete[] Res_orig;
+    }*/
+    
+    /////////// TEST JACOBIAN ///////////
+    
+    
+    
     
     /*--- Add Residual (and Jacobian) ---*/
     LinSysRes.SubtractBlock(iPoint, Residual);
@@ -2011,21 +2116,6 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solution_con
         
         /*--- Apply the contribution to the system ---*/
         Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
-        
-        
-/*        cout << "TNE2Solver::BCEulerWall - " << endl;
-        cout << "Residual: " << endl;
-        for (iVar =0; iVar < nVar; iVar++)
-          cout << Residual[iVar] << endl;
-        
-        cout << endl << endl <<  "Jacobian: " << endl;
-        for (iVar =0; iVar < nVar; iVar++) {
-          for (jVar =0; jVar < nVar; jVar++) {
-            cout << Jacobian_i[iVar][jVar] << "\t";
-          }
-          cout << endl;
-        }
-        cin.get();*/
         
 			}
 		}
@@ -2922,6 +3012,7 @@ void CTNE2EulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solut
 
 void CTNE2EulerSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned short val_iZone) {
   
+  unsigned short iVar;
 	int rank = MASTER_NODE;
 #ifndef NO_MPI
 	rank = MPI::COMM_WORLD.Get_rank();
@@ -3027,9 +3118,12 @@ void CTNE2EulerSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned
 		iPoint_Local = Global2Local[iPoint_Global];
 		if (iPoint_Local >= 0) {
       
-      if (nDim == 2) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-      if (nDim == 3) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
+      /*--- First value is the point index, then the conservative variables ---*/
+      point_line >> index;
       
+      for (iVar = 0; iVar < nVar; iVar++)
+        point_line >> Solution[iVar];
+            
 			node[iPoint_Local]->SetSolution(Solution);
       
 			/*--- If necessary, read in the grid velocities for the unsteady adjoint ---*/

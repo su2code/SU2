@@ -374,6 +374,12 @@ inline double CConfig::GetCharVibTemp(unsigned short iSpecies) {return CharVibTe
 
 inline double* CConfig::GetCharVibTemp() {return CharVibTemp; }
 
+inline double** CConfig::GetCharElTemp() {return CharElTemp; }
+
+inline unsigned short* CConfig::GetnElStates() {return nElStates; }
+
+inline double** CConfig::GetElDegeneracy() {return degen; }
+
 inline double* CConfig::GetRotationModes() { return RotationModes; }
 
 inline double* CConfig::GetRefTemperature() { return Ref_Temperature; }

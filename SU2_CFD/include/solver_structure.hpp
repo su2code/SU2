@@ -6617,6 +6617,7 @@ protected:
 	double Mach_Inf,	/*!< \brief Mach number at the infinity. */
 	Mach_Inlet,		/*!< \brief Mach number at the inlet. */
 	Mach_Outlet,		/*!< \brief Mach number at the outlet. */
+  *Density, /*!< \brief Density at the infinity. */
 	Density_Inf,	/*!< \brief Density at the infinity. */
 	Density_Inlet,		/*!< \brief Density at the inlet. */
 	Density_Outlet,		/*!< \brief Density at the outlet. */

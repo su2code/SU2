@@ -752,10 +752,10 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	/* DESCRIPTION:  */
 	AddScalarOption("FREESTREAM_TURB2LAMVISCRATIO", Turb2LamViscRatio_FreeStream, 10.0);
   /* DESCRIPTION: Species mass fractions for the 2-temperature model */
-  double *default_massfrac;
-  default_massfrac = new double[1];
-  default_massfrac[0] = 1.0;
-  AddArrayOption("FREESTREAM_MASS_FRACTION", 1, MassFrac_FreeStream, default_massfrac);
+//  double *default_massfrac;
+//  default_massfrac = new double[1];
+//  default_massfrac[0] = 1.0;
+//  AddArrayOption("FREESTREAM_MASS_FRACTION", 1, MassFrac_FreeStream, default_massfrac);
 	/* DESCRIPTION: Laminar Prandtl number (0.72 (air), only for compressible flows) */
 	AddScalarOption("PRANDTL_LAM", Prandtl_Lam, 0.72);
 	/* DESCRIPTION: Turbulent Prandtl number (0.9 (air), only for compressible flows) */
@@ -1464,6 +1464,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         Enthalpy_Formation = new double[nSpecies];
         Ref_Temperature    = new double[nSpecies];
         
+        
+        MassFrac_FreeStream = new double[nSpecies];
+        MassFrac_FreeStream[0] = 1.0;
+        
         /*--- Assign gas properties ---*/
         // Rotational modes of energy storage
         RotationModes[0] = 2.0;
@@ -1476,8 +1480,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         Enthalpy_Formation[0] = 0.0;					//N2
         // Reference temperature (JANAF values, [K])
         Ref_Temperature[0] = 0.0;
-        
         break;
+        
       case N2:
         /*--- Define parameters of the gas model ---*/
         nMonatomics = 1;
@@ -1490,14 +1494,150 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         CharVibTemp        = new double[nSpecies];
         RotationModes      = new double[nSpecies];
         Enthalpy_Formation = new double[nSpecies];
+        Ref_Temperature    = new double[nSpecies];
+        nElStates           = new unsigned short[nSpecies];
+        
+        MassFrac_FreeStream = new double[nSpecies];
+        MassFrac_FreeStream[0] = 0.5;
+        MassFrac_FreeStream[1] = 0.5;
         
         /*--- Assign gas properties ---*/
+        
+        // Rotational modes of energy storage
+        RotationModes[0] = 2.0;
+        RotationModes[1] = 0.0;
+        
+        // Molar mass [kg/kmol]
+        Molar_Mass[0] = 2.0*14.0067;
+        Molar_Mass[1] = 14.0067;
+        
         // Characteristic vibrational temperatures
         CharVibTemp[0] = 3395.0;
         CharVibTemp[1] = 0.0;
+        
         // Formation enthalpy: (JANAF values [KJ/Kmol])
         Enthalpy_Formation[0] = 0.0;					//N2
         Enthalpy_Formation[1] = 472.683E3;		//N
+        
+        // Reference temperature (JANAF values, [K])
+        Ref_Temperature[0] = 0.0;
+        Ref_Temperature[1] = 298.15;
+        
+        // Electron degeneracy data
+        
+        // N2
+        nElStates[0] = 15;
+        double *N2g, *N2thetae;
+        N2thetae = new double[nElStates[0]];
+        N2thetae[0]  = 0.000000000000000E+00;
+        N2thetae[1]  = 7.223156514095200E+04;
+        N2thetae[2]  = 8.577862640384000E+04;
+        N2thetae[3]  = 8.605026716160000E+04;
+        N2thetae[4]  = 9.535118627874400E+04;
+        N2thetae[5]  = 9.805635702203200E+04;
+        N2thetae[6]  = 9.968267656935200E+04;
+        N2thetae[7]  = 1.048976467715200E+05;
+        N2thetae[8]  = 1.116489555200000E+05;
+        N2thetae[9]  = 1.225836470400000E+05;
+        N2thetae[10] = 1.248856873600000E+05;
+        N2thetae[11] = 1.282476158188320E+05;
+        N2thetae[12] = 1.338060936000000E+05;
+        N2thetae[13] = 1.404296391107200E+05;
+        N2thetae[14] = 1.504958859200000E+05;
+        
+        N2g = new double[nElStates[0]];
+        N2g[0]  = 1;
+        N2g[1]  = 3;
+        N2g[2]  = 6;
+        N2g[3]  = 6;
+        N2g[4]  = 3;
+        N2g[5]  = 1;
+        N2g[6]  = 2;
+        N2g[7]  = 2;
+        N2g[8]  = 5;
+        N2g[9]  = 1;
+        N2g[10] = 6;
+        N2g[11] = 6;
+        N2g[12] = 10;
+        N2g[13] = 6;
+        N2g[14] = 6;
+        
+        // N
+        nElStates[1] = 3;
+        double *Ng, *Nthetae;
+        Nthetae = new double[nElStates[1]];
+        Nthetae[0] = 0.000000000000000E+00;
+        Nthetae[1] = 2.766469645581980E+04;
+        Nthetae[2] = 4.149309313560210E+04; 
+        
+        Ng = new double[nElStates[1]];
+        Ng[0] = 4;
+        Ng[1] = 10;
+        Ng[2] = 6;
+                
+        CharElTemp = new double *[nSpecies];
+        degen  = new double *[nSpecies];
+        
+        CharElTemp[0] = N2thetae;
+        CharElTemp[1] = Nthetae;
+        degen[0] = N2g;
+        degen[1] = Ng;
+        
+        break;
+        
+      case AIR5:
+        /*--- Define parameters of the gas model ---*/
+        nMonatomics = 2;
+        nDiatomics  = 3;
+        nSpecies    = nMonatomics + nDiatomics;
+        ionization  = false;
+        
+        /*--- Allocate vectors for gas properties ---*/
+        Molar_Mass         = new double[nSpecies];
+        CharVibTemp        = new double[nSpecies];
+        RotationModes      = new double[nSpecies];
+        Enthalpy_Formation = new double[nSpecies];
+        Ref_Temperature    = new double[nSpecies];
+        
+        MassFrac_FreeStream = new double[nSpecies];
+        MassFrac_FreeStream[0] = 0.2;
+        MassFrac_FreeStream[1] = 0.2;
+        MassFrac_FreeStream[2] = 0.2;
+        MassFrac_FreeStream[3] = 0.2;
+        MassFrac_FreeStream[4] = 0.2;
+        
+        /*--- Assign gas properties ---*/
+        // Rotational modes of energy storage
+        RotationModes[0] = 2.0;
+        RotationModes[1] = 2.0;
+        RotationModes[2] = 2.0;
+        RotationModes[3] = 0.0;
+        RotationModes[4] = 0.0;
+        
+        // Molar mass [kg/kmol]
+        Molar_Mass[0] = 2.0*14.0067;
+        Molar_Mass[1] = 2.0*15.9994;
+        Molar_Mass[2] = 14.0067+15.9994;
+        Molar_Mass[3] = 14.0067;
+        Molar_Mass[4] = 15.9994;
+        
+        // Characteristic vibrational temperatures
+        CharVibTemp[0] = 3395.0;
+        CharVibTemp[1] = 0.0;
+        
+        // Formation enthalpy: (JANAF values [KJ/Kmol])
+        Enthalpy_Formation[0] = 0.0;					//N2
+        Enthalpy_Formation[1] = 0.0;					//O2
+        Enthalpy_Formation[2] = 90.291E3;			//NO
+        Enthalpy_Formation[3] = 472.683E3;		//N
+        Enthalpy_Formation[4] = 249.173E3;		//O
+        
+        // Reference temperature (JANAF values, [K])
+        Ref_Temperature[0] = 0.0;
+        Ref_Temperature[1] = 0.0;
+        Ref_Temperature[2] = 298.15;
+        Ref_Temperature[3] = 298.15;
+        Ref_Temperature[4] = 298.15;
         break;
     }
   }

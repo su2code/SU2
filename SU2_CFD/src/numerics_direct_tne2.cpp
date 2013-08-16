@@ -958,7 +958,6 @@ void CCentLax_TNE2::ComputeResidual(double *val_resconv, double *val_resvisc, do
 CSource_TNE2::CSource_TNE2(unsigned short val_nDim, unsigned short val_nVar,
                                    CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
-  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   X = new double[nSpecies];
 
 }
@@ -975,8 +974,8 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual, double **val_Jacob
   // Note: Millikan & White relaxation time (requires P in Atm.)
 	// Note: Park limiting cross section
   
-  bool ionization;
-  unsigned short iDim, iSpecies, jSpecies, nEv, nHeavy, nEl;
+  bool ionization, implicit;
+  unsigned short iDim, iEl, iSpecies, jSpecies, nEv, nHeavy, nEl, *nElStates;
   double rhos, evib, P, T, Tve, u, v, w, rhoCvtr, rhoCvve, Ru, conc, sqvel, N;
   double Qtv, estar, tau, tauMW, tauP;
   double tau_sr, mu, A_sr, B_sr, num, denom;
@@ -985,11 +984,17 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual, double **val_Jacob
   double *dTdrhos, dTdrhou, dTdrhov, dTdrhow, dTdrhoE, dTdrhoEve;
   double *dTvedrhos, dTvedrhou, dTvedrhov, dTvedrhow, dTvedrhoE, dTvedrhoEve;
   double sigma, ws;
-  double *Ms, *thetav, *Tref, *hf, *xi, ef;
+  double *Ms, *thetav, **thetae, **g, *Tref, *hf, *xi, ef;
   
   /*--- Initialize ---*/
   dTdrhos = NULL;
   dTvedrhos = NULL;
+  
+  /*--- Determine if Jacobian calculation is required ---*/
+  // NOTE: Need to take derivatives of relaxation time (not currently implemented).
+  //       For now, we de-activate the Jacobian and return to it at a later date.
+  //implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  implicit = false;
   
   /*--- Determine the number of heavy particle species ---*/
   ionization = config->GetIonization();
@@ -1009,11 +1014,14 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual, double **val_Jacob
   nEv     = nSpecies+nDim+1;
   
   /*--- Read from CConfig ---*/
-  Ms     = config->GetMolar_Mass();
-  thetav = config->GetCharVibTemp();
-  Tref   = config->GetRefTemperature();
-  hf     = config->GetEnthalpy_Formation();
-  xi     = config->GetRotationModes();
+  Ms        = config->GetMolar_Mass();
+  thetav    = config->GetCharVibTemp();
+  thetae    = config->GetCharElTemp();
+  g         = config->GetElDegeneracy();
+  nElStates = config->GetnElStates();
+  Tref      = config->GetRefTemperature();
+  hf        = config->GetEnthalpy_Formation();
+  xi        = config->GetRotationModes();
   
   /*--- Calculate mole fractions ---*/
   N    = 0.0;
@@ -1038,7 +1046,15 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual, double **val_Jacob
       Cvtrs = (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies];
       ef    = hf[iSpecies] - Ru/Ms[iSpecies] * Tref[iSpecies];
       evibs = Ru/Ms[iSpecies] * thetav[iSpecies] / (exp(thetav[iSpecies]/Tve) - 1.0);
-      eels  = 0.0;
+
+      num = 0.0;
+      denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
+      for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
+        num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+        denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+      }
+      eels = Ru/Ms[iSpecies] * (num/denom);
+      
       dTdrhos[iSpecies]   = (-Cvtrs*(T - Tref[iSpecies]) - ef + 0.5*sqvel) / rhoCvtr;
       dTvedrhos[iSpecies] = -(evibs + eels) / rhoCvve;
     }
