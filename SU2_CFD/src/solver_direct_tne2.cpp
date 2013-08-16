@@ -69,7 +69,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
 	/*--- Array initialization ---*/
 	Velocity_Inlet = NULL;
 	Velocity_Outlet = NULL;
-  Velocity_Inf = NULL;
+	Velocity_Inf = NULL;
 	CDrag_Inv = NULL;
 	CLift_Inv = NULL;
 	CSideForce_Inv = NULL;
