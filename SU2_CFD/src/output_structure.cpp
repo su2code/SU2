@@ -1591,6 +1591,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       if (transition) ThirdIndex=TRANS_SOL;
       else ThirdIndex = NONE;
       break;
+    case TNE2_EULER :
+      FirstIndex = TNE2_SOL; SecondIndex = NONE; ThirdIndex = NONE;
+      break;
     case FREE_SURFACE_EULER: case FREE_SURFACE_NAVIER_STOKES:
       FirstIndex = FLOW_SOL; SecondIndex = LEVELSET_SOL; ThirdIndex = NONE;
       break;
@@ -3392,15 +3395,15 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short va
   }
   
   if (Kind_Solver == TNE2_EULER) {
-    restart_file << ", \"Pressure\", \"Pressure_Coefficient\", \"Mach\"";
+    restart_file << ", \"Mach\", \"Pressure\", \"Temperature\", \"Temperature_ve\"";
+  }
+  
+  if (Kind_Solver == TNE2_NAVIER_STOKES) {
+    restart_file << ", \"Temperature\", \"Laminar_Viscosity\", \"Skin_Friction_Coefficient\", \"Heat_Transfer\", \"Y_Plus\"";
   }
 
   if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
       (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
-    restart_file << ", \"Temperature\", \"Laminar_Viscosity\", \"Skin_Friction_Coefficient\", \"Heat_Transfer\", \"Y_Plus\"";
-  }
-  
-  if (Kind_Solver == TNE2_NAVIER_STOKES) {
     restart_file << ", \"Temperature\", \"Laminar_Viscosity\", \"Skin_Friction_Coefficient\", \"Heat_Transfer\", \"Y_Plus\"";
   }
 

@@ -506,6 +506,9 @@ private:
 	*Species_Ref_Viscosity;		/*!< \brief Reference viscosity  of all particles present in the plasma */
 	unsigned short nMonatomics,	/*!< \brief Number of monatomic species in the gas. */
 	nDiatomics;									/*!< \brief Number of diatomic species in the gas. */
+  unsigned short *nElStates; /*!< \brief Number of electron states. */
+  double **CharElTemp, /*!< \brief Characteristic temperature of electron states. */
+  **degen; /*!< \brief Degeneracy of electron states. */
 	double Gamma,			/*!< \brief Ratio of specific heats of the gas. */
 	GammaDiatomic,			/*!< \brief Ratio of specific heats of the diatomic gas. */ 
 	GammaMonatomic,			/*!< \brief Ratio of specific heats of the monatomic gas. */ 
@@ -3039,6 +3042,25 @@ public:
 	 * \return: Vector of characteristic vibrational temperatures [K]
 	 */
 	double* GetCharVibTemp(void);
+  
+  /*!
+	 * \brief Provides the characteristic electronic temperature for calculating e_el
+	 * \return: Vector of characteristic vibrational temperatures [K]
+	 */
+	double** GetCharElTemp(void);
+  
+  /*!
+	 * \brief Provides the degeneracy of electron states for calculating e_el
+	 * \return: Vector of characteristic vibrational temperatures [K]
+	 */
+	double** GetElDegeneracy(void);
+  
+  /*!
+	 * \brief Provides number electron states for calculating e_el
+	 * \return: Vector of number of electron states for each species 
+	 */
+	unsigned short* GetnElStates(void);
+  
 
   /*!
 	 * \brief Provides the thermodynamic reference temperatures from the JANAF tables

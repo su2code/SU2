@@ -38,10 +38,10 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_pressure, double *val_massfrac
                                        unsigned short val_nvar, unsigned short val_nvarprim,
                                        unsigned short val_nvarprimgrad, CConfig *config) : CVariable(val_ndim, val_nvar,config) {
   
-  unsigned short iMesh, iDim, iSpecies, iVar, nDim, nEl, nHeavy, nMGSmooth;
-  double *xi, *Ms, *thetav, *hf, *Tref;
-  double E, Eve, Ev, Ee, Ef, T, Tve, rho, rhoCvtr;
-  double Ru, sqvel, denom, conc, soundspeed;
+  unsigned short iEl, iMesh, iDim, iSpecies, iVar, nDim, nEl, nHeavy, *nElStates, nMGSmooth;
+  double *xi, *Ms, *thetav, **thetae, **g, *hf, *Tref;
+  double rhoE, rhoEve, Ev, Ee, Ef, T, Tve, rho, rhoCvtr, rhos;
+  double Ru, sqvel, num, denom, conc, soundspeed;
   
   nSpecies     = config->GetnSpecies();
   nDim         = val_ndim;
@@ -113,19 +113,22 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_pressure, double *val_massfrac
   else            { nHeavy = nSpecies;   nEl = 0; }  
   
   /*--- Load variables from the config class --*/
-  xi     = config->GetRotationModes();      // Rotational modes of energy storage
-  Ms     = config->GetMolar_Mass();         // Species molar mass
-  thetav = config->GetCharVibTemp();        // Species characteristic vib. temperature [K]
-  Tref   = config->GetRefTemperature();     // Thermodynamic reference temperature [K]
-  hf     = config->GetEnthalpy_Formation(); // Formation enthalpy [J/kg]
+  xi        = config->GetRotationModes();      // Rotational modes of energy storage
+  Ms        = config->GetMolar_Mass();         // Species molar mass
+  thetav    = config->GetCharVibTemp();        // Species characteristic vib. temperature [K]
+  thetae    = config->GetCharElTemp();         // Characteristic electron temperature [K]
+  g         = config->GetElDegeneracy();       // Degeneracy of electron states
+  nElStates = config->GetnElStates();          // Number of electron states
+  Tref      = config->GetRefTemperature();     // Thermodynamic reference temperature [K]
+  hf        = config->GetEnthalpy_Formation(); // Formation enthalpy [J/kg]
   
   /*--- Rename & initialize for convenience ---*/
   Ru      = UNIVERSAL_GAS_CONSTANT;         // Universal gas constant [J/(kmol*K)]
   Tve     = val_temperature_ve;             // Vibrational temperature [K]
   T       = val_temperature;                // Translational-rotational temperature [K]
   sqvel   = 0.0;                            // Velocity^2 [m2/s2]
-  E       = 0.0;                            // Mixture total energy per mass [J/kg]
-  Eve     = 0.0;                            // Mixture vib-el energy per mass [J/kg]
+  rhoE    = 0.0;                            // Mixture total energy per mass [J/kg]
+  rhoEve  = 0.0;                            // Mixture vib-el energy per mass [J/kg]
   denom   = 0.0;
   conc    = 0.0;
   rhoCvtr = 0.0;
@@ -148,6 +151,9 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_pressure, double *val_massfrac
   
   /*--- Calculate energy (RRHO) from supplied primitive quanitites ---*/
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+    // Species density
+    rhos = val_massfrac[iSpecies]*rho;
+    
     // Species formation energy
     Ef = hf[iSpecies] - Ru/Ms[iSpecies]*Tref[iSpecies];
     
@@ -157,22 +163,28 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_pressure, double *val_massfrac
     else
       Ev = 0.0;
     
-    // Species electronic energy
-    Ee = 0.0;
+    // Species electronic energy    
+    num = 0.0;
+    denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
+    for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
+      num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+      denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+    }
+    Ee = Ru/Ms[iSpecies] * (num/denom);
     
     // Mixture total energy
-    E += (3.0/2.0+xi[iSpecies]/2.0) * Ru/Ms[iSpecies] * (T-Tref[iSpecies])
-        + Ev + Ee + Ef + 0.5*sqvel;
+    rhoE += rhos * ((3.0/2.0+xi[iSpecies]/2.0) * Ru/Ms[iSpecies] * (T-Tref[iSpecies])
+                    + Ev + Ee + Ef + 0.5*sqvel);
     
     // Mixture vibrational-electronic energy
-    Eve += Ev + Ee;
+    rhoEve += rhos * (Ev + Ee);
   }
   for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
     // Species formation energy
     Ef = hf[nSpecies-1] - Ru/Ms[nSpecies-1] * Tref[nSpecies-1];
     
     // Electron t-r mode contributes to mixture vib-el energy
-    Eve += (3.0/2.0) * Ru/Ms[nSpecies-1] * (Tve - Tref[nSpecies-1]);
+    rhoEve += (3.0/2.0) * Ru/Ms[nSpecies-1] * (Tve - Tref[nSpecies-1]);
   }
   
   /*--- Initialize Solution & Solution_Old vectors ---*/
@@ -184,10 +196,10 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_pressure, double *val_massfrac
     Solution[nSpecies+iDim]     = rho*val_mach[iDim]*soundspeed;
     Solution_Old[nSpecies+iDim] = rho*val_mach[iDim]*soundspeed;
   }
-  Solution[nSpecies+nDim]       = rho*E;
-  Solution_Old[nSpecies+nDim]   = rho*E;
-  Solution[nSpecies+nDim+1]     = rho*Eve;
-  Solution_Old[nSpecies+nDim+1] = rho*Eve;
+  Solution[nSpecies+nDim]       = rhoE;
+  Solution_Old[nSpecies+nDim]   = rhoE;
+  Solution[nSpecies+nDim+1]     = rhoEve;
+  Solution_Old[nSpecies+nDim+1] = rhoEve;
   
   /*--- Assign primitive variables ---*/
   Primitive[T_INDEX]   = val_temperature;
@@ -270,6 +282,11 @@ CTNE2EulerVariable::CTNE2EulerVariable(double *val_solution, unsigned short val_
 		Solution[iVar]     = val_solution[iVar];
 		Solution_Old[iVar] = val_solution[iVar];
 	}
+  
+  /*--- Initialize Tve to the free stream for Newton-Raphson method ---*/
+  Primitive[TVE_INDEX] = config->GetTemperature_FreeStream();
+  Primitive[T_INDEX]   = config->GetTemperature_FreeStream();
+  Primitive[P_INDEX]   = config->GetPressure_FreeStream();
 }
 
 CTNE2EulerVariable::~CTNE2EulerVariable(void) {
@@ -355,14 +372,15 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   // Note: Requires previous call to SetDensity()
   // Note: Missing contribution from electronic energy
   
-  unsigned short iSpecies, iDim, nHeavy, nEl, iIter, maxIter;
-  double *xi, *Ms, *thetav, *hf, *Tref;
+  unsigned short iEl, iSpecies, iDim, nHeavy, nEl, iIter, maxIter, *nElStates;
+  double *xi, *Ms, *thetav, **thetae, **g, *hf, *Tref;
   double rho, rhoE, rhoEve, rhoEve_t, rhoE_ref, rhoE_f;
   double evs, eels;
   double Ru, sqvel, rhoCvtr, rhoCvve;
   double Cvvs, Cves, Tve;
   double f, df, tol;
   double exptv, thsqr, thoTve;
+  double num, denom, num2, denom2, num3, denom3;
   
   /*--- Set tolerance for Newton-Raphson method ---*/
   tol     = 1.0E-4;
@@ -373,21 +391,24 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   else            { nHeavy = nSpecies;   nEl = 0; }
   
   /*--- Load variables from the config class --*/
-  xi     = config->GetRotationModes();      // Rotational modes of energy storage
-  Ms     = config->GetMolar_Mass();         // Species molar mass
-  thetav = config->GetCharVibTemp();        // Species characteristic vib. temperature [K]
-  Tref   = config->GetRefTemperature();     // Thermodynamic reference temperature [K]
-  hf     = config->GetEnthalpy_Formation(); // Formation enthalpy [J/kg]
+  xi        = config->GetRotationModes();      // Rotational modes of energy storage
+  Ms        = config->GetMolar_Mass();         // Species molar mass
+  thetav    = config->GetCharVibTemp();        // Species characteristic vib. temperature [K]
+  Tref      = config->GetRefTemperature();     // Thermodynamic reference temperature [K]
+  hf        = config->GetEnthalpy_Formation(); // Formation enthalpy [J/kg]
+  thetae    = config->GetCharElTemp();
+  g         = config->GetElDegeneracy();
+  nElStates = config->GetnElStates();
   
   /*--- Rename & initialize for convenience ---*/
-  Ru       = UNIVERSAL_GAS_CONSTANT;        // Universal gas constant [J/(kmol*K)]
-  rho      = Primitive[RHO_INDEX];          // Mixture density [kg/m3]
-  rhoE     = Solution[nSpecies+nDim];       // Density * energy [J/m3]
-  rhoEve   = Solution[nSpecies+nDim+1];     // Density * energy_ve [J/m3]
-  rhoE_f   = 0.0;                           // Density * formation energy [J/m3]
-  rhoE_ref = 0.0;                           // Density * reference energy [J/m3]
-  rhoCvtr  = 0.0;                           // Mix spec. heat @ const. volume [J/(kg*K)]
-  sqvel    = 0.0;                           // Velocity^2 [m2/s2]
+  Ru       = UNIVERSAL_GAS_CONSTANT;           // Universal gas constant [J/(kmol*K)]
+  rho      = Primitive[RHO_INDEX];             // Mixture density [kg/m3]
+  rhoE     = Solution[nSpecies+nDim];          // Density * energy [J/m3]
+  rhoEve   = Solution[nSpecies+nDim+1];        // Density * energy_ve [J/m3]
+  rhoE_f   = 0.0;                              // Density * formation energy [J/m3]
+  rhoE_ref = 0.0;                              // Density * reference energy [J/m3]
+  rhoCvtr  = 0.0;                              // Mix spec. heat @ const. volume [J/(kg*K)]
+  sqvel    = 0.0;                              // Velocity^2 [m2/s2]
   
   /*--- Calculate mixture properties (heavy particles only) ---*/
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
@@ -405,11 +426,13 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   // NOTE: Cannot write an expression explicitly in terms of Tve
   // NOTE: We use Newton-Raphson to iteratively find the value of Tve
   // NOTE: Use T as an initial guess
-  Tve      = Primitive[TVE_INDEX];
+  Tve = Primitive[TVE_INDEX];
   for (iIter = 0; iIter < maxIter; iIter++) {
     rhoEve_t = 0.0;
     rhoCvve  = 0.0;
     for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+      
+      /*--- Vibrational energy ---*/
       if (thetav[iSpecies] != 0.0) {
         
         /*--- Rename for convenience ---*/
@@ -417,18 +440,35 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
         exptv = exp(thetav[iSpecies]/Tve);
         thsqr = thetav[iSpecies]*thetav[iSpecies];
         
-        /*--- Calculate species energies ---*/
+        /*--- Calculate vibrational energy ---*/
         evs  = Ru/Ms[iSpecies] * thetav[iSpecies] / (exptv - 1.0);
-        eels = 0;
         
-        /*--- Calculate species specific heats ---*/
+        /*--- Calculate species vibrational specific heats ---*/
         Cvvs  = Ru/Ms[iSpecies] * thoTve*thoTve * exptv / ((exptv-1.0)*(exptv-1.0));
-        Cves  = 0.0;
         
         /*--- Add contribution ---*/
-        rhoEve_t += Solution[iSpecies] * (evs + eels);
-        rhoCvve  += Solution[iSpecies] * (Cvvs + Cves);
+        rhoEve_t += Solution[iSpecies] * evs;
+        rhoCvve  += Solution[iSpecies] * Cvvs;
       }
+      
+      /*--- Electronic energy ---*/
+      num = 0.0; num2 = 0.0;
+      denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve); denom2 = 0.0; denom3 = 0.0;
+      num3  = g[iSpecies][iEl] * (thetae[iSpecies][0]/(Tve*Tve))*exp(-thetae[iSpecies][0]/Tve);
+      for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
+        thoTve = thetae[iSpecies][iEl]/Tve;
+        exptv = exp(-thetae[iSpecies][iEl]/Tve);
+        
+        num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exptv;
+        denom += g[iSpecies][iEl] * exptv;
+        num2  += g[iSpecies][iEl] * (thoTve*thoTve) * exptv;
+        num3  += g[iSpecies][iEl] * thoTve/Tve * exptv;
+      }
+      eels = Ru/Ms[iSpecies] * (num/denom);
+      Cves = Ru/Ms[iSpecies] * (num2/denom - num*num3/(denom*denom));
+      
+      rhoEve_t += Solution[iSpecies] * eels;
+      rhoCvve  += Solution[iSpecies] * Cves;
     }
     for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
       Cves = 3.0/2.0 * Ru/Ms[nSpecies-1];
@@ -578,10 +618,11 @@ void CTNE2EulerVariable::SetdPdrhos(CConfig *config) {
   // Note: Requires SetDensity(), SetTemperature(), SetPressure(), & SetGasProperties()
   // Note: Electron energy not included properly.
   
-  unsigned short iDim, iSpecies, nHeavy, nEl;
-  double *Ms, *Tref, *hf, *xi, *thetav;
+  unsigned short iDim, iSpecies, iEl, nHeavy, nEl, *nElStates;
+  double *Ms, *Tref, *hf, *xi, *thetav, **thetae, **g;
   double Ru, rhoCvtr, rhoCvve, Cvtrs, Cvves, rho_el, sqvel, conc;
   double rho, rhos, rhoEve, T, Tve, evibs, eels, ef;
+  double num, denom;
   
   /*--- Determine the number of heavy species ---*/
   if (ionization) {
@@ -595,11 +636,14 @@ void CTNE2EulerVariable::SetdPdrhos(CConfig *config) {
   }
   
   /*--- Read gas mixture properties from config ---*/
-  Ms   = config->GetMolar_Mass();
-  Tref = config->GetRefTemperature();
-  hf   = config->GetEnthalpy_Formation();
-  xi   = config->GetRotationModes();
-  thetav = config->GetCharVibTemp();
+  Ms        = config->GetMolar_Mass();
+  Tref      = config->GetRefTemperature();
+  hf        = config->GetEnthalpy_Formation();
+  xi        = config->GetRotationModes();
+  thetav    = config->GetCharVibTemp();
+  thetae    = config->GetCharElTemp();
+  g         = config->GetElDegeneracy();
+  nElStates = config->GetnElStates();
   
   /*--- Rename for convenience ---*/
   Ru      = UNIVERSAL_GAS_CONSTANT;
@@ -629,8 +673,15 @@ void CTNE2EulerVariable::SetdPdrhos(CConfig *config) {
   if (ionization) {
     for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
       evibs = Ru/Ms[iSpecies] * thetav[iSpecies] / (exp(thetav[iSpecies]/Tve) - 1.0);
-      eels  = 0.0;
-      dPdrhos[iSpecies] -= rho_el * Ru/Ms[nSpecies-1] * (evibs - eels)/rhoCvve;
+      num = 0.0;
+      denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
+      for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
+        num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+        denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+      }
+      eels = Ru/Ms[iSpecies] * (num/denom);
+      
+      dPdrhos[iSpecies] -= rho_el * Ru/Ms[nSpecies-1] * (evibs + eels)/rhoCvve;
     }
     ef = hf[nSpecies-1] - Ru/Ms[nSpecies-1]*Tref[nSpecies-1];
     dPdrhos[nSpecies-1] =  Ru*conc/rhoCvtr * (-ef + 0.5*sqvel)
