@@ -40,6 +40,12 @@ AC_ARG_WITH(Metis-include,
 AC_ARG_WITH(Metis-version,
    	AS_HELP_STRING([--with-Metis-version[=ARG]], [Metis major version, ARG = 4 (default) or 5]), 
 	[with_Metis_version=$withval], [with_Metis_version="4"])
+AC_ARG_WITH(Mutationpp-lib,
+   	AS_HELP_STRING([--with-Mutationpp-lib[=ARG]], [Mutation++ library directory, ARG = path to libmutation++.dylib]), 
+	[with_Mutationpp_lib=$withval], [with_Mutationpp_lib="no"])
+AC_ARG_WITH(Mutationpp-include,
+   	AS_HELP_STRING([--with-Mutationpp-include[=ARG]], [Mutation++ include directory, ARG = path to mutation++.h]), 
+	[with_Mutationpp_include=$withval], [with_Mutationpp_include="no"])
 AC_ARG_ENABLE(CFD,
    	AS_HELP_STRING([--disable-CFD], [build the SU2_CFD executable (default = yes)]), 
 	[build_CFD=$enableval], [build_CFD="yes"])
@@ -213,6 +219,52 @@ fi
 AC_SUBST([TECIO_CXX])
 AC_SUBST([TECIO_LD])
 
+
+##########################
+
+# check for lib
+Mutationpplib=libmutation++.dylib
+Mutationppheader=mutation++.h
+have_Mutationpp="no"
+
+if test "$with_Mutationpp_lib" != "no" 
+then
+  	AC_CHECK_FILE([$with_Mutationpp_lib/$Mutationpplib],[have_Mutationpp="yes"],[have_Mutationpp="no"])   
+	if test "$have_Mutationpp" == "no"
+	then
+		AC_MSG_ERROR([Mutation++ requested but library file not found.])
+	fi
+fi
+
+# check for header
+if test "$have_Mutationpp" != "no"
+then
+	if test "$with_Mutationpp_include" != "no"
+	then
+		AC_CHECK_FILE([$with_Mutationpp_include/$Mutationppheader],[have_Mutationpp='yes'],[have_Mutationpp='no']) 
+		if test "$have_Mutationpp" == "no"
+		then
+			AC_MSG_ERROR([Mutation++ requested but header file not found.])
+		fi
+	else
+		have_Mutationpp="no"
+	fi  
+fi
+
+if test "$have_Mutationpp" != "no"
+then
+  	AM_CONDITIONAL(BUILD_MUTATIONPP,true)
+	MUTATIONPP_CXX=-I"$with_Mutationpp_include"
+	MUTATIONPP_LD="$with_Mutationpp_lib"/$Mutationpplib
+else
+	AM_CONDITIONAL(BUILD_MUTATIONPP,false)
+	MUTATIONPP_CXX=-DNO_MUTATIONPP
+	MUTATION_LD=
+fi
+AC_SUBST([MUTATIONPP_CXX])
+AC_SUBST([MUTATIONPP_LD])
+
+
 ########################### MPI
 
 have_MPI="no"
@@ -274,6 +326,7 @@ Build Configuration Summary:
     CGNS support:         $have_CGNS
     MPI support:          $have_MPI
     Metis support:        $have_METIS
+    Mutation++ support:   $have_Mutationpp
 
     Build SU2_CFD:        $build_CFD
     Build SU2_DDC:        $build_DDC
