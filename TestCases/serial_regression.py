@@ -247,7 +247,7 @@ if __name__=="__main__":
   oneram6.su2_exec  = "SU2_CFD"
   oneram6.timeout   = 9600
   oneram6.tol       = 0.00001
-  passed4           = True #oneram6.run_test()
+  passed4           = oneram6.run_test()
 
   #############
   ###  N-S  ###
