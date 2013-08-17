@@ -837,7 +837,7 @@ Optional Packages:
                           Metis major version, ARG = 4 (default) or 5
   --with-Mutationpp-lib=ARG
                           Mutation++ library directory, ARG = path to
-                          libmutation++.a
+                          libmutation++.dylib
   --with-Mutationpp-include=ARG
                           Mutation++ include directory, ARG = path to
                           mutation++.h
@@ -2259,7 +2259,7 @@ fi
 ##########################
 
 # check for lib
-Mutationpplib=libmutation++.a
+Mutationpplib=libmutation++.dylib
 Mutationppheader=mutation++.h
 have_Mutationpp="no"
 

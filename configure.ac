@@ -41,7 +41,7 @@ AC_ARG_WITH(Metis-version,
    	AS_HELP_STRING([--with-Metis-version[=ARG]], [Metis major version, ARG = 4 (default) or 5]), 
 	[with_Metis_version=$withval], [with_Metis_version="4"])
 AC_ARG_WITH(Mutationpp-lib,
-   	AS_HELP_STRING([--with-Mutationpp-lib[=ARG]], [Mutation++ library directory, ARG = path to libmutation++.a]), 
+   	AS_HELP_STRING([--with-Mutationpp-lib[=ARG]], [Mutation++ library directory, ARG = path to libmutation++.dylib]), 
 	[with_Mutationpp_lib=$withval], [with_Mutationpp_lib="no"])
 AC_ARG_WITH(Mutationpp-include,
    	AS_HELP_STRING([--with-Mutationpp-include[=ARG]], [Mutation++ include directory, ARG = path to mutation++.h]), 
@@ -223,7 +223,7 @@ AC_SUBST([TECIO_LD])
 ##########################
 
 # check for lib
-Mutationpplib=libmutation++.a
+Mutationpplib=libmutation++.dylib
 Mutationppheader=mutation++.h
 have_Mutationpp="no"
 
