@@ -1235,6 +1235,7 @@ void CAdjEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_
 	unsigned long iVertex, iPoint, iPointNearField, nPointNearField = 0;
 	double factor = 1.0, AngleDouble, data, aux, *IntBound_Vector, *coord, u, v, sq_vel, *FlowSolution, A[5][5], M[5][5], AM[5][5], b[5], WeightSB, sum, MinDist = 1E6,
 			Dist, DerivativeOF = 0.0, *Normal;
+  double Area, UnitaryNormal[3];
 	short iPhiAngle = 0, IndexNF_inv[180], iColumn;
 	ifstream index_file;
 	string text_line;
@@ -1300,7 +1301,7 @@ void CAdjEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 				Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
-				double Area = 0.0; double UnitaryNormal[3];
+				Area = 0.0;
 				for (iDim = 0; iDim < nDim; iDim++)
 					Area += Normal[iDim]*Normal[iDim];
 				Area = sqrt (Area);
@@ -4069,7 +4070,8 @@ void CAdjEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, 
 			for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 			conv_numerics->SetNormal(Normal);
 
-			Area = 0.0; for (iDim = 0; iDim < nDim; iDim++)
+			Area = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
 				Area += Normal[iDim]*Normal[iDim];
 			Area = sqrt (Area);
 
@@ -4368,7 +4370,8 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 	double *U_domain = new double[nVar]; double *U_outlet = new double[nVar];
 	double *Psi_domain = new double [nVar]; double *Psi_outlet = new double [nVar];
 	double *Normal = new double[nDim];
-
+  double Area, UnitaryNormal[3];
+  
 	bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
 	bool incompressible = config->GetIncompressible();
 	bool rotating_frame = config->GetRotating_Frame();
@@ -4394,7 +4397,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 			geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
 			for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
-			double Area = 0.0; double UnitaryNormal[3];
+			Area = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++)
 				Area += Normal[iDim]*Normal[iDim];
 			Area = sqrt (Area);
@@ -4961,6 +4964,7 @@ void CAdjEulerSolver::SetAeroacoustic_Coupling(CSolver ***wave_solution, CSolver
 	unsigned short iMarker, iVar, jVar, kVar, iDim;
 	unsigned short jc, jrjc, jrjcm1, jrjcp1, jr, jm, jrm1, jrjr, jrp1, jmjm;
 	unsigned long iVertex, iPoint;
+  double Area, UnitaryNormal[3];
 	double aux, *coord, u, v, w = 0.0, sq_vel, E = 0.0;
 	double *U_i, M[5][5], AM[5][5], b[5], sum, rho;
 	double *Phi = NULL, *U_i_old = NULL, *Normal = NULL;
@@ -4989,7 +4993,8 @@ void CAdjEulerSolver::SetAeroacoustic_Coupling(CSolver ***wave_solution, CSolver
 					/*--- Some geometry information for this boundary node ---*/
 					coord = flow_geometry[MESH_0]->node[iPoint]->GetCoord();
 					Normal = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetNormal();
-					double Area = 0.0; double UnitaryNormal[3];
+          
+					Area = 0.0;
 					for (iDim = 0; iDim < nDim; iDim++)
 						Area += Normal[iDim]*Normal[iDim];
 					Area = sqrt (Area);
