@@ -206,11 +206,11 @@ if __name__=="__main__":
   os.chdir(os.environ['SU2_HOME'])  
   os.chdir('../')
 
-  #############
-  ### EULER ###
-  #############
+  ##########################
+  ### Compressible Euler ###
+  ##########################
 
-  # Inviscid Channel
+  # Channel
   channel           = testcase('channel')
   channel.cfg_dir   = "TestCases/euler/channel"
   channel.cfg_file  = "inv_channel_RK.cfg"
@@ -221,7 +221,7 @@ if __name__=="__main__":
   channel.tol       = 0.00001
   passed1           = channel.run_test()
   
-  # Inviscid NACA0012 
+  # NACA0012 
   naca0012           = testcase('naca0012')
   naca0012.cfg_dir   = "TestCases/euler/naca0012"
   naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
@@ -243,7 +243,7 @@ if __name__=="__main__":
   wedge.tol       = 0.00001
   passed3         = wedge.run_test()
 
-  # Inviscid ONERA M6 Wing
+  # ONERA M6 Wing
   oneram6           = testcase('oneram6')
   oneram6.cfg_dir   = "TestCases/euler/oneram6"
   oneram6.cfg_file  = "inv_ONERAM6_JST.cfg"
@@ -254,9 +254,9 @@ if __name__=="__main__":
   oneram6.tol       = 0.00001
   passed4           = oneram6.run_test()
 
-  #############
-  ###  N-S  ###
-  #############
+  ##########################
+  ###  Compressible N-S  ###
+  ##########################
 
   # Laminar flat plate
   flatplate           = testcase('flatplate')
@@ -285,7 +285,7 @@ if __name__=="__main__":
   ### Compressible RANS  ###
   ##########################
 
-  # rae2822
+  # RAE2822
   rae2822           = testcase('rae2822')
   rae2822.cfg_dir   = "TestCases/rans/rae2822"
   rae2822.cfg_file  = "turb_SA_RAE2822.cfg"
@@ -296,7 +296,7 @@ if __name__=="__main__":
   rae2822.tol       = 0.00001
   passed7           = rae2822.run_test()
 
-  # flatplate
+  # Flat plate
   turb_flatplate           = testcase('turb_flatplate')
   turb_flatplate.cfg_dir   = "TestCases/rans/flatplate"
   turb_flatplate.cfg_file  = "turb_SA_flatplate_Roe.cfg"
@@ -307,7 +307,7 @@ if __name__=="__main__":
   turb_flatplate.tol       = 0.00001
   passed8                  = turb_flatplate.run_test()
 
-  # oneram6
+  # ONERA M6 Wing
   turb_oneram6           = testcase('turb_oneram6')
   turb_oneram6.cfg_dir   = "TestCases/rans/oneram6"
   turb_oneram6.cfg_file  = "turb_ONERAM6.cfg"
@@ -318,7 +318,7 @@ if __name__=="__main__":
   turb_oneram6.tol       = 0.00001
   passed9                = turb_oneram6.run_test()
   
-  # naca0012
+  # NACA0012
   turb_naca0012           = testcase('turb_naca0012')
   turb_naca0012.cfg_dir   = "TestCases/rans/naca0012"
   turb_naca0012.cfg_file  = "naca0012.cfg"
@@ -333,7 +333,7 @@ if __name__=="__main__":
   ### Incompressible RANS  ###
   ############################
   
-  # Incompressible NACA0012
+  # NACA0012
   inc_turb_naca0012           = testcase('inc_turb_naca0012')
   inc_turb_naca0012.cfg_dir   = "TestCases/incomp_rans/naca0012"
   inc_turb_naca0012.cfg_file  = "naca0012.cfg"
@@ -344,9 +344,9 @@ if __name__=="__main__":
   inc_turb_naca0012.tol       = 0.00001
   passed11                    = inc_turb_naca0012.run_test()
   
-  ########################
-  ### Cont. Adj. Euler ###
-  ########################
+  #####################################
+  ### Cont. adj. compressible Euler ###
+  #####################################
 
   # Inviscid NACA0012 (To be validated with finite differences)
   contadj_naca0012           = testcase('contadj_naca0012')
@@ -370,9 +370,9 @@ if __name__=="__main__":
   contadj_ram_c.tol       = 0.00001
   passed13                = contadj_ram_c.run_test()
 
-  ######################
-  ### Cont. Adj. N-S ###
-  ######################
+  ###################################
+  ### Cont. adj. compressible N-S ###
+  ###################################
 
   # Adjoint laminar cylinder
   contadj_ns_cylinder           = testcase('contadj_ns_cylinder')
@@ -396,10 +396,10 @@ if __name__=="__main__":
   contadj_ns_naca0012.tol       = 0.00001
   passed15                      = True #contadj_ns_naca0012.run_test() 
 
-  ################################
-  ### Cont. Adj. RANS (Frozen) ###
-  ################################
-  
+  #######################################################
+  ### Cont. adj. compressible RANS (frozen viscosity) ###
+  #######################################################
+
   # Adjoint turbulent NACA0012 (To be validated with finite differences)
   contadj_rans_naca0012           = testcase('contadj_rans_naca0012')
   contadj_rans_naca0012.cfg_dir   = "TestCases/cont_adj_rans/naca0012"
@@ -412,9 +412,9 @@ if __name__=="__main__":
   passed16                        = contadj_rans_naca0012.run_test()
   
   #######################################
-  ### Cont. Adj. Incompressible Euler ###
+  ### Cont. adj. incompressible Euler ###
   #######################################
-  
+
   # Adjoint Incompressible Inviscid NACA0012
   contadj_incomp_NACA0012           = testcase('contadj_incomp_NACA0012')
   contadj_incomp_NACA0012.cfg_dir   = "TestCases/cont_adj_incomp_euler/naca0012"
@@ -427,9 +427,9 @@ if __name__=="__main__":
   passed17                          = contadj_incomp_NACA0012.run_test()
   
   #####################################
-  ### Cont. Adj. Incompressible N-S ###
+  ### Cont. adj. incompressible N-S ###
   #####################################
-  
+
   # Adjoint Incompressible Viscous Cylinder
   contadj_incomp_cylinder           = testcase('contadj_incomp_cylinder')
   contadj_incomp_cylinder.cfg_dir   = "TestCases/cont_adj_incomp_navierstokes/cylinder"
