@@ -5375,113 +5375,72 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
 }
 
 void CPhysicalGeometry::ComputeSurf_Curvature(CConfig *config) {
-
-	unsigned short iMarker, iNeigh_Point, iNeigh_Elem, iDim, Neighbor_Counter = 0, iNode;
-	unsigned long Neighbor_Point, Neighbor_Elem, iVertex, iPoint, jPoint;
-	double dot_product, dihedral_angle, avg_dihedral;
-	double Coord_Vertex_i[3], Coord_Vertex_j[3], Unit_Normal[2][3], area;
-  vector<unsigned long> Point_NeighborList, Elem_NeighborList, Point_Triangle, Point_Critical;
+	unsigned short iMarker, iNeigh_Point, iDim, iNode, iNeighbor_Nodes, Neighbor_Node;
+	unsigned long Neighbor_Point, iVertex, iPoint, jPoint,iElem_Bound, iEdge;
+  vector<unsigned long> Point_NeighborList, Elem_NeighborList, Point_Triangle, Point_Edge, Point_Critical;
   vector<unsigned long>::iterator it;
-  double U[3], V[3], W[3], Length_U, Length_V, Length_W, CosValue, Angle_Value;
+  double U[3], V[3], W[3], Length_U, Length_V, Length_W, CosValue, Angle_Value, K, *Angle_Defect, *Area_Vertex, *Angle_Alpha, *Angle_Beta, **NormalMeanK, MeanK, GaussK, MaxPrinK, MinPrinK, cot_alpha, cot_beta, delta, X1, X2, X3, Y1, Y2, Y3, radius, curvature_threshold;
+  bool *Check_Edge;
 
-  
 	/*--- IMPORTANT: Sharp corner angle threshold as a multiple of the average ---*/
-	double angle_threshold = 10.0;
+	if (nDim == 2) curvature_threshold = 100.0;
+	else curvature_threshold = 1.0;
 
 	if (nDim == 2) {
-    
-// I think it is better to compute the curvature in 2D using the radius of the circle https://en.wikipedia.org/wiki/Radius
 
-//		/*--- Loop over all the markers ---*/
-//		for (iMarker = 0; iMarker < nMarker; iMarker++) {
-//
-//			avg_dihedral = 0.0;
-//
-//			/*--- Create a vector to identify the points on this marker ---*/
-//			bool *Surface_Node = new bool[nPoint];
-//			for (iPoint = 0; iPoint < nPoint; iPoint++) Surface_Node[iPoint] = false;
-//
-//			/*--- Loop through and flag all global nodes on this marker ---*/
-//			for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-//				iPoint  = vertex[iMarker][iVertex]->GetNode();
-//				Surface_Node[iPoint] = true;
-//			}
-//
-//			/*--- Now loop through all marker vertices again, this time also
-//       finding the neighbors of each node that share this marker.---*/
-//			for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-//				iPoint  = vertex[iMarker][iVertex]->GetNode();
-//
-//				/*--- Loop through neighbors. In 2-D, there should be 2 nodes on either
-//         side of this vertex that lie on the same surface. ---*/
-//				Neighbor_Counter = 0;
-//				for (iNeigh = 0; iNeigh < node[iPoint]->GetnPoint(); iNeigh++) {
-//					Neighbor_Point = node[iPoint]->GetPoint(iNeigh);
-//
-//					/*--- Check if this neighbor lies on the surface. If so, compute
-//           the surface normal for the edge that the nodes share. ---*/
-//					if (Surface_Node[Neighbor_Point]) {
-//						for (iDim = 0; iDim < nDim; iDim++) {
-//							Coord_Vertex_i[iDim]  = node[iPoint]->GetCoord(iDim);
-//							Coord_Vertex_j[iDim]  = node[Neighbor_Point]->GetCoord(iDim);
-//						}
-//
-//						/*--- The order of the two points matters when computing the normal ---*/
-//						if (Neighbor_Counter == 0) {
-//							Unit_Normal[Neighbor_Counter][0] = Coord_Vertex_i[1]-Coord_Vertex_j[1];
-//							Unit_Normal[Neighbor_Counter][1] = -(Coord_Vertex_i[0]-Coord_Vertex_j[0]);
-//						} else if (Neighbor_Counter == 1) {
-//							Unit_Normal[Neighbor_Counter][0] = Coord_Vertex_j[1]-Coord_Vertex_i[1];
-//							Unit_Normal[Neighbor_Counter][1] = -(Coord_Vertex_j[0]-Coord_Vertex_i[0]);
-//						}
-//
-//						/*--- Store as a unit normal ---*/
-//						area = 0.0;
-//						for (iDim = 0; iDim < nDim; iDim++)
-//							area += Unit_Normal[Neighbor_Counter][iDim]*Unit_Normal[Neighbor_Counter][iDim];
-//						area = sqrt(area);
-//						for (iDim = 0; iDim < nDim; iDim++) Unit_Normal[Neighbor_Counter][iDim] /= area;
-//
-//						/*--- Increment neighbor counter ---*/
-//						Neighbor_Counter++;
-//					}
-//				}
-//
-//				/*--- Now we have the two edge normals that we need to compute the
-//         dihedral angle about this vertex. ---*/
-//				dot_product = 0.0;
-//				for (iDim = 0; iDim < nDim; iDim++)
-//					dot_product += Unit_Normal[0][iDim]*Unit_Normal[1][iDim];
-//				dihedral_angle = acos(dot_product);
-//				vertex[iMarker][iVertex]->SetAuxVar(dihedral_angle);
-//				avg_dihedral += dihedral_angle/(double)nVertex[iMarker];
-//			}
-//
-//			/*--- Check criteria and set sharp corner boolean for each vertex ---*/
-//			for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-//				if (vertex[iMarker][iVertex]->GetAuxVar() > angle_threshold*avg_dihedral) {
-//					iPoint  = vertex[iMarker][iVertex]->GetNode();
-//					for (iDim = 0; iDim < nDim; iDim++)
-//						Coord_Vertex_i[iDim] = node[iPoint]->GetCoord(iDim);
-//					vertex[iMarker][iVertex]->SetCurvature(true);
-//					//         cout.precision(6);
-//					//          cout << "  Found a sharp corner at point (" << Coord_Vertex_i[0];
-//					//          cout << ", " << Coord_Vertex_i[1] << ")" << endl;
-//				}
-//			}
-//
-//			delete[] Surface_Node;
-//		}
+    Point_Critical.clear();
+
+		/*--- Loop over all the markers ---*/
+		for (iMarker = 0; iMarker < nMarker; iMarker++) {
+
+			/*--- Loop through all marker vertices again, this time also
+       finding the neighbors of each node.---*/
+			for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+				iPoint  = vertex[iMarker][iVertex]->GetNode();
+
+				/*--- Loop through neighbors. In 2-D, there should be 2 nodes on either
+         side of this vertex that lie on the same surface. ---*/
+        Point_Edge.clear();
+        
+				for (iNeigh_Point = 0; iNeigh_Point < node[iPoint]->GetnPoint(); iNeigh_Point++) {
+					Neighbor_Point = node[iPoint]->GetPoint(iNeigh_Point);
+
+					/*--- Check if this neighbor lies on the surface. If so,
+           add to the list of neighbors. ---*/
+					if (node[Neighbor_Point]->GetBoundary()) {
+            Point_Edge.push_back(Neighbor_Point);
+ 					}
+          
+				}
+                
+        if (Point_Edge.size() != 2) cout << "Check the surface mesh." << endl;
+        else {
+          
+          /*--- Compute the curvature using three points ---*/
+          X1 = node[iPoint]->GetCoord(0);
+          X2 = node[Point_Edge[0]]->GetCoord(0);
+          X3 = node[Point_Edge[1]]->GetCoord(0);
+          Y1 = node[iPoint]->GetCoord(1);
+          Y2 = node[Point_Edge[0]]->GetCoord(1);
+          Y3 = node[Point_Edge[1]]->GetCoord(1);
+          
+          radius = sqrt(((X2-X1)*(X2-X1) + (Y2-Y1)*(Y2-Y1))*
+                        ((X2-X3)*(X2-X3) + (Y2-Y3)*(Y2-Y3))*
+                        ((X3-X1)*(X3-X1) + (Y3-Y1)*(Y3-Y1)))/
+          (2.0*fabs(X1*Y2+X2*Y3+X3*Y1-X1*Y3-X2*Y1-X3*Y2));
+          
+          K = 1.0/radius;
+          
+          if (K > curvature_threshold) Point_Critical.push_back(iPoint);
+          
+        }
+        
+			}
+
+		}
 
 	} else {
-    
-		/*--- Given a vertex on the surface, compute the neighbor points ---*/
-    
-    unsigned long iElem_Bound, Neighbor_Point, iEdge;
-    unsigned short iNode, iNeighbor_Nodes, Neighbor_Node;
-    double *Angle_Defect, *Area_Vertex, *Angle_Alpha, *Angle_Beta, **NormalMeanK, MeanK, GaussK, MaxPrinK, MinPrinK, cot_alpha, cot_beta, delta;
-    bool *Check_Edge;
-    
+        
     Angle_Defect = new double [nPoint];
     Area_Vertex = new double [nPoint];
     
@@ -5612,25 +5571,9 @@ void CPhysicalGeometry::ComputeSurf_Curvature(CConfig *config) {
         MaxPrinK = MeanK + sqrt(delta);
         MinPrinK = MeanK - sqrt(delta);
         
-        if (MaxPrinK > 50.0) Point_Critical.push_back(iPoint);
-//
-//        vertex[iMarker][iVertex]->SetCurvature(MaxPrinK);
-//
+        if (MaxPrinK > curvature_threshold) Point_Critical.push_back(iPoint);
+
       }
-    }
-    
-    double *Coord, Dist, Dist2, *CoordSharp;
-    for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
-      Coord = node[iPoint]->GetCoord();
-      Dist = 1E20;
-      for (iVertex = 0; iVertex < Point_Critical.size(); iVertex++) {
-        CoordSharp = node[Point_Critical[iVertex]]->GetCoord();
-        Dist2 = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          Dist2 += (Coord[iDim]-CoordSharp[iDim]) * (Coord[iDim]-CoordSharp[iDim]);
-        if (Dist2 < Dist) Dist = Dist2;
-      }
-      node[iPoint]->SetSharpEdge_Distance(sqrt(Dist));
     }
     
     delete [] Angle_Defect;
@@ -5644,7 +5587,23 @@ void CPhysicalGeometry::ComputeSurf_Curvature(CConfig *config) {
     delete [] NormalMeanK;
 
   }
-   
+  
+  
+  double *Coord, Dist, Dist2, *CoordSharp;
+  for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
+    Coord = node[iPoint]->GetCoord();
+    Dist = 1E20;
+    for (iVertex = 0; iVertex < Point_Critical.size(); iVertex++) {
+      CoordSharp = node[Point_Critical[iVertex]]->GetCoord();
+      Dist2 = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Dist2 += (Coord[iDim]-CoordSharp[iDim]) * (Coord[iDim]-CoordSharp[iDim]);
+      if (Dist2 < Dist) Dist = Dist2;
+    }
+    node[iPoint]->SetSharpEdge_Distance(sqrt(Dist));
+  }
+  
+  
 }
 
 void CPhysicalGeometry::FindNormal_Neighbor(CConfig *config) {
