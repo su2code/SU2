@@ -328,10 +328,6 @@ inline double CVertex::GetRotFlux(void) { return Rot_Flux; }
 
 inline void CVertex::AddRotFlux(double val_rot_flux) { Rot_Flux += val_rot_flux; }
 
-inline double CVertex::GetCurvature(void) { return Curvature; }
-
-inline void CVertex::SetCurvature(double val_Curvature) { Curvature = val_Curvature; }
-
 inline unsigned long CVertex::GetNormal_Neighbor(void) { return Normal_Neighbor; }
 
 inline void CVertex::SetNormal_Neighbor(unsigned long val_Normal_Neighbor) { Normal_Neighbor = val_Normal_Neighbor; }
