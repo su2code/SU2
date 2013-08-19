@@ -26,7 +26,7 @@ AC_ARG_WITH(CGNS-include,
     	AS_HELP_STRING([--with-CGNS-include[=ARG]], [CGNS include directory, ARG = path to cgnslib.h]), 
 	[with_CGNS_include=$withval], [with_CGNS_include="no"])
 AC_ARG_WITH(Tecio-lib,
-    	AS_HELP_STRING([--with-Tecio-lib[=ARG]], [Tecio library directory, ARG = path to tecio.a or tecio64.a]), 
+    	AS_HELP_STRING([--with-Tecio-lib[=ARG]], [Tecio library directory, ARG = path to libtecio.a]), 
 	[with_Tecio_lib=$withval], [with_Tecio_lib="no"])
 AC_ARG_WITH(Tecio-include,
     	AS_HELP_STRING([--with-Tecio-include[=ARG]], [Tecio include directory, ARG = path to TECIO.h]), 
@@ -172,7 +172,7 @@ AC_SUBST([METIS_LD])
 
 ########################### Tecplot
 
-Teciolib=tecio64.a
+Teciolib=libtecio.a
 Tecioheader=TECIO.h
 have_Tecio="no"
 
@@ -182,7 +182,7 @@ then
   	AC_CHECK_FILE([$with_Tecio_lib/$Teciolib],[have_Tecio="yes"],[have_Tecio="no"]) 
 	if test "$have_Tecio" == "no"
 	then
-		Teciolib=tecio.a
+		Teciolib=libtecio.a
 		AC_CHECK_FILE([$with_Tecio_lib/$Teciolib],[have_Tecio="yes"],[have_Tecio="no"])
 	fi
 	if test "$have_Tecio" == "no"
@@ -326,6 +326,7 @@ Build Configuration Summary:
     CGNS support:         $have_CGNS
     MPI support:          $have_MPI
     Metis support:        $have_METIS
+    TecIO support:        $have_Tecio
     Mutation++ support:   $have_Mutationpp
 
     Build SU2_CFD:        $build_CFD

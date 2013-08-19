@@ -89,12 +89,12 @@ int main(int argc, char *argv[]) {
   vector<unsigned long>::iterator IterPoint[MAX_NUMBER_SLIDING][2];
   vector<unsigned long>::iterator IterNewElem[MAX_NUMBER_MARKER];
   
-  vector<unsigned long> SlidingPoint[nZone][MAX_NUMBER_SLIDING][2];			/*!< \brief SlidingPoint[Periodic bc] and return the point that
+  vector<unsigned long> SlidingPoint[MAX_ZONES][MAX_NUMBER_SLIDING][2];			/*!< \brief SlidingPoint[Periodic bc] and return the point that
                                                                          must be sent [0], and the matching point in the sliding bc[1]. */
-	vector<unsigned long> SlidingElem[nZone][MAX_NUMBER_SLIDING];				/*!< \brief SlidingElem[Periodic bc] and return the elements that
+	vector<unsigned long> SlidingElem[MAX_ZONES][MAX_NUMBER_SLIDING];				/*!< \brief SlidingElem[Periodic bc] and return the elements that
                                                                        must be sent. */
-  vector<unsigned long> NewBoundaryPoints[nZone][MAX_NUMBER_MARKER];  /*!< \brief Vector containing new points appearing on multiple boundaries. */
-	vector<unsigned long> OldBoundaryElems[nZone][MAX_NUMBER_MARKER];  /*!< \brief Vector of old boundary elements. */
+  vector<unsigned long> NewBoundaryPoints[MAX_ZONES][MAX_NUMBER_MARKER];  /*!< \brief Vector containing new points appearing on multiple boundaries. */
+	vector<unsigned long> OldBoundaryElems[MAX_ZONES][MAX_NUMBER_MARKER];  /*!< \brief Vector of old boundary elements. */
 
 	long *PeriodicDomainIndex = NULL;
   bool **SlidingBC = NULL;
