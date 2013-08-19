@@ -23,6 +23,10 @@
 
 #include "../include/solver_structure.hpp"
 
+#ifndef NO_MUTATIONPP
+#include "mutation++.h"
+#endif
+
 CTNE2EulerSolver::CTNE2EulerSolver(void) : CSolver() {
   
 	/*--- Array initialization ---*/
@@ -65,6 +69,14 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
 #ifndef NO_MPI
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
+  
+  Mutation::MixtureOptions opts("N2special");
+  Mutation::Mixt
+//  opts.setThermodynamicDatabase("RRHO");
+//  Mutation::Mixture mix(opts);
+  
+//  cout << "Mixture nSpecies: " << mix.nSpecies() << endl;
+  cin.get();
   
 	/*--- Array initialization ---*/
 	Velocity_Inlet = NULL;

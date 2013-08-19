@@ -29,6 +29,7 @@
 #ifndef NO_MPI
 #include <mpi.h>
 #endif
+
 #include <cmath>
 #include <string>
 #include <fstream>
@@ -43,6 +44,7 @@
 #include "../../Common/include/vector_structure.hpp"
 #include "../../Common/include/linear_solvers_structure.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
+
 
 using namespace std;
 
