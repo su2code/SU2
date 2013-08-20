@@ -4024,6 +4024,203 @@ public:
   
 };
 
+
+/*!
+ * \class CAdjTNE2EulerVariable
+ * \brief Main class for defining the variables of the adjoint Euler solver.
+ * \ingroup Euler_Equations
+ * \author F. Palacios.
+ * \version 2.0.6
+ */
+class CAdjTNE2EulerVariable : public CVariable {
+protected:
+	double *Psi;		/*!< \brief Vector of the adjoint variables. */
+	double *ForceProj_Vector;	/*!< \brief Vector d. */
+	double *ObjFuncSource;    /*!< \brief Vector containing objective function sensitivity for discrete adjoint. */
+	double *IntBoundary_Jump;	/*!< \brief Interior boundary jump vector. */
+	double *TS_Source;		/*!< \brief Time spectral source term. */
+	double Theta;		/*!< \brief Theta variable. */
+	bool incompressible;
+public:
+  
+	/*!
+	 * \brief Constructor of the class.
+	 */
+	CAdjTNE2EulerVariable(void);
+  
+	/*!
+	 * \overload
+	 * \param[in] val_psirho - Value of the adjoint density (initialization value).
+	 * \param[in] val_phi - Value of the adjoint velocity (initialization value).
+	 * \param[in] val_psie - Value of the adjoint energy (initialization value).
+	 * \param[in] val_ndim - Number of dimensions of the problem.
+	 * \param[in] val_nvar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CAdjTNE2EulerVariable(double val_psirho, double *val_phi, double val_psie,
+                        unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+  
+	/*!
+	 * \overload
+	 * \param[in] val_solution - Pointer to the adjoint value (initialization value).
+	 * \param[in] val_ndim - Number of dimensions of the problem.
+	 * \param[in] val_nvar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CAdjTNE2EulerVariable(double *val_solution, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+  
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	virtual ~CAdjTNE2EulerVariable(void);
+  
+  /*!
+	 * \brief Set all the primitive variables for compressible flows.
+	 */
+	void SetPrimVar_Compressible(double val_adjlimit);
+  
+	/*!
+	 * \brief Set the value of the adjoint velocity.
+	 * \param[in] val_phi - Value of the adjoint velocity.
+	 */
+	void SetPhi_Old(double *val_phi);
+  
+	/*!
+	 * \brief Set the value of theta.
+	 * \param[in] val_density - Value of the density.
+	 * \param[in] val_velocity - Pointer to the velocity.
+	 * \param[in] val_enthalpy - Value of the enthalpy.
+	 */
+	void SetTheta(double val_density, double *val_velocity, double val_enthalpy);
+  
+	/*!
+	 * \brief Get the value of theta.
+	 */
+	double GetTheta(void);
+  
+	/*!
+	 * \brief Set the value of the force projection vector.
+	 * \param[in] val_ForceProj_Vector - Pointer to the force projection vector.
+	 */
+	void SetForceProj_Vector(double *val_ForceProj_Vector);
+  
+	/*!
+	 * \brief Set the value of the objective function source.
+	 * \param[in] val_SetObjFuncSource - Pointer to the objective function source.
+	 */
+	void SetObjFuncSource(double *val_SetObjFuncSource);
+  
+	/*!
+	 * \brief Get the value of the force projection vector.
+	 * \return Pointer to the force projection vector.
+	 */
+	double *GetForceProj_Vector(void);
+  
+	/*!
+	 * \brief Get the value of the objective function source.
+	 * \param[in] val_SetObjFuncSource - Pointer to the objective function source.
+	 */
+	double *GetObjFuncSource(void);
+  
+};
+
+/*!
+ * \class CAdjNSVariable
+ * \brief Main class for defining the variables of the adjoint Navier-Stokes solver.
+ * \ingroup Navier_Stokes_Equations
+ * \author F. Palacios.
+ * \version 2.0.6
+ */
+class CAdjTNE2NSVariable : public CAdjTNE2EulerVariable {
+private:
+	double kappapsi_Volume;
+  
+public:
+  
+	/*!
+	 * \brief Constructor of the class.
+	 */
+	CAdjTNE2NSVariable(void);
+  
+	/*!
+	 * \overload
+	 * \param[in] val_psirho - Value of the adjoint density (initialization value).
+	 * \param[in] val_phi - Value of the adjoint velocity (initialization value).
+	 * \param[in] val_psie - Value of the adjoint energy (initialization value).
+	 * \param[in] val_ndim - Number of dimensions of the problem.
+	 * \param[in] val_nvar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CAdjTNE2NSVariable(double val_psirho, double *val_phi, double val_psie, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+  
+	/*!
+	 * \overload
+	 * \param[in] val_solution - Pointer to the adjoint value (initialization value).
+	 * \param[in] val_ndim - Number of dimensions of the problem.
+	 * \param[in] val_nvar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CAdjTNE2NSVariable(double *val_solution, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+  
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CAdjTNE2NSVariable(void);
+  
+	/*!
+	 * \brief Set the value of the adjoint velocity.
+	 * \param[in] val_phi - Value of the adjoint velocity.
+	 */
+	void SetPhi_Old(double *val_phi);
+  
+	/*!
+	 * \brief Set the value of theta.
+	 * \param[in] val_density - Value of the density.
+	 * \param[in] val_velocity - Pointer to the velocity.
+	 * \param[in] val_enthalpy - Value of the enthalpy.
+	 */
+	void SetTheta(double val_density, double *val_velocity, double val_enthalpy);
+  
+	/*!
+	 * \brief Get the value of theta.
+	 */
+	double GetTheta(void);
+  
+	/*!
+	 * \brief Set the value of the force projection vector.
+	 * \param[in] val_ForceProj_Vector - Pointer to the force projection vector.
+	 */
+	void SetForceProj_Vector(double *val_ForceProj_Vector);
+  
+	/*!
+	 * \brief Get the value of the force projection vector.
+	 * \return Pointer to the force projection vector.
+	 */
+	double *GetForceProj_Vector(void);
+  
+	/*!
+	 * \brief Set the value of the force projection vector on the solution vector.
+	 */
+	void SetVelSolutionOldDVector(void);
+  
+	/*!
+	 * \brief Set the value of the force projection vector on the old solution vector.
+	 */
+	void SetVelSolutionDVector(void);
+  
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] kappapsi_Volume - Value of the mean flow hybrid coupling term.
+	 */
+	void SetKappaPsiVolume(double kappapsi_Volume);
+  
+	/*!
+	 * \brief A virtual member.
+	 */
+	double GetKappaPsiVolume(void);
+};
+
+
 /*! 
  * \class CTemplateVariable
  * \brief Main class for defining the variables of the potential solver.

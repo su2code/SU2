@@ -23,9 +23,9 @@
 
 #include "../include/solver_structure.hpp"
 
-#ifndef NO_MUTATIONPP
-#include "mutation++.h"
-#endif
+//#ifndef NO_MUTATIONPP
+//#include "mutation++.h"
+//#endif
 
 CTNE2EulerSolver::CTNE2EulerSolver(void) : CSolver() {
   
@@ -70,8 +70,8 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
   
-  Mutation::MixtureOptions opts("N2special");
-  Mutation::Mixt
+//  Mutation::MixtureOptions opts("N2special");
+
 //  opts.setThermodynamicDatabase("RRHO");
 //  Mutation::Mixture mix(opts);
   
@@ -3407,19 +3407,19 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config, unsigned shor
   Maxq_Visc = new double[nMarker];
   
 	/*--- Read farfield conditions from config ---*/
-	Density_Inf   = config->GetDensity_FreeStreamND();
+//	Density_Inf   = config->GetDensity_FreeStreamND();
 	Pressure_Inf  = config->GetPressure_FreeStreamND();
 	Velocity_Inf  = config->GetVelocity_FreeStreamND();
-	Energy_Inf    = config->GetEnergy_FreeStreamND();
+//	Energy_Inf    = config->GetEnergy_FreeStreamND();
 	Viscosity_Inf = config->GetViscosity_FreeStreamND();
 	Mach_Inf      = config->GetMach_FreeStreamND();
 	Prandtl_Lam   = config->GetPrandtl_Lam();
 	Prandtl_Turb  = config->GetPrandtl_Turb();
   
 	/*--- Inlet/Outlet boundary conditions, using infinity values ---*/
-	Density_Inlet = Density_Inf;		Density_Outlet = Density_Inf;
+//	Density_Inlet = Density_Inf;		Density_Outlet = Density_Inf;
 	Pressure_Inlet = Pressure_Inf;	Pressure_Outlet = Pressure_Inf;
-	Energy_Inlet = Energy_Inf;			Energy_Outlet = Energy_Inf;
+//	Energy_Inlet = Energy_Inf;			Energy_Outlet = Energy_Inf;
 	Mach_Inlet = Mach_Inf;					Mach_Outlet = Mach_Inf;
 	Velocity_Inlet  = new double [nDim]; Velocity_Outlet = new double [nDim];
 	for (iDim = 0; iDim < nDim; iDim++) {
@@ -3431,8 +3431,8 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config, unsigned shor
 	if (!restart || geometry->GetFinestMGLevel() == false || nZone > 1) {
     
 		/*--- Restart the solution from infinity ---*/
-		for (iPoint = 0; iPoint < nPoint; iPoint++)
-			node[iPoint] = new CNSVariable(Density_Inf, Velocity_Inf, Energy_Inf, nDim, nVar, config);
+//		for (iPoint = 0; iPoint < nPoint; iPoint++)
+//			node[iPoint] = new CNSVariable(Density_Inf, Velocity_Inf, Energy_Inf, nDim, nVar, config);
 	}
   
 	else {
@@ -3507,10 +3507,10 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config, unsigned shor
     Pressure    = Gamma_Minus_One*Density*(node[iPoint]->GetSolution(nDim+1)/Density-0.5*Velocity2);
     Temperature = Pressure / ( Gas_Constant * Density);
     if ((Pressure < 0.0) || (Temperature < 0.0)) {
-      Solution[0] = Density_Inf;
+//      Solution[0] = Density_Inf;
       for (iDim = 0; iDim < nDim; iDim++)
-        Solution[iDim+1] = Velocity_Inf[iDim]*Density_Inf;
-      Solution[nDim+1] = Energy_Inf*Density_Inf;
+//        Solution[iDim+1] = Velocity_Inf[iDim]*Density_Inf;
+//      Solution[nDim+1] = Energy_Inf*Density_Inf;
       
       node[iPoint]->SetSolution(Solution);
       node[iPoint]->SetSolution_Old(Solution);
