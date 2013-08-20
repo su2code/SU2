@@ -931,7 +931,6 @@ void CVolumetricMovement::SetRigidRotation(CGeometry *geometry, CConfig *config,
 	double DEG2RAD = PI_NUMBER/180.0;
 	bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
 	bool adjoint = config->GetAdjoint();
-  double motion_ramp = config->GetMotion_Ramp(iter);
 
 	/*--- Problem dimension and physical time step ---*/
 	nDim = geometry->GetnDim();
@@ -959,9 +958,9 @@ void CVolumetricMovement::SetRigidRotation(CGeometry *geometry, CConfig *config,
   Center[0] = config->GetMotion_Origin_X(iZone);
   Center[1] = config->GetMotion_Origin_Y(iZone);
   Center[2] = config->GetMotion_Origin_Z(iZone);
-  Omega[0]  = (config->GetRotation_Rate_X(iZone)/config->GetOmega_Ref())*motion_ramp;
-  Omega[1]  = (config->GetRotation_Rate_Y(iZone)/config->GetOmega_Ref())*motion_ramp;
-  Omega[2]  = (config->GetRotation_Rate_Z(iZone)/config->GetOmega_Ref())*motion_ramp;
+  Omega[0]  = (config->GetRotation_Rate_X(iZone)/config->GetOmega_Ref());
+  Omega[1]  = (config->GetRotation_Rate_Y(iZone)/config->GetOmega_Ref());
+  Omega[2]  = (config->GetRotation_Rate_Z(iZone)/config->GetOmega_Ref());
 
   /*-- Set dt for time-spectral cases ---*/
   if (time_spectral) {
@@ -1072,7 +1071,6 @@ void CVolumetricMovement::SetRigidPitching(CGeometry *geometry, CConfig *config,
   unsigned long iPoint;
   bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
   bool adjoint = config->GetAdjoint();
-	double motion_ramp = config->GetMotion_Ramp(iter);
   
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND(); 
@@ -1087,9 +1085,9 @@ void CVolumetricMovement::SetRigidPitching(CGeometry *geometry, CConfig *config,
   Center[0] = config->GetMotion_Origin_X(iZone);
   Center[1] = config->GetMotion_Origin_Y(iZone);
   Center[2] = config->GetMotion_Origin_Z(iZone);
-  Omega[0]  = (config->GetPitching_Omega_X(iZone)/config->GetOmega_Ref())*motion_ramp;
-  Omega[1]  = (config->GetPitching_Omega_Y(iZone)/config->GetOmega_Ref())*motion_ramp;
-  Omega[2]  = (config->GetPitching_Omega_Z(iZone)/config->GetOmega_Ref())*motion_ramp;
+  Omega[0]  = (config->GetPitching_Omega_X(iZone)/config->GetOmega_Ref());
+  Omega[1]  = (config->GetPitching_Omega_Y(iZone)/config->GetOmega_Ref());
+  Omega[2]  = (config->GetPitching_Omega_Z(iZone)/config->GetOmega_Ref());
   Ampl[0]   = config->GetPitching_Ampl_X(iZone)*DEG2RAD;
   Ampl[1]   = config->GetPitching_Ampl_Y(iZone)*DEG2RAD;
   Ampl[2]   = config->GetPitching_Ampl_Z(iZone)*DEG2RAD;
@@ -1137,7 +1135,7 @@ void CVolumetricMovement::SetRigidPitching(CGeometry *geometry, CConfig *config,
   alphaDot[2] = -Omega[2]*Ampl[2]*cos(Omega[2]*time_new);
   
   if (rank == MASTER_NODE) {
-    cout.precision(4);
+    //cout << fixed;
 		cout << "New pitching angles (about x, y, z axes): (";
     cout << Ampl[0]*sin(Omega[0]*time_new + Phase[0])/DEG2RAD << ", ";
     cout << Ampl[1]*sin(Omega[1]*time_new + Phase[1])/DEG2RAD << ", ";
@@ -1229,7 +1227,6 @@ void CVolumetricMovement::SetRigidPlunging(CGeometry *geometry, CConfig *config,
   unsigned long iPoint;
   bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
   bool adjoint = config->GetAdjoint();
-	double motion_ramp = config->GetMotion_Ramp(iter);
   
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
@@ -1244,9 +1241,9 @@ void CVolumetricMovement::SetRigidPlunging(CGeometry *geometry, CConfig *config,
   Center[0] = config->GetMotion_Origin_X(iZone);
   Center[1] = config->GetMotion_Origin_Y(iZone);
   Center[2] = config->GetMotion_Origin_Z(iZone);
-  Omega[0]  = (config->GetPlunging_Omega_X(iZone)/config->GetOmega_Ref())*motion_ramp;
-  Omega[1]  = (config->GetPlunging_Omega_Y(iZone)/config->GetOmega_Ref())*motion_ramp;
-  Omega[2]  = (config->GetPlunging_Omega_Z(iZone)/config->GetOmega_Ref())*motion_ramp;
+  Omega[0]  = (config->GetPlunging_Omega_X(iZone)/config->GetOmega_Ref());
+  Omega[1]  = (config->GetPlunging_Omega_Y(iZone)/config->GetOmega_Ref());
+  Omega[2]  = (config->GetPlunging_Omega_Z(iZone)/config->GetOmega_Ref());
   Ampl[0]   = config->GetPlunging_Ampl_X(iZone)/Lref;
   Ampl[1]   = config->GetPlunging_Ampl_Y(iZone)/Lref;
   Ampl[2]   = config->GetPlunging_Ampl_Z(iZone)/Lref;
@@ -1289,7 +1286,7 @@ void CVolumetricMovement::SetRigidPlunging(CGeometry *geometry, CConfig *config,
 	xDot[2] = -Ampl[2]*Omega[2]*(cos(Omega[2]*time_new));
   
   if (rank == MASTER_NODE) {
-    cout.precision(4);
+    //cout << fixed;
 		cout << "Delta plunging increments (dx, dy, dz): (";
     cout << deltaX[0] << ", ";
     cout << deltaX[1] << ", ";
@@ -1350,7 +1347,6 @@ void CVolumetricMovement::SetRigidTranslation(CGeometry *geometry, CConfig *conf
   double deltaX[3], newCoord[3], Center[3], *Coord, Lref;
   double xDot[3];
   double deltaT, time_new, time_old;
-  double motion_ramp = config->GetMotion_Ramp(iter);
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint;
   bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
@@ -1369,9 +1365,9 @@ void CVolumetricMovement::SetRigidTranslation(CGeometry *geometry, CConfig *conf
   Center[0] = config->GetMotion_Origin_X(iZone);
   Center[1] = config->GetMotion_Origin_Y(iZone);
   Center[2] = config->GetMotion_Origin_Z(iZone);
-  xDot[0]   = config->GetTranslation_Rate_X(iZone)*motion_ramp;
-  xDot[1]   = config->GetTranslation_Rate_Y(iZone)*motion_ramp;
-  xDot[2]   = config->GetTranslation_Rate_Z(iZone)*motion_ramp;
+  xDot[0]   = config->GetTranslation_Rate_X(iZone);
+  xDot[1]   = config->GetTranslation_Rate_Y(iZone);
+  xDot[2]   = config->GetTranslation_Rate_Z(iZone);
   
   if (time_spectral) {
 	  /*--- period of oscillation & time interval using nTimeInstances ---*/
@@ -1406,7 +1402,7 @@ void CVolumetricMovement::SetRigidTranslation(CGeometry *geometry, CConfig *conf
 	deltaX[2] = xDot[2]*deltaT;
   
   if (rank == MASTER_NODE) {
-    cout.precision(4);
+    //cout << fixed;
 		cout << "Delta translation increments (dx, dy, dz): (";
     cout << deltaX[0] << ", ";
     cout << deltaX[1] << ", ";

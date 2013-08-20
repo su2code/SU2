@@ -318,8 +318,6 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	/* DESCRIPTION: Type of mesh motion */
 	AddEnumListOption("GRID_MOVEMENT_KIND", nZone, Kind_GridMovement, GridMovement_Map);
 	default_vec_3d[0] = 0; default_vec_3d[1] = 0;
-	/* DESCRIPTION: Mesh motion ramp (starting iteration, ramp iterations (zero to max)) */
-	AddArrayOption("MOTION_RAMP", 2, Motion_Ramp, default_vec_3d);
 	/* DESCRIPTION: % Mach number (non-dimensional, based on the mesh velocity and freestream vals.) */
 	AddScalarOption("MACH_MOTION", Mach_Motion, 0.0);
 	/* DESCRIPTION: Coordinates of the rigid motion origin */
@@ -5504,23 +5502,6 @@ double CConfig::GetFlowLoad_Value(string val_marker) {
 	for (iMarker_FlowLoad = 0; iMarker_FlowLoad < nMarker_FlowLoad; iMarker_FlowLoad++)
 		if (Marker_FlowLoad[iMarker_FlowLoad] == val_marker) break;
 	return FlowLoad_Value[iMarker_FlowLoad];
-}
-
-double CConfig::GetMotion_Ramp(unsigned long val_iter) {
-	double coeff;
-
-	if ((val_iter < int(Motion_Ramp[0])) ) {
-		coeff = 0.0;
-	} else if (((val_iter >= int(Motion_Ramp[0])) && (int(Motion_Ramp[1]) == 0)) ||
-			(val_iter >= int(Motion_Ramp[0])+int(Motion_Ramp[1]))) {
-		coeff = 1.0;
-	} else if ((val_iter >= int(Motion_Ramp[0])) &&
-			(val_iter <  int(Motion_Ramp[0])+int(Motion_Ramp[1]))) {
-		coeff = ((double)val_iter - Motion_Ramp[0])/Motion_Ramp[1];
-	} else
-		coeff = 1.0;
-
-	return coeff;
 }
 
 void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short val_iZone) {
