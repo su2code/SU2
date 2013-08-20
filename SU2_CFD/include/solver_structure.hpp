@@ -6649,8 +6649,7 @@ protected:
   *ForceInviscid,		        /*!< \brief Inviscid forces at domain boundaries. */
 	*MomentInviscid,	        /*!< \brief Inviscid moments at domain boundaries. */
 	**CPressure,		          /*!< \brief Cp at each node on domain boundaries . */
-	**CHeatTransfer;		      /*!< \brief Cq at each node on domain boundaries . */
-	double
+	**CHeatTransfer,		      /*!< \brief Cq at each node on domain boundaries . */
   AllBound_CDrag_Inv,	      /*!< \brief Sum of CDrag_Inv from all boundaries. */
 	AllBound_CLift_Inv,			  /*!< \brief Sum of CLift_Inv from all boundaries. */
 	AllBound_CSideForce_Inv,	/*!< \brief Sum of CSideForce_Inv from all boundaries. */
@@ -6673,11 +6672,15 @@ protected:
 	Total_CFy,                /*!< \brief Total CFy. */
 	Total_CFz,                /*!< \brief Total CFz. */
 	Total_CEff,               /*!< \brief Total CEff. */
-  Total_Q,        /*!< \brief Total heat load for all the boundaries. */
-  Total_Maxq;     /*!< \brief Maximum heat flux on all boundaries. */
-	double *PrimVar_i,	/*!< \brief Auxiliary vector for storing the solution at point i. */
-	*PrimVar_j;			/*!< \brief Auxiliary vector for storing the solution at point j. */
-	double **Precon_Mat_inv; /*!< \brief Auxiliary vector for storing the inverse of Roe-turkel preconditioner. */
+  Total_Q,                  /*!< \brief Total heat load. */
+  Total_Maxq;               /*!< \brief Maximum heat flux on all boundaries. */
+
+	double
+  *PrimVar_i,	              /*!< \brief Auxiliary vector for storing the solution at point i. */
+	*PrimVar_j;			          /*!< \brief Auxiliary vector for storing the solution at point j. */
+
+	double
+  **Precon_Mat_inv; /*!< \brief Auxiliary vector for storing the inverse of Roe-turkel preconditioner. */
 	unsigned long nMarker;				/*!< \brief Total number of markers using the grid information. */
 	bool roe_turkel,         /*!< \brief True if computing preconditioning matrix for roe-turkel method. */
 	least_squares;        /*!< \brief True if computing gradients by least squares. */

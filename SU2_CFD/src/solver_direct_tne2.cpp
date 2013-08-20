@@ -76,7 +76,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
 //  Mutation::Mixture mix(opts);
   
 //  cout << "Mixture nSpecies: " << mix.nSpecies() << endl;
-  cin.get();
+//  cin.get();
   
 	/*--- Array initialization ---*/
 	Velocity_Inlet = NULL;
