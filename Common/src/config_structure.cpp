@@ -490,6 +490,8 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	/* DESCRIPTION: Convective numerical method */
 	AddConvectOption("CONV_NUM_METHOD_ADJ", Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow, Kind_Upwind_AdjFlow);
 	/* DESCRIPTION: Convective numerical method */
+	AddConvectOption("CONV_NUM_METHOD_ADJTNE2", Kind_ConvNumScheme_AdjTNE2, Kind_Centered_AdjTNE2, Kind_Upwind_AdjTNE2);
+	/* DESCRIPTION: Convective numerical method */
 	AddConvectOption("CONV_NUM_METHOD_LIN", Kind_ConvNumScheme_LinFlow, Kind_Centered_LinFlow, Kind_Upwind_LinFlow);
 	/* DESCRIPTION: Convective numerical method */
 	AddConvectOption("CONV_NUM_METHOD_TURB", Kind_ConvNumScheme_Turb, Kind_Centered_Turb, Kind_Upwind_Turb);
@@ -561,6 +563,12 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
 	/* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
 	AddArrayOption("AD_COEFF_ADJ", 3, Kappa_AdjFlow, default_vec_3d);
+	default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
+  /* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
+	AddArrayOption("AD_COEFF_TNE2", 3, Kappa_TNE2, default_vec_3d);
+	default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
+  /* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
+	AddArrayOption("AD_COEFF_ADJTNE2", 3, Kappa_AdjTNE2, default_vec_3d);
 	default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
 	/* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
 	AddArrayOption("AD_COEFF_PLASMA", 3, Kappa_Plasma, default_vec_3d);
@@ -5044,6 +5052,38 @@ void CConfig::SetGlobalParam(unsigned short val_solver, unsigned short val_syste
 			SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjTurb());
 		}
 		break;
+  case ADJ_TNE2_EULER:
+      if (val_system == RUNTIME_TNE2_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_TNE2(), GetKind_Centered_TNE2(),
+                              GetKind_Upwind_TNE2(), GetKind_SlopeLimit_TNE2());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_TNE2());
+        SetKind_ViscNumScheme(NONE);
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_TNE2());
+      }
+      if (val_system == RUNTIME_ADJTNE2_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjTNE2(), GetKind_Centered_AdjTNE2(),
+                              GetKind_Upwind_AdjTNE2(), GetKind_SlopeLimit_AdjTNE2());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_AdjTNE2());
+        SetKind_ViscNumScheme(NONE);
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjTNE2());
+      }
+      break;
+  case ADJ_TNE2_NAVIER_STOKES:
+      if (val_system == RUNTIME_TNE2_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_TNE2(), GetKind_Centered_TNE2(),
+                              GetKind_Upwind_TNE2(), GetKind_SlopeLimit_TNE2());
+        SetKind_ViscNumScheme(GetKind_ViscNumScheme_TNE2());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_TNE2());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_TNE2());
+      }
+      if (val_system == RUNTIME_ADJTNE2_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjTNE2(), GetKind_Centered_AdjTNE2(),
+                              GetKind_Upwind_AdjTNE2(), GetKind_SlopeLimit_AdjTNE2());
+        SetKind_ViscNumScheme(GetKind_ViscNumScheme_AdjTNE2());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_AdjTNE2());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjTNE2());
+      }
+      break;
 	case ADJ_FREE_SURFACE_EULER:
 		if (val_system == RUNTIME_FLOW_SYS) {
 			SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),

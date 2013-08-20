@@ -6012,4 +6012,158 @@ public:
 };
 
 
+/*!
+ * \class CUpwRoe_AdjTNE2
+ * \brief Class for solving an approximate Riemann solver of Roe
+ *        for the adjoint flow equations.
+ * \ingroup ConvDiscr
+ * \author F. Palacios.
+ * \version 2.0.6
+ */
+class CUpwRoe_AdjTNE2 : public CNumerics {
+private:
+	double *Residual_Roe;
+	double area, Sx, Sy, Sz, rarea, nx, ny, nz, rho_l, u_l, v_l, w_l, h_l, rho_r,
+	u_r, v_r, w_r, h_r, psi1, psi2, psi3, psi4, psi5;
+	double h, u, v, w, c, psi1_l, psi2_l, psi3_l, psi4_l, psi5_l,
+	psi1_r, psi2_r, psi3_r, psi4_r, psi5_r, q_l, q_r, Q_l, Q_r, vn,
+	rrho_l, weight, rweight1, cc;
+	double l1psi, l2psi, absQ, absQp, absQm, q2, alpha, beta_u, beta_v, beta_w, Q, l1l2p, l1l2m, eta;
+	double RoeDensity, RoeSoundSpeed, *RoeVelocity, *Lambda, *Velocity_i, *Velocity_j, **Proj_flux_tensor_i, **Proj_flux_tensor_j,
+	Proj_ModJac_Tensor_ij, **Proj_ModJac_Tensor, Energy_i, Energy_j, **P_Tensor, **invP_Tensor;
+	unsigned short iDim, iVar, jVar, kVar;
+	bool implicit, rotating_frame, grid_movement;
+  
+public:
+  
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CUpwRoe_AdjTNE2(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CUpwRoe_AdjTNE2(void);
+  
+	/*!
+	 * \brief Compute the adjoint Roe's flux between two nodes i and j.
+	 * \param[out] val_residual_i - Pointer to the total residual at point i.
+	 * \param[out] val_residual_j - Pointer to the total residual at point j.
+	 * \param[out] val_Jacobian_ii - Jacobian of the numerical method at node i (implicit computation) from node i.
+	 * \param[out] val_Jacobian_ij - Jacobian of the numerical method at node i (implicit computation) from node j.
+	 * \param[out] val_Jacobian_ji - Jacobian of the numerical method at node j (implicit computation) from node i.
+	 * \param[out] val_Jacobian_jj - Jacobian of the numerical method at node j (implicit computation) from node j.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ComputeResidual(double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii,
+                       double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj,CConfig *config);
+};
+
+
+/*!
+ * \class CCentJST_AdjTNE2
+ * \brief Class for and adjoint centered scheme - JST.
+ * \ingroup ConvDiscr
+ * \author F. Palacios.
+ * \version 2.0.6
+ */
+class CCentJST_AdjTNE2 : public CNumerics {
+private:
+	double *Diff_Psi, *Diff_Lapl;
+	double *Velocity_i, *Velocity_j;
+	double *MeanPhi;
+	unsigned short iDim, jDim, iVar, jVar;
+	double Residual, ProjVelocity_i, ProjVelocity_j, ProjPhi, ProjPhi_Vel, sq_vel, phis1, phis2;
+	double MeanPsiRho, MeanPsiE, Param_p, Param_Kappa_4, Param_Kappa_2, Local_Lambda_i, Local_Lambda_j, MeanLambda;
+	double Phi_i, Phi_j, sc4, StretchingFactor, Epsilon_4, Epsilon_2;
+	bool implicit, stretching, grid_movement, rotating_frame;
+  
+public:
+  
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CCentJST_AdjTNE2(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CCentJST_AdjTNE2(void);
+  
+	/*!
+	 * \brief Compute the adjoint flow residual using a JST method.
+	 * \param[out] val_resconv_i - Pointer to the convective residual at point i.
+	 * \param[out] val_resvisc_i - Pointer to the artificial viscosity residual at point i.
+	 * \param[out] val_resconv_j - Pointer to the convective residual at point j.
+	 * \param[out] val_resvisc_j - Pointer to the artificial viscosity residual at point j.
+	 * \param[out] val_Jacobian_ii - Jacobian of the numerical method at node i (implicit computation) from node i.
+	 * \param[out] val_Jacobian_ij - Jacobian of the numerical method at node i (implicit computation) from node j.
+	 * \param[out] val_Jacobian_ji - Jacobian of the numerical method at node j (implicit computation) from node i.
+	 * \param[out] val_Jacobian_jj - Jacobian of the numerical method at node j (implicit computation) from node j.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ComputeResidual (double *val_resconv_i, double *val_resvisc_i, double *val_resconv_j, double *val_resvisc_j,
+                        double **val_Jacobian_ii, double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj,
+                        CConfig *config);
+};
+
+
+/*!
+ * \class CCentLax_AdjTNE2
+ * \brief Class for computing the Lax-Friedrich adjoint centered scheme.
+ * \ingroup ConvDiscr
+ * \author F. Palacios.
+ * \version 2.0.6
+ */
+class CCentLax_AdjTNE2 : public CNumerics {
+private:
+	double *Diff_Psi;
+	double *Velocity_i, *Velocity_j;
+	double *MeanPhi;
+	unsigned short iDim, jDim, iVar, jVar;
+	double Residual, ProjVelocity_i, ProjVelocity_j, ProjPhi, ProjPhi_Vel, sq_vel, phis1, phis2,
+	MeanPsiRho, MeanPsiE, Param_p, Param_Kappa_0, Local_Lambda_i, Local_Lambda_j, MeanLambda,
+	Phi_i, Phi_j, sc2, StretchingFactor, Epsilon_0, cte_0;
+	bool implicit, stretching, rotating_frame, grid_movement;
+  
+public:
+  
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CCentLax_AdjTNE2(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CCentLax_AdjTNE2(void);
+  
+	/*!
+	 * \brief Compute the adjoint flow residual using a Lax method.
+	 * \param[out] val_resconv_i - Pointer to the convective residual at point i.
+	 * \param[out] val_resvisc_i - Pointer to the artificial viscosity residual at point i.
+	 * \param[out] val_resconv_j - Pointer to the convective residual at point j.
+	 * \param[out] val_resvisc_j - Pointer to the artificial viscosity residual at point j.
+	 * \param[out] val_Jacobian_ii - Jacobian of the numerical method at node i (implicit computation) from node i.
+	 * \param[out] val_Jacobian_ij - Jacobian of the numerical method at node i (implicit computation) from node j.
+	 * \param[out] val_Jacobian_ji - Jacobian of the numerical method at node j (implicit computation) from node i.
+	 * \param[out] val_Jacobian_jj - Jacobian of the numerical method at node j (implicit computation) from node j.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ComputeResidual (double *val_resconv_i, double *val_resvisc_i, double *val_resconv_j, double *val_resvisc_j,
+                        double **val_Jacobian_ii, double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj,
+                        CConfig *config);
+};
+
+
 #include "numerics_structure.inl"
