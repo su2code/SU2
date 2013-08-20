@@ -578,7 +578,6 @@ private:
 	double Cyclic_Pitch,          /*!< \brief Cyclic pitch for rotorcraft simulations. */
 	Collective_Pitch;             /*!< \brief Collective pitch for rotorcraft simulations. */
 	string Motion_Filename;				/*!< \brief Arbitrary mesh motion input base filename. */
-	double *Motion_Ramp;			/*!< \brief Information about the mesh motion ramp. */
 	double Mach_Motion;			/*!< \brief Mach number based on mesh velocity and freestream quantities. */
 	double *Motion_Origin_X,    /*!< \brief X-coordinate of the mesh motion origin. */
 	*Motion_Origin_Y,           /*!< \brief Y-coordinate of the mesh motion origin. */
@@ -3609,12 +3608,6 @@ public:
 	 * \param[in] motion_Type - Specify motion type.
 	 */
 	void SetKind_GridMovement(unsigned short val_iZone, unsigned short motion_Type);
-
-	/*!
-	 * \brief Get the mesh motion ramp information.
-	 * \param[in] val_iter - Current solver iteration.
-	 */
-	double GetMotion_Ramp(unsigned long val_iter);
 
 	/*!
 	 * \brief Get the mach number based on the mesh velocity and freestream quantities.

@@ -100,63 +100,63 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
         (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
         
 		for(IntIter = 1; IntIter < config_container[ZONE_0]->GetUnst_nIntIter(); IntIter++) {
-            
-            /*--- Write the convergence history (only screen output) ---*/
-            output->SetConvergence_History(NULL, geometry_container, solver_container, config_container, integration_container, true, 0, ZONE_0);
-            
-            /*--- Set the value of the internal iteration ---*/
-            config_container[ZONE_0]->SetIntIter(IntIter);
-            
+      
+      /*--- Write the convergence history (only screen output) ---*/
+      output->SetConvergence_History(NULL, geometry_container, solver_container, config_container, integration_container, true, 0, ZONE_0);
+      
+      /*--- Set the value of the internal iteration ---*/
+      config_container[ZONE_0]->SetIntIter(IntIter);
+      
 			/*--- All zones must be advanced and coupled with each pseudo timestep. ---*/
 			for (iZone = 0; iZone < nZone; iZone++) {
-                
+        
 				/*--- Pseudo-timestepping for the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes equations ---*/
 				if (config_container[iZone]->GetKind_Solver() == EULER) config_container[iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, ExtIter);
 				if (config_container[iZone]->GetKind_Solver() == NAVIER_STOKES) config_container[iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter);
 				if (config_container[iZone]->GetKind_Solver() == RANS) config_container[iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS, ExtIter);
 				integration_container[iZone][FLOW_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
-                                                                            config_container, RUNTIME_FLOW_SYS, IntIter, iZone);
-                
+                                                                    config_container, RUNTIME_FLOW_SYS, IntIter, iZone);
+        
 				/*--- Pseudo-timestepping the turbulence model ---*/
 				if (config_container[iZone]->GetKind_Solver() == RANS) {
 					/*--- Turbulent model solution ---*/
 					config_container[iZone]->SetGlobalParam(RANS, RUNTIME_TURB_SYS, ExtIter);
 					integration_container[iZone][TURB_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
-                                                                                 config_container, RUNTIME_TURB_SYS, IntIter, iZone);
+                                                                       config_container, RUNTIME_TURB_SYS, IntIter, iZone);
 					if (config_container[iZone]->GetKind_Trans_Model() == LM) {
 						/*--- Transition model solution ---*/
 						config_container[iZone]->SetGlobalParam(RANS, RUNTIME_TRANS_SYS, ExtIter);
 						integration_container[iZone][TRANS_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
-                                                                                      config_container, RUNTIME_TRANS_SYS, IntIter, iZone);
+                                                                          config_container, RUNTIME_TRANS_SYS, IntIter, iZone);
 					}
 				}
-                
+        
 				/*--- Call if AEROELASTIC motion was specified ---*/
 				if ((config_container[ZONE_0]->GetGrid_Movement()) && (config_container[ZONE_0]->GetKind_GridMovement(ZONE_0) == AEROELASTIC)) {
 					SetGrid_Movement(geometry_container[iZone], surface_movement[iZone],
-                                     grid_movement[iZone], FFDBox[iZone], solver_container[iZone], config_container[iZone], iZone, IntIter);
-                    /* If unsteady step converged, write out the plunge and pitch for that step */
-                    int rank = MASTER_NODE;
-                    #ifndef NO_MPI
-                    rank = MPI::COMM_WORLD.Get_rank();
-                    #endif
-                    if (rank == MASTER_NODE && integration_container[ZONE_0][FLOW_SOL]->GetConvergence()) {
-                        std::fstream output_file;
-                        output_file.open("plunging_pitching2.txt", std::fstream::in | std::fstream::out | std::fstream::app);
-                        
-                        output_file << std::setprecision(15) << config_container[ZONE_0]->GetAeroelastic_plunge() << "    " << config_container[ZONE_0]->GetAeroelastic_pitch() << "\n";
-                        output_file.close();
-                        
-                        std::cout.precision(15);
-                        std::cout << "plunge = " << config_container[ZONE_0]->GetAeroelastic_plunge() << std::endl;
-                        std::cout << "pitch = " << config_container[ZONE_0]->GetAeroelastic_pitch() << std::endl;
-                    }
-
-				}
-                
-			}
+                           grid_movement[iZone], FFDBox[iZone], solver_container[iZone], config_container[iZone], iZone, IntIter);
+          /* If unsteady step converged, write out the plunge and pitch for that step */
+          int rank = MASTER_NODE;
+#ifndef NO_MPI
+          rank = MPI::COMM_WORLD.Get_rank();
+#endif
+          if (rank == MASTER_NODE && integration_container[ZONE_0][FLOW_SOL]->GetConvergence()) {
+            std::fstream output_file;
+            output_file.open("plunging_pitching2.txt", std::fstream::in | std::fstream::out | std::fstream::app);
             
-            if (integration_container[ZONE_0][FLOW_SOL]->GetConvergence()) break;
+            output_file << std::setprecision(15) << config_container[ZONE_0]->GetAeroelastic_plunge() << "    " << config_container[ZONE_0]->GetAeroelastic_pitch() << "\n";
+            output_file.close();
+            
+            std::cout.precision(15);
+            std::cout << "plunge = " << config_container[ZONE_0]->GetAeroelastic_plunge() << std::endl;
+            std::cout << "pitch = " << config_container[ZONE_0]->GetAeroelastic_pitch() << std::endl;
+          }
+          
+				}
+        
+			}
+      
+      if (integration_container[ZONE_0][FLOW_SOL]->GetConvergence()) break;
       
 		}
 
@@ -307,7 +307,7 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
 		for(IntIter = 1; IntIter < config_container[ZONE_0]->GetUnst_nIntIter(); IntIter++) {
       
       /*--- Write the convergence history (only screen output) ---*/
-      if (iZone == ZONE_0) output->SetConvergence_History(NULL, geometry_container, solver_container, config_container, integration_container, true, 0, iZone);
+      output->SetConvergence_History(NULL, geometry_container, solver_container, config_container, integration_container, true, 0, ZONE_0);
       
       /*--- Set the value of the internal iteration ---*/
       config_container[ZONE_0]->SetIntIter(IntIter);
@@ -316,9 +316,10 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
 			for (iZone = 0; iZone < nZone; iZone++) {
 				integration_container[iZone][ADJFLOW_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
 						config_container, RUNTIME_ADJFLOW_SYS, IntIter, iZone);
-
-				if (integration_container[iZone][ADJFLOW_SOL]->GetConvergence()) {if (rank == MASTER_NODE) cout<<endl; break;}
 			}
+      
+      /*--- Check to see if the convergence criteria has been met. ---*/
+      if (integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence()) break;
 		}
 
 		for (iZone = 0; iZone < nZone; iZone++) {

@@ -3702,7 +3702,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
   
 	unsigned long iIntIter = config[val_iZone]->GetIntIter();
 	unsigned long iExtIter = config[val_iZone]->GetExtIter();
-  
+
 #ifndef NO_MPI
   
 	int rank = MPI::COMM_WORLD.Get_rank();
@@ -4854,6 +4854,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
           cout.width(14); cout << Total_Sens_Geo;
           cout.width(14); cout << Total_Sens_Mach;
           cout << endl;
+          cout.unsetf(ios_base::floatfield);
           break;
           
         case ADJ_FREE_SURFACE_EULER : case ADJ_FREE_SURFACE_NAVIER_STOKES :
@@ -4871,6 +4872,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
           cout.setf(ios::scientific,ios::floatfield);
           cout.width(12); cout << Total_Sens_Geo;
           cout.width(12); cout << Total_Sens_Mach;
+          cout.unsetf(ios_base::floatfield);
           cout << endl;
           break;
                     
@@ -4904,6 +4906,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
           cout.width(14); cout << Total_Sens_Geo;
           cout.width(14); cout << Total_Sens_Mach;
           cout << endl;
+          cout.unsetf(ios_base::floatfield);
           break;
           
         case ADJ_FREE_SURFACE_RANS :
@@ -4924,6 +4927,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
           cout.width(12); cout << Total_Sens_Geo;
           cout.width(12); cout << Total_Sens_Mach;
           cout << endl;
+          cout.unsetf(ios_base::floatfield);
           break;
           
         case ADJ_PLASMA_EULER : case ADJ_PLASMA_NAVIER_STOKES:

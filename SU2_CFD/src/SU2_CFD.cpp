@@ -541,12 +541,9 @@ int main(int argc, char *argv[]) {
   finish = MPI::Wtime();
   time = finish-start;
   if (rank == MASTER_NODE) {
-    if (size == 1) {cout << "\nCompleted in " << time << " seconds on ";
-      cout << size << " core.\n" << endl;
-    } else {
-      cout << "\nCompleted in " << time << " seconds on " << size;
-      cout << " cores.\n" << endl;
-    }
+    cout << "\nCompleted in " << fixed << time << " seconds on ";
+    if (size == 1) cout << size << " core.\n" << endl;
+    else cout << " cores.\n" << endl;
   }
 #endif
   /*--- Finalize MPI parallelization ---*/
