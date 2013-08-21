@@ -101,6 +101,8 @@ inline double CConfig::GetRefLengthMoment(void) { return RefLengthMoment; }
 
 inline double CConfig::GetRefElemLength(void) { return RefElemLength; }
 
+inline double CConfig::GetRefSharpEdges(void) { return RefSharpEdges; }
+
 inline double CConfig::GetDomainVolume(void) { return DomainVolume; }
 
 inline void CConfig::SetRefAreaCoeff(double val_area) { RefAreaCoeff = val_area; }

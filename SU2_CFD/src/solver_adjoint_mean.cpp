@@ -1626,7 +1626,7 @@ void CAdjEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
 
 void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
-  bool SharpEdge_Distance;
+  double SharpEdge_Distance;
 
   /*--- Retrieve information about the spatial and temporal integration for the
    adjoint equations (note that the flow problem may use different methods). ---*/
@@ -1644,12 +1644,12 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
 	for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
     /*--- Get the distance form a sharp edge ---*/
-    SharpEdge_Distance = (geometry->node[iPoint]->GetSharpEdge_Distance() < 10.0);
+    SharpEdge_Distance = geometry->node[iPoint]->GetSharpEdge_Distance();
     
     /*--- Set the primitive variables incompressible and compressible
      adjoint variables ---*/
-		if (incompressible) node[iPoint]->SetPrimVar_Incompressible(SharpEdge_Distance, config);
-		else node[iPoint]->SetPrimVar_Compressible(SharpEdge_Distance, config);
+		if (incompressible) node[iPoint]->SetPrimVar_Incompressible(SharpEdge_Distance, false, config);
+		else node[iPoint]->SetPrimVar_Compressible(SharpEdge_Distance, false, config);
     
 		/*--- Initialize the convective residual vector ---*/
 		LinSysRes.SetBlock_Zero(iPoint);
@@ -5436,7 +5436,7 @@ CAdjNSSolver::~CAdjNSSolver(void) {
 
 void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
-  bool SharpEdge_Distance;
+  double SharpEdge_Distance;
   
   /*--- Retrieve information about the spatial and temporal integration for the
    adjoint equations (note that the flow problem may use different methods). ---*/
@@ -5454,12 +5454,12 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 	for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
     /*--- Get the distance form a sharp edge ---*/
-    SharpEdge_Distance = (geometry->node[iPoint]->GetSharpEdge_Distance() < 0.1);
+    SharpEdge_Distance = geometry->node[iPoint]->GetSharpEdge_Distance();
     
     /*--- Set the primitive variables incompressible and compressible
      adjoint variables ---*/
-		if (incompressible) node[iPoint]->SetPrimVar_Incompressible(SharpEdge_Distance, config);
-		else node[iPoint]->SetPrimVar_Compressible(SharpEdge_Distance, config);
+		if (incompressible) node[iPoint]->SetPrimVar_Incompressible(SharpEdge_Distance, false, config);
+		else node[iPoint]->SetPrimVar_Compressible(SharpEdge_Distance, false, config);
     
 		/*--- Initialize the convective residual vector ---*/
 		LinSysRes.SetBlock_Zero(iPoint);

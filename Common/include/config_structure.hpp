@@ -421,6 +421,7 @@ private:
 	unsigned short Output_FileFormat;	/*!< \brief Format of the output files. */
 	double RefAreaCoeff,		/*!< \brief Reference area for coefficient computation. */
 	RefElemLength,				/*!< \brief Reference element length for computing the slope limiting epsilon. */
+	RefSharpEdges,				/*!< \brief Reference coefficient for detecting sharp edges. */
 	RefLengthMoment,			/*!< \brief Reference length for moment computation. */
 	*RefOriginMoment,			/*!< \brief Origin for moment computation. */
 	*CFLRamp,			/*!< \brief Information about the CFL ramp. */
@@ -1395,6 +1396,12 @@ public:
 	 * \return Reference element length for slope limiting epsilon.
 	 */
 	double GetRefElemLength(void);
+  
+  /*!
+	 * \brief Get the reference coefficient for detecting sharp edges.
+	 * \return Reference coefficient for detecting sharp edges.
+	 */
+	double GetRefSharpEdges(void);
 
 	/*! 
 	 * \brief Get the volume of the whole domain using the fine grid, this value is common for all the grids
