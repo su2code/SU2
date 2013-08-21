@@ -1546,7 +1546,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 	/*--- Local variables needed on all processors ---*/
 	unsigned short Kind_Solver  = config->GetKind_Solver();
 	unsigned short iVar, jVar, iSpecies, FirstIndex = NONE, SecondIndex = NONE, ThirdIndex = NONE;
-	unsigned short nVar_First = 0, nVar_Second = 0, nVar_Third = 0, iVar_Eddy = 0;
+	unsigned short nVar_First = 0, nVar_Second = 0, nVar_Third = 0, iVar_Eddy = 0, iVar_Sharp = 0;
 	unsigned short iVar_GridVel = 0, iVar_PressMach = 0, iVar_Density = 0, iVar_TempLam = 0,
   iVar_Tempv = 0,iVar_MagF = 0, iVar_EF =0, iVar_Temp = 0, iVar_Lam =0, iVar_Mach = 0, iVar_Press = 0,
   iVar_ViscCoeffs = 0, iVar_Sens = 0, iVar_Coords = 0;
@@ -1657,9 +1657,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 	if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
 			(Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) ||
 			(Kind_Solver == FREE_SURFACE_RANS)) {
-		/*--- Pressure, Cp, Mach, Sharp edge distance ---*/
+		/*--- Pressure, Cp, Mach ---*/
 		iVar_PressMach = nVar_Total;
-		nVar_Total += 4;
+		nVar_Total += 3;
 	}
   
 	if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
@@ -1675,6 +1675,14 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 	if ((Kind_Solver == RANS) || (Kind_Solver == FREE_SURFACE_RANS)) {
 		/*--- Eddy Viscosity ---*/
 		iVar_Eddy = nVar_Total;
+		nVar_Total += 1;
+	}
+  
+  if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
+    (Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) ||
+    (Kind_Solver == FREE_SURFACE_RANS)) {
+		/*--- Sharp edges ---*/
+		iVar_Sharp = nVar_Total;
 		nVar_Total += 1;
 	}
   
@@ -2555,6 +2563,49 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 		/*--- The master node unpacks and sorts this variable by global index ---*/
 		if (rank == MASTER_NODE) {
 			jPoint = 0; iVar = iVar_Eddy;
+			for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+				for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
+          
+					/*--- Get global index, then loop over each variable and store ---*/
+					iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
+					Data[iVar][iGlobal_Index] = Buffer_Recv_Var[jPoint];
+					jPoint++;
+				}
+				/*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+				jPoint = (iProcessor+1)*nBuffer_Scalar;
+			}
+		}
+    
+	}
+  
+  /*--- Communicate the Sharp Edges ---*/
+	if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
+      (Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    
+		/*--- Loop over this partition to collect the current variable ---*/
+		jPoint = 0;
+		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      
+      /*--- Check for halos & write only if requested ---*/
+      
+      if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
+        
+        /*--- Load buffers with the pressure and mach variables. ---*/
+        Buffer_Send_Var[jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance();
+
+        jPoint++;
+      }
+		}
+    
+		/*--- Gather the data on the master node. ---*/
+		MPI::COMM_WORLD.Barrier();
+		MPI::COMM_WORLD.Gather(Buffer_Send_Var, nBuffer_Scalar, MPI::DOUBLE,
+                           Buffer_Recv_Var, nBuffer_Scalar, MPI::DOUBLE,
+                           MASTER_NODE);
+    
+		/*--- The master node unpacks and sorts this variable by global index ---*/
+		if (rank == MASTER_NODE) {
+			jPoint = 0; iVar = iVar_Sharp;
 			for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
 				for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
           

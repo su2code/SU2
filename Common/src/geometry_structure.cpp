@@ -5376,80 +5376,85 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
 
 void CPhysicalGeometry::ComputeSurf_Curvature(CConfig *config) {
 	unsigned short iMarker, iNeigh_Point, iDim, iNode, iNeighbor_Nodes, Neighbor_Node;
-	unsigned long Neighbor_Point, iVertex, iPoint, jPoint,iElem_Bound, iEdge;
+	unsigned long Neighbor_Point, iVertex, iPoint, jPoint,iElem_Bound, iEdge, nLocalVertex, nGlobalVertex , MaxLocalVertex , *Buffer_Send_nVertex, *Buffer_Receive_nVertex, nBuffer;
+  int iProcessor, nProcessor;
   vector<unsigned long> Point_NeighborList, Elem_NeighborList, Point_Triangle, Point_Edge, Point_Critical;
   vector<unsigned long>::iterator it;
-  double U[3], V[3], W[3], Length_U, Length_V, Length_W, CosValue, Angle_Value, K, *Angle_Defect, *Area_Vertex, *Angle_Alpha, *Angle_Beta, **NormalMeanK, MeanK, GaussK, MaxPrinK, MinPrinK, cot_alpha, cot_beta, delta, X1, X2, X3, Y1, Y2, Y3, radius, curvature_threshold;
+  double U[3], V[3], W[3], Length_U, Length_V, Length_W, CosValue, Angle_Value, K, *Angle_Defect, *Area_Vertex, *Angle_Alpha, *Angle_Beta, **NormalMeanK, MeanK, GaussK, MaxPrinK, MinPrinK, cot_alpha, cot_beta, delta, X1, X2, X3, Y1, Y2, Y3, radius, curvature_threshold, *Buffer_Send_Coord, *Buffer_Receive_Coord, *Coord, Dist, MinDist;
   bool *Check_Edge;
-
-	/*--- IMPORTANT: Sharp corner angle threshold as a multiple of the average ---*/
+  
+	/*--- Definition of the curvature threshold ---*/
 	if (nDim == 2) curvature_threshold = 100.0;
-	else curvature_threshold = 1.0;
-
+	else curvature_threshold = 1000.0;
+  
 	if (nDim == 2) {
-
+    
     Point_Critical.clear();
-
+    
 		/*--- Loop over all the markers ---*/
 		for (iMarker = 0; iMarker < nMarker; iMarker++) {
       
-			/*--- Loop through all marker vertices again, this time also
-       finding the neighbors of each node.---*/
-			for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-				iPoint  = vertex[iMarker][iVertex]->GetNode();
+      if (config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE) {
         
-        if (node[iPoint]->GetDomain()) {
-          /*--- Loop through neighbors. In 2-D, there should be 2 nodes on either
-           side of this vertex that lie on the same surface. ---*/
-          Point_Edge.clear();
+        /*--- Loop through all marker vertices again, this time also
+         finding the neighbors of each node.---*/
+        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+          iPoint  = vertex[iMarker][iVertex]->GetNode();
           
-          for (iNeigh_Point = 0; iNeigh_Point < node[iPoint]->GetnPoint(); iNeigh_Point++) {
-            Neighbor_Point = node[iPoint]->GetPoint(iNeigh_Point);
+          if (node[iPoint]->GetDomain()) {
+            /*--- Loop through neighbors. In 2-D, there should be 2 nodes on either
+             side of this vertex that lie on the same surface. ---*/
+            Point_Edge.clear();
             
-            /*--- Check if this neighbor lies on the surface. If so,
-             add to the list of neighbors. ---*/
-            if (node[Neighbor_Point]->GetBoundary()) {
-              Point_Edge.push_back(Neighbor_Point);
+            for (iNeigh_Point = 0; iNeigh_Point < node[iPoint]->GetnPoint(); iNeigh_Point++) {
+              Neighbor_Point = node[iPoint]->GetPoint(iNeigh_Point);
+              
+              /*--- Check if this neighbor lies on the surface. If so,
+               add to the list of neighbors. ---*/
+              if (node[Neighbor_Point]->GetBoundary()) {
+                Point_Edge.push_back(Neighbor_Point);
+              }
+              
             }
             
-          }
-          
-          if (Point_Edge.size() == 2) {
-            
-            /*--- Compute the curvature using three points ---*/
-            X1 = node[iPoint]->GetCoord(0);
-            X2 = node[Point_Edge[0]]->GetCoord(0);
-            X3 = node[Point_Edge[1]]->GetCoord(0);
-            Y1 = node[iPoint]->GetCoord(1);
-            Y2 = node[Point_Edge[0]]->GetCoord(1);
-            Y3 = node[Point_Edge[1]]->GetCoord(1);
-            
-            radius = sqrt(((X2-X1)*(X2-X1) + (Y2-Y1)*(Y2-Y1))*
-                          ((X2-X3)*(X2-X3) + (Y2-Y3)*(Y2-Y3))*
-                          ((X3-X1)*(X3-X1) + (Y3-Y1)*(Y3-Y1)))/
-            (2.0*fabs(X1*Y2+X2*Y3+X3*Y1-X1*Y3-X2*Y1-X3*Y2));
-            
-            K = 1.0/radius;
-            
-            if (K > curvature_threshold) Point_Critical.push_back(iPoint);
+            if (Point_Edge.size() == 2) {
+              
+              /*--- Compute the curvature using three points ---*/
+              X1 = node[iPoint]->GetCoord(0);
+              X2 = node[Point_Edge[0]]->GetCoord(0);
+              X3 = node[Point_Edge[1]]->GetCoord(0);
+              Y1 = node[iPoint]->GetCoord(1);
+              Y2 = node[Point_Edge[0]]->GetCoord(1);
+              Y3 = node[Point_Edge[1]]->GetCoord(1);
+              
+              radius = sqrt(((X2-X1)*(X2-X1) + (Y2-Y1)*(Y2-Y1))*
+                            ((X2-X3)*(X2-X3) + (Y2-Y3)*(Y2-Y3))*
+                            ((X3-X1)*(X3-X1) + (Y3-Y1)*(Y3-Y1)))/
+              (2.0*fabs(X1*Y2+X2*Y3+X3*Y1-X1*Y3-X2*Y1-X3*Y2));
+              
+              K = 1.0/radius;
+              
+              if (K > curvature_threshold) Point_Critical.push_back(iPoint);
+              
+            }
             
           }
           
         }
         
-			}
+      }
       
 		}
-
+    
 	} else {
-        
+    
     Angle_Defect = new double [nPoint];
     Area_Vertex = new double [nPoint];
     
     Angle_Alpha = new double [nEdge];
     Angle_Beta = new double [nEdge];
     Check_Edge = new bool [nEdge];
-
+    
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
       Angle_Defect[iPoint] = 2*PI_NUMBER;
       Area_Vertex[iPoint] = 0.0;
@@ -5472,85 +5477,87 @@ void CPhysicalGeometry::ComputeSurf_Curvature(CConfig *config) {
     /*--- Loop over all the markers ---*/
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       
-      /*--- Loop over all the boundary elements ---*/
-      for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
+      if (config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE) {
         
-        /*--- Loop over all the nodes of the boundary ---*/
-        for(iNode = 0; iNode < bound[iMarker][iElem_Bound]->GetnNodes(); iNode++) {
+        /*--- Loop over all the boundary elements ---*/
+        for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
           
-          iPoint = bound[iMarker][iElem_Bound]->GetNode(iNode);
-          
-          if (node[iPoint]->GetDomain()) {
-
-          Point_Triangle.clear();
-          
-          for(iNeighbor_Nodes = 0; iNeighbor_Nodes < bound[iMarker][iElem_Bound]->GetnNeighbor_Nodes(iNode); iNeighbor_Nodes++) {
-            Neighbor_Node = bound[iMarker][iElem_Bound]->GetNeighbor_Nodes(iNode, iNeighbor_Nodes);
-            Neighbor_Point = bound[iMarker][iElem_Bound]->GetNode(Neighbor_Node);
-            Point_Triangle.push_back(Neighbor_Point);
-          }
-          
-          if (Point_Triangle.size() != 2) cout << "Check the surface mesh." << endl;
-          iEdge = FindEdge(Point_Triangle[0], Point_Triangle[1]);
-          
-          for (iDim = 0; iDim < nDim; iDim++) {
-            U[iDim] = node[Point_Triangle[0]]->GetCoord(iDim) - node[iPoint]->GetCoord(iDim);
-            V[iDim] = node[Point_Triangle[1]]->GetCoord(iDim) - node[iPoint]->GetCoord(iDim);
-          }
-          
-          W[0] = 0.5*(U[1]*V[2]-U[2]*V[1]); W[1] = -0.5*(U[0]*V[2]-U[2]*V[0]); W[2] = 0.5*(U[0]*V[1]-U[1]*V[0]);
-          
-          Length_U = 0.0, Length_V = 0.0, Length_W = 0.0, CosValue = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) { Length_U += U[iDim]*U[iDim]; Length_V += V[iDim]*V[iDim]; Length_W += W[iDim]*W[iDim]; }
-          Length_U = sqrt(Length_U); Length_V = sqrt(Length_V); Length_W = sqrt(Length_W);
-          for (iDim = 0; iDim < nDim; iDim++) { U[iDim] /= Length_U; V[iDim] /= Length_V; CosValue += U[iDim]*V[iDim]; }
-          if (CosValue >= 1.0) CosValue = 1.0;
-          if (CosValue <= -1.0) CosValue = -1.0;
-          
-          Angle_Value = acos(CosValue);
-
-          Angle_Defect[iPoint] -= Angle_Value;
-          if (Angle_Alpha[iEdge] == 0.0) Angle_Alpha[iEdge] = Angle_Value;
-          else {
-            if (Angle_Beta[iEdge] != 0.0) cout << "Check the surface mesh." << endl;
-            Angle_Beta[iEdge] = Angle_Value;
-          }
-          
-          Area_Vertex[iPoint] += Length_W;
-          
-          }
+          /*--- Loop over all the nodes of the boundary element ---*/
+          for(iNode = 0; iNode < bound[iMarker][iElem_Bound]->GetnNodes(); iNode++) {
+            
+            iPoint = bound[iMarker][iElem_Bound]->GetNode(iNode);
+                          
+              Point_Triangle.clear();
+              
+              for(iNeighbor_Nodes = 0; iNeighbor_Nodes < bound[iMarker][iElem_Bound]->GetnNeighbor_Nodes(iNode); iNeighbor_Nodes++) {
+                Neighbor_Node = bound[iMarker][iElem_Bound]->GetNeighbor_Nodes(iNode, iNeighbor_Nodes);
+                Neighbor_Point = bound[iMarker][iElem_Bound]->GetNode(Neighbor_Node);
+                Point_Triangle.push_back(Neighbor_Point);
+              }
+              
+              iEdge = FindEdge(Point_Triangle[0], Point_Triangle[1]);
+              
+              for (iDim = 0; iDim < nDim; iDim++) {
+                U[iDim] = node[Point_Triangle[0]]->GetCoord(iDim) - node[iPoint]->GetCoord(iDim);
+                V[iDim] = node[Point_Triangle[1]]->GetCoord(iDim) - node[iPoint]->GetCoord(iDim);
+              }
+              
+              W[0] = 0.5*(U[1]*V[2]-U[2]*V[1]); W[1] = -0.5*(U[0]*V[2]-U[2]*V[0]); W[2] = 0.5*(U[0]*V[1]-U[1]*V[0]);
+              
+              Length_U = 0.0, Length_V = 0.0, Length_W = 0.0, CosValue = 0.0;
+              for (iDim = 0; iDim < nDim; iDim++) { Length_U += U[iDim]*U[iDim]; Length_V += V[iDim]*V[iDim]; Length_W += W[iDim]*W[iDim]; }
+              Length_U = sqrt(Length_U); Length_V = sqrt(Length_V); Length_W = sqrt(Length_W);
+              for (iDim = 0; iDim < nDim; iDim++) { U[iDim] /= Length_U; V[iDim] /= Length_V; CosValue += U[iDim]*V[iDim]; }
+              if (CosValue >= 1.0) CosValue = 1.0;
+              if (CosValue <= -1.0) CosValue = -1.0;
+              
+              Angle_Value = acos(CosValue);
+              
+              Angle_Defect[iPoint] -= Angle_Value;
+              if (Angle_Alpha[iEdge] == 0.0) Angle_Alpha[iEdge] = Angle_Value;
+              else Angle_Beta[iEdge] = Angle_Value;
+              
+              Area_Vertex[iPoint] += Length_W;
+              
+            }
           
         }
       }
     }
-        
+    
     /*--- Compute mean curvature ---*/
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-        for(iNode = 0; iNode < bound[iMarker][iElem_Bound]->GetnNodes(); iNode++) {
-          iPoint = bound[iMarker][iElem_Bound]->GetNode(iNode);
-          
-          if (node[iPoint]->GetDomain()) {
+      if (config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE) {
+        for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
+          for(iNode = 0; iNode < bound[iMarker][iElem_Bound]->GetnNodes(); iNode++) {
+            iPoint = bound[iMarker][iElem_Bound]->GetNode(iNode);
             
-            for(iNeighbor_Nodes = 0; iNeighbor_Nodes < bound[iMarker][iElem_Bound]->GetnNeighbor_Nodes(iNode); iNeighbor_Nodes++) {
-              Neighbor_Node = bound[iMarker][iElem_Bound]->GetNeighbor_Nodes(iNode, iNeighbor_Nodes);
-              jPoint = bound[iMarker][iElem_Bound]->GetNode(Neighbor_Node);
+            if (node[iPoint]->GetDomain()) {
               
-              iEdge = FindEdge(iPoint, jPoint);
-              
-              if (Check_Edge[iEdge]) {
+              for(iNeighbor_Nodes = 0; iNeighbor_Nodes < bound[iMarker][iElem_Bound]->GetnNeighbor_Nodes(iNode); iNeighbor_Nodes++) {
+                Neighbor_Node = bound[iMarker][iElem_Bound]->GetNeighbor_Nodes(iNode, iNeighbor_Nodes);
+                jPoint = bound[iMarker][iElem_Bound]->GetNode(Neighbor_Node);
                 
-                Check_Edge[iEdge] = false;
-                
-                cot_alpha = 1.0/tan(Angle_Alpha[iEdge]);
-                cot_beta = 1.0/tan(Angle_Beta[iEdge]);
-                
-                /*--- iPoint, and jPoint ---*/
-                for (iDim = 0; iDim < nDim; iDim++) {
-                  NormalMeanK[iPoint][iDim] += 3.0 * (cot_alpha + cot_beta) * (node[iPoint]->GetCoord(iDim) - node[jPoint]->GetCoord(iDim)) / Area_Vertex[iPoint];
-                  NormalMeanK[jPoint][iDim] += 3.0 * (cot_alpha + cot_beta) * (node[jPoint]->GetCoord(iDim) - node[iPoint]->GetCoord(iDim)) / Area_Vertex[jPoint];
+                if (node[jPoint]->GetDomain()) {
+                  
+                  iEdge = FindEdge(iPoint, jPoint);
+                  
+                  if (Check_Edge[iEdge]) {
+                    
+                    Check_Edge[iEdge] = false;
+                    
+                    cot_alpha = 1.0/tan(Angle_Alpha[iEdge]);
+                    cot_beta = 1.0/tan(Angle_Beta[iEdge]);
+                    
+                    /*--- iPoint, and jPoint ---*/
+                    for (iDim = 0; iDim < nDim; iDim++) {
+                      NormalMeanK[iPoint][iDim] += 3.0 * (cot_alpha + cot_beta) * (node[iPoint]->GetCoord(iDim) - node[jPoint]->GetCoord(iDim)) / Area_Vertex[iPoint];
+                      NormalMeanK[jPoint][iDim] += 3.0 * (cot_alpha + cot_beta) * (node[jPoint]->GetCoord(iDim) - node[iPoint]->GetCoord(iDim)) / Area_Vertex[jPoint];
+                    }
+                    if (Area_Vertex[iPoint] == 0) cout <<iPoint<< endl;
+                    if (Area_Vertex[jPoint] == 0) cout <<jPoint<< endl;
+                  }
                 }
-                
               }
             }
           }
@@ -5558,30 +5565,33 @@ void CPhysicalGeometry::ComputeSurf_Curvature(CConfig *config) {
       }
     }
     
-    /*--- Compute Gauss, mean, max and min principal curvature, 
+    /*--- Compute Gauss, mean, max and min principal curvature,
      and set the list of critical points ---*/
     
     Point_Critical.clear();
-
+    
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        iPoint  = vertex[iMarker][iVertex]->GetNode();
-        
-        if (node[iPoint]->GetDomain()) {
+      if (config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE) {
+        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+          iPoint  = vertex[iMarker][iVertex]->GetNode();
           
-          GaussK = 3.0*Angle_Defect[iPoint]/Area_Vertex[iPoint];
+          if (node[iPoint]->GetDomain()) {
+            
+            GaussK = 3.0*Angle_Defect[iPoint]/Area_Vertex[iPoint];
+            
+            MeanK = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              MeanK += NormalMeanK[iPoint][iDim]*NormalMeanK[iPoint][iDim];
+            MeanK = sqrt(MeanK);
+            
+            delta = max((MeanK*MeanK - GaussK), 0.0);
+            
+            MaxPrinK = MeanK + sqrt(delta);
+            MinPrinK = MeanK - sqrt(delta);
+            
+            if (MaxPrinK > curvature_threshold) { Point_Critical.push_back(iPoint); }
+          }
           
-          MeanK = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            MeanK += NormalMeanK[iPoint][iDim]*NormalMeanK[iPoint][iDim];
-          MeanK = sqrt(MeanK);
-          
-          delta = max((MeanK*MeanK - GaussK), 0.0);
-          
-          MaxPrinK = MeanK + sqrt(delta);
-          MinPrinK = MeanK - sqrt(delta);
-          
-          if (MaxPrinK > curvature_threshold) Point_Critical.push_back(iPoint);
         }
       }
     }
@@ -5595,20 +5605,20 @@ void CPhysicalGeometry::ComputeSurf_Curvature(CConfig *config) {
     for (iPoint = 0; iPoint < nPoint; iPoint++)
       delete NormalMeanK[iPoint];
     delete [] NormalMeanK;
-
+    
   }
   
   /*--- Variables and buffers needed for MPI ---*/
-	int iProcessor;
-	int nProcessor = 1;
-
+  
 #ifndef NO_MPI
   nProcessor = MPI::COMM_WORLD.Get_size();
+#else
+	nProcessor = 1;
 #endif
-
-	unsigned long nLocalVertex = 0, nGlobalVertex = 0, MaxLocalVertex = 0;
-	unsigned long *Buffer_Send_nVertex    = new unsigned long [1];
-	unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
+  
+	nLocalVertex = 0, nGlobalVertex = 0, MaxLocalVertex = 0;
+	Buffer_Send_nVertex    = new unsigned long [1];
+	Buffer_Receive_nVertex = new unsigned long [nProcessor];
   
   /*--- Count the total number of critical edge nodes. ---*/
   nLocalVertex = Point_Critical.size();
@@ -5625,16 +5635,16 @@ void CPhysicalGeometry::ComputeSurf_Curvature(CConfig *config) {
 #else
   MaxLocalVertex = nLocalVertex;
   nGlobalVertex = nLocalVertex;
-  Buffer_Receive_nVertex[1] = nLocalVertex;
+  Buffer_Receive_nVertex[0] = nLocalVertex;
 #endif
-
+  
   
   /*--- Create and initialize to zero some buffers to hold the coordinates
    of the boundary nodes that are communicated from each partition (all-to-all). ---*/
   
-	double *Buffer_Send_Coord    = new double [MaxLocalVertex*nDim];
-	double *Buffer_Receive_Coord = new double [nProcessor*MaxLocalVertex*nDim];
-	unsigned long nBuffer = MaxLocalVertex*nDim;
+	Buffer_Send_Coord     = new double [MaxLocalVertex*nDim];
+	Buffer_Receive_Coord  = new double [nProcessor*MaxLocalVertex*nDim];
+  nBuffer               = MaxLocalVertex*nDim;
   
 	for (iVertex = 0; iVertex < MaxLocalVertex; iVertex++) {
 		for (iDim = 0; iDim < nDim; iDim++) {
@@ -5656,28 +5666,37 @@ void CPhysicalGeometry::ComputeSurf_Curvature(CConfig *config) {
                             Buffer_Receive_Coord, nBuffer, MPI::DOUBLE);
 #else
   for (iVertex = 0; iVertex < Point_Critical.size(); iVertex++) {
-    for (iDim = 0; iDim < nDim; iDim++)
+    for (iDim = 0; iDim < nDim; iDim++) {
       Buffer_Receive_Coord[iVertex*nDim+iDim] = Buffer_Send_Coord[iVertex*nDim+iDim];
+    }
   }
 #endif
   
   /*--- Loop over all interior mesh nodes on the local partition and compute
    the distances to each of the no-slip boundary nodes in the entire mesh.
    Store the minimum distance to the wall for each interior mesh node. ---*/
-  double *Coord, Dist, Dist2;
-
+  
 	for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
 		Coord = node[iPoint]->GetCoord();
-		Dist = 1E20;
-		for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
+    
+    Dist = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Dist += (Coord[iDim]-Buffer_Receive_Coord[0]) * (Coord[iDim]-Buffer_Receive_Coord[0]);
+    }
+    Dist = sqrt(Dist); MinDist = Dist;
+
+		for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
 			for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
-				Dist2 = 0.0;
-				for (iDim = 0; iDim < nDim; iDim++)
-					Dist2 += (Coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex+iVertex)*nDim+iDim])*
+				Dist = 0.0;
+				for (iDim = 0; iDim < nDim; iDim++) {
+					Dist += (Coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex+iVertex)*nDim+iDim])*
 					(Coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex+iVertex)*nDim+iDim]);
-				if (Dist2 < Dist) Dist = Dist2;
+        }
+        Dist = sqrt(Dist);
+				if (Dist < MinDist) MinDist = Dist;
 			}
-		node[iPoint]->SetSharpEdge_Distance(sqrt(Dist));
+    }
+    node[iPoint]->SetSharpEdge_Distance(MinDist);
 	}
   
   /*--- Deallocate the buffers needed for the MPI communication. ---*/
