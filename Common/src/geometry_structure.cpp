@@ -1807,6 +1807,20 @@ void CPhysicalGeometry::CGNS_Format(CConfig *config, string val_mesh_filename, u
   nElem = interiorElems;
   cout << nElem << " inner elements." << endl;
   
+  /*--- Communicate some information about the mesh to all processors. ---*/
+#ifndef NO_MPI
+  if (config->GetKind_SU2() != SU2_DDC) {
+    Local_nElem = nElem;
+    MPI::COMM_WORLD.Allreduce(&Local_nElem, &Global_nElem, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+  }
+  else {
+    Local_nElem = nElem;
+    Global_nElem = Local_nElem;
+  }
+#else
+  Global_nElem = nElem;
+#endif
+  
   /*--- Allocate space for elements ---*/
   if (!config->GetDivide_Element()) elem = new CPrimalGrid*[nElem];
   else {
@@ -1902,6 +1916,67 @@ void CPhysicalGeometry::CGNS_Format(CConfig *config, string val_mesh_filename, u
 
   if (config->GetDivide_Element()) nElem = nelem_triangle + nelem_quad + nelem_tetra + nelem_hexa + nelem_wedge + nelem_pyramid;
   
+  /*--- Communicate the number of each element type to all processors. ---*/
+#ifndef NO_MPI
+  if (config->GetKind_SU2() != SU2_DDC) {
+    Local_nElemTri = nelem_triangle;
+    MPI::COMM_WORLD.Allreduce(&Local_nElemTri, &Global_nelem_triangle,
+                              1, MPI::UNSIGNED_LONG, MPI::SUM);
+    Local_nElemQuad = nelem_quad;
+    MPI::COMM_WORLD.Allreduce(&Local_nElemQuad,     &Global_nelem_quad,
+                              1, MPI::UNSIGNED_LONG, MPI::SUM);
+    Local_nElemTet = nelem_tetra;
+    MPI::COMM_WORLD.Allreduce(&Local_nElemTet,    &Global_nelem_tetra,
+                              1, MPI::UNSIGNED_LONG, MPI::SUM);
+    Local_nElemHex = nelem_hexa;
+    MPI::COMM_WORLD.Allreduce(&Local_nElemHex,     &Global_nelem_hexa,
+                              1, MPI::UNSIGNED_LONG, MPI::SUM);
+    Local_nElemWedge = nelem_wedge;
+    MPI::COMM_WORLD.Allreduce(&Local_nElemWedge,    &Global_nelem_wedge,
+                              1, MPI::UNSIGNED_LONG, MPI::SUM);
+    Local_nElemPyramid = nelem_pyramid;
+    MPI::COMM_WORLD.Allreduce(&Local_nElemPyramid,  &Global_nelem_pyramid,
+                              1, MPI::UNSIGNED_LONG, MPI::SUM);
+  }
+  else {
+    Local_nElemTri = nelem_triangle;
+    Global_nelem_triangle = Local_nElemTri;
+    Local_nElemQuad = nelem_quad;
+    Global_nelem_quad = Local_nElemQuad;
+    Local_nElemTet = nelem_tetra;
+    Global_nelem_tetra = Local_nElemTet;
+    Local_nElemHex = nelem_hexa;
+    Global_nelem_hexa = Local_nElemHex;
+    Local_nElemWedge = nelem_wedge;
+    Global_nelem_wedge = Local_nElemWedge;
+    Local_nElemPyramid = nelem_pyramid;
+    Global_nelem_pyramid = Local_nElemPyramid;
+  }
+#else
+  Global_nelem_triangle = nelem_triangle;
+  Global_nelem_quad     = nelem_quad;
+  Global_nelem_tetra    = nelem_tetra;
+  Global_nelem_hexa     = nelem_hexa;
+  Global_nelem_wedge    = nelem_wedge;
+  Global_nelem_pyramid  = nelem_pyramid;
+#endif
+  
+  /*--- Print information about the elements to the console ---*/
+  if (size == 1) {
+    if (Global_nelem_triangle > 0)
+      cout << Global_nelem_triangle << " triangles." << endl;
+    if (Global_nelem_quad > 0)
+      cout << Global_nelem_quad << " quadrilaterals." << endl;
+    if (Global_nelem_tetra > 0)
+      cout << Global_nelem_tetra << " tetrahedra." << endl;
+    if (Global_nelem_hexa > 0)
+      cout << Global_nelem_hexa << " hexahedra." << endl;
+    if (Global_nelem_wedge > 0)
+      cout << Global_nelem_wedge << " prisms." << endl;
+    if (Global_nelem_pyramid > 0)
+      cout << Global_nelem_pyramid << " pyramids." << endl;
+  }
+  
   /*--- Retrieve grid conversion factor. The conversion is only
    applied for SU2_CFD. All other SU2 components leave the mesh
    as is. ---*/
@@ -1933,6 +2008,23 @@ void CPhysicalGeometry::CGNS_Format(CConfig *config, string val_mesh_filename, u
     }
   }
   
+  /*--- Set some important point information for parallel simulations. ---*/
+#ifndef NO_MPI
+  if (config->GetKind_SU2() != SU2_DDC) {
+    Local_nPoint = nPoint; Local_nPointDomain = nPointDomain;
+    MPI::COMM_WORLD.Allreduce(&Local_nPoint, &Global_nPoint, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+    MPI::COMM_WORLD.Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+  }
+  else {
+    Local_nPoint = nPoint; Local_nPointDomain = nPointDomain;
+    Global_nPoint = Local_nPoint;
+    Global_nPointDomain = Local_nPointDomain;
+  }
+#else
+  Global_nPoint = nPoint;
+  Global_nPointDomain = nPointDomain;
+#endif
+  
   /*--- Read number of markers ---*/
   nMarker = nMarkers;
   cout << nMarker << " surface markers." << endl;
@@ -1945,7 +2037,7 @@ void CPhysicalGeometry::CGNS_Format(CConfig *config, string val_mesh_filename, u
   for ( int k = 0; k < nzones; k ++ ) {
     for ( int s = 0; s < nsections; s++ ) {
       if ( !isInternal[k][s] ) {
-        nelem_edge = 0; nelem_triangle = 0; nelem_quad = 0; ielem = 0;
+        nelem_edge_bound = 0; nelem_triangle_bound = 0; nelem_quad_bound = 0; ielem = 0;
         Marker_Tag = sectionNames[k][s];
         if (Marker_Tag != "SEND_RECEIVE") {
           nElem_Bound[iMarker] = nElems[k][s];
@@ -1978,13 +2070,13 @@ void CPhysicalGeometry::CGNS_Format(CConfig *config, string val_mesh_filename, u
                 }
                 
                 bound[iMarker][ielem] = new CLine(vnodes_cgns[0],vnodes_cgns[1],2);
-                ielem++; nelem_edge++; break;
+                ielem++; nelem_edge_bound++; break;
               case TRIANGLE:
                 bound[iMarker][ielem] = new CTriangle(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],3);
-                ielem++; nelem_triangle++; break;
+                ielem++; nelem_triangle_bound++; break;
               case RECTANGLE:
                 bound[iMarker][ielem] = new CRectangle(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[3],3);
-                ielem++; nelem_quad++; break;
+                ielem++; nelem_quad_bound++; break;
             }
           }
           
