@@ -217,8 +217,6 @@ inline double CVariable::GetTemperature_tr(unsigned short val_iSpecies) { return
 
 inline double CVariable::GetTemperature_vib(unsigned short val_iSpecies) { return 0; }
 
-inline double CVariable::GetTheta(void) { return 0; }
-
 inline double CVariable::GetVelocity(unsigned short val_dim, bool val_incomp) { return 0; }
 
 inline double CVariable::GetVelocity2(void) { return 0; }
@@ -255,17 +253,17 @@ inline void CVariable::SetEddyViscosity(unsigned short val_Kind_Turb_Model, CVar
 
 inline void CVariable::SetEnthalpy(void) { }
 
-inline void CVariable::SetPrimVar_Compressible(CConfig *config) { }
+inline void CVariable::SetPrimVar_Compressible(double SharpEdge_Distance, bool check, CConfig *config) { }
 
-inline void CVariable::SetPrimVar_Compressible(bool val_sharpedge_distance, CConfig *config) { }
+inline void CVariable::SetPrimVar_Incompressible(double SharpEdge_Distance, bool check, CConfig *config) { }
+
+inline void CVariable::SetPrimVar_Compressible(CConfig *config) { }
 
 inline void CVariable::SetPrimVar_Compressible(double turb_ke, CConfig *config) { }
 
 inline void CVariable::SetPrimVar_Incompressible(double Density_Inf, double levelset, CConfig *config) { }
 
 inline void CVariable::SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double turb_ke, double levelset, CConfig *config) { }
-
-inline void CVariable::SetPrimVar_Incompressible(bool val_sharpedge_distance, CConfig *config) { }
 
 inline double CVariable::GetPrimVar(unsigned short val_var) { return 0; }
 
@@ -318,8 +316,6 @@ inline void CVariable::SetWallTemperature(double Temperature_Wall) { }
 inline void CVariable::SetWallTemperature(double* Temperature_Wall) { }
 
 inline void CVariable::SetThermalCoeff(CConfig *config) { }
-
-inline void CVariable::SetTheta(double val_density, double *val_velocity, double val_enthalpy) { }
 
 inline void CVariable::SetVelocity(double *val_velocity, bool val_incomp) { }
 
@@ -567,8 +563,6 @@ inline double *CAdjEulerVariable::GetObjFuncSource(void) { return ObjFuncSource;
 
 inline double *CAdjEulerVariable::GetIntBoundary_Jump(void) { return IntBoundary_Jump; }
 
-inline double CAdjEulerVariable::GetTheta(void) { return Theta; }
-
 inline void CAdjEulerVariable::SetForceProj_Vector(double *val_ForceProj_Vector) { for (unsigned short iDim = 0; iDim < nDim; iDim++) ForceProj_Vector[iDim] = val_ForceProj_Vector[iDim]; }
 
 inline void CAdjEulerVariable::SetObjFuncSource(double *val_ObjFuncSource) { for (unsigned short iVar = 0; iVar < nVar; iVar++) ObjFuncSource[iVar] = val_ObjFuncSource[iVar]; }
@@ -582,8 +576,6 @@ inline void CAdjEulerVariable::SetTimeSpectral_Source(unsigned short val_var, do
 inline double CAdjEulerVariable::GetTimeSpectral_Source(unsigned short val_var) { return TS_Source[val_var]; }
 
 inline double *CAdjNSVariable::GetForceProj_Vector(void) { return ForceProj_Vector; }
-
-inline double CAdjNSVariable::GetTheta(void) { return Theta; }
 
 inline void CAdjNSVariable::SetForceProj_Vector(double *val_ForceProj_Vector) {	for (unsigned short iDim = 0; iDim < nDim; iDim++) ForceProj_Vector[iDim] = val_ForceProj_Vector[iDim]; }
 
@@ -684,8 +676,6 @@ inline void CPlasmaVariable::SetMagneticField( double* val_B) { B_Field[0] = val
 inline double *CAdjPlasmaVariable::GetForceProj_Vector(void) { return ForceProj_Vector; }
 
 inline double *CAdjPlasmaVariable::GetIntBoundary_Jump(void) { return IntBoundary_Jump; }
-
-inline double CAdjPlasmaVariable::GetTheta(void) { return Theta; }
 
 inline void CAdjPlasmaVariable::SetForceProj_Vector(double *val_ForceProj_Vector) { for (unsigned short iDim = 0; iDim < nDim; iDim++) ForceProj_Vector[iDim] = val_ForceProj_Vector[iDim]; }
 

@@ -709,6 +709,8 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddScalarOption("REF_LENGTH_MOMENT", RefLengthMoment, 1.0);
 	/* DESCRIPTION: Reference element length for computing the slope limiter epsilon */
 	AddScalarOption("REF_ELEM_LENGTH", RefElemLength, 0.1);
+  /* DESCRIPTION: Reference coefficient for detecting sharp edges */
+	AddScalarOption("REF_SHARP_EDGES", RefSharpEdges, 3.0);
 	/* DESCRIPTION: Side-slip angle (degrees, only for compressible flows) */
 	AddScalarOption("SIDESLIP_ANGLE", AoS, 0.0);
 	/* DESCRIPTION: Angle of attack (degrees, only for compressible flows) */
