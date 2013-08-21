@@ -193,9 +193,13 @@ inline void CPoint::SetDomain(bool val_domain) { Domain = val_domain; }
 
 inline bool CPoint::GetDomain(void) { return Domain; }
 
-inline void CPoint::SetWallDistance(double val_distance) { WallDistance = val_distance; }
+inline void CPoint::SetWall_Distance(double val_distance) { Wall_Distance = val_distance; }
 
-inline double CPoint::GetWallDistance(void) { return WallDistance; }
+inline void CPoint::SetSharpEdge_Distance(double val_distance) { SharpEdge_Distance = val_distance; }
+
+inline double CPoint::GetWall_Distance(void) { return Wall_Distance; }
+
+inline double CPoint::GetSharpEdge_Distance(void) { return SharpEdge_Distance; }
 
 inline void CPoint::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG, CConfig *config) { }
 
@@ -323,10 +327,6 @@ inline void CVertex::SetZeroValues(void) {
 inline double CVertex::GetRotFlux(void) { return Rot_Flux; }
 
 inline void CVertex::AddRotFlux(double val_rot_flux) { Rot_Flux += val_rot_flux; }
-
-inline bool CVertex::GetSharp_Corner(void) { return Sharp_Corner; }
-
-inline void CVertex::SetSharp_Corner(bool val_sharp_corner) { Sharp_Corner = val_sharp_corner; }
 
 inline unsigned long CVertex::GetNormal_Neighbor(void) { return Normal_Neighbor; }
 

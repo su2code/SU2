@@ -153,7 +153,8 @@ private:
 	bool Agglomerate;					/*!< \brief This flag indicates if the element has been agglomerated. */
 	bool Move;					/*!< \brief This flag indicates if the point is going to be move in the grid deformation process. */
 	unsigned short color;	/*!< \brief Color of the point in the partitioning strategy. */
-	double WallDistance;	/*!< \brief Distance to the nearest wall. */
+	double Wall_Distance;	/*!< \brief Distance to the nearest wall. */
+  double SharpEdge_Distance;	/*!< \brief Distance to a sharp edge. */
 	unsigned long GlobalIndex;	/*!< \brief Global index in the parallel simulation. */
 	unsigned short nNeighbor;	/*!< \brief Color of the point in the partitioning strategy. */
 
@@ -207,14 +208,26 @@ public:
 	 * \brief Set the value of the distance to the nearest wall.
 	 * \param[in] val_distance - Value of the distance.
 	 */
-	void SetWallDistance(double val_distance);
+	void SetWall_Distance(double val_distance);
+  
+  /*!
+	 * \brief Set the value of the distance to a sharp edge.
+	 * \param[in] val_distance - Value of the distance.
+	 */
+	void SetSharpEdge_Distance(double val_distance);
 	
 	/*! 
 	 * \brief Get the value of the distance to the nearest wall.
 	 * \return Value of the distance to the nearest wall.
 	 */
-	double GetWallDistance(void);
+	double GetWall_Distance(void);
 	
+  /*!
+	 * \brief Get the value of the distance to a sharp edge
+	 * \return Value of the distance to the nearest wall.
+	 */
+	double GetSharpEdge_Distance(void);
+  
 	/*! 
 	 * \brief Set the number of elements that compose the control volume.
 	 * \param[in] val_nElem - Number of elements that make the control volume around a node.
@@ -832,7 +845,6 @@ private:
 	short Rotation_Type;			/*!< \brief Type of rotation associated with the vertex (MPI and periodic) */
   short Matching_Zone;			/*!< \brief Donor zone associated with the vertex (MPI and sliding) */
   double Rot_Flux;     /*!< \brief The exactly integrated rotational volume flux. */
-  bool Sharp_Corner;     /*!< \brief Flag to mark vertices at sharp corners of the surfaces. */
 	unsigned long Normal_Neighbor; /*!< \brief Index of the closest neighbor. */
   unsigned long Donor_Elem;   /*!< \brief Store the donor element for interpolation across zones/ */
   double Basis_Function[3]; /*!< \brief Basis function values for interpolation across zones. */
@@ -1045,18 +1057,6 @@ public:
 	 * \brief Add contribution to the exact integral of the rotational volume flux.
 	 */
 	void AddRotFlux(double val_rot_flux);
-  
-  /*! 
-	 * \brief Set the boolean for a corner vertex.
-	 * \param[in] val_sharp_corner - <code>TRUE</code> if this vertex sits on a sharp corner; otherwise <code>FALSE</code>.
-	 */
-	void SetSharp_Corner(bool val_sharp_corner);
-	
-	/*! 
-	 * \brief Get the value of an auxiliar variable for gradient computation.
-	 * \return <code>TRUE</code> if this vertex sits on a sharp corner; otherwise <code>FALSE</code>.
-	 */
-	bool GetSharp_Corner(void);
 	
 	/*! 
 	 * \brief Set the index of the closest neighbor to a point on the boundaries.

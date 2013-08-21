@@ -1306,7 +1306,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 		numerics->SetVolume(geometry->node[iPoint]->GetVolume());
 
 		/*--- Set distance to the surface ---*/
-		numerics->SetDistance(geometry->node[iPoint]->GetWallDistance(), 0.0);
+		numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), 0.0);
 
 		/*--- Compute the source term ---*/
 		numerics->ComputeResidual(Residual, Jacobian_i, NULL, config);
@@ -2867,7 +2867,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 			rho  = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
 			mu   = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
 		}
-		dist = geometry->node[iPoint]->GetWallDistance();
+		dist = geometry->node[iPoint]->GetWall_Distance();
 
 		node[iPoint]->SetBlendingFunc(mu,dist,rho);
 		F2 = node[iPoint]->GetF2blending();
@@ -3072,7 +3072,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 		numerics->SetVolume(geometry->node[iPoint]->GetVolume());
 
 		/*--- Set distance to the surface ---*/
-		numerics->SetDistance(geometry->node[iPoint]->GetWallDistance(), 0.0);
+		numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), 0.0);
 
 		/*--- Menter's first blending function ---*/
 		numerics->SetF1blending(node[iPoint]->GetF1blending(),0.0);

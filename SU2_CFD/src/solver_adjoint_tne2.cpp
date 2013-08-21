@@ -1270,8 +1270,8 @@ void CAdjTNE2EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
     
     /*--- Set the primitive variables incompressible and compressible
      adjoint variables ---*/
-		if (incompressible) node[iPoint]->SetPrimVar_Incompressible(adj_limit);
-		else node[iPoint]->SetPrimVar_Compressible(adj_limit);
+//		if (incompressible) node[iPoint]->SetPrimVar_Incompressible(adj_limit);
+//		else node[iPoint]->SetPrimVar_Compressible(adj_limit);
     
 		/*--- Initialize the convective residual vector ---*/
 		LinSysRes.SetBlock_Zero(iPoint);
@@ -3451,8 +3451,8 @@ void CAdjTNE2NSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_conta
     
     /*--- Set the primitive variables incompressible and compressible
      adjoint variables ---*/
-		if (incompressible) node[iPoint]->SetPrimVar_Incompressible(adj_limit);
-		else node[iPoint]->SetPrimVar_Compressible(adj_limit);
+//		if (incompressible) node[iPoint]->SetPrimVar_Incompressible(adj_limit);
+//		else node[iPoint]->SetPrimVar_Compressible(adj_limit);
     
 		/*--- Initialize the convective residual vector ---*/
 		LinSysRes.SetBlock_Zero(iPoint);
@@ -3604,7 +3604,7 @@ void CAdjTNE2NSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
 			numerics->SetTurbAdjointGradient(solver_container[ADJTURB_SOL]->node[iPoint]->GetGradient(), NULL);
       
 			/*--- Set distance to the surface ---*/
-			numerics->SetDistance(geometry->node[iPoint]->GetWallDistance(), 0.0);
+//			numerics->SetDistance(geometry->node[iPoint]->GetWallDistance(), 0.0);
       
 		}
     

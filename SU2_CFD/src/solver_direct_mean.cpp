@@ -6444,7 +6444,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 		/*--- Set the primitive variables incompressible (dens, vx, vy, vz, beta)
          and compressible (temp, vx, vy, vz, press, dens, enthal, sos)---*/
 		if (incompressible) node[iPoint]->SetPrimVar_Incompressible(Density_Inf, Viscosity_Inf, turb_ke, levelset, config);
-		else node[iPoint]->SetPrimVar_Compressible(config, turb_ke);
+		else node[iPoint]->SetPrimVar_Compressible(turb_ke, config);
         
 		/*--- Set the value of the eddy viscosity ---*/
 		if (turb_model != NONE)
