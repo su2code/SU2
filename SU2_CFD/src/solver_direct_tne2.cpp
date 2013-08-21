@@ -50,7 +50,9 @@ CTNE2EulerSolver::CTNE2EulerSolver(void) : CSolver() {
   
 }
 
-CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
+CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
+                                   unsigned short iMesh) : CSolver() {
+
 	unsigned long iPoint, index, counter_local = 0, counter_global = 0;
 	unsigned short iVar, iDim, iMarker, iSpecies, nZone;
   double *Mvec_Inf;
@@ -69,8 +71,8 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
   
   Mutation::MixtureOptions opts2;
 //  Mutation::MixtureOptions opts("N2special");
-//  opts.setThermodynamicDatabase("RRHO");
-//  Mutation::Mixture mix(opts);
+//  opts2.setThermodynamicDatabase("RRHO");
+  Mutation::Mixture mix(opts2);
 //  cout << "Mixture nSpecies: " << mix.nSpecies() << endl;
   cout << "Set mutation mixture. " << endl;
   cin.get();
