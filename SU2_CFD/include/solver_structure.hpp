@@ -30,6 +30,10 @@
 #include <mpi.h>
 #endif
 
+#ifndef NO_MUTATIONPP
+#include "mutation++.h"
+#endif
+
 #include <cmath>
 #include <string>
 #include <fstream>
