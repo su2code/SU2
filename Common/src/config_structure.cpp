@@ -72,7 +72,7 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddEnumOption("PHYSICAL_PROBLEM", Kind_Solver, Solver_Map, "NONE");
 	/* DESCRIPTION: Mathematical problem */
 	AddMathProblem("MATH_PROBLEM" , Adjoint, false , OneShot, false, 
-			Linearized, false, Restart_Flow, false);
+                 Linearized, false, Restart_Flow, false);
 	/* DESCRIPTION: Free-surface problem */
 	AddSpecialOption("FREE_SURFACE", FreeSurface, SetBoolOption, false);
 	/* DESCRIPTION: Incompressible flow using artificial compressibility */
@@ -129,7 +129,7 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
   /* DESCRIPTION: Marker(s) of the surface where objective function (design problem) will be evaluated */
 	AddMarkerOption("MARKER_DESIGNING", nMarker_Designing, Marker_Designing);
   
-	/* DESCRIPTION: Euler wall boundary marker(s) */
+	/* DESCRIPTION: Euler wall boundary condition */
 	AddMarkerOption("MARKER_EULER", nMarker_Euler, Marker_Euler);
 	/* DESCRIPTION: Adiabatic wall boundary condition */
 	AddSpecialOption("ADIABATIC_WALL", AdiabaticWall, SetBoolOption, true);
@@ -139,9 +139,9 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddSpecialOption("CATALYTIC_WALL", CatalyticWall, SetBoolOption, false);
 	/* DESCRIPTION: Far-field boundary marker(s) */
 	AddMarkerOption("MARKER_FAR", nMarker_FarField, Marker_FarField);
-	/* DESCRIPTION: Symmetry boundary marker(s) */
+	/* DESCRIPTION: Symmetry boundary condition */
 	AddMarkerOption("MARKER_SYM", nMarker_SymWall, Marker_SymWall);
-	/* DESCRIPTION: Near-Field boundary marker(s) */
+	/* DESCRIPTION: Near-Field boundary condition */
 	AddMarkerOption("MARKER_NEARFIELD", nMarker_NearFieldBound, Marker_NearFieldBound);
 	/* DESCRIPTION: Zone interface boundary marker(s) */
 	AddMarkerOption("MARKER_INTERFACE", nMarker_InterfaceBound, Marker_InterfaceBound);
@@ -1447,6 +1447,16 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
                (Kind_Solver == ADJ_RANS) ||
                (Kind_Solver == ADJ_FREE_SURFACE_RANS));
   
+  /*Mutation::MixtureOptions mppOpts;
+  mppOpts.setThermodynamicDatabase("RRHO");
+  mppOpts.setStateModel("T,Tv");
+  Mutation::Mixture mix(mppOpts);
+  
+  cout << "After mutation specs." << endl;
+  cout << mix.speciesName(0) << endl;
+  cin.get();*/
+  
+  
   if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
 
 		if (val_izone == ZONE_1 ) {
@@ -1486,6 +1496,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         Enthalpy_Formation[0] = 0.0;					//N2
         // Reference temperature (JANAF values, [K])
         Ref_Temperature[0] = 0.0;
+        
         break;
         
       case N2:
@@ -1588,6 +1599,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         CharElTemp[1] = Nthetae;
         degen[0] = N2g;
         degen[1] = Ng;
+        
+        
+        //Mutation::MixtureOptions mppOpts("N2special");
+        //mppOpts.setThermodynamicDatabase("RRHO");
+        //mppOpts.setStateModel("T,Tv");
+        //Mutation::Mixture mix(mppOpts);
+        
         
         break;
         
