@@ -249,45 +249,49 @@ CAdjEulerVariable::~CAdjEulerVariable(void) {
   
 }
 
-void CAdjEulerVariable::SetTheta(double val_density, double *val_velocity, double val_enthalpy) {
-	unsigned short iDim;
-	
-	Theta = val_density*Solution[0];
-	Theta += val_density*val_enthalpy*Solution[nDim+1];
-	
-	for (iDim = 0; iDim < nDim; iDim++)
-		Theta += val_density*val_velocity[iDim]*Solution[iDim+1];
-}
-
-void CAdjEulerVariable::SetPrimVar_Compressible(double val_adjlimit) {
+void CAdjEulerVariable::SetPrimVar_Compressible(double SharpEdge_Distance, bool check, CConfig *config) {
 	unsigned short iVar;
   bool check_dens = false;
   
-  check_dens = (fabs(Solution[0]) > val_adjlimit);             // Check the adjoint density
-  
-  /*--- Check that the solution has a physical meaning ---*/
-  if (check_dens) {
+  double adj_limit = config->GetAdjointLimit();
+  double dist_limit = config->GetRefElemLength();
+
+  if (SharpEdge_Distance < dist_limit) {
     
-    /*--- Copy the old solution ---*/
-    for (iVar = 0; iVar < nVar; iVar++)
-      Solution[iVar] = Solution_Old[iVar];
+    check_dens = (fabs(Solution[0]) > adj_limit);  // Check adjoint density
+    
+    /*--- Check that the solution has a physical meaning ---*/
+    if (check_dens) {
+      
+      /*--- Copy the old solution ---*/
+      for (iVar = 0; iVar < nVar; iVar++)
+        Solution[iVar] = Solution_Old[iVar];
+      
+    }
     
   }
   
 }
 
-void CAdjEulerVariable::SetPrimVar_Incompressible(double val_adjlimit) {
+void CAdjEulerVariable::SetPrimVar_Incompressible(double SharpEdge_Distance, bool check, CConfig *config) {
   unsigned short iVar;
   bool check_press = false;
   
-  check_press = (fabs(Solution[0]) > val_adjlimit);             // Check the adjoint pressure
-  
-  /*--- Check that the solution has a physical meaning ---*/
-  if (check_press) {
+  double adj_limit = config->GetAdjointLimit();
+  double dist_limit = config->GetRefElemLength();
+
+  if (SharpEdge_Distance < dist_limit) {
     
-    /*--- Copy the old solution ---*/
-    for (iVar = 0; iVar < nVar; iVar++)
-      Solution[iVar] = Solution_Old[iVar];
+    check_press = (fabs(Solution[0]) > adj_limit); // Check adjoint pressure
+    
+    /*--- Check that the solution has a physical meaning ---*/
+    if (check_press) {
+      
+      /*--- Copy the old solution ---*/
+      for (iVar = 0; iVar < nVar; iVar++)
+        Solution[iVar] = Solution_Old[iVar];
+      
+    }
     
   }
   
@@ -366,10 +370,3 @@ void SetLaminarViscosity_Jacobian(CConfig *config) {
 }
 
 void SetEddyViscosity_Jacobian(unsigned short val_Kind_Turb_Model, CVariable *TurbVariable) { }
-
-void CAdjNSVariable::SetTheta(double val_density, double *val_velocity, double val_enthalpy) {
-	Theta = val_density*Solution[0];
-	Theta += val_density*val_enthalpy*Solution[nDim+1];
-	for (unsigned short iDim = 0; iDim < nDim; iDim++)
-		Theta += val_density*val_velocity[iDim]*Solution[iDim+1];
-}

@@ -1546,7 +1546,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 	/*--- Local variables needed on all processors ---*/
 	unsigned short Kind_Solver  = config->GetKind_Solver();
 	unsigned short iVar, jVar, iSpecies, FirstIndex = NONE, SecondIndex = NONE, ThirdIndex = NONE;
-	unsigned short nVar_First = 0, nVar_Second = 0, nVar_Third = 0, iVar_Eddy = 0;
+	unsigned short nVar_First = 0, nVar_Second = 0, nVar_Third = 0, iVar_Eddy = 0, iVar_Sharp = 0;
 	unsigned short iVar_GridVel = 0, iVar_PressMach = 0, iVar_Density = 0, iVar_TempLam = 0,
   iVar_Tempv = 0,iVar_MagF = 0, iVar_EF =0, iVar_Temp = 0, iVar_Lam =0, iVar_Mach = 0, iVar_Press = 0,
   iVar_ViscCoeffs = 0, iVar_Sens = 0, iVar_Coords = 0;
@@ -1660,7 +1660,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 	if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
 			(Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) ||
 			(Kind_Solver == FREE_SURFACE_RANS)) {
-		/*--- Pressure, Cp, and Mach ---*/
+		/*--- Pressure, Cp, Mach ---*/
 		iVar_PressMach = nVar_Total;
 		nVar_Total += 3;
 	}
@@ -1678,6 +1678,14 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 	if ((Kind_Solver == RANS) || (Kind_Solver == FREE_SURFACE_RANS)) {
 		/*--- Eddy Viscosity ---*/
 		iVar_Eddy = nVar_Total;
+		nVar_Total += 1;
+	}
+  
+  if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
+    (Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) ||
+    (Kind_Solver == FREE_SURFACE_RANS)) {
+		/*--- Sharp edges ---*/
+		iVar_Sharp = nVar_Total;
 		nVar_Total += 1;
 	}
   
@@ -1867,11 +1875,12 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
             Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure(incompressible); jVar++;
             Data[jVar][jPoint] = Aux_Press[iPoint]; jVar++;
             Data[jVar][jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensityInc()*config->GetDensity_Ref())); jVar++;
+            Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
           } else {
             Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure(incompressible); jVar++;
             Data[jVar][jPoint] = Aux_Press[iPoint]; jVar++;
-            Data[jVar][jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/
-            solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed(); jVar++;
+            Data[jVar][jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed(); jVar++;
+            Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
           }
           break;
           /*--- Write pressure, Cp, mach, temperature, laminar viscosity, skin friction, heat transfer, yplus ---*/
@@ -1883,6 +1892,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
             Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure(incompressible); jVar++;
             Data[jVar][jPoint] = Aux_Press[iPoint]; jVar++;
             Data[jVar][jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensityInc()*config->GetDensity_Ref())); jVar++;
+            Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
             Data[jVar][jPoint] = 0.0; jVar++;
             Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc(); jVar++;
             Data[jVar][jPoint] = Aux_Frict[iPoint]; jVar++;
@@ -1893,6 +1903,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
             Data[jVar][jPoint] = Aux_Press[iPoint]; jVar++;
             Data[jVar][jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/
             solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed(); jVar++;
+            Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
             Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetTemperature(); jVar++;
             Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(); jVar++;
             Data[jVar][jPoint] = Aux_Frict[iPoint]; jVar++;
@@ -1926,6 +1937,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
             Data[jVar][jPoint] = Aux_yPlus[iPoint]; jVar++;
           }
           Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetEddyViscosity(); jVar++;
+          Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
           break;
           /*--- Write electric field. ---*/
         case ELECTRIC_POTENTIAL:
@@ -2599,10 +2611,51 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     
 	}
   
+  /*--- Communicate the Sharp Edges ---*/
+	if ( (Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES)      ||
+       (Kind_Solver == RANS)  || (Kind_Solver == FREE_SURFACE_EULER) ||
+       (Kind_Solver == FREE_SURFACE_NAVIER_STOKES)                   ||
+       (Kind_Solver == FREE_SURFACE_RANS)                              ) {
+    
+		/*--- Loop over this partition to collect the current variable ---*/
+		jPoint = 0;
+		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+
+      /*--- Check for halos & write only if requested ---*/
+      if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
+        
+        /*--- Load buffers with the pressure and mach variables. ---*/
+        Buffer_Send_Var[jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance();
+        jPoint++;
+      }
+		}
+    
+		/*--- Gather the data on the master node. ---*/
+		MPI::COMM_WORLD.Barrier();
+		MPI::COMM_WORLD.Gather(Buffer_Send_Var, nBuffer_Scalar, MPI::DOUBLE,
+                           Buffer_Recv_Var, nBuffer_Scalar, MPI::DOUBLE,
+                           MASTER_NODE);
+    
+		/*--- The master node unpacks and sorts this variable by global index ---*/
+		if (rank == MASTER_NODE) {
+			jPoint = 0; iVar = iVar_Sharp;
+			for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+				for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
+          
+					/*--- Get global index, then loop over each variable and store ---*/
+					iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
+					Data[iVar][iGlobal_Index] = Buffer_Recv_Var[jPoint];
+					jPoint++;
+				}
+				/*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+				jPoint = (iProcessor+1)*nBuffer_Scalar;
+			}
+		}
+	}
   
   /*--- Communicate additional variables for the two-temperature solvers ---*/
-	if (Kind_Solver == TNE2_EULER) {
-
+  if (Kind_Solver == TNE2_EULER) {
+    
     /*--- Mach number ---*/
     // Loop over this partition to collect the current variable
     jPoint = 0;
@@ -2613,10 +2666,11 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
         
         /*--- Load buffers with the Mach number variables. ---*/
-        Buffer_Send_Var[jPoint] = sqrt(solver[TNE2_SOL]->node[iPoint]->GetVelocity2()) / solver[TNE2_SOL]->node[iPoint]->GetSoundSpeed();
+        Buffer_Send_Var[jPoint] =
+            sqrt(solver[TNE2_SOL]->node[iPoint]->GetVelocity2())
+            /solver[TNE2_SOL]->node[iPoint]->GetSoundSpeed();
         jPoint++;
       }
-      
     }
     
     /*--- Gather the data on the master node. ---*/
@@ -2648,14 +2702,12 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
       
       /*--- Check for halos & write only if requested ---*/
-      
       if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
         
         /*--- Load buffers with the Mach number variables. ---*/
         Buffer_Send_Var[jPoint] = solver[TNE2_SOL]->node[iPoint]->GetPressure();
         jPoint++;
       }
-      
     }
     
     /*--- Gather the data on the master node. ---*/
@@ -2687,14 +2739,12 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
       
       /*--- Check for halos & write only if requested ---*/
-      
       if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
         
         /*--- Load buffers with the Mach number variables. ---*/
         Buffer_Send_Var[jPoint] = solver[TNE2_SOL]->node[iPoint]->GetTemperature();
         jPoint++;
       }
-      
     }
     
     /*--- Gather the data on the master node. ---*/
@@ -2719,29 +2769,27 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         jPoint = (iProcessor+1)*nBuffer_Scalar;
       }
     }
-    
+  
     /*--- Vib-el Temperature ---*/
     // Loop over this partition to collect the current variable
     jPoint = 0;
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
       
       /*--- Check for halos & write only if requested ---*/
-      
       if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
         
         /*--- Load buffers with the Mach number variables. ---*/
         Buffer_Send_Var[jPoint] = solver[TNE2_SOL]->node[iPoint]->GetTemperature_ve();
         jPoint++;
-      }
-      
+      }      
     }
-    
+  
     /*--- Gather the data on the master node. ---*/
     MPI::COMM_WORLD.Barrier();
     MPI::COMM_WORLD.Gather(Buffer_Send_Var, nBuffer_Scalar, MPI::DOUBLE,
                            Buffer_Recv_Var, nBuffer_Scalar, MPI::DOUBLE,
                            MASTER_NODE);
-    
+  
     /*--- The master node unpacks and sorts this variable by global index ---*/
     if (rank == MASTER_NODE) {
       jPoint = 0;
@@ -2758,9 +2806,8 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         jPoint = (iProcessor+1)*nBuffer_Scalar;
       }
     }
+  }
 
-  }  
-  
 	/*--- Communicate additional variables for the plasma solvers ---*/
 	if ((Kind_Solver == PLASMA_EULER) || (Kind_Solver == PLASMA_NAVIER_STOKES)) {
     
@@ -3391,7 +3438,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short va
   
   if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
       (Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
-    restart_file << ", \"Pressure\", \"Pressure_Coefficient\", \"Mach\"";
+    restart_file << ", \"Pressure\", \"Pressure_Coefficient\", \"Mach\", \"Sharp_Edge_Dist\"";
   }
   
   if (Kind_Solver == TNE2_EULER) {
@@ -5287,38 +5334,6 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
 #endif
     
   }
-}
-
-void COutput::SetFlowRate(CSolver *solver_container, CGeometry *geometry, CConfig *config, unsigned long iExtIter) {
-
-	ifstream index_file;
-	int integration_node[100];
-	int nPointFlowRate = 0;
-
-	/*--- Read list of nodes ---*/
-	index_file.open("flowrate_nodes.dat", ios::in);
-	while (index_file.good()) {
-		index_file >> integration_node[nPointFlowRate];
-		nPointFlowRate++;
-	}
-	nPointFlowRate--;
-	index_file.close();
-
-
-	/*--- Perform trapezoid integration ---*/
-	double y1, y2, q1, q2;
-	double integral = 0.0;
-	for (int j=0; j<nPointFlowRate-1; j++) {
-		y1 = geometry->node[integration_node[j]]->GetCoord(1);
-		y2 = geometry->node[integration_node[j+1]]->GetCoord(1);
-		q1 = solver_container->node[integration_node[j]]->GetVelocity(0, config->GetIncompressible());
-		q2 = solver_container->node[integration_node[j+1]]->GetVelocity(0, config->GetIncompressible());
-
-		integral = integral + 0.5*(q1+q2)*(y2-y1);
-	}
-
-	/*--- Store integral in solver_container ---*/
-	solver_container->SetTotal_CEquivArea(integral);  // integral shows up as EquivArea in history
 }
 
 void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, CConfig *config, unsigned long iExtIter) {

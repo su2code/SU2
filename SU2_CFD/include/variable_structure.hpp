@@ -856,12 +856,6 @@ public:
 
 	/*!
 	 * \brief A virtual member.
-	 * \return Value of the Theta variable of the adjoint problem.
-	 */		
-	virtual double GetTheta(void);
-
-	/*!
-	 * \brief A virtual member.
 	 * \param[in] val_dim - Index of the dimension.
 	 * \return Value of the velocity for the dimension <i>val_dim</i>.
 	 */		
@@ -1008,22 +1002,22 @@ public:
   /*!
 	 * \brief A virtual member.
 	 */
-	virtual void SetPrimVar_Compressible(double val_adjlimit);
+	virtual void SetPrimVar_Compressible(double SharpEdge_Distance, bool check, CConfig *config);
 	
+  /*!
+	 * \brief A virtual member.
+	 */
+	virtual void SetPrimVar_Incompressible(double SharpEdge_Distance, bool check, CConfig *config);
+  
 	/*!
 	 * \brief A virtual member.
 	 */		
-	virtual void SetPrimVar_Compressible(CConfig *config, double turb_ke);
+	virtual void SetPrimVar_Compressible(double turb_ke, CConfig *config);
 	
 	/*!
 	 * \brief A virtual member.
 	 */		
 	virtual void SetPrimVar_Incompressible(double Density_Inf, double levelset, CConfig *config);
-  
-  /*!
-	 * \brief A virtual member.
-	 */
-	virtual void SetPrimVar_Incompressible(double val_adjlimit);
 	
 	/*!
 	 * \brief A virtual member.
@@ -1193,14 +1187,6 @@ public:
 	 * \param[in] config - Configuration parameters.
 	 */
 	virtual void SetThermalCoeff(CConfig *config);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_density - Value of the density.
-	 * \param[in] val_velocity - Pointer to the velocity.
-	 * \param[in] val_enthalpy - Value of the enthalpy.
-	 */
-	virtual void SetTheta(double val_density, double *val_velocity, double val_enthalpy);
 
 	/*!
 	 * \brief A virtual member.
@@ -2308,7 +2294,7 @@ public:
 	/*!
 	 * \brief Set all the primitive variables for compressible flows
 	 */
-	void SetPrimVar_Compressible(CConfig *config, double turb_ke);
+	void SetPrimVar_Compressible(double turb_ke, CConfig *config);
 	
 	/*!
 	 * \brief Set all the primitive variables for incompressible flows
@@ -2574,7 +2560,6 @@ protected:
 	double *ObjFuncSource;    /*!< \brief Vector containing objective function sensitivity for discrete adjoint. */
 	double *IntBoundary_Jump;	/*!< \brief Interior boundary jump vector. */
 	double *TS_Source;		/*!< \brief Time spectral source term. */
-	double Theta;		/*!< \brief Theta variable. */
 	bool incompressible;
 public:
 
@@ -2611,31 +2596,18 @@ public:
   /*!
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
-	void SetPrimVar_Compressible(double val_adjlimit);
+	void SetPrimVar_Compressible(double SharpEdge_Distance, bool check, CConfig *config);
   
   /*!
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
-	void SetPrimVar_Incompressible(double val_adjlimit);
+	void SetPrimVar_Incompressible(double SharpEdge_Distance, bool check, CConfig *config);
   
 	/*!
 	 * \brief Set the value of the adjoint velocity.
 	 * \param[in] val_phi - Value of the adjoint velocity.
 	 */	
 	void SetPhi_Old(double *val_phi);
-
-	/*!
-	 * \brief Set the value of theta.
-	 * \param[in] val_density - Value of the density.
-	 * \param[in] val_velocity - Pointer to the velocity.
-	 * \param[in] val_enthalpy - Value of the enthalpy.
-	 */		
-	void SetTheta(double val_density, double *val_velocity, double val_enthalpy);
-
-	/*!
-	 * \brief Get the value of theta.
-	 */		
-	double GetTheta(void);
 
 	/*!
 	 * \brief Set the value of the force projection vector.
@@ -2749,19 +2721,6 @@ public:
 	 * \param[in] val_phi - Value of the adjoint velocity.
 	 */	
 	void SetPhi_Old(double *val_phi);
-
-	/*!
-	 * \brief Set the value of theta.
-	 * \param[in] val_density - Value of the density.
-	 * \param[in] val_velocity - Pointer to the velocity.
-	 * \param[in] val_enthalpy - Value of the enthalpy.
-	 */	
-	void SetTheta(double val_density, double *val_velocity, double val_enthalpy);
-
-	/*!
-	 * \brief Get the value of theta.
-	 */		
-	double GetTheta(void);
 
 	/*!
 	 * \brief Set the value of the force projection vector.
@@ -3490,7 +3449,6 @@ protected:
 	double *Psi;		/*!< \brief Vector of the adjoint variables. */
 	double *ForceProj_Vector;	/*!< \brief Vector d. */
 	double *IntBoundary_Jump;	/*!< \brief Interior boundary jump vector. */
-	double Theta;		/*!< \brief Theta variable. */
 	bool incompressible;
 public:
 
@@ -3530,19 +3488,6 @@ public:
 	 * \param[in] val_phi - Value of the adjoint velocity.
 	 */	
 	void SetPhi_Old(double *val_phi);
-
-	/*!
-	 * \brief Set the value of theta.
-	 * \param[in] val_density - Value of the density.
-	 * \param[in] val_velocity - Pointer to the velocity.
-	 * \param[in] val_enthalpy - Value of the enthalpy.
-	 */		
-	void SetTheta(double val_density, double *val_velocity, double val_enthalpy);
-
-	/*!
-	 * \brief Get the value of theta.
-	 */		
-	double GetTheta(void);
 
 	/*!
 	 * \brief Set the value of the force projection vector.

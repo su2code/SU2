@@ -66,7 +66,6 @@ private:
 	bool Adjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
     Viscous,                /*!< \brief Flag to know if the code is solving a viscous problem. */
 	EquivArea,				/*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
-	FlowRate,				/*!< \brief Flag to know if the code is going to compute and plot the flow rate. */
 	OneShot,				/*!< \brief Flag to know if the code is solving a one shot problem. */
 	Linearized,				/*!< \brief Flag to know if the code is solving a linearized problem. */
 	Grid_Movement,			/*!< \brief Flag to know if there is grid movement. */
@@ -446,6 +445,7 @@ private:
 	unsigned short Output_FileFormat;	/*!< \brief Format of the output files. */
 	double RefAreaCoeff,		/*!< \brief Reference area for coefficient computation. */
 	RefElemLength,				/*!< \brief Reference element length for computing the slope limiting epsilon. */
+	RefSharpEdges,				/*!< \brief Reference coefficient for detecting sharp edges. */
 	RefLengthMoment,			/*!< \brief Reference length for moment computation. */
 	*RefOriginMoment,			/*!< \brief Origin for moment computation. */
 	*CFLRamp,			/*!< \brief Information about the CFL ramp. */
@@ -1439,6 +1439,12 @@ public:
 	 * \return Reference element length for slope limiting epsilon.
 	 */
 	double GetRefElemLength(void);
+  
+  /*!
+	 * \brief Get the reference coefficient for detecting sharp edges.
+	 * \return Reference coefficient for detecting sharp edges.
+	 */
+	double GetRefSharpEdges(void);
 
 	/*! 
 	 * \brief Get the volume of the whole domain using the fine grid, this value is common for all the grids
@@ -3312,12 +3318,6 @@ public:
 	 * \return <code>TRUE</code> or <code>FALSE</code>  depending if we are computing the equivalent area.
 	 */		
 	bool GetEquivArea(void);
-
-	/*! 
-	 * \brief Information about computing and plotting the flow rate.
-	 * \return <code>TRUE</code> or <code>FALSE</code>  depending if we are computing the flow rate.
-	 */		
-	bool GetFlowRate(void);
 
 	/*! 
 	 * \brief Get name of the input grid.
