@@ -204,9 +204,9 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
 		if (rank == MASTER_NODE) cout << "Searching for the closest normal neighbors to the surfaces." << endl;
 		geometry[iZone][MESH_0]->FindNormal_Neighbor(config[iZone]);
    
-//    /*--- Compute the surface curvature ---*/
-//		if (rank == MASTER_NODE) cout << "Compute the surface curvature." << endl;
-//    geometry[iZone][MESH_0]->ComputeSurf_Curvature(config[iZone]);
+    /*--- Compute the surface curvature ---*/
+		if (rank == MASTER_NODE) cout << "Compute the surface curvature." << endl;
+    geometry[iZone][MESH_0]->ComputeSurf_Curvature(config[iZone]);
 
 		/*--- For a rotating frame, set the velocity due to rotation at each mesh point ---*/
 		if (config[iZone]->GetRotating_Frame())

@@ -705,13 +705,7 @@ bool CVolumetricMovement::CheckDeformed_Elem2D(CGeometry *geometry, unsigned lon
   Area = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
   
   if (Area < 0.0) {
-    
-    /*--- It is probably a degenerated element,
-     set all the cooridnates to the same point ---*/
-    
-    geometry->node[val_Point_1]->SetCoord(Coord_0);
-    geometry->node[val_Point_2]->SetCoord(Coord_0);
-
+ 
     return false;
 
   }
@@ -742,13 +736,6 @@ bool CVolumetricMovement::CheckDeformed_Elem3D(CGeometry *geometry, unsigned lon
   Volume = (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   if (Volume < 0.0) {
-    
-    /*--- It is probably a degenerated element, 
-     set all the cooridnates to the same point ---*/
-
-    geometry->node[val_Point_1]->SetCoord(Coord_0);
-    geometry->node[val_Point_2]->SetCoord(Coord_0);
-    geometry->node[val_Point_3]->SetCoord(Coord_0);
     
     return false;
 
