@@ -1442,17 +1442,18 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
                (Kind_Solver == ADJ_RANS) ||
                (Kind_Solver == ADJ_FREE_SURFACE_RANS));
   
-  /*Mutation::MixtureOptions mppOpts;
-  mppOpts.setThermodynamicDatabase("RRHO");
-  mppOpts.setStateModel("T,Tv");
-  Mutation::Mixture mix(mppOpts);
-  
-  cout << "After mutation specs." << endl;
-  cout << mix.speciesName(0) << endl;
-  cin.get();*/
-  
   
   if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
+    
+    Mutation::MixtureOptions mppOpts("N2special");
+    mppOpts.setThermodynamicDatabase("RRHO");
+    mppOpts.setStateModel("T,Tv");
+    Mutation::Mixture mix(mppOpts);
+    cout << "Set Mutation properties..." << endl;
+    cout << "Species 1: " << mix.speciesName(0) << endl;
+    cout << "Species 2: " << mix.speciesName(1) << endl;
+    cout << "T: " << mix.T() << endl;
+    cin.get();
 
 		if (val_izone == ZONE_1 ) {
 			Divide_Element = true;
@@ -1474,6 +1475,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         RotationModes      = new double[nSpecies];
         Enthalpy_Formation = new double[nSpecies];
         Ref_Temperature    = new double[nSpecies];
+        nElStates          = new unsigned short[nSpecies];
         
         
         MassFrac_FreeStream = new double[nSpecies];
@@ -1491,6 +1493,19 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         Enthalpy_Formation[0] = 0.0;					//N2
         // Reference temperature (JANAF values, [K])
         Ref_Temperature[0] = 0.0;
+        
+        nElStates[0] = 0;
+        CharElTemp   = new double *[nSpecies];
+        degen        = new double *[nSpecies];
+        
+        double *OSPthetae, *OSPg;
+        OSPthetae    = new double[nElStates[0]];
+        OSPthetae[0] = 1.0;
+        OSPg         = new double[nElStates[0]];
+        OSPg[0]      = 1.0;
+        
+        CharElTemp[0] = OSPthetae;
+        degen[0] = OSPg;
         
         break;
         
@@ -1596,12 +1611,15 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         degen[1] = Ng;
         
         
-        //Mutation::MixtureOptions mppOpts("N2special");
-        //mppOpts.setThermodynamicDatabase("RRHO");
-        //mppOpts.setStateModel("T,Tv");
-        //Mutation::Mixture mix(mppOpts);
-        
-        
+/*        Mutation::MixtureOptions mppOpts("N2special");
+        mppOpts.setThermodynamicDatabase("RRHO");
+        mppOpts.setStateModel("T,Tv");
+        Mutation::Mixture mix(mppOpts);
+        cout << "Set Mutation properties..." << endl;
+        cout << "Species 1: " << mix.speciesName(0) << endl;
+        cout << "Species 2: " << mix.speciesName(1) << endl;
+        cin.get();*/
+ 
         break;
         
       case AIR5:

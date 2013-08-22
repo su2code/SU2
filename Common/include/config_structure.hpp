@@ -27,9 +27,9 @@
 #ifndef NO_MPI
 #include <mpi.h>
 #endif
-//#ifndef NO_MUTATIONPP
-//#include "mutation++.h"
-//#endif
+#ifndef NO_MUTATIONPP
+#include "mutation++.h"
+#endif
 #include <iostream>
 #include <fstream>
 #include <sstream>
