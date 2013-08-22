@@ -205,7 +205,7 @@ int main(int argc, char *argv[]) {
         UpdatePoint[iPoint] = true;
       
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-				if (config->GetMarker_All_Moving(iMarker) == YES) {
+				if (config->GetMarker_All_DV(iMarker) == YES) {
 					for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
 						
 						iPoint = boundary->vertex[iMarker][iVertex]->GetNode();

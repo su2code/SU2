@@ -1150,6 +1150,7 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
           config->SetMarker_All_Monitoring(iMarker, config->GetMarker_Config_Monitoring(Marker_Tag));
           config->SetMarker_All_Designing(iMarker, config->GetMarker_Config_Designing(Marker_Tag));
           config->SetMarker_All_Plotting(iMarker, config->GetMarker_Config_Plotting(Marker_Tag));
+          config->SetMarker_All_DV(iMarker, config->GetMarker_Config_DV(Marker_Tag));
           config->SetMarker_All_Moving(iMarker, config->GetMarker_Config_Moving(Marker_Tag));
           config->SetMarker_All_PerBound(iMarker, config->GetMarker_Config_PerBound(Marker_Tag));
           config->SetMarker_All_Sliding(iMarker, config->GetMarker_Config_Sliding(Marker_Tag));
@@ -2087,6 +2088,7 @@ void CPhysicalGeometry::CGNS_Format(CConfig *config, string val_mesh_filename, u
           config->SetMarker_All_Monitoring(iMarker, config->GetMarker_Config_Monitoring(Marker_Tag));
           config->SetMarker_All_Designing(iMarker, config->GetMarker_Config_Designing(Marker_Tag));
           config->SetMarker_All_Plotting(iMarker, config->GetMarker_Config_Plotting(Marker_Tag));
+          config->SetMarker_All_DV(iMarker, config->GetMarker_Config_DV(Marker_Tag));
           config->SetMarker_All_Moving(iMarker, config->GetMarker_Config_Moving(Marker_Tag));
           config->SetMarker_All_SendRecv(iMarker, NONE);
         }
@@ -2501,6 +2503,7 @@ void CPhysicalGeometry::NETCDF_Format(CConfig *config, string val_mesh_filename,
     config->SetMarker_All_Monitoring(iMarker, config->GetMarker_Config_Monitoring(Marker_Tag));
     config->SetMarker_All_Designing(iMarker, config->GetMarker_Config_Designing(Marker_Tag));
     config->SetMarker_All_Plotting(iMarker, config->GetMarker_Config_Plotting(Marker_Tag));
+    config->SetMarker_All_DV(iMarker, config->GetMarker_Config_DV(Marker_Tag));
     config->SetMarker_All_Moving(iMarker, config->GetMarker_Config_Moving(Marker_Tag));
     config->SetMarker_All_SendRecv(iMarker, NONE);
   }
@@ -7225,7 +7228,8 @@ CBoundaryGeometry::CBoundaryGeometry(CConfig *config, string val_mesh_filename, 
 					config->SetMarker_All_Monitoring(iMarker, config->GetMarker_Config_Monitoring(Marker_Tag));
 					config->SetMarker_All_Designing(iMarker, config->GetMarker_Config_Designing(Marker_Tag));
 					config->SetMarker_All_Plotting(iMarker, config->GetMarker_Config_Plotting(Marker_Tag));
-					config->SetMarker_All_Moving(iMarker, config->GetMarker_Config_Moving(Marker_Tag));
+					config->SetMarker_All_DV(iMarker, config->GetMarker_Config_DV(Marker_Tag));
+          config->SetMarker_All_Moving(iMarker, config->GetMarker_Config_Moving(Marker_Tag));
 					config->SetMarker_All_PerBound(iMarker, config->GetMarker_Config_PerBound(Marker_Tag));
 					config->SetMarker_All_SendRecv(iMarker, NONE);
 
@@ -7509,7 +7513,7 @@ void CBoundaryGeometry::SetBoundSensitivity(CConfig *config) {
 		PointInDomain[iPoint] = false;
 
 	for (iMarker = 0; iMarker < nMarker; iMarker++)
-		if (config->GetMarker_All_Moving(iMarker) == YES)
+		if (config->GetMarker_All_DV(iMarker) == YES)
 			for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
 
 				/*--- The sensitivity file uses the global numbering ---*/
@@ -7666,7 +7670,7 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
       Coord_Variation[iPoint] = new double [nDim];
     
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_Moving(iMarker) == YES) {
+      if (config->GetMarker_All_DV(iMarker) == YES) {
         for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
           VarCoord = vertex[iMarker][iVertex]->GetVarCoord();
           iPoint = vertex[iMarker][iVertex]->GetNode();
@@ -7679,7 +7683,7 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
   }
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    if (config->GetMarker_All_Moving(iMarker) == YES) {
+    if (config->GetMarker_All_DV(iMarker) == YES) {
       for (iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
         for(iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
           iPoint = bound[iMarker][iElem]->GetNode(iNode);
