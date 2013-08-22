@@ -142,11 +142,16 @@ double CVolumetricMovement::SetSpringMethodContributions_Edges(CGeometry *geomet
 double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) {
   
 	unsigned short iVar, iDim;
-	unsigned long Point_0, Point_1, Point_2, Point_3, iElem, iEdge;
-  double *Coord_0, *Coord_1;
-	double Length, MinLength = 1E10;
-  double **StiffMatrix_Elem;
+	unsigned long Point_0, Point_1, Point_2, Point_3, iElem, iEdge, ElemCounter = 0;
+  double *Coord_0, *Coord_1, Length, MinLength = 1E10, **StiffMatrix_Elem;
   double *Edge_Vector = new double [nDim];
+  bool RightVol;
+  
+  int rank = MASTER_NODE;
+  
+#ifndef NO_MPI
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
   
   if (nDim == 2) {
     StiffMatrix_Elem = new double* [6];
@@ -187,35 +192,35 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
       Point_0 = geometry->elem[iElem]->GetNode(0);
       Point_1 = geometry->elem[iElem]->GetNode(1);
       Point_2 = geometry->elem[iElem]->GetNode(2);      
-      SetFEA_StiffMatrix2D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2);
+      RightVol = SetFEA_StiffMatrix2D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2);
       AddFEA_StiffMatrix2D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2);
-      
-      /*--- Divide any rectangles and add contribution from the second triangle ---*/
-      if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE) {
-        Point_0 = geometry->elem[iElem]->GetNode(0);
-        Point_1 = geometry->elem[iElem]->GetNode(2);
-        Point_2 = geometry->elem[iElem]->GetNode(3);
-        SetFEA_StiffMatrix2D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2);
-        AddFEA_StiffMatrix2D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2);
-      }
       
     }
     
     if (nDim == 3) {
       
       /*--- Tetrahedra are loaded directly ---*/
-      if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON) {
-        Point_0 = geometry->elem[iElem]->GetNode(0);
-        Point_1 = geometry->elem[iElem]->GetNode(1);
-        Point_2 = geometry->elem[iElem]->GetNode(2);
-        Point_3 = geometry->elem[iElem]->GetNode(3);
-        SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-        AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-			}
+      Point_0 = geometry->elem[iElem]->GetNode(0);
+      Point_1 = geometry->elem[iElem]->GetNode(1);
+      Point_2 = geometry->elem[iElem]->GetNode(2);
+      Point_3 = geometry->elem[iElem]->GetNode(3);
+      RightVol = SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+      AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
     
     }
+    
+    if (!RightVol) ElemCounter++;
+
 	}
 	
+#ifndef NO_MPI
+  unsigned long ElemCounter_Local = ElemCounter;
+  MPI::COMM_WORLD.Allreduce(&ElemCounter_Local, &ElemCounter, 1, MPI::DOUBLE, MPI::SUM);
+#endif
+  
+  if ((ElemCounter != 0) && (rank == MASTER_NODE))
+    cout <<"There are " << ElemCounter << " degenerated elements in the original grid." << endl;
+  
   /*--- Deallocate memory and exit ---*/
   if (nDim == 2) {
     for (iVar = 0; iVar < 6; iVar++)
@@ -239,7 +244,14 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
 }
 
 void CVolumetricMovement::CheckDeformed_Grid(CGeometry *geometry) {
-	unsigned long Point_0, Point_1, Point_2, Point_3, iElem;
+	unsigned long Point_0, Point_1, Point_2, Point_3, iElem, ElemCounter = 0;
+  bool RightVol;
+  
+  int rank = MASTER_NODE;
+  
+#ifndef NO_MPI
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
   
 	/*--- Load up each triangle and tetrahedron to check for negative volumes. ---*/
   
@@ -250,28 +262,38 @@ void CVolumetricMovement::CheckDeformed_Grid(CGeometry *geometry) {
       Point_0 = geometry->elem[iElem]->GetNode(0);
       Point_1 = geometry->elem[iElem]->GetNode(1);
       Point_2 = geometry->elem[iElem]->GetNode(2);
-      CheckDeformed_Elem2D(geometry, iElem, Point_0, Point_1, Point_2);
+      RightVol = CheckDeformed_Elem2D(geometry, iElem, Point_0, Point_1, Point_2);
     }
     
     /*--- Tetrahedra ---*/
     if (nDim == 3) {
-      if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON) {
-        Point_0 = geometry->elem[iElem]->GetNode(0);
-        Point_1 = geometry->elem[iElem]->GetNode(1);
-        Point_2 = geometry->elem[iElem]->GetNode(2);
-        Point_3 = geometry->elem[iElem]->GetNode(3);
-        CheckDeformed_Elem3D(geometry, iElem, Point_0, Point_1, Point_2, Point_3);
-			}
-      
+      Point_0 = geometry->elem[iElem]->GetNode(0);
+      Point_1 = geometry->elem[iElem]->GetNode(1);
+      Point_2 = geometry->elem[iElem]->GetNode(2);
+      Point_3 = geometry->elem[iElem]->GetNode(3);
+      RightVol = CheckDeformed_Elem3D(geometry, iElem, Point_0, Point_1, Point_2, Point_3);
     }
+    
+    if (!RightVol) ElemCounter++;
+    
 	}
+
+#ifndef NO_MPI
+  unsigned long ElemCounter_Local = ElemCounter;
+  MPI::COMM_WORLD.Allreduce(&ElemCounter_Local, &ElemCounter, 1, MPI::DOUBLE, MPI::SUM);
+#endif
+  
+  if ((ElemCounter != 0) && (rank == MASTER_NODE))
+    cout <<"There are " << ElemCounter << " elements with negative volume (automatically fixed).\n" << endl;
+
 }
 
-void CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, double **StiffMatrix_Elem,
-                                                   unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2) {
+bool CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, double **StiffMatrix_Elem,
+                                               unsigned long val_Point_0, unsigned long val_Point_1,
+                                               unsigned long val_Point_2) {
   unsigned short iDim, iVar, jVar, kVar;
   double B_Matrix[6][12], BT_Matrix[12][6], D_Matrix[6][6], Aux_Matrix[12][6];
-  double a[3], b[3], c[3], Area, E, Mu, Lambda, eps = 1e-14;
+  double a[3], b[3], c[3], Area, E, Mu, Lambda;
   
   double *Coord_0 = geometry->node[val_Point_0]->GetCoord();
   double *Coord_1 = geometry->node[val_Point_1]->GetCoord();
@@ -287,67 +309,86 @@ void CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, double **Sti
     b[iDim] = Coord_1[iDim]-Coord_2[iDim];
   }
   
-  Area = 0.5*fabs(a[0]*b[1]-a[1]*b[0]) + eps;
+  Area = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
   
-  /*--- Each element uses their own stiffness which is inversely
-   proportional to the area/volume of the cell. Using Mu = E & Lambda = -E
-   is a modification to help allow rigid rotation of elements (see
-   "Robust Mesh Deformation using the Linear Elasticity Equations" by
-   R. P. Dwight. This might need more testing... ---*/
-  
-  E = 1.0 / Area;
-  Mu = E;
-  Lambda = -E;
-  
-  a[0] = 0.5 * (Coord_1[0]*Coord_2[1]-Coord_2[0]*Coord_1[1]) / Area;
-  a[1] = 0.5 * (Coord_2[0]*Coord_0[1]-Coord_0[0]*Coord_2[1]) / Area;
-  a[2] = 0.5 * (Coord_0[0]*Coord_1[1]-Coord_1[0]*Coord_0[1]) / Area;
-  
-  b[0] = 0.5 * (Coord_1[1]-Coord_2[1]) / Area;
-  b[1] = 0.5 * (Coord_2[1]-Coord_0[1]) / Area;
-  b[2] = 0.5 * (Coord_0[1]-Coord_1[1]) / Area;
-  
-  c[0] = 0.5 * (Coord_2[0]-Coord_1[0]) / Area;
-  c[1] = 0.5 * (Coord_0[0]-Coord_2[0]) / Area;
-  c[2] = 0.5 * (Coord_1[0]-Coord_0[0]) / Area;
-  
-  /*--- Compute the B Matrix ---*/
-  B_Matrix[0][0] = b[0];	B_Matrix[0][1] = 0.0;		B_Matrix[0][2] = b[1];	B_Matrix[0][3] = 0.0;		B_Matrix[0][4] = b[2];	B_Matrix[0][5] = 0.0;
-  B_Matrix[1][0] = 0.0;		B_Matrix[1][1] = c[0];	B_Matrix[1][2] = 0.0;		B_Matrix[1][3] = c[1];	B_Matrix[1][4] = 0.0;		B_Matrix[1][5] = c[2];
-  B_Matrix[2][0] = c[0];	B_Matrix[2][1] = b[0];	B_Matrix[2][2] = c[1];	B_Matrix[2][3] = b[1];	B_Matrix[2][4] = c[2];	B_Matrix[2][5] = b[2];
-  
-  for (iVar = 0; iVar < 3; iVar++)
-    for (jVar = 0; jVar < 6; jVar++)
-      BT_Matrix[jVar][iVar] = B_Matrix[iVar][jVar];
-  
-  /*--- Compute the D Matrix (for plane strain and 3-D)---*/
-  D_Matrix[0][0] = Lambda + 2.0*Mu;		D_Matrix[0][1] = Lambda;            D_Matrix[0][2] = 0.0;
-  D_Matrix[1][0] = Lambda;            D_Matrix[1][1] = Lambda + 2.0*Mu;   D_Matrix[1][2] = 0.0;
-  D_Matrix[2][0] = 0.0;               D_Matrix[2][1] = 0.0;               D_Matrix[2][2] = Mu;
-  
-  /*--- Compute the BT.D Matrix ---*/
-  for (iVar = 0; iVar < 6; iVar++) {
-    for (jVar = 0; jVar < 3; jVar++) {
-      Aux_Matrix[iVar][jVar] = 0.0;
-      for (kVar = 0; kVar < 3; kVar++)
-        Aux_Matrix[iVar][jVar] += BT_Matrix[iVar][kVar]*D_Matrix[kVar][jVar];
+  if (Area < EPS) {
+    
+    /*--- The initial grid has degenerated elements ---*/
+
+    for (iVar = 0; iVar < 6; iVar++) {
+      for (jVar = 0; jVar < 6; jVar++) {
+        StiffMatrix_Elem[iVar][jVar] = 0.0;
+      }
     }
+
+    return false;
+    
   }
-  
-  /*--- Compute the BT.D.B Matrix (stiffness matrix) ---*/
-  for (iVar = 0; iVar < 6; iVar++) {
-    for (jVar = 0; jVar < 6; jVar++) {
-      StiffMatrix_Elem[iVar][jVar] = 0.0;
-      for (kVar = 0; kVar < 3; kVar++)
-        StiffMatrix_Elem[iVar][jVar] += Area * Aux_Matrix[iVar][kVar]*B_Matrix[kVar][jVar];
+  else {
+    
+    /*--- Each element uses their own stiffness which is inversely
+     proportional to the area/volume of the cell. Using Mu = E & Lambda = -E
+     is a modification to help allow rigid rotation of elements (see
+     "Robust Mesh Deformation using the Linear Elasticity Equations" by
+     R. P. Dwight. This might need more testing... ---*/
+    
+    E = 1.0 / Area;
+    Mu = E;
+    Lambda = -E;
+    
+    a[0] = 0.5 * (Coord_1[0]*Coord_2[1]-Coord_2[0]*Coord_1[1]) / Area;
+    a[1] = 0.5 * (Coord_2[0]*Coord_0[1]-Coord_0[0]*Coord_2[1]) / Area;
+    a[2] = 0.5 * (Coord_0[0]*Coord_1[1]-Coord_1[0]*Coord_0[1]) / Area;
+    
+    b[0] = 0.5 * (Coord_1[1]-Coord_2[1]) / Area;
+    b[1] = 0.5 * (Coord_2[1]-Coord_0[1]) / Area;
+    b[2] = 0.5 * (Coord_0[1]-Coord_1[1]) / Area;
+    
+    c[0] = 0.5 * (Coord_2[0]-Coord_1[0]) / Area;
+    c[1] = 0.5 * (Coord_0[0]-Coord_2[0]) / Area;
+    c[2] = 0.5 * (Coord_1[0]-Coord_0[0]) / Area;
+    
+    /*--- Compute the B Matrix ---*/
+    B_Matrix[0][0] = b[0];	B_Matrix[0][1] = 0.0;		B_Matrix[0][2] = b[1];	B_Matrix[0][3] = 0.0;		B_Matrix[0][4] = b[2];	B_Matrix[0][5] = 0.0;
+    B_Matrix[1][0] = 0.0;		B_Matrix[1][1] = c[0];	B_Matrix[1][2] = 0.0;		B_Matrix[1][3] = c[1];	B_Matrix[1][4] = 0.0;		B_Matrix[1][5] = c[2];
+    B_Matrix[2][0] = c[0];	B_Matrix[2][1] = b[0];	B_Matrix[2][2] = c[1];	B_Matrix[2][3] = b[1];	B_Matrix[2][4] = c[2];	B_Matrix[2][5] = b[2];
+    
+    for (iVar = 0; iVar < 3; iVar++)
+      for (jVar = 0; jVar < 6; jVar++)
+        BT_Matrix[jVar][iVar] = B_Matrix[iVar][jVar];
+    
+    /*--- Compute the D Matrix (for plane strain and 3-D)---*/
+    D_Matrix[0][0] = Lambda + 2.0*Mu;		D_Matrix[0][1] = Lambda;            D_Matrix[0][2] = 0.0;
+    D_Matrix[1][0] = Lambda;            D_Matrix[1][1] = Lambda + 2.0*Mu;   D_Matrix[1][2] = 0.0;
+    D_Matrix[2][0] = 0.0;               D_Matrix[2][1] = 0.0;               D_Matrix[2][2] = Mu;
+    
+    /*--- Compute the BT.D Matrix ---*/
+    for (iVar = 0; iVar < 6; iVar++) {
+      for (jVar = 0; jVar < 3; jVar++) {
+        Aux_Matrix[iVar][jVar] = 0.0;
+        for (kVar = 0; kVar < 3; kVar++)
+          Aux_Matrix[iVar][jVar] += BT_Matrix[iVar][kVar]*D_Matrix[kVar][jVar];
+      }
     }
+    
+    /*--- Compute the BT.D.B Matrix (stiffness matrix) ---*/
+    for (iVar = 0; iVar < 6; iVar++) {
+      for (jVar = 0; jVar < 6; jVar++) {
+        StiffMatrix_Elem[iVar][jVar] = 0.0;
+        for (kVar = 0; kVar < 3; kVar++)
+          StiffMatrix_Elem[iVar][jVar] += Area * Aux_Matrix[iVar][kVar]*B_Matrix[kVar][jVar];
+      }
+    }
+    
+    return true;
+    
   }
   
 }
 
-void CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **StiffMatrix_Elem,
-                                               unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2, unsigned long val_Point_3) {
-  
+bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **StiffMatrix_Elem,
+                                               unsigned long val_Point_0, unsigned long val_Point_1,
+                                               unsigned long val_Point_2, unsigned long val_Point_3) {
   unsigned short iVar, jVar, kVar, iDim;
   double B_Matrix[6][12], BT_Matrix[12][6], D_Matrix[6][6], Aux_Matrix[12][6];
   double a[4], b[4], c[4], d[4], Volume, E, Mu, Lambda;
@@ -368,98 +409,115 @@ void CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
   Volume = (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
-
-  if (Volume < EPS) { cout << "Negative or zero volume: " << Volume << endl;  Volume = EPS; }
-   
-  /*--- Each element uses their own stiffness which is inversely
-   proportional to the area/volume of the cell. Using Mu = E & Lambda = -E
-   is a modification to help allow rigid rotation of elements (see
-   "Robust Mesh Deformation using the Linear Elasticity Equations" by
-   R. P. Dwight. This might need more testing... ---*/
   
-  E = 1.0 / Volume;
-  Mu = E;
-  Lambda = -E;
-  
-  a[0] = Determinant_3x3(Coord_1[0],Coord_1[1],Coord_1[2],Coord_2[0],Coord_2[1],Coord_2[2],Coord_3[0],Coord_3[1],Coord_3[2])/(6.0*Volume);
-  b[0] = -Determinant_3x3(1.0,Coord_1[1],Coord_1[2],1.0,Coord_2[1],Coord_2[2],1.0,Coord_3[1],Coord_3[2])/(6.0*Volume);
-  c[0] = -Determinant_3x3(Coord_1[0],1.0,Coord_1[2],Coord_2[0],1.0,Coord_2[2],Coord_3[0],1.0,Coord_3[2])/(6.0*Volume);
-  d[0] = -Determinant_3x3(Coord_1[0],Coord_1[1],1.0,Coord_2[0],Coord_2[1],1.0,Coord_3[0],Coord_3[1],1.0)/(6.0*Volume);
-  
-  a[1] = -Determinant_3x3(Coord_2[0],Coord_2[1],Coord_2[2],Coord_3[0],Coord_3[1],Coord_3[2],Coord_0[0],Coord_0[1],Coord_0[2])/(6.0*Volume);
-  b[1] = Determinant_3x3(1.0,Coord_2[1],Coord_2[2],1.0,Coord_3[1],Coord_3[2],1.0,Coord_0[1],Coord_0[2])/(6.0*Volume);
-  c[1] = Determinant_3x3(Coord_2[0],1.0,Coord_2[2],Coord_3[0],1.0,Coord_3[2],Coord_0[0],1.0,Coord_0[2])/(6.0*Volume);
-  d[1] = Determinant_3x3(Coord_2[0],Coord_2[1],1.0,Coord_3[0],Coord_3[1],1.0,Coord_0[0],Coord_0[1],1.0)/(6.0*Volume);
-
-  a[2] = Determinant_3x3(Coord_3[0],Coord_3[1],Coord_3[2],Coord_0[0],Coord_0[1],Coord_0[2],Coord_1[0],Coord_1[1],Coord_1[2])/(6.0*Volume);
-  b[2] = -Determinant_3x3(1.0,Coord_3[1],Coord_3[2],1.0,Coord_0[1],Coord_0[2],1.0,Coord_1[1],Coord_1[2])/(6.0*Volume);
-  c[2] = -Determinant_3x3(Coord_3[0],1.0,Coord_3[2],Coord_0[0],1.0,Coord_0[2],Coord_1[0],1.0,Coord_1[2])/(6.0*Volume);
-  d[2] = -Determinant_3x3(Coord_3[0],Coord_3[1],1.0,Coord_0[0],Coord_0[1],1.0,Coord_1[0],Coord_1[1],1.0)/(6.0*Volume);
-  
-  a[3] = -Determinant_3x3(Coord_0[0],Coord_0[1],Coord_0[2],Coord_1[0],Coord_1[1],Coord_1[2],Coord_2[0],Coord_2[1],Coord_2[2])/(6.0*Volume);
-  b[3] = Determinant_3x3(1.0,Coord_0[1],Coord_0[2],1.0,Coord_1[1],Coord_1[2],1.0,Coord_2[1],Coord_2[2])/(6.0*Volume);
-  c[3] = Determinant_3x3(Coord_0[0],1.0,Coord_0[2],Coord_1[0],1.0,Coord_1[2],Coord_2[0],1.0,Coord_2[2])/(6.0*Volume);
-  d[3] = Determinant_3x3(Coord_0[0],Coord_0[1],1.0,Coord_1[0],Coord_1[1],1.0,Coord_2[0],Coord_2[1],1.0)/(6.0*Volume);
-  
-  /*--- Compute the B Matrix ---*/
-  B_Matrix[0][0] = b[0];	B_Matrix[0][1] = 0.0;		B_Matrix[0][2] = 0.0;
-  B_Matrix[0][3] = b[1];	B_Matrix[0][4] = 0.0;		B_Matrix[0][5] = 0.0;
-  B_Matrix[0][6] = b[2];	B_Matrix[0][7] = 0.0;		B_Matrix[0][8] = 0.0;
-  B_Matrix[0][9] = b[3];	B_Matrix[0][10] = 0.0;	B_Matrix[0][11] = 0.0;
-  
-  B_Matrix[1][0] = 0.0;   B_Matrix[1][1] = c[0];  B_Matrix[1][2] = 0.0;
-  B_Matrix[1][3] = 0.0;   B_Matrix[1][4] = c[1];	B_Matrix[1][5] = 0.0;
-  B_Matrix[1][6] = 0.0;		B_Matrix[1][7] = c[2];  B_Matrix[1][8] = 0.0;
-  B_Matrix[1][9] = 0.0;		B_Matrix[1][10] = c[3];	B_Matrix[1][11] = 0.0;
-  
-  B_Matrix[2][0] = 0.0;		B_Matrix[2][1] = 0.0;		B_Matrix[2][2] = d[0];
-  B_Matrix[2][3] = 0.0;   B_Matrix[2][4] = 0.0;		B_Matrix[2][5] = d[1];
-  B_Matrix[2][6] = 0.0;		B_Matrix[2][7] = 0.0;   B_Matrix[2][8] = d[2];
-  B_Matrix[2][9] = 0.0;		B_Matrix[2][10] = 0.0;	B_Matrix[2][11] = d[3];
-  
-  B_Matrix[3][0] = c[0];	B_Matrix[3][1] = b[0];	B_Matrix[3][2] = 0.0;
-  B_Matrix[3][3] = c[1];  B_Matrix[3][4] = b[1];	B_Matrix[3][5] = 0.0;
-  B_Matrix[3][6] = c[2];	B_Matrix[3][7] = b[2];  B_Matrix[3][8] = 0.0;
-  B_Matrix[3][9] = c[3];	B_Matrix[3][10] = b[3];	B_Matrix[3][11] = 0.0;
-  
-  B_Matrix[4][0] = 0.0;		B_Matrix[4][1] = d[0];	B_Matrix[4][2] = c[0];
-  B_Matrix[4][3] = 0.0;   B_Matrix[4][4] = d[1];	B_Matrix[4][5] = c[1];
-  B_Matrix[4][6] = 0.0;		B_Matrix[4][7] = d[2];  B_Matrix[4][8] = c[2];
-  B_Matrix[4][9] = 0.0;		B_Matrix[4][10] = d[3];	B_Matrix[4][11] = c[3];
-  
-  B_Matrix[5][0] = d[0];	B_Matrix[5][1] = 0.0;		B_Matrix[5][2] = b[0];
-  B_Matrix[5][3] = d[1];  B_Matrix[5][4] = 0.0;		B_Matrix[5][5] = b[1];
-  B_Matrix[5][6] = d[2];	B_Matrix[5][7] = 0.0;   B_Matrix[5][8] = b[2];
-  B_Matrix[5][9] = d[3];	B_Matrix[5][10] = 0.0;	B_Matrix[5][11] = b[3];
-  
-  for (iVar = 0; iVar < 6; iVar++)
-    for (jVar = 0; jVar < 12; jVar++)
-      BT_Matrix[jVar][iVar] = B_Matrix[iVar][jVar];
-  
-  /*--- Compute the D Matrix (for plane strain and 3-D)---*/
-  D_Matrix[0][0] = Lambda + 2.0*Mu;	D_Matrix[0][1] = Lambda;					D_Matrix[0][2] = Lambda;					D_Matrix[0][3] = 0.0;	D_Matrix[0][4] = 0.0;	D_Matrix[0][5] = 0.0;
-  D_Matrix[1][0] = Lambda;					D_Matrix[1][1] = Lambda + 2.0*Mu;	D_Matrix[1][2] = Lambda;					D_Matrix[1][3] = 0.0;	D_Matrix[1][4] = 0.0;	D_Matrix[1][5] = 0.0;
-  D_Matrix[2][0] = Lambda;					D_Matrix[2][1] = Lambda;					D_Matrix[2][2] = Lambda + 2.0*Mu;	D_Matrix[2][3] = 0.0;	D_Matrix[2][4] = 0.0;	D_Matrix[2][5] = 0.0;
-  D_Matrix[3][0] = 0.0;							D_Matrix[3][1] = 0.0;							D_Matrix[3][2] = 0.0;							D_Matrix[3][3] = Mu;	D_Matrix[3][4] = 0.0;	D_Matrix[3][5] = 0.0;
-  D_Matrix[4][0] = 0.0;							D_Matrix[4][1] = 0.0;							D_Matrix[4][2] = 0.0;							D_Matrix[4][3] = 0.0;	D_Matrix[4][4] = Mu;	D_Matrix[4][5] = 0.0;
-  D_Matrix[5][0] = 0.0;							D_Matrix[5][1] = 0.0;							D_Matrix[5][2] = 0.0;							D_Matrix[5][3] = 0.0;	D_Matrix[5][4] = 0.0;	D_Matrix[5][5] = Mu;
-  
-  /*--- Compute the BT.D Matrix ---*/
-  for (iVar = 0; iVar < 12; iVar++) {
-    for (jVar = 0; jVar < 6; jVar++) {
-      Aux_Matrix[iVar][jVar] = 0.0;
-      for (kVar = 0; kVar < 6; kVar++)
-        Aux_Matrix[iVar][jVar] += BT_Matrix[iVar][kVar]*D_Matrix[kVar][jVar];
+  if (Volume < EPS) {
+    
+    /*--- The initial grid has degenerated elements ---*/
+     
+    for (iVar = 0; iVar < 12; iVar++) {
+      for (jVar = 0; jVar < 12; jVar++) {
+        StiffMatrix_Elem[iVar][jVar] = 0.0;
+      }
     }
+    
+    return false;
+    
   }
-  
-  /*--- Compute the BT.D.B Matrix (stiffness matrix) ---*/
-  for (iVar = 0; iVar < 12; iVar++) {
-    for (jVar = 0; jVar < 12; jVar++) {
-      StiffMatrix_Elem[iVar][jVar] = 0.0;
-      for (kVar = 0; kVar < 6; kVar++)
-        StiffMatrix_Elem[iVar][jVar] += Volume * Aux_Matrix[iVar][kVar]*B_Matrix[kVar][jVar];
+  else {
+    
+    /*--- Each element uses their own stiffness which is inversely
+     proportional to the area/volume of the cell. Using Mu = E & Lambda = -E
+     is a modification to help allow rigid rotation of elements (see
+     "Robust Mesh Deformation using the Linear Elasticity Equations" by
+     R. P. Dwight. This might need more testing... ---*/
+    
+    E = 1.0 / Volume;
+    Mu = E;
+    Lambda = -E;
+    
+    a[0] = Determinant_3x3(Coord_1[0],Coord_1[1],Coord_1[2],Coord_2[0],Coord_2[1],Coord_2[2],Coord_3[0],Coord_3[1],Coord_3[2])/(6.0*Volume);
+    b[0] = -Determinant_3x3(1.0,Coord_1[1],Coord_1[2],1.0,Coord_2[1],Coord_2[2],1.0,Coord_3[1],Coord_3[2])/(6.0*Volume);
+    c[0] = -Determinant_3x3(Coord_1[0],1.0,Coord_1[2],Coord_2[0],1.0,Coord_2[2],Coord_3[0],1.0,Coord_3[2])/(6.0*Volume);
+    d[0] = -Determinant_3x3(Coord_1[0],Coord_1[1],1.0,Coord_2[0],Coord_2[1],1.0,Coord_3[0],Coord_3[1],1.0)/(6.0*Volume);
+    
+    a[1] = -Determinant_3x3(Coord_2[0],Coord_2[1],Coord_2[2],Coord_3[0],Coord_3[1],Coord_3[2],Coord_0[0],Coord_0[1],Coord_0[2])/(6.0*Volume);
+    b[1] = Determinant_3x3(1.0,Coord_2[1],Coord_2[2],1.0,Coord_3[1],Coord_3[2],1.0,Coord_0[1],Coord_0[2])/(6.0*Volume);
+    c[1] = Determinant_3x3(Coord_2[0],1.0,Coord_2[2],Coord_3[0],1.0,Coord_3[2],Coord_0[0],1.0,Coord_0[2])/(6.0*Volume);
+    d[1] = Determinant_3x3(Coord_2[0],Coord_2[1],1.0,Coord_3[0],Coord_3[1],1.0,Coord_0[0],Coord_0[1],1.0)/(6.0*Volume);
+    
+    a[2] = Determinant_3x3(Coord_3[0],Coord_3[1],Coord_3[2],Coord_0[0],Coord_0[1],Coord_0[2],Coord_1[0],Coord_1[1],Coord_1[2])/(6.0*Volume);
+    b[2] = -Determinant_3x3(1.0,Coord_3[1],Coord_3[2],1.0,Coord_0[1],Coord_0[2],1.0,Coord_1[1],Coord_1[2])/(6.0*Volume);
+    c[2] = -Determinant_3x3(Coord_3[0],1.0,Coord_3[2],Coord_0[0],1.0,Coord_0[2],Coord_1[0],1.0,Coord_1[2])/(6.0*Volume);
+    d[2] = -Determinant_3x3(Coord_3[0],Coord_3[1],1.0,Coord_0[0],Coord_0[1],1.0,Coord_1[0],Coord_1[1],1.0)/(6.0*Volume);
+    
+    a[3] = -Determinant_3x3(Coord_0[0],Coord_0[1],Coord_0[2],Coord_1[0],Coord_1[1],Coord_1[2],Coord_2[0],Coord_2[1],Coord_2[2])/(6.0*Volume);
+    b[3] = Determinant_3x3(1.0,Coord_0[1],Coord_0[2],1.0,Coord_1[1],Coord_1[2],1.0,Coord_2[1],Coord_2[2])/(6.0*Volume);
+    c[3] = Determinant_3x3(Coord_0[0],1.0,Coord_0[2],Coord_1[0],1.0,Coord_1[2],Coord_2[0],1.0,Coord_2[2])/(6.0*Volume);
+    d[3] = Determinant_3x3(Coord_0[0],Coord_0[1],1.0,Coord_1[0],Coord_1[1],1.0,Coord_2[0],Coord_2[1],1.0)/(6.0*Volume);
+    
+    /*--- Compute the B Matrix ---*/
+    B_Matrix[0][0] = b[0];	B_Matrix[0][1] = 0.0;		B_Matrix[0][2] = 0.0;
+    B_Matrix[0][3] = b[1];	B_Matrix[0][4] = 0.0;		B_Matrix[0][5] = 0.0;
+    B_Matrix[0][6] = b[2];	B_Matrix[0][7] = 0.0;		B_Matrix[0][8] = 0.0;
+    B_Matrix[0][9] = b[3];	B_Matrix[0][10] = 0.0;	B_Matrix[0][11] = 0.0;
+    
+    B_Matrix[1][0] = 0.0;   B_Matrix[1][1] = c[0];  B_Matrix[1][2] = 0.0;
+    B_Matrix[1][3] = 0.0;   B_Matrix[1][4] = c[1];	B_Matrix[1][5] = 0.0;
+    B_Matrix[1][6] = 0.0;		B_Matrix[1][7] = c[2];  B_Matrix[1][8] = 0.0;
+    B_Matrix[1][9] = 0.0;		B_Matrix[1][10] = c[3];	B_Matrix[1][11] = 0.0;
+    
+    B_Matrix[2][0] = 0.0;		B_Matrix[2][1] = 0.0;		B_Matrix[2][2] = d[0];
+    B_Matrix[2][3] = 0.0;   B_Matrix[2][4] = 0.0;		B_Matrix[2][5] = d[1];
+    B_Matrix[2][6] = 0.0;		B_Matrix[2][7] = 0.0;   B_Matrix[2][8] = d[2];
+    B_Matrix[2][9] = 0.0;		B_Matrix[2][10] = 0.0;	B_Matrix[2][11] = d[3];
+    
+    B_Matrix[3][0] = c[0];	B_Matrix[3][1] = b[0];	B_Matrix[3][2] = 0.0;
+    B_Matrix[3][3] = c[1];  B_Matrix[3][4] = b[1];	B_Matrix[3][5] = 0.0;
+    B_Matrix[3][6] = c[2];	B_Matrix[3][7] = b[2];  B_Matrix[3][8] = 0.0;
+    B_Matrix[3][9] = c[3];	B_Matrix[3][10] = b[3];	B_Matrix[3][11] = 0.0;
+    
+    B_Matrix[4][0] = 0.0;		B_Matrix[4][1] = d[0];	B_Matrix[4][2] = c[0];
+    B_Matrix[4][3] = 0.0;   B_Matrix[4][4] = d[1];	B_Matrix[4][5] = c[1];
+    B_Matrix[4][6] = 0.0;		B_Matrix[4][7] = d[2];  B_Matrix[4][8] = c[2];
+    B_Matrix[4][9] = 0.0;		B_Matrix[4][10] = d[3];	B_Matrix[4][11] = c[3];
+    
+    B_Matrix[5][0] = d[0];	B_Matrix[5][1] = 0.0;		B_Matrix[5][2] = b[0];
+    B_Matrix[5][3] = d[1];  B_Matrix[5][4] = 0.0;		B_Matrix[5][5] = b[1];
+    B_Matrix[5][6] = d[2];	B_Matrix[5][7] = 0.0;   B_Matrix[5][8] = b[2];
+    B_Matrix[5][9] = d[3];	B_Matrix[5][10] = 0.0;	B_Matrix[5][11] = b[3];
+    
+    for (iVar = 0; iVar < 6; iVar++)
+      for (jVar = 0; jVar < 12; jVar++)
+        BT_Matrix[jVar][iVar] = B_Matrix[iVar][jVar];
+    
+    /*--- Compute the D Matrix (for plane strain and 3-D)---*/
+    D_Matrix[0][0] = Lambda + 2.0*Mu;	D_Matrix[0][1] = Lambda;					D_Matrix[0][2] = Lambda;					D_Matrix[0][3] = 0.0;	D_Matrix[0][4] = 0.0;	D_Matrix[0][5] = 0.0;
+    D_Matrix[1][0] = Lambda;					D_Matrix[1][1] = Lambda + 2.0*Mu;	D_Matrix[1][2] = Lambda;					D_Matrix[1][3] = 0.0;	D_Matrix[1][4] = 0.0;	D_Matrix[1][5] = 0.0;
+    D_Matrix[2][0] = Lambda;					D_Matrix[2][1] = Lambda;					D_Matrix[2][2] = Lambda + 2.0*Mu;	D_Matrix[2][3] = 0.0;	D_Matrix[2][4] = 0.0;	D_Matrix[2][5] = 0.0;
+    D_Matrix[3][0] = 0.0;							D_Matrix[3][1] = 0.0;							D_Matrix[3][2] = 0.0;							D_Matrix[3][3] = Mu;	D_Matrix[3][4] = 0.0;	D_Matrix[3][5] = 0.0;
+    D_Matrix[4][0] = 0.0;							D_Matrix[4][1] = 0.0;							D_Matrix[4][2] = 0.0;							D_Matrix[4][3] = 0.0;	D_Matrix[4][4] = Mu;	D_Matrix[4][5] = 0.0;
+    D_Matrix[5][0] = 0.0;							D_Matrix[5][1] = 0.0;							D_Matrix[5][2] = 0.0;							D_Matrix[5][3] = 0.0;	D_Matrix[5][4] = 0.0;	D_Matrix[5][5] = Mu;
+    
+    /*--- Compute the BT.D Matrix ---*/
+    for (iVar = 0; iVar < 12; iVar++) {
+      for (jVar = 0; jVar < 6; jVar++) {
+        Aux_Matrix[iVar][jVar] = 0.0;
+        for (kVar = 0; kVar < 6; kVar++)
+          Aux_Matrix[iVar][jVar] += BT_Matrix[iVar][kVar]*D_Matrix[kVar][jVar];
+      }
     }
+    
+    /*--- Compute the BT.D.B Matrix (stiffness matrix) ---*/
+    for (iVar = 0; iVar < 12; iVar++) {
+      for (jVar = 0; jVar < 12; jVar++) {
+        StiffMatrix_Elem[iVar][jVar] = 0.0;
+        for (kVar = 0; kVar < 6; kVar++)
+          StiffMatrix_Elem[iVar][jVar] += Volume * Aux_Matrix[iVar][kVar]*B_Matrix[kVar][jVar];
+      }
+    }
+    
+    return true;
+    
   }
   
 }
@@ -630,10 +688,10 @@ void CVolumetricMovement::AddFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
   
 }
 
-void CVolumetricMovement::CheckDeformed_Elem2D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2) {
+bool CVolumetricMovement::CheckDeformed_Elem2D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2) {
   
   unsigned short iDim;
-  double a[3], b[3], Area, eps = 1e-14;
+  double a[3], b[3], Area;
   
   double *Coord_0 = geometry->node[val_Point_0]->GetCoord();
   double *Coord_1 = geometry->node[val_Point_1]->GetCoord();
@@ -644,13 +702,18 @@ void CVolumetricMovement::CheckDeformed_Elem2D(CGeometry *geometry, unsigned lon
     b[iDim] = Coord_1[iDim]-Coord_2[iDim];
   }
   
-  Area = 0.5*fabs(a[0]*b[1]-a[1]*b[0]) + eps;
+  Area = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
   
-  if (Area < 0.0) cout << "Negative volume for element " << val_iElem << ": " << Area << endl;
-  
+  if (Area < 0.0) {
+ 
+    return false;
+
+  }
+  else return true;
+      
 }
 
-void CVolumetricMovement::CheckDeformed_Elem3D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2, unsigned long val_Point_3) {
+bool CVolumetricMovement::CheckDeformed_Elem3D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2, unsigned long val_Point_3) {
   
   unsigned short iDim;
   double r1[3], r2[3], r3[3], CrossProduct[3], Volume;
@@ -672,8 +735,13 @@ void CVolumetricMovement::CheckDeformed_Elem3D(CGeometry *geometry, unsigned lon
   
   Volume = (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
-  if (Volume < 0.0) cout << "Negative volume for element " << val_iElem << ": " << Volume << endl;
-  
+  if (Volume < 0.0) {
+    
+    return false;
+
+  }
+  else return true;
+
 }
 
 void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig *config) {
@@ -897,13 +965,13 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
       geometry->SetControlVolume(config, UPDATE);
       geometry->SetBoundControlVolume(config, UPDATE);
     }
+
+    /*--- Check for failed deformation (negative volumes). ---*/
+    
+    CheckDeformed_Grid(geometry);
     
   }
-  
-  /*--- Check for failed deformation (negative volumes). ---*/
-  
-  CheckDeformed_Grid(geometry);
-  
+ 
   /*--- Deallocate vectors for the linear system. ---*/
   
   LinSysSol.~CSysVector();
@@ -3697,7 +3765,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 				
 				getline (mesh_file,text_line);
 				text_line.erase (0,19); nSurfacePoints[iFFDBox] = atoi(text_line.c_str());
-        
+
 				/*--- The the surface points parametric coordinates ---*/
         my_nSurfPoints = 0;
 				for (iSurfacePoints = 0; iSurfacePoints < nSurfacePoints[iFFDBox]; iSurfacePoints++) {
@@ -3726,6 +3794,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
             FFDBox[iFFDBox]->Set_MarkerIndex(iMarker);
             FFDBox[iFFDBox]->Set_PointIndex(iPoint);
             FFDBox[iFFDBox]->Set_ParametricCoord(coord);
+            my_nSurfPoints = nSurfacePoints[iFFDBox];
           }
 				}
         
@@ -3866,22 +3935,30 @@ void CSurfaceMovement::WriteFFDInfo(CGeometry *geometry, CConfig *config, CFreeF
 						double *coord = FFDBox[iFFDBox]->GetCoordControlPoints(iOrder, jOrder, kOrder);
 						mesh_file << iOrder << "\t" << jOrder << "\t" << kOrder << "\t" << coord[0] << "\t" << coord[1] << "\t" << coord[2] << endl;
 					}
-      
+
       /*--- Compute the number of points on the new surfaces, note that we are not
        adding the new ghost points (receive), which eventually are also inside the chunck ---*/
       unsigned long nSurfacePoint = 0;
       for (iSurfacePoints = 0; iSurfacePoints < FFDBox[iFFDBox]->GetnSurfacePoint(); iSurfacePoints++) {
         iPoint = FFDBox[iFFDBox]->Get_PointIndex(iSurfacePoints);
-        if ((geometry->GetGlobal_to_Local_Point(iPoint) != -1) && (iPoint <= geometry->GetMax_GlobalPoint())) nSurfacePoint++;
+        
+        /*--- Note that we cannot use && because of the range of 
+         geometry->GetGlobal_to_Local_Point(iPoint) is smaller than iPoint ---*/
+        
+        if (iPoint <= geometry->GetMax_GlobalPoint()) {
+          if (geometry->GetGlobal_to_Local_Point(iPoint) != -1) nSurfacePoint++;
+        }
       }
       
       mesh_file << "FFD_SURFACE_POINTS= " << nSurfacePoint << endl;
       for (iSurfacePoints = 0; iSurfacePoints < FFDBox[iFFDBox]->GetnSurfacePoint(); iSurfacePoints++) {
         iMarker = FFDBox[iFFDBox]->Get_MarkerIndex(iSurfacePoints);
         iPoint = FFDBox[iFFDBox]->Get_PointIndex(iSurfacePoints);
-        if ((geometry->GetGlobal_to_Local_Point(iPoint) != -1) && (iPoint <= geometry->GetMax_GlobalPoint())) {
-          double *parCoord = FFDBox[iFFDBox]->Get_ParametricCoord(iSurfacePoints);
-          mesh_file << scientific << config->GetMarker_All_Tag(iMarker) << "\t" << geometry->GetGlobal_to_Local_Point(iPoint) << "\t" << parCoord[0] << "\t" << parCoord[1] << "\t" << parCoord[2] << endl;
+        if (iPoint <= geometry->GetMax_GlobalPoint()) {
+          if (geometry->GetGlobal_to_Local_Point(iPoint) != -1) {
+            double *parCoord = FFDBox[iFFDBox]->Get_ParametricCoord(iSurfacePoints);
+            mesh_file << scientific << config->GetMarker_All_Tag(iMarker) << "\t" << geometry->GetGlobal_to_Local_Point(iPoint) << "\t" << parCoord[0] << "\t" << parCoord[1] << "\t" << parCoord[2] << endl;
+          }
         }
       }
 			
@@ -4618,25 +4695,30 @@ void CFreeFormDefBox::Gauss_Elimination(double** A, double* rhs, unsigned short 
 	unsigned short jVar, kVar, iVar;
     double weight, aux;
 	
-	if (nVar == 1)
-		rhs[0] /= (A[0][0]+EPS*EPS);
+	if (nVar == 1) {
+    if (fabs(A[0][0]) < EPS) cout <<"Gauss' elimination error, value:" << abs(A[0][0]) << "." << endl;
+		rhs[0] /= A[0][0];
+  }
 	else {
 		/*--- Transform system in Upper Matrix ---*/
 		for (iVar = 1; iVar < nVar; iVar++) {
 			for (jVar = 0; jVar < iVar; jVar++) {
-				weight = A[iVar][jVar]/(A[jVar][jVar]+EPS*EPS);
+        if (fabs(A[jVar][jVar]) < EPS) cout <<"Gauss' elimination error, value:" << abs(A[jVar][jVar]) << "." << endl;
+				weight = A[iVar][jVar]/A[jVar][jVar];
 				for (kVar = jVar; kVar < nVar; kVar++)
 					A[iVar][kVar] -= weight*A[jVar][kVar];
 				rhs[iVar] -= weight*rhs[jVar];
 			}
 		}
 		/*--- Backwards substitution ---*/
-		rhs[nVar-1] = rhs[nVar-1]/(A[nVar-1][nVar-1]+EPS*EPS);
+    if (fabs(A[nVar-1][nVar-1]) < EPS) cout <<"Gauss' elimination error, value:" << abs(A[nVar-1][nVar-1]) << "." << endl;
+		rhs[nVar-1] = rhs[nVar-1]/A[nVar-1][nVar-1];
 		for (short iVar = nVar-2; iVar >= 0; iVar--) {
 			aux = 0;
 			for (jVar = iVar+1; jVar < nVar; jVar++)
 				aux += A[iVar][jVar]*rhs[jVar];
-			rhs[iVar] = (rhs[iVar]-aux)/(A[iVar][iVar]+EPS*EPS);
+      if (fabs(A[iVar][iVar]) < EPS) cout <<"Gauss' elimination error, value:" << abs(A[iVar][iVar]) << "." << endl;
+			rhs[iVar] = (rhs[iVar]-aux)/A[iVar][iVar];
 			if (iVar == 0) break;
 		}
 	}
