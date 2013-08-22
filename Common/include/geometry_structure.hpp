@@ -551,7 +551,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void FindSharpEdges(CConfig *config);
+	virtual void ComputeSurf_Curvature(CConfig *config);
   
   /*!
 	 * \brief A virtual member.
@@ -1021,7 +1021,7 @@ public:
 	 * \brief Find and store all vertices on a sharp corner in the geometry.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void FindSharpEdges(CConfig *config);
+	void ComputeSurf_Curvature(CConfig *config);
 
 	/*! 
 	 * \brief Find and store the closest neighbor to a vertex.

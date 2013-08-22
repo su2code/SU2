@@ -137,16 +137,6 @@ public:
 	void SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, CConfig *config, 
 			unsigned long iExtIter);
 	
-	/*!
-	 * \brief Writes mass flow rate.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iExtIter - Current external (time) iteration.
-	 */
-	void SetFlowRate(CSolver *solver_container, CGeometry *geometry, CConfig *config,
-                   unsigned long iExtIter);
-	
 	/*! 
 	 * \brief Create and write the file with the flow coefficient on the surface.
 	 * \param[in] config - Definition of the particular problem.

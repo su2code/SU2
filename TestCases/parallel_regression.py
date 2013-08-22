@@ -226,7 +226,7 @@ if __name__=="__main__":
   naca0012.cfg_dir   = "TestCases/euler/naca0012"
   naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
   naca0012.test_iter = 100
-  naca0012.test_vals = [-3.752127,-3.271486,0.135985,0.067254]
+  naca0012.test_vals = [-3.752168,-3.271550,0.135985,0.067254]
   naca0012.su2_exec  = "parallel_computation.py -f"
   naca0012.timeout   = 1600
   naca0012.tol       = 0.00001
@@ -248,7 +248,7 @@ if __name__=="__main__":
   oneram6.cfg_dir   = "TestCases/euler/oneram6"
   oneram6.cfg_file  = "inv_ONERAM6_JST.cfg"
   oneram6.test_iter = 10
-  oneram6.test_vals = [-2.640196,-2.107535,0.284846,0.017115]
+  oneram6.test_vals = [-2.639754,-2.107317,0.284842,0.017115]
   oneram6.su2_exec  = "parallel_computation.py -f"
   oneram6.timeout   = 3200
   oneram6.tol       = 0.00001
@@ -275,7 +275,7 @@ if __name__=="__main__":
   cylinder.cfg_dir   = "TestCases/navierstokes/cylinder"
   cylinder.cfg_file  = "lam_cylinder_JST.cfg"
   cylinder.test_iter = 25
-  cylinder.test_vals = [-9.727674,-8.897569,0.032136,3.886479]
+  cylinder.test_vals = [-9.724776,-8.896674,0.032211,3.890232]
   cylinder.su2_exec  = "parallel_computation.py -f"
   cylinder.timeout   = 1600
   cylinder.tol       = 0.00001
@@ -290,7 +290,7 @@ if __name__=="__main__":
   rae2822.cfg_dir   = "TestCases/rans/rae2822"
   rae2822.cfg_file  = "turb_SA_RAE2822.cfg"
   rae2822.test_iter = 100
-  rae2822.test_vals = [ -3.413507,-5.454305,0.889595,0.024464] #last 4 columns
+  rae2822.test_vals = [-3.413481,-5.454277,0.889613,0.024466] #last 4 columns
   rae2822.su2_exec  = "parallel_computation.py -f"
   rae2822.timeout   = 1600
   rae2822.tol       = 0.00001
@@ -312,7 +312,7 @@ if __name__=="__main__":
   turb_oneram6.cfg_dir   = "TestCases/rans/oneram6"
   turb_oneram6.cfg_file  = "turb_ONERAM6.cfg"
   turb_oneram6.test_iter = 20
-  turb_oneram6.test_vals = [44.640092,-16.000000,-1000.000000,-1000.000000] #last 4 columns
+  turb_oneram6.test_vals = [59.145970,133.849088,1000.000000,1000.000000] #last 4 columns
   turb_oneram6.su2_exec  = "parallel_computation.py -f"
   turb_oneram6.timeout   = 3200
   turb_oneram6.tol       = 0.00001
@@ -323,7 +323,7 @@ if __name__=="__main__":
   turb_naca0012.cfg_dir   = "TestCases/rans/naca0012"
   turb_naca0012.cfg_file  = "naca0012.cfg"
   turb_naca0012.test_iter = 20
-  turb_naca0012.test_vals = [-8.694561,-9.210106,-0.000034,0.008124] #last 4 columns
+  turb_naca0012.test_vals = [-7.513293,-9.210105,-0.000034,0.008124] #last 4 columns
   turb_naca0012.su2_exec  = "parallel_computation.py -f"
   turb_naca0012.timeout   = 3200
   turb_naca0012.tol       = 0.00001

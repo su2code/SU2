@@ -1626,7 +1626,8 @@ void CAdjEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
 
 void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
-  
+  double SharpEdge_Distance;
+
   /*--- Retrieve information about the spatial and temporal integration for the
    adjoint equations (note that the flow problem may use different methods). ---*/
   bool implicit       = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
@@ -1635,7 +1636,6 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   bool center_jst     = (config->GetKind_Centered_AdjFlow() == JST);
   bool limiter        = (config->GetKind_SlopeLimit() != NONE);
   bool incompressible = config->GetIncompressible();
-  double adj_limit    = config->GetAdjointLimit();
 
   /*--- Compute nacelle inflow and exhaust properties ---*/
   GetNacelle_Properties(geometry, config, iMesh);
@@ -1643,17 +1643,20 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
 	/*--- Residual initialization ---*/
 	for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
-    /*--- Set the primitive variables incompressible and compressible 
+    /*--- Get the distance form a sharp edge ---*/
+    SharpEdge_Distance = geometry->node[iPoint]->GetSharpEdge_Distance();
+    
+    /*--- Set the primitive variables incompressible and compressible
      adjoint variables ---*/
-		if (incompressible) node[iPoint]->SetPrimVar_Incompressible(adj_limit);
-		else node[iPoint]->SetPrimVar_Compressible(adj_limit);
+		if (incompressible) node[iPoint]->SetPrimVar_Incompressible(SharpEdge_Distance, false, config);
+		else node[iPoint]->SetPrimVar_Compressible(SharpEdge_Distance, false, config);
     
 		/*--- Initialize the convective residual vector ---*/
 		LinSysRes.SetBlock_Zero(iPoint);
 
 	}
   
-  /*--- Upwind second order reconstruction ---*/
+  /*--- Compute gradients for upwind second-order reconstruction ---*/
   if ((upwind_2nd) && (iMesh == MESH_0)) {
 		if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
 		if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
@@ -1662,7 +1665,7 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
 		if (limiter) SetSolution_Limiter(geometry, config);
 	}
 
-  /*--- Artificial dissipation ---*/
+  /*--- Artificial dissipation for centered schemes ---*/
   if (center) {
     if ((center_jst) && (iMesh == MESH_0)) {
       SetDissipation_Switch(geometry, config);
@@ -5433,17 +5436,16 @@ CAdjNSSolver::~CAdjNSSolver(void) {
 
 void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
+  double SharpEdge_Distance;
   
   /*--- Retrieve information about the spatial and temporal integration for the
    adjoint equations (note that the flow problem may use different methods). ---*/
   bool implicit       = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-  bool upwind_2nd     = (config->GetKind_Upwind_AdjFlow() == ROE_2ND) ||
-  (config->GetKind_Upwind_AdjFlow() == SW_2ND);
+  bool upwind_2nd     = (config->GetKind_Upwind_AdjFlow() == ROE_2ND) || (config->GetKind_Upwind_AdjFlow() == SW_2ND);
   bool center         = (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst     = (config->GetKind_Centered_AdjFlow() == JST);
   bool limiter        = (config->GetKind_SlopeLimit() != NONE);
   bool incompressible = config->GetIncompressible();
-  double adj_limit    = config->GetAdjointLimit();
 
   /*--- Compute nacelle inflow and exhaust properties ---*/
   GetNacelle_Properties(geometry, config, iMesh);
@@ -5451,10 +5453,13 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 	/*--- Residual initialization ---*/
 	for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
+    /*--- Get the distance form a sharp edge ---*/
+    SharpEdge_Distance = geometry->node[iPoint]->GetSharpEdge_Distance();
+    
     /*--- Set the primitive variables incompressible and compressible
      adjoint variables ---*/
-		if (incompressible) node[iPoint]->SetPrimVar_Incompressible(adj_limit);
-		else node[iPoint]->SetPrimVar_Compressible(adj_limit);
+		if (incompressible) node[iPoint]->SetPrimVar_Incompressible(SharpEdge_Distance, false, config);
+		else node[iPoint]->SetPrimVar_Compressible(SharpEdge_Distance, false, config);
     
 		/*--- Initialize the convective residual vector ---*/
 		LinSysRes.SetBlock_Zero(iPoint);
@@ -5606,7 +5611,7 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 			numerics->SetTurbAdjointGradient(solver_container[ADJTURB_SOL]->node[iPoint]->GetGradient(), NULL);
 
 			/*--- Set distance to the surface ---*/
-			numerics->SetDistance(geometry->node[iPoint]->GetWallDistance(), 0.0);
+			numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), 0.0);
 
 		}
 
@@ -5692,7 +5697,7 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 //                                       solver_container[ADJTURB_SOL]->node[jPoint]->GetSolution());
 //      
 //      /*--- Set distance to the surface ---*/
-//      second_numerics->SetDistance(geometry->node[iPoint]->GetWallDistance(), geometry->node[jPoint]->GetWallDistance());
+//      second_numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), geometry->node[jPoint]->GetWall_Distance());
 //      
 //      /*--- Add and Subtract Residual ---*/
 //      for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;

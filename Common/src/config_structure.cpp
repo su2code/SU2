@@ -679,13 +679,6 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	/* DESCRIPTION: Integration limits of the equivalent area ( xmin, xmax, Dist_NearField ) */
 	AddArrayOption("EA_INT_LIMIT", 3, EA_IntLimit, default_vec_3d);
 
-
-	/*--- options related to flow rate ---*/
-	/* CONFIG_CATEGORY: Flow rate */
-
-	/* DESCRIPTION:  */
-	AddSpecialOption("FLOW_RATE", FlowRate, SetBoolOption, false);
-
 	/*--- options related to the chemical system ---*/
 	/* CONFIG_CATEGORY: Chemical system */
 
@@ -716,6 +709,8 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddScalarOption("REF_LENGTH_MOMENT", RefLengthMoment, 1.0);
 	/* DESCRIPTION: Reference element length for computing the slope limiter epsilon */
 	AddScalarOption("REF_ELEM_LENGTH", RefElemLength, 0.1);
+  /* DESCRIPTION: Reference coefficient for detecting sharp edges */
+	AddScalarOption("REF_SHARP_EDGES", RefSharpEdges, 3.0);
 	/* DESCRIPTION: Side-slip angle (degrees, only for compressible flows) */
 	AddScalarOption("SIDESLIP_ANGLE", AoS, 0.0);
 	/* DESCRIPTION: Angle of attack (degrees, only for compressible flows) */

@@ -713,7 +713,7 @@ public:
    * \param[in] val_Point_1 - Index value for Node 1 of the current triangle.
    * \param[in] val_Point_2 - Index value for Node 2 of the current triangle.
 	 */
-  void SetFEA_StiffMatrix2D(CGeometry *geometry, double **StiffMatrix_Elem,
+  bool SetFEA_StiffMatrix2D(CGeometry *geometry, double **StiffMatrix_Elem,
                               unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2);
   
   /*!
@@ -725,7 +725,7 @@ public:
    * \param[in] val_Point_2 - Index value for Node 2 of the current tetrahedron.
    * \param[in] val_Point_3 - Index value for Node 3 of the current tetrahedron.
 	 */
-  void SetFEA_StiffMatrix3D(CGeometry *geometry, double **StiffMatrix_Elem,
+  bool SetFEA_StiffMatrix3D(CGeometry *geometry, double **StiffMatrix_Elem,
                             unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2, unsigned long val_Point_3);
 	
   /*!
@@ -765,7 +765,7 @@ public:
    * \param[in] val_Point_1 - Index value for Node 1 of the current triangle.
    * \param[in] val_Point_2 - Index value for Node 2 of the current triangle.
 	 */
-  void CheckDeformed_Elem2D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2);
+  bool CheckDeformed_Elem2D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2);
   
   /*!
 	 * \brief Check for negative volumes for 3-D elements after grid deformation.
@@ -776,7 +776,7 @@ public:
    * \param[in] val_Point_2 - Index value for Node 2 of the current tetrahedron.
    * \param[in] val_Point_3 - Index value for Node 3 of the current tetrahedron.
 	 */
-  void CheckDeformed_Elem3D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2, unsigned long val_Point_3);
+  bool CheckDeformed_Elem3D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2, unsigned long val_Point_3);
   
 	/*!
 	 * \brief Check the boundary vertex that are going to be moved.
