@@ -32,13 +32,21 @@ CTNE2EulerVariable::CTNE2EulerVariable(void) : CVariable() {
   
 }
 
-CTNE2EulerVariable::CTNE2EulerVariable(double val_pressure, double *val_massfrac,
-                                       double *val_mach, double val_temperature,
-                                       double val_temperature_ve, unsigned short val_ndim,
-                                       unsigned short val_nvar, unsigned short val_nvarprim,
-                                       unsigned short val_nvarprimgrad, CConfig *config) : CVariable(val_ndim, val_nvar,config) {
+CTNE2EulerVariable::CTNE2EulerVariable(double val_pressure,
+                                       double *val_massfrac,
+                                       double *val_mach,
+                                       double val_temperature,
+                                       double val_temperature_ve,
+                                       unsigned short val_ndim,
+                                       unsigned short val_nvar,
+                                       unsigned short val_nvarprim,
+                                       unsigned short val_nvarprimgrad,
+                                       CConfig *config) : CVariable(val_ndim,
+                                                                    val_nvar,
+                                                                    config   ) {
   
-  unsigned short iEl, iMesh, iDim, iSpecies, iVar, nDim, nEl, nHeavy, *nElStates, nMGSmooth;
+  unsigned short iEl, iMesh, iDim, iSpecies, iVar, nDim, nEl, nHeavy, nMGSmooth;
+  unsigned short *nElStates;
   double *xi, *Ms, *thetav, **thetae, **g, *hf, *Tref;
   double rhoE, rhoEve, Ev, Ee, Ef, T, Tve, rho, rhoCvtr, rhos;
   double Ru, sqvel, num, denom, conc, soundspeed;

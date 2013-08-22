@@ -1444,16 +1444,16 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   
   if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
+
+#ifndef NO_MUTATIONPP
+    /*--- Set Mutation++ mixture options ---*/
+    mppOpts = new Mutation::MixtureOptions("N2special");
+    mppOpts->setThermodynamicDatabase("RRHO");
+    mppOpts->setStateModel("T,Tv");
     
-    Mutation::MixtureOptions mppOpts("N2special");
-    mppOpts.setThermodynamicDatabase("RRHO");
-    mppOpts.setStateModel("T,Tv");
-    Mutation::Mixture mix(mppOpts);
-    cout << "Set Mutation properties..." << endl;
-    cout << "Species 1: " << mix.speciesName(0) << endl;
-    cout << "Species 2: " << mix.speciesName(1) << endl;
-    cout << "T: " << mix.T() << endl;
-    cin.get();
+    /*--- Initialize the mixture object ---*/
+    mix = new Mutation::Mixture(*mppOpts);
+#endif
 
 		if (val_izone == ZONE_1 ) {
 			Divide_Element = true;

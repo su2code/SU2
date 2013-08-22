@@ -621,7 +621,12 @@ private:
 	**Velocity_FreeStreamND_Time,
 	*Energy_FreeStreamND_Time,
 	*Mach_Inf_Time;
-
+  
+#ifndef NO_MUTATIONPP
+  Mutation::MixtureOptions *mppOpts;
+  Mutation::Mixture *mix;
+#endif 
+  
 	map<string, CAnyOptionRef*> param; /*!< \brief associates option names (strings) with options */
 
 public:
@@ -4550,6 +4555,14 @@ public:
 	 * \returns The interpolated value of for x.
 	 */
 	double GetSpline(vector<double> &xa, vector<double> &ya, vector<double> &y2a, unsigned long n, double x);
+  
+#ifndef NO_MUTATIONPP
+  /*!
+	 * \brief Get the Mutation++ mixture object.
+	 * \return Mutation++ mixture object.
+	 */
+  Mutation::Mixture* GetMppMixture(void);
+#endif
 
 
 };

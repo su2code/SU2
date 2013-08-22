@@ -3536,6 +3536,10 @@ protected:
   
   unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
   RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
+  
+#ifndef NO_MUTATIONPP
+  Mutation::Mixture *mix;
+#endif
 
   
 public:
