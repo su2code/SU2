@@ -1014,3 +1014,7 @@ inline	double  CConfig::GetMach_FreeStreamND_Time(unsigned long val_Ext_Iter) {r
 
 inline	double*  CConfig::GetVelocity_FreeStreamND_Time(unsigned long val_Ext_Iter) {return Velocity_FreeStreamND_Time[val_Ext_Iter];}
 
+#ifndef NO_MUTATIONPP
+inline Mutation::Mixture* CConfig::GetMppMixture(void) { return mix; }
+#endif
+

@@ -6546,7 +6546,9 @@ public:
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
      * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
+	void Preprocessing(CGeometry *geometry, CSolver **solver_container,
+                     CConfig *config, unsigned short iMesh,
+                     unsigned short iRKStep, unsigned short RunTime_EqSystem);
     
 	/*!
 	 * \brief Compute the inviscid sensitivity of the functional.
@@ -6555,7 +6557,8 @@ public:
 	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+	void Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver_container,
+                            CNumerics *numerics, CConfig *config);
     
 	/*!
 	 * \brief Get the shape sensitivity coefficient.
@@ -6571,7 +6574,8 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \param[in] val_sensitivity - Value of the sensitivity coefficient.
 	 */
-	void SetCSensitivity(unsigned short val_marker, unsigned short val_vertex, double val_sensitivity);
+	void SetCSensitivity(unsigned short val_marker, unsigned short val_vertex,
+                       double val_sensitivity);
     
 	/*!
 	 * \brief Provide the total shape sensitivity coefficient.
@@ -6622,6 +6626,10 @@ protected:
   unsigned short
   nSpecies,	                /*!< \brief Number of species in the gas mixture. */
   nPrimVar;                 /*!< \brief Number of primitive variables. */
+  
+  double
+  Gamma,                    /*!< \brief Mixture Cp/Cv. */
+	Gamma_Minus_One;	        /*!< \brief Mixture Cp/Cv - 1. */
 	
   double
   Mach_Inf,       	        /*!< \brief Free stream Mach number. */
@@ -6640,15 +6648,15 @@ protected:
   Temperature_ve_Inf;       /*!< \brief Vib.-el. free stream temperature. */
 
 	double                    
-  *CDrag_Inv,	              /*!< \brief Invisc. Cd contribution on boundaries. */
-	*CLift_Inv,			          /*!< \brief Invisc. Cl contribution on boundaries. */
-	*CSideForce_Inv,		      /*!< \brief Invisc. sideforce contribution on boundaries. */
-	*CMx_Inv,			            /*!< \brief X-moment coeff. contribution on boundaries. */
-	*CMy_Inv,			            /*!< \brief Y-moment coeff. contribution on boundaries. */
-	*CMz_Inv,			            /*!< \brief Z-moment coeff. contribution on boundaries. */
-	*CFx_Inv,			            /*!< \brief X-force coeff. contribution on boundaries. */
-	*CFy_Inv,                 /*!< \brief Y-force coeff. contribution on boundaries. */
-	*CFz_Inv,                 /*!< \brief Z-force coeff. contribution on boundaries. */
+  *CDrag_Inv,	              /*!< \brief Boundary invisc. Cd contribution. */
+	*CLift_Inv,			          /*!< \brief Boundary invisc. Cl contribution. */
+	*CSideForce_Inv,		      /*!< \brief Boundary invisc. sideforce contribution. */
+	*CMx_Inv,			            /*!< \brief X-moment contribution on boundaries. */
+	*CMy_Inv,			            /*!< \brief Y-moment contribution on boundaries. */
+	*CMz_Inv,			            /*!< \brief Z-moment contribution on boundaries. */
+	*CFx_Inv,			            /*!< \brief X-force contribution on boundaries. */
+	*CFy_Inv,                 /*!< \brief Y-force contribution on boundaries. */
+	*CFz_Inv,                 /*!< \brief Z-force contribution on boundaries. */
 	*CEff_Inv,			        	/*!< \brief Invisc. Cl/Cd on boundaries. */
   *ForceInviscid,		        /*!< \brief Inviscid forces at domain boundaries. */
 	*MomentInviscid,	        /*!< \brief Inviscid moments at domain boundaries. */
@@ -6680,17 +6688,26 @@ protected:
   Total_Maxq;               /*!< \brief Maximum heat flux on all boundaries. */
 
 	double
-  *PrimVar_i,	              /*!< \brief Auxiliary vector for storing the solution at point i. */
-	*PrimVar_j;			          /*!< \brief Auxiliary vector for storing the solution at point j. */
+  *PrimVar_i,	      /*!< \brief Vector for storing primitives at node i. */
+	*PrimVar_j;			  /*!< \brief Vector for storing primitives at node j. */
 
 	double
-  **Precon_Mat_inv; /*!< \brief Auxiliary vector for storing the inverse of Roe-turkel preconditioner. */
-	unsigned long nMarker;				/*!< \brief Total number of markers using the grid information. */
-	bool roe_turkel,         /*!< \brief True if computing preconditioning matrix for roe-turkel method. */
-	least_squares;        /*!< \brief True if computing gradients by least squares. */
-	double Gamma;									/*!< \brief Fluid's Gamma constant (ratio of specific heats). */
-	double Gamma_Minus_One;				/*!< \brief Fluids's Gamma - 1.0  . */
-  CVariable *node_infty;     /*!< \brief CVariable that stores the free-stream values. */
+  **Precon_Mat_inv; /*!< \brief Matrix for storing the inverse of preconditioner. */
+	
+  unsigned long
+  nMarker;				  /*!< \brief Total number of domain boundaries. */
+  
+	bool
+  roe_turkel,        /*!< \brief Indicator for roe-turkel preconditioning. */
+	least_squares;     /*!< \brief Indicator for least-squares computed grads. */
+
+  CVariable
+  *node_infty;       /*!< \brief CVariable for storing free-stream state. */
+  
+#ifndef NO_MUTATIONPP
+  Mutation::Mixture
+  *mix;              /*!< \brief Mutation++ mixture object for gas calcs. */
+#endif
   
 public:
   

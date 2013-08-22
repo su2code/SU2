@@ -1,6 +1,6 @@
 /*!
  * \file solution_direct_tne2.cpp
- * \brief Main subrotuines for solving two-temperature flows in thermochemical nonequilibrium.
+ * \brief Main subrotuines for solving flows in thermochemical nonequilibrium.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
  * \version 2.0.6
  *
@@ -27,26 +27,27 @@
 CTNE2EulerSolver::CTNE2EulerSolver(void) : CSolver() {
   
 	/*--- Array initialization ---*/
-	Velocity_Inlet = NULL;
+	Velocity_Inlet  = NULL;
 	Velocity_Outlet = NULL;
-  Velocity_Inf = NULL;
-	CDrag_Inv = NULL;
-	CLift_Inv = NULL;
-	CSideForce_Inv = NULL;
-	CMx_Inv = NULL;
-	CMy_Inv = NULL;
-	CMz_Inv = NULL;
-	CFx_Inv = NULL;
-	CFy_Inv = NULL;
-	CFz_Inv = NULL;
-	CEff_Inv = NULL;
-	ForceInviscid = NULL;
-	MomentInviscid = NULL;
-	PrimVar_i = NULL;
-	PrimVar_j = NULL;
-	Precon_Mat_inv = NULL;
-	CPressure = NULL;
-	CHeatTransfer = NULL;
+  Velocity_Inf    = NULL;
+	CDrag_Inv       = NULL;
+	CLift_Inv       = NULL;
+	CSideForce_Inv  = NULL;
+	CMx_Inv         = NULL;
+	CMy_Inv         = NULL;
+	CMz_Inv         = NULL;
+	CFx_Inv         = NULL;
+	CFy_Inv         = NULL;
+	CFz_Inv         = NULL;
+	CEff_Inv        = NULL;
+	ForceInviscid   = NULL;
+	MomentInviscid  = NULL;
+	PrimVar_i       = NULL;
+	PrimVar_j       = NULL;
+	Precon_Mat_inv  = NULL;
+	CPressure       = NULL;
+	CHeatTransfer   = NULL;
+  mix             = NULL;
   
 }
 
@@ -57,59 +58,52 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
 	unsigned short iVar, iDim, iMarker, iSpecies, nZone;
   double *Mvec_Inf;
   double *Density, Velocity2, Alpha, Beta;
-	bool restart, check_temp, check_press, check_dens, check_sos;
-	
-  restart = (config->GetRestart() || config->GetRestart_Flow());
-	roe_turkel = false;
+	bool restart, check_temp, check_press, check_dens, check_sos;	
   
-  Density = new double [nSpecies];
-  
+  /*--- Get MPI rank ---*/
 	int rank = MASTER_NODE;
 #ifndef NO_MPI
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
   
-//  Mutation::MixtureOptions opts2;
-//  Mutation::MixtureOptions opts("N2special");
-//  opts2.setThermodynamicDatabase("RRHO");
-//  Mutation::Mixture mix(opts2);
-//  cout << "Mixture nSpecies: " << mix.nSpecies() << endl;
-//  cout << "Set mutation mixture. " << endl;
-//  cin.get();
-  
 	/*--- Array initialization ---*/
-	Velocity_Inlet = NULL;
+	Velocity_Inlet  = NULL;
 	Velocity_Outlet = NULL;
-	Velocity_Inf = NULL;
-	CDrag_Inv = NULL;
-	CLift_Inv = NULL;
-	CSideForce_Inv = NULL;
-	CMx_Inv = NULL;
-	CMy_Inv = NULL;
-	CMz_Inv = NULL;
-	CFx_Inv = NULL;
-	CFy_Inv = NULL;
-	CFz_Inv = NULL;
-	CEff_Inv = NULL;
-	ForceInviscid = NULL;
-	MomentInviscid = NULL;
-	PrimVar_i = NULL;
-	PrimVar_j = NULL;
-	Precon_Mat_inv = NULL;
-	CPressure = NULL;
-	CHeatTransfer = NULL;
+  Velocity_Inf    = NULL;
+	CDrag_Inv       = NULL;
+	CLift_Inv       = NULL;
+	CSideForce_Inv  = NULL;
+	CMx_Inv         = NULL;
+	CMy_Inv         = NULL;
+	CMz_Inv         = NULL;
+	CFx_Inv         = NULL;
+	CFy_Inv         = NULL;
+	CFz_Inv         = NULL;
+	CEff_Inv        = NULL;
+	ForceInviscid   = NULL;
+	MomentInviscid  = NULL;
+	PrimVar_i       = NULL;
+	PrimVar_j       = NULL;
+	Precon_Mat_inv  = NULL;
+	CPressure       = NULL;
+	CHeatTransfer   = NULL;
+  mix             = NULL;
   
-	/*--- Set the gamma value ---*/
-	Gamma = config->GetGamma();
-	Gamma_Minus_One = Gamma - 1.0;
+  /*--- Set booleans for solver settings ---*/
+  restart    = (config->GetRestart() || config->GetRestart_Flow());
+	roe_turkel = false;
   
-	/*--- Define constants in the solver structure ---*/
-	nSpecies     = config->GetnSpecies();
+  /*--- Define constants in the solver structure ---*/	
 	nMarker      = config->GetnMarker_All();
 	nPoint       = geometry->GetnPoint();
 	nPointDomain = geometry->GetnPointDomain();
   nZone        = geometry->GetnZone();
   nDim         = geometry->GetnDim();
+  
+  
+  /*--- Get gasdynamic properties ---*/
+  mix      = config->GetMppMixture();
+  nSpecies = mix->nSpecies();
   
   /*--- Set size of the conserved and primitive vectors ---*/
   //     U: [rho1, ..., rhoNs, rhou, rhov, rhow, rhoe, rhoeve]^T
@@ -139,11 +133,15 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
 	Solution_j = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution_j[iVar] = 0.0;
   
 	/*--- Define some auxiliary vectors related to the geometry ---*/
-	Vector   = new double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector[iDim]   = 0.0;
-	Vector_i = new double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_i[iDim] = 0.0;
-	Vector_j = new double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_j[iDim] = 0.0;
+	Vector   = new double[nDim];
+  for (iDim = 0; iDim < nDim; iDim++) Vector[iDim]   = 0.0;
+	Vector_i = new double[nDim];
+  for (iDim = 0; iDim < nDim; iDim++) Vector_i[iDim] = 0.0;
+	Vector_j = new double[nDim];
+  for (iDim = 0; iDim < nDim; iDim++) Vector_j[iDim] = 0.0;
   
-	if ((config->GetKind_Upwind_TNE2() == ROE_TURKEL_2ND) || (config->GetKind_Upwind_TNE2() == ROE_TURKEL_1ST)) {
+	if ((config->GetKind_Upwind_TNE2() == ROE_TURKEL_2ND) ||
+      (config->GetKind_Upwind_TNE2() == ROE_TURKEL_1ST)   ) {
 		Precon_Mat_inv = new double* [nVar];
 		for (iVar = 0; iVar < nVar; iVar ++)
 			Precon_Mat_inv[iVar] = new double[nVar];
@@ -163,12 +161,14 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
 		}
     
 		/*--- Initialization of the structure for the global Jacobian ---*/
-		if (rank == MASTER_NODE) cout << "Initialize jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
+		if (rank == MASTER_NODE)
+      cout << "Initialize Jacobian structure. MG level: "
+           << iMesh <<"." << endl;
 		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
-    
 	} else {
 		if (rank == MASTER_NODE)
-			cout << "Explicit scheme. No jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
+			cout << "Explicit scheme. No jacobian structure (Euler). MG level: "
+           << iMesh <<"." << endl;
 	}
   
 	/*--- Allocate arrays for gradient computation by least squares ---*/
@@ -185,7 +185,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
 			cvector[iVar] = new double [nDim];
 	}
   
-	/*--- Allocate force & coefficient arrays for mesh markers (boundaries) ---*/
+	/*--- Allocate force & coefficient arrays on boundaries ---*/
 	CPressure = new double* [nMarker];
 	for (iMarker = 0; iMarker < nMarker; iMarker++)
 		CPressure[iMarker] = new double [geometry->nVertex[iMarker]];
@@ -218,7 +218,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
   MassFrac_Inf       = config->GetMassFrac_FreeStream();
   Mach_Inf           = config->GetMach_FreeStreamND();
   
-  /*--- Convert free stream Mach number to vector based on AoA & AoS ---*/
+  /*--- Vectorize free stream Mach number based on AoA & AoS ---*/
   Mvec_Inf = new double[nDim];
   Alpha    = config->GetAoA();
   Beta     = config->GetAoS();
@@ -233,16 +233,10 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
   }
   
   /*--- Create a CVariable that stores the free-stream values ---*/
-/*  cout << "Check freestream case: " << endl;
-  cout << "Tinf: " << Temperature_Inf << endl;
-  cout << "Tveinf: " << Temperature_ve_Inf << endl;
-  cout << "Pinf: " << Pressure_Inf << endl;
-  cout << "Y: " << MassFrac_Inf[0] << ", " << MassFrac_Inf[1] << endl;
-  cout << "Mvec: " << Mvec_Inf[0] << ", " << Mvec_Inf[1] << ", " << Mvec_Inf[2] << endl;*/
-  node_infty = new CTNE2EulerVariable(Pressure_Inf, MassFrac_Inf, Mvec_Inf,
-                                      Temperature_Inf, Temperature_ve_Inf, nDim,
-                                      nVar, nPrimVar, nPrimVarGrad, config);
-  
+  node_infty = new CTNE2EulerVariable(Pressure_Inf, MassFrac_Inf,
+                                      Mvec_Inf, Temperature_Inf,
+                                      Temperature_ve_Inf, nDim, nVar,
+                                      nPrimVar, nPrimVarGrad, config);
   node_infty->SetPrimVar_Compressible(config);
   Velocity_Inf = new double[nDim];
   for (iDim = 0; iDim < nDim; iDim++)
@@ -257,12 +251,12 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
     
 		/*--- Initialize using freestream values ---*/
 		for (iPoint = 0; iPoint < nPoint; iPoint++)
-			node[iPoint] = new CTNE2EulerVariable(Pressure_Inf, MassFrac_Inf, Mvec_Inf,
-                                            Temperature_Inf, Temperature_ve_Inf, nDim,
-                                            nVar, nPrimVar, nPrimVarGrad, config);
-	}
-  
-	else {
+			node[iPoint] = new CTNE2EulerVariable(Pressure_Inf, MassFrac_Inf,
+                                            Mvec_Inf, Temperature_Inf,
+                                            Temperature_ve_Inf, nDim,
+                                            nVar, nPrimVar, nPrimVarGrad,
+                                            config);
+	} else {
     
 		/*--- Restart the solution from file information ---*/
 		ifstream restart_file;
@@ -273,11 +267,16 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
 			char buffer[50];
 			unsigned long flowIter = config->GetnExtIter() - 1;
 			filename.erase (filename.end()-4, filename.end());
-			if ((int(flowIter) >= 0) && (int(flowIter) < 10)) sprintf (buffer, "_0000%d.dat", int(flowIter));
-			if ((int(flowIter) >= 10) && (int(flowIter) < 100)) sprintf (buffer, "_000%d.dat", int(flowIter));
-			if ((int(flowIter) >= 100) && (int(flowIter) < 1000)) sprintf (buffer, "_00%d.dat", int(flowIter));
-			if ((int(flowIter) >= 1000) && (int(flowIter) < 10000)) sprintf (buffer, "_0%d.dat", int(flowIter));
-			if (int(flowIter) >= 10000) sprintf (buffer, "_%d.dat", int(flowIter));
+			if ((int(flowIter) >= 0) && (int(flowIter) < 10))
+        sprintf (buffer, "_0000%d.dat", int(flowIter));
+			if ((int(flowIter) >= 10) && (int(flowIter) < 100))
+        sprintf (buffer, "_000%d.dat", int(flowIter));
+			if ((int(flowIter) >= 100) && (int(flowIter) < 1000))
+        sprintf (buffer, "_00%d.dat", int(flowIter));
+			if ((int(flowIter) >= 1000) && (int(flowIter) < 10000))
+        sprintf (buffer, "_0%d.dat", int(flowIter));
+			if (int(flowIter) >= 10000)
+        sprintf (buffer, "_%d.dat", int(flowIter));
 			string UnstExt = string(buffer);
 			filename.append(UnstExt);
 		}
@@ -285,7 +284,8 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
     
 		/*--- In case there is no restart file ---*/
 		if (restart_file.fail()) {
-			cout << "There is no flow restart file!! " << filename.data() << "."<< endl;
+			cout << "There is no flow restart file!! " << filename.data()
+           << "."<< endl;
 			cout << "Press any key to exit..." << endl;
 			cin.get(); exit(1);
 		}
@@ -433,7 +433,6 @@ CTNE2EulerSolver::~CTNE2EulerSolver(void) {
 	unsigned short iVar, iMarker;
   
 	/*--- Array initialization ---*/
-  if (Density != NULL) delete [] Density;
 	if (Velocity_Inlet != NULL) delete [] Velocity_Inlet;
 	if (Velocity_Outlet != NULL) delete [] Velocity_Outlet;
   if (Velocity_Inf != NULL) delete [] Velocity_Inf;
