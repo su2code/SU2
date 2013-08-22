@@ -407,7 +407,7 @@ void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 		numerics->SetVolume(geometry->node[iPoint]->GetVolume());
 		
 		/*--- Set distance to the surface ---*/
-		numerics->SetDistance(geometry->node[iPoint]->GetWallDistance(), 0.0);
+		numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), 0.0);
 		
 		/*--- Compute the source term ---*/
 		numerics->ComputeResidual_TransLM(Residual, Jacobian_i, NULL, config, gamma_sep);

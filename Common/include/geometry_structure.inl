@@ -169,7 +169,7 @@ inline void CGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename
 
 inline void CGeometry::SetBoundTecPlot(CConfig *config, char mesh_filename[200]) { }
 
-inline void CGeometry::FindSharpEdges(CConfig *config) { }
+inline void CGeometry::ComputeSurf_Curvature(CConfig *config) { }
 
 inline void CGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config,
                                        vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface) { }

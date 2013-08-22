@@ -101,6 +101,8 @@ inline double CConfig::GetRefLengthMoment(void) { return RefLengthMoment; }
 
 inline double CConfig::GetRefElemLength(void) { return RefElemLength; }
 
+inline double CConfig::GetRefSharpEdges(void) { return RefSharpEdges; }
+
 inline double CConfig::GetDomainVolume(void) { return DomainVolume; }
 
 inline void CConfig::SetRefAreaCoeff(double val_area) { RefAreaCoeff = val_area; }
@@ -639,8 +641,6 @@ inline bool CConfig::GetRestart_Flow(void) { return Restart_Flow; }
 inline bool CConfig::GetFullMG(void) { return FullMG; }
 
 inline bool CConfig::GetEquivArea(void) { return EquivArea; }
-
-inline bool CConfig::GetFlowRate(void) { return FlowRate; }
 
 inline double CConfig::GetReduced_Frequency(void) { return Reduced_Frequency; }
 
