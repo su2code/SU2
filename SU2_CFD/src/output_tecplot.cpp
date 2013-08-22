@@ -23,7 +23,7 @@
 
 #include "../include/output_structure.hpp"
 
-string AssembleVariableNames(bool GridMovement, bool Incompressible, unsigned short KindSolver, unsigned short nVar_Consv, unsigned short dims, unsigned short *NVar);
+string AssembleVariableNames(CGeometry *geometry, CConfig *config, unsigned short nVar_Consv, unsigned short *NVar);
 
 void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol) {
     
@@ -683,52 +683,56 @@ void COutput::SetTecplot_Mesh(CConfig *config, CGeometry *geometry, unsigned sho
 		if (nGlobal_Wedg > 0) {
 			cout << "Wedge element type not yet supported; no zone written." << endl;
 		}
-		if (nGlobal_Line > 0) {
-            
-			/*--- Write the zone header information ---*/
-			ZoneType = FELINESEG; NElm = (INTEGER4)nGlobal_Line; N = NElm*N_POINTS_LINE;
-            
-			err = TECZNE112((char*)"Line Elements",
-                            &ZoneType,
-                            &NPts,
-                            &NElm,
-                            &KMax,
-                            &ICellMax,
-                            &JCellMax,
-                            &KCellMax,
-                            &t,
-                            &StrandID,
-                            &ParentZn,
-                            &IsBlock,
-                            &NumFaceConnections,
-                            &FaceNeighborMode,
-                            0,         /* TotalNumFaceNodes */
-                            0,         /* NumConnectedBoundaryFaces */
-                            0,         /* TotalNumBoundaryConnections */
-                            NULL,      /* PassiveVarList */
-                            NULL,      /* ValueLocation */
-                            NULL,      /* ShareVarFromZone */
-                            &ShareConnectivityFromZone);
-			if (err) cout << "Error writing Tecplot zone data" << endl;
-            
-			/*--- write node coordinates and data if not done already---*/
-			if (first_zone) {
-                
-				err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[0] = 1;
-				err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[1] = 1;
-				if (geometry->GetnDim() == 3) {
-					err = TECDAT112(&NPts, Coords[2], &IsDouble);
-					ShareFromZone[2] = 1;
-				}
-				if (err) cout << "Error writing coordinates to Tecplot file" << endl;
-				first_zone = false; 
-			}
-            
-			err = TECNOD112(Conn_Line);
-			if (err) cout << "Error writing connectivity to Tecplot file" << endl;
-            
-		}
-        
+    
+    /*--- For now, only write the volume file in this routine. This was throwing
+     an error because we also count the number of line elements on the surface
+     for writing a surface file (we'll write a separate routine for this). ---*/
+//		if (nGlobal_Line > 0) {
+//            
+//			/*--- Write the zone header information ---*/
+//			ZoneType = FELINESEG; NElm = (INTEGER4)nGlobal_Line; N = NElm*N_POINTS_LINE;
+//            
+//			err = TECZNE112((char*)"Line Elements",
+//                            &ZoneType,
+//                            &NPts,
+//                            &NElm,
+//                            &KMax,
+//                            &ICellMax,
+//                            &JCellMax,
+//                            &KCellMax,
+//                            &t,
+//                            &StrandID,
+//                            &ParentZn,
+//                            &IsBlock,
+//                            &NumFaceConnections,
+//                            &FaceNeighborMode,
+//                            0,         /* TotalNumFaceNodes */
+//                            0,         /* NumConnectedBoundaryFaces */
+//                            0,         /* TotalNumBoundaryConnections */
+//                            NULL,      /* PassiveVarList */
+//                            NULL,      /* ValueLocation */
+//                            NULL,      /* ShareVarFromZone */
+//                            &ShareConnectivityFromZone);
+//			if (err) cout << "Error writing Tecplot zone data" << endl;
+//            
+//			/*--- write node coordinates and data if not done already---*/
+//			if (first_zone) {
+//                
+//				err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[0] = 1;
+//				err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[1] = 1;
+//				if (geometry->GetnDim() == 3) {
+//					err = TECDAT112(&NPts, Coords[2], &IsDouble);
+//					ShareFromZone[2] = 1;
+//				}
+//				if (err) cout << "Error writing coordinates to Tecplot file" << endl;
+//				first_zone = false; 
+//			}
+//            
+//			err = TECNOD112(Conn_Line);
+//			if (err) cout << "Error writing connectivity to Tecplot file" << endl;
+//            
+//		}
+    
 		delete [] ShareFromZone;
 		wrote_base_file = true;
         
@@ -799,7 +803,7 @@ void COutput::SetTecplot_Solution(CConfig *config, CGeometry *geometry, unsigned
 	}
 	file << ".sol.plt";
 	FileType = SOLUTION;
-	variables = AssembleVariableNames(config->GetGrid_Movement(), config->GetIncompressible(), config->GetKind_Solver(), nVar_Consv, dims, &NVar);
+	variables = AssembleVariableNames(geometry, config, nVar_Consv, &NVar);
     
 	/*--- Open Tecplot file ---*/
 	err = TECINI112((char *)config->GetFlow_FileName().c_str(),
@@ -1029,59 +1033,63 @@ void COutput::SetTecplot_Solution(CConfig *config, CGeometry *geometry, unsigned
 	if (nGlobal_Wedg > 0) {
 		cout << "Wedge element type not yet supported; no zone written." << endl;
 	}
-	if (nGlobal_Line > 0) {
-        
-		/*--- Write the zone header information ---*/
-		ZoneType = FELINESEG; NElm = (INTEGER4)nGlobal_Line; N = NElm*N_POINTS_LINE;
-        
-		err = TECZNE112((char*)"Line Elements",
-                        &ZoneType,
-                        &NPts,
-                        &NElm,
-                        &KMax,
-                        &ICellMax,
-                        &JCellMax,
-                        &KCellMax,
-                        &t,
-                        &StrandID,
-                        &ParentZn,
-                        &IsBlock,
-                        &NumFaceConnections,
-                        &FaceNeighborMode,
-                        0,         /* TotalNumFaceNodes */
-                        0,         /* NumConnectedBoundaryFaces */
-                        0,         /* TotalNumBoundaryConnections */
-                        NULL,      /* PassiveVarList */
-                        NULL,      /* ValueLocation */
-                        NULL,      /* ShareVarFromZone */
-                        &ShareConnectivityFromZone);
-		if (err) cout << "Error writing Tecplot zone data" << endl;
-        
-		/*--- write node coordinates and data if not done already---*/
-		if (first_zone) {
-            
-			i = 0;
-			if (GridMovement) {
-				err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[i++] = 1;
-				if (err) cout << "Error writing coordinates to Tecplot file" << endl;
-				err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[i++] = 1;
-				if (err) cout << "Error writing coordinates to Tecplot file" << endl;
-				if (dims == 3) {
-					err = TECDAT112(&NPts, Coords[2], &IsDouble);
-					if (err) cout << "Error writing coordinates to Tecplot file" << endl;
-					ShareFromZone[i++] = 1;
-				}
-			}
-			for (iVar = 0; iVar < nVar_Total; iVar++) {
-				err = TECDAT112(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
-				if (err) cout << "Error writing data to Tecplot file" << endl;
-			}
-            
-			first_zone = false;
-		}
-        
-	}
-    
+  
+  /*--- For now, only write the volume file in this routine. This was throwing
+   an error because we also count the number of line elements on the surface
+   for writing a surface file (we'll write a separate routine for this). ---*/
+//	if (nGlobal_Line > 0) {
+//        
+//		/*--- Write the zone header information ---*/
+//		ZoneType = FELINESEG; NElm = (INTEGER4)nGlobal_Line; N = NElm*N_POINTS_LINE;
+//        
+//		err = TECZNE112((char*)"Line Elements",
+//                        &ZoneType,
+//                        &NPts,
+//                        &NElm,
+//                        &KMax,
+//                        &ICellMax,
+//                        &JCellMax,
+//                        &KCellMax,
+//                        &t,
+//                        &StrandID,
+//                        &ParentZn,
+//                        &IsBlock,
+//                        &NumFaceConnections,
+//                        &FaceNeighborMode,
+//                        0,         /* TotalNumFaceNodes */
+//                        0,         /* NumConnectedBoundaryFaces */
+//                        0,         /* TotalNumBoundaryConnections */
+//                        NULL,      /* PassiveVarList */
+//                        NULL,      /* ValueLocation */
+//                        NULL,      /* ShareVarFromZone */
+//                        &ShareConnectivityFromZone);
+//		if (err) cout << "Error writing Tecplot zone data" << endl;
+//        
+//		/*--- write node coordinates and data if not done already---*/
+//		if (first_zone) {
+//            
+//			i = 0;
+//			if (GridMovement) {
+//				err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[i++] = 1;
+//				if (err) cout << "Error writing coordinates to Tecplot file" << endl;
+//				err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[i++] = 1;
+//				if (err) cout << "Error writing coordinates to Tecplot file" << endl;
+//				if (dims == 3) {
+//					err = TECDAT112(&NPts, Coords[2], &IsDouble);
+//					if (err) cout << "Error writing coordinates to Tecplot file" << endl;
+//					ShareFromZone[i++] = 1;
+//				}
+//			}
+//			for (iVar = 0; iVar < nVar_Total; iVar++) {
+//				err = TECDAT112(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
+//				if (err) cout << "Error writing data to Tecplot file" << endl;
+//			}
+//            
+//			first_zone = false;
+//		}
+//        
+//	}
+  
 	delete [] ShareFromZone;
     
 	err = TECEND112();
@@ -1095,45 +1103,152 @@ void COutput::SetTecplot_Solution(CConfig *config, CGeometry *geometry, unsigned
     
 }
 
-string AssembleVariableNames(bool GridMovement, bool Incompressible, unsigned short KindSolver, unsigned short nVar_Consv, unsigned short dims, unsigned short *NVar) {
+string AssembleVariableNames(CGeometry *geometry, CConfig *config, unsigned short nVar_Consv, unsigned short *NVar) {
     
-	stringstream variables;
-	unsigned short iVar;
-	*NVar = 0;
-    
-	variables.str(string());
-	if (GridMovement) {
-		variables << "x y "; *NVar += 2;
-		if (dims == 3) {
-			variables << "z "; *NVar += 1;
-		}
-	}
-	for (iVar = 0; iVar < nVar_Consv; iVar++){
-		variables << "Conservative_Variable_" << iVar+1 << " ";
-		*NVar += 1;
-	}
-//	for (iVar = nVar_Consv; iVar < 2*nVar_Consv; iVar++) {
-//		variables << "Conservative_Residual_" << iVar-nVar_Consv+1 << " ";
+//
+//    
+//	
+//	if (GridMovement) {
+//		variables << "x y "; *NVar += 2;
+//		if (dims == 3) {
+//			variables << "z "; *NVar += 1;
+//		}
+//	}
+//	for (iVar = 0; iVar < nVar_Consv; iVar++){
+//		variables << "Conservative_Variable_" << iVar+1 << " ";
 //		*NVar += 1;
 //	}
-	if (GridMovement) {
-		variables << "Grid_Velocity_X " << "Grid_Velocity_Y "; *NVar += 2;
-		if (dims == 3) {
-			variables << "Grid_Velocity_Z "; *NVar += 1;
-		}
+////	for (iVar = nVar_Consv; iVar < 2*nVar_Consv; iVar++) {
+////		variables << "Conservative_Residual_" << iVar-nVar_Consv+1 << " ";
+////		*NVar += 1;
+////	}
+//	if (GridMovement) {
+//		variables << "Grid_Velocity_X " << "Grid_Velocity_Y "; *NVar += 2;
+//		if (dims == 3) {
+//			variables << "Grid_Velocity_Z "; *NVar += 1;
+//		}
+//	}
+//    
+//	variables << "Pressure " << "Mach "; *NVar += 2;
+//	if (!Incompressible) {
+//		switch (KindSolver) {
+//                
+//                /*--- Include temperature and laminar viscosity, if applicable ---*/
+//            case NAVIER_STOKES: variables << "Temperature " << "Viscosity "; *NVar += 2; break;
+//                
+//                /*--- Include eddy viscosity, if applicable ---*/
+//            case RANS: variables << "Temperature " << "Viscosity " << "Eddy_Viscosity "; *NVar += 3; break;
+//		}
+//	}
+  
+  
+  /*--- Local variables ---*/
+  stringstream variables; variables.str(string());
+	unsigned short iVar;
+	*NVar = 0;
+  unsigned short iDim, nDim = geometry->GetnDim();
+  unsigned short Kind_Solver  = config->GetKind_Solver();
+  bool grid_movement = config->GetGrid_Movement();
+  
+
+	/*--- Write the basic variable header based on the particular solution ----*/
+
+  if (grid_movement) {
+    if (nDim == 2) {
+      variables << "x y"; *NVar += 2;
+    } else {
+      variables << "x y z "; *NVar += 3;
+    }
 	}
+  
+	for (iVar = 0; iVar < nVar_Consv; iVar++) {
+		variables << "Conservative_" << iVar+1<<" "; *NVar += 1;
+	}
+  if (config->GetWrt_Residuals()) {
+    for (iVar = 0; iVar < nVar_Consv; iVar++) {
+      variables << "Residual_" << iVar+1<<" "; *NVar += 1;
+    }
+  }
+  
+  /*--- Add names for any extra variables (this will need to be adjusted). ---*/
+	if (grid_movement) {
+    if (nDim == 2) {
+      variables << "Grid_Velx Grid_Vely "; *NVar += 2;
+    } else {
+      variables << "Grid_Velx Grid_Vely Grid_Velz "; *NVar += 3;
+    }
+	}
+  
+  if ((Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    variables << "Density ";
+    *NVar += 1;
+  }
+  
+  if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
+      (Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    variables << "Pressure Pressure_Coefficient Mach Sharp_Edge_Dist ";
+    *NVar += 4;
+  }
+  
+  if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
+      (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    variables << "Temperature Laminar_Viscosity Skin_Friction_Coefficient Heat_Transfer Y_Plus ";
+    *NVar += 5;
+  }
+  
+  if ((Kind_Solver == RANS) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    variables << "Eddy_Viscosity ";
+    *NVar += 1;
+  }
+  
+  if ((Kind_Solver == PLASMA_EULER) || (Kind_Solver == PLASMA_NAVIER_STOKES)) {
+    unsigned short iSpecies;
+    for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
+      variables << "Pressure_" << iSpecies << " ";
+      *NVar += 1;
+    }
+    for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
+      variables << "Temperature_" << iSpecies << " ";
+      *NVar += 1;
+    }
+    for (iSpecies = 0; iSpecies < config->GetnDiatomics(); iSpecies++) {
+      variables << "TemperatureVib_" << iSpecies << " ";
+      *NVar += 1;
+    }
+    for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
+      variables << "Mach_" << iSpecies << " ";
+      *NVar += 1;
+    }
+  }
+  
+  if (Kind_Solver == PLASMA_NAVIER_STOKES) {
+    unsigned short iSpecies;
+    for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
+      variables << "LaminaryViscosity_" << iSpecies << " ";
+      *NVar += 1;
+    }
     
-	variables << "Pressure " << "Mach "; *NVar += 2;
-	if (!Incompressible) {
-		switch (KindSolver) {
-                
-                /*--- Include temperature and laminar viscosity, if applicable ---*/
-            case NAVIER_STOKES: variables << "Temperature " << "Viscosity "; *NVar += 2; break;
-                
-                /*--- Include eddy viscosity, if applicable ---*/
-            case RANS: variables << "Temperature " << "Viscosity " << "Eddy_Viscosity "; *NVar += 3; break;
-		}
-	}
+    if ( Kind_Solver == PLASMA_NAVIER_STOKES  && (config->GetMagnetic_Force() == YES) && (geometry->GetnDim() == 3)) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        variables << "Magnet_Field" << iDim << " ";
+        *NVar += 1;
+      }
+    }
+  }
+  
+  if (Kind_Solver == ELECTRIC_POTENTIAL) {
+    for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
+      variables << "ElectricField_" << iDim+1 << " ";
+      *NVar += 1;
+    }
+  }
+  
+  if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) ||
+			(Kind_Solver == ADJ_FREE_SURFACE_EULER) || (Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
+			(Kind_Solver == ADJ_FREE_SURFACE_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
+    variables << "Surface_Sensitivity ";
+    *NVar += 1;
+  }
     
 	return variables.str(); 
     
