@@ -490,75 +490,75 @@ void CMultiGridIntegration::SetRestricted_Residual(CSolver *sol_fine, CSolver *s
 }
 
 void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
-    unsigned long iVertex, Point_Fine, Point_Coarse;
+  unsigned long iVertex, Point_Fine, Point_Coarse;
 	unsigned short iMarker, iVar, iChildren, iDim;
-    double Area_Parent, Area_Children, *Solution_Fine, *Grid_Vel, Vector[3];
-
-    const unsigned short SolContainer_Position = config->GetContainerPosition(RunTime_EqSystem);
+  double Area_Parent, Area_Children, *Solution_Fine, *Grid_Vel, Vector[3];
+  
+  const unsigned short SolContainer_Position = config->GetContainerPosition(RunTime_EqSystem);
 	const unsigned short nVar = sol_coarse->GetnVar();
-    const unsigned short nDim = geo_fine->GetnDim();
-    const bool rotating_frame = config->GetRotating_Frame();
-    const bool grid_movement  = config->GetGrid_Movement();
-    
-    double *Solution = new double[nVar];
-    
+  const unsigned short nDim = geo_fine->GetnDim();
+  const bool rotating_frame = config->GetRotating_Frame();
+  const bool grid_movement  = config->GetGrid_Movement();
+  
+  double *Solution = new double[nVar];
+  
 	/*--- Compute coarse solution from fine solution ---*/
 	for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
 		Area_Parent = geo_coarse->node[Point_Coarse]->GetVolume();
-        
+    
 		for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
-        
+    
 		for (iChildren = 0; iChildren < geo_coarse->node[Point_Coarse]->GetnChildren_CV(); iChildren++) {
-            
+      
 			Point_Fine = geo_coarse->node[Point_Coarse]->GetChildren_CV(iChildren);
 			Area_Children = geo_fine->node[Point_Fine]->GetVolume();
 			Solution_Fine = sol_fine->node[Point_Fine]->GetSolution();
 			for (iVar = 0; iVar < nVar; iVar++) {
 				Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
-            }
+      }
 		}
-        
-		sol_coarse->node[Point_Coarse]->SetSolution(Solution);
-        
-	}
     
+		sol_coarse->node[Point_Coarse]->SetSolution(Solution);
+    
+	}
+  
 	/*--- Update the solution at the no-slip walls ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 		if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX) ||
-            (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL)) {
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL)) {
 			for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
 				Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
-                
+        
 				if (SolContainer_Position == FLOW_SOL) {
-                    /*--- At moving walls, set the solution based on the new density and wall velocity ---*/
-                    if (rotating_frame) {
-                        Grid_Vel = geo_coarse->node[Point_Coarse]->GetRotVel();
-                        for (iDim = 0; iDim < nDim; iDim++)
-                            Vector[iDim] = sol_coarse->node[Point_Coarse]->GetSolution(0)*Grid_Vel[iDim];
-                        sol_coarse->node[Point_Coarse]->SetVelSolutionVector(Vector);
-                    } else if (grid_movement) {
-                        Grid_Vel = geo_coarse->node[Point_Coarse]->GetGridVel();
-                        for (iDim = 0; iDim < nDim; iDim++)
-                            Vector[iDim] = sol_coarse->node[Point_Coarse]->GetSolution(0)*Grid_Vel[iDim];
-                        sol_coarse->node[Point_Coarse]->SetVelSolutionVector(Vector);
-                    } else {
-                        /*--- For stationary no-slip walls, set the velocity to zero. ---*/
-                        sol_coarse->node[Point_Coarse]->SetVelSolutionZero();
-                    }
-                }
-				if (SolContainer_Position == ADJFLOW_SOL) {
-                    sol_coarse->node[Point_Coarse]->SetVelSolutionDVector();
-                }
-                
-			}
+          /*--- At moving walls, set the solution based on the new density and wall velocity ---*/
+          if (rotating_frame) {
+            Grid_Vel = geo_coarse->node[Point_Coarse]->GetRotVel();
+            for (iDim = 0; iDim < nDim; iDim++)
+              Vector[iDim] = sol_coarse->node[Point_Coarse]->GetSolution(0)*Grid_Vel[iDim];
+            sol_coarse->node[Point_Coarse]->SetVelSolutionVector(Vector);
+          } else if (grid_movement) {
+            Grid_Vel = geo_coarse->node[Point_Coarse]->GetGridVel();
+            for (iDim = 0; iDim < nDim; iDim++)
+              Vector[iDim] = sol_coarse->node[Point_Coarse]->GetSolution(0)*Grid_Vel[iDim];
+            sol_coarse->node[Point_Coarse]->SetVelSolutionVector(Vector);
+          } else {
+            /*--- For stationary no-slip walls, set the velocity to zero. ---*/
+            sol_coarse->node[Point_Coarse]->SetVelSolutionZero();
+          }
         }
+				if (SolContainer_Position == ADJFLOW_SOL) {
+          sol_coarse->node[Point_Coarse]->SetVelSolutionDVector();
+        }
+        
+			}
+    }
 	}
-    
-    /*--- MPI the new interpolated solution ---*/
-    sol_coarse->Set_MPI_Solution(geo_coarse, config);
-    
+  
+  /*--- MPI the new interpolated solution ---*/
+  sol_coarse->Set_MPI_Solution(geo_coarse, config);
+  
 	delete [] Solution;
-
+  
 }
 
 void CMultiGridIntegration::SetRestricted_Gradient(unsigned short RunTime_EqSystem, CSolver **sol_fine, CSolver **sol_coarse, CGeometry *geo_fine,

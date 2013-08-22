@@ -398,20 +398,24 @@ private:
 	unsigned short nMarker_Monitoring,	/*!< \brief Number of markers to monitor. */
 	nMarker_Designing,					/*!< \brief Number of markers for the objective function. */
 	nMarker_Plotting,					/*!< \brief Number of markers to plot. */
-	nMarker_Moving;						/*!< \brief Number of markers to move. */
+  nMarker_Moving,               /*!< \brief Number of markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
+	nMarker_DV;               /*!< \brief Number of markers affected by the design variables. */
 	string *Marker_Monitoring,			/*!< \brief Markers to monitor. */
 	*Marker_Designing,					/*!< \brief Markers to plot. */
 	*Marker_Plotting,					/*!< \brief Markers to plot. */
-	*Marker_Moving;						/*!< \brief Markers to move. */
+  *Marker_Moving,						/*!< \brief Markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
+	*Marker_DV;						/*!< \brief Markers affected by the design variables. */
 	unsigned short  *Marker_All_Monitoring,				/*!< \brief Global index for monitoring using the grid information. */
 	*Marker_All_Plotting,				/*!< \brief Global index for plotting using the grid information. */
-	*Marker_All_Moving,					/*!< \brief Global index for moving using the grid information. */
+	*Marker_All_DV,					/*!< \brief Global index for design variable markers using the grid information. */
+  *Marker_All_Moving,					/*!< \brief Global index for moving surfaces using the grid information. */
 	*Marker_All_Designing,					/*!< \brief Global index for moving using the grid information. */
 	*Marker_All_Sliding,					/*!< \brief Global index for sliding interfaces using the grid information. */
 	*Marker_Config_Monitoring,			/*!< \brief Global index for monitoring using the config information. */
 	*Marker_Config_Designing,			/*!< \brief Global index for monitoring using the config information. */
 	*Marker_Config_Plotting,			/*!< \brief Global index for plotting using the config information. */
-	*Marker_Config_Moving,				/*!< \brief Global index for moving using the config information. */
+  *Marker_Config_Moving,				/*!< \brief Global index for moving surfaces using the config information. */
+	*Marker_Config_DV,				/*!< \brief Global index for design variable markers using the config information. */
 	*Marker_Config_Sliding,				/*!< \brief Global index for sliding interfaces using the config information. */
 	*Marker_Config_PerBound;			/*!< \brief Global index for periodic boundaries using the config information. */
 	string *PlaneTag;			/*!< \brief Global index for the plane adaptation (upper, lower). */
@@ -1839,11 +1843,19 @@ public:
 	void SetMarker_All_Plotting(unsigned short val_marker, unsigned short val_plotting);
 
 	/*! 
-	 * \brief Set if a marker <i>val_marker</i> is going to be move <i>val_moving</i> 
+	 * \brief Set if a marker <i>val_marker</i> is going to be affected by design variables <i>val_moving</i> 
+	 *        (read from the config file).
+	 * \param[in] val_marker - Index of the marker in which we are interested.
+	 * \param[in] val_DV - 0 or 1 depending if the the marker is affected by design variables.
+	 */	
+	void SetMarker_All_DV(unsigned short val_marker, unsigned short val_DV);
+  
+  /*!
+	 * \brief Set if a marker <i>val_marker</i> is going to be moved <i>val_moving</i>
 	 *        (read from the config file).
 	 * \param[in] val_marker - Index of the marker in which we are interested.
 	 * \param[in] val_moving - 0 or 1 depending if the the marker is going to be moved.
-	 */	
+	 */
 	void SetMarker_All_Moving(unsigned short val_marker, unsigned short val_moving);
 
 	/*! 
@@ -1894,15 +1906,15 @@ public:
 
 	/*! 
 	 * \brief Get the monitoring information for a marker <i>val_marker</i>.
-	 * \param[in] val_marker - 0 or 1 depending if the the marker is going to be moved.
-	 * \return 0 or 1 depending if the marker is going to be monitorized.
+	 * \param[in] val_marker - 0 or 1 depending if the the marker is going to be monitored.
+	 * \return 0 or 1 depending if the marker is going to be monitored.
 	 */		
 	unsigned short GetMarker_All_Monitoring(unsigned short val_marker);
   
   /*!
-	 * \brief Get the monitoring information for a marker <i>val_marker</i>.
-	 * \param[in] val_marker - 0 or 1 depending if the the marker is going to be moved.
-	 * \return 0 or 1 depending if the marker is going to be monitorized.
+	 * \brief Get the design information for a marker <i>val_marker</i>.
+	 * \param[in] val_marker - 0 or 1 depending if the the marker is going to be monitored.
+	 * \return 0 or 1 depending if the marker is going to be monitored.
 	 */
 	unsigned short GetMarker_All_Designing(unsigned short val_marker);
 
@@ -1914,12 +1926,19 @@ public:
 	unsigned short GetMarker_All_Plotting(unsigned short val_marker);
 
 	/*! 
-	 * \brief Get the moving information for a marker <i>val_marker</i>.
+	 * \brief Get the DV information for a marker <i>val_marker</i>.
+	 * \param[in] val_marker - 0 or 1 depending if the the marker is going to be affected by design variables.
+	 * \return 0 or 1 depending if the marker is going to be affected by design variables.
+	 */		
+	unsigned short GetMarker_All_DV(unsigned short val_marker);
+
+  /*!
+	 * \brief Get the motion information for a marker <i>val_marker</i>.
 	 * \param[in] val_marker - 0 or 1 depending if the the marker is going to be moved.
 	 * \return 0 or 1 depending if the marker is going to be moved.
-	 */		
+	 */
 	unsigned short GetMarker_All_Moving(unsigned short val_marker);
-
+  
 	/*! 
 	 * \brief Get the number of pre-smoothings in a multigrid strategy.
 	 * \param[in] val_mesh - Index of the grid.
@@ -3734,29 +3753,35 @@ public:
 	unsigned short GetMarker_Config_Boundary(string val_marker);
 
 	/*! 
-	 * \brief Get the monitoring information from the config definition of the marker <i>val_marker</i>.
-	 * \return Monitoring information of the boundary in the config information of the marker <i>val_marker</i>.
+	 * \brief Get the monitoring information from the config definition for the marker <i>val_marker</i>.
+	 * \return Monitoring information of the boundary in the config information for the marker <i>val_marker</i>.
 	 */	
 	unsigned short GetMarker_Config_Monitoring(string val_marker);
   
   /*!
-	 * \brief Get the monitoring information from the config definition of the marker <i>val_marker</i>.
-	 * \return Monitoring information of the boundary in the config information of the marker <i>val_marker</i>.
+	 * \brief Get the monitoring information from the config definition for the marker <i>val_marker</i>.
+	 * \return Monitoring information of the boundary in the config information for the marker <i>val_marker</i>.
 	 */
 	unsigned short GetMarker_Config_Designing(string val_marker);
 
 	/*! 
-	 * \brief Get the plotting information from the config definition of the marker <i>val_marker</i>.
-	 * \return Plotting information of the boundary in the config information of the marker <i>val_marker</i>.
+	 * \brief Get the plotting information from the config definition for the marker <i>val_marker</i>.
+	 * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
 	 */	
 	unsigned short GetMarker_Config_Plotting(string val_marker);
 
 	/*! 
-	 * \brief Get the moving information from the config definition of the marker <i>val_marker</i>.
-	 * \return Moving information of the boundary in the config information of the marker <i>val_marker</i>.
+	 * \brief Get the DV information from the config definition for the marker <i>val_marker</i>.
+	 * \return DV information of the boundary in the config information for the marker <i>val_marker</i>.
 	 */	
-	unsigned short GetMarker_Config_Moving(string val_marker);
+	unsigned short GetMarker_Config_DV(string val_marker);
 
+  /*!
+	 * \brief Get the motion information from the config definition for the marker <i>val_marker</i>.
+	 * \return Motion information of the boundary in the config information for the marker <i>val_marker</i>.
+	 */
+	unsigned short GetMarker_Config_Moving(string val_marker);
+  
 	/*! 
 	 * \brief Get the periodic information from the config definition of the marker <i>val_marker</i>.
 	 * \return Periodic information of the boundary in the config information of the marker <i>val_marker</i>.

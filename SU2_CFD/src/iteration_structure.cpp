@@ -1067,13 +1067,6 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
   
-	if ((rank == MASTER_NODE) && (Kind_Grid_Movement != AEROELASTIC)) {
-		if (geometry_container[MESH_0]->GetnZone() > 1)
-			cout << endl << "Performing the dynamic mesh update for Zone " << iZone << "." << endl;
-		else
-			cout << endl << "Performing the dynamic mesh update." << endl;
-	}
-  
 	/*--- Perform mesh movement depending on specified type ---*/
 	switch (Kind_Grid_Movement) {
       
@@ -1122,12 +1115,12 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
       
       /*--- Surface grid deformation read from external files ---*/
       if (rank == MASTER_NODE)
-        cout << "Updating surface locations from the mesh motion file." << endl;
+        cout << "Updating surface locations from file." << endl;
       surface_movement->SetExternal_Deformation(geometry_container[MESH_0], config_container, iZone, ExtIter);
       
       /*--- Volume grid deformation ---*/
       if (rank == MASTER_NODE)
-        cout << "Deforming the volume grid using the spring analogy." << endl;
+        cout << "Deforming the volume grid." << endl;
       grid_movement->SetVolume_Deformation(geometry_container[MESH_0], config_container, true);
       
       /*--- Update the multigrid structure after moving the finest grid ---*/
@@ -1159,11 +1152,11 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
       
       break;
       
-    case FLUTTER:
+    case DEFORMING:
       
       /*--- Surface grid deformation ---*/
       if (rank == MASTER_NODE)
-        cout << "Updating flutter surface locations." << endl;
+        cout << "Updating moving surface locations." << endl;
       if (geometry_container[MESH_0]->GetnDim() == 2)
         surface_movement->SetBoundary_Flutter2D(geometry_container[MESH_0], config_container, ExtIter, iZone);
       else
@@ -1199,6 +1192,22 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
           /*---Set the grid velocity on the coarser levels ---*/
           geometry_container[iMGlevel]->SetRestricted_GridVelocity(geometry_container[iMGlevel-1], config_container, ExtIter);
         }
+      }
+      
+      break;
+      
+    case MOVING_WALL:
+      
+      /*--- Set the moving wall velocities ---*/
+      
+      if (rank == MASTER_NODE && ExtIter == 0)
+        cout << endl << " Simulation with moving walls." << endl;
+      surface_movement->SetMoving_Walls(geometry_container[MESH_0], config_container, iZone, ExtIter);
+      
+      /*--- Update the grid velocities on the coarser multigrid levels after
+       setting the moving wall velocities for the finest mesh. ---*/
+      for (unsigned short iMGlevel = 1; iMGlevel <= config_container->GetMGLevels(); iMGlevel++) {
+        geometry_container[iMGlevel]->SetRestricted_GridVelocity(geometry_container[iMGlevel-1], config_container, ExtIter);
       }
       
       break;

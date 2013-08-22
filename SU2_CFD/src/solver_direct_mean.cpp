@@ -6830,15 +6830,19 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 				/*--- Compute y+ and non-dimensional velocity ---*/
 				FrictionVel = sqrt(fabs(WallShearStress)/Density);
 				YPlus[iMarker][iVertex] = WallDistMod*FrictionVel/(Viscosity/Density);
-                
+        
 				/*--- Compute heat flux on the wall ---*/
-				GradTemperature = 0.0; for (iDim = 0; iDim < nDim; iDim++) GradTemperature +=  Grad_PrimVar[0][iDim]*(-Normal[iDim]);
+				GradTemperature = 0.0;
+        if (!incompressible) {
+          for (iDim = 0; iDim < nDim; iDim++)
+            GradTemperature += Grad_PrimVar[0][iDim]*(-Normal[iDim]);
+        }
 				CHeatTransfer[iMarker][iVertex] = (Cp * Viscosity/PRANDTL)*GradTemperature/(0.5*RefDensity*RefVel2);
-                HeatLoad += CHeatTransfer[iMarker][iVertex];
-                
-                if (CHeatTransfer[iMarker][iVertex]/Area > Maxq_Visc[iMarker])
-                    Maxq_Visc[iMarker] = CHeatTransfer[iMarker][iVertex]/Area;
-                
+        HeatLoad += CHeatTransfer[iMarker][iVertex];
+        
+        if (CHeatTransfer[iMarker][iVertex]/Area > Maxq_Visc[iMarker])
+          Maxq_Visc[iMarker] = CHeatTransfer[iMarker][iVertex]/Area;
+        
 				/*--- Compute viscous forces, and moment using the stress tensor ---*/
 				if ((geometry->node[iPoint]->GetDomain()) && (Monitoring == YES)) {
                     

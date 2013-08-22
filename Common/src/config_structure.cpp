@@ -128,6 +128,8 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddMarkerOption("MARKER_MONITORING", nMarker_Monitoring, Marker_Monitoring);
   /* DESCRIPTION: Marker(s) of the surface where objective function (design problem) will be evaluated */
 	AddMarkerOption("MARKER_DESIGNING", nMarker_Designing, Marker_Designing);
+  /* DESCRIPTION: Marker(s) of moving surfaces (MOVING_WALL or DEFORMING grid motion). */
+	AddMarkerOption("MARKER_MOVING", nMarker_Moving, Marker_Moving);
   
 	/* DESCRIPTION: Euler wall boundary marker(s) */
 	AddMarkerOption("MARKER_EULER", nMarker_Euler, Marker_Euler);
@@ -827,7 +829,7 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	/* DESCRIPTION: Kind of deformation */
 	AddEnumListOption("DV_KIND", nDV, Design_Variable, Param_Map);
 	/* DESCRIPTION: Marker of the surface to which we are going apply the shape deformation */
-	AddMarkerOption("DV_MARKER", nMarker_Moving, Marker_Moving);
+	AddMarkerOption("DV_MARKER", nMarker_DV, Marker_DV);
 	/* DESCRIPTION: New value of the shape deformation */
 	AddListOption("DV_VALUE", nDV, DV_Value);
 	/* DESCRIPTION: Parameters of the shape deformation
@@ -993,9 +995,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 	else
 		Wrt_Unsteady = true;
 
-	/*--- If we're solving a steady problem, make sure that
+	/*--- If we're solving a purely steady problem with no prescribed grid
+   movement (both rotating frame and moving walls are steady), make sure that
    there is no grid motion ---*/
-	if (Kind_SU2 == SU2_CFD && Unsteady_Simulation == STEADY)
+	if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL) &&
+      (Unsteady_Simulation == STEADY) &&
+      (Kind_GridMovement[ZONE_0] != MOVING_WALL)) // rotating_frame here too soon
 		Grid_Movement = false;
 
 	/*--- If it is not specified, set the mesh motion mach number
@@ -1004,7 +1009,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		Mach_Motion = Mach;
 
 	/*--- In case rigid-motion parameters have not been declared in the config file, set them equal to zero. ---*/
-	if ( Grid_Movement && (Kind_GridMovement[ZONE_0] == RIGID_MOTION) ) {
+	if (Grid_Movement) {
 
 		unsigned short iZone;
 
@@ -2371,55 +2376,59 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 			+ nMarker_NacelleInflow + nMarker_NacelleExhaust + nMarker_Dirichlet_Elec + nMarker_Displacement + nMarker_Load
 			+ nMarker_FlowLoad + nMarker_FWH + nMarker_Observer + nMarker_Custom + nMarker_Sliding + 2*nDomain;
 
-	Marker_All_Tag = new string[nMarker_All+2];									// Store the tag that correspond with each marker.
-	Marker_All_SendRecv = new short[nMarker_All+2];							// +#domain (send), -#domain (receive) o 0 (no send neither receive).
-	Marker_All_Boundary = new unsigned short[nMarker_All+2];		// Store the kind of boundary condition
-	Marker_All_Monitoring = new unsigned short[nMarker_All+2];	// Store if the boundary should be monitored.
-	Marker_All_Designing = new unsigned short[nMarker_All+2];   // Store if the boundary should be designed.
-	Marker_All_Plotting = new unsigned short[nMarker_All+2];		// Store if the boundary should be plotted.
-	Marker_All_Moving = new unsigned short[nMarker_All+2];			// Store if the boundary should be moved.
-	Marker_All_PerBound = new short[nMarker_All+2];							// Store if the boundary belongs to a periodic boundary.
-	Marker_All_Sliding = new unsigned short[nMarker_All+2];			// Store if the boundary belongs to a sliding interface.
+	Marker_All_Tag        = new string[nMarker_All+2];			    // Store the tag that correspond with each marker.
+	Marker_All_SendRecv   = new short[nMarker_All+2];						// +#domain (send), -#domain (receive) or 0 (neither send nor receive).
+	Marker_All_Boundary   = new unsigned short[nMarker_All+2];	// Store the kind of boundary condition.
+	Marker_All_Monitoring = new unsigned short[nMarker_All+2];	// Store whether the boundary should be monitored.
+	Marker_All_Designing  = new unsigned short[nMarker_All+2];  // Store whether the boundary should be designed.
+	Marker_All_Plotting   = new unsigned short[nMarker_All+2];	// Store whether the boundary should be plotted.
+	Marker_All_DV         = new unsigned short[nMarker_All+2];	// Store whether the boundary should be affected by design variables.
+  Marker_All_Moving     = new unsigned short[nMarker_All+2];	// Store whether the boundary should be in motion.
+	Marker_All_PerBound   = new short[nMarker_All+2];						// Store whether the boundary belongs to a periodic boundary.
+	Marker_All_Sliding    = new unsigned short[nMarker_All+2];	// Store whether the boundary belongs to a sliding interface.
 
 	unsigned short iMarker_All, iMarker_Config, iMarker_Euler, iMarker_Custom, iMarker_FarField,
 	iMarker_SymWall, iMarker_PerBound, iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
 	iMarker_Inlet, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement, iMarker_Load,
-	iMarker_FlowLoad, iMarker_FWH, iMarker_Observer, iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_Plotting, iMarker_Moving,
+	iMarker_FlowLoad, iMarker_FWH, iMarker_Observer, iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_Plotting, iMarker_DV, iMarker_Moving,
 	iMarker_Supersonic_Inlet, iMarker_Sliding;
 
 	for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
 		Marker_All_Tag[iMarker_All] = "NONE";
-		Marker_All_SendRecv[iMarker_All] = 0;
-		Marker_All_Boundary[iMarker_All] = 0;
+		Marker_All_SendRecv[iMarker_All]   = 0;
+		Marker_All_Boundary[iMarker_All]   = 0;
 		Marker_All_Monitoring[iMarker_All] = 0;
-		Marker_All_Designing[iMarker_All] = 0;
-		Marker_All_Plotting[iMarker_All] = 0;
-		Marker_All_Moving[iMarker_All] = 0;
-		Marker_All_PerBound[iMarker_All] = 0;
-		Marker_All_Sliding[iMarker_All] = 0;
+		Marker_All_Designing[iMarker_All]  = 0;
+		Marker_All_Plotting[iMarker_All]   = 0;
+		Marker_All_DV[iMarker_All]         = 0;
+    Marker_All_Moving[iMarker_All]     = 0;
+		Marker_All_PerBound[iMarker_All]   = 0;
+		Marker_All_Sliding[iMarker_All]    = 0;
 	}
 
 	nMarker_Config = nMarker_Euler + nMarker_FarField + nMarker_SymWall + nMarker_PerBound + nMarker_NearFieldBound
 			+ nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux + nMarker_NacelleInflow + nMarker_NacelleExhaust + nMarker_Supersonic_Inlet + nMarker_Displacement + nMarker_Load + nMarker_FlowLoad + nMarker_FWH + nMarker_Observer + nMarker_Custom + nMarker_Sliding;
 
-	Marker_Config_Tag = new string[nMarker_Config];
-	Marker_Config_Boundary = new unsigned short[nMarker_Config];
+	Marker_Config_Tag        = new string[nMarker_Config];
+	Marker_Config_Boundary   = new unsigned short[nMarker_Config];
 	Marker_Config_Monitoring = new unsigned short[nMarker_Config];
-	Marker_Config_Plotting = new unsigned short[nMarker_Config];
-	Marker_Config_Moving = new unsigned short[nMarker_Config];
-	Marker_Config_Designing = new unsigned short[nMarker_Config];
-	Marker_Config_PerBound = new unsigned short[nMarker_Config];
-	Marker_Config_Sliding = new unsigned short[nMarker_Config];
+	Marker_Config_Plotting   = new unsigned short[nMarker_Config];
+	Marker_Config_DV         = new unsigned short[nMarker_Config];
+  Marker_Config_Moving     = new unsigned short[nMarker_Config];
+	Marker_Config_Designing  = new unsigned short[nMarker_Config];
+	Marker_Config_PerBound   = new unsigned short[nMarker_Config];
+	Marker_Config_Sliding    = new unsigned short[nMarker_Config];
     
 	for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++) {
 		Marker_Config_Tag[iMarker_Config] = "NONE";
-		Marker_Config_Boundary[iMarker_Config] = 0;
+		Marker_Config_Boundary[iMarker_Config]   = 0;
 		Marker_Config_Monitoring[iMarker_Config] = 0;
-		Marker_Config_Designing[iMarker_Config] = 0;
-		Marker_Config_Plotting[iMarker_Config] = 0;
-		Marker_Config_Moving[iMarker_Config] = 0;
-		Marker_Config_PerBound[iMarker_Config] = 0;
-		Marker_Config_Sliding[iMarker_Config] = 0;
+		Marker_Config_Designing[iMarker_Config]  = 0;
+		Marker_Config_Plotting[iMarker_Config]   = 0;
+		Marker_Config_DV[iMarker_Config]         = 0;
+    Marker_Config_Moving[iMarker_Config]     = 0;
+		Marker_Config_PerBound[iMarker_Config]   = 0;
+		Marker_Config_Sliding[iMarker_Config]    = 0;
 	}
 
 	iMarker_Config = 0;
@@ -2584,19 +2593,25 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 	}
 
 	for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++) {
+		Marker_Config_DV[iMarker_Config] = NO;
+		for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++)
+			if (Marker_Config_Tag[iMarker_Config] == Marker_DV[iMarker_DV])
+				Marker_Config_DV[iMarker_Config] = YES;
+	}
+
+  for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++) {
 		Marker_Config_Moving[iMarker_Config] = NO;
 		for (iMarker_Moving = 0; iMarker_Moving < nMarker_Moving; iMarker_Moving++)
 			if (Marker_Config_Tag[iMarker_Config] == Marker_Moving[iMarker_Moving])
 				Marker_Config_Moving[iMarker_Config] = YES;
 	}
-
+  
 }
 
 void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
 	iMarker_SymWall, iMarker_PerBound, iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
-	iMarker_Inlet, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_FWH, iMarker_Observer,
-	iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_Plotting, iMarker_Moving, iMarker_Supersonic_Inlet;
+	iMarker_Inlet, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_FWH, iMarker_Observer, iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_Plotting, iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet;
 
 	cout << endl <<"-------------------------------------------------------------------------" << endl;
 	cout <<"|     _____   _    _   ___                                              |" << endl;
@@ -2764,22 +2779,35 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		for (iMarker_Designing = 0; iMarker_Designing < nMarker_Designing; iMarker_Designing++) {
 			cout << Marker_Designing[iMarker_Designing];
 			if (iMarker_Designing < nMarker_Designing-1) cout << ", ";
-			else cout <<"."<<endl;
+			else cout <<".";
 		}
+    cout<<endl;
     
     cout << "Surface(s) plotted in the output file: ";
 		for (iMarker_Plotting = 0; iMarker_Plotting < nMarker_Plotting; iMarker_Plotting++) {
 			cout << Marker_Plotting[iMarker_Plotting];
 			if (iMarker_Plotting < nMarker_Plotting-1) cout << ", ";
-			else cout <<"."<<endl;
+			else cout <<".";
 		}
+    cout<<endl;
     
-    cout << "Surface(s) afected by a grid movement: ";
-		for (iMarker_Moving = 0; iMarker_Moving < nMarker_Moving; iMarker_Moving++) {
-			cout << Marker_Moving[iMarker_Moving];
-			if (iMarker_Moving < nMarker_Moving-1) cout << ", ";
-			else cout <<"."<<endl;
+    cout << "Surface(s) affected by the design variables: ";
+		for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++) {
+			cout << Marker_DV[iMarker_DV];
+			if (iMarker_DV < nMarker_DV-1) cout << ", ";
+			else cout <<".";
 		}
+    cout<<endl;
+    
+    if ((Kind_GridMovement[ZONE_0] == DEFORMING) || (Kind_GridMovement[ZONE_0] == MOVING_WALL)) {
+      cout << "Surface(s) in motion: ";
+      for (iMarker_Moving = 0; iMarker_Moving < nMarker_Moving; iMarker_Moving++) {
+        cout << Marker_Moving[iMarker_Moving];
+        if (iMarker_Moving < nMarker_Moving-1) cout << ", ";
+        else cout <<".";
+      }
+      cout<<endl;
+    }
     
 	}
 
@@ -2840,9 +2868,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				case FFD_THICKNESS: cout << "FFD (thickness) <-> "; break;
 				case FFD_VOLUME: cout << "FFD (volume) <-> "; break;
 				}
-				for (iMarker_Moving = 0; iMarker_Moving < nMarker_Moving; iMarker_Moving++) {
-					cout << Marker_Moving[iMarker_Moving];
-					if (iMarker_Moving < nMarker_Moving-1) cout << ", ";
+				for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++) {
+					cout << Marker_DV[iMarker_DV];
+					if (iMarker_DV < nMarker_DV-1) cout << ", ";
 					else cout << " <-> ";
 				}
 				cout << DV_Value[iDV] << " <-> ";
@@ -2901,9 +2929,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			case FFD_THICKNESS: cout << "FFD (thickness) <-> "; break;
 			case FFD_VOLUME: cout << "FFD (volume) <-> "; break;
 			}
-			for (iMarker_Moving = 0; iMarker_Moving < nMarker_Moving; iMarker_Moving++) {
-				cout << Marker_Moving[iMarker_Moving];
-				if (iMarker_Moving < nMarker_Moving-1) cout << ", ";
+			for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++) {
+				cout << Marker_DV[iMarker_DV];
+				if (iMarker_DV < nMarker_DV-1) cout << ", ";
 				else cout << " <-> ";
 			}
 			cout << DV_Value[iDV] << " <-> ";
@@ -4205,6 +4233,13 @@ unsigned short CConfig::GetMarker_Config_Plotting(string val_marker) {
 	for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++)
 		if (Marker_Config_Tag[iMarker_Config] == val_marker) break;
 	return Marker_Config_Plotting[iMarker_Config];
+}
+
+unsigned short CConfig::GetMarker_Config_DV(string val_marker) {
+	unsigned short iMarker_Config;
+	for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++)
+		if (Marker_Config_Tag[iMarker_Config] == val_marker) break;
+	return Marker_Config_DV[iMarker_Config];
 }
 
 unsigned short CConfig::GetMarker_Config_Moving(string val_marker) {
