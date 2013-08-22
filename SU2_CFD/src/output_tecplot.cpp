@@ -481,7 +481,7 @@ void COutput::SetTecplot_Mesh(CConfig *config, CGeometry *geometry, unsigned sho
         
 		if (dims == 2) variables = "x y";
 		else if (dims == 3) variables = "x y z";
-		else cout << "Error: wrong number of dimentsions: " << dims << endl;
+		else cout << "Error: wrong number of dimensions: " << dims << endl;
         
 		/*--- Open Tecplot file ---*/
 		err = TECINI112((char *)config->GetFlow_FileName().c_str(),
@@ -740,7 +740,7 @@ void COutput::SetTecplot_Mesh(CConfig *config, CGeometry *geometry, unsigned sho
     
 #else // Not built with Tecplot binary support
     
-	cout << "Tecplot binary file requested but SU^2 was built without Tecio support. No file written" << "\n";
+	cout << "Tecplot binary file requested but SU^2 was built without TecIO support. No file written" << "\n";
     
 #endif
     
