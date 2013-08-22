@@ -109,6 +109,7 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_pressure, double *val_massfrac
   dPdrhos = new double [nSpecies];
   
   /*--- Determine the number of heavy species ---*/
+  ionization = config->GetIonization();
   if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
   else            { nHeavy = nSpecies;   nEl = 0; }  
   

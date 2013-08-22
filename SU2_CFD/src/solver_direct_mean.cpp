@@ -2133,38 +2133,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 		}
 
 		/*--- Compute the residual ---*/
-    if (iPoint == 17) {
-      unsigned short iVar;
-      cout << "U_i:" << endl;
-      for (iVar = 0; iVar < nVar; iVar++)
-        cout << U_i[iVar] << endl;
-      cout << endl << endl;
-      cout << "U_j:" << endl;
-      for (iVar = 0; iVar < nVar; iVar++)
-        cout << U_j[iVar] << endl;
-      cout << endl << endl;
-      cin.get();
-    }
 		numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
-
-    if (iPoint == 17) {
-      unsigned short iVar, jVar;
-      cout << "Euler Upwind Residual." << endl;
-      cout << "Residual: " << endl;
-      for (iVar = 0; iVar < nVar; iVar++)
-        cout << Res_Conv[iVar] << endl;
-      
-      cout << endl << endl << "Jacobian: " << endl;
-      for (iVar = 0; iVar < nVar; iVar++) {
-        for (jVar = 0; jVar < nVar; jVar++) {
-          cout << Jacobian_i[iVar][jVar] << "\t";
-        }
-        cout << endl;
-      }
-      cin.get();
-    }
     
-
 		/*--- Update residual value ---*/
 		LinSysRes.AddBlock(iPoint, Res_Conv);
 		LinSysRes.SubtractBlock(jPoint, Res_Conv);

@@ -69,13 +69,13 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
   
-  Mutation::MixtureOptions opts2;
+//  Mutation::MixtureOptions opts2;
 //  Mutation::MixtureOptions opts("N2special");
 //  opts2.setThermodynamicDatabase("RRHO");
-  Mutation::Mixture mix(opts2);
+//  Mutation::Mixture mix(opts2);
 //  cout << "Mixture nSpecies: " << mix.nSpecies() << endl;
-  cout << "Set mutation mixture. " << endl;
-  cin.get();
+//  cout << "Set mutation mixture. " << endl;
+//  cin.get();
   
 	/*--- Array initialization ---*/
 	Velocity_Inlet = NULL;
@@ -126,7 +126,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
 	Residual      = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]      = 0.0;
 	Residual_RMS  = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
 	Residual_Max  = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
-	Point_Max  = new unsigned long[nVar]; for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]  = 0;
+	Point_Max     = new unsigned long[nVar]; for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]  = 0;
 	Residual_i    = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]    = 0.0;
 	Residual_j    = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]    = 0.0;
 	Res_Conv      = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Conv[iVar]      = 0.0;
@@ -233,6 +233,12 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
   }
   
   /*--- Create a CVariable that stores the free-stream values ---*/
+/*  cout << "Check freestream case: " << endl;
+  cout << "Tinf: " << Temperature_Inf << endl;
+  cout << "Tveinf: " << Temperature_ve_Inf << endl;
+  cout << "Pinf: " << Pressure_Inf << endl;
+  cout << "Y: " << MassFrac_Inf[0] << ", " << MassFrac_Inf[1] << endl;
+  cout << "Mvec: " << Mvec_Inf[0] << ", " << Mvec_Inf[1] << ", " << Mvec_Inf[2] << endl;*/
   node_infty = new CTNE2EulerVariable(Pressure_Inf, MassFrac_Inf, Mvec_Inf,
                                       Temperature_Inf, Temperature_ve_Inf, nDim,
                                       nVar, nPrimVar, nPrimVarGrad, config);
@@ -246,6 +252,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
    appropriately. Coarse multigrid levels will be intitially set to
    the farfield values bc the solver will immediately interpolate
    the solution from the finest mesh to the coarser levels. ---*/
+  
 	if (!restart || geometry->GetFinestMGLevel() == false || nZone > 1) {
     
 		/*--- Initialize using freestream values ---*/
