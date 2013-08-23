@@ -254,9 +254,10 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
 	}
 
 	/*--- For unsteady simulations, initialize the grid volumes
-   and coordinates for previous solutions. Loop over all zones/grids. ---*/
+   and coordinates for previous solutions. Loop over all zones/grids. Is this
+   the best place for this? ---*/
 	for (iZone = 0; iZone < val_nZone; iZone++) {
-		if (config[iZone]->GetGrid_Movement()) {
+		if (config[iZone]->GetUnsteady_Simulation() && config[iZone]->GetGrid_Movement()) {
 			for (iMGlevel = 0; iMGlevel <= config[iZone]->GetMGLevels(); iMGlevel++) {
 				for (iPoint = 0; iPoint < geometry[iZone][iMGlevel]->GetnPoint(); iPoint++) {
 					geometry[iZone][iMGlevel]->node[iPoint]->SetVolume_n();

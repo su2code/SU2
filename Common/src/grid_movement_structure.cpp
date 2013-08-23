@@ -750,6 +750,12 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 	unsigned long iPoint, total_index, iVertex;
 	double *VarCoord, MeanCoord[3], VarIncrement = 1.0;
   
+  /*--- Get the SU2 module. SU2_CFD will use this routine for dynamically
+   deforming meshes (MARKER_MOVING), while SU2_MDC will use it for deforming
+   meshes after imposing design variable surface deformations (DV_MARKER). ---*/
+  
+  unsigned short Kind_SU2 = config->GetKind_SU2();
+  
   /*--- If requested (no by default) impose the surface deflections in
    increments and solve the grid deformation equations iteratively with
    successive small deformations. ---*/
@@ -802,7 +808,8 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 	/*--- Set the known displacements, note that some points of the moving surfaces
    could be on on the symmetry plane, we should specify DeleteValsRowi again (just in case) ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		if (config->GetMarker_All_Moving(iMarker) == YES)  {
+		if ((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD) ||
+        (config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_MDC)) {
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 				VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
@@ -1731,7 +1738,7 @@ void CVolumetricMovement::AeroelasticDeform(CGeometry *geometry, CConfig *config
     
 	/*--- Store movement of each node on the moving surface ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        if (config->GetMarker_All_Moving(iMarker) == YES) {
+        if (config->GetMarker_All_DV(iMarker) == YES) {
             for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
                 iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
                 /*--- Coordinates of the current point ---*/
@@ -1955,7 +1962,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
       Surface_File.precision(15);
       unsigned long iMarker, jPoint, GlobalIndex, iVertex; double *Coords;
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        if (config->GetMarker_All_Moving(iMarker) == YES) {
+        if (config->GetMarker_All_DV(iMarker) == YES) {
           for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
             jPoint = geometry->vertex[iMarker][iVertex]->GetNode();
             GlobalIndex = geometry->node[jPoint]->GetGlobalIndex();
@@ -2120,9 +2127,9 @@ void CSurfaceMovement::CopyBoundary(CGeometry *geometry, CConfig *config) {
 	unsigned short iMarker;
 	unsigned long iVertex, iPoint;
 	double *Coord;
-	
+
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {	
+		for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 			iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 			Coord = geometry->node[iPoint]->GetCoord();
 			geometry->vertex[iMarker][iVertex]->SetCoord(Coord);
@@ -2144,7 +2151,7 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
 	guess[0] = 0.5; guess[1] = 0.5; guess[2] = 0.5;
 		
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		if (config->GetMarker_All_Moving(iMarker) == YES)
+		if (config->GetMarker_All_DV(iMarker) == YES)
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 				car_coord = geometry->vertex[iMarker][iVertex]->GetCoord();
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -2267,7 +2274,7 @@ void CSurfaceMovement::UpdateParametricCoord(CGeometry *geometry, CConfig *confi
 		/*--- Get the marker of the surface point ---*/
 		iMarker = FFDBox->Get_MarkerIndex(iSurfacePoints);
 		
-		if (config->GetMarker_All_Moving(iMarker) == YES) {
+		if (config->GetMarker_All_DV(iMarker) == YES) {
 			
 			/*--- Get the vertex of the surface point ---*/
 			iVertex = FFDBox->Get_VertexIndex(iSurfacePoints);
@@ -2335,7 +2342,7 @@ void CSurfaceMovement::SetCartesianCoord(CGeometry *geometry, CConfig *config, C
 		/*--- Get the marker of the surface point ---*/
 		iMarker = FFDBox->Get_MarkerIndex(iSurfacePoints);
 		
-		if (config->GetMarker_All_Moving(iMarker) == YES) {
+		if (config->GetMarker_All_DV(iMarker) == YES) {
 			
 			/*--- Get the vertex of the surface point ---*/
 			iVertex = FFDBox->Get_VertexIndex(iSurfacePoints);
@@ -2690,7 +2697,7 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
 
 		for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
 			VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
-			if (config->GetMarker_All_Moving(iMarker) == YES) {
+			if (config->GetMarker_All_DV(iMarker) == YES) {
 				Point = boundary->vertex[iMarker][iVertex]->GetNode();
 				Coord = boundary->vertex[iMarker][iVertex]->GetCoord();
 				Normal = boundary->vertex[iMarker][iVertex]->GetNormal();
@@ -2787,7 +2794,7 @@ void CSurfaceMovement::SetSpherical(CGeometry *boundary, CConfig *config, unsign
 		for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
 			VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
       
-			if (config->GetMarker_All_Moving(iMarker) == YES) {
+			if (config->GetMarker_All_DV(iMarker) == YES) {
         
         iPoint = boundary->vertex[iMarker][iVertex]->GetNode();
         Coord = boundary->vertex[iMarker][iVertex]->GetCoord();
@@ -2870,7 +2877,7 @@ void CSurfaceMovement::SetCosBump(CGeometry *boundary, CConfig *config, unsigned
     
 		for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
 			VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
-			if (config->GetMarker_All_Moving(iMarker) == YES) {
+			if (config->GetMarker_All_DV(iMarker) == YES) {
 
 				Point = boundary->vertex[iMarker][iVertex]->GetNode();
 				Coord = boundary->vertex[iMarker][iVertex]->GetCoord();
@@ -2945,7 +2952,7 @@ void CSurfaceMovement::SetFourier(CGeometry *boundary, CConfig *config, unsigned
     
 		for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
 			VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
-			if (config->GetMarker_All_Moving(iMarker) == YES) {
+			if (config->GetMarker_All_DV(iMarker) == YES) {
         
 				Point = boundary->vertex[iMarker][iVertex]->GetNode();
 				Coord = boundary->vertex[iMarker][iVertex]->GetCoord();
@@ -3010,7 +3017,7 @@ void CSurfaceMovement::SetDisplacement(CGeometry *boundary, CConfig *config, uns
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
 		for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
 			VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
-			if (config->GetMarker_All_Moving(iMarker) == YES) {
+			if (config->GetMarker_All_DV(iMarker) == YES) {
 				VarCoord[0] = Ampl*xDispl;
 				VarCoord[1] = Ampl*yDispl;
 				if (boundary->GetnDim() == 3) VarCoord[2] = Ampl*zDispl;
@@ -3050,7 +3057,7 @@ void CSurfaceMovement::SetRotation(CGeometry *boundary, CConfig *config, unsigne
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
 		for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
 			VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
-			if (config->GetMarker_All_Moving(iMarker) == YES) {
+			if (config->GetMarker_All_DV(iMarker) == YES) {
 				Coord = boundary->vertex[iMarker][iVertex]->GetCoord();						
 				x = Coord[0]; y = Coord[1]; z = Coord[2];
 				
@@ -3079,6 +3086,54 @@ void CSurfaceMovement::SetRotation(CGeometry *boundary, CConfig *config, unsigne
 		}	
 }
 
+void CSurfaceMovement::SetMoving_Walls(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter) {
+  
+  int rank = MASTER_NODE;
+#ifndef NO_MPI
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+  
+  /*--- Local variables ---*/
+  unsigned short iMarker, iDim, nDim = geometry->GetnDim();
+  unsigned long iPoint, iVertex;
+  double xDot[3] = {0.0,0.0,0.0};
+  bool adjoint = config->GetAdjoint();
+	
+  /*--- Retrieve values from the config file ---*/
+
+  double Lref = config->GetLength_Ref();
+
+  /*--- Get prescribed wall translation speed from config (non-dim?) ---*/
+
+  xDot[0] = config->GetTranslation_Rate_X(iZone);
+  xDot[1] = config->GetTranslation_Rate_Y(iZone);
+  xDot[2] = config->GetTranslation_Rate_Z(iZone);
+  
+  /*--- Store grid velocity for each node on the moving surface(s) ---*/
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_Moving(iMarker) == YES) {
+      
+      if (rank == MASTER_NODE && iter == 0) {
+        cout << " Setting wall velocity = (" << xDot[0] << ", " << xDot[1];
+        cout << ", " << xDot[2] << ") m/s for marker: ";
+        cout << config->GetMarker_All_Tag(iMarker) << "." << endl;
+      }
+      
+      for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        
+        /*--- Get the point index and store the grid velocity (do not store 
+         if this is an adjoint calculation). ---*/
+        
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        for (iDim = 0; iDim < nDim; iDim++)
+          if (!adjoint) geometry->node[iPoint]->SetGridVel(iDim,xDot[iDim]);
+      }
+		}
+	}
+  
+}
+
 void CSurfaceMovement::SetBoundary_Flutter2D(CGeometry *geometry, CConfig *config, 
                                              unsigned long iter, unsigned short iZone) {
 	
@@ -3101,8 +3156,6 @@ void CSurfaceMovement::SetBoundary_Flutter2D(CGeometry *geometry, CConfig *confi
   /*--- Retrieve values from the config file ---*/
   deltaT    = config->GetDelta_UnstTimeND();
   vel       = config->GetVelocity_FreeStreamND();
-  w_red     = config->GetReduced_Frequency();
-  ampl      = config->GetPitching_Amplitude();
   
   /*--- Pitching origin, frequency, and amplitude from config. ---*/
   Center[0] = config->GetMotion_Origin_X(iZone);
@@ -3166,11 +3219,14 @@ void CSurfaceMovement::SetBoundary_Flutter2D(CGeometry *geometry, CConfig *confi
 }
 
 void CSurfaceMovement::SetBoundary_Flutter3D(CGeometry *geometry, CConfig *config, 
-                                             CFreeFormDefBox **FFDBox, unsigned long iter) {
+                                             CFreeFormDefBox **FFDBox, unsigned long iter, unsigned short iZone) {
 	
 	double omega, w_red, deltaT, ampl, v_inf, *vel;
   double alpha, alpha_new, alpha_old;
   double time_new, time_old;
+  double Center[3], Omega[3], Ampl[3], Phase[3];
+  double DEG2RAD = PI_NUMBER/180.0;
+
   unsigned short iDim;
   unsigned short nDim = geometry->GetnDim();
   bool adjoint = config->GetAdjoint();
@@ -3184,8 +3240,20 @@ void CSurfaceMovement::SetBoundary_Flutter3D(CGeometry *geometry, CConfig *confi
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
   vel    = config->GetVelocity_FreeStreamND();
-  w_red  = config->GetReduced_Frequency();
-  ampl   = config->GetPitching_Amplitude();
+  
+  /*--- Pitching origin, frequency, and amplitude from config. ---*/
+  Center[0] = config->GetMotion_Origin_X(iZone);
+  Center[1] = config->GetMotion_Origin_Y(iZone);
+  Center[2] = config->GetMotion_Origin_Z(iZone);
+  Omega[0]  = (config->GetPitching_Omega_X(iZone)/config->GetOmega_Ref());
+  Omega[1]  = (config->GetPitching_Omega_Y(iZone)/config->GetOmega_Ref());
+  Omega[2]  = (config->GetPitching_Omega_Z(iZone)/config->GetOmega_Ref());
+  Ampl[0]   = config->GetPitching_Ampl_X(iZone)*DEG2RAD;
+  Ampl[1]   = config->GetPitching_Ampl_Y(iZone)*DEG2RAD;
+  Ampl[2]   = config->GetPitching_Ampl_Z(iZone)*DEG2RAD;
+  Phase[0]   = config->GetPitching_Phase_X(iZone)*DEG2RAD;
+  Phase[1]   = config->GetPitching_Phase_Y(iZone)*DEG2RAD;
+  Phase[2]   = config->GetPitching_Phase_Z(iZone)*DEG2RAD;
   
   /*--- Compute delta time based on physical time step ---*/
   if (adjoint) {
@@ -3202,26 +3270,16 @@ void CSurfaceMovement::SetBoundary_Flutter3D(CGeometry *geometry, CConfig *confi
     time_old = time_new;
     if (iter != 0) time_old = (static_cast<double>(iter)-1.0)*deltaT;
   }
-  
-  /*--- Compute the freestream velocity for use with the reduced frequency --*/
-  v_inf = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    v_inf += vel[iDim]*vel[iDim];
-  v_inf = sqrt(v_inf);
-  
-  /*--- For now, hard code the origin and chord length. These can be
-   inputs in the config file in the future. ---*/
-	double chord = 1.0;
 	
   /*--- Update the pitching angle at this time step. Flip sign for
    nose-up positive convention. ---*/
-  omega     = 2.0*w_red*v_inf/chord;
-  alpha_new = ampl*sin(omega*time_new);
-  alpha_old = ampl*sin(omega*time_old);
+  omega     = Omega[2];
+  alpha_new = Ampl[2]*sin(omega*time_new);
+  alpha_old = Ampl[2]*sin(omega*time_old);
   alpha     = (1E-10 + (alpha_new - alpha_old))*(-PI_NUMBER/180.0);
 	
 	if (rank == MASTER_NODE)
-		cout << "New dihedral angle (alpha): " << alpha_new << " degrees." << endl;
+		cout << "New dihedral angle (alpha): " << alpha_new/DEG2RAD << " degrees." << endl;
 	
 	unsigned short iOrder, jOrder, kOrder;
 	short iFFDBox;
@@ -3483,7 +3541,7 @@ void CSurfaceMovement::SetNACA_4Digits(CGeometry *boundary, CConfig *config) {
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
 		for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
 			VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
-			if (config->GetMarker_All_Moving(iMarker) == YES) {
+			if (config->GetMarker_All_DV(iMarker) == YES) {
 				Point = boundary->vertex[iMarker][iVertex]->GetNode();
 				Coord = boundary->vertex[iMarker][iVertex]->GetCoord();
 				Normal = boundary->vertex[iMarker][iVertex]->GetNormal();
@@ -3515,7 +3573,7 @@ void CSurfaceMovement::SetParabolic(CGeometry *boundary, CConfig *config) {
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
 		for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
 			VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
-			if (config->GetMarker_All_Moving(iMarker) == YES) {
+			if (config->GetMarker_All_DV(iMarker) == YES) {
 				Point = boundary->vertex[iMarker][iVertex]->GetNode();
 				Coord = boundary->vertex[iMarker][iVertex]->GetCoord();
 				Normal = boundary->vertex[iMarker][iVertex]->GetNormal();
@@ -3545,7 +3603,7 @@ void CSurfaceMovement::SetObstacle(CGeometry *boundary, CConfig *config) {
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
 		for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
 			VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
-			if (config->GetMarker_All_Moving(iMarker) == YES) {
+			if (config->GetMarker_All_DV(iMarker) == YES) {
 				Point = boundary->vertex[iMarker][iVertex]->GetNode();
 				Coord = boundary->vertex[iMarker][iVertex]->GetCoord();
 				xCoord = Coord[0]-xOffSet;
@@ -3570,7 +3628,7 @@ void CSurfaceMovement::SetStretch(CGeometry *boundary, CConfig *config) {
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
 		for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
 			VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
-			if (config->GetMarker_All_Moving(iMarker) == YES) {
+			if (config->GetMarker_All_DV(iMarker) == YES) {
 				Point = boundary->vertex[iMarker][iVertex]->GetNode();
 				Coord = boundary->vertex[iMarker][iVertex]->GetCoord();
 				VarCoord[0] = End - Coord[0];
@@ -4532,7 +4590,7 @@ void CFreeFormDefBox::SetDeformationZone(CGeometry *geometry, CConfig *config, u
 		{2, 7, 5, 6, 2, 7, 5}};
 	
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		if (config->GetMarker_All_Moving(iMarker) == YES)
+		if (config->GetMarker_All_DV(iMarker) == YES)
 			for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {	
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 				geometry->node[iPoint]->SetMove(false);

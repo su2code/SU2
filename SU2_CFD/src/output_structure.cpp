@@ -1555,11 +1555,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   
   double *Aux_Press, *Aux_Frict, *Aux_Heat, *Aux_yPlus, *Aux_Sens;
   
-	bool grid_movement = ((config->GetUnsteady_Simulation() &&
-                         config->GetWrt_Unsteady() &&
-                         config->GetGrid_Movement()) ||
-                        ((config->GetUnsteady_Simulation() == TIME_SPECTRAL) &&
-                         config->GetGrid_Movement()));
+	bool grid_movement = config->GetGrid_Movement();
 	bool incompressible = config->GetIncompressible();
   bool transition = (config->GetKind_Trans_Model()==LM);
   
@@ -1833,7 +1829,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       
       /*--- For unsteady problems with grid movement, write the mesh velocities
        also, in case we need them for the unsteady adjoint. ---*/
-      if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady() && grid_movement) {
+      if (grid_movement) {
         Coordinates = geometry->node[iPoint]->GetCoord();
         for (unsigned short iDim = 0; iDim < geometry->GetnDim(); iDim++) {
           Data[jVar][jPoint] = Coordinates[iDim];
@@ -3145,11 +3141,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short va
 	char buffer[50];
 	unsigned short Kind_ObjFunc = config->GetKind_ObjFunc();
   unsigned short Kind_Solver  = config->GetKind_Solver();
-  bool grid_movement = ((config->GetUnsteady_Simulation() &&
-                         config->GetWrt_Unsteady() &&
-                         config->GetGrid_Movement()) ||
-                        ((config->GetUnsteady_Simulation() == TIME_SPECTRAL) &&
-                         config->GetGrid_Movement()));
+  bool grid_movement = config->GetGrid_Movement();
   
 	/*--- Retrieve filename from config ---*/
 	if (config->GetAdjoint())

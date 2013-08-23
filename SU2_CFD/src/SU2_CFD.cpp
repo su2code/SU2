@@ -273,7 +273,7 @@ int main(int argc, char *argv[]) {
 			surface_movement[iZone]->CopyBoundary(geometry_container[iZone][MESH_0], config_container[iZone]);
 			if (config_container[iZone]->GetUnsteady_Simulation() == TIME_SPECTRAL)
 				SetGrid_Movement(geometry_container[iZone], surface_movement[iZone], grid_movement[iZone],
-                         FFDBox[iZone], solver_container[iZone], config_container[iZone], iZone, 0);      
+                         FFDBox[iZone], solver_container[iZone], config_container[iZone], iZone, 0);
 		}
     
   }
