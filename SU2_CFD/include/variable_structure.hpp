@@ -997,32 +997,32 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 */		
-	virtual void SetPrimVar_Compressible(CConfig *config);
+	virtual bool SetPrimVar_Compressible(CConfig *config);
   
   /*!
 	 * \brief A virtual member.
 	 */
-	virtual void SetPrimVar_Compressible(double SharpEdge_Distance, bool check, CConfig *config);
+	virtual bool SetPrimVar_Compressible(double SharpEdge_Distance, bool check, CConfig *config);
 	
   /*!
 	 * \brief A virtual member.
 	 */
-	virtual void SetPrimVar_Incompressible(double SharpEdge_Distance, bool check, CConfig *config);
+	virtual bool SetPrimVar_Incompressible(double SharpEdge_Distance, bool check, CConfig *config);
   
 	/*!
 	 * \brief A virtual member.
 	 */		
-	virtual void SetPrimVar_Compressible(double turb_ke, CConfig *config);
+	virtual bool SetPrimVar_Compressible(double turb_ke, CConfig *config);
 	
 	/*!
 	 * \brief A virtual member.
 	 */		
-	virtual void SetPrimVar_Incompressible(double Density_Inf, double levelset, CConfig *config);
+	virtual bool SetPrimVar_Incompressible(double Density_Inf, double levelset, CConfig *config);
 	
 	/*!
 	 * \brief A virtual member.
 	 */		
-	virtual void SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double turb_ke, double levelset, CConfig *config);
+	virtual bool SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double turb_ke, double levelset, CConfig *config);
 	
 	/*!
 	 * \brief A virtual member.
@@ -1982,12 +1982,12 @@ public:
 	/*!
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
-	void SetPrimVar_Compressible(CConfig *config);
+	bool SetPrimVar_Compressible(CConfig *config);
 	
 	/*!
 	 * \brief Set all the primitive variables for incompressible flows.
 	 */
-	void SetPrimVar_Incompressible(double Density_Inf, double levelset, CConfig *config);
+	bool SetPrimVar_Incompressible(double Density_Inf, double levelset, CConfig *config);
 	
 	/*!
 	 * \brief Get the primitive variables.
@@ -2294,12 +2294,12 @@ public:
 	/*!
 	 * \brief Set all the primitive variables for compressible flows
 	 */
-	void SetPrimVar_Compressible(double turb_ke, CConfig *config);
+	bool SetPrimVar_Compressible(double turb_ke, CConfig *config);
 	
 	/*!
 	 * \brief Set all the primitive variables for incompressible flows
 	 */
-	void SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double turb_ke, double levelset, CConfig *config);
+	bool SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double turb_ke, double levelset, CConfig *config);
 };
 
 /*! 
@@ -2596,12 +2596,12 @@ public:
   /*!
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
-	void SetPrimVar_Compressible(double SharpEdge_Distance, bool check, CConfig *config);
+	bool SetPrimVar_Compressible(double SharpEdge_Distance, bool check, CConfig *config);
   
   /*!
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
-	void SetPrimVar_Incompressible(double SharpEdge_Distance, bool check, CConfig *config);
+	bool SetPrimVar_Incompressible(double SharpEdge_Distance, bool check, CConfig *config);
   
 	/*!
 	 * \brief Set the value of the adjoint velocity.

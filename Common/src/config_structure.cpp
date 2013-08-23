@@ -24,112 +24,124 @@
 #include "../include/config_structure.hpp"
 
 CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short verb_level) {
-	string text_line, text2find, option_name, keyword;
-	ifstream case_file;
-	vector<string> option_value;
-	double default_vec_3d[3];
-	double default_vec_6d[6];
-	nZone = val_nZone;
-
+  
 	int rank = MASTER_NODE;
 #ifndef NO_MPI
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
+  
+  /*--- Reading config options  ---*/
+  SetConfig_Options(val_nZone);
+  
+  /*--- Parsing the config file  ---*/
+  SetParsing(case_filename);
+  
+	/*--- Configuration file postprocessing ---*/
+	SetPostprocessing(val_software, val_iZone);
+  
+	/*--- Configuration file boundaries/markers seting ---*/
+	SetMarkers(val_software, val_iZone);
+  
+	/*--- Configuration file output ---*/
+	if ((rank == MASTER_NODE) && (verb_level == VERB_HIGH) && (val_iZone != 1))
+		SetOutput(val_software, val_iZone);
+  
+}
 
-	/*--- Intialize motion pointers to NULL. If we don't find these values
+CConfig::CConfig(char case_filename[200]) {
+	string text_line, text2find, option_name, keyword;
+	ifstream case_file;
+	vector<string> option_value;
+  
+	/*--- Mesh information ---*/
+	AddEnumOption("MESH_FORMAT", Mesh_FileFormat, Input_Map, "SU2");
+	AddScalarOption("MESH_FILENAME", Mesh_FileName, string("mesh.su2"));
+  
+	/*--- Information about type of simulation and time-spectral instances ---*/
+	AddEnumOption("UNSTEADY_SIMULATION", Unsteady_Simulation, Unsteady_Map, "NO");
+	AddScalarOption("TIME_INSTANCES", nTimeInstances, 1);
+  
+	/*--- Read the configuration file ---*/
+	case_file.open(case_filename, ios::in);
+  
+	if (case_file.fail()) {
+		cout << "There is no configuration file!!" << endl;
+		cout << "Press any key to exit..." << endl;
+		cin.get(); exit(1);
+	}
+  
+	/*--- Parse the configuration file and set the options ---*/
+	while (getline (case_file,text_line)) {
+		if (TokenizeString(text_line, option_name, option_value)) {
+			map<string, CAnyOptionRef*>::iterator it;
+			it = param.find(option_name);
+			if (it != param.end()) {
+				param[option_name]->SetValue(option_value);
+			}
+		}
+	}
+  
+	case_file.close();
+  
+}
+
+void CConfig::SetConfig_Options(unsigned short val_nZone) {
+	double default_vec_3d[3];
+	double default_vec_6d[6];
+	nZone = val_nZone;
+  
+	/*--- Intialize pointers to NULL. If we don't find these values
    in the config file, they will all be set to zero. ---*/
-	Motion_Origin_X = NULL;
-	Motion_Origin_Y = NULL;
-	Motion_Origin_Z = NULL;
-	Translation_Rate_X = NULL;
-	Translation_Rate_Y = NULL;
-	Translation_Rate_Z = NULL;
-	Rotation_Rate_X = NULL;
-	Rotation_Rate_Y = NULL;
-	Rotation_Rate_Z = NULL;
-	Pitching_Omega_X = NULL;
-	Pitching_Omega_Y = NULL;
-	Pitching_Omega_Z = NULL;
-	Pitching_Ampl_X = NULL;
-	Pitching_Ampl_Y = NULL;
-	Pitching_Ampl_Z = NULL;
-	Pitching_Phase_X = NULL;
-	Pitching_Phase_Y = NULL;
-	Pitching_Phase_Z = NULL;
-	Plunging_Omega_X = NULL;
-	Plunging_Omega_Y = NULL;
-	Plunging_Omega_Z = NULL;
-	Plunging_Ampl_X = NULL;
-	Plunging_Ampl_Y = NULL;
-	Plunging_Ampl_Z = NULL;
-
+  Kind_GridMovement = NULL;
+	Motion_Origin_X = NULL;     Motion_Origin_Y = NULL;     Motion_Origin_Z = NULL;
+	Translation_Rate_X = NULL;  Translation_Rate_Y = NULL;  Translation_Rate_Z = NULL;
+	Rotation_Rate_X = NULL;     Rotation_Rate_Y = NULL;     Rotation_Rate_Z = NULL;
+	Pitching_Omega_X = NULL;    Pitching_Omega_Y = NULL;    Pitching_Omega_Z = NULL;
+	Pitching_Ampl_X = NULL;     Pitching_Ampl_Y = NULL;     Pitching_Ampl_Z = NULL;
+	Pitching_Phase_X = NULL;    Pitching_Phase_Y = NULL;    Pitching_Phase_Z = NULL;
+	Plunging_Omega_X = NULL;    Plunging_Omega_Y = NULL;    Plunging_Omega_Z = NULL;
+	Plunging_Ampl_X = NULL;     Plunging_Ampl_Y = NULL;     Plunging_Ampl_Z = NULL;
+  
 	/* BEGIN_CONFIG_OPTIONS */
-
+  
 	/*--- Options related to problem definition and partitioning ---*/
-	/* CONFIG_CATEGORY: Problem Definition and Partitioning */
-
+	/* CONFIG_CATEGORY: Problem Definition */
+  
 	/* DESCRIPTION: Physical governing equations */
 	AddEnumOption("PHYSICAL_PROBLEM", Kind_Solver, Solver_Map, "NONE");
 	/* DESCRIPTION: Mathematical problem */
-	AddMathProblem("MATH_PROBLEM" , Adjoint, false , OneShot, false, 
-                 Linearized, false, Restart_Flow, false);
+	AddMathProblem("MATH_PROBLEM" , Adjoint, false , OneShot, false, Linearized, false, Restart_Flow, false);
+  /* DESCRIPTION: Specify turbulence model */
+	AddEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, "NONE");
+	/* DESCRIPTION: Specify transition model */
+	AddEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, "NONE");
 	/* DESCRIPTION: Free-surface problem */
 	AddSpecialOption("FREE_SURFACE", FreeSurface, SetBoolOption, false);
 	/* DESCRIPTION: Incompressible flow using artificial compressibility */
 	AddSpecialOption("INCOMPRESSIBLE_FORMULATION", Incompressible, SetBoolOption, false);
 	/* DESCRIPTION: Axisymmetric simulation */
 	AddSpecialOption("AXISYMMETRIC", Axisymmetric, SetBoolOption, false);
-	/* DESCRIPTION: Magnetic simulation */
-	AddSpecialOption("MAGNET", MagneticForce, SetBoolOption, false);
-	/* DESCRIPTION: Joule heating simulation */
-	AddSpecialOption("JOULE_HEAT", JouleHeating, SetBoolOption, false);
-	/* DESCRIPTION: Flag for running the electric potential solver as part of the plasma solver */
-	AddSpecialOption("ELECTRIC_SOLVER", ElectricSolver, SetBoolOption, false);
-	/* DESCRIPTION:  */
-	AddSpecialOption("MACCORMACK_RELAXATION", MacCormackRelaxation, SetBoolOption, false);
-	/* DESCRIPTION: Time stepping of the various species in a steady plasma solution */
-	AddSpecialOption("PLASMA_MULTI_TIME_STEP", PlasmaMultiTimeSteps, SetBoolOption, false);
-	/* DESCRIPTION: Perform a low fidelity simulation */
+  /* DESCRIPTION: Add the gravity force */
+	AddSpecialOption("GRAVITY_FORCE", GravityForce, SetBoolOption, false);
+  /* DESCRIPTION: Perform a low fidelity simulation */
 	AddSpecialOption("LOW_FIDELITY_SIMULATION", LowFidelitySim, SetBoolOption, false);
-
-	/* DESCRIPTION: Roe-Turkel preconditioning for low Mach number flows */
-	AddSpecialOption("ROE_TURKEL_PREC", Low_Mach_Precon, SetBoolOption, false);
-	/* DESCRIPTION: Time Step for dual time stepping simulations (s) */
-	AddScalarOption("MIN_ROE_TURKEL_PREC", Min_Beta_RoeTurkel, 0.01);
-	/* DESCRIPTION: Time Step for dual time stepping simulations (s) */
-	AddScalarOption("MAX_ROE_TURKEL_PREC", Max_Beta_RoeTurkel, 0.2);
-	/* DESCRIPTION: Time Step for dual time stepping simulations (s) */
-	AddScalarOption("STAGNATION_BFIELD", Stagnation_B, 0.2);
-	/* DESCRIPTION: Time Step for dual time stepping simulations (s) */
-	AddScalarOption("ELECTRICAL_CONDUCTIVITY", Electric_Cond, 2000.0);
-	/* DESCRIPTION: Time Step for dual time stepping simulations (s) */
-	AddScalarOption("DIPOLE_DIST", DipoleDist, 1E-6);
-	/* DESCRIPTION: Restart solution from native solution file */
+  /* DESCRIPTION: Restart solution from native solution file */
 	AddSpecialOption("RESTART_SOL", Restart, SetBoolOption, false);
-	/* DESCRIPTION: Restart a Plasma solution from an Euler native solution file */
-	AddSpecialOption("RESTART_PLASMA_FROM_EULER", Restart_Euler2Plasma, SetBoolOption, false);
-	/* DESCRIPTION: Write a tecplot file for each partition */
+  /* DESCRIPTION: Write a tecplot file for each partition */
 	AddSpecialOption("VISUALIZE_PART", Visualize_Partition, SetBoolOption, false);
-	/* DESCRIPTION: Divide rectangles into triangles */
-	AddSpecialOption("DIVIDE_ELEMENTS", Divide_Element, SetBoolOption, false);
-	/* DESCRIPTION: Specify turbulence model */
-	AddEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, "NONE");
-	/* DESCRIPTION: Specify transition model */
-	AddEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, "NONE");
-	/* DESCRIPTION: Engine subsonic intake region */
-	AddSpecialOption("SUBSONIC_NACELLE_INFLOW", Engine_Intake, SetBoolOption, false);
   
-	/*--- options related to various boundary markers ---*/
+	/*--- Options related to various boundary markers ---*/
 	/* CONFIG_CATEGORY: Boundary Markers */
-
+  
 	/* DESCRIPTION: Marker(s) of the surface in the surface flow solution file */
 	AddMarkerOption("MARKER_PLOTTING", nMarker_Plotting, Marker_Plotting);
 	/* DESCRIPTION: Marker(s) of the surface where evaluate the non-dimensional coefficients */
 	AddMarkerOption("MARKER_MONITORING", nMarker_Monitoring, Marker_Monitoring);
   /* DESCRIPTION: Marker(s) of the surface where objective function (design problem) will be evaluated */
 	AddMarkerOption("MARKER_DESIGNING", nMarker_Designing, Marker_Designing);
-  
-	/* DESCRIPTION: Euler wall boundary condition */
+  /* DESCRIPTION: Marker(s) of moving surfaces (MOVING_WALL or DEFORMING grid motion). */
+	AddMarkerOption("MARKER_MOVING", nMarker_Moving, Marker_Moving);
+	/* DESCRIPTION: Euler wall boundary marker(s) */
 	AddMarkerOption("MARKER_EULER", nMarker_Euler, Marker_Euler);
 	/* DESCRIPTION: Adiabatic wall boundary condition */
 	AddSpecialOption("ADIABATIC_WALL", AdiabaticWall, SetBoolOption, true);
@@ -147,45 +159,41 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddMarkerOption("MARKER_INTERFACE", nMarker_InterfaceBound, Marker_InterfaceBound);
 	/* DESCRIPTION: Dirichlet boundary marker(s) */
 	AddMarkerOption("MARKER_DIRICHLET", nMarker_Dirichlet, Marker_Dirichlet);
-	/* DESCRIPTION: Custom boundary marker(s) */
-	AddMarkerOption("MARKER_CUSTOM", nMarker_Custom, Marker_Custom);
-	/* DESCRIPTION: Neumann boundary marker(s) */
+  /* DESCRIPTION: Neumann boundary marker(s) */
 	AddMarkerOption("MARKER_NEUMANN", nMarker_Neumann, Marker_Neumann);
-
-
-	/* DESCRIPTION: Electric dirichlet boundary marker(s) */
+  /* DESCRIPTION: Electric dirichlet boundary marker(s) */
 	AddMarkerDirichlet("ELEC_DIRICHLET", nMarker_Dirichlet_Elec, Marker_Dirichlet_Elec, Dirichlet_Value );
 	/* DESCRIPTION: Electric neumann boundary marker(s) */
 	AddMarkerOption("ELEC_NEUMANN", nMarker_Neumann_Elec, Marker_Neumann_Elec);
-
-
+	/* DESCRIPTION: Custom boundary marker(s) */
+	AddMarkerOption("MARKER_CUSTOM", nMarker_Custom, Marker_Custom);
 	/* DESCRIPTION: Periodic boundary marker(s) for use with SU2_PBC
-     Format: ( periodic marker, donor marker, rotation_center_x, rotation_center_y,
-     rotation_center_z, rotation_angle_x-axis, rotation_angle_y-axis,
-     rotation_angle_z-axis, translation_x, translation_y, translation_z, ... ) */
+   Format: ( periodic marker, donor marker, rotation_center_x, rotation_center_y,
+   rotation_center_z, rotation_angle_x-axis, rotation_angle_y-axis,
+   rotation_angle_z-axis, translation_x, translation_y, translation_z, ... ) */
 	AddMarkerPeriodic("MARKER_PERIODIC", nMarker_PerBound, Marker_PerBound, Marker_PerDonor,
-			Periodic_RotCenter, Periodic_RotAngles, Periodic_Translation);
+                    Periodic_RotCenter, Periodic_RotAngles, Periodic_Translation);
 	/* DESCRIPTION: Sliding mesh interface boundary marker(s) for use with SU2_SMC
-     Format: ( sliding marker, zone # of sliding marker, donor marker, zone # of donor, ... ) */
+   Format: ( sliding marker, zone # of sliding marker, donor marker, zone # of donor, ... ) */
 	AddMarkerSliding("MARKER_SLIDING", nMarker_Sliding, Marker_SlideBound, Marker_SlideDonor,
-			SlideBound_Zone, SlideDonor_Zone);
-	/* DESCRIPTION: Inlet boundary type */
+                   SlideBound_Zone, SlideDonor_Zone);
+  /* DESCRIPTION: Inlet boundary type */
 	AddEnumOption("INLET_TYPE", Kind_Inlet, Inlet_Map, "TOTAL_CONDITIONS");
 	/* DESCRIPTION: Inlet boundary marker(s) with the following formats,
-     Total Conditions: (inlet marker, total temp, total pressure, flow_direction_x,
-               flow_direction_y, flow_direction_z, ... ) where flow_direction is
-               a unit vector.
-     Mass Flow: (inlet marker, density, velocity magnitude, flow_direction_x,
-               flow_direction_y, flow_direction_z, ... ) where flow_direction is
-               a unit vector. */
+   Total Conditions: (inlet marker, total temp, total pressure, flow_direction_x,
+   flow_direction_y, flow_direction_z, ... ) where flow_direction is
+   a unit vector.
+   Mass Flow: (inlet marker, density, velocity magnitude, flow_direction_x,
+   flow_direction_y, flow_direction_z, ... ) where flow_direction is
+   a unit vector. */
 	AddMarkerInlet("MARKER_INLET", nMarker_Inlet, Marker_Inlet, Inlet_Ttotal, Inlet_Ptotal, Inlet_FlowDir);
 	/* DESCRIPTION: % Supersonic inlet boundary marker(s)
    Format: (inlet marker, temperature, static pressure, velocity_x,
    velocity_y, velocity_z, ... ), i.e. primitive variables specified. */
 	AddMarkerInlet("MARKER_SUPERSONIC_INLET", nMarker_Supersonic_Inlet, Marker_Supersonic_Inlet,
-			Inlet_Temperature, Inlet_Pressure, Inlet_Velocity);
+                 Inlet_Temperature, Inlet_Pressure, Inlet_Velocity);
 	/* DESCRIPTION: Outlet boundary marker(s)
-     Format: ( outlet marker, back pressure (static), ... ) */
+   Format: ( outlet marker, back pressure (static), ... ) */
 	AddMarkerOutlet("MARKER_OUTLET", nMarker_Outlet, Marker_Outlet, Outlet_Pressure);
 	/* DESCRIPTION: Isothermal wall boundary marker(s)
    Format: ( isothermal marker, wall temperature (static), ... ) */
@@ -194,13 +202,15 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
    Format: ( Heat flux marker, wall heat flux (static), ... ) */
 	AddMarkerOutlet("MARKER_HEATFLUX", nMarker_HeatFlux, Marker_HeatFlux, Heat_Flux);
 	/* DESCRIPTION: Nacelle inflow boundary marker(s)
-     Format: ( nacelle inflow marker, fan face Mach, ... ) */
+   Format: ( nacelle inflow marker, fan face Mach, ... ) */
 	AddMarkerOutlet("MARKER_NACELLE_INFLOW", nMarker_NacelleInflow, Marker_NacelleInflow, FanFace_Mach_Target);
+  /* DESCRIPTION: Engine subsonic intake region */
+	AddSpecialOption("SUBSONIC_NACELLE_INFLOW", Engine_Intake, SetBoolOption, false);
 	/* DESCRIPTION: Nacelle exhaust boundary marker(s)
-     Format: (nacelle exhaust marker, total nozzle temp, total nozzle pressure, ... )*/
+   Format: (nacelle exhaust marker, total nozzle temp, total nozzle pressure, ... )*/
 	AddMarkerInlet("MARKER_NACELLE_EXHAUST", nMarker_NacelleExhaust, Marker_NacelleExhaust, Nozzle_Ttotal, Nozzle_Ptotal);
 	/* DESCRIPTION: Displacement boundary marker(s) */
-	AddMarkerDisplacement("MARKER_DISPL", nMarker_Displacement, Marker_Displacement, Displ_Value);
+  AddMarkerDisplacement("MARKER_DISPL", nMarker_Displacement, Marker_Displacement, Displ_Value);
 	/* DESCRIPTION: Load boundary marker(s) */
 	AddMarkerLoad("MARKER_LOAD", nMarker_Load, Marker_Load, Load_Value);
 	/* DESCRIPTION: Flow load boundary marker(s) */
@@ -211,10 +221,10 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddMarkerOption("MARKER_OBSERVER", nMarker_Observer, Marker_Observer);
 	/* DESCRIPTION: Damping factor for engine inlet condition */
 	AddScalarOption("DAMP_NACELLE_INFLOW", Damp_Nacelle_Inflow, 0.1);
-    
-	/*--- options related to grid adaptation ---*/
+  
+	/*--- Options related to grid adaptation ---*/
 	/* CONFIG_CATEGORY: Grid adaptation */
-
+  
 	/* DESCRIPTION: Kind of grid adaptation */
 	AddEnumOption("KIND_ADAPT", Kind_Adaptation, Adapt_Map, "NONE");
 	/* DESCRIPTION: Percentage of new elements (% of the original number of elements) */
@@ -227,11 +237,12 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddSpecialOption("SMOOTH_GEOMETRY", SmoothNumGrid, SetBoolOption, false);
 	/* DESCRIPTION: Adapt the boundary elements */
 	AddSpecialOption("ADAPT_BOUNDARY", AdaptBoundary, SetBoolOption, true);
-
-
-	/*--- options related to time-marching ---*/
+  /* DESCRIPTION: Divide rectangles into triangles */
+	AddSpecialOption("DIVIDE_ELEMENTS", Divide_Element, SetBoolOption, false);
+  
+	/*--- Options related to time-marching ---*/
 	/* CONFIG_CATEGORY: Time-marching */
-
+  
 	/* DESCRIPTION: Unsteady simulation  */
 	AddEnumOption("UNSTEADY_SIMULATION", Unsteady_Simulation, Unsteady_Map, "NO");
 	/* DESCRIPTION:  Unsteady farfield boundaries  */
@@ -241,6 +252,14 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	/* DESCRIPTION: CFL ramp (factor, number of iterations, CFL limit) */
 	default_vec_3d[0] = 1.0; default_vec_3d[1] = 100.0; default_vec_3d[2] = 1.0;
 	AddArrayOption("CFL_RAMP", 3, CFLRamp, default_vec_3d);
+  /* DESCRIPTION: Reduction factor of the CFL coefficient in the adjoint problem */
+	AddScalarOption("ADJ_CFL_REDUCTION", Adj_CFLRedCoeff, 0.8);
+  /* DESCRIPTION: Reduction factor of the CFL coefficient in the level set problem */
+	AddScalarOption("TURB_CFL_REDUCTION", Turb_CFLRedCoeff, 1.0);
+  /* DESCRIPTION: Reduction factor of the CFL coefficient in the turbulent adjoint problem */
+	AddScalarOption("ADJTURB_CFL_REDUCTION", AdjTurb_CFLRedCoeff, 0.1);
+  /* DESCRIPTION: Reduction factor of the CFL coefficient in the level set problem */
+	AddScalarOption("LEVELSET_CFL_REDUCTION", LevelSet_CFLRedCoeff, 1E-2);
 	/* DESCRIPTION: Number of total iterations */
 	AddScalarOption("EXT_ITER", nExtIter, 999999);
 	// these options share nRKStep as their size, which is not a good idea in general
@@ -280,14 +299,10 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddEnumOption("TIME_DISCRE_WAVE", Kind_TimeIntScheme_Wave, Time_Int_Map, "EULER_IMPLICIT");
 	/* DESCRIPTION: Time discretization */
 	AddEnumOption("TIME_DISCRE_FEA", Kind_TimeIntScheme_FEA, Time_Int_Map, "EULER_IMPLICIT");
-	/* DESCRIPTION: Reduction factor of the CFL coefficient in the level set problem */
-	AddScalarOption("LEVELSET_CFL_REDUCTION", LevelSet_CFLRedCoeff, 1E-2);
-	/* DESCRIPTION: Reduction factor of the CFL coefficient in the level set problem */
-	AddScalarOption("TURB_CFL_REDUCTION", Turb_CFLRedCoeff, 1.0);
-  
-	/*--- options related to the linear solvers ---*/
-	/* CONFIG_CATEGORY: Linear solver definition */
 
+	/*--- Options related to the linear solvers ---*/
+	/* CONFIG_CATEGORY: Linear solver definition */
+  
 	/* DESCRIPTION: Linear solver for the implicit, mesh deformation, or discrete adjoint systems */
 	AddEnumOption("LINEAR_SOLVER", Kind_Linear_Solver, Linear_Solver_Map, "FGMRES");
 	/* DESCRIPTION: Preconditioner for the Krylov linear solvers */
@@ -298,7 +313,12 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddScalarOption("LINEAR_SOLVER_ITER", Linear_Solver_Iter, 10);
 	/* DESCRIPTION: Relaxation of the linear solver for the implicit formulation */
 	AddScalarOption("LINEAR_SOLVER_RELAX", Linear_Solver_Relax, 1.0);
-
+  /* DESCRIPTION: Roe-Turkel preconditioning for low Mach number flows */
+	AddSpecialOption("ROE_TURKEL_PREC", Low_Mach_Precon, SetBoolOption, false);
+	/* DESCRIPTION: Time Step for dual time stepping simulations (s) */
+	AddScalarOption("MIN_ROE_TURKEL_PREC", Min_Beta_RoeTurkel, 0.01);
+	/* DESCRIPTION: Time Step for dual time stepping simulations (s) */
+	AddScalarOption("MAX_ROE_TURKEL_PREC", Max_Beta_RoeTurkel, 0.2);
 	/* DESCRIPTION: Linear solver for the turbulent adjoint systems */
 	AddEnumOption("ADJTURB_LIN_SOLVER", Kind_AdjTurb_Linear_Solver, Linear_Solver_Map, "FGMRES");
 	/* DESCRIPTION: Preconditioner for the turbulent adjoint Krylov linear solvers */
@@ -307,16 +327,14 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddScalarOption("ADJTURB_LIN_ERROR", AdjTurb_Linear_Error, 1E-5);
 	/* DESCRIPTION: Maximum number of iterations of the turbulent adjoint linear solver for the implicit formulation */
 	AddScalarOption("ADJTURB_LIN_ITER", AdjTurb_Linear_Iter, 10);
-
-	/*--- options related to dynamic meshes ---*/
+  
+	/*--- Options related to dynamic meshes ---*/
 	/* CONFIG_CATEGORY: Dynamic mesh definition */
-
+  
 	/* DESCRIPTION: Mesh motion for unsteady simulations */
 	AddSpecialOption("GRID_MOVEMENT", Grid_Movement, SetBoolOption, false);
-  /* DESCRIPTION: Add the gravity force */
-	AddSpecialOption("GRAVITY_FORCE", GravityForce, SetBoolOption, false);
 	/* DESCRIPTION: Type of mesh motion */
-	AddEnumListOption("GRID_MOVEMENT_KIND", nZone, Kind_GridMovement, GridMovement_Map);
+  AddEnumListOption("GRID_MOVEMENT_KIND", nZone, Kind_GridMovement, GridMovement_Map);
 	default_vec_3d[0] = 0; default_vec_3d[1] = 0;
 	/* DESCRIPTION: % Mach number (non-dimensional, based on the mesh velocity and freestream vals.) */
 	AddScalarOption("MACH_MOTION", Mach_Motion, 0.0);
@@ -370,10 +388,6 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddListOption("PLUNGING_AMPL_Z", nZone, Plunging_Ampl_Z);
 	/* DESCRIPTION:  */
 	AddScalarOption("MOTION_FILENAME", Motion_Filename, string("mesh_motion.dat"));
-	/* DESCRIPTION: Reduced frequency for flutter pitching motion */
-	AddScalarOption("RED_FREC", Reduced_Frequency, 0.0);
-	/* DESCRIPTION: Pitching amplitude for flutter (degrees) */
-	AddScalarOption("MAX_PITCH", Pitching_Amplitude, 0.0);
 	/* DESCRIPTION: Uncoupled Aeroelastic Frequency Plunge. */
 	AddScalarOption("FREQ_PLUNGE_AEROELASTIC", FreqPlungeAeroelastic, 100);
 	/* DESCRIPTION: Uncoupled Aeroelastic Frequency Pitch. */
@@ -382,10 +396,10 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddEnumOption("TYPE_AEROELASTIC_GRID_MOVEMENT", Aeroelastic_Grid_Movement, Aeroelastic_Movement_Map, "RIGID");
 	/* DESCRIPTION: Type of grid velocities for aeroelastic motion */
 	AddEnumOption("TYPE_AEROELASTIC_GRID_VELOCITY", Aeroelastic_Grid_Velocity, Aeroelastic_Velocity_Map, "FD");
-
-	/*--- options related to rotating frame problems ---*/
+  
+	/*--- Options related to rotating frame problems ---*/
 	/* CONFIG_CATEGORY: Rotating frame */
-
+  
 	/* DESCRIPTION: Rotating frame problem */
 	AddSpecialOption("ROTATING_FRAME", Rotating_Frame, SetBoolOption, false);
 	default_vec_3d[0] = 0.0; default_vec_3d[1] = 0.0; default_vec_3d[2] = 0.0;
@@ -396,13 +410,12 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddArrayOption("ROTATION_RATE", 3, Omega, default_vec_3d);
 	/*--- Initializing this here because it might be needed in the geometry classes. ---*/
 	Omega_FreeStreamND = new double[3];
-
-	/*--- options related to convergence ---*/
+  
+	/*--- Options related to convergence ---*/
 	/* CONFIG_CATEGORY: Convergence*/
-
+  
 	/* DESCRIPTION: Convergence criteria */
 	AddEnumOption("CONV_CRITERIA", ConvCriteria, Converge_Crit_Map, "RESIDUAL");
-
 	/* DESCRIPTION: Residual reduction (order of magnitude with respect to the initial value) */
 	AddScalarOption("RESIDUAL_REDUCTION", OrderMagResidual, 3.0);
 	/* DESCRIPTION: Min value of the residual (log10 of the residual) */
@@ -421,10 +434,10 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddEnumOption("CAUCHY_FUNC_LIN", Cauchy_Func_LinFlow, Linear_Obj_Map, "DELTA_DRAG");
 	/* DESCRIPTION: Epsilon for a full multigrid method evaluation */
 	AddScalarOption("FULLMG_CAUCHY_EPS", Cauchy_Eps_FullMG, 1E-4);
-
-	/*--- options related to Multi-grid ---*/
+  
+	/*--- Options related to Multi-grid ---*/
 	/* CONFIG_CATEGORY: Multi-grid */
-
+  
 	/* DESCRIPTION: Full multi-grid  */
 	AddSpecialOption("FULLMG", FullMG, SetBoolOption, false);
 	/* DESCRIPTION: Start up iterations using the fine grid only */
@@ -449,142 +462,133 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddScalarOption("MAX_CHILDREN", MaxChildren, 500);
 	/* DESCRIPTION: Maximum length of an agglomerated element (relative to the domain) */
 	AddScalarOption("MAX_DIMENSION", MaxDimension, 0.1);
-
-	/*--- options related to the discretization ---*/
-	/* CONFIG_CATEGORY: Discretization */
-
-	/* DESCRIPTION: Slope limiter */
-	AddEnumOption("SLOPE_LIMITER_FLOW", Kind_SlopeLimit_Flow, Limiter_Map, "NONE");
-  /* DESCRIPTION: Slope limiter */
-	AddEnumOption("SLOPE_LIMITER_TNE2", Kind_SlopeLimit_TNE2, Limiter_Map, "NONE");
-	/* DESCRIPTION: Slope limiter */
-	AddEnumOption("SLOPE_LIMITER_ADJFLOW", Kind_SlopeLimit_AdjFlow, Limiter_Map, "NONE");
-	/* DESCRIPTION: Slope limiter */
-	AddEnumOption("SLOPE_LIMITER_TURB", Kind_SlopeLimit_Turb, Limiter_Map, "NONE");
-	/* DESCRIPTION: Slope limiter */
-	AddEnumOption("SLOPE_LIMITER_ADJTURB", Kind_SlopeLimit_AdjTurb, Limiter_Map, "NONE");
-	/* DESCRIPTION: Slope limiter */
-	AddEnumOption("SLOPE_LIMITER_LEVELSET", Kind_SlopeLimit_LevelSet, Limiter_Map, "NONE");
-	/* DESCRIPTION: Slope limiter */
-	AddEnumOption("SLOPE_LIMITER_ADJLEVELSET", Kind_SlopeLimit_AdjLevelSet, Limiter_Map, "NONE");
-	/* DESCRIPTION: Slope limiter */
-	AddEnumOption("SLOPE_LIMITER_PLASMA", Kind_SlopeLimit_Plasma, Limiter_Map, "NONE");
-	/* DESCRIPTION: Slope limiter */
-	AddEnumOption("SLOPE_LIMITER_ADJPLASMA", Kind_SlopeLimit_AdjPlasma, Limiter_Map, "NONE");
-	/* DESCRIPTION: Coefficient for the limiter */
-	AddScalarOption("LIMITER_COEFF", LimiterCoeff, 0.3);
-	/* DESCRIPTION: Convective numerical method */
-	AddConvectOption("CONV_NUM_METHOD_FLOW", Kind_ConvNumScheme_Flow, Kind_Centered_Flow, Kind_Upwind_Flow);
-  /* DESCRIPTION: Convective numerical method */
-	AddConvectOption("CONV_NUM_METHOD_TNE2", Kind_ConvNumScheme_TNE2, Kind_Centered_TNE2, Kind_Upwind_TNE2);
-	/* DESCRIPTION: Convective numerical method */
-	AddConvectOption("CONV_NUM_METHOD_LEVELSET", Kind_ConvNumScheme_LevelSet, Kind_Centered_LevelSet, Kind_Upwind_LevelSet);
-	/* DESCRIPTION: Convective numerical method */
-	AddConvectOption("CONV_NUM_METHOD_ADJLEVELSET", Kind_ConvNumScheme_AdjLevelSet, Kind_Centered_AdjLevelSet, Kind_Upwind_AdjLevelSet);
-	/* DESCRIPTION: Convective numerical method */
-	AddConvectOption("CONV_NUM_METHOD_PLASMA", Kind_ConvNumScheme_Plasma, Kind_Centered_Plasma, Kind_Upwind_Plasma);
-	/* DESCRIPTION: Convective numerical method */
-	AddConvectOption("CONV_NUM_METHOD_ADJPLASMA", Kind_ConvNumScheme_AdjPlasma, Kind_Centered_AdjPlasma, Kind_Upwind_AdjPlasma);
-	/* DESCRIPTION: Convective numerical method */
-	AddConvectOption("CONV_NUM_METHOD_ADJ", Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow, Kind_Upwind_AdjFlow);
-	/* DESCRIPTION: Convective numerical method */
-	AddConvectOption("CONV_NUM_METHOD_ADJTNE2", Kind_ConvNumScheme_AdjTNE2, Kind_Centered_AdjTNE2, Kind_Upwind_AdjTNE2);
-	/* DESCRIPTION: Convective numerical method */
-	AddConvectOption("CONV_NUM_METHOD_LIN", Kind_ConvNumScheme_LinFlow, Kind_Centered_LinFlow, Kind_Upwind_LinFlow);
-	/* DESCRIPTION: Convective numerical method */
-	AddConvectOption("CONV_NUM_METHOD_TURB", Kind_ConvNumScheme_Turb, Kind_Centered_Turb, Kind_Upwind_Turb);
-	/* DESCRIPTION: Convective numerical method */
-	AddConvectOption("CONV_NUM_METHOD_ADJTURB", Kind_ConvNumScheme_AdjTurb, Kind_Centered_AdjTurb, Kind_Upwind_AdjTurb);
+  
+	/*--- Options related to the spatial discretization ---*/
+	/* CONFIG_CATEGORY: Spatial Discretization */
+  
 	/* DESCRIPTION: Numerical method for spatial gradients */
 	AddEnumOption("NUM_METHOD_GRAD", Kind_Gradient_Method, Gradient_Map, "GREEN_GAUSS");
+	/* DESCRIPTION: Coefficient for the limiter */
+	AddScalarOption("LIMITER_COEFF", LimiterCoeff, 0.3);
+  
+	/* DESCRIPTION: Convective numerical method */
+	AddConvectOption("CONV_NUM_METHOD_FLOW", Kind_ConvNumScheme_Flow, Kind_Centered_Flow, Kind_Upwind_Flow);
 	/* DESCRIPTION: Viscous numerical method */
 	AddEnumOption("VISC_NUM_METHOD_FLOW", Kind_ViscNumScheme_Flow, Viscous_Map, "NONE");
-  /* DESCRIPTION: Viscous numerical method */
-	AddEnumOption("VISC_NUM_METHOD_TNE2", Kind_ViscNumScheme_TNE2, Viscous_Map, "NONE");
-	/* DESCRIPTION: Viscous numerical method */
-	AddEnumOption("VISC_NUM_METHOD_WAVE", Kind_ViscNumScheme_Wave, Viscous_Map, "GALERKIN");
-	/* DESCRIPTION: Viscous numerical method */
-	AddEnumOption("VISC_NUM_METHOD_FEA", Kind_ViscNumScheme_FEA, Viscous_Map, "GALERKIN");
-	/* DESCRIPTION: Source term numerical method */
-	AddEnumOption("SOUR_NUM_METHOD_WAVE", Kind_SourNumScheme_Wave, Source_Map, "NONE");
-	/* DESCRIPTION: Source term numerical method */
-	AddEnumOption("SOUR_NUM_METHOD_FEA", Kind_SourNumScheme_FEA, Source_Map, "NONE");
 	/* DESCRIPTION: Source term numerical method */
 	AddEnumOption("SOUR_NUM_METHOD_FLOW", Kind_SourNumScheme_Flow, Source_Map, "NONE");
-  /* DESCRIPTION: Source term numerical method */
-	AddEnumOption("SOUR_NUM_METHOD_TNE2", Kind_SourNumScheme_TNE2, Source_Map, "NONE");
-	/* DESCRIPTION: Source term numerical method */
-	AddEnumOption("SOUR_NUM_METHOD_LEVELSET", Kind_SourNumScheme_LevelSet, Source_Map, "NONE");
-	/* DESCRIPTION: Viscous numerical method */
-	AddEnumOption("VISC_NUM_METHOD_ADJLEVELSET", Kind_ViscNumScheme_AdjLevelSet, Viscous_Map, "NONE");
-	/* DESCRIPTION: Source term numerical method */
-	AddEnumOption("SOUR_NUM_METHOD_ADJLEVELSET", Kind_SourNumScheme_AdjLevelSet, Source_Map, "NONE");
+	/* DESCRIPTION: Slope limiter */
+	AddEnumOption("SLOPE_LIMITER_FLOW", Kind_SlopeLimit_Flow, Limiter_Map, "NONE");
+	default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
+	/* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
+	AddArrayOption("AD_COEFF_FLOW", 3, Kappa_Flow, default_vec_3d);
+  
+	/* DESCRIPTION: Convective numerical method */
+	AddConvectOption("CONV_NUM_METHOD_ADJ", Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow, Kind_Upwind_AdjFlow);
 	/* DESCRIPTION: Viscous numerical method */
 	AddEnumOption("VISC_NUM_METHOD_ADJ", Kind_ViscNumScheme_AdjFlow, Viscous_Map, "NONE");
 	/* DESCRIPTION: Source term numerical method */
 	AddEnumOption("SOUR_NUM_METHOD_ADJ", Kind_SourNumScheme_AdjFlow, Source_Map, "NONE");
-	/* DESCRIPTION: Viscous numerical method */
-	AddEnumOption("VISC_NUM_METHOD_LIN", Kind_ViscNumScheme_LinFlow, Viscous_Map, "NONE");
-	/* DESCRIPTION: Source term numerical method */
-	AddEnumOption("SOUR_NUM_METHOD_LIN", Kind_SourNumScheme_LinFlow, Source_Map, "NONE");
-	/* DESCRIPTION: Viscous numerical method */
-	AddEnumOption("VISC_NUM_METHOD_PLASMA", Kind_ViscNumScheme_Plasma, Viscous_Map, "NONE");
-	/* DESCRIPTION: Source term numerical method */
-	AddEnumOption("SOUR_NUM_METHOD_PLASMA", Kind_SourNumScheme_Plasma, Source_Map, "NONE");
-	/* DESCRIPTION: Viscous numerical method */
-	AddEnumOption("VISC_NUM_METHOD_ADJPLASMA", Kind_ViscNumScheme_AdjPlasma, Viscous_Map, "NONE");
-	/* DESCRIPTION: Source term numerical method */
-	AddEnumOption("SOUR_NUM_METHOD_ADJPLASMA", Kind_SourNumScheme_AdjPlasma, Source_Map, "NONE");
-	/* DESCRIPTION: Source term numerical method */
-	AddEnumOption("SOUR_JAC_METHOD_PLASMA", Kind_SourJac_Plasma, SourceJac_Map, "FINITE_DIFF");
-	/* DESCRIPTION: Source term numerical method */
-	AddEnumOption("SOUR_NUM_METHOD_TEMPLATE", Kind_SourNumScheme_Template, Source_Map, "NONE");
+	/* DESCRIPTION: Slope limiter */
+	AddEnumOption("SLOPE_LIMITER_ADJFLOW", Kind_SlopeLimit_AdjFlow, Limiter_Map, "NONE");
+	default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
+	/* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
+	AddArrayOption("AD_COEFF_ADJ", 3, Kappa_AdjFlow, default_vec_3d);
+	
+	/* DESCRIPTION: Slope limiter */
+	AddEnumOption("SLOPE_LIMITER_TURB", Kind_SlopeLimit_Turb, Limiter_Map, "NONE");
+	/* DESCRIPTION: Convective numerical method */
+	AddConvectOption("CONV_NUM_METHOD_TURB", Kind_ConvNumScheme_Turb, Kind_Centered_Turb, Kind_Upwind_Turb);
 	/* DESCRIPTION: Viscous numerical method */
 	AddEnumOption("VISC_NUM_METHOD_TURB", Kind_ViscNumScheme_Turb, Viscous_Map, "NONE");
 	/* DESCRIPTION: Source term numerical method */
 	AddEnumOption("SOUR_NUM_METHOD_TURB", Kind_SourNumScheme_Turb, Source_Map, "NONE");
-	/* DESCRIPTION: Viscous numerical method */
-	AddEnumOption("VISC_NUM_METHOD_ELEC", Kind_ViscNumScheme_Elec, Viscous_Map, "NONE");
-	/* DESCRIPTION: Source term numerical method */
-	AddEnumOption("SOUR_NUM_METHOD_ELEC", Kind_SourNumScheme_Elec, Source_Map, "NONE");
+  
+	/* DESCRIPTION: Slope limiter */
+	AddEnumOption("SLOPE_LIMITER_ADJTURB", Kind_SlopeLimit_AdjTurb, Limiter_Map, "NONE");
+	/* DESCRIPTION: Convective numerical method */
+	AddConvectOption("CONV_NUM_METHOD_ADJTURB", Kind_ConvNumScheme_AdjTurb, Kind_Centered_AdjTurb, Kind_Upwind_AdjTurb);
 	/* DESCRIPTION: Viscous numerical method */
 	AddEnumOption("VISC_NUM_METHOD_ADJTURB", Kind_ViscNumScheme_AdjTurb, Viscous_Map, "NONE");
 	/* DESCRIPTION: Source term numerical method */
 	AddEnumOption("SOUR_NUM_METHOD_ADJTURB", Kind_SourNumScheme_AdjTurb, Source_Map, "NONE");
-
-	/*--- options related to the artificial dissipation ---*/
-	/* CONFIG_CATEGORY: Artificial dissipation */
-
-	default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
-	/* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
-	AddArrayOption("AD_COEFF_FLOW", 3, Kappa_Flow, default_vec_3d);
-	default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
-	/* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
-	AddArrayOption("AD_COEFF_ADJ", 3, Kappa_AdjFlow, default_vec_3d);
-	default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
-  /* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
-	AddArrayOption("AD_COEFF_TNE2", 3, Kappa_TNE2, default_vec_3d);
-	default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
-  /* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
-	AddArrayOption("AD_COEFF_ADJTNE2", 3, Kappa_AdjTNE2, default_vec_3d);
-	default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
-	/* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
-	AddArrayOption("AD_COEFF_PLASMA", 3, Kappa_Plasma, default_vec_3d);
-	default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
-	/* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
-	AddArrayOption("AD_COEFF_ADJPLASMA", 3, Kappa_AdjPlasma, default_vec_3d);
+  
+	/* DESCRIPTION: Convective numerical method */
+	AddConvectOption("CONV_NUM_METHOD_LIN", Kind_ConvNumScheme_LinFlow, Kind_Centered_LinFlow, Kind_Upwind_LinFlow);
+	/* DESCRIPTION: Viscous numerical method */
+	AddEnumOption("VISC_NUM_METHOD_LIN", Kind_ViscNumScheme_LinFlow, Viscous_Map, "NONE");
+	/* DESCRIPTION: Source term numerical method */
+	AddEnumOption("SOUR_NUM_METHOD_LIN", Kind_SourNumScheme_LinFlow, Source_Map, "NONE");
 	default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.02;
 	/* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
 	AddArrayOption("AD_COEFF_LIN", 2, Kappa_LinFlow, default_vec_3d);
-
-
-	/*--- options related to the adjoint and gradient ---*/
-	/* CONFIG_CATEGORY: Adjoint and gradient */
-
+  
+	/* DESCRIPTION: Slope limiter */
+	AddEnumOption("SLOPE_LIMITER_LEVELSET", Kind_SlopeLimit_LevelSet, Limiter_Map, "NONE");
+	/* DESCRIPTION: Convective numerical method */
+	AddConvectOption("CONV_NUM_METHOD_LEVELSET", Kind_ConvNumScheme_LevelSet, Kind_Centered_LevelSet, Kind_Upwind_LevelSet);
+	/* DESCRIPTION: Source term numerical method */
+	AddEnumOption("SOUR_NUM_METHOD_LEVELSET", Kind_SourNumScheme_LevelSet, Source_Map, "NONE");
+  
+	/* DESCRIPTION: Slope limiter */
+	AddEnumOption("SLOPE_LIMITER_ADJLEVELSET", Kind_SlopeLimit_AdjLevelSet, Limiter_Map, "NONE");
+	/* DESCRIPTION: Convective numerical method */
+	AddConvectOption("CONV_NUM_METHOD_ADJLEVELSET", Kind_ConvNumScheme_AdjLevelSet, Kind_Centered_AdjLevelSet, Kind_Upwind_AdjLevelSet);
+	/* DESCRIPTION: Viscous numerical method */
+	AddEnumOption("VISC_NUM_METHOD_ADJLEVELSET", Kind_ViscNumScheme_AdjLevelSet, Viscous_Map, "NONE");
+	/* DESCRIPTION: Source term numerical method */
+	AddEnumOption("SOUR_NUM_METHOD_ADJLEVELSET", Kind_SourNumScheme_AdjLevelSet, Source_Map, "NONE");
+  
+	/* DESCRIPTION: Convective numerical method */
+	AddConvectOption("CONV_NUM_METHOD_PLASMA", Kind_ConvNumScheme_Plasma, Kind_Centered_Plasma, Kind_Upwind_Plasma);
+	/* DESCRIPTION: Viscous numerical method */
+	AddEnumOption("VISC_NUM_METHOD_PLASMA", Kind_ViscNumScheme_Plasma, Viscous_Map, "NONE");
+	/* DESCRIPTION: Source term numerical method */
+	AddEnumOption("SOUR_NUM_METHOD_PLASMA", Kind_SourNumScheme_Plasma, Source_Map, "NONE");
+	/* DESCRIPTION: Source term numerical method */
+	AddEnumOption("SOUR_JAC_METHOD_PLASMA", Kind_SourJac_Plasma, SourceJac_Map, "FINITE_DIFF");
+	/* DESCRIPTION: Slope limiter */
+	AddEnumOption("SLOPE_LIMITER_PLASMA", Kind_SlopeLimit_Plasma, Limiter_Map, "NONE");
+	default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
+	/* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
+	AddArrayOption("AD_COEFF_PLASMA", 3, Kappa_Plasma, default_vec_3d);
+  
+	/* DESCRIPTION: Convective numerical method */
+	AddConvectOption("CONV_NUM_METHOD_ADJPLASMA", Kind_ConvNumScheme_AdjPlasma, Kind_Centered_AdjPlasma, Kind_Upwind_AdjPlasma);
+	/* DESCRIPTION: Viscous numerical method */
+	AddEnumOption("VISC_NUM_METHOD_ADJPLASMA", Kind_ViscNumScheme_AdjPlasma, Viscous_Map, "NONE");
+	/* DESCRIPTION: Source term numerical method */
+	AddEnumOption("SOUR_NUM_METHOD_ADJPLASMA", Kind_SourNumScheme_AdjPlasma, Source_Map, "NONE");
+	/* DESCRIPTION: Slope limiter */
+	AddEnumOption("SLOPE_LIMITER_ADJPLASMA", Kind_SlopeLimit_AdjPlasma, Limiter_Map, "NONE");
+	default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
+	/* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
+	AddArrayOption("AD_COEFF_ADJPLASMA", 3, Kappa_AdjPlasma, default_vec_3d);
+  
+	/* DESCRIPTION: Viscous numerical method */
+	AddEnumOption("VISC_NUM_METHOD_WAVE", Kind_ViscNumScheme_Wave, Viscous_Map, "GALERKIN");
+	/* DESCRIPTION: Source term numerical method */
+	AddEnumOption("SOUR_NUM_METHOD_WAVE", Kind_SourNumScheme_Wave, Source_Map, "NONE");
+  
+	/* DESCRIPTION: Viscous numerical method */
+	AddEnumOption("VISC_NUM_METHOD_ELEC", Kind_ViscNumScheme_Elec, Viscous_Map, "NONE");
+	/* DESCRIPTION: Source term numerical method */
+	AddEnumOption("SOUR_NUM_METHOD_ELEC", Kind_SourNumScheme_Elec, Source_Map, "NONE");
+  
+	/* DESCRIPTION: Viscous numerical method */
+	AddEnumOption("VISC_NUM_METHOD_FEA", Kind_ViscNumScheme_FEA, Viscous_Map, "GALERKIN");
+	/* DESCRIPTION: Source term numerical method */
+	AddEnumOption("SOUR_NUM_METHOD_FEA", Kind_SourNumScheme_FEA, Source_Map, "NONE");
+  
+	/* DESCRIPTION: Source term numerical method */
+	AddEnumOption("SOUR_NUM_METHOD_TEMPLATE", Kind_SourNumScheme_Template, Source_Map, "NONE");
+  
+  
+	/*--- Options related to the adjoint and gradient ---*/
+	/* CONFIG_CATEGORY: Adjoint and Gradient */
+  
 	/* DESCRIPTION: Adjoint type */
 	AddEnumOption("ADJOINT_TYPE", Kind_Adjoint, Adjoint_Map,"CONTINUOUS");
-	/* DESCRIPTION: Reduction factor of the CFL coefficient in the adjoint problem */
-	AddScalarOption("ADJ_CFL_REDUCTION", Adj_CFLRedCoeff, 0.8);
   /* DESCRIPTION: Limit value for the adjoint variable */
 	AddScalarOption("ADJ_LIMIT", AdjointLimit, 1E6);
 	/* DESCRIPTION: Adjoint problem boundary condition */
@@ -608,14 +612,11 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddScalarOption("CTE_VISCOUS_DRAG", CteViscDrag, 0.0);
 	/* DESCRIPTION: Print sensitivities to screen on exit */
 	AddSpecialOption("SHOW_ADJ_SENS", Show_Adj_Sens, SetBoolOption, false);
-
-	/* DESCRIPTION: Reduction factor of the CFL coefficient in the turbulent adjoint problem */
-	AddScalarOption("ADJTURB_CFL_REDUCTION", AdjTurb_CFLRedCoeff, 0.1);
-
-	/*--- options related to input/output files and formats ---*/
+  
+	/*--- Options related to input/output files and formats ---*/
 	/* CONFIG_CATEGORY: Input/output files and formats */
-
-	/* DESCRIPTION: Output file format */
+  
+	/* DESCRIPTION: I/O */
 	AddEnumOption("OUTPUT_FORMAT", Output_FileFormat, Output_Map, "TECPLOT");
 	/* DESCRIPTION: Mesh input file format */
 	AddEnumOption("MESH_FORMAT", Mesh_FileFormat, Input_Map, "SU2");
@@ -685,27 +686,21 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddSpecialOption("WRT_RESIDUALS", Wrt_Residuals, SetBoolOption, false);
   /* DESCRIPTION: Output the rind layers in the solution files */
 	AddSpecialOption("WRT_HALO", Wrt_Halo, SetBoolOption, false);
-
-	/*--- options related to the equivalent area ---*/
+  
+	/*--- Options related to the equivalent area ---*/
 	/* CONFIG_CATEGORY: Equivalent Area */
-
+  
 	/* DESCRIPTION: Evaluate equivalent area on the Near-Field  */
 	AddSpecialOption("EQUIV_AREA", EquivArea, SetBoolOption, false);
 	default_vec_3d[0] = 0.0; default_vec_3d[1] = 1.0; default_vec_3d[2] = 1.0;
 	/* DESCRIPTION: Integration limits of the equivalent area ( xmin, xmax, Dist_NearField ) */
 	AddArrayOption("EA_INT_LIMIT", 3, EA_IntLimit, default_vec_3d);
-
-	/*--- options related to the chemical system ---*/
-	/* CONFIG_CATEGORY: Chemical system */
-
-	/* DESCRIPTION: Specify chemical model for multi-species simulations */
-	AddEnumOption("GAS_MODEL", Kind_GasModel, GasModel_Map, "ARGON");        
-
-	/*--- options related to reference and freestream quantities ---*/
-	/* CONFIG_CATEGORY: Reference and freestream quantities */
-
-	Length_Ref = 1.0; //<---- NOTE: this should be given an option or set as a const
-
+  
+	/*--- Options related to freestream specification ---*/
+	/* CONFIG_CATEGORY: Freestream Conditions */
+  
+	/* DESCRIPTION: Specific gas constant (287.87 J/kg*K (air), only for compressible flows) */
+	AddScalarOption("GAS_CONSTANT", Gas_Constant, 287.87);
 	/* DESCRIPTION: Ratio of specific heats (1.4 (air), only for compressible flows) */
 	AddScalarOption("GAMMA_VALUE", Gamma, 1.4);
 	/* DESCRIPTION: Ratio of specific heats for monatomic gas */
@@ -713,9 +708,51 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	/* DESCRIPTION: Ratio of specific heats for diatomic gas */
 	AddScalarOption("GAMMA_DIATOMIC_VALUE", GammaDiatomic, 7.0/5.0);
 	/* DESCRIPTION:  */
-	default_vec_3d[0] = 0.0; default_vec_3d[1] = 0.0; default_vec_3d[2] = 0.0;
+	/* DESCRIPTION: Reynolds number (non-dimensional, based on the free-stream values) */
+	AddScalarOption("REYNOLDS_NUMBER", Reynolds, 0.0);
+	/* DESCRIPTION: Reynolds length (1 m by default) */
+	AddScalarOption("REYNOLDS_LENGTH", Length_Reynolds, 1.0);
+	/* DESCRIPTION: Laminar Prandtl number (0.72 (air), only for compressible flows) */
+	AddScalarOption("PRANDTL_LAM", Prandtl_Lam, 0.72);
+	/* DESCRIPTION: Turbulent Prandtl number (0.9 (air), only for compressible flows) */
+	AddScalarOption("PRANDTL_TURB", Prandtl_Turb, 0.90);
+	/* DESCRIPTION: Value of the Bulk Modulus  */
+	AddScalarOption("BULK_MODULUS", Bulk_Modulus, 2.15E9);
+	/* DESCRIPTION: Artifical compressibility factor  */
+	AddScalarOption("ARTCOMP_FACTOR", ArtComp_Factor, 1.0);
+	/* DESCRIPTION:  Mach number (non-dimensional, based on the free-stream values) */
+	AddScalarOption("MACH_NUMBER", Mach, 0.0);
+	//	AddScalarOption("MIXTURE_MOLAR_MASS", Mixture_Molar_mass, 28.97);
+	/* DESCRIPTION: Free-stream pressure (101325.0 N/m^2 by default) */
+	AddScalarOption("FREESTREAM_PRESSURE", Pressure_FreeStream, 101325.0);
+	/* DESCRIPTION: Free-stream density (1.2886 Kg/m^3 (air), 998.2 Kg/m^3 (water)) */
+	AddScalarOption("FREESTREAM_DENSITY", Density_FreeStream, -1.0);
+	/* DESCRIPTION: Free-stream temperature (273.15 K by default) */
+	AddScalarOption("FREESTREAM_TEMPERATURE", Temperature_FreeStream, 273.15);  
+  /* DESCRIPTION: Free-stream vibrational-electronic temperature (273.15 K by default) */
+	AddScalarOption("FREESTREAM_TEMPERATURE_VE", Temperature_ve_FreeStream, 273.15);
 	/* DESCRIPTION: Free-stream velocity (m/s) */
 	AddArrayOption("FREESTREAM_VELOCITY", 3, Velocity_FreeStream, default_vec_3d);
+	/* DESCRIPTION: Free-stream viscosity (1.853E-5 Ns/m^2 (air), 0.798E-3 Ns/m^2 (water)) */
+	AddScalarOption("FREESTREAM_VISCOSITY", Viscosity_FreeStream, -1.0);
+	/* DESCRIPTION:  */
+	AddScalarOption("FREESTREAM_INTERMITTENCY", Intermittency_FreeStream, 1.0);
+	/* DESCRIPTION:  */
+	AddScalarOption("FREESTREAM_TURBULENCEINTENSITY", TurbulenceIntensity_FreeStream, 0.05);
+	/* DESCRIPTION:  */
+	AddScalarOption("FREESTREAM_NU_FACTOR", NuFactor_FreeStream, 3.0);
+	/* DESCRIPTION:  */
+	AddScalarOption("FREESTREAM_TURB2LAMVISCRATIO", Turb2LamViscRatio_FreeStream, 10.0);
+	/* DESCRIPTION: Side-slip angle (degrees, only for compressible flows) */
+	AddScalarOption("SIDESLIP_ANGLE", AoS, 0.0);
+	/* DESCRIPTION: Angle of attack (degrees, only for compressible flows) */
+	AddScalarOption("AOA", AoA, 0.0);
+  
+	/*--- Options related to reference values for nondimensionalization ---*/
+	/* CONFIG_CATEGORY: Reference Conditions */
+  
+	Length_Ref = 1.0; //<---- NOTE: this should be given an option or set as a const
+  
 	default_vec_3d[0] = 0.0; default_vec_3d[1] = 0.0; default_vec_3d[2] = 0.0;
 	/* DESCRIPTION: Reference origin for moment computation */
 	AddArrayOption("REF_ORIGIN_MOMENT", 3, RefOriginMoment, default_vec_3d);
@@ -727,40 +764,6 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddScalarOption("REF_ELEM_LENGTH", RefElemLength, 0.1);
   /* DESCRIPTION: Reference coefficient for detecting sharp edges */
 	AddScalarOption("REF_SHARP_EDGES", RefSharpEdges, 3.0);
-	/* DESCRIPTION: Side-slip angle (degrees, only for compressible flows) */
-	AddScalarOption("SIDESLIP_ANGLE", AoS, 0.0);
-	/* DESCRIPTION: Angle of attack (degrees, only for compressible flows) */
-	AddScalarOption("AOA", AoA, 0.0);
-	/* DESCRIPTION: Specific gas constant (287.87 J/kg*K (air), only for compressible flows) */
-	AddScalarOption("GAS_CONSTANT", Gas_Constant, 287.87);
-	//	AddScalarOption("MIXTURE_MOLAR_MASS", Mixture_Molar_mass, 28.97);
-	/* DESCRIPTION: Free-stream pressure (101325.0 N/m^2 by default) */
-	AddScalarOption("FREESTREAM_PRESSURE", Pressure_FreeStream, 101325.0);
-	/* DESCRIPTION: Free-stream density (1.2886 Kg/m^3 (air), 998.2 Kg/m^3 (water)) */
-	AddScalarOption("FREESTREAM_DENSITY", Density_FreeStream, -1.0);
-	/* DESCRIPTION: Free-stream temperature (273.15 K by default) */
-	AddScalarOption("FREESTREAM_TEMPERATURE", Temperature_FreeStream, 273.15);  
-  /* DESCRIPTION: Free-stream vibrational-electronic temperature (273.15 K by default) */
-	AddScalarOption("FREESTREAM_TEMPERATURE_VE", Temperature_ve_FreeStream, 273.15);
-	/* DESCRIPTION: Free-stream viscosity (1.853E-5 Ns/m^2 (air), 0.798E-3 Ns/m^2 (water)) */
-	AddScalarOption("FREESTREAM_VISCOSITY", Viscosity_FreeStream, -1.0);
-	/* DESCRIPTION:  */
-	AddScalarOption("FREESTREAM_INTERMITTENCY", Intermittency_FreeStream, 1.0);
-	/* DESCRIPTION:  */
-	AddScalarOption("FREESTREAM_TURBULENCEINTENSITY", TurbulenceIntensity_FreeStream, 0.05);
-	/* DESCRIPTION:  */
-	AddScalarOption("FREESTREAM_NU_FACTOR", NuFactor_FreeStream, 3.0);
-	/* DESCRIPTION:  */
-	AddScalarOption("FREESTREAM_TURB2LAMVISCRATIO", Turb2LamViscRatio_FreeStream, 10.0);
-  /* DESCRIPTION: Species mass fractions for the 2-temperature model */
-//  double *default_massfrac;
-//  default_massfrac = new double[1];
-//  default_massfrac[0] = 1.0;
-//  AddArrayOption("FREESTREAM_MASS_FRACTION", 1, MassFrac_FreeStream, default_massfrac);
-	/* DESCRIPTION: Laminar Prandtl number (0.72 (air), only for compressible flows) */
-	AddScalarOption("PRANDTL_LAM", Prandtl_Lam, 0.72);
-	/* DESCRIPTION: Turbulent Prandtl number (0.9 (air), only for compressible flows) */
-	AddScalarOption("PRANDTL_TURB", Prandtl_Turb, 0.90);
 	/* DESCRIPTION: Reference pressure (1.0 N/m^2 by default, only for compressible flows)  */
 	AddScalarOption("REF_PRESSURE", Pressure_Ref, 1.0);
 	/* DESCRIPTION: Reference temperature (1.0 K by default, only for compressible flows) */
@@ -771,22 +774,16 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddScalarOption("REF_VELOCITY", Velocity_Ref, -1.0);
 	/* DESCRIPTION: Reference viscosity (incompressible only) */
 	AddScalarOption("REF_VISCOSITY", Viscosity_Ref, -1.0);
-	/* DESCRIPTION:  */
-	AddScalarOption("WALL_TEMPERATURE", Wall_Temperature, 300.0);
-	/* DESCRIPTION:  Mach number (non-dimensional, based on the free-stream values) */
-	AddScalarOption("MACH_NUMBER", Mach, 0.0);
-	/* DESCRIPTION: Reynolds number (non-dimensional, based on the free-stream values) */
-	AddScalarOption("REYNOLDS_NUMBER", Reynolds, 0.0);
-	/* DESCRIPTION: Reynolds length (1 m by default) */
-	AddScalarOption("REYNOLDS_LENGTH", Length_Reynolds, 1.0);
 	/* DESCRIPTION: Factor for converting the grid to meters */
 	AddScalarOption("CONVERT_TO_METER", Conversion_Factor, 1.0);
 	/* DESCRIPTION: Write a new mesh converted to meters */
 	AddSpecialOption("WRITE_CONVERTED_MESH", Write_Converted_Mesh, SetBoolOption, false);
-	/* DESCRIPTION: Value of the Bulk Modulus  */
-	AddScalarOption("BULK_MODULUS", Bulk_Modulus, 2.15E9);
-	/* DESCRIPTION: Artifical compressibility factor  */
-	AddScalarOption("ARTCOMP_FACTOR", ArtComp_Factor, 1.0);
+  
+	/*--- Options related to the reacting gas mixtures ---*/
+	/* CONFIG_CATEGORY: Reacting Flow */
+  
+	/* DESCRIPTION: Specify chemical model for multi-species simulations */
+	AddEnumOption("GAS_MODEL", Kind_GasModel, GasModel_Map, "ARGON");
 	/* DESCRIPTION:  */
 	AddScalarOption("CHARGE_COEFF", ChargeCoeff, -1.0);
 	/* DESCRIPTION:  */
@@ -817,10 +814,28 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddListOption("PARTICLE_REFERENCE_TEMPERATURE", nRef_Temperature, Species_Ref_Temperature);
 	/* DESCRIPTION:  */
 	AddListOption("PARTICLE_REFERENCE_VISCOSITY", nRef_Viscosity, Species_Ref_Viscosity);
-
-	/*--- options related to free surface simulation ---*/
+	/* DESCRIPTION: Magnetic simulation */
+	AddSpecialOption("MAGNET", MagneticForce, SetBoolOption, false);
+	/* DESCRIPTION: Joule heating simulation */
+	AddSpecialOption("JOULE_HEAT", JouleHeating, SetBoolOption, false);
+	/* DESCRIPTION: Flag for running the electric potential solver as part of the plasma solver */
+	AddSpecialOption("ELECTRIC_SOLVER", ElectricSolver, SetBoolOption, false);
+	/* DESCRIPTION:  */
+	AddSpecialOption("MACCORMACK_RELAXATION", MacCormackRelaxation, SetBoolOption, false);
+	/* DESCRIPTION: Time stepping of the various species in a steady plasma solution */
+	AddSpecialOption("PLASMA_MULTI_TIME_STEP", PlasmaMultiTimeSteps, SetBoolOption, false);
+	/* DESCRIPTION: Time Step for dual time stepping simulations (s) */
+	AddScalarOption("STAGNATION_BFIELD", Stagnation_B, 0.2);
+	/* DESCRIPTION: Time Step for dual time stepping simulations (s) */
+	AddScalarOption("ELECTRICAL_CONDUCTIVITY", Electric_Cond, 2000.0);
+	/* DESCRIPTION: Time Step for dual time stepping simulations (s) */
+	AddScalarOption("DIPOLE_DIST", DipoleDist, 1E-6);
+	/* DESCRIPTION: Restart a Plasma solution from an Euler native solution file */
+	AddSpecialOption("RESTART_PLASMA_FROM_EULER", Restart_Euler2Plasma, SetBoolOption, false);
+  
+	/*--- Options related to free surface simulation ---*/
 	/* CONFIG_CATEGORY: Free surface simulation */
-
+  
 	/* DESCRIPTION: Ratio of density for two phase problems */
 	AddScalarOption("RATIO_DENSITY", RatioDensity, 0.1);
 	/* DESCRIPTION: Ratio of viscosity for two phase problems */
@@ -839,34 +854,34 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddScalarOption("FREESURFACE_OUTLET", FreeSurface_Outlet, 0.0);
 	/* DESCRIPTION: Writing convergence history frequency for the dual time */
 	AddScalarOption("FREESURFACE_REEVALUATION",  FreeSurface_Reevaluation, 1);
-
-	/*--- options related to the grid deformation ---*/
+  
+	/*--- Options related to the grid deformation ---*/
 	// these options share nDV as their size in the option references; not a good idea
 	/* CONFIG_CATEGORY: Grid deformation */
-
+  
 	/* DESCRIPTION: Kind of deformation */
 	AddEnumListOption("DV_KIND", nDV, Design_Variable, Param_Map);
 	/* DESCRIPTION: Marker of the surface to which we are going apply the shape deformation */
-	AddMarkerOption("DV_MARKER", nMarker_Moving, Marker_Moving);
+	AddMarkerOption("DV_MARKER", nMarker_DV, Marker_DV);
 	/* DESCRIPTION: New value of the shape deformation */
 	AddListOption("DV_VALUE", nDV, DV_Value);
 	/* DESCRIPTION: Parameters of the shape deformation
-    	- HICKS_HENNE ( Lower Surface (0)/Upper Surface (1)/Only one Surface (2), x_Loc )
-      - COSINE_BUMP ( Lower Surface (0)/Upper Surface (1)/Only one Surface (2), x_Loc, Thickness )
-      - FOURIER ( Lower Surface (0)/Upper Surface (1)/Only one Surface (2), index, cos(0)/sin(1) )
-      - NACA_4DIGITS ( 1st digit, 2nd digit, 3rd and 4th digit )
-    	- PARABOLIC ( Center, Thickness )
-    	- DISPLACEMENT ( x_Disp, y_Disp, z_Disp )
-    	- ROTATION ( x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
-    	- OBSTACLE ( Center, Bump size )
-      - SPHERICAL ( ControlPoint_Index, Theta_Disp, R_Disp )
-      - FFD_CONTROL_POINT ( FFDBox ID, i_Ind, j_Ind, k_Ind, x_Disp, y_Disp, z_Disp )
-    	- FFD_DIHEDRAL_ANGLE ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
-    	- FFD_TWIST_ANGLE ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
-    	- FFD_ROTATION ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
-    	- FFD_CAMBER ( FFDBox ID, i_Ind, j_Ind )
-    	- FFD_THICKNESS ( FFDBox ID, i_Ind, j_Ind )
-    	- FFD_VOLUME ( FFDBox ID, i_Ind, j_Ind ) */
+   - HICKS_HENNE ( Lower Surface (0)/Upper Surface (1)/Only one Surface (2), x_Loc )
+   - COSINE_BUMP ( Lower Surface (0)/Upper Surface (1)/Only one Surface (2), x_Loc, Thickness )
+   - FOURIER ( Lower Surface (0)/Upper Surface (1)/Only one Surface (2), index, cos(0)/sin(1) )
+   - NACA_4DIGITS ( 1st digit, 2nd digit, 3rd and 4th digit )
+   - PARABOLIC ( Center, Thickness )
+   - DISPLACEMENT ( x_Disp, y_Disp, z_Disp )
+   - ROTATION ( x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
+   - OBSTACLE ( Center, Bump size )
+   - SPHERICAL ( ControlPoint_Index, Theta_Disp, R_Disp )
+   - FFD_CONTROL_POINT ( FFDBox ID, i_Ind, j_Ind, k_Ind, x_Disp, y_Disp, z_Disp )
+   - FFD_DIHEDRAL_ANGLE ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
+   - FFD_TWIST_ANGLE ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
+   - FFD_ROTATION ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
+   - FFD_CAMBER ( FFDBox ID, i_Ind, j_Ind )
+   - FFD_THICKNESS ( FFDBox ID, i_Ind, j_Ind )
+   - FFD_VOLUME ( FFDBox ID, i_Ind, j_Ind ) */
 	AddDVParamOption("DV_PARAM", nDV, ParamDV, Design_Variable);
 	/* DESCRIPTION: Hold the grid fixed in a region */
 	AddSpecialOption("HOLD_GRID_FIXED", Hold_GridFixed, SetBoolOption, false);
@@ -883,45 +898,57 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
   
 	/*--- option related to rotorcraft problems ---*/
 	/* CONFIG_CATEGORY: Rotorcraft problem */
-
+  
 	AddScalarOption("CYCLIC_PITCH", Cyclic_Pitch, 0.0);
 	AddScalarOption("COLLECTIVE_PITCH", Collective_Pitch, 0.0);
-
-
-	/*--- options related to the FEA solver ---*/
+  
+  
+	/*--- Options related to the FEA solver ---*/
 	/* CONFIG_CATEGORY: FEA solver */
-
+  
 	/* DESCRIPTION: Modulus of elasticity */
 	AddScalarOption("ELASTICITY_MODULUS", ElasticyMod, 2E11);
 	/* DESCRIPTION: Poisson ratio */
 	AddScalarOption("POISSON_RATIO", PoissonRatio, 0.30);
 	/* DESCRIPTION: Material density */
-	AddScalarOption("MATERIAL_DENSITY", MaterialDensity, 7854); 
-
+	AddScalarOption("MATERIAL_DENSITY", MaterialDensity, 7854);
+  
 	/*--- options related to the wave solver ---*/
 	/* CONFIG_CATEGORY: Wave solver */
-
+  
 	/* DESCRIPTION: Constant wave speed */
 	AddScalarOption("WAVE_SPEED", Wave_Speed, 331.79);
-
+  
 	/*--- options related to the heat solver ---*/
 	/* CONFIG_CATEGORY: Heat solver */
-
+  
 	/* DESCRIPTION: Thermal diffusivity constant */
 	AddScalarOption("THERMAL_DIFFUSIVITY", Thermal_Diffusivity, 1.172E-5);
-
-
+  
+  
 	/* END_CONFIG_OPTIONS */
+  
+}
 
-	/*--- Read the configuration file ---*/
-	case_file.open(case_filename, ios::in);
-
-	if (case_file.fail()) {
-		cout << "There is no configuration file!!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get(); exit(1);
+void CConfig::SetParsing(char case_filename[200]) {
+	string text_line, option_name;
+	ifstream case_file;
+	vector<string> option_value;
+  
+	int rank = MASTER_NODE;
+#ifndef NO_MPI
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+  
+  /*--- Read the configuration file ---*/
+  case_file.open(case_filename, ios::in);
+  
+  if (case_file.fail()) {
+    cout << "There is no configuration file!!" << endl;
+    cout << "Press any key to exit..." << endl;
+    cin.get(); exit(1);
 	}
-
+  
 	/*--- Parse the configuration file and set the options ---*/
 	while (getline (case_file,text_line)) {
 		if (TokenizeString(text_line, option_name, option_value)) {
@@ -933,63 +960,18 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 				if ( !GetPython_Option(option_name) && (rank == MASTER_NODE) )
 					cout << "WARNING: unrecognized option in the config. file: " << option_name << "." << endl;
 			}
-		}					
-	}	
-
-	case_file.close();
-
-	/*--- Configuration file postprocessing ---*/
-	SetPostprocessing(val_software, val_iZone);
-
-	/*--- Configuration file boundaries/markers seting ---*/
-	SetMarkers(val_software, val_iZone);
-
-	/*--- Configuration file output ---*/
-	if ((rank == MASTER_NODE) && (verb_level == VERB_HIGH) && (val_iZone != 1))
-		SetOutput(val_software, val_iZone);
-
-}
-
-CConfig::CConfig(char case_filename[200]) {
-	string text_line, text2find, option_name, keyword;
-	ifstream case_file;
-	vector<string> option_value;	
-
-	/*--- Mesh information ---*/
-	AddEnumOption("MESH_FORMAT", Mesh_FileFormat, Input_Map, "SU2");	
-	AddScalarOption("MESH_FILENAME", Mesh_FileName, string("mesh.su2"));
-
-	/*--- Information about type of simulation and time-spectral instances ---*/
-	AddEnumOption("UNSTEADY_SIMULATION", Unsteady_Simulation, Unsteady_Map, "NO");
-	AddScalarOption("TIME_INSTANCES", nTimeInstances, 1);
-
-	/*--- Read the configuration file ---*/
-	case_file.open(case_filename, ios::in);
-
-	if (case_file.fail()) {
-		cout << "There is no configuration file!!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get(); exit(1);
-	}
-
-	/*--- Parse the configuration file and set the options ---*/
-	while (getline (case_file,text_line)) {
-		if (TokenizeString(text_line, option_name, option_value)) {
-			map<string, CAnyOptionRef*>::iterator it;
-			it = param.find(option_name);
-			if (it != param.end()) {
-				param[option_name]->SetValue(option_value);
-			}
 		}
-	}	
-
+	}
+  
 	case_file.close();
-
+  
 }
-
 
 void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_izone) {
 
+  unsigned short iZone;
+
+  /*--- Store the SU2 module that we are executing. ---*/
 	Kind_SU2 = val_software;
 
   /*--- Divide grid if runnning SU2_MDC ---*/
@@ -1013,20 +995,20 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 	else
 		Wrt_Unsteady = true;
 
-	/*--- If we're solving a steady problem, make sure that
-   there is no grid motion ---*/
-	if (Kind_SU2 == SU2_CFD && Unsteady_Simulation == STEADY)
-		Grid_Movement = false;
-
-	/*--- If it is not specified, set the mesh motion mach number
-   equal to the freestream value. ---*/
-	if ((Rotating_Frame || Grid_Movement) && Mach_Motion == 0.0)
-		Mach_Motion = Mach;
-
-	/*--- In case rigid-motion parameters have not been declared in the config file, set them equal to zero. ---*/
-	if ( Grid_Movement && (Kind_GridMovement[ZONE_0] == RIGID_MOTION) ) {
-
-		unsigned short iZone;
+  /*--- Set grid movement kind to NO_MOVEMENT if not specified, which means
+   that we also set the Grid_Movement flag to false. ---*/
+  if (Kind_GridMovement == NULL) {
+    Kind_GridMovement = new unsigned short[nZone];
+    for (unsigned short iZone = 0; iZone < nZone; iZone++ )
+      Kind_GridMovement[iZone] = NO_MOVEMENT;
+    if (Grid_Movement == true) {
+      cout << "WARNING: Grid movement requested but no type provided. Grid movement set to NO. " << endl;
+      Grid_Movement = false;
+    }
+  }
+  
+	/*--- In case the grid movement parameters have not been declared in the 
+   config file, set them equal to zero for safety. ---*/
 
 		/*--- Motion Origin: ---*/
 		if (Motion_Origin_X == NULL) {
@@ -1179,8 +1161,19 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 			for (iZone = 0; iZone < nZone; iZone++ )
 				Plunging_Ampl_Z[iZone] = 0.0;
 		}
-
-	}
+  
+  /*--- If we're solving a purely steady problem with no prescribed grid
+   movement (both rotating frame and moving walls can be steady), make sure that
+   there is no grid motion ---*/
+	if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL) &&
+      (Unsteady_Simulation == STEADY) &&
+      (Kind_GridMovement[ZONE_0] != MOVING_WALL)) // rotating_frame here too soon
+		Grid_Movement = false;
+  
+	/*--- If it is not specified, set the mesh motion mach number
+   equal to the freestream value. ---*/
+	if ((Rotating_Frame || Grid_Movement) && Mach_Motion == 0.0)
+		Mach_Motion = Mach;
 
 	/*--- Use the various rigid-motion input frequencies to determine the period to be used with time-spectral cases.
 		  There are THREE types of motion to consider, namely: rotation, pitching, and plunging.
@@ -1235,18 +1228,20 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		}
 	}
 
+  /*--- Fluid-Structure problems always have grid movement ---*/
+	if (Kind_Solver == FLUID_STRUCTURE_EULER ||
+      Kind_Solver == FLUID_STRUCTURE_NAVIER_STOKES) {
+		if (Kind_Turb_Model == SA || Kind_Turb_Model == SST)
+			Kind_Solver = FLUID_STRUCTURE_RANS;
+		Grid_Movement = true;
+	}
+  
 	/*--- Set a flag for sliding interfaces so that a search
    and interpolation is performed after each time step. ---*/
 	if (nMarker_Sliding > 0)
 		Relative_Motion = true;
 	else
 		Relative_Motion = false;
-
-	if (Kind_Solver == FLUID_STRUCTURE_EULER || Kind_Solver == FLUID_STRUCTURE_NAVIER_STOKES) {
-		if (Kind_Turb_Model == SA || Kind_Turb_Model == SST)
-			Kind_Solver = FLUID_STRUCTURE_RANS;
-		Grid_Movement = true;
-	}
 
 	if (FullMG) FinestMesh = nMultiLevel;
 	else FinestMesh = MESH_0;
@@ -1407,6 +1402,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		RK_Alpha_Step = new double[1]; RK_Alpha_Step[0] = 1.0;
 	}
 
+  if ((Kind_SU2 == SU2_CFD) && (Kind_Solver == NO_SOLVER)) {
+		cout << "You must define a solver type!!" << endl;
+		cout << "Press any key to exit..." << endl;
+		cin.get();
+		exit(1);
+	}
 
 	if (((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS) || (Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == ADJ_FREE_SURFACE_RANS))
 			&& (Kind_ViscNumScheme_Flow == NONE)) {
@@ -2643,55 +2644,59 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 			+ nMarker_NacelleInflow + nMarker_NacelleExhaust + nMarker_Dirichlet_Elec + nMarker_Displacement + nMarker_Load
 			+ nMarker_FlowLoad + nMarker_FWH + nMarker_Observer + nMarker_Custom + nMarker_Sliding + 2*nDomain;
 
-	Marker_All_Tag = new string[nMarker_All+2];									// Store the tag that correspond with each marker.
-	Marker_All_SendRecv = new short[nMarker_All+2];							// +#domain (send), -#domain (receive) o 0 (no send neither receive).
-	Marker_All_Boundary = new unsigned short[nMarker_All+2];		// Store the kind of boundary condition
-	Marker_All_Monitoring = new unsigned short[nMarker_All+2];	// Store if the boundary should be monitored.
-	Marker_All_Designing = new unsigned short[nMarker_All+2];   // Store if the boundary should be designed.
-	Marker_All_Plotting = new unsigned short[nMarker_All+2];		// Store if the boundary should be plotted.
-	Marker_All_Moving = new unsigned short[nMarker_All+2];			// Store if the boundary should be moved.
-	Marker_All_PerBound = new short[nMarker_All+2];							// Store if the boundary belongs to a periodic boundary.
-	Marker_All_Sliding = new unsigned short[nMarker_All+2];			// Store if the boundary belongs to a sliding interface.
+	Marker_All_Tag        = new string[nMarker_All+2];			    // Store the tag that correspond with each marker.
+	Marker_All_SendRecv   = new short[nMarker_All+2];						// +#domain (send), -#domain (receive) or 0 (neither send nor receive).
+	Marker_All_Boundary   = new unsigned short[nMarker_All+2];	// Store the kind of boundary condition.
+	Marker_All_Monitoring = new unsigned short[nMarker_All+2];	// Store whether the boundary should be monitored.
+	Marker_All_Designing  = new unsigned short[nMarker_All+2];  // Store whether the boundary should be designed.
+	Marker_All_Plotting   = new unsigned short[nMarker_All+2];	// Store whether the boundary should be plotted.
+	Marker_All_DV         = new unsigned short[nMarker_All+2];	// Store whether the boundary should be affected by design variables.
+  Marker_All_Moving     = new unsigned short[nMarker_All+2];	// Store whether the boundary should be in motion.
+	Marker_All_PerBound   = new short[nMarker_All+2];						// Store whether the boundary belongs to a periodic boundary.
+	Marker_All_Sliding    = new unsigned short[nMarker_All+2];	// Store whether the boundary belongs to a sliding interface.
 
 	unsigned short iMarker_All, iMarker_Config, iMarker_Euler, iMarker_Custom, iMarker_FarField,
 	iMarker_SymWall, iMarker_PerBound, iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
 	iMarker_Inlet, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement, iMarker_Load,
-	iMarker_FlowLoad, iMarker_FWH, iMarker_Observer, iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_Plotting, iMarker_Moving,
+	iMarker_FlowLoad, iMarker_FWH, iMarker_Observer, iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_Plotting, iMarker_DV, iMarker_Moving,
 	iMarker_Supersonic_Inlet, iMarker_Sliding;
 
 	for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
 		Marker_All_Tag[iMarker_All] = "NONE";
-		Marker_All_SendRecv[iMarker_All] = 0;
-		Marker_All_Boundary[iMarker_All] = 0;
+		Marker_All_SendRecv[iMarker_All]   = 0;
+		Marker_All_Boundary[iMarker_All]   = 0;
 		Marker_All_Monitoring[iMarker_All] = 0;
-		Marker_All_Designing[iMarker_All] = 0;
-		Marker_All_Plotting[iMarker_All] = 0;
-		Marker_All_Moving[iMarker_All] = 0;
-		Marker_All_PerBound[iMarker_All] = 0;
-		Marker_All_Sliding[iMarker_All] = 0;
+		Marker_All_Designing[iMarker_All]  = 0;
+		Marker_All_Plotting[iMarker_All]   = 0;
+		Marker_All_DV[iMarker_All]         = 0;
+    Marker_All_Moving[iMarker_All]     = 0;
+		Marker_All_PerBound[iMarker_All]   = 0;
+		Marker_All_Sliding[iMarker_All]    = 0;
 	}
 
 	nMarker_Config = nMarker_Euler + nMarker_FarField + nMarker_SymWall + nMarker_PerBound + nMarker_NearFieldBound
 			+ nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux + nMarker_NacelleInflow + nMarker_NacelleExhaust + nMarker_Supersonic_Inlet + nMarker_Displacement + nMarker_Load + nMarker_FlowLoad + nMarker_FWH + nMarker_Observer + nMarker_Custom + nMarker_Sliding;
 
-	Marker_Config_Tag = new string[nMarker_Config];
-	Marker_Config_Boundary = new unsigned short[nMarker_Config];
+	Marker_Config_Tag        = new string[nMarker_Config];
+	Marker_Config_Boundary   = new unsigned short[nMarker_Config];
 	Marker_Config_Monitoring = new unsigned short[nMarker_Config];
-	Marker_Config_Plotting = new unsigned short[nMarker_Config];
-	Marker_Config_Moving = new unsigned short[nMarker_Config];
-	Marker_Config_Designing = new unsigned short[nMarker_Config];
-	Marker_Config_PerBound = new unsigned short[nMarker_Config];
-	Marker_Config_Sliding = new unsigned short[nMarker_Config];
+	Marker_Config_Plotting   = new unsigned short[nMarker_Config];
+	Marker_Config_DV         = new unsigned short[nMarker_Config];
+  Marker_Config_Moving     = new unsigned short[nMarker_Config];
+	Marker_Config_Designing  = new unsigned short[nMarker_Config];
+	Marker_Config_PerBound   = new unsigned short[nMarker_Config];
+	Marker_Config_Sliding    = new unsigned short[nMarker_Config];
     
 	for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++) {
 		Marker_Config_Tag[iMarker_Config] = "NONE";
-		Marker_Config_Boundary[iMarker_Config] = 0;
+		Marker_Config_Boundary[iMarker_Config]   = 0;
 		Marker_Config_Monitoring[iMarker_Config] = 0;
-		Marker_Config_Designing[iMarker_Config] = 0;
-		Marker_Config_Plotting[iMarker_Config] = 0;
-		Marker_Config_Moving[iMarker_Config] = 0;
-		Marker_Config_PerBound[iMarker_Config] = 0;
-		Marker_Config_Sliding[iMarker_Config] = 0;
+		Marker_Config_Designing[iMarker_Config]  = 0;
+		Marker_Config_Plotting[iMarker_Config]   = 0;
+		Marker_Config_DV[iMarker_Config]         = 0;
+    Marker_Config_Moving[iMarker_Config]     = 0;
+		Marker_Config_PerBound[iMarker_Config]   = 0;
+		Marker_Config_Sliding[iMarker_Config]    = 0;
 	}
 
 	iMarker_Config = 0;
@@ -2856,19 +2861,25 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 	}
 
 	for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++) {
+		Marker_Config_DV[iMarker_Config] = NO;
+		for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++)
+			if (Marker_Config_Tag[iMarker_Config] == Marker_DV[iMarker_DV])
+				Marker_Config_DV[iMarker_Config] = YES;
+	}
+
+  for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++) {
 		Marker_Config_Moving[iMarker_Config] = NO;
 		for (iMarker_Moving = 0; iMarker_Moving < nMarker_Moving; iMarker_Moving++)
 			if (Marker_Config_Tag[iMarker_Config] == Marker_Moving[iMarker_Moving])
 				Marker_Config_Moving[iMarker_Config] = YES;
 	}
-
+  
 }
 
 void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
 	iMarker_SymWall, iMarker_PerBound, iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
-	iMarker_Inlet, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_FWH, iMarker_Observer,
-	iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_Plotting, iMarker_Moving, iMarker_Supersonic_Inlet;
+	iMarker_Inlet, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_FWH, iMarker_Observer, iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_Plotting, iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet;
 
 	cout << endl <<"-------------------------------------------------------------------------" << endl;
 	cout <<"|     _____   _    _   ___                                              |" << endl;
@@ -3044,22 +3055,35 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		for (iMarker_Designing = 0; iMarker_Designing < nMarker_Designing; iMarker_Designing++) {
 			cout << Marker_Designing[iMarker_Designing];
 			if (iMarker_Designing < nMarker_Designing-1) cout << ", ";
-			else cout <<"."<<endl;
+			else cout <<".";
 		}
+    cout<<endl;
     
     cout << "Surface(s) plotted in the output file: ";
 		for (iMarker_Plotting = 0; iMarker_Plotting < nMarker_Plotting; iMarker_Plotting++) {
 			cout << Marker_Plotting[iMarker_Plotting];
 			if (iMarker_Plotting < nMarker_Plotting-1) cout << ", ";
-			else cout <<"."<<endl;
+			else cout <<".";
 		}
+    cout<<endl;
     
-    cout << "Surface(s) afected by a grid movement: ";
-		for (iMarker_Moving = 0; iMarker_Moving < nMarker_Moving; iMarker_Moving++) {
-			cout << Marker_Moving[iMarker_Moving];
-			if (iMarker_Moving < nMarker_Moving-1) cout << ", ";
-			else cout <<"."<<endl;
+    cout << "Surface(s) affected by the design variables: ";
+		for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++) {
+			cout << Marker_DV[iMarker_DV];
+			if (iMarker_DV < nMarker_DV-1) cout << ", ";
+			else cout <<".";
 		}
+    cout<<endl;
+    
+    if ((Kind_GridMovement[ZONE_0] == DEFORMING) || (Kind_GridMovement[ZONE_0] == MOVING_WALL)) {
+      cout << "Surface(s) in motion: ";
+      for (iMarker_Moving = 0; iMarker_Moving < nMarker_Moving; iMarker_Moving++) {
+        cout << Marker_Moving[iMarker_Moving];
+        if (iMarker_Moving < nMarker_Moving-1) cout << ", ";
+        else cout <<".";
+      }
+      cout<<endl;
+    }
     
 	}
 
@@ -3120,9 +3144,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				case FFD_THICKNESS: cout << "FFD (thickness) <-> "; break;
 				case FFD_VOLUME: cout << "FFD (volume) <-> "; break;
 				}
-				for (iMarker_Moving = 0; iMarker_Moving < nMarker_Moving; iMarker_Moving++) {
-					cout << Marker_Moving[iMarker_Moving];
-					if (iMarker_Moving < nMarker_Moving-1) cout << ", ";
+				for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++) {
+					cout << Marker_DV[iMarker_DV];
+					if (iMarker_DV < nMarker_DV-1) cout << ", ";
 					else cout << " <-> ";
 				}
 				cout << DV_Value[iDV] << " <-> ";
@@ -3181,9 +3205,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			case FFD_THICKNESS: cout << "FFD (thickness) <-> "; break;
 			case FFD_VOLUME: cout << "FFD (volume) <-> "; break;
 			}
-			for (iMarker_Moving = 0; iMarker_Moving < nMarker_Moving; iMarker_Moving++) {
-				cout << Marker_Moving[iMarker_Moving];
-				if (iMarker_Moving < nMarker_Moving-1) cout << ", ";
+			for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++) {
+				cout << Marker_DV[iMarker_DV];
+				if (iMarker_DV < nMarker_DV-1) cout << ", ";
 				else cout << " <-> ";
 			}
 			cout << DV_Value[iDV] << " <-> ";
@@ -4554,6 +4578,13 @@ unsigned short CConfig::GetMarker_Config_Plotting(string val_marker) {
 	return Marker_Config_Plotting[iMarker_Config];
 }
 
+unsigned short CConfig::GetMarker_Config_DV(string val_marker) {
+	unsigned short iMarker_Config;
+	for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++)
+		if (Marker_Config_Tag[iMarker_Config] == val_marker) break;
+	return Marker_Config_DV[iMarker_Config];
+}
+
 unsigned short CConfig::GetMarker_Config_Moving(string val_marker) {
 	unsigned short iMarker_Config;
 	for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++)
@@ -4625,8 +4656,11 @@ CConfig::~CConfig(void)
 		delete[] Aeroelastic_n1;
 	}
 
-	/*--- Free memory for unspecified Rigid Motion parameters ---*/
+	/*--- Free memory for unspecified grid motion parameters ---*/
 
+  if (Kind_GridMovement != NULL)
+    delete [] Kind_GridMovement;
+  
 	/*--- motion origin: ---*/
 	if (Motion_Origin_X != NULL)
 		delete [] Motion_Origin_X;
