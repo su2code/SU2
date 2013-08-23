@@ -4223,6 +4223,16 @@ public:
 	 */	
 	void SetNondimensionalization(unsigned short val_nDim, unsigned short val_iZone);
 
+  /*!
+	 * \brief Set the config options.
+	 */
+	void SetConfig_Options(unsigned short val_nZone);
+
+  /*!
+	 * \brief Set the config file parsing.
+	 */
+  void SetParsing(char case_filename[200]);
+
 	/*! 
 	 * \brief Config file postprocessing.
 	 */	
