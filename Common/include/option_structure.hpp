@@ -366,22 +366,24 @@ static const map<string, ENUM_GASMODEL> GasModel_Map = CCreateMap<string, ENUM_G
  * \brief types of unsteady mesh motion
  */
 enum ENUM_GRIDMOVEMENT {
-	NO_MOVEMENT = 0, /*!< \brief _____. */
-	FLUTTER = 1,		/*!< \brief _____. */
+	NO_MOVEMENT = 0, /*!< \brief Simulation on a static mesh. */
+	DEFORMING = 1,		/*!< \brief Simulation with dynamically deforming meshes (plunging/pitching/rotation). */
 	RIGID_MOTION = 2,		/*!< \brief Simulation with rigid mesh motion (plunging/pitching/rotation). */
 	FLUID_STRUCTURE = 3,		/*!< \brief _______. */
 	EXTERNAL = 4,  /*!< \brief Arbitrary grid motion specified by external files at each time step. */
 	EXTERNAL_ROTATION = 5,  /*!< \brief Arbitrary grid motion specified by external files at each time step with rigid rotation. */
-    AEROELASTIC = 6    /*!< \brief Simulation with aeroelastic motion. */
+  AEROELASTIC = 6,    /*!< \brief Simulation with aeroelastic motion. */
+  MOVING_WALL = 7    /*!< \brief Simulation with moving walls (translation/rotation). */
 };
 static const map<string, ENUM_GRIDMOVEMENT> GridMovement_Map = CCreateMap<string, ENUM_GRIDMOVEMENT>
 ("NONE", NO_MOVEMENT)       
-("FLUTTER", FLUTTER)
+("DEFORMING", DEFORMING)
 ("RIGID_MOTION", RIGID_MOTION)
 ("FLUID_STRUCTURE", FLUID_STRUCTURE)
 ("EXTERNAL", EXTERNAL)
 ("EXTERNAL_ROTATION", EXTERNAL_ROTATION)
-("AEROELASTIC", AEROELASTIC);
+("AEROELASTIC", AEROELASTIC)
+("MOVING_WALL", MOVING_WALL);
 
 /*!
  * \brief type of aeroelastic grid movement

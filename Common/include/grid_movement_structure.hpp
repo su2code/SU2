@@ -988,6 +988,15 @@ public:
 	 */
 	void SetRotation(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
   
+  /*!
+	 * \brief Set the translational velocity for a moving wall.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+   * \param[in] iZone - Zone number in the mesh.
+   * \param[in] iter - Physical time iteration number.
+	 */
+	void SetMoving_Walls(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
+  
   /*! 
 	 * \brief Deforms a 2-D flutter/pitching surface during an unsteady simulation.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -1003,9 +1012,10 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iter - Current physical time iteration.
+   * \param[in] iZone - Zone number in the mesh.
 	 */
 	void SetBoundary_Flutter3D(CGeometry *geometry, CConfig *config, 
-                             CFreeFormDefBox **FFDBox, unsigned long iter);	
+                             CFreeFormDefBox **FFDBox, unsigned long iter, unsigned short iZone);
 	
   /*! 
 	 * \brief Set the collective pitch for a blade surface movement.

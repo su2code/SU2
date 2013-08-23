@@ -1513,7 +1513,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 		}
         
 	}
-    
+      
   if (config->GetEngine_Intake()) {
     
     /*--- Set initial boundary condition at iteration 0 ---*/
@@ -1620,19 +1620,21 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
     
     
 	/*--- The value of the solution for the first iteration of the dual time ---*/
-	for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++) {
-		for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-			if ((ExtIter == 0) && (dual_time)) {
-				solver_container[iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n();
-				solver_container[iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n1();
-				if (rans) {
-					solver_container[iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n();
-					solver_container[iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n1();
-				}
-			}
-		}
-	}
-    
+  if (dual_time) {
+    for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++) {
+      for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+        if (ExtIter == 0) {
+          solver_container[iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n();
+          solver_container[iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n1();
+          if (rans) {
+            solver_container[iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n();
+            solver_container[iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n1();
+          }
+        }
+      }
+    }
+  }
+  
 	if (dual_time && config->GetUnsteady_Farfield()) {
         
 		/*--- Read farfield conditions ---*/
@@ -1669,8 +1671,16 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 }
 
 void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
-	unsigned long iPoint;
+  
+	unsigned long iPoint, ErrorCounter = 0;
 	double levelset;
+  bool RightSol;
+
+#ifdef NO_MPI
+	int rank = MASTER_NODE;
+#else
+	int rank = MPI::COMM_WORLD.Get_rank();
+#endif
   
 	bool freesurface = config->GetFreeSurface();
 	bool adjoint = config->GetAdjoint();
@@ -1697,9 +1707,10 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     
 		/*--- Set the primitive variables incompressible (dens, vx, vy, vz, beta)
      and compressible (temp, vx, vy, vz, press, dens, enthal, sos)---*/
-		if (incompressible) node[iPoint]->SetPrimVar_Incompressible(Density_Inf, levelset, config);
-		else node[iPoint]->SetPrimVar_Compressible(config);
-        
+		if (incompressible) RightSol = node[iPoint]->SetPrimVar_Incompressible(Density_Inf, levelset, config);
+		else RightSol = node[iPoint]->SetPrimVar_Compressible(config);
+    if (!RightSol) ErrorCounter++;
+
 		/*--- Initialize the convective residual vector ---*/
 		LinSysRes.SetBlock_Zero(iPoint);
     
@@ -1725,6 +1736,14 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
 	/*--- Initialize the jacobian matrices ---*/
 	if (implicit) Jacobian.SetValZero();
+  
+  /*--- Error message ---*/
+#ifndef NO_MPI
+  unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
+  MPI::COMM_WORLD.Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+#endif
+  if ((ErrorCounter != 0) && (rank == MASTER_NODE))
+    cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
   
 }
 
@@ -6381,9 +6400,17 @@ CNSSolver::~CNSSolver(void) {
 }
 
 void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
-	unsigned long iPoint;
+  
+	unsigned long iPoint, ErrorCounter = 0;
 	double levelset;
-    
+  bool RightSol;
+
+#ifdef NO_MPI
+	int rank = MASTER_NODE;
+#else
+	int rank = MPI::COMM_WORLD.Get_rank();
+#endif
+  
 	bool adjoint = config->GetAdjoint();
 	bool freesurface = config->GetFreeSurface();
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -6413,9 +6440,10 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
         
 		/*--- Set the primitive variables incompressible (dens, vx, vy, vz, beta)
          and compressible (temp, vx, vy, vz, press, dens, enthal, sos)---*/
-		if (incompressible) node[iPoint]->SetPrimVar_Incompressible(Density_Inf, Viscosity_Inf, turb_ke, levelset, config);
-		else node[iPoint]->SetPrimVar_Compressible(turb_ke, config);
-        
+		if (incompressible) RightSol = node[iPoint]->SetPrimVar_Incompressible(Density_Inf, Viscosity_Inf, turb_ke, levelset, config);
+		else RightSol = node[iPoint]->SetPrimVar_Compressible(turb_ke, config);
+    if (!RightSol) ErrorCounter++;
+ 
 		/*--- Set the value of the eddy viscosity ---*/
 		if (turb_model != NONE)
 			node[iPoint]->SetEddyViscosity(config->GetKind_Turb_Model(), solver_container[TURB_SOL]->node[iPoint]);
@@ -6451,7 +6479,15 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     
 	/*--- Initialize the jacobian matrices ---*/
 	if (implicit) Jacobian.SetValZero();
-    
+  
+  /*--- Error message ---*/
+#ifndef NO_MPI
+  unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
+  MPI::COMM_WORLD.Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+#endif
+  if ((ErrorCounter != 0) && (rank == MASTER_NODE))
+    cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
+  
 }
 
 void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned long Iteration) {
@@ -6872,15 +6908,19 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 				/*--- Compute y+ and non-dimensional velocity ---*/
 				FrictionVel = sqrt(fabs(WallShearStress)/Density);
 				YPlus[iMarker][iVertex] = WallDistMod*FrictionVel/(Viscosity/Density);
-                
+        
 				/*--- Compute heat flux on the wall ---*/
-				GradTemperature = 0.0; for (iDim = 0; iDim < nDim; iDim++) GradTemperature +=  Grad_PrimVar[0][iDim]*(-Normal[iDim]);
+				GradTemperature = 0.0;
+        if (!incompressible) {
+          for (iDim = 0; iDim < nDim; iDim++)
+            GradTemperature += Grad_PrimVar[0][iDim]*(-Normal[iDim]);
+        }
 				CHeatTransfer[iMarker][iVertex] = (Cp * Viscosity/PRANDTL)*GradTemperature/(0.5*RefDensity*RefVel2);
-                HeatLoad += CHeatTransfer[iMarker][iVertex];
-                
-                if (CHeatTransfer[iMarker][iVertex]/Area > Maxq_Visc[iMarker])
-                    Maxq_Visc[iMarker] = CHeatTransfer[iMarker][iVertex]/Area;
-                
+        HeatLoad += CHeatTransfer[iMarker][iVertex];
+        
+        if (CHeatTransfer[iMarker][iVertex]/Area > Maxq_Visc[iMarker])
+          Maxq_Visc[iMarker] = CHeatTransfer[iMarker][iVertex]/Area;
+        
 				/*--- Compute viscous forces, and moment using the stress tensor ---*/
 				if ((geometry->node[iPoint]->GetDomain()) && (Monitoring == YES)) {
                     

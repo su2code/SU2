@@ -1625,9 +1625,17 @@ void CAdjEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
 }
 
 void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
-	unsigned long iPoint;
+  
+	unsigned long iPoint, ErrorCounter = 0;
   double SharpEdge_Distance;
+  bool RightSol;
 
+#ifdef NO_MPI
+	int rank = MASTER_NODE;
+#else
+	int rank = MPI::COMM_WORLD.Get_rank();
+#endif
+  
   /*--- Retrieve information about the spatial and temporal integration for the
    adjoint equations (note that the flow problem may use different methods). ---*/
   bool implicit       = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
@@ -1648,12 +1656,13 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
     
     /*--- Set the primitive variables incompressible and compressible
      adjoint variables ---*/
-		if (incompressible) node[iPoint]->SetPrimVar_Incompressible(SharpEdge_Distance, false, config);
-		else node[iPoint]->SetPrimVar_Compressible(SharpEdge_Distance, false, config);
-    
+		if (incompressible) RightSol = node[iPoint]->SetPrimVar_Incompressible(SharpEdge_Distance, false, config);
+		else RightSol = node[iPoint]->SetPrimVar_Compressible(SharpEdge_Distance, false, config);
+    if (!RightSol) ErrorCounter++;
+      
 		/*--- Initialize the convective residual vector ---*/
 		LinSysRes.SetBlock_Zero(iPoint);
-
+    
 	}
   
   /*--- Compute gradients for upwind second-order reconstruction ---*/
@@ -1677,6 +1686,14 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   
 	/*--- Implicit solution ---*/
 	if ((implicit) || (config->GetKind_Adjoint() == DISCRETE) ) Jacobian.SetValZero();
+  
+  /*--- Error message ---*/
+#ifndef NO_MPI
+  double MyErrorCounter = ErrorCounter; ErrorCounter = 0.0;
+  MPI::COMM_WORLD.Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+#endif
+  if ((ErrorCounter != 0) && (rank == MASTER_NODE))
+    cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
   
 }
 
@@ -5435,8 +5452,16 @@ CAdjNSSolver::~CAdjNSSolver(void) {
 
 
 void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
-	unsigned long iPoint;
+  
+	unsigned long iPoint, ErrorCounter = 0;
   double SharpEdge_Distance;
+  bool RightSol;
+
+#ifdef NO_MPI
+	int rank = MASTER_NODE;
+#else
+	int rank = MPI::COMM_WORLD.Get_rank();
+#endif
   
   /*--- Retrieve information about the spatial and temporal integration for the
    adjoint equations (note that the flow problem may use different methods). ---*/
@@ -5458,9 +5483,10 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     
     /*--- Set the primitive variables incompressible and compressible
      adjoint variables ---*/
-		if (incompressible) node[iPoint]->SetPrimVar_Incompressible(SharpEdge_Distance, false, config);
-		else node[iPoint]->SetPrimVar_Compressible(SharpEdge_Distance, false, config);
-    
+		if (incompressible) RightSol = node[iPoint]->SetPrimVar_Incompressible(SharpEdge_Distance, false, config);
+		else RightSol = node[iPoint]->SetPrimVar_Compressible(SharpEdge_Distance, false, config);
+    if (!RightSol) ErrorCounter++;
+
 		/*--- Initialize the convective residual vector ---*/
 		LinSysRes.SetBlock_Zero(iPoint);
     
@@ -5502,6 +5528,14 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
 	/*--- Initialize the Jacobian for implicit integration ---*/
 	if ((implicit) || (config->GetKind_Adjoint() == DISCRETE) ) Jacobian.SetValZero();
+  
+  /*--- Error message ---*/
+#ifndef NO_MPI
+  double MyErrorCounter = ErrorCounter; ErrorCounter = 0.0;
+  MPI::COMM_WORLD.Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+#endif
+  if ((ErrorCounter != 0) && (rank == MASTER_NODE))
+    cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
   
 }
 
