@@ -129,7 +129,6 @@ void CConfig::SetConfig_Options(unsigned short val_nZone) {
   /* DESCRIPTION: Write a tecplot file for each partition */
 	AddSpecialOption("VISUALIZE_PART", Visualize_Partition, SetBoolOption, false);
   
-  
 	/*--- Options related to various boundary markers ---*/
 	/* CONFIG_CATEGORY: Boundary Markers */
   
@@ -204,6 +203,8 @@ void CConfig::SetConfig_Options(unsigned short val_nZone) {
 	/* DESCRIPTION: Nacelle inflow boundary marker(s)
    Format: ( nacelle inflow marker, fan face Mach, ... ) */
 	AddMarkerOutlet("MARKER_NACELLE_INFLOW", nMarker_NacelleInflow, Marker_NacelleInflow, FanFace_Mach_Target);
+  /* DESCRIPTION: Engine subsonic intake region */
+	AddSpecialOption("SUBSONIC_NACELLE_INFLOW", Engine_Intake, SetBoolOption, false);
 	/* DESCRIPTION: Nacelle exhaust boundary marker(s)
    Format: (nacelle exhaust marker, total nozzle temp, total nozzle pressure, ... )*/
 	AddMarkerInlet("MARKER_NACELLE_EXHAUST", nMarker_NacelleExhaust, Marker_NacelleExhaust, Nozzle_Ttotal, Nozzle_Ptotal);
@@ -217,7 +218,9 @@ void CConfig::SetConfig_Options(unsigned short val_nZone) {
 	AddMarkerOption("MARKER_FWH", nMarker_FWH, Marker_FWH);
 	/* DESCRIPTION: Observer boundary marker(s) */
 	AddMarkerOption("MARKER_OBSERVER", nMarker_Observer, Marker_Observer);
-
+	/* DESCRIPTION: Damping factor for engine inlet condition */
+	AddScalarOption("DAMP_NACELLE_INFLOW", Damp_Nacelle_Inflow, 0.1);
+  
 	/*--- Options related to grid adaptation ---*/
 	/* CONFIG_CATEGORY: Grid adaptation */
   
