@@ -1513,7 +1513,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 		}
         
 	}
-    
+      
   if (config->GetEngine_Intake()) {
     
     /*--- Set initial boundary condition at iteration 0 ---*/
@@ -1620,19 +1620,21 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
     
     
 	/*--- The value of the solution for the first iteration of the dual time ---*/
-	for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++) {
-		for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-			if ((ExtIter == 0) && (dual_time)) {
-				solver_container[iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n();
-				solver_container[iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n1();
-				if (rans) {
-					solver_container[iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n();
-					solver_container[iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n1();
-				}
-			}
-		}
-	}
-    
+  if (dual_time) {
+    for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++) {
+      for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+        if (ExtIter == 0) {
+          solver_container[iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n();
+          solver_container[iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n1();
+          if (rans) {
+            solver_container[iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n();
+            solver_container[iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n1();
+          }
+        }
+      }
+    }
+  }
+  
 	if (dual_time && config->GetUnsteady_Farfield()) {
         
 		/*--- Read farfield conditions ---*/
