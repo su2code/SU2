@@ -146,6 +146,7 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
   double *Coord_0, *Coord_1, Length, MinLength = 1E10, **StiffMatrix_Elem;
   double *Edge_Vector = new double [nDim];
   bool RightVol;
+  vector<unsigned long> Degenerated_Elem;
   
   int rank = MASTER_NODE;
   
@@ -181,7 +182,13 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
 		}
 		Length = sqrt(Length);
 		MinLength = min(Length, MinLength);
+    
 	}
+  
+#ifndef NO_MPI
+  double MinLength_Local = MinLength; MinLength = 0.0;
+  MPI::COMM_WORLD.Allreduce(&MinLength_Local, &MinLength, 1, MPI::DOUBLE, MPI::MIN);
+#endif
   
 	/*--- Compute contributions from each element by forming the stiffness matrix (FEA) ---*/
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
@@ -206,13 +213,111 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
       Point_3 = geometry->elem[iElem]->GetNode(3);
       RightVol = SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
       AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-    
+          
     }
     
-    if (!RightVol) ElemCounter++;
+    /*--- Create a list with the degenerated elements ---*/
 
+    if (!RightVol) {
+      ElemCounter++;
+      Degenerated_Elem.push_back(iElem);
+    }
+      
 	}
 	
+//  unsigned short jVar;
+//  unsigned long nEdge = geometry->GetnEdge();
+//  double **Block;
+//  Block = new double*[nVar];
+//  for (iVar = 0; iVar < nVar; iVar++)
+//    Block[iVar] = new double[nVar];
+//  double DeltaX, DeltaY, DeltaZ;
+//  bool *FixedEdge;
+//  FixedEdge = new bool[nEdge];
+//  for (iEdge = 0; iEdge < nEdge; iEdge++)
+//    FixedEdge[iEdge] = false;
+  
+//  /*--- Fix the stifness matrix using the degenerated elements ---*/
+//  for (iElem = 0; iElem < Degenerated_Elem.size(); iElem++) {
+//    
+//    Point_0 = geometry->elem[iElem]->GetNode(0);
+//    Point_1 = geometry->elem[iElem]->GetNode(1);
+//    Point_2 = geometry->elem[iElem]->GetNode(2);
+//    Point_3 = geometry->elem[iElem]->GetNode(3);
+//    
+//    
+//    StiffMatrix.GetBlock(Point_0, Point_0); StiffMatrix.ReturnBlock(Block);
+//    DeltaX = Block[0][0]; DeltaY = Block[1][1]; DeltaZ = Block[2][2];
+//    Block[0][0] = EPS; Block[1][1] = EPS; Block[2][2] = EPS;
+//    StiffMatrix.SetBlock(Point_0, Point_0, Block);
+//    for (iVar = 0; iVar < nVar; iVar++)
+//      for (jVar = 0; jVar < nVar; jVar++)
+//        Block[iVar][jVar] = 0.0;
+//    Block[0][0] = DeltaX; Block[1][1] = DeltaY; Block[2][2] = DeltaZ;
+//    
+//    iEdge = geometry->FindEdge(Point_0, Point_1);
+//    if (!FixedEdge[iEdge]) { StiffMatrix.AddBlock(Point_0, Point_1, Block); FixedEdge[iEdge] = true; }
+//    iEdge = geometry->FindEdge(Point_0, Point_2);
+//    if (!FixedEdge[iEdge]) { StiffMatrix.AddBlock(Point_0, Point_2, Block); FixedEdge[iEdge] = true; }
+//    iEdge = geometry->FindEdge(Point_0, Point_3);
+//    if (!FixedEdge[iEdge]) { StiffMatrix.AddBlock(Point_0, Point_3, Block); FixedEdge[iEdge] = true; }
+//
+//    StiffMatrix.GetBlock(Point_1, Point_0); StiffMatrix.ReturnBlock(Block);
+//    DeltaX = Block[0][0]; DeltaY = Block[1][1]; DeltaZ = Block[2][2];
+//    Block[0][0] = EPS; Block[1][1] = EPS; Block[2][2] = EPS;
+//    
+//    iEdge = geometry->FindEdge(Point_1, Point_0);
+//    if (!FixedEdge[iEdge]) { StiffMatrix.SetBlock(Point_1, Point_0, Block); FixedEdge[iEdge] = true; }
+//    for (iVar = 0; iVar < nVar; iVar++)
+//      for (jVar = 0; jVar < nVar; jVar++)
+//        Block[iVar][jVar] = 0.0;
+//    Block[0][0] = EPS; Block[1][1] = EPS; Block[2][2] = EPS;
+//    
+//    StiffMatrix.AddBlock(Point_1, Point_1, Block);
+//    iEdge = geometry->FindEdge(Point_1, Point_2);
+//    if (!FixedEdge[iEdge]) { StiffMatrix.AddBlock(Point_1, Point_2, Block); FixedEdge[iEdge] = true; }
+//    iEdge = geometry->FindEdge(Point_1, Point_3);
+//    if (!FixedEdge[iEdge]) { StiffMatrix.AddBlock(Point_1, Point_3, Block); FixedEdge[iEdge] = true; }
+//    
+//    StiffMatrix.GetBlock(Point_2, Point_0); StiffMatrix.ReturnBlock(Block);
+//    DeltaX = Block[0][0]; DeltaY = Block[1][1]; DeltaZ = Block[2][2];
+//    Block[0][0] = EPS; Block[1][1] = EPS; Block[2][2] = EPS;
+//    
+//    
+//    iEdge = geometry->FindEdge(Point_2, Point_0);
+//    if (!FixedEdge[iEdge]) { StiffMatrix.SetBlock(Point_2, Point_0, Block); FixedEdge[iEdge] = true; }
+//    
+//    
+//    for (iVar = 0; iVar < nVar; iVar++)
+//      for (jVar = 0; jVar < nVar; jVar++)
+//        Block[iVar][jVar] = 0.0;
+//    Block[0][0] = DeltaX; Block[1][1] = DeltaY; Block[2][2] = DeltaZ;
+//    iEdge = geometry->FindEdge(Point_2, Point_1);
+//    if (!FixedEdge[iEdge]) { StiffMatrix.AddBlock(Point_2, Point_1, Block); FixedEdge[iEdge] = true; }
+//    StiffMatrix.AddBlock(Point_2, Point_2, Block);
+//    iEdge = geometry->FindEdge(Point_2, Point_3);
+//    if (!FixedEdge[iEdge]) { StiffMatrix.AddBlock(Point_2, Point_3, Block); FixedEdge[iEdge] = true; }
+//    
+//    StiffMatrix.GetBlock(Point_3, Point_0); StiffMatrix.ReturnBlock(Block);
+//    DeltaX = Block[0][0]; DeltaY = Block[1][1]; DeltaZ = Block[2][2];
+//    Block[0][0] = EPS; Block[1][1] = EPS; Block[2][2] = EPS;
+//    
+//    iEdge = geometry->FindEdge(Point_3, Point_0);
+//    if (!FixedEdge[iEdge]) { StiffMatrix.SetBlock(Point_3, Point_0, Block); FixedEdge[iEdge] = true; }
+//    
+//    for (iVar = 0; iVar < nVar; iVar++)
+//      for (jVar = 0; jVar < nVar; jVar++)
+//        Block[iVar][jVar] = 0.0;
+//    Block[0][0] = DeltaX; Block[1][1] = DeltaY; Block[2][2] = DeltaZ;
+//    
+//    iEdge = geometry->FindEdge(Point_3, Point_1);
+//    if (!FixedEdge[iEdge]) { StiffMatrix.AddBlock(Point_3, Point_1, Block); FixedEdge[iEdge] = true; }
+//    iEdge = geometry->FindEdge(Point_3, Point_2);
+//    if (!FixedEdge[iEdge]) { StiffMatrix.AddBlock(Point_3, Point_2, Block); FixedEdge[iEdge] = true; }
+//    StiffMatrix.AddBlock(Point_3, Point_3, Block);
+//  }
+    
+  
 #ifndef NO_MPI
   unsigned long ElemCounter_Local = ElemCounter;
   MPI::COMM_WORLD.Allreduce(&ElemCounter_Local, &ElemCounter, 1, MPI::DOUBLE, MPI::SUM);
@@ -234,12 +339,7 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
   }
   
   delete [] Edge_Vector;
-  
-#ifndef NO_MPI
-  double MinLength_Local = MinLength;
-  MPI::COMM_WORLD.Allreduce(&MinLength_Local, &MinLength, 1, MPI::DOUBLE, MPI::MIN);
-#endif
-  
+    
 	return MinLength;
 }
 
@@ -808,8 +908,8 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 	/*--- Set the known displacements, note that some points of the moving surfaces
    could be on on the symmetry plane, we should specify DeleteValsRowi again (just in case) ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		if ((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD) ||
-        (config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_MDC)) {
+		if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_MDC))) {
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 				VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
@@ -2730,7 +2830,7 @@ void CSurfaceMovement::SetSpherical(CGeometry *boundary, CConfig *config, unsign
 
 	unsigned long iVertex, iPoint, n;
 	unsigned short iMarker, jDV;
-	double VarCoord[3], *Coord, *Normal, Theta_Value, Radius_Value, Value_old, Value_new, Delta;
+	double VarCoord[3], *Coord, *Normal, Theta_Value, Radius_Value, Delta;
 	double x, x2, y2, z2, r_yz, r_yz2, theta, r, cos_theta, sin_theta, cos_phi, sin_phi;
 	vector<double> Theta_Spline, Radius_Spline, Radius2_Spline;
 	int ControlPoint_Index;
@@ -3101,7 +3201,7 @@ void CSurfaceMovement::SetMoving_Walls(CGeometry *geometry, CConfig *config, uns
 	
   /*--- Retrieve values from the config file ---*/
 
-  double Lref = config->GetLength_Ref();
+//  double Lref = config->GetLength_Ref();
 
   /*--- Get prescribed wall translation speed from config (non-dim?) ---*/
 
@@ -3137,13 +3237,12 @@ void CSurfaceMovement::SetMoving_Walls(CGeometry *geometry, CConfig *config, uns
 void CSurfaceMovement::SetBoundary_Flutter2D(CGeometry *geometry, CConfig *config, 
                                              unsigned long iter, unsigned short iZone) {
 	
-	double VarCoord[3], omega, w_red, deltaT, ampl, v_inf, *vel;
-  double r[3], rotCoord[3],*Coord, Center[3], Omega[3], Ampl[3], Phase[3];
+	double VarCoord[3], omega, deltaT, *vel;
+  double Center[3], Omega[3], Ampl[3], Phase[3];
   double alpha, alpha_new, alpha_old, dx, dy;
   double time_new, time_old;
   double DEG2RAD = PI_NUMBER/180.0;
-  unsigned short iDim, iMarker;
-  unsigned short nDim = geometry->GetnDim();
+  unsigned short iMarker;
   unsigned long iPoint, iVertex;
   bool adjoint = config->GetAdjoint();
     
@@ -3221,14 +3320,12 @@ void CSurfaceMovement::SetBoundary_Flutter2D(CGeometry *geometry, CConfig *confi
 void CSurfaceMovement::SetBoundary_Flutter3D(CGeometry *geometry, CConfig *config, 
                                              CFreeFormDefBox **FFDBox, unsigned long iter, unsigned short iZone) {
 	
-	double omega, w_red, deltaT, ampl, v_inf, *vel;
+	double omega, deltaT, *vel;
   double alpha, alpha_new, alpha_old;
   double time_new, time_old;
   double Center[3], Omega[3], Ampl[3], Phase[3];
   double DEG2RAD = PI_NUMBER/180.0;
 
-  unsigned short iDim;
-  unsigned short nDim = geometry->GetnDim();
   bool adjoint = config->GetAdjoint();
     
 #ifndef NO_MPI
