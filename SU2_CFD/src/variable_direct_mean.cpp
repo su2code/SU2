@@ -305,9 +305,9 @@ double CEulerVariable::GetProjVelInc(double *val_vector) {
 	return ProjVel;
 }
 
-void CEulerVariable::SetPrimVar_Compressible(CConfig *config) {
+bool CEulerVariable::SetPrimVar_Compressible(CConfig *config) {
 	unsigned short iDim, iVar;
-  bool check_dens = false, check_press = false, check_sos = false, check_temp = false;
+  bool check_dens = false, check_press = false, check_sos = false, check_temp = false, RightVol = true;
   
   double Gas_Constant = config->GetGas_ConstantND();
 	double Gamma = config->GetGamma();
@@ -321,9 +321,6 @@ void CEulerVariable::SetPrimVar_Compressible(CConfig *config) {
   /*--- Check that the solution has a physical meaning ---*/
   if (check_dens || check_press || check_sos || check_temp) {
     
-    /*--- Output to control the convergence ---*/
-    cout << "Negative density, pressure, sos, or temperature. Using old solution." << endl;
-    
     /*--- Copy the old solution ---*/
     for (iVar = 0; iVar < nVar; iVar++)
       Solution[iVar] = Solution_Old[iVar];
@@ -334,6 +331,8 @@ void CEulerVariable::SetPrimVar_Compressible(CConfig *config) {
     check_sos = SetSoundSpeed(Gamma);
     check_temp = SetTemperature(Gas_Constant);
     
+    RightVol = false;
+    
   }
   
   SetEnthalpy();                                // Requires pressure computation.
@@ -342,9 +341,11 @@ void CEulerVariable::SetPrimVar_Compressible(CConfig *config) {
 		Primitive[iDim+1] = Solution[iDim+1] / Solution[0];
 	Primitive[nDim+2] = Solution[0];
   
+  return RightVol;
+  
 }
 
-void CEulerVariable::SetPrimVar_Incompressible(double Density_Inf, double levelset, CConfig *config) {
+bool CEulerVariable::SetPrimVar_Incompressible(double Density_Inf, double levelset, CConfig *config) {
 	unsigned short iDim;
   double epsilon, Heaviside, lambda, DensityInc;
   
@@ -376,6 +377,8 @@ void CEulerVariable::SetPrimVar_Incompressible(double Density_Inf, double levels
   /*--- Set the value of the velocity ---*/
   for (iDim = 0; iDim < nDim; iDim++)
     Primitive[iDim+1] = Solution[iDim+1] / Primitive[0];
+  
+  return true;
   
 }
 
@@ -462,9 +465,9 @@ void CNSVariable::SetStrainMag(void) {
 	StrainMag = sqrt(2.0*StrainMag);
 }
 
-void CNSVariable::SetPrimVar_Compressible(double turb_ke, CConfig *config) {
+bool CNSVariable::SetPrimVar_Compressible(double turb_ke, CConfig *config) {
 	unsigned short iDim, iVar;
-  bool check_dens = false, check_press = false, check_sos = false, check_temp = false;
+  bool check_dens = false, check_press = false, check_sos = false, check_temp = false, RightVol = true;
   
   double Gas_Constant = config->GetGas_ConstantND();
 	double Gamma = config->GetGamma();
@@ -478,9 +481,6 @@ void CNSVariable::SetPrimVar_Compressible(double turb_ke, CConfig *config) {
   /*--- Check that the solution has a physical meaning ---*/
   if (check_dens || check_press || check_sos || check_temp) {
     
-    /*--- Output to control the convergence ---*/
-    cout << "Negative density, pressure, sos, or temperature. Using old solution." << endl;
-    
     /*--- Copy the old solution ---*/
     for (iVar = 0; iVar < nVar; iVar++)
       Solution[iVar] = Solution_Old[iVar];
@@ -491,6 +491,8 @@ void CNSVariable::SetPrimVar_Compressible(double turb_ke, CConfig *config) {
     check_sos = SetSoundSpeed(Gamma);
     check_temp = SetTemperature(Gas_Constant);
     
+    RightVol = false;
+    
   }
   
 	SetEnthalpy();                                  // Requires pressure computation.
@@ -500,9 +502,11 @@ void CNSVariable::SetPrimVar_Compressible(double turb_ke, CConfig *config) {
 		Primitive[iDim+1] = Solution[iDim+1] / Solution[0];
 	Primitive[nDim+2] = Solution[0];
   
+  return RightVol;
+  
 }
 
-void CNSVariable::SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double turb_ke, double levelset, CConfig *config) {
+bool CNSVariable::SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double turb_ke, double levelset, CConfig *config) {
 	unsigned short iDim;
   double epsilon, Heaviside, lambda, DensityInc, ViscosityInc;
   
@@ -539,5 +543,7 @@ void CNSVariable::SetPrimVar_Incompressible(double Density_Inf, double Viscosity
   /*--- Set the value of the velocity ---*/
 	for (iDim = 0; iDim < nDim; iDim++) 
 		Primitive[iDim+1] = Solution[iDim+1] / GetDensityInc();
+  
+  return true;
   
 }
