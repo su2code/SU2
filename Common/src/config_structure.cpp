@@ -92,6 +92,7 @@ void CConfig::SetConfig_Options(unsigned short val_nZone) {
   
 	/*--- Intialize pointers to NULL. If we don't find these values
    in the config file, they will all be set to zero. ---*/
+  Kind_GridMovement = NULL;
 	Motion_Origin_X = NULL;     Motion_Origin_Y = NULL;     Motion_Origin_Z = NULL;
 	Translation_Rate_X = NULL;  Translation_Rate_Y = NULL;  Translation_Rate_Z = NULL;
 	Rotation_Rate_X = NULL;     Rotation_Rate_Y = NULL;     Rotation_Rate_Z = NULL;
@@ -328,9 +329,9 @@ void CConfig::SetConfig_Options(unsigned short val_nZone) {
 	/* DESCRIPTION: Mesh motion for unsteady simulations */
 	AddSpecialOption("GRID_MOVEMENT", Grid_Movement, SetBoolOption, false);
 	/* DESCRIPTION: Type of mesh motion */
-  Kind_GridMovement = new unsigned short[1];
-  Kind_GridMovement[0] = 0;
-//AddEnumListOption("GRID_MOVEMENT_KIND", nZone, Kind_GridMovement, GridMovement_Map);
+//  Kind_GridMovement = new unsigned short[1];
+//  Kind_GridMovement[0] = 0;
+  AddEnumListOption("GRID_MOVEMENT_KIND", nZone, Kind_GridMovement, GridMovement_Map);
 	default_vec_3d[0] = 0; default_vec_3d[1] = 0;
 	/* DESCRIPTION: % Mach number (non-dimensional, based on the mesh velocity and freestream vals.) */
 	AddScalarOption("MACH_MOTION", Mach_Motion, 0.0);
@@ -964,6 +965,9 @@ void CConfig::SetParsing(char case_filename[200]) {
 
 void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_izone) {
 
+  unsigned short iZone;
+
+  /*--- Store the SU2 module that we are executing. ---*/
 	Kind_SU2 = val_software;
 
   /*--- Divide grid if runnning SU2_MDC ---*/
@@ -987,23 +991,20 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 	else
 		Wrt_Unsteady = true;
 
-	/*--- If we're solving a purely steady problem with no prescribed grid
-   movement (both rotating frame and moving walls are steady), make sure that
-   there is no grid motion ---*/
-	if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL) &&
-      (Unsteady_Simulation == STEADY) &&
-      (Kind_GridMovement[ZONE_0] != MOVING_WALL)) // rotating_frame here too soon
-		Grid_Movement = false;
-
-	/*--- If it is not specified, set the mesh motion mach number
-   equal to the freestream value. ---*/
-	if ((Rotating_Frame || Grid_Movement) && Mach_Motion == 0.0)
-		Mach_Motion = Mach;
-
-	/*--- In case rigid-motion parameters have not been declared in the config file, set them equal to zero. ---*/
-	if (Grid_Movement) {
-
-		unsigned short iZone;
+  /*--- Set grid movement kind to NO_MOVEMENT if not specified, which means
+   that we also set the Grid_Movement flag to false. ---*/
+  if (Kind_GridMovement == NULL) {
+    Kind_GridMovement = new unsigned short[nZone];
+    for (unsigned short iZone = 0; iZone < nZone; iZone++ )
+      Kind_GridMovement[iZone] = NO_MOVEMENT;
+    if (Grid_Movement == true) {
+      cout << "WARNING: Grid movement requested but no type provided. Grid movement set to NO. " << endl;
+      Grid_Movement = false;
+    }
+  }
+  
+	/*--- In case the grid movement parameters have not been declared in the 
+   config file, set them equal to zero for safety. ---*/
 
 		/*--- Motion Origin: ---*/
 		if (Motion_Origin_X == NULL) {
@@ -1156,8 +1157,19 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 			for (iZone = 0; iZone < nZone; iZone++ )
 				Plunging_Ampl_Z[iZone] = 0.0;
 		}
-
-	}
+  
+  /*--- If we're solving a purely steady problem with no prescribed grid
+   movement (both rotating frame and moving walls can be steady), make sure that
+   there is no grid motion ---*/
+	if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL) &&
+      (Unsteady_Simulation == STEADY) &&
+      (Kind_GridMovement[ZONE_0] != MOVING_WALL)) // rotating_frame here too soon
+		Grid_Movement = false;
+  
+	/*--- If it is not specified, set the mesh motion mach number
+   equal to the freestream value. ---*/
+	if ((Rotating_Frame || Grid_Movement) && Mach_Motion == 0.0)
+		Mach_Motion = Mach;
 
 	/*--- Use the various rigid-motion input frequencies to determine the period to be used with time-spectral cases.
 		  There are THREE types of motion to consider, namely: rotation, pitching, and plunging.
@@ -1212,18 +1224,20 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		}
 	}
 
+  /*--- Fluid-Structure problems always have grid movement ---*/
+	if (Kind_Solver == FLUID_STRUCTURE_EULER ||
+      Kind_Solver == FLUID_STRUCTURE_NAVIER_STOKES) {
+		if (Kind_Turb_Model == SA || Kind_Turb_Model == SST)
+			Kind_Solver = FLUID_STRUCTURE_RANS;
+		Grid_Movement = true;
+	}
+  
 	/*--- Set a flag for sliding interfaces so that a search
    and interpolation is performed after each time step. ---*/
 	if (nMarker_Sliding > 0)
 		Relative_Motion = true;
 	else
 		Relative_Motion = false;
-
-	if (Kind_Solver == FLUID_STRUCTURE_EULER || Kind_Solver == FLUID_STRUCTURE_NAVIER_STOKES) {
-		if (Kind_Turb_Model == SA || Kind_Turb_Model == SST)
-			Kind_Solver = FLUID_STRUCTURE_RANS;
-		Grid_Movement = true;
-	}
 
 	if (FullMG) FinestMesh = nMultiLevel;
 	else FinestMesh = MESH_0;
@@ -4311,8 +4325,11 @@ CConfig::~CConfig(void)
 		delete[] Aeroelastic_n1;
 	}
 
-	/*--- Free memory for unspecified Rigid Motion parameters ---*/
+	/*--- Free memory for unspecified grid motion parameters ---*/
 
+  if (Kind_GridMovement != NULL)
+    delete [] Kind_GridMovement;
+  
 	/*--- motion origin: ---*/
 	if (Motion_Origin_X != NULL)
 		delete [] Motion_Origin_X;
