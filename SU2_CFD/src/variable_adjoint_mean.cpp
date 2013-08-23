@@ -249,9 +249,9 @@ CAdjEulerVariable::~CAdjEulerVariable(void) {
   
 }
 
-void CAdjEulerVariable::SetPrimVar_Compressible(double SharpEdge_Distance, bool check, CConfig *config) {
+bool CAdjEulerVariable::SetPrimVar_Compressible(double SharpEdge_Distance, bool check, CConfig *config) {
 	unsigned short iVar;
-  bool check_dens = false;
+  bool check_dens = false, RightVol = true;
   
   double adj_limit = config->GetAdjointLimit();
   double dist_limit = config->GetRefElemLength();
@@ -267,15 +267,19 @@ void CAdjEulerVariable::SetPrimVar_Compressible(double SharpEdge_Distance, bool 
       for (iVar = 0; iVar < nVar; iVar++)
         Solution[iVar] = Solution_Old[iVar];
       
+      RightVol = false;
+      
     }
     
   }
   
+  return RightVol;
+  
 }
 
-void CAdjEulerVariable::SetPrimVar_Incompressible(double SharpEdge_Distance, bool check, CConfig *config) {
+bool CAdjEulerVariable::SetPrimVar_Incompressible(double SharpEdge_Distance, bool check, CConfig *config) {
   unsigned short iVar;
-  bool check_press = false;
+  bool check_press = false, RightVol = true;
   
   double adj_limit = config->GetAdjointLimit();
   double dist_limit = config->GetRefElemLength();
@@ -291,9 +295,13 @@ void CAdjEulerVariable::SetPrimVar_Incompressible(double SharpEdge_Distance, boo
       for (iVar = 0; iVar < nVar; iVar++)
         Solution[iVar] = Solution_Old[iVar];
       
+      RightVol = false;
+      
     }
     
   }
+  
+  return RightVol;
   
 }
 
