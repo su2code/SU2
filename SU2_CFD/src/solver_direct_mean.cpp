@@ -1737,8 +1737,8 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   /*--- Error message ---*/
 #ifndef NO_MPI
-  double MyErrorCounter = ErrorCounter; ErrorCounter = 0.0;
-  MPI::COMM_WORLD.Allreduce(&ErrorCounter, &ErrorCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+  unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
+  MPI::COMM_WORLD.Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
 #endif
   if ((ErrorCounter != 0) && (rank == MASTER_NODE))
     cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
@@ -6438,8 +6438,8 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   
   /*--- Error message ---*/
 #ifndef NO_MPI
-  double MyErrorCounter = ErrorCounter; ErrorCounter = 0.0;
-  MPI::COMM_WORLD.Allreduce(&ErrorCounter, &ErrorCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+  unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
+  MPI::COMM_WORLD.Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
 #endif
   if ((ErrorCounter != 0) && (rank == MASTER_NODE))
     cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
