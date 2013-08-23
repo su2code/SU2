@@ -124,8 +124,6 @@ private:
 	Total_UnstTimeND;								/*!< \brief Total time for unsteady computations (non dimensional). */
 	double Current_UnstTime,									/*!< \brief Global time of the unsteady simulation. */
 	Current_UnstTimeND;									/*!< \brief Global time of the unsteady simulation. */
-	double Reduced_Frequency,		/*!< \brief Reduced frequency for airfoil movement. */
-	Pitching_Amplitude;				/*!< \brief Pitching amplitude for airfoil movement. */
 	unsigned short nMarker_Euler,	/*!< \brief Number of Euler wall markers. */
 	nMarker_FarField,				/*!< \brief Number of far-field markers. */
 	nMarker_Custom,
@@ -3313,18 +3311,6 @@ public:
 	 * \return Value of the convergence criteria.
 	 */
 	double GetCauchy_Eps_FullMG(void);
-
-	/*! 
-	 * \brief Get the value of the reduced frequency.
-	 * \return Value of the reduced frequency in a non-steady problem.
-	 */
-	double GetReduced_Frequency(void);
-
-	/*! 
-	 * \brief Get the value of the pitching amplitude.
-	 * \return Value of the pitching amplitude in a non-steady problem.
-	 */
-	double GetPitching_Amplitude(void);
 
 	/*! 
 	 * \brief If we are prforming an unsteady simulation, there is only 

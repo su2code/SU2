@@ -370,10 +370,6 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 	AddListOption("PLUNGING_AMPL_Z", nZone, Plunging_Ampl_Z);
 	/* DESCRIPTION:  */
 	AddScalarOption("MOTION_FILENAME", Motion_Filename, string("mesh_motion.dat"));
-	/* DESCRIPTION: Reduced frequency for flutter pitching motion */
-	AddScalarOption("RED_FREC", Reduced_Frequency, 0.0);
-	/* DESCRIPTION: Pitching amplitude for flutter (degrees) */
-	AddScalarOption("MAX_PITCH", Pitching_Amplitude, 0.0);
 	/* DESCRIPTION: Uncoupled Aeroelastic Frequency Plunge. */
 	AddScalarOption("FREQ_PLUNGE_AEROELASTIC", FreqPlungeAeroelastic, 100);
 	/* DESCRIPTION: Uncoupled Aeroelastic Frequency Pitch. */
@@ -1385,6 +1381,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		RK_Alpha_Step = new double[1]; RK_Alpha_Step[0] = 1.0;
 	}
 
+  if ((Kind_SU2 == SU2_CFD) && (Kind_Solver == NO_SOLVER)) {
+		cout << "You must define a solver type!!" << endl;
+		cout << "Press any key to exit..." << endl;
+		cin.get();
+		exit(1);
+	}
 
 	if (((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS) || (Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == ADJ_FREE_SURFACE_RANS))
 			&& (Kind_ViscNumScheme_Flow == NONE)) {

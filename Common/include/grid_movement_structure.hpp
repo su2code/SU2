@@ -1012,9 +1012,10 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iter - Current physical time iteration.
+   * \param[in] iZone - Zone number in the mesh.
 	 */
 	void SetBoundary_Flutter3D(CGeometry *geometry, CConfig *config, 
-                             CFreeFormDefBox **FFDBox, unsigned long iter);	
+                             CFreeFormDefBox **FFDBox, unsigned long iter, unsigned short iZone);
 	
   /*! 
 	 * \brief Set the collective pitch for a blade surface movement.

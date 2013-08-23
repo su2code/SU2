@@ -642,10 +642,6 @@ inline bool CConfig::GetFullMG(void) { return FullMG; }
 
 inline bool CConfig::GetEquivArea(void) { return EquivArea; }
 
-inline double CConfig::GetReduced_Frequency(void) { return Reduced_Frequency; }
-
-inline double CConfig::GetPitching_Amplitude(void) { return Pitching_Amplitude; }
-
 inline void CConfig::SetnMarker_All(unsigned short val_nmarker) { nMarker_All = val_nmarker; }
 
 inline string CConfig::GetMarker_All_Tag(unsigned short val_marker) { return Marker_All_Tag[val_marker]; }

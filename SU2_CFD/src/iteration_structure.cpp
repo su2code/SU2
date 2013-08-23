@@ -1160,7 +1160,7 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
       if (geometry_container[MESH_0]->GetnDim() == 2)
         surface_movement->SetBoundary_Flutter2D(geometry_container[MESH_0], config_container, ExtIter, iZone);
       else
-        surface_movement->SetBoundary_Flutter3D(geometry_container[MESH_0], config_container, FFDBox, ExtIter);
+        surface_movement->SetBoundary_Flutter3D(geometry_container[MESH_0], config_container, FFDBox, ExtIter, iZone);
       
       /*--- Volume grid deformation ---*/
       if (rank == MASTER_NODE)

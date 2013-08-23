@@ -750,6 +750,12 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 	unsigned long iPoint, total_index, iVertex;
 	double *VarCoord, MeanCoord[3], VarIncrement = 1.0;
   
+  /*--- Get the SU2 module. SU2_CFD will use this routine for dynamically
+   deforming meshes (MARKER_MOVING), while SU2_MDC will use it for deforming
+   meshes after imposing design variable surface deformations (DV_MARKER). ---*/
+  
+  unsigned short Kind_SU2 = config->GetKind_SU2();
+  
   /*--- If requested (no by default) impose the surface deflections in
    increments and solve the grid deformation equations iteratively with
    successive small deformations. ---*/
@@ -802,7 +808,8 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 	/*--- Set the known displacements, note that some points of the moving surfaces
    could be on on the symmetry plane, we should specify DeleteValsRowi again (just in case) ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		if (config->GetMarker_All_DV(iMarker) == YES)  {
+		if ((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD) ||
+        (config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_MDC)) {
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 				VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
@@ -3149,8 +3156,6 @@ void CSurfaceMovement::SetBoundary_Flutter2D(CGeometry *geometry, CConfig *confi
   /*--- Retrieve values from the config file ---*/
   deltaT    = config->GetDelta_UnstTimeND();
   vel       = config->GetVelocity_FreeStreamND();
-  w_red     = config->GetReduced_Frequency();
-  ampl      = config->GetPitching_Amplitude();
   
   /*--- Pitching origin, frequency, and amplitude from config. ---*/
   Center[0] = config->GetMotion_Origin_X(iZone);
@@ -3214,11 +3219,14 @@ void CSurfaceMovement::SetBoundary_Flutter2D(CGeometry *geometry, CConfig *confi
 }
 
 void CSurfaceMovement::SetBoundary_Flutter3D(CGeometry *geometry, CConfig *config, 
-                                             CFreeFormDefBox **FFDBox, unsigned long iter) {
+                                             CFreeFormDefBox **FFDBox, unsigned long iter, unsigned short iZone) {
 	
 	double omega, w_red, deltaT, ampl, v_inf, *vel;
   double alpha, alpha_new, alpha_old;
   double time_new, time_old;
+  double Center[3], Omega[3], Ampl[3], Phase[3];
+  double DEG2RAD = PI_NUMBER/180.0;
+
   unsigned short iDim;
   unsigned short nDim = geometry->GetnDim();
   bool adjoint = config->GetAdjoint();
@@ -3232,8 +3240,20 @@ void CSurfaceMovement::SetBoundary_Flutter3D(CGeometry *geometry, CConfig *confi
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
   vel    = config->GetVelocity_FreeStreamND();
-  w_red  = config->GetReduced_Frequency();
-  ampl   = config->GetPitching_Amplitude();
+  
+  /*--- Pitching origin, frequency, and amplitude from config. ---*/
+  Center[0] = config->GetMotion_Origin_X(iZone);
+  Center[1] = config->GetMotion_Origin_Y(iZone);
+  Center[2] = config->GetMotion_Origin_Z(iZone);
+  Omega[0]  = (config->GetPitching_Omega_X(iZone)/config->GetOmega_Ref());
+  Omega[1]  = (config->GetPitching_Omega_Y(iZone)/config->GetOmega_Ref());
+  Omega[2]  = (config->GetPitching_Omega_Z(iZone)/config->GetOmega_Ref());
+  Ampl[0]   = config->GetPitching_Ampl_X(iZone)*DEG2RAD;
+  Ampl[1]   = config->GetPitching_Ampl_Y(iZone)*DEG2RAD;
+  Ampl[2]   = config->GetPitching_Ampl_Z(iZone)*DEG2RAD;
+  Phase[0]   = config->GetPitching_Phase_X(iZone)*DEG2RAD;
+  Phase[1]   = config->GetPitching_Phase_Y(iZone)*DEG2RAD;
+  Phase[2]   = config->GetPitching_Phase_Z(iZone)*DEG2RAD;
   
   /*--- Compute delta time based on physical time step ---*/
   if (adjoint) {
@@ -3250,26 +3270,16 @@ void CSurfaceMovement::SetBoundary_Flutter3D(CGeometry *geometry, CConfig *confi
     time_old = time_new;
     if (iter != 0) time_old = (static_cast<double>(iter)-1.0)*deltaT;
   }
-  
-  /*--- Compute the freestream velocity for use with the reduced frequency --*/
-  v_inf = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    v_inf += vel[iDim]*vel[iDim];
-  v_inf = sqrt(v_inf);
-  
-  /*--- For now, hard code the origin and chord length. These can be
-   inputs in the config file in the future. ---*/
-	double chord = 1.0;
 	
   /*--- Update the pitching angle at this time step. Flip sign for
    nose-up positive convention. ---*/
-  omega     = 2.0*w_red*v_inf/chord;
-  alpha_new = ampl*sin(omega*time_new);
-  alpha_old = ampl*sin(omega*time_old);
+  omega     = Omega[2];
+  alpha_new = Ampl[2]*sin(omega*time_new);
+  alpha_old = Ampl[2]*sin(omega*time_old);
   alpha     = (1E-10 + (alpha_new - alpha_old))*(-PI_NUMBER/180.0);
 	
 	if (rank == MASTER_NODE)
-		cout << "New dihedral angle (alpha): " << alpha_new << " degrees." << endl;
+		cout << "New dihedral angle (alpha): " << alpha_new/DEG2RAD << " degrees." << endl;
 	
 	unsigned short iOrder, jOrder, kOrder;
 	short iFFDBox;
