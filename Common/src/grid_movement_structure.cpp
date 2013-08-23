@@ -284,7 +284,7 @@ void CVolumetricMovement::CheckDeformed_Grid(CGeometry *geometry) {
 #endif
   
   if ((ElemCounter != 0) && (rank == MASTER_NODE))
-    cout <<"There are " << ElemCounter << " elements with negative volume (automatically fixed).\n" << endl;
+    cout <<"There are " << ElemCounter << " elements with negative volume.\n" << endl;
 
 }
 

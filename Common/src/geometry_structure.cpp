@@ -171,9 +171,9 @@ long CGeometry::FindEdge(unsigned long first_point, unsigned long second_point) 
   
 	if (iPoint == second_point) return node[first_point]->GetEdge(iNode);
 	else {
-//    cout << "\n\n   !!! Error !!!\n" << endl;
-//		cout <<"Can't find the edge that connects "<< first_point <<" and "<< second_point <<"."<< endl;
-//		exit(1);
+    cout << "\n\n   !!! Error !!!\n" << endl;
+		cout <<"Can't find the edge that connects "<< first_point <<" and "<< second_point <<"."<< endl;
+		exit(1);
 		return -1;
 	}
 }
@@ -218,7 +218,7 @@ void CGeometry::SetEdges(void) {
 	for(iPoint = 0; iPoint < nPoint; iPoint++)
 		for(iNode = 0; iNode < node[iPoint]->GetnPoint(); iNode++) {
 			jPoint = node[iPoint]->GetPoint(iNode);
-			iEdge = FindEdge(iPoint, jPoint); if (iEdge == -1) cout <<"Wrong edge." << endl;
+			iEdge = FindEdge(iPoint, jPoint);
 			if (iPoint < jPoint) edge[iEdge] = new CEdge(iPoint, jPoint, nDim);
 		}
 }
@@ -3467,7 +3467,7 @@ void CPhysicalGeometry::SetBoundControlVolume(CConfig *config, unsigned short ac
 					Neighbor_Node = bound[iMarker][iElem]->GetNeighbor_Nodes(iNode,iNeighbor_Nodes);
 					Neighbor_Point = bound[iMarker][iElem]->GetNode(Neighbor_Node);
 					/*--- Shared edge by the Neighbor Point and the point ---*/
-					iEdge = FindEdge(iPoint, Neighbor_Point); if (iEdge == -1) cout <<"Wrong edge." << endl;
+					iEdge = FindEdge(iPoint, Neighbor_Point);
 					for (iDim = 0; iDim < nDim; iDim++) {
 						Coord_Edge_CG[iDim] = edge[iEdge]->GetCG(iDim);
 						Coord_Elem_CG[iDim] = bound[iMarker][iElem]->GetCG(iDim);
@@ -4081,7 +4081,7 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
 				/*--- We define a direction (from the smalest index to the greatest) --*/
 				change_face_orientation = false;
 				if (face_iPoint > face_jPoint) change_face_orientation = true;
-				iEdge = FindEdge(face_iPoint, face_jPoint); if (iEdge == -1) cout <<"Wrong edge." << endl;
+				iEdge = FindEdge(face_iPoint, face_jPoint);
 
 				for (iDim = 0; iDim < nDim; iDim++) {
 					Coord_Edge_CG[iDim] = edge[iEdge]->GetCG(iDim);
@@ -5605,22 +5605,23 @@ void CPhysicalGeometry::ComputeSurf_Curvature(CConfig *config) {
         /*--- Loop over all the boundary elements ---*/
         for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
           
-          /*--- Loop over all the nodes of the boundary element ---*/
-          for(iNode = 0; iNode < bound[iMarker][iElem_Bound]->GetnNodes(); iNode++) {
+          /*--- Only triangles ---*/
+          if (bound[iMarker][iElem_Bound]->GetVTK_Type() == TRIANGLE) {
             
-            iPoint = bound[iMarker][iElem_Bound]->GetNode(iNode);
-            
-            Point_Triangle.clear();
-            
-            for(iNeighbor_Nodes = 0; iNeighbor_Nodes < bound[iMarker][iElem_Bound]->GetnNeighbor_Nodes(iNode); iNeighbor_Nodes++) {
-              Neighbor_Node = bound[iMarker][iElem_Bound]->GetNeighbor_Nodes(iNode, iNeighbor_Nodes);
-              Neighbor_Point = bound[iMarker][iElem_Bound]->GetNode(Neighbor_Node);
-              Point_Triangle.push_back(Neighbor_Point);
-            }
-            
-            iEdge = FindEdge(Point_Triangle[0], Point_Triangle[1]);
-            
-            if (iEdge != -1) {
+            /*--- Loop over all the nodes of the boundary element ---*/
+            for(iNode = 0; iNode < bound[iMarker][iElem_Bound]->GetnNodes(); iNode++) {
+              
+              iPoint = bound[iMarker][iElem_Bound]->GetNode(iNode);
+              
+              Point_Triangle.clear();
+              
+              for(iNeighbor_Nodes = 0; iNeighbor_Nodes < bound[iMarker][iElem_Bound]->GetnNeighbor_Nodes(iNode); iNeighbor_Nodes++) {
+                Neighbor_Node = bound[iMarker][iElem_Bound]->GetNeighbor_Nodes(iNode, iNeighbor_Nodes);
+                Neighbor_Point = bound[iMarker][iElem_Bound]->GetNode(Neighbor_Node);
+                Point_Triangle.push_back(Neighbor_Point);
+              }
+              
+              iEdge = FindEdge(Point_Triangle[0], Point_Triangle[1]);
               
               for (iDim = 0; iDim < nDim; iDim++) {
                 U[iDim] = node[Point_Triangle[0]]->GetCoord(iDim) - node[iPoint]->GetCoord(iDim);
@@ -5641,10 +5642,9 @@ void CPhysicalGeometry::ComputeSurf_Curvature(CConfig *config) {
               Angle_Defect[iPoint] -= Angle_Value;
               if (Angle_Alpha[iEdge] == 0.0) Angle_Alpha[iEdge] = Angle_Value;
               else Angle_Beta[iEdge] = Angle_Value;
+              
             }
-            
           }
-          
         }
       }
     }
@@ -5653,16 +5653,15 @@ void CPhysicalGeometry::ComputeSurf_Curvature(CConfig *config) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       if (config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE) {
         for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-          for(iNode = 0; iNode < bound[iMarker][iElem_Bound]->GetnNodes(); iNode++) {
-            iPoint = bound[iMarker][iElem_Bound]->GetNode(iNode);
-            
-            for(iNeighbor_Nodes = 0; iNeighbor_Nodes < bound[iMarker][iElem_Bound]->GetnNeighbor_Nodes(iNode); iNeighbor_Nodes++) {
-              Neighbor_Node = bound[iMarker][iElem_Bound]->GetNeighbor_Nodes(iNode, iNeighbor_Nodes);
-              jPoint = bound[iMarker][iElem_Bound]->GetNode(Neighbor_Node);
+          if (bound[iMarker][iElem_Bound]->GetVTK_Type() == TRIANGLE) {
+            for(iNode = 0; iNode < bound[iMarker][iElem_Bound]->GetnNodes(); iNode++) {
+              iPoint = bound[iMarker][iElem_Bound]->GetNode(iNode);
               
-              iEdge = FindEdge(iPoint, jPoint);
-              
-              if (iEdge != -1) {
+              for(iNeighbor_Nodes = 0; iNeighbor_Nodes < bound[iMarker][iElem_Bound]->GetnNeighbor_Nodes(iNode); iNeighbor_Nodes++) {
+                Neighbor_Node = bound[iMarker][iElem_Bound]->GetNeighbor_Nodes(iNode, iNeighbor_Nodes);
+                jPoint = bound[iMarker][iElem_Bound]->GetNode(Neighbor_Node);
+                
+                iEdge = FindEdge(iPoint, jPoint);
                 
                 if (Check_Edge[iEdge]) {
                   
@@ -5694,8 +5693,9 @@ void CPhysicalGeometry::ComputeSurf_Curvature(CConfig *config) {
           
           if (node[iPoint]->GetDomain()) {
             
-            GaussK = 3.0*Angle_Defect[iPoint]/Area_Vertex[iPoint];
-            
+            if (Area_Vertex[iPoint] != 0.0) GaussK = 3.0*Angle_Defect[iPoint]/Area_Vertex[iPoint];
+            else GaussK = 0.0;
+                        
             MeanK = 0.0;
             for (iDim = 0; iDim < nDim; iDim++)
               MeanK += NormalMeanK[iPoint][iDim]*NormalMeanK[iPoint][iDim];
@@ -6958,12 +6958,12 @@ void CMultiGridGeometry::SetControlVolume(CConfig *config, CGeometry *fine_grid,
 				iParent = fine_grid->node[iFinePoint_Neighbor]->GetParent_CV();
 				if ((iParent != iCoarsePoint) && (iParent < iCoarsePoint)) {
 
-					FineEdge = fine_grid->FindEdge(iFinePoint, iFinePoint_Neighbor); if (FineEdge == -1) cout <<"Wrong edge." << endl;
+					FineEdge = fine_grid->FindEdge(iFinePoint, iFinePoint_Neighbor);
 
 					change_face_orientation = false;
 					if (iFinePoint < iFinePoint_Neighbor) change_face_orientation = true;
 
-					CoarseEdge = FindEdge(iParent, iCoarsePoint); if (CoarseEdge == -1) cout <<"Wrong edge." << endl;
+					CoarseEdge = FindEdge(iParent, iCoarsePoint);
 
 					fine_grid->edge[FineEdge]->GetNormal(Normal);
 

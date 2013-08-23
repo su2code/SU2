@@ -1669,8 +1669,16 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 }
 
 void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
-	unsigned long iPoint;
+  
+	unsigned long iPoint, ErrorCounter = 0;
 	double levelset;
+  bool RightSol;
+
+#ifdef NO_MPI
+	int rank = MASTER_NODE;
+#else
+	int rank = MPI::COMM_WORLD.Get_rank();
+#endif
   
 	bool freesurface = config->GetFreeSurface();
 	bool adjoint = config->GetAdjoint();
@@ -1697,9 +1705,10 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     
 		/*--- Set the primitive variables incompressible (dens, vx, vy, vz, beta)
      and compressible (temp, vx, vy, vz, press, dens, enthal, sos)---*/
-		if (incompressible) node[iPoint]->SetPrimVar_Incompressible(Density_Inf, levelset, config);
-		else node[iPoint]->SetPrimVar_Compressible(config);
-        
+		if (incompressible) RightSol = node[iPoint]->SetPrimVar_Incompressible(Density_Inf, levelset, config);
+		else RightSol = node[iPoint]->SetPrimVar_Compressible(config);
+    if (!RightSol) ErrorCounter++;
+
 		/*--- Initialize the convective residual vector ---*/
 		LinSysRes.SetBlock_Zero(iPoint);
     
@@ -1725,6 +1734,14 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
 	/*--- Initialize the jacobian matrices ---*/
 	if (implicit) Jacobian.SetValZero();
+  
+  /*--- Error message ---*/
+#ifndef NO_MPI
+  double MyErrorCounter = ErrorCounter; ErrorCounter = 0.0;
+  MPI::COMM_WORLD.Allreduce(&ErrorCounter, &ErrorCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+#endif
+  if ((ErrorCounter != 0) && (rank == MASTER_NODE))
+    cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
   
 }
 
@@ -6339,9 +6356,17 @@ CNSSolver::~CNSSolver(void) {
 }
 
 void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
-	unsigned long iPoint;
+  
+	unsigned long iPoint, ErrorCounter = 0;
 	double levelset;
-    
+  bool RightSol;
+
+#ifdef NO_MPI
+	int rank = MASTER_NODE;
+#else
+	int rank = MPI::COMM_WORLD.Get_rank();
+#endif
+  
 	bool adjoint = config->GetAdjoint();
 	bool freesurface = config->GetFreeSurface();
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -6371,9 +6396,10 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
         
 		/*--- Set the primitive variables incompressible (dens, vx, vy, vz, beta)
          and compressible (temp, vx, vy, vz, press, dens, enthal, sos)---*/
-		if (incompressible) node[iPoint]->SetPrimVar_Incompressible(Density_Inf, Viscosity_Inf, turb_ke, levelset, config);
-		else node[iPoint]->SetPrimVar_Compressible(turb_ke, config);
-        
+		if (incompressible) RightSol = node[iPoint]->SetPrimVar_Incompressible(Density_Inf, Viscosity_Inf, turb_ke, levelset, config);
+		else RightSol = node[iPoint]->SetPrimVar_Compressible(turb_ke, config);
+    if (!RightSol) ErrorCounter++;
+ 
 		/*--- Set the value of the eddy viscosity ---*/
 		if (turb_model != NONE)
 			node[iPoint]->SetEddyViscosity(config->GetKind_Turb_Model(), solver_container[TURB_SOL]->node[iPoint]);
@@ -6409,7 +6435,15 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     
 	/*--- Initialize the jacobian matrices ---*/
 	if (implicit) Jacobian.SetValZero();
-    
+  
+  /*--- Error message ---*/
+#ifndef NO_MPI
+  double MyErrorCounter = ErrorCounter; ErrorCounter = 0.0;
+  MPI::COMM_WORLD.Allreduce(&ErrorCounter, &ErrorCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+#endif
+  if ((ErrorCounter != 0) && (rank == MASTER_NODE))
+    cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
+  
 }
 
 void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned long Iteration) {
