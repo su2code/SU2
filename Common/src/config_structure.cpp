@@ -328,7 +328,9 @@ void CConfig::SetConfig_Options(unsigned short val_nZone) {
 	/* DESCRIPTION: Mesh motion for unsteady simulations */
 	AddSpecialOption("GRID_MOVEMENT", Grid_Movement, SetBoolOption, false);
 	/* DESCRIPTION: Type of mesh motion */
-	AddEnumListOption("GRID_MOVEMENT_KIND", nZone, Kind_GridMovement, GridMovement_Map);
+  Kind_GridMovement = new unsigned short[1];
+  Kind_GridMovement[0] = 0;
+//AddEnumListOption("GRID_MOVEMENT_KIND", nZone, Kind_GridMovement, GridMovement_Map);
 	default_vec_3d[0] = 0; default_vec_3d[1] = 0;
 	/* DESCRIPTION: % Mach number (non-dimensional, based on the mesh velocity and freestream vals.) */
 	AddScalarOption("MACH_MOTION", Mach_Motion, 0.0);
@@ -855,7 +857,7 @@ void CConfig::SetConfig_Options(unsigned short val_nZone) {
 	/* DESCRIPTION: Kind of deformation */
 	AddEnumListOption("DV_KIND", nDV, Design_Variable, Param_Map);
 	/* DESCRIPTION: Marker of the surface to which we are going apply the shape deformation */
-	AddMarkerOption("DV_MARKER", nMarker_Moving, Marker_Moving);
+	AddMarkerOption("DV_MARKER", nMarker_DV, Marker_DV);
 	/* DESCRIPTION: New value of the shape deformation */
 	AddListOption("DV_VALUE", nDV, DV_Value);
 	/* DESCRIPTION: Parameters of the shape deformation
