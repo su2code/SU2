@@ -332,8 +332,6 @@ void CConfig::SetConfig_Options(unsigned short val_nZone) {
 	/* DESCRIPTION: Mesh motion for unsteady simulations */
 	AddSpecialOption("GRID_MOVEMENT", Grid_Movement, SetBoolOption, false);
 	/* DESCRIPTION: Type of mesh motion */
-//  Kind_GridMovement = new unsigned short[1];
-//  Kind_GridMovement[0] = 0;
   AddEnumListOption("GRID_MOVEMENT_KIND", nZone, Kind_GridMovement, GridMovement_Map);
 	default_vec_3d[0] = 0; default_vec_3d[1] = 0;
 	/* DESCRIPTION: % Mach number (non-dimensional, based on the mesh velocity and freestream vals.) */
