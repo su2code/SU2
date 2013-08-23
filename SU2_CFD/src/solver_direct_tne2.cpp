@@ -26,6 +26,7 @@
 
 CTNE2EulerSolver::CTNE2EulerSolver(void) : CSolver() {
   
+#ifndef NO_MUTATIONPP
 	/*--- Array initialization ---*/
 	Velocity_Inlet  = NULL;
 	Velocity_Outlet = NULL;
@@ -48,12 +49,14 @@ CTNE2EulerSolver::CTNE2EulerSolver(void) : CSolver() {
 	CPressure       = NULL;
 	CHeatTransfer   = NULL;
   mix             = NULL;
+#endif
   
 }
 
 CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
                                    unsigned short iMesh) : CSolver() {
 
+#ifndef NO_MUTATIONPP
 	unsigned long iPoint, index, counter_local = 0, counter_global = 0;
 	unsigned short iVar, iDim, iMarker, iSpecies, nZone;
   double *Mvec_Inf;
@@ -427,6 +430,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
   /*--- Deallocate arrays ---*/
   delete [] Mvec_Inf;
   
+#endif //NO_MUTATIONPP
 }
 
 CTNE2EulerSolver::~CTNE2EulerSolver(void) {

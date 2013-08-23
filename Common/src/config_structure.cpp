@@ -1553,7 +1553,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         // Electron degeneracy data
         
         // N2
-        nElStates[0] = 15;
+/*        nElStates[0] = 15;
         double *N2g, *N2thetae;
         N2thetae = new double[nElStates[0]];
         N2thetae[0]  = 0.000000000000000E+00;
@@ -1570,9 +1570,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         N2thetae[11] = 1.282476158188320E+05;
         N2thetae[12] = 1.338060936000000E+05;
         N2thetae[13] = 1.404296391107200E+05;
-        N2thetae[14] = 1.504958859200000E+05;
+        N2thetae[14] = 1.504958859200000E+05;*/
         
-        N2g = new double[nElStates[0]];
+/*        N2g = new double[nElStates[0]];
         N2g[0]  = 1;
         N2g[1]  = 3;
         N2g[2]  = 6;
@@ -1587,10 +1587,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         N2g[11] = 6;
         N2g[12] = 10;
         N2g[13] = 6;
-        N2g[14] = 6;
+        N2g[14] = 6;*/
+        
         
         // N
-        nElStates[1] = 3;
+/*        nElStates[1] = 3;
         double *Ng, *Nthetae;
         Nthetae = new double[nElStates[1]];
         Nthetae[0] = 0.000000000000000E+00;
@@ -1600,8 +1601,20 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         Ng = new double[nElStates[1]];
         Ng[0] = 4;
         Ng[1] = 10;
-        Ng[2] = 6;
-                
+        Ng[2] = 6;*/
+        
+        
+        double *N2g, *N2thetae, *Ng, *Nthetae;
+        nElStates[0] = 1; nElStates[1]= 1;
+        N2thetae = new double[nElStates[0]];
+        N2thetae[0] = 1.0;
+        N2g = new double[nElStates[0]];
+        N2g[0] = 1.0;
+        Nthetae = new double[nElStates[1]];
+        Ng = new double[nElStates[1]];
+        Nthetae[0] = 1.0;
+        Ng[0] = 1.0;
+        
         CharElTemp = new double *[nSpecies];
         degen  = new double *[nSpecies];
         
