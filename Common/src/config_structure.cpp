@@ -609,7 +609,7 @@ void CConfig::SetConfig_Options(unsigned short val_nZone) {
 	/* DESCRIPTION: Adjoint problem boundary condition */
 	AddEnumOption("ADJ_OBJFUNC", Kind_ObjFunc, Objective_Map, "DRAG");
   /* DESCRIPTION: Definition of the airfoil section */
-  default_vec_3d[0] = 0.0; default_vec_3d[1] = 1.0;
+  default_vec_3d[0] = 1E-6; default_vec_3d[1] = 1;
 	AddArrayOption("GEO_SECTION_LIMIT", 2, Section_Limit, default_vec_3d);
 	/* DESCRIPTION: Mode of the GDC code (analysis, or gradient) */
 	AddEnumOption("GEO_MODE", GeometryMode, GeometryMode_Map, "FUNCTION");

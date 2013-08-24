@@ -8165,7 +8165,7 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
 
 #endif 
   
-  if (rank == MASTER_NODE) {
+  if ((rank == MASTER_NODE) && (Xcoord.size() != 0)) {
     
     /*--- Create a list with the duplicated points ---*/
     for (iVertex = 0; iVertex < Xcoord.size()-1; iVertex++) {
@@ -8335,7 +8335,7 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
         Tecplot_File << "VARIABLES = \"X\",\"Y\",\"Z\"" << endl;
       }
       
-      Tecplot_File << "ZONE T=\"SECTION_"<< (iSection+1) << "\", NODES= "<< Xcoord_Airfoil.size() << ", ELEMENTS= " << Xcoord_Airfoil.size()-1 << ", DATAPACKING= POINT, ZONETYPE= FELINESEG" << endl;
+      Tecplot_File << "ZONE T=\"SECTION_"<< (iSection+1) << "\", NODES= "<< Xcoord_Airfoil.size() << ", ELEMENTS= " << Xcoord_Airfoil.size() << ", DATAPACKING= POINT, ZONETYPE= FELINESEG" << endl;
       
       /*--- Coordinates ---*/
       for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
@@ -8345,6 +8345,8 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
       for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
         Tecplot_File << iVertex << "\t" << iVertex+1 << "\n";
       }
+      Tecplot_File << Xcoord_Airfoil.size()-1 << "\t" << 1 << "\n";
+
       
       Tecplot_File.close();
     }
