@@ -539,6 +539,15 @@ void CConfig::SetConfig_Options(unsigned short val_nZone) {
 	/* DESCRIPTION: Source term numerical method */
 	AddEnumOption("SOUR_NUM_METHOD_ADJLEVELSET", Kind_SourNumScheme_AdjLevelSet, Source_Map, "NONE");
   
+  /* DESCRIPTION: Convective numerical method */
+	AddConvectOption("CONV_NUM_METHOD_TNE2", Kind_ConvNumScheme_TNE2, Kind_Centered_TNE2, Kind_Upwind_TNE2);
+	/* DESCRIPTION: Viscous numerical method */
+	AddEnumOption("VISC_NUM_METHOD_TNE2", Kind_ViscNumScheme_TNE2, Viscous_Map, "NONE");
+	/* DESCRIPTION: Source term numerical method */
+	AddEnumOption("SOUR_NUM_METHOD_TNE2", Kind_SourNumScheme_TNE2, Source_Map, "NONE");
+	/* DESCRIPTION: Slope limiter */
+	AddEnumOption("SLOPE_LIMITER_TNE2", Kind_SlopeLimit_TNE2, Limiter_Map, "NONE");
+  
 	/* DESCRIPTION: Convective numerical method */
 	AddConvectOption("CONV_NUM_METHOD_PLASMA", Kind_ConvNumScheme_Plasma, Kind_Centered_Plasma, Kind_Upwind_Plasma);
 	/* DESCRIPTION: Viscous numerical method */
@@ -1446,16 +1455,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
 
-#ifndef NO_MUTATIONPP
-    /*--- Set Mutation++ mixture options ---*/
-    mppOpts = new Mutation::MixtureOptions("N2special");
-    mppOpts->setThermodynamicDatabase("RRHO");
-    mppOpts->setStateModel("T,Tv");
-    
-    /*--- Initialize the mixture object ---*/
-    mix = new Mutation::Mixture(*mppOpts);
-#endif
-
 		if (val_izone == ZONE_1 ) {
 			Divide_Element = true;
 			Restart_FlowFileName = "restart_phi.dat";
@@ -1515,19 +1514,30 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         nMonatomics = 1;
         nDiatomics  = 1;
         nSpecies    = nMonatomics + nDiatomics;
+        nReactions  = 2;
         ionization  = false;
         
         /*--- Allocate vectors for gas properties ---*/
-        Molar_Mass         = new double[nSpecies];
-        CharVibTemp        = new double[nSpecies];
-        RotationModes      = new double[nSpecies];
-        Enthalpy_Formation = new double[nSpecies];
-        Ref_Temperature    = new double[nSpecies];
-        nElStates           = new unsigned short[nSpecies];
+        Molar_Mass           = new double[nSpecies];
+        CharVibTemp          = new double[nSpecies];
+        RotationModes        = new double[nSpecies];
+        Enthalpy_Formation   = new double[nSpecies];
+        Ref_Temperature      = new double[nSpecies];
+        Diss                 = new double[nSpecies];
+        ArrheniusCoefficient = new double[nReactions];
+        ArrheniusEta         = new double[nReactions];
+        ArrheniusTheta       = new double[nReactions];
+        nElStates            = new unsigned short[nSpecies];
+        Reactions = new int**[nReactions];
+        for (unsigned short iRxn = 0; iRxn < nReactions; iRxn++) {
+          Reactions[iRxn] = new int*[2];
+          for (unsigned short ii = 0; ii < 2; ii++)
+            Reactions[iRxn][ii] = new int[6];
+        }
         
         MassFrac_FreeStream = new double[nSpecies];
-        MassFrac_FreeStream[0] = 0.5;
-        MassFrac_FreeStream[1] = 0.5;
+        MassFrac_FreeStream[0] = 0.99;
+        MassFrac_FreeStream[1] = 0.01;
         
         /*--- Assign gas properties ---*/
         
@@ -1552,9 +1562,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         Ref_Temperature[1] = 298.15;
         
         // Electron degeneracy data
-        
-        // N2
-/*        nElStates[0] = 15;
+        nElStates[0] = 15;                    // N2
         double *N2g, *N2thetae;
         N2thetae = new double[nElStates[0]];
         N2thetae[0]  = 0.000000000000000E+00;
@@ -1571,9 +1579,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         N2thetae[11] = 1.282476158188320E+05;
         N2thetae[12] = 1.338060936000000E+05;
         N2thetae[13] = 1.404296391107200E+05;
-        N2thetae[14] = 1.504958859200000E+05;*/
-        
-/*        N2g = new double[nElStates[0]];
+        N2thetae[14] = 1.504958859200000E+05;
+        N2g = new double[nElStates[0]];
         N2g[0]  = 1;
         N2g[1]  = 3;
         N2g[2]  = 6;
@@ -1588,52 +1595,43 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         N2g[11] = 6;
         N2g[12] = 10;
         N2g[13] = 6;
-        N2g[14] = 6;*/
-        
-        
-        // N
-/*        nElStates[1] = 3;
+        N2g[14] = 6;
+        nElStates[1] = 3;                     // N
         double *Ng, *Nthetae;
         Nthetae = new double[nElStates[1]];
         Nthetae[0] = 0.000000000000000E+00;
         Nthetae[1] = 2.766469645581980E+04;
         Nthetae[2] = 4.149309313560210E+04; 
-        
         Ng = new double[nElStates[1]];
         Ng[0] = 4;
         Ng[1] = 10;
-        Ng[2] = 6;*/
-        
-        
-        double *N2g, *N2thetae, *Ng, *Nthetae;
-        nElStates[0] = 1; nElStates[1]= 1;
-        N2thetae = new double[nElStates[0]];
-        N2thetae[0] = 1.0;
-        N2g = new double[nElStates[0]];
-        N2g[0] = 1.0;
-        Nthetae = new double[nElStates[1]];
-        Ng = new double[nElStates[1]];
-        Nthetae[0] = 1.0;
-        Ng[0] = 1.0;
-        
-        CharElTemp = new double *[nSpecies];
-        degen  = new double *[nSpecies];
-        
+        Ng[2] = 6;
+        CharElTemp    = new double *[nSpecies];
         CharElTemp[0] = N2thetae;
         CharElTemp[1] = Nthetae;
-        degen[0] = N2g;
-        degen[1] = Ng;
+        degen         = new double *[nSpecies];
+        degen[0]      = N2g;
+        degen[1]      = Ng;
         
+        /*--- Set Arrhenius coefficients for chemical reactions ---*/
+        // Pre-exponential factor
+        ArrheniusCoefficient[0]  = 7.0E21;
+        ArrheniusCoefficient[1]  = 3.0E22;
+        // Rate-controlling temperature exponent
+        ArrheniusEta[0]  = -1.60;
+        ArrheniusEta[1]  = -1.60;
+        // Characteristic temperature
+        ArrheniusTheta[0] = 113200.0;
+        ArrheniusTheta[1] = 113200.0;
         
-/*        Mutation::MixtureOptions mppOpts("N2special");
-        mppOpts.setThermodynamicDatabase("RRHO");
-        mppOpts.setStateModel("T,Tv");
-        Mutation::Mixture mix(mppOpts);
-        cout << "Set Mutation properties..." << endl;
-        cout << "Species 1: " << mix.speciesName(0) << endl;
-        cout << "Species 2: " << mix.speciesName(1) << endl;
-        cin.get();*/
- 
+        /*--- Set reaction maps ---*/
+        Reactions[0][0][0]=0;		Reactions[0][0][1]=0;		Reactions[0][0][2]=nSpecies;		Reactions[0][1][0]=1;		Reactions[0][1][1]=1;		Reactions[0][1][2] =0;
+        Reactions[1][0][0]=0;		Reactions[1][0][1]=1;		Reactions[1][0][2]=nSpecies;		Reactions[1][1][0]=1;		Reactions[1][1][1]=1;		Reactions[1][1][2] =1;
+        
+        /*--- Dissociation potential [KJ/kg] ---*/
+        Diss[0] = 3.36E4;
+        Diss[1] = 0.0;
+        
         break;
         
       case AIR5:

@@ -72,6 +72,8 @@ inline void CNumerics::ComputeVibRelaxation(double *val_residual, double **val_J
 
 inline void CNumerics::ComputeChemistry(double *val_residual, double **val_Jacobian_i, CConfig *config) { }
 
+inline void CNumerics::GetKeqConstants(double *A, unsigned short val_reaction, CConfig *config) { } 
+
 inline void CNumerics::ComputeResidual_Chemistry(double *val_residual, CConfig *config) { }
 
 inline void CNumerics::ComputeResidual_Chemistry_ad(double *val_residual, double *val_residuald, CConfig *config) { }

@@ -24,12 +24,12 @@
 #include "../include/variable_structure.hpp"
 
 CTNE2EulerVariable::CTNE2EulerVariable(void) : CVariable() {  
-#ifndef NO_MUTATIONPP
+
   /*--- Array initialization ---*/
 	Primitive = NULL;
 	Gradient_Primitive = NULL;
 	Limiter_Primitive = NULL;
-#endif
+
 }
 
 CTNE2EulerVariable::CTNE2EulerVariable(double val_pressure,
@@ -44,7 +44,7 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_pressure,
                                        CConfig *config) : CVariable(val_ndim,
                                                                     val_nvar,
                                                                     config   ) {
-#ifndef NO_MUTATIONPP
+  
   unsigned short iEl, iMesh, iDim, iSpecies, iVar, nDim, nEl, nHeavy, nMGSmooth;
   unsigned short *nElStates;
   double *xi, *Ms, *thetav, **thetae, **g, *hf, *Tref;
@@ -52,8 +52,7 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_pressure,
   double Ru, sqvel, num, denom, conc, soundspeed;
   
   /*--- Get Mutation++ mixture ---*/
-  mix          = config->GetMppMixture();
-  nSpecies     = mix->nSpecies();
+  nSpecies     = config->GetnSpecies();
   nDim         = val_ndim;
   nPrimVar     = val_nvarprim;
   nPrimVarGrad = val_nvarprimgrad;
@@ -119,25 +118,22 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_pressure,
   dPdrhos = new double [nSpecies];
   
   /*--- Determine the number of heavy species ---*/
-  //  ionization = config->GetIonization();
-  ionization = mix->hasElectrons();
-  nHeavy = mix->nHeavy();
-//  if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
-//  else            { nHeavy = nSpecies;   nEl = 0; }
+  ionization = config->GetIonization();
+  if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
+  else            { nHeavy = nSpecies;   nEl = 0; }
 
-  /////////////  OLD /////////////
   /*--- Load variables from the config class --*/
-/*  xi        = config->GetRotationModes();      // Rotational modes of energy storage
+  xi        = config->GetRotationModes();      // Rotational modes of energy storage
   Ms        = config->GetMolar_Mass();         // Species molar mass
   thetav    = config->GetCharVibTemp();        // Species characteristic vib. temperature [K]
   thetae    = config->GetCharElTemp();         // Characteristic electron temperature [K]
   g         = config->GetElDegeneracy();       // Degeneracy of electron states
   nElStates = config->GetnElStates();          // Number of electron states
   Tref      = config->GetRefTemperature();     // Thermodynamic reference temperature [K]
-  hf        = config->GetEnthalpy_Formation(); // Formation enthalpy [J/kg]*/
+  hf        = config->GetEnthalpy_Formation(); // Formation enthalpy [J/kg]
   
   /*--- Rename & initialize for convenience ---*/
-/*  Ru      = UNIVERSAL_GAS_CONSTANT;         // Universal gas constant [J/(kmol*K)]
+  Ru      = UNIVERSAL_GAS_CONSTANT;         // Universal gas constant [J/(kmol*K)]
   Tve     = val_temperature_ve;             // Vibrational temperature [K]
   T       = val_temperature;                // Translational-rotational temperature [K]
   sqvel   = 0.0;                            // Velocity^2 [m2/s2]
@@ -145,11 +141,7 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_pressure,
   rhoEve  = 0.0;                            // Mixture vib-el energy per mass [J/kg]
   denom   = 0.0;
   conc    = 0.0;
-  rhoCvtr = 0.0; */
-  ///////////// END OLD /////////////
-  
-  /*--- Set mixture state from input parameters ---*/
-  mix->SetStateTPY()
+  rhoCvtr = 0.0;
   
   /*--- Calculate mixture density from supplied primitive quantities ---*/
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
@@ -223,8 +215,6 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_pressure,
   Primitive[T_INDEX]   = val_temperature;
   Primitive[TVE_INDEX] = val_temperature_ve;
   Primitive[P_INDEX]   = val_pressure;
-  
-#endif //NO_MUTATIONPP
 }
 
 CTNE2EulerVariable::CTNE2EulerVariable(double *val_solution, unsigned short val_ndim,
@@ -710,7 +700,7 @@ void CTNE2EulerVariable::SetdPdrhos(CConfig *config) {
 }
 
 
-void CTNE2EulerVariable::SetPrimVar_Compressible(CConfig *config) {
+bool CTNE2EulerVariable::SetPrimVar_Compressible(CConfig *config) {
 	unsigned short iDim, iVar, iSpecies;
   bool check_dens, check_press, check_sos, check_temp;
   
@@ -752,6 +742,8 @@ void CTNE2EulerVariable::SetPrimVar_Compressible(CConfig *config) {
     check_sos   = SetSoundSpeed(config);    // Requires density & pressure computation.
   }
   SetEnthalpy();                            // Requires density & pressure computation.
+  
+  return true;
 }
 
 CTNE2NSVariable::CTNE2NSVariable(void) : CTNE2EulerVariable() { }
@@ -769,7 +761,7 @@ CTNE2NSVariable::CTNE2NSVariable(double val_density, double *val_massfrac, doubl
 	Viscosity_Ref   = config->GetViscosity_Ref();
 	Viscosity_Inf   = config->GetViscosity_FreeStreamND();
 	Prandtl_Lam     = config->GetPrandtl_Lam();
-  
+
 }
 
 CTNE2NSVariable::CTNE2NSVariable(double *val_solution, unsigned short val_ndim,
@@ -843,7 +835,7 @@ bool CTNE2NSVariable::SetPressure(CConfig *config) {
   else return true;
 }
 
-void CTNE2NSVariable::SetPrimVar_Compressible(CConfig *config) {
+bool CTNE2NSVariable::SetPrimVar_Compressible(CConfig *config) {
 	unsigned short iDim, iVar, iSpecies;
   bool check_dens = false, check_press = false, check_sos = false, check_temp = false;
   
@@ -878,4 +870,5 @@ void CTNE2NSVariable::SetPrimVar_Compressible(CConfig *config) {
 	for (iDim = 0; iDim < nDim; iDim++)
 		Primitive[nSpecies+iDim+2] = Solution[nSpecies+iDim] / Primitive[nSpecies+nDim+3];
   
+  return true;
 }

@@ -313,7 +313,7 @@ inline void CVariable::SetDeltaPressure(double *val_velocity, double Gamma) { }
 
 inline bool CVariable::SetSoundSpeed(CConfig *config) { return false; }
 
-inline bool CVariable::SetSoundSpeed() { false; }
+inline bool CVariable::SetSoundSpeed() { return false; }
 
 inline bool CVariable::SetSoundSpeed(double Gamma) { return false; }
 

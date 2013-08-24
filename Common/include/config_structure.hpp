@@ -491,7 +491,8 @@ private:
 	*ArrheniusTheta,							/*!< \brief Arrhenius reaction characteristic temperature */
 	*CharVibTemp,									/*!< \brief Characteristic vibrational temperature for e_vib */
   *RotationModes,				/*!< \brief Rotational modes of energy storage */
-  *Ref_Temperature;   			/*!< \brief Reference temperature for thermodynamic relations */
+  *Ref_Temperature,   			/*!< \brief Reference temperature for thermodynamic relations */
+  *Diss;                /*!< \brief Dissociation potential. */
 	unsigned short nMass,                 /*!< \brief No of particle masses */
 	nTemp,						/*!< \brief No of freestream temperatures specified */
 	nRef_Temperature,   			/*!< \brief No of particle Reference Temperature */
@@ -623,11 +624,6 @@ private:
 	**Velocity_FreeStreamND_Time,
 	*Energy_FreeStreamND_Time,
 	*Mach_Inf_Time;
-  
-#ifndef NO_MUTATIONPP
-  Mutation::MixtureOptions *mppOpts;
-  Mutation::Mixture *mix;
-#endif 
   
 	map<string, CAnyOptionRef*> param; /*!< \brief associates option names (strings) with options */
 
@@ -3149,6 +3145,12 @@ public:
 	 * \return: The number of chemical reactions, read from input file
 	 */
 	double GetArrheniusTheta(unsigned short iReaction);
+  
+  /*!
+	 * \brief Dissociation potential of species.
+	 * \return: Dissociation potential.
+	 */
+	double* GetDissociationPot(void);
 
 	/*!
 	 * \brief Provides the number of rotational modes of energy storage
@@ -4577,15 +4579,6 @@ public:
 	 */
 	double GetSpline(vector<double> &xa, vector<double> &ya, vector<double> &y2a, unsigned long n, double x);
   
-#ifndef NO_MUTATIONPP
-  /*!
-	 * \brief Get the Mutation++ mixture object.
-	 * \return Mutation++ mixture object.
-	 */
-  Mutation::Mixture* GetMppMixture(void);
-#endif
-
-
 };
 
 #include "config_structure.inl"

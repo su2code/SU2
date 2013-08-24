@@ -26,7 +26,6 @@
 
 CTNE2EulerSolver::CTNE2EulerSolver(void) : CSolver() {
   
-#ifndef NO_MUTATIONPP
 	/*--- Array initialization ---*/
 	Velocity_Inlet  = NULL;
 	Velocity_Outlet = NULL;
@@ -49,14 +48,12 @@ CTNE2EulerSolver::CTNE2EulerSolver(void) : CSolver() {
 	CPressure       = NULL;
 	CHeatTransfer   = NULL;
   mix             = NULL;
-#endif
   
 }
 
 CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
                                    unsigned short iMesh) : CSolver() {
 
-#ifndef NO_MUTATIONPP
 	unsigned long iPoint, index, counter_local = 0, counter_global = 0;
 	unsigned short iVar, iDim, iMarker, iSpecies, nZone;
   double *Mvec_Inf;
@@ -97,16 +94,12 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
 	roe_turkel = false;
   
   /*--- Define constants in the solver structure ---*/	
-	nMarker      = config->GetnMarker_All();
+	nSpecies     = config->GetnSpecies();
+  nMarker      = config->GetnMarker_All();
 	nPoint       = geometry->GetnPoint();
 	nPointDomain = geometry->GetnPointDomain();
   nZone        = geometry->GetnZone();
   nDim         = geometry->GetnDim();
-  
-  
-  /*--- Get gasdynamic properties ---*/
-  mix      = config->GetMppMixture();
-  nSpecies = mix->nSpecies();
   
   /*--- Set size of the conserved and primitive vectors ---*/
   //     U: [rho1, ..., rhoNs, rhou, rhov, rhow, rhoe, rhoeve]^T
@@ -429,8 +422,6 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
   
   /*--- Deallocate arrays ---*/
   delete [] Mvec_Inf;
-  
-#endif //NO_MUTATIONPP
 }
 
 CTNE2EulerSolver::~CTNE2EulerSolver(void) {
@@ -860,15 +851,18 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_con
 	unsigned long iPoint;
   
 	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
-	bool upwind_2nd = ((config->GetKind_Upwind_TNE2() == ROE_2ND) || (config->GetKind_Upwind_TNE2() == AUSM_2ND)
-                     || (config->GetKind_Upwind_TNE2() == HLLC_2ND) || (config->GetKind_Upwind_TNE2() == ROE_TURKEL_2ND));
+	bool upwind_2nd = ((config->GetKind_Upwind_TNE2() == ROE_2ND)  ||
+                     (config->GetKind_Upwind_TNE2() == AUSM_2ND) ||
+                     (config->GetKind_Upwind_TNE2() == HLLC_2ND) ||
+                     (config->GetKind_Upwind_TNE2() == ROE_TURKEL_2ND));
 	bool limiter = (config->GetKind_SlopeLimit_TNE2() != NONE);
 	double Gas_Constant = config->GetGas_ConstantND();
+  bool check;
   
 	for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
 		/*--- Primitive variables [rho1,...,rhoNs,T,Tve,u,v,w,P,rho,h,c] ---*/
-		node[iPoint]->SetPrimVar_Compressible(config);
+		check = node[iPoint]->SetPrimVar_Compressible(config);
     
     /*--- Initialize the convective residual vector ---*/
 		LinSysRes.SetBlock_Zero(iPoint);
@@ -1253,6 +1247,11 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
   numerics->SetRhoCvtrIndex( node[0]->GetRhoCvtrIndex() );
   numerics->SetRhoCvveIndex( node[0]->GetRhoCvveIndex() );
   
+  double delta;
+  double *U_i, *V_i;
+  double *Res_new;
+  Res_new = new double[nVar];
+  
   /*--- loop over points ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     
@@ -1274,91 +1273,62 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
     /*--- Set volume of the dual grid cell ---*/
     numerics->SetVolume(geometry->node[iPoint]->GetVolume());
     
-    numerics->ComputeChemistry(Residual, Jacobian_i, config);
+    numerics->ComputeChemistry(Residual, Jacobian_i, config);    
+    
+    /////////// TEST JACOBIAN ///////////
+    U_i = node[iPoint]->GetSolution();
+    V_i = node[iPoint]->GetPrimVar();
+    
+    // Perturb
+    for (iVar =0; iVar < nVar; iVar++) {
+      delta = 1E-5*U_i[iVar];
+      if (delta == 0.0) delta = 1E-8;
+      U_i[iVar] += delta;
+      
+      for (jVar = 0; jVar < nVar; jVar++)
+        Res_new[jVar] = 0.0;
+      
+      // Re-calculate primitive quantities & pass to CNumerics
+      node[iPoint]->SetSolution(U_i);
+      node[iPoint]->SetPrimVar_Compressible(config);
+      U_i = node[iPoint]->GetSolution();
+      V_i = node[iPoint]->GetPrimVar();
+      numerics->SetPrimitive(V_i, V_i);
+      numerics->SetConservative(U_i, U_i);
+      numerics->SetdPdrhos(node[iPoint]->GetdPdrhos(), node[iPoint]->GetdPdrhos());
+      
+      // Compute residual
+      numerics->ComputeChemistry(Res_new, Jacobian_i, config);
+      for (jVar = 0; jVar < nVar; jVar++) {
+        Jacobian_i[jVar][iVar] = (Res_new[jVar] - Residual[jVar])/delta;
+      }
+      
+      // Reset U_i
+      U_i[iVar] -= delta;
+      node[iPoint]->SetSolution(U_i);
+      node[iPoint]->SetPrimVar_Compressible(config);
+    }
+    /////////// TEST JACOBIAN ///////////
+/*    for (iVar = 0; iVar < nVar; iVar++) {
+      for (jVar = 0; jVar < nVar; jVar++) {
+        cout << Jacobian_i[iVar][jVar] << "\t";
+      }
+      cout << endl;
+    }
+    cin.get();*/
     
     /*--- Compute vibrational energy relaxation ---*/
     // NOTE: Jacobians de-activated.  Need to take derivatives w.r.t. relaxation time
-    numerics->ComputeVibRelaxation(Residual, Jacobian_i, config);
-    
-    
-    /////////// TEST JACOBIAN ///////////
-/*    if (iPoint == 17) {
-      unsigned short iVar, jVar;
-      double delta;
-      double *U_i, *V_i;
-      double **FDJac, *Res_orig;
-      
-      Res_orig = new double[nVar];
-      FDJac = new double*[nVar];
-      for (iVar =0; iVar < nVar; iVar++) {
-        FDJac[iVar] = new double[nVar];
-        Res_orig[iVar] = Residual[iVar];
-      }
-      
-      U_i = node[iPoint]->GetSolution();
-      V_i = node[iPoint]->GetPrimVar();
-      
-      cout << "Analytic Jacobian: " << endl;
-      for (iVar =0; iVar < nVar; iVar++) {
-        for (jVar = 0; jVar < nVar; jVar++) {
-          cout << Jacobian_i[iVar][jVar] << "\t";
-        }
-        cout << endl;
-      }
-      
-      // Perturb
-      for (iVar =0; iVar < nVar; iVar++) {
-        delta = 1E-4*U_i[iVar];
-        if (delta == 0.0) delta = 1E-8;
-        U_i[iVar] += delta;
-        
-        // Re-calculate primitive quantities & pass to CNumerics
-        node[iPoint]->SetSolution(U_i);
-        node[iPoint]->SetPrimVar_Compressible(config);
-        U_i = node[iPoint]->GetSolution();
-        V_i = node[iPoint]->GetPrimVar();
-        numerics->SetPrimitive(V_i, V_i);
-        numerics->SetConservative(U_i, U_i);
-        numerics->SetdPdrhos(node[iPoint]->GetdPdrhos(), node[iPoint]->GetdPdrhos());
-        
-        // Compute residual
-        numerics->ComputeVibRelaxation(Residual, Jacobian_i, config);
-        for (jVar = 0; jVar < nVar; jVar++) {
-          FDJac[jVar][iVar] = (Residual[jVar] - Res_orig[jVar])/delta;
-        }
-        
-        // Reset U_i
-        U_i[iVar] -= delta;
-        node[iPoint]->SetSolution(U_i);
-        node[iPoint]->SetPrimVar_Compressible(config);
-      }
-      
-      cout << endl << endl << "FD Jacobian: " << endl;
-      for (iVar =0; iVar < nVar; iVar++) {
-        for (jVar = 0; jVar < nVar; jVar++) {
-          cout << FDJac[iVar][jVar] << "\t";
-        }
-        cout << endl;
-      }
-      
-      cin.get();
-      // Deallocate
-      for (iVar = 0; iVar < nVar; iVar++)
-        delete [] FDJac[iVar];
-      delete[] FDJac;
-      delete[] Res_orig;
-    }*/
-    
-    /////////// TEST JACOBIAN ///////////
-    
-    
-    
+    numerics->ComputeVibRelaxation(Residual, Jacobian_j, config);
     
     /*--- Add Residual (and Jacobian) ---*/
     LinSysRes.SubtractBlock(iPoint, Residual);
     if (implicit)
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+
   }
+  // Deallocate
+  delete[] Res_new;
 }
 
 void CTNE2EulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
