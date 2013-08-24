@@ -333,7 +333,6 @@ void CConfig::SetConfig_Options(unsigned short val_nZone) {
 	AddSpecialOption("GRID_MOVEMENT", Grid_Movement, SetBoolOption, false);
 	/* DESCRIPTION: Type of mesh motion */
   AddEnumListOption("GRID_MOVEMENT_KIND", nZone, Kind_GridMovement, GridMovement_Map);
-	default_vec_3d[0] = 0; default_vec_3d[1] = 0;
 	/* DESCRIPTION: % Mach number (non-dimensional, based on the mesh velocity and freestream vals.) */
 	AddScalarOption("MACH_MOTION", Mach_Motion, 0.0);
 	/* DESCRIPTION: Coordinates of the rigid motion origin */
@@ -394,20 +393,6 @@ void CConfig::SetConfig_Options(unsigned short val_nZone) {
 	AddEnumOption("TYPE_AEROELASTIC_GRID_MOVEMENT", Aeroelastic_Grid_Movement, Aeroelastic_Movement_Map, "RIGID");
 	/* DESCRIPTION: Type of grid velocities for aeroelastic motion */
 	AddEnumOption("TYPE_AEROELASTIC_GRID_VELOCITY", Aeroelastic_Grid_Velocity, Aeroelastic_Velocity_Map, "FD");
-  
-	/*--- Options related to rotating frame problems ---*/
-	/* CONFIG_CATEGORY: Rotating frame */
-  
-	/* DESCRIPTION: Rotating frame problem */
-	AddSpecialOption("ROTATING_FRAME", Rotating_Frame, SetBoolOption, false);
-	default_vec_3d[0] = 0.0; default_vec_3d[1] = 0.0; default_vec_3d[2] = 0.0;
-	/* DESCRIPTION: Origin of the axis of rotation */
-	AddArrayOption("ROTATIONAL_ORIGIN", 3, RotAxisOrigin, default_vec_3d);
-	default_vec_3d[0] = 0.0; default_vec_3d[1] = 0.0; default_vec_3d[2] = 0.0;
-	/* DESCRIPTION: Angular velocity vector (rad/s) */
-	AddArrayOption("ROTATION_RATE", 3, Omega, default_vec_3d);
-	/*--- Initializing this here because it might be needed in the geometry classes. ---*/
-	Omega_FreeStreamND = new double[3];
   
 	/*--- Options related to convergence ---*/
 	/* CONFIG_CATEGORY: Convergence*/
@@ -1162,15 +1147,20 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- If we're solving a purely steady problem with no prescribed grid
    movement (both rotating frame and moving walls can be steady), make sure that
    there is no grid motion ---*/
-	if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL) &&
+	if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL) && 
       (Unsteady_Simulation == STEADY) &&
-      (Kind_GridMovement[ZONE_0] != MOVING_WALL)) // rotating_frame here too soon
+      ((Kind_GridMovement[ZONE_0] != MOVING_WALL) &&
+       (Kind_GridMovement[ZONE_0] != ROTATING_FRAME)))
 		Grid_Movement = false;
   
 	/*--- If it is not specified, set the mesh motion mach number
    equal to the freestream value. ---*/
-	if ((Rotating_Frame || Grid_Movement) && Mach_Motion == 0.0)
+	if (Grid_Movement && Mach_Motion == 0.0)
 		Mach_Motion = Mach;
+  
+  /*--- Set the boolean flag if we are in a rotating frame (source term). ---*/
+	if (Grid_Movement && Kind_GridMovement[ZONE_0] == ROTATING_FRAME)
+		Rotating_Frame = true;
 
 	/*--- Use the various rigid-motion input frequencies to determine the period to be used with time-spectral cases.
 		  There are THREE types of motion to consider, namely: rotation, pitching, and plunging.
@@ -2753,15 +2743,19 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			cout <<"The lower integration limit is "<<EA_IntLimit[0]<<", and the upper is "<<EA_IntLimit[1]<<"."<<endl;
 			cout <<"The near-field is situated at "<<EA_IntLimit[2]<<"."<<endl;
 		}
-
+    
 		if (Grid_Movement) {
-			cout << "Performing a dynamic mesh simulation." << endl;
-		}
-
-		if (Rotating_Frame) {
-			cout << "Performing a simulation in a rotating frame." << endl;
-			cout << "Origin of the rotation axis: " << RotAxisOrigin[0] <<","<< RotAxisOrigin[1] <<","<< RotAxisOrigin[2] << ". ";
-			cout << "Angular velocity vector: " << Omega[0] <<","<< Omega[1] <<","<< Omega[2] << "." << endl;
+			cout << "Performing a dynamic mesh simulation: ";
+      switch (Kind_GridMovement[ZONE_0]) {
+        case NO_MOVEMENT:     cout << "no movement." << endl; break;
+        case DEFORMING:       cout << "deforming mesh motion." << endl; break;
+        case RIGID_MOTION:    cout << "rigid mesh motion." << endl; break;
+        case MOVING_WALL:     cout << "moving walls." << endl; break;
+        case ROTATING_FRAME:  cout << "rotating reference frame." << endl; break;
+        case AEROELASTIC:     cout << "aeroelastic motion." << endl; break;
+        case FLUID_STRUCTURE: cout << "fluid-structure motion." << endl; break;
+        case EXTERNAL:        cout << "externally prescribed motion." << endl; break;
+      }
 		}
 
 		if (Restart) {
@@ -5365,7 +5359,7 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
       
 			/*--- First, check if there is mesh motion. If yes, use the Mach
        number relative to the body to initialize the flow. ---*/
-			if (Rotating_Frame || Grid_Movement)
+			if (Grid_Movement)
 				Velocity_Reynolds = Mach_Motion*Mach2Vel_FreeStream;
 			else
 				Velocity_Reynolds = ModVel_FreeStream;
@@ -5444,14 +5438,6 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
   
 	Gas_ConstantND = Gas_Constant/Gas_Constant_Ref;
   
-	/*--- Perform non-dim. for rotating terms ---*/
-	Omega_Mag = 0.0;
-	for (iDim = 0; iDim < 3; iDim++) {
-		Omega_FreeStreamND[iDim] = Omega[iDim]/Omega_Ref;
-		Omega_Mag += Omega[iDim]*Omega[iDim];
-	}
-	Omega_Mag = sqrt(Omega_Mag)/Omega_Ref;
-  
 	ModVel_FreeStreamND = 0;
 	for (iDim = 0; iDim < val_nDim; iDim++)
 		ModVel_FreeStreamND += Velocity_FreeStreamND[iDim]*Velocity_FreeStreamND[iDim];
@@ -5510,24 +5496,20 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 		cout << "Freestream density (kg/m^3): "					 << Density_FreeStream << endl;
 		if (val_nDim == 2) {
 			cout << "Freestream velocity (m/s): (" << Velocity_FreeStream[0] << ",";
-			cout << Velocity_FreeStream[1] << ")";
+			cout << Velocity_FreeStream[1] << ")" << endl;
 		} else if (val_nDim == 3) {
 			cout << "Freestream velocity (m/s): (" << Velocity_FreeStream[0] << ",";
-			cout << Velocity_FreeStream[1] << "," << Velocity_FreeStream[2] << ")";
+			cout << Velocity_FreeStream[1] << "," << Velocity_FreeStream[2] << ")" << endl;
 		}
     
-		cout << " -> Modulus: "					 << ModVel_FreeStream << endl;
+		cout << "Freestream velocity magnitude (m/s):"	<< ModVel_FreeStream << endl;
     
 		if (Compressible)
 			cout << "Freestream energy (kg.m/s^2): "					 << Energy_FreeStream << endl;
     
 		if (Viscous)
 			cout << "Freestream viscosity (N.s/m^2): "				 << Viscosity_FreeStream << endl;
-    
-		if (Rotating_Frame) {
-			cout << "Freestream rotation (rad/s): (" << Omega[0];
-			cout << "," << Omega[1] << "," << Omega[2] << ")" << endl;
-		}
+
 		if (Unsteady) {
 			cout << "Total time (s): " << Total_UnstTime << ". Time step (s): " << Delta_UnstTime << endl;
 		}
@@ -5571,12 +5553,12 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 		cout << "Freestream density (non-dimensional): "      << Density_FreeStreamND     << endl;
 		if (val_nDim == 2) {
 			cout << "Freestream velocity (non-dimensional): (" << Velocity_FreeStreamND[0] << ",";
-			cout << Velocity_FreeStreamND[1] << ")";
+			cout << Velocity_FreeStreamND[1] << ")" << endl;
 		} else if (val_nDim == 3) {
 			cout << "Freestream velocity (non-dimensional): (" << Velocity_FreeStreamND[0] << ",";
-			cout << Velocity_FreeStreamND[1] << "," << Velocity_FreeStreamND[2] << ")";
+			cout << Velocity_FreeStreamND[1] << "," << Velocity_FreeStreamND[2] << ")" << endl;
 		}
-		cout << " -> Modulus: "					 << ModVel_FreeStreamND << endl;
+		cout << "Freestream velocity magnitude (non-dimensional): "	 << ModVel_FreeStreamND << endl;
     
 		if (turbulent){
 			cout << "Free-stream turb. kinetic energy (non-dimensional): " << kine_Inf << endl;
@@ -5588,16 +5570,12 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
     
 		if (Viscous)
 			cout << "Freestream viscosity (non-dimensional): " << Viscosity_FreeStreamND << endl;
-    
-		if (Rotating_Frame) {
-			cout << "Freestream rotation (non-dimensional): (" << Omega_FreeStreamND[0];
-			cout << "," << Omega_FreeStreamND[1] << "," << Omega_FreeStreamND[2] << ")" << endl;
-		}
+
 		if (Unsteady) {
 			cout << "Total time (non-dimensional): "				 << Total_UnstTimeND << endl;
 			cout << "Time step (non-dimensional): "				 << Delta_UnstTimeND << endl;
 		}
-		if (Mach <= 0.0) cout << "Force coefficients computed using reference values." << endl;
+		if (Grid_Movement) cout << "Force coefficients computed using MACH_MOTION." << endl;
 		else cout << "Force coefficients computed using freestream values." << endl;
 	}
   

@@ -972,13 +972,13 @@ public:
 	void SetColorGrid(CConfig *config);
   
 	/*!
-	 * \brief Set the rotational velocity at each grid point.
+	 * \brief Set the rotational velocity at each node.
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetRotationalVelocity(CConfig *config);
 
-	/*! MC - fill this in - 7/11/12
-	 * \brief A virtual member.
+	/*! 
+	 * \brief Set the grid velocity via finite differencing at each node.
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetGridVelocity(CConfig *config, unsigned long iter);
@@ -1282,7 +1282,7 @@ public:
 
 	/*!
 	 * \brief Set the grid velocity at each node in the coarse mesh level based
-	 *        on a restriction from a finer mesh (needed for the unsteady adjoint).
+	 *        on a restriction from a finer mesh.
 	 * \param[in] fine_mesh - Geometry container for the finer mesh level.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iter - Current physical time step.

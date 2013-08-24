@@ -686,6 +686,10 @@ def get_specialCases(config):
     if config.has_key('UNSTEADY_SIMULATION') and config['UNSTEADY_SIMULATION'] == 'TIME_SPECTRAL':
         special_cases.append('TIME_SPECTRAL')
 
+    # Special case for rotating frame
+    if config.has_key('GRID_MOVEMENT_KIND') and config['GRID_MOVEMENT_KIND'] == 'ROTATING_FRAME':
+      special_cases.append('ROTATING_FRAME')
+
     return special_cases
 
 #: def get_specialCases()

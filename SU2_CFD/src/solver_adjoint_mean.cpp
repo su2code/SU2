@@ -1048,15 +1048,14 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
 	double *RefOriginMoment = config->GetRefOriginMoment();
 	double RefVel2, RefDensity;
   
-	bool rotating_frame = config->GetRotating_Frame();
   bool grid_movement = config->GetGrid_Movement();
   
 	ForceProj_Vector = new double[nDim];
   
-	/*--- If we have a rotating frame problem or an unsteady problem with
-   mesh motion, use special reference values for the force coefficients.
-   Otherwise, use the freestream values, which is the standard convention. ---*/
-	if (rotating_frame || grid_movement) {
+	/*--- For dynamic meshes, use the motion Mach number as a reference value
+   for computing the force coefficients. Otherwise, use the freestream values, 
+   which is the standard convention. ---*/
+	if (grid_movement) {
     double Gas_Constant = config->GetGas_ConstantND();
     double Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
     double Mach_Motion = config->GetMach_Motion();
@@ -1747,8 +1746,6 @@ void CAdjEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
 
 		/*--- Rotating frame - use lower-order dissipation sensor ---*/
 		if (rotating_frame) {
-			numerics->SetRotVel(geometry->node[iPoint]->GetRotVel(), geometry->node[jPoint]->GetRotVel());
-			numerics->SetRotFlux(geometry->edge[iEdge]->GetRotFlux());
 			numerics->SetSensor(node[iPoint]->GetSensor(),node[jPoint]->GetSensor());
 		}
 
@@ -1788,7 +1785,6 @@ void CAdjEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 	bool high_order_diss = (((config->GetKind_Upwind_AdjFlow() == ROE_2ND) ||
                            (config->GetKind_Upwind_AdjFlow() == SW_2ND)) && (iMesh == MESH_0));
 	bool incompressible = config->GetIncompressible();
-	bool rotating_frame = config->GetRotating_Frame();
 	bool grid_movement  = config->GetGrid_Movement();
 	bool limiter = (config->GetKind_SlopeLimit() != NONE);
 
@@ -1824,13 +1820,7 @@ void CAdjEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 					solver_container[FLOW_SOL]->node[jPoint]->GetEnthalpy());
 		}
 
-		/*--- Rotating frame ---*/
-		if (rotating_frame) {
-			numerics->SetRotVel(geometry->node[iPoint]->GetRotVel(), geometry->node[jPoint]->GetRotVel());
-			numerics->SetRotFlux(geometry->edge[iEdge]->GetRotFlux());
-		}
-
-		/*--- Mesh motion ---*/
+		/*--- Grid velocities for dynamic meshes ---*/
 		if (grid_movement) {
 			numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[jPoint]->GetGridVel());
 		}
@@ -1969,11 +1959,12 @@ void CAdjEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 	unsigned long iPoint;
 
 	bool rotating_frame = config->GetRotating_Frame();
-	bool axisymmetric = config->GetAxisymmetric();
-	bool gravity = (config->GetGravityForce() == YES);
-	bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
-	bool freesurface = config->GetFreeSurface();
+	bool axisymmetric   = config->GetAxisymmetric();
+	bool gravity        = (config->GetGravityForce() == YES);
+	bool time_spectral  = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
+	bool freesurface    = config->GetFreeSurface();
 
+  /*--- Initialize the source residual to zero ---*/
 	for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
 
 	if (rotating_frame) {
@@ -1982,13 +1973,15 @@ void CAdjEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 		for (iPoint = 0; iPoint < nPointDomain; iPoint++) { 
 
 			/*--- Set solution  ---*/
-			numerics->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
+			numerics->SetConservative(node[iPoint]->GetSolution(),
+                                node[iPoint]->GetSolution());
 
 			/*--- Set control volume ---*/
 			numerics->SetVolume(geometry->node[iPoint]->GetVolume());
 
 			/*--- Set rotational velocity ---*/
-			numerics->SetRotVel(geometry->node[iPoint]->GetRotVel(), geometry->node[iPoint]->GetRotVel());
+			numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
+                           geometry->node[iPoint]->GetGridVel());
 
 			/*--- Compute Residual ---*/
 			numerics->ComputeResidual(Residual, Jacobian_i, config);
@@ -2456,7 +2449,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
 	unsigned short iDim, iMarker, iNeigh;
 	double *d = NULL, *Normal = NULL, *Psi = NULL, *U = NULL, Enthalpy, conspsi, Mach_Inf,
   Area, **PrimVar_Grad = NULL, **ConsVar_Grad = NULL, *ConsPsi_Grad = NULL,
-  ConsPsi, d_press, grad_v, Beta2, v_gradconspsi, UnitaryNormal[3], *RotVel = NULL, *GridVel = NULL,
+  ConsPsi, d_press, grad_v, Beta2, v_gradconspsi, UnitaryNormal[3], *GridVel = NULL,
   LevelSet, Target_LevelSet;
 	//double RefDensity, *RefVelocity = NULL, RefPressure;
 
@@ -2478,7 +2471,6 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
 	USens = new double[nVar];
 	U_infty = new double[nVar];
 
-	bool rotating_frame = config->GetRotating_Frame();
 	bool incompressible = config->GetIncompressible();
 	bool grid_movement  = config->GetGrid_Movement();
     bool freesurface = config->GetFreeSurface();
@@ -2554,10 +2546,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
 						ConsPsi_Grad = node[iPoint]->GetAuxVarGradient();
 						ConsPsi = node[iPoint]->GetAuxVar();
 
-						/*--- Adjustment for a rotating frame ---*/
-						if (rotating_frame) RotVel = geometry->node[iPoint]->GetRotVel();
-
-						/*--- Adjustment for grid movement - double check this ---*/
+						/*--- Adjustment for grid movement ---*/
 						if (grid_movement) GridVel = geometry->node[iPoint]->GetGridVel();
 
 						d_press = 0.0; grad_v = 0.0; v_gradconspsi = 0.0;
@@ -2572,7 +2561,6 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
               
               /*-- Retrieve the value of the theta gradient ---*/
 							v_gradconspsi += solver_container[FLOW_SOL]->node[iPoint]->GetVelocity(iDim, incompressible) * ConsPsi_Grad[iDim];
-							if (rotating_frame) v_gradconspsi -= RotVel[iDim] * ConsPsi_Grad[iDim];
 							if (grid_movement) v_gradconspsi -= GridVel[iDim] * ConsPsi_Grad[iDim];
 						}
 
@@ -2612,7 +2600,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
             Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
             
             Mach_Inf   = config->GetMach_FreeStreamND();
-            if (grid_movement || rotating_frame)
+            if (grid_movement)
               Mach_Inf = config->GetMach_Motion();
             
             r = U[0]; ru = U[1]; rv = U[2];
@@ -3133,7 +3121,6 @@ void CAdjEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_contai
 	double *dPressure;
   
 	bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-	bool rotating_frame = config->GetRotating_Frame();
 	bool incompressible = config->GetIncompressible();
 	bool grid_movement = config->GetGrid_Movement();
   
@@ -3239,18 +3226,7 @@ void CAdjEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_contai
           vn      += Velocity[iDim]*UnitaryNormal[iDim];
           phin    += Psi[iDim+1]*UnitaryNormal[iDim];
         }
-        
-        /*--- Extra boundary term for a rotating frame ---*/
-        if (rotating_frame) {
-          double ProjRotVel = 0.0;
-          double *RotVel = geometry->node[iPoint]->GetRotVel();
-          for (iDim = 0; iDim < nDim; iDim++) {
-            ProjRotVel += RotVel[iDim]*UnitaryNormal[iDim];
-          }
-          ProjRotVel = -geometry->vertex[val_marker][iVertex]->GetRotFlux()/Area;
-          phin -= Psi[nVar-1]*ProjRotVel;
-        }
-        
+
         /*--- Extra boundary term for grid movement ---*/
         if (grid_movement) {
           double ProjGridVel = 0.0;
@@ -3277,20 +3253,7 @@ void CAdjEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_contai
           Residual[iDim+1] = ProjVel * Psi[iDim+1] - phis2 * Normal[iDim] - phis1 * Gamma_Minus_One * Velocity[iDim];
         Residual[nVar-1] = ProjVel * Psi[nVar-1] + phis1 * Gamma_Minus_One;
         
-        /*--- Flux adjustment for a rotating Frame ---*/
-        if (rotating_frame) {
-          double ProjRotVel = 0.0;
-          double *RotVel = geometry->node[iPoint]->GetRotVel();
-          for (iDim = 0; iDim < nDim; iDim++)
-            ProjRotVel -= RotVel[iDim]*Normal[iDim];
-          ProjRotVel = -geometry->vertex[val_marker][iVertex]->GetRotFlux();
-          Residual[0] -= ProjRotVel*Psi[0];
-          for (iDim = 0; iDim < nDim; iDim++)
-            Residual[iDim+1] -= ProjRotVel*Psi[iDim+1];
-          Residual[nVar-1] -= ProjRotVel*Psi[nVar-1];
-        }
-        
-        /*--- Flux adjustment for grid movement (TDE) ---*/
+        /*--- Flux adjustment for grid movement ---*/
         if (grid_movement) {
           double ProjGridVel = 0.0;
           double *GridVel = geometry->node[iPoint]->GetGridVel();
@@ -3325,20 +3288,7 @@ void CAdjEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_contai
             Jacobian_ii[nVar-1][iDim+1] = 0.0;
           Jacobian_ii[nVar-1][nVar-1] = ProjVel;
           
-          /*--- Jacobian contribution due to a rotating frame ---*/
-          if (rotating_frame) {
-            double ProjRotVel = 0.0;
-            double *RotVel = geometry->node[iPoint]->GetRotVel();
-            for (iDim = 0; iDim < nDim; iDim++)
-              ProjRotVel -= RotVel[iDim]*Normal[iDim];
-            ProjRotVel = -geometry->vertex[val_marker][iVertex]->GetRotFlux();
-            Jacobian_ii[0][0] -= ProjRotVel;
-            for (iDim = 0; iDim < nDim; iDim++)
-              Jacobian_ii[iDim+1][iDim+1] -= ProjRotVel;
-            Jacobian_ii[nVar-1][nVar-1] -= ProjRotVel;
-          }
-          
-          /*--- Jacobian contribution due to grid movement (TDE) ---*/
+          /*--- Jacobian contribution due to grid movement ---*/
           if (grid_movement) {
             double ProjGridVel = 0.0;
             double *GridVel = geometry->node[iPoint]->GetGridVel();
@@ -3376,7 +3326,6 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
 	unsigned short iDim, iVar, jDim;
 
 	bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-	bool rotating_frame = config->GetRotating_Frame();
 	bool incompressible = config->GetIncompressible();
 	bool grid_movement = config->GetGrid_Movement();
 
@@ -3451,17 +3400,6 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
 					phin    += Psi[iDim+1]*UnitaryNormal[iDim];
 				}
 
-				/*--- Rotating Frame ---*/
-				if (rotating_frame) {
-					double ProjRotVel = 0.0;
-					double *RotVel = geometry->node[iPoint]->GetRotVel();
-					for (iDim = 0; iDim < nDim; iDim++) {
-						ProjRotVel += RotVel[iDim]*UnitaryNormal[iDim];
-					}
-					ProjRotVel = -geometry->vertex[val_marker][iVertex]->GetRotFlux()/Area;
-					phin -= Psi[nVar-1]*ProjRotVel;				
-				}
-
 				/*--- Grid Movement ---*/
 				if (grid_movement) {
 					double ProjGridVel = 0.0;
@@ -3488,19 +3426,6 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
 				for (iDim = 0; iDim < nDim; iDim++)
 					Residual[iDim+1] = ProjVel * Psi[iDim+1] - phis2 * Normal[iDim] - phis1 * Gamma_Minus_One * Velocity[iDim];
 				Residual[nVar-1] = ProjVel * Psi[nVar-1] + phis1 * Gamma_Minus_One;
-
-				/*--- Rotating Frame ---*/
-				if (rotating_frame) {
-					double ProjRotVel = 0.0;
-					double *RotVel = geometry->node[iPoint]->GetRotVel();
-					for (iDim = 0; iDim < nDim; iDim++)
-						ProjRotVel -= RotVel[iDim]*Normal[iDim];
-					ProjRotVel = -geometry->vertex[val_marker][iVertex]->GetRotFlux();
-					Residual[0] -= ProjRotVel*Psi[0];
-					for (iDim = 0; iDim < nDim; iDim++)
-						Residual[iDim+1] -= ProjRotVel*Psi[iDim+1];
-					Residual[nVar-1] -= ProjRotVel*Psi[nVar-1];
-				}
 
 				/*--- Grid Movement ---*/
 				if (grid_movement) {
@@ -3560,19 +3485,6 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
 					for (iDim = 0; iDim < nDim; iDim++)
 						Jacobian_ii[nVar-1][iDim+1] = 0.0;
 					Jacobian_ii[nVar-1][nVar-1] = ProjVel;
-
-					/*--- Contribution from a rotating frame ---*/
-					if (rotating_frame) {
-						double ProjRotVel = 0.0;
-						double *RotVel = geometry->node[iPoint]->GetRotVel();
-						for (iDim = 0; iDim < nDim; iDim++)
-							ProjRotVel -= RotVel[iDim]*Normal[iDim];
-						ProjRotVel = -geometry->vertex[val_marker][iVertex]->GetRotFlux();
-						Jacobian_ii[0][0] -= ProjRotVel;
-						for (iDim = 0; iDim < nDim; iDim++)
-							Jacobian_ii[iDim+1][iDim+1] -= ProjRotVel;
-						Jacobian_ii[nVar-1][nVar-1] -= ProjRotVel;
-					}
 
 					/*--- Contribution from grid movement ---*/
 					if (grid_movement) {
@@ -3950,7 +3862,6 @@ void CAdjEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 	unsigned short iVar, iDim;
 	double *Normal, *U_domain, *U_infty, *Psi_domain, *Psi_infty;
 
-	bool rotating_frame = config->GetRotating_Frame();
 	bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
 	bool incompressible = config->GetIncompressible();
 	bool grid_movement = config->GetGrid_Movement();
@@ -4017,12 +3928,6 @@ void CAdjEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 						solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy());
 			}
 
-			/*--- Rotating Frame ---*/
-			if (rotating_frame) {
-				conv_numerics->SetRotVel(geometry->node[iPoint]->GetRotVel(), geometry->node[iPoint]->GetRotVel());
-				conv_numerics->SetRotFlux(-geometry->vertex[val_marker][iVertex]->GetRotFlux());
-			}
-
 			/*--- Grid Movement ---*/
 			if (grid_movement)
 				conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
@@ -4060,14 +3965,13 @@ void CAdjEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, 
 	double P_Total, T_Total, Velocity[3], Density_Inlet, Velocity2, H_Total,
   Temperature, Riemann, Pressure, Density, Energy, *Flow_Dir, Mach2, SoundSpeed2,
   SoundSpeed_Total2, Vel_Mag, alpha, aa, bb, cc, dd, bcn, phin, Area, UnitaryNormal[3],
-  ProjGridVel, *GridVel, ProjRotVel, *RotVel;
+  ProjGridVel, *GridVel;
   
 	double Two_Gamma_M1 = 2.0/Gamma_Minus_One;
 	double Gas_Constant = config->GetGas_ConstantND();
 	bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
 	bool incompressible = config->GetIncompressible();
 	bool grid_movement = config->GetGrid_Movement();
-	bool rotating_frame = config->GetRotating_Frame();
     bool freesurface = config->GetFreeSurface();
 	string Marker_Tag = config->GetMarker_All_Tag(val_marker);
 
@@ -4298,17 +4202,6 @@ void CAdjEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, 
 						phin += Psi_domain[iDim+1]*UnitaryNormal[iDim];
 					}
 
-					/*--- Extra boundary term for a rotating frame ---*/
-					if (rotating_frame) {
-						ProjRotVel = 0.0;
-						RotVel = geometry->node[iPoint]->GetRotVel();
-						for (iDim = 0; iDim < nDim; iDim++) {
-							ProjRotVel += RotVel[iDim]*UnitaryNormal[iDim];
-						}
-						ProjRotVel = -geometry->vertex[val_marker][iVertex]->GetRotFlux()/Area;
-						bcn -= (1.0/Gamma_Minus_One)*ProjRotVel;
-					}
-
 					/*--- Extra boundary term for grid movement ---*/
 					if (grid_movement) {
 						ProjGridVel = 0.0;
@@ -4340,13 +4233,6 @@ void CAdjEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, 
 						solver_container[FLOW_SOL]->node[iPoint]->GetSoundSpeed());
 				conv_numerics->SetEnthalpy(solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy(), 
 						solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy());
-			}
-
-			/*--- Rotational frame ---*/
-			if (rotating_frame) {
-				conv_numerics->SetRotVel(geometry->node[iPoint]->GetRotVel(),
-						geometry->node[iPoint]->GetRotVel());
-				conv_numerics->SetRotFlux(-geometry->vertex[val_marker][iVertex]->GetRotFlux());
 			}
 
 			/*--- Grid Movement ---*/
@@ -4391,7 +4277,6 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   
 	bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
 	bool incompressible = config->GetIncompressible();
-	bool rotating_frame = config->GetRotating_Frame();
 	bool grid_movement  = config->GetGrid_Movement();
     double FreeSurface_Zero = config->GetFreeSurface_Zero();
 	double PressFreeSurface = solver_container[FLOW_SOL]->GetPressure_Inf();
@@ -4565,17 +4450,6 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 					for (iDim = 0; iDim < nDim; iDim++)
 						Vn += Velocity[iDim]*UnitaryNormal[iDim];
 
-					/*--- Extra boundary term for a rotating frame ---*/
-					if (rotating_frame) {
-						double ProjRotVel = 0.0;
-						double *RotVel = geometry->node[iPoint]->GetRotVel();
-						for (iDim = 0; iDim < nDim; iDim++) {
-							ProjRotVel += RotVel[iDim]*UnitaryNormal[iDim];
-						}
-						ProjRotVel = -geometry->vertex[val_marker][iVertex]->GetRotFlux()/Area;
-						Ubn = ProjRotVel;
-					}
-
 					/*--- Extra boundary term for grid movement ---*/
 					if (grid_movement) {
 						double ProjGridVel = 0.0;
@@ -4625,13 +4499,6 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 						solver_container[FLOW_SOL]->node[iPoint]->GetSoundSpeed());
 				conv_numerics->SetEnthalpy(solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy(),
 						solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy());
-			}
-
-			/*--- Rotational frame ---*/
-			if (rotating_frame) {
-				conv_numerics->SetRotVel(geometry->node[iPoint]->GetRotVel(),
-						geometry->node[iPoint]->GetRotVel());
-				conv_numerics->SetRotFlux(-geometry->vertex[val_marker][iVertex]->GetRotFlux());
 			}
 
 			/*--- Grid Movement ---*/
@@ -5666,13 +5533,15 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 		for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       
 			/*--- Set solution  ---*/
-			second_numerics->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
+			second_numerics->SetConservative(node[iPoint]->GetSolution(),
+                                       node[iPoint]->GetSolution());
       
 			/*--- Set control volume ---*/
 			second_numerics->SetVolume(geometry->node[iPoint]->GetVolume());
       
 			/*--- Set rotational velocity ---*/
-			second_numerics->SetRotVel(geometry->node[iPoint]->GetRotVel(), geometry->node[iPoint]->GetRotVel());
+			second_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
+                                  geometry->node[iPoint]->GetGridVel());
       
 			/*--- Compute Residual ---*/
 			second_numerics->ComputeResidual(Residual, Jacobian_i, config);
@@ -5752,14 +5621,14 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   cp, Laminar_Viscosity, heat_flux_factor, LevelSet, Target_LevelSet, temp_sens;
   
   double *Psi, *U, Enthalpy, **GridVel_Grad, gradPsi5_v, psi5_tau_partial, psi5_tau_grad_vel, source_v;
-  double Density, Pressure, div_vel, val_turb_ke, vartheta, vartheta_partial, psi5_p_div_vel, *Omega, rho_v[3], CrossProduct[3];
+  double Density, Pressure, div_vel, val_turb_ke, vartheta, vartheta_partial, psi5_p_div_vel, Omega[3], rho_v[3], CrossProduct[3];
   double delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
   
 	double Gas_Constant = config->GetGas_ConstantND();
 	bool incompressible = config->GetIncompressible();
-    bool rotating_frame = config->GetRotating_Frame();
-    bool freesurface = config->GetFreeSurface();
-
+  bool rotating_frame = config->GetRotating_Frame();
+  bool grid_movement  = config->GetGrid_Movement();
+  bool freesurface    = config->GetFreeSurface();
   
 	cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   
@@ -5787,9 +5656,9 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
 		/*--- Compute gradient of adjoint variables on the surface ---*/
 		SetSurface_Gradient(geometry, config);
     
-    /*--- Compute gradient of the grid velocity if applicable - only need to do this once at beginning ---*/
-    if (rotating_frame)
-      SetRotVel_Gradient(geometry, config);
+    /*--- Compute gradient of the grid velocity if applicable - only need to do this once at beginning FIX! ---*/
+    if (grid_movement)
+      SetGridVel_Gradient(geometry, config);
     
     Total_Sens_Geo = 0.0;
 		for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -5879,7 +5748,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             
             /*--- Compute additional terms in the surface sensitivity for
              moving walls in a rotating frame or dynamic mesh problem. ---*/
-            if (rotating_frame) {
+            if (grid_movement) {
               
               Psi = node[iPoint]->GetSolution();
               U = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
@@ -5906,7 +5775,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
                   - TWO3*Density*val_turb_ke*delta[iDim][jDim];
                             
               /*--- Form normal_grad_gridvel = \partial_n (u_x) ---*/
-              GridVel_Grad = geometry->node[iPoint]->GetRotVel_Grad();
+              GridVel_Grad = geometry->node[iPoint]->GetGridVel_Grad();
               for (iDim = 0; iDim < nDim; iDim++) {
                 normal_grad_gridvel[iDim] = 0.0;
                 for (jDim = 0; jDim < nDim; jDim++)
@@ -5960,9 +5829,13 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
               for (iDim = 0; iDim < nDim; iDim++)
                 for (jDim = 0; jDim < nDim; jDim++)
                   psi5_tau_grad_vel += Psi[nDim+1]*tau[iDim][jDim]*PrimVar_Grad[iDim+1][jDim];
-                            
-              /*--- Retrieve the angular velocity vector ---*/
-              Omega = config->GetOmega_FreeStreamND();
+              
+              if (rotating_frame) {
+              	/*--- Retrieve the angular velocity vector from config. ---*/
+                
+                Omega[0]  = config->GetRotation_Rate_X(ZONE_0)/config->GetOmega_Ref();
+                Omega[1]  = config->GetRotation_Rate_Y(ZONE_0)/config->GetOmega_Ref();
+                Omega[2]  = config->GetRotation_Rate_Z(ZONE_0)/config->GetOmega_Ref();
               
               /*--- Calculate momentum source terms as: rho * ( Omega X V ) ---*/
               for(iDim = 0; iDim < nDim; iDim++)
@@ -5975,6 +5848,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
               source_v = 0.0;
               for(iDim = 0; iDim < nDim; iDim++)
                 source_v -= Psi[nDim+1]*CrossProduct[iDim]*Velocity[iDim];
+              }
               
               /*--- For simplicity, store all additional terms within sigma_partial ---*/
               //if (iVertex==10)cout << sigma_partial << "\t" << vartheta_partial << "\t" << psi5_tau_partial << "\t" << psi5_p_div_vel << "\t" << psi5_tau_grad_vel << "\t" <<tang_psi_5<<endl;
@@ -6045,8 +5919,7 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
     
 	bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
 	bool incompressible = config->GetIncompressible();
-    bool rotating_frame = config->GetRotating_Frame();
-    bool grid_movement  = config->GetGrid_Movement();
+  bool grid_movement  = config->GetGrid_Movement();
     
 	double Gas_Constant = config->GetGas_ConstantND();
 	double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
@@ -6066,36 +5939,31 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
 			geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
 			for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
             
-            /*--- Get the force projection vector (based on the objective function) ---*/
+      /*--- Get the force projection vector (based on the objective function) ---*/
 			d = node[iPoint]->GetForceProj_Vector();
-            
-            /*--- Initialize the convective & viscous residuals to zero ---*/
-            for (iVar = 0; iVar < nVar; iVar++) {
-                Res_Conv_i[iVar] = 0.0;
-                Res_Visc_i[iVar] = 0.0;
-                if (implicit) {
-                    for (jVar = 0; jVar < nVar; jVar ++)
-                        Jacobian_ii[iVar][jVar] = 0.0;
-                }
-            }
-            
-            /*--- Adjustments to strong boundary condition for dynamic meshes ---*/
-            if (rotating_frame) {
-                GridVel = geometry->node[iPoint]->GetRotVel();
-                for (iDim = 0; iDim < nDim; iDim++) {
-                    phi[iDim] = d[iDim] - Psi[nVar-1]*GridVel[iDim];
-                }
-            } else if ( grid_movement) {
-                GridVel = geometry->node[iPoint]->GetGridVel();
-                for (iDim = 0; iDim < nDim; iDim++) {
-                    phi[iDim] = d[iDim] - Psi[nVar-1]*GridVel[iDim];
-                }
-            } else {
-                for (iDim = 0; iDim < nDim; iDim++) {
-                    phi[iDim] = d[iDim];
-                }
-            }
-            
+      
+      /*--- Initialize the convective & viscous residuals to zero ---*/
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Res_Conv_i[iVar] = 0.0;
+        Res_Visc_i[iVar] = 0.0;
+        if (implicit) {
+          for (jVar = 0; jVar < nVar; jVar ++)
+            Jacobian_ii[iVar][jVar] = 0.0;
+        }
+      }
+      
+      /*--- Adjustments to strong boundary condition for dynamic meshes ---*/
+      if ( grid_movement) {
+        GridVel = geometry->node[iPoint]->GetGridVel();
+        for (iDim = 0; iDim < nDim; iDim++) {
+          phi[iDim] = d[iDim] - Psi[nVar-1]*GridVel[iDim];
+        }
+      } else {
+        for (iDim = 0; iDim < nDim; iDim++) {
+          phi[iDim] = d[iDim];
+        }
+      }
+      
 			/*--- Strong BC imposition for the adjoint velocity equations ---*/
       for (iDim = 0; iDim < nDim; iDim++)
             LinSysRes.SetBlock_Zero(iPoint, iDim+1);
@@ -6163,12 +6031,9 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
                 /*--- Flux contribution and Jacobian contributions for moving
                  walls. Note that these are only for the adjoint density and
                  adjoint energy equations (the adjoint vel. uses a strong BC). ---*/
-                if (rotating_frame || grid_movement) {
+                if (grid_movement) {
                     
                     /*--- Get the appropriate grid velocity at this node ---*/
-                    if (rotating_frame)
-                        GridVel = geometry->node[iPoint]->GetRotVel();
-                    else if (grid_movement)
                         GridVel = geometry->node[iPoint]->GetGridVel();
                     
                     /*--- Get the enthalpy from the direct solution ---*/
@@ -6335,7 +6200,6 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   
 	bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
 	bool incompressible = config->GetIncompressible();
-  bool rotating_frame = config->GetRotating_Frame();
   bool grid_movement  = config->GetGrid_Movement();
   bool heat_flux_obj  = (config->GetKind_ObjFunc() == HEAT_FLUX);
   
@@ -6371,12 +6235,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
       }
       
       /*--- Adjustments to strong boundary condition for dynamic meshes ---*/
-      if (rotating_frame) {
-        GridVel = geometry->node[iPoint]->GetRotVel();
-        for (iDim = 0; iDim < nDim; iDim++) {
-          phi[iDim] = d[iDim] - Psi[nVar-1]*GridVel[iDim];
-        }
-      } else if ( grid_movement) {
+      if ( grid_movement) {
         GridVel = geometry->node[iPoint]->GetGridVel();
         for (iDim = 0; iDim < nDim; iDim++) {
           phi[iDim] = d[iDim] - Psi[nVar-1]*GridVel[iDim];
@@ -6466,13 +6325,10 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
         /*--- Flux contribution and Jacobian contributions for moving
          walls. Note that these are only for the adjoint density and
          adjoint energy equations (the adjoint vel. uses a strong BC). ---*/
-        if (rotating_frame || grid_movement) {
+        if (grid_movement) {
           
           /*--- Get the appropriate grid velocity at this node ---*/
-          if (rotating_frame)
-            GridVel = geometry->node[iPoint]->GetRotVel();
-          else if (grid_movement)
-            GridVel = geometry->node[iPoint]->GetGridVel();
+          GridVel = geometry->node[iPoint]->GetGridVel();
           
           /*--- Get the enthalpy from the direct solution ---*/
 					Enthalpy = solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy();

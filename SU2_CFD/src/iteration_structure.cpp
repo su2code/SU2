@@ -1070,6 +1070,51 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
 	/*--- Perform mesh movement depending on specified type ---*/
 	switch (Kind_Grid_Movement) {
       
+      
+    case MOVING_WALL:
+      
+      /*--- Fixed wall velocities: set the grid velocities only one time
+       before the first iteration flow solver. ---*/
+      
+      if (ExtIter == 0) {
+        
+        if (rank == MASTER_NODE)
+          cout << endl << " Setting the moving wall velocities." << endl;
+        surface_movement->SetMoving_Walls(geometry_container[MESH_0], config_container, iZone, ExtIter);
+        
+        /*--- Update the grid velocities on the coarser multigrid levels after
+         setting the moving wall velocities for the finest mesh. ---*/
+        
+        for (unsigned short iMGlevel = 1; iMGlevel <= config_container->GetMGLevels(); iMGlevel++) {
+          geometry_container[iMGlevel]->SetRestricted_GridVelocity(geometry_container[iMGlevel-1], config_container, ExtIter);
+        }
+        
+      }
+      
+      break;
+      
+      
+    case ROTATING_FRAME:
+      
+      /*--- Steadily rotating frame: set the grid velocities only one time
+       before the first iteration flow solver. ---*/
+      
+      if (ExtIter == 0) {
+        
+        if (rank == MASTER_NODE)
+          cout << endl << " Setting the grid velocities for the rotating frame." << endl;
+        
+        /*--- Set the grid velocities on all multigrid levels for a steadily
+         rotating reference frame. ---*/
+        
+        for (unsigned short iMGlevel = 0; iMGlevel <= config_container->GetMGLevels(); iMGlevel++) {
+          geometry_container[iMGlevel]->SetRotationalVelocity(config_container);
+        }
+        
+      }
+      
+      break;
+      
     case RIGID_MOTION:
       
       /*--- Move each point in the volume mesh using the specified type of rigid
@@ -1192,22 +1237,6 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
           /*---Set the grid velocity on the coarser levels ---*/
           geometry_container[iMGlevel]->SetRestricted_GridVelocity(geometry_container[iMGlevel-1], config_container, ExtIter);
         }
-      }
-      
-      break;
-      
-    case MOVING_WALL:
-      
-      /*--- Set the moving wall velocities ---*/
-      
-      if (rank == MASTER_NODE && ExtIter == 0)
-        cout << endl << " Simulation with moving walls." << endl;
-      surface_movement->SetMoving_Walls(geometry_container[MESH_0], config_container, iZone, ExtIter);
-      
-      /*--- Update the grid velocities on the coarser multigrid levels after
-       setting the moving wall velocities for the finest mesh. ---*/
-      for (unsigned short iMGlevel = 1; iMGlevel <= config_container->GetMGLevels(); iMGlevel++) {
-        geometry_container[iMGlevel]->SetRestricted_GridVelocity(geometry_container[iMGlevel-1], config_container, ExtIter);
       }
       
       break;

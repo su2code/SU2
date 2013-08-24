@@ -52,9 +52,6 @@ private:
 	unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component. */
 	unsigned short nZone; /*!< \brief Number of zones in the mesh. */
 	double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
-	double *RotAxisOrigin,	 /*!< \brief Axis of rotation (origin) for rotational frame problem. */
-	*Omega,						/*!< \brief Angular velocity vector for rotational frame problem. */
-	Omega_Mag;						/*!< \brief Angular velocity magnitude for rotational frame problem. */
 	double MinLogResidual; /*!< \brief Minimum value of the log residual. */
 	double* EA_IntLimit; /*!< \brief Integration limits of the Equivalent Area computation */
   double AdjointLimit; /*!< \brief Adjoint variable limit */
@@ -537,7 +534,6 @@ private:
 	Temperature_FreeStreamND,  /*!< \brief Farfield temperature value (external flow). */
 	Density_FreeStreamND,      /*!< \brief Farfield density value (external flow). */
 	*Velocity_FreeStreamND,    /*!< \brief Farfield velocity values (external flow). */
-	*Omega_FreeStreamND,       /*!< \brief Farfield angular velocity values (external flow). */
 	Energy_FreeStreamND,       /*!< \brief Farfield energy value (external flow). */
 	Viscosity_FreeStreamND;    /*!< \brief Farfield viscosity value (external flow). */
 	int ***Reactions;					/*!< \brief Reaction map for chemically reacting, multi-species flows. */
@@ -1288,12 +1284,6 @@ public:
 	 * \return Non-dimensionalized freestream velocity vector.
 	 */
 	double* GetVelocity_FreeStreamND(void);
-
-	/*!
-	 * \brief Get the vector of the non-dimensionalized freestream angular velocity (rotating frame).
-	 * \return Non-dimensionalized freestream angular velocity vector (rotating frame).
-	 */
-	double* GetOmega_FreeStreamND(void);
 
 	/*!
 	 * \brief Get the value of the non-dimensionalized freestream energy.
@@ -3846,24 +3836,6 @@ public:
 	 * \return Value of ther constant viscous drag for Cl/Cd computation.
 	 */
 	double GetCteViscDrag(void);
-
-	/*! 
-	 * \brief Value of the origin of the rotation axis for a rotating frame problem.
-	 * \return Value of the rotation axis origin.
-	 */	
-	double *GetRotAxisOrigin(void);
-
-	/*! 
-	 * \brief Angular velocity vector for a rotating frame problem.
-	 * \return The specified angular velocity vector.
-	 */	
-	double *GetOmega(void);
-
-	/*!
-	 * \brief Angular velocity magnitude for a rotating frame problem.
-	 * \return The specified angular velocity magnitude.
-	 */	
-	double GetOmegaMag(void);
 
 	/*! 
 	 * \brief Update the CFL number using the ramp information.

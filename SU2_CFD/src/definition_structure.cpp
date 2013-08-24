@@ -208,10 +208,6 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
 		if (rank == MASTER_NODE) cout << "Compute the surface curvature." << endl;
     geometry[iZone][MESH_0]->ComputeSurf_Curvature(config[iZone]);
 
-		/*--- For a rotating frame, set the velocity due to rotation at each mesh point ---*/
-		if (config[iZone]->GetRotating_Frame())
-			geometry[iZone][MESH_0]->SetRotationalVelocity(config[iZone]);
-
 		if ((config[iZone]->GetMGLevels() != 0) && (rank == MASTER_NODE))
 			cout << "Setting the multigrid structure." <<endl;
 
@@ -245,10 +241,6 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
 
 			/*--- Find closest neighbor to a surface point ---*/
 			geometry[iZone][iMGlevel]->FindNormal_Neighbor(config[iZone]);
-
-			/*--- For a rotating frame, set the velocity due to rotation at each mesh point ---*/
-			if (config[iZone]->GetRotating_Frame())
-				geometry[iZone][iMGlevel]->SetRotationalVelocity(config[iZone]);
 
 		}
 	}
