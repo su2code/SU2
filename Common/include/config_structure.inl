@@ -372,6 +372,8 @@ inline double CConfig::GetArrheniusEta(unsigned short iReaction) { return Arrhen
 
 inline double CConfig::GetArrheniusTheta(unsigned short iReaction) { return ArrheniusTheta[iReaction]; }
 
+inline double* CConfig::GetDissociationPot(void) { return Diss; }
+
 inline double CConfig::GetCharVibTemp(unsigned short iSpecies) {return CharVibTemp[iSpecies]; }
 
 inline double* CConfig::GetCharVibTemp() {return CharVibTemp; }
@@ -1013,8 +1015,4 @@ inline	double  CConfig::GetEnergy_FreeStreamND_Time(unsigned long val_Ext_Iter) 
 inline	double  CConfig::GetMach_FreeStreamND_Time(unsigned long val_Ext_Iter) {return Mach_Inf_Time[val_Ext_Iter];}
 
 inline	double*  CConfig::GetVelocity_FreeStreamND_Time(unsigned long val_Ext_Iter) {return Velocity_FreeStreamND_Time[val_Ext_Iter];}
-
-#ifndef NO_MUTATIONPP
-inline Mutation::Mixture* CConfig::GetMppMixture(void) { return mix; }
-#endif
 

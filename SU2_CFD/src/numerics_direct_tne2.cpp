@@ -959,22 +959,282 @@ CSource_TNE2::CSource_TNE2(unsigned short val_nDim, unsigned short val_nVar,
                                    CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
   X = new double[nSpecies];
+  RxnConstantTable = new double*[6];
+	for (unsigned short iVar = 0; iVar < 6; iVar++)
+		RxnConstantTable[iVar] = new double[5];
 
 }
 
 CSource_TNE2::~CSource_TNE2(void) {
   delete [] X;
+  for (unsigned short iVar = 0; iVar < 6; iVar++)
+    delete [] RxnConstantTable[iVar];
+  delete [] RxnConstantTable;
   
 }
 
-void CSource_TNE2::ComputeChemistry(double *val_residual, double **val_Jacobian_i, CConfig *config) {
+void CSource_TNE2::GetKeqConstants(double *A, unsigned short val_Reaction,
+                                   CConfig *config) {
+  unsigned short ii, iSpecies, iIndex, tbl_offset;
+  double N, pwr, rem;
+  double *Ms;
   
+  /*--- Acquire database constants from CConfig ---*/
+  Ms = config->GetMolar_Mass();
+  config->GetChemistryEquilConstants(RxnConstantTable, val_Reaction);
+
+  /*--- Calculate mixture number density ---*/
+  N = 0.0;
+  for (iSpecies =0 ; iSpecies < nSpecies; iSpecies++) {
+    N += V_i[iSpecies]/Ms[iSpecies]*AVOGAD_CONSTANT;
+  }
+  
+  /*--- Determine table index based on mixture N ---*/
+  tbl_offset = 14;
+  pwr        = floor(log10(N));
+//  rem        = pow(10.0,log10(N)-pwr) * pow(10.0,pwr);
+
+  /*--- Bound the interpolation to table limit values ---*/
+  iIndex = int(pwr) - tbl_offset;
+  if (iIndex <= 0) {
+    for (ii = 0; ii < 5; ii++)
+      A[ii] = RxnConstantTable[0][ii];
+    return;
+  } else if (iIndex >= 5) {
+    for (ii = 0; ii < 5; ii++)
+      A[ii] = RxnConstantTable[5][ii];
+    return;
+  }
+  
+  /*--- Interpolate ---*/
+  for (ii = 0; ii < 5; ii++)
+    A[ii] =  (RxnConstantTable[iIndex+1][ii] - RxnConstantTable[iIndex][ii])
+           / (pow(10.0,pwr+1) - pow(10.0,pwr)) * (N - pow(10.0,pwr))
+           + RxnConstantTable[iIndex][ii];
+  return;
+}
+
+void CSource_TNE2::ComputeChemistry(double *val_residual,
+                                    double **val_Jacobian_i,
+                                    CConfig *config) {
+  
+  /*--- Nonequilibrium chemistry ---*/
+  unsigned short iSpecies, jSpecies, ii, iReaction, nReactions;
+  int ***RxnMap;
+  double T_min, epsilon;
+  double rho, T, Tve, evs, Trxnf, Trxnb, Keq, Cf, eta, theta, kf, kb;
+  double *A, *Ms, *thetav, fwdRxn, bkwRxn, alpha, Dprime, Ru;
+  
+  /*--- Allocate arrays ---*/
+  A = new double[5];
+  
+  /*--- Define artificial chemistry parameters ---*/
+  // Note: These parameters artificially increase the rate-controlling reaction
+  //       temperature.  This relaxes some of the stiffness in the chemistry
+  //       source term.
+  T_min   = 800.0;
+  epsilon = 80;
+  
+  /*--- Define preferential dissociation coefficient ---*/
+  alpha = 0.3;
+  
+  /*--- Acquire parameters from the configuration file ---*/
+  nReactions = config->GetnReactions();
+  Ms         = config->GetMolar_Mass();
+  RxnMap     = config->GetReaction_Map();
+  thetav     = config->GetCharVibTemp();
+  
+  /*--- Rename for convenience ---*/
+  T   = V_i[T_INDEX];
+  Tve = V_i[TVE_INDEX];
+  rho = V_i[RHO_INDEX];
+  Ru  = UNIVERSAL_GAS_CONSTANT;
+  
+  for (iReaction = 0; iReaction < nReactions; iReaction++) {
+    
+    /*--- Determine the rate-controlling temperature ---*/
+    // Note: Need to re-visit these!  Just hacking them in as a first-cut
+    Trxnf = sqrt(T*Tve);
+    Trxnb = T;
+    
+    /*--- Calculate the modified temperature ---*/
+		Trxnf = 0.5 * (Trxnf+T_min + sqrt((Trxnf-T_min)*(Trxnf-T_min)+epsilon*epsilon));
+		Trxnb = 0.5 * (Trxnb+T_min + sqrt((Trxnb-T_min)*(Trxnb-T_min)+epsilon*epsilon));
+    
+    /*--- Get the Keq & Arrhenius coefficients ---*/
+    GetKeqConstants(A, iReaction, config);
+    Cf    = config->GetArrheniusCoeff(iReaction);
+    eta   = config->GetArrheniusEta(iReaction);
+    theta = config->GetArrheniusTheta(iReaction);
+        
+    /*--- Calculate Keq ---*/
+    Keq = exp(  A[0]*(Trxnb/1E4) + A[1] + A[2]*log(1E4/Trxnb)
+              + A[3]*(1E4/Trxnb) + A[4]*(1E4/Trxnb)*(1E4/Trxnb) );
+    
+    /*--- Calculate rate coefficients ---*/
+    kf = Cf * exp(eta*log(Trxnf)) * exp(-theta/Trxnf);
+		kb = Cf * exp(eta*log(Trxnb)) * exp(-theta/Trxnb) / Keq;
+    
+    /*--- Determine production & destruction of each species ---*/
+    fwdRxn = 1.0;
+		bkwRxn = 1.0;
+		for (ii = 0; ii < 3; ii++) {
+			/*--- Reactants ---*/
+			iSpecies = RxnMap[iReaction][0][ii];
+      if ( iSpecies != nSpecies)
+        fwdRxn *= 0.001*U_i[iSpecies]/Ms[iSpecies];
+			/*--- Products ---*/
+			jSpecies = RxnMap[iReaction][1][ii];
+      if (jSpecies != nSpecies) {
+        bkwRxn *= 0.001*U_i[jSpecies]/Ms[jSpecies];
+      }
+    }
+    fwdRxn = 1000.0 * kf * fwdRxn;
+    bkwRxn = 1000.0 * kb * bkwRxn;
+    
+    for (ii = 0; ii < 3; ii++) {
+			/*--- Products ---*/
+      iSpecies = RxnMap[iReaction][1][ii];
+      if (thetav[iSpecies] != 0) { evs  = Ru/Ms[iSpecies] * thetav[iSpecies]
+                                         / (exp(thetav[iSpecies]/Tve) - 1.0); }
+      else                       { evs = 0.0; }
+      if (iSpecies != nSpecies)
+        val_residual[iSpecies] += Ms[iSpecies] * (fwdRxn-bkwRxn) * Volume;
+      val_residual[nSpecies+nDim+1] += Ms[iSpecies] * (fwdRxn-bkwRxn) * evs * Volume;
+			/*--- Reactants ---*/
+      iSpecies = RxnMap[iReaction][0][ii];
+      if (thetav[iSpecies] != 0) { evs  = Ru/Ms[iSpecies] * thetav[iSpecies]
+                                         / (exp(thetav[iSpecies]/Tve) - 1.0); }
+      else                       { evs = 0.0; }
+      if (iSpecies != nSpecies)
+        val_residual[iSpecies] -= Ms[iSpecies] * (fwdRxn-bkwRxn) * Volume;
+      val_residual[nSpecies+nDim+1] -= Ms[iSpecies] * (fwdRxn-bkwRxn) * evs * Volume;
+    }
+  }
+
+  /*--- Deallocate arrays ---*/
+  delete [] A;
+  
+  /////////// OLD /////////////
+/*  double T_min;						// Minimum temperature for the modified temperature calculations.
+	double epsilon;					// Parameter for the modified temperature calculations.
+	unsigned short iSpecies, jSpecies, iReaction, iVar, iDim, ii;
+	unsigned short iLoc, jLoc;
+	unsigned short counterFwd, counterBkw;
+	double T_tr;
+  
+	T_min = 800;
+	epsilon = 80;*/
+  
+	/*--- Initialize all components of the residual and Jacobian to zero ---*/
+/*	for (iVar = 0; iVar < nVar; iVar++) {
+		val_residual[iVar] = 0.0;
+	}
+  
+	for (iReaction = 0; iReaction < nReactions; iReaction++) {*/
+    
+		/*--- Calculate the rate-controlling temperatures ---*/
+		//NOTE:  This implementation takes the geometric mean of the TR temps of all particpants.
+		//       This is NOT consistent with the Park chemical models, and is only a first-cut approach.
+/*		T_rxnf[iReaction] = 1.0;
+		T_rxnb[iReaction] = 1.0;
+		counterFwd = 0;
+		counterBkw = 0;
+		for (ii = 0; ii < 3; ii++) {
+			iSpecies = Reactions[iReaction][0][ii];
+			jSpecies = Reactions[iReaction][1][ii];*/
+			/*--- Reactants ---*/
+/*			if (iSpecies != nSpecies) {
+				T_tr = Varray_i[iSpecies][0];
+				T_rxnf[iReaction] *= T_tr;
+				counterFwd++;
+			}*/
+			/*--- Products ---*/
+/*			if (jSpecies != nSpecies) {
+				T_tr = Varray_i[jSpecies][0];
+				T_rxnb[iReaction] *= T_tr;
+				counterBkw++;
+			}
+		}
+		T_rxnf[iReaction] = exp(1.0/counterFwd*log(T_rxnf[iReaction]));
+		T_rxnb[iReaction] = exp(1.0/counterBkw*log(T_rxnb[iReaction]));*/
+    
+		/*--- Apply a modified temperature to ease the stiffness at low temperatures ---*/
+/*		T_rxnf[iReaction] = 0.5 * (T_rxnf[iReaction]+T_min + sqrt((T_rxnf[iReaction]-T_min)*(T_rxnf[iReaction]-T_min) + epsilon*epsilon));
+		T_rxnb[iReaction] = 0.5 * (T_rxnb[iReaction]+T_min + sqrt((T_rxnb[iReaction]-T_min)*(T_rxnb[iReaction]-T_min) + epsilon*epsilon));
+    
+		GetEq_Rxn_Coefficients(EqRxnConstants, config);*/
+    
+		/*--- Calculate equilibrium extent of reaction ---*/
+		//NOTE: Scalabrin implementation
+/*		Keq[iReaction] = exp(EqRxnConstants[iReaction][0]*(T_rxnb[iReaction]/1E4)
+                         + EqRxnConstants[iReaction][1]
+                         + EqRxnConstants[iReaction][2]*log(1E4/T_rxnb[iReaction])
+                         + EqRxnConstants[iReaction][3]*(1E4/T_rxnb[iReaction])
+                         + EqRxnConstants[iReaction][4]*(1E4/T_rxnb[iReaction])
+                                                       *(1E4/T_rxnb[iReaction]));*/
+    
+		/*--- Calculate reaction rate coefficients ---*/
+/*		ReactionRateFwd[iReaction] = Cf[iReaction] * exp(eta[iReaction]*log(T_rxnf[iReaction])) * exp(-theta[iReaction]/T_rxnf[iReaction]);
+		ReactionRateBkw[iReaction] = Cf[iReaction] * exp(eta[iReaction]*log(T_rxnb[iReaction])) * exp(-theta[iReaction]/T_rxnb[iReaction]) / Keq[iReaction];
+    
+		fwdRxn[iReaction] = 1.0;
+		bkwRxn[iReaction] = 1.0;
+		for (ii = 0; ii < 3; ii++) {*/
+			/*--- Reactants ---*/
+/*			iSpecies = Reactions[iReaction][0][ii];
+			if ( iSpecies != nSpecies) {
+				if ( iSpecies < nDiatomics ) iLoc = (nDim+3)*iSpecies;
+				else iLoc = (nDim+3)*nDiatomics + (nDim+2)*(iSpecies-nDiatomics);
+				fwdRxn[iReaction] *= 0.001*U_i[iLoc+0]/Molar_Mass[iSpecies];
+			}*/
+			/*--- Products ---*/
+/*			jSpecies = Reactions[iReaction][1][ii];
+			if (jSpecies != nSpecies) {
+				if ( jSpecies < nDiatomics ) jLoc = (nDim+3)*jSpecies;
+				else jLoc = (nDim+3)*nDiatomics + (nDim+2)*(jSpecies-nDiatomics);
+				bkwRxn[iReaction] *= 0.001*U_i[jLoc+0]/Molar_Mass[jSpecies];
+			}
+		}
+		fwdRxn[iReaction] = 1000.0 * ReactionRateFwd[iReaction] * fwdRxn[iReaction];
+		bkwRxn[iReaction] = 1000.0 * ReactionRateBkw[iReaction] * bkwRxn[iReaction];
+	}
+  
+	for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) w_dot[iSpecies] = 0.0;
+  
+	for (iReaction = 0; iReaction < nReactions; iReaction++) {
+		for (ii = 0; ii < 3; ii++) {*/
+			/*--- Products ---*/
+/*			iSpecies = Reactions[iReaction][1][ii];
+			if (iSpecies != nSpecies)
+				w_dot[iSpecies] += Molar_Mass[iSpecies] * (fwdRxn[iReaction] - bkwRxn[iReaction]);*/
+			/*--- Reactants ---*/
+/*			iSpecies = Reactions[iReaction][0][ii];
+			if (iSpecies != nSpecies)
+				w_dot[iSpecies] -= Molar_Mass[iSpecies] * (fwdRxn[iReaction] - bkwRxn[iReaction]);
+		}
+	}
+  
+	for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+		if ( iSpecies < nDiatomics ) iLoc = (nDim+3)*iSpecies;
+		else iLoc = (nDim+3)*nDiatomics + (nDim+2)*(iSpecies-nDiatomics);
+		val_residual[iLoc] = w_dot[iSpecies]*Volume;
+		for (iDim = 0; iDim < nDim; iDim++)
+			val_residual[iLoc+1+iDim] = w_dot[iSpecies] * U_i[iLoc+1+iDim]/U_i[iLoc] * Volume;
+		val_residual[iLoc+1+nDim] = w_dot[iSpecies] * U_i[iLoc+1+nDim]/U_i[iLoc] * Volume;
+		if (iSpecies < nDiatomics) {
+			val_residual[iLoc+2+nDim] = w_dot[iSpecies] * U_i[iLoc+2+nDim]/U_i[iLoc] * Volume;
+		}
+	}*/
 }
 
 
 
-void CSource_TNE2::ComputeVibRelaxation(double *val_residual, double **val_Jacobian_i, CConfig *config) {
-  /*--- Translational-rotational & vibrational energy exchange via inelastic collisions ---*/
+void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
+                                        double **val_Jacobian_i,
+                                        CConfig *config) {
+  
+  /*--- Trans.-rot. & vibrational energy exchange via inelastic collisions ---*/
   // Note: Electronic energy not implemented
 	// Note: Landau-Teller formulation
   // Note: Millikan & White relaxation time (requires P in Atm.)

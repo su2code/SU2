@@ -1029,7 +1029,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
         break;
         
       default :
-        cout << "Convective scheme not implemented (euler and ns)." << endl; cin.get();
+        cout << "Convective scheme not implemented (TNE2)." << endl; cin.get();
         break;
 		}
     

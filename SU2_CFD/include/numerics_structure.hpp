@@ -1495,6 +1495,14 @@ public:
 	 * \param[out] val_Jacobian_i - Jacobian of the source terms
 	 */
 	virtual void ComputeChemistry(double *val_residual, double **val_Jacobian_i, CConfig *config);
+  
+  /*!
+	 * \brief Calculates constants used for Keq correlation.
+	 * \param[out] A - Pointer to coefficient array.
+   * \param[in] val_reaction - Reaction number indicator.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  virtual void GetKeqConstants(double *A, unsigned short val_reaction, CConfig *config);
 
 	/*! 
 	 * \overload
@@ -1862,7 +1870,7 @@ private:
 
 public:
 
-	/*! 
+	/*!
 	 * \brief Constructor of the class.
 	 * \param[in] val_nDim - Number of dimensions of the problem.
 	 * \param[in] val_nVar - Number of variables of the problem.
@@ -5979,6 +5987,7 @@ class CSource_TNE2 : public CNumerics {
 private:
   bool implicit;
   double *X; // Mole fraction
+  double **RxnConstantTable;
 public:
   
 	/*!
@@ -6001,6 +6010,14 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
   void ComputeChemistry(double *val_residual, double **val_Jacobian_i, CConfig *config);
+
+  /*!
+	 * \brief Calculates constants used for Keq correlation.
+	 * \param[out] A - Pointer to coefficient array.
+   * \param[in] val_reaction - Reaction number indicator.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  void GetKeqConstants(double *A, unsigned short val_reaction, CConfig *config);
   
 	/*!
 	 * \brief Residual of the rotational frame source term.
