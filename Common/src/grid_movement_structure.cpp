@@ -3179,7 +3179,7 @@ void CSurfaceMovement::SetRotation(CGeometry *boundary, CConfig *config, unsigne
 		}	
 }
 
-void CSurfaceMovement::SetMoving_Walls(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter) {
+void CSurfaceMovement::Moving_Walls(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter) {
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
@@ -3189,42 +3189,68 @@ void CSurfaceMovement::SetMoving_Walls(CGeometry *geometry, CConfig *config, uns
   /*--- Local variables ---*/
   unsigned short iMarker, iDim, nDim = geometry->GetnDim();
   unsigned long iPoint, iVertex;
-  double xDot[3] = {0.0,0.0,0.0};
-  bool adjoint = config->GetAdjoint();
+  double xDot[3] = {0.0,0.0,0.0}, *Coord, Center[3], Omega[3], r[3], GridVel[3];
 	
   /*--- Retrieve values from the config file ---*/
 
-//  double Lref = config->GetLength_Ref();
+  double Lref = config->GetLength_Ref();
 
-  /*--- Get prescribed wall translation speed from config (non-dim?) ---*/
+  /*--- Get prescribed wall speed from config ---*/
 
-  xDot[0] = config->GetTranslation_Rate_X(iZone);
-  xDot[1] = config->GetTranslation_Rate_Y(iZone);
-  xDot[2] = config->GetTranslation_Rate_Z(iZone);
+  Center[0] = config->GetMotion_Origin_X(iZone);
+  Center[1] = config->GetMotion_Origin_Y(iZone);
+  Center[2] = config->GetMotion_Origin_Z(iZone);
+  Omega[0]  = config->GetRotation_Rate_X(iZone)/config->GetOmega_Ref();
+  Omega[1]  = config->GetRotation_Rate_Y(iZone)/config->GetOmega_Ref();
+  Omega[2]  = config->GetRotation_Rate_Z(iZone)/config->GetOmega_Ref();
+  xDot[0]   = config->GetTranslation_Rate_X(iZone)/config->GetVelocity_Ref();
+  xDot[1]   = config->GetTranslation_Rate_Y(iZone)/config->GetVelocity_Ref();
+  xDot[2]   = config->GetTranslation_Rate_Z(iZone)/config->GetVelocity_Ref();
   
-  /*--- Store grid velocity for each node on the moving surface(s) ---*/
+  /*--- Store grid velocity for each node on the moving surface(s).
+   Sum and store the x, y, & z velocities due to translation and rotation. ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_Moving(iMarker) == YES) {
       
       if (rank == MASTER_NODE && iter == 0) {
-        cout << " Wall velocity: (" << xDot[0] << ", " << xDot[1];
-        cout << ", " << xDot[2] << ") m/s for marker: ";
+        cout << " Storing grid velocity for marker: ";
         cout << config->GetMarker_All_Tag(iMarker) << "." << endl;
+        cout << " Translational velocity: (" << xDot[0] << ", " << xDot[1];
+        cout << ", " << xDot[2] << ") m/s." << endl;
+        cout << " Angular velocity: (" << Omega[0] << ", " << Omega[1];
+        cout << ", " << Omega[2] << ") rad/s about origin: (" << Center[0];
+        cout << ", " << Center[1] << ", " << Center[2] << ")." << endl;
       }
       
       for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         
-        /*--- Get the point index and store the grid velocity (do not store 
-         if this is an adjoint calculation). ---*/
+        /*--- Get the index and coordinates of the current point ---*/
         
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        Coord  = geometry->node[iPoint]->GetCoord();
+        
+        /*--- Calculate non-dim. position from rotation center ---*/
         for (iDim = 0; iDim < nDim; iDim++)
-          if (!adjoint) geometry->node[iPoint]->SetGridVel(iDim,xDot[iDim]);
+          r[iDim] = (Coord[iDim]-Center[iDim])/Lref;
+        if (nDim == 2) r[nDim] = 0.0;
+        
+        /*--- Cross Product of angular velocity and distance from center to
+         get the rotational velocity. Note that we are adding on the velocity
+         due to pure translation. ---*/
+        
+        GridVel[0] = xDot[0] + Omega[1]*r[2] - Omega[2]*r[1];
+        GridVel[1] = xDot[1] + Omega[2]*r[0] - Omega[0]*r[2];
+        GridVel[2] = xDot[2] + Omega[0]*r[1] - Omega[1]*r[0];
+        
+        /*--- Store the moving wall velocity for this node ---*/
+        
+        for (iDim = 0; iDim < nDim; iDim++)
+          geometry->node[iPoint]->SetGridVel(iDim,GridVel[iDim]);
+  
       }
 		}
 	}
-  
 }
 
 void CSurfaceMovement::Surface_Pitching(CGeometry *geometry, CConfig *config,
