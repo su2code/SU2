@@ -3243,7 +3243,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short va
   
   if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
       (Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
-    restart_file << ", \"Pressure\", \"Pressure_Coefficient\", \"Mach\", \"Sharp_Edge_Dist\"";
+    restart_file << ", \"Pressure\", \"Pressure_Coefficient\", \"Mach\"";
   }
 
   if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
@@ -3255,6 +3255,11 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short va
     restart_file << ", \"Eddy_Viscosity\"";
   }
 
+  if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
+      (Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    restart_file << ", \"Sharp_Edge_Dist\"";
+  }
+  
   if ((Kind_Solver == PLASMA_EULER) || (Kind_Solver == PLASMA_NAVIER_STOKES)) {
     unsigned short iSpecies;
     for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++)
