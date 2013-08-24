@@ -394,6 +394,30 @@ static const map<string, ENUM_AEROELASTIC_GRIDVELOCITY> Aeroelastic_Velocity_Map
 ("ANALYTIC", ANALYTIC);
 
 /*!
+ * \brief type of wind gusts
+ */
+enum ENUM_GUST_TYPE {
+    NO_GUST = 0,        /*!< \brief _______. */
+	TOP_HAT = 1, 		/*!< \brief Top-hat function shaped gust  */
+	SINE = 2,  		/*!< \brief  Sine shaped gust */
+};
+static const map<string, ENUM_GUST_TYPE> Gust_Type_Map = CCreateMap<string, ENUM_GUST_TYPE>
+("NONE", NO_GUST)
+("TOP_HAT", TOP_HAT)
+("SINE", SINE);
+
+/*!
+ * \brief type of wind direction
+ */
+enum ENUM_GUST_DIR {
+    X_DIR = 0,        /*!< \brief _______. */
+	Y_DIR = 1, 		 /*!< \brief _______. */
+};
+static const map<string, ENUM_GUST_DIR> Gust_Dir_Map = CCreateMap<string, ENUM_GUST_DIR>
+("X_DIR", X_DIR)
+("Y_DIR", Y_DIR);
+
+/*!
  * \brief types of centered spatial discretizations
  */
 enum ENUM_CENTERED {
