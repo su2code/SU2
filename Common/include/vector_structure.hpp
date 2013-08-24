@@ -92,6 +92,11 @@ public:
   CSysVector(const CSysVector & u);
   
   /*!
+	 * \brief Sets to zero all the entries of the vector.
+	 */
+	void SetValZero(void);
+  
+  /*!
    * \brief constructor from array
    * \param[in] size - number of elements locally
    * \param[in] u_array - vector stored as array being copied

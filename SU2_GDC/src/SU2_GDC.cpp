@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
 	else {
 		char grid_file[200];
 		strcpy (grid_file, "default.cfg");
-		config = new CConfig(grid_file, SU2_GPC, ZONE_0, nZone, VERB_HIGH);
+		config = new CConfig(grid_file, SU2_GDC, ZONE_0, nZone, VERB_HIGH);
 	}
 	
 #ifndef NO_MPI
