@@ -997,13 +997,13 @@ public:
 	void SetRotation(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
   
   /*!
-	 * \brief Set the translational velocity for a moving wall.
+	 * \brief Set the translational/rotational velocity for a moving wall.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
    * \param[in] iZone - Zone number in the mesh.
    * \param[in] iter - Physical time iteration number.
 	 */
-	void SetMoving_Walls(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
+	void Moving_Walls(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
   
   /*! 
 	 * \brief Computes the displacement of a pitching surface for a dynamic mesh simulation.

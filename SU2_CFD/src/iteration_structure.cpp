@@ -1142,7 +1142,7 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
 		ExtIter = iZone;
 		Kind_Grid_Movement = config_container->GetKind_GridMovement(ZONE_0);
 	}
-
+  
 	int rank = MASTER_NODE;
 #ifndef NO_MPI
 	rank = MPI::COMM_WORLD.Get_rank();
@@ -1161,8 +1161,8 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
         if (rank == MASTER_NODE)
           cout << endl << " Setting the moving wall velocities." << endl;
         
-        surface_movement->SetMoving_Walls(geometry_container[MESH_0],
-                                          config_container, iZone, ExtIter);
+        surface_movement->Moving_Walls(geometry_container[MESH_0],
+                                       config_container, iZone, ExtIter);
         
         /*--- Update the grid velocities on the coarser multigrid levels after
          setting the moving wall velocities for the finest mesh. ---*/
@@ -1374,14 +1374,12 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
       
       break;
   }
-    
-    /*--- Apply a Wind Gust ---*/
-    
-    if (config_container->GetWind_Gust()) {
-        FieldVelocityMethod(config_container,geometry_container[MESH_0],solver_container[MESH_0]);
-    }
-    
-    
+  
+  /*--- Apply a Wind Gust ---*/
+  
+  if (config_container->GetWind_Gust()) {
+    FieldVelocityMethod(config_container,geometry_container[MESH_0],solver_container[MESH_0]);
+  }
   
 }
 
