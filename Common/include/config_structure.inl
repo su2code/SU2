@@ -1006,6 +1006,22 @@ inline unsigned short CConfig::GetType_Aeroelastic(void) {return Aeroelastic_Gri
 
 inline unsigned short CConfig::GetAeroelastic_GridVelocity(void) {return Aeroelastic_Grid_Velocity;}
 
+inline bool CConfig::GetWind_Gust(void) { return Wind_Gust; }
+
+inline unsigned short CConfig::GetGust_Type(void) {return Gust_Type;}
+
+inline unsigned short CConfig::GetGust_Dir(void) {return Gust_Dir;}
+
+inline double CConfig::GetGust_WaveLength(void) {return Gust_WaveLength;}
+
+inline double CConfig::GetGust_Periods(void) {return Gust_Periods;}
+
+inline double CConfig::GetGust_Ampl(void) {return Gust_Ampl;}
+
+inline double CConfig::GetGust_Begin_Time(void) {return Gust_Begin_Time;}
+
+inline double CConfig::GetGust_Begin_Loc(void) {return Gust_Begin_Loc;}
+
 inline	double  CConfig::GetDensity_FreeStreamND_Time(unsigned long val_Ext_Iter) {return Density_FreeStreamND_Time[val_Ext_Iter];}
 
 inline	double  CConfig::GetPressure_FreeStreamND_Time(unsigned long val_Ext_Iter) {return Pressure_FreeStreamND_Time[val_Ext_Iter];}
