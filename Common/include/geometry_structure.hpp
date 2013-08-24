@@ -542,10 +542,10 @@ public:
 
 	/*!
 	 * \brief A virtual member.
+   * \param[in] geometry - Geometry of the fine mesh.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iter - Current physical time step.
 	 */
-	virtual void SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config, unsigned long iter);
+	virtual void SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
@@ -1285,9 +1285,8 @@ public:
 	 *        on a restriction from a finer mesh.
 	 * \param[in] fine_mesh - Geometry container for the finer mesh level.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iter - Current physical time step.
 	 */
-	void SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config, unsigned long iter);
+	void SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config);
 
 	/*!
 	 * \brief Find and store the closest neighbor to a vertex.

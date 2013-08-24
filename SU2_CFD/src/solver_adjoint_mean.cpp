@@ -1957,7 +1957,7 @@ void CAdjEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
 	unsigned short iVar, iDim;
 	unsigned long iPoint;
-
+  bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
 	bool rotating_frame = config->GetRotating_Frame();
 	bool axisymmetric   = config->GetAxisymmetric();
 	bool gravity        = (config->GetGravityForce() == YES);
@@ -1969,25 +1969,25 @@ void CAdjEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
 	if (rotating_frame) {
 
-		/*--- loop over points ---*/
+		/*--- Loop over all points ---*/
 		for (iPoint = 0; iPoint < nPointDomain; iPoint++) { 
 
-			/*--- Set solution  ---*/
-			numerics->SetConservative(node[iPoint]->GetSolution(),
-                                node[iPoint]->GetSolution());
+			/*--- Load the adjoint variables ---*/
+			numerics->SetAdjointVar(node[iPoint]->GetSolution(),
+                              node[iPoint]->GetSolution());
 
-			/*--- Set control volume ---*/
+			/*--- Load the volume of the dual mesh cell ---*/
 			numerics->SetVolume(geometry->node[iPoint]->GetVolume());
 
-			/*--- Set rotational velocity ---*/
-			numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
-                           geometry->node[iPoint]->GetGridVel());
-
-			/*--- Compute Residual ---*/
+			/*--- Compute the adjoint rotating frame source residual ---*/
 			numerics->ComputeResidual(Residual, Jacobian_i, config);
 
-			/*--- Add Residual ---*/
+			/*--- Add the source residual to the total ---*/
 			LinSysRes.AddBlock(iPoint, Residual);
+      
+      /*--- Add the implicit Jacobian contribution ---*/
+      if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      
 		}
 	}
 
@@ -2015,7 +2015,6 @@ void CAdjEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
 	if (axisymmetric) {
 
-		bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
     /*--- Zero out Jacobian structure ---*/
     if (implicit) {
       for (iVar = 0; iVar < nVar; iVar ++)
@@ -2848,6 +2847,8 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
             p = solver_container[FLOW_SOL]->node[iPoint]->GetPressure(incompressible);
             
             Mach_Inf   = config->GetMach_FreeStreamND();
+            if (grid_movement)
+              Mach_Inf = config->GetMach_Motion();
             
             d = node[iPoint]->GetForceProj_Vector();
             

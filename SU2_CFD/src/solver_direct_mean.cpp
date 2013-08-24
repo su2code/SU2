@@ -2145,7 +2145,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   
 	unsigned short iVar;
 	unsigned long iPoint;
-  
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 	bool rotating_frame = config->GetRotating_Frame();
 	bool axisymmetric   = config->GetAxisymmetric();
 	bool incompressible = config->GetIncompressible();
@@ -2174,13 +2174,15 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
 			/*--- Add the source residual to the total ---*/
 			LinSysRes.AddBlock(iPoint, Residual);
-
+      
+      /*--- Add the implicit Jacobian contribution ---*/
+      if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      
 		}
 	}
 
 	if (axisymmetric) {
 
-		bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 		/*--- Zero out Jacobian structure ---*/
 		if (implicit) {
 			for (iVar = 0; iVar < nVar; iVar ++)
@@ -2267,7 +2269,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 	}
 
 	if (magnet) {
-		bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+
 		for (iVar = 0; iVar < nVar; iVar ++)
 			for (unsigned short jVar = 0; jVar < nVar; jVar ++)
 				Jacobian_i[iVar][jVar] = 0.0;
@@ -2296,7 +2298,6 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
 	if (jouleheating) {
 		double arc_column_extent = 2.30581;
-		bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 		for (iVar = 0; iVar < nVar; iVar ++)
 			for (unsigned short jVar = 0; jVar < nVar; jVar ++)
 				Jacobian_i[iVar][jVar] = 0.0;

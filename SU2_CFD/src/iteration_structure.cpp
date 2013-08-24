@@ -216,7 +216,7 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
 	for (iZone = 0; iZone < nZone; iZone++) {
 		if ((ExtIter == 0) || (config_container[iZone]->GetUnsteady_Simulation() && !time_spectral)) {
 			if (rank == MASTER_NODE && iZone == ZONE_0)
-				cout << "Single iteration of the direct solver to store flow data." << endl;
+				cout << " Single iteration of the direct solver to store flow data." << endl;
 			if (config_container[iZone]->GetUnsteady_Simulation())
 				solver_container[iZone][MESH_0][FLOW_SOL]->GetRestart(geometry_container[iZone][MESH_0], config_container[iZone], iZone);
 		}
@@ -1051,6 +1051,7 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
                       CVolumetricMovement *grid_movement, CFreeFormDefBox **FFDBox,
                       CSolver ***solver_container, CConfig *config_container, unsigned short iZone, unsigned long ExtIter)   {
   
+  unsigned short iMGlevel, nMGlevels = config_container->GetMGLevels();
 	unsigned short Kind_Grid_Movement = config_container->GetKind_GridMovement(iZone);
   bool adjoint = config_container->GetAdjoint();
 	bool time_spectral = (config_container->GetUnsteady_Simulation() == TIME_SPECTRAL);
@@ -1070,7 +1071,6 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
 	/*--- Perform mesh movement depending on specified type ---*/
 	switch (Kind_Grid_Movement) {
       
-      
     case MOVING_WALL:
       
       /*--- Fixed wall velocities: set the grid velocities only one time
@@ -1080,14 +1080,14 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
         
         if (rank == MASTER_NODE)
           cout << endl << " Setting the moving wall velocities." << endl;
-        surface_movement->SetMoving_Walls(geometry_container[MESH_0], config_container, iZone, ExtIter);
+        
+        surface_movement->SetMoving_Walls(geometry_container[MESH_0],
+                                          config_container, iZone, ExtIter);
         
         /*--- Update the grid velocities on the coarser multigrid levels after
          setting the moving wall velocities for the finest mesh. ---*/
         
-        for (unsigned short iMGlevel = 1; iMGlevel <= config_container->GetMGLevels(); iMGlevel++) {
-          geometry_container[iMGlevel]->SetRestricted_GridVelocity(geometry_container[iMGlevel-1], config_container, ExtIter);
-        }
+        grid_movement->UpdateMultiGrid(geometry_container, config_container);
         
       }
       
@@ -1096,20 +1096,19 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
       
     case ROTATING_FRAME:
       
-      /*--- Steadily rotating frame: set the grid velocities only one time
+      /*--- Steadily rotating frame: set the grid velocities just once
        before the first iteration flow solver. ---*/
       
       if (ExtIter == 0) {
         
         if (rank == MASTER_NODE)
-          cout << endl << " Setting the grid velocities for the rotating frame." << endl;
+          cout << endl << " Setting rotating frame grid velocities." << endl;
         
         /*--- Set the grid velocities on all multigrid levels for a steadily
          rotating reference frame. ---*/
         
-        for (unsigned short iMGlevel = 0; iMGlevel <= config_container->GetMGLevels(); iMGlevel++) {
+        for (iMGlevel = 0; iMGlevel <= nMGlevels; iMGlevel++)
           geometry_container[iMGlevel]->SetRotationalVelocity(config_container);
-        }
         
       }
       
@@ -1117,197 +1116,174 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
       
     case RIGID_MOTION:
       
-      /*--- Move each point in the volume mesh using the specified type of rigid
-       mesh motion. These routines also compute the analytic grid velocities. ---*/
       if (rank == MASTER_NODE)
-        cout << "Updating vertex locations through rigid mesh motion." << endl;
-      grid_movement->SetRigidTranslation(geometry_container[MESH_0], config_container, iZone, ExtIter);
-      grid_movement->SetRigidPlunging(geometry_container[MESH_0], config_container, iZone, ExtIter);
-      grid_movement->SetRigidPitching(geometry_container[MESH_0], config_container, iZone, ExtIter);
-      grid_movement->SetRigidRotation(geometry_container[MESH_0], config_container, iZone, ExtIter);
+        cout << " Updating vertex locations through rigid mesh motion." << endl;
+      
+      /*--- Move each node in the volume mesh using the specified type
+       of rigid mesh motion. These routines also compute analytic grid
+       velocities for the fine mesh. ---*/
+      
+      grid_movement->Rigid_Translation(geometry_container[MESH_0],
+                                       config_container, iZone, ExtIter);
+      grid_movement->Rigid_Plunging(geometry_container[MESH_0],
+                                    config_container, iZone, ExtIter);
+      grid_movement->Rigid_Pitching(geometry_container[MESH_0],
+                                    config_container, iZone, ExtIter);
+      grid_movement->Rigid_Rotation(geometry_container[MESH_0],
+                                    config_container, iZone, ExtIter);
       
       /*--- Update the multigrid structure after moving the finest grid,
        including computing the grid velocities on the coarser levels. ---*/
-      for (unsigned short iMGlevel = 1; iMGlevel <= config_container->GetMGLevels(); iMGlevel++) {
-        /*--- Create the control volume structures ---*/
-        geometry_container[iMGlevel]->SetControlVolume(config_container,geometry_container[iMGlevel-1], UPDATE);
-        geometry_container[iMGlevel]->SetBoundControlVolume(config_container,geometry_container[iMGlevel-1], UPDATE);
-        geometry_container[iMGlevel]->SetCoord(geometry_container[iMGlevel-1]);
-        geometry_container[iMGlevel]->SetRestricted_GridVelocity(geometry_container[iMGlevel-1], config_container, ExtIter);
-      }
       
-      /*--- Adjoint mesh velocities: compute an approximation of the
-       mesh velocities on the coarser levels starting from the values
-       read in from the restart file for the finest mesh. ---*/
-      if (adjoint) {
-        for (unsigned short iMGlevel = 1; iMGlevel <= config_container->GetMGLevels(); iMGlevel++) {
-          /*---Set the grid velocity on the coarser levels ---*/
-          geometry_container[iMGlevel]->SetRestricted_GridVelocity(geometry_container[iMGlevel-1], config_container, ExtIter);
-        }
-      }
-      
-      break;
-      
-    case EXTERNAL: case EXTERNAL_ROTATION:
-      
-      /*--- Apply rigid rotation first, if necessary ---*/
-      if (Kind_Grid_Movement == EXTERNAL_ROTATION) {
-        /*--- Rotate each point in the volume mesh (no deformation) ---*/
-        if (rank == MASTER_NODE)
-          cout << "Updating vertex locations by rigid rotation." << endl;
-        grid_movement->SetRigidRotation(geometry_container[MESH_0], config_container, iZone, ExtIter);
-      }
-      
-      /*--- Surface grid deformation read from external files ---*/
-      if (rank == MASTER_NODE)
-        cout << "Updating surface locations from file." << endl;
-      surface_movement->SetExternal_Deformation(geometry_container[MESH_0], config_container, iZone, ExtIter);
-      
-      /*--- Volume grid deformation ---*/
-      if (rank == MASTER_NODE)
-        cout << "Deforming the volume grid." << endl;
-      grid_movement->SetVolume_Deformation(geometry_container[MESH_0], config_container, true);
-      
-      /*--- Update the multigrid structure after moving the finest grid ---*/
-      for (unsigned short iMGlevel = 1; iMGlevel <= config_container->GetMGLevels(); iMGlevel++) {
-        /*--- Create the control volume structures ---*/
-        geometry_container[iMGlevel]->SetControlVolume(config_container,geometry_container[iMGlevel-1], UPDATE);
-        geometry_container[iMGlevel]->SetBoundControlVolume(config_container,geometry_container[iMGlevel-1], UPDATE);
-        geometry_container[iMGlevel]->SetCoord(geometry_container[iMGlevel-1]);
-      }
-      
-      if (!adjoint) {
-        /*--- Update grid node velocities on all mesh levels ---*/
-        if (rank == MASTER_NODE)
-          cout << "Computing mesh velocities using a finite diff. approx." << endl;
-        geometry_container[MESH_0]->SetGridVelocity(config_container, ExtIter);
-        for (unsigned short iMGlevel = 1; iMGlevel <= config_container->GetMGLevels(); iMGlevel++) {
-          /*---Set the grid velocity on the coarser levels ---*/
-          geometry_container[iMGlevel]->SetGridVelocity(config_container,ExtIter);
-        }
-      } else {
-        /*--- Adjoint mesh velocities: compute an approximation of the
-         mesh velocities on the coarser levels starting from the values
-         read in from the restart file for the finest mesh. ---*/
-        for (unsigned short iMGlevel = 1; iMGlevel <= config_container->GetMGLevels(); iMGlevel++) {
-          /*---Set the grid velocity on the coarser levels ---*/
-          geometry_container[iMGlevel]->SetRestricted_GridVelocity(geometry_container[iMGlevel-1], config_container, ExtIter);
-        }
-      }
+      grid_movement->UpdateMultiGrid(geometry_container, config_container);
       
       break;
       
     case DEFORMING:
       
-      /*--- Surface grid deformation ---*/
       if (rank == MASTER_NODE)
-        cout << "Updating moving surface locations." << endl;
+        cout << endl << " Updating moving surface locations." << endl;
+      
+      /*--- First, compute the new node locations for moving markers ---*/
+      
       if (geometry_container[MESH_0]->GetnDim() == 2)
-        surface_movement->SetBoundary_Flutter2D(geometry_container[MESH_0], config_container, ExtIter, iZone);
+        surface_movement->Surface_Pitching(geometry_container[MESH_0],
+                                           config_container, ExtIter, iZone);
       else
-        surface_movement->SetBoundary_Flutter3D(geometry_container[MESH_0], config_container, FFDBox, ExtIter, iZone);
+        surface_movement->SetBoundary_Flutter3D(geometry_container[MESH_0],
+                                                config_container, FFDBox, ExtIter, iZone);
       
-      /*--- Volume grid deformation ---*/
+      /*--- Deform the volume grid around the new boundary locations ---*/
+      
       if (rank == MASTER_NODE)
-        cout << "Deforming the volume grid." << endl;
-      grid_movement->SetVolume_Deformation(geometry_container[MESH_0], config_container, true);
+        cout << " Deforming the volume grid." << endl;
+      grid_movement->SetVolume_Deformation(geometry_container[MESH_0],
+                                           config_container, true);
       
-      /*--- Update the multigrid structure after moving the finest grid ---*/
-      for (unsigned short iMGlevel = 1; iMGlevel <= config_container->GetMGLevels(); iMGlevel++) {
-        /*--- Create the control volume structures ---*/
-        geometry_container[iMGlevel]->SetControlVolume(config_container,geometry_container[iMGlevel-1], UPDATE);
-        geometry_container[iMGlevel]->SetBoundControlVolume(config_container,geometry_container[iMGlevel-1], UPDATE);
-        geometry_container[iMGlevel]->SetCoord(geometry_container[iMGlevel-1]);
-      }
+      /*--- Update the grid velocities on the fine mesh using finite
+       differencing based on node coordinates at previous times. ---*/
       
       if (!adjoint) {
-        /*--- Update grid node velocities on all mesh levels ---*/
         if (rank == MASTER_NODE)
-          cout << "Computing mesh velocities using a finite difference approx." << endl;
+          cout << " Computing grid velocities by finite differencing." << endl;
         geometry_container[MESH_0]->SetGridVelocity(config_container, ExtIter);
-        for (unsigned short iMGlevel = 1; iMGlevel <= config_container->GetMGLevels(); iMGlevel++) {
-          /*---Set the grid velocity on the coarser levels ---*/
-          geometry_container[iMGlevel]->SetGridVelocity(config_container,ExtIter);
-        }
-      } else {
-        /*--- Adjoint mesh velocities: compute an approximation of the
-         mesh velocities on the coarser levels starting from the values
-         read in from the restart file for the finest mesh. ---*/
-        for (unsigned short iMGlevel = 1; iMGlevel <= config_container->GetMGLevels(); iMGlevel++) {
-          /*---Set the grid velocity on the coarser levels ---*/
-          geometry_container[iMGlevel]->SetRestricted_GridVelocity(geometry_container[iMGlevel-1], config_container, ExtIter);
-        }
       }
+      
+      /*--- Update the multigrid structure after moving the finest grid,
+       including computing the grid velocities on the coarser levels. ---*/
+      
+      grid_movement->UpdateMultiGrid(geometry_container, config_container);
+      
+      break;
+      
+    case EXTERNAL: case EXTERNAL_ROTATION:
+      
+      /*--- Apply rigid rotation to entire grid first, if necessary ---*/
+      
+      if (Kind_Grid_Movement == EXTERNAL_ROTATION) {
+        if (rank == MASTER_NODE)
+          cout << " Updating node locations by rigid rotation." << endl;
+        grid_movement->Rigid_Rotation(geometry_container[MESH_0],
+                                      config_container, iZone, ExtIter);
+      }
+      
+      /*--- Load new surface node locations from external files ---*/
+      
+      if (rank == MASTER_NODE)
+        cout << " Updating surface locations from file." << endl;
+      surface_movement->SetExternal_Deformation(geometry_container[MESH_0],
+                                                config_container, iZone, ExtIter);
+      
+      /*--- Deform the volume grid around the new boundary locations ---*/
+      
+      if (rank == MASTER_NODE)
+        cout << " Deforming the volume grid." << endl;
+      grid_movement->SetVolume_Deformation(geometry_container[MESH_0],
+                                           config_container, true);
+      
+      /*--- Update the grid velocities on the fine mesh using finite
+       differencing based on node coordinates at previous times. ---*/
+      
+      if (!adjoint) {
+        if (rank == MASTER_NODE)
+          cout << "Computing grid velocities by finite differencing." << endl;
+        geometry_container[MESH_0]->SetGridVelocity(config_container, ExtIter);
+      }
+      
+      /*--- Update the multigrid structure after moving the finest grid,
+       including computing the grid velocities on the coarser levels. ---*/
+      
+      grid_movement->UpdateMultiGrid(geometry_container, config_container);
       
       break;
       
     case AEROELASTIC:
-    
-            /*--- Variables used for Aeroelastic case ---*/
-            double Cl, Cm, Cl_proc, Cm_proc, pitch, plunge;
-            double structural_solution[4]; //contains solution of typical section wing model.
-            unsigned short Aeroelastic_Type, Aeroelastic_Grid_Vel;
-            Aeroelastic_Type = config_container->GetType_Aeroelastic();
-            Aeroelastic_Grid_Vel = config_container->GetAeroelastic_GridVelocity();
-            
-            /*--- Reset value of plunge and pitch for the new unsteady step ---*/
-            if (ExtIter == 1) {
-                pitch = 0.0;
-                plunge = 0.0;
-                config_container->SetAeroelastic_pitch(pitch);
-                config_container->SetAeroelastic_plunge(plunge);
-            }
-            
-            /*--- Forces per processor ---*/
-            Cl_proc = solver_container[MESH_0][FLOW_SOL]->GetTotal_CLift();
-            Cm_proc = -1.0*solver_container[MESH_0][FLOW_SOL]->GetTotal_CMz();
-            
+      
+      /*--- Variables used for Aeroelastic case ---*/
+      double Cl, Cm, Cl_proc, Cm_proc, pitch, plunge;
+      double structural_solution[4]; //contains solution of typical section wing model.
+      unsigned short Aeroelastic_Type, Aeroelastic_Grid_Vel;
+      Aeroelastic_Type = config_container->GetType_Aeroelastic();
+      Aeroelastic_Grid_Vel = config_container->GetAeroelastic_GridVelocity();
+      
+      /*--- Reset value of plunge and pitch for the new unsteady step ---*/
+      if (ExtIter == 1) {
+        pitch = 0.0;
+        plunge = 0.0;
+        config_container->SetAeroelastic_pitch(pitch);
+        config_container->SetAeroelastic_plunge(plunge);
+      }
+      
+      /*--- Forces per processor ---*/
+      Cl_proc = solver_container[MESH_0][FLOW_SOL]->GetTotal_CLift();
+      Cm_proc = -1.0*solver_container[MESH_0][FLOW_SOL]->GetTotal_CMz();
+      
 #ifndef NO_MPI
-            /*--- Add the forces over all the processors ---*/
-            MPI::COMM_WORLD.Allreduce(&Cl_proc, &Cl, 1, MPI::DOUBLE, MPI::SUM);
-            MPI::COMM_WORLD.Allreduce(&Cm_proc, &Cm, 1, MPI::DOUBLE, MPI::SUM);
-            MPI::COMM_WORLD.Barrier();
+      /*--- Add the forces over all the processors ---*/
+      MPI::COMM_WORLD.Allreduce(&Cl_proc, &Cl, 1, MPI::DOUBLE, MPI::SUM);
+      MPI::COMM_WORLD.Allreduce(&Cm_proc, &Cm, 1, MPI::DOUBLE, MPI::SUM);
+      MPI::COMM_WORLD.Barrier();
 #else
-            /*--- Set the forces to the forces on the sole processor ---*/
-            Cl = Cl_proc;
-            Cm = Cm_proc;
+      /*--- Set the forces to the forces on the sole processor ---*/
+      Cl = Cl_proc;
+      Cm = Cm_proc;
 #endif
-            
-            /*--- Use the if statement to move the grid only at selected dual time step iterations. ---*/
-            if (ExtIter % 3 ==0) {
-                
-                /*--- Solve typical section wing model, solution returned in structural solution ---*/
-                grid_movement->SolveTypicalSectionWingModel(geometry_container[MESH_0], Cl, Cm, config_container, iZone, ExtIter, structural_solution);
-                
-                /*--- Check type of Aeroelastic mesh motion ---*/
-                if (Aeroelastic_Type == RIGID)
-                    grid_movement->AeroelasticRigid(geometry_container[MESH_0], config_container, iZone, structural_solution);
-                if (Aeroelastic_Type == DEFORM) {
-                    Aeroelastic_Grid_Vel = FD;  // For deforming mesh can't do analytic mesh velocities.
-                    grid_movement->AeroelasticDeform(geometry_container[MESH_0], config_container, iZone, structural_solution);
-                }
-                
-                /*--- Update the multigrid structure after moving the finest grid ---*/
-                for (unsigned short iMGlevel = 1; iMGlevel <= config_container->GetMGLevels(); iMGlevel++) {
-                    /*--- Create the control volume structures ---*/
-                    geometry_container[iMGlevel]->SetControlVolume(config_container,geometry_container[iMGlevel-1], UPDATE);
-                    geometry_container[iMGlevel]->SetBoundControlVolume(config_container,geometry_container[iMGlevel-1], UPDATE);
-                    geometry_container[iMGlevel]->SetCoord(geometry_container[iMGlevel-1]);
-                    if (Aeroelastic_Grid_Vel == ANALYTIC) {
-                        /*---Set the grid velocity on the coarser levels ---*/
-                        geometry_container[iMGlevel]->SetRestricted_GridVelocity(geometry_container[iMGlevel-1], config_container, ExtIter);
-                    }
-                }
-                
-                if (Aeroelastic_Grid_Vel == FD) {
-                    /* Grid Velocity by finite Difference */
-                    geometry_container[MESH_0]->SetGridVelocity(config_container, ExtIter);
-                    for (unsigned short iMGlevel = 1; iMGlevel <= config_container->GetMGLevels(); iMGlevel++) {
-                        /*---Set the grid velocity on the coarser levels ---*/
-                        geometry_container[iMGlevel]->SetGridVelocity(config_container,ExtIter);
-                    }
-                }
-            }
+      
+      /*--- Use the if statement to move the grid only at selected dual time step iterations. ---*/
+      if (ExtIter % 3 ==0) {
+        
+        /*--- Solve typical section wing model, solution returned in structural solution ---*/
+        grid_movement->SolveTypicalSectionWingModel(geometry_container[MESH_0], Cl, Cm, config_container, iZone, ExtIter, structural_solution);
+        
+        /*--- Check type of Aeroelastic mesh motion ---*/
+        if (Aeroelastic_Type == RIGID)
+          grid_movement->AeroelasticRigid(geometry_container[MESH_0], config_container, iZone, structural_solution);
+        if (Aeroelastic_Type == DEFORM) {
+          Aeroelastic_Grid_Vel = FD;  // For deforming mesh can't do analytic mesh velocities.
+          grid_movement->AeroelasticDeform(geometry_container[MESH_0], config_container, iZone, structural_solution);
+        }
+        
+        /*--- Update the multigrid structure after moving the finest grid ---*/
+        for (unsigned short iMGlevel = 1; iMGlevel <= config_container->GetMGLevels(); iMGlevel++) {
+          /*--- Create the control volume structures ---*/
+          geometry_container[iMGlevel]->SetControlVolume(config_container,geometry_container[iMGlevel-1], UPDATE);
+          geometry_container[iMGlevel]->SetBoundControlVolume(config_container,geometry_container[iMGlevel-1], UPDATE);
+          geometry_container[iMGlevel]->SetCoord(geometry_container[iMGlevel-1]);
+          if (Aeroelastic_Grid_Vel == ANALYTIC) {
+            /*---Set the grid velocity on the coarser levels ---*/
+            geometry_container[iMGlevel]->SetRestricted_GridVelocity(geometry_container[iMGlevel-1], config_container);
+          }
+        }
+        
+        if (Aeroelastic_Grid_Vel == FD) {
+          /* Grid Velocity by finite Difference */
+          geometry_container[MESH_0]->SetGridVelocity(config_container, ExtIter);
+          for (unsigned short iMGlevel = 1; iMGlevel <= config_container->GetMGLevels(); iMGlevel++) {
+            /*---Set the grid velocity on the coarser levels ---*/
+            geometry_container[iMGlevel]->SetGridVelocity(config_container,ExtIter);
+          }
+        }
+      }
       break;
       
     case NONE: default:
