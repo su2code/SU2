@@ -904,11 +904,11 @@ void CConfig::SetConfig_Options(unsigned short val_nZone) {
 	/* DESCRIPTION: Coordinates of the box where the grid will be deformed (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax) */
 	AddArrayOption("HOLD_GRID_FIXED_COORD", 6, Hold_GridFixed_Coord, default_vec_6d);
 	/* DESCRIPTION: Grid deformation technique */
-	AddEnumOption("GRID_DEFORM_METHOD", Kind_GridDef_Method, Deform_Map, "SPRING");
+	AddEnumOption("GRID_DEFORM_METHOD", Kind_GridDef_Method, Deform_Map, "FEA");
 	/* DESCRIPTION: Visualize the deformation */
 	AddSpecialOption("VISUALIZE_DEFORMATION", Visualize_Deformation, SetBoolOption, false);
 	/* DESCRIPTION: Number of iterations for FEA mesh deformation (surface deformation increments) */
-	AddScalarOption("GRID_DEFORM_ITER", GridDef_Iter, 1);
+	AddScalarOption("GRID_DEFORM_ITER", GridDef_Iter, 10);
   
 	/*--- option related to rotorcraft problems ---*/
 	/* CONFIG_CATEGORY: Rotorcraft problem */

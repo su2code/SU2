@@ -143,13 +143,11 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
   
 	unsigned short iVar, iDim;
 	unsigned long Point_0, Point_1, Point_2, Point_3, iElem, iEdge, ElemCounter = 0;
-  double *Coord_0, *Coord_1, Length, MinLength = 1E10, **StiffMatrix_Elem;
+  double *Coord_0, *Coord_1, Length, MinLength = 1E10, **StiffMatrix_Elem, Scale;
   double *Edge_Vector = new double [nDim];
   bool RightVol;
-  vector<unsigned long> Degenerated_Elem;
   
   int rank = MASTER_NODE;
-  
 #ifndef NO_MPI
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
@@ -166,13 +164,12 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
   }
   
   /*--- First, check the minimum edge length in the entire mesh. ---*/
+  
 	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
 		/*--- Points in edge and coordinates ---*/
-		Point_0 = geometry->edge[iEdge]->GetNode(0);
-		Point_1 = geometry->edge[iEdge]->GetNode(1);
-		Coord_0 = geometry->node[Point_0]->GetCoord();
-		Coord_1 = geometry->node[Point_1]->GetCoord();
+		Point_0 = geometry->edge[iEdge]->GetNode(0);  Coord_0 = geometry->node[Point_0]->GetCoord();
+		Point_1 = geometry->edge[iEdge]->GetNode(1);  Coord_1 = geometry->node[Point_1]->GetCoord();
     
 		/*--- Compute Edge_Vector ---*/
 		Length = 0;
@@ -190,6 +187,9 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
   MPI::COMM_WORLD.Allreduce(&MinLength_Local, &MinLength, 1, MPI::DOUBLE, MPI::MIN);
 #endif
   
+  /*--- Second, compute min volume in the entire mesh. ---*/
+  Scale = Check_Grid(geometry);
+  
 	/*--- Compute contributions from each element by forming the stiffness matrix (FEA) ---*/
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
 
@@ -199,7 +199,7 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
       Point_0 = geometry->elem[iElem]->GetNode(0);
       Point_1 = geometry->elem[iElem]->GetNode(1);
       Point_2 = geometry->elem[iElem]->GetNode(2);      
-      RightVol = SetFEA_StiffMatrix2D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2);
+      RightVol = SetFEA_StiffMatrix2D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Scale);
       AddFEA_StiffMatrix2D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2);
       
     }
@@ -211,116 +211,20 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
       Point_1 = geometry->elem[iElem]->GetNode(1);
       Point_2 = geometry->elem[iElem]->GetNode(2);
       Point_3 = geometry->elem[iElem]->GetNode(3);
-      RightVol = SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+      RightVol = SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3, Scale);
       AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
           
     }
     
     /*--- Create a list with the degenerated elements ---*/
 
-    if (!RightVol) {
-      ElemCounter++;
-      Degenerated_Elem.push_back(iElem);
-    }
+    if (!RightVol) ElemCounter++;
       
 	}
-	
-//  unsigned short jVar;
-//  unsigned long nEdge = geometry->GetnEdge();
-//  double **Block;
-//  Block = new double*[nVar];
-//  for (iVar = 0; iVar < nVar; iVar++)
-//    Block[iVar] = new double[nVar];
-//  double DeltaX, DeltaY, DeltaZ;
-//  bool *FixedEdge;
-//  FixedEdge = new bool[nEdge];
-//  for (iEdge = 0; iEdge < nEdge; iEdge++)
-//    FixedEdge[iEdge] = false;
-  
-//  /*--- Fix the stifness matrix using the degenerated elements ---*/
-//  for (iElem = 0; iElem < Degenerated_Elem.size(); iElem++) {
-//    
-//    Point_0 = geometry->elem[iElem]->GetNode(0);
-//    Point_1 = geometry->elem[iElem]->GetNode(1);
-//    Point_2 = geometry->elem[iElem]->GetNode(2);
-//    Point_3 = geometry->elem[iElem]->GetNode(3);
-//    
-//    
-//    StiffMatrix.GetBlock(Point_0, Point_0); StiffMatrix.ReturnBlock(Block);
-//    DeltaX = Block[0][0]; DeltaY = Block[1][1]; DeltaZ = Block[2][2];
-//    Block[0][0] = EPS; Block[1][1] = EPS; Block[2][2] = EPS;
-//    StiffMatrix.SetBlock(Point_0, Point_0, Block);
-//    for (iVar = 0; iVar < nVar; iVar++)
-//      for (jVar = 0; jVar < nVar; jVar++)
-//        Block[iVar][jVar] = 0.0;
-//    Block[0][0] = DeltaX; Block[1][1] = DeltaY; Block[2][2] = DeltaZ;
-//    
-//    iEdge = geometry->FindEdge(Point_0, Point_1);
-//    if (!FixedEdge[iEdge]) { StiffMatrix.AddBlock(Point_0, Point_1, Block); FixedEdge[iEdge] = true; }
-//    iEdge = geometry->FindEdge(Point_0, Point_2);
-//    if (!FixedEdge[iEdge]) { StiffMatrix.AddBlock(Point_0, Point_2, Block); FixedEdge[iEdge] = true; }
-//    iEdge = geometry->FindEdge(Point_0, Point_3);
-//    if (!FixedEdge[iEdge]) { StiffMatrix.AddBlock(Point_0, Point_3, Block); FixedEdge[iEdge] = true; }
-//
-//    StiffMatrix.GetBlock(Point_1, Point_0); StiffMatrix.ReturnBlock(Block);
-//    DeltaX = Block[0][0]; DeltaY = Block[1][1]; DeltaZ = Block[2][2];
-//    Block[0][0] = EPS; Block[1][1] = EPS; Block[2][2] = EPS;
-//    
-//    iEdge = geometry->FindEdge(Point_1, Point_0);
-//    if (!FixedEdge[iEdge]) { StiffMatrix.SetBlock(Point_1, Point_0, Block); FixedEdge[iEdge] = true; }
-//    for (iVar = 0; iVar < nVar; iVar++)
-//      for (jVar = 0; jVar < nVar; jVar++)
-//        Block[iVar][jVar] = 0.0;
-//    Block[0][0] = EPS; Block[1][1] = EPS; Block[2][2] = EPS;
-//    
-//    StiffMatrix.AddBlock(Point_1, Point_1, Block);
-//    iEdge = geometry->FindEdge(Point_1, Point_2);
-//    if (!FixedEdge[iEdge]) { StiffMatrix.AddBlock(Point_1, Point_2, Block); FixedEdge[iEdge] = true; }
-//    iEdge = geometry->FindEdge(Point_1, Point_3);
-//    if (!FixedEdge[iEdge]) { StiffMatrix.AddBlock(Point_1, Point_3, Block); FixedEdge[iEdge] = true; }
-//    
-//    StiffMatrix.GetBlock(Point_2, Point_0); StiffMatrix.ReturnBlock(Block);
-//    DeltaX = Block[0][0]; DeltaY = Block[1][1]; DeltaZ = Block[2][2];
-//    Block[0][0] = EPS; Block[1][1] = EPS; Block[2][2] = EPS;
-//    
-//    
-//    iEdge = geometry->FindEdge(Point_2, Point_0);
-//    if (!FixedEdge[iEdge]) { StiffMatrix.SetBlock(Point_2, Point_0, Block); FixedEdge[iEdge] = true; }
-//    
-//    
-//    for (iVar = 0; iVar < nVar; iVar++)
-//      for (jVar = 0; jVar < nVar; jVar++)
-//        Block[iVar][jVar] = 0.0;
-//    Block[0][0] = DeltaX; Block[1][1] = DeltaY; Block[2][2] = DeltaZ;
-//    iEdge = geometry->FindEdge(Point_2, Point_1);
-//    if (!FixedEdge[iEdge]) { StiffMatrix.AddBlock(Point_2, Point_1, Block); FixedEdge[iEdge] = true; }
-//    StiffMatrix.AddBlock(Point_2, Point_2, Block);
-//    iEdge = geometry->FindEdge(Point_2, Point_3);
-//    if (!FixedEdge[iEdge]) { StiffMatrix.AddBlock(Point_2, Point_3, Block); FixedEdge[iEdge] = true; }
-//    
-//    StiffMatrix.GetBlock(Point_3, Point_0); StiffMatrix.ReturnBlock(Block);
-//    DeltaX = Block[0][0]; DeltaY = Block[1][1]; DeltaZ = Block[2][2];
-//    Block[0][0] = EPS; Block[1][1] = EPS; Block[2][2] = EPS;
-//    
-//    iEdge = geometry->FindEdge(Point_3, Point_0);
-//    if (!FixedEdge[iEdge]) { StiffMatrix.SetBlock(Point_3, Point_0, Block); FixedEdge[iEdge] = true; }
-//    
-//    for (iVar = 0; iVar < nVar; iVar++)
-//      for (jVar = 0; jVar < nVar; jVar++)
-//        Block[iVar][jVar] = 0.0;
-//    Block[0][0] = DeltaX; Block[1][1] = DeltaY; Block[2][2] = DeltaZ;
-//    
-//    iEdge = geometry->FindEdge(Point_3, Point_1);
-//    if (!FixedEdge[iEdge]) { StiffMatrix.AddBlock(Point_3, Point_1, Block); FixedEdge[iEdge] = true; }
-//    iEdge = geometry->FindEdge(Point_3, Point_2);
-//    if (!FixedEdge[iEdge]) { StiffMatrix.AddBlock(Point_3, Point_2, Block); FixedEdge[iEdge] = true; }
-//    StiffMatrix.AddBlock(Point_3, Point_3, Block);
-//  }
-    
   
 #ifndef NO_MPI
-  unsigned long ElemCounter_Local = ElemCounter;
-  MPI::COMM_WORLD.Allreduce(&ElemCounter_Local, &ElemCounter, 1, MPI::DOUBLE, MPI::SUM);
+  unsigned long ElemCounter_Local = ElemCounter; ElemCounter = 0;
+  MPI::COMM_WORLD.Allreduce(&ElemCounter_Local, &ElemCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
 #endif
   
   if ((ElemCounter != 0) && (rank == MASTER_NODE))
@@ -343,8 +247,9 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
 	return MinLength;
 }
 
-void CVolumetricMovement::CheckDeformed_Grid(CGeometry *geometry) {
+double CVolumetricMovement::Check_Grid(CGeometry *geometry) {
 	unsigned long Point_0, Point_1, Point_2, Point_3, iElem, ElemCounter = 0;
+  double Area, Volume, MaxArea = -1E22, MaxVolume = -1E22, MinArea = 1E22, MinVolume = 1E22;
   bool RightVol;
   
   int rank = MASTER_NODE;
@@ -362,7 +267,11 @@ void CVolumetricMovement::CheckDeformed_Grid(CGeometry *geometry) {
       Point_0 = geometry->elem[iElem]->GetNode(0);
       Point_1 = geometry->elem[iElem]->GetNode(1);
       Point_2 = geometry->elem[iElem]->GetNode(2);
-      RightVol = CheckDeformed_Elem2D(geometry, iElem, Point_0, Point_1, Point_2);
+      RightVol = Check_Elem2D(geometry, iElem, Point_0, Point_1, Point_2, &Area);
+      
+      MaxArea = max(MaxArea, Area);
+      MinArea = min(MinArea, Area);
+      
     }
     
     /*--- Tetrahedra ---*/
@@ -371,7 +280,11 @@ void CVolumetricMovement::CheckDeformed_Grid(CGeometry *geometry) {
       Point_1 = geometry->elem[iElem]->GetNode(1);
       Point_2 = geometry->elem[iElem]->GetNode(2);
       Point_3 = geometry->elem[iElem]->GetNode(3);
-      RightVol = CheckDeformed_Elem3D(geometry, iElem, Point_0, Point_1, Point_2, Point_3);
+      RightVol = Check_Elem3D(geometry, iElem, Point_0, Point_1, Point_2, Point_3, &Volume);
+      
+      MaxVolume = max(MaxVolume, Volume);
+      MinVolume = min(MinVolume, Volume);
+      
     }
     
     if (!RightVol) ElemCounter++;
@@ -379,18 +292,25 @@ void CVolumetricMovement::CheckDeformed_Grid(CGeometry *geometry) {
 	}
 
 #ifndef NO_MPI
-  unsigned long ElemCounter_Local = ElemCounter;
-  MPI::COMM_WORLD.Allreduce(&ElemCounter_Local, &ElemCounter, 1, MPI::DOUBLE, MPI::SUM);
+  unsigned long ElemCounter_Local = ElemCounter; ElemCounter = 0;
+  double MaxVolume_Local = MaxVolume; MaxVolume = 0.0;
+  double MinVolume_Local = MinVolume; MinVolume = 0.0;
+
+  MPI::COMM_WORLD.Allreduce(&ElemCounter_Local, &ElemCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+  MPI::COMM_WORLD.Allreduce(&MaxVolume_Local, &MaxVolume, 1, MPI::DOUBLE, MPI::MAX);
+  MPI::COMM_WORLD.Allreduce(&MinVolume_Local, &MinVolume, 1, MPI::DOUBLE, MPI::MIN);
 #endif
   
   if ((ElemCounter != 0) && (rank == MASTER_NODE))
     cout <<"There are " << ElemCounter << " elements with negative volume.\n" << endl;
 
+  if (nDim == 2) return MinArea;
+  else return MinVolume;
 }
 
 bool CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, double **StiffMatrix_Elem,
                                                unsigned long val_Point_0, unsigned long val_Point_1,
-                                               unsigned long val_Point_2) {
+                                               unsigned long val_Point_2, double scale) {
   unsigned short iDim, iVar, jVar, kVar;
   double B_Matrix[6][12], BT_Matrix[12][6], D_Matrix[6][6], Aux_Matrix[12][6];
   double a[3], b[3], c[3], Area, E, Mu, Lambda;
@@ -411,7 +331,7 @@ bool CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, double **Sti
   
   Area = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
   
-  if (Area < EPS) {
+  if (Area < 0.0) {
     
     /*--- The initial grid has degenerated elements ---*/
 
@@ -430,9 +350,9 @@ bool CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, double **Sti
      proportional to the area/volume of the cell. Using Mu = E & Lambda = -E
      is a modification to help allow rigid rotation of elements (see
      "Robust Mesh Deformation using the Linear Elasticity Equations" by
-     R. P. Dwight. This might need more testing... ---*/
+     R. P. Dwight. ---*/
     
-    E = 1.0 / Area;
+    E = 1.0 / Area * fabs(scale);
     Mu = E;
     Lambda = -E;
     
@@ -488,7 +408,7 @@ bool CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, double **Sti
 
 bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **StiffMatrix_Elem,
                                                unsigned long val_Point_0, unsigned long val_Point_1,
-                                               unsigned long val_Point_2, unsigned long val_Point_3) {
+                                               unsigned long val_Point_2, unsigned long val_Point_3, double scale) {
   unsigned short iVar, jVar, kVar, iDim;
   double B_Matrix[6][12], BT_Matrix[12][6], D_Matrix[6][6], Aux_Matrix[12][6];
   double a[4], b[4], c[4], d[4], Volume, E, Mu, Lambda;
@@ -510,7 +430,7 @@ bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
   Volume = (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
-  if (Volume < EPS) {
+  if (Volume <= 0.0) {
     
     /*--- The initial grid has degenerated elements ---*/
      
@@ -529,9 +449,9 @@ bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
      proportional to the area/volume of the cell. Using Mu = E & Lambda = -E
      is a modification to help allow rigid rotation of elements (see
      "Robust Mesh Deformation using the Linear Elasticity Equations" by
-     R. P. Dwight. This might need more testing... ---*/
+     R. P. Dwight. ---*/
     
-    E = 1.0 / Volume;
+    E = 1.0 / Volume * fabs(scale);
     Mu = E;
     Lambda = -E;
     
@@ -622,8 +542,8 @@ bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
   
 }
 
-void CVolumetricMovement::AddFEA_StiffMatrix2D(CGeometry *geometry, double **StiffMatrix_Elem,
-                                               unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2) {
+void CVolumetricMovement::AddFEA_StiffMatrix2D(CGeometry *geometry, double **StiffMatrix_Elem, unsigned long val_Point_0,
+                                               unsigned long val_Point_1, unsigned long val_Point_2) {
   unsigned short iVar, jVar;
   unsigned short nVar = geometry->GetnDim();
   
@@ -683,8 +603,8 @@ void CVolumetricMovement::AddFEA_StiffMatrix2D(CGeometry *geometry, double **Sti
   
 }
 
-void CVolumetricMovement::AddFEA_StiffMatrix3D(CGeometry *geometry, double **StiffMatrix_Elem,
-                                               unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2, unsigned long val_Point_3) {
+void CVolumetricMovement::AddFEA_StiffMatrix3D(CGeometry *geometry, double **StiffMatrix_Elem, unsigned long val_Point_0, unsigned long val_Point_1,
+                                               unsigned long val_Point_2, unsigned long val_Point_3) {
   unsigned short iVar, jVar;
   unsigned short nVar = geometry->GetnDim();
   
@@ -788,10 +708,11 @@ void CVolumetricMovement::AddFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
   
 }
 
-bool CVolumetricMovement::CheckDeformed_Elem2D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2) {
+bool CVolumetricMovement::Check_Elem2D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0,
+                                       unsigned long val_Point_1, unsigned long val_Point_2, double *Area) {
   
   unsigned short iDim;
-  double a[3], b[3], Area;
+  double a[3], b[3];
   
   double *Coord_0 = geometry->node[val_Point_0]->GetCoord();
   double *Coord_1 = geometry->node[val_Point_1]->GetCoord();
@@ -802,9 +723,9 @@ bool CVolumetricMovement::CheckDeformed_Elem2D(CGeometry *geometry, unsigned lon
     b[iDim] = Coord_1[iDim]-Coord_2[iDim];
   }
   
-  Area = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
+  (*Area) = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
   
-  if (Area < 0.0) {
+  if ((*Area) < 0.0) {
  
     return false;
 
@@ -813,10 +734,11 @@ bool CVolumetricMovement::CheckDeformed_Elem2D(CGeometry *geometry, unsigned lon
       
 }
 
-bool CVolumetricMovement::CheckDeformed_Elem3D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2, unsigned long val_Point_3) {
+bool CVolumetricMovement::Check_Elem3D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1,
+                                       unsigned long val_Point_2, unsigned long val_Point_3, double *Volume) {
   
   unsigned short iDim;
-  double r1[3], r2[3], r3[3], CrossProduct[3], Volume;
+  double r1[3], r2[3], r3[3], CrossProduct[3];
   
   double *Coord_0 = geometry->node[val_Point_0]->GetCoord();
   double *Coord_1 = geometry->node[val_Point_1]->GetCoord();
@@ -833,9 +755,9 @@ bool CVolumetricMovement::CheckDeformed_Elem3D(CGeometry *geometry, unsigned lon
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
   
-  Volume = (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  (*Volume) = (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
-  if (Volume < 0.0) {
+  if ((*Volume) < 0.0) {
     
     return false;
 
@@ -986,7 +908,7 @@ void CVolumetricMovement::UpdateGridCoord(CGeometry *geometry, CConfig *config) 
 
 void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo) {
 	unsigned long IterLinSol, iGridDef_Iter;
-  double MinLength, NumError;
+  double MinLength, NumError, MinVol;
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
@@ -1013,6 +935,10 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
   
   for (iGridDef_Iter = 0; iGridDef_Iter < config->GetGridDef_Iter(); iGridDef_Iter++) {
     
+    /*--- Initialize vector and sparse matrix ---*/
+    
+    LinSysSol.SetValZero();
+    LinSysRes.SetValZero();
     StiffMatrix.SetValZero();
     
     /*--- Compute the stiffness matrix entries for all nodes/elements in the
@@ -1043,30 +969,30 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     StiffMatrix.SendReceive_Solution(LinSysSol, geometry, config);
     StiffMatrix.SendReceive_Solution(LinSysRes, geometry, config);
     
-    /*--- Definition of the preconditioner and the matrix vector multiplication ---*/
+    /*--- Definition of the preconditioner matrix vector multiplication, and linear solver ---*/
     
     CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
     CPreconditioner* precond      = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
-        
-    /*--- Linear solver class ---*/
-    CSysSolve system;
+    CSysSolve *system             = new CSysSolve();
     
     /*--- Solve the linear system ---*/
     
-    if (rank == MASTER_NODE) cout << endl;
-    if (config->GetKind_GridDef_Method() == FEA) IterLinSol = system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 300, true);
-    if (config->GetKind_GridDef_Method() == SPRING) IterLinSol = system.ConjugateGradient(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 300, true);
-    if (rank == MASTER_NODE) cout << endl;
+    if (config->GetKind_GridDef_Method() == FEA) IterLinSol = system->FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 100, false);
+    if (config->GetKind_GridDef_Method() == SPRING) IterLinSol = system->ConjugateGradient(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 100, false);
 
     /*--- Deallocate memory needed by the Krylov linear solver ---*/
-    
+
+    delete system;
     delete mat_vec;
     delete precond;
-    
+
     /*--- Update the grid coordinates and cell volumes using the solution
      of the linear system (usol contains the x, y, z displacements). ---*/
     
     UpdateGridCoord(geometry, config);
+    
+    /*--- Update data structure ---*/
+    
     if (UpdateGeo) {
       geometry->SetCG();
       geometry->SetControlVolume(config, UPDATE);
@@ -1075,7 +1001,13 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
     /*--- Check for failed deformation (negative volumes). ---*/
     
-    CheckDeformed_Grid(geometry);
+    MinVol = Check_Grid(geometry);
+    
+    if (rank == MASTER_NODE) {
+      cout << "Non-linear iter.: " << iGridDef_Iter << "/" << config->GetGridDef_Iter()
+      << ". Linear iter.: " << IterLinSol << ". Min vol.: " << MinVol
+      << ". Error: " << NumError << "." <<endl;
+    }
     
   }
  

@@ -767,9 +767,34 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
                 ielem++; nelem_tetra++;
                 elem[ielem] = new CTetrahedron(vnodes_hexa[two], vnodes_hexa[eight], vnodes_hexa[seven], vnodes_hexa[three]);
                 ielem++; nelem_tetra++;
-
+                
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[six], vnodes_hexa[eight], vnodes_hexa[five]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[two], vnodes_hexa[seven], vnodes_hexa[six]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[eight], vnodes_hexa[six]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[eight], vnodes_hexa[three], vnodes_hexa[four]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[eight], vnodes_hexa[seven], vnodes_hexa[three]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[two], vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[three]);
+//                ielem++; nelem_tetra++;
+                
               }
               if ((code1 + code2 + code3) == 2) {
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[five], vnodes_hexa[six], vnodes_hexa[seven]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[four], vnodes_hexa[eight], vnodes_hexa[seven]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[eight], vnodes_hexa[five], vnodes_hexa[seven]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[two], vnodes_hexa[three], vnodes_hexa[six]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[four], vnodes_hexa[seven], vnodes_hexa[three]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[six], vnodes_hexa[three]);
+//                ielem++; nelem_tetra++;
                 
                 elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[three], vnodes_hexa[four], vnodes_hexa[seven]);
                 ielem++; nelem_tetra++;
@@ -798,6 +823,31 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
                 elem[ielem] = new CTetrahedron(vnodes_hexa[two], vnodes_hexa[seven], vnodes_hexa[three], vnodes_hexa[one]);
                 ielem++; nelem_tetra++;
                 
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[two], vnodes_hexa[seven], vnodes_hexa[six]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[eight], vnodes_hexa[five]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[six], vnodes_hexa[seven], vnodes_hexa[five]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[two], vnodes_hexa[three]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[eight], vnodes_hexa[seven], vnodes_hexa[four]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[three], vnodes_hexa[four]);
+//                ielem++; nelem_tetra++;
+
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[two], vnodes_hexa[seven], vnodes_hexa[six]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[two], vnodes_hexa[three], vnodes_hexa[seven]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[three], vnodes_hexa[four], vnodes_hexa[seven]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[six], vnodes_hexa[seven], vnodes_hexa[five]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[four], vnodes_hexa[eight]);
+//                ielem++; nelem_tetra++;
+//                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[eight], vnodes_hexa[five]);
+//                ielem++; nelem_tetra++;
               }
             
             }
