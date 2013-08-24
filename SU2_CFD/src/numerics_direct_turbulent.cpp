@@ -28,7 +28,6 @@ CUpwSca_TurbSA::CUpwSca_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
                                CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
 	implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-	rotating_frame = config->GetRotating_Frame();
 	grid_movement  = config->GetGrid_Movement();
 	incompressible = config->GetIncompressible();
   
@@ -81,13 +80,7 @@ void CUpwSca_TurbSA::ComputeResidual(double *val_residual, double **val_Jacobian
   
 	q_ij = 0;
 	//SU2_CPP2C COMMENT START
-	if (rotating_frame) {
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Velocity_i[iDim] = U_i[iDim+1]/Density_i - RotVel_i[iDim];
-			Velocity_j[iDim] = U_j[iDim+1]/Density_j - RotVel_j[iDim];
-			q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
-		}
-	} else if (grid_movement) {
+	if (grid_movement) {
 		for (iDim = 0; iDim < nDim; iDim++) {
 			Velocity_i[iDim] = U_i[iDim+1]/Density_i - GridVel_i[iDim];
 			Velocity_j[iDim] = U_j[iDim+1]/Density_j - GridVel_j[iDim];
@@ -123,7 +116,6 @@ CUpwSca_TurbSST::CUpwSca_TurbSST(unsigned short val_nDim, unsigned short val_nVa
                                  CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
 	implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-	rotating_frame = config->GetRotating_Frame();
 	grid_movement  = config->GetGrid_Movement();
 	incompressible = config->GetIncompressible();
   
@@ -151,13 +143,7 @@ void CUpwSca_TurbSST::ComputeResidual(double *val_residual, double **val_Jacobia
 	}
   
 	q_ij = 0;
-	if (rotating_frame) {
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Velocity_i[iDim] = U_i[iDim+1]/Density_i - RotVel_i[iDim];
-			Velocity_j[iDim] = U_j[iDim+1]/Density_j - RotVel_j[iDim];
-			q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
-		}
-	} else if (grid_movement) {
+	if (grid_movement) {
 		for (iDim = 0; iDim < nDim; iDim++) {
 			Velocity_i[iDim] = U_i[iDim+1]/Density_i - GridVel_i[iDim];
 			Velocity_j[iDim] = U_j[iDim+1]/Density_j - GridVel_j[iDim];

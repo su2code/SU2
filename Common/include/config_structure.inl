@@ -191,8 +191,6 @@ inline double* CConfig::GetVelocity_FreeStreamND(void) { return Velocity_FreeStr
 
 inline double* CConfig::GetVelocity_FreeStream(void) { return Velocity_FreeStream; }
 
-inline double* CConfig::GetOmega_FreeStreamND(void) { return Omega_FreeStreamND; }
-
 inline double CConfig::GetEnergy_FreeStreamND(void) { return Energy_FreeStreamND; }
 
 inline double CConfig::GetViscosity_FreeStreamND(void) { return Viscosity_FreeStreamND; }
@@ -807,12 +805,6 @@ inline double CConfig::GetCteViscDrag(void) { return CteViscDrag; }
 inline double CConfig::GetLevelSet_CFLRedCoeff(void) { return LevelSet_CFLRedCoeff; }
 
 inline double CConfig::GetTurb_CFLRedCoeff(void) { return Turb_CFLRedCoeff; }
-
-inline double *CConfig::GetRotAxisOrigin(void) { return RotAxisOrigin; }
-
-inline double *CConfig::GetOmega(void) { return Omega; }
-
-inline double CConfig::GetOmegaMag(void) { return Omega_Mag; }
 
 inline bool CConfig::GetGrid_Movement(void) { return Grid_Movement; }
 

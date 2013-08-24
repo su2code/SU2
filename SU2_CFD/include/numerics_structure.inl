@@ -340,13 +340,6 @@ inline void CNumerics::SetGridVel(double *val_gridvel_i, double *val_gridvel_j) 
 	GridVel_j = val_gridvel_j;
 }
 
-inline void CNumerics::SetRotVel(double *val_rotvel_i, double *val_rotvel_j) {
-	RotVel_i = val_rotvel_i;
-	RotVel_j = val_rotvel_j;
-}
-
-inline void CNumerics::SetRotFlux(double val_rot_flux) { Rot_Flux = val_rot_flux; }
-
 inline void CNumerics::SetPressure(double val_pressure_i, double val_pressure_j) {
 	Pressure_i = val_pressure_i;
 	Pressure_j = val_pressure_j;
