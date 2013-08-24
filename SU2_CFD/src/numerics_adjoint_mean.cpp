@@ -2632,9 +2632,10 @@ CSourceRotatingFrame_AdjFlow::~CSourceRotatingFrame_AdjFlow(void) { }
 
 void CSourceRotatingFrame_AdjFlow::ComputeResidual(double *val_residual, double **val_Jacobian_i, CConfig *config) {
   
-	unsigned short iDim;
+	unsigned short iDim, iVar, jVar;
   double Omega[3] = {0,0,0}, Phi[3] = {0,0,0};
-  
+  bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
+
 	/*--- Retrieve the angular velocity vector from config. ---*/
 
   Omega[0]  = config->GetRotation_Rate_X(ZONE_0)/config->GetOmega_Ref();
@@ -2661,6 +2662,25 @@ void CSourceRotatingFrame_AdjFlow::ComputeResidual(double *val_residual, double 
 		val_residual[3] = (Omega[1]*Phi[0] - Omega[0]*Phi[1])*Volume;
 		val_residual[4] = 0.0;
 	}
+  
+  /*--- Calculate the source term Jacobian ---*/
+  
+  if (implicit) {
+    for (iVar = 0; iVar < nVar; iVar++)
+      for (jVar = 0; jVar < nVar; jVar++)
+        val_Jacobian_i[iVar][jVar] = 0.0;
+    if (nDim == 2) {
+      val_Jacobian_i[1][2] =  Omega[2]*Volume;
+      val_Jacobian_i[2][1] = -Omega[2]*Volume;
+    } else {
+      val_Jacobian_i[1][2] =  Omega[2]*Volume;
+      val_Jacobian_i[1][3] = -Omega[1]*Volume;
+      val_Jacobian_i[2][1] = -Omega[2]*Volume;
+      val_Jacobian_i[2][3] =  Omega[0]*Volume;
+      val_Jacobian_i[3][1] =  Omega[1]*Volume;
+      val_Jacobian_i[3][2] = -Omega[0]*Volume;
+    }
+  }
   
 }
 

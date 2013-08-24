@@ -5099,7 +5099,12 @@ void CPhysicalGeometry::SetRotationalVelocity(CConfig *config) {
 	unsigned long iPoint;
 	double RotVel[3], Distance[3], *Coord, Center[3], Omega[3], L_Ref;
 
-  /*--- Center of rotation & angular velocity vector from config. ---*/
+  int rank = MASTER_NODE;
+#ifndef NO_MPI
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+  
+  /*--- Center of rotation & angular velocity vector from config ---*/
   
   Center[0] = config->GetMotion_Origin_X(ZONE_0);
   Center[1] = config->GetMotion_Origin_Y(ZONE_0);
@@ -5109,7 +5114,16 @@ void CPhysicalGeometry::SetRotationalVelocity(CConfig *config) {
   Omega[2]  = config->GetRotation_Rate_Z(ZONE_0)/config->GetOmega_Ref();
   L_Ref     = config->GetLength_Ref();
   
-	/*--- Loop over all nodes and set the rotational velocity. ---*/
+  /*--- Print some information to the console ---*/
+  
+  if (rank == MASTER_NODE) {
+    cout << " Rotational origin (x,y,z): ( " << Center[0] << ", " << Center[1];
+    cout << ", " << Center[2] << " )" << endl;
+    cout << " Angular velocity about x, y, z axes: ( " << Omega[0] << ", ";
+    cout << Omega[1] << ", " << Omega[2] << " )" << endl;
+  }
+  
+	/*--- Loop over all nodes and set the rotational velocity ---*/
   
 	for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
@@ -5140,7 +5154,9 @@ void CPhysicalGeometry::SetRotationalVelocity(CConfig *config) {
 void CPhysicalGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
 
 	/*--- Local variables ---*/
-	double *Coord_nP1 = NULL, *Coord_n = NULL, *Coord_nM1 = NULL, TimeStep, GridVel = 0.0;
+  
+	double *Coord_nP1 = NULL, *Coord_n = NULL, *Coord_nM1 = NULL;
+  double TimeStep, GridVel = 0.0;
 	unsigned long iPoint;
 	unsigned short iDim;
 
@@ -5165,7 +5181,7 @@ void CPhysicalGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
 				GridVel = ( Coord_nP1[iDim] - Coord_n[iDim] ) / TimeStep;
 			if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
 				GridVel = ( 3.0*Coord_nP1[iDim] - 4.0*Coord_n[iDim]
-				                                              + 1.0*Coord_nM1[iDim] ) / (2.0*TimeStep);
+                  + 1.0*Coord_nM1[iDim] ) / (2.0*TimeStep);
 
 			/*--- Store grid velocity for this point ---*/
 
@@ -7121,7 +7137,8 @@ void CMultiGridGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
 
 	/*--- Local variables ---*/
 
-	double *Coord_nP1 = NULL, *Coord_n = NULL, *Coord_nM1 = NULL, TimeStep, GridVel = 0.0;
+	double *Coord_nP1 = NULL, *Coord_n = NULL, *Coord_nM1 = NULL;
+  double TimeStep, GridVel = 0.0;
 	unsigned long Point_Coarse;
 	unsigned short iDim;
 
@@ -7146,16 +7163,17 @@ void CMultiGridGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
 				GridVel = ( Coord_nP1[iDim] - Coord_n[iDim] ) / TimeStep;
 			if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
 				GridVel = ( 3.0*Coord_nP1[iDim] - 4.0*Coord_n[iDim]
-				                                              +  1.0*Coord_nM1[iDim] ) / (2.0*TimeStep);
+                   +  1.0*Coord_nM1[iDim] ) / (2.0*TimeStep);
 
 			/*--- Store grid velocity for this point ---*/
 
 			node[Point_Coarse]->SetGridVel(iDim,GridVel);
+      
 		}
 	}
 }
 
-void CMultiGridGeometry::SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config, unsigned long iter) {
+void CMultiGridGeometry::SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config) {
 
 	/*--- Local variables ---*/
 	unsigned short iDim, iChild;
