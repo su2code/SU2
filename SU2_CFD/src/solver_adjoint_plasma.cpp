@@ -754,7 +754,7 @@ void CAdjPlasmaSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
 		numerics->SetConservative(U_i, U_j);
     
     
-    if ((high_order_diss) && (config->GetKind_Adjoint() != DISCRETE) ) {
+    if (high_order_diss) {
       
       cout << "CAdjPlasmaSolver::Upwind_Residual - FLUX RECONSTRUCTION NOT VERIFIED!!!" << endl;
 			for (iDim = 0; iDim < nDim; iDim++) {

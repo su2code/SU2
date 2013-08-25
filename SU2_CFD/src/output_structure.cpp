@@ -1613,10 +1613,8 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       break;
     case ADJ_RANS :
       FirstIndex = ADJFLOW_SOL;
-      if ((config->GetFrozen_Visc()) && (config->GetKind_Adjoint() != HYBRID))
-        SecondIndex = NONE;
-      else
-        SecondIndex = ADJTURB_SOL;
+      if (config->GetFrozen_Visc()) SecondIndex = NONE;
+      else SecondIndex = ADJTURB_SOL;
       ThirdIndex = NONE;
       break;
     case LIN_EULER : case LIN_NAVIER_STOKES : ThirdIndex = NONE;
@@ -3488,12 +3486,11 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
 		break;
 
 	case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS:
-		ConvHist_file[0] << begin << adj_coeff << adj_flow_resid;
-        if (turbulent)
-            if (((config->GetKind_Adjoint() != HYBRID) && (!config->GetFrozen_Visc())) || (config->GetKind_Adjoint() == HYBRID) )
-                ConvHist_file[0] << adj_turb_resid;
-		ConvHist_file[0] << end;
-		break;
+      ConvHist_file[0] << begin << adj_coeff << adj_flow_resid;
+      if (turbulent)
+        if (!config->GetFrozen_Visc()) ConvHist_file[0] << adj_turb_resid;
+      ConvHist_file[0] << end;
+      break;
 
 	case ADJ_FREE_SURFACE_EULER: case ADJ_FREE_SURFACE_NAVIER_STOKES: case ADJ_FREE_SURFACE_RANS:
 		ConvHist_file[0] << begin << adj_coeff << adj_flow_resid << adj_levelset_resid << end;
@@ -3826,7 +3823,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
         
         /*--- Adjoint turbulent residuals ---*/
         if (turbulent)
-            if (((config[val_iZone]->GetKind_Adjoint() != HYBRID) && (!config[val_iZone]->GetFrozen_Visc())) || (config[val_iZone]->GetKind_Adjoint() == HYBRID)) {
+            if (!config[val_iZone]->GetFrozen_Visc()) {
                 for (iVar = 0; iVar < nVar_AdjTurb; iVar++)
                     residual_adjturbulent[iVar] = solver_container[val_iZone][FinestMesh][ADJTURB_SOL]->GetRes_RMS(iVar);
             }
@@ -4131,7 +4128,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
               
               /*--- Adjoint turbulent residuals ---*/
               if (turbulent)
-                  if (((config[val_iZone]->GetKind_Adjoint() != HYBRID) && (!config[val_iZone]->GetFrozen_Visc())) || (config[val_iZone]->GetKind_Adjoint() == HYBRID))
+                  if (!config[val_iZone]->GetFrozen_Visc())
                       sprintf (adj_turb_resid, ", %12.10f", log10 (residual_adjturbulent[0]));
               
               /*--- Adjoint free surface residuals ---*/
@@ -4358,7 +4355,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
             if (incompressible) cout << "     Res[Psi_Press]";
             else cout << "     Res[Psi_Rho]";
                 
-            if (((config[val_iZone]->GetKind_Adjoint() != HYBRID) && (!config[val_iZone]->GetFrozen_Visc())) || (config[val_iZone]->GetKind_Adjoint() == HYBRID)) {
+            if (!config[val_iZone]->GetFrozen_Visc()) {
               cout << "      Res[Psi_nu]";
             }
             else {
@@ -4580,7 +4577,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
           
           if (!DualTime_Iteration) {
               ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid;
-              if (((config[val_iZone]->GetKind_Adjoint() != HYBRID) && (!config[val_iZone]->GetFrozen_Visc())) || (config[val_iZone]->GetKind_Adjoint() == HYBRID))
+              if (!config[val_iZone]->GetFrozen_Visc())
                   ConvHist_file[0] << adj_turb_resid;
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
@@ -4589,7 +4586,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
           cout.precision(6);
           cout.setf(ios::fixed,ios::floatfield);
           cout.width(17); cout << log10(residual_adjflow[0]);
-          if (((config[val_iZone]->GetKind_Adjoint() != HYBRID) && (!config[val_iZone]->GetFrozen_Visc())) || (config[val_iZone]->GetKind_Adjoint() == HYBRID)) {
+          if (!config[val_iZone]->GetFrozen_Visc()) {
             cout.width(17); cout << log10(residual_adjturbulent[0]);
           }
           else {

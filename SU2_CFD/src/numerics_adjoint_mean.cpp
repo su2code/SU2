@@ -2421,7 +2421,7 @@ void CSourceViscous_AdjFlow::ComputeResidual (double *val_residual, CConfig *con
                               Sigma_5_vec[jDim]*PrimVar_Grad_i[iDim+1][jDim]/Density) * Volume;
 	val_residual[nVar-1] = alpha_gradpsi5 * Volume;
   
-	/*--- Turn on laminar viscosity sensitivity for NS ---*/
+  /*--- Laminar viscosity sensitivity for NS ---*/
 	if ((!config->GetFrozen_Visc()) && (config->GetKind_Solver() != ADJ_RANS)) {
     
 		double Temperature_Ref = config->GetTemperature_Ref();
@@ -2441,34 +2441,8 @@ void CSourceViscous_AdjFlow::ComputeResidual (double *val_residual, CConfig *con
     
 	}
   
-  /*--- Turn on laminar/eddy viscosity sensitivity for Hybrid RANS ---*/
-	if ((config->GetKind_Adjoint() == HYBRID) && (config->GetKind_Solver() == ADJ_RANS)) {
-    
-		double Temperature_Ref = config->GetTemperature_Ref();
-		double Temperature_Dim = Temp_i*Temperature_Ref;
-		double dVisc_T = ((Laminar_Viscosity_i)/(2.0*Temperature_Dim*(Temperature_Dim + 110.3)))*(Temperature_Dim + 3.0*110.3)*Temperature_Ref;
-    
-		double Cp = (Gamma/Gamma_Minus_One)*Gas_Constant;
-		double kappa_psi = (sigma_gradpsi + vel_sigma_gradpsi5)/mu_tot_1 + Cp/PRANDTL_TURB*gradT_gradpsi5;
-		double theta = (kappa_psi + Cp/PRANDTL*gradT_gradpsi5)*dVisc_T*Gamma_Minus_One/(Gas_Constant*Density);
-    
-    // If frozen hybrid, this doesn't get added
-    if (!config->GetFrozen_Visc()) {
-      val_residual[0] += (theta*(sq_vel-Energy))*Volume;
-      for (iDim = 0; iDim < nDim; iDim++)
-        val_residual[iDim+1] -= theta*Velocity[iDim]*Volume;
-      val_residual[nVar-1] += theta*Volume;
-    }
-    
-		// store this value for coupling
-    kappapsi_Volume = kappa_psi*Volume;
-    
-    SetKappaPsiVolume(kappapsi_Volume);
-    
-	}
-  
 	/*--- Coupling terms coming from the continuous adjoint turbulent equations ---*/
-	if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc()) && (config->GetKind_Adjoint() == CONTINUOUS)) {
+	if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc())) {
     
 		/*--- Closure constants ---*/
 		double cv1_3 = 7.1*7.1*7.1;
@@ -2488,20 +2462,9 @@ void CSourceViscous_AdjFlow::ComputeResidual (double *val_residual, CConfig *con
 		fv1 = Ji_3/(Ji_3+cv1_3);
     
 		/*--- Contributions due to variation of viscosities ---*/
-		double dVisc_T;
-		dVisc_T = 0.0;
-    
-		if (!config->GetFrozen_Visc()) {
-      
-			double Temperature_Ref = config->GetTemperature_Ref();
-			double Temperature_Dim = Temp_i*Temperature_Ref;
-			dVisc_T = ((Laminar_Viscosity_i)/(2.0*Temperature_Dim*(Temperature_Dim + 110.3)))*(Temperature_Dim + 3.0*110.3)*Temperature_Ref;
-      
-		}
-    
-		//		double mu1 = 1.404/config->GetReynolds();
-		//		double mu2 = 0.404;
-		//		double dVisc_T = Laminar_Viscosity_i*(Temp_i+3.0*mu2)/(2.0*Temp_i*(Temp_i+mu2));
+    double Temperature_Ref = config->GetTemperature_Ref();
+    double Temperature_Dim = Temp_i*Temperature_Ref;
+    double dVisc_T = ((Laminar_Viscosity_i)/(2.0*Temperature_Dim*(Temperature_Dim + 110.3)))*(Temperature_Dim + 3.0*110.3)*Temperature_Ref;
     
 		double Cp = (Gamma/Gamma_Minus_One)*Gas_Constant;
 		double kappa_psi = (sigma_gradpsi + vel_sigma_gradpsi5)/mu_tot_1 + Cp/PRANDTL_TURB*gradT_gradpsi5;

@@ -497,44 +497,44 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 	unsigned short iVar;
 	unsigned long iPoint, total_index;
 	double Delta, Vol, density_old, density;
-    
-    bool adjoint = config->GetAdjoint();
-    
+  
+  bool adjoint = config->GetAdjoint();
+  
 	/*--- Set maximum residual to zero ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
 		SetRes_RMS(iVar, 0.0);
-        SetRes_Max(iVar, 0.0, 0);
-    }
-    
+    SetRes_Max(iVar, 0.0, 0);
+  }
+  
 	/*--- Build implicit system ---*/
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-        
-        /*--- Read the volume ---*/
+    
+    /*--- Read the volume ---*/
 		Vol = geometry->node[iPoint]->GetVolume();
-        
+    
 		/*--- Modify matrix diagonal to assure diagonal dominance ---*/
 		Delta = Vol / (config->GetTurb_CFLRedCoeff()*solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time());
 		Jacobian.AddVal2Diag(iPoint,Delta);
-        
-        /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
+    
+    /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 		for (iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar+iVar;
 			LinSysRes[total_index] = - LinSysRes[total_index];
 			LinSysSol[total_index] = 0.0;
 			AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
-            AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex());
+      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex());
 		}
 	}
-    
-    /*--- Initialize residual and solution at the ghost points ---*/
-    for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-        for (iVar = 0; iVar < nVar; iVar++) {
-            total_index = iPoint*nVar + iVar;
-            LinSysRes[total_index] = 0.0;
-            LinSysSol[total_index] = 0.0;
-        }
+  
+  /*--- Initialize residual and solution at the ghost points ---*/
+  for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      total_index = iPoint*nVar + iVar;
+      LinSysRes[total_index] = 0.0;
+      LinSysSol[total_index] = 0.0;
     }
-    
+  }
+  
 	/*--- Solve the linear system (Krylov subspace methods) ---*/
   CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
   
@@ -558,40 +558,40 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
                    config->GetLinear_Solver_Iter(), false);
   else if (config->GetKind_Linear_Solver() == FGMRES)
     system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(),
-                 config->GetLinear_Solver_Iter(), false);
+                  config->GetLinear_Solver_Iter(), false);
   
   delete mat_vec;
   delete precond;
   
 	/*--- Update solution (system written in terms of increments) ---*/
 	switch (config->GetKind_Turb_Model()){
-        case SA:
-            if (!adjoint) {
-                for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-                    for (iVar = 0; iVar < nVar; iVar++)
-                        node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*LinSysSol[iPoint*nVar+iVar]);
-            }
-            break;
-        case SST:
-            if (!adjoint) {
-                for (iPoint = 0; iPoint < nPointDomain; iPoint++){
-                    density_old = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_Old(0);
-                    density     = solver_container[FLOW_SOL]->node[iPoint]->GetSolution(0);
-                    
-                    for (iVar = 0; iVar < nVar; iVar++)
-                        node[iPoint]->AddConservativeSolution(iVar, config->GetLinear_Solver_Relax()*LinSysSol[iPoint*nVar+iVar],
-                                                              density, density_old, lowerlimit[iVar], upperlimit[iVar]);
-                }
-            }
-            break;
+    case SA:
+      if (!adjoint) {
+        for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+          for (iVar = 0; iVar < nVar; iVar++)
+            node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*LinSysSol[iPoint*nVar+iVar]);
+      }
+      break;
+    case SST:
+      if (!adjoint) {
+        for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+          density_old = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_Old(0);
+          density     = solver_container[FLOW_SOL]->node[iPoint]->GetSolution(0);
+          
+          for (iVar = 0; iVar < nVar; iVar++)
+            node[iPoint]->AddConservativeSolution(iVar, config->GetLinear_Solver_Relax()*LinSysSol[iPoint*nVar+iVar],
+                                                  density, density_old, lowerlimit[iVar], upperlimit[iVar]);
+        }
+      }
+      break;
 	}
-
+  
   /*--- MPI solution ---*/
   Set_MPI_Solution(geometry, config);
   
   /*--- Compute the root mean square residual ---*/
   SetResidual_RMS(geometry, config);
-
+  
 }
 
 void CTurbSolver::CalcGradient_GG(double *val_U_i, double **val_U_js, unsigned short nNeigh, unsigned short numVar,

@@ -1462,18 +1462,6 @@ public:
 	virtual void SetIntermittency(double intermittency_in);
 
 	/*!
-	 * \brief Get the kappapsi_Volume value for Hybrid coupling.
-	 * \return kappapsi_Volume - value of mean flow coupling term
-	 */
-	virtual double GetKappaPsiVolume();
-    
-    /*!
-	 * \brief Get the kappapsi_Volume value for Hybrid coupling.
-	 * \param[in] kappapsi_Volume - value of mean flow coupling term
-	 */
-	virtual void SetKappaPsiVolume(double val_kappapsi_Volume);
-
-	/*!
 	 * \overload
 	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i
 	 * \param[in] config - Definition of the particular problem.
@@ -3798,6 +3786,58 @@ public:
 };
 
 /*!
+ * \class CAvgGrad_AdjTurb
+ * \brief Class for adjoint turbulent using average of gradients with a correction.
+ * \ingroup ViscDiscr
+ * \author F. Palacios.
+ * \version 2.0.6
+ */
+class CAvgGrad_AdjTurb : public CNumerics {
+private:
+	double **Mean_GradTurbPsi;
+	double *Proj_Mean_GradTurbPsi_Kappa, *Proj_Mean_GradTurbPsi_Edge, *Proj_Mean_GradTurbPsi_Corrected;
+	double *Edge_Vector;
+  
+public:
+  
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CAvgGrad_AdjTurb(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CAvgGrad_AdjTurb(void);
+  
+	/*!
+	 * \brief Compute the adjoint turbulent residual using average of gradients and a derivative correction.
+	 * \param[out] val_residual - Pointer to the total residual.
+	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  
+	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
+  
+	/*!
+	 * \overload
+	 * \param[out] val_residual_i - Pointer to the total residual at point i.
+	 * \param[out] val_residual_j - Pointer to the total viscosity residual at point j.
+	 * \param[out] val_Jacobian_ii - Jacobian of the numerical method at node i (implicit computation) from node i.
+	 * \param[out] val_Jacobian_ij - Jacobian of the numerical method at node i (implicit computation) from node j.
+	 * \param[out] val_Jacobian_ji - Jacobian of the numerical method at node j (implicit computation) from node i.
+	 * \param[out] val_Jacobian_jj - Jacobian of the numerical method at node j (implicit computation) from node j.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ComputeResidual(double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii, double **val_Jacobian_ij,
+                       double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config);
+};
+
+/*!
  * \class CAvgGradCorrected_Plasma
  * \brief Class for computing viscous term using average of gradients.
  * \ingroup ViscDiscr
@@ -4770,8 +4810,6 @@ class CSourceViscous_AdjFlow : public CNumerics {
 private:
 	double *Velocity, *GradDensity, *GradInvDensity, *dPoDensity2, *alpha, *beta, *Sigma_5_vec;
 	double **GradVel_o_Rho, **sigma, **Sigma_phi, **Sigma_5_Tensor, **Sigma;
-	double kappapsi_Volume; /*!< \brief value of the mean flow Hybrid coupling term. */
-
 
 public:
 
@@ -4800,18 +4838,6 @@ public:
 	 * \param[in] val_phi - Value of the adjoint velocity.
 	 */
 	void SetPhi_Old(double *val_phi);
-
-	/*!
-	 * \brief Get the kappapsi_Volume value for Hybrid coupling.
-	 * \return kappapsi_Volume - value of mean flow coupling term
-	 */
-	double GetKappaPsiVolume();
-    
-    /*!
-	 * \brief Get the kappapsi_Volume value for Hybrid coupling.
-	 * \param[in] kappapsi_Volume - value of mean flow coupling term
-	 */
-	void SetKappaPsiVolume(double val_kappapsi_Volume);
 
 };
 

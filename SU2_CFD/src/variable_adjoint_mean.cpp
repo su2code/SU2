@@ -132,13 +132,6 @@ CAdjEulerVariable::CAdjEulerVariable(double val_psirho, double *val_phi, double 
 	for (iVar = 0; iVar < nVar; iVar++)
 		IntBoundary_Jump[iVar] = 0.0;
   
-	/*--- Allocate and initialize vector containing objective function sensitivity for discrete adjoint ---*/
-	if (config->GetKind_Adjoint() == DISCRETE) {
-		ObjFuncSource = new double [nVar];
-		for (iVar = 0; iVar < nVar; iVar++)
-			ObjFuncSource[iVar] = 0.0;
-	}
-  
   /*--- Allocate space for the time spectral source terms ---*/
 	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
 		TS_Source = new double[nVar];
@@ -222,13 +215,6 @@ CAdjEulerVariable::CAdjEulerVariable(double *val_solution, unsigned short val_nd
 	IntBoundary_Jump = new double [nVar];
 	for (iVar = 0; iVar < nVar; iVar++)
 		IntBoundary_Jump[iVar] = 0.0;
-	
-	/*--- Allocate and initialize vector containing objective function sensitivity for discrete adjoint ---*/
-	if (config->GetKind_Adjoint() == DISCRETE) {
-		ObjFuncSource = new double [nVar];
-		for (iVar = 0; iVar < nVar; iVar++)
-			ObjFuncSource[iVar] = 0.0;
-	}
   
 	/*--- Allocate space for the time spectral source terms ---*/
 	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
@@ -314,9 +300,7 @@ CAdjNSVariable::CAdjNSVariable(double *val_solution, unsigned short val_ndim,
 
 CAdjNSVariable::CAdjNSVariable(double val_psirho, double *val_phi, double val_psie,
                                unsigned short val_ndim, unsigned short val_nvar, CConfig *config) : CAdjEulerVariable(val_psirho, val_phi, val_psie, val_ndim, val_nvar, config) {
-  
-  kappapsi_Volume = 0.0;
-  
+
 }
 
 CAdjNSVariable::~CAdjNSVariable(void) { }
