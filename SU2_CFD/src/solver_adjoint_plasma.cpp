@@ -1003,7 +1003,7 @@ void CAdjPlasmaSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solve
   double *d = NULL, *Normal = NULL, *Psi = NULL, *U = NULL, Enthalpy, conspsi,
 	Area, **PrimVar_Grad = NULL, *ConsPsi_Grad = NULL, ConsPsi, d_press, grad_v,
 	v_gradconspsi;
-  //double UnitaryNormal[3], *RotVel = NULL, *GridVel = NULL;
+  //double UnitaryNormal[3];
   //double Mach_Inf, Beta2;
 	//double RefDensity, *RefVelocity = NULL, RefPressure;
   

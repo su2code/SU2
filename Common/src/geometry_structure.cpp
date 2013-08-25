@@ -5147,29 +5147,55 @@ void CPhysicalGeometry::GetQualityStatistics(double *statistics) {
 void CPhysicalGeometry::SetRotationalVelocity(CConfig *config) {
 
 	unsigned long iPoint;
-	double RotVel[3], Distance[3], *Coord, *Axis, *Omega, L_Ref;
+	double RotVel[3], Distance[3], *Coord, Center[3], Omega[3], L_Ref;
 
-	/*--- Loop over all points and set rotational velocity.
-        Note that this only need be done once for steady rotation. ---*/
+  int rank = MASTER_NODE;
+#ifndef NO_MPI
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+  
+  /*--- Center of rotation & angular velocity vector from config ---*/
+  
+  Center[0] = config->GetMotion_Origin_X(ZONE_0);
+  Center[1] = config->GetMotion_Origin_Y(ZONE_0);
+  Center[2] = config->GetMotion_Origin_Z(ZONE_0);
+  Omega[0]  = config->GetRotation_Rate_X(ZONE_0)/config->GetOmega_Ref();
+  Omega[1]  = config->GetRotation_Rate_Y(ZONE_0)/config->GetOmega_Ref();
+  Omega[2]  = config->GetRotation_Rate_Z(ZONE_0)/config->GetOmega_Ref();
+  L_Ref     = config->GetLength_Ref();
+  
+  /*--- Print some information to the console ---*/
+  
+  if (rank == MASTER_NODE) {
+    cout << " Rotational origin (x,y,z): ( " << Center[0] << ", " << Center[1];
+    cout << ", " << Center[2] << " )" << endl;
+    cout << " Angular velocity about x, y, z axes: ( " << Omega[0] << ", ";
+    cout << Omega[1] << ", " << Omega[2] << " ) rad/s" << endl;
+  }
+  
+	/*--- Loop over all nodes and set the rotational velocity ---*/
+  
 	for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
-		/*--- Get values for this node ---*/
+		/*--- Get the coordinates of the current node ---*/
+    
 		Coord = node[iPoint]->GetCoord();
-		Axis  = config->GetRotAxisOrigin();
-		Omega = config->GetOmega_FreeStreamND();
-		L_Ref = config->GetLength_Ref(); // should always be 1
 
-		/*--- Calculate non-dim distance fron rotation center ---*/
-		Distance[0] = (Coord[0]-Axis[0])/L_Ref;
-		Distance[1] = (Coord[1]-Axis[1])/L_Ref;
-		Distance[2] = (Coord[2]-Axis[2])/L_Ref;
+		/*--- Calculate the non-dim. distance from the rotation center ---*/
+    
+		Distance[0] = (Coord[0]-Center[0])/L_Ref;
+		Distance[1] = (Coord[1]-Center[1])/L_Ref;
+		Distance[2] = (Coord[2]-Center[2])/L_Ref;
 
 		/*--- Calculate the angular velocity as omega X r ---*/
+    
 		RotVel[0] = Omega[1]*(Distance[2]) - Omega[2]*(Distance[1]);
 		RotVel[1] = Omega[2]*(Distance[0]) - Omega[0]*(Distance[2]);
 		RotVel[2] = Omega[0]*(Distance[1]) - Omega[1]*(Distance[0]);
 
-		node[iPoint]->SetRotVel(RotVel);
+    /*--- Store the grid velocity at this node ---*/
+    
+		node[iPoint]->SetGridVel(RotVel);
 
 	}
 
@@ -5178,7 +5204,9 @@ void CPhysicalGeometry::SetRotationalVelocity(CConfig *config) {
 void CPhysicalGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
 
 	/*--- Local variables ---*/
-	double *Coord_nP1 = NULL, *Coord_n = NULL, *Coord_nM1 = NULL, TimeStep, GridVel = 0.0;
+  
+	double *Coord_nP1 = NULL, *Coord_n = NULL, *Coord_nM1 = NULL;
+  double TimeStep, GridVel = 0.0;
 	unsigned long iPoint;
 	unsigned short iDim;
 
@@ -5203,7 +5231,7 @@ void CPhysicalGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
 				GridVel = ( Coord_nP1[iDim] - Coord_n[iDim] ) / TimeStep;
 			if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
 				GridVel = ( 3.0*Coord_nP1[iDim] - 4.0*Coord_n[iDim]
-				                                              + 1.0*Coord_nM1[iDim] ) / (2.0*TimeStep);
+                  + 1.0*Coord_nM1[iDim] ) / (2.0*TimeStep);
 
 			/*--- Store grid velocity for this point ---*/
 
@@ -6983,7 +7011,6 @@ void CMultiGridGeometry::SetControlVolume(CConfig *config, CGeometry *fine_grid,
 	bool change_face_orientation;
 	double *Normal, Coarse_Volume, Area, *NormalFace = NULL;
 	Normal = new double [nDim];
-	bool rotating_frame = config->GetRotating_Frame();
 
 	/*--- Compute the area of the coarse volume ---*/
 	for (iCoarsePoint = 0; iCoarsePoint < nPoint; iCoarsePoint ++) {
@@ -7023,15 +7050,9 @@ void CMultiGridGeometry::SetControlVolume(CConfig *config, CGeometry *fine_grid,
 					if (change_face_orientation) {
 						for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 						edge[CoarseEdge]->AddNormal(Normal);
-						/*--- Add contribution for the rotating volume flux if necessary ---*/
-						if (rotating_frame)
-							edge[CoarseEdge]->AddRotFlux(-fine_grid->edge[FineEdge]->GetRotFlux());
 					} 
 					else {
 						edge[CoarseEdge]->AddNormal(Normal);
-						/*--- Add contribution for the rotating volume flux if necessary ---*/
-						if (rotating_frame)
-							edge[CoarseEdge]->AddRotFlux(fine_grid->edge[FineEdge]->GetRotFlux());
 					}
 				}
 			}
@@ -7063,7 +7084,6 @@ void CMultiGridGeometry::SetBoundControlVolume(CConfig *config, CGeometry *fine_
 	double *Normal, Area, *NormalFace = NULL;
 
 	Normal = new double [nDim];
-	bool rotating_frame = config->GetRotating_Frame();
 
 	if (action != ALLOCATE) {
 		for (iMarker = 0; iMarker < nMarker; iMarker++)
@@ -7080,9 +7100,6 @@ void CMultiGridGeometry::SetBoundControlVolume(CConfig *config, CGeometry *fine_
 					FineVertex = fine_grid->node[iFinePoint]->GetVertex(iMarker);
 					fine_grid->vertex[iMarker][FineVertex]->GetNormal(Normal);
 					vertex[iMarker][iVertex]->AddNormal(Normal);
-					/*--- Add contribution for the rotating volume flux if necessary ---*/
-					if (rotating_frame)
-						vertex[iMarker][iVertex]->AddRotFlux(fine_grid->vertex[iMarker][FineVertex]->GetRotFlux());
 				}
 			}
 		}
@@ -7124,40 +7141,54 @@ void CMultiGridGeometry::SetCoord(CGeometry *geometry) {
 }
 
 void CMultiGridGeometry::SetRotationalVelocity(CConfig *config) {
-
-	unsigned short Point_Coarse;
-	double RotVel[3], Distance[3], *Coord, *Axis, *Omega, Length_Ref;
-
-	/*--- Loop over all points and set rotational velocity.
-   Note that this only need be done once for steady rotation. ---*/
-	for (Point_Coarse = 0; Point_Coarse < GetnPoint(); Point_Coarse++) {
-
-		/*--- Get values for this node ---*/
-		Coord     = node[Point_Coarse]->GetCoord();
-		Axis      = config->GetRotAxisOrigin();
-		Omega     = config->GetOmega_FreeStreamND();
-		Length_Ref = config->GetLength_Ref();
-
-		/*--- Calculate non-dim distance fron rotation center ---*/
-		Distance[0] = (Coord[0]-Axis[0])/Length_Ref;
-		Distance[1] = (Coord[1]-Axis[1])/Length_Ref;
-		Distance[2] = (Coord[2]-Axis[2])/Length_Ref;
-
+  
+	unsigned long iPoint_Coarse;
+	double RotVel[3], Distance[3], *Coord, Center[3], Omega[3], L_Ref;
+  
+  /*--- Center of rotation & angular velocity vector from config. ---*/
+  
+  Center[0] = config->GetMotion_Origin_X(ZONE_0);
+  Center[1] = config->GetMotion_Origin_Y(ZONE_0);
+  Center[2] = config->GetMotion_Origin_Z(ZONE_0);
+  Omega[0]  = config->GetRotation_Rate_X(ZONE_0)/config->GetOmega_Ref();
+  Omega[1]  = config->GetRotation_Rate_Y(ZONE_0)/config->GetOmega_Ref();
+  Omega[2]  = config->GetRotation_Rate_Z(ZONE_0)/config->GetOmega_Ref();
+  L_Ref     = config->GetLength_Ref();
+  
+	/*--- Loop over all nodes and set the rotational velocity. ---*/
+  
+	for (iPoint_Coarse = 0; iPoint_Coarse < GetnPoint(); iPoint_Coarse++) {
+    
+		/*--- Get the coordinates of the current node ---*/
+    
+		Coord = node[iPoint_Coarse]->GetCoord();
+    
+		/*--- Calculate the non-dim. distance from the rotation center ---*/
+    
+		Distance[0] = (Coord[0]-Center[0])/L_Ref;
+		Distance[1] = (Coord[1]-Center[1])/L_Ref;
+		Distance[2] = (Coord[2]-Center[2])/L_Ref;
+    
 		/*--- Calculate the angular velocity as omega X r ---*/
+    
 		RotVel[0] = Omega[1]*(Distance[2]) - Omega[2]*(Distance[1]);
 		RotVel[1] = Omega[2]*(Distance[0]) - Omega[0]*(Distance[2]);
 		RotVel[2] = Omega[0]*(Distance[1]) - Omega[1]*(Distance[0]);
-
-		node[Point_Coarse]->SetRotVel(RotVel);
-
+    
+    /*--- Store the grid velocity at this node ---*/
+    
+		node[iPoint_Coarse]->SetGridVel(RotVel);
+    
 	}
+  
 }
 
 void CMultiGridGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
 
 	/*--- Local variables ---*/
 
-	double *Coord_nP1 = NULL, *Coord_n = NULL, *Coord_nM1 = NULL, TimeStep, GridVel = 0.0;
+	double *Coord_nP1 = NULL, *Coord_n = NULL, *Coord_nM1 = NULL;
+  double TimeStep, GridVel = 0.0;
 	unsigned long Point_Coarse;
 	unsigned short iDim;
 
@@ -7182,16 +7213,17 @@ void CMultiGridGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
 				GridVel = ( Coord_nP1[iDim] - Coord_n[iDim] ) / TimeStep;
 			if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
 				GridVel = ( 3.0*Coord_nP1[iDim] - 4.0*Coord_n[iDim]
-				                                              +  1.0*Coord_nM1[iDim] ) / (2.0*TimeStep);
+                   +  1.0*Coord_nM1[iDim] ) / (2.0*TimeStep);
 
 			/*--- Store grid velocity for this point ---*/
 
 			node[Point_Coarse]->SetGridVel(iDim,GridVel);
+      
 		}
 	}
 }
 
-void CMultiGridGeometry::SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config, unsigned long iter) {
+void CMultiGridGeometry::SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config) {
 
 	/*--- Local variables ---*/
 	unsigned short iDim, iChild;
@@ -7916,22 +7948,11 @@ void CBoundaryGeometry::SetBoundSensitivity(CConfig *config) {
 		total_T  = (double)nExtIter*delta_T;
 	} else if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
 
-		//		/*--- Pitching origin, frequency, and amplitude from config. ---*/
-		//		double Omega[3], Omega_mag, period;
-		//		Omega[0]  = config->GetPitching_Omega_X(ZONE_0)/config->GetOmega_Ref();
-		//		Omega[1]  = config->GetPitching_Omega_Y(ZONE_0)/config->GetOmega_Ref();
-		//		Omega[2]  = config->GetPitching_Omega_Z(ZONE_0)/config->GetOmega_Ref();
-		//
-		//		/*--- period of oscillation & compute time interval using nTimeInstances ---*/
-		//		Omega_mag = sqrt(pow(Omega[0],2)+pow(Omega[1],2)+pow(Omega[2],2));
-		//		period    = 2.0*PI_NUMBER/Omega_mag;
-
 		/*--- Compute period of oscillation & compute time interval using nTimeInstances ---*/
 		double period = config->GetTimeSpectral_Period();
 		nExtIter  = config->GetnTimeInstances();
 		delta_T   = period/(double)nExtIter;
 		total_T   = period;
-
 
 	} else {
 		nExtIter = 1;

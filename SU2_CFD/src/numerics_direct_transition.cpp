@@ -27,7 +27,6 @@
 CUpwLin_TransLM::CUpwLin_TransLM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
 	implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-	rotating_frame = config->GetRotating_Frame();
 	grid_movement  = config->GetGrid_Movement();
 	incompressible = config->GetIncompressible();
   
@@ -76,7 +75,6 @@ CUpwSca_TransLM::CUpwSca_TransLM(unsigned short val_nDim, unsigned short val_nVa
                                  CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
 	implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-	rotating_frame = config->GetRotating_Frame();
 	grid_movement = config->GetGrid_Movement();
   
 	Gamma = config->GetGamma();

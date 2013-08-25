@@ -665,6 +665,7 @@ protected:
 
 	unsigned short nDim;		/*!< \brief Number of dimensions. */
 	unsigned short nVar;		/*!< \brief Number of variables. */
+  
 	unsigned long nPoint;		/*!< \brief Number of points. */
 	unsigned long nPointDomain;		/*!< \brief Number of points in the domain. */
 
@@ -683,9 +684,23 @@ public:
 	 * \brief Destructor of the class. 
 	 */
 	~CVolumetricMovement(void);
-	
+  
+	/*!
+	 * \brief Update the value of the coordinates after the grid movement.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void UpdateGridCoord(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief Update the dual grid after the grid movement (edges and control volumes).
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void UpdateDualGrid(CGeometry *geometry, CConfig *config);
+  
 	/*! 
-	 * \brief __________________________
+	 * \brief Update the coarse multigrid levels after the grid movement.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
@@ -792,13 +807,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetDomainDisplacements(CGeometry *geometry, CConfig *config);
-	
-	/*! 
-	 * \brief Update the value of the coordinates after the the grid movement.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void UpdateGridCoord(CGeometry *geometry, CConfig *config);
   
   /*!
 	 * \brief Unsteady grid movement using rigid mesh rotation.
@@ -807,7 +815,7 @@ public:
    * \param[in] iZone - Zone number in the mesh.
    * \param[in] iter - Physical time iteration number.
 	 */
-	void SetRigidRotation(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
+	void Rigid_Rotation(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
 	
   /*!
 	 * \brief Unsteady pitching grid movement using rigid mesh motion.
@@ -816,7 +824,7 @@ public:
    * \param[in] iZone - Zone number in the mesh.
    * \param[in] iter - Physical time iteration number.
 	 */
-	void SetRigidPitching(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
+	void Rigid_Pitching(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
   
   /*!
 	 * \brief Unsteady plunging grid movement using rigid mesh motion.
@@ -825,7 +833,7 @@ public:
    * \param[in] iZone - Zone number in the mesh.
    * \param[in] iter - Physical time iteration number.
 	 */
-	void SetRigidPlunging(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
+	void Rigid_Plunging(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
   
   /*!
 	 * \brief Unsteady translational grid movement using rigid mesh motion.
@@ -834,7 +842,7 @@ public:
    * \param[in] iZone - Zone number in the mesh.
    * \param[in] iter - Physical time iteration number.
 	 */
-	void SetRigidTranslation(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
+	void Rigid_Translation(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
 
   /*!
 	 * \brief Solve the typical section wing model.
@@ -894,7 +902,7 @@ public:
 /*! 
  * \class CSurfaceMovement
  * \brief Class for moving the surface numerical grid.
- * \author F. Palacios.
+ * \author F. Palacios, T. Economon.
  * \version 2.0.6
  */
 class CSurfaceMovement : public CGridMovement {
@@ -990,22 +998,22 @@ public:
 	void SetRotation(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
   
   /*!
-	 * \brief Set the translational velocity for a moving wall.
+	 * \brief Set the translational/rotational velocity for a moving wall.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
    * \param[in] iZone - Zone number in the mesh.
    * \param[in] iter - Physical time iteration number.
 	 */
-	void SetMoving_Walls(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
+	void Moving_Walls(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
   
   /*! 
-	 * \brief Deforms a 2-D flutter/pitching surface during an unsteady simulation.
+	 * \brief Computes the displacement of a pitching surface for a dynamic mesh simulation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iter - Current physical time iteration.
    * \param[in] iZone - Zone number in the mesh.
 	 */
-	void SetBoundary_Flutter2D(CGeometry *geometry, CConfig *config, 
+	void Surface_Pitching(CGeometry *geometry, CConfig *config,
                              unsigned long iter, unsigned short iZone);
 	
 	/*! 
