@@ -2905,12 +2905,6 @@ public:
 	 */
 	bool GetHold_GridFixed(void);
 
-	/*! 
-	 * \brief Get the kind of adjoint approach. There are several options: Continuous, Discrete, Hyrbid
-	 * \return Kind of adjoint approach.
-	 */
-	unsigned short GetKind_Adjoint(void);
-
 	/*!
 	 * \brief Get the kind of objective function. There are several options: Drag coefficient, 
 	 *        Lift coefficient, efficiency, etc.

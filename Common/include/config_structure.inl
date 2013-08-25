@@ -33,8 +33,6 @@ inline bool CConfig::GetAdjoint(void) { return Adjoint; }
 
 inline bool CConfig::GetViscous(void) { return Viscous; }
 
-inline unsigned short CConfig::GetKind_Adjoint(void) { return Kind_Adjoint; }
-
 inline unsigned long CConfig::GetnExtIter(void) { return nExtIter; }
 
 inline unsigned short CConfig::GetnTimeInstances(void) { return nTimeInstances; }

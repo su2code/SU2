@@ -257,7 +257,7 @@ void CConfig::SetConfig_Options(unsigned short val_nZone) {
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the level set problem */
 	AddScalarOption("TURB_CFL_REDUCTION", Turb_CFLRedCoeff, 1.0);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the turbulent adjoint problem */
-	AddScalarOption("ADJTURB_CFL_REDUCTION", AdjTurb_CFLRedCoeff, 0.1);
+	AddScalarOption("ADJTURB_CFL_REDUCTION", AdjTurb_CFLRedCoeff, 1.0);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the level set problem */
 	AddScalarOption("LEVELSET_CFL_REDUCTION", LevelSet_CFLRedCoeff, 1E-2);
 	/* DESCRIPTION: Number of total iterations */
@@ -2376,13 +2376,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 			}
 		}
 
-	}
-
-
-	/*--- Some discrete adjoint requirements ---*/
-	if ((GetAdjoint() && (GetKind_Adjoint() == DISCRETE)) && (Kind_Solver==ADJ_EULER||ADJ_NAVIER_STOKES||ADJ_RANS)) {
-		SetnExtIter(1);
-		SetMGLevels(0);
 	}
 
 	delete [] tmp_smooth;

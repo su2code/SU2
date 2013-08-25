@@ -1450,17 +1450,6 @@ public:
 	virtual double GetTimeSpectral_Source(unsigned short val_var);
 
 	/*!
-	 * \brief A virtual member.
-	 * \param[in] kappapsi_Volume - Value of the mean flow hybrid coupling term.
-	 */
-	virtual void SetKappaPsiVolume(double kappapsi_Volume);
-
-	/*!
-	 * \brief A virtual member.
-	 */
-	virtual double GetKappaPsiVolume();
-
-	/*!
 	 * \brief Set the Eddy Viscosity Sensitivity of the problem.
 	 * \param[in] val_EddyViscSens - Eddy Viscosity Sensitivity.
 	 */
@@ -2555,7 +2544,6 @@ public:
  */
 class CAdjNSVariable : public CAdjEulerVariable {	
 private:
-	double kappapsi_Volume;
   
 public:
 
@@ -2630,16 +2618,6 @@ public:
 	 */
 	void SetVelSolutionDVector(void);
 
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] kappapsi_Volume - Value of the mean flow hybrid coupling term.
-	 */
-	void SetKappaPsiVolume(double kappapsi_Volume);
-
-	/*!
-	 * \brief A virtual member.
-	 */
-	double GetKappaPsiVolume(void);
 };
 
 /*! 

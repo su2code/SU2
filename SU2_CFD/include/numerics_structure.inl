@@ -539,14 +539,6 @@ inline void CNumerics::SetElec_CondIntegralsqr(double val_var) {}
 
 inline void CSource_JouleHeating::SetElec_CondIntegralsqr(double val_var) {Integralsqr = val_var; }
 
-inline double CNumerics::GetKappaPsiVolume() {return 0;}
-
-inline double CSourceViscous_AdjFlow::GetKappaPsiVolume() { return kappapsi_Volume; }
-
-inline void CNumerics::SetKappaPsiVolume(double val_kappapsi_Volume) {}
-
-inline void CSourceViscous_AdjFlow::SetKappaPsiVolume(double val_kappapsi_Volume) { kappapsi_Volume = val_kappapsi_Volume;}
-
 inline void CNumerics::ComputeResidual(double **val_Jacobian_i, double *val_Jacobian_mui, double ***val_Jacobian_gradi, CConfig *config) { }
 
 inline void CNumerics::ComputeResidual(double **val_Jacobian_i, double *val_Jacobian_mui, double ***val_Jacobian_gradi, 

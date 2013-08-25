@@ -307,10 +307,10 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry, CCo
 	case LINEAR_ELASTICITY: fea = true; break;
 	case ADJ_EULER : euler = true; adj_euler = true; break;
 	case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-	case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = ( ((config->GetKind_Adjoint() == CONTINUOUS) && (!config->GetFrozen_Visc())) || (config->GetKind_Adjoint() == HYBRID) ); break;
+	case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
 	case ADJ_FREE_SURFACE_EULER: euler = true; adj_euler = true; levelset = true; adj_levelset = true; break;
 	case ADJ_FREE_SURFACE_NAVIER_STOKES: ns = true; adj_ns = true; levelset = true; adj_levelset = true; break;
-	case ADJ_FREE_SURFACE_RANS: ns = true; adj_ns = true; turbulent = true; adj_turb = (((config->GetKind_Adjoint() != HYBRID) && (!config->GetFrozen_Visc())) || (config->GetKind_Adjoint() == HYBRID)); levelset = true; adj_levelset = true; break;
+	case ADJ_FREE_SURFACE_RANS: ns = true; adj_ns = true; turbulent = true; adj_turb = (!config->GetFrozen_Visc()); levelset = true; adj_levelset = true; break;
 	case ADJ_PLASMA_EULER : plasma_euler = true; adj_plasma_euler = true; break;
 	case ADJ_PLASMA_NAVIER_STOKES : plasma_ns = true; adj_plasma_ns = true; break;
 	case LIN_EULER: euler = true; lin_euler = true; break;
@@ -474,14 +474,14 @@ void Integration_Preprocessing(CIntegration **integration_container, CGeometry *
         case LINEAR_ELASTICITY: fea = true; break;
         case ADJ_EULER : euler = true; adj_euler = true; break;
         case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-        case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = ( ((config->GetKind_Adjoint() == CONTINUOUS) && (!config->GetFrozen_Visc())) || (config->GetKind_Adjoint() == HYBRID) ); break;
+        case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
         case ADJ_PLASMA_EULER : plasma_euler = true; adj_plasma_euler = true; break;
         case ADJ_PLASMA_NAVIER_STOKES : plasma_ns = true; adj_plasma_ns = true; break;
         case ADJ_FREE_SURFACE_EULER: euler = true; levelset = true; adj_euler = true; adj_levelset = true; break;
         case ADJ_FREE_SURFACE_NAVIER_STOKES: ns = true; levelset = true; adj_ns = true; adj_levelset = true; break;
-        case ADJ_FREE_SURFACE_RANS : ns = true; turbulent = true; levelset = true; adj_ns = true; adj_turb = (((config->GetKind_Adjoint() != HYBRID) && (!config->GetFrozen_Visc())) || (config->GetKind_Adjoint() == HYBRID)); adj_levelset = true; break;
+        case ADJ_FREE_SURFACE_RANS : ns = true; turbulent = true; levelset = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); adj_levelset = true; break;
         case LIN_EULER: euler = true; lin_euler = true; break;
-            
+      
             /*--- Specify by zone for the aeroacoustic problem ---*/
         case AEROACOUSTIC_EULER:
             if (iZone == ZONE_0) {
@@ -607,10 +607,10 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
 	case LINEAR_ELASTICITY: fea = true; break;
 	case ADJ_EULER : euler = true; adj_euler = true; break;
 	case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-	case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = ( ((config->GetKind_Adjoint() == CONTINUOUS) && (!config->GetFrozen_Visc())) || (config->GetKind_Adjoint() == HYBRID) ); break;
+	case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
 	case ADJ_FREE_SURFACE_EULER: euler = true; adj_euler = true; levelset = true; adj_levelset = true; break;
 	case ADJ_FREE_SURFACE_NAVIER_STOKES: ns = true; adj_ns = true; levelset = true; adj_levelset = true; break;
-	case ADJ_FREE_SURFACE_RANS: ns = true; adj_ns = true; turbulent = true; adj_turb = (((config->GetKind_Adjoint() != HYBRID) && (!config->GetFrozen_Visc())) || (config->GetKind_Adjoint() == HYBRID)); levelset = true; adj_levelset = true; break;
+	case ADJ_FREE_SURFACE_RANS: ns = true; adj_ns = true; turbulent = true; adj_turb = (!config->GetFrozen_Visc()); levelset = true; adj_levelset = true; break;
 	case ADJ_PLASMA_EULER : plasma_euler = true; adj_plasma_euler = true; break;
 	case ADJ_PLASMA_NAVIER_STOKES : plasma_ns = true; adj_plasma_ns = true; break;
 	case LIN_EULER: euler = true; lin_euler = true; break;
@@ -1551,9 +1551,9 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
 			break;
 		case AVG_GRAD :
 			for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-			if (spalart_allmaras){
-				cout << "Viscous scheme not implemented." << endl; cin.get();
-			}
+				if (spalart_allmaras){
+					numerics_container[iMGlevel][ADJTURB_SOL][VISC_TERM] = new CAvgGrad_AdjTurb(nDim, nVar_Adj_Turb, config);
+				}
 			else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; cin.get();}
 			break;
 		case AVG_GRAD_CORRECTED :

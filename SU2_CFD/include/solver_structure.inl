@@ -227,9 +227,6 @@ inline void CSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 									   
 inline void CSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, 
 												  CNumerics *numerics, CConfig *config, unsigned short iMesh) { }
-												  
-inline void CSolver::SourceConserv_Residual(CGeometry *geometry, CSolver **solver_container, 
-											   CNumerics *numerics, CConfig *config, unsigned short iMesh) { }
 
 inline void CSolver::Charge_Dist_SourceTerm(CGeometry *geometry, CSolver **solver_container, 
 											  CNumerics *numerics, CConfig *config, unsigned short iMesh) { }
