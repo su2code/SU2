@@ -139,8 +139,6 @@ void CConfig::SetConfig_Options(unsigned short val_nZone) {
 	AddMarkerOption("MARKER_MONITORING", nMarker_Monitoring, Marker_Monitoring);
   /* DESCRIPTION: Marker(s) of the surface where objective function (design problem) will be evaluated */
 	AddMarkerOption("MARKER_DESIGNING", nMarker_Designing, Marker_Designing);
-  /* DESCRIPTION: Marker(s) of moving surfaces (MOVING_WALL or DEFORMING grid motion). */
-	AddMarkerOption("MARKER_MOVING", nMarker_Moving, Marker_Moving);
 	/* DESCRIPTION: Euler wall boundary marker(s) */
 	AddMarkerOption("MARKER_EULER", nMarker_Euler, Marker_Euler);
 	/* DESCRIPTION: Adiabatic wall boundary condition */
@@ -332,57 +330,59 @@ void CConfig::SetConfig_Options(unsigned short val_nZone) {
 	/* DESCRIPTION: Mesh motion for unsteady simulations */
 	AddSpecialOption("GRID_MOVEMENT", Grid_Movement, SetBoolOption, false);
 	/* DESCRIPTION: Type of mesh motion */
-  AddEnumListOption("GRID_MOVEMENT_KIND", nZone, Kind_GridMovement, GridMovement_Map);
-	/* DESCRIPTION: % Mach number (non-dimensional, based on the mesh velocity and freestream vals.) */
+  AddEnumListOption("GRID_MOVEMENT_KIND", nGridMovement, Kind_GridMovement, GridMovement_Map);
+  /* DESCRIPTION: Marker(s) of moving surfaces (MOVING_WALL or DEFORMING grid motion). */
+	AddMarkerOption("MARKER_MOVING", nMarker_Moving, Marker_Moving);
+	/* DESCRIPTION: Mach number (non-dimensional, based on the mesh velocity and freestream vals.) */
 	AddScalarOption("MACH_MOTION", Mach_Motion, 0.0);
 	/* DESCRIPTION: Coordinates of the rigid motion origin */
-	AddListOption("MOTION_ORIGIN_X", nZone, Motion_Origin_X);
+	AddListOption("MOTION_ORIGIN_X", nMotion_Origin_X, Motion_Origin_X);
 	/* DESCRIPTION: Coordinates of the rigid motion origin */
-	AddListOption("MOTION_ORIGIN_Y", nZone, Motion_Origin_Y);
+	AddListOption("MOTION_ORIGIN_Y", nMotion_Origin_Y, Motion_Origin_Y);
 	/* DESCRIPTION: Coordinates of the rigid motion origin */
-	AddListOption("MOTION_ORIGIN_Z", nZone, Motion_Origin_Z);
+	AddListOption("MOTION_ORIGIN_Z", nMotion_Origin_Z, Motion_Origin_Z);
 	/* DESCRIPTION: Translational velocity vector (m/s) in the x, y, & z directions (RIGID_MOTION only) */
-	AddListOption("TRANSLATION_RATE_X", nZone, Translation_Rate_X);
+	AddListOption("TRANSLATION_RATE_X", nTranslation_Rate_X, Translation_Rate_X);
 	/* DESCRIPTION: Translational velocity vector (m/s) in the x, y, & z directions (RIGID_MOTION only) */
-	AddListOption("TRANSLATION_RATE_Y", nZone, Translation_Rate_Y);
+	AddListOption("TRANSLATION_RATE_Y", nTranslation_Rate_Y, Translation_Rate_Y);
 	/* DESCRIPTION: Translational velocity vector (m/s) in the x, y, & z directions (RIGID_MOTION only) */
-	AddListOption("TRANSLATION_RATE_Z", nZone, Translation_Rate_Z);
+	AddListOption("TRANSLATION_RATE_Z", nTranslation_Rate_Z, Translation_Rate_Z);
 	/* DESCRIPTION: Angular velocity vector (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-	AddListOption("ROTATION_RATE_X", nZone, Rotation_Rate_X);
+	AddListOption("ROTATION_RATE_X", nRotation_Rate_X, Rotation_Rate_X);
 	/* DESCRIPTION: Angular velocity vector (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-	AddListOption("ROTATION_RATE_Y", nZone, Rotation_Rate_Y);
+	AddListOption("ROTATION_RATE_Y", nRotation_Rate_Y, Rotation_Rate_Y);
 	/* DESCRIPTION: Angular velocity vector (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-	AddListOption("ROTATION_RATE_Z", nZone, Rotation_Rate_Z);
+	AddListOption("ROTATION_RATE_Z", nRotation_Rate_Z, Rotation_Rate_Z);
 	/* DESCRIPTION: Pitching angular freq. (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-	AddListOption("PITCHING_OMEGA_X", nZone, Pitching_Omega_X);
+	AddListOption("PITCHING_OMEGA_X", nPitching_Omega_X, Pitching_Omega_X);
 	/* DESCRIPTION: Pitching angular freq. (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-	AddListOption("PITCHING_OMEGA_Y", nZone, Pitching_Omega_Y);
+	AddListOption("PITCHING_OMEGA_Y", nPitching_Omega_Y, Pitching_Omega_Y);
 	/* DESCRIPTION: Pitching angular freq. (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-	AddListOption("PITCHING_OMEGA_Z", nZone, Pitching_Omega_Z);
+	AddListOption("PITCHING_OMEGA_Z", nPitching_Omega_Z, Pitching_Omega_Z);
 	/* DESCRIPTION: Pitching amplitude (degrees) about x, y, & z axes (RIGID_MOTION only) */
-	AddListOption("PITCHING_AMPL_X", nZone, Pitching_Ampl_X);
+	AddListOption("PITCHING_AMPL_X", nPitching_Ampl_X, Pitching_Ampl_X);
 	/* DESCRIPTION: Pitching amplitude (degrees) about x, y, & z axes (RIGID_MOTION only) */
-	AddListOption("PITCHING_AMPL_Y", nZone, Pitching_Ampl_Y);
+	AddListOption("PITCHING_AMPL_Y", nPitching_Ampl_Y, Pitching_Ampl_Y);
 	/* DESCRIPTION: Pitching amplitude (degrees) about x, y, & z axes (RIGID_MOTION only) */
-	AddListOption("PITCHING_AMPL_Z", nZone, Pitching_Ampl_Z);
+	AddListOption("PITCHING_AMPL_Z", nPitching_Ampl_Z, Pitching_Ampl_Z);
 	/* DESCRIPTION: Pitching phase offset (degrees) about x, y, & z axes (RIGID_MOTION only) */
-	AddListOption("PITCHING_PHASE_X", nZone, Pitching_Phase_X);
+	AddListOption("PITCHING_PHASE_X", nPitching_Phase_X, Pitching_Phase_X);
 	/* DESCRIPTION: Pitching phase offset (degrees) about x, y, & z axes (RIGID_MOTION only) */
-	AddListOption("PITCHING_PHASE_Y", nZone, Pitching_Phase_Y);
+	AddListOption("PITCHING_PHASE_Y", nPitching_Phase_Y, Pitching_Phase_Y);
 	/* DESCRIPTION: Pitching phase offset (degrees) about x, y, & z axes (RIGID_MOTION only) */
-	AddListOption("PITCHING_PHASE_Z", nZone, Pitching_Phase_Z);
+	AddListOption("PITCHING_PHASE_Z", nPitching_Phase_Z, Pitching_Phase_Z);
 	/* DESCRIPTION: Plunging angular freq. (rad/s) in x, y, & z directions (RIGID_MOTION only) */
-	AddListOption("PLUNGING_OMEGA_X", nZone, Plunging_Omega_X);
+	AddListOption("PLUNGING_OMEGA_X", nPlunging_Omega_X, Plunging_Omega_X);
 	/* DESCRIPTION: Plunging angular freq. (rad/s) in x, y, & z directions (RIGID_MOTION only) */
-	AddListOption("PLUNGING_OMEGA_Y", nZone, Plunging_Omega_Y);
+	AddListOption("PLUNGING_OMEGA_Y", nPlunging_Omega_Y, Plunging_Omega_Y);
 	/* DESCRIPTION: Plunging angular freq. (rad/s) in x, y, & z directions (RIGID_MOTION only) */
-	AddListOption("PLUNGING_OMEGA_Z", nZone, Plunging_Omega_Z);
+	AddListOption("PLUNGING_OMEGA_Z", nPlunging_Omega_Z, Plunging_Omega_Z);
 	/* DESCRIPTION: Plunging amplitude (m) in x, y, & z directions (RIGID_MOTION only) */
-	AddListOption("PLUNGING_AMPL_X", nZone, Plunging_Ampl_X);
+	AddListOption("PLUNGING_AMPL_X", nPlunging_Ampl_X, Plunging_Ampl_X);
 	/* DESCRIPTION: Plunging amplitude (m) in x, y, & z directions (RIGID_MOTION only) */
-	AddListOption("PLUNGING_AMPL_Y", nZone, Plunging_Ampl_Y);
+	AddListOption("PLUNGING_AMPL_Y", nPlunging_Ampl_Y, Plunging_Ampl_Y);
 	/* DESCRIPTION: Plunging amplitude (m) in x, y, & z directions (RIGID_MOTION only) */
-	AddListOption("PLUNGING_AMPL_Z", nZone, Plunging_Ampl_Z);
+	AddListOption("PLUNGING_AMPL_Z", nPlunging_Ampl_Z, Plunging_Ampl_Z);
 	/* DESCRIPTION:  */
 	AddScalarOption("MOTION_FILENAME", Motion_Filename, string("mesh_motion.dat"));
 	/* DESCRIPTION: Uncoupled Aeroelastic Frequency Plunge. */
@@ -998,176 +998,24 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		Wrt_Unsteady = true;
 
   /*--- Set grid movement kind to NO_MOVEMENT if not specified, which means
-   that we also set the Grid_Movement flag to false. ---*/
+   that we also set the Grid_Movement flag to false. We initialize to the 
+   number of zones here, because we are guaranteed to at least have one. ---*/
   if (Kind_GridMovement == NULL) {
     Kind_GridMovement = new unsigned short[nZone];
     for (unsigned short iZone = 0; iZone < nZone; iZone++ )
       Kind_GridMovement[iZone] = NO_MOVEMENT;
     if (Grid_Movement == true) {
-      cout << "WARNING: Grid movement requested but no type provided. Grid movement set to NO. " << endl;
-      Grid_Movement = false;
+      cout << "GRID_MOVEMENT = YES but no type provided in GRID_MOVEMENT_KIND!!" << endl;
+      cout << "Press any key to exit..." << endl;
+      cin.get();
+      exit(1);
     }
   }
-  
-	/*--- In case the grid movement parameters have not been declared in the 
-   config file, set them equal to zero for safety. ---*/
-
-		/*--- Motion Origin: ---*/
-		if (Motion_Origin_X == NULL) {
-			Motion_Origin_X = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Motion_Origin_X[iZone] = 0.0;
-		}
-
-		if (Motion_Origin_Y == NULL) {
-			Motion_Origin_Y = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Motion_Origin_Y[iZone] = 0.0;
-		}
-
-		if (Motion_Origin_Z == NULL) {
-			Motion_Origin_Z = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Motion_Origin_Z[iZone] = 0.0;
-		}
-
-		/*--- Translation: ---*/
-		if (Translation_Rate_X == NULL) {
-			Translation_Rate_X = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Translation_Rate_X[iZone] = 0.0;
-		}
-
-		if (Translation_Rate_Y == NULL) {
-			Translation_Rate_Y = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Translation_Rate_Y[iZone] = 0.0;
-		}
-
-		if (Translation_Rate_Z == NULL) {
-			Translation_Rate_Z = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Translation_Rate_Z[iZone] = 0.0;
-		}
-
-		/*--- Rotation: ---*/
-		if (Rotation_Rate_X == NULL) {
-			Rotation_Rate_X = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Rotation_Rate_X[iZone] = 0.0;
-		}
-
-		if (Rotation_Rate_Y == NULL) {
-			Rotation_Rate_Y = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Rotation_Rate_Y[iZone] = 0.0;
-		}
-
-		if (Rotation_Rate_Z == NULL) {
-			Rotation_Rate_Z = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Rotation_Rate_Z[iZone] = 0.0;
-		}
-
-		/*--- Pitching: ---*/
-		if (Pitching_Omega_X == NULL) {
-			Pitching_Omega_X = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Pitching_Omega_X[iZone] = 0.0;
-		}
-
-		if (Pitching_Omega_Y == NULL) {
-			Pitching_Omega_Y = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Pitching_Omega_Y[iZone] = 0.0;
-		}
-
-		if (Pitching_Omega_Z == NULL) {
-			Pitching_Omega_Z = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Pitching_Omega_Z[iZone] = 0.0;
-		}
-
-		/*--- Pitching Amplitude: ---*/
-		if (Pitching_Ampl_X == NULL) {
-			Pitching_Ampl_X = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Pitching_Ampl_X[iZone] = 0.0;
-		}
-
-		if (Pitching_Ampl_Y == NULL) {
-			Pitching_Ampl_Y = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Pitching_Ampl_Y[iZone] = 0.0;
-		}
-
-		if (Pitching_Ampl_Z == NULL) {
-			Pitching_Ampl_Z = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Pitching_Ampl_Z[iZone] = 0.0;
-		}
-
-		/*--- Pitching Phase: ---*/
-		if (Pitching_Phase_X == NULL) {
-			Pitching_Phase_X = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Pitching_Phase_X[iZone] = 0.0;
-		}
-
-		if (Pitching_Phase_Y == NULL) {
-			Pitching_Phase_Y = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Pitching_Phase_Y[iZone] = 0.0;
-		}
-
-		if (Pitching_Phase_Z == NULL) {
-			Pitching_Phase_Z = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Pitching_Phase_Z[iZone] = 0.0;
-		}
-
-		/*--- Plunging: ---*/
-		if (Plunging_Omega_X == NULL) {
-			Plunging_Omega_X = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Plunging_Omega_X[iZone] = 0.0;
-		}
-
-		if (Plunging_Omega_Y == NULL) {
-			Plunging_Omega_Y = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Plunging_Omega_Y[iZone] = 0.0;
-		}
-
-		if (Plunging_Omega_Z == NULL) {
-			Plunging_Omega_Z = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Plunging_Omega_Z[iZone] = 0.0;
-		}
-
-		/*--- Plunging Amplitude: ---*/
-		if (Plunging_Ampl_X == NULL) {
-			Plunging_Ampl_X = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Plunging_Ampl_X[iZone] = 0.0;
-		}
-
-		if (Plunging_Ampl_Y == NULL) {
-			Plunging_Ampl_Y = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Plunging_Ampl_Y[iZone] = 0.0;
-		}
-
-		if (Plunging_Ampl_Z == NULL) {
-			Plunging_Ampl_Z = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Plunging_Ampl_Z[iZone] = 0.0;
-		}
   
   /*--- If we're solving a purely steady problem with no prescribed grid
    movement (both rotating frame and moving walls can be steady), make sure that
    there is no grid motion ---*/
-	if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL) && 
+	if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL) &&
       (Unsteady_Simulation == STEADY) &&
       ((Kind_GridMovement[ZONE_0] != MOVING_WALL) &&
        (Kind_GridMovement[ZONE_0] != ROTATING_FRAME)))
@@ -1181,6 +1029,367 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Set the boolean flag if we are in a rotating frame (source term). ---*/
 	if (Grid_Movement && Kind_GridMovement[ZONE_0] == ROTATING_FRAME)
 		Rotating_Frame = true;
+  else
+    Rotating_Frame = false;
+  
+  /*--- Check the number of moving markers against the number of grid movement
+   types provided (should be equal, except that rigid motion and rotating frame
+   do not depend on surface specification). ---*/
+  if (Grid_Movement && (Kind_GridMovement[ZONE_0] != RIGID_MOTION) &&
+      (Kind_GridMovement[ZONE_0] != ROTATING_FRAME) &&
+      (nGridMovement != nMarker_Moving)) {
+    cout << "Number of GRID_MOVEMENT_KIND must match number of MARKER_MOVING!!" << endl;
+    cout << "Press any key to exit..." << endl;
+    cin.get();
+    exit(1);
+  }
+  
+  /*--- Make sure that there aren't more than one rigid motion or 
+   rotating frame specified in GRID_MOVEMENT_KIND. This means that sliding
+   mesh simulations are currently disabled. ---*/
+  if (Grid_Movement && (Kind_GridMovement[ZONE_0] == RIGID_MOTION) &&
+      (nGridMovement > 1)) {
+    cout << "Can not support more than one type of rigid motion in GRID_MOVEMENT_KIND!!" << endl;
+    cout << "Press any key to exit..." << endl;
+    cin.get();
+    exit(1);
+  }
+  if (Grid_Movement && (Kind_GridMovement[ZONE_0] == ROTATING_FRAME) &&
+      (nGridMovement > 1)) {
+    cout << "Can not support more than one rotating frame in GRID_MOVEMENT_KIND!!" << endl;
+    cout << "Press any key to exit..." << endl;
+    cin.get();
+    exit(1);
+  }
+  
+	/*--- In case the grid movement parameters have not been declared in the
+   config file, set them equal to zero for safety. Also check to make sure
+   that for each option, a value has been declared for each moving marker. ---*/
+
+  unsigned short nMoving;
+  if (nGridMovement > nZone) nMoving = nGridMovement;
+  else nMoving = nZone;
+  
+		/*--- Motion Origin: ---*/
+		if (Motion_Origin_X == NULL) {
+			Motion_Origin_X = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Motion_Origin_X[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nMotion_Origin_X != nGridMovement)) {
+        cout << "Length of MOTION_ORIGIN_X must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		if (Motion_Origin_Y == NULL) {
+			Motion_Origin_Y = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Motion_Origin_Y[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nMotion_Origin_Y != nGridMovement)) {
+        cout << "Length of MOTION_ORIGIN_Y must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		if (Motion_Origin_Z == NULL) {
+			Motion_Origin_Z = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Motion_Origin_Z[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nMotion_Origin_Z != nGridMovement)) {
+        cout << "Length of MOTION_ORIGIN_Z must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		/*--- Translation: ---*/
+		if (Translation_Rate_X == NULL) {
+			Translation_Rate_X = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Translation_Rate_X[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nTranslation_Rate_X != nGridMovement)) {
+        cout << "Length of TRANSLATION_RATE_X must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		if (Translation_Rate_Y == NULL) {
+			Translation_Rate_Y = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Translation_Rate_Y[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nTranslation_Rate_Y != nGridMovement)) {
+        cout << "Length of TRANSLATION_RATE_Y must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		if (Translation_Rate_Z == NULL) {
+			Translation_Rate_Z = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Translation_Rate_Z[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nTranslation_Rate_Z != nGridMovement)) {
+        cout << "Length of TRANSLATION_RATE_Z must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		/*--- Rotation: ---*/
+		if (Rotation_Rate_X == NULL) {
+			Rotation_Rate_X = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Rotation_Rate_X[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nRotation_Rate_X != nGridMovement)) {
+        cout << "Length of ROTATION_RATE_X must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		if (Rotation_Rate_Y == NULL) {
+			Rotation_Rate_Y = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Rotation_Rate_Y[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nRotation_Rate_Y != nGridMovement)) {
+        cout << "Length of ROTATION_RATE_Y must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		if (Rotation_Rate_Z == NULL) {
+			Rotation_Rate_Z = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Rotation_Rate_Z[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nRotation_Rate_Z != nGridMovement)) {
+        cout << "Length of ROTATION_RATE_Z must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		/*--- Pitching: ---*/
+		if (Pitching_Omega_X == NULL) {
+			Pitching_Omega_X = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Pitching_Omega_X[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nPitching_Omega_X != nGridMovement)) {
+        cout << "Length of PITCHING_OMEGA_X must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		if (Pitching_Omega_Y == NULL) {
+			Pitching_Omega_Y = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Pitching_Omega_Y[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nPitching_Omega_Y != nGridMovement)) {
+        cout << "Length of PITCHING_OMEGA_Y must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		if (Pitching_Omega_Z == NULL) {
+			Pitching_Omega_Z = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Pitching_Omega_Z[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nPitching_Omega_Z != nGridMovement)) {
+        cout << "Length of PITCHING_OMEGA_Z must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		/*--- Pitching Amplitude: ---*/
+		if (Pitching_Ampl_X == NULL) {
+			Pitching_Ampl_X = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Pitching_Ampl_X[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nPitching_Ampl_X != nGridMovement)) {
+        cout << "Length of PITCHING_AMPL_X must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		if (Pitching_Ampl_Y == NULL) {
+			Pitching_Ampl_Y = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Pitching_Ampl_Y[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nPitching_Ampl_Y != nGridMovement)) {
+        cout << "Length of PITCHING_AMPL_Y must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		if (Pitching_Ampl_Z == NULL) {
+			Pitching_Ampl_Z = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Pitching_Ampl_Z[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nPitching_Ampl_Z != nGridMovement)) {
+        cout << "Length of PITCHING_AMPL_Z must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		/*--- Pitching Phase: ---*/
+		if (Pitching_Phase_X == NULL) {
+			Pitching_Phase_X = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Pitching_Phase_X[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nPitching_Phase_X != nGridMovement)) {
+        cout << "Length of PITCHING_PHASE_X must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		if (Pitching_Phase_Y == NULL) {
+			Pitching_Phase_Y = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Pitching_Phase_Y[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nPitching_Phase_Y != nGridMovement)) {
+        cout << "Length of PITCHING_PHASE_Y must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		if (Pitching_Phase_Z == NULL) {
+			Pitching_Phase_Z = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Pitching_Phase_Z[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nPitching_Phase_Z != nGridMovement)) {
+        cout << "Length of PITCHING_PHASE_Z must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		/*--- Plunging: ---*/
+		if (Plunging_Omega_X == NULL) {
+			Plunging_Omega_X = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Plunging_Omega_X[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nPlunging_Omega_X != nGridMovement)) {
+        cout << "Length of PLUNGING_OMEGA_X must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		if (Plunging_Omega_Y == NULL) {
+			Plunging_Omega_Y = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Plunging_Omega_Y[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nPlunging_Omega_Y != nGridMovement)) {
+        cout << "Length of PLUNGING_OMEGA_Y must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		if (Plunging_Omega_Z == NULL) {
+			Plunging_Omega_Z = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Plunging_Omega_Z[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nPlunging_Omega_Z != nGridMovement)) {
+        cout << "Length of PLUNGING_OMEGA_Z must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		/*--- Plunging Amplitude: ---*/
+		if (Plunging_Ampl_X == NULL) {
+			Plunging_Ampl_X = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Plunging_Ampl_X[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nPlunging_Ampl_X != nGridMovement)) {
+        cout << "Length of PLUNGING_AMPL_X must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		if (Plunging_Ampl_Y == NULL) {
+			Plunging_Ampl_Y = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Plunging_Ampl_Y[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nPlunging_Ampl_Y != nGridMovement)) {
+        cout << "Length of PLUNGING_AMPL_Y must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		if (Plunging_Ampl_Z == NULL) {
+			Plunging_Ampl_Z = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Plunging_Ampl_Z[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nPlunging_Ampl_Z != nGridMovement)) {
+        cout << "Length of PLUNGING_AMPL_Z must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
 
 	/*--- Use the various rigid-motion input frequencies to determine the period to be used with time-spectral cases.
 		  There are THREE types of motion to consider, namely: rotation, pitching, and plunging.
@@ -5077,6 +5286,16 @@ unsigned short CConfig::GetSlideBound_Zone(string val_marker) {
 		if (Marker_SlideBound[iMarker_SlideBound] == val_marker) break;
 
 	return SlideBound_Zone[iMarker_SlideBound];
+}
+
+unsigned short CConfig::GetMarker_Moving(string val_marker) {
+	unsigned short iMarker_Moving;
+  
+	/*--- Find the marker for this moving boundary. ---*/
+	for (iMarker_Moving = 0; iMarker_Moving < nMarker_Moving; iMarker_Moving++)
+		if (Marker_Moving[iMarker_Moving] == val_marker) break;
+  
+	return iMarker_Moving;
 }
 
 double CConfig::GetDirichlet_Value(string val_marker) {

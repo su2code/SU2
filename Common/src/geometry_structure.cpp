@@ -5120,7 +5120,7 @@ void CPhysicalGeometry::SetRotationalVelocity(CConfig *config) {
     cout << " Rotational origin (x,y,z): ( " << Center[0] << ", " << Center[1];
     cout << ", " << Center[2] << " )" << endl;
     cout << " Angular velocity about x, y, z axes: ( " << Omega[0] << ", ";
-    cout << Omega[1] << ", " << Omega[2] << " )" << endl;
+    cout << Omega[1] << ", " << Omega[2] << " ) rad/s" << endl;
   }
   
 	/*--- Loop over all nodes and set the rotational velocity ---*/

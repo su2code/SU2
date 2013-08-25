@@ -3179,7 +3179,8 @@ void CSurfaceMovement::SetRotation(CGeometry *boundary, CConfig *config, unsigne
 		}	
 }
 
-void CSurfaceMovement::Moving_Walls(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter) {
+void CSurfaceMovement::Moving_Walls(CGeometry *geometry, CConfig *config,
+                                    unsigned short iZone, unsigned long iter) {
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
@@ -3187,25 +3188,13 @@ void CSurfaceMovement::Moving_Walls(CGeometry *geometry, CConfig *config, unsign
 #endif
   
   /*--- Local variables ---*/
-  unsigned short iMarker, iDim, nDim = geometry->GetnDim();
+  unsigned short iMarker, jMarker, iDim, nDim = geometry->GetnDim();
   unsigned long iPoint, iVertex;
   double xDot[3] = {0.0,0.0,0.0}, *Coord, Center[3], Omega[3], r[3], GridVel[3];
-	
-  /*--- Retrieve values from the config file ---*/
-
-  double Lref = config->GetLength_Ref();
-
-  /*--- Get prescribed wall speed from config ---*/
-
-  Center[0] = config->GetMotion_Origin_X(iZone);
-  Center[1] = config->GetMotion_Origin_Y(iZone);
-  Center[2] = config->GetMotion_Origin_Z(iZone);
-  Omega[0]  = config->GetRotation_Rate_X(iZone)/config->GetOmega_Ref();
-  Omega[1]  = config->GetRotation_Rate_Y(iZone)/config->GetOmega_Ref();
-  Omega[2]  = config->GetRotation_Rate_Z(iZone)/config->GetOmega_Ref();
-  xDot[0]   = config->GetTranslation_Rate_X(iZone)/config->GetVelocity_Ref();
-  xDot[1]   = config->GetTranslation_Rate_Y(iZone)/config->GetVelocity_Ref();
-  xDot[2]   = config->GetTranslation_Rate_Z(iZone)/config->GetVelocity_Ref();
+	double L_Ref     = config->GetLength_Ref();
+  double Omega_Ref = config->GetOmega_Ref();
+  double Vel_Ref   = config->GetVelocity_Ref();
+	string Marker_Tag;
   
   /*--- Store grid velocity for each node on the moving surface(s).
    Sum and store the x, y, & z velocities due to translation and rotation. ---*/
@@ -3213,9 +3202,26 @@ void CSurfaceMovement::Moving_Walls(CGeometry *geometry, CConfig *config, unsign
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_Moving(iMarker) == YES) {
       
+      /*--- Identify iMarker from the list of those under MARKER_MOVING ---*/
+      
+      Marker_Tag = config->GetMarker_All_Tag(iMarker);
+      jMarker    = config->GetMarker_Moving(Marker_Tag);
+      
+      /*--- Get prescribed wall speed from config for this marker ---*/
+      
+      Center[0] = config->GetMotion_Origin_X(jMarker);
+      Center[1] = config->GetMotion_Origin_Y(jMarker);
+      Center[2] = config->GetMotion_Origin_Z(jMarker);
+      Omega[0]  = config->GetRotation_Rate_X(jMarker)/Omega_Ref;
+      Omega[1]  = config->GetRotation_Rate_Y(jMarker)/Omega_Ref;
+      Omega[2]  = config->GetRotation_Rate_Z(jMarker)/Omega_Ref;
+      xDot[0]   = config->GetTranslation_Rate_X(jMarker)/Vel_Ref;
+      xDot[1]   = config->GetTranslation_Rate_Y(jMarker)/Vel_Ref;
+      xDot[2]   = config->GetTranslation_Rate_Z(jMarker)/Vel_Ref;
+      
       if (rank == MASTER_NODE && iter == 0) {
         cout << " Storing grid velocity for marker: ";
-        cout << config->GetMarker_All_Tag(iMarker) << "." << endl;
+        cout << Marker_Tag << "." << endl;
         cout << " Translational velocity: (" << xDot[0] << ", " << xDot[1];
         cout << ", " << xDot[2] << ") m/s." << endl;
         cout << " Angular velocity: (" << Omega[0] << ", " << Omega[1];
@@ -3223,7 +3229,7 @@ void CSurfaceMovement::Moving_Walls(CGeometry *geometry, CConfig *config, unsign
         cout << ", " << Center[1] << ", " << Center[2] << ")." << endl;
       }
       
-      for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         
         /*--- Get the index and coordinates of the current point ---*/
         
@@ -3232,12 +3238,12 @@ void CSurfaceMovement::Moving_Walls(CGeometry *geometry, CConfig *config, unsign
         
         /*--- Calculate non-dim. position from rotation center ---*/
         for (iDim = 0; iDim < nDim; iDim++)
-          r[iDim] = (Coord[iDim]-Center[iDim])/Lref;
+          r[iDim] = (Coord[iDim]-Center[iDim])/L_Ref;
         if (nDim == 2) r[nDim] = 0.0;
         
         /*--- Cross Product of angular velocity and distance from center to
          get the rotational velocity. Note that we are adding on the velocity
-         due to pure translation. ---*/
+         due to pure translation as well. ---*/
         
         GridVel[0] = xDot[0] + Omega[1]*r[2] - Omega[2]*r[1];
         GridVel[1] = xDot[1] + Omega[2]*r[0] - Omega[0]*r[2];
@@ -3262,9 +3268,10 @@ void CSurfaceMovement::Surface_Pitching(CGeometry *geometry, CConfig *config,
   double dtheta, dphi, dpsi, cosTheta, sinTheta;
   double cosPhi, sinPhi, cosPsi, sinPsi;
   double DEG2RAD = PI_NUMBER/180.0;
-  unsigned short iMarker, iDim, nDim = geometry->GetnDim();
+  unsigned short iMarker, jMarker, iDim, nDim = geometry->GetnDim();
   unsigned long iPoint, iVertex;
   bool adjoint = config->GetAdjoint();
+  string Marker_Tag;
   
 #ifndef NO_MPI
 	int rank = MPI::COMM_WORLD.Get_rank();
@@ -3273,22 +3280,9 @@ void CSurfaceMovement::Surface_Pitching(CGeometry *geometry, CConfig *config,
 #endif
 	
   /*--- Retrieve values from the config file ---*/
+  
   deltaT = config->GetDelta_UnstTimeND();
   Lref   = config->GetLength_Ref();
-  
-  /*--- Pitching origin, frequency, and amplitude from config. ---*/
-  Center[0] = config->GetMotion_Origin_X(iZone);
-  Center[1] = config->GetMotion_Origin_Y(iZone);
-  Center[2] = config->GetMotion_Origin_Z(iZone);
-  Omega[0]  = config->GetPitching_Omega_X(iZone)/config->GetOmega_Ref();
-  Omega[1]  = config->GetPitching_Omega_Y(iZone)/config->GetOmega_Ref();
-  Omega[2]  = config->GetPitching_Omega_Z(iZone)/config->GetOmega_Ref();
-  Ampl[0]   = config->GetPitching_Ampl_X(iZone)*DEG2RAD;
-  Ampl[1]   = config->GetPitching_Ampl_Y(iZone)*DEG2RAD;
-  Ampl[2]   = config->GetPitching_Ampl_Z(iZone)*DEG2RAD;
-  Phase[0]  = config->GetPitching_Phase_X(iZone)*DEG2RAD;
-  Phase[1]  = config->GetPitching_Phase_Y(iZone)*DEG2RAD;
-  Phase[2]  = config->GetPitching_Phase_Z(iZone)*DEG2RAD;
   
   /*--- Compute delta time based on physical time step ---*/
   if (adjoint) {
@@ -3305,46 +3299,80 @@ void CSurfaceMovement::Surface_Pitching(CGeometry *geometry, CConfig *config,
     time_old = time_new;
     if (iter != 0) time_old = (static_cast<double>(iter)-1.0)*deltaT;
   }
-	
-	/*--- Compute delta change in the angle about the x, y, & z axes. ---*/
-  
-	dtheta = -Ampl[0]*(sin(Omega[0]*time_new + Phase[0]) - sin(Omega[0]*time_old + Phase[0]));
-	dphi   = -Ampl[1]*(sin(Omega[1]*time_new + Phase[1]) - sin(Omega[1]*time_old + Phase[1]));
-	dpsi   = -Ampl[2]*(sin(Omega[2]*time_new + Phase[2]) - sin(Omega[2]*time_old + Phase[2]));
-  
-  if (rank == MASTER_NODE) {
-    //cout << fixed;
-		cout << " Pitching angles (about x, y, z axes): (";
-    cout << Ampl[0]*sin(Omega[0]*time_new + Phase[0])/DEG2RAD << ", ";
-    cout << Ampl[1]*sin(Omega[1]*time_new + Phase[1])/DEG2RAD << ", ";
-    cout << Ampl[2]*sin(Omega[2]*time_new + Phase[2])/DEG2RAD << ") ";
-    cout << "degrees." << endl;
-  }
-  
-	/*--- Store angles separately for clarity. Compute sines/cosines. ---*/
-  
-	cosTheta = cos(dtheta);  cosPhi = cos(dphi);  cosPsi = cos(dpsi);
-	sinTheta = sin(dtheta);  sinPhi = sin(dphi);  sinPsi = sin(dpsi);
-  
-	/*--- Compute the rotation matrix. Note that the implicit
-   ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
-  
-	rotMatrix[0][0] = cosPhi*cosPsi;
-	rotMatrix[1][0] = cosPhi*sinPsi;
-	rotMatrix[2][0] = -sinPhi;
-  
-	rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
-	rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
-	rotMatrix[2][1] = sinTheta*cosPhi;
-  
-	rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-	rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-	rotMatrix[2][2] = cosTheta*cosPhi;
   
 	/*--- Store displacement of each node on the pitching surface ---*/
   
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_Moving(iMarker) == YES) {
+      
+      /*--- Identify iMarker from the list of those under MARKER_MOVING ---*/
+      
+      Marker_Tag = config->GetMarker_All_Tag(iMarker);
+      jMarker    = config->GetMarker_Moving(Marker_Tag);
+      
+      /*--- Pitching origin, frequency, and amplitude from config. ---*/
+      
+      Center[0] = config->GetMotion_Origin_X(jMarker);
+      Center[1] = config->GetMotion_Origin_Y(jMarker);
+      Center[2] = config->GetMotion_Origin_Z(jMarker);
+      Omega[0]  = config->GetPitching_Omega_X(jMarker)/config->GetOmega_Ref();
+      Omega[1]  = config->GetPitching_Omega_Y(jMarker)/config->GetOmega_Ref();
+      Omega[2]  = config->GetPitching_Omega_Z(jMarker)/config->GetOmega_Ref();
+      Ampl[0]   = config->GetPitching_Ampl_X(jMarker)*DEG2RAD;
+      Ampl[1]   = config->GetPitching_Ampl_Y(jMarker)*DEG2RAD;
+      Ampl[2]   = config->GetPitching_Ampl_Z(jMarker)*DEG2RAD;
+      Phase[0]  = config->GetPitching_Phase_X(jMarker)*DEG2RAD;
+      Phase[1]  = config->GetPitching_Phase_Y(jMarker)*DEG2RAD;
+      Phase[2]  = config->GetPitching_Phase_Z(jMarker)*DEG2RAD;
+      
+      /*--- Print some information to the console. Be verbose at the first
+       iteration only (mostly for debugging purposes). ---*/
+      
+      if (rank == MASTER_NODE) {
+        cout << " Storing pitching displacement for marker: ";
+        cout << Marker_Tag << "." << endl;
+        if (iter == 0) {
+          cout << " Angular velocity: (" << Omega[0] << ", " << Omega[1];
+          cout << ", " << Omega[2] << ") rad/s about origin: (" << Center[0];
+          cout << ", " << Center[1] << ", " << Center[2] << ")." << endl;
+          cout << " Amplitude about origin: (" << Ampl[0]/DEG2RAD << ", ";
+          cout << Ampl[1]/DEG2RAD << ", " << Ampl[2]/DEG2RAD;
+          cout << ") degrees."<< endl;
+          cout << " Phase lag about origin: (" << Phase[0]/DEG2RAD << ", ";
+          cout << Phase[1]/DEG2RAD <<", "<< Phase[2]/DEG2RAD;
+          cout << ") degrees."<< endl;
+        }
+      }
+      
+      /*--- Compute delta change in the angle about the x, y, & z axes. ---*/
+      
+      dtheta = -Ampl[0]*(sin(Omega[0]*time_new + Phase[0])
+                         - sin(Omega[0]*time_old + Phase[0]));
+      dphi   = -Ampl[1]*(sin(Omega[1]*time_new + Phase[1])
+                         - sin(Omega[1]*time_old + Phase[1]));
+      dpsi   = -Ampl[2]*(sin(Omega[2]*time_new + Phase[2])
+                         - sin(Omega[2]*time_old + Phase[2]));
+      
+      /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
+      
+      cosTheta = cos(dtheta);  cosPhi = cos(dphi);  cosPsi = cos(dpsi);
+      sinTheta = sin(dtheta);  sinPhi = sin(dphi);  sinPsi = sin(dpsi);
+      
+      /*--- Compute the rotation matrix. Note that the implicit
+       ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+      
+      rotMatrix[0][0] = cosPhi*cosPsi;
+      rotMatrix[1][0] = cosPhi*sinPsi;
+      rotMatrix[2][0] = -sinPhi;
+      
+      rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
+      rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
+      rotMatrix[2][1] = sinTheta*cosPhi;
+      
+      rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+      rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+      rotMatrix[2][2] = cosTheta*cosPhi;
+      
       for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         
         /*--- Index and coordinates of the current point ---*/
@@ -3352,26 +3380,26 @@ void CSurfaceMovement::Surface_Pitching(CGeometry *geometry, CConfig *config,
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         Coord  = geometry->node[iPoint]->GetCoord();
         
-          /*--- Calculate non-dim. position from rotation center ---*/
-          
-          for (iDim = 0; iDim < nDim; iDim++)
-            r[iDim] = (Coord[iDim]-Center[iDim])/Lref;
-          if (nDim == 2) r[nDim] = 0.0;
-          
-          /*--- Compute transformed point coordinates ---*/
-          
-          rotCoord[0] = rotMatrix[0][0]*r[0]
-                      + rotMatrix[0][1]*r[1]
-                      + rotMatrix[0][2]*r[2] + Center[0];
-          
-          rotCoord[1] = rotMatrix[1][0]*r[0]
-                      + rotMatrix[1][1]*r[1]
-                      + rotMatrix[1][2]*r[2] + Center[1];
-          
-          rotCoord[2] = rotMatrix[2][0]*r[0]
-                      + rotMatrix[2][1]*r[1]
-                      + rotMatrix[2][2]*r[2] + Center[2];
-
+        /*--- Calculate non-dim. position from rotation center ---*/
+        
+        for (iDim = 0; iDim < nDim; iDim++)
+          r[iDim] = (Coord[iDim]-Center[iDim])/Lref;
+        if (nDim == 2) r[nDim] = 0.0;
+        
+        /*--- Compute transformed point coordinates ---*/
+        
+        rotCoord[0] = rotMatrix[0][0]*r[0]
+                    + rotMatrix[0][1]*r[1]
+                    + rotMatrix[0][2]*r[2] + Center[0];
+        
+        rotCoord[1] = rotMatrix[1][0]*r[0]
+                    + rotMatrix[1][1]*r[1]
+                    + rotMatrix[1][2]*r[2] + Center[1];
+        
+        rotCoord[2] = rotMatrix[2][0]*r[0]
+                    + rotMatrix[2][1]*r[1]
+                    + rotMatrix[2][2]*r[2] + Center[2];
+        
         /*--- Calculate delta change in the x, y, & z directions ---*/
         for (iDim = 0; iDim < nDim; iDim++)
           VarCoord[iDim] = (rotCoord[iDim]-Coord[iDim])/Lref;
@@ -3383,7 +3411,6 @@ void CSurfaceMovement::Surface_Pitching(CGeometry *geometry, CConfig *config,
       }
 		}
 	}
-  
 }
 
 void CSurfaceMovement::SetBoundary_Flutter3D(CGeometry *geometry, CConfig *config,

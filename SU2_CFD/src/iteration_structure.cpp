@@ -1222,16 +1222,12 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
     case DEFORMING:
       
       if (rank == MASTER_NODE)
-        cout << endl << " Updating moving surface locations." << endl;
+        cout << endl << " Updating surface locations." << endl;
       
-      /*--- First, compute the new node locations for moving markers ---*/
+      /*--- Compute the new node locations for moving markers ---*/
       
-      if (geometry_container[MESH_0]->GetnDim() == 2)
-        surface_movement->Surface_Pitching(geometry_container[MESH_0],
-                                           config_container, ExtIter, iZone);
-      else
-        surface_movement->SetBoundary_Flutter3D(geometry_container[MESH_0],
-                                                config_container, FFDBox, ExtIter, iZone);
+      surface_movement->Surface_Pitching(geometry_container[MESH_0],
+                                         config_container, ExtIter, iZone);
       
       /*--- Deform the volume grid around the new boundary locations ---*/
       
