@@ -1755,7 +1755,6 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 	unsigned short iDim, iMarker;
 
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-	bool rotating_frame = config->GetRotating_Frame();
 	bool incompressible = config->GetIncompressible();
 	bool grid_movement = config->GetGrid_Movement();
 	bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -1787,18 +1786,6 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 		else {
 			Mean_ProjVel = 0.5 * (node[iPoint]->GetProjVel(Normal) + node[jPoint]->GetProjVel(Normal));
 			Mean_SoundSpeed = 0.5 * (node[iPoint]->GetSoundSpeed() + node[jPoint]->GetSoundSpeed()) * Area;
-		}
-
-		/*--- Adjustment for a rotating frame ---*/
-		if (rotating_frame) {
-			double *RotVel_i = geometry->node[iPoint]->GetRotVel();
-			double *RotVel_j = geometry->node[jPoint]->GetRotVel();
-			ProjVel_i = 0.0; ProjVel_j =0.0;
-			for (iDim = 0; iDim < nDim; iDim++) {
-				ProjVel_i += RotVel_i[iDim]*Normal[iDim];
-				ProjVel_j += RotVel_j[iDim]*Normal[iDim];
-			}
-			Mean_ProjVel -= 0.5 * (ProjVel_i + ProjVel_j);
 		}
 
 		/*--- Adjustment for grid movement ---*/
@@ -1839,15 +1826,6 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 			else {
 				Mean_ProjVel = node[iPoint]->GetProjVel(Normal);
 				Mean_SoundSpeed = node[iPoint]->GetSoundSpeed() * Area;		
-			}
-
-			/*--- Adjustment for a rotating frame ---*/
-			if (rotating_frame) {
-				double *RotVel = geometry->node[iPoint]->GetRotVel();
-				ProjVel = 0.0;
-				for (iDim = 0; iDim < nDim; iDim++)
-					ProjVel += RotVel[iDim]*Normal[iDim];
-				Mean_ProjVel -= ProjVel;
 			}
 
 			/*--- Adjustment for grid movement ---*/
@@ -1936,7 +1914,6 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 	bool high_order_diss = ((config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0));
 	bool low_fidelity = (config->GetLowFidelitySim() && (iMesh == MESH_1));
-	bool rotating_frame = config->GetRotating_Frame();
 	bool incompressible = config->GetIncompressible();
 	bool grid_movement = config->GetGrid_Movement();
 
@@ -1969,12 +1946,6 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
 		if ((high_order_diss || low_fidelity)) {
 			numerics->SetUndivided_Laplacian(node[iPoint]->GetUndivided_Laplacian(), node[jPoint]->GetUndivided_Laplacian());
 			numerics->SetSensor(node[iPoint]->GetSensor(), node[jPoint]->GetSensor()); 
-		}
-
-		/*--- Rotational Frame ---*/
-		if (rotating_frame) {
-			numerics->SetRotVel(geometry->node[iPoint]->GetRotVel(), geometry->node[jPoint]->GetRotVel());
-			numerics->SetRotFlux(geometry->edge[iEdge]->GetRotFlux());
 		}
 
 		/*--- Grid Movement ---*/
@@ -2014,7 +1985,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 			|| (config->GetKind_Upwind_Flow() == HLLC_2ND) || (config->GetKind_Upwind_Flow() == ROE_TURKEL_2ND))
 			&& ((iMesh == MESH_0) || low_fidelity));
 	bool incompressible = config->GetIncompressible();
-	bool rotating_frame = config->GetRotating_Frame();
 //	bool gravity = config->GetGravityForce();
 	bool grid_movement = config->GetGrid_Movement();
 	bool limiter = ((config->GetKind_SlopeLimit_Flow() != NONE) && !low_fidelity);
@@ -2036,12 +2006,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 			for (iDim = 0; iDim < nDim; iDim ++)
 				sqvel += config->GetVelocity_FreeStream()[iDim]*config->GetVelocity_FreeStream()[iDim];
 			numerics->SetVelocity2_Inf(sqvel);
-		}
-
-		/*--- Rotating frame ---*/
-		if (rotating_frame) {
-			numerics->SetRotVel(geometry->node[iPoint]->GetRotVel(), geometry->node[jPoint]->GetRotVel());
-			numerics->SetRotFlux(geometry->edge[iEdge]->GetRotFlux());
 		}
 
 		/*--- Grid Movement ---*/
@@ -2181,43 +2145,44 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   
 	unsigned short iVar;
 	unsigned long iPoint;
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 	bool rotating_frame = config->GetRotating_Frame();
-	bool axisymmetric = config->GetAxisymmetric();
+	bool axisymmetric   = config->GetAxisymmetric();
 	bool incompressible = config->GetIncompressible();
-	bool gravity = (config->GetGravityForce() == YES);
-	bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
-	bool magnet = (config->GetMagnetic_Force() == YES);
-	bool jouleheating = config->GetJouleHeating();
+	bool gravity        = (config->GetGravityForce() == YES);
+	bool time_spectral  = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
+	bool magnet         = (config->GetMagnetic_Force() == YES);
+	bool jouleheating   = config->GetJouleHeating();
 
-	for (iVar = 0; iVar < nVar; iVar++)
-		Residual[iVar] = 0;
+  /*--- Initialize the source residual to zero ---*/
+	for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
   
 	if (rotating_frame) {
 
-		/*--- loop over points ---*/
+		/*--- Loop over all points ---*/
 		for (iPoint = 0; iPoint < nPointDomain; iPoint++) { 
 
-			/*--- Set solution  ---*/
-			numerics->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
+			/*--- Load the conservative variables ---*/
+			numerics->SetConservative(node[iPoint]->GetSolution(),
+                                node[iPoint]->GetSolution());
 
-			/*--- Set control volume ---*/
+			/*--- Load the volume of the dual mesh cell ---*/
 			numerics->SetVolume(geometry->node[iPoint]->GetVolume());
 
-			/*--- Set rotational velocity ---*/
-			numerics->SetRotVel(geometry->node[iPoint]->GetRotVel(), geometry->node[iPoint]->GetRotVel());
-
-			/*--- Compute Residual ---*/
+			/*--- Compute the rotating frame source residual ---*/
 			numerics->ComputeResidual(Residual, Jacobian_i, config);
 
-			/*--- Add Residual ---*/
+			/*--- Add the source residual to the total ---*/
 			LinSysRes.AddBlock(iPoint, Residual);
-
+      
+      /*--- Add the implicit Jacobian contribution ---*/
+      if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      
 		}
 	}
 
 	if (axisymmetric) {
 
-		bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 		/*--- Zero out Jacobian structure ---*/
 		if (implicit) {
 			for (iVar = 0; iVar < nVar; iVar ++)
@@ -2304,7 +2269,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 	}
 
 	if (magnet) {
-		bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+
 		for (iVar = 0; iVar < nVar; iVar ++)
 			for (unsigned short jVar = 0; jVar < nVar; jVar ++)
 				Jacobian_i[iVar][jVar] = 0.0;
@@ -2333,7 +2298,6 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
 	if (jouleheating) {
 		double arc_column_extent = 2.30581;
-		bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 		for (iVar = 0; iVar < nVar; iVar ++)
 			for (unsigned short jVar = 0; jVar < nVar; jVar ++)
 				Jacobian_i[iVar][jVar] = 0.0;
@@ -2418,7 +2382,6 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
 	unsigned long iEdge, iVertex, iPoint, jPoint;
 	unsigned short iDim, iMarker;
 
-	bool rotating_frame = config->GetRotating_Frame();
 	bool incompressible = config->GetIncompressible();
 	bool grid_movement = config->GetGrid_Movement();
 
@@ -2447,18 +2410,6 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
 		else {
 			Mean_ProjVel = 0.5 * (node[iPoint]->GetProjVel(Normal) + node[jPoint]->GetProjVel(Normal));
 			Mean_SoundSpeed = 0.5 * (node[iPoint]->GetSoundSpeed() + node[jPoint]->GetSoundSpeed()) * Area;
-		}
-
-		/*--- Adjustment for a rotating frame ---*/
-		if (rotating_frame) {
-			double *RotVel_i = geometry->node[iPoint]->GetRotVel();
-			double *RotVel_j = geometry->node[jPoint]->GetRotVel();
-			ProjVel_i = 0.0; ProjVel_j =0.0;
-			for (iDim = 0; iDim < nDim; iDim++) {
-				ProjVel_i += RotVel_i[iDim]*Normal[iDim];
-				ProjVel_j += RotVel_j[iDim]*Normal[iDim];
-			}
-			Mean_ProjVel -= 0.5 * (ProjVel_i + ProjVel_j);
 		}
 
 		/*--- Adjustment for grid movement ---*/
@@ -2499,15 +2450,6 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
 			else {
 				Mean_ProjVel = node[iPoint]->GetProjVel(Normal);
 				Mean_SoundSpeed = node[iPoint]->GetSoundSpeed() * Area;
-			}
-
-			/*--- Adjustment for a rotating frame ---*/
-			if (rotating_frame) {
-				double *RotVel = geometry->node[iPoint]->GetRotVel();
-				ProjVel = 0.0;
-				for (iDim = 0; iDim < nDim; iDim++)
-					ProjVel += RotVel[iDim]*Normal[iDim];
-				Mean_ProjVel -= ProjVel;
 			}
 
 			/*--- Adjustment for grid movement ---*/
@@ -2768,7 +2710,6 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 	double Pressure, *Normal = NULL, dist[3], *Coord, Face_Area, PressInviscid;
 	double factor, NFPressOF, RefVel2, RefDensity, RefPressure;
 
-	bool rotating_frame = config->GetRotating_Frame();
 	bool grid_movement  = config->GetGrid_Movement();
 
 	double Alpha           = config->GetAoA()*PI_NUMBER/180.0;
@@ -2780,23 +2721,10 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 	//double *Velocity_Inf   = config->GetVelocity_FreeStreamND();
 	bool incompressible    = config->GetIncompressible();
 
-	/*--- If we have a rotating frame problem or an unsteady problem with
-   mesh motion, use special reference values for the force coefficients.
-   Otherwise, use the freestream values, which is the standard convention. ---*/
-
-	if (rotating_frame) {
-    
-    /*--- Use the rotational origin for computing moments ---*/
-    Origin = config->GetRotAxisOrigin();
-    
-    /*--- Reference moment length is the rotor radius. Note that
-     this assumes that the reference area was set to the rotor disk area. ---*/
-    RefLengthMoment = sqrt(RefAreaCoeff/PI_NUMBER);
-    
-    /*--- Reference velocity is the rotational speed times rotor radius ---*/
-    RefVel2 = (config->GetOmegaMag()*RefLengthMoment)*(config->GetOmegaMag()*RefLengthMoment);
-  
-  } else if (grid_movement) {
+	/*--- For dynamic meshes, use the motion Mach number as a reference value
+   for computing the force coefficients. Otherwise, use the freestream values,
+   which is the standard convention. ---*/
+  if (grid_movement) {
 		double Gas_Constant = config->GetGas_ConstantND();
 		double Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
 		double Mach_Motion = config->GetMach_Motion();
@@ -3686,11 +3614,10 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
 		CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 	unsigned short iDim, iVar, jVar, jDim;
 	unsigned long iPoint, iVertex;
-	double Pressure, *Normal = NULL, *GridVel = NULL, Area, UnitaryNormal[3], Rot_Flux,
-			ProjGridVel = 0.0, ProjRotVel = 0.0, Density, a2, phi;
+	double Pressure, *Normal = NULL, *GridVel = NULL, Area, UnitaryNormal[3],
+			ProjGridVel = 0.0, Density, a2, phi;
 
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-	bool rotating_frame = config->GetRotating_Frame();
 	bool grid_movement  = config->GetGrid_Movement();
 	bool incompressible = config->GetIncompressible();
 
@@ -3718,12 +3645,6 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
 			for (iDim = 0; iDim < nDim; iDim++)
 				Residual[iDim+1] = Pressure*UnitaryNormal[iDim]*Area;
 			if (!incompressible) Residual[nVar-1] = 0.0;
-
-			/*--- Adjustment to energy equation for a rotating frame ---*/
-			if (rotating_frame) {
-				ProjRotVel = -geometry->vertex[val_marker][iVertex]->GetRotFlux();
-				Residual[nVar-1] = Pressure*ProjRotVel;
-			}
 
 			/*--- Adjustment to energy equation due to grid motion ---*/
 			if (grid_movement) {
@@ -3772,12 +3693,6 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
 							Jacobian_i[nDim+1][jDim+1] = a2*node[iPoint]->GetVelocity(jDim, incompressible)*ProjGridVel;
 						Jacobian_i[nDim+1][nDim+1] = -a2*ProjGridVel;
 					}
-					if (rotating_frame) {
-						Rot_Flux = -geometry->vertex[val_marker][iVertex]->GetRotFlux();
-						for (jDim = 0; jDim < nDim; jDim++)
-							Jacobian_i[nDim+1][jDim+1] = a2*node[iPoint]->GetVelocity(jDim, incompressible)*Rot_Flux;
-						Jacobian_i[nDim+1][nDim+1] = -a2*Rot_Flux;
-					}
 					Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
 				}
 			}
@@ -3809,7 +3724,6 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
   /*--- These should probably all be computed at the solver class level. ---*/
   
 	bool implicit       = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-	bool rotating_frame = config->GetRotating_Frame();
 	bool grid_movement  = config->GetGrid_Movement();
 	bool incompressible = config->GetIncompressible();
 	bool gravity        = config->GetGravityForce();
@@ -3998,12 +3912,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 				conv_numerics->SetBetaInc2(node[iPoint]->GetBetaInc2(), node[iPoint]->GetBetaInc2());
 				conv_numerics->SetCoord(Coord, Coord);
 			}
-      
-			if (rotating_frame) {
-				conv_numerics->SetRotVel(geometry->node[iPoint]->GetRotVel(), geometry->node[iPoint]->GetRotVel());
-				conv_numerics->SetRotFlux(-geometry->vertex[val_marker][iVertex]->GetRotFlux());
-			}
-      
+
 			if (grid_movement) {
 				conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
 			}
@@ -4072,7 +3981,6 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 	alpha, aa, bb, cc, dd, Area, UnitaryNormal[3], Density_Inlet;
   
 	bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-	bool rotating_frame       = config->GetRotating_Frame();
 	bool grid_movement        = config->GetGrid_Movement();
 	bool incompressible       = config->GetIncompressible();
 	double Two_Gamma_M1       = 2.0/Gamma_Minus_One;
@@ -4306,10 +4214,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 				conv_numerics->SetBetaInc2(node[iPoint]->GetBetaInc2(), node[iPoint]->GetBetaInc2());
 				conv_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
 			}
-			if (rotating_frame) {
-				conv_numerics->SetRotVel(geometry->node[iPoint]->GetRotVel(), geometry->node[iPoint]->GetRotVel());
-				conv_numerics->SetRotFlux(-geometry->vertex[val_marker][iVertex]->GetRotFlux());
-			}
+
 			if (grid_movement)
 				conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
       
@@ -4379,7 +4284,6 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 	bool implicit           = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
     double Gas_Constant     = config->GetGas_ConstantND();
 	bool incompressible     = config->GetIncompressible();
-	bool rotating_frame     = config->GetRotating_Frame();
 	bool grid_movement      = config->GetGrid_Movement();
 	double FreeSurface_Zero = config->GetFreeSurface_Zero();
 	double PressFreeSurface = GetPressure_Inf();
@@ -4544,10 +4448,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 				conv_numerics->SetBetaInc2(node[iPoint]->GetBetaInc2(), node[iPoint]->GetBetaInc2());
 				conv_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
 			}
-			if (rotating_frame) {
-				conv_numerics->SetRotVel(geometry->node[iPoint]->GetRotVel(), geometry->node[iPoint]->GetRotVel());
-				conv_numerics->SetRotFlux(-geometry->vertex[val_marker][iVertex]->GetRotFlux());
-			}
+
 			if (grid_movement)
 				conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
             
@@ -4616,7 +4517,6 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
 	double Gas_Constant = config->GetGas_ConstantND();
     
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-	bool rotating_frame = config->GetRotating_Frame();
 	bool grid_movement  = config->GetGrid_Movement();
 	bool incompressible = config->GetIncompressible();
 	bool viscous              = config->GetViscous();
@@ -4702,11 +4602,7 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
 				conv_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
                                       geometry->node[iPoint]->GetCoord());
 			}
-			if (rotating_frame) {
-				conv_numerics->SetRotVel(geometry->node[iPoint]->GetRotVel(),
-                                       geometry->node[iPoint]->GetRotVel());
-				conv_numerics->SetRotFlux(-geometry->vertex[val_marker][iVertex]->GetRotFlux());
-			}
+
 			if (grid_movement)
 				conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
                                         geometry->node[iPoint]->GetGridVel());
@@ -6456,7 +6352,6 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
 	double ProjVel, ProjVel_i, ProjVel_j;
 
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-	bool rotating_frame = config->GetRotating_Frame();
 	bool incompressible = config->GetIncompressible();
 	bool grid_movement = config->GetGrid_Movement();
 	double turb_model = config->GetKind_Turb_Model();
@@ -6497,18 +6392,6 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
 		else {
 			Mean_ProjVel = 0.5 * (node[iPoint]->GetProjVel(Normal) + node[jPoint]->GetProjVel(Normal));
 			Mean_SoundSpeed = 0.5 * (node[iPoint]->GetSoundSpeed() + node[jPoint]->GetSoundSpeed()) * Area;
-		}
-
-		/*--- Contribution due to a rotating frame ---*/
-		if (rotating_frame) {
-			double *RotVel_i = geometry->node[iPoint]->GetRotVel();
-			double *RotVel_j = geometry->node[jPoint]->GetRotVel();
-			ProjVel_i = 0.0; ProjVel_j =0.0;
-			for (iDim = 0; iDim < nDim; iDim++) {
-				ProjVel_i += RotVel_i[iDim]*Normal[iDim];
-				ProjVel_j += RotVel_j[iDim]*Normal[iDim];
-			}
-			Mean_ProjVel -= 0.5 * (ProjVel_i + ProjVel_j) ;
 		}
 
 		/*--- Adjustment for grid movement ---*/
@@ -6568,15 +6451,6 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
 			else {
 				Mean_ProjVel = node[iPoint]->GetProjVel(Normal);
 				Mean_SoundSpeed = node[iPoint]->GetSoundSpeed() * Area;
-			}
-
-			/*--- Contribution due to a rotating frame ---*/
-			if (rotating_frame) {
-				double *RotVel = geometry->node[iPoint]->GetRotVel();
-				ProjVel = 0.0;
-				for (iDim = 0; iDim < nDim; iDim++)
-					ProjVel += RotVel[iDim]*Normal[iDim];
-				Mean_ProjVel -= ProjVel;
 			}
 
 			/*--- Adjustment for grid movement ---*/
@@ -6743,35 +6617,19 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 	double Gas_Constant = config->GetGas_ConstantND();
 	double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
     
-	bool rotating_frame = config->GetRotating_Frame();
 	bool grid_movement  = config->GetGrid_Movement();
 	bool incompressible = config->GetIncompressible();
     
-    
-	/*--- If we have a rotating frame problem or an unsteady problem with
-     mesh motion, use special reference values for the force coefficients.
-     Otherwise, use the freestream values, which is the standard convention. ---*/
-    
-	if (rotating_frame) {
-        
-        /*--- Use the rotational origin for computing moments ---*/
-        Origin = config->GetRotAxisOrigin();
-        
-        /*--- Reference moment length is the rotor radius. Note that
-         this assumes that the reference area was set to the rotor disk area. ---*/
-        RefLengthMoment = sqrt(RefAreaCoeff/PI_NUMBER);
-        
-        /*--- Reference velocity is the rotational speed times rotor radius ---*/
-        RefVel2 = (config->GetOmegaMag()*RefLengthMoment)*(config->GetOmegaMag()*RefLengthMoment);
-        
-    } else if (grid_movement) {
+  /*--- For dynamic meshes, use the motion Mach number as a reference value
+   for computing the force coefficients. Otherwise, use the freestream values,
+   which is the standard convention. ---*/
+  if (grid_movement) {
 		double Gas_Constant = config->GetGas_ConstantND();
 		double Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
 		double Mach_Motion = config->GetMach_Motion();
 		RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
-        
 	} else {
-		double *Velocity_Inf = config->GetVelocity_FreeStreamND();
+    double *Velocity_Inf = config->GetVelocity_FreeStreamND();
 		RefVel2 = 0.0;
 		for (iDim = 0; iDim < nDim; iDim++)
 			RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
@@ -6977,13 +6835,12 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
 	unsigned long iVertex, iPoint, total_index;
     
 	double Wall_HeatFlux;
-	double *Grid_Vel, *Rot_Vel, *Normal, Area;
+	double *Grid_Vel, *Normal, Area;
     
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 	bool incompressible = config->GetIncompressible();
 	bool grid_movement  = config->GetGrid_Movement();
-	bool rotating_frame = config->GetRotating_Frame();
-    
+  
 	/*--- Identify the boundary by string name ---*/
 	string Marker_Tag = config->GetMarker_All_Tag(val_marker);
     
@@ -7013,11 +6870,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
             
 			/*--- Store the corrected velocity at the wall which will
              be zero (v = 0), unless there are moving walls (v = u_wall)---*/
-			if (rotating_frame) {
-				Rot_Vel = geometry->node[iPoint]->GetRotVel();
-				for (iDim = 0; iDim < nDim; iDim++)
-					Vector[iDim] = Rot_Vel[iDim];
-			} else if (grid_movement) {
+			if (grid_movement) {
 				Grid_Vel = geometry->node[iPoint]->GetGridVel();
 				for (iDim = 0; iDim < nDim; iDim++)
 					Vector[iDim] = Grid_Vel[iDim];
@@ -7035,13 +6888,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
             
 			/*--- Set the residual on the boundary with the specified heat flux ---*/
 			Res_Visc[nDim+1] = Wall_HeatFlux * Area;
-            
-			/*--- Flux contribution due to a rotating frame (energy equation) ---*/
-			if (rotating_frame) {
-				double ProjRotVel = -geometry->vertex[val_marker][iVertex]->GetRotFlux();
-				Res_Conv[nDim+1] = node[iPoint]->GetPressure(incompressible)*ProjRotVel;
-			}
-            
+
 			/*--- Flux contribution due to grid motion (energy equation) ---*/
 			if (grid_movement) {
 				double ProjGridVel = 0.0;
@@ -7052,7 +6899,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
 			}
             
 			/*--- Viscous contribution for moving walls ---*/
-			if (rotating_frame || grid_movement) {
+			if (grid_movement) {
                 
 				unsigned short jDim;
 				double total_viscosity, div_vel, Density, val_turb_ke;
@@ -7064,12 +6911,8 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
 				total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
                 
 				/*--- Get the appropriate grid velocity at this node ---*/
-				if (rotating_frame) {
-					Grid_Vel = geometry->node[iPoint]->GetRotVel();
-				} else if (grid_movement) {
 					Grid_Vel = geometry->node[iPoint]->GetGridVel();
-				}
-                
+        
 				double Flux_Tensor[nVar][nDim];
 				for (iVar = 0 ; iVar < nVar; iVar++)
 					for (jDim = 0 ; jDim < nDim; jDim++)
@@ -7153,7 +6996,7 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
     
 	unsigned long iVertex, iPoint, Point_Normal, total_index;
 	unsigned short iVar, jVar, iDim;
-	double *Normal, *Coord_i, *Coord_j, Area, dist_ij, *Grid_Vel, *Rot_Vel;
+	double *Normal, *Coord_i, *Coord_j, Area, dist_ij, *Grid_Vel;
 	double UnitaryNormal[3];
 	double Twall, Temperature, dTdn, dTdrho;
 	double Density, Vel2, Energy;
@@ -7162,8 +7005,7 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 	bool incompressible = config->GetIncompressible();
 	bool grid_movement = config->GetGrid_Movement();
-	bool rotating_frame = config->GetRotating_Frame();
-    
+  
 	Point_Normal = 0;
     
 	/*--- Identify the boundary ---*/
@@ -7209,11 +7051,7 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
             
 			/*--- Store the corrected velocity at the wall which will
              be zero (v = 0), unless there is grid motion (v = u_wall)---*/
-			if (rotating_frame) {
-				Rot_Vel = geometry->node[iPoint]->GetRotVel();
-				for (iDim = 0; iDim < nDim; iDim++)
-					Vector[iDim] = Rot_Vel[iDim];
-			} else if (grid_movement) {
+			if (grid_movement) {
 				Grid_Vel = geometry->node[iPoint]->GetGridVel();
 				for (iDim = 0; iDim < nDim; iDim++)
 					Vector[iDim] = Grid_Vel[iDim];

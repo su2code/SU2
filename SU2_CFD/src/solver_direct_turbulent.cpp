@@ -1116,7 +1116,6 @@ void CTurbSASolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contai
 	unsigned short iDim, iVar;
 
 	bool high_order_diss = (config->GetKind_Upwind_Turb() == SCALAR_UPWIND_2ND);
-	bool rotating_frame = config->GetRotating_Frame();
 	bool grid_movement = config->GetGrid_Movement();
 	bool incompressible = config->GetIncompressible();
 	bool limiter = (config->GetKind_SlopeLimit() != NONE);
@@ -1144,10 +1143,6 @@ void CTurbSASolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contai
 		/*--- Incompressible density w/o reconstruction ---*/
 		if (incompressible)
 			numerics->SetDensityInc(solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc(), solver_container[FLOW_SOL]->node[jPoint]->GetDensityInc());
-
-		/*--- Rotating Frame ---*/
-		if (rotating_frame)
-			numerics->SetRotVel(geometry->node[iPoint]->GetRotVel(), geometry->node[jPoint]->GetRotVel());
 
 		/*--- Grid Movement ---*/
 		if (grid_movement)
@@ -1409,7 +1404,6 @@ void CTurbSASolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container
 	unsigned short iVar, iDim;
 	double *Normal;
 
-	bool rotating_frame = config->GetRotating_Frame();
 	bool grid_movement	= config->GetGrid_Movement();
 	bool incompressible = config->GetIncompressible();
 	bool gravity        = config->GetGravityForce();
@@ -1452,10 +1446,6 @@ void CTurbSASolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container
 				for (iDim = 0; iDim < nDim; iDim++)
 					FlowSolution_j[iDim+1] = solver_container[FLOW_SOL]->GetDensity_Velocity_Inf(iDim);
 			}
-
-			/*--- Rotating Frame ---*/
-			if (rotating_frame)
-				conv_numerics->SetRotVel(geometry->node[iPoint]->GetRotVel(), geometry->node[iPoint]->GetRotVel());
 
 			/*--- Grid Movement ---*/
 			if (grid_movement)
@@ -1506,7 +1496,6 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
 	double Gas_Constant = config->GetGas_ConstantND();
 	double *Normal = new double[nDim];
     
-	bool rotating_frame = config->GetRotating_Frame();
 	bool grid_movement  = config->GetGrid_Movement();
 	bool incompressible = config->GetIncompressible();
     bool freesurface = config->GetFreeSurface();
@@ -1727,11 +1716,6 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
 			if (incompressible)
 				conv_numerics->SetDensityInc(solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc(),
                                    solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc());
-			if (rotating_frame) {
-				conv_numerics->SetRotVel(geometry->node[iPoint]->GetRotVel(),
-                               geometry->node[iPoint]->GetRotVel());
-				conv_numerics->SetRotFlux(-geometry->vertex[val_marker][iVertex]->GetRotFlux());
-			}
 			if (grid_movement)
 				conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
                                 geometry->node[iPoint]->GetGridVel());
@@ -1790,7 +1774,6 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
 	unsigned short iVar, iDim;
 
 	bool incompressible = config->GetIncompressible();
-	bool rotating_frame = config->GetRotating_Frame();
 	bool grid_movement  = config->GetGrid_Movement();
 
 	double *Normal = new double[nDim];
@@ -1831,11 +1814,7 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
 			if (incompressible)
 				conv_numerics->SetDensityInc(solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc(), 
 						solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc());
-			if (rotating_frame) {
-				conv_numerics->SetRotVel(geometry->node[iPoint]->GetRotVel(),
-						geometry->node[iPoint]->GetRotVel());
-				conv_numerics->SetRotFlux(-geometry->vertex[val_marker][iVertex]->GetRotFlux());
-			}
+      
 			if (grid_movement)
 				conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
 						geometry->node[iPoint]->GetGridVel());
@@ -2891,7 +2870,6 @@ void CTurbSSTSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
 	unsigned short iDim, iVar;
 
 	bool high_order_diss = (config->GetKind_Upwind_Turb() == SCALAR_UPWIND_2ND);
-	bool rotating_frame = config->GetRotating_Frame();
 	bool grid_movement = config->GetGrid_Movement();
 	bool incompressible = config->GetIncompressible();
 
@@ -2922,10 +2900,6 @@ void CTurbSSTSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
 		if (incompressible)
 			numerics->SetDensityInc(solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc(), 
 					solver_container[FLOW_SOL]->node[jPoint]->GetDensityInc());
-
-		/*--- Rotating Frame ---*/
-		if (rotating_frame)
-			numerics->SetRotVel(geometry->node[iPoint]->GetRotVel(), geometry->node[jPoint]->GetRotVel());
 
 		/*--- Grid Movement ---*/
 		if (grid_movement)
@@ -3256,7 +3230,6 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
 	double Gas_Constant = config->GetGas_ConstantND();
 	double *Normal = new double[nDim];
 
-	bool rotating_frame = config->GetRotating_Frame();
 	bool grid_movement  = config->GetGrid_Movement();
 	bool incompressible = config->GetIncompressible();
 
@@ -3480,10 +3453,6 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
 			if (incompressible)
 				conv_numerics->SetDensityInc(solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc(),
 						solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc());
-			if (rotating_frame) {
-				conv_numerics->SetRotVel(geometry->node[iPoint]->GetRotVel(), geometry->node[iPoint]->GetRotVel());
-				conv_numerics->SetRotFlux(-geometry->vertex[val_marker][iVertex]->GetRotFlux());
-			}
 
 			if (grid_movement)
 				conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
@@ -3510,7 +3479,6 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
 	unsigned short iVar, iDim;
 
 	bool incompressible = config->GetIncompressible();
-	bool rotating_frame = config->GetRotating_Frame();
 	bool grid_movement  = config->GetGrid_Movement();
 
 	double *Normal = new double[nDim];
@@ -3548,10 +3516,6 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
 			if (incompressible)
 				conv_numerics->SetDensityInc(solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc(),
 						solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc());
-			if (rotating_frame) {
-				conv_numerics->SetRotVel(geometry->node[iPoint]->GetRotVel(), geometry->node[iPoint]->GetRotVel());
-				conv_numerics->SetRotFlux(-geometry->vertex[val_marker][iVertex]->GetRotFlux());
-			}
 
 			if (grid_movement)
 				conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());

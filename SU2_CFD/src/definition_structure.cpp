@@ -208,10 +208,6 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
 		if (rank == MASTER_NODE) cout << "Compute the surface curvature." << endl;
     geometry[iZone][MESH_0]->ComputeSurf_Curvature(config[iZone]);
 
-		/*--- For a rotating frame, set the velocity due to rotation at each mesh point ---*/
-		if (config[iZone]->GetRotating_Frame())
-			geometry[iZone][MESH_0]->SetRotationalVelocity(config[iZone]);
-
 		if ((config[iZone]->GetMGLevels() != 0) && (rank == MASTER_NODE))
 			cout << "Setting the multigrid structure." <<endl;
 
@@ -245,10 +241,6 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
 
 			/*--- Find closest neighbor to a surface point ---*/
 			geometry[iZone][iMGlevel]->FindNormal_Neighbor(config[iZone]);
-
-			/*--- For a rotating frame, set the velocity due to rotation at each mesh point ---*/
-			if (config[iZone]->GetRotating_Frame())
-				geometry[iZone][iMGlevel]->SetRotationalVelocity(config[iZone]);
 
 		}
 	}
@@ -1430,10 +1422,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
           else {
             if (config->GetRotating_Frame() == YES)
               numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceRotatingFrame_AdjFlow(nDim, nVar_Adj_Flow, config);
-            else
-              numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Adj_Flow, config);
-
-            if (config->GetAxisymmetric() == YES)
+            else if (config->GetAxisymmetric() == YES)
               numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceAxisymmetric_AdjFlow(nDim, nVar_Adj_Flow, config);
             else
               numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Adj_Flow, config);

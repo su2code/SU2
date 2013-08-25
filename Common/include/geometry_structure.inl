@@ -71,7 +71,7 @@ inline void CGeometry::SetRotationalVelocity(CConfig *config) { }
 
 inline void CGeometry::SetGridVelocity(CConfig *config, unsigned long iter) { }
 
-inline void CGeometry::SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config, unsigned long iter) { } 
+inline void CGeometry::SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config) { } 
 
 inline void CGeometry::SetPeriodicBoundary(CConfig *config) { }
 
