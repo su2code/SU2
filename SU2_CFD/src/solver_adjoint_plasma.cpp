@@ -1003,7 +1003,7 @@ void CAdjPlasmaSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solve
   double *d = NULL, *Normal = NULL, *Psi = NULL, *U = NULL, Enthalpy, conspsi,
 	Area, **PrimVar_Grad = NULL, *ConsPsi_Grad = NULL, ConsPsi, d_press, grad_v,
 	v_gradconspsi;
-  //double UnitaryNormal[3];
+  //double UnitNormal[3];
   //double Mach_Inf, Beta2;
 	//double RefDensity, *RefVelocity = NULL, RefPressure;
   
@@ -1086,14 +1086,14 @@ void CAdjPlasmaSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solve
 void CAdjPlasmaSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 	
 	unsigned long iVertex, iPoint;
-	double *d, *Normal, *U, *Psi_Aux, ProjVel, bcn, Area, *UnitaryNormal, *Coord, Gamma_Minus_One;
+	double *d, *Normal, *U, *Psi_Aux, ProjVel, bcn, Area, *UnitNormal, *Coord, Gamma_Minus_One;
   double *Velocity, *Psi, Enthalpy, hf, Energy_vib, sq_vel, phin;
 	unsigned short iDim, iVar, jVar, jDim, loc, iSpecies;
   double phidotu, phidotn, Energy_el, dPdrho, *dPdrhou, dPdrhoE, dPdrhoEv;
 	
 	bool implicit = (config->GetKind_TimeIntScheme_Plasma() == EULER_IMPLICIT);
 	
-	UnitaryNormal = new double[nDim];
+	UnitNormal = new double[nDim];
 	Velocity = new double[nDim];
 	Psi      = new double[nVar];
   dPdrhou = new double[nDim];
@@ -1123,7 +1123,7 @@ void CAdjPlasmaSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
 				for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
 				Area = sqrt(Area);
 				for (iDim = 0; iDim < nDim; iDim++)
-					UnitaryNormal[iDim]   = -Normal[iDim]/Area;
+					UnitNormal[iDim]   = -Normal[iDim]/Area;
 								
 
         Gamma_Minus_One = config->GetSpecies_Gamma(iSpecies);
@@ -1143,21 +1143,21 @@ void CAdjPlasmaSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
 				ProjVel = 0.0; bcn = 0.0; phin = 0.0;
 				for (iDim = 0; iDim < nDim; iDim++) {
 //					ProjVel -= Velocity[iDim]*Normal[iDim];
-					ProjVel += Velocity[iDim]*UnitaryNormal[iDim];
-					bcn     += d[iDim]*UnitaryNormal[iDim];
-					phin    += Psi[loc+iDim+1]*UnitaryNormal[iDim];
+					ProjVel += Velocity[iDim]*UnitNormal[iDim];
+					bcn     += d[iDim]*UnitNormal[iDim];
+					phin    += Psi[loc+iDim+1]*UnitNormal[iDim];
 				}
 
 				/*--- Introduce the boundary condition ---*/
 				for (iDim = 0; iDim < nDim; iDim++) 
-					Psi[loc+iDim+1] -= ( phin - bcn ) * UnitaryNormal[iDim];
+					Psi[loc+iDim+1] -= ( phin - bcn ) * UnitNormal[iDim];
         
         /*--- Pre-compute useful quantities ---*/
         phidotu = 0.0;
         phidotn = 0.0;
         for (iDim = 0; iDim < nDim; iDim ++) {
           phidotu += Velocity[iDim] * Psi[loc+iDim+1];
-          phidotn += Psi[loc+iDim+1] * UnitaryNormal[iDim];
+          phidotn += Psi[loc+iDim+1] * UnitNormal[iDim];
         }
         dPdrho = Gamma_Minus_One * (0.5*sq_vel - hf - Energy_el);
         for (iDim = 0; iDim < nDim; iDim++)
@@ -1168,14 +1168,14 @@ void CAdjPlasmaSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
         /*--- Flux of the Euler wall: Psi^T * (dF/dU dot n) ---*/
         Residual[loc+0] = dPdrho*phidotn - ProjVel*phidotu + ProjVel*(dPdrho-Enthalpy)*Psi[loc+nDim+1];
         for (iDim = 0; iDim < nDim; iDim++)
-          Residual[loc+iDim+1] = UnitaryNormal[iDim]*Psi[loc] + ProjVel*Psi[loc+iDim+1] + phidotu*UnitaryNormal[iDim] + dPdrhou[iDim]*phidotn 
-          + (dPdrhou[iDim]*ProjVel+Enthalpy*UnitaryNormal[iDim])*Psi[loc+nDim+1];
+          Residual[loc+iDim+1] = UnitNormal[iDim]*Psi[loc] + ProjVel*Psi[loc+iDim+1] + phidotu*UnitNormal[iDim] + dPdrhou[iDim]*phidotn 
+          + (dPdrhou[iDim]*ProjVel+Enthalpy*UnitNormal[iDim])*Psi[loc+nDim+1];
         Residual[loc+nDim+1] = dPdrhoE*phidotn + ProjVel*(1.0+dPdrhoE)*Psi[loc+nDim+1];
         
         if (iSpecies < nDiatomics) {
           Residual[loc+0] -= ProjVel*Energy_vib*Psi[loc+nDim+2];
           for (iDim = 0; iDim < nDim; iDim++)
-            Residual[loc+iDim+1] += Energy_vib*UnitaryNormal[iDim]*Psi[loc+nDim+2];
+            Residual[loc+iDim+1] += Energy_vib*UnitNormal[iDim]*Psi[loc+nDim+2];
           Residual[loc+nDim+1] += 0.0;
           Residual[loc+nDim+2] = dPdrhoEv*phidotn + ProjVel*dPdrhoEv*Psi[loc+nDim+1] + ProjVel*Psi[loc+nDim+2];
         }       
@@ -1186,34 +1186,34 @@ void CAdjPlasmaSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
           /*--- Adjoint density ---*/
           Jacobian_ii[loc+0][loc+0] = 0.0;
           for (iDim = 0; iDim < nDim; iDim++)
-            Jacobian_ii[loc+0][loc+iDim+1] = dPdrho*UnitaryNormal[iDim] - ProjVel*Velocity[iDim];
+            Jacobian_ii[loc+0][loc+iDim+1] = dPdrho*UnitNormal[iDim] - ProjVel*Velocity[iDim];
           Jacobian_ii[loc+0][loc+nDim+1] = ProjVel*(dPdrho - Enthalpy);
           
           /*--- Adjoint velocity ---*/
           for (iDim = 0; iDim < nDim; iDim++) {
-            Jacobian_ii[loc+iDim+1][0] = UnitaryNormal[iDim];
+            Jacobian_ii[loc+iDim+1][0] = UnitNormal[iDim];
             for (jDim = 0; jDim < nDim; jDim++)
-              Jacobian_ii[loc+iDim+1][loc+jDim+1] = Velocity[jDim]*UnitaryNormal[iDim] + dPdrhou[iDim]*UnitaryNormal[jDim];
+              Jacobian_ii[loc+iDim+1][loc+jDim+1] = Velocity[jDim]*UnitNormal[iDim] + dPdrhou[iDim]*UnitNormal[jDim];
             Jacobian_ii[loc+iDim+1][loc+iDim+1] += ProjVel;
-            Jacobian_ii[loc+iDim+1][loc+nDim+1] = dPdrhou[iDim]*ProjVel + Enthalpy*UnitaryNormal[iDim];
+            Jacobian_ii[loc+iDim+1][loc+nDim+1] = dPdrhou[iDim]*ProjVel + Enthalpy*UnitNormal[iDim];
           }
           
           /*--- Adjoint energy ---*/
           Jacobian_ii[loc+nDim+1][loc+0] = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) 
-            Jacobian_ii[loc+nDim+1][loc+iDim+1] = dPdrhoE*UnitaryNormal[iDim];
+            Jacobian_ii[loc+nDim+1][loc+iDim+1] = dPdrhoE*UnitNormal[iDim];
           Jacobian_ii[loc+nDim+1][loc+nDim+1] = ProjVel*(1.0+dPdrhoE);
           
           /*--- Adjoint vibrational energy ---*/
           if (iSpecies < nDiatomics) {
             Jacobian_ii[loc+0][loc+nDim+2] = -ProjVel*Energy_vib;
             for (iDim = 0; iDim < nDim; iDim++)
-              Jacobian_ii[loc+iDim+1][loc+nDim+2] = Energy_vib*UnitaryNormal[iDim];
+              Jacobian_ii[loc+iDim+1][loc+nDim+2] = Energy_vib*UnitNormal[iDim];
             Jacobian_ii[loc+nDim+1][loc+nDim+2] = 0.0;
             
             Jacobian_ii[loc+nDim+2][loc+0] = 0.0;
             for (iDim = 0; iDim < nDim; iDim++)
-              Jacobian_ii[loc+nDim+2][loc+iDim+1] = dPdrhoEv*UnitaryNormal[iDim];
+              Jacobian_ii[loc+nDim+2][loc+iDim+1] = dPdrhoEv*UnitNormal[iDim];
             Jacobian_ii[loc+nDim+2][loc+nDim+1] = ProjVel*dPdrhoEv;
             Jacobian_ii[loc+nDim+2][loc+nDim+2] = ProjVel;
           }  
@@ -1232,7 +1232,7 @@ void CAdjPlasmaSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
 		}
 	}	
 	delete [] Velocity;
-	delete [] UnitaryNormal;
+	delete [] UnitNormal;
 	delete [] Psi;
   delete [] dPdrhou;
 }
@@ -1241,14 +1241,14 @@ void CAdjPlasmaSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
 																		 CConfig *config, unsigned short val_marker) {
 	
 	unsigned long iVertex, iPoint;
-	double *Normal, *U, *Psi_Aux, ProjVel, bcn, Area, *UnitaryNormal, *Coord, Gamma_Minus_One;
+	double *Normal, *U, *Psi_Aux, ProjVel, bcn, Area, *UnitNormal, *Coord, Gamma_Minus_One;
   double *Velocity, *Psi, Enthalpy, hf, Energy_vib, sq_vel, phin;
 	unsigned short iDim, iVar, jVar, jDim, loc, iSpecies;
   double phidotu, phidotn, Energy_el, dPdrho, *dPdrhou, dPdrhoE, dPdrhoEv;
 	
 	bool implicit = (config->GetKind_TimeIntScheme_Plasma() == EULER_IMPLICIT);
 	
-	UnitaryNormal = new double[nDim];
+	UnitNormal = new double[nDim];
 	Velocity = new double[nDim];
 	Psi      = new double[nVar];
   dPdrhou = new double[nDim];
@@ -1277,7 +1277,7 @@ void CAdjPlasmaSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
 				for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
 				Area = sqrt(Area);
 				for (iDim = 0; iDim < nDim; iDim++)
-					UnitaryNormal[iDim]   = -Normal[iDim]/Area;
+					UnitNormal[iDim]   = -Normal[iDim]/Area;
         
         Gamma_Minus_One = config->GetSpecies_Gamma(iSpecies);
 				Enthalpy = solver_container[PLASMA_SOL]->node[iPoint]->GetEnthalpy(iSpecies);
@@ -1296,20 +1296,20 @@ void CAdjPlasmaSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
 				ProjVel = 0.0; bcn = 0.0; phin = 0.0;
 				for (iDim = 0; iDim < nDim; iDim++) {
           //					ProjVel -= Velocity[iDim]*Normal[iDim];
-					ProjVel += Velocity[iDim]*UnitaryNormal[iDim];
-					phin    += Psi[loc+iDim+1]*UnitaryNormal[iDim];
+					ProjVel += Velocity[iDim]*UnitNormal[iDim];
+					phin    += Psi[loc+iDim+1]*UnitNormal[iDim];
 				}
         
 				/*--- Introduce the boundary condition ---*/
 				for (iDim = 0; iDim < nDim; iDim++)
-					Psi[loc+iDim+1] -= phin * UnitaryNormal[iDim];
+					Psi[loc+iDim+1] -= phin * UnitNormal[iDim];
               
         /*--- Pre-compute useful quantities ---*/
         phidotu = 0.0;
         phidotn = 0.0;
         for (iDim = 0; iDim < nDim; iDim ++) {
           phidotu += Velocity[iDim] * Psi[loc+iDim+1];
-          phidotn += Psi[loc+iDim+1] * UnitaryNormal[iDim];
+          phidotn += Psi[loc+iDim+1] * UnitNormal[iDim];
         }
         dPdrho = Gamma_Minus_One * (0.5*sq_vel - hf - Energy_el);
         for (iDim = 0; iDim < nDim; iDim++)
@@ -1320,14 +1320,14 @@ void CAdjPlasmaSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
         /*--- Flux of the Euler wall: Psi^T * (dF/dU dot n) ---*/
         Residual[loc+0] = dPdrho*phidotn - ProjVel*phidotu + ProjVel*(dPdrho-Enthalpy)*Psi[loc+nDim+1];
         for (iDim = 0; iDim < nDim; iDim++)
-          Residual[loc+iDim+1] = UnitaryNormal[iDim]*Psi[loc] + ProjVel*Psi[loc+iDim+1] + phidotu*UnitaryNormal[iDim] + dPdrhou[iDim]*phidotn
-          + (dPdrhou[iDim]*ProjVel+Enthalpy*UnitaryNormal[iDim])*Psi[loc+nDim+1];
+          Residual[loc+iDim+1] = UnitNormal[iDim]*Psi[loc] + ProjVel*Psi[loc+iDim+1] + phidotu*UnitNormal[iDim] + dPdrhou[iDim]*phidotn
+          + (dPdrhou[iDim]*ProjVel+Enthalpy*UnitNormal[iDim])*Psi[loc+nDim+1];
         Residual[loc+nDim+1] = dPdrhoE*phidotn + ProjVel*(1.0+dPdrhoE)*Psi[loc+nDim+1];
         
         if (iSpecies < nDiatomics) {
           Residual[loc+0] -= ProjVel*Energy_vib*Psi[loc+nDim+2];
           for (iDim = 0; iDim < nDim; iDim++)
-            Residual[loc+iDim+1] += Energy_vib*UnitaryNormal[iDim]*Psi[loc+nDim+2];
+            Residual[loc+iDim+1] += Energy_vib*UnitNormal[iDim]*Psi[loc+nDim+2];
           Residual[loc+nDim+1] += 0.0;
           Residual[loc+nDim+2] = dPdrhoEv*phidotn + ProjVel*dPdrhoEv*Psi[loc+nDim+1] + ProjVel*Psi[loc+nDim+2];
         }
@@ -1338,34 +1338,34 @@ void CAdjPlasmaSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
           /*--- Adjoint density ---*/
           Jacobian_ii[loc+0][loc+0] = 0.0;
           for (iDim = 0; iDim < nDim; iDim++)
-            Jacobian_ii[loc+0][loc+iDim+1] = dPdrho*UnitaryNormal[iDim] - ProjVel*Velocity[iDim];
+            Jacobian_ii[loc+0][loc+iDim+1] = dPdrho*UnitNormal[iDim] - ProjVel*Velocity[iDim];
           Jacobian_ii[loc+0][loc+nDim+1] = ProjVel*(dPdrho - Enthalpy);
           
           /*--- Adjoint velocity ---*/
           for (iDim = 0; iDim < nDim; iDim++) {
-            Jacobian_ii[loc+iDim+1][0] = UnitaryNormal[iDim];
+            Jacobian_ii[loc+iDim+1][0] = UnitNormal[iDim];
             for (jDim = 0; jDim < nDim; jDim++)
-              Jacobian_ii[loc+iDim+1][loc+jDim+1] = Velocity[jDim]*UnitaryNormal[iDim] + dPdrhou[iDim]*UnitaryNormal[jDim];
+              Jacobian_ii[loc+iDim+1][loc+jDim+1] = Velocity[jDim]*UnitNormal[iDim] + dPdrhou[iDim]*UnitNormal[jDim];
             Jacobian_ii[loc+iDim+1][loc+iDim+1] += ProjVel;
-            Jacobian_ii[loc+iDim+1][loc+nDim+1] = dPdrhou[iDim]*ProjVel + Enthalpy*UnitaryNormal[iDim];
+            Jacobian_ii[loc+iDim+1][loc+nDim+1] = dPdrhou[iDim]*ProjVel + Enthalpy*UnitNormal[iDim];
           }
           
           /*--- Adjoint energy ---*/
           Jacobian_ii[loc+nDim+1][loc+0] = 0.0;
           for (iDim = 0; iDim < nDim; iDim++)
-            Jacobian_ii[loc+nDim+1][loc+iDim+1] = dPdrhoE*UnitaryNormal[iDim];
+            Jacobian_ii[loc+nDim+1][loc+iDim+1] = dPdrhoE*UnitNormal[iDim];
           Jacobian_ii[loc+nDim+1][loc+nDim+1] = ProjVel*(1.0+dPdrhoE);
           
           /*--- Adjoint vibrational energy ---*/
           if (iSpecies < nDiatomics) {
             Jacobian_ii[loc+0][loc+nDim+2] = -ProjVel*Energy_vib;
             for (iDim = 0; iDim < nDim; iDim++)
-              Jacobian_ii[loc+iDim+1][loc+nDim+2] = Energy_vib*UnitaryNormal[iDim];
+              Jacobian_ii[loc+iDim+1][loc+nDim+2] = Energy_vib*UnitNormal[iDim];
             Jacobian_ii[loc+nDim+1][loc+nDim+2] = 0.0;
             
             Jacobian_ii[loc+nDim+2][loc+0] = 0.0;
             for (iDim = 0; iDim < nDim; iDim++)
-              Jacobian_ii[loc+nDim+2][loc+iDim+1] = dPdrhoEv*UnitaryNormal[iDim];
+              Jacobian_ii[loc+nDim+2][loc+iDim+1] = dPdrhoEv*UnitNormal[iDim];
             Jacobian_ii[loc+nDim+2][loc+nDim+1] = ProjVel*dPdrhoEv;
             Jacobian_ii[loc+nDim+2][loc+nDim+2] = ProjVel;
           }
@@ -1384,7 +1384,7 @@ void CAdjPlasmaSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
 		}
 	}
 	delete [] Velocity;
-	delete [] UnitaryNormal;
+	delete [] UnitNormal;
 	delete [] Psi;
   delete [] dPdrhou;
 }
