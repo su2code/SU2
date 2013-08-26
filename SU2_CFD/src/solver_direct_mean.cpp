@@ -66,7 +66,7 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
 CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
 	unsigned long iPoint, index, counter_local = 0, counter_global = 0;
 	unsigned short iVar, iDim, iMarker;
-  double Density, Velocity2, Pressure, Temperature;
+  double Density, Velocity2, Pressure, Temperature, dull_val;
 
 	unsigned short nZone = geometry->GetnZone();
 	bool restart = (config->GetRestart() || config->GetRestart_Flow());
@@ -353,12 +353,12 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 			iPoint_Local = Global2Local[iPoint_Global];
 			if (iPoint_Local >= 0) {
 				if (incompressible) {
-					if (nDim == 2) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2];
-					if (nDim == 3) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+					if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
+					if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
 				}
 				else {
-					if (nDim == 2) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-					if (nDim == 3) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
+					if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+					if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
 				}
 				node[iPoint_Local] = new CEulerVariable(Solution, nDim, nVar, config);
 			}
@@ -5718,7 +5718,8 @@ void CEulerSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned sho
 	bool incompressible = config->GetIncompressible();
 	bool grid_movement = config->GetGrid_Movement();
 	unsigned short nZone = geometry->GetnZone();
-
+  double dull_val;
+  
 	/*--- Multi-zone restart files. ---*/
 	if (nZone > 1 && !(config->GetUnsteady_Simulation() == TIME_SPECTRAL)) {
 		restart_filename.erase(restart_filename.end()-4, restart_filename.end());
@@ -5811,21 +5812,21 @@ void CEulerSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned sho
 		if (iPoint_Local >= 0) {
 
 			if (incompressible) {
-				if (nDim == 2) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2];
-				if (nDim == 3) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+				if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
+				if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
 			}
 			else {
-				if (nDim == 2) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-				if (nDim == 3) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
+				if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+				if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
 			}
 
 			node[iPoint_Local]->SetSolution(Solution);
 
 			/*--- If necessary, read in the grid velocities for the unsteady adjoint ---*/
 			if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady() && grid_movement) {
-				double Volume, GridVel[3];
-				if (nDim == 2) point_line >> Volume >> GridVel[0] >> GridVel[1];
-				if (nDim == 3) point_line >> Volume >> GridVel[0] >> GridVel[1] >> GridVel[2];
+				double GridVel[3];
+				if (nDim == 2) point_line >> GridVel[0] >> GridVel[1];
+				if (nDim == 3) point_line >> GridVel[0] >> GridVel[1] >> GridVel[2];
 				if (iPoint_Local >= 0)
 					for (unsigned short iDim = 0; iDim < nDim; iDim++)
 						geometry->node[iPoint_Local]->SetGridVel(iDim, GridVel[iDim]);
@@ -5890,12 +5891,12 @@ CNSSolver::CNSSolver(void) : CEulerSolver() {
 CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CEulerSolver() {
 	unsigned long iPoint, index, counter_local = 0, counter_global = 0;
 	unsigned short iVar, iDim, iMarker;
-  double Density, Velocity2, Pressure, Temperature;
+  double Density, Velocity2, Pressure, Temperature, dull_val;
   
 	unsigned short nZone = geometry->GetnZone();
 	bool restart = (config->GetRestart() || config->GetRestart_Flow());
 	bool incompressible = config->GetIncompressible();
-    double Gas_Constant = config->GetGas_ConstantND();
+  double Gas_Constant = config->GetGas_ConstantND();
 
 	/*--- Array initialization ---*/
 	CDrag_Visc = NULL;
@@ -6161,12 +6162,12 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 			iPoint_Local = Global2Local[iPoint_Global];
 			if (iPoint_Local >= 0) {
 				if (incompressible) {
-					if (nDim == 2) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2];
-					if (nDim == 3) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+					if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
+					if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
 				}
 				else {
-					if (nDim == 2) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-					if (nDim == 3) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
+					if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+					if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
 				}
 				node[iPoint_Local] = new CNSVariable(Solution, nDim, nVar, config);
 			}

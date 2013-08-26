@@ -34,7 +34,8 @@ CPlasmaSolver::CPlasmaSolver(CGeometry *geometry, CConfig *config) : CSolver() {
 	unsigned long iPoint, index;
 	unsigned short iVar, iDim, iSpecies, iMarker, nPrimVar;
 	double Vel2 = 0.0;
-
+  double dull_val;
+  
 	restart = (config->GetRestart() || config->GetRestart_Flow());
 	implicit = config->GetKind_TimeIntScheme_Plasma() == EULER_IMPLICIT;
 	centered_scheme = config->GetKind_ConvNumScheme_Plasma() == SPACE_CENTERED;
@@ -498,6 +499,8 @@ CPlasmaSolver::CPlasmaSolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
 					/*--- First value is the point index, then the conservative vars. ---*/
 					point_line >> index;
+          if (nDim ==2) point_line >> dull_val >> dull_val;
+          else point_line >> dull_val >> dull_val >> dull_val;
 					for (iVar = 0; iVar < nVar; iVar++)
 						point_line >> Solution[iVar];
 
@@ -507,8 +510,8 @@ CPlasmaSolver::CPlasmaSolver(CGeometry *geometry, CConfig *config) : CSolver() {
 				} else {
 
 					/*--- Load the line from the Euler restart file. ---*/
-					if (nDim == 2) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-					if (nDim == 3) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
+					if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+					if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
 
 
 					double Molecular_Mass_mean;
