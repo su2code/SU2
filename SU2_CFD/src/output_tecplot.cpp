@@ -242,7 +242,7 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
     if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) ||
         (Kind_Solver == ADJ_FREE_SURFACE_EULER) || (Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
         (Kind_Solver == ADJ_FREE_SURFACE_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
-      Tecplot_File << ", \"Surface_Sensitivity\"";
+      Tecplot_File << ", \"Surface_Sensitivity\", \"Solution_Sensor\"";
     }
     
     Tecplot_File << endl;
@@ -1186,8 +1186,8 @@ string AssembleVariableNames(CGeometry *geometry, CConfig *config, unsigned shor
   
   if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
       (Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
-    variables << "Pressure Pressure_Coefficient Mach Sharp_Edge_Dist ";
-    *NVar += 4;
+    variables << "Pressure Pressure_Coefficient Mach ";
+    *NVar += 3;
   }
   
   if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
@@ -1198,6 +1198,12 @@ string AssembleVariableNames(CGeometry *geometry, CConfig *config, unsigned shor
   
   if ((Kind_Solver == RANS) || (Kind_Solver == FREE_SURFACE_RANS)) {
     variables << "Eddy_Viscosity ";
+    *NVar += 1;
+  }
+  
+  if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
+      (Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    variables << "Sharp_Edge_Dist ";
     *NVar += 1;
   }
   
@@ -1246,8 +1252,8 @@ string AssembleVariableNames(CGeometry *geometry, CConfig *config, unsigned shor
   if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) ||
 			(Kind_Solver == ADJ_FREE_SURFACE_EULER) || (Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
 			(Kind_Solver == ADJ_FREE_SURFACE_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
-    variables << "Surface_Sensitivity ";
-    *NVar += 1;
+    variables << "Surface_Sensitivity Solution_Sensor ";
+    *NVar += 2;
   }
     
 	return variables.str(); 

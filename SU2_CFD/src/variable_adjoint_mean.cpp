@@ -68,8 +68,7 @@ CAdjEulerVariable::CAdjEulerVariable(double val_psirho, double *val_phi, double 
 	/*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
 	if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED)
 		Undivided_Laplacian = new double [nVar];
-	if ((config->GetKind_ConvNumScheme_AdjFlow() == SPACE_UPWIND) &&
-			(config->GetKind_SlopeLimit_AdjFlow() != NONE)) {
+	if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_UPWIND) {
 		Limiter = new double [nVar];
 		Solution_Max = new double [nVar];
 		Solution_Min = new double [nVar];
@@ -174,8 +173,7 @@ CAdjEulerVariable::CAdjEulerVariable(double *val_solution, unsigned short val_nd
 	/*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
 	if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED)
 		Undivided_Laplacian = new double [nVar];
-	if ((config->GetKind_ConvNumScheme_AdjFlow() == SPACE_UPWIND) &&
-			(config->GetKind_SlopeLimit_AdjFlow() != NONE)) {
+	if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_UPWIND) {
 		Limiter = new double [nVar];
 		Solution_Max = new double [nVar];
 		Solution_Min = new double [nVar];
