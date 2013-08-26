@@ -306,8 +306,8 @@ if __name__=="__main__":
   turb_oneram6           = testcase('turb_oneram6')
   turb_oneram6.cfg_dir   = "TestCases/rans/oneram6"
   turb_oneram6.cfg_file  = "turb_ONERAM6.cfg"
-  turb_oneram6.test_iter = 20
-  turb_oneram6.test_vals = [-4.715559,-11.458031,0.228190,0.114983]#last 4 columns
+  turb_oneram6.test_iter = 10
+  turb_oneram6.test_vals = [-4.867975,-11.515095,0.238326,0.157699]#last 4 columns
   turb_oneram6.su2_exec  = "SU2_CFD"
   turb_oneram6.timeout   = 3200
   turb_oneram6.tol       = 0.00001

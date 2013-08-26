@@ -297,7 +297,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetRotVel_Gradient(CGeometry *geometry, CConfig *config);
+	void SetGridVel_Gradient(CGeometry *geometry, CConfig *config);
     
 	/*!
 	 * \brief Compute the Least Squares gradient of the solution on the profile surface.

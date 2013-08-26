@@ -40,8 +40,7 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
   Volume = NULL;  vertex = NULL;
 	coord = NULL; Coord_old = NULL; Coord_sum = NULL;
 	Coord_n = NULL; Coord_n1 = NULL;  Coord_p1 = NULL;
-	gridvel = NULL; gridvel_grad = NULL;
-  rotvel = NULL; rotvel_grad = NULL;
+	GridVel = NULL; GridVel_Grad = NULL;
 
 	/*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
 	if (config->GetUnsteady_Simulation() == NO) { Volume = new double[1]; Volume[0] = 0.0; }
@@ -73,40 +72,29 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
 		Coord_sum = new double[nDim];
 	}
 	
-	/*--- Structures that are useful when the numerical grid changes ---*/
+	/*--- Storage of grid velocities for dynamic meshes ---*/
 	if (config->GetGrid_Movement()) {
-		gridvel  = new double[nDim];
+		GridVel  = new double[nDim];
 			for (iDim = 0; iDim < nDim; iDim ++) 
-		gridvel[iDim] = 0.0;
+		GridVel[iDim] = 0.0;
     
     /*--- Gradient of the grid velocity ---*/
-    gridvel_grad = new double*[nDim];
+    GridVel_Grad = new double*[nDim];
     for (iDim = 0; iDim < nDim; iDim++) {
-      gridvel_grad[iDim] = new double[nDim];
+      GridVel_Grad[iDim] = new double[nDim];
       for (jDim = 0; jDim < nDim; jDim++)
-        gridvel_grad[iDim][jDim] = 0.0;
+        GridVel_Grad[iDim][jDim] = 0.0;
     }
     
-    /*--- Structures for storing old locations for computing mesh velocities ---*/
-    Coord_p1 = new double[nDim];
-    Coord_n  = new double[nDim];
-    Coord_n1 = new double[nDim];
-	}
-	
-	/*--- Structures that are useful using rotational frame ---*/
-	if (config->GetRotating_Frame()) {
-		rotvel = new double[nDim];
-		for (iDim = 0; iDim < nDim; iDim ++) 
-			rotvel[iDim] = 0.0;
-    
-    /*--- Gradient of the grid velocity ---*/
-    rotvel_grad = new double*[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) {
-      rotvel_grad[iDim] = new double[nDim];
-      for (jDim = 0; jDim < nDim; jDim++)
-        rotvel_grad[iDim][jDim] = 0.0;
+    /*--- Structures for storing old node coordinates for computing grid 
+     velocities via finite differencing with dynamically deforming meshes. ---*/
+    if (config->GetUnsteady_Simulation() != NO) {
+      Coord_p1 = new double[nDim];
+      Coord_n  = new double[nDim];
+      Coord_n1 = new double[nDim];
     }
 	}
+
 }
 
 CPoint::CPoint(double val_coord_0, double val_coord_1, unsigned long val_globalindex, CConfig *config) : CDualGrid(2) {
@@ -120,8 +108,7 @@ CPoint::CPoint(double val_coord_0, double val_coord_1, unsigned long val_globali
   Volume = NULL;  vertex = NULL;
 	coord = NULL; Coord_old = NULL; Coord_sum = NULL;
 	Coord_n = NULL; Coord_n1 = NULL;  Coord_p1 = NULL;
-	gridvel = NULL; gridvel_grad = NULL;
-  rotvel = NULL; rotvel_grad = NULL;
+	GridVel = NULL; GridVel_Grad = NULL;
 
 	/*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
 	if (config->GetUnsteady_Simulation() == NO) { Volume = new double[1]; Volume[0] = 0.0; }
@@ -153,43 +140,31 @@ CPoint::CPoint(double val_coord_0, double val_coord_1, unsigned long val_globali
 		Coord_sum = new double[nDim];
 	}
 	
-	/*--- Structures that are useful when the numerical grid changes ---*/
+	/*--- Storage of grid velocities for dynamic meshes ---*/
 	if (config->GetGrid_Movement()) {
-		gridvel = new double[nDim];
-		for (iDim = 0; iDim < nDim; iDim ++) 
-			gridvel[iDim] = 0.0;
+		GridVel  = new double[nDim];
+    for (iDim = 0; iDim < nDim; iDim ++)
+      GridVel[iDim] = 0.0;
     
     /*--- Gradient of the grid velocity ---*/
-    gridvel_grad = new double*[nDim];
+    GridVel_Grad = new double*[nDim];
     for (iDim = 0; iDim < nDim; iDim++) {
-      gridvel_grad[iDim] = new double[nDim];
+      GridVel_Grad[iDim] = new double[nDim];
       for (jDim = 0; jDim < nDim; jDim++)
-        gridvel_grad[iDim][jDim] = 0.0;
+        GridVel_Grad[iDim][jDim] = 0.0;
     }
     
-    /*--- Structures for storing old locations for computing mesh velocities ---*/
-    Coord_p1 = new double[nDim];
-    Coord_n  = new double[nDim];
-    Coord_n1 = new double[nDim];
-    for (iDim = 0; iDim < nDim; iDim ++) {
-      Coord_p1[iDim] = coord[iDim];
-      Coord_n[iDim]  = coord[iDim];
-      Coord_n1[iDim] = coord[iDim];
-    }
-	}
-	
-	/*--- Structures that are useful using rotational frame ---*/
-	if (config->GetRotating_Frame()) {
-		rotvel = new double[nDim];
-		for (iDim = 0; iDim < nDim; iDim ++) 
-			rotvel[iDim] = 0.0;
-    
-    /*--- Gradient of the grid velocity ---*/
-    rotvel_grad = new double*[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) {
-      rotvel_grad[iDim] = new double[nDim];
-      for (jDim = 0; jDim < nDim; jDim++)
-        rotvel_grad[iDim][jDim] = 0.0;
+    /*--- Structures for storing old node coordinates for computing grid
+     velocities via finite differencing with dynamically deforming meshes. ---*/
+    if (config->GetUnsteady_Simulation() != NO) {
+      Coord_p1 = new double[nDim];
+      Coord_n  = new double[nDim];
+      Coord_n1 = new double[nDim];
+      for (iDim = 0; iDim < nDim; iDim ++) {
+        Coord_p1[iDim] = coord[iDim];
+        Coord_n[iDim]  = coord[iDim];
+        Coord_n1[iDim] = coord[iDim];
+      }
     }
 	}
 }
@@ -205,8 +180,7 @@ CPoint::CPoint(double val_coord_0, double val_coord_1, double val_coord_2, unsig
 	Volume = NULL;  vertex = NULL;
 	coord = NULL; Coord_old = NULL; Coord_sum = NULL;
 	Coord_n = NULL; Coord_n1 = NULL;  Coord_p1 = NULL;
-	gridvel = NULL; gridvel_grad = NULL;
-  rotvel = NULL; rotvel_grad = NULL;
+	GridVel = NULL; GridVel_Grad = NULL;
   
 	/*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
 	if (config->GetUnsteady_Simulation() == NO) { Volume = new double[1]; Volume[0] = 0.0; }
@@ -238,43 +212,31 @@ CPoint::CPoint(double val_coord_0, double val_coord_1, double val_coord_2, unsig
 		Coord_sum = new double[nDim];
 	}
 	
-	/*--- Structures that are useful when the numerical grid changes ---*/
+	/*--- Storage of grid velocities for dynamic meshes ---*/
 	if (config->GetGrid_Movement()) {
-		gridvel = new double[nDim];
-		for (iDim = 0; iDim < nDim; iDim ++) 
-			gridvel[iDim] = 0.0;
+		GridVel = new double[nDim];
+    for (iDim = 0; iDim < nDim; iDim ++)
+      GridVel[iDim] = 0.0;
     
     /*--- Gradient of the grid velocity ---*/
-    gridvel_grad = new double*[nDim];
+    GridVel_Grad = new double*[nDim];
     for (iDim = 0; iDim < nDim; iDim++) {
-      gridvel_grad[iDim] = new double[nDim];
+      GridVel_Grad[iDim] = new double[nDim];
       for (jDim = 0; jDim < nDim; jDim++)
-        gridvel_grad[iDim][jDim] = 0.0;
+        GridVel_Grad[iDim][jDim] = 0.0;
     }
     
-    /*--- Structures for storing old locations for computing mesh velocities ---*/
-    Coord_p1 = new double[nDim];
-    Coord_n  = new double[nDim];
-    Coord_n1 = new double[nDim];
-    for (iDim = 0; iDim < nDim; iDim ++) {
-      Coord_p1[iDim] = coord[iDim];
-      Coord_n[iDim]  = coord[iDim];
-      Coord_n1[iDim] = coord[iDim];
-    }
-	}
-	
-	/*--- Structures that are useful using rotational frame ---*/
-	if (config->GetRotating_Frame()) {
-		rotvel = new double[nDim];
-		for (iDim = 0; iDim < nDim; iDim ++) 
-			rotvel[iDim] = 0.0;
-    
-    /*--- Gradient of the grid velocity ---*/
-    rotvel_grad = new double*[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) {
-      rotvel_grad[iDim] = new double[nDim];
-      for (jDim = 0; jDim < nDim; jDim++)
-        rotvel_grad[iDim][jDim] = 0.0;
+    /*--- Structures for storing old node coordinates for computing grid
+     velocities via finite differencing with dynamically deforming meshes. ---*/
+    if (config->GetUnsteady_Simulation() != NO) {
+      Coord_p1 = new double[nDim];
+      Coord_n  = new double[nDim];
+      Coord_n1 = new double[nDim];
+      for (iDim = 0; iDim < nDim; iDim ++) {
+        Coord_p1[iDim] = coord[iDim];
+        Coord_n[iDim]  = coord[iDim];
+        Coord_n1[iDim] = coord[iDim];
+      }
     }
 	}
 }
@@ -294,8 +256,12 @@ CPoint::~CPoint() {
 	if (Coord_n != NULL) delete[] Coord_n;
 	if (Coord_n1 != NULL) delete[] Coord_n1;
 	if (Coord_p1 != NULL) delete[] Coord_p1;
-	if (gridvel != NULL) delete[] gridvel;
-	if (rotvel != NULL) delete[] rotvel;
+	if (GridVel != NULL) delete[] GridVel;
+  if (GridVel_Grad != NULL) {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      delete [] GridVel_Grad[iDim];
+    delete [] GridVel_Grad;
+  }
   
 }
 
@@ -350,9 +316,6 @@ CEdge::CEdge(unsigned long val_iPoint, unsigned long val_jPoint,unsigned short v
 		Coord_CG[iDim] = 0.0;
 		Normal[iDim] = 0.0;
 	}
-	
-  /*--- In case there is rotation, initialize volume flux to zero ---*/
-  Rot_Flux = 0.0;
   
 	Nodes[0] = val_iPoint; 
 	Nodes[1] = val_jPoint;
@@ -425,38 +388,7 @@ void CEdge::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem
 	
 	Normal[0] += Dim_Normal[0]; 
 	Normal[1] += Dim_Normal[1];		
-	Normal[2] += Dim_Normal[2];	
-  
-  /*--- Perform exact integration for rotating volume flux and store ---*/
-	if (config->GetRotating_Frame()) {
-    unsigned short iDim;
-    double RotVel[3], Distance[3], *Origin, *Omega, L_Ref;
-    double Sub_Face_CG[3] = {0.0, 0.0, 0.0};
-    
-    /*--- Locate the sub-edge CG ---*/
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Sub_Face_CG[iDim] = (1.0/3.0)*(val_coord_Elem_CG[iDim]+val_coord_FaceElem_CG[iDim]+val_coord_Edge_CG[iDim]);
-    }
-    
-    Origin = config->GetRotAxisOrigin();
-    Omega  = config->GetOmega_FreeStreamND();
-    L_Ref  = config->GetLength_Ref(); // should always be 1
-    
-    /*--- Calculate non-dim. distance fron rotation center ---*/
-    Distance[0] = (Sub_Face_CG[0]-Origin[0])/L_Ref;
-    Distance[1] = (Sub_Face_CG[1]-Origin[1])/L_Ref;
-    Distance[2] = (Sub_Face_CG[2]-Origin[2])/L_Ref;
-    
-    /*--- Calculate the angular velocity as omega X r ---*/
-    RotVel[0] = Omega[1]*(Distance[2]) - Omega[2]*(Distance[1]);
-    RotVel[1] = Omega[2]*(Distance[0]) - Omega[0]*(Distance[2]);
-    RotVel[2] = Omega[0]*(Distance[1]) - Omega[1]*(Distance[0]);
-    
-    /*--- Dot rotational velocity with local face normal and store 
-     the contribution for this edge ---*/
-		for (iDim = 0; iDim < nDim; iDim ++) 
-			Rot_Flux += RotVel[iDim]*Dim_Normal[iDim];
-	}
+	Normal[2] += Dim_Normal[2];
   
 }
 
@@ -468,37 +400,6 @@ void CEdge::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG,
 	
 	Normal[0] += Dim_Normal[0]; 
 	Normal[1] += Dim_Normal[1];
-  
-  /*--- Perform exact integration for rotating volume flux and store ---*/
-	if (config->GetRotating_Frame()) {
-    unsigned short iDim;
-    double RotVel[3], Distance[3], *Origin, *Omega, L_Ref;
-    double Sub_Face_CG[3] = {0.0, 0.0, 0.0};
-    
-    /*--- Locate the sub-edge CG ---*/
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Sub_Face_CG[iDim] = 0.5*(val_coord_Elem_CG[iDim]+val_coord_Edge_CG[iDim]);
-    }
-    
-    Origin = config->GetRotAxisOrigin();
-    Omega  = config->GetOmega_FreeStreamND();
-    L_Ref  = config->GetLength_Ref(); // should always be 1
-    
-    /*--- Calculate non-dim. distance fron rotation center ---*/
-    Distance[0] = (Sub_Face_CG[0]-Origin[0])/L_Ref;
-    Distance[1] = (Sub_Face_CG[1]-Origin[1])/L_Ref;
-    Distance[2] = (Sub_Face_CG[2]-Origin[2])/L_Ref;
-    
-    /*--- Calculate the angular velocity as omega X r ---*/
-    RotVel[0] = Omega[1]*(Distance[2]) - Omega[2]*(Distance[1]);
-    RotVel[1] = Omega[2]*(Distance[0]) - Omega[0]*(Distance[2]);
-    RotVel[2] = Omega[0]*(Distance[1]) - Omega[1]*(Distance[0]);
-    
-    /*--- Dot rotational velocity with local face normal and store 
-     the contribution for this edge ---*/
-		for (iDim = 0; iDim < nDim; iDim ++) 
-			Rot_Flux += RotVel[iDim]*Dim_Normal[iDim];
-	}
   
 }
 
@@ -516,9 +417,6 @@ CVertex::CVertex(unsigned long val_point, unsigned short val_nDim) : CDualGrid(v
 	/*--- Initializate the structure ---*/
 	Nodes[0] = val_point;
 	for (iDim = 0; iDim < nDim; iDim ++) Normal[iDim] = 0.0;
-	
-  /*--- In case there is rotation, initialize volume flux to zero ---*/
-  Rot_Flux = 0.0;
 	
 	/*--- Set to zero the variation of the coordinates ---*/
 	VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
@@ -547,38 +445,7 @@ void CVertex::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceEl
 		
 	Normal[0] += Dim_Normal[0]; 
 	Normal[1] += Dim_Normal[1];	
-	Normal[2] += Dim_Normal[2];	
-  
-  /*--- Perform exact integration for rotating volume flux and store ---*/
-	if (config->GetRotating_Frame()) {
-    unsigned short iDim;
-    double RotVel[3], Distance[3], *Origin, *Omega, L_Ref;
-    double Sub_Face_CG[3] = {0.0, 0.0, 0.0};
-    
-    /*--- Locate the sub-edge CG ---*/
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Sub_Face_CG[iDim] = (1.0/3.0)*(val_coord_Elem_CG[iDim]+val_coord_FaceElem_CG[iDim]+val_coord_Edge_CG[iDim]);
-    }
-    
-    Origin = config->GetRotAxisOrigin();
-    Omega  = config->GetOmega_FreeStreamND();
-    L_Ref  = config->GetLength_Ref(); // should always be 1
-    
-    /*--- Calculate non-dim. distance fron rotation center ---*/
-    Distance[0] = (Sub_Face_CG[0]-Origin[0])/L_Ref;
-    Distance[1] = (Sub_Face_CG[1]-Origin[1])/L_Ref;
-    Distance[2] = (Sub_Face_CG[2]-Origin[2])/L_Ref;
-    
-    /*--- Calculate the angular velocity as omega X r ---*/
-    RotVel[0] = Omega[1]*(Distance[2]) - Omega[2]*(Distance[1]);
-    RotVel[1] = Omega[2]*(Distance[0]) - Omega[0]*(Distance[2]);
-    RotVel[2] = Omega[0]*(Distance[1]) - Omega[1]*(Distance[0]);
-    
-    /*--- Dot rotational velocity with local face normal and store 
-     the contribution for this edge ---*/
-		for (iDim = 0; iDim < nDim; iDim ++) 
-			Rot_Flux += RotVel[iDim]*Dim_Normal[iDim];
-	}
+	Normal[2] += Dim_Normal[2];
   
 }
 
@@ -590,37 +457,6 @@ void CVertex::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_C
 
 	Normal[0] += Dim_Normal[0]; 
 	Normal[1] += Dim_Normal[1];
-  
-  /*--- Perform exact integration for rotating volume flux and store ---*/
-	if (config->GetRotating_Frame()) {
-    unsigned short iDim;
-    double RotVel[3], Distance[3], *Origin, *Omega, L_Ref;
-    double Sub_Face_CG[3] = {0.0, 0.0, 0.0};
-    
-    /*--- Locate the sub-edge CG ---*/
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Sub_Face_CG[iDim] = 0.5*(val_coord_Elem_CG[iDim]+val_coord_Edge_CG[iDim]);
-    }
-    
-    Origin = config->GetRotAxisOrigin();
-    Omega  = config->GetOmega_FreeStreamND();
-    L_Ref  = config->GetLength_Ref(); // should always be 1
-    
-    /*--- Calculate non-dim. distance fron rotation center ---*/
-    Distance[0] = (Sub_Face_CG[0]-Origin[0])/L_Ref;
-    Distance[1] = (Sub_Face_CG[1]-Origin[1])/L_Ref;
-    Distance[2] = (Sub_Face_CG[2]-Origin[2])/L_Ref;
-    
-    /*--- Calculate the angular velocity as omega X r ---*/
-    RotVel[0] = Omega[1]*(Distance[2]) - Omega[2]*(Distance[1]);
-    RotVel[1] = Omega[2]*(Distance[0]) - Omega[0]*(Distance[2]);
-    RotVel[2] = Omega[0]*(Distance[1]) - Omega[1]*(Distance[0]);
-    
-    /*--- Dot rotational velocity with local face normal and store 
-     the contribution for this edge ---*/
-		for (iDim = 0; iDim < nDim; iDim ++) 
-			Rot_Flux += RotVel[iDim]*Dim_Normal[iDim];
-	}
   
 }
 

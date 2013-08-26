@@ -52,9 +52,6 @@ private:
 	unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component. */
 	unsigned short nZone; /*!< \brief Number of zones in the mesh. */
 	double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
-	double *RotAxisOrigin,	 /*!< \brief Axis of rotation (origin) for rotational frame problem. */
-	*Omega,						/*!< \brief Angular velocity vector for rotational frame problem. */
-	Omega_Mag;						/*!< \brief Angular velocity magnitude for rotational frame problem. */
 	double MinLogResidual; /*!< \brief Minimum value of the log residual. */
 	double* EA_IntLimit; /*!< \brief Integration limits of the Equivalent Area computation */
   double AdjointLimit; /*!< \brief Adjoint variable limit */
@@ -235,6 +232,7 @@ private:
 	double MaxDimension;			/*!< \brief Maximum dimension of the aglomerated element compared with the whole domain. */
 	bool AddIndNeighbor;			/*!< \brief Include indirect neighbor in the agglomeration process. */
 	unsigned short nDV;		/*!< \brief Number of design variables. */
+  unsigned short nGridMovement;		/*!< \brief Number of grid movement types specified. */
 	unsigned short nParamDV;		/*!< \brief Number of parameters of the design variable. */
 	double **ParamDV;				/*!< \brief Parameters of the design variable. */
 	unsigned short GeometryMode;			/*!< \brief Gemoetry mode (analysis or gradient computation). */
@@ -538,7 +536,6 @@ private:
 	Temperature_FreeStreamND,  /*!< \brief Farfield temperature value (external flow). */
 	Density_FreeStreamND,      /*!< \brief Farfield density value (external flow). */
 	*Velocity_FreeStreamND,    /*!< \brief Farfield velocity values (external flow). */
-	*Omega_FreeStreamND,       /*!< \brief Farfield angular velocity values (external flow). */
 	Energy_FreeStreamND,       /*!< \brief Farfield energy value (external flow). */
 	Viscosity_FreeStreamND;    /*!< \brief Farfield viscosity value (external flow). */
 	int ***Reactions;					/*!< \brief Reaction map for chemically reacting, multi-species flows. */
@@ -578,6 +575,30 @@ private:
 	*Plunging_Ampl_X,           /*!< \brief Plunging amplitude in the x-direction. */
 	*Plunging_Ampl_Y,           /*!< \brief Plunging amplitude in the y-direction. */
 	*Plunging_Ampl_Z;           /*!< \brief Plunging amplitude in the z-direction. */
+  unsigned short nMotion_Origin_X,    /*!< \brief Number of X-coordinate mesh motion origins. */
+	nMotion_Origin_Y,           /*!< \brief Number of Y-coordinate mesh motion origins. */
+	nMotion_Origin_Z,           /*!< \brief Number of Z-coordinate mesh motion origins. */
+	nTranslation_Rate_X,           /*!< \brief Number of Translational x-velocities for mesh motion. */
+	nTranslation_Rate_Y,           /*!< \brief Number of Translational y-velocities for mesh motion. */
+	nTranslation_Rate_Z,           /*!< \brief Number of Translational z-velocities for mesh motion. */
+	nRotation_Rate_X,           /*!< \brief Number of Angular velocities about the x-axis for mesh motion. */
+	nRotation_Rate_Y,           /*!< \brief Number of Angular velocities about the y-axis for mesh motion. */
+	nRotation_Rate_Z,           /*!< \brief Number of Angular velocities about the z-axis for mesh motion. */
+	nPitching_Omega_X,           /*!< \brief Number of Angular frequencies about the x-axis for pitching. */
+	nPitching_Omega_Y,           /*!< \brief Number of Angular frequencies about the y-axis for pitching. */
+	nPitching_Omega_Z,           /*!< \brief Number of Angular frequencies about the z-axis for pitching. */
+	nPitching_Ampl_X,           /*!< \brief Number of Pitching amplitudes about the x-axis. */
+	nPitching_Ampl_Y,           /*!< \brief Number of Pitching amplitudes about the y-axis. */
+	nPitching_Ampl_Z,           /*!< \brief Number of Pitching amplitudes about the z-axis. */
+	nPitching_Phase_X,           /*!< \brief Number of Pitching phase offsets about the x-axis. */
+	nPitching_Phase_Y,           /*!< \brief Number of Pitching phase offsets about the y-axis. */
+	nPitching_Phase_Z,           /*!< \brief Number of Pitching phase offsets about the z-axis. */
+	nPlunging_Omega_X,           /*!< \brief Number of Angular frequencies in the x-direction for plunging. */
+	nPlunging_Omega_Y,           /*!< \brief Number of Angular frequencies in the y-direction for plunging. */
+	nPlunging_Omega_Z,           /*!< \brief Number of Angular frequencies in the z-direction for plunging. */
+	nPlunging_Ampl_X,           /*!< \brief Number of Plunging amplitudes in the x-direction. */
+	nPlunging_Ampl_Y,           /*!< \brief Number of Plunging amplitudes in the y-direction. */
+	nPlunging_Ampl_Z;           /*!< \brief Number of Plunging amplitudes in the z-direction. */
 	bool Relative_Motion;       /*!< \brief Flag for relative motion between zones (search & interpolate required). */
 	double *Aeroelastic_np1, /*!< \brief Structural source terms used for Aeroelastic computation at time level n+1. */
 	*Aeroelastic_n, /*!< \brief Structural source terms used for Aeroelastic computation at time level n. */
@@ -1296,12 +1317,6 @@ public:
 	 * \return Non-dimensionalized freestream velocity vector.
 	 */
 	double* GetVelocity_FreeStreamND(void);
-
-	/*!
-	 * \brief Get the vector of the non-dimensionalized freestream angular velocity (rotating frame).
-	 * \return Non-dimensionalized freestream angular velocity vector (rotating frame).
-	 */
-	double* GetOmega_FreeStreamND(void);
 
 	/*!
 	 * \brief Get the value of the non-dimensionalized freestream energy.
@@ -3850,24 +3865,6 @@ public:
 	double GetCteViscDrag(void);
 
 	/*! 
-	 * \brief Value of the origin of the rotation axis for a rotating frame problem.
-	 * \return Value of the rotation axis origin.
-	 */	
-	double *GetRotAxisOrigin(void);
-
-	/*! 
-	 * \brief Angular velocity vector for a rotating frame problem.
-	 * \return The specified angular velocity vector.
-	 */	
-	double *GetOmega(void);
-
-	/*!
-	 * \brief Angular velocity magnitude for a rotating frame problem.
-	 * \return The specified angular velocity magnitude.
-	 */	
-	double GetOmegaMag(void);
-
-	/*! 
 	 * \brief Update the CFL number using the ramp information.
 	 * \param[in] val_iter - Current solver iteration.
 	 */
@@ -3918,7 +3915,13 @@ public:
 	 * \return Sliding interface domain from the config information for the marker <i>val_marker</i>.
 	 */
 	unsigned short GetSlideBound_Zone(string val_marker);
-
+  
+  /*!
+	 * \brief Get the internal index for a moving boundary <i>val_marker</i>.
+	 * \return Internal index for a moving boundary <i>val_marker</i>.
+	 */
+	unsigned short GetMarker_Moving(string val_marker);
+  
 	/*!
 	 * \brief Flag for relative motion between zones.
 	 * \return <code>TRUE</code> if there is relative motion (need to search & interpolate); otherwise <code>FALSE</code>.
