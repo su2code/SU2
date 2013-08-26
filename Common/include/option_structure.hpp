@@ -477,14 +477,16 @@ static const map<string, ENUM_UPWIND> Upwind_Map = CCreateMap<string, ENUM_UPWIN
  * \brief types of slope limiters
  */
 enum ENUM_LIMITER {
-	NO_LIMITER = 0,               /*!< \brief No slope limiter */
-	VENKATAKRISHNAN = 1,		/*!< \brief Slope limiter using Venkatakrisnan method. */
-  MINMOD = 2 /*!< \brief Slope limiter using minmod method. */
+	NO_LIMITER = 0,       /*!< \brief No slope limiter */
+	VENKATAKRISHNAN = 1,	/*!< \brief Slope limiter using Venkatakrisnan method. */
+  MINMOD = 2,           /*!< \brief Slope limiter using minmod method. */
+  SHARP_EDGES = 3       /*!< \brief Slope limiter using sharp edges. */
 };
 static const map<string, ENUM_LIMITER> Limiter_Map = CCreateMap<string, ENUM_LIMITER>
 ("NONE", NO_LIMITER)
 ("VENKATAKRISHNAN", VENKATAKRISHNAN)
-("MINMOD", MINMOD);
+("MINMOD", MINMOD)
+("SHARP_EDGES", SHARP_EDGES);
 
 /*!
  * \brief types of viscous term discretizations

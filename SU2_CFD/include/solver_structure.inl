@@ -402,8 +402,6 @@ inline void CSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
 inline void CSolver::Solve_LinearSystem(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
 										  unsigned short iMesh) { }
 
-inline void CSolver::Solve_LinearSystem(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
-
 inline void CSolver::Compute_Residual(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
 										unsigned short iMesh) { }
 

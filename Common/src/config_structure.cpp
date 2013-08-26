@@ -473,6 +473,8 @@ void CConfig::SetConfig_Options(unsigned short val_nZone) {
 	AddEnumOption("NUM_METHOD_GRAD", Kind_Gradient_Method, Gradient_Map, "GREEN_GAUSS");
 	/* DESCRIPTION: Coefficient for the limiter */
 	AddScalarOption("LIMITER_COEFF", LimiterCoeff, 0.3);
+  /* DESCRIPTION: Coefficient for detecting the limit of the sharp edges */
+	AddScalarOption("SHARP_EDGES_COEFF", SharpEdgesCoeff, 3.0);
   
 	/* DESCRIPTION: Convective numerical method */
 	AddConvectOption("CONV_NUM_METHOD_FLOW", Kind_ConvNumScheme_Flow, Kind_Centered_Flow, Kind_Upwind_Flow);
@@ -613,8 +615,8 @@ void CConfig::SetConfig_Options(unsigned short val_nZone) {
 	AddSpecialOption("FROZEN_VISC", Frozen_Visc, SetBoolOption, true);
 	/* DESCRIPTION:  */
 	AddScalarOption("CTE_VISCOUS_DRAG", CteViscDrag, 0.0);
-	/* DESCRIPTION: Print sensitivities to screen on exit */
-	AddSpecialOption("SHOW_ADJ_SENS", Show_Adj_Sens, SetBoolOption, false);
+	/* DESCRIPTION: Remove sharp edges from the sensitivity evaluation */
+	AddSpecialOption("SENS_REMOVE_SHARP", Sens_Remove_Sharp, SetBoolOption, false);
   
 	/*--- Options related to input/output files and formats ---*/
 	/* CONFIG_CATEGORY: Input/output files and formats */
@@ -3324,6 +3326,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				cout << "JST viscous coefficients (1st, 2nd, & 4th): " << Kappa_1st_AdjFlow
 						<< ", " << Kappa_2nd_AdjFlow << ", " << Kappa_4th_AdjFlow <<"."<< endl;
 				cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
+        cout << "The reference sharp edge distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
 			}
 			if ((Kind_ConvNumScheme_AdjFlow == SPACE_CENTERED) && (Kind_Centered_AdjFlow == LAX))
 				cout << "Lax-Friedrich scheme for the adjoint inviscid terms."<< endl;
@@ -3331,9 +3334,17 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				cout << "1st order Roe solver for the adjoint inviscid terms."<< endl;
 			if ((Kind_ConvNumScheme_AdjFlow == SPACE_UPWIND) && (Kind_Upwind_AdjFlow == ROE_2ND)) {
 				cout << "2nd order Roe solver for the adjoint inviscid terms."<< endl;
-				switch (Kind_SlopeLimit_Flow) {
+				switch (Kind_SlopeLimit_AdjFlow) {
 				case NONE: cout << "Without slope-limiting method." << endl; break;
-				case VENKATAKRISHNAN: cout << "Venkatakrishnan slope-limiting method." << endl; break;
+				case VENKATAKRISHNAN:
+            cout << "Venkatakrishnan slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+            cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+            break;
+        case SHARP_EDGES:
+            cout << "Sharp edges slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+            cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+            cout << "The reference sharp edge distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
+            break;
 				}
 			}
 		}
