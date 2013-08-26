@@ -371,6 +371,7 @@ void CTNE2EulerVariable::SetVelocity2(void) {
   
   Velocity2 = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
+    Primitive[VEL_INDEX+iDim] = Solution[nSpecies+iDim] / Primitive[RHO_INDEX];
     Velocity2 +=  Solution[nSpecies+iDim]*Solution[nSpecies+iDim]
     / (Primitive[RHO_INDEX]*Primitive[RHO_INDEX]);
   }
@@ -389,13 +390,14 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   double Cvvs, Cves, Tve;
   double f, df, tol;
   double exptv, thsqr, thoTve;
-  double num, denom, num2, denom2, num3, denom3;
+  double num, denom, num2, num3;
   
   /*--- Set tolerance for Newton-Raphson method ---*/
   tol     = 1.0E-4;
   maxIter = 30;
   
   /*--- Determine the number of heavy species ---*/
+  ionization = config->GetIonization();
   if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
   else            { nHeavy = nSpecies;   nEl = 0; }
   
@@ -436,6 +438,10 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   // NOTE: We use Newton-Raphson to iteratively find the value of Tve
   // NOTE: Use T as an initial guess
   Tve = Primitive[TVE_INDEX];
+  double Tve2 = Primitive[TVE_INDEX];
+  
+  double rhoCvve1a, rhoCvve1b;
+  double Cves1, Cvvs1, eels1, evs1, f1, df1;
   for (iIter = 0; iIter < maxIter; iIter++) {
     rhoEve_t = 0.0;
     rhoCvve  = 0.0;
@@ -459,10 +465,12 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
         rhoEve_t += Solution[iSpecies] * evs;
         rhoCvve  += Solution[iSpecies] * Cvvs;
       }
+      if (iIter == 0)
+        rhoCvve1a = rhoCvve;
       
       /*--- Electronic energy ---*/
       num = 0.0; num2 = 0.0;
-      denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve); denom2 = 0.0; denom3 = 0.0;
+      denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
       num3  = g[iSpecies][iEl] * (thetae[iSpecies][0]/(Tve*Tve))*exp(-thetae[iSpecies][0]/Tve);
       for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
         thoTve = thetae[iSpecies][iEl]/Tve;
@@ -478,6 +486,8 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
       
       rhoEve_t += Solution[iSpecies] * eels;
       rhoCvve  += Solution[iSpecies] * Cves;
+      
+      //cout << "rhoCvve[" << iSpecies << "]: " << rhoCvve << endl;
     }
     for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
       Cves = 3.0/2.0 * Ru/Ms[nSpecies-1];
@@ -490,10 +500,34 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
     df = -rhoCvve;
     Primitive[TVE_INDEX] = Tve - f/df;
     
+    if (iIter == 0) {
+      rhoCvve1b = rhoCvve;
+      Cves1 = Cves;
+      Cvvs1 = Cvvs;
+      eels1 = eels;
+      evs1  = evs;
+      f1 = f;
+      df1 = df;
+    }
+    
     /*--- Check for convergence ---*/
     if (fabs(Primitive[TVE_INDEX]-Tve) < tol) break;
     if (iIter == maxIter-1) {
       cout << "WARNING!!! Tve convergence not reached!" << endl;
+      cout << "Tve: " << Primitive[TVE_INDEX] << ", T: " << Primitive[T_INDEX] << endl;
+      cout << "Tve2: " << Tve2 << endl;
+      cout << "RhoCvve: " << rhoCvve << endl;
+      cout << "Evs1: " << evs1 << endl;
+      cout << "Eels1: " << eels1 << endl;
+      cout << "Cvvs1: " << Cvvs1 << endl;
+      cout << "Cves1: " << Cves1 << endl;
+      cout << "Cvve1a: " << rhoCvve1a << endl;
+      cout << "Cvve1b: " << rhoCvve1b << endl;
+      cout << "f1; " << f1 << endl;
+      cout << "df1; " << df1 << endl;
+      cout << endl << "**********" << endl;
+      for (unsigned short iVar = 0; iVar < nVar; iVar++)
+        cout << "Solution[" << iVar << "]: " << Solution[iVar] << endl;
       Primitive[TVE_INDEX] = Primitive[T_INDEX];
     }
     Tve = Primitive[TVE_INDEX];
@@ -717,8 +751,8 @@ bool CTNE2EulerVariable::SetPrimVar_Compressible(CConfig *config) {
   SetDensity();                             // Compute species & mixture density
 	SetVelocity2();                           // Compute the square of the velocity (req. mixture density).
   /*--- Calculate velocities (req. density calculation) ---*/
-	for (iDim = 0; iDim < nDim; iDim++)
-		Primitive[nSpecies+iDim+2] = Solution[nSpecies+iDim] / Primitive[nSpecies+nDim+3];
+//	for (iDim = 0; iDim < nDim; iDim++)
+//		Primitive[nSpecies+iDim+2] = Solution[nSpecies+iDim] / Primitive[nSpecies+nDim+3];
   
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     check_dens = ((Solution[iSpecies] < 0.0) || check_dens);  // Check the density

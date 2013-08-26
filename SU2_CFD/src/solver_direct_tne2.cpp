@@ -47,7 +47,6 @@ CTNE2EulerSolver::CTNE2EulerSolver(void) : CSolver() {
 	Precon_Mat_inv  = NULL;
 	CPressure       = NULL;
 	CHeatTransfer   = NULL;
-  mix             = NULL;
   
 }
 
@@ -87,7 +86,6 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
 	Precon_Mat_inv  = NULL;
 	CPressure       = NULL;
 	CHeatTransfer   = NULL;
-  mix             = NULL;
   
   /*--- Set booleans for solver settings ---*/
   restart    = (config->GetRestart() || config->GetRestart_Flow());
@@ -236,22 +234,27 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
   node_infty->SetPrimVar_Compressible(config);
   Velocity_Inf = new double[nDim];
   for (iDim = 0; iDim < nDim; iDim++)
-    Velocity_Inf[iDim] = node_infty->GetVelocity(iDim, false);
+    Velocity_Inf[iDim] = node_infty->GetVelocity(iDim, false);  
   
 	/*--- Check for a restart and set up the variables at each node
    appropriately. Coarse multigrid levels will be intitially set to
    the farfield values bc the solver will immediately interpolate
    the solution from the finest mesh to the coarser levels. ---*/
   
+  cout << "CHECK1: " << endl;
+  cin.get();
+  
 	if (!restart || geometry->GetFinestMGLevel() == false || nZone > 1) {
-    
+
 		/*--- Initialize using freestream values ---*/
-		for (iPoint = 0; iPoint < nPoint; iPoint++)
+		for (iPoint = 0; iPoint < nPoint; iPoint++) {
 			node[iPoint] = new CTNE2EulerVariable(Pressure_Inf, MassFrac_Inf,
                                             Mvec_Inf, Temperature_Inf,
                                             Temperature_ve_Inf, nDim,
                                             nVar, nPrimVar, nPrimVarGrad,
                                             config);
+//      node[iPoint]->SetPrimVar_Compressible(config);
+    }
 	} else {
     
 		/*--- Restart the solution from file information ---*/
@@ -328,7 +331,12 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
      because a send/recv is performed immediately in the solver. ---*/
     Solution = node_infty->GetSolution();
 		for(iPoint = nPointDomain; iPoint < nPoint; iPoint++)
-			node[iPoint] = new CTNE2EulerVariable(Solution, nDim, nVar, nPrimVar, nPrimVarGrad, config);
+      node[iPoint] = new CTNE2EulerVariable(Pressure_Inf, MassFrac_Inf,
+                                            Mvec_Inf, Temperature_Inf,
+                                            Temperature_ve_Inf, nDim,
+                                            nVar, nPrimVar, nPrimVarGrad,
+                                            config);
+			//node[iPoint] = new CTNE2EulerVariable(Solution, nDim, nVar, nPrimVar, nPrimVarGrad, config);
     
 		/*--- Close the restart file ---*/
 		restart_file.close();
@@ -337,69 +345,125 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
 		delete [] Global2Local;
 	}
   
-  /*--- MPI solution ---*/
-	Set_MPI_Solution(geometry, config);
+  Set_MPI_Solution(geometry, config);
   
   /*--- Check that the initial solution is physical ---*/
-/*  counter_local = 0;
-  
+  counter_local = 0;
+  cout << "Check physical solution" << endl;
+  cin.get();
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    
-    ///////// OLD
+ 
     node[iPoint]->SetDensity();
     node[iPoint]->SetVelocity2();
     check_temp = node[iPoint]->SetTemperature(config);
     check_press = node[iPoint]->SetPressure(config);
     
-    Density = node[iPoint]->GetSolution(0);
-    Velocity2 = 0.0;
     if (check_temp || check_press) {
-      double *molar_mass, *theta_v, *rotation_modes, *temperature_ref, *enthalpy_formation;
-      double sqvel, energy, energy_ve, energy_v, energy_e, energy_formation;*/
+      bool ionization;
+      unsigned short iEl, nHeavy, nEl, *nElStates;
+      double Ru, T, Tve, rhoCvtr, sqvel, rhoE, rhoEve, num, denom, conc;
+      double rho, rhos, Ef, Ev, Ee, soundspeed;
+      double *xi, *Ms, *thetav, **thetae, **g, *Tref, *hf;
+      /*--- Determine the number of heavy species ---*/
+      ionization = config->GetIonization();
+      if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
+      else            { nHeavy = nSpecies;   nEl = 0; }
       
-      /*--- Calculate energy ---*/
-/*      molar_mass         = config->GetMolar_Mass();
-      theta_v            = config->GetCharVibTemp();
-      rotation_modes     = config->GetRotationModes();
-      temperature_ref    = config->GetRefTemperature();
-      enthalpy_formation = config->GetEnthalpy_Formation();
-      sqvel     = 0.0;
-      energy    = 0.0;
-      energy_ve = 0.0;
+      /*--- Load variables from the config class --*/
+      xi        = config->GetRotationModes();      // Rotational modes of energy storage
+      Ms        = config->GetMolar_Mass();         // Species molar mass
+      thetav    = config->GetCharVibTemp();        // Species characteristic vib. temperature [K]
+      thetae    = config->GetCharElTemp();         // Characteristic electron temperature [K]
+      g         = config->GetElDegeneracy();       // Degeneracy of electron states
+      nElStates = config->GetnElStates();          // Number of electron states
+      Tref      = config->GetRefTemperature();     // Thermodynamic reference temperature [K]
+      hf        = config->GetEnthalpy_Formation(); // Formation enthalpy [J/kg]
+      
+      /*--- Rename & initialize for convenience ---*/
+      Ru      = UNIVERSAL_GAS_CONSTANT;         // Universal gas constant [J/(kmol*K)]
+      Tve     = Temperature_ve_Inf;             // Vibrational temperature [K]
+      T       = Temperature_Inf;                // Translational-rotational temperature [K]
+      sqvel   = 0.0;                            // Velocity^2 [m2/s2]
+      rhoE    = 0.0;                            // Mixture total energy per mass [J/kg]
+      rhoEve  = 0.0;                            // Mixture vib-el energy per mass [J/kg]
+      denom   = 0.0;
+      conc    = 0.0;
+      rhoCvtr = 0.0;
+      
+      /*--- Calculate mixture density from supplied primitive quantities ---*/
+      for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
+        denom += MassFrac_Inf[iSpecies] * (Ru/Ms[iSpecies]) * T;
+      for (iSpecies = 0; iSpecies < nEl; iSpecies++)
+        denom += MassFrac_Inf[nSpecies-1] * (Ru/Ms[nSpecies-1]) * Tve;
+      rho = Pressure_Inf / denom;
+      
+      /*--- Calculate sound speed and extract velocities ---*/
+      for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+        conc += MassFrac_Inf[iSpecies]*rho/Ms[iSpecies];
+        rhoCvtr += rho*MassFrac_Inf[iSpecies] * (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies];
+      }
+      soundspeed = sqrt((1.0 + Ru/rhoCvtr*conc) * Pressure_Inf/rho);
       for (iDim = 0; iDim < nDim; iDim++)
-        sqvel += Velocity_Inf[iDim]*Velocity_Inf[iDim];
+        sqvel += Mvec_Inf[iDim]*soundspeed * Mvec_Inf[iDim]*soundspeed;
+      
+      /*--- Calculate energy (RRHO) from supplied primitive quanitites ---*/
+      for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+        // Species density
+        rhos = MassFrac_Inf[iSpecies]*rho;
+        
+        // Species formation energy
+        Ef = hf[iSpecies] - Ru/Ms[iSpecies]*Tref[iSpecies];
+        
+        // Species vibrational energy
+        if (thetav[iSpecies] != 0.0)
+          Ev = Ru/Ms[iSpecies] * thetav[iSpecies] / (exp(thetav[iSpecies]/Tve)-1.0);
+        else
+          Ev = 0.0;
+        
+        // Species electronic energy
+        num = 0.0;
+        denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
+        for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
+          num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+          denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+        }
+        Ee = Ru/Ms[iSpecies] * (num/denom);
+        
+        // Mixture total energy
+        rhoE += rhos * ((3.0/2.0+xi[iSpecies]/2.0) * Ru/Ms[iSpecies] * (T-Tref[iSpecies])
+                        + Ev + Ee + Ef + 0.5*sqvel);
+        
+        // Mixture vibrational-electronic energy
+        rhoEve += rhos * (Ev + Ee);
+      }
+      for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
+        // Species formation energy
+        Ef = hf[nSpecies-1] - Ru/Ms[nSpecies-1] * Tref[nSpecies-1];
+        
+        // Electron t-r mode contributes to mixture vib-el energy
+        rhoEve += (3.0/2.0) * Ru/Ms[nSpecies-1] * (Tve - Tref[nSpecies-1]);
+      }
+      
+      /*--- Initialize Solution & Solution_Old vectors ---*/
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        energy_v  =  UNIVERSAL_GAS_CONSTANT/molar_mass[iSpecies]
-        * theta_v[iSpecies] / ( exp(theta_v[iSpecies]/Temperature_ve_Inf) -1.0 );
-        energy_e = 0.0;
-        energy_formation =  enthalpy_formation[iSpecies]
-        - UNIVERSAL_GAS_CONSTANT/molar_mass[iSpecies]*temperature_ref[iSpecies];
-        energy +=  (3.0/2.0 + rotation_modes[iSpecies]/2.0) * (Temperature_Inf - temperature_ref[iSpecies])
-        + energy_v + energy_e + energy_formation + 0.5*sqvel;
-        energy_ve += energy_v + energy_e;
+        Solution[iSpecies]     = rho*MassFrac_Inf[iSpecies];
       }
-      if (config->GetIonization()) {
-        iSpecies = nSpecies - 1;
-        energy_formation = enthalpy_formation[iSpecies] - UNIVERSAL_GAS_CONSTANT/molar_mass[iSpecies]*temperature_ref[iSpecies];
-        energy          -= (3.0/2.0) * (Temperature_Inf-temperature_ref[iSpecies]) + energy_formation + 0.5*sqvel;
-        energy_ve       += (3.0/2.0) * (Temperature_ve_Inf-temperature_ref[iSpecies]) + energy_formation + 0.5*sqvel;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Solution[nSpecies+iDim]     = rho*Mvec_Inf[iDim]*soundspeed;
       }
-      
-      
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-        Solution[iSpecies] = Density_Inf*MassFrac_Inf[iSpecies];
-      for (iDim = 0; iDim < nDim; iDim++)
-        Solution[nSpecies+iDim] = Velocity_Inf[iDim]*Density_Inf;
-      Solution[nSpecies+nDim]   = Density_Inf*energy;
-      Solution[nSpecies+nDim+1] = Density_Inf*energy_ve;
+      Solution[nSpecies+nDim]       = rhoE;
+      Solution[nSpecies+nDim+1]     = rhoEve;
       
       node[iPoint]->SetSolution(Solution);
       node[iPoint]->SetSolution_Old(Solution);
-      
+
       counter_local++;
     }
     
   }
+  
+  cout << "CHECK2: " << endl;
+  cin.get();
   
 #ifndef NO_MPI
   
@@ -412,7 +476,9 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
 #endif
   
   
-  if ((rank == MASTER_NODE) && (counter_global != 0)) cout << "Warning. The original solution contains "<< counter_global << " points that are not physical." << endl;*/
+  if ((rank == MASTER_NODE) && (counter_global != 0))
+    cout << "Warning. The original solution contains "<< counter_global
+         << " points that are not physical." << endl;
 
 	if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
 	else least_squares = false;
@@ -469,7 +535,9 @@ CTNE2EulerSolver::~CTNE2EulerSolver(void) {
 void CTNE2EulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
 	unsigned short iVar, iMarker, iPeriodic_Index;
 	unsigned long iVertex, iPoint, nVertex, nBuffer_Vector;
-	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi, *newSolution = NULL, *Buffer_Receive_U = NULL;
+	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta;
+  double phi, cosPhi, sinPhi, psi, cosPsi, sinPsi;
+  double *newSolution = NULL, *Buffer_Receive_U = NULL;
 	short SendRecv;
 	int send_to, receive_from;
   
@@ -796,9 +864,17 @@ void CTNE2EulerSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *co
 					 ordering is rotation about the x-axis, y-axis,
 					 then z-axis. Note that this is the transpose of the matrix
 					 used during the preprocessing stage. ---*/
-					rotMatrix[0][0] = cosPhi*cosPsi; rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi; rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-					rotMatrix[0][1] = cosPhi*sinPsi; rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi; rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-					rotMatrix[0][2] = -sinPhi; rotMatrix[1][2] = sinTheta*cosPhi; rotMatrix[2][2] = cosTheta*cosPhi;
+					rotMatrix[0][0] = cosPhi*cosPsi;
+          rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
+          rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+					
+          rotMatrix[0][1] = cosPhi*sinPsi;
+          rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
+          rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+          
+					rotMatrix[0][2] = -sinPhi;
+          rotMatrix[1][2] = sinTheta*cosPhi;
+          rotMatrix[2][2] = cosTheta*cosPhi;
           
 					/*--- Copy conserved variables before performing transformation. ---*/
 					for (iVar = 0; iVar < nVar; iVar++)
@@ -847,7 +923,11 @@ void CTNE2EulerSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *co
 }
 
 
-void CTNE2EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
+void CTNE2EulerSolver::Preprocessing(CGeometry *geometry,
+                                     CSolver **solution_container,
+                                     CConfig *config, unsigned short iMesh,
+                                     unsigned short iRKStep,
+                                     unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
   
 	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
@@ -859,8 +939,11 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_con
 	double Gas_Constant = config->GetGas_ConstantND();
   bool check;
   
+  cout << "In Preprocessing..." << endl;
+  cin.get();
+  
 	for (iPoint = 0; iPoint < nPoint; iPoint ++) {
-    
+
 		/*--- Primitive variables [rho1,...,rhoNs,T,Tve,u,v,w,P,rho,h,c] ---*/
 		check = node[iPoint]->SetPrimVar_Compressible(config);
     
@@ -1059,6 +1142,9 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
   numerics->SetAIndex      ( node[0]->GetAIndex()       );
   numerics->SetRhoCvtrIndex( node[0]->GetRhoCvtrIndex() );
   numerics->SetRhoCvveIndex( node[0]->GetRhoCvveIndex() );
+  
+  cout << "STARTING UPWIND RESIDUAL CALCULATION: " << endl;
+  cin.get();
   
   /*--- Loop over edges and calculate convective fluxes ---*/
 	for(iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {

@@ -6704,11 +6704,6 @@ protected:
   CVariable
   *node_infty;       /*!< \brief CVariable for storing free-stream state. */
   
-#ifndef NO_MUTATIONPP
-  Mutation::Mixture
-  *mix;              /*!< \brief Mutation++ mixture object for gas calcs. */
-#endif
-  
 public:
   
 	/*!

@@ -1527,6 +1527,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         break;
         
       case N2:
+        
         /*--- Define parameters of the gas model ---*/
         nMonatomics = 1;
         nDiatomics  = 1;
