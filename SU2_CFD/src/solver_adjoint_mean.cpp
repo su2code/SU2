@@ -2076,7 +2076,8 @@ void CAdjEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config
   Param_Kappa_2 = config->GetKappa_2nd_AdjFlow();
 	Param_Kappa_4 = config->GetKappa_4th_AdjFlow();
   
-  scale = 2.0 * Param_Kappa_4 / Param_Kappa_2;
+  if (Param_Kappa_2 != 0.0) scale = 2.0 * Param_Kappa_4 / Param_Kappa_2;
+  else scale = 0.0;
   
 	for (iPoint = 0; iPoint < nPoint; iPoint++) {
     
