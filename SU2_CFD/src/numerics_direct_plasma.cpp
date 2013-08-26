@@ -1705,9 +1705,9 @@ void CCentJST_Plasma::ComputeResidual(double *val_resconv, double *val_resvisc, 
 		Local_Lambda_i = (fabs(ProjVelocity_i)+SoundSpeed_i[iSpecies]*Area);
 		Local_Lambda_j = (fabs(ProjVelocity_j)+SoundSpeed_j[iSpecies]*Area);
 		MeanLambda[iSpecies] = 0.5*(Local_Lambda_i+Local_Lambda_j);
-		Phi_i = pow(Lambda_i[iSpecies]/(4.0*MeanLambda[iSpecies]+EPS), Param_p);
-		Phi_j = pow(Lambda_j[iSpecies]/(4.0*MeanLambda[iSpecies]+EPS), Param_p);
-		StretchingFactor[iSpecies] = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j+EPS);
+		Phi_i = pow(Lambda_i[iSpecies]/(4.0*MeanLambda[iSpecies]), Param_p);
+		Phi_j = pow(Lambda_j[iSpecies]/(4.0*MeanLambda[iSpecies]), Param_p);
+		StretchingFactor[iSpecies] = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
 		Epsilon_2[iSpecies] = Param_Kappa_2*0.5*(Sensor_i[iSpecies]+Sensor_j[iSpecies])*sc2;
 		Epsilon_4[iSpecies] = max(0.0, Param_Kappa_4-Epsilon_2[iSpecies])*sc4;
 	}
@@ -1919,9 +1919,9 @@ void CCentJST_PlasmaDiatomic::ComputeResidual(double *val_resconv, double *val_r
 		Local_Lambda_i = (fabs(ProjVelocity_i)+SoundSpeed_i[iSpecies]*Area);
 		Local_Lambda_j = (fabs(ProjVelocity_j)+SoundSpeed_j[iSpecies]*Area);
 		MeanLambda[iSpecies] = 0.5*(Local_Lambda_i+Local_Lambda_j);
-		Phi_i = pow(Lambda_i[iSpecies]/(4.0*MeanLambda[iSpecies]+EPS), Param_p);
-		Phi_j = pow(Lambda_j[iSpecies]/(4.0*MeanLambda[iSpecies]+EPS), Param_p);
-		StretchingFactor[iSpecies] = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j+EPS);
+		Phi_i = pow(Lambda_i[iSpecies]/(4.0*MeanLambda[iSpecies]), Param_p);
+		Phi_j = pow(Lambda_j[iSpecies]/(4.0*MeanLambda[iSpecies]), Param_p);
+		StretchingFactor[iSpecies] = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
 		Epsilon_2[iSpecies] = Param_Kappa_2*0.5*(Sensor_i[iSpecies]+Sensor_j[iSpecies])*sc2;
 		Epsilon_4[iSpecies] = max(0.0, Param_Kappa_4-Epsilon_2[iSpecies])*sc4;
 	}
@@ -2132,10 +2132,10 @@ void CCentLax_PlasmaDiatomic::ComputeResidual(double *val_resconv, double *val_r
 		Local_Lambda_j = (fabs(ProjVelocity_j)+SoundSpeed_j[iSpecies]*Area);
     
 		MeanLambda[iSpecies] = 0.5*(Local_Lambda_i+Local_Lambda_j);
-		Phi_i = pow(Lambda_i[iSpecies]/(4.0*MeanLambda[iSpecies]+EPS), Param_p);
-		Phi_j = pow(Lambda_j[iSpecies]/(4.0*MeanLambda[iSpecies]+EPS), Param_p);
+		Phi_i = pow(Lambda_i[iSpecies]/(4.0*MeanLambda[iSpecies]), Param_p);
+		Phi_j = pow(Lambda_j[iSpecies]/(4.0*MeanLambda[iSpecies]), Param_p);
     
-		StretchingFactor[iSpecies] = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j+EPS);
+		StretchingFactor[iSpecies] = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
 		Epsilon_0[iSpecies] = Param_Kappa_0*sc0*double(nDim)/3.0;
 	}
   

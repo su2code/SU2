@@ -945,7 +945,7 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
 	unsigned long iEdge, iPoint, jPoint;
 	unsigned short iVar, iDim;
 	double **Gradient_i, **Gradient_j, *Coord_i, *Coord_j, *Solution_i, *Solution_j, 
-	dave, LimK, eps2, dm, dp, du, limiter;
+	dave, LimK, eps1, eps2, dm, dp, du, ds, limiter, SharpEdge_Distance;
 
 	/*--- Initialize solution max and solution min in the entire domain --*/
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
@@ -1083,6 +1083,79 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
         }
       }
       break;
+      
+      /*--- Sharp edges (Palacios 2013) limiter ---*/
+    case SHARP_EDGES:
+      
+      for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+        
+        iPoint     = geometry->edge[iEdge]->GetNode(0);
+        jPoint     = geometry->edge[iEdge]->GetNode(1);
+        Solution_i = node[iPoint]->GetSolution();
+        Solution_j = node[jPoint]->GetSolution();
+        Gradient_i = node[iPoint]->GetGradient();
+        Gradient_j = node[jPoint]->GetGradient();
+        Coord_i    = geometry->node[iPoint]->GetCoord();
+        Coord_j    = geometry->node[jPoint]->GetCoord();
+        
+        for (iVar = 0; iVar < nVar; iVar++) {
+          
+          /*-- Get limiter parameters from the configuration file ---*/
+          dave = config->GetRefElemLength();
+          LimK = config->GetLimiterCoeff();
+          eps1 = LimK*dave;
+          eps2 = pow(eps1, 3.0);
+          
+          /*--- Calculate the interface left gradient, delta- (dm) ---*/
+          dm = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            dm += 0.5*(Coord_j[iDim]-Coord_i[iDim])*Gradient_i[iVar][iDim];
+          
+          /*--- Calculate the interface right gradient, delta+ (dp) ---*/
+          if ( dm > 0.0 ) dp = node[iPoint]->GetSolution_Max(iVar);
+          else dp = node[iPoint]->GetSolution_Min(iVar);
+          
+          /*--- Compute the distance to a sharp edge ---*/
+          SharpEdge_Distance = (geometry->node[iPoint]->GetSharpEdge_Distance() - 5.0*eps1);
+          ds = 0.0;
+					if (SharpEdge_Distance < -eps1) ds = 0.0;
+					if (fabs(SharpEdge_Distance) <= eps1) ds = 0.5*(1.0+(SharpEdge_Distance/eps1)+(1.0/PI_NUMBER)*sin(PI_NUMBER*SharpEdge_Distance/eps1));
+					if (SharpEdge_Distance > eps1) ds = 1.0;
+                    
+          limiter = ds * ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
+          
+          if (limiter < node[iPoint]->GetLimiter(iVar))
+            if (geometry->node[iPoint]->GetDomain()) node[iPoint]->SetLimiter(iVar, limiter);
+          
+          /*-- Repeat for point j on the edge ---*/
+          dave = config->GetRefElemLength();
+          LimK = config->GetLimiterCoeff();
+          eps1 = LimK*dave;
+          eps2 = pow(eps1, 3.0);
+					
+          dm = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            dm += 0.5*(Coord_i[iDim]-Coord_j[iDim])*Gradient_j[iVar][iDim];
+          
+          if ( dm > 0.0 ) dp = node[jPoint]->GetSolution_Max(iVar);
+          else dp = node[jPoint]->GetSolution_Min(iVar);
+          
+          /*--- Compute the distance to a sharp edge ---*/
+          SharpEdge_Distance = (geometry->node[jPoint]->GetSharpEdge_Distance() - 5.0*eps1);
+          ds = 0.0;
+					if (SharpEdge_Distance < -eps1) ds = 0.0;
+					if (fabs(SharpEdge_Distance) <= eps1) ds = 0.5*(1.0+(SharpEdge_Distance/eps1)+(1.0/PI_NUMBER)*sin(PI_NUMBER*SharpEdge_Distance/eps1));
+					if (SharpEdge_Distance > eps1) ds = 1.0;
+          
+          limiter = ds * ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
+          
+          if (limiter < node[jPoint]->GetLimiter(iVar))
+            if (geometry->node[jPoint]->GetDomain()) node[jPoint]->SetLimiter(iVar, limiter);
+          
+        }
+      }
+      break;
+      
   }
   
   /*--- Limiter MPI ---*/
