@@ -133,20 +133,7 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
   if (surf_sol) Tecplot_File << "TITLE = \"Visualization of the surface solution\"" << endl;
   else Tecplot_File << "TITLE = \"Visualization of the volumetric solution\"" << endl;
 
-	/*--- Prepare the variables lists. ---*/
-  if (!grid_movement) {
-	if (nDim == 2) {
-		Tecplot_File << "VARIABLES = \"x\",\"y\"";
-	} else {
-		Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\"";
-	}
-  } else {
-    if (nDim == 2) {
-      Tecplot_File << "VARIABLES = ";
-    } else {
-      Tecplot_File << "VARIABLES = ";
-    }
-  }
+	/*--- Prepare the variable lists. ---*/
   
   /*--- Write the list of the fields in the restart file.
    Without including the PointID---*/
@@ -154,7 +141,7 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
     
     /*--- If SU2_SOL called this routine, we already have a set of output
      variables with the appropriate string tags stored in the config class. ---*/
-    Tecplot_File << ",";
+    Tecplot_File << "VARIABLES = ";
     nVar_Total = config->fields.size() - 1;
     for (unsigned short iField = 1; iField < config->fields.size(); iField++) {
       Tecplot_File << config->fields[iField];
@@ -162,6 +149,12 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
     Tecplot_File << endl;
     
   } else {
+    
+    if (nDim == 2) {
+      Tecplot_File << "VARIABLES = \"x\",\"y\"";
+    } else {
+      Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\"";
+    }
     
     /*--- Add names for conservative and residual variables ---*/
     for (iVar = 0; iVar < nVar_Consv; iVar++) {
@@ -175,11 +168,6 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
     
     /*--- Add names for any extra variables (this will need to be adjusted). ---*/
     if (grid_movement) {
-      if (nDim == 2) {
-        Tecplot_File << ",\"x\",\"y\"";
-      } else {
-        Tecplot_File << ",\"x\",\"y\",\"z\"";
-      }
       if (nDim == 2) {
         Tecplot_File << ",\"Grid_Velx\",\"Grid_Vely\"";
       } else {
@@ -308,9 +296,9 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
       if (LocalIndex[iPoint+1] != 0) {
         
         /*--- Write the node coordinates ---*/
-        if (!grid_movement) {
-        for(iDim = 0; iDim < nDim; iDim++)
-          Tecplot_File << scientific << Coords[iDim][iPoint] << "\t";
+        if (config->GetKind_SU2() != SU2_SOL) {
+          for(iDim = 0; iDim < nDim; iDim++)
+            Tecplot_File << scientific << Coords[iDim][iPoint] << "\t";
         }
         
         /*--- Loop over the vars/residuals and write the values to file ---*/
@@ -324,9 +312,9 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
     } else {
       
       /*--- Write the node coordinates ---*/
-      if (!grid_movement) {
-      for(iDim = 0; iDim < nDim; iDim++)
-        Tecplot_File << scientific << Coords[iDim][iPoint] << "\t";
+      if (config->GetKind_SU2() != SU2_SOL) {
+        for(iDim = 0; iDim < nDim; iDim++)
+          Tecplot_File << scientific << Coords[iDim][iPoint] << "\t";
       }
       
       /*--- Loop over the vars/residuals and write the values to file ---*/
