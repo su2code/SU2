@@ -179,8 +179,8 @@ public:
 	unsigned short Neighbor_i,	/*!< \brief Number of neighbors of the point i. */
 	Neighbor_j;					/*!< \brief Number of neighbors of the point j. */
 	double *Normal,	/*!< \brief Normal vector, it norm is the area of the face. */
-	*UnitaryNormal,		/*!< \brief Unitary normal vector. */
-	*UnitaryNormald;		/*!< \brief derivatve of unitary normal vector. */
+	*UnitNormal,		/*!< \brief Unitary normal vector. */
+	*UnitNormald;		/*!< \brief derivatve of unitary normal vector. */
 	double TimeStep,		/*!< \brief Time step useful in dual time method. */
 	Area,				/*!< \brief Area of the face i-j. */
 	Volume;				/*!< \brief Volume of the control volume around point i. */

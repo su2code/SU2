@@ -80,7 +80,7 @@ void CConvective_Template::ComputeResidual(double *val_residual, double **val_Ja
   Area = sqrt(Area);                    /*! Area of the face*/
   
   for (iDim = 0; iDim < nDim; iDim++)
-    UnitaryNormal[iDim] = Normal[iDim]/Area;   /* ! Unit Normal*/
+    UnitNormal[iDim] = Normal[iDim]/Area;   /* ! Unit Normal*/
   
   /*--- Point i, Needs to recompute SoundSpeed / Pressure / Enthalpy in case of 2nd order reconstruction ---*/
   Density_i = U_i[0];
@@ -124,13 +124,13 @@ void CConvective_Template::ComputeResidual(double *val_residual, double **val_Ja
   GetInviscidProjFlux(&Density_j, Velocity_j, &Pressure_j, &Enthalpy_j, Normal, Proj_flux_tensor_j);
   
   /*--- Compute P and Lambda (do it with the Normal) ---*/
-  GetPMatrix(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitaryNormal, P_Tensor);
+  GetPMatrix(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, P_Tensor);
   
   ProjVelocity = 0.0; ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
-    ProjVelocity   += RoeVelocity[iDim]*UnitaryNormal[iDim];
-    ProjVelocity_i += Velocity_i[iDim]*UnitaryNormal[iDim];
-    ProjVelocity_j += Velocity_j[iDim]*UnitaryNormal[iDim];
+    ProjVelocity   += RoeVelocity[iDim]*UnitNormal[iDim];
+    ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
+    ProjVelocity_j += Velocity_j[iDim]*UnitNormal[iDim];
   }
   
   /*--- Flow eigenvalues and Entropy correctors ---*/
@@ -164,14 +164,14 @@ void CConvective_Template::ComputeResidual(double *val_residual, double **val_Ja
     
     if (nDim == 3) {
       delta_wave[0] = delta_rho - delta_p/(RoeSoundSpeed*RoeSoundSpeed);
-      delta_wave[1] = UnitaryNormal[0]*delta_vel[2]-UnitaryNormal[2]*delta_vel[0];
-      delta_wave[2] = UnitaryNormal[1]*delta_vel[0]-UnitaryNormal[0]*delta_vel[1];
+      delta_wave[1] = UnitNormal[0]*delta_vel[2]-UnitNormal[2]*delta_vel[0];
+      delta_wave[2] = UnitNormal[1]*delta_vel[0]-UnitNormal[0]*delta_vel[1];
       delta_wave[3] = proj_delta_vel + delta_p/(RoeDensity*RoeSoundSpeed);
       delta_wave[4] = -proj_delta_vel + delta_p/(RoeDensity*RoeSoundSpeed);
     }
     else {
       delta_wave[0] = delta_rho - delta_p/(RoeSoundSpeed*RoeSoundSpeed);
-      delta_wave[1] = UnitaryNormal[1]*delta_vel[0]-UnitaryNormal[0]*delta_vel[1];
+      delta_wave[1] = UnitNormal[1]*delta_vel[0]-UnitNormal[0]*delta_vel[1];
       delta_wave[2] = proj_delta_vel + delta_p/(RoeDensity*RoeSoundSpeed);
       delta_wave[3] = -proj_delta_vel + delta_p/(RoeDensity*RoeSoundSpeed);
     }
@@ -186,7 +186,7 @@ void CConvective_Template::ComputeResidual(double *val_residual, double **val_Ja
   else {
     
     /*--- Compute inverse P ---*/
-    GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitaryNormal, invP_Tensor);
+    GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
     
     /*--- Jacobias of the inviscid flux, scale = 0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal ---*/
     GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, val_Jacobian_i);
