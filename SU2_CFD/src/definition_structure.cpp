@@ -289,7 +289,7 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry, CCo
   tne2_euler = false; tne2_ns = false;
   adj_tne2_euler = false; adj_tne2_ns = false;
 	template_solver = false;
-
+  
 	/*--- Assign booleans ---*/
 	switch (config->GetKind_Solver()) {
 	case TEMPLATE_SOLVER: template_solver = true; break;
