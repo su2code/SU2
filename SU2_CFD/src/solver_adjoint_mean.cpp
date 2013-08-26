@@ -1672,7 +1672,7 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   
   /*--- Error message ---*/
 #ifndef NO_MPI
-  double MyErrorCounter = ErrorCounter; ErrorCounter = 0.0;
+  unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0.0;
   MPI::COMM_WORLD.Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
 #endif
   if ((ErrorCounter != 0) && (rank == MASTER_NODE))
@@ -1724,13 +1724,7 @@ void CAdjEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
 
 		if (high_order_diss) {
 			numerics->SetUndivided_Laplacian(node[iPoint]->GetUndivided_Laplacian(), node[jPoint]->GetUndivided_Laplacian());
-			numerics->SetSensor(solver_container[FLOW_SOL]->node[iPoint]->GetSensor(),
-					solver_container[FLOW_SOL]->node[jPoint]->GetSensor());
-		}
-
-		/*--- Rotating frame - use lower-order dissipation sensor ---*/
-		if (rotating_frame) {
-			numerics->SetSensor(node[iPoint]->GetSensor(),node[jPoint]->GetSensor());
+			numerics->SetSensor(node[iPoint]->GetSensor(), node[jPoint]->GetSensor());
 		}
 
 		/*--- Mesh motion ---*/
@@ -2074,61 +2068,86 @@ void CAdjEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *confi
 }
 
 void CAdjEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config) {
-
-	double dx = 0.1;
-	double LimK = 0.03;
-	double eps2 =  pow((LimK*dx),3);
-
-	unsigned long iPoint, jPoint;
-	unsigned short iNeigh, nNeigh, iDim;
-	double **Gradient_i, *Coord_i, *Coord_j, diff_coord, dist_ij, r_u, r_u_ij, 
-	du_max, du_min, u_ij, *Solution_i, *Solution_j, dp, dm;
-
-
-	for (iPoint = 0; iPoint < nPoint; iPoint++) 
-
-		if (geometry->node[iPoint]->GetDomain()) {
-
-			Solution_i = node[iPoint]->GetSolution();
-			Gradient_i = node[iPoint]->GetGradient();
-			Coord_i = geometry->node[iPoint]->GetCoord();
-			nNeigh = geometry->node[iPoint]->GetnPoint();
-
-			/*--- Find max and min value of the variable in the control volume around the mesh point ---*/
-			du_max = 1.0E-8; du_min = -1.0E-8;
-			for (iNeigh = 0; iNeigh < nNeigh; iNeigh++) {
-				jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-				Solution_j = node[jPoint]->GetSolution();
-				du_max = max(du_max, Solution_j[0] - Solution_i[0]);
-				du_min = min(du_min, Solution_j[0] - Solution_i[0]);
-			}
-
-			r_u = 1.0;
-			for (iNeigh = 0; iNeigh < nNeigh; iNeigh++) {
-
-				/*--- Unconstrained reconstructed solution ---*/
-				jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-				Solution_j = node[jPoint]->GetSolution();
-				Coord_j = geometry->node[jPoint]->GetCoord();
-				u_ij = Solution_i[0]; dist_ij = 0;
-				for (iDim = 0; iDim < nDim; iDim++) {
-					diff_coord = Coord_j[iDim]-Coord_i[iDim];
-					u_ij += 0.5*diff_coord*Gradient_i[0][iDim];
-				}
-
-				/*--- Venkatakrishnan limiter ---*/
-				if ((u_ij - Solution_i[0]) >= 0.0) dp = du_max;
-				else	dp = du_min;
-				dm = u_ij - Solution_i[0];
-				r_u_ij = (dp*dp+2.0*dm*dp + eps2)/(dp*dp+2*dm*dm+dm*dp + eps2);
-
-				/*--- Take the smallest value of the limiter ---*/
-				r_u = min(r_u, r_u_ij);
-
-			}
-			node[iPoint]->SetSensor(1.0-r_u);
-		}
   
+  unsigned long iPoint;
+	double SharpEdge_Distance, eps, ds, scale, Sensor, Param_Kappa_2, Param_Kappa_4;
+  
+  eps = config->GetLimiterCoeff()*config->GetRefElemLength();
+  Param_Kappa_2 = config->GetKappa_2nd_AdjFlow();
+	Param_Kappa_4 = config->GetKappa_4th_AdjFlow();
+  
+  if (Param_Kappa_2 != 0.0) scale = 2.0 * Param_Kappa_4 / Param_Kappa_2;
+  else scale = 0.0;
+  
+	for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    
+    SharpEdge_Distance = (geometry->node[iPoint]->GetSharpEdge_Distance() - config->GetSharpEdgesCoeff()*eps);
+    
+    ds = 0.0;
+    if (SharpEdge_Distance < -eps) ds = 1.0;
+    if (fabs(SharpEdge_Distance) <= eps) ds = 1.0 - (0.5*(1.0+(SharpEdge_Distance/eps)+(1.0/PI_NUMBER)*sin(PI_NUMBER*SharpEdge_Distance/eps)));
+    if (SharpEdge_Distance > eps) ds = 0.0;
+    
+    Sensor = scale * ds;
+    
+    node[iPoint]->SetSensor(Sensor);
+    
+  }
+  
+//	double dx = 0.1;
+//	double LimK = 0.03;
+//	double eps2 =  pow((LimK*dx),3);
+//  
+//	unsigned long iPoint, jPoint;
+//	unsigned short iNeigh, nNeigh, iDim;
+//	double **Gradient_i, *Coord_i, *Coord_j, diff_coord, dist_ij, r_u, r_u_ij,
+//	du_max, du_min, u_ij, *Solution_i, *Solution_j, dp, dm;
+//  
+//  
+//	for (iPoint = 0; iPoint < nPoint; iPoint++)
+//    
+//		if (geometry->node[iPoint]->GetDomain()) {
+//      
+//			Solution_i = node[iPoint]->GetSolution();
+//			Gradient_i = node[iPoint]->GetGradient();
+//			Coord_i = geometry->node[iPoint]->GetCoord();
+//			nNeigh = geometry->node[iPoint]->GetnPoint();
+//      
+//			/*--- Find max and min value of the variable in the control volume around the mesh point ---*/
+//			du_max = 1.0E-8; du_min = -1.0E-8;
+//			for (iNeigh = 0; iNeigh < nNeigh; iNeigh++) {
+//				jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+//				Solution_j = node[jPoint]->GetSolution();
+//				du_max = max(du_max, Solution_j[0] - Solution_i[0]);
+//				du_min = min(du_min, Solution_j[0] - Solution_i[0]);
+//			}
+//      
+//			r_u = 1.0;
+//			for (iNeigh = 0; iNeigh < nNeigh; iNeigh++) {
+//        
+//				/*--- Unconstrained reconstructed solution ---*/
+//				jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+//				Solution_j = node[jPoint]->GetSolution();
+//				Coord_j = geometry->node[jPoint]->GetCoord();
+//				u_ij = Solution_i[0]; dist_ij = 0;
+//				for (iDim = 0; iDim < nDim; iDim++) {
+//					diff_coord = Coord_j[iDim]-Coord_i[iDim];
+//					u_ij += 0.5*diff_coord*Gradient_i[0][iDim];
+//				}
+//        
+//				/*--- Venkatakrishnan limiter ---*/
+//				if ((u_ij - Solution_i[0]) >= 0.0) dp = du_max;
+//				else	dp = du_min;
+//				dm = u_ij - Solution_i[0];
+//				r_u_ij = (dp*dp+2.0*dm*dp + eps2)/(dp*dp+2*dm*dm+dm*dp + eps2);
+//        
+//				/*--- Take the smallest value of the limiter ---*/
+//				r_u = min(r_u, r_u_ij);
+//        
+//			}
+//			node[iPoint]->SetSensor(1.0-r_u);
+//		}
+    
   /*--- MPI parallelization ---*/
   Set_MPI_Dissipation_Switch(geometry, config);
   
@@ -2293,57 +2312,6 @@ void CAdjEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
   
 }
 
-void CAdjEulerSolver::Solve_LinearSystem(CGeometry *geometry, CSolver **solver_container, CConfig *config){
-	unsigned long iPoint;
-	unsigned long total_index;
-	unsigned short iVar;
-	double *ObjFuncSource;
-
-	/*--- Build linear system ---*/
-	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-		ObjFuncSource = node[iPoint]->GetObjFuncSource();
-		for (iVar = 0; iVar < nVar; iVar++) {
-			total_index = iPoint*nVar+iVar;
-			LinSysRes[total_index] = ObjFuncSource[iVar];
-			LinSysSol[total_index] = 0.0;
-		}
-	}
-
-	/*--- Solve the linear system (Krylov subspace methods) ---*/
-  CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
-  
-  CPreconditioner* precond = NULL;
-  if (config->GetKind_Linear_Solver_Prec() == JACOBI) {
-    Jacobian.BuildJacobiPreconditioner();
-    precond = new CJacobiPreconditioner(Jacobian, geometry, config);
-  }
-  else if (config->GetKind_Linear_Solver_Prec() == LU_SGS) {
-    precond = new CLU_SGSPreconditioner(Jacobian, geometry, config);
-  }
-  else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-    Jacobian.BuildJacobiPreconditioner();
-    Jacobian.BuildLineletPreconditioner(geometry, config);
-    precond = new CLineletPreconditioner(Jacobian, geometry, config);
-  }
-  
-  CSysSolve system;
-  if (config->GetKind_Linear_Solver() == BCGSTAB)
-    system.BCGSTAB(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(),
-                   config->GetLinear_Solver_Iter(), true);
-  else if (config->GetKind_Linear_Solver() == FGMRES)
-    system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(),
-                 config->GetLinear_Solver_Iter(), true);
-  
-  delete mat_vec;
-  delete precond;
-
-	/*--- Update solution (system written in terms of increments) ---*/
-	for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-		for (iVar = 0; iVar < nVar; iVar++)
-			node[iPoint]->SetSolution(iVar, config->GetLinear_Solver_Relax()*LinSysSol[iPoint*nVar+iVar]);
-
-}
-
 void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
 	unsigned long iVertex, iPoint, Neigh;
 	unsigned short iPos, jPos;
@@ -2351,13 +2319,10 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
 	double *d = NULL, *Normal = NULL, *Psi = NULL, *U = NULL, Enthalpy, conspsi, Mach_Inf,
   Area, **PrimVar_Grad = NULL, **ConsVar_Grad = NULL, *ConsPsi_Grad = NULL,
   ConsPsi, d_press, grad_v, Beta2, v_gradconspsi, UnitNormal[3], *GridVel = NULL,
-  LevelSet, Target_LevelSet;
-	//double RefDensity, *RefVelocity = NULL, RefPressure;
-
+  LevelSet, Target_LevelSet, eps;
 	double r, ru, rv, rw, rE, p, T; // used in farfield sens
 	double dp_dr, dp_dru, dp_drv, dp_drw, dp_drE; // used in farfield sens
 	double dH_dr, dH_dru, dH_drv, dH_drw, dH_drE, H; // used in farfield sens
-	//	double alpha, beta;
 	double *USens, *U_infty;
 
 	double Gas_Constant = config->GetGas_ConstantND();
@@ -2471,6 +2436,14 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
           
           /*--- Compute sensitivity for each surface point ---*/
           CSensitivity[iMarker][iVertex] = (d_press + grad_v + v_gradconspsi) * Area;
+          
+          /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
+          if (config->GetSens_Remove_Sharp()) {
+            eps = config->GetLimiterCoeff()*config->GetRefElemLength();
+            if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetSharpEdgesCoeff()*eps )
+              CSensitivity[iMarker][iVertex] = 0.0;
+          }
+          
           Sens_Geo[iMarker] -= CSensitivity[iMarker][iVertex] * Area;
         }
       }
@@ -5245,7 +5218,7 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   /*--- Error message ---*/
 #ifndef NO_MPI
-  double MyErrorCounter = ErrorCounter; ErrorCounter = 0.0;
+  unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0.0;
   MPI::COMM_WORLD.Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
 #endif
   if ((ErrorCounter != 0) && (rank == MASTER_NODE))
