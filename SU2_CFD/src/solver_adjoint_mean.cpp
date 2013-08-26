@@ -2069,26 +2069,84 @@ void CAdjEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *confi
 
 void CAdjEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config) {
   
-	unsigned long iPoint;
-	double SharpEdge_Distance, dave, LimK, eps, ds, scale = 0.5, Sensor = 0.0;
+  unsigned long iPoint;
+	double SharpEdge_Distance, eps, ds, scale, Sensor, Param_Kappa_2, Param_Kappa_4;
   
-  dave = config->GetRefElemLength();
-  LimK = config->GetLimiterCoeff();
-  eps = LimK*dave;
+  eps = config->GetLimiterCoeff()*config->GetRefElemLength();
+  Param_Kappa_2 = config->GetKappa_2nd_AdjFlow();
+	Param_Kappa_4 = config->GetKappa_4th_AdjFlow();
+  
+  scale = 2.0 * Param_Kappa_4 / Param_Kappa_2;
   
 	for (iPoint = 0; iPoint < nPoint; iPoint++) {
     
-    SharpEdge_Distance = (geometry->node[iPoint]->GetSharpEdge_Distance() - 5.0*eps);
+    SharpEdge_Distance = (geometry->node[iPoint]->GetSharpEdge_Distance() - config->GetSharpEdgesCoeff()*eps);
+    
     ds = 0.0;
     if (SharpEdge_Distance < -eps) ds = 1.0;
-    if (fabs(SharpEdge_Distance) <= eps) ds = 1.0 - 0.5*(1.0+(SharpEdge_Distance/eps)+(1.0/PI_NUMBER)*sin(PI_NUMBER*SharpEdge_Distance/eps));
+    if (fabs(SharpEdge_Distance) <= eps) ds = 1.0 - (0.5*(1.0+(SharpEdge_Distance/eps)+(1.0/PI_NUMBER)*sin(PI_NUMBER*SharpEdge_Distance/eps)));
     if (SharpEdge_Distance > eps) ds = 0.0;
     
     Sensor = scale * ds;
+    
     node[iPoint]->SetSensor(Sensor);
     
   }
   
+//	double dx = 0.1;
+//	double LimK = 0.03;
+//	double eps2 =  pow((LimK*dx),3);
+//  
+//	unsigned long iPoint, jPoint;
+//	unsigned short iNeigh, nNeigh, iDim;
+//	double **Gradient_i, *Coord_i, *Coord_j, diff_coord, dist_ij, r_u, r_u_ij,
+//	du_max, du_min, u_ij, *Solution_i, *Solution_j, dp, dm;
+//  
+//  
+//	for (iPoint = 0; iPoint < nPoint; iPoint++)
+//    
+//		if (geometry->node[iPoint]->GetDomain()) {
+//      
+//			Solution_i = node[iPoint]->GetSolution();
+//			Gradient_i = node[iPoint]->GetGradient();
+//			Coord_i = geometry->node[iPoint]->GetCoord();
+//			nNeigh = geometry->node[iPoint]->GetnPoint();
+//      
+//			/*--- Find max and min value of the variable in the control volume around the mesh point ---*/
+//			du_max = 1.0E-8; du_min = -1.0E-8;
+//			for (iNeigh = 0; iNeigh < nNeigh; iNeigh++) {
+//				jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+//				Solution_j = node[jPoint]->GetSolution();
+//				du_max = max(du_max, Solution_j[0] - Solution_i[0]);
+//				du_min = min(du_min, Solution_j[0] - Solution_i[0]);
+//			}
+//      
+//			r_u = 1.0;
+//			for (iNeigh = 0; iNeigh < nNeigh; iNeigh++) {
+//        
+//				/*--- Unconstrained reconstructed solution ---*/
+//				jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+//				Solution_j = node[jPoint]->GetSolution();
+//				Coord_j = geometry->node[jPoint]->GetCoord();
+//				u_ij = Solution_i[0]; dist_ij = 0;
+//				for (iDim = 0; iDim < nDim; iDim++) {
+//					diff_coord = Coord_j[iDim]-Coord_i[iDim];
+//					u_ij += 0.5*diff_coord*Gradient_i[0][iDim];
+//				}
+//        
+//				/*--- Venkatakrishnan limiter ---*/
+//				if ((u_ij - Solution_i[0]) >= 0.0) dp = du_max;
+//				else	dp = du_min;
+//				dm = u_ij - Solution_i[0];
+//				r_u_ij = (dp*dp+2.0*dm*dp + eps2)/(dp*dp+2*dm*dm+dm*dp + eps2);
+//        
+//				/*--- Take the smallest value of the limiter ---*/
+//				r_u = min(r_u, r_u_ij);
+//        
+//			}
+//			node[iPoint]->SetSensor(1.0-r_u);
+//		}
+    
   /*--- MPI parallelization ---*/
   Set_MPI_Dissipation_Switch(geometry, config);
   
@@ -2260,13 +2318,10 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
 	double *d = NULL, *Normal = NULL, *Psi = NULL, *U = NULL, Enthalpy, conspsi, Mach_Inf,
   Area, **PrimVar_Grad = NULL, **ConsVar_Grad = NULL, *ConsPsi_Grad = NULL,
   ConsPsi, d_press, grad_v, Beta2, v_gradconspsi, UnitNormal[3], *GridVel = NULL,
-  LevelSet, Target_LevelSet;
-	//double RefDensity, *RefVelocity = NULL, RefPressure;
-
+  LevelSet, Target_LevelSet, eps;
 	double r, ru, rv, rw, rE, p, T; // used in farfield sens
 	double dp_dr, dp_dru, dp_drv, dp_drw, dp_drE; // used in farfield sens
 	double dH_dr, dH_dru, dH_drv, dH_drw, dH_drE, H; // used in farfield sens
-	//	double alpha, beta;
 	double *USens, *U_infty;
 
 	double Gas_Constant = config->GetGas_ConstantND();
@@ -2381,9 +2436,12 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
           /*--- Compute sensitivity for each surface point ---*/
           CSensitivity[iMarker][iVertex] = (d_press + grad_v + v_gradconspsi) * Area;
           
-//          /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
-//          if ( geometry->node[iPoint]->GetSharpEdge_Distance() < 0.01 )
-//            CSensitivity[iMarker][iVertex] = 0.0;
+          /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
+          if (config->GetSens_Remove_Sharp()) {
+            eps = config->GetLimiterCoeff()*config->GetRefElemLength();
+            if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetSharpEdgesCoeff()*eps )
+              CSensitivity[iMarker][iVertex] = 0.0;
+          }
           
           Sens_Geo[iMarker] -= CSensitivity[iMarker][iVertex] * Area;
         }

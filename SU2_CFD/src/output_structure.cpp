@@ -1708,9 +1708,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) ||
 			(Kind_Solver == ADJ_FREE_SURFACE_EULER) || (Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
 			(Kind_Solver == ADJ_FREE_SURFACE_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
-    /*--- Surface sensitivity coefficient ---*/
+    /*--- Surface sensitivity coefficient, and solution sensor ---*/
     iVar_Sens   = nVar_Total;
-    nVar_Total += 1;
+    nVar_Total += 2;
   }
   
 	/*--- Merge the solution either in serial or parallel. ---*/
@@ -1988,6 +1988,10 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         case ADJ_PLASMA_EULER: case ADJ_PLASMA_NAVIER_STOKES:
           
           Data[jVar][jPoint] = Aux_Sens[iPoint]; jVar++;
+          if (config->GetKind_ConvNumScheme() == SPACE_CENTERED)
+          { Data[jVar][jPoint] = solver[ADJFLOW_SOL]->node[iPoint]->GetSensor(); jVar++; }
+          if (config->GetKind_ConvNumScheme() == SPACE_UPWIND)
+          { Data[jVar][jPoint] = solver[ADJFLOW_SOL]->node[iPoint]->GetLimiter(0); jVar++; }
           break;
           
       }
@@ -2906,8 +2910,13 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
         
         /*--- Load buffers with the skin friction, heat transfer, y+ variables. ---*/
-        Buffer_Send_Var[jPoint] = Aux_Sens[iPoint];
         
+        Buffer_Send_Var[jPoint] = Aux_Sens[iPoint];
+        if (config->GetKind_ConvNumScheme() == SPACE_CENTERED)
+          Buffer_Send_Res[jPoint] = solver[ADJFLOW_SOL]->node[iPoint]->GetSensor(iPoint);
+        if (config->GetKind_ConvNumScheme() == SPACE_UPWIND)
+          Buffer_Send_Res[jPoint] = solver[ADJFLOW_SOL]->node[iPoint]->GetLimiter(0);
+
         jPoint++;
       }
     }
@@ -2916,6 +2925,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 		MPI::COMM_WORLD.Barrier();
 		MPI::COMM_WORLD.Gather(Buffer_Send_Var, nBuffer_Scalar, MPI::DOUBLE,
                            Buffer_Recv_Var, nBuffer_Scalar, MPI::DOUBLE,
+                           MASTER_NODE);
+    MPI::COMM_WORLD.Gather(Buffer_Send_Res, nBuffer_Scalar, MPI::DOUBLE,
+                           Buffer_Recv_Res, nBuffer_Scalar, MPI::DOUBLE,
                            MASTER_NODE);
     
 		/*--- The master node unpacks and sorts this variable by global index ---*/
@@ -2926,7 +2938,8 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           
 					/*--- Get global index, then loop over each variable and store ---*/
 					iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
-					Data[iVar][iGlobal_Index] = Buffer_Recv_Var[jPoint];
+					Data[iVar+0][iGlobal_Index] = Buffer_Recv_Var[jPoint];
+          Data[iVar+1][iGlobal_Index] = Buffer_Recv_Res[jPoint];
 					jPoint++;
 				}
 				/*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
@@ -3289,7 +3302,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short va
   if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) ||
 			(Kind_Solver == ADJ_FREE_SURFACE_EULER) || (Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
 			(Kind_Solver == ADJ_FREE_SURFACE_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
-    restart_file << ", \"Surface_Sensitivity\"";
+    restart_file << ", \"Surface_Sensitivity\", \"Solution_Sensor\"";
   }
   
   restart_file << endl;

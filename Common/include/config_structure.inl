@@ -213,6 +213,8 @@ inline double CConfig::GetChargeCoeff(void) { return ChargeCoeff; }
 
 inline double CConfig::GetLimiterCoeff(void) { return LimiterCoeff; }
 
+inline double CConfig::GetSharpEdgesCoeff(void) { return SharpEdgesCoeff; }
+
 inline double CConfig::GetReynolds(void) { return Reynolds; }
 
 inline double CConfig::GetFroude(void) { return Froude; }
@@ -862,7 +864,7 @@ inline unsigned short CConfig::GetKind_Trans_Model(void) { return Kind_Trans_Mod
 
 inline bool CConfig::GetFrozen_Visc(void) { return Frozen_Visc; }
 
-inline bool CConfig::GetShow_Adj_Sens(void) { return Show_Adj_Sens; }
+inline bool CConfig::GetSens_Remove_Sharp(void) { return Sens_Remove_Sharp; }
 
 inline bool CConfig::GetHold_GridFixed(void) { return Hold_GridFixed; }
 
