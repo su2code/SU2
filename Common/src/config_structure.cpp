@@ -3118,6 +3118,18 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				cout << "JST viscous coefficients (1st, 2nd, & 4th): " << Kappa_1st_AdjFlow
 						<< ", " << Kappa_2nd_AdjFlow << ", " << Kappa_4th_AdjFlow <<"."<< endl;
 				cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
+        switch (Kind_SlopeLimit_AdjFlow) {
+          case NONE: cout << "Without slope-limiting method." << endl; break;
+          case VENKATAKRISHNAN:
+            cout << "Venkatakrishnan slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+            cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+            break;
+          case SHARP_EDGES:
+            cout << "Sharp edges slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+            cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+            cout << "The reference sharp edge distance is: " << 5.0*RefElemLength*LimiterCoeff <<". "<< endl;
+            break;
+				}
 			}
 			if ((Kind_ConvNumScheme_AdjFlow == SPACE_CENTERED) && (Kind_Centered_AdjFlow == LAX))
 				cout << "Lax-Friedrich scheme for the adjoint inviscid terms."<< endl;
@@ -3125,9 +3137,17 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				cout << "1st order Roe solver for the adjoint inviscid terms."<< endl;
 			if ((Kind_ConvNumScheme_AdjFlow == SPACE_UPWIND) && (Kind_Upwind_AdjFlow == ROE_2ND)) {
 				cout << "2nd order Roe solver for the adjoint inviscid terms."<< endl;
-				switch (Kind_SlopeLimit_Flow) {
+				switch (Kind_SlopeLimit_AdjFlow) {
 				case NONE: cout << "Without slope-limiting method." << endl; break;
-				case VENKATAKRISHNAN: cout << "Venkatakrishnan slope-limiting method." << endl; break;
+				case VENKATAKRISHNAN:
+            cout << "Venkatakrishnan slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+            cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+            break;
+        case SHARP_EDGES:
+            cout << "Sharp edges slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+            cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+            cout << "The reference sharp edge distance is: " << 5.0*RefElemLength*LimiterCoeff <<". "<< endl;
+            break;
 				}
 			}
 		}

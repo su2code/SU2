@@ -884,10 +884,10 @@ void CCentLax_AdjPlasmaDiatomic::ComputeResidual(double *val_resconv_i, double *
 		Local_Lambda_j = (fabs(ProjVelocity_j)+SoundSpeed_j[iSpecies]*Area);
     
 		MeanLambda[iSpecies] = 0.5*(Local_Lambda_i+Local_Lambda_j);
-		Phi_i = pow(Lambda_i[iSpecies]/(4.0*MeanLambda[iSpecies]+EPS), Param_p);
-		Phi_j = pow(Lambda_j[iSpecies]/(4.0*MeanLambda[iSpecies]+EPS), Param_p);
+		Phi_i = pow(Lambda_i[iSpecies]/(4.0*MeanLambda[iSpecies]), Param_p);
+		Phi_j = pow(Lambda_j[iSpecies]/(4.0*MeanLambda[iSpecies]), Param_p);
     
-		StretchingFactor[iSpecies] = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j+EPS);
+		StretchingFactor[iSpecies] = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
 		Epsilon_0[iSpecies] = Param_Kappa_0*sc0*double(nDim)/3.0;
 	}
   

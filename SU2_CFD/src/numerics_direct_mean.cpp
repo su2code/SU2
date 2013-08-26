@@ -1737,41 +1737,20 @@ void CCentLax_Flow::ComputeResidual(double *val_resconv, double *val_resvisc, do
 	Local_Lambda_j = (fabs(ProjVelocity_j)+SoundSpeed_j*Area);
 	MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
   
-	/*	cout << "EULER LocalLambda_i " << Local_Lambda_i << endl;
-   cout << "EULER LocalLambda_j " << Local_Lambda_j << endl;
-   cout << "SoundSpeed_i " << SoundSpeed_i << endl;
-   cout << "Area " << Area << endl;*/
-  
-	Phi_i = pow(Lambda_i/(4.0*MeanLambda+EPS),Param_p);
-	Phi_j = pow(Lambda_j/(4.0*MeanLambda+EPS),Param_p);
-	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j+EPS);
+	Phi_i = pow(Lambda_i/(4.0*MeanLambda),Param_p);
+	Phi_j = pow(Lambda_j/(4.0*MeanLambda),Param_p);
+	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
   
 	sc0 = 3.0*(double(Neighbor_i)+double(Neighbor_j))/(double(Neighbor_i)*double(Neighbor_j));
 	Epsilon_0 = Param_Kappa_0*sc0*double(nDim)/3.0;
   
-	/*	cout << "Euler sc0: " << sc0 << endl;
-   cout << "Epsilon_0: " << Epsilon_0 << endl;*/
-  
 	/*--- Compute viscous part of the residual ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
 		val_resvisc[iVar] = Epsilon_0*Diff_U[iVar]*StretchingFactor*MeanLambda;
-		/*		cout << "artificial dissipation: " << (Epsilon_0*Diff_U[iVar])*StretchingFactor*MeanLambda << endl;
-     cout << "epsilon0: " << Epsilon_0 << endl;
-     cout << "DiffU: " << Diff_U[iVar] << endl;
-     cout << "stretching: " << StretchingFactor << endl;
-     cout << "MeanLambda: " << MeanLambda << endl;
-     cin.get();*/
-		//		cout << val_resconv[iVar] << endl;
 	}
-	/*	cout << "EULER val_resvisc:" << endl;
-   for (iVar = 0; iVar < nVar; iVar++)
-   cout << val_resvisc[iVar] << endl;
-   cin.get();*/
   
 	if (implicit) {
-		cte = Epsilon_0*StretchingFactor*MeanLambda;
-		//		cout << "cte " << cte << endl;
-    
+		cte = Epsilon_0*StretchingFactor*MeanLambda;    
 		for (iVar = 0; iVar < (nVar-1); iVar++) {
 			val_Jacobian_i[iVar][iVar] += cte;
 			val_Jacobian_j[iVar][iVar] -= cte;
@@ -1789,14 +1768,6 @@ void CCentLax_Flow::ComputeResidual(double *val_resconv, double *val_resvisc, do
 			val_Jacobian_j[nVar-1][iDim+1] += cte*Gamma_Minus_One*Velocity_j[iDim];
 		val_Jacobian_j[nVar-1][nVar-1] -= cte*Gamma;
 	}
-	/*	cout << "EULER val_Jacobian_i: " << endl;
-   for (iVar = 0; iVar < nVar; iVar++) {
-   for (jVar =0; jVar < nVar; jVar++) {
-   cout << "\t" << val_Jacobian_i[iVar][jVar];
-   }
-   cout << endl;
-   }
-   cin.get();*/
 }
 
 CCentLaxArtComp_Flow::CCentLaxArtComp_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
@@ -1895,9 +1866,9 @@ void CCentLaxArtComp_Flow::ComputeResidual(double *val_resconv, double *val_resv
 	Local_Lambda_j = fabs(ProjVelocity_j)+SoundSpeed_j;
 	MeanLambda = 0.5*(Local_Lambda_i + Local_Lambda_j);
   
-	Phi_i = pow(Lambda_i/(4.0*MeanLambda+EPS),Param_p);
-	Phi_j = pow(Lambda_j/(4.0*MeanLambda+EPS),Param_p);
-	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j+EPS);
+	Phi_i = pow(Lambda_i/(4.0*MeanLambda),Param_p);
+	Phi_j = pow(Lambda_j/(4.0*MeanLambda),Param_p);
+	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
   
 	sc0 = 3.0*(double(Neighbor_i)+double(Neighbor_j))/(double(Neighbor_i)*double(Neighbor_j));
 	Epsilon_0 = Param_Kappa_0*sc0*double(nDim)/3.0;

@@ -143,9 +143,9 @@ void CCentJST_LinFlow::ComputeResidual (double *val_resconv, double *val_resvisc
 	Local_Lambda_j = (fabs(ProjVelocity_j)+SoundSpeed_j*Area);
 	MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
   
-	Phi_i = pow(0.5*max(0.0,(Lambda_i - MeanLambda)/(MeanLambda+EPS)), Param_p);
-	Phi_j = pow(0.5*max(0.0,(Lambda_j - MeanLambda)/(MeanLambda+EPS)), Param_p);
-	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j+EPS);
+	Phi_i = pow(0.5*max(0.0,(Lambda_i - MeanLambda)/(MeanLambda)), Param_p);
+	Phi_j = pow(0.5*max(0.0,(Lambda_j - MeanLambda)/(MeanLambda)), Param_p);
+	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
   
 	sc4 = 9.0/(double(Neighbor_i*(1+Neighbor_i))) + 9.0/(double(Neighbor_j*(1+Neighbor_j)));
   
@@ -268,9 +268,9 @@ void CCentLax_LinFlow::ComputeResidual (double *val_resconv, double *val_resvisc
 	MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
   
 	/*--- Compute stretching factor ---*/
-	Phi_i = pow(Lambda_i/(4.0*MeanLambda+EPS),Param_p);
-	Phi_j = pow(Lambda_j/(4.0*MeanLambda+EPS),Param_p);
-	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j+EPS);
+	Phi_i = pow(Lambda_i/(4.0*MeanLambda),Param_p);
+	Phi_j = pow(Lambda_j/(4.0*MeanLambda),Param_p);
+	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
   
 	sc2 = 3.0*(double(Neighbor_i)+double(Neighbor_j))/(double(Neighbor_i)*double(Neighbor_j));
 	Epsilon_i = Param_Kappa_0*sc2*double(nDim)/3.0;

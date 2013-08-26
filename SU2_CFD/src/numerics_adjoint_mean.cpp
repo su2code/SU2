@@ -697,15 +697,15 @@ void CCentJST_AdjFlow::ComputeResidual (double *val_resconv_i, double *val_resvi
 	Local_Lambda_j = (fabs(ProjVelocity_j)+SoundSpeed_j*Area);
 	MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
   
-	Phi_i = pow(Lambda_i/(4.0*MeanLambda+EPS),Param_p);
-	Phi_j = pow(Lambda_j/(4.0*MeanLambda+EPS),Param_p);
-	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j+EPS);
+	Phi_i = pow(Lambda_i/(4.0*MeanLambda),Param_p);
+	Phi_j = pow(Lambda_j/(4.0*MeanLambda),Param_p);
+	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
   
 	double sc2 = 3.0*(double(Neighbor_i)+double(Neighbor_j))/(double(Neighbor_i)*double(Neighbor_j));
 	sc4 = sc2*sc2/4.0;
 	Epsilon_2 = Param_Kappa_2*0.5*(Sensor_i+Sensor_j)*sc2;
 	Epsilon_4 = max(0.0, Param_Kappa_4-Epsilon_2)*sc4;
-  
+    
 	/*--- Compute viscous residual 1st- & 3rd-order dissipation ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
 		Residual = (Epsilon_2*Diff_Psi[iVar]-Epsilon_4*Diff_Lapl[iVar])*StretchingFactor*MeanLambda;
@@ -812,9 +812,9 @@ void CCentJSTArtComp_AdjFlow::ComputeResidual (double *val_resconv_i, double *va
 	MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
   
 	/*--- Compute streching factor ---*/
-	Phi_i = pow(Lambda_i/(4.0*MeanLambda+EPS),Param_p);
-	Phi_j = pow(Lambda_j/(4.0*MeanLambda+EPS),Param_p);
-	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j+EPS);
+	Phi_i = pow(Lambda_i/(4.0*MeanLambda),Param_p);
+	Phi_j = pow(Lambda_j/(4.0*MeanLambda),Param_p);
+	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
   
 	sc2 = 3.0*(double(Neighbor_i)+double(Neighbor_j))/(double(Neighbor_i)*double(Neighbor_j));
 	sc4 = sc2*sc2/4.0;
@@ -1064,9 +1064,9 @@ void CCentLax_AdjFlow::ComputeResidual (double *val_resconv_i, double *val_resvi
 	MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
   
 	/*--- Compute streching factor ---*/
-	Phi_i = pow(Lambda_i/(4.0*MeanLambda+EPS),Param_p);
-	Phi_j = pow(Lambda_j/(4.0*MeanLambda+EPS),Param_p);
-	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j+EPS);
+	Phi_i = pow(Lambda_i/(4.0*MeanLambda),Param_p);
+	Phi_j = pow(Lambda_j/(4.0*MeanLambda),Param_p);
+	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
   
 	sc2 = 3.0*(double(Neighbor_i)+double(Neighbor_j))/(double(Neighbor_i)*double(Neighbor_j));
 	Epsilon_0 = Param_Kappa_0*sc2*double(nDim)/3.0;
@@ -1177,9 +1177,9 @@ void CCentLaxArtComp_AdjFlow::ComputeResidual (double *val_resconv_i, double *va
 	MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
   
 	/*--- Compute streching factor ---*/
-	Phi_i = pow(Lambda_i/(4.0*MeanLambda+EPS),Param_p);
-	Phi_j = pow(Lambda_j/(4.0*MeanLambda+EPS),Param_p);
-	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j+EPS);
+	Phi_i = pow(Lambda_i/(4.0*MeanLambda),Param_p);
+	Phi_j = pow(Lambda_j/(4.0*MeanLambda),Param_p);
+	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
   
 	sc2 = 3.0*(double(Neighbor_i)+double(Neighbor_j))/(double(Neighbor_i)*double(Neighbor_j));
 	Epsilon_0 = Param_Kappa_0*sc2*double(nDim)/3.0;
