@@ -592,7 +592,7 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
   
 }
 
-void CSolver::SetRotVel_Gradient(CGeometry *geometry, CConfig *config) {
+void CSolver::SetGridVel_Gradient(CGeometry *geometry, CConfig *config) {
 	unsigned short iDim, jDim, iVar, iNeigh;
 	unsigned long iPoint, jPoint;
 	double *Coord_i, *Coord_j, *Solution_i, *Solution_j, Smatrix[3][3],
@@ -609,7 +609,7 @@ void CSolver::SetRotVel_Gradient(CGeometry *geometry, CConfig *config) {
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
     
 		Coord_i = geometry->node[iPoint]->GetCoord();
-		Solution_i = geometry->node[iPoint]->GetRotVel();
+		Solution_i = geometry->node[iPoint]->GetGridVel();
     
 		/*--- Inizialization of variables ---*/
 		for (iVar = 0; iVar < nDim; iVar++)
@@ -620,7 +620,7 @@ void CSolver::SetRotVel_Gradient(CGeometry *geometry, CConfig *config) {
 		for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
 			jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
 			Coord_j = geometry->node[jPoint]->GetCoord();
-			Solution_j = geometry->node[jPoint]->GetRotVel();
+			Solution_j = geometry->node[jPoint]->GetGridVel();
       
 			weight = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++)
@@ -684,7 +684,7 @@ void CSolver::SetRotVel_Gradient(CGeometry *geometry, CConfig *config) {
 				product = 0.0;
 				for (jDim = 0; jDim < nDim; jDim++)
 					product += Smatrix[iDim][jDim]*cvector[iVar][jDim];
-				geometry->node[iPoint]->SetRotVel_Grad(iVar,iDim,product);
+				geometry->node[iPoint]->SetGridVel_Grad(iVar,iDim,product);
 			}
 		}
 	}

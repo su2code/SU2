@@ -4421,7 +4421,12 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
           else if (fluid_structure) { cout.width(14); cout << log10(residual_fea[0]); }
           else if (aeroacoustic) { cout.width(14); cout << log10(residual_wave[0]); }
           
-          if (rotating_frame && nDim == 3 ) { cout.width(15); cout << Total_CT; cout.width(15); cout << Total_CQ; }
+          if (rotating_frame && nDim == 3 ) {
+            cout.setf(ios::scientific,ios::floatfield);
+            cout.width(15); cout << Total_CT;
+            cout.width(15); cout << Total_CQ;
+            cout.unsetf(ios_base::floatfield);
+          }
           else if (aeroacoustic) { cout.width(15); cout << Total_CLift; cout.width(15); cout << Total_CDrag; cout.width(15); cout << Total_CWave; }
           else if (equiv_area) { cout.width(15); cout << Total_CLift; cout.width(15); cout << Total_CDrag; cout.width(15);
             cout.precision(4);
@@ -4453,7 +4458,12 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
           
           if (transition) { cout.width(14); cout << log10(residual_transition[0]); cout.width(14); cout << log10(residual_transition[1]); }
       
-          if (rotating_frame  && nDim == 3 ) { cout.width(15); cout << Total_CT; cout.width(15); cout << Total_CQ; }
+          if (rotating_frame  && nDim == 3 ) {
+            cout.setf(ios::scientific,ios::floatfield);
+            cout.width(15); cout << Total_CT; cout.width(15);
+            cout << Total_CQ;
+            cout.unsetf(ios_base::floatfield);
+          }
           else { cout.width(15); cout << min(1000.0,max(-1000.0, Total_CLift)); cout.width(15); cout << min(1000.0,max(-1000.0, Total_CDrag)); }
           cout << endl;
           break;

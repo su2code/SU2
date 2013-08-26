@@ -115,9 +115,6 @@ public:
 	Sensor_j;			/*!< \brief Pressure sensor at point j. */
 	double *GridVel_i,	/*!< \brief Grid velocity at point i. */
 	*GridVel_j;			/*!< \brief Grid velocity at point j. */
-	double *RotVel_i,	/*!< \brief Rotational velocity at point i. */
-	*RotVel_j;			/*!< \brief Rotational velocity at point j. */
-	double Rot_Flux; /*!< \brief Exact rotating volume flux for an edge. */
 	double *U_i,		/*!< \brief Vector of conservative variables at point i. */
 	*U_id,		/*!< \brief Vector of derivative of conservative variables at point i. */
   *UZeroOrder_i,  /*!< \brief Vector of conservative variables at point i without reconstruction. */
@@ -182,8 +179,8 @@ public:
 	unsigned short Neighbor_i,	/*!< \brief Number of neighbors of the point i. */
 	Neighbor_j;					/*!< \brief Number of neighbors of the point j. */
 	double *Normal,	/*!< \brief Normal vector, it norm is the area of the face. */
-	*UnitaryNormal,		/*!< \brief Unitary normal vector. */
-	*UnitaryNormald;		/*!< \brief derivatve of unitary normal vector. */
+	*UnitNormal,		/*!< \brief Unitary normal vector. */
+	*UnitNormald;		/*!< \brief derivatve of unitary normal vector. */
 	double TimeStep,		/*!< \brief Time step useful in dual time method. */
 	Area,				/*!< \brief Area of the face i-j. */
 	Volume;				/*!< \brief Volume of the control volume around point i. */
@@ -628,19 +625,6 @@ public:
 	 * \param[in] val_gridvel_j - Grid velocity of the point j.
 	 */
 	void SetGridVel(double *val_gridvel_i, double *val_gridvel_j);
-
-	/*! 
-	 * \brief Set the velocity of the rotational framework.
-	 * \param[in] val_rotvel_i - Rotational frame velocity of the point i.
-	 * \param[in] val_rotvel_j - Rotational frame velocity of the point j.
-	 */
-	void SetRotVel(double *val_rotvel_i, double *val_rotvel_j);
-
-	/*!
-	 * \brief Set the exact rotating volume flux.
-	 * \param[in] val_rot_flux - Exact rotating volume flux for an edge.
-	 */
-	void SetRotFlux(double val_rot_flux);
 
 	/*! 
 	 * \brief Set the value of the pressure.
@@ -1487,7 +1471,7 @@ public:
  */
 class CUpwRoe_Flow : public CNumerics {
 private:
-	bool implicit, rotating_frame, grid_movement;
+	bool implicit, grid_movement;
 	double *Diff_U;
 	double *Velocity_i, *Velocity_j, *RoeVelocity;
 	double *Proj_flux_tensor_i, *Proj_flux_tensor_j;
@@ -1533,7 +1517,7 @@ public:
  */
 class CUpwRoePrim_Flow : public CNumerics {
 private:
-	bool implicit, rotating_frame, grid_movement;
+	bool implicit, grid_movement;
 	double *Diff_U;
 	double *Velocity_i, *Velocity_j, *RoeVelocity;
 	double *Proj_flux_tensor_i, *Proj_flux_tensor_j;
@@ -1579,7 +1563,7 @@ public:
  */
 class CUpwRoe_Turkel_Flow : public CNumerics {
 private:
-	bool implicit, rotating_frame, grid_movement;
+	bool implicit, grid_movement;
 	double *Diff_U;
 	double *Velocity_i, *Velocity_j, *RoeVelocity;
 	double *Proj_flux_tensor_i, *Proj_flux_tensor_j;
@@ -1689,7 +1673,7 @@ private:
 	double RoeDensity, RoeSoundSpeed, *RoeVelocity, *Lambda, *Velocity_i, *Velocity_j, **Proj_flux_tensor_i, **Proj_flux_tensor_j,
 	Proj_ModJac_Tensor_ij, **Proj_ModJac_Tensor, Energy_i, Energy_j, **P_Tensor, **invP_Tensor;
 	unsigned short iDim, iVar, jVar, kVar;
-	bool implicit, rotating_frame, grid_movement;
+	bool implicit, grid_movement;
 
 public:
 
@@ -1823,7 +1807,7 @@ public:
  */
 class CUpwRoe_Turkel_Plasma : public CNumerics {
 private:
-	bool implicit, rotating_frame, grid_movement;
+	bool implicit, grid_movement;
 	double *Diff_U;
 	double *Velocity_i, *Velocity_j, *RoeVelocity;
 	double *Proj_flux_tensor_i, *Proj_flux_tensor_j;
@@ -2273,7 +2257,7 @@ class CUpwLin_TransLM : public CNumerics {
 private:
 	double *Velocity_i;
 	double *Velocity_j;
-	bool implicit, rotating_frame, grid_movement, incompressible;
+	bool implicit, grid_movement, incompressible;
 	double Density_i, Density_j, q_ij, a0, a1;
 	unsigned short iDim;
 
@@ -2430,7 +2414,7 @@ public:
 class CUpwSca_TurbSA : public CNumerics {
 private:
 	double *Velocity_i, *Velocity_j;
-	bool implicit, rotating_frame, grid_movement, incompressible;
+	bool implicit, grid_movement, incompressible;
 	double Density_i, Density_j, q_ij, a0, a1;
 	unsigned short iDim;
 
@@ -2469,7 +2453,7 @@ public:
 class CUpwSca_TurbSST : public CNumerics {
 private:
 	double *Velocity_i, *Velocity_j;
-	bool implicit, rotating_frame, grid_movement, incompressible;
+	bool implicit, grid_movement, incompressible;
 	double Density_i, Density_j,
 	q_ij,
 	a0, a1;
@@ -2510,7 +2494,7 @@ public:
 class CUpwSca_TransLM : public CNumerics {
 private:
 	double *Velocity_i, *Velocity_j;
-	bool implicit, rotating_frame, grid_movement;
+	bool implicit, grid_movement;
 	double Density_i, Density_j,
 	q_ij,
 	a0, a1;
@@ -2605,8 +2589,7 @@ private:
     ProjGridVel_i, ProjGridVel_j, ProjGridVel;  /*!< \brief Projected grid velocity. */
 	bool implicit, /*!< \brief Implicit calculation. */
 	grid_movement, /*!< \brief Modification for grid movement. */
-	stretching, /*!< \brief Stretching factor. */
-	rotating_frame; /*!< \brief Rotational frame. */
+	stretching; /*!< \brief Stretching factor. */
 
 
 public:
@@ -2660,7 +2643,6 @@ private:
 	bool implicit, /*!< \brief Implicit calculation. */
 	grid_movement, /*!< \brief Modification for grid movement. */
 	stretching, /*!< \brief Stretching factor. */
-	rotating_frame, /*!< \brief Rotational frame. */
 	gravity; /*!< \brief computation with gravity force. */
 	double Froude; /*!< \brief Froude number. */
 
@@ -2707,7 +2689,7 @@ private:
 	double Residual, ProjVelocity_i, ProjVelocity_j, ProjPhi, ProjPhi_Vel, sq_vel, phis1, phis2;
 	double MeanPsiRho, MeanPsiE, Param_p, Param_Kappa_4, Param_Kappa_2, Local_Lambda_i, Local_Lambda_j, MeanLambda;
 	double Phi_i, Phi_j, sc4, StretchingFactor, Epsilon_4, Epsilon_2;
-	bool implicit, stretching, grid_movement, rotating_frame;
+	bool implicit, stretching, grid_movement;
 
 public:
 
@@ -2757,7 +2739,7 @@ private:
 	double Residual, ProjVelocity_i, ProjVelocity_j, ProjPhi, ProjPhi_Vel, sq_vel, phis1, phis2;
 	double MeanPsiRho, MeanPsiE, Param_p, Param_Kappa_4, Param_Kappa_2, Local_Lambda_i, Local_Lambda_j, MeanLambda;
 	double Phi_i, Phi_j, sc4, StretchingFactor, Epsilon_4, Epsilon_2;
-	bool implicit, stretching, grid_movement, rotating_frame;
+	bool implicit, stretching, grid_movement;
 
 public:
 
@@ -2863,8 +2845,7 @@ private:
 	Epsilon_0, cte; /*!< \brief Artificial dissipation values. */
 	bool implicit, /*!< \brief Implicit calculation. */
 	grid_movement, /*!< \brief Modification for grid movement. */
-	rotating_frame; /*!< \brief Rotational frame. */
-	bool stretching;
+	stretching;
 
 public:
 
@@ -2915,8 +2896,7 @@ private:
 	Epsilon_0, cte; /*!< \brief Artificial dissipation values. */
 	bool implicit, /*!< \brief Implicit calculation. */
 	grid_movement, /*!< \brief Modification for grid movement. */
-	gravity, /*!< \brief Modification for for gravity force. */
-	rotating_frame; /*!< \brief Rotational frame. */
+	gravity; /*!< \brief Modification for for gravity force. */
 	bool stretching;
 	double Froude;
 
@@ -2963,7 +2943,7 @@ private:
 	double Residual, ProjVelocity_i, ProjVelocity_j, ProjPhi, ProjPhi_Vel, sq_vel, phis1, phis2, 
 	MeanPsiRho, MeanPsiE, Param_p, Param_Kappa_0, Local_Lambda_i, Local_Lambda_j, MeanLambda, 
 	Phi_i, Phi_j, sc2, StretchingFactor, Epsilon_0, cte_0;
-	bool implicit, stretching, rotating_frame, grid_movement;
+	bool implicit, stretching, grid_movement;
 
 public:
 
@@ -3013,9 +2993,7 @@ private:
 	double Residual, ProjVelocity_i, ProjVelocity_j, ProjPhi, ProjPhi_Vel, sq_vel, phis1, phis2, 
 	MeanPsiRho, MeanPsiE, Param_p, Param_Kappa_0, Local_Lambda_i, Local_Lambda_j, MeanLambda, 
 	Phi_i, Phi_j, sc2, StretchingFactor, Epsilon_0, cte_0;
-	bool implicit;
-	bool stretching;
-	bool rotating_frame;
+	bool implicit, stretching;
 
 public:
 
