@@ -1350,7 +1350,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
       /*--- The PointID is not stored --*/
       point_line >> index;
       
-      /*--- Store the solution --*/
+      /*--- Store the solution (starting with node coordinates) --*/
       for (iField = 0; iField < nVar; iField++)
         point_line >> Solution[iField];
       
@@ -1635,7 +1635,7 @@ void CBaselineSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned 
       /*--- The PointID is not stored --*/
       point_line >> index;
       
-      /*--- Store the solution --*/
+      /*--- Store the solution (starting with node coordinates) --*/
       for (iField = 0; iField < nVar; iField++)
         point_line >> Solution[iField];
       

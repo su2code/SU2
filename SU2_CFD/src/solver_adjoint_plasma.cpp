@@ -31,7 +31,7 @@ CAdjPlasmaSolver::CAdjPlasmaSolver(CGeometry *geometry, CConfig *config) : CSolv
 	unsigned short iDim = 0, iVar, iMarker;
 	ifstream restart_file;
 	string filename, AdjExt;
-
+  double dull_val;
 	bool restart = config->GetRestart();
 	bool axisymmetric = config->GetAxisymmetric();
 
@@ -215,6 +215,8 @@ CAdjPlasmaSolver::CAdjPlasmaSolver(CGeometry *geometry, CConfig *config) : CSolv
 
         /*--- First value is the point index, then the conservative vars. ---*/
         point_line >> index;
+        if (nDim ==2) point_line >> dull_val >> dull_val;
+        else point_line >> dull_val >> dull_val >> dull_val;
         for (iVar = 0; iVar < nVar; iVar++)
           point_line >> Solution[iVar];
         
