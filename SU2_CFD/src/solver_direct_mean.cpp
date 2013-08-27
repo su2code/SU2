@@ -307,7 +307,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 		if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
 			char buffer[50];
 			unsigned long flowIter = config->GetnExtIter() - 1;
-			filename.erase (filename.end()-4, filename.end());
+      unsigned short lastindex = filename.find_last_of(".");
+      filename = filename.substr(0, lastindex);
+      
 			if ((int(flowIter) >= 0) && (int(flowIter) < 10)) sprintf (buffer, "_0000%d.dat", int(flowIter));
 			if ((int(flowIter) >= 10) && (int(flowIter) < 100)) sprintf (buffer, "_000%d.dat", int(flowIter));
 			if ((int(flowIter) >= 100) && (int(flowIter) < 1000)) sprintf (buffer, "_00%d.dat", int(flowIter));
@@ -5721,7 +5723,8 @@ void CEulerSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned sho
 
 	/*--- Multi-zone restart files. ---*/
 	if (nZone > 1 && !(config->GetUnsteady_Simulation() == TIME_SPECTRAL)) {
-		restart_filename.erase(restart_filename.end()-4, restart_filename.end());
+    unsigned short lastindex = restart_filename.find_last_of(".");
+    restart_filename = restart_filename.substr(0, lastindex);
 		sprintf (buffer, "_%d.dat", int(val_iZone));
 		UnstExt = string(buffer);
 		restart_filename.append(UnstExt);
@@ -5731,7 +5734,8 @@ void CEulerSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned sho
    physical time, so load in the direct solution files in reverse. ---*/
 	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
 		flowIter = val_iZone;
-		restart_filename.erase(restart_filename.end()-4, restart_filename.end());
+    unsigned short lastindex = restart_filename.find_last_of(".");
+    restart_filename = restart_filename.substr(0, lastindex);
 		if (int(val_iZone) < 10) sprintf (buffer, "_0000%d.dat", int(val_iZone));
 		if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) sprintf (buffer, "_000%d.dat", int(val_iZone));
 		if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) sprintf (buffer, "_00%d.dat", int(val_iZone));
@@ -5743,7 +5747,8 @@ void CEulerSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned sho
 		nFlowIter = config->GetnExtIter() - 1;
 		adjIter   = config->GetExtIter();
 		flowIter  = nFlowIter - adjIter;
-		restart_filename.erase (restart_filename.end()-4, restart_filename.end());
+    unsigned short lastindex = restart_filename.find_last_of(".");
+    restart_filename = restart_filename.substr(0, lastindex);
 		if ((int(flowIter) >= 0) && (int(flowIter) < 10)) sprintf (buffer, "_0000%d.dat", int(flowIter));
 		if ((int(flowIter) >= 10) && (int(flowIter) < 100)) sprintf (buffer, "_000%d.dat", int(flowIter));
 		if ((int(flowIter) >= 100) && (int(flowIter) < 1000)) sprintf (buffer, "_00%d.dat", int(flowIter));
@@ -5753,7 +5758,8 @@ void CEulerSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned sho
 		restart_filename.append(UnstExt);
 	} else {
 		flowIter = config->GetExtIter();
-		restart_filename.erase (restart_filename.end()-4, restart_filename.end());
+    unsigned short lastindex = restart_filename.find_last_of(".");
+    restart_filename = restart_filename.substr(0, lastindex);
 		if ((int(flowIter) >= 0) && (int(flowIter) < 10)) sprintf (buffer, "_0000%d.dat", int(flowIter));
 		if ((int(flowIter) >= 10) && (int(flowIter) < 100)) sprintf (buffer, "_000%d.dat", int(flowIter));
 		if ((int(flowIter) >= 100) && (int(flowIter) < 1000)) sprintf (buffer, "_00%d.dat", int(flowIter));

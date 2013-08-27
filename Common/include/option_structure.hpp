@@ -136,6 +136,7 @@ const unsigned int MAX_COMM_LEVEL = 1000;	/*!< \brief Maximum number of communic
 const unsigned int MAX_NUMBER_PERIODIC = 10;	/*!< \brief Maximum number of periodic boundary conditions. */
 const unsigned int MAX_NUMBER_SLIDING  = 10;	/*!< \brief Maximum number of sliding boundary conditions. */
 const int MASTER_NODE = 0;			/*!< \brief Master node for MPI parallelization. */
+const int SINGLE_NODE = 1;			/*!< \brief There is only a node in the MPI parallelization. */
 const int AUX_NODE = 1;			/*!< \brief Computational node that is used for IO stuff. */
 
 /** General output & CGNS defines **/

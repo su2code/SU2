@@ -55,8 +55,7 @@ int main(int argc, char *argv[]) {
     }
   
 		/*--- Definition of the geometry class and open the mesh file ---*/
-		geometry_container[iZone] = new CPhysicalGeometry(config_container[iZone], config_container[iZone]->GetMesh_FileName(),
-                                                      config_container[iZone]->GetMesh_FileFormat(), iZone+1, nZone);
+		geometry_container[iZone] = new CPhysicalGeometry(config_container[iZone], iZone+1, nZone);
     
     /*--- Perform the geometric preprocessing for each zone ---*/
     Geometric_Definition(geometry_container[iZone], config_container[iZone]);

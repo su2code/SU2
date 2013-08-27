@@ -699,7 +699,9 @@ void CHeatSolver::GetRestart(CGeometry *geometry, CConfig *config) {
     nFlowIter = config->GetnExtIter();
     adjIter   = config->GetExtIter();
     flowIter  = nFlowIter - adjIter - 1;
-    restart_filename.erase (restart_filename.end()-4, restart_filename.end());
+    unsigned short lastindex = restart_filename.find_last_of(".");
+    restart_filename = restart_filename.substr(0, lastindex);
+    
     if ((int(flowIter) >= 0) && (int(flowIter) < 10)) sprintf (buffer, "_0000%d.dat", int(flowIter));
     if ((int(flowIter) >= 10) && (int(flowIter) < 100)) sprintf (buffer, "_000%d.dat", int(flowIter));
     if ((int(flowIter) >= 100) && (int(flowIter) < 1000)) sprintf (buffer, "_00%d.dat", int(flowIter));
@@ -709,7 +711,9 @@ void CHeatSolver::GetRestart(CGeometry *geometry, CConfig *config) {
     restart_filename.append(UnstExt);
   } else {
     flowIter  =config->GetExtIter();
-    restart_filename.erase (restart_filename.end()-4, restart_filename.end());
+    unsigned short lastindex = restart_filename.find_last_of(".");
+    restart_filename = restart_filename.substr(0, lastindex);
+    
     if ((int(flowIter) >= 0) && (int(flowIter) < 10)) sprintf (buffer, "_0000%d.dat", int(flowIter));
     if ((int(flowIter) >= 10) && (int(flowIter) < 100)) sprintf (buffer, "_000%d.dat", int(flowIter));
     if ((int(flowIter) >= 100) && (int(flowIter) < 1000)) sprintf (buffer, "_00%d.dat", int(flowIter));

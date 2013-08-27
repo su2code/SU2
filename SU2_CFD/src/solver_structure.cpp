@@ -1084,7 +1084,7 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
       }
       break;
       
-      /*--- Sharp edges (Palacios 2013) limiter ---*/
+      /*--- Sharp edges limiter ---*/
     case SHARP_EDGES:
       
       for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -1309,7 +1309,8 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
 		filename = config->GetSolution_FlowFileName();
   
 	/*--- Remove restart filename extension ---*/
-	filename.erase(filename.end()-4, filename.end());
+  unsigned short lastindex = filename.find_last_of(".");
+  filename = filename.substr(0, lastindex);
   
 	/*--- The adjoint problem requires a particular extension. ---*/
 	if (config->GetAdjoint()) {
@@ -1340,7 +1341,8 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
 	/*--- Multi-zone restart files. ---*/
 	if (nZone > 1 && !(config->GetUnsteady_Simulation() == TIME_SPECTRAL)) {
     val_iZone = config->GetExtIter();
-		filename.erase(filename.end()-4, filename.end());
+    unsigned short lastindex = filename.find_last_of(".");
+    filename = filename.substr(0, lastindex);
 		sprintf (buffer, "_%d.dat", int(val_iZone));
 		UnstExt = string(buffer);
 		filename.append(UnstExt);
@@ -1596,7 +1598,8 @@ void CBaselineSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned 
 		filename = config->GetSolution_FlowFileName();
   
 	/*--- Remove restart filename extension ---*/
-	filename.erase(filename.end()-4, filename.end());
+  unsigned short lastindex = filename.find_last_of(".");
+  filename = filename.substr(0, lastindex);
   
 	/*--- The adjoint problem requires a particular extension. ---*/
 	if (config->GetAdjoint()) {
@@ -1626,7 +1629,8 @@ void CBaselineSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned 
   
 	/*--- Multi-zone restart files. ---*/
 	if (nZone > 1 && !(config->GetUnsteady_Simulation() == TIME_SPECTRAL)) {
-		filename.erase(filename.end()-4, filename.end());
+    unsigned short lastindex = filename.find_last_of(".");
+    filename = filename.substr(0, lastindex);
 		sprintf (buffer, "_%d.dat", int(val_iZone));
 		UnstExt = string(buffer);
 		filename.append(UnstExt);

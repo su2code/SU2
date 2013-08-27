@@ -610,7 +610,7 @@ void COutput::SetSurfaceCSV_Linearized(CConfig *config, CGeometry *geometry, CSo
 void COutput::MergeGeometry(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
 
 	int rank = MASTER_NODE;
-  int size = 1;
+  int size = SINGLE_NODE;
 
 #ifndef NO_MPI
 	rank = MPI::COMM_WORLD.Get_rank();
@@ -633,33 +633,33 @@ void COutput::MergeGeometry(CConfig *config, CGeometry *geometry, unsigned short
     /*--- Merge volumetric grid. ---*/
 
 		MergeVolumetricConnectivity(config, geometry, TRIANGLE    );
-    if ((rank == MASTER_NODE) && (size != 1) && (nGlobal_Tria != 0)) cout <<"Merging volumetric triangle grid connectivity." << endl;
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Tria != 0)) cout <<"Merging volumetric triangle grid connectivity." << endl;
 
 		MergeVolumetricConnectivity(config, geometry, RECTANGLE   );
-    if ((rank == MASTER_NODE) && (size != 1) && (nGlobal_Quad != 0)) cout <<"Merging volumetric rectangle grid connectivity." << endl;
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Quad != 0)) cout <<"Merging volumetric rectangle grid connectivity." << endl;
 
 		MergeVolumetricConnectivity(config, geometry, TETRAHEDRON );
-    if ((rank == MASTER_NODE) && (size != 1) && (nGlobal_Tetr != 0)) cout <<"Merging volumetric tetrahedron grid connectivity." << endl;
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Tetr != 0)) cout <<"Merging volumetric tetrahedron grid connectivity." << endl;
 
 		MergeVolumetricConnectivity(config, geometry, HEXAHEDRON  );
-    if ((rank == MASTER_NODE) && (size != 1) && (nGlobal_Hexa != 0)) cout <<"Merging volumetric hexahedron grid connectivity." << endl;
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Hexa != 0)) cout <<"Merging volumetric hexahedron grid connectivity." << endl;
 
 		MergeVolumetricConnectivity(config, geometry, WEDGE       );
-    if ((rank == MASTER_NODE) && (size != 1) && (nGlobal_Wedg != 0)) cout <<"Merging volumetric wedge grid connectivity." << endl;
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Wedg != 0)) cout <<"Merging volumetric wedge grid connectivity." << endl;
 
 		MergeVolumetricConnectivity(config, geometry, PYRAMID     );
-    if ((rank == MASTER_NODE) && (size != 1) && (nGlobal_Pyra != 0)) cout <<"Merging volumetric pyramid grid connectivity." << endl;
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Pyra != 0)) cout <<"Merging volumetric pyramid grid connectivity." << endl;
 
     /*--- Merge surface grid. ---*/
     
     MergeSurfaceConnectivity(config, geometry, LINE      );
-    if ((rank == MASTER_NODE) && (size != 1) && (nGlobal_Line != 0)) cout <<"Merging surface line grid connectivity." << endl;
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Line != 0)) cout <<"Merging surface line grid connectivity." << endl;
 
 		MergeSurfaceConnectivity(config, geometry, TRIANGLE  );
-    if ((rank == MASTER_NODE) && (size != 1) && (nGlobal_BoundTria != 0)) cout <<"Merging surface triangle grid connectivity." << endl;
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_BoundTria != 0)) cout <<"Merging surface triangle grid connectivity." << endl;
 
 		MergeSurfaceConnectivity(config, geometry, RECTANGLE );
-    if ((rank == MASTER_NODE) && (size != 1) && (nGlobal_BoundQuad != 0)) cout <<"Merging surface rectangle grid connectivity." << endl;
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_BoundQuad != 0)) cout <<"Merging surface rectangle grid connectivity." << endl;
 
 
 		/*--- Update total number of volumetric elements after merge. ---*/
@@ -686,7 +686,7 @@ void COutput::MergeGeometry(CConfig *config, CGeometry *geometry, unsigned short
      unsteady simulation with grid motion. ---*/
 
 	if (!wrote_base_file || dynamic_mesh) {
-    if ((rank == MASTER_NODE) && (size != 1)) cout <<"Merging grid coordinates." << endl;
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE)) cout <<"Merging grid coordinates." << endl;
 		MergeCoordinates(config, geometry);
   }
 
@@ -3161,8 +3161,9 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short va
 		filename = config->GetRestart_FlowFileName();
 
 	/*--- Remove restart filename extension ---*/
-	filename.erase(filename.end()-4, filename.end());
-
+  unsigned short lastindex = filename.find_last_of(".");
+  filename = filename.substr(0, lastindex);
+  
 	/*--- The adjoint problem requires a particular extension. ---*/
 	if (config->GetAdjoint()) {
 		switch (Kind_ObjFunc) {
@@ -4720,7 +4721,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
     /*--- Do not merge the volume solutions if we are running in parallel.
      Force the use of SU2_SOL to merge the volume sols in this case. ---*/
     int size = MPI::COMM_WORLD.Get_size();
-    if (size > 1) {
+    if (size > SINGLE_NODE) {
       Wrt_Vol = false;
       Wrt_Srf = false;
     }
