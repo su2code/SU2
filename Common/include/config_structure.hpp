@@ -3286,7 +3286,22 @@ public:
 	 * \return Name of the file with the surface information for the linearized flow problem.
 	 */
 	string GetSurfLinCoeff_FileName(void);
+  
+  /*!
+	 * \brief Augment the input filename with the iteration number for an unsteady file.
+   * \param[in] val_filename - String value of the base filename.
+   * \param[in] val_iter - Unsteady iteration number or time spectral instance.
+	 * \return Name of the file with the iteration numer for an unsteady solution file.
+	 */
+  string GetUnsteady_FileName(string val_filename, int val_iter);
 
+  /*!
+	 * \brief Append the input filename string with the appropriate objective function extension.
+   * \param[in] val_filename - String value of the base filename.
+	 * \return Name of the file with the appropriate objective function extension.
+	 */
+  string GetObjFunc_Extension(string val_filename);
+  
 	/*! 
 	 * \brief Get functional that is going to be used to evaluate the flow convergence.
 	 * \return Functional that is going to be used to evaluate the flow convergence.
