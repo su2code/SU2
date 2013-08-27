@@ -356,8 +356,7 @@ double CGeometry::GetSpline(vector<double>&xa, vector<double>&ya, vector<double>
 
 CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {}
 
-CPhysicalGeometry::CPhysicalGeometry(CConfig *config, string val_mesh_filename, unsigned short val_format,
-                                     unsigned short val_iZone, unsigned short val_nZone) : CGeometry() {
+CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, unsigned short val_nZone) : CGeometry() {
   
   /*--- Local variables and initialization ---*/
 	string text_line, Marker_Tag;
@@ -367,6 +366,9 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, string val_mesh_filename, 
 	double Conversion_Factor = 1.0;
 	int rank = MASTER_NODE;
 	nZone = val_nZone;
+  
+  string val_mesh_filename = config->GetMesh_FileName();
+  unsigned short val_format = config->GetMesh_FileFormat();
   
   /*--- Initialize counters for local/global points & elements ---*/
 #ifndef NO_MPI
@@ -448,7 +450,7 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
 	double Coord_2D[2], Coord_3D[3], Conversion_Factor = 1.0, dummyDouble;
 	string::size_type position;
 	bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
-	int rank = MASTER_NODE, size = 1;
+	int rank = MASTER_NODE, size = SINGLE_NODE;
 	bool domain_flag = false;
 	bool found_transform = false;
 	nZone = val_nZone;
@@ -479,7 +481,7 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
   
   /*--- Check the grid ---*/
   if (mesh_file.fail()) {
-    cout << "There is no geometry file (CPhysicalGeometry)!!" << endl;
+    cout << "There is no geometry file (CPhysicalGeometry)!! " << mesh_file << endl;
     cout << "Press any key to exit..." << endl;
     cin.get();
 #ifdef NO_MPI
@@ -1086,7 +1088,7 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
 #ifdef NO_MPI
             point_line >> Coord_2D[0]; point_line >> Coord_2D[1];
 #else
-            if (size > 1) { point_line >> Coord_2D[0]; point_line >> Coord_2D[1]; point_line >> LocalIndex; point_line >> GlobalIndex; }
+            if (size > SINGLE_NODE) { point_line >> Coord_2D[0]; point_line >> Coord_2D[1]; point_line >> LocalIndex; point_line >> GlobalIndex; }
             else { point_line >> Coord_2D[0]; point_line >> Coord_2D[1]; LocalIndex = iPoint; GlobalIndex = iPoint; }
 #endif
             node[iPoint] = new CPoint(Conversion_Factor*Coord_2D[0], Conversion_Factor*Coord_2D[1], GlobalIndex, config);
@@ -1096,7 +1098,7 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
 #ifdef NO_MPI
             point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2];
 #else
-            if (size > 1) { point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2]; point_line >> LocalIndex; point_line >> GlobalIndex; }
+            if (size > SINGLE_NODE) { point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2]; point_line >> LocalIndex; point_line >> GlobalIndex; }
             else { point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2]; LocalIndex = iPoint; GlobalIndex = iPoint; }
 #endif
             node[iPoint] = new CPoint(Conversion_Factor*Coord_3D[0], Conversion_Factor*Coord_3D[1], Conversion_Factor*Coord_3D[2], GlobalIndex, config);
@@ -1334,7 +1336,7 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
   mesh_file.close();
   
 #ifndef NO_MPI
-  if ((size > 1) && (rank == MASTER_NODE))
+  if ((size > SINGLE_NODE) && (rank == MASTER_NODE))
     cout << Global_nElem << " interior elements (incl. halo cells). " << Global_nPoint << " points (incl. ghost points) " << endl;
 #endif
   
@@ -1359,7 +1361,7 @@ void CPhysicalGeometry::CGNS_Format(CConfig *config, string val_mesh_filename, u
 	double Coord_2D[2], Coord_3D[3], Conversion_Factor = 1.0;
 	string::size_type position;
 	bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
-	int rank = MASTER_NODE, size = 1;
+	int rank = MASTER_NODE, size = SINGLE_NODE;
 	bool domain_flag = false;
 	bool found_transform = false;
 	nZone = val_nZone;
@@ -1395,15 +1397,6 @@ void CPhysicalGeometry::CGNS_Format(CConfig *config, string val_mesh_filename, u
 	char*** sectionNames = NULL;
   
   /*--- Initialize counters for local/global points & elements ---*/
-#ifndef NO_MPI
-	unsigned long LocalIndex;
-	unsigned long Local_nPoint, Local_nPointDomain;
-	unsigned long Local_nElem;
-  unsigned long Local_nElemTri, Local_nElemQuad, Local_nElemTet;
-  unsigned long Local_nElemHex, Local_nElemWedge, Local_nElemPyramid;
-	rank = MPI::COMM_WORLD.Get_rank();
-	size = MPI::COMM_WORLD.Get_size();
-#endif
   FinestMGLevel = true;
 	Global_nPoint = 0; Global_nPointDomain = 0; Global_nElem = 0;
   nelem_edge     = 0; Global_nelem_edge     = 0;
@@ -1413,19 +1406,6 @@ void CPhysicalGeometry::CGNS_Format(CConfig *config, string val_mesh_filename, u
   nelem_hexa     = 0; Global_nelem_hexa     = 0;
   nelem_wedge    = 0; Global_nelem_wedge    = 0;
   nelem_pyramid  = 0; Global_nelem_pyramid  = 0;
-  
-#ifndef NO_CGNS
-  
-  /*--- Throw error if not in serial mode. ---*/
-#ifndef NO_MPI
-  if (size > 1) {
-    cout << "Parallel support with CGNS format not yet implemented!!" << endl;
-    cout << "Press any key to exit..." << endl;
-    cin.get();
-    MPI::COMM_WORLD.Abort(1);
-    MPI::Finalize();
-  }
-#endif
   
   /*--- Check whether the supplied file is truly a CGNS file. ---*/
   if ( cg_is_cgns(val_mesh_filename.c_str(),&file_type) != CG_OK ) {
@@ -1603,7 +1583,6 @@ void CPhysicalGeometry::CGNS_Format(CConfig *config, string val_mesh_filename, u
       nElems[j-1]      = new int[nsections];
       dataSize[j-1]    = new int[nsections];
       isInternal[j-1]  = new bool[nsections];
-      //          nMarkers    = 0;
       
       sectionNames[j-1] = new char*[nsections];
       for (int ii = 0; ii < nsections; ii++) {
@@ -1883,32 +1862,10 @@ void CPhysicalGeometry::CGNS_Format(CConfig *config, string val_mesh_filename, u
   /*--- Read the information about inner elements ---*/
   nElem = interiorElems;
   cout << nElem << " inner elements." << endl;
-  
-  /*--- Communicate some information about the mesh to all processors. ---*/
-#ifndef NO_MPI
-  if (config->GetKind_SU2() != SU2_DDC) {
-    Local_nElem = nElem;
-    MPI::COMM_WORLD.Allreduce(&Local_nElem, &Global_nElem, 1, MPI::UNSIGNED_LONG, MPI::SUM);
-  }
-  else {
-    Local_nElem = nElem;
-    Global_nElem = Local_nElem;
-  }
-#else
   Global_nElem = nElem;
-#endif
   
   /*--- Allocate space for elements ---*/
-  if (!config->GetDivide_Element()) elem = new CPrimalGrid*[nElem];
-  else {
-    if (nDim == 2) elem = new CPrimalGrid*[2*nElem];
-    if (nDim == 3) {
-      elem = new CPrimalGrid*[5*nElem];
-      cout << "The grid division only works in 2D!!" << endl;
-      cout << "Press any key to exit..." << endl;
-      cin.get();
-    }
-  }
+  elem = new CPrimalGrid*[nElem];
   
   /*--- Loop over all the volumetric elements ---*/
   for ( int k = 0; k < nzones; k ++ ) {
@@ -1930,60 +1887,24 @@ void CPhysicalGeometry::CGNS_Format(CConfig *config, string val_mesh_filename, u
               elem[ielem] = new CTriangle(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],nDim);
               ielem_div++; ielem++; nelem_triangle++; break;
             case RECTANGLE:
-              if (!config->GetDivide_Element()) {
-                elem[ielem] = new CRectangle(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[3],nDim);
-                ielem++; nelem_quad++; }
-              else {
-                elem[ielem] = new CTriangle(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],nDim);
-                ielem++; nelem_triangle++;
-                elem[ielem] = new CTriangle(vnodes_cgns[0],vnodes_cgns[2],vnodes_cgns[3],nDim);
-                ielem++; nelem_triangle++; }
+              elem[ielem] = new CRectangle(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[3],nDim);
+              ielem++; nelem_quad++;
               ielem_div++;
               break;
             case TETRAHEDRON:
               elem[ielem] = new CTetrahedron(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[3]);
               ielem_div++; ielem++; nelem_tetra++; break;
             case HEXAHEDRON:
-              if (!config->GetDivide_Element()) {
-                elem[ielem] = new CHexahedron(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[3],vnodes_cgns[4],vnodes_cgns[5],vnodes_cgns[6],vnodes_cgns[7]);
-                ielem++; nelem_hexa++; }
-              else {
-                elem[ielem] = new CTetrahedron(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[5]);
-                ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_cgns[0],vnodes_cgns[2],vnodes_cgns[7],vnodes_cgns[5]);
-                ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_cgns[0],vnodes_cgns[2],vnodes_cgns[3],vnodes_cgns[7]);
-                ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_cgns[0],vnodes_cgns[5],vnodes_cgns[7],vnodes_cgns[4]);
-                ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_cgns[2],vnodes_cgns[7],vnodes_cgns[5],vnodes_cgns[6]);
-                ielem++; nelem_tetra++; }
-              ielem_div++;
+              elem[ielem] = new CHexahedron(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[3],vnodes_cgns[4],vnodes_cgns[5],vnodes_cgns[6],vnodes_cgns[7]);
+              ielem++; nelem_hexa++; ielem_div++;
               break;
             case WEDGE:
-              if (!config->GetDivide_Element()) {
                 elem[ielem] = new CWedge(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[3],vnodes_cgns[4],vnodes_cgns[5]);
-                ielem++; nelem_wedge++; }
-              else {
-                elem[ielem] = new CTetrahedron(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[5]);
-                ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[5],vnodes_cgns[4]);
-                ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_cgns[0],vnodes_cgns[4],vnodes_cgns[5],vnodes_cgns[3]);
-                ielem++; nelem_tetra++; }
-              ielem_div++;
+                ielem++; nelem_wedge++; ielem_div++;
               break;
             case PYRAMID:
-              if (!config->GetDivide_Element()) {
-                elem[ielem] = new CPyramid(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[3],vnodes_cgns[4]);
-                ielem++; nelem_pyramid++;
-              }
-              else {
-                elem[ielem] = new CTetrahedron(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[4]);
-                ielem++; nelem_tetra++;
-                elem[ielem] = new CTetrahedron(vnodes_cgns[0],vnodes_cgns[2],vnodes_cgns[3],vnodes_cgns[4]);
-                ielem++; nelem_tetra++; }
-              ielem_div++;
+              elem[ielem] = new CPyramid(vnodes_cgns[0],vnodes_cgns[1],vnodes_cgns[2],vnodes_cgns[3],vnodes_cgns[4]);
+              ielem++; nelem_pyramid++; ielem_div++;
               break;
           }
         }
@@ -1993,50 +1914,12 @@ void CPhysicalGeometry::CGNS_Format(CConfig *config, string val_mesh_filename, u
 
   if (config->GetDivide_Element()) nElem = nelem_triangle + nelem_quad + nelem_tetra + nelem_hexa + nelem_wedge + nelem_pyramid;
   
-  /*--- Communicate the number of each element type to all processors. ---*/
-#ifndef NO_MPI
-  if (config->GetKind_SU2() != SU2_DDC) {
-    Local_nElemTri = nelem_triangle;
-    MPI::COMM_WORLD.Allreduce(&Local_nElemTri, &Global_nelem_triangle,
-                              1, MPI::UNSIGNED_LONG, MPI::SUM);
-    Local_nElemQuad = nelem_quad;
-    MPI::COMM_WORLD.Allreduce(&Local_nElemQuad,     &Global_nelem_quad,
-                              1, MPI::UNSIGNED_LONG, MPI::SUM);
-    Local_nElemTet = nelem_tetra;
-    MPI::COMM_WORLD.Allreduce(&Local_nElemTet,    &Global_nelem_tetra,
-                              1, MPI::UNSIGNED_LONG, MPI::SUM);
-    Local_nElemHex = nelem_hexa;
-    MPI::COMM_WORLD.Allreduce(&Local_nElemHex,     &Global_nelem_hexa,
-                              1, MPI::UNSIGNED_LONG, MPI::SUM);
-    Local_nElemWedge = nelem_wedge;
-    MPI::COMM_WORLD.Allreduce(&Local_nElemWedge,    &Global_nelem_wedge,
-                              1, MPI::UNSIGNED_LONG, MPI::SUM);
-    Local_nElemPyramid = nelem_pyramid;
-    MPI::COMM_WORLD.Allreduce(&Local_nElemPyramid,  &Global_nelem_pyramid,
-                              1, MPI::UNSIGNED_LONG, MPI::SUM);
-  }
-  else {
-    Local_nElemTri = nelem_triangle;
-    Global_nelem_triangle = Local_nElemTri;
-    Local_nElemQuad = nelem_quad;
-    Global_nelem_quad = Local_nElemQuad;
-    Local_nElemTet = nelem_tetra;
-    Global_nelem_tetra = Local_nElemTet;
-    Local_nElemHex = nelem_hexa;
-    Global_nelem_hexa = Local_nElemHex;
-    Local_nElemWedge = nelem_wedge;
-    Global_nelem_wedge = Local_nElemWedge;
-    Local_nElemPyramid = nelem_pyramid;
-    Global_nelem_pyramid = Local_nElemPyramid;
-  }
-#else
   Global_nelem_triangle = nelem_triangle;
   Global_nelem_quad     = nelem_quad;
   Global_nelem_tetra    = nelem_tetra;
   Global_nelem_hexa     = nelem_hexa;
   Global_nelem_wedge    = nelem_wedge;
   Global_nelem_pyramid  = nelem_pyramid;
-#endif
   
   /*--- Print information about the elements to the console ---*/
   if (size == 1) {
@@ -2086,21 +1969,8 @@ void CPhysicalGeometry::CGNS_Format(CConfig *config, string val_mesh_filename, u
   }
   
   /*--- Set some important point information for parallel simulations. ---*/
-#ifndef NO_MPI
-  if (config->GetKind_SU2() != SU2_DDC) {
-    Local_nPoint = nPoint; Local_nPointDomain = nPointDomain;
-    MPI::COMM_WORLD.Allreduce(&Local_nPoint, &Global_nPoint, 1, MPI::UNSIGNED_LONG, MPI::SUM);
-    MPI::COMM_WORLD.Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI::UNSIGNED_LONG, MPI::SUM);
-  }
-  else {
-    Local_nPoint = nPoint; Local_nPointDomain = nPointDomain;
-    Global_nPoint = Local_nPoint;
-    Global_nPointDomain = Local_nPointDomain;
-  }
-#else
   Global_nPoint = nPoint;
   Global_nPointDomain = nPointDomain;
-#endif
   
   /*--- Read number of markers ---*/
   nMarker = nMarkers;
@@ -2138,12 +2008,7 @@ void CPhysicalGeometry::CGNS_Format(CConfig *config, string val_mesh_filename, u
                   cout << "Please remove line boundary conditions from the mesh file!" << endl;
                   cout << "Press any key to exit..." << endl;
                   cin.get();
-#ifdef NO_MPI
                   exit(1);
-#else
-                  MPI::COMM_WORLD.Abort(1);
-                  MPI::Finalize();
-#endif
                 }
                 
                 bound[iMarker][ielem] = new CLine(vnodes_cgns[0],vnodes_cgns[1],2);
@@ -2172,6 +2037,19 @@ void CPhysicalGeometry::CGNS_Format(CConfig *config, string val_mesh_filename, u
       }
     }
   }
+  
+  /*--- Periodic transormations is not implement, store default zeros ---*/
+  unsigned short nPeriodic = 1, iPeriodic = 0;
+  config->SetnPeriodicIndex(nPeriodic);
+  double* center    = new double[3];
+  double* rotation  = new double[3];
+  double* translate = new double[3];
+  for (unsigned short iDim = 0; iDim < 3; iDim++) {
+    center[iDim] = 0.0; rotation[iDim] = 0.0; translate[iDim] = 0.0;
+  }
+  config->SetPeriodicCenter(iPeriodic, center);
+  config->SetPeriodicRotation(iPeriodic, rotation);
+  config->SetPeriodicTranslate(iPeriodic, translate);
   
   /*--- Deallocate temporary memory. ---*/
   delete[] vertices;
@@ -2221,15 +2099,7 @@ void CPhysicalGeometry::CGNS_Format(CConfig *config, string val_mesh_filename, u
   cout << " to the CGNS library." << endl;
   cout << "Press any key to exit..." << endl;
   cin.get();
-#ifdef NO_MPI
   exit(1);
-#else
-  MPI::COMM_WORLD.Abort(1);
-  MPI::Finalize();
-#endif
-  
-#endif
-  
 #endif
 
 }
@@ -7418,7 +7288,7 @@ CBoundaryGeometry::CBoundaryGeometry(CConfig *config, string val_mesh_filename, 
 			vnodes_quad[4], dummy, GlobalIndex;
 	string Marker_Tag;
 	char cstr[200];
-	int rank = MASTER_NODE, size = 1;
+	int rank = MASTER_NODE, size = SINGLE_NODE;
 	bool domain_flag = false;
 	bool found_transform = false;
 	nZone = val_nZone;
@@ -7749,7 +7619,7 @@ CBoundaryGeometry::CBoundaryGeometry(CConfig *config, string val_mesh_filename, 
 	mesh_file.close();
 
 #ifndef NO_MPI
-	if ((size > 1) && (rank == MASTER_NODE))
+	if ((size > SINGLE_NODE) && (rank == MASTER_NODE))
 		cout << Global_nElem << " interior elements (incl. halo cells). " << Global_nPoint << " points (incl. ghost points) " << endl;
 #endif
 
@@ -7901,7 +7771,7 @@ void CBoundaryGeometry::SetBoundSensitivity(CConfig *config) {
 	double Sensitivity;
 	bool *PointInDomain;
 	int rank = MASTER_NODE;
-	int size = 1;
+	int size = SINGLE_NODE;
 
 #ifndef NO_MPI
 	rank = MPI::COMM_WORLD.Get_rank();
@@ -7970,7 +7840,7 @@ void CBoundaryGeometry::SetBoundSensitivity(CConfig *config) {
 		string surfadj_filename = config->GetSurfAdjCoeff_FileName();
 
 		/*--- Remove the domain number from the surface csv filename ---*/
-		if (size > 1) {
+		if (size > SINGLE_NODE) {
 			if ((rank+1 >= 0) && (rank+1 < 10)) surfadj_filename.erase (surfadj_filename.end()-2, surfadj_filename.end());
 			if ((rank+1 >= 10) && (rank+1 < 100)) surfadj_filename.erase (surfadj_filename.end()-3, surfadj_filename.end());
 			if ((rank+1 >= 100) && (rank+1 < 1000)) surfadj_filename.erase (surfadj_filename.end()-4, surfadj_filename.end());

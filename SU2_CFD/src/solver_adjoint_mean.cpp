@@ -202,7 +202,9 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
 		/*--- Change the name, depending of the objective function ---*/
 		filename.assign(mesh_filename);
-		filename.erase (filename.end()-4, filename.end());
+    unsigned short lastindex = filename.find_last_of(".");
+    filename = filename.substr(0, lastindex);
+        
 		switch (config->GetKind_ObjFunc()) {
 		case DRAG_COEFFICIENT: AdjExt = "_cd.dat"; break;
 		case LIFT_COEFFICIENT: AdjExt = "_cl.dat"; break;
@@ -5042,7 +5044,9 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
 		/*--- Change the name, depending of the objective function ---*/
 		filename.assign(mesh_filename);
-		filename.erase (filename.end()-4, filename.end());
+    unsigned short lastindex = filename.find_last_of(".");
+    filename = filename.substr(0, lastindex);
+    
 		switch (config->GetKind_ObjFunc()) {
 		case DRAG_COEFFICIENT: AdjExt = "_cd.dat"; break;
 		case LIFT_COEFFICIENT: AdjExt = "_cl.dat"; break;

@@ -243,7 +243,7 @@ if __name__=="__main__":
   oneram6.cfg_dir   = "TestCases/euler/oneram6"
   oneram6.cfg_file  = "inv_ONERAM6_JST.cfg"
   oneram6.test_iter = 10
-  oneram6.test_vals = [-2.632092,-2.096791,0.288165,0.016925]
+  oneram6.test_vals = [-4.819422,-4.284121,0.288165,0.016925]
   oneram6.su2_exec  = "SU2_CFD"
   oneram6.timeout   = 9600
   oneram6.tol       = 0.00001
@@ -348,7 +348,7 @@ if __name__=="__main__":
   contadj_naca0012.cfg_dir   = "TestCases/cont_adj_euler/naca0012"
   contadj_naca0012.cfg_file  = "inv_NACA0012.cfg"
   contadj_naca0012.test_iter = 100
-  contadj_naca0012.test_vals = [-4.806415,-10.122602,0.005408,0.501940] #last 4 columns
+  contadj_naca0012.test_vals = [-4.882472,-10.149505,0.006059,0.519590] #last 4 columns
   contadj_naca0012.su2_exec  = "SU2_CFD"
   contadj_naca0012.timeout   = 1600
   contadj_naca0012.tol       = 0.00001

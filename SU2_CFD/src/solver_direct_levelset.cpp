@@ -139,7 +139,9 @@ CLevelSetSolver::CLevelSetSolver(CGeometry *geometry, CConfig *config, unsigned 
 		if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
 			char buffer[50];
 			unsigned long flowIter = config->GetnExtIter() - 1;
-			filename.erase (filename.end()-4, filename.end());
+      unsigned short lastindex = filename.find_last_of(".");
+      filename = filename.substr(0, lastindex);
+      
 			if ((int(flowIter) >= 0) && (int(flowIter) < 10)) sprintf (buffer, "_0000%d.dat", int(flowIter));
 			if ((int(flowIter) >= 10) && (int(flowIter) < 100)) sprintf (buffer, "_000%d.dat", int(flowIter));
 			if ((int(flowIter) >= 100) && (int(flowIter) < 1000)) sprintf (buffer, "_00%d.dat", int(flowIter));

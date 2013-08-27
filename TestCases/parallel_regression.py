@@ -248,7 +248,7 @@ if __name__=="__main__":
   oneram6.cfg_dir   = "TestCases/euler/oneram6"
   oneram6.cfg_file  = "inv_ONERAM6_JST.cfg"
   oneram6.test_iter = 10
-  oneram6.test_vals = [-2.639754,-2.107317,0.284842,0.017115]
+  oneram6.test_vals = [-4.827084,-4.294647,0.284842,0.017115]
   oneram6.su2_exec  = "parallel_computation.py -f"
   oneram6.timeout   = 3200
   oneram6.tol       = 0.00001
@@ -353,7 +353,7 @@ if __name__=="__main__":
   contadj_naca0012.cfg_dir   = "TestCases/cont_adj_euler/naca0012"
   contadj_naca0012.cfg_file  = "inv_NACA0012.cfg"
   contadj_naca0012.test_iter = 100
-  contadj_naca0012.test_vals = [-4.869331,-10.269769,0.005507,0.506520] #last 4 columns
+  contadj_naca0012.test_vals = [-4.990986,-10.357194,0.006229,0.532240] #last 4 columns
   contadj_naca0012.su2_exec  = "parallel_computation.py -f"
   contadj_naca0012.timeout   = 1600
   contadj_naca0012.tol       = 0.00001

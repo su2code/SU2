@@ -794,8 +794,7 @@ public:
 	 * \param[in] val_iZone - Domain to be read from the grid file.
 	 * \param[in] val_nZone - Total number of domains in the grid file.
 	 */
-	CPhysicalGeometry(CConfig *config, string val_mesh_filename, unsigned short val_format, 
-			unsigned short val_iZone, unsigned short val_nZone);
+	CPhysicalGeometry(CConfig *config, unsigned short val_iZone, unsigned short val_nZone);
 
 	/*! 
 	 * \brief Destructor of the class.

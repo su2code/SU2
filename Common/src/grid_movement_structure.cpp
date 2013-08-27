@@ -3472,7 +3472,8 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
        physical time, so perform mesh motion in reverse. ---*/
       unsigned long nFlowIter = config->GetnExtIter() - 1;
       flowIter  = nFlowIter - iter;
-      motion_filename.erase (motion_filename.end()-4, motion_filename.end());
+      unsigned short lastindex = motion_filename.find_last_of(".");
+      motion_filename = motion_filename.substr(0, lastindex);
       if ((int(flowIter) >= 0) && (int(flowIter) < 10)) sprintf (buffer, "_0000%d.dat", int(flowIter));
       if ((int(flowIter) >= 10) && (int(flowIter) < 100)) sprintf (buffer, "_000%d.dat", int(flowIter));
       if ((int(flowIter) >= 100) && (int(flowIter) < 1000)) sprintf (buffer, "_00%d.dat", int(flowIter));
@@ -3483,7 +3484,8 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
     } else {
       /*--- Forward time for the direct problem ---*/
       flowIter = iter;
-      motion_filename.erase (motion_filename.end()-4, motion_filename.end());
+      unsigned short lastindex = motion_filename.find_last_of(".");
+      motion_filename = motion_filename.substr(0, lastindex);
       if ((int(flowIter) >= 0) && (int(flowIter) < 10)) sprintf (buffer, "_0000%d.dat", int(flowIter));
       if ((int(flowIter) >= 10) && (int(flowIter) < 100)) sprintf (buffer, "_000%d.dat", int(flowIter));
       if ((int(flowIter) >= 100) && (int(flowIter) < 1000)) sprintf (buffer, "_00%d.dat", int(flowIter));

@@ -36,7 +36,8 @@ unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CCo
 #ifndef NO_MPI
 	rank = MPI::COMM_WORLD.Get_rank();
 	if (MPI::COMM_WORLD.Get_size() != 1) {
-		val_mesh_filename.erase (val_mesh_filename.end()-4, val_mesh_filename.end());
+    unsigned short lastindex = val_mesh_filename.find_last_of(".");
+    val_mesh_filename = val_mesh_filename.substr(0, lastindex);
 		val_mesh_filename = val_mesh_filename + "_1.su2";
 	}
 #endif
@@ -127,7 +128,8 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format) {
 
 #ifndef NO_MPI
 	if (MPI::COMM_WORLD.Get_size() != 1) {
-		val_mesh_filename.erase (val_mesh_filename.end()-4, val_mesh_filename.end());
+    unsigned short lastindex = val_mesh_filename.find_last_of(".");
+    val_mesh_filename = val_mesh_filename.substr(0, lastindex);
 		val_mesh_filename = val_mesh_filename + "_1.su2";
 	}
 #endif

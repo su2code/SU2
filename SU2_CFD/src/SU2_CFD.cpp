@@ -156,8 +156,6 @@ int main(int argc, char *argv[]) {
     
 		geometry_container[iZone] = new CGeometry *[config_container[iZone]->GetMGLevels()+1];
 		geometry_container[iZone][MESH_0] = new CPhysicalGeometry(config_container[iZone],
-                                                              config_container[iZone]->GetMesh_FileName(),
-																															config_container[iZone]->GetMesh_FileFormat(),
                                                               iZone+1, nZone);
 		
   }

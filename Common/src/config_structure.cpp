@@ -975,9 +975,27 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   unsigned short iZone;
 
+#ifdef NO_MPI
+  int size = SINGLE_NODE;
+#else
+  int size = MPI::COMM_WORLD.Get_size();
+#endif
+  
   /*--- Store the SU2 module that we are executing. ---*/
 	Kind_SU2 = val_software;
-
+  
+  /*--- Only SU2_DDC, and SU2_CFD work with CGNS ---*/
+  if ((Kind_SU2 != SU2_DDC) && (Kind_SU2 != SU2_CFD)) {
+    if (Mesh_FileFormat == CGNS)
+    cout << "This software is not prepared for CGNS, please switch to SU2" << endl;
+    cout << "Press any key to exit..." << endl;
+    cin.get();
+    exit(1);
+  }
+  
+  /*--- If multiple processors the grid should be always in native .su2 format ---*/
+  if ((size > SINGLE_NODE) && (Kind_SU2 == SU2_CFD)) Mesh_FileFormat = SU2;
+  
   /*--- Divide grid if runnning SU2_MDC ---*/
   if (Kind_SU2 == SU2_MDC) Divide_Element = true;
    
@@ -4665,7 +4683,8 @@ void CConfig::SetFileNameDomain(unsigned short val_domain) {
 		/*--- Mesh files ---*/	
 		sprintf (buffer, "_%d.su2", int(val_domain));
 		old_name = Mesh_FileName;
-		old_name.erase (old_name.end()-4, old_name.end());
+    unsigned short lastindex = old_name.find_last_of(".");
+    old_name = old_name.substr(0, lastindex);
 		Mesh_FileName = old_name + buffer;
 
 	}
