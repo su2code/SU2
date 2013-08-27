@@ -1100,7 +1100,7 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
       else                       { evs = 0.0; }
       if (iSpecies != nSpecies)
         val_residual[iSpecies] += Ms[iSpecies] * (fwdRxn-bkwRxn) * Volume;
-      val_residual[nSpecies+nDim+1] += Ms[iSpecies] * (fwdRxn-bkwRxn) * evs * Volume;
+//      val_residual[nSpecies+nDim+1] += Ms[iSpecies] * (fwdRxn-bkwRxn) * evs * Volume;
 			/*--- Reactants ---*/
       iSpecies = RxnMap[iReaction][0][ii];
       if (thetav[iSpecies] != 0) { evs  = Ru/Ms[iSpecies] * thetav[iSpecies]
@@ -1108,7 +1108,7 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
       else                       { evs = 0.0; }
       if (iSpecies != nSpecies)
         val_residual[iSpecies] -= Ms[iSpecies] * (fwdRxn-bkwRxn) * Volume;
-      val_residual[nSpecies+nDim+1] -= Ms[iSpecies] * (fwdRxn-bkwRxn) * evs * Volume;
+//      val_residual[nSpecies+nDim+1] -= Ms[iSpecies] * (fwdRxn-bkwRxn) * evs * Volume;
     }
   }
 
@@ -1259,8 +1259,7 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
   /*--- Determine if Jacobian calculation is required ---*/
   // NOTE: Need to take derivatives of relaxation time (not currently implemented).
   //       For now, we de-activate the Jacobian and return to it at a later date.
-  //implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  implicit = false;
+  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   
   /*--- Determine the number of heavy particle species ---*/
   ionization = config->GetIonization();
@@ -1311,7 +1310,10 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
     for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
       Cvtrs = (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies];
       ef    = hf[iSpecies] - Ru/Ms[iSpecies] * Tref[iSpecies];
-      evibs = Ru/Ms[iSpecies] * thetav[iSpecies] / (exp(thetav[iSpecies]/Tve) - 1.0);
+      if (thetav[iSpecies] != 0)
+        evibs = Ru/Ms[iSpecies] * thetav[iSpecies] / (exp(thetav[iSpecies]/Tve) - 1.0);
+      else
+        evibs = 0.0;
 
       num = 0.0;
       denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
@@ -1389,7 +1391,7 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
         /*--- Density ---*/
         val_Jacobian_i[nEv][iSpecies] += (estar - evib)/tau * Volume;
         for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
-          val_Jacobian_i[nEv][jSpecies] += U_i[iSpecies] * (Cvvst*dTdrhos[iSpecies] - Cvvs*dTvedrhos[iSpecies]) * Volume;
+          val_Jacobian_i[nEv][jSpecies] += U_i[iSpecies]/tau * (Cvvst*dTdrhos[jSpecies] - Cvvs*dTvedrhos[jSpecies]) * Volume;
         
         /*--- Momentum ---*/
         val_Jacobian_i[nEv][nSpecies]      += U_i[iSpecies]/tau * (Cvvst*dTdrhou - Cvvs*dTvedrhou) * Volume;

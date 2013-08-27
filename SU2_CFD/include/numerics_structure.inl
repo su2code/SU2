@@ -369,13 +369,6 @@ inline void CNumerics::SetGridVel(double *val_gridvel_i, double *val_gridvel_j) 
 	GridVel_j = val_gridvel_j;
 }
 
-inline void CNumerics::SetRotVel(double *val_rotvel_i, double *val_rotvel_j) {
-	RotVel_i = val_rotvel_i;
-	RotVel_j = val_rotvel_j;
-}
-
-inline void CNumerics::SetRotFlux(double val_rot_flux) { Rot_Flux = val_rot_flux; }
-
 inline void CNumerics::SetPressure(double val_pressure_i, double val_pressure_j) {
 	Pressure_i = val_pressure_i;
 	Pressure_j = val_pressure_j;
@@ -567,14 +560,6 @@ inline double CSource_JouleHeating::GetElec_CondIntegral() {return Elec_Conduct*
 inline void CNumerics::SetElec_CondIntegralsqr(double val_var) {}
 
 inline void CSource_JouleHeating::SetElec_CondIntegralsqr(double val_var) {Integralsqr = val_var; }
-
-inline double CNumerics::GetKappaPsiVolume() {return 0;}
-
-inline double CSourceViscous_AdjFlow::GetKappaPsiVolume() { return kappapsi_Volume; }
-
-inline void CNumerics::SetKappaPsiVolume(double val_kappapsi_Volume) {}
-
-inline void CSourceViscous_AdjFlow::SetKappaPsiVolume(double val_kappapsi_Volume) { kappapsi_Volume = val_kappapsi_Volume;}
 
 inline void CNumerics::ComputeResidual(double **val_Jacobian_i, double *val_Jacobian_mui, double ***val_Jacobian_gradi, CConfig *config) { }
 

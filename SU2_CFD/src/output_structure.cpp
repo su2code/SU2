@@ -1616,10 +1616,8 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       break;
     case ADJ_RANS :
       FirstIndex = ADJFLOW_SOL;
-      if ((config->GetFrozen_Visc()) && (config->GetKind_Adjoint() != HYBRID))
-        SecondIndex = NONE;
-      else
-        SecondIndex = ADJTURB_SOL;
+      if (config->GetFrozen_Visc()) SecondIndex = NONE;
+      else SecondIndex = ADJTURB_SOL;
       ThirdIndex = NONE;
       break;
     case LIN_EULER : case LIN_NAVIER_STOKES : ThirdIndex = NONE;
@@ -1646,23 +1644,29 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 		else if (geometry->GetnDim() == 3) nVar_Total += 3;
 	}
   
-  if ((Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) ||
-			(Kind_Solver == FREE_SURFACE_RANS)) {
+  if ((Kind_Solver == FREE_SURFACE_EULER)         ||
+      (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) ||
+			(Kind_Solver == FREE_SURFACE_RANS)            ) {
 		/*--- Density ---*/
 		iVar_Density = nVar_Total;
 		nVar_Total += 1;
 	}
   
-	if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
-			(Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) ||
-			(Kind_Solver == FREE_SURFACE_RANS)) {
+	if ((Kind_Solver == EULER)                      ||
+      (Kind_Solver == NAVIER_STOKES)              ||
+      (Kind_Solver == RANS)                       ||
+			(Kind_Solver == FREE_SURFACE_EULER)         ||
+      (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) ||
+			(Kind_Solver == FREE_SURFACE_RANS)            ) {
 		/*--- Pressure, Cp, Mach ---*/
 		iVar_PressMach = nVar_Total;
 		nVar_Total += 3;
 	}
   
-	if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
-			(Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+	if ((Kind_Solver == NAVIER_STOKES)              ||
+      (Kind_Solver == RANS)                       ||
+			(Kind_Solver == FREE_SURFACE_NAVIER_STOKES) ||
+      (Kind_Solver == FREE_SURFACE_RANS)            ) {
 		/*--- Temperature, Laminar Viscosity ---*/
 		iVar_TempLam = nVar_Total;
 		nVar_Total += 2;
@@ -1671,21 +1675,26 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 		nVar_Total += 3;
 	}
   
-	if ((Kind_Solver == RANS) || (Kind_Solver == FREE_SURFACE_RANS)) {
+	if ((Kind_Solver == RANS)              ||
+      (Kind_Solver == FREE_SURFACE_RANS)   ) {
 		/*--- Eddy Viscosity ---*/
 		iVar_Eddy = nVar_Total;
 		nVar_Total += 1;
 	}
   
-  if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
-    (Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) ||
-    (Kind_Solver == FREE_SURFACE_RANS)) {
+  if ((Kind_Solver == EULER)                      ||
+      (Kind_Solver == NAVIER_STOKES)              ||
+      (Kind_Solver == RANS)                       ||
+      (Kind_Solver == FREE_SURFACE_EULER)         ||
+      (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) ||
+      (Kind_Solver == FREE_SURFACE_RANS)            ) {
 		/*--- Sharp edges ---*/
 		iVar_Sharp = nVar_Total;
 		nVar_Total += 1;
 	}
   
-  if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
+  if ((Kind_Solver == TNE2_EULER)         ||
+      (Kind_Solver == TNE2_NAVIER_STOKES)   ) {
     /*--- Mach ---*/
     iVar_Mach = nVar_Total;
     nVar_Total++;
@@ -1705,7 +1714,8 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 		nVar_Total += geometry->GetnDim();
 	}
   
-	if ((Kind_Solver == PLASMA_EULER) || (Kind_Solver == PLASMA_NAVIER_STOKES)) {
+	if ((Kind_Solver == PLASMA_EULER)         ||
+      (Kind_Solver == PLASMA_NAVIER_STOKES)   ) {
 		iVar_Press  = nVar_Total;
 		nVar_Total += config->GetnSpecies();
 		iVar_Temp   = nVar_Total;
@@ -1725,9 +1735,14 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 		}
 	}
   
-  if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) ||
-			(Kind_Solver == ADJ_FREE_SURFACE_EULER) || (Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
-			(Kind_Solver == ADJ_FREE_SURFACE_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
+  if ((Kind_Solver == ADJ_EULER)                      ||
+      (Kind_Solver == ADJ_NAVIER_STOKES)              ||
+      (Kind_Solver == ADJ_RANS)                       ||
+			(Kind_Solver == ADJ_FREE_SURFACE_EULER)         ||
+      (Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
+			(Kind_Solver == ADJ_FREE_SURFACE_RANS)          ||
+      (Kind_Solver == ADJ_PLASMA_EULER)               ||
+      (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)         ) {
     /*--- Surface sensitivity coefficient ---*/
     iVar_Sens   = nVar_Total;
     nVar_Total += 1;
@@ -2312,7 +2327,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 	}
   
   /*--- Communicate the Density in Free-surface problems ---*/
-	if ((Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+	if ((Kind_Solver == FREE_SURFACE_EULER)         ||
+      (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) ||
+      (Kind_Solver == FREE_SURFACE_RANS)            ) {
     
 		/*--- Loop over this partition to collect the current variable ---*/
 		jPoint = 0;
@@ -2359,8 +2376,12 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   
 	/*--- Communicate Pressure, Cp, and Mach ---*/
   
-	if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
-      (Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+	if ((Kind_Solver == EULER)                      ||
+      (Kind_Solver == NAVIER_STOKES)              ||
+      (Kind_Solver == RANS)                       ||
+      (Kind_Solver == FREE_SURFACE_EULER)         ||
+      (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) ||
+      (Kind_Solver == FREE_SURFACE_RANS)            ) {
     
     /*--- First, loop through the mesh in order to find and store the
      value of the coefficient of pressure at any surface nodes. They 
@@ -2757,8 +2778,8 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
           
           /*--- Get global index, then loop over each variable and store ---*/
-          iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
-          Data[iVar][iGlobal_Index]   = Buffer_Recv_Var[jPoint];
+          iGlobal_Index             = Buffer_Recv_GlobalIndex[jPoint];
+          Data[iVar][iGlobal_Index] = Buffer_Recv_Var[jPoint];
           jPoint++;
         }
         /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
@@ -2794,8 +2815,8 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
           
           /*--- Get global index, then loop over each variable and store ---*/
-          iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
-          Data[iVar][iGlobal_Index]   = Buffer_Recv_Var[jPoint];
+          iGlobal_Index             = Buffer_Recv_GlobalIndex[jPoint];
+          Data[iVar][iGlobal_Index] = Buffer_Recv_Var[jPoint];
           jPoint++;
         }
         /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
@@ -3472,7 +3493,9 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short va
     for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++)
       restart_file << ", \"LaminaryViscosity_" << iSpecies << "\"";
     
-    if ( Kind_Solver == PLASMA_NAVIER_STOKES  && (config->GetMagnetic_Force() == YES) && (geometry->GetnDim() == 3)) {
+    if ( (Kind_Solver == PLASMA_NAVIER_STOKES) &&
+         (config->GetMagnetic_Force() == YES)  &&
+         (geometry->GetnDim() == 3)              ) {
       for (iDim = 0; iDim < nDim; iDim++)
         restart_file << ", \"Magnet_Field" << iDim << "\"";
     }
@@ -3483,9 +3506,14 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short va
       restart_file << ", \"ElectricField_" << iDim+1 << "\"";
   }
   
-  if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) ||
-			(Kind_Solver == ADJ_FREE_SURFACE_EULER) || (Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
-			(Kind_Solver == ADJ_FREE_SURFACE_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
+  if ((Kind_Solver == ADJ_EULER)                      ||
+      (Kind_Solver == ADJ_NAVIER_STOKES)              ||
+      (Kind_Solver == ADJ_RANS)                       ||
+      (Kind_Solver == ADJ_FREE_SURFACE_EULER)         ||
+      (Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
+      (Kind_Solver == ADJ_FREE_SURFACE_RANS)          ||
+      (Kind_Solver == ADJ_PLASMA_EULER)               ||
+      (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)         ) {
     restart_file << ", \"Surface_Sensitivity\"";
   }
   
@@ -3690,12 +3718,11 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
 		break;
 
 	case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS:
-		ConvHist_file[0] << begin << adj_coeff << adj_flow_resid;
-        if (turbulent)
-            if (((config->GetKind_Adjoint() != HYBRID) && (!config->GetFrozen_Visc())) || (config->GetKind_Adjoint() == HYBRID) )
-                ConvHist_file[0] << adj_turb_resid;
-		ConvHist_file[0] << end;
-		break;
+      ConvHist_file[0] << begin << adj_coeff << adj_flow_resid;
+      if (turbulent)
+        if (!config->GetFrozen_Visc()) ConvHist_file[0] << adj_turb_resid;
+      ConvHist_file[0] << end;
+      break;
 
 	case ADJ_FREE_SURFACE_EULER: case ADJ_FREE_SURFACE_NAVIER_STOKES: case ADJ_FREE_SURFACE_RANS:
 		ConvHist_file[0] << begin << adj_coeff << adj_flow_resid << adj_levelset_resid << end;
@@ -4034,7 +4061,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
         
         /*--- Adjoint turbulent residuals ---*/
         if (turbulent)
-            if (((config[val_iZone]->GetKind_Adjoint() != HYBRID) && (!config[val_iZone]->GetFrozen_Visc())) || (config[val_iZone]->GetKind_Adjoint() == HYBRID)) {
+            if (!config[val_iZone]->GetFrozen_Visc()) {
                 for (iVar = 0; iVar < nVar_AdjTurb; iVar++)
                     residual_adjturbulent[iVar] = solver_container[val_iZone][FinestMesh][ADJTURB_SOL]->GetRes_RMS(iVar);
             }
@@ -4407,7 +4434,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
               
               /*--- Adjoint turbulent residuals ---*/
               if (turbulent)
-                  if (((config[val_iZone]->GetKind_Adjoint() != HYBRID) && (!config[val_iZone]->GetFrozen_Visc())) || (config[val_iZone]->GetKind_Adjoint() == HYBRID))
+                  if (!config[val_iZone]->GetFrozen_Visc())
                       sprintf (adj_turb_resid, ", %12.10f", log10 (residual_adjturbulent[0]));
               
               /*--- Adjoint free surface residuals ---*/
@@ -4682,7 +4709,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
             if (incompressible) cout << "     Res[Psi_Press]";
             else cout << "     Res[Psi_Rho]";
                 
-            if (((config[val_iZone]->GetKind_Adjoint() != HYBRID) && (!config[val_iZone]->GetFrozen_Visc())) || (config[val_iZone]->GetKind_Adjoint() == HYBRID)) {
+            if (!config[val_iZone]->GetFrozen_Visc()) {
               cout << "      Res[Psi_nu]";
             }
             else {
@@ -4748,7 +4775,12 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
           else if (fluid_structure) { cout.width(14); cout << log10(residual_fea[0]); }
           else if (aeroacoustic) { cout.width(14); cout << log10(residual_wave[0]); }
           
-          if (rotating_frame && nDim == 3 ) { cout.width(15); cout << Total_CT; cout.width(15); cout << Total_CQ; }
+          if (rotating_frame && nDim == 3 ) {
+            cout.setf(ios::scientific,ios::floatfield);
+            cout.width(15); cout << Total_CT;
+            cout.width(15); cout << Total_CQ;
+            cout.unsetf(ios_base::floatfield);
+          }
           else if (aeroacoustic) { cout.width(15); cout << Total_CLift; cout.width(15); cout << Total_CDrag; cout.width(15); cout << Total_CWave; }
           else if (equiv_area) { cout.width(15); cout << Total_CLift; cout.width(15); cout << Total_CDrag; cout.width(15);
             cout.precision(4);
@@ -4800,7 +4832,12 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
           
           if (transition) { cout.width(14); cout << log10(residual_transition[0]); cout.width(14); cout << log10(residual_transition[1]); }
       
-          if (rotating_frame  && nDim == 3 ) { cout.width(15); cout << Total_CT; cout.width(15); cout << Total_CQ; }
+          if (rotating_frame  && nDim == 3 ) {
+            cout.setf(ios::scientific,ios::floatfield);
+            cout.width(15); cout << Total_CT; cout.width(15);
+            cout << Total_CQ;
+            cout.unsetf(ios_base::floatfield);
+          }
           else { cout.width(15); cout << min(1000.0,max(-1000.0, Total_CLift)); cout.width(15); cout << min(1000.0,max(-1000.0, Total_CDrag)); }
           cout << endl;
           break;
@@ -4924,7 +4961,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
           
           if (!DualTime_Iteration) {
               ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid;
-              if (((config[val_iZone]->GetKind_Adjoint() != HYBRID) && (!config[val_iZone]->GetFrozen_Visc())) || (config[val_iZone]->GetKind_Adjoint() == HYBRID))
+              if (!config[val_iZone]->GetFrozen_Visc())
                   ConvHist_file[0] << adj_turb_resid;
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
@@ -4933,7 +4970,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
           cout.precision(6);
           cout.setf(ios::fixed,ios::floatfield);
           cout.width(17); cout << log10(residual_adjflow[0]);
-          if (((config[val_iZone]->GetKind_Adjoint() != HYBRID) && (!config[val_iZone]->GetFrozen_Visc())) || (config[val_iZone]->GetKind_Adjoint() == HYBRID)) {
+          if (!config[val_iZone]->GetFrozen_Visc()) {
             cout.width(17); cout << log10(residual_adjturbulent[0]);
           }
           else {

@@ -208,10 +208,6 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
 		if (rank == MASTER_NODE) cout << "Compute the surface curvature." << endl;
     geometry[iZone][MESH_0]->ComputeSurf_Curvature(config[iZone]);
 
-		/*--- For a rotating frame, set the velocity due to rotation at each mesh point ---*/
-		if (config[iZone]->GetRotating_Frame())
-			geometry[iZone][MESH_0]->SetRotationalVelocity(config[iZone]);
-
 		if ((config[iZone]->GetMGLevels() != 0) && (rank == MASTER_NODE))
 			cout << "Setting the multigrid structure." <<endl;
 
@@ -245,10 +241,6 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
 
 			/*--- Find closest neighbor to a surface point ---*/
 			geometry[iZone][iMGlevel]->FindNormal_Neighbor(config[iZone]);
-
-			/*--- For a rotating frame, set the velocity due to rotation at each mesh point ---*/
-			if (config[iZone]->GetRotating_Frame())
-				geometry[iZone][iMGlevel]->SetRotationalVelocity(config[iZone]);
 
 		}
 	}
@@ -313,10 +305,10 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry, CCo
 	case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
   case ADJ_TNE2_EULER : tne2_euler = true; adj_tne2_euler = true; break;
   case ADJ_TNE2_NAVIER_STOKES : tne2_ns = true; adj_tne2_ns = true; break;
-	case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = ( ((config->GetKind_Adjoint() == CONTINUOUS) && (!config->GetFrozen_Visc())) || (config->GetKind_Adjoint() == HYBRID) ); break;
+	case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
 	case ADJ_FREE_SURFACE_EULER: euler = true; adj_euler = true; levelset = true; adj_levelset = true; break;
 	case ADJ_FREE_SURFACE_NAVIER_STOKES: ns = true; adj_ns = true; levelset = true; adj_levelset = true; break;
-	case ADJ_FREE_SURFACE_RANS: ns = true; adj_ns = true; turbulent = true; adj_turb = (((config->GetKind_Adjoint() != HYBRID) && (!config->GetFrozen_Visc())) || (config->GetKind_Adjoint() == HYBRID)); levelset = true; adj_levelset = true; break;
+	case ADJ_FREE_SURFACE_RANS: ns = true; adj_ns = true; turbulent = true; adj_turb = (!config->GetFrozen_Visc()); levelset = true; adj_levelset = true; break;
 	case ADJ_PLASMA_EULER : plasma_euler = true; adj_plasma_euler = true; break;
 	case ADJ_PLASMA_NAVIER_STOKES : plasma_ns = true; adj_plasma_ns = true; break;
 	case LIN_EULER: euler = true; lin_euler = true; break;
@@ -495,14 +487,14 @@ void Integration_Preprocessing(CIntegration **integration_container, CGeometry *
         case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
         case ADJ_TNE2_EULER : tne2_euler = true; adj_tne2_euler = true; break;
         case ADJ_TNE2_NAVIER_STOKES : tne2_ns = true; adj_tne2_ns = true; break;
-        case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = ( ((config->GetKind_Adjoint() == CONTINUOUS) && (!config->GetFrozen_Visc())) || (config->GetKind_Adjoint() == HYBRID) ); break;
+        case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
         case ADJ_PLASMA_EULER : plasma_euler = true; adj_plasma_euler = true; break;
         case ADJ_PLASMA_NAVIER_STOKES : plasma_ns = true; adj_plasma_ns = true; break;
         case ADJ_FREE_SURFACE_EULER: euler = true; levelset = true; adj_euler = true; adj_levelset = true; break;
         case ADJ_FREE_SURFACE_NAVIER_STOKES: ns = true; levelset = true; adj_ns = true; adj_levelset = true; break;
-        case ADJ_FREE_SURFACE_RANS : ns = true; turbulent = true; levelset = true; adj_ns = true; adj_turb = (((config->GetKind_Adjoint() != HYBRID) && (!config->GetFrozen_Visc())) || (config->GetKind_Adjoint() == HYBRID)); adj_levelset = true; break;
+        case ADJ_FREE_SURFACE_RANS : ns = true; turbulent = true; levelset = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); adj_levelset = true; break;
         case LIN_EULER: euler = true; lin_euler = true; break;
-            
+      
             /*--- Specify by zone for the aeroacoustic problem ---*/
         case AEROACOUSTIC_EULER:
             if (iZone == ZONE_0) {
@@ -619,9 +611,9 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
 	case TEMPLATE_SOLVER: template_solver = true; break;
 	case EULER : euler = true; break;
 	case NAVIER_STOKES: ns = true; break;
+	case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
   case TNE2_EULER : tne2_euler = true; break;
   case TNE2_NAVIER_STOKES: tne2_ns = true; break;
-	case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
 	case FREE_SURFACE_EULER: euler = true; levelset = true; break;
 	case FREE_SURFACE_NAVIER_STOKES: ns = true; levelset = true; break;
 	case FREE_SURFACE_RANS: ns = true; turbulent = true; levelset = true; break;
@@ -635,12 +627,12 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
 	case LINEAR_ELASTICITY: fea = true; break;
 	case ADJ_EULER : euler = true; adj_euler = true; break;
 	case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
+	case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
   case ADJ_TNE2_EULER : tne2_euler = true; adj_tne2_euler = true; break;
   case ADJ_TNE2_NAVIER_STOKES : tne2_ns = true; adj_tne2_ns = true; break;
-	case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = ( ((config->GetKind_Adjoint() == CONTINUOUS) && (!config->GetFrozen_Visc())) || (config->GetKind_Adjoint() == HYBRID) ); break;
 	case ADJ_FREE_SURFACE_EULER: euler = true; adj_euler = true; levelset = true; adj_levelset = true; break;
 	case ADJ_FREE_SURFACE_NAVIER_STOKES: ns = true; adj_ns = true; levelset = true; adj_levelset = true; break;
-	case ADJ_FREE_SURFACE_RANS: ns = true; adj_ns = true; turbulent = true; adj_turb = (((config->GetKind_Adjoint() != HYBRID) && (!config->GetFrozen_Visc())) || (config->GetKind_Adjoint() == HYBRID)); levelset = true; adj_levelset = true; break;
+	case ADJ_FREE_SURFACE_RANS: ns = true; adj_ns = true; turbulent = true; adj_turb = (!config->GetFrozen_Visc()); levelset = true; adj_levelset = true; break;
 	case ADJ_PLASMA_EULER : plasma_euler = true; adj_plasma_euler = true; break;
 	case ADJ_PLASMA_NAVIER_STOKES : plasma_ns = true; adj_plasma_ns = true; break;
 	case LIN_EULER: euler = true; lin_euler = true; break;
@@ -1577,10 +1569,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
           else {
             if (config->GetRotating_Frame() == YES)
               numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceRotatingFrame_AdjFlow(nDim, nVar_Adj_Flow, config);
-            else
-              numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Adj_Flow, config);
-
-            if (config->GetAxisymmetric() == YES)
+            else if (config->GetAxisymmetric() == YES)
               numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceAxisymmetric_AdjFlow(nDim, nVar_Adj_Flow, config);
             else
               numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Adj_Flow, config);
@@ -1819,9 +1808,9 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
 			break;
 		case AVG_GRAD :
 			for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-			if (spalart_allmaras){
-				cout << "Viscous scheme not implemented." << endl; cin.get();
-			}
+				if (spalart_allmaras){
+					numerics_container[iMGlevel][ADJTURB_SOL][VISC_TERM] = new CAvgGrad_AdjTurb(nDim, nVar_Adj_Turb, config);
+				}
 			else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; cin.get();}
 			break;
 		case AVG_GRAD_CORRECTED :

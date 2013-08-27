@@ -373,7 +373,9 @@ enum ENUM_GRIDMOVEMENT {
 	EXTERNAL = 4,  /*!< \brief Arbitrary grid motion specified by external files at each time step. */
 	EXTERNAL_ROTATION = 5,  /*!< \brief Arbitrary grid motion specified by external files at each time step with rigid rotation. */
   AEROELASTIC = 6,    /*!< \brief Simulation with aeroelastic motion. */
-  MOVING_WALL = 7    /*!< \brief Simulation with moving walls (translation/rotation). */
+  MOVING_WALL = 7,    /*!< \brief Simulation with moving walls (translation/rotation). */
+  ROTATING_FRAME = 8    /*!< \brief Simulation in a rotating frame. */
+
 };
 static const map<string, ENUM_GRIDMOVEMENT> GridMovement_Map = CCreateMap<string, ENUM_GRIDMOVEMENT>
 ("NONE", NO_MOVEMENT)       
@@ -383,6 +385,7 @@ static const map<string, ENUM_GRIDMOVEMENT> GridMovement_Map = CCreateMap<string
 ("EXTERNAL", EXTERNAL)
 ("EXTERNAL_ROTATION", EXTERNAL_ROTATION)
 ("AEROELASTIC", AEROELASTIC)
+("ROTATING_FRAME", ROTATING_FRAME)
 ("MOVING_WALL", MOVING_WALL);
 
 /*!
