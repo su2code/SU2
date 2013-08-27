@@ -5530,6 +5530,37 @@ public:
 	~CSource_JouleHeating(void);
 };
 
+/*!
+ * \class CSourceWindGust
+ * \brief Class for a source term due to a wind gust.
+ * \ingroup SourceDiscr
+ * \author S. Padrón
+ * \version 2.0.6
+ */
+class CSourceWindGust : public CNumerics {
+public:
+    
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CSourceWindGust(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+    
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CSourceWindGust(void);
+    
+	/*!
+	 * \brief Residual of the wind gust source term.
+	 * \param[out] val_residual - Pointer to the total residual.
+     * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ComputeResidual(double *val_residual, double **val_Jacobian_i, CConfig *config);
+};
 
 /*!
  * \class CSource_Template
