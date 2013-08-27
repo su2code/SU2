@@ -33,8 +33,9 @@ CLinEulerSolver::CLinEulerSolver(CGeometry *geometry, CConfig *config) : CSolver
 	bool restart = config->GetRestart();
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
-	
-	/*--- Define geometry constans in the solver structure ---*/
+	double dull_val;
+  
+	/*--- Define geometry constants in the solver structure ---*/
 	nDim = geometry->GetnDim();
 	nVar = geometry->GetnDim()+2;
   nPoint = geometry->GetnPoint();
@@ -145,8 +146,8 @@ CLinEulerSolver::CLinEulerSolver(CGeometry *geometry, CConfig *config) : CSolver
        will be returned and used to instantiate the vars. ---*/
       iPoint_Local = Global2Local[iPoint_Global];
       if (iPoint_Local >= 0) {
-          if (nDim == 2) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-          if (nDim == 3) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
+          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
         node[iPoint_Local] = new CLinEulerVariable(Solution, nDim, nVar, config);
       }
       iPoint_Global++;

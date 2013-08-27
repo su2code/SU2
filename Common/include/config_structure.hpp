@@ -216,6 +216,7 @@ private:
 	unsigned long ExtIter;			/*!< \brief Current external iteration number. */
 	unsigned long IntIter;			/*!< \brief Current internal iteration number. */
 	unsigned long Unst_nIntIter;			/*!< \brief Number of internal iterations (Dual time Method). */
+  long Unst_RestartIter;			/*!< \brief Iteration number to restart an unsteady simulation (Dual time Method). */
 	unsigned short nRKStep;			/*!< \brief Number of steps of the explicit Runge-Kutta method. */
 	double *RK_Alpha_Step;			/*!< \brief Runge-Kutta beta coefficients. */
 	unsigned short nMultiLevel;		/*!< \brief Number of multigrid levels (coarse levels). */
@@ -1672,6 +1673,12 @@ public:
 	 */
 	unsigned long GetUnst_nIntIter(void);
 
+  /*!
+	 * \brief Get the restart iteration number for unsteady simulations.
+	 * \return Restart iteration number for unsteady simulations.
+	 */
+  long GetUnst_RestartIter(void);
+  
 	/*!
 	 * \brief Retrieves the number of periodic time instances for Time Spectral.
 	 * \return: Number of periodic time instances for Time Spectral.
@@ -3286,7 +3293,22 @@ public:
 	 * \return Name of the file with the surface information for the linearized flow problem.
 	 */
 	string GetSurfLinCoeff_FileName(void);
+  
+  /*!
+	 * \brief Augment the input filename with the iteration number for an unsteady file.
+   * \param[in] val_filename - String value of the base filename.
+   * \param[in] val_iter - Unsteady iteration number or time spectral instance.
+	 * \return Name of the file with the iteration numer for an unsteady solution file.
+	 */
+  string GetUnsteady_FileName(string val_filename, int val_iter);
 
+  /*!
+	 * \brief Append the input filename string with the appropriate objective function extension.
+   * \param[in] val_filename - String value of the base filename.
+	 * \return Name of the file with the appropriate objective function extension.
+	 */
+  string GetObjFunc_Extension(string val_filename);
+  
 	/*! 
 	 * \brief Get functional that is going to be used to evaluate the flow convergence.
 	 * \return Functional that is going to be used to evaluate the flow convergence.

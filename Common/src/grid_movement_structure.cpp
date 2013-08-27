@@ -1027,7 +1027,6 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
 	double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
 	double dtheta, dphi, dpsi, cosTheta, sinTheta;
 	double cosPhi, sinPhi, cosPsi, sinPsi;
-	double DEG2RAD = PI_NUMBER/180.0;
 	bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
 	bool adjoint = config->GetAdjoint();
 
