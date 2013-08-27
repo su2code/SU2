@@ -475,6 +475,8 @@ void CConfig::SetConfig_Options(unsigned short val_nZone) {
 	AddEnumOption("NUM_METHOD_GRAD", Kind_Gradient_Method, Gradient_Map, "GREEN_GAUSS");
 	/* DESCRIPTION: Coefficient for the limiter */
 	AddScalarOption("LIMITER_COEFF", LimiterCoeff, 0.3);
+  /* DESCRIPTION: Coefficient for detecting the limit of the sharp edges */
+	AddScalarOption("SHARP_EDGES_COEFF", SharpEdgesCoeff, 3.0);
   
 	/* DESCRIPTION: Convective numerical method */
 	AddConvectOption("CONV_NUM_METHOD_FLOW", Kind_ConvNumScheme_Flow, Kind_Centered_Flow, Kind_Upwind_Flow);
@@ -624,8 +626,8 @@ void CConfig::SetConfig_Options(unsigned short val_nZone) {
 	AddSpecialOption("FROZEN_VISC", Frozen_Visc, SetBoolOption, true);
 	/* DESCRIPTION:  */
 	AddScalarOption("CTE_VISCOUS_DRAG", CteViscDrag, 0.0);
-	/* DESCRIPTION: Print sensitivities to screen on exit */
-	AddSpecialOption("SHOW_ADJ_SENS", Show_Adj_Sens, SetBoolOption, false);
+	/* DESCRIPTION: Remove sharp edges from the sensitivity evaluation */
+	AddSpecialOption("SENS_REMOVE_SHARP", Sens_Remove_Sharp, SetBoolOption, false);
   
 	/*--- Options related to input/output files and formats ---*/
 	/* CONFIG_CATEGORY: Input/output files and formats */
@@ -985,9 +987,28 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   unsigned short iZone;
 
+#ifdef NO_MPI
+  int size = SINGLE_NODE;
+#else
+  int size = MPI::COMM_WORLD.Get_size();
+#endif
+  
   /*--- Store the SU2 module that we are executing. ---*/
 	Kind_SU2 = val_software;
-
+  
+  /*--- Only SU2_DDC, and SU2_CFD work with CGNS ---*/
+  if ((Kind_SU2 != SU2_DDC) && (Kind_SU2 != SU2_CFD)) {
+    if (Mesh_FileFormat == CGNS) {
+    cout << "This software is not prepared for CGNS, please switch to SU2" << endl;
+    cout << "Press any key to exit..." << endl;
+    cin.get();
+    exit(1);
+    }
+  }
+  
+  /*--- If multiple processors the grid should be always in native .su2 format ---*/
+  if ((size > SINGLE_NODE) && (Kind_SU2 == SU2_CFD)) Mesh_FileFormat = SU2;
+  
   /*--- Divide grid if runnning SU2_MDC ---*/
   if (Kind_SU2 == SU2_MDC) Divide_Element = true;
    
@@ -3845,6 +3866,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				cout << "JST viscous coefficients (1st, 2nd, & 4th): " << Kappa_1st_AdjFlow
 						<< ", " << Kappa_2nd_AdjFlow << ", " << Kappa_4th_AdjFlow <<"."<< endl;
 				cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
+        cout << "The reference sharp edge distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
 			}
 			if ((Kind_ConvNumScheme_AdjFlow == SPACE_CENTERED) && (Kind_Centered_AdjFlow == LAX))
 				cout << "Lax-Friedrich scheme for the adjoint inviscid terms."<< endl;
@@ -3852,9 +3874,17 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				cout << "1st order Roe solver for the adjoint inviscid terms."<< endl;
 			if ((Kind_ConvNumScheme_AdjFlow == SPACE_UPWIND) && (Kind_Upwind_AdjFlow == ROE_2ND)) {
 				cout << "2nd order Roe solver for the adjoint inviscid terms."<< endl;
-				switch (Kind_SlopeLimit_Flow) {
+				switch (Kind_SlopeLimit_AdjFlow) {
 				case NONE: cout << "Without slope-limiting method." << endl; break;
-				case VENKATAKRISHNAN: cout << "Venkatakrishnan slope-limiting method." << endl; break;
+				case VENKATAKRISHNAN:
+            cout << "Venkatakrishnan slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+            cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+            break;
+        case SHARP_EDGES:
+            cout << "Sharp edges slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+            cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+            cout << "The reference sharp edge distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
+            break;
 				}
 			}
 		}
@@ -5208,7 +5238,8 @@ void CConfig::SetFileNameDomain(unsigned short val_domain) {
 		/*--- Mesh files ---*/	
 		sprintf (buffer, "_%d.su2", int(val_domain));
 		old_name = Mesh_FileName;
-		old_name.erase (old_name.end()-4, old_name.end());
+    unsigned short lastindex = old_name.find_last_of(".");
+    old_name = old_name.substr(0, lastindex);
 		Mesh_FileName = old_name + buffer;
 
 	}

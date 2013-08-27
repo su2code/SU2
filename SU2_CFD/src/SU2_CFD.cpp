@@ -156,8 +156,6 @@ int main(int argc, char *argv[]) {
     
 		geometry_container[iZone] = new CGeometry *[config_container[iZone]->GetMGLevels()+1];
 		geometry_container[iZone][MESH_0] = new CPhysicalGeometry(config_container[iZone],
-                                                              config_container[iZone]->GetMesh_FileName(),
-																															config_container[iZone]->GetMesh_FileFormat(),
                                                               iZone+1, nZone);
 		
   }
@@ -481,19 +479,6 @@ int main(int argc, char *argv[]) {
 		if (StopCalc) break;
 		ExtIter++;
     
-	}
-	
-  /*--- If requested, print adjoint sensitivity information to the console on exit. ---*/
-  
-	if ((config_container[ZONE_0]->GetAdjoint()) && (config_container[ZONE_0]->GetShow_Adj_Sens())) {
-		cout << endl;
-		cout << "Adjoint-derived sensitivities:" << endl;
-		cout << "Surface sensitivity = " << solver_container[ZONE_0][MESH_0][ADJFLOW_SOL]->GetTotal_Sens_Geo() << endl;
-		cout << "Mach number sensitivity = " << solver_container[ZONE_0][MESH_0][ADJFLOW_SOL]->GetTotal_Sens_Mach() << endl;
-		cout << "Angle of attack sensitivity = " << solver_container[ZONE_0][MESH_0][ADJFLOW_SOL]->GetTotal_Sens_AoA() << endl;
-		cout << "Pressure sensitivity = " << solver_container[ZONE_0][MESH_0][ADJFLOW_SOL]->GetTotal_Sens_Press() << endl;
-		cout << "Temperature sensitivity = " << solver_container[ZONE_0][MESH_0][ADJFLOW_SOL]->GetTotal_Sens_Temp() << endl;
-		cout << endl;
 	}
   
   /*--- Close the convergence history file. ---*/

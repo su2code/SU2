@@ -610,7 +610,7 @@ void COutput::SetSurfaceCSV_Linearized(CConfig *config, CGeometry *geometry, CSo
 void COutput::MergeGeometry(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
 
 	int rank = MASTER_NODE;
-  int size = 1;
+  int size = SINGLE_NODE;
 
 #ifndef NO_MPI
 	rank = MPI::COMM_WORLD.Get_rank();
@@ -633,33 +633,33 @@ void COutput::MergeGeometry(CConfig *config, CGeometry *geometry, unsigned short
     /*--- Merge volumetric grid. ---*/
 
 		MergeVolumetricConnectivity(config, geometry, TRIANGLE    );
-    if ((rank == MASTER_NODE) && (size != 1) && (nGlobal_Tria != 0)) cout <<"Merging volumetric triangle grid connectivity." << endl;
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Tria != 0)) cout <<"Merging volumetric triangle grid connectivity." << endl;
 
 		MergeVolumetricConnectivity(config, geometry, RECTANGLE   );
-    if ((rank == MASTER_NODE) && (size != 1) && (nGlobal_Quad != 0)) cout <<"Merging volumetric rectangle grid connectivity." << endl;
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Quad != 0)) cout <<"Merging volumetric rectangle grid connectivity." << endl;
 
 		MergeVolumetricConnectivity(config, geometry, TETRAHEDRON );
-    if ((rank == MASTER_NODE) && (size != 1) && (nGlobal_Tetr != 0)) cout <<"Merging volumetric tetrahedron grid connectivity." << endl;
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Tetr != 0)) cout <<"Merging volumetric tetrahedron grid connectivity." << endl;
 
 		MergeVolumetricConnectivity(config, geometry, HEXAHEDRON  );
-    if ((rank == MASTER_NODE) && (size != 1) && (nGlobal_Hexa != 0)) cout <<"Merging volumetric hexahedron grid connectivity." << endl;
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Hexa != 0)) cout <<"Merging volumetric hexahedron grid connectivity." << endl;
 
 		MergeVolumetricConnectivity(config, geometry, WEDGE       );
-    if ((rank == MASTER_NODE) && (size != 1) && (nGlobal_Wedg != 0)) cout <<"Merging volumetric wedge grid connectivity." << endl;
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Wedg != 0)) cout <<"Merging volumetric wedge grid connectivity." << endl;
 
 		MergeVolumetricConnectivity(config, geometry, PYRAMID     );
-    if ((rank == MASTER_NODE) && (size != 1) && (nGlobal_Pyra != 0)) cout <<"Merging volumetric pyramid grid connectivity." << endl;
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Pyra != 0)) cout <<"Merging volumetric pyramid grid connectivity." << endl;
 
     /*--- Merge surface grid. ---*/
     
     MergeSurfaceConnectivity(config, geometry, LINE      );
-    if ((rank == MASTER_NODE) && (size != 1) && (nGlobal_Line != 0)) cout <<"Merging surface line grid connectivity." << endl;
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Line != 0)) cout <<"Merging surface line grid connectivity." << endl;
 
 		MergeSurfaceConnectivity(config, geometry, TRIANGLE  );
-    if ((rank == MASTER_NODE) && (size != 1) && (nGlobal_BoundTria != 0)) cout <<"Merging surface triangle grid connectivity." << endl;
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_BoundTria != 0)) cout <<"Merging surface triangle grid connectivity." << endl;
 
 		MergeSurfaceConnectivity(config, geometry, RECTANGLE );
-    if ((rank == MASTER_NODE) && (size != 1) && (nGlobal_BoundQuad != 0)) cout <<"Merging surface rectangle grid connectivity." << endl;
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_BoundQuad != 0)) cout <<"Merging surface rectangle grid connectivity." << endl;
 
 
 		/*--- Update total number of volumetric elements after merge. ---*/
@@ -686,7 +686,7 @@ void COutput::MergeGeometry(CConfig *config, CGeometry *geometry, unsigned short
      unsteady simulation with grid motion. ---*/
 
 	if (!wrote_base_file || dynamic_mesh) {
-    if ((rank == MASTER_NODE) && (size != 1)) cout <<"Merging grid coordinates." << endl;
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE)) cout <<"Merging grid coordinates." << endl;
 		MergeCoordinates(config, geometry);
   }
 
@@ -1743,9 +1743,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 			(Kind_Solver == ADJ_FREE_SURFACE_RANS)          ||
       (Kind_Solver == ADJ_PLASMA_EULER)               ||
       (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)         ) {
-    /*--- Surface sensitivity coefficient ---*/
+    /*--- Surface sensitivity coefficient, and solution sensor ---*/
     iVar_Sens   = nVar_Total;
-    nVar_Total += 1;
+    nVar_Total += 2;
   }
   
 	/*--- Merge the solution either in serial or parallel. ---*/
@@ -2038,6 +2038,10 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         case ADJ_PLASMA_EULER: case ADJ_PLASMA_NAVIER_STOKES:
           
           Data[jVar][jPoint] = Aux_Sens[iPoint]; jVar++;
+          if (config->GetKind_ConvNumScheme() == SPACE_CENTERED)
+          { Data[jVar][jPoint] = solver[ADJFLOW_SOL]->node[iPoint]->GetSensor(); jVar++; }
+          if (config->GetKind_ConvNumScheme() == SPACE_UPWIND)
+          { Data[jVar][jPoint] = solver[ADJFLOW_SOL]->node[iPoint]->GetLimiter(0); jVar++; }
           break;
           
       }
@@ -3116,8 +3120,13 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
         
         /*--- Load buffers with the skin friction, heat transfer, y+ variables. ---*/
-        Buffer_Send_Var[jPoint] = Aux_Sens[iPoint];
         
+        Buffer_Send_Var[jPoint] = Aux_Sens[iPoint];
+        if (config->GetKind_ConvNumScheme() == SPACE_CENTERED)
+          Buffer_Send_Res[jPoint] = solver[ADJFLOW_SOL]->node[iPoint]->GetSensor(iPoint);
+        if (config->GetKind_ConvNumScheme() == SPACE_UPWIND)
+          Buffer_Send_Res[jPoint] = solver[ADJFLOW_SOL]->node[iPoint]->GetLimiter(0);
+
         jPoint++;
       }
     }
@@ -3126,6 +3135,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 		MPI::COMM_WORLD.Barrier();
 		MPI::COMM_WORLD.Gather(Buffer_Send_Var, nBuffer_Scalar, MPI::DOUBLE,
                            Buffer_Recv_Var, nBuffer_Scalar, MPI::DOUBLE,
+                           MASTER_NODE);
+    MPI::COMM_WORLD.Gather(Buffer_Send_Res, nBuffer_Scalar, MPI::DOUBLE,
+                           Buffer_Recv_Res, nBuffer_Scalar, MPI::DOUBLE,
                            MASTER_NODE);
     
 		/*--- The master node unpacks and sorts this variable by global index ---*/
@@ -3136,7 +3148,8 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           
 					/*--- Get global index, then loop over each variable and store ---*/
 					iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
-					Data[iVar][iGlobal_Index] = Buffer_Recv_Var[jPoint];
+					Data[iVar+0][iGlobal_Index] = Buffer_Recv_Var[jPoint];
+          Data[iVar+1][iGlobal_Index] = Buffer_Recv_Res[jPoint];
 					jPoint++;
 				}
 				/*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
@@ -3358,8 +3371,9 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short va
 		filename = config->GetRestart_FlowFileName();
 
 	/*--- Remove restart filename extension ---*/
-	filename.erase(filename.end()-4, filename.end());
-
+  unsigned short lastindex = filename.find_last_of(".");
+  filename = filename.substr(0, lastindex);
+  
 	/*--- The adjoint problem requires a particular extension. ---*/
 	if (config->GetAdjoint()) {
 		switch (Kind_ObjFunc) {
@@ -3514,7 +3528,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short va
       (Kind_Solver == ADJ_FREE_SURFACE_RANS)          ||
       (Kind_Solver == ADJ_PLASMA_EULER)               ||
       (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)         ) {
-    restart_file << ", \"Surface_Sensitivity\"";
+    restart_file << ", \"Surface_Sensitivity\", \"Solution_Sensor\"";
   }
   
   restart_file << endl;
@@ -5083,7 +5097,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
     /*--- Do not merge the volume solutions if we are running in parallel.
      Force the use of SU2_SOL to merge the volume sols in this case. ---*/
     int size = MPI::COMM_WORLD.Get_size();
-    if (size > 1) {
+    if (size > SINGLE_NODE) {
       Wrt_Vol = false;
       Wrt_Srf = false;
     }
