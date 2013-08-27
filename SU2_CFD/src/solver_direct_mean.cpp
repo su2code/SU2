@@ -2145,7 +2145,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   
 	unsigned short iVar;
 	unsigned long iPoint;
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+    bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 	bool rotating_frame = config->GetRotating_Frame();
 	bool axisymmetric   = config->GetAxisymmetric();
 	bool incompressible = config->GetIncompressible();
@@ -2153,6 +2153,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 	bool time_spectral  = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
 	bool magnet         = (config->GetMagnetic_Force() == YES);
 	bool jouleheating   = config->GetJouleHeating();
+    bool windgust       = config->GetWind_Gust();
 
   /*--- Initialize the source residual to zero ---*/
 	for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
@@ -2360,6 +2361,31 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 			}
 		}
 	}
+    
+    if (windgust) {
+        
+		/*--- Loop over all points ---*/
+		for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+            
+			/*--- Load the conservative variables ---*/
+			numerics->SetConservative(node[iPoint]->GetSolution(),
+                                      node[iPoint]->GetSolution());
+            
+			/*--- Load the volume of the dual mesh cell ---*/
+			numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+            
+			/*--- Compute the rotating frame source residual ---*/
+			numerics->ComputeResidual(Residual, Jacobian_i, config);
+            
+			/*--- Add the source residual to the total ---*/
+			LinSysRes.AddBlock(iPoint, Residual);
+            
+            /*--- Add the implicit Jacobian contribution ---*/
+            if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+            
+		}
+	}
+
 }
 
 void CEulerSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,

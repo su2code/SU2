@@ -2421,5 +2421,69 @@ void CSource_JouleHeating::SetElec_Cond() {
 	//	}
 }
 
+CSourceWindGust::CSourceWindGust(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+    
+	Gamma = config->GetGamma();
+	Gamma_Minus_One = Gamma - 1.0;
+    
+}
+
+CSourceWindGust::~CSourceWindGust(void) { }
+
+void CSourceWindGust::ComputeResidual(double *val_residual, double **val_Jacobian_i, CConfig *config) {
+    
+    
+    /*--- Need to put the actual wind source terms in here ---*/
+    
+    unsigned short iDim, iVar, jVar;
+	double Omega[3] = {0,0,0}, Momentum[3] = {0,0,0};
+    bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+    
+	/*--- Retrieve the angular velocity vector from config. ---*/
+    
+    Omega[0]  = config->GetRotation_Rate_X(ZONE_0)/config->GetOmega_Ref();
+    Omega[1]  = config->GetRotation_Rate_Y(ZONE_0)/config->GetOmega_Ref();
+    Omega[2]  = config->GetRotation_Rate_Z(ZONE_0)/config->GetOmega_Ref();
+    
+	/*--- Get the momentum vector at the current node. ---*/
+    
+    for(iDim = 0; iDim < nDim; iDim++)
+		Momentum[iDim] = U_i[iDim+1];
+    
+	/*--- Calculate rotating frame source term as ( Omega X Rho-U ) ---*/
+    
+	if (nDim == 2) {
+		val_residual[0] = 0.0;
+		val_residual[1] = (Omega[1]*Momentum[2] - Omega[2]*Momentum[1])*Volume;
+		val_residual[2] = (Omega[2]*Momentum[0] - Omega[0]*Momentum[2])*Volume;
+		val_residual[3] = 0.0;
+	} else {
+		val_residual[0] = 0.0;
+		val_residual[1] = (Omega[1]*Momentum[2] - Omega[2]*Momentum[1])*Volume;
+		val_residual[2] = (Omega[2]*Momentum[0] - Omega[0]*Momentum[2])*Volume;
+		val_residual[3] = (Omega[0]*Momentum[1] - Omega[1]*Momentum[0])*Volume;
+		val_residual[4] = 0.0;
+	}
+    
+    /*--- Calculate the source term Jacobian ---*/
+    
+    if (implicit) {
+        for (iVar = 0; iVar < nVar; iVar++)
+            for (jVar = 0; jVar < nVar; jVar++)
+                val_Jacobian_i[iVar][jVar] = 0.0;
+        if (nDim == 2) {
+            val_Jacobian_i[1][2] = -Omega[2]*Volume;
+            val_Jacobian_i[2][1] =  Omega[2]*Volume;
+        } else {
+            val_Jacobian_i[1][2] = -Omega[2]*Volume;
+            val_Jacobian_i[1][3] =  Omega[1]*Volume;
+            val_Jacobian_i[2][1] =  Omega[2]*Volume;
+            val_Jacobian_i[2][3] = -Omega[0]*Volume;
+            val_Jacobian_i[3][1] = -Omega[1]*Volume;
+            val_Jacobian_i[3][2] =  Omega[0]*Volume;
+        }
+    }
+    
+}
 
 

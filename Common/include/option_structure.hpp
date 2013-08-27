@@ -304,12 +304,12 @@ const int FEA_SOL = 1;		/*!< \brief Position of the FEA equation in the solution
 
 const int TEMPLATE_SOL = 0;     /*!< \brief Position of the template solution. */
 
-const int CONV_TERM = 0;	/*!< \brief Position of the convective terms in the solver container array. */
-const int VISC_TERM = 1;        /*!< \brief Position of the viscous terms in the solver container array. */
-const int SOURCE_FIRST_TERM = 2;        /*!< \brief Position of the first source term in the solver container array. */
-const int SOURCE_SECOND_TERM = 3;   /*!< \brief Position of the second source term in the solver container array. */
-const int CONV_BOUND_TERM = 4;       /*!< \brief Position of the convective boundary terms in the solver container array. */
-const int VISC_BOUND_TERM = 5;       /*!< \brief Position of the viscous boundary terms in the solver container array. */
+const int CONV_TERM = 0;	/*!< \brief Position of the convective terms in the numerics container array. */
+const int VISC_TERM = 1;        /*!< \brief Position of the viscous terms in the numerics container array. */
+const int SOURCE_FIRST_TERM = 2;        /*!< \brief Position of the first source term in the numerics container array. */
+const int SOURCE_SECOND_TERM = 3;   /*!< \brief Position of the second source term in the numerics container array. */
+const int CONV_BOUND_TERM = 4;       /*!< \brief Position of the convective boundary terms in the numerics container array. */
+const int VISC_BOUND_TERM = 5;       /*!< \brief Position of the viscous boundary terms in the numerics container array. */
 
 /*!
  * \brief types of spatial discretizations
