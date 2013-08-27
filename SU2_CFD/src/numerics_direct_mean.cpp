@@ -2432,38 +2432,101 @@ CSourceWindGust::~CSourceWindGust(void) { }
 
 void CSourceWindGust::ComputeResidual(double *val_residual, double **val_Jacobian_i, CConfig *config) {
     
+    /*--- Need to put the actual wind source terms in here ---*/
     
+    double x, x_gust, gust;
+    double *GridVel;
+    unsigned short Kind_Grid_Movement = config->GetKind_GridMovement(ZONE_0);
+    
+    double Physical_dt = config->GetDelta_UnstTime();
+    unsigned long ExtIter = config->GetExtIter();
+    double Physical_t = (ExtIter+1)*Physical_dt;
+    
+    double Uinf = sqrt(vel2_inf); // Assumption gust moves at infinity velocity
+    
+    /*--- Gust Parameters ---*/
+    unsigned short Gust_Type = config->GetGust_Type();
+    double x0 = config->GetGust_Begin_Loc();        //Location at which the gust begins.
+    double L = config->GetGust_WaveLength();        //Gust size
+    double tbegin = config->GetGust_Begin_Time();   //Physical time at which the gust begins.
+    double gust_amp = config->GetGust_Ampl();       //Gust amplitude
+    double n = config->GetGust_Periods();           //Number of gust periods
+    unsigned short GustDir = config->GetGust_Dir(); //Gust direction
+    
+    /*--- For the source terms ---*/
+    double du_dx;
+    double du_dt;
+    double smx = 0;
+    double smy = 0;
+    double se = 0;
+    
+    /*--- Check to make sure gust lenght is not zero or negative ---*/
+    if (L <= 0.0) {
+        cout << "ERROR: The gust length needs to be positive" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+#ifdef NO_MPI
+        exit(1);
+#else
+        MPI::COMM_WORLD.Abort(1);
+        MPI::Finalize();
+#endif
+    }
+    
+    // Begin applying the gust
+    if (Physical_t > tbegin) {
+        x = Coord_i[0]; // x-location of the node
+        x_gust = (x - x0 - Uinf*(Physical_t-tbegin))/L;
+        // Check if we are in the region where the gust is active
+        if (x_gust > 0 && x_gust < n) {
+            
+            /*--- Calculate the specified gust ---*/
+            switch (Gust_Type) {
+                    
+                case TOP_HAT:
+                    gust = gust_amp;
+                    break;
+                    
+                case SINE:
+                    gust = gust_amp*(sin(2*PI_NUMBER*x_gust));
+                    du_dx = gust_amp*2*PI_NUMBER*(cos(2*PI_NUMBER*x_gust))/L;
+                    du_dt = gust_amp*2*PI_NUMBER*(cos(2*PI_NUMBER*x_gust))*(-Uinf)/L;
+                    
+                    break;
+            }
+            
+            smx = U_i[0]*(du_dt+(U_i[1]/U_i[0]+gust*du_dx));
+            smy = 0;
+            se = U_i[1]/U_i[0]*smx + U_i[2]/U_i[0]*smy;
+        }
+    }
+    
+    if (nDim == 2) {
+		val_residual[0] = 0.0;
+		val_residual[1] = smx*Volume;
+		val_residual[2] = smy*Volume;
+		val_residual[3] = se*Volume;
+	} else {
+        cout << "ERROR: You should only be here in two dimensions" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+#ifdef NO_MPI
+        exit(1);
+#else
+        MPI::COMM_WORLD.Abort(1);
+        MPI::Finalize();
+#endif
+
+	}
+    
+    
+
     /*--- Need to put the actual wind source terms in here ---*/
     
     unsigned short iDim, iVar, jVar;
 	double Omega[3] = {0,0,0}, Momentum[3] = {0,0,0};
     bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
     
-	/*--- Retrieve the angular velocity vector from config. ---*/
-    
-    Omega[0]  = config->GetRotation_Rate_X(ZONE_0)/config->GetOmega_Ref();
-    Omega[1]  = config->GetRotation_Rate_Y(ZONE_0)/config->GetOmega_Ref();
-    Omega[2]  = config->GetRotation_Rate_Z(ZONE_0)/config->GetOmega_Ref();
-    
-	/*--- Get the momentum vector at the current node. ---*/
-    
-    for(iDim = 0; iDim < nDim; iDim++)
-		Momentum[iDim] = U_i[iDim+1];
-    
-	/*--- Calculate rotating frame source term as ( Omega X Rho-U ) ---*/
-    
-	if (nDim == 2) {
-		val_residual[0] = 0.0;
-		val_residual[1] = (Omega[1]*Momentum[2] - Omega[2]*Momentum[1])*Volume;
-		val_residual[2] = (Omega[2]*Momentum[0] - Omega[0]*Momentum[2])*Volume;
-		val_residual[3] = 0.0;
-	} else {
-		val_residual[0] = 0.0;
-		val_residual[1] = (Omega[1]*Momentum[2] - Omega[2]*Momentum[1])*Volume;
-		val_residual[2] = (Omega[2]*Momentum[0] - Omega[0]*Momentum[2])*Volume;
-		val_residual[3] = (Omega[0]*Momentum[1] - Omega[1]*Momentum[0])*Volume;
-		val_residual[4] = 0.0;
-	}
     
     /*--- Calculate the source term Jacobian ---*/
     
