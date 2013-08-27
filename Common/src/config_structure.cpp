@@ -986,11 +986,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- Only SU2_DDC, and SU2_CFD work with CGNS ---*/
   if ((Kind_SU2 != SU2_DDC) && (Kind_SU2 != SU2_CFD)) {
-    if (Mesh_FileFormat == CGNS)
+    if (Mesh_FileFormat == CGNS) {
     cout << "This software is not prepared for CGNS, please switch to SU2" << endl;
     cout << "Press any key to exit..." << endl;
     cin.get();
     exit(1);
+    }
   }
   
   /*--- If multiple processors the grid should be always in native .su2 format ---*/
