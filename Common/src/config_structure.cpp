@@ -1773,6 +1773,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         ArrheniusCoefficient = new double[nReactions];
         ArrheniusEta         = new double[nReactions];
         ArrheniusTheta       = new double[nReactions];
+        Tcf_a                = new double[nReactions];
+        Tcf_b                = new double[nReactions];
+        Tcb_a                = new double[nReactions];
+        Tcb_b                = new double[nReactions];
         nElStates            = new unsigned short[nSpecies];
         Reactions = new int**[nReactions];
         for (unsigned short iRxn = 0; iRxn < nReactions; iRxn++) {
@@ -1871,8 +1875,28 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         ArrheniusTheta[1] = 113200.0;
         
         /*--- Set reaction maps ---*/
-        Reactions[0][0][0]=0;		Reactions[0][0][1]=0;		Reactions[0][0][2]=nSpecies;		Reactions[0][1][0]=1;		Reactions[0][1][1]=1;		Reactions[0][1][2] =0;
-        Reactions[1][0][0]=0;		Reactions[1][0][1]=1;		Reactions[1][0][2]=nSpecies;		Reactions[1][1][0]=1;		Reactions[1][1][1]=1;		Reactions[1][1][2] =1;
+        // N2 + N2 -> 2N + N2
+        Reactions[0][0][0]=0;		Reactions[0][0][1]=0;		Reactions[0][0][2]=nSpecies;
+        Reactions[0][1][0]=1;		Reactions[0][1][1]=1;		Reactions[0][1][2] =0;
+        // N2 + N -> 2N + N
+        Reactions[1][0][0]=0;		Reactions[1][0][1]=1;		Reactions[1][0][2]=nSpecies;
+        Reactions[1][1][0]=1;		Reactions[1][1][1]=1;		Reactions[1][1][2] =1;
+        
+        /*--- Set rate-controlling temperature exponents ---*/
+        //  -----------  Tc = Ttr^a * Tve^b  -----------
+        //
+        // Forward Reactions
+        //   Dissociation:      a = 0.5, b = 0.5  (OR a = 0.7, b =0.3)
+        //   Exchange:          a = 1,   b = 0
+        //   Impact ionization: a = 0,   b = 1
+        //
+        // Backward Reactions
+        //   Recomb ionization:      a = 0, b = 1
+        //   Impact ionization:      a = 0, b = 1
+        //   N2 impact dissociation: a = 0, b = 1
+        //   Others:                 a = 1, b = 0
+        Tcf_a[0] = 0.5; Tcf_b[0] = 0.5; Tcb_a[0] = 1;  Tcb_b[0] = 0;
+        Tcf_a[1] = 0.5; Tcf_b[1] = 0.5; Tcb_a[1] = 1;  Tcb_b[1] = 0;
         
         /*--- Dissociation potential [KJ/kg] ---*/
         Diss[0] = 3.36E4;
@@ -2684,9 +2708,15 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 			Gas_Composition[2] = 0.01;
 
 			/*--- Set reaction maps ---*/
-			Reactions[0][0][0]=0;		Reactions[0][0][1]=0;		Reactions[0][0][2]=nSpecies;		Reactions[0][1][0]=1;		Reactions[0][1][1]=2;		Reactions[0][1][2] =0;
-			Reactions[1][0][0]=0;		Reactions[1][0][1]=1;		Reactions[1][0][2]=nSpecies;		Reactions[1][1][0]=1;		Reactions[1][1][1]=2;		Reactions[1][1][2] =1;
-			Reactions[2][0][0]=0;		Reactions[2][0][1]=2;		Reactions[2][0][2]=nSpecies;		Reactions[2][1][0]=1;		Reactions[2][1][1]=2;		Reactions[2][1][2] =2;
+      //
+			Reactions[0][0][0]=0;		Reactions[0][0][1]=0;		Reactions[0][0][2]=nSpecies;
+      Reactions[0][1][0]=1;		Reactions[0][1][1]=2;		Reactions[0][1][2] =0;
+			//
+      Reactions[1][0][0]=0;		Reactions[1][0][1]=1;		Reactions[1][0][2]=nSpecies;
+      Reactions[1][1][0]=1;   Reactions[1][1][1]=2;		Reactions[1][1][2] =1;
+			//
+      Reactions[2][0][0]=0;		Reactions[2][0][1]=2;		Reactions[2][0][2]=nSpecies;
+      Reactions[2][1][0]=1;		Reactions[2][1][1]=2;		Reactions[2][1][2] =2;
 
 			/*--- Set Arrhenius coefficients for chemical reactions ---*/
 			// Pre-exponential factor
