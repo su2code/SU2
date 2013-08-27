@@ -370,6 +370,11 @@ inline double CConfig::GetArrheniusEta(unsigned short iReaction) { return Arrhen
 
 inline double CConfig::GetArrheniusTheta(unsigned short iReaction) { return ArrheniusTheta[iReaction]; }
 
+inline double* CConfig::GetRxnTcf_a(void) { return Tcf_a; }
+inline double* CConfig::GetRxnTcf_b(void) { return Tcf_b; }
+inline double* CConfig::GetRxnTcb_a(void) { return Tcb_a; }
+inline double* CConfig::GetRxnTcb_b(void) { return Tcb_b; }
+
 inline double* CConfig::GetDissociationPot(void) { return Diss; }
 
 inline double CConfig::GetCharVibTemp(unsigned short iSpecies) {return CharVibTemp[iSpecies]; }

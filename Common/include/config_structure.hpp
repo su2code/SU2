@@ -493,6 +493,10 @@ private:
 	*CharVibTemp,									/*!< \brief Characteristic vibrational temperature for e_vib */
   *RotationModes,				/*!< \brief Rotational modes of energy storage */
   *Ref_Temperature,   			/*!< \brief Reference temperature for thermodynamic relations */
+  *Tcf_a,   /*!< \brief Rate controlling temperature exponent (fwd) */
+  *Tcf_b,   /*!< \brief Rate controlling temperature exponent (fwd) */
+  *Tcb_a,   /*!< \brief Rate controlling temperature exponent (bkw) */
+  *Tcb_b,   /*!< \brief Rate controlling temperature exponent (bkw) */
   *Diss;                /*!< \brief Dissociation potential. */
 	unsigned short nMass,                 /*!< \brief No of particle masses */
 	nTemp,						/*!< \brief No of freestream temperatures specified */
@@ -3170,6 +3174,30 @@ public:
 	 * \return: The number of chemical reactions, read from input file
 	 */
 	double GetArrheniusTheta(unsigned short iReaction);
+
+  /*!
+	 * \brief Provides the rate controlling temperature exponents for chemistry.
+	 * \return: Rate controlling temperature exponents.
+	 */
+  double* GetRxnTcf_a(void);
+  
+  /*!
+	 * \brief Provides the rate controlling temperature exponents for chemistry.
+	 * \return: Rate controlling temperature exponents.
+	 */
+  double* GetRxnTcf_b(void);
+  
+  /*!
+	 * \brief Provides the rate controlling temperature exponents for chemistry.
+	 * \return: Rate controlling temperature exponents.
+	 */
+  double* GetRxnTcb_a(void);
+  
+  /*!
+	 * \brief Provides the rate controlling temperature exponents for chemistry.
+	 * \return: Rate controlling temperature exponents.
+	 */
+  double* GetRxnTcb_b(void);
   
   /*!
 	 * \brief Dissociation potential of species.

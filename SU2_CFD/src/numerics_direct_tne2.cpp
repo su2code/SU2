@@ -104,7 +104,7 @@ void CUpwRoe_TNE2::ComputeResidual(double *val_residual, double **val_Jacobian_i
   
 	/*-- Unit Normal ---*/
 	for (iDim = 0; iDim < nDim; iDim++)
-		UnitaryNormal[iDim] = Normal[iDim]/Area;
+		UnitNormal[iDim] = Normal[iDim]/Area;
   
   /*--- Determine the number of heavy particle species ---*/
   if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
@@ -187,7 +187,7 @@ void CUpwRoe_TNE2::ComputeResidual(double *val_residual, double **val_Jacobian_i
   RoeSoundSpeed = sqrt((1.0 + dPdrhoE) * RoePressure/(DensityMix_i*R));
   
   /*--- Calculate dual grid tangent vectors for P & invP ---*/
-  CreateBasis(UnitaryNormal);
+  CreateBasis(UnitNormal);
   
   /*--- Compute Proj_flux_tensor_i ---*/
   GetInviscidProjFlux(Density_i, Velocity_i, &Pressure_i, &Enthalpy_i, &Energy_ve_i, Normal, Proj_flux_tensor_i);
@@ -197,16 +197,16 @@ void CUpwRoe_TNE2::ComputeResidual(double *val_residual, double **val_Jacobian_i
   
   /*--- Compute projected P, invP, and Lambda ---*/
   GetPMatrix(RoeDensity, RoeVelocity, &RoeEnthalpy, &RoeEnergy_ve, &RoeSoundSpeed, dPdrhos,
-             dPdrhoE, dPdrhoEve, UnitaryNormal, l, m, P_Tensor);
+             dPdrhoE, dPdrhoEve, UnitNormal, l, m, P_Tensor);
   GetPMatrix_inv(RoeDensity, RoeVelocity, &RoeEnergy_ve, &RoeSoundSpeed, dPdrhos,
-                 dPdrhoE, dPdrhoEve, UnitaryNormal, l, m, invP_Tensor);
+                 dPdrhoE, dPdrhoEve, UnitNormal, l, m, invP_Tensor);
   
   /*--- Compute projected velocities ---*/
   ProjVelocity = 0.0; ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
-    ProjVelocity   += RoeVelocity[iDim]*UnitaryNormal[iDim];
-    ProjVelocity_i += Velocity_i[iDim]*UnitaryNormal[iDim];
-    ProjVelocity_j += Velocity_j[iDim]*UnitaryNormal[iDim];
+    ProjVelocity   += RoeVelocity[iDim]*UnitNormal[iDim];
+    ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
+    ProjVelocity_j += Velocity_j[iDim]*UnitNormal[iDim];
   }
   
   /*--- Calculate eigenvalues ---*/
@@ -297,7 +297,7 @@ void CUpwRoe_TNE2::ComputeResidual(double *val_residual, double **val_Jacobian_i
   /* Visualization
   cout << "normal: " << endl;
   for (iDim = 0; iDim < nDim; iDim++)
-    cout << UnitaryNormal[iDim] << endl;
+    cout << UnitNormal[iDim] << endl;
   
   cout << "l: " << endl;
   for (iDim = 0; iDim < nDim; iDim++)
@@ -426,7 +426,7 @@ void CUpwAUSM_TNE2::ComputeResidual(double *val_residual, double **val_Jacobian_
 	Area = sqrt(Area);
   
 	for (iDim = 0; iDim < nDim; iDim++)
-		UnitaryNormal[iDim] = Normal[iDim]/Area;
+		UnitNormal[iDim] = Normal[iDim]/Area;
   
   /*--- Read from config ---*/
   Ms = config->GetMolar_Mass();
@@ -474,8 +474,8 @@ void CUpwAUSM_TNE2::ComputeResidual(double *val_residual, double **val_Jacobian_
 	/*--- Projected velocities ---*/
 	ProjVel_i = 0.0; ProjVel_j = 0.0;
 	for (iDim = 0; iDim < nDim; iDim++) {
-		ProjVel_i += u_i[iDim]*UnitaryNormal[iDim];
-		ProjVel_j += u_j[iDim]*UnitaryNormal[iDim];
+		ProjVel_i += u_i[iDim]*UnitNormal[iDim];
+		ProjVel_j += u_j[iDim]*UnitNormal[iDim];
 	}
   
   /*--- Calculate L/R Mach numbers ---*/
@@ -523,7 +523,7 @@ void CUpwAUSM_TNE2::ComputeResidual(double *val_residual, double **val_Jacobian_
     val_residual[iVar] = 0.5*((mF+Phi)*FcL[iVar]+(mF-Phi)*FcR[iVar])*Area;
     //val_residual[iVar] = 0.5*(mF*(FcL[iVar]+FcR[iVar]) - Phi*(FcR[iVar]-FcL[iVar]))*Area;
   for (iDim = 0; iDim < nDim; iDim++)
-    val_residual[nSpecies+iDim] += pF*UnitaryNormal[iDim]*Area;
+    val_residual[nSpecies+iDim] += pF*UnitNormal[iDim]*Area;
   
   
 	if (implicit) {
@@ -607,7 +607,7 @@ void CUpwAUSM_TNE2::ComputeResidual(double *val_residual, double **val_Jacobian_
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
           dmLP[iSpecies] = 0.5*(mL+1.0) * (-ProjVel_i/(rho_i*a_i) - ProjVel_i*daL[iSpecies]/(a_i*a_i));
         for (iDim = 0; iDim < nDim; iDim++)
-          dmLP[nSpecies+iDim] = 0.5*(mL+1.0) * (-ProjVel_i/(a_i*a_i) * daL[nSpecies+iDim] + UnitaryNormal[iDim]/(rho_i*a_i));
+          dmLP[nSpecies+iDim] = 0.5*(mL+1.0) * (-ProjVel_i/(a_i*a_i) * daL[nSpecies+iDim] + UnitNormal[iDim]/(rho_i*a_i));
         dmLP[nSpecies+nDim]   = 0.5*(mL+1.0) * (-ProjVel_i/(a_i*a_i) * daL[nSpecies+nDim]);
         dmLP[nSpecies+nDim+1] = 0.5*(mL+1.0) * (-ProjVel_i/(a_i*a_i) * daL[nSpecies+nDim+1]);
 
@@ -619,7 +619,7 @@ void CUpwAUSM_TNE2::ComputeResidual(double *val_residual, double **val_Jacobian_
         for (iDim = 0; iDim < nDim; iDim++)
           dpLP[nSpecies+iDim] = 0.25*(mL+1.0) * (-u_i[iDim]*dPdrhoE_i*(mL+1.0)*(2.0-mL)
                                                  + P_i*( -ProjVel_i/(a_i*a_i) * daL[nSpecies+iDim]
-                                                        + UnitaryNormal[iDim]/(rho_i*a_i))*(3.0-3.0*mL));
+                                                        + UnitNormal[iDim]/(rho_i*a_i))*(3.0-3.0*mL));
         dpLP[nSpecies+nDim]   = 0.25*(mL+1.0) * (dPdrhoE_i*(mL+1.0)*(2.0-mL)
                                                  + P_i*(-ProjVel_i/(a_i*a_i) * daL[nSpecies+nDim])*(3.0-3.0*mL));
         dpLP[nSpecies+nDim+1] = 0.25*(mL+1.0) * (dPdrhoEve_i*(mL+1.0)*(2.0-mL)
@@ -630,7 +630,7 @@ void CUpwAUSM_TNE2::ComputeResidual(double *val_residual, double **val_Jacobian_
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
           dmLP[iSpecies]      = -ProjVel_i/(rho_i*a_i) - ProjVel_i*daL[iSpecies]/(a_i*a_i);
         for (iDim = 0; iDim < nDim; iDim++)
-          dmLP[nSpecies+iDim] = -ProjVel_i/(a_i*a_i) * daL[nSpecies+iDim] + UnitaryNormal[iDim]/(rho_i*a_i);
+          dmLP[nSpecies+iDim] = -ProjVel_i/(a_i*a_i) * daL[nSpecies+iDim] + UnitNormal[iDim]/(rho_i*a_i);
         dmLP[nSpecies+nDim]   = -ProjVel_i/(a_i*a_i) * daL[nSpecies+nDim];
         dmLP[nSpecies+nDim+1] = -ProjVel_i/(a_i*a_i) * daL[nSpecies+nDim+1];
 
@@ -653,7 +653,7 @@ void CUpwAUSM_TNE2::ComputeResidual(double *val_residual, double **val_Jacobian_
       /*--- Jacobian contribution: dP terms ---*/
       for (iDim = 0; iDim < nDim; iDim++) {
         for (iVar = 0; iVar < nVar; iVar++) {
-          val_Jacobian_i[nSpecies+iDim][iVar] += dpLP[iVar]*UnitaryNormal[iDim];
+          val_Jacobian_i[nSpecies+iDim][iVar] += dpLP[iVar]*UnitNormal[iDim];
         }
       }
     }
@@ -689,7 +689,7 @@ void CUpwAUSM_TNE2::ComputeResidual(double *val_residual, double **val_Jacobian_
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
           dmRM[iSpecies] = -0.5*(mR-1.0) * (-ProjVel_j/(rho_j*a_j) - ProjVel_j*daR[iSpecies]/(a_j*a_j));
         for (iDim = 0; iDim < nDim; iDim++)
-          dmRM[nSpecies+iDim] = -0.5*(mR-1.0) * (-ProjVel_j/(a_j*a_j) * daR[nSpecies+iDim] + UnitaryNormal[iDim]/(rho_j*a_j));
+          dmRM[nSpecies+iDim] = -0.5*(mR-1.0) * (-ProjVel_j/(a_j*a_j) * daR[nSpecies+iDim] + UnitNormal[iDim]/(rho_j*a_j));
         dmRM[nSpecies+nDim]   = -0.5*(mR-1.0) * (-ProjVel_j/(a_j*a_j) * daR[nSpecies+nDim]);
         dmRM[nSpecies+nDim+1] = -0.5*(mR-1.0) * (-ProjVel_j/(a_j*a_j) * daR[nSpecies+nDim+1]);
         
@@ -701,7 +701,7 @@ void CUpwAUSM_TNE2::ComputeResidual(double *val_residual, double **val_Jacobian_
         for (iDim = 0; iDim < nDim; iDim++)
           dpRM[nSpecies+iDim] = 0.25*(mR-1.0) * ((-u_j[iDim]*dPdrhoE_j)*(mR-1.0)*(2.0+mR)
                                                  + P_j*( -ProjVel_j/(a_j*a_j) * daR[nSpecies+iDim]
-                                                        + UnitaryNormal[iDim]/(rho_j*a_j))*(3.0+3.0*mR));
+                                                        + UnitNormal[iDim]/(rho_j*a_j))*(3.0+3.0*mR));
         dpRM[nSpecies+nDim]   = 0.25*(mR-1.0) * (dPdrhoE_j*(mR-1.0)*(2.0+mR)
                                                  + P_j*(-ProjVel_j/(a_j*a_j)*daR[nSpecies+nDim])*(3.0+3.0*mR));
         dpRM[nSpecies+nDim+1] = 0.25*(mR-1.0) * (dPdrhoEve_j*(mR-1.0)*(2.0+mR)
@@ -713,7 +713,7 @@ void CUpwAUSM_TNE2::ComputeResidual(double *val_residual, double **val_Jacobian_
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
           dmRM[iSpecies]      = -ProjVel_j/(rho_j*a_j) - ProjVel_j*daR[iSpecies]/(a_j*a_j);
         for (iDim = 0; iDim < nDim; iDim++)
-          dmRM[nSpecies+iDim] = -ProjVel_j/(a_j*a_j) * daR[nSpecies+iDim] + UnitaryNormal[iDim]/(rho_j*a_j);
+          dmRM[nSpecies+iDim] = -ProjVel_j/(a_j*a_j) * daR[nSpecies+iDim] + UnitNormal[iDim]/(rho_j*a_j);
         dmRM[nSpecies+nDim]   = -ProjVel_j/(a_j*a_j) * daR[nSpecies+nDim];
         dmRM[nSpecies+nDim+1] = -ProjVel_j/(a_j*a_j) * daR[nSpecies+nDim+1];
         
@@ -736,7 +736,7 @@ void CUpwAUSM_TNE2::ComputeResidual(double *val_residual, double **val_Jacobian_
       /*--- Jacobian contribution: dP terms ---*/
       for (iDim = 0; iDim < nDim; iDim++) {
         for (iVar = 0; iVar < nVar; iVar++) {
-          val_Jacobian_j[nSpecies+iDim][iVar] += dpRM[iVar]*UnitaryNormal[iDim];
+          val_Jacobian_j[nSpecies+iDim][iVar] += dpRM[iVar]*UnitNormal[iDim];
         }
       } 
     }
@@ -813,7 +813,7 @@ void CCentLax_TNE2::ComputeResidual(double *val_resconv, double *val_resvisc, do
   
 	/*-- Unit Normal ---*/
 	for (iDim = 0; iDim < nDim; iDim++)
-		UnitaryNormal[iDim] = Normal[iDim]/Area;
+		UnitNormal[iDim] = Normal[iDim]/Area;
   
   /*--- Determine the number of heavy particle species ---*/
   if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
@@ -1022,8 +1022,9 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
   unsigned short iSpecies, jSpecies, ii, iReaction, nReactions;
   int ***RxnMap;
   double T_min, epsilon;
-  double rho, T, Tve, evs, Trxnf, Trxnb, Keq, Cf, eta, theta, kf, kb;
+  double rho, T, Tve, evs, Thf, Thb, Trxnf, Trxnb, Keq, Cf, eta, theta, kf, kb;
   double *A, *Ms, *thetav, fwdRxn, bkwRxn, alpha, Dprime, Ru;
+  double *Tcf_a, *Tcf_b, *Tcb_a, *Tcb_b;
   
   /*--- Allocate arrays ---*/
   A = new double[5];
@@ -1043,6 +1044,10 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
   Ms         = config->GetMolar_Mass();
   RxnMap     = config->GetReaction_Map();
   thetav     = config->GetCharVibTemp();
+  Tcf_a      = config->GetRxnTcf_a();
+  Tcf_b      = config->GetRxnTcf_b();
+  Tcb_a      = config->GetRxnTcb_a();
+  Tcb_b      = config->GetRxnTcb_b();
   
   /*--- Rename for convenience ---*/
   T   = V_i[T_INDEX];
@@ -1054,12 +1059,12 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
     
     /*--- Determine the rate-controlling temperature ---*/
     // Note: Need to re-visit these!  Just hacking them in as a first-cut
-    Trxnf = sqrt(T*Tve);
-    Trxnb = T;
+    Trxnf = pow(T, Tcf_a[iReaction])*pow(Tve, Tcf_b[iReaction]);
+    Trxnb = pow(T, Tcb_a[iReaction])*pow(Tve, Tcb_b[iReaction]);
     
     /*--- Calculate the modified temperature ---*/
-		Trxnf = 0.5 * (Trxnf+T_min + sqrt((Trxnf-T_min)*(Trxnf-T_min)+epsilon*epsilon));
-		Trxnb = 0.5 * (Trxnb+T_min + sqrt((Trxnb-T_min)*(Trxnb-T_min)+epsilon*epsilon));
+		Thf = 0.5 * (Trxnf+T_min + sqrt((Trxnf-T_min)*(Trxnf-T_min)+epsilon*epsilon));
+		Thb = 0.5 * (Trxnb+T_min + sqrt((Trxnb-T_min)*(Trxnb-T_min)+epsilon*epsilon));
     
     /*--- Get the Keq & Arrhenius coefficients ---*/
     GetKeqConstants(A, iReaction, config);
@@ -1068,12 +1073,12 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
     theta = config->GetArrheniusTheta(iReaction);
         
     /*--- Calculate Keq ---*/
-    Keq = exp(  A[0]*(Trxnb/1E4) + A[1] + A[2]*log(1E4/Trxnb)
-              + A[3]*(1E4/Trxnb) + A[4]*(1E4/Trxnb)*(1E4/Trxnb) );
+    Keq = exp(  A[0]*(Thb/1E4) + A[1] + A[2]*log(1E4/Thb)
+              + A[3]*(1E4/Thb) + A[4]*(1E4/Thb)*(1E4/Thb) );
     
     /*--- Calculate rate coefficients ---*/
-    kf = Cf * exp(eta*log(Trxnf)) * exp(-theta/Trxnf);
-		kb = Cf * exp(eta*log(Trxnb)) * exp(-theta/Trxnb) / Keq;
+    kf = Cf * exp(eta*log(Thf)) * exp(-theta/Thf);
+		kb = Cf * exp(eta*log(Thb)) * exp(-theta/Thb) / Keq;
     
     /*--- Determine production & destruction of each species ---*/
     fwdRxn = 1.0;
