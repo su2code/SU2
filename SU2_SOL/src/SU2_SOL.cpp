@@ -99,7 +99,7 @@ int main(int argc, char *argv[]) {
   /*---  Check whether this is an unsteady simulation, and call the
    solution merging routines accordingly.---*/
   
-  if (config[ZONE_0]->GetUnsteady_Simulation() && config[ZONE_0]->GetWrt_Unsteady()) {
+  if (config[ZONE_0]->GetWrt_Unsteady()) {
     
     /*--- Unsteady simulation: merge all unsteady time steps. First,
      find the frequency and total number of files to write. ---*/
@@ -107,6 +107,10 @@ int main(int argc, char *argv[]) {
     double Physical_dt, Physical_t;
     unsigned long iExtIter = 0;
     bool StopCalc = false;
+    
+    /*--- Check for an unsteady restart. Update ExtIter if necessary. ---*/
+    if (config[ZONE_0]->GetWrt_Unsteady() && config[ZONE_0]->GetRestart())
+      iExtIter = config[ZONE_0]->GetUnst_RestartIter();
     
     while (iExtIter < config[ZONE_0]->GetnExtIter()) {
       
@@ -132,7 +136,7 @@ int main(int argc, char *argv[]) {
         for (iZone = 0; iZone < nZone; iZone++) {
           
           /*--- Either instantiate the solution class or load a restart file. ---*/
-          if (iExtIter == 0)
+          if (iExtIter == 0 || (config[ZONE_0]->GetRestart() && iExtIter == config[ZONE_0]->GetUnst_RestartIter()))
             solver[iZone] = new CBaselineSolver(geometry[iZone], config[iZone], MESH_0);
           else
             solver[iZone]->GetRestart(geometry[iZone], config[iZone], MESH_0);

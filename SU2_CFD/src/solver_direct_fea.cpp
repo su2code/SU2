@@ -29,6 +29,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
 	unsigned long iPoint;
 	unsigned short nMarker, iVar, NodesElement;
+  double dull_val;
   
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
@@ -36,7 +37,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 	nMarker = config->GetnMarker_All(); 
 	node    = new CVariable*[nPoint];
 	nVar    = 2*nDim;
-	if (nDim == 2) NodesElement = 3;	// Trianles in 2D
+	if (nDim == 2) NodesElement = 3;	// Triangles in 2D
 	if (nDim == 3) NodesElement = 4;	// Tets in 3D
 	
 	Residual     = new double[nVar]; Residual_RMS = new double[nVar];
@@ -127,8 +128,8 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
        will be returned and used to instantiate the vars. ---*/
       iPoint_Local = Global2Local[iPoint_Global];
       if (iPoint_Local >= 0) {
-        if (nDim == 2) point_line >> index >> Solution[0] >> Solution[1];
-        if (nDim == 3) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2];
+        if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1];
+        if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
         node[iPoint_Local] = new CFEAVariable(Solution, nDim, nVar, config);
       }
       iPoint_Global++;

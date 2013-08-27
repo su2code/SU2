@@ -273,6 +273,8 @@ void CConfig::SetConfig_Options(unsigned short val_nZone) {
 	AddScalarOption("UNST_INT_ITER", Unst_nIntIter, 100);
 	/* DESCRIPTION: Integer number of periodic time instances for Time Spectral */
 	AddScalarOption("TIME_INSTANCES", nTimeInstances, 1);
+  /* DESCRIPTION: Number of internal iterations (dual time method) */
+	AddScalarOption("UNST_RESTART_ITER", Unst_RestartIter, 0);
 	/* DESCRIPTION: Time discretization */
 	AddEnumOption("TIME_DISCRE_FLOW", Kind_TimeIntScheme_Flow, Time_Int_Map, "RUNGE-KUTTA_EXPLICIT");
 	/* DESCRIPTION: Time discretization */
@@ -4690,6 +4692,76 @@ void CConfig::SetFileNameDomain(unsigned short val_domain) {
 
 	}
 #endif
+}
+
+string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {
+  
+  string UnstExt, UnstFilename = val_filename;
+  char buffer[50];
+  
+  /*--- Check that a positive value iteration is requested (for now). ---*/
+  if (val_iter < 0) {
+    cout << "Requesting a negative iteration number for the restart file!!" << endl;
+    cout << "Press any key to exit..." << endl;
+    cin.get(); exit(1);
+  }
+  
+  /*--- Append iteration number for unsteady cases ---*/
+  if ((Wrt_Unsteady) || (Unsteady_Simulation == TIME_SPECTRAL)) {
+    unsigned short lastindex = UnstFilename.find_last_of(".");
+    UnstFilename = UnstFilename.substr(0, lastindex);
+    if ((val_iter >= 0)    && (val_iter < 10))    sprintf (buffer, "_0000%d.dat", val_iter);
+    if ((val_iter >= 10)   && (val_iter < 100))   sprintf (buffer, "_000%d.dat",  val_iter);
+    if ((val_iter >= 100)  && (val_iter < 1000))  sprintf (buffer, "_00%d.dat",   val_iter);
+    if ((val_iter >= 1000) && (val_iter < 10000)) sprintf (buffer, "_0%d.dat",    val_iter);
+    if (val_iter >= 10000) sprintf (buffer, "_%d.dat", val_iter);
+    string UnstExt = string(buffer);
+    UnstFilename.append(UnstExt);
+  }
+  
+  return UnstFilename;
+}
+
+string CConfig::GetObjFunc_Extension(string val_filename) {
+  
+  string AdjExt, Filename = val_filename;
+  
+  if (Adjoint) {
+    
+    /*--- Remove filename extension (.dat) ---*/
+    unsigned short lastindex = Filename.find_last_of(".");
+    Filename = Filename.substr(0, lastindex);
+    
+    switch (Kind_ObjFunc) {
+      case DRAG_COEFFICIENT:      AdjExt = "_cd";   break;
+      case LIFT_COEFFICIENT:      AdjExt = "_cl";   break;
+      case SIDEFORCE_COEFFICIENT: AdjExt = "_csf";  break;
+      case PRESSURE_COEFFICIENT:  AdjExt = "_cp";   break;
+      case MOMENT_X_COEFFICIENT:  AdjExt = "_cmx";  break;
+      case MOMENT_Y_COEFFICIENT:  AdjExt = "_cmy";  break;
+      case MOMENT_Z_COEFFICIENT:  AdjExt = "_cmz";  break;
+      case EFFICIENCY:            AdjExt = "_eff";  break;
+      case EQUIVALENT_AREA:       AdjExt = "_ea";   break;
+      case NEARFIELD_PRESSURE:    AdjExt = "_nfp";  break;
+      case FORCE_X_COEFFICIENT:   AdjExt = "_cfx";  break;
+      case FORCE_Y_COEFFICIENT:   AdjExt = "_cfy";  break;
+      case FORCE_Z_COEFFICIENT:   AdjExt = "_cfz";  break;
+      case THRUST_COEFFICIENT:    AdjExt = "_ct";   break;
+      case TORQUE_COEFFICIENT:    AdjExt = "_cq";   break;
+      case HEAT_LOAD:             AdjExt = "_Q";    break;
+      case MAX_HEAT_FLUX:         AdjExt = "_qmax"; break;
+      case FIGURE_OF_MERIT:       AdjExt = "_merit";break;
+      case FREE_SURFACE:          AdjExt = "_fs";   break;
+      case NOISE:                 AdjExt = "_fwh";  break;
+    }
+    Filename.append(AdjExt);
+    
+    /*--- Lastly, add the .dat extension ---*/
+    Filename.append(".dat");
+    
+  }
+  
+  return Filename;
 }
 
 unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {

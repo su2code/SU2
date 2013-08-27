@@ -49,6 +49,8 @@ inline unsigned long CConfig::GetIntIter(void) { return IntIter; }
 
 inline unsigned long CConfig::GetUnst_nIntIter(void) { return Unst_nIntIter; }
 
+inline long CConfig::GetUnst_RestartIter(void) { return Unst_RestartIter; }
+
 inline unsigned short CConfig::GetMaxChildren(void) { return MaxChildren; }
 
 inline string CConfig::GetPlaneTag(unsigned short index) { return PlaneTag[index]; }
@@ -714,9 +716,9 @@ inline unsigned short CConfig::GetOutput_FileFormat(void) { return Output_FileFo
 
 inline string CConfig::GetConv_FileName(void) { return Conv_FileName; }
 
-inline string CConfig::GetSolution_FlowFileName(void) { return Solution_FlowFileName; }
-
 inline string CConfig::GetFarfield_FileName(void) { return Farfield_FileName; }
+
+inline string CConfig::GetSolution_FlowFileName(void) { return Solution_FlowFileName; }
 
 inline string CConfig::GetSolution_LinFileName(void) { return Solution_LinFileName; }
 
