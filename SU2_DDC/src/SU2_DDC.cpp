@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
   if (rank == MASTER_NODE) {
     
     /*--- Definition of the Class for the geometry ---*/
-    geometry = new CPhysicalGeometry(config, config->GetMesh_FileName(), config->GetMesh_FileFormat(), ZONE_0, nZone);
+    geometry = new CPhysicalGeometry(config, ZONE_0, nZone);
     
   }
   
@@ -69,10 +69,11 @@ int main(int argc, char *argv[]) {
 	/*--- Set domains for parallel computation (if any) ---*/
 	if (size > 1) {
 		
-    /*--- Write the new subgrid ---*/
+    /*--- Write the new subgrid, and remove the extension ---*/
     MeshFile = config->GetMesh_FileName();
-    MeshFile.erase (MeshFile.end()-4, MeshFile.end());
-    
+    unsigned short lastindex = MeshFile.find_last_of(".");
+    MeshFile = MeshFile.substr(0, lastindex);
+
     if (rank == MASTER_NODE) {
       
       cout << endl <<"------------------------ Divide the numerical grid ----------------------" << endl;

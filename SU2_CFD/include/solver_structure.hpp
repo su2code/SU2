@@ -730,14 +730,6 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void Solve_LinearSystem(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-    
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
 	virtual void Compute_Residual(CGeometry *geometry, CSolver **solver_container, CConfig *config,
@@ -3629,25 +3621,6 @@ public:
 	 */
 	void Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                          CConfig *config, unsigned short iMesh);
-    
-	/*!
-	 * \brief Source term from objective function integration.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iMesh - Index of the mesh in multigrid computations.
-	 */
-	//void SourceObjFunc_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-	//	CConfig *config, unsigned short iMesh);
-    
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void Solve_LinearSystem(CGeometry *geometry, CSolver **solver_container, CConfig *config);
     
 	/*!
 	 * \brief Compute the undivided laplacian for the adjoint solution.

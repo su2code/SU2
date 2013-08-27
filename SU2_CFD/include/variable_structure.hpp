@@ -2692,19 +2692,6 @@ public:
 	~CAdjNSVariable(void);
 
 	/*!
-	 * \brief Set the laminar viscosity Jacobian.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetLaminarViscosity_Jacobian(CConfig *config);
-
-	/*!
-	 * \brief Set the eddy viscosity Jacobian.
-	 * \param[in] val_Kind_Turb_Model - Kind of turbulence model.
-	 * \param[in] Turb_Solution - Solution of the turbulence model.
-	 */
-	void SetEddyViscosity_Jacobian(unsigned short val_Kind_Turb_Model, CVariable *TurbVariable);
-
-	/*!
 	 * \brief Set the value of the adjoint velocity.
 	 * \param[in] val_phi - Value of the adjoint velocity.
 	 */	

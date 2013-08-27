@@ -195,7 +195,8 @@ void CGridAdaptation::GetAdjSolution(CGeometry *geometry, CConfig *config) {
 	char buffer[50], cstr[200];
 	mesh_filename = config->GetSolution_AdjFileName();
 	copy.assign(mesh_filename);
-	copy.erase (copy.end()-4, copy.end());
+  unsigned short lastindex = copy.find_last_of(".");
+  copy = copy.substr(0, lastindex);
 	strcpy (cstr, copy.c_str()); 
 	if (config->GetKind_ObjFunc() == DRAG_COEFFICIENT) sprintf (buffer, "_cd.dat"); 
 	if (config->GetKind_ObjFunc() == LIFT_COEFFICIENT) sprintf (buffer, "_cl.dat");
@@ -273,8 +274,9 @@ void CGridAdaptation::GetAdjResidual(CGeometry *geometry, CConfig *config){
 	char buffer[50], cstr[200];
 	mesh_filename = config->GetSolution_AdjFileName();
 	copy.assign(mesh_filename);
-	copy.erase (copy.end()-4, copy.end());
-	strcpy (cstr, copy.c_str()); 
+  unsigned short lastindex = copy.find_last_of(".");
+  copy = copy.substr(0, lastindex);
+	strcpy (cstr, copy.c_str());
 	if (config->GetKind_ObjFunc() == DRAG_COEFFICIENT) sprintf (buffer, "_cd.dat"); 
 	if (config->GetKind_ObjFunc() == LIFT_COEFFICIENT) sprintf (buffer, "_cl.dat");
 	if (config->GetKind_ObjFunc() == SIDEFORCE_COEFFICIENT) sprintf (buffer, "_csf.dat"); 
@@ -3513,8 +3515,9 @@ void CGridAdaptation::SetRestart_AdjSolution(CConfig *config, string mesh_adjfil
 	string copy;
 	
 	copy.assign(mesh_adjfilename);
-	copy.erase (copy.end()-4, copy.end());
-	strcpy (cstr, copy.c_str()); 
+  unsigned short lastindex = copy.find_last_of(".");
+  copy = copy.substr(0, lastindex);
+	strcpy (cstr, copy.c_str());
 	if (config->GetKind_ObjFunc() == DRAG_COEFFICIENT) sprintf (buffer, "_cd.dat"); 
 	if (config->GetKind_ObjFunc() == LIFT_COEFFICIENT) sprintf (buffer, "_cl.dat");
 	if (config->GetKind_ObjFunc() == SIDEFORCE_COEFFICIENT) sprintf (buffer, "_csf.dat"); 

@@ -35,8 +35,8 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar, CConfig *
 	//U_id = new double [nVar];
 	//U_jd = new double [nVar];
 
-	UnitaryNormal = new double [nDim];
-	UnitaryNormald = new double [nDim];
+	UnitNormal = new double [nDim];
+	UnitNormald = new double [nDim];
 
 	Normal = new double [nDim];
 	Flux_Tensor = new double* [nVar];
@@ -87,7 +87,7 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar, unsigned 
 		Vector_Gamma[iSpecies] =   config->GetSpecies_Gamma(iSpecies);
 	}
 
-	UnitaryNormal = new double [nDim];
+	UnitNormal = new double [nDim];
 	Normal  = new double [nDim];
 	Flux_Tensor = new double* [nVar];
 	for (unsigned short iVar = 0; iVar < (nVar); iVar++)
@@ -145,7 +145,7 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar, unsigned 
 		Theta_v[iSpecies]                      = config->GetCharVibTemp(iSpecies);
 	}
 
-	UnitaryNormal = new double [nDim];
+	UnitNormal = new double [nDim];
 	Normal  = new double [nDim];
 	Flux_Tensor = new double* [nDim+3];
 	for (unsigned short iVar = 0; iVar < nDim+3; iVar++)
@@ -195,7 +195,7 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar, unsigned 
 CNumerics::~CNumerics(void) {
 
   delete [] Normal;
-	delete [] UnitaryNormal;
+	delete [] UnitNormal;
 
 	delete [] U_n;
 	delete [] U_nM1;

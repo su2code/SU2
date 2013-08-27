@@ -87,6 +87,7 @@ private:
 	Divide_Element,			/*!< \brief Divide rectables and hexahedrom. */
 	Engine_Intake,			/*!< \brief Engine intake subsonic region. */
 	Frozen_Visc,			/*!< \brief Flag for adjoint problem with/without frozen viscosity. */
+	Sens_Remove_Sharp,			/*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
 	Hold_GridFixed,	/*!< \brief Flag hold fixed some part of the mesh during the deformation. */
 	Axisymmetric, /*!< \brief Flag for axisymmetric calculations */
 	Show_Adj_Sens, /*!< \brief Flag for outputting sensitivities on exit */
@@ -103,6 +104,7 @@ private:
 	double CteViscDrag;		/*!< \brief Constant value of the viscous drag. */
 	double *DV_Value;		/*!< \brief Previous value of the design variable. */
 	double LimiterCoeff;				/*!< \brief Limiter coefficient */ 
+	double SharpEdgesCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
 	unsigned short Kind_Adjoint;	/*!< \brief Kind of adjoint function. */
 	unsigned short Kind_ObjFunc;	/*!< \brief Kind of objective function. */
 	unsigned short Kind_SensSmooth;	/*!< \brief Kind of sensitivity smoothing technique. */
@@ -1554,6 +1556,12 @@ public:
 	 */
 	double GetLimiterCoeff(void);
 
+  /*!
+	 * \brief Get the value of sharp edge limiter.
+	 * \return Value of the sharp edge limiter coefficient.
+	 */
+	double GetSharpEdgesCoeff(void);
+  
 	/*! 
 	 * \brief Get the Reynolds number. Dimensionless number that gives a measure of the ratio of inertial forces 
 	 *        to viscous forces and consequently quantifies the relative importance of these two types of forces 
@@ -3079,12 +3087,12 @@ public:
 	 * \return <code>FALSE</code> means that the adjoint turbulence equations will be used.
 	 */
 	bool GetFrozen_Visc(void);
-
-	/*!
-	 * \brief Whether or not to output sensitivities to the screen.
-	 * \return <code>FALSE</code> means that nothing is output.
+  
+  /*!
+	 * \brief Provides information about if the sharp edges are going to be removed from the sensitivity.
+	 * \return <code>FALSE</code> means that the sharp edges will be removed from the sensitivity.
 	 */
-	bool GetShow_Adj_Sens(void);
+	bool GetSens_Remove_Sharp(void);
 
 	/*!
 	 * \brief Get the kind of inlet boundary condition treatment (total conditions or mass flow).

@@ -237,7 +237,7 @@ void CUpwRoe_AdjFlow::ComputeResidual (double *val_residual_i, double *val_resid
 		/*--- Prepare variables for use in matrix routines ---*/
 		RoeDensity = U_i[0]*sqrt(U_j[0]/U_i[0]);
 		RoeSoundSpeed = c;
-		UnitaryNormal[0] = nx;  UnitaryNormal[1] = ny;  if (nDim == 3 ) UnitaryNormal[2] = nz;
+		UnitNormal[0] = nx;  UnitNormal[1] = ny;  if (nDim == 3 ) UnitNormal[2] = nz;
 		RoeVelocity[0]   = u;   RoeVelocity[1]   = v;   if (nDim == 3 ) RoeVelocity[2]   = w;
 		Velocity_i[0]    = u_l; Velocity_i[1]    = v_l; if (nDim == 3 ) Velocity_i[2]    = w_l;
 		Velocity_j[0]    = u_r; Velocity_j[1]    = v_r; if (nDim == 3 ) Velocity_j[2]    = w_r;
@@ -249,8 +249,8 @@ void CUpwRoe_AdjFlow::ComputeResidual (double *val_residual_i, double *val_resid
 		GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, Proj_flux_tensor_j);
     
 		/*--- Compute P, inverse P, and store eigenvalues ---*/
-		GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitaryNormal, invP_Tensor);
-		GetPMatrix(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitaryNormal, P_Tensor);
+		GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
+		GetPMatrix(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, P_Tensor);
     
 		/*--- Flow eigenvalues ---*/
 		for (iDim = 0; iDim < nDim; iDim++)
@@ -350,8 +350,8 @@ void CUpwRoeArtComp_AdjFlow::ComputeResidual (double *val_residual_i, double *va
   
   /*--- Compute and unitary normal vector ---*/
 	for (iDim = 0; iDim < nDim; iDim++) {
-		UnitaryNormal[iDim] = Normal[iDim]/Area;
-    if (fabs(UnitaryNormal[iDim]) < EPS) UnitaryNormal[iDim] = EPS;
+		UnitNormal[iDim] = Normal[iDim]/Area;
+    if (fabs(UnitNormal[iDim]) < EPS) UnitNormal[iDim] = EPS;
   }
   
 	/*--- Set the variables at point i, and j ---*/
@@ -388,8 +388,8 @@ void CUpwRoeArtComp_AdjFlow::ComputeResidual (double *val_residual_i, double *va
 	MeanSoundSpeed = sqrt(ProjVelocity*ProjVelocity + (MeanBetaInc2/MeanDensity) * Area * Area);
   
 	/*--- Compute P, inverse P, and store eigenvalues ---*/
-	GetPArtCompMatrix_inv(&MeanDensity, MeanVelocity, &MeanBetaInc2, UnitaryNormal, invP_Tensor);
-	GetPArtCompMatrix(&MeanDensity, MeanVelocity, &MeanBetaInc2, UnitaryNormal, P_Tensor);
+	GetPArtCompMatrix_inv(&MeanDensity, MeanVelocity, &MeanBetaInc2, UnitNormal, invP_Tensor);
+	GetPArtCompMatrix(&MeanDensity, MeanVelocity, &MeanBetaInc2, UnitNormal, P_Tensor);
   
 	/*--- Flow eigenvalues ---*/
 	if (nDim == 2) {
@@ -624,15 +624,15 @@ void CCentJST_AdjFlow::ComputeResidual (double *val_resconv_i, double *val_resvi
 	Local_Lambda_j = (fabs(ProjVelocity_j)+SoundSpeed_j*Area);
 	MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
   
-	Phi_i = pow(Lambda_i/(4.0*MeanLambda+EPS),Param_p);
-	Phi_j = pow(Lambda_j/(4.0*MeanLambda+EPS),Param_p);
-	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j+EPS);
+	Phi_i = pow(Lambda_i/(4.0*MeanLambda),Param_p);
+	Phi_j = pow(Lambda_j/(4.0*MeanLambda),Param_p);
+	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
   
 	double sc2 = 3.0*(double(Neighbor_i)+double(Neighbor_j))/(double(Neighbor_i)*double(Neighbor_j));
 	sc4 = sc2*sc2/4.0;
 	Epsilon_2 = Param_Kappa_2*0.5*(Sensor_i+Sensor_j)*sc2;
 	Epsilon_4 = max(0.0, Param_Kappa_4-Epsilon_2)*sc4;
-  
+    
 	/*--- Compute viscous residual 1st- & 3rd-order dissipation ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
 		Residual = (Epsilon_2*Diff_Psi[iVar]-Epsilon_4*Diff_Lapl[iVar])*StretchingFactor*MeanLambda;
@@ -739,9 +739,9 @@ void CCentJSTArtComp_AdjFlow::ComputeResidual (double *val_resconv_i, double *va
 	MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
   
 	/*--- Compute streching factor ---*/
-	Phi_i = pow(Lambda_i/(4.0*MeanLambda+EPS),Param_p);
-	Phi_j = pow(Lambda_j/(4.0*MeanLambda+EPS),Param_p);
-	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j+EPS);
+	Phi_i = pow(Lambda_i/(4.0*MeanLambda),Param_p);
+	Phi_j = pow(Lambda_j/(4.0*MeanLambda),Param_p);
+	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
   
 	sc2 = 3.0*(double(Neighbor_i)+double(Neighbor_j))/(double(Neighbor_i)*double(Neighbor_j));
 	sc4 = sc2*sc2/4.0;
@@ -946,9 +946,9 @@ void CCentLax_AdjFlow::ComputeResidual (double *val_resconv_i, double *val_resvi
 	MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
   
 	/*--- Compute streching factor ---*/
-	Phi_i = pow(Lambda_i/(4.0*MeanLambda+EPS),Param_p);
-	Phi_j = pow(Lambda_j/(4.0*MeanLambda+EPS),Param_p);
-	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j+EPS);
+	Phi_i = pow(Lambda_i/(4.0*MeanLambda),Param_p);
+	Phi_j = pow(Lambda_j/(4.0*MeanLambda),Param_p);
+	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
   
 	sc2 = 3.0*(double(Neighbor_i)+double(Neighbor_j))/(double(Neighbor_i)*double(Neighbor_j));
 	Epsilon_0 = Param_Kappa_0*sc2*double(nDim)/3.0;
@@ -1059,9 +1059,9 @@ void CCentLaxArtComp_AdjFlow::ComputeResidual (double *val_resconv_i, double *va
 	MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
   
 	/*--- Compute streching factor ---*/
-	Phi_i = pow(Lambda_i/(4.0*MeanLambda+EPS),Param_p);
-	Phi_j = pow(Lambda_j/(4.0*MeanLambda+EPS),Param_p);
-	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j+EPS);
+	Phi_i = pow(Lambda_i/(4.0*MeanLambda),Param_p);
+	Phi_j = pow(Lambda_j/(4.0*MeanLambda),Param_p);
+	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
   
 	sc2 = 3.0*(double(Neighbor_i)+double(Neighbor_j))/(double(Neighbor_i)*double(Neighbor_j));
 	Epsilon_0 = Param_Kappa_0*sc2*double(nDim)/3.0;

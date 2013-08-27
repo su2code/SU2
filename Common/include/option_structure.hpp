@@ -136,6 +136,7 @@ const unsigned int MAX_COMM_LEVEL = 1000;	/*!< \brief Maximum number of communic
 const unsigned int MAX_NUMBER_PERIODIC = 10;	/*!< \brief Maximum number of periodic boundary conditions. */
 const unsigned int MAX_NUMBER_SLIDING  = 10;	/*!< \brief Maximum number of sliding boundary conditions. */
 const int MASTER_NODE = 0;			/*!< \brief Master node for MPI parallelization. */
+const int SINGLE_NODE = 1;			/*!< \brief There is only a node in the MPI parallelization. */
 const int AUX_NODE = 1;			/*!< \brief Computational node that is used for IO stuff. */
 
 /** General output & CGNS defines **/
@@ -491,14 +492,16 @@ static const map<string, ENUM_UPWIND> Upwind_Map = CCreateMap<string, ENUM_UPWIN
  * \brief types of slope limiters
  */
 enum ENUM_LIMITER {
-	NO_LIMITER = 0,               /*!< \brief No slope limiter */
-	VENKATAKRISHNAN = 1,		/*!< \brief Slope limiter using Venkatakrisnan method. */
-  MINMOD = 2 /*!< \brief Slope limiter using minmod method. */
+	NO_LIMITER = 0,       /*!< \brief No slope limiter */
+	VENKATAKRISHNAN = 1,	/*!< \brief Slope limiter using Venkatakrisnan method. */
+  MINMOD = 2,           /*!< \brief Slope limiter using minmod method. */
+  SHARP_EDGES = 3       /*!< \brief Slope limiter using sharp edges. */
 };
 static const map<string, ENUM_LIMITER> Limiter_Map = CCreateMap<string, ENUM_LIMITER>
 ("NONE", NO_LIMITER)
 ("VENKATAKRISHNAN", VENKATAKRISHNAN)
-("MINMOD", MINMOD);
+("MINMOD", MINMOD)
+("SHARP_EDGES", SHARP_EDGES);
 
 /*!
  * \brief types of viscous term discretizations

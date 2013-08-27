@@ -72,8 +72,7 @@ int main(int argc, char *argv[]) {
 #endif
     
 		/*--- Definition of the geometry class and open the mesh file ---*/
-		geometry[iZone] = new CPhysicalGeometry(config[iZone], config[iZone]->GetMesh_FileName(),
-                                            config[iZone]->GetMesh_FileFormat(), iZone+1, nZone);
+		geometry[iZone] = new CPhysicalGeometry(config[iZone], iZone+1, nZone);
     
     /*--- Create the vertex structure (required for MPI) ---*/
     if (rank == MASTER_NODE) cout << "Identify vertices." <<endl;
