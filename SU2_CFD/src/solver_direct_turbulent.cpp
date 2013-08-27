@@ -977,8 +977,13 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 		/*--- Restart the solution from file information ---*/
 		ifstream restart_file;
 		string filename = config->GetSolution_FlowFileName();
-		restart_file.open(filename.data(), ios::in);
     
+    /*--- Modify file name for an unsteady restart ---*/
+    int Unst_RestartIter = int(config->GetUnst_RestartIter())-1;
+    filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+    
+    /*--- Open the restart file, throw an error if this fails. ---*/
+		restart_file.open(filename.data(), ios::in);
 		if (restart_file.fail()) {
 			cout << "There is no turbulent restart file!!" << endl;
 			cout << "Press any key to exit..." << endl;
@@ -2706,8 +2711,14 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 	}
 	else {
 		/*--- Restart the solution from file information ---*/
-		string mesh_filename = config->GetSolution_FlowFileName();
-		restart_file.open(mesh_filename.data(), ios::in);
+		string filename = config->GetSolution_FlowFileName();
+    
+    /*--- Modify file name for an unsteady restart ---*/
+    int Unst_RestartIter = int(config->GetUnst_RestartIter())-1;
+    filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+    
+    /*--- Open the restart file, throw an error if this fails. ---*/
+		restart_file.open(filename.data(), ios::in);
     
 		if (restart_file.fail()) {
 			cout << "There is no turbulent restart file!!" << endl;

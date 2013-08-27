@@ -3281,9 +3281,21 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
     if (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL) isothermal = true;
   
 	unsigned short iSpecies;
-
+    
 	/*--- Write file name with extension ---*/
-	strcpy (cstr, config->GetConv_FileName().data());
+  string filename = config->GetConv_FileName();
+  	strcpy (cstr, filename.data());
+  
+  if (config->GetWrt_Unsteady() && config->GetRestart()) {
+    long iExtIter = config->GetUnst_RestartIter();
+		if (int(iExtIter) < 10) sprintf (buffer, "_0000%d", int(iExtIter));
+		if ((int(iExtIter) >= 10) && (int(iExtIter) < 100)) sprintf (buffer, "_000%d", int(iExtIter));
+		if ((int(iExtIter) >= 100) && (int(iExtIter) < 1000)) sprintf (buffer, "_00%d", int(iExtIter));
+		if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d", int(iExtIter));
+		if (int(iExtIter) >= 10000) sprintf (buffer, "_%d", int(iExtIter));
+    strcat(cstr,buffer);
+	}
+
 	if (config->GetOutput_FileFormat() == TECPLOT)  sprintf (buffer, ".plt");
 	if (config->GetOutput_FileFormat() == TECPLOT_BINARY)  sprintf (buffer, ".plt");
 	if (config->GetOutput_FileFormat() == CGNS_SOL)  sprintf (buffer, ".csv");
