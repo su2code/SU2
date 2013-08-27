@@ -139,8 +139,6 @@ void CConfig::SetConfig_Options(unsigned short val_nZone) {
 	AddMarkerOption("MARKER_MONITORING", nMarker_Monitoring, Marker_Monitoring);
   /* DESCRIPTION: Marker(s) of the surface where objective function (design problem) will be evaluated */
 	AddMarkerOption("MARKER_DESIGNING", nMarker_Designing, Marker_Designing);
-  /* DESCRIPTION: Marker(s) of moving surfaces (MOVING_WALL or DEFORMING grid motion). */
-	AddMarkerOption("MARKER_MOVING", nMarker_Moving, Marker_Moving);
 	/* DESCRIPTION: Euler wall boundary marker(s) */
 	AddMarkerOption("MARKER_EULER", nMarker_Euler, Marker_Euler);
 	/* DESCRIPTION: Adiabatic wall boundary condition */
@@ -257,7 +255,7 @@ void CConfig::SetConfig_Options(unsigned short val_nZone) {
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the level set problem */
 	AddScalarOption("TURB_CFL_REDUCTION", Turb_CFLRedCoeff, 1.0);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the turbulent adjoint problem */
-	AddScalarOption("ADJTURB_CFL_REDUCTION", AdjTurb_CFLRedCoeff, 0.1);
+	AddScalarOption("ADJTURB_CFL_REDUCTION", AdjTurb_CFLRedCoeff, 1.0);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the level set problem */
 	AddScalarOption("LEVELSET_CFL_REDUCTION", LevelSet_CFLRedCoeff, 1E-2);
 	/* DESCRIPTION: Number of total iterations */
@@ -334,58 +332,59 @@ void CConfig::SetConfig_Options(unsigned short val_nZone) {
 	/* DESCRIPTION: Mesh motion for unsteady simulations */
 	AddSpecialOption("GRID_MOVEMENT", Grid_Movement, SetBoolOption, false);
 	/* DESCRIPTION: Type of mesh motion */
-  AddEnumListOption("GRID_MOVEMENT_KIND", nZone, Kind_GridMovement, GridMovement_Map);
-	default_vec_3d[0] = 0; default_vec_3d[1] = 0;
-	/* DESCRIPTION: % Mach number (non-dimensional, based on the mesh velocity and freestream vals.) */
+  AddEnumListOption("GRID_MOVEMENT_KIND", nGridMovement, Kind_GridMovement, GridMovement_Map);
+  /* DESCRIPTION: Marker(s) of moving surfaces (MOVING_WALL or DEFORMING grid motion). */
+	AddMarkerOption("MARKER_MOVING", nMarker_Moving, Marker_Moving);
+	/* DESCRIPTION: Mach number (non-dimensional, based on the mesh velocity and freestream vals.) */
 	AddScalarOption("MACH_MOTION", Mach_Motion, 0.0);
 	/* DESCRIPTION: Coordinates of the rigid motion origin */
-	AddListOption("MOTION_ORIGIN_X", nZone, Motion_Origin_X);
+	AddListOption("MOTION_ORIGIN_X", nMotion_Origin_X, Motion_Origin_X);
 	/* DESCRIPTION: Coordinates of the rigid motion origin */
-	AddListOption("MOTION_ORIGIN_Y", nZone, Motion_Origin_Y);
+	AddListOption("MOTION_ORIGIN_Y", nMotion_Origin_Y, Motion_Origin_Y);
 	/* DESCRIPTION: Coordinates of the rigid motion origin */
-	AddListOption("MOTION_ORIGIN_Z", nZone, Motion_Origin_Z);
+	AddListOption("MOTION_ORIGIN_Z", nMotion_Origin_Z, Motion_Origin_Z);
 	/* DESCRIPTION: Translational velocity vector (m/s) in the x, y, & z directions (RIGID_MOTION only) */
-	AddListOption("TRANSLATION_RATE_X", nZone, Translation_Rate_X);
+	AddListOption("TRANSLATION_RATE_X", nTranslation_Rate_X, Translation_Rate_X);
 	/* DESCRIPTION: Translational velocity vector (m/s) in the x, y, & z directions (RIGID_MOTION only) */
-	AddListOption("TRANSLATION_RATE_Y", nZone, Translation_Rate_Y);
+	AddListOption("TRANSLATION_RATE_Y", nTranslation_Rate_Y, Translation_Rate_Y);
 	/* DESCRIPTION: Translational velocity vector (m/s) in the x, y, & z directions (RIGID_MOTION only) */
-	AddListOption("TRANSLATION_RATE_Z", nZone, Translation_Rate_Z);
+	AddListOption("TRANSLATION_RATE_Z", nTranslation_Rate_Z, Translation_Rate_Z);
 	/* DESCRIPTION: Angular velocity vector (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-	AddListOption("ROTATION_RATE_X", nZone, Rotation_Rate_X);
+	AddListOption("ROTATION_RATE_X", nRotation_Rate_X, Rotation_Rate_X);
 	/* DESCRIPTION: Angular velocity vector (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-	AddListOption("ROTATION_RATE_Y", nZone, Rotation_Rate_Y);
+	AddListOption("ROTATION_RATE_Y", nRotation_Rate_Y, Rotation_Rate_Y);
 	/* DESCRIPTION: Angular velocity vector (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-	AddListOption("ROTATION_RATE_Z", nZone, Rotation_Rate_Z);
+	AddListOption("ROTATION_RATE_Z", nRotation_Rate_Z, Rotation_Rate_Z);
 	/* DESCRIPTION: Pitching angular freq. (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-	AddListOption("PITCHING_OMEGA_X", nZone, Pitching_Omega_X);
+	AddListOption("PITCHING_OMEGA_X", nPitching_Omega_X, Pitching_Omega_X);
 	/* DESCRIPTION: Pitching angular freq. (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-	AddListOption("PITCHING_OMEGA_Y", nZone, Pitching_Omega_Y);
+	AddListOption("PITCHING_OMEGA_Y", nPitching_Omega_Y, Pitching_Omega_Y);
 	/* DESCRIPTION: Pitching angular freq. (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-	AddListOption("PITCHING_OMEGA_Z", nZone, Pitching_Omega_Z);
+	AddListOption("PITCHING_OMEGA_Z", nPitching_Omega_Z, Pitching_Omega_Z);
 	/* DESCRIPTION: Pitching amplitude (degrees) about x, y, & z axes (RIGID_MOTION only) */
-	AddListOption("PITCHING_AMPL_X", nZone, Pitching_Ampl_X);
+	AddListOption("PITCHING_AMPL_X", nPitching_Ampl_X, Pitching_Ampl_X);
 	/* DESCRIPTION: Pitching amplitude (degrees) about x, y, & z axes (RIGID_MOTION only) */
-	AddListOption("PITCHING_AMPL_Y", nZone, Pitching_Ampl_Y);
+	AddListOption("PITCHING_AMPL_Y", nPitching_Ampl_Y, Pitching_Ampl_Y);
 	/* DESCRIPTION: Pitching amplitude (degrees) about x, y, & z axes (RIGID_MOTION only) */
-	AddListOption("PITCHING_AMPL_Z", nZone, Pitching_Ampl_Z);
+	AddListOption("PITCHING_AMPL_Z", nPitching_Ampl_Z, Pitching_Ampl_Z);
 	/* DESCRIPTION: Pitching phase offset (degrees) about x, y, & z axes (RIGID_MOTION only) */
-	AddListOption("PITCHING_PHASE_X", nZone, Pitching_Phase_X);
+	AddListOption("PITCHING_PHASE_X", nPitching_Phase_X, Pitching_Phase_X);
 	/* DESCRIPTION: Pitching phase offset (degrees) about x, y, & z axes (RIGID_MOTION only) */
-	AddListOption("PITCHING_PHASE_Y", nZone, Pitching_Phase_Y);
+	AddListOption("PITCHING_PHASE_Y", nPitching_Phase_Y, Pitching_Phase_Y);
 	/* DESCRIPTION: Pitching phase offset (degrees) about x, y, & z axes (RIGID_MOTION only) */
-	AddListOption("PITCHING_PHASE_Z", nZone, Pitching_Phase_Z);
+	AddListOption("PITCHING_PHASE_Z", nPitching_Phase_Z, Pitching_Phase_Z);
 	/* DESCRIPTION: Plunging angular freq. (rad/s) in x, y, & z directions (RIGID_MOTION only) */
-	AddListOption("PLUNGING_OMEGA_X", nZone, Plunging_Omega_X);
+	AddListOption("PLUNGING_OMEGA_X", nPlunging_Omega_X, Plunging_Omega_X);
 	/* DESCRIPTION: Plunging angular freq. (rad/s) in x, y, & z directions (RIGID_MOTION only) */
-	AddListOption("PLUNGING_OMEGA_Y", nZone, Plunging_Omega_Y);
+	AddListOption("PLUNGING_OMEGA_Y", nPlunging_Omega_Y, Plunging_Omega_Y);
 	/* DESCRIPTION: Plunging angular freq. (rad/s) in x, y, & z directions (RIGID_MOTION only) */
-	AddListOption("PLUNGING_OMEGA_Z", nZone, Plunging_Omega_Z);
+	AddListOption("PLUNGING_OMEGA_Z", nPlunging_Omega_Z, Plunging_Omega_Z);
 	/* DESCRIPTION: Plunging amplitude (m) in x, y, & z directions (RIGID_MOTION only) */
-	AddListOption("PLUNGING_AMPL_X", nZone, Plunging_Ampl_X);
+	AddListOption("PLUNGING_AMPL_X", nPlunging_Ampl_X, Plunging_Ampl_X);
 	/* DESCRIPTION: Plunging amplitude (m) in x, y, & z directions (RIGID_MOTION only) */
-	AddListOption("PLUNGING_AMPL_Y", nZone, Plunging_Ampl_Y);
+	AddListOption("PLUNGING_AMPL_Y", nPlunging_Ampl_Y, Plunging_Ampl_Y);
 	/* DESCRIPTION: Plunging amplitude (m) in x, y, & z directions (RIGID_MOTION only) */
-	AddListOption("PLUNGING_AMPL_Z", nZone, Plunging_Ampl_Z);
+	AddListOption("PLUNGING_AMPL_Z", nPlunging_Ampl_Z, Plunging_Ampl_Z);
 	/* DESCRIPTION:  */
 	AddScalarOption("MOTION_FILENAME", Motion_Filename, string("mesh_motion.dat"));
 	/* DESCRIPTION: Uncoupled Aeroelastic Frequency Plunge. */
@@ -396,37 +395,26 @@ void CConfig::SetConfig_Options(unsigned short val_nZone) {
 	AddEnumOption("TYPE_AEROELASTIC_GRID_MOVEMENT", Aeroelastic_Grid_Movement, Aeroelastic_Movement_Map, "RIGID");
 	/* DESCRIPTION: Type of grid velocities for aeroelastic motion */
 	AddEnumOption("TYPE_AEROELASTIC_GRID_VELOCITY", Aeroelastic_Grid_Velocity, Aeroelastic_Velocity_Map, "FD");
-    /* DESCRIPTION: Apply a wind gust */
-	AddSpecialOption("WIND_GUST", Wind_Gust, SetBoolOption, false);
-    /* DESCRIPTION: Type of gust */
-	AddEnumOption("GUST_TYPE", Gust_Type, Gust_Type_Map, "NONE");
-    /* DESCRIPTION: Gust wavelenght (meters) */
-    AddScalarOption("GUST_WAVELENGTH", Gust_WaveLength, 0.0);
-    /* DESCRIPTION: Number of gust periods */
-    AddScalarOption("GUST_PERIODS", Gust_Periods, 1.0);
-    /* DESCRIPTION: Gust amplitude (m/s) */
-    AddScalarOption("GUST_AMPL", Gust_Ampl, 0.0);
-    /* DESCRIPTION: Time at which to begin the gust (sec) */
-    AddScalarOption("GUST_BEGIN_TIME", Gust_Begin_Time, 0.0);
-    /* DESCRIPTION: Location at which the gust begins (meters) */
-    AddScalarOption("GUST_BEGIN_LOC", Gust_Begin_Loc, 0.0);
-    /* DESCRIPTION: Direction of the gust X or Y dir */
-    AddEnumOption("GUST_DIR", Gust_Dir, Gust_Dir_Map, "X_DIR");
 
-	/*--- options related to rotating frame problems ---*/
-
-	/* CONFIG_CATEGORY: Rotating frame */
+  /*--- Options related to wind gust simulations ---*/
+	/* CONFIG_CATEGORY: Wind Gust */
   
-	/* DESCRIPTION: Rotating frame problem */
-	AddSpecialOption("ROTATING_FRAME", Rotating_Frame, SetBoolOption, false);
-	default_vec_3d[0] = 0.0; default_vec_3d[1] = 0.0; default_vec_3d[2] = 0.0;
-	/* DESCRIPTION: Origin of the axis of rotation */
-	AddArrayOption("ROTATIONAL_ORIGIN", 3, RotAxisOrigin, default_vec_3d);
-	default_vec_3d[0] = 0.0; default_vec_3d[1] = 0.0; default_vec_3d[2] = 0.0;
-	/* DESCRIPTION: Angular velocity vector (rad/s) */
-	AddArrayOption("ROTATION_RATE", 3, Omega, default_vec_3d);
-	/*--- Initializing this here because it might be needed in the geometry classes. ---*/
-	Omega_FreeStreamND = new double[3];
+  /* DESCRIPTION: Apply a wind gust */
+	AddSpecialOption("WIND_GUST", Wind_Gust, SetBoolOption, false);
+  /* DESCRIPTION: Type of gust */
+	AddEnumOption("GUST_TYPE", Gust_Type, Gust_Type_Map, "NONE");
+  /* DESCRIPTION: Gust wavelenght (meters) */
+  AddScalarOption("GUST_WAVELENGTH", Gust_WaveLength, 0.0);
+  /* DESCRIPTION: Number of gust periods */
+  AddScalarOption("GUST_PERIODS", Gust_Periods, 1.0);
+  /* DESCRIPTION: Gust amplitude (m/s) */
+  AddScalarOption("GUST_AMPL", Gust_Ampl, 0.0);
+  /* DESCRIPTION: Time at which to begin the gust (sec) */
+  AddScalarOption("GUST_BEGIN_TIME", Gust_Begin_Time, 0.0);
+  /* DESCRIPTION: Location at which the gust begins (meters) */
+  AddScalarOption("GUST_BEGIN_LOC", Gust_Begin_Loc, 0.0);
+  /* DESCRIPTION: Direction of the gust X or Y dir */
+  AddEnumOption("GUST_DIR", Gust_Dir, Gust_Dir_Map, "X_DIR");
   
 	/*--- Options related to convergence ---*/
 	/* CONFIG_CATEGORY: Convergence*/
@@ -620,7 +608,7 @@ void CConfig::SetConfig_Options(unsigned short val_nZone) {
 	/* DESCRIPTION: Adjoint problem boundary condition */
 	AddEnumOption("ADJ_OBJFUNC", Kind_ObjFunc, Objective_Map, "DRAG");
   /* DESCRIPTION: Definition of the airfoil section */
-  default_vec_3d[0] = 0.0; default_vec_3d[1] = 1.0;
+  default_vec_3d[0] = 1E-6; default_vec_3d[1] = 1;
 	AddArrayOption("GEO_SECTION_LIMIT", 2, Section_Limit, default_vec_3d);
 	/* DESCRIPTION: Mode of the GDC code (analysis, or gradient) */
 	AddEnumOption("GEO_MODE", GeometryMode, GeometryMode_Map, "FUNCTION");
@@ -916,11 +904,11 @@ void CConfig::SetConfig_Options(unsigned short val_nZone) {
 	/* DESCRIPTION: Coordinates of the box where the grid will be deformed (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax) */
 	AddArrayOption("HOLD_GRID_FIXED_COORD", 6, Hold_GridFixed_Coord, default_vec_6d);
 	/* DESCRIPTION: Grid deformation technique */
-	AddEnumOption("GRID_DEFORM_METHOD", Kind_GridDef_Method, Deform_Map, "SPRING");
+	AddEnumOption("GRID_DEFORM_METHOD", Kind_GridDef_Method, Deform_Map, "FEA");
 	/* DESCRIPTION: Visualize the deformation */
 	AddSpecialOption("VISUALIZE_DEFORMATION", Visualize_Deformation, SetBoolOption, false);
 	/* DESCRIPTION: Number of iterations for FEA mesh deformation (surface deformation increments) */
-	AddScalarOption("GRID_DEFORM_ITER", GridDef_Iter, 1);
+	AddScalarOption("GRID_DEFORM_ITER", GridDef_Iter, 10);
   
 	/*--- option related to rotorcraft problems ---*/
 	/* CONFIG_CATEGORY: Rotorcraft problem */
@@ -1022,184 +1010,398 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		Wrt_Unsteady = true;
 
   /*--- Set grid movement kind to NO_MOVEMENT if not specified, which means
-   that we also set the Grid_Movement flag to false. ---*/
+   that we also set the Grid_Movement flag to false. We initialize to the 
+   number of zones here, because we are guaranteed to at least have one. ---*/
   if (Kind_GridMovement == NULL) {
     Kind_GridMovement = new unsigned short[nZone];
     for (unsigned short iZone = 0; iZone < nZone; iZone++ )
       Kind_GridMovement[iZone] = NO_MOVEMENT;
     if (Grid_Movement == true) {
-      cout << "WARNING: Grid movement requested but no type provided. Grid movement set to NO. " << endl;
-      Grid_Movement = false;
+      cout << "GRID_MOVEMENT = YES but no type provided in GRID_MOVEMENT_KIND!!" << endl;
+      cout << "Press any key to exit..." << endl;
+      cin.get();
+      exit(1);
     }
   }
-  
-	/*--- In case the grid movement parameters have not been declared in the 
-   config file, set them equal to zero for safety. ---*/
-
-		/*--- Motion Origin: ---*/
-		if (Motion_Origin_X == NULL) {
-			Motion_Origin_X = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Motion_Origin_X[iZone] = 0.0;
-		}
-
-		if (Motion_Origin_Y == NULL) {
-			Motion_Origin_Y = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Motion_Origin_Y[iZone] = 0.0;
-		}
-
-		if (Motion_Origin_Z == NULL) {
-			Motion_Origin_Z = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Motion_Origin_Z[iZone] = 0.0;
-		}
-
-		/*--- Translation: ---*/
-		if (Translation_Rate_X == NULL) {
-			Translation_Rate_X = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Translation_Rate_X[iZone] = 0.0;
-		}
-
-		if (Translation_Rate_Y == NULL) {
-			Translation_Rate_Y = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Translation_Rate_Y[iZone] = 0.0;
-		}
-
-		if (Translation_Rate_Z == NULL) {
-			Translation_Rate_Z = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Translation_Rate_Z[iZone] = 0.0;
-		}
-
-		/*--- Rotation: ---*/
-		if (Rotation_Rate_X == NULL) {
-			Rotation_Rate_X = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Rotation_Rate_X[iZone] = 0.0;
-		}
-
-		if (Rotation_Rate_Y == NULL) {
-			Rotation_Rate_Y = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Rotation_Rate_Y[iZone] = 0.0;
-		}
-
-		if (Rotation_Rate_Z == NULL) {
-			Rotation_Rate_Z = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Rotation_Rate_Z[iZone] = 0.0;
-		}
-
-		/*--- Pitching: ---*/
-		if (Pitching_Omega_X == NULL) {
-			Pitching_Omega_X = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Pitching_Omega_X[iZone] = 0.0;
-		}
-
-		if (Pitching_Omega_Y == NULL) {
-			Pitching_Omega_Y = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Pitching_Omega_Y[iZone] = 0.0;
-		}
-
-		if (Pitching_Omega_Z == NULL) {
-			Pitching_Omega_Z = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Pitching_Omega_Z[iZone] = 0.0;
-		}
-
-		/*--- Pitching Amplitude: ---*/
-		if (Pitching_Ampl_X == NULL) {
-			Pitching_Ampl_X = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Pitching_Ampl_X[iZone] = 0.0;
-		}
-
-		if (Pitching_Ampl_Y == NULL) {
-			Pitching_Ampl_Y = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Pitching_Ampl_Y[iZone] = 0.0;
-		}
-
-		if (Pitching_Ampl_Z == NULL) {
-			Pitching_Ampl_Z = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Pitching_Ampl_Z[iZone] = 0.0;
-		}
-
-		/*--- Pitching Phase: ---*/
-		if (Pitching_Phase_X == NULL) {
-			Pitching_Phase_X = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Pitching_Phase_X[iZone] = 0.0;
-		}
-
-		if (Pitching_Phase_Y == NULL) {
-			Pitching_Phase_Y = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Pitching_Phase_Y[iZone] = 0.0;
-		}
-
-		if (Pitching_Phase_Z == NULL) {
-			Pitching_Phase_Z = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Pitching_Phase_Z[iZone] = 0.0;
-		}
-
-		/*--- Plunging: ---*/
-		if (Plunging_Omega_X == NULL) {
-			Plunging_Omega_X = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Plunging_Omega_X[iZone] = 0.0;
-		}
-
-		if (Plunging_Omega_Y == NULL) {
-			Plunging_Omega_Y = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Plunging_Omega_Y[iZone] = 0.0;
-		}
-
-		if (Plunging_Omega_Z == NULL) {
-			Plunging_Omega_Z = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Plunging_Omega_Z[iZone] = 0.0;
-		}
-
-		/*--- Plunging Amplitude: ---*/
-		if (Plunging_Ampl_X == NULL) {
-			Plunging_Ampl_X = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Plunging_Ampl_X[iZone] = 0.0;
-		}
-
-		if (Plunging_Ampl_Y == NULL) {
-			Plunging_Ampl_Y = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Plunging_Ampl_Y[iZone] = 0.0;
-		}
-
-		if (Plunging_Ampl_Z == NULL) {
-			Plunging_Ampl_Z = new double[nZone];
-			for (iZone = 0; iZone < nZone; iZone++ )
-				Plunging_Ampl_Z[iZone] = 0.0;
-		}
   
   /*--- If we're solving a purely steady problem with no prescribed grid
    movement (both rotating frame and moving walls can be steady), make sure that
    there is no grid motion ---*/
 	if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL) &&
       (Unsteady_Simulation == STEADY) &&
-      (Kind_GridMovement[ZONE_0] != MOVING_WALL)) // rotating_frame here too soon
+      ((Kind_GridMovement[ZONE_0] != MOVING_WALL) &&
+       (Kind_GridMovement[ZONE_0] != ROTATING_FRAME)))
 		Grid_Movement = false;
   
 	/*--- If it is not specified, set the mesh motion mach number
    equal to the freestream value. ---*/
-	if ((Rotating_Frame || Grid_Movement) && Mach_Motion == 0.0)
+	if (Grid_Movement && Mach_Motion == 0.0)
 		Mach_Motion = Mach;
+  
+  /*--- Set the boolean flag if we are in a rotating frame (source term). ---*/
+	if (Grid_Movement && Kind_GridMovement[ZONE_0] == ROTATING_FRAME)
+		Rotating_Frame = true;
+  else
+    Rotating_Frame = false;
+  
+  /*--- Check the number of moving markers against the number of grid movement
+   types provided (should be equal, except that rigid motion and rotating frame
+   do not depend on surface specification). ---*/
+  if (Grid_Movement && (Kind_GridMovement[ZONE_0] != RIGID_MOTION) &&
+      (Kind_GridMovement[ZONE_0] != ROTATING_FRAME) &&
+      (nGridMovement != nMarker_Moving)) {
+    cout << "Number of GRID_MOVEMENT_KIND must match number of MARKER_MOVING!!" << endl;
+    cout << "Press any key to exit..." << endl;
+    cin.get();
+    exit(1);
+  }
+  
+  /*--- Make sure that there aren't more than one rigid motion or 
+   rotating frame specified in GRID_MOVEMENT_KIND. This means that sliding
+   mesh simulations are currently disabled. ---*/
+  if (Grid_Movement && (Kind_GridMovement[ZONE_0] == RIGID_MOTION) &&
+      (nGridMovement > 1)) {
+    cout << "Can not support more than one type of rigid motion in GRID_MOVEMENT_KIND!!" << endl;
+    cout << "Press any key to exit..." << endl;
+    cin.get();
+    exit(1);
+  }
+  if (Grid_Movement && (Kind_GridMovement[ZONE_0] == ROTATING_FRAME) &&
+      (nGridMovement > 1)) {
+    cout << "Can not support more than one rotating frame in GRID_MOVEMENT_KIND!!" << endl;
+    cout << "Press any key to exit..." << endl;
+    cin.get();
+    exit(1);
+  }
+  
+	/*--- In case the grid movement parameters have not been declared in the
+   config file, set them equal to zero for safety. Also check to make sure
+   that for each option, a value has been declared for each moving marker. ---*/
+
+  unsigned short nMoving;
+  if (nGridMovement > nZone) nMoving = nGridMovement;
+  else nMoving = nZone;
+  
+		/*--- Motion Origin: ---*/
+		if (Motion_Origin_X == NULL) {
+			Motion_Origin_X = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Motion_Origin_X[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nMotion_Origin_X != nGridMovement)) {
+        cout << "Length of MOTION_ORIGIN_X must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		if (Motion_Origin_Y == NULL) {
+			Motion_Origin_Y = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Motion_Origin_Y[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nMotion_Origin_Y != nGridMovement)) {
+        cout << "Length of MOTION_ORIGIN_Y must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		if (Motion_Origin_Z == NULL) {
+			Motion_Origin_Z = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Motion_Origin_Z[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nMotion_Origin_Z != nGridMovement)) {
+        cout << "Length of MOTION_ORIGIN_Z must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		/*--- Translation: ---*/
+		if (Translation_Rate_X == NULL) {
+			Translation_Rate_X = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Translation_Rate_X[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nTranslation_Rate_X != nGridMovement)) {
+        cout << "Length of TRANSLATION_RATE_X must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		if (Translation_Rate_Y == NULL) {
+			Translation_Rate_Y = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Translation_Rate_Y[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nTranslation_Rate_Y != nGridMovement)) {
+        cout << "Length of TRANSLATION_RATE_Y must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		if (Translation_Rate_Z == NULL) {
+			Translation_Rate_Z = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Translation_Rate_Z[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nTranslation_Rate_Z != nGridMovement)) {
+        cout << "Length of TRANSLATION_RATE_Z must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		/*--- Rotation: ---*/
+		if (Rotation_Rate_X == NULL) {
+			Rotation_Rate_X = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Rotation_Rate_X[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nRotation_Rate_X != nGridMovement)) {
+        cout << "Length of ROTATION_RATE_X must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		if (Rotation_Rate_Y == NULL) {
+			Rotation_Rate_Y = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Rotation_Rate_Y[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nRotation_Rate_Y != nGridMovement)) {
+        cout << "Length of ROTATION_RATE_Y must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		if (Rotation_Rate_Z == NULL) {
+			Rotation_Rate_Z = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Rotation_Rate_Z[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nRotation_Rate_Z != nGridMovement)) {
+        cout << "Length of ROTATION_RATE_Z must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		/*--- Pitching: ---*/
+		if (Pitching_Omega_X == NULL) {
+			Pitching_Omega_X = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Pitching_Omega_X[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nPitching_Omega_X != nGridMovement)) {
+        cout << "Length of PITCHING_OMEGA_X must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		if (Pitching_Omega_Y == NULL) {
+			Pitching_Omega_Y = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Pitching_Omega_Y[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nPitching_Omega_Y != nGridMovement)) {
+        cout << "Length of PITCHING_OMEGA_Y must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		if (Pitching_Omega_Z == NULL) {
+			Pitching_Omega_Z = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Pitching_Omega_Z[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nPitching_Omega_Z != nGridMovement)) {
+        cout << "Length of PITCHING_OMEGA_Z must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		/*--- Pitching Amplitude: ---*/
+		if (Pitching_Ampl_X == NULL) {
+			Pitching_Ampl_X = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Pitching_Ampl_X[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nPitching_Ampl_X != nGridMovement)) {
+        cout << "Length of PITCHING_AMPL_X must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		if (Pitching_Ampl_Y == NULL) {
+			Pitching_Ampl_Y = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Pitching_Ampl_Y[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nPitching_Ampl_Y != nGridMovement)) {
+        cout << "Length of PITCHING_AMPL_Y must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		if (Pitching_Ampl_Z == NULL) {
+			Pitching_Ampl_Z = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Pitching_Ampl_Z[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nPitching_Ampl_Z != nGridMovement)) {
+        cout << "Length of PITCHING_AMPL_Z must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		/*--- Pitching Phase: ---*/
+		if (Pitching_Phase_X == NULL) {
+			Pitching_Phase_X = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Pitching_Phase_X[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nPitching_Phase_X != nGridMovement)) {
+        cout << "Length of PITCHING_PHASE_X must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		if (Pitching_Phase_Y == NULL) {
+			Pitching_Phase_Y = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Pitching_Phase_Y[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nPitching_Phase_Y != nGridMovement)) {
+        cout << "Length of PITCHING_PHASE_Y must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		if (Pitching_Phase_Z == NULL) {
+			Pitching_Phase_Z = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Pitching_Phase_Z[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nPitching_Phase_Z != nGridMovement)) {
+        cout << "Length of PITCHING_PHASE_Z must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		/*--- Plunging: ---*/
+		if (Plunging_Omega_X == NULL) {
+			Plunging_Omega_X = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Plunging_Omega_X[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nPlunging_Omega_X != nGridMovement)) {
+        cout << "Length of PLUNGING_OMEGA_X must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		if (Plunging_Omega_Y == NULL) {
+			Plunging_Omega_Y = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Plunging_Omega_Y[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nPlunging_Omega_Y != nGridMovement)) {
+        cout << "Length of PLUNGING_OMEGA_Y must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		if (Plunging_Omega_Z == NULL) {
+			Plunging_Omega_Z = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Plunging_Omega_Z[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nPlunging_Omega_Z != nGridMovement)) {
+        cout << "Length of PLUNGING_OMEGA_Z must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		/*--- Plunging Amplitude: ---*/
+		if (Plunging_Ampl_X == NULL) {
+			Plunging_Ampl_X = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Plunging_Ampl_X[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nPlunging_Ampl_X != nGridMovement)) {
+        cout << "Length of PLUNGING_AMPL_X must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		if (Plunging_Ampl_Y == NULL) {
+			Plunging_Ampl_Y = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Plunging_Ampl_Y[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nPlunging_Ampl_Y != nGridMovement)) {
+        cout << "Length of PLUNGING_AMPL_Y must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
+		if (Plunging_Ampl_Z == NULL) {
+			Plunging_Ampl_Z = new double[nMoving];
+			for (iZone = 0; iZone < nMoving; iZone++ )
+				Plunging_Ampl_Z[iZone] = 0.0;
+		} else {
+      if (Grid_Movement && (nPlunging_Ampl_Z != nGridMovement)) {
+        cout << "Length of PLUNGING_AMPL_Z must match GRID_MOVEMENT_KIND!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+      }
+    }
+
 
 	/*--- Use the various rigid-motion input frequencies to determine the period to be used with time-spectral cases.
 		  There are THREE types of motion to consider, namely: rotation, pitching, and plunging.
@@ -1471,7 +1673,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   
   if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
-
+    double *N2g, *N2thetae;
+    double *O2g, *O2thetae;
+    double *NOg, *NOthetae;
+    double *Ng, *Nthetae;
+    double *Og, *Othetae;
+    double *OSPthetae, *OSPg;
+    
 		if (val_izone == ZONE_1 ) {
 			Divide_Element = true;
 			Restart_FlowFileName = "restart_phi.dat";
@@ -1515,7 +1723,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         CharElTemp   = new double *[nSpecies];
         degen        = new double *[nSpecies];
         
-        double *OSPthetae, *OSPg;
         OSPthetae    = new double[nElStates[0]];
         OSPthetae[0] = 1.0;
         OSPg         = new double[nElStates[0]];
@@ -1581,7 +1788,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         
         // Electron degeneracy data
         nElStates[0] = 15;                    // N2
-        double *N2g, *N2thetae;
+
         N2thetae = new double[nElStates[0]];
         N2thetae[0]  = 0.000000000000000E+00;
         N2thetae[1]  = 7.223156514095200E+04;
@@ -1615,7 +1822,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         N2g[13] = 6;
         N2g[14] = 6;
         nElStates[1] = 3;                     // N
-        double *Ng, *Nthetae;
+
         Nthetae = new double[nElStates[1]];
         Nthetae[0] = 0.000000000000000E+00;
         Nthetae[1] = 2.766469645581980E+04;
@@ -1657,21 +1864,32 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         nMonatomics = 2;
         nDiatomics  = 3;
         nSpecies    = nMonatomics + nDiatomics;
+        nReactions  = 17;
         ionization  = false;
         
         /*--- Allocate vectors for gas properties ---*/
-        Molar_Mass         = new double[nSpecies];
-        CharVibTemp        = new double[nSpecies];
-        RotationModes      = new double[nSpecies];
-        Enthalpy_Formation = new double[nSpecies];
-        Ref_Temperature    = new double[nSpecies];
+        Molar_Mass           = new double[nSpecies];
+        CharVibTemp          = new double[nSpecies];
+        RotationModes        = new double[nSpecies];
+        Enthalpy_Formation   = new double[nSpecies];
+        Ref_Temperature      = new double[nSpecies];
+        ArrheniusCoefficient = new double[nReactions];
+        ArrheniusEta         = new double[nReactions];
+        ArrheniusTheta       = new double[nReactions];
+        nElStates            = new unsigned short[nSpecies];
+        Reactions            = new int**[nReactions];
+        for (unsigned short iRxn = 0; iRxn < nReactions; iRxn++) {
+          Reactions[iRxn] = new int*[2];
+          for (unsigned short ii = 0; ii < 2; ii++)
+            Reactions[iRxn][ii] = new int[6];
+        }
         
         MassFrac_FreeStream = new double[nSpecies];
-        MassFrac_FreeStream[0] = 0.2;
-        MassFrac_FreeStream[1] = 0.2;
-        MassFrac_FreeStream[2] = 0.2;
-        MassFrac_FreeStream[3] = 0.2;
-        MassFrac_FreeStream[4] = 0.2;
+        MassFrac_FreeStream[0] = 0.78;
+        MassFrac_FreeStream[1] = 0.19;
+        MassFrac_FreeStream[2] = 0.01;
+        MassFrac_FreeStream[3] = 0.01;
+        MassFrac_FreeStream[4] = 0.01;
         
         /*--- Assign gas properties ---*/
         // Rotational modes of energy storage
@@ -1688,9 +1906,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         Molar_Mass[3] = 14.0067;
         Molar_Mass[4] = 15.9994;
         
-        // Characteristic vibrational temperatures
+        //Characteristic vibrational temperatures
         CharVibTemp[0] = 3395.0;
-        CharVibTemp[1] = 0.0;
+        CharVibTemp[1] = 2239.0;
+        CharVibTemp[2] = 2817.0;
+        CharVibTemp[3] = 0.0;
+        CharVibTemp[4] = 0.0;
         
         // Formation enthalpy: (JANAF values [KJ/Kmol])
         Enthalpy_Formation[0] = 0.0;					//N2
@@ -1705,6 +1926,213 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         Ref_Temperature[2] = 298.15;
         Ref_Temperature[3] = 298.15;
         Ref_Temperature[4] = 298.15;
+        
+        // Electron degeneracy data
+        nElStates[0] = 15;                    // N2
+        N2thetae = new double[nElStates[0]];
+        N2thetae[0]  = 0.000000000000000E+00;
+        N2thetae[1]  = 7.223156514095200E+04;
+        N2thetae[2]  = 8.577862640384000E+04;
+        N2thetae[3]  = 8.605026716160000E+04;
+        N2thetae[4]  = 9.535118627874400E+04;
+        N2thetae[5]  = 9.805635702203200E+04;
+        N2thetae[6]  = 9.968267656935200E+04;
+        N2thetae[7]  = 1.048976467715200E+05;
+        N2thetae[8]  = 1.116489555200000E+05;
+        N2thetae[9]  = 1.225836470400000E+05;
+        N2thetae[10] = 1.248856873600000E+05;
+        N2thetae[11] = 1.282476158188320E+05;
+        N2thetae[12] = 1.338060936000000E+05;
+        N2thetae[13] = 1.404296391107200E+05;
+        N2thetae[14] = 1.504958859200000E+05;
+        N2g = new double[nElStates[0]];
+        N2g[0]  = 1;
+        N2g[1]  = 3;
+        N2g[2]  = 6;
+        N2g[3]  = 6;
+        N2g[4]  = 3;
+        N2g[5]  = 1;
+        N2g[6]  = 2;
+        N2g[7]  = 2;
+        N2g[8]  = 5;
+        N2g[9]  = 1;
+        N2g[10] = 6;
+        N2g[11] = 6;
+        N2g[12] = 10;
+        N2g[13] = 6;
+        N2g[14] = 6;
+        
+        nElStates[1] = 7;                     // O2
+        O2thetae = new double[nElStates[1]];
+        O2thetae[0] = 0.000000000000000E+00;
+        O2thetae[1] = 1.139156019700800E+04;
+        O2thetae[2] = 1.898473947826400E+04;
+        O2thetae[3] = 4.755973576639200E+04;
+        O2thetae[4] = 4.991242097343200E+04;
+        O2thetae[5] = 5.092268575561600E+04;
+        O2thetae[6] = 7.189863255967200E+04;
+        O2g = new double[nElStates[1]];
+        O2g[0] = 3;
+        O2g[1] = 2;
+        O2g[2] = 1;
+        O2g[3] = 1;
+        O2g[4] = 6;
+        O2g[5] = 3;
+        O2g[6] = 3;
+        
+        nElStates[2] = 16;                     // NO
+        NOthetae = new double[nElStates[2]];
+        NOthetae[0]  = 0.000000000000000E+00;
+        NOthetae[1]  = 5.467345760000000E+04;
+        NOthetae[2]  = 6.317139627802400E+04;
+        NOthetae[3]  = 6.599450342445600E+04;
+        NOthetae[4]  = 6.906120960000000E+04;
+        NOthetae[5]  = 7.049998480000000E+04;
+        NOthetae[6]  = 7.491055017560000E+04;
+        NOthetae[7]  = 7.628875293968000E+04;
+        NOthetae[8]  = 8.676188537552000E+04;
+        NOthetae[9]  = 8.714431182368000E+04;
+        NOthetae[10] = 8.886077063728000E+04;
+        NOthetae[11] = 8.981755614528000E+04;
+        NOthetae[12] = 8.988445919208000E+04;
+        NOthetae[13] = 9.042702132000000E+04;
+        NOthetae[14] = 9.064283760000000E+04;
+        NOthetae[15] = 9.111763341600000E+04;
+        NOg = new double[nElStates[2]];
+        NOg[0]  = 4;
+        NOg[1]  = 8;
+        NOg[2]  = 2;
+        NOg[3]  = 4;
+        NOg[4]  = 4;
+        NOg[5]  = 4;
+        NOg[6]  = 4;
+        NOg[7]  = 2;
+        NOg[8]  = 4;
+        NOg[9]  = 2;
+        NOg[10] = 4;
+        NOg[11] = 4;
+        NOg[12] = 2;
+        NOg[13] = 2;
+        NOg[14] = 2;
+        NOg[15] = 4;
+        
+        nElStates[3] = 3;                     // N
+        Nthetae = new double[nElStates[3]];
+        Nthetae[0] = 0.000000000000000E+00;
+        Nthetae[1] = 2.766469645581980E+04;
+        Nthetae[2] = 4.149309313560210E+04;
+        Ng = new double[nElStates[3]];
+        Ng[0] = 4;
+        Ng[1] = 10;
+        Ng[2] = 6;
+        
+        nElStates[4] = 5;                     // O
+        Othetae = new double[nElStates[4]];
+        Othetae[0] = 0.000000000000000E+00;
+        Othetae[1] = 2.277077570280000E+02;
+        Othetae[2] = 3.265688785704000E+02;
+        Othetae[3] = 2.283028632262240E+04;
+        Othetae[4] = 4.861993036434160E+04;
+        Og = new double[nElStates[3]];
+        Og[0] = 5;
+        Og[1] = 3;
+        Og[2] = 1;
+        Og[3] = 5;
+        Og[4] = 1;
+        
+        CharElTemp    = new double *[nSpecies];
+        CharElTemp[0] = N2thetae;
+        CharElTemp[1] = O2thetae;
+        CharElTemp[2] = NOthetae;
+        CharElTemp[3] = Nthetae;
+        CharElTemp[4] = Othetae;
+        degen         = new double *[nSpecies];
+        degen[0]      = N2g;
+        degen[1]      = O2g;
+        degen[2]      = NOg;
+        degen[3]      = Ng;
+        degen[4]      = Og;
+        
+        /*--- Set reaction maps ---*/
+        Reactions[0][0][0]=0;		Reactions[0][0][1]=0;		Reactions[0][0][2]=nSpecies;		Reactions[0][1][0]=3;		Reactions[0][1][1]=3;		Reactions[0][1][2] =0;
+        Reactions[1][0][0]=0;		Reactions[1][0][1]=1;		Reactions[1][0][2]=nSpecies;		Reactions[1][1][0]=3;		Reactions[1][1][1]=3;		Reactions[1][1][2] =1;
+        Reactions[2][0][0]=0;		Reactions[2][0][1]=2;		Reactions[2][0][2]=nSpecies;		Reactions[2][1][0]=3;		Reactions[2][1][1]=3;		Reactions[2][1][2] =2;
+        Reactions[3][0][0]=0;		Reactions[3][0][1]=3;		Reactions[3][0][2]=nSpecies;		Reactions[3][1][0]=3;		Reactions[3][1][1]=3;		Reactions[3][1][2] =3;
+        Reactions[4][0][0]=0;		Reactions[4][0][1]=4;		Reactions[4][0][2]=nSpecies;		Reactions[4][1][0]=3;		Reactions[4][1][1]=3;		Reactions[4][1][2] =4;
+        
+        Reactions[5][0][0]=1;		Reactions[5][0][1]=0;		Reactions[5][0][2]=nSpecies;		Reactions[5][1][0]=4;		Reactions[5][1][1]=4;		Reactions[5][1][2] =0;
+        Reactions[6][0][0]=1;		Reactions[6][0][1]=1;		Reactions[6][0][2]=nSpecies;		Reactions[6][1][0]=4;		Reactions[6][1][1]=4;		Reactions[6][1][2] =1;
+        Reactions[7][0][0]=1;		Reactions[7][0][1]=2;		Reactions[7][0][2]=nSpecies;		Reactions[7][1][0]=4;		Reactions[7][1][1]=4;		Reactions[7][1][2] =2;
+        Reactions[8][0][0]=1;		Reactions[8][0][1]=3;		Reactions[8][0][2]=nSpecies;		Reactions[8][1][0]=4;		Reactions[8][1][1]=4;		Reactions[8][1][2] =3;
+        Reactions[9][0][0]=1;		Reactions[9][0][1]=4;		Reactions[9][0][2]=nSpecies;		Reactions[9][1][0]=4;		Reactions[9][1][1]=4;		Reactions[9][1][2] =4;
+        
+        Reactions[10][0][0]=2;		Reactions[10][0][1]=0;		Reactions[10][0][2]=nSpecies;		Reactions[10][1][0]=3;		Reactions[10][1][1]=4;		Reactions[10][1][2] =0;
+        Reactions[11][0][0]=2;		Reactions[11][0][1]=1;		Reactions[11][0][2]=nSpecies;		Reactions[11][1][0]=3;		Reactions[11][1][1]=4;		Reactions[11][1][2] =1;
+        Reactions[12][0][0]=2;		Reactions[12][0][1]=2;		Reactions[12][0][2]=nSpecies;		Reactions[12][1][0]=3;		Reactions[12][1][1]=4;		Reactions[12][1][2] =2;
+        Reactions[13][0][0]=2;		Reactions[13][0][1]=3;		Reactions[13][0][2]=nSpecies;		Reactions[13][1][0]=3;		Reactions[13][1][1]=4;		Reactions[13][1][2] =3;
+        Reactions[14][0][0]=2;		Reactions[14][0][1]=4;		Reactions[14][0][2]=nSpecies;		Reactions[14][1][0]=3;		Reactions[14][1][1]=4;		Reactions[14][1][2] =4;
+        
+        Reactions[15][0][0]=0;		Reactions[15][0][1]=3;		Reactions[15][0][2]=nSpecies;		Reactions[15][1][0]=2;		Reactions[15][1][1]=4;		Reactions[15][1][2]= nSpecies;
+        Reactions[16][0][0]=2;		Reactions[16][0][1]=3;		Reactions[16][0][2]=nSpecies;		Reactions[16][1][0]=1;		Reactions[16][1][1]=4;		Reactions[16][1][2]= nSpecies;
+        
+        /*--- Set Arrhenius coefficients for reactions ---*/
+        // Pre-exponential factor
+        ArrheniusCoefficient[0]  = 7.0E21;
+        ArrheniusCoefficient[1]  = 7.0E21;
+        ArrheniusCoefficient[2]  = 7.0E21;
+        ArrheniusCoefficient[3]  = 3.0E22;
+        ArrheniusCoefficient[4]  = 3.0E22;
+        ArrheniusCoefficient[5]  = 2.0E21;
+        ArrheniusCoefficient[6]  = 2.0E21;
+        ArrheniusCoefficient[7]  = 2.0E21;
+        ArrheniusCoefficient[8]  = 1.0E22;
+        ArrheniusCoefficient[9]  = 1.0E22;
+        ArrheniusCoefficient[10] = 5.0E15;
+        ArrheniusCoefficient[11] = 5.0E15;
+        ArrheniusCoefficient[12] = 5.0E15;
+        ArrheniusCoefficient[13] = 1.1E17;
+        ArrheniusCoefficient[14] = 1.1E17;
+        ArrheniusCoefficient[15] = 5.7E12;
+        ArrheniusCoefficient[16] = 8.4E12;
+        
+        // Rate-controlling temperature exponent
+        ArrheniusEta[0]  = -1.60;
+        ArrheniusEta[1]  = -1.60;
+        ArrheniusEta[2]  = -1.60;
+        ArrheniusEta[3]  = -1.60;
+        ArrheniusEta[4]  = -1.60;
+        ArrheniusEta[5]  = -1.50;
+        ArrheniusEta[6]  = -1.50;
+        ArrheniusEta[7]  = -1.50;
+        ArrheniusEta[8]  = -1.50;
+        ArrheniusEta[9]  = -1.50;
+        ArrheniusEta[10] = 0.0;
+        ArrheniusEta[11] = 0.0;
+        ArrheniusEta[12] = 0.0;
+        ArrheniusEta[13] = 0.0;
+        ArrheniusEta[14] = 0.0;
+        ArrheniusEta[15] = 0.42;
+        ArrheniusEta[16] = 0.00;
+        
+        // Characteristic temperature
+        ArrheniusTheta[0]  = 113200.0;
+        ArrheniusTheta[1]  = 113200.0;
+        ArrheniusTheta[2]  = 113200.0;
+        ArrheniusTheta[3]  = 113200.0;
+        ArrheniusTheta[4]  = 113200.0;
+        ArrheniusTheta[5]  = 59500.0;
+        ArrheniusTheta[6]  = 59500.0;
+        ArrheniusTheta[7]  = 59500.0;
+        ArrheniusTheta[8]  = 59500.0;
+        ArrheniusTheta[9]  = 59500.0;
+        ArrheniusTheta[10] = 75500.0;
+        ArrheniusTheta[11] = 75500.0;
+        ArrheniusTheta[12] = 75500.0;
+        ArrheniusTheta[13] = 75500.0;
+        ArrheniusTheta[14] = 75500.0;
+        ArrheniusTheta[15] = 42938.0;
+        ArrheniusTheta[16] = 19400.0;
+        
         break;
     }
   }
@@ -2369,7 +2797,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 			Enthalpy_Formation[3] = 472.683E3;		//N
 			Enthalpy_Formation[4] = 249.173E3;		//O
 
-
 			/*--- Set initial fraction of number density (Ns / Ntotal) ---*/
 			Gas_Composition[0] = 0.788;	//N2
 			Gas_Composition[1] = 0.199;	//O2
@@ -2630,13 +3057,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 			}
 		}
 
-	}
-
-
-	/*--- Some discrete adjoint requirements ---*/
-	if ((GetAdjoint() && (GetKind_Adjoint() == DISCRETE)) && (Kind_Solver==ADJ_EULER||ADJ_NAVIER_STOKES||ADJ_RANS)) {
-		SetnExtIter(1);
-		SetMGLevels(0);
 	}
 
 	delete [] tmp_smooth;
@@ -3032,15 +3452,19 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			cout <<"The lower integration limit is "<<EA_IntLimit[0]<<", and the upper is "<<EA_IntLimit[1]<<"."<<endl;
 			cout <<"The near-field is situated at "<<EA_IntLimit[2]<<"."<<endl;
 		}
-
+    
 		if (Grid_Movement) {
-			cout << "Performing a dynamic mesh simulation." << endl;
-		}
-
-		if (Rotating_Frame) {
-			cout << "Performing a simulation in a rotating frame." << endl;
-			cout << "Origin of the rotation axis: " << RotAxisOrigin[0] <<","<< RotAxisOrigin[1] <<","<< RotAxisOrigin[2] << ". ";
-			cout << "Angular velocity vector: " << Omega[0] <<","<< Omega[1] <<","<< Omega[2] << "." << endl;
+			cout << "Performing a dynamic mesh simulation: ";
+      switch (Kind_GridMovement[ZONE_0]) {
+        case NO_MOVEMENT:     cout << "no movement." << endl; break;
+        case DEFORMING:       cout << "deforming mesh motion." << endl; break;
+        case RIGID_MOTION:    cout << "rigid mesh motion." << endl; break;
+        case MOVING_WALL:     cout << "moving walls." << endl; break;
+        case ROTATING_FRAME:  cout << "rotating reference frame." << endl; break;
+        case AEROELASTIC:     cout << "aeroelastic motion." << endl; break;
+        case FLUID_STRUCTURE: cout << "fluid-structure motion." << endl; break;
+        case EXTERNAL:        cout << "externally prescribed motion." << endl; break;
+      }
 		}
 
 		if (Restart) {
@@ -5461,6 +5885,16 @@ unsigned short CConfig::GetSlideBound_Zone(string val_marker) {
 	return SlideBound_Zone[iMarker_SlideBound];
 }
 
+unsigned short CConfig::GetMarker_Moving(string val_marker) {
+	unsigned short iMarker_Moving;
+  
+	/*--- Find the marker for this moving boundary. ---*/
+	for (iMarker_Moving = 0; iMarker_Moving < nMarker_Moving; iMarker_Moving++)
+		if (Marker_Moving[iMarker_Moving] == val_marker) break;
+  
+	return iMarker_Moving;
+}
+
 double CConfig::GetDirichlet_Value(string val_marker) {
 	unsigned short iMarker_Dirichlet;
 	for (iMarker_Dirichlet = 0; iMarker_Dirichlet < nMarker_Dirichlet_Elec; iMarker_Dirichlet++)
@@ -5761,7 +6195,7 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
       
 			/*--- First, check if there is mesh motion. If yes, use the Mach
        number relative to the body to initialize the flow. ---*/
-			if (Rotating_Frame || Grid_Movement)
+			if (Grid_Movement)
 				Velocity_Reynolds = Mach_Motion*Mach2Vel_FreeStream;
 			else
 				Velocity_Reynolds = ModVel_FreeStream;
@@ -5840,14 +6274,6 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
   
 	Gas_ConstantND = Gas_Constant/Gas_Constant_Ref;
   
-	/*--- Perform non-dim. for rotating terms ---*/
-	Omega_Mag = 0.0;
-	for (iDim = 0; iDim < 3; iDim++) {
-		Omega_FreeStreamND[iDim] = Omega[iDim]/Omega_Ref;
-		Omega_Mag += Omega[iDim]*Omega[iDim];
-	}
-	Omega_Mag = sqrt(Omega_Mag)/Omega_Ref;
-  
 	ModVel_FreeStreamND = 0;
 	for (iDim = 0; iDim < val_nDim; iDim++)
 		ModVel_FreeStreamND += Velocity_FreeStreamND[iDim]*Velocity_FreeStreamND[iDim];
@@ -5906,24 +6332,20 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 		cout << "Freestream density (kg/m^3): "					 << Density_FreeStream << endl;
 		if (val_nDim == 2) {
 			cout << "Freestream velocity (m/s): (" << Velocity_FreeStream[0] << ",";
-			cout << Velocity_FreeStream[1] << ")";
+			cout << Velocity_FreeStream[1] << ")" << endl;
 		} else if (val_nDim == 3) {
 			cout << "Freestream velocity (m/s): (" << Velocity_FreeStream[0] << ",";
-			cout << Velocity_FreeStream[1] << "," << Velocity_FreeStream[2] << ")";
+			cout << Velocity_FreeStream[1] << "," << Velocity_FreeStream[2] << ")" << endl;
 		}
     
-		cout << " -> Modulus: "					 << ModVel_FreeStream << endl;
+		cout << "Freestream velocity magnitude (m/s):"	<< ModVel_FreeStream << endl;
     
 		if (Compressible)
 			cout << "Freestream energy (kg.m/s^2): "					 << Energy_FreeStream << endl;
     
 		if (Viscous)
 			cout << "Freestream viscosity (N.s/m^2): "				 << Viscosity_FreeStream << endl;
-    
-		if (Rotating_Frame) {
-			cout << "Freestream rotation (rad/s): (" << Omega[0];
-			cout << "," << Omega[1] << "," << Omega[2] << ")" << endl;
-		}
+
 		if (Unsteady) {
 			cout << "Total time (s): " << Total_UnstTime << ". Time step (s): " << Delta_UnstTime << endl;
 		}
@@ -5967,12 +6389,12 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 		cout << "Freestream density (non-dimensional): "      << Density_FreeStreamND     << endl;
 		if (val_nDim == 2) {
 			cout << "Freestream velocity (non-dimensional): (" << Velocity_FreeStreamND[0] << ",";
-			cout << Velocity_FreeStreamND[1] << ")";
+			cout << Velocity_FreeStreamND[1] << ")" << endl;
 		} else if (val_nDim == 3) {
 			cout << "Freestream velocity (non-dimensional): (" << Velocity_FreeStreamND[0] << ",";
-			cout << Velocity_FreeStreamND[1] << "," << Velocity_FreeStreamND[2] << ")";
+			cout << Velocity_FreeStreamND[1] << "," << Velocity_FreeStreamND[2] << ")" << endl;
 		}
-		cout << " -> Modulus: "					 << ModVel_FreeStreamND << endl;
+		cout << "Freestream velocity magnitude (non-dimensional): "	 << ModVel_FreeStreamND << endl;
     
 		if (turbulent){
 			cout << "Free-stream turb. kinetic energy (non-dimensional): " << kine_Inf << endl;
@@ -5984,16 +6406,12 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
     
 		if (Viscous)
 			cout << "Freestream viscosity (non-dimensional): " << Viscosity_FreeStreamND << endl;
-    
-		if (Rotating_Frame) {
-			cout << "Freestream rotation (non-dimensional): (" << Omega_FreeStreamND[0];
-			cout << "," << Omega_FreeStreamND[1] << "," << Omega_FreeStreamND[2] << ")" << endl;
-		}
+
 		if (Unsteady) {
 			cout << "Total time (non-dimensional): "				 << Total_UnstTimeND << endl;
 			cout << "Time step (non-dimensional): "				 << Delta_UnstTimeND << endl;
 		}
-		if (Mach <= 0.0) cout << "Force coefficients computed using reference values." << endl;
+		if (Grid_Movement) cout << "Force coefficients computed using MACH_MOTION." << endl;
 		else cout << "Force coefficients computed using freestream values." << endl;
 	}
   

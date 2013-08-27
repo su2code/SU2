@@ -132,13 +132,6 @@ CAdjTNE2EulerVariable::CAdjTNE2EulerVariable(double val_psirho, double *val_phi,
 	for (iVar = 0; iVar < nVar; iVar++)
 		IntBoundary_Jump[iVar] = 0.0;
   
-	/*--- Allocate and initialize vector containing objective function sensitivity for discrete adjoint ---*/
-	if (config->GetKind_Adjoint() == DISCRETE) {
-		ObjFuncSource = new double [nVar];
-		for (iVar = 0; iVar < nVar; iVar++)
-			ObjFuncSource[iVar] = 0.0;
-	}
-  
   /*--- Allocate space for the time spectral source terms ---*/
 	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
 		TS_Source = new double[nVar];
@@ -222,13 +215,6 @@ CAdjTNE2EulerVariable::CAdjTNE2EulerVariable(double *val_solution, unsigned shor
 	IntBoundary_Jump = new double [nVar];
 	for (iVar = 0; iVar < nVar; iVar++)
 		IntBoundary_Jump[iVar] = 0.0;
-	
-	/*--- Allocate and initialize vector containing objective function sensitivity for discrete adjoint ---*/
-	if (config->GetKind_Adjoint() == DISCRETE) {
-		ObjFuncSource = new double [nVar];
-		for (iVar = 0; iVar < nVar; iVar++)
-			ObjFuncSource[iVar] = 0.0;
-	}
   
 	/*--- Allocate space for the time spectral source terms ---*/
 	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
@@ -249,7 +235,8 @@ CAdjTNE2EulerVariable::~CAdjTNE2EulerVariable(void) {
   
 }
 
-void CAdjTNE2EulerVariable::SetTheta(double val_density, double *val_velocity, double val_enthalpy) {
+void CAdjTNE2EulerVariable::SetTheta(double val_density, double *val_velocity,
+                                     double val_enthalpy) {
 	unsigned short iDim;
 	
 	Theta = val_density*Solution[0];
@@ -279,8 +266,13 @@ void CAdjTNE2EulerVariable::SetPrimVar_Compressible(double val_adjlimit) {
 
 CAdjTNE2NSVariable::CAdjTNE2NSVariable(void) : CAdjTNE2EulerVariable() { }
 
-CAdjTNE2NSVariable::CAdjTNE2NSVariable(double *val_solution, unsigned short val_ndim,
-                               unsigned short val_nvar, CConfig *config) : CAdjTNE2EulerVariable(val_solution, val_ndim, val_nvar, config) {
+CAdjTNE2NSVariable::CAdjTNE2NSVariable(double *val_solution,
+                                       unsigned short val_ndim,
+                                       unsigned short val_nvar,
+                                       CConfig *config) : CAdjTNE2EulerVariable(val_solution,
+                                                                                val_ndim,
+                                                                                val_nvar,
+                                                                                config) {
   
 }
 

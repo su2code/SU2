@@ -176,11 +176,6 @@ void CUpwRoe_AdjTNE2::ComputeResidual (double *val_residual_i, double *val_resid
 	cc = Gamma_Minus_One * h - 0.5 * Gamma_Minus_One * q2;
 	c  = sqrt(cc);
   
-	/*--- Contribution to velocity projection due to a rotating frame ---*/
-	if (rotating_frame) {
-		double ProjRotVel = Rot_Flux;
-		Q -= ProjRotVel;
-	}
   
 	/*--- Contribution to velocity projection due to grid movement ---*/
 	if (grid_movement) {
@@ -228,15 +223,6 @@ void CUpwRoe_AdjTNE2::ComputeResidual (double *val_residual_i, double *val_resid
 	for (iVar = 0; iVar < nVar; iVar++) {
 		val_residual_i[iVar]   += Residual_Roe[iVar];
 		val_residual_j[iVar]   -= Residual_Roe[iVar];
-	}
-  
-	/*--- Flux contribution due to a rotating frame ---*/
-	if (rotating_frame) {
-		double ProjVelocity = Rot_Flux;
-		for (iVar = 0; iVar < nVar; iVar++) {
-			val_residual_i[iVar] -= ProjVelocity * 0.5*(Psi_i[iVar]+Psi_j[iVar]);
-			val_residual_j[iVar] += ProjVelocity * 0.5*(Psi_i[iVar]+Psi_j[iVar]);
-		}
 	}
   
 	/*--- Flux contribution due to grid movement ---*/
@@ -296,18 +282,6 @@ void CUpwRoe_AdjTNE2::ComputeResidual (double *val_residual_i, double *val_resid
 				val_Jacobian_ij[jVar][iVar] = Proj_flux_tensor_i[iVar][jVar] + Proj_ModJac_Tensor[iVar][jVar];
 				val_Jacobian_ji[jVar][iVar] = -(Proj_flux_tensor_j[iVar][jVar] - Proj_ModJac_Tensor[iVar][jVar]);
 				val_Jacobian_jj[jVar][iVar] = -(Proj_flux_tensor_j[iVar][jVar] + Proj_ModJac_Tensor[iVar][jVar]);
-			}
-		}
-    
-		/*--- Jacobian contributions for a rotating frame ---*/
-		if (rotating_frame) {
-			double ProjVelocity = Rot_Flux;
-			for (iVar = 0; iVar < nVar; iVar++) {
-				/*--- Adjust Jacobian main diagonal ---*/
-				val_Jacobian_ii[iVar][iVar] -= 0.5*ProjVelocity;
-				val_Jacobian_ij[iVar][iVar] -= 0.5*ProjVelocity;
-				val_Jacobian_ji[iVar][iVar] += 0.5*ProjVelocity;
-				val_Jacobian_jj[iVar][iVar] += 0.5*ProjVelocity;
 			}
 		}
     
@@ -388,15 +362,6 @@ void CCentJST_AdjTNE2::ComputeResidual (double *val_resconv_i, double *val_resvi
 		val_resconv_i[iDim+1] = ProjVelocity_i*MeanPhi[iDim] + phis2*Normal[iDim] - Gamma_Minus_One*phis1*Velocity_i[iDim];
 	val_resconv_i[nVar-1] = ProjVelocity_i*MeanPsiE + Gamma_Minus_One*phis1;
   
-	/*--- Flux contributions due to a rotating frame at point i ---*/
-	if (rotating_frame) {
-		double ProjRotVel = Rot_Flux;
-		val_resconv_i[0] -= ProjRotVel*MeanPsiRho;
-		for (iDim = 0; iDim < nDim; iDim++)
-			val_resconv_i[iDim+1] -= ProjRotVel*MeanPhi[iDim];
-		val_resconv_i[nVar-1] -= ProjRotVel*MeanPsiE;
-	}
-  
 	/*--- Flux contributions due to grid movement at point i (TDE) ---*/
 	if (grid_movement) {
 		double ProjGridVel = 0.0;
@@ -430,15 +395,6 @@ void CCentJST_AdjTNE2::ComputeResidual (double *val_resconv_i, double *val_resvi
 			for (jVar = 0; jVar < nVar; jVar++)
 				val_Jacobian_ij[iVar][jVar] = val_Jacobian_ii[iVar][jVar];
     
-		/*--- Jacobian contributions due to a rotating frame at point i ---*/
-		if (rotating_frame) {
-			double ProjRotVel = Rot_Flux;
-			for (iVar = 0; iVar < nVar; iVar++) {
-				val_Jacobian_ii[iVar][iVar] -= 0.5*ProjRotVel;
-				val_Jacobian_ij[iVar][iVar] -= 0.5*ProjRotVel;
-			}
-		}
-    
 		/*--- Jacobian contributions due to grid movement at point i (TDE) ---*/
 		if (grid_movement) {
 			double ProjGridVel = 0.0;
@@ -468,15 +424,6 @@ void CCentJST_AdjTNE2::ComputeResidual (double *val_resconv_i, double *val_resvi
 	for (iDim = 0; iDim < nDim; iDim++)
 		val_resconv_j[iDim+1] = -(ProjVelocity_j*MeanPhi[iDim] + phis2*Normal[iDim] - Gamma_Minus_One*phis1*Velocity_j[iDim]);
 	val_resconv_j[nVar-1] = -(ProjVelocity_j*MeanPsiE + Gamma_Minus_One*phis1);
-  
-	/*--- Flux contributions due to a rotating frame at point j ---*/
-	if (rotating_frame) {
-		double ProjRotVel = Rot_Flux;
-		val_resconv_j[0] += ProjRotVel*MeanPsiRho;
-		for (iDim = 0; iDim < nDim; iDim++)
-			val_resconv_j[iDim+1] += ProjRotVel*MeanPhi[iDim];
-		val_resconv_j[nVar-1] += ProjRotVel*MeanPsiE;
-	}
   
 	/*--- Flux contributions due to grid movement at point j (TDE) ---*/
 	if (grid_movement) {
@@ -511,15 +458,6 @@ void CCentJST_AdjTNE2::ComputeResidual (double *val_resconv_i, double *val_resvi
 			for (jVar = 0; jVar < nVar; jVar++)
 				val_Jacobian_ji[iVar][jVar] = val_Jacobian_jj[iVar][jVar];
     
-		/*--- Jacobian contributions due to a rotating frame at point j ---*/
-		if (rotating_frame) {
-			double ProjRotVel = Rot_Flux;
-			for (iVar = 0; iVar < nVar; iVar++) {
-				val_Jacobian_jj[iVar][iVar] += 0.5*ProjRotVel;
-				val_Jacobian_ji[iVar][iVar] += 0.5*ProjRotVel;
-			}
-		}
-    
 		/*--- Jacobian contributions due to grid movement at point j (TDE) ---*/
 		if (grid_movement) {
 			double ProjGridVel = 0.0;
@@ -536,12 +474,6 @@ void CCentJST_AdjTNE2::ComputeResidual (double *val_resconv_i, double *val_resvi
 	for (iVar = 0; iVar < nVar; iVar++) {
 		Diff_Lapl[iVar] = Und_Lapl_i[iVar]-Und_Lapl_j[iVar];
 		Diff_Psi[iVar]  = Psi_i[iVar]-Psi_j[iVar];
-	}
-  
-	/*--- Adjustment to projected velocity due to a rotating frame ---*/
-	if (rotating_frame) {
-		ProjVelocity_i -= Rot_Flux;
-		ProjVelocity_j += Rot_Flux;
 	}
   
 	/*--- Adjustment to projected velocity due to mesh motion (TDE) ---*/
@@ -639,15 +571,6 @@ void CCentLax_AdjTNE2::ComputeResidual (double *val_resconv_i, double *val_resvi
 		val_resconv_i[iDim+1] = ProjVelocity_i*MeanPhi[iDim] + phis2*Normal[iDim] - Gamma_Minus_One*phis1*Velocity_i[iDim];
 	val_resconv_i[nVar-1] = ProjVelocity_i*MeanPsiE + Gamma_Minus_One*phis1;
   
-	/*--- Flux contributions due to a rotating frame at point i ---*/
-	if (rotating_frame) {
-		double ProjRotVel = Rot_Flux;
-		val_resconv_i[0] -= ProjRotVel*MeanPsiRho;
-		for (iDim = 0; iDim < nDim; iDim++)
-			val_resconv_i[iDim+1] -= ProjRotVel*MeanPhi[iDim];
-		val_resconv_i[nVar-1] -= ProjRotVel*MeanPsiE;
-	}
-  
 	/*--- Flux contributions due to grid movement at point i (TDE) ---*/
 	if (grid_movement) {
 		double ProjGridVel = 0.0;
@@ -681,15 +604,6 @@ void CCentLax_AdjTNE2::ComputeResidual (double *val_resconv_i, double *val_resvi
 			for (jVar = 0; jVar < nVar; jVar++)
 				val_Jacobian_ij[iVar][jVar] = val_Jacobian_ii[iVar][jVar];
     
-		/*--- Jacobian contributions due to a rotating frame at point i ---*/
-		if (rotating_frame) {
-			double ProjRotVel = Rot_Flux;
-			for (iVar = 0; iVar < nVar; iVar++) {
-				val_Jacobian_ii[iVar][iVar] -= 0.5*ProjRotVel;
-				val_Jacobian_ij[iVar][iVar] -= 0.5*ProjRotVel;
-			}
-		}
-    
 		/*--- Jacobian contributions due to grid movement at point i (TDE) ---*/
 		if (grid_movement) {
 			double ProjGridVel = 0.0;
@@ -719,15 +633,6 @@ void CCentLax_AdjTNE2::ComputeResidual (double *val_resconv_i, double *val_resvi
 	for (iDim = 0; iDim < nDim; iDim++)
 		val_resconv_j[iDim+1] = -(ProjVelocity_j*MeanPhi[iDim] + phis2*Normal[iDim] - Gamma_Minus_One*phis1*Velocity_j[iDim]);
 	val_resconv_j[nVar-1] = -(ProjVelocity_j*MeanPsiE + Gamma_Minus_One*phis1);
-  
-	/*--- Flux contributions due to a rotating frame at point j ---*/
-	if (rotating_frame) {
-		double ProjRotVel = Rot_Flux;
-		val_resconv_j[0] += ProjRotVel*MeanPsiRho;
-		for (iDim = 0; iDim < nDim; iDim++)
-			val_resconv_j[iDim+1] += ProjRotVel*MeanPhi[iDim];
-		val_resconv_j[nVar-1] += ProjRotVel*MeanPsiE;
-	}
   
 	/*--- Flux contributions due to grid movement at point j (TDE) ---*/
 	if (grid_movement) {
@@ -762,15 +667,6 @@ void CCentLax_AdjTNE2::ComputeResidual (double *val_resconv_i, double *val_resvi
 			for (jVar = 0; jVar < nVar; jVar++)
 				val_Jacobian_ji[iVar][jVar] = val_Jacobian_jj[iVar][jVar];
     
-		/*--- Jacobian contributions due to a rotating frame at point j ---*/
-		if (rotating_frame) {
-			double ProjRotVel = Rot_Flux;
-			for (iVar = 0; iVar < nVar; iVar++) {
-				val_Jacobian_jj[iVar][iVar] += 0.5*ProjRotVel;
-				val_Jacobian_ji[iVar][iVar] += 0.5*ProjRotVel;
-			}
-		}
-    
 		/*--- Jacobian contributions due to grid movement at point j (TDE) ---*/
 		if (grid_movement) {
 			double ProjGridVel = 0.0;
@@ -786,12 +682,6 @@ void CCentLax_AdjTNE2::ComputeResidual (double *val_resconv_i, double *val_resvi
 	/*--- Computes differences btw. variables ---*/
 	for (iVar = 0; iVar < nVar; iVar++)
 		Diff_Psi[iVar] = Psi_i[iVar]-Psi_j[iVar];
-  
-	/*--- Adjustment to projected velocity due to a rotating frame ---*/
-	if (rotating_frame) {
-		ProjVelocity_i -= Rot_Flux;
-		ProjVelocity_j += Rot_Flux;
-	}
   
 	/*--- Adjustment to projected velocity due to mesh motion (TDE) ---*/
 	if (grid_movement) {

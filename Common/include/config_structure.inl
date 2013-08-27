@@ -33,8 +33,6 @@ inline bool CConfig::GetAdjoint(void) { return Adjoint; }
 
 inline bool CConfig::GetViscous(void) { return Viscous; }
 
-inline unsigned short CConfig::GetKind_Adjoint(void) { return Kind_Adjoint; }
-
 inline unsigned long CConfig::GetnExtIter(void) { return nExtIter; }
 
 inline unsigned short CConfig::GetnTimeInstances(void) { return nTimeInstances; }
@@ -192,8 +190,6 @@ inline double CConfig::GetDensity_FreeStreamND(void) { return Density_FreeStream
 inline double* CConfig::GetVelocity_FreeStreamND(void) { return Velocity_FreeStreamND; }
 
 inline double* CConfig::GetVelocity_FreeStream(void) { return Velocity_FreeStream; }
-
-inline double* CConfig::GetOmega_FreeStreamND(void) { return Omega_FreeStreamND; }
 
 inline double CConfig::GetEnergy_FreeStreamND(void) { return Energy_FreeStreamND; }
 
@@ -865,12 +861,6 @@ inline double CConfig::GetCteViscDrag(void) { return CteViscDrag; }
 inline double CConfig::GetLevelSet_CFLRedCoeff(void) { return LevelSet_CFLRedCoeff; }
 
 inline double CConfig::GetTurb_CFLRedCoeff(void) { return Turb_CFLRedCoeff; }
-
-inline double *CConfig::GetRotAxisOrigin(void) { return RotAxisOrigin; }
-
-inline double *CConfig::GetOmega(void) { return Omega; }
-
-inline double CConfig::GetOmegaMag(void) { return Omega_Mag; }
 
 inline bool CConfig::GetGrid_Movement(void) { return Grid_Movement; }
 

@@ -142,10 +142,8 @@ private:
   *Coord_n,		/*!< \brief Coordinates at time n for use with dynamic meshes. */
   *Coord_n1,		/*!< \brief Coordinates at time n-1 for use with dynamic meshes. */
   *Coord_p1;		/*!< \brief Coordinates at time n+1 for use with dynamic meshes. */
-	double *gridvel;	/*!< \brief Velocity of the grid, in case the grid is moving. */
-  double **gridvel_grad;  /*!< \brief Gradient of the grid velocity for dynamic meshes. */
-	double *rotvel;         /*!< \brief Rotational velocity for a rotating frame. */
-  double **rotvel_grad;   /*!< \brief Gradient of the grid velocity for a rotating frame. */
+	double *GridVel;	/*!< \brief Velocity of the grid for dynamic mesh cases. */
+  double **GridVel_Grad;  /*!< \brief Gradient of the grid velocity for dynamic meshes. */
 	unsigned long Parent_CV;			/*!< \brief Index of the parent control volume in the agglomeration process. */
 	unsigned short nChildren_CV;		/*!< \brief Number of children in the agglomeration process. */
 	vector<unsigned long> Children_CV;		/*!< \brief Index of the children control volumes in the agglomeration process. */
@@ -561,18 +559,6 @@ public:
 	double **GetGridVel_Grad(void);
 	
 	/*! 
-	 * \brief Get the value of the rotational velocity at the point.
-	 * \return Rotational velocity at the point.
-	 */	
-	double *GetRotVel(void);
-  
-  /*!
-	 * \brief Get the value of the rotational velocity gradient at the point.
-	 * \return Rotational velocity gradient at the point.
-	 */
-	double **GetRotVel_Grad(void);
-	
-	/*! 
 	 * \brief Add the value of the coordinates to the <i>Coord_sum</i> vector for implicit smoothing.
 	 * \param[in] val_coord_sum - Value of the coordinates to add.
 	 */	
@@ -609,27 +595,6 @@ public:
 	 * \param[in] val_value - Value of the gradient.
 	 */
 	void SetGridVel_Grad(unsigned short val_var, unsigned short val_dim, double val_value);
-	
-	/*! 
-	 * \brief Set the value of the rotational velocity at the point.
-	 * \param[in] val_dim - Index of the coordinate.
-	 * \param[in] val_rotvel - Value of the rotational velocity.
-	 */	
-	void SetRotVel(unsigned short val_dim, double val_rotvel);
-	
-	/*! 
-	 * \overload
-	 * \param[in] val_rotvel - Value of the rotational velocity.
-	 */	
-	void SetRotVel(double *val_rotvel);
-  
-  /*!
-	 * \brief Set the gradient of the rotational grid velocity.
-	 * \param[in] val_var - Index of the variable.
-	 * \param[in] val_dim - Index of the dimension.
-	 * \param[in] val_value - Value of the gradient.
-	 */
-	void SetRotVel_Grad(unsigned short val_var, unsigned short val_dim, double val_value);
 	
 	/*! 
 	 * \brief This function does nothing (it comes from a pure virtual function, that implies the 
@@ -691,7 +656,6 @@ private:
 	double *Coord_CG;			/*!< \brief Center-of-gravity of the element. */
 	unsigned long *Nodes;		/*!< \brief Vector to store the global nodes of an element. */
 	double *Normal;				/*!< \brief Normal al elemento y coordenadas de su centro de gravedad. */
-  double Rot_Flux;     /*!< \brief The exactly integrated rotational volume flux. */
 
 public:
 		
@@ -815,17 +779,7 @@ public:
 	 *        definition of the function in all the derived classes).
 	 */
 	void SetCoord(double *val_coord);
-  
-  /*! 
-	 * \brief Get the exact integral of the rotational volume flux.
-	 * \return Value of the exactly integrated rotational volume flux.
-	 */
-	double GetRotFlux(void);
-  
-  /*! 
-	 * \brief Add contribution to the exact integral of the rotational volume flux.
-	 */
-	void AddRotFlux(double val_rot_flux);
+
 };
 
 /*! 
@@ -844,7 +798,6 @@ private:
 	long PeriodicPoint[2];			/*!< \brief Store the periodic point of a boundary (iProcessor, iPoint) */
 	short Rotation_Type;			/*!< \brief Type of rotation associated with the vertex (MPI and periodic) */
   short Matching_Zone;			/*!< \brief Donor zone associated with the vertex (MPI and sliding) */
-  double Rot_Flux;     /*!< \brief The exactly integrated rotational volume flux. */
 	unsigned long Normal_Neighbor; /*!< \brief Index of the closest neighbor. */
   unsigned long Donor_Elem;   /*!< \brief Store the donor element for interpolation across zones/ */
   double Basis_Function[3]; /*!< \brief Basis function values for interpolation across zones. */
@@ -1046,17 +999,6 @@ public:
    * \return Value of the basis function for this node.
 	 */
 	double GetBasisFunction(unsigned short val_node);
-  
-  /*! 
-	 * \brief Get the exact integral of the rotational volume flux.
-	 * \return Value of the exactly integrated rotational volume flux.
-	 */
-	double GetRotFlux(void);
-  
-  /*! 
-	 * \brief Add contribution to the exact integral of the rotational volume flux.
-	 */
-	void AddRotFlux(double val_rot_flux);
 	
 	/*! 
 	 * \brief Set the index of the closest neighbor to a point on the boundaries.

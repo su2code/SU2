@@ -387,14 +387,14 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   double rho, rhoE, rhoEve, rhoEve_t, rhoE_ref, rhoE_f;
   double evs, eels;
   double Ru, sqvel, rhoCvtr, rhoCvve;
-  double Cvvs, Cves, Tve;
+  double Cvvs, Cves, Tve, Tve2;
   double f, df, tol;
   double exptv, thsqr, thoTve;
   double num, denom, num2, num3;
   
   /*--- Set tolerance for Newton-Raphson method ---*/
   tol     = 1.0E-4;
-  maxIter = 30;
+  maxIter = 50;
   
   /*--- Determine the number of heavy species ---*/
   ionization = config->GetIonization();
@@ -437,8 +437,8 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   // NOTE: Cannot write an expression explicitly in terms of Tve
   // NOTE: We use Newton-Raphson to iteratively find the value of Tve
   // NOTE: Use T as an initial guess
-  Tve = Primitive[TVE_INDEX];
-  double Tve2 = Primitive[TVE_INDEX];
+  Tve  = Primitive[TVE_INDEX];
+  Tve2 = Primitive[TVE_INDEX];
   
   double rhoCvve1a, rhoCvve1b;
   double Cves1, Cvvs1, eels1, evs1, f1, df1;
@@ -465,7 +465,7 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
         rhoEve_t += Solution[iSpecies] * evs;
         rhoCvve  += Solution[iSpecies] * Cvvs;
       }
-      if (iIter == 0)
+      if (iIter == 0 && iSpecies == 0)
         rhoCvve1a = rhoCvve;
       
       /*--- Electronic energy ---*/
@@ -487,7 +487,10 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
       rhoEve_t += Solution[iSpecies] * eels;
       rhoCvve  += Solution[iSpecies] * Cves;
       
-      //cout << "rhoCvve[" << iSpecies << "]: " << rhoCvve << endl;
+      if (iIter == 0 && iSpecies == 0)
+        rhoCvve1b = rhoCvve;
+      
+//      cout << "rhoCvve[" << iSpecies << "]: " << rhoCvve << endl;
     }
     for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
       Cves = 3.0/2.0 * Ru/Ms[nSpecies-1];
@@ -498,10 +501,9 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
     /*--- Determine function f(Tve) and df/dTve ---*/
     f  = rhoEve - rhoEve_t;
     df = -rhoCvve;
-    Primitive[TVE_INDEX] = Tve - f/df;
+    Tve2 = Tve - (f/df)*0.5;
     
     if (iIter == 0) {
-      rhoCvve1b = rhoCvve;
       Cves1 = Cves;
       Cvvs1 = Cvvs;
       eels1 = eels;
@@ -511,7 +513,7 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
     }
     
     /*--- Check for convergence ---*/
-    if (fabs(Primitive[TVE_INDEX]-Tve) < tol) break;
+    if (fabs(Tve2-Tve) < tol) break;
     if (iIter == maxIter-1) {
       cout << "WARNING!!! Tve convergence not reached!" << endl;
       cout << "Tve: " << Primitive[TVE_INDEX] << ", T: " << Primitive[T_INDEX] << endl;
@@ -523,16 +525,20 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
       cout << "Cves1: " << Cves1 << endl;
       cout << "Cvve1a: " << rhoCvve1a << endl;
       cout << "Cvve1b: " << rhoCvve1b << endl;
-      cout << "f1; " << f1 << endl;
-      cout << "df1; " << df1 << endl;
+      cout << "f1: " << f1 << endl;
+      cout << "df1: " << df1 << endl;
       cout << endl << "**********" << endl;
       for (unsigned short iVar = 0; iVar < nVar; iVar++)
         cout << "Solution[" << iVar << "]: " << Solution[iVar] << endl;
-      Primitive[TVE_INDEX] = Primitive[T_INDEX];
+      Tve2 = Primitive[TVE_INDEX];
     }
-    Tve = Primitive[TVE_INDEX];
+    Tve = Tve2;
     
   }
+  
+  if (Tve2 <= 0)
+    Tve2 = 1E-8;
+  Primitive[TVE_INDEX] = Tve2;
   
   /*--- Assign Gas Properties ---*/
   Primitive[RHOCVTR_INDEX] = rhoCvtr;
@@ -760,6 +766,12 @@ bool CTNE2EulerVariable::SetPrimVar_Compressible(CConfig *config) {
  	check_press = SetPressure(config);        // Requires T & Tve computation.
 	check_sos   = SetSoundSpeed(config);      // Requires density, pressure, rhoCvtr, & rhoCvve.
   SetdPdrhos(config);                       // Requires density, pressure, rhoCvtr, & rhoCvve.  
+  
+  for (iVar = 0; iVar < nPrimVar; iVar++) {
+    if (isnan(Primitive[iVar]))
+      cout << "iVar NaN: " << iVar << endl;
+  }
+  
   
   /*--- Check that the solution has a physical meaning ---*/
   if (check_dens || check_press || check_sos || check_temp) {

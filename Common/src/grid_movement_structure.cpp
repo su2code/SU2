@@ -40,39 +40,52 @@ CVolumetricMovement::~CVolumetricMovement(void) {
 
 }
 
-void CVolumetricMovement::UpdateMultiGrid(CGeometry **geometry, CConfig *config) {
-	unsigned long Fine_Point, Coarse_Point;
-	unsigned short iDim, iChildren;
-	double Area_Parent, Area_Children;
-	unsigned short nDim = geometry[0]->GetnDim();
-	double *GridVel_fine, *GridVel;
-	GridVel = new double[nDim];
 
-	for (unsigned short iMGlevel = 1; iMGlevel <=config->GetMGLevels(); iMGlevel++) {
-		geometry[iMGlevel]->SetControlVolume(config,geometry[iMGlevel-1], UPDATE);
-		geometry[iMGlevel]->SetBoundControlVolume(config,geometry[iMGlevel-1], UPDATE);
-	}
-
-	for (unsigned short iMesh = 0; iMesh < config->GetMGLevels(); iMesh++) {
-		for (Coarse_Point = 0; Coarse_Point < geometry[iMesh+1]->GetnPoint(); Coarse_Point++) {
-			Area_Parent = geometry[iMesh+1]->node[Coarse_Point]->GetVolume();
-
-			for (iDim = 0; iDim < nDim; iDim++) GridVel[iDim] = 0.0;
-
-			for (iChildren = 0; iChildren < 
-				geometry[iMesh+1]->node[Coarse_Point]->GetnChildren_CV(); iChildren++) {
-	
-				Fine_Point = geometry[iMesh+1]->node[Coarse_Point]->GetChildren_CV(iChildren);
-				Area_Children = geometry[iMesh]->node[Fine_Point]->GetVolume();
-				GridVel_fine = geometry[iMesh]->node[Fine_Point]->GetGridVel();
-
-				for (iDim = 0; iDim < nDim; iDim++)
-					GridVel[iDim] += GridVel_fine[iDim]*Area_Children/Area_Parent;  
-			}
-			geometry[iMesh+1]->node[Coarse_Point]->SetGridVel(GridVel);
+void CVolumetricMovement::UpdateGridCoord(CGeometry *geometry, CConfig *config) {
+  
+  unsigned short iDim;
+	unsigned long iPoint, total_index;
+	double new_coord;
+  
+  /*--- Update the grid coordinates using the solution of the linear system
+   after grid deformation (LinSysSol contains the x, y, z displacements). ---*/
+  
+	for (iPoint = 0; iPoint < nPoint; iPoint++)
+		for (iDim = 0; iDim < nDim; iDim++) {
+			total_index = iPoint*nDim + iDim;
+			new_coord = geometry->node[iPoint]->GetCoord(iDim)+LinSysSol[total_index];
+			if (fabs(new_coord) < EPS*EPS) new_coord = 0.0;
+			geometry->node[iPoint]->SetCoord(iDim, new_coord);
 		}
-	}
-	delete [] GridVel;
+  
+}
+
+void CVolumetricMovement::UpdateDualGrid(CGeometry *geometry, CConfig *config) {
+  
+  /*--- After moving all nodes, update the dual mesh. Recompute the edges and
+   dual mesh control volumes in the domain and on the boundaries. ---*/
+  
+	geometry->SetCG();
+	geometry->SetControlVolume(config, UPDATE);
+	geometry->SetBoundControlVolume(config, UPDATE);
+  
+}
+
+void CVolumetricMovement::UpdateMultiGrid(CGeometry **geometry, CConfig *config) {
+  
+  unsigned short iMGfine, iMGlevel, nMGlevel = config->GetMGLevels();
+  
+  /*--- Update the multigrid structure after moving the finest grid,
+   including computing the grid velocities on the coarser levels. ---*/
+  
+  for (iMGlevel = 1; iMGlevel <= nMGlevel; iMGlevel++) {
+    iMGfine = iMGlevel-1;
+    geometry[iMGlevel]->SetControlVolume(config,geometry[iMGfine], UPDATE);
+    geometry[iMGlevel]->SetBoundControlVolume(config,geometry[iMGfine],UPDATE);
+    geometry[iMGlevel]->SetCoord(geometry[iMGfine]);
+    geometry[iMGlevel]->SetRestricted_GridVelocity(geometry[iMGfine],config);
+  }
+ 
 }
 
 double CVolumetricMovement::SetSpringMethodContributions_Edges(CGeometry *geometry) {
@@ -143,13 +156,11 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
   
 	unsigned short iVar, iDim;
 	unsigned long Point_0, Point_1, Point_2, Point_3, iElem, iEdge, ElemCounter = 0;
-  double *Coord_0, *Coord_1, Length, MinLength = 1E10, **StiffMatrix_Elem;
+  double *Coord_0, *Coord_1, Length, MinLength = 1E10, **StiffMatrix_Elem, Scale;
   double *Edge_Vector = new double [nDim];
   bool RightVol;
-  vector<unsigned long> Degenerated_Elem;
   
   int rank = MASTER_NODE;
-  
 #ifndef NO_MPI
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
@@ -166,13 +177,12 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
   }
   
   /*--- First, check the minimum edge length in the entire mesh. ---*/
+  
 	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
 		/*--- Points in edge and coordinates ---*/
-		Point_0 = geometry->edge[iEdge]->GetNode(0);
-		Point_1 = geometry->edge[iEdge]->GetNode(1);
-		Coord_0 = geometry->node[Point_0]->GetCoord();
-		Coord_1 = geometry->node[Point_1]->GetCoord();
+		Point_0 = geometry->edge[iEdge]->GetNode(0);  Coord_0 = geometry->node[Point_0]->GetCoord();
+		Point_1 = geometry->edge[iEdge]->GetNode(1);  Coord_1 = geometry->node[Point_1]->GetCoord();
     
 		/*--- Compute Edge_Vector ---*/
 		Length = 0;
@@ -190,6 +200,9 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
   MPI::COMM_WORLD.Allreduce(&MinLength_Local, &MinLength, 1, MPI::DOUBLE, MPI::MIN);
 #endif
   
+  /*--- Second, compute min volume in the entire mesh. ---*/
+  Scale = Check_Grid(geometry);
+  
 	/*--- Compute contributions from each element by forming the stiffness matrix (FEA) ---*/
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
 
@@ -199,7 +212,7 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
       Point_0 = geometry->elem[iElem]->GetNode(0);
       Point_1 = geometry->elem[iElem]->GetNode(1);
       Point_2 = geometry->elem[iElem]->GetNode(2);      
-      RightVol = SetFEA_StiffMatrix2D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2);
+      RightVol = SetFEA_StiffMatrix2D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Scale);
       AddFEA_StiffMatrix2D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2);
       
     }
@@ -211,116 +224,20 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
       Point_1 = geometry->elem[iElem]->GetNode(1);
       Point_2 = geometry->elem[iElem]->GetNode(2);
       Point_3 = geometry->elem[iElem]->GetNode(3);
-      RightVol = SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
+      RightVol = SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3, Scale);
       AddFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
           
     }
     
     /*--- Create a list with the degenerated elements ---*/
 
-    if (!RightVol) {
-      ElemCounter++;
-      Degenerated_Elem.push_back(iElem);
-    }
+    if (!RightVol) ElemCounter++;
       
 	}
-	
-//  unsigned short jVar;
-//  unsigned long nEdge = geometry->GetnEdge();
-//  double **Block;
-//  Block = new double*[nVar];
-//  for (iVar = 0; iVar < nVar; iVar++)
-//    Block[iVar] = new double[nVar];
-//  double DeltaX, DeltaY, DeltaZ;
-//  bool *FixedEdge;
-//  FixedEdge = new bool[nEdge];
-//  for (iEdge = 0; iEdge < nEdge; iEdge++)
-//    FixedEdge[iEdge] = false;
-  
-//  /*--- Fix the stifness matrix using the degenerated elements ---*/
-//  for (iElem = 0; iElem < Degenerated_Elem.size(); iElem++) {
-//    
-//    Point_0 = geometry->elem[iElem]->GetNode(0);
-//    Point_1 = geometry->elem[iElem]->GetNode(1);
-//    Point_2 = geometry->elem[iElem]->GetNode(2);
-//    Point_3 = geometry->elem[iElem]->GetNode(3);
-//    
-//    
-//    StiffMatrix.GetBlock(Point_0, Point_0); StiffMatrix.ReturnBlock(Block);
-//    DeltaX = Block[0][0]; DeltaY = Block[1][1]; DeltaZ = Block[2][2];
-//    Block[0][0] = EPS; Block[1][1] = EPS; Block[2][2] = EPS;
-//    StiffMatrix.SetBlock(Point_0, Point_0, Block);
-//    for (iVar = 0; iVar < nVar; iVar++)
-//      for (jVar = 0; jVar < nVar; jVar++)
-//        Block[iVar][jVar] = 0.0;
-//    Block[0][0] = DeltaX; Block[1][1] = DeltaY; Block[2][2] = DeltaZ;
-//    
-//    iEdge = geometry->FindEdge(Point_0, Point_1);
-//    if (!FixedEdge[iEdge]) { StiffMatrix.AddBlock(Point_0, Point_1, Block); FixedEdge[iEdge] = true; }
-//    iEdge = geometry->FindEdge(Point_0, Point_2);
-//    if (!FixedEdge[iEdge]) { StiffMatrix.AddBlock(Point_0, Point_2, Block); FixedEdge[iEdge] = true; }
-//    iEdge = geometry->FindEdge(Point_0, Point_3);
-//    if (!FixedEdge[iEdge]) { StiffMatrix.AddBlock(Point_0, Point_3, Block); FixedEdge[iEdge] = true; }
-//
-//    StiffMatrix.GetBlock(Point_1, Point_0); StiffMatrix.ReturnBlock(Block);
-//    DeltaX = Block[0][0]; DeltaY = Block[1][1]; DeltaZ = Block[2][2];
-//    Block[0][0] = EPS; Block[1][1] = EPS; Block[2][2] = EPS;
-//    
-//    iEdge = geometry->FindEdge(Point_1, Point_0);
-//    if (!FixedEdge[iEdge]) { StiffMatrix.SetBlock(Point_1, Point_0, Block); FixedEdge[iEdge] = true; }
-//    for (iVar = 0; iVar < nVar; iVar++)
-//      for (jVar = 0; jVar < nVar; jVar++)
-//        Block[iVar][jVar] = 0.0;
-//    Block[0][0] = EPS; Block[1][1] = EPS; Block[2][2] = EPS;
-//    
-//    StiffMatrix.AddBlock(Point_1, Point_1, Block);
-//    iEdge = geometry->FindEdge(Point_1, Point_2);
-//    if (!FixedEdge[iEdge]) { StiffMatrix.AddBlock(Point_1, Point_2, Block); FixedEdge[iEdge] = true; }
-//    iEdge = geometry->FindEdge(Point_1, Point_3);
-//    if (!FixedEdge[iEdge]) { StiffMatrix.AddBlock(Point_1, Point_3, Block); FixedEdge[iEdge] = true; }
-//    
-//    StiffMatrix.GetBlock(Point_2, Point_0); StiffMatrix.ReturnBlock(Block);
-//    DeltaX = Block[0][0]; DeltaY = Block[1][1]; DeltaZ = Block[2][2];
-//    Block[0][0] = EPS; Block[1][1] = EPS; Block[2][2] = EPS;
-//    
-//    
-//    iEdge = geometry->FindEdge(Point_2, Point_0);
-//    if (!FixedEdge[iEdge]) { StiffMatrix.SetBlock(Point_2, Point_0, Block); FixedEdge[iEdge] = true; }
-//    
-//    
-//    for (iVar = 0; iVar < nVar; iVar++)
-//      for (jVar = 0; jVar < nVar; jVar++)
-//        Block[iVar][jVar] = 0.0;
-//    Block[0][0] = DeltaX; Block[1][1] = DeltaY; Block[2][2] = DeltaZ;
-//    iEdge = geometry->FindEdge(Point_2, Point_1);
-//    if (!FixedEdge[iEdge]) { StiffMatrix.AddBlock(Point_2, Point_1, Block); FixedEdge[iEdge] = true; }
-//    StiffMatrix.AddBlock(Point_2, Point_2, Block);
-//    iEdge = geometry->FindEdge(Point_2, Point_3);
-//    if (!FixedEdge[iEdge]) { StiffMatrix.AddBlock(Point_2, Point_3, Block); FixedEdge[iEdge] = true; }
-//    
-//    StiffMatrix.GetBlock(Point_3, Point_0); StiffMatrix.ReturnBlock(Block);
-//    DeltaX = Block[0][0]; DeltaY = Block[1][1]; DeltaZ = Block[2][2];
-//    Block[0][0] = EPS; Block[1][1] = EPS; Block[2][2] = EPS;
-//    
-//    iEdge = geometry->FindEdge(Point_3, Point_0);
-//    if (!FixedEdge[iEdge]) { StiffMatrix.SetBlock(Point_3, Point_0, Block); FixedEdge[iEdge] = true; }
-//    
-//    for (iVar = 0; iVar < nVar; iVar++)
-//      for (jVar = 0; jVar < nVar; jVar++)
-//        Block[iVar][jVar] = 0.0;
-//    Block[0][0] = DeltaX; Block[1][1] = DeltaY; Block[2][2] = DeltaZ;
-//    
-//    iEdge = geometry->FindEdge(Point_3, Point_1);
-//    if (!FixedEdge[iEdge]) { StiffMatrix.AddBlock(Point_3, Point_1, Block); FixedEdge[iEdge] = true; }
-//    iEdge = geometry->FindEdge(Point_3, Point_2);
-//    if (!FixedEdge[iEdge]) { StiffMatrix.AddBlock(Point_3, Point_2, Block); FixedEdge[iEdge] = true; }
-//    StiffMatrix.AddBlock(Point_3, Point_3, Block);
-//  }
-    
   
 #ifndef NO_MPI
-  unsigned long ElemCounter_Local = ElemCounter;
-  MPI::COMM_WORLD.Allreduce(&ElemCounter_Local, &ElemCounter, 1, MPI::DOUBLE, MPI::SUM);
+  unsigned long ElemCounter_Local = ElemCounter; ElemCounter = 0;
+  MPI::COMM_WORLD.Allreduce(&ElemCounter_Local, &ElemCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
 #endif
   
   if ((ElemCounter != 0) && (rank == MASTER_NODE))
@@ -343,8 +260,9 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
 	return MinLength;
 }
 
-void CVolumetricMovement::CheckDeformed_Grid(CGeometry *geometry) {
+double CVolumetricMovement::Check_Grid(CGeometry *geometry) {
 	unsigned long Point_0, Point_1, Point_2, Point_3, iElem, ElemCounter = 0;
+  double Area, Volume, MaxArea = -1E22, MaxVolume = -1E22, MinArea = 1E22, MinVolume = 1E22;
   bool RightVol;
   
   int rank = MASTER_NODE;
@@ -362,7 +280,11 @@ void CVolumetricMovement::CheckDeformed_Grid(CGeometry *geometry) {
       Point_0 = geometry->elem[iElem]->GetNode(0);
       Point_1 = geometry->elem[iElem]->GetNode(1);
       Point_2 = geometry->elem[iElem]->GetNode(2);
-      RightVol = CheckDeformed_Elem2D(geometry, iElem, Point_0, Point_1, Point_2);
+      RightVol = Check_Elem2D(geometry, iElem, Point_0, Point_1, Point_2, &Area);
+      
+      MaxArea = max(MaxArea, Area);
+      MinArea = min(MinArea, Area);
+      
     }
     
     /*--- Tetrahedra ---*/
@@ -371,7 +293,11 @@ void CVolumetricMovement::CheckDeformed_Grid(CGeometry *geometry) {
       Point_1 = geometry->elem[iElem]->GetNode(1);
       Point_2 = geometry->elem[iElem]->GetNode(2);
       Point_3 = geometry->elem[iElem]->GetNode(3);
-      RightVol = CheckDeformed_Elem3D(geometry, iElem, Point_0, Point_1, Point_2, Point_3);
+      RightVol = Check_Elem3D(geometry, iElem, Point_0, Point_1, Point_2, Point_3, &Volume);
+      
+      MaxVolume = max(MaxVolume, Volume);
+      MinVolume = min(MinVolume, Volume);
+      
     }
     
     if (!RightVol) ElemCounter++;
@@ -379,18 +305,25 @@ void CVolumetricMovement::CheckDeformed_Grid(CGeometry *geometry) {
 	}
 
 #ifndef NO_MPI
-  unsigned long ElemCounter_Local = ElemCounter;
-  MPI::COMM_WORLD.Allreduce(&ElemCounter_Local, &ElemCounter, 1, MPI::DOUBLE, MPI::SUM);
+  unsigned long ElemCounter_Local = ElemCounter; ElemCounter = 0;
+  double MaxVolume_Local = MaxVolume; MaxVolume = 0.0;
+  double MinVolume_Local = MinVolume; MinVolume = 0.0;
+
+  MPI::COMM_WORLD.Allreduce(&ElemCounter_Local, &ElemCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+  MPI::COMM_WORLD.Allreduce(&MaxVolume_Local, &MaxVolume, 1, MPI::DOUBLE, MPI::MAX);
+  MPI::COMM_WORLD.Allreduce(&MinVolume_Local, &MinVolume, 1, MPI::DOUBLE, MPI::MIN);
 #endif
   
   if ((ElemCounter != 0) && (rank == MASTER_NODE))
     cout <<"There are " << ElemCounter << " elements with negative volume.\n" << endl;
 
+  if (nDim == 2) return MinArea;
+  else return MinVolume;
 }
 
 bool CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, double **StiffMatrix_Elem,
                                                unsigned long val_Point_0, unsigned long val_Point_1,
-                                               unsigned long val_Point_2) {
+                                               unsigned long val_Point_2, double scale) {
   unsigned short iDim, iVar, jVar, kVar;
   double B_Matrix[6][12], BT_Matrix[12][6], D_Matrix[6][6], Aux_Matrix[12][6];
   double a[3], b[3], c[3], Area, E, Mu, Lambda;
@@ -411,7 +344,7 @@ bool CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, double **Sti
   
   Area = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
   
-  if (Area < EPS) {
+  if (Area < 0.0) {
     
     /*--- The initial grid has degenerated elements ---*/
 
@@ -430,9 +363,9 @@ bool CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, double **Sti
      proportional to the area/volume of the cell. Using Mu = E & Lambda = -E
      is a modification to help allow rigid rotation of elements (see
      "Robust Mesh Deformation using the Linear Elasticity Equations" by
-     R. P. Dwight. This might need more testing... ---*/
+     R. P. Dwight. ---*/
     
-    E = 1.0 / Area;
+    E = 1.0 / Area * fabs(scale);
     Mu = E;
     Lambda = -E;
     
@@ -488,7 +421,7 @@ bool CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, double **Sti
 
 bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **StiffMatrix_Elem,
                                                unsigned long val_Point_0, unsigned long val_Point_1,
-                                               unsigned long val_Point_2, unsigned long val_Point_3) {
+                                               unsigned long val_Point_2, unsigned long val_Point_3, double scale) {
   unsigned short iVar, jVar, kVar, iDim;
   double B_Matrix[6][12], BT_Matrix[12][6], D_Matrix[6][6], Aux_Matrix[12][6];
   double a[4], b[4], c[4], d[4], Volume, E, Mu, Lambda;
@@ -510,7 +443,7 @@ bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
   Volume = (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
-  if (Volume < EPS) {
+  if (Volume <= 0.0) {
     
     /*--- The initial grid has degenerated elements ---*/
      
@@ -529,9 +462,9 @@ bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
      proportional to the area/volume of the cell. Using Mu = E & Lambda = -E
      is a modification to help allow rigid rotation of elements (see
      "Robust Mesh Deformation using the Linear Elasticity Equations" by
-     R. P. Dwight. This might need more testing... ---*/
+     R. P. Dwight. ---*/
     
-    E = 1.0 / Volume;
+    E = 1.0 / Volume * fabs(scale);
     Mu = E;
     Lambda = -E;
     
@@ -622,8 +555,8 @@ bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
   
 }
 
-void CVolumetricMovement::AddFEA_StiffMatrix2D(CGeometry *geometry, double **StiffMatrix_Elem,
-                                               unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2) {
+void CVolumetricMovement::AddFEA_StiffMatrix2D(CGeometry *geometry, double **StiffMatrix_Elem, unsigned long val_Point_0,
+                                               unsigned long val_Point_1, unsigned long val_Point_2) {
   unsigned short iVar, jVar;
   unsigned short nVar = geometry->GetnDim();
   
@@ -683,8 +616,8 @@ void CVolumetricMovement::AddFEA_StiffMatrix2D(CGeometry *geometry, double **Sti
   
 }
 
-void CVolumetricMovement::AddFEA_StiffMatrix3D(CGeometry *geometry, double **StiffMatrix_Elem,
-                                               unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2, unsigned long val_Point_3) {
+void CVolumetricMovement::AddFEA_StiffMatrix3D(CGeometry *geometry, double **StiffMatrix_Elem, unsigned long val_Point_0, unsigned long val_Point_1,
+                                               unsigned long val_Point_2, unsigned long val_Point_3) {
   unsigned short iVar, jVar;
   unsigned short nVar = geometry->GetnDim();
   
@@ -788,10 +721,11 @@ void CVolumetricMovement::AddFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
   
 }
 
-bool CVolumetricMovement::CheckDeformed_Elem2D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2) {
+bool CVolumetricMovement::Check_Elem2D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0,
+                                       unsigned long val_Point_1, unsigned long val_Point_2, double *Area) {
   
   unsigned short iDim;
-  double a[3], b[3], Area;
+  double a[3], b[3];
   
   double *Coord_0 = geometry->node[val_Point_0]->GetCoord();
   double *Coord_1 = geometry->node[val_Point_1]->GetCoord();
@@ -802,9 +736,9 @@ bool CVolumetricMovement::CheckDeformed_Elem2D(CGeometry *geometry, unsigned lon
     b[iDim] = Coord_1[iDim]-Coord_2[iDim];
   }
   
-  Area = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
+  (*Area) = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
   
-  if (Area < 0.0) {
+  if ((*Area) < 0.0) {
  
     return false;
 
@@ -813,10 +747,11 @@ bool CVolumetricMovement::CheckDeformed_Elem2D(CGeometry *geometry, unsigned lon
       
 }
 
-bool CVolumetricMovement::CheckDeformed_Elem3D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2, unsigned long val_Point_3) {
+bool CVolumetricMovement::Check_Elem3D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1,
+                                       unsigned long val_Point_2, unsigned long val_Point_3, double *Volume) {
   
   unsigned short iDim;
-  double r1[3], r2[3], r3[3], CrossProduct[3], Volume;
+  double r1[3], r2[3], r3[3], CrossProduct[3];
   
   double *Coord_0 = geometry->node[val_Point_0]->GetCoord();
   double *Coord_1 = geometry->node[val_Point_1]->GetCoord();
@@ -833,9 +768,9 @@ bool CVolumetricMovement::CheckDeformed_Elem3D(CGeometry *geometry, unsigned lon
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
   
-  Volume = (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  (*Volume) = (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
-  if (Volume < 0.0) {
+  if ((*Volume) < 0.0) {
     
     return false;
 
@@ -969,24 +904,9 @@ void CVolumetricMovement::SetDomainDisplacements(CGeometry *geometry, CConfig *c
 	}
 }
 
-void CVolumetricMovement::UpdateGridCoord(CGeometry *geometry, CConfig *config) {
-	unsigned long iPoint, total_index;
-	double new_coord;
-	unsigned short iDim;
-  
-	for (iPoint = 0; iPoint < nPoint; iPoint++)
-		for (iDim = 0; iDim < nDim; iDim++) {
-			total_index = iPoint*nDim + iDim;
-			new_coord = geometry->node[iPoint]->GetCoord(iDim) + LinSysSol[total_index];
-			if (fabs(new_coord) < EPS*EPS) new_coord = 0.0;
-			geometry->node[iPoint]->SetCoord(iDim, new_coord);
-		}
-  
-}
-
 void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo) {
 	unsigned long IterLinSol, iGridDef_Iter;
-  double MinLength, NumError;
+  double MinLength, NumError, MinVol;
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
@@ -1013,6 +933,10 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
   
   for (iGridDef_Iter = 0; iGridDef_Iter < config->GetGridDef_Iter(); iGridDef_Iter++) {
     
+    /*--- Initialize vector and sparse matrix ---*/
+    
+    LinSysSol.SetValZero();
+    LinSysRes.SetValZero();
     StiffMatrix.SetValZero();
     
     /*--- Compute the stiffness matrix entries for all nodes/elements in the
@@ -1043,39 +967,39 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     StiffMatrix.SendReceive_Solution(LinSysSol, geometry, config);
     StiffMatrix.SendReceive_Solution(LinSysRes, geometry, config);
     
-    /*--- Definition of the preconditioner and the matrix vector multiplication ---*/
+    /*--- Definition of the preconditioner matrix vector multiplication, and linear solver ---*/
     
     CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
     CPreconditioner* precond      = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
-        
-    /*--- Linear solver class ---*/
-    CSysSolve system;
+    CSysSolve *system             = new CSysSolve();
     
     /*--- Solve the linear system ---*/
     
-    if (rank == MASTER_NODE) cout << endl;
-    if (config->GetKind_GridDef_Method() == FEA) IterLinSol = system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 300, true);
-    if (config->GetKind_GridDef_Method() == SPRING) IterLinSol = system.ConjugateGradient(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 300, true);
-    if (rank == MASTER_NODE) cout << endl;
+    if (config->GetKind_GridDef_Method() == FEA) IterLinSol = system->FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 100, false);
+    if (config->GetKind_GridDef_Method() == SPRING) IterLinSol = system->ConjugateGradient(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 100, false);
 
     /*--- Deallocate memory needed by the Krylov linear solver ---*/
-    
+
+    delete system;
     delete mat_vec;
     delete precond;
-    
+
     /*--- Update the grid coordinates and cell volumes using the solution
      of the linear system (usol contains the x, y, z displacements). ---*/
     
     UpdateGridCoord(geometry, config);
-    if (UpdateGeo) {
-      geometry->SetCG();
-      geometry->SetControlVolume(config, UPDATE);
-      geometry->SetBoundControlVolume(config, UPDATE);
-    }
+    if (UpdateGeo)
+      UpdateDualGrid(geometry, config);
 
     /*--- Check for failed deformation (negative volumes). ---*/
     
-    CheckDeformed_Grid(geometry);
+    MinVol = Check_Grid(geometry);
+    
+    if (rank == MASTER_NODE) {
+      cout << "Non-linear iter.: " << iGridDef_Iter << "/" << config->GetGridDef_Iter()
+      << ". Linear iter.: " << IterLinSol << ". Min vol.: " << MinVol
+      << ". Error: " << NumError << "." <<endl;
+    }
     
   }
  
@@ -1087,8 +1011,8 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
 }
 
-void CVolumetricMovement::SetRigidRotation(CGeometry *geometry, CConfig *config,
-                                           unsigned short iZone, unsigned long iter) {
+void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
+                                         unsigned short iZone, unsigned long iter) {
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
@@ -1150,12 +1074,9 @@ void CVolumetricMovement::SetRigidRotation(CGeometry *geometry, CConfig *config,
   dphi   = Omega[1]*dt;
   dpsi   = Omega[2]*dt;
 
-  if (rank == MASTER_NODE) {
-	  cout.precision(4);
-	  cout << "Delta rotation angles (about x, y, z axes): (";
-	  cout << dtheta/DEG2RAD << ", ";
-	  cout << dphi/DEG2RAD << ", ";
-	  cout << dpsi/DEG2RAD << ") degrees." << endl;
+  if (rank == MASTER_NODE && iter == 0) {
+    cout << " Angular velocity: (" << Omega[0] << ", " << Omega[1];
+    cout << ", " << Omega[2] << ") rad/s." << endl;
   }
   
 	/*--- Store angles separately for clarity. Compute sines/cosines. ---*/
@@ -1213,20 +1134,21 @@ void CVolumetricMovement::SetRigidRotation(CGeometry *geometry, CConfig *config,
     
     /*--- Store new node location & grid velocity. Add center. 
      Do not store the grid velocity if this is an adjoint calculation.---*/
+    
     for (iDim = 0; iDim < nDim; iDim++) {
       geometry->node[iPoint]->SetCoord(iDim,rotCoord[iDim] + Center[iDim]);
       if (!adjoint) geometry->node[iPoint]->SetGridVel(iDim, newGridVel[iDim]);
+      
     }
   }
   
 	/*--- After moving all nodes, update geometry class ---*/
-	geometry->SetCG();
-	geometry->SetControlVolume(config, UPDATE);
-	geometry->SetBoundControlVolume(config, UPDATE);
+  
+	UpdateDualGrid(geometry, config);
 
 }
 
-void CVolumetricMovement::SetRigidPitching(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter) {
+void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter) {
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
@@ -1308,14 +1230,16 @@ void CVolumetricMovement::SetRigidPitching(CGeometry *geometry, CConfig *config,
   alphaDot[0] = -Omega[0]*Ampl[0]*cos(Omega[0]*time_new);
   alphaDot[1] = -Omega[1]*Ampl[1]*cos(Omega[1]*time_new);
   alphaDot[2] = -Omega[2]*Ampl[2]*cos(Omega[2]*time_new);
-  
-  if (rank == MASTER_NODE) {
-    //cout << fixed;
-		cout << "New pitching angles (about x, y, z axes): (";
-    cout << Ampl[0]*sin(Omega[0]*time_new + Phase[0])/DEG2RAD << ", ";
-    cout << Ampl[1]*sin(Omega[1]*time_new + Phase[1])/DEG2RAD << ", ";
-    cout << Ampl[2]*sin(Omega[2]*time_new + Phase[2])/DEG2RAD << ") ";
-    cout << "degrees." << endl;
+
+  if (rank == MASTER_NODE && iter == 0) {
+      cout << " Pitching frequency: (" << Omega[0] << ", " << Omega[1];
+      cout << ", " << Omega[2] << ") rad/s." << endl;
+      cout << " Pitching amplitude: (" << Ampl[0]/DEG2RAD << ", ";
+      cout << Ampl[1]/DEG2RAD << ", " << Ampl[2]/DEG2RAD;
+      cout << ") degrees."<< endl;
+      cout << " Pitching phase lag: (" << Phase[0]/DEG2RAD << ", ";
+      cout << Phase[1]/DEG2RAD <<", "<< Phase[2]/DEG2RAD;
+      cout << ") degrees."<< endl;
   }
   
 	/*--- Store angles separately for clarity. Compute sines/cosines. ---*/
@@ -1381,13 +1305,12 @@ void CVolumetricMovement::SetRigidPitching(CGeometry *geometry, CConfig *config,
   }
   
 	/*--- After moving all nodes, update geometry class ---*/
-	geometry->SetCG();
-	geometry->SetControlVolume(config, UPDATE);
-	geometry->SetBoundControlVolume(config, UPDATE);
+  
+	UpdateDualGrid(geometry, config);
   
 }
 
-void CVolumetricMovement::SetRigidPlunging(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter) {
+void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter) {
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
@@ -1460,12 +1383,11 @@ void CVolumetricMovement::SetRigidPlunging(CGeometry *geometry, CConfig *config,
 	xDot[1] = -Ampl[1]*Omega[1]*(cos(Omega[1]*time_new));
 	xDot[2] = -Ampl[2]*Omega[2]*(cos(Omega[2]*time_new));
   
-  if (rank == MASTER_NODE) {
-    //cout << fixed;
-		cout << "Delta plunging increments (dx, dy, dz): (";
-    cout << deltaX[0] << ", ";
-    cout << deltaX[1] << ", ";
-    cout << deltaX[2] << ")." << endl;
+  if (rank == MASTER_NODE && iter == 0) {
+    cout << " Plunging frequency: (" << Omega[0] << ", " << Omega[1];
+    cout << ", " << Omega[2] << ") rad/s." << endl;
+    cout << " Plunging amplitude: (" << Ampl[0] << ", ";
+    cout << Ampl[1] << ", " << Ampl[2] <<  ") m."<< endl;
   }
   
 	/*--- Loop over and move each node in the volume mesh ---*/
@@ -1504,14 +1426,21 @@ void CVolumetricMovement::SetRigidPlunging(CGeometry *geometry, CConfig *config,
   config->SetMotion_Origin_Y(iZone,Center[1]+deltaX[1]);
   config->SetMotion_Origin_Z(iZone,Center[2]+deltaX[2]);
   
+  /*--- As the body origin may have moved, pring it to the console ---*/
+  
+  if (rank == MASTER_NODE) {
+    cout << " Body origin: (" << Center[0]+deltaX[0];
+    cout << ", " << Center[1]+deltaX[1] << ", " << Center[2]+deltaX[2];
+    cout << ")." << endl;
+  }
+  
 	/*--- After moving all nodes, update geometry class ---*/
-	geometry->SetCG();
-	geometry->SetControlVolume(config, UPDATE);
-	geometry->SetBoundControlVolume(config, UPDATE);
+	
+  UpdateDualGrid(geometry, config);
   
 }
 
-void CVolumetricMovement::SetRigidTranslation(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter) {
+void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter) {
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
@@ -1575,13 +1504,13 @@ void CVolumetricMovement::SetRigidTranslation(CGeometry *geometry, CConfig *conf
 	deltaX[0] = xDot[0]*deltaT;
 	deltaX[1] = xDot[1]*deltaT;
 	deltaX[2] = xDot[2]*deltaT;
-  
+
   if (rank == MASTER_NODE) {
-    //cout << fixed;
-		cout << "Delta translation increments (dx, dy, dz): (";
-    cout << deltaX[0] << ", ";
-    cout << deltaX[1] << ", ";
-    cout << deltaX[2] << ")." << endl;
+    cout << " New physical time: " << time_new << " seconds." << endl;
+    if (iter == 0) {
+    cout << " Translational velocity: (" << xDot[0] << ", " << xDot[1];
+    cout << ", " << xDot[2] << ") m/s." << endl;
+    }
   }
   
 	/*--- Loop over and move each node in the volume mesh ---*/
@@ -1612,9 +1541,8 @@ void CVolumetricMovement::SetRigidTranslation(CGeometry *geometry, CConfig *conf
   config->SetMotion_Origin_Z(iZone,Center[2]+deltaX[2]);
   
 	/*--- After moving all nodes, update geometry class ---*/
-	geometry->SetCG();
-	geometry->SetControlVolume(config, UPDATE);
-	geometry->SetBoundControlVolume(config, UPDATE);
+	
+  UpdateDualGrid(geometry, config);
   
 }
 
@@ -3186,7 +3114,8 @@ void CSurfaceMovement::SetRotation(CGeometry *boundary, CConfig *config, unsigne
 		}	
 }
 
-void CSurfaceMovement::SetMoving_Walls(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter) {
+void CSurfaceMovement::Moving_Walls(CGeometry *geometry, CConfig *config,
+                                    unsigned short iZone, unsigned long iter) {
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
@@ -3194,58 +3123,91 @@ void CSurfaceMovement::SetMoving_Walls(CGeometry *geometry, CConfig *config, uns
 #endif
   
   /*--- Local variables ---*/
-  unsigned short iMarker, iDim, nDim = geometry->GetnDim();
+  unsigned short iMarker, jMarker, iDim, nDim = geometry->GetnDim();
   unsigned long iPoint, iVertex;
-  double xDot[3] = {0.0,0.0,0.0};
-  bool adjoint = config->GetAdjoint();
-	
-  /*--- Retrieve values from the config file ---*/
-
-//  double Lref = config->GetLength_Ref();
-
-  /*--- Get prescribed wall translation speed from config (non-dim?) ---*/
-
-  xDot[0] = config->GetTranslation_Rate_X(iZone);
-  xDot[1] = config->GetTranslation_Rate_Y(iZone);
-  xDot[2] = config->GetTranslation_Rate_Z(iZone);
+  double xDot[3] = {0.0,0.0,0.0}, *Coord, Center[3], Omega[3], r[3], GridVel[3];
+	double L_Ref     = config->GetLength_Ref();
+  double Omega_Ref = config->GetOmega_Ref();
+  double Vel_Ref   = config->GetVelocity_Ref();
+	string Marker_Tag;
   
-  /*--- Store grid velocity for each node on the moving surface(s) ---*/
+  /*--- Store grid velocity for each node on the moving surface(s).
+   Sum and store the x, y, & z velocities due to translation and rotation. ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_Moving(iMarker) == YES) {
       
+      /*--- Identify iMarker from the list of those under MARKER_MOVING ---*/
+      
+      Marker_Tag = config->GetMarker_All_Tag(iMarker);
+      jMarker    = config->GetMarker_Moving(Marker_Tag);
+      
+      /*--- Get prescribed wall speed from config for this marker ---*/
+      
+      Center[0] = config->GetMotion_Origin_X(jMarker);
+      Center[1] = config->GetMotion_Origin_Y(jMarker);
+      Center[2] = config->GetMotion_Origin_Z(jMarker);
+      Omega[0]  = config->GetRotation_Rate_X(jMarker)/Omega_Ref;
+      Omega[1]  = config->GetRotation_Rate_Y(jMarker)/Omega_Ref;
+      Omega[2]  = config->GetRotation_Rate_Z(jMarker)/Omega_Ref;
+      xDot[0]   = config->GetTranslation_Rate_X(jMarker)/Vel_Ref;
+      xDot[1]   = config->GetTranslation_Rate_Y(jMarker)/Vel_Ref;
+      xDot[2]   = config->GetTranslation_Rate_Z(jMarker)/Vel_Ref;
+      
       if (rank == MASTER_NODE && iter == 0) {
-        cout << " Setting wall velocity = (" << xDot[0] << ", " << xDot[1];
-        cout << ", " << xDot[2] << ") m/s for marker: ";
-        cout << config->GetMarker_All_Tag(iMarker) << "." << endl;
+        cout << " Storing grid velocity for marker: ";
+        cout << Marker_Tag << "." << endl;
+        cout << " Translational velocity: (" << xDot[0] << ", " << xDot[1];
+        cout << ", " << xDot[2] << ") m/s." << endl;
+        cout << " Angular velocity: (" << Omega[0] << ", " << Omega[1];
+        cout << ", " << Omega[2] << ") rad/s about origin: (" << Center[0];
+        cout << ", " << Center[1] << ", " << Center[2] << ")." << endl;
       }
       
-      for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         
-        /*--- Get the point index and store the grid velocity (do not store 
-         if this is an adjoint calculation). ---*/
+        /*--- Get the index and coordinates of the current point ---*/
         
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        Coord  = geometry->node[iPoint]->GetCoord();
+        
+        /*--- Calculate non-dim. position from rotation center ---*/
         for (iDim = 0; iDim < nDim; iDim++)
-          if (!adjoint) geometry->node[iPoint]->SetGridVel(iDim,xDot[iDim]);
+          r[iDim] = (Coord[iDim]-Center[iDim])/L_Ref;
+        if (nDim == 2) r[nDim] = 0.0;
+        
+        /*--- Cross Product of angular velocity and distance from center to
+         get the rotational velocity. Note that we are adding on the velocity
+         due to pure translation as well. ---*/
+        
+        GridVel[0] = xDot[0] + Omega[1]*r[2] - Omega[2]*r[1];
+        GridVel[1] = xDot[1] + Omega[2]*r[0] - Omega[0]*r[2];
+        GridVel[2] = xDot[2] + Omega[0]*r[1] - Omega[1]*r[0];
+        
+        /*--- Store the moving wall velocity for this node ---*/
+        
+        for (iDim = 0; iDim < nDim; iDim++)
+          geometry->node[iPoint]->SetGridVel(iDim,GridVel[iDim]);
+  
       }
 		}
 	}
-  
 }
 
-void CSurfaceMovement::SetBoundary_Flutter2D(CGeometry *geometry, CConfig *config, 
-                                             unsigned long iter, unsigned short iZone) {
+void CSurfaceMovement::Surface_Pitching(CGeometry *geometry, CConfig *config,
+                                        unsigned long iter, unsigned short iZone) {
 	
-	double VarCoord[3], omega, deltaT, *vel;
-  double Center[3], Omega[3], Ampl[3], Phase[3];
-  double alpha, alpha_new, alpha_old, dx, dy;
-  double time_new, time_old;
+	double deltaT, time_new, time_old, Lref, *Coord;
+  double Center[3], Omega[3], Ampl[3], Phase[3], rotCoord[3], r[3], VarCoord[3];
+  double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
+  double dtheta, dphi, dpsi, cosTheta, sinTheta;
+  double cosPhi, sinPhi, cosPsi, sinPsi;
   double DEG2RAD = PI_NUMBER/180.0;
-  unsigned short iMarker;
+  unsigned short iMarker, jMarker, iDim, nDim = geometry->GetnDim();
   unsigned long iPoint, iVertex;
   bool adjoint = config->GetAdjoint();
-    
+  string Marker_Tag;
+  
 #ifndef NO_MPI
 	int rank = MPI::COMM_WORLD.Get_rank();
 #else
@@ -3253,27 +3215,14 @@ void CSurfaceMovement::SetBoundary_Flutter2D(CGeometry *geometry, CConfig *confi
 #endif
 	
   /*--- Retrieve values from the config file ---*/
-  deltaT    = config->GetDelta_UnstTimeND();
-  vel       = config->GetVelocity_FreeStreamND();
   
-  /*--- Pitching origin, frequency, and amplitude from config. ---*/
-  Center[0] = config->GetMotion_Origin_X(iZone);
-  Center[1] = config->GetMotion_Origin_Y(iZone);
-  Center[2] = config->GetMotion_Origin_Z(iZone);
-  Omega[0]  = (config->GetPitching_Omega_X(iZone)/config->GetOmega_Ref());
-  Omega[1]  = (config->GetPitching_Omega_Y(iZone)/config->GetOmega_Ref());
-  Omega[2]  = (config->GetPitching_Omega_Z(iZone)/config->GetOmega_Ref());
-  Ampl[0]   = config->GetPitching_Ampl_X(iZone)*DEG2RAD;
-  Ampl[1]   = config->GetPitching_Ampl_Y(iZone)*DEG2RAD;
-  Ampl[2]   = config->GetPitching_Ampl_Z(iZone)*DEG2RAD;
-  Phase[0]   = config->GetPitching_Phase_X(iZone)*DEG2RAD;
-  Phase[1]   = config->GetPitching_Phase_Y(iZone)*DEG2RAD;
-  Phase[2]   = config->GetPitching_Phase_Z(iZone)*DEG2RAD;
+  deltaT = config->GetDelta_UnstTimeND();
+  Lref   = config->GetLength_Ref();
   
   /*--- Compute delta time based on physical time step ---*/
   if (adjoint) {
     /*--- For the unsteady adjoint, we integrate backwards through
-     physical time, so perform mesh motion in reverse. ---*/ 
+     physical time, so perform mesh motion in reverse. ---*/
     unsigned long nFlowIter  = config->GetnExtIter();
     unsigned long directIter = nFlowIter - iter - 1;
     time_new = static_cast<double>(directIter)*deltaT;
@@ -3285,39 +3234,121 @@ void CSurfaceMovement::SetBoundary_Flutter2D(CGeometry *geometry, CConfig *confi
     time_old = time_new;
     if (iter != 0) time_old = (static_cast<double>(iter)-1.0)*deltaT;
   }
-	
-  /*--- Set x and y origins from the config file specifications. ---*/
-  double x_origin = Center[0], y_origin = Center[1];
-
-  /*--- Update the pitching angle at this time step. Flip sign for
-   nose-up positive convention. ---*/
-  omega     = Omega[2];
-  alpha_new = Ampl[2]*sin(omega*time_new);
-  alpha_old = Ampl[2]*sin(omega*time_old);
-  alpha     = -(1E-12 + (alpha_new - alpha_old));
-	
-	if (rank == MASTER_NODE)
-		cout << "New pitching angle (alpha): " << alpha_new/DEG2RAD << " degrees." << endl;
   
-	/*--- Store movement and velocity of each node on the pitching surface ---*/
+	/*--- Store displacement of each node on the pitching surface ---*/
+  
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_Moving(iMarker) == YES) {
-      for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        dx = geometry->node[iPoint]->GetCoord(0) - x_origin;
-        dy = geometry->node[iPoint]->GetCoord(1) - y_origin;
-        VarCoord[0] = dx*cos(alpha) - dy*sin(alpha) - dx;
-        VarCoord[1] = dx*sin(alpha) + dy*cos(alpha) - dy;
-        VarCoord[2] = 0.0;
-        /*--- Set position and velocity for this node ---*/
-        geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
+      
+      /*--- Identify iMarker from the list of those under MARKER_MOVING ---*/
+      
+      Marker_Tag = config->GetMarker_All_Tag(iMarker);
+      jMarker    = config->GetMarker_Moving(Marker_Tag);
+      
+      /*--- Pitching origin, frequency, and amplitude from config. ---*/
+      
+      Center[0] = config->GetMotion_Origin_X(jMarker);
+      Center[1] = config->GetMotion_Origin_Y(jMarker);
+      Center[2] = config->GetMotion_Origin_Z(jMarker);
+      Omega[0]  = config->GetPitching_Omega_X(jMarker)/config->GetOmega_Ref();
+      Omega[1]  = config->GetPitching_Omega_Y(jMarker)/config->GetOmega_Ref();
+      Omega[2]  = config->GetPitching_Omega_Z(jMarker)/config->GetOmega_Ref();
+      Ampl[0]   = config->GetPitching_Ampl_X(jMarker)*DEG2RAD;
+      Ampl[1]   = config->GetPitching_Ampl_Y(jMarker)*DEG2RAD;
+      Ampl[2]   = config->GetPitching_Ampl_Z(jMarker)*DEG2RAD;
+      Phase[0]  = config->GetPitching_Phase_X(jMarker)*DEG2RAD;
+      Phase[1]  = config->GetPitching_Phase_Y(jMarker)*DEG2RAD;
+      Phase[2]  = config->GetPitching_Phase_Z(jMarker)*DEG2RAD;
+      
+      /*--- Print some information to the console. Be verbose at the first
+       iteration only (mostly for debugging purposes). ---*/
+      
+      if (rank == MASTER_NODE) {
+        cout << " Storing pitching displacement for marker: ";
+        cout << Marker_Tag << "." << endl;
+        if (iter == 0) {
+          cout << " Pitching frequency: (" << Omega[0] << ", " << Omega[1];
+          cout << ", " << Omega[2] << ") rad/s about origin: (" << Center[0];
+          cout << ", " << Center[1] << ", " << Center[2] << ")." << endl;
+          cout << " Pitching amplitude about origin: (" << Ampl[0]/DEG2RAD;
+          cout << ", " << Ampl[1]/DEG2RAD << ", " << Ampl[2]/DEG2RAD;
+          cout << ") degrees."<< endl;
+          cout << " Pitching phase lag about origin: (" << Phase[0]/DEG2RAD;
+          cout << ", " << Phase[1]/DEG2RAD <<", "<< Phase[2]/DEG2RAD;
+          cout << ") degrees."<< endl;
+        }
       }
-		}	
+      
+      /*--- Compute delta change in the angle about the x, y, & z axes. ---*/
+      
+      dtheta = -Ampl[0]*(sin(Omega[0]*time_new + Phase[0])
+                         - sin(Omega[0]*time_old + Phase[0]));
+      dphi   = -Ampl[1]*(sin(Omega[1]*time_new + Phase[1])
+                         - sin(Omega[1]*time_old + Phase[1]));
+      dpsi   = -Ampl[2]*(sin(Omega[2]*time_new + Phase[2])
+                         - sin(Omega[2]*time_old + Phase[2]));
+      
+      /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
+      
+      cosTheta = cos(dtheta);  cosPhi = cos(dphi);  cosPsi = cos(dpsi);
+      sinTheta = sin(dtheta);  sinPhi = sin(dphi);  sinPsi = sin(dpsi);
+      
+      /*--- Compute the rotation matrix. Note that the implicit
+       ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+      
+      rotMatrix[0][0] = cosPhi*cosPsi;
+      rotMatrix[1][0] = cosPhi*sinPsi;
+      rotMatrix[2][0] = -sinPhi;
+      
+      rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
+      rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
+      rotMatrix[2][1] = sinTheta*cosPhi;
+      
+      rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+      rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+      rotMatrix[2][2] = cosTheta*cosPhi;
+      
+      for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        
+        /*--- Index and coordinates of the current point ---*/
+        
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        Coord  = geometry->node[iPoint]->GetCoord();
+        
+        /*--- Calculate non-dim. position from rotation center ---*/
+        
+        for (iDim = 0; iDim < nDim; iDim++)
+          r[iDim] = (Coord[iDim]-Center[iDim])/Lref;
+        if (nDim == 2) r[nDim] = 0.0;
+        
+        /*--- Compute transformed point coordinates ---*/
+        
+        rotCoord[0] = rotMatrix[0][0]*r[0]
+                    + rotMatrix[0][1]*r[1]
+                    + rotMatrix[0][2]*r[2] + Center[0];
+        
+        rotCoord[1] = rotMatrix[1][0]*r[0]
+                    + rotMatrix[1][1]*r[1]
+                    + rotMatrix[1][2]*r[2] + Center[1];
+        
+        rotCoord[2] = rotMatrix[2][0]*r[0]
+                    + rotMatrix[2][1]*r[1]
+                    + rotMatrix[2][2]*r[2] + Center[2];
+        
+        /*--- Calculate delta change in the x, y, & z directions ---*/
+        for (iDim = 0; iDim < nDim; iDim++)
+          VarCoord[iDim] = (rotCoord[iDim]-Coord[iDim])/Lref;
+        if (nDim == 2) VarCoord[nDim] = 0.0;
+        
+        /*--- Set node displacement for volume deformation ---*/
+        geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
+        
+      }
+		}
 	}
-  
 }
 
-void CSurfaceMovement::SetBoundary_Flutter3D(CGeometry *geometry, CConfig *config, 
+void CSurfaceMovement::SetBoundary_Flutter3D(CGeometry *geometry, CConfig *config,
                                              CFreeFormDefBox **FFDBox, unsigned long iter, unsigned short iZone) {
 	
 	double omega, deltaT, *vel;

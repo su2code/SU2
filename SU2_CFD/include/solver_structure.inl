@@ -35,6 +35,8 @@ inline void CSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *con
 
 inline void CSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) { }
 
+inline void CSolver::Set_MPI_Primitive(CGeometry *geometry, CConfig *config) { }
+
 inline void CSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config) { }
@@ -227,9 +229,6 @@ inline void CSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 									   
 inline void CSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, 
 												  CNumerics *numerics, CConfig *config, unsigned short iMesh) { }
-												  
-inline void CSolver::SourceConserv_Residual(CGeometry *geometry, CSolver **solver_container, 
-											   CNumerics *numerics, CConfig *config, unsigned short iMesh) { }
 
 inline void CSolver::Charge_Dist_SourceTerm(CGeometry *geometry, CSolver **solver_container, 
 											  CNumerics *numerics, CConfig *config, unsigned short iMesh) { }

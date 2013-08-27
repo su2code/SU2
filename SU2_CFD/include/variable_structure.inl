@@ -767,14 +767,6 @@ inline void CTurbSAVariable::SetTimeSpectral_Source(unsigned short val_var, doub
 
 inline double CTurbSAVariable::GetTimeSpectral_Source(unsigned short val_var) { return TS_Source[val_var]; }
 
-inline void CVariable::SetKappaPsiVolume(double val_kappapsi_Volume) { }
-
-inline void CAdjNSVariable::SetKappaPsiVolume(double val_kappapsi_Volume) { kappapsi_Volume = val_kappapsi_Volume; }
-
-inline double CVariable::GetKappaPsiVolume() { return 0; }
-
-inline double CAdjNSVariable::GetKappaPsiVolume() { return kappapsi_Volume; }
-
 inline void CVariable::SetEddyViscSens(double *val_EddyViscSens, unsigned short numTotalVar) { }
 
 inline void CAdjTurbVariable::SetEddyViscSens(double *val_EddyViscSens, unsigned short numTotalVar) { 

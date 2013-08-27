@@ -191,26 +191,19 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
                                     unsigned short RunTime_EqSystem, unsigned long Iteration) {
 	unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
     
-    
-	if ((config->GetAdjoint()) || (config->GetKind_Adjoint() != DISCRETE)) {
-        
-        /*--- Perform the time integration ---*/
-        switch (config->GetKind_TimeIntScheme()) {
-			case (RUNGE_KUTTA_EXPLICIT):
-				solver_container[MainSolver]->ExplicitRK_Iteration(geometry, solver_container, config, iRKStep);
-				break;
-			case (EULER_EXPLICIT):
-				solver_container[MainSolver]->ExplicitEuler_Iteration(geometry, solver_container, config);
-				break;
-			case (EULER_IMPLICIT):
-                solver_container[MainSolver]->ImplicitEuler_Iteration(geometry, solver_container, config);
-				break;
-		}
-        
-	} else {
-		solver_container[MainSolver]->Solve_LinearSystem(geometry, solver_container, config);
-	}
-    
+  /*--- Perform the time integration ---*/
+  switch (config->GetKind_TimeIntScheme()) {
+    case (RUNGE_KUTTA_EXPLICIT):
+      solver_container[MainSolver]->ExplicitRK_Iteration(geometry, solver_container, config, iRKStep);
+      break;
+    case (EULER_EXPLICIT):
+      solver_container[MainSolver]->ExplicitEuler_Iteration(geometry, solver_container, config);
+      break;
+    case (EULER_IMPLICIT):
+      solver_container[MainSolver]->ImplicitEuler_Iteration(geometry, solver_container, config);
+      break;
+  }
+  
 }
 
 void CIntegration::Solving_Linear_System(CGeometry *geometry, CSolver *solver, CSolver **solver_container, CConfig *config, 
