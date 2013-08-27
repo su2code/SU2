@@ -305,7 +305,11 @@ int main(int argc, char *argv[]) {
   
 	if (rank == MASTER_NODE)
 		output->SetHistory_Header(&ConvHist_file, config_container[ZONE_0]);
-	
+  
+  /*--- Check for an unsteady restart. Update ExtIter if necessary. ---*/
+  if (config_container[ZONE_0]->GetWrt_Unsteady() && config_container[ZONE_0]->GetRestart())
+    ExtIter = config_container[ZONE_0]->GetUnst_RestartIter();
+  
 	/*--- Main external loop of the solver. Within this loop, each iteration ---*/
   
 	if (rank == MASTER_NODE)

@@ -273,6 +273,8 @@ void CConfig::SetConfig_Options(unsigned short val_nZone) {
 	AddScalarOption("UNST_INT_ITER", Unst_nIntIter, 100);
 	/* DESCRIPTION: Integer number of periodic time instances for Time Spectral */
 	AddScalarOption("TIME_INSTANCES", nTimeInstances, 1);
+  /* DESCRIPTION: Number of internal iterations (dual time method) */
+	AddScalarOption("UNST_RESTART_ITER", Unst_RestartIter, 0);
 	/* DESCRIPTION: Time discretization */
 	AddEnumOption("TIME_DISCRE_FLOW", Kind_TimeIntScheme_Flow, Time_Int_Map, "RUNGE-KUTTA_EXPLICIT");
 	/* DESCRIPTION: Time discretization */

@@ -216,6 +216,7 @@ private:
 	unsigned long ExtIter;			/*!< \brief Current external iteration number. */
 	unsigned long IntIter;			/*!< \brief Current internal iteration number. */
 	unsigned long Unst_nIntIter;			/*!< \brief Number of internal iterations (Dual time Method). */
+  long Unst_RestartIter;			/*!< \brief Iteration number to restart an unsteady simulation (Dual time Method). */
 	unsigned short nRKStep;			/*!< \brief Number of steps of the explicit Runge-Kutta method. */
 	double *RK_Alpha_Step;			/*!< \brief Runge-Kutta beta coefficients. */
 	unsigned short nMultiLevel;		/*!< \brief Number of multigrid levels (coarse levels). */
@@ -1672,6 +1673,12 @@ public:
 	 */
 	unsigned long GetUnst_nIntIter(void);
 
+  /*!
+	 * \brief Get the restart iteration number for unsteady simulations.
+	 * \return Restart iteration number for unsteady simulations.
+	 */
+  long GetUnst_RestartIter(void);
+  
 	/*!
 	 * \brief Retrieves the number of periodic time instances for Time Spectral.
 	 * \return: Number of periodic time instances for Time Spectral.

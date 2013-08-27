@@ -1283,10 +1283,9 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
   
-	unsigned long iPoint, index, flowIter, iPoint_Global;
+	unsigned long iPoint, index, iPoint_Global;
   long iPoint_Local;
-  char buffer[50];
-  unsigned short iField, val_iZone, iVar;
+  unsigned short iField, iVar;
   string Tag, text_line, AdjExt, UnstExt;
   unsigned long iExtIter = config->GetExtIter();
   
