@@ -1080,7 +1080,14 @@ void FieldVelocityMethod(CConfig *config, CGeometry *geometry, CSolver **solver_
     /*--- Check to make sure gust lenght is not zero or negative ---*/
     if (L <= 0.0) {
         cout << "ERROR: The gust length needs to be positive" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+#ifdef NO_MPI
         exit(1);
+#else
+        MPI::COMM_WORLD.Abort(1);
+        MPI::Finalize();
+#endif
     }
     
     /*--- Loop over each node in the volume mesh ---*/
@@ -1093,7 +1100,7 @@ void FieldVelocityMethod(CConfig *config, CGeometry *geometry, CSolver **solver_
         }
 
         // Begin applying the gust
-        if (Physical_dt > tbegin) {
+        if (Physical_t > tbegin) {
             x = geometry->node[iPoint]->GetCoord()[0]; // x-location of the node
             x_gust = (x - x0 - Uinf*(Physical_t-tbegin))/L;
             // Check if we are in the region where the gust is active

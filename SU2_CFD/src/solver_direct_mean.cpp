@@ -2367,6 +2367,10 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 		/*--- Loop over all points ---*/
 		for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
             
+            
+            /*--- Load the coordinates ---*/
+			numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
+
 			/*--- Load the conservative variables ---*/
 			numerics->SetConservative(node[iPoint]->GetSolution(),
                                       node[iPoint]->GetSolution());
