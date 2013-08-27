@@ -302,20 +302,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 		/*--- Restart the solution from file information ---*/
 		ifstream restart_file;
 		string filename = config->GetSolution_FlowFileName();
-
-		/*--- Append time step for unsteady restart ---*/
-		if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
-			char buffer[50];
-			unsigned long flowIter = config->GetnExtIter() - 1;
-			filename.erase (filename.end()-4, filename.end());
-			if ((int(flowIter) >= 0) && (int(flowIter) < 10)) sprintf (buffer, "_0000%d.dat", int(flowIter));
-			if ((int(flowIter) >= 10) && (int(flowIter) < 100)) sprintf (buffer, "_000%d.dat", int(flowIter));
-			if ((int(flowIter) >= 100) && (int(flowIter) < 1000)) sprintf (buffer, "_00%d.dat", int(flowIter));
-			if ((int(flowIter) >= 1000) && (int(flowIter) < 10000)) sprintf (buffer, "_0%d.dat", int(flowIter));
-			if (int(flowIter) >= 10000) sprintf (buffer, "_%d.dat", int(flowIter));
-			string UnstExt = string(buffer);
-			filename.append(UnstExt);
-		}
 		restart_file.open(filename.data(), ios::in);
 
 		/*--- In case there is no restart file ---*/

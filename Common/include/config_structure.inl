@@ -714,9 +714,9 @@ inline unsigned short CConfig::GetOutput_FileFormat(void) { return Output_FileFo
 
 inline string CConfig::GetConv_FileName(void) { return Conv_FileName; }
 
-inline string CConfig::GetSolution_FlowFileName(void) { return Solution_FlowFileName; }
-
 inline string CConfig::GetFarfield_FileName(void) { return Farfield_FileName; }
+
+inline string CConfig::GetSolution_FlowFileName(void) { return Solution_FlowFileName; }
 
 inline string CConfig::GetSolution_LinFileName(void) { return Solution_LinFileName; }
 

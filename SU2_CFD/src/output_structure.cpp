@@ -3053,91 +3053,38 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
 }
 
 void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
-
+  
 	/*--- Local variables ---*/
-	unsigned short iVar;
-	unsigned long iPoint;
-  unsigned short iDim, nDim = geometry->GetnDim();
-	ofstream restart_file;
-	string filename, AdjExt, UnstExt;
-	unsigned long iExtIter = config->GetExtIter();
-	char buffer[50];
-	unsigned short Kind_ObjFunc = config->GetKind_ObjFunc();
   unsigned short Kind_Solver  = config->GetKind_Solver();
+	unsigned short iVar, iDim, nDim = geometry->GetnDim();
+	unsigned long iPoint, iExtIter = config->GetExtIter();
   bool grid_movement = config->GetGrid_Movement();
+	ofstream restart_file;
+	string filename;
   
 	/*--- Retrieve filename from config ---*/
-	if (config->GetAdjoint())
-		filename = config->GetRestart_AdjFileName();
-	else
-		filename = config->GetRestart_FlowFileName();
-
-	/*--- Remove restart filename extension ---*/
-	filename.erase(filename.end()-4, filename.end());
-
-	/*--- The adjoint problem requires a particular extension. ---*/
 	if (config->GetAdjoint()) {
-		switch (Kind_ObjFunc) {
-		case DRAG_COEFFICIENT:      AdjExt = "_cd";   break;
-		case LIFT_COEFFICIENT:      AdjExt = "_cl";   break;
-		case SIDEFORCE_COEFFICIENT: AdjExt = "_csf";  break;
-		case PRESSURE_COEFFICIENT:  AdjExt = "_cp";   break;
-		case MOMENT_X_COEFFICIENT:  AdjExt = "_cmx";  break;
-		case MOMENT_Y_COEFFICIENT:  AdjExt = "_cmy";  break;
-		case MOMENT_Z_COEFFICIENT:  AdjExt = "_cmz";  break;
-		case EFFICIENCY:            AdjExt = "_eff";  break;
-		case EQUIVALENT_AREA:       AdjExt = "_ea";   break;
-		case NEARFIELD_PRESSURE:    AdjExt = "_nfp";  break;
-		case FORCE_X_COEFFICIENT:   AdjExt = "_cfx";  break;
-		case FORCE_Y_COEFFICIENT:   AdjExt = "_cfy";  break;
-		case FORCE_Z_COEFFICIENT:   AdjExt = "_cfz";  break;
-		case THRUST_COEFFICIENT:    AdjExt = "_ct";   break;
-		case TORQUE_COEFFICIENT:    AdjExt = "_cq";   break;
-    case HEAT_LOAD:             AdjExt = "_Q";    break;
-    case MAX_HEAT_FLUX:         AdjExt = "_qmax"; break;
-		case FIGURE_OF_MERIT:       AdjExt = "_merit";break;
-		case FREE_SURFACE:          AdjExt = "_fs";   break;
-		case NOISE:                 AdjExt = "_fwh";  break;
-		}
-		filename.append(AdjExt);
-	}
-
-	/*--- Unsteady problems require the physical timestep to be appended. ---*/
+		filename = config->GetRestart_AdjFileName();
+    filename = config->GetObjFunc_Extension(filename);
+  } else {
+		filename = config->GetRestart_FlowFileName();
+  }
+  
+	/*--- Unsteady problems require an iteration number to be appended. ---*/
 	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-
-		if (int(val_iZone) < 10) sprintf (buffer, "_0000%d", int(val_iZone));
-		if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) sprintf (buffer, "_000%d", int(val_iZone));
-		if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) sprintf (buffer, "_00%d", int(val_iZone));
-		if ((int(val_iZone) >= 1000) && (int(val_iZone) < 10000)) sprintf (buffer, "_0%d", int(val_iZone));
-		if (int(val_iZone) >= 10000) sprintf (buffer, "_%d", int(val_iZone));
-		UnstExt = string(buffer);
-		filename.append(UnstExt);
-	} else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
-		if ((int(iExtIter) >= 0) && (int(iExtIter) < 10))
-			sprintf (buffer, "_0000%d", int(iExtIter));
-		if ((int(iExtIter) >= 10) && (int(iExtIter) < 100))
-			sprintf (buffer, "_000%d", int(iExtIter));
-		if ((int(iExtIter) >= 100) && (int(iExtIter) < 1000))
-			sprintf (buffer, "_00%d", int(iExtIter));
-		if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000))
-			sprintf (buffer, "_0%d", int(iExtIter));
-		if (int(iExtIter) >= 10000)
-			sprintf (buffer, "_%d", int(iExtIter));
-		UnstExt = string(buffer);
-		filename.append(UnstExt);
+    filename = config->GetUnsteady_FileName(filename, int(val_iZone));
+	} else if (config->GetWrt_Unsteady()) {
+		filename = config->GetUnsteady_FileName(filename, int(iExtIter));
 	}
-
-	/*--- Lastly, add the .dat extension ---*/
-	filename.append(".dat");
-
+  
 	/*--- Open the restart file and write the solution. ---*/
 	restart_file.open(filename.c_str(), ios::out);
 	restart_file.precision(15);
-
-
-	/*--- Write the basic header based on the particular solution ----*/
+  
+	/*--- Write the header line based on the particular solver ----*/
 	restart_file << "\"PointID\"";
   
+  /*--- Mesh coordinates are always written to the restart first ---*/
   if (nDim == 2) {
     restart_file << ", \"x\", \"y\"";
   } else {
@@ -3147,13 +3094,13 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short va
 	for (iVar = 0; iVar < nVar_Consv; iVar++) {
 		restart_file << ", \"Conservative_" << iVar+1<<"\"";
 	}
-    if (config->GetWrt_Residuals()) {
-        for (iVar = 0; iVar < nVar_Consv; iVar++) {
-            restart_file << ", \"Residual_" << iVar+1<<"\"";
-        }
+  if (config->GetWrt_Residuals()) {
+    for (iVar = 0; iVar < nVar_Consv; iVar++) {
+      restart_file << ", \"Residual_" << iVar+1<<"\"";
     }
-
-  /*--- Add names for any extra variables (this will need to be adjusted). ---*/
+  }
+  
+  /*--- Mesh velocities for dynamic mesh cases ---*/
 	if (grid_movement) {
     if (nDim == 2) {
       restart_file << ", \"Grid_Velx\", \"Grid_Vely\"";
@@ -3161,7 +3108,8 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short va
       restart_file << ", \"Grid_Velx\", \"Grid_Vely\", \"Grid_Velz\"";
     }
 	}
-
+  
+  /*--- Solver specific output variables ---*/
   if ((Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
     restart_file << ", \"Density\"";
   }
@@ -3170,16 +3118,16 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short va
       (Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
     restart_file << ", \"Pressure\", \"Pressure_Coefficient\", \"Mach\"";
   }
-
+  
   if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
       (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
     restart_file << ", \"Temperature\", \"Laminar_Viscosity\", \"Skin_Friction_Coefficient\", \"Heat_Transfer\", \"Y_Plus\"";
   }
-
+  
   if ((Kind_Solver == RANS) || (Kind_Solver == FREE_SURFACE_RANS)) {
     restart_file << ", \"Eddy_Viscosity\"";
   }
-
+  
   if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
       (Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
     restart_file << ", \"Sharp_Edge_Dist\"";
@@ -3224,10 +3172,10 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short va
   /*--- Write the restart file ---*/
   
 	for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
-
+    
 		/*--- Index of the point ---*/
 		restart_file << iPoint << "\t";
-
+    
     /*--- Write the grid coordinates first ---*/
     for (iDim = 0; iDim < nDim; iDim++) {
 			restart_file << scientific << Coords[iDim][iPoint] << "\t";
@@ -3239,9 +3187,9 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short va
 		}
 		restart_file << endl;
 	}
-
+  
   restart_file.close();
-
+  
 }
 
 void COutput::DeallocateCoordinates(CConfig *config, CGeometry *geometry) {
@@ -4607,10 +4555,9 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
 		unsigned long iExtIter, unsigned short val_nZone) {
 
 	int rank = MASTER_NODE;
-  int size = 1;
 #ifndef NO_MPI
 	rank = MPI::COMM_WORLD.Get_rank();
-  size = MPI::COMM_WORLD.Get_size();
+  int size = MPI::COMM_WORLD.Get_size();
 #endif
 
 	unsigned short iZone;
@@ -4814,9 +4761,6 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
     /*--- Get the file output format ---*/
     
     unsigned short FileFormat = config[iZone]->GetOutput_FileFormat();
-    
-    bool dynamic_mesh = (config[iZone]->GetUnsteady_Simulation() &&
-                         config[iZone]->GetGrid_Movement());
     
     /*--- Merge the node coordinates and connectivity if necessary. This
      is only performed if a volume solution file is requested, and it
