@@ -1598,9 +1598,9 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_iZone - Current zone in the mesh.
+	 * \param[in] val_iter - Current external iteration number.
 	 */
-	virtual void GetRestart(CGeometry *geometry, CConfig *config, unsigned short val_iZone);
+	virtual void GetRestart(CGeometry *geometry, CConfig *config, int val_iter);
     
 	/*!
 	 * \brief Gauss method for solving a linear system.
@@ -1666,9 +1666,9 @@ public:
 	 * \brief Load a solution from a restart file.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_iZone - Current zone in the mesh.
+	 * \param[in] val_iter - Current external iteration number.
 	 */
-	void GetRestart(CGeometry *geometry, CConfig *config, unsigned short val_iZone);
+	void GetRestart(CGeometry *geometry, CConfig *config, int val_iter);
     
 	/*!
 	 * \brief Destructor of the class.
@@ -2519,9 +2519,9 @@ public:
 	 * \brief Load a direct flow solution for use with the adjoint solver.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_iZone - Current zone in the mesh.
+	 * \param[in] val_iter - Current external iteration number.
 	 */
-	void GetRestart(CGeometry *geometry, CConfig *config, unsigned short val_iZone);
+	void GetRestart(CGeometry *geometry, CConfig *config, int val_iter);
     
 	/*!
 	 * \brief Set the initial condition for the Euler Equations.
@@ -4576,7 +4576,14 @@ public:
 	 */
 	void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                               unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
-    
+  
+  /*!
+	 * \brief Load a direct flow solution for use with the adjoint solver.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void GetRestart(CGeometry *geometry, CConfig *config);
+  
 	/*!
 	 * \brief Set the noise sources from the flow problem for aeroacoustic computations.
 	 * \param[in] wave_geometry - Geometrical definition of the problem.
@@ -4591,13 +4598,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void Wave_Strength(CGeometry *geometry, CConfig *config);
-    
-	/*!
-	 * \brief Load the direct solution from file for the adjoint problem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void GetRestart(CGeometry *geometry, CConfig *config);
     
 	/*!
 	 * \brief Build stiffness matrix in space.
@@ -4747,13 +4747,6 @@ public:
 	 */
 	void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                               unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
-    
-	/*!
-	 * \brief Load the direct solution from file for the adjoint problem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void GetRestart(CGeometry *geometry, CConfig *config);
     
 	/*!
 	 * \brief Build stiffness matrix & Jacobian in time.

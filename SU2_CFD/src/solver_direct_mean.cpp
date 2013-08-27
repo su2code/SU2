@@ -304,8 +304,14 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 		string filename = config->GetSolution_FlowFileName();
     
     /*--- Modify file name for an unsteady restart ---*/
-    int Unst_RestartIter = int(config->GetUnst_RestartIter())-1;
-    filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+    if (dual_time) {
+      int Unst_RestartIter;
+      if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+        Unst_RestartIter = int(config->GetUnst_RestartIter())-1;
+      else
+        Unst_RestartIter = int(config->GetUnst_RestartIter())-2;
+      filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+    }
     
     /*--- Open the restart file, throw an error if this fails. ---*/
 		restart_file.open(filename.data(), ios::in);
@@ -1393,15 +1399,17 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 	unsigned long iPoint, Point_Fine;
 	unsigned short iMesh, iChildren, iVar, iDim;
 	double Density, Pressure, yFreeSurface, PressFreeSurface, Froude, yCoord, Velx, Vely, Velz, RhoVelx, RhoVely, RhoVelz, XCoord, YCoord, ZCoord, DensityInc, ViscosityInc, Heaviside, LevelSet, lambda, DensityFreeSurface, Area_Children, Area_Parent, LevelSet_Fine, epsilon, *Solution_Fine, *Solution; //, Factor_nu, nu_tilde;
-  
+
+  unsigned short nDim = geometry[MESH_0]->GetnDim();
 	bool restart = (config->GetRestart() || config->GetRestart_Flow());
-	unsigned short nDim = geometry[MESH_0]->GetnDim();
 	bool freesurface = config->GetFreeSurface();
-	bool rans = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == ADJ_RANS) ||
-                 (config->GetKind_Solver() == FREE_SURFACE_RANS) || (config->GetKind_Solver() == ADJ_FREE_SURFACE_RANS));
+	bool rans = ((config->GetKind_Solver() == RANS) ||
+               (config->GetKind_Solver() == ADJ_RANS) ||
+               (config->GetKind_Solver() == FREE_SURFACE_RANS) ||
+               (config->GetKind_Solver() == ADJ_FREE_SURFACE_RANS));
 	bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                      (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-    
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  
 	if (freesurface) {
         
 		for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++) {
@@ -1601,7 +1609,6 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 					}
 				}
 				solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(Solution);
-                
 			}
 			solver_container[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
 		}
@@ -1610,15 +1617,53 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
     
     
 	/*--- The value of the solution for the first iteration of the dual time ---*/
-  if (dual_time) {
+  if (dual_time && (ExtIter == 0 || (restart && ExtIter == config->GetUnst_RestartIter()))) {
+    
+    /*--- Push back the initial condition to previous solution containers
+     for a 1st-order restart or when simply intitializing to freestream. ---*/
     for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++) {
       for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-        if (ExtIter == 0) {
+        solver_container[iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n();
+        solver_container[iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n1();
+        if (rans) {
+          solver_container[iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n();
+          solver_container[iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n1();
+        }
+      }
+    }
+    
+    if ((restart && ExtIter == config->GetUnst_RestartIter()) &&
+      (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
+      
+      /*--- Load an additional restart file for a 2nd-order restart ---*/
+      solver_container[MESH_0][FLOW_SOL]->GetRestart(geometry[MESH_0], config, int(config->GetUnst_RestartIter()-1));
+      
+      /*--- Interpolate this second restart down onto all multigrid levels ---*/
+      Solution = new double[nVar];
+      for (iMesh = 1; iMesh <= config->GetMGLevels(); iMesh++) {
+        for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+          Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
+          for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
+          for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
+            Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
+            Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
+            Solution_Fine = solver_container[iMesh-1][FLOW_SOL]->node[Point_Fine]->GetSolution();
+            for (iVar = 0; iVar < nVar; iVar++) {
+              Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
+            }
+          }
+          solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(Solution);
+        }
+        solver_container[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+      }
+      delete [] Solution;
+      
+      /*--- Push back this new solution to time level N. ---*/
+      for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++) {
+        for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
           solver_container[iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n();
-          solver_container[iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n1();
           if (rans) {
             solver_container[iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n();
-            solver_container[iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n1();
           }
         }
       }
@@ -5692,7 +5737,7 @@ void CEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMo
 
 }
 
-void CEulerSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned short val_iZone) {
+void CEulerSolver::GetRestart(CGeometry *geometry, CConfig *config, int val_iter) {
 
 	int rank = MASTER_NODE;
 #ifndef NO_MPI
@@ -5700,76 +5745,31 @@ void CEulerSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned sho
 #endif
 
 	/*--- Restart the solution from file information ---*/
-	string restart_filename = config->GetSolution_FlowFileName();
-	unsigned long iPoint, index, nFlowIter, adjIter, flowIter;
-	char buffer[50];
+	unsigned long iPoint, index;
 	string UnstExt, text_line;
 	ifstream restart_file;
 	bool incompressible = config->GetIncompressible();
 	bool grid_movement = config->GetGrid_Movement();
-	unsigned short nZone = geometry->GetnZone();
   double dull_val;
+	bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+
+  string restart_filename = config->GetSolution_FlowFileName();
   
-	/*--- Multi-zone restart files. ---*/
-	if (nZone > 1 && !(config->GetUnsteady_Simulation() == TIME_SPECTRAL)) {
-		restart_filename.erase(restart_filename.end()-4, restart_filename.end());
-		sprintf (buffer, "_%d.dat", int(val_iZone));
-		UnstExt = string(buffer);
-		restart_filename.append(UnstExt);
-	}
-
-	/*--- For the unsteady adjoint, we integrate backwards through
+  /*--- Modify file name for an unsteady restart ---*/
+  /*--- For the unsteady adjoint, we integrate backwards through
    physical time, so load in the direct solution files in reverse. ---*/
-	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-		flowIter = val_iZone;
-		restart_filename.erase(restart_filename.end()-4, restart_filename.end());
-		if (int(val_iZone) < 10) sprintf (buffer, "_0000%d.dat", int(val_iZone));
-		if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) sprintf (buffer, "_000%d.dat", int(val_iZone));
-		if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) sprintf (buffer, "_00%d.dat", int(val_iZone));
-		if ((int(val_iZone) >= 1000) && (int(val_iZone) < 10000)) sprintf (buffer, "_0%d.dat", int(val_iZone));
-		if (int(val_iZone) >= 10000) sprintf (buffer, "_%d.dat", int(val_iZone));
-		UnstExt = string(buffer);
-		restart_filename.append(UnstExt);
-	} else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
-		nFlowIter = config->GetnExtIter() - 1;
-		adjIter   = config->GetExtIter();
-		flowIter  = nFlowIter - adjIter;
-		restart_filename.erase (restart_filename.end()-4, restart_filename.end());
-		if ((int(flowIter) >= 0) && (int(flowIter) < 10)) sprintf (buffer, "_0000%d.dat", int(flowIter));
-		if ((int(flowIter) >= 10) && (int(flowIter) < 100)) sprintf (buffer, "_000%d.dat", int(flowIter));
-		if ((int(flowIter) >= 100) && (int(flowIter) < 1000)) sprintf (buffer, "_00%d.dat", int(flowIter));
-		if ((int(flowIter) >= 1000) && (int(flowIter) < 10000)) sprintf (buffer, "_0%d.dat", int(flowIter));
-		if (int(flowIter) >= 10000) sprintf (buffer, "_%d.dat", int(flowIter));
-		UnstExt = string(buffer);
-		restart_filename.append(UnstExt);
-	} else {
-		flowIter = config->GetExtIter();
-		restart_filename.erase (restart_filename.end()-4, restart_filename.end());
-		if ((int(flowIter) >= 0) && (int(flowIter) < 10)) sprintf (buffer, "_0000%d.dat", int(flowIter));
-		if ((int(flowIter) >= 10) && (int(flowIter) < 100)) sprintf (buffer, "_000%d.dat", int(flowIter));
-		if ((int(flowIter) >= 100) && (int(flowIter) < 1000)) sprintf (buffer, "_00%d.dat", int(flowIter));
-		if ((int(flowIter) >= 1000) && (int(flowIter) < 10000)) sprintf (buffer, "_0%d.dat", int(flowIter));
-		if (int(flowIter) >= 10000) sprintf (buffer, "_%d.dat", int(flowIter));
-		UnstExt = string(buffer);
-		restart_filename.append(UnstExt);
-	}
+  if (dual_time)
+    restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter);
 
-	/*--- Open the flow solution from the restart file ---*/
-	if (rank == MASTER_NODE && val_iZone == ZONE_0)
-		cout << "Reading in the direct flow solution from iteration " << flowIter << "." << endl;
+  /*--- Open the restart file, throw an error if this fails. ---*/
+
 	restart_file.open(restart_filename.data(), ios::in);
-
-	/*--- In case there is no file ---*/
 	if (restart_file.fail()) {
 		cout << "There is no flow restart file!! " << restart_filename.data() << "."<< endl;
 		cout << "Press any key to exit..." << endl;
 		cin.get(); exit(1);
 	}
-
-	/*--- Store the previous solution (needed for aeroacoustic adjoint) ---*/
-	if (config->GetExtIter() > 0)
-		for (iPoint = 0; iPoint < nPoint; iPoint++)
-			node[iPoint]->Set_Solution_time_n();
 
 	/*--- In case this is a parallel simulation, we need to perform the
    Global2Local index transformation first. ---*/
@@ -5813,7 +5813,7 @@ void CEulerSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned sho
 			node[iPoint_Local]->SetSolution(Solution);
 
 			/*--- If necessary, read in the grid velocities for the unsteady adjoint ---*/
-			if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady() && grid_movement) {
+			if (config->GetWrt_Unsteady() && grid_movement) {
 				double GridVel[3];
 				if (nDim == 2) point_line >> GridVel[0] >> GridVel[1];
 				if (nDim == 3) point_line >> GridVel[0] >> GridVel[1] >> GridVel[2];
@@ -5827,7 +5827,8 @@ void CEulerSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned sho
 	}
 
 	/*--- Set an average grid velocity at any halo nodes for the unsteady adjoint ---*/
-	if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady() && grid_movement) {
+  // does this make sense?
+	if (config->GetWrt_Unsteady() && grid_movement) {
 		unsigned long jPoint;
 		unsigned short nNeighbors;
 		double AvgVel[3], *GridVel;
@@ -5848,6 +5849,7 @@ void CEulerSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned sho
 				geometry->node[iPoint]->SetGridVel(iDim, AvgVel[iDim]/(double)nNeighbors);
 		}
 	}
+
 
 	/*--- Close the restart file ---*/
 	restart_file.close();

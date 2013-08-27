@@ -1516,7 +1516,7 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
   
 }
 
-void CBaselineSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned short val_iZone) {
+void CBaselineSolver::GetRestart(CGeometry *geometry, CConfig *config, int val_iter) {
   
 	int rank = MASTER_NODE;
 #ifndef NO_MPI
@@ -1528,8 +1528,8 @@ void CBaselineSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned 
 	unsigned long iPoint, index;
 	string UnstExt, text_line, AdjExt;
 	ifstream restart_file;
-  unsigned long iExtIter = config->GetExtIter();
   unsigned short iField;
+  unsigned long iExtIter = config->GetExtIter();
   
   /*--- Retrieve filename from config ---*/
 	if (config->GetAdjoint()) {
