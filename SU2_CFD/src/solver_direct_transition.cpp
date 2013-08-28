@@ -157,8 +157,8 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
 		for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
 			getline(restart_file,text_line);
 			istringstream point_line(text_line);
-			if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
-			if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
+			if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
+			if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
 			node[iPoint] = new CTurbSAVariable(Solution[0], 0, nDim, nVar, config);
 		}
 		restart_file.close();

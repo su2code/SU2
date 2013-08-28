@@ -607,7 +607,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
 
 void COutput::SetSurfaceCSV_Linearized(CConfig *config, CGeometry *geometry, CSolver *LinSolution, string val_filename, unsigned long iExtIter) { }
 
-void COutput::MergeGeometry(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
+void COutput::MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
 
 	int rank = MASTER_NODE;
   int size = SINGLE_NODE;
@@ -617,13 +617,6 @@ void COutput::MergeGeometry(CConfig *config, CGeometry *geometry, unsigned short
   size = MPI::COMM_WORLD.Get_size();
 #endif
 
-	/*--- Get the file output format ---*/
-  
-	unsigned short FileFormat = config->GetOutput_FileFormat();
-
-	bool dynamic_mesh = (config->GetUnsteady_Simulation() &&
-			config->GetGrid_Movement());
-
 	/*--- Merge connectivity for each type of element (excluding halos). Note
      that we only need to merge the connectivity once, as it does not change
      during computation. Check whether the base file has been written. ---*/
@@ -632,40 +625,48 @@ void COutput::MergeGeometry(CConfig *config, CGeometry *geometry, unsigned short
 
     /*--- Merge volumetric grid. ---*/
 
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Tria != 0))
+      cout <<"Merging volumetric triangle grid connectivity." << endl;
 		MergeVolumetricConnectivity(config, geometry, TRIANGLE    );
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Tria != 0)) cout <<"Merging volumetric triangle grid connectivity." << endl;
 
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Quad != 0))
+      cout <<"Merging volumetric rectangle grid connectivity." << endl;
 		MergeVolumetricConnectivity(config, geometry, RECTANGLE   );
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Quad != 0)) cout <<"Merging volumetric rectangle grid connectivity." << endl;
 
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Tetr != 0))
+      cout <<"Merging volumetric tetrahedron grid connectivity." << endl;
 		MergeVolumetricConnectivity(config, geometry, TETRAHEDRON );
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Tetr != 0)) cout <<"Merging volumetric tetrahedron grid connectivity." << endl;
 
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Hexa != 0))
+      cout <<"Merging volumetric hexahedron grid connectivity." << endl;
 		MergeVolumetricConnectivity(config, geometry, HEXAHEDRON  );
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Hexa != 0)) cout <<"Merging volumetric hexahedron grid connectivity." << endl;
 
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Wedg != 0))
+      cout <<"Merging volumetric wedge grid connectivity." << endl;
 		MergeVolumetricConnectivity(config, geometry, WEDGE       );
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Wedg != 0)) cout <<"Merging volumetric wedge grid connectivity." << endl;
 
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Pyra != 0))
+      cout <<"Merging volumetric pyramid grid connectivity." << endl;
 		MergeVolumetricConnectivity(config, geometry, PYRAMID     );
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Pyra != 0)) cout <<"Merging volumetric pyramid grid connectivity." << endl;
 
     /*--- Merge surface grid. ---*/
     
-    MergeSurfaceConnectivity(config, geometry, LINE      );
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Line != 0)) cout <<"Merging surface line grid connectivity." << endl;
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Line != 0))
+      cout <<"Merging surface line grid connectivity." << endl;
+    MergeSurfaceConnectivity(config, geometry, LINE);
 
-		MergeSurfaceConnectivity(config, geometry, TRIANGLE  );
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_BoundTria != 0)) cout <<"Merging surface triangle grid connectivity." << endl;
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_BoundTria != 0))
+      cout <<"Merging surface triangle grid connectivity." << endl;
+		MergeSurfaceConnectivity(config, geometry, TRIANGLE);
 
-		MergeSurfaceConnectivity(config, geometry, RECTANGLE );
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_BoundQuad != 0)) cout <<"Merging surface rectangle grid connectivity." << endl;
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_BoundQuad != 0))
+      cout <<"Merging surface rectangle grid connectivity." << endl;
+		MergeSurfaceConnectivity(config, geometry, RECTANGLE);
 
-
-		/*--- Update total number of volumetric elements after merge. ---*/
+		/*--- Update total number of volume elements after merge. ---*/
 
 		nGlobal_Elem = nGlobal_Tria + nGlobal_Quad + nGlobal_Tetr +
-				nGlobal_Hexa + nGlobal_Pyra + nGlobal_Wedg;
+                   nGlobal_Hexa + nGlobal_Pyra + nGlobal_Wedg;
     
     /*--- Update total number of surface elements after merge. ---*/
     
@@ -673,34 +674,14 @@ void COutput::MergeGeometry(CConfig *config, CGeometry *geometry, unsigned short
 
 		/*--- Write the connectivity to the base binary output file, then
          clear the memory immediately for the rest of the computation. ---*/
-
+    
+    unsigned short FileFormat = config->GetOutput_FileFormat();
 		if (rank == MASTER_NODE && FileFormat == CGNS_SOL) {
 			SetCGNS_Connectivity(config, geometry, val_iZone);
 			DeallocateConnectivity(config, geometry, false);
 		}
 
 	}
-
-	/*--- Merge coordinates of all grid nodes (excluding ghost points).
-     Note that this also only needs to be done once, unless it is an
-     unsteady simulation with grid motion. ---*/
-
-	if (!wrote_base_file || dynamic_mesh) {
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE)) cout <<"Merging grid coordinates." << endl;
-		MergeCoordinates(config, geometry);
-  }
-
-	if (rank == MASTER_NODE) {
-
-		if (FileFormat == CGNS_SOL) {
-			SetCGNS_Coordinates(config, geometry, val_iZone);
-			if (!wrote_base_file || dynamic_mesh) DeallocateCoordinates(config, geometry);
-		} else if (FileFormat == TECPLOT_BINARY) {
-			SetTecplot_Mesh(config, geometry, val_iZone);
-			if (!wrote_base_file) DeallocateConnectivity(config, geometry, false);
-		}
-	}
-
 }
 
 void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
@@ -1549,7 +1530,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 	unsigned short nVar_First = 0, nVar_Second = 0, nVar_Third = 0, iVar_Eddy = 0, iVar_Sharp = 0;
 	unsigned short iVar_GridVel = 0, iVar_PressMach = 0, iVar_Density = 0, iVar_TempLam = 0,
   iVar_Tempv = 0,iVar_MagF = 0, iVar_EF =0, iVar_Temp = 0, iVar_Lam =0, iVar_Mach = 0, iVar_Press = 0,
-  iVar_ViscCoeffs = 0, iVar_Sens = 0, iVar_Coords = 0;
+  iVar_ViscCoeffs = 0, iVar_Sens = 0;
   
 	unsigned long iPoint = 0, jPoint = 0, iVertex = 0, iMarker = 0;
   
@@ -1636,9 +1617,6 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   
 	/*--- Add the grid velocity to the restart file for the unsteady adjoint ---*/
 	if (grid_movement) {
-    iVar_Coords = nVar_Total;
-		if (geometry->GetnDim() == 2) nVar_Total += 2;
-		else if (geometry->GetnDim() == 3) nVar_Total += 3;
 		iVar_GridVel = nVar_Total;
 		if (geometry->GetnDim() == 2) nVar_Total += 2;
 		else if (geometry->GetnDim() == 3) nVar_Total += 3;
@@ -1761,7 +1739,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 	}
   
 	/*--- In case there is grid movement ---*/
-	double *Grid_Vel, *Coordinates;
+	double *Grid_Vel;
   
   /*--- First, loop through the mesh in order to find and store the
    value of the coefficient of pressure at any surface nodes. They
@@ -1860,14 +1838,8 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         }
       }
       
-      /*--- For unsteady problems with grid movement, write the mesh velocities
-       also, in case we need them for the unsteady adjoint. ---*/
+      /*--- For unsteady problems with grid movement, write the mesh velocities ---*/
       if (grid_movement) {
-        Coordinates = geometry->node[iPoint]->GetCoord();
-        for (unsigned short iDim = 0; iDim < geometry->GetnDim(); iDim++) {
-          Data[jVar][jPoint] = Coordinates[iDim];
-          jVar++;
-        }
         Grid_Vel = geometry->node[iPoint]->GetGridVel();
         for (unsigned short iDim = 0; iDim < geometry->GetnDim(); iDim++) {
           Data[jVar][jPoint] = Grid_Vel[iDim];
@@ -2219,64 +2191,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
    we are reusing the same temporary buffers from above for efficiency.
    Also, in the future more routines like this could be used to write
    an arbitrary number of additional variables to the file. ---*/
-  
-  /*--- First, collect the x, y, & z's is there is grid motion. ---*/
-  
-  if (grid_movement) {
     
-		/*--- Loop over this partition to collect the current variable ---*/
-		jPoint = 0; double *Coordinates;
-		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-      
-      /*--- Check for halos & write only if requested ---*/
-      
-      if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
-        
-        /*--- Load buffers with the three grid velocity components. ---*/
-        Coordinates = geometry->node[iPoint]->GetCoord();
-        Buffer_Send_Var[jPoint] = Coordinates[0];
-        Buffer_Send_Res[jPoint] = Coordinates[1];
-        if (geometry->GetnDim() == 3) Buffer_Send_Vol[jPoint] = Coordinates[2];
-        jPoint++;
-      }
-    }
-    
-		/*--- Gather the data on the master node. ---*/
-		MPI::COMM_WORLD.Barrier();
-		MPI::COMM_WORLD.Gather(Buffer_Send_Var, nBuffer_Scalar, MPI::DOUBLE,
-                           Buffer_Recv_Var, nBuffer_Scalar, MPI::DOUBLE,
-                           MASTER_NODE);
-		MPI::COMM_WORLD.Gather(Buffer_Send_Res, nBuffer_Scalar, MPI::DOUBLE,
-                           Buffer_Recv_Res, nBuffer_Scalar, MPI::DOUBLE,
-                           MASTER_NODE);
-		if (geometry->GetnDim() == 3) {
-			MPI::COMM_WORLD.Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI::DOUBLE,
-                             Buffer_Recv_Vol, nBuffer_Scalar, MPI::DOUBLE,
-                             MASTER_NODE);
-		}
-    
-		/*--- The master node unpacks and sorts this variable by global index ---*/
-		if (rank == MASTER_NODE) {
-			jPoint = 0; iVar = iVar_Coords;
-			for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-				for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
-          
-					/*--- Get global index, then loop over each variable and store ---*/
-					iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
-					Data[iVar][iGlobal_Index]   = Buffer_Recv_Var[jPoint];
-					Data[iVar+1][iGlobal_Index] = Buffer_Recv_Res[jPoint];
-					if (geometry->GetnDim() == 3)
-						Data[iVar+2][iGlobal_Index] = Buffer_Recv_Vol[jPoint];
-					jPoint++;
-				}
-				/*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
-				jPoint = (iProcessor+1)*nBuffer_Scalar;
-			}
-		}
-	}
-  
-  /*--- Now get the grid velocity from each point ---*/
-  
 	if (grid_movement) {
     
 		/*--- Loop over this partition to collect the current variable ---*/
@@ -3242,9 +3157,6 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
   bool Wrt_Halo = config->GetWrt_Halo();
   
   /*--- Each processor sends its local number of nodes to the master. ---*/
-	//!
-	//! TO DO: MPI I/O for writing the solution files.
-	//!
   if (Wrt_Halo) {
     nLocalPoint = geometry->GetnPoint();
   } else
@@ -3351,114 +3263,63 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
 }
 
 void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
-
+  
 	/*--- Local variables ---*/
-	unsigned short iVar;
-	unsigned long iPoint;
-  unsigned short iDim, nDim = geometry->GetnDim();
-	ofstream restart_file;
-	string filename, AdjExt, UnstExt;
-	unsigned long iExtIter = config->GetExtIter();
-	char buffer[50];
-	unsigned short Kind_ObjFunc = config->GetKind_ObjFunc();
   unsigned short Kind_Solver  = config->GetKind_Solver();
+	unsigned short iVar, iDim, nDim = geometry->GetnDim();
+	unsigned long iPoint, iExtIter = config->GetExtIter();
   bool grid_movement = config->GetGrid_Movement();
+	ofstream restart_file;
+	string filename;
   
 	/*--- Retrieve filename from config ---*/
-	if (config->GetAdjoint())
-		filename = config->GetRestart_AdjFileName();
-	else
-		filename = config->GetRestart_FlowFileName();
-
-	/*--- Remove restart filename extension ---*/
-  unsigned short lastindex = filename.find_last_of(".");
-  filename = filename.substr(0, lastindex);
-  
-	/*--- The adjoint problem requires a particular extension. ---*/
 	if (config->GetAdjoint()) {
-		switch (Kind_ObjFunc) {
-		case DRAG_COEFFICIENT:      AdjExt = "_cd";   break;
-		case LIFT_COEFFICIENT:      AdjExt = "_cl";   break;
-		case SIDEFORCE_COEFFICIENT: AdjExt = "_csf";  break;
-		case PRESSURE_COEFFICIENT:  AdjExt = "_cp";   break;
-		case MOMENT_X_COEFFICIENT:  AdjExt = "_cmx";  break;
-		case MOMENT_Y_COEFFICIENT:  AdjExt = "_cmy";  break;
-		case MOMENT_Z_COEFFICIENT:  AdjExt = "_cmz";  break;
-		case EFFICIENCY:            AdjExt = "_eff";  break;
-		case EQUIVALENT_AREA:       AdjExt = "_ea";   break;
-		case NEARFIELD_PRESSURE:    AdjExt = "_nfp";  break;
-		case FORCE_X_COEFFICIENT:   AdjExt = "_cfx";  break;
-		case FORCE_Y_COEFFICIENT:   AdjExt = "_cfy";  break;
-		case FORCE_Z_COEFFICIENT:   AdjExt = "_cfz";  break;
-		case THRUST_COEFFICIENT:    AdjExt = "_ct";   break;
-		case TORQUE_COEFFICIENT:    AdjExt = "_cq";   break;
-    case HEAT_LOAD:             AdjExt = "_Q";    break;
-    case MAX_HEAT_FLUX:         AdjExt = "_qmax"; break;
-		case FIGURE_OF_MERIT:       AdjExt = "_merit";break;
-		case FREE_SURFACE:          AdjExt = "_fs";   break;
-		case NOISE:                 AdjExt = "_fwh";  break;
-		}
-		filename.append(AdjExt);
-	}
-
-	/*--- Unsteady problems require the physical timestep to be appended. ---*/
+		filename = config->GetRestart_AdjFileName();
+    filename = config->GetObjFunc_Extension(filename);
+  } else {
+		filename = config->GetRestart_FlowFileName();
+  }
+  
+	/*--- Unsteady problems require an iteration number to be appended. ---*/
 	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-
-		if (int(val_iZone) < 10) sprintf (buffer, "_0000%d", int(val_iZone));
-		if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) sprintf (buffer, "_000%d", int(val_iZone));
-		if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) sprintf (buffer, "_00%d", int(val_iZone));
-		if ((int(val_iZone) >= 1000) && (int(val_iZone) < 10000)) sprintf (buffer, "_0%d", int(val_iZone));
-		if (int(val_iZone) >= 10000) sprintf (buffer, "_%d", int(val_iZone));
-		UnstExt = string(buffer);
-		filename.append(UnstExt);
-	} else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
-		if ((int(iExtIter) >= 0) && (int(iExtIter) < 10))
-			sprintf (buffer, "_0000%d", int(iExtIter));
-		if ((int(iExtIter) >= 10) && (int(iExtIter) < 100))
-			sprintf (buffer, "_000%d", int(iExtIter));
-		if ((int(iExtIter) >= 100) && (int(iExtIter) < 1000))
-			sprintf (buffer, "_00%d", int(iExtIter));
-		if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000))
-			sprintf (buffer, "_0%d", int(iExtIter));
-		if (int(iExtIter) >= 10000)
-			sprintf (buffer, "_%d", int(iExtIter));
-		UnstExt = string(buffer);
-		filename.append(UnstExt);
+    filename = config->GetUnsteady_FileName(filename, int(val_iZone));
+	} else if (config->GetWrt_Unsteady()) {
+		filename = config->GetUnsteady_FileName(filename, int(iExtIter));
 	}
-
-	/*--- Lastly, add the .dat extension ---*/
-	filename.append(".dat");
-
+  
 	/*--- Open the restart file and write the solution. ---*/
 	restart_file.open(filename.c_str(), ios::out);
 	restart_file.precision(15);
-
-
-	/*--- Write the basic header based on the particular solution ----*/
+  
+	/*--- Write the header line based on the particular solver ----*/
 	restart_file << "\"PointID\"";
+  
+  /*--- Mesh coordinates are always written to the restart first ---*/
+  if (nDim == 2) {
+    restart_file << ", \"x\", \"y\"";
+  } else {
+    restart_file << ", \"x\", \"y\", \"z\"";
+  }
+  
 	for (iVar = 0; iVar < nVar_Consv; iVar++) {
 		restart_file << ", \"Conservative_" << iVar+1<<"\"";
 	}
-    if (config->GetWrt_Residuals()) {
-        for (iVar = 0; iVar < nVar_Consv; iVar++) {
-            restart_file << ", \"Residual_" << iVar+1<<"\"";
-        }
+  if (config->GetWrt_Residuals()) {
+    for (iVar = 0; iVar < nVar_Consv; iVar++) {
+      restart_file << ", \"Residual_" << iVar+1<<"\"";
     }
-
-  /*--- Add names for any extra variables (this will need to be adjusted). ---*/
+  }
+  
+  /*--- Mesh velocities for dynamic mesh cases ---*/
 	if (grid_movement) {
-    if (nDim == 2) {
-      restart_file << ", \"x\", \"y\"";
-    } else {
-      restart_file << ", \"x\", \"y\", \"z\"";
-    }
     if (nDim == 2) {
       restart_file << ", \"Grid_Velx\", \"Grid_Vely\"";
     } else {
       restart_file << ", \"Grid_Velx\", \"Grid_Vely\", \"Grid_Velz\"";
     }
 	}
-
+  
+  /*--- Solver specific output variables ---*/
   if ((Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
     restart_file << ", \"Density\"";
   }
@@ -3480,11 +3341,11 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short va
       (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
     restart_file << ", \"Temperature\", \"Laminar_Viscosity\", \"Skin_Friction_Coefficient\", \"Heat_Transfer\", \"Y_Plus\"";
   }
-
+  
   if ((Kind_Solver == RANS) || (Kind_Solver == FREE_SURFACE_RANS)) {
     restart_file << ", \"Eddy_Viscosity\"";
   }
-
+  
   if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
       (Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
     restart_file << ", \"Sharp_Edge_Dist\"";
@@ -3533,31 +3394,27 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short va
   
   restart_file << endl;
   
+  /*--- Write the restart file ---*/
   
-	//  for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) { (F.P.)
 	for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
-
+    
 		/*--- Index of the point ---*/
 		restart_file << iPoint << "\t";
-
+    
+    /*--- Write the grid coordinates first ---*/
+    for (iDim = 0; iDim < nDim; iDim++) {
+			restart_file << scientific << Coords[iDim][iPoint] << "\t";
+		}
+    
 		/*--- Loop over the variables and write the values to file ---*/
 		for (iVar = 0; iVar < nVar_Total; iVar++) {
 			restart_file << scientific << Data[iVar][iPoint] << "\t";
 		}
-
 		restart_file << endl;
 	}
-
+  
   restart_file.close();
   
-	/*--- Binary version - eventually ---*/
-	//  restart_file.close();
-	//  restart_file.open("restart_file.bin", ios::binary);
-	//  restart_file.precision(15);
-	//  restart_file.write( (char *)&Data[0][0], sizeof(double)*(nGlobal_Poin*nVar_Consv*2) );
-	//  restart_file.write( (char *)&Volume[0], sizeof(double)*(nGlobal_Poin) );
-	//  restart_file.close();
-
 }
 
 void COutput::DeallocateCoordinates(CConfig *config, CGeometry *geometry) {
@@ -3649,9 +3506,21 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
     if (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL) isothermal = true;
   
 	unsigned short iSpecies;
-
+    
 	/*--- Write file name with extension ---*/
-	strcpy (cstr, config->GetConv_FileName().data());
+  string filename = config->GetConv_FileName();
+  	strcpy (cstr, filename.data());
+  
+  if (config->GetWrt_Unsteady() && config->GetRestart()) {
+    long iExtIter = config->GetUnst_RestartIter();
+		if (int(iExtIter) < 10) sprintf (buffer, "_0000%d", int(iExtIter));
+		if ((int(iExtIter) >= 10) && (int(iExtIter) < 100)) sprintf (buffer, "_000%d", int(iExtIter));
+		if ((int(iExtIter) >= 100) && (int(iExtIter) < 1000)) sprintf (buffer, "_00%d", int(iExtIter));
+		if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d", int(iExtIter));
+		if (int(iExtIter) >= 10000) sprintf (buffer, "_%d", int(iExtIter));
+    strcat(cstr,buffer);
+	}
+
 	if (config->GetOutput_FileFormat() == TECPLOT)  sprintf (buffer, ".plt");
 	if (config->GetOutput_FileFormat() == TECPLOT_BINARY)  sprintf (buffer, ".plt");
 	if (config->GetOutput_FileFormat() == CGNS_SOL)  sprintf (buffer, ".csv");
@@ -5080,14 +4949,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
 
 	unsigned short iZone;
 
-	/*--- Allocate space for the local data arrays ---*/
-	//nOutput_Vars = new unsigned short*[MAX_ZONES];
-	//data_container = new double***[MAX_ZONES];
-
 	for (iZone = 0; iZone < val_nZone; iZone++) {
-
-		//nOutput_Vars[iZone] = new unsigned short[MAX_SOLS];
-		//data_container[iZone] = new double**[MAX_SOLS];
 
 		/*--- Flags identifying the types of files to be written. ---*/
 		bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol();
@@ -5147,13 +5009,32 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
 		bool dynamic_mesh = (config[iZone]->GetUnsteady_Simulation() &&
 				config[iZone]->GetGrid_Movement());
 
-		/*--- Merge the node coordinates and connectivity if necessary. This
+		/*--- Merge the node coordinates and connectivity, if necessary. This
          is only performed if a volume solution file is requested, and it
          is active by default. ---*/
 
     if (Wrt_Vol || Wrt_Srf)
-			MergeGeometry(config[iZone], geometry[iZone][MESH_0], iZone);
+			MergeConnectivity(config[iZone], geometry[iZone][MESH_0], iZone);
   
+    /*--- Merge coordinates of all grid nodes (excluding ghost points).
+     The grid coordinates are always merged and included first in the
+     restart files. ---*/
+
+    MergeCoordinates(config[iZone], geometry[iZone][MESH_0]);
+    
+    if (rank == MASTER_NODE) {
+      
+      if (FileFormat == CGNS_SOL) {
+        SetCGNS_Coordinates(config[iZone], geometry[iZone][MESH_0], iZone);
+        if (!wrote_base_file || dynamic_mesh)
+          DeallocateCoordinates(config[iZone], geometry[iZone][MESH_0]);
+      } else if (FileFormat == TECPLOT_BINARY) {
+        SetTecplot_Mesh(config[iZone], geometry[iZone][MESH_0], iZone);
+        if (!wrote_base_file)
+          DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
+      }
+    }
+    
 		/*--- Merge the solution data needed for volume solutions and restarts ---*/
 
 		if (Wrt_Vol || Wrt_Rst)
@@ -5274,16 +5155,13 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
     
     unsigned short FileFormat = config[iZone]->GetOutput_FileFormat();
     
-    bool dynamic_mesh = (config[iZone]->GetUnsteady_Simulation() &&
-                         config[iZone]->GetGrid_Movement());
-    
     /*--- Merge the node coordinates and connectivity if necessary. This
      is only performed if a volume solution file is requested, and it
      is active by default. ---*/
     
     if (Wrt_Vol || Wrt_Srf) {
-      if (rank == MASTER_NODE) cout <<"Merging geometry." << endl;
-      MergeGeometry(config[iZone], geometry[iZone], iZone);
+      if (rank == MASTER_NODE) cout <<"Merging grid connectivity." << endl;
+      MergeConnectivity(config[iZone], geometry[iZone], iZone);
     }
     
     /*--- Merge the solution data needed for volume solutions and restarts ---*/
@@ -5301,7 +5179,8 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
       
       if (Wrt_Vol) {
         
-        if (rank == MASTER_NODE) cout <<"Writing volume solution." << endl;
+        if (rank == MASTER_NODE)
+          cout <<"Writing volume solution file." << endl;
 
         switch (FileFormat) {
             
@@ -5315,8 +5194,10 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
           case TECPLOT_BINARY:
             
             /*--- Write a Tecplot binary solution file ---*/
+            SetTecplot_Mesh(config[iZone], geometry[iZone], iZone);
+            if (!wrote_base_file)
+              DeallocateConnectivity(config[iZone], geometry[iZone], false);
             SetTecplot_Solution(config[iZone], geometry[iZone], iZone);
-            if (dynamic_mesh) DeallocateCoordinates(config[iZone], geometry[iZone]);
             break;
             
           case CGNS_SOL:
@@ -5340,7 +5221,7 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
       
       if (Wrt_Srf) {
         
-        if (rank == MASTER_NODE) cout <<"Writing surface solution." << endl;
+        if (rank == MASTER_NODE) cout <<"Writing surface solution file." << endl;
         
         switch (FileFormat) {
             
@@ -5361,14 +5242,9 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
           default:
             break;
         }
-        
       }
       
-			/*--- Release memory needed for merging the solution data. ---*/
-      if (((Wrt_Vol) || (Wrt_Srf)) && (FileFormat == TECPLOT))
-        DeallocateCoordinates(config[iZone], geometry[iZone]);
-      
-      if (Wrt_Vol || Wrt_Rst)
+      if (Wrt_Vol || Wrt_Srf)
         DeallocateSolution(config[iZone], geometry[iZone]);
     }
     

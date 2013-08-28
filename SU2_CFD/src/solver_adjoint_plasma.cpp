@@ -31,7 +31,7 @@ CAdjPlasmaSolver::CAdjPlasmaSolver(CGeometry *geometry, CConfig *config) : CSolv
 	unsigned short iDim = 0, iVar, iMarker;
 	ifstream restart_file;
 	string filename, AdjExt;
-
+  double dull_val;
 	bool restart = config->GetRestart();
 	bool axisymmetric = config->GetAxisymmetric();
 
@@ -149,34 +149,8 @@ CAdjPlasmaSolver::CAdjPlasmaSolver(CGeometry *geometry, CConfig *config) : CSolv
 		
 		/*--- Restart the solution from file information ---*/
 		mesh_filename = config->GetSolution_AdjFileName();
-		
-		/*--- Change the name, depending of the objective function ---*/
-		filename.assign(mesh_filename);
-    unsigned short lastindex = filename.find_last_of(".");
-    filename = filename.substr(0, lastindex);
-    
-		switch (config->GetKind_ObjFunc()) {
-			case DRAG_COEFFICIENT: AdjExt = "_cd.dat"; break;
-			case LIFT_COEFFICIENT: AdjExt = "_cl.dat"; break;
-			case SIDEFORCE_COEFFICIENT: AdjExt = "_csf.dat"; break;
-			case PRESSURE_COEFFICIENT: AdjExt = "_cp.dat"; break;
-			case MOMENT_X_COEFFICIENT: AdjExt = "_cmx.dat"; break;
-			case MOMENT_Y_COEFFICIENT: AdjExt = "_cmy.dat"; break;
-			case MOMENT_Z_COEFFICIENT: AdjExt = "_cmz.dat"; break;
-			case EFFICIENCY: AdjExt = "_eff.dat"; break;
-			case EQUIVALENT_AREA: AdjExt = "_ea.dat"; break;
-			case NEARFIELD_PRESSURE: AdjExt = "_nfp.dat"; break;
-      case FORCE_X_COEFFICIENT: AdjExt = "_cfx.dat"; break;
-			case FORCE_Y_COEFFICIENT: AdjExt = "_cfy.dat"; break;
-			case FORCE_Z_COEFFICIENT: AdjExt = "_cfz.dat"; break;
-      case THRUST_COEFFICIENT: AdjExt = "_ct.dat"; break;
-      case TORQUE_COEFFICIENT: AdjExt = "_cq.dat"; break;
-      case FIGURE_OF_MERIT: AdjExt = "_merit.dat"; break;
-			case FREE_SURFACE: AdjExt = "_fs.dat"; break;
-      case NOISE: AdjExt = "_fwh.dat"; break;
-      case HEAT_LOAD: AdjExt = "_Q.dat"; break;
-		}
-		filename.append(AdjExt);
+    filename = config->GetObjFunc_Extension(mesh_filename);
+
 		restart_file.open(filename.data(), ios::in);
     
 		/*--- In case there is no file ---*/
@@ -217,6 +191,8 @@ CAdjPlasmaSolver::CAdjPlasmaSolver(CGeometry *geometry, CConfig *config) : CSolv
 
         /*--- First value is the point index, then the conservative vars. ---*/
         point_line >> index;
+        if (nDim ==2) point_line >> dull_val >> dull_val;
+        else point_line >> dull_val >> dull_val >> dull_val;
         for (iVar = 0; iVar < nVar; iVar++)
           point_line >> Solution[iVar];
         

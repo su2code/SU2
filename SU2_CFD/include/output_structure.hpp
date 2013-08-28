@@ -173,7 +173,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] val_nZone - iZone index.
 	 */
-	void MergeGeometry(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
+	void MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
   
   /*!
 	 * \brief Merge the node coordinates from all processors.

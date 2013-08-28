@@ -133,20 +133,7 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
   if (surf_sol) Tecplot_File << "TITLE = \"Visualization of the surface solution\"" << endl;
   else Tecplot_File << "TITLE = \"Visualization of the volumetric solution\"" << endl;
 
-	/*--- Prepare the variables lists. ---*/
-  if (!grid_movement) {
-	if (nDim == 2) {
-		Tecplot_File << "VARIABLES = \"x\",\"y\"";
-	} else {
-		Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\"";
-	}
-  } else {
-    if (nDim == 2) {
-      Tecplot_File << "VARIABLES = ";
-    } else {
-      Tecplot_File << "VARIABLES = ";
-    }
-  }
+	/*--- Prepare the variable lists. ---*/
   
   /*--- Write the list of the fields in the restart file.
    Without including the PointID---*/
@@ -154,7 +141,7 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
     
     /*--- If SU2_SOL called this routine, we already have a set of output
      variables with the appropriate string tags stored in the config class. ---*/
-    Tecplot_File << ",";
+    Tecplot_File << "VARIABLES = ";
     nVar_Total = config->fields.size() - 1;
     for (unsigned short iField = 1; iField < config->fields.size(); iField++) {
       Tecplot_File << config->fields[iField];
@@ -162,6 +149,12 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
     Tecplot_File << endl;
     
   } else {
+    
+    if (nDim == 2) {
+      Tecplot_File << "VARIABLES = \"x\",\"y\"";
+    } else {
+      Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\"";
+    }
     
     /*--- Add names for conservative and residual variables ---*/
     for (iVar = 0; iVar < nVar_Consv; iVar++) {
@@ -175,11 +168,6 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
     
     /*--- Add names for any extra variables (this will need to be adjusted). ---*/
     if (grid_movement) {
-      if (nDim == 2) {
-        Tecplot_File << ",\"x\",\"y\"";
-      } else {
-        Tecplot_File << ",\"x\",\"y\",\"z\"";
-      }
       if (nDim == 2) {
         Tecplot_File << ",\"Grid_Velx\",\"Grid_Vely\"";
       } else {
@@ -312,9 +300,9 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
       if (LocalIndex[iPoint+1] != 0) {
         
         /*--- Write the node coordinates ---*/
-        if (!grid_movement) {
-        for(iDim = 0; iDim < nDim; iDim++)
-          Tecplot_File << scientific << Coords[iDim][iPoint] << "\t";
+        if (config->GetKind_SU2() != SU2_SOL) {
+          for(iDim = 0; iDim < nDim; iDim++)
+            Tecplot_File << scientific << Coords[iDim][iPoint] << "\t";
         }
         
         /*--- Loop over the vars/residuals and write the values to file ---*/
@@ -328,9 +316,9 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
     } else {
       
       /*--- Write the node coordinates ---*/
-      if (!grid_movement) {
-      for(iDim = 0; iDim < nDim; iDim++)
-        Tecplot_File << scientific << Coords[iDim][iPoint] << "\t";
+      if (config->GetKind_SU2() != SU2_SOL) {
+        for(iDim = 0; iDim < nDim; iDim++)
+          Tecplot_File << scientific << Coords[iDim][iPoint] << "\t";
       }
       
       /*--- Loop over the vars/residuals and write the values to file ---*/
@@ -531,17 +519,26 @@ void COutput::SetTecplot_Mesh(CConfig *config, CGeometry *geometry, unsigned sho
             
 			/*--- write node coordinates and data if not done already---*/
 			if (first_zone) {
-                
-				err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[0] = 1;
-				err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[1] = 1;
-				if (geometry->GetnDim() == 3) {
-					err = TECDAT112(&NPts, Coords[2], &IsDouble);
-					ShareFromZone[2] = 1;
-				}
+        
+        if (config->GetKind_SU2() == SU2_SOL) {
+          err = TECDAT112(&NPts, Data[0], &IsDouble); ShareFromZone[0] = 1;
+          err = TECDAT112(&NPts, Data[1], &IsDouble); ShareFromZone[1] = 1;
+          if (geometry->GetnDim() == 3) {
+            err = TECDAT112(&NPts, Data[2], &IsDouble);
+            ShareFromZone[2] = 1;
+          }
+        } else {
+          err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[0] = 1;
+          err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[1] = 1;
+          if (geometry->GetnDim() == 3) {
+            err = TECDAT112(&NPts, Coords[2], &IsDouble);
+            ShareFromZone[2] = 1;
+          }
+        }
 				if (err) cout << "Error writing coordinates to Tecplot file" << endl;
 				first_zone = false;
 			}
-            
+      
 			err = TECNOD112(Conn_Tria);
 			if (err) cout << "Error writing connectivity to Tecplot file" << endl;
             
@@ -576,13 +573,22 @@ void COutput::SetTecplot_Mesh(CConfig *config, CGeometry *geometry, unsigned sho
             
 			/*--- write node coordinates and data if not done already---*/
 			if (first_zone) {
-                
-				err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[0] = 1;
-				err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[1] = 1;
-				if (geometry->GetnDim() == 3) {
-					err = TECDAT112(&NPts, Coords[2], &IsDouble);
-					ShareFromZone[2] = 1;
-				}
+        
+        if (config->GetKind_SU2() == SU2_SOL) {
+          err = TECDAT112(&NPts, Data[0], &IsDouble); ShareFromZone[0] = 1;
+          err = TECDAT112(&NPts, Data[1], &IsDouble); ShareFromZone[1] = 1;
+          if (geometry->GetnDim() == 3) {
+            err = TECDAT112(&NPts, Data[2], &IsDouble);
+            ShareFromZone[2] = 1;
+          }
+        }else {
+          err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[0] = 1;
+          err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[1] = 1;
+          if (geometry->GetnDim() == 3) {
+            err = TECDAT112(&NPts, Coords[2], &IsDouble);
+            ShareFromZone[2] = 1;
+          }
+        }
 				if (err) cout << "Error writing coordinates to Tecplot file" << endl;
 				first_zone = false;
 			}
@@ -621,13 +627,22 @@ void COutput::SetTecplot_Mesh(CConfig *config, CGeometry *geometry, unsigned sho
             
 			/*--- write node coordinates and data if not done already---*/
 			if (first_zone) {
-                
-				err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[0] = 1;
-				err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[1] = 1;
-				if (geometry->GetnDim() == 3) {
-					err = TECDAT112(&NPts, Coords[2], &IsDouble);
-					ShareFromZone[2] = 1;
-				}
+        
+        if (config->GetKind_SU2() == SU2_SOL) {
+          err = TECDAT112(&NPts, Data[0], &IsDouble); ShareFromZone[0] = 1;
+          err = TECDAT112(&NPts, Data[1], &IsDouble); ShareFromZone[1] = 1;
+          if (geometry->GetnDim() == 3) {
+            err = TECDAT112(&NPts, Data[2], &IsDouble);
+            ShareFromZone[2] = 1;
+          }
+        }else {
+          err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[0] = 1;
+          err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[1] = 1;
+          if (geometry->GetnDim() == 3) {
+            err = TECDAT112(&NPts, Coords[2], &IsDouble);
+            ShareFromZone[2] = 1;
+          }
+        }
 				if (err) cout << "Error writing coordinates to Tecplot file" << endl;
 				first_zone = false;
 			}
@@ -666,13 +681,22 @@ void COutput::SetTecplot_Mesh(CConfig *config, CGeometry *geometry, unsigned sho
             
 			/*--- write node coordinates and data if not done already---*/
 			if (first_zone) {
-                
-				err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[0] = 1;
-				err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[1] = 1;
-				if (geometry->GetnDim() == 3) {
-					err = TECDAT112(&NPts, Coords[2], &IsDouble);
-					ShareFromZone[2] = 1;
-				}
+        
+        if (config->GetKind_SU2() == SU2_SOL) {
+          err = TECDAT112(&NPts, Data[0], &IsDouble); ShareFromZone[0] = 1;
+          err = TECDAT112(&NPts, Data[1], &IsDouble); ShareFromZone[1] = 1;
+          if (geometry->GetnDim() == 3) {
+            err = TECDAT112(&NPts, Data[2], &IsDouble);
+            ShareFromZone[2] = 1;
+          }
+        }else {
+          err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[0] = 1;
+          err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[1] = 1;
+          if (geometry->GetnDim() == 3) {
+            err = TECDAT112(&NPts, Coords[2], &IsDouble);
+            ShareFromZone[2] = 1;
+          }
+        }
 				if (err) cout << "Error writing coordinates to Tecplot file" << endl;
 				first_zone = false;
 			}
@@ -808,7 +832,8 @@ void COutput::SetTecplot_Solution(CConfig *config, CGeometry *geometry, unsigned
 	file << ".sol.plt";
 	FileType = SOLUTION;
 	variables = AssembleVariableNames(geometry, config, nVar_Consv, &NVar);
-    
+  if (config->GetKind_SU2() == SU2_SOL) nVar_Total = NVar;
+  
 	/*--- Open Tecplot file ---*/
 	err = TECINI112((char *)config->GetFlow_FileName().c_str(),
                     (char *)variables.c_str(),
@@ -822,7 +847,7 @@ void COutput::SetTecplot_Solution(CConfig *config, CGeometry *geometry, unsigned
 	first_zone = true;
 	ShareFromZone = new INTEGER4[NVar];
 	for (i = 0; i < NVar; i++) ShareFromZone[i] = 0;
-    
+  
 	if (nGlobal_Tria > 0) {
         
 		/*--- Write the zone header information ---*/
@@ -853,9 +878,9 @@ void COutput::SetTecplot_Solution(CConfig *config, CGeometry *geometry, unsigned
         
 		/*--- write node coordinates and data if not done already---*/
 		if (first_zone) {
-            
+      cout << nVar_Total << endl;
 			i = 0;
-			if (GridMovement) {
+      if (config->GetKind_SU2() == SU2_CFD) {
 				err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[i++] = 1;
 				if (err) cout << "Error writing coordinates to Tecplot file" << endl;
 				err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[i++] = 1;
@@ -907,7 +932,7 @@ void COutput::SetTecplot_Solution(CConfig *config, CGeometry *geometry, unsigned
 		if (first_zone) {
             
 			i = 0;
-			if (GridMovement) {
+			if (config->GetKind_SU2() == SU2_CFD) {
 				err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[i++] = 1;
 				if (err) cout << "Error writing coordinates to Tecplot file" << endl;
 				err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[i++] = 1;
@@ -959,7 +984,7 @@ void COutput::SetTecplot_Solution(CConfig *config, CGeometry *geometry, unsigned
 		if (first_zone) {
             
 			i = 0;
-			if (GridMovement) {
+			if (config->GetKind_SU2() == SU2_CFD) {
 				err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[i++] = 1;
 				if (err) cout << "Error writing coordinates to Tecplot file" << endl;
 				err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[i++] = 1;
@@ -1011,7 +1036,7 @@ void COutput::SetTecplot_Solution(CConfig *config, CGeometry *geometry, unsigned
 		if (first_zone) {
             
 			i = 0;
-			if (GridMovement) {
+			if (config->GetKind_SU2() == SU2_CFD) {
 				err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[i++] = 1;
 				if (err) cout << "Error writing coordinates to Tecplot file" << endl;
 				err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[i++] = 1;
@@ -1108,43 +1133,6 @@ void COutput::SetTecplot_Solution(CConfig *config, CGeometry *geometry, unsigned
 }
 
 string AssembleVariableNames(CGeometry *geometry, CConfig *config, unsigned short nVar_Consv, unsigned short *NVar) {
-    
-//
-//    
-//	
-//	if (GridMovement) {
-//		variables << "x y "; *NVar += 2;
-//		if (dims == 3) {
-//			variables << "z "; *NVar += 1;
-//		}
-//	}
-//	for (iVar = 0; iVar < nVar_Consv; iVar++){
-//		variables << "Conservative_Variable_" << iVar+1 << " ";
-//		*NVar += 1;
-//	}
-////	for (iVar = nVar_Consv; iVar < 2*nVar_Consv; iVar++) {
-////		variables << "Conservative_Residual_" << iVar-nVar_Consv+1 << " ";
-////		*NVar += 1;
-////	}
-//	if (GridMovement) {
-//		variables << "Grid_Velocity_X " << "Grid_Velocity_Y "; *NVar += 2;
-//		if (dims == 3) {
-//			variables << "Grid_Velocity_Z "; *NVar += 1;
-//		}
-//	}
-//    
-//	variables << "Pressure " << "Mach "; *NVar += 2;
-//	if (!Incompressible) {
-//		switch (KindSolver) {
-//                
-//                /*--- Include temperature and laminar viscosity, if applicable ---*/
-//            case NAVIER_STOKES: variables << "Temperature " << "Viscosity "; *NVar += 2; break;
-//                
-//                /*--- Include eddy viscosity, if applicable ---*/
-//            case RANS: variables << "Temperature " << "Viscosity " << "Eddy_Viscosity "; *NVar += 3; break;
-//		}
-//	}
-  
   
   /*--- Local variables ---*/
   stringstream variables; variables.str(string());
@@ -1154,112 +1142,127 @@ string AssembleVariableNames(CGeometry *geometry, CConfig *config, unsigned shor
   unsigned short Kind_Solver  = config->GetKind_Solver();
   bool grid_movement = config->GetGrid_Movement();
   
-
+  
 	/*--- Write the basic variable header based on the particular solution ----*/
-
-  if (grid_movement) {
+  
+  /*--- Write the list of the fields in the restart file.
+   Without including the PointID---*/
+  if (config->GetKind_SU2() == SU2_SOL) {
+    
+    /*--- If SU2_SOL called this routine, we already have a set of output
+     variables with the appropriate string tags stored in the config class. ---*/
+    *NVar = config->fields.size()-1;
+    string varname;
+    for (unsigned short iField = 1; iField < config->fields.size(); iField++) {
+      varname = config->fields[iField];
+      varname.erase (varname.begin(), varname.begin()+1);
+      varname.erase (varname.end()-2, varname.end());
+      variables << varname << " ";
+    }
+    
+  } else {
     if (nDim == 2) {
-      variables << "x y"; *NVar += 2;
+      variables << "x y "; *NVar += 2;
     } else {
       variables << "x y z "; *NVar += 3;
     }
-	}
-  
-	for (iVar = 0; iVar < nVar_Consv; iVar++) {
-		variables << "Conservative_" << iVar+1<<" "; *NVar += 1;
-	}
-  if (config->GetWrt_Residuals()) {
+    
     for (iVar = 0; iVar < nVar_Consv; iVar++) {
-      variables << "Residual_" << iVar+1<<" "; *NVar += 1;
+      variables << "Conservative_" << iVar+1<<" "; *NVar += 1;
     }
-  }
-  
-  /*--- Add names for any extra variables (this will need to be adjusted). ---*/
-	if (grid_movement) {
-    if (nDim == 2) {
-      variables << "Grid_Velx Grid_Vely "; *NVar += 2;
-    } else {
-      variables << "Grid_Velx Grid_Vely Grid_Velz "; *NVar += 3;
+    if (config->GetWrt_Residuals()) {
+      for (iVar = 0; iVar < nVar_Consv; iVar++) {
+        variables << "Residual_" << iVar+1<<" "; *NVar += 1;
+      }
     }
-	}
-  
-  if ((Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
-    variables << "Density ";
-    *NVar += 1;
-  }
-  
-  if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
-      (Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
-    variables << "Pressure Pressure_Coefficient Mach ";
-    *NVar += 3;
-  }
-  
-  if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
-      (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
-    variables << "Temperature Laminar_Viscosity Skin_Friction_Coefficient Heat_Transfer Y_Plus ";
-    *NVar += 5;
-  }
-  
-  if ((Kind_Solver == RANS) || (Kind_Solver == FREE_SURFACE_RANS)) {
-    variables << "Eddy_Viscosity ";
-    *NVar += 1;
-  }
-  
-  if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
-      (Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
-    variables << "Sharp_Edge_Dist ";
-    *NVar += 1;
-  }
-  
-  if ((Kind_Solver == PLASMA_EULER) || (Kind_Solver == PLASMA_NAVIER_STOKES)) {
-    unsigned short iSpecies;
-    for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
-      variables << "Pressure_" << iSpecies << " ";
-      *NVar += 1;
+    
+    /*--- Add names for any extra variables (this will need to be adjusted). ---*/
+    if (grid_movement) {
+      if (nDim == 2) {
+        variables << "Grid_Velx Grid_Vely "; *NVar += 2;
+      } else {
+        variables << "Grid_Velx Grid_Vely Grid_Velz "; *NVar += 3;
+      }
     }
-    for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
-      variables << "Temperature_" << iSpecies << " ";
-      *NVar += 1;
-    }
-    for (iSpecies = 0; iSpecies < config->GetnDiatomics(); iSpecies++) {
-      variables << "TemperatureVib_" << iSpecies << " ";
-      *NVar += 1;
-    }
-    for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
-      variables << "Mach_" << iSpecies << " ";
-      *NVar += 1;
-    }
-  }
-  
-  if (Kind_Solver == PLASMA_NAVIER_STOKES) {
-    unsigned short iSpecies;
-    for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
-      variables << "LaminaryViscosity_" << iSpecies << " ";
+    
+    if ((Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+      variables << "Density ";
       *NVar += 1;
     }
     
-    if ( Kind_Solver == PLASMA_NAVIER_STOKES  && (config->GetMagnetic_Force() == YES) && (geometry->GetnDim() == 3)) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        variables << "Magnet_Field" << iDim << " ";
+    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
+        (Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+      variables << "Pressure Pressure_Coefficient Mach ";
+      *NVar += 3;
+    }
+    
+    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
+        (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+      variables << "Temperature Laminar_Viscosity Skin_Friction_Coefficient Heat_Transfer Y_Plus ";
+      *NVar += 5;
+    }
+    
+    if ((Kind_Solver == RANS) || (Kind_Solver == FREE_SURFACE_RANS)) {
+      variables << "Eddy_Viscosity ";
+      *NVar += 1;
+    }
+    
+    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
+        (Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+      variables << "Sharp_Edge_Dist ";
+      *NVar += 1;
+    }
+    
+    if ((Kind_Solver == PLASMA_EULER) || (Kind_Solver == PLASMA_NAVIER_STOKES)) {
+      unsigned short iSpecies;
+      for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
+        variables << "Pressure_" << iSpecies << " ";
+        *NVar += 1;
+      }
+      for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
+        variables << "Temperature_" << iSpecies << " ";
+        *NVar += 1;
+      }
+      for (iSpecies = 0; iSpecies < config->GetnDiatomics(); iSpecies++) {
+        variables << "TemperatureVib_" << iSpecies << " ";
+        *NVar += 1;
+      }
+      for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
+        variables << "Mach_" << iSpecies << " ";
         *NVar += 1;
       }
     }
-  }
-  
-  if (Kind_Solver == ELECTRIC_POTENTIAL) {
-    for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
-      variables << "ElectricField_" << iDim+1 << " ";
-      *NVar += 1;
+    
+    if (Kind_Solver == PLASMA_NAVIER_STOKES) {
+      unsigned short iSpecies;
+      for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
+        variables << "LaminaryViscosity_" << iSpecies << " ";
+        *NVar += 1;
+      }
+      
+      if ( Kind_Solver == PLASMA_NAVIER_STOKES  && (config->GetMagnetic_Force() == YES) && (geometry->GetnDim() == 3)) {
+        for (iDim = 0; iDim < nDim; iDim++) {
+          variables << "Magnet_Field" << iDim << " ";
+          *NVar += 1;
+        }
+      }
+    }
+    
+    if (Kind_Solver == ELECTRIC_POTENTIAL) {
+      for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
+        variables << "ElectricField_" << iDim+1 << " ";
+        *NVar += 1;
+      }
+    }
+    
+    if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) ||
+        (Kind_Solver == ADJ_FREE_SURFACE_EULER) || (Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
+        (Kind_Solver == ADJ_FREE_SURFACE_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
+      variables << "Surface_Sensitivity Solution_Sensor ";
+      *NVar += 2;
     }
   }
+
+	return variables.str();
   
-  if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) ||
-			(Kind_Solver == ADJ_FREE_SURFACE_EULER) || (Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
-			(Kind_Solver == ADJ_FREE_SURFACE_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
-    variables << "Surface_Sensitivity Solution_Sensor ";
-    *NVar += 2;
-  }
-    
-	return variables.str(); 
-    
 }
