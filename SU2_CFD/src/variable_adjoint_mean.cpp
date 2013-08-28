@@ -238,7 +238,7 @@ bool CAdjEulerVariable::SetPrimVar_Compressible(double SharpEdge_Distance, bool 
   bool check_dens = false, RightVol = true;
   
   double adj_limit = config->GetAdjointLimit();
-  double dist_limit = config->GetRefElemLength();
+  double dist_limit = config->GetLimiterCoeff()*config->GetRefElemLength()*config->GetSharpEdgesCoeff();
 
   if (SharpEdge_Distance < dist_limit) {
     
@@ -266,7 +266,7 @@ bool CAdjEulerVariable::SetPrimVar_Incompressible(double SharpEdge_Distance, boo
   bool check_press = false, RightVol = true;
   
   double adj_limit = config->GetAdjointLimit();
-  double dist_limit = config->GetRefElemLength();
+  double dist_limit = config->GetLimiterCoeff()*config->GetRefElemLength()*config->GetSharpEdgesCoeff();
 
   if (SharpEdge_Distance < dist_limit) {
     

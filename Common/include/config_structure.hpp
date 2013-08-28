@@ -31,6 +31,7 @@
 #include "mutation++.h"
 #endif
 #include <iostream>
+#include <cstdlib>
 #include <fstream>
 #include <sstream>
 #include <string>

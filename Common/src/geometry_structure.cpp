@@ -1828,7 +1828,13 @@ void CPhysicalGeometry::CGNS_Format(CConfig *config, string val_mesh_filename, u
         for ( int s = 0; s < nsections; s++ ) {
           if ( !isInternal[k][s] ) {
             counter++;
-            fprintf( SU2File, "MARKER_TAG= %s\n", sectionNames[k][s] );
+            
+            Marker_Tag = sectionNames[k][s];
+            
+            /*--- Remove whitespaces from the marker names ---*/
+            Marker_Tag.erase(remove(Marker_Tag.begin(),Marker_Tag.end(),' '),Marker_Tag.end());
+
+            fprintf( SU2File, "MARKER_TAG= %s\n", Marker_Tag.c_str() );
             fprintf( SU2File, "MARKER_ELEMS= %i\n", nElems[k][s] );
             for ( int i = 0; i < nElems[k][s]; i++ ) {
               fprintf( SU2File, "%2i\t", elemTypeVTK[k][s]);
