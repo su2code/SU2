@@ -1283,14 +1283,11 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
   
-	unsigned long iPoint, index, flowIter, iPoint_Global;
+	unsigned long iPoint, index, iPoint_Global;
   long iPoint_Local;
-  char buffer[50];
-  unsigned short iField, val_iZone, iVar;
+  unsigned short iField, iVar;
   string Tag, text_line, AdjExt, UnstExt;
-  
-  unsigned short Kind_ObjFunc = config->GetKind_ObjFunc();
-  unsigned short nZone = geometry->GetnZone();
+  unsigned long iExtIter = config->GetExtIter();
   
 	/*--- Define geometry constants in the solver structure ---*/
 	nDim = geometry->GetnDim();
@@ -1303,74 +1300,19 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   string filename;
   
   /*--- Retrieve filename from config ---*/
-	if (config->GetAdjoint())
-		filename = config->GetSolution_AdjFileName();
-	else
-		filename = config->GetSolution_FlowFileName();
-  
-	/*--- Remove restart filename extension ---*/
-  unsigned short lastindex = filename.find_last_of(".");
-  filename = filename.substr(0, lastindex);
-  
-	/*--- The adjoint problem requires a particular extension. ---*/
 	if (config->GetAdjoint()) {
-		switch (Kind_ObjFunc) {
-      case DRAG_COEFFICIENT:      AdjExt = "_cd";   break;
-      case LIFT_COEFFICIENT:      AdjExt = "_cl";   break;
-      case SIDEFORCE_COEFFICIENT: AdjExt = "_csf";  break;
-      case PRESSURE_COEFFICIENT:  AdjExt = "_cp";   break;
-      case MOMENT_X_COEFFICIENT:  AdjExt = "_cmx";  break;
-      case MOMENT_Y_COEFFICIENT:  AdjExt = "_cmy";  break;
-      case MOMENT_Z_COEFFICIENT:  AdjExt = "_cmz";  break;
-      case EFFICIENCY:            AdjExt = "_eff";  break;
-      case EQUIVALENT_AREA:       AdjExt = "_ea";   break;
-      case NEARFIELD_PRESSURE:    AdjExt = "_nfp";  break;
-      case FORCE_X_COEFFICIENT:   AdjExt = "_cfx";  break;
-      case FORCE_Y_COEFFICIENT:   AdjExt = "_cfy";  break;
-      case FORCE_Z_COEFFICIENT:   AdjExt = "_cfz";  break;
-      case THRUST_COEFFICIENT:    AdjExt = "_ct";   break;
-      case TORQUE_COEFFICIENT:    AdjExt = "_cq";   break;
-      case FIGURE_OF_MERIT:       AdjExt = "_merit";break;
-      case FREE_SURFACE:           AdjExt = "_fs";   break;
-      case NOISE:                 AdjExt = "_fwh";  break;
-      case HEAT_LOAD:                 AdjExt = "_Q";  break;
-		}
-		filename.append(AdjExt);
+		filename = config->GetSolution_AdjFileName();
+    filename = config->GetObjFunc_Extension(filename);
+  } else {
+		filename = config->GetSolution_FlowFileName();
+  }
+  
+	/*--- Unsteady problems require an iteration number to be appended. ---*/
+  if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+		filename = config->GetUnsteady_FileName(filename, int(iExtIter));
 	}
-  
-	/*--- Multi-zone restart files. ---*/
-	if (nZone > 1 && !(config->GetUnsteady_Simulation() == TIME_SPECTRAL)) {
-    val_iZone = config->GetExtIter();
-    unsigned short lastindex = filename.find_last_of(".");
-    filename = filename.substr(0, lastindex);
-		sprintf (buffer, "_%d.dat", int(val_iZone));
-		UnstExt = string(buffer);
-		filename.append(UnstExt);
-	}
-  
-	/*--- For the unsteady adjoint, we integrate backwards through
-   physical time, so load in the direct solution files in reverse. ---*/
-	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-		flowIter = val_iZone;
-		if (int(val_iZone) < 10) sprintf (buffer, "_0000%d.dat", int(val_iZone));
-		if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) sprintf (buffer, "_000%d.dat", int(val_iZone));
-		if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) sprintf (buffer, "_00%d.dat", int(val_iZone));
-		if ((int(val_iZone) >= 1000) && (int(val_iZone) < 10000)) sprintf (buffer, "_0%d.dat", int(val_iZone));
-		if (int(val_iZone) >= 10000) sprintf (buffer, "_%d.dat", int(val_iZone));
-		UnstExt = string(buffer);
-		filename.append(UnstExt);
-	} else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
-		flowIter   = config->GetExtIter();
-		if ((int(flowIter) >= 0) && (int(flowIter) < 10)) sprintf (buffer, "_0000%d.dat", int(flowIter));
-		if ((int(flowIter) >= 10) && (int(flowIter) < 100)) sprintf (buffer, "_000%d.dat", int(flowIter));
-		if ((int(flowIter) >= 100) && (int(flowIter) < 1000)) sprintf (buffer, "_00%d.dat", int(flowIter));
-		if ((int(flowIter) >= 1000) && (int(flowIter) < 10000)) sprintf (buffer, "_0%d.dat", int(flowIter));
-		if (int(flowIter) >= 10000) sprintf (buffer, "_%d.dat", int(flowIter));
-		UnstExt = string(buffer);
-		filename.append(UnstExt);
-	} else
-    filename.append(".dat");
-  
+
+  /*--- Open the restart file ---*/
   restart_file.open(filename.data(), ios::in);
 
   /*--- In case there is no restart file ---*/
@@ -1425,7 +1367,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
       /*--- The PointID is not stored --*/
       point_line >> index;
       
-      /*--- Store the solution --*/
+      /*--- Store the solution (starting with node coordinates) --*/
       for (iField = 0; iField < nVar; iField++)
         point_line >> Solution[iField];
       
@@ -1574,7 +1516,7 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
   
 }
 
-void CBaselineSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned short val_iZone) {
+void CBaselineSolver::GetRestart(CGeometry *geometry, CConfig *config, int val_iter) {
   
 	int rank = MASTER_NODE;
 #ifndef NO_MPI
@@ -1583,83 +1525,26 @@ void CBaselineSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned 
   
 	/*--- Restart the solution from file information ---*/
 	string filename;
-	unsigned long iPoint, index, flowIter;
-	char buffer[50];
+	unsigned long iPoint, index;
 	string UnstExt, text_line, AdjExt;
 	ifstream restart_file;
-	unsigned short nZone = geometry->GetnZone();
-  unsigned short Kind_ObjFunc = config->GetKind_ObjFunc();
   unsigned short iField;
+  unsigned long iExtIter = config->GetExtIter();
   
   /*--- Retrieve filename from config ---*/
-	if (config->GetAdjoint())
-		filename = config->GetSolution_AdjFileName();
-	else
-		filename = config->GetSolution_FlowFileName();
-  
-	/*--- Remove restart filename extension ---*/
-  unsigned short lastindex = filename.find_last_of(".");
-  filename = filename.substr(0, lastindex);
-  
-	/*--- The adjoint problem requires a particular extension. ---*/
 	if (config->GetAdjoint()) {
-		switch (Kind_ObjFunc) {
-      case DRAG_COEFFICIENT:      AdjExt = "_cd";   break;
-      case LIFT_COEFFICIENT:      AdjExt = "_cl";   break;
-      case SIDEFORCE_COEFFICIENT: AdjExt = "_csf";  break;
-      case PRESSURE_COEFFICIENT:  AdjExt = "_cp";   break;
-      case MOMENT_X_COEFFICIENT:  AdjExt = "_cmx";  break;
-      case MOMENT_Y_COEFFICIENT:  AdjExt = "_cmy";  break;
-      case MOMENT_Z_COEFFICIENT:  AdjExt = "_cmz";  break;
-      case EFFICIENCY:            AdjExt = "_eff";  break;
-      case EQUIVALENT_AREA:       AdjExt = "_ea";   break;
-      case NEARFIELD_PRESSURE:    AdjExt = "_nfp";  break;
-      case FORCE_X_COEFFICIENT:   AdjExt = "_cfx";  break;
-      case FORCE_Y_COEFFICIENT:   AdjExt = "_cfy";  break;
-      case FORCE_Z_COEFFICIENT:   AdjExt = "_cfz";  break;
-      case THRUST_COEFFICIENT:    AdjExt = "_ct";   break;
-      case TORQUE_COEFFICIENT:    AdjExt = "_cq";   break;
-      case FIGURE_OF_MERIT:       AdjExt = "_merit";break;
-      case FREE_SURFACE:          AdjExt = "_fs";   break;
-      case NOISE:                 AdjExt = "_fwh";  break;
-      case HEAT_LOAD:             AdjExt = "_Q";  break;
-		}
-		filename.append(AdjExt);
+		filename = config->GetSolution_AdjFileName();
+    filename = config->GetObjFunc_Extension(filename);
+  } else {
+		filename = config->GetSolution_FlowFileName();
+  }
+  
+	/*--- Unsteady problems require an iteration number to be appended. ---*/
+  if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+		filename = config->GetUnsteady_FileName(filename, int(iExtIter));
 	}
   
-	/*--- Multi-zone restart files. ---*/
-	if (nZone > 1 && !(config->GetUnsteady_Simulation() == TIME_SPECTRAL)) {
-    unsigned short lastindex = filename.find_last_of(".");
-    filename = filename.substr(0, lastindex);
-		sprintf (buffer, "_%d.dat", int(val_iZone));
-		UnstExt = string(buffer);
-		filename.append(UnstExt);
-	}
-  
-	/*--- For the unsteady adjoint, we integrate backwards through
-   physical time, so load in the direct solution files in reverse. ---*/
-	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-		flowIter = val_iZone;
-		if (int(val_iZone) < 10) sprintf (buffer, "_0000%d.dat", int(val_iZone));
-		if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) sprintf (buffer, "_000%d.dat", int(val_iZone));
-		if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) sprintf (buffer, "_00%d.dat", int(val_iZone));
-		if ((int(val_iZone) >= 1000) && (int(val_iZone) < 10000)) sprintf (buffer, "_0%d.dat", int(val_iZone));
-		if (int(val_iZone) >= 10000) sprintf (buffer, "_%d.dat", int(val_iZone));
-		UnstExt = string(buffer);
-		filename.append(UnstExt);
-	} else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
-		flowIter   = config->GetExtIter();
-		if ((int(flowIter) >= 0) && (int(flowIter) < 10)) sprintf (buffer, "_0000%d.dat", int(flowIter));
-		if ((int(flowIter) >= 10) && (int(flowIter) < 100)) sprintf (buffer, "_000%d.dat", int(flowIter));
-		if ((int(flowIter) >= 100) && (int(flowIter) < 1000)) sprintf (buffer, "_00%d.dat", int(flowIter));
-		if ((int(flowIter) >= 1000) && (int(flowIter) < 10000)) sprintf (buffer, "_0%d.dat", int(flowIter));
-		if (int(flowIter) >= 10000) sprintf (buffer, "_%d.dat", int(flowIter));
-		UnstExt = string(buffer);
-		filename.append(UnstExt);
-	} else
-    filename.append(".dat");
-  
-  
+  /*--- Open the restart file ---*/
   restart_file.open(filename.data(), ios::in);
   
 	/*--- In case there is no file ---*/
@@ -1712,7 +1597,7 @@ void CBaselineSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned 
       /*--- The PointID is not stored --*/
       point_line >> index;
       
-      /*--- Store the solution --*/
+      /*--- Store the solution (starting with node coordinates) --*/
       for (iField = 0; iField < nVar; iField++)
         point_line >> Solution[iField];
       

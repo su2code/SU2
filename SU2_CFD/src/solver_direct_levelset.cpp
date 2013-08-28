@@ -189,12 +189,12 @@ CLevelSetSolver::CLevelSetSolver(CGeometry *geometry, CConfig *config, unsigned 
       iPoint_Local = Global2Local[iPoint_Global];
       if (iPoint_Local >= 0) {
         if (!rans) {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
+          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
+          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
         }
         else {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
+          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
+          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
         }
         node[iPoint_Local] = new CLevelSetVariable(Solution[0], nDim, nVar, config);
       }

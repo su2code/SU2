@@ -1986,6 +1986,10 @@ void CPhysicalGeometry::CGNS_Format(CConfig *config, string val_mesh_filename, u
       if ( !isInternal[k][s] ) {
         nelem_edge_bound = 0; nelem_triangle_bound = 0; nelem_quad_bound = 0; ielem = 0;
         Marker_Tag = sectionNames[k][s];
+        
+        /*--- Remove whitespaces from the marker names ---*/
+        Marker_Tag.erase(remove(Marker_Tag.begin(),Marker_Tag.end(),' '),Marker_Tag.end());
+        
         if (Marker_Tag != "SEND_RECEIVE") {
           nElem_Bound[iMarker] = nElems[k][s];
           if (rank == MASTER_NODE)

@@ -218,7 +218,7 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
 			if (rank == MASTER_NODE && iZone == ZONE_0)
 				cout << " Single iteration of the direct solver to store flow data." << endl;
 			if (config_container[iZone]->GetUnsteady_Simulation())
-				solver_container[iZone][MESH_0][FLOW_SOL]->GetRestart(geometry_container[iZone][MESH_0], config_container[iZone], iZone);
+				solver_container[iZone][MESH_0][FLOW_SOL]->GetRestart(geometry_container[iZone][MESH_0], config_container[iZone], ExtIter);
 		}
 	}
 
