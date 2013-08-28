@@ -891,7 +891,6 @@ void COutput::SetTecplot_Solution(CConfig *config, CGeometry *geometry, unsigned
 //			}
       if (config->GetKind_SU2() == SU2_SOL) {
         for (iVar = dims; iVar < nVar_Total; iVar++) {
-          cout << iVar << endl;
           err = TECDAT112(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
           if (err) cout << "Error writing data to Tecplot file" << endl;
         }
