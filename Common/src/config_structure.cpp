@@ -987,7 +987,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 	Kind_SU2 = val_software;
   
   /*--- Only SU2_DDC, and SU2_CFD work with CGNS ---*/
-  if ((Kind_SU2 != SU2_DDC) && (Kind_SU2 != SU2_CFD)) {
+  if ((Kind_SU2 != SU2_DDC) && (Kind_SU2 != SU2_CFD) && (Kind_SU2 != SU2_SOL)) {
     if (Mesh_FileFormat == CGNS) {
     cout << "This software is not prepared for CGNS, please switch to SU2" << endl;
     cout << "Press any key to exit..." << endl;
