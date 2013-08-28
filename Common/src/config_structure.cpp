@@ -1923,6 +1923,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         ArrheniusCoefficient = new double[nReactions];
         ArrheniusEta         = new double[nReactions];
         ArrheniusTheta       = new double[nReactions];
+        Tcf_a                = new double[nReactions];
+        Tcf_b                = new double[nReactions];
+        Tcb_a                = new double[nReactions];
+        Tcb_b                = new double[nReactions];
         nElStates            = new unsigned short[nSpecies];
         Reactions            = new int**[nReactions];
         for (unsigned short iRxn = 0; iRxn < nReactions; iRxn++) {
@@ -2101,26 +2105,28 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         degen[4]      = Og;
         
         /*--- Set reaction maps ---*/
+        // N2 dissociation
         Reactions[0][0][0]=0;		Reactions[0][0][1]=0;		Reactions[0][0][2]=nSpecies;		Reactions[0][1][0]=3;		Reactions[0][1][1]=3;		Reactions[0][1][2] =0;
         Reactions[1][0][0]=0;		Reactions[1][0][1]=1;		Reactions[1][0][2]=nSpecies;		Reactions[1][1][0]=3;		Reactions[1][1][1]=3;		Reactions[1][1][2] =1;
         Reactions[2][0][0]=0;		Reactions[2][0][1]=2;		Reactions[2][0][2]=nSpecies;		Reactions[2][1][0]=3;		Reactions[2][1][1]=3;		Reactions[2][1][2] =2;
         Reactions[3][0][0]=0;		Reactions[3][0][1]=3;		Reactions[3][0][2]=nSpecies;		Reactions[3][1][0]=3;		Reactions[3][1][1]=3;		Reactions[3][1][2] =3;
         Reactions[4][0][0]=0;		Reactions[4][0][1]=4;		Reactions[4][0][2]=nSpecies;		Reactions[4][1][0]=3;		Reactions[4][1][1]=3;		Reactions[4][1][2] =4;
-        
+        // O2 dissociation
         Reactions[5][0][0]=1;		Reactions[5][0][1]=0;		Reactions[5][0][2]=nSpecies;		Reactions[5][1][0]=4;		Reactions[5][1][1]=4;		Reactions[5][1][2] =0;
         Reactions[6][0][0]=1;		Reactions[6][0][1]=1;		Reactions[6][0][2]=nSpecies;		Reactions[6][1][0]=4;		Reactions[6][1][1]=4;		Reactions[6][1][2] =1;
         Reactions[7][0][0]=1;		Reactions[7][0][1]=2;		Reactions[7][0][2]=nSpecies;		Reactions[7][1][0]=4;		Reactions[7][1][1]=4;		Reactions[7][1][2] =2;
         Reactions[8][0][0]=1;		Reactions[8][0][1]=3;		Reactions[8][0][2]=nSpecies;		Reactions[8][1][0]=4;		Reactions[8][1][1]=4;		Reactions[8][1][2] =3;
         Reactions[9][0][0]=1;		Reactions[9][0][1]=4;		Reactions[9][0][2]=nSpecies;		Reactions[9][1][0]=4;		Reactions[9][1][1]=4;		Reactions[9][1][2] =4;
-        
+        // NO dissociation
         Reactions[10][0][0]=2;		Reactions[10][0][1]=0;		Reactions[10][0][2]=nSpecies;		Reactions[10][1][0]=3;		Reactions[10][1][1]=4;		Reactions[10][1][2] =0;
         Reactions[11][0][0]=2;		Reactions[11][0][1]=1;		Reactions[11][0][2]=nSpecies;		Reactions[11][1][0]=3;		Reactions[11][1][1]=4;		Reactions[11][1][2] =1;
         Reactions[12][0][0]=2;		Reactions[12][0][1]=2;		Reactions[12][0][2]=nSpecies;		Reactions[12][1][0]=3;		Reactions[12][1][1]=4;		Reactions[12][1][2] =2;
         Reactions[13][0][0]=2;		Reactions[13][0][1]=3;		Reactions[13][0][2]=nSpecies;		Reactions[13][1][0]=3;		Reactions[13][1][1]=4;		Reactions[13][1][2] =3;
         Reactions[14][0][0]=2;		Reactions[14][0][1]=4;		Reactions[14][0][2]=nSpecies;		Reactions[14][1][0]=3;		Reactions[14][1][1]=4;		Reactions[14][1][2] =4;
-        
-        Reactions[15][0][0]=0;		Reactions[15][0][1]=3;		Reactions[15][0][2]=nSpecies;		Reactions[15][1][0]=2;		Reactions[15][1][1]=4;		Reactions[15][1][2]= nSpecies;
-        Reactions[16][0][0]=2;		Reactions[16][0][1]=3;		Reactions[16][0][2]=nSpecies;		Reactions[16][1][0]=1;		Reactions[16][1][1]=4;		Reactions[16][1][2]= nSpecies;
+        // N2 + O -> NO + N
+        Reactions[15][0][0]=0;		Reactions[15][0][1]=4;		Reactions[15][0][2]=nSpecies;		Reactions[15][1][0]=2;		Reactions[15][1][1]=3;		Reactions[15][1][2]= nSpecies;
+        // NO + O -> O2 + N
+        Reactions[16][0][0]=2;		Reactions[16][0][1]=4;		Reactions[16][0][2]=nSpecies;		Reactions[16][1][0]=1;		Reactions[16][1][1]=3;		Reactions[16][1][2]= nSpecies;
         
         /*--- Set Arrhenius coefficients for reactions ---*/
         // Pre-exponential factor
@@ -2139,7 +2145,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         ArrheniusCoefficient[12] = 5.0E15;
         ArrheniusCoefficient[13] = 1.1E17;
         ArrheniusCoefficient[14] = 1.1E17;
-        ArrheniusCoefficient[15] = 5.7E12;
+        ArrheniusCoefficient[15] = 6.4E17;
         ArrheniusCoefficient[16] = 8.4E12;
         
         // Rate-controlling temperature exponent
@@ -2158,8 +2164,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         ArrheniusEta[12] = 0.0;
         ArrheniusEta[13] = 0.0;
         ArrheniusEta[14] = 0.0;
-        ArrheniusEta[15] = 0.42;
-        ArrheniusEta[16] = 0.00;
+        ArrheniusEta[15] = -1.0;
+        ArrheniusEta[16] = 0.0;
         
         // Characteristic temperature
         ArrheniusTheta[0]  = 113200.0;
@@ -2177,8 +2183,42 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         ArrheniusTheta[12] = 75500.0;
         ArrheniusTheta[13] = 75500.0;
         ArrheniusTheta[14] = 75500.0;
-        ArrheniusTheta[15] = 42938.0;
-        ArrheniusTheta[16] = 19400.0;
+        ArrheniusTheta[15] = 38400.0;
+        ArrheniusTheta[16] = 19450.0;
+        
+        /*--- Set rate-controlling temperature exponents ---*/
+        //  -----------  Tc = Ttr^a * Tve^b  -----------
+        //
+        // Forward Reactions
+        //   Dissociation:      a = 0.5, b = 0.5  (OR a = 0.7, b =0.3)
+        //   Exchange:          a = 1,   b = 0
+        //   Impact ionization: a = 0,   b = 1
+        //
+        // Backward Reactions
+        //   Recomb ionization:      a = 0, b = 1
+        //   Impact ionization:      a = 0, b = 1
+        //   N2 impact dissociation: a = 0, b = 1
+        //   Others:                 a = 1, b = 0
+        Tcf_a[0]  = 0.5; Tcf_b[0]  = 0.5; Tcb_a[0]  = 1;  Tcb_b[0] = 0;
+        Tcf_a[1]  = 0.5; Tcf_b[1]  = 0.5; Tcb_a[1]  = 1;  Tcb_b[1] = 0;
+        Tcf_a[2]  = 0.5; Tcf_b[2]  = 0.5; Tcb_a[2]  = 1;  Tcb_b[2] = 0;
+        Tcf_a[3]  = 0.5; Tcf_b[3]  = 0.5; Tcb_a[3]  = 1;  Tcb_b[3] = 0;
+        Tcf_a[4]  = 0.5; Tcf_b[4]  = 0.5; Tcb_a[4]  = 1;  Tcb_b[4] = 0;
+        
+        Tcf_a[5]  = 0.5; Tcf_b[5]  = 0.5; Tcb_a[5]  = 1;  Tcb_b[5] = 0;
+        Tcf_a[6]  = 0.5; Tcf_b[6]  = 0.5; Tcb_a[6]  = 1;  Tcb_b[6] = 0;
+        Tcf_a[7]  = 0.5; Tcf_b[7]  = 0.5; Tcb_a[7]  = 1;  Tcb_b[7] = 0;
+        Tcf_a[8]  = 0.5; Tcf_b[8]  = 0.5; Tcb_a[8]  = 1;  Tcb_b[8] = 0;
+        Tcf_a[9]  = 0.5; Tcf_b[9]  = 0.5; Tcb_a[9]  = 1;  Tcb_b[9] = 0;
+        
+        Tcf_a[10] = 0.5; Tcf_b[10] = 0.5; Tcb_a[10] = 1;  Tcb_b[10] = 0;
+        Tcf_a[11] = 0.5; Tcf_b[11] = 0.5; Tcb_a[11] = 1;  Tcb_b[11] = 0;
+        Tcf_a[12] = 0.5; Tcf_b[12] = 0.5; Tcb_a[12] = 1;  Tcb_b[12] = 0;
+        Tcf_a[13] = 0.5; Tcf_b[13] = 0.5; Tcb_a[13] = 1;  Tcb_b[13] = 0;
+        Tcf_a[14] = 0.5; Tcf_b[14] = 0.5; Tcb_a[14] = 1;  Tcb_b[14] = 0;
+        
+        Tcf_a[15] = 1.0; Tcf_b[15] = 0.0; Tcb_a[15] = 1;  Tcb_b[15] = 0;
+        Tcf_a[16] = 1.0; Tcf_b[16] = 0.0; Tcb_a[16] = 1;  Tcb_b[16] = 0;
         
         break;
     }

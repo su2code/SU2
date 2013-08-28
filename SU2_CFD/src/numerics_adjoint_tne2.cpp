@@ -242,7 +242,7 @@ void CUpwRoe_AdjTNE2::ComputeResidual (double *val_residual_i, double *val_resid
 		/*--- Prepare variables for use in matrix routines ---*/
 		RoeDensity = U_i[0]*sqrt(U_j[0]/U_i[0]);
 		RoeSoundSpeed = c;
-		UnitaryNormal[0] = nx;  UnitaryNormal[1] = ny;  if (nDim == 3 ) UnitaryNormal[2] = nz;
+		UnitNormal[0] = nx;  UnitNormal[1] = ny;  if (nDim == 3 ) UnitNormal[2] = nz;
 		RoeVelocity[0]   = u;   RoeVelocity[1]   = v;   if (nDim == 3 ) RoeVelocity[2]   = w;
 		Velocity_i[0]    = u_l; Velocity_i[1]    = v_l; if (nDim == 3 ) Velocity_i[2]    = w_l;
 		Velocity_j[0]    = u_r; Velocity_j[1]    = v_r; if (nDim == 3 ) Velocity_j[2]    = w_r;
@@ -254,8 +254,8 @@ void CUpwRoe_AdjTNE2::ComputeResidual (double *val_residual_i, double *val_resid
 		GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, Proj_flux_tensor_j);
     
 		/*--- Compute P, inverse P, and store eigenvalues ---*/
-		GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitaryNormal, invP_Tensor);
-		GetPMatrix(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitaryNormal, P_Tensor);
+		GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
+		GetPMatrix(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, P_Tensor);
     
 		/*--- Flow eigenvalues ---*/
 		for (iDim = 0; iDim < nDim; iDim++)
