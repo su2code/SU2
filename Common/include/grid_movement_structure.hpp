@@ -33,6 +33,7 @@
 #include "linear_solvers_structure.hpp"
 
 #include <iostream>
+#include <cstdlib>
 #include <fstream>
 #include <cmath>
 #include <ctime>

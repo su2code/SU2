@@ -26,6 +26,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <cstdlib>
 #include <vector>
 
 #include "config_structure.hpp"

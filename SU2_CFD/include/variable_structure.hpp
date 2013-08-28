@@ -27,6 +27,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <cstdlib>
 
 #include "../../Common/include/config_structure.hpp"
 
