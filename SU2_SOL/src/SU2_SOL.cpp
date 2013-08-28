@@ -77,6 +77,11 @@ int main(int argc, char *argv[]) {
     /*--- Create the vertex structure (required for MPI) ---*/
     if (rank == MASTER_NODE) cout << "Identify vertices." <<endl;
     geometry[iZone]->SetVertex(config[iZone]);
+   
+    /*--- Perform the non-dimensionalization for the flow equations using the
+     specified reference values. ---*/
+    
+		config[iZone]->SetNondimensionalization(geometry[iZone]->GetnDim(), iZone);
     
   }
   
@@ -141,8 +146,8 @@ int main(int argc, char *argv[]) {
           else
             solver[iZone]->GetRestart(geometry[iZone], config[iZone], MESH_0);
         }
-        
-        if (rank == MASTER_NODE)
+
+            if (rank == MASTER_NODE)
           cout << "Writing the volume solution for time step " << iExtIter << "." << endl;
         output->SetBaselineResult_Files(solver, geometry, config, iExtIter, nZone);
       }
