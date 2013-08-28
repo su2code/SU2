@@ -962,7 +962,6 @@ CSource_TNE2::CSource_TNE2(unsigned short val_nDim, unsigned short val_nVar,
   RxnConstantTable = new double*[6];
 	for (unsigned short iVar = 0; iVar < 6; iVar++)
 		RxnConstantTable[iVar] = new double[5];
-
 }
 
 CSource_TNE2::~CSource_TNE2(void) {
@@ -970,7 +969,6 @@ CSource_TNE2::~CSource_TNE2(void) {
   for (unsigned short iVar = 0; iVar < 6; iVar++)
     delete [] RxnConstantTable[iVar];
   delete [] RxnConstantTable;
-  
 }
 
 void CSource_TNE2::GetKeqConstants(double *A, unsigned short val_Reaction,
@@ -1019,15 +1017,43 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
                                     CConfig *config) {
   
   /*--- Nonequilibrium chemistry ---*/
-  unsigned short iSpecies, jSpecies, ii, iReaction, nReactions;
-  int ***RxnMap;
+  bool ionization, implicit;
+  unsigned short iSpecies, jSpecies, ii, iReaction, nReactions, iVar, iEl, iDim, nEve;
+  unsigned short *nElStates, nHeavy, nEl;
+  int ***RxnMap, *alphak, *betak;
   double T_min, epsilon;
-  double rho, T, Tve, evs, Thf, Thb, Trxnf, Trxnb, Keq, Cf, eta, theta, kf, kb;
-  double *A, *Ms, *thetav, fwdRxn, bkwRxn, alpha, Dprime, Ru;
-  double *Tcf_a, *Tcf_b, *Tcb_a, *Tcb_b;
+  double T, Tve, Thf, Thb, Trxnf, Trxnb, Keq, Cf, eta, theta, kf, kb;
+  double rho, u, v, w, rhoCvtr, rhoCvve, P, sqvel;
+  double num, num2, num3, denom, *evibs, *eels, *Cvvs, *Cves;
+  double *A, *Ms, *thetav, **thetae, **g, fwdRxn, bkwRxn, alpha, Dprime, Ru;
+  double *dTdrhos, dTdrhou, dTdrhov, dTdrhow, dTdrhoE, dTdrhoEve;
+  double *dTvedrhos, dTvedrhou, dTvedrhov, dTvedrhow, dTvedrhoE, dTvedrhoEve;
+  double *hf, *Tref, *xi, Cvtrs, ef;
+  double *Tcf_a, *Tcf_b, *Tcb_a, *Tcb_b, af, bf, ab, bb;
+  double *dkf, *dkb, *dRfok, *dRbok, coeff;
+  double dThf, dThb;
+  double thoTve, exptv;
+  
+//  double *wdot = new double[nSpecies];
+//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//    wdot[iSpecies] = 0.0;
   
   /*--- Allocate arrays ---*/
   A = new double[5];
+  
+  /*--- Initialize ---*/
+  evibs     = NULL;
+  eels      = NULL;
+  Cvvs      = NULL;
+  Cves      = NULL;
+  dTdrhos   = NULL;
+  dTvedrhos = NULL;
+  dkf       = NULL;
+  dkb       = NULL;
+  dRfok     = NULL;
+  dRbok     = NULL;
+  alphak    = NULL;
+  betak     = NULL;
   
   /*--- Define artificial chemistry parameters ---*/
   // Note: These parameters artificially increase the rate-controlling reaction
@@ -1039,28 +1065,127 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
   /*--- Define preferential dissociation coefficient ---*/
   alpha = 0.3;
   
+  /*--- Determine if Jacobian calculation is required ---*/
+  // NOTE: Need to take derivatives of relaxation time (not currently implemented).
+  //       For now, we de-activate the Jacobian and return to it at a later date.
+  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  
+  /*--- Determine the number of heavy particle species ---*/
+  ionization = config->GetIonization();
+  if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
+  else            { nHeavy = nSpecies;   nEl = 0; }
+  
+  /*--- Rename for convenience ---*/
+  Ru      = UNIVERSAL_GAS_CONSTANT;
+  rho     = V_i[RHO_INDEX];
+  P       = V_i[P_INDEX];
+  T       = V_i[T_INDEX];
+  Tve     = V_i[TVE_INDEX];
+  u       = V_i[VEL_INDEX];
+  v       = V_i[VEL_INDEX+1];
+  w       = V_i[VEL_INDEX+2];
+  rhoCvtr = V_i[RHOCVTR_INDEX];
+  rhoCvve = V_i[RHOCVVE_INDEX];
+  
   /*--- Acquire parameters from the configuration file ---*/
   nReactions = config->GetnReactions();
   Ms         = config->GetMolar_Mass();
   RxnMap     = config->GetReaction_Map();
   thetav     = config->GetCharVibTemp();
+  thetae     = config->GetCharElTemp();
+  g          = config->GetElDegeneracy();
+  nElStates  = config->GetnElStates();
+  hf         = config->GetEnthalpy_Formation();
+  xi         = config->GetRotationModes();
+  Tref       = config->GetRefTemperature();
   Tcf_a      = config->GetRxnTcf_a();
   Tcf_b      = config->GetRxnTcf_b();
   Tcb_a      = config->GetRxnTcb_a();
   Tcb_b      = config->GetRxnTcb_b();
   
-  /*--- Rename for convenience ---*/
-  T   = V_i[T_INDEX];
-  Tve = V_i[TVE_INDEX];
-  rho = V_i[RHO_INDEX];
-  Ru  = UNIVERSAL_GAS_CONSTANT;
+  /*--- Calculate partial derivatives of T & Tve ---*/
+  if (implicit) {
+    alphak    = new int[nSpecies];
+    betak     = new int[nSpecies];
+    dTdrhos   = new double[nSpecies];
+    dTvedrhos = new double[nSpecies];
+    evibs     = new double[nSpecies];
+    eels      = new double[nSpecies];
+    Cvvs      = new double[nSpecies];
+    Cves      = new double[nSpecies];
+    dkf       = new double[nVar];
+    dkb       = new double[nVar];
+    dRfok     = new double[nVar];
+    dRbok     = new double[nVar];
+    
+    sqvel = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      sqvel += V_i[VEL_INDEX+iDim]*V_i[VEL_INDEX+iDim];
+    }
+    
+    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+      Cvtrs = (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies];
+      ef    = hf[iSpecies] - Ru/Ms[iSpecies] * Tref[iSpecies];
+      
+      /*--- Vibrational energy ---*/
+      if (thetav[iSpecies] != 0) {
+        thoTve = thetav[iSpecies]/Tve;
+        exptv = exp(thetav[iSpecies]/Tve);
+        evibs[iSpecies] = Ru/Ms[iSpecies] * thetav[iSpecies] / (exptv - 1.0);
+        Cvvs[iSpecies]  = Ru/Ms[iSpecies] * thoTve*thoTve * exptv / ((exptv-1.0)*(exptv-1.0));
+      }
+      else {
+        evibs[iSpecies] = 0.0;
+        Cvvs[iSpecies]  = 0.0;
+      }
+      
+      /*--- Electronic energy ---*/
+      num = 0.0; num2 = 0.0;
+      denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
+      num3  = g[iSpecies][iEl] * (thetae[iSpecies][0]/(Tve*Tve))*exp(-thetae[iSpecies][0]/Tve);
+      for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
+        thoTve = thetae[iSpecies][iEl]/Tve;
+        exptv = exp(-thetae[iSpecies][iEl]/Tve);
+        
+        num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exptv;
+        denom += g[iSpecies][iEl] * exptv;
+        num2  += g[iSpecies][iEl] * (thoTve*thoTve) * exptv;
+        num3  += g[iSpecies][iEl] * thoTve/Tve * exptv;
+      }
+      eels[iSpecies] = Ru/Ms[iSpecies] * (num/denom);
+      Cves[iSpecies] = Ru/Ms[iSpecies] * (num2/denom - num*num3/(denom*denom));
+      
+      /*--- Partial derivatives of temperature ---*/
+      dTdrhos[iSpecies]   = (-Cvtrs*(T-Tref[iSpecies]) - ef + 0.5*sqvel) / rhoCvtr;
+      dTvedrhos[iSpecies] = -(evibs[iSpecies] + eels[iSpecies]) / rhoCvve;
+    }
+    for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
+      ef = hf[nSpecies-1] - Ru/Ms[nSpecies-1] * Tref[nSpecies-1];
+      dTdrhos[nSpecies-1] = (-ef + 0.5*sqvel) / rhoCvtr;
+      dTvedrhos[nSpecies-1] = -(3.0/2.0) * Ru/Ms[nSpecies-1] * Tve / rhoCvve;
+    }
+    dTdrhou     = -u / rhoCvtr;
+    dTdrhov     = -v / rhoCvtr;
+    dTdrhow     = -w / rhoCvtr;
+    dTdrhoE     = 1.0 / rhoCvtr;
+    dTdrhoEve   = -1.0 / rhoCvtr;
+    dTvedrhou   = 0.0;
+    dTvedrhov   = 0.0;
+    dTvedrhow   = 0.0;
+    dTvedrhoE   = 0.0;
+    dTvedrhoEve = 1.0 / rhoCvve;
+  }
+  
   
   for (iReaction = 0; iReaction < nReactions; iReaction++) {
     
     /*--- Determine the rate-controlling temperature ---*/
-    // Note: Need to re-visit these!  Just hacking them in as a first-cut
-    Trxnf = pow(T, Tcf_a[iReaction])*pow(Tve, Tcf_b[iReaction]);
-    Trxnb = pow(T, Tcb_a[iReaction])*pow(Tve, Tcb_b[iReaction]);
+    af = Tcf_a[iReaction];
+    bf = Tcf_b[iReaction];
+    ab = Tcb_a[iReaction];
+    bb = Tcb_b[iReaction];
+    Trxnf = pow(T, af)*pow(Tve, bf);
+    Trxnb = pow(T, ab)*pow(Tve, bb);
     
     /*--- Calculate the modified temperature ---*/
 		Thf = 0.5 * (Trxnf+T_min + sqrt((Trxnf-T_min)*(Trxnf-T_min)+epsilon*epsilon));
@@ -1100,137 +1225,241 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
     for (ii = 0; ii < 3; ii++) {
 			/*--- Products ---*/
       iSpecies = RxnMap[iReaction][1][ii];
-      if (thetav[iSpecies] != 0) { evs  = Ru/Ms[iSpecies] * thetav[iSpecies]
-                                         / (exp(thetav[iSpecies]/Tve) - 1.0); }
-      else                       { evs = 0.0; }
-      if (iSpecies != nSpecies)
+      if (iSpecies != nSpecies) {
         val_residual[iSpecies] += Ms[iSpecies] * (fwdRxn-bkwRxn) * Volume;
-//      val_residual[nSpecies+nDim+1] += Ms[iSpecies] * (fwdRxn-bkwRxn) * evs * Volume;
+        val_residual[nSpecies+nDim+1] += Ms[iSpecies] * (fwdRxn-bkwRxn)
+                                       * (evibs[iSpecies]+eels[iSpecies]) * Volume;
+      }
 			/*--- Reactants ---*/
       iSpecies = RxnMap[iReaction][0][ii];
-      if (thetav[iSpecies] != 0) { evs  = Ru/Ms[iSpecies] * thetav[iSpecies]
-                                         / (exp(thetav[iSpecies]/Tve) - 1.0); }
-      else                       { evs = 0.0; }
-      if (iSpecies != nSpecies)
+      if (iSpecies != nSpecies) {
         val_residual[iSpecies] -= Ms[iSpecies] * (fwdRxn-bkwRxn) * Volume;
-//      val_residual[nSpecies+nDim+1] -= Ms[iSpecies] * (fwdRxn-bkwRxn) * evs * Volume;
+        val_residual[nSpecies+nDim+1] -= Ms[iSpecies] * (fwdRxn-bkwRxn)
+                                       * (evibs[iSpecies]+eels[iSpecies]) * Volume;
+      }
     }
-  }
+    
+    if (implicit) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        dkf[iVar] = 0.0;
+        dkb[iVar] = 0.0;
+        dRfok[iVar] = 0.0;
+        dRbok[iVar] = 0.0;
+      }
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+        alphak[iSpecies] = 0;
+        betak[iSpecies]  = 0;
+      }
+      
+      dThf = 0.5 * (1.0 + (Trxnf-T_min)/sqrt((Trxnf-T_min)*(Trxnf-T_min)
+                                             + epsilon*epsilon          ));
+      dThb = 0.5 * (1.0 + (Trxnb-T_min)/sqrt((Trxnb-T_min)*(Trxnb-T_min)
+                                             + epsilon*epsilon          ));
+      
+      /*--- Rate coefficient derivatives ---*/
+      // Fwd
+      coeff = kf * (eta/Thf+theta/(Thf*Thf)) * dThf;
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+        dkf[iSpecies] = coeff * (  af*Trxnf/T*dTdrhos[iSpecies]
+                                 + bf*Trxnf/Tve*dTvedrhos[iSpecies]);
+      }
+      dkf[nSpecies]   = coeff * (  af*Trxnf/T*dTdrhou
+                                 + bf*Trxnf/Tve*dTvedrhou );
+      dkf[nSpecies+1] = coeff * (  af*Trxnf/T*dTdrhov
+                                 + bf*Trxnf/Tve*dTvedrhov );
+      dkf[nSpecies+2] = coeff * (  af*Trxnf/T*dTdrhow
+                                 + bf*Trxnf/Tve*dTvedrhow );
+      dkf[nSpecies+3] = coeff * (  af*Trxnf/T*dTdrhoE
+                                 + bf*Trxnf/Tve*dTvedrhoE );
+      dkf[nSpecies+4] = coeff * (  af*Trxnf/T*dTdrhoEve
+                                 + bf*Trxnf/Tve*dTvedrhoEve );
+      // Bkw
+      coeff = kb * (eta/Thb+theta/(Thb*Thb)
+                    + (-A[0]*Thb/1E4 + A[2] + A[3]*1E4/Thb
+                       + 2*A[4]*(1E4/Thb)*(1E4/Thb))/Thb) * dThb;
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+        dkb[iSpecies] = coeff * (  ab*Trxnb/T*dTdrhos[iSpecies]
+                                 + bb*Trxnb/Tve*dTvedrhos[iSpecies]);
+      }
+      dkb[nSpecies]   = coeff * (  ab*Trxnb/T*dTdrhou
+                                 + bb*Trxnb/Tve*dTvedrhou );
+      dkb[nSpecies+1] = coeff * (  ab*Trxnb/T*dTdrhov
+                                 + bb*Trxnb/Tve*dTvedrhov );
+      dkb[nSpecies+2] = coeff * (  ab*Trxnb/T*dTdrhow
+                                 + bb*Trxnb/Tve*dTvedrhow );
+      dkb[nSpecies+3] = coeff * (  ab*Trxnb/T*dTdrhoE
+                                 + bb*Trxnb/Tve*dTvedrhoE );
+      dkb[nSpecies+4] = coeff * (  ab*Trxnb/T*dTdrhoEve
+                                 + bb*Trxnb/Tve*dTvedrhoEve );
+      
+      /*--- Rxn rate derivatives ---*/
+      for (ii = 0; ii < 3; ii++) {
+        /*--- Products ---*/
+        iSpecies = RxnMap[iReaction][1][ii];
+        if (iSpecies != nSpecies)
+          betak[iSpecies]++;
+        /*--- Reactants ---*/
+        iSpecies = RxnMap[iReaction][0][ii];
+        if (iSpecies != nSpecies)
+          alphak[iSpecies]++;
+      }
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+        // Fwd
+        dRfok[iSpecies] =  0.001*alphak[iSpecies]/Ms[iSpecies]
+                         * pow(0.001*U_i[iSpecies]/Ms[iSpecies],
+                               max(0, alphak[iSpecies]-1)      );
+        for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
+          if (jSpecies != iSpecies)
+            dRfok[iSpecies] *= pow(0.001*U_i[jSpecies]/Ms[jSpecies],
+                                   alphak[jSpecies]                );
+        dRfok[iSpecies] *= 1000.0;
+        // Bkw
+        dRbok[iSpecies] =  0.001*betak[iSpecies]/Ms[iSpecies]
+                         * pow(0.001*U_i[iSpecies]/Ms[iSpecies],
+                               max(0, betak[iSpecies]-1)       );
+        for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
+          if (jSpecies != iSpecies)
+            dRbok[iSpecies] *= pow(0.001*U_i[jSpecies]/Ms[jSpecies],
+                                   betak[jSpecies]                 );
+        dRbok[iSpecies] *= 1000.0;
+      }
+      
+/*      cout << endl << "************" << endl;
+      for (iVar = 0; iVar < nVar; iVar++)
+        cout << "dkf[" << iVar << "]: " << dkf[iVar] << endl;
+      cout << endl << endl;
+      for (iVar = 0; iVar < nVar; iVar++)
+        cout << "dkb[" << iVar << "]: " << dkb[iVar] << endl;
+      cout << endl << endl;
+      for (iVar = 0; iVar < nVar; iVar++)
+        cout << "dRfok[" << iVar << "]: " << dRfok[iVar] << endl;
+      cout << endl << endl;
+      for (iVar = 0; iVar < nVar; iVar++)
+        cout << "dRbok[" << iVar << "]: " << dRbok[iVar] << endl;
+      
+      cout << "kf: " << kf << endl;
+      cout << "kb: " << kb << endl;
+      cout << "fwdRxn: " << fwdRxn << endl;
+      cout << "bkwRxn: " << bkwRxn << endl;
+      cout << "iReaction: " << iReaction << endl;
+      cin.get();*/
+      
+/*      cout << "dTdrhou: " << dTdrhou << endl;
+      cout << "dTdrhov: " << dTdrhov << endl;
+      cout << "dTdrhow: " << dTdrhow << endl;
+
+      cout << endl;
+      for (iVar = 0; iVar < nVar; iVar++)
+        cout << "dkf[" << iVar << "]: " << dkf[iVar] << endl;
+      cout << endl;
+      for (iVar = 0; iVar < nVar; iVar++)
+        cout << "dkb[" << iVar << "]: " << dkb[iVar] << endl;
+      cout << endl;
+      for (iVar = 0; iVar < nVar; iVar++)
+        cout << "dRfok[" << iVar << "]: " << dRfok[iVar] << endl;
+      cout << endl;
+      for (iVar = 0; iVar < nVar; iVar++)
+        cout << "dRbok[" << iVar << "]: " << dRbok[iVar] << endl;
+      cin.get();*/
+      
+      nEve = nSpecies+nDim+1;
+      for (ii = 0; ii < 3; ii++) {
+        /*--- Products ---*/
+        iSpecies = RxnMap[iReaction][1][ii];
+        if (iSpecies != nSpecies) {
+          for (iVar = 0; iVar < nVar; iVar++) {
+            val_Jacobian_i[iSpecies][iVar] +=
+                Ms[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar]
+                                -dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar]) * Volume;
+            val_Jacobian_i[nEve][iVar] +=
+                Ms[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar]
+                                -dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar])
+                             * (evibs[iSpecies]+eels[iSpecies]) * Volume;
+/*            cout << "dwskfwd * eve: " << Ms[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar]
+                                                      -dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar])
+            * (evibs[iSpecies]+eels[iSpecies]) * Volume;
+            cin.get();*/
+          }
+          
+          for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+            val_Jacobian_i[nEve][jSpecies] += Ms[iSpecies] * (fwdRxn-bkwRxn)
+                                            * (Cvvs[iSpecies]+Cves[iSpecies])
+                                            * dTvedrhos[jSpecies] * Volume;
+          }
+/*          val_Jacobian_i[nEve][nSpecies]   += Ms[iSpecies] * (fwdRxn-bkwRxn)
+                                            * (Cvvs[iSpecies]+Cves[iSpecies])
+                                            * dTvedrhou * Volume;
+          val_Jacobian_i[nEve][nSpecies+1] += Ms[iSpecies] * (fwdRxn-bkwRxn)
+                                            * (Cvvs[iSpecies]+Cves[iSpecies])
+                                            * dTvedrhov * Volume;
+          val_Jacobian_i[nEve][nSpecies+2] += Ms[iSpecies] * (fwdRxn-bkwRxn)
+                                            * (Cvvs[iSpecies]+Cves[iSpecies])
+                                            * dTvedrhow * Volume;
+          val_Jacobian_i[nEve][nSpecies+3] += Ms[iSpecies] * (fwdRxn-bkwRxn)
+                                            * (Cvvs[iSpecies]+Cves[iSpecies])
+                                            * dTvedrhoE * Volume;*/
+          val_Jacobian_i[nEve][nSpecies+4] += Ms[iSpecies] * (fwdRxn-bkwRxn)
+                                            * (Cvvs[iSpecies]+Cves[iSpecies])
+                                            * dTvedrhoEve * Volume;
+        }
+        /*--- Reactants ---*/
+        iSpecies = RxnMap[iReaction][0][ii];
+        if (iSpecies != nSpecies) {
+          for (iVar = 0; iVar < nVar; iVar++) {
+            val_Jacobian_i[iSpecies][iVar] -=
+                Ms[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar]
+                                -dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar]) * Volume;
+            val_Jacobian_i[nEve][iVar] -=
+                Ms[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar]
+                                -dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar])
+                             * (evibs[iSpecies] + eels[iSpecies]) * Volume;
+/*            cout << "dwskbkw * eve: " <<     Ms[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar]
+                                                             -dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar])
+            * (evibs[iSpecies] + eels[iSpecies]) * Volume;
+            cin.get();*/
+            
+          }
+          
+          for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+            val_Jacobian_i[nEve][jSpecies] -= Ms[iSpecies] * (fwdRxn-bkwRxn)
+                                            * (Cvvs[iSpecies]+Cves[iSpecies])
+                                            * dTvedrhos[jSpecies] * Volume;
+          }
+/*          val_Jacobian_i[nEve][nSpecies]   -= Ms[iSpecies] * (fwdRxn-bkwRxn)
+                                            * (Cvvs[iSpecies]+Cves[iSpecies])
+                                            * dTvedrhou * Volume;
+          val_Jacobian_i[nEve][nSpecies+1] -= Ms[iSpecies] * (fwdRxn-bkwRxn)
+                                            * (Cvvs[iSpecies]+Cves[iSpecies])
+                                            * dTvedrhov * Volume;
+          val_Jacobian_i[nEve][nSpecies+2] -= Ms[iSpecies] * (fwdRxn-bkwRxn)
+                                            * (Cvvs[iSpecies]+Cves[iSpecies])
+                                            * dTvedrhow * Volume;
+          val_Jacobian_i[nEve][nSpecies+3] -= Ms[iSpecies] * (fwdRxn-bkwRxn)
+                                            * (Cvvs[iSpecies]+Cves[iSpecies])
+                                            * dTvedrhoE * Volume;*/
+          val_Jacobian_i[nEve][nSpecies+4] -= Ms[iSpecies] * (fwdRxn-bkwRxn)
+                                            * (Cvvs[iSpecies]+Cves[iSpecies])
+                                            * dTvedrhoEve * Volume;
+        } // != nSpecies
+      } // ii
+    } // implicit
+  } // iReaction
 
   /*--- Deallocate arrays ---*/
   delete [] A;
   
-  /////////// OLD /////////////
-/*  double T_min;						// Minimum temperature for the modified temperature calculations.
-	double epsilon;					// Parameter for the modified temperature calculations.
-	unsigned short iSpecies, jSpecies, iReaction, iVar, iDim, ii;
-	unsigned short iLoc, jLoc;
-	unsigned short counterFwd, counterBkw;
-	double T_tr;
-  
-	T_min = 800;
-	epsilon = 80;*/
-  
-	/*--- Initialize all components of the residual and Jacobian to zero ---*/
-/*	for (iVar = 0; iVar < nVar; iVar++) {
-		val_residual[iVar] = 0.0;
-	}
-  
-	for (iReaction = 0; iReaction < nReactions; iReaction++) {*/
-    
-		/*--- Calculate the rate-controlling temperatures ---*/
-		//NOTE:  This implementation takes the geometric mean of the TR temps of all particpants.
-		//       This is NOT consistent with the Park chemical models, and is only a first-cut approach.
-/*		T_rxnf[iReaction] = 1.0;
-		T_rxnb[iReaction] = 1.0;
-		counterFwd = 0;
-		counterBkw = 0;
-		for (ii = 0; ii < 3; ii++) {
-			iSpecies = Reactions[iReaction][0][ii];
-			jSpecies = Reactions[iReaction][1][ii];*/
-			/*--- Reactants ---*/
-/*			if (iSpecies != nSpecies) {
-				T_tr = Varray_i[iSpecies][0];
-				T_rxnf[iReaction] *= T_tr;
-				counterFwd++;
-			}*/
-			/*--- Products ---*/
-/*			if (jSpecies != nSpecies) {
-				T_tr = Varray_i[jSpecies][0];
-				T_rxnb[iReaction] *= T_tr;
-				counterBkw++;
-			}
-		}
-		T_rxnf[iReaction] = exp(1.0/counterFwd*log(T_rxnf[iReaction]));
-		T_rxnb[iReaction] = exp(1.0/counterBkw*log(T_rxnb[iReaction]));*/
-    
-		/*--- Apply a modified temperature to ease the stiffness at low temperatures ---*/
-/*		T_rxnf[iReaction] = 0.5 * (T_rxnf[iReaction]+T_min + sqrt((T_rxnf[iReaction]-T_min)*(T_rxnf[iReaction]-T_min) + epsilon*epsilon));
-		T_rxnb[iReaction] = 0.5 * (T_rxnb[iReaction]+T_min + sqrt((T_rxnb[iReaction]-T_min)*(T_rxnb[iReaction]-T_min) + epsilon*epsilon));
-    
-		GetEq_Rxn_Coefficients(EqRxnConstants, config);*/
-    
-		/*--- Calculate equilibrium extent of reaction ---*/
-		//NOTE: Scalabrin implementation
-/*		Keq[iReaction] = exp(EqRxnConstants[iReaction][0]*(T_rxnb[iReaction]/1E4)
-                         + EqRxnConstants[iReaction][1]
-                         + EqRxnConstants[iReaction][2]*log(1E4/T_rxnb[iReaction])
-                         + EqRxnConstants[iReaction][3]*(1E4/T_rxnb[iReaction])
-                         + EqRxnConstants[iReaction][4]*(1E4/T_rxnb[iReaction])
-                                                       *(1E4/T_rxnb[iReaction]));*/
-    
-		/*--- Calculate reaction rate coefficients ---*/
-/*		ReactionRateFwd[iReaction] = Cf[iReaction] * exp(eta[iReaction]*log(T_rxnf[iReaction])) * exp(-theta[iReaction]/T_rxnf[iReaction]);
-		ReactionRateBkw[iReaction] = Cf[iReaction] * exp(eta[iReaction]*log(T_rxnb[iReaction])) * exp(-theta[iReaction]/T_rxnb[iReaction]) / Keq[iReaction];
-    
-		fwdRxn[iReaction] = 1.0;
-		bkwRxn[iReaction] = 1.0;
-		for (ii = 0; ii < 3; ii++) {*/
-			/*--- Reactants ---*/
-/*			iSpecies = Reactions[iReaction][0][ii];
-			if ( iSpecies != nSpecies) {
-				if ( iSpecies < nDiatomics ) iLoc = (nDim+3)*iSpecies;
-				else iLoc = (nDim+3)*nDiatomics + (nDim+2)*(iSpecies-nDiatomics);
-				fwdRxn[iReaction] *= 0.001*U_i[iLoc+0]/Molar_Mass[iSpecies];
-			}*/
-			/*--- Products ---*/
-/*			jSpecies = Reactions[iReaction][1][ii];
-			if (jSpecies != nSpecies) {
-				if ( jSpecies < nDiatomics ) jLoc = (nDim+3)*jSpecies;
-				else jLoc = (nDim+3)*nDiatomics + (nDim+2)*(jSpecies-nDiatomics);
-				bkwRxn[iReaction] *= 0.001*U_i[jLoc+0]/Molar_Mass[jSpecies];
-			}
-		}
-		fwdRxn[iReaction] = 1000.0 * ReactionRateFwd[iReaction] * fwdRxn[iReaction];
-		bkwRxn[iReaction] = 1000.0 * ReactionRateBkw[iReaction] * bkwRxn[iReaction];
-	}
-  
-	for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) w_dot[iSpecies] = 0.0;
-  
-	for (iReaction = 0; iReaction < nReactions; iReaction++) {
-		for (ii = 0; ii < 3; ii++) {*/
-			/*--- Products ---*/
-/*			iSpecies = Reactions[iReaction][1][ii];
-			if (iSpecies != nSpecies)
-				w_dot[iSpecies] += Molar_Mass[iSpecies] * (fwdRxn[iReaction] - bkwRxn[iReaction]);*/
-			/*--- Reactants ---*/
-/*			iSpecies = Reactions[iReaction][0][ii];
-			if (iSpecies != nSpecies)
-				w_dot[iSpecies] -= Molar_Mass[iSpecies] * (fwdRxn[iReaction] - bkwRxn[iReaction]);
-		}
-	}
-  
-	for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-		if ( iSpecies < nDiatomics ) iLoc = (nDim+3)*iSpecies;
-		else iLoc = (nDim+3)*nDiatomics + (nDim+2)*(iSpecies-nDiatomics);
-		val_residual[iLoc] = w_dot[iSpecies]*Volume;
-		for (iDim = 0; iDim < nDim; iDim++)
-			val_residual[iLoc+1+iDim] = w_dot[iSpecies] * U_i[iLoc+1+iDim]/U_i[iLoc] * Volume;
-		val_residual[iLoc+1+nDim] = w_dot[iSpecies] * U_i[iLoc+1+nDim]/U_i[iLoc] * Volume;
-		if (iSpecies < nDiatomics) {
-			val_residual[iLoc+2+nDim] = w_dot[iSpecies] * U_i[iLoc+2+nDim]/U_i[iLoc] * Volume;
-		}
-	}*/
+  if (evibs     != NULL) delete[] evibs;
+  if (eels      != NULL) delete[] eels;
+  if (Cvvs      != NULL) delete[] Cvvs;
+  if (Cves      != NULL) delete[] Cves;
+  if (alphak    != NULL) delete[] alphak;
+  if (betak     != NULL) delete[] betak;
+  if (dTdrhos   != NULL) delete[] dTdrhos;
+  if (dTvedrhos != NULL) delete[] dTvedrhos;
+  if (dkf       != NULL) delete[] dkf;
+  if (dkb       != NULL) delete[] dkb;
+  if (dRfok     != NULL) delete[] dRfok;
+  if (dRbok     != NULL) delete[] dRbok;
 }
 
 

@@ -2020,76 +2020,79 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
     /*--- Set volume of the dual grid cell ---*/
     numerics->SetVolume(geometry->node[iPoint]->GetVolume());
     
-    numerics->ComputeChemistry(Residual, Jacobian_j, config);
-    
-    
-    /*--- Compute vibrational energy relaxation ---*/
-    // NOTE: Jacobians de-activated.  Need to take derivatives w.r.t. relaxation time
-    numerics->ComputeVibRelaxation(Residual, Jacobian_i, config);
+    numerics->ComputeChemistry(Residual, Jacobian_i, config);
+//    numerics->ComputeChemistry(Residual, Jacobian_j, config);
     
 /*    if (iPoint == 3) {
       cout << "Residual: " << endl;
       for (iVar = 0; iVar < nVar; iVar++) {
         cout << Residual[iVar] << endl;
       }
-      
-    cout << "Analytic Jacobian: " << endl;
-    for (iVar = 0; iVar < nVar; iVar++) {
-      for (jVar = 0; jVar < nVar; jVar++) {
-        cout << Jacobian_i[iVar][jVar] << "\t";
+            
+      cout << "Analytic Jacobian: " << endl;
+      for (iVar = 0; iVar < nVar; iVar++) {
+        for (jVar = 0; jVar < nVar; jVar++) {
+          cout << Jacobian_i[iVar][jVar] << "\t";
+        }
+        cout << endl;
       }
-      cout << endl;
-    }
-    cin.get();
-    
-    /////////// TEST JACOBIAN ///////////
-    U_i = node[iPoint]->GetSolution();
-    V_i = node[iPoint]->GetPrimVar();
-    
-    for (iVar = 0; iVar < nVar; iVar++)
-      for (jVar = 0; jVar < nVar; jVar++)
-        FDJac[iVar][jVar] = 0.0;
-    
-    // Perturb
-    for (iVar =0; iVar < nVar; iVar++) {
-      delta = 1E-4*U_i[iVar];
-      if (delta == 0.0) delta = 1E-8;
-      U_i[iVar] += delta;
+      cin.get();
       
-      for (jVar = 0; jVar < nVar; jVar++)
-        Res_new[jVar] = 0.0;
-      
-      // Re-calculate primitive quantities & pass to CNumerics
-      node[iPoint]->SetSolution(U_i);
-      node[iPoint]->SetPrimVar_Compressible(config);
+      /////////// TEST JACOBIAN ///////////
       U_i = node[iPoint]->GetSolution();
       V_i = node[iPoint]->GetPrimVar();
-      numerics->SetPrimitive(V_i, V_i);
-      numerics->SetConservative(U_i, U_i);
-      numerics->SetdPdrhos(node[iPoint]->GetdPdrhos(), node[iPoint]->GetdPdrhos());
       
-      // Compute residual
-      numerics->ComputeVibRelaxation(Res_new, Jacobian_j, config);
-      for (jVar = 0; jVar < nVar; jVar++) {
-        FDJac[jVar][iVar] = (Res_new[jVar] - Residual[jVar])/delta;
-      }
+      cout << "U: " << V_i[nSpecies+2] << ", " << V_i[nSpecies+3] << ", " << V_i[nSpecies+4] << endl;
       
-      // Reset U_i
-      U_i[iVar] -= delta;
-      node[iPoint]->SetSolution(U_i);
-      node[iPoint]->SetPrimVar_Compressible(config);
-    }
-    /////////// TEST JACOBIAN ///////////
-    
-    cout << "FD Jacobian: " << endl;
-    for (iVar = 0; iVar < nVar; iVar++) {
-      for (jVar = 0; jVar < nVar; jVar++) {
-        cout << FDJac[iVar][jVar] << "\t";
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nVar; jVar++)
+          FDJac[iVar][jVar] = 0.0;
+      
+      // Perturb
+      for (iVar =0; iVar < nVar; iVar++) {
+        delta = 1E-2*U_i[iVar];
+        if (delta == 0.0) delta = 1E-8;
+        U_i[iVar] += delta;
+        
+        for (jVar = 0; jVar < nVar; jVar++)
+          Res_new[jVar] = 0.0;
+        
+        // Re-calculate primitive quantities & pass to CNumerics
+        node[iPoint]->SetSolution(U_i);
+        node[iPoint]->SetPrimVar_Compressible(config);
+        U_i = node[iPoint]->GetSolution();
+        V_i = node[iPoint]->GetPrimVar();
+        numerics->SetPrimitive(V_i, V_i);
+        numerics->SetConservative(U_i, U_i);
+        numerics->SetdPdrhos(node[iPoint]->GetdPdrhos(), node[iPoint]->GetdPdrhos());
+        
+        // Compute residual
+        numerics->ComputeChemistry(Res_new, Jacobian_j, config);
+        for (jVar = 0; jVar < nVar; jVar++) {
+          FDJac[jVar][iVar] = (Res_new[jVar] - Residual[jVar])/delta;
+//          Jacobian_i[jVar][iVar] = (Res_new[jVar] - Residual[jVar])/delta;
+        }
+        
+        // Reset U_i
+        U_i[iVar] -= delta;
+        node[iPoint]->SetSolution(U_i);
+        node[iPoint]->SetPrimVar_Compressible(config);
       }
-      cout << endl;
-    }
-    cin.get();
+      /////////// TEST JACOBIAN ///////////
+ 
+      cout << "FD Jacobian: " << endl;
+      for (iVar = 0; iVar < nVar; iVar++) {
+        for (jVar = 0; jVar < nVar; jVar++) {
+          cout << FDJac[iVar][jVar] << "\t";
+        }
+        cout << endl;
+      }
+      cin.get();
     }*/
+    
+    /*--- Compute vibrational energy relaxation ---*/
+    // NOTE: Jacobians don't account for relaxation time derivatives
+    numerics->ComputeVibRelaxation(Residual, Jacobian_i, config);
     
     /*--- Add Residual (and Jacobian) ---*/
     LinSysRes.SubtractBlock(iPoint, Residual);

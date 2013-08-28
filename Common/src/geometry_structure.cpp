@@ -481,7 +481,7 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
   
   /*--- Check the grid ---*/
   if (mesh_file.fail()) {
-    cout << "There is no geometry file (CPhysicalGeometry)!! " << mesh_file << endl;
+    cout << "There is no geometry file (CPhysicalGeometry)!! " << cstr << endl;
     cout << "Press any key to exit..." << endl;
     cin.get();
 #ifdef NO_MPI

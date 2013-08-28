@@ -440,8 +440,6 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   Tve  = Primitive[TVE_INDEX];
   Tve2 = Primitive[TVE_INDEX];
   
-  double rhoCvve1a, rhoCvve1b;
-  double Cves1, Cvvs1, eels1, evs1, f1, df1;
   for (iIter = 0; iIter < maxIter; iIter++) {
     rhoEve_t = 0.0;
     rhoCvve  = 0.0;
@@ -465,8 +463,6 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
         rhoEve_t += Solution[iSpecies] * evs;
         rhoCvve  += Solution[iSpecies] * Cvvs;
       }
-      if (iIter == 0 && iSpecies == 0)
-        rhoCvve1a = rhoCvve;
       
       /*--- Electronic energy ---*/
       num = 0.0; num2 = 0.0;
@@ -486,11 +482,6 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
       
       rhoEve_t += Solution[iSpecies] * eels;
       rhoCvve  += Solution[iSpecies] * Cves;
-      
-      if (iIter == 0 && iSpecies == 0)
-        rhoCvve1b = rhoCvve;
-      
-//      cout << "rhoCvve[" << iSpecies << "]: " << rhoCvve << endl;
     }
     for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
       Cves = 3.0/2.0 * Ru/Ms[nSpecies-1];
@@ -503,33 +494,10 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
     df = -rhoCvve;
     Tve2 = Tve - (f/df)*0.5;
     
-    if (iIter == 0) {
-      Cves1 = Cves;
-      Cvvs1 = Cvvs;
-      eels1 = eels;
-      evs1  = evs;
-      f1 = f;
-      df1 = df;
-    }
-    
     /*--- Check for convergence ---*/
     if (fabs(Tve2-Tve) < tol) break;
     if (iIter == maxIter-1) {
       cout << "WARNING!!! Tve convergence not reached!" << endl;
-      cout << "Tve: " << Primitive[TVE_INDEX] << ", T: " << Primitive[T_INDEX] << endl;
-      cout << "Tve2: " << Tve2 << endl;
-      cout << "RhoCvve: " << rhoCvve << endl;
-      cout << "Evs1: " << evs1 << endl;
-      cout << "Eels1: " << eels1 << endl;
-      cout << "Cvvs1: " << Cvvs1 << endl;
-      cout << "Cves1: " << Cves1 << endl;
-      cout << "Cvve1a: " << rhoCvve1a << endl;
-      cout << "Cvve1b: " << rhoCvve1b << endl;
-      cout << "f1: " << f1 << endl;
-      cout << "df1: " << df1 << endl;
-      cout << endl << "**********" << endl;
-      for (unsigned short iVar = 0; iVar < nVar; iVar++)
-        cout << "Solution[" << iVar << "]: " << Solution[iVar] << endl;
       Tve2 = Primitive[TVE_INDEX];
     }
     Tve = Tve2;
