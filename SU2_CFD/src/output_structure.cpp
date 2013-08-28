@@ -5195,7 +5195,7 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
             
             /*--- Write a Tecplot binary solution file ---*/
             SetTecplot_Mesh(config[iZone], geometry[iZone], iZone);
-            if (!wrote_base_file)
+            if (wrote_base_file)
               DeallocateConnectivity(config[iZone], geometry[iZone], false);
             SetTecplot_Solution(config[iZone], geometry[iZone], iZone);
             break;

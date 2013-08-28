@@ -24,8 +24,6 @@
 
 #pragma once
 
-#include "vector_structure.hpp"
-
 #ifndef NO_MPI
 #include <mpi.h>
 #endif
@@ -34,8 +32,11 @@
 #include <cmath>
 #include <vector>
 #include <iostream>
+#include <cstdlib>
 #include <iomanip>
 #include <string>
+
+#include "vector_structure.hpp"
 
 using namespace std;
 

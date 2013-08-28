@@ -29,6 +29,7 @@
 #include <cmath>
 #include <iostream>
 #include <limits>
+#include <cstdlib>
 
 #include "../../Common/include/config_structure.hpp"
 #include "math_ad.hpp"

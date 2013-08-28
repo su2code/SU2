@@ -30,6 +30,7 @@
 #endif
 #include <cmath>
 #include <iostream>
+#include <cstdlib>
 
 #include "solver_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
