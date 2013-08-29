@@ -3253,21 +3253,15 @@ void COutput::DeallocateSolution(CConfig *config, CGeometry *geometry) {
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
 
-	/*--- Local variables and initilization ---*/
-
-	unsigned short iVar;
-
 	/*--- The master node alone owns all data found in this routine. ---*/
 	if (rank == MASTER_NODE) {
 
 		/*--- Deallocate memory for solution data ---*/
-		for (iVar = 0; iVar < nVar_Total; iVar++) {
+		for (unsigned short iVar = 0; iVar < nVar_Total; iVar++) {
 			delete [] Data[iVar];
 		}
 		delete [] Data;
 
-		/*--- Deallocate memory for volume data (needed in restart) ---*/
-		//delete [] Volume;
 	}
 
 }
@@ -4466,8 +4460,11 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
           DeallocateCoordinates(config[iZone], geometry[iZone][MESH_0]);
       } else if (FileFormat == TECPLOT_BINARY) {
         SetTecplot_Mesh(config[iZone], geometry[iZone][MESH_0], iZone);
-        if (!wrote_base_file)
+        SetTecplot_SurfaceMesh(config[iZone], geometry[iZone][MESH_0], iZone);
+        if (!wrote_base_file) 
           DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
+        if (!wrote_surf_file)
+          DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], wrote_surf_file);
       }
     }
     
@@ -4502,7 +4499,6 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
             
             /*--- Write a Tecplot binary solution file ---*/
             SetTecplot_Solution(config[iZone], geometry[iZone][MESH_0], iZone);
-            if (dynamic_mesh) DeallocateCoordinates(config[iZone], geometry[iZone][MESH_0]);
             break;
             
           case CGNS_SOL:
@@ -4535,6 +4531,12 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
             DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], true);
             break;
             
+          case TECPLOT_BINARY:
+            
+            /*--- Write a Tecplot binary solution file ---*/
+            SetTecplot_SurfaceSolution(config[iZone], geometry[iZone][MESH_0], iZone);
+            break;
+            
           case PARAVIEW:
             
             /*--- Write a Paraview ASCII file ---*/
@@ -4549,7 +4551,9 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
       }
 
 			/*--- Release memory needed for merging the solution data. ---*/
-      if (((Wrt_Vol) || (Wrt_Srf)) && ((FileFormat == TECPLOT) || (FileFormat == PARAVIEW)))
+      if (((Wrt_Vol) || (Wrt_Srf)) && (FileFormat == TECPLOT ||
+                                       FileFormat == TECPLOT_BINARY ||
+                                       FileFormat == PARAVIEW))
         DeallocateCoordinates(config[iZone], geometry[iZone][MESH_0]);
       
       if (Wrt_Vol || Wrt_Rst)
@@ -4631,8 +4635,6 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
             
             /*--- Write a Tecplot binary solution file ---*/
             SetTecplot_Mesh(config[iZone], geometry[iZone], iZone);
-            if (wrote_base_file)
-              DeallocateConnectivity(config[iZone], geometry[iZone], false);
             SetTecplot_Solution(config[iZone], geometry[iZone], iZone);
             break;
             
@@ -4668,6 +4670,13 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
             DeallocateConnectivity(config[iZone], geometry[iZone], true);
             break;
             
+          case TECPLOT_BINARY:
+            
+            /*--- Write a Tecplot binary solution file ---*/
+            SetTecplot_SurfaceMesh(config[iZone], geometry[iZone], iZone);
+            SetTecplot_SurfaceSolution(config[iZone], geometry[iZone], iZone);
+            break;
+            
           case PARAVIEW:
             
             /*--- Write a Paraview ASCII file ---*/
@@ -4678,6 +4687,13 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
           default:
             break;
         }
+      }
+      
+      if (FileFormat == TECPLOT_BINARY) {
+        if (!wrote_base_file)
+          DeallocateConnectivity(config[iZone], geometry[iZone], false);
+        if (!wrote_surf_file)
+          DeallocateConnectivity(config[iZone], geometry[iZone], wrote_surf_file);
       }
       
       if (Wrt_Vol || Wrt_Srf)
