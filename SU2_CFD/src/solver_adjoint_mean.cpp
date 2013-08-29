@@ -2306,8 +2306,11 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
   
 	/*--- Initialize sensitivities to zero ---*/
   
-	Total_Sens_Geo = 0.0;     Total_Sens_Mach = 0.0;  Total_Sens_AoA = 0.0;
-	Total_Sens_Press = 0.0;   Total_Sens_Temp = 0.0;
+  Total_Sens_Geo = 0.0;
+  Total_Sens_Mach = 0.0;
+  Total_Sens_AoA = 0.0;
+  Total_Sens_Press = 0.0;
+  Total_Sens_Temp = 0.0;
   
   /*--- Loop over boundary markers to select those for Euler walls ---*/
   
@@ -5362,6 +5365,11 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
     SetGridVel_Gradient(geometry, config);
   
   Total_Sens_Geo = 0.0;
+  Total_Sens_Mach = 0.0;
+  Total_Sens_AoA = 0.0;
+  Total_Sens_Press = 0.0;
+  Total_Sens_Temp = 0.0;  
+  
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
     Sens_Geo[iMarker] = 0.0;

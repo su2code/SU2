@@ -2913,6 +2913,44 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 		}
 	}
 
+#ifndef NO_MPI
+  
+  /*--- Add AllBound information using all the nodes ---*/
+
+  double MyAllBound_CDrag_Inv        = AllBound_CDrag_Inv;        AllBound_CDrag_Inv = 0.0;
+	double MyAllBound_CLift_Inv       = AllBound_CLift_Inv;        AllBound_CLift_Inv = 0.0;
+	double MyAllBound_CSideForce_Inv   = AllBound_CSideForce_Inv;   AllBound_CSideForce_Inv = 0.0;
+	double MyAllBound_CEff_Inv         = AllBound_CEff_Inv;         AllBound_CEff_Inv = 0.0;
+	double MyAllBound_CMx_Inv          = AllBound_CMx_Inv;          AllBound_CMx_Inv = 0.0;
+	double MyAllBound_CMy_Inv          = AllBound_CMy_Inv;          AllBound_CMy_Inv = 0.0;
+	double MyAllBound_CMz_Inv          = AllBound_CMz_Inv;          AllBound_CMz_Inv = 0.0;
+	double MyAllBound_CFx_Inv          = AllBound_CFx_Inv;          AllBound_CFx_Inv = 0.0;
+	double MyAllBound_CFy_Inv         = AllBound_CFy_Inv;          AllBound_CFy_Inv = 0.0;
+	double MyAllBound_CFz_Inv          = AllBound_CFz_Inv;          AllBound_CFz_Inv = 0.0;
+	double MyAllBound_CT_Inv           = AllBound_CT_Inv;           AllBound_CT_Inv = 0.0;
+	double MyAllBound_CQ_Inv           = AllBound_CQ_Inv;           AllBound_CQ_Inv = 0.0;
+	double MyAllBound_CMerit_Inv       = AllBound_CMerit_Inv;       AllBound_CMerit_Inv = 0.0;
+  double MyAllBound_CNearFieldOF_Inv = AllBound_CNearFieldOF_Inv; AllBound_CNearFieldOF_Inv = 0.0;
+  
+  MPI::COMM_WORLD.Allreduce(&MyAllBound_CDrag_Inv, &AllBound_CDrag_Inv, 1, MPI::DOUBLE, MPI::SUM);
+  MPI::COMM_WORLD.Allreduce(&MyAllBound_CLift_Inv, &AllBound_CLift_Inv, 1, MPI::DOUBLE, MPI::SUM);
+  MPI::COMM_WORLD.Allreduce(&MyAllBound_CSideForce_Inv, &AllBound_CSideForce_Inv, 1, MPI::DOUBLE, MPI::SUM);
+  AllBound_CEff_Inv = AllBound_CLift_Inv / (AllBound_CDrag_Inv + config->GetCteViscDrag() + EPS);
+  MPI::COMM_WORLD.Allreduce(&MyAllBound_CMx_Inv, &AllBound_CMx_Inv, 1, MPI::DOUBLE, MPI::SUM);
+  MPI::COMM_WORLD.Allreduce(&MyAllBound_CMy_Inv, &AllBound_CMy_Inv, 1, MPI::DOUBLE, MPI::SUM);
+  MPI::COMM_WORLD.Allreduce(&MyAllBound_CMz_Inv, &AllBound_CMz_Inv, 1, MPI::DOUBLE, MPI::SUM);
+  MPI::COMM_WORLD.Allreduce(&MyAllBound_CFx_Inv, &AllBound_CFx_Inv, 1, MPI::DOUBLE, MPI::SUM);
+  MPI::COMM_WORLD.Allreduce(&MyAllBound_CFy_Inv, &AllBound_CFy_Inv, 1, MPI::DOUBLE, MPI::SUM);
+  MPI::COMM_WORLD.Allreduce(&MyAllBound_CFz_Inv, &AllBound_CFz_Inv, 1, MPI::DOUBLE, MPI::SUM);
+  MPI::COMM_WORLD.Allreduce(&MyAllBound_CT_Inv, &AllBound_CT_Inv, 1, MPI::DOUBLE, MPI::SUM);
+  MPI::COMM_WORLD.Allreduce(&MyAllBound_CQ_Inv, &AllBound_CQ_Inv, 1, MPI::DOUBLE, MPI::SUM);
+  AllBound_CMerit_Inv = AllBound_CT_Inv / (AllBound_CQ_Inv + EPS);
+  MPI::COMM_WORLD.Allreduce(&MyAllBound_CNearFieldOF_Inv, &AllBound_CNearFieldOF_Inv, 1, MPI::DOUBLE, MPI::SUM);
+  
+#endif
+  
+  /*--- Update the total coefficients (note that all the nodes have the same value)---*/
+
 	Total_CDrag         = AllBound_CDrag_Inv;
 	Total_CLift         = AllBound_CLift_Inv;
 	Total_CSideForce    = AllBound_CSideForce_Inv;
@@ -2927,40 +2965,6 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 	Total_CQ            = AllBound_CQ_Inv;
 	Total_CMerit        = Total_CT / (Total_CQ + EPS);
   Total_CNearFieldOF  = AllBound_CNearFieldOF_Inv;
-
-#ifndef NO_MPI
-  
-  double MyTotal_CDrag        = Total_CDrag;        Total_CDrag = 0.0;
-	double MyTotal_CLift        = Total_CLift;        Total_CLift = 0.0;
-	double MyTotal_CSideForce   = Total_CSideForce;   Total_CSideForce = 0.0;
-	double MyTotal_CEff         = Total_CEff;         Total_CEff = 0.0;
-	double MyTotal_CMx          = Total_CMx;          Total_CMx = 0.0;
-	double MyTotal_CMy          = Total_CMy;          Total_CMy = 0.0;
-	double MyTotal_CMz          = Total_CMz;          Total_CMz = 0.0;
-	double MyTotal_CFx          = Total_CFx;          Total_CFx = 0.0;
-	double MyTotal_CFy          = Total_CFy;          Total_CFy = 0.0;
-	double MyTotal_CFz          = Total_CFz;          Total_CFz = 0.0;
-	double MyTotal_CT           = Total_CT;           Total_CT = 0.0;
-	double MyTotal_CQ           = Total_CQ;           Total_CQ = 0.0;
-	double MyTotal_CMerit       = Total_CMerit;       Total_CMerit = 0.0;
-  double MyTotal_CNearFieldOF = Total_CNearFieldOF; Total_CNearFieldOF = 0.0;
-
-  MPI::COMM_WORLD.Allreduce(&MyTotal_CDrag, &Total_CDrag, 1, MPI::DOUBLE, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&MyTotal_CLift, &Total_CLift, 1, MPI::DOUBLE, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&MyTotal_CSideForce, &Total_CSideForce, 1, MPI::DOUBLE, MPI::SUM);
-  Total_CEff = Total_CLift / (Total_CDrag + config->GetCteViscDrag() + EPS);
-  MPI::COMM_WORLD.Allreduce(&MyTotal_CMx, &Total_CMx, 1, MPI::DOUBLE, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&MyTotal_CMy, &Total_CMy, 1, MPI::DOUBLE, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&MyTotal_CMz, &Total_CMz, 1, MPI::DOUBLE, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&MyTotal_CFx, &Total_CFx, 1, MPI::DOUBLE, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&MyTotal_CFy, &Total_CFy, 1, MPI::DOUBLE, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&MyTotal_CFz, &Total_CFz, 1, MPI::DOUBLE, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&MyTotal_CT, &Total_CT, 1, MPI::DOUBLE, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&MyTotal_CQ, &Total_CQ, 1, MPI::DOUBLE, MPI::SUM);
-  Total_CMerit = Total_CT / (Total_CQ + EPS);
-  MPI::COMM_WORLD.Allreduce(&MyTotal_CNearFieldOF, &Total_CNearFieldOF, 1, MPI::DOUBLE, MPI::SUM);
-  
-#endif
   
 }
 
@@ -6872,6 +6876,47 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 		}
 	}
   
+  
+#ifndef NO_MPI
+  
+  /*--- Add AllBound information using all the nodes ---*/
+  
+  double MyAllBound_CDrag_Visc        = AllBound_CDrag_Visc;        AllBound_CDrag_Visc = 0.0;
+	double MyAllBound_CLift_Visc        = AllBound_CLift_Visc;        AllBound_CLift_Visc = 0.0;
+	double MyAllBound_CSideForce_Visc   = AllBound_CSideForce_Visc;   AllBound_CSideForce_Visc = 0.0;
+	double MyAllBound_CEff_Visc         = AllBound_CEff_Visc;         AllBound_CEff_Visc = 0.0;
+	double MyAllBound_CMx_Visc          = AllBound_CMx_Visc;          AllBound_CMx_Visc = 0.0;
+	double MyAllBound_CMy_Visc          = AllBound_CMy_Visc;          AllBound_CMy_Visc = 0.0;
+	double MyAllBound_CMz_Visc          = AllBound_CMz_Visc;          AllBound_CMz_Visc = 0.0;
+	double MyAllBound_CFx_Visc          = AllBound_CFx_Visc;          AllBound_CFx_Visc = 0.0;
+	double MyAllBound_CFy_Visc          = AllBound_CFy_Visc;          AllBound_CFy_Visc = 0.0;
+	double MyAllBound_CFz_Visc          = AllBound_CFz_Visc;          AllBound_CFz_Visc = 0.0;
+	double MyAllBound_CT_Visc           = AllBound_CT_Visc;           AllBound_CT_Visc = 0.0;
+	double MyAllBound_CQ_Visc           = AllBound_CQ_Visc;           AllBound_CQ_Visc = 0.0;
+	double MyAllBound_CMerit_Visc       = AllBound_CMerit_Visc;       AllBound_CMerit_Visc = 0.0;
+  double MyAllBound_Q_Visc            = AllBound_Q_Visc;            AllBound_Q_Visc = 0.0;
+  double MyAllBound_Maxq_Visc         = AllBound_Maxq_Visc;         AllBound_Maxq_Visc = 0.0;
+  
+  MPI::COMM_WORLD.Allreduce(&MyAllBound_CDrag_Visc, &AllBound_CDrag_Visc, 1, MPI::DOUBLE, MPI::SUM);
+  MPI::COMM_WORLD.Allreduce(&MyAllBound_CLift_Visc, &AllBound_CLift_Visc, 1, MPI::DOUBLE, MPI::SUM);
+  MPI::COMM_WORLD.Allreduce(&MyAllBound_CSideForce_Visc, &AllBound_CSideForce_Visc, 1, MPI::DOUBLE, MPI::SUM);
+  AllBound_CEff_Visc = AllBound_CLift_Visc / (AllBound_CDrag_Visc + EPS);
+  MPI::COMM_WORLD.Allreduce(&MyAllBound_CMx_Visc, &AllBound_CMx_Visc, 1, MPI::DOUBLE, MPI::SUM);
+  MPI::COMM_WORLD.Allreduce(&MyAllBound_CMy_Visc, &AllBound_CMy_Visc, 1, MPI::DOUBLE, MPI::SUM);
+  MPI::COMM_WORLD.Allreduce(&MyAllBound_CMz_Visc, &AllBound_CMz_Visc, 1, MPI::DOUBLE, MPI::SUM);
+  MPI::COMM_WORLD.Allreduce(&MyAllBound_CFx_Visc, &AllBound_CFx_Visc, 1, MPI::DOUBLE, MPI::SUM);
+  MPI::COMM_WORLD.Allreduce(&MyAllBound_CFy_Visc, &AllBound_CFy_Visc, 1, MPI::DOUBLE, MPI::SUM);
+  MPI::COMM_WORLD.Allreduce(&MyAllBound_CFz_Visc, &AllBound_CFz_Visc, 1, MPI::DOUBLE, MPI::SUM);
+  MPI::COMM_WORLD.Allreduce(&MyAllBound_CT_Visc, &AllBound_CT_Visc, 1, MPI::DOUBLE, MPI::SUM);
+  MPI::COMM_WORLD.Allreduce(&MyAllBound_CQ_Visc, &AllBound_CQ_Visc, 1, MPI::DOUBLE, MPI::SUM);
+  AllBound_CMerit_Visc = AllBound_CT_Visc / (AllBound_CQ_Visc + EPS);
+  MPI::COMM_WORLD.Allreduce(&MyAllBound_Q_Visc, &AllBound_Q_Visc, 1, MPI::DOUBLE, MPI::SUM);
+  MPI::COMM_WORLD.Allreduce(&MyAllBound_Maxq_Visc, &AllBound_Maxq_Visc, 1, MPI::DOUBLE, MPI::MAX);
+  
+#endif
+  
+  /*--- Update the total coefficients (note that all the nodes have the same value)---*/
+  
 	Total_CDrag       += AllBound_CDrag_Visc;
 	Total_CLift       += AllBound_CLift_Visc;
 	Total_CSideForce  += AllBound_CSideForce_Visc;
@@ -6887,42 +6932,6 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 	Total_CMerit      += AllBound_CMerit_Visc;
   Total_Q           += Total_CT / (Total_CQ + EPS);
   Total_Maxq        = AllBound_Maxq_Visc;
-  
-#ifndef NO_MPI
-  
-  double MyTotal_CDrag        = Total_CDrag;        Total_CDrag = 0.0;
-	double MyTotal_CLift        = Total_CLift;        Total_CLift = 0.0;
-	double MyTotal_CSideForce   = Total_CSideForce;   Total_CSideForce = 0.0;
-	double MyTotal_CEff         = Total_CEff;         Total_CEff = 0.0;
-	double MyTotal_CMx          = Total_CMx;          Total_CMx = 0.0;
-	double MyTotal_CMy          = Total_CMy;          Total_CMy = 0.0;
-	double MyTotal_CMz          = Total_CMz;          Total_CMz = 0.0;
-	double MyTotal_CFx          = Total_CFx;          Total_CFx = 0.0;
-	double MyTotal_CFy          = Total_CFy;          Total_CFy = 0.0;
-	double MyTotal_CFz          = Total_CFz;          Total_CFz = 0.0;
-	double MyTotal_CT           = Total_CT;           Total_CT = 0.0;
-	double MyTotal_CQ           = Total_CQ;           Total_CQ = 0.0;
-	double MyTotal_CMerit       = Total_CMerit;       Total_CMerit = 0.0;
-  double MyTotal_Q            = Total_Q;            Total_Q = 0.0;
-  double MyTotal_Maxq         = Total_Maxq;         Total_Maxq = 0.0;
-
-  MPI::COMM_WORLD.Allreduce(&MyTotal_CDrag, &Total_CDrag, 1, MPI::DOUBLE, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&MyTotal_CLift, &Total_CLift, 1, MPI::DOUBLE, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&MyTotal_CSideForce, &Total_CSideForce, 1, MPI::DOUBLE, MPI::SUM);
-  Total_CEff = Total_CLift / (Total_CDrag + EPS);
-  MPI::COMM_WORLD.Allreduce(&MyTotal_CMx, &Total_CMx, 1, MPI::DOUBLE, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&MyTotal_CMy, &Total_CMy, 1, MPI::DOUBLE, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&MyTotal_CMz, &Total_CMz, 1, MPI::DOUBLE, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&MyTotal_CFx, &Total_CFx, 1, MPI::DOUBLE, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&MyTotal_CFy, &Total_CFy, 1, MPI::DOUBLE, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&MyTotal_CFz, &Total_CFz, 1, MPI::DOUBLE, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&MyTotal_CT, &Total_CT, 1, MPI::DOUBLE, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&MyTotal_CQ, &Total_CQ, 1, MPI::DOUBLE, MPI::SUM);
-  Total_CMerit = Total_CT / (Total_CQ + EPS);
-  MPI::COMM_WORLD.Allreduce(&MyTotal_Q, &Total_Q, 1, MPI::DOUBLE, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&MyTotal_Maxq, &Total_Maxq, 1, MPI::DOUBLE, MPI::MAX);
-
-#endif
   
 }
 
