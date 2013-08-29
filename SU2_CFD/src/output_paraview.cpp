@@ -178,20 +178,44 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
   
 	/*--- Write surface and volumetric solution data. ---*/
   for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+    
     if (surf_sol) {
+      
       if (LocalIndex[iPoint+1] != 0) {
+        
         if (!grid_movement) {
+          
+          /*--- Write the node coordinates ---*/
+          if (config->GetKind_SU2() != SU2_SOL) {
+            for(iDim = 0; iDim < nDim; iDim++)
+              Paraview_File << scientific << Coords[iDim][iPoint] << "\t";
+            if (nDim == 2) Paraview_File << scientific << "0.0" << "\t";
+          }
+          else {
+            for(iDim = 0; iDim < nDim; iDim++)
+              Paraview_File << scientific << Data[iDim][iPoint] << "\t";
+            if (nDim == 2) Paraview_File << scientific << "0.0" << "\t";
+          }
+            
+        }
+        
+      }
+      
+    } else {
+      
+      if (!grid_movement) {
+        
+        if (config->GetKind_SU2() != SU2_SOL) {
           for(iDim = 0; iDim < nDim; iDim++)
             Paraview_File << scientific << Coords[iDim][iPoint] << "\t";
           if (nDim == 2) Paraview_File << scientific << "0.0" << "\t";
         }
-      }
-      
-    } else {
-      if (!grid_movement) {
-        for(iDim = 0; iDim < nDim; iDim++)
-          Paraview_File << scientific << Coords[iDim][iPoint] << "\t";
-        if (nDim == 2) Paraview_File << scientific << "0.0" << "\t";
+        else {
+          for(iDim = 0; iDim < nDim; iDim++)
+            Paraview_File << scientific << Data[iDim][iPoint] << "\t";
+          if (nDim == 2) Paraview_File << scientific << "0.0" << "\t";
+        }
+        
       }
     }
   }
