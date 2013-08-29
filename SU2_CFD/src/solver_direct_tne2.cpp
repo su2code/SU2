@@ -56,7 +56,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
 	unsigned long iPoint, index, counter_local = 0, counter_global = 0;
 	unsigned short iVar, iDim, iMarker, iSpecies, nZone;
   double *Mvec_Inf;
-  double *Density, Velocity2, Alpha, Beta;
+  double Alpha, Beta;
 	bool restart, check_temp, check_press, check_dens, check_sos;	
   
   /*--- Get MPI rank ---*/
@@ -1991,13 +1991,13 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
   numerics->SetRhoCvtrIndex( node[0]->GetRhoCvtrIndex() );
   numerics->SetRhoCvveIndex( node[0]->GetRhoCvveIndex() );
   
-  double delta;
+/*  double delta;
   double *U_i, *V_i;
   double *Res_new, **FDJac;
   Res_new = new double[nVar];
   FDJac = new double*[nVar];
   for (iVar = 0; iVar < nVar; iVar++)
-    FDJac[iVar] = new double[nVar];
+    FDJac[iVar] = new double[nVar];*/
   
   /*--- loop over points ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -2102,7 +2102,6 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
 //    cout << "Source resid NVar: " << nVar << endl;
     
     for (iVar = 0; iVar < nVar; iVar++) {
-      cout << iVar << endl;
       if (isnan(Residual[iVar])) {
         cout << "Source Residual iVar NaN: " << iVar << endl;
       }
@@ -2111,7 +2110,7 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
 
   }
   // Deallocate
-  delete[] Res_new;
+//  delete[] Res_new;
 }
 
 void CTNE2EulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
