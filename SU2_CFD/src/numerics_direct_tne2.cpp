@@ -962,6 +962,22 @@ CSource_TNE2::CSource_TNE2(unsigned short val_nDim, unsigned short val_nVar,
   RxnConstantTable = new double*[6];
 	for (unsigned short iVar = 0; iVar < 6; iVar++)
 		RxnConstantTable[iVar] = new double[5];
+
+  /*--- Allocate arrays ---*/
+  alphak    = new int[nSpecies];
+  betak     = new int[nSpecies];
+  A         = new double[5];
+  dTdrhos   = new double[nSpecies];
+  dTvedrhos = new double[nSpecies];
+  evibs     = new double[nSpecies];
+  eels      = new double[nSpecies];
+  Cvvs      = new double[nSpecies];
+  Cves      = new double[nSpecies];
+  dkf       = new double[nVar];
+  dkb       = new double[nVar];
+  dRfok     = new double[nVar];
+  dRbok     = new double[nVar];
+  
 }
 
 CSource_TNE2::~CSource_TNE2(void) {
@@ -969,12 +985,27 @@ CSource_TNE2::~CSource_TNE2(void) {
   for (unsigned short iVar = 0; iVar < 6; iVar++)
     delete [] RxnConstantTable[iVar];
   delete [] RxnConstantTable;
+  
+  /*--- Deallocate arrays ---*/
+  delete [] A;
+  delete [] evibs;
+  delete [] eels;
+  delete [] Cvvs;
+  delete [] Cves;
+  delete [] alphak;
+  delete [] betak;
+  delete [] dTdrhos;
+  delete [] dTvedrhos;
+  delete [] dkf;
+  delete [] dkb;
+  delete [] dRfok;
+  delete [] dRbok;
 }
 
 void CSource_TNE2::GetKeqConstants(double *A, unsigned short val_Reaction,
                                    CConfig *config) {
   unsigned short ii, iSpecies, iIndex, tbl_offset;
-  double N, pwr, rem;
+  double N, pwr;
   double *Ms;
   
   /*--- Acquire database constants from CConfig ---*/
@@ -990,7 +1021,6 @@ void CSource_TNE2::GetKeqConstants(double *A, unsigned short val_Reaction,
   /*--- Determine table index based on mixture N ---*/
   tbl_offset = 14;
   pwr        = floor(log10(N));
-//  rem        = pow(10.0,log10(N)-pwr) * pow(10.0,pwr);
 
   /*--- Bound the interpolation to table limit values ---*/
   iIndex = int(pwr) - tbl_offset;
@@ -1020,17 +1050,17 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
   bool ionization, implicit;
   unsigned short iSpecies, jSpecies, ii, iReaction, nReactions, iVar, iEl, iDim, nEve;
   unsigned short *nElStates, nHeavy, nEl;
-  int ***RxnMap, *alphak, *betak;
+  int ***RxnMap;
   double T_min, epsilon;
   double T, Tve, Thf, Thb, Trxnf, Trxnb, Keq, Cf, eta, theta, kf, kb;
   double rho, u, v, w, rhoCvtr, rhoCvve, P, sqvel;
-  double num, num2, num3, denom, *evibs, *eels, *Cvvs, *Cves;
-  double *A, *Ms, *thetav, **thetae, **g, fwdRxn, bkwRxn, alpha, Dprime, Ru;
-  double *dTdrhos, dTdrhou, dTdrhov, dTdrhow, dTdrhoE, dTdrhoEve;
-  double *dTvedrhos, dTvedrhou, dTvedrhov, dTvedrhow, dTvedrhoE, dTvedrhoEve;
+  double num, num2, num3, denom;
+  double *Ms, *thetav, **thetae, **g, fwdRxn, bkwRxn, alpha, Dprime, Ru;
+  double dTdrhou, dTdrhov, dTdrhow, dTdrhoE, dTdrhoEve;
+  double dTvedrhou, dTvedrhov, dTvedrhow, dTvedrhoE, dTvedrhoEve;
+  double *Tcf_a, *Tcf_b, *Tcb_a, *Tcb_b;
   double *hf, *Tref, *xi, Cvtrs, ef;
-  double *Tcf_a, *Tcf_b, *Tcb_a, *Tcb_b, af, bf, ab, bb;
-  double *dkf, *dkb, *dRfok, *dRbok, coeff;
+  double af, bf, ab, bb, coeff;
   double dThf, dThb;
   double thoTve, exptv;
   
@@ -1038,22 +1068,6 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
 //  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
 //    wdot[iSpecies] = 0.0;
   
-  /*--- Allocate arrays ---*/
-  A = new double[5];
-  
-  /*--- Initialize ---*/
-  evibs     = NULL;
-  eels      = NULL;
-  Cvvs      = NULL;
-  Cves      = NULL;
-  dTdrhos   = NULL;
-  dTvedrhos = NULL;
-  dkf       = NULL;
-  dkb       = NULL;
-  dRfok     = NULL;
-  dRbok     = NULL;
-  alphak    = NULL;
-  betak     = NULL;
   
   /*--- Define artificial chemistry parameters ---*/
   // Note: These parameters artificially increase the rate-controlling reaction
@@ -1105,18 +1119,7 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
   
   /*--- Calculate partial derivatives of T & Tve ---*/
   if (implicit) {
-    alphak    = new int[nSpecies];
-    betak     = new int[nSpecies];
-    dTdrhos   = new double[nSpecies];
-    dTvedrhos = new double[nSpecies];
-    evibs     = new double[nSpecies];
-    eels      = new double[nSpecies];
-    Cvvs      = new double[nSpecies];
-    Cves      = new double[nSpecies];
-    dkf       = new double[nVar];
-    dkb       = new double[nVar];
-    dRfok     = new double[nVar];
-    dRbok     = new double[nVar];
+ 
     
     sqvel = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
@@ -1444,22 +1447,6 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
       } // ii
     } // implicit
   } // iReaction
-
-  /*--- Deallocate arrays ---*/
-  delete [] A;
-  
-  if (evibs     != NULL) delete[] evibs;
-  if (eels      != NULL) delete[] eels;
-  if (Cvvs      != NULL) delete[] Cvvs;
-  if (Cves      != NULL) delete[] Cves;
-  if (alphak    != NULL) delete[] alphak;
-  if (betak     != NULL) delete[] betak;
-  if (dTdrhos   != NULL) delete[] dTdrhos;
-  if (dTvedrhos != NULL) delete[] dTvedrhos;
-  if (dkf       != NULL) delete[] dkf;
-  if (dkb       != NULL) delete[] dkb;
-  if (dRfok     != NULL) delete[] dRfok;
-  if (dRbok     != NULL) delete[] dRbok;
 }
 
 
@@ -1481,14 +1468,10 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
   double tau_sr, mu, A_sr, B_sr, num, denom;
   double thoTve, exptv, evibs, eels;
   double thoT, expt, Cvvs, Cvvst, Cvtrs;
-  double *dTdrhos, dTdrhou, dTdrhov, dTdrhow, dTdrhoE, dTdrhoEve;
-  double *dTvedrhos, dTvedrhou, dTvedrhov, dTvedrhow, dTvedrhoE, dTvedrhoEve;
+  double dTdrhou, dTdrhov, dTdrhow, dTdrhoE, dTdrhoEve;
+  double dTvedrhou, dTvedrhov, dTvedrhow, dTvedrhoE, dTvedrhoEve;
   double sigma, ws;
   double *Ms, *thetav, **thetae, **g, *Tref, *hf, *xi, ef;
-  
-  /*--- Initialize ---*/
-  dTdrhos = NULL;
-  dTvedrhos = NULL;
   
   /*--- Determine if Jacobian calculation is required ---*/
   // NOTE: Need to take derivatives of relaxation time (not currently implemented).
@@ -1539,8 +1522,6 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
   
   /*--- Calculate partial derivatives of T & Tve ---*/
   if (implicit) {
-    dTdrhos   = new double[nSpecies];
-    dTvedrhos = new double[nSpecies];
     for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
       Cvtrs = (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies];
       ef    = hf[iSpecies] - Ru/Ms[iSpecies] * Tref[iSpecies];
@@ -1640,7 +1621,4 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
       }
     }
   }
-  
-  if (dTdrhos != NULL)   delete[] dTdrhos;
-  if (dTvedrhos != NULL) delete [] dTvedrhos;
 }
