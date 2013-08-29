@@ -3997,14 +3997,6 @@ public:
 	void SetPhi_Old(double *val_phi);
   
 	/*!
-	 * \brief Set the value of theta.
-	 * \param[in] val_density - Value of the density.
-	 * \param[in] val_velocity - Pointer to the velocity.
-	 * \param[in] val_enthalpy - Value of the enthalpy.
-	 */
-	void SetTheta(double val_density, double *val_velocity, double val_enthalpy);
-  
-	/*!
 	 * \brief Get the value of theta.
 	 */
 	double GetTheta(void);
@@ -4039,12 +4031,11 @@ public:
  * \class CAdjNSVariable
  * \brief Main class for defining the variables of the adjoint Navier-Stokes solver.
  * \ingroup Navier_Stokes_Equations
- * \author F. Palacios.
+ * \author S. R. Copeland, F. Palacios.
  * \version 2.0.6
  */
 class CAdjTNE2NSVariable : public CAdjTNE2EulerVariable {
 private:
-	double kappapsi_Volume;
   
 public:
   
@@ -4085,14 +4076,6 @@ public:
 	void SetPhi_Old(double *val_phi);
   
 	/*!
-	 * \brief Set the value of theta.
-	 * \param[in] val_density - Value of the density.
-	 * \param[in] val_velocity - Pointer to the velocity.
-	 * \param[in] val_enthalpy - Value of the enthalpy.
-	 */
-	void SetTheta(double val_density, double *val_velocity, double val_enthalpy);
-  
-	/*!
 	 * \brief Get the value of theta.
 	 */
 	double GetTheta(void);
@@ -4118,17 +4101,7 @@ public:
 	 * \brief Set the value of the force projection vector on the old solution vector.
 	 */
 	void SetVelSolutionDVector(void);
-  
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] kappapsi_Volume - Value of the mean flow hybrid coupling term.
-	 */
-	void SetKappaPsiVolume(double kappapsi_Volume);
-  
-	/*!
-	 * \brief A virtual member.
-	 */
-	double GetKappaPsiVolume(void);
+
 };
 
 
