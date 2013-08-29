@@ -391,6 +391,8 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   double f, df, tol;
   double exptv, thsqr, thoTve;
   double num, denom, num2, num3;
+
+  double jnk;
   
   /*--- Set tolerance for Newton-Raphson method ---*/
   tol     = 1.0E-4;
@@ -462,6 +464,11 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
         /*--- Add contribution ---*/
         rhoEve_t += Solution[iSpecies] * evs;
         rhoCvve  += Solution[iSpecies] * Cvvs;
+        
+        // Just a test...
+        if (iIter == 0)
+          jnk = 0;
+        //
       }
       
       /*--- Electronic energy ---*/
