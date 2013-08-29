@@ -876,10 +876,9 @@ void CTNE2EulerSolver::Set_MPI_Primitive(CGeometry *geometry, CConfig *config) {
       
       /*--- Deallocate receive buffer ---*/
       delete [] Buffer_Receive_V;
-      delete [] Primitive;
-      
     }
 	}
+  delete [] Primitive;
 }
 
 
