@@ -108,6 +108,8 @@ inline double CSolver::GetCEff_Inv(unsigned short val_marker) { return 0; }
 
 inline double CSolver::GetCLift_Visc(unsigned short val_marker) { return 0; }
 
+inline double CSolver::GetCSideForce_Visc(unsigned short val_marker) { return 0; }
+
 inline double CSolver::GetCDrag_Visc(unsigned short val_marker) { return 0; }
 
 inline double CSolver::GetAllBound_CLift_Inv() { return 0; }
@@ -119,6 +121,8 @@ inline double CSolver::GetAllBound_CSideForce_Inv() { return 0; }
 inline double CSolver::GetAllBound_CEff_Inv() { return 0; }
 
 inline double CSolver::GetAllBound_CLift_Visc() { return 0; }
+
+inline double CSolver::GetAllBound_CSideForce_Visc() { return 0; }
 
 inline double CSolver::GetAllBound_CDrag_Visc() { return 0; }
 
@@ -564,9 +568,13 @@ inline double CNSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 
 inline double CNSSolver::GetCLift_Visc(unsigned short val_marker) { return CLift_Visc[val_marker]; }
 
+inline double CNSSolver::GetCSideForce_Visc(unsigned short val_marker) { return CSideForce_Visc[val_marker]; }
+
 inline double CNSSolver::GetCDrag_Visc(unsigned short val_marker) { return CDrag_Visc[val_marker]; }
 
 inline double CNSSolver::GetAllBound_CLift_Visc() { return AllBound_CLift_Visc; }
+
+inline double CNSSolver::GetAllBound_CSideForce_Visc() { return AllBound_CSideForce_Visc; }
 
 inline double CNSSolver::GetAllBound_CDrag_Visc() { return AllBound_CDrag_Visc; }
 
