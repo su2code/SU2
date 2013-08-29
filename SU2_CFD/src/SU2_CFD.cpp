@@ -521,8 +521,8 @@ int main(int argc, char *argv[]) {
   finish = MPI::Wtime();
   time = finish-start;
   if (rank == MASTER_NODE) {
-    cout << "\nCompleted in " << fixed << time << " seconds on ";
-    if (size == 1) cout << size << " core.\n" << endl;
+    cout << "\nCompleted in " << fixed << time << " seconds on "<< size;
+    if (size == 1) cout << " core.\n" << endl;
     else cout << " cores.\n" << endl;
   }
 #endif
