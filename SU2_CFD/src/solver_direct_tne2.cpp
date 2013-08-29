@@ -2099,9 +2099,14 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
     if (implicit)
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
     
-    for (iVar = 0; iVar < nVar; iVar++)
-      if (isnan(Residual[iVar]))
+//    cout << "Source resid NVar: " << nVar << endl;
+    
+    for (iVar = 0; iVar < nVar; iVar++) {
+      cout << iVar << endl;
+      if (isnan(Residual[iVar])) {
         cout << "Source Residual iVar NaN: " << iVar << endl;
+      }
+    }
     
 
   }

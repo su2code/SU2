@@ -489,6 +489,8 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
       rhoCvve += Solution[nSpecies-1] * Cves;
     }
     
+//    cout << "PRINT ME" << endl;
+    
     /*--- Determine function f(Tve) and df/dTve ---*/
     f  = rhoEve - rhoEve_t;
     df = -rhoCvve;
