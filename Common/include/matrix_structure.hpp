@@ -26,6 +26,7 @@
 
 #include <iostream>
 #include <cmath>
+#include <cstdlib>
 
 #include "config_structure.hpp"
 #include "geometry_structure.hpp"

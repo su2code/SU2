@@ -7,11 +7,13 @@
 
 #pragma once
 
-#include "geometry_structure.hpp"
-#include "config_structure.hpp"
 #include <cmath>
 #include <iostream>
+#include <cstdlib>
 #include <fstream>
+
+#include "geometry_structure.hpp"
+#include "config_structure.hpp"
 
 using namespace std;
 
