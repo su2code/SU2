@@ -7548,24 +7548,6 @@ public:
                     unsigned short val_marker);
   
 	/*!
-	 * \brief Update the solution using a Runge-Kutta strategy.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-	 */
-	void ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                            unsigned short iRKStep);
-  
-	/*!
-	 * \brief Update the solution using a explicit Euler scheme.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-  
-	/*!
 	 * \brief Update the solution using an implicit solver.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
@@ -7591,15 +7573,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
-  
-	/*!
-	 * \brief Smooth the inviscid sensitivity of the functional.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void Smooth_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
   
 	/*!
 	 * \brief Get the shape sensitivity coefficient.
@@ -7651,12 +7624,6 @@ public:
 	 *         (inviscid + viscous contribution).
 	 */
 	double GetTotal_Sens_Temp(void);
-  
-	/*!
-	 * \brief Get the value of kappapsi_Volume
-	 * \return kappapsi_Volume
-	 */
-	double GetKappaPsiVolume(void);
   
   /*!
 	 * \brief Set the initial condition for the Euler Equations.

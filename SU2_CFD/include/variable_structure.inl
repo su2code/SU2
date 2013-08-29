@@ -885,10 +885,6 @@ inline double  CAdjTNE2EulerVariable::GetTheta(void) { return Theta; }
 
 inline void    CAdjTNE2NSVariable::SetPhi_Old(double *val_phi) { for (unsigned short iDim = 0; iDim < nDim; iDim++) Solution_Old[iDim+1] = val_phi[iDim]; };
 
-inline double  CAdjTNE2NSVariable::GetKappaPsiVolume() { return kappapsi_Volume; }
-
-inline void    CAdjTNE2NSVariable::SetKappaPsiVolume(double val_kappapsi_Volume) { kappapsi_Volume = val_kappapsi_Volume; }
-
 inline double* CAdjTNE2NSVariable::GetForceProj_Vector(void) { return ForceProj_Vector; }
 
 inline void    CAdjTNE2NSVariable::SetForceProj_Vector(double *val_ForceProj_Vector) {	for (unsigned short iDim = 0; iDim < nDim; iDim++) ForceProj_Vector[iDim] = val_ForceProj_Vector[iDim]; }
