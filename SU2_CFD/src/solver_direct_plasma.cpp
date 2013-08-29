@@ -257,6 +257,7 @@ CPlasmaSolver::CPlasmaSolver(CGeometry *geometry, CConfig *config) : CSolver() {
 	MomentViscous = new double[nDim];
 	CDrag_Visc = new double[config->GetnMarker_All()];
 	CLift_Visc = new double[config->GetnMarker_All()];
+	CSideForce_Visc = new double[config->GetnMarker_All()];
 	CMx_Visc = new double[config->GetnMarker_All()];
 	CMy_Visc = new double[config->GetnMarker_All()];
 	CMz_Visc = new double[config->GetnMarker_All()];
@@ -2036,7 +2037,7 @@ void CPlasmaSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 
 
 	/*-- Initialization --*/
-	AllBound_CDrag_Visc = 0.0; AllBound_CLift_Visc = 0.0;
+	AllBound_CDrag_Visc = 0.0; AllBound_CLift_Visc = 0.0; AllBound_CSideForce_Visc = 0.0;
 	AllBound_CMx_Visc = 0.0; AllBound_CMy_Visc = 0.0; AllBound_CMz_Visc = 0.0;
 	AllBound_CFx_Visc = 0.0; AllBound_CFy_Visc = 0.0; AllBound_CFz_Visc = 0.0;
 	AllBound_CEff_Visc = 0.0; AllBound_CMerit_Visc = 0.0;
@@ -2175,6 +2176,7 @@ void CPlasmaSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 				if (nDim == 3) {
 					CDrag_Visc[iMarker] =  ForceViscous[0]*cos(Alpha)*cos(Beta) + ForceViscous[1]*sin(Beta) + ForceViscous[2]*sin(Alpha)*cos(Beta);
 					CLift_Visc[iMarker] = -ForceViscous[0]*sin(Alpha) + ForceViscous[2]*cos(Alpha);
+          CSideForce_Visc[iMarker] = -ForceViscous[0]*sin(Beta)*cos(Alpha) + ForceViscous[1]*cos(Beta) - ForceViscous[2]*sin(Beta)*sin(Alpha);
 					CMx_Visc[iMarker] = MomentViscous[0];
 					CMy_Visc[iMarker] = MomentViscous[1];
 					CMz_Visc[iMarker] = MomentViscous[2];
@@ -2188,6 +2190,7 @@ void CPlasmaSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 
 				AllBound_CDrag_Visc += CDrag_Visc[iMarker];
 				AllBound_CLift_Visc += CLift_Visc[iMarker];
+        AllBound_CSideForce_Visc += CSideForce_Visc[iMarker];
 				AllBound_CMx_Visc += CMx_Visc[iMarker];
 				AllBound_CMy_Visc += CMy_Visc[iMarker];
 				AllBound_CMz_Visc += CMz_Visc[iMarker];
@@ -2202,6 +2205,7 @@ void CPlasmaSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 	ViscDrag = AllBound_CDrag_Visc;
 	Total_CDrag += AllBound_CDrag_Visc;
 	Total_CLift += AllBound_CLift_Visc;
+	Total_CSideForce += AllBound_CSideForce_Visc;
 	Total_CMx += AllBound_CMx_Visc;
 	Total_CMy += AllBound_CMy_Visc;
 	Total_CMz += AllBound_CMz_Visc;
