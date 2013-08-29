@@ -1696,18 +1696,15 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   
   if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
-    double *N2g, *N2thetae;
-    double *O2g, *O2thetae;
-    double *NOg, *NOthetae;
-    double *Ng, *Nthetae;
-    double *Og, *Othetae;
-    double *OSPthetae, *OSPg;
     
 		if (val_izone == ZONE_1 ) {
 			Divide_Element = true;
 			Restart_FlowFileName = "restart_phi.dat";
 			SurfFlowCoeff_FileName = "surface_phi.dat";
 		}
+    
+    unsigned short maxEl = 0;
+    unsigned short iSpecies, iEl;
     
 		switch (Kind_GasModel) {
       case ONESPECIES:
@@ -1742,7 +1739,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         // Reference temperature (JANAF values, [K])
         Ref_Temperature[0] = 0.0;
         
-        nElStates[0] = 0;
+/*        nElStates[0] = 0;
         CharElTemp   = new double *[nSpecies];
         degen        = new double *[nSpecies];
         
@@ -1752,8 +1749,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         OSPg[0]      = 1.0;
         
         CharElTemp[0] = OSPthetae;
-        degen[0] = OSPg;
-        
+        degen[0] = OSPg;*/
+ 
         break;
         
       case N2:
@@ -1813,57 +1810,67 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         Ref_Temperature[0] = 0.0;
         Ref_Temperature[1] = 298.15;
         
-        // Electron degeneracy data
+        // Number of electron states
         nElStates[0] = 15;                    // N2
-
-        N2thetae = new double[nElStates[0]];
-        N2thetae[0]  = 0.000000000000000E+00;
-        N2thetae[1]  = 7.223156514095200E+04;
-        N2thetae[2]  = 8.577862640384000E+04;
-        N2thetae[3]  = 8.605026716160000E+04;
-        N2thetae[4]  = 9.535118627874400E+04;
-        N2thetae[5]  = 9.805635702203200E+04;
-        N2thetae[6]  = 9.968267656935200E+04;
-        N2thetae[7]  = 1.048976467715200E+05;
-        N2thetae[8]  = 1.116489555200000E+05;
-        N2thetae[9]  = 1.225836470400000E+05;
-        N2thetae[10] = 1.248856873600000E+05;
-        N2thetae[11] = 1.282476158188320E+05;
-        N2thetae[12] = 1.338060936000000E+05;
-        N2thetae[13] = 1.404296391107200E+05;
-        N2thetae[14] = 1.504958859200000E+05;
-        N2g = new double[nElStates[0]];
-        N2g[0]  = 1;
-        N2g[1]  = 3;
-        N2g[2]  = 6;
-        N2g[3]  = 6;
-        N2g[4]  = 3;
-        N2g[5]  = 1;
-        N2g[6]  = 2;
-        N2g[7]  = 2;
-        N2g[8]  = 5;
-        N2g[9]  = 1;
-        N2g[10] = 6;
-        N2g[11] = 6;
-        N2g[12] = 10;
-        N2g[13] = 6;
-        N2g[14] = 6;
         nElStates[1] = 3;                     // N
-
-        Nthetae = new double[nElStates[1]];
-        Nthetae[0] = 0.000000000000000E+00;
-        Nthetae[1] = 2.766469645581980E+04;
-        Nthetae[2] = 4.149309313560210E+04; 
-        Ng = new double[nElStates[1]];
-        Ng[0] = 4;
-        Ng[1] = 10;
-        Ng[2] = 6;
-        CharElTemp    = new double *[nSpecies];
-        CharElTemp[0] = N2thetae;
-        CharElTemp[1] = Nthetae;
-        degen         = new double *[nSpecies];
-        degen[0]      = N2g;
-        degen[1]      = Ng;
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+          maxEl = max(maxEl, nElStates[iSpecies]);
+        
+        /*--- Allocate electron data arrays ---*/
+        CharElTemp = new double*[nSpecies];
+        degen      = new double*[nSpecies];
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          CharElTemp[iSpecies] = new double[maxEl];
+          degen[iSpecies]      = new double[maxEl];
+        }
+        
+        /*--- Initialize the arrays ---*/
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          for (iEl = 0; iEl < maxEl; iEl++) {
+            CharElTemp[iSpecies][iEl] = 0.0;
+            degen[iSpecies][iEl] = 0.0;
+          }
+        }
+        
+        /*--- Assign values to data structures ---*/
+        // N2: 15 states
+        CharElTemp[0][0]  = 0.000000000000000E+00;
+        CharElTemp[0][1]  = 7.223156514095200E+04;
+        CharElTemp[0][2]  = 8.577862640384000E+04;
+        CharElTemp[0][3]  = 8.605026716160000E+04;
+        CharElTemp[0][4]  = 9.535118627874400E+04;
+        CharElTemp[0][5]  = 9.805635702203200E+04;
+        CharElTemp[0][6]  = 9.968267656935200E+04;
+        CharElTemp[0][7]  = 1.048976467715200E+05;
+        CharElTemp[0][8]  = 1.116489555200000E+05;
+        CharElTemp[0][9]  = 1.225836470400000E+05;
+        CharElTemp[0][10] = 1.248856873600000E+05;
+        CharElTemp[0][11] = 1.282476158188320E+05;
+        CharElTemp[0][12] = 1.338060936000000E+05;
+        CharElTemp[0][13] = 1.404296391107200E+05;
+        CharElTemp[0][14] = 1.504958859200000E+05;
+        degen[0][0]  = 1;
+        degen[0][1]  = 3;
+        degen[0][2]  = 6;
+        degen[0][3]  = 6;
+        degen[0][4]  = 3;
+        degen[0][5]  = 1;
+        degen[0][6]  = 2;
+        degen[0][7]  = 2;
+        degen[0][8]  = 5;
+        degen[0][9]  = 1;
+        degen[0][10] = 6;
+        degen[0][11] = 6;
+        degen[0][12] = 10;
+        degen[0][13] = 6;
+        degen[0][14] = 6;
+        // N: 3 states
+        CharElTemp[1][0] = 0.000000000000000E+00;
+        CharElTemp[1][1] = 2.766469645581980E+04;
+        CharElTemp[1][2] = 4.149309313560210E+04; 
+        degen[1][0] = 4;
+        degen[1][1] = 10;
+        degen[1][2] = 6;
         
         /*--- Set Arrhenius coefficients for chemical reactions ---*/
         // Pre-exponential factor
@@ -1978,132 +1985,135 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         Ref_Temperature[3] = 298.15;
         Ref_Temperature[4] = 298.15;
         
-        // Electron degeneracy data
+        // Number of electron states
         nElStates[0] = 15;                    // N2
-        N2thetae = new double[nElStates[0]];
-        N2thetae[0]  = 0.000000000000000E+00;
-        N2thetae[1]  = 7.223156514095200E+04;
-        N2thetae[2]  = 8.577862640384000E+04;
-        N2thetae[3]  = 8.605026716160000E+04;
-        N2thetae[4]  = 9.535118627874400E+04;
-        N2thetae[5]  = 9.805635702203200E+04;
-        N2thetae[6]  = 9.968267656935200E+04;
-        N2thetae[7]  = 1.048976467715200E+05;
-        N2thetae[8]  = 1.116489555200000E+05;
-        N2thetae[9]  = 1.225836470400000E+05;
-        N2thetae[10] = 1.248856873600000E+05;
-        N2thetae[11] = 1.282476158188320E+05;
-        N2thetae[12] = 1.338060936000000E+05;
-        N2thetae[13] = 1.404296391107200E+05;
-        N2thetae[14] = 1.504958859200000E+05;
-        N2g = new double[nElStates[0]];
-        N2g[0]  = 1;
-        N2g[1]  = 3;
-        N2g[2]  = 6;
-        N2g[3]  = 6;
-        N2g[4]  = 3;
-        N2g[5]  = 1;
-        N2g[6]  = 2;
-        N2g[7]  = 2;
-        N2g[8]  = 5;
-        N2g[9]  = 1;
-        N2g[10] = 6;
-        N2g[11] = 6;
-        N2g[12] = 10;
-        N2g[13] = 6;
-        N2g[14] = 6;
-        
         nElStates[1] = 7;                     // O2
-        O2thetae = new double[nElStates[1]];
-        O2thetae[0] = 0.000000000000000E+00;
-        O2thetae[1] = 1.139156019700800E+04;
-        O2thetae[2] = 1.898473947826400E+04;
-        O2thetae[3] = 4.755973576639200E+04;
-        O2thetae[4] = 4.991242097343200E+04;
-        O2thetae[5] = 5.092268575561600E+04;
-        O2thetae[6] = 7.189863255967200E+04;
-        O2g = new double[nElStates[1]];
-        O2g[0] = 3;
-        O2g[1] = 2;
-        O2g[2] = 1;
-        O2g[3] = 1;
-        O2g[4] = 6;
-        O2g[5] = 3;
-        O2g[6] = 3;
-        
-        nElStates[2] = 16;                     // NO
-        NOthetae = new double[nElStates[2]];
-        NOthetae[0]  = 0.000000000000000E+00;
-        NOthetae[1]  = 5.467345760000000E+04;
-        NOthetae[2]  = 6.317139627802400E+04;
-        NOthetae[3]  = 6.599450342445600E+04;
-        NOthetae[4]  = 6.906120960000000E+04;
-        NOthetae[5]  = 7.049998480000000E+04;
-        NOthetae[6]  = 7.491055017560000E+04;
-        NOthetae[7]  = 7.628875293968000E+04;
-        NOthetae[8]  = 8.676188537552000E+04;
-        NOthetae[9]  = 8.714431182368000E+04;
-        NOthetae[10] = 8.886077063728000E+04;
-        NOthetae[11] = 8.981755614528000E+04;
-        NOthetae[12] = 8.988445919208000E+04;
-        NOthetae[13] = 9.042702132000000E+04;
-        NOthetae[14] = 9.064283760000000E+04;
-        NOthetae[15] = 9.111763341600000E+04;
-        NOg = new double[nElStates[2]];
-        NOg[0]  = 4;
-        NOg[1]  = 8;
-        NOg[2]  = 2;
-        NOg[3]  = 4;
-        NOg[4]  = 4;
-        NOg[5]  = 4;
-        NOg[6]  = 4;
-        NOg[7]  = 2;
-        NOg[8]  = 4;
-        NOg[9]  = 2;
-        NOg[10] = 4;
-        NOg[11] = 4;
-        NOg[12] = 2;
-        NOg[13] = 2;
-        NOg[14] = 2;
-        NOg[15] = 4;
-        
+        nElStates[2] = 16;                    // NO
         nElStates[3] = 3;                     // N
-        Nthetae = new double[nElStates[3]];
-        Nthetae[0] = 0.000000000000000E+00;
-        Nthetae[1] = 2.766469645581980E+04;
-        Nthetae[2] = 4.149309313560210E+04;
-        Ng = new double[nElStates[3]];
-        Ng[0] = 4;
-        Ng[1] = 10;
-        Ng[2] = 6;
-        
         nElStates[4] = 5;                     // O
-        Othetae = new double[nElStates[4]];
-        Othetae[0] = 0.000000000000000E+00;
-        Othetae[1] = 2.277077570280000E+02;
-        Othetae[2] = 3.265688785704000E+02;
-        Othetae[3] = 2.283028632262240E+04;
-        Othetae[4] = 4.861993036434160E+04;
-        Og = new double[nElStates[3]];
-        Og[0] = 5;
-        Og[1] = 3;
-        Og[2] = 1;
-        Og[3] = 5;
-        Og[4] = 1;
+/////
+
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+          maxEl = max(maxEl, nElStates[iSpecies]);
         
-        CharElTemp    = new double *[nSpecies];
-        CharElTemp[0] = N2thetae;
-        CharElTemp[1] = O2thetae;
-        CharElTemp[2] = NOthetae;
-        CharElTemp[3] = Nthetae;
-        CharElTemp[4] = Othetae;
-        degen         = new double *[nSpecies];
-        degen[0]      = N2g;
-        degen[1]      = O2g;
-        degen[2]      = NOg;
-        degen[3]      = Ng;
-        degen[4]      = Og;
+        /*--- Allocate electron data arrays ---*/
+        CharElTemp = new double*[nSpecies];
+        degen      = new double*[nSpecies];
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          CharElTemp[iSpecies] = new double[maxEl];
+          degen[iSpecies]      = new double[maxEl];
+        }
         
+        /*--- Initialize the arrays ---*/
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          for (iEl = 0; iEl < maxEl; iEl++) {
+            CharElTemp[iSpecies][iEl] = 0.0;
+            degen[iSpecies][iEl] = 0.0;
+          }
+        }
+
+        //N2: 15 states
+        CharElTemp[0][0]  = 0.000000000000000E+00;
+        CharElTemp[0][1]  = 7.223156514095200E+04;
+        CharElTemp[0][2]  = 8.577862640384000E+04;
+        CharElTemp[0][3]  = 8.605026716160000E+04;
+        CharElTemp[0][4]  = 9.535118627874400E+04;
+        CharElTemp[0][5]  = 9.805635702203200E+04;
+        CharElTemp[0][6]  = 9.968267656935200E+04;
+        CharElTemp[0][7]  = 1.048976467715200E+05;
+        CharElTemp[0][8]  = 1.116489555200000E+05;
+        CharElTemp[0][9]  = 1.225836470400000E+05;
+        CharElTemp[0][10] = 1.248856873600000E+05;
+        CharElTemp[0][11] = 1.282476158188320E+05;
+        CharElTemp[0][12] = 1.338060936000000E+05;
+        CharElTemp[0][13] = 1.404296391107200E+05;
+        CharElTemp[0][14] = 1.504958859200000E+05;
+        degen[0][0]  = 1;
+        degen[0][1]  = 3;
+        degen[0][2]  = 6;
+        degen[0][3]  = 6;
+        degen[0][4]  = 3;
+        degen[0][5]  = 1;
+        degen[0][6]  = 2;
+        degen[0][7]  = 2;
+        degen[0][8]  = 5;
+        degen[0][9]  = 1;
+        degen[0][10] = 6;
+        degen[0][11] = 6;
+        degen[0][12] = 10;
+        degen[0][13] = 6;
+        degen[0][14] = 6;
+
+        // O2: 7 states
+        CharElTemp[1][0] = 0.000000000000000E+00;
+        CharElTemp[1][1] = 1.139156019700800E+04;
+        CharElTemp[1][2] = 1.898473947826400E+04;
+        CharElTemp[1][3] = 4.755973576639200E+04;
+        CharElTemp[1][4] = 4.991242097343200E+04;
+        CharElTemp[1][5] = 5.092268575561600E+04;
+        CharElTemp[1][6] = 7.189863255967200E+04;
+        degen[1][0] = 3;
+        degen[1][1] = 2;
+        degen[1][2] = 1;
+        degen[1][3] = 1;
+        degen[1][4] = 6;
+        degen[1][5] = 3;
+        degen[1][6] = 3;
+        
+        // NO: 16 states
+        CharElTemp[2][0]  = 0.000000000000000E+00;
+        CharElTemp[2][1]  = 5.467345760000000E+04;
+        CharElTemp[2][2]  = 6.317139627802400E+04;
+        CharElTemp[2][3]  = 6.599450342445600E+04;
+        CharElTemp[2][4]  = 6.906120960000000E+04;
+        CharElTemp[2][5]  = 7.049998480000000E+04;
+        CharElTemp[2][6]  = 7.491055017560000E+04;
+        CharElTemp[2][7]  = 7.628875293968000E+04;
+        CharElTemp[2][8]  = 8.676188537552000E+04;
+        CharElTemp[2][9]  = 8.714431182368000E+04;
+        CharElTemp[2][10] = 8.886077063728000E+04;
+        CharElTemp[2][11] = 8.981755614528000E+04;
+        CharElTemp[2][12] = 8.988445919208000E+04;
+        CharElTemp[2][13] = 9.042702132000000E+04;
+        CharElTemp[2][14] = 9.064283760000000E+04;
+        CharElTemp[2][15] = 9.111763341600000E+04;
+        degen[2][0]  = 4;
+        degen[2][1]  = 8;
+        degen[2][2]  = 2;
+        degen[2][3]  = 4;
+        degen[2][4]  = 4;
+        degen[2][5]  = 4;
+        degen[2][6]  = 4;
+        degen[2][7]  = 2;
+        degen[2][8]  = 4;
+        degen[2][9]  = 2;
+        degen[2][10] = 4;
+        degen[2][11] = 4;
+        degen[2][12] = 2;
+        degen[2][13] = 2;
+        degen[2][14] = 2;
+        degen[2][15] = 4;
+        
+        // N: 3 states
+        CharElTemp[3][0] = 0.000000000000000E+00;
+        CharElTemp[3][1] = 2.766469645581980E+04;
+        CharElTemp[3][2] = 4.149309313560210E+04;
+        degen[3][0] = 4;
+        degen[3][1] = 10;
+        degen[3][2] = 6;
+        
+        // O: 5 states
+        CharElTemp[4][0] = 0.000000000000000E+00;
+        CharElTemp[4][1] = 2.277077570280000E+02;
+        CharElTemp[4][2] = 3.265688785704000E+02;
+        CharElTemp[4][3] = 2.283028632262240E+04;
+        CharElTemp[4][4] = 4.861993036434160E+04;
+        degen[4][0] = 5;
+        degen[4][1] = 3;
+        degen[4][2] = 1;
+        degen[4][3] = 5;
+        degen[4][4] = 1;
+                
         /*--- Set reaction maps ---*/
         // N2 dissociation
         Reactions[0][0][0]=0;		Reactions[0][0][1]=0;		Reactions[0][0][2]=nSpecies;		Reactions[0][1][0]=3;		Reactions[0][1][1]=3;		Reactions[0][1][2] =0;
@@ -2689,7 +2699,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
 			/*-- Allocation ---*/
 			Species_Gas_Constant = new double[nSpecies];
-			Species_Gamma = new double[nSpecies];
+			Species_Gamma      = new double[nSpecies];
 			Molar_Mass         = new double[nSpecies];
 			Particle_Mass      = new double[nSpecies];
 			Molecular_Diameter = new double[nSpecies];
@@ -5156,32 +5166,30 @@ CConfig::~CConfig(void)
 	delete [] U_FreeStreamND;
 
 	/*--- If allocated, delete arrays for Plasma solver ---*/
-	if (Species_Gas_Constant != NULL)
-		delete [] Species_Gas_Constant;
-	if (Species_Gamma != NULL)
-		delete [] Species_Gamma;
-	if (Molar_Mass != NULL)
-		delete[] Molar_Mass;
-	if (Particle_Mass != NULL)
-		delete [] Particle_Mass;
-	if (Molecular_Diameter != NULL)
-		delete [] Molecular_Diameter;
-	if (Gas_Composition != NULL)
-		delete [] Gas_Composition;
-	if (Charge_Number != NULL)
-		delete [] Charge_Number;
-	if (Enthalpy_Formation != NULL)
-		delete [] Enthalpy_Formation;
-	if (ArrheniusCoefficient != NULL)
-		delete [] ArrheniusCoefficient;
-	if (ArrheniusEta != NULL)
-		delete [] ArrheniusEta;
-	if (ArrheniusTheta != NULL)
-		delete [] ArrheniusTheta;
-	if (CharVibTemp != NULL)
-		delete [] CharVibTemp;
+	if (Species_Gas_Constant != NULL) delete [] Species_Gas_Constant;
+	if (Species_Gamma        != NULL) delete [] Species_Gamma;
+	if (Molar_Mass           != NULL) delete[] Molar_Mass;
+	if (Particle_Mass        != NULL) delete [] Particle_Mass;
+	if (Molecular_Diameter   != NULL) delete [] Molecular_Diameter;
+	if (Gas_Composition      != NULL) delete [] Gas_Composition;
+	if (Charge_Number        != NULL) delete [] Charge_Number;
+	if (Enthalpy_Formation   != NULL) delete [] Enthalpy_Formation;
+	if (ArrheniusCoefficient != NULL) delete [] ArrheniusCoefficient;
+	if (ArrheniusEta         != NULL) delete [] ArrheniusEta;
+	if (ArrheniusTheta       != NULL) delete [] ArrheniusTheta;
+	if (CharVibTemp          != NULL) delete [] CharVibTemp;
+  if (CharElTemp           != NULL) {
+    for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      delete[] CharElTemp[iSpecies];
+    delete [] CharElTemp;
+  }
+  if (degen                != NULL) {
+    for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      delete[] degen[iSpecies];
+    delete [] degen;
+  }
 	unsigned short ii, iReaction;
-	if (Reactions != NULL) {
+	if (Reactions            != NULL) {
 		for (iReaction = 0; iReaction < nReactions; iReaction++) {
 			for (ii = 0; ii < 2; ii++) {
 				delete [] Reactions[iReaction][ii];
