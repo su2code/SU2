@@ -5990,9 +5990,13 @@ public:
  */
 class CSource_TNE2 : public CNumerics {
 private:
-  bool implicit;
+  bool   implicit;
+  int    *alphak, *betak;
   double *X; // Mole fraction
   double **RxnConstantTable;
+  double *dkf, *dkb, *dRfok, *dRbok, *A;
+  double *evibs, *eels, *Cvvs, *Cves;
+  double *dTdrhos, *dTvedrhos;
 public:
   
 	/*!
