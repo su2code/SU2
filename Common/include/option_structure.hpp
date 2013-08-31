@@ -282,36 +282,36 @@ enum RUNTIME_TYPE {
 	RUNTIME_TRANS_SYS = 22			/*!< \brief One-physics case, the code is solving the turbulence model. */
 };
 
-const int FLOW_SOL = 0;		/*!< \brief Position of the mean flow solution in the solution container array. */
-const int ADJFLOW_SOL = 1;	/*!< \brief Position of the continuous adjoint flow solution in the solution container array. */
-const int LINFLOW_SOL = 1;	/*!< \brief Position of the linearized flow solution in the solution container array. */
+const int FLOW_SOL = 0;		/*!< \brief Position of the mean flow solution in the solver container array. */
+const int ADJFLOW_SOL = 1;	/*!< \brief Position of the continuous adjoint flow solution in the solver container array. */
+const int LINFLOW_SOL = 1;	/*!< \brief Position of the linearized flow solution in the solution solver array. */
 
-const int TURB_SOL = 2;		/*!< \brief Position of the turbulence model solution in the solution container array. */
-const int ADJTURB_SOL = 3;	/*!< \brief Position of the continuous adjoint turbulence solution in the solution container array. */
-const int LINTURB_SOL = 3;	/*!< \brief Position of the linearized turbulence model in the solution container array. */
+const int TURB_SOL = 2;		/*!< \brief Position of the turbulence model solution in the solver container array. */
+const int ADJTURB_SOL = 3;	/*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
+const int LINTURB_SOL = 3;	/*!< \brief Position of the linearized turbulence model in the solver container array. */
 
-const int LEVELSET_SOL = 4;	/*!< \brief Position of the level set solution in the solution container array. */
-const int ADJLEVELSET_SOL = 5;	/*!< \brief Position of the continuous adjoint level set solution in the solution container array. */
-const int LINLEVELSET_SOL = 5;	/*!< \brief Position of the linearized level set solution in the solution container array. */
+const int LEVELSET_SOL = 4;	/*!< \brief Position of the level set solution in the solver container array. */
+const int ADJLEVELSET_SOL = 5;	/*!< \brief Position of the continuous adjoint level set solution in the solver container array. */
+const int LINLEVELSET_SOL = 5;	/*!< \brief Position of the linearized level set solution in the solver container array. */
 
-const int PLASMA_SOL = 0;	/*!< \brief Position of the plasma solution in the solution container array. */
-const int ADJPLASMA_SOL = 1;	/*!< \brief Position of the continuous adjoint plasma solution in the solution container array. */
-const int LINPLASMA_SOL = 1;	/*!< \brief Position of the linearized plasma solution in the solution container array. */
+const int PLASMA_SOL = 0;	/*!< \brief Position of the plasma solution in the solver container array. */
+const int ADJPLASMA_SOL = 1;	/*!< \brief Position of the continuous adjoint plasma solution in the solver container array. */
+const int LINPLASMA_SOL = 1;	/*!< \brief Position of the linearized plasma solution in the solver container array. */
 
-const int TRANS_SOL = 4;	/*!< \brief Position of the transition model solution in the solution container array. */
-const int ELEC_SOL = 2;		/*!< \brief Position of the electronic potential solution in the solution container array. */
-const int WAVE_SOL = 1;		/*!< \brief Position of the wave equation in the solution container array. */
-const int HEAT_SOL = 2;		/*!< \brief Position of the heat equation in the solution container array. */
-const int FEA_SOL = 1;		/*!< \brief Position of the FEA equation in the solution container array. */
+const int TRANS_SOL = 4;	/*!< \brief Position of the transition model solution in the solver container array. */
+const int ELEC_SOL = 2;		/*!< \brief Position of the electronic potential solution in the solver container array. */
+const int WAVE_SOL = 1;		/*!< \brief Position of the wave equation in the solution solver array. */
+const int HEAT_SOL = 2;		/*!< \brief Position of the heat equation in the solution solver array. */
+const int FEA_SOL = 1;		/*!< \brief Position of the FEA equation in the solution solver array. */
 
 const int TEMPLATE_SOL = 0;     /*!< \brief Position of the template solution. */
 
-const int CONV_TERM = 0;	/*!< \brief Position of the convective terms in the solver container array. */
-const int VISC_TERM = 1;        /*!< \brief Position of the viscous terms in the solver container array. */
-const int SOURCE_FIRST_TERM = 2;        /*!< \brief Position of the first source term in the solver container array. */
-const int SOURCE_SECOND_TERM = 3;   /*!< \brief Position of the second source term in the solver container array. */
-const int CONV_BOUND_TERM = 4;       /*!< \brief Position of the convective boundary terms in the solver container array. */
-const int VISC_BOUND_TERM = 5;       /*!< \brief Position of the viscous boundary terms in the solver container array. */
+const int CONV_TERM = 0;	/*!< \brief Position of the convective terms in the numerics container array. */
+const int VISC_TERM = 1;        /*!< \brief Position of the viscous terms in the numerics container array. */
+const int SOURCE_FIRST_TERM = 2;        /*!< \brief Position of the first source term in the numerics container array. */
+const int SOURCE_SECOND_TERM = 3;   /*!< \brief Position of the second source term in the numerics container array. */
+const int CONV_BOUND_TERM = 4;       /*!< \brief Position of the convective boundary terms in the numerics container array. */
+const int VISC_BOUND_TERM = 5;       /*!< \brief Position of the viscous boundary terms in the numerics container array. */
 
 /*!
  * \brief types of spatial discretizations
