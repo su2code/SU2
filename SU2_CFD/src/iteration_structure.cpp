@@ -43,6 +43,14 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
     
   /*--- Initial set up for unsteady problems with dynamic meshes. ---*/
 	for (iZone = 0; iZone < nZone; iZone++) {
+        
+        
+        /*--- Apply a Wind Gust ---*/  //Will need to think about this if I do multiple zones and combined with Aeroelastic
+        
+        if (config_container[ZONE_0]->GetWind_Gust()) {
+            SetWind_GustField(config_container[iZone],geometry_container[iZone],solver_container[iZone]);
+        }
+        
 		/*--- Dynamic mesh update ---*/
 		if ((config_container[iZone]->GetGrid_Movement()) && (!time_spectral) && (config_container[ZONE_0]->GetKind_GridMovement(ZONE_0) != AEROELASTIC))
 			SetGrid_Movement(geometry_container[iZone], surface_movement[iZone],
@@ -131,7 +139,7 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
 					}
 				}
         
-				/*--- Call if AEROELASTIC motion was specified ---*/
+				/*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/
 				if ((config_container[ZONE_0]->GetGrid_Movement()) && (config_container[ZONE_0]->GetKind_GridMovement(ZONE_0) == AEROELASTIC)) {
 					SetGrid_Movement(geometry_container[iZone], surface_movement[iZone],
                            grid_movement[iZone], FFDBox[iZone], solver_container[iZone], config_container[iZone], iZone, IntIter);
@@ -1046,37 +1054,26 @@ void AdjAeroacousticIteration(COutput *output, CIntegration ***integration_conta
 	}
 
 }
-
-void FieldVelocityMethod(CConfig *config, CGeometry *geometry, CSolver **solver_container) {
-    // The Field Velocity Method (VFM) imposes a gust on the flow field via the grid velocities.
-    // The method is described in the NASA TM–2012-217771 -
-    // Development, Verification and Use of Gust Modeling in the NASA Computational Fluid Dynamics Code FUN3D
     
-    // the gust is the negative of the grid velocity
+void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container, CSolver ***solver_container) {
+    // The gust is imposed on the flow field via the grid velocities. This method called the Field Velocity Method is described in the
+    // NASA TM–2012-217771 - Development, Verification and Use of Gust Modeling in the NASA Computational Fluid Dynamics Code FUN3D
+    // the desired gust is prescribed as the negative of the grid velocity.
     
-    unsigned short iDim;
-    unsigned short nDim = geometry->GetnDim();
-    unsigned long iPoint;
-
-    double x, x_gust, gust;
-    double *GridVel;
-    unsigned short Kind_Grid_Movement = config->GetKind_GridMovement(ZONE_0);
+    // If a source term is included to account for the gust field, the method is described by Jones et al. as the Split Velocity Method in
+    // Simulation of Airfoil Gust Responses Using Prescribed Velocities.
+    // In this routine the gust derivatives needed for the source term are calculated. The source term itself is implemented in the class CSourceWindGust
     
-    double Physical_dt = config->GetDelta_UnstTime();
-    unsigned long ExtIter = config->GetExtIter();
-    double Physical_t = (ExtIter+1)*Physical_dt;
     
-    double Uinf = solver_container[FLOW_SOL]->GetVelocity_Inf(0); // Assumption gust moves at infinity velocity
+    /*--- Gust Parameters from config ---*/
+    unsigned short Gust_Type = config_container->GetGust_Type();
+    double x0 = config_container->GetGust_Begin_Loc();        // Location at which the gust begins.
+    double L = config_container->GetGust_WaveLength();        // Gust size
+    double tbegin = config_container->GetGust_Begin_Time();   // Physical time at which the gust begins.
+    double gust_amp = config_container->GetGust_Ampl();       // Gust amplitude
+    double n = config_container->GetGust_Periods();           // Number of gust periods
+    unsigned short GustDir = config_container->GetGust_Dir(); // Gust direction
     
-    /*--- Gust Parameters ---*/
-    unsigned short Gust_Type = config->GetGust_Type();
-    double x0 = config->GetGust_Begin_Loc();        //Location at which the gust begins.
-    double L = config->GetGust_WaveLength();        //Gust size
-    double tbegin = config->GetGust_Begin_Time();   //Physical time at which the gust begins.
-    double gust_amp = config->GetGust_Ampl();       //Gust amplitude
-    double n = config->GetGust_Periods();           //Number of gust periods
-    unsigned short GustDir = config->GetGust_Dir(); //Gust direction
-
     /*--- Check to make sure gust lenght is not zero or negative ---*/
     if (L <= 0.0) {
         cout << "ERROR: The gust length needs to be positive" << endl;
@@ -1089,48 +1086,91 @@ void FieldVelocityMethod(CConfig *config, CGeometry *geometry, CSolver **solver_
         MPI::Finalize();
 #endif
     }
+
+    /*--- Variables needed to compute the gust ---*/
+    unsigned short iDim;
+    unsigned short nDim = geometry_container[MESH_0]->GetnDim();
+    unsigned long iPoint;
+
+    double x, x_gust, gust, dgust_dx, dgust_dy, dgust_dt;
+    double *GridVel;
+    unsigned short Kind_Grid_Movement = config_container->GetKind_GridMovement(ZONE_0);
     
-    /*--- Loop over each node in the volume mesh ---*/
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    double Physical_dt = config_container->GetDelta_UnstTime();
+    unsigned long ExtIter = config_container->GetExtIter();
+    double Physical_t = (ExtIter+1)*Physical_dt;
+    
+    double Uinf = solver_container[MESH_0][FLOW_SOL]->GetVelocity_Inf(0); // Assumption gust moves at infinity velocity
+    
+    /*--- Loop over all multigrid levels ---*/
+    unsigned short iMGlevel, nMGlevel = config_container->GetMGLevels();
+    
+    for (iMGlevel = 0; iMGlevel <= nMGlevel; iMGlevel++) { //<= ?
+    
+        /*--- Loop over each node in the volume mesh ---*/
+        for (iPoint = 0; iPoint < geometry_container[iMGlevel]->GetnPoint(); iPoint++) {
 
-        // Reset the Grid Velocity to zero if there is no grid movement
-        if (Kind_Grid_Movement == NO_MOVEMENT) {
-            for(iDim = 0; iDim < nDim; iDim++)
-                geometry->node[iPoint]->SetGridVel(iDim, 0.0);
-        }
-
-        // Begin applying the gust
-        if (Physical_t > tbegin) {
-            x = geometry->node[iPoint]->GetCoord()[0]; // x-location of the node
-            x_gust = (x - x0 - Uinf*(Physical_t-tbegin))/L;
-            // Check if we are in the region where the gust is active
-            if (x_gust > 0 && x_gust < n) {
-                
-                /*--- Calculate the specified gust ---*/
-                switch (Gust_Type) {
+            //initialize the gust and derivatives to zero everywhere
+            gust = 0;
+            dgust_dx = 0;
+            dgust_dy = 0; // This always stays equal to zero. All the gust implemented don't vary in the y-dir.
+            dgust_dt = 0;
+            
+            // Reset the Grid Velocity to zero if there is no grid movement
+            if (Kind_Grid_Movement == NO_MOVEMENT) {
+                for(iDim = 0; iDim < nDim; iDim++)
+                    geometry_container[iMGlevel]->node[iPoint]->SetGridVel(iDim, 0.0);
+            }
+            
+            // Begin applying the gust
+            if (Physical_t > tbegin) {
+                x = geometry_container[iMGlevel]->node[iPoint]->GetCoord()[0]; // x-location of the node
+                // Gust coordinate
+                x_gust = (x - x0 - Uinf*(Physical_t-tbegin))/L;
+                // Check if we are in the region where the gust is active
+                if (x_gust > 0 && x_gust < n) {
                     
-                case TOP_HAT:
-                    gust = gust_amp;
-                    break;
-                
-                case SINE:
-                    gust = gust_amp*(sin(2*PI_NUMBER*x_gust));
-                    break;
+                    /*--- Calculate the specified gust ---*/
+                    switch (Gust_Type) {
+                        
+                    case TOP_HAT:
+                        gust = gust_amp;
+                        // Still need to put the gust derivatives. Think about this.
+                        break;
+                    
+                    case SINE:
+                        gust = gust_amp*(sin(2*PI_NUMBER*x_gust));
+                        
+                        // Gust derivatives
+                        dgust_dx = gust_amp*2*PI_NUMBER*(cos(2*PI_NUMBER*x_gust))/L;
+                        dgust_dy = 0;
+                        dgust_dt = gust_amp*2*PI_NUMBER*(cos(2*PI_NUMBER*x_gust))*(-Uinf)/L;
+                        break;
+                    }
                 }
-                
-                // Compute new grid velocity
-                double NewGridVel[2] = {0,0};
-                GridVel = geometry->node[iPoint]->GetGridVel();
-                NewGridVel[GustDir] = GridVel[GustDir] - gust;
-                
-                // Store new grid velocity
-                for(iDim = 0; iDim < nDim; iDim++) {
-                    geometry->node[iPoint]->SetGridVel(iDim, NewGridVel[iDim]);
-                }
+            }
+
+            /*--- Set the Wind Gust, Wind Gust Derivatives and the Grid Velocities ---*/
+            double NewGridVel[2] = {0,0};
+            double Gust[2] = {0,0};
+            Gust[GustDir] = gust;
+            double GustDer[3] = {0,0,0};
+            GustDer[0] = dgust_dx;
+            GustDer[1] = dgust_dy;
+            GustDer[2] = dgust_dt;
+            
+            solver_container[iMGlevel][FLOW_SOL]->node[iPoint]->SetWindGust(Gust);
+            solver_container[iMGlevel][FLOW_SOL]->node[iPoint]->SetWindGustDer(GustDer);
+            
+            GridVel = geometry_container[iMGlevel]->node[iPoint]->GetGridVel();
+            NewGridVel[GustDir] = GridVel[GustDir] - gust;
+            
+            // Store new grid velocity
+            for(iDim = 0; iDim < nDim; iDim++) {
+                geometry_container[iMGlevel]->node[iPoint]->SetGridVel(iDim, NewGridVel[iDim]);
             }
         }
     }
-    
 }
 
 
@@ -1377,12 +1417,6 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
         cout << "No mesh motion specified." << endl;
       
       break;
-  }
-  
-  /*--- Apply a Wind Gust ---*/
-  
-  if (config_container->GetWind_Gust()) {
-    FieldVelocityMethod(config_container,geometry_container[MESH_0],solver_container[MESH_0]);
   }
   
 }

@@ -2423,83 +2423,45 @@ void CSource_JouleHeating::SetElec_Cond() {
 
 CSourceWindGust::CSourceWindGust(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
     
-	Gamma = config->GetGamma();
-	Gamma_Minus_One = Gamma - 1.0;
-    
 }
 
 CSourceWindGust::~CSourceWindGust(void) { }
 
 void CSourceWindGust::ComputeResidual(double *val_residual, double **val_Jacobian_i, CConfig *config) {
     
-    /*--- Need to put the actual wind source terms in here ---*/
-    
-    double x, x_gust, gust;
-    double *GridVel;
-    unsigned short Kind_Grid_Movement = config->GetKind_GridMovement(ZONE_0);
-    
-    double Physical_dt = config->GetDelta_UnstTime();
-    unsigned long ExtIter = config->GetExtIter();
-    double Physical_t = (ExtIter+1)*Physical_dt;
-    
-    double Uinf = sqrt(vel2_inf); // Assumption gust moves at infinity velocity
-    
-    /*--- Gust Parameters ---*/
-    unsigned short Gust_Type = config->GetGust_Type();
-    double x0 = config->GetGust_Begin_Loc();        //Location at which the gust begins.
-    double L = config->GetGust_WaveLength();        //Gust size
-    double tbegin = config->GetGust_Begin_Time();   //Physical time at which the gust begins.
-    double gust_amp = config->GetGust_Ampl();       //Gust amplitude
-    double n = config->GetGust_Periods();           //Number of gust periods
+    double u_gust, v_gust, du_gust_dx, du_gust_dy, du_gust_dt, dv_gust_dx, dv_gust_dy, dv_gust_dt, smx, smy, se, rho, u, v, p;
     unsigned short GustDir = config->GetGust_Dir(); //Gust direction
+
+    u_gust = WindGust_i[0];
+    v_gust = WindGust_i[1];
     
-    /*--- For the source terms ---*/
-    double du_dx;
-    double du_dt;
-    double smx = 0;
-    double smy = 0;
-    double se = 0;
-    
-    /*--- Check to make sure gust lenght is not zero or negative ---*/
-    if (L <= 0.0) {
-        cout << "ERROR: The gust length needs to be positive" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
-#ifdef NO_MPI
-        exit(1);
-#else
-        MPI::COMM_WORLD.Abort(1);
-        MPI::Finalize();
-#endif
+    if (GustDir == X_DIR) {
+        du_gust_dx = WindGustDer_i[0];
+        du_gust_dy = WindGustDer_i[1];
+        du_gust_dt = WindGustDer_i[2];
+        dv_gust_dx = 0.0;
+        dv_gust_dy = 0.0;
+        dv_gust_dt = 0.0;
+    } else {
+        du_gust_dx = 0.0;
+        du_gust_dy = 0.0;
+        du_gust_dt = 0.0;
+        dv_gust_dx = WindGustDer_i[0];
+        dv_gust_dy = WindGustDer_i[1];
+        dv_gust_dt = WindGustDer_i[2];
+        
     }
     
-    // Begin applying the gust
-    if (Physical_t > tbegin) {
-        x = Coord_i[0]; // x-location of the node
-        x_gust = (x - x0 - Uinf*(Physical_t-tbegin))/L;
-        // Check if we are in the region where the gust is active
-        if (x_gust > 0 && x_gust < n) {
-            
-            /*--- Calculate the specified gust ---*/
-            switch (Gust_Type) {
-                    
-                case TOP_HAT:
-                    gust = gust_amp;
-                    break;
-                    
-                case SINE:
-                    gust = gust_amp*(sin(2*PI_NUMBER*x_gust));
-                    du_dx = gust_amp*2*PI_NUMBER*(cos(2*PI_NUMBER*x_gust))/L;
-                    du_dt = gust_amp*2*PI_NUMBER*(cos(2*PI_NUMBER*x_gust))*(-Uinf)/L;
-                    
-                    break;
-            }
-            
-            smx = U_i[0]*(du_dt+(U_i[1]/U_i[0]+gust*du_dx));
-            smy = 0;
-            se = U_i[1]/U_i[0]*smx + U_i[2]/U_i[0]*smy;
-        }
-    }
+    /*--- Primitive variables at point i ---*/
+	u = V_i[1];
+    v = V_i[2];
+    p = V_i[nDim+1];
+	rho = V_i[nDim+2];
+    
+    /*--- Source terms ---*/
+    smx = rho*(du_gust_dt + (u+u_gust)*du_gust_dx + (v+v_gust)*du_gust_dy);
+    smy = rho*(dv_gust_dt + (u+u_gust)*dv_gust_dx + (v+v_gust)*dv_gust_dy);
+    se = u*smx + v*smy + p*(du_gust_dx + dv_gust_dy);
     
     if (nDim == 2) {
 		val_residual[0] = 0.0;
@@ -2507,7 +2469,7 @@ void CSourceWindGust::ComputeResidual(double *val_residual, double **val_Jacobia
 		val_residual[2] = smy*Volume;
 		val_residual[3] = se*Volume;
 	} else {
-        cout << "ERROR: You should only be here in two dimensions" << endl;
+        cout << "ERROR: You should only be in the gust source term in two dimensions" << endl;
         cout << "Press any key to exit..." << endl;
         cin.get();
 #ifdef NO_MPI
@@ -2519,14 +2481,10 @@ void CSourceWindGust::ComputeResidual(double *val_residual, double **val_Jacobia
 
 	}
     
+    /*--- For now the source term Jacobian is just set to zero ---*/
     
-
-    /*--- Need to put the actual wind source terms in here ---*/
-    
-    unsigned short iDim, iVar, jVar;
-	double Omega[3] = {0,0,0}, Momentum[3] = {0,0,0};
+    unsigned short iVar, jVar;
     bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-    
     
     /*--- Calculate the source term Jacobian ---*/
     
@@ -2534,19 +2492,7 @@ void CSourceWindGust::ComputeResidual(double *val_residual, double **val_Jacobia
         for (iVar = 0; iVar < nVar; iVar++)
             for (jVar = 0; jVar < nVar; jVar++)
                 val_Jacobian_i[iVar][jVar] = 0.0;
-        if (nDim == 2) {
-            val_Jacobian_i[1][2] = -Omega[2]*Volume;
-            val_Jacobian_i[2][1] =  Omega[2]*Volume;
-        } else {
-            val_Jacobian_i[1][2] = -Omega[2]*Volume;
-            val_Jacobian_i[1][3] =  Omega[1]*Volume;
-            val_Jacobian_i[2][1] =  Omega[2]*Volume;
-            val_Jacobian_i[2][3] = -Omega[0]*Volume;
-            val_Jacobian_i[3][1] = -Omega[1]*Volume;
-            val_Jacobian_i[3][2] =  Omega[0]*Volume;
-        }
     }
-    
 }
 
 

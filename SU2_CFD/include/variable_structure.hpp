@@ -489,6 +489,30 @@ public:
 	 */
 	virtual void SetMagneticField(double* val_B);
 
+       /*!
+	 * \brief Get the value of the wind gust
+	 * \param[out] Value of the wind gust
+	 */
+	virtual double* GetWindGust();
+    
+	/*!
+	 * \brief Set the value of the wind gust
+	 * \param[in] Value of the wind gust
+	 */
+	virtual void SetWindGust(double* val_WindGust);
+    
+    /*!
+	 * \brief Get the value of the derivatives of the wind gust
+	 * \param[out] Value of the derivatives of the wind gust
+	 */
+	virtual double* GetWindGustDer();
+    
+	/*!
+	 * \brief Set the value of the derivatives of the wind gust
+	 * \param[in] Value of the derivatives of the wind gust
+	 */
+	virtual void SetWindGustDer(double* val_WindGust);
+    
 	/*!
 	 * \brief Set the value of the time step.
 	 * \param[in] val_delta_time - Value of the time step.
@@ -1741,6 +1765,8 @@ protected:
 	double *TS_Source;		/*!< \brief Time spectral source term. */
 	double Precond_Beta;	/*!< \brief Low Mach number preconditioner value, Beta. */
 	double *B_Field;		/*! < \brief Magnetic field value */
+    double *WindGust;           /*! < \brief Wind gust value */
+    double *WindGustDer;        /*! < \brief Wind gust derivatives value */
 
 	/*--- Primitive variable definition ---*/
 	double *Primitive;	/*!< \brief Primitive variables (T,vx,vy,vz,P,rho,h,c) in compressible flows. */
@@ -2031,6 +2057,30 @@ public:
 	 * \param[in] Value of the magnetic field
 	 */
 	void SetMagneticField(double* val_B);
+    
+    /*!
+	 * \brief Get the value of the wind gust
+	 * \param[out] Value of the wind gust
+	 */
+	double* GetWindGust();
+    
+	/*!
+	 * \brief Set the value of the wind gust
+	 * \param[in] Value of the wind gust
+	 */
+	void SetWindGust(double* val_WindGust);
+    
+    /*!
+	 * \brief Get the value of the derivatives of the wind gust
+	 * \param[out] Value of the derivatives of the wind gust
+	 */
+	double* GetWindGustDer();
+    
+	/*!
+	 * \brief Set the value of the derivatives of the wind gust
+	 * \param[in] Value of the derivatives of the wind gust
+	 */
+	void SetWindGustDer(double* val_WindGust);
 };
 
 /*! 
