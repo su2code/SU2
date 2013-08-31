@@ -340,6 +340,16 @@ inline void CNumerics::SetGridVel(double *val_gridvel_i, double *val_gridvel_j) 
 	GridVel_j = val_gridvel_j;
 }
 
+inline void CNumerics::SetWindGust(double *val_windgust_i, double *val_windgust_j) {
+	WindGust_i = val_windgust_i;
+	WindGust_j = val_windgust_j;
+}
+
+inline void CNumerics::SetWindGustDer(double *val_windgustder_i, double *val_windgustder_j) {
+	WindGustDer_i = val_windgustder_i;
+	WindGustDer_j = val_windgustder_j;
+}
+
 inline void CNumerics::SetPressure(double val_pressure_i, double val_pressure_j) {
 	Pressure_i = val_pressure_i;
 	Pressure_j = val_pressure_j;

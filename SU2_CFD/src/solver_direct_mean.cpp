@@ -2367,13 +2367,14 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 		/*--- Loop over all points ---*/
 		for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
             
+            /*--- Load the wind gust ---*/
+			numerics->SetWindGust(node[iPoint]->GetWindGust(), node[iPoint]->GetWindGust());
             
-            /*--- Load the coordinates ---*/
-			numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
-
-			/*--- Load the conservative variables ---*/
-			numerics->SetConservative(node[iPoint]->GetSolution(),
-                                      node[iPoint]->GetSolution());
+            /*--- Load the wind gust derivatives ---*/
+			numerics->SetWindGustDer(node[iPoint]->GetWindGustDer(), node[iPoint]->GetWindGustDer());
+            
+            /*--- Load the primitive variables ---*/
+            numerics->SetPrimitive(node[iPoint]->GetPrimVar(), node[iPoint]->GetPrimVar());
             
 			/*--- Load the volume of the dual mesh cell ---*/
 			numerics->SetVolume(geometry->node[iPoint]->GetVolume());

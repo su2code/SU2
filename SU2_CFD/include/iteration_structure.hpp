@@ -229,11 +229,11 @@ void AdjAeroacousticIteration(COutput *output, CIntegration ***integration_conta
 /*!
  * \brief Imposes a gust via the grid velocities.
  * \author S. Padron
- * \param[in] config - Definition of the particular problem.
- * \param[in] geometry - Geometrical definition of the problem.
+ * \param[in] config_container - Definition of the particular problem.
+ * \param[in] geometry_container - Geometrical definition of the problem.
  * \param[in] solver_container - Container vector with all the solutions.
  */
-void FieldVelocityMethod(CConfig *config_container, CGeometry **geometry_container, CSolver **solver_container);
+void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container, CSolver ***solver_container);
 
 /*!
  * \brief Updates the positions and grid velocities for dynamic meshes between physical time steps.
