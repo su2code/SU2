@@ -107,6 +107,14 @@ inline double* CVariable::GetMagneticField() { return 0; }
 
 inline void CVariable::SetMagneticField( double* val_B) {}
 
+inline double* CVariable::GetWindGust() { return 0; }
+
+inline void CVariable::SetWindGust( double* val_WindGust) {}
+
+inline double* CVariable::GetWindGustDer() { return 0; }
+
+inline void CVariable::SetWindGustDer( double* val_WindGustDer) {}
+
 inline double **CVariable::GetGradient(void) { return Gradient; }
 
 inline double *CVariable::GetLimiter(void) { return Limiter; }
@@ -528,6 +536,18 @@ inline bool CEulerVariable::SetPressure(double Gamma) {
 inline void CEulerVariable::SetMagneticField( double* val_B) { B_Field[0] = val_B[0]; B_Field[1] = val_B[1];B_Field[2] = val_B[2];}
 
 inline double* CEulerVariable::GetMagneticField() { return B_Field;}
+
+inline void CEulerVariable::SetWindGust( double* val_WindGust) { 
+        for (unsigned short iDim = 0; iDim < nDim; iDim++)	
+            WindGust[iDim] = val_WindGust[iDim];}
+
+inline double* CEulerVariable::GetWindGust() { return WindGust;}
+
+inline void CEulerVariable::SetWindGustDer( double* val_WindGustDer) {
+        for (unsigned short iDim = 0; iDim < nDim+1; iDim++)
+            WindGustDer[iDim] = val_WindGustDer[iDim];}
+
+inline double* CEulerVariable::GetWindGustDer() { return WindGustDer;}
 
 inline double CNSVariable::GetEddyViscosity(void) { return EddyViscosity; }
 
