@@ -7087,6 +7087,8 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
         
         /*--- Implicit Jacobian contributions due to moving walls ---*/
         if (implicit) {
+          
+          /*--- Jacobian contribution related to the pressure term ---*/
           GridVel2 = 0.0;
           for (iDim = 0; iDim < nDim; iDim++)
             GridVel2 += GridVel[iDim]*GridVel[iDim];
@@ -7097,6 +7099,14 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
           for (jDim = 0; jDim < nDim; jDim++)
             Jacobian_i[nDim+1][jDim+1] = -(Gamma-1.0)*GridVel[jDim]*ProjGridVel;
           Jacobian_i[nDim+1][nDim+1] = (Gamma-1.0)*ProjGridVel;
+          
+          /*--- Add the block to the Global Jacobian structure ---*/
+          Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+          
+          /*--- Now the Jacobian contribution related to the shear stress ---*/
+          for (iVar = 0; iVar < nVar; iVar++)
+            for (jVar = 0; jVar < nVar; jVar++)
+              Jacobian_i[iVar][jVar] = 0.0;
           
           /*--- Compute closest normal neighbor ---*/
           Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
@@ -7146,8 +7156,8 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
             Jacobian_i[nDim+1][3] -= factor*piz;
           }
           
-          /*--- Add this block to the Global Jacobian structure ---*/
-          Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+          /*--- Subtract the block to the Global Jacobian structure ---*/
+          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
         }
         
 			}
