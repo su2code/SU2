@@ -467,7 +467,6 @@ void CWaveSolver::SetNoise_Source(CSolver ***flow_solution, CGeometry **wave_geo
   double rho_0  = wave_config->GetDensity_FreeStreamND();
   double p_0    = wave_config->GetPressure_FreeStreamND();
   double *v_inf = wave_config->GetVelocity_FreeStreamND();
-	bool incompressible = wave_config->GetIncompressible();
 
 	for (iMarker = 0; iMarker < wave_config->GetnMarker_All(); iMarker++) {
     
@@ -495,7 +494,7 @@ void CWaveSolver::SetNoise_Source(CSolver ***flow_solution, CGeometry **wave_geo
         Density  = Solution[0];
         for (iDim = 0; iDim < nDim; iDim++)
           Velocity[iDim] = Solution[iDim+1]/Density;
-        Pressure = flow_solution[MESH_0][FLOW_SOL]->node[iPoint_Donor]->GetPressure(incompressible);
+        Pressure = flow_solution[MESH_0][FLOW_SOL]->node[iPoint_Donor]->GetPressure(COMPRESSIBLE);
 
         /* Get old solution for computing time derivative */
         Solution_Old = flow_solution[MESH_0][FLOW_SOL]->node[iPoint_Donor]->GetSolution_time_n();

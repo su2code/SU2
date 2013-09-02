@@ -241,9 +241,7 @@ int main(int argc, char *argv[]) {
 		/*--- Computation of wall distances for turbulence modeling ---*/
     
 		if ((config_container[iZone]->GetKind_Solver() == RANS) ||
-        (config_container[iZone]->GetKind_Solver() == ADJ_RANS) ||
-        (config_container[iZone]->GetKind_Solver() == FREE_SURFACE_RANS) ||
-        (config_container[iZone]->GetKind_Solver() == ADJ_FREE_SURFACE_RANS))
+        (config_container[iZone]->GetKind_Solver() == ADJ_RANS))
 			geometry_container[iZone][MESH_0]->ComputeWall_Distance(config_container[iZone]);
     
 		/*--- Computation of positive surface area in the z-plane which is used for
@@ -341,12 +339,6 @@ int main(int argc, char *argv[]) {
 												surface_movement, grid_movement, FFDBox);
 				break;
 				
-			case FREE_SURFACE_EULER: case FREE_SURFACE_NAVIER_STOKES: case FREE_SURFACE_RANS:
-				FreeSurfaceIteration(output, integration_container, geometry_container,
-														 solver_container, numerics_container, config_container,
-														 surface_movement, grid_movement, FFDBox);
-				break;
-				
 			case FLUID_STRUCTURE_EULER: case FLUID_STRUCTURE_NAVIER_STOKES:
 				FluidStructureIteration(output, integration_container, geometry_container,
 																solver_container, numerics_container, config_container,
@@ -382,12 +374,6 @@ int main(int argc, char *argv[]) {
 				AdjPlasmaIteration(output, integration_container, geometry_container,
 													 solver_container, numerics_container, config_container,
 													 surface_movement, grid_movement, FFDBox);
-				break;
-				
-			case ADJ_FREE_SURFACE_EULER: case ADJ_FREE_SURFACE_NAVIER_STOKES: case ADJ_FREE_SURFACE_RANS:
-				AdjFreeSurfaceIteration(output, integration_container, geometry_container,
-																solver_container, numerics_container, config_container,
-																surface_movement, grid_movement, FFDBox);
 				break;
         
 			case ADJ_AEROACOUSTIC_EULER:
@@ -425,8 +411,6 @@ int main(int argc, char *argv[]) {
 		switch (config_container[ZONE_0]->GetKind_Solver()) {
 			case EULER: case NAVIER_STOKES: case RANS:
 				StopCalc = integration_container[ZONE_0][FLOW_SOL]->GetConvergence(); break;
-			case FREE_SURFACE_EULER: case FREE_SURFACE_NAVIER_STOKES: case FREE_SURFACE_RANS:
-				StopCalc = integration_container[ZONE_0][FLOW_SOL]->GetConvergence(); break;
 			case PLASMA_EULER: case PLASMA_NAVIER_STOKES:
 				StopCalc = integration_container[ZONE_0][PLASMA_SOL]->GetConvergence(); break;
 			case WAVE_EQUATION:
@@ -434,8 +418,6 @@ int main(int argc, char *argv[]) {
 			case LINEAR_ELASTICITY:
 				StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;
 			case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
-				StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
-			case ADJ_FREE_SURFACE_EULER: case ADJ_FREE_SURFACE_NAVIER_STOKES: case ADJ_FREE_SURFACE_RANS:
 				StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
 			case ADJ_PLASMA_EULER: case ADJ_PLASMA_NAVIER_STOKES:
 				StopCalc = integration_container[ZONE_0][ADJPLASMA_SOL]->GetConvergence(); break;

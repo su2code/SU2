@@ -569,8 +569,7 @@ void CAdjLevelSetSolver::Source_Residual(CGeometry *geometry, CSolver **solver_c
   double epsilon, DeltaDirac, lambda, dRho_dPhi, dMud_Phi, Vol, DiffLevelSet, LevelSet, *MeanFlow, *AdjMeanFlow, **AdjLevelSetGradient, **AdjMeanFlowGradient, Density, Velocity[3], ProjAdj, dFc_dRho[3][4], ProjFlux;
   
 	double Froude2 = config->GetFroude()*config->GetFroude();
-  bool incompressible = config->GetIncompressible();
-
+  
 	for (iVar = 0; iVar < nVar; iVar++)
 		Residual[iVar] = 0;
 
@@ -579,21 +578,21 @@ void CAdjLevelSetSolver::Source_Residual(CGeometry *geometry, CSolver **solver_c
 		
 		Vol = geometry->node[iPoint]->GetVolume();
 
-    /*--- Direct problem quantities ---*/
-		DiffLevelSet = solver_container[LEVELSET_SOL]->node[iPoint]->GetDiffLevelSet();
-		LevelSet = solver_container[LEVELSET_SOL]->node[iPoint]->GetSolution(0);
-		MeanFlow = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
-    Density = solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
-    
-    /*--- Adjoint problem quantities ---*/
-		AdjMeanFlow = solver_container[ADJFLOW_SOL]->node[iPoint]->GetSolution();
-    AdjLevelSetGradient = solver_container[ADJLEVELSET_SOL]->node[iPoint]->GetGradient();
-    AdjMeanFlowGradient = solver_container[ADJFLOW_SOL]->node[iPoint]->GetGradient();
+//    /*--- Direct problem quantities ---*/
+//		DiffLevelSet = solver_container[LEVELSET_SOL]->node[iPoint]->GetDiffLevelSet();
+//		LevelSet = solver_container[LEVELSET_SOL]->node[iPoint]->GetSolution(0);
+//		MeanFlow = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
+//    Density = solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
+//    
+//    /*--- Adjoint problem quantities ---*/
+//		AdjMeanFlow = solver_container[ADJFLOW_SOL]->node[iPoint]->GetSolution();
+//    AdjLevelSetGradient = solver_container[ADJLEVELSET_SOL]->node[iPoint]->GetGradient();
+//    AdjMeanFlowGradient = solver_container[ADJFLOW_SOL]->node[iPoint]->GetGradient();
     
     /*--- Projected adjoint velocity ---*/
     ProjAdj = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
-      Velocity[iDim] = solver_container[FLOW_SOL]->node[iPoint]->GetVelocity(iDim, incompressible);
+      Velocity[iDim] = solver_container[FLOW_SOL]->node[iPoint]->GetVelocity(iDim, INCOMPRESSIBLE);
       ProjAdj += Velocity[iDim]*AdjLevelSetGradient[0][iDim];
     }
     

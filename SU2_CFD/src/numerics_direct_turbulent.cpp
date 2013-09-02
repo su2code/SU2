@@ -29,7 +29,7 @@ CUpwSca_TurbSA::CUpwSca_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
   
 	implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
 	grid_movement  = config->GetGrid_Movement();
-	incompressible = config->GetIncompressible();
+	incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
@@ -117,8 +117,7 @@ CUpwSca_TurbSST::CUpwSca_TurbSST(unsigned short val_nDim, unsigned short val_nVa
   
 	implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
 	grid_movement  = config->GetGrid_Movement();
-	incompressible = config->GetIncompressible();
-  
+	incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
   
@@ -176,7 +175,8 @@ CAvgGrad_TurbSA::CAvgGrad_TurbSA(unsigned short val_nDim, unsigned short val_nVa
 	unsigned short iVar;
   
 	implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-	incompressible = config->GetIncompressible();
+	incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  
   
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
@@ -291,7 +291,8 @@ CAvgGrad_TurbSST::CAvgGrad_TurbSST(unsigned short val_nDim, unsigned short val_n
 	unsigned short iVar;
   
 	implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-	incompressible = config->GetIncompressible();
+	incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  
   
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
@@ -357,7 +358,7 @@ CAvgGradCorrected_TurbSA::CAvgGradCorrected_TurbSA(unsigned short val_nDim, unsi
 	unsigned short iVar;
   
 	implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-	incompressible = config->GetIncompressible();
+	incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
@@ -440,7 +441,7 @@ CAvgGradCorrected_TurbSST::CAvgGradCorrected_TurbSST(unsigned short val_nDim, un
 	unsigned short iVar;
   
 	implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-	incompressible = config->GetIncompressible();
+	incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
@@ -531,7 +532,7 @@ void CAvgGradCorrected_TurbSST::ComputeResidual(double *val_residual, double **J
 CSourcePieceWise_TurbSA::CSourcePieceWise_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
                                                  CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
-	incompressible = config->GetIncompressible();
+	incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 	//transition     = (config->GetKind_Trans_Model() == LM);
   transition = false; // Debugging, -AA
   rotating_frame = config->GetRotating_Frame();
@@ -685,7 +686,7 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
 CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim, unsigned short val_nVar, double *constants,
                                                    CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
-	incompressible = config->GetIncompressible();
+	incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;

@@ -1544,7 +1544,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetLevelSet_Distance(CGeometry *geometry, CConfig *config, bool Initialization, bool WriteLevelSet);
+	virtual void SetFreeSurface_Distance(CGeometry *geometry, CConfig *config, bool Initialization, bool WriteLevelSet);
     
 	/*!
 	 * \brief A virtual member.
@@ -2014,7 +2014,16 @@ public:
      * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
 	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
-    
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iMesh - Index of the mesh in multigrid computations.
+	 */
+	void Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh);
+  
 	/*!
 	 * \brief Compute a pressure sensor switch.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -2544,7 +2553,15 @@ public:
 	 * \param[in] ExtIter - External iteration.
 	 */
 	void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter);
-    
+  
+  
+	/*!
+	 * \brief Recompute distance to the level set 0.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetFreeSurface_Distance(CGeometry *geometry, CConfig *config, bool Initialization, bool WriteLevelSet);
+  
 };
 
 /*!
@@ -2860,45 +2877,6 @@ public:
 	void CalcGradient_LS(double *U_i, double **U_js, unsigned long nNeigh,
                          double *coords_i, double **coords_js, double **grad_U_i, CConfig *config);
     
-	/*!
-	 * \brief A virtual member.
-	 */
-	void CalcPrimVar_Compressible(double *val_Vars, double Gamma, double Gas_Constant, unsigned short numVar, double turb_ke,
-                                  double* Primitive, CConfig *config);
-    
-	/*!
-	 * \brief A virtual member.
-	 */
-    //	void CalcPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf,
-    //			double ArtComp_Factor, double turb_ke, bool freesurface,
-    //			double* LaminarViscosityInc, double* Primitive);
-    
-	/*!
-	 * \brief Calculate the laminar viscosity (used for AD).
-	 * \param[in] val_U_i - Value of the flow variables at point i.
-	 * \param[out] val_laminar_viscosity_i - Value of the laminar viscosity at point i.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void CalcLaminarViscosity(double *val_U_i, double *val_laminar_viscosity_i, CConfig *config);
-    
-	/*!
-	 * \brief Calculate the eddy viscosity (used for AD).
-	 */
-	virtual void CalcEddyViscosity(double *val_FlowVars, double val_laminar_viscosity,
-                                   double *val_TurbVar, double *val_eddy_viscosity);
-    
-    //	/*!
-    //	 * \brief Alternative MUSCL reconstruction of solution. Required for discrete adjoint
-    //	 * \param[in] val_grad_U_i - Solution gradient at i.
-    //	 * \param[in] val_grad_U_j - Solution gradient at j.
-    //	 * \param[in] Vector_i - 1/2 Vector i -> j
-    //	 * \param[in] Vector_j - 1/2 Vector j -> i
-    //	 * \param[in] config - Definition of the particular problem.
-    //	 */
-    //	virtual void MUSCL_Reconstruction(double **val_grad_U_i, double **val_grad_U_j,
-    //			double *Vector_i, double *Vector_j, CConfig *config);
-    
-    
 };
 
 /*!
@@ -3116,17 +3094,7 @@ public:
 	 * \param[in] val_iter - Current external iteration number.
 	 */
 	void GetRestart(CGeometry *geometry, CConfig *config, int val_iter);
-  
-	/*!
-	 * \brief Calculate the laminar viscosity (used for AD).
-	 * \param[in] val_U_i - Value of the flow variables at point i.
-	 * \param[out] val_laminar_viscosity_i - Value of the laminar viscosity at point i.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void CalcEddyViscosity(double *val_FlowVars, double val_laminar_viscosity,
-                           double *val_TurbVar, double *val_eddy_viscosity);
-    
-    
+
     
 };
 
@@ -5157,7 +5125,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetLevelSet_Distance(CGeometry *geometry, CConfig *config, bool Initialization, bool WriteLevelSet);
+	void SetFreeSurface_Distance(CGeometry *geometry, CConfig *config, bool Initialization, bool WriteLevelSet);
     
 	/*!
 	 * \brief Set the total residual adding the term that comes from the Dual Time Strategy.

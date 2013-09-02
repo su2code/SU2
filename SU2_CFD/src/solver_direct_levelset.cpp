@@ -30,7 +30,7 @@ CLevelSetSolver::CLevelSetSolver(CGeometry *geometry, CConfig *config, unsigned 
 	string text_line;
   
 	bool restart = (config->GetRestart() || config->GetRestart_Flow());
-  bool rans = ((config->GetKind_Solver() == FREE_SURFACE_RANS) || (config->GetKind_Solver() == ADJ_FREE_SURFACE_RANS));
+  bool rans = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == ADJ_RANS));
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
@@ -531,7 +531,7 @@ void CLevelSetSolver::Postprocessing(CGeometry *geometry, CSolver **solver_conta
   if (config->GetIntIter() % config->GetFreeSurface_Reevaluation() == 0) reevaluation = true;
   else reevaluation = false;
   
-  SetLevelSet_Distance(geometry, config, reevaluation, output);
+  SetFreeSurface_Distance(geometry, config, reevaluation, output);
     
 }
 
@@ -873,7 +873,7 @@ void CLevelSetSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
 
 }
 
-void CLevelSetSolver::SetLevelSet_Distance(CGeometry *geometry, CConfig *config, bool Initialization, bool WriteLevelSet) {
+void CLevelSetSolver::SetFreeSurface_Distance(CGeometry *geometry, CConfig *config, bool Initialization, bool WriteLevelSet) {
 	double *coord = NULL, dist2, *iCoord = NULL, *jCoord = NULL, *U_i = NULL, *U_j = NULL,
     **Coord_LevelSet = NULL, *xCoord = NULL, *yCoord = NULL, *zCoord = NULL, auxCoordx, auxCoordy,
     auxCoordz, FreeSurface, volume, LevelSetDiff_Squared, LevelSetDiff, dist, Min_dist;

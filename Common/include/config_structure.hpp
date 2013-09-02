@@ -66,8 +66,6 @@ private:
 	Grid_Movement,			/*!< \brief Flag to know if there is grid movement. */
     Wind_Gust,              /*!< \brief Flag to know if there is a wind gust. */
 	Rotating_Frame,			/*!< \brief Flag to know if there is a rotating frame. */
-	FreeSurface,            /*!< \brief Flag to know if we are solving a freesurface problem. */
-	Incompressible,			/*!< \brief Flag to know if we are using the incompressible formulation. */
 	AdiabaticWall,			/*!< \brief Flag to know if we are using the Adiabatic Wall. */
 	IsothermalWall,			/*!< \brief Flag to know if we are using the Isothermal Wall. */
 	CatalyticWall,			/*!< \brief Flag to know if we are using the Catalytic Wall. */
@@ -101,7 +99,7 @@ private:
 	double *DV_Value;		/*!< \brief Previous value of the design variable. */
 	double LimiterCoeff;				/*!< \brief Limiter coefficient */ 
 	double SharpEdgesCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
-	unsigned short Kind_Adjoint;	/*!< \brief Kind of adjoint function. */
+	unsigned short Kind_Regime;	/*!< \brief Kind of adjoint function. */
 	unsigned short Kind_ObjFunc;	/*!< \brief Kind of objective function. */
 	unsigned short Kind_SensSmooth;	/*!< \brief Kind of sensitivity smoothing technique. */
 	unsigned short Continuous_Eqns;	/*!< \brief Which equations to treat continuously (Hybrid adjoint) */
@@ -2009,6 +2007,13 @@ public:
 	 */		
 	unsigned short GetKind_Solver(void);
 
+  /*!
+	 * \brief Governing equations of the flow (it can be different from the run time equation).
+	 * \param[in] val_zone - Zone where the soler is applied.
+	 * \return Governing equation that we are solving.
+	 */
+	unsigned short GetKind_Regime(void);
+  
 	/*! 
 	 * \brief Gas model that we are using.
 	 * \return Gas model that we are using.
@@ -3638,18 +3643,6 @@ public:
 	 * \return the minimum value of Beta for Roe-Turkel preconditioner
 	 */
 	double GetmaxTurkelBeta();
-
-	/*!
-	 * \brief Get information about the compressible or imcompressible solver.
-	 * \return <code>TRUE</code> if it is a incompressible formulation; otherwise <code>FALSE</code>.
-	 */
-	bool GetIncompressible(void);
-
-	/*!
-	 * \brief Get information about the cfree surface solver.
-	 * \return <code>TRUE</code> if it is a free surface formulation; otherwise <code>FALSE</code>.
-	 */
-	bool GetFreeSurface(void);
 
 	/*!
 	 * \brief Get information about the adibatic wall condition
