@@ -3508,9 +3508,9 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
         Total_CFy         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFy();
         Total_CFz         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFz();
         
-//        if (freesurface) {
-//          Total_CFreeSurface = solver_container[val_iZone][FinestMesh][LEVELSET_SOL]->GetTotal_CFreeSurface();
-//        }
+        if (freesurface) {
+          Total_CFreeSurface = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFreeSurface();
+        }
         
         if (isothermal) {
           Total_Q     = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_Q();

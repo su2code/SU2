@@ -918,7 +918,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
           else if (config->GetAxisymmetric() == YES)
             numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceAxisymmetric_Flow(nDim,nVar_Flow, config);
           else if (config->GetGravityForce() == YES)
-            numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_Gravity(nDim, nVar_Flow, config);
+            numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceGravity(nDim, nVar_Flow, config);
           else if (config->GetMagnetic_Force() == YES)
             numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSource_Magnet(nDim, nVar_Flow, config);
           else if (config->GetJouleHeating() == YES)

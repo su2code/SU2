@@ -347,6 +347,8 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
 	bool unsteady = config->GetUnsteady_Simulation();
 	cgsize_t isize[3][1];
   
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  
 	/*--- Create CGNS base file name ---*/
 	base_file = config->GetFlow_FileName();
   

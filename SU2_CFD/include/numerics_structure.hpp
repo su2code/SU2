@@ -4743,15 +4743,15 @@ public:
 };
 
 /*!
- * \class CSourcePieceWise_Gravity
+ * \class CSourceGravity
  * \brief Class for the source term integration of the gravity force.
  * \ingroup SourceDiscr
  * \author F. Palacios
  * \version 2.0.6
  */
-class CSourcePieceWise_Gravity : public CNumerics {
+class CSourceGravity : public CNumerics {
 	double Froude;
-	bool incompressible;
+	bool compressible, incompressible, freesurface;
 
 public:
 
@@ -4760,12 +4760,12 @@ public:
 	 * \param[in] val_nVar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CSourcePieceWise_Gravity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+	CSourceGravity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
 
 	/*! 
 	 * \brief Destructor of the class. 
 	 */
-	~CSourcePieceWise_Gravity(void);
+	~CSourceGravity(void);
 
 	/*! 
 	 * \brief Source term integration for the electrical potential.
@@ -5403,6 +5403,9 @@ public:
  * \version 2.0.6
  */
 class CSourceAxisymmetric_Flow : public CNumerics {
+private:
+	bool compressible, incompressible, freesurface;
+  
 public:
 
 	/*! 
@@ -5425,9 +5428,6 @@ public:
 	 */
 	void ComputeResidual(double *val_residual, double **Jacobian_i, CConfig *config);
 
-
-private: 
-	bool incompressible;
 };
 
 /*!

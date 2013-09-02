@@ -1743,9 +1743,9 @@ protected:
 	*FanFace_Pressure,	/*!< \brief Fan face pressure for each boundary. */
 	*FanFace_Mach,	/*!< \brief Fan face mach number for each boundary. */
 	*FanFace_Area,	/*!< \brief Boundary total area. */
-    *Exhaust_Area,	/*!< \brief Boundary total area. */
-    FanFace_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
-    Exhaust_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
+  *Exhaust_Area,	/*!< \brief Boundary total area. */
+  FanFace_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
+  Exhaust_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
 	FanFace_Pressure_Total,	/*!< \brief Fan face pressure for each boundary. */
 	FanFace_Mach_Total,	/*!< \brief Fan face mach number for each boundary. */
 	InverseDesign;	/*!< \brief Inverse design functional for each boundary. */
@@ -1777,10 +1777,11 @@ protected:
 	Total_CMerit,			/*!< \brief Total rotor Figure of Merit for all the boundaries. */
 	Total_CT,		/*!< \brief Total thrust coefficient for all the boundaries. */
 	Total_CQ,		/*!< \brief Total torque coefficient for all the boundaries. */
-    Total_Q,    /*!< \brief Total heat load for all the boundaries. */
-    Total_Maxq, /*!< \brief Maximum heat flux on all boundaries. */
+  Total_Q,    /*!< \brief Total heat load for all the boundaries. */
+  Total_Maxq, /*!< \brief Maximum heat flux on all boundaries. */
 	Total_CEquivArea,			/*!< \brief Total Equivalent Area coefficient for all the boundaries. */
-	Total_CNearFieldOF;			/*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
+	Total_CNearFieldOF,			/*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
+  Total_CFreeSurface;			/*!< \brief Total Free Surface coefficient for all the boundaries. */
 	double *p1_Und_Lapl,	/*!< \brief Auxiliary variable for the undivided Laplacians. */
 	*p2_Und_Lapl;			/*!< \brief Auxiliary variable for the undivided Laplacians. */
 	double *PrimVar_i,	/*!< \brief Auxiliary vector for storing the solution at point i. */
@@ -2514,7 +2515,19 @@ public:
 	 * \return Value of the pressure coefficient.
 	 */
 	double GetCPressure(unsigned short val_marker, unsigned short val_vertex);
-    
+  
+	/*!
+	 * \brief Provide the total (inviscid + viscous) non dimensional Free Surface coefficient.
+	 * \return Value of the Free Surface coefficient (inviscid + viscous contribution).
+	 */
+	double GetTotal_CFreeSurface(void);
+  
+	/*!
+	 * \brief Set the value of the Free Surface coefficient.
+	 * \param[in] val_cfreesurface - Value of the Free Surface coefficient.
+	 */
+	void SetTotal_CFreeSurface(double val_cfreesurface);
+  
 	/*!
 	 * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -3868,9 +3881,7 @@ public:
 	 *         (inviscid + viscous contribution).
 	 */
 	double GetTotal_Sens_Temp(void);
-    
-    
-    
+  
 	/*!
 	 * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -4991,7 +5002,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
     void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
-    
+  
 	/*!
 	 * \brief Provide the total (inviscid + viscous) non dimensional Free Surface coefficient.
 	 * \return Value of the Free Surface coefficient (inviscid + viscous contribution).
