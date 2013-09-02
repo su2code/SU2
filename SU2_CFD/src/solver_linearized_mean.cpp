@@ -313,7 +313,6 @@ void CLinEulerSolver::Inviscid_DeltaForces(CGeometry *geometry, CSolver **solver
 	double Density_Inf = solver_container[FLOW_SOL]->GetDensity_Inf();
 	double ModVelocity_Inf = solver_container[FLOW_SOL]->GetModVelocity_Inf();
 	double C_p = 1.0/(0.5*Density_Inf*RefAreaCoeff*ModVelocity_Inf*ModVelocity_Inf);
-	bool incompressible = config->GetIncompressible();
 
 	/*-- Inicialization ---*/
 	Total_CDeltaDrag = 0.0; Total_CDeltaLift = 0.0;
@@ -332,11 +331,11 @@ void CLinEulerSolver::Inviscid_DeltaForces(CGeometry *geometry, CSolver **solver
 					
 					/*--- Compute pressure on the boundary ---*/
 					for (iDim = 0; iDim < nDim; iDim++) 
-						Velocity[iDim] = solver_container[FLOW_SOL]->node[Point]->GetVelocity(iDim, config->GetIncompressible());
+						Velocity[iDim] = solver_container[FLOW_SOL]->node[Point]->GetVelocity(iDim, COMPRESSIBLE);
 					
 					double rho = solver_container[FLOW_SOL]->node[Point]->GetSolution(0) + node[Point]->GetSolution(0);
 					double rhoE = solver_container[FLOW_SOL]->node[Point]->GetSolution(nVar-1) + node[Point]->GetSolution(nVar-1);
-					double Pressure = solver_container[FLOW_SOL]->node[Point]->GetPressure(incompressible);
+					double Pressure = solver_container[FLOW_SOL]->node[Point]->GetPressure(COMPRESSIBLE);
 					double rhoVel[3];
 					double sqr_vel = 0.0;
 					for (iDim = 0; iDim < nDim; iDim++) {
