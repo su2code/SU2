@@ -192,6 +192,12 @@ public:
 	*U_nM1,		/*!< \brief Vector of conservative variables at time n-1. */
 	*U_nP1;		/*!< \brief Vector of conservative variables at time n+1. */
 	double vel2_inf; /*!< \brief value of the square of freestream speed. */
+    double *WindGust_i,	/*!< \brief Wind gust at point i. */
+	*WindGust_j;			/*!< \brief Wind gust at point j. */
+    double *WindGustDer_i,	/*!< \brief Wind gust derivatives at point i. */
+	*WindGustDer_j;			/*!< \brief Wind gust derivatives at point j. */
+
+
 
 	/*! 
 	 * \brief Constructor of the class.
@@ -616,7 +622,21 @@ public:
 	 */
 	void SetGridVel(double *val_gridvel_i, double *val_gridvel_j);
 
-	/*! 
+    /*!
+	 * \brief Set the wind gust value.
+	 * \param[in] val_windgust_i - Wind gust of the point i.
+	 * \param[in] val_windgust_j - Wind gust of the point j.
+	 */
+	void SetWindGust(double *val_windgust_i, double *val_windgust_j);
+    
+    /*!
+	 * \brief Set the wind gust derivatives values.
+	 * \param[in] val_windgust_i - Wind gust derivatives of the point i.
+	 * \param[in] val_windgust_j - Wind gust derivatives of the point j.
+	 */
+	void SetWindGustDer(double *val_windgustder_i, double *val_windgustder_j);
+    
+    /*!
 	 * \brief Set the value of the pressure.
 	 * \param[in] val_pressure_i - Value of the pressure at point i.
 	 * \param[in] val_pressure_j - Value of the pressure at point j.
@@ -5567,6 +5587,37 @@ public:
 	~CSource_JouleHeating(void);
 };
 
+/*!
+ * \class CSourceWindGust
+ * \brief Class for a source term due to a wind gust.
+ * \ingroup SourceDiscr
+ * \author S. Padrón
+ * \version 2.0.6
+ */
+class CSourceWindGust : public CNumerics {
+public:
+    
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CSourceWindGust(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+    
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CSourceWindGust(void);
+    
+	/*!
+	 * \brief Residual of the wind gust source term.
+	 * \param[out] val_residual - Pointer to the total residual.
+     * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ComputeResidual(double *val_residual, double **val_Jacobian_i, CConfig *config);
+};
 
 /*!
  * \class CSource_Template
