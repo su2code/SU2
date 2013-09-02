@@ -1415,6 +1415,8 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 	bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
+  /*--- Set the location and value of the free-surface ---*/
+  
 	if (freesurface) {
         
 		for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++) {
@@ -1493,14 +1495,14 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
             
 			/*--- Set the MPI communication ---*/
 			solver_container[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
-            
-//      /*--- Set the primitive variables for the level set equation ---*/
-//      solver_container[iMesh][FLOW_SOL]->SetFreeSurface_Distance(geometry[iMesh], config, true, false);
-      
+      solver_container[iMesh][FLOW_SOL]->Set_MPI_Solution_Old(geometry[iMesh], config);
+
 		}
-        
+    
 	}
-      
+  
+  /*--- Set subsonic initial condition for Engine intakes ---*/
+  
   if (config->GetEngine_Intake()) {
     
     /*--- Set initial boundary condition at iteration 0 ---*/
@@ -1583,6 +1585,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
   
 	/*--- If restart solution, then interpolate the flow solution to
      all the multigrid levels, this is important with the dual time strategy ---*/
+  
 	if (restart) {
 		Solution = new double[nVar];
 		for (iMesh = 1; iMesh <= config->GetMGLevels(); iMesh++) {
@@ -1606,6 +1609,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
     
     
 	/*--- The value of the solution for the first iteration of the dual time ---*/
+  
   if (dual_time && (ExtIter == 0 || (restart && ExtIter == config->GetUnst_RestartIter()))) {
     
     /*--- Push back the initial condition to previous solution containers
@@ -1672,13 +1676,13 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 		/*--- Initializate fan face pressure, fan face mach number, and mass flow rate ---*/
 		for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
 			FanFace_MassFlow[iMarker] = 0.0;
-            Exhaust_MassFlow[iMarker] = 0.0;
-            Exhaust_Area[iMarker] = 0.0;
+      Exhaust_MassFlow[iMarker] = 0.0;
+      Exhaust_Area[iMarker] = 0.0;
 			FanFace_Mach[iMarker] = Mach_Inf;
 			FanFace_Pressure[iMarker] = Pressure_Inf;
-            FanFace_Area[iMarker] = 0.0;
+      FanFace_Area[iMarker] = 0.0;
 		}
-        
+    
 		/*--- Inlet/Outlet boundary conditions, using infinity values ---*/
 		Density_Inlet = Density_Inf;		Density_Outlet = Density_Inf;
 		Pressure_Inlet = Pressure_Inf;	Pressure_Outlet = Pressure_Inf;
@@ -1778,13 +1782,12 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 void CEulerSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                      unsigned short iMesh) {
   
-  bool output, reevaluation;
-  
+  bool output = false, reevaluation = false;
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   
-  if (freesurface) {
+  /*--- Compute freesurface objective function and reevalue, if needed ---*/
+  if (freesurface && (iMesh == MESH_0)) {
     
-    /*--- Compute level set function using the distance to the free surface ---*/
     if (config->GetIntIter() == 0) output = true;
     else output = false;
     
@@ -3755,21 +3758,21 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
         Residual[nVar-1] = 0.0;
       }
       if (freesurface) {
-//        /*--- Convection of the level set quatity ---*/
-//        double q_ij = 0.0, Velocity_i[3] = {0.0, 0.0, 0.0}, Velocity_j[3] = {0.0, 0.0, 0.0}, a0 = 0.0, a1 = 0.0;
-//        double LevelSetVar_i = node[iPoint]->GetSolution(nDim+1);
-//        double LevelSetVar_j = node[iPoint]->GetSolution(nDim+1);
-//        
-//        for (iDim = 0; iDim < nDim; iDim++) {
-//          Velocity_i[iDim] = node[iPoint]->GetVelocity(iDim, FREESURFACE);
-//          Velocity_j[iDim] = node[iPoint]->GetVelocity(iDim, FREESURFACE);
-//          q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*UnitNormal[iDim]*Area;
-//        }
-//
-//        a0 = 0.5*(q_ij+fabs(q_ij)); a1 = 0.5*(q_ij-fabs(q_ij));
-//        
-//        Residual[nDim+1] = a0*LevelSetVar_i+a1*LevelSetVar_j;
-//        
+        /*--- Convection of the level set quatity ---*/
+        double q_ij = 0.0, Velocity_i[3] = {0.0, 0.0, 0.0}, Velocity_j[3] = {0.0, 0.0, 0.0}, a0 = 0.0, a1 = 0.0;
+        double LevelSetVar_i = node[iPoint]->GetSolution(nDim+1);
+        double LevelSetVar_j = node[iPoint]->GetSolution(nDim+1);
+        
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Velocity_i[iDim] = node[iPoint]->GetVelocity(iDim, FREESURFACE);
+          Velocity_j[iDim] = node[iPoint]->GetVelocity(iDim, FREESURFACE);
+          q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*UnitNormal[iDim]*Area;
+        }
+
+        a0 = 0.5*(q_ij+fabs(q_ij)); a1 = 0.5*(q_ij-fabs(q_ij));
+        
+        Residual[nDim+1] = a0*LevelSetVar_i+a1*LevelSetVar_j;
+        
       }
 
 			/*--- Adjustment to energy equation due to grid motion ---*/
@@ -4371,7 +4374,6 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         U_inlet[nDim] = node[iPoint]->GetSolution(nDim);
         V_inlet[nDim] = node[iPoint]->GetPrimVar(nDim);
         
-        
         U_inlet[nDim+1] = node[iPoint]->GetSolution(nDim+1);
 
 			}
@@ -4631,14 +4633,12 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
             
 			/*--- Compute the residual using an upwind scheme ---*/
 			conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-//      if (freesurface) Residual[nDim+1] = 0.0;
       
 			LinSysRes.AddBlock(iPoint, Residual);
             
 			/*--- Jacobian contribution for implicit integration ---*/
 			if (implicit) {
 				Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
- //       if (freesurface) Jacobian.DeleteValsRowi(iPoint*nVar+(nDim+1));
       }
       
 			/*--- Roe Turkel preconditioning, set the value of beta ---*/
@@ -6099,14 +6099,9 @@ void CEulerSolver::SetFreeSurface_Distance(CGeometry *geometry, CConfig *config,
       volume = geometry->node[iPoint]->GetVolume();
       LevelSetDiff_Squared = 0.0; LevelSetDiff = 0.0;
       
-//      if ((coord[0] > 1.0) && (coord[0] < 4.0)){
-        LevelSetDiff = (node[iPoint]->GetSolution(nDim+1) - coord[nDim-1]);
-        LevelSetDiff_Squared = LevelSetDiff*LevelSetDiff;
-        FreeSurface += 0.5*LevelSetDiff_Squared*volume;
-//      }
-//      else {
-//        LevelSetDiff = 0.0;
-//      }
+      LevelSetDiff = (node[iPoint]->GetSolution(nDim+1) - coord[nDim-1]);
+      LevelSetDiff_Squared = LevelSetDiff*LevelSetDiff;
+      FreeSurface += 0.5*LevelSetDiff_Squared*volume;
       
       node[iPoint]->SetDiffLevelSet(LevelSetDiff);
       
@@ -6148,10 +6143,7 @@ void CEulerSolver::SetFreeSurface_Distance(CGeometry *geometry, CConfig *config,
     
     /*--- Store the value of the free surface coefficient ---*/
     SetTotal_CFreeSurface(FreeSurface);
-    
-    //    if (config->GetExtIter() < 50) SetTotal_CFreeSurface(FreeSurface);
-    //    else { if ( FreeSurface < GetTotal_CFreeSurface() ) SetTotal_CFreeSurface(FreeSurface); }
-    
+        
     delete [] xCoord;
     delete [] yCoord;
     if (nDim == 3) delete [] zCoord;

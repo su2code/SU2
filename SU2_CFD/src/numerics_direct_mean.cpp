@@ -1001,49 +1001,49 @@ void CUpwRoeArtComp_Flow_FreeSurface::ComputeResidual(double *val_residual, doub
 		}
 	}
   
-//  /*--- Free surface contribution ---*/
-//	double a0, a1; //, dqij_dvi[3], dqij_dvj[3], dabsqij_dvi[3], dabsqij_dvj[3], da0_dvi[3], da0_dvj[3], da1_dvi[3], da1_dvj[3];
-//  
-//  a0 = 0.5*(ProjVelocity+fabs(ProjVelocity)); a1 = 0.5*(ProjVelocity-fabs(ProjVelocity));
-//  
-//	val_residual[nDim+1] = a0*U_i[nDim+1]+a1*U_j[nDim+1];
-//  
-//	if (implicit) {
-//		val_Jacobian_i[nVar-1][nVar-1] = a0;
-//		val_Jacobian_j[nVar-1][nVar-1] = a1;
-//    
-//    //    for (iDim = 0; iDim < nDim; iDim++) {
-//    //      dqij_dvi[iDim] = 0.5 * Normal[iDim]/V_i[0];
-//    //      dqij_dvj[iDim] = 0.5 * Normal[iDim]/V_j[0];
-//    //      if ( q_ij >= 0.0 ) {
-//    //        dabsqij_dvi[iDim] = dqij_dvi[iDim];
-//    //        dabsqij_dvj[iDim] = dqij_dvj[iDim];
-//    //      }
-//    //      else {
-//    //        dabsqij_dvi[iDim] = -dqij_dvi[iDim];
-//    //        dabsqij_dvj[iDim] = -dqij_dvj[iDim];
-//    //      }
-//    //      da0_dvi[iDim] = 0.5 * (dqij_dvi[iDim] + dabsqij_dvi[iDim]);
-//    //      da1_dvi[iDim] = 0.5 * (dqij_dvi[iDim] - dabsqij_dvi[iDim]);
-//    //
-//    //      da0_dvj[iDim] = 0.5 * (dqij_dvj[iDim] + dabsqij_dvj[iDim]);
-//    //      da1_dvj[iDim] = 0.5 * (dqij_dvj[iDim] - dabsqij_dvj[iDim]);
-//    //    }
-//    //
-//    //    for (iDim = 0; iDim < nDim+1; iDim++) {
-//    //      for (jDim = 0; jDim < nDim+1; jDim++) {
-//    //        val_JacobianMeanFlow_i[iDim][jDim] = 0.0;
-//    //        val_JacobianMeanFlow_j[iDim][jDim] = 0.0;
-//    //      }
-//    //    }
-//    //
-//    //    val_JacobianMeanFlow_i[0][0] = 0.0; val_JacobianMeanFlow_j[0][0] = 0.0;
-//    //    for (iDim = 0; iDim < nDim; iDim++) {
-//    //      val_JacobianMeanFlow_i[0][iDim+1] = da0_dvi[iDim]*LevelSetVar_i[0]+da1_dvi[iDim]*LevelSetVar_j[0];
-//    //      val_JacobianMeanFlow_j[0][iDim+1] = da0_dvj[iDim]*LevelSetVar_i[0]+da1_dvj[iDim]*LevelSetVar_j[0];
-//    //    }
-//    
-//  }
+  /*--- Free surface contribution ---*/
+	double a0, a1; //, dqij_dvi[3], dqij_dvj[3], dabsqij_dvi[3], dabsqij_dvj[3], da0_dvi[3], da0_dvj[3], da1_dvi[3], da1_dvj[3];
+  
+  a0 = 0.5*(ProjVelocity+fabs(ProjVelocity)); a1 = 0.5*(ProjVelocity-fabs(ProjVelocity));
+  
+	val_residual[nDim+1] = a0*U_i[nDim+1]+a1*U_j[nDim+1];
+  
+	if (implicit) {
+		val_Jacobian_i[nVar-1][nVar-1] = a0;
+		val_Jacobian_j[nVar-1][nVar-1] = a1;
+    
+    //    for (iDim = 0; iDim < nDim; iDim++) {
+    //      dqij_dvi[iDim] = 0.5 * Normal[iDim]/V_i[0];
+    //      dqij_dvj[iDim] = 0.5 * Normal[iDim]/V_j[0];
+    //      if ( q_ij >= 0.0 ) {
+    //        dabsqij_dvi[iDim] = dqij_dvi[iDim];
+    //        dabsqij_dvj[iDim] = dqij_dvj[iDim];
+    //      }
+    //      else {
+    //        dabsqij_dvi[iDim] = -dqij_dvi[iDim];
+    //        dabsqij_dvj[iDim] = -dqij_dvj[iDim];
+    //      }
+    //      da0_dvi[iDim] = 0.5 * (dqij_dvi[iDim] + dabsqij_dvi[iDim]);
+    //      da1_dvi[iDim] = 0.5 * (dqij_dvi[iDim] - dabsqij_dvi[iDim]);
+    //
+    //      da0_dvj[iDim] = 0.5 * (dqij_dvj[iDim] + dabsqij_dvj[iDim]);
+    //      da1_dvj[iDim] = 0.5 * (dqij_dvj[iDim] - dabsqij_dvj[iDim]);
+    //    }
+    //
+    //    for (iDim = 0; iDim < nDim+1; iDim++) {
+    //      for (jDim = 0; jDim < nDim+1; jDim++) {
+    //        val_JacobianMeanFlow_i[iDim][jDim] = 0.0;
+    //        val_JacobianMeanFlow_j[iDim][jDim] = 0.0;
+    //      }
+    //    }
+    //
+    //    val_JacobianMeanFlow_i[0][0] = 0.0; val_JacobianMeanFlow_j[0][0] = 0.0;
+    //    for (iDim = 0; iDim < nDim; iDim++) {
+    //      val_JacobianMeanFlow_i[0][iDim+1] = da0_dvi[iDim]*LevelSetVar_i[0]+da1_dvi[iDim]*LevelSetVar_j[0];
+    //      val_JacobianMeanFlow_j[0][iDim+1] = da0_dvj[iDim]*LevelSetVar_i[0]+da1_dvj[iDim]*LevelSetVar_j[0];
+    //    }
+    
+  }
   
 }
 
@@ -2293,21 +2293,29 @@ void CAvgGradCorrectedArtComp_Flow::ComputeResidual(double *val_residual, double
 	}
 }
 
-CSourcePieceWise_Gravity::CSourcePieceWise_Gravity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CSourceGravity::CSourceGravity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
+  compressible = (config->GetKind_Regime() == COMPRESSIBLE);
 	incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  
+  freesurface = (config->GetKind_Regime() == FREESURFACE);
+
 }
 
-CSourcePieceWise_Gravity::~CSourcePieceWise_Gravity(void) { }
+CSourceGravity::~CSourceGravity(void) { }
 
-void CSourcePieceWise_Gravity::ComputeResidual(double *val_residual, CConfig *config) {
+void CSourceGravity::ComputeResidual(double *val_residual, CConfig *config) {
 	unsigned short iVar;
   
 	for (iVar = 0; iVar < nVar; iVar++)
 		val_residual[iVar] = 0.0;
   
-	if (incompressible) {
+	if (compressible) {
+    
+		/*--- Evaluate the source term  ---*/
+		val_residual[nDim] = Volume * U_i[0] * STANDART_GRAVITY;
+    
+	}
+	if (incompressible || freesurface) {
     
 		/*--- Compute the Froude number  ---*/
 		Froude = config->GetFroude();
@@ -2316,12 +2324,7 @@ void CSourcePieceWise_Gravity::ComputeResidual(double *val_residual, CConfig *co
 		val_residual[nDim] = Volume * DensityInc_i / (Froude * Froude);
     
 	}
-  else {
-    
-		/*--- Evaluate the source term  ---*/
-		val_residual[nDim] = Volume * U_i[0] * STANDART_GRAVITY;
-    
-	}
+
   
 }
 
@@ -2402,17 +2405,14 @@ void CSourceAxisymmetric_Flow::ComputeResidual(double *val_residual, double **Ja
 	unsigned short iDim;
   
 	bool implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
 	bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  
+  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+
 	if (Coord_i[1] > 0.0) yinv = 1.0/Coord_i[1];
 	else yinv = 0.0;
   
-	if (incompressible) {
-		val_residual[0] = yinv*Volume*U_i[2]*BetaInc2_i;
-		val_residual[1] = yinv*Volume*U_i[1]*U_i[2]/DensityInc_i;
-		val_residual[2] = yinv*Volume*U_i[2]*U_i[2]/DensityInc_i;
-	}
-	else {
+	if (compressible) {
 		sq_vel = 0.0;
 		for (iDim = 0; iDim < nDim; iDim++) {
 			Velocity_i = U_i[iDim+1] / U_i[0];
@@ -2427,6 +2427,12 @@ void CSourceAxisymmetric_Flow::ComputeResidual(double *val_residual, double **Ja
 		val_residual[2] = yinv*Volume*(U_i[2]*U_i[2]/U_i[0]);
 		val_residual[3] = yinv*Volume*Enthalpy_i*U_i[2];
 	}
+	if (incompressible || freesurface) {
+		val_residual[0] = yinv*Volume*U_i[2]*BetaInc2_i;
+		val_residual[1] = yinv*Volume*U_i[1]*U_i[2]/DensityInc_i;
+		val_residual[2] = yinv*Volume*U_i[2]*U_i[2]/DensityInc_i;
+	}
+
   
   if (implicit) {
     Jacobian_i[0][0] = 0;

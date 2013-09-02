@@ -711,11 +711,6 @@ void COutput::SetTecplot_Mesh(CConfig *config, CGeometry *geometry, unsigned sho
         
 	}
     
-    
-#else // Not built with Tecplot binary support
-    
-	cout << "Tecplot binary file requested but SU^2 was built without TecIO support. No file written" << "\n";
-    
 #endif
     
 }
@@ -1022,11 +1017,6 @@ void COutput::SetTecplot_SurfaceMesh(CConfig *config, CGeometry *geometry, unsig
 		if (err) cout << "Error in closing Tecplot file" << endl;
     
 	}
-  
-  
-#else // Not built with Tecplot binary support
-  
-	cout << "Tecplot binary file requested but SU^2 was built without TecIO support. No file written" << "\n";
   
 #endif
   
@@ -1381,11 +1371,7 @@ void COutput::SetTecplot_Solution(CConfig *config, CGeometry *geometry, unsigned
     
 	err = TECEND112();
 	if (err) cout << "Error in closing Tecplot file" << endl;
-    
-#else // Not built with Tecplot binary support
-    
-	cout << "Tecplot binary file requested but SU^2 was built without Tecio support. No file written" << "\n"; 
-    
+
 #endif
     
 }
@@ -1701,10 +1687,6 @@ void COutput::SetTecplot_SurfaceSolution(CConfig *config, CGeometry *geometry, u
   
 	err = TECEND112();
 	if (err) cout << "Error in closing Tecplot file" << endl;
-  
-#else // Not built with Tecplot binary support
-  
-	cout << "Tecplot binary file requested but SU^2 was built without Tecio support. No file written" << "\n";
   
 #endif
   

@@ -562,6 +562,10 @@ inline double CEulerSolver::GetAllBound_CSideForce_Inv() { return AllBound_CSide
 
 inline double CEulerSolver::GetAllBound_CEff_Inv() { return AllBound_CEff_Inv; }
 
+inline double CEulerSolver::GetTotal_CFreeSurface() { return Total_CFreeSurface; }
+
+inline void CEulerSolver::SetTotal_CFreeSurface(double cfreesurface) { Total_CFreeSurface = cfreesurface; }
+
 inline double CNSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 
 inline double CNSSolver::GetCLift_Visc(unsigned short val_marker) { return CLift_Visc[val_marker]; }

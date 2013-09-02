@@ -981,6 +981,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   int size = MPI::COMM_WORLD.Get_size();
 #endif
   
+#ifdef NO_TECIO
+  if (Output_FileFormat == TECPLOT_BINARY) {
+    cout << "Tecplot binary file requested but SU^2 was built without TecIO support." << "\n";
+    Output_FileFormat = TECPLOT;
+  }
+#endif
+
   /*--- Store the SU2 module that we are executing. ---*/
 	Kind_SU2 = val_software;
   
@@ -1008,11 +1015,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 	/*--- Decide whether we should be writing unsteady solution files. ---*/
 	if (Unsteady_Simulation == STEADY ||
 			Unsteady_Simulation == TIME_STEPPING ||
-			Unsteady_Simulation == TIME_SPECTRAL ||
-			Kind_Regime == FREESURFACE)
-		Wrt_Unsteady = false;
-	else
-		Wrt_Unsteady = true;
+			Unsteady_Simulation == TIME_SPECTRAL) { Wrt_Unsteady = false; }
+	else { Wrt_Unsteady = true; }
 
   /*--- Set grid movement kind to NO_MOVEMENT if not specified, which means
    that we also set the Grid_Movement flag to false. We initialize to the 
