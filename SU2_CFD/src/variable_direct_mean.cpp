@@ -31,6 +31,8 @@ CEulerVariable::CEulerVariable(void) : CVariable() {
 	Primitive = NULL;
 	Gradient_Primitive = NULL;
 	Limiter_Primitive = NULL;
+    WindGust = NULL;
+    WindGustDer = NULL;
   
 }
 
@@ -45,6 +47,7 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
   bool low_fidelity = config->GetLowFidelitySim();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+    bool windgust = config->GetWind_Gust();
   
   /*--- Array initialization ---*/
 	TS_Source = NULL;
@@ -52,6 +55,9 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
 	Primitive = NULL;
 	Gradient_Primitive = NULL;
 	Limiter_Primitive = NULL;
+    WindGust = NULL;
+    WindGustDer = NULL;
+
   
   /*--- Allocate and initialize the primitive variables and gradients ---*/
   if (compressible) { nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
@@ -137,9 +143,15 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
 		for (iVar = 0; iVar < nVar; iVar++) TS_Source[iVar] = 0.0;
 	}
   
-	/*--- Allocate auxiliar vector for magnetic field ---*/
+	/*--- Allocate vector for magnetic field ---*/
 	if (magnet) B_Field = new double [3];
-  
+    
+    /*--- Allocate vector for wind gust and wind gust derivative field ---*/
+	if (windgust) {
+        WindGust = new double [nDim];
+        WindGustDer = new double [nDim+1];
+       }
+    
 	/*--- Allocate auxiliar vector for free surface source term ---*/
 	if (freesurface) Grad_AuxVar = new double [nDim];
   
@@ -171,6 +183,7 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_ndim, un
   bool low_fidelity = config->GetLowFidelitySim();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+    bool windgust = config->GetWind_Gust();
   
   /*--- Array initialization ---*/
 	TS_Source = NULL;
@@ -178,6 +191,8 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_ndim, un
 	Primitive = NULL;
 	Gradient_Primitive = NULL;
   Limiter_Primitive = NULL;
+    WindGust = NULL;
+    WindGustDer = NULL;
   
 	/*--- Allocate residual structures ---*/
 	Res_TruncError = new double [nVar];
@@ -234,8 +249,14 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_ndim, un
 			TS_Source[iVar] = 0.0;
 	}
   
-	/*--- Allocate auxiliar vector for magnetic field ---*/
+	/*--- Allocate vector for magnetic field ---*/
 	if (magnet) B_Field = new double [3];
+    
+    /*--- Allocate vector for wind gust and wind gust derivative field ---*/
+	if (windgust) {
+        WindGust = new double [nDim];
+        WindGustDer = new double [nDim+1];
+    }
   
 	/*--- Allocate auxiliar vector for free surface source term ---*/
 	if (freesurface) Grad_AuxVar = new double [nDim];
@@ -270,7 +291,9 @@ CEulerVariable::~CEulerVariable(void) {
 	if (TS_Source         != NULL) delete [] TS_Source;
   if (Primitive         != NULL) delete [] Primitive;
   if (Limiter_Primitive != NULL) delete [] Limiter_Primitive;
-  
+  if (WindGust           != NULL) delete [] WindGust;
+  if (WindGustDer        != NULL) delete [] WindGustDer;
+
   if (Gradient_Primitive != NULL) {
     for (iVar = 0; iVar < nPrimVarGrad; iVar++)
       delete Gradient_Primitive[iVar];
