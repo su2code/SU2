@@ -414,7 +414,7 @@ void CConfig::SetConfig_Options(unsigned short val_nZone) {
   /* DESCRIPTION: Location at which the gust begins (meters) */
   AddScalarOption("GUST_BEGIN_LOC", Gust_Begin_Loc, 0.0);
   /* DESCRIPTION: Direction of the gust X or Y dir */
-  AddEnumOption("GUST_DIR", Gust_Dir, Gust_Dir_Map, "X_DIR");
+  AddEnumOption("GUST_DIR", Gust_Dir, Gust_Dir_Map, "Y_DIR");
   
 	/*--- Options related to convergence ---*/
 	/* CONFIG_CATEGORY: Convergence*/
