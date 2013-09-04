@@ -242,22 +242,18 @@ bool CAdjEulerVariable::SetPrimVar_Compressible(double SharpEdge_Distance, bool 
   bool check_dens = false, RightVol = true;
   
   double adj_limit = config->GetAdjointLimit();
-  double dist_limit = config->GetLimiterCoeff()*config->GetRefElemLength()*config->GetSharpEdgesCoeff();
-
-  if (SharpEdge_Distance < dist_limit) {
+  
+  check_dens = (fabs(Solution[0]) > adj_limit);
+  
+  /*--- Check that the adjoint solution is bounded ---*/
+  
+  if (check_dens) {
     
-    check_dens = (fabs(Solution[0]) > adj_limit);  // Check adjoint density
+    /*--- Copy the old solution ---*/
+    for (iVar = 0; iVar < nVar; iVar++)
+      Solution[iVar] = Solution_Old[iVar];
     
-    /*--- Check that the solution has a physical meaning ---*/
-    if (check_dens) {
-      
-      /*--- Copy the old solution ---*/
-      for (iVar = 0; iVar < nVar; iVar++)
-        Solution[iVar] = Solution_Old[iVar];
-      
-      RightVol = false;
-      
-    }
+    RightVol = false;
     
   }
   
@@ -270,22 +266,18 @@ bool CAdjEulerVariable::SetPrimVar_Incompressible(double SharpEdge_Distance, boo
   bool check_press = false, RightVol = true;
   
   double adj_limit = config->GetAdjointLimit();
-  double dist_limit = config->GetLimiterCoeff()*config->GetRefElemLength()*config->GetSharpEdgesCoeff();
-
-  if (SharpEdge_Distance < dist_limit) {
+  
+  check_press = (fabs(Solution[0]) > adj_limit);
+  
+  /*--- Check that the adjoint solution is bounded ---*/
+  
+  if (check_press) {
     
-    check_press = (fabs(Solution[0]) > adj_limit); // Check adjoint pressure
+    /*--- Copy the old solution ---*/
+    for (iVar = 0; iVar < nVar; iVar++)
+      Solution[iVar] = Solution_Old[iVar];
     
-    /*--- Check that the solution has a physical meaning ---*/
-    if (check_press) {
-      
-      /*--- Copy the old solution ---*/
-      for (iVar = 0; iVar < nVar; iVar++)
-        Solution[iVar] = Solution_Old[iVar];
-      
-      RightVol = false;
-      
-    }
+    RightVol = false;
     
   }
   
