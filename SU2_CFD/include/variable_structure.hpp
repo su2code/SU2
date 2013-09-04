@@ -776,7 +776,7 @@ public:
 	 * \brief A virtual member.
 	 * \return Value of the flow pressure.
 	 */		
-	virtual double GetPressure(bool val_incomp);
+	virtual double GetPressure(unsigned short val_incomp);
 
 	/*!
 	 * \brief A virtual member.
@@ -859,7 +859,7 @@ public:
 	 * \param[in] val_dim - Index of the dimension.
 	 * \return Value of the velocity for the dimension <i>val_dim</i>.
 	 */		
-	virtual double GetVelocity(unsigned short val_dim, bool val_incomp);
+	virtual double GetVelocity(unsigned short val_dim, unsigned short val_incomp);
 
 	/*!
 	 * \brief A virtual member.
@@ -869,21 +869,9 @@ public:
 
 	/*!
 	 * \brief A virtual member.
-	 * \return Pressure of Fluid val_species
-	 */	
-	virtual double GetPressure(unsigned short val_species);
-
-	/*!
-	 * \brief A virtual member.
 	 * \return Norm 2 of the velocity vector of Fluid val_species.
 	 */	
 	virtual double GetVelocity2(unsigned short val_species);
-
-	/*!
-	 * \brief A virtual member.
-	 * \return val_dim component of velocity vector of Fluid val_species.
-	 */	
-	virtual double GetVelocity(unsigned short val_dim, unsigned short val_species);
 
 	/*!
 	 * \brief A virtual member.
@@ -1003,6 +991,11 @@ public:
 	 */
 	virtual bool SetPrimVar_Incompressible(double SharpEdge_Distance, bool check, CConfig *config);
   
+  /*!
+	 * \brief A virtual member.
+	 */
+	virtual bool SetPrimVar_FreeSurface(double SharpEdge_Distance, bool check, CConfig *config);
+  
 	/*!
 	 * \brief A virtual member.
 	 */		
@@ -1011,12 +1004,22 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 */		
-	virtual bool SetPrimVar_Incompressible(double Density_Inf, double levelset, CConfig *config);
+	virtual bool SetPrimVar_Incompressible(double Density_Inf, CConfig *config);
+  
+  /*!
+	 * \brief A virtual member.
+	 */
+	virtual bool SetPrimVar_FreeSurface(double Density_Inf, CConfig *config);
 	
 	/*!
 	 * \brief A virtual member.
 	 */		
-	virtual bool SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double turb_ke, double levelset, CConfig *config);
+	virtual bool SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double turb_ke, CConfig *config);
+  
+  /*!
+	 * \brief A virtual member.
+	 */
+	virtual bool SetPrimVar_FreeSurface(double Density_Inf, double Viscosity_Inf, double turb_ke, CConfig *config);
 	
 	/*!
 	 * \brief A virtual member.
@@ -1163,7 +1166,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] val_velocity - Pointer to the velocity.
 	 */		
-	virtual void SetVelocity(double *val_velocity, bool val_incomp);
+	virtual void SetVelocity(double *val_velocity, unsigned short val_incomp);
 
 	/*!
 	 * \brief A virtual member.
@@ -1189,14 +1192,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] val_velocity - Pointer to the velocity.
 	 */		
-	virtual void SetVelocity_Old(double *val_velocity, bool val_incomp);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_velocity - Pointer to the velocity.
-	 * \param[in] iSpecies - Index of the species to set the velocity.
-	 */
-	virtual void SetVelocity_Old(double *val_velocity, unsigned short iSpecies);
+	virtual void SetVelocity_Old(double *val_velocity, unsigned short val_incomp);
 
 	/*!
 	 * \brief A virtual member.
@@ -1889,7 +1885,12 @@ public:
 	/*!
 	 * \brief Set all the primitive variables for incompressible flows.
 	 */
-	bool SetPrimVar_Incompressible(double Density_Inf, double levelset, CConfig *config);
+	bool SetPrimVar_Incompressible(double Density_Inf, CConfig *config);
+  
+  /*!
+	 * \brief Set all the primitive variables for incompressible flows.
+	 */
+	bool SetPrimVar_FreeSurface(double Density_Inf, CConfig *config);
 	
 	/*!
 	 * \brief Get the primitive variables.
@@ -1945,7 +1946,7 @@ public:
 	 * \brief Get the flow pressure.
 	 * \return Value of the flow pressure.
 	 */
-	double GetPressure(bool val_incomp);
+	double GetPressure(unsigned short val_incomp);
 	/*!
 	 * \brief Get the speed of the sound.
 	 * \return Value of speed of the sound.
@@ -1993,7 +1994,7 @@ public:
 	 * \param[in] val_dim - Index of the dimension.
 	 * \return Value of the velocity for the dimension <i>val_dim</i>.
 	 */
-	double GetVelocity(unsigned short val_dim, bool val_incomp);
+	double GetVelocity(unsigned short val_dim, unsigned short val_incomp);
 
 	/*!
 	 * \brief Get the projected velocity in a unitary vector direction (compressible solver).
@@ -2013,13 +2014,13 @@ public:
 	 * \brief Set the velocity vector from the solution.
 	 * \param[in] val_velocity - Pointer to the velocity.
 	 */	
-	void SetVelocity(double *val_velocity, bool val_incomp);
+	void SetVelocity(double *val_velocity, unsigned short val_incomp);
 
 	/*!
 	 * \brief Set the velocity vector from the old solution.
 	 * \param[in] val_velocity - Pointer to the velocity.
 	 */		
-	void SetVelocity_Old(double *val_velocity, bool val_incomp);
+	void SetVelocity_Old(double *val_velocity, unsigned short val_incomp);
 
 	/*!
 	 * \brief Set the time spectral source term.
@@ -2225,7 +2226,12 @@ public:
 	/*!
 	 * \brief Set all the primitive variables for incompressible flows
 	 */
-	bool SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double turb_ke, double levelset, CConfig *config);
+	bool SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double turb_ke, CConfig *config);
+  
+  /*!
+	 * \brief Set all the primitive variables for incompressible flows
+	 */
+	bool SetPrimVar_FreeSurface(double Density_Inf, double Viscosity_Inf, double turb_ke, CConfig *config);
 };
 
 /*! 
@@ -2528,6 +2534,11 @@ public:
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
 	bool SetPrimVar_Incompressible(double SharpEdge_Distance, bool check, CConfig *config);
+  
+  /*!
+	 * \brief Set all the primitive variables for compressible flows.
+	 */
+	bool SetPrimVar_FreeSurface(double SharpEdge_Distance, bool check, CConfig *config);
   
 	/*!
 	 * \brief Set the value of the adjoint velocity.
@@ -3191,14 +3202,14 @@ public:
 	 * \return Value of the laminar viscosity of the flow.
 	 */
 	double GetEddyViscosity(unsigned short iSpecies);
-    
+  
 	/*!
 	 * \brief Set the velocity vector from the old solution.
 	 * \param[in] val_velocity - Pointer to the velocity.
 	 * \param[in] iSpecies - Index of the species to set the old velocity.
 	 */
 	void SetVelocity_Old(double *val_velocity, unsigned short iSpecies);
-
+  
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] Temperature_Wall - Value of the Temperature at the wall

@@ -175,26 +175,23 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
       }
     }
     
-    if ((Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    if (config->GetKind_Regime() == FREESURFACE) {
       Tecplot_File << ",\"Density\"";
     }
     
-    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
-        (Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       Tecplot_File << ",\"Pressure\",\"Pressure_Coefficient\",\"Mach\"";
     }
     
-    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
-        (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       Tecplot_File << ", \"Temperature\", \"Laminar_Viscosity\", \"Skin_Friction_Coefficient\", \"Heat_Transfer\", \"Y_Plus\"";
     }
     
-    if ((Kind_Solver == RANS) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    if (Kind_Solver == RANS) {
       Tecplot_File << ", \"Eddy_Viscosity\"";
     }
     
-    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
-        (Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       Tecplot_File << ", \"Sharp_Edge_Dist\"";
     }
     
@@ -227,9 +224,7 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
         Tecplot_File << ",\"ElectricField_" << iDim+1 << "\"";
     }
     
-    if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) ||
-        (Kind_Solver == ADJ_FREE_SURFACE_EULER) || (Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
-        (Kind_Solver == ADJ_FREE_SURFACE_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
+    if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
       Tecplot_File << ", \"Surface_Sensitivity\", \"Solution_Sensor\"";
     }
     
@@ -716,11 +711,6 @@ void COutput::SetTecplot_Mesh(CConfig *config, CGeometry *geometry, unsigned sho
         
 	}
     
-    
-#else // Not built with Tecplot binary support
-    
-	cout << "Tecplot binary file requested but SU^2 was built without TecIO support. No file written" << "\n";
-    
 #endif
     
 }
@@ -1027,11 +1017,6 @@ void COutput::SetTecplot_SurfaceMesh(CConfig *config, CGeometry *geometry, unsig
 		if (err) cout << "Error in closing Tecplot file" << endl;
     
 	}
-  
-  
-#else // Not built with Tecplot binary support
-  
-	cout << "Tecplot binary file requested but SU^2 was built without TecIO support. No file written" << "\n";
   
 #endif
   
@@ -1386,11 +1371,7 @@ void COutput::SetTecplot_Solution(CConfig *config, CGeometry *geometry, unsigned
     
 	err = TECEND112();
 	if (err) cout << "Error in closing Tecplot file" << endl;
-    
-#else // Not built with Tecplot binary support
-    
-	cout << "Tecplot binary file requested but SU^2 was built without Tecio support. No file written" << "\n"; 
-    
+
 #endif
     
 }
@@ -1707,10 +1688,6 @@ void COutput::SetTecplot_SurfaceSolution(CConfig *config, CGeometry *geometry, u
 	err = TECEND112();
 	if (err) cout << "Error in closing Tecplot file" << endl;
   
-#else // Not built with Tecplot binary support
-  
-	cout << "Tecplot binary file requested but SU^2 was built without Tecio support. No file written" << "\n";
-  
 #endif
   
 }
@@ -1788,30 +1765,27 @@ string AssembleVariableNames(CGeometry *geometry, CConfig *config, unsigned shor
       }
     }
     
-    if ((Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    if (config->GetKind_Regime() == FREESURFACE) {
       variables << "Density ";
       *NVar += 1;
     }
     
-    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
-        (Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       variables << "Pressure Pressure_Coefficient Mach ";
       *NVar += 3;
     }
     
-    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
-        (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       variables << "Temperature Laminar_Viscosity Skin_Friction_Coefficient Heat_Transfer Y_Plus ";
       *NVar += 5;
     }
     
-    if ((Kind_Solver == RANS) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    if (Kind_Solver == RANS) {
       variables << "Eddy_Viscosity ";
       *NVar += 1;
     }
     
-    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
-        (Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       variables << "Sharp_Edge_Dist ";
       *NVar += 1;
     }
@@ -1858,9 +1832,7 @@ string AssembleVariableNames(CGeometry *geometry, CConfig *config, unsigned shor
       }
     }
     
-    if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) ||
-        (Kind_Solver == ADJ_FREE_SURFACE_EULER) || (Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
-        (Kind_Solver == ADJ_FREE_SURFACE_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
+    if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
       variables << "Surface_Sensitivity Solution_Sensor ";
       *NVar += 2;
     }

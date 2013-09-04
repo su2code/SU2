@@ -207,7 +207,7 @@ inline double CVariable::GetEnthalpy(void) { return 0; }
 
 inline double CVariable::GetEnthalpy(unsigned short iSpecies) { return 0; }
 
-inline double CVariable::GetPressure(bool val_incomp) { return 0; }
+inline double CVariable::GetPressure(unsigned short val_incomp) { return 0; }
 
 inline double CVariable::GetDeltaPressure(void) { return 0; }
 
@@ -225,15 +225,11 @@ inline double CVariable::GetTemperature_tr(unsigned short val_iSpecies) { return
 
 inline double CVariable::GetTemperature_vib(unsigned short val_iSpecies) { return 0; }
 
-inline double CVariable::GetVelocity(unsigned short val_dim, bool val_incomp) { return 0; }
+inline double CVariable::GetVelocity(unsigned short val_dim, unsigned short val_incomp) { return 0; }
 
 inline double CVariable::GetVelocity2(void) { return 0; }
 
-inline double CVariable::GetPressure(unsigned short val_species) { return 0;}
-
 inline double CVariable::GetVelocity2(unsigned short val_species) { return 0;}
-
-inline double CVariable::GetVelocity(unsigned short val_dim, unsigned short val_species) { return 0;}
 
 inline double CVariable::GetLaminarViscosity(void) { return 0; }
 
@@ -265,13 +261,19 @@ inline bool CVariable::SetPrimVar_Compressible(double SharpEdge_Distance, bool c
 
 inline bool CVariable::SetPrimVar_Incompressible(double SharpEdge_Distance, bool check, CConfig *config) { return true; }
 
+inline bool CVariable::SetPrimVar_FreeSurface(double SharpEdge_Distance, bool check, CConfig *config) { return true; }
+
 inline bool CVariable::SetPrimVar_Compressible(CConfig *config) { return true; }
 
 inline bool CVariable::SetPrimVar_Compressible(double turb_ke, CConfig *config) { return true; }
 
-inline bool CVariable::SetPrimVar_Incompressible(double Density_Inf, double levelset, CConfig *config) { return true; }
+inline bool CVariable::SetPrimVar_Incompressible(double Density_Inf, CConfig *config) { return true; }
 
-inline bool CVariable::SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double turb_ke, double levelset, CConfig *config) { return true; }
+inline bool CVariable::SetPrimVar_FreeSurface(double Density_Inf, CConfig *config) { return true; }
+
+inline bool CVariable::SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double turb_ke, CConfig *config) { return true; }
+
+inline bool CVariable::SetPrimVar_FreeSurface(double Density_Inf, double Viscosity_Inf, double turb_ke, CConfig *config) { return true; }
 
 inline double CVariable::GetPrimVar(unsigned short val_var) { return 0; }
 
@@ -325,13 +327,11 @@ inline void CVariable::SetWallTemperature(double* Temperature_Wall) { }
 
 inline void CVariable::SetThermalCoeff(CConfig *config) { }
 
-inline void CVariable::SetVelocity(double *val_velocity, bool val_incomp) { }
+inline void CVariable::SetVelocity(double *val_velocity, unsigned short val_incomp) { }
 
 inline void CVariable::SetVelocity2(void) { }
 
-inline void CVariable::SetVelocity_Old(double *val_velocity, bool val_incomp) { }
-
-inline void CVariable::SetVelocity_Old(double *val_velocity, unsigned short iSpecies) { }
+inline void CVariable::SetVelocity_Old(double *val_velocity, unsigned short val_incomp) { }
 
 inline void CVariable::SetVel_ResTruncError_Zero(unsigned short iSpecies) { }
 
@@ -431,19 +431,21 @@ inline double CEulerVariable::GetEnergy(void) { return Solution[nVar-1]/Solution
 
 inline double CEulerVariable::GetEnthalpy(void) { return Primitive[nDim+3]; }
 
-inline double CEulerVariable::GetPressure(bool val_incomp) { 
-   if (val_incomp) return Solution[0];
-   else return Primitive[nDim+1]; 
+inline double CEulerVariable::GetPressure(unsigned short val_incomp) {
+double pressure;
+   if (val_incomp == COMPRESSIBLE) pressure = Primitive[nDim+1]; 
+   if ((val_incomp == INCOMPRESSIBLE) || (val_incomp == FREESURFACE)) pressure = Solution[0];
+return pressure;
 }
 
 inline double CEulerVariable::GetSoundSpeed(void) { return Primitive[nDim+4]; }
 
 inline double CEulerVariable::GetTemperature(void) { return Primitive[0]; }
 
-inline double CEulerVariable::GetVelocity(unsigned short val_dim, bool val_incomp) {
+inline double CEulerVariable::GetVelocity(unsigned short val_dim, unsigned short val_incomp) {
 double velocity;
-   if (val_incomp) velocity = Solution[val_dim+1]/Primitive[0];
-   else velocity = Solution[val_dim+1]/Solution[0]; 
+   if (val_incomp == COMPRESSIBLE) velocity = Solution[val_dim+1]/Solution[0]; 
+   if ((val_incomp == INCOMPRESSIBLE) || (val_incomp == FREESURFACE)) velocity = Solution[val_dim+1]/Primitive[0];
 return velocity;
 }
 
@@ -481,14 +483,14 @@ inline void CEulerVariable::SetPrimVar(double *val_prim) {
 
 inline double *CEulerVariable::GetPrimVar(void) { return Primitive; }
 
-inline void CEulerVariable::SetVelocity(double *val_velocity, bool val_incomp) {
-	if (val_incomp) {
-		for (unsigned short iDim = 0; iDim < nDim; iDim++) 
-			Solution[iDim+1] = val_velocity[iDim]*Primitive[0]; 
-	}
-	else {
+inline void CEulerVariable::SetVelocity(double *val_velocity, unsigned short val_incomp) {
+	if (val_incomp == COMPRESSIBLE) {
 		for (unsigned short iDim = 0; iDim < nDim; iDim++) 
 			Solution[iDim+1] = val_velocity[iDim]*Solution[0]; 
+	}
+	if ((val_incomp == INCOMPRESSIBLE) || (val_incomp == FREESURFACE)) {
+		for (unsigned short iDim = 0; iDim < nDim; iDim++) 
+			Solution[iDim+1] = val_velocity[iDim]*Primitive[0]; 
 	}
 }
 
@@ -498,14 +500,14 @@ inline void CEulerVariable::SetVelocityInc2(void) { Velocity2 = 0.0; for (unsign
 
 inline void CEulerVariable::SetPressureInc(double val_pressure) { Solution[0] = val_pressure; }
 
-inline void CEulerVariable::SetVelocity_Old(double *val_velocity, bool val_incomp) { 
-	if (val_incomp) {
-		for (unsigned short iDim = 0; iDim < nDim; iDim++)	
-			Solution_Old[iDim+1] = val_velocity[iDim]*Primitive[0];
-	}
-	else {
+inline void CEulerVariable::SetVelocity_Old(double *val_velocity, unsigned short val_incomp) { 
+	if (val_incomp == COMPRESSIBLE) {
 		for (unsigned short iDim = 0; iDim < nDim; iDim++)	
 			Solution_Old[iDim+1] = val_velocity[iDim]*Solution[0]; 
+	}
+	if ((val_incomp == INCOMPRESSIBLE) || (val_incomp == FREESURFACE)) {
+		for (unsigned short iDim = 0; iDim < nDim; iDim++)	
+			Solution_Old[iDim+1] = val_velocity[iDim]*Primitive[0];
 	}
 }
 

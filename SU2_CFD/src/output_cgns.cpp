@@ -184,6 +184,10 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
 	bool unsteady = config->GetUnsteady_Simulation();
 	cgsize_t isize[3][1], elem_start, elem_end, N;
   
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+	bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+	bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+  
 	/*--- Create CGNS base file name ---*/
 	base_file = config->GetFlow_FileName();
   
@@ -238,7 +242,7 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
 		/*--- Write governing equations to CGNS file ---*/
 		cgns_err = cg_goto(cgns_file,cgns_base,"FlowEquationSet_t",1,"end");
 		if (cgns_err) cg_error_print();
-		if (!config->GetIncompressible()) {
+		if (compressible) {
 			switch (config->GetKind_Solver()) {
         case EULER:
           cgns_err = cg_governing_write(Euler); break;
@@ -342,6 +346,8 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
 	stringstream name, results_file;
 	bool unsteady = config->GetUnsteady_Simulation();
 	cgsize_t isize[3][1];
+  
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   
 	/*--- Create CGNS base file name ---*/
 	base_file = config->GetFlow_FileName();
@@ -482,7 +488,7 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
 		}
 	}
   
-	if (!config->GetIncompressible()) {
+	if (compressible) {
 		switch (config->GetKind_Solver()) {
         
         /*--- Write pressure and Mach data to CGNS file ---*/
