@@ -1064,6 +1064,10 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
     // Simulation of Airfoil Gust Responses Using Prescribed Velocities.
     // In this routine the gust derivatives needed for the source term are calculated. The source term itself is implemented in the class CSourceWindGust
     
+    int rank = MASTER_NODE;
+#ifndef NO_MPI
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
     
     /*--- Gust Parameters from config ---*/
     unsigned short Gust_Type = config_container->GetGust_Type();
@@ -1146,6 +1150,22 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
                         dgust_dy = 0;
                         dgust_dt = gust_amp*2*PI_NUMBER*(cos(2*PI_NUMBER*x_gust))*(-Uinf)/L;
                         break;
+                            
+                    case ONE_M_COSINE:
+                        gust = 0.5*gust_amp*(1-cos(2*PI_NUMBER*x_gust));
+                        
+                        // Gust derivatives
+                        dgust_dx = 0.5*gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))/L;
+                        dgust_dy = 0;
+                        dgust_dt = 0.5*gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))*(-Uinf)/L;
+                        break;
+                            
+                    case NONE: default:
+                        
+                        /*--- There is no wind gust specified. ---*/
+                        if (rank == MASTER_NODE)
+                            cout << "No wind gust specified." << endl;
+
                     }
                 }
             }
