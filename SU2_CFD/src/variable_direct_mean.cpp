@@ -394,11 +394,12 @@ bool CEulerVariable::SetPrimVar_Incompressible(double Density_Inf, CConfig *conf
   
 }
 
-bool CEulerVariable::SetPrimVar_FreeSurface(double Density_Inf, double levelset, CConfig *config) {
+bool CEulerVariable::SetPrimVar_FreeSurface(double Density_Inf, CConfig *config) {
 	unsigned short iDim;
   double epsilon, Heaviside, lambda, DensityInc;
   
   double ArtComp_Factor = config->GetArtComp_Factor();
+  double levelset = GetSolution(nDim+1);
   
   /*--- Set the value of the density ---*/
   epsilon = config->GetFreeSurface_Thickness();
@@ -572,12 +573,13 @@ bool CNSVariable::SetPrimVar_Incompressible(double Density_Inf, double Viscosity
   
 }
 
-bool CNSVariable::SetPrimVar_FreeSurface(double Density_Inf, double Viscosity_Inf, double turb_ke, double levelset, CConfig *config) {
+bool CNSVariable::SetPrimVar_FreeSurface(double Density_Inf, double Viscosity_Inf, double turb_ke, CConfig *config) {
 	unsigned short iDim;
   double epsilon, Heaviside, lambda, DensityInc, ViscosityInc;
   
 	double ArtComp_Factor = config->GetArtComp_Factor();
-  
+  double levelset = GetSolution(nDim+1);
+
   /*--- Set the value of the density and viscosity ---*/
   epsilon = config->GetFreeSurface_Thickness();
   Heaviside = 0.0;
