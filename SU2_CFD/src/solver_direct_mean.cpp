@@ -1396,8 +1396,8 @@ void CEulerSolver::Set_MPI_PrimVar_Gradient(CGeometry *geometry, CConfig *config
 }
 
 void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
-	unsigned long iPoint, Point_Fine;
-	unsigned short iMesh, iChildren, iVar, iDim;
+	unsigned long iPoint, Point_Fine, iVertex, Point_Coarse;
+	unsigned short iMesh, iChildren, iVar, iDim, iMarker;
 	double Density, Pressure, yFreeSurface, PressFreeSurface, Froude, yCoord, Velx, Vely, Velz, RhoVelx, RhoVely, RhoVelz, XCoord, YCoord, ZCoord, DensityInc, ViscosityInc, Heaviside, LevelSet, lambda, DensityFreeSurface, Area_Children, Area_Parent, LevelSet_Fine, epsilon, *Solution_Fine, *Solution; //, Factor_nu, nu_tilde;
 
   unsigned short nDim = geometry[MESH_0]->GetnDim();
@@ -1611,8 +1611,32 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 				solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(Solution);
 			}
 			solver_container[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
-		}
+    }
 		delete [] Solution;
+    
+    /*--- Interpolate the turblence variable also, if needed ---*/
+    if (rans) {
+      unsigned short nVar_Turb = solver_container[MESH_0][TURB_SOL]->GetnVar();
+      Solution = new double[nVar_Turb];
+      for (iMesh = 1; iMesh <= config->GetMGLevels(); iMesh++) {
+        for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+          Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
+          for (iVar = 0; iVar < nVar_Turb; iVar++) Solution[iVar] = 0.0;
+          for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
+            Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
+            Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
+            Solution_Fine = solver_container[iMesh-1][TURB_SOL]->node[Point_Fine]->GetSolution();
+            for (iVar = 0; iVar < nVar_Turb; iVar++) {
+              Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
+            }
+          }
+          solver_container[iMesh][TURB_SOL]->node[iPoint]->SetSolution(Solution);
+        }
+        solver_container[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver_container[iMesh], config, iMesh);
+        solver_container[iMesh][TURB_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+      }
+      delete [] Solution;
+    }
 	}
     
     
@@ -1637,7 +1661,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
       
       /*--- Load an additional restart file for a 2nd-order restart ---*/
       solver_container[MESH_0][FLOW_SOL]->GetRestart(geometry[MESH_0], config, int(config->GetUnst_RestartIter()-1));
-      solver_container[MESH_0][TURB_SOL]->GetRestart(geometry[MESH_0], config, int(config->GetUnst_RestartIter()-1));
+      solver_container[MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
       
       /*--- Interpolate this second restart down onto all multigrid levels ---*/
       Solution = new double[nVar];
@@ -1656,8 +1680,40 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
           solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(Solution);
         }
         solver_container[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+      
       }
       delete [] Solution;
+      
+      if (rans) {
+        
+        /*--- Load an additional restart file for the turbulence model ---*/
+        solver_container[MESH_0][TURB_SOL]->GetRestart(geometry[MESH_0], config, int(config->GetUnst_RestartIter()-1));
+        solver_container[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver_container[MESH_0], config, MESH_0);
+        solver_container[MESH_0][TURB_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
+        
+        /*--- Interpolate the turblence variable down to the coarse levels ---*/
+          unsigned short nVar_Turb = solver_container[MESH_0][TURB_SOL]->GetnVar();
+          Solution = new double[nVar_Turb];
+          for (iMesh = 1; iMesh <= config->GetMGLevels(); iMesh++) {
+            for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+              Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
+              for (iVar = 0; iVar < nVar_Turb; iVar++) Solution[iVar] = 0.0;
+              for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
+                Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
+                Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
+                Solution_Fine = solver_container[iMesh-1][TURB_SOL]->node[Point_Fine]->GetSolution();
+                for (iVar = 0; iVar < nVar_Turb; iVar++) {
+                  Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
+                }
+              }
+              solver_container[iMesh][TURB_SOL]->node[iPoint]->SetSolution(Solution);
+            }
+            /*--- Compute the eddy viscosity on this level and perform MPI communication ---*/
+            solver_container[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver_container[iMesh], config, iMesh);
+            solver_container[iMesh][TURB_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+          }
+          delete [] Solution;
+      }
       
       /*--- Push back this new solution to time level N. ---*/
       for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++) {
@@ -5922,6 +5978,9 @@ void CEulerSolver::GetRestart(CGeometry *geometry, CConfig *config, int val_iter
 
 	/*--- Free memory needed for the transformation ---*/
 	delete [] Global2Local;
+  
+  /*--- MPI solution ---*/
+	Set_MPI_Solution(geometry, config);
 
 }
 
