@@ -583,17 +583,6 @@ public:
 	 */
 	void SetEddyViscosity(double val_eddy_viscosity_i, double val_eddy_viscosity_j, unsigned short iSpecies);
 
-	/*!
-	 * \brief Calculate the eddy viscosity (used for AD).
-	 * \param[in] val_U_i - Value of the flow variables at point i.
-	 * \param[out] val_Ut_i - Value of the turbulence variables at point i.
-	 * \param[out] val_laminar_viscosity_i - Value of the laminar viscosity at point i.
-	 * \param[out] val_eddy_viscosity_i - Value of the eddy viscosity at point i.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void CalcEddyViscosity(double *val_U_i, double *val_Ut_i, double val_laminar_viscosity_i,
-			double val_eddy_viscosity_i, CConfig *config);
-
 	/*! 
 	 * \brief Set the value of the distance from the nearest wall.
 	 * \param[in] val_dist_i - Value of of the distance from point i to the nearest wall.
@@ -1665,6 +1654,53 @@ public:
 	~CUpwRoeArtComp_Flow(void);
 
 	/*! 
+	 * \brief Compute the Roe's flux between two nodes i and j.
+	 * \param[out] val_residual - Pointer to the total residual.
+	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
+};
+
+/*!
+ * \class CUpwRoeArtComp_Flow_FreeSurface
+ * \brief Class for solving an approximate Riemann solver of Roe for the incompressible flow equations.
+ * \ingroup ConvDiscr
+ * \author F. Palacios.
+ * \version 2.0.6
+ */
+class CUpwRoeArtComp_Flow_FreeSurface : public CNumerics {
+private:
+	bool implicit;
+	bool gravity;
+	double Froude;
+	double *Diff_U;
+	double *Velocity_i, *Velocity_j, *MeanVelocity;
+	double *Proj_flux_tensor_i, *Proj_flux_tensor_j;
+	double *Lambda, *Epsilon;
+	double **P_Tensor, **invP_Tensor;
+	double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
+	Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, MeanDensity, MeanEnthalpy, MeanSoundSpeed, MeanPressure, MeanBetaInc2,
+	ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel, delta_p, delta_rho, vn;
+	unsigned short iDim, jDim, iVar, jVar, kVar;
+  
+public:
+  
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CUpwRoeArtComp_Flow_FreeSurface(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CUpwRoeArtComp_Flow_FreeSurface(void);
+  
+	/*!
 	 * \brief Compute the Roe's flux between two nodes i and j.
 	 * \param[out] val_residual - Pointer to the total residual.
 	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
@@ -4727,15 +4763,15 @@ public:
 };
 
 /*!
- * \class CSourcePieceWise_Gravity
+ * \class CSourceGravity
  * \brief Class for the source term integration of the gravity force.
  * \ingroup SourceDiscr
  * \author F. Palacios
  * \version 2.0.6
  */
-class CSourcePieceWise_Gravity : public CNumerics {
+class CSourceGravity : public CNumerics {
 	double Froude;
-	bool incompressible;
+	bool compressible, incompressible, freesurface;
 
 public:
 
@@ -4744,12 +4780,12 @@ public:
 	 * \param[in] val_nVar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CSourcePieceWise_Gravity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+	CSourceGravity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
 
 	/*! 
 	 * \brief Destructor of the class. 
 	 */
-	~CSourcePieceWise_Gravity(void);
+	~CSourceGravity(void);
 
 	/*! 
 	 * \brief Source term integration for the electrical potential.
@@ -5387,6 +5423,9 @@ public:
  * \version 2.0.6
  */
 class CSourceAxisymmetric_Flow : public CNumerics {
+private:
+	bool compressible, incompressible, freesurface;
+  
 public:
 
 	/*! 
@@ -5409,9 +5448,6 @@ public:
 	 */
 	void ComputeResidual(double *val_residual, double **Jacobian_i, CConfig *config);
 
-
-private: 
-	bool incompressible;
 };
 
 /*!

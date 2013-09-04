@@ -35,8 +35,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry, CSolver *
 	const bool restart = (config[iZone]->GetRestart() || config[iZone]->GetRestart_Flow());
 	const bool startup_multigrid = (config[iZone]->GetRestart_Flow() && (RunTime_EqSystem == RUNTIME_FLOW_SYS) && (Iteration == 0));
 	const bool direct = ((config[iZone]->GetKind_Solver() == EULER) || (config[iZone]->GetKind_Solver() == NAVIER_STOKES) ||
-                   (config[iZone]->GetKind_Solver() == RANS) || (config[iZone]->GetKind_Solver() == FREE_SURFACE_EULER) ||
-                   (config[iZone]->GetKind_Solver() == FREE_SURFACE_NAVIER_STOKES) || (config[iZone]->GetKind_Solver() == FREE_SURFACE_RANS) ||
+                   (config[iZone]->GetKind_Solver() == RANS) ||
                    (config[iZone]->GetKind_Solver() == FLUID_STRUCTURE_EULER) || (config[iZone]->GetKind_Solver() == FLUID_STRUCTURE_NAVIER_STOKES) ||
                    (config[iZone]->GetKind_Solver() == FLUID_STRUCTURE_RANS) || (config[iZone]->GetKind_Solver() == AEROACOUSTIC_EULER) ||
                    (config[iZone]->GetKind_Solver() == AEROACOUSTIC_NAVIER_STOKES) || (config[iZone]->GetKind_Solver() == AEROACOUSTIC_RANS) ||
@@ -772,15 +771,14 @@ void CSingleGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSys
 	/*--- Update solution at the no slip wall boundary ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 		if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX) ||
-            (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL)) {
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL)) {
 			for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
 				Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
 				if (SolContainer_Position == TURB_SOL) sol_coarse[SolContainer_Position]->node[Point_Coarse]->SetSolutionZero();
-                if (SolContainer_Position == LEVELSET_SOL) sol_coarse[SolContainer_Position]->node[Point_Coarse]->SetSolutionZero();
 			}
-        }
+    }
 	}
-    
+  
 	delete [] Solution;
     
 }
