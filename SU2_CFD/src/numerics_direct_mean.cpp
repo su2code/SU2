@@ -911,14 +911,6 @@ CUpwRoeArtComp_Flow_FreeSurface::~CUpwRoeArtComp_Flow_FreeSurface(void) {
 }
 
 void CUpwRoeArtComp_Flow_FreeSurface::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
-
-//  for (iVar = 0; iVar < nVar; iVar++) {
-//		for (jVar = 0; jVar < nVar; jVar++) {
-//      val_residual[iVar] = 0.0;
-//      val_Jacobian_i[iVar][jVar] = 0.0;
-//      val_Jacobian_j[iVar][jVar] = 0.0;
-//		}
-//	}
   
 	/*--- Compute face area ---*/
 	Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
@@ -1001,47 +993,54 @@ void CUpwRoeArtComp_Flow_FreeSurface::ComputeResidual(double *val_residual, doub
 		}
 	}
   
+  /*--- Set to zero the off diagonal terms (until I finish the complete implementation ---*/
+  if (implicit) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      val_Jacobian_i[nDim+1][iVar] = 0.0;
+      val_Jacobian_i[iVar][nDim+1] = 0.0;
+      val_Jacobian_j[nDim+1][iVar] = 0.0;
+      val_Jacobian_j[iVar][nDim+1] = 0.0;
+  	}
+  }
+  
   /*--- Free surface contribution ---*/
-	double a0, a1; //, dqij_dvi[3], dqij_dvj[3], dabsqij_dvi[3], dabsqij_dvj[3], da0_dvi[3], da0_dvj[3], da1_dvi[3], da1_dvj[3];
+	double a0, a1, dqij_dvi[3], dqij_dvj[3], dabsqij_dvi[3], dabsqij_dvj[3], da0_dvi[3], da0_dvj[3], da1_dvi[3], da1_dvj[3];
   
   a0 = 0.5*(ProjVelocity+fabs(ProjVelocity)); a1 = 0.5*(ProjVelocity-fabs(ProjVelocity));
   
 	val_residual[nDim+1] = a0*U_i[nDim+1]+a1*U_j[nDim+1];
   
 	if (implicit) {
-		val_Jacobian_i[nVar-1][nVar-1] = a0;
-		val_Jacobian_j[nVar-1][nVar-1] = a1;
     
-    //    for (iDim = 0; iDim < nDim; iDim++) {
-    //      dqij_dvi[iDim] = 0.5 * Normal[iDim]/V_i[0];
-    //      dqij_dvj[iDim] = 0.5 * Normal[iDim]/V_j[0];
-    //      if ( q_ij >= 0.0 ) {
-    //        dabsqij_dvi[iDim] = dqij_dvi[iDim];
-    //        dabsqij_dvj[iDim] = dqij_dvj[iDim];
-    //      }
-    //      else {
-    //        dabsqij_dvi[iDim] = -dqij_dvi[iDim];
-    //        dabsqij_dvj[iDim] = -dqij_dvj[iDim];
-    //      }
-    //      da0_dvi[iDim] = 0.5 * (dqij_dvi[iDim] + dabsqij_dvi[iDim]);
-    //      da1_dvi[iDim] = 0.5 * (dqij_dvi[iDim] - dabsqij_dvi[iDim]);
-    //
-    //      da0_dvj[iDim] = 0.5 * (dqij_dvj[iDim] + dabsqij_dvj[iDim]);
-    //      da1_dvj[iDim] = 0.5 * (dqij_dvj[iDim] - dabsqij_dvj[iDim]);
-    //    }
-    //
-    //    for (iDim = 0; iDim < nDim+1; iDim++) {
-    //      for (jDim = 0; jDim < nDim+1; jDim++) {
-    //        val_JacobianMeanFlow_i[iDim][jDim] = 0.0;
-    //        val_JacobianMeanFlow_j[iDim][jDim] = 0.0;
-    //      }
-    //    }
-    //
-    //    val_JacobianMeanFlow_i[0][0] = 0.0; val_JacobianMeanFlow_j[0][0] = 0.0;
-    //    for (iDim = 0; iDim < nDim; iDim++) {
-    //      val_JacobianMeanFlow_i[0][iDim+1] = da0_dvi[iDim]*LevelSetVar_i[0]+da1_dvi[iDim]*LevelSetVar_j[0];
-    //      val_JacobianMeanFlow_j[0][iDim+1] = da0_dvj[iDim]*LevelSetVar_i[0]+da1_dvj[iDim]*LevelSetVar_j[0];
-    //    }
+		val_Jacobian_i[nDim+1][nDim+1] = a0;
+		val_Jacobian_j[nDim+1][nDim+1] = a1;
+    
+//    for (iDim = 0; iDim < nDim; iDim++) {
+//      if (Velocity_i[0] != 0.0) dqij_dvi[iDim] = 0.5 * Normal[iDim]/Velocity_i[0];
+//      else Velocity_i[0] = 0.0;
+//      
+//      if (Velocity_j[0] != 0.0)  dqij_dvj[iDim] = 0.5 * Normal[iDim]/Velocity_j[0];
+//      else Velocity_j[0] = 0.0;
+//
+//      if ( ProjVelocity >= 0.0 ) {
+//        dabsqij_dvi[iDim] = dqij_dvi[iDim];
+//        dabsqij_dvj[iDim] = dqij_dvj[iDim];
+//      }
+//      else {
+//        dabsqij_dvi[iDim] = -dqij_dvi[iDim];
+//        dabsqij_dvj[iDim] = -dqij_dvj[iDim];
+//      }
+//      da0_dvi[iDim] = 0.5 * (dqij_dvi[iDim] + dabsqij_dvi[iDim]);
+//      da1_dvi[iDim] = 0.5 * (dqij_dvi[iDim] - dabsqij_dvi[iDim]);
+//
+//      da0_dvj[iDim] = 0.5 * (dqij_dvj[iDim] + dabsqij_dvj[iDim]);
+//      da1_dvj[iDim] = 0.5 * (dqij_dvj[iDim] - dabsqij_dvj[iDim]);
+//    }
+//
+//    for (iDim = 0; iDim < nDim; iDim++) {
+//      val_Jacobian_i[nDim+1][iDim+1] = da0_dvi[iDim]*U_i[nDim+1]+da1_dvi[iDim]*U_j[nDim+1];
+//      val_Jacobian_j[nDim+1][iDim+1] = da0_dvj[iDim]*U_i[nDim+1]+da1_dvj[iDim]*U_j[nDim+1];
+//    }
     
   }
   

@@ -269,11 +269,11 @@ inline bool CVariable::SetPrimVar_Compressible(double turb_ke, CConfig *config) 
 
 inline bool CVariable::SetPrimVar_Incompressible(double Density_Inf, CConfig *config) { return true; }
 
-inline bool CVariable::SetPrimVar_FreeSurface(double Density_Inf, double levelset, CConfig *config) { return true; }
+inline bool CVariable::SetPrimVar_FreeSurface(double Density_Inf, CConfig *config) { return true; }
 
 inline bool CVariable::SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double turb_ke, CConfig *config) { return true; }
 
-inline bool CVariable::SetPrimVar_FreeSurface(double Density_Inf, double Viscosity_Inf, double turb_ke, double levelset, CConfig *config) { return true; }
+inline bool CVariable::SetPrimVar_FreeSurface(double Density_Inf, double Viscosity_Inf, double turb_ke, CConfig *config) { return true; }
 
 inline double CVariable::GetPrimVar(unsigned short val_var) { return 0; }
 
