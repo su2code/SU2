@@ -3302,7 +3302,8 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   
 	if ((config->GetOutput_FileFormat() == TECPLOT) ||
       (config->GetOutput_FileFormat() == TECPLOT_BINARY)) {
-    ConvHist_file[0] << "TITLE = \"SU2 Simulation\" VARIABLES = " << endl;
+    ConvHist_file[0] << "TITLE = \"SU2 Simulation\"" << endl;
+        ConvHist_file[0] << "VARIABLES = ";
 	}
   
   /*--- Write the header, case depending ---*/
