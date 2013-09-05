@@ -57,7 +57,7 @@ COutput::COutput(void) {
 
 COutput::~COutput(void) { }
 
-void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry, CSolver *FlowSolver, unsigned long iExtIter) {
+void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry, CSolver *FlowSolver, unsigned long iExtIter, unsigned short val_iZone) {
 
 #ifdef NO_MPI
 	unsigned long iPoint, iVertex, Global_Index;
@@ -69,12 +69,20 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry, CSolver *
 
 	/*--- Write file name with extension if unsteady ---*/
 	strcpy (cstr, config->GetSurfFlowCoeff_FileName().c_str());
-	if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
-		if ((int(iExtIter) >= 0) && (int(iExtIter) < 10)) sprintf (buffer, "_0000%d.csv", int(iExtIter));
-		if ((int(iExtIter) >= 10) && (int(iExtIter) < 100)) sprintf (buffer, "_000%d.csv", int(iExtIter));
-		if ((int(iExtIter) >= 100) && (int(iExtIter) < 1000)) sprintf (buffer, "_00%d.csv", int(iExtIter));
-		if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d.csv", int(iExtIter));
-		if (int(iExtIter) >= 10000) sprintf (buffer, "_%d.csv", int(iExtIter));
+
+	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+		if (int(val_iZone) < 10) sprintf (buffer, "_0000%d.csv", int(val_iZone));
+		if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) sprintf (buffer, "_000%d.csv", int(val_iZone));
+		if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) sprintf (buffer, "_00%d.csv", int(val_iZone));
+		if ((int(val_iZone) >= 1000) && (int(val_iZone) < 10000)) sprintf (buffer, "_0%d.csv", int(val_iZone));
+		if (int(val_iZone) >= 10000) sprintf (buffer, "_%d.csv", int(val_iZone));
+
+	} else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
+		if ((int(iExtIter) >= 0)    && (int(iExtIter) < 10))    sprintf (buffer, "_0000%d.csv", int(iExtIter));
+		if ((int(iExtIter) >= 10)   && (int(iExtIter) < 100))   sprintf (buffer, "_000%d.csv",  int(iExtIter));
+		if ((int(iExtIter) >= 100)  && (int(iExtIter) < 1000))  sprintf (buffer, "_00%d.csv",   int(iExtIter));
+		if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d.csv",    int(iExtIter));
+		if  (int(iExtIter) >= 10000) sprintf (buffer, "_%d.csv", int(iExtIter));
 	}
 	else
 		sprintf (buffer, ".csv");
@@ -244,12 +252,19 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry, CSolver *
 
 		/*--- Write file name with extension if unsteady ---*/
 		strcpy (cstr, filename.c_str());
-		if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
-			if ((int(iExtIter) >= 0) && (int(iExtIter) < 10)) sprintf (buffer, "_0000%d.csv", int(iExtIter));
-			if ((int(iExtIter) >= 10) && (int(iExtIter) < 100)) sprintf (buffer, "_000%d.csv", int(iExtIter));
-			if ((int(iExtIter) >= 100) && (int(iExtIter) < 1000)) sprintf (buffer, "_00%d.csv", int(iExtIter));
-			if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d.csv", int(iExtIter));
-			if (int(iExtIter) >= 10000) sprintf (buffer, "_%d.csv", int(iExtIter));
+		if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+			if (int(val_iZone) < 10) sprintf (buffer, "_0000%d.csv", int(val_iZone));
+			if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) sprintf (buffer, "_000%d.csv", int(val_iZone));
+			if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) sprintf (buffer, "_00%d.csv", int(val_iZone));
+			if ((int(val_iZone) >= 1000) && (int(val_iZone) < 10000)) sprintf (buffer, "_0%d.csv", int(val_iZone));
+			if (int(val_iZone) >= 10000) sprintf (buffer, "_%d.csv", int(val_iZone));
+
+		} else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
+			if ((int(iExtIter) >= 0)    && (int(iExtIter) < 10))    sprintf (buffer, "_0000%d.csv", int(iExtIter));
+			if ((int(iExtIter) >= 10)   && (int(iExtIter) < 100))   sprintf (buffer, "_000%d.csv",  int(iExtIter));
+			if ((int(iExtIter) >= 100)  && (int(iExtIter) < 1000))  sprintf (buffer, "_00%d.csv",   int(iExtIter));
+			if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d.csv",    int(iExtIter));
+			if  (int(iExtIter) >= 10000) sprintf (buffer, "_%d.csv", int(iExtIter));
 		}
 		else
 			sprintf (buffer, ".csv");
@@ -3302,7 +3317,8 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   
 	if ((config->GetOutput_FileFormat() == TECPLOT) ||
       (config->GetOutput_FileFormat() == TECPLOT_BINARY)) {
-    ConvHist_file[0] << "TITLE = \"SU2 Simulation\" VARIABLES = " << endl;
+    ConvHist_file[0] << "TITLE = \"SU2 Simulation\"" << endl;
+        ConvHist_file[0] << "VARIABLES = ";
 	}
   
   /*--- Write the header, case depending ---*/
@@ -4341,7 +4357,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
 		case EULER : case NAVIER_STOKES : case RANS :
 		case FLUID_STRUCTURE_EULER : case FLUID_STRUCTURE_NAVIER_STOKES : case FLUID_STRUCTURE_RANS:
 
-			if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0][FLOW_SOL], iExtIter);
+			if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0][FLOW_SOL], iExtIter, iZone);
 			break;
 
 		case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS :
@@ -4353,13 +4369,13 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
 			break;
 
 		case AEROACOUSTIC_EULER : case AEROACOUSTIC_NAVIER_STOKES : case AEROACOUSTIC_RANS:
-			if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0][FLOW_SOL], iExtIter);
+			if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0][FLOW_SOL], iExtIter,iZone);
 			break;
 		case ADJ_AEROACOUSTIC_EULER:
 			if (iZone == ZONE_0) {
 				if (Wrt_Csv) SetSurfaceCSV_Adjoint(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0][ADJFLOW_SOL], solver_container[iZone][MESH_0][FLOW_SOL], iExtIter, iZone);
 			} else if (iZone == ZONE_1) {
-				if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0][FLOW_SOL], iExtIter);
+				if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0][FLOW_SOL], iExtIter,iZone);
 			}
 			break;
 		}

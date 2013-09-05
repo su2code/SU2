@@ -540,6 +540,12 @@ public:
 	 */
 	virtual void SetGridVelocity(CConfig *config, unsigned long iter);
 
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  virtual void Set_MPI_GridVel(CConfig *config);
+  
 	/*!
 	 * \brief A virtual member.
    * \param[in] geometry - Geometry of the fine mesh.
@@ -558,8 +564,10 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config,
-                                      vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
+                                      vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, vector<unsigned long> &point1_Airfoil, vector<unsigned long> &point2_Airfoil, bool original_surface);
   
+	virtual void ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config,
+                                      vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
   /*!
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
@@ -765,7 +773,18 @@ public:
 	 * \returns The interpolated value of for x.
 	 */
 	double GetSpline(vector<double> &xa, vector<double> &ya, vector<double> &y2a, unsigned long n, double x);
-	
+	  
+  /*!
+	 * \brief Compute the intersection between a segment and a plane.
+   * \param[in] Segment_P0 - Definition of the particular problem.
+	 * \param[in] Segment_P1 - Definition of the particular problem.
+	 * \param[in] Plane_P0 - Definition of the particular problem.
+	 * \param[in] Plane_Normal - Definition of the particular problem.
+   * \param[in] Intersection - Definition of the particular problem.
+   * \returns If the intersection has has been successful.
+	 */
+  unsigned short ComputeSegmentPlane_Intersection(double *Segment_P0, double *Segment_P1, double *Plane_P0, double *Plane_Normal, double *Intersection);
+
 };
 
 /*! 
@@ -981,13 +1000,19 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetGridVelocity(CConfig *config, unsigned long iter);
-
+  
+  /*!
+	 * \brief Perform the MPI communication for the grid velocities.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  void Set_MPI_GridVel(CConfig *config);
+  
 	/*! 
 	 * \brief Set the periodic boundary conditions.
 	 * \param[in] config - Definition of the particular problem.		 
 	 */
 	void SetPeriodicBoundary(CConfig *config);
-
+  
 	/*! 
 	 * \brief Do an implicit smoothing of the grid coordinates.
 	 * \param[in] val_nSmooth - Number of smoothing iterations.
@@ -1159,6 +1184,14 @@ public:
 	 * \brief Get all points on a geometrical plane in the mesh
 	 */
 	vector<vector<unsigned long> > GetPlanarPoints();
+  
+  /*!
+	 * \brief Compute the sections of a wing.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config,
+                              vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, vector<unsigned long> &point1_Airfoil, vector<unsigned long> &point2_Airfoil, bool original_surface);
+  
 };
 
 /*! 
@@ -1408,17 +1441,6 @@ public:
    * \returns The total volume of the airfoil.
 	 */
   double Compute_Area(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
-	
-  /*!
-	 * \brief Compute the intersection between a segment and a plane.
-   * \param[in] Segment_P0 - Definition of the particular problem.
-	 * \param[in] Segment_P1 - Definition of the particular problem.
-	 * \param[in] Plane_P0 - Definition of the particular problem.
-	 * \param[in] Plane_Normal - Definition of the particular problem.
-   * \param[in] Intersection - Definition of the particular problem.
-   * \returns If the intersection has has been successful.
-	 */
-  unsigned short ComputeSegmentPlane_Intersection(double *Segment_P0, double *Segment_P1, double *Plane_P0, double *Plane_Normal, double *Intersection);
 
 };
 
