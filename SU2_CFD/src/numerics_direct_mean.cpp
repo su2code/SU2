@@ -1012,9 +1012,9 @@ void CUpwRoeArtComp_Flow_FreeSurface::ComputeResidual(double *val_residual, doub
   
 	if (implicit) {
     
-		val_Jacobian_i[nDim+1][nDim+1] = a0;
-		val_Jacobian_j[nDim+1][nDim+1] = a1;
-    
+//		val_Jacobian_i[nDim+1][nDim+1] = a0;
+//		val_Jacobian_j[nDim+1][nDim+1] = a1;
+//    
 //    for (iDim = 0; iDim < nDim; iDim++) {
 //      if (Velocity_i[0] != 0.0) dqij_dvi[iDim] = 0.5 * Normal[iDim]/Velocity_i[0];
 //      else Velocity_i[0] = 0.0;

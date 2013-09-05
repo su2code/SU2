@@ -724,9 +724,9 @@ void CAdjTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
 }
 
 void CAdjTurbSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics, CConfig *config, unsigned short iMesh) {
-	unsigned long iPoint, jPoint, iEdge;
+	unsigned long iPoint;
 	double *U_i, **GradPrimVar_i, *TurbVar_i;
-	double **TurbVar_Grad_i, **TurbVar_Grad_j, *TurbPsi_i, *TurbPsi_j, **PsiVar_Grad_i; // Gradients
+	double **TurbVar_Grad_i, *TurbPsi_i, **PsiVar_Grad_i; // Gradients
   
   /*--- Piecewise source term ---*/
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -771,6 +771,9 @@ void CAdjTurbSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 	}
   
 //  /*--- Conservative Source Term ---*/
+//  double **TurbVar_Grad_j;
+//  unsigned long jPoint, iEdge;
+//
 //  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 //    
 //    /*--- Points in edge ---*/
