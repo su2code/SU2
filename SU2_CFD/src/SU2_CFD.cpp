@@ -97,6 +97,7 @@ int main(int argc, char *argv[]) {
 	
 	/*--- Definition and of the containers for all possible zones. ---*/
   
+    // MAX_ZONES is a hard-coded constant in option_structure.hpp
 	solver_container      = new CSolver***[MAX_ZONES];
 	integration_container = new CIntegration**[MAX_ZONES];
 	numerics_container    = new CNumerics****[MAX_ZONES];
