@@ -623,8 +623,6 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
     position = text_line.find ("NELEM=",0);
     if (position != string::npos) {
       text_line.erase (0,6); nElem = atoi(text_line.c_str());
-      if (size == 1)
-        cout << nElem << " interior elements. " << endl;
       
 #ifndef NO_MPI
       if (config->GetKind_SU2() != SU2_DDC) {
@@ -638,6 +636,8 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
 #else
       Global_nElem = nElem;
 #endif
+      if (rank == MASTER_NODE)
+        cout << Global_nElem << " interior elements. " << endl;
       
       /*--- Allocate space for elements ---*/
       if (!config->GetDivide_Element()) elem = new CPrimalGrid*[nElem];
@@ -1036,7 +1036,7 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
 #endif
       
       /*--- Print information about the elements to the console ---*/
-      if (size == 1) {
+      if (rank == MASTER_NODE) {
         if (Global_nelem_triangle > 0)
           cout << Global_nelem_triangle << " triangles." << endl;
         if (Global_nelem_quad > 0)
@@ -1049,6 +1049,8 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
           cout << Global_nelem_wedge << " prisms." << endl;
         if (Global_nelem_pyramid > 0)
           cout << Global_nelem_pyramid << " pyramids." << endl;
+        if ((size > SINGLE_NODE) && (config->GetKind_SU2() != SU2_DDC))
+          cout << "Element totals include halo cells." << endl;
       }
     }
     
@@ -1067,8 +1069,6 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
       if (iCount == 2) {
         stream_line >> nPoint;
         stream_line >> nPointDomain;
-        if (size == 1)
-          cout << nPoint << " points, and " << nPoint-nPointDomain << " ghost points." << endl;
         
         /*--- Set some important point information for parallel simulations. ---*/
 #ifndef NO_MPI
@@ -1086,7 +1086,8 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
         Global_nPoint = nPoint;
         Global_nPointDomain = nPointDomain;
 #endif
-        
+        if (rank == MASTER_NODE)
+          cout << Global_nPointDomain << " points, and " << Global_nPoint-Global_nPointDomain << " ghost points." << endl;
       }
       else if (iCount == 1) {
         stream_line >> nPoint;
@@ -1372,12 +1373,6 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
   
   /*--- Close the input file ---*/
   mesh_file.close();
-  
-#ifndef NO_MPI
-  if ((size > SINGLE_NODE) && (rank == MASTER_NODE))
-    cout << Global_nElem << " interior elements (incl. halo cells). " << Global_nPoint << " points (incl. ghost points) " << endl;
-#endif
-  
   
   if (config->GetDivide_Element()) {
     if (Local2Global != NULL) delete [] Local2Global;
@@ -5159,6 +5154,128 @@ void CPhysicalGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
 
 }
 
+void CPhysicalGeometry::Set_MPI_GridVel(CConfig *config) {
+	unsigned short iVar, iMarker, iPeriodic_Index;
+	unsigned long iVertex, iPoint, nVert, nBuffer_Vector;
+	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi,
+  psi, cosPsi, sinPsi, *newGridVel = NULL, *Buffer_Receive_GridVel = NULL, *GridVel;
+	short SendRecv;
+	int send_to, receive_from;
+  
+#ifndef NO_MPI
+  
+  MPI::COMM_WORLD.Barrier();
+	double *Buffer_Send_GridVel = NULL;
+  
+#endif
+  
+	newGridVel = new double[nDim];
+  
+	/*--- Send-Receive boundary conditions ---*/
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+		if (config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) {
+			SendRecv = config->GetMarker_All_SendRecv(iMarker);
+			nVert = nVertex[iMarker];
+			nBuffer_Vector = nVert*nDim;
+			send_to = SendRecv-1;
+			receive_from = abs(SendRecv)-1;
+      
+#ifndef NO_MPI
+      
+			/*--- Send information using MPI  ---*/
+			if (SendRecv > 0) {
+        Buffer_Send_GridVel = new double[nBuffer_Vector];
+				for (iVertex = 0; iVertex < nVert; iVertex++) {
+					iPoint = vertex[iMarker][iVertex]->GetNode();
+          GridVel = node[iPoint]->GetGridVel();
+          for (iVar = 0; iVar < nDim; iVar++)
+            Buffer_Send_GridVel[iVar*nVert+iVertex] = GridVel[iVar];
+				}
+        MPI::COMM_WORLD.Bsend(Buffer_Send_GridVel, nBuffer_Vector, MPI::DOUBLE, send_to, 0); delete [] Buffer_Send_GridVel;
+			}
+      
+#endif
+      
+			/*--- Receive information  ---*/
+			if (SendRecv < 0) {
+        Buffer_Receive_GridVel = new double [nBuffer_Vector];
+        
+#ifdef NO_MPI
+        
+				/*--- Receive information without MPI ---*/
+				for (iVertex = 0; iVertex < nVert; iVertex++) {
+          iPoint = vertex[iMarker][iVertex]->GetNode();
+          GridVel = node[iPoint]->GetGridVel();
+          for (iVar = 0; iVar < nDim; iVar++)
+            Buffer_Receive_GridVel[iVar*nVert+iVertex] = GridVel[iVar];
+        }
+        
+#else
+        
+        MPI::COMM_WORLD.Recv(Buffer_Receive_GridVel, nBuffer_Vector, MPI::DOUBLE, receive_from, 0);
+        
+#endif
+        
+				/*--- Do the coordinate transformation ---*/
+				for (iVertex = 0; iVertex < nVert; iVertex++) {
+          
+					/*--- Find point and its type of transformation ---*/
+					iPoint = vertex[iMarker][iVertex]->GetNode();
+					iPeriodic_Index = vertex[iMarker][iVertex]->GetRotation_Type();
+          
+					/*--- Retrieve the supplied periodic information. ---*/
+					angles = config->GetPeriodicRotation(iPeriodic_Index);
+          
+					/*--- Store angles separately for clarity. ---*/
+					theta    = angles[0];   phi    = angles[1]; psi    = angles[2];
+					cosTheta = cos(theta);  cosPhi = cos(phi);  cosPsi = cos(psi);
+					sinTheta = sin(theta);  sinPhi = sin(phi);  sinPsi = sin(psi);
+          
+					/*--- Compute the rotation matrix. Note that the implicit
+					 ordering is rotation about the x-axis, y-axis,
+					 then z-axis. Note that this is the transpose of the matrix
+					 used during the preprocessing stage. ---*/
+					rotMatrix[0][0] = cosPhi*cosPsi; rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi; rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+					rotMatrix[0][1] = cosPhi*sinPsi; rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi; rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+					rotMatrix[0][2] = -sinPhi; rotMatrix[1][2] = sinTheta*cosPhi; rotMatrix[2][2] = cosTheta*cosPhi;
+          
+					/*--- Copy conserved variables before performing transformation. ---*/
+					for (iVar = 0; iVar < nDim; iVar++)
+						newGridVel[iVar] = Buffer_Receive_GridVel[iVar*nVert+iVertex];
+          
+					/*--- Rotate the momentum components. ---*/
+					if (nDim == 2) {
+						newGridVel[1] = rotMatrix[0][0]*Buffer_Receive_GridVel[1*nVert+iVertex] + rotMatrix[0][1]*Buffer_Receive_GridVel[2*nVert+iVertex];
+						newGridVel[2] = rotMatrix[1][0]*Buffer_Receive_GridVel[1*nVert+iVertex] + rotMatrix[1][1]*Buffer_Receive_GridVel[2*nVert+iVertex];
+					}
+					else {
+						newGridVel[1] = rotMatrix[0][0]*Buffer_Receive_GridVel[1*nVert+iVertex] + rotMatrix[0][1]*Buffer_Receive_GridVel[2*nVert+iVertex] + rotMatrix[0][2]*Buffer_Receive_GridVel[3*nVert+iVertex];
+						newGridVel[2] = rotMatrix[1][0]*Buffer_Receive_GridVel[1*nVert+iVertex] + rotMatrix[1][1]*Buffer_Receive_GridVel[2*nVert+iVertex] + rotMatrix[1][2]*Buffer_Receive_GridVel[3*nVert+iVertex];
+						newGridVel[3] = rotMatrix[2][0]*Buffer_Receive_GridVel[1*nVert+iVertex] + rotMatrix[2][1]*Buffer_Receive_GridVel[2*nVert+iVertex] + rotMatrix[2][2]*Buffer_Receive_GridVel[3*nVert+iVertex];
+					}
+          
+					/*--- Copy transformed conserved variables back into buffer. ---*/
+					for (iVar = 0; iVar < nDim; iVar++)
+						Buffer_Receive_GridVel[iVar*nVert+iVertex] = newGridVel[iVar];
+          
+          for (iVar = 0; iVar < nDim; iVar++)
+            node[iPoint]->SetGridVel(iVar, Buffer_Receive_GridVel[iVar*nVert+iVertex]);
+          
+				}
+        delete [] Buffer_Receive_GridVel;
+			}
+		}
+	}
+	delete [] newGridVel;
+  
+#ifndef NO_MPI
+  
+  MPI::COMM_WORLD.Barrier();
+  
+#endif
+  
+}
+
 void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
 
 	unsigned short iMarker, jMarker, kMarker = 0, iPeriodic, iDim, nPeriodic = 0, VTK_Type;
@@ -7937,6 +8054,7 @@ void CMultiGridGeometry::SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfi
 			node[Point_Coarse]->SetGridVel(iDim, Grid_Vel[iDim]);
 	}
 }
+
 
 void CMultiGridGeometry::FindNormal_Neighbor(CConfig *config) {
   

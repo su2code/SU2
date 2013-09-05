@@ -1648,7 +1648,7 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   
   /*--- Error message ---*/
 #ifndef NO_MPI
-  unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0.0;
+  unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
   MPI::COMM_WORLD.Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
 #endif
   if ((ErrorCounter != 0) && (rank == MASTER_NODE) && (iMesh == MESH_0))
@@ -1829,14 +1829,14 @@ void CAdjEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 void CAdjEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
 		CConfig *config, unsigned short iMesh) {
 
-	unsigned short iVar, iDim;
+	unsigned short iVar;
 	unsigned long iPoint;
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
 	bool rotating_frame = config->GetRotating_Frame();
 	bool axisymmetric   = config->GetAxisymmetric();
-	bool gravity        = (config->GetGravityForce() == YES);
+//	bool gravity        = (config->GetGravityForce() == YES);
 	bool time_spectral  = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
-	bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+//	bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   
   /*--- Initialize the source residual to zero ---*/
 	for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
@@ -1924,11 +1924,11 @@ void CAdjEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 		}
 	}
 
-	if (gravity) {
+//	if (gravity) {
+//
+//	}
 
-	}
-
-	if (freesurface) {
+//	if (freesurface) {
 //    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 //      
 //      double Volume = geometry->node[iPoint]->GetVolume();
@@ -1943,7 +1943,7 @@ void CAdjEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 //      LinSysRes.AddBlock(iPoint, Residual);
 //      
 //		}		
-	}
+//	}
 
 }
 
@@ -5159,7 +5159,7 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   /*--- Error message ---*/
 #ifndef NO_MPI
-  unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0.0;
+  unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
   MPI::COMM_WORLD.Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
 #endif
   if ((ErrorCounter != 0) && (rank == MASTER_NODE) && (iMesh == MESH_0))
@@ -5231,10 +5231,10 @@ void CAdjNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
 void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
 		CConfig *config, unsigned short iMesh) {
 	unsigned long iPoint;
-  unsigned short iVar, iDim;
+  unsigned short iVar;
   
   bool rotating_frame = config->GetRotating_Frame();
-	bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+//	bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   
   for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
 
@@ -5314,7 +5314,7 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 		}
 	}
   
-	if (freesurface) {
+//	if (freesurface) {
 //    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 //      
 //      double Volume = geometry->node[iPoint]->GetVolume();
@@ -5329,7 +5329,7 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 //      LinSysRes.AddBlock(iPoint, Residual);
 //      
 //		}
-	}
+//	}
   
 //  if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc()) && (config->GetKind_Adjoint() == CONTINUOUS)) {
 //    unsigned long jPoint, iEdge;
