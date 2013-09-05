@@ -542,16 +542,16 @@ public:
 
 	/*!
 	 * \brief A virtual member.
+   * \param[in] geometry - Geometry of the fine mesh.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iter - Current physical time step.
 	 */
-	virtual void SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config, unsigned long iter);
+	virtual void SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void FindSharpEdges(CConfig *config);
+	virtual void ComputeSurf_Curvature(CConfig *config);
   
   /*!
 	 * \brief A virtual member.
@@ -807,8 +807,7 @@ public:
 	 * \param[in] val_iZone - Domain to be read from the grid file.
 	 * \param[in] val_nZone - Total number of domains in the grid file.
 	 */
-	CPhysicalGeometry(CConfig *config, string val_mesh_filename, unsigned short val_format, 
-			unsigned short val_iZone, unsigned short val_nZone);
+	CPhysicalGeometry(CConfig *config, unsigned short val_iZone, unsigned short val_nZone);
 
 	/*! 
 	 * \brief Destructor of the class.
@@ -985,13 +984,13 @@ public:
 	void SetColorGrid(CConfig *config);
   
 	/*!
-	 * \brief Set the rotational velocity at each grid point.
+	 * \brief Set the rotational velocity at each node.
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetRotationalVelocity(CConfig *config);
 
-	/*! MC - fill this in - 7/11/12
-	 * \brief A virtual member.
+	/*! 
+	 * \brief Set the grid velocity via finite differencing at each node.
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetGridVelocity(CConfig *config, unsigned long iter);
@@ -1034,7 +1033,7 @@ public:
 	 * \brief Find and store all vertices on a sharp corner in the geometry.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void FindSharpEdges(CConfig *config);
+	void ComputeSurf_Curvature(CConfig *config);
 
 	/*! 
 	 * \brief Find and store the closest neighbor to a vertex.
@@ -1303,12 +1302,11 @@ public:
 
 	/*!
 	 * \brief Set the grid velocity at each node in the coarse mesh level based
-	 *        on a restriction from a finer mesh (needed for the unsteady adjoint).
+	 *        on a restriction from a finer mesh.
 	 * \param[in] fine_mesh - Geometry container for the finer mesh level.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iter - Current physical time step.
 	 */
-	void SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config, unsigned long iter);
+	void SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config);
 
 	/*!
 	 * \brief Find and store the closest neighbor to a vertex.

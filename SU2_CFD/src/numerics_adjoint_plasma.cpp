@@ -176,7 +176,7 @@ void CUpwRoe_AdjPlasmaDiatomic::ComputeResidual(double *val_residual_i, double *
 		Area += Normal[iDim]*Normal[iDim];
 	Area = sqrt(Area);                    /*! Area of the face*/
 	for (iDim = 0; iDim < nDim; iDim++)
-		UnitaryNormal[iDim] = Normal[iDim]/Area;   /* ! Unit Normal*/
+		UnitNormal[iDim] = Normal[iDim]/Area;   /* ! Unit Normal*/
   
   
 	for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -245,9 +245,9 @@ void CUpwRoe_AdjPlasmaDiatomic::ComputeResidual(double *val_residual_i, double *
 		ProjVelocity_i[iSpecies] = 0.0;
 		ProjVelocity_j[iSpecies] = 0.0;
 		for (iDim = 0; iDim < nDim; iDim++) {
-			ProjVelocity[iSpecies]   += RoeVelocity[iSpecies][iDim]*UnitaryNormal[iDim];
-			ProjVelocity_i[iSpecies] += Velocity_i[iSpecies][iDim] *UnitaryNormal[iDim];
-			ProjVelocity_j[iSpecies] += Velocity_j[iSpecies][iDim] *UnitaryNormal[iDim];
+			ProjVelocity[iSpecies]   += RoeVelocity[iSpecies][iDim]*UnitNormal[iDim];
+			ProjVelocity_i[iSpecies] += Velocity_i[iSpecies][iDim] *UnitNormal[iDim];
+			ProjVelocity_j[iSpecies] += Velocity_j[iSpecies][iDim] *UnitNormal[iDim];
 		}
 	}
   
@@ -277,10 +277,10 @@ void CUpwRoe_AdjPlasmaDiatomic::ComputeResidual(double *val_residual_i, double *
 	}
   
 	/*--- Compute P and Lambda (do it with the Normal) ---*/
-	GetPMatrix_(RoeDensity, RoeVelocity, RoeEnthalpy, RoeSoundSpeed, RoeEnergy_vib, Energy_el_i, config, UnitaryNormal, P_Tensor);
+	GetPMatrix_(RoeDensity, RoeVelocity, RoeEnthalpy, RoeSoundSpeed, RoeEnergy_vib, Energy_el_i, config, UnitNormal, P_Tensor);
   
 	/*--- Compute inverse P ---*/
-	GetPMatrix_inv_(RoeDensity, RoeVelocity, RoeSoundSpeed, RoeEnergy_vib, Energy_el_i, config, UnitaryNormal, invP_Tensor);
+	GetPMatrix_inv_(RoeDensity, RoeVelocity, RoeSoundSpeed, RoeEnergy_vib, Energy_el_i, config, UnitNormal, invP_Tensor);
   
 	/*--- Flux approximation ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
@@ -440,7 +440,7 @@ void CUpwSW_AdjPlasmaDiatomic::ComputeResidual(double *val_residual_i, double *v
 		Area += Normal[iDim]*Normal[iDim];
 	Area = sqrt(Area);                    /*! Area of the face*/
 	for (iDim = 0; iDim < nDim; iDim++)
-		UnitaryNormal[iDim] = Normal[iDim]/Area;   /* ! Unit Normal*/
+		UnitNormal[iDim] = Normal[iDim]/Area;   /* ! Unit Normal*/
   
 	for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
 		if ( iSpecies < nDiatomics ) loc = (nDim+3)*iSpecies;
@@ -489,8 +489,8 @@ void CUpwSW_AdjPlasmaDiatomic::ComputeResidual(double *val_residual_i, double *v
 		ProjVelocity_i[iSpecies]  = 0.0;
 		ProjVelocity_j[iSpecies]	= 0.0;
 		for (iDim = 0; iDim < nDim; iDim++) {
-			ProjVelocity_i[iSpecies]  += Velocity_i[iSpecies][iDim] *UnitaryNormal[iDim];
-			ProjVelocity_j[iSpecies]  += Velocity_j[iSpecies][iDim] *UnitaryNormal[iDim];
+			ProjVelocity_i[iSpecies]  += Velocity_i[iSpecies][iDim] *UnitNormal[iDim];
+			ProjVelocity_j[iSpecies]  += Velocity_j[iSpecies][iDim] *UnitNormal[iDim];
 		}
 	}
   
@@ -522,8 +522,8 @@ void CUpwSW_AdjPlasmaDiatomic::ComputeResidual(double *val_residual_i, double *v
 	}
   
 	/*--- Compute P & invP at i ---*/
-	GetPMatrix_(Density_i, Velocity_i, Enthalpy_i, SoundSpeed_i, Energy_vib_i, Energy_el_i, config, UnitaryNormal, P_Tensor);
-	GetPMatrix_inv_(Density_i, Velocity_i, SoundSpeed_i, Energy_vib_i, Energy_el_i, config, UnitaryNormal, invP_Tensor);
+	GetPMatrix_(Density_i, Velocity_i, Enthalpy_i, SoundSpeed_i, Energy_vib_i, Energy_el_i, config, UnitNormal, P_Tensor);
+	GetPMatrix_inv_(Density_i, Velocity_i, SoundSpeed_i, Energy_vib_i, Energy_el_i, config, UnitNormal, invP_Tensor);
   
 	/*--- Projected Jacobian (A+) at i ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
@@ -547,8 +547,8 @@ void CUpwSW_AdjPlasmaDiatomic::ComputeResidual(double *val_residual_i, double *v
 	}
   
 	/*--- Compute P & invP at j ---*/
-	GetPMatrix_(Density_j, Velocity_j, Enthalpy_j, SoundSpeed_j, Energy_vib_j, Energy_el_j, config, UnitaryNormal, P_Tensor);
-	GetPMatrix_inv_(Density_j, Velocity_j, SoundSpeed_j, Energy_vib_j, Energy_el_j, config, UnitaryNormal, invP_Tensor);
+	GetPMatrix_(Density_j, Velocity_j, Enthalpy_j, SoundSpeed_j, Energy_vib_j, Energy_el_j, config, UnitNormal, P_Tensor);
+	GetPMatrix_inv_(Density_j, Velocity_j, SoundSpeed_j, Energy_vib_j, Energy_el_j, config, UnitNormal, invP_Tensor);
   
 	/*--- Projected Jacobian (A-) at j ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
@@ -574,7 +574,7 @@ void CUpwSW_AdjPlasmaDiatomic::ComputeResidual(double *val_residual_i, double *v
 	///////////////////////////////////////////////////////////////////////////////////////////////////////
 	/*--- j->i Calculation ---*/
 	for (iDim = 0; iDim < nDim; iDim++)
-		UnitaryNormal[iDim] = -UnitaryNormal[iDim];
+		UnitNormal[iDim] = -UnitNormal[iDim];
   
 	/*--- Flow eigenvalues for Fji --- */
 	for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -603,8 +603,8 @@ void CUpwSW_AdjPlasmaDiatomic::ComputeResidual(double *val_residual_i, double *v
 	}
   
 	/*--- Compute P & invP at i ---*/
-	GetPMatrix_(Density_i, Velocity_i, Enthalpy_i, SoundSpeed_i, Energy_vib_i, Energy_el_i, config, UnitaryNormal, P_Tensor);
-	GetPMatrix_inv_(Density_i, Velocity_i, SoundSpeed_i, Energy_vib_i, Energy_el_i, config, UnitaryNormal, invP_Tensor);
+	GetPMatrix_(Density_i, Velocity_i, Enthalpy_i, SoundSpeed_i, Energy_vib_i, Energy_el_i, config, UnitNormal, P_Tensor);
+	GetPMatrix_inv_(Density_i, Velocity_i, SoundSpeed_i, Energy_vib_i, Energy_el_i, config, UnitNormal, invP_Tensor);
   
 	/*--- Projected Jacobian (A-) at i ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
@@ -628,8 +628,8 @@ void CUpwSW_AdjPlasmaDiatomic::ComputeResidual(double *val_residual_i, double *v
 	}
   
 	/*--- Compute P & invP at j ---*/
-	GetPMatrix_(Density_j, Velocity_j, Enthalpy_j, SoundSpeed_j, Energy_vib_j, Energy_el_j, config, UnitaryNormal, P_Tensor);
-	GetPMatrix_inv_(Density_j, Velocity_j, SoundSpeed_j, Energy_vib_j, Energy_el_j, config, UnitaryNormal, invP_Tensor);
+	GetPMatrix_(Density_j, Velocity_j, Enthalpy_j, SoundSpeed_j, Energy_vib_j, Energy_el_j, config, UnitNormal, P_Tensor);
+	GetPMatrix_inv_(Density_j, Velocity_j, SoundSpeed_j, Energy_vib_j, Energy_el_j, config, UnitNormal, invP_Tensor);
   
 	/*--- Projected Jacobian (A-) at j ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
@@ -710,7 +710,7 @@ void CUpwSW_AdjPlasmaDiatomic::ComputeResidual(double *val_residual_i, double *v
   
 	/*--- Reset to i->j ---*/
 	for (iDim = 0; iDim < nDim; iDim++)
-		UnitaryNormal[iDim] = -UnitaryNormal[iDim];
+		UnitNormal[iDim] = -UnitNormal[iDim];
 }
 
 CCentLax_AdjPlasmaDiatomic::CCentLax_AdjPlasmaDiatomic(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nSpecies, unsigned short val_nDiatomics, unsigned short val_nMonatomics, CConfig *config) : CNumerics(val_nDim, val_nVar,val_nSpecies, val_nDiatomics, val_nMonatomics, config) {
@@ -884,10 +884,10 @@ void CCentLax_AdjPlasmaDiatomic::ComputeResidual(double *val_resconv_i, double *
 		Local_Lambda_j = (fabs(ProjVelocity_j)+SoundSpeed_j[iSpecies]*Area);
     
 		MeanLambda[iSpecies] = 0.5*(Local_Lambda_i+Local_Lambda_j);
-		Phi_i = pow(Lambda_i[iSpecies]/(4.0*MeanLambda[iSpecies]+EPS), Param_p);
-		Phi_j = pow(Lambda_j[iSpecies]/(4.0*MeanLambda[iSpecies]+EPS), Param_p);
+		Phi_i = pow(Lambda_i[iSpecies]/(4.0*MeanLambda[iSpecies]), Param_p);
+		Phi_j = pow(Lambda_j[iSpecies]/(4.0*MeanLambda[iSpecies]), Param_p);
     
-		StretchingFactor[iSpecies] = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j+EPS);
+		StretchingFactor[iSpecies] = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
 		Epsilon_0[iSpecies] = Param_Kappa_0*sc0*double(nDim)/3.0;
 	}
   

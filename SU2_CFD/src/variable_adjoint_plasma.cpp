@@ -101,13 +101,3 @@ CAdjPlasmaVariable::CAdjPlasmaVariable(double *val_solution, unsigned short val_
 }
 
 CAdjPlasmaVariable::~CAdjPlasmaVariable(void) { }
-
-void CAdjPlasmaVariable::SetTheta(double val_density, double *val_velocity, double val_enthalpy) {
-	unsigned short iDim;
-	
-	Theta = val_density*Solution[0];
-	Theta += val_density*val_enthalpy*Solution[nDim+1];
-	
-	for (iDim = 0; iDim < nDim; iDim++)
-		Theta += val_density*val_velocity[iDim]*Solution[iDim+1];
-}

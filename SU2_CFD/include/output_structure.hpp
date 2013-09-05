@@ -82,7 +82,7 @@ class COutput {
 	double **residuals, **consv_vars;					// placeholders
 	double *p, *rho, *M, *Cp, *Cf, *Ch, *h, *yplus;		// placeholders 
 	unsigned short nVar_Consv, nVar_Total, nZones; 
-	bool wrote_base_file, wrote_CGNS_base, wrote_Tecplot_base;
+	bool wrote_base_file, wrote_surf_file, wrote_CGNS_base, wrote_Tecplot_base, wrote_Paraview_base;
 
   int cgns_base, cgns_zone, cgns_base_results, cgns_zone_results;
   
@@ -137,16 +137,6 @@ public:
 	void SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, CConfig *config, 
 			unsigned long iExtIter);
 	
-	/*!
-	 * \brief Writes mass flow rate.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iExtIter - Current external (time) iteration.
-	 */
-	void SetFlowRate(CSolver *solver_container, CGeometry *geometry, CConfig *config,
-                   unsigned long iExtIter);
-	
 	/*! 
 	 * \brief Create and write the file with the flow coefficient on the surface.
 	 * \param[in] config - Definition of the particular problem.
@@ -184,7 +174,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] val_nZone - iZone index.
 	 */
-	void MergeGeometry(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
+	void MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
   
   /*!
 	 * \brief Merge the node coordinates from all processors.
@@ -235,13 +225,6 @@ public:
 	 */
 	void SetRestart(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
 
-	/*! 
-	 * \brief Write CGNS results file.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 */
-	void WriteCGNS(CConfig *config, CGeometry *geometry, unsigned short iZone);
-
   /*!
 	 * \brief Write the x, y, & z coordinates to a CGNS output file.
 	 * \param[in] config - Definition of the particular problem.
@@ -267,15 +250,6 @@ public:
 	void SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
   
   /*!
-	 * \brief Write a Tecplot ASCII solution file.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - Current zone.
-   * \param[in] val_nZone - Total number of zones.
-	 */
-	void SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
-  
-  /*!
 	 * \brief Write a Paraview ASCII solution file.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -283,13 +257,15 @@ public:
    * \param[in] val_nZone - Total number of zones.
 	 */
 	void SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
-
-	/*!
-	 * \brief Write Tecplot binary results file.
+  
+  /*!
+	 * \brief Write a Tecplot ASCII solution file.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - Current zone.
+   * \param[in] val_nZone - Total number of zones.
 	 */
-	void WriteTecplotBinary(CConfig *config, CGeometry *geometry, unsigned short iZone);
+	void SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
   
   /*!
 	 * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
@@ -300,35 +276,28 @@ public:
 	void SetTecplot_Mesh(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
   
   /*!
-	 * \brief Write the x, y, & z coordinates to a Tecplot binary output file.
+	 * \brief Write the coordinates and connectivity to a Tecplot binary surface mesh file.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_iZone - iZone index.
 	 */
-	void SetTecplot_Coordinates(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
+	void SetTecplot_SurfaceMesh(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
   
   /*!
-	 * \brief Write the element connectivity to a Tecplot binary output file.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - iZone index.
-	 */
-	void SetTecplot_Connectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
-  
-  /*!
-	 * \brief Write solution data to a Tecplot binary output file.
+	 * \brief Write solution data to a Tecplot binary volume solution file.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_iZone - iZone index.
 	 */
 	void SetTecplot_Solution(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
 
-	/*! 
-	 * \brief Deallocate temporary memory needed for solution merging and writing.
+  /*!
+	 * \brief Write solution data to a Tecplot binary surface solution file.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - iZone index.
 	 */
-	void CleanUp(CConfig *config, CGeometry *geometry);
+	void SetTecplot_SurfaceSolution(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
 
   /*!
 	 * \brief Deallocate temporary memory needed for merging and writing coordinates.

@@ -127,32 +127,8 @@ CAdjLevelSetSolver::CAdjLevelSetSolver(CGeometry *geometry, CConfig *config, uns
 
 		/*--- Restart the solution from file information ---*/
 		mesh_filename = config->GetSolution_AdjFileName();
-		
-		/*--- Change the name, depending of the objective function ---*/
-		filename.assign(mesh_filename);
-		filename.erase (filename.end()-4, filename.end());
-		switch (config->GetKind_ObjFunc()) {
-			case DRAG_COEFFICIENT: AdjExt = "_cd.dat"; break;
-			case LIFT_COEFFICIENT: AdjExt = "_cl.dat"; break;
-			case SIDEFORCE_COEFFICIENT: AdjExt = "_csf.dat"; break;
-			case PRESSURE_COEFFICIENT: AdjExt = "_cp.dat"; break;
-			case MOMENT_X_COEFFICIENT: AdjExt = "_cmx.dat"; break;
-			case MOMENT_Y_COEFFICIENT: AdjExt = "_cmy.dat"; break;
-			case MOMENT_Z_COEFFICIENT: AdjExt = "_cmz.dat"; break;
-			case EFFICIENCY: AdjExt = "_eff.dat"; break;
-			case EQUIVALENT_AREA: AdjExt = "_ea.dat"; break;
-			case NEARFIELD_PRESSURE: AdjExt = "_nfp.dat"; break;
-      case FORCE_X_COEFFICIENT: AdjExt = "_cfx.dat"; break;
-      case FORCE_Y_COEFFICIENT: AdjExt = "_cfy.dat"; break;
-      case FORCE_Z_COEFFICIENT: AdjExt = "_cfz.dat"; break;
-      case THRUST_COEFFICIENT: AdjExt = "_ct.dat"; break;
-      case TORQUE_COEFFICIENT: AdjExt = "_cq.dat"; break;
-      case FIGURE_OF_MERIT: AdjExt = "_merit.dat"; break;
-      case FREE_SURFACE: AdjExt = "_fs.dat"; break;
-      case NOISE: AdjExt = "_fwh.dat"; break;
-      case HEAT_LOAD: AdjExt = "_Q.dat"; break;
-		}
-		filename.append(AdjExt);
+    filename = config->GetObjFunc_Extension(mesh_filename);
+    
 		restart_file.open(filename.data(), ios::in);		
 		
 		if (restart_file.fail()) {
@@ -190,8 +166,8 @@ CAdjLevelSetSolver::CAdjLevelSetSolver(CGeometry *geometry, CConfig *config, uns
        will be returned and used to instantiate the vars. ---*/
       iPoint_Local = Global2Local[iPoint_Global];
       if (iPoint_Local >= 0) {
-        if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0];
-        if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
+        if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
+        if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
         node[iPoint_Local] = new CAdjLevelSetVariable(Solution[0], nDim, nVar, config);
       }
       iPoint_Global++;
@@ -593,8 +569,7 @@ void CAdjLevelSetSolver::Source_Residual(CGeometry *geometry, CSolver **solver_c
   double epsilon, DeltaDirac, lambda, dRho_dPhi, dMud_Phi, Vol, DiffLevelSet, LevelSet, *MeanFlow, *AdjMeanFlow, **AdjLevelSetGradient, **AdjMeanFlowGradient, Density, Velocity[3], ProjAdj, dFc_dRho[3][4], ProjFlux;
   
 	double Froude2 = config->GetFroude()*config->GetFroude();
-  bool incompressible = config->GetIncompressible();
-
+  
 	for (iVar = 0; iVar < nVar; iVar++)
 		Residual[iVar] = 0;
 
@@ -603,21 +578,21 @@ void CAdjLevelSetSolver::Source_Residual(CGeometry *geometry, CSolver **solver_c
 		
 		Vol = geometry->node[iPoint]->GetVolume();
 
-    /*--- Direct problem quantities ---*/
-		DiffLevelSet = solver_container[LEVELSET_SOL]->node[iPoint]->GetDiffLevelSet();
-		LevelSet = solver_container[LEVELSET_SOL]->node[iPoint]->GetSolution(0);
-		MeanFlow = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
-    Density = solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
-    
-    /*--- Adjoint problem quantities ---*/
-		AdjMeanFlow = solver_container[ADJFLOW_SOL]->node[iPoint]->GetSolution();
-    AdjLevelSetGradient = solver_container[ADJLEVELSET_SOL]->node[iPoint]->GetGradient();
-    AdjMeanFlowGradient = solver_container[ADJFLOW_SOL]->node[iPoint]->GetGradient();
+//    /*--- Direct problem quantities ---*/
+//		DiffLevelSet = solver_container[LEVELSET_SOL]->node[iPoint]->GetDiffLevelSet();
+//		LevelSet = solver_container[LEVELSET_SOL]->node[iPoint]->GetSolution(0);
+//		MeanFlow = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
+//    Density = solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
+//    
+//    /*--- Adjoint problem quantities ---*/
+//		AdjMeanFlow = solver_container[ADJFLOW_SOL]->node[iPoint]->GetSolution();
+//    AdjLevelSetGradient = solver_container[ADJLEVELSET_SOL]->node[iPoint]->GetGradient();
+//    AdjMeanFlowGradient = solver_container[ADJFLOW_SOL]->node[iPoint]->GetGradient();
     
     /*--- Projected adjoint velocity ---*/
     ProjAdj = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
-      Velocity[iDim] = solver_container[FLOW_SOL]->node[iPoint]->GetVelocity(iDim, incompressible);
+      Velocity[iDim] = solver_container[FLOW_SOL]->node[iPoint]->GetVelocity(iDim, INCOMPRESSIBLE);
       ProjAdj += Velocity[iDim]*AdjLevelSetGradient[0][iDim];
     }
     

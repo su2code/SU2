@@ -77,13 +77,9 @@ inline double *CPoint::GetCoord_Old(void) { return Coord_old; }
 
 inline double *CPoint::GetCoord_Sum(void) { return Coord_sum; }
 
-inline double *CPoint::GetGridVel(void) { return gridvel; }
+inline double *CPoint::GetGridVel(void) { return GridVel; }
 
-inline double **CPoint::GetGridVel_Grad(void) { return gridvel_grad; }
-
-inline double *CPoint::GetRotVel(void) { return rotvel; }
-
-inline double **CPoint::GetRotVel_Grad(void) { return rotvel_grad; }
+inline double **CPoint::GetGridVel_Grad(void) { return GridVel_Grad; }
 
 inline void CPoint::SetCoord_Old(double *val_coord_old) {
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
@@ -100,13 +96,9 @@ inline void CPoint::AddCoord_Sum(double *val_coord_sum) {
 		Coord_sum[iDim] += val_coord_sum[iDim]; 
 }
 
-inline void CPoint::SetGridVel(unsigned short val_dim, double val_gridvel) { gridvel[val_dim] = val_gridvel; }
+inline void CPoint::SetGridVel(unsigned short val_dim, double val_gridvel) { GridVel[val_dim] = val_gridvel; }
 
-inline void CPoint::SetGridVel_Grad(unsigned short val_var, unsigned short val_dim, double val_value) { gridvel_grad[val_var][val_dim] = val_value; }
-
-inline void CPoint::SetRotVel(unsigned short val_dim, double val_rotvel) { rotvel[val_dim] = val_rotvel; }
-
-inline void CPoint::SetRotVel_Grad(unsigned short val_var, unsigned short val_dim, double val_value) { rotvel_grad[val_var][val_dim] = val_value; }
+inline void CPoint::SetGridVel_Grad(unsigned short val_var, unsigned short val_dim, double val_value) { GridVel_Grad[val_var][val_dim] = val_value; }
 
 inline void CPoint::SetChildren_CV (unsigned short val_nchildren_CV, unsigned long val_children_CV) {
 	if (Children_CV.size() <= val_nchildren_CV) Children_CV.resize(val_nchildren_CV+1);
@@ -142,12 +134,7 @@ inline void CPoint::SetParent_CV (unsigned long val_parent_CV) { Parent_CV = val
 
 inline void CPoint::SetGridVel(double *val_gridvel) { 
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
-		gridvel[iDim] = val_gridvel[iDim]; 
-}
-
-inline void CPoint::SetRotVel(double *val_rotvel) { 
-	for (unsigned short iDim = 0; iDim < nDim; iDim++)
-		rotvel[iDim] = val_rotvel[iDim]; 
+		GridVel[iDim] = val_gridvel[iDim];
 }
 
 inline void CPoint::SetVolume_n (void) { Volume[1] = Volume[0]; }
@@ -193,9 +180,13 @@ inline void CPoint::SetDomain(bool val_domain) { Domain = val_domain; }
 
 inline bool CPoint::GetDomain(void) { return Domain; }
 
-inline void CPoint::SetWallDistance(double val_distance) { WallDistance = val_distance; }
+inline void CPoint::SetWall_Distance(double val_distance) { Wall_Distance = val_distance; }
 
-inline double CPoint::GetWallDistance(void) { return WallDistance; }
+inline void CPoint::SetSharpEdge_Distance(double val_distance) { SharpEdge_Distance = val_distance; }
+
+inline double CPoint::GetWall_Distance(void) { return Wall_Distance; }
+
+inline double CPoint::GetSharpEdge_Distance(void) { return SharpEdge_Distance; }
 
 inline void CPoint::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG, CConfig *config) { }
 
@@ -242,10 +233,6 @@ inline void CEdge::SetZeroValues(void) {
 inline double *CEdge::GetCoord(void) { return NULL; }
 
 inline void CEdge::SetCoord(double *val_coord) { }
-
-inline double CEdge::GetRotFlux(void) { return Rot_Flux; }
-
-inline void CEdge::AddRotFlux(double val_rot_flux) { Rot_Flux += val_rot_flux; }
 
 inline unsigned short CVertex::GetnNodes() { return 1; }
 
@@ -319,14 +306,6 @@ inline void CVertex::SetZeroValues(void) {
 	for (unsigned short iDim = 0; iDim < nDim; iDim ++) 
 		Normal[iDim] = 0.0; 
 }
-
-inline double CVertex::GetRotFlux(void) { return Rot_Flux; }
-
-inline void CVertex::AddRotFlux(double val_rot_flux) { Rot_Flux += val_rot_flux; }
-
-inline bool CVertex::GetSharp_Corner(void) { return Sharp_Corner; }
-
-inline void CVertex::SetSharp_Corner(bool val_sharp_corner) { Sharp_Corner = val_sharp_corner; }
 
 inline unsigned long CVertex::GetNormal_Neighbor(void) { return Normal_Neighbor; }
 

@@ -38,7 +38,9 @@ CAdjEulerVariable::CAdjEulerVariable(double val_psirho, double *val_phi, double 
 																		 unsigned short val_nvar, CConfig *config) : CVariable(val_ndim, val_nvar, config) {
 	unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
   
-  bool Incompressible = config->GetIncompressible();
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+	bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+	bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
@@ -68,8 +70,7 @@ CAdjEulerVariable::CAdjEulerVariable(double val_psirho, double *val_phi, double 
 	/*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
 	if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED)
 		Undivided_Laplacian = new double [nVar];
-	if ((config->GetKind_ConvNumScheme_AdjFlow() == SPACE_UPWIND) &&
-			(config->GetKind_SlopeLimit_AdjFlow() != NONE)) {
+	if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_UPWIND) {
 		Limiter = new double [nVar];
 		Solution_Max = new double [nVar];
 		Solution_Min = new double [nVar];
@@ -81,14 +82,7 @@ CAdjEulerVariable::CAdjEulerVariable(double val_psirho, double *val_phi, double 
 	}
   
   /*--- Allocate and initialize solution ---*/
-	if (Incompressible) {
-		Solution[0] = 0.0; 	Solution_Old[0] = 0.0;
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Solution[iDim+1] = 0.0;
-			Solution_Old[iDim+1] = 0.0;
-		}
-	}
-	else {
+	if (compressible) {
 		Solution[0] = val_psirho; 	Solution_Old[0] = val_psirho;
 		Solution[nVar-1] = val_psie; Solution_Old[nVar-1] = val_psie;
 		for (iDim = 0; iDim < nDim; iDim++) {
@@ -96,18 +90,18 @@ CAdjEulerVariable::CAdjEulerVariable(double val_psirho, double *val_phi, double 
 			Solution_Old[iDim+1] = val_phi[iDim];
 		}
 	}
+	if (incompressible || freesurface) {
+		Solution[0] = 0.0; 	Solution_Old[0] = 0.0;
+		for (iDim = 0; iDim < nDim; iDim++) {
+			Solution[iDim+1] = 0.0;
+			Solution_Old[iDim+1] = 0.0;
+		}
+	}
+
   
   /*--- Allocate and initialize solution for dual time strategy ---*/
 	if (dual_time) {
-		if (Incompressible) {
-			Solution_time_n[0] = 0.0;
-			Solution_time_n1[0] = 0.0;
-			for (iDim = 0; iDim < nDim; iDim++) {
-				Solution_time_n[iDim+1] = 0.0;
-				Solution_time_n1[iDim+1] = 0.0;
-			}
-		}
-		else {
+    if (compressible) {
 			Solution_time_n[0] = val_psirho;
 			Solution_time_n1[0] = val_psirho;
 			for (iDim = 0; iDim < nDim; iDim++) {
@@ -117,6 +111,15 @@ CAdjEulerVariable::CAdjEulerVariable(double val_psirho, double *val_phi, double 
 			Solution_time_n[nVar-1] = val_psie;
 			Solution_time_n1[nVar-1] = val_psie;
 		}
+    if (incompressible || freesurface) {
+			Solution_time_n[0] = 0.0;
+			Solution_time_n1[0] = 0.0;
+			for (iDim = 0; iDim < nDim; iDim++) {
+				Solution_time_n[iDim+1] = 0.0;
+				Solution_time_n1[iDim+1] = 0.0;
+			}
+		}
+
 	}
   
   /*--- Allocate auxiliar vector for sensitivity computation ---*/
@@ -131,13 +134,6 @@ CAdjEulerVariable::CAdjEulerVariable(double val_psirho, double *val_phi, double 
 	IntBoundary_Jump = new double [nVar];
 	for (iVar = 0; iVar < nVar; iVar++)
 		IntBoundary_Jump[iVar] = 0.0;
-  
-	/*--- Allocate and initialize vector containing objective function sensitivity for discrete adjoint ---*/
-	if (config->GetKind_Adjoint() == DISCRETE) {
-		ObjFuncSource = new double [nVar];
-		for (iVar = 0; iVar < nVar; iVar++)
-			ObjFuncSource[iVar] = 0.0;
-	}
   
   /*--- Allocate space for the time spectral source terms ---*/
 	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
@@ -181,8 +177,7 @@ CAdjEulerVariable::CAdjEulerVariable(double *val_solution, unsigned short val_nd
 	/*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
 	if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED)
 		Undivided_Laplacian = new double [nVar];
-	if ((config->GetKind_ConvNumScheme_AdjFlow() == SPACE_UPWIND) &&
-			(config->GetKind_SlopeLimit_AdjFlow() != NONE)) {
+	if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_UPWIND) {
 		Limiter = new double [nVar];
 		Solution_Max = new double [nVar];
 		Solution_Min = new double [nVar];
@@ -222,13 +217,6 @@ CAdjEulerVariable::CAdjEulerVariable(double *val_solution, unsigned short val_nd
 	IntBoundary_Jump = new double [nVar];
 	for (iVar = 0; iVar < nVar; iVar++)
 		IntBoundary_Jump[iVar] = 0.0;
-	
-	/*--- Allocate and initialize vector containing objective function sensitivity for discrete adjoint ---*/
-	if (config->GetKind_Adjoint() == DISCRETE) {
-		ObjFuncSource = new double [nVar];
-		for (iVar = 0; iVar < nVar; iVar++)
-			ObjFuncSource[iVar] = 0.0;
-	}
   
 	/*--- Allocate space for the time spectral source terms ---*/
 	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
@@ -249,47 +237,79 @@ CAdjEulerVariable::~CAdjEulerVariable(void) {
   
 }
 
-void CAdjEulerVariable::SetTheta(double val_density, double *val_velocity, double val_enthalpy) {
-	unsigned short iDim;
-	
-	Theta = val_density*Solution[0];
-	Theta += val_density*val_enthalpy*Solution[nDim+1];
-	
-	for (iDim = 0; iDim < nDim; iDim++)
-		Theta += val_density*val_velocity[iDim]*Solution[iDim+1];
-}
-
-void CAdjEulerVariable::SetPrimVar_Compressible(double val_adjlimit) {
+bool CAdjEulerVariable::SetPrimVar_Compressible(double SharpEdge_Distance, bool check, CConfig *config) {
 	unsigned short iVar;
-  bool check_dens = false;
+  bool check_dens = false, RightVol = true;
   
-  check_dens = (fabs(Solution[0]) > val_adjlimit);             // Check the adjoint density
+  double adj_limit = config->GetAdjointLimit();
   
-  /*--- Check that the solution has a physical meaning ---*/
+  check_dens = (fabs(Solution[0]) > adj_limit);
+  
+  /*--- Check that the adjoint solution is bounded ---*/
+  
   if (check_dens) {
     
     /*--- Copy the old solution ---*/
     for (iVar = 0; iVar < nVar; iVar++)
       Solution[iVar] = Solution_Old[iVar];
     
+    RightVol = false;
+    
   }
+  
+  return RightVol;
   
 }
 
-void CAdjEulerVariable::SetPrimVar_Incompressible(double val_adjlimit) {
+bool CAdjEulerVariable::SetPrimVar_Incompressible(double SharpEdge_Distance, bool check, CConfig *config) {
   unsigned short iVar;
-  bool check_press = false;
+  bool check_press = false, RightVol = true;
   
-  check_press = (fabs(Solution[0]) > val_adjlimit);             // Check the adjoint pressure
+  double adj_limit = config->GetAdjointLimit();
   
-  /*--- Check that the solution has a physical meaning ---*/
+  check_press = (fabs(Solution[0]) > adj_limit);
+  
+  /*--- Check that the adjoint solution is bounded ---*/
+  
   if (check_press) {
     
     /*--- Copy the old solution ---*/
     for (iVar = 0; iVar < nVar; iVar++)
       Solution[iVar] = Solution_Old[iVar];
     
+    RightVol = false;
+    
   }
+  
+  return RightVol;
+  
+}
+
+bool CAdjEulerVariable::SetPrimVar_FreeSurface(double SharpEdge_Distance, bool check, CConfig *config) {
+  unsigned short iVar;
+  bool check_press = false, RightVol = true;
+  
+  double adj_limit = config->GetAdjointLimit();
+  double dist_limit = config->GetLimiterCoeff()*config->GetRefElemLength()*config->GetSharpEdgesCoeff();
+  
+  if (SharpEdge_Distance < dist_limit) {
+    
+    check_press = (fabs(Solution[0]) > adj_limit); // Check adjoint pressure
+    
+    /*--- Check that the solution has a physical meaning ---*/
+    if (check_press) {
+      
+      /*--- Copy the old solution ---*/
+      for (iVar = 0; iVar < nVar; iVar++)
+        Solution[iVar] = Solution_Old[iVar];
+      
+      RightVol = false;
+      
+    }
+    
+  }
+  
+  return RightVol;
   
 }
 
@@ -302,74 +322,7 @@ CAdjNSVariable::CAdjNSVariable(double *val_solution, unsigned short val_ndim,
 
 CAdjNSVariable::CAdjNSVariable(double val_psirho, double *val_phi, double val_psie,
                                unsigned short val_ndim, unsigned short val_nvar, CConfig *config) : CAdjEulerVariable(val_psirho, val_phi, val_psie, val_ndim, val_nvar, config) {
-  
-  kappapsi_Volume = 0.0;
-  
+
 }
 
 CAdjNSVariable::~CAdjNSVariable(void) { }
-
-
-void SetLaminarViscosity_Jacobian(CConfig *config) {
-	// Derivative of Sutherland's Law wrt conservative variables
-  
-  //	double Temperature, Pressure, Temperature_Dim;
-  //	double *U, T_Sens, P_Sens, TDim_Sens;
-  //
-  //	U = new double[nVar];
-  //	T_Sens = new double[nVar];
-  //	P_Sens = new double[nVar];
-  //	TDim_Sens = new double[nVar];
-  //
-  //	for (iVar = 0; iVar < nVar; iVar++)
-  //		U[iVar] = solver_container[FLOW_SOL]->node[iPoint]->GetSolution(iVar);
-  //
-  //	if (iDim == 2)
-  //		Pressure = Gamma_Minus_One*(U[3] - (U[1]*U[1] + U[2]*U[2])/(2*U[0]));
-  //	else
-  //		Pressure = Gamma_Minus_One*(U[4] - (U[1]*U[1] + U[2]*U[2] + U[3]*U[3])/(2*U[0]));
-  //
-  //	Temperature = Pressure/(U[0]*Gas_Constant);
-  //
-  //	if (iDim == 2) {
-  //		P_Sens[0] = Gamma_Minus_One*(U[1]*U[1] + U[2]*U[2])/(2*U[0]*U[0]);
-  //		P_Sens[1] = -Gamma_Minus_One*U[1]/U[0];
-  //		P_Sens[2] = -Gamma_Minus_One*U[2]/U[0];
-  //		P_Sens[3] = Gamma_Minus_One;
-  //
-  //	} else {
-  //		P_Sens[0] = Gamma_Minus_One*(U[1]*U[1] + U[2]*U[2] + U[3]*U[3])/(2*U[0]*U[0]);
-  //		P_Sens[1] = -Gamma_Minus_One*U[1]/U[0];
-  //		P_Sens[2] = -Gamma_Minus_One*U[2]/U[0];
-  //		P_Sens[3] = -Gamma_Minus_One*U[3]/U[0];
-  //		P_Sens[4] = Gamma_Minus_One;
-  //	}
-  //
-  //	T_Sens[0] = P_Sens[0]/(U[0]*Gas_Constant) - Pressure/(U[0]*U[0]*Gas_Constant);
-  //	for (iVar = 1; iVar < nVar; iVar++)
-  //		T_Sens[iVar] = P_Sens[iVar]/(U[0]*Gas_Constant);
-  //
-  //	Temperature_Dim = Temperature*Temperature_Ref;
-  //
-  //	for (iVar = 0; iVar < nVar; iVar++)
-  //		TDim_Sens[iVar] = T_Sens[iVar]*Temperature_Ref;
-  //
-  //	for (iVar = 0; iVar < nVar; iVar++) {
-  //		LaminarViscosity_Jacobian[iVar] = 1.853E-5*(
-  //				(3.0/2.0)*(TDim_Sens[iVar]/300.0)*sqrt(Temperature_Dim/300.0) * (300.0+110.3)/(Temperature_Dim+110.3)
-  //				- pow(Temperature_Dim/300.0,3.0/2.0) * TDim_Sens[iVar]* (300.0+110.3)/((Temperature_Dim+110.3)*(Temperature_Dim+110.3))
-  //				);
-  //
-  //		LaminarViscosity_Jacobian[iVar] = LaminarViscosity_Jacobian[iVar]/Viscosity_Ref;
-  //	}
-  
-}
-
-void SetEddyViscosity_Jacobian(unsigned short val_Kind_Turb_Model, CVariable *TurbVariable) { }
-
-void CAdjNSVariable::SetTheta(double val_density, double *val_velocity, double val_enthalpy) {
-	Theta = val_density*Solution[0];
-	Theta += val_density*val_enthalpy*Solution[nDim+1];
-	for (unsigned short iDim = 0; iDim < nDim; iDim++)
-		Theta += val_density*val_velocity[iDim]*Solution[iDim+1];
-}

@@ -592,7 +592,7 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
   
 }
 
-void CSolver::SetRotVel_Gradient(CGeometry *geometry, CConfig *config) {
+void CSolver::SetGridVel_Gradient(CGeometry *geometry, CConfig *config) {
 	unsigned short iDim, jDim, iVar, iNeigh;
 	unsigned long iPoint, jPoint;
 	double *Coord_i, *Coord_j, *Solution_i, *Solution_j, Smatrix[3][3],
@@ -609,7 +609,7 @@ void CSolver::SetRotVel_Gradient(CGeometry *geometry, CConfig *config) {
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
     
 		Coord_i = geometry->node[iPoint]->GetCoord();
-		Solution_i = geometry->node[iPoint]->GetRotVel();
+		Solution_i = geometry->node[iPoint]->GetGridVel();
     
 		/*--- Inizialization of variables ---*/
 		for (iVar = 0; iVar < nDim; iVar++)
@@ -620,7 +620,7 @@ void CSolver::SetRotVel_Gradient(CGeometry *geometry, CConfig *config) {
 		for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
 			jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
 			Coord_j = geometry->node[jPoint]->GetCoord();
-			Solution_j = geometry->node[jPoint]->GetRotVel();
+			Solution_j = geometry->node[jPoint]->GetGridVel();
       
 			weight = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++)
@@ -684,7 +684,7 @@ void CSolver::SetRotVel_Gradient(CGeometry *geometry, CConfig *config) {
 				product = 0.0;
 				for (jDim = 0; jDim < nDim; jDim++)
 					product += Smatrix[iDim][jDim]*cvector[iVar][jDim];
-				geometry->node[iPoint]->SetRotVel_Grad(iVar,iDim,product);
+				geometry->node[iPoint]->SetGridVel_Grad(iVar,iDim,product);
 			}
 		}
 	}
@@ -945,7 +945,7 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
 	unsigned long iEdge, iPoint, jPoint;
 	unsigned short iVar, iDim;
 	double **Gradient_i, **Gradient_j, *Coord_i, *Coord_j, *Solution_i, *Solution_j, 
-	dave, LimK, eps2, dm, dp, du, limiter;
+	dave, LimK, eps1, eps2, dm, dp, du, ds, limiter, SharpEdge_Distance;
 
 	/*--- Initialize solution max and solution min in the entire domain --*/
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
@@ -1083,6 +1083,79 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
         }
       }
       break;
+      
+      /*--- Sharp edges limiter ---*/
+    case SHARP_EDGES:
+      
+      for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+        
+        iPoint     = geometry->edge[iEdge]->GetNode(0);
+        jPoint     = geometry->edge[iEdge]->GetNode(1);
+        Solution_i = node[iPoint]->GetSolution();
+        Solution_j = node[jPoint]->GetSolution();
+        Gradient_i = node[iPoint]->GetGradient();
+        Gradient_j = node[jPoint]->GetGradient();
+        Coord_i    = geometry->node[iPoint]->GetCoord();
+        Coord_j    = geometry->node[jPoint]->GetCoord();
+        
+        for (iVar = 0; iVar < nVar; iVar++) {
+          
+          /*-- Get limiter parameters from the configuration file ---*/
+          dave = config->GetRefElemLength();
+          LimK = config->GetLimiterCoeff();
+          eps1 = LimK*dave;
+          eps2 = pow(eps1, 3.0);
+          
+          /*--- Calculate the interface left gradient, delta- (dm) ---*/
+          dm = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            dm += 0.5*(Coord_j[iDim]-Coord_i[iDim])*Gradient_i[iVar][iDim];
+          
+          /*--- Calculate the interface right gradient, delta+ (dp) ---*/
+          if ( dm > 0.0 ) dp = node[iPoint]->GetSolution_Max(iVar);
+          else dp = node[iPoint]->GetSolution_Min(iVar);
+          
+          /*--- Compute the distance to a sharp edge ---*/
+          SharpEdge_Distance = (geometry->node[iPoint]->GetSharpEdge_Distance() - config->GetSharpEdgesCoeff()*eps1);
+          ds = 0.0;
+					if (SharpEdge_Distance < -eps1) ds = 0.0;
+					if (fabs(SharpEdge_Distance) <= eps1) ds = 0.5*(1.0+(SharpEdge_Distance/eps1)+(1.0/PI_NUMBER)*sin(PI_NUMBER*SharpEdge_Distance/eps1));
+					if (SharpEdge_Distance > eps1) ds = 1.0;
+                    
+          limiter = ds * ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
+          
+          if (limiter < node[iPoint]->GetLimiter(iVar))
+            if (geometry->node[iPoint]->GetDomain()) node[iPoint]->SetLimiter(iVar, limiter);
+          
+          /*-- Repeat for point j on the edge ---*/
+          dave = config->GetRefElemLength();
+          LimK = config->GetLimiterCoeff();
+          eps1 = LimK*dave;
+          eps2 = pow(eps1, 3.0);
+					
+          dm = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            dm += 0.5*(Coord_i[iDim]-Coord_j[iDim])*Gradient_j[iVar][iDim];
+          
+          if ( dm > 0.0 ) dp = node[jPoint]->GetSolution_Max(iVar);
+          else dp = node[jPoint]->GetSolution_Min(iVar);
+          
+          /*--- Compute the distance to a sharp edge ---*/
+          SharpEdge_Distance = (geometry->node[jPoint]->GetSharpEdge_Distance() - config->GetSharpEdgesCoeff()*eps1);
+          ds = 0.0;
+					if (SharpEdge_Distance < -eps1) ds = 0.0;
+					if (fabs(SharpEdge_Distance) <= eps1) ds = 0.5*(1.0+(SharpEdge_Distance/eps1)+(1.0/PI_NUMBER)*sin(PI_NUMBER*SharpEdge_Distance/eps1));
+					if (SharpEdge_Distance > eps1) ds = 1.0;
+          
+          limiter = ds * ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
+          
+          if (limiter < node[jPoint]->GetLimiter(iVar))
+            if (geometry->node[jPoint]->GetDomain()) node[jPoint]->SetLimiter(iVar, limiter);
+          
+        }
+      }
+      break;
+      
   }
   
   /*--- Limiter MPI ---*/
@@ -1210,14 +1283,11 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
   
-	unsigned long iPoint, index, flowIter, iPoint_Global;
+	unsigned long iPoint, index, iPoint_Global;
   long iPoint_Local;
-  char buffer[50];
-  unsigned short iField, val_iZone, iVar;
+  unsigned short iField, iVar;
   string Tag, text_line, AdjExt, UnstExt;
-  
-  unsigned short Kind_ObjFunc = config->GetKind_ObjFunc();
-  unsigned short nZone = geometry->GetnZone();
+  unsigned long iExtIter = config->GetExtIter();
   
 	/*--- Define geometry constants in the solver structure ---*/
 	nDim = geometry->GetnDim();
@@ -1230,71 +1300,18 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   string filename;
   
   /*--- Retrieve filename from config ---*/
-	if (config->GetAdjoint())
-		filename = config->GetSolution_AdjFileName();
-	else
-		filename = config->GetSolution_FlowFileName();
-  
-	/*--- Remove restart filename extension ---*/
-	filename.erase(filename.end()-4, filename.end());
-  
-	/*--- The adjoint problem requires a particular extension. ---*/
 	if (config->GetAdjoint()) {
-		switch (Kind_ObjFunc) {
-      case DRAG_COEFFICIENT:      AdjExt = "_cd";   break;
-      case LIFT_COEFFICIENT:      AdjExt = "_cl";   break;
-      case SIDEFORCE_COEFFICIENT: AdjExt = "_csf";  break;
-      case PRESSURE_COEFFICIENT:  AdjExt = "_cp";   break;
-      case MOMENT_X_COEFFICIENT:  AdjExt = "_cmx";  break;
-      case MOMENT_Y_COEFFICIENT:  AdjExt = "_cmy";  break;
-      case MOMENT_Z_COEFFICIENT:  AdjExt = "_cmz";  break;
-      case EFFICIENCY:            AdjExt = "_eff";  break;
-      case EQUIVALENT_AREA:       AdjExt = "_ea";   break;
-      case NEARFIELD_PRESSURE:    AdjExt = "_nfp";  break;
-      case FORCE_X_COEFFICIENT:   AdjExt = "_cfx";  break;
-      case FORCE_Y_COEFFICIENT:   AdjExt = "_cfy";  break;
-      case FORCE_Z_COEFFICIENT:   AdjExt = "_cfz";  break;
-      case THRUST_COEFFICIENT:    AdjExt = "_ct";   break;
-      case TORQUE_COEFFICIENT:    AdjExt = "_cq";   break;
-      case FIGURE_OF_MERIT:       AdjExt = "_merit";break;
-      case FREE_SURFACE:           AdjExt = "_fs";   break;
-      case NOISE:                 AdjExt = "_fwh";  break;
-      case HEAT_LOAD:                 AdjExt = "_Q";  break;
-		}
-		filename.append(AdjExt);
-	}
+		filename = config->GetSolution_AdjFileName();
+    filename = config->GetObjFunc_Extension(filename);
+  } else {
+		filename = config->GetSolution_FlowFileName();
+  }
   
-	/*--- Multi-zone restart files. ---*/
-	if (nZone > 1 && !(config->GetUnsteady_Simulation() == TIME_SPECTRAL)) {
-    val_iZone = config->GetExtIter();
-		filename.erase(filename.end()-4, filename.end());
-		sprintf (buffer, "_%d.dat", int(val_iZone));
-		UnstExt = string(buffer);
-		filename.append(UnstExt);
-	}
-  
-	/*--- Naming the solution files for unsteady/time-spectral cases. ---*/
-	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-		val_iZone   = config->GetExtIter();
-		if (int(val_iZone) < 10) sprintf (buffer, "_0000%d.dat", int(val_iZone));
-		if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) sprintf (buffer, "_000%d.dat", int(val_iZone));
-		if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) sprintf (buffer, "_00%d.dat", int(val_iZone));
-		if ((int(val_iZone) >= 1000) && (int(val_iZone) < 10000)) sprintf (buffer, "_0%d.dat", int(val_iZone));
-		if (int(val_iZone) >= 10000) sprintf (buffer, "_%d.dat", int(val_iZone));
-		UnstExt = string(buffer);
-		filename.append(UnstExt);
-	} else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
-		flowIter   = config->GetExtIter();
-		if ((int(flowIter) >= 0) && (int(flowIter) < 10)) sprintf (buffer, "_0000%d.dat", int(flowIter));
-		if ((int(flowIter) >= 10) && (int(flowIter) < 100)) sprintf (buffer, "_000%d.dat", int(flowIter));
-		if ((int(flowIter) >= 100) && (int(flowIter) < 1000)) sprintf (buffer, "_00%d.dat", int(flowIter));
-		if ((int(flowIter) >= 1000) && (int(flowIter) < 10000)) sprintf (buffer, "_0%d.dat", int(flowIter));
-		if (int(flowIter) >= 10000) sprintf (buffer, "_%d.dat", int(flowIter));
-		UnstExt = string(buffer);
-		filename.append(UnstExt);
-	} else
-    filename.append(".dat");
-  
+	/*--- Unsteady problems require an iteration number to be appended. ---*/
+  if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+		filename = config->GetUnsteady_FileName(filename, int(iExtIter));
+	}
+  /*--- Open the restart file ---*/
   restart_file.open(filename.data(), ios::in);
 
   /*--- In case there is no restart file ---*/
@@ -1349,7 +1366,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
       /*--- The PointID is not stored --*/
       point_line >> index;
       
-      /*--- Store the solution --*/
+      /*--- Store the solution (starting with node coordinates) --*/
       for (iField = 0; iField < nVar; iField++)
         point_line >> Solution[iField];
       
@@ -1498,7 +1515,7 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
   
 }
 
-void CBaselineSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned short val_iZone) {
+void CBaselineSolver::GetRestart(CGeometry *geometry, CConfig *config, int val_iter) {
   
 	int rank = MASTER_NODE;
 #ifndef NO_MPI
@@ -1507,80 +1524,26 @@ void CBaselineSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned 
   
 	/*--- Restart the solution from file information ---*/
 	string filename;
-	unsigned long iPoint, index, flowIter;
-	char buffer[50];
+	unsigned long iPoint, index;
 	string UnstExt, text_line, AdjExt;
 	ifstream restart_file;
-	unsigned short nZone = geometry->GetnZone();
-  unsigned short Kind_ObjFunc = config->GetKind_ObjFunc();
   unsigned short iField;
+  unsigned long iExtIter = config->GetExtIter();
   
   /*--- Retrieve filename from config ---*/
-	if (config->GetAdjoint())
-		filename = config->GetSolution_AdjFileName();
-	else
-		filename = config->GetSolution_FlowFileName();
-  
-	/*--- Remove restart filename extension ---*/
-	filename.erase(filename.end()-4, filename.end());
-  
-	/*--- The adjoint problem requires a particular extension. ---*/
 	if (config->GetAdjoint()) {
-		switch (Kind_ObjFunc) {
-      case DRAG_COEFFICIENT:      AdjExt = "_cd";   break;
-      case LIFT_COEFFICIENT:      AdjExt = "_cl";   break;
-      case SIDEFORCE_COEFFICIENT: AdjExt = "_csf";  break;
-      case PRESSURE_COEFFICIENT:  AdjExt = "_cp";   break;
-      case MOMENT_X_COEFFICIENT:  AdjExt = "_cmx";  break;
-      case MOMENT_Y_COEFFICIENT:  AdjExt = "_cmy";  break;
-      case MOMENT_Z_COEFFICIENT:  AdjExt = "_cmz";  break;
-      case EFFICIENCY:            AdjExt = "_eff";  break;
-      case EQUIVALENT_AREA:       AdjExt = "_ea";   break;
-      case NEARFIELD_PRESSURE:    AdjExt = "_nfp";  break;
-      case FORCE_X_COEFFICIENT:   AdjExt = "_cfx";  break;
-      case FORCE_Y_COEFFICIENT:   AdjExt = "_cfy";  break;
-      case FORCE_Z_COEFFICIENT:   AdjExt = "_cfz";  break;
-      case THRUST_COEFFICIENT:    AdjExt = "_ct";   break;
-      case TORQUE_COEFFICIENT:    AdjExt = "_cq";   break;
-      case FIGURE_OF_MERIT:       AdjExt = "_merit";break;
-      case FREE_SURFACE:          AdjExt = "_fs";   break;
-      case NOISE:                 AdjExt = "_fwh";  break;
-      case HEAT_LOAD:             AdjExt = "_Q";  break;
-		}
-		filename.append(AdjExt);
+		filename = config->GetSolution_AdjFileName();
+    filename = config->GetObjFunc_Extension(filename);
+  } else {
+		filename = config->GetSolution_FlowFileName();
+  }
+  
+	/*--- Unsteady problems require an iteration number to be appended. ---*/
+  if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+		filename = config->GetUnsteady_FileName(filename, int(iExtIter));
 	}
   
-	/*--- Multi-zone restart files. ---*/
-	if (nZone > 1 && !(config->GetUnsteady_Simulation() == TIME_SPECTRAL)) {
-		filename.erase(filename.end()-4, filename.end());
-		sprintf (buffer, "_%d.dat", int(val_iZone));
-		UnstExt = string(buffer);
-		filename.append(UnstExt);
-	}
-  
-	/*--- Naming the solution files for unsteady/time-spectral cases. ---*/
-	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-		val_iZone   = config->GetExtIter();
-		if (int(val_iZone) < 10) sprintf (buffer, "_0000%d.dat", int(val_iZone));
-		if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) sprintf (buffer, "_000%d.dat", int(val_iZone));
-		if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) sprintf (buffer, "_00%d.dat", int(val_iZone));
-		if ((int(val_iZone) >= 1000) && (int(val_iZone) < 10000)) sprintf (buffer, "_0%d.dat", int(val_iZone));
-		if (int(val_iZone) >= 10000) sprintf (buffer, "_%d.dat", int(val_iZone));
-		UnstExt = string(buffer);
-		filename.append(UnstExt);
-	} else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
-		flowIter   = config->GetExtIter();
-		if ((int(flowIter) >= 0) && (int(flowIter) < 10)) sprintf (buffer, "_0000%d.dat", int(flowIter));
-		if ((int(flowIter) >= 10) && (int(flowIter) < 100)) sprintf (buffer, "_000%d.dat", int(flowIter));
-		if ((int(flowIter) >= 100) && (int(flowIter) < 1000)) sprintf (buffer, "_00%d.dat", int(flowIter));
-		if ((int(flowIter) >= 1000) && (int(flowIter) < 10000)) sprintf (buffer, "_0%d.dat", int(flowIter));
-		if (int(flowIter) >= 10000) sprintf (buffer, "_%d.dat", int(flowIter));
-		UnstExt = string(buffer);
-		filename.append(UnstExt);
-	} else
-    filename.append(".dat");
-  
-  
+  /*--- Open the restart file ---*/
   restart_file.open(filename.data(), ios::in);
   
 	/*--- In case there is no file ---*/
@@ -1633,7 +1596,7 @@ void CBaselineSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned 
       /*--- The PointID is not stored --*/
       point_line >> index;
       
-      /*--- Store the solution --*/
+      /*--- Store the solution (starting with node coordinates) --*/
       for (iField = 0; iField < nVar; iField++)
         point_line >> Solution[iField];
       

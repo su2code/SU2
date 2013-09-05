@@ -192,29 +192,11 @@ void CGridAdaptation::GetAdjSolution(CGeometry *geometry, CConfig *config) {
 	string copy, mesh_filename;
 	ifstream restart_file;
 
-	char buffer[50], cstr[200];
+  /*--- Get the adjoint solution file name ---*/
 	mesh_filename = config->GetSolution_AdjFileName();
-	copy.assign(mesh_filename);
-	copy.erase (copy.end()-4, copy.end());
-	strcpy (cstr, copy.c_str()); 
-	if (config->GetKind_ObjFunc() == DRAG_COEFFICIENT) sprintf (buffer, "_cd.dat"); 
-	if (config->GetKind_ObjFunc() == LIFT_COEFFICIENT) sprintf (buffer, "_cl.dat");
-	if (config->GetKind_ObjFunc() == SIDEFORCE_COEFFICIENT) sprintf (buffer, "_csf.dat"); 
-	if (config->GetKind_ObjFunc() == PRESSURE_COEFFICIENT) sprintf (buffer, "_cp.dat"); 
-	if (config->GetKind_ObjFunc() == MOMENT_X_COEFFICIENT) sprintf (buffer, "_cmx.dat"); 
-	if (config->GetKind_ObjFunc() == MOMENT_Y_COEFFICIENT) sprintf (buffer, "_cmy.dat"); 
-	if (config->GetKind_ObjFunc() == MOMENT_Z_COEFFICIENT) sprintf (buffer, "_cmz.dat"); 
-	if (config->GetKind_ObjFunc() == EFFICIENCY) sprintf (buffer, "_eff.dat"); 
-  if (config->GetKind_ObjFunc() == FORCE_X_COEFFICIENT) sprintf (buffer, "_cfx.dat"); 
-	if (config->GetKind_ObjFunc() == FORCE_Y_COEFFICIENT) sprintf (buffer, "_cfy.dat"); 
-	if (config->GetKind_ObjFunc() == FORCE_Z_COEFFICIENT) sprintf (buffer, "_cfz.dat");
-  if (config->GetKind_ObjFunc() == THRUST_COEFFICIENT) sprintf (buffer, "_ct.dat"); 
-	if (config->GetKind_ObjFunc() == TORQUE_COEFFICIENT) sprintf (buffer, "_cq.dat"); 
-	if (config->GetKind_ObjFunc() == FIGURE_OF_MERIT) sprintf (buffer, "_merit.dat");
-  if (config->GetKind_ObjFunc() == HEAT_LOAD) sprintf (buffer, "_Q.dat");
-	strcat(cstr, buffer);
+  mesh_filename = config->GetObjFunc_Extension(mesh_filename);
 	
-	restart_file.open(cstr, ios::in);
+	restart_file.open(mesh_filename.c_str(), ios::in);
 	if (restart_file.fail()) {
 		cout << "There is no adjoint restart file!!" << endl;
 		cout << "Press any key to exit..." << endl;
@@ -273,8 +255,9 @@ void CGridAdaptation::GetAdjResidual(CGeometry *geometry, CConfig *config){
 	char buffer[50], cstr[200];
 	mesh_filename = config->GetSolution_AdjFileName();
 	copy.assign(mesh_filename);
-	copy.erase (copy.end()-4, copy.end());
-	strcpy (cstr, copy.c_str()); 
+  unsigned short lastindex = copy.find_last_of(".");
+  copy = copy.substr(0, lastindex);
+	strcpy (cstr, copy.c_str());
 	if (config->GetKind_ObjFunc() == DRAG_COEFFICIENT) sprintf (buffer, "_cd.dat"); 
 	if (config->GetKind_ObjFunc() == LIFT_COEFFICIENT) sprintf (buffer, "_cl.dat");
 	if (config->GetKind_ObjFunc() == SIDEFORCE_COEFFICIENT) sprintf (buffer, "_csf.dat"); 
@@ -3513,8 +3496,9 @@ void CGridAdaptation::SetRestart_AdjSolution(CConfig *config, string mesh_adjfil
 	string copy;
 	
 	copy.assign(mesh_adjfilename);
-	copy.erase (copy.end()-4, copy.end());
-	strcpy (cstr, copy.c_str()); 
+  unsigned short lastindex = copy.find_last_of(".");
+  copy = copy.substr(0, lastindex);
+	strcpy (cstr, copy.c_str());
 	if (config->GetKind_ObjFunc() == DRAG_COEFFICIENT) sprintf (buffer, "_cd.dat"); 
 	if (config->GetKind_ObjFunc() == LIFT_COEFFICIENT) sprintf (buffer, "_cl.dat");
 	if (config->GetKind_ObjFunc() == SIDEFORCE_COEFFICIENT) sprintf (buffer, "_csf.dat"); 

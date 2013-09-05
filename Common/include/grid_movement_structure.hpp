@@ -33,6 +33,7 @@
 #include "linear_solvers_structure.hpp"
 
 #include <iostream>
+#include <cstdlib>
 #include <fstream>
 #include <cmath>
 #include <ctime>
@@ -665,6 +666,7 @@ protected:
 
 	unsigned short nDim;		/*!< \brief Number of dimensions. */
 	unsigned short nVar;		/*!< \brief Number of variables. */
+  
 	unsigned long nPoint;		/*!< \brief Number of points. */
 	unsigned long nPointDomain;		/*!< \brief Number of points in the domain. */
 
@@ -683,9 +685,23 @@ public:
 	 * \brief Destructor of the class. 
 	 */
 	~CVolumetricMovement(void);
-	
+  
+	/*!
+	 * \brief Update the value of the coordinates after the grid movement.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void UpdateGridCoord(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief Update the dual grid after the grid movement (edges and control volumes).
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void UpdateDualGrid(CGeometry *geometry, CConfig *config);
+  
 	/*! 
-	 * \brief __________________________
+	 * \brief Update the coarse multigrid levels after the grid movement.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
@@ -713,8 +729,8 @@ public:
    * \param[in] val_Point_1 - Index value for Node 1 of the current triangle.
    * \param[in] val_Point_2 - Index value for Node 2 of the current triangle.
 	 */
-  void SetFEA_StiffMatrix2D(CGeometry *geometry, double **StiffMatrix_Elem,
-                              unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2);
+  bool SetFEA_StiffMatrix2D(CGeometry *geometry, double **StiffMatrix_Elem, unsigned long val_Point_0, unsigned long val_Point_1,
+                            unsigned long val_Point_2, double scale);
   
   /*!
 	 * \brief Build the stiffness matrix for a 3-D tetrehedral element. The result will be placed in StiffMatrix_Elem.
@@ -725,8 +741,8 @@ public:
    * \param[in] val_Point_2 - Index value for Node 2 of the current tetrahedron.
    * \param[in] val_Point_3 - Index value for Node 3 of the current tetrahedron.
 	 */
-  void SetFEA_StiffMatrix3D(CGeometry *geometry, double **StiffMatrix_Elem,
-                            unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2, unsigned long val_Point_3);
+  bool SetFEA_StiffMatrix3D(CGeometry *geometry, double **StiffMatrix_Elem, unsigned long val_Point_0, unsigned long val_Point_1,
+                            unsigned long val_Point_2, unsigned long val_Point_3, double scale);
 	
   /*!
 	 * \brief Add the stiffness matrix for a 2-D triangular element to the global stiffness matrix for the entire mesh (node-based).
@@ -736,8 +752,8 @@ public:
    * \param[in] val_Point_1 - Index value for Node 1 of the current triangle.
    * \param[in] val_Point_2 - Index value for Node 2 of the current triangle.
 	 */
-  void AddFEA_StiffMatrix2D(CGeometry *geometry, double **StiffMatrix_Elem,
-                              unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2);
+  void AddFEA_StiffMatrix2D(CGeometry *geometry, double **StiffMatrix_Elem, unsigned long val_Point_0, unsigned long val_Point_1,
+                            unsigned long val_Point_2);
   
   /*!
 	 * \brief Add the stiffness matrix for a 2-D triangular element to the global stiffness matrix for the entire mesh (node-based).
@@ -748,14 +764,14 @@ public:
    * \param[in] val_Point_2 - Index value for Node 2 of the current tetrahedron.
    * \param[in] val_Point_3 - Index value for Node 3 of the current tetrahedron.
 	 */
-  void AddFEA_StiffMatrix3D(CGeometry *geometry, double **StiffMatrix_Elem,
-                            unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2, unsigned long val_Point_3);
+  void AddFEA_StiffMatrix3D(CGeometry *geometry, double **StiffMatrix_Elem, unsigned long val_Point_0, unsigned long val_Point_1,
+                            unsigned long val_Point_2, unsigned long val_Point_3);
   
   /*!
 	 * \brief Check for negative volumes (all elements) after performing grid deformation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 */
-	void CheckDeformed_Grid(CGeometry *geometry);
+	double Check_Grid(CGeometry *geometry);
   
   /*!
 	 * \brief Check for negative volumes for 2-D elements after grid deformation.
@@ -765,7 +781,7 @@ public:
    * \param[in] val_Point_1 - Index value for Node 1 of the current triangle.
    * \param[in] val_Point_2 - Index value for Node 2 of the current triangle.
 	 */
-  void CheckDeformed_Elem2D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2);
+  bool Check_Elem2D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2, double *Area);
   
   /*!
 	 * \brief Check for negative volumes for 3-D elements after grid deformation.
@@ -776,7 +792,8 @@ public:
    * \param[in] val_Point_2 - Index value for Node 2 of the current tetrahedron.
    * \param[in] val_Point_3 - Index value for Node 3 of the current tetrahedron.
 	 */
-  void CheckDeformed_Elem3D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2, unsigned long val_Point_3);
+  bool Check_Elem3D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2,
+                    unsigned long val_Point_3, double *Volume);
   
 	/*!
 	 * \brief Check the boundary vertex that are going to be moved.
@@ -791,13 +808,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetDomainDisplacements(CGeometry *geometry, CConfig *config);
-	
-	/*! 
-	 * \brief Update the value of the coordinates after the the grid movement.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void UpdateGridCoord(CGeometry *geometry, CConfig *config);
   
   /*!
 	 * \brief Unsteady grid movement using rigid mesh rotation.
@@ -806,7 +816,7 @@ public:
    * \param[in] iZone - Zone number in the mesh.
    * \param[in] iter - Physical time iteration number.
 	 */
-	void SetRigidRotation(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
+	void Rigid_Rotation(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
 	
   /*!
 	 * \brief Unsteady pitching grid movement using rigid mesh motion.
@@ -815,7 +825,7 @@ public:
    * \param[in] iZone - Zone number in the mesh.
    * \param[in] iter - Physical time iteration number.
 	 */
-	void SetRigidPitching(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
+	void Rigid_Pitching(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
   
   /*!
 	 * \brief Unsteady plunging grid movement using rigid mesh motion.
@@ -824,7 +834,7 @@ public:
    * \param[in] iZone - Zone number in the mesh.
    * \param[in] iter - Physical time iteration number.
 	 */
-	void SetRigidPlunging(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
+	void Rigid_Plunging(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
   
   /*!
 	 * \brief Unsteady translational grid movement using rigid mesh motion.
@@ -833,7 +843,7 @@ public:
    * \param[in] iZone - Zone number in the mesh.
    * \param[in] iter - Physical time iteration number.
 	 */
-	void SetRigidTranslation(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
+	void Rigid_Translation(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
 
   /*!
 	 * \brief Solve the typical section wing model.
@@ -893,7 +903,7 @@ public:
 /*! 
  * \class CSurfaceMovement
  * \brief Class for moving the surface numerical grid.
- * \author F. Palacios.
+ * \author F. Palacios, T. Economon.
  * \version 2.0.6
  */
 class CSurfaceMovement : public CGridMovement {
@@ -988,14 +998,23 @@ public:
 	 */
 	void SetRotation(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
   
+  /*!
+	 * \brief Set the translational/rotational velocity for a moving wall.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+   * \param[in] iZone - Zone number in the mesh.
+   * \param[in] iter - Physical time iteration number.
+	 */
+	void Moving_Walls(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
+  
   /*! 
-	 * \brief Deforms a 2-D flutter/pitching surface during an unsteady simulation.
+	 * \brief Computes the displacement of a pitching surface for a dynamic mesh simulation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iter - Current physical time iteration.
    * \param[in] iZone - Zone number in the mesh.
 	 */
-	void SetBoundary_Flutter2D(CGeometry *geometry, CConfig *config, 
+	void Surface_Pitching(CGeometry *geometry, CConfig *config,
                              unsigned long iter, unsigned short iZone);
 	
 	/*! 
@@ -1003,9 +1022,10 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iter - Current physical time iteration.
+   * \param[in] iZone - Zone number in the mesh.
 	 */
 	void SetBoundary_Flutter3D(CGeometry *geometry, CConfig *config, 
-                             CFreeFormDefBox **FFDBox, unsigned long iter);	
+                             CFreeFormDefBox **FFDBox, unsigned long iter, unsigned short iZone);
 	
   /*! 
 	 * \brief Set the collective pitch for a blade surface movement.

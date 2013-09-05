@@ -27,6 +27,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <cstdlib>
 
 #include "../../Common/include/config_structure.hpp"
 
@@ -489,6 +490,30 @@ public:
 	 */
 	virtual void SetMagneticField(double* val_B);
 
+       /*!
+	 * \brief Get the value of the wind gust
+	 * \param[out] Value of the wind gust
+	 */
+	virtual double* GetWindGust();
+    
+	/*!
+	 * \brief Set the value of the wind gust
+	 * \param[in] Value of the wind gust
+	 */
+	virtual void SetWindGust(double* val_WindGust);
+    
+    /*!
+	 * \brief Get the value of the derivatives of the wind gust
+	 * \param[out] Value of the derivatives of the wind gust
+	 */
+	virtual double* GetWindGustDer();
+    
+	/*!
+	 * \brief Set the value of the derivatives of the wind gust
+	 * \param[in] Value of the derivatives of the wind gust
+	 */
+	virtual void SetWindGustDer(double* val_WindGust);
+    
 	/*!
 	 * \brief Set the value of the time step.
 	 * \param[in] val_delta_time - Value of the time step.
@@ -751,7 +776,7 @@ public:
 	 * \brief A virtual member.
 	 * \return Value of the flow pressure.
 	 */		
-	virtual double GetPressure(bool val_incomp);
+	virtual double GetPressure(unsigned short val_incomp);
 
 	/*!
 	 * \brief A virtual member.
@@ -831,16 +856,10 @@ public:
 
 	/*!
 	 * \brief A virtual member.
-	 * \return Value of the Theta variable of the adjoint problem.
-	 */		
-	virtual double GetTheta(void);
-
-	/*!
-	 * \brief A virtual member.
 	 * \param[in] val_dim - Index of the dimension.
 	 * \return Value of the velocity for the dimension <i>val_dim</i>.
 	 */		
-	virtual double GetVelocity(unsigned short val_dim, bool val_incomp);
+	virtual double GetVelocity(unsigned short val_dim, unsigned short val_incomp);
 
 	/*!
 	 * \brief A virtual member.
@@ -850,21 +869,9 @@ public:
 
 	/*!
 	 * \brief A virtual member.
-	 * \return Pressure of Fluid val_species
-	 */	
-	virtual double GetPressure(unsigned short val_species);
-
-	/*!
-	 * \brief A virtual member.
 	 * \return Norm 2 of the velocity vector of Fluid val_species.
 	 */	
 	virtual double GetVelocity2(unsigned short val_species);
-
-	/*!
-	 * \brief A virtual member.
-	 * \return val_dim component of velocity vector of Fluid val_species.
-	 */	
-	virtual double GetVelocity(unsigned short val_dim, unsigned short val_species);
 
 	/*!
 	 * \brief A virtual member.
@@ -972,32 +979,47 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 */		
-	virtual void SetPrimVar_Compressible(CConfig *config);
+	virtual bool SetPrimVar_Compressible(CConfig *config);
   
   /*!
 	 * \brief A virtual member.
 	 */
-	virtual void SetPrimVar_Compressible(double val_adjlimit);
+	virtual bool SetPrimVar_Compressible(double SharpEdge_Distance, bool check, CConfig *config);
 	
-	/*!
+  /*!
 	 * \brief A virtual member.
-	 */		
-	virtual void SetPrimVar_Compressible(CConfig *config, double turb_ke);
-	
-	/*!
-	 * \brief A virtual member.
-	 */		
-	virtual void SetPrimVar_Incompressible(double Density_Inf, double levelset, CConfig *config);
+	 */
+	virtual bool SetPrimVar_Incompressible(double SharpEdge_Distance, bool check, CConfig *config);
   
   /*!
 	 * \brief A virtual member.
 	 */
-	virtual void SetPrimVar_Incompressible(double val_adjlimit);
+	virtual bool SetPrimVar_FreeSurface(double SharpEdge_Distance, bool check, CConfig *config);
+  
+	/*!
+	 * \brief A virtual member.
+	 */		
+	virtual bool SetPrimVar_Compressible(double turb_ke, CConfig *config);
 	
 	/*!
 	 * \brief A virtual member.
 	 */		
-	virtual void SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double turb_ke, double levelset, CConfig *config);
+	virtual bool SetPrimVar_Incompressible(double Density_Inf, CConfig *config);
+  
+  /*!
+	 * \brief A virtual member.
+	 */
+	virtual bool SetPrimVar_FreeSurface(double Density_Inf, CConfig *config);
+	
+	/*!
+	 * \brief A virtual member.
+	 */		
+	virtual bool SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double turb_ke, CConfig *config);
+  
+  /*!
+	 * \brief A virtual member.
+	 */
+	virtual bool SetPrimVar_FreeSurface(double Density_Inf, double Viscosity_Inf, double turb_ke, CConfig *config);
 	
 	/*!
 	 * \brief A virtual member.
@@ -1142,17 +1164,9 @@ public:
 
 	/*!
 	 * \brief A virtual member.
-	 * \param[in] val_density - Value of the density.
-	 * \param[in] val_velocity - Pointer to the velocity.
-	 * \param[in] val_enthalpy - Value of the enthalpy.
-	 */
-	virtual void SetTheta(double val_density, double *val_velocity, double val_enthalpy);
-
-	/*!
-	 * \brief A virtual member.
 	 * \param[in] val_velocity - Pointer to the velocity.
 	 */		
-	virtual void SetVelocity(double *val_velocity, bool val_incomp);
+	virtual void SetVelocity(double *val_velocity, unsigned short val_incomp);
 
 	/*!
 	 * \brief A virtual member.
@@ -1178,14 +1192,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] val_velocity - Pointer to the velocity.
 	 */		
-	virtual void SetVelocity_Old(double *val_velocity, bool val_incomp);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_velocity - Pointer to the velocity.
-	 * \param[in] iSpecies - Index of the species to set the velocity.
-	 */
-	virtual void SetVelocity_Old(double *val_velocity, unsigned short iSpecies);
+	virtual void SetVelocity_Old(double *val_velocity, unsigned short val_incomp);
 
 	/*!
 	 * \brief A virtual member.
@@ -1462,17 +1469,6 @@ public:
 	 * \brief A virtual member.
 	 */
 	virtual double GetTimeSpectral_Source(unsigned short val_var);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] kappapsi_Volume - Value of the mean flow hybrid coupling term.
-	 */
-	virtual void SetKappaPsiVolume(double kappapsi_Volume);
-
-	/*!
-	 * \brief A virtual member.
-	 */
-	virtual double GetKappaPsiVolume();
 
 	/*!
 	 * \brief Set the Eddy Viscosity Sensitivity of the problem.
@@ -1766,6 +1762,8 @@ protected:
 	double *TS_Source;		/*!< \brief Time spectral source term. */
 	double Precond_Beta;	/*!< \brief Low Mach number preconditioner value, Beta. */
 	double *B_Field;		/*! < \brief Magnetic field value */
+    double *WindGust;           /*! < \brief Wind gust value */
+    double *WindGustDer;        /*! < \brief Wind gust derivatives value */
 
 	/*--- Primitive variable definition ---*/
 	double *Primitive;	/*!< \brief Primitive variables (T,vx,vy,vz,P,rho,h,c) in compressible flows. */
@@ -1882,12 +1880,17 @@ public:
 	/*!
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
-	void SetPrimVar_Compressible(CConfig *config);
+	bool SetPrimVar_Compressible(CConfig *config);
 	
 	/*!
 	 * \brief Set all the primitive variables for incompressible flows.
 	 */
-	void SetPrimVar_Incompressible(double Density_Inf, double levelset, CConfig *config);
+	bool SetPrimVar_Incompressible(double Density_Inf, CConfig *config);
+  
+  /*!
+	 * \brief Set all the primitive variables for incompressible flows.
+	 */
+	bool SetPrimVar_FreeSurface(double Density_Inf, CConfig *config);
 	
 	/*!
 	 * \brief Get the primitive variables.
@@ -1943,7 +1946,7 @@ public:
 	 * \brief Get the flow pressure.
 	 * \return Value of the flow pressure.
 	 */
-	double GetPressure(bool val_incomp);
+	double GetPressure(unsigned short val_incomp);
 	/*!
 	 * \brief Get the speed of the sound.
 	 * \return Value of speed of the sound.
@@ -1991,7 +1994,7 @@ public:
 	 * \param[in] val_dim - Index of the dimension.
 	 * \return Value of the velocity for the dimension <i>val_dim</i>.
 	 */
-	double GetVelocity(unsigned short val_dim, bool val_incomp);
+	double GetVelocity(unsigned short val_dim, unsigned short val_incomp);
 
 	/*!
 	 * \brief Get the projected velocity in a unitary vector direction (compressible solver).
@@ -2011,13 +2014,13 @@ public:
 	 * \brief Set the velocity vector from the solution.
 	 * \param[in] val_velocity - Pointer to the velocity.
 	 */	
-	void SetVelocity(double *val_velocity, bool val_incomp);
+	void SetVelocity(double *val_velocity, unsigned short val_incomp);
 
 	/*!
 	 * \brief Set the velocity vector from the old solution.
 	 * \param[in] val_velocity - Pointer to the velocity.
 	 */		
-	void SetVelocity_Old(double *val_velocity, bool val_incomp);
+	void SetVelocity_Old(double *val_velocity, unsigned short val_incomp);
 
 	/*!
 	 * \brief Set the time spectral source term.
@@ -2056,6 +2059,30 @@ public:
 	 * \param[in] Value of the magnetic field
 	 */
 	void SetMagneticField(double* val_B);
+    
+    /*!
+	 * \brief Get the value of the wind gust
+	 * \param[out] Value of the wind gust
+	 */
+	double* GetWindGust();
+    
+	/*!
+	 * \brief Set the value of the wind gust
+	 * \param[in] Value of the wind gust
+	 */
+	void SetWindGust(double* val_WindGust);
+    
+    /*!
+	 * \brief Get the value of the derivatives of the wind gust
+	 * \param[out] Value of the derivatives of the wind gust
+	 */
+	double* GetWindGustDer();
+    
+	/*!
+	 * \brief Set the value of the derivatives of the wind gust
+	 * \param[in] Value of the derivatives of the wind gust
+	 */
+	void SetWindGustDer(double* val_WindGust);
 };
 
 /*! 
@@ -2194,12 +2221,17 @@ public:
 	/*!
 	 * \brief Set all the primitive variables for compressible flows
 	 */
-	void SetPrimVar_Compressible(CConfig *config, double turb_ke);
+	bool SetPrimVar_Compressible(double turb_ke, CConfig *config);
 	
 	/*!
 	 * \brief Set all the primitive variables for incompressible flows
 	 */
-	void SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double turb_ke, double levelset, CConfig *config);
+	bool SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double turb_ke, CConfig *config);
+  
+  /*!
+	 * \brief Set all the primitive variables for incompressible flows
+	 */
+	bool SetPrimVar_FreeSurface(double Density_Inf, double Viscosity_Inf, double turb_ke, CConfig *config);
 };
 
 /*! 
@@ -2460,7 +2492,6 @@ protected:
 	double *ObjFuncSource;    /*!< \brief Vector containing objective function sensitivity for discrete adjoint. */
 	double *IntBoundary_Jump;	/*!< \brief Interior boundary jump vector. */
 	double *TS_Source;		/*!< \brief Time spectral source term. */
-	double Theta;		/*!< \brief Theta variable. */
 	bool incompressible;
 public:
 
@@ -2497,31 +2528,23 @@ public:
   /*!
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
-	void SetPrimVar_Compressible(double val_adjlimit);
+	bool SetPrimVar_Compressible(double SharpEdge_Distance, bool check, CConfig *config);
   
   /*!
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
-	void SetPrimVar_Incompressible(double val_adjlimit);
+	bool SetPrimVar_Incompressible(double SharpEdge_Distance, bool check, CConfig *config);
+  
+  /*!
+	 * \brief Set all the primitive variables for compressible flows.
+	 */
+	bool SetPrimVar_FreeSurface(double SharpEdge_Distance, bool check, CConfig *config);
   
 	/*!
 	 * \brief Set the value of the adjoint velocity.
 	 * \param[in] val_phi - Value of the adjoint velocity.
 	 */	
 	void SetPhi_Old(double *val_phi);
-
-	/*!
-	 * \brief Set the value of theta.
-	 * \param[in] val_density - Value of the density.
-	 * \param[in] val_velocity - Pointer to the velocity.
-	 * \param[in] val_enthalpy - Value of the enthalpy.
-	 */		
-	void SetTheta(double val_density, double *val_velocity, double val_enthalpy);
-
-	/*!
-	 * \brief Get the value of theta.
-	 */		
-	double GetTheta(void);
 
 	/*!
 	 * \brief Set the value of the force projection vector.
@@ -2583,7 +2606,6 @@ public:
  */
 class CAdjNSVariable : public CAdjEulerVariable {	
 private:
-	double kappapsi_Volume;
   
 public:
 
@@ -2618,36 +2640,10 @@ public:
 	~CAdjNSVariable(void);
 
 	/*!
-	 * \brief Set the laminar viscosity Jacobian.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetLaminarViscosity_Jacobian(CConfig *config);
-
-	/*!
-	 * \brief Set the eddy viscosity Jacobian.
-	 * \param[in] val_Kind_Turb_Model - Kind of turbulence model.
-	 * \param[in] Turb_Solution - Solution of the turbulence model.
-	 */
-	void SetEddyViscosity_Jacobian(unsigned short val_Kind_Turb_Model, CVariable *TurbVariable);
-
-	/*!
 	 * \brief Set the value of the adjoint velocity.
 	 * \param[in] val_phi - Value of the adjoint velocity.
 	 */	
 	void SetPhi_Old(double *val_phi);
-
-	/*!
-	 * \brief Set the value of theta.
-	 * \param[in] val_density - Value of the density.
-	 * \param[in] val_velocity - Pointer to the velocity.
-	 * \param[in] val_enthalpy - Value of the enthalpy.
-	 */	
-	void SetTheta(double val_density, double *val_velocity, double val_enthalpy);
-
-	/*!
-	 * \brief Get the value of theta.
-	 */		
-	double GetTheta(void);
 
 	/*!
 	 * \brief Set the value of the force projection vector.
@@ -2671,16 +2667,6 @@ public:
 	 */
 	void SetVelSolutionDVector(void);
 
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] kappapsi_Volume - Value of the mean flow hybrid coupling term.
-	 */
-	void SetKappaPsiVolume(double kappapsi_Volume);
-
-	/*!
-	 * \brief A virtual member.
-	 */
-	double GetKappaPsiVolume(void);
 };
 
 /*! 
@@ -3216,14 +3202,14 @@ public:
 	 * \return Value of the laminar viscosity of the flow.
 	 */
 	double GetEddyViscosity(unsigned short iSpecies);
-    
+  
 	/*!
 	 * \brief Set the velocity vector from the old solution.
 	 * \param[in] val_velocity - Pointer to the velocity.
 	 * \param[in] iSpecies - Index of the species to set the old velocity.
 	 */
 	void SetVelocity_Old(double *val_velocity, unsigned short iSpecies);
-
+  
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] Temperature_Wall - Value of the Temperature at the wall
@@ -3376,7 +3362,6 @@ protected:
 	double *Psi;		/*!< \brief Vector of the adjoint variables. */
 	double *ForceProj_Vector;	/*!< \brief Vector d. */
 	double *IntBoundary_Jump;	/*!< \brief Interior boundary jump vector. */
-	double Theta;		/*!< \brief Theta variable. */
 	bool incompressible;
 public:
 
@@ -3416,19 +3401,6 @@ public:
 	 * \param[in] val_phi - Value of the adjoint velocity.
 	 */	
 	void SetPhi_Old(double *val_phi);
-
-	/*!
-	 * \brief Set the value of theta.
-	 * \param[in] val_density - Value of the density.
-	 * \param[in] val_velocity - Pointer to the velocity.
-	 * \param[in] val_enthalpy - Value of the enthalpy.
-	 */		
-	void SetTheta(double val_density, double *val_velocity, double val_enthalpy);
-
-	/*!
-	 * \brief Get the value of theta.
-	 */		
-	double GetTheta(void);
 
 	/*!
 	 * \brief Set the value of the force projection vector.

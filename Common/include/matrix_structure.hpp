@@ -26,6 +26,7 @@
 
 #include <iostream>
 #include <cmath>
+#include <cstdlib>
 
 #include "config_structure.hpp"
 #include "geometry_structure.hpp"
@@ -120,6 +121,14 @@ public:
 	 * \brief Returns the content of the internal variable <i>*block</i> (for debug purposes).
 	 */
 	void ReturnBlock(double **val_block);
+  
+  /*!
+	 * \brief Set the value of a block in the sparse matrix.
+	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
+	 * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
+	 * \param[in] **val_block - Block to set to A(i,j).
+	 */
+	void SetBlock(unsigned long block_i, unsigned long block_j, double **val_block);
   
 	/*!
 	 * \brief Adds the specified block to the sparse matrix.

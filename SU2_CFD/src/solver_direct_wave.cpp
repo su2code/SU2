@@ -467,7 +467,6 @@ void CWaveSolver::SetNoise_Source(CSolver ***flow_solution, CGeometry **wave_geo
   double rho_0  = wave_config->GetDensity_FreeStreamND();
   double p_0    = wave_config->GetPressure_FreeStreamND();
   double *v_inf = wave_config->GetVelocity_FreeStreamND();
-	bool incompressible = wave_config->GetIncompressible();
 
 	for (iMarker = 0; iMarker < wave_config->GetnMarker_All(); iMarker++) {
     
@@ -481,21 +480,21 @@ void CWaveSolver::SetNoise_Source(CSolver ***flow_solution, CGeometry **wave_geo
         /* Some geometry information for this boundary node */
         Normal = wave_geometry[MESH_0]->vertex[iMarker][iVertex]->GetNormal();
         
-        double Area = 0.0; double UnitaryNormal[3];
+        double Area = 0.0; double UnitNormal[3];
         for (iDim = 0; iDim < nDim; iDim++)
           Area += Normal[iDim]*Normal[iDim];
         Area = sqrt (Area);
         
         /* Flipping the normal for now */
         for (iDim = 0; iDim < nDim; iDim++)
-          UnitaryNormal[iDim] = -Normal[iDim]/Area;
+          UnitNormal[iDim] = -Normal[iDim]/Area;
         
         /* Get primitive variables from the CFD solution */
 				Solution = flow_solution[MESH_0][FLOW_SOL]->node[iPoint_Donor]->GetSolution();
         Density  = Solution[0];
         for (iDim = 0; iDim < nDim; iDim++)
           Velocity[iDim] = Solution[iDim+1]/Density;
-        Pressure = flow_solution[MESH_0][FLOW_SOL]->node[iPoint_Donor]->GetPressure(incompressible);
+        Pressure = flow_solution[MESH_0][FLOW_SOL]->node[iPoint_Donor]->GetPressure(COMPRESSIBLE);
 
         /* Get old solution for computing time derivative */
         Solution_Old = flow_solution[MESH_0][FLOW_SOL]->node[iPoint_Donor]->GetSolution_time_n();
@@ -508,10 +507,10 @@ void CWaveSolver::SetNoise_Source(CSolver ***flow_solution, CGeometry **wave_geo
         U_n = 0.0; U_nM1 = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
           // this version subtracts off mean flow
-          //U_n   += ( (Velocity[iDim] - v_inf[iDim]) + (Density/rho_0 - 1.0)*(Velocity[iDim] - v_inf[iDim]))*(UnitaryNormal[iDim]*Area);
-          //U_nM1 += ( (Velocity_Old[iDim]  - v_inf[iDim]) + (Density_Old/rho_0 - 1.0)*(Velocity_Old[iDim] - v_inf[iDim]))*(UnitaryNormal[iDim]*Area);
-          U_n   += ( (Velocity[iDim]) + (Density/rho_0 - 1.0)*(Velocity[iDim] ))*(UnitaryNormal[iDim]*Area);
-          U_nM1 += ( (Velocity_Old[iDim]) + (Density_Old/rho_0 - 1.0)*(Velocity_Old[iDim] ))*(UnitaryNormal[iDim]*Area);
+          //U_n   += ( (Velocity[iDim] - v_inf[iDim]) + (Density/rho_0 - 1.0)*(Velocity[iDim] - v_inf[iDim]))*(UnitNormal[iDim]*Area);
+          //U_nM1 += ( (Velocity_Old[iDim]  - v_inf[iDim]) + (Density_Old/rho_0 - 1.0)*(Velocity_Old[iDim] - v_inf[iDim]))*(UnitNormal[iDim]*Area);
+          U_n   += ( (Velocity[iDim]) + (Density/rho_0 - 1.0)*(Velocity[iDim] ))*(UnitNormal[iDim]*Area);
+          U_nM1 += ( (Velocity_Old[iDim]) + (Density_Old/rho_0 - 1.0)*(Velocity_Old[iDim] ))*(UnitNormal[iDim]*Area);
         }
         
         /* Approximate the d/dt term with a backward difference */
@@ -531,7 +530,7 @@ void CWaveSolver::SetNoise_Source(CSolver ***flow_solution, CGeometry **wave_geo
         for (iDim = 0; iDim < nDim; iDim++) {
           Ln[iDim] = 0.0;
           for (jDim = 0; jDim < nDim; jDim++) {
-            Ln[iDim] += L[iDim][jDim]*(UnitaryNormal[jDim]*Area);
+            Ln[iDim] += L[iDim][jDim]*(UnitNormal[jDim]*Area);
         }
         }
         
@@ -1173,7 +1172,8 @@ void CWaveSolver::GetRestart(CGeometry *geometry, CConfig *config) {
     nFlowIter = config->GetnExtIter();
     adjIter   = config->GetExtIter();
     flowIter  = nFlowIter - adjIter - 1;
-    restart_filename.erase (restart_filename.end()-4, restart_filename.end());
+    unsigned short lastindex = restart_filename.find_last_of(".");
+    restart_filename = restart_filename.substr(0, lastindex);
     if ((int(flowIter) >= 0) && (int(flowIter) < 10)) sprintf (buffer, "_0000%d.dat", int(flowIter));
     if ((int(flowIter) >= 10) && (int(flowIter) < 100)) sprintf (buffer, "_000%d.dat", int(flowIter));
     if ((int(flowIter) >= 100) && (int(flowIter) < 1000)) sprintf (buffer, "_00%d.dat", int(flowIter));
@@ -1183,7 +1183,8 @@ void CWaveSolver::GetRestart(CGeometry *geometry, CConfig *config) {
     restart_filename.append(UnstExt);
   } else {
     flowIter  =config->GetExtIter();
-    restart_filename.erase (restart_filename.end()-4, restart_filename.end());
+    unsigned short lastindex = restart_filename.find_last_of(".");
+    restart_filename = restart_filename.substr(0, lastindex);
     if ((int(flowIter) >= 0) && (int(flowIter) < 10)) sprintf (buffer, "_0000%d.dat", int(flowIter));
     if ((int(flowIter) >= 10) && (int(flowIter) < 100)) sprintf (buffer, "_000%d.dat", int(flowIter));
     if ((int(flowIter) >= 100) && (int(flowIter) < 1000)) sprintf (buffer, "_00%d.dat", int(flowIter));
