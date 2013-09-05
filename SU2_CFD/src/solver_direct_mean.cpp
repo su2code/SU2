@@ -2851,36 +2851,57 @@ void CEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config) {
 }
 
 void CEulerSolver::Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config) {
-	unsigned short nPlane, iDim;
+	unsigned short nPlane, iDim, iMarker, nMarker_Section;
 	short iPlane;
 	unsigned long iSegment, nSegment;
 	double **Plane_P0, **Plane_Normal, MinPlane, MaxPlane;
 	vector<double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil;
-	vector<unsigned long> *point1_Airfoil, *point2_Airfoil;
-  	bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+	vector<unsigned long> **point1_Airfoil, **point2_Airfoil;
+  	bool compressible = (config->GetKind_Regime() ==COMPRESSIBLE);
 	double rho_inf = Density_Inf;
 	double V_inf_mag = sqrt(pow(Velocity_Inf[0],2.0) + pow(Velocity_Inf[1],2.0) + pow(Velocity_Inf[2],2.0));	
 	double dynamic_pressure = 0.5*rho_inf*pow(V_inf_mag,2.0);
+  bool Boundary, Monitoring;
+  
 	int rank = MASTER_NODE;
 #ifndef NO_MPI
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
 
+  
 	if (nDim == 3) {
-		nPlane = 15; MinPlane = 0; MaxPlane = 14;
+		nPlane = 15; MinPlane = 0; MaxPlane = 1.1;
 
-		Xcoord_Airfoil = new vector<double> [nPlane];
-		Ycoord_Airfoil = new vector<double> [nPlane];
-		Zcoord_Airfoil = new vector<double> [nPlane];
-		point1_Airfoil = new vector<unsigned long> [nPlane];
-		point2_Airfoil = new vector<unsigned long> [nPlane];
-
-		Plane_P0 = new double *[nPlane]; 		// point defining plane
+    Plane_P0 = new double *[nPlane]; 		// point defining plane
 		Plane_Normal = new double *[nPlane];		// normal defining plane
 		for (iPlane = 0; iPlane < nPlane; iPlane++) {
 			Plane_P0[iPlane] = new double [3];
 			Plane_Normal[iPlane] = new double [3];
 		}
+    
+		Xcoord_Airfoil = new vector<double> [nPlane];
+		Ycoord_Airfoil = new vector<double> [nPlane];
+		Zcoord_Airfoil = new vector<double> [nPlane];
+
+    /*--- Count the total number of markers that we will be slicing ---*/
+    nMarker_Section = 0;
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      Boundary   = config->GetMarker_All_Boundary(iMarker);
+      Monitoring = config->GetMarker_All_Monitoring(iMarker);
+      if ((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) ||
+          (Boundary == ISOTHERMAL) || (Boundary == NEARFIELD_BOUNDARY)) {
+        if (Monitoring) {
+          nMarker_Section++;
+        }
+      }
+    }
+    
+		point1_Airfoil = new vector<unsigned long> *[MAX_NUMBER_MARKER];
+		point2_Airfoil = new vector<unsigned long> *[MAX_NUMBER_MARKER];
+    for (iMarker = 0; iMarker < nMarker_Section; iMarker++) {
+      point1_Airfoil[iMarker] = new vector<unsigned long> [nPlane];
+      point2_Airfoil[iMarker] = new vector<unsigned long> [nPlane];
+    }
 		
 		/*--- dynamically-defined arrays for airfoil normal 
 		      force, chord force, and pitching moment  - 
@@ -2903,7 +2924,7 @@ void CEulerSolver::Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config
 			
 			// pass in the pressure and bring it back
 			geometry->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, config,
-					Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], point1_Airfoil[iPlane], point2_Airfoil[iPlane], true);
+					Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], point1_Airfoil[0][iPlane], point2_Airfoil[0][iPlane], true);
 			
 			unsigned long nNodes = Xcoord_Airfoil[iPlane].size();
 			unsigned long iNode;
@@ -3021,11 +3042,11 @@ void CEulerSolver::Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config
 			Zcoord_around = Zcoord_Airfoil[iPlane];
 			Zcoord_around.push_back(Zcoord_Airfoil[iPlane].at(0));
 			
-			point1_around = point1_Airfoil[iPlane];
-			point1_around.push_back(point1_Airfoil[iPlane].at(0));
+			point1_around = point1_Airfoil[0][iPlane];
+			point1_around.push_back(point1_Airfoil[0][iPlane].at(0));
 			
-			point2_around = point2_Airfoil[iPlane];
-			point2_around.push_back(point2_Airfoil[iPlane].at(0));
+			point2_around = point2_Airfoil[0][iPlane];
+			point2_around.push_back(point2_Airfoil[0][iPlane].at(0));
 
 			/*--- for each segment around the airfoil, populate a data structure ---*/
 			for (iSegment = 0; iSegment < nSegment; iSegment++) {
@@ -3090,8 +3111,8 @@ void CEulerSolver::Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config
 			
 				/*--- find the pressure at endpoint1 of this segment by interpolating
 				      the pressures at the two nodes of the edge it sits on ---*/
-				double pressure_endpoint1_p1 = node[point1_around.at(iSegment)]->GetPressure(incompressible);
-				double pressure_endpoint1_p2 = node[point2_around.at(iSegment)]->GetPressure(incompressible);
+				double pressure_endpoint1_p1 = node[point1_around.at(iSegment)]->GetPressure(compressible);
+				double pressure_endpoint1_p2 = node[point2_around.at(iSegment)]->GetPressure(compressible);
 				
 				deltaX = endpoint1_p1[0] - segments[iSegment].endpoint1[0];
 				deltaY = endpoint1_p1[1] - segments[iSegment].endpoint1[1];
@@ -3108,8 +3129,8 @@ void CEulerSolver::Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config
 				
 				/*--- find the pressure at endpoint2 of this segment by interpolating	
 				      the pressures at the two nodes of the edge it sits on ---*/
-				double pressure_endpoint2_p1 = node[point1_around.at(iSegment+1)]->GetPressure(incompressible);
-				double pressure_endpoint2_p2 = node[point2_around.at(iSegment+1)]->GetPressure(incompressible);
+				double pressure_endpoint2_p1 = node[point1_around.at(iSegment+1)]->GetPressure(compressible);
+				double pressure_endpoint2_p2 = node[point2_around.at(iSegment+1)]->GetPressure(compressible);
 				
 				deltaX = endpoint2_p1[0] - segments[iSegment].endpoint2[0];	
 				deltaY = endpoint2_p1[1] - segments[iSegment].endpoint2[1];
