@@ -5659,16 +5659,16 @@ void CPhysicalGeometry::SetGeometryPlanes(CConfig *config) {
 
 void CPhysicalGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config,
                                                vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil,
-                                               vector<double> &Zcoord_Airfoil, vector<double> &point1_Airfoil,
-					       vector<double> &point2_Airfoil, bool original_surface) {
+                                               vector<double> &Zcoord_Airfoil, vector<unsigned long> &point1_Airfoil,
+					       vector<unsigned long> &point2_Airfoil, bool original_surface) {
   unsigned short iMarker, iNode, jNode, iDim, intersect;
   long MinDist_Point, MinDistAngle_Point;
   unsigned long iPoint, jPoint, iElem, Trailing_Point, Airfoil_Point, iVertex, jVertex, n;
   double Segment_P0[3] = {0.0, 0.0, 0.0}, Segment_P1[3] = {0.0, 0.0, 0.0}, Intersection[3] = {0.0, 0.0, 0.0}, Trailing_Coord, MinDist_Value, MinDistAngle_Value, Dist_Value,
   Airfoil_Tangent[3] = {0.0, 0.0, 0.0}, Segment[3] = {0.0, 0.0, 0.0}, Length, Angle_Value, Normal[3], Tangent[3], BiNormal[3], auxXCoord,
-  auxYCoord, auxZCoord, zp1, zpn, Camber_Line, MaxAngle = 25, CosValue;
+  auxYCoord, auxZCoord, auxpoint1, auxpoint2, zp1, zpn, Camber_Line, MaxAngle = 15, CosValue;
   vector<double> Xcoord, Ycoord, Zcoord, Z2coord, Xcoord_Normal, Ycoord_Normal, Zcoord_Normal, Xcoord_Camber, Ycoord_Camber, Zcoord_Camber;
-  vector<unsigned long> Duplicate;
+  vector<unsigned long> Duplicate, point1, point2;
   vector<unsigned long>::iterator it;
   int rank = MASTER_NODE;
   double **Coord_Variation;
@@ -5686,6 +5686,8 @@ void CPhysicalGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
   	Xcoord_Airfoil.clear();
 	Ycoord_Airfoil.clear();
 	Zcoord_Airfoil.clear();
+	point1_Airfoil.clear();
+	point2_Airfoil.clear();
   
   /*--- Set the right plane in 2D (note the change in Y-Z plane) ---*/
   if (nDim == 2) {
@@ -5712,8 +5714,13 @@ void CPhysicalGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
                 
                 if (jPoint > iPoint) {
                   
-                  Segment_P0[0] = 0.0;  Segment_P0[1] = 0.0;  Segment_P0[2] = 0.0;
-                  Segment_P1[0] = 0.0;  Segment_P1[1] = 0.0;  Segment_P1[2] = 0.0;
+                  Segment_P0[0] = 0.0;  
+		  Segment_P0[1] = 0.0;  
+		  Segment_P0[2] = 0.0;
+                  
+		  Segment_P1[0] = 0.0;  
+	   	  Segment_P1[1] = 0.0;  
+		  Segment_P1[2] = 0.0;
                   
                   for (iDim = 0; iDim < nDim; iDim++) {
                     Segment_P0[iDim] = node[iPoint]->GetCoord(iDim);
@@ -5734,6 +5741,8 @@ void CPhysicalGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
                       Xcoord.push_back(Intersection[0]);
                       Ycoord.push_back(Intersection[1]);
                       Zcoord.push_back(Intersection[2]);
+		      point1.push_back(iPoint);			// let point1 be i
+		      point2.push_back(jPoint);			// let point2 be j
                       //interpolate the pressures at the endpoints.
                     }
                   }
@@ -5824,7 +5833,9 @@ void CPhysicalGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
       Xcoord.erase (Xcoord.begin() + Duplicate[iVertex-1]);
       Ycoord.erase (Ycoord.begin() + Duplicate[iVertex-1]);
       Zcoord.erase (Zcoord.begin() + Duplicate[iVertex-1]);
-      //also erase the points from i and j  
+      //also erase the points from i and j
+      point1.erase(point1.begin() + Duplicate.at(iVertex-1));
+      point2.erase(point2.begin() + Duplicate.at(iVertex-1));
   }
     
     /*--- Find the trailing edge ---*/
@@ -5836,9 +5847,20 @@ void CPhysicalGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
     }
     
     /*--- Add the trailing edge to the list, and remove from the original list ---*/
-    Xcoord_Airfoil.push_back(Xcoord[Trailing_Point]); Ycoord_Airfoil.push_back(Ycoord[Trailing_Point]); Zcoord_Airfoil.push_back(Zcoord[Trailing_Point]);
-    Xcoord.erase (Xcoord.begin() + Trailing_Point); Ycoord.erase (Ycoord.begin() + Trailing_Point); Zcoord.erase (Zcoord.begin() + Trailing_Point);
+    Xcoord_Airfoil.push_back(Xcoord[Trailing_Point]); 
+    Ycoord_Airfoil.push_back(Ycoord[Trailing_Point]); 
+    Zcoord_Airfoil.push_back(Zcoord[Trailing_Point]);
     
+    Xcoord.erase (Xcoord.begin() + Trailing_Point); 
+    Ycoord.erase (Ycoord.begin() + Trailing_Point); 
+    Zcoord.erase (Zcoord.begin() + Trailing_Point);
+
+    point1_Airfoil.push_back(point1.at(Trailing_Point));
+    point2_Airfoil.push_back(point2.at(Trailing_Point));
+
+    point1.erase(point1.begin() + Trailing_Point);
+    point2.erase(point2.begin() + Trailing_Point);    
+
     /*--- Find the next point using the right hand side rule ---*/
     MinDist_Value = 1E6;
     for (iVertex = 0; iVertex < Xcoord.size(); iVertex++) {
@@ -5850,9 +5872,22 @@ void CPhysicalGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
       
       if ((Dist_Value < MinDist_Value) && (Segment[2] > 0.0)) { MinDist_Point = iVertex; MinDist_Value = Dist_Value; }
     }
-    Xcoord_Airfoil.push_back(Xcoord[MinDist_Point]);  Ycoord_Airfoil.push_back(Ycoord[MinDist_Point]);  Zcoord_Airfoil.push_back(Zcoord[MinDist_Point]);
-    Xcoord.erase (Xcoord.begin() + MinDist_Point);    Ycoord.erase (Ycoord.begin() + MinDist_Point);    Zcoord.erase (Zcoord.begin() + MinDist_Point);
+
+    Xcoord_Airfoil.push_back(Xcoord[MinDist_Point]);  
+    Ycoord_Airfoil.push_back(Ycoord[MinDist_Point]);  
+    Zcoord_Airfoil.push_back(Zcoord[MinDist_Point]);
     
+    Xcoord.erase (Xcoord.begin() + MinDist_Point);    
+    Ycoord.erase (Ycoord.begin() + MinDist_Point);    
+    Zcoord.erase (Zcoord.begin() + MinDist_Point);
+
+    point1_Airfoil.push_back(point1.at(MinDist_Point));
+    point2_Airfoil.push_back(point2.at(MinDist_Point));
+
+    point1.erase(point1.begin() + MinDist_Point);
+    point2.erase(point2.begin() + MinDist_Point);
+    
+
     /*--- Algorithm for the rest of the points ---*/
     do {
       
@@ -5896,15 +5931,31 @@ void CPhysicalGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
       if ( MinDistAngle_Point != -1) MinDist_Point = MinDistAngle_Point;
       
       /*--- Add and remove the min distance to the list ---*/
-      Xcoord_Airfoil.push_back(Xcoord[MinDist_Point]);  Ycoord_Airfoil.push_back(Ycoord[MinDist_Point]);  Zcoord_Airfoil.push_back(Zcoord[MinDist_Point]);
-      Xcoord.erase(Xcoord.begin() + MinDist_Point);    Ycoord.erase(Ycoord.begin() + MinDist_Point);    Zcoord.erase(Zcoord.begin() + MinDist_Point);
+      Xcoord_Airfoil.push_back(Xcoord[MinDist_Point]);  
+      Ycoord_Airfoil.push_back(Ycoord[MinDist_Point]);  
+      Zcoord_Airfoil.push_back(Zcoord[MinDist_Point]);
+      
+      Xcoord.erase(Xcoord.begin() + MinDist_Point);    
+      Ycoord.erase(Ycoord.begin() + MinDist_Point);    
+      Zcoord.erase(Zcoord.begin() + MinDist_Point);
+
+      point1_Airfoil.push_back(point1.at(MinDist_Point));
+      point2_Airfoil.push_back(point2.at(MinDist_Point));
+
+      point1.erase(point1.begin() + MinDist_Point);
+      point2.erase(point2.begin() + MinDist_Point);
       
     } while (Xcoord.size() != 0);
     
     /*--- Clean the vector before using them again for storing the upper or the lower side ---*/
-    Xcoord.clear(); Ycoord.clear(); Zcoord.clear();
+    Xcoord.clear(); 
+    Ycoord.clear(); 
+    Zcoord.clear();
+
+    point1.clear();
+    point2.clear();
     
-    /*--- Identify upper and lower side using the value of the normal vector --*/
+    /*--- Identify upper and lower side using the value of the normal vector -
     for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
       Tangent[0] = Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[iVertex-1];
       Tangent[1] = Ycoord_Airfoil[iVertex] - Ycoord_Airfoil[iVertex-1];
@@ -5928,19 +5979,40 @@ void CPhysicalGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
         Xcoord.push_back(Xcoord_Airfoil[iVertex]);
         Ycoord.push_back(Ycoord_Airfoil[iVertex]);
         Zcoord.push_back(Zcoord_Airfoil[iVertex]);
+
+//	point1.push_back(point1_Airfoil.at(iVertex));
+//	point2.push_back(point2_Airfoil.at(iVertex));
       }
       
     }
     
     n = Xcoord.size();
-    
-    /*--- Order the arrays using the X component ---*/
+    */
+    /*--- Order the arrays using the X component ---
     for (iVertex = 0; iVertex < Xcoord.size(); iVertex++) {
       for (jVertex = 0; jVertex < Xcoord.size() - 1 - iVertex; jVertex++) {
         if (Xcoord[jVertex] > Xcoord[jVertex+1]) {
-          auxXCoord = Xcoord[jVertex]; Xcoord[jVertex] = Xcoord[jVertex+1]; Xcoord[jVertex+1] = auxXCoord;
-          auxYCoord = Ycoord[jVertex]; Ycoord[jVertex] = Ycoord[jVertex+1]; Ycoord[jVertex+1] = auxYCoord;
-          auxZCoord = Zcoord[jVertex]; Zcoord[jVertex] = Zcoord[jVertex+1]; Zcoord[jVertex+1] = auxZCoord;
+          
+	  auxXCoord = Xcoord[jVertex]; 
+	  Xcoord[jVertex] = Xcoord[jVertex+1]; 
+	  Xcoord[jVertex+1] = auxXCoord;
+          
+	  auxYCoord = Ycoord[jVertex]; 
+	  Ycoord[jVertex] = Ycoord[jVertex+1]; 
+	  Ycoord[jVertex+1] = auxYCoord;
+          
+	  auxZCoord = Zcoord[jVertex]; 
+	  Zcoord[jVertex] = Zcoord[jVertex+1]; 
+	  Zcoord[jVertex+1] = auxZCoord;
+
+	  auxpoint1 = point1.at(jVertex);
+	  point1.at(jVertex) = point1.at(jVertex+1);
+	  point1.at(jVertex+1) = auxpoint1;
+
+	  auxpoint2 = point2.at(jVertex);
+	  point2.at(jVertex) = point2.at(jVertex+1);
+	  point2.at(jVertex+1) = auxpoint2;
+
         }
       }
     }
@@ -5949,8 +6021,8 @@ void CPhysicalGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
     zpn=(Zcoord[n-1]-Zcoord[n-2]) / (Xcoord[n-1]-Xcoord[n-2]);
     Z2coord.resize(n+1);
     SetSpline(Xcoord, Zcoord, n, zp1, zpn, Z2coord);
-    
-    /*--- Compute the camber--*/
+    */
+    /*--- Compute the camber--
     for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
       if (Zcoord_Normal[iVertex] < 0.0) {
         Camber_Line = 0.5 * (Zcoord_Airfoil[iVertex] + GetSpline(Xcoord, Zcoord, Z2coord, n, Xcoord_Airfoil[iVertex]));
@@ -5959,31 +6031,436 @@ void CPhysicalGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
         Zcoord_Camber.push_back(Camber_Line);
       }
     }
-    
-    /*--- Write the output file (tecplot format) ---*/
-    if (original_surface == true) {
-      ofstream Tecplot_File;
-      if (iSection == 0) Tecplot_File.open("Airfoil_Sections.plt", ios::out);
-      else Tecplot_File.open("Airfoil_Sections.plt", ios::app);
-      
-      if (iSection == 0) {
-        Tecplot_File << "TITLE = \"Wing airfoil sections\"" << endl;
-        Tecplot_File << "VARIABLES = \"X\",\"Y\",\"Z\"" << endl;
-      }
-      
-      Tecplot_File << "ZONE T=\"SECTION_"<< (iSection+1) << "\", NODES= "<< Xcoord_Airfoil.size() << ", ELEMENTS= " << Xcoord_Airfoil.size()-1 << ", DATAPACKING= POINT, ZONETYPE= FELINESEG" << endl;
-      
-      /*--- Coordinates ---*/
-      for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-        Tecplot_File << Xcoord_Airfoil[iVertex] <<" "<< Ycoord_Airfoil[iVertex] <<" "<< Zcoord_Airfoil[iVertex] << endl;
-      }
-      /*--- Conectivity ---*/
-      for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-        Tecplot_File << iVertex << "\t" << iVertex+1 << "\n";
-      }
-      
-      Tecplot_File.close();
-    }
+    */
+
+
+
+
+
+
+
+
+
+/*
+cout << endl << "About to start the tracing algorithm!" << endl;
+
+  	/*--- THIS IS THE START OF THE AIRFOIL-TRACING ALGORITHM
+		(it requires vectors of the X, Y, and Z coordinates 
+		of the airfoil section, with no points repeated.) ---*/
+/*	unsigned long iNode, trailing_loc;
+	unsigned long nNode = Xcoord_Airfoil.size();
+	double max_x;
+	vector<double> X_dummy(nNode), Y_dummy(nNode), Z_dummy(nNode);
+
+cout << endl << "finished first initializations!" << endl;
+	
+	/*--- find the trailing-edge point
+		(we're assuming that the airfoil is facing 
+		left and that it isn't sitting upside down. 
+		If either of those happens to be true, this 
+		algorithm will not work.) ---*/	   
+/*	max_x = -1.0;
+	for (iNode = 0; iNode < nNode; iNode++) {
+		if (Xcoord_Airfoil.at(iNode) >= max_x) {
+			max_x = Xcoord_Airfoil.at(iNode);
+			trailing_loc = iNode;
+		}
+	}
+
+cout << endl << "found the trailing edge!" << endl;
+	
+	/*--- move the trailing-edge point to the 
+		top of the coordinates lists ---*/	
+/*	X_dummy.at(0) = Xcoord_Airfoil.at(trailing_loc);
+	Y_dummy.at(0) = Ycoord_Airfoil.at(trailing_loc);
+	Z_dummy.at(0) = Zcoord_Airfoil.at(trailing_loc);
+	
+	for (iNode = 0; iNode <= trailing_loc-1; iNode++) {
+		X_dummy.at(iNode+1) = Xcoord_Airfoil.at(iNode);
+		Y_dummy.at(iNode+1) = Ycoord_Airfoil.at(iNode);
+		Z_dummy.at(iNode+1) = Zcoord_Airfoil.at(iNode);
+	}
+	
+	for (iNode = trailing_loc+1; iNode < nNode; iNode++) {
+		X_dummy.at(iNode) = Xcoord_Airfoil.at(iNode);
+		Y_dummy.at(iNode) = Ycoord_Airfoil.at(iNode);
+		Z_dummy.at(iNode) = Zcoord_Airfoil.at(iNode);
+	}
+	
+	Xcoord_Airfoil.swap(X_dummy);
+	Ycoord_Airfoil.swap(Y_dummy);
+	Zcoord_Airfoil.swap(Z_dummy);
+	
+	X_dummy.clear();
+	Y_dummy.clear();
+	Z_dummy.clear();
+
+cout << endl << "moved the trailing edge to the beginning!" << endl;
+
+	/*--- name the trailing-edge point, for convenience ---*/
+/*	double trailing_point [3];
+	trailing_point[0] = Xcoord_Airfoil.at(0);
+	trailing_point[1] = Ycoord_Airfoil.at(0);
+	trailing_point[2] = Zcoord_Airfoil.at(0);
+
+	/*--- find the leading-edge point ---*/
+/*	double maxDistance, xDist, yDist, zDist, distance;
+	double leading_point [3];
+	maxDistance = 0.0;
+	for (iNode = 1; iNode < nNode; iNode++) {
+		
+		/*--- compute the distance of the each 
+			point from the trailing edge ---*/
+/*		xDist = trailing_point[0] - Xcoord_Airfoil.at(iNode);
+		yDist = trailing_point[1] - Ycoord_Airfoil.at(iNode);
+		zDist = trailing_point[2] - Zcoord_Airfoil.at(iNode);
+		distance = sqrt(pow(xDist,2.0) + pow(yDist,2.0) + pow(zDist,2.0));
+		
+		/*--- assume the leading-edge point 
+			is the one that is farthest 
+			from the trailing edge ---*/
+/*		if (distance > maxDistance) {
+			maxDistance = distance;
+			leading_point[0] = Xcoord_Airfoil.at(iNode);
+			leading_point[1] = Ycoord_Airfoil.at(iNode);
+			leading_point[2] = Zcoord_Airfoil.at(iNode);
+		}
+	}
+	
+cout << endl << "found the leading edge!" << endl;
+
+	/*--- find the chord length ---*/
+/*	double chord;
+	xDist = trailing_point[0] - leading_point[0];
+	yDist = trailing_point[1] - leading_point[1];
+	zDist = trailing_point[2] - leading_point[2];		
+	chord = sqrt(pow(xDist,2.0) + pow(yDist,2.0) + pow(zDist,2.0));
+	
+	/*--- define a vector pointing from the 
+		trailing edge to the leading edge ---*/
+/*	double chord_line [3];
+	for (iDim = 0; iDim < nDim; iDim++) {
+		chord_line[iDim] = leading_point[iDim]-trailing_point[iDim];
+	}
+	
+	/*--- define a point that lies "above" the 
+		leading edge, in the plane of the 
+		airfoil. (Here, we need to hope 
+		that the Z-axis points "upward.") ---*/
+/*	double above_point [3];
+	above_point[0] = leading_point[0];
+	above_point[1] = leading_point[1];
+	above_point[2] = leading_point[2] + 1;
+
+	/*--- define a vector point from the trailing 
+		edge to the newly created "point above" ---*/
+/*	double above_line [3];
+	for (iDim = 0; iDim < nDim; iDim++) {
+		above_line[iDim] = above_point[iDim] - trailing_point[iDim];
+	}
+	
+	/*--- find the vector that points "into the page," 
+		i.e. if the airfoil is facing  left, this 
+		vector points away from you and lies 
+		normal to the section. ---*/
+/*	double section_normal [3];
+	section_normal[0] = chord_line[1]*above_line[2] - chord_line[2]*above_line[1];
+	section_normal[1] = chord_line[2]*above_line[0] - chord_line[0]*above_line[2];
+	section_normal[2] = chord_line[0]*above_line[1] - chord_line[1]*above_line[0];
+	
+	/*--- beginning at the trailing edge, 
+		connect the points, in order. ---*/
+/*	double startingPossibles, magnitude, outward_vec_mag, a_dot_b, cos_angle, weight_dist, weight_ang;
+	double *dist, **vec, *vec_mag, *angles;
+	double tangent [3], unit_tangent [3], unit_vec [3], inward_vec [3], outward_vec [3], penalty [2];
+	vector<double> minDist, list, ang_list;
+	vector<long> min_loc;
+	unsigned long jNode, next_loc;
+	unsigned long min_ang_loc [2];
+	unsigned short  nPossibles, k, jPoss;
+	unsigned short ang_index [2];
+
+	dist = new double [nNode];
+
+cout << endl << "about to start the loop over the points!" << endl;
+	
+	for (iNode = 0; iNode < nNode-1; iNode++) {
+		
+		/*--- as we move around the airfoil, and as more 
+			points are connected, we don't need to 
+			test as many "possibles" at each station. 
+			here, we will begin with four and, by the 
+			end, linearly decrease the number to one. ---*/ 
+/*		startingPossibles = 4.9;
+		nPossibles = int(floor(((1.0-startingPossibles)/double(nNode))*double(iNode) + startingPossibles));
+	
+		/*--- initialize the minimum-distance 
+			and corresponding index arrays ---*/
+/*		minDist.clear();
+		min_loc.clear();		
+	
+		minDist.assign(nPossibles, pow(chord,2.0));
+		min_loc.assign(nPossibles, 0);
+		
+		/*--- intialize all distances from the 
+			current point equal to zero ---*/
+/*		for (jNode = 0; jNode < nNode; jNode++) {
+			dist[jNode] = 0;
+		} 
+		
+		/*--- of the points left to be connected, 
+			find the nPossible closest ones ---*/	
+/*		for (jNode = iNode+1; jNode < nNode; jNode++) {
+			
+			/*--- compute th distance from the current point ---*/			
+/*			xDist = Xcoord_Airfoil.at(iNode) - Xcoord_Airfoil.at(jNode);
+			yDist = Ycoord_Airfoil.at(iNode) - Ycoord_Airfoil.at(jNode);
+			zDist = Zcoord_Airfoil.at(iNode) - Zcoord_Airfoil.at(jNode);
+			dist[jNode] = sqrt(pow(xDist,2.0) + pow(yDist,2.0) + pow(zDist,2.0));
+			
+			/*--- let the "list" be the nPossible minimum distances 
+				and also the newly computed distance ---*/
+/*			list = minDist;
+
+			list.push_back(dist[jNode]);
+			
+			/*--- sort the list, in ascending order ---*/
+/*			sort(list.begin(),list.end());
+			
+			/*--- let the new minimum-distance vector hold the 
+	
+				first nPossible entries of the list ---*/
+/*			minDist.assign(list.begin(),list.begin()+nPossibles);
+		}				
+		
+		/*--- find the index of the four closest nodes. 
+			(N.B. There might be a more elegant way 
+			to do this using unordered_sets. That 
+			being said, this should work, since the 
+			grids will be unstructured and the chance 
+			that two separate points have the same 
+			distance is slim.) ---*/ 		
+/*		for (jNode = iNode+1; jNode < nNode; jNode++){
+			
+			/*--- check against the nPossible distances ---*/
+/*			for(k = 0; k < nPossibles; k++) {
+				
+				/*--- if the distances match, 
+					record the index ---*/
+/*				if (minDist.at(k) == dist[jNode]) {
+					min_loc.at(k) = jNode;
+				}
+			}
+		}
+		
+		/*--- move on to comparing angles. ---*/
+/*		if (nPossibles == 1) {
+			
+			/*--- if we only have one "possible" point, 
+				then there is nothing to compare ---*/
+/*			 next_loc = min_loc.at(0);
+		
+		}
+		else {
+			/*--- define vectors pointing from the current 
+				point to each of the nPossible points ---*/
+/*			vec = new double * [nPossibles];
+			for (k = 0; k < nPossibles; k ++) {
+				vec[k] = new double [3];
+			}
+			vec_mag = new double [nPossibles];
+			
+			for (jPoss = 0; jPoss < nPossibles; jPoss++) {
+				vec[jPoss][0] = Xcoord_Airfoil.at(min_loc.at(jPoss)) - Xcoord_Airfoil.at(iNode);
+				vec[jPoss][1] = Ycoord_Airfoil.at(min_loc.at(jPoss)) - Ycoord_Airfoil.at(iNode);
+				vec[jPoss][2] = Zcoord_Airfoil.at(min_loc.at(jPoss)) - Zcoord_Airfoil.at(iNode);
+				vec_mag[jPoss] = sqrt(pow(vec[jPoss][0],2.0) + pow(vec[jPoss][1],2.0) + pow(vec[jPoss][2],2.0));
+			}
+			
+			/*-- find the vector that points "inward." if there is a 
+				previous point, then use it to find a unit tangent 
+				vector along the surface. use this tangent as a 
+				component of the "inward" vector, along with the 
+				nPossible directions. If we're at the trailing edge, 
+				where there is not previous point, then just use 
+				the "mean" of the nPossible directions. ---*/
+/*			if (iNode > 1) {
+				
+				/*-- define the tangent vector ---*/
+/*				tangent[0] = Xcoord_Airfoil.at(iNode) - Xcoord_Airfoil.at(iNode-1);
+				tangent[1] = Ycoord_Airfoil.at(iNode) - Ycoord_Airfoil.at(iNode-1);
+				tangent[2] = Zcoord_Airfoil.at(iNode) - Zcoord_Airfoil.at(iNode-1);
+				magnitude = sqrt(pow(tangent[0],2.0) + pow(tangent[1],2.0) + pow(tangent[2],2.0));
+				
+				/*--- define the unit tangent vector ---*/
+/*				for (iDim = 0; iDim < nDim; iDim++) {
+					unit_tangent[iDim] = tangent[iDim]/magnitude;
+				}
+				
+				/*--- initialize the "inward"-pointing vector ---*/
+/*				for (iDim = 0; iDim < nDim; iDim++) {
+					inward_vec[iDim] = unit_tangent[iDim];
+				}
+			}
+			else {
+				/*--- if there is no tangent vector to include ---*/
+/*				for (iDim = 0; iDim < nDim; iDim ++) {
+					inward_vec[iDim] = 0.0;
+				}
+			}
+			
+			/*--- add the nPossible directions as components 
+				of the "inward"-pointing vector ---*/
+/*			for (jPoss = 0; jPoss < nPossibles; jPoss++){
+				
+				for (iDim = 0; iDim < nDim; iDim++) {
+					
+					/*--- compute the i-th component of the unit vector 
+						pointing in the j-th "possible" direction ---*/
+/*					unit_vec[iDim] = vec[jPoss][iDim]/vec_mag[jPoss];
+					
+					/*--- add it to the definition of 
+						the "inward" vector ---*/
+/*					inward_vec[iDim] += unit_vec[iDim];
+				}
+			}
+			
+	
+			/*--- rotate the "inward" vector clockwise 90 degrees 
+				to get the "outward"-facing vector ---*/
+/*			outward_vec[0] = section_normal[1]*inward_vec[2] - section_normal[2]*inward_vec[1];
+			outward_vec[1] = section_normal[2]*inward_vec[0] - section_normal[0]*inward_vec[2];
+			outward_vec[2] = section_normal[0]*inward_vec[1] - section_normal[1]*inward_vec[0];
+			outward_vec_mag = sqrt(pow(outward_vec[0],2.0) + pow(outward_vec[1],2.0) + pow(outward_vec[2],2.0));
+			
+			/*--- compute the angles between the "outward" vector and the nPossible "possible" points ---*/
+/*			angles = new double [nPossibles];	
+			for (jPoss = 0; jPoss < nPossibles; jPoss++) {
+				
+				/*--- dot the "outward" vector with the j-th possible direction ---*/
+/*				a_dot_b = outward_vec[0]*vec[jPoss][0] + outward_vec[1]*vec[jPoss][1] + outward_vec[2]*vec[jPoss][2];
+				/*--- compute the cosine of the angle between them ---*/
+/*				cos_angle = a_dot_b/(outward_vec_mag*vec_mag[jPoss]);
+	
+				/*--- store the actual angle ---*/
+/*				angles[jPoss] = acos(cos_angle);
+			}
+			
+			/*--- copy the nPossible angles to the angle-list ---*/
+/*			ang_list.assign(angles,angles+nPossibles);
+			
+			/*--- sort the angle-list ---*/
+/*			sort(ang_list.begin(),ang_list.end());
+			
+			/*--- find the indices corresponding to the 
+				two smallest angles in the angle-list ---*/
+/*			for (jPoss = 0; jPoss < 2; jPoss++) {
+				
+				/*--- check against the 
+					nPossible angles ---*/
+/*				for (k = 0; k < nPossibles; k++) {
+					
+					/*--- if there is a match, 
+						note the index ---*/
+/*					if (ang_list.at(jPoss) == angles[k]) {
+						min_ang_loc[jPoss] = min_loc.at(k);
+						ang_index[jPoss] = k;
+					}
+				}
+			}
+			
+			/*--- assign nondimensional penalties for long distanes and large angles 
+				(distances are nondimensionalized by chord length, while angles 
+				are nondimensionalized by 90 degrees) ---*/
+/*			weight_dist = 2.0;
+			weight_ang = 1.0;
+			for (jPoss = 0; jPoss < 2; jPoss++) {
+				penalty[jPoss] = weight_dist*(dist[min_ang_loc[jPoss]]/chord) + weight_ang*(angles[ang_index[jPoss]]/(3.14159/2));
+			}
+
+			/*--- of the two points with the smallest angle, 
+				choose the one with the smaller penalty ---*/
+/*			if (penalty[1] > penalty[0]) {
+				next_loc = min_ang_loc[0];
+			}
+			else {
+				next_loc = min_ang_loc[1];
+			}
+	
+			
+			/*--- delete dynamically allocated memory 
+				within the else statement ---*/
+/*			for (k = 0; k < nPossibles; k++) {
+				delete [] vec[k];
+			}
+			delete [] vec;
+			delete [] vec_mag;
+			delete [] angles;
+		}
+	
+		/*--- move the newly found "next point" to the 
+			appropriate location in the coordiates vectors ---*/
+/*		for (jNode = 0; jNode <= iNode; jNode++) {
+			X_dummy.at(jNode) = Xcoord_Airfoil.at(jNode);
+			Y_dummy.at(jNode) = Ycoord_Airfoil.at(jNode);
+			Z_dummy.at(jNode) = Zcoord_Airfoil.at(jNode);
+		}
+		
+		X_dummy.at(iNode+1) = Xcoord_Airfoil.at(next_loc);
+		Y_dummy.at(iNode+1) = Ycoord_Airfoil.at(next_loc);
+		Z_dummy.at(iNode+1) = Zcoord_Airfoil.at(next_loc);
+		
+		for (jNode = iNode+1; jNode <= next_loc-1; jNode++) {
+			X_dummy.at(jNode+1) = Xcoord_Airfoil.at(jNode);
+			Y_dummy.at(jNode+1) = Ycoord_Airfoil.at(jNode);
+			Z_dummy.at(jNode+1) = Zcoord_Airfoil.at(jNode);
+		}
+		
+		for (jNode = next_loc+1; jNode < nNode; jNode++) {
+			X_dummy.at(jNode) = Xcoord_Airfoil.at(jNode);
+			Y_dummy.at(jNode) = Ycoord_Airfoil.at(jNode);
+			Z_dummy.at(jNode) = Zcoord_Airfoil.at(jNode);
+		}
+
+		Xcoord_Airfoil.swap(X_dummy);
+		Ycoord_Airfoil.swap(Y_dummy);
+		Zcoord_Airfoil.swap(Z_dummy);
+
+		X_dummy.clear();
+		Y_dummy.clear();
+		Z_dummy.clear();
+		
+	}
+
+	delete [] dist;
+	
+
+    	/*--- Write the output file (tecplot format) ---*/
+    	if (original_surface == true) {
+      		
+		ofstream Tecplot_File;
+      		if (iSection == 0) Tecplot_File.open("Airfoil_Sections.plt", ios::out);
+      		else Tecplot_File.open("Airfoil_Sections.plt", ios::app);
+      	
+      		if (iSection == 0) {
+        		Tecplot_File << "TITLE = \"Wing airfoil sections\"" << endl;
+        		Tecplot_File << "VARIABLES = \"X\",\"Y\",\"Z\"" << endl;
+      		}
+      	
+      		Tecplot_File << "ZONE T=\"SECTION_"<< (iSection+1) << "\", NODES= "<< Xcoord_Airfoil.size() << ", ELEMENTS= " << Xcoord_Airfoil.size()-1 << ", DATAPACKING= POINT, ZONETYPE= FELINESEG" << endl;
+      	
+      		/*--- Coordinates ---*/
+      		for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+        		Tecplot_File << Xcoord_Airfoil[iVertex] <<" "<< Ycoord_Airfoil[iVertex] <<" "<< Zcoord_Airfoil[iVertex] << endl;
+      		}
+      		
+		/*--- Conectivity ---*/
+      		for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+        		Tecplot_File << iVertex << "\t" << iVertex+1 << "\n";
+      		}
+      	
+      		Tecplot_File.close();
+    	}
     
   }
   
