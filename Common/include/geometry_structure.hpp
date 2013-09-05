@@ -540,6 +540,12 @@ public:
 	 */
 	virtual void SetGridVelocity(CConfig *config, unsigned long iter);
 
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  virtual void Set_MPI_GridVel(CConfig *config);
+  
 	/*!
 	 * \brief A virtual member.
    * \param[in] geometry - Geometry of the fine mesh.
@@ -981,13 +987,19 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetGridVelocity(CConfig *config, unsigned long iter);
-
+  
+  /*!
+	 * \brief Perform the MPI communication for the grid velocities.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  void Set_MPI_GridVel(CConfig *config);
+  
 	/*! 
 	 * \brief Set the periodic boundary conditions.
 	 * \param[in] config - Definition of the particular problem.		 
 	 */
 	void SetPeriodicBoundary(CConfig *config);
-
+  
 	/*! 
 	 * \brief Do an implicit smoothing of the grid coordinates.
 	 * \param[in] val_nSmooth - Number of smoothing iterations.
