@@ -765,7 +765,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 	unsigned short iVar, iDim;
 	unsigned long iPoint, index;
 	double Density_Inf, Viscosity_Inf, Factor_nu_Inf, dull_val;
-    
+  
 	bool restart = (config->GetRestart() || config->GetRestart_Flow());
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -846,7 +846,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 	Factor_nu_Inf = config->GetNuFactor_FreeStream();
 	nu_tilde_Inf  = Factor_nu_Inf*Viscosity_Inf/Density_Inf;
     
-	/*--- Eddy viscosity at the infinity ---*/
+	/*--- Eddy viscosity at infinity ---*/
 	double Ji, Ji_3, fv1, cv1_3 = 7.1*7.1*7.1;
 	double muT_Inf;
 	Ji = nu_tilde_Inf/Viscosity_Inf*Density_Inf;
@@ -864,6 +864,11 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 		/*--- Restart the solution from file information ---*/
 		ifstream restart_file;
 		string filename = config->GetSolution_FlowFileName();
+    double Density, Laminar_Viscosity, nu, nu_hat, muT, U[5];
+    double Temperature, Temperature_Dim, Pressure;
+    double Temperature_Ref = config->GetTemperature_Ref();
+    double Viscosity_Ref   = config->GetViscosity_Ref();
+    double Gas_Constant    = config->GetGas_ConstantND();
     
     /*--- Modify file name for an unsteady restart ---*/
     if (dual_time) {
@@ -914,20 +919,44 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 			if (iPoint_Local >= 0) {
         
 				if (compressible) {
-					if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
-					if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
+					if (nDim == 2) point_line >> index >> dull_val >> dull_val >> U[0] >> U[1] >> U[2] >> U[3] >> Solution[0];
+					if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> U[0] >> U[1] >> U[2] >> U[3] >> U[4] >> Solution[0];
+          
+          Density = U[0];
+          if (nDim == 2)
+            Pressure = Gamma_Minus_One*(U[3] - (U[1]*U[1] + U[2]*U[2])/(2.0*U[0]));
+          else
+            Pressure = Gamma_Minus_One*(U[4] - (U[1]*U[1] + U[2]*U[2] + U[3]*U[3])/(2.0*U[0]));
+          
+          Temperature = Pressure/(Gas_Constant*Density);
+          
+          /*--- Calculate viscosity from a non-dim. Sutherland's Law ---*/
+          Temperature_Dim = Temperature*Temperature_Ref;
+          Laminar_Viscosity = 1.853E-5*(pow(Temperature_Dim/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_Dim+110.3));
+          Laminar_Viscosity = Laminar_Viscosity/Viscosity_Ref;
+          
+          nu     = Laminar_Viscosity/Density;
+          nu_hat = Solution[0];
+          Ji     = nu_hat/nu;
+          Ji_3   = Ji*Ji*Ji;
+          fv1    = Ji_3/(Ji_3+cv1_3);
+          muT    = Density*fv1*nu_hat;
+          
 				}
 				if (incompressible) {
 					if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
 					if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
+          muT = muT_Inf;
 				}
+
         if (freesurface) {
 					if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
 					if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
+           muT = muT_Inf;
 				}
         
 				/*--- Instantiate the solution at this node, note that the eddy viscosity should be recomputed ---*/
-				node[iPoint_Local] = new CTurbSAVariable(Solution[0], muT_Inf, nDim, nVar, config);
+				node[iPoint_Local] = new CTurbSAVariable(Solution[0], muT, nDim, nVar, config);
 			}
 			iPoint_Global++;
 		}
@@ -2535,6 +2564,9 @@ void CTurbSASolver::GetRestart(CGeometry *geometry, CConfig *config, int val_ite
   
 	/*--- Free memory needed for the transformation ---*/
 	delete [] Global2Local;
+  
+  /*--- MPI solution ---*/
+	Set_MPI_Solution(geometry, config);
   
 }
 

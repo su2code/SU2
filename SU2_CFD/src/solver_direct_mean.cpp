@@ -66,14 +66,13 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
 CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
 	unsigned long iPoint, index, counter_local = 0, counter_global = 0;
 	unsigned short iVar, iDim, iMarker;
-  double Density, Velocity2, Pressure, Temperature, dull_val;
-
+  	double Density, Velocity2, Pressure, Temperature, dull_val;
 	unsigned short nZone = geometry->GetnZone();
 	bool restart = (config->GetRestart() || config->GetRestart_Flow());
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
-  double Gas_Constant = config->GetGas_ConstantND();
+  	bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  	bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  	bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+  	double Gas_Constant = config->GetGas_ConstantND();
 	bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
 			(config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
 	roe_turkel = false;
@@ -1403,8 +1402,8 @@ void CEulerSolver::Set_MPI_PrimVar_Gradient(CGeometry *geometry, CConfig *config
 }
 
 void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
-	unsigned long iPoint, Point_Fine;
-	unsigned short iMesh, iChildren, iVar, iDim;
+	unsigned long iPoint, Point_Fine, iVertex, Point_Coarse;
+	unsigned short iMesh, iChildren, iVar, iDim, iMarker;
 	double Density, Pressure, yFreeSurface, PressFreeSurface, Froude, yCoord, Velx, Vely, Velz, RhoVelx, RhoVely, RhoVelz, XCoord, YCoord, ZCoord, DensityInc, ViscosityInc, Heaviside, LevelSet, lambda, DensityFreeSurface, Area_Children, Area_Parent, LevelSet_Fine, epsilon, *Solution_Fine, *Solution; //, Factor_nu, nu_tilde;
 
   unsigned short nDim = geometry[MESH_0]->GetnDim();
@@ -1603,8 +1602,32 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 				solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(Solution);
 			}
 			solver_container[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
-		}
+    }
 		delete [] Solution;
+    
+    /*--- Interpolate the turblence variable also, if needed ---*/
+    if (rans) {
+      unsigned short nVar_Turb = solver_container[MESH_0][TURB_SOL]->GetnVar();
+      Solution = new double[nVar_Turb];
+      for (iMesh = 1; iMesh <= config->GetMGLevels(); iMesh++) {
+        for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+          Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
+          for (iVar = 0; iVar < nVar_Turb; iVar++) Solution[iVar] = 0.0;
+          for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
+            Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
+            Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
+            Solution_Fine = solver_container[iMesh-1][TURB_SOL]->node[Point_Fine]->GetSolution();
+            for (iVar = 0; iVar < nVar_Turb; iVar++) {
+              Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
+            }
+          }
+          solver_container[iMesh][TURB_SOL]->node[iPoint]->SetSolution(Solution);
+        }
+        solver_container[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver_container[iMesh], config, iMesh);
+        solver_container[iMesh][TURB_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+      }
+      delete [] Solution;
+    }
 	}
     
     
@@ -1630,7 +1653,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
       
       /*--- Load an additional restart file for a 2nd-order restart ---*/
       solver_container[MESH_0][FLOW_SOL]->GetRestart(geometry[MESH_0], config, int(config->GetUnst_RestartIter()-1));
-      solver_container[MESH_0][TURB_SOL]->GetRestart(geometry[MESH_0], config, int(config->GetUnst_RestartIter()-1));
+      solver_container[MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
       
       /*--- Interpolate this second restart down onto all multigrid levels ---*/
       Solution = new double[nVar];
@@ -1649,8 +1672,40 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
           solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(Solution);
         }
         solver_container[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+      
       }
       delete [] Solution;
+      
+      if (rans) {
+        
+        /*--- Load an additional restart file for the turbulence model ---*/
+        solver_container[MESH_0][TURB_SOL]->GetRestart(geometry[MESH_0], config, int(config->GetUnst_RestartIter()-1));
+        solver_container[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver_container[MESH_0], config, MESH_0);
+        solver_container[MESH_0][TURB_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
+        
+        /*--- Interpolate the turblence variable down to the coarse levels ---*/
+          unsigned short nVar_Turb = solver_container[MESH_0][TURB_SOL]->GetnVar();
+          Solution = new double[nVar_Turb];
+          for (iMesh = 1; iMesh <= config->GetMGLevels(); iMesh++) {
+            for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+              Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
+              for (iVar = 0; iVar < nVar_Turb; iVar++) Solution[iVar] = 0.0;
+              for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
+                Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
+                Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
+                Solution_Fine = solver_container[iMesh-1][TURB_SOL]->node[Point_Fine]->GetSolution();
+                for (iVar = 0; iVar < nVar_Turb; iVar++) {
+                  Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
+                }
+              }
+              solver_container[iMesh][TURB_SOL]->node[iPoint]->SetSolution(Solution);
+            }
+            /*--- Compute the eddy viscosity on this level and perform MPI communication ---*/
+            solver_container[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver_container[iMesh], config, iMesh);
+            solver_container[iMesh][TURB_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+          }
+          delete [] Solution;
+      }
       
       /*--- Push back this new solution to time level N. ---*/
       for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++) {
@@ -2569,9 +2624,8 @@ void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) 
 	unsigned long iPoint, jPoint, iEdge;
 	double Pressure_i = 0, Pressure_j = 0, *Diff;
 	unsigned short iVar;
-
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  
+  	bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+	
 	Diff = new double[nVar];
 
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++)
@@ -2793,6 +2847,426 @@ void CEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config) {
 
 	/*--- MPI parallelization ---*/
 	Set_MPI_Dissipation_Switch(geometry, config);
+
+}
+
+void CEulerSolver::Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config) {
+	unsigned short nPlane, iDim;
+	short iPlane;
+	unsigned long iSegment, nSegment;
+	double **Plane_P0, **Plane_Normal, MinPlane, MaxPlane;
+	vector<double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil;
+	vector<unsigned long> *point1_Airfoil, *point2_Airfoil;
+  	bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+	double rho_inf = Density_Inf;
+	double V_inf_mag = sqrt(pow(Velocity_Inf[0],2.0) + pow(Velocity_Inf[1],2.0) + pow(Velocity_Inf[2],2.0));	
+	double dynamic_pressure = 0.5*rho_inf*pow(V_inf_mag,2.0);
+	int rank = MASTER_NODE;
+#ifndef NO_MPI
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+
+	if (nDim == 3) {
+		nPlane = 15; MinPlane = 0; MaxPlane = 14;
+
+		Xcoord_Airfoil = new vector<double> [nPlane];
+		Ycoord_Airfoil = new vector<double> [nPlane];
+		Zcoord_Airfoil = new vector<double> [nPlane];
+		point1_Airfoil = new vector<unsigned long> [nPlane];
+		point2_Airfoil = new vector<unsigned long> [nPlane];
+
+		Plane_P0 = new double *[nPlane]; 		// point defining plane
+		Plane_Normal = new double *[nPlane];		// normal defining plane
+		for (iPlane = 0; iPlane < nPlane; iPlane++) {
+			Plane_P0[iPlane] = new double [3];
+			Plane_Normal[iPlane] = new double [3];
+		}
+		
+		/*--- dynamically-defined arrays for airfoil normal 
+		      force, chord force, and pitching moment  - 
+		      and their nondimensional coefficients ---*/
+		double *normal_force, *chord_force, *pitching_moment;
+		normal_force = new double [nPlane];
+		chord_force = new double [nPlane];
+		pitching_moment = new double [nPlane];
+
+		double *cl, *cd, *cm;
+		cl = new double [nPlane];
+		cd = new double [nPlane];
+		cm = new double [nPlane];
+		
+		for (iPlane = 0; iPlane < nPlane; iPlane++) {
+			
+			Plane_Normal[iPlane][0] = 0.0;    Plane_P0[iPlane][0] = 0.0;
+			Plane_Normal[iPlane][1] = 1.0;    Plane_P0[iPlane][1] = MinPlane + iPlane*(MaxPlane - MinPlane)/double(nPlane-1);
+			Plane_Normal[iPlane][2] = 0.0;    Plane_P0[iPlane][2] = 0.0;
+			
+			// pass in the pressure and bring it back
+			geometry->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, config,
+					Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], point1_Airfoil[iPlane], point2_Airfoil[iPlane], true);
+			
+			unsigned long nNodes = Xcoord_Airfoil[iPlane].size();
+			unsigned long iNode;
+			
+			/*--- find the node that corresponds to the trailing edge ---*/
+			double trailing_node [3];
+			trailing_node[0] = Xcoord_Airfoil[iPlane].at(0);
+			trailing_node[1] = Ycoord_Airfoil[iPlane].at(0); 
+			trailing_node[2] = Zcoord_Airfoil[iPlane].at(0);
+			
+			/*--- find the node that corresponds to the leading edge ---*/
+			double maxDistance = 0;
+			double distance, chord;
+			double leading_node [3], chord_line [3], q_chord [3];
+			double x_node, y_node, z_node;
+			for (iNode = 1; iNode < nNodes; iNode++) {
+			
+				/*--- compute the distance from the trailing edge ---*/
+				x_node = Xcoord_Airfoil[iPlane].at(iNode);
+				y_node = Ycoord_Airfoil[iPlane].at(iNode);
+				z_node = Zcoord_Airfoil[iPlane].at(iNode);
+				distance = sqrt(pow(trailing_node[0]-x_node,2.0) + pow(trailing_node[1]-y_node,2.0) + pow(trailing_node[2]-z_node,2.0));
+			
+				/*--- assume the leading edge is the point
+	      			      farthest away from the trailing edge ---*/
+				if (distance > maxDistance) {
+					maxDistance = distance;
+					leading_node[0] = x_node;
+					leading_node[1] = y_node;
+					leading_node[2] = z_node;
+				}
+			}
+
+			/*--- compute the length of the chord ---*/
+			chord = sqrt(pow(trailing_node[0]-leading_node[0],2.0) + pow(trailing_node[1]-leading_node[1],2.0) + pow(trailing_node[2]-leading_node[2],2.0));
+
+			/*--- define vector pointing from the trailing edge to the leading edge ---*/
+			for (iDim = 0; iDim < nDim; iDim++) {
+				chord_line[iDim] = leading_node[iDim]-trailing_node[iDim];
+			}
+			
+			/*--- find the coordinates of the quarter-chord point
+	    		      (move three-quarters of the chord
+	     		       length along the chord line) ---*/
+			for (iDim = 0; iDim < nDim; iDim++) {
+				q_chord[iDim] = trailing_node[iDim]+0.75*chord_line[iDim];
+			}
+			
+			/*--- find the vector that points from the trailing node to
+	    		      the first point along the top of the airfoil surface
+	    		      (assume that this is always the
+	     		       second point of the coord vectors.) ---*/
+			double first_line [3];
+			double first_line_x = Xcoord_Airfoil[iPlane].at(1);
+			double first_line_y = Ycoord_Airfoil[iPlane].at(1);
+			double first_line_z = Zcoord_Airfoil[iPlane].at(1);
+			first_line[0] = first_line_x - trailing_node[0];
+			first_line[1] = first_line_y - trailing_node[1];
+			first_line[2] = first_line_z - trailing_node[2];
+			
+			/*--- find the vector that lies normal to the plane of the airfoil
+	    		      (we are assuming, that after a deformation, the plane's normal
+	     		       will no longer be oriented in the conventional +Y direction.) ---*/
+			double section_normal [3];
+			section_normal[0] = chord_line[1]*first_line[2] - chord_line[2]*first_line[1];
+			section_normal[1] = chord_line[2]*first_line[0] - chord_line[0]*first_line[2];
+			section_normal[2] = chord_line[0]*first_line[1] - chord_line[1]*first_line[0];
+			
+			/*--- find the direction of the normal force
+	    		      (take a cross product between the 
+	     		       section normal and the chordline) ---*/
+			double normal_line [3];
+			normal_line[0] = section_normal[1]*chord_line[2] - section_normal[2]*chord_line[1];
+			normal_line[1] = section_normal[2]*chord_line[0] - section_normal[0]*chord_line[2];
+			normal_line[2] = section_normal[0]*chord_line[1] - section_normal[1]*chord_line[0];
+		
+//cout << endl << "Plane: "<< iPlane << endl;
+//cout << "\ttrailing node: (" << trailing_node[0] <<", " << trailing_node[1] << ", " << trailing_node[2] << ")" << endl;
+//cout << "\tnormal line: <" << normal_line[0] <<", " << normal_line[1] << ", " << normal_line[2] << ">" << endl;
+//cout << "\tfirst-point: (" << first_line_x << ", " << first_line_y << ", " << first_line_z << ")" << endl;
+//cout << "\tchordline: <" << chord_line[0] <<", " << chord_line[1] << ", " << chord_line[2] << ">" << endl;
+//cout << "\tsection normal: <" << section_normal[0] <<", " << section_normal[1] << ", " << section_normal[2] << ">" << endl;
+//cout << "\tfirst line: <" << first_line[0] <<", " << first_line[1] << ", " << first_line[2] << ">" << endl;	
+//int counter = 0;
+
+			/*--- Information about each segment along the airfoil
+	    		      section will be stored in a structure of type segment_t ---*/      
+			nSegment = Xcoord_Airfoil[iPlane].size()-1;
+			struct segment_t {
+				double endpoint1 [3];		// coordinates of the first endpoint
+				double endpoint2 [3];		// coordinates of the second endpoint
+				double length;			// segment length
+				double midpoint [3];		// coordinates of the segment midpoint
+				double normal [3];		// components of the outward-pointing unit normal
+				double normal_force;		// force per unit length projected 90 degs above chordline
+				double chord_force;		// force per unit length projected along the chordline
+				double pitching_moment;		// force per unit length times lever arm from midpoint to quarter chord
+			};
+			
+			segment_t *segments; 			// pointer of type segment_t
+			segments = new segment_t [nSegment];	// array of structures
+			
+			/*--- append the first entry (corresponding to the trailing
+	    		      point) to the ends of the coord vectors so that we have 
+	    		      easily identifiable segments all around the airfoil section. ---*/
+			vector<double> Xcoord_around, Ycoord_around, Zcoord_around;
+			vector<unsigned long> point1_around, point2_around;
+				
+			Xcoord_around = Xcoord_Airfoil[iPlane];
+			Xcoord_around.push_back(Xcoord_Airfoil[iPlane].at(0));
+			
+			Ycoord_around = Ycoord_Airfoil[iPlane];
+			Ycoord_around.push_back(Ycoord_Airfoil[iPlane].at(0));
+			
+			Zcoord_around = Zcoord_Airfoil[iPlane];
+			Zcoord_around.push_back(Zcoord_Airfoil[iPlane].at(0));
+			
+			point1_around = point1_Airfoil[iPlane];
+			point1_around.push_back(point1_Airfoil[iPlane].at(0));
+			
+			point2_around = point2_Airfoil[iPlane];
+			point2_around.push_back(point2_Airfoil[iPlane].at(0));
+
+			/*--- for each segment around the airfoil, populate a data structure ---*/
+			for (iSegment = 0; iSegment < nSegment; iSegment++) {
+
+				/*--- coordinates of first endpoint ---*/
+				segments[iSegment].endpoint1[0] = Xcoord_around.at(iSegment);
+				segments[iSegment].endpoint1[1] = Ycoord_around.at(iSegment);
+				segments[iSegment].endpoint1[2] = Zcoord_around.at(iSegment);
+
+				/*--- coordinates of second endpoint ---*/
+				segments[iSegment].endpoint2[0] = Xcoord_around.at(iSegment+1);
+				segments[iSegment].endpoint2[1] = Ycoord_around.at(iSegment+1);
+				segments[iSegment].endpoint2[2] = Zcoord_around.at(iSegment+1);
+			
+				/*--- segment length ---*/
+				double deltaX = segments[iSegment].endpoint2[0] - segments[iSegment].endpoint1[0];
+				double deltaY = segments[iSegment].endpoint2[1] - segments[iSegment].endpoint1[1];
+				double deltaZ = segments[iSegment].endpoint2[2] - segments[iSegment].endpoint1[2];
+				segments[iSegment].length = sqrt(pow(deltaX,2.0) + pow(deltaY,2.0) + pow(deltaZ,2.0));
+			
+				/*--- coordinates of the segment midpoint ---*/
+				for (iDim = 0; iDim < nDim; iDim++) {
+					segments[iSegment].midpoint[iDim] = 0.5*(segments[iSegment].endpoint1[iDim] + segments[iSegment].endpoint2[iDim]);
+				}             
+				
+				/*--- compute the unit "tangent" vector, i.e.
+	      			      the vector pointing along the segment ---*/
+				double tangent [3];
+				tangent[0] = (1.0/segments[iSegment].length)*(deltaX);
+				tangent[1] = (1.0/segments[iSegment].length)*(deltaY);
+				tangent[2] = (1.0/segments[iSegment].length)*(deltaZ);
+			
+				/*--- compute the outward-pointing normal ---*/
+				segments[iSegment].normal[0] = section_normal[1]*tangent[2] - section_normal[2]*tangent[1];
+				segments[iSegment].normal[1] = section_normal[2]*tangent[0] - section_normal[0]*tangent[2];
+				segments[iSegment].normal[2] = section_normal[0]*tangent[1] - section_normal[1]*tangent[0];
+
+				/*--- compute the outward-pointing unit normal ---*/
+				double norm_dot_norm = pow(segments[iSegment].normal[0],2.0) + pow(segments[iSegment].normal[1],2.0) + pow(segments[iSegment].normal[2],2.0);
+				double normal_length = sqrt(norm_dot_norm);
+				for (iDim = 0; iDim < nDim; iDim++) { 
+					segments[iSegment].normal[iDim] = segments[iSegment].normal[iDim]/normal_length;
+				}
+			
+				/*--- find the coordinates of the two nodes used 
+				      to find the first endpoint of this segment ---*/
+				double endpoint1_p1 [3];
+				double endpoint1_p2 [3];
+				for (iDim = 0; iDim < nDim; iDim++) {
+					endpoint1_p1[iDim] = geometry->node[point1_around.at(iSegment)]->GetCoord(iDim);
+					endpoint1_p2[iDim] = geometry->node[point2_around.at(iSegment)]->GetCoord(iDim);
+				}
+				
+				/*--- find the coordinates of the two nodes used 
+				      to find the second endpoint of this segment ---*/
+				double endpoint2_p1 [3];
+				double endpoint2_p2 [3];
+				for (iDim = 0; iDim < nDim; iDim++) {
+					endpoint2_p1[iDim] = geometry->node[point1_around.at(iSegment+1)]->GetCoord(iDim);
+					endpoint2_p2[iDim] = geometry->node[point2_around.at(iSegment+1)]->GetCoord(iDim);
+				}
+			
+				/*--- find the pressure at endpoint1 of this segment by interpolating
+				      the pressures at the two nodes of the edge it sits on ---*/
+				double pressure_endpoint1_p1 = node[point1_around.at(iSegment)]->GetPressure(incompressible);
+				double pressure_endpoint1_p2 = node[point2_around.at(iSegment)]->GetPressure(incompressible);
+				
+				deltaX = endpoint1_p1[0] - segments[iSegment].endpoint1[0];
+				deltaY = endpoint1_p1[1] - segments[iSegment].endpoint1[1];
+				deltaZ = endpoint1_p1[2] - segments[iSegment].endpoint1[2];
+				double distance_p1 = sqrt(pow(deltaX,2.0) + pow(deltaY,2.0) + pow(deltaZ,2.0));
+				
+				deltaX = endpoint1_p2[0] - segments[iSegment].endpoint1[0];
+				deltaY = endpoint1_p2[1] - segments[iSegment].endpoint1[1];
+				deltaZ = endpoint1_p2[2] - segments[iSegment].endpoint1[2];
+				double distance_p2 = sqrt(pow(deltaX,2.0) + pow(deltaY,2.0) + pow(deltaZ,2.0));
+				
+				double distance_total = distance_p1 + distance_p2;
+				double pressure_endpoint1 = (1.0/distance_total)*(distance_p2*pressure_endpoint1_p1 + distance_p1*pressure_endpoint1_p2);
+				
+				/*--- find the pressure at endpoint2 of this segment by interpolating	
+				      the pressures at the two nodes of the edge it sits on ---*/
+				double pressure_endpoint2_p1 = node[point1_around.at(iSegment+1)]->GetPressure(incompressible);
+				double pressure_endpoint2_p2 = node[point2_around.at(iSegment+1)]->GetPressure(incompressible);
+				
+				deltaX = endpoint2_p1[0] - segments[iSegment].endpoint2[0];	
+				deltaY = endpoint2_p1[1] - segments[iSegment].endpoint2[1];
+				deltaZ = endpoint2_p1[2] - segments[iSegment].endpoint2[2];
+				distance_p1 = sqrt(pow(deltaX,2.0) + pow(deltaY,2.0) + pow(deltaZ,2.0));
+				
+				deltaX = endpoint2_p2[0] - segments[iSegment].endpoint2[0];
+				deltaY = endpoint2_p2[1] - segments[iSegment].endpoint2[1];
+				deltaZ = endpoint2_p2[2] - segments[iSegment].endpoint2[2];
+				distance_p2 = sqrt(pow(deltaX,2.0) + pow(deltaY,2.0) + pow(deltaZ,2.0));
+				
+				distance_total = distance_p1 + distance_p2;
+				double pressure_endpoint2 = (1.0/distance_total)*(distance_p2*pressure_endpoint2_p1 + distance_p1*pressure_endpoint2_p2);
+				
+				/*--- find the value of pressure at the segment's midpoint 
+				      by averaging the values found at the endpoints ---*/
+				double midPressure = 0.5*(pressure_endpoint1 + pressure_endpoint2);
+
+				/*--- find the force per unit length carried by the segment ---*/
+				double midForce = midPressure*segments[iSegment].length;
+				
+				/*--- create a vector associated with the force, pointing 
+				      in the direction of the inward-facing unit-normal ---*/
+				double force_vector [3];
+				for (iDim = 0; iDim < nDim; iDim++) {
+					force_vector[iDim] = midForce*(-1.0*segments[iSegment].normal[iDim]);
+				}
+
+/*
+if (iSegment == 1 || iSegment == nSegment-1) {
+	counter++;
+	cout << counter << ") " << "\tSegment " << iSegment << ": force vector = <" << force_vector[0]/fabs(force_vector[0]) << ", " << force_vector[1] << ", " << force_vector[2]/fabs(force_vector[2]) << ">" << endl;
+} else
+	if (segments[iSegment].normal[0]/fabs(segments[iSegment].normal[0]) != segments[iSegment-1].normal[0]/fabs(segments[iSegment-1].normal[0]) || segments[iSegment].normal[2]/fabs(segments[iSegment].normal[2]) != segments[iSegment-1].normal[2]/fabs(segments[iSegment-1].normal[2])) { 
+	counter++;
+	cout << counter << ") " << "\tSegment " << iSegment << ": force vector = <" << force_vector[0]/fabs(force_vector[0]) << ", " << force_vector[1] << ", " << force_vector[2]/fabs(force_vector[2]) << ">" << endl;
+}
+*/
+
+		
+				/*--- find the component of the force in the normal direction by 
+				      projecting the force on the segment onto the normal-line ---*/
+				double unit_normal_line [3];
+				double normal_line_mag = sqrt(pow(normal_line[0],2.0) + pow(normal_line[1],2.0) + pow(normal_line[2],2.0));
+				for (iDim = 0; iDim < nDim; iDim++) {
+					unit_normal_line[iDim] = normal_line[iDim]/normal_line_mag;
+				}
+				segments[iSegment].normal_force = unit_normal_line[0]*force_vector[0] + unit_normal_line[1]*force_vector[1] + unit_normal_line[2]*force_vector[2];
+				
+				/*--- find the component of the force in the chordwise direction 
+				      by projecting the force on the segment onto the chordline ---*/
+				double unit_chord_line [3];
+				double chord_line_mag = sqrt(pow(chord_line[0],2.0) + pow(chord_line[1],2.0) + pow(chord_line[2],2.0));
+				for (iDim = 0; iDim < nDim; iDim++) {
+					unit_chord_line[iDim] = chord_line[iDim]/chord_line_mag;
+				}
+				segments[iSegment].chord_force = unit_chord_line[0]*force_vector[0] + unit_chord_line[1]*force_vector[1] + unit_chord_line[2]*force_vector[2];
+				
+				/*--- find the contribution to the nose-up pitching 
+				      moment about the quarter-chord point ---*/
+				double lever_arm [3];
+				for (iDim = 0; iDim < nDim; iDim++) {
+					lever_arm[iDim] = segments[iSegment].midpoint[iDim]-q_chord[iDim];
+				}
+								
+				double pitching_moment_vec [3];
+				pitching_moment_vec[0] = lever_arm[1]*force_vector[2] - lever_arm[2]*force_vector[1];
+				pitching_moment_vec[1] = lever_arm[2]*force_vector[0] - lever_arm[0]*force_vector[2];
+				pitching_moment_vec[2] = lever_arm[0]*force_vector[1] - lever_arm[1]*force_vector[0];
+				
+				double unit_section_normal [3];
+				double section_normal_mag = sqrt(pow(section_normal[0],2.0) + pow(section_normal[1],2.0) + pow(section_normal[2],2.0));
+				for (iDim = 0; iDim < nDim; iDim++) {
+					unit_section_normal[iDim] = section_normal[iDim]/section_normal_mag;
+				}
+				segments[iSegment].pitching_moment = unit_section_normal[0]*pitching_moment_vec[0] + unit_section_normal[1]*pitching_moment_vec[1] + unit_section_normal[2]*pitching_moment_vec[2];	
+			}
+			
+			/*--- for each airfoil section, sum the physical quantities found at the sections ---*/
+			normal_force[iPlane] = 0;
+			chord_force[iPlane] = 0;
+			pitching_moment[iPlane] = 0;
+			for (iSegment = 0; iSegment < nSegment; iSegment++) {
+				normal_force[iPlane] += segments[iSegment].normal_force;
+				chord_force[iPlane] += segments[iSegment].chord_force;
+				pitching_moment[iPlane] += segments[iSegment].pitching_moment;
+			}
+			
+			/*--- compute the associated coefficients ---*/
+			cl[iPlane] = normal_force[iPlane]/(dynamic_pressure*chord);
+			cd[iPlane] = chord_force[iPlane]/(dynamic_pressure*chord);
+			cm[iPlane] = pitching_moment[iPlane]/(dynamic_pressure*pow(chord,2.0));			
+			
+		}
+		
+		/*--- write the values of these sectional coefficients to the appropriate files ---*/
+		ofstream cl_file;
+		ofstream cd_file;
+		ofstream cm_file;
+				
+		if (rank == MASTER_NODE) {
+			
+			cl_file.precision(15);
+			cd_file.precision(15);
+			cm_file.precision(15);
+			
+			cl_file.open("cl", ios::out);
+			cd_file.open("cd", ios::out);
+			cm_file.open("cm", ios::out);
+			
+			for (iPlane = nPlane-1; iPlane >= 0; iPlane--) {
+				cl_file << " " << cl[iPlane];
+				cd_file << " " << cd[iPlane];
+				cm_file << " " << cm[iPlane];
+			}
+			cl_file << endl;
+			cd_file << endl;
+			cm_file << endl;
+			
+			cl_file.close();
+			cd_file.close();
+			cm_file.close();
+		}
+		
+		
+		
+		
+		/*--- delete dynamically allocated memory ---*/
+		delete [] Xcoord_Airfoil;
+		delete [] Ycoord_Airfoil;
+		delete [] Zcoord_Airfoil;
+		
+		delete [] point1_Airfoil;
+		delete [] point2_Airfoil;
+
+		for (iPlane = 0; iPlane < nPlane; iPlane++) {
+			delete Plane_Normal[iPlane];
+			delete Plane_P0[iPlane];
+		}
+		delete [] Plane_P0;
+		delete [] Plane_Normal;
+		
+		delete [] normal_force;
+		delete [] chord_force;
+		delete [] pitching_moment;
+		delete [] cl;
+		delete [] cd;
+		delete [] cm;
+	// WHAT IS THE RIGHT WAY TO DELETE DYNAMICALLY ALLOCATED MEMORY FOR AN ARRAY OF STRUCTURES?!
+//		for (iSegment = 0; iSegment < nSegment; iSegment++) {
+//			delete segments[iSegment];
+//		}
+//		delete segments;
+
+	}
+
+
 
 }
 
@@ -5887,36 +6361,18 @@ void CEulerSolver::GetRestart(CGeometry *geometry, CConfig *config, int val_iter
 		iPoint_Global++;
 	}
 
-	/*--- Set an average grid velocity at any halo nodes for the unsteady adjoint ---*/
-  // does this make sense still?
-	if (config->GetWrt_Unsteady() && grid_movement) {
-		unsigned long jPoint;
-		unsigned short nNeighbors;
-		double AvgVel[3], *GridVel;
-		for(iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-			AvgVel[0] = 0.0; AvgVel[1] = 0.0; AvgVel[2] = 0.0; nNeighbors = 0;
-			/*--- Find & store any neighbor points to the sliding boundary in the donor zone (jZone). ---*/
-			for (unsigned short iNeighbor = 0; iNeighbor < geometry->node[iPoint]->GetnPoint(); iNeighbor++) {
-				jPoint = geometry->node[iPoint]->GetPoint(iNeighbor);
-				if (geometry->node[jPoint]->GetDomain()) {
-					GridVel = geometry->node[jPoint]->GetGridVel();
-					for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-						AvgVel[iDim] += GridVel[iDim];
-						nNeighbors++;
-					}
-				}
-			}
-			for (unsigned short iDim = 0; iDim < nDim; iDim++)
-				geometry->node[iPoint]->SetGridVel(iDim, AvgVel[iDim]/(double)nNeighbors);
-		}
-	}
-
-
 	/*--- Close the restart file ---*/
 	restart_file.close();
 
 	/*--- Free memory needed for the transformation ---*/
 	delete [] Global2Local;
+  
+  /*--- MPI solution ---*/
+	Set_MPI_Solution(geometry, config);
+  
+  /*--- MPI for the grid velocities ---*/
+  if (config->GetWrt_Unsteady() && grid_movement)
+    geometry->Set_MPI_GridVel(config);
 
 }
 
@@ -7273,7 +7729,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
 			node[iPoint]->SetVel_ResTruncError_Zero();
       
 			/*--- Apply a weak boundary condition for the energy equation.
-       First, compute the residual due to the prescribed heat flux. ---*/
+       Compute the residual due to the prescribed heat flux. ---*/
 			Res_Visc[nDim+1] = Wall_HeatFlux * Area;
       
 			/*--- If the wall is moving, there are additional residual contributions
@@ -7354,7 +7810,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
           /*--- Compute closest normal neighbor ---*/
           Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
           
-          /*--- Get cartesian coordinates of i & j and compute inter-node distance ---*/
+          /*--- Get coordinates of i & nearest normal and compute distance ---*/
           Coord_i = geometry->node[iPoint]->GetCoord();
           Coord_j = geometry->node[Point_Normal]->GetCoord();
           dist_ij = 0;
@@ -7399,7 +7855,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
             Jacobian_i[nDim+1][3] -= factor*piz;
           }
           
-          /*--- Subtract the block to the Global Jacobian structure ---*/
+          /*--- Subtract the block from the Global Jacobian structure ---*/
           Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
         }
         
@@ -7411,9 +7867,9 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
 			/*--- Viscous contribution to the residual at the wall ---*/
 			LinSysRes.SubtractBlock(iPoint, Res_Visc);
       
-			/*--- Modify the velocity-rows of the Jacobian (1 on the diagonal). ---*/
+      /*--- Enforce the no-slip boundary condition in a strong way by
+       modifying the velocity-rows of the Jacobian (1 on the diagonal). ---*/
 			if (implicit) {
-				/*--- Enforce the no-slip boundary condition in a strong way ---*/
 				for (iVar = 1; iVar <= nDim; iVar++) {
 					total_index = iPoint*nVar+iVar;
 					Jacobian.DeleteValsRowi(total_index);
@@ -7425,36 +7881,43 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
 }
 
 void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-    
+  
+  /*--- Local variables ---*/
+  unsigned short iVar, jVar, iDim, jDim;
 	unsigned long iVertex, iPoint, Point_Normal, total_index;
-	unsigned short iVar, jVar, iDim;
-	double *Normal, *Coord_i, *Coord_j, Area, dist_ij, *Grid_Vel;
-	double UnitNormal[3];
-	double Twall, Temperature, dTdn, dTdrho;
-	double Density, Vel2, Energy;
-	double Laminar_Viscosity, Eddy_Viscosity, Thermal_Conductivity, Gas_Constant, cp;
-	double Theta;
+  
+	double *Normal, *Coord_i, *Coord_j, Area, dist_ij, theta2, Gas_Constant;
+  double Twall, Temperature, dTdn, dTdrho, thermal_conductivity, cp;
+  double thetax, thetay, thetaz, etax, etay, etaz, pix, piy, piz, factor;
+	double ProjGridVel, *GridVel, GridVel2, Pressure, Density, Vel2, Energy;
+  double total_viscosity, div_vel, turb_ke, tau_vel[3], UnitNormal[3];
+  double laminar_viscosity, eddy_viscosity, **grad_primvar, tau[3][3];
+  double delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
+  
+  double Prandtl_Lam  = config->GetPrandtl_Lam();
+  double Prandtl_Turb = config->GetPrandtl_Turb();
+  
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
-	bool grid_movement = config->GetGrid_Movement();
+  bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
+	bool grid_movement  = config->GetGrid_Movement();
   
 	Point_Normal = 0;
-    
+  
 	/*--- Identify the boundary ---*/
 	string Marker_Tag = config->GetMarker_All_Tag(val_marker);
-    
+  
 	/*--- Retrieve the specified wall temperature ---*/
 	Twall = config->GetIsothermal_Temperature(Marker_Tag);
 	Gas_Constant = config->GetGas_ConstantND();
 	cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
-    
+  
 	/*--- Loop over boundary points ---*/
 	for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 		if (geometry->node[iPoint]->GetDomain()) {
-            
+      
 			/*--- Compute dual-grid area and boundary normal ---*/
 			Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
       
@@ -7465,43 +7928,39 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
       
 			for (iDim = 0; iDim < nDim; iDim++)
 				UnitNormal[iDim] = -Normal[iDim]/Area;
-            
+      
 			/*--- Calculate useful quantities ---*/
-			Theta = 0.0;
+			theta2 = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++)
-				Theta += UnitNormal[iDim]*UnitNormal[iDim];
-            
+				theta2 += UnitNormal[iDim]*UnitNormal[iDim];
+      
 			/*--- Compute closest normal neighbor ---*/
 			Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-            
-			/*--- Get cartesian coordinates of i & j and compute inter-node distance ---*/
+      
+			/*--- Get coordinates of i & nearest normal and compute distance ---*/
 			Coord_i = geometry->node[iPoint]->GetCoord();
 			Coord_j = geometry->node[Point_Normal]->GetCoord();
 			dist_ij = 0;
 			for (iDim = 0; iDim < nDim; iDim++)
 				dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
 			dist_ij = sqrt(dist_ij);
-            
-            
+      
+      
 			/*--- Store the corrected velocity at the wall which will
-             be zero (v = 0), unless there is grid motion (v = u_wall)---*/
+       be zero (v = 0), unless there is grid motion (v = u_wall)---*/
 			if (grid_movement) {
-				Grid_Vel = geometry->node[iPoint]->GetGridVel();
-				for (iDim = 0; iDim < nDim; iDim++)
-					Vector[iDim] = Grid_Vel[iDim];
+				GridVel = geometry->node[iPoint]->GetGridVel();
+				for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = GridVel[iDim];
 			} else {
 				for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = 0.0;
 			}
-            
-			/*--- Initialize viscous residual (and Jacobian if implicit) to zero ---*/
-			for (iVar = 0; iVar < nVar; iVar ++)
+      
+			/*--- Initialize the convective & viscous residuals to zero ---*/
+			for (iVar = 0; iVar < nVar; iVar++) {
+				Res_Conv[iVar] = 0.0;
 				Res_Visc[iVar] = 0.0;
-			if (implicit) {
-				for (iVar = 0; iVar < nVar; iVar ++)
-					for (jVar = 0; jVar < nVar; jVar ++)
-						Jacobian_i[iVar][jVar] = 0.0;
 			}
-            
+      
 			/*--- Set the residual, truncation error and velocity value on the boundary ---*/
 			if (compressible) node[iPoint]->SetVelocity_Old(Vector, COMPRESSIBLE);
       if (incompressible) node[iPoint]->SetVelocity_Old(Vector, INCOMPRESSIBLE);
@@ -7510,23 +7969,28 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
 			for (iDim = 0; iDim < nDim; iDim++)
         LinSysRes.SetBlock_Zero(iPoint, iDim+1);
 			node[iPoint]->SetVel_ResTruncError_Zero();
-            
+      
 			/*--- Retrieve temperatures from boundary nearest neighbor --*/
 			Temperature = node[Point_Normal]->GetPrimVar(0);
-            
+      
 			/*--- Calculate temperature gradient normal to the wall using FD ---*/
-			dTdn                  = (Twall - Temperature)/dist_ij;
-			Laminar_Viscosity     = node[iPoint]->GetLaminarViscosity();
-			Eddy_Viscosity        = node[iPoint]->GetEddyViscosity();
-			Thermal_Conductivity  = cp * (Laminar_Viscosity/PRANDTL + Eddy_Viscosity/PRANDTL_TURB);
-            
-			/*--- Set the residual on the boundary, enforcing the no-slip boundary condition ---*/
-			Res_Visc[nDim+1] = Thermal_Conductivity * dTdn * Area;
-            
+			dTdn                 = (Twall - Temperature)/dist_ij;
+			laminar_viscosity    = node[iPoint]->GetLaminarViscosity();
+			eddy_viscosity       = node[iPoint]->GetEddyViscosity();
+			thermal_conductivity = cp * ( laminar_viscosity/Prandtl_Lam
+                                   +eddy_viscosity/Prandtl_Turb);
+      
+      /*--- Apply a weak boundary condition for the energy equation.
+       Compute the residual due to the prescribed heat flux. ---*/
+			Res_Visc[nDim+1] = thermal_conductivity * dTdn * Area;
+      
 			/*--- Calculate Jacobian for implicit time stepping ---*/
-			// Note: Momentum equations are enforced in a strong way while the energy equation is enforced weakly
 			if (implicit) {
-                
+        
+        for (iVar = 0; iVar < nVar; iVar ++)
+					for (jVar = 0; jVar < nVar; jVar ++)
+						Jacobian_i[iVar][jVar] = 0.0;
+        
 				/*--- Calculate useful quantities ---*/
 				Density = node[iPoint]->GetPrimVar(nDim+2);
 				Energy  = node[iPoint]->GetSolution(nDim+1);
@@ -7536,21 +8000,149 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
 					Vel2 += node[iPoint]->GetPrimVar(iDim+1) * node[iPoint]->GetPrimVar(iDim+1);
 				//dTdrho = (Gamma-1.0)/(Density*Gas_Constant) * (-Energy/Density + Vel2);
 				dTdrho = 1.0/Density * ( -Twall + (Gamma-1.0)/Gas_Constant*(Vel2/2.0) );
-                
+        
 				/*--- Enforce the no-slip boundary condition in a strong way ---*/
 				for (iVar = 1; iVar <= nDim; iVar++) {
 					total_index = iPoint*nVar+iVar;
 					Jacobian.DeleteValsRowi(total_index);
 				}
-                
+        
 				/*--- Add contributions to the Jacobian from the weak enforcement of the energy equations ---*/
-				Jacobian_i[nDim+1][0]      = -Thermal_Conductivity*Theta/dist_ij * dTdrho * Area;
-				Jacobian_i[nDim+1][nDim+1] = -Thermal_Conductivity*Theta/dist_ij * (Gamma-1.0)/(Gas_Constant*Density) * Area;
+				Jacobian_i[nDim+1][0]      = -thermal_conductivity*theta2/dist_ij * dTdrho * Area;
+				Jacobian_i[nDim+1][nDim+1] = -thermal_conductivity*theta2/dist_ij * (Gamma-1.0)/(Gas_Constant*Density) * Area;
+        
+        /*--- Subtract the block from the Global Jacobian structure ---*/
+        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
 			}
+      
+      /*--- If the wall is moving, there are additional residual contributions
+       due to pressure (p v_wall.n) and shear stress (tau.v_wall.n). ---*/
+			if (grid_movement) {
+        
+        /*--- Get the grid velocity at the current boundary node ---*/
+        GridVel = geometry->node[iPoint]->GetGridVel();
+        ProjGridVel = 0.0;
+				for (iDim = 0; iDim < nDim; iDim++)
+					ProjGridVel += GridVel[iDim]*UnitNormal[iDim]*Area;
+        
+        /*--- Retrieve other primitive quantities and viscosities ---*/
+				Density  = node[iPoint]->GetSolution(0);
+        Pressure = node[iPoint]->GetPressure(incompressible);
+				laminar_viscosity = node[iPoint]->GetLaminarViscosity();
+				eddy_viscosity    = node[iPoint]->GetEddyViscosity();
+        total_viscosity   = laminar_viscosity + eddy_viscosity;
+				grad_primvar      = node[iPoint]->GetGradient_Primitive();
+        
+				/*--- Turbulent kinetic energy ---*/
+				if (config->GetKind_Turb_Model() == SST)
+					turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
+				else
+					turb_ke = 0.0;
+        
+        /*--- Divergence of the velocity ---*/
+				div_vel = 0.0;
+				for (iDim = 0 ; iDim < nDim; iDim++)
+					div_vel += grad_primvar[iDim+1][iDim];
+        
+        /*--- Compute the viscous stress tensor ---*/
+				for (iDim = 0; iDim < nDim; iDim++)
+					for (jDim = 0; jDim < nDim; jDim++) {
+						tau[iDim][jDim] = total_viscosity*( grad_primvar[jDim+1][iDim]
+                                               +grad_primvar[iDim+1][jDim] )
+						- TWO3*total_viscosity*div_vel*delta[iDim][jDim]
+            - TWO3*Density*turb_ke*delta[iDim][jDim];
+          }
+        
+        /*--- Dot product of the stress tensor with the grid velocity ---*/
+        for (iDim = 0 ; iDim < nDim; iDim++) {
+          tau_vel[iDim] = 0.0;
+					for (jDim = 0 ; jDim < nDim; jDim++)
+            tau_vel[iDim] += tau[iDim][jDim]*GridVel[jDim];
+        }
+        
+        /*--- Compute the convective and viscous residuals (energy eqn.) ---*/
+        Res_Conv[nDim+1] = Pressure*ProjGridVel;
+        for (iDim = 0 ; iDim < nDim; iDim++)
+          Res_Visc[nDim+1] += tau_vel[iDim]*UnitNormal[iDim]*Area;
+        
+        /*--- Implicit Jacobian contributions due to moving walls ---*/
+        if (implicit) {
+          
+          /*--- Jacobian contribution related to the pressure term ---*/
+          GridVel2 = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            GridVel2 += GridVel[iDim]*GridVel[iDim];
+          for (iVar = 0; iVar < nVar; iVar++)
+            for (jVar = 0; jVar < nVar; jVar++)
+              Jacobian_i[iVar][jVar] = 0.0;
+          
+          Jacobian_i[nDim+1][0] = 0.5*(Gamma-1.0)*GridVel2*ProjGridVel;
+          for (jDim = 0; jDim < nDim; jDim++)
+            Jacobian_i[nDim+1][jDim+1] = -(Gamma-1.0)*GridVel[jDim]*ProjGridVel;
+          Jacobian_i[nDim+1][nDim+1] = (Gamma-1.0)*ProjGridVel;
+          
+          /*--- Add the block to the Global Jacobian structure ---*/
+          Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+          
+          /*--- Now the Jacobian contribution related to the shear stress ---*/
+          for (iVar = 0; iVar < nVar; iVar++)
+            for (jVar = 0; jVar < nVar; jVar++)
+              Jacobian_i[iVar][jVar] = 0.0;
+          
+          factor = total_viscosity*Area/(Density*dist_ij);
+          
+          if (nDim == 2) {
+            thetax = theta2 + UnitNormal[0]*UnitNormal[0]/3.0;
+            thetay = theta2 + UnitNormal[1]*UnitNormal[1]/3.0;
             
-			/*--- Apply calculated residuals and Jacobians to the linear system ---*/
+            etaz   = UnitNormal[0]*UnitNormal[1]/3.0;
+            
+            pix = GridVel[0]*thetax + GridVel[1]*etaz;
+            piy = GridVel[0]*etaz   + GridVel[1]*thetay;
+            
+            Jacobian_i[nDim+1][0] -= factor*(-pix*GridVel[0]+piy*GridVel[1]);
+            Jacobian_i[nDim+1][1] -= factor*pix;
+            Jacobian_i[nDim+1][2] -= factor*piy;
+          } else {
+            thetax = theta2 + UnitNormal[0]*UnitNormal[0]/3.0;
+            thetay = theta2 + UnitNormal[1]*UnitNormal[1]/3.0;
+            thetaz = theta2 + UnitNormal[2]*UnitNormal[2]/3.0;
+            
+            etaz = UnitNormal[0]*UnitNormal[1]/3.0;
+            etax = UnitNormal[1]*UnitNormal[2]/3.0;
+            etay = UnitNormal[0]*UnitNormal[2]/3.0;
+            
+            pix = GridVel[0]*thetax + GridVel[1]*etaz   + GridVel[2]*etay;
+            piy = GridVel[0]*etaz   + GridVel[1]*thetay + GridVel[2]*etax;
+            piz = GridVel[0]*etay   + GridVel[1]*etax   + GridVel[2]*thetaz;
+            
+            Jacobian_i[nDim+1][0] -= factor*(-pix*GridVel[0]+piy*GridVel[1]+piz*GridVel[2]);
+            Jacobian_i[nDim+1][1] -= factor*pix;
+            Jacobian_i[nDim+1][2] -= factor*piy;
+            Jacobian_i[nDim+1][3] -= factor*piz;
+          }
+          
+          /*--- Subtract the block from the Global Jacobian structure ---*/
+          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        }
+        
+			}
+      
+      /*--- Convective contribution to the residual at the wall ---*/
+			LinSysRes.AddBlock(iPoint, Res_Conv);
+      
+			/*--- Viscous contribution to the residual at the wall ---*/
 			LinSysRes.SubtractBlock(iPoint, Res_Visc);
-			Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+      
+			/*--- Enforce the no-slip boundary condition in a strong way by
+       modifying the velocity-rows of the Jacobian (1 on the diagonal). ---*/
+			if (implicit) {
+				for (iVar = 1; iVar <= nDim; iVar++) {
+					total_index = iPoint*nVar+iVar;
+					Jacobian.DeleteValsRowi(total_index);
+				}
+			}
+      
 		}
 	}
 }
