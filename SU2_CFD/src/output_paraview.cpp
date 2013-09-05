@@ -178,20 +178,44 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
   
 	/*--- Write surface and volumetric solution data. ---*/
   for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+    
     if (surf_sol) {
+      
       if (LocalIndex[iPoint+1] != 0) {
+        
         if (!grid_movement) {
+          
+          /*--- Write the node coordinates ---*/
+          if (config->GetKind_SU2() != SU2_SOL) {
+            for(iDim = 0; iDim < nDim; iDim++)
+              Paraview_File << scientific << Coords[iDim][iPoint] << "\t";
+            if (nDim == 2) Paraview_File << scientific << "0.0" << "\t";
+          }
+          else {
+            for(iDim = 0; iDim < nDim; iDim++)
+              Paraview_File << scientific << Data[iDim][iPoint] << "\t";
+            if (nDim == 2) Paraview_File << scientific << "0.0" << "\t";
+          }
+            
+        }
+        
+      }
+      
+    } else {
+      
+      if (!grid_movement) {
+        
+        if (config->GetKind_SU2() != SU2_SOL) {
           for(iDim = 0; iDim < nDim; iDim++)
             Paraview_File << scientific << Coords[iDim][iPoint] << "\t";
           if (nDim == 2) Paraview_File << scientific << "0.0" << "\t";
         }
-      }
-      
-    } else {
-      if (!grid_movement) {
-        for(iDim = 0; iDim < nDim; iDim++)
-          Paraview_File << scientific << Coords[iDim][iPoint] << "\t";
-        if (nDim == 2) Paraview_File << scientific << "0.0" << "\t";
+        else {
+          for(iDim = 0; iDim < nDim; iDim++)
+            Paraview_File << scientific << Data[iDim][iPoint] << "\t";
+          if (nDim == 2) Paraview_File << scientific << "0.0" << "\t";
+        }
+        
       }
     }
   }
@@ -442,7 +466,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       }
     }
     
-    if ((Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    if (config->GetKind_Regime() == FREESURFACE) {
       
       Paraview_File << "\nSCALARS Density float 1\n";
       Paraview_File << "LOOKUP_TABLE default\n";
@@ -462,8 +486,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       
     }
     
-    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
-        (Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       
       Paraview_File << "\nSCALARS Pressure float 1\n";
       Paraview_File << "LOOKUP_TABLE default\n";
@@ -515,8 +538,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       
     }
     
-    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
-        (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       
       Paraview_File << "\nSCALARS Temperature float 1\n";
       Paraview_File << "LOOKUP_TABLE default\n";
@@ -600,7 +622,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       
     }
     
-    if ((Kind_Solver == RANS) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    if (Kind_Solver == RANS) {
       
       Paraview_File << "\nSCALARS Eddy_Viscosity float 1\n";
       Paraview_File << "LOOKUP_TABLE default\n";
@@ -621,8 +643,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
     }
     
     if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) ||
-        (Kind_Solver == ADJ_FREE_SURFACE_EULER) || (Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
-        (Kind_Solver == ADJ_FREE_SURFACE_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
+        (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
       
       Paraview_File << "\nSCALARS Surface_Sensitivity float 1\n";
       Paraview_File << "LOOKUP_TABLE default\n";

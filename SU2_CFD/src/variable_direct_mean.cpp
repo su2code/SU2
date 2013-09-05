@@ -31,6 +31,8 @@ CEulerVariable::CEulerVariable(void) : CVariable() {
 	Primitive = NULL;
 	Gradient_Primitive = NULL;
 	Limiter_Primitive = NULL;
+    WindGust = NULL;
+    WindGustDer = NULL;
   
 }
 
@@ -38,12 +40,14 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
                                unsigned short val_nvar, CConfig *config) : CVariable(val_ndim, val_nvar, config) {
 	unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
   
-	bool Incompressible = config->GetIncompressible();
-	bool freesurface = config->GetFreeSurface();
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
 	bool magnet = (config->GetMagnetic_Force() == YES);
   bool low_fidelity = config->GetLowFidelitySim();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+    bool windgust = config->GetWind_Gust();
   
   /*--- Array initialization ---*/
 	TS_Source = NULL;
@@ -51,11 +55,15 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
 	Primitive = NULL;
 	Gradient_Primitive = NULL;
 	Limiter_Primitive = NULL;
+    WindGust = NULL;
+    WindGustDer = NULL;
+
   
   /*--- Allocate and initialize the primitive variables and gradients ---*/
-  if (Incompressible) { nPrimVar = nDim+2; nPrimVarGrad = nDim+2; }
-  else { nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
-  
+  if (compressible) { nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
+  if (incompressible) { nPrimVar = nDim+2; nPrimVarGrad = nDim+2; }
+  if (freesurface) { nPrimVar = nDim+2; nPrimVarGrad = nDim+2; }
+
 	/*--- Allocate residual structures ---*/
 	Res_TruncError = new double [nVar];
   
@@ -88,15 +96,7 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
 	}
   
 	/*--- Solution and old solution initialization ---*/
-	if (Incompressible) {
-		Solution[0] = config->GetPressure_FreeStreamND();
-		Solution_Old[0] = config->GetPressure_FreeStreamND();
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Solution[iDim+1] = val_velocity[iDim]*config->GetDensity_FreeStreamND();
-			Solution_Old[iDim+1] = val_velocity[iDim]*config->GetDensity_FreeStreamND();
-		}
-	}
-	else {
+	if (compressible) {
 		Solution[0] = val_density;
 		Solution_Old[0] = val_density;
 		for (iDim = 0; iDim < nDim; iDim++) {
@@ -106,18 +106,18 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
 		Solution[nVar-1] = val_density*val_energy;
 		Solution_Old[nVar-1] = val_density*val_energy;
 	}
+	if (incompressible || freesurface) {
+		Solution[0] = config->GetPressure_FreeStreamND();
+		Solution_Old[0] = config->GetPressure_FreeStreamND();
+		for (iDim = 0; iDim < nDim; iDim++) {
+			Solution[iDim+1] = val_velocity[iDim]*config->GetDensity_FreeStreamND();
+			Solution_Old[iDim+1] = val_velocity[iDim]*config->GetDensity_FreeStreamND();
+		}
+	}
   
 	/*--- Allocate and initialize solution for dual time strategy ---*/
 	if (dual_time) {
-		if (Incompressible) {
-			Solution_time_n[0] = config->GetPressure_FreeStreamND();
-			Solution_time_n1[0] = config->GetPressure_FreeStreamND();
-			for (iDim = 0; iDim < nDim; iDim++) {
-				Solution_time_n[iDim+1] = val_velocity[iDim]*config->GetDensity_FreeStreamND();
-				Solution_time_n1[iDim+1] = val_velocity[iDim]*config->GetDensity_FreeStreamND();
-			}
-		}
-		else {
+    if (compressible) {
 			Solution_time_n[0] = val_density;
 			Solution_time_n1[0] = val_density;
 			for (iDim = 0; iDim < nDim; iDim++) {
@@ -127,6 +127,14 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
 			Solution_time_n[nVar-1] = val_density*val_energy;
 			Solution_time_n1[nVar-1] = val_density*val_energy;
 		}
+    if (incompressible || freesurface) {
+			Solution_time_n[0] = config->GetPressure_FreeStreamND();
+			Solution_time_n1[0] = config->GetPressure_FreeStreamND();
+			for (iDim = 0; iDim < nDim; iDim++) {
+				Solution_time_n[iDim+1] = val_velocity[iDim]*config->GetDensity_FreeStreamND();
+				Solution_time_n1[iDim+1] = val_velocity[iDim]*config->GetDensity_FreeStreamND();
+			}
+		}
 	}
   
 	/*--- Allocate space for the time spectral source terms ---*/
@@ -135,9 +143,15 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
 		for (iVar = 0; iVar < nVar; iVar++) TS_Source[iVar] = 0.0;
 	}
   
-	/*--- Allocate auxiliar vector for magnetic field ---*/
+	/*--- Allocate vector for magnetic field ---*/
 	if (magnet) B_Field = new double [3];
-  
+    
+    /*--- Allocate vector for wind gust and wind gust derivative field ---*/
+	if (windgust) {
+        WindGust = new double [nDim];
+        WindGustDer = new double [nDim+1];
+       }
+    
 	/*--- Allocate auxiliar vector for free surface source term ---*/
 	if (freesurface) Grad_AuxVar = new double [nDim];
   
@@ -162,12 +176,14 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
 CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_ndim, unsigned short val_nvar, CConfig *config) : CVariable(val_ndim, val_nvar, config) {
 	unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
   
-	bool Incompressible = config->GetIncompressible();
-	bool freesurface = config->GetFreeSurface();
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
 	bool magnet = (config->GetMagnetic_Force() == YES);
   bool low_fidelity = config->GetLowFidelitySim();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+    bool windgust = config->GetWind_Gust();
   
   /*--- Array initialization ---*/
 	TS_Source = NULL;
@@ -175,6 +191,8 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_ndim, un
 	Primitive = NULL;
 	Gradient_Primitive = NULL;
   Limiter_Primitive = NULL;
+    WindGust = NULL;
+    WindGustDer = NULL;
   
 	/*--- Allocate residual structures ---*/
 	Res_TruncError = new double [nVar];
@@ -231,16 +249,23 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_ndim, un
 			TS_Source[iVar] = 0.0;
 	}
   
-	/*--- Allocate auxiliar vector for magnetic field ---*/
+	/*--- Allocate vector for magnetic field ---*/
 	if (magnet) B_Field = new double [3];
+    
+    /*--- Allocate vector for wind gust and wind gust derivative field ---*/
+	if (windgust) {
+        WindGust = new double [nDim];
+        WindGustDer = new double [nDim+1];
+    }
   
 	/*--- Allocate auxiliar vector for free surface source term ---*/
 	if (freesurface) Grad_AuxVar = new double [nDim];
   
 	/*--- Allocate and initialize the primitive variables and gradients ---*/
-  if (Incompressible) { nPrimVar = nDim+2; nPrimVarGrad = nDim+2; }
-  else { nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
-  
+  if (compressible) { nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
+  if (incompressible) { nPrimVar = nDim+2; nPrimVarGrad = nDim+2; }
+  if (freesurface) { nPrimVar = nDim+2; nPrimVarGrad = nDim+2; }
+
   /*--- Incompressible flow, primitive variables nDim+2, (rho,vx,vy,vz,beta)
    compressible flow, primitive variables nDim+5, (T,vx,vy,vz,P,rho,h,c) ---*/
   Primitive = new double [nPrimVar];
@@ -266,7 +291,9 @@ CEulerVariable::~CEulerVariable(void) {
 	if (TS_Source         != NULL) delete [] TS_Source;
   if (Primitive         != NULL) delete [] Primitive;
   if (Limiter_Primitive != NULL) delete [] Limiter_Primitive;
-  
+  if (WindGust           != NULL) delete [] WindGust;
+  if (WindGustDer        != NULL) delete [] WindGustDer;
+
   if (Gradient_Primitive != NULL) {
     for (iVar = 0; iVar < nPrimVarGrad; iVar++)
       delete Gradient_Primitive[iVar];
@@ -305,9 +332,9 @@ double CEulerVariable::GetProjVelInc(double *val_vector) {
 	return ProjVel;
 }
 
-void CEulerVariable::SetPrimVar_Compressible(CConfig *config) {
+bool CEulerVariable::SetPrimVar_Compressible(CConfig *config) {
 	unsigned short iDim, iVar;
-  bool check_dens = false, check_press = false, check_sos = false, check_temp = false;
+  bool check_dens = false, check_press = false, check_sos = false, check_temp = false, RightVol = true;
   
   double Gas_Constant = config->GetGas_ConstantND();
 	double Gamma = config->GetGamma();
@@ -321,9 +348,6 @@ void CEulerVariable::SetPrimVar_Compressible(CConfig *config) {
   /*--- Check that the solution has a physical meaning ---*/
   if (check_dens || check_press || check_sos || check_temp) {
     
-    /*--- Output to control the convergence ---*/
-    cout << "Negative density, pressure, sos, or temperature. Using old solution." << endl;
-    
     /*--- Copy the old solution ---*/
     for (iVar = 0; iVar < nVar; iVar++)
       Solution[iVar] = Solution_Old[iVar];
@@ -334,6 +358,8 @@ void CEulerVariable::SetPrimVar_Compressible(CConfig *config) {
     check_sos = SetSoundSpeed(Gamma);
     check_temp = SetTemperature(Gas_Constant);
     
+    RightVol = false;
+    
   }
   
   SetEnthalpy();                                // Requires pressure computation.
@@ -342,30 +368,17 @@ void CEulerVariable::SetPrimVar_Compressible(CConfig *config) {
 		Primitive[iDim+1] = Solution[iDim+1] / Solution[0];
 	Primitive[nDim+2] = Solution[0];
   
+  return RightVol;
+  
 }
 
-void CEulerVariable::SetPrimVar_Incompressible(double Density_Inf, double levelset, CConfig *config) {
+bool CEulerVariable::SetPrimVar_Incompressible(double Density_Inf, CConfig *config) {
 	unsigned short iDim;
-  double epsilon, Heaviside, lambda, DensityInc;
   
   double ArtComp_Factor = config->GetArtComp_Factor();
-  bool freesurface = config->GetFreeSurface();
   
   /*--- Set the value of the density ---*/
-	if (!freesurface) {
-		SetDensityInc(Density_Inf);
-  }
-  else {
-    epsilon = config->GetFreeSurface_Thickness();
-    Heaviside = 0.0;
-    if (levelset < -epsilon) Heaviside = 1.0;
-    if (fabs(levelset) <= epsilon) Heaviside = 1.0 - (0.5*(1.0+(levelset/epsilon)+(1.0/PI_NUMBER)*sin(PI_NUMBER*levelset/epsilon)));
-    if (levelset > epsilon) Heaviside = 0.0;
-    
-    lambda = config->GetRatioDensity();
-    DensityInc = (lambda + (1.0 - lambda)*Heaviside)*config->GetDensity_FreeStreamND();
-		SetDensityInc(DensityInc);
-  }
+  SetDensityInc(Density_Inf);
   
   /*--- Set the value of the velocity squared (requires density) ---*/
 	SetVelocityInc2();
@@ -376,6 +389,40 @@ void CEulerVariable::SetPrimVar_Incompressible(double Density_Inf, double levels
   /*--- Set the value of the velocity ---*/
   for (iDim = 0; iDim < nDim; iDim++)
     Primitive[iDim+1] = Solution[iDim+1] / Primitive[0];
+  
+  return true;
+  
+}
+
+bool CEulerVariable::SetPrimVar_FreeSurface(double Density_Inf, CConfig *config) {
+	unsigned short iDim;
+  double epsilon, Heaviside, lambda, DensityInc;
+  
+  double ArtComp_Factor = config->GetArtComp_Factor();
+  double levelset = GetSolution(nDim+1);
+  
+  /*--- Set the value of the density ---*/
+  epsilon = config->GetFreeSurface_Thickness();
+  Heaviside = 0.0;
+  if (levelset < -epsilon) Heaviside = 1.0;
+  if (fabs(levelset) <= epsilon) Heaviside = 1.0 - (0.5*(1.0+(levelset/epsilon)+(1.0/PI_NUMBER)*sin(PI_NUMBER*levelset/epsilon)));
+  if (levelset > epsilon) Heaviside = 0.0;
+  
+  lambda = config->GetRatioDensity();
+  DensityInc = (lambda + (1.0 - lambda)*Heaviside)*config->GetDensity_FreeStreamND();
+  SetDensityInc(DensityInc);
+  
+  /*--- Set the value of the velocity squared (requires density) ---*/
+	SetVelocityInc2();
+  
+  /*--- Set the value of the artificial compressibility factor ---*/
+  SetBetaInc2(ArtComp_Factor);
+  
+  /*--- Set the value of the velocity ---*/
+  for (iDim = 0; iDim < nDim; iDim++)
+    Primitive[iDim+1] = Solution[iDim+1] / Primitive[0];
+  
+  return true;
   
 }
 
@@ -462,9 +509,9 @@ void CNSVariable::SetStrainMag(void) {
 	StrainMag = sqrt(2.0*StrainMag);
 }
 
-void CNSVariable::SetPrimVar_Compressible(CConfig *config, double turb_ke) {
+bool CNSVariable::SetPrimVar_Compressible(double turb_ke, CConfig *config) {
 	unsigned short iDim, iVar;
-  bool check_dens = false, check_press = false, check_sos = false, check_temp = false;
+  bool check_dens = false, check_press = false, check_sos = false, check_temp = false, RightVol = true;
   
   double Gas_Constant = config->GetGas_ConstantND();
 	double Gamma = config->GetGamma();
@@ -478,9 +525,6 @@ void CNSVariable::SetPrimVar_Compressible(CConfig *config, double turb_ke) {
   /*--- Check that the solution has a physical meaning ---*/
   if (check_dens || check_press || check_sos || check_temp) {
     
-    /*--- Output to control the convergence ---*/
-    cout << "Negative density, pressure, sos, or temperature. Using old solution." << endl;
-    
     /*--- Copy the old solution ---*/
     for (iVar = 0; iVar < nVar; iVar++)
       Solution[iVar] = Solution_Old[iVar];
@@ -491,6 +535,8 @@ void CNSVariable::SetPrimVar_Compressible(CConfig *config, double turb_ke) {
     check_sos = SetSoundSpeed(Gamma);
     check_temp = SetTemperature(Gas_Constant);
     
+    RightVol = false;
+    
   }
   
 	SetEnthalpy();                                  // Requires pressure computation.
@@ -500,35 +546,18 @@ void CNSVariable::SetPrimVar_Compressible(CConfig *config, double turb_ke) {
 		Primitive[iDim+1] = Solution[iDim+1] / Solution[0];
 	Primitive[nDim+2] = Solution[0];
   
+  return RightVol;
+  
 }
 
-void CNSVariable::SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double turb_ke, double levelset, CConfig *config) {
+bool CNSVariable::SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double turb_ke, CConfig *config) {
 	unsigned short iDim;
-  double epsilon, Heaviside, lambda, DensityInc, ViscosityInc;
   
 	double ArtComp_Factor = config->GetArtComp_Factor();
-  bool freesurface = config->GetFreeSurface();
   
   /*--- Set the value of the density and viscosity ---*/
-	if (!freesurface) {
-		SetDensityInc(Density_Inf);
-		SetLaminarViscosityInc(Viscosity_Inf);
-  }
-  else {
-    epsilon = config->GetFreeSurface_Thickness();
-    Heaviside = 0.0;
-    if (levelset < -epsilon) Heaviside = 1.0;
-    if (fabs(levelset) <= epsilon) Heaviside = 1.0 - (0.5*(1.0+(levelset/epsilon)+(1.0/PI_NUMBER)*sin(PI_NUMBER*levelset/epsilon)));
-    if (levelset > epsilon) Heaviside = 0.0;
-    
-    lambda = config->GetRatioDensity();
-    DensityInc = (lambda + (1.0 - lambda)*Heaviside)*config->GetDensity_FreeStreamND();
-		SetDensityInc(DensityInc);
-    
-    lambda = config->GetRatioViscosity();
-    ViscosityInc = (lambda + (1.0 - lambda)*Heaviside)*config->GetViscosity_FreeStreamND();
-    SetLaminarViscosityInc(ViscosityInc);
-  }
+  SetDensityInc(Density_Inf);
+  SetLaminarViscosityInc(Viscosity_Inf);
   
   /*--- Set the value of the velocity squared (requires density) ---*/
 	SetVelocityInc2();
@@ -539,5 +568,43 @@ void CNSVariable::SetPrimVar_Incompressible(double Density_Inf, double Viscosity
   /*--- Set the value of the velocity ---*/
 	for (iDim = 0; iDim < nDim; iDim++) 
 		Primitive[iDim+1] = Solution[iDim+1] / GetDensityInc();
+  
+  return true;
+  
+}
+
+bool CNSVariable::SetPrimVar_FreeSurface(double Density_Inf, double Viscosity_Inf, double turb_ke, CConfig *config) {
+	unsigned short iDim;
+  double epsilon, Heaviside, lambda, DensityInc, ViscosityInc;
+  
+	double ArtComp_Factor = config->GetArtComp_Factor();
+  double levelset = GetSolution(nDim+1);
+
+  /*--- Set the value of the density and viscosity ---*/
+  epsilon = config->GetFreeSurface_Thickness();
+  Heaviside = 0.0;
+  if (levelset < -epsilon) Heaviside = 1.0;
+  if (fabs(levelset) <= epsilon) Heaviside = 1.0 - (0.5*(1.0+(levelset/epsilon)+(1.0/PI_NUMBER)*sin(PI_NUMBER*levelset/epsilon)));
+  if (levelset > epsilon) Heaviside = 0.0;
+  
+  lambda = config->GetRatioDensity();
+  DensityInc = (lambda + (1.0 - lambda)*Heaviside)*config->GetDensity_FreeStreamND();
+  SetDensityInc(DensityInc);
+  
+  lambda = config->GetRatioViscosity();
+  ViscosityInc = (lambda + (1.0 - lambda)*Heaviside)*config->GetViscosity_FreeStreamND();
+  SetLaminarViscosityInc(ViscosityInc);
+  
+  /*--- Set the value of the velocity squared (requires density) ---*/
+	SetVelocityInc2();
+  
+  /*--- Set the value of the artificial compressibility factor ---*/
+  SetBetaInc2(ArtComp_Factor);
+  
+  /*--- Set the value of the velocity ---*/
+	for (iDim = 0; iDim < nDim; iDim++)
+		Primitive[iDim+1] = Solution[iDim+1] / GetDensityInc();
+  
+  return true;
   
 }

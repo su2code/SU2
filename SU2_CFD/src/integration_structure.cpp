@@ -142,11 +142,11 @@ void CIntegration::Space_Integration(CGeometry *geometry, CSolver **solver_conta
 	/*--- Strong boundary conditions (Navier-Stokes and Dirichlet type BCs) ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
 		switch (config->GetMarker_All_Boundary(iMarker)) {
-            case ISOTHERMAL:
-                solver_container[MainSolver]->BC_Isothermal_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+      case ISOTHERMAL:
+        solver_container[MainSolver]->BC_Isothermal_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
 				break;
-            case HEAT_FLUX:
-                solver_container[MainSolver]->BC_HeatFlux_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+      case HEAT_FLUX:
+        solver_container[MainSolver]->BC_HeatFlux_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
 				break;
 			case DIRICHLET:
 				solver_container[MainSolver]->BC_Dirichlet(geometry, solver_container, config, iMarker);
@@ -155,7 +155,7 @@ void CIntegration::Space_Integration(CGeometry *geometry, CSolver **solver_conta
 				solver_container[MainSolver]->BC_Custom(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
 				break;
 		}
-    
+  
 }
 
 void CIntegration::Adjoint_Setup(CGeometry ***geometry, CSolver ****solver_container, CConfig **config,
@@ -191,26 +191,19 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
                                     unsigned short RunTime_EqSystem, unsigned long Iteration) {
 	unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
     
-    
-	if ((config->GetAdjoint()) || (config->GetKind_Adjoint() != DISCRETE)) {
-        
-        /*--- Perform the time integration ---*/
-        switch (config->GetKind_TimeIntScheme()) {
-			case (RUNGE_KUTTA_EXPLICIT):
-				solver_container[MainSolver]->ExplicitRK_Iteration(geometry, solver_container, config, iRKStep);
-				break;
-			case (EULER_EXPLICIT):
-				solver_container[MainSolver]->ExplicitEuler_Iteration(geometry, solver_container, config);
-				break;
-			case (EULER_IMPLICIT):
-                solver_container[MainSolver]->ImplicitEuler_Iteration(geometry, solver_container, config);
-				break;
-		}
-        
-	} else {
-		solver_container[MainSolver]->Solve_LinearSystem(geometry, solver_container, config);
-	}
-    
+  /*--- Perform the time integration ---*/
+  switch (config->GetKind_TimeIntScheme()) {
+    case (RUNGE_KUTTA_EXPLICIT):
+      solver_container[MainSolver]->ExplicitRK_Iteration(geometry, solver_container, config, iRKStep);
+      break;
+    case (EULER_EXPLICIT):
+      solver_container[MainSolver]->ExplicitEuler_Iteration(geometry, solver_container, config);
+      break;
+    case (EULER_IMPLICIT):
+      solver_container[MainSolver]->ImplicitEuler_Iteration(geometry, solver_container, config);
+      break;
+  }
+  
 }
 
 void CIntegration::Solving_Linear_System(CGeometry *geometry, CSolver *solver, CSolver **solver_container, CConfig *config, 

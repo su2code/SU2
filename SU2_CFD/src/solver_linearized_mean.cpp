@@ -33,8 +33,9 @@ CLinEulerSolver::CLinEulerSolver(CGeometry *geometry, CConfig *config) : CSolver
 	bool restart = config->GetRestart();
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
-	
-	/*--- Define geometry constans in the solver structure ---*/
+	double dull_val;
+  
+	/*--- Define geometry constants in the solver structure ---*/
 	nDim = geometry->GetnDim();
 	nVar = geometry->GetnDim()+2;
   nPoint = geometry->GetnPoint();
@@ -145,8 +146,8 @@ CLinEulerSolver::CLinEulerSolver(CGeometry *geometry, CConfig *config) : CSolver
        will be returned and used to instantiate the vars. ---*/
       iPoint_Local = Global2Local[iPoint_Global];
       if (iPoint_Local >= 0) {
-          if (nDim == 2) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-          if (nDim == 3) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
+          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
         node[iPoint_Local] = new CLinEulerVariable(Solution, nDim, nVar, config);
       }
       iPoint_Global++;
@@ -312,7 +313,6 @@ void CLinEulerSolver::Inviscid_DeltaForces(CGeometry *geometry, CSolver **solver
 	double Density_Inf = solver_container[FLOW_SOL]->GetDensity_Inf();
 	double ModVelocity_Inf = solver_container[FLOW_SOL]->GetModVelocity_Inf();
 	double C_p = 1.0/(0.5*Density_Inf*RefAreaCoeff*ModVelocity_Inf*ModVelocity_Inf);
-	bool incompressible = config->GetIncompressible();
 
 	/*-- Inicialization ---*/
 	Total_CDeltaDrag = 0.0; Total_CDeltaLift = 0.0;
@@ -331,11 +331,11 @@ void CLinEulerSolver::Inviscid_DeltaForces(CGeometry *geometry, CSolver **solver
 					
 					/*--- Compute pressure on the boundary ---*/
 					for (iDim = 0; iDim < nDim; iDim++) 
-						Velocity[iDim] = solver_container[FLOW_SOL]->node[Point]->GetVelocity(iDim, config->GetIncompressible());
+						Velocity[iDim] = solver_container[FLOW_SOL]->node[Point]->GetVelocity(iDim, COMPRESSIBLE);
 					
 					double rho = solver_container[FLOW_SOL]->node[Point]->GetSolution(0) + node[Point]->GetSolution(0);
 					double rhoE = solver_container[FLOW_SOL]->node[Point]->GetSolution(nVar-1) + node[Point]->GetSolution(nVar-1);
-					double Pressure = solver_container[FLOW_SOL]->node[Point]->GetPressure(incompressible);
+					double Pressure = solver_container[FLOW_SOL]->node[Point]->GetPressure(COMPRESSIBLE);
 					double rhoVel[3];
 					double sqr_vel = 0.0;
 					for (iDim = 0; iDim < nDim; iDim++) {

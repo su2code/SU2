@@ -72,12 +72,16 @@ int main(int argc, char *argv[]) {
 #endif
     
 		/*--- Definition of the geometry class and open the mesh file ---*/
-		geometry[iZone] = new CPhysicalGeometry(config[iZone], config[iZone]->GetMesh_FileName(),
-                                            config[iZone]->GetMesh_FileFormat(), iZone+1, nZone);
+		geometry[iZone] = new CPhysicalGeometry(config[iZone], iZone+1, nZone);
     
     /*--- Create the vertex structure (required for MPI) ---*/
     if (rank == MASTER_NODE) cout << "Identify vertices." <<endl;
     geometry[iZone]->SetVertex(config[iZone]);
+   
+    /*--- Perform the non-dimensionalization for the flow equations using the
+     specified reference values. ---*/
+    
+		config[iZone]->SetNondimensionalization(geometry[iZone]->GetnDim(), iZone);
     
   }
   
@@ -100,7 +104,7 @@ int main(int argc, char *argv[]) {
   /*---  Check whether this is an unsteady simulation, and call the
    solution merging routines accordingly.---*/
   
-  if (config[ZONE_0]->GetUnsteady_Simulation() && config[ZONE_0]->GetWrt_Unsteady()) {
+  if (config[ZONE_0]->GetWrt_Unsteady()) {
     
     /*--- Unsteady simulation: merge all unsteady time steps. First,
      find the frequency and total number of files to write. ---*/
@@ -108,6 +112,10 @@ int main(int argc, char *argv[]) {
     double Physical_dt, Physical_t;
     unsigned long iExtIter = 0;
     bool StopCalc = false;
+    
+    /*--- Check for an unsteady restart. Update ExtIter if necessary. ---*/
+    if (config[ZONE_0]->GetWrt_Unsteady() && config[ZONE_0]->GetRestart())
+      iExtIter = config[ZONE_0]->GetUnst_RestartIter();
     
     while (iExtIter < config[ZONE_0]->GetnExtIter()) {
       
@@ -133,13 +141,13 @@ int main(int argc, char *argv[]) {
         for (iZone = 0; iZone < nZone; iZone++) {
           
           /*--- Either instantiate the solution class or load a restart file. ---*/
-          if (iExtIter == 0)
+          if (iExtIter == 0 || (config[ZONE_0]->GetRestart() && iExtIter == config[ZONE_0]->GetUnst_RestartIter()))
             solver[iZone] = new CBaselineSolver(geometry[iZone], config[iZone], MESH_0);
           else
             solver[iZone]->GetRestart(geometry[iZone], config[iZone], MESH_0);
         }
-        
-        if (rank == MASTER_NODE)
+
+            if (rank == MASTER_NODE)
           cout << "Writing the volume solution for time step " << iExtIter << "." << endl;
         output->SetBaselineResult_Files(solver, geometry, config, iExtIter, nZone);
       }

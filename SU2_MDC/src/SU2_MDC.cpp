@@ -70,8 +70,7 @@ int main(int argc, char *argv[]) {
 #endif
     
     /*--- Definition of the geometry class ---*/
-    geometry[iZone] = new CPhysicalGeometry(config[iZone], config[iZone]->GetMesh_FileName(),
-                                            config[iZone]->GetMesh_FileFormat(), iZone+1, nZone);
+    geometry[iZone] = new CPhysicalGeometry(config[iZone], iZone+1, nZone);
     
   }
   

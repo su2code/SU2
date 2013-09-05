@@ -34,7 +34,8 @@ CPlasmaSolver::CPlasmaSolver(CGeometry *geometry, CConfig *config) : CSolver() {
 	unsigned long iPoint, index;
 	unsigned short iVar, iDim, iSpecies, iMarker, nPrimVar;
 	double Vel2 = 0.0;
-
+  double dull_val;
+  
 	restart = (config->GetRestart() || config->GetRestart_Flow());
 	implicit = config->GetKind_TimeIntScheme_Plasma() == EULER_IMPLICIT;
 	centered_scheme = config->GetKind_ConvNumScheme_Plasma() == SPACE_CENTERED;
@@ -256,6 +257,7 @@ CPlasmaSolver::CPlasmaSolver(CGeometry *geometry, CConfig *config) : CSolver() {
 	MomentViscous = new double[nDim];
 	CDrag_Visc = new double[config->GetnMarker_All()];
 	CLift_Visc = new double[config->GetnMarker_All()];
+	CSideForce_Visc = new double[config->GetnMarker_All()];
 	CMx_Visc = new double[config->GetnMarker_All()];
 	CMy_Visc = new double[config->GetnMarker_All()];
 	CMz_Visc = new double[config->GetnMarker_All()];
@@ -498,6 +500,8 @@ CPlasmaSolver::CPlasmaSolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
 					/*--- First value is the point index, then the conservative vars. ---*/
 					point_line >> index;
+          if (nDim ==2) point_line >> dull_val >> dull_val;
+          else point_line >> dull_val >> dull_val >> dull_val;
 					for (iVar = 0; iVar < nVar; iVar++)
 						point_line >> Solution[iVar];
 
@@ -507,8 +511,8 @@ CPlasmaSolver::CPlasmaSolver(CGeometry *geometry, CConfig *config) : CSolver() {
 				} else {
 
 					/*--- Load the line from the Euler restart file. ---*/
-					if (nDim == 2) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-					if (nDim == 3) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
+					if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+					if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
 
 
 					double Molecular_Mass_mean;
@@ -2008,7 +2012,7 @@ void CPlasmaSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 	unsigned long iVertex, iPoint, iSpecies;
 	unsigned short Boundary, Monitoring, iMarker, iDim, jDim;
 	double **Tau, Delta, Viscosity, **Grad_PrimVar, div_vel, *Normal, *TauElem;
-	double dist[3], *Coord, *UnitaryNormal, *TauTangent, Area, WallShearStress, TauNormal;
+	double dist[3], *Coord, *UnitNormal, *TauTangent, Area, WallShearStress, TauNormal;
 	double GradTemperature, GradTemperature_vib;
 	double ThermalConductivity, ThermalConductivity_vib;
 	double factor, RefVel2, RefDensity;
@@ -2033,14 +2037,14 @@ void CPlasmaSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 
 
 	/*-- Initialization --*/
-	AllBound_CDrag_Visc = 0.0; AllBound_CLift_Visc = 0.0;
+	AllBound_CDrag_Visc = 0.0; AllBound_CLift_Visc = 0.0; AllBound_CSideForce_Visc = 0.0;
 	AllBound_CMx_Visc = 0.0; AllBound_CMy_Visc = 0.0; AllBound_CMz_Visc = 0.0;
 	AllBound_CFx_Visc = 0.0; AllBound_CFy_Visc = 0.0; AllBound_CFz_Visc = 0.0;
 	AllBound_CEff_Visc = 0.0; AllBound_CMerit_Visc = 0.0;
 	AllBound_CT_Visc = 0.0; AllBound_Q_Visc = 0.0; ViscDrag = 0.0;
 
 	/*--- Vector and variables initialization ---*/
-	UnitaryNormal      = new double [nDim];
+	UnitNormal      = new double [nDim];
 	TauElem    = new double [nDim];
 	TauTangent = new double [nDim];
 	Tau        = new double* [nDim];
@@ -2078,7 +2082,7 @@ void CPlasmaSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 					for (iDim = 0; iDim < nDim; iDim++) dist[iDim] = Coord[iDim] - Origin[iDim];
 					Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 					Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
-					for (iDim = 0; iDim < nDim; iDim++) UnitaryNormal[iDim] = Normal[iDim]/Area;
+					for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim]/Area;
 
 
 					for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++) {
@@ -2109,7 +2113,7 @@ void CPlasmaSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 						for (iDim = 0; iDim < nDim; iDim++) {
 							TauElem[iDim] = 0.0;
 							for (jDim = 0; jDim < nDim; jDim++)
-								TauElem[iDim] += Tau[iDim][jDim]*UnitaryNormal[jDim] ;
+								TauElem[iDim] += Tau[iDim][jDim]*UnitNormal[jDim] ;
 						}
 
 						/*--- Compute viscous forces, and moment ---*/
@@ -2137,10 +2141,10 @@ void CPlasmaSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 					/*--- Compute wall shear stress, skin friction coefficient, and heat flux on the wall ---*/
 					TauNormal = 0.0;
 					for (iDim = 0; iDim < nDim; iDim++)
-						TauNormal += TauElem[iDim] * UnitaryNormal[iDim];
+						TauNormal += TauElem[iDim] * UnitNormal[iDim];
 
 					for (iDim = 0; iDim < nDim; iDim++)
-						TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitaryNormal[iDim];
+						TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
 
 					WallShearStress = 0.0;
 					for (iDim = 0; iDim < nDim; iDim++)
@@ -2172,6 +2176,7 @@ void CPlasmaSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 				if (nDim == 3) {
 					CDrag_Visc[iMarker] =  ForceViscous[0]*cos(Alpha)*cos(Beta) + ForceViscous[1]*sin(Beta) + ForceViscous[2]*sin(Alpha)*cos(Beta);
 					CLift_Visc[iMarker] = -ForceViscous[0]*sin(Alpha) + ForceViscous[2]*cos(Alpha);
+          CSideForce_Visc[iMarker] = -ForceViscous[0]*sin(Beta)*cos(Alpha) + ForceViscous[1]*cos(Beta) - ForceViscous[2]*sin(Beta)*sin(Alpha);
 					CMx_Visc[iMarker] = MomentViscous[0];
 					CMy_Visc[iMarker] = MomentViscous[1];
 					CMz_Visc[iMarker] = MomentViscous[2];
@@ -2185,6 +2190,7 @@ void CPlasmaSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 
 				AllBound_CDrag_Visc += CDrag_Visc[iMarker];
 				AllBound_CLift_Visc += CLift_Visc[iMarker];
+        AllBound_CSideForce_Visc += CSideForce_Visc[iMarker];
 				AllBound_CMx_Visc += CMx_Visc[iMarker];
 				AllBound_CMy_Visc += CMy_Visc[iMarker];
 				AllBound_CMz_Visc += CMz_Visc[iMarker];
@@ -2199,6 +2205,7 @@ void CPlasmaSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 	ViscDrag = AllBound_CDrag_Visc;
 	Total_CDrag += AllBound_CDrag_Visc;
 	Total_CLift += AllBound_CLift_Visc;
+	Total_CSideForce += AllBound_CSideForce_Visc;
 	Total_CMx += AllBound_CMx_Visc;
 	Total_CMy += AllBound_CMy_Visc;
 	Total_CMz += AllBound_CMz_Visc;
@@ -2211,7 +2218,7 @@ void CPlasmaSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 	for (iDim = 0; iDim < nDim; iDim++)
 		delete [] Tau[iDim];
 	delete [] Tau;
-	delete [] UnitaryNormal;
+	delete [] UnitNormal;
 	delete [] TauTangent;
 	delete [] TauElem;
 }
@@ -3262,12 +3269,12 @@ void CPlasmaSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_containe
 
 			/*--- Acquire geometry parameters ---*/
 			Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-			double Area = 0.0; double UnitaryNormal[3];
+			double Area = 0.0; double UnitNormal[3];
 			for (iDim = 0; iDim < nDim; iDim++)
 				Area += Normal[iDim]*Normal[iDim];
 			Area = sqrt (Area);
 			for (iDim = 0; iDim < nDim; iDim++)
-				UnitaryNormal[iDim] = -Normal[iDim]/Area;
+				UnitNormal[iDim] = -Normal[iDim]/Area;
 
 			/*--- Initialize the residual ---*/
 			for (iVar = 0; iVar < nVar; iVar++) {
@@ -3282,7 +3289,7 @@ void CPlasmaSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_containe
 				/*--- Apply the boundary condition ---*/
 				Residual[loc+0] = 0.0;
 				for (iDim = 0; iDim < nDim; iDim++)
-					Residual[loc + iDim+1] =  Pressure*UnitaryNormal[iDim]*Area;
+					Residual[loc + iDim+1] =  Pressure*UnitNormal[iDim]*Area;
 				Residual[loc+nDim+1] = 0.0;
 				if ( iSpecies < nDiatomics )
 					Residual[loc+nDim+2] = 0.0;
@@ -3319,25 +3326,25 @@ void CPlasmaSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_containe
 
 					Jacobian_i[loc+0][loc+0] = 0.0;
 					for (iDim = 0; iDim < nDim; iDim++)
-						Jacobian_i[loc+0][loc+iDim+1] = UnitaryNormal[iDim]*Area;
+						Jacobian_i[loc+0][loc+iDim+1] = UnitNormal[iDim]*Area;
 					Jacobian_i[loc+0][loc+nDim+1] = 0.0;
 
 					for (iDim = 0; iDim < nDim; iDim++) {
-						Jacobian_i[loc+iDim+1][loc+0] = dPdrho * UnitaryNormal[iDim] * Area;
+						Jacobian_i[loc+iDim+1][loc+0] = dPdrho * UnitNormal[iDim] * Area;
 						for (jDim = 0; jDim < nDim; jDim++) {
-							Jacobian_i[loc+iDim+1][loc+jDim+1] = (node[iPoint]->GetVelocity(iDim, iSpecies)*UnitaryNormal[jDim] -
-									(Gamma-1.0) * node[iPoint]->GetVelocity(jDim, iSpecies)*UnitaryNormal[iDim])*Area;
+							Jacobian_i[loc+iDim+1][loc+jDim+1] = (node[iPoint]->GetVelocity(iDim, iSpecies)*UnitNormal[jDim] -
+									(Gamma-1.0) * node[iPoint]->GetVelocity(jDim, iSpecies)*UnitNormal[iDim])*Area;
 						}
-						Jacobian_i[loc+iDim+1][loc+nDim+1] = dPdE * UnitaryNormal[iDim] * Area;
+						Jacobian_i[loc+iDim+1][loc+nDim+1] = dPdE * UnitNormal[iDim] * Area;
 					}
 
 					for (iDim = 0; iDim < nDim; iDim++)
-						Jacobian_i[loc+nDim+1][loc+iDim+1] = EPorho * UnitaryNormal[iDim] * Area;
+						Jacobian_i[loc+nDim+1][loc+iDim+1] = EPorho * UnitNormal[iDim] * Area;
 
 					if ( iSpecies < nDiatomics) {
 						for (iDim = 0; iDim < nDim; iDim++) {
-							Jacobian_i[loc+iDim+1][loc+nDim+2] = dPdEv * UnitaryNormal[iDim] * Area;
-							Jacobian_i[loc+nDim+2][loc+iDim+1] = node[iPoint]->GetSolution(loc+nDim+2) / Density * UnitaryNormal[iDim] * Area;
+							Jacobian_i[loc+iDim+1][loc+nDim+2] = dPdEv * UnitNormal[iDim] * Area;
+							Jacobian_i[loc+nDim+2][loc+iDim+1] = node[iPoint]->GetSolution(loc+nDim+2) / Density * UnitNormal[iDim] * Area;
 						}
 					}
 				}
@@ -3395,13 +3402,13 @@ void CPlasmaSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
 				/*--- Compute the projected residual ---*/
 				Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
 
-				double Area = 0.0; double UnitaryNormal[3];
+				double Area = 0.0; double UnitNormal[3];
 				for (iDim = 0; iDim < nDim; iDim++)
 					Area += Normal[iDim]*Normal[iDim];
 				Area = sqrt (Area);
 
 				for (iDim = 0; iDim < nDim; iDim++)
-					UnitaryNormal[iDim] = -Normal[iDim]/Area;
+					UnitNormal[iDim] = -Normal[iDim]/Area;
 				for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++)
 					CHeatTransfer[val_marker][iSpecies][iVertex] = 0.0;
 
@@ -3484,7 +3491,7 @@ void CPlasmaSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
 
 					theta = 0.0;
 					for (iDim = 0; iDim < nDim; iDim++)
-						theta += UnitaryNormal[iDim]*UnitaryNormal[iDim];
+						theta += UnitNormal[iDim]*UnitNormal[iDim];
 
 					for (iVar = 0; iVar < nVar; iVar ++)
 						for (jVar = 0; jVar < nVar; jVar ++)
@@ -3549,13 +3556,13 @@ void CPlasmaSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
 				/*--- Compute the projected residual ---*/
 				Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
 
-				double Area = 0.0; double UnitaryNormal[3];
+				double Area = 0.0; double UnitNormal[3];
 				for (iDim = 0; iDim < nDim; iDim++)
 					Area += Normal[iDim]*Normal[iDim];
 				Area = sqrt (Area);
 
 				for (iDim = 0; iDim < nDim; iDim++)
-					UnitaryNormal[iDim] = -Normal[iDim]/Area;
+					UnitNormal[iDim] = -Normal[iDim]/Area;
 
 				/*--- Compute closest normal neighbor ---*/
 				double *Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
@@ -3642,7 +3649,7 @@ void CPlasmaSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
 
 					theta = 0.0;
 					for (iDim = 0; iDim < nDim; iDim++)
-						theta += UnitaryNormal[iDim]*UnitaryNormal[iDim];
+						theta += UnitNormal[iDim]*UnitNormal[iDim];
 
 					for (iVar = 0; iVar < nVar; iVar ++)
 						for (jVar = 0; jVar < nVar; jVar ++)
@@ -3736,7 +3743,7 @@ void CPlasmaSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_con
 	unsigned long iVertex, iPoint, Point_Normal;
 	unsigned short iSpecies, iVar, jVar, iDim, jDim, loc, nVarSpecies;
 	double *Normal, *Coord_i, *Coord_j, Area, dist_ij;
-	double UnitaryNormal[3];
+	double UnitNormal[3];
 	double Twall, Temperature_tr, Temperature_vib, dT_trdrho, dT_vibdrho, dT_vibdev;
 	double Density, Pwall, Vel2, Energy_el;
 	double Viscosity, ThermalConductivity, ThermalConductivity_vib, GasConstant, h_f, CharVibTemp;
@@ -3785,8 +3792,8 @@ void CPlasmaSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_con
 				Area += Normal[iDim]*Normal[iDim];
 			Area = sqrt (Area);
 			for (iDim = 0; iDim < nDim; iDim++) {
-				UnitaryNormal[iDim] = -Normal[iDim]/Area;
-				Theta += UnitaryNormal[iDim]*UnitaryNormal[iDim];
+				UnitNormal[iDim] = -Normal[iDim]/Area;
+				Theta += UnitNormal[iDim]*UnitNormal[iDim];
 			}
 
 			/*--- Compute closest normal neighbor ---*/
@@ -3857,11 +3864,11 @@ void CPlasmaSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_con
 					ViscFlux_Tensor[iDim+1][iDim] -= 2.0/3.0 * Viscosity * div_vel;
 				}
 				/*for (jDim = 0; jDim < nDim; jDim++)
-          ViscFlux_Tensor[nDim+1][jDim] = ThermalConductivity * (Twall-Temperature_tr)/dist_ij * UnitaryNormal[jDim];
+          ViscFlux_Tensor[nDim+1][jDim] = ThermalConductivity * (Twall-Temperature_tr)/dist_ij * UnitNormal[jDim];
         if (iSpecies < nDiatomics) {
           for (jDim = 0; jDim < nDim; jDim++) {
-            ViscFlux_Tensor[nDim+1][jDim] += ThermalConductivity_vib * (Twall-Temperature_vib)/dist_ij * UnitaryNormal[jDim];
-            ViscFlux_Tensor[nDim+2][jDim] = ThermalConductivity_vib * (Twall-Temperature_vib)/dist_ij * UnitaryNormal[jDim];
+            ViscFlux_Tensor[nDim+1][jDim] += ThermalConductivity_vib * (Twall-Temperature_vib)/dist_ij * UnitNormal[jDim];
+            ViscFlux_Tensor[nDim+2][jDim] = ThermalConductivity_vib * (Twall-Temperature_vib)/dist_ij * UnitNormal[jDim];
           }
         }*/
 
@@ -3903,10 +3910,10 @@ void CPlasmaSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_con
           if (nDim == 3) {
             /*--- Jacobian of the convective terms (energy rows only) ---*/
             for (iDim = 0; iDim < nDim; iDim++)
-              Jacobian_ElecForce[loc+nDim+1][loc+iDim+1] = (Energy_tot + Pwall) / Density * UnitaryNormal[iDim] * Area;
+              Jacobian_ElecForce[loc+nDim+1][loc+iDim+1] = (Energy_tot + Pwall) / Density * UnitNormal[iDim] * Area;
             if (iSpecies < nDiatomics) {
               for (iDim = 0; iDim < nDim; iDim++)
-                Jacobian_ElecForce[loc+nDim+2][loc+iDim+1] = Energy_vib / Density * UnitaryNormal[iDim] * Area;
+                Jacobian_ElecForce[loc+nDim+2][loc+iDim+1] = Energy_vib / Density * UnitNormal[iDim] * Area;
             }
             
             /*--- Jacobian of the viscous terms ---*/
@@ -3941,8 +3948,8 @@ void CPlasmaSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_con
             
             for (iDim = 0; iDim < nDim; iDim++) {
               for (jDim = 0; jDim < nDim; jDim++) {
-                Jacobian_i[loc+4][loc+iDim+1] += 1.0/(2.0*Density) * ViscFlux_Tensor[iDim+1][jDim] * UnitaryNormal[jDim] * Area;
-                Jacobian_j[loc+4][loc+iDim+1] += 1.0/(2.0*Density) * ViscFlux_Tensor[iDim+1][jDim] * UnitaryNormal[jDim] * Area;
+                Jacobian_i[loc+4][loc+iDim+1] += 1.0/(2.0*Density) * ViscFlux_Tensor[iDim+1][jDim] * UnitNormal[jDim] * Area;
+                Jacobian_j[loc+4][loc+iDim+1] += 1.0/(2.0*Density) * ViscFlux_Tensor[iDim+1][jDim] * UnitNormal[jDim] * Area;
               }
             }
             /*--- Strong enforcement of the no-slip condition in the Jacobian ---*/
@@ -3977,7 +3984,7 @@ void CPlasmaSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_con
 		/*--- Apply the boundary condition ---*/
 		Residual[loc+0] = 0.0;
 		for (iDim = 0; iDim < nDim; iDim++)
-			Residual[loc + iDim+1] =  Pressure*UnitaryNormal[iDim]*Area;
+			Residual[loc + iDim+1] =  Pressure*UnitNormal[iDim]*Area;
 		Residual[loc+nDim+1] = 0.0;
 
 
@@ -4008,20 +4015,20 @@ void CPlasmaSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_con
 
 			Jacobian_i[loc+0][loc+0] = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++)
-				Jacobian_i[loc+0][loc+iDim+1] = UnitaryNormal[iDim]*Area;
+				Jacobian_i[loc+0][loc+iDim+1] = UnitNormal[iDim]*Area;
 			Jacobian_i[loc+0][loc+nDim+1] = 0.0;
 
 			for (iDim = 0; iDim < nDim; iDim++) {
-				Jacobian_i[loc+iDim+1][loc+0] = dPdrho * UnitaryNormal[iDim] * Area;
+				Jacobian_i[loc+iDim+1][loc+0] = dPdrho * UnitNormal[iDim] * Area;
 				for (jDim = 0; jDim < nDim; jDim++) {
-					Jacobian_i[loc+iDim+1][loc+jDim+1] = (node[iPoint]->GetVelocity(iDim, iSpecies)*UnitaryNormal[jDim] -
-							(Gamma-1.0) * node[iPoint]->GetVelocity(jDim, iSpecies)*UnitaryNormal[iDim])*Area;
+					Jacobian_i[loc+iDim+1][loc+jDim+1] = (node[iPoint]->GetVelocity(iDim, iSpecies)*UnitNormal[jDim] -
+							(Gamma-1.0) * node[iPoint]->GetVelocity(jDim, iSpecies)*UnitNormal[iDim])*Area;
 				}
-				Jacobian_i[loc+iDim+1][loc+nDim+1] = dPdE * UnitaryNormal[iDim] * Area;
+				Jacobian_i[loc+iDim+1][loc+nDim+1] = dPdE * UnitNormal[iDim] * Area;
 			}
 
 			for (iDim = 0; iDim < nDim; iDim++)
-				Jacobian_i[loc+nDim+1][loc+iDim+1] = EPorho * UnitaryNormal[iDim] * Area;
+				Jacobian_i[loc+nDim+1][loc+iDim+1] = EPorho * UnitNormal[iDim] * Area;
 
 			Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
 		}
@@ -4250,12 +4257,12 @@ void CPlasmaSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
 	unsigned short iSpecies, loc = 0;
 	unsigned short iVar, jVar, iDim;
 	double Area, sq_vel,  **P_Matrix, **invP_Matrix, *Normal,
-	*UnitaryNormal, *U_domain, *U_outlet, *U_update, *W_domain, *W_outlet, *W_update;
+	*UnitNormal, *U_domain, *U_outlet, *U_update, *W_domain, *W_outlet, *W_update;
 
 	double *vn = NULL, *rho = NULL, *rhoE = NULL, **velocity = NULL, *c = NULL, *pressure = NULL, *enthalpy = NULL;
 	bool implicit = (config->GetKind_TimeIntScheme_Plasma() == EULER_IMPLICIT);
 
-	UnitaryNormal = new double[nDim];
+	UnitNormal = new double[nDim];
 	U_domain = new double[nVar]; U_outlet = new double[nVar]; U_update = new double[nVar];
 	W_domain = new double[nVar]; W_outlet = new double[nVar]; W_update = new double[nVar];
 	P_Matrix = new double* [nVar]; invP_Matrix = new double* [nVar];
@@ -4304,7 +4311,7 @@ void CPlasmaSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
 			Area = sqrt (Area);
 
 			for (iDim = 0; iDim < nDim; iDim++)
-				UnitaryNormal[iDim] = -Normal[iDim]/Area;
+				UnitNormal[iDim] = -Normal[iDim]/Area;
 
 			/*--- Computation of P and inverse P matrix using values at the domain ---*/
 			for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++) {
@@ -4318,14 +4325,14 @@ void CPlasmaSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
 				for (iDim = 0; iDim < nDim; iDim++) {
 					velocity[iSpecies][iDim] = (U_domain[loc + iDim+1]/U_domain[loc + 0] + U_outlet[loc + iDim+1]/U_outlet[loc + 0] )/2.0;
 					sq_vel += velocity[iSpecies][iDim]*velocity[iSpecies][iDim];
-					vn[iSpecies] += velocity[iSpecies][iDim]*UnitaryNormal[iDim]*Area;
+					vn[iSpecies] += velocity[iSpecies][iDim]*UnitNormal[iDim]*Area;
 				}
 				Gamma = config->GetSpecies_Gamma(iSpecies);
 				Gamma_Minus_One = Gamma - 1.0;
 				c[iSpecies] = sqrt(fabs(Gamma*Gamma_Minus_One*(rhoE[iSpecies]/rho[iSpecies]-0.5*sq_vel)));
 			}
-			conv_numerics->GetPMatrix_inv(rho, velocity, c, UnitaryNormal, invP_Matrix);
-			conv_numerics->GetPMatrix(rho, velocity, c, UnitaryNormal, P_Matrix);
+			conv_numerics->GetPMatrix_inv(rho, velocity, c, UnitNormal, invP_Matrix);
+			conv_numerics->GetPMatrix(rho, velocity, c, UnitNormal, P_Matrix);
 
 			/*--- computation of characteristics variables at the wall ---*/
 			for (iVar=0; iVar < nVar; iVar++) {
@@ -4409,7 +4416,7 @@ void CPlasmaSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
 				enthalpy[iSpecies] = (rhoE[iSpecies] + pressure[iSpecies]) / rho[iSpecies];
 			}
 
-			conv_numerics->GetInviscidProjFlux(rho, velocity, pressure, enthalpy, UnitaryNormal, Residual);
+			conv_numerics->GetInviscidProjFlux(rho, velocity, pressure, enthalpy, UnitNormal, Residual);
 
 			for	(iVar = 0; iVar < nVar; iVar++)
 				Residual[iVar] = Residual[iVar]*Area;
@@ -4434,7 +4441,7 @@ void CPlasmaSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
 	delete [] velocity;
 	delete [] vn; delete [] rho; delete [] pressure;
 	delete [] rhoE; delete [] c; delete [] enthalpy;
-	delete [] UnitaryNormal;
+	delete [] UnitNormal;
 	delete [] U_domain; delete [] U_outlet; delete [] U_update;
 	delete [] W_domain; delete [] W_outlet; delete [] W_update;
 	for (iVar = 0; iVar < nVar; iVar++) {
@@ -4627,12 +4634,12 @@ void CPlasmaSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container
 
 			/*--- Acquire geometry parameters ---*/
 			Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-			double Area = 0.0; double UnitaryNormal[3];
+			double Area = 0.0; double UnitNormal[3];
 			for (iDim = 0; iDim < nDim; iDim++)
 				Area += Normal[iDim]*Normal[iDim];
 			Area = sqrt (Area);
 			for (iDim = 0; iDim < nDim; iDim++)
-				UnitaryNormal[iDim] = -Normal[iDim]/Area;
+				UnitNormal[iDim] = -Normal[iDim]/Area;
 
 			/*--- Initialize the residual ---*/
 			for (iVar = 0; iVar < nVar; iVar++) {
@@ -4647,7 +4654,7 @@ void CPlasmaSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container
 				/*--- Apply the boundary condition ---*/
 				Residual[loc+0] = 0.0;
 				for (iDim = 0; iDim < nDim; iDim++)
-					Residual[loc + iDim+1] =  Pressure*UnitaryNormal[iDim]*Area;
+					Residual[loc + iDim+1] =  Pressure*UnitNormal[iDim]*Area;
 				Residual[loc+nDim+1] = 0.0;
 				if ( iSpecies < nDiatomics )
 					Residual[loc+nDim+2] = 0.0;
@@ -4684,25 +4691,25 @@ void CPlasmaSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container
 
 					Jacobian_i[loc+0][loc+0] = 0.0;
 					for (iDim = 0; iDim < nDim; iDim++)
-						Jacobian_i[loc+0][loc+iDim+1] = UnitaryNormal[iDim]*Area;
+						Jacobian_i[loc+0][loc+iDim+1] = UnitNormal[iDim]*Area;
 					Jacobian_i[loc+0][loc+nDim+1] = 0.0;
 
 					for (iDim = 0; iDim < nDim; iDim++) {
-						Jacobian_i[loc+iDim+1][loc+0] = dPdrho * UnitaryNormal[iDim] * Area;
+						Jacobian_i[loc+iDim+1][loc+0] = dPdrho * UnitNormal[iDim] * Area;
 						for (jDim = 0; jDim < nDim; jDim++) {
-							Jacobian_i[loc+iDim+1][loc+jDim+1] = (node[iPoint]->GetVelocity(iDim, iSpecies)*UnitaryNormal[jDim] -
-									(Gamma-1.0) * node[iPoint]->GetVelocity(jDim, iSpecies)*UnitaryNormal[iDim])*Area;
+							Jacobian_i[loc+iDim+1][loc+jDim+1] = (node[iPoint]->GetVelocity(iDim, iSpecies)*UnitNormal[jDim] -
+									(Gamma-1.0) * node[iPoint]->GetVelocity(jDim, iSpecies)*UnitNormal[iDim])*Area;
 						}
-						Jacobian_i[loc+iDim+1][loc+nDim+1] = dPdE * UnitaryNormal[iDim] * Area;
+						Jacobian_i[loc+iDim+1][loc+nDim+1] = dPdE * UnitNormal[iDim] * Area;
 					}
 
 					for (iDim = 0; iDim < nDim; iDim++)
-						Jacobian_i[loc+nDim+1][loc+iDim+1] = EPorho * UnitaryNormal[iDim] * Area;
+						Jacobian_i[loc+nDim+1][loc+iDim+1] = EPorho * UnitNormal[iDim] * Area;
 
 					if ( iSpecies < nDiatomics) {
 						for (iDim = 0; iDim < nDim; iDim++) {
-							Jacobian_i[loc+iDim+1][loc+nDim+2] = dPdEv * UnitaryNormal[iDim] * Area;
-							Jacobian_i[loc+nDim+2][loc+iDim+1] = node[iPoint]->GetSolution(loc+nDim+2) / Density * UnitaryNormal[iDim] * Area;
+							Jacobian_i[loc+iDim+1][loc+nDim+2] = dPdEv * UnitNormal[iDim] * Area;
+							Jacobian_i[loc+nDim+2][loc+iDim+1] = node[iPoint]->GetSolution(loc+nDim+2) / Density * UnitNormal[iDim] * Area;
 						}
 					}
 				}

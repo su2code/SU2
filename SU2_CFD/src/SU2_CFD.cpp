@@ -156,8 +156,6 @@ int main(int argc, char *argv[]) {
     
 		geometry_container[iZone] = new CGeometry *[config_container[iZone]->GetMGLevels()+1];
 		geometry_container[iZone][MESH_0] = new CPhysicalGeometry(config_container[iZone],
-                                                              config_container[iZone]->GetMesh_FileName(),
-																															config_container[iZone]->GetMesh_FileFormat(),
                                                               iZone+1, nZone);
 		
   }
@@ -243,9 +241,7 @@ int main(int argc, char *argv[]) {
 		/*--- Computation of wall distances for turbulence modeling ---*/
     
 		if ((config_container[iZone]->GetKind_Solver() == RANS) ||
-        (config_container[iZone]->GetKind_Solver() == ADJ_RANS) ||
-        (config_container[iZone]->GetKind_Solver() == FREE_SURFACE_RANS) ||
-        (config_container[iZone]->GetKind_Solver() == ADJ_FREE_SURFACE_RANS))
+        (config_container[iZone]->GetKind_Solver() == ADJ_RANS))
 			geometry_container[iZone][MESH_0]->ComputeWall_Distance(config_container[iZone]);
     
 		/*--- Computation of positive surface area in the z-plane which is used for
@@ -273,7 +269,7 @@ int main(int argc, char *argv[]) {
 			surface_movement[iZone]->CopyBoundary(geometry_container[iZone][MESH_0], config_container[iZone]);
 			if (config_container[iZone]->GetUnsteady_Simulation() == TIME_SPECTRAL)
 				SetGrid_Movement(geometry_container[iZone], surface_movement[iZone], grid_movement[iZone],
-                         FFDBox[iZone], solver_container[iZone], config_container[iZone], iZone, 0);      
+                         FFDBox[iZone], solver_container[iZone], config_container[iZone], iZone, 0);
 		}
     
   }
@@ -305,7 +301,11 @@ int main(int argc, char *argv[]) {
   
 	if (rank == MASTER_NODE)
 		output->SetHistory_Header(&ConvHist_file, config_container[ZONE_0]);
-	
+  
+  /*--- Check for an unsteady restart. Update ExtIter if necessary. ---*/
+  if (config_container[ZONE_0]->GetWrt_Unsteady() && config_container[ZONE_0]->GetRestart())
+    ExtIter = config_container[ZONE_0]->GetUnst_RestartIter();
+  
 	/*--- Main external loop of the solver. Within this loop, each iteration ---*/
   
 	if (rank == MASTER_NODE)
@@ -337,12 +337,6 @@ int main(int argc, char *argv[]) {
 				PlasmaIteration(output, integration_container, geometry_container,
 												solver_container, numerics_container, config_container,
 												surface_movement, grid_movement, FFDBox);
-				break;
-				
-			case FREE_SURFACE_EULER: case FREE_SURFACE_NAVIER_STOKES: case FREE_SURFACE_RANS:
-				FreeSurfaceIteration(output, integration_container, geometry_container,
-														 solver_container, numerics_container, config_container,
-														 surface_movement, grid_movement, FFDBox);
 				break;
 				
 			case FLUID_STRUCTURE_EULER: case FLUID_STRUCTURE_NAVIER_STOKES:
@@ -381,12 +375,6 @@ int main(int argc, char *argv[]) {
 													 solver_container, numerics_container, config_container,
 													 surface_movement, grid_movement, FFDBox);
 				break;
-				
-			case ADJ_FREE_SURFACE_EULER: case ADJ_FREE_SURFACE_NAVIER_STOKES: case ADJ_FREE_SURFACE_RANS:
-				AdjFreeSurfaceIteration(output, integration_container, geometry_container,
-																solver_container, numerics_container, config_container,
-																surface_movement, grid_movement, FFDBox);
-				break;
         
 			case ADJ_AEROACOUSTIC_EULER:
 				AdjAeroacousticIteration(output, integration_container, geometry_container,
@@ -406,13 +394,10 @@ int main(int argc, char *argv[]) {
     
     /*--- For specific applications, evaluate and plot the equivalent area or flow rate. ---*/
     
-    if (config_container[ZONE_0]->GetKind_Solver() == EULER) {
-      if (config_container[ZONE_0]->GetEquivArea() == YES)
+    if ((config_container[ZONE_0]->GetKind_Solver() == EULER) &&
+        (config_container[ZONE_0]->GetEquivArea() == YES)) {
         output->SetEquivalentArea(solver_container[ZONE_0][MESH_0][FLOW_SOL],
                                   geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
-      if (config_container[ZONE_0]->GetFlowRate() == YES)
-        output->SetFlowRate(solver_container[ZONE_0][MESH_0][FLOW_SOL],
-                            geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
     }
     
 		/*--- Update the convergence history file (serial and parallel computations). ---*/
@@ -426,8 +411,6 @@ int main(int argc, char *argv[]) {
 		switch (config_container[ZONE_0]->GetKind_Solver()) {
 			case EULER: case NAVIER_STOKES: case RANS:
 				StopCalc = integration_container[ZONE_0][FLOW_SOL]->GetConvergence(); break;
-			case FREE_SURFACE_EULER: case FREE_SURFACE_NAVIER_STOKES: case FREE_SURFACE_RANS:
-				StopCalc = integration_container[ZONE_0][FLOW_SOL]->GetConvergence(); break;
 			case PLASMA_EULER: case PLASMA_NAVIER_STOKES:
 				StopCalc = integration_container[ZONE_0][PLASMA_SOL]->GetConvergence(); break;
 			case WAVE_EQUATION:
@@ -435,8 +418,6 @@ int main(int argc, char *argv[]) {
 			case LINEAR_ELASTICITY:
 				StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;
 			case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
-				StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
-			case ADJ_FREE_SURFACE_EULER: case ADJ_FREE_SURFACE_NAVIER_STOKES: case ADJ_FREE_SURFACE_RANS:
 				StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
 			case ADJ_PLASMA_EULER: case ADJ_PLASMA_NAVIER_STOKES:
 				StopCalc = integration_container[ZONE_0][ADJPLASMA_SOL]->GetConvergence(); break;
@@ -478,19 +459,6 @@ int main(int argc, char *argv[]) {
 		if (StopCalc) break;
 		ExtIter++;
     
-	}
-	
-  /*--- If requested, print adjoint sensitivity information to the console on exit. ---*/
-  
-	if ((config_container[ZONE_0]->GetAdjoint()) && (config_container[ZONE_0]->GetShow_Adj_Sens())) {
-		cout << endl;
-		cout << "Adjoint-derived sensitivities:" << endl;
-		cout << "Surface sensitivity = " << solver_container[ZONE_0][MESH_0][ADJFLOW_SOL]->GetTotal_Sens_Geo() << endl;
-		cout << "Mach number sensitivity = " << solver_container[ZONE_0][MESH_0][ADJFLOW_SOL]->GetTotal_Sens_Mach() << endl;
-		cout << "Angle of attack sensitivity = " << solver_container[ZONE_0][MESH_0][ADJFLOW_SOL]->GetTotal_Sens_AoA() << endl;
-		cout << "Pressure sensitivity = " << solver_container[ZONE_0][MESH_0][ADJFLOW_SOL]->GetTotal_Sens_Press() << endl;
-		cout << "Temperature sensitivity = " << solver_container[ZONE_0][MESH_0][ADJFLOW_SOL]->GetTotal_Sens_Temp() << endl;
-		cout << endl;
 	}
   
   /*--- Close the convergence history file. ---*/
@@ -535,12 +503,9 @@ int main(int argc, char *argv[]) {
   finish = MPI::Wtime();
   time = finish-start;
   if (rank == MASTER_NODE) {
-    if (size == 1) {cout << "\nCompleted in " << time << " seconds on ";
-      cout << size << " core.\n" << endl;
-    } else {
-      cout << "\nCompleted in " << time << " seconds on " << size;
-      cout << " cores.\n" << endl;
-    }
+    cout << "\nCompleted in " << fixed << time << " seconds on "<< size;
+    if (size == 1) cout << " core.\n" << endl;
+    else cout << " cores.\n" << endl;
   }
 #endif
   /*--- Finalize MPI parallelization ---*/

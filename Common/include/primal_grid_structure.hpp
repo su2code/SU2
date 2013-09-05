@@ -26,6 +26,7 @@
 
 #include <iostream>
 #include <vector>
+#include <cstdlib>
 
 #include "dual_grid_structure.hpp"
 #include "config_structure.hpp"

@@ -28,9 +28,8 @@ CUpwSca_TurbSA::CUpwSca_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
                                CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
 	implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-	rotating_frame = config->GetRotating_Frame();
 	grid_movement  = config->GetGrid_Movement();
-	incompressible = config->GetIncompressible();
+	incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
@@ -81,13 +80,7 @@ void CUpwSca_TurbSA::ComputeResidual(double *val_residual, double **val_Jacobian
   
 	q_ij = 0;
 	//SU2_CPP2C COMMENT START
-	if (rotating_frame) {
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Velocity_i[iDim] = U_i[iDim+1]/Density_i - RotVel_i[iDim];
-			Velocity_j[iDim] = U_j[iDim+1]/Density_j - RotVel_j[iDim];
-			q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
-		}
-	} else if (grid_movement) {
+	if (grid_movement) {
 		for (iDim = 0; iDim < nDim; iDim++) {
 			Velocity_i[iDim] = U_i[iDim+1]/Density_i - GridVel_i[iDim];
 			Velocity_j[iDim] = U_j[iDim+1]/Density_j - GridVel_j[iDim];
@@ -123,10 +116,8 @@ CUpwSca_TurbSST::CUpwSca_TurbSST(unsigned short val_nDim, unsigned short val_nVa
                                  CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
 	implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-	rotating_frame = config->GetRotating_Frame();
 	grid_movement  = config->GetGrid_Movement();
-	incompressible = config->GetIncompressible();
-  
+	incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
   
@@ -151,13 +142,7 @@ void CUpwSca_TurbSST::ComputeResidual(double *val_residual, double **val_Jacobia
 	}
   
 	q_ij = 0;
-	if (rotating_frame) {
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Velocity_i[iDim] = U_i[iDim+1]/Density_i - RotVel_i[iDim];
-			Velocity_j[iDim] = U_j[iDim+1]/Density_j - RotVel_j[iDim];
-			q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
-		}
-	} else if (grid_movement) {
+	if (grid_movement) {
 		for (iDim = 0; iDim < nDim; iDim++) {
 			Velocity_i[iDim] = U_i[iDim+1]/Density_i - GridVel_i[iDim];
 			Velocity_j[iDim] = U_j[iDim+1]/Density_j - GridVel_j[iDim];
@@ -190,7 +175,8 @@ CAvgGrad_TurbSA::CAvgGrad_TurbSA(unsigned short val_nDim, unsigned short val_nVa
 	unsigned short iVar;
   
 	implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-	incompressible = config->GetIncompressible();
+	incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  
   
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
@@ -305,7 +291,8 @@ CAvgGrad_TurbSST::CAvgGrad_TurbSST(unsigned short val_nDim, unsigned short val_n
 	unsigned short iVar;
   
 	implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-	incompressible = config->GetIncompressible();
+	incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  
   
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
@@ -371,7 +358,7 @@ CAvgGradCorrected_TurbSA::CAvgGradCorrected_TurbSA(unsigned short val_nDim, unsi
 	unsigned short iVar;
   
 	implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-	incompressible = config->GetIncompressible();
+	incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
@@ -454,7 +441,7 @@ CAvgGradCorrected_TurbSST::CAvgGradCorrected_TurbSST(unsigned short val_nDim, un
 	unsigned short iVar;
   
 	implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-	incompressible = config->GetIncompressible();
+	incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
@@ -545,7 +532,7 @@ void CAvgGradCorrected_TurbSST::ComputeResidual(double *val_residual, double **J
 CSourcePieceWise_TurbSA::CSourcePieceWise_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
                                                  CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
-	incompressible = config->GetIncompressible();
+	incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 	//transition     = (config->GetKind_Trans_Model() == LM);
   transition = false; // Debugging, -AA
   rotating_frame = config->GetRotating_Frame();
@@ -699,7 +686,7 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
 CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim, unsigned short val_nVar, double *constants,
                                                    CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
-	incompressible = config->GetIncompressible();
+	incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;

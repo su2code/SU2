@@ -46,13 +46,13 @@ inline double CSolver::GetCSensitivity(unsigned short val_marker, unsigned short
 inline void CSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep, 
 																		 unsigned short iMesh, unsigned short RunTime_EqSystem) { }
 																		 
-inline void CSolver::SetLevelSet_Distance(CGeometry *geometry, CConfig *config, bool Initialization, bool WriteLevelSet) { }
+inline void CSolver::SetFreeSurface_Distance(CGeometry *geometry, CConfig *config, bool Initialization, bool WriteLevelSet) { }
 
 inline void CSolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry, CGeometry **flow_geometry, CConfig *fea_config, CConfig *flow_config) { }
 
 inline void CSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) { }
 
-inline void CSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned short val_iZone) { }
+inline void CSolver::GetRestart(CGeometry *geometry, CConfig *config, int val_iter) { }
   
 inline void CSolver::SetNoise_Source(CSolver ***flow_solution, CGeometry **wave_geometry, CConfig *wave_config) { }
 
@@ -106,6 +106,8 @@ inline double CSolver::GetCEff_Inv(unsigned short val_marker) { return 0; }
 
 inline double CSolver::GetCLift_Visc(unsigned short val_marker) { return 0; }
 
+inline double CSolver::GetCSideForce_Visc(unsigned short val_marker) { return 0; }
+
 inline double CSolver::GetCDrag_Visc(unsigned short val_marker) { return 0; }
 
 inline double CSolver::GetAllBound_CLift_Inv() { return 0; }
@@ -117,6 +119,8 @@ inline double CSolver::GetAllBound_CSideForce_Inv() { return 0; }
 inline double CSolver::GetAllBound_CEff_Inv() { return 0; }
 
 inline double CSolver::GetAllBound_CLift_Visc() { return 0; }
+
+inline double CSolver::GetAllBound_CSideForce_Visc() { return 0; }
 
 inline double CSolver::GetAllBound_CDrag_Visc() { return 0; }
 
@@ -227,9 +231,6 @@ inline void CSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 									   
 inline void CSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, 
 												  CNumerics *numerics, CConfig *config, unsigned short iMesh) { }
-												  
-inline void CSolver::SourceConserv_Residual(CGeometry *geometry, CSolver **solver_container, 
-											   CNumerics *numerics, CConfig *config, unsigned short iMesh) { }
 
 inline void CSolver::Charge_Dist_SourceTerm(CGeometry *geometry, CSolver **solver_container, 
 											  CNumerics *numerics, CConfig *config, unsigned short iMesh) { }
@@ -407,8 +408,6 @@ inline void CSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
 inline void CSolver::Solve_LinearSystem(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
 										  unsigned short iMesh) { }
 
-inline void CSolver::Solve_LinearSystem(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
-
 inline void CSolver::Compute_Residual(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
 										unsigned short iMesh) { }
 
@@ -565,13 +564,21 @@ inline double CEulerSolver::GetAllBound_CSideForce_Inv() { return AllBound_CSide
 
 inline double CEulerSolver::GetAllBound_CEff_Inv() { return AllBound_CEff_Inv; }
 
+inline double CEulerSolver::GetTotal_CFreeSurface() { return Total_CFreeSurface; }
+
+inline void CEulerSolver::SetTotal_CFreeSurface(double cfreesurface) { Total_CFreeSurface = cfreesurface; }
+
 inline double CNSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 
 inline double CNSSolver::GetCLift_Visc(unsigned short val_marker) { return CLift_Visc[val_marker]; }
 
+inline double CNSSolver::GetCSideForce_Visc(unsigned short val_marker) { return CSideForce_Visc[val_marker]; }
+
 inline double CNSSolver::GetCDrag_Visc(unsigned short val_marker) { return CDrag_Visc[val_marker]; }
 
 inline double CNSSolver::GetAllBound_CLift_Visc() { return AllBound_CLift_Visc; }
+
+inline double CNSSolver::GetAllBound_CSideForce_Visc() { return AllBound_CSideForce_Visc; }
 
 inline double CNSSolver::GetAllBound_CDrag_Visc() { return AllBound_CDrag_Visc; }
 
@@ -712,8 +719,3 @@ inline void CFEASolver::SetTotal_CFEA(double cfea) { Total_CFEA = cfea; }
 inline double CWaveSolver::GetTotal_CWave() { return Total_CWave; }
 
 inline double CHeatSolver::GetTotal_CHeat() { return Total_CHeat; }
-
-inline void CTurbSolver::CalcEddyViscosity(double *val_FlowVars, double val_laminar_viscosity,
-			double *val_TurbVar, double *val_eddy_viscosity) {}
-
-

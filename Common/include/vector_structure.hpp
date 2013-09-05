@@ -34,6 +34,7 @@
 #include <iostream>
 #include <iomanip>
 #include <string>
+#include <cstdlib>
 
 using namespace std;
 
@@ -90,6 +91,11 @@ public:
    * \param[in] u - CSysVector that is being copied
    */
   CSysVector(const CSysVector & u);
+  
+  /*!
+	 * \brief Sets to zero all the entries of the vector.
+	 */
+	void SetValZero(void);
   
   /*!
    * \brief constructor from array

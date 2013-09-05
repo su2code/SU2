@@ -23,6 +23,11 @@
 
 #pragma once
 
+inline void CSysVector::SetValZero(void) { 
+  for (unsigned int i = 0; i < nElm; i++)
+		vec_val[i] = 0.0;
+}
+
 inline unsigned int CSysVector::GetLocSize() const { return nElm; }
 
 inline unsigned long CSysVector::GetSize() const {

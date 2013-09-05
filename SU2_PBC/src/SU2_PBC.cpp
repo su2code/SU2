@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
 
 	/*--- Definition of the class for the geometry ---*/
 	CGeometry *geometry; geometry = new CGeometry;
-	geometry = new CPhysicalGeometry(config, config->GetMesh_FileName(), config->GetMesh_FileFormat(), ZONE_0, nZone);
+	geometry = new CPhysicalGeometry(config, ZONE_0, nZone);
   
   /*--- Perform the non-dimensionalization, in case any values are needed ---*/
   config->SetNondimensionalization(geometry->GetnDim(), ZONE_0);
