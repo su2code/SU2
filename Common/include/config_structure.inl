@@ -51,6 +51,8 @@ inline unsigned long CConfig::GetUnst_nIntIter(void) { return Unst_nIntIter; }
 
 inline long CConfig::GetUnst_RestartIter(void) { return Unst_RestartIter; }
 
+inline long CConfig::GetUnst_AdjointIter(void) { return Unst_AdjointIter; }
+
 inline unsigned short CConfig::GetMaxChildren(void) { return MaxChildren; }
 
 inline string CConfig::GetPlaneTag(unsigned short index) { return PlaneTag[index]; }

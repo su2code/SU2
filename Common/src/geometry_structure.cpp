@@ -5154,8 +5154,138 @@ void CPhysicalGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
 
 }
 
+void CPhysicalGeometry::Set_MPI_Coord(CConfig *config) {
+	unsigned short iDim, iMarker, iPeriodic_Index;
+	unsigned long iVertex, iPoint, nVert, nBuffer_Vector;
+	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi,
+  psi, cosPsi, sinPsi, *newCoord = NULL, *Buffer_Receive_Coord = NULL, *Coord;
+	short SendRecv;
+	int send_to, receive_from;
+  
+#ifndef NO_MPI
+  
+  MPI::COMM_WORLD.Barrier();
+	double *Buffer_Send_Coord = NULL;
+  
+#endif
+  
+	newCoord = new double[nDim];
+  
+	/*--- Send-Receive boundary conditions ---*/
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+		if (config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) {
+			SendRecv = config->GetMarker_All_SendRecv(iMarker);
+			nVert = nVertex[iMarker];
+			nBuffer_Vector = nVert*nDim;
+			send_to = SendRecv-1;
+			receive_from = abs(SendRecv)-1;
+      
+#ifndef NO_MPI
+      
+			/*--- Send information using MPI  ---*/
+			if (SendRecv > 0) {
+        Buffer_Send_Coord = new double[nBuffer_Vector];
+				for (iVertex = 0; iVertex < nVert; iVertex++) {
+					iPoint = vertex[iMarker][iVertex]->GetNode();
+          Coord = node[iPoint]->GetCoord();
+          for (iDim = 0; iDim < nDim; iDim++)
+            Buffer_Send_Coord[iDim*nVert+iVertex] = Coord[iDim];
+				}
+        MPI::COMM_WORLD.Bsend(Buffer_Send_Coord, nBuffer_Vector, MPI::DOUBLE, send_to, 0); delete [] Buffer_Send_Coord;
+			}
+      
+#endif
+      
+			/*--- Receive information  ---*/
+			if (SendRecv < 0) {
+        Buffer_Receive_Coord = new double [nBuffer_Vector];
+        
+#ifdef NO_MPI
+        
+				/*--- Receive information without MPI ---*/
+				for (iVertex = 0; iVertex < nVert; iVertex++) {
+          iPoint = vertex[iMarker][iVertex]->GetNode();
+          Coord = node[iPoint]->GetCoord();
+          for (iDim = 0; iDim < nDim; iDim++)
+            Buffer_Receive_Coord[iDim*nVert+iVertex] = Coord[iDim];
+        }
+        
+#else
+        
+        MPI::COMM_WORLD.Recv(Buffer_Receive_Coord, nBuffer_Vector, MPI::DOUBLE, receive_from, 0);
+        
+#endif
+        
+				/*--- Do the coordinate transformation ---*/
+				for (iVertex = 0; iVertex < nVert; iVertex++) {
+          
+					/*--- Find point and its type of transformation ---*/
+					iPoint = vertex[iMarker][iVertex]->GetNode();
+					iPeriodic_Index = vertex[iMarker][iVertex]->GetRotation_Type();
+          
+					/*--- Retrieve the supplied periodic information. ---*/
+					angles = config->GetPeriodicRotation(iPeriodic_Index);
+          
+					/*--- Store angles separately for clarity. ---*/
+					theta    = angles[0];   phi    = angles[1]; psi    = angles[2];
+					cosTheta = cos(theta);  cosPhi = cos(phi);  cosPsi = cos(psi);
+					sinTheta = sin(theta);  sinPhi = sin(phi);  sinPsi = sin(psi);
+          
+					/*--- Compute the rotation matrix. Note that the implicit
+					 ordering is rotation about the x-axis, y-axis,
+					 then z-axis. Note that this is the transpose of the matrix
+					 used during the preprocessing stage. ---*/
+					rotMatrix[0][0] = cosPhi*cosPsi; rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi; rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+					rotMatrix[0][1] = cosPhi*sinPsi; rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi; rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+					rotMatrix[0][2] = -sinPhi; rotMatrix[1][2] = sinTheta*cosPhi; rotMatrix[2][2] = cosTheta*cosPhi;
+          
+					/*--- Copy conserved variables before performing transformation. ---*/
+					for (iDim = 0; iDim < nDim; iDim++)
+						newCoord[iDim] = Buffer_Receive_Coord[iDim*nVert+iVertex];
+          
+					/*--- Rotate the grid coordinate vector if necessary. ---*/
+					if (nDim == 2) {
+						newCoord[0] = rotMatrix[0][0]*Buffer_Receive_Coord[0*nVert+iVertex]
+                        + rotMatrix[0][1]*Buffer_Receive_Coord[1*nVert+iVertex];
+            
+						newCoord[1] = rotMatrix[1][0]*Buffer_Receive_Coord[0*nVert+iVertex]
+                        + rotMatrix[1][1]*Buffer_Receive_Coord[1*nVert+iVertex];
+					}
+					else {
+						newCoord[0] = rotMatrix[0][0]*Buffer_Receive_Coord[0*nVert+iVertex]
+                        + rotMatrix[0][1]*Buffer_Receive_Coord[1*nVert+iVertex]
+                        + rotMatrix[0][2]*Buffer_Receive_Coord[2*nVert+iVertex];
+            
+						newCoord[1] = rotMatrix[1][0]*Buffer_Receive_Coord[0*nVert+iVertex]
+                        + rotMatrix[1][1]*Buffer_Receive_Coord[1*nVert+iVertex]
+                        + rotMatrix[1][2]*Buffer_Receive_Coord[2*nVert+iVertex];
+            
+						newCoord[2] = rotMatrix[2][0]*Buffer_Receive_Coord[0*nVert+iVertex]
+                        + rotMatrix[2][1]*Buffer_Receive_Coord[1*nVert+iVertex]
+                        + rotMatrix[2][2]*Buffer_Receive_Coord[2*nVert+iVertex];
+					}
+          
+					/*--- Copy transformed conserved variables back into buffer. ---*/          
+          for (iDim = 0; iDim < nDim; iDim++)
+            node[iPoint]->SetCoord(iDim, newCoord[iDim]);
+          
+				}
+        delete [] Buffer_Receive_Coord;
+			}
+		}
+	}
+	delete [] newCoord;
+  
+#ifndef NO_MPI
+  
+  MPI::COMM_WORLD.Barrier();
+  
+#endif
+  
+}
+
 void CPhysicalGeometry::Set_MPI_GridVel(CConfig *config) {
-	unsigned short iVar, iMarker, iPeriodic_Index;
+	unsigned short iDim, iMarker, iPeriodic_Index;
 	unsigned long iVertex, iPoint, nVert, nBuffer_Vector;
 	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi,
   psi, cosPsi, sinPsi, *newGridVel = NULL, *Buffer_Receive_GridVel = NULL, *GridVel;
@@ -5188,8 +5318,8 @@ void CPhysicalGeometry::Set_MPI_GridVel(CConfig *config) {
 				for (iVertex = 0; iVertex < nVert; iVertex++) {
 					iPoint = vertex[iMarker][iVertex]->GetNode();
           GridVel = node[iPoint]->GetGridVel();
-          for (iVar = 0; iVar < nDim; iVar++)
-            Buffer_Send_GridVel[iVar*nVert+iVertex] = GridVel[iVar];
+          for (iDim = 0; iDim < nDim; iDim++)
+            Buffer_Send_GridVel[iDim*nVert+iVertex] = GridVel[iDim];
 				}
         MPI::COMM_WORLD.Bsend(Buffer_Send_GridVel, nBuffer_Vector, MPI::DOUBLE, send_to, 0); delete [] Buffer_Send_GridVel;
 			}
@@ -5206,8 +5336,8 @@ void CPhysicalGeometry::Set_MPI_GridVel(CConfig *config) {
 				for (iVertex = 0; iVertex < nVert; iVertex++) {
           iPoint = vertex[iMarker][iVertex]->GetNode();
           GridVel = node[iPoint]->GetGridVel();
-          for (iVar = 0; iVar < nDim; iVar++)
-            Buffer_Receive_GridVel[iVar*nVert+iVertex] = GridVel[iVar];
+          for (iDim = 0; iDim < nDim; iDim++)
+            Buffer_Receive_GridVel[iDim*nVert+iVertex] = GridVel[iDim];
         }
         
 #else
@@ -5240,26 +5370,34 @@ void CPhysicalGeometry::Set_MPI_GridVel(CConfig *config) {
 					rotMatrix[0][2] = -sinPhi; rotMatrix[1][2] = sinTheta*cosPhi; rotMatrix[2][2] = cosTheta*cosPhi;
           
 					/*--- Copy conserved variables before performing transformation. ---*/
-					for (iVar = 0; iVar < nDim; iVar++)
-						newGridVel[iVar] = Buffer_Receive_GridVel[iVar*nVert+iVertex];
+					for (iDim = 0; iDim < nDim; iDim++)
+						newGridVel[iDim] = Buffer_Receive_GridVel[iDim*nVert+iVertex];
           
-					/*--- Rotate the momentum components. ---*/
+					/*--- Rotate the grid velocity vector if necessary. ---*/
 					if (nDim == 2) {
-						newGridVel[1] = rotMatrix[0][0]*Buffer_Receive_GridVel[1*nVert+iVertex] + rotMatrix[0][1]*Buffer_Receive_GridVel[2*nVert+iVertex];
-						newGridVel[2] = rotMatrix[1][0]*Buffer_Receive_GridVel[1*nVert+iVertex] + rotMatrix[1][1]*Buffer_Receive_GridVel[2*nVert+iVertex];
+						newGridVel[0] = rotMatrix[0][0]*Buffer_Receive_GridVel[0*nVert+iVertex]
+                          + rotMatrix[0][1]*Buffer_Receive_GridVel[1*nVert+iVertex];
+            
+						newGridVel[1] = rotMatrix[1][0]*Buffer_Receive_GridVel[0*nVert+iVertex]
+                          + rotMatrix[1][1]*Buffer_Receive_GridVel[1*nVert+iVertex];
 					}
 					else {
-						newGridVel[1] = rotMatrix[0][0]*Buffer_Receive_GridVel[1*nVert+iVertex] + rotMatrix[0][1]*Buffer_Receive_GridVel[2*nVert+iVertex] + rotMatrix[0][2]*Buffer_Receive_GridVel[3*nVert+iVertex];
-						newGridVel[2] = rotMatrix[1][0]*Buffer_Receive_GridVel[1*nVert+iVertex] + rotMatrix[1][1]*Buffer_Receive_GridVel[2*nVert+iVertex] + rotMatrix[1][2]*Buffer_Receive_GridVel[3*nVert+iVertex];
-						newGridVel[3] = rotMatrix[2][0]*Buffer_Receive_GridVel[1*nVert+iVertex] + rotMatrix[2][1]*Buffer_Receive_GridVel[2*nVert+iVertex] + rotMatrix[2][2]*Buffer_Receive_GridVel[3*nVert+iVertex];
+						newGridVel[0] = rotMatrix[0][0]*Buffer_Receive_GridVel[0*nVert+iVertex]
+                          + rotMatrix[0][1]*Buffer_Receive_GridVel[1*nVert+iVertex]
+                          + rotMatrix[0][2]*Buffer_Receive_GridVel[2*nVert+iVertex];
+            
+						newGridVel[1] = rotMatrix[1][0]*Buffer_Receive_GridVel[0*nVert+iVertex]
+                          + rotMatrix[1][1]*Buffer_Receive_GridVel[1*nVert+iVertex]
+                          + rotMatrix[1][2]*Buffer_Receive_GridVel[2*nVert+iVertex];
+            
+						newGridVel[2] = rotMatrix[2][0]*Buffer_Receive_GridVel[0*nVert+iVertex]
+                          + rotMatrix[2][1]*Buffer_Receive_GridVel[1*nVert+iVertex]
+                          + rotMatrix[2][2]*Buffer_Receive_GridVel[2*nVert+iVertex];
 					}
           
-					/*--- Copy transformed conserved variables back into buffer. ---*/
-					for (iVar = 0; iVar < nDim; iVar++)
-						Buffer_Receive_GridVel[iVar*nVert+iVertex] = newGridVel[iVar];
-          
-          for (iVar = 0; iVar < nDim; iVar++)
-            node[iPoint]->SetGridVel(iVar, Buffer_Receive_GridVel[iVar*nVert+iVertex]);
+					/*--- Copy transformed conserved variables back into buffer. ---*/          
+          for (iDim = 0; iDim < nDim; iDim++)
+            node[iPoint]->SetGridVel(iDim, newGridVel[iDim]);
           
 				}
         delete [] Buffer_Receive_GridVel;
@@ -8704,29 +8842,29 @@ void CBoundaryGeometry::SetBoundSensitivity(CConfig *config) {
 	bool *PointInDomain;
 	int rank = MASTER_NODE;
 	int size = SINGLE_NODE;
-
+  
 #ifndef NO_MPI
 	rank = MPI::COMM_WORLD.Get_rank();
 	size = MPI::COMM_WORLD.Get_size();
 #endif
-
+  
 	nPointLocal = nPoint;
 #ifndef NO_MPI
 	MPI::COMM_WORLD.Allreduce(&nPointLocal, &nPointGlobal, 1, MPI::UNSIGNED_LONG, MPI::SUM);
 #else
 	nPointGlobal = nPointLocal;
 #endif
-
+  
 	Point2Vertex = new unsigned long[nPointGlobal][2];
 	PointInDomain = new bool[nPointGlobal];
-
+  
 	for (iPoint = 0; iPoint < nPointGlobal; iPoint ++)
 		PointInDomain[iPoint] = false;
-
+  
 	for (iMarker = 0; iMarker < nMarker; iMarker++)
 		if (config->GetMarker_All_DV(iMarker) == YES)
 			for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-
+        
 				/*--- The sensitivity file uses the global numbering ---*/
 #ifdef NO_MPI
 				iPoint = vertex[iMarker][iVertex]->GetNode();
@@ -8740,37 +8878,37 @@ void CBoundaryGeometry::SetBoundSensitivity(CConfig *config) {
 					vertex[iMarker][iVertex]->SetAuxVar(0.0);
 				}
 			}
-
+  
 	/*--- Time-average any unsteady surface sensitivities ---*/
 	unsigned long iExtIter, nExtIter;
 	double delta_T, total_T;
 	if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
-		nExtIter = config->GetnExtIter();
+		nExtIter = config->GetUnst_AdjointIter();
 		delta_T  = config->GetDelta_UnstTimeND();
 		total_T  = (double)nExtIter*delta_T;
 	} else if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-
+    
 		/*--- Compute period of oscillation & compute time interval using nTimeInstances ---*/
 		double period = config->GetTimeSpectral_Period();
 		nExtIter  = config->GetnTimeInstances();
 		delta_T   = period/(double)nExtIter;
 		total_T   = period;
-
+    
 	} else {
 		nExtIter = 1;
 		delta_T  = 1.0;
 		total_T  = 1.0;
 	}
-
+  
 	for (iExtIter = 0; iExtIter < nExtIter; iExtIter++) {
-
+    
 		/*--- Prepare to read surface sensitivity files (CSV) ---*/
 		string text_line;
 		ifstream Surface_file;
 		char buffer[50];
 		char cstr[200];
 		string surfadj_filename = config->GetSurfAdjCoeff_FileName();
-
+    
 		/*--- Remove the domain number from the surface csv filename ---*/
 		if (size > SINGLE_NODE) {
 			if ((rank+1 >= 0) && (rank+1 < 10)) surfadj_filename.erase (surfadj_filename.end()-2, surfadj_filename.end());
@@ -8779,7 +8917,7 @@ void CBoundaryGeometry::SetBoundSensitivity(CConfig *config) {
 			if ((rank+1 >= 1000) && (rank+1 < 10000)) surfadj_filename.erase (surfadj_filename.end()-5, surfadj_filename.end());
 		}
 		strcpy (cstr, surfadj_filename.c_str());
-
+    
 		/*--- Write file name with extension if unsteady or steady ---*/
 		if ((config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) ||
 				(config->GetUnsteady_Simulation() == TIME_SPECTRAL)) {
@@ -8791,15 +8929,15 @@ void CBoundaryGeometry::SetBoundSensitivity(CConfig *config) {
 		}
 		else
 			sprintf (buffer, ".csv");
-
+    
 		strcat (cstr, buffer);
-
+    
 		/*--- Read the sensitivity file ---*/
 		string::size_type position;
-
+    
 		Surface_file.open(cstr, ios::in);
 		getline(Surface_file,text_line);
-
+    
 		while (getline(Surface_file,text_line)) {
 			for (icommas = 0; icommas < 50; icommas++) {
 				position = text_line.find( ",", 0 );
@@ -8807,23 +8945,23 @@ void CBoundaryGeometry::SetBoundSensitivity(CConfig *config) {
 			}
 			stringstream  point_line(text_line);
 			point_line >> iPoint >> Sensitivity;
-
+      
 			if (PointInDomain[iPoint]) {
-
+        
 				/*--- Find the vertex for the Point and Marker ---*/
 				iMarker = Point2Vertex[iPoint][0];
 				iVertex = Point2Vertex[iPoint][1];
-
+        
 				/*--- Increment the auxiliary variable with the contribution of
          this unsteady timestep. For steady problems, this reduces to
          a single sensitivity value multiplied by 1.0. ---*/
 				vertex[iMarker][iVertex]->AddAuxVar(Sensitivity*(delta_T/total_T));
 			}
-
+      
 		}
 		Surface_file.close();
 	}
-
+  
 	delete[] Point2Vertex;
 }
 

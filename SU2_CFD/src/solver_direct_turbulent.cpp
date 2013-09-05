@@ -2480,24 +2480,22 @@ void CTurbSASolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_c
   }
 }
 
-void CTurbSASolver::GetRestart(CGeometry *geometry, CConfig *config, int val_iter) {
+void CTurbSASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter) {
   
 	/*--- Restart the solution from file information ---*/
-	unsigned long iPoint, index;
-	string UnstExt, text_line;
-	ifstream restart_file;
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  unsigned short iDim, iVar, iMesh;
+	unsigned long iPoint, index, iChildren, Point_Fine;
+  double dull_val, Area_Children, Area_Parent, Coord[3], *Solution_Fine;
+  bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
-  double dull_val;
+  bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
 	bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  
+  string UnstExt, text_line;
+	ifstream restart_file;
   string restart_filename = config->GetSolution_FlowFileName();
   
   /*--- Modify file name for an unsteady restart ---*/
-  /*--- For the unsteady adjoint, we integrate backwards through
-   physical time, so load in the direct solution files in reverse eventually. ---*/
   if (dual_time)
     restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter);
   
@@ -2512,15 +2510,15 @@ void CTurbSASolver::GetRestart(CGeometry *geometry, CConfig *config, int val_ite
 	/*--- In case this is a parallel simulation, we need to perform the
    Global2Local index transformation first. ---*/
 	long *Global2Local = NULL;
-	Global2Local = new long[geometry->GetGlobal_nPointDomain()];
+	Global2Local = new long[geometry[MESH_0]->GetGlobal_nPointDomain()];
 	/*--- First, set all indices to a negative value by default ---*/
-	for(iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
+	for(iPoint = 0; iPoint < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint++) {
 		Global2Local[iPoint] = -1;
 	}
   
 	/*--- Now fill array with the transform values only for local points ---*/
-	for(iPoint = 0; iPoint < nPointDomain; iPoint++) {
-		Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+	for(iPoint = 0; iPoint < geometry[MESH_0]->GetnPointDomain(); iPoint++) {
+		Global2Local[geometry[MESH_0]->node[iPoint]->GetGlobalIndex()] = iPoint;
 	}
   
 	/*--- Read all lines in the restart file ---*/
@@ -2565,8 +2563,28 @@ void CTurbSASolver::GetRestart(CGeometry *geometry, CConfig *config, int val_ite
 	/*--- Free memory needed for the transformation ---*/
 	delete [] Global2Local;
   
-  /*--- MPI solution ---*/
-	Set_MPI_Solution(geometry, config);
+  /*--- MPI solution and compute the eddy viscosity ---*/
+	solver[MESH_0][TURB_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
+  solver[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
+  
+  /*--- Interpolate the solution down to the coarse multigrid levels ---*/
+  for (iMesh = 1; iMesh <= config->GetMGLevels(); iMesh++) {
+    for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+      Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
+      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
+      for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
+        Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
+        Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
+        Solution_Fine = solver[iMesh-1][TURB_SOL]->node[Point_Fine]->GetSolution();
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
+        }
+      }
+      solver[iMesh][TURB_SOL]->node[iPoint]->SetSolution(Solution);
+    }
+    solver[iMesh][TURB_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+    solver[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
+  }
   
 }
 

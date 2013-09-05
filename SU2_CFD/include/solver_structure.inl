@@ -52,7 +52,7 @@ inline void CSolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geome
 
 inline void CSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) { }
 
-inline void CSolver::GetRestart(CGeometry *geometry, CConfig *config, int val_iter) { }
+inline void CSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter) { }
   
 inline void CSolver::SetNoise_Source(CSolver ***flow_solution, CGeometry **wave_geometry, CConfig *wave_config) { }
 

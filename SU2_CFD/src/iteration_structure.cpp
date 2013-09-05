@@ -199,33 +199,27 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
 	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
 	if (time_spectral) nZone = config_container[ZONE_0]->GetnTimeInstances();
 	bool relative_motion = config_container[ZONE_0]->GetRelative_Motion();
-	int rank = MASTER_NODE;
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
-  
+
+  int rank = MASTER_NODE;
 #ifndef NO_MPI
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
 
-	/*--- Initial set up for unsteady problems with dynamic meshes. ---*/
-	for (iZone = 0; iZone < nZone; iZone++) {
-		/*--- Dynamic mesh update ---*/
-		if (config_container[iZone]->GetGrid_Movement() && !time_spectral)
-			SetGrid_Movement(geometry_container[iZone], surface_movement[iZone],
-					grid_movement[iZone], FFDBox[iZone], solver_container[iZone], config_container[iZone], iZone, ExtIter);
-	}
 	/*--- If any relative motion between zones was found, perform a search
    and interpolation for any sliding interfaces before the next timestep. ---*/
 	if (relative_motion) {
 		SetSliding_Interfaces(geometry_container, solver_container, config_container, nZone);
   }
 
+  /*--- For the unsteady adjoint, load a new direct solution from a restart file. ---*/
 	for (iZone = 0; iZone < nZone; iZone++) {
-		if ((ExtIter == 0) || (config_container[iZone]->GetUnsteady_Simulation() && !time_spectral)) {
-			if (rank == MASTER_NODE && iZone == ZONE_0)
-				cout << " Single iteration of the direct solver to store flow data." << endl;
-			if (config_container[iZone]->GetUnsteady_Simulation())
-				solver_container[iZone][MESH_0][FLOW_SOL]->GetRestart(geometry_container[iZone][MESH_0], config_container[iZone], ExtIter);
+		if (config_container[iZone]->GetUnsteady_Simulation() && !time_spectral) {
+      unsigned long Direct_Iter = config_container[iZone]->GetUnst_AdjointIter() - ExtIter - 1;
+        if (rank == MASTER_NODE && iZone == ZONE_0 && config_container[iZone]->GetUnsteady_Simulation())
+          cout << endl << " Loading flow solution from direct iteration " << Direct_Iter << "." << endl;
+				solver_container[iZone][MESH_0][FLOW_SOL]->LoadRestart(geometry_container[iZone], solver_container[iZone], config_container[iZone], int(Direct_Iter));
 		}
 	}
 
@@ -239,6 +233,8 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
 			if (config_container[iZone]->GetKind_Solver() == ADJ_RANS)          config_container[iZone]->SetGlobalParam(ADJ_RANS, RUNTIME_FLOW_SYS, ExtIter);
       
       /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
+      if (rank == MASTER_NODE && iZone == ZONE_0)
+				cout << " Single iteration of the direct solver to store flow data." << endl;
 			integration_container[iZone][FLOW_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                   config_container, RUNTIME_FLOW_SYS, 0, iZone);
       
@@ -727,8 +723,8 @@ void AdjAeroacousticIteration(COutput *output, CIntegration ***integration_conta
 	if (rank == MASTER_NODE) cout << "Iteration over the direct problem to store all flow information." << endl;
 
 	/*--- Load direct solutions for the flow and wave problems from file in reverse time ---*/
-	solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetRestart(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ZONE_0);
-	solver_container[ZONE_1][MESH_0][WAVE_SOL]->GetRestart(geometry_container[ZONE_1][MESH_0], config_container[ZONE_1], ZONE_1);
+	solver_container[ZONE_0][MESH_0][FLOW_SOL]->LoadRestart(geometry_container[ZONE_0], solver_container[ZONE_0], config_container[ZONE_0], int(ZONE_0));
+	solver_container[ZONE_1][MESH_0][WAVE_SOL]->LoadRestart(geometry_container[ZONE_1], solver_container[ZONE_1], config_container[ZONE_1], int(ZONE_1));
 
 	if (config_container[ZONE_0]->GetKind_Solver() == ADJ_AEROACOUSTIC_EULER)
 		config_container[ZONE_0]->SetGlobalParam(ADJ_AEROACOUSTIC_EULER, RUNTIME_FLOW_SYS, ExtIter);
