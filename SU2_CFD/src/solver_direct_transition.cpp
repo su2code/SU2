@@ -429,7 +429,6 @@ void CTransLMSolver::Source_Template(CGeometry *geometry, CSolver **solver_conta
 void CTransLMSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned long iPoint, iVertex, Point_Normal;
 	unsigned short iVar, iDim;
-  int total_index;
   double *U_i;
   double *U_domain = new double[nVar];
   double *U_wall   = new double[nVar];

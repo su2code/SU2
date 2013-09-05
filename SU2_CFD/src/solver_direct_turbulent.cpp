@@ -2482,11 +2482,6 @@ void CTurbSASolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_c
 
 void CTurbSASolver::GetRestart(CGeometry *geometry, CConfig *config, int val_iter) {
   
-	int rank = MASTER_NODE;
-#ifndef NO_MPI
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
-  
 	/*--- Restart the solution from file information ---*/
 	unsigned long iPoint, index;
 	string UnstExt, text_line;
@@ -2494,7 +2489,6 @@ void CTurbSASolver::GetRestart(CGeometry *geometry, CConfig *config, int val_ite
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
-	bool grid_movement = config->GetGrid_Movement();
   double dull_val;
 	bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
