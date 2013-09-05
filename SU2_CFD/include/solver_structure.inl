@@ -388,6 +388,8 @@ inline void CSolver::Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *config)
 
 inline void CSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) { }
 
+inline void CSolver::Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config) { }
+
 inline void CSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Inviscid_DeltaForces(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
