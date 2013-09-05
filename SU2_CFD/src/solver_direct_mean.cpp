@@ -5987,31 +5987,6 @@ void CEulerSolver::GetRestart(CGeometry *geometry, CConfig *config, int val_iter
 		iPoint_Global++;
 	}
 
-	/*--- Set an average grid velocity at any halo nodes for the unsteady adjoint ---*/
-  // does this make sense still?
-	if (config->GetWrt_Unsteady() && grid_movement) {
-		unsigned long jPoint;
-		unsigned short nNeighbors;
-		double AvgVel[3], *GridVel;
-		for(iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-			AvgVel[0] = 0.0; AvgVel[1] = 0.0; AvgVel[2] = 0.0; nNeighbors = 0;
-			/*--- Find & store any neighbor points to the sliding boundary in the donor zone (jZone). ---*/
-			for (unsigned short iNeighbor = 0; iNeighbor < geometry->node[iPoint]->GetnPoint(); iNeighbor++) {
-				jPoint = geometry->node[iPoint]->GetPoint(iNeighbor);
-				if (geometry->node[jPoint]->GetDomain()) {
-					GridVel = geometry->node[jPoint]->GetGridVel();
-					for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-						AvgVel[iDim] += GridVel[iDim];
-						nNeighbors++;
-					}
-				}
-			}
-			for (unsigned short iDim = 0; iDim < nDim; iDim++)
-				geometry->node[iPoint]->SetGridVel(iDim, AvgVel[iDim]/(double)nNeighbors);
-		}
-	}
-
-
 	/*--- Close the restart file ---*/
 	restart_file.close();
 
@@ -6020,6 +5995,10 @@ void CEulerSolver::GetRestart(CGeometry *geometry, CConfig *config, int val_iter
   
   /*--- MPI solution ---*/
 	Set_MPI_Solution(geometry, config);
+  
+  /*--- MPI for the grid velocities ---*/
+  if (config->GetWrt_Unsteady() && grid_movement)
+    geometry->Set_MPI_GridVel(config);
 
 }
 
