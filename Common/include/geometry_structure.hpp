@@ -544,6 +544,12 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
 	 */
+  virtual void Set_MPI_Coord(CConfig *config);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] config - Definition of the particular problem.
+	 */
   virtual void Set_MPI_GridVel(CConfig *config);
   
 	/*!
@@ -1000,6 +1006,12 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetGridVelocity(CConfig *config, unsigned long iter);
+  
+  /*!
+	 * \brief Perform the MPI communication for the grid coordinates (dynamic meshes).
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  void Set_MPI_Coord(CConfig *config);
   
   /*!
 	 * \brief Perform the MPI communication for the grid velocities.

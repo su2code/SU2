@@ -77,6 +77,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   	double Gas_Constant = config->GetGas_ConstantND();
 	bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
 			(config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool adjoint = config->GetAdjoint();
 	roe_turkel = false;
   
 	int rank = MASTER_NODE;
@@ -313,7 +314,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     /*--- Modify file name for an unsteady restart ---*/
     if (dual_time) {
       int Unst_RestartIter;
-      if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+      if (adjoint) {
+        Unst_RestartIter = int(config->GetUnst_AdjointIter()) - 1;
+      } else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
         Unst_RestartIter = int(config->GetUnst_RestartIter())-1;
       else
         Unst_RestartIter = int(config->GetUnst_RestartIter())-2;
@@ -1648,8 +1651,8 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
           }
           solver_container[iMesh][TURB_SOL]->node[iPoint]->SetSolution(Solution);
         }
-        solver_container[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver_container[iMesh], config, iMesh);
         solver_container[iMesh][TURB_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+        solver_container[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver_container[iMesh], config, iMesh);
       }
       delete [] Solution;
     }
@@ -1677,61 +1680,12 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
       (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
       
       /*--- Load an additional restart file for a 2nd-order restart ---*/
-      solver_container[MESH_0][FLOW_SOL]->GetRestart(geometry[MESH_0], config, int(config->GetUnst_RestartIter()-1));
-      solver_container[MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
+      solver_container[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver_container, config, int(config->GetUnst_RestartIter()-1));
       
-      /*--- Interpolate this second restart down onto all multigrid levels ---*/
-      Solution = new double[nVar];
-      for (iMesh = 1; iMesh <= config->GetMGLevels(); iMesh++) {
-        for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-          Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
-          for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
-          for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
-            Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
-            Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
-            Solution_Fine = solver_container[iMesh-1][FLOW_SOL]->node[Point_Fine]->GetSolution();
-            for (iVar = 0; iVar < nVar; iVar++) {
-              Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
-            }
-          }
-          solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(Solution);
-        }
-        solver_container[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
-      
-      }
-      delete [] Solution;
-      
-      if (rans) {
-        
-        /*--- Load an additional restart file for the turbulence model ---*/
-        solver_container[MESH_0][TURB_SOL]->GetRestart(geometry[MESH_0], config, int(config->GetUnst_RestartIter()-1));
-        solver_container[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver_container[MESH_0], config, MESH_0);
-        solver_container[MESH_0][TURB_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
-        
-        /*--- Interpolate the turblence variable down to the coarse levels ---*/
-          unsigned short nVar_Turb = solver_container[MESH_0][TURB_SOL]->GetnVar();
-          Solution = new double[nVar_Turb];
-          for (iMesh = 1; iMesh <= config->GetMGLevels(); iMesh++) {
-            for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-              Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
-              for (iVar = 0; iVar < nVar_Turb; iVar++) Solution[iVar] = 0.0;
-              for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
-                Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
-                Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
-                Solution_Fine = solver_container[iMesh-1][TURB_SOL]->node[Point_Fine]->GetSolution();
-                for (iVar = 0; iVar < nVar_Turb; iVar++) {
-                  Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
-                }
-              }
-              solver_container[iMesh][TURB_SOL]->node[iPoint]->SetSolution(Solution);
-            }
-            /*--- Compute the eddy viscosity on this level and perform MPI communication ---*/
-            solver_container[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver_container[iMesh], config, iMesh);
-            solver_container[iMesh][TURB_SOL]->Set_MPI_Solution(geometry[iMesh], config);
-          }
-          delete [] Solution;
-      }
-      
+      /*--- Load an additional restart file for the turbulence model ---*/
+      if (rans)
+        solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, int(config->GetUnst_RestartIter()-1));
+
       /*--- Push back this new solution to time level N. ---*/
       for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++) {
         for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
@@ -6362,32 +6316,31 @@ void CEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMo
 
 }
 
-void CEulerSolver::GetRestart(CGeometry *geometry, CConfig *config, int val_iter) {
+void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter) {
 
 	/*--- Restart the solution from file information ---*/
-	unsigned long iPoint, index;
-	string UnstExt, text_line;
-	ifstream restart_file;
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  unsigned short iDim, iVar, iMesh, iMeshFine;
+	unsigned long iPoint, index, iChildren, Point_Fine;
+  double Area_Children, Area_Parent, Coord[3], *Solution_Fine;
+  bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
-	bool grid_movement = config->GetGrid_Movement();
-  double dull_val;
+  bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
+	bool grid_movement  = config->GetGrid_Movement();
 	bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-
+  string UnstExt, text_line;
+	ifstream restart_file;
+  
   string restart_filename = config->GetSolution_FlowFileName();
   
   /*--- Modify file name for an unsteady restart ---*/
-  /*--- For the unsteady adjoint, we integrate backwards through
-   physical time, so load in the direct solution files in reverse eventually. ---*/
   if (dual_time)
     restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter);
 
-  /*--- Open the restart file, throw an error if this fails. ---*/
+  /*--- Open the restart file, and throw an error if this fails. ---*/
 	restart_file.open(restart_filename.data(), ios::in);
 	if (restart_file.fail()) {
-		cout << "There is no flow restart file!! " << restart_filename.data() << "."<< endl;
+		cout << "There is no flow restart file!! " << restart_filename << endl;
 		cout << "Press any key to exit..." << endl;
 		cin.get(); exit(1);
 	}
@@ -6395,15 +6348,15 @@ void CEulerSolver::GetRestart(CGeometry *geometry, CConfig *config, int val_iter
 	/*--- In case this is a parallel simulation, we need to perform the
    Global2Local index transformation first. ---*/
 	long *Global2Local = NULL;
-	Global2Local = new long[geometry->GetGlobal_nPointDomain()];
+	Global2Local = new long[geometry[MESH_0]->GetGlobal_nPointDomain()];
 	/*--- First, set all indices to a negative value by default ---*/
-	for(iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
+	for(iPoint = 0; iPoint < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint++) {
 		Global2Local[iPoint] = -1;
 	}
 
 	/*--- Now fill array with the transform values only for local points ---*/
-	for(iPoint = 0; iPoint < nPointDomain; iPoint++) {
-		Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+	for(iPoint = 0; iPoint < geometry[MESH_0]->GetnPointDomain(); iPoint++) {
+		Global2Local[geometry[MESH_0]->node[iPoint]->GetGlobalIndex()] = iPoint;
 	}
 
 	/*--- Read all lines in the restart file ---*/
@@ -6423,28 +6376,31 @@ void CEulerSolver::GetRestart(CGeometry *geometry, CConfig *config, int val_iter
 		if (iPoint_Local >= 0) {
 
 			if (compressible) {
-				if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-				if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
+				if (nDim == 2) point_line >> index >> Coord[0] >> Coord[1] >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+				if (nDim == 3) point_line >> index >> Coord[0] >> Coord[1] >> Coord[2] >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
 			}
 			if (incompressible) {
-				if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
-				if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+				if (nDim == 2) point_line >> index >> Coord[0] >> Coord[1] >> Solution[0] >> Solution[1] >> Solution[2];
+				if (nDim == 3) point_line >> index >> Coord[0] >> Coord[1] >> Coord[2] >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
 			}
 			if (freesurface) {
-				if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-				if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
+				if (nDim == 2) point_line >> index >> Coord[0] >> Coord[1] >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+				if (nDim == 3) point_line >> index >> Coord[0] >> Coord[1] >> Coord[2] >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
 			}
       
 			node[iPoint_Local]->SetSolution(Solution);
 
-			/*--- If necessary, read in the grid velocities for the unsteady adjoint ---*/
+			/*--- For unsteady flows on dynamic meshes, read in and store the
+       grid coordinates and grid velocities for each node. ---*/
 			if (config->GetWrt_Unsteady() && grid_movement) {
 				double GridVel[3];
 				if (nDim == 2) point_line >> GridVel[0] >> GridVel[1];
 				if (nDim == 3) point_line >> GridVel[0] >> GridVel[1] >> GridVel[2];
 				if (iPoint_Local >= 0)
-					for (unsigned short iDim = 0; iDim < nDim; iDim++)
-						geometry->node[iPoint_Local]->SetGridVel(iDim, GridVel[iDim]);
+					for (iDim = 0; iDim < nDim; iDim++) {
+            geometry[MESH_0]->node[iPoint_Local]->SetCoord(iDim, Coord[iDim]);
+						geometry[MESH_0]->node[iPoint_Local]->SetGridVel(iDim, GridVel[iDim]);
+          }
 			}
 
 		}
@@ -6458,12 +6414,51 @@ void CEulerSolver::GetRestart(CGeometry *geometry, CConfig *config, int val_iter
 	delete [] Global2Local;
   
   /*--- MPI solution ---*/
-	Set_MPI_Solution(geometry, config);
+	solver[MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
   
-  /*--- MPI for the grid velocities ---*/
-  if (config->GetWrt_Unsteady() && grid_movement)
-    geometry->Set_MPI_GridVel(config);
-
+  /*--- Interpolate the solution down to the coarse multigrid levels ---*/
+  for (iMesh = 1; iMesh <= config->GetMGLevels(); iMesh++) {
+    for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+      Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
+      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
+      for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
+        Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
+        Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
+        Solution_Fine = solver[iMesh-1][FLOW_SOL]->node[Point_Fine]->GetSolution();
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
+        }
+      }
+      solver[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(Solution);
+    }
+    solver[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+  }
+  
+  /*--- Update the geometry for unsteady flows on dynamic meshes ---*/
+  if (config->GetWrt_Unsteady() && grid_movement) {
+    
+    /*--- Communicate the new coordinates and grid velocities at the halos ---*/
+    geometry[MESH_0]->Set_MPI_Coord(config);
+    geometry[MESH_0]->Set_MPI_GridVel(config);
+    
+    /*--- Recompute the edges and  dual mesh control volumes in the 
+     domain and on the boundaries. ---*/
+    geometry[MESH_0]->SetCG();
+    geometry[MESH_0]->SetControlVolume(config, UPDATE);
+    geometry[MESH_0]->SetBoundControlVolume(config, UPDATE);
+    
+    /*--- Update the multigrid structure after setting up the finest grid,
+     including computing the grid velocities on the coarser levels. ---*/
+    
+    for (iMesh = 1; iMesh <= config->GetMGLevels(); iMesh++) {
+      iMeshFine = iMesh-1;
+      geometry[iMesh]->SetControlVolume(config,geometry[iMeshFine], UPDATE);
+      geometry[iMesh]->SetBoundControlVolume(config,geometry[iMeshFine],UPDATE);
+      geometry[iMesh]->SetCoord(geometry[iMeshFine]);
+      geometry[iMesh]->SetRestricted_GridVelocity(geometry[iMeshFine],config);
+    }
+  }
+  
 }
 
 void CEulerSolver::SetFreeSurface_Distance(CGeometry *geometry, CConfig *config, bool Initialization, bool WriteLevelSet) {
@@ -6722,6 +6717,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   double Gas_Constant = config->GetGas_ConstantND();
+  bool adjoint = config->GetAdjoint();
 	bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
@@ -6959,7 +6955,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     /*--- Modify file name for an unsteady restart ---*/
     if (dual_time) {
       int Unst_RestartIter;
-      if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+      if (adjoint) {
+        Unst_RestartIter = int(config->GetUnst_AdjointIter()) - 1;
+      } else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
         Unst_RestartIter = int(config->GetUnst_RestartIter())-1;
       else
         Unst_RestartIter = int(config->GetUnst_RestartIter())-2;

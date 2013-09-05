@@ -216,6 +216,7 @@ private:
 	unsigned long IntIter;			/*!< \brief Current internal iteration number. */
 	unsigned long Unst_nIntIter;			/*!< \brief Number of internal iterations (Dual time Method). */
   long Unst_RestartIter;			/*!< \brief Iteration number to restart an unsteady simulation (Dual time Method). */
+  long Unst_AdjointIter;			/*!< \brief Iteration number to begin the reverse time integration in the direct solver for the unsteady adjoint. */
 	unsigned short nRKStep;			/*!< \brief Number of steps of the explicit Runge-Kutta method. */
 	double *RK_Alpha_Step;			/*!< \brief Runge-Kutta beta coefficients. */
 	unsigned short nMultiLevel;		/*!< \brief Number of multigrid levels (coarse levels). */
@@ -1678,6 +1679,12 @@ public:
 	 * \return Restart iteration number for unsteady simulations.
 	 */
   long GetUnst_RestartIter(void);
+  
+  /*!
+	 * \brief Get the starting direct iteration number for the unsteady adjoint (reverse time integration).
+	 * \return Starting direct iteration number for the unsteady adjoint.
+	 */
+  long GetUnst_AdjointIter(void);
   
 	/*!
 	 * \brief Retrieves the number of periodic time instances for Time Spectral.

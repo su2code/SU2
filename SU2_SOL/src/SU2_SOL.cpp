@@ -144,7 +144,7 @@ int main(int argc, char *argv[]) {
           if (iExtIter == 0 || (config[ZONE_0]->GetRestart() && iExtIter == config[ZONE_0]->GetUnst_RestartIter()))
             solver[iZone] = new CBaselineSolver(geometry[iZone], config[iZone], MESH_0);
           else
-            solver[iZone]->GetRestart(geometry[iZone], config[iZone], MESH_0);
+            solver[iZone]->LoadRestart(geometry, &solver, config[iZone], int(MESH_0));
         }
 
             if (rank == MASTER_NODE)
@@ -174,7 +174,7 @@ int main(int argc, char *argv[]) {
 			  if (iTimeSpectral == 0)
 				  solver[iZone] = new CBaselineSolver(geometry[iZone], config[iZone], MESH_0);
 			  else
-				  solver[iZone]->GetRestart(geometry[iZone], config[iZone], MESH_0);
+				  solver[iZone]->LoadRestart(geometry, &solver, config[iZone], int(MESH_0));
 		  }
 
 		  /*--- Print progress in solution writing to the screen. ---*/
@@ -197,14 +197,7 @@ int main(int argc, char *argv[]) {
 
   }
   
-  /*--- Deallocate the solution and output objects. ---*/
-  //  for (iZone = 0; iZone < nZone; iZone++) {
-  //    delete [] solver[iZone];
-  //  }
-  //  delete solver;
-  //  delete output;
-  
-  
+
 #ifndef NO_MPI
   /*--- Finalize MPI parallelization ---*/
   old_buffer = buffer;

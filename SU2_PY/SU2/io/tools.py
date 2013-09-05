@@ -790,33 +790,35 @@ def restart2solution(config,state={}):
         direct or adjoint is read from config
         adjoint objective is read from config
     """
+  
+    if not config.has_key('UNSTEADY_SIMULATION') or config['UNSTEADY_SIMULATION'] == 'NO':
     
-    # direct solution
-    if config.MATH_PROBLEM == 'DIRECT':
-        restart  = config.RESTART_FLOW_FILENAME
-        solution = config.SOLUTION_FLOW_FILENAME        
-        # move
-        shutil.move( restart , solution )
-        # update state
-        if state: state.FILES.DIRECT = solution
-        
-    # adjoint solution
-    elif config.MATH_PROBLEM == 'ADJOINT':
-        restart  = config.RESTART_ADJ_FILENAME
-        solution = config.SOLUTION_ADJ_FILENAME           
-        # add suffix
-        func_name = config.ADJ_OBJFUNC
-        suffix    = get_adjointSuffix(func_name)
-        restart   = add_suffix(restart,suffix)
-        solution  = add_suffix(solution,suffix)        
-        # move
-        shutil.move( restart , solution )
-        # udpate state
-        ADJ_NAME = 'ADJOINT_' + func_name
-        if state: state.FILES[ADJ_NAME] = solution
-        
-    else:
-        raise Exception, 'unknown math problem'
-    
+      # direct solution
+      if config.MATH_PROBLEM == 'DIRECT':
+          restart  = config.RESTART_FLOW_FILENAME
+          solution = config.SOLUTION_FLOW_FILENAME        
+          # move
+          shutil.move( restart , solution )
+          # update state
+          if state: state.FILES.DIRECT = solution
+          
+      # adjoint solution
+      elif config.MATH_PROBLEM == 'ADJOINT':
+          restart  = config.RESTART_ADJ_FILENAME
+          solution = config.SOLUTION_ADJ_FILENAME           
+          # add suffix
+          func_name = config.ADJ_OBJFUNC
+          suffix    = get_adjointSuffix(func_name)
+          restart   = add_suffix(restart,suffix)
+          solution  = add_suffix(solution,suffix)        
+          # move
+          shutil.move( restart , solution )
+          # udpate state
+          ADJ_NAME = 'ADJOINT_' + func_name
+          if state: state.FILES[ADJ_NAME] = solution
+          
+      else:
+          raise Exception, 'unknown math problem'
+
     
     

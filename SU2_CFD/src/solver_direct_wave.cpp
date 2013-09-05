@@ -1151,7 +1151,7 @@ void CWaveSolver::SetTime_Matrix(CGeometry *geometry,
 	}
 }
 
-void CWaveSolver::GetRestart(CGeometry *geometry, CConfig *config) {
+void CWaveSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter) {
   
 #ifndef NO_MPI
 	int rank = MPI::COMM_WORLD.Get_rank();
@@ -1207,7 +1207,7 @@ void CWaveSolver::GetRestart(CGeometry *geometry, CConfig *config) {
   }
   
   /*--- Read the restart file ---*/
-  for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+  for(iPoint = 0; iPoint < geometry[MESH_0]->GetnPoint(); iPoint++) {
     getline(restart_file,text_line);
     istringstream point_line(text_line);
     point_line >> index >> Solution[0] >> Solution[1];

@@ -1617,10 +1617,11 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_iter - Current external iteration number.
 	 */
-	virtual void GetRestart(CGeometry *geometry, CConfig *config, int val_iter);
+	virtual void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
     
 	/*!
 	 * \brief Gauss method for solving a linear system.
@@ -1682,14 +1683,15 @@ public:
 	 */
 	void Set_MPI_Solution(CGeometry *geometry, CConfig *config);
     
-    /*!
+  /*!
 	 * \brief Load a solution from a restart file.
 	 * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_iter - Current external iteration number.
 	 */
-	void GetRestart(CGeometry *geometry, CConfig *config, int val_iter);
-    
+	void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
+  
 	/*!
 	 * \brief Destructor of the class.
 	 */
@@ -2568,12 +2570,13 @@ public:
                               CGeometry **fea_geometry, CSolver ***fea_solution);
     
 	/*!
-	 * \brief Load a direct flow solution for use with the adjoint solver.
+	 * \brief Load a solution from a restart file.
 	 * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_iter - Current external iteration number.
 	 */
-	void GetRestart(CGeometry *geometry, CConfig *config, int val_iter);
+	void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
     
 	/*!
 	 * \brief Set the initial condition for the Euler Equations.
@@ -3118,12 +3121,13 @@ public:
                               unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
   
   /*!
-	 * \brief Load a direct flow solution for use with the adjoint solver.
+	 * \brief Load a solution from a restart file.
 	 * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_iter - Current external iteration number.
 	 */
-	void GetRestart(CGeometry *geometry, CConfig *config, int val_iter);
+	void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
 
     
 };
@@ -4610,11 +4614,13 @@ public:
                               unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
   
   /*!
-	 * \brief Load a direct flow solution for use with the adjoint solver.
+	 * \brief Load a solution from a restart file.
 	 * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
 	 * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iter - Current external iteration number.
 	 */
-	void GetRestart(CGeometry *geometry, CConfig *config);
+	void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
   
 	/*!
 	 * \brief Set the noise sources from the flow problem for aeroacoustic computations.
