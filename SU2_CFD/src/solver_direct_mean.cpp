@@ -2899,23 +2899,26 @@ void CEulerSolver::Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config
   
 	if (nDim == 3) {
     
+    /*--- Set the total number of slices for all markers ---*/
+    nSection = 15;
+    
     /*--- Perform the cutting only if this is the first iteration ---*/
     if (iExtIter == 0) {
-      
-      /*--- Set the total number of slices for all markers ---*/
-      nSection = 15;
+    point1_Airfoil = new vector<unsigned long> *[nMarker];
+    point2_Airfoil = new vector<unsigned long> *[nMarker];
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      point1_Airfoil[iMarker] = new vector<unsigned long> [nSection];
+      point2_Airfoil[iMarker] = new vector<unsigned long> [nSection];
+    }
+  }
+
       
       /*--- For now, the slicing planes are hard-coded for each marker, but this
        will be added to the config file in the future. ---*/
 			Plane_P0 = new double [3];
 			Plane_Normal = new double [3];
       
-      point1_Airfoil = new vector<unsigned long> *[nMarker];
-      point2_Airfoil = new vector<unsigned long> *[nMarker];
-      for (iMarker = 0; iMarker < nMarker; iMarker++) {
-        point1_Airfoil[iMarker] = new vector<unsigned long> [nSection];
-        point2_Airfoil[iMarker] = new vector<unsigned long> [nSection];
-      }
+
       
       Xcoord_Airfoil = new vector<double> [nSection];
       Ycoord_Airfoil = new vector<double> [nSection];
@@ -2928,7 +2931,7 @@ void CEulerSolver::Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config
             (Boundary == ISOTHERMAL) || (Boundary == NEARFIELD_BOUNDARY)) {
           if (Monitoring) {
             
-            cout << " Slicing marker: " << config->GetMarker_All_Tag(iMarker) << endl;
+            //cout << " Slicing marker: " << config->GetMarker_All_Tag(iMarker) << endl;
             
             MinPlane = 0; MaxPlane = 1.1;
             Plane_Normal[0] = 0.0;
@@ -2937,7 +2940,7 @@ void CEulerSolver::Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config
             
             for (iSection = 0; iSection < nSection; iSection++) {
               
-              cout << "  Slicing section: " << iSection << endl;
+              //cout << "  Slicing section: " << iSection << endl;
               
               Plane_P0[0] = 0.0;
               Plane_P0[1] = MinPlane + iSection*(MaxPlane - MinPlane)/double(nSection-1);
@@ -2950,7 +2953,6 @@ void CEulerSolver::Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config
           }
         }
       }
-    }
     
 		/*--- dynamically-defined arrays for airfoil normal 
 		      force, chord force, and pitching moment  - 
