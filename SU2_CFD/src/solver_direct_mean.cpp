@@ -2882,8 +2882,9 @@ void CEulerSolver::Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config
   unsigned long iExtIter = config->GetExtIter();
 	double *Plane_P0, *Plane_Normal, MinPlane, MaxPlane;
 	vector<double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil;
-  	bool compressible = (config->GetKind_Regime() ==COMPRESSIBLE);
-	double rho_inf = Density_Inf;
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+	bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+	bool freesurface = (config->GetKind_Regime() == FREESURFACE);	double rho_inf = Density_Inf;
 	double V_inf_mag = sqrt(pow(Velocity_Inf[0],2.0) + pow(Velocity_Inf[1],2.0) + pow(Velocity_Inf[2],2.0));	
 	double dynamic_pressure = 0.5*rho_inf*pow(V_inf_mag,2.0);
   bool Boundary, Monitoring;
@@ -3164,8 +3165,14 @@ void CEulerSolver::Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config
               
               /*--- find the pressure at endpoint1 of this segment by interpolating
                the pressures at the two nodes of the edge it sits on ---*/
-              double pressure_endpoint1_p1 = node[point1_around.at(iSegment)]->GetPressure(compressible);
-              double pressure_endpoint1_p2 = node[point2_around.at(iSegment)]->GetPressure(compressible);
+              double pressure_endpoint1_p1, pressure_endpoint1_p2;
+              if (compressible) {
+                pressure_endpoint1_p1 = node[point1_around.at(iSegment)]->GetPressure(COMPRESSIBLE);
+                pressure_endpoint1_p2 = node[point2_around.at(iSegment)]->GetPressure(COMPRESSIBLE);
+              } else {
+                pressure_endpoint1_p1 = node[point1_around.at(iSegment)]->GetPressure(INCOMPRESSIBLE);
+                pressure_endpoint1_p2 = node[point2_around.at(iSegment)]->GetPressure(INCOMPRESSIBLE);
+              }
               
               deltaX = endpoint1_p1[0] - segments[iSegment].endpoint1[0];
               deltaY = endpoint1_p1[1] - segments[iSegment].endpoint1[1];
@@ -3182,8 +3189,14 @@ void CEulerSolver::Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config
               
               /*--- find the pressure at endpoint2 of this segment by interpolating	
                the pressures at the two nodes of the edge it sits on ---*/
-              double pressure_endpoint2_p1 = node[point1_around.at(iSegment+1)]->GetPressure(compressible);
-              double pressure_endpoint2_p2 = node[point2_around.at(iSegment+1)]->GetPressure(compressible);
+              double pressure_endpoint2_p1, pressure_endpoint2_p2;
+              if (compressible) {
+                pressure_endpoint2_p1 = node[point1_around.at(iSegment+1)]->GetPressure(COMPRESSIBLE);
+                pressure_endpoint2_p2 = node[point2_around.at(iSegment+1)]->GetPressure(COMPRESSIBLE);
+              } else {
+                pressure_endpoint2_p1 = node[point1_around.at(iSegment+1)]->GetPressure(INCOMPRESSIBLE);
+                pressure_endpoint2_p2 = node[point2_around.at(iSegment+1)]->GetPressure(INCOMPRESSIBLE);
+              }
               
               deltaX = endpoint2_p1[0] - segments[iSegment].endpoint2[0];	
               deltaY = endpoint2_p1[1] - segments[iSegment].endpoint2[1];
