@@ -6421,13 +6421,13 @@ void CPhysicalGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
 
 
 
-/*
+
 cout << endl << "About to start the tracing algorithm!" << endl;
 
   	/*--- THIS IS THE START OF THE AIRFOIL-TRACING ALGORITHM
 		(it requires vectors of the X, Y, and Z coordinates 
 		of the airfoil section, with no points repeated.) ---*/
-/*	unsigned long iNode, trailing_loc;
+	unsigned long iNode, trailing_loc;
 	unsigned long nNode = Xcoord_Airfoil.size();
 	double max_x;
 	vector<double> X_dummy(nNode), Y_dummy(nNode), Z_dummy(nNode);
@@ -6439,7 +6439,7 @@ cout << endl << "finished first initializations!" << endl;
 		left and that it isn't sitting upside down. 
 		If either of those happens to be true, this 
 		algorithm will not work.) ---*/	   
-/*	max_x = -1.0;
+	max_x = -1.0;
 	for (iNode = 0; iNode < nNode; iNode++) {
 		if (Xcoord_Airfoil.at(iNode) >= max_x) {
 			max_x = Xcoord_Airfoil.at(iNode);
@@ -6448,24 +6448,51 @@ cout << endl << "finished first initializations!" << endl;
 	}
 
 cout << endl << "found the trailing edge!" << endl;
-	
 	/*--- move the trailing-edge point to the 
 		top of the coordinates lists ---*/	
-/*	X_dummy.at(0) = Xcoord_Airfoil.at(trailing_loc);
+	//X_dummy.clear();
+	//Y_dummy.clear();
+	//Z_dummy.clear();
+
+cout << endl << "cleared the vectors!" << endl;
+
+	X_dummy.at(0) = Xcoord_Airfoil.at(trailing_loc);
 	Y_dummy.at(0) = Ycoord_Airfoil.at(trailing_loc);
 	Z_dummy.at(0) = Zcoord_Airfoil.at(trailing_loc);
 	
-	for (iNode = 0; iNode <= trailing_loc-1; iNode++) {
+	//X_dummy.push_back(Xcoord_Airfoil.at(trailing_loc));
+	//Y_dummy.push_back(Ycoord_Airfoil.at(trailing_loc));
+	//Z_dummy.push_back(Zcoord_Airfoil.at(trailing_loc));
+
+cout << endl << "assigned trailing edge to beginning." << endl;
+	if (trailing_loc != 0) {	
+		for (iNode = 0; iNode <= trailing_loc-1; iNode++) {
 		X_dummy.at(iNode+1) = Xcoord_Airfoil.at(iNode);
 		Y_dummy.at(iNode+1) = Ycoord_Airfoil.at(iNode);
 		Z_dummy.at(iNode+1) = Zcoord_Airfoil.at(iNode);
+
+cout << endl << "nNode = " << nNode << endl;
+cout << endl << "trailing_loc = " << trailing_loc << endl;
+
+	//		X_dummy.push_back(Xcoord_Airfoil.at(iNode));
+	//		Y_dummy.push_back(Ycoord_Airfoil.at(iNode));
+	//		Z_dummy.push_back(Zcoord_Airfoil.at(iNode));
+		}
 	}
+
+cout << endl << "wrote points to just before the trailing_loc" << endl;
 	
 	for (iNode = trailing_loc+1; iNode < nNode; iNode++) {
 		X_dummy.at(iNode) = Xcoord_Airfoil.at(iNode);
 		Y_dummy.at(iNode) = Ycoord_Airfoil.at(iNode);
 		Z_dummy.at(iNode) = Zcoord_Airfoil.at(iNode);
+		
+	//	X_dummy.push_back(Xcoord_Airfoil.at(iNode));
+	//	Y_dummy.push_back(Ycoord_Airfoil.at(iNode));
+	//	Z_dummy.push_back(Zcoord_Airfoil.at(iNode));
 	}
+
+cout << endl << "wrote points from the trailing loc to the end of the vector" << endl;
 	
 	Xcoord_Airfoil.swap(X_dummy);
 	Ycoord_Airfoil.swap(Y_dummy);
@@ -6478,20 +6505,20 @@ cout << endl << "found the trailing edge!" << endl;
 cout << endl << "moved the trailing edge to the beginning!" << endl;
 
 	/*--- name the trailing-edge point, for convenience ---*/
-/*	double trailing_point [3];
+	double trailing_point [3];
 	trailing_point[0] = Xcoord_Airfoil.at(0);
 	trailing_point[1] = Ycoord_Airfoil.at(0);
 	trailing_point[2] = Zcoord_Airfoil.at(0);
 
 	/*--- find the leading-edge point ---*/
-/*	double maxDistance, xDist, yDist, zDist, distance;
+	double maxDistance, xDist, yDist, zDist, distance;
 	double leading_point [3];
 	maxDistance = 0.0;
 	for (iNode = 1; iNode < nNode; iNode++) {
 		
 		/*--- compute the distance of the each 
 			point from the trailing edge ---*/
-/*		xDist = trailing_point[0] - Xcoord_Airfoil.at(iNode);
+		xDist = trailing_point[0] - Xcoord_Airfoil.at(iNode);
 		yDist = trailing_point[1] - Ycoord_Airfoil.at(iNode);
 		zDist = trailing_point[2] - Zcoord_Airfoil.at(iNode);
 		distance = sqrt(pow(xDist,2.0) + pow(yDist,2.0) + pow(zDist,2.0));
@@ -6499,7 +6526,7 @@ cout << endl << "moved the trailing edge to the beginning!" << endl;
 		/*--- assume the leading-edge point 
 			is the one that is farthest 
 			from the trailing edge ---*/
-/*		if (distance > maxDistance) {
+		if (distance > maxDistance) {
 			maxDistance = distance;
 			leading_point[0] = Xcoord_Airfoil.at(iNode);
 			leading_point[1] = Ycoord_Airfoil.at(iNode);
@@ -6510,7 +6537,7 @@ cout << endl << "moved the trailing edge to the beginning!" << endl;
 cout << endl << "found the leading edge!" << endl;
 
 	/*--- find the chord length ---*/
-/*	double chord;
+	double chord;
 	xDist = trailing_point[0] - leading_point[0];
 	yDist = trailing_point[1] - leading_point[1];
 	zDist = trailing_point[2] - leading_point[2];		
@@ -6518,7 +6545,7 @@ cout << endl << "found the leading edge!" << endl;
 	
 	/*--- define a vector pointing from the 
 		trailing edge to the leading edge ---*/
-/*	double chord_line [3];
+	double chord_line [3];
 	for (iDim = 0; iDim < nDim; iDim++) {
 		chord_line[iDim] = leading_point[iDim]-trailing_point[iDim];
 	}
@@ -6527,14 +6554,14 @@ cout << endl << "found the leading edge!" << endl;
 		leading edge, in the plane of the 
 		airfoil. (Here, we need to hope 
 		that the Z-axis points "upward.") ---*/
-/*	double above_point [3];
+	double above_point [3];
 	above_point[0] = leading_point[0];
 	above_point[1] = leading_point[1];
 	above_point[2] = leading_point[2] + 1;
 
 	/*--- define a vector point from the trailing 
 		edge to the newly created "point above" ---*/
-/*	double above_line [3];
+	double above_line [3];
 	for (iDim = 0; iDim < nDim; iDim++) {
 		above_line[iDim] = above_point[iDim] - trailing_point[iDim];
 	}
@@ -6543,14 +6570,14 @@ cout << endl << "found the leading edge!" << endl;
 		i.e. if the airfoil is facing  left, this 
 		vector points away from you and lies 
 		normal to the section. ---*/
-/*	double section_normal [3];
+	double section_normal [3];
 	section_normal[0] = chord_line[1]*above_line[2] - chord_line[2]*above_line[1];
 	section_normal[1] = chord_line[2]*above_line[0] - chord_line[0]*above_line[2];
 	section_normal[2] = chord_line[0]*above_line[1] - chord_line[1]*above_line[0];
 	
 	/*--- beginning at the trailing edge, 
 		connect the points, in order. ---*/
-/*	double startingPossibles, magnitude, outward_vec_mag, a_dot_b, cos_angle, weight_dist, weight_ang;
+	double startingPossibles, magnitude, outward_vec_mag, a_dot_b, cos_angle, weight_dist, weight_ang;
 	double *dist, **vec, *vec_mag, *angles;
 	double tangent [3], unit_tangent [3], unit_vec [3], inward_vec [3], outward_vec [3], penalty [2];
 	vector<double> minDist, list, ang_list;
@@ -6571,48 +6598,52 @@ cout << endl << "about to start the loop over the points!" << endl;
 			test as many "possibles" at each station. 
 			here, we will begin with four and, by the 
 			end, linearly decrease the number to one. ---*/ 
-/*		startingPossibles = 4.9;
+		startingPossibles = 5.9;
 		nPossibles = int(floor(((1.0-startingPossibles)/double(nNode))*double(iNode) + startingPossibles));
 	
 		/*--- initialize the minimum-distance 
 			and corresponding index arrays ---*/
-/*		minDist.clear();
+		minDist.clear();
 		min_loc.clear();		
 	
 		minDist.assign(nPossibles, pow(chord,2.0));
 		min_loc.assign(nPossibles, 0);
+
+cout << endl << "initialized minDist and min_loc" << endl;
 		
 		/*--- intialize all distances from the 
 			current point equal to zero ---*/
-/*		for (jNode = 0; jNode < nNode; jNode++) {
+		for (jNode = 0; jNode < nNode; jNode++) {
 			dist[jNode] = 0;
 		} 
 		
 		/*--- of the points left to be connected, 
 			find the nPossible closest ones ---*/	
-/*		for (jNode = iNode+1; jNode < nNode; jNode++) {
+		for (jNode = iNode+1; jNode < nNode; jNode++) {
 			
 			/*--- compute th distance from the current point ---*/			
-/*			xDist = Xcoord_Airfoil.at(iNode) - Xcoord_Airfoil.at(jNode);
+			xDist = Xcoord_Airfoil.at(iNode) - Xcoord_Airfoil.at(jNode);
 			yDist = Ycoord_Airfoil.at(iNode) - Ycoord_Airfoil.at(jNode);
 			zDist = Zcoord_Airfoil.at(iNode) - Zcoord_Airfoil.at(jNode);
 			dist[jNode] = sqrt(pow(xDist,2.0) + pow(yDist,2.0) + pow(zDist,2.0));
 			
 			/*--- let the "list" be the nPossible minimum distances 
 				and also the newly computed distance ---*/
-/*			list = minDist;
+			list = minDist;
 
 			list.push_back(dist[jNode]);
 			
 			/*--- sort the list, in ascending order ---*/
-/*			sort(list.begin(),list.end());
+			sort(list.begin(),list.end());
 			
 			/*--- let the new minimum-distance vector hold the 
 	
 				first nPossible entries of the list ---*/
-/*			minDist.assign(list.begin(),list.begin()+nPossibles);
+			minDist.assign(list.begin(),list.begin()+nPossibles);
 		}				
 		
+cout << endl << "found the nPossible closest points" << endl;
+
 		/*--- find the index of the four closest nodes. 
 			(N.B. There might be a more elegant way 
 			to do this using unordered_sets. That 
@@ -6620,31 +6651,33 @@ cout << endl << "about to start the loop over the points!" << endl;
 			grids will be unstructured and the chance 
 			that two separate points have the same 
 			distance is slim.) ---*/ 		
-/*		for (jNode = iNode+1; jNode < nNode; jNode++){
+		for (jNode = iNode+1; jNode < nNode; jNode++){
 			
 			/*--- check against the nPossible distances ---*/
-/*			for(k = 0; k < nPossibles; k++) {
+			for(k = 0; k < nPossibles; k++) {
 				
 				/*--- if the distances match, 
 					record the index ---*/
-/*				if (minDist.at(k) == dist[jNode]) {
+				if (minDist.at(k) == dist[jNode]) {
 					min_loc.at(k) = jNode;
 				}
 			}
 		}
+
+cout << endl << "found the indices of the nPossible closest points" << endl;
 		
 		/*--- move on to comparing angles. ---*/
-/*		if (nPossibles == 1) {
+		if (nPossibles == 1) {
 			
 			/*--- if we only have one "possible" point, 
 				then there is nothing to compare ---*/
-/*			 next_loc = min_loc.at(0);
+			 next_loc = min_loc.at(0);
 		
 		}
 		else {
 			/*--- define vectors pointing from the current 
 				point to each of the nPossible points ---*/
-/*			vec = new double * [nPossibles];
+			vec = new double * [nPossibles];
 			for (k = 0; k < nPossibles; k ++) {
 				vec[k] = new double [3];
 			}
@@ -6664,95 +6697,96 @@ cout << endl << "about to start the loop over the points!" << endl;
 				nPossible directions. If we're at the trailing edge, 
 				where there is not previous point, then just use 
 				the "mean" of the nPossible directions. ---*/
-/*			if (iNode > 1) {
+			if (iNode > 1) {
 				
 				/*-- define the tangent vector ---*/
-/*				tangent[0] = Xcoord_Airfoil.at(iNode) - Xcoord_Airfoil.at(iNode-1);
+				tangent[0] = Xcoord_Airfoil.at(iNode) - Xcoord_Airfoil.at(iNode-1);
 				tangent[1] = Ycoord_Airfoil.at(iNode) - Ycoord_Airfoil.at(iNode-1);
 				tangent[2] = Zcoord_Airfoil.at(iNode) - Zcoord_Airfoil.at(iNode-1);
 				magnitude = sqrt(pow(tangent[0],2.0) + pow(tangent[1],2.0) + pow(tangent[2],2.0));
 				
 				/*--- define the unit tangent vector ---*/
-/*				for (iDim = 0; iDim < nDim; iDim++) {
+				for (iDim = 0; iDim < nDim; iDim++) {
 					unit_tangent[iDim] = tangent[iDim]/magnitude;
 				}
 				
 				/*--- initialize the "inward"-pointing vector ---*/
-/*				for (iDim = 0; iDim < nDim; iDim++) {
+				for (iDim = 0; iDim < nDim; iDim++) {
 					inward_vec[iDim] = unit_tangent[iDim];
 				}
 			}
 			else {
 				/*--- if there is no tangent vector to include ---*/
-/*				for (iDim = 0; iDim < nDim; iDim ++) {
+				for (iDim = 0; iDim < nDim; iDim ++) {
 					inward_vec[iDim] = 0.0;
 				}
 			}
 			
 			/*--- add the nPossible directions as components 
 				of the "inward"-pointing vector ---*/
-/*			for (jPoss = 0; jPoss < nPossibles; jPoss++){
+			for (jPoss = 0; jPoss < nPossibles; jPoss++){
 				
 				for (iDim = 0; iDim < nDim; iDim++) {
 					
 					/*--- compute the i-th component of the unit vector 
 						pointing in the j-th "possible" direction ---*/
-/*					unit_vec[iDim] = vec[jPoss][iDim]/vec_mag[jPoss];
+					unit_vec[iDim] = vec[jPoss][iDim]/vec_mag[jPoss];
 					
 					/*--- add it to the definition of 
 						the "inward" vector ---*/
-/*					inward_vec[iDim] += unit_vec[iDim];
+					inward_vec[iDim] += unit_vec[iDim];
 				}
 			}
 			
+cout << endl << "set the direction of the \"inward\" vector" << endl;
 	
 			/*--- rotate the "inward" vector clockwise 90 degrees 
 				to get the "outward"-facing vector ---*/
-/*			outward_vec[0] = section_normal[1]*inward_vec[2] - section_normal[2]*inward_vec[1];
+			outward_vec[0] = section_normal[1]*inward_vec[2] - section_normal[2]*inward_vec[1];
 			outward_vec[1] = section_normal[2]*inward_vec[0] - section_normal[0]*inward_vec[2];
 			outward_vec[2] = section_normal[0]*inward_vec[1] - section_normal[1]*inward_vec[0];
 			outward_vec_mag = sqrt(pow(outward_vec[0],2.0) + pow(outward_vec[1],2.0) + pow(outward_vec[2],2.0));
 			
 			/*--- compute the angles between the "outward" vector and the nPossible "possible" points ---*/
-/*			angles = new double [nPossibles];	
+			angles = new double [nPossibles];	
 			for (jPoss = 0; jPoss < nPossibles; jPoss++) {
 				
 				/*--- dot the "outward" vector with the j-th possible direction ---*/
-/*				a_dot_b = outward_vec[0]*vec[jPoss][0] + outward_vec[1]*vec[jPoss][1] + outward_vec[2]*vec[jPoss][2];
+				a_dot_b = outward_vec[0]*vec[jPoss][0] + outward_vec[1]*vec[jPoss][1] + outward_vec[2]*vec[jPoss][2];
 				/*--- compute the cosine of the angle between them ---*/
-/*				cos_angle = a_dot_b/(outward_vec_mag*vec_mag[jPoss]);
+				cos_angle = a_dot_b/(outward_vec_mag*vec_mag[jPoss]);
 	
 				/*--- store the actual angle ---*/
-/*				angles[jPoss] = acos(cos_angle);
+				angles[jPoss] = acos(cos_angle);
 			}
 			
 			/*--- copy the nPossible angles to the angle-list ---*/
-/*			ang_list.assign(angles,angles+nPossibles);
-			
+			ang_list.assign(angles,angles+nPossibles);
+
 			/*--- sort the angle-list ---*/
-/*			sort(ang_list.begin(),ang_list.end());
-			
+			sort(ang_list.begin(),ang_list.end());
+
 			/*--- find the indices corresponding to the 
 				two smallest angles in the angle-list ---*/
-/*			for (jPoss = 0; jPoss < 2; jPoss++) {
+			for (jPoss = 0; jPoss < 2; jPoss++) {
 				
 				/*--- check against the 
 					nPossible angles ---*/
-/*				for (k = 0; k < nPossibles; k++) {
+				for (k = 0; k < nPossibles; k++) {
 					
 					/*--- if there is a match, 
 						note the index ---*/
-/*					if (ang_list.at(jPoss) == angles[k]) {
+					if (ang_list.at(jPoss) == angles[k]) {
 						min_ang_loc[jPoss] = min_loc.at(k);
 						ang_index[jPoss] = k;
 					}
 				}
 			}
-			
+
 			/*--- assign nondimensional penalties for long distanes and large angles 
 				(distances are nondimensionalized by chord length, while angles 
 				are nondimensionalized by 90 degrees) ---*/
-/*			weight_dist = 2.0;
+			weight_dist = 2.0;
 			weight_ang = 1.0;
 			for (jPoss = 0; jPoss < 2; jPoss++) {
 				penalty[jPoss] = weight_dist*(dist[min_ang_loc[jPoss]]/chord) + weight_ang*(angles[ang_index[jPoss]]/(3.14159/2));
@@ -6760,27 +6794,32 @@ cout << endl << "about to start the loop over the points!" << endl;
 
 			/*--- of the two points with the smallest angle, 
 				choose the one with the smaller penalty ---*/
-/*			if (penalty[1] > penalty[0]) {
+			if (penalty[1] > penalty[0]) {
 				next_loc = min_ang_loc[0];
 			}
 			else {
 				next_loc = min_ang_loc[1];
 			}
 	
-			
 			/*--- delete dynamically allocated memory 
 				within the else statement ---*/
-/*			for (k = 0; k < nPossibles; k++) {
+			for (k = 0; k < nPossibles; k++) {
 				delete [] vec[k];
 			}
 			delete [] vec;
 			delete [] vec_mag;
 			delete [] angles;
 		}
-	
+
+		/*--- re-initialize the dummy coordinate 
+			vectors to a length of nNode ---*/		
+		X_dummy.assign(nNode,0.0);
+		Y_dummy.assign(nNode,0.0);
+		Z_dummy.assign(nNode,0.0);
+		
 		/*--- move the newly found "next point" to the 
 			appropriate location in the coordiates vectors ---*/
-/*		for (jNode = 0; jNode <= iNode; jNode++) {
+		for (jNode = 0; jNode <= iNode; jNode++) {
 			X_dummy.at(jNode) = Xcoord_Airfoil.at(jNode);
 			Y_dummy.at(jNode) = Ycoord_Airfoil.at(jNode);
 			Z_dummy.at(jNode) = Zcoord_Airfoil.at(jNode);
@@ -6789,7 +6828,7 @@ cout << endl << "about to start the loop over the points!" << endl;
 		X_dummy.at(iNode+1) = Xcoord_Airfoil.at(next_loc);
 		Y_dummy.at(iNode+1) = Ycoord_Airfoil.at(next_loc);
 		Z_dummy.at(iNode+1) = Zcoord_Airfoil.at(next_loc);
-		
+
 		for (jNode = iNode+1; jNode <= next_loc-1; jNode++) {
 			X_dummy.at(jNode+1) = Xcoord_Airfoil.at(jNode);
 			Y_dummy.at(jNode+1) = Ycoord_Airfoil.at(jNode);
