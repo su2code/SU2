@@ -118,14 +118,14 @@ int main(int argc, char *argv[]) {
 	
 	/*--- Load in the number of zones and spatial dimensions in the mesh file ---*/
     // If no config file is specified, default.cfg is used
-    char file_name[200];
-	CConfig *config = NULL;
-	if (argc == 2){
-        config = new CConfig(argv[1]);
-    }else {
-        strcpy (file_name, "default.cfg");
-        config = new CConfig(file_name);
+    char config_file_name[200];
+    if (argc == 2){
+        strcpy(config_file_name,argv[1]);
+    }else{
+        strcpy(config_file_name, "default.cfg");
     }
+	CConfig *config = NULL;
+    config = new CConfig(config_file_name);
 	nZone = GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
 	nDim = GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
 	
@@ -139,11 +139,7 @@ int main(int argc, char *argv[]) {
          constructor, the input configuration file is parsed and all options are
          read and stored. ---*/
         
-		if (argc == 2) config_container[iZone] = new CConfig(argv[1], SU2_CFD, iZone, nZone, VERB_HIGH);
-		else {
-            strcpy (file_name, "default.cfg");
-            config_container[iZone] = new CConfig(file_name, SU2_CFD, iZone, nZone, VERB_HIGH);
-        }
+		config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, VERB_HIGH);
 		
 #ifndef NO_MPI
 		/*--- Change the name of the input-output files for a parallel computation ---*/
