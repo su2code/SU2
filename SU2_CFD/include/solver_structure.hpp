@@ -1810,7 +1810,10 @@ protected:
 	least_squares;        /*!< \brief True if computing gradients by least squares. */
 	double Gamma;									/*!< \brief Fluid's Gamma constant (ratio of specific heats). */
 	double Gamma_Minus_One;				/*!< \brief Fluids's Gamma - 1.0  . */
-    
+  unsigned short nSection;    /*!< \brief Total number of airfoil sections to be cut from each specified marker. */
+  vector<unsigned long> **point1_Airfoil;     /*!< \brief Vector of first points in the list of edges making up an airfoil section. */
+  vector<unsigned long> **point2_Airfoil;     /*!< \brief Vector of second points in the list of edges making up an airfoil section. */
+  
 public:
     
 	/*!
