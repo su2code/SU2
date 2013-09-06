@@ -1009,7 +1009,7 @@ public:
   /*!
 	 * \brief A virtual member.
 	 */
-	virtual bool SetPrimVar_FreeSurface(double Density_Inf, CConfig *config);
+	virtual bool SetPrimVar_FreeSurface(CConfig *config);
 	
 	/*!
 	 * \brief A virtual member.
@@ -1019,7 +1019,7 @@ public:
   /*!
 	 * \brief A virtual member.
 	 */
-	virtual bool SetPrimVar_FreeSurface(double Density_Inf, double Viscosity_Inf, double turb_ke, CConfig *config);
+	virtual bool SetPrimVar_FreeSurface(double turb_ke, CConfig *config);
 	
 	/*!
 	 * \brief A virtual member.
@@ -1890,7 +1890,7 @@ public:
   /*!
 	 * \brief Set all the primitive variables for incompressible flows.
 	 */
-	bool SetPrimVar_FreeSurface(double Density_Inf, CConfig *config);
+	bool SetPrimVar_FreeSurface(CConfig *config);
 	
 	/*!
 	 * \brief Get the primitive variables.
@@ -2231,7 +2231,7 @@ public:
   /*!
 	 * \brief Set all the primitive variables for incompressible flows
 	 */
-	bool SetPrimVar_FreeSurface(double Density_Inf, double Viscosity_Inf, double turb_ke, CConfig *config);
+	bool SetPrimVar_FreeSurface(double turb_ke, CConfig *config);
 };
 
 /*! 
