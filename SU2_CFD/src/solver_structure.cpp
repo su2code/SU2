@@ -54,6 +54,7 @@ CSolver::CSolver(void) {
 	Smatrix = NULL;
 	cvector = NULL;
   node = NULL;
+  nOutputVariables = 0;
 
 }
 
@@ -1310,7 +1311,8 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
 	/*--- Unsteady problems require an iteration number to be appended. ---*/
   if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
 		filename = config->GetUnsteady_FileName(filename, int(iExtIter));
-	}
+	}
+
   /*--- Open the restart file ---*/
   restart_file.open(filename.data(), ios::in);
 
