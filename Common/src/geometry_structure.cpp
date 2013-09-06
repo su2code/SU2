@@ -418,13 +418,13 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   
 	switch (val_format) {
     case SU2:
-      SU2_Format(config, val_mesh_filename, val_iZone, val_nZone);
+      Read_SU2_Format(config, val_mesh_filename, val_iZone, val_nZone);
       break;
     case CGNS:
-      CGNS_Format(config, val_mesh_filename, val_iZone, val_nZone);
+      Read_CGNS_Format(config, val_mesh_filename, val_iZone, val_nZone);
       break;
     case NETCDF_ASCII:
-      NETCDF_Format(config, val_mesh_filename, val_iZone, val_nZone);
+      Read_NETCDF_Format(config, val_mesh_filename, val_iZone, val_nZone);
       break;
     default:
       cout << "Unrecognized mesh format specified!!" << endl;
@@ -477,7 +477,7 @@ CPhysicalGeometry::~CPhysicalGeometry(void) {
   
 }
 
-void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone) {
+void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone) {
   
   /*--- Local variables and initialization ---*/
 	string text_line, Marker_Tag;
@@ -1380,7 +1380,7 @@ void CPhysicalGeometry::SU2_Format(CConfig *config, string val_mesh_filename, un
   
 }
 
-void CPhysicalGeometry::CGNS_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone){
+void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone){
   
 #ifndef NO_CGNS
 
@@ -2147,7 +2147,7 @@ void CPhysicalGeometry::CGNS_Format(CConfig *config, string val_mesh_filename, u
 
 }
 
-void CPhysicalGeometry::NETCDF_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone) {
+void CPhysicalGeometry::Read_NETCDF_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone) {
   
   /*--- Local variables and initialization ---*/
 	string text_line, Marker_Tag;
