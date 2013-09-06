@@ -60,6 +60,8 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
 	CPressure = NULL;
 	CHeatTransfer = NULL;
 	YPlus = NULL;
+  point1_Airfoil = NULL;
+  point2_Airfoil = NULL;
 
 }
 
@@ -117,6 +119,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 	CPressure = NULL;
 	CHeatTransfer = NULL;
 	YPlus = NULL;
+  point1_Airfoil = NULL;
+  point2_Airfoil = NULL;
 
 	/*--- Set the gamma value ---*/
 	Gamma = config->GetGamma();
@@ -130,7 +134,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 	nMarker = config->GetnMarker_All();
 	nPoint = geometry->GetnPoint();
 	nPointDomain = geometry->GetnPointDomain();
-
+  nSection = 0;
+  
 	/*--- Allocate the node variables ---*/
 	node = new CVariable*[nPoint];
 
@@ -425,7 +430,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 }
 
 CEulerSolver::~CEulerSolver(void) {
-	unsigned short iVar, iMarker;
+	unsigned short iVar, iMarker, iSection;
 
 	/*--- Array initialization ---*/
 	if (Velocity_Inlet != NULL)   delete [] Velocity_Inlet;
@@ -484,6 +489,26 @@ CEulerSolver::~CEulerSolver(void) {
 		}
 		delete [] YPlus;
 	}
+  
+  if (point1_Airfoil != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for (iSection = 0; iSection < nSection; iSection++) {
+        point1_Airfoil[iMarker][iSection].clear();
+      }
+			delete [] point1_Airfoil[iMarker];
+		}
+		delete [] point1_Airfoil;
+  }
+  
+  if (point2_Airfoil != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for (iSection = 0; iSection < nSection; iSection++) {
+        point2_Airfoil[iMarker][iSection].clear();
+      }
+			delete [] point2_Airfoil[iMarker];
+		}
+		delete [] point2_Airfoil;
+  }
 
 }
 
@@ -2851,404 +2876,482 @@ void CEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config) {
 }
 
 void CEulerSolver::Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config) {
-	unsigned short nPlane, iDim;
-	short iPlane;
+	unsigned short iDim, iMarker;
+	short iSection;
 	unsigned long iSegment, nSegment;
-	double **Plane_P0, **Plane_Normal, MinPlane, MaxPlane;
+  unsigned long iExtIter = config->GetExtIter();
+	double *Plane_P0, *Plane_Normal, MinPlane, MaxPlane;
 	vector<double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil;
-	vector<unsigned long> *point1_Airfoil, *point2_Airfoil;
-  	bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-	double rho_inf = Density_Inf;
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+	bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+	bool freesurface = (config->GetKind_Regime() == FREESURFACE);	double rho_inf = Density_Inf;
 	double V_inf_mag = sqrt(pow(Velocity_Inf[0],2.0) + pow(Velocity_Inf[1],2.0) + pow(Velocity_Inf[2],2.0));	
 	double dynamic_pressure = 0.5*rho_inf*pow(V_inf_mag,2.0);
+  bool Boundary, Monitoring;
+  string Marker_Tag, Slice_Filename, Slice_Ext;
+  ofstream Cp_File;
+  char buffer[50];
+  
 	int rank = MASTER_NODE;
 #ifndef NO_MPI
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
 
+  
 	if (nDim == 3) {
-		nPlane = 15; MinPlane = 0; MaxPlane = 14;
+    
+    /*--- Set the total number of slices for all markers ---*/
+    nSection = 15;
+    
+    /*--- Perform the cutting only if this is the first iteration ---*/
+    if (iExtIter == 0) {
+    point1_Airfoil = new vector<unsigned long> *[nMarker];
+    point2_Airfoil = new vector<unsigned long> *[nMarker];
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      point1_Airfoil[iMarker] = new vector<unsigned long> [nSection];
+      point2_Airfoil[iMarker] = new vector<unsigned long> [nSection];
+    }
+  }
 
-		Xcoord_Airfoil = new vector<double> [nPlane];
-		Ycoord_Airfoil = new vector<double> [nPlane];
-		Zcoord_Airfoil = new vector<double> [nPlane];
-		point1_Airfoil = new vector<unsigned long> [nPlane];
-		point2_Airfoil = new vector<unsigned long> [nPlane];
+      
+      /*--- For now, the slicing planes are hard-coded for each marker, but this
+       will be added to the config file in the future. ---*/
+			Plane_P0 = new double [3];
+			Plane_Normal = new double [3];
+      
 
-		Plane_P0 = new double *[nPlane]; 		// point defining plane
-		Plane_Normal = new double *[nPlane];		// normal defining plane
-		for (iPlane = 0; iPlane < nPlane; iPlane++) {
-			Plane_P0[iPlane] = new double [3];
-			Plane_Normal[iPlane] = new double [3];
-		}
-		
+      
+      Xcoord_Airfoil = new vector<double> [nSection];
+      Ycoord_Airfoil = new vector<double> [nSection];
+      Zcoord_Airfoil = new vector<double> [nSection];
+      
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        Boundary   = config->GetMarker_All_Boundary(iMarker);
+        Monitoring = config->GetMarker_All_Monitoring(iMarker);
+        if ((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) ||
+            (Boundary == ISOTHERMAL) || (Boundary == NEARFIELD_BOUNDARY)) {
+          if (Monitoring) {
+            
+            //cout << " Slicing marker: " << config->GetMarker_All_Tag(iMarker) << endl;
+            
+            MinPlane = 0; MaxPlane = 1.1;
+            Plane_Normal[0] = 0.0;
+            Plane_Normal[1] = 1.0;
+            Plane_Normal[2] = 0.0;
+            
+            for (iSection = 0; iSection < nSection; iSection++) {
+              
+              //cout << "  Slicing section: " << iSection << endl;
+              
+              Plane_P0[0] = 0.0;
+              Plane_P0[1] = MinPlane + iSection*(MaxPlane - MinPlane)/double(nSection-1);
+              Plane_P0[2] = 0.0;
+              
+              // pass in the pressure and bring it back
+              geometry->ComputeAirfoil_Section(Plane_P0, Plane_Normal, iSection, config,
+                                               Xcoord_Airfoil[iSection], Ycoord_Airfoil[iSection], Zcoord_Airfoil[iSection], point1_Airfoil[iMarker][iSection], point2_Airfoil[iMarker][iSection], true);
+            }
+          }
+        }
+      }
+    
 		/*--- dynamically-defined arrays for airfoil normal 
 		      force, chord force, and pitching moment  - 
 		      and their nondimensional coefficients ---*/
 		double *normal_force, *chord_force, *pitching_moment;
-		normal_force = new double [nPlane];
-		chord_force = new double [nPlane];
-		pitching_moment = new double [nPlane];
+		normal_force = new double [nSection];
+		chord_force = new double [nSection];
+		pitching_moment = new double [nSection];
 
 		double *cl, *cd, *cm;
-		cl = new double [nPlane];
-		cd = new double [nPlane];
-		cm = new double [nPlane];
+		cl = new double [nSection];
+		cd = new double [nSection];
+		cm = new double [nSection];
 		
-		for (iPlane = 0; iPlane < nPlane; iPlane++) {
-			
-			Plane_Normal[iPlane][0] = 0.0;    Plane_P0[iPlane][0] = 0.0;
-			Plane_Normal[iPlane][1] = 1.0;    Plane_P0[iPlane][1] = MinPlane + iPlane*(MaxPlane - MinPlane)/double(nPlane-1);
-			Plane_Normal[iPlane][2] = 0.0;    Plane_P0[iPlane][2] = 0.0;
-			
-			// pass in the pressure and bring it back
-			geometry->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, config,
-					Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], point1_Airfoil[iPlane], point2_Airfoil[iPlane], true);
-			
-			unsigned long nNodes = Xcoord_Airfoil[iPlane].size();
-			unsigned long iNode;
-			
-			/*--- find the node that corresponds to the trailing edge ---*/
-			double trailing_node [3];
-			trailing_node[0] = Xcoord_Airfoil[iPlane].at(0);
-			trailing_node[1] = Ycoord_Airfoil[iPlane].at(0); 
-			trailing_node[2] = Zcoord_Airfoil[iPlane].at(0);
-			
-			/*--- find the node that corresponds to the leading edge ---*/
-			double maxDistance = 0;
-			double distance, chord;
-			double leading_node [3], chord_line [3], q_chord [3];
-			double x_node, y_node, z_node;
-			for (iNode = 1; iNode < nNodes; iNode++) {
-			
-				/*--- compute the distance from the trailing edge ---*/
-				x_node = Xcoord_Airfoil[iPlane].at(iNode);
-				y_node = Ycoord_Airfoil[iPlane].at(iNode);
-				z_node = Zcoord_Airfoil[iPlane].at(iNode);
-				distance = sqrt(pow(trailing_node[0]-x_node,2.0) + pow(trailing_node[1]-y_node,2.0) + pow(trailing_node[2]-z_node,2.0));
-			
-				/*--- assume the leading edge is the point
-	      			      farthest away from the trailing edge ---*/
-				if (distance > maxDistance) {
-					maxDistance = distance;
-					leading_node[0] = x_node;
-					leading_node[1] = y_node;
-					leading_node[2] = z_node;
-				}
-			}
+    
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      Boundary   = config->GetMarker_All_Boundary(iMarker);
+      Monitoring = config->GetMarker_All_Monitoring(iMarker);
+      if ((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) ||
+          (Boundary == ISOTHERMAL) || (Boundary == NEARFIELD_BOUNDARY)) {
+        if (Monitoring) {
+          
+          for (iSection = 0; iSection < nSection; iSection++) {
+            
+            unsigned long nNodes = Xcoord_Airfoil[iSection].size();
+            unsigned long iNode;
+            
+            /*--- find the node that corresponds to the trailing edge ---*/
+            double trailing_node [3];
+            trailing_node[0] = Xcoord_Airfoil[iSection].at(0);
+            trailing_node[1] = Ycoord_Airfoil[iSection].at(0);
+            trailing_node[2] = Zcoord_Airfoil[iSection].at(0);
+            
+            /*--- find the node that corresponds to the leading edge ---*/
+            double maxDistance = 0;
+            double distance, chord;
+            double leading_node [3], chord_line [3], q_chord [3];
+            double x_node, y_node, z_node;
+            for (iNode = 1; iNode < nNodes; iNode++) {
+              
+              /*--- compute the distance from the trailing edge ---*/
+              x_node = Xcoord_Airfoil[iSection].at(iNode);
+              y_node = Ycoord_Airfoil[iSection].at(iNode);
+              z_node = Zcoord_Airfoil[iSection].at(iNode);
+              distance = sqrt(pow(trailing_node[0]-x_node,2.0) + pow(trailing_node[1]-y_node,2.0) + pow(trailing_node[2]-z_node,2.0));
+              
+              /*--- assume the leading edge is the point
+               farthest away from the trailing edge ---*/
+              if (distance > maxDistance) {
+                maxDistance = distance;
+                leading_node[0] = x_node;
+                leading_node[1] = y_node;
+                leading_node[2] = z_node;
+              }
+            }
+            
+            /*--- compute the length of the chord ---*/
+            chord = sqrt(pow(trailing_node[0]-leading_node[0],2.0) + pow(trailing_node[1]-leading_node[1],2.0) + pow(trailing_node[2]-leading_node[2],2.0));
+            
+            /*--- define vector pointing from the trailing edge to the leading edge ---*/
+            for (iDim = 0; iDim < nDim; iDim++) {
+              chord_line[iDim] = leading_node[iDim]-trailing_node[iDim];
+            }
+            
+            /*--- find the coordinates of the quarter-chord point
+             (move three-quarters of the chord
+             length along the chord line) ---*/
+            for (iDim = 0; iDim < nDim; iDim++) {
+              q_chord[iDim] = trailing_node[iDim]+0.75*chord_line[iDim];
+            }
+            
+            /*--- find the vector that points from the trailing node to
+             the first point along the top of the airfoil surface
+             (assume that this is always the
+             second point of the coord vectors.) ---*/
+            double first_line [3];
+            double first_line_x = Xcoord_Airfoil[iSection].at(1);
+            double first_line_y = Ycoord_Airfoil[iSection].at(1);
+            double first_line_z = Zcoord_Airfoil[iSection].at(1);
+            first_line[0] = first_line_x - trailing_node[0];
+            first_line[1] = first_line_y - trailing_node[1];
+            first_line[2] = first_line_z - trailing_node[2];
+            
+            /*--- find the vector that lies normal to the plane of the airfoil
+             (we are assuming, that after a deformation, the plane's normal
+             will no longer be oriented in the conventional +Y direction.) ---*/
+            double section_normal [3];
+            section_normal[0] = chord_line[1]*first_line[2] - chord_line[2]*first_line[1];
+            section_normal[1] = chord_line[2]*first_line[0] - chord_line[0]*first_line[2];
+            section_normal[2] = chord_line[0]*first_line[1] - chord_line[1]*first_line[0];
+            
+            /*--- find the direction of the normal force
+             (take a cross product between the 
+             section normal and the chordline) ---*/
+            double normal_line [3];
+            normal_line[0] = section_normal[1]*chord_line[2] - section_normal[2]*chord_line[1];
+            normal_line[1] = section_normal[2]*chord_line[0] - section_normal[0]*chord_line[2];
+            normal_line[2] = section_normal[0]*chord_line[1] - section_normal[1]*chord_line[0];
+            
+            //cout << endl << "Plane: "<< iPlane << endl;
+            //cout << "\ttrailing node: (" << trailing_node[0] <<", " << trailing_node[1] << ", " << trailing_node[2] << ")" << endl;
+            //cout << "\tnormal line: <" << normal_line[0] <<", " << normal_line[1] << ", " << normal_line[2] << ">" << endl;
+            //cout << "\tfirst-point: (" << first_line_x << ", " << first_line_y << ", " << first_line_z << ")" << endl;
+            //cout << "\tchordline: <" << chord_line[0] <<", " << chord_line[1] << ", " << chord_line[2] << ">" << endl;
+            //cout << "\tsection normal: <" << section_normal[0] <<", " << section_normal[1] << ", " << section_normal[2] << ">" << endl;
+            //cout << "\tfirst line: <" << first_line[0] <<", " << first_line[1] << ", " << first_line[2] << ">" << endl;	
+            //int counter = 0;
+            
+            /*--- Information about each segment along the airfoil
+             section will be stored in a structure of type segment_t ---*/      
+            nSegment = Xcoord_Airfoil[iSection].size()-1;
+            struct segment_t {
+              double endpoint1 [3];		// coordinates of the first endpoint
+              double endpoint2 [3];		// coordinates of the second endpoint
+              double length;			// segment length
+              double midpoint [3];		// coordinates of the segment midpoint
+              double normal [3];		// components of the outward-pointing unit normal
+              double normal_force;		// force per unit length projected 90 degs above chordline
+              double chord_force;		// force per unit length projected along the chordline
+              double pitching_moment;		// force per unit length times lever arm from midpoint to quarter chord
+              double pressure_endpoint1;     // pressure at point 1
+              double pressure_endpoint2;     // pressure at point 2
+            };
+            
+            segment_t *segments; 			// pointer of type segment_t
+            segments = new segment_t [nSegment];	// array of structures
+            
+            /*--- append the first entry (corresponding to the trailing
+             point) to the ends of the coord vectors so that we have 
+             easily identifiable segments all around the airfoil section. ---*/
+            vector<double> Xcoord_around, Ycoord_around, Zcoord_around;
+            vector<unsigned long> point1_around, point2_around;
+            
+            Xcoord_around = Xcoord_Airfoil[iSection];
+            Xcoord_around.push_back(Xcoord_Airfoil[iSection].at(0));
+            
+            Ycoord_around = Ycoord_Airfoil[iSection];
+            Ycoord_around.push_back(Ycoord_Airfoil[iSection].at(0));
+            
+            Zcoord_around = Zcoord_Airfoil[iSection];
+            Zcoord_around.push_back(Zcoord_Airfoil[iSection].at(0));
+            
+            point1_around = point1_Airfoil[iMarker][iSection];
+            point1_around.push_back(point1_Airfoil[iMarker][iSection].at(0));
+            
+            point2_around = point2_Airfoil[iMarker][iSection];
+            point2_around.push_back(point2_Airfoil[iMarker][iSection].at(0));
+            
+            /*--- for each segment around the airfoil, populate a data structure ---*/
+            for (iSegment = 0; iSegment < nSegment; iSegment++) {
+              
+              /*--- coordinates of first endpoint ---*/
+              segments[iSegment].endpoint1[0] = Xcoord_around.at(iSegment);
+              segments[iSegment].endpoint1[1] = Ycoord_around.at(iSegment);
+              segments[iSegment].endpoint1[2] = Zcoord_around.at(iSegment);
+              
+              /*--- coordinates of second endpoint ---*/
+              segments[iSegment].endpoint2[0] = Xcoord_around.at(iSegment+1);
+              segments[iSegment].endpoint2[1] = Ycoord_around.at(iSegment+1);
+              segments[iSegment].endpoint2[2] = Zcoord_around.at(iSegment+1);
+              
+              /*--- segment length ---*/
+              double deltaX = segments[iSegment].endpoint2[0] - segments[iSegment].endpoint1[0];
+              double deltaY = segments[iSegment].endpoint2[1] - segments[iSegment].endpoint1[1];
+              double deltaZ = segments[iSegment].endpoint2[2] - segments[iSegment].endpoint1[2];
+              segments[iSegment].length = sqrt(pow(deltaX,2.0) + pow(deltaY,2.0) + pow(deltaZ,2.0));
+              
+              /*--- coordinates of the segment midpoint ---*/
+              for (iDim = 0; iDim < nDim; iDim++) {
+                segments[iSegment].midpoint[iDim] = 0.5*(segments[iSegment].endpoint1[iDim] + segments[iSegment].endpoint2[iDim]);
+              }             
+              
+              /*--- compute the unit "tangent" vector, i.e.
+               the vector pointing along the segment ---*/
+              double tangent [3];
+              tangent[0] = (1.0/segments[iSegment].length)*(deltaX);
+              tangent[1] = (1.0/segments[iSegment].length)*(deltaY);
+              tangent[2] = (1.0/segments[iSegment].length)*(deltaZ);
+              
+              /*--- compute the outward-pointing normal ---*/
+              segments[iSegment].normal[0] = section_normal[1]*tangent[2] - section_normal[2]*tangent[1];
+              segments[iSegment].normal[1] = section_normal[2]*tangent[0] - section_normal[0]*tangent[2];
+              segments[iSegment].normal[2] = section_normal[0]*tangent[1] - section_normal[1]*tangent[0];
+              
+              /*--- compute the outward-pointing unit normal ---*/
+              double norm_dot_norm = pow(segments[iSegment].normal[0],2.0) + pow(segments[iSegment].normal[1],2.0) + pow(segments[iSegment].normal[2],2.0);
+              double normal_length = sqrt(norm_dot_norm);
+              for (iDim = 0; iDim < nDim; iDim++) { 
+                segments[iSegment].normal[iDim] = segments[iSegment].normal[iDim]/normal_length;
+              }
+              
+              /*--- find the coordinates of the two nodes used 
+               to find the first endpoint of this segment ---*/
+              double endpoint1_p1 [3];
+              double endpoint1_p2 [3];
+              for (iDim = 0; iDim < nDim; iDim++) {
+                endpoint1_p1[iDim] = geometry->node[point1_around.at(iSegment)]->GetCoord(iDim);
+                endpoint1_p2[iDim] = geometry->node[point2_around.at(iSegment)]->GetCoord(iDim);
+              }
+              
+              /*--- find the coordinates of the two nodes used 
+               to find the second endpoint of this segment ---*/
+              double endpoint2_p1 [3];
+              double endpoint2_p2 [3];
+              for (iDim = 0; iDim < nDim; iDim++) {
+                endpoint2_p1[iDim] = geometry->node[point1_around.at(iSegment+1)]->GetCoord(iDim);
+                endpoint2_p2[iDim] = geometry->node[point2_around.at(iSegment+1)]->GetCoord(iDim);
+              }
+              
+              /*--- find the pressure at endpoint1 of this segment by interpolating
+               the pressures at the two nodes of the edge it sits on ---*/
+              double pressure_endpoint1_p1, pressure_endpoint1_p2;
+              if (compressible) {
+                pressure_endpoint1_p1 = node[point1_around.at(iSegment)]->GetPressure(COMPRESSIBLE);
+                pressure_endpoint1_p2 = node[point2_around.at(iSegment)]->GetPressure(COMPRESSIBLE);
+              } else {
+                pressure_endpoint1_p1 = node[point1_around.at(iSegment)]->GetPressure(INCOMPRESSIBLE);
+                pressure_endpoint1_p2 = node[point2_around.at(iSegment)]->GetPressure(INCOMPRESSIBLE);
+              }
+              
+              deltaX = endpoint1_p1[0] - segments[iSegment].endpoint1[0];
+              deltaY = endpoint1_p1[1] - segments[iSegment].endpoint1[1];
+              deltaZ = endpoint1_p1[2] - segments[iSegment].endpoint1[2];
+              double distance_p1 = sqrt(pow(deltaX,2.0) + pow(deltaY,2.0) + pow(deltaZ,2.0));
+              
+              deltaX = endpoint1_p2[0] - segments[iSegment].endpoint1[0];
+              deltaY = endpoint1_p2[1] - segments[iSegment].endpoint1[1];
+              deltaZ = endpoint1_p2[2] - segments[iSegment].endpoint1[2];
+              double distance_p2 = sqrt(pow(deltaX,2.0) + pow(deltaY,2.0) + pow(deltaZ,2.0));
+              
+              double distance_total = distance_p1 + distance_p2;
+              segments[iSegment].pressure_endpoint1 = (1.0/distance_total)*(distance_p2*pressure_endpoint1_p1 + distance_p1*pressure_endpoint1_p2);
+              
+              /*--- find the pressure at endpoint2 of this segment by interpolating	
+               the pressures at the two nodes of the edge it sits on ---*/
+              double pressure_endpoint2_p1, pressure_endpoint2_p2;
+              if (compressible) {
+                pressure_endpoint2_p1 = node[point1_around.at(iSegment+1)]->GetPressure(COMPRESSIBLE);
+                pressure_endpoint2_p2 = node[point2_around.at(iSegment+1)]->GetPressure(COMPRESSIBLE);
+              } else {
+                pressure_endpoint2_p1 = node[point1_around.at(iSegment+1)]->GetPressure(INCOMPRESSIBLE);
+                pressure_endpoint2_p2 = node[point2_around.at(iSegment+1)]->GetPressure(INCOMPRESSIBLE);
+              }
+              
+              deltaX = endpoint2_p1[0] - segments[iSegment].endpoint2[0];	
+              deltaY = endpoint2_p1[1] - segments[iSegment].endpoint2[1];
+              deltaZ = endpoint2_p1[2] - segments[iSegment].endpoint2[2];
+              distance_p1 = sqrt(pow(deltaX,2.0) + pow(deltaY,2.0) + pow(deltaZ,2.0));
+              
+              deltaX = endpoint2_p2[0] - segments[iSegment].endpoint2[0];
+              deltaY = endpoint2_p2[1] - segments[iSegment].endpoint2[1];
+              deltaZ = endpoint2_p2[2] - segments[iSegment].endpoint2[2];
+              distance_p2 = sqrt(pow(deltaX,2.0) + pow(deltaY,2.0) + pow(deltaZ,2.0));
+              
+              distance_total = distance_p1 + distance_p2;
+              segments[iSegment].pressure_endpoint2 = (1.0/distance_total)*(distance_p2*pressure_endpoint2_p1 + distance_p1*pressure_endpoint2_p2);
+              
+              /*--- find the value of pressure at the segment's midpoint 
+               by averaging the values found at the endpoints ---*/
+              double midPressure = 0.5*(segments[iSegment].pressure_endpoint1 + segments[iSegment].pressure_endpoint2);
+              
+              /*--- find the force per unit length carried by the segment ---*/
+              double midForce = midPressure*segments[iSegment].length;
+              
+              /*--- create a vector associated with the force, pointing 
+               in the direction of the inward-facing unit-normal ---*/
+              double force_vector [3];
+              for (iDim = 0; iDim < nDim; iDim++) {
+                force_vector[iDim] = midForce*(-1.0*segments[iSegment].normal[iDim]);
+              }
+              
+              /*
+               if (iSegment == 1 || iSegment == nSegment-1) {
+               counter++;
+               cout << counter << ") " << "\tSegment " << iSegment << ": force vector = <" << force_vector[0]/fabs(force_vector[0]) << ", " << force_vector[1] << ", " << force_vector[2]/fabs(force_vector[2]) << ">" << endl;
+               } else
+               if (segments[iSegment].normal[0]/fabs(segments[iSegment].normal[0]) != segments[iSegment-1].normal[0]/fabs(segments[iSegment-1].normal[0]) || segments[iSegment].normal[2]/fabs(segments[iSegment].normal[2]) != segments[iSegment-1].normal[2]/fabs(segments[iSegment-1].normal[2])) { 
+               counter++;
+               cout << counter << ") " << "\tSegment " << iSegment << ": force vector = <" << force_vector[0]/fabs(force_vector[0]) << ", " << force_vector[1] << ", " << force_vector[2]/fabs(force_vector[2]) << ">" << endl;
+               }
+               */
+              
+              
+              /*--- find the component of the force in the normal direction by 
+               projecting the force on the segment onto the normal-line ---*/
+              double unit_normal_line [3];
+              double normal_line_mag = sqrt(pow(normal_line[0],2.0) + pow(normal_line[1],2.0) + pow(normal_line[2],2.0));
+              for (iDim = 0; iDim < nDim; iDim++) {
+                unit_normal_line[iDim] = normal_line[iDim]/normal_line_mag;
+              }
+              segments[iSegment].normal_force = unit_normal_line[0]*force_vector[0] + unit_normal_line[1]*force_vector[1] + unit_normal_line[2]*force_vector[2];
+              
+              /*--- find the component of the force in the chordwise direction 
+               by projecting the force on the segment onto the chordline ---*/
+              double unit_chord_line [3];
+              double chord_line_mag = sqrt(pow(chord_line[0],2.0) + pow(chord_line[1],2.0) + pow(chord_line[2],2.0));
+              for (iDim = 0; iDim < nDim; iDim++) {
+                unit_chord_line[iDim] = chord_line[iDim]/chord_line_mag;
+              }
+              segments[iSegment].chord_force = unit_chord_line[0]*force_vector[0] + unit_chord_line[1]*force_vector[1] + unit_chord_line[2]*force_vector[2];
+              
+              /*--- find the contribution to the nose-up pitching 
+               moment about the quarter-chord point ---*/
+              double lever_arm [3];
+              for (iDim = 0; iDim < nDim; iDim++) {
+                lever_arm[iDim] = segments[iSegment].midpoint[iDim]-q_chord[iDim];
+              }
+              
+              double pitching_moment_vec [3];
+              pitching_moment_vec[0] = lever_arm[1]*force_vector[2] - lever_arm[2]*force_vector[1];
+              pitching_moment_vec[1] = lever_arm[2]*force_vector[0] - lever_arm[0]*force_vector[2];
+              pitching_moment_vec[2] = lever_arm[0]*force_vector[1] - lever_arm[1]*force_vector[0];
+              
+              double unit_section_normal [3];
+              double section_normal_mag = sqrt(pow(section_normal[0],2.0) + pow(section_normal[1],2.0) + pow(section_normal[2],2.0));
+              for (iDim = 0; iDim < nDim; iDim++) {
+                unit_section_normal[iDim] = section_normal[iDim]/section_normal_mag;
+              }
+              segments[iSegment].pitching_moment = unit_section_normal[0]*pitching_moment_vec[0] + unit_section_normal[1]*pitching_moment_vec[1] + unit_section_normal[2]*pitching_moment_vec[2];	
+            }
+            
+            /*--- for each airfoil section, sum the physical quantities found at the sections ---*/
+            normal_force[iSection] = 0;
+            chord_force[iSection] = 0;
+            pitching_moment[iSection] = 0;
+            for (iSegment = 0; iSegment < nSegment; iSegment++) {
+              normal_force[iSection] += segments[iSegment].normal_force;
+              chord_force[iSection] += segments[iSegment].chord_force;
+              pitching_moment[iSection] += segments[iSegment].pitching_moment;
+            }
+            
+            /*--- Write a file with the Cp distribution ---*/
+            if (rank == MASTER_NODE) {
+              Cp_File.precision(15);
+              Slice_Filename = "Cp_Section";
+              sprintf (buffer, "_%d.csv", iSection);
+               Slice_Ext = string(buffer);
+              Slice_Filename.append(Slice_Ext);
+              Cp_File.open(Slice_Filename.c_str(), ios::out);
+              Cp_File <<  "\"x_coord\",\"Pressure\",\"y_coord\",\"z_coord\"" << endl;
+              /*--- Loop over this airfoil section and write x, y, z, & Pressure ---*/
+              for (iSegment = 0; iSegment < nSegment; iSegment++) {
+                Cp_File << segments[iSegment].endpoint1[0] << ", ";
+                Cp_File << segments[iSegment].pressure_endpoint1 << ", ";
+                Cp_File << segments[iSegment].endpoint1[1] << ", ";
+                Cp_File << segments[iSegment].endpoint1[2] <<endl;
+              }
+              Cp_File.close();
+            }
 
-			/*--- compute the length of the chord ---*/
-			chord = sqrt(pow(trailing_node[0]-leading_node[0],2.0) + pow(trailing_node[1]-leading_node[1],2.0) + pow(trailing_node[2]-leading_node[2],2.0));
-
-			/*--- define vector pointing from the trailing edge to the leading edge ---*/
-			for (iDim = 0; iDim < nDim; iDim++) {
-				chord_line[iDim] = leading_node[iDim]-trailing_node[iDim];
-			}
-			
-			/*--- find the coordinates of the quarter-chord point
-	    		      (move three-quarters of the chord
-	     		       length along the chord line) ---*/
-			for (iDim = 0; iDim < nDim; iDim++) {
-				q_chord[iDim] = trailing_node[iDim]+0.75*chord_line[iDim];
-			}
-			
-			/*--- find the vector that points from the trailing node to
-	    		      the first point along the top of the airfoil surface
-	    		      (assume that this is always the
-	     		       second point of the coord vectors.) ---*/
-			double first_line [3];
-			double first_line_x = Xcoord_Airfoil[iPlane].at(1);
-			double first_line_y = Ycoord_Airfoil[iPlane].at(1);
-			double first_line_z = Zcoord_Airfoil[iPlane].at(1);
-			first_line[0] = first_line_x - trailing_node[0];
-			first_line[1] = first_line_y - trailing_node[1];
-			first_line[2] = first_line_z - trailing_node[2];
-			
-			/*--- find the vector that lies normal to the plane of the airfoil
-	    		      (we are assuming, that after a deformation, the plane's normal
-	     		       will no longer be oriented in the conventional +Y direction.) ---*/
-			double section_normal [3];
-			section_normal[0] = chord_line[1]*first_line[2] - chord_line[2]*first_line[1];
-			section_normal[1] = chord_line[2]*first_line[0] - chord_line[0]*first_line[2];
-			section_normal[2] = chord_line[0]*first_line[1] - chord_line[1]*first_line[0];
-			
-			/*--- find the direction of the normal force
-	    		      (take a cross product between the 
-	     		       section normal and the chordline) ---*/
-			double normal_line [3];
-			normal_line[0] = section_normal[1]*chord_line[2] - section_normal[2]*chord_line[1];
-			normal_line[1] = section_normal[2]*chord_line[0] - section_normal[0]*chord_line[2];
-			normal_line[2] = section_normal[0]*chord_line[1] - section_normal[1]*chord_line[0];
-		
-//cout << endl << "Plane: "<< iPlane << endl;
-//cout << "\ttrailing node: (" << trailing_node[0] <<", " << trailing_node[1] << ", " << trailing_node[2] << ")" << endl;
-//cout << "\tnormal line: <" << normal_line[0] <<", " << normal_line[1] << ", " << normal_line[2] << ">" << endl;
-//cout << "\tfirst-point: (" << first_line_x << ", " << first_line_y << ", " << first_line_z << ")" << endl;
-//cout << "\tchordline: <" << chord_line[0] <<", " << chord_line[1] << ", " << chord_line[2] << ">" << endl;
-//cout << "\tsection normal: <" << section_normal[0] <<", " << section_normal[1] << ", " << section_normal[2] << ">" << endl;
-//cout << "\tfirst line: <" << first_line[0] <<", " << first_line[1] << ", " << first_line[2] << ">" << endl;	
-//int counter = 0;
-
-			/*--- Information about each segment along the airfoil
-	    		      section will be stored in a structure of type segment_t ---*/      
-			nSegment = Xcoord_Airfoil[iPlane].size()-1;
-			struct segment_t {
-				double endpoint1 [3];		// coordinates of the first endpoint
-				double endpoint2 [3];		// coordinates of the second endpoint
-				double length;			// segment length
-				double midpoint [3];		// coordinates of the segment midpoint
-				double normal [3];		// components of the outward-pointing unit normal
-				double normal_force;		// force per unit length projected 90 degs above chordline
-				double chord_force;		// force per unit length projected along the chordline
-				double pitching_moment;		// force per unit length times lever arm from midpoint to quarter chord
-			};
-			
-			segment_t *segments; 			// pointer of type segment_t
-			segments = new segment_t [nSegment];	// array of structures
-			
-			/*--- append the first entry (corresponding to the trailing
-	    		      point) to the ends of the coord vectors so that we have 
-	    		      easily identifiable segments all around the airfoil section. ---*/
-			vector<double> Xcoord_around, Ycoord_around, Zcoord_around;
-			vector<unsigned long> point1_around, point2_around;
-				
-			Xcoord_around = Xcoord_Airfoil[iPlane];
-			Xcoord_around.push_back(Xcoord_Airfoil[iPlane].at(0));
-			
-			Ycoord_around = Ycoord_Airfoil[iPlane];
-			Ycoord_around.push_back(Ycoord_Airfoil[iPlane].at(0));
-			
-			Zcoord_around = Zcoord_Airfoil[iPlane];
-			Zcoord_around.push_back(Zcoord_Airfoil[iPlane].at(0));
-			
-			point1_around = point1_Airfoil[iPlane];
-			point1_around.push_back(point1_Airfoil[iPlane].at(0));
-			
-			point2_around = point2_Airfoil[iPlane];
-			point2_around.push_back(point2_Airfoil[iPlane].at(0));
-
-			/*--- for each segment around the airfoil, populate a data structure ---*/
-			for (iSegment = 0; iSegment < nSegment; iSegment++) {
-
-				/*--- coordinates of first endpoint ---*/
-				segments[iSegment].endpoint1[0] = Xcoord_around.at(iSegment);
-				segments[iSegment].endpoint1[1] = Ycoord_around.at(iSegment);
-				segments[iSegment].endpoint1[2] = Zcoord_around.at(iSegment);
-
-				/*--- coordinates of second endpoint ---*/
-				segments[iSegment].endpoint2[0] = Xcoord_around.at(iSegment+1);
-				segments[iSegment].endpoint2[1] = Ycoord_around.at(iSegment+1);
-				segments[iSegment].endpoint2[2] = Zcoord_around.at(iSegment+1);
-			
-				/*--- segment length ---*/
-				double deltaX = segments[iSegment].endpoint2[0] - segments[iSegment].endpoint1[0];
-				double deltaY = segments[iSegment].endpoint2[1] - segments[iSegment].endpoint1[1];
-				double deltaZ = segments[iSegment].endpoint2[2] - segments[iSegment].endpoint1[2];
-				segments[iSegment].length = sqrt(pow(deltaX,2.0) + pow(deltaY,2.0) + pow(deltaZ,2.0));
-			
-				/*--- coordinates of the segment midpoint ---*/
-				for (iDim = 0; iDim < nDim; iDim++) {
-					segments[iSegment].midpoint[iDim] = 0.5*(segments[iSegment].endpoint1[iDim] + segments[iSegment].endpoint2[iDim]);
-				}             
-				
-				/*--- compute the unit "tangent" vector, i.e.
-	      			      the vector pointing along the segment ---*/
-				double tangent [3];
-				tangent[0] = (1.0/segments[iSegment].length)*(deltaX);
-				tangent[1] = (1.0/segments[iSegment].length)*(deltaY);
-				tangent[2] = (1.0/segments[iSegment].length)*(deltaZ);
-			
-				/*--- compute the outward-pointing normal ---*/
-				segments[iSegment].normal[0] = section_normal[1]*tangent[2] - section_normal[2]*tangent[1];
-				segments[iSegment].normal[1] = section_normal[2]*tangent[0] - section_normal[0]*tangent[2];
-				segments[iSegment].normal[2] = section_normal[0]*tangent[1] - section_normal[1]*tangent[0];
-
-				/*--- compute the outward-pointing unit normal ---*/
-				double norm_dot_norm = pow(segments[iSegment].normal[0],2.0) + pow(segments[iSegment].normal[1],2.0) + pow(segments[iSegment].normal[2],2.0);
-				double normal_length = sqrt(norm_dot_norm);
-				for (iDim = 0; iDim < nDim; iDim++) { 
-					segments[iSegment].normal[iDim] = segments[iSegment].normal[iDim]/normal_length;
-				}
-			
-				/*--- find the coordinates of the two nodes used 
-				      to find the first endpoint of this segment ---*/
-				double endpoint1_p1 [3];
-				double endpoint1_p2 [3];
-				for (iDim = 0; iDim < nDim; iDim++) {
-					endpoint1_p1[iDim] = geometry->node[point1_around.at(iSegment)]->GetCoord(iDim);
-					endpoint1_p2[iDim] = geometry->node[point2_around.at(iSegment)]->GetCoord(iDim);
-				}
-				
-				/*--- find the coordinates of the two nodes used 
-				      to find the second endpoint of this segment ---*/
-				double endpoint2_p1 [3];
-				double endpoint2_p2 [3];
-				for (iDim = 0; iDim < nDim; iDim++) {
-					endpoint2_p1[iDim] = geometry->node[point1_around.at(iSegment+1)]->GetCoord(iDim);
-					endpoint2_p2[iDim] = geometry->node[point2_around.at(iSegment+1)]->GetCoord(iDim);
-				}
-			
-				/*--- find the pressure at endpoint1 of this segment by interpolating
-				      the pressures at the two nodes of the edge it sits on ---*/
-				double pressure_endpoint1_p1 = node[point1_around.at(iSegment)]->GetPressure(incompressible);
-				double pressure_endpoint1_p2 = node[point2_around.at(iSegment)]->GetPressure(incompressible);
-				
-				deltaX = endpoint1_p1[0] - segments[iSegment].endpoint1[0];
-				deltaY = endpoint1_p1[1] - segments[iSegment].endpoint1[1];
-				deltaZ = endpoint1_p1[2] - segments[iSegment].endpoint1[2];
-				double distance_p1 = sqrt(pow(deltaX,2.0) + pow(deltaY,2.0) + pow(deltaZ,2.0));
-				
-				deltaX = endpoint1_p2[0] - segments[iSegment].endpoint1[0];
-				deltaY = endpoint1_p2[1] - segments[iSegment].endpoint1[1];
-				deltaZ = endpoint1_p2[2] - segments[iSegment].endpoint1[2];
-				double distance_p2 = sqrt(pow(deltaX,2.0) + pow(deltaY,2.0) + pow(deltaZ,2.0));
-				
-				double distance_total = distance_p1 + distance_p2;
-				double pressure_endpoint1 = (1.0/distance_total)*(distance_p2*pressure_endpoint1_p1 + distance_p1*pressure_endpoint1_p2);
-				
-				/*--- find the pressure at endpoint2 of this segment by interpolating	
-				      the pressures at the two nodes of the edge it sits on ---*/
-				double pressure_endpoint2_p1 = node[point1_around.at(iSegment+1)]->GetPressure(incompressible);
-				double pressure_endpoint2_p2 = node[point2_around.at(iSegment+1)]->GetPressure(incompressible);
-				
-				deltaX = endpoint2_p1[0] - segments[iSegment].endpoint2[0];	
-				deltaY = endpoint2_p1[1] - segments[iSegment].endpoint2[1];
-				deltaZ = endpoint2_p1[2] - segments[iSegment].endpoint2[2];
-				distance_p1 = sqrt(pow(deltaX,2.0) + pow(deltaY,2.0) + pow(deltaZ,2.0));
-				
-				deltaX = endpoint2_p2[0] - segments[iSegment].endpoint2[0];
-				deltaY = endpoint2_p2[1] - segments[iSegment].endpoint2[1];
-				deltaZ = endpoint2_p2[2] - segments[iSegment].endpoint2[2];
-				distance_p2 = sqrt(pow(deltaX,2.0) + pow(deltaY,2.0) + pow(deltaZ,2.0));
-				
-				distance_total = distance_p1 + distance_p2;
-				double pressure_endpoint2 = (1.0/distance_total)*(distance_p2*pressure_endpoint2_p1 + distance_p1*pressure_endpoint2_p2);
-				
-				/*--- find the value of pressure at the segment's midpoint 
-				      by averaging the values found at the endpoints ---*/
-				double midPressure = 0.5*(pressure_endpoint1 + pressure_endpoint2);
-
-				/*--- find the force per unit length carried by the segment ---*/
-				double midForce = midPressure*segments[iSegment].length;
-				
-				/*--- create a vector associated with the force, pointing 
-				      in the direction of the inward-facing unit-normal ---*/
-				double force_vector [3];
-				for (iDim = 0; iDim < nDim; iDim++) {
-					force_vector[iDim] = midForce*(-1.0*segments[iSegment].normal[iDim]);
-				}
-
-/*
-if (iSegment == 1 || iSegment == nSegment-1) {
-	counter++;
-	cout << counter << ") " << "\tSegment " << iSegment << ": force vector = <" << force_vector[0]/fabs(force_vector[0]) << ", " << force_vector[1] << ", " << force_vector[2]/fabs(force_vector[2]) << ">" << endl;
-} else
-	if (segments[iSegment].normal[0]/fabs(segments[iSegment].normal[0]) != segments[iSegment-1].normal[0]/fabs(segments[iSegment-1].normal[0]) || segments[iSegment].normal[2]/fabs(segments[iSegment].normal[2]) != segments[iSegment-1].normal[2]/fabs(segments[iSegment-1].normal[2])) { 
-	counter++;
-	cout << counter << ") " << "\tSegment " << iSegment << ": force vector = <" << force_vector[0]/fabs(force_vector[0]) << ", " << force_vector[1] << ", " << force_vector[2]/fabs(force_vector[2]) << ">" << endl;
-}
-*/
-
-		
-				/*--- find the component of the force in the normal direction by 
-				      projecting the force on the segment onto the normal-line ---*/
-				double unit_normal_line [3];
-				double normal_line_mag = sqrt(pow(normal_line[0],2.0) + pow(normal_line[1],2.0) + pow(normal_line[2],2.0));
-				for (iDim = 0; iDim < nDim; iDim++) {
-					unit_normal_line[iDim] = normal_line[iDim]/normal_line_mag;
-				}
-				segments[iSegment].normal_force = unit_normal_line[0]*force_vector[0] + unit_normal_line[1]*force_vector[1] + unit_normal_line[2]*force_vector[2];
-				
-				/*--- find the component of the force in the chordwise direction 
-				      by projecting the force on the segment onto the chordline ---*/
-				double unit_chord_line [3];
-				double chord_line_mag = sqrt(pow(chord_line[0],2.0) + pow(chord_line[1],2.0) + pow(chord_line[2],2.0));
-				for (iDim = 0; iDim < nDim; iDim++) {
-					unit_chord_line[iDim] = chord_line[iDim]/chord_line_mag;
-				}
-				segments[iSegment].chord_force = unit_chord_line[0]*force_vector[0] + unit_chord_line[1]*force_vector[1] + unit_chord_line[2]*force_vector[2];
-				
-				/*--- find the contribution to the nose-up pitching 
-				      moment about the quarter-chord point ---*/
-				double lever_arm [3];
-				for (iDim = 0; iDim < nDim; iDim++) {
-					lever_arm[iDim] = segments[iSegment].midpoint[iDim]-q_chord[iDim];
-				}
-								
-				double pitching_moment_vec [3];
-				pitching_moment_vec[0] = lever_arm[1]*force_vector[2] - lever_arm[2]*force_vector[1];
-				pitching_moment_vec[1] = lever_arm[2]*force_vector[0] - lever_arm[0]*force_vector[2];
-				pitching_moment_vec[2] = lever_arm[0]*force_vector[1] - lever_arm[1]*force_vector[0];
-				
-				double unit_section_normal [3];
-				double section_normal_mag = sqrt(pow(section_normal[0],2.0) + pow(section_normal[1],2.0) + pow(section_normal[2],2.0));
-				for (iDim = 0; iDim < nDim; iDim++) {
-					unit_section_normal[iDim] = section_normal[iDim]/section_normal_mag;
-				}
-				segments[iSegment].pitching_moment = unit_section_normal[0]*pitching_moment_vec[0] + unit_section_normal[1]*pitching_moment_vec[1] + unit_section_normal[2]*pitching_moment_vec[2];	
-			}
-			
-			/*--- for each airfoil section, sum the physical quantities found at the sections ---*/
-			normal_force[iPlane] = 0;
-			chord_force[iPlane] = 0;
-			pitching_moment[iPlane] = 0;
-			for (iSegment = 0; iSegment < nSegment; iSegment++) {
-				normal_force[iPlane] += segments[iSegment].normal_force;
-				chord_force[iPlane] += segments[iSegment].chord_force;
-				pitching_moment[iPlane] += segments[iSegment].pitching_moment;
-			}
-			
-			/*--- compute the associated coefficients ---*/
-			cl[iPlane] = normal_force[iPlane]/(dynamic_pressure*chord);
-			cd[iPlane] = chord_force[iPlane]/(dynamic_pressure*chord);
-			cm[iPlane] = pitching_moment[iPlane]/(dynamic_pressure*pow(chord,2.0));			
-			
-		}
-		
-		/*--- write the values of these sectional coefficients to the appropriate files ---*/
-		ofstream cl_file;
-		ofstream cd_file;
-		ofstream cm_file;
-				
-		if (rank == MASTER_NODE) {
-			
-			cl_file.precision(15);
-			cd_file.precision(15);
-			cm_file.precision(15);
-			
-			cl_file.open("cl", ios::out);
-			cd_file.open("cd", ios::out);
-			cm_file.open("cm", ios::out);
-			
-			for (iPlane = nPlane-1; iPlane >= 0; iPlane--) {
-				cl_file << " " << cl[iPlane];
-				cd_file << " " << cd[iPlane];
-				cm_file << " " << cm[iPlane];
-			}
-			cl_file << endl;
-			cd_file << endl;
-			cm_file << endl;
-			
-			cl_file.close();
-			cd_file.close();
-			cm_file.close();
-		}
-		
-		
+            
+            /*--- compute the associated coefficients ---*/
+            cl[iSection] = normal_force[iSection]/(dynamic_pressure*chord);
+            cd[iSection] = chord_force[iSection]/(dynamic_pressure*chord);
+            cm[iSection] = pitching_moment[iSection]/(dynamic_pressure*pow(chord,2.0));			
+            
+          }
+          
+          
+          /*--- write the values of these sectional coefficients to the appropriate files ---*/
+          ofstream cl_file;
+          ofstream cd_file;
+          ofstream cm_file;
+          
+          if (rank == MASTER_NODE) {
+            
+            cl_file.precision(15);
+            cd_file.precision(15);
+            cm_file.precision(15);
+            
+            cl_file.open("cl", ios::out);
+            cd_file.open("cd", ios::out);
+            cm_file.open("cm", ios::out);
+            
+            for (iSection = nSection-1; iSection >= 0; iSection--) {
+              cl_file << " " << cl[iSection];
+              cd_file << " " << cd[iSection];
+              cm_file << " " << cm[iSection];
+            }
+            cl_file << endl;
+            cd_file << endl;
+            cm_file << endl;
+            
+            cl_file.close();
+            cd_file.close();
+            cm_file.close();
+          }
+          
+        }
+      }
+    }
 		
 		
 		/*--- delete dynamically allocated memory ---*/
 		delete [] Xcoord_Airfoil;
 		delete [] Ycoord_Airfoil;
 		delete [] Zcoord_Airfoil;
-		
-		delete [] point1_Airfoil;
-		delete [] point2_Airfoil;
 
-		for (iPlane = 0; iPlane < nPlane; iPlane++) {
-			delete Plane_Normal[iPlane];
-			delete Plane_P0[iPlane];
-		}
 		delete [] Plane_P0;
 		delete [] Plane_Normal;
 		
