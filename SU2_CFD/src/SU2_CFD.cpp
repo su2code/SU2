@@ -59,7 +59,6 @@ int main(int argc, char *argv[]) {
     // Add description of iMesh
 	unsigned short iMesh, iZone, iSol, nZone, nDim;
 	ofstream ConvHist_file;
-	char file_name[200];
 	int rank = MASTER_NODE;
 	
 #ifndef NO_MPI
@@ -117,11 +116,16 @@ int main(int argc, char *argv[]) {
         FFDBox[iZone]                 = NULL;
     }
 	
-	/*--- Check the number of zones and spatial dimensions in the mesh file ---*/
-    
+	/*--- Load in the number of zones and spatial dimensions in the mesh file ---*/
+    // If no config file is specified, default.cfg is used
+    char file_name[200];
 	CConfig *config = NULL;
-	if (argc == 2) config = new CConfig(argv[1]);
-	else { strcpy (file_name, "default.cfg"); config = new CConfig(file_name); }
+	if (argc == 2){
+        config = new CConfig(argv[1]);
+    }else {
+        strcpy (file_name, "default.cfg");
+        config = new CConfig(file_name);
+    }
 	nZone = GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
 	nDim = GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
 	
