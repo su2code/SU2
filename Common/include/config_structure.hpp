@@ -623,6 +623,7 @@ private:
 	**Velocity_FreeStreamND_Time,
 	*Energy_FreeStreamND_Time,
 	*Mach_Inf_Time;
+  bool ExtraOutput;
 
 	map<string, CAnyOptionRef*> param; /*!< \brief associates option names (strings) with options */
 
@@ -1044,6 +1045,12 @@ public:
 	 */
 	bool GetVisualize_Partition(void);
 
+  /*!
+	 * \brief Creates a tecplot file to visualize the partition made by the DDC software.
+	 * \return <code>TRUE</code> if the partition is going to be plotted; otherwise <code>FALSE</code>.
+	 */
+  bool GetExtraOutput(void);
+  
 	/*! 
 	 * \brief Creates a teot file to visualize the deformation made by the MDC software.
 	 * \return <code>TRUE</code> if the deformation is going to be plotted; otherwise <code>FALSE</code>.

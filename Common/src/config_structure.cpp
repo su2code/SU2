@@ -110,6 +110,9 @@ void CConfig::SetConfig_Options(unsigned short val_nZone) {
   /* DESCRIPTION: Adjoint type */
 	AddEnumOption("REGIME_TYPE", Kind_Regime, Regime_Map, "COMPRESSIBLE");
   
+  /* DESCRIPTION: Write extra output */
+	AddSpecialOption("EXTRA_OUTPUT", ExtraOutput, SetBoolOption, false);
+  
 	/* DESCRIPTION: Physical governing equations */
 	AddEnumOption("PHYSICAL_PROBLEM", Kind_Solver, Solver_Map, "NONE");
 	/* DESCRIPTION: Mathematical problem */
