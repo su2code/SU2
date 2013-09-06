@@ -31,7 +31,7 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 #endif
   
   /*--- Reading config options  ---*/
-  SetConfig_Options(val_nZone);
+  SetConfig_Options(val_iZone, val_nZone);
   
   /*--- Parsing the config file  ---*/
   SetParsing(case_filename);
@@ -85,10 +85,11 @@ CConfig::CConfig(char case_filename[200]) {
   
 }
 
-void CConfig::SetConfig_Options(unsigned short val_nZone) {
+void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZone) {
 	double default_vec_3d[3];
 	double default_vec_6d[6];
 	nZone = val_nZone;
+	iZone = val_iZone;
   
 	/*--- Intialize pointers to NULL. If we don't find these values
    in the config file, they will all be set to zero. ---*/
