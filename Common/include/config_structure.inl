@@ -27,6 +27,10 @@ inline void CConfig::SetFanFace_Mach(unsigned short val_imarker, double val_fanf
 
 inline void CConfig::SetFanFace_Pressure(unsigned short val_imarker, double val_fanface_pressure) { FanFace_Pressure[val_imarker] = val_fanface_pressure; }
 
+inline unsigned short CConfig::GetnZone(void) { return nZone; }
+
+inline unsigned short CConfig::GetiZone(void) { return iZone; }
+
 inline unsigned short CConfig::GetKind_SU2(void) { return Kind_SU2; }
 
 inline bool CConfig::GetAdjoint(void) { return Adjoint; }

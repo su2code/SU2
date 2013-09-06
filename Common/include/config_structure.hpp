@@ -51,7 +51,7 @@ using namespace std;
 class CConfig {
 private:
 	unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component. */
-	unsigned short nZone; /*!< \brief Number of zones in the mesh. */
+	unsigned short iZone, nZone; /*!< \brief Number of zones in the mesh. */
 	double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
 	double MinLogResidual; /*!< \brief Minimum value of the log residual. */
 	double* EA_IntLimit; /*!< \brief Integration limits of the Equivalent Area computation */
@@ -3134,6 +3134,18 @@ public:
 	 * \return Number of variables.
 	 */
 	unsigned short GetnVar(void);
+  
+  /*!
+	 * \brief Provides the number of varaibles.
+	 * \return Number of variables.
+	 */
+	unsigned short GetnZone(void);
+  
+  /*!
+	 * \brief Provides the number of varaibles.
+	 * \return Number of variables.
+	 */
+	unsigned short GetiZone(void);
 
 	/*! 
 	 * \brief For some problems like adjoint or the linearized equations it 
@@ -4268,7 +4280,7 @@ public:
   /*!
 	 * \brief Set the config options.
 	 */
-	void SetConfig_Options(unsigned short val_nZone);
+	void SetConfig_Options(unsigned short val_iZone, unsigned short val_nZone);
 
   /*!
 	 * \brief Set the config file parsing.
