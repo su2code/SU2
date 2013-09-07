@@ -191,11 +191,12 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
 
 void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
 		CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
-		CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
+		CSurfaceMovement **surface_movement, CVolumetricMovement **volume_grid_movement, CFreeFormDefBox*** FFDBox) {
 	double Physical_dt, Physical_t;
 	unsigned short iMesh, iZone;
   
 	bool time_spectral = (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL);
+  bool grid_movement = config_container[ZONE_0]->GetGrid_Movement();
 	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
 	if (time_spectral) nZone = config_container[ZONE_0]->GetnTimeInstances();
 	bool relative_motion = config_container[ZONE_0]->GetRelative_Motion();
@@ -215,7 +216,7 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
 
   /*--- For the unsteady adjoint, load a new direct solution from a restart file. ---*/
 	for (iZone = 0; iZone < nZone; iZone++) {
-		if (config_container[iZone]->GetUnsteady_Simulation() && !time_spectral) {
+		if ((grid_movement || config_container[ZONE_0]->GetUnsteady_Simulation()) && !time_spectral) {
       unsigned long Direct_Iter = config_container[iZone]->GetUnst_AdjointIter() - ExtIter - 1;
         if (rank == MASTER_NODE && iZone == ZONE_0 && config_container[iZone]->GetUnsteady_Simulation())
           cout << endl << " Loading flow solution from direct iteration " << Direct_Iter << "." << endl;
