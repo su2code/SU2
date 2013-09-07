@@ -51,7 +51,7 @@ using namespace std;
 class CConfig {
 private:
 	unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component. */
-	unsigned short nZone; /*!< \brief Number of zones in the mesh. */
+	unsigned short iZone, nZone; /*!< \brief Number of zones in the mesh. */
 	double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
 	double MinLogResidual; /*!< \brief Minimum value of the log residual. */
 	double* EA_IntLimit; /*!< \brief Integration limits of the Equivalent Area computation */
@@ -624,6 +624,7 @@ private:
 	**Velocity_FreeStreamND_Time,
 	*Energy_FreeStreamND_Time,
 	*Mach_Inf_Time;
+  bool ExtraOutput;
 
 	map<string, CAnyOptionRef*> param; /*!< \brief associates option names (strings) with options */
 
@@ -1045,6 +1046,12 @@ public:
 	 */
 	bool GetVisualize_Partition(void);
 
+  /*!
+	 * \brief Creates a tecplot file to visualize the partition made by the DDC software.
+	 * \return <code>TRUE</code> if the partition is going to be plotted; otherwise <code>FALSE</code>.
+	 */
+  bool GetExtraOutput(void);
+  
 	/*! 
 	 * \brief Creates a teot file to visualize the deformation made by the MDC software.
 	 * \return <code>TRUE</code> if the deformation is going to be plotted; otherwise <code>FALSE</code>.
@@ -3134,6 +3141,18 @@ public:
 	 * \return Number of variables.
 	 */
 	unsigned short GetnVar(void);
+  
+  /*!
+	 * \brief Provides the number of varaibles.
+	 * \return Number of variables.
+	 */
+	unsigned short GetnZone(void);
+  
+  /*!
+	 * \brief Provides the number of varaibles.
+	 * \return Number of variables.
+	 */
+	unsigned short GetiZone(void);
 
 	/*! 
 	 * \brief For some problems like adjoint or the linearized equations it 
@@ -4268,7 +4287,7 @@ public:
   /*!
 	 * \brief Set the config options.
 	 */
-	void SetConfig_Options(unsigned short val_nZone);
+	void SetConfig_Options(unsigned short val_iZone, unsigned short val_nZone);
 
   /*!
 	 * \brief Set the config file parsing.

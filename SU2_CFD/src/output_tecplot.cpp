@@ -233,6 +233,12 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
       Tecplot_File << ", \"Surface_Sensitivity\", \"Solution_Sensor\"";
     }
     
+    if (config->GetExtraOutput()) {
+      for (iVar = 0; iVar < nVar_Extra; iVar++) {
+        Tecplot_File << ", \"ExtraOutput_" << iVar+1<<"\"";
+      }
+    }
+    
     Tecplot_File << endl;
     
   }

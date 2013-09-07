@@ -823,7 +823,12 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
     LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-        
+    
+    if (config->GetExtraOutput()) {
+      nOutputVariables = 3;
+      OutputVariables.Initialize(nPoint, nPointDomain, nOutputVariables, 0.0);
+    }
+    
 		/*--- Computation of gradients by least squares ---*/
 		if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
 			/*--- S matrix := inv(R)*traspose(inv(R)) ---*/
@@ -1244,6 +1249,12 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 
 		/*--- Compute the source term ---*/
 		numerics->ComputeResidual(Residual, Jacobian_i, NULL, config);
+    
+    if (config->GetExtraOutput()) {
+      OutputVariables[iPoint*nOutputVariables + 0] = numerics->GetProduction();
+      OutputVariables[iPoint*nOutputVariables + 1] = numerics->GetDestruction();
+      OutputVariables[iPoint*nOutputVariables + 2] = numerics->GetCrossProduction();      
+    }
 
     /*--- Don't add source term in the interface or air ---*/
     if (freesurface) {

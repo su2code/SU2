@@ -1454,6 +1454,42 @@ public:
 	 * \brief Set intermittency for numerics (used in SA with LM transition model)
 	 */
 	virtual void SetIntermittency(double intermittency_in);
+  
+  /*!
+	 * \brief Residual for source term integration.
+	 * \param[in] val_production - Value of the Production.
+	 */
+  virtual void SetProduction(double val_production);
+  
+  /*!
+	 * \brief Residual for source term integration.
+	 * \param[in] val_destruction - Value of the Destruction.
+	 */
+  virtual void SetDestruction(double val_destruction);
+  
+  /*!
+	 * \brief Residual for source term integration.
+	 * \param[in] val_crossproduction - Value of the CrossProduction.
+	 */
+  virtual void SetCrossProduction(double val_crossproduction);
+  
+  /*!
+	 * \brief Residual for source term integration.
+	 * \param[in] val_production - Value of the Production.
+	 */
+  virtual double GetProduction(void);
+  
+  /*!
+	 * \brief Residual for source term integration.
+	 * \param[in] val_destruction - Value of the Destruction.
+	 */
+  virtual double GetDestruction(void);
+  
+  /*!
+	 * \brief Residual for source term integration.
+	 * \param[in] val_crossproduction - Value of the CrossProduction.
+	 */
+  virtual double GetCrossProduction(void);
 
 	/*!
 	 * \overload
@@ -4541,6 +4577,7 @@ private:
   double div, StrainMag;
   double beta, gamma_sep, gamma_eff, intermittency;
   double Freattach, r_t, s1;
+  double Production, Destruction, CrossProduction;
 
 public:
 
@@ -4570,7 +4607,44 @@ public:
 	 * \brief Residual for source term integration.
 	 * \param[in] intermittency_in - Value of the intermittency.
 	 */
-  void SetIntermittency(double intermittency_in); 
+  void SetIntermittency(double intermittency_in);
+  
+  /*!
+	 * \brief Residual for source term integration.
+	 * \param[in] val_production - Value of the Production.
+	 */
+  void SetProduction(double val_production);
+  
+  /*!
+	 * \brief Residual for source term integration.
+	 * \param[in] val_destruction - Value of the Destruction.
+	 */
+  void SetDestruction(double val_destruction);
+  
+  /*!
+	 * \brief Residual for source term integration.
+	 * \param[in] val_crossproduction - Value of the CrossProduction.
+	 */
+  void SetCrossProduction(double val_crossproduction);
+  
+  /*!
+	 * \brief Residual for source term integration.
+	 * \param[in] val_production - Value of the Production.
+	 */
+  double GetProduction(void);
+  
+  /*!
+	 * \brief Residual for source term integration.
+	 * \param[in] val_destruction - Value of the Destruction.
+	 */
+  double GetDestruction(void);
+  
+  /*!
+	 * \brief Residual for source term integration.
+	 * \param[in] val_crossproduction - Value of the CrossProduction.
+	 */
+  double GetCrossProduction(void);
+  
 };
 
 /*! 

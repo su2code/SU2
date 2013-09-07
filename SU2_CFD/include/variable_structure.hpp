@@ -69,6 +69,7 @@ protected:
   unsigned short nPrimVar, nPrimVarGrad;		/*!< \brief Number of variables of the problem,
                                              note that this variable cannnot be static, it is possible to
                                              have different number of nVar in the same problem. */
+  
 public:
 
 	/*!

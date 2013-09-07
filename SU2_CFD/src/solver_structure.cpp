@@ -54,6 +54,7 @@ CSolver::CSolver(void) {
 	Smatrix = NULL;
 	cvector = NULL;
   node = NULL;
+  nOutputVariables = 0;
 
 }
 

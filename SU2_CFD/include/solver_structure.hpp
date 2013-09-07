@@ -58,7 +58,7 @@ protected:
 	unsigned short IterLinSolver;	/*!< \brief Linear solver iterations. */
 	unsigned short nVar,					/*!< \brief Number of variables of the problem. */
   nPrimVar,                     /*!< \brief Number of primitive variables of the problem. */
-  nPrimVarGrad,                    /*!< \brief Number of primitive variables of the problem in the gradient computation. */
+  nPrimVarGrad,                 /*!< \brief Number of primitive variables of the problem in the gradient computation. */
 	nDim;													/*!< \brief Number of dimensions of the problem. */
 	unsigned long nPoint;					/*!< \brief Number of points of the computational grid. */
   unsigned long nPointDomain; 	/*!< \brief Number of points of the computational grid. */
@@ -93,6 +93,8 @@ protected:
 	double **Smatrix,	/*!< \brief Auxiliary structure for computing gradients by least-squares */
 	**cvector;			 /*!< \brief Auxiliary structure for computing gradients by least-squares */
 
+  unsigned short nOutputVariables;  /*!< \brief Number of variables to write. */
+
 public:
   
   CSysVector LinSysSol;		/*!< \brief vector to store iterative solution of implicit linear system. */
@@ -100,6 +102,8 @@ public:
 	CSysMatrix Jacobian; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
   
 	CSysMatrix StiffMatrix; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations, and grid movement. */
+
+  CSysVector OutputVariables;		/*!< \brief vector to store the extra variables to be written. */
 
 	CVariable** node;	/*!< \brief Vector which the define the variables for each problem. */
   
@@ -178,6 +182,11 @@ public:
 	 * \brief Get the number of variables of the problem.
 	 */
 	unsigned short GetnVar(void);
+  
+  /*!
+	 * \brief Get the number of variables of the problem.
+	 */
+	unsigned short GetnOutputVariables(void);
     
     /*!
 	 * \brief Get the number of variables of the problem.
