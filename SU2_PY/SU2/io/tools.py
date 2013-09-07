@@ -661,10 +661,9 @@ def get_specialCases(config):
         specified in the config file, and set to 'yes'
     """
     
-    all_special_cases = [ 'FREE_SURFACE'       ,
-                          'ROTATING_FRAME'     ,
-                          'EQUIV_AREA'         ,
-                          'WRT_UNSTEADY'       ,
+    all_special_cases = [ 'FREE_SURFACE'        ,
+                          'ROTATING_FRAME'      ,
+                          'EQUIV_AREA'          ,
                           'AEROACOUSTIC_EULER'  ]
     
     special_cases = []
@@ -673,7 +672,10 @@ def get_specialCases(config):
             special_cases.append(key)
         if config.has_key('PHYSICAL_PROBLEM') and config['PHYSICAL_PROBLEM'] == key:
             special_cases.append(key)
-  
+            
+    if config.get('UNSTEADY_SIMULATION','NO') != 'NO':
+        special_cases.append('UNSTEADY_SIMULATION')
+     
     # no support for more than one special case (except for noise)
     if len(special_cases) > 1 and 'AEROACOUSTIC_EULER' not in special_cases:
         error_str = 'Currently cannot support ' + ' and '.join(special_cases) + ' at once'
@@ -688,7 +690,7 @@ def get_specialCases(config):
 
     # Special case for rotating frame
     if config.has_key('GRID_MOVEMENT_KIND') and config['GRID_MOVEMENT_KIND'] == 'ROTATING_FRAME':
-      special_cases.append('ROTATING_FRAME')
+        special_cases.append('ROTATING_FRAME')
 
     return special_cases
 
@@ -744,7 +746,6 @@ def expand_part(name,config):
         names = [name]
     return names
     
-    
 def make_link(src,dst):
     """ make_link(src,dst)
         makes a relative link
@@ -790,6 +791,14 @@ def restart2solution(config,state={}):
         direct or adjoint is read from config
         adjoint objective is read from config
     """
+    
+    if 'UNSTEADY_SIMULATION' in get_specialCases(config):
+        if state and config.MATH_PROBLEM == 'DIRECT' :
+            del state.FILES.DIRECT
+        elif state and config.MATH_PROBLEM == 'ADJOINT':
+            ADJ_NAME = 'ADJOINT_' + func_name
+            del state.FILES[ADJ_NAME]
+        return
     
     # direct solution
     if config.MATH_PROBLEM == 'DIRECT':

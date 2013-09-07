@@ -350,7 +350,8 @@ def findiff( config, state=None, step=1e-4 ):
     name = su2io.expand_part(name,konfig)
     link.extend(name)
     # files: direct solution
-    link.append( files['DIRECT'] )
+    if files.has_key('DIRECT'):
+        link.append( files['DIRECT'] )
     # files: target equivarea distribution
     if 'EQUIV_AREA' in special_cases and 'TARGET_EA' in files:
         pull.append(files['TARGET_EA'])
