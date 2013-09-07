@@ -640,11 +640,12 @@ def get_optFileFormat(plot_format,special_cases=None):
 
 def get_extension(output_format):
     
-    if (output_format == "PARAVIEW") : return ".csv"
-    if (output_format == "TECPLOT")  : return ".plt"        
-    if (output_format == "SOLUTION") : return ".dat"  
-    if (output_format == "RESTART")  : return ".dat"  
-    if (output_format == "CONFIG")   : return ".cfg"  
+    if (output_format == "PARAVIEW")        : return ".csv"
+    if (output_format == "TECPLOT")         : return ".plt"
+    if (output_format == "TECPLOT_BINARY")  : return ".plt"
+    if (output_format == "SOLUTION")        : return ".dat"  
+    if (output_format == "RESTART")         : return ".dat"  
+    if (output_format == "CONFIG")          : return ".cfg"  
 
     # otherwise
     raise Exception("Output Format Unknown")
@@ -661,10 +662,9 @@ def get_specialCases(config):
         specified in the config file, and set to 'yes'
     """
     
-    all_special_cases = [ 'FREE_SURFACE'       ,
-                          'ROTATING_FRAME'     ,
-                          'EQUIV_AREA'         ,
-                          'WRT_UNSTEADY'       ,
+    all_special_cases = [ 'FREE_SURFACE'        ,
+                          'ROTATING_FRAME'      ,
+                          'EQUIV_AREA'          ,
                           'AEROACOUSTIC_EULER'  ]
     
     special_cases = []
@@ -673,7 +673,10 @@ def get_specialCases(config):
             special_cases.append(key)
         if config.has_key('PHYSICAL_PROBLEM') and config['PHYSICAL_PROBLEM'] == key:
             special_cases.append(key)
-  
+            
+    if config.get('UNSTEADY_SIMULATION','NO') != 'NO':
+        special_cases.append('UNSTEADY_SIMULATION')
+     
     # no support for more than one special case (except for noise)
     if len(special_cases) > 1 and 'AEROACOUSTIC_EULER' not in special_cases:
         error_str = 'Currently cannot support ' + ' and '.join(special_cases) + ' at once'
@@ -688,7 +691,7 @@ def get_specialCases(config):
 
     # Special case for rotating frame
     if config.has_key('GRID_MOVEMENT_KIND') and config['GRID_MOVEMENT_KIND'] == 'ROTATING_FRAME':
-      special_cases.append('ROTATING_FRAME')
+        special_cases.append('ROTATING_FRAME')
 
     return special_cases
 
@@ -744,7 +747,6 @@ def expand_part(name,config):
         names = [name]
     return names
     
-    
 def make_link(src,dst):
     """ make_link(src,dst)
         makes a relative link
@@ -790,35 +792,41 @@ def restart2solution(config,state={}):
         direct or adjoint is read from config
         adjoint objective is read from config
     """
-  
-    if not config.has_key('UNSTEADY_SIMULATION') or config['UNSTEADY_SIMULATION'] == 'NO':
     
-      # direct solution
-      if config.MATH_PROBLEM == 'DIRECT':
-          restart  = config.RESTART_FLOW_FILENAME
-          solution = config.SOLUTION_FLOW_FILENAME        
-          # move
-          shutil.move( restart , solution )
-          # update state
-          if state: state.FILES.DIRECT = solution
-          
-      # adjoint solution
-      elif config.MATH_PROBLEM == 'ADJOINT':
-          restart  = config.RESTART_ADJ_FILENAME
-          solution = config.SOLUTION_ADJ_FILENAME           
-          # add suffix
-          func_name = config.ADJ_OBJFUNC
-          suffix    = get_adjointSuffix(func_name)
-          restart   = add_suffix(restart,suffix)
-          solution  = add_suffix(solution,suffix)        
-          # move
-          shutil.move( restart , solution )
-          # udpate state
-          ADJ_NAME = 'ADJOINT_' + func_name
-          if state: state.FILES[ADJ_NAME] = solution
-          
-      else:
-          raise Exception, 'unknown math problem'
+    if 'UNSTEADY_SIMULATION' in get_specialCases(config):
+        if state and config.MATH_PROBLEM == 'DIRECT' :
+            del state.FILES.DIRECT
+        elif state and config.MATH_PROBLEM == 'ADJOINT':
+            ADJ_NAME = 'ADJOINT_' + func_name
+            del state.FILES[ADJ_NAME]
+        return
+    
+    # direct solution
+    if config.MATH_PROBLEM == 'DIRECT':
+        restart  = config.RESTART_FLOW_FILENAME
+        solution = config.SOLUTION_FLOW_FILENAME        
+        # move
+        shutil.move( restart , solution )
+        # update state
+        if state: state.FILES.DIRECT = solution
+        
+    # adjoint solution
+    elif config.MATH_PROBLEM == 'ADJOINT':
+        restart  = config.RESTART_ADJ_FILENAME
+        solution = config.SOLUTION_ADJ_FILENAME           
+        # add suffix
+        func_name = config.ADJ_OBJFUNC
+        suffix    = get_adjointSuffix(func_name)
+        restart   = add_suffix(restart,suffix)
+        solution  = add_suffix(solution,suffix)        
+        # move
+        shutil.move( restart , solution )
+        # udpate state
+        ADJ_NAME = 'ADJOINT_' + func_name
+        if state: state.FILES[ADJ_NAME] = solution
+        
+    else:
+        raise Exception, 'unknown math problem'
 
-    
+
     
