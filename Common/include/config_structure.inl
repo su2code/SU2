@@ -27,6 +27,10 @@ inline void CConfig::SetFanFace_Mach(unsigned short val_imarker, double val_fanf
 
 inline void CConfig::SetFanFace_Pressure(unsigned short val_imarker, double val_fanface_pressure) { FanFace_Pressure[val_imarker] = val_fanface_pressure; }
 
+inline unsigned short CConfig::GetnZone(void) { return nZone; }
+
+inline unsigned short CConfig::GetiZone(void) { return iZone; }
+
 inline unsigned short CConfig::GetKind_SU2(void) { return Kind_SU2; }
 
 inline bool CConfig::GetAdjoint(void) { return Adjoint; }
@@ -84,6 +88,8 @@ inline unsigned short CConfig::GetAnalytical_Surface(void) { return Analytical_S
 inline double CConfig::GetDualVol_Power(void) { return DualVol_Power; }
 
 inline bool CConfig::GetVisualize_Partition(void) { return Visualize_Partition; }
+
+inline bool CConfig::GetExtraOutput(void) { return ExtraOutput; }
 
 inline bool CConfig::GetVisualize_Deformation(void) { return Visualize_Deformation; }
 
