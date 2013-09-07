@@ -835,7 +835,7 @@ public:
 	 * \param[in] val_iZone - Domain to be read from the grid file.
 	 * \param[in] val_nZone - Total number of domains in the grid file.
 	 */
-	void SU2_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
+	void Read_SU2_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
   
   /*!
 	 * \brief Reads the geometry of the grid and adjust the boundary
@@ -846,7 +846,7 @@ public:
 	 * \param[in] val_iZone - Domain to be read from the grid file.
 	 * \param[in] val_nZone - Total number of domains in the grid file.
 	 */
-	void CGNS_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
+	void Read_CGNS_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
   
   /*!
 	 * \brief Reads the geometry of the grid and adjust the boundary
@@ -857,7 +857,7 @@ public:
 	 * \param[in] val_iZone - Domain to be read from the grid file.
 	 * \param[in] val_nZone - Total number of domains in the grid file.
 	 */
-	void NETCDF_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
+	void Read_NETCDF_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
 
 	/*! 
 	 * \brief Find repeated nodes between two elements to identify the common face.
