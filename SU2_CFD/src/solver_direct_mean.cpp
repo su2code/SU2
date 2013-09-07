@@ -6403,9 +6403,9 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
       
 			node[iPoint_Local]->SetSolution(Solution);
 
-			/*--- For unsteady flows on dynamic meshes, read in and store the
+			/*--- For dynamic meshes, read in and store the
        grid coordinates and grid velocities for each node. ---*/
-			if (config->GetWrt_Unsteady() && grid_movement) {
+			if (grid_movement) {
 				double GridVel[3];
 				if (nDim == 2) point_line >> GridVel[0] >> GridVel[1];
 				if (nDim == 3) point_line >> GridVel[0] >> GridVel[1] >> GridVel[2];
@@ -6447,8 +6447,8 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
     solver[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
   }
   
-  /*--- Update the geometry for unsteady flows on dynamic meshes ---*/
-  if (config->GetWrt_Unsteady() && grid_movement) {
+  /*--- Update the geometry for flows on dynamic meshes ---*/
+  if (grid_movement) {
     
     /*--- Communicate the new coordinates and grid velocities at the halos ---*/
     geometry[MESH_0]->Set_MPI_Coord(config);
