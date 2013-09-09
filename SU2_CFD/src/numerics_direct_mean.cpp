@@ -864,7 +864,7 @@ void CUpwRoeArtComp_Flow::ComputeResidual(double *val_residual, double **val_Jac
   
 }
 
-CUpwRoeArtComp_Flow_FreeSurface::CUpwRoeArtComp_Flow_FreeSurface(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CUpwRoeArtComp_FreeSurf_Flow::CUpwRoeArtComp_FreeSurf_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 	unsigned short iVar;
   
 	implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -889,7 +889,7 @@ CUpwRoeArtComp_Flow_FreeSurface::CUpwRoeArtComp_Flow_FreeSurface(unsigned short 
   
 }
 
-CUpwRoeArtComp_Flow_FreeSurface::~CUpwRoeArtComp_Flow_FreeSurface(void) {
+CUpwRoeArtComp_FreeSurf_Flow::~CUpwRoeArtComp_FreeSurf_Flow(void) {
 	unsigned short iVar;
   
 	delete [] Diff_U;
@@ -910,7 +910,7 @@ CUpwRoeArtComp_Flow_FreeSurface::~CUpwRoeArtComp_Flow_FreeSurface(void) {
   
 }
 
-void CUpwRoeArtComp_Flow_FreeSurface::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CUpwRoeArtComp_FreeSurf_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
 	/*--- Compute face area ---*/
 	Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
@@ -924,7 +924,8 @@ void CUpwRoeArtComp_Flow_FreeSurface::ComputeResidual(double *val_residual, doub
   
 	/*--- Set velocity and pressure variables at points iPoint and jPoint ---*/
 	Pressure_i = U_i[0]; Pressure_j = U_j[0];
-  
+  LevelSet_i = U_i[nDim+1]; LevelSet_j = U_j[nDim+1];
+
   ProjVelocity = 0.0;
 	for (iDim = 0; iDim < nDim; iDim++) {
 		Velocity_i[iDim] = U_i[iDim+1]/DensityInc_i;
@@ -936,42 +937,40 @@ void CUpwRoeArtComp_Flow_FreeSurface::ComputeResidual(double *val_residual, doub
 	/*--- Mean variables at points iPoint and jPoint ---*/
 	MeanDensity = 0.5*(DensityInc_i + DensityInc_j);
 	MeanPressure = 0.5*(Pressure_i + Pressure_j);
+  MeanLevelSet = 0.5*(LevelSet_i + LevelSet_j);
 	MeanBetaInc2 = 0.5*(BetaInc2_i + BetaInc2_j);
-	MeanSoundSpeed = sqrt(ProjVelocity*ProjVelocity + (MeanBetaInc2/MeanDensity) * Area * Area);
   
 	/*--- Compute Proj_flux_tensor_i ---*/
-	GetInviscidArtCompProjFlux(&DensityInc_i, Velocity_i, &Pressure_i, &BetaInc2_i, Normal, Proj_flux_tensor_i);
+	GetInviscidArtComp_FreeSurf_ProjFlux(&DensityInc_i, Velocity_i, &Pressure_i, &BetaInc2_i, &LevelSet_i, Normal, Proj_flux_tensor_i);
   
 	/*--- Compute Proj_flux_tensor_j ---*/
-	GetInviscidArtCompProjFlux(&DensityInc_j, Velocity_j, &Pressure_j, &BetaInc2_j, Normal, Proj_flux_tensor_j);
+	GetInviscidArtComp_FreeSurf_ProjFlux(&DensityInc_j, Velocity_j, &Pressure_j, &BetaInc2_j, &LevelSet_j, Normal, Proj_flux_tensor_j);
   
 	/*--- Compute P and Lambda (matrix of eigenvalues) ---*/
-	GetPArtCompMatrix(&MeanDensity, MeanVelocity, &MeanBetaInc2, UnitNormal, P_Tensor);
+	GetPArtComp_FreeSurf_Matrix(&MeanDensity, MeanVelocity, &MeanBetaInc2, &MeanLevelSet, UnitNormal, P_Tensor);
   
 	/*--- Flow eigenvalues ---*/
 	if (nDim == 2) {
-		Lambda[0] = ProjVelocity;
-		Lambda[1] = ProjVelocity + MeanSoundSpeed;
-		Lambda[2] = ProjVelocity - MeanSoundSpeed;
+    
+//    Lambda[0] = d;
+//    Lambda[1] = d;
+//    Lambda[2] = 1/2 (d - b c d + nx u + ny v - Sqrt[ 4 a (nx^2 + ny^2) + (d - b c d + nx u + ny v)^2]);
+//    Lambda[3] = 1/2 (d - b c d + nx u + ny v + Sqrt[ 4 a (nx^2 + ny^2) + (d - b c d + nx u + ny v)^2]);
+    
 	}
-	if (nDim == 3) {
-		Lambda[0] = ProjVelocity;
-		Lambda[1] = ProjVelocity;
-		Lambda[2] = ProjVelocity + MeanSoundSpeed;
-		Lambda[3] = ProjVelocity - MeanSoundSpeed;
-	}
+	if (nDim == 3) { }
   
   /*--- Absolute value of the eigenvalues ---*/
 	for (iVar = 0; iVar < nVar-1; iVar++)
 		Lambda[iVar] = fabs(Lambda[iVar]);
   
 	/*--- Compute inverse P ---*/
-	GetPArtCompMatrix_inv(&MeanDensity, MeanVelocity, &MeanBetaInc2, UnitNormal, invP_Tensor);
+	GetPArtComp_FreeSurf_Matrix_inv(&MeanDensity, MeanVelocity, &MeanBetaInc2, &MeanLevelSet, UnitNormal, invP_Tensor);
   
 	if (implicit) {
 		/*--- Jacobian of the inviscid flux ---*/
-		GetInviscidArtCompProjJac(&DensityInc_i, Velocity_i, &BetaInc2_i, Normal, 0.5, val_Jacobian_i);
-		GetInviscidArtCompProjJac(&DensityInc_j, Velocity_j, &BetaInc2_j, Normal, 0.5, val_Jacobian_j);
+		GetInviscidArtComp_FreeSurf_ProjJac(&DensityInc_i, Velocity_i, &BetaInc2_i, &LevelSet_i, Normal, 0.5, val_Jacobian_i);
+		GetInviscidArtComp_FreeSurf_ProjJac(&DensityInc_j, Velocity_j, &BetaInc2_j, &LevelSet_j, Normal, 0.5, val_Jacobian_j);
 	}
   
 	/*--- Diference variables iPoint and jPoint ---*/

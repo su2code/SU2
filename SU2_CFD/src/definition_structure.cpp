@@ -823,8 +823,8 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
             case NO_UPWIND : cout << "No upwind scheme." << endl; break;
             case ROE_1ST : case ROE_2ND :
               for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-                numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwRoeArtComp_Flow_FreeSurface(nDim, nVar_Flow, config);
-                numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoeArtComp_Flow_FreeSurface(nDim, nVar_Flow, config);
+                numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwRoeArtComp_FreeSurf_Flow(nDim, nVar_Flow, config);
+                numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoeArtComp_FreeSurf_Flow(nDim, nVar_Flow, config);
               }
               break;
             default : cout << "Upwind scheme not implemented." << endl; cin.get(); break;
