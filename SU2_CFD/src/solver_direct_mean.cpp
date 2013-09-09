@@ -1817,7 +1817,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
      freesurface (dens, vx, vy, vz, beta) ---*/
     if (compressible) {   RightSol = node[iPoint]->SetPrimVar_Compressible(config); }
 		if (incompressible) { RightSol = node[iPoint]->SetPrimVar_Incompressible(Density_Inf, config); }
-    if (freesurface) {    RightSol = node[iPoint]->SetPrimVar_FreeSurface(Density_Inf, config); }
+    if (freesurface) {    RightSol = node[iPoint]->SetPrimVar_FreeSurface(config); }
     if (!RightSol) ErrorCounter++;
 
 		/*--- Initialize the convective residual vector ---*/
@@ -6596,7 +6596,7 @@ void CEulerSolver::SetFreeSurface_Distance(CGeometry *geometry, CConfig *config,
 #endif
   
   if (Initialization) {
-    
+
     /*--- Get coordinates of the points and compute distances to the surface ---*/
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
       coord = geometry->node[iPoint]->GetCoord();
@@ -7173,7 +7173,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
          and compressible (temp, vx, vy, vz, press, dens, enthal, sos)---*/
 		if (compressible) RightSol = node[iPoint]->SetPrimVar_Compressible(turb_ke, config);
 		if (incompressible) RightSol = node[iPoint]->SetPrimVar_Incompressible(Density_Inf, Viscosity_Inf, turb_ke, config);
-    if (freesurface) RightSol = node[iPoint]->SetPrimVar_FreeSurface(Density_Inf, Viscosity_Inf, turb_ke, config);
+    if (freesurface) RightSol = node[iPoint]->SetPrimVar_FreeSurface(turb_ke, config);
     if (!RightSol) ErrorCounter++;
  
 		/*--- Set the value of the eddy viscosity ---*/

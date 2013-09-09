@@ -717,125 +717,125 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
         
 		/*--- Definition of the convective scheme for each equation and mesh level ---*/
 		switch (config->GetKind_ConvNumScheme_Flow()) {
-            case NO_CONVECTIVE :
-                cout << "No convective scheme." << endl; cin.get();
-                break;
-                
-            case SPACE_CENTERED :
-                if (compressible) {
-                    /*--- Compressible flow ---*/
-                    switch (config->GetKind_Centered_Flow()) {
-                        case NO_CENTERED : cout << "No centered scheme." << endl; break;
-                        case LAX : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentLax_Flow(nDim,nVar_Flow, config); break;
-                        case JST : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentJST_Flow(nDim,nVar_Flow, config); break;
-                        default : cout << "Centered scheme not implemented." << endl; cin.get(); break;
-                    }
-                    
-                    if (!config->GetLowFidelitySim()) {
-                        for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-                            numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CCentLax_Flow(nDim, nVar_Flow, config);
-                    }
-                    else {
-                        numerics_container[MESH_1][FLOW_SOL][CONV_TERM] = new CCentJST_Flow(nDim, nVar_Flow, config);
-                        for (iMGlevel = 2; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-                            numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CCentLax_Flow(nDim, nVar_Flow, config);
-                    }
-                    
-                    /*--- Definition of the boundary condition method ---*/
-                    for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-                        numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_Flow(nDim, nVar_Flow, config);
-                    
-                }
-                if (incompressible) {
-                    /*--- Incompressible flow, use artificial compressibility method ---*/
-                    switch (config->GetKind_Centered_Flow()) {
-                        case NO_CENTERED : cout << "No centered scheme." << endl; break;
-                        case LAX : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentLaxArtComp_Flow(nDim, nVar_Flow, config); break;
-                        case JST : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentJSTArtComp_Flow(nDim, nVar_Flow, config); break;
-                        default : cout << "Centered scheme not implemented." << endl; cin.get(); break;
-                    }
-                    for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-                        numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CCentLaxArtComp_Flow(nDim,nVar_Flow, config);
-                    
-                    /*--- Definition of the boundary condition method ---*/
-                    for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-                        numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoeArtComp_Flow(nDim, nVar_Flow, config);
-                    
-                }
-                if (freesurface) {
-                    /*--- FreeSurface flow, use artificial compressibility method ---*/
-                    cout << "Centered scheme not implemented." << endl; cin.get();
-                }
-                break;
-            case SPACE_UPWIND :
-                if (compressible) {
-                    /*--- Compressible flow ---*/
-                    switch (config->GetKind_Upwind_Flow()) {
-                        case NO_UPWIND : cout << "No upwind scheme." << endl; break;
-                        case ROE_1ST : case ROE_2ND :
-                            for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-                                numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwRoe_Flow(nDim, nVar_Flow, config);
-                                numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_Flow(nDim, nVar_Flow, config);
-                            }
-                            break;
-                            
-                        case AUSM_1ST : case AUSM_2ND :
-                            for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-                                numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwAUSM_Flow(nDim, nVar_Flow, config);
-                                numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwAUSM_Flow(nDim, nVar_Flow, config);
-                            }
-                            break;
-                            
-                        case ROE_TURKEL_1ST : case ROE_TURKEL_2ND :
-                            for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-                                numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwRoe_Turkel_Flow(nDim, nVar_Flow, config);
-                                numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_Turkel_Flow(nDim, nVar_Flow, config);
-                            }
-                            break;
-                            
-                        case HLLC_1ST : case HLLC_2ND :
-                            for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-                                numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwHLLC_Flow(nDim, nVar_Flow, config);
-                                numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwHLLC_Flow(nDim, nVar_Flow, config);
-                            }
-                            break;
-                            
-                        default : cout << "Upwind scheme not implemented." << endl; cin.get(); break;
-                    }
-                    
-                }
-                if (incompressible) {
-                    /*--- Incompressible flow, use artificial compressibility method ---*/
-                    switch (config->GetKind_Upwind_Flow()) {
-                        case NO_UPWIND : cout << "No upwind scheme." << endl; break;
-                        case ROE_1ST : case ROE_2ND :
-                            for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-                                numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwRoeArtComp_Flow(nDim, nVar_Flow, config);
-                                numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoeArtComp_Flow(nDim, nVar_Flow, config);
-                            }
-                            break;
-                        default : cout << "Upwind scheme not implemented." << endl; cin.get(); break;
-                    }
-                }
-                if (freesurface) {
-                    /*--- Incompressible flow, use artificial compressibility method ---*/
-                    switch (config->GetKind_Upwind_Flow()) {
-                        case NO_UPWIND : cout << "No upwind scheme." << endl; break;
-                        case ROE_1ST : case ROE_2ND :
-                            for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-                                numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwRoeArtComp_Flow_FreeSurface(nDim, nVar_Flow, config);
-                                numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoeArtComp_Flow_FreeSurface(nDim, nVar_Flow, config);
-                            }
-                            break;
-                        default : cout << "Upwind scheme not implemented." << endl; cin.get(); break;
-                    }
-                }
-                
-                break;
-                
-            default :
-                cout << "Convective scheme not implemented (euler and ns)." << endl; cin.get();
-                break;
+      case NO_CONVECTIVE :
+        cout << "No convective scheme." << endl; cin.get();
+        break;
+        
+      case SPACE_CENTERED :
+        if (compressible) {
+          /*--- Compressible flow ---*/
+          switch (config->GetKind_Centered_Flow()) {
+            case NO_CENTERED : cout << "No centered scheme." << endl; break;
+            case LAX : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentLax_Flow(nDim,nVar_Flow, config); break;
+            case JST : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentJST_Flow(nDim,nVar_Flow, config); break;
+            default : cout << "Centered scheme not implemented." << endl; cin.get(); break;
+          }
+          
+          if (!config->GetLowFidelitySim()) {
+            for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+              numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CCentLax_Flow(nDim, nVar_Flow, config);
+          }
+          else {
+            numerics_container[MESH_1][FLOW_SOL][CONV_TERM] = new CCentJST_Flow(nDim, nVar_Flow, config);
+            for (iMGlevel = 2; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+              numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CCentLax_Flow(nDim, nVar_Flow, config);
+          }
+          
+          /*--- Definition of the boundary condition method ---*/
+          for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+            numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_Flow(nDim, nVar_Flow, config);
+          
+        }
+        if (incompressible) {
+          /*--- Incompressible flow, use artificial compressibility method ---*/
+          switch (config->GetKind_Centered_Flow()) {
+            case NO_CENTERED : cout << "No centered scheme." << endl; break;
+            case LAX : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentLaxArtComp_Flow(nDim, nVar_Flow, config); break;
+            case JST : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentJSTArtComp_Flow(nDim, nVar_Flow, config); break;
+            default : cout << "Centered scheme not implemented." << endl; cin.get(); break;
+          }
+          for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+            numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CCentLaxArtComp_Flow(nDim,nVar_Flow, config);
+          
+          /*--- Definition of the boundary condition method ---*/
+          for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+            numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoeArtComp_Flow(nDim, nVar_Flow, config);
+          
+        }
+        if (freesurface) {
+          /*--- FreeSurface flow, use artificial compressibility method ---*/
+          cout << "Centered scheme not implemented." << endl; cin.get();
+        }
+        break;
+      case SPACE_UPWIND :
+        if (compressible) {
+          /*--- Compressible flow ---*/
+          switch (config->GetKind_Upwind_Flow()) {
+            case NO_UPWIND : cout << "No upwind scheme." << endl; break;
+            case ROE_1ST : case ROE_2ND :
+              for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+                numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwRoe_Flow(nDim, nVar_Flow, config);
+                numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_Flow(nDim, nVar_Flow, config);
+              }
+              break;
+              
+            case AUSM_1ST : case AUSM_2ND :
+              for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+                numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwAUSM_Flow(nDim, nVar_Flow, config);
+                numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwAUSM_Flow(nDim, nVar_Flow, config);
+              }
+              break;
+              
+            case ROE_TURKEL_1ST : case ROE_TURKEL_2ND :
+              for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+                numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwRoe_Turkel_Flow(nDim, nVar_Flow, config);
+                numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_Turkel_Flow(nDim, nVar_Flow, config);
+              }
+              break;
+              
+            case HLLC_1ST : case HLLC_2ND :
+              for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+                numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwHLLC_Flow(nDim, nVar_Flow, config);
+                numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwHLLC_Flow(nDim, nVar_Flow, config);
+              }
+              break;
+              
+            default : cout << "Upwind scheme not implemented." << endl; cin.get(); break;
+          }
+          
+        }
+        if (incompressible) {
+          /*--- Incompressible flow, use artificial compressibility method ---*/
+          switch (config->GetKind_Upwind_Flow()) {
+            case NO_UPWIND : cout << "No upwind scheme." << endl; break;
+            case ROE_1ST : case ROE_2ND :
+              for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+                numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwRoeArtComp_Flow(nDim, nVar_Flow, config);
+                numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoeArtComp_Flow(nDim, nVar_Flow, config);
+              }
+              break;
+            default : cout << "Upwind scheme not implemented." << endl; cin.get(); break;
+          }
+        }
+        if (freesurface) {
+          /*--- Incompressible flow, use artificial compressibility method ---*/
+          switch (config->GetKind_Upwind_Flow()) {
+            case NO_UPWIND : cout << "No upwind scheme." << endl; break;
+            case ROE_1ST : case ROE_2ND :
+              for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+                numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwRoeArtComp_FreeSurf_Flow(nDim, nVar_Flow, config);
+                numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoeArtComp_FreeSurf_Flow(nDim, nVar_Flow, config);
+              }
+              break;
+            default : cout << "Upwind scheme not implemented." << endl; cin.get(); break;
+          }
+        }
+        
+        break;
+        
+      default :
+        cout << "Convective scheme not implemented (euler and ns)." << endl; cin.get();
+        break;
 		}
         
 		/*--- Definition of the viscous scheme for each equation and mesh level ---*/
