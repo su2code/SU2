@@ -522,14 +522,14 @@ void CNumerics::GetInviscidArtCompProjJac(double *val_density, double *val_veloc
 
 }
 
-void CNumerics::GetInviscidArtComp_FreeSurf_ProjJac(double *val_density, double *val_velocity, double *val_betainc2, double *val_levelset, double *val_normal,
+void CNumerics::GetInviscidArtComp_FreeSurf_ProjJac(double *val_density, double *val_ddensity, double *val_velocity, double *val_betainc2, double *val_levelset, double *val_normal,
                                                     double val_scale, double **val_Proj_Jac_Tensor) {
   
 	double a = 0.0, b = 0.0, c = 0.0, d = 0.0, area2 = 0.0, nx = 0.0, ny = 0.0, nz = 0.0, u = 0.0, v = 0.0, w = 0.0;
   
   a = (*val_betainc2)/(*val_density);
   b = (*val_levelset)/(*val_density);
-  c = 0.0;
+  c = (*val_ddensity);
   
   if (nDim == 2) {
     
@@ -537,27 +537,27 @@ void CNumerics::GetInviscidArtComp_FreeSurf_ProjJac(double *val_density, double 
     u = val_velocity[0];  v = val_velocity[1];  d = u*nx + v*ny;
     
     val_Proj_Jac_Tensor[0][0] = 0;
-    val_Proj_Jac_Tensor[0][0] = val_scale*a*nx;
-    val_Proj_Jac_Tensor[0][0] = val_scale*a*ny;
-    val_Proj_Jac_Tensor[0][0] = - val_scale*a*c*d;
+    val_Proj_Jac_Tensor[0][1] = val_scale*a*nx;
+    val_Proj_Jac_Tensor[0][2] = val_scale*a*ny;
+    val_Proj_Jac_Tensor[0][3] = - val_scale*a*c*d;
     
     
-    val_Proj_Jac_Tensor[0][0] = val_scale*nx;
-    val_Proj_Jac_Tensor[0][0] = val_scale*(d + nx*u);
-    val_Proj_Jac_Tensor[0][0] = val_scale*ny*u;
-    val_Proj_Jac_Tensor[0][0] = -val_scale*c*d*u;
+    val_Proj_Jac_Tensor[1][0] = val_scale*nx;
+    val_Proj_Jac_Tensor[1][1] = val_scale*(d + nx*u);
+    val_Proj_Jac_Tensor[1][2] = val_scale*ny*u;
+    val_Proj_Jac_Tensor[1][3] = -val_scale*c*d*u;
     
     
-    val_Proj_Jac_Tensor[0][0] = val_scale*ny;
-    val_Proj_Jac_Tensor[0][0] = val_scale*nx*v;
-    val_Proj_Jac_Tensor[0][0] = val_scale*(d + ny*v);
-    val_Proj_Jac_Tensor[0][0] = -val_scale*c*d*v;
+    val_Proj_Jac_Tensor[2][0] = val_scale*ny;
+    val_Proj_Jac_Tensor[2][1] = val_scale*nx*v;
+    val_Proj_Jac_Tensor[2][2] = val_scale*(d + ny*v);
+    val_Proj_Jac_Tensor[2][3] = -val_scale*c*d*v;
     
     
-    val_Proj_Jac_Tensor[0][0] = 0;
-    val_Proj_Jac_Tensor[0][0] = val_scale*b*nx;
-    val_Proj_Jac_Tensor[0][0] = val_scale*b*ny;
-    val_Proj_Jac_Tensor[0][0] = val_scale*(d - b*c*d);
+    val_Proj_Jac_Tensor[3][0] = 0;
+    val_Proj_Jac_Tensor[3][1] = val_scale*b*nx;
+    val_Proj_Jac_Tensor[3][2] = val_scale*b*ny;
+    val_Proj_Jac_Tensor[3][3] = val_scale*(d - b*c*d);
     
   }
 	else {
@@ -1835,14 +1835,14 @@ void CNumerics::GetPArtCompMatrix_inv(double *val_density, double *val_velocity,
 
 }
 
-void CNumerics::GetPArtComp_FreeSurf_Matrix(double *val_density, double *val_velocity, double *val_betainc2, double *val_levelset,
+void CNumerics::GetPArtComp_FreeSurf_Matrix(double *val_density, double *val_ddensity, double *val_velocity, double *val_betainc2, double *val_levelset,
                                   double *val_normal, double **val_p_tensor) {
   
 	double a = 0.0, b = 0.0, c = 0.0, d = 0.0, area2 = 0.0, e2 = 0.0, f = 0.0, nx = 0.0, ny = 0.0, nz = 0.0, u = 0.0, v = 0.0, w = 0.0;
   
   a = (*val_betainc2)/(*val_density);
   b = (*val_levelset)/(*val_density);
-  c = 0.0;
+  c = (*val_ddensity);
   
   if (nDim == 2) {
     
@@ -1854,22 +1854,22 @@ void CNumerics::GetPArtComp_FreeSurf_Matrix(double *val_density, double *val_vel
     val_p_tensor[0][0] = 0;
     val_p_tensor[0][1] = 0;
     val_p_tensor[0][2] = (d*d*(1.0 - b*c) + 2.0*a*area2 + d*d + d*f)/(2.0*b*area2);
-    val_p_tensor[0][2] = (d*d*(1.0 - b*c) + 2.0*a*area2 + d*d - d*f)/(2.0*b*area2);
+    val_p_tensor[0][3] = (d*d*(1.0 - b*c) + 2.0*a*area2 + d*d - d*f)/(2.0*b*area2);
     
-    val_p_tensor[1][1] = (c*d)/nx;
-    val_p_tensor[1][2] = -(ny/nx);
-    val_p_tensor[1][3] = (d*nx*(b*c - 1.0) + nx*nx*u + 2.0*ny*ny*u - nx*ny*v - nx*f)/(2*b*area2);
-    val_p_tensor[1][4] = (d*nx*(b*c - 1.0) + nx*nx*u + 2.0*ny*ny*u - nx*ny*v + nx*f)/(2*b*area2);
+    val_p_tensor[1][0] = (c*d)/nx;
+    val_p_tensor[1][1] = -(ny/nx);
+    val_p_tensor[1][2] = (d*nx*(b*c - 1.0) + nx*nx*u + 2.0*ny*ny*u - nx*ny*v - nx*f)/(2*b*area2);
+    val_p_tensor[1][3] = (d*nx*(b*c - 1.0) + nx*nx*u + 2.0*ny*ny*u - nx*ny*v + nx*f)/(2*b*area2);
     
-    val_p_tensor[2][1] = 0.0;
-    val_p_tensor[2][2] = 1.0;
-    val_p_tensor[2][3] = (d*ny*(b*c - 1.0) - nx*ny*u + 2.0*nx*nx*v + ny*ny*v - ny*f)/(2*b*area2);
-    val_p_tensor[2][4] = (d*ny*(b*c - 1.0) - nx*ny*u + 2.0*nx*nx*v + ny*ny*v + ny*f)/(2*b*area2);
+    val_p_tensor[2][0] = 0.0;
+    val_p_tensor[2][1] = 1.0;
+    val_p_tensor[2][2] = (d*ny*(b*c - 1.0) - nx*ny*u + 2.0*nx*nx*v + ny*ny*v - ny*f)/(2*b*area2);
+    val_p_tensor[2][3] = (d*ny*(b*c - 1.0) - nx*ny*u + 2.0*nx*nx*v + ny*ny*v + ny*f)/(2*b*area2);
     
-    val_p_tensor[3][1] = 1.0;
-    val_p_tensor[3][2] = 0.0;
+    val_p_tensor[3][0] = 1.0;
+    val_p_tensor[3][1] = 0.0;
+    val_p_tensor[3][2] = 1.0;
     val_p_tensor[3][3] = 1.0;
-    val_p_tensor[3][4] = 1.0;
     
 	}
 	else {
@@ -1884,14 +1884,14 @@ void CNumerics::GetPArtComp_FreeSurf_Matrix(double *val_density, double *val_vel
   
 }
 
-void CNumerics::GetPArtComp_FreeSurf_Matrix_inv(double *val_density, double *val_velocity, double *val_betainc2, double *val_levelset,
+void CNumerics::GetPArtComp_FreeSurf_Matrix_inv(double *val_density, double *val_ddensity, double *val_velocity, double *val_betainc2, double *val_levelset,
                                       double *val_normal, double **val_invp_tensor) {
   
 	double a = 0.0, b = 0.0, c = 0.0, d = 0.0, area2 = 0.0, e2 = 0.0, f = 0.0, nx = 0.0, ny = 0.0, nz = 0.0, u = 0.0, v = 0.0, w = 0.0;
   
   a = (*val_betainc2)/(*val_density);
   b = (*val_levelset)/(*val_density);
-  c = 0.0;
+  c = (*val_ddensity);
   
   if (nDim == 2) {
     

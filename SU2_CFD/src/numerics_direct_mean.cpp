@@ -926,6 +926,20 @@ void CUpwRoeArtComp_FreeSurf_Flow::ComputeResidual(double *val_residual, double 
 	Pressure_i = U_i[0];      Pressure_j = U_j[0];
   LevelSet_i = U_i[nDim+1]; LevelSet_j = U_j[nDim+1];
 
+  if (fabs(LevelSet_i) < EPS) LevelSet_i = EPS;
+  if (fabs(LevelSet_j) < EPS) LevelSet_j = EPS;  
+  
+  double epsilon = config->GetFreeSurface_Thickness(), Delta = 0.0;
+  if (LevelSet_i < -epsilon) Delta = 0.0;
+  if (fabs(LevelSet_i) <= epsilon) Delta = 0.5*(1.0+cos(PI_NUMBER*LevelSet_i/epsilon))/epsilon;
+  if (LevelSet_i > epsilon) Delta = 0.0;
+  dDensityInc_i = (1.0 - config->GetRatioDensity())*Delta*config->GetDensity_FreeStreamND();
+  
+  if (LevelSet_j < -epsilon) Delta = 0.0;
+  if (fabs(LevelSet_j) <= epsilon) Delta = 0.5*(1.0+cos(PI_NUMBER*LevelSet_j/epsilon))/epsilon;
+  if (LevelSet_j > epsilon) Delta = 0.0;
+  dDensityInc_j = (1.0 - config->GetRatioDensity())*Delta*config->GetDensity_FreeStreamND();
+  
   ProjVelocity = 0.0;
 	for (iDim = 0; iDim < nDim; iDim++) {
 		Velocity_i[iDim] = U_i[iDim+1]/DensityInc_i;
@@ -936,6 +950,7 @@ void CUpwRoeArtComp_FreeSurf_Flow::ComputeResidual(double *val_residual, double 
   
 	/*--- Mean variables at points iPoint and jPoint ---*/
 	MeanDensity   = 0.5*(DensityInc_i + DensityInc_j);
+  dMeanDensity   = 0.5*(dDensityInc_i + dDensityInc_j);
 	MeanPressure  = 0.5*(Pressure_i + Pressure_j);
   MeanLevelSet  = 0.5*(LevelSet_i + LevelSet_j);
 	MeanBetaInc2  = 0.5*(BetaInc2_i + BetaInc2_j);
@@ -946,21 +961,13 @@ void CUpwRoeArtComp_FreeSurf_Flow::ComputeResidual(double *val_residual, double 
 	/*--- Compute Proj_flux_tensor_j ---*/
 	GetInviscidArtComp_FreeSurf_ProjFlux(&DensityInc_j, Velocity_j, &Pressure_j, &BetaInc2_j, &LevelSet_j, Normal, Proj_flux_tensor_j);
   
-  
-  MeanDensity = 1.0;
-  MeanVelocity[0] = 1.0; MeanVelocity[1] = 1.0;
-  MeanBetaInc2 = 1.0;
-  MeanLevelSet = 1.0;
-  UnitNormal[0] = 1.0; UnitNormal[1] = 1.0;
-  
-  
 	/*--- Compute P and Lambda (matrix of eigenvalues) ---*/
-	GetPArtComp_FreeSurf_Matrix(&MeanDensity, MeanVelocity, &MeanBetaInc2, &MeanLevelSet, UnitNormal, P_Tensor);
+	GetPArtComp_FreeSurf_Matrix(&MeanDensity, &dMeanDensity, MeanVelocity, &MeanBetaInc2, &MeanLevelSet, UnitNormal, P_Tensor);
   
 	/*--- Flow eigenvalues ---*/
   double a = MeanBetaInc2/MeanDensity;
   double b = MeanLevelSet/MeanDensity;
-  double c = 0.0;
+  double c = dMeanDensity;
   double e = (2.0*ProjVelocity - b*c*ProjVelocity);
   double f = sqrt(4.0*a*Area*Area + e*e);
   
@@ -983,48 +990,60 @@ void CUpwRoeArtComp_FreeSurf_Flow::ComputeResidual(double *val_residual, double 
 		Lambda[iVar] = fabs(Lambda[iVar]);
   
 	/*--- Compute inverse P ---*/
-	GetPArtComp_FreeSurf_Matrix_inv(&MeanDensity, MeanVelocity, &MeanBetaInc2, &MeanLevelSet, UnitNormal, invP_Tensor);
+	GetPArtComp_FreeSurf_Matrix_inv(&MeanDensity, &dMeanDensity, MeanVelocity, &MeanBetaInc2, &MeanLevelSet, UnitNormal, invP_Tensor);
   
 	if (implicit) {
 		/*--- Jacobian of the inviscid flux ---*/
-		GetInviscidArtComp_FreeSurf_ProjJac(&DensityInc_i, Velocity_i, &BetaInc2_i, &LevelSet_i, Normal, 0.5, val_Jacobian_i);
-		GetInviscidArtComp_FreeSurf_ProjJac(&DensityInc_j, Velocity_j, &BetaInc2_j, &LevelSet_j, Normal, 0.5, val_Jacobian_j);
+		GetInviscidArtComp_FreeSurf_ProjJac(&DensityInc_i, &dDensityInc_i, Velocity_i, &BetaInc2_i, &LevelSet_i, Normal, 0.5, val_Jacobian_i);
+		GetInviscidArtComp_FreeSurf_ProjJac(&DensityInc_j, &dDensityInc_j, Velocity_j, &BetaInc2_j, &LevelSet_j, Normal, 0.5, val_Jacobian_j);
 	}
   
   
-  cout << endl <<"P Matrix"<< endl;
-
-  for (iVar = 0; iVar < nVar; iVar++) {
-    for (jVar = 0; jVar < nVar; jVar++)
-      cout << P_Tensor[iVar][jVar] << "\t";
-    cout << endl;
-  }
-  
-  cout << endl <<"invP Matrix"<< endl;
-  for (iVar = 0; iVar < nVar; iVar++) {
-    for (jVar = 0; jVar < nVar; jVar++)
-      cout << invP_Tensor[iVar][jVar] << "\t";
-    cout << endl;
-  }
-  
-  for (iVar = 0; iVar < nVar; iVar++) {
-		for (jVar = 0; jVar < nVar; jVar++) {
-      Proj_ModJac_Tensor_ij = 0.0;
-			for (kVar = 0; kVar < nVar; kVar++)
-				Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*invP_Tensor[kVar][jVar];
-      val_Jacobian_i[iVar][jVar] = Proj_ModJac_Tensor_ij;
-		}
-	}
-
-  cout << endl <<"Identity"<< endl;
-  for (iVar = 0; iVar < nVar; iVar++) {
-    for (jVar = 0; jVar < nVar; jVar++)
-      cout << val_Jacobian_i[iVar][jVar] << "\t";
-    cout << endl;
-  }
-  
-  cin.get();
-  
+//  cout << endl <<"P Matrix"<< endl;
+//  for (iVar = 0; iVar < nVar; iVar++) {
+//    for (jVar = 0; jVar < nVar; jVar++)
+//      cout << P_Tensor[iVar][jVar] << "\t";
+//    cout << endl;
+//  }
+//  
+//  cout << endl <<"invP Matrix"<< endl;
+//  for (iVar = 0; iVar < nVar; iVar++) {
+//    for (jVar = 0; jVar < nVar; jVar++)
+//      cout << invP_Tensor[iVar][jVar] << "\t";
+//    cout << endl;
+//  }
+//  
+//  GetInviscidArtComp_FreeSurf_ProjJac(&MeanDensity, MeanVelocity, &MeanBetaInc2, &MeanLevelSet, Normal, 1.0, val_Jacobian_j);
+//  cout << endl <<"Jacobian Matrix"<< endl;
+//  for (iVar = 0; iVar < nVar; iVar++) {
+//    for (jVar = 0; jVar < nVar; jVar++)
+//      cout << val_Jacobian_j[iVar][jVar] << "\t";
+//    cout << endl;
+//  }
+//  
+//  cout << endl <<"EigenValues"<< endl;
+//  for (iVar = 0; iVar < nVar; iVar++) {
+//      cout << Lambda[iVar] << "\t";
+//  }
+//  
+//  for (iVar = 0; iVar < nVar; iVar++) {
+//		for (jVar = 0; jVar < nVar; jVar++) {
+//      Proj_ModJac_Tensor_ij = 0.0;
+//			for (kVar = 0; kVar < nVar; kVar++)
+//				Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
+//      val_Jacobian_i[iVar][jVar] = Proj_ModJac_Tensor_ij;
+//		}
+//	}
+//  cout << endl << endl;
+//
+//  cout << endl <<"Identity"<< endl;
+//  for (iVar = 0; iVar < nVar; iVar++) {
+//    for (jVar = 0; jVar < nVar; jVar++)
+//      cout << val_Jacobian_i[iVar][jVar]-val_Jacobian_j[iVar][jVar] << "\t";
+//    cout << endl;
+//  }
+//  
+//  cin.get();
   
   
 	/*--- Diference variables iPoint and jPoint ---*/
@@ -1048,6 +1067,22 @@ void CUpwRoeArtComp_FreeSurf_Flow::ComputeResidual(double *val_residual, double 
       
 		}
 	}
+  
+  
+//  for (iVar = 0; iVar < nVar; iVar++) {
+//    if (val_residual[iVar] != val_residual[iVar]) {cout <<"val_residual"<<endl; cin.get();}
+//  }
+//  
+//  for (iVar = 0; iVar < nVar; iVar++) {
+//    for (jVar = 0; jVar < nVar; jVar++)
+//      if (val_Jacobian_i[iVar][jVar] != val_Jacobian_i[iVar][jVar]) {cout <<"val_Jacobian_i" <<iVar <<" "<< jVar<<" " <<
+//        DensityInc_i<<" "<<Velocity_i[0]<<" "<<Velocity_i[1]<<" "<<BetaInc2_i<<" "<<LevelSet_i<<" "<< Normal[0]<<" "<< Normal[1]<< endl; cin.get();}
+//  }
+//  
+//  for (iVar = 0; iVar < nVar; iVar++) {
+//    for (jVar = 0; jVar < nVar; jVar++)
+//      if (val_Jacobian_j[iVar][jVar] != val_Jacobian_j[iVar][jVar]) {cout <<"val_Jacobian_j"<<endl; cin.get();}
+//  }
 
 }
 
