@@ -278,7 +278,7 @@ def read_aerodynamics( History_filename , special_cases=[] ):
         
         Outputs:
             dictionary with function keys and thier values
-            if special cases has 'WRT_UNSTEADY', returns time averaged data
+            if special cases has 'UNSTEADY_SIMULATION', returns time averaged data
             otherwise returns final value from history file
     """
     
@@ -295,7 +295,7 @@ def read_aerodynamics( History_filename , special_cases=[] ):
             Func_Values[this_objfun] = history_data[this_objfun] 
     
     # for unsteady cases, average time-accurate objective function values
-    if 'WRT_UNSTEADY' in special_cases:
+    if 'UNSTEADY_SIMULATION' in special_cases:
         for key,value in Func_Values.iteritems():
             Func_Values[key] = sum(value)/len(value)
     
