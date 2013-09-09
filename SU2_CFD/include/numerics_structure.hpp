@@ -945,7 +945,7 @@ public:
 	 * \param[in] val_scale - Scale of the projection.
 	 * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
 	 */
-	void GetInviscidArtComp_FreeSurf_ProjJac(double *val_density, double *val_velocity, double *val_betainc2, double *val_levelset, double *val_normal,
+	void GetInviscidArtComp_FreeSurf_ProjJac(double *val_density, double *val_ddensity, double *val_velocity, double *val_betainc2, double *val_levelset, double *val_normal,
                                  double val_scale, double **val_Proj_Jac_tensor);
   
 	/*! 
@@ -1145,7 +1145,7 @@ public:
 	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
 	 * \param[out] val_p_tensor - Pointer to the P matrix.
 	 */
-	void GetPArtComp_FreeSurf_Matrix(double *val_density, double *val_velocity, double *val_betainv2, double *val_levelset, double *val_normal, double **val_p_tensor);
+	void GetPArtComp_FreeSurf_Matrix(double *val_density, double *val_ddensity, double *val_velocity, double *val_betainv2, double *val_levelset, double *val_normal, double **val_p_tensor);
   
 	/*! 
 	 * \brief Computation of the matrix P^{-1}, this matrix diagonalize the conservative Jacobians 
@@ -1223,7 +1223,7 @@ public:
 	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
 	 * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
 	 */
-	void GetPArtComp_FreeSurf_Matrix_inv(double *val_density, double *val_velocity, double *val_betainv2, double *val_levelset, double *val_normal, double **val_invp_tensor);
+	void GetPArtComp_FreeSurf_Matrix_inv(double *val_density, double *val_ddensity, double *val_velocity, double *val_betainv2, double *val_levelset, double *val_normal, double **val_invp_tensor);
   
 	/*! 
 	 * \brief Computation of the projected inviscid lambda (eingenvalues).
@@ -1762,9 +1762,9 @@ private:
 	double *Proj_flux_tensor_i, *Proj_flux_tensor_j;
 	double *Lambda, *Epsilon;
 	double **P_Tensor, **invP_Tensor;
-	double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, LevelSet_i, Enthalpy_i,
-	Density_j, Energy_j, SoundSpeed_j, Pressure_j, LevelSet_j, Enthalpy_j, R, MeanDensity, MeanEnthalpy, MeanSoundSpeed, MeanPressure, MeanLevelSet, MeanBetaInc2,
-	ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel, delta_p, delta_rho, vn;
+	double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Pressure_i, LevelSet_i, dDensityInc_i, dDensityInc_j,
+	Density_j, Pressure_j, LevelSet_j, MeanDensity, dMeanDensity, MeanPressure, MeanLevelSet, MeanBetaInc2,
+	ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel;
 	unsigned short iDim, jDim, iVar, jVar, kVar;
   
 public:
