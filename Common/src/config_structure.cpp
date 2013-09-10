@@ -2854,24 +2854,31 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	iMarker_Inlet, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_FWH, iMarker_Observer, iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_Plotting, iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet;
 
 	cout << endl <<"-------------------------------------------------------------------------" << endl;
-	cout <<"|     _____   _    _   ___                                              |" << endl;
-	cout <<"|    / ____| | |  | | |__ \\       Web: su2.stanford.edu                 |" << endl;
-	cout <<"|   | (___   | |  | |    ) |      Twitter: @su2code                     |" << endl;
-	cout <<"|    \\___ \\  | |  | |   / /       Forum: www.cfd-online.com/Forums/su2/ |" << endl;
-	cout <<"|    ____) | | |__| |  / /_                                             |" << endl;
+	cout <<"|    _____   _    _   ___                                               |" << endl;
+	cout <<"|   / ____| | |  | | |__ \\    Web: su2.stanford.edu                     |" << endl;
+	cout <<"|  | (___   | |  | |    ) |   Twitter: @su2code                         |" << endl;
+	cout <<"|   \\___ \\  | |  | |   / /    Forum: www.cfd-online.com/Forums/su2/     |" << endl;
+	cout <<"|   ____) | | |__| |  / /_                                              |" << endl;
 	switch (val_software) {
-	case SU2_CFD: cout << "|   |_____/   \\____/  |____|  Suite (Computational Fluid Dyn. Code)     |" << endl; break;
-	case SU2_MDC: cout << "|   |_____/   \\____/  |____|  Suite (Mesh Deformation Code)             |" << endl; break;
-	case SU2_GPC: cout << "|   |_____/   \\____/  |____|  Suite (Gradient Projection Code)          |" << endl; break;
-	case SU2_DDC: cout << "|   |_____/   \\____/  |____|  Suite (Domain Decomposition Code)         |" << endl; break;
-	case SU2_MAC: cout << "|   |_____/   \\____/  |____|  Suite (Mesh Adaptation Code)              |" << endl; break;
-	case SU2_GDC: cout << "|   |_____/   \\____/  |____|  Suite (Geometry Design Code)              |" << endl; break;
-	case SU2_PBC: cout << "|   |_____/   \\____/  |____|  Suite (Periodic Boundary Code)            |" << endl; break;
-	case SU2_SMC: cout << "|   |_____/   \\____/  |____|  Suite (Sliding Mesh Code)                 |" << endl; break;
-	case SU2_SOL: cout << "|   |_____/   \\____/  |____|  Suite (Solution Exporting Code)           |" << endl; break;
+	case SU2_CFD: cout << "|  |_____/   \\____/  |____|   Suite (Computational Fluid Dynamic Code)  |" << endl; break;
+	case SU2_MDC: cout << "|  |_____/   \\____/  |____|   Suite (Mesh Deformation Code)             |" << endl; break;
+	case SU2_GPC: cout << "|  |_____/   \\____/  |____|   Suite (Gradient Projection Code)          |" << endl; break;
+	case SU2_DDC: cout << "|  |_____/   \\____/  |____|   Suite (Domain Decomposition Code)         |" << endl; break;
+	case SU2_MAC: cout << "|  |_____/   \\____/  |____|   Suite (Mesh Adaptation Code)              |" << endl; break;
+	case SU2_GDC: cout << "|  |_____/   \\____/  |____|   Suite (Geometry Design Code)              |" << endl; break;
+	case SU2_PBC: cout << "|  |_____/   \\____/  |____|   Suite (Periodic Boundary Code)            |" << endl; break;
+	case SU2_SMC: cout << "|  |_____/   \\____/  |____|   Suite (Sliding Mesh Code)                 |" << endl; break;
+	case SU2_SOL: cout << "|  |_____/   \\____/  |____|   Suite (Solution Exporting Code)           |" << endl; break;
 	}
 
 	cout << "|                             Release 2.0.7                             |" << endl;
+  cout <<"-------------------------------------------------------------------------" << endl;
+  cout << "| Stanford University Unstructured (SU2).                               |" << endl; 
+  cout << "| Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).            |" << endl;
+  cout << "| SU2 is distributed in the hope that it will be useful,                |" << endl;
+  cout << "| but WITHOUT ANY WARRANTY; without even the implied warranty of        |" << endl;
+  cout << "| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU     |" << endl;
+  cout << "| Lesser General Public License (version 2.1) for more details.         |" << endl;
 	cout <<"-------------------------------------------------------------------------" << endl;
 
 	cout << endl <<"------------------------ Physical case definition -----------------------" << endl;
