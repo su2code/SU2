@@ -1879,11 +1879,12 @@ void CEulerSolver::Postprocessing(CGeometry *geometry, CSolver **solver_containe
 
 void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
 		unsigned short iMesh, unsigned long Iteration) {
-	double *Normal, Area, Vol, Mean_SoundSpeed, Mean_ProjVel, Mean_BetaInc2, Lambda, Local_Delta_Time, Mean_DensityInc,
-	Global_Delta_Time = 1E6, Global_Delta_UnstTimeND, ProjVel, ProjVel_i, ProjVel_j;
+	double *Normal, Area, Vol, Mean_SoundSpeed, Mean_ProjVel, Mean_BetaInc2, Lambda, Local_Delta_Time, Mean_DensityInc, Mean_LevelSet,
+	Global_Delta_Time = 1E6, Global_Delta_UnstTimeND, ProjVel, ProjVel_i, ProjVel_j, Delta, a, b, c, e, f;
 	unsigned long iEdge, iVertex, iPoint, jPoint;
 	unsigned short iDim, iMarker;
 
+  double epsilon = config->GetFreeSurface_Thickness();
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -1913,13 +1914,29 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 			Mean_ProjVel = 0.5 * (node[iPoint]->GetProjVel(Normal) + node[jPoint]->GetProjVel(Normal));
 			Mean_SoundSpeed = 0.5 * (node[iPoint]->GetSoundSpeed() + node[jPoint]->GetSoundSpeed()) * Area;
 		}
-		if (incompressible || freesurface) {
+		if (incompressible) {
 			Mean_ProjVel = 0.5 * (node[iPoint]->GetProjVelInc(Normal) + node[jPoint]->GetProjVelInc(Normal));
 			Mean_BetaInc2 = 0.5 * (node[iPoint]->GetBetaInc2() + node[jPoint]->GetBetaInc2());
 			Mean_DensityInc = 0.5 * (node[iPoint]->GetDensityInc() + node[jPoint]->GetDensityInc());
 			Mean_SoundSpeed = sqrt(Mean_ProjVel*Mean_ProjVel + (Mean_BetaInc2/Mean_DensityInc)*Area*Area);
 		}
+		if (freesurface) {
+			Mean_ProjVel = 0.5 * (node[iPoint]->GetProjVelInc(Normal) + node[jPoint]->GetProjVelInc(Normal));
+			Mean_BetaInc2 = 0.5 * (node[iPoint]->GetBetaInc2() + node[jPoint]->GetBetaInc2());
+			Mean_DensityInc = 0.5 * (node[iPoint]->GetDensityInc() + node[jPoint]->GetDensityInc());
+      Mean_LevelSet = 0.5 * (node[iPoint]->GetLevelSet() + node[jPoint]->GetLevelSet());
 
+      if (Mean_LevelSet < -epsilon) Delta = 0.0;
+      if (fabs(Mean_LevelSet) <= epsilon) Delta = 0.5*(1.0+cos(PI_NUMBER*Mean_LevelSet/epsilon))/epsilon;
+      if (Mean_LevelSet > epsilon) Delta = 0.0;
+      
+      a = Mean_BetaInc2/Mean_DensityInc, b = Mean_LevelSet/Mean_DensityInc;
+      c = (1.0 - config->GetRatioDensity())*Delta*config->GetDensity_FreeStreamND();
+      e = (2.0*Mean_ProjVel - b*c*Mean_ProjVel), f = sqrt(4.0*a*Area*Area + e*e);
+      Mean_SoundSpeed = 0.5*f;
+      Mean_ProjVel = 0.5*e;
+		}
+    
 		/*--- Adjustment for grid movement ---*/
 		if (grid_movement) {
 			double *GridVel_i = geometry->node[iPoint]->GetGridVel();
@@ -1953,12 +1970,28 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 				Mean_ProjVel = node[iPoint]->GetProjVel(Normal);
 				Mean_SoundSpeed = node[iPoint]->GetSoundSpeed() * Area;
 			}
-			if (incompressible || freesurface) {
+			if (incompressible) {
 				Mean_ProjVel = node[iPoint]->GetProjVelInc(Normal);
 				Mean_BetaInc2 = node[iPoint]->GetBetaInc2();
 				Mean_DensityInc = node[iPoint]->GetDensityInc();
-				Mean_SoundSpeed = sqrt(Mean_ProjVel*Mean_ProjVel + (Mean_BetaInc2/Mean_DensityInc)*Area*Area); 
-			}
+				Mean_SoundSpeed = sqrt(Mean_ProjVel*Mean_ProjVel + (Mean_BetaInc2/Mean_DensityInc)*Area*Area);
+      }
+      if (freesurface) {
+        Mean_ProjVel = node[iPoint]->GetProjVelInc(Normal);
+        Mean_BetaInc2 = node[iPoint]->GetBetaInc2();
+        Mean_DensityInc = node[iPoint]->GetDensityInc();
+        Mean_LevelSet = node[iPoint]->GetLevelSet();
+        
+        if (Mean_LevelSet < -epsilon) Delta = 0.0;
+        if (fabs(Mean_LevelSet) <= epsilon) Delta = 0.5*(1.0+cos(PI_NUMBER*Mean_LevelSet/epsilon))/epsilon;
+        if (Mean_LevelSet > epsilon) Delta = 0.0;
+        
+        a = Mean_BetaInc2/Mean_DensityInc; b = Mean_LevelSet/Mean_DensityInc;
+        c = (1.0 - config->GetRatioDensity())*Delta*config->GetDensity_FreeStreamND();
+        e = (2.0*Mean_ProjVel - b*c*Mean_ProjVel); f = sqrt(4.0*a*Area*Area + e*e);
+        Mean_SoundSpeed = 0.5*f;
+        Mean_ProjVel = 0.5*e;
+      }
 
 			/*--- Adjustment for grid movement ---*/
 			if (grid_movement) {
@@ -2275,39 +2308,39 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
-		CConfig *config, unsigned short iMesh) {
+                                   CConfig *config, unsigned short iMesh) {
   
 	unsigned short iVar;
 	unsigned long iPoint;
-    bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit       = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 	bool rotating_frame = config->GetRotating_Frame();
 	bool axisymmetric   = config->GetAxisymmetric();
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+  bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
 	bool gravity        = (config->GetGravityForce() == YES);
 	bool time_spectral  = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
 	bool magnet         = (config->GetMagnetic_Force() == YES);
 	bool jouleheating   = config->GetJouleHeating();
-    bool windgust       = config->GetWind_Gust();
-
+  bool windgust       = config->GetWind_Gust();
+  
   /*--- Initialize the source residual to zero ---*/
 	for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
   
 	if (rotating_frame) {
-
+    
 		/*--- Loop over all points ---*/
-		for (iPoint = 0; iPoint < nPointDomain; iPoint++) { 
-
+		for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      
 			/*--- Load the conservative variables ---*/
 			numerics->SetConservative(node[iPoint]->GetSolution(),
                                 node[iPoint]->GetSolution());
-
+      
 			/*--- Load the volume of the dual mesh cell ---*/
 			numerics->SetVolume(geometry->node[iPoint]->GetVolume());
-
+      
 			/*--- Compute the rotating frame source residual ---*/
 			numerics->ComputeResidual(Residual, Jacobian_i, config);
-
+      
 			/*--- Add the source residual to the total ---*/
 			LinSysRes.AddBlock(iPoint, Residual);
       
@@ -2316,53 +2349,53 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       
 		}
 	}
-
+  
 	if (axisymmetric) {
-
+    
 		/*--- Zero out Jacobian structure ---*/
 		if (implicit) {
 			for (iVar = 0; iVar < nVar; iVar ++)
 				for (unsigned short jVar = 0; jVar < nVar; jVar ++)
 					Jacobian_i[iVar][jVar] = 0.0;
 		}
-
+    
 		/*--- loop over points ---*/
-		for (iPoint = 0; iPoint < nPointDomain; iPoint++) { 
-
+		for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      
 			/*--- Set solution  ---*/
 			numerics->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
-
+      
 			if (incompressible || freesurface) {
 				/*--- Set incompressible density  ---*/
 				numerics->SetDensityInc(node[iPoint]->GetDensityInc(), node[iPoint]->GetDensityInc());
-
+        
 				/*--- Set beta squared  ---*/
 				numerics->SetBetaInc2(node[iPoint]->GetBetaInc2(), node[iPoint]->GetBetaInc2());
 			}
-
+      
 			/*--- Set control volume ---*/
 			numerics->SetVolume(geometry->node[iPoint]->GetVolume());
-
+      
 			/*--- Set y coordinate ---*/
 			numerics->SetCoord(geometry->node[iPoint]->GetCoord(),geometry->node[iPoint]->GetCoord());
-
+      
 			/*--- Compute Source term Residual ---*/
 			numerics->ComputeResidual(Residual, Jacobian_i, config);
-
+      
 			/*--- Add Residual ---*/
 			LinSysRes.AddBlock(iPoint, Residual);
-
+      
 			/*--- Implicit part ---*/
 			if (implicit)
 				Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 		}
 	}
-
+  
 	if (gravity) {
-
+    
 		/*--- loop over points ---*/
-		for (iPoint = 0; iPoint < nPointDomain; iPoint++) { 
-
+		for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      
 			/*--- Set solution  ---*/
 			numerics->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
       
@@ -2370,164 +2403,162 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 			if (incompressible || freesurface) {
         numerics->SetDensityInc(node[iPoint]->GetDensityInc(), node[iPoint]->GetDensityInc());
       }
-
+      
 			/*--- Set control volume ---*/
 			numerics->SetVolume(geometry->node[iPoint]->GetVolume());
-
+      
 			/*--- Compute Source term Residual ---*/
 			numerics->ComputeResidual(Residual, config);
       
 			/*--- Add Residual ---*/
 			LinSysRes.AddBlock(iPoint, Residual);
-
+      
 		}
     
 	}
-
+  
 	if (time_spectral) {
-
+    
 		double Volume, Source;
-
+    
 		/*--- loop over points ---*/
 		for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
+      
 			/*--- Get control volume ---*/
 			Volume = geometry->node[iPoint]->GetVolume();
-
+      
 			/*--- Get stored time spectral source term ---*/
 			for (iVar = 0; iVar < nVar; iVar++) {
 				Source = node[iPoint]->GetTimeSpectral_Source(iVar);
 				Residual[iVar] = Source*Volume;
 			}
-
+      
 			/*--- Add Residual ---*/
 			LinSysRes.AddBlock(iPoint, Residual);
-
+      
 		}
 	}
-
+  
 	if (magnet) {
-
+    
 		for (iVar = 0; iVar < nVar; iVar ++)
 			for (unsigned short jVar = 0; jVar < nVar; jVar ++)
 				Jacobian_i[iVar][jVar] = 0.0;
 		/*--- loop over points ---*/
 		for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
+      
 			/*--- Set the coordinate ---*/
 			numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
-
+      
 			/*--- Set solution  ---*/
 			numerics->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
-
+      
 			/*--- Set control volume ---*/
 			numerics->SetVolume(geometry->node[iPoint]->GetVolume());
-
+      
 			/*--- Compute Residual ---*/
 			numerics->ComputeResidual(Residual, Jacobian_i, config);
-
+      
 			LinSysRes.SubtractBlock(iPoint, Residual);
 			if (nDim ==3) node[iPoint]->SetMagneticField(numerics->GetMagneticField());
 			if (implicit)
 				Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-
+      
 		}
 	}
-
+  
 	if (jouleheating) {
 		double arc_column_extent = 2.30581;
 		for (iVar = 0; iVar < nVar; iVar ++)
 			for (unsigned short jVar = 0; jVar < nVar; jVar ++)
 				Jacobian_i[iVar][jVar] = 0.0;
-
+    
 		double integral = 0.0; unsigned long jPoint;
 		vector<double> XCoordList = geometry->GetGeometryPlanes();
 		vector<vector<double> > Xcoord_plane = geometry->GetXCoord();
 		vector<vector<double> > Ycoord_plane = geometry->GetYCoord();
 		vector<vector<unsigned long> > Plane_points = geometry->GetPlanarPoints();
-
+    
 		for (unsigned short iPlane = 0; iPlane < XCoordList.size(); iPlane++) {
 			integral= 0.0;
 			if (Xcoord_plane[iPlane][0] <= arc_column_extent) {
 				for (unsigned short iVertex = 1; iVertex < Xcoord_plane[iPlane].size(); iVertex++) {
 					iPoint = Plane_points[iPlane][iVertex];
 					jPoint = Plane_points[iPlane][iVertex-1];
-
+          
 					/*--- Set solution  ---*/
 					numerics->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
-
+          
 					/*--- Set control volume ---*/
 					numerics->SetVolume(geometry->node[iPoint]->GetVolume());
-
+          
 					/*--- Set the coordinate ---*/
 					numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[jPoint]->GetCoord());
-
+          
 					/*--- Set electrical conductivity  ---*/
 					numerics->SetElec_Cond();
-
+          
 					/*--- Sum over points to get the integral  ---*/
 					integral +=numerics->GetElec_CondIntegral();
 				}
-
+        
 				/*--- Set the integral  ---*/
 				numerics->SetElec_CondIntegralsqr(integral*integral);
-
+        
 				for (unsigned short iVertex = 0; iVertex < Xcoord_plane[iPlane].size(); iVertex++) {
 					iPoint = Plane_points[iPlane][iVertex];
-
+          
 					/*--- Set solution  ---*/
 					numerics->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
-
+          
 					/*--- Set control volume ---*/
 					numerics->SetVolume(geometry->node[iPoint]->GetVolume());
-
+          
 					/*--- Set the coordinate ---*/
 					numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
-
+          
 					/*--- Set electrical conductivity  ---*/
 					numerics->SetElec_Cond();
-
+          
 					/*--- Compute Residual ---*/
 					numerics->ComputeResidual(Residual, Jacobian_i, config);
-					//					for (iVar = 0; iVar < nVar; iVar++)
-					//						cout << Residual[iVar] << ", ";
-					//					cout << endl;
+          
 					LinSysRes.SubtractBlock(iPoint, Residual);
 					if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
 				}
 			}
 		}
 	}
+  
+  if (windgust) {
     
-    if (windgust) {
-        
 		/*--- Loop over all points ---*/
 		for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-            
-            /*--- Load the wind gust ---*/
+      
+      /*--- Load the wind gust ---*/
 			numerics->SetWindGust(node[iPoint]->GetWindGust(), node[iPoint]->GetWindGust());
-            
-            /*--- Load the wind gust derivatives ---*/
+      
+      /*--- Load the wind gust derivatives ---*/
 			numerics->SetWindGustDer(node[iPoint]->GetWindGustDer(), node[iPoint]->GetWindGustDer());
-            
-            /*--- Load the primitive variables ---*/
-            numerics->SetPrimitive(node[iPoint]->GetPrimVar(), node[iPoint]->GetPrimVar());
-            
+      
+      /*--- Load the primitive variables ---*/
+      numerics->SetPrimitive(node[iPoint]->GetPrimVar(), node[iPoint]->GetPrimVar());
+      
 			/*--- Load the volume of the dual mesh cell ---*/
 			numerics->SetVolume(geometry->node[iPoint]->GetVolume());
-            
+      
 			/*--- Compute the rotating frame source residual ---*/
 			numerics->ComputeResidual(Residual, Jacobian_i, config);
-            
+      
 			/*--- Add the source residual to the total ---*/
 			LinSysRes.AddBlock(iPoint, Residual);
-            
-            /*--- Add the implicit Jacobian contribution ---*/
-            if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-            
+      
+      /*--- Add the implicit Jacobian contribution ---*/
+      if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      
 		}
 	}
-
+  
 }
 
 void CEulerSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
@@ -4341,25 +4372,8 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
 			for (iDim = 0; iDim < nDim; iDim++)
 				Residual[iDim+1] = Pressure*UnitNormal[iDim]*Area;
       
-			if (compressible) {
+			if (compressible || freesurface) {
         Residual[nVar-1] = 0.0;
-      }
-      if (freesurface) {
-        /*--- Convection of the level set quatity ---*/
-        double q_ij = 0.0, Velocity_i[3] = {0.0, 0.0, 0.0}, Velocity_j[3] = {0.0, 0.0, 0.0}, a0 = 0.0, a1 = 0.0;
-        double LevelSetVar_i = node[iPoint]->GetSolution(nDim+1);
-        double LevelSetVar_j = node[iPoint]->GetSolution(nDim+1);
-        
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Velocity_i[iDim] = node[iPoint]->GetVelocity(iDim, FREESURFACE);
-          Velocity_j[iDim] = node[iPoint]->GetVelocity(iDim, FREESURFACE);
-          q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*UnitNormal[iDim]*Area;
-        }
-
-        a0 = 0.5*(q_ij+fabs(q_ij)); a1 = 0.5*(q_ij-fabs(q_ij));
-        
-        Residual[nDim+1] = a0*LevelSetVar_i+a1*LevelSetVar_j;
-        
       }
 
 			/*--- Adjustment to energy equation due to grid motion ---*/
@@ -4408,15 +4422,9 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
 					}
 					Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
 				}
-				if (incompressible)  {
+				if (incompressible || freesurface)  {
 					for (iDim = 0; iDim < nDim; iDim++)
 						Jacobian_i[iDim+1][0] = -Normal[iDim];
-					Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-				}
-        if (freesurface)  {
-					for (iDim = 0; iDim < nDim; iDim++)
-						Jacobian_i[iDim+1][0] = -Normal[iDim];
-          Jacobian_i[nDim+1][nDim+1] = a0;
 					Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 				}
         
@@ -4961,6 +4969,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         U_inlet[nDim] = node[iPoint]->GetSolution(nDim);
         V_inlet[nDim] = node[iPoint]->GetPrimVar(nDim);
         
+        /*--- Neumann condition for the level set ---*/
         U_inlet[nDim+1] = node[iPoint]->GetSolution(nDim+1);
 
 			}
@@ -5165,7 +5174,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         U_outlet[0] = GetPressure_Inf();
         V_domain[0] = Density_Outlet;
         
-				/*--- Neumman condition for the velocity ---*/
+				/*--- Neumann condition for the velocity ---*/
 				for (iDim = 0; iDim < nDim; iDim++) {
 					U_outlet[iDim+1] = node[Point_Normal]->GetSolution(iDim+1);
           V_outlet[iDim+1] = node[Point_Normal]->GetPrimVar(iDim+1);
@@ -5184,14 +5193,14 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         U_outlet[0] = PressFreeSurface + Density_Outlet*((FreeSurface_Zero-Height)/(Froude*Froude));
         V_domain[0] = Density_Outlet;
                 
-        /*--- Neumman condition in the interface for the pressure and density ---*/
+        /*--- Neumann condition in the interface for the pressure and density ---*/
         if (fabs(LevelSet) <= epsilon) {
           U_outlet[0] = node[Point_Normal]->GetSolution(0);
           Density_Outlet = node[Point_Normal]->GetDensityInc();
           V_domain[0] = Density_Outlet;
         }
         
-				/*--- Neumman condition for the velocity ---*/
+				/*--- Neumann condition for the velocity ---*/
 				for (iDim = 0; iDim < nDim; iDim++) {
 					U_outlet[iDim+1] = node[Point_Normal]->GetSolution(iDim+1);
           V_outlet[iDim+1] = node[Point_Normal]->GetPrimVar(iDim+1);
