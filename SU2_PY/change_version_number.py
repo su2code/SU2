@@ -4,9 +4,8 @@
 #  \brief Python script for doing the continuous adjoint computation using the SU2 suite.
 #  \author Aniket Aranake
 #
-# Stanford University Unstructured (SU2),
-# copyright (C) 2012-2013 Aerospace Design Laboratory (ADL), is
-# distributed under the GNU Lesser General Public License (GNU LGPL).
+# Stanford University Unstructured (SU2).
+# Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -19,7 +18,7 @@
 # Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public
-# License along with this library.  If not, see <http://www.gnu.org/licenses/>.
+# License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
 # Run the script from the base directory (ie $SU2HOME). Grep will search directories recursively for matches in version number
 import os,sys
