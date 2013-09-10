@@ -62,7 +62,6 @@ am____bin_SU2_CFD_OBJECTS =  \
 	../src/___bin_SU2_CFD-integration_structure.$(OBJEXT) \
 	../src/___bin_SU2_CFD-integration_time.$(OBJEXT) \
 	../src/___bin_SU2_CFD-iteration_structure.$(OBJEXT) \
-	../src/___bin_SU2_CFD-math_ad.$(OBJEXT) \
 	../src/___bin_SU2_CFD-numerics_adjoint_electric.$(OBJEXT) \
 	../src/___bin_SU2_CFD-numerics_adjoint_levelset.$(OBJEXT) \
 	../src/___bin_SU2_CFD-numerics_adjoint_mean.$(OBJEXT) \
@@ -248,7 +247,6 @@ ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
 		../include/integration_structure.hpp \
 		../include/integration_structure.inl \
 		../include/iteration_structure.hpp \
-		../include/math_ad.hpp \
 		../include/numerics_structure.hpp \
 		../include/numerics_structure.inl \
 		../include/output_structure.hpp \
@@ -262,7 +260,6 @@ ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
 		../src/integration_structure.cpp \
 		../src/integration_time.cpp \
 		../src/iteration_structure.cpp \
-		../src/math_ad.cpp \
 		../src/numerics_adjoint_electric.cpp \
 		../src/numerics_adjoint_levelset.cpp \
 		../src/numerics_adjoint_mean.cpp \
@@ -430,8 +427,6 @@ clean-binPROGRAMS:
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD-iteration_structure.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
-../src/___bin_SU2_CFD-math_ad.$(OBJEXT): ../src/$(am__dirstamp) \
-	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD-numerics_adjoint_electric.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD-numerics_adjoint_levelset.$(OBJEXT):  \
@@ -575,7 +570,6 @@ mostlyclean-compile:
 	-rm -f ../src/___bin_SU2_CFD-integration_structure.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-integration_time.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-iteration_structure.$(OBJEXT)
-	-rm -f ../src/___bin_SU2_CFD-math_ad.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-numerics_adjoint_electric.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-numerics_adjoint_levelset.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-numerics_adjoint_mean.$(OBJEXT)
@@ -649,7 +643,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-integration_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-integration_time.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-iteration_structure.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-math_ad.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-numerics_adjoint_electric.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-numerics_adjoint_levelset.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-numerics_adjoint_mean.Po@am__quote@
@@ -799,20 +792,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/iteration_structure.cpp' object='../src/___bin_SU2_CFD-iteration_structure.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-iteration_structure.obj `if test -f '../src/iteration_structure.cpp'; then $(CYGPATH_W) '../src/iteration_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/iteration_structure.cpp'; fi`
-
-../src/___bin_SU2_CFD-math_ad.o: ../src/math_ad.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-math_ad.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD-math_ad.Tpo -c -o ../src/___bin_SU2_CFD-math_ad.o `test -f '../src/math_ad.cpp' || echo '$(srcdir)/'`../src/math_ad.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD-math_ad.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD-math_ad.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/math_ad.cpp' object='../src/___bin_SU2_CFD-math_ad.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-math_ad.o `test -f '../src/math_ad.cpp' || echo '$(srcdir)/'`../src/math_ad.cpp
-
-../src/___bin_SU2_CFD-math_ad.obj: ../src/math_ad.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-math_ad.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD-math_ad.Tpo -c -o ../src/___bin_SU2_CFD-math_ad.obj `if test -f '../src/math_ad.cpp'; then $(CYGPATH_W) '../src/math_ad.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/math_ad.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD-math_ad.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD-math_ad.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/math_ad.cpp' object='../src/___bin_SU2_CFD-math_ad.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-math_ad.obj `if test -f '../src/math_ad.cpp'; then $(CYGPATH_W) '../src/math_ad.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/math_ad.cpp'; fi`
 
 ../src/___bin_SU2_CFD-numerics_adjoint_electric.o: ../src/numerics_adjoint_electric.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-numerics_adjoint_electric.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD-numerics_adjoint_electric.Tpo -c -o ../src/___bin_SU2_CFD-numerics_adjoint_electric.o `test -f '../src/numerics_adjoint_electric.cpp' || echo '$(srcdir)/'`../src/numerics_adjoint_electric.cpp

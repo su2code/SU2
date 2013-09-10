@@ -8,9 +8,8 @@
  * be declared and defined here; to keep all elements together, there
  * is no corresponding .cpp file at this time.
  *
- * Stanford University Unstructured (SU2),
- * copyright (C) 2012-2013 Aerospace Design Laboratory (ADL), is
- * distributed under the GNU Lesser General Public License (GNU LGPL).
+ * Stanford University Unstructured (SU2).
+ * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -23,7 +22,7 @@
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #pragma once
