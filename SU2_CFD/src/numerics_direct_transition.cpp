@@ -596,7 +596,8 @@ void CSourcePieceWise_TransLM::CSourcePieceWise_TransLM__ComputeResidual_TransLM
     r_t = Eddy_Viscosity_i/Laminar_Viscosity_i;
     f_onset1d = -(re_v*2.193*rey_tcd/(2.193*rey_tc*(2.193*rey_tc)));
     f_onset1 = re_v/(2.193*rey_tc);
-    y1d = pow_d(f_onset1, f_onset1d, 4., &y1);
+    y1 = pow(f_onset1, 4.);
+    y1d = 4.*f_onset1d*pow(f_onset1, 3);
     if (f_onset1 < y1) {
       x1d = y1d;
       x1 = y1;
@@ -714,8 +715,9 @@ void CSourcePieceWise_TransLM::CSourcePieceWise_TransLM__ComputeResidual_TransLM
     //
     //f_wake = 1.;
     var1d = TransVar_id[0]/(1.0-1./c_e2);
-    var1 = (TransVar_i[0]-1./c_e2)/(1.0-1./c_e2);
-    result1d = pow_d(var1, var1d, 2, &result1);
+    var1 = (TransVar_i[0]-1./c_e2)/(1.0-1./c_e2);    
+    result1 = pow(var1, 2.0);
+    result1d = 2.0*var1d*pow(var1, 1.0);
     var1d = -result1d;
     var1 = 1. - result1;
     if (var1 > 1.0) {

@@ -33,7 +33,6 @@
 #include <cstdlib>
 
 #include "../../Common/include/config_structure.hpp"
-#include "math_ad.hpp"
 
 using namespace std;
 
