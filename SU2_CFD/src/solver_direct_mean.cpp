@@ -1427,8 +1427,8 @@ void CEulerSolver::Set_MPI_PrimVar_Gradient(CGeometry *geometry, CConfig *config
 }
 
 void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
-	unsigned long iPoint, Point_Fine, iVertex, Point_Coarse;
-	unsigned short iMesh, iChildren, iVar, iDim, iMarker;
+	unsigned long iPoint, Point_Fine;
+	unsigned short iMesh, iChildren, iVar, iDim;
 	double Density, Pressure, yFreeSurface, PressFreeSurface, Froude, yCoord, Velx, Vely, Velz, RhoVelx, RhoVely, RhoVelz, XCoord, YCoord, ZCoord, DensityInc, ViscosityInc, Heaviside, LevelSet, lambda, DensityFreeSurface, Area_Children, Area_Parent, LevelSet_Fine, epsilon, *Solution_Fine, *Solution; //, Factor_nu, nu_tilde;
 
   unsigned short nDim = geometry[MESH_0]->GetnDim();
@@ -1868,8 +1868,11 @@ void CEulerSolver::Postprocessing(CGeometry *geometry, CSolver **solver_containe
     if (config->GetIntIter() == 0) output = true;
     else output = false;
     
-    if (config->GetIntIter() % config->GetFreeSurface_Reevaluation() == 0) reevaluation = true;
-    else reevaluation = false;
+    if (config->GetFreeSurface_Reevaluation() < 0) reevaluation = false;
+    else {
+      if (config->GetIntIter() % config->GetFreeSurface_Reevaluation() == 0) reevaluation = true;
+      else reevaluation = false;
+    }
     
     SetFreeSurface_Distance(geometry, config, reevaluation, output);
     
@@ -2310,7 +2313,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
                                    CConfig *config, unsigned short iMesh) {
   
-	unsigned short iVar;
+	unsigned short iVar, jVar;
 	unsigned long iPoint;
   bool implicit       = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 	bool rotating_frame = config->GetRotating_Frame();
@@ -2416,6 +2419,42 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 		}
     
 	}
+  
+  if (freesurface) {
+    
+    unsigned long iPoint;
+    double Vol, x_o, x_od, x, z, levelset, DampingFactor;
+    double factor = config->GetFreeSurface_Damping_Length();
+    
+    x_o = config->GetFreeSurface_Outlet();
+    x_od = x_o - factor*2.0*PI_NUMBER*config->GetFroude()*config->GetFroude();
+    
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      
+      Vol = geometry->node[iPoint]->GetVolume();
+      x = geometry->node[iPoint]->GetCoord()[0];
+      z = geometry->node[iPoint]->GetCoord()[nDim-1]-config->GetFreeSurface_Zero();
+      levelset = node[iPoint]->GetSolution(nDim+1);
+      
+      DampingFactor = 0.0;
+      if (x >= x_od)
+        DampingFactor = config->GetFreeSurface_Damping_Coeff()*pow((x-x_od)/(x_o-x_od), 2.0);
+
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Residual[iVar] = 0.0;
+        for (jVar = 0; jVar < nVar; jVar++)
+          Jacobian_i[iVar][jVar] = 0.0;
+      }
+      
+      Residual[nDim+1] = Vol*(levelset-z)*DampingFactor;
+      Jacobian_i[nDim+1][nDim+1] = Vol*DampingFactor;
+      
+      LinSysRes.AddBlock(iPoint, Residual);
+      if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      
+    }
+    
+  }
   
 	if (time_spectral) {
     
@@ -2914,8 +2953,7 @@ void CEulerSolver::Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config
 	double *Plane_P0, *Plane_Normal, MinPlane, MaxPlane;
 	vector<double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil;
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-	bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-	bool freesurface = (config->GetKind_Regime() == FREESURFACE);	double rho_inf = Density_Inf;
+  double rho_inf = Density_Inf;
 	double V_inf_mag = sqrt(pow(Velocity_Inf[0],2.0) + pow(Velocity_Inf[1],2.0) + pow(Velocity_Inf[2],2.0));	
 	double dynamic_pressure = 0.5*rho_inf*pow(V_inf_mag,2.0);
   bool Boundary, Monitoring;
@@ -4340,7 +4378,7 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
 	unsigned short iDim, iVar, jVar, jDim;
 	unsigned long iPoint, iVertex;
 	double Pressure, *Normal = NULL, *GridVel = NULL, Area, UnitNormal[3],
-			ProjGridVel = 0.0, a2, phi, a0;
+			ProjGridVel = 0.0, a2, phi;
 
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 	bool grid_movement  = config->GetGrid_Movement();
@@ -6604,34 +6642,34 @@ void CEulerSolver::SetFreeSurface_Distance(CGeometry *geometry, CConfig *config,
   
 #endif
   
-  if (Initialization) {
-
-    /*--- Get coordinates of the points and compute distances to the surface ---*/
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      coord = geometry->node[iPoint]->GetCoord();
-      
-      /*--- Compute the min distance ---*/
-      Min_dist = 1E20;
-      for (iVertex = 0; iVertex < nVertex_LevelSet; iVertex++) {
-        
-        dist2 = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          dist2 += (coord[iDim]-Coord_LevelSet[iVertex][iDim])*(coord[iDim]-Coord_LevelSet[iVertex][iDim]);
-        dist = sqrt(dist2);
-        if (dist < Min_dist) { Min_dist = dist; }
-        
-      }
-      
-      /*--- Compute the sign using the current solution ---*/
-      double NumberSign = 1.0;
-      if (node[iPoint]->GetSolution(0) != 0.0)
-        NumberSign = node[iPoint]->GetSolution(nDim+1)/fabs(node[iPoint]->GetSolution(nDim+1));
-      
-      /*--- Store the value of the primitive variable ---*/
-      node[iPoint]->SetSolution(nDim+1, Min_dist*NumberSign);
-    }
-    
-  }
+//  if (Initialization) {
+//
+//    /*--- Get coordinates of the points and compute distances to the surface ---*/
+//    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+//      coord = geometry->node[iPoint]->GetCoord();
+//      
+//      /*--- Compute the min distance ---*/
+//      Min_dist = 1E20;
+//      for (iVertex = 0; iVertex < nVertex_LevelSet; iVertex++) {
+//        
+//        dist2 = 0.0;
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          dist2 += (coord[iDim]-Coord_LevelSet[iVertex][iDim])*(coord[iDim]-Coord_LevelSet[iVertex][iDim]);
+//        dist = sqrt(dist2);
+//        if (dist < Min_dist) { Min_dist = dist; }
+//        
+//      }
+//      
+//      /*--- Compute the sign using the current solution ---*/
+//      double NumberSign = 1.0;
+//      if (node[iPoint]->GetSolution(0) != 0.0)
+//        NumberSign = node[iPoint]->GetSolution(nDim+1)/fabs(node[iPoint]->GetSolution(nDim+1));
+//      
+//      /*--- Store the value of the primitive variable ---*/
+//      node[iPoint]->SetSolution(nDim+1, Min_dist*NumberSign);
+//    }
+//    
+//  }
   
   if (WriteLevelSet) {
     
