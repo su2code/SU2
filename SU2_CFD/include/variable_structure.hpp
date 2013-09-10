@@ -4,23 +4,24 @@
  *        each kind of governing equation (direct, adjoint and linearized).
  *        The subroutines and functions are in the <i>variable_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.6
+ * \version 2.0.7
  *
- * Stanford University Unstructured (SU2) Code
- * Copyright (C) 2012 Aerospace Design Laboratory
+ * Stanford University Unstructured (SU2),
+ * copyright (C) 2012-2013 Aerospace Design Laboratory (ADL), is
+ * distributed under the GNU Lesser General Public License (GNU LGPL).
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #pragma once
@@ -37,7 +38,7 @@ using namespace std;
  * \class CVariable
  * \brief Main class for defining the variables.
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CVariable {
 protected:
@@ -1494,7 +1495,7 @@ public:
  * \class CBaselineVariable
  * \brief Main class for defining the variables of a baseline solution from a restart file (for output).
  * \author F. Palacios, T. Economon.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CBaselineVariable : public CVariable {
 public:
@@ -1524,7 +1525,7 @@ public:
  * \brief Main class for defining the variables of the potential solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CPotentialVariable : public CVariable {
 	double *Charge_Density;
@@ -1594,7 +1595,7 @@ public:
  * \brief Main class for defining the variables of the wave equation solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CWaveVariable : public CVariable {
 protected:
@@ -1676,7 +1677,7 @@ public:
  * \brief Main class for defining the variables of the Heat equation solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CHeatVariable : public CVariable {
 protected:
@@ -1722,7 +1723,7 @@ public:
  * \brief Main class for defining the variables of the FEA equation solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CFEAVariable : public CVariable {
 protected:
@@ -1761,7 +1762,7 @@ public:
  * \brief Main class for defining the variables of the Euler's solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CEulerVariable : public CVariable {
 protected:
@@ -2103,7 +2104,7 @@ public:
  * \brief Main class for defining the variables of the Navier-Stokes' solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CNSVariable : public CEulerVariable {
 private:
@@ -2252,7 +2253,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CTurbVariable : public CVariable {
 protected:
@@ -2296,7 +2297,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.6
+ * \version 2.0.7
  */
 
 class CTurbSAVariable : public CTurbVariable {
@@ -2342,7 +2343,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.6
+ * \version 2.0.7
  */
 
 class CTransLMVariable : public CTurbVariable {
@@ -2399,7 +2400,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.6
+ * \version 2.0.7
  */
 
 class CTurbSSTVariable : public CTurbVariable {
@@ -2461,7 +2462,7 @@ public:
  * \brief Main class for defining the variables of the adjoint potential solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CAdjPotentialVariable : public CVariable {
 private:
@@ -2496,7 +2497,7 @@ public:
  * \brief Main class for defining the variables of the adjoint Euler solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CAdjEulerVariable : public CVariable {
 protected:
@@ -2615,7 +2616,7 @@ public:
  * \brief Main class for defining the variables of the adjoint Navier-Stokes solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CAdjNSVariable : public CAdjEulerVariable {	
 private:
@@ -2687,7 +2688,7 @@ public:
  * \brief Main class for defining the variables of the adjoint turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CAdjTurbVariable : public CVariable {
 protected:
@@ -2737,7 +2738,7 @@ public:
  * \brief Main class for defining the variables of the linearized potential equation.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CLinPotentialVariable : public CVariable {
 public:	
@@ -2748,7 +2749,7 @@ public:
  * \brief Main class for defining the variables of the linearized Euler's equations.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CLinEulerVariable : public CVariable {
 private:
@@ -2825,7 +2826,7 @@ public:
  * \brief Main class for defining the variables of the linearized Navier-Stokes' equations.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CLinNSVariable : public CLinEulerVariable {
 public:
@@ -2834,7 +2835,7 @@ public:
 /*!
  * \class CPlasmaVariable
  * \brief Main class for defining the variables of the Plasma solver.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CPlasmaVariable : public CVariable {
 protected:	
@@ -3260,7 +3261,7 @@ public:
  * \brief Main class for defining the variables of the Level Set.
  * \ingroup LevelSet_Model
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CLevelSetVariable : public CVariable {
 protected:
@@ -3330,7 +3331,7 @@ public:
  * \brief Main class for defining the variables of the Level Set.
  * \ingroup LevelSet_Model
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CAdjLevelSetVariable : public CVariable {
 public:
@@ -3368,7 +3369,7 @@ public:
  * \brief Main class for defining the variables of the adjoint Euler solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CAdjPlasmaVariable : public CVariable {
 protected:
@@ -3445,7 +3446,7 @@ public:
  * \brief Main class for defining the variables of the potential solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CTemplateVariable : public CVariable {
 public:

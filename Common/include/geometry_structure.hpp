@@ -3,23 +3,24 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>geometry_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.6
+ * \version 2.0.7
  *
- * Stanford University Unstructured (SU2) Code
- * Copyright (C) 2012 Aerospace Design Laboratory
+ * Stanford University Unstructured (SU2), 
+ * copyright (C) 2012-2013 Aerospace Design Laboratory (ADL), is
+ * distributed under the GNU Lesser General Public License (GNU LGPL).
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #pragma once
@@ -57,7 +58,7 @@ using namespace std;
  * \brief Parent class for defining the geometry of the problem (complete geometry, 
  *        multigrid agglomerated geometry, only boundary geometry, etc..)
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CGeometry {
 protected:
@@ -792,7 +793,7 @@ public:
  * \brief Class for reading a defining the primal grid which is read from the 
  *        grid file in .su2 format.
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CPhysicalGeometry : public CGeometry {
 
@@ -1199,7 +1200,7 @@ public:
  * \brief Class for defining the multigrid geometry, the main delicated part is the 
  *        agglomeration stage, which is done in the declaration.
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CMultiGridGeometry : public CGeometry {
 
@@ -1363,7 +1364,7 @@ public:
  * \brief Class for only defining the boundary of the geometry, this class is only 
  *        used in case we are not interested in the volumetric grid.
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CBoundaryGeometry : public CGeometry {
   
@@ -1448,7 +1449,7 @@ public:
  * \class CDomainGeometry
  * \brief Class for defining an especial kind of grid used in the partioning stage.
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CDomainGeometry : public CGeometry {
 	long *Global_to_Local_Point;				/*!< \brief Global-local indexation for the points. */
@@ -1521,7 +1522,7 @@ public:
  * \class CPeriodicGeometry
  * \brief Class for defining a periodic boundary condition.
  * \author T. Economon, F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CPeriodicGeometry : public CGeometry {
 	CPrimalGrid*** newBoundPer;            /*!< \brief Boundary vector for new periodic elements (primal grid information). */
@@ -1567,7 +1568,7 @@ public:
  * \struct CMultiGridQueue
  * \brief Class for a multigrid queue system
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  * \date Aug 12, 2012
  */
 class CMultiGridQueue {

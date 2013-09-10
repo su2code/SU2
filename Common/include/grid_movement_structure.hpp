@@ -5,23 +5,24 @@
  *        technique definition). The subroutines and functions are in 
  *        the <i>grid_movement_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.6
+ * \version 2.0.7
  *
- * Stanford University Unstructured (SU2) Code
- * Copyright (C) 2012 Aerospace Design Laboratory
+ * Stanford University Unstructured (SU2),
+ * copyright (C) 2012-2013 Aerospace Design Laboratory (ADL), is
+ * distributed under the GNU Lesser General Public License (GNU LGPL).
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #pragma once
@@ -45,7 +46,7 @@ using namespace std;
  * \brief Class for moving the surface and volumetric 
  *        numerical grid (2D and 3D problems).
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CGridMovement {
 public:
@@ -74,7 +75,7 @@ public:
  * \class CFreeFormDefBox
  * \brief Class for defining the free form FFDBox structure.
  * \author F. Palacios & A. Galdran.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CFreeFormDefBox : public CGridMovement {
 public:
@@ -659,7 +660,7 @@ public:
  * \class CVolumetricMovement
  * \brief Class for moving the volumetric numerical grid.
  * \author F. Palacios, A. Bueno, T. Economon, S. Padron.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CVolumetricMovement : public CGridMovement {
 protected:
@@ -904,7 +905,7 @@ public:
  * \class CSurfaceMovement
  * \brief Class for moving the surface numerical grid.
  * \author F. Palacios, T. Economon.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CSurfaceMovement : public CGridMovement {
 protected:
