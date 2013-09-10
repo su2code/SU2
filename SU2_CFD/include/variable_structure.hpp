@@ -819,6 +819,12 @@ public:
 	 */		
 	virtual double GetDensityInc(void);
 
+  /*!
+	 * \brief A virtual member.
+	 * \return Value of the levelset for the freesurface flows.
+	 */
+	virtual double GetLevelSet(void);
+  
 	/*!
 	 * \brief A virtual member.
 	 * \return Value of the beta for the incompressible flow.
@@ -1960,6 +1966,12 @@ public:
 	 */
 	double GetDensityInc(void);
 
+  /*!
+	 * \brief Get the value of levelset for the freesurface flows
+	 * \return Value of beta squared.
+	 */
+	double GetLevelSet(void);
+  
 	/*!
 	 * \brief Get the value of beta squared for the incompressible flow
 	 * \return Value of beta squared.

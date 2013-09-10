@@ -35,6 +35,8 @@ inline double CVariable::GetDiffLevelSet(void) { return 0; }
 
 inline double CVariable::GetDensityInc(void) { return 0; }
 
+inline double CVariable::GetLevelSet(void) { return 0; }
+
 inline double CVariable::GetProjVelInc(double *val_vector) { return 0; }
 
 inline void CVariable::SetSolution(unsigned short val_var, double val_solution) { Solution[val_var] = val_solution; }
@@ -424,6 +426,8 @@ inline double CVariable::GetTimeSpectral_Source(unsigned short val_var) { return
 inline double CEulerVariable::GetDensity(void) { return Solution[0]; }
 
 inline double CEulerVariable::GetDensityInc(void) { return Primitive[0]; }
+
+inline double CEulerVariable::GetLevelSet(void) { return Solution[nDim+1]; }
 
 inline double CEulerVariable::GetBetaInc2(void) { return Primitive[nDim+1]; }
 

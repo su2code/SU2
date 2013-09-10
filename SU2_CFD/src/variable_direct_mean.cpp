@@ -415,8 +415,8 @@ bool CEulerVariable::SetPrimVar_FreeSurface(CConfig *config) {
   /*--- Set the value of the velocity squared (requires density) ---*/
 	SetVelocityInc2();
   
-  /*--- Compute artificial compressibility factor ---*/
-  ArtComp_Factor = 5.0*max(Velocity2*DensityInc, 0.3);
+//  /*--- Compute artificial compressibility factor ---*/
+//  ArtComp_Factor = 5.0*max(Velocity2*DensityInc, 0.3);
   
   /*--- Set the value of the artificial compressibility factor ---*/
   SetBetaInc2(ArtComp_Factor);
@@ -601,8 +601,8 @@ bool CNSVariable::SetPrimVar_FreeSurface(double turb_ke, CConfig *config) {
   /*--- Set the value of the velocity squared (requires density) ---*/
 	SetVelocityInc2();
   
-  /*--- Compute artificial compressibility factor ---*/
-  ArtComp_Factor = 5.0*max(Velocity2*DensityInc, 0.3);
+//  /*--- Compute artificial compressibility factor ---*/
+//  ArtComp_Factor = 5.0*max(Velocity2*DensityInc, 0.3);
   
   /*--- Set the value of the artificial compressibility factor ---*/
   SetBetaInc2(ArtComp_Factor);

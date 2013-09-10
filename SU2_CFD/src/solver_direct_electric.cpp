@@ -550,7 +550,7 @@ void CElectricSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_contai
 		unsigned short val_marker) {
 	unsigned long Point, iVertex;
 
-	/*--- Identify if a boundary is Dirichlet or Neumman ---*/
+	/*--- Identify if a boundary is Dirichlet or Neumann ---*/
 	bool Dirichlet = config->GetDirichlet_Boundary(config->GetMarker_All_Tag(val_marker));
 	if (Dirichlet) {
 		for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -572,7 +572,7 @@ void CElectricSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
 		unsigned short val_marker) {
 	unsigned long Point, iVertex;
 
-	/*--- Identify if a boundary is Dirichlet or Neumman ---*/
+	/*--- Identify if a boundary is Dirichlet or Neumann ---*/
 	bool Dirichlet = config->GetDirichlet_Boundary(config->GetMarker_All_Tag(val_marker));
 	if (Dirichlet) {
 		for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -594,7 +594,7 @@ void CElectricSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_con
 		unsigned short val_marker) {
 	unsigned long Point, iVertex;
 
-	/*--- Identify if a boundary is Dirichlet or Neumman ---*/
+	/*--- Identify if a boundary is Dirichlet or Neumann ---*/
 	bool Dirichlet = config->GetDirichlet_Boundary(config->GetMarker_All_Tag(val_marker));
 	if (Dirichlet) {
 		for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -616,7 +616,7 @@ void CElectricSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 		unsigned short val_marker) {
 	unsigned long Point, iVertex;
 
-	/*--- Identify if a boundary is Dirichlet or Neumman ---*/
+	/*--- Identify if a boundary is Dirichlet or Neumann ---*/
 	bool Dirichlet = config->GetDirichlet_Boundary(config->GetMarker_All_Tag(val_marker));
 	if (Dirichlet) {
 		for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -638,7 +638,7 @@ void CElectricSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, 
 		unsigned short val_marker) {
 	unsigned long Point, iVertex;
 
-	/*--- Identify if a boundary is Dirichlet or Neumman ---*/
+	/*--- Identify if a boundary is Dirichlet or Neumann ---*/
 	bool Dirichlet = config->GetDirichlet_Boundary(config->GetMarker_All_Tag(val_marker));
 	if (Dirichlet) {
 		for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -660,7 +660,7 @@ void CElectricSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 		unsigned short val_marker) {
 	unsigned long Point, iVertex;
 
-	/*--- Identify if a boundary is Dirichlet or Neumman ---*/
+	/*--- Identify if a boundary is Dirichlet or Neumann ---*/
 	bool Dirichlet = config->GetDirichlet_Boundary(config->GetMarker_All_Tag(val_marker));
 	if (Dirichlet) {
 		for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
