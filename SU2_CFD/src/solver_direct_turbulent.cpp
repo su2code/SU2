@@ -825,7 +825,11 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
         LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
         
         if (config->GetExtraOutput()) {
-            nOutputVariables = 3;
+            if (nDim==2){
+                nOutputVariables = 12;
+            }else if (nDim == 3){
+                nOutputVariables = 18;
+            }
             OutputVariables.Initialize(nPoint, nPointDomain, nOutputVariables, 0.0);
         }
         
@@ -1208,6 +1212,8 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 	unsigned long iPoint;
     double LevelSet;
     unsigned short iVar;
+    unsigned short iDim;
+    unsigned short jDim;
     
     bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
     bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -1250,11 +1256,32 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 		/*--- Compute the source term ---*/
 		numerics->ComputeResidual(Residual, Jacobian_i, NULL, config);
         
+        unsigned long idx = 0;
         if (config->GetExtraOutput()) {
-            OutputVariables[iPoint*nOutputVariables + 0] = numerics->GetProduction();
-            OutputVariables[iPoint*nOutputVariables + 1] = numerics->GetDestruction();
-            OutputVariables[iPoint*nOutputVariables + 2] = numerics->GetCrossProduction();
+            OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = numerics->GetProduction()/numerics->Volume;
+            idx++;
+            OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = numerics->GetDestruction()/numerics->Volume;
+            idx++;
+            OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = numerics->GetCrossProduction()/numerics->Volume;
+            idx++;
+            OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = numerics->Laminar_Viscosity_i/numerics->Density_i;
+            idx++;
+            OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = numerics->TurbVar_i[0];
+            idx++;
+            OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = numerics->dist_i;
+            idx++;
+            for (iDim = 0; iDim<nDim;iDim++){
+                OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = numerics->TurbVar_Grad_i[0][iDim];
+                idx++;
+            }
+            for (iDim = 0; iDim<nDim; iDim++){
+                for (jDim = 0; jDim<nDim; jDim++){
+                    OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = numerics->PrimVar_Grad_i[iDim][jDim];
+                    idx++;
+                }
+            }
         }
+        
         
         /*--- Don't add source term in the interface or air ---*/
         if (freesurface) {
