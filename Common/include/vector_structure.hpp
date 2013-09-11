@@ -55,13 +55,13 @@ class CSysVector {
   
 private:
   
-	unsigned int nElm; /*!< \brief total number of elements (or number elements on this processor) */
-	unsigned int nElmDomain; /*!< \brief total number of elements (or number elements on this processor without Ghost cells) */
+	unsigned long nElm; /*!< \brief total number of elements (or number elements on this processor) */
+	unsigned long nElmDomain; /*!< \brief total number of elements (or number elements on this processor without Ghost cells) */
   unsigned long nElmGlobal; /*!< \brief total number of elements over all processors */
 	unsigned short nVar; /*!< \brief number of elements in a block */
-	unsigned int nBlk; /*!< \brief number of blocks (or number of blocks on this processor) */
-	unsigned int nBlkDomain; /*!< \brief number of blocks (or number of blocks on this processor without Ghost cells) */
-  unsigned int myrank; /*!< \brief processor rank (only used for parallel runs) */
+	unsigned long nBlk; /*!< \brief number of blocks (or number of blocks on this processor) */
+	unsigned long nBlkDomain; /*!< \brief number of blocks (or number of blocks on this processor without Ghost cells) */
+  unsigned long myrank; /*!< \brief processor rank (only used for parallel runs) */
   double* vec_val; /*!< \brief storage for the element values */
   
 public:
@@ -76,7 +76,7 @@ public:
    * \param[in] size - number of elements locally
    * \param[in] val - default value for elements
    */
-  CSysVector(const unsigned int & size, const double & val = 0.0);
+  CSysVector(const unsigned long & size, const double & val = 0.0);
   
   /*!
    * \brief constructor of the class.
@@ -84,7 +84,7 @@ public:
    * \param[in] numVar - number of variables in each block
    * \param[in] val - default value for elements
    */
-  CSysVector(const unsigned int & numBlk, const unsigned int & numBlkDomain, const unsigned short & numVar, const double & val = 0.0);
+  CSysVector(const unsigned long & numBlk, const unsigned long & numBlkDomain, const unsigned short & numVar, const double & val = 0.0);
   
   /*!
    * \brief copy constructor of the class.
@@ -102,7 +102,7 @@ public:
    * \param[in] size - number of elements locally
    * \param[in] u_array - vector stored as array being copied
    */
-  explicit CSysVector(const unsigned int & size, const double* u_array);
+  explicit CSysVector(const unsigned long & size, const double* u_array);
   
   /*!
    * \brief constructor from array
@@ -111,7 +111,7 @@ public:
    * \param[in] numVar - number of variables in each block
    * \param[in] u_array - vector stored as array being copied
    */
-  explicit CSysVector(const unsigned int & numBlk, const unsigned int & numBlkDomain, const unsigned short & numVar,
+  explicit CSysVector(const unsigned long & numBlk, const unsigned long & numBlkDomain, const unsigned short & numVar,
                       const double* u_array);
   
   /*!
@@ -125,12 +125,12 @@ public:
    * \param[in] numVar - number of variables in each block
    * \param[in] val - default value for elements
    */
-  void Initialize(const unsigned int & numBlk, const unsigned int & numBlkDomain, const unsigned short & numVar, const double & val = 0.0);
+  void Initialize(const unsigned long & numBlk, const unsigned long & numBlkDomain, const unsigned short & numVar, const double & val = 0.0);
   
   /*!
    * \brief return the number of local elements in the CSysVector
    */
-  unsigned int GetLocSize() const;
+  unsigned long GetLocSize() const;
   
   /*!
    * \brief return the size of the CSysVector (over all processors)
@@ -145,12 +145,12 @@ public:
   /*!
    * \brief return the number of blocks (typically number of nodes locally)
    */
-  unsigned int GetNBlk() const;
+  unsigned long GetNBlk() const;
 	
 	/*!
    * \brief return the number of blocks (typically number of nodes locally)
    */
-  unsigned int GetNBlkDomain() const;
+  unsigned long GetNBlkDomain() const;
   
   /*!
    * \brief set calling CSysVector to scaling of another CSysVector
@@ -246,13 +246,13 @@ public:
    * \brief indexing operator with assignment permitted
    * \param[in] i = local index to access
    */
-  double & operator[](const unsigned int & i);
+  double & operator[](const unsigned long & i);
   
   /*!
    * \brief indexing operator with assignment not permitted
    * \param[in] i = local index to access
    */
-  const double & operator[](const unsigned int & i) const;
+  const double & operator[](const unsigned long & i) const;
     
   /*!
    * \brief the L2 norm of the CSysVector

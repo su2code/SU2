@@ -502,7 +502,7 @@ void CTransLMSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
 void CTransLMSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned long iPoint, iVertex;
-  int total_index;
+  unsigned long total_index;
   unsigned short iVar;
 
   //cout << "Arrived in BC_Far_Field. -AA" << endl;
