@@ -260,8 +260,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddScalarOption("TURB_CFL_REDUCTION", Turb_CFLRedCoeff, 1.0);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the turbulent adjoint problem */
 	AddScalarOption("ADJTURB_CFL_REDUCTION", AdjTurb_CFLRedCoeff, 1.0);
-  /* DESCRIPTION: Reduction factor of the CFL coefficient in the level set problem */
-	AddScalarOption("LEVELSET_CFL_REDUCTION", LevelSet_CFLRedCoeff, 1E-2);
 	/* DESCRIPTION: Number of total iterations */
 	AddScalarOption("EXT_ITER", nExtIter, 999999);
 	// these options share nRKStep as their size, which is not a good idea in general
@@ -281,8 +279,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddScalarOption("UNST_RESTART_ITER", Unst_RestartIter, 0);
 	/* DESCRIPTION: Time discretization */
 	AddEnumOption("TIME_DISCRE_FLOW", Kind_TimeIntScheme_Flow, Time_Int_Map, "RUNGE-KUTTA_EXPLICIT");
-	/* DESCRIPTION: Time discretization */
-	AddEnumOption("TIME_DISCRE_LEVELSET", Kind_TimeIntScheme_LevelSet, Time_Int_Map, "RUNGE-KUTTA_EXPLICIT");
 	/* DESCRIPTION: Time discretization */
 	AddEnumOption("TIME_DISCRE_ADJLEVELSET", Kind_TimeIntScheme_AdjLevelSet, Time_Int_Map, "RUNGE-KUTTA_EXPLICIT");
 	/* DESCRIPTION: Time discretization */
@@ -533,13 +529,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.02;
 	/* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
 	AddArrayOption("AD_COEFF_LIN", 2, Kappa_LinFlow, default_vec_3d);
-  
-	/* DESCRIPTION: Slope limiter */
-	AddEnumOption("SLOPE_LIMITER_LEVELSET", Kind_SlopeLimit_LevelSet, Limiter_Map, "NONE");
-	/* DESCRIPTION: Convective numerical method */
-	AddConvectOption("CONV_NUM_METHOD_LEVELSET", Kind_ConvNumScheme_LevelSet, Kind_Centered_LevelSet, Kind_Upwind_LevelSet);
-	/* DESCRIPTION: Source term numerical method */
-	AddEnumOption("SOUR_NUM_METHOD_LEVELSET", Kind_SourNumScheme_LevelSet, Source_Map, "NONE");
   
 	/* DESCRIPTION: Slope limiter */
 	AddEnumOption("SLOPE_LIMITER_ADJLEVELSET", Kind_SlopeLimit_AdjLevelSet, Limiter_Map, "NONE");

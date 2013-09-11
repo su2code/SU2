@@ -464,15 +464,11 @@ inline unsigned short CConfig::GetKind_ConvNumScheme_Plasma(void) { return Kind_
 
 inline unsigned short CConfig::GetKind_ConvNumScheme_AdjPlasma(void) { return Kind_ConvNumScheme_AdjPlasma; }
 
-inline unsigned short CConfig::GetKind_ConvNumScheme_LevelSet(void) { return Kind_ConvNumScheme_LevelSet; }
-
 inline unsigned short CConfig::GetKind_ConvNumScheme_AdjLevelSet(void) { return Kind_ConvNumScheme_AdjLevelSet; }
 
 inline unsigned short CConfig::GetKind_ConvNumScheme_Template(void) { return Kind_ConvNumScheme_Template; }
 
 inline unsigned short CConfig::GetKind_ViscNumScheme_Flow(void) { return Kind_ViscNumScheme_Flow; }
-
-inline unsigned short CConfig::GetKind_SourNumScheme_LevelSet(void) { return Kind_SourNumScheme_LevelSet; }
 
 inline unsigned short CConfig::GetKind_SourNumScheme_Wave(void) { return Kind_SourNumScheme_Wave; }
 
@@ -504,8 +500,6 @@ inline unsigned short CConfig::GetKind_SourNumScheme_Elec(void) { return Kind_So
 
 inline unsigned short CConfig::GetKind_Centered_Flow(void) { return Kind_Centered_Flow; }
 
-inline unsigned short CConfig::GetKind_Centered_LevelSet(void) { return Kind_Centered_LevelSet; }
-
 inline unsigned short CConfig::GetKind_Centered_AdjLevelSet(void) { return Kind_Centered_AdjLevelSet; }
 
 inline unsigned short CConfig::GetKind_Centered_Plasma(void) { return Kind_Centered_Plasma; }
@@ -522,8 +516,6 @@ inline unsigned short CConfig::GetKind_SlopeLimit_AdjPlasma(void) { return Kind_
 
 inline unsigned short CConfig::GetKind_SlopeLimit_Turb(void) { return Kind_SlopeLimit_Turb; }
 
-inline unsigned short CConfig::GetKind_SlopeLimit_LevelSet(void) { return Kind_SlopeLimit_LevelSet; }
-
 inline unsigned short CConfig::GetKind_SlopeLimit_AdjLevelSet(void) { return Kind_SlopeLimit_AdjLevelSet; }
 
 inline unsigned short CConfig::GetKind_SlopeLimit_AdjTurb(void) { return Kind_SlopeLimit_AdjTurb; }
@@ -531,8 +523,6 @@ inline unsigned short CConfig::GetKind_SlopeLimit_AdjTurb(void) { return Kind_Sl
 inline unsigned short CConfig::GetKind_SlopeLimit_AdjFlow(void) { return Kind_SlopeLimit_AdjFlow; }
 
 inline unsigned short CConfig::GetKind_Upwind_Flow(void) { return Kind_Upwind_Flow; }
-
-inline unsigned short CConfig::GetKind_Upwind_LevelSet(void) { return Kind_Upwind_LevelSet; }
 
 inline unsigned short CConfig::GetKind_Upwind_AdjLevelSet(void) { return Kind_Upwind_AdjLevelSet; }
 
@@ -597,8 +587,6 @@ inline double CConfig::GetKappa_4th_LinFlow(void) { return Kappa_4th_LinFlow; }
 inline double CConfig::GetKappa_1st_LinFlow(void) { return Kappa_1st_LinFlow; }
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_Turb(void) { return Kind_TimeIntScheme_Turb; }
-
-inline unsigned short CConfig::GetKind_TimeIntScheme_LevelSet(void) { return Kind_TimeIntScheme_LevelSet; }
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_AdjLevelSet(void) { return Kind_TimeIntScheme_AdjLevelSet; }
 
@@ -811,8 +799,6 @@ inline double CConfig::GetPosition_Plane(void) { return Position_Plane; }
 inline double CConfig::GetWeightCd(void) { return WeightCd; }
 
 inline double CConfig::GetCteViscDrag(void) { return CteViscDrag; }
-
-inline double CConfig::GetLevelSet_CFLRedCoeff(void) { return LevelSet_CFLRedCoeff; }
 
 inline double CConfig::GetTurb_CFLRedCoeff(void) { return Turb_CFLRedCoeff; }
 

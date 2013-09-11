@@ -709,14 +709,6 @@ inline void CAdjPlasmaVariable::SetIntBoundary_Jump(double *val_IntBoundary_Jump
 
 inline void CAdjPlasmaVariable::SetPhi_Old(double *val_phi) { for (unsigned short iDim = 0; iDim < nDim; iDim++) Solution_Old[iDim+1]=val_phi[iDim]; };
 
-inline void CLevelSetVariable::SetDiffLevelSet(double val_difflevelset) { DiffLevelSet = val_difflevelset; }
-
-inline double CLevelSetVariable::GetDiffLevelSet(void) { return DiffLevelSet; }
-
-inline void CLevelSetVariable::SetPrimVar(unsigned short val_var, double val_prim) { Primitive[val_var] = val_prim; }
-
-inline double CLevelSetVariable::GetPrimVar(unsigned short val_var) { return Primitive[val_var]; }
-
 inline void CFEAVariable::SetPressureValue(double val_pressure) { Pressure = val_pressure; }
 
 inline void CWaveVariable::SetThickness_Noise(double val_thickness_noise) { Thickness_Noise = val_thickness_noise; }
