@@ -246,13 +246,13 @@ public:
    * \brief indexing operator with assignment permitted
    * \param[in] i = local index to access
    */
-  double & operator[](const unsigned int & i);
+  double & operator[](const unsigned long & i);
   
   /*!
    * \brief indexing operator with assignment not permitted
    * \param[in] i = local index to access
    */
-  const double & operator[](const unsigned int & i) const;
+  const double & operator[](const unsigned long & i) const;
     
   /*!
    * \brief the L2 norm of the CSysVector
