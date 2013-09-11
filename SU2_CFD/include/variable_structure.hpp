@@ -898,12 +898,6 @@ public:
 	 * \return Norm 2 of the velocity vector.
 	 */		
 	virtual double GetVelocity2(void);
-  
-  /*!
-	 * \brief A virtual member.
-	 * \return Pressure of gas mixture
-	 */
-	virtual double GetPressure(void);
 
 	/*!
 	 * \brief A virtual member.
