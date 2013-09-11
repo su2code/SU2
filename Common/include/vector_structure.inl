@@ -24,11 +24,11 @@
 #pragma once
 
 inline void CSysVector::SetValZero(void) { 
-  for (unsigned int i = 0; i < nElm; i++)
+  for (unsigned long i = 0; i < nElm; i++)
 		vec_val[i] = 0.0;
 }
 
-inline unsigned int CSysVector::GetLocSize() const { return nElm; }
+inline unsigned long CSysVector::GetLocSize() const { return nElm; }
 
 inline unsigned long CSysVector::GetSize() const {
 #ifndef NO_MPI
@@ -40,9 +40,9 @@ inline unsigned long CSysVector::GetSize() const {
 
 inline unsigned short CSysVector::GetNVar() const { return nVar; }
 
-inline unsigned int CSysVector::GetNBlk() const { return nBlk; }
+inline unsigned long CSysVector::GetNBlk() const { return nBlk; }
 
-inline unsigned int CSysVector::GetNBlkDomain() const { return nBlkDomain; }
+inline unsigned long CSysVector::GetNBlkDomain() const { return nBlkDomain; }
 
 inline double & CSysVector::operator[](const unsigned long & i) { return vec_val[i]; }
 
