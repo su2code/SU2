@@ -14,7 +14,7 @@
  *
  * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
@@ -1669,7 +1669,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		cout << "Press any key to exit..." << endl;
 		cin.get();
 		exit(1);
-	}	
+	}
 
 	if (((Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) && (Kind_SourNumScheme_AdjFlow == NONE)) {
 		cout << "You must define a source numerical method for the adjoint Navier-Stokes equations!!" << endl;
@@ -3435,7 +3435,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   cout << "| Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).            |" << endl;
   cout << "| SU2 is distributed in the hope that it will be useful,                |" << endl;
   cout << "| but WITHOUT ANY WARRANTY; without even the implied warranty of        |" << endl;
-  cout << "| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU     |" << endl;
+  cout << "| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      |" << endl;
   cout << "| Lesser General Public License (version 2.1) for more details.         |" << endl;
 	cout <<"-------------------------------------------------------------------------" << endl;
 
@@ -5689,38 +5689,6 @@ void CConfig::SetGlobalParam(unsigned short val_solver, unsigned short val_syste
         SetKind_ViscNumScheme(GetKind_ViscNumScheme_AdjTNE2());
         SetKind_SourNumScheme(GetKind_SourNumScheme_AdjTNE2());
         SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjTNE2());
-      }
-      break;
-    case ADJ_PLASMA_EULER:
-      if (val_system == RUNTIME_PLASMA_SYS) {
-        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Plasma(), GetKind_Centered_Plasma(),
-                              GetKind_Upwind_Plasma(), GetKind_SlopeLimit_Plasma());
-        SetKind_ViscNumScheme(NONE);
-        SetKind_SourNumScheme(GetKind_SourNumScheme_Plasma());
-        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Plasma());
-      }
-      if (val_system == RUNTIME_ADJPLASMA_SYS) {
-        SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjPlasma(), GetKind_Centered_AdjPlasma(),
-                              GetKind_Upwind_AdjPlasma(), GetKind_SlopeLimit_AdjPlasma());
-        SetKind_ViscNumScheme(NONE);
-        SetKind_SourNumScheme(GetKind_SourNumScheme_AdjPlasma());
-        SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjPlasma());
-      }
-      break;
-    case ADJ_PLASMA_NAVIER_STOKES:
-      if (val_system == RUNTIME_PLASMA_SYS) {
-        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Plasma(), GetKind_Centered_Plasma(),
-                              GetKind_Upwind_Plasma(), GetKind_SlopeLimit_Plasma());
-        SetKind_ViscNumScheme(GetKind_ViscNumScheme_Plasma());
-        SetKind_SourNumScheme(GetKind_SourNumScheme_Plasma());
-        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Plasma());
-      }
-      if (val_system == RUNTIME_ADJPLASMA_SYS) {
-        SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjPlasma(), GetKind_Centered_AdjPlasma(),
-                              GetKind_Upwind_AdjPlasma(), GetKind_SlopeLimit_AdjPlasma());
-        SetKind_ViscNumScheme(GetKind_ViscNumScheme_AdjPlasma());
-        SetKind_SourNumScheme(GetKind_SourNumScheme_AdjPlasma());
-        SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjPlasma());
       }
       break;
 	case LIN_EULER:

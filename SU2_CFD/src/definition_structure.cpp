@@ -14,7 +14,7 @@
  *
  * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
@@ -454,7 +454,6 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry, CCo
     
 }
 
-
 void Integration_Preprocessing(CIntegration **integration_container,
                                CGeometry **geometry, CConfig *config,
                                unsigned short iZone) {
@@ -735,9 +734,9 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
 	if (euler)				nVar_Flow = solver_container[MESH_0][FLOW_SOL]->GetnVar();
 	if (ns)	          nVar_Flow = solver_container[MESH_0][FLOW_SOL]->GetnVar();
 	if (turbulent)		nVar_Turb = solver_container[MESH_0][TURB_SOL]->GetnVar();
+  if (transition)		nVar_Trans = solver_container[MESH_0][TRANS_SOL]->GetnVar();
   if (tne2_euler)   nVar_TNE2 = solver_container[MESH_0][TNE2_SOL]->GetnVar();
   if (tne2_ns)	    nVar_TNE2 = solver_container[MESH_0][TNE2_SOL]->GetnVar();
-	if (transition)		nVar_Trans = solver_container[MESH_0][TRANS_SOL]->GetnVar();
 	if (electric)			nVar_Elec = solver_container[MESH_0][ELEC_SOL]->GetnVar();
 	if (plasma_euler || plasma_ns)	{
 		nVar_Plasma = solver_container[MESH_0][PLASMA_SOL]->GetnVar();
@@ -1636,7 +1635,6 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
 		}
 	}
   
-  ///////
   /*--- Solver definition for the flow adjoint problem ---*/
 	if (adj_tne2_euler || adj_tne2_ns) {
     
@@ -1755,8 +1753,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
         break;
 		}
 	}
-///////////
-  
+
 	/*--- Solver definition for the multi species plasma model problem ---*/
 	if (adj_plasma_euler || adj_plasma_ns) {
         

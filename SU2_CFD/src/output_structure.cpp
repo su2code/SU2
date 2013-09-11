@@ -14,7 +14,7 @@
  *
  * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
@@ -1631,11 +1631,13 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 		if (geometry->GetnDim() == 2) nVar_Total += 2;
 		else if (geometry->GetnDim() == 3) nVar_Total += 3;
 	}
+
   if ((config->GetKind_Regime() == FREESURFACE)) {
 		/*--- Density ---*/
 		iVar_Density = nVar_Total;
 		nVar_Total += 1;
 	}
+
 	if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
 		/*--- Pressure, Cp, Mach ---*/
 		iVar_PressMach = nVar_Total;
@@ -4454,6 +4456,26 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                     
           break;
     
+        case TNE2_EULER : case TNE2_NAVIER_STOKES:
+          
+          if (!DualTime_Iteration) {
+            ConvHist_file[0] << begin << direct_coeff << flow_resid;
+            ConvHist_file[0] << end;
+            ConvHist_file[0].flush();
+          }
+          
+          cout.precision(6);
+          cout.setf(ios::fixed,ios::floatfield);
+          cout.width(13); cout << log10(residual_TNE2[0]);
+          if (!fluid_structure && !aeroacoustic && !equiv_area) {
+              if (nDim == 2 ) { cout.width(14); cout << log10(residual_TNE2[3]); }
+              else { cout.width(14); cout << log10(residual_TNE2[4]); }
+          }
+          
+          cout.width(15); cout << Total_CLift; cout.width(15); cout << Total_CDrag;
+          cout << endl;
+          break;
+
         case RANS :
           
           if (!DualTime_Iteration) {
