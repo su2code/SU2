@@ -1587,12 +1587,6 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       if (transition) ThirdIndex=TRANS_SOL;
       else ThirdIndex = NONE;
       break;
-    case FREE_SURFACE_EULER: case FREE_SURFACE_NAVIER_STOKES:
-      FirstIndex = FLOW_SOL; SecondIndex = LEVELSET_SOL; ThirdIndex = NONE;
-      break;
-    case FREE_SURFACE_RANS:
-      FirstIndex = FLOW_SOL; SecondIndex = TURB_SOL; ThirdIndex = LEVELSET_SOL;
-      break;
     case TNE2_EULER :
       FirstIndex = TNE2_SOL; SecondIndex = NONE; ThirdIndex = NONE;
       break;

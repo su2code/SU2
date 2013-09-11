@@ -278,7 +278,7 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry, CCo
   adj_plasma_euler, adj_plasma_ns,
 	electric, wave, fea,
   spalart_allmaras, menter_sst, transition,
-  template_solver
+  template_solver;
     
     
 	/*--- Initialize some useful booleans ---*/
@@ -455,15 +455,17 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry, CCo
 }
 
 
-void Integration_Preprocessing(CIntegration **integration_container, CGeometry **geometry, CConfig *config, unsigned short iZone) {
+void Integration_Preprocessing(CIntegration **integration_container,
+                               CGeometry **geometry, CConfig *config,
+                               unsigned short iZone) {
 
   bool
   euler, adj_euler, lin_euler,
   ns, adj_ns, lin_ns,
   turbulent, adj_turb, lin_turb,
   spalart_allmaras, menter_sst,
-  tne2_euler, adj_tne2_euler
-  tne2_ns, adj_tne2_ns
+  tne2_euler, adj_tne2_euler,
+  tne2_ns, adj_tne2_ns,
   plasma_euler, adj_plasma_euler,
   plasma_ns,   adj_plasma_ns,
   plasma_monatomic, plasma_diatomic,
@@ -487,60 +489,60 @@ void Integration_Preprocessing(CIntegration **integration_container, CGeometry *
 	 
 	/*--- Assign booleans ---*/
 	switch (config->GetKind_Solver()) {
-        case TEMPLATE_SOLVER: template_solver = true; break;
-        case EULER : euler = true; break;
-        case NAVIER_STOKES: ns = true; break;
-        case TNE2_EULER : tne2_euler = true; break;
-        case TNE2_NAVIER_STOKES: tne2_ns = true; break;
-        case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
-        case FLUID_STRUCTURE_EULER: euler = true; fea = true; break;
-        case FLUID_STRUCTURE_NAVIER_STOKES: ns = true; fea = true; break;
-        case FLUID_STRUCTURE_RANS: ns = true; turbulent = true; fea = true; break;
-        case AEROACOUSTIC_NAVIER_STOKES: ns = true; wave = true; break;
-        case AEROACOUSTIC_RANS: ns = true; turbulent = true; wave = true; break;
-        case ELECTRIC_POTENTIAL: electric = true; break;
-        case WAVE_EQUATION: wave = true; break;
-        case LINEAR_ELASTICITY: fea = true; break;
-        case ADJ_EULER : euler = true; adj_euler = true; break;
-        case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-        case ADJ_TNE2_EULER : tne2_euler = true; adj_tne2_euler = true; break;
-        case ADJ_TNE2_NAVIER_STOKES : tne2_ns = true; adj_tne2_ns = true; break;
-        case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
-        case ADJ_PLASMA_EULER : plasma_euler = true; adj_plasma_euler = true; break;
-        case ADJ_PLASMA_NAVIER_STOKES : plasma_ns = true; adj_plasma_ns = true; break;
-        case LIN_EULER: euler = true; lin_euler = true; break;
-            
-            /*--- Specify by zone for the aeroacoustic problem ---*/
-        case AEROACOUSTIC_EULER:
-            if (iZone == ZONE_0) {
-                euler = true;
-            } else if (iZone == ZONE_1) {
-                wave = true;
-            }
-            break;
-        case ADJ_AEROACOUSTIC_EULER:
-            if (iZone == ZONE_0) {
-                euler = true; adj_euler = true;
-            } else if (iZone == ZONE_1) {
-                wave = true;
-            }
-            break;
-        case PLASMA_EULER:
-            if (iZone == ZONE_0) {
-                plasma_euler = true;
-            } else if (iZone == ZONE_1) {
-                electric = true;
-            }
-            break;
-        case PLASMA_NAVIER_STOKES:
-            if (iZone == ZONE_0) {
-                plasma_ns = true;
-            } else if (iZone == ZONE_1) {
-                electric = true;
-            }
-            break;
+    case TEMPLATE_SOLVER: template_solver = true; break;
+    case EULER : euler = true; break;
+    case NAVIER_STOKES: ns = true; break;
+    case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
+    case TNE2_EULER : tne2_euler = true; break;
+    case TNE2_NAVIER_STOKES: tne2_ns = true; break;
+    case FLUID_STRUCTURE_EULER: euler = true; fea = true; break;
+    case FLUID_STRUCTURE_NAVIER_STOKES: ns = true; fea = true; break;
+    case FLUID_STRUCTURE_RANS: ns = true; turbulent = true; fea = true; break;
+    case AEROACOUSTIC_NAVIER_STOKES: ns = true; wave = true; break;
+    case AEROACOUSTIC_RANS: ns = true; turbulent = true; wave = true; break;
+    case ELECTRIC_POTENTIAL: electric = true; break;
+    case WAVE_EQUATION: wave = true; break;
+    case LINEAR_ELASTICITY: fea = true; break;
+    case ADJ_EULER : euler = true; adj_euler = true; break;
+    case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
+    case ADJ_TNE2_EULER : tne2_euler = true; adj_tne2_euler = true; break;
+    case ADJ_TNE2_NAVIER_STOKES : tne2_ns = true; adj_tne2_ns = true; break;
+    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
+    case ADJ_PLASMA_EULER : plasma_euler = true; adj_plasma_euler = true; break;
+    case ADJ_PLASMA_NAVIER_STOKES : plasma_ns = true; adj_plasma_ns = true; break;
+    case LIN_EULER: euler = true; lin_euler = true; break;
+      
+      /*--- Specify by zone for the aeroacoustic problem ---*/
+    case AEROACOUSTIC_EULER:
+      if (iZone == ZONE_0) {
+        euler = true;
+      } else if (iZone == ZONE_1) {
+        wave = true;
+      }
+      break;
+    case ADJ_AEROACOUSTIC_EULER:
+      if (iZone == ZONE_0) {
+        euler = true; adj_euler = true;
+      } else if (iZone == ZONE_1) {
+        wave = true;
+      }
+      break;
+    case PLASMA_EULER:
+      if (iZone == ZONE_0) {
+        plasma_euler = true;
+      } else if (iZone == ZONE_1) {
+        electric = true;
+      }
+      break;
+    case PLASMA_NAVIER_STOKES:
+      if (iZone == ZONE_0) {
+        plasma_ns = true;
+      } else if (iZone == ZONE_1) {
+        electric = true;
+      }
+      break;
 	}
-    
+  
 	/*--- Assign turbulence model booleans --- */
 	if (turbulent) {
 		switch (config->GetKind_Turb_Model()) {

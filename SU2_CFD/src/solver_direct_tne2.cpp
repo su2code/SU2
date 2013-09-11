@@ -57,7 +57,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
 	unsigned short iVar, iDim, iMarker, iSpecies, nZone;
   double *Mvec_Inf;
   double Alpha, Beta;
-	bool restart, check_temp, check_press, check_dens, check_sos;	
+	bool restart, check_temp, check_press;	
   
   /*--- Get MPI rank ---*/
 	int rank = MASTER_NODE;
@@ -1626,7 +1626,7 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry,
 void CTNE2EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_container, CConfig *config,
                                       unsigned short iMesh, unsigned long Iteration) {
 	double *Normal, Area, Vol, Mean_SoundSpeed, Mean_ProjVel, Lambda, Local_Delta_Time,
-	Global_Delta_Time = 1E6, Global_Delta_UnstTimeND, ProjVel, ProjVel_i, ProjVel_j;
+	Global_Delta_Time = 1E6, Global_Delta_UnstTimeND;
 	unsigned long iEdge, iVertex, iPoint, jPoint;
 	unsigned short iDim, iMarker;
   
@@ -1821,6 +1821,23 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
       cout << "Test!" << endl;
     }*/
 		numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
+
+    
+    /////////// TEST UPWIND ///////////
+/*    unsigned short iSpecies, iDim;
+    double *density, *velocity, h, e_ve, a;
+    density = new double[nSpecies];
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      density[iSpecies] = V_i[iSpecies];
+    }
+    for (iDim = 0; iDim < nDim; iDim++) {
+      velocity[iDim] = V_i[nSpecies+2+iDim];
+    }
+    h = V_i[nSpecies+nDim+4];
+    e_ve = U_i[nSpecies+nDim+1]/V_i[nSpecies+nDim+3];
+    a    = V_i[nSpecies+nDim+5];
+    
+    numerics->GetPMatrix(density, velocity, h, e_ve, a, node[iPoint]->GetdPdrhos(), dPdrhoE, dPdrhoEve, normal, l, m, p-tensor)*/
     
     /////////// TEST JACOBIAN ///////////
 /*    if (iPoint == 17) {
@@ -1846,7 +1863,7 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
       // Perturb
       for (iVar =0; iVar < nVar; iVar++) {
         delta = 1E-8*U_i[iVar];
-        if (delta == 0.0) delta = 1E-8;
+        if (delta == 0.0) delta = 1E-4;
         U_i[iVar] += delta;
         
         // Re-calculate primitive quantities & pass to CNumerics

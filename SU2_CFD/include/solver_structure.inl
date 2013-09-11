@@ -723,9 +723,6 @@ inline void CFEASolver::SetTotal_CFEA(double cfea) { Total_CFEA = cfea; }
 inline double CWaveSolver::GetTotal_CWave() { return Total_CWave; }
 
 inline double CHeatSolver::GetTotal_CHeat() { return Total_CHeat; }
-
-inline void CTurbSolver::CalcEddyViscosity(double *val_FlowVars, double val_laminar_viscosity,
-			double *val_TurbVar, double *val_eddy_viscosity) {}
       
 inline double CTNE2EulerSolver::GetDensity_Inf(void) { cout << "CTNE2EulerSolver::GetDensity_Inf NOT RETURNING THE CORRECT VALUE!!!" << endl; return 0.0; }
 

@@ -785,6 +785,12 @@ public:
 	 * \return Value of the flow pressure.
 	 */		
 	virtual double GetPressure(unsigned short val_incomp);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \return Value of the flow pressure.
+	 */
+	virtual double GetPressure(void);
 
 	/*!
 	 * \brief A virtual member.
