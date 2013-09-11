@@ -746,7 +746,16 @@ def expand_part(name,config):
     else:
         names = [name]
     return names
-    
+
+def expand_time(name,config):
+    if 'UNSTEADY_SIMULATION' in get_specialCases(config):
+        n_time = config['UNST_ADJOINT_ITER']
+        name_pat = add_suffix(name,'%05d')
+        names = [name_pat%i for i in range(n_time)]
+    else:
+        names = [name]
+    return names
+        
 def make_link(src,dst):
     """ make_link(src,dst)
         makes a relative link
@@ -792,21 +801,17 @@ def restart2solution(config,state={}):
         direct or adjoint is read from config
         adjoint objective is read from config
     """
-    
-    if 'UNSTEADY_SIMULATION' in get_specialCases(config):
-        if state and config.MATH_PROBLEM == 'DIRECT' :
-            del state.FILES.DIRECT
-        elif state and config.MATH_PROBLEM == 'ADJOINT':
-            ADJ_NAME = 'ADJOINT_' + func_name
-            del state.FILES[ADJ_NAME]
-        return
-    
+
     # direct solution
     if config.MATH_PROBLEM == 'DIRECT':
         restart  = config.RESTART_FLOW_FILENAME
         solution = config.SOLUTION_FLOW_FILENAME        
+        # expand unsteady time
+        restarts  = expand_time(restart,config)
+        solutions = expand_time(solution,config)
         # move
-        shutil.move( restart , solution )
+        for res,sol in zip(restarts,solutions):
+            shutil.move( res , sol )
         # update state
         if state: state.FILES.DIRECT = solution
         
@@ -818,9 +823,13 @@ def restart2solution(config,state={}):
         func_name = config.ADJ_OBJFUNC
         suffix    = get_adjointSuffix(func_name)
         restart   = add_suffix(restart,suffix)
-        solution  = add_suffix(solution,suffix)        
+        solution  = add_suffix(solution,suffix)
+        # expand unsteady time
+        restarts  = expand_time(restart,config)
+        solutions = expand_time(solution,config)        
         # move
-        shutil.move( restart , solution )
+        for res,sol in zip(restarts,solutions):
+            shutil.move( res , sol )
         # udpate state
         ADJ_NAME = 'ADJOINT_' + func_name
         if state: state.FILES[ADJ_NAME] = solution

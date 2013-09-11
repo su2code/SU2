@@ -194,12 +194,15 @@ def adjoint( func_name, config, state=None ):
     link.extend(name)
     
     # files: direct solution
-    link.append( files['DIRECT'] )
+    name = files['DIRECT']
+    name = su2io.expand_time(name,config)
+    link.extend(name)
     
     # files: adjoint solution
     if files.has_key( ADJ_NAME ):
-        link.append( files[ ADJ_NAME ] )
-        ##config['RESTART_SOL'] = 'YES' # don't override config file
+        name = files[ADJ_NAME]
+        name = su2io.expand_time(name,config)
+        link.extend(name)       
     else:
         config['RESTART_SOL'] = 'NO'
     
@@ -223,8 +226,10 @@ def adjoint( func_name, config, state=None ):
             info = su2run.projection(config)
             state.update(info)
             
-            # files to push
-            push.append( state['FILES'][ADJ_NAME] )
+            # solution files to push
+            name = state.FILES[ADJ_NAME]
+            name = su2io.expand_time(name,config)
+            push.extend(name)
             
     #: with output redirection
 
@@ -351,7 +356,9 @@ def findiff( config, state=None, step=1e-4 ):
     link.extend(name)
     # files: direct solution
     if files.has_key('DIRECT'):
-        link.append( files['DIRECT'] )
+        name = files['DIRECT']
+        name = su2io.expand_time(name,config)
+        link.extend(name)
     # files: target equivarea distribution
     if 'EQUIV_AREA' in special_cases and 'TARGET_EA' in files:
         pull.append(files['TARGET_EA'])
