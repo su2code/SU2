@@ -223,7 +223,6 @@ private:
 	double *CFL,		/*!< \brief CFL number for each multigrid level. */
 	**CFL_MS,               /*!< \brief CFL number for each multigrid level. */
 	MG_CFLRedCoeff,		/*!< \brief CFL reduction coefficient on the MG coarse level. */
-	LevelSet_CFLRedCoeff,		/*!< \brief CFL reduction coefficient on the LevelSet problem. */
 	Turb_CFLRedCoeff,		/*!< \brief CFL reduction coefficient on the LevelSet problem. */
 	Adj_CFLRedCoeff,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
 	AdjTurb_CFLRedCoeff,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
@@ -257,7 +256,6 @@ private:
 	Kind_SlopeLimit,				/*!< \brief Global slope limiter. */
 	Kind_SlopeLimit_Flow,		/*!< \brief Slope limiter for flow equations.*/
 	Kind_SlopeLimit_Turb,		/*!< \brief Slope limiter for the turbulence equation.*/
-	Kind_SlopeLimit_LevelSet,		/*!< \brief Slope limiter for the level set equation.*/
 	Kind_SlopeLimit_AdjLevelSet,		/*!< \brief Slope limiter for the adjoint level set equation.*/
 	Kind_SlopeLimit_Plasma,		/*!< \brief Slope limiter for the plasma equation.*/
 	Kind_SlopeLimit_AdjPlasma,		/*!< \brief Slope limiter for the adjoint plasma equation.*/
@@ -268,7 +266,6 @@ private:
 	Kind_TimeIntScheme_AdjFlow,		/*!< \brief Time integration for the adjoint flow equations. */
 	Kind_TimeIntScheme_LinFlow,		/*!< \brief Time integration for the linearized flow equations. */
 	Kind_TimeIntScheme_Turb,	/*!< \brief Time integration for the turbulence model. */
-	Kind_TimeIntScheme_LevelSet,	/*!< \brief Time integration for the level set model. */
 	Kind_TimeIntScheme_AdjLevelSet,	/*!< \brief Time integration for the adjoint level set model. */
 	Kind_TimeIntScheme_AdjTurb,	/*!< \brief Time integration for the adjoint turbulence model. */
 	Kind_TimeIntScheme_Plasma,	/*!< \brief Time integration for the plasma equations. */
@@ -283,7 +280,6 @@ private:
 	Kind_ConvNumScheme_AdjTurb,	/*!< \brief Centered or upwind scheme for the adjoint turbulence model. */
 	Kind_ConvNumScheme_Plasma,	/*!< \brief Centered or upwind scheme for the plasma equations. */
 	Kind_ConvNumScheme_AdjPlasma,	/*!< \brief Centered or upwind scheme for the adjoint plasma equations. */
-	Kind_ConvNumScheme_LevelSet,	/*!< \brief Centered or upwind scheme for the level set equation. */
 	Kind_ConvNumScheme_AdjLevelSet,	/*!< \brief Centered or upwind scheme for the adjoint level set equation. */
 	Kind_ConvNumScheme_Template,	/*!< \brief Centered or upwind scheme for the level set equation. */
 	Kind_ViscNumScheme,			/*!< \brief Global definition of the viscous term. */
@@ -316,7 +312,6 @@ private:
 	Kind_SourNumScheme_Template,	/*!< \brief Source numerical scheme for the template. */
 	Kind_Centered,				/*!< \brief Centered scheme. */
 	Kind_Centered_Flow,			/*!< \brief Centered scheme for the flow equations. */
-	Kind_Centered_LevelSet,			/*!< \brief Centered scheme for the level set equation. */
 	Kind_Centered_AdjLevelSet,			/*!< \brief Centered scheme for the level set equation. */
 	Kind_Centered_AdjFlow,			/*!< \brief Centered scheme for the adjoint flow equations. */
 	Kind_Centered_LinFlow,			/*!< \brief Centered scheme for the linearized flow equations. */
@@ -327,7 +322,6 @@ private:
 	Kind_Centered_Template,		/*!< \brief Centered scheme for the template model. */
 	Kind_Upwind,				/*!< \brief Upwind scheme. */
 	Kind_Upwind_Flow,			/*!< \brief Upwind scheme for the flow equations. */
-	Kind_Upwind_LevelSet,			/*!< \brief Upwind scheme for the level set equations. */
 	Kind_Upwind_AdjLevelSet,			/*!< \brief Upwind scheme for the level set equations. */
 	Kind_Upwind_AdjFlow,			/*!< \brief Upwind scheme for the adjoint flow equations. */
 	Kind_Upwind_LinFlow,			/*!< \brief Upwind scheme for the linearized flow equations. */
@@ -2298,15 +2292,6 @@ public:
 	 */		
 	unsigned short GetKind_ConvNumScheme_Template(void);
 
-	/*! 
-	 * \brief Get the kind of convective numerical scheme for the level set 
-	 *        equations (centered or upwind).
-	 * \note This value is obtained from the config file, and it is constant 
-	 *       during the computation.
-	 * \return Kind of convective numerical scheme for the level set equation.
-	 */		
-	unsigned short GetKind_ConvNumScheme_LevelSet(void);
-
 	/*!
 	 * \brief Get the kind of convective numerical scheme for the adjoint level set
 	 *        equations (centered or upwind).
@@ -2325,15 +2310,6 @@ public:
 	 * \return Kind of viscous numerical scheme for the flow equations.
 	 */		
 	unsigned short GetKind_ViscNumScheme_Flow(void);
-
-	/*!
-	 * \brief Get the kind of viscous numerical scheme for the level set
-	 (        equation.
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of viscous numerical scheme for the levelset equations.
-	 */
-	unsigned short GetKind_SourNumScheme_LevelSet(void);
 
 	/*!
 	 * \brief Get the kind of viscous numerical scheme for the wave
@@ -2437,14 +2413,6 @@ public:
 	 */
 	unsigned short GetKind_Centered_Flow(void);
 
-	/*! 
-	 * \brief Get the kind of center convective numerical scheme for the level set equations.
-	 * \note This value is obtained from the config file, and it is constant 
-	 *       during the computation.
-	 * \return Kind of center convective numerical scheme for the level set equations.
-	 */
-	unsigned short GetKind_Centered_LevelSet(void);
-
 	/*!
 	 * \brief Get the kind of center convective numerical scheme for the adjoint level set equations.
 	 * \note This value is obtained from the config file, and it is constant
@@ -2484,14 +2452,6 @@ public:
 	 * \return Kind of upwind convective numerical scheme for the flow equations.
 	 */
 	unsigned short GetKind_Upwind_Flow(void);
-
-	/*! 
-	 * \brief Get the kind of upwind convective numerical scheme for the level set equation.
-	 * \note This value is obtained from the config file, and it is constant 
-	 *       during the computation.
-	 * \return Kind of upwind convective numerical scheme for the flow equations.
-	 */
-	unsigned short GetKind_Upwind_LevelSet(void);
 
 	/*!
 	 * \brief Get the kind of upwind convective numerical scheme for the adjoint level set equation.
@@ -2534,12 +2494,6 @@ public:
 	 * \return Method for limiting the spatial gradients solving the turbulent equation.
 	 */		
 	unsigned short GetKind_SlopeLimit_Turb(void);
-
-	/*! 
-	 * \brief Get the method for limiting the spatial gradients.
-	 * \return Method for limiting the spatial gradients solving the level set equation.
-	 */		
-	unsigned short GetKind_SlopeLimit_LevelSet(void);
 
 	/*!
 	 * \brief Get the method for limiting the spatial gradients.
@@ -2789,15 +2743,6 @@ public:
 	 * \return Kind of integration scheme for the turbulence equations.
 	 */
 	unsigned short GetKind_TimeIntScheme_Turb(void);
-
-	/*! 
-	 * \brief Get the kind of integration scheme (implicit) 
-	 *        for the level set equations.
-	 * \note This value is obtained from the config file, and it is constant 
-	 *       during the computation.
-	 * \return Kind of integration scheme for the level set equations.
-	 */
-	unsigned short GetKind_TimeIntScheme_LevelSet(void);
 
 	/*!
 	 * \brief Get the kind of integration scheme (implicit)
@@ -4153,13 +4098,6 @@ public:
 	 * \return The total temperature.
 	 */
 	double GetOutlet_Species_Velocity(unsigned short iSpecies);
-
-
-	/*!
-	 * \brief Value of the CFL reduction in LevelSet problems.
-	 * \return Value of the CFL reduction in LevelSet problems.
-	 */
-	double GetLevelSet_CFLRedCoeff(void);
   
   /*!
 	 * \brief Value of the CFL reduction in LevelSet problems.

@@ -684,10 +684,6 @@ inline double CPlasmaSolver::GetMax_Delta_Time(unsigned short val_Species) { ret
 
 inline double CPlasmaSolver::GetMin_Delta_Time(unsigned short val_Species) { return Min_Delta_Time[val_Species]; }
 
-inline double CLevelSetSolver::GetTotal_CFreeSurface() { return Total_CFreeSurface; }
-
-inline void CLevelSetSolver::SetTotal_CFreeSurface(double cfreesurface) { Total_CFreeSurface = cfreesurface; }
-
 inline unsigned short CAdjPlasmaSolver::GetnSpecies(void) { return nSpecies; }
 
 inline unsigned short CAdjPlasmaSolver::GetnMonatomics(void) { return nMonatomics; }

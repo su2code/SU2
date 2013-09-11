@@ -395,13 +395,27 @@ bool CEulerVariable::SetPrimVar_Incompressible(double Density_Inf, CConfig *conf
 }
 
 bool CEulerVariable::SetPrimVar_FreeSurface(CConfig *config) {
-	unsigned short iDim;
-  double epsilon, Heaviside, lambda, DensityInc;
-  
+	unsigned short iDim, iVar;
+  double epsilon, Heaviside, lambda, DensityInc, levelset;
+  bool check_level = false, RightVol = true;
+
   double ArtComp_Factor = config->GetArtComp_Factor();
-  double levelset = GetSolution(nDim+1);
   
+  check_level = (abs(Solution[nDim+1]) > 1.0);   // Check the LevelSet
+
+  /*--- Check that the solution has a physical meaning ---*/
+  if (check_level) {
+    
+    /*--- Copy the old solution ---*/
+    for (iVar = 0; iVar < nVar; iVar++)
+      Solution[iVar] = Solution_Old[iVar];
+        
+    RightVol = false;
+    
+  }
+
   /*--- Set the value of the density ---*/
+  levelset = GetSolution(nDim+1);
   epsilon = config->GetFreeSurface_Thickness();
   Heaviside = 0.0;
   if (levelset < -epsilon) Heaviside = 1.0;
@@ -425,7 +439,7 @@ bool CEulerVariable::SetPrimVar_FreeSurface(CConfig *config) {
   for (iDim = 0; iDim < nDim; iDim++)
     Primitive[iDim+1] = Solution[iDim+1] / Primitive[0];
   
-  return true;
+  return RightVol;
   
 }
 

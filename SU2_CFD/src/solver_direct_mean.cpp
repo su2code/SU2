@@ -1935,16 +1935,17 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
       
       a = Mean_BetaInc2/Mean_DensityInc, b = Mean_LevelSet/Mean_DensityInc;
       c = (1.0 - config->GetRatioDensity())*Delta*config->GetDensity_FreeStreamND();
-      e = (2.0*Mean_ProjVel - b*c*Mean_ProjVel), f = sqrt(4.0*a*Area*Area + e*e);
+      e = (2.0*fabs(Mean_ProjVel) + b*c*fabs(Mean_ProjVel)), f = sqrt(4.0*a*Area*Area + e*e);
       Mean_SoundSpeed = 0.5*f;
       Mean_ProjVel = 0.5*e;
+      
 		}
     
 		/*--- Adjustment for grid movement ---*/
 		if (grid_movement) {
 			double *GridVel_i = geometry->node[iPoint]->GetGridVel();
 			double *GridVel_j = geometry->node[jPoint]->GetGridVel();
-			ProjVel_i = 0.0; ProjVel_j =0.0;
+			ProjVel_i = 0.0; ProjVel_j = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++) {
 				ProjVel_i += GridVel_i[iDim]*Normal[iDim];
 				ProjVel_j += GridVel_j[iDim]*Normal[iDim];
@@ -1991,7 +1992,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
         
         a = Mean_BetaInc2/Mean_DensityInc; b = Mean_LevelSet/Mean_DensityInc;
         c = (1.0 - config->GetRatioDensity())*Delta*config->GetDensity_FreeStreamND();
-        e = (2.0*Mean_ProjVel - b*c*Mean_ProjVel); f = sqrt(4.0*a*Area*Area + e*e);
+        e = (2.0*fabs(Mean_ProjVel) + b*c*fabs(Mean_ProjVel)); f = sqrt(4.0*a*Area*Area + e*e);
         Mean_SoundSpeed = 0.5*f;
         Mean_ProjVel = 0.5*e;
       }
@@ -7449,10 +7450,11 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
 			node[iPoint]->SetDelta_Time(Global_Delta_Time);
 	}
 
-	/*--- Recompute the unsteady time step for the dual time stratey
+	/*--- Recompute the unsteady time step for the dual time strategy
 	 if the unsteady CFL is diferent from 0 ---*/
 	if ((dual_time) && (Iteration == 0) && (config->GetUnst_CFL() != 0.0) && (iMesh == MESH_0)) {
 		Global_Delta_UnstTimeND = config->GetUnst_CFL()*Global_Delta_Time/config->GetCFL(iMesh);
+    
 #ifndef NO_MPI
 		double rbuf_time, sbuf_time;
 		sbuf_time = Global_Delta_UnstTimeND;
