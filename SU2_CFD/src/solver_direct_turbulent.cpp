@@ -1276,7 +1276,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
             }
             for (iDim = 0; iDim<nDim; iDim++){
                 for (jDim = 0; jDim<nDim; jDim++){
-                    OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = numerics->PrimVar_Grad_i[iDim][jDim];
+                    OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = numerics->PrimVar_Grad_i[iDim + 1][jDim];
                     idx++;
                 }
             }
