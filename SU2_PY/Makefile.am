@@ -18,17 +18,10 @@ bin_SCRIPTS = \
     shape_optimization.py \
     merge_solution.py \
     2DChannel.py \
-    box.py \
+    3DChannel.py \
     config_gui.py \
-    convert_routines_c2c.py \
-    convert_routines_c2cpp.py \
-    convert_routines_cpp2c.py \
-    differentiate_routines.py \
     filter_adjoint.py \
-    insert_math.py \
-    insert_routines.py \
-    mesh_adaptation.py \
-    square.py
+    mesh_adaptation.py
 		      
 mypkgdir = $(prefix)/bin
 nobase_dist_mypkg_DATA= \

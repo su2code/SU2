@@ -2,23 +2,23 @@
  * \file integration_time.cpp
  * \brief Time deppending numerical method.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.6
+ * \version 2.0.7
  *
- * Stanford University Unstructured (SU2) Code
- * Copyright (C) 2012 Aerospace Design Laboratory
+ * Stanford University Unstructured (SU2).
+ * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "../include/integration_structure.hpp"
@@ -35,8 +35,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry, CSolver *
 	const bool restart = (config[iZone]->GetRestart() || config[iZone]->GetRestart_Flow());
 	const bool startup_multigrid = (config[iZone]->GetRestart_Flow() && (RunTime_EqSystem == RUNTIME_FLOW_SYS) && (Iteration == 0));
 	const bool direct = ((config[iZone]->GetKind_Solver() == EULER) || (config[iZone]->GetKind_Solver() == NAVIER_STOKES) ||
-                   (config[iZone]->GetKind_Solver() == RANS) || (config[iZone]->GetKind_Solver() == FREE_SURFACE_EULER) ||
-                   (config[iZone]->GetKind_Solver() == FREE_SURFACE_NAVIER_STOKES) || (config[iZone]->GetKind_Solver() == FREE_SURFACE_RANS) ||
+                   (config[iZone]->GetKind_Solver() == RANS) ||
                    (config[iZone]->GetKind_Solver() == FLUID_STRUCTURE_EULER) || (config[iZone]->GetKind_Solver() == FLUID_STRUCTURE_NAVIER_STOKES) ||
                    (config[iZone]->GetKind_Solver() == FLUID_STRUCTURE_RANS) || (config[iZone]->GetKind_Solver() == AEROACOUSTIC_EULER) ||
                    (config[iZone]->GetKind_Solver() == AEROACOUSTIC_NAVIER_STOKES) || (config[iZone]->GetKind_Solver() == AEROACOUSTIC_RANS) ||
@@ -604,6 +603,8 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
             
 			/*--- Calculate the inviscid and viscous forces ---*/
 			solver_container[FinestMesh][FLOW_SOL]->Inviscid_Forces(geometry[FinestMesh], config);
+      if (config->GetWrt_Sectional_Forces())
+        solver_container[FinestMesh][FLOW_SOL]->Inviscid_Forces_Sections(geometry[FinestMesh], config);
 			if (config->GetKind_ViscNumScheme() != NONE) solver_container[FinestMesh][FLOW_SOL]->Viscous_Forces(geometry[FinestMesh], config);
             
 			/*--- Evaluate convergence monitor ---*/
@@ -772,15 +773,14 @@ void CSingleGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSys
 	/*--- Update solution at the no slip wall boundary ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 		if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX) ||
-            (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL)) {
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL)) {
 			for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
 				Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
 				if (SolContainer_Position == TURB_SOL) sol_coarse[SolContainer_Position]->node[Point_Coarse]->SetSolutionZero();
-                if (SolContainer_Position == LEVELSET_SOL) sol_coarse[SolContainer_Position]->node[Point_Coarse]->SetSolutionZero();
 			}
-        }
+    }
 	}
-    
+  
 	delete [] Solution;
     
 }

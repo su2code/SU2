@@ -3,23 +3,23 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>geometry_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.6
+ * \version 2.0.7
  *
- * Stanford University Unstructured (SU2) Code
- * Copyright (C) 2012 Aerospace Design Laboratory
+ * Stanford University Unstructured (SU2).
+ * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #pragma once
@@ -57,7 +57,7 @@ using namespace std;
  * \brief Parent class for defining the geometry of the problem (complete geometry, 
  *        multigrid agglomerated geometry, only boundary geometry, etc..)
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CGeometry {
 protected:
@@ -540,6 +540,12 @@ public:
 	 */
 	virtual void SetGridVelocity(CConfig *config, unsigned long iter);
 
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  virtual void Set_MPI_GridVel(CConfig *config);
+  
 	/*!
 	 * \brief A virtual member.
    * \param[in] geometry - Geometry of the fine mesh.
@@ -558,8 +564,10 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config,
-                                      vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
+                                      vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, vector<unsigned long> &point1_Airfoil, vector<unsigned long> &point2_Airfoil, bool original_surface);
   
+	virtual void ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config,
+                                      vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
   /*!
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
@@ -765,7 +773,18 @@ public:
 	 * \returns The interpolated value of for x.
 	 */
 	double GetSpline(vector<double> &xa, vector<double> &ya, vector<double> &y2a, unsigned long n, double x);
-	
+	  
+  /*!
+	 * \brief Compute the intersection between a segment and a plane.
+   * \param[in] Segment_P0 - Definition of the particular problem.
+	 * \param[in] Segment_P1 - Definition of the particular problem.
+	 * \param[in] Plane_P0 - Definition of the particular problem.
+	 * \param[in] Plane_Normal - Definition of the particular problem.
+   * \param[in] Intersection - Definition of the particular problem.
+   * \returns If the intersection has has been successful.
+	 */
+  unsigned short ComputeSegmentPlane_Intersection(double *Segment_P0, double *Segment_P1, double *Plane_P0, double *Plane_Normal, double *Intersection);
+
 };
 
 /*! 
@@ -773,7 +792,7 @@ public:
  * \brief Class for reading a defining the primal grid which is read from the 
  *        grid file in .su2 format.
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CPhysicalGeometry : public CGeometry {
 
@@ -810,7 +829,7 @@ public:
 	 * \param[in] val_iZone - Domain to be read from the grid file.
 	 * \param[in] val_nZone - Total number of domains in the grid file.
 	 */
-	void SU2_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
+	void Read_SU2_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
   
   /*!
 	 * \brief Reads the geometry of the grid and adjust the boundary
@@ -821,7 +840,7 @@ public:
 	 * \param[in] val_iZone - Domain to be read from the grid file.
 	 * \param[in] val_nZone - Total number of domains in the grid file.
 	 */
-	void CGNS_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
+	void Read_CGNS_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
   
   /*!
 	 * \brief Reads the geometry of the grid and adjust the boundary
@@ -832,7 +851,7 @@ public:
 	 * \param[in] val_iZone - Domain to be read from the grid file.
 	 * \param[in] val_nZone - Total number of domains in the grid file.
 	 */
-	void NETCDF_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
+	void Read_NETCDF_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
 
 	/*! 
 	 * \brief Find repeated nodes between two elements to identify the common face.
@@ -981,13 +1000,19 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetGridVelocity(CConfig *config, unsigned long iter);
-
+  
+  /*!
+	 * \brief Perform the MPI communication for the grid velocities.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  void Set_MPI_GridVel(CConfig *config);
+  
 	/*! 
 	 * \brief Set the periodic boundary conditions.
 	 * \param[in] config - Definition of the particular problem.		 
 	 */
 	void SetPeriodicBoundary(CConfig *config);
-
+  
 	/*! 
 	 * \brief Do an implicit smoothing of the grid coordinates.
 	 * \param[in] val_nSmooth - Number of smoothing iterations.
@@ -1159,6 +1184,14 @@ public:
 	 * \brief Get all points on a geometrical plane in the mesh
 	 */
 	vector<vector<unsigned long> > GetPlanarPoints();
+  
+  /*!
+	 * \brief Compute the sections of a wing.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config,
+                              vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, vector<unsigned long> &point1_Airfoil, vector<unsigned long> &point2_Airfoil, bool original_surface);
+  
 };
 
 /*! 
@@ -1166,7 +1199,7 @@ public:
  * \brief Class for defining the multigrid geometry, the main delicated part is the 
  *        agglomeration stage, which is done in the declaration.
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CMultiGridGeometry : public CGeometry {
 
@@ -1330,7 +1363,7 @@ public:
  * \brief Class for only defining the boundary of the geometry, this class is only 
  *        used in case we are not interested in the volumetric grid.
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CBoundaryGeometry : public CGeometry {
   
@@ -1408,17 +1441,6 @@ public:
    * \returns The total volume of the airfoil.
 	 */
   double Compute_Area(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
-	
-  /*!
-	 * \brief Compute the intersection between a segment and a plane.
-   * \param[in] Segment_P0 - Definition of the particular problem.
-	 * \param[in] Segment_P1 - Definition of the particular problem.
-	 * \param[in] Plane_P0 - Definition of the particular problem.
-	 * \param[in] Plane_Normal - Definition of the particular problem.
-   * \param[in] Intersection - Definition of the particular problem.
-   * \returns If the intersection has has been successful.
-	 */
-  unsigned short ComputeSegmentPlane_Intersection(double *Segment_P0, double *Segment_P1, double *Plane_P0, double *Plane_Normal, double *Intersection);
 
 };
 
@@ -1426,7 +1448,7 @@ public:
  * \class CDomainGeometry
  * \brief Class for defining an especial kind of grid used in the partioning stage.
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CDomainGeometry : public CGeometry {
 	long *Global_to_Local_Point;				/*!< \brief Global-local indexation for the points. */
@@ -1499,7 +1521,7 @@ public:
  * \class CPeriodicGeometry
  * \brief Class for defining a periodic boundary condition.
  * \author T. Economon, F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CPeriodicGeometry : public CGeometry {
 	CPrimalGrid*** newBoundPer;            /*!< \brief Boundary vector for new periodic elements (primal grid information). */
@@ -1545,7 +1567,7 @@ public:
  * \struct CMultiGridQueue
  * \brief Class for a multigrid queue system
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  * \date Aug 12, 2012
  */
 class CMultiGridQueue {

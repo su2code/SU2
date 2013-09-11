@@ -2,23 +2,23 @@
  * \file output_paraview.cpp
  * \brief Main subroutines for output solver information.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.6
+ * \version 2.0.7
  *
- * Stanford University Unstructured (SU2) Code
- * Copyright (C) 2013 Aerospace Design Laboratory
+ * Stanford University Unstructured (SU2).
+ * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "../include/output_structure.hpp"
@@ -466,7 +466,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       }
     }
     
-    if ((Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    if (config->GetKind_Regime() == FREESURFACE) {
       
       Paraview_File << "\nSCALARS Density float 1\n";
       Paraview_File << "LOOKUP_TABLE default\n";
@@ -486,8 +486,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       
     }
     
-    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
-        (Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       
       Paraview_File << "\nSCALARS Pressure float 1\n";
       Paraview_File << "LOOKUP_TABLE default\n";
@@ -539,8 +538,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       
     }
     
-    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
-        (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       
       Paraview_File << "\nSCALARS Temperature float 1\n";
       Paraview_File << "LOOKUP_TABLE default\n";
@@ -624,7 +622,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       
     }
     
-    if ((Kind_Solver == RANS) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    if (Kind_Solver == RANS) {
       
       Paraview_File << "\nSCALARS Eddy_Viscosity float 1\n";
       Paraview_File << "LOOKUP_TABLE default\n";
@@ -645,8 +643,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
     }
     
     if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) ||
-        (Kind_Solver == ADJ_FREE_SURFACE_EULER) || (Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
-        (Kind_Solver == ADJ_FREE_SURFACE_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
+        (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
       
       Paraview_File << "\nSCALARS Surface_Sensitivity float 1\n";
       Paraview_File << "LOOKUP_TABLE default\n";

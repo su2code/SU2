@@ -2,23 +2,23 @@
  * \file solution_linearized_mean.cpp
  * \brief Main subrotuines for solving linearized problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.6
+ * \version 2.0.7
  *
- * Stanford University Unstructured (SU2) Code
- * Copyright (C) 2012 Aerospace Design Laboratory
+ * Stanford University Unstructured (SU2).
+ * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "../include/solver_structure.hpp"
@@ -313,7 +313,6 @@ void CLinEulerSolver::Inviscid_DeltaForces(CGeometry *geometry, CSolver **solver
 	double Density_Inf = solver_container[FLOW_SOL]->GetDensity_Inf();
 	double ModVelocity_Inf = solver_container[FLOW_SOL]->GetModVelocity_Inf();
 	double C_p = 1.0/(0.5*Density_Inf*RefAreaCoeff*ModVelocity_Inf*ModVelocity_Inf);
-	bool incompressible = config->GetIncompressible();
 
 	/*-- Inicialization ---*/
 	Total_CDeltaDrag = 0.0; Total_CDeltaLift = 0.0;
@@ -332,11 +331,11 @@ void CLinEulerSolver::Inviscid_DeltaForces(CGeometry *geometry, CSolver **solver
 					
 					/*--- Compute pressure on the boundary ---*/
 					for (iDim = 0; iDim < nDim; iDim++) 
-						Velocity[iDim] = solver_container[FLOW_SOL]->node[Point]->GetVelocity(iDim, config->GetIncompressible());
+						Velocity[iDim] = solver_container[FLOW_SOL]->node[Point]->GetVelocity(iDim, COMPRESSIBLE);
 					
 					double rho = solver_container[FLOW_SOL]->node[Point]->GetSolution(0) + node[Point]->GetSolution(0);
 					double rhoE = solver_container[FLOW_SOL]->node[Point]->GetSolution(nVar-1) + node[Point]->GetSolution(nVar-1);
-					double Pressure = solver_container[FLOW_SOL]->node[Point]->GetPressure(incompressible);
+					double Pressure = solver_container[FLOW_SOL]->node[Point]->GetPressure(COMPRESSIBLE);
 					double rhoVel[3];
 					double sqr_vel = 0.0;
 					for (iDim = 0; iDim < nDim; iDim++) {

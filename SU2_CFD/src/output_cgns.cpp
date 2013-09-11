@@ -2,23 +2,23 @@
  * \file output_cgns.cpp
  * \brief Main subroutines for output solver information.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.6
+ * \version 2.0.7
  *
- * Stanford University Unstructured (SU2) Code
- * Copyright (C) 2013 Aerospace Design Laboratory
+ * Stanford University Unstructured (SU2).
+ * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "../include/output_structure.hpp"
@@ -107,10 +107,10 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
     
 		cgns_err = cg_open((char *)results_file.str().c_str(),CG_MODE_WRITE,&cgns_file);
 
-		element_dims = geometry->GetnDim();		// Currently (release 2.0.6) only all-2D or all-3D zones permitted
+		element_dims = geometry->GetnDim();		// Currently (release 2.0.7) only all-2D or all-3D zones permitted
 		physical_dims = element_dims;
 
-    /*--- write CGNS base data (one base assumed as of version 2.0.6) ---*/
+    /*--- write CGNS base data (one base assumed as of version 2.0.7) ---*/
 		cgns_err = cg_base_write(cgns_file,"SU^2 Base",element_dims,physical_dims,&cgns_base_results);
 		if (cgns_err) cg_error_print();
 
@@ -184,6 +184,10 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
 	bool unsteady = config->GetUnsteady_Simulation();
 	cgsize_t isize[3][1], elem_start, elem_end, N;
   
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+	bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+	bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+  
 	/*--- Create CGNS base file name ---*/
 	base_file = config->GetFlow_FileName();
   
@@ -224,7 +228,7 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
 		element_dims = geometry->GetnDim();		// Currently (release 2.0) only all-2D or all-3D zones permitted
 		physical_dims = element_dims;
     
-		/*--- write CGNS base data (one base assumed as of version 2.0.6) ---*/
+		/*--- write CGNS base data (one base assumed as of version 2.0.7) ---*/
 		cgns_err = cg_base_write(cgns_file,"SU^2 Base",element_dims,physical_dims,&cgns_base);
 		if (cgns_err) cg_error_print();
     
@@ -238,7 +242,7 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
 		/*--- Write governing equations to CGNS file ---*/
 		cgns_err = cg_goto(cgns_file,cgns_base,"FlowEquationSet_t",1,"end");
 		if (cgns_err) cg_error_print();
-		if (!config->GetIncompressible()) {
+		if (compressible) {
 			switch (config->GetKind_Solver()) {
         case EULER:
           cgns_err = cg_governing_write(Euler); break;
@@ -256,7 +260,7 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
 		else cgns_err = cg_simulation_type_write(cgns_file,cgns_base,NonTimeAccurate);
 		if (cgns_err) cg_error_print();
     
-		cgns_err = cg_descriptor_write("Solver Information","SU^2 version 2.0.6, Stanford University Aerospace Design Lab");
+		cgns_err = cg_descriptor_write("Solver Information","SU^2 version 2.0.7, Stanford University Aerospace Design Lab");
 		if (cgns_err) cg_error_print();
 		
 		isize[0][0] = geometry->GetGlobal_nPointDomain(); //;				// vertex size
@@ -343,6 +347,8 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
 	bool unsteady = config->GetUnsteady_Simulation();
 	cgsize_t isize[3][1];
   
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  
 	/*--- Create CGNS base file name ---*/
 	base_file = config->GetFlow_FileName();
   
@@ -413,7 +419,7 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
 		element_dims = geometry->GetnDim();		// Currently (release 2.0) only all-2D or all-3D zones permitted
 		physical_dims = element_dims;
     
-//		/*--- write CGNS base data (one base assumed as of version 2.0.6) ---*/
+//		/*--- write CGNS base data (one base assumed as of version 2.0.7) ---*/
 //		cgns_err = cg_base_write(cgns_file,"SU^2 Base",element_dims,physical_dims,&cgns_base);
 //		if (cgns_err) cg_error_print();
     
@@ -482,7 +488,7 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
 		}
 	}
   
-	if (!config->GetIncompressible()) {
+	if (compressible) {
 		switch (config->GetKind_Solver()) {
         
         /*--- Write pressure and Mach data to CGNS file ---*/

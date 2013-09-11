@@ -2,23 +2,23 @@
  * \file output_tecplot.cpp
  * \brief Main subroutines for output solver information.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.6
+ * \version 2.0.7
  *
- * Stanford University Unstructured (SU2) Code
- * Copyright (C) 2013 Aerospace Design Laboratory
+ * Stanford University Unstructured (SU2).
+ * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "../include/output_structure.hpp"
@@ -108,6 +108,11 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
 	}
     
 	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+
+		/*--- SU2_SOL requires different names. It is only called for parallel cases. ---*/
+		if (config->GetKind_SU2() == SU2_SOL) {
+			val_iZone = iExtIter;
+		}
 		if (int(val_iZone) < 10) sprintf (buffer, "_0000%d.dat", int(val_iZone));
 		if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) sprintf (buffer, "_000%d.dat", int(val_iZone));
 		if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) sprintf (buffer, "_00%d.dat", int(val_iZone));
@@ -175,26 +180,23 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
       }
     }
     
-    if ((Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    if (config->GetKind_Regime() == FREESURFACE) {
       Tecplot_File << ",\"Density\"";
     }
     
-    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
-        (Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       Tecplot_File << ",\"Pressure\",\"Pressure_Coefficient\",\"Mach\"";
     }
     
-    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
-        (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       Tecplot_File << ", \"Temperature\", \"Laminar_Viscosity\", \"Skin_Friction_Coefficient\", \"Heat_Transfer\", \"Y_Plus\"";
     }
     
-    if ((Kind_Solver == RANS) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    if (Kind_Solver == RANS) {
       Tecplot_File << ", \"Eddy_Viscosity\"";
     }
     
-    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
-        (Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       Tecplot_File << ", \"Sharp_Edge_Dist\"";
     }
     
@@ -231,10 +233,14 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
         Tecplot_File << ",\"ElectricField_" << iDim+1 << "\"";
     }
     
-    if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) ||
-        (Kind_Solver == ADJ_FREE_SURFACE_EULER) || (Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
-        (Kind_Solver == ADJ_FREE_SURFACE_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
+    if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
       Tecplot_File << ", \"Surface_Sensitivity\", \"Solution_Sensor\"";
+    }
+    
+    if (config->GetExtraOutput()) {
+      for (iVar = 0; iVar < nVar_Extra; iVar++) {
+        Tecplot_File << ", \"ExtraOutput_" << iVar+1<<"\"";
+      }
     }
     
     Tecplot_File << endl;
@@ -280,15 +286,21 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
   
   /*--- Write the header ---*/
   Tecplot_File << "ZONE ";
-	if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady())
+	if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
 		Tecplot_File << "STRANDID="<<int(iExtIter+1)<<", SOLUTIONTIME="<<config->GetDelta_UnstTime()*iExtIter<<", ";
-  
+	} else if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+		/*--- Compute period of oscillation & compute time interval using nTimeInstances ---*/
+		double period = config->GetTimeSpectral_Period();
+		double deltaT = period/(double)(config->GetnTimeInstances());
+		Tecplot_File << "STRANDID="<<int(iExtIter+1)<<", SOLUTIONTIME="<<deltaT*iExtIter<<", ";
+	}
+
 	if (nDim == 2) {
-    if (surf_sol) Tecplot_File << "NODES= "<< nSurf_Poin <<", ELEMENTS= "<< nSurf_Elem <<", DATAPACKING=POINT, ZONETYPE=FELINESEG"<< endl;
-    else Tecplot_File << "NODES= "<< nGlobal_Poin <<", ELEMENTS= "<< nGlobal_Elem <<", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
+		if (surf_sol) Tecplot_File << "NODES= "<< nSurf_Poin <<", ELEMENTS= "<< nSurf_Elem <<", DATAPACKING=POINT, ZONETYPE=FELINESEG"<< endl;
+		else Tecplot_File << "NODES= "<< nGlobal_Poin <<", ELEMENTS= "<< nGlobal_Elem <<", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
 	} else {
-    if (surf_sol) Tecplot_File << "NODES= "<< nSurf_Poin<<", ELEMENTS= "<< nSurf_Elem <<", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
-    else Tecplot_File << "NODES= "<< nGlobal_Poin <<", ELEMENTS= "<< nGlobal_Elem <<", DATAPACKING=POINT, ZONETYPE=FEBRICK"<< endl;
+		if (surf_sol) Tecplot_File << "NODES= "<< nSurf_Poin<<", ELEMENTS= "<< nSurf_Elem <<", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
+		else Tecplot_File << "NODES= "<< nGlobal_Poin <<", ELEMENTS= "<< nGlobal_Elem <<", DATAPACKING=POINT, ZONETYPE=FEBRICK"<< endl;
 	}
   
 	/*--- Write surface and volumetric solution data. ---*/
@@ -720,11 +732,6 @@ void COutput::SetTecplot_Mesh(CConfig *config, CGeometry *geometry, unsigned sho
         
 	}
     
-    
-#else // Not built with Tecplot binary support
-    
-	cout << "Tecplot binary file requested but SU^2 was built without TecIO support. No file written" << "\n";
-    
 #endif
     
 }
@@ -1031,11 +1038,6 @@ void COutput::SetTecplot_SurfaceMesh(CConfig *config, CGeometry *geometry, unsig
 		if (err) cout << "Error in closing Tecplot file" << endl;
     
 	}
-  
-  
-#else // Not built with Tecplot binary support
-  
-	cout << "Tecplot binary file requested but SU^2 was built without TecIO support. No file written" << "\n";
   
 #endif
   
@@ -1390,11 +1392,7 @@ void COutput::SetTecplot_Solution(CConfig *config, CGeometry *geometry, unsigned
     
 	err = TECEND112();
 	if (err) cout << "Error in closing Tecplot file" << endl;
-    
-#else // Not built with Tecplot binary support
-    
-	cout << "Tecplot binary file requested but SU^2 was built without Tecio support. No file written" << "\n"; 
-    
+
 #endif
     
 }
@@ -1711,10 +1709,6 @@ void COutput::SetTecplot_SurfaceSolution(CConfig *config, CGeometry *geometry, u
 	err = TECEND112();
 	if (err) cout << "Error in closing Tecplot file" << endl;
   
-#else // Not built with Tecplot binary support
-  
-	cout << "Tecplot binary file requested but SU^2 was built without Tecio support. No file written" << "\n";
-  
 #endif
   
 }
@@ -1792,30 +1786,27 @@ string AssembleVariableNames(CGeometry *geometry, CConfig *config, unsigned shor
       }
     }
     
-    if ((Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    if (config->GetKind_Regime() == FREESURFACE) {
       variables << "Density ";
       *NVar += 1;
     }
     
-    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
-        (Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       variables << "Pressure Pressure_Coefficient Mach ";
       *NVar += 3;
     }
     
-    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
-        (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       variables << "Temperature Laminar_Viscosity Skin_Friction_Coefficient Heat_Transfer Y_Plus ";
       *NVar += 5;
     }
     
-    if ((Kind_Solver == RANS) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    if (Kind_Solver == RANS) {
       variables << "Eddy_Viscosity ";
       *NVar += 1;
     }
     
-    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
-        (Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS)) {
+    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       variables << "Sharp_Edge_Dist ";
       *NVar += 1;
     }
@@ -1862,9 +1853,7 @@ string AssembleVariableNames(CGeometry *geometry, CConfig *config, unsigned shor
       }
     }
     
-    if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) ||
-        (Kind_Solver == ADJ_FREE_SURFACE_EULER) || (Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
-        (Kind_Solver == ADJ_FREE_SURFACE_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
+    if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
       variables << "Surface_Sensitivity Solution_Sensor ";
       *NVar += 2;
     }

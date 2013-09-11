@@ -3,23 +3,23 @@
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.6
+ * \version 2.0.7
  *
- * Stanford University Unstructured (SU2) Code
- * Copyright (C) 2012 Aerospace Design Laboratory
+ * Stanford University Unstructured (SU2).
+ * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #pragma once
@@ -49,7 +49,7 @@ using namespace std;
  * \brief Class for writing the flow, adjoint and linearized solver 
  *        solution (including the history solution, and parallel stuff).
  * \author F. Palacios, T. Economon, M. Colonno.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class COutput {
 
@@ -81,7 +81,7 @@ class COutput {
 	double **Data;
 	double **residuals, **consv_vars;					// placeholders
 	double *p, *rho, *M, *Cp, *Cf, *Ch, *h, *yplus;		// placeholders 
-	unsigned short nVar_Consv, nVar_Total, nZones; 
+	unsigned short nVar_Consv, nVar_Total, nVar_Extra, nZones;
 	bool wrote_base_file, wrote_surf_file, wrote_CGNS_base, wrote_Tecplot_base, wrote_Paraview_base;
 
   int cgns_base, cgns_zone, cgns_base_results, cgns_zone_results;
@@ -143,8 +143,9 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] FlowSolution - Flow solution.
 	 * \param[in] iExtIter - Current external (time) iteration.
+	 * \param[in] val_iZone - Current zone number in the grid file.
 	 */
-	void SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry, CSolver *FlowSolver, unsigned long iExtIter);
+	void SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry, CSolver *FlowSolver, unsigned long iExtIter, unsigned short val_iZone);
 
 	/*! 
 	 * \brief Create and write the file with the adjoint coefficients on the surface for serial computations.

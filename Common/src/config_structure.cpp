@@ -2,23 +2,23 @@
  * \file config_structure.cpp
  * \brief Main file for reading the config file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.6
+ * \version 2.0.7
  *
- * Stanford University Unstructured (SU2) Code
- * Copyright (C) 2012 Aerospace Design Laboratory
+ * Stanford University Unstructured (SU2).
+ * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "../include/config_structure.hpp"
@@ -31,7 +31,7 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 #endif
   
   /*--- Reading config options  ---*/
-  SetConfig_Options(val_nZone);
+  SetConfig_Options(val_iZone, val_nZone);
   
   /*--- Parsing the config file  ---*/
   SetParsing(case_filename);
@@ -85,10 +85,11 @@ CConfig::CConfig(char case_filename[200]) {
   
 }
 
-void CConfig::SetConfig_Options(unsigned short val_nZone) {
+void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZone) {
 	double default_vec_3d[3];
 	double default_vec_6d[6];
 	nZone = val_nZone;
+	iZone = val_iZone;
   
 	/*--- Intialize pointers to NULL. If we don't find these values
    in the config file, they will all be set to zero. ---*/
@@ -107,6 +108,12 @@ void CConfig::SetConfig_Options(unsigned short val_nZone) {
 	/*--- Options related to problem definition and partitioning ---*/
 	/* CONFIG_CATEGORY: Problem Definition */
   
+  /* DESCRIPTION: Adjoint type */
+	AddEnumOption("REGIME_TYPE", Kind_Regime, Regime_Map, "COMPRESSIBLE");
+  
+  /* DESCRIPTION: Write extra output */
+	AddSpecialOption("EXTRA_OUTPUT", ExtraOutput, SetBoolOption, false);
+  
 	/* DESCRIPTION: Physical governing equations */
 	AddEnumOption("PHYSICAL_PROBLEM", Kind_Solver, Solver_Map, "NONE");
 	/* DESCRIPTION: Mathematical problem */
@@ -115,10 +122,7 @@ void CConfig::SetConfig_Options(unsigned short val_nZone) {
 	AddEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, "NONE");
 	/* DESCRIPTION: Specify transition model */
 	AddEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, "NONE");
-	/* DESCRIPTION: Free-surface problem */
-	AddSpecialOption("FREE_SURFACE", FreeSurface, SetBoolOption, false);
-	/* DESCRIPTION: Incompressible flow using artificial compressibility */
-	AddSpecialOption("INCOMPRESSIBLE_FORMULATION", Incompressible, SetBoolOption, false);
+  
 	/* DESCRIPTION: Axisymmetric simulation */
 	AddSpecialOption("AXISYMMETRIC", Axisymmetric, SetBoolOption, false);
   /* DESCRIPTION: Add the gravity force */
@@ -416,7 +420,7 @@ void CConfig::SetConfig_Options(unsigned short val_nZone) {
   /* DESCRIPTION: Location at which the gust begins (meters) */
   AddScalarOption("GUST_BEGIN_LOC", Gust_Begin_Loc, 0.0);
   /* DESCRIPTION: Direction of the gust X or Y dir */
-  AddEnumOption("GUST_DIR", Gust_Dir, Gust_Dir_Map, "X_DIR");
+  AddEnumOption("GUST_DIR", Gust_Dir, Gust_Dir_Map, "Y_DIR");
   
 	/*--- Options related to convergence ---*/
 	/* CONFIG_CATEGORY: Convergence*/
@@ -605,8 +609,6 @@ void CConfig::SetConfig_Options(unsigned short val_nZone) {
 	/*--- Options related to the adjoint and gradient ---*/
 	/* CONFIG_CATEGORY: Adjoint and Gradient */
   
-	/* DESCRIPTION: Adjoint type */
-	AddEnumOption("ADJOINT_TYPE", Kind_Adjoint, Adjoint_Map,"CONTINUOUS");
   /* DESCRIPTION: Limit value for the adjoint variable */
 	AddScalarOption("ADJ_LIMIT", AdjointLimit, 1E6);
 	/* DESCRIPTION: Adjoint problem boundary condition */
@@ -704,6 +706,8 @@ void CConfig::SetConfig_Options(unsigned short val_nZone) {
 	AddSpecialOption("WRT_RESIDUALS", Wrt_Residuals, SetBoolOption, false);
   /* DESCRIPTION: Output the rind layers in the solution files */
 	AddSpecialOption("WRT_HALO", Wrt_Halo, SetBoolOption, false);
+  /* DESCRIPTION: Output sectional forces for specified markers. */
+	AddSpecialOption("WRT_SECTIONAL_FORCES", Wrt_Sectional_Forces, SetBoolOption, false);
   
 	/*--- Options related to the equivalent area ---*/
 	/* CONFIG_CATEGORY: Equivalent Area */
@@ -995,6 +999,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   int size = MPI::COMM_WORLD.Get_size();
 #endif
   
+#ifdef NO_TECIO
+  if (Output_FileFormat == TECPLOT_BINARY) {
+    cout << "Tecplot binary file requested but SU^2 was built without TecIO support." << "\n";
+    Output_FileFormat = TECPLOT;
+  }
+#endif
+
   /*--- Store the SU2 module that we are executing. ---*/
 	Kind_SU2 = val_software;
   
@@ -1015,22 +1026,16 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (Kind_SU2 == SU2_MDC) Divide_Element = true;
    
 	/*--- Identification of free-surface problem, this problems are always unsteady and incompressible. ---*/
-	if (FreeSurface) {
-		Incompressible = true;
-		if (Kind_Solver == EULER) Kind_Solver = FREE_SURFACE_EULER;
-		if (Kind_Solver == NAVIER_STOKES) Kind_Solver = FREE_SURFACE_NAVIER_STOKES;
+	if (Kind_Regime == FREESURFACE) {
 		if (Unsteady_Simulation != DT_STEPPING_2ND) Unsteady_Simulation = DT_STEPPING_1ST;
 	}
 
 	/*--- Decide whether we should be writing unsteady solution files. ---*/
 	if (Unsteady_Simulation == STEADY ||
 			Unsteady_Simulation == TIME_STEPPING ||
-			Unsteady_Simulation == TIME_SPECTRAL ||
-			Kind_Solver == FREE_SURFACE_EULER ||
-			Kind_Solver == FREE_SURFACE_NAVIER_STOKES)
-		Wrt_Unsteady = false;
-	else
-		Wrt_Unsteady = true;
+			Unsteady_Simulation == TIME_SPECTRAL  ||
+			Kind_Regime == FREESURFACE) { Wrt_Unsteady = false; }
+	else { Wrt_Unsteady = true; }
 
   /*--- Set grid movement kind to NO_MOVEMENT if not specified, which means
    that we also set the Grid_Movement flag to false. We initialize to the 
@@ -1501,13 +1506,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 			(Kind_Turb_Model == SA || Kind_Turb_Model == SST))
 		Kind_Solver = RANS;
 
-	if ((Kind_Solver == FREE_SURFACE_NAVIER_STOKES) &&
-			(Kind_Turb_Model == SA || Kind_Turb_Model == SST))
-		Kind_Solver = FREE_SURFACE_RANS;
-
-	if (Kind_Solver == FREE_SURFACE_EULER ||
-			Kind_Solver == FREE_SURFACE_NAVIER_STOKES ||
-			Kind_Solver == FREE_SURFACE_RANS) GravityForce = true;
+	if (Kind_Regime == FREESURFACE) GravityForce = true;
 
 	Kappa_1st_Flow = Kappa_Flow[0];
 	Kappa_2nd_Flow = Kappa_Flow[1];
@@ -1601,16 +1600,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
 	if (Adjoint) {
 		if (Kind_Solver == EULER) Kind_Solver = ADJ_EULER;
-		if (Kind_Solver == TNE2_EULER) Kind_Solver = ADJ_TNE2_EULER;
-		if (Kind_Solver == FREE_SURFACE_EULER) Kind_Solver = ADJ_FREE_SURFACE_EULER;
-		if (Kind_Solver == AEROACOUSTIC_EULER) Kind_Solver = ADJ_AEROACOUSTIC_EULER;
+    if (Kind_Solver == NAVIER_STOKES) Kind_Solver = ADJ_NAVIER_STOKES;
+    if (Kind_Solver == RANS) Kind_Solver = ADJ_RANS;
+    if (Kind_Solver == TNE2_EULER) Kind_Solver = ADJ_TNE2_EULER;
+		if (Kind_Solver == TNE2_NAVIER_STOKES) Kind_Solver = ADJ_TNE2_NAVIER_STOKES;
+    if (Kind_Solver == AEROACOUSTIC_EULER) Kind_Solver = ADJ_AEROACOUSTIC_EULER;
 		if (Kind_Solver == PLASMA_EULER) Kind_Solver = ADJ_PLASMA_EULER;
 		if (Kind_Solver == PLASMA_NAVIER_STOKES) Kind_Solver = ADJ_PLASMA_NAVIER_STOKES;
-		if (Kind_Solver == NAVIER_STOKES) Kind_Solver = ADJ_NAVIER_STOKES;
-		if (Kind_Solver == TNE2_NAVIER_STOKES) Kind_Solver = ADJ_TNE2_NAVIER_STOKES;
-		if (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) Kind_Solver = ADJ_FREE_SURFACE_NAVIER_STOKES;
-		if (Kind_Solver == FREE_SURFACE_RANS) Kind_Solver = ADJ_FREE_SURFACE_RANS;
-		if (Kind_Solver == RANS) Kind_Solver = ADJ_RANS;
 	}
 
 	if (Linearized) {
@@ -1660,7 +1656,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		exit(1);
 	}
 
-	if (((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == FREE_SURFACE_RANS) || (Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == ADJ_FREE_SURFACE_RANS))
+	if (((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS))
 			&& (Kind_ViscNumScheme_Flow == NONE)) {
 		cout << "You must define a viscous numerical method for the flow equations!!" << endl;
 		cout << "Press any key to exit..." << endl;
@@ -1668,32 +1664,27 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		exit(1);
 	}
 
-	if (((Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == ADJ_FREE_SURFACE_RANS)) && (Kind_ViscNumScheme_AdjFlow == NONE)) {
+	if (((Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) && (Kind_ViscNumScheme_AdjFlow == NONE)) {
 		cout << "You must define a viscous numerical method for the adjoint Navier-Stokes equations!!" << endl;
 		cout << "Press any key to exit..." << endl;
 		cin.get();
 		exit(1);
 	}	
 
-	if (((Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES) || (Kind_Solver == ADJ_FREE_SURFACE_RANS)) && (Kind_SourNumScheme_AdjFlow == NONE)) {
+	if (((Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) && (Kind_SourNumScheme_AdjFlow == NONE)) {
 		cout << "You must define a source numerical method for the adjoint Navier-Stokes equations!!" << endl;
 		cout << "Press any key to exit..." << endl;
 		cin.get();
 		exit(1);
 	}
 
-    /*--- Set a flag for viscous simulations ---*/
-    Viscous = ((Kind_Solver == NAVIER_STOKES) ||
-               (Kind_Solver == FREE_SURFACE_NAVIER_STOKES) ||
-               (Kind_Solver == PLASMA_NAVIER_STOKES) ||
-               (Kind_Solver == ADJ_NAVIER_STOKES) ||
-               (Kind_Solver == ADJ_FREE_SURFACE_NAVIER_STOKES) ||
-               (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES) ||
-               (Kind_Solver == RANS) ||
-               (Kind_Solver == FREE_SURFACE_RANS) ||
-               (Kind_Solver == ADJ_RANS) ||
-               (Kind_Solver == ADJ_FREE_SURFACE_RANS));
-  
+  /*--- Set a flag for viscous simulations ---*/
+  Viscous = ((Kind_Solver == NAVIER_STOKES) ||
+             (Kind_Solver == PLASMA_NAVIER_STOKES) ||
+             (Kind_Solver == ADJ_NAVIER_STOKES) ||
+             (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES) ||
+             (Kind_Solver == RANS) ||
+             (Kind_Solver == ADJ_RANS));
   
   if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
     
@@ -3421,48 +3412,74 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	iMarker_Inlet, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_FWH, iMarker_Observer, iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_Plotting, iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet;
 
 	cout << endl <<"-------------------------------------------------------------------------" << endl;
-	cout <<"|     _____   _    _   ___                                              |" << endl;
-	cout <<"|    / ____| | |  | | |__ \\       Web: su2.stanford.edu                 |" << endl;
-	cout <<"|   | (___   | |  | |    ) |      Twitter: @su2code                     |" << endl;
-	cout <<"|    \\___ \\  | |  | |   / /       Forum: www.cfd-online.com/Forums/su2/ |" << endl;
-	cout <<"|    ____) | | |__| |  / /_                                             |" << endl;
+	cout <<"|    _____   _    _   ___                                               |" << endl;
+	cout <<"|   / ____| | |  | | |__ \\    Web: su2.stanford.edu                     |" << endl;
+	cout <<"|  | (___   | |  | |    ) |   Twitter: @su2code                         |" << endl;
+	cout <<"|   \\___ \\  | |  | |   / /    Forum: www.cfd-online.com/Forums/su2/     |" << endl;
+	cout <<"|   ____) | | |__| |  / /_                                              |" << endl;
 	switch (val_software) {
-	case SU2_CFD: cout << "|   |_____/   \\____/  |____|  Suite (Computational Fluid Dyn. Code)     |" << endl; break;
-	case SU2_MDC: cout << "|   |_____/   \\____/  |____|  Suite (Mesh Deformation Code)             |" << endl; break;
-	case SU2_GPC: cout << "|   |_____/   \\____/  |____|  Suite (Gradient Projection Code)          |" << endl; break;
-	case SU2_DDC: cout << "|   |_____/   \\____/  |____|  Suite (Domain Decomposition Code)         |" << endl; break;
-	case SU2_MAC: cout << "|   |_____/   \\____/  |____|  Suite (Mesh Adaptation Code)              |" << endl; break;
-	case SU2_GDC: cout << "|   |_____/   \\____/  |____|  Suite (Geometry Design Code)              |" << endl; break;
-	case SU2_PBC: cout << "|   |_____/   \\____/  |____|  Suite (Periodic Boundary Code)            |" << endl; break;
-	case SU2_SMC: cout << "|   |_____/   \\____/  |____|  Suite (Sliding Mesh Code)                 |" << endl; break;
-	case SU2_SOL: cout << "|   |_____/   \\____/  |____|  Suite (Solution Exporting Code)           |" << endl; break;
+	case SU2_CFD: cout << "|  |_____/   \\____/  |____|   Suite (Computational Fluid Dynamic Code)  |" << endl; break;
+	case SU2_MDC: cout << "|  |_____/   \\____/  |____|   Suite (Mesh Deformation Code)             |" << endl; break;
+	case SU2_GPC: cout << "|  |_____/   \\____/  |____|   Suite (Gradient Projection Code)          |" << endl; break;
+	case SU2_DDC: cout << "|  |_____/   \\____/  |____|   Suite (Domain Decomposition Code)         |" << endl; break;
+	case SU2_MAC: cout << "|  |_____/   \\____/  |____|   Suite (Mesh Adaptation Code)              |" << endl; break;
+	case SU2_GDC: cout << "|  |_____/   \\____/  |____|   Suite (Geometry Design Code)              |" << endl; break;
+	case SU2_PBC: cout << "|  |_____/   \\____/  |____|   Suite (Periodic Boundary Code)            |" << endl; break;
+	case SU2_SMC: cout << "|  |_____/   \\____/  |____|   Suite (Sliding Mesh Code)                 |" << endl; break;
+	case SU2_SOL: cout << "|  |_____/   \\____/  |____|   Suite (Solution Exporting Code)           |" << endl; break;
 	}
 
-	cout << "|                             Release 2.0.6                             |" << endl;
+	cout << "|                             Release 2.0.7                             |" << endl;
+  cout <<"-------------------------------------------------------------------------" << endl;
+  cout << "| Stanford University Unstructured (SU2).                               |" << endl; 
+  cout << "| Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).            |" << endl;
+  cout << "| SU2 is distributed in the hope that it will be useful,                |" << endl;
+  cout << "| but WITHOUT ANY WARRANTY; without even the implied warranty of        |" << endl;
+  cout << "| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU     |" << endl;
+  cout << "| Lesser General Public License (version 2.1) for more details.         |" << endl;
 	cout <<"-------------------------------------------------------------------------" << endl;
 
 	cout << endl <<"------------------------ Physical case definition -----------------------" << endl;
 	if (val_software == SU2_CFD) {
 		switch (Kind_Solver) {
-		case EULER:
-			if (Incompressible) cout << "Incompressible Euler equations." << endl;
-			else cout << "Compressible Euler equations." << endl; break;
-		case NAVIER_STOKES:
-			if (Incompressible) cout << "Incompressible Laminar Navier-Stokes equations." << endl;
-			else cout << "Compressible Laminar Navier-Stokes' equations." << endl; break;
-    case TNE2_EULER:
-        cout << "Compressible TNE2 Euler equations." << endl; break;
-    case TNE2_NAVIER_STOKES:
-        cout << "Compressible TNE2 Laminar Navier-Stokes' equations." << endl; break;
-		case RANS:
-			if (Incompressible) cout << "Incompressible RANS equations." << endl;
-			else cout << "Compressible RANS equations." << endl;
-			cout << "Turbulence model: ";
-			switch (Kind_Turb_Model) {
-			case SA:  cout << "Spalart Allmaras" << endl; break;
-			case SST: cout << "Menter's SST"     << endl; break;
-			}
-			break;
+      case EULER:
+        if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Euler equations." << endl;
+        if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Euler equations." << endl;
+        if (Kind_Regime == FREESURFACE) {
+          cout << "Incompressible Euler equations with FreeSurface." << endl;
+          cout << "Free surface flow equation. Density ratio: " << RatioDensity << "." << endl;
+          cout << "The free surface is located at: " << FreeSurface_Zero <<", and its thickness is: " << FreeSurface_Thickness << "." << endl;
+        }
+        break;
+      case NAVIER_STOKES:
+        if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Laminar Navier-Stokes' equations." << endl;
+        if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Laminar Navier-Stokes' equations." << endl;
+        if (Kind_Regime == FREESURFACE) {
+          cout << "Incompressible Laminar Navier-Stokes' equations with FreeSurface." << endl;
+          cout << "Free surface flow equation. Density ratio: " << RatioDensity <<". Viscosity ratio: "<< RatioViscosity << "." << endl;
+          cout << "The free surface is located at: " << FreeSurface_Zero <<", and its thickness is: " << FreeSurface_Thickness << "." << endl;
+        }
+        break;
+      case RANS:
+        if (Kind_Regime == COMPRESSIBLE) cout << "Compressible RANS equations." << endl;
+        if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible RANS equations." << endl;
+        if (Kind_Regime == FREESURFACE) {
+          cout << "Incompressible RANS equations with FreeSurface." << endl;
+          cout << "Free surface flow equation. Density ratio: " << RatioDensity <<". Viscosity ratio: "<< RatioViscosity << "." << endl;
+          cout << "The free surface is located at: " << FreeSurface_Zero <<", and its thickness is: " << FreeSurface_Thickness << "." << endl;
+        }
+        cout << "Turbulence model: ";
+        switch (Kind_Turb_Model) {
+          case SA:  cout << "Spalart Allmaras" << endl; break;
+          case SST: cout << "Menter's SST"     << endl; break;
+        }
+        break;
+      case TNE2_EULER:
+        cout << "Compressible TNE2 Euler equations." << endl;
+        break;
+      case TNE2_NAVIER_STOKES:
+        cout << "Compressible TNE2 Laminar Navier-Stokes' equations." << endl;
+        break;
 			case PLASMA_EULER:
 				cout << "Plasma equations (without viscosity)." << endl;
 				if (Kind_GasModel == ARGON) cout << "Using 3 species Argon gas model." << endl;
@@ -3515,34 +3532,17 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 					cout << "Continuous TNE2 Navier-Stokes adjoint equations with frozen (laminar) viscosity." << endl;
 				break;
 			case ADJ_RANS:
-				if (Kind_Adjoint == CONTINUOUS) {
-					if (Frozen_Visc)
-						cout << "Continuous RANS adjoint equations with frozen (laminar and eddy) viscosity." << endl;
-					else
-						cout << "Continuous RANS adjoint equations." << endl;
-				}
-
+        if (Frozen_Visc)
+          cout << "Continuous RANS adjoint equations with frozen (laminar and eddy) viscosity." << endl;
+        else
+          cout << "Continuous RANS adjoint equations." << endl;
+        
 				break;
 			case LIN_EULER: cout << "Linearized Euler equations." << endl; break;
-			case FREE_SURFACE_EULER: case FREE_SURFACE_NAVIER_STOKES: case FREE_SURFACE_RANS:
-				if (Kind_Solver == FREE_SURFACE_EULER)
-					cout << "Free surface flow equation. Density ratio: " << RatioDensity << "." << endl;
-				if (Kind_Solver == FREE_SURFACE_NAVIER_STOKES)
-					cout << "Free surface flow equation. Density ratio: " << RatioDensity <<". Viscosity ratio: "<< RatioViscosity << "." << endl;
-				if (Kind_Solver == FREE_SURFACE_RANS) {
-					cout << "Free surface flow equation. Density ratio: " << RatioDensity <<". Viscosity ratio: "<< RatioViscosity << "." << endl;
-					cout << "Turbulence model: ";
-					switch (Kind_Turb_Model) {
-					case SA:  cout << "Spalart Allmaras" << endl; break;
-					case SST: cout << "Menter's SST"     << endl; break;
-					}
-				}
-				cout << "The free surface is located at: " << FreeSurface_Zero <<", and its thickness is: " << FreeSurface_Thickness << "." << endl;
-				break;
-
+        
 		}
 
-		if (!Incompressible) {
+		if (Kind_Regime == COMPRESSIBLE) {
 			cout << "Mach number: " << Mach <<"."<< endl;
 			cout << "Angle of attack (AoA): " << AoA <<" deg, and angle of sideslip (AoS): " << AoS <<" deg."<< endl;
 			if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == ADJ_NAVIER_STOKES) ||
@@ -3821,9 +3821,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 		if (SmoothNumGrid) cout << "There are some smoothing iterations on the grid coordinates." <<endl;
 
-		if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)
-				|| (Kind_Solver == FREE_SURFACE_EULER) || (Kind_Solver == FREE_SURFACE_NAVIER_STOKES)
-				|| (Kind_Solver == FREE_SURFACE_RANS)) {
+		if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
 			if ((Kind_ConvNumScheme_Flow == SPACE_CENTERED) && (Kind_Centered_Flow == JST)) {
 				cout << "Jameson-Schmidt-Turkel scheme for the flow inviscid terms."<< endl;
 				cout << "JST viscous coefficients (1st, 2nd & 4th): " << Kappa_1st_Flow
@@ -4072,7 +4070,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		case WEIGHTED_LEAST_SQUARES: cout << "Gradient Computation using weighted Least-Squares method." << endl; break;
 		}
 
-		if (Incompressible) {
+		if ((Kind_Regime == INCOMPRESSIBLE) || (Kind_Regime == FREESURFACE)) {
 			cout << "Artificial compressibility factor: " << ArtComp_Factor << "." <<endl;
 		}
 
@@ -5411,10 +5409,8 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
 	case RUNTIME_ADJFLOW_SYS: return ADJFLOW_SOL;
 	case RUNTIME_ADJTURB_SYS: return ADJTURB_SOL;
 	case RUNTIME_ADJPLASMA_SYS: return ADJPLASMA_SOL;
-	case RUNTIME_ADJLEVELSET_SYS: return ADJLEVELSET_SOL;
 	case RUNTIME_LINPOT_SYS: return LINFLOW_SOL;
 	case RUNTIME_LINFLOW_SYS: return LINFLOW_SOL;
-	case RUNTIME_LEVELSET_SYS: return LEVELSET_SOL;
 	case RUNTIME_MULTIGRID_SYS: return 0;
 	}
 	return 0;
@@ -5428,6 +5424,7 @@ void CConfig::SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme,
 	Kind_Centered = val_kind_centered;
 	Kind_Upwind = val_kind_upwind;
 	Kind_SlopeLimit = val_kind_slopelimit;
+  
 }
 
 void CConfig::UpdateCFL(unsigned long val_iter) {
@@ -5600,93 +5597,6 @@ void CConfig::SetGlobalParam(unsigned short val_solver, unsigned short val_syste
 			SetKind_TimeIntScheme(NONE);
 		}
 		break;
-	case ADJ_PLASMA_EULER:
-		if (val_system == RUNTIME_PLASMA_SYS) {
-			SetKind_ConvNumScheme(GetKind_ConvNumScheme_Plasma(), GetKind_Centered_Plasma(),
-					GetKind_Upwind_Plasma(), GetKind_SlopeLimit_Plasma());
-			SetKind_ViscNumScheme(NONE);
-			SetKind_SourNumScheme(GetKind_SourNumScheme_Plasma());
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_Plasma());
-		}
-		if (val_system == RUNTIME_ADJPLASMA_SYS) {
-			SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjPlasma(), GetKind_Centered_AdjPlasma(),
-					GetKind_Upwind_AdjPlasma(), GetKind_SlopeLimit_AdjPlasma());
-			SetKind_ViscNumScheme(NONE);
-			SetKind_SourNumScheme(GetKind_SourNumScheme_AdjPlasma());
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjPlasma());
-		}
-		break;
-	case ADJ_PLASMA_NAVIER_STOKES:
-		if (val_system == RUNTIME_PLASMA_SYS) {
-			SetKind_ConvNumScheme(GetKind_ConvNumScheme_Plasma(), GetKind_Centered_Plasma(),
-					GetKind_Upwind_Plasma(), GetKind_SlopeLimit_Plasma());
-			SetKind_ViscNumScheme(GetKind_ViscNumScheme_Plasma());
-			SetKind_SourNumScheme(GetKind_SourNumScheme_Plasma());
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_Plasma());
-		}
-		if (val_system == RUNTIME_ADJPLASMA_SYS) {
-			SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjPlasma(), GetKind_Centered_AdjPlasma(),
-					GetKind_Upwind_AdjPlasma(), GetKind_SlopeLimit_AdjPlasma());
-			SetKind_ViscNumScheme(GetKind_ViscNumScheme_AdjPlasma());
-			SetKind_SourNumScheme(GetKind_SourNumScheme_AdjPlasma());
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjPlasma());
-		}
-		break;
-	case FREE_SURFACE_EULER:
-		if (val_system == RUNTIME_FLOW_SYS) {
-			SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
-					GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
-			SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
-			SetKind_ViscNumScheme(NONE);
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
-		}
-		if (val_system == RUNTIME_LEVELSET_SYS) {
-			SetKind_ConvNumScheme(GetKind_ConvNumScheme_LevelSet(), GetKind_Centered_LevelSet(),
-					GetKind_Upwind_LevelSet(), GetKind_SlopeLimit_LevelSet());
-			SetKind_SourNumScheme(GetKind_SourNumScheme_LevelSet());
-			SetKind_ViscNumScheme(NONE);
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_LevelSet());
-		}
-		break;
-	case FREE_SURFACE_NAVIER_STOKES:
-		if (val_system == RUNTIME_FLOW_SYS) {
-			SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
-					GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
-			SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
-			SetKind_ViscNumScheme(GetKind_ViscNumScheme_Flow());
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
-		}
-		if (val_system == RUNTIME_LEVELSET_SYS) {
-			SetKind_ConvNumScheme(GetKind_ConvNumScheme_LevelSet(), GetKind_Centered_LevelSet(),
-					GetKind_Upwind_LevelSet(), GetKind_SlopeLimit_LevelSet());
-			SetKind_SourNumScheme(GetKind_SourNumScheme_LevelSet());
-			SetKind_ViscNumScheme(NONE);
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_LevelSet());
-		}
-		break;
-	case FREE_SURFACE_RANS:
-		if (val_system == RUNTIME_FLOW_SYS) {
-			SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
-					GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
-			SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
-			SetKind_ViscNumScheme(GetKind_ViscNumScheme_Flow());
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
-		}
-		if (val_system == RUNTIME_TURB_SYS) {
-			SetKind_ConvNumScheme(GetKind_ConvNumScheme_Turb(), GetKind_Centered_Turb(),
-					GetKind_Upwind_Turb(), GetKind_SlopeLimit_Turb());
-			SetKind_ViscNumScheme(GetKind_ViscNumScheme_Turb());
-			SetKind_SourNumScheme(GetKind_SourNumScheme_Turb());
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_Turb());
-		}
-		if (val_system == RUNTIME_LEVELSET_SYS) {
-			SetKind_ConvNumScheme(GetKind_ConvNumScheme_LevelSet(), GetKind_Centered_LevelSet(),
-					GetKind_Upwind_LevelSet(), GetKind_SlopeLimit_LevelSet());
-			SetKind_SourNumScheme(GetKind_SourNumScheme_LevelSet());
-			SetKind_ViscNumScheme(NONE);
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_LevelSet());
-		}
-		break;
 	case ADJ_EULER:
 		if (val_system == RUNTIME_FLOW_SYS) {
 			SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
@@ -5781,110 +5691,38 @@ void CConfig::SetGlobalParam(unsigned short val_solver, unsigned short val_syste
         SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjTNE2());
       }
       break;
-	case ADJ_FREE_SURFACE_EULER:
-		if (val_system == RUNTIME_FLOW_SYS) {
-			SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
-					GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
-			SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
-			SetKind_ViscNumScheme(NONE);
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
-		}
-		if (val_system == RUNTIME_LEVELSET_SYS) {
-			SetKind_ConvNumScheme(GetKind_ConvNumScheme_LevelSet(), GetKind_Centered_LevelSet(),
-					GetKind_Upwind_LevelSet(), GetKind_SlopeLimit_LevelSet());
-			SetKind_SourNumScheme(GetKind_SourNumScheme_LevelSet());
-			SetKind_ViscNumScheme(NONE);
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_LevelSet());
-		}
-		if (val_system == RUNTIME_ADJFLOW_SYS) {
-			SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjFlow(), GetKind_Centered_AdjFlow(),
-					GetKind_Upwind_AdjFlow(), GetKind_SlopeLimit_AdjFlow());
-			SetKind_SourNumScheme(GetKind_SourNumScheme_AdjFlow());
-			SetKind_ViscNumScheme(NONE);
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjFlow());
-		}
-		if (val_system == RUNTIME_ADJLEVELSET_SYS) {
-			SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjLevelSet(), GetKind_Centered_AdjLevelSet(),
-					GetKind_Upwind_AdjLevelSet(), GetKind_SlopeLimit_AdjLevelSet());
-			SetKind_SourNumScheme(GetKind_SourNumScheme_AdjLevelSet());
-			SetKind_ViscNumScheme(NONE);
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjLevelSet());
-		}
-		break;
-	case ADJ_FREE_SURFACE_NAVIER_STOKES:
-		if (val_system == RUNTIME_FLOW_SYS) {
-			SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
-					GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
-			SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
-			SetKind_ViscNumScheme(GetKind_ViscNumScheme_Flow());
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
-		}
-		if (val_system == RUNTIME_LEVELSET_SYS) {
-			SetKind_ConvNumScheme(GetKind_ConvNumScheme_LevelSet(), GetKind_Centered_LevelSet(),
-					GetKind_Upwind_LevelSet(), GetKind_SlopeLimit_LevelSet());
-			SetKind_SourNumScheme(GetKind_SourNumScheme_LevelSet());
-			SetKind_ViscNumScheme(NONE);
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_LevelSet());
-		}
-		if (val_system == RUNTIME_ADJFLOW_SYS) {
-			SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjFlow(), GetKind_Centered_AdjFlow(),
-					GetKind_Upwind_AdjFlow(), GetKind_SlopeLimit_AdjFlow());
-			SetKind_SourNumScheme(GetKind_SourNumScheme_AdjFlow());
-			SetKind_ViscNumScheme(GetKind_ViscNumScheme_AdjFlow());
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjFlow());
-		}
-		if (val_system == RUNTIME_ADJLEVELSET_SYS) {
-			SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjLevelSet(), GetKind_Centered_AdjLevelSet(),
-					GetKind_Upwind_AdjLevelSet(), GetKind_SlopeLimit_AdjLevelSet());
-			SetKind_SourNumScheme(GetKind_SourNumScheme_AdjLevelSet());
-			SetKind_ViscNumScheme(NONE);
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjLevelSet());
-		}
-		break;
-	case ADJ_FREE_SURFACE_RANS:
-		if (val_system == RUNTIME_FLOW_SYS) {
-			SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
-					GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
-			SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
-			SetKind_ViscNumScheme(GetKind_ViscNumScheme_Flow());
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
-		}
-		if (val_system == RUNTIME_TURB_SYS) {
-			SetKind_ConvNumScheme(GetKind_ConvNumScheme_Turb(), GetKind_Centered_Turb(),
-					GetKind_Upwind_Turb(), GetKind_SlopeLimit_Turb());
-			SetKind_ViscNumScheme(GetKind_ViscNumScheme_Turb());
-			SetKind_SourNumScheme(GetKind_SourNumScheme_Turb());
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_Turb());
-		}
-		if (val_system == RUNTIME_LEVELSET_SYS) {
-			SetKind_ConvNumScheme(GetKind_ConvNumScheme_LevelSet(), GetKind_Centered_LevelSet(),
-					GetKind_Upwind_LevelSet(), GetKind_SlopeLimit_LevelSet());
-			SetKind_SourNumScheme(GetKind_SourNumScheme_LevelSet());
-			SetKind_ViscNumScheme(NONE);
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_LevelSet());
-		}
-		if (val_system == RUNTIME_ADJFLOW_SYS) {
-			SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjFlow(), GetKind_Centered_AdjFlow(),
-					GetKind_Upwind_AdjFlow(), GetKind_SlopeLimit_AdjFlow());
-			SetKind_SourNumScheme(GetKind_SourNumScheme_AdjFlow());
-			SetKind_ViscNumScheme(GetKind_ViscNumScheme_AdjFlow());
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjFlow());
-		}
-		if (val_system == RUNTIME_ADJTURB_SYS) {
-			SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjTurb(), GetKind_Centered_AdjTurb(),
-					GetKind_Upwind_AdjTurb(), GetKind_SlopeLimit_AdjTurb());
-			SetKind_ViscNumScheme(GetKind_ViscNumScheme_AdjTurb());
-			SetKind_SourNumScheme(GetKind_SourNumScheme_AdjTurb());
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjTurb());
-		}
-		if (val_system == RUNTIME_ADJLEVELSET_SYS) {
-			SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjLevelSet(), GetKind_Centered_AdjLevelSet(),
-					GetKind_Upwind_AdjLevelSet(), GetKind_SlopeLimit_AdjLevelSet());
-			SetKind_SourNumScheme(GetKind_SourNumScheme_AdjLevelSet());
-			SetKind_ViscNumScheme(NONE);
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjLevelSet());
-		}
-		break;
+    case ADJ_PLASMA_EULER:
+      if (val_system == RUNTIME_PLASMA_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Plasma(), GetKind_Centered_Plasma(),
+                              GetKind_Upwind_Plasma(), GetKind_SlopeLimit_Plasma());
+        SetKind_ViscNumScheme(NONE);
+        SetKind_SourNumScheme(GetKind_SourNumScheme_Plasma());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Plasma());
+      }
+      if (val_system == RUNTIME_ADJPLASMA_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjPlasma(), GetKind_Centered_AdjPlasma(),
+                              GetKind_Upwind_AdjPlasma(), GetKind_SlopeLimit_AdjPlasma());
+        SetKind_ViscNumScheme(NONE);
+        SetKind_SourNumScheme(GetKind_SourNumScheme_AdjPlasma());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjPlasma());
+      }
+      break;
+    case ADJ_PLASMA_NAVIER_STOKES:
+      if (val_system == RUNTIME_PLASMA_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Plasma(), GetKind_Centered_Plasma(),
+                              GetKind_Upwind_Plasma(), GetKind_SlopeLimit_Plasma());
+        SetKind_ViscNumScheme(GetKind_ViscNumScheme_Plasma());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_Plasma());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Plasma());
+      }
+      if (val_system == RUNTIME_ADJPLASMA_SYS) {
+        SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjPlasma(), GetKind_Centered_AdjPlasma(),
+                              GetKind_Upwind_AdjPlasma(), GetKind_SlopeLimit_AdjPlasma());
+        SetKind_ViscNumScheme(GetKind_ViscNumScheme_AdjPlasma());
+        SetKind_SourNumScheme(GetKind_SourNumScheme_AdjPlasma());
+        SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjPlasma());
+      }
+      break;
 	case LIN_EULER:
 		if (val_system == RUNTIME_FLOW_SYS) {
 			SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
@@ -6229,7 +6067,9 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 	double Alpha = AoA*PI_NUMBER/180.0;
 	double Beta  = AoS*PI_NUMBER/180.0;
 	double Gamma_Minus_One = Gamma - 1.0;
-	bool Compressible = (!Incompressible);
+  bool compressible = (Kind_Regime == COMPRESSIBLE);
+	bool incompressible = (Kind_Regime == INCOMPRESSIBLE);
+	bool freesurface = (Kind_Regime == FREESURFACE);
 	bool Unsteady = (Unsteady_Simulation != NO);
 	bool turbulent = (Kind_Solver == RANS);
   
@@ -6351,7 +6191,7 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
     
 	}
   
-	if (Compressible) {
+	if (compressible) {
     
 		Mach2Vel_FreeStream = sqrt(Gamma*Gas_Constant*Temperature_FreeStream);
     
@@ -6474,7 +6314,7 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
     
 		cout.precision(6);
     
-		if (Compressible) {
+		if (compressible) {
 			if (Viscous) {
 				cout << "Viscous flow: Computing pressure using the ideal gas law" << endl;
 				cout << "based on the freestream temperature and a density computed" << endl;
@@ -6484,7 +6324,7 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 				cout << "temperature and pressure using the ideal gas law." << endl;
 			}
 		}
-		else {
+		if (incompressible || freesurface) {
 			cout << "Viscous and Inviscid flow: rho_ref, and vel_ref" << endl;
 			cout << "are based on the freestream values, p_ref = rho_ref*vel_ref^2." << endl;
 			cout << "The freestream value of the pressure is 0." << endl;
@@ -6498,17 +6338,17 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 		cout <<"--Input conditions:"<< endl;
 		cout << "Grid conversion factor to meters: " << Conversion_Factor << endl;
     
-		if (Compressible) {
+		if (compressible) {
 			cout << "Ratio of specific heats: " << Gamma           << endl;
 			cout << "Specific gas constant (J/(kg.K)): "   << Gas_Constant  << endl;
 		}
-		else {
+		if (incompressible || freesurface) {
 			cout << "Bulk modulus (N/m^2): "						<< Bulk_Modulus    << endl;
 			cout << "Artificial compressibility factor (N/m^2): "						<< ArtComp_Factor    << endl;
 		}
     
 		cout << "Freestream pressure (N/m^2): "          << Pressure_FreeStream    << endl;
-		if (Compressible)
+		if (compressible)
 			cout << "Freestream temperature (K): "       << Temperature_FreeStream << endl;
 		cout << "Freestream density (kg/m^3): "					 << Density_FreeStream << endl;
 		if (val_nDim == 2) {
@@ -6521,7 +6361,7 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
     
 		cout << "Freestream velocity magnitude (m/s):"	<< ModVel_FreeStream << endl;
     
-		if (Compressible)
+		if (compressible)
 			cout << "Freestream energy (kg.m/s^2): "					 << Energy_FreeStream << endl;
     
 		if (Viscous)
@@ -6535,11 +6375,11 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 		cout <<"--Reference values:"<< endl;
 		cout << "Reference pressure (N/m^2): "      << Pressure_Ref    << endl;
     
-		if (Compressible) {
+		if (compressible) {
 			cout << "Reference temperature (K): "   << Temperature_Ref << endl;
 			cout << "Reference energy (kg.m/s^2): "       << Energy_FreeStream/Energy_FreeStreamND     << endl;
 		}
-		else {
+		if (incompressible || freesurface) {
 			cout << "Reference length (m): 1.0" << endl;
 		}
 		cout << "Reference density (kg/m^3): "       << Density_Ref     << endl;
@@ -6561,7 +6401,7 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 		cout << "Froude number (non-dimensional): " << Froude << endl;
 		cout << "Lenght of the baseline wave (non-dimensional): " << 2.0*PI_NUMBER*Froude*Froude << endl;
     
-		if (Compressible) {
+		if (compressible) {
 			cout << "Negative pressure, temperature or density is not allowed!" << endl;
 			cout << "Specific gas constant (non-dimensional): "   << Gas_Constant << endl;
 			cout << "Freestream temperature (non-dimensional): "  << Temperature_FreeStreamND << endl;
@@ -6582,7 +6422,7 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 			cout << "Free-stream specific dissipation (non-dimensional): " << omega_Inf << endl;
 		}
     
-		if (Compressible)
+		if (compressible)
 			cout << "Freestream energy (non-dimensional): "					 << Energy_FreeStreamND << endl;
     
 		if (Viscous)
