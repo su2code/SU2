@@ -2,23 +2,23 @@
  * \file solver_structure.inl
  * \brief In-Line subroutines of the <i>solver_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.6
+ * \version 2.0.7
  *
- * Stanford University Unstructured (SU2) Code
- * Copyright (C) 2012 Aerospace Design Laboratory
+ * Stanford University Unstructured (SU2).
+ * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #pragma once
@@ -48,7 +48,7 @@ inline double CSolver::GetCSensitivity(unsigned short val_marker, unsigned short
 inline void CSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep, 
 																		 unsigned short iMesh, unsigned short RunTime_EqSystem) { }
 																		 
-inline void CSolver::SetLevelSet_Distance(CGeometry *geometry, CConfig *config, bool Initialization, bool WriteLevelSet) { }
+inline void CSolver::SetFreeSurface_Distance(CGeometry *geometry, CConfig *config, bool Initialization, bool WriteLevelSet) { }
 
 inline void CSolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry, CGeometry **flow_geometry, CConfig *fea_config, CConfig *flow_config) { }
 
@@ -390,6 +390,8 @@ inline void CSolver::Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *config)
 
 inline void CSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) { }
 
+inline void CSolver::Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config) { }
+
 inline void CSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Inviscid_DeltaForces(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
@@ -437,6 +439,8 @@ inline void CSolver::Set_OldSolution(CGeometry *geometry) {
 }
 
 inline unsigned short CSolver::GetnVar(void) { return nVar; }
+
+inline unsigned short CSolver::GetnOutputVariables(void) { return nOutputVariables; }
 
 inline unsigned short CSolver::GetnPrimVar(void) { return nPrimVar; }
 
@@ -563,6 +567,10 @@ inline double CEulerSolver::GetAllBound_CDrag_Inv() { return AllBound_CDrag_Inv;
 inline double CEulerSolver::GetAllBound_CSideForce_Inv() { return AllBound_CSideForce_Inv; }
 
 inline double CEulerSolver::GetAllBound_CEff_Inv() { return AllBound_CEff_Inv; }
+
+inline double CEulerSolver::GetTotal_CFreeSurface() { return Total_CFreeSurface; }
+
+inline void CEulerSolver::SetTotal_CFreeSurface(double cfreesurface) { Total_CFreeSurface = cfreesurface; }
 
 inline double CNSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 
@@ -715,9 +723,6 @@ inline void CFEASolver::SetTotal_CFEA(double cfea) { Total_CFEA = cfea; }
 inline double CWaveSolver::GetTotal_CWave() { return Total_CWave; }
 
 inline double CHeatSolver::GetTotal_CHeat() { return Total_CHeat; }
-
-inline void CTurbSolver::CalcEddyViscosity(double *val_FlowVars, double val_laminar_viscosity,
-			double *val_TurbVar, double *val_eddy_viscosity) {}
       
 inline double CTNE2EulerSolver::GetDensity_Inf(void) { cout << "CTNE2EulerSolver::GetDensity_Inf NOT RETURNING THE CORRECT VALUE!!!" << endl; return 0.0; }
 
@@ -831,3 +836,4 @@ inline double CAdjTNE2EulerSolver::GetTotal_Sens_Mach() { return Total_Sens_Mach
 inline double CAdjTNE2EulerSolver::GetTotal_Sens_Press() { return Total_Sens_Press; }
 
 inline double CAdjTNE2EulerSolver::GetTotal_Sens_Temp() { return Total_Sens_Temp; }
+

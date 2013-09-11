@@ -2,23 +2,23 @@
  * \file SU2_SOL.cpp
  * \brief Main file for the solution export/conversion code (SU2_SOL).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.6
+ * \version 2.0.7
  *
- * Stanford University Unstructured (SU2) Code
- * Copyright (C) 2012 Aerospace Design Laboratory
+ * Stanford University Unstructured (SU2).
+ * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "../include/SU2_SOL.hpp"
@@ -28,7 +28,7 @@ using namespace std;
 int main(int argc, char *argv[]) {
 	/*--- Variable definitions ---*/
 	unsigned short iZone, nZone;
-  unsigned long iExtIter, nExtIter;
+	unsigned long iExtIter, nExtIter;
 	ofstream ConvHist_file;
 	char file_name[200];
 	int rank = MASTER_NODE;
@@ -156,17 +156,45 @@ int main(int argc, char *argv[]) {
       if (StopCalc) break;
     }
     
+  } else if (config[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+
+	  /*--- Time-spectral simulation: merge files for each time instance (each zone). ---*/
+	  unsigned short nTimeSpectral = config[ZONE_0]->GetnTimeInstances();
+	  unsigned short iTimeSpectral;
+	  for (iTimeSpectral = 0; iTimeSpectral < nTimeSpectral; iTimeSpectral++) {
+
+		  /*--- Set the current instance number in the config class to "ExtIter." ---*/
+		  config[ZONE_0]->SetExtIter(iTimeSpectral);
+
+		  /*--- Read in the restart file for this time step ---*/
+		  /*--- N.B. In SU2_SOL, nZone != nTimeInstances ---*/
+		  for (iZone = 0; iZone < nZone; iZone++) {
+
+			  /*--- Either instantiate the solution class or load a restart file. ---*/
+			  if (iTimeSpectral == 0)
+				  solver[iZone] = new CBaselineSolver(geometry[iZone], config[iZone], MESH_0);
+			  else
+				  solver[iZone]->GetRestart(geometry[iZone], config[iZone], MESH_0);
+		  }
+
+		  /*--- Print progress in solution writing to the screen. ---*/
+		  if (rank == MASTER_NODE) {
+			  cout << "Writing the volume solution for time instance " << iTimeSpectral << "." << endl;
+		  }
+
+		  output->SetBaselineResult_Files(solver, geometry, config, iTimeSpectral, nZone);
+	  }
   } else {
-    
-    /*--- Steady simulation: merge the single solution file. ---*/
-    
-    for (iZone = 0; iZone < nZone; iZone++) {
-      /*--- Definition of the solution class ---*/
-      solver[iZone] = new CBaselineSolver(geometry[iZone], config[iZone], MESH_0);      
-    }
-    
-    output->SetBaselineResult_Files(solver, geometry, config, 0, nZone);
-    
+
+	  /*--- Steady simulation: merge the single solution file. ---*/
+
+	  for (iZone = 0; iZone < nZone; iZone++) {
+		  /*--- Definition of the solution class ---*/
+		  solver[iZone] = new CBaselineSolver(geometry[iZone], config[iZone], MESH_0);
+	  }
+
+	  output->SetBaselineResult_Files(solver, geometry, config, 0, nZone);
+
   }
   
   /*--- Deallocate the solution and output objects. ---*/

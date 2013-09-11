@@ -2,23 +2,23 @@
  * \file numerics_structure.inl
  * \brief In-Line subroutines of the <i>numerics_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.6
+ * \version 2.0.7
  *
- * Stanford University Unstructured (SU2) Code
- * Copyright (C) 2012 Aerospace Design Laboratory
+ * Stanford University Unstructured (SU2).
+ * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #pragma once
@@ -257,6 +257,18 @@ inline void CNumerics::SetEddyViscosity(double val_eddy_viscosity_i, double val_
 
 inline void CNumerics::SetIntermittency(double intermittency_in) { }
 
+inline void CNumerics::SetProduction(double val_production) { }
+
+inline void CNumerics::SetDestruction(double val_destruction) { }
+
+inline void CNumerics::SetCrossProduction(double val_crossproduction) { }
+
+inline double CNumerics::GetProduction(void) { return 0; }
+
+inline double CNumerics::GetDestruction(void) { return 0; }
+
+inline double CNumerics::GetCrossProduction(void) { return 0; }
+
 inline void CNumerics::SetTurbKineticEnergy(double val_turb_ke_i, double val_turb_ke_j) {
 	turb_ke_i = val_turb_ke_i;
 	turb_ke_j = val_turb_ke_j;
@@ -367,6 +379,16 @@ inline void CNumerics::SetCoord(double *val_coord_0, double *val_coord_1,
 inline void CNumerics::SetGridVel(double *val_gridvel_i, double *val_gridvel_j) {
 	GridVel_i = val_gridvel_i;
 	GridVel_j = val_gridvel_j;
+}
+
+inline void CNumerics::SetWindGust(double *val_windgust_i, double *val_windgust_j) {
+	WindGust_i = val_windgust_i;
+	WindGust_j = val_windgust_j;
+}
+
+inline void CNumerics::SetWindGustDer(double *val_windgustder_i, double *val_windgustder_j) {
+	WindGustDer_i = val_windgustder_i;
+	WindGustDer_j = val_windgustder_j;
 }
 
 inline void CNumerics::SetPressure(double val_pressure_i, double val_pressure_j) {
@@ -542,6 +564,18 @@ inline void CSourcePieceWise_TurbSST::SetCrossDiff(double val_CDkw_i, double val
 }			
 
 inline void CSourcePieceWise_TurbSA::SetIntermittency(double intermittency_in) { intermittency = intermittency_in; }
+
+inline void CSourcePieceWise_TurbSA::SetProduction(double val_production) { Production = val_production; }
+
+inline void CSourcePieceWise_TurbSA::SetDestruction(double val_destruction) { Destruction = val_destruction; }
+
+inline void CSourcePieceWise_TurbSA::SetCrossProduction(double val_crossproduction) { CrossProduction = val_crossproduction; }
+
+inline double CSourcePieceWise_TurbSA::GetProduction(void) { return Production; }
+
+inline double CSourcePieceWise_TurbSA::GetDestruction(void) { return Destruction; }
+
+inline double CSourcePieceWise_TurbSA::GetCrossProduction(void) { return CrossProduction; }
 
 inline void CSourcePieceWise_Plasma::SetElecField(double *val_Efield) { ElectricField = val_Efield; }
 

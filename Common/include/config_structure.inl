@@ -2,23 +2,23 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.6
+ * \version 2.0.7
  *
- * Stanford University Unstructured (SU2) Code
- * Copyright (C) 2012 Aerospace Design Laboratory
+ * Stanford University Unstructured (SU2).
+ * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #pragma once
@@ -26,6 +26,10 @@
 inline void CConfig::SetFanFace_Mach(unsigned short val_imarker, double val_fanface_mach) { FanFace_Mach[val_imarker] = val_fanface_mach; }
 
 inline void CConfig::SetFanFace_Pressure(unsigned short val_imarker, double val_fanface_pressure) { FanFace_Pressure[val_imarker] = val_fanface_pressure; }
+
+inline unsigned short CConfig::GetnZone(void) { return nZone; }
+
+inline unsigned short CConfig::GetiZone(void) { return iZone; }
 
 inline unsigned short CConfig::GetKind_SU2(void) { return Kind_SU2; }
 
@@ -82,6 +86,8 @@ inline unsigned short CConfig::GetAnalytical_Surface(void) { return Analytical_S
 inline double CConfig::GetDualVol_Power(void) { return DualVol_Power; }
 
 inline bool CConfig::GetVisualize_Partition(void) { return Visualize_Partition; }
+
+inline bool CConfig::GetExtraOutput(void) { return ExtraOutput; }
 
 inline bool CConfig::GetVisualize_Deformation(void) { return Visualize_Deformation; }
 
@@ -295,6 +301,8 @@ inline bool CConfig::GetLowFidelitySim(void) { return LowFidelitySim; }
 inline bool CConfig::GetIonization(void) { return ionization; }
 
 inline unsigned short CConfig::GetKind_Solver(void) { return Kind_Solver; }
+
+inline unsigned short CConfig::GetKind_Regime(void) { return Kind_Regime; }
 
 inline unsigned short CConfig::GetKind_GasModel(void) { return Kind_GasModel; }
 
@@ -879,10 +887,6 @@ inline bool CConfig::GetAxisymmetric(void) { return Axisymmetric; }
 
 inline bool CConfig::GetAdaptBoundary(void) { return AdaptBoundary; }
 
-inline bool CConfig::GetIncompressible(void) { return Incompressible; }
-
-inline bool CConfig::GetFreeSurface(void) { return FreeSurface; }
-
 inline bool CConfig::GetAdiabaticWall(void) { return AdiabaticWall; }
 
 inline bool CConfig::GetIsothermalWall(void) { return IsothermalWall; }
@@ -968,6 +972,8 @@ inline bool CConfig::GetWrt_Restart(void) { return Wrt_Restart; }
 inline bool CConfig::GetWrt_Residuals(void) { return Wrt_Residuals; }
 
 inline bool CConfig::GetWrt_Halo(void) { return Wrt_Halo; }
+
+inline bool CConfig::GetWrt_Sectional_Forces(void) { return Wrt_Sectional_Forces; }
 
 inline bool CConfig::GetRelative_Motion(void) { return Relative_Motion; }
 

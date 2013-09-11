@@ -3,23 +3,23 @@
  * \brief Headers of the main subroutines for storing the primal grid structure.
  *        The subroutines and functions are in the <i>primal_grid_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.6
+ * \version 2.0.7
  *
- * Stanford University Unstructured (SU2) Code
- * Copyright (C) 2012 Aerospace Design Laboratory
+ * Stanford University Unstructured (SU2).
+ * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #pragma once
@@ -37,7 +37,7 @@ using namespace std;
  * \class CPrimalGrid
  * \brief Class to define the numerical primal grid.
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CPrimalGrid {
 protected:
@@ -241,7 +241,7 @@ public:
  * \brief Class for vertex element definition. This kind
  *        of element is used in the parallelization stuff.
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CVertexMPI : public CPrimalGrid {
 private:
@@ -364,7 +364,7 @@ public:
  * \class CLine
  * \brief Class for line element definition.
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CLine : public CPrimalGrid {
 private:
@@ -483,7 +483,7 @@ public:
  * \class CTriangle
  * \brief Class for triangle element definition.
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CTriangle : public CPrimalGrid {
 private:
@@ -604,7 +604,7 @@ public:
  * \class CRectangle
  * \brief Class for rectangle element definition.
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CRectangle : public CPrimalGrid {
 private:
@@ -725,7 +725,7 @@ public:
  * \class CTetrahedron
  * \brief Class for tetrahedron element definition.
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CTetrahedron : public CPrimalGrid {
 private:
@@ -833,7 +833,7 @@ public:
  * \class CHexahedron
  * \brief Class for hexahedron element definition.
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CHexahedron : public CPrimalGrid {
 private:
@@ -948,7 +948,7 @@ public:
  * \class CWedge
  * \brief Class for wedge element definition.
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CWedge : public CPrimalGrid {
 private:
@@ -1059,7 +1059,7 @@ public:
  * \class CPyramid
  * \brief Class for pyramid element definition.
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CPyramid : public CPrimalGrid {
 private:

@@ -5,23 +5,23 @@
  *        <i>solution_direct.cpp</i>, <i>solution_adjoint.cpp</i>, and
  *        <i>solution_linearized.cpp</i> files.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.6
+ * \version 2.0.7
  *
- * Stanford University Unstructured (SU2) Code
- * Copyright (C) 2012 Aerospace Design Laboratory
+ * Stanford University Unstructured (SU2).
+ * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #pragma once
@@ -57,14 +57,14 @@ using namespace std;
  * \brief Main class for defining the PDE solution, it requires
  * a child class for each particular solver (Euler, Navier-Stokes, Plasma, etc.)
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CSolver {
 protected:
 	unsigned short IterLinSolver;	/*!< \brief Linear solver iterations. */
 	unsigned short nVar,					/*!< \brief Number of variables of the problem. */
   nPrimVar,                     /*!< \brief Number of primitive variables of the problem. */
-  nPrimVarGrad,                    /*!< \brief Number of primitive variables of the problem in the gradient computation. */
+  nPrimVarGrad,                 /*!< \brief Number of primitive variables of the problem in the gradient computation. */
 	nDim;													/*!< \brief Number of dimensions of the problem. */
 	unsigned long nPoint;					/*!< \brief Number of points of the computational grid. */
   unsigned long nPointDomain; 	/*!< \brief Number of points of the computational grid. */
@@ -99,6 +99,8 @@ protected:
 	double **Smatrix,	/*!< \brief Auxiliary structure for computing gradients by least-squares */
 	**cvector;			 /*!< \brief Auxiliary structure for computing gradients by least-squares */
 
+  unsigned short nOutputVariables;  /*!< \brief Number of variables to write. */
+
 public:
   
   CSysVector LinSysSol;		/*!< \brief vector to store iterative solution of implicit linear system. */
@@ -106,6 +108,8 @@ public:
 	CSysMatrix Jacobian; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
   
 	CSysMatrix StiffMatrix; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations, and grid movement. */
+
+  CSysVector OutputVariables;		/*!< \brief vector to store the extra variables to be written. */
 
 	CVariable** node;	/*!< \brief Vector which the define the variables for each problem. */
   
@@ -190,6 +194,11 @@ public:
 	 * \brief Get the number of variables of the problem.
 	 */
 	unsigned short GetnVar(void);
+  
+  /*!
+	 * \brief Get the number of variables of the problem.
+	 */
+	unsigned short GetnOutputVariables(void);
     
     /*!
 	 * \brief Get the number of variables of the problem.
@@ -741,7 +750,14 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void Inviscid_Forces(CGeometry *geometry, CConfig *config);
-    
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config);
+  
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -1556,7 +1572,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetLevelSet_Distance(CGeometry *geometry, CConfig *config, bool Initialization, bool WriteLevelSet);
+	virtual void SetFreeSurface_Distance(CGeometry *geometry, CConfig *config, bool Initialization, bool WriteLevelSet);
     
 	/*!
 	 * \brief A virtual member.
@@ -1663,7 +1679,7 @@ public:
  * \class CBaselineSolver
  * \brief Main class for defining a baseline solution from a restart file (for output).
  * \author F. Palacios, T. Economon.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CBaselineSolver : public CSolver {
 public:
@@ -1707,7 +1723,7 @@ public:
  * \brief Main class for defining the Euler's flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CEulerSolver : public CSolver {
 protected:
@@ -1755,9 +1771,9 @@ protected:
 	*FanFace_Pressure,	/*!< \brief Fan face pressure for each boundary. */
 	*FanFace_Mach,	/*!< \brief Fan face mach number for each boundary. */
 	*FanFace_Area,	/*!< \brief Boundary total area. */
-    *Exhaust_Area,	/*!< \brief Boundary total area. */
-    FanFace_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
-    Exhaust_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
+  *Exhaust_Area,	/*!< \brief Boundary total area. */
+  FanFace_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
+  Exhaust_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
 	FanFace_Pressure_Total,	/*!< \brief Fan face pressure for each boundary. */
 	FanFace_Mach_Total,	/*!< \brief Fan face mach number for each boundary. */
 	InverseDesign;	/*!< \brief Inverse design functional for each boundary. */
@@ -1789,10 +1805,11 @@ protected:
 	Total_CMerit,			/*!< \brief Total rotor Figure of Merit for all the boundaries. */
 	Total_CT,		/*!< \brief Total thrust coefficient for all the boundaries. */
 	Total_CQ,		/*!< \brief Total torque coefficient for all the boundaries. */
-    Total_Q,    /*!< \brief Total heat load for all the boundaries. */
-    Total_Maxq, /*!< \brief Maximum heat flux on all boundaries. */
+  Total_Q,    /*!< \brief Total heat load for all the boundaries. */
+  Total_Maxq, /*!< \brief Maximum heat flux on all boundaries. */
 	Total_CEquivArea,			/*!< \brief Total Equivalent Area coefficient for all the boundaries. */
-	Total_CNearFieldOF;			/*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
+	Total_CNearFieldOF,			/*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
+  Total_CFreeSurface;			/*!< \brief Total Free Surface coefficient for all the boundaries. */
 	double *p1_Und_Lapl,	/*!< \brief Auxiliary variable for the undivided Laplacians. */
 	*p2_Und_Lapl;			/*!< \brief Auxiliary variable for the undivided Laplacians. */
 	double *PrimVar_i,	/*!< \brief Auxiliary vector for storing the solution at point i. */
@@ -1805,7 +1822,10 @@ protected:
 	least_squares;        /*!< \brief True if computing gradients by least squares. */
 	double Gamma;									/*!< \brief Fluid's Gamma constant (ratio of specific heats). */
 	double Gamma_Minus_One;				/*!< \brief Fluids's Gamma - 1.0  . */
-    
+  unsigned short nSection;    /*!< \brief Total number of airfoil sections to be cut from each specified marker. */
+  vector<unsigned long> **point1_Airfoil;     /*!< \brief Vector of first points in the list of edges making up an airfoil section. */
+  vector<unsigned long> **point2_Airfoil;     /*!< \brief Vector of second points in the list of edges making up an airfoil section. */
+  
 public:
     
 	/*!
@@ -2026,7 +2046,16 @@ public:
      * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
 	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
-    
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iMesh - Index of the mesh in multigrid computations.
+	 */
+	void Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh);
+  
 	/*!
 	 * \brief Compute a pressure sensor switch.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -2279,6 +2308,13 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void Inviscid_Forces(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief Compute the pressure forces and all the adimensional coefficients.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config);
     
 	/*!
 	 * \brief Provide the non dimensional lift coefficient (inviscid contribution).
@@ -2517,7 +2553,19 @@ public:
 	 * \return Value of the pressure coefficient.
 	 */
 	double GetCPressure(unsigned short val_marker, unsigned short val_vertex);
-    
+  
+	/*!
+	 * \brief Provide the total (inviscid + viscous) non dimensional Free Surface coefficient.
+	 * \return Value of the Free Surface coefficient (inviscid + viscous contribution).
+	 */
+	double GetTotal_CFreeSurface(void);
+  
+	/*!
+	 * \brief Set the value of the Free Surface coefficient.
+	 * \param[in] val_cfreesurface - Value of the Free Surface coefficient.
+	 */
+	void SetTotal_CFreeSurface(double val_cfreesurface);
+  
 	/*!
 	 * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -2556,7 +2604,15 @@ public:
 	 * \param[in] ExtIter - External iteration.
 	 */
 	void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter);
-    
+  
+  
+	/*!
+	 * \brief Recompute distance to the level set 0.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetFreeSurface_Distance(CGeometry *geometry, CConfig *config, bool Initialization, bool WriteLevelSet);
+  
 };
 
 /*!
@@ -2564,7 +2620,7 @@ public:
  * \brief Main class for defining the Navier-Stokes flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CNSSolver : public CEulerSolver {
 private:
@@ -2761,7 +2817,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CTurbSolver : public CSolver {
 protected:
@@ -2872,45 +2928,6 @@ public:
 	void CalcGradient_LS(double *U_i, double **U_js, unsigned long nNeigh,
                          double *coords_i, double **coords_js, double **grad_U_i, CConfig *config);
     
-	/*!
-	 * \brief A virtual member.
-	 */
-	void CalcPrimVar_Compressible(double *val_Vars, double Gamma, double Gas_Constant, unsigned short numVar, double turb_ke,
-                                  double* Primitive, CConfig *config);
-    
-	/*!
-	 * \brief A virtual member.
-	 */
-    //	void CalcPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf,
-    //			double ArtComp_Factor, double turb_ke, bool freesurface,
-    //			double* LaminarViscosityInc, double* Primitive);
-    
-	/*!
-	 * \brief Calculate the laminar viscosity (used for AD).
-	 * \param[in] val_U_i - Value of the flow variables at point i.
-	 * \param[out] val_laminar_viscosity_i - Value of the laminar viscosity at point i.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void CalcLaminarViscosity(double *val_U_i, double *val_laminar_viscosity_i, CConfig *config);
-    
-	/*!
-	 * \brief Calculate the eddy viscosity (used for AD).
-	 */
-	virtual void CalcEddyViscosity(double *val_FlowVars, double val_laminar_viscosity,
-                                   double *val_TurbVar, double *val_eddy_viscosity);
-    
-    //	/*!
-    //	 * \brief Alternative MUSCL reconstruction of solution. Required for discrete adjoint
-    //	 * \param[in] val_grad_U_i - Solution gradient at i.
-    //	 * \param[in] val_grad_U_j - Solution gradient at j.
-    //	 * \param[in] Vector_i - 1/2 Vector i -> j
-    //	 * \param[in] Vector_j - 1/2 Vector j -> i
-    //	 * \param[in] config - Definition of the particular problem.
-    //	 */
-    //	virtual void MUSCL_Reconstruction(double **val_grad_U_i, double **val_grad_U_j,
-    //			double *Vector_i, double *Vector_j, CConfig *config);
-    
-    
 };
 
 /*!
@@ -2918,7 +2935,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.6
+ * \version 2.0.7
  */
 
 class CTurbSASolver: public CTurbSolver {
@@ -3128,17 +3145,7 @@ public:
 	 * \param[in] val_iter - Current external iteration number.
 	 */
 	void GetRestart(CGeometry *geometry, CConfig *config, int val_iter);
-  
-	/*!
-	 * \brief Calculate the laminar viscosity (used for AD).
-	 * \param[in] val_U_i - Value of the flow variables at point i.
-	 * \param[out] val_laminar_viscosity_i - Value of the laminar viscosity at point i.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void CalcEddyViscosity(double *val_FlowVars, double val_laminar_viscosity,
-                           double *val_TurbVar, double *val_eddy_viscosity);
-    
-    
+
     
 };
 
@@ -3147,7 +3154,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.6
+ * \version 2.0.7
  */
 
 class CTransLMSolver: public CTurbSolver {
@@ -3324,7 +3331,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Campos, F. Palacios, T. Economon
- * \version 2.0.6
+ * \version 2.0.7
  */
 
 class CTurbSSTSolver: public CTurbSolver {
@@ -3497,7 +3504,7 @@ public:
  * \brief Main class for defining the Euler's adjoint flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CAdjEulerSolver : public CSolver {
 protected:
@@ -3912,9 +3919,7 @@ public:
 	 *         (inviscid + viscous contribution).
 	 */
 	double GetTotal_Sens_Temp(void);
-    
-    
-    
+  
 	/*!
 	 * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -3943,7 +3948,7 @@ public:
  * \brief Main class for defining the Navier-Stokes' adjoint flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CAdjNSSolver : public CAdjEulerSolver {
 public:
@@ -4036,7 +4041,7 @@ public:
  * \brief Main class for defining the adjoint turbulence model solver.
  * \ingroup Turbulence_Model
  * \author F. Palacios, A. Bueno.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CAdjTurbSolver : public CSolver {
 private:
@@ -4179,7 +4184,7 @@ public:
  * \brief Main class for defining the linearized Euler solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CLinEulerSolver : public CSolver {
 private:
@@ -4302,7 +4307,7 @@ public:
 /*! \class CElectricSolver
  *  \brief Main class for defining the electric potential solver.
  *  \author F. Palacios.
- *  \version 2.0.6
+ *  \version 2.0.7
  *  \date May 3, 2010.
  */
 class CElectricSolver : public CSolver {
@@ -4495,7 +4500,7 @@ public:
 /*! \class CWaveSolver
  *  \brief Main class for defining the wave solver.
  *  \author F. Palacios.
- *  \version 2.0.6
+ *  \version 2.0.7
  *  \date May 3, 2010.
  */
 class CWaveSolver : public CSolver {
@@ -4677,7 +4682,7 @@ public:
 /*! \class CHeatSolver
  *  \brief Main class for defining the heat solver.
  *  \author F. Palacios.
- *  \version 2.0.6
+ *  \version 2.0.7
  *  \date May 3, 2010.
  */
 class CHeatSolver : public CSolver {
@@ -4817,7 +4822,7 @@ public:
 /*! \class CFEASolver
  *  \brief Main class for defining the FEA solver.
  *  \author F. Palacios.
- *  \version 2.0.6
+ *  \version 2.0.7
  *  \date May 3, 2010.
  */
 class CFEASolver : public CSolver {
@@ -4990,7 +4995,7 @@ public:
  * \brief Main class for defining the level set solver.
  * \ingroup LevelSet_Model
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CLevelSetSolver : public CSolver {
 protected:
@@ -5021,7 +5026,14 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void Set_MPI_Solution(CGeometry *geometry, CConfig *config);
-    
+  
+  /*!
+	 * \brief Impose the send-receive boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config);
+  
     /*!
 	 * \brief Impose the send-receive boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -5035,7 +5047,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
     void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
-    
+  
 	/*!
 	 * \brief Provide the total (inviscid + viscous) non dimensional Free Surface coefficient.
 	 * \return Value of the Free Surface coefficient (inviscid + viscous contribution).
@@ -5169,7 +5181,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetLevelSet_Distance(CGeometry *geometry, CConfig *config, bool Initialization, bool WriteLevelSet);
+	void SetFreeSurface_Distance(CGeometry *geometry, CConfig *config, bool Initialization, bool WriteLevelSet);
     
 	/*!
 	 * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
@@ -5190,7 +5202,7 @@ public:
  * \brief Main class for defining the level set solver.
  * \ingroup LevelSet_Model
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CAdjLevelSetSolver : public CSolver {
 protected:
@@ -5369,7 +5381,7 @@ public:
  * \brief Main class for defining the template model solver.
  * \ingroup Template_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CTemplateSolver : public CSolver {
 private:
@@ -5578,7 +5590,7 @@ public:
  * \class CPlasmaSolver
  * \brief Main class for defining the plasma solver.
  * \author ADL Stanford.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CPlasmaSolver : public CSolver {
 protected:
@@ -6318,7 +6330,7 @@ public:
  * \brief Main class for defining the Euler's adjoint flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CAdjPlasmaSolver : public CSolver {
 protected:
