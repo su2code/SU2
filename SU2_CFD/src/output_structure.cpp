@@ -4456,26 +4456,6 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                     
           break;
     
-        case TNE2_EULER : case TNE2_NAVIER_STOKES:
-          
-          if (!DualTime_Iteration) {
-            ConvHist_file[0] << begin << direct_coeff << flow_resid;
-            ConvHist_file[0] << end;
-            ConvHist_file[0].flush();
-          }
-          
-          cout.precision(6);
-          cout.setf(ios::fixed,ios::floatfield);
-          cout.width(13); cout << log10(residual_TNE2[0]);
-          if (!fluid_structure && !aeroacoustic && !equiv_area) {
-              if (nDim == 2 ) { cout.width(14); cout << log10(residual_TNE2[3]); }
-              else { cout.width(14); cout << log10(residual_TNE2[4]); }
-          }
-          
-          cout.width(15); cout << Total_CLift; cout.width(15); cout << Total_CDrag;
-          cout << endl;
-          break;
-
         case RANS :
           
           if (!DualTime_Iteration) {
