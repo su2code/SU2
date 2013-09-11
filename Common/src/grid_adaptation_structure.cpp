@@ -1582,14 +1582,14 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 	
 	unsigned long iPoint, iElem, iEdge, ip_0, ip_1, ip_2, ip_3, iVertex;
 	unsigned short iDim, iMarker, iVar;
-	int no_0 = 0, no_1 = 0, no_2 = 0, no_3 = 0;
+	long no_0 = 0, no_1 = 0, no_2 = 0, no_3 = 0;
 
-	int *TriangleAdaptCode; 
-	int **TriangleEdgeIndex; bool **TriangleEdgeCode; int **TriangleEdgeNode;
+	unsigned long *TriangleAdaptCode;
+		unsigned long **TriangleEdgeIndex; bool **TriangleEdgeCode; 	unsigned long **TriangleEdgeNode;
 	
-	int *RectAdaptCode; 
-	int **RectEdgeIndex; bool **RectEdgeCode; int **RectEdgeNode;
-	int **RectElemIndex; bool **RectElemCode; int **RectElemNode;
+	unsigned long *RectAdaptCode;
+    unsigned long **RectEdgeIndex; bool **RectEdgeCode; unsigned long **RectEdgeNode;
+    unsigned long **RectElemIndex; bool **RectElemCode; unsigned long **RectElemNode;
 	
 	bool Restart_Flow = false;
 	bool Restart_Adjoint = false;
@@ -1617,31 +1617,31 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 	if ((config->GetKind_Adaptation() == COMPUTABLE_ROBUST) ||
 			(config->GetKind_Adaptation() == FULL_LINEAR)) Restart_Linear = true;
 	
-	TriangleAdaptCode = new int[geometry->GetnElem()];
-	TriangleEdgeIndex = new int*[geometry->GetnElem()];
+	TriangleAdaptCode = new unsigned long[geometry->GetnElem()];
+	TriangleEdgeIndex = new unsigned long*[geometry->GetnElem()];
 	TriangleEdgeCode = new bool*[geometry->GetnElem()];
-	TriangleEdgeNode = new int*[geometry->GetnElem()];
+	TriangleEdgeNode = new unsigned long*[geometry->GetnElem()];
 	
-	RectAdaptCode = new int[geometry->GetnElem()];
-	RectEdgeIndex = new int*[geometry->GetnElem()];
+	RectAdaptCode = new unsigned long[geometry->GetnElem()];
+	RectEdgeIndex = new unsigned long*[geometry->GetnElem()];
 	RectEdgeCode = new bool*[geometry->GetnElem()];
-	RectEdgeNode = new int*[geometry->GetnElem()];
-	RectElemIndex = new int*[geometry->GetnElem()];
+	RectEdgeNode = new unsigned long*[geometry->GetnElem()];
+	RectElemIndex = new unsigned long*[geometry->GetnElem()];
 	RectElemCode = new bool*[geometry->GetnElem()];
-	RectElemNode = new int*[geometry->GetnElem()];
+	RectElemNode = new unsigned long*[geometry->GetnElem()];
 	
 	
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-		TriangleEdgeIndex[iElem] = new int [3];
+		TriangleEdgeIndex[iElem] = new unsigned long [3];
 		TriangleEdgeCode[iElem] = new bool [3];
-		TriangleEdgeNode[iElem] = new int [3];
+		TriangleEdgeNode[iElem] = new unsigned long [3];
 		
-		RectEdgeIndex[iElem] = new int [4];
+		RectEdgeIndex[iElem] = new unsigned long [4];
 		RectEdgeCode[iElem] = new bool [4];
-		RectEdgeNode[iElem] = new int [4];
-		RectElemIndex[iElem] = new int [1];
+		RectEdgeNode[iElem] = new unsigned long [4];
+		RectElemIndex[iElem] = new unsigned long [1];
 		RectElemCode[iElem] = new bool [1];
-		RectElemNode[iElem] = new int [1];		
+		RectElemNode[iElem] = new unsigned long [1];		
 	}
 	
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
@@ -1758,8 +1758,8 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 	}
 	
 	// Create the new nodes on the edges, on the faces, and in the element.
-	int *NodeAtEdges = new int[geometry->GetnEdge()]; 
-	int *NodeAtElem = new int[geometry->GetnElem()];
+	unsigned long *NodeAtEdges = new unsigned long[geometry->GetnEdge()];
+	unsigned long *NodeAtElem = new unsigned long[geometry->GetnElem()];
 	
 	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) NodeAtEdges[iEdge] = -1;
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) NodeAtElem[iElem] = -1;
@@ -1916,35 +1916,35 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 	
 	// If semidivision, then divide add a new point (hexa), divide the rectangle into triangles, 
 	// and find the right combination, it also create the new node (hexa).
-	int nRectExt = nSemiDivided;	
+	unsigned long nRectExt = nSemiDivided;	
 	
-	int *RectExtAdaptCode;
-	int **RectExtNode;	
-	int **RectRectExtIndex;
-	int *RectExtRectIndex;
+	unsigned long *RectExtAdaptCode;
+	unsigned long **RectExtNode;
+	unsigned long **RectRectExtIndex;
+	unsigned long *RectExtRectIndex;
 	
-	int **RectExtEdgeIndex; 
+	unsigned long **RectExtEdgeIndex; 
 	bool **RectExtEdgeCode;
-	int **RectExtEdgeNode; 
+	unsigned long **RectExtEdgeNode; 
 	
-	RectExtAdaptCode = new int [nRectExt];
-	RectExtNode = new int *[nRectExt];	
-	RectRectExtIndex = new int *[geometry->GetnElem()];	
-	RectExtRectIndex = new int [nRectExt];	
-	RectExtEdgeIndex = new int *[nRectExt]; 
+	RectExtAdaptCode = new unsigned long [nRectExt];
+	RectExtNode = new unsigned long *[nRectExt];	
+	RectRectExtIndex = new unsigned long *[geometry->GetnElem()];	
+	RectExtRectIndex = new unsigned long [nRectExt];	
+	RectExtEdgeIndex = new unsigned long *[nRectExt]; 
 	RectExtEdgeCode = new bool *[nRectExt];
-	RectExtEdgeNode = new int *[nRectExt]; 
+	RectExtEdgeNode = new unsigned long *[nRectExt]; 
 	
-	for (int iRectExt = 0; iRectExt < nRectExt; iRectExt++) {
-		RectExtNode[iRectExt] = new int [4];
-		RectExtEdgeIndex[iRectExt] = new int [4];
+	for (unsigned long iRectExt = 0; iRectExt < nRectExt; iRectExt++) {
+		RectExtNode[iRectExt] = new unsigned long [4];
+		RectExtEdgeIndex[iRectExt] = new unsigned long [4];
 		RectExtEdgeCode[iRectExt] = new bool [4];
-		RectExtEdgeNode[iRectExt] = new int [4];
+		RectExtEdgeNode[iRectExt] = new unsigned long [4];
 	}
 	
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem ++) {
 		if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE) {
-			RectRectExtIndex[iElem] = new int [1];
+			RectRectExtIndex[iElem] = new unsigned long [1];
 		}
 	}
 	
@@ -1981,7 +1981,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 	}
 	
 	//	Check the kind of RectExt partitioning that should be applied
-	for (int iRectExt = 0; iRectExt < nRectExt; iRectExt ++) {
+	for (unsigned long iRectExt = 0; iRectExt < nRectExt; iRectExt ++) {
 		RectExtAdaptCode[iRectExt] = CheckRectExtCode(RectExtEdgeCode[iRectExt]);
 		if (RectExtAdaptCode[iRectExt] == 0) cout << "There is a problem with one RectExt" << endl;
 	}
@@ -2003,7 +2003,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 			if (RectAdaptCode[iElem] == 2) nElem_new = nElem_new + 1;
 			if (RectAdaptCode[iElem] == 3) nElem_new = nElem_new + 1;
 			if (RectAdaptCode[iElem] == 0) {
-				int iRectExt = RectRectExtIndex[iElem][0];
+				unsigned long iRectExt = RectRectExtIndex[iElem][0];
 				if (RectExtAdaptCode[iRectExt] == 2) nElem_new = nElem_new + 2;
 				if (RectExtAdaptCode[iRectExt] == 3) nElem_new = nElem_new + 2;
 				if (RectExtAdaptCode[iRectExt] == 4) nElem_new = nElem_new + 2;
