@@ -3,23 +3,23 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.6
+ * \version 2.0.7
  *
- * Stanford University Unstructured (SU2) Code
- * Copyright (C) 2012 Aerospace Design Laboratory
+ * Stanford University Unstructured (SU2).
+ * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #pragma once
@@ -49,12 +49,12 @@ using namespace std;
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
  * \author F. Palacios.
- * \version 2.0.6
+ * \version 2.0.7
  */
 class CConfig {
 private:
 	unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component. */
-	unsigned short nZone; /*!< \brief Number of zones in the mesh. */
+	unsigned short iZone, nZone; /*!< \brief Number of zones in the mesh. */
 	double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
 	double MinLogResidual; /*!< \brief Minimum value of the log residual. */
 	double* EA_IntLimit; /*!< \brief Integration limits of the Equivalent Area computation */
@@ -69,8 +69,6 @@ private:
 	Grid_Movement,			/*!< \brief Flag to know if there is grid movement. */
     Wind_Gust,              /*!< \brief Flag to know if there is a wind gust. */
 	Rotating_Frame,			/*!< \brief Flag to know if there is a rotating frame. */
-	FreeSurface,            /*!< \brief Flag to know if we are solving a freesurface problem. */
-	Incompressible,			/*!< \brief Flag to know if we are using the incompressible formulation. */
 	AdiabaticWall,			/*!< \brief Flag to know if we are using the Adiabatic Wall. */
 	IsothermalWall,			/*!< \brief Flag to know if we are using the Isothermal Wall. */
 	CatalyticWall,			/*!< \brief Flag to know if we are using the Catalytic Wall. */
@@ -106,7 +104,7 @@ private:
 	double *DV_Value;		/*!< \brief Previous value of the design variable. */
 	double LimiterCoeff;				/*!< \brief Limiter coefficient */ 
 	double SharpEdgesCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
-	unsigned short Kind_Adjoint;	/*!< \brief Kind of adjoint function. */
+	unsigned short Kind_Regime;	/*!< \brief Kind of adjoint function. */
 	unsigned short Kind_ObjFunc;	/*!< \brief Kind of objective function. */
 	unsigned short Kind_SensSmooth;	/*!< \brief Kind of sensitivity smoothing technique. */
 	unsigned short Continuous_Eqns;	/*!< \brief Which equations to treat continuously (Hybrid adjoint) */
@@ -488,7 +486,8 @@ private:
 	Wrt_Restart,                /*!< \brief Write a restart solution file */
 	Wrt_Csv_Sol,                /*!< \brief Write a surface comma-separated values solution file */
 	Wrt_Residuals,              /*!< \brief Write residuals to solution file */
-  Wrt_Halo;                   /*!< \brief Write rind layers in solution files */
+  Wrt_Halo,                   /*!< \brief Write rind layers in solution files */
+  Wrt_Sectional_Forces;       /*!< \brief Write sectional forces for specified markers. */
 	double *ArrheniusCoefficient,					/*!< \brief Arrhenius reaction coefficient */
 	*ArrheniusEta,								/*!< \brief Arrhenius reaction temperature exponent */
 	*ArrheniusTheta,							/*!< \brief Arrhenius reaction characteristic temperature */
@@ -661,7 +660,9 @@ private:
 	**Velocity_FreeStreamND_Time,
 	*Energy_FreeStreamND_Time,
 	*Mach_Inf_Time;
-  
+
+  bool ExtraOutput;
+
 	map<string, CAnyOptionRef*> param; /*!< \brief associates option names (strings) with options */
 
 public:
@@ -1082,6 +1083,12 @@ public:
 	 */
 	bool GetVisualize_Partition(void);
 
+  /*!
+	 * \brief Creates a tecplot file to visualize the partition made by the DDC software.
+	 * \return <code>TRUE</code> if the partition is going to be plotted; otherwise <code>FALSE</code>.
+	 */
+  bool GetExtraOutput(void);
+  
 	/*! 
 	 * \brief Creates a teot file to visualize the deformation made by the MDC software.
 	 * \return <code>TRUE</code> if the deformation is going to be plotted; otherwise <code>FALSE</code>.
@@ -1846,6 +1853,12 @@ public:
 	 */
 	bool GetWrt_Halo(void);
 
+  /*!
+	 * \brief Get information about writing sectional force files.
+	 * \return <code>TRUE</code> means that sectional force files will be written for specified markers.
+	 */
+	bool GetWrt_Sectional_Forces(void);
+  
 	/*!
 	 * \brief Get the alpha (convective) coefficients for the Runge-Kutta integration scheme.
 	 * \param[in] val_step - Index of the step.
@@ -2059,6 +2072,13 @@ public:
 	 */		
 	unsigned short GetKind_Solver(void);
 
+  /*!
+	 * \brief Governing equations of the flow (it can be different from the run time equation).
+	 * \param[in] val_zone - Zone where the soler is applied.
+	 * \return Governing equation that we are solving.
+	 */
+	unsigned short GetKind_Regime(void);
+  
 	/*! 
 	 * \brief Gas model that we are using.
 	 * \return Gas model that we are using.
@@ -3378,6 +3398,18 @@ public:
 	 * \return Number of variables.
 	 */
 	unsigned short GetnVar(void);
+  
+  /*!
+	 * \brief Provides the number of varaibles.
+	 * \return Number of variables.
+	 */
+	unsigned short GetnZone(void);
+  
+  /*!
+	 * \brief Provides the number of varaibles.
+	 * \return Number of variables.
+	 */
+	unsigned short GetiZone(void);
 
 	/*! 
 	 * \brief For some problems like adjoint or the linearized equations it 
@@ -3906,18 +3938,6 @@ public:
 	 * \return the minimum value of Beta for Roe-Turkel preconditioner
 	 */
 	double GetmaxTurkelBeta();
-
-	/*!
-	 * \brief Get information about the compressible or imcompressible solver.
-	 * \return <code>TRUE</code> if it is a incompressible formulation; otherwise <code>FALSE</code>.
-	 */
-	bool GetIncompressible(void);
-
-	/*!
-	 * \brief Get information about the cfree surface solver.
-	 * \return <code>TRUE</code> if it is a free surface formulation; otherwise <code>FALSE</code>.
-	 */
-	bool GetFreeSurface(void);
 
 	/*!
 	 * \brief Get information about the adibatic wall condition
@@ -4529,7 +4549,7 @@ public:
   /*!
 	 * \brief Set the config options.
 	 */
-	void SetConfig_Options(unsigned short val_nZone);
+	void SetConfig_Options(unsigned short val_iZone, unsigned short val_nZone);
 
   /*!
 	 * \brief Set the config file parsing.

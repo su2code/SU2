@@ -1,7 +1,7 @@
 ## \file gradients.py
 #  \brief python package for gradients
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.6
+#  \version 2.0.7
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -350,7 +350,8 @@ def findiff( config, state=None, step=1e-4 ):
     name = su2io.expand_part(name,konfig)
     link.extend(name)
     # files: direct solution
-    link.append( files['DIRECT'] )
+    if files.has_key('DIRECT'):
+        link.append( files['DIRECT'] )
     # files: target equivarea distribution
     if 'EQUIV_AREA' in special_cases and 'TARGET_EA' in files:
         pull.append(files['TARGET_EA'])

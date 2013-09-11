@@ -18,7 +18,6 @@ ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
 		../include/integration_structure.hpp \
 		../include/integration_structure.inl \
 		../include/iteration_structure.hpp \
-		../include/math_ad.hpp \
 		../include/numerics_structure.hpp \
 		../include/numerics_structure.inl \
 		../include/output_structure.hpp \
@@ -32,7 +31,6 @@ ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
 		../src/integration_structure.cpp \
 		../src/integration_time.cpp \
 		../src/iteration_structure.cpp \
-		../src/math_ad.cpp \
 		../src/numerics_adjoint_electric.cpp \
 		../src/numerics_adjoint_levelset.cpp \
 		../src/numerics_adjoint_mean.cpp \
