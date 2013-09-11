@@ -646,7 +646,7 @@ void CTNE2EulerVariable::SetdPdrhos(CConfig *config) {
   
   unsigned short iDim, iSpecies, iEl, nHeavy, nEl, *nElStates;
   double *Ms, *Tref, *hf, *xi, *thetav, **thetae, **g;
-  double Ru, rhoCvtr, rhoCvve, Cvtrs, Cvves, rho_el, sqvel, conc;
+  double Ru, RuBAR, CvtrBAR, rhoCvtr, rhoCvve, Cvtrs, Cvves, rho_el, sqvel, conc;
   double rho, rhos, rhoEve, T, Tve, evibs, eels, ef;
   double num, denom;
   
@@ -681,6 +681,17 @@ void CTNE2EulerVariable::SetdPdrhos(CConfig *config) {
   rhoCvve = Primitive[RHOCVVE_INDEX];
   
   /*--- Pre-compute useful quantities ---*/
+  RuBAR   = 0.0;
+  CvtrBAR = 0.0;
+  sqvel   = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    sqvel += Primitive[VEL_INDEX+iDim] * Primitive[VEL_INDEX+iDim];
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    CvtrBAR += Primitive[RHOS_INDEX+iSpecies]*(3.0/2.0 + xi[iSpecies]/2.0)*Ru/Ms[iSpecies];
+  }
+
+  
+  
   conc  = 0.0;
   sqvel = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)

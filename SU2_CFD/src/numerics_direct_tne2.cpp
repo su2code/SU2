@@ -136,6 +136,8 @@ void CUpwRoe_TNE2::ComputeResidual(double *val_residual, double **val_Jacobian_i
   Temperature_j    = V_j[T_INDEX];
   Temperature_ve_i = V_i[TVE_INDEX];
   Temperature_ve_j = V_j[TVE_INDEX];
+  Energy_ve_i      = U_i[nSpecies+nDim+1]/V_i[RHO_INDEX];
+  Energy_ve_j      = U_j[nSpecies+nDim+1]/V_j[RHO_INDEX];
   
   /*--- Read parameters from CConfig ---*/
   Ms = config->GetMolar_Mass();
@@ -217,6 +219,55 @@ void CUpwRoe_TNE2::ComputeResidual(double *val_residual, double **val_Jacobian_i
   Lambda[nSpecies+nDim-1] = ProjVelocity + RoeSoundSpeed;
   Lambda[nSpecies+nDim]   = ProjVelocity - RoeSoundSpeed;
   Lambda[nSpecies+nDim+1] = ProjVelocity;
+  
+  
+  //////////////// TEST UPWINDING!!!! ////////////////////
+/*  GetInviscidProjJac(Density_i, Velocity_i, &Enthalpy_i, &Energy_ve_i,
+                     dPdrhos_i, dPdrhoE_i, dPdrhoEve_i, UnitNormal, 1.0,
+                     val_Jacobian_i);
+  GetPMatrix(Density_i, Velocity_i, &Enthalpy_i, &Energy_ve_i,
+             &SoundSpeed_i, dPdrhos_i, dPdrhoE_i, dPdrhoEve_i, UnitNormal, l, m,
+             P_Tensor);
+  GetPMatrix_inv(Density_i, Velocity_i, &Energy_ve_i, &SoundSpeed_i,
+                 dPdrhos_i, dPdrhoE_i, dPdrhoEve_i, UnitNormal, l, m,
+                 invP_Tensor);
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    Lambda[iSpecies] = ProjVelocity_i;
+  for (iDim = 0; iDim < nDim-1; iDim++)
+    Lambda[nSpecies+iDim] = ProjVelocity_i;
+  Lambda[nSpecies+nDim-1] = ProjVelocity_i + SoundSpeed_i;
+  Lambda[nSpecies+nDim]   = ProjVelocity_i - SoundSpeed_i;
+  Lambda[nSpecies+nDim+1] = ProjVelocity_i;*/
+  
+  /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
+/*  for (iVar = 0; iVar < nVar; iVar++) {
+    for (jVar = 0; jVar < nVar; jVar++) {
+      Proj_ModJac_Tensor_ij = 0.0;
+      for (kVar = 0; kVar < nVar; kVar++)
+        Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
+      val_Jacobian_j[iVar][jVar] += Proj_ModJac_Tensor_ij;
+    }
+  }
+  
+  
+  cout << "Analytic Projected Jacobian: " << endl;
+  for (iVar =0; iVar < nVar; iVar++){
+    for (jVar =0 ; jVar < nVar; jVar++) {
+      cout << val_Jacobian_i[iVar][jVar] << "\t" ;
+    }
+    cout << endl;
+  }
+  cout << endl << endl;
+  cout << "Upwind Projected Jacobian: " << endl;
+  for (iVar =0; iVar < nVar; iVar++){
+    for (jVar =0 ; jVar < nVar; jVar++) {
+      cout << val_Jacobian_j[iVar][jVar] << "\t" ;
+    }
+    cout << endl;
+  }
+  cin.get();*/
+  
+  //////////////// TEST UPWINDING!!!! ////////////////////
   
   //	/*--- Harten and Hyman (1983) entropy correction ---*/
   //	for (iDim = 0; iDim < nDim; iDim++)
@@ -372,8 +423,6 @@ void CUpwRoe_TNE2::CreateBasis(double *val_Normal) {
 }
 
 CUpwAUSM_TNE2::CUpwAUSM_TNE2(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
-
-	unsigned short iVar;
   
   /*--- Read configuration parameters ---*/
 	implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -411,7 +460,10 @@ CUpwAUSM_TNE2::~CUpwAUSM_TNE2(void) {
 	delete [] u_j;
 }
 
-void CUpwAUSM_TNE2::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CUpwAUSM_TNE2::ComputeResidual(double *val_residual,
+                                    double **val_Jacobian_i,
+                                    double **val_Jacobian_j,
+                                    CConfig *config         ) {
 
   unsigned short iDim, iVar, jVar, iSpecies, nHeavy, nEl;
   double rho_i, rho_j, rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j;
@@ -800,7 +852,7 @@ CCentLax_TNE2::~CCentLax_TNE2(void) {
 void CCentLax_TNE2::ComputeResidual(double *val_resconv, double *val_resvisc, double **val_Jacobian_i,
                                     double **val_Jacobian_j, CConfig *config) {
   
-  unsigned short iDim, iSpecies, iVar, jVar, kVar, nHeavy, nEl;
+  unsigned short iDim, iSpecies, iVar, jVar, nHeavy, nEl;
   double *Ms;
   double DensityMix_i, DensityMix_j, conc;
   double Ru, rhoCvtr, rhoCvtr_i, rhoCvtr_j, rhoCvve, rhoCvve_i, rhoCvve_j, rho_el, dPdrhoE, dPdrhoEve;
@@ -1055,7 +1107,7 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
   double T, Tve, Thf, Thb, Trxnf, Trxnb, Keq, Cf, eta, theta, kf, kb;
   double rho, u, v, w, rhoCvtr, rhoCvve, P, sqvel;
   double num, num2, num3, denom;
-  double *Ms, *thetav, **thetae, **g, fwdRxn, bkwRxn, alpha, Dprime, Ru;
+  double *Ms, *thetav, **thetae, **g, fwdRxn, bkwRxn, alpha, Ru;
   double dTdrhou, dTdrhov, dTdrhow, dTdrhoE, dTdrhoEve;
   double dTvedrhou, dTvedrhov, dTvedrhow, dTvedrhoE, dTvedrhoEve;
   double *Tcf_a, *Tcf_b, *Tcb_a, *Tcb_b;
