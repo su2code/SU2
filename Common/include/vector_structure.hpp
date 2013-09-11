@@ -3,23 +3,23 @@
  * \brief Headers for the classes related to linear solvers (CG, FGMRES, etc)
  *        The subroutines and functions are in the <i>linear_solvers_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.6
+ * \version 2.0.7
  *
- * Stanford University Unstructured (SU2) Code
- * Copyright (C) 2012 Aerospace Design Laboratory
+ * Stanford University Unstructured (SU2).
+ * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #pragma once
@@ -44,7 +44,7 @@ const double eps = numeric_limits<double>::epsilon(); /*!< \brief machine epsilo
  * \class CSysVector
  * \brief Class for holding and manipulating vectors needed by linear solvers
  * \author J. Hicken.
- * \version 2.0.6
+ * \version 2.0.7
  *
  * We could use the STL vector as a base class here, but this gives us
  * more flexibility with the underlying data (e.g. we may decide to
@@ -337,7 +337,7 @@ public:
  * \class CMatrixVectorProduct
  * \brief abstract base class for defining matrix-vector products
  * \author J. Hicken.
- * \version 2.0.6
+ * \version 2.0.7
  *
  * The Krylov-subspace solvers require only matrix-vector products and
  * not the actual matrix/Jacobian.  We need some way to indicate which
@@ -362,7 +362,7 @@ inline CMatrixVectorProduct::~CMatrixVectorProduct() {}
  * \class CPreconditioner
  * \brief abstract base class for defining preconditioning operation
  * \author J. Hicken.
- * \version 2.0.6
+ * \version 2.0.7
  *
  * See the remarks regarding the CMatrixVectorProduct class.  The same
  * idea applies here to the preconditioning operation.

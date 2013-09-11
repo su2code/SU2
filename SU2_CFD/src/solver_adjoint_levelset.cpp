@@ -2,23 +2,23 @@
  * \file solution_adjoint_levelset.cpp
  * \brief Main subrotuines for solving the level set problem.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.6
+ * \version 2.0.7
  *
- * Stanford University Unstructured (SU2) Code
- * Copyright (C) 2012 Aerospace Design Laboratory
+ * Stanford University Unstructured (SU2).
+ * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "../include/solver_structure.hpp"
@@ -566,11 +566,10 @@ void CAdjLevelSetSolver::Source_Residual(CGeometry *geometry, CSolver **solver_c
 																								 CConfig *config, unsigned short iMesh) {
 	unsigned short iVar, iDim;
 	unsigned long iPoint;
-  double epsilon, DeltaDirac, lambda, dRho_dPhi, dMud_Phi, Vol, DiffLevelSet, LevelSet, *MeanFlow, *AdjMeanFlow, **AdjLevelSetGradient, **AdjMeanFlowGradient, Density, Velocity[3], ProjAdj, dFc_dRho[3][4], ProjFlux;
+  double epsilon, DeltaDirac, lambda, dRho_dPhi, dMud_Phi, Vol, DiffLevelSet, LevelSet, *AdjMeanFlow, **AdjLevelSetGradient, **AdjMeanFlowGradient, Density, Velocity[3], ProjAdj, dFc_dRho[3][4], ProjFlux;
   
 	double Froude2 = config->GetFroude()*config->GetFroude();
-  bool incompressible = config->GetIncompressible();
-
+  
 	for (iVar = 0; iVar < nVar; iVar++)
 		Residual[iVar] = 0;
 
@@ -579,21 +578,21 @@ void CAdjLevelSetSolver::Source_Residual(CGeometry *geometry, CSolver **solver_c
 		
 		Vol = geometry->node[iPoint]->GetVolume();
 
-    /*--- Direct problem quantities ---*/
-		DiffLevelSet = solver_container[LEVELSET_SOL]->node[iPoint]->GetDiffLevelSet();
-		LevelSet = solver_container[LEVELSET_SOL]->node[iPoint]->GetSolution(0);
-		MeanFlow = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
-    Density = solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
-    
-    /*--- Adjoint problem quantities ---*/
-		AdjMeanFlow = solver_container[ADJFLOW_SOL]->node[iPoint]->GetSolution();
-    AdjLevelSetGradient = solver_container[ADJLEVELSET_SOL]->node[iPoint]->GetGradient();
-    AdjMeanFlowGradient = solver_container[ADJFLOW_SOL]->node[iPoint]->GetGradient();
+//    /*--- Direct problem quantities ---*/
+//		DiffLevelSet = solver_container[LEVELSET_SOL]->node[iPoint]->GetDiffLevelSet();
+//		LevelSet = solver_container[LEVELSET_SOL]->node[iPoint]->GetSolution(0);
+//		MeanFlow = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
+//    Density = solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
+//    
+//    /*--- Adjoint problem quantities ---*/
+//		AdjMeanFlow = solver_container[ADJFLOW_SOL]->node[iPoint]->GetSolution();
+//    AdjLevelSetGradient = solver_container[ADJLEVELSET_SOL]->node[iPoint]->GetGradient();
+//    AdjMeanFlowGradient = solver_container[ADJFLOW_SOL]->node[iPoint]->GetGradient();
     
     /*--- Projected adjoint velocity ---*/
     ProjAdj = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
-      Velocity[iDim] = solver_container[FLOW_SOL]->node[iPoint]->GetVelocity(iDim, incompressible);
+      Velocity[iDim] = solver_container[FLOW_SOL]->node[iPoint]->GetVelocity(iDim, INCOMPRESSIBLE);
       ProjAdj += Velocity[iDim]*AdjLevelSetGradient[0][iDim];
     }
     

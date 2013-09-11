@@ -2,23 +2,23 @@
  * \file solution_direct_wave.cpp
  * \brief Main subrotuines for solving the wave equation.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.6
+ * \version 2.0.7
  *
- * Stanford University Unstructured (SU2) Code
- * Copyright (C) 2012 Aerospace Design Laboratory
+ * Stanford University Unstructured (SU2).
+ * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "../include/solver_structure.hpp"
@@ -467,7 +467,6 @@ void CWaveSolver::SetNoise_Source(CSolver ***flow_solution, CGeometry **wave_geo
   double rho_0  = wave_config->GetDensity_FreeStreamND();
   double p_0    = wave_config->GetPressure_FreeStreamND();
   double *v_inf = wave_config->GetVelocity_FreeStreamND();
-	bool incompressible = wave_config->GetIncompressible();
 
 	for (iMarker = 0; iMarker < wave_config->GetnMarker_All(); iMarker++) {
     
@@ -495,7 +494,7 @@ void CWaveSolver::SetNoise_Source(CSolver ***flow_solution, CGeometry **wave_geo
         Density  = Solution[0];
         for (iDim = 0; iDim < nDim; iDim++)
           Velocity[iDim] = Solution[iDim+1]/Density;
-        Pressure = flow_solution[MESH_0][FLOW_SOL]->node[iPoint_Donor]->GetPressure(incompressible);
+        Pressure = flow_solution[MESH_0][FLOW_SOL]->node[iPoint_Donor]->GetPressure(COMPRESSIBLE);
 
         /* Get old solution for computing time derivative */
         Solution_Old = flow_solution[MESH_0][FLOW_SOL]->node[iPoint_Donor]->GetSolution_time_n();

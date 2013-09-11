@@ -2,27 +2,27 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.6
+ * \version 2.0.7
  *
  * Many of the classes in this file are templated, and therefore must
  * be declared and defined here; to keep all elements together, there
  * is no corresponding .cpp file at this time.
  *
- * Stanford University Unstructured (SU2) Code
- * Copyright (C) 2012 Aerospace Design Laboratory
+ * Stanford University Unstructured (SU2).
+ * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #pragma once
@@ -185,9 +185,6 @@ enum ENUM_SOLVER {
 	NAVIER_STOKES = 2,			/*!< \brief Definition of the Navier-Stokes' solver. */
 	RANS = 3,				/*!< \brief Definition of the Reynolds-averaged Navier-Stokes' (RANS) solver. */
 	ELECTRIC_POTENTIAL = 4,       	/*!< \brief Definition of the electric potential solver. */
-	FREE_SURFACE_EULER = 5,			/*!< \brief Definition of the Free Surface Euler solver. */
-	FREE_SURFACE_NAVIER_STOKES = 6,			/*!< \brief Definition of the Free Surface Navier-Stokes solver. */
-	FREE_SURFACE_RANS = 7,			/*!< \brief Definition of the Free Surface RANS solver. */
 	PLASMA_EULER = 8,	/*!< \brief Definition of the plasma solver. */
 	PLASMA_NAVIER_STOKES = 9,	/*!< \brief Definition of the plasma solver. */
 	WAVE_EQUATION = 10,	/*!< \brief Definition of the wave solver. */
@@ -204,9 +201,6 @@ enum ENUM_SOLVER {
 	ADJ_RANS = 20,				/*!< \brief Definition of the continuous adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
 	LIN_EULER = 21,			/*!< \brief Definition of the linear Euler's solver. */
 	LIN_NAVIER_STOKES = 22,		/*!< \brief Definition of the linear Navier-Stokes' solver. */
-	ADJ_FREE_SURFACE_EULER = 23,			/*!< \brief Definition of the adjoint Free Surface Euler solver. */
-	ADJ_FREE_SURFACE_NAVIER_STOKES = 24,			/*!< \brief Definition of the adjoint Free Surface Navier-Stokes solver. */
-	ADJ_FREE_SURFACE_RANS = 25,			/*!< \brief Definition of the adjoint Free Surface RANS solver. */
 	ADJ_PLASMA_NAVIER_STOKES = 26,	/*!< \brief Definition of the adjoint plasma solver. */
 	ADJ_PLASMA_EULER = 27,	/*!< \brief Definition of the adjoint plasma solver. */
 	ADJ_AEROACOUSTIC_EULER = 28,			/*!< \brief Definition of the adjoint aeroacoustic Euler solver. */
@@ -234,9 +228,6 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("ADJ_TNE2_NAVIER_STOKES", ADJ_TNE2_NAVIER_STOKES)
 ("PLASMA_NAVIER_STOKES", PLASMA_NAVIER_STOKES)
 ("PLASMA_EULER", PLASMA_EULER)
-("FREE_SURFACE_EULER", FREE_SURFACE_EULER)
-("FREE_SURFACE_NAVIER_STOKES", FREE_SURFACE_NAVIER_STOKES)
-("FREE_SURFACE_RANS", FREE_SURFACE_RANS)
 ("WAVE_EQUATION", WAVE_EQUATION)
 ("HEAT_EQUATION", HEAT_EQUATION)
 ("LINEAR_ELASTICITY", LINEAR_ELASTICITY)
@@ -249,20 +240,18 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("TEMPLATE_SOLVER", TEMPLATE_SOLVER);
 
 /*!
- * \brief different adjoint types for the adjoint solver
+ * \brief different regime modes
  */
-enum ENUM_ADJOINT {
-	CONTINUOUS = 0,			/*!< \brief Definition of continuous method. */
-	DISCRETE = 1,				/*!< \brief Definition of discrete method. */
-	HYBRID = 2			/*!< \brief Definition of hybrid method. */
-
-
+enum ENUM_REGIME {
+	COMPRESSIBLE = 0,			/*!< \brief Definition of compressible solver. */
+	INCOMPRESSIBLE = 1,				/*!< \brief Definition of incompressible solver. */
+	FREESURFACE = 2			/*!< \brief Definition of freesurface solver (incompressible). */
+  
 };
-static const map<string, ENUM_ADJOINT> Adjoint_Map = CCreateMap<string, ENUM_ADJOINT>
-("CONTINUOUS", CONTINUOUS)
-("DISCRETE", DISCRETE)
-("HYBRID", HYBRID);
-
+static const map<string, ENUM_REGIME> Regime_Map = CCreateMap<string, ENUM_REGIME>
+("COMPRESSIBLE", COMPRESSIBLE)
+("INCOMPRESSIBLE", INCOMPRESSIBLE)
+("FREESURFACE", FREESURFACE);
 
 /*!
  * \brief different types of systems
@@ -273,14 +262,12 @@ enum RUNTIME_TYPE {
 	RUNTIME_TURB_SYS = 3,			/*!< \brief One-physics case, the code is solving the turbulence model. */
 	RUNTIME_ELEC_SYS = 4,			/*!< \brief One-physics case, the code is solving the electrical potential equation. */
 	RUNTIME_PLASMA_SYS = 15,		/*!< \brief One-physics case, the code is solving the plasma equations. */
-	RUNTIME_LEVELSET_SYS = 16,		/*!< \brief One-physics case, the code is solving the level set equations. */
 	RUNTIME_WAVE_SYS = 8,		/*!< \brief One-physics case, the code is solving the wave equation. */
 	RUNTIME_HEAT_SYS = 21,		/*!< \brief One-physics case, the code is solving the heat equation. */
 	RUNTIME_FEA_SYS = 20,		/*!< \brief One-physics case, the code is solving the FEA equation. */
 	RUNTIME_ADJPOT_SYS = 5,		/*!< \brief One-physics case, the code is solving the adjoint potential flow equation. */
 	RUNTIME_ADJFLOW_SYS = 6,		/*!< \brief One-physics case, the code is solving the adjoint equations is being solved (Euler and Navier-Stokes). */
 	RUNTIME_ADJTURB_SYS = 7,		/*!< \brief One-physics case, the code is solving the adjoint turbulence model. */
-	RUNTIME_ADJLEVELSET_SYS = 18,		/*!< \brief One-physics case, the code is solving the adjoint evel set equations. */
 	RUNTIME_LINPOT_SYS = 9,		/*!< \brief One-physics case, the code is solving the linear potential flow equations. */
 	RUNTIME_LINFLOW_SYS = 10,		/*!< \brief One-physics case, the code is solving the linear equations is being solved (Euler and Navier-Stokes). */
 	RUNTIME_MULTIGRID_SYS = 14,   	/*!< \brief Full Approximation Storage Multigrid system of equations. */
@@ -302,28 +289,24 @@ const int TURB_SOL = 2;		/*!< \brief Position of the turbulence model solution i
 const int ADJTURB_SOL = 3;	/*!< \brief Position of the continuous adjoint turbulence solution in the solution container array. */
 const int LINTURB_SOL = 3;	/*!< \brief Position of the linearized turbulence model in the solution container array. */
 
-const int LEVELSET_SOL = 4;	/*!< \brief Position of the level set solution in the solution container array. */
-const int ADJLEVELSET_SOL = 5;	/*!< \brief Position of the continuous adjoint level set solution in the solution container array. */
-const int LINLEVELSET_SOL = 5;	/*!< \brief Position of the linearized level set solution in the solution container array. */
-
 const int PLASMA_SOL = 0;	/*!< \brief Position of the plasma solution in the solution container array. */
 const int ADJPLASMA_SOL = 1;	/*!< \brief Position of the continuous adjoint plasma solution in the solution container array. */
 const int LINPLASMA_SOL = 1;	/*!< \brief Position of the linearized plasma solution in the solution container array. */
 
-const int TRANS_SOL = 4;	/*!< \brief Position of the transition model solution in the solution container array. */
-const int ELEC_SOL = 2;		/*!< \brief Position of the electronic potential solution in the solution container array. */
-const int WAVE_SOL = 1;		/*!< \brief Position of the wave equation in the solution container array. */
-const int HEAT_SOL = 2;		/*!< \brief Position of the heat equation in the solution container array. */
-const int FEA_SOL = 1;		/*!< \brief Position of the FEA equation in the solution container array. */
+const int TRANS_SOL = 4;	/*!< \brief Position of the transition model solution in the solver container array. */
+const int ELEC_SOL = 2;		/*!< \brief Position of the electronic potential solution in the solver container array. */
+const int WAVE_SOL = 1;		/*!< \brief Position of the wave equation in the solution solver array. */
+const int HEAT_SOL = 2;		/*!< \brief Position of the heat equation in the solution solver array. */
+const int FEA_SOL = 1;		/*!< \brief Position of the FEA equation in the solution solver array. */
 
 const int TEMPLATE_SOL = 0;     /*!< \brief Position of the template solution. */
 
-const int CONV_TERM = 0;	/*!< \brief Position of the convective terms in the solver container array. */
-const int VISC_TERM = 1;        /*!< \brief Position of the viscous terms in the solver container array. */
-const int SOURCE_FIRST_TERM = 2;        /*!< \brief Position of the first source term in the solver container array. */
-const int SOURCE_SECOND_TERM = 3;   /*!< \brief Position of the second source term in the solver container array. */
-const int CONV_BOUND_TERM = 4;       /*!< \brief Position of the convective boundary terms in the solver container array. */
-const int VISC_BOUND_TERM = 5;       /*!< \brief Position of the viscous boundary terms in the solver container array. */
+const int CONV_TERM = 0;	/*!< \brief Position of the convective terms in the numerics container array. */
+const int VISC_TERM = 1;        /*!< \brief Position of the viscous terms in the numerics container array. */
+const int SOURCE_FIRST_TERM = 2;        /*!< \brief Position of the first source term in the numerics container array. */
+const int SOURCE_SECOND_TERM = 3;   /*!< \brief Position of the second source term in the numerics container array. */
+const int CONV_BOUND_TERM = 4;       /*!< \brief Position of the convective boundary terms in the numerics container array. */
+const int VISC_BOUND_TERM = 5;       /*!< \brief Position of the viscous boundary terms in the numerics container array. */
 
 /*!
  * \brief types of spatial discretizations
@@ -419,11 +402,13 @@ enum ENUM_GUST_TYPE {
     NO_GUST = 0,        /*!< \brief _______. */
 	TOP_HAT = 1, 		/*!< \brief Top-hat function shaped gust  */
 	SINE = 2,  		/*!< \brief  Sine shaped gust */
+    ONE_M_COSINE = 3, /*!< \brief  1-cosine shaped gust */
 };
 static const map<string, ENUM_GUST_TYPE> Gust_Type_Map = CCreateMap<string, ENUM_GUST_TYPE>
 ("NONE", NO_GUST)
 ("TOP_HAT", TOP_HAT)
-("SINE", SINE);
+("SINE", SINE)
+("ONE_M_COSINE", ONE_M_COSINE);
 
 /*!
  * \brief type of wind direction
