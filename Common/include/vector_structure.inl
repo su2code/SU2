@@ -44,6 +44,6 @@ inline unsigned int CSysVector::GetNBlk() const { return nBlk; }
 
 inline unsigned int CSysVector::GetNBlkDomain() const { return nBlkDomain; }
 
-inline double & CSysVector::operator[](const unsigned int & i) { return vec_val[i]; }
+inline double & CSysVector::operator[](const unsigned long & i) { return vec_val[i]; }
 
-inline const double & CSysVector::operator[](const unsigned int & i) const { return vec_val[i]; }
+inline const double & CSysVector::operator[](const unsigned long & i) const { return vec_val[i]; }
