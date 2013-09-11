@@ -536,7 +536,7 @@ void CNumerics::GetInviscidArtComp_FreeSurf_ProjJac(double *val_density, double 
     nx = val_normal[0];   ny = val_normal[1];   area2 = nx*nx + ny*ny;
     u = val_velocity[0];  v = val_velocity[1];  d = u*nx + v*ny;
     
-    val_Proj_Jac_Tensor[0][0] = 0;
+    val_Proj_Jac_Tensor[0][0] = 0.0;
     val_Proj_Jac_Tensor[0][1] = val_scale*a*nx;
     val_Proj_Jac_Tensor[0][2] = val_scale*a*ny;
     val_Proj_Jac_Tensor[0][3] = - val_scale*a*c*d;
@@ -554,7 +554,7 @@ void CNumerics::GetInviscidArtComp_FreeSurf_ProjJac(double *val_density, double 
     val_Proj_Jac_Tensor[2][3] = -val_scale*c*d*v;
     
     
-    val_Proj_Jac_Tensor[3][0] = 0;
+    val_Proj_Jac_Tensor[3][0] = 0.0;
     val_Proj_Jac_Tensor[3][1] = val_scale*b*nx;
     val_Proj_Jac_Tensor[3][2] = val_scale*b*ny;
     val_Proj_Jac_Tensor[3][3] = val_scale*(d - b*c*d);
@@ -565,6 +565,38 @@ void CNumerics::GetInviscidArtComp_FreeSurf_ProjJac(double *val_density, double 
     nx = val_normal[0];   ny = val_normal[1];   nz = val_normal[2];   area2 = nx*nx + ny*ny + nz*nz;
     u = val_velocity[0];  v = val_velocity[1];  w = val_velocity[2];  d = u*nx + v*ny + w*nz;
   
+    val_Proj_Jac_Tensor[0][0] = 0.0;
+    val_Proj_Jac_Tensor[0][1] = val_scale*a*nx;
+    val_Proj_Jac_Tensor[0][2] = val_scale*a*ny;
+    val_Proj_Jac_Tensor[0][3] = val_scale*a*nz;
+    val_Proj_Jac_Tensor[0][4] = - val_scale*a*c*d;
+    
+    
+    val_Proj_Jac_Tensor[1][0] = val_scale*nx;
+    val_Proj_Jac_Tensor[1][1] = val_scale*(d + nx*u);
+    val_Proj_Jac_Tensor[1][2] = val_scale*ny*u;
+    val_Proj_Jac_Tensor[1][3] = val_scale*nz*u;
+    val_Proj_Jac_Tensor[1][4] = -val_scale*c*d*u;
+    
+    
+    val_Proj_Jac_Tensor[2][0] = val_scale*ny;
+    val_Proj_Jac_Tensor[2][1] = val_scale*nx*v;
+    val_Proj_Jac_Tensor[2][2] = val_scale*(d + ny*v);
+    val_Proj_Jac_Tensor[2][3] = val_scale*nz*v;
+    val_Proj_Jac_Tensor[2][4] = -val_scale*c*d*v;
+    
+    val_Proj_Jac_Tensor[3][0] = val_scale*nz;
+    val_Proj_Jac_Tensor[3][1] = val_scale*nx*w;
+    val_Proj_Jac_Tensor[3][2] = val_scale*ny*w;
+    val_Proj_Jac_Tensor[3][3] = val_scale*(d + nz*w);
+    val_Proj_Jac_Tensor[3][4] = -val_scale*c*d*w;
+    
+    val_Proj_Jac_Tensor[3][0] = 0.0;
+    val_Proj_Jac_Tensor[3][1] = val_scale*b*nx;
+    val_Proj_Jac_Tensor[3][2] = val_scale*b*ny;
+    val_Proj_Jac_Tensor[3][3] = val_scale*b*nz;
+    val_Proj_Jac_Tensor[3][4] = val_scale*(d - b*c*d);
+    
   }
   
 }
@@ -1878,7 +1910,36 @@ void CNumerics::GetPArtComp_FreeSurf_Matrix(double *val_density, double *val_dde
     e2 = (2.0*d - b*c*d)*(2.0*d - b*c*d);
     f = sqrt(4.0*a*area2 + e2);
   
-  
+    val_p_tensor[0][0] = 0.0;
+    val_p_tensor[0][1] = 0.0;
+    val_p_tensor[0][2] = 0.0;
+    val_p_tensor[0][3] = -((a*(b*c*d + f))/(b*(2.0*d - b*c*d - f)));
+    val_p_tensor[0][4] = (a*(- b*c*d + f))/(b*(2.0*d - b*c*d + f));
+      
+    val_p_tensor[1][0] = (c*d)/nx;
+    val_p_tensor[1][1] = -(nz/nx);
+    val_p_tensor[1][2] = -(ny/nx);
+    val_p_tensor[1][3] = -((-2.0*a*nx + b*c*d*u - 2.0*u*d + u*f)/(b*(2.0*d - b*c*d - f)));
+    val_p_tensor[1][4] = -((-2.0*a*nx + b*c*d*u - 2.0*u*d - u*f)/(b*(2.0*d - b*c*d + f)));
+      
+    val_p_tensor[2][0] = 0.0;
+    val_p_tensor[2][1] = 0.0;
+    val_p_tensor[2][2] = 1.0;
+    val_p_tensor[2][3] = -((-2.0*a*ny + b*c*d*v - 2.0*v*d + v*f)/(b*(2.0*d - b*c*d - f)));
+    val_p_tensor[2][4] = -((-2.0*a*ny + b*c*d*v - 2.0*v*d - v*f)/(b*(2.0*d - b*c*d + f)));
+      
+    val_p_tensor[3][0] = 0.0;
+    val_p_tensor[3][1] = 1.0;
+    val_p_tensor[3][2] = 0.0;
+    val_p_tensor[3][3] = -((-2.0*a*nz + b*c*d*w - 2.0*w*d + w*f)/(b*(2.0*d - b*c*d - f)));
+    val_p_tensor[3][4] = -((-2.0*a*nz + b*c*d*w - 2.0*w*d - w*f)/(b*(2.0*d - b*c*d + f)));
+
+    val_p_tensor[4][0] = 1.0;
+    val_p_tensor[4][1] = 0.0;
+    val_p_tensor[4][2] = 0.0;
+    val_p_tensor[4][3] = 1.0;
+    val_p_tensor[4][4] = 1.0;
+    
   }
   
 }
@@ -1926,6 +1987,36 @@ void CNumerics::GetPArtComp_FreeSurf_Matrix_inv(double *val_density, double *val
     u = val_velocity[0];  v = val_velocity[1];  w = val_velocity[2];  d = u*nx + v*ny + w*nz;
     e2 = (2.0*d - b*c*d)*(2.0*d - b*c*d);
     f = sqrt(4.0*a*area2 + e2);
+    
+    val_invp_tensor[0][0] = (b*area2)/(b*c*d*d - a*area2 - d*d);
+    val_invp_tensor[0][1] = -((b*d*nx)/(-b*c*d*d + a*area2 + d*d));
+    val_invp_tensor[0][2] = -((b*d*ny)/(-b*c*d*d + a*area2 + d*d));
+    val_invp_tensor[0][3] = -((b*d*nz)/(-b*c*d*d + a*area2 + d*d));
+    val_invp_tensor[0][4] = (a*area2 + d*d)/(-b*c*d*d +a*area2 + d*d);
+    
+    val_invp_tensor[1][0] = (-b*c*d*nz +nx*nz*u - nx*nx*w + ny*(nz*v - ny*w))/(-b*c*d*d +a*area2 + d*d);
+    val_invp_tensor[1][1] = -((nx*(a*nz + d*w))/(-b*c*d*d + a*area2 + d*d));
+    val_invp_tensor[1][2] = -((ny*(a*nz + d*w))/(-b*c*d*d + a*area2 + d*d));
+    val_invp_tensor[1][3] = (-b*c*d*d + a*(nx*nx + ny*ny) + d*(nx*u + ny*v))/(-b*c*d*d + a*area2 + d*d);
+    val_invp_tensor[1][4] = (c*d*(a*nz + d*w))/(-b*c*d*d + a*area2 + d*d);
+        
+    val_invp_tensor[2][0] = (-b*c*d*ny + nx*ny*u - nx*nx*v + nz*(-nz*v + ny*w))/(-b*c*d*d + a*area2 + d*d);
+    val_invp_tensor[2][1] =  -((nx*(a*ny + d*v))/(-b*c*d*d + a*area2 + d*d));
+    val_invp_tensor[2][2] = (-b*c*d*d + a*(nx*nx + nz*nz) + d*(nx*u + nz*w))/(-b*c*d*d + a*area2 + d*d);
+    val_invp_tensor[2][3] = -((nz*(a*ny + d*v))/(-b*c*d*d + a*area2 + d*d));
+    val_invp_tensor[2][4] = (c*d*(a*ny + d*v))/(-b*c*d*d + a*area2 + d*(nx*u + ny*v + nz*w));
+    
+    val_invp_tensor[3][0] = -(b*(-d + b*c*d - d + f)*(b*b*c*c*d*d + 2.0*a*area2 + d*d - 3.0*b*c*d*d + 2.0*nx*ny*u*v + 2.0*nx*nz*u*w + 2.0*ny*nz*v*w + nx*nx*u*u + ny*ny*v*v + nz*nz*w*w - b*c*d*f + d*f))/(4*a*(b*c*d*d - a*area2 - d*d)*f);
+    val_invp_tensor[3][1] = (b*nx*(-d + b*c*d - d + f)*(- b*c*d + f))/(4.0*(b*c*d*d - a*area2 - d*d)*f);
+    val_invp_tensor[3][2] = (b*ny*(-d + b*c*d - d + f)*(- b*c*d + f))/(4.0*(b*c*d*d - a*area2 - d*d)*f);
+    val_invp_tensor[3][3] = (b*nz*(-d + b*c*d - d + f)*(- b*c*d + f))/(4.0*(b*c*d*d - a*area2 - d*d)*f);
+    val_invp_tensor[3][4] = -((b*c*d*(-d + b*c*d - d + f)*(- b*c*d + f))/(4.0*(b*c*d*d - a*area2 - d*d)*f));
+        
+    val_invp_tensor[4][0] = -(b*(2.0*d - b*c*d + f)*(b*b*c*c*d*d + 2.0*a*area2 + d*d - 3.0*b*c*d*d + 2.0*nx*ny*u*v + 2.0*nx*nz*u*w + 2.0*ny*nz*v*w + nx*nx*u*u + ny*ny*v*v + nz*nz*w*w + b*c*d*f - d*f))/(4*a*(b*c*d*d - a*area2 - d*d)*f);
+    val_invp_tensor[4][1] = -((b*nx*(b*c*d + f)*(2.0*d - b*c*d + f))/(4.0*(b*c*d*d - a*area2 - d*d)*f));
+    val_invp_tensor[4][2] = -((b*ny*(b*c*d + f)*(2.0*d - b*c*d + f))/(4.0*(b*c*d*d - a*area2 - d*d)*f));
+    val_invp_tensor[4][3] = -((b*nz*(b*c*d + f)*(2.0*d - b*c*d + f))/(4.0*(b*c*d*d - a*area2 - d*d)*f));
+    val_invp_tensor[4][4] = (b*c*d*(b*c*d + f)*(2.0*d - b*c*d + f))/(4.0*(b*c*d*d - a*area2 - d*d)*f);
 
   }
   
