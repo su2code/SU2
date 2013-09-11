@@ -14,7 +14,7 @@
  *
  * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
@@ -2877,7 +2877,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   cout << "| Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).            |" << endl;
   cout << "| SU2 is distributed in the hope that it will be useful,                |" << endl;
   cout << "| but WITHOUT ANY WARRANTY; without even the implied warranty of        |" << endl;
-  cout << "| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU     |" << endl;
+  cout << "| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      |" << endl;
   cout << "| Lesser General Public License (version 2.1) for more details.         |" << endl;
 	cout <<"-------------------------------------------------------------------------" << endl;
 
