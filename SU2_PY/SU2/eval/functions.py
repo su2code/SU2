@@ -180,7 +180,9 @@ def aerodynamics( config, state=None ):
     
     # files: direct solution
     if files.has_key('DIRECT'):
-        link.append( files['DIRECT'] )
+        name = files['DIRECT']
+        name = su2io.expand_time(name,config)
+        link.extend( name )
         ##config['RESTART_SOL'] = 'YES' # don't override config file
     else:
         config['RESTART_SOL'] = 'NO'
@@ -199,10 +201,13 @@ def aerodynamics( config, state=None ):
             su2io.restart2solution(config,info)
             state.update(info)
             
-            # files to push
-            for this_type in ['DIRECT','WEIGHT_NF']:
-                if info['FILES'].has_key(this_type):
-                    push.append( info['FILES'][this_type] )
+            # direct files to push
+            name = info.FILES['DIRECT']
+            name = su2io.expand_time(name,config)
+            push.extend(name)
+            # equivarea files to push
+            if 'WEIGHT_NF' in info.FILES:
+                push.append(info.FILES['WEIGHT_NF'])
             
     #: with output redirection
     
