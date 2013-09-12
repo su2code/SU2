@@ -636,9 +636,11 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
 #else
             Global_nElem = nElem;
 #endif
-            if (rank == MASTER_NODE)
-                cout << Global_nElem << " interior elements. " << endl;
-            
+          if ((rank == MASTER_NODE) && (size > SINGLE_NODE) && (config->GetKind_SU2() != SU2_DDC))
+            cout << Global_nElem << " interior elements including halo cells. " << endl;
+          else if (rank == MASTER_NODE)
+            cout << Global_nElem << " interior elements. " << endl;
+          
             /*--- Allocate space for elements ---*/
             if (!config->GetDivide_Element()) elem = new CPrimalGrid*[nElem];
             else {
@@ -1049,8 +1051,6 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
                     cout << Global_nelem_wedge << " prisms." << endl;
                 if (Global_nelem_pyramid > 0)
                     cout << Global_nelem_pyramid << " pyramids." << endl;
-                if ((size > SINGLE_NODE) && (config->GetKind_SU2() != SU2_DDC))
-                    cout << "Element totals include halo cells." << endl;
             }
         }
         

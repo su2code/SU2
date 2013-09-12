@@ -6409,12 +6409,11 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
 				double GridVel[3];
 				if (nDim == 2) point_line >> GridVel[0] >> GridVel[1];
 				if (nDim == 3) point_line >> GridVel[0] >> GridVel[1] >> GridVel[2];
-				if (iPoint_Local >= 0)
-					for (iDim = 0; iDim < nDim; iDim++) {
-            geometry[MESH_0]->node[iPoint_Local]->SetCoord(iDim, Coord[iDim]);
-						geometry[MESH_0]->node[iPoint_Local]->SetGridVel(iDim, GridVel[iDim]);
-          }
-			}
+        for (iDim = 0; iDim < nDim; iDim++) {
+          geometry[MESH_0]->node[iPoint_Local]->SetCoord(iDim, Coord[iDim]);
+          geometry[MESH_0]->node[iPoint_Local]->SetGridVel(iDim, GridVel[iDim]);
+        }
+      }
 
 		}
 		iPoint_Global++;

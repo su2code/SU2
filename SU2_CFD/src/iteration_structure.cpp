@@ -216,12 +216,12 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
 
   /*--- For the unsteady adjoint, load a new direct solution from a restart file. ---*/
 	for (iZone = 0; iZone < nZone; iZone++) {
-		if ((grid_movement || config_container[ZONE_0]->GetUnsteady_Simulation()) && !time_spectral) {
-      unsigned long Direct_Iter = config_container[iZone]->GetUnst_AdjointIter() - ExtIter - 1;
+		if (((grid_movement && ExtIter == 0) || config_container[ZONE_0]->GetUnsteady_Simulation()) && !time_spectral) {
+      int Direct_Iter = int(config_container[iZone]->GetUnst_AdjointIter()) - int(ExtIter) - 1;
         if (rank == MASTER_NODE && iZone == ZONE_0 && config_container[iZone]->GetUnsteady_Simulation())
           cout << endl << " Loading flow solution from direct iteration " << Direct_Iter << "." << endl;
-				solver_container[iZone][MESH_0][FLOW_SOL]->LoadRestart(geometry_container[iZone], solver_container[iZone], config_container[iZone], int(Direct_Iter));
-		}
+				solver_container[iZone][MESH_0][FLOW_SOL]->LoadRestart(geometry_container[iZone], solver_container[iZone], config_container[iZone], Direct_Iter);
+    }
 	}
 
 	for (iZone = 0; iZone < nZone; iZone++) {
