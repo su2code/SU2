@@ -3939,7 +3939,6 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
         break;
       
     case TNE2_EULER:  case TNE2_NAVIER_STOKES:
-      
         Total_CLift       = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_CLift();
         Total_CDrag       = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_CDrag();
         Total_CSideForce  = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_CSideForce();
