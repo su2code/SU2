@@ -472,28 +472,30 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
       }
       
       /*--- Electronic energy ---*/
-      num = 0.0; num2 = 0.0;
-      denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
-      num3  = g[iSpecies][iEl] * (thetae[iSpecies][0]/(Tve*Tve))*exp(-thetae[iSpecies][0]/Tve);
-      for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
-        thoTve = thetae[iSpecies][iEl]/Tve;
-        exptv = exp(-thetae[iSpecies][iEl]/Tve);
+      if (nElStates[iSpecies] != 0) {
+        num = 0.0; num2 = 0.0;
+        denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
+        num3  = g[iSpecies][iEl] * (thetae[iSpecies][0]/(Tve*Tve))*exp(-thetae[iSpecies][0]/Tve);
+        for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
+          thoTve = thetae[iSpecies][iEl]/Tve;
+          exptv = exp(-thetae[iSpecies][iEl]/Tve);
+          
+          num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exptv;
+          denom += g[iSpecies][iEl] * exptv;
+          num2  += g[iSpecies][iEl] * (thoTve*thoTve) * exptv;
+          num3  += g[iSpecies][iEl] * thoTve/Tve * exptv;
+        }
+        eels = Ru/Ms[iSpecies] * (num/denom);
+        Cves = Ru/Ms[iSpecies] * (num2/denom - num*num3/(denom*denom));
         
-        num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exptv;
-        denom += g[iSpecies][iEl] * exptv;
-        num2  += g[iSpecies][iEl] * (thoTve*thoTve) * exptv;
-        num3  += g[iSpecies][iEl] * thoTve/Tve * exptv;
+        rhoEve_t += Solution[iSpecies] * eels;
+        rhoCvve  += Solution[iSpecies] * Cves;
       }
-      eels = Ru/Ms[iSpecies] * (num/denom);
-      Cves = Ru/Ms[iSpecies] * (num2/denom - num*num3/(denom*denom));
-      
-      rhoEve_t += Solution[iSpecies] * eels;
-      rhoCvve  += Solution[iSpecies] * Cves;
-    }
-    for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
-      Cves = 3.0/2.0 * Ru/Ms[nSpecies-1];
-      rhoEve_t += Solution[nSpecies-1] * Cves * Tve;
-      rhoCvve += Solution[nSpecies-1] * Cves;
+      for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
+        Cves = 3.0/2.0 * Ru/Ms[nSpecies-1];
+        rhoEve_t += Solution[nSpecies-1] * Cves * Tve;
+        rhoCvve += Solution[nSpecies-1] * Cves;
+      }
     }
     
 //    cout << "PRINT ME" << endl;
@@ -744,6 +746,7 @@ bool CTNE2EulerVariable::SetPrimVar_Compressible(CConfig *config) {
   // GradPrim:  [rho1, ..., rhoNs, T, Tve, u, v, w, P]^T
   SetDensity();                             // Compute species & mixture density
 	SetVelocity2();                           // Compute the square of the velocity (req. mixture density).
+  
   /*--- Calculate velocities (req. density calculation) ---*/
 //	for (iDim = 0; iDim < nDim; iDim++)
 //		Primitive[nSpecies+iDim+2] = Solution[nSpecies+iDim] / Primitive[nSpecies+nDim+3];
