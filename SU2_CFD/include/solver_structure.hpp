@@ -57,19 +57,19 @@ class CSolver {
 protected:
 	unsigned short IterLinSolver;	/*!< \brief Linear solver iterations. */
 	unsigned short nVar,					/*!< \brief Number of variables of the problem. */
-  nPrimVar,                     /*!< \brief Number of primitive variables of the problem. */
-  nPrimVarGrad,                 /*!< \brief Number of primitive variables of the problem in the gradient computation. */
+    nPrimVar,                     /*!< \brief Number of primitive variables of the problem. */
+    nPrimVarGrad,                 /*!< \brief Number of primitive variables of the problem in the gradient computation. */
 	nDim;													/*!< \brief Number of dimensions of the problem. */
 	unsigned long nPoint;					/*!< \brief Number of points of the computational grid. */
-  unsigned long nPointDomain; 	/*!< \brief Number of points of the computational grid. */
+    unsigned long nPointDomain; 	/*!< \brief Number of points of the computational grid. */
 	double Max_Delta_Time,	/*!< \brief Maximum value of the delta time for all the control volumes. */
 	Min_Delta_Time;					/*!< \brief Minimum value of the delta time for all the control volumes. */
 	double *Residual_RMS,	/*!< \brief Vector with the mean residual for each variable. */
-  *Residual_Max,        /*!< \brief Vector with the maximal residual for each variable. */
+    *Residual_Max,        /*!< \brief Vector with the maximal residual for each variable. */
 	*Residual,						/*!< \brief Auxiliary nVar vector. */
 	*Residual_i,					/*!< \brief Auxiliary nVar vector for storing the residual at point i. */
 	*Residual_j;					/*!< \brief Auxiliary nVar vector for storing the residual at point j. */
-  unsigned long *Point_Max; /*!< \brief Vector with the maximal residual for each variable. */
+    unsigned long *Point_Max; /*!< \brief Vector with the maximal residual for each variable. */
 	double *Solution,		/*!< \brief Auxiliary nVar vector. */
 	*Solution_i,				/*!< \brief Auxiliary nVar vector for storing the solution at point i. */
 	*Solution_j;				/*!< \brief Auxiliary nVar vector for storing the solution at point j. */
@@ -93,17 +93,17 @@ protected:
 	double **Smatrix,	/*!< \brief Auxiliary structure for computing gradients by least-squares */
 	**cvector;			 /*!< \brief Auxiliary structure for computing gradients by least-squares */
 
-  unsigned short nOutputVariables;  /*!< \brief Number of variables to write. */
+    unsigned short nOutputVariables;  /*!< \brief Number of variables to write. */
 
 public:
   
-  CSysVector LinSysSol;		/*!< \brief vector to store iterative solution of implicit linear system. */
-  CSysVector LinSysRes;		/*!< \brief vector to store iterative residual of implicit linear system. */
+    CSysVector LinSysSol;		/*!< \brief vector to store iterative solution of implicit linear system. */
+    CSysVector LinSysRes;		/*!< \brief vector to store iterative residual of implicit linear system. */
 	CSysMatrix Jacobian; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
   
 	CSysMatrix StiffMatrix; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations, and grid movement. */
 
-  CSysVector OutputVariables;		/*!< \brief vector to store the extra variables to be written. */
+    CSysVector OutputVariables;		/*!< \brief vector to store the extra variables to be written. */
 
 	CVariable** node;	/*!< \brief Vector which the define the variables for each problem. */
   
@@ -117,7 +117,7 @@ public:
 	 */
 	virtual ~CSolver(void);
      
-  /*!
+    /*!
 	 * \brief Set number of linear solver iterations.
 	 * \param[in] val_iterlinsolver - Number of linear iterations.
 	 */
@@ -146,7 +146,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-  virtual void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
+    virtual void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
     
 	/*!
 	 * \brief Get number of linear solver iterations.
@@ -1759,9 +1759,9 @@ protected:
 	*FanFace_Pressure,	/*!< \brief Fan face pressure for each boundary. */
 	*FanFace_Mach,	/*!< \brief Fan face mach number for each boundary. */
 	*FanFace_Area,	/*!< \brief Boundary total area. */
-  *Exhaust_Area,	/*!< \brief Boundary total area. */
-  FanFace_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
-  Exhaust_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
+    *Exhaust_Area,	/*!< \brief Boundary total area. */
+    FanFace_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
+    Exhaust_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
 	FanFace_Pressure_Total,	/*!< \brief Fan face pressure for each boundary. */
 	FanFace_Mach_Total,	/*!< \brief Fan face mach number for each boundary. */
 	InverseDesign;	/*!< \brief Inverse design functional for each boundary. */
@@ -1793,11 +1793,11 @@ protected:
 	Total_CMerit,			/*!< \brief Total rotor Figure of Merit for all the boundaries. */
 	Total_CT,		/*!< \brief Total thrust coefficient for all the boundaries. */
 	Total_CQ,		/*!< \brief Total torque coefficient for all the boundaries. */
-  Total_Q,    /*!< \brief Total heat load for all the boundaries. */
-  Total_Maxq, /*!< \brief Maximum heat flux on all boundaries. */
+    Total_Q,    /*!< \brief Total heat load for all the boundaries. */
+    Total_Maxq, /*!< \brief Maximum heat flux on all boundaries. */
 	Total_CEquivArea,			/*!< \brief Total Equivalent Area coefficient for all the boundaries. */
 	Total_CNearFieldOF,			/*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
-  Total_CFreeSurface;			/*!< \brief Total Free Surface coefficient for all the boundaries. */
+    Total_CFreeSurface;			/*!< \brief Total Free Surface coefficient for all the boundaries. */
 	double *p1_Und_Lapl,	/*!< \brief Auxiliary variable for the undivided Laplacians. */
 	*p2_Und_Lapl;			/*!< \brief Auxiliary variable for the undivided Laplacians. */
 	double *PrimVar_i,	/*!< \brief Auxiliary vector for storing the solution at point i. */
@@ -1810,9 +1810,9 @@ protected:
 	least_squares;        /*!< \brief True if computing gradients by least squares. */
 	double Gamma;									/*!< \brief Fluid's Gamma constant (ratio of specific heats). */
 	double Gamma_Minus_One;				/*!< \brief Fluids's Gamma - 1.0  . */
-  unsigned short nSection;    /*!< \brief Total number of airfoil sections to be cut from each specified marker. */
-  vector<unsigned long> **point1_Airfoil;     /*!< \brief Vector of first points in the list of edges making up an airfoil section. */
-  vector<unsigned long> **point2_Airfoil;     /*!< \brief Vector of second points in the list of edges making up an airfoil section. */
+    unsigned short nSection;    /*!< \brief Total number of airfoil sections to be cut from each specified marker. */
+    vector<unsigned long> **point1_Airfoil;     /*!< \brief Vector of first points in the list of edges making up an airfoil section. */
+    vector<unsigned long> **point2_Airfoil;     /*!< \brief Vector of second points in the list of edges making up an airfoil section. */
   
 public:
     
