@@ -570,7 +570,7 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
 	Vorticity = (PrimVar_Grad_i[2][0]-PrimVar_Grad_i[1][1])*(PrimVar_Grad_i[2][0]-PrimVar_Grad_i[1][1]);
 	if (nDim == 3) Vorticity += ( (PrimVar_Grad_i[3][1]-PrimVar_Grad_i[2][2])*(PrimVar_Grad_i[3][1]-PrimVar_Grad_i[2][2]) +
                                  (PrimVar_Grad_i[1][2]-PrimVar_Grad_i[3][0])*(PrimVar_Grad_i[1][2]-PrimVar_Grad_i[3][0]) );
-	Omega = max(sqrt(Vorticity), 1.0e-10);
+	Omega = sqrt(Vorticity);
 	dist_i = max(dist_i, 1.0e-10);
     
     /*--- Rotational correction term ---*/
