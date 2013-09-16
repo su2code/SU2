@@ -224,7 +224,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
     Mvec_Inf[0] = cos(Alpha)*cos(Beta)*Mach_Inf;
     Mvec_Inf[1] = sin(Beta)*Mach_Inf;
     Mvec_Inf[2] = sin(Alpha)*cos(Beta)*Mach_Inf;
-  }
+  }  
   
   /*--- Create a CVariable that stores the free-stream values ---*/
   node_infty = new CTNE2EulerVariable(Pressure_Inf, MassFrac_Inf,
@@ -232,6 +232,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
                                       Temperature_ve_Inf, nDim, nVar,
                                       nPrimVar, nPrimVarGrad, config);
   node_infty->SetPrimVar_Compressible(config);
+  
   Velocity_Inf = new double[nDim];
   for (iDim = 0; iDim < nDim; iDim++)
     Velocity_Inf[iDim] = node_infty->GetVelocity(iDim, false);  
