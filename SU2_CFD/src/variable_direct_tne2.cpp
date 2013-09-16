@@ -381,7 +381,7 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   
   // Note: Requires previous call to SetDensity()
   // Note: Missing contribution from electronic energy
-  
+  bool ionization;
   unsigned short iEl, iSpecies, iDim, nHeavy, nEl, iIter, maxIter, *nElStates;
   double *xi, *Ms, *thetav, **thetae, **g, *hf, *Tref;
   double rho, rhoE, rhoEve, rhoEve_t, rhoE_ref, rhoE_f;
@@ -391,8 +391,6 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   double f, df, tol;
   double exptv, thsqr, thoTve;
   double num, denom, num2, num3;
-
-  double jnk;
   
   /*--- Set tolerance for Newton-Raphson method ---*/
   tol     = 1.0E-4;
@@ -463,19 +461,13 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
         
         /*--- Add contribution ---*/
         rhoEve_t += Solution[iSpecies] * evs;
-        rhoCvve  += Solution[iSpecies] * Cvvs;
-        
-        // Just a test...
-        if (iIter == 0)
-          jnk = 0;
-        //
+        rhoCvve  += Solution[iSpecies] * Cvvs;        
       }
-      
       /*--- Electronic energy ---*/
       if (nElStates[iSpecies] != 0) {
         num = 0.0; num2 = 0.0;
         denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
-        num3  = g[iSpecies][iEl] * (thetae[iSpecies][0]/(Tve*Tve))*exp(-thetae[iSpecies][0]/Tve);
+        num3  = g[iSpecies][0] * (thetae[iSpecies][0]/(Tve*Tve))*exp(-thetae[iSpecies][0]/Tve);
         for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
           thoTve = thetae[iSpecies][iEl]/Tve;
           exptv = exp(-thetae[iSpecies][iEl]/Tve);
@@ -491,14 +483,12 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
         rhoEve_t += Solution[iSpecies] * eels;
         rhoCvve  += Solution[iSpecies] * Cves;
       }
-      for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
-        Cves = 3.0/2.0 * Ru/Ms[nSpecies-1];
-        rhoEve_t += Solution[nSpecies-1] * Cves * Tve;
-        rhoCvve += Solution[nSpecies-1] * Cves;
-      }
     }
-    
-//    cout << "PRINT ME" << endl;
+    for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
+      Cves = 3.0/2.0 * Ru/Ms[nSpecies-1];
+      rhoEve_t += Solution[nSpecies-1] * Cves * Tve;
+      rhoCvve += Solution[nSpecies-1] * Cves;
+    }
     
     /*--- Determine function f(Tve) and df/dTve ---*/
     f  = rhoEve - rhoEve_t;

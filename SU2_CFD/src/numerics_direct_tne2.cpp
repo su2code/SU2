@@ -1195,21 +1195,25 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
       }
       
       /*--- Electronic energy ---*/
-      num = 0.0; num2 = 0.0;
-      denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
-      num3  = g[iSpecies][iEl] * (thetae[iSpecies][0]/(Tve*Tve))*exp(-thetae[iSpecies][0]/Tve);
-      for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
-        thoTve = thetae[iSpecies][iEl]/Tve;
-        exptv = exp(-thetae[iSpecies][iEl]/Tve);
-        
-        num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exptv;
-        denom += g[iSpecies][iEl] * exptv;
-        num2  += g[iSpecies][iEl] * (thoTve*thoTve) * exptv;
-        num3  += g[iSpecies][iEl] * thoTve/Tve * exptv;
+      if (nElStates[iSpecies] != 0) {
+        num = 0.0; num2 = 0.0;
+        denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
+        num3  = g[iSpecies][0] * (thetae[iSpecies][0]/(Tve*Tve))*exp(-thetae[iSpecies][0]/Tve);
+        for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
+          thoTve = thetae[iSpecies][iEl]/Tve;
+          exptv = exp(-thetae[iSpecies][iEl]/Tve);
+          
+          num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exptv;
+          denom += g[iSpecies][iEl] * exptv;
+          num2  += g[iSpecies][iEl] * (thoTve*thoTve) * exptv;
+          num3  += g[iSpecies][iEl] * thoTve/Tve * exptv;
+        }
+        eels[iSpecies] = Ru/Ms[iSpecies] * (num/denom);
+        Cves[iSpecies] = Ru/Ms[iSpecies] * (num2/denom - num*num3/(denom*denom));
+      } else {
+        eels[iSpecies] = 0.0;
+        Cves[iSpecies] = 0.0;
       }
-      eels[iSpecies] = Ru/Ms[iSpecies] * (num/denom);
-      Cves[iSpecies] = Ru/Ms[iSpecies] * (num2/denom - num*num3/(denom*denom));
-      
       /*--- Partial derivatives of temperature ---*/
       dTdrhos[iSpecies]   = (-Cvtrs*(T-Tref[iSpecies]) - ef + 0.5*sqvel) / rhoCvtr;
       dTvedrhos[iSpecies] = -(evibs[iSpecies] + eels[iSpecies]) / rhoCvve;
