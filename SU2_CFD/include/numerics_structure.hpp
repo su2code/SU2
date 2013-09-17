@@ -4720,6 +4720,7 @@ private:
 	double cb1;
 	double cw2;
 	double cw3_6;
+    double cb2_sigma;
 	double sigma;
 	double cb2;
 	double cw1;
