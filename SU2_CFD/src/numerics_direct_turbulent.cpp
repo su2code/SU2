@@ -548,6 +548,7 @@ CSourcePieceWise_TurbSA::CSourcePieceWise_TurbSA(unsigned short val_nDim, unsign
 	cw3_6 = pow(2.0,6.0);
 	sigma = 2./3.;
 	cb2 = 0.622;
+    cb2_sigma = cb2/sigma;
 	cw1 = cb1/k2+(1+cb2)/sigma;
     
 	/*--- LM transition model constants ---*/
@@ -570,7 +571,7 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
 	Vorticity = (PrimVar_Grad_i[2][0]-PrimVar_Grad_i[1][1])*(PrimVar_Grad_i[2][0]-PrimVar_Grad_i[1][1]);
 	if (nDim == 3) Vorticity += ( (PrimVar_Grad_i[3][1]-PrimVar_Grad_i[2][2])*(PrimVar_Grad_i[3][1]-PrimVar_Grad_i[2][2]) +
                                  (PrimVar_Grad_i[1][2]-PrimVar_Grad_i[3][0])*(PrimVar_Grad_i[1][2]-PrimVar_Grad_i[3][0]) );
-	Omega = max(sqrt(Vorticity), 1.0e-10);
+	Omega = sqrt(Vorticity);
 	dist_i = max(dist_i, 1.0e-10);
     
     /*--- Rotational correction term ---*/
@@ -626,7 +627,7 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
 		norm2_Grad = 0.0;
 		for (iDim = 0; iDim < nDim; iDim++)
 			norm2_Grad += TurbVar_Grad_i[0][iDim]*TurbVar_Grad_i[0][iDim];
-		CrossProduction = cb2/sigma*norm2_Grad*Volume;
+		CrossProduction = cb2_sigma*norm2_Grad*Volume;
         
         val_residual[0] = Production - Destruction + CrossProduction;
         
