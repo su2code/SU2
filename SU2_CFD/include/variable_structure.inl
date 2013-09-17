@@ -826,7 +826,8 @@ inline double* CTNE2EulerVariable::GetdPdrhos(void) { return dPdrhos; }
 
 inline double CTNE2EulerVariable::GetVelocity(unsigned short val_dim, bool val_incomp) {
 double velocity;
-   velocity = Solution[nSpecies+val_dim]/Primitive[RHO_INDEX]; 
+   //velocity = Solution[nSpecies+val_dim]/Primitive[RHO_INDEX]; 
+   velocity = Primitive[VEL_INDEX+val_dim];
 return velocity;
 }
 

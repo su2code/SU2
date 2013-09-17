@@ -2661,12 +2661,12 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solution_con
   unsigned short iDim, iSpecies, jSpecies, iVar, jVar;
 	unsigned long iPoint, iVertex;
   bool implicit;
-  double *Normal, *UnitaryNormal, *Ms, *dPdrhos;
+  double *Normal, *UnitNormal, *Ms, *dPdrhos;
   double Area, rhoCvtr, rhoCvve, rho_el, Ru;
   double rho, cs, u, v, w, P, rhoE, rhoEve, conc, Beta;
   
   /*--- Allocate arrays ---*/
-  UnitaryNormal = new double[3];
+  UnitNormal = new double[3];
   
   /*--- Set booleans based on configuration options ---*/
 	implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
@@ -2692,7 +2692,7 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solution_con
 			Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
 			for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
 			Area = sqrt (Area);
-			for (iDim = 0; iDim < nDim; iDim++) UnitaryNormal[iDim] = -Normal[iDim]/Area;
+			for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
       
 			/*--- Retrieve the pressure on the vertex ---*/
       P   = node[iPoint]->GetPressure();
@@ -2701,7 +2701,7 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solution_con
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
         Residual[iSpecies] = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++)
-				Residual[nSpecies+iDim] = P * UnitaryNormal[iDim] * Area;
+				Residual[nSpecies+iDim] = P * UnitNormal[iDim] * Area;
       Residual[nSpecies+nDim]   = 0.0;
 			Residual[nSpecies+nDim+1] = 0.0;
       
@@ -2716,9 +2716,12 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solution_con
             Jacobian_i[iVar][jVar] = 0.0;
         
         rho     = node[iPoint]->GetDensity();
-        u       = node[iPoint]->GetVelocity(0, false);
-        v       = node[iPoint]->GetVelocity(1, false);
-        w       = node[iPoint]->GetVelocity(2, false);
+        u       = node[iPoint]->GetPrimVar(node[iPoint]->GetVelIndex()+0);
+        v       = node[iPoint]->GetPrimVar(node[iPoint]->GetVelIndex()+1);
+        w       = node[iPoint]->GetPrimVar(node[iPoint]->GetVelIndex()+2);
+//        u       = node[iPoint]->GetVelocity(0, false);
+//        v       = node[iPoint]->GetVelocity(1, false);
+//        w       = node[iPoint]->GetVelocity(2, false);
         rhoCvtr = node[iPoint]->GetRhoCv_tr();
         rhoCvve = node[iPoint]->GetRhoCv_ve();
         rhoE    = node[iPoint]->GetSolution(nSpecies+nDim);
@@ -2733,52 +2736,49 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solution_con
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
           cs    = node[iPoint]->GetMassFraction(iSpecies);
           conc += cs * rho/Ms[iSpecies];
-          for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-            Jacobian_i[iSpecies][jSpecies] = 0.0;
-          }
           
-          Jacobian_i[nSpecies][iSpecies]   = dPdrhos[iSpecies] * UnitaryNormal[0];
-          Jacobian_i[nSpecies+1][iSpecies] = dPdrhos[iSpecies] * UnitaryNormal[1];
-          Jacobian_i[nSpecies+2][iSpecies] = dPdrhos[iSpecies] * UnitaryNormal[2];
+          Jacobian_i[nSpecies][iSpecies]   = dPdrhos[iSpecies] * UnitNormal[0];
+          Jacobian_i[nSpecies+1][iSpecies] = dPdrhos[iSpecies] * UnitNormal[1];
+          Jacobian_i[nSpecies+2][iSpecies] = dPdrhos[iSpecies] * UnitNormal[2];
           Jacobian_i[nSpecies+3][iSpecies] = 0.0;
           Jacobian_i[nSpecies+4][iSpecies] = 0.0;
           
-          Jacobian_i[iSpecies][nSpecies]   = cs * UnitaryNormal[0];
-          Jacobian_i[iSpecies][nSpecies+1] = cs * UnitaryNormal[1];
-          Jacobian_i[iSpecies][nSpecies+2] = cs * UnitaryNormal[2];
+          Jacobian_i[iSpecies][nSpecies]   = cs * UnitNormal[0];
+          Jacobian_i[iSpecies][nSpecies+1] = cs * UnitNormal[1];
+          Jacobian_i[iSpecies][nSpecies+2] = cs * UnitNormal[2];
           Jacobian_i[iSpecies][nSpecies+3] = 0.0;
           Jacobian_i[iSpecies][nSpecies+4] = 0.0;
         }
         
         Beta = Ru*conc/rhoCvtr;
         
-        Jacobian_i[nSpecies][nSpecies]     = u*UnitaryNormal[0] - u*Beta*UnitaryNormal[0];
-        Jacobian_i[nSpecies][nSpecies+1]   = u*UnitaryNormal[1] - v*Beta*UnitaryNormal[0];
-        Jacobian_i[nSpecies][nSpecies+2]   = u*UnitaryNormal[2] - w*Beta*UnitaryNormal[0];
-        Jacobian_i[nSpecies][nSpecies+3]   = Beta*UnitaryNormal[0];
-        Jacobian_i[nSpecies][nSpecies+4]   = (-Beta + (rho_el/Ms[nSpecies-1])*Ru/rhoCvve)*UnitaryNormal[0];
+        Jacobian_i[nSpecies][nSpecies]     = u*UnitNormal[0] - u*Beta*UnitNormal[0];
+        Jacobian_i[nSpecies][nSpecies+1]   = u*UnitNormal[1] - v*Beta*UnitNormal[0];
+        Jacobian_i[nSpecies][nSpecies+2]   = u*UnitNormal[2] - w*Beta*UnitNormal[0];
+        Jacobian_i[nSpecies][nSpecies+3]   = Beta*UnitNormal[0];
+        Jacobian_i[nSpecies][nSpecies+4]   = (-Beta + (rho_el/Ms[nSpecies-1])*Ru/rhoCvve)*UnitNormal[0];
         
-        Jacobian_i[nSpecies+1][nSpecies]   = v*UnitaryNormal[0] - u*Beta*UnitaryNormal[1];
-        Jacobian_i[nSpecies+1][nSpecies+1] = v*UnitaryNormal[1] - v*Beta*UnitaryNormal[1];
-        Jacobian_i[nSpecies+1][nSpecies+2] = v*UnitaryNormal[2] - w*Beta*UnitaryNormal[1];
-        Jacobian_i[nSpecies+1][nSpecies+3] = Beta*UnitaryNormal[1];
-        Jacobian_i[nSpecies+1][nSpecies+4] = (-Beta + (rho_el/Ms[nSpecies-1])*Ru/rhoCvve)*UnitaryNormal[1];
+        Jacobian_i[nSpecies+1][nSpecies]   = v*UnitNormal[0] - u*Beta*UnitNormal[1];
+        Jacobian_i[nSpecies+1][nSpecies+1] = v*UnitNormal[1] - v*Beta*UnitNormal[1];
+        Jacobian_i[nSpecies+1][nSpecies+2] = v*UnitNormal[2] - w*Beta*UnitNormal[1];
+        Jacobian_i[nSpecies+1][nSpecies+3] = Beta*UnitNormal[1];
+        Jacobian_i[nSpecies+1][nSpecies+4] = (-Beta + (rho_el/Ms[nSpecies-1])*Ru/rhoCvve)*UnitNormal[1];
         
-        Jacobian_i[nSpecies+2][nSpecies]   = w*UnitaryNormal[0] - u*Beta*UnitaryNormal[2];
-        Jacobian_i[nSpecies+2][nSpecies+1] = w*UnitaryNormal[1] - v*Beta*UnitaryNormal[2];
-        Jacobian_i[nSpecies+2][nSpecies+2] = w*UnitaryNormal[2] - w*Beta*UnitaryNormal[2];
-        Jacobian_i[nSpecies+2][nSpecies+3] = Beta*UnitaryNormal[2];
-        Jacobian_i[nSpecies+2][nSpecies+4] = (-Beta + (rho_el/Ms[nSpecies-1])*Ru/rhoCvve)*UnitaryNormal[2];
+        Jacobian_i[nSpecies+2][nSpecies]   = w*UnitNormal[0] - u*Beta*UnitNormal[2];
+        Jacobian_i[nSpecies+2][nSpecies+1] = w*UnitNormal[1] - v*Beta*UnitNormal[2];
+        Jacobian_i[nSpecies+2][nSpecies+2] = w*UnitNormal[2] - w*Beta*UnitNormal[2];
+        Jacobian_i[nSpecies+2][nSpecies+3] = Beta*UnitNormal[2];
+        Jacobian_i[nSpecies+2][nSpecies+4] = (-Beta + (rho_el/Ms[nSpecies-1])*Ru/rhoCvve)*UnitNormal[2];
         
-        Jacobian_i[nSpecies+3][nSpecies]   = (rhoE+P)/rho * UnitaryNormal[0];
-        Jacobian_i[nSpecies+3][nSpecies+1] = (rhoE+P)/rho * UnitaryNormal[1];
-        Jacobian_i[nSpecies+3][nSpecies+2] = (rhoE+P)/rho * UnitaryNormal[2];
+        Jacobian_i[nSpecies+3][nSpecies]   = (rhoE+P)/rho * UnitNormal[0];
+        Jacobian_i[nSpecies+3][nSpecies+1] = (rhoE+P)/rho * UnitNormal[1];
+        Jacobian_i[nSpecies+3][nSpecies+2] = (rhoE+P)/rho * UnitNormal[2];
         Jacobian_i[nSpecies+3][nSpecies+3] = 0.0;
         Jacobian_i[nSpecies+3][nSpecies+4] = 0.0;
         
-        Jacobian_i[nSpecies+4][nSpecies]   = rhoEve/rho * UnitaryNormal[0];
-        Jacobian_i[nSpecies+4][nSpecies+1] = rhoEve/rho * UnitaryNormal[1];
-        Jacobian_i[nSpecies+4][nSpecies+2] = rhoEve/rho * UnitaryNormal[2];
+        Jacobian_i[nSpecies+4][nSpecies]   = rhoEve/rho * UnitNormal[0];
+        Jacobian_i[nSpecies+4][nSpecies+1] = rhoEve/rho * UnitNormal[1];
+        Jacobian_i[nSpecies+4][nSpecies+2] = rhoEve/rho * UnitNormal[2];
         Jacobian_i[nSpecies+4][nSpecies+3] = 0.0;
         Jacobian_i[nSpecies+4][nSpecies+4] = 0.0;
         
@@ -3463,157 +3463,10 @@ void CTNE2EulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **soluti
   
 }
 
-void CTNE2EulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-  unsigned short iDim, iSpecies, jSpecies, iVar, jVar;
-	unsigned long iPoint, iVertex;
-  bool implicit;
-  double *Normal, *UnitaryNormal, *Ms, *dPdrhos;
-  double Area, rhoCvtr, rhoCvve, rho_el, Ru;
-  double rho, cs, u, v, w, P, rhoE, rhoEve, conc, Beta;
-  
-  /*--- Allocate arrays ---*/
-  UnitaryNormal = new double[3];
-  
-  /*--- Set booleans based on configuration options ---*/
-	implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
-  
-  /*--- Load parameters from the config class ---*/
-  Ms = config->GetMolar_Mass();
-  
-  /*--- Rename for convenience ---*/
-  Ru = UNIVERSAL_GAS_CONSTANT;
-  
-	/*--- Loop over all the vertices on this boundary (val_marker) ---*/
-	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    
-		/*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-		if (geometry->node[iPoint]->GetDomain()) {
-      
-			/*--- Calculate parameters from the geometry ---*/
-      // Note: The vertex normal points out of the geometry by convention,
-      //       so to calculate the influence from the boundary condition
-      //       to the domain, we negate this vector
-      Area   = 0.0;
-			Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-			for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-			Area = sqrt (Area);
-			for (iDim = 0; iDim < nDim; iDim++) UnitaryNormal[iDim] = -Normal[iDim]/Area;
-      
-			/*--- Retrieve the pressure on the vertex ---*/
-      P   = node[iPoint]->GetPressure();
-      
-      /*--- Apply the flow-tangency b.c. to the convective flux ---*/
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-        Residual[iSpecies] = 0.0;
-			for (iDim = 0; iDim < nDim; iDim++)
-				Residual[nSpecies+iDim] = P * UnitaryNormal[iDim] * Area;
-      Residual[nSpecies+nDim]   = 0.0;
-			Residual[nSpecies+nDim+1] = 0.0;
-      
-			/*--- Add value to the residual ---*/
-			LinSysRes.AddBlock(iPoint, Residual);
-      
-			/*--- If using implicit time-stepping, calculate b.c. contribution to Jacobian ---*/
-			if (implicit) {
-        
-        for (iVar = 0; iVar < nVar; iVar++)
-          for (jVar = 0; jVar < nVar; jVar++)
-            Jacobian_i[iVar][jVar] = 0.0;
-        
-        rho     = node[iPoint]->GetDensity();
-        u       = node[iPoint]->GetVelocity(0, false);
-        v       = node[iPoint]->GetVelocity(1, false);
-        w       = node[iPoint]->GetVelocity(2, false);
-        rhoCvtr = node[iPoint]->GetRhoCv_tr();
-        rhoCvve = node[iPoint]->GetRhoCv_ve();
-        rhoE    = node[iPoint]->GetSolution(nSpecies+nDim);
-        rhoEve  = node[iPoint]->GetSolution(nSpecies+nDim+1);
-        dPdrhos = node[iPoint]->GetdPdrhos();
-        
-        /*--- If free electrons are present, retrieve the electron gas density ---*/
-        if (config->GetIonization()) rho_el = node[iPoint]->GetMassFraction(nSpecies-1) * rho;
-        else                         rho_el = 0.0;
-        
-        conc = 0.0;
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          cs    = node[iPoint]->GetMassFraction(iSpecies);
-          conc += cs * rho/Ms[iSpecies];
-          for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-            Jacobian_i[iSpecies][jSpecies] = 0.0;
-          }
-          
-          Jacobian_i[nSpecies][iSpecies]   = dPdrhos[iSpecies] * UnitaryNormal[0];
-          Jacobian_i[nSpecies+1][iSpecies] = dPdrhos[iSpecies] * UnitaryNormal[1];
-          Jacobian_i[nSpecies+2][iSpecies] = dPdrhos[iSpecies] * UnitaryNormal[2];
-          Jacobian_i[nSpecies+3][iSpecies] = 0.0;
-          Jacobian_i[nSpecies+4][iSpecies] = 0.0;
-          
-          Jacobian_i[iSpecies][nSpecies]   = cs * UnitaryNormal[0];
-          Jacobian_i[iSpecies][nSpecies+1] = cs * UnitaryNormal[1];
-          Jacobian_i[iSpecies][nSpecies+2] = cs * UnitaryNormal[2];
-          Jacobian_i[iSpecies][nSpecies+3] = 0.0;
-          Jacobian_i[iSpecies][nSpecies+4] = 0.0;
-        }
-        
-        Beta = Ru*conc/rhoCvtr;
-        
-        Jacobian_i[nSpecies][nSpecies]     = u*UnitaryNormal[0] - u*Beta*UnitaryNormal[0];
-        Jacobian_i[nSpecies][nSpecies+1]   = u*UnitaryNormal[1] - v*Beta*UnitaryNormal[0];
-        Jacobian_i[nSpecies][nSpecies+2]   = u*UnitaryNormal[2] - w*Beta*UnitaryNormal[0];
-        Jacobian_i[nSpecies][nSpecies+3]   = Beta*UnitaryNormal[0];
-        Jacobian_i[nSpecies][nSpecies+4]   = (-Beta + (rho_el/Ms[nSpecies-1])*Ru/rhoCvve)*UnitaryNormal[0];
-        
-        Jacobian_i[nSpecies+1][nSpecies]   = v*UnitaryNormal[0] - u*Beta*UnitaryNormal[1];
-        Jacobian_i[nSpecies+1][nSpecies+1] = v*UnitaryNormal[1] - v*Beta*UnitaryNormal[1];
-        Jacobian_i[nSpecies+1][nSpecies+2] = v*UnitaryNormal[2] - w*Beta*UnitaryNormal[1];
-        Jacobian_i[nSpecies+1][nSpecies+3] = Beta*UnitaryNormal[1];
-        Jacobian_i[nSpecies+1][nSpecies+4] = (-Beta + (rho_el/Ms[nSpecies-1])*Ru/rhoCvve)*UnitaryNormal[1];
-        
-        Jacobian_i[nSpecies+2][nSpecies]   = w*UnitaryNormal[0] - u*Beta*UnitaryNormal[2];
-        Jacobian_i[nSpecies+2][nSpecies+1] = w*UnitaryNormal[1] - v*Beta*UnitaryNormal[2];
-        Jacobian_i[nSpecies+2][nSpecies+2] = w*UnitaryNormal[2] - w*Beta*UnitaryNormal[2];
-        Jacobian_i[nSpecies+2][nSpecies+3] = Beta*UnitaryNormal[2];
-        Jacobian_i[nSpecies+2][nSpecies+4] = (-Beta + (rho_el/Ms[nSpecies-1])*Ru/rhoCvve)*UnitaryNormal[2];
-        
-        Jacobian_i[nSpecies+3][nSpecies]   = (rhoE+P)/rho * UnitaryNormal[0];
-        Jacobian_i[nSpecies+3][nSpecies+1] = (rhoE+P)/rho * UnitaryNormal[1];
-        Jacobian_i[nSpecies+3][nSpecies+2] = (rhoE+P)/rho * UnitaryNormal[2];
-        Jacobian_i[nSpecies+3][nSpecies+3] = 0.0;
-        Jacobian_i[nSpecies+3][nSpecies+4] = 0.0;
-        
-        Jacobian_i[nSpecies+4][nSpecies]   = rhoEve/rho * UnitaryNormal[0];
-        Jacobian_i[nSpecies+4][nSpecies+1] = rhoEve/rho * UnitaryNormal[1];
-        Jacobian_i[nSpecies+4][nSpecies+2] = rhoEve/rho * UnitaryNormal[2];
-        Jacobian_i[nSpecies+4][nSpecies+3] = 0.0;
-        Jacobian_i[nSpecies+4][nSpecies+4] = 0.0;
-        
-        /*--- Integrate over the dual-grid area ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-          for (jVar = 0; jVar < nVar; jVar++)
-            Jacobian_i[iVar][jVar] = Jacobian_i[iVar][jVar] * Area;
-        
-        /*--- Apply the contribution to the system ---*/
-        Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
-        
-        
-        /*        cout << "TNE2Solver::BCEulerWall - " << endl;
-         cout << "Residual: " << endl;
-         for (iVar =0; iVar < nVar; iVar++)
-         cout << Residual[iVar] << endl;
-         
-         cout << endl << endl <<  "Jacobian: " << endl;
-         for (iVar =0; iVar < nVar; iVar++) {
-         for (jVar =0; jVar < nVar; jVar++) {
-         cout << Jacobian_i[iVar][jVar] << "\t";
-         }
-         cout << endl;
-         }
-         cin.get();*/
-        
-			}
-		}
-	}
+void CTNE2EulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+
+  /*--- Call the Euler wall routine ---*/
+  BC_Euler_Wall(geometry, solver_container, conv_numerics, config, val_marker);
 }
 
 void CTNE2EulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solution_container, CConfig *config,
