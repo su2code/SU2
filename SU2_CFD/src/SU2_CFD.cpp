@@ -14,7 +14,7 @@
  *
  * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
@@ -333,6 +333,12 @@ int main(int argc, char *argv[]) {
                                   solver_container, numerics_container, config_container,
                                   surface_movement, grid_movement, FFDBox);
 				break;
+        
+      case TNE2_EULER: case TNE2_NAVIER_STOKES:
+        TNE2Iteration(output, integration_container, geometry_container,
+                      solver_container, numerics_container, config_container,
+                      surface_movement, grid_movement, FFDBox);
+        break;
 				
 			case PLASMA_EULER: case PLASMA_NAVIER_STOKES:
 				PlasmaIteration(output, integration_container, geometry_container,

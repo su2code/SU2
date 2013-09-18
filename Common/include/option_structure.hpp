@@ -18,7 +18,7 @@
  *
  * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
@@ -204,9 +204,11 @@ enum ENUM_SOLVER {
 	ADJ_PLASMA_NAVIER_STOKES = 26,	/*!< \brief Definition of the adjoint plasma solver. */
 	ADJ_PLASMA_EULER = 27,	/*!< \brief Definition of the adjoint plasma solver. */
 	ADJ_AEROACOUSTIC_EULER = 28,			/*!< \brief Definition of the adjoint aeroacoustic Euler solver. */
-	TEMPLATE_SOLVER = 30                  /*!< \brief Definition of template solver. */
-
-
+	TEMPLATE_SOLVER = 30,                  /*!< \brief Definition of template solver. */
+  TNE2_EULER = 31,
+  TNE2_NAVIER_STOKES = 32,
+  ADJ_TNE2_EULER = 33,
+  ADJ_TNE2_NAVIER_STOKES = 34
 };
 /* BEGIN_CONFIG_ENUMS */
 static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVER>
@@ -220,6 +222,10 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("ADJ_RANS", ADJ_RANS )
 ("LIN_EULER", LIN_EULER)
 ("LIN_NAVIER_STOKES", LIN_NAVIER_STOKES)
+("TNE2_EULER", TNE2_EULER)
+("TNE2_NAVIER_STOKES", TNE2_NAVIER_STOKES)
+("ADJ_TNE2_EULER", ADJ_TNE2_EULER)
+("ADJ_TNE2_NAVIER_STOKES", ADJ_TNE2_NAVIER_STOKES)
 ("PLASMA_NAVIER_STOKES", PLASMA_NAVIER_STOKES)
 ("PLASMA_EULER", PLASMA_EULER)
 ("WAVE_EQUATION", WAVE_EQUATION)
@@ -266,7 +272,9 @@ enum RUNTIME_TYPE {
 	RUNTIME_LINFLOW_SYS = 10,		/*!< \brief One-physics case, the code is solving the linear equations is being solved (Euler and Navier-Stokes). */
 	RUNTIME_MULTIGRID_SYS = 14,   	/*!< \brief Full Approximation Storage Multigrid system of equations. */
 	RUNTIME_ADJPLASMA_SYS = 19,		/*!< \brief One-physics case, the code is solving the plasma equations. */
-	RUNTIME_TRANS_SYS = 22			/*!< \brief One-physics case, the code is solving the turbulence model. */
+	RUNTIME_TRANS_SYS = 22,			/*!< \brief One-physics case, the code is solving the turbulence model. */
+  RUNTIME_TNE2_SYS = 23,  /*!< \brief One-physics case, the code is solving the two-temperature model. */
+  RUNTIME_ADJTNE2_SYS = 24  /*!< \brief One-physics case, the code is solving the two-temperature model. */
 };
 
 const int FLOW_SOL = 0;		/*!< \brief Position of the mean flow solution in the solver container array. */
@@ -276,6 +284,10 @@ const int LINFLOW_SOL = 1;	/*!< \brief Position of the linearized flow solution 
 const int TURB_SOL = 2;		/*!< \brief Position of the turbulence model solution in the solver container array. */
 const int ADJTURB_SOL = 3;	/*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
 const int LINTURB_SOL = 3;	/*!< \brief Position of the linearized turbulence model in the solver container array. */
+
+const int TNE2_SOL = 0;		/*!< \brief Position of the mean flow solution in the solution container array. */
+const int ADJTNE2_SOL = 1;	/*!< \brief Position of the continuous adjoint flow solution in the solution container array. */
+const int LINTNE2_SOL = 1;	/*!< \brief Position of the linearized flow solution in the solution container array. */
 
 const int PLASMA_SOL = 0;	/*!< \brief Position of the plasma solution in the solution container array. */
 const int ADJPLASMA_SOL = 1;	/*!< \brief Position of the continuous adjoint plasma solution in the solution container array. */
@@ -320,7 +332,8 @@ enum ENUM_GASMODEL {
 	O2 = 4,
 	N2 = 5,
 	AIR5 = 6,
-	ARGON_SID = 7
+	ARGON_SID = 7,
+  ONESPECIES = 8
 
 };
 static const map<string, ENUM_GASMODEL> GasModel_Map = CCreateMap<string, ENUM_GASMODEL>
@@ -331,7 +344,8 @@ static const map<string, ENUM_GASMODEL> GasModel_Map = CCreateMap<string, ENUM_G
 ("O2", O2)
 ("N2", N2)
 ("AIR-5", AIR5)
-("ARGON-SID",ARGON_SID);
+("ARGON-SID",ARGON_SID)
+("ONESPECIES", ONESPECIES);
 
 /*!
  * \brief types of unsteady mesh motion
