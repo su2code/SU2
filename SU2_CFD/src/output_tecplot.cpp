@@ -14,7 +14,7 @@
  *
  * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
@@ -198,6 +198,10 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
     
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       Tecplot_File << ", \"Sharp_Edge_Dist\"";
+    }
+    
+    if (Kind_Solver == TNE2_EULER) {
+      Tecplot_File << ",\"Mach\",\"Pressure\",\"Temperature\",\"Temperature_ve\"";
     }
     
     if ((Kind_Solver == PLASMA_EULER) || (Kind_Solver == PLASMA_NAVIER_STOKES)) {

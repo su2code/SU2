@@ -14,7 +14,7 @@
  *
  * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
@@ -439,8 +439,7 @@ void CPlasmaVariable::SetVelocity2() {
 	}
 }
 
-void CPlasmaVariable::SetSoundSpeed(CConfig *config) {
-  
+bool CPlasmaVariable::SetSoundSpeed(CConfig *config) {
 	unsigned short loc = 0, iSpecies;
 	double Gamma, Enthalpy_formation;
 	double Density, Energy, Energy_vib, Energy_el;
@@ -459,10 +458,12 @@ void CPlasmaVariable::SetSoundSpeed(CConfig *config) {
 		Enthalpy_formation = config->GetEnthalpy_Formation(iSpecies);
 		Primitive[iSpecies][nDim+5] = sqrt(fabs(Gamma*(Gamma - 1.0)*(Energy - 0.5*Velocity2[iSpecies] - Energy_vib - Energy_el - Enthalpy_formation)));
 	}
+  
+  return true;
 }
 
-void CPlasmaVariable::SetPressure(CConfig *config) {
-  
+
+bool CPlasmaVariable::SetPressure(CConfig *config) {
 	unsigned short loc = 0, iSpecies, iDim;
 	double Gamma, Enthalpy_formation;
 	double Density, Energy, Energy_vib, Energy_el;
@@ -486,6 +487,8 @@ void CPlasmaVariable::SetPressure(CConfig *config) {
 		Primitive[iSpecies][nDim+2] = (Gamma-1.0) * Density * (Energy - 0.5*Vel2 - Enthalpy_formation - Energy_vib - Energy_el);
     
 	}
+  if (Primitive[iSpecies][nDim+2] >= 0.0) return true;
+  else return false;
 }
 
 void CPlasmaVariable::SetTemperature_tr(CConfig *config) {

@@ -14,7 +14,7 @@
  *
  * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
@@ -68,6 +68,12 @@ inline void CNumerics::ComputeResidual_Axisymmetric_ad(double *val_residual, dou
 
 inline void CNumerics::SetJacobian_Axisymmetric(double **val_Jacobian_i, CConfig *config) { }
 
+inline void CNumerics::ComputeVibRelaxation(double *val_residual, double **val_Jacobian_i, CConfig *config) { }
+
+inline void CNumerics::ComputeChemistry(double *val_residual, double **val_Jacobian_i, CConfig *config) { }
+
+inline void CNumerics::GetKeqConstants(double *A, unsigned short val_reaction, CConfig *config) { } 
+
 inline void CNumerics::ComputeResidual_Chemistry(double *val_residual, CConfig *config) { }
 
 inline void CNumerics::ComputeResidual_Chemistry_ad(double *val_residual, double *val_residuald, CConfig *config) { }
@@ -111,6 +117,29 @@ inline void CNumerics::SetEnthalpy(double val_enthalpy_i, double val_enthalpy_j,
 inline void CNumerics::SetLambda(double val_lambda_i, double val_lambda_j, unsigned short iSpecies) { }
 
 inline double CNumerics::GetPrecond_Beta() { return 0; }
+
+
+inline void CNumerics::SetRhosIndex(unsigned short val_Index) { RHOS_INDEX = val_Index; }
+
+inline void CNumerics::SetRhoIndex(unsigned short val_Index) { RHO_INDEX = val_Index; }
+
+inline void CNumerics::SetPIndex(unsigned short val_Index) { P_INDEX = val_Index; }
+
+inline void CNumerics::SetTIndex(unsigned short val_Index) { T_INDEX = val_Index; }
+  
+inline void CNumerics::SetTveIndex(unsigned short val_Index) { TVE_INDEX = val_Index; }
+
+inline void CNumerics::SetVelIndex(unsigned short val_Index) { VEL_INDEX = val_Index; }
+  
+inline void CNumerics::SetHIndex(unsigned short val_Index) { H_INDEX = val_Index; }
+  
+inline void CNumerics::SetAIndex(unsigned short val_Index) { A_INDEX = val_Index; }
+  
+inline void CNumerics::SetRhoCvtrIndex(unsigned short val_Index) { RHOCVTR_INDEX = val_Index; }
+
+inline void CNumerics::SetRhoCvveIndex(unsigned short val_Index) { RHOCVVE_INDEX = val_Index; }
+
+inline void CNumerics::SetdPdrhos(double *val_dPdrhos_i, double *val_dPdrhos_j) { dPdrhos_i = val_dPdrhos_i; dPdrhos_j = val_dPdrhos_j; }
 	
 inline void CNumerics::SetUndivided_Laplacian(double *val_und_lapl_i, double *val_und_lapl_j) {
 	Und_Lapl_i = val_und_lapl_i; 

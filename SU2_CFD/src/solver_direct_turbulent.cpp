@@ -14,7 +14,7 @@
  *
  * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
@@ -1276,7 +1276,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
             }
             for (iDim = 0; iDim<nDim; iDim++){
                 for (jDim = 0; jDim<nDim; jDim++){
-                    OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = numerics->PrimVar_Grad_i[iDim][jDim];
+                    OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = numerics->PrimVar_Grad_i[iDim + 1][jDim];
                     idx++;
                 }
             }
