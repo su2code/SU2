@@ -1,0 +1,679 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		053071F117EA4678008A56F6 /* config_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 053071E817EA4678008A56F6 /* config_structure.cpp */; };
+		053071F217EA4678008A56F6 /* dual_grid_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 053071E917EA4678008A56F6 /* dual_grid_structure.cpp */; };
+		053071F317EA4678008A56F6 /* geometry_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 053071EA17EA4678008A56F6 /* geometry_structure.cpp */; };
+		053071F417EA4678008A56F6 /* grid_adaptation_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 053071EB17EA4678008A56F6 /* grid_adaptation_structure.cpp */; };
+		053071F517EA4678008A56F6 /* grid_movement_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 053071EC17EA4678008A56F6 /* grid_movement_structure.cpp */; };
+		053071F617EA4678008A56F6 /* linear_solvers_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 053071ED17EA4678008A56F6 /* linear_solvers_structure.cpp */; };
+		053071F717EA4678008A56F6 /* matrix_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 053071EE17EA4678008A56F6 /* matrix_structure.cpp */; };
+		053071F817EA4678008A56F6 /* primal_grid_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 053071EF17EA4678008A56F6 /* primal_grid_structure.cpp */; };
+		053071F917EA4678008A56F6 /* vector_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 053071F017EA4678008A56F6 /* vector_structure.cpp */; };
+		0530726317EA46DB008A56F6 /* definition_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530721E17EA46DB008A56F6 /* definition_structure.cpp */; };
+		0530726417EA46DB008A56F6 /* integration_notime.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530721F17EA46DB008A56F6 /* integration_notime.cpp */; };
+		0530726517EA46DB008A56F6 /* integration_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530722017EA46DB008A56F6 /* integration_structure.cpp */; };
+		0530726617EA46DB008A56F6 /* integration_time.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530722117EA46DB008A56F6 /* integration_time.cpp */; };
+		0530726717EA46DB008A56F6 /* iteration_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530722217EA46DB008A56F6 /* iteration_structure.cpp */; };
+		0530726817EA46DB008A56F6 /* numerics_adjoint_electric.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530722317EA46DB008A56F6 /* numerics_adjoint_electric.cpp */; };
+		0530726917EA46DB008A56F6 /* numerics_adjoint_levelset.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530722417EA46DB008A56F6 /* numerics_adjoint_levelset.cpp */; };
+		0530726A17EA46DB008A56F6 /* numerics_adjoint_mean.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530722517EA46DB008A56F6 /* numerics_adjoint_mean.cpp */; };
+		0530726B17EA46DB008A56F6 /* numerics_adjoint_plasma.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530722617EA46DB008A56F6 /* numerics_adjoint_plasma.cpp */; };
+		0530726C17EA46DB008A56F6 /* numerics_adjoint_tne2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530722717EA46DB008A56F6 /* numerics_adjoint_tne2.cpp */; };
+		0530726D17EA46DB008A56F6 /* numerics_adjoint_turbulent.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530722817EA46DB008A56F6 /* numerics_adjoint_turbulent.cpp */; };
+		0530726E17EA46DB008A56F6 /* numerics_direct_electric.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530722917EA46DB008A56F6 /* numerics_direct_electric.cpp */; };
+		0530726F17EA46DB008A56F6 /* numerics_direct_fea.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530722A17EA46DB008A56F6 /* numerics_direct_fea.cpp */; };
+		0530727017EA46DB008A56F6 /* numerics_direct_heat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530722B17EA46DB008A56F6 /* numerics_direct_heat.cpp */; };
+		0530727117EA46DB008A56F6 /* numerics_direct_levelset.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530722C17EA46DB008A56F6 /* numerics_direct_levelset.cpp */; };
+		0530727217EA46DB008A56F6 /* numerics_direct_mean.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530722D17EA46DB008A56F6 /* numerics_direct_mean.cpp */; };
+		0530727317EA46DB008A56F6 /* numerics_direct_plasma.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530722E17EA46DB008A56F6 /* numerics_direct_plasma.cpp */; };
+		0530727417EA46DB008A56F6 /* numerics_direct_tne2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530722F17EA46DB008A56F6 /* numerics_direct_tne2.cpp */; };
+		0530727517EA46DB008A56F6 /* numerics_direct_transition.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530723017EA46DB008A56F6 /* numerics_direct_transition.cpp */; };
+		0530727617EA46DB008A56F6 /* numerics_direct_turbulent.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530723117EA46DB008A56F6 /* numerics_direct_turbulent.cpp */; };
+		0530727717EA46DB008A56F6 /* numerics_direct_wave.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530723217EA46DB008A56F6 /* numerics_direct_wave.cpp */; };
+		0530727817EA46DB008A56F6 /* numerics_linearized_mean.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530723317EA46DB008A56F6 /* numerics_linearized_mean.cpp */; };
+		0530727917EA46DB008A56F6 /* numerics_linearized_turbulent.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530723417EA46DB008A56F6 /* numerics_linearized_turbulent.cpp */; };
+		0530727A17EA46DB008A56F6 /* numerics_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530723517EA46DB008A56F6 /* numerics_structure.cpp */; };
+		0530727B17EA46DB008A56F6 /* numerics_template.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530723617EA46DB008A56F6 /* numerics_template.cpp */; };
+		0530727C17EA46DB008A56F6 /* output_cgns.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530723717EA46DB008A56F6 /* output_cgns.cpp */; };
+		0530727D17EA46DB008A56F6 /* output_paraview.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530723817EA46DB008A56F6 /* output_paraview.cpp */; };
+		0530727E17EA46DB008A56F6 /* output_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530723917EA46DB008A56F6 /* output_structure.cpp */; };
+		0530727F17EA46DB008A56F6 /* output_tecplot.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530723A17EA46DB008A56F6 /* output_tecplot.cpp */; };
+		0530728017EA46DB008A56F6 /* solver_adjoint_levelset.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530723B17EA46DB008A56F6 /* solver_adjoint_levelset.cpp */; };
+		0530728117EA46DB008A56F6 /* solver_adjoint_mean.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530723C17EA46DB008A56F6 /* solver_adjoint_mean.cpp */; };
+		0530728217EA46DB008A56F6 /* solver_adjoint_plasma.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530723D17EA46DB008A56F6 /* solver_adjoint_plasma.cpp */; };
+		0530728317EA46DB008A56F6 /* solver_adjoint_tne2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530723E17EA46DB008A56F6 /* solver_adjoint_tne2.cpp */; };
+		0530728417EA46DB008A56F6 /* solver_adjoint_turbulent.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530723F17EA46DB008A56F6 /* solver_adjoint_turbulent.cpp */; };
+		0530728517EA46DB008A56F6 /* solver_direct_electric.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530724017EA46DB008A56F6 /* solver_direct_electric.cpp */; };
+		0530728617EA46DB008A56F6 /* solver_direct_fea.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530724117EA46DB008A56F6 /* solver_direct_fea.cpp */; };
+		0530728717EA46DB008A56F6 /* solver_direct_heat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530724217EA46DB008A56F6 /* solver_direct_heat.cpp */; };
+		0530728817EA46DB008A56F6 /* solver_direct_levelset.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530724317EA46DB008A56F6 /* solver_direct_levelset.cpp */; };
+		0530728917EA46DB008A56F6 /* solver_direct_mean.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530724417EA46DB008A56F6 /* solver_direct_mean.cpp */; };
+		0530728A17EA46DB008A56F6 /* solver_direct_plasma.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530724517EA46DB008A56F6 /* solver_direct_plasma.cpp */; };
+		0530728B17EA46DB008A56F6 /* solver_direct_tne2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530724617EA46DB008A56F6 /* solver_direct_tne2.cpp */; };
+		0530728C17EA46DB008A56F6 /* solver_direct_transition.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530724717EA46DB008A56F6 /* solver_direct_transition.cpp */; };
+		0530728D17EA46DB008A56F6 /* solver_direct_turbulent.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530724817EA46DB008A56F6 /* solver_direct_turbulent.cpp */; };
+		0530728E17EA46DB008A56F6 /* solver_direct_wave.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530724917EA46DB008A56F6 /* solver_direct_wave.cpp */; };
+		0530728F17EA46DB008A56F6 /* solver_linearized_mean.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530724A17EA46DB008A56F6 /* solver_linearized_mean.cpp */; };
+		0530729017EA46DB008A56F6 /* solver_linearized_turbulent.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530724B17EA46DB008A56F6 /* solver_linearized_turbulent.cpp */; };
+		0530729117EA46DB008A56F6 /* solver_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530724C17EA46DB008A56F6 /* solver_structure.cpp */; };
+		0530729217EA46DB008A56F6 /* solver_template.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530724D17EA46DB008A56F6 /* solver_template.cpp */; };
+		0530729317EA46DB008A56F6 /* SU2_CFD.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530724E17EA46DB008A56F6 /* SU2_CFD.cpp */; };
+		0530729417EA46DB008A56F6 /* variable_adjoint_electric.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530724F17EA46DB008A56F6 /* variable_adjoint_electric.cpp */; };
+		0530729517EA46DB008A56F6 /* variable_adjoint_levelset.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530725017EA46DB008A56F6 /* variable_adjoint_levelset.cpp */; };
+		0530729617EA46DB008A56F6 /* variable_adjoint_mean.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530725117EA46DB008A56F6 /* variable_adjoint_mean.cpp */; };
+		0530729717EA46DB008A56F6 /* variable_adjoint_plasma.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530725217EA46DB008A56F6 /* variable_adjoint_plasma.cpp */; };
+		0530729817EA46DB008A56F6 /* variable_adjoint_tne2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530725317EA46DB008A56F6 /* variable_adjoint_tne2.cpp */; };
+		0530729917EA46DB008A56F6 /* variable_adjoint_turbulent.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530725417EA46DB008A56F6 /* variable_adjoint_turbulent.cpp */; };
+		0530729A17EA46DB008A56F6 /* variable_direct_electric.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530725517EA46DB008A56F6 /* variable_direct_electric.cpp */; };
+		0530729B17EA46DB008A56F6 /* variable_direct_fea.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530725617EA46DB008A56F6 /* variable_direct_fea.cpp */; };
+		0530729C17EA46DB008A56F6 /* variable_direct_heat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530725717EA46DB008A56F6 /* variable_direct_heat.cpp */; };
+		0530729D17EA46DB008A56F6 /* variable_direct_levelset.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530725817EA46DB008A56F6 /* variable_direct_levelset.cpp */; };
+		0530729E17EA46DB008A56F6 /* variable_direct_mean.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530725917EA46DB008A56F6 /* variable_direct_mean.cpp */; };
+		0530729F17EA46DB008A56F6 /* variable_direct_plasma.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530725A17EA46DB008A56F6 /* variable_direct_plasma.cpp */; };
+		053072A017EA46DB008A56F6 /* variable_direct_tne2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530725B17EA46DB008A56F6 /* variable_direct_tne2.cpp */; };
+		053072A117EA46DB008A56F6 /* variable_direct_transition.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530725C17EA46DB008A56F6 /* variable_direct_transition.cpp */; };
+		053072A217EA46DB008A56F6 /* variable_direct_turbulent.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530725D17EA46DB008A56F6 /* variable_direct_turbulent.cpp */; };
+		053072A317EA46DB008A56F6 /* variable_direct_wave.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530725E17EA46DB008A56F6 /* variable_direct_wave.cpp */; };
+		053072A417EA46DB008A56F6 /* variable_linearized_mean.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530725F17EA46DB008A56F6 /* variable_linearized_mean.cpp */; };
+		053072A517EA46DB008A56F6 /* variable_linearized_turbulent.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530726017EA46DB008A56F6 /* variable_linearized_turbulent.cpp */; };
+		053072A617EA46DB008A56F6 /* variable_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530726117EA46DB008A56F6 /* variable_structure.cpp */; };
+		053072A717EA46DB008A56F6 /* variable_template.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530726217EA46DB008A56F6 /* variable_template.cpp */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		8DD76F690486A84900D96B5E /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 8;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		0530715217EA4616008A56F6 /* config_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = config_structure.inl; path = ../Common/include/config_structure.inl; sourceTree = "<group>"; };
+		0530715317EA4616008A56F6 /* dual_grid_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = dual_grid_structure.inl; path = ../Common/include/dual_grid_structure.inl; sourceTree = "<group>"; };
+		0530715417EA4616008A56F6 /* geometry_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = geometry_structure.inl; path = ../Common/include/geometry_structure.inl; sourceTree = "<group>"; };
+		0530715517EA4616008A56F6 /* grid_adaptation_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = grid_adaptation_structure.inl; path = ../Common/include/grid_adaptation_structure.inl; sourceTree = "<group>"; };
+		0530715617EA4616008A56F6 /* grid_movement_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = grid_movement_structure.inl; path = ../Common/include/grid_movement_structure.inl; sourceTree = "<group>"; };
+		0530715717EA4616008A56F6 /* linear_solvers_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = linear_solvers_structure.inl; path = ../Common/include/linear_solvers_structure.inl; sourceTree = "<group>"; };
+		0530715817EA4616008A56F6 /* matrix_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = matrix_structure.inl; path = ../Common/include/matrix_structure.inl; sourceTree = "<group>"; };
+		0530715917EA4616008A56F6 /* primal_grid_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = primal_grid_structure.inl; path = ../Common/include/primal_grid_structure.inl; sourceTree = "<group>"; };
+		0530715A17EA4616008A56F6 /* vector_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = vector_structure.inl; path = ../Common/include/vector_structure.inl; sourceTree = "<group>"; };
+		0530716E17EA4635008A56F6 /* config_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = config_structure.hpp; path = ../Common/include/config_structure.hpp; sourceTree = "<group>"; };
+		0530716F17EA4635008A56F6 /* dual_grid_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = dual_grid_structure.hpp; path = ../Common/include/dual_grid_structure.hpp; sourceTree = "<group>"; };
+		0530717017EA4635008A56F6 /* geometry_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = geometry_structure.hpp; path = ../Common/include/geometry_structure.hpp; sourceTree = "<group>"; };
+		0530717117EA4635008A56F6 /* grid_adaptation_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = grid_adaptation_structure.hpp; path = ../Common/include/grid_adaptation_structure.hpp; sourceTree = "<group>"; };
+		0530717217EA4635008A56F6 /* grid_movement_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = grid_movement_structure.hpp; path = ../Common/include/grid_movement_structure.hpp; sourceTree = "<group>"; };
+		0530717317EA4635008A56F6 /* linear_solvers_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = linear_solvers_structure.hpp; path = ../Common/include/linear_solvers_structure.hpp; sourceTree = "<group>"; };
+		0530717417EA4635008A56F6 /* matrix_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = matrix_structure.hpp; path = ../Common/include/matrix_structure.hpp; sourceTree = "<group>"; };
+		0530717517EA4635008A56F6 /* option_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = option_structure.hpp; path = ../Common/include/option_structure.hpp; sourceTree = "<group>"; };
+		0530717617EA4635008A56F6 /* primal_grid_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = primal_grid_structure.hpp; path = ../Common/include/primal_grid_structure.hpp; sourceTree = "<group>"; };
+		0530717717EA4635008A56F6 /* vector_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = vector_structure.hpp; path = ../Common/include/vector_structure.hpp; sourceTree = "<group>"; };
+		053071E817EA4678008A56F6 /* config_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = config_structure.cpp; path = ../Common/src/config_structure.cpp; sourceTree = "<group>"; };
+		053071E917EA4678008A56F6 /* dual_grid_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = dual_grid_structure.cpp; path = ../Common/src/dual_grid_structure.cpp; sourceTree = "<group>"; };
+		053071EA17EA4678008A56F6 /* geometry_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = geometry_structure.cpp; path = ../Common/src/geometry_structure.cpp; sourceTree = "<group>"; };
+		053071EB17EA4678008A56F6 /* grid_adaptation_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = grid_adaptation_structure.cpp; path = ../Common/src/grid_adaptation_structure.cpp; sourceTree = "<group>"; };
+		053071EC17EA4678008A56F6 /* grid_movement_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = grid_movement_structure.cpp; path = ../Common/src/grid_movement_structure.cpp; sourceTree = "<group>"; };
+		053071ED17EA4678008A56F6 /* linear_solvers_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = linear_solvers_structure.cpp; path = ../Common/src/linear_solvers_structure.cpp; sourceTree = "<group>"; };
+		053071EE17EA4678008A56F6 /* matrix_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = matrix_structure.cpp; path = ../Common/src/matrix_structure.cpp; sourceTree = "<group>"; };
+		053071EF17EA4678008A56F6 /* primal_grid_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = primal_grid_structure.cpp; path = ../Common/src/primal_grid_structure.cpp; sourceTree = "<group>"; };
+		053071F017EA4678008A56F6 /* vector_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = vector_structure.cpp; path = ../Common/src/vector_structure.cpp; sourceTree = "<group>"; };
+		0530721217EA46C4008A56F6 /* definition_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = definition_structure.hpp; path = ../SU2_CFD/include/definition_structure.hpp; sourceTree = "<group>"; };
+		0530721317EA46C4008A56F6 /* integration_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = integration_structure.hpp; path = ../SU2_CFD/include/integration_structure.hpp; sourceTree = "<group>"; };
+		0530721417EA46C4008A56F6 /* iteration_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = iteration_structure.hpp; path = ../SU2_CFD/include/iteration_structure.hpp; sourceTree = "<group>"; };
+		0530721517EA46C4008A56F6 /* numerics_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = numerics_structure.hpp; path = ../SU2_CFD/include/numerics_structure.hpp; sourceTree = "<group>"; };
+		0530721617EA46C4008A56F6 /* output_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = output_structure.hpp; path = ../SU2_CFD/include/output_structure.hpp; sourceTree = "<group>"; };
+		0530721717EA46C4008A56F6 /* solver_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = solver_structure.hpp; path = ../SU2_CFD/include/solver_structure.hpp; sourceTree = "<group>"; };
+		0530721817EA46C4008A56F6 /* SU2_CFD.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = SU2_CFD.hpp; path = ../SU2_CFD/include/SU2_CFD.hpp; sourceTree = "<group>"; };
+		0530721917EA46C4008A56F6 /* variable_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = variable_structure.hpp; path = ../SU2_CFD/include/variable_structure.hpp; sourceTree = "<group>"; };
+		0530721A17EA46CC008A56F6 /* integration_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = integration_structure.inl; path = ../SU2_CFD/include/integration_structure.inl; sourceTree = "<group>"; };
+		0530721B17EA46CC008A56F6 /* numerics_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = numerics_structure.inl; path = ../SU2_CFD/include/numerics_structure.inl; sourceTree = "<group>"; };
+		0530721C17EA46CC008A56F6 /* solver_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = solver_structure.inl; path = ../SU2_CFD/include/solver_structure.inl; sourceTree = "<group>"; };
+		0530721D17EA46CC008A56F6 /* variable_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = variable_structure.inl; path = ../SU2_CFD/include/variable_structure.inl; sourceTree = "<group>"; };
+		0530721E17EA46DB008A56F6 /* definition_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = definition_structure.cpp; path = ../SU2_CFD/src/definition_structure.cpp; sourceTree = "<group>"; };
+		0530721F17EA46DB008A56F6 /* integration_notime.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = integration_notime.cpp; path = ../SU2_CFD/src/integration_notime.cpp; sourceTree = "<group>"; };
+		0530722017EA46DB008A56F6 /* integration_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = integration_structure.cpp; path = ../SU2_CFD/src/integration_structure.cpp; sourceTree = "<group>"; };
+		0530722117EA46DB008A56F6 /* integration_time.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = integration_time.cpp; path = ../SU2_CFD/src/integration_time.cpp; sourceTree = "<group>"; };
+		0530722217EA46DB008A56F6 /* iteration_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = iteration_structure.cpp; path = ../SU2_CFD/src/iteration_structure.cpp; sourceTree = "<group>"; };
+		0530722317EA46DB008A56F6 /* numerics_adjoint_electric.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_adjoint_electric.cpp; path = ../SU2_CFD/src/numerics_adjoint_electric.cpp; sourceTree = "<group>"; };
+		0530722417EA46DB008A56F6 /* numerics_adjoint_levelset.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_adjoint_levelset.cpp; path = ../SU2_CFD/src/numerics_adjoint_levelset.cpp; sourceTree = "<group>"; };
+		0530722517EA46DB008A56F6 /* numerics_adjoint_mean.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_adjoint_mean.cpp; path = ../SU2_CFD/src/numerics_adjoint_mean.cpp; sourceTree = "<group>"; };
+		0530722617EA46DB008A56F6 /* numerics_adjoint_plasma.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_adjoint_plasma.cpp; path = ../SU2_CFD/src/numerics_adjoint_plasma.cpp; sourceTree = "<group>"; };
+		0530722717EA46DB008A56F6 /* numerics_adjoint_tne2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_adjoint_tne2.cpp; path = ../SU2_CFD/src/numerics_adjoint_tne2.cpp; sourceTree = "<group>"; };
+		0530722817EA46DB008A56F6 /* numerics_adjoint_turbulent.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_adjoint_turbulent.cpp; path = ../SU2_CFD/src/numerics_adjoint_turbulent.cpp; sourceTree = "<group>"; };
+		0530722917EA46DB008A56F6 /* numerics_direct_electric.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_direct_electric.cpp; path = ../SU2_CFD/src/numerics_direct_electric.cpp; sourceTree = "<group>"; };
+		0530722A17EA46DB008A56F6 /* numerics_direct_fea.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_direct_fea.cpp; path = ../SU2_CFD/src/numerics_direct_fea.cpp; sourceTree = "<group>"; };
+		0530722B17EA46DB008A56F6 /* numerics_direct_heat.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_direct_heat.cpp; path = ../SU2_CFD/src/numerics_direct_heat.cpp; sourceTree = "<group>"; };
+		0530722C17EA46DB008A56F6 /* numerics_direct_levelset.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_direct_levelset.cpp; path = ../SU2_CFD/src/numerics_direct_levelset.cpp; sourceTree = "<group>"; };
+		0530722D17EA46DB008A56F6 /* numerics_direct_mean.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_direct_mean.cpp; path = ../SU2_CFD/src/numerics_direct_mean.cpp; sourceTree = "<group>"; };
+		0530722E17EA46DB008A56F6 /* numerics_direct_plasma.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_direct_plasma.cpp; path = ../SU2_CFD/src/numerics_direct_plasma.cpp; sourceTree = "<group>"; };
+		0530722F17EA46DB008A56F6 /* numerics_direct_tne2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_direct_tne2.cpp; path = ../SU2_CFD/src/numerics_direct_tne2.cpp; sourceTree = "<group>"; };
+		0530723017EA46DB008A56F6 /* numerics_direct_transition.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_direct_transition.cpp; path = ../SU2_CFD/src/numerics_direct_transition.cpp; sourceTree = "<group>"; };
+		0530723117EA46DB008A56F6 /* numerics_direct_turbulent.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_direct_turbulent.cpp; path = ../SU2_CFD/src/numerics_direct_turbulent.cpp; sourceTree = "<group>"; };
+		0530723217EA46DB008A56F6 /* numerics_direct_wave.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_direct_wave.cpp; path = ../SU2_CFD/src/numerics_direct_wave.cpp; sourceTree = "<group>"; };
+		0530723317EA46DB008A56F6 /* numerics_linearized_mean.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_linearized_mean.cpp; path = ../SU2_CFD/src/numerics_linearized_mean.cpp; sourceTree = "<group>"; };
+		0530723417EA46DB008A56F6 /* numerics_linearized_turbulent.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_linearized_turbulent.cpp; path = ../SU2_CFD/src/numerics_linearized_turbulent.cpp; sourceTree = "<group>"; };
+		0530723517EA46DB008A56F6 /* numerics_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_structure.cpp; path = ../SU2_CFD/src/numerics_structure.cpp; sourceTree = "<group>"; };
+		0530723617EA46DB008A56F6 /* numerics_template.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_template.cpp; path = ../SU2_CFD/src/numerics_template.cpp; sourceTree = "<group>"; };
+		0530723717EA46DB008A56F6 /* output_cgns.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = output_cgns.cpp; path = ../SU2_CFD/src/output_cgns.cpp; sourceTree = "<group>"; };
+		0530723817EA46DB008A56F6 /* output_paraview.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = output_paraview.cpp; path = ../SU2_CFD/src/output_paraview.cpp; sourceTree = "<group>"; };
+		0530723917EA46DB008A56F6 /* output_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = output_structure.cpp; path = ../SU2_CFD/src/output_structure.cpp; sourceTree = "<group>"; };
+		0530723A17EA46DB008A56F6 /* output_tecplot.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = output_tecplot.cpp; path = ../SU2_CFD/src/output_tecplot.cpp; sourceTree = "<group>"; };
+		0530723B17EA46DB008A56F6 /* solver_adjoint_levelset.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_adjoint_levelset.cpp; path = ../SU2_CFD/src/solver_adjoint_levelset.cpp; sourceTree = "<group>"; };
+		0530723C17EA46DB008A56F6 /* solver_adjoint_mean.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_adjoint_mean.cpp; path = ../SU2_CFD/src/solver_adjoint_mean.cpp; sourceTree = "<group>"; };
+		0530723D17EA46DB008A56F6 /* solver_adjoint_plasma.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_adjoint_plasma.cpp; path = ../SU2_CFD/src/solver_adjoint_plasma.cpp; sourceTree = "<group>"; };
+		0530723E17EA46DB008A56F6 /* solver_adjoint_tne2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_adjoint_tne2.cpp; path = ../SU2_CFD/src/solver_adjoint_tne2.cpp; sourceTree = "<group>"; };
+		0530723F17EA46DB008A56F6 /* solver_adjoint_turbulent.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_adjoint_turbulent.cpp; path = ../SU2_CFD/src/solver_adjoint_turbulent.cpp; sourceTree = "<group>"; };
+		0530724017EA46DB008A56F6 /* solver_direct_electric.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_direct_electric.cpp; path = ../SU2_CFD/src/solver_direct_electric.cpp; sourceTree = "<group>"; };
+		0530724117EA46DB008A56F6 /* solver_direct_fea.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_direct_fea.cpp; path = ../SU2_CFD/src/solver_direct_fea.cpp; sourceTree = "<group>"; };
+		0530724217EA46DB008A56F6 /* solver_direct_heat.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_direct_heat.cpp; path = ../SU2_CFD/src/solver_direct_heat.cpp; sourceTree = "<group>"; };
+		0530724317EA46DB008A56F6 /* solver_direct_levelset.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_direct_levelset.cpp; path = ../SU2_CFD/src/solver_direct_levelset.cpp; sourceTree = "<group>"; };
+		0530724417EA46DB008A56F6 /* solver_direct_mean.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_direct_mean.cpp; path = ../SU2_CFD/src/solver_direct_mean.cpp; sourceTree = "<group>"; };
+		0530724517EA46DB008A56F6 /* solver_direct_plasma.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_direct_plasma.cpp; path = ../SU2_CFD/src/solver_direct_plasma.cpp; sourceTree = "<group>"; };
+		0530724617EA46DB008A56F6 /* solver_direct_tne2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_direct_tne2.cpp; path = ../SU2_CFD/src/solver_direct_tne2.cpp; sourceTree = "<group>"; };
+		0530724717EA46DB008A56F6 /* solver_direct_transition.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_direct_transition.cpp; path = ../SU2_CFD/src/solver_direct_transition.cpp; sourceTree = "<group>"; };
+		0530724817EA46DB008A56F6 /* solver_direct_turbulent.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_direct_turbulent.cpp; path = ../SU2_CFD/src/solver_direct_turbulent.cpp; sourceTree = "<group>"; };
+		0530724917EA46DB008A56F6 /* solver_direct_wave.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_direct_wave.cpp; path = ../SU2_CFD/src/solver_direct_wave.cpp; sourceTree = "<group>"; };
+		0530724A17EA46DB008A56F6 /* solver_linearized_mean.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_linearized_mean.cpp; path = ../SU2_CFD/src/solver_linearized_mean.cpp; sourceTree = "<group>"; };
+		0530724B17EA46DB008A56F6 /* solver_linearized_turbulent.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_linearized_turbulent.cpp; path = ../SU2_CFD/src/solver_linearized_turbulent.cpp; sourceTree = "<group>"; };
+		0530724C17EA46DB008A56F6 /* solver_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_structure.cpp; path = ../SU2_CFD/src/solver_structure.cpp; sourceTree = "<group>"; };
+		0530724D17EA46DB008A56F6 /* solver_template.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_template.cpp; path = ../SU2_CFD/src/solver_template.cpp; sourceTree = "<group>"; };
+		0530724E17EA46DB008A56F6 /* SU2_CFD.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SU2_CFD.cpp; path = ../SU2_CFD/src/SU2_CFD.cpp; sourceTree = "<group>"; };
+		0530724F17EA46DB008A56F6 /* variable_adjoint_electric.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = variable_adjoint_electric.cpp; path = ../SU2_CFD/src/variable_adjoint_electric.cpp; sourceTree = "<group>"; };
+		0530725017EA46DB008A56F6 /* variable_adjoint_levelset.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = variable_adjoint_levelset.cpp; path = ../SU2_CFD/src/variable_adjoint_levelset.cpp; sourceTree = "<group>"; };
+		0530725117EA46DB008A56F6 /* variable_adjoint_mean.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = variable_adjoint_mean.cpp; path = ../SU2_CFD/src/variable_adjoint_mean.cpp; sourceTree = "<group>"; };
+		0530725217EA46DB008A56F6 /* variable_adjoint_plasma.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = variable_adjoint_plasma.cpp; path = ../SU2_CFD/src/variable_adjoint_plasma.cpp; sourceTree = "<group>"; };
+		0530725317EA46DB008A56F6 /* variable_adjoint_tne2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = variable_adjoint_tne2.cpp; path = ../SU2_CFD/src/variable_adjoint_tne2.cpp; sourceTree = "<group>"; };
+		0530725417EA46DB008A56F6 /* variable_adjoint_turbulent.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = variable_adjoint_turbulent.cpp; path = ../SU2_CFD/src/variable_adjoint_turbulent.cpp; sourceTree = "<group>"; };
+		0530725517EA46DB008A56F6 /* variable_direct_electric.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = variable_direct_electric.cpp; path = ../SU2_CFD/src/variable_direct_electric.cpp; sourceTree = "<group>"; };
+		0530725617EA46DB008A56F6 /* variable_direct_fea.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = variable_direct_fea.cpp; path = ../SU2_CFD/src/variable_direct_fea.cpp; sourceTree = "<group>"; };
+		0530725717EA46DB008A56F6 /* variable_direct_heat.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = variable_direct_heat.cpp; path = ../SU2_CFD/src/variable_direct_heat.cpp; sourceTree = "<group>"; };
+		0530725817EA46DB008A56F6 /* variable_direct_levelset.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = variable_direct_levelset.cpp; path = ../SU2_CFD/src/variable_direct_levelset.cpp; sourceTree = "<group>"; };
+		0530725917EA46DB008A56F6 /* variable_direct_mean.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = variable_direct_mean.cpp; path = ../SU2_CFD/src/variable_direct_mean.cpp; sourceTree = "<group>"; };
+		0530725A17EA46DB008A56F6 /* variable_direct_plasma.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = variable_direct_plasma.cpp; path = ../SU2_CFD/src/variable_direct_plasma.cpp; sourceTree = "<group>"; };
+		0530725B17EA46DB008A56F6 /* variable_direct_tne2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = variable_direct_tne2.cpp; path = ../SU2_CFD/src/variable_direct_tne2.cpp; sourceTree = "<group>"; };
+		0530725C17EA46DB008A56F6 /* variable_direct_transition.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = variable_direct_transition.cpp; path = ../SU2_CFD/src/variable_direct_transition.cpp; sourceTree = "<group>"; };
+		0530725D17EA46DB008A56F6 /* variable_direct_turbulent.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = variable_direct_turbulent.cpp; path = ../SU2_CFD/src/variable_direct_turbulent.cpp; sourceTree = "<group>"; };
+		0530725E17EA46DB008A56F6 /* variable_direct_wave.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = variable_direct_wave.cpp; path = ../SU2_CFD/src/variable_direct_wave.cpp; sourceTree = "<group>"; };
+		0530725F17EA46DB008A56F6 /* variable_linearized_mean.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = variable_linearized_mean.cpp; path = ../SU2_CFD/src/variable_linearized_mean.cpp; sourceTree = "<group>"; };
+		0530726017EA46DB008A56F6 /* variable_linearized_turbulent.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = variable_linearized_turbulent.cpp; path = ../SU2_CFD/src/variable_linearized_turbulent.cpp; sourceTree = "<group>"; };
+		0530726117EA46DB008A56F6 /* variable_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = variable_structure.cpp; path = ../SU2_CFD/src/variable_structure.cpp; sourceTree = "<group>"; };
+		0530726217EA46DB008A56F6 /* variable_template.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = variable_template.cpp; path = ../SU2_CFD/src/variable_template.cpp; sourceTree = "<group>"; };
+		0541ABEE1370F5A6002D668B /* SU2_CFD */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = SU2_CFD; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		8DD76F660486A84900D96B5E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		052D515817A1D352003BE8B2 /* Variable */ = {
+			isa = PBXGroup;
+			children = (
+				0530724F17EA46DB008A56F6 /* variable_adjoint_electric.cpp */,
+				0530725017EA46DB008A56F6 /* variable_adjoint_levelset.cpp */,
+				0530725117EA46DB008A56F6 /* variable_adjoint_mean.cpp */,
+				0530725217EA46DB008A56F6 /* variable_adjoint_plasma.cpp */,
+				0530725317EA46DB008A56F6 /* variable_adjoint_tne2.cpp */,
+				0530725417EA46DB008A56F6 /* variable_adjoint_turbulent.cpp */,
+				0530725517EA46DB008A56F6 /* variable_direct_electric.cpp */,
+				0530725617EA46DB008A56F6 /* variable_direct_fea.cpp */,
+				0530725717EA46DB008A56F6 /* variable_direct_heat.cpp */,
+				0530725817EA46DB008A56F6 /* variable_direct_levelset.cpp */,
+				0530725917EA46DB008A56F6 /* variable_direct_mean.cpp */,
+				0530725A17EA46DB008A56F6 /* variable_direct_plasma.cpp */,
+				0530725B17EA46DB008A56F6 /* variable_direct_tne2.cpp */,
+				0530725C17EA46DB008A56F6 /* variable_direct_transition.cpp */,
+				0530725D17EA46DB008A56F6 /* variable_direct_turbulent.cpp */,
+				0530725E17EA46DB008A56F6 /* variable_direct_wave.cpp */,
+				0530725F17EA46DB008A56F6 /* variable_linearized_mean.cpp */,
+				0530726017EA46DB008A56F6 /* variable_linearized_turbulent.cpp */,
+				0530726117EA46DB008A56F6 /* variable_structure.cpp */,
+				0530726217EA46DB008A56F6 /* variable_template.cpp */,
+			);
+			name = Variable;
+			sourceTree = "<group>";
+		};
+		052D517F17A21FAC003BE8B2 /* Solver */ = {
+			isa = PBXGroup;
+			children = (
+				0530723B17EA46DB008A56F6 /* solver_adjoint_levelset.cpp */,
+				0530723C17EA46DB008A56F6 /* solver_adjoint_mean.cpp */,
+				0530723D17EA46DB008A56F6 /* solver_adjoint_plasma.cpp */,
+				0530723E17EA46DB008A56F6 /* solver_adjoint_tne2.cpp */,
+				0530723F17EA46DB008A56F6 /* solver_adjoint_turbulent.cpp */,
+				0530724017EA46DB008A56F6 /* solver_direct_electric.cpp */,
+				0530724117EA46DB008A56F6 /* solver_direct_fea.cpp */,
+				0530724217EA46DB008A56F6 /* solver_direct_heat.cpp */,
+				0530724317EA46DB008A56F6 /* solver_direct_levelset.cpp */,
+				0530724417EA46DB008A56F6 /* solver_direct_mean.cpp */,
+				0530724517EA46DB008A56F6 /* solver_direct_plasma.cpp */,
+				0530724617EA46DB008A56F6 /* solver_direct_tne2.cpp */,
+				0530724717EA46DB008A56F6 /* solver_direct_transition.cpp */,
+				0530724817EA46DB008A56F6 /* solver_direct_turbulent.cpp */,
+				0530724917EA46DB008A56F6 /* solver_direct_wave.cpp */,
+				0530724A17EA46DB008A56F6 /* solver_linearized_mean.cpp */,
+				0530724B17EA46DB008A56F6 /* solver_linearized_turbulent.cpp */,
+				0530724C17EA46DB008A56F6 /* solver_structure.cpp */,
+				0530724D17EA46DB008A56F6 /* solver_template.cpp */,
+			);
+			name = Solver;
+			sourceTree = "<group>";
+		};
+		052D51AA17A22E15003BE8B2 /* Integration */ = {
+			isa = PBXGroup;
+			children = (
+				0530721F17EA46DB008A56F6 /* integration_notime.cpp */,
+				0530722017EA46DB008A56F6 /* integration_structure.cpp */,
+				0530722117EA46DB008A56F6 /* integration_time.cpp */,
+			);
+			name = Integration;
+			sourceTree = "<group>";
+		};
+		052D51AB17A22E24003BE8B2 /* Output */ = {
+			isa = PBXGroup;
+			children = (
+				0530723717EA46DB008A56F6 /* output_cgns.cpp */,
+				0530723817EA46DB008A56F6 /* output_paraview.cpp */,
+				0530723917EA46DB008A56F6 /* output_structure.cpp */,
+				0530723A17EA46DB008A56F6 /* output_tecplot.cpp */,
+			);
+			name = Output;
+			sourceTree = "<group>";
+		};
+		0541ABE41370DC56002D668B /* InLine */ = {
+			isa = PBXGroup;
+			children = (
+				0530721A17EA46CC008A56F6 /* integration_structure.inl */,
+				0530721B17EA46CC008A56F6 /* numerics_structure.inl */,
+				0530721C17EA46CC008A56F6 /* solver_structure.inl */,
+				0530721D17EA46CC008A56F6 /* variable_structure.inl */,
+				0530715217EA4616008A56F6 /* config_structure.inl */,
+				0530715317EA4616008A56F6 /* dual_grid_structure.inl */,
+				0530715417EA4616008A56F6 /* geometry_structure.inl */,
+				0530715517EA4616008A56F6 /* grid_adaptation_structure.inl */,
+				0530715617EA4616008A56F6 /* grid_movement_structure.inl */,
+				0530715717EA4616008A56F6 /* linear_solvers_structure.inl */,
+				0530715817EA4616008A56F6 /* matrix_structure.inl */,
+				0530715917EA4616008A56F6 /* primal_grid_structure.inl */,
+				0530715A17EA4616008A56F6 /* vector_structure.inl */,
+			);
+			name = InLine;
+			sourceTree = "<group>";
+		};
+		0541ABE51370DC5E002D668B /* Include */ = {
+			isa = PBXGroup;
+			children = (
+				0530721217EA46C4008A56F6 /* definition_structure.hpp */,
+				0530721317EA46C4008A56F6 /* integration_structure.hpp */,
+				0530721417EA46C4008A56F6 /* iteration_structure.hpp */,
+				0530721517EA46C4008A56F6 /* numerics_structure.hpp */,
+				0530721617EA46C4008A56F6 /* output_structure.hpp */,
+				0530721717EA46C4008A56F6 /* solver_structure.hpp */,
+				0530721817EA46C4008A56F6 /* SU2_CFD.hpp */,
+				0530721917EA46C4008A56F6 /* variable_structure.hpp */,
+				0530716E17EA4635008A56F6 /* config_structure.hpp */,
+				0530716F17EA4635008A56F6 /* dual_grid_structure.hpp */,
+				0530717017EA4635008A56F6 /* geometry_structure.hpp */,
+				0530717117EA4635008A56F6 /* grid_adaptation_structure.hpp */,
+				0530717217EA4635008A56F6 /* grid_movement_structure.hpp */,
+				0530717317EA4635008A56F6 /* linear_solvers_structure.hpp */,
+				0530717417EA4635008A56F6 /* matrix_structure.hpp */,
+				0530717517EA4635008A56F6 /* option_structure.hpp */,
+				0530717617EA4635008A56F6 /* primal_grid_structure.hpp */,
+				0530717717EA4635008A56F6 /* vector_structure.hpp */,
+			);
+			name = Include;
+			sourceTree = "<group>";
+		};
+		05D28619178BCA1200DD76AE /* Numerics */ = {
+			isa = PBXGroup;
+			children = (
+				0530722317EA46DB008A56F6 /* numerics_adjoint_electric.cpp */,
+				0530722417EA46DB008A56F6 /* numerics_adjoint_levelset.cpp */,
+				0530722517EA46DB008A56F6 /* numerics_adjoint_mean.cpp */,
+				0530722617EA46DB008A56F6 /* numerics_adjoint_plasma.cpp */,
+				0530722717EA46DB008A56F6 /* numerics_adjoint_tne2.cpp */,
+				0530722817EA46DB008A56F6 /* numerics_adjoint_turbulent.cpp */,
+				0530722917EA46DB008A56F6 /* numerics_direct_electric.cpp */,
+				0530722A17EA46DB008A56F6 /* numerics_direct_fea.cpp */,
+				0530722B17EA46DB008A56F6 /* numerics_direct_heat.cpp */,
+				0530722C17EA46DB008A56F6 /* numerics_direct_levelset.cpp */,
+				0530722D17EA46DB008A56F6 /* numerics_direct_mean.cpp */,
+				0530722E17EA46DB008A56F6 /* numerics_direct_plasma.cpp */,
+				0530722F17EA46DB008A56F6 /* numerics_direct_tne2.cpp */,
+				0530723017EA46DB008A56F6 /* numerics_direct_transition.cpp */,
+				0530723117EA46DB008A56F6 /* numerics_direct_turbulent.cpp */,
+				0530723217EA46DB008A56F6 /* numerics_direct_wave.cpp */,
+				0530723317EA46DB008A56F6 /* numerics_linearized_mean.cpp */,
+				0530723417EA46DB008A56F6 /* numerics_linearized_turbulent.cpp */,
+				0530723517EA46DB008A56F6 /* numerics_structure.cpp */,
+				0530723617EA46DB008A56F6 /* numerics_template.cpp */,
+			);
+			name = Numerics;
+			sourceTree = "<group>";
+		};
+		08FB7794FE84155DC02AAC07 /* SU2_CFD */ = {
+			isa = PBXGroup;
+			children = (
+				0541ABE41370DC56002D668B /* InLine */,
+				0541ABE51370DC5E002D668B /* Include */,
+				08FB7795FE84155DC02AAC07 /* Source */,
+				1AB674ADFE9D54B511CA2CBB /* Products */,
+			);
+			name = SU2_CFD;
+			sourceTree = "<group>";
+		};
+		08FB7795FE84155DC02AAC07 /* Source */ = {
+			isa = PBXGroup;
+			children = (
+				0530721E17EA46DB008A56F6 /* definition_structure.cpp */,
+				0530722217EA46DB008A56F6 /* iteration_structure.cpp */,
+				0530724E17EA46DB008A56F6 /* SU2_CFD.cpp */,
+				053071E817EA4678008A56F6 /* config_structure.cpp */,
+				053071E917EA4678008A56F6 /* dual_grid_structure.cpp */,
+				053071EA17EA4678008A56F6 /* geometry_structure.cpp */,
+				053071EB17EA4678008A56F6 /* grid_adaptation_structure.cpp */,
+				053071EC17EA4678008A56F6 /* grid_movement_structure.cpp */,
+				053071ED17EA4678008A56F6 /* linear_solvers_structure.cpp */,
+				053071EE17EA4678008A56F6 /* matrix_structure.cpp */,
+				053071EF17EA4678008A56F6 /* primal_grid_structure.cpp */,
+				053071F017EA4678008A56F6 /* vector_structure.cpp */,
+				052D51AB17A22E24003BE8B2 /* Output */,
+				052D51AA17A22E15003BE8B2 /* Integration */,
+				052D517F17A21FAC003BE8B2 /* Solver */,
+				052D515817A1D352003BE8B2 /* Variable */,
+				05D28619178BCA1200DD76AE /* Numerics */,
+			);
+			name = Source;
+			sourceTree = "<group>";
+		};
+		1AB674ADFE9D54B511CA2CBB /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				0541ABEE1370F5A6002D668B /* SU2_CFD */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		8DD76F620486A84900D96B5E /* SU2_CFD */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1DEB923108733DC60010E9CD /* Build configuration list for PBXNativeTarget "SU2_CFD" */;
+			buildPhases = (
+				8DD76F640486A84900D96B5E /* Sources */,
+				8DD76F660486A84900D96B5E /* Frameworks */,
+				8DD76F690486A84900D96B5E /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SU2_CFD;
+			productInstallPath = "$(HOME)/bin";
+			productName = SU2_CFD;
+			productReference = 0541ABEE1370F5A6002D668B /* SU2_CFD */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		08FB7793FE84155DC02AAC07 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0460;
+			};
+			buildConfigurationList = 1DEB923508733DC60010E9CD /* Build configuration list for PBXProject "SU2_CFD" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 1;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+			);
+			mainGroup = 08FB7794FE84155DC02AAC07 /* SU2_CFD */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				8DD76F620486A84900D96B5E /* SU2_CFD */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		8DD76F640486A84900D96B5E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				053071F117EA4678008A56F6 /* config_structure.cpp in Sources */,
+				053071F217EA4678008A56F6 /* dual_grid_structure.cpp in Sources */,
+				053071F317EA4678008A56F6 /* geometry_structure.cpp in Sources */,
+				053071F417EA4678008A56F6 /* grid_adaptation_structure.cpp in Sources */,
+				053071F517EA4678008A56F6 /* grid_movement_structure.cpp in Sources */,
+				053071F617EA4678008A56F6 /* linear_solvers_structure.cpp in Sources */,
+				053071F717EA4678008A56F6 /* matrix_structure.cpp in Sources */,
+				053071F817EA4678008A56F6 /* primal_grid_structure.cpp in Sources */,
+				053071F917EA4678008A56F6 /* vector_structure.cpp in Sources */,
+				0530726317EA46DB008A56F6 /* definition_structure.cpp in Sources */,
+				0530726417EA46DB008A56F6 /* integration_notime.cpp in Sources */,
+				0530726517EA46DB008A56F6 /* integration_structure.cpp in Sources */,
+				0530726617EA46DB008A56F6 /* integration_time.cpp in Sources */,
+				0530726717EA46DB008A56F6 /* iteration_structure.cpp in Sources */,
+				0530726817EA46DB008A56F6 /* numerics_adjoint_electric.cpp in Sources */,
+				0530726917EA46DB008A56F6 /* numerics_adjoint_levelset.cpp in Sources */,
+				0530726A17EA46DB008A56F6 /* numerics_adjoint_mean.cpp in Sources */,
+				0530726B17EA46DB008A56F6 /* numerics_adjoint_plasma.cpp in Sources */,
+				0530726C17EA46DB008A56F6 /* numerics_adjoint_tne2.cpp in Sources */,
+				0530726D17EA46DB008A56F6 /* numerics_adjoint_turbulent.cpp in Sources */,
+				0530726E17EA46DB008A56F6 /* numerics_direct_electric.cpp in Sources */,
+				0530726F17EA46DB008A56F6 /* numerics_direct_fea.cpp in Sources */,
+				0530727017EA46DB008A56F6 /* numerics_direct_heat.cpp in Sources */,
+				0530727117EA46DB008A56F6 /* numerics_direct_levelset.cpp in Sources */,
+				0530727217EA46DB008A56F6 /* numerics_direct_mean.cpp in Sources */,
+				0530727317EA46DB008A56F6 /* numerics_direct_plasma.cpp in Sources */,
+				0530727417EA46DB008A56F6 /* numerics_direct_tne2.cpp in Sources */,
+				0530727517EA46DB008A56F6 /* numerics_direct_transition.cpp in Sources */,
+				0530727617EA46DB008A56F6 /* numerics_direct_turbulent.cpp in Sources */,
+				0530727717EA46DB008A56F6 /* numerics_direct_wave.cpp in Sources */,
+				0530727817EA46DB008A56F6 /* numerics_linearized_mean.cpp in Sources */,
+				0530727917EA46DB008A56F6 /* numerics_linearized_turbulent.cpp in Sources */,
+				0530727A17EA46DB008A56F6 /* numerics_structure.cpp in Sources */,
+				0530727B17EA46DB008A56F6 /* numerics_template.cpp in Sources */,
+				0530727C17EA46DB008A56F6 /* output_cgns.cpp in Sources */,
+				0530727D17EA46DB008A56F6 /* output_paraview.cpp in Sources */,
+				0530727E17EA46DB008A56F6 /* output_structure.cpp in Sources */,
+				0530727F17EA46DB008A56F6 /* output_tecplot.cpp in Sources */,
+				0530728017EA46DB008A56F6 /* solver_adjoint_levelset.cpp in Sources */,
+				0530728117EA46DB008A56F6 /* solver_adjoint_mean.cpp in Sources */,
+				0530728217EA46DB008A56F6 /* solver_adjoint_plasma.cpp in Sources */,
+				0530728317EA46DB008A56F6 /* solver_adjoint_tne2.cpp in Sources */,
+				0530728417EA46DB008A56F6 /* solver_adjoint_turbulent.cpp in Sources */,
+				0530728517EA46DB008A56F6 /* solver_direct_electric.cpp in Sources */,
+				0530728617EA46DB008A56F6 /* solver_direct_fea.cpp in Sources */,
+				0530728717EA46DB008A56F6 /* solver_direct_heat.cpp in Sources */,
+				0530728817EA46DB008A56F6 /* solver_direct_levelset.cpp in Sources */,
+				0530728917EA46DB008A56F6 /* solver_direct_mean.cpp in Sources */,
+				0530728A17EA46DB008A56F6 /* solver_direct_plasma.cpp in Sources */,
+				0530728B17EA46DB008A56F6 /* solver_direct_tne2.cpp in Sources */,
+				0530728C17EA46DB008A56F6 /* solver_direct_transition.cpp in Sources */,
+				0530728D17EA46DB008A56F6 /* solver_direct_turbulent.cpp in Sources */,
+				0530728E17EA46DB008A56F6 /* solver_direct_wave.cpp in Sources */,
+				0530728F17EA46DB008A56F6 /* solver_linearized_mean.cpp in Sources */,
+				0530729017EA46DB008A56F6 /* solver_linearized_turbulent.cpp in Sources */,
+				0530729117EA46DB008A56F6 /* solver_structure.cpp in Sources */,
+				0530729217EA46DB008A56F6 /* solver_template.cpp in Sources */,
+				0530729317EA46DB008A56F6 /* SU2_CFD.cpp in Sources */,
+				0530729417EA46DB008A56F6 /* variable_adjoint_electric.cpp in Sources */,
+				0530729517EA46DB008A56F6 /* variable_adjoint_levelset.cpp in Sources */,
+				0530729617EA46DB008A56F6 /* variable_adjoint_mean.cpp in Sources */,
+				0530729717EA46DB008A56F6 /* variable_adjoint_plasma.cpp in Sources */,
+				0530729817EA46DB008A56F6 /* variable_adjoint_tne2.cpp in Sources */,
+				0530729917EA46DB008A56F6 /* variable_adjoint_turbulent.cpp in Sources */,
+				0530729A17EA46DB008A56F6 /* variable_direct_electric.cpp in Sources */,
+				0530729B17EA46DB008A56F6 /* variable_direct_fea.cpp in Sources */,
+				0530729C17EA46DB008A56F6 /* variable_direct_heat.cpp in Sources */,
+				0530729D17EA46DB008A56F6 /* variable_direct_levelset.cpp in Sources */,
+				0530729E17EA46DB008A56F6 /* variable_direct_mean.cpp in Sources */,
+				0530729F17EA46DB008A56F6 /* variable_direct_plasma.cpp in Sources */,
+				053072A017EA46DB008A56F6 /* variable_direct_tne2.cpp in Sources */,
+				053072A117EA46DB008A56F6 /* variable_direct_transition.cpp in Sources */,
+				053072A217EA46DB008A56F6 /* variable_direct_turbulent.cpp in Sources */,
+				053072A317EA46DB008A56F6 /* variable_direct_wave.cpp in Sources */,
+				053072A417EA46DB008A56F6 /* variable_linearized_mean.cpp in Sources */,
+				053072A517EA46DB008A56F6 /* variable_linearized_turbulent.cpp in Sources */,
+				053072A617EA46DB008A56F6 /* variable_structure.cpp in Sources */,
+				053072A717EA46DB008A56F6 /* variable_template.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		1DEB923208733DC60010E9CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_IMPLICIT_SIGN_CONVERSION = NO;
+				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = NO;
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = NO;
+				GCC_TREAT_INCOMPATIBLE_POINTER_TYPE_WARNINGS_AS_ERRORS = NO;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
+				GCC_WARN_ABOUT_MISSING_FIELD_INITIALIZERS = NO;
+				GCC_WARN_ABOUT_MISSING_NEWLINE = NO;
+				GCC_WARN_ABOUT_MISSING_PROTOTYPES = NO;
+				GCC_WARN_FOUR_CHARACTER_CONSTANTS = NO;
+				GCC_WARN_INITIALIZER_NOT_FULLY_BRACKETED = NO;
+				GCC_WARN_SHADOW = NO;
+				GCC_WARN_SIGN_COMPARE = NO;
+				GCC_WARN_UNINITIALIZED_AUTOS = NO;
+				GCC_WARN_UNKNOWN_PRAGMAS = YES;
+				GCC_WARN_UNUSED_FUNCTION = NO;
+				GCC_WARN_UNUSED_LABEL = NO;
+				GCC_WARN_UNUSED_PARAMETER = NO;
+				GCC_WARN_UNUSED_VALUE = NO;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				INSTALL_PATH = /usr/local/bin;
+				PRODUCT_NAME = SU2_CFD;
+			};
+			name = Debug;
+		};
+		1DEB923308733DC60010E9CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_IMPLICIT_SIGN_CONVERSION = NO;
+				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_MODEL_TUNING = G5;
+				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = NO;
+				GCC_TREAT_INCOMPATIBLE_POINTER_TYPE_WARNINGS_AS_ERRORS = NO;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
+				GCC_WARN_ABOUT_MISSING_FIELD_INITIALIZERS = NO;
+				GCC_WARN_ABOUT_MISSING_NEWLINE = NO;
+				GCC_WARN_ABOUT_MISSING_PROTOTYPES = NO;
+				GCC_WARN_FOUR_CHARACTER_CONSTANTS = NO;
+				GCC_WARN_INITIALIZER_NOT_FULLY_BRACKETED = NO;
+				GCC_WARN_SHADOW = NO;
+				GCC_WARN_SIGN_COMPARE = NO;
+				GCC_WARN_UNINITIALIZED_AUTOS = NO;
+				GCC_WARN_UNKNOWN_PRAGMAS = YES;
+				GCC_WARN_UNUSED_FUNCTION = NO;
+				GCC_WARN_UNUSED_LABEL = NO;
+				GCC_WARN_UNUSED_PARAMETER = NO;
+				GCC_WARN_UNUSED_VALUE = NO;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				INSTALL_PATH = /usr/local/bin;
+				PRODUCT_NAME = SU2_CFD;
+			};
+			name = Release;
+		};
+		1DEB923608733DC60010E9CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					NO_OMP,
+					NO_METIS,
+					NO_MPI,
+					NO_CGNS,
+					NO_MUTATIONPP,
+				);
+				"GCC_PREPROCESSOR_DEFINITIONS[arch=*]" = (
+					NO_TECIO,
+					NO_OMP,
+					NO_METIS,
+					NO_MPI,
+					NO_CGNS,
+					NO_MUTATIONPP,
+				);
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		1DEB923708733DC60010E9CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1DEB923108733DC60010E9CD /* Build configuration list for PBXNativeTarget "SU2_CFD" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1DEB923208733DC60010E9CD /* Debug */,
+				1DEB923308733DC60010E9CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1DEB923508733DC60010E9CD /* Build configuration list for PBXProject "SU2_CFD" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1DEB923608733DC60010E9CD /* Debug */,
+				1DEB923708733DC60010E9CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 08FB7793FE84155DC02AAC07 /* Project object */;
+}
