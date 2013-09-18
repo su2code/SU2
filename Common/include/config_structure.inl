@@ -75,8 +75,6 @@ inline double CConfig::GetFreeSurface_Damping_Coeff(void) { return FreeSurface_D
 
 inline double CConfig::GetFreeSurface_Damping_Length(void) { return FreeSurface_Damping_Length; }
 
-inline long CConfig::GetFreeSurface_Reevaluation(void) { return FreeSurface_Reevaluation; }
-
 inline double CConfig::GetFreeSurface_Outlet(void) { return FreeSurface_Outlet; }
 
 inline double CConfig::GetRatioViscosity(void) { return RatioViscosity; }

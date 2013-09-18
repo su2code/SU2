@@ -116,7 +116,6 @@ private:
 	FreeSurface_Outlet,  /*!< \brief Outlet of the interfase for a free surface problem. */
 	FreeSurface_Damping_Coeff,  /*!< \brief Damping coefficient of the free surface for a free surface problem. */
 	FreeSurface_Damping_Length;  /*!< \brief Damping length of the free surface for a free surface problem. */
-	long FreeSurface_Reevaluation;  /*!< \brief Frecuency for level set reevaluation. */
 	unsigned short Kind_Adaptation;	/*!< \brief Kind of numerical grid adaptation. */
 	unsigned short nTimeInstances;  /*!< \brief Number of periodic time instances for Time Spectral integration. */
 	double TimeSpectral_Period;		/*!< \brief Period of oscillation to be used with time-spectral computations. */
@@ -1058,12 +1057,6 @@ public:
 	 * \return Damping of the interfase for a free surface problem.
 	 */
 	double GetFreeSurface_Damping_Length(void);
-
-	/*!
-	 * \brief Get the damping of the free surface for a free surface problem.
-	 * \return Damping of the interfase for a free surface problem.
-	 */
-	long GetFreeSurface_Reevaluation(void);
 
 	/*!
 	 * \brief Get the outlet position of the free surface for a free surface problem.

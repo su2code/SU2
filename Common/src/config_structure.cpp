@@ -863,8 +863,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddScalarOption("FREESURFACE_DAMPING_LENGTH", FreeSurface_Damping_Length, 1.0);
 	/* DESCRIPTION: Location of the free surface outlet surface (x or y coordinate) */
 	AddScalarOption("FREESURFACE_OUTLET", FreeSurface_Outlet, 0.0);
-	/* DESCRIPTION: Writing convergence history frequency for the dual time */
-	AddScalarOption("FREESURFACE_REEVALUATION",  FreeSurface_Reevaluation, 1);
   
 	/*--- Options related to the grid deformation ---*/
 	// these options share nDV as their size in the option references; not a good idea

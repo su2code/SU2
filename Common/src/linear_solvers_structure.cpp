@@ -75,54 +75,54 @@ void CSysSolve::solveReduced(const int & n, const vector<vector<double> > & Hsbg
 
 void CSysSolve::modGramSchmidt(int i, vector<vector<double> > & Hsbg, vector<CSysVector> & w) {
   
-  // parameter for reorthonormalization
+  /*--- Parameter for reorthonormalization ---*/
   static const double reorth = 0.98;
   
-  // get the norm of the vector being orthogonalized, and find the
-  // threshold for re-orthogonalization
+  /*--- get the norm of the vector being orthogonalized, and find the
+  threshold for re-orthogonalization ---*/
   double nrm = dotProd(w[i+1],w[i+1]);
   double thr = nrm*reorth;
   if (nrm <= 0.0) {
-    // the norm of w[i+1] < 0.0
+    /*--- The norm of w[i+1] < 0.0 ---*/
     cerr << "CSysSolve::modGramSchmidt: dotProd(w[i+1],w[i+1]) < 0.0" << endl;
     throw(-1);
   }
   else if (nrm != nrm) {
-    // this is intended to catch if nrm = NaN, but some optimizations
-    // may mess it up (according to posts on stackoverflow.com)
+    /*--- This is intended to catch if nrm = NaN, but some optimizations
+     may mess it up (according to posts on stackoverflow.com) ---*/
     cerr << "CSysSolve::modGramSchmidt: w[i+1] = NaN" << endl;
     throw(-1);
   }
   
-  // begin main Gram-Schmidt loop
+  /*--- Begin main Gram-Schmidt loop ---*/
   for (int k = 0; k < i+1; k++) {
     double prod = dotProd(w[i+1],w[k]);
     Hsbg[k][i] = prod;
     w[i+1].Plus_AX(-prod, w[k]);
     
-    // check if reorthogonalization is necessary
+    /*--- Check if reorthogonalization is necessary ---*/
     if (prod*prod > thr) {
       prod = dotProd(w[i+1],w[k]);
       Hsbg[k][i] += prod;
       w[i+1].Plus_AX(-prod, w[k]);
     }
     
-    // update the norm and check its size
+    /*--- Update the norm and check its size ---*/
     nrm -= Hsbg[k][i]*Hsbg[k][i];
     if (nrm < 0.0) nrm = 0.0;
     thr = nrm*reorth;
   }
   
-  // test the resulting vector
+  /*--- Test the resulting vector ---*/
   nrm = w[i+1].norm();
   Hsbg[i+1][i] = nrm;
   if (nrm <= 0.0) {
-    // w[i+1] is a linear combination of the w[0:i]
+    /*--- w[i+1] is a linear combination of the w[0:i] ---*/
     cerr << "CSysSolve::modGramSchmidt: w[i+1] linearly dependent on w[0:i]" << endl;
     throw(-1);
   }
   
-  // scale the resulting vector
+  /*--- Scale the resulting vector ---*/
   w[i+1] /= nrm;
 }
 
