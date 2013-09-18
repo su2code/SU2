@@ -1560,7 +1560,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetFreeSurface_Distance(CGeometry *geometry, CConfig *config, bool Initialization, bool WriteLevelSet);
+	virtual void SetFreeSurface_Distance(CGeometry *geometry, CConfig *config);
     
 	/*!
 	 * \brief A virtual member.
@@ -2599,7 +2599,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetFreeSurface_Distance(CGeometry *geometry, CConfig *config, bool Initialization, bool WriteLevelSet);
+	void SetFreeSurface_Distance(CGeometry *geometry, CConfig *config);
   
 };
 

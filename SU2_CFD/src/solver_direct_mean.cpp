@@ -128,9 +128,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
 	/*--- Define geometry constants in the solver structure ---*/
 	nDim = geometry->GetnDim();
-  if (compressible) { nVar = nDim + 2; nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
-	if (incompressible) { nVar = nDim + 1; nPrimVar = nDim+2; nPrimVarGrad = nDim+2; }
-  if (freesurface) { nVar = nDim + 2; nPrimVar = nDim+2; nPrimVarGrad = nDim+2; }
+  if (compressible) { nVar = nDim+2; nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
+	if (incompressible) { nVar = nDim+1; nPrimVar = nDim+2; nPrimVarGrad = nDim+2; }
+  if (freesurface) { nVar = nDim+2; nPrimVar = nDim+3; nPrimVarGrad = nDim+3; }
 	nMarker = config->GetnMarker_All();
 	nPoint = geometry->GetnPoint();
 	nPointDomain = geometry->GetnPointDomain();
@@ -1807,8 +1807,11 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   /*--- Compute nacelle inflow and exhaust properties ---*/
   if (engine) GetNacelle_Properties(geometry, config, iMesh);
   
-    /*--- Compute Joule heating ---*/
+  /*--- Compute Joule heating ---*/
 	if (jouleheating) geometry->SetGeometryPlanes(config);
+
+  /*--- Compute distance function to zero level set ---*/
+  if (freesurface) SetFreeSurface_Distance(geometry, config);
   
 	for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
@@ -1857,28 +1860,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 }
 
 void CEulerSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                                     unsigned short iMesh) {
-  
-  bool output = false, reevaluation = false;
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
-  
-  /*--- Compute freesurface objective function and reevalue, if needed ---*/
-  if (freesurface && (iMesh == MESH_0)) {
-    
-    if (config->GetIntIter() == 0) output = true;
-    else output = false;
-    
-    if (config->GetFreeSurface_Reevaluation() < 0) reevaluation = false;
-    else {
-      if (config->GetIntIter() % config->GetFreeSurface_Reevaluation() == 0) reevaluation = true;
-      else reevaluation = false;
-    }
-    
-    SetFreeSurface_Distance(geometry, config, reevaluation, output);
-    
-  }
-  
-}
+                                     unsigned short iMesh) { }
 
 void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
 		unsigned short iMesh, unsigned long Iteration) {
@@ -4992,8 +4974,11 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 			}
       if (freesurface) {
         
-				/*--- Pressure and density using the internal value ---*/
+				/*--- Pressure and level set using the internal value ---*/
 				U_inlet[0] = node[iPoint]->GetSolution(0);
+        U_inlet[nDim+1] = node[iPoint]->GetSolution(nDim+1);
+        
+        /*--- Density using the internal value ---*/
 				Density_Inlet = node[iPoint]->GetDensityInc();
         V_inlet[0] = node[iPoint]->GetDensityInc();
         
@@ -5008,9 +4993,6 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         U_inlet[nDim] = node[iPoint]->GetSolution(nDim);
         V_inlet[nDim] = node[iPoint]->GetPrimVar(nDim);
         
-        /*--- Neumann condition for the level set ---*/
-        U_inlet[nDim+1] = node[iPoint]->GetSolution(nDim+1);
-
 			}
       
 			/*--- Set various quantities in the solver class ---*/
@@ -5226,15 +5208,17 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         Height = geometry->node[iPoint]->GetCoord(nDim-1);
         LevelSet = Height - FreeSurface_Zero;
         
-        /*--- Pressure computation the density at the exit (imposed) ---*/
+        /*--- Pressure, level set, and density (imposed) ---*/
         if (LevelSet < -epsilon) Density_Outlet = config->GetDensity_FreeStreamND();
         if (LevelSet > epsilon) Density_Outlet = RatioDensity*config->GetDensity_FreeStreamND();
         U_outlet[0] = PressFreeSurface + Density_Outlet*((FreeSurface_Zero-Height)/(Froude*Froude));
+        U_outlet[nDim+1] = LevelSet;
         V_domain[0] = Density_Outlet;
                 
-        /*--- Neumann condition in the interface for the pressure and density ---*/
+        /*--- Neumann condition in the interface for the pressure, density and level set ---*/
         if (fabs(LevelSet) <= epsilon) {
           U_outlet[0] = node[Point_Normal]->GetSolution(0);
+          U_outlet[nDim+1] = node[Point_Normal]->GetSolution(nDim+1);
           Density_Outlet = node[Point_Normal]->GetDensityInc();
           V_domain[0] = Density_Outlet;
         }
@@ -5245,10 +5229,6 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           V_outlet[iDim+1] = node[Point_Normal]->GetPrimVar(iDim+1);
         }
         
-        /*--- Set level set to its original value ---*/
-        U_outlet[nDim+1] = LevelSet;
-        node[iPoint]->SetSolution_Old(nDim+1, LevelSet);
-
 			}
       
 			/*--- Set various quantities in the solver class ---*/
@@ -6527,7 +6507,7 @@ void CEulerSolver::GetRestart(CGeometry *geometry, CConfig *config, int val_iter
 
 }
 
-void CEulerSolver::SetFreeSurface_Distance(CGeometry *geometry, CConfig *config, bool Initialization, bool WriteLevelSet) {
+void CEulerSolver::SetFreeSurface_Distance(CGeometry *geometry, CConfig *config) {
 	double *coord = NULL, dist2, *iCoord = NULL, *jCoord = NULL, LevelSet_i, LevelSet_j,
   **Coord_LevelSet = NULL, *xCoord = NULL, *yCoord = NULL, *zCoord = NULL, auxCoordx, auxCoordy,
   auxCoordz, FreeSurface, volume, LevelSetDiff_Squared, LevelSetDiff, dist, Min_dist;
@@ -6643,36 +6623,32 @@ void CEulerSolver::SetFreeSurface_Distance(CGeometry *geometry, CConfig *config,
   
 #endif
   
-//  if (Initialization) {
-//
-//    /*--- Get coordinates of the points and compute distances to the surface ---*/
-//    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-//      coord = geometry->node[iPoint]->GetCoord();
-//      
-//      /*--- Compute the min distance ---*/
-//      Min_dist = 1E20;
-//      for (iVertex = 0; iVertex < nVertex_LevelSet; iVertex++) {
-//        
-//        dist2 = 0.0;
-//        for (iDim = 0; iDim < nDim; iDim++)
-//          dist2 += (coord[iDim]-Coord_LevelSet[iVertex][iDim])*(coord[iDim]-Coord_LevelSet[iVertex][iDim]);
-//        dist = sqrt(dist2);
-//        if (dist < Min_dist) { Min_dist = dist; }
-//        
-//      }
-//      
-//      /*--- Compute the sign using the current solution ---*/
-//      double NumberSign = 1.0;
-//      if (node[iPoint]->GetSolution(0) != 0.0)
-//        NumberSign = node[iPoint]->GetSolution(nDim+1)/fabs(node[iPoint]->GetSolution(nDim+1));
-//      
-//      /*--- Store the value of the primitive variable ---*/
-//      node[iPoint]->SetSolution(nDim+1, Min_dist*NumberSign);
-//    }
-//    
-//  }
+  /*--- Get coordinates of the points and compute distances to the surface ---*/
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    coord = geometry->node[iPoint]->GetCoord();
+    
+    /*--- Compute the min distance ---*/
+    Min_dist = 1E20;
+    for (iVertex = 0; iVertex < nVertex_LevelSet; iVertex++) {
+      
+      dist2 = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        dist2 += (coord[iDim]-Coord_LevelSet[iVertex][iDim])*(coord[iDim]-Coord_LevelSet[iVertex][iDim]);
+      dist = sqrt(dist2);
+      if (dist < Min_dist) { Min_dist = dist; }
+      
+    }
+    
+    /*--- Compute the sign using the current solution ---*/
+    double NumberSign = 1.0;
+    if (node[iPoint]->GetSolution(0) != 0.0)
+      NumberSign = node[iPoint]->GetSolution(nDim+1)/fabs(node[iPoint]->GetSolution(nDim+1));
+    
+    /*--- Store the value of the primitive variable ---*/
+    node[iPoint]->SetPrimVar(nDim+2, Min_dist*NumberSign);
+  }
   
-  if (WriteLevelSet) {
+  if (config->GetIntIter() == 0) {
     
     /*--- Order the arrays (x Coordinate, y Coordinate, z Coordiante) ---*/
     for (iVertex = 0; iVertex < nVertex_LevelSet; iVertex++) {
@@ -6817,9 +6793,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
 	/*--- Define geometry constants in the solver structure ---*/
 	nDim = geometry->GetnDim();
-  if (compressible) { nVar = nDim + 2; nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
-	if (incompressible) { nVar = nDim + 1; nPrimVar = nDim+2; nPrimVarGrad = nDim+2; }
-  if (freesurface) { nVar = nDim + 2; nPrimVar = nDim+2; nPrimVarGrad = nDim+2; }
+  if (compressible) { nVar = nDim+2; nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
+	if (incompressible) { nVar = nDim+1; nPrimVar = nDim+2; nPrimVarGrad = nDim+2; }
+  if (freesurface) { nVar = nDim+2; nPrimVar = nDim+3; nPrimVarGrad = nDim+3; }
 	nMarker = config->GetnMarker_All();
 	nPoint = geometry->GetnPoint();
 	nPointDomain = geometry->GetnPointDomain();
@@ -7212,7 +7188,10 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   
     /*--- Compute Joule heating ---*/
 	if (jouleheating) geometry->SetGeometryPlanes(config);
-    
+  
+  /*--- Compute distance function to zero level set ---*/
+  if (freesurface) SetFreeSurface_Distance(geometry, config);
+
 	for (iPoint = 0; iPoint < nPoint; iPoint ++) {
         
 		if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
