@@ -2128,33 +2128,33 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
 }
 
 void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-		CConfig *config, unsigned short iMesh) {
-	double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, 
-	*U_i, *U_j, sqvel, *Limiter_i = NULL, *Limiter_j = NULL;
+                                   CConfig *config, unsigned short iMesh) {
+	double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j,
+	*U_i, *U_j, sqvel, *Limiter_i = NULL, *Limiter_j = NULL, YDistance, GradHidrosPress;
 	unsigned long iEdge, iPoint, jPoint;
 	unsigned short iDim, iVar;
-
+  
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 	bool low_fidelity = (config->GetLowFidelitySim() && (iMesh == MESH_1));
 	bool high_order_diss = (((config->GetKind_Upwind_Flow() == ROE_2ND) || (config->GetKind_Upwind_Flow() == AUSM_2ND)
-			|| (config->GetKind_Upwind_Flow() == HLLC_2ND) || (config->GetKind_Upwind_Flow() == ROE_TURKEL_2ND))
-			&& ((iMesh == MESH_0) || low_fidelity));
+                           || (config->GetKind_Upwind_Flow() == HLLC_2ND) || (config->GetKind_Upwind_Flow() == ROE_TURKEL_2ND))
+                          && ((iMesh == MESH_0) || low_fidelity));
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
 	bool grid_movement = config->GetGrid_Movement();
 	bool limiter = ((config->GetKind_SlopeLimit_Flow() != NONE) && !low_fidelity);
-
+  
 	for(iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-
+    
 		/*--- Points in edge and normal vectors ---*/
 		iPoint = geometry->edge[iEdge]->GetNode(0); jPoint = geometry->edge[iEdge]->GetNode(1);
 		numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
-
+    
     /*--- Set a copy of the conservative variables w/o reconstruction, just in case the
      2nd order reconstruction fails ---*/
     U_i = node[iPoint]->GetSolution(); U_j = node[jPoint]->GetSolution();
     numerics->SetConservative_ZeroOrder(U_i, U_j);
-
+    
 		/*--- Roe Turkel preconditioning ---*/
 		if (roe_turkel) {
 			sqvel = 0.0;
@@ -2162,22 +2162,22 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 				sqvel += config->GetVelocity_FreeStream()[iDim]*config->GetVelocity_FreeStream()[iDim];
 			numerics->SetVelocity2_Inf(sqvel);
 		}
-
+    
 		/*--- Grid Movement ---*/
 		if (grid_movement)
 			numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[jPoint]->GetGridVel());
-
+    
 		/*--- High order reconstruction using MUSCL strategy ---*/
-		if (high_order_diss) {
-
+		if (high_order_diss && !freesurface) {
+      
 			for (iDim = 0; iDim < nDim; iDim++) {
 				Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
 				Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
 			}
-
+      
 			Gradient_i = node[iPoint]->GetGradient(); Gradient_j = node[jPoint]->GetGradient();
 			if (limiter) { Limiter_j = node[jPoint]->GetLimiter(); Limiter_i = node[iPoint]->GetLimiter(); }
-
+      
 			for (iVar = 0; iVar < nVar; iVar++) {
 				Project_Grad_i = 0; Project_Grad_j = 0;
 				for (iDim = 0; iDim < nDim; iDim++) {
@@ -2185,15 +2185,15 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 					Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
 				}
 				if (limiter) {
-					Solution_i[iVar] = U_i[iVar] + Project_Grad_i*Limiter_i[iVar];
-					Solution_j[iVar] = U_j[iVar] + Project_Grad_j*Limiter_j[iVar];
+					Solution_i[iVar] = U_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
+					Solution_j[iVar] = U_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
 				}
 				else {
 					Solution_i[iVar] = U_i[iVar] + Project_Grad_i;
 					Solution_j[iVar] = U_j[iVar] + Project_Grad_j;
 				}
 			}
-
+      
 			/*--- Set conservative variables with reconstruction ---*/
 			numerics->SetConservative(Solution_i, Solution_j);
       
@@ -2203,66 +2203,64 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       numerics->SetConservative(U_i, U_j);
       
     }
-
-//		if (config->GetGravityForce()) {
-//      double YDistance, GradHidrosPress;
-//
-//			/*--- The zero order reconstruction includes the gradient of the hydrostatic pressure constribution ---*/
-//			YDistance = 0.5*(geometry->node[jPoint]->GetCoord(nDim-1)-geometry->node[iPoint]->GetCoord(nDim-1));
-//			GradHidrosPress = node[iPoint]->GetDensityInc()/(config->GetFroude()*config->GetFroude());
-//			Solution_i[0] = U_i[0] - GradHidrosPress*YDistance;
-//			GradHidrosPress = node[jPoint]->GetDensityInc()/(config->GetFroude()*config->GetFroude());
-//			Solution_j[0] = U_j[0] + GradHidrosPress*YDistance;
-//
-//			/*--- No reconstruction for the velocities ---*/
-//			for (iVar = 1; iVar < nVar; iVar++) {
-//				Solution_i[iVar] = U_i[iVar];
-//				Solution_j[iVar] = U_j[iVar];
-//			}
-//
-//			/*--- Set conservative variables with reconstruction only for the pressure ---*/
-//			numerics->SetConservative(Solution_i, Solution_j);
-//
-//			if (high_order_diss) {
-//
-//				for (iDim = 0; iDim < nDim; iDim++) {
-//					Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
-//					Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
-//				}
-//
-//				Gradient_i = node[iPoint]->GetGradient(); Gradient_j = node[jPoint]->GetGradient();
-//				if (limiter) { Limiter_j = node[jPoint]->GetLimiter(); Limiter_i = node[iPoint]->GetLimiter(); }
-//
-//				for (iVar = 0; iVar < nVar; iVar++) {
-//					Project_Grad_i = 0; Project_Grad_j = 0;
-//					for (iDim = 0; iDim < nDim; iDim++) {
-//						Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
-//						Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
-//					}
-//					if (limiter) {
-//						/*--- Note that the pressure reconstruction always includes the hydrostatic gradient,
-//             and limits the kinematic contribution ---*/
-//						if (iVar == 0) {
-//							Solution_i[iVar] = Solution_i[iVar] + Limiter_i[iVar]*(U_i[iVar] + Project_Grad_i - Solution_i[iVar]);
-//							Solution_j[iVar] = Solution_j[iVar] + Limiter_j[iVar]*(U_j[iVar] + Project_Grad_j - Solution_j[iVar]);
-//						}
-//						else {
-//							Solution_i[iVar] = U_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
-//							Solution_j[iVar] = U_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
-//						}
-//					}
-//					else {
-//						Solution_i[iVar] = U_i[iVar] + Project_Grad_i;
-//						Solution_j[iVar] = U_j[iVar] + Project_Grad_j;
-//					}
-//				}
-//
-//				/*--- Set conservative variables with reconstruction ---*/
-//				numerics->SetConservative(Solution_i, Solution_j);
-//			}
-//
-//		}
-
+    
+    /*--- Free surface simulation ---*/
+		if (freesurface) {
+      
+			/*--- The zero order reconstruction includes the gradient of the hydrostatic pressure constribution ---*/
+			YDistance = 0.5*(geometry->node[jPoint]->GetCoord(nDim-1)-geometry->node[iPoint]->GetCoord(nDim-1));
+			GradHidrosPress = node[iPoint]->GetDensityInc()/(config->GetFroude()*config->GetFroude());
+			Solution_i[0] = U_i[0] - GradHidrosPress*YDistance;
+			GradHidrosPress = node[jPoint]->GetDensityInc()/(config->GetFroude()*config->GetFroude());
+			Solution_j[0] = U_j[0] + GradHidrosPress*YDistance;
+      
+			/*--- No reconstruction for the velocities or level set ---*/
+			for (iVar = 1; iVar < nVar; iVar++) {
+				Solution_i[iVar] = U_i[iVar];
+				Solution_j[iVar] = U_j[iVar];
+			}
+      
+			if (high_order_diss) {
+        
+				for (iDim = 0; iDim < nDim; iDim++) {
+					Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
+					Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
+				}
+        
+				Gradient_i = node[iPoint]->GetGradient(); Gradient_j = node[jPoint]->GetGradient();
+				if (limiter) { Limiter_j = node[jPoint]->GetLimiter(); Limiter_i = node[iPoint]->GetLimiter(); }
+        
+				for (iVar = 0; iVar < nVar; iVar++) {
+					Project_Grad_i = 0; Project_Grad_j = 0;
+					for (iDim = 0; iDim < nDim; iDim++) {
+						Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
+						Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
+					}
+					if (limiter) {
+						/*--- Note that the pressure reconstruction always includes the hydrostatic gradient,
+             and we should limit only the kinematic contribution ---*/
+						if (iVar == 0) {
+							Solution_i[iVar] = Solution_i[iVar] + Limiter_i[iVar]*(U_i[iVar] + Project_Grad_i - Solution_i[iVar]);
+							Solution_j[iVar] = Solution_j[iVar] + Limiter_j[iVar]*(U_j[iVar] + Project_Grad_j - Solution_j[iVar]);
+						}
+						else {
+							Solution_i[iVar] = U_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
+							Solution_j[iVar] = U_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
+						}
+					}
+					else {
+						Solution_i[iVar] = U_i[iVar] + Project_Grad_i;
+						Solution_j[iVar] = U_j[iVar] + Project_Grad_j;
+					}
+				}
+        
+			}
+      
+      /*--- Set conservative variables with reconstruction ---*/
+      numerics->SetConservative(Solution_i, Solution_j);
+      
+    }
+    
 		/*--- Set the density and beta w/o reconstruction (incompressible flows) ---*/
 		if (incompressible || freesurface) {
 			numerics->SetBetaInc2(node[iPoint]->GetBetaInc2(), node[jPoint]->GetBetaInc2());
@@ -2284,15 +2282,15 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 			Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
 			Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
 		}
-
+    
 		/*--- Roe Turkel preconditioning, set the value of beta ---*/
 		if (roe_turkel) {
 			node[iPoint]->SetPreconditioner_Beta(numerics->GetPrecond_Beta());
 			node[jPoint]->SetPreconditioner_Beta(numerics->GetPrecond_Beta());
 		}
-
+    
 	}
-
+  
 }
 
 void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
