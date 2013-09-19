@@ -668,6 +668,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddScalarOption("VOLUME_FLOW_FILENAME", Flow_FileName, string("flow"));
 	/* DESCRIPTION: Output file structure (w/o extension) variables */
 	AddScalarOption("VOLUME_STRUCTURE_FILENAME", Structure_FileName, string("structure"));
+	/* DESCRIPTION: Output file structure (w/o extension) variables */
+	AddScalarOption("SURFACE_STRUCTURE_FILENAME", SurfStructure_FileName, string("surface_structure"));
 	/* DESCRIPTION: Output file wave (w/o extension) variables */
 	AddScalarOption("VOLUME_WAVE_FILENAME", Wave_FileName, string("wave"));
 	/* DESCRIPTION: Output file adj. wave (w/o extension) variables */
@@ -5298,6 +5300,12 @@ void CConfig::SetFileNameDomain(unsigned short val_domain) {
 		SurfAdjCoeff_FileName = old_name + buffer;
 	}
 
+  old_name = SurfStructure_FileName;
+	if (MPI::COMM_WORLD.Get_size() > 1) {
+		sprintf (buffer, "_%d", int(val_domain));
+		SurfStructure_FileName = old_name + buffer;
+	}
+  
 	if (MPI::COMM_WORLD.Get_size() > 1) {
 
 		/*--- Standard flow and adjoint output ---*/
