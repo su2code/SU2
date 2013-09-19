@@ -40,7 +40,7 @@
 
 using namespace std;
 
-/*! 
+/*!
  * \class CGridMovement
  * \brief Class for moving the surface and volumetric 
  *        numerical grid (2D and 3D problems).
@@ -49,7 +49,7 @@ using namespace std;
  */
 class CGridMovement {
 public:
-	
+
 	/*! 
 	 * \brief Constructor of the class. 
 	 */
@@ -1016,8 +1016,8 @@ public:
 	 */
 	void Surface_Pitching(CGeometry *geometry, CConfig *config,
                              unsigned long iter, unsigned short iZone);
-	
-	/*! 
+    
+   /*!
 	 * \brief Deforms a 3-D flutter/pitching surface during an unsteady simulation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.

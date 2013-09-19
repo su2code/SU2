@@ -1547,7 +1547,7 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
 
 void CVolumetricMovement::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned short iZone, unsigned long iter, double (&displacements)[4]) {
     
-    /*--- The structural model solved in this routine is the typical section wing model
+    /*--- The aeroelastic model solved in this routine is the typical section wing model
      The details of the implementation can be found in J.J. Alonso "Fully-Implicit Time-Marching Aeroelastic Solutions" 1994.
      This routine is limited to 2 dimensional problems ---*/
     
@@ -1765,7 +1765,11 @@ void CVolumetricMovement::AeroelasticDeform(CGeometry *geometry, CConfig *config
     
 	/*--- Store movement of each node on the moving surface ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        if (config->GetMarker_All_DV(iMarker) == YES) {
+        //if (config->GetMarker_All_DV(iMarker) == YES) {
+        if (config->GetMarker_All_Moving(iMarker) == YES) {
+            
+            // Will need to put the jMarker and Markder stuff tag in here.
+
             for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
                 iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
                 /*--- Coordinates of the current point ---*/

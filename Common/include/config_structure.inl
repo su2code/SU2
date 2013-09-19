@@ -950,6 +950,8 @@ inline unsigned short CConfig::GetAeroelastic_GridVelocity(void) {return Aeroela
 
 inline bool CConfig::GetWind_Gust(void) { return Wind_Gust; }
 
+inline bool CConfig::GetAeroelastic_Simulation(void) { return Aeroelastic_Simulation; }
+
 inline unsigned short CConfig::GetGust_Type(void) {return Gust_Type;}
 
 inline unsigned short CConfig::GetGust_Dir(void) {return Gust_Dir;}

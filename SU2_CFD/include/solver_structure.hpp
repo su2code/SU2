@@ -985,7 +985,21 @@ public:
 	 * \return Value of the lift coefficient (viscous contribution) on the surface <i>val_marker</i>.
 	 */
 	virtual double GetCLift_Visc(unsigned short val_marker);
-  
+
+    /*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \return Value of the z moment coefficient (inviscid contribution) on the surface <i>val_marker</i>.
+	 */
+	virtual double GetCMz_Inv(unsigned short val_marker);
+    
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \return Value of the z moment coefficient (viscous contribution) on the surface <i>val_marker</i>.
+	 */
+	virtual double GetCMz_Visc(unsigned short val_marker);
+
   /*!
 	 * \brief A virtual member.
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -1660,6 +1674,46 @@ public:
 	 * \param[in] solution - Container vector with all the solutions.
 	 */
 	virtual void GetNacelle_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+    
+    /*!
+	 * \brief Prepares and solves the aeroelastic equations.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iter - Current sudo time iteration.
+     * \param[in] iZone - Zone number in the mesh.
+	 */
+	void Aeroelastic(CGeometry *geometry, CConfig *config, unsigned long IntIter, unsigned short iZone);
+
+    
+    /*!
+	 * \brief Sets up the generalized eigenvectors and eigenvalues needed to solve the aeroelastic equations.
+     * \param[in] PHI - Matrix of the generalized eigenvectors.
+     * \param[in] lambda - The eigenvalues of the generalized eigensystem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+    void SetUpTypicalSectionWingModel(double (&PHI)[2][2],double (&lambda)[2], CConfig *config);
+    
+    /*!
+	 * \brief Solve the typical section wing model.
+	 * \param[in] geometry - Geometrical definition of the problem.
+     * \param[in] Cl - Coefficient of lift at particular iteration.
+     * \param[in] Cm - Moment coefficient about z-axis at particular iteration.
+	 * \param[in] config - Definition of the particular problem.
+     * \param[in] iZone - Zone number in the mesh.
+     * \param[in] iter - Sudo time iteration number.
+     * \param[in] displacements - solution of typical section wing model.
+	 */
+    void SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned short iZone, unsigned long iter, double (&displacements)[4]);
+    
+    /*!
+	 * \brief Unsteady aeroelastic grid movement by deforming the mesh.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+     * \param[in] iZone - Zone number in the mesh.
+     * \param[in] displacements - solution of typical section wing model.
+	 */
+    void AeroelasticDeform(CGeometry *geometry, CConfig *config, unsigned short iZone, double displacements[4]);
+
 
 };
 
@@ -2311,6 +2365,13 @@ public:
 	 */
 	double GetCLift_Inv(unsigned short val_marker);
     
+    /*!
+	 * \brief Provide the non dimensional z moment coefficient (inviscid contribution).
+	 * \param val_marker Surface where the coefficient is going to be computed.
+	 * \return Value of the z moment coefficient (inviscid contribution) on the surface <i>val_marker</i>.
+	 */
+	double GetCMz_Inv(unsigned short val_marker);
+    
 	/*!
 	 * \brief Provide the non dimensional drag coefficient (inviscid contribution).
 	 * \param val_marker Surface where the coeficient is going to be computed.
@@ -2730,6 +2791,13 @@ public:
 	 * \return Value of the lift coefficient (viscous contribution) on the surface <i>val_marker</i>.
 	 */
 	double GetCLift_Visc(unsigned short val_marker);
+    
+    /*!
+	 * \brief Get the non dimensional z moment coefficient (viscous contribution).
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \return Value of the z moment coefficient (viscous contribution) on the surface <i>val_marker</i>.
+	 */
+	double GetCMz_Visc(unsigned short val_marker);
   
   /*!
 	 * \brief Get the non dimensional sideforce coefficient (viscous contribution).

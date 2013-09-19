@@ -1472,6 +1472,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		}
 	}
 
+    /*--- Set the boolean flag if we are carrying out an aeroelastic simulation. ---*/
+	if (Grid_Movement && Kind_GridMovement[ZONE_0] == AEROELASTIC)
+		Aeroelastic_Simulation = true;
+    else
+        Aeroelastic_Simulation = false;
+    
   /*--- Fluid-Structure problems always have grid movement ---*/
 	if (Kind_Solver == FLUID_STRUCTURE_EULER ||
       Kind_Solver == FLUID_STRUCTURE_NAVIER_STOKES) {
