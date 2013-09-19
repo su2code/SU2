@@ -3307,13 +3307,12 @@ void COutput::DeallocateSolution(CConfig *config, CGeometry *geometry) {
 		delete [] Data;
 
 	}
-
 }
 
 void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
 	char cstr[200], buffer[50], turb_resid[1000];
   unsigned short iMarker, iSpecies;
-  
+    
 	bool rotating_frame = config->GetRotating_Frame();
 	bool equiv_area = config->GetEquivArea();
 	bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == ADJ_RANS));
