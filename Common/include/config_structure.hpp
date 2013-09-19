@@ -65,6 +65,7 @@ private:
 	Linearized,				/*!< \brief Flag to know if the code is solving a linearized problem. */
 	Grid_Movement,			/*!< \brief Flag to know if there is grid movement. */
     Wind_Gust,              /*!< \brief Flag to know if there is a wind gust. */
+    Aeroelastic_Simulation, /*!< \brief Flag to know if there is an aeroelastic simulation. */
 	Rotating_Frame,			/*!< \brief Flag to know if there is a rotating frame. */
 	AdiabaticWall,			/*!< \brief Flag to know if we are using the Adiabatic Wall. */
 	IsothermalWall,			/*!< \brief Flag to know if we are using the Isothermal Wall. */
@@ -4373,6 +4374,12 @@ public:
 	 * \return type of grid velocity computation used.
 	 */
 	unsigned short GetAeroelastic_GridVelocity(void);
+    
+    /*!
+	 * \brief Get information about the aeroelastic simulation.
+	 * \return <code>TRUE</code> if it is an aeroelastic case; otherwise <code>FALSE</code>.
+	 */
+	bool GetAeroelastic_Simulation(void);
     
     /*!
 	 * \brief Get information about the wind gust.

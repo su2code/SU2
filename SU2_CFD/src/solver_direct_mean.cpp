@@ -3551,6 +3551,9 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 		}
 	}
 
+    // Compute the forces per airfoil and then do MPI.
+    // Dont use iMarker use the name of the marker to make sure I have the same one.
+    
 #ifndef NO_MPI
   
   /*--- Add AllBound information using all the nodes ---*/
