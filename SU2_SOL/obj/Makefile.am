@@ -42,3 +42,10 @@ ___bin_SU2_SOL_LDADD += @METIS_LD@
 ___bin_SU2_SOL_CXXFLAGS += @TECIO_CXX@
 ___bin_SU2_SOL_LDADD += @TECIO_LD@
 # endif
+
+# if BUILD_MUTATIONPP
+___bin_SU2_SOL_CXXFLAGS += @MUTATIONPP_CXX@
+___bin_SU2_SOL_LDADD += @MUTATIONPP_LD@
+# endif
+
+

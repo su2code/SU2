@@ -200,6 +200,10 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
       Tecplot_File << ", \"Sharp_Edge_Dist\"";
     }
     
+    if (Kind_Solver == TNE2_EULER) {
+      Tecplot_File << ",\"Mach\",\"Pressure\",\"Temperature\",\"Temperature_ve\"";
+    }
+    
     if ((Kind_Solver == PLASMA_EULER) || (Kind_Solver == PLASMA_NAVIER_STOKES)) {
       unsigned short iSpecies;
       for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++)
