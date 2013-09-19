@@ -33,3 +33,8 @@ ___bin_SU2_GDC_LDADD += @METIS_LD@
 ___bin_SU2_GDC_CXXFLAGS += @TECIO_CXX@
 ___bin_SU2_GDC_LDADD += @TECIO_LD@
 # endif
+
+# if BUILD_MUTATIONPP
+___bin_SU2_GDC_CXXFLAGS += @MUTATIONPP_CXX@
+___bin_SU2_GDC_LDADD += @MUTATIONPP_LD@
+# endif

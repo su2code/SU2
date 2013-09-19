@@ -27,6 +27,9 @@
 #ifndef NO_MPI
 #include <mpi.h>
 #endif
+#ifndef NO_MUTATIONPP
+#include "mutation++.h"
+#endif
 #include <ctime>
 
 #include "solver_structure.hpp"
