@@ -3318,95 +3318,95 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short va
     
     /*--- Mesh coordinates are always written to the restart first ---*/
     if (nDim == 2) {
-        restart_file << ", \"x\", \"y\"";
+        restart_file << "\t\"x\"\t\"y\"";
     } else {
-        restart_file << ", \"x\", \"y\", \"z\"";
+        restart_file << "\t\"x\"\t\"y\"\t\"z\"";
     }
     
 	for (iVar = 0; iVar < nVar_Consv; iVar++) {
-		restart_file << ", \"Conservative_" << iVar+1<<"\"";
+		restart_file << "\t\"Conservative_" << iVar+1<<"\"";
 	}
     if (config->GetWrt_Residuals()) {
         for (iVar = 0; iVar < nVar_Consv; iVar++) {
-            restart_file << ", \"Residual_" << iVar+1<<"\"";
+            restart_file << "\t\"Residual_" << iVar+1<<"\"";
         }
     }
     
     /*--- Mesh velocities for dynamic mesh cases ---*/
 	if (grid_movement) {
         if (nDim == 2) {
-            restart_file << ", \"Grid_Velx\", \"Grid_Vely\"";
+            restart_file << "\t\"Grid_Velx\"\t\"Grid_Vely\"";
         } else {
-            restart_file << ", \"Grid_Velx\", \"Grid_Vely\", \"Grid_Velz\"";
+            restart_file << "\t\"Grid_Velx\"\t\"Grid_Vely\"\t\"Grid_Velz\"";
         }
 	}
     
     /*--- Solver specific output variables ---*/
     if (config->GetKind_Regime() == FREESURFACE) {
-        restart_file << ", \"Density\"";
+        restart_file << "\t\"Density\"";
     }
     
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-        restart_file << ", \"Pressure\", \"Pressure_Coefficient\", \"Mach\"";
+        restart_file << "\t\"Pressure\"\t\"Pressure_Coefficient\"\t\"Mach\"";
     }
     
     if (Kind_Solver == TNE2_EULER) {
-        restart_file << ", \"Mach\", \"Pressure\", \"Temperature\", \"Temperature_ve\"";
+        restart_file << "\t\"Mach\"\t\"Pressure\"\t\"Temperature\"\t\"Temperature_ve\"";
     }
     
     if (Kind_Solver == TNE2_NAVIER_STOKES) {
-        restart_file << ", \"Temperature\", \"Laminar_Viscosity\", \"Skin_Friction_Coefficient\", \"Heat_Transfer\", \"Y_Plus\"";
+        restart_file << "\t\"Temperature\"\t\"Laminar_Viscosity\"\t\"Skin_Friction_Coefficient\"\t\"Heat_Transfer\"\t\"Y_Plus\"";
     }
     
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-        restart_file << ", \"Temperature\", \"Laminar_Viscosity\", \"Skin_Friction_Coefficient\", \"Heat_Transfer\", \"Y_Plus\"";
+        restart_file << "\t\"Temperature\"\t\"Laminar_Viscosity\"\t\"Skin_Friction_Coefficient\"\t\"Heat_Transfer\"\t\"Y_Plus\"";
     }
     
     if (Kind_Solver == RANS) {
-        restart_file << ", \"Eddy_Viscosity\"";
+        restart_file << "\t\"Eddy_Viscosity\"";
     }
     
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-        restart_file << ", \"Sharp_Edge_Dist\"";
+        restart_file << "\t\"Sharp_Edge_Dist\"";
     }
     
     if ((Kind_Solver == PLASMA_EULER) || (Kind_Solver == PLASMA_NAVIER_STOKES)) {
         unsigned short iSpecies;
         for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++)
-            restart_file << ", \"Pressure_" << iSpecies << "\"";
+            restart_file << "\t\"Pressure_" << iSpecies << "\"";
         for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++)
-            restart_file << ", \"Temperature_" << iSpecies << "\"";
+            restart_file << "\t\"Temperature_" << iSpecies << "\"";
         for (iSpecies = 0; iSpecies < config->GetnDiatomics(); iSpecies++)
-            restart_file << ", \"TemperatureVib_" << iSpecies << "\"";
+            restart_file << "\t\"TemperatureVib_" << iSpecies << "\"";
         for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++)
-            restart_file << ", \"Mach_" << iSpecies << "\"";
+            restart_file << "\t\"Mach_" << iSpecies << "\"";
     }
     
     if (Kind_Solver == PLASMA_NAVIER_STOKES) {
         unsigned short iSpecies;
         for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++)
-            restart_file << ", \"LaminaryViscosity_" << iSpecies << "\"";
+            restart_file << "\t\"LaminaryViscosity_" << iSpecies << "\"";
         
         if ( (Kind_Solver == PLASMA_NAVIER_STOKES) &&
             (config->GetMagnetic_Force() == YES)  &&
             (geometry->GetnDim() == 3)              ) {
             for (iDim = 0; iDim < nDim; iDim++)
-                restart_file << ", \"Magnet_Field" << iDim << "\"";
+                restart_file << "\t\"Magnet_Field" << iDim << "\"";
         }
     }
     
     if (Kind_Solver == ELECTRIC_POTENTIAL) {
         for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
-            restart_file << ", \"ElectricField_" << iDim+1 << "\"";
+            restart_file << "\t\"ElectricField_" << iDim+1 << "\"";
     }
     
     if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
-        restart_file << ", \"Surface_Sensitivity\", \"Solution_Sensor\"";
+        restart_file << "\t\"Surface_Sensitivity\"\t\"Solution_Sensor\"";
     }
     
     if (config->GetExtraOutput()) {
         for (iVar = 0; iVar < nVar_Extra; iVar++) {
-            restart_file << ", \"ExtraOutput_" << iVar+1<<"\"";
+            restart_file << "\t\"ExtraOutput_" << iVar+1<<"\"";
         }
     }
     
