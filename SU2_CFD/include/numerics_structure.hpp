@@ -6208,16 +6208,20 @@ public:
 class CUpwRoe_AdjTNE2 : public CNumerics {
 private:
 	double *Residual_Roe;
-	double area, Sx, Sy, Sz, rarea, nx, ny, nz, rho_l, u_l, v_l, w_l, h_l, rho_r,
-	u_r, v_r, w_r, h_r, psi1, psi2, psi3, psi4, psi5;
-	double h, u, v, w, c, psi1_l, psi2_l, psi3_l, psi4_l, psi5_l,
-	psi1_r, psi2_r, psi3_r, psi4_r, psi5_r, q_l, q_r, Q_l, Q_r, vn,
-	rrho_l, weight, rweight1, cc;
-	double l1psi, l2psi, absQ, absQp, absQm, q2, alpha, beta_u, beta_v, beta_w, Q, l1l2p, l1l2m, eta;
-	double RoeDensity, RoeSoundSpeed, *RoeVelocity, *Lambda, *Velocity_i, *Velocity_j, **Proj_flux_tensor_i, **Proj_flux_tensor_j,
-	Proj_ModJac_Tensor_ij, **Proj_ModJac_Tensor, Energy_i, Energy_j, **P_Tensor, **invP_Tensor;
-	unsigned short iDim, iVar, jVar, kVar;
-	bool implicit, rotating_frame, grid_movement;
+  double *Density_i, *Density_j;
+  double *Velocity_i, *Velocity_j;
+  double *dPdrhos;
+  double Energy_i, Energy_j;
+  double Energy_ve_i, Energy_ve_j;
+  double SoundSpeed_i, SoundSpeed_j;
+	double *RoeDensity, RoeSoundSpeed, *RoeVelocity, RoeEnthalpy, RoeEnergy_ve;
+  double *Lambda;
+  double **Proj_flux_tensor_i, **Proj_flux_tensor_j;
+  double **Proj_Jac_Tensor_i, **Proj_Jac_Tensor_j;
+  double Proj_ModJac_Tensor_ij, **Proj_ModJac_Tensor;
+  double **P_Tensor, **invP_Tensor;
+  double *l, *m;
+	bool implicit, ionization;
   
 public:
   
@@ -6246,6 +6250,12 @@ public:
 	 */
 	void ComputeResidual(double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii,
                        double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj,CConfig *config);
+
+  /*!
+	 * \brief Generate a set of mutually orthogonal vectors.
+	 * \param[in] val_Normal - Normal vector
+	 */
+  void CreateBasis(double *val_Normal);
 };
 
 
@@ -6309,14 +6319,13 @@ public:
  */
 class CCentLax_AdjTNE2 : public CNumerics {
 private:
+  bool implicit, stretching;
 	double *Diff_Psi;
-	double *Velocity_i, *Velocity_j;
-	double *MeanPhi;
-	unsigned short iDim, jDim, iVar, jVar;
-	double Residual, ProjVelocity_i, ProjVelocity_j, ProjPhi, ProjPhi_Vel, sq_vel, phis1, phis2,
-	MeanPsiRho, MeanPsiE, Param_p, Param_Kappa_0, Local_Lambda_i, Local_Lambda_j, MeanLambda,
-	Phi_i, Phi_j, sc2, StretchingFactor, Epsilon_0, cte_0;
-	bool implicit, stretching, rotating_frame, grid_movement;
+	double *Velocity_i, *Velocity_j, ProjVelocity_i, ProjVelocity_j, sq_vel;
+  double *MeanPsiRho, MeanPsiE, MeanPsiEve;
+	double Phi_i, Phi_j, *MeanPhi, ProjPhi, ProjPhi_Vel, phis1, phis2;
+	double Residual, Local_Lambda_i, Local_Lambda_j, MeanLambda;
+  double Param_p, Param_Kappa_0, sc2, StretchingFactor, Epsilon_0, cte_0;
   
 public:
   

@@ -2,7 +2,7 @@
  * \file solution_direct_tne2.cpp
  * \brief Main subrotuines for solving flows in thermochemical nonequilibrium.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.6
+ * \version 2.0.7
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -603,9 +603,17 @@ void CTNE2EulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
          ordering is rotation about the x-axis, y-axis,
          then z-axis. Note that this is the transpose of the matrix
          used during the preprocessing stage. ---*/
-        rotMatrix[0][0] = cosPhi*cosPsi;    rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;     rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-        rotMatrix[0][1] = cosPhi*sinPsi;    rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;     rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-        rotMatrix[0][2] = -sinPhi;          rotMatrix[1][2] = sinTheta*cosPhi;                              rotMatrix[2][2] = cosTheta*cosPhi;
+        rotMatrix[0][0] = cosPhi*cosPsi;
+        rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
+        rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+        
+        rotMatrix[0][1] = cosPhi*sinPsi;
+        rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
+        rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+        
+        rotMatrix[0][2] = -sinPhi;
+        rotMatrix[1][2] = sinTheta*cosPhi;
+        rotMatrix[2][2] = cosTheta*cosPhi;
         
         /*--- Copy conserved variables before performing transformation. ---*/
         for (iVar = 0; iVar < nVar; iVar++)
@@ -613,9 +621,9 @@ void CTNE2EulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
         
         /*--- Rotate the momentum components. ---*/
         if (nDim == 2) {
-          Solution[nSpecies]   = rotMatrix[0][0]*Buffer_Receive_U[nSpecies*nVertexR+iVertex]
+          Solution[nSpecies]   = rotMatrix[0][0]*Buffer_Receive_U[(nSpecies)*nVertexR+iVertex]
                                + rotMatrix[0][1]*Buffer_Receive_U[(nSpecies+1)*nVertexR+iVertex];
-          Solution[nSpecies+1] = rotMatrix[1][0]*Buffer_Receive_U[nSpecies*nVertexR+iVertex]
+          Solution[nSpecies+1] = rotMatrix[1][0]*Buffer_Receive_U[(nSpecies)*nVertexR+iVertex]
                                + rotMatrix[1][1]*Buffer_Receive_U[(nSpecies+1)*nVertexR+iVertex];
         }
         else {
@@ -1805,7 +1813,8 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
 	for(iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
 		/*--- Retrieve node numbers and pass edge normal to CNumerics ---*/
-		iPoint = geometry->edge[iEdge]->GetNode(0); jPoint = geometry->edge[iEdge]->GetNode(1);
+		iPoint = geometry->edge[iEdge]->GetNode(0);
+    jPoint = geometry->edge[iEdge]->GetNode(1);
 		numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
     
     /*--- Pass conserved and primitive variables from CVariable to CNumerics class ---*/
@@ -1817,10 +1826,7 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
     /*--- Pass supplementary information to CNumerics ---*/
     numerics->SetdPdrhos(node[iPoint]->GetdPdrhos(), node[jPoint]->GetdPdrhos());
     
-		/*--- Compute the residual ---*/
-/*    if (iPoint == 17) {
-      cout << "Test!" << endl;
-    }*/
+    /*--- Compute the upwind residual ---*/
 		numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
 
     
@@ -2111,7 +2117,7 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
     // NOTE: Jacobians don't account for relaxation time derivatives
     numerics->ComputeVibRelaxation(Residual, Jacobian_i, config);
     
-    /*--- Add Residual (and Jacobian) ---*/
+    /*--- Subtract Residual (and Jacobian) ---*/
     LinSysRes.SubtractBlock(iPoint, Residual);
     if (implicit)
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
