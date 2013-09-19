@@ -2,23 +2,23 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.6
+ * \version 2.0.7
  *
- * Stanford University Unstructured (SU2) Code
- * Copyright (C) 2012 Aerospace Design Laboratory
+ * Stanford University Unstructured (SU2).
+ * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #pragma once
@@ -165,6 +165,8 @@ inline double CConfig::GetGas_Constant_Ref(void) { return Gas_Constant_Ref; }
 
 inline double CConfig::GetTemperature_FreeStream(void) { return Temperature_FreeStream; }
 
+inline double CConfig::GetTemperature_ve_FreeStream(void) { return Temperature_ve_FreeStream; }
+
 inline double CConfig::GetPrandtl_Lam(void) { return Prandtl_Lam; }
 
 inline double CConfig::GetPrandtl_Turb(void) { return Prandtl_Turb; }
@@ -210,6 +212,8 @@ inline double CConfig::GetIntermittency_FreeStream(void) { return Intermittency_
 inline double CConfig::GetTurbulenceIntensity_FreeStream(void) { return TurbulenceIntensity_FreeStream; }
 
 inline double CConfig::GetTurb2LamViscRatio_FreeStream(void) {return Turb2LamViscRatio_FreeStream;}
+
+inline double* CConfig::GetMassFrac_FreeStream(void) { return MassFrac_FreeStream; }
 
 inline double CConfig::GetLength_Reynolds(void) { return Length_Reynolds; }
 
@@ -296,6 +300,8 @@ inline bool CConfig::GetWrt_Unsteady(void) { return Wrt_Unsteady; }
 
 inline bool CConfig::GetLowFidelitySim(void) { return LowFidelitySim; }
 
+inline bool CConfig::GetIonization(void) { return ionization; }
+
 inline unsigned short CConfig::GetKind_Solver(void) { return Kind_Solver; }
 
 inline unsigned short CConfig::GetKind_Regime(void) { return Kind_Regime; }
@@ -376,15 +382,36 @@ inline double CConfig::GetArrheniusEta(unsigned short iReaction) { return Arrhen
 
 inline double CConfig::GetArrheniusTheta(unsigned short iReaction) { return ArrheniusTheta[iReaction]; }
 
+inline double* CConfig::GetRxnTcf_a(void) { return Tcf_a; }
+inline double* CConfig::GetRxnTcf_b(void) { return Tcf_b; }
+inline double* CConfig::GetRxnTcb_a(void) { return Tcb_a; }
+inline double* CConfig::GetRxnTcb_b(void) { return Tcb_b; }
+
+inline double* CConfig::GetDissociationPot(void) { return Diss; }
+
 inline double CConfig::GetCharVibTemp(unsigned short iSpecies) {return CharVibTemp[iSpecies]; }
+
+inline double* CConfig::GetCharVibTemp() {return CharVibTemp; }
+
+inline double** CConfig::GetCharElTemp() {return CharElTemp; }
+
+inline unsigned short* CConfig::GetnElStates() {return nElStates; }
+
+inline double** CConfig::GetElDegeneracy() {return degen; }
+
+inline double* CConfig::GetRotationModes() { return RotationModes; }
+
+inline double* CConfig::GetRefTemperature() { return Ref_Temperature; }
 
 inline double CConfig::GetParticle_Mass(unsigned short iSpecies) { return Particle_Mass[iSpecies]; } 
 
-inline double CConfig::GetStagnation_B() { return Stagnation_B; } 
+inline double CConfig::GetStagnation_B() { return Stagnation_B; }
 
 inline double CConfig::GetElec_Conductivity() { return Electric_Cond; } 
 
 inline double CConfig::GetDipoleDist() { return DipoleDist; } 
+
+inline double* CConfig::GetMolar_Mass() { return Molar_Mass; } 
 
 inline double CConfig::GetMolar_Mass(unsigned short iSpecies) { return Molar_Mass[iSpecies]; } 
 
@@ -397,6 +424,8 @@ inline double CConfig::GetMolecular_Diameter(unsigned short iSpecies) { return M
 inline int CConfig::GetParticle_ChargeNumber(unsigned short iSpecies) { return Charge_Number[iSpecies]; }
 
 inline double CConfig::GetInitial_Gas_Composition(unsigned short iSpecies) { return Gas_Composition[iSpecies]; }
+
+inline double* CConfig::GetEnthalpy_Formation(void) { return Enthalpy_Formation; }
 
 inline double CConfig::GetEnthalpy_Formation(unsigned short iSpecies) { return Enthalpy_Formation[iSpecies]; }
 
@@ -452,6 +481,8 @@ inline unsigned short CConfig::GetKind_Upwind(void) { return Kind_Upwind; }
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_Flow(void) { return Kind_TimeIntScheme_Flow; }
 
+inline unsigned short CConfig::GetKind_TimeIntScheme_TNE2(void) { return Kind_TimeIntScheme_TNE2; }
+
 inline unsigned short CConfig::GetKind_TimeIntScheme_Plasma(void) { return Kind_TimeIntScheme_Plasma; }
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_AdjPlasma(void) { return Kind_TimeIntScheme_AdjPlasma; }
@@ -461,6 +492,8 @@ inline unsigned short CConfig::GetKind_TimeIntScheme_Wave(void) { return Kind_Ti
 inline unsigned short CConfig::GetKind_TimeIntScheme_FEA(void) { return Kind_TimeIntScheme_FEA; }
 
 inline unsigned short CConfig::GetKind_ConvNumScheme_Flow(void) { return Kind_ConvNumScheme_Flow; }
+
+inline unsigned short CConfig::GetKind_ConvNumScheme_TNE2(void) { return Kind_ConvNumScheme_TNE2; }
 
 inline unsigned short CConfig::GetKind_ConvNumScheme_Plasma(void) { return Kind_ConvNumScheme_Plasma; }
 
@@ -473,6 +506,8 @@ inline unsigned short CConfig::GetKind_ConvNumScheme_AdjLevelSet(void) { return 
 inline unsigned short CConfig::GetKind_ConvNumScheme_Template(void) { return Kind_ConvNumScheme_Template; }
 
 inline unsigned short CConfig::GetKind_ViscNumScheme_Flow(void) { return Kind_ViscNumScheme_Flow; }
+
+inline unsigned short CConfig::GetKind_ViscNumScheme_TNE2(void) { return Kind_ViscNumScheme_TNE2; }
 
 inline unsigned short CConfig::GetKind_SourNumScheme_LevelSet(void) { return Kind_SourNumScheme_LevelSet; }
 
@@ -492,6 +527,8 @@ inline unsigned short CConfig::GetKind_ViscNumScheme_Template(void) { return Kin
 
 inline unsigned short CConfig::GetKind_SourNumScheme_Flow(void) { return Kind_SourNumScheme_Flow; }
 
+inline unsigned short CConfig::GetKind_SourNumScheme_TNE2(void) { return Kind_SourNumScheme_TNE2; }
+
 inline unsigned short CConfig::GetKind_SourNumScheme_Plasma(void) { return Kind_SourNumScheme_Plasma; }
 
 inline unsigned short CConfig::GetKind_SourNumScheme_AdjPlasma(void) { return Kind_SourNumScheme_AdjPlasma; }
@@ -506,6 +543,10 @@ inline unsigned short CConfig::GetKind_SourNumScheme_Elec(void) { return Kind_So
 
 inline unsigned short CConfig::GetKind_Centered_Flow(void) { return Kind_Centered_Flow; }
 
+inline unsigned short CConfig::GetKind_Centered_TNE2(void) { return Kind_Centered_TNE2; }
+
+inline unsigned short CConfig::GetKind_Centered_AdjTNE2(void) { return Kind_Centered_AdjTNE2; }
+
 inline unsigned short CConfig::GetKind_Centered_LevelSet(void) { return Kind_Centered_LevelSet; }
 
 inline unsigned short CConfig::GetKind_Centered_AdjLevelSet(void) { return Kind_Centered_AdjLevelSet; }
@@ -517,6 +558,10 @@ inline unsigned short CConfig::GetKind_Centered_AdjPlasma(void) { return Kind_Ce
 inline unsigned short CConfig::GetKind_SlopeLimit(void) { return Kind_SlopeLimit; }
 
 inline unsigned short CConfig::GetKind_SlopeLimit_Flow(void) { return Kind_SlopeLimit_Flow; }
+
+inline unsigned short CConfig::GetKind_SlopeLimit_TNE2(void) { return Kind_SlopeLimit_TNE2; }
+
+inline unsigned short CConfig::GetKind_SlopeLimit_AdjTNE2(void) { return Kind_SlopeLimit_AdjTNE2; }
 
 inline unsigned short CConfig::GetKind_SlopeLimit_Plasma(void) { return Kind_SlopeLimit_Plasma; }
 
@@ -533,6 +578,10 @@ inline unsigned short CConfig::GetKind_SlopeLimit_AdjTurb(void) { return Kind_Sl
 inline unsigned short CConfig::GetKind_SlopeLimit_AdjFlow(void) { return Kind_SlopeLimit_AdjFlow; }
 
 inline unsigned short CConfig::GetKind_Upwind_Flow(void) { return Kind_Upwind_Flow; }
+
+inline unsigned short CConfig::GetKind_Upwind_TNE2(void) { return Kind_Upwind_TNE2; }
+
+inline unsigned short CConfig::GetKind_Upwind_AdjTNE2(void) { return Kind_Upwind_AdjTNE2; }
 
 inline unsigned short CConfig::GetKind_Upwind_LevelSet(void) { return Kind_Upwind_LevelSet; }
 
@@ -554,11 +603,25 @@ inline double CConfig::GetKappa_2nd_Plasma(void) { return Kappa_2nd_Plasma; }
 
 inline double CConfig::GetKappa_4th_Plasma(void) { return Kappa_4th_Plasma; }
 
+inline double CConfig::GetKappa_1st_AdjTNE2(void) { return Kappa_1st_AdjTNE2; }
+
+inline double CConfig::GetKappa_2nd_AdjTNE2(void) { return Kappa_2nd_AdjTNE2; }
+
+inline double CConfig::GetKappa_4th_AdjTNE2(void) { return Kappa_4th_AdjTNE2; }
+
 inline unsigned short CConfig::GetKind_TimeIntScheme_AdjFlow(void) { return Kind_TimeIntScheme_AdjFlow; }
 
 inline unsigned short CConfig::GetKind_ConvNumScheme_AdjFlow(void) { return Kind_ConvNumScheme_AdjFlow; }
 
 inline unsigned short CConfig::GetKind_ViscNumScheme_AdjFlow(void) { return Kind_ViscNumScheme_AdjFlow; }
+
+inline unsigned short CConfig::GetKind_TimeIntScheme_AdjTNE2(void) { return Kind_TimeIntScheme_AdjTNE2; }
+
+inline unsigned short CConfig::GetKind_ConvNumScheme_AdjTNE2(void) { return Kind_ConvNumScheme_AdjTNE2; }
+
+inline unsigned short CConfig::GetKind_ViscNumScheme_AdjTNE2(void) { return Kind_ViscNumScheme_AdjTNE2; }
+
+inline unsigned short CConfig::GetKind_SourNumScheme_AdjTNE2(void) { return Kind_SourNumScheme_AdjTNE2; }
 
 inline unsigned short CConfig::GetKind_ViscNumScheme_Wave(void) { return Kind_ViscNumScheme_Wave; }
 

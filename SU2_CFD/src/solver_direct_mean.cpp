@@ -2,23 +2,23 @@
  * \file solution_direct_mean.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.6
+ * \version 2.0.7
  *
- * Stanford University Unstructured (SU2) Code
- * Copyright (C) 2012 Aerospace Design Laboratory
+ * Stanford University Unstructured (SU2).
+ * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "../include/solver_structure.hpp"
@@ -1746,8 +1746,10 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
 	bool adjoint = config->GetAdjoint();
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-	bool upwind_2nd = ((config->GetKind_Upwind_Flow() == ROE_2ND) || (config->GetKind_Upwind_Flow() == AUSM_2ND)
-                     || (config->GetKind_Upwind_Flow() == HLLC_2ND) || (config->GetKind_Upwind_Flow() == ROE_TURKEL_2ND));
+	bool upwind_2nd = ((config->GetKind_Upwind_Flow() == ROE_2ND)       ||
+                     (config->GetKind_Upwind_Flow() == AUSM_2ND)      ||
+                     (config->GetKind_Upwind_Flow() == HLLC_2ND)      ||
+                     (config->GetKind_Upwind_Flow() == ROE_TURKEL_2ND)  );
 	bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
 	bool center_jst = center && (config->GetKind_Centered_Flow() == JST);
 	bool low_fidelity = (config->GetLowFidelitySim() && (iMesh == MESH_1));
@@ -2205,7 +2207,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     
 		/*--- Compute the residual ---*/
 		numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
-
+    
 		/*--- Update residual value ---*/
 		LinSysRes.AddBlock(iPoint, Res_Conv);
 		LinSysRes.SubtractBlock(jPoint, Res_Conv);
@@ -4361,6 +4363,20 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
 						Jacobian_i[nDim+1][nDim+1] = a2*ProjGridVel;
 					}
 					Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
+          
+/*          cout << "EulerSolver::BCEulerWall - " << endl;
+          cout << "Residual: " << endl;
+          for (iVar =0; iVar < nVar; iVar++)
+            cout << Residual[iVar] << endl;
+
+          cout << endl << endl <<  "Jacobian: " << endl;
+          for (iVar =0; iVar < nVar; iVar++) {
+            for (jVar =0; jVar < nVar; jVar++) {
+              cout << Jacobian_i[iVar][jVar] << "\t";
+            }
+            cout << endl;
+          }
+          cin.get();*/
 				}
 				if (incompressible)  {
 					for (iDim = 0; iDim < nDim; iDim++)
@@ -4616,6 +4632,34 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 			/*--- Convective Jacobian contribution for implicit integration ---*/
 			if (implicit)
 				Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      
+      
+/*      unsigned short iVar, jVar;
+      cout << "Euler BC Far Field: " << endl;
+      cout << "ConsVarDomain: " << endl;
+      for (iVar = 0; iVar < nVar; iVar++)
+        cout << U_domain[iVar] << endl;
+      cout << endl << endl << "PrimVarDomain: " << endl;
+      for (iVar = 0; iVar < nVar+2; iVar++)
+        cout << V_domain[iVar] << endl;
+      cout << endl << endl << "ConsVarInfty: " << endl;
+      for (iVar = 0; iVar < nVar; iVar++)
+        cout << U_infty[iVar] << endl;
+      cout << endl << endl << "PrimVarInfty: " << endl;
+      for (iVar = 0; iVar < nVar+2; iVar++)
+        cout << V_infty[iVar] << endl;
+      
+      cout << endl << endl << "Residual: " << endl;
+      for (iVar = 0; iVar < nVar; iVar++)
+        cout << Residual[iVar] << endl;
+      cout << endl << endl << "Jacobian: " << endl;
+      for (iVar = 0; iVar < nVar; iVar++) {
+        for (jVar = 0; jVar < nVar; jVar++) {
+          cout << Jacobian_i[iVar][jVar] << "\t";
+        }
+        cout << endl;
+      }
+      cin.get();*/
       
 			/*--- Roe Turkel preconditioning, set the value of beta ---*/
 			if ((config->GetKind_Upwind() == ROE_TURKEL_2ND) ||

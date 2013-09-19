@@ -2,23 +2,23 @@
  * \file iteration_structure.cpp
  * \brief Main subroutines used by SU2_CFD.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.6
+ * \version 2.0.7
  *
- * Stanford University Unstructured (SU2) Code
- * Copyright (C) 2012 Aerospace Design Laboratory
+ * Stanford University Unstructured (SU2).
+ * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "../include/iteration_structure.hpp"
@@ -339,7 +339,45 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
 	}
 }
 
-void PlasmaIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
+
+void TNE2Iteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+                   CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+                   CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
+  
+	double Physical_dt, Physical_t;
+	unsigned short iMesh; // Index for multi-grid level
+  unsigned short iZone; // Index for zone of the mesh
+	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
+  unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
+  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+  
+#ifndef NO_MPI
+	int rank = MPI::COMM_WORLD.Get_rank();
+#endif
+  
+	for (iZone = 0; iZone < nZone; iZone++) {
+    
+		/*--- Set the value of the internal iteration ---*/
+		IntIter = ExtIter;
+		if ((config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+				(config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) IntIter = 0;
+    
+		/*--- Set the initial condition ---*/
+		solver_container[iZone][MESH_0][TNE2_SOL]->SetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
+    
+		/*--- Update global parameters ---*/
+		if (config_container[iZone]->GetKind_Solver() == TNE2_EULER) config_container[iZone]->SetGlobalParam(TNE2_EULER, RUNTIME_TNE2_SYS, ExtIter);
+		if (config_container[iZone]->GetKind_Solver() == TNE2_NAVIER_STOKES) config_container[iZone]->SetGlobalParam(TNE2_NAVIER_STOKES, RUNTIME_TNE2_SYS, ExtIter);
+    
+		/*--- Solve the inviscid or viscous two-temperature flow equations (one iteration) ---*/
+		integration_container[iZone][TNE2_SOL]->MultiGrid_Iteration(geometry_container, solver_container,
+                                                                numerics_container, config_container,
+                                                                RUNTIME_FLOW_SYS, IntIter, iZone);
+	}
+}
+
+
+void PlasmaIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
 		CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
 		CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
 

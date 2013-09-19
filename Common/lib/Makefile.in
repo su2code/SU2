@@ -219,8 +219,12 @@ libSU2_a_SOURCES = ../src/config_structure.hpp \
 # endif
 
 # if BUILD_TECIO
-libSU2_a_CXXFLAGS = @CGNS_CXX@ @METIS_CXX@ @TECIO_CXX@
-libSU2_a_LIBADD = @CGNS_LD@ @METIS_LD@ @TECIO_LD@
+# endif
+
+# if BUILD_MUTATIONPP
+libSU2_a_CXXFLAGS = @CGNS_CXX@ @METIS_CXX@ @TECIO_CXX@ \
+	@MUTATIONPP_CXX@ $(am__empty)
+libSU2_a_LIBADD = @CGNS_LD@ @METIS_LD@ @TECIO_LD@ @MUTATIONPP_LD@
 all: all-am
 
 .SUFFIXES:

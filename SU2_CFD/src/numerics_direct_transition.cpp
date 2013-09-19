@@ -2,23 +2,23 @@
  * \file numerics_direct_transition.cpp
  * \brief This file contains all the convective term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.6
+ * \version 2.0.7
  *
- * Stanford University Unstructured (SU2) Code
- * Copyright (C) 2012 Aerospace Design Laboratory
+ * Stanford University Unstructured (SU2).
+ * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "../include/numerics_structure.hpp"
@@ -595,7 +595,8 @@ void CSourcePieceWise_TransLM::CSourcePieceWise_TransLM__ComputeResidual_TransLM
     r_t = Eddy_Viscosity_i/Laminar_Viscosity_i;
     f_onset1d = -(re_v*2.193*rey_tcd/(2.193*rey_tc*(2.193*rey_tc)));
     f_onset1 = re_v/(2.193*rey_tc);
-    y1d = pow_d(f_onset1, f_onset1d, 4., &y1);
+    y1 = pow(f_onset1, 4.);
+    y1d = 4.*f_onset1d*pow(f_onset1, 3);
     if (f_onset1 < y1) {
       x1d = y1d;
       x1 = y1;
@@ -713,8 +714,9 @@ void CSourcePieceWise_TransLM::CSourcePieceWise_TransLM__ComputeResidual_TransLM
     //
     //f_wake = 1.;
     var1d = TransVar_id[0]/(1.0-1./c_e2);
-    var1 = (TransVar_i[0]-1./c_e2)/(1.0-1./c_e2);
-    result1d = pow_d(var1, var1d, 2, &result1);
+    var1 = (TransVar_i[0]-1./c_e2)/(1.0-1./c_e2);    
+    result1 = pow(var1, 2.0);
+    result1d = 2.0*var1d*pow(var1, 1.0);
     var1d = -result1d;
     var1 = 1. - result1;
     if (var1 > 1.0) {
