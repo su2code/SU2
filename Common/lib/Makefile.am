@@ -61,4 +61,7 @@ libSU2_a_CXXFLAGS += @TECIO_CXX@
 libSU2_a_LIBADD += @TECIO_LD@
 # endif
 
-
+# if BUILD_MUTATIONPP
+libSU2_a_CXXFLAGS += @MUTATIONPP_CXX@
+libSU2_a_LIBADD += @MUTATIONPP_LD@
+# endif

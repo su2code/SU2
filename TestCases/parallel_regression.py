@@ -441,9 +441,26 @@ if __name__=="__main__":
   contadj_incomp_cylinder.tol       = 0.00001
   passed18                          = contadj_incomp_cylinder.run_test()
   
+  ######################################
+  ### Thermochemical Nonequilibrium  ###
+  ######################################
+  
+  # RAM-C II Sphere-Cone -- 61km Altitude
+  ramc           = testcase('ramc')
+  ramc.cfg_dir   = "TestCases/tne2/ramc"
+  ramc.cfg_file  = "ramc61km.cfg"
+  ramc.test_iter = 25
+  ramc.test_vals = [-4.638119,-3.018965,-0.000076,0.000176]
+  ramc.su2_exec  = "parallel_computation.py -f"
+  ramc.timeout   = 1600
+  ramc.tol       = 0.00001
+  passed19       = ramc.run_test()
+  
+  
   if (passed1 and passed2 and passed3 and passed4 and passed5 and passed6 and
       passed7 and passed8 and passed9 and passed10 and passed11 and passed12
-      and passed13 and passed14 and passed15 and passed16 and passed17 and passed18):
+      and passed13 and passed14 and passed15 and passed16 and passed17 and
+      passed18 and passed19):
     sys.exit(0)
   else:
     sys.exit(1)
