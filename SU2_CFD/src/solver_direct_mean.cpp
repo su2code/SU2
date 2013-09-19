@@ -7816,10 +7816,10 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
   double laminar_viscosity, eddy_viscosity, **grad_primvar, tau[3][3];
   double delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
   
-	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+	bool implicit       = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+  bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
 	bool grid_movement  = config->GetGrid_Movement();
   
 	/*--- Identify the boundary by string name ---*/
@@ -7864,9 +7864,9 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
 			/*--- Impose the value of the velocity as a strong boundary
        condition (Dirichlet). Fix the velocity and zero out any
        contribution to the residual at this node. ---*/
-			if (compressible) node[iPoint]->SetVelocity_Old(Vector, COMPRESSIBLE);
+			if (compressible)   node[iPoint]->SetVelocity_Old(Vector, COMPRESSIBLE);
       if (incompressible) node[iPoint]->SetVelocity_Old(Vector, INCOMPRESSIBLE);
-			if (freesurface) node[iPoint]->SetVelocity_Old(Vector, FREESURFACE);
+			if (freesurface)    node[iPoint]->SetVelocity_Old(Vector, FREESURFACE);
       
       for (iDim = 0; iDim < nDim; iDim++)
         LinSysRes.SetBlock_Zero(iPoint, iDim+1);
@@ -7888,9 +7888,9 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
         
         /*--- Retrieve other primitive quantities and viscosities ---*/
 				Density  = node[iPoint]->GetSolution(0);
-        if (compressible) Pressure = node[iPoint]->GetPressure(COMPRESSIBLE)*ProjGridVel;
-        if (incompressible) Pressure = node[iPoint]->GetPressure(INCOMPRESSIBLE)*ProjGridVel;
-        if (freesurface) Pressure = node[iPoint]->GetPressure(FREESURFACE)*ProjGridVel;
+        if (compressible)   Pressure = node[iPoint]->GetPressure(COMPRESSIBLE);
+        if (incompressible) Pressure = node[iPoint]->GetPressure(INCOMPRESSIBLE);
+        if (freesurface)    Pressure = node[iPoint]->GetPressure(FREESURFACE);
 				laminar_viscosity = node[iPoint]->GetLaminarViscosity();
 				eddy_viscosity    = node[iPoint]->GetEddyViscosity();
         total_viscosity   = laminar_viscosity + eddy_viscosity;
@@ -8106,9 +8106,9 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
 			}
       
 			/*--- Set the residual, truncation error and velocity value on the boundary ---*/
-			if (compressible) node[iPoint]->SetVelocity_Old(Vector, COMPRESSIBLE);
+			if (compressible)   node[iPoint]->SetVelocity_Old(Vector, COMPRESSIBLE);
       if (incompressible) node[iPoint]->SetVelocity_Old(Vector, INCOMPRESSIBLE);
-			if (freesurface) node[iPoint]->SetVelocity_Old(Vector, FREESURFACE);
+			if (freesurface)    node[iPoint]->SetVelocity_Old(Vector, FREESURFACE);
 
 			for (iDim = 0; iDim < nDim; iDim++)
         LinSysRes.SetBlock_Zero(iPoint, iDim+1);
@@ -8171,7 +8171,9 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
         
         /*--- Retrieve other primitive quantities and viscosities ---*/
 				Density  = node[iPoint]->GetSolution(0);
-        Pressure = node[iPoint]->GetPressure(incompressible);
+        if (compressible)   Pressure = node[iPoint]->GetPressure(COMPRESSIBLE);
+        if (incompressible) Pressure = node[iPoint]->GetPressure(INCOMPRESSIBLE);
+        if (freesurface)    Pressure = node[iPoint]->GetPressure(FREESURFACE);
 				laminar_viscosity = node[iPoint]->GetLaminarViscosity();
 				eddy_viscosity    = node[iPoint]->GetEddyViscosity();
         total_viscosity   = laminar_viscosity + eddy_viscosity;
