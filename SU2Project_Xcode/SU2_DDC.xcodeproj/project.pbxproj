@@ -130,9 +130,9 @@
 		08FB7794FE84155DC02AAC07 /* SU2_DDC */ = {
 			isa = PBXGroup;
 			children = (
-				05E415491760113500A448E0 /* Source */,
 				05E415481760112D00A448E0 /* InLine */,
 				05E415471760111D00A448E0 /* Include */,
+				05E415491760113500A448E0 /* Source */,
 				1AB674ADFE9D54B511CA2CBB /* Products */,
 			);
 			name = SU2_DDC;
