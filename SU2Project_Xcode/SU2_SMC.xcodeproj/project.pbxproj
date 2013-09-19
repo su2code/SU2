@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		051D574317EA7F7A00FD35ED /* SU2_SMC.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 051D574217EA7F7A00FD35ED /* SU2_SMC.cpp */; };
 		0530710917EA45A8008A56F6 /* config_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530710017EA45A8008A56F6 /* config_structure.cpp */; };
 		0530710A17EA45A8008A56F6 /* dual_grid_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530710117EA45A8008A56F6 /* dual_grid_structure.cpp */; };
 		0530710B17EA45A8008A56F6 /* geometry_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530710217EA45A8008A56F6 /* geometry_structure.cpp */; };
@@ -31,6 +32,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		051D574217EA7F7A00FD35ED /* SU2_SMC.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SU2_SMC.cpp; path = ../SU2_SMC/src/SU2_SMC.cpp; sourceTree = "<group>"; };
+		051D574417EA7F7F00FD35ED /* SU2_SMC.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = SU2_SMC.hpp; path = ../SU2_SMC/include/SU2_SMC.hpp; sourceTree = "<group>"; };
 		053070A717EA4400008A56F6 /* SU2_SMC */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = SU2_SMC; sourceTree = BUILT_PRODUCTS_DIR; };
 		0530710017EA45A8008A56F6 /* config_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = config_structure.cpp; path = ../Common/src/config_structure.cpp; sourceTree = "<group>"; };
 		0530710117EA45A8008A56F6 /* dual_grid_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = dual_grid_structure.cpp; path = ../Common/src/dual_grid_structure.cpp; sourceTree = "<group>"; };
@@ -76,9 +79,9 @@
 		0530709E17EA4400008A56F6 = {
 			isa = PBXGroup;
 			children = (
-				053070B517EA4509008A56F6 /* Source */,
-				053070B417EA4502008A56F6 /* Include */,
 				053070A917EA4400008A56F6 /* InLine */,
+				053070B417EA4502008A56F6 /* Include */,
+				053070B517EA4509008A56F6 /* Source */,
 				053070A817EA4400008A56F6 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -112,6 +115,7 @@
 			isa = PBXGroup;
 			children = (
 				0530711217EA45C4008A56F6 /* config_structure.hpp */,
+				051D574417EA7F7F00FD35ED /* SU2_SMC.hpp */,
 				0530711417EA45C4008A56F6 /* dual_grid_structure.hpp */,
 				0530711617EA45C4008A56F6 /* geometry_structure.hpp */,
 				0530711817EA45C4008A56F6 /* grid_adaptation_structure.hpp */,
@@ -128,6 +132,7 @@
 		053070B517EA4509008A56F6 /* Source */ = {
 			isa = PBXGroup;
 			children = (
+				051D574217EA7F7A00FD35ED /* SU2_SMC.cpp */,
 				0530710017EA45A8008A56F6 /* config_structure.cpp */,
 				0530710117EA45A8008A56F6 /* dual_grid_structure.cpp */,
 				0530710217EA45A8008A56F6 /* geometry_structure.cpp */,
@@ -201,6 +206,7 @@
 				0530710F17EA45A8008A56F6 /* matrix_structure.cpp in Sources */,
 				0530711017EA45A8008A56F6 /* primal_grid_structure.cpp in Sources */,
 				0530711117EA45A8008A56F6 /* vector_structure.cpp in Sources */,
+				051D574317EA7F7A00FD35ED /* SU2_SMC.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
