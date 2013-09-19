@@ -1554,11 +1554,14 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     double *Aux_Press, *Aux_Frict, *Aux_Heat, *Aux_yPlus, *Aux_Sens;
     
 	bool grid_movement = config->GetGrid_Movement();
-    bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
 	bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 	bool freesurface = (config->GetKind_Regime() == FREESURFACE);
-    bool transition = (config->GetKind_Trans_Model()==LM);
-    
+  bool transition = (config->GetKind_Trans_Model() == LM);
+  bool flow = (config->GetKind_Regime() == EULER) || (config->GetKind_Regime() == NAVIER_STOKES) ||
+  (config->GetKind_Regime() == RANS) || (config->GetKind_Regime() == ADJ_EULER) ||
+  (config->GetKind_Regime() == ADJ_NAVIER_STOKES) || (config->GetKind_Regime() == ADJ_RANS);
+  
 	if (Kind_Solver == AEROACOUSTIC_EULER) {
 		if (val_iZone == ZONE_0) Kind_Solver = EULER;
 		if (val_iZone == ZONE_1) Kind_Solver = WAVE_EQUATION;
@@ -1733,7 +1736,8 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     
 	/*--- In case there is grid movement ---*/
 	double *Grid_Vel;
-    
+  
+  if (flow) {
     /*--- First, loop through the mesh in order to find and store the
      value of the coefficient of pressure at any surface nodes. They
      will be placed in an auxiliary vector and then communicated like
@@ -1742,12 +1746,13 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     Aux_Press = new double [geometry->GetnPointDomain()];
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Aux_Press[iPoint] = 0.0;
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-        if (config->GetMarker_All_Plotting(iMarker) == YES)
-            for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-                iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-                Aux_Press[iPoint] = solver[FLOW_SOL]->GetCPressure(iMarker,iVertex);
-            }
-    
+      if (config->GetMarker_All_Plotting(iMarker) == YES)
+        for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          Aux_Press[iPoint] = solver[FLOW_SOL]->GetCPressure(iMarker,iVertex);
+        }
+  }
+  
 	if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
         
         Aux_Frict = new double [geometry->GetnPointDomain()];
@@ -3114,7 +3119,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 #endif
     
     /*--- Release memory needed for surface coefficients ---*/
-    
+  if (flow)
     delete [] Aux_Press;
 	if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
         delete [] Aux_Frict; delete [] Aux_Heat; delete [] Aux_yPlus;
@@ -3717,7 +3722,10 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                        (config[val_iZone]->GetKind_Solver() == ADJ_PLASMA_EULER) || (config[val_iZone]->GetKind_Solver() == ADJ_PLASMA_NAVIER_STOKES));
         bool TNE2 = ((config[val_iZone]->GetKind_Solver() == TNE2_EULER) || (config[val_iZone]->GetKind_Solver() == TNE2_NAVIER_STOKES) ||
                      (config[val_iZone]->GetKind_Solver() == ADJ_TNE2_EULER) || (config[val_iZone]->GetKind_Solver() == ADJ_TNE2_NAVIER_STOKES));
-        
+        bool flow = (config[val_iZone]->GetKind_Regime() == EULER) || (config[val_iZone]->GetKind_Regime() == NAVIER_STOKES) ||
+                    (config[val_iZone]->GetKind_Regime() == RANS) || (config[val_iZone]->GetKind_Regime() == ADJ_EULER) ||
+                    (config[val_iZone]->GetKind_Regime() == ADJ_NAVIER_STOKES) || (config[val_iZone]->GetKind_Regime() == ADJ_RANS);
+
         /*--- Initialize variables to store information from all domains (direct solution) ---*/
         double Total_CLift = 0.0, Total_CDrag = 0.0, Total_CSideForce = 0.0, Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0,
         Total_CEquivArea = 0.0, Total_CNearFieldOF = 0.0, Total_CFx = 0.0, Total_CFy = 0.0, Total_CFz = 0.0, Total_CMerit = 0.0,
@@ -4242,9 +4250,16 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                     }
                 }
                 else {
+                  if (flow) {
                     cout << endl << " Min DT: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<<
                     ". Max DT: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() <<
                     ". Dual Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
+                  }
+                  else {
+                    cout << endl << " Min DT: " << solver_container[val_iZone][FinestMesh][FEA_SOL]->GetMin_Delta_Time()<<
+                    ". Max DT: " << solver_container[val_iZone][FinestMesh][FEA_SOL]->GetMax_Delta_Time() <<
+                    ". Dual Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
+                  }
                 }
                 
                 switch (config[val_iZone]->GetKind_Solver()) {

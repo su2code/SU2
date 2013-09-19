@@ -799,6 +799,8 @@ inline string CConfig::GetFlow_FileName(void) { return Flow_FileName; }
 
 inline string CConfig::GetStructure_FileName(void) { return Structure_FileName; }
 
+inline string CConfig::GetSurfStructure_FileName(void) { return SurfStructure_FileName; }
+
 inline string CConfig::GetWave_FileName(void) { return Wave_FileName; }
 
 inline string CConfig::GetAdjWave_FileName(void) { return AdjWave_FileName; }
