@@ -88,9 +88,9 @@ void CIntegration::Space_Integration(CGeometry *geometry, CSolver **solver_conta
 			case INLET_FLOW:
 				solver_container[MainSolver]->BC_Inlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
 				break;
-            case SUPERSONIC_INLET:
+      case SUPERSONIC_INLET:
 				solver_container[MainSolver]->BC_Supersonic_Inlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-                break;
+        break;
 			case OUTLET_FLOW:
 				solver_container[MainSolver]->BC_Outlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
 				break;
@@ -100,7 +100,7 @@ void CIntegration::Space_Integration(CGeometry *geometry, CSolver **solver_conta
 			case SYMMETRY_PLANE:
 				solver_container[MainSolver]->BC_Sym_Plane(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
 				break;
-            case NACELLE_EXHAUST:
+      case NACELLE_EXHAUST:
 				solver_container[MainSolver]->BC_Nacelle_Exhaust(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
 				break;
 			case NACELLE_INFLOW:

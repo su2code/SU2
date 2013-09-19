@@ -35,6 +35,8 @@ inline void CSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *con
 
 inline void CSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) { }
 
+inline void CSolver::Set_MPI_Primitive(CGeometry *geometry, CConfig *config) { }
+
 inline void CSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config) { }
@@ -729,3 +731,117 @@ inline void CFEASolver::SetTotal_CFEA(double cfea) { Total_CFEA = cfea; }
 inline double CWaveSolver::GetTotal_CWave() { return Total_CWave; }
 
 inline double CHeatSolver::GetTotal_CHeat() { return Total_CHeat; }
+      
+inline double CTNE2EulerSolver::GetDensity_Inf(void) { cout << "CTNE2EulerSolver::GetDensity_Inf NOT RETURNING THE CORRECT VALUE!!!" << endl; return 0.0; }
+
+inline double CTNE2EulerSolver::GetVelocity_Inf(unsigned short val_dim) { return Velocity_Inf[val_dim]; }
+
+inline double CTNE2EulerSolver::GetDensity_Velocity_Inf(unsigned short val_dim) { cout << "CTNE2EulerSolver::GetDensity_Velocity_Inf NOT RETURNING THE CORRECT VALUE!!!" << endl; return 0.0; }
+
+inline double CTNE2EulerSolver::GetPressure_Inf(void) { return Pressure_Inf; }
+
+inline double CTNE2EulerSolver::GetDensity_Energy_Inf(void) { cout << "CTNE2EulerSolver::GetDensity_Energy_Inf NOT RETURNING THE CORRECT VALUE!!!" << endl; return 0.0; }
+
+inline double CTNE2EulerSolver::GetModVelocity_Inf(void) { 
+	double Vel2 = 0; 
+	for (unsigned short iDim = 0; iDim < nDim; iDim++) 
+		Vel2 += Velocity_Inf[iDim]*Velocity_Inf[iDim]; 
+	return sqrt(Vel2);
+}
+
+inline double CTNE2EulerSolver::GetDensity_Inlet(void) { cout << "CTNE2EulerSolver::GetDensity_Inlet NOT RETURNING THE CORRECT VALUE!!!" << endl; return 0.0; }
+
+inline double CTNE2EulerSolver::GetDensity_Energy_Inlet(void) { cout << "CTNE2EulerSolver::GetDensity_Energy_Inlet NOT RETURNING THE CORRECT VALUE!!!" << endl; return 0.0; }
+
+inline double CTNE2EulerSolver::GetDensity_Velocity_Inlet(unsigned short val_dim) { cout << "CTNE2EulerSolver::GetDensity_Velocity_Inlet NOT RETURNING THE CORRECT VALUE!!!" << endl; return 0.0; }
+
+inline double CTNE2EulerSolver::GetDensity_Outlet(void) { cout << "CTNE2EulerSolver::GetDensity_Outlet NOT RETURNING THE CORRECT VALUE!!!" << endl; return 0.0; }
+
+inline double CTNE2EulerSolver::GetDensity_Energy_Outlet(void) { cout << "CTNE2EulerSolver::GetDensity_Energy_Outlet NOT RETURNING THE CORRECT VALUE!!!" << endl; return 0.0; }
+
+inline double CTNE2EulerSolver::GetDensity_Velocity_Outlet(unsigned short val_dim) { cout << "CTNE2EulerSolver::GetDensity_Velocity_Outlet NOT RETURNING THE CORRECT VALUE!!!" << endl; return 0.0; }
+
+inline double CTNE2EulerSolver::GetCPressure(unsigned short val_marker, unsigned short val_vertex) { return CPressure[val_marker][val_vertex]; }
+
+inline double CTNE2EulerSolver::GetCLift_Inv(unsigned short val_marker) { return CLift_Inv[val_marker]; }
+
+inline double CTNE2EulerSolver::GetCDrag_Inv(unsigned short val_marker) { return CDrag_Inv[val_marker]; }
+
+inline double CTNE2EulerSolver::GetCSideForce_Inv(unsigned short val_marker) { return CSideForce_Inv[val_marker]; }
+
+inline double CTNE2EulerSolver::GetCEff_Inv(unsigned short val_marker) { return CEff_Inv[val_marker]; }
+
+inline double CTNE2EulerSolver::GetTotal_CLift() { return Total_CLift; }
+
+inline double CTNE2EulerSolver::GetTotal_CDrag() { return Total_CDrag; }
+
+inline double CTNE2EulerSolver::GetTotal_CMx() { return Total_CMx; }
+
+inline double CTNE2EulerSolver::GetTotal_CMy() { return Total_CMy; }
+
+inline double CTNE2EulerSolver::GetTotal_CMz() { return Total_CMz; }
+
+inline double CTNE2EulerSolver::GetTotal_CFx() { return Total_CFx; }
+
+inline double CTNE2EulerSolver::GetTotal_CFy() { return Total_CFy; }
+
+inline double CTNE2EulerSolver::GetTotal_CFz() { return Total_CFz; }
+
+inline double CTNE2EulerSolver::GetTotal_CSideForce() { return Total_CSideForce; }
+
+inline double CTNE2EulerSolver::GetTotal_CEff() { return Total_CEff; }
+
+inline double CTNE2EulerSolver::GetTotal_Q() { return Total_Q; }
+
+inline double CTNE2EulerSolver::GetTotal_MaxQ() { return Total_Maxq; }
+
+inline void CTNE2EulerSolver::SetTotal_Q(double val_Total_Q) { Total_Q = val_Total_Q; }
+
+inline void CTNE2EulerSolver::SetTotal_MaxQ(double val_Total_MaxQ) { Total_Maxq = val_Total_MaxQ; }
+
+inline void CTNE2EulerSolver::SetTotal_CLift(double val_Total_CLift) { Total_CLift = val_Total_CLift; }
+
+inline void CTNE2EulerSolver::SetTotal_CDrag(double val_Total_CDrag) { Total_CDrag = val_Total_CDrag; }
+
+inline double CTNE2EulerSolver::GetAllBound_CLift_Inv() { return AllBound_CLift_Inv; }
+
+inline double CTNE2EulerSolver::GetAllBound_CDrag_Inv() { return AllBound_CDrag_Inv; }
+
+inline double CTNE2EulerSolver::GetAllBound_CSideForce_Inv() { return AllBound_CSideForce_Inv; }
+
+inline double CTNE2EulerSolver::GetAllBound_CEff_Inv() { return AllBound_CEff_Inv; }
+
+inline double CTNE2NSSolver::GetCDrag_Visc(unsigned short val_marker) { return CDrag_Visc[val_marker]; }
+
+inline double CTNE2NSSolver::GetCLift_Visc(unsigned short val_marker) { return CLift_Visc[val_marker]; }
+
+inline double CTNE2NSSolver::GetCSkinFriction(unsigned short val_marker, unsigned short val_vertex) { return CSkinFriction[val_marker][val_vertex]; }
+
+inline double CTNE2NSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
+
+inline double CTNE2NSSolver::GetHeatTransferCoeff(unsigned short val_marker, unsigned short val_vertex) { return CHeatTransfer[val_marker][val_vertex]; }
+
+inline double CTNE2NSSolver::GetAllBound_CLift_Visc() { return AllBound_CLift_Visc; }
+
+inline double CTNE2NSSolver::GetAllBound_CDrag_Visc() { return AllBound_CDrag_Visc; }
+
+inline double CAdjTNE2EulerSolver::GetPhi_Inf(unsigned short val_dim) { return Phi_Inf[val_dim]; }
+
+inline double CAdjTNE2EulerSolver::GetPsiE_Inf(void) { return PsiE_Inf; }
+
+inline double CAdjTNE2EulerSolver::GetPsiRho_Inf(void) { return PsiRho_Inf; }
+
+inline double CAdjTNE2EulerSolver::GetTotal_Sens_Geo() { return Total_Sens_Geo; }
+
+inline void CAdjTNE2EulerSolver::SetCSensitivity(unsigned short val_marker, unsigned short val_vertex, double val_sensitivity) {CSensitivity[val_marker][val_vertex]=val_sensitivity; }
+
+inline double CAdjTNE2EulerSolver::GetCSensitivity(unsigned short val_marker, unsigned short val_vertex) { return CSensitivity[val_marker][val_vertex]; }
+
+inline double CAdjTNE2EulerSolver::GetTotal_Sens_AoA() { return Total_Sens_AoA; }
+
+inline double CAdjTNE2EulerSolver::GetTotal_Sens_Mach() { return Total_Sens_Mach; }
+
+inline double CAdjTNE2EulerSolver::GetTotal_Sens_Press() { return Total_Sens_Press; }
+
+inline double CAdjTNE2EulerSolver::GetTotal_Sens_Temp() { return Total_Sens_Temp; }
+

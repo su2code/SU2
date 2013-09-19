@@ -27,6 +27,9 @@
 #ifndef NO_MPI
 #include <mpi.h>
 #endif
+#ifndef NO_MUTATIONPP
+#include "mutation++.h"
+#endif
 #include <iostream>
 #include <cstdlib>
 #include <fstream>
@@ -86,7 +89,9 @@ private:
 	Frozen_Visc,			/*!< \brief Flag for adjoint problem with/without frozen viscosity. */
 	Sens_Remove_Sharp,			/*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
 	Hold_GridFixed,	/*!< \brief Flag hold fixed some part of the mesh during the deformation. */
-	Axisymmetric; /*!< \brief Flag for outputting sensitivities on exit */
+	Axisymmetric, /*!< \brief Flag for axisymmetric calculations */
+	Show_Adj_Sens, /*!< \brief Flag for outputting sensitivities on exit */
+  ionization;  /*!< \brief Flag for determining if free electron gas is in the mixture */
 	bool Visualize_Partition;	/*!< \brief Flag to visualize each partition in the DDM. */
 	bool Visualize_Deformation;	/*!< \brief Flag to visualize the deformation in the MDC. */
     double Damp_Nacelle_Inflow;	/*!< \brief Damping factor for the engine inlet. */
@@ -257,6 +262,8 @@ private:
 	Kind_AdjTurb_Linear_Prec,		/*!< \brief Preconditioner of the turbulent adjoint linear solver. */
 	Kind_SlopeLimit,				/*!< \brief Global slope limiter. */
 	Kind_SlopeLimit_Flow,		/*!< \brief Slope limiter for flow equations.*/
+	Kind_SlopeLimit_TNE2,		/*!< \brief Slope limiter for flow equations.*/
+  Kind_SlopeLimit_AdjTNE2,		/*!< \brief Slope limiter for flow equations.*/
 	Kind_SlopeLimit_Turb,		/*!< \brief Slope limiter for the turbulence equation.*/
 	Kind_SlopeLimit_LevelSet,		/*!< \brief Slope limiter for the level set equation.*/
 	Kind_SlopeLimit_AdjLevelSet,		/*!< \brief Slope limiter for the adjoint level set equation.*/
@@ -267,6 +274,8 @@ private:
 	Kind_TimeNumScheme,			/*!< \brief Global explicit or implicit time integration. */
 	Kind_TimeIntScheme_Flow,	/*!< \brief Time integration for the flow equations. */
 	Kind_TimeIntScheme_AdjFlow,		/*!< \brief Time integration for the adjoint flow equations. */
+  Kind_TimeIntScheme_TNE2,	/*!< \brief Time integration for the flow equations. */
+  Kind_TimeIntScheme_AdjTNE2, /*!< \brief Time integration for the flow equations. */
 	Kind_TimeIntScheme_LinFlow,		/*!< \brief Time integration for the linearized flow equations. */
 	Kind_TimeIntScheme_Turb,	/*!< \brief Time integration for the turbulence model. */
 	Kind_TimeIntScheme_LevelSet,	/*!< \brief Time integration for the level set model. */
@@ -278,7 +287,9 @@ private:
 	Kind_TimeIntScheme_FEA,	/*!< \brief Time integration for the FEA equations. */
 	Kind_ConvNumScheme,			/*!< \brief Global definition of the convective term. */
 	Kind_ConvNumScheme_Flow,	/*!< \brief Centered or upwind scheme for the flow equations. */
+	Kind_ConvNumScheme_TNE2,	/*!< \brief Centered or upwind scheme for the flow equations. */
 	Kind_ConvNumScheme_AdjFlow,		/*!< \brief Centered or upwind scheme for the adjoint flow equations. */
+  Kind_ConvNumScheme_AdjTNE2,		/*!< \brief Centered or upwind scheme for the adjoint TNE2 equations. */
 	Kind_ConvNumScheme_LinFlow,		/*!< \brief Centered or upwind scheme for the linearized flow equations. */
 	Kind_ConvNumScheme_Turb,	/*!< \brief Centered or upwind scheme for the turbulence model. */
 	Kind_ConvNumScheme_AdjTurb,	/*!< \brief Centered or upwind scheme for the adjoint turbulence model. */
@@ -290,6 +301,8 @@ private:
 	Kind_ViscNumScheme,			/*!< \brief Global definition of the viscous term. */
 	Kind_ViscNumScheme_Flow,	/*!< \brief Viscous scheme for the flow equations. */
 	Kind_ViscNumScheme_AdjFlow,		/*!< \brief Viscous scheme for the adjoint flow equations. */
+  Kind_ViscNumScheme_TNE2,	/*!< \brief Viscous scheme for the flow equations. */
+  Kind_ViscNumScheme_AdjTNE2, /*!< \brief Viscous scheme for the flow equations. */
 	Kind_ViscNumScheme_LinFlow,		/*!< \brief Viscous scheme for the linearized flow equations. */
 	Kind_ViscNumScheme_Turb,	/*!< \brief Viscous scheme for the turbulence model. */
 	Kind_ViscNumScheme_Elec,	/*!< \brief Viscous scheme for the electric potential. */
@@ -303,6 +316,8 @@ private:
 	Kind_SourNumScheme,			/*!< \brief Global definition of the source term. */
 	Kind_SourNumScheme_Flow,	/*!< \brief Source numerical scheme for the flow equations. */
 	Kind_SourNumScheme_AdjFlow,		/*!< \brief Source numerical scheme for the adjoint flow equations. */
+  Kind_SourNumScheme_TNE2,	/*!< \brief Source numerical scheme for the flow equations. */
+  Kind_SourNumScheme_AdjTNE2,	/*!< \brief Source numerical scheme for the flow equations. */
 	Kind_SourNumScheme_LinFlow,		/*!< \brief Source numerical scheme for the linearized flow equations. */
 	Kind_SourNumScheme_Turb,	/*!< \brief Source numerical scheme for the turbulence model. */
 	Kind_SourNumScheme_Elec,	/*!< \brief Source numerical scheme for the electric potential. */
@@ -317,9 +332,11 @@ private:
 	Kind_SourNumScheme_Template,	/*!< \brief Source numerical scheme for the template. */
 	Kind_Centered,				/*!< \brief Centered scheme. */
 	Kind_Centered_Flow,			/*!< \brief Centered scheme for the flow equations. */
+	Kind_Centered_TNE2,			/*!< \brief Centered scheme for the flow equations. */
 	Kind_Centered_LevelSet,			/*!< \brief Centered scheme for the level set equation. */
 	Kind_Centered_AdjLevelSet,			/*!< \brief Centered scheme for the level set equation. */
 	Kind_Centered_AdjFlow,			/*!< \brief Centered scheme for the adjoint flow equations. */
+  Kind_Centered_AdjTNE2,			/*!< \brief Centered scheme for the adjoint TNE2 equations. */
 	Kind_Centered_LinFlow,			/*!< \brief Centered scheme for the linearized flow equations. */
 	Kind_Centered_Turb,			/*!< \brief Centered scheme for the turbulence model. */
 	Kind_Centered_AdjTurb,		/*!< \brief Centered scheme for the adjoint turbulence model. */
@@ -328,9 +345,11 @@ private:
 	Kind_Centered_Template,		/*!< \brief Centered scheme for the template model. */
 	Kind_Upwind,				/*!< \brief Upwind scheme. */
 	Kind_Upwind_Flow,			/*!< \brief Upwind scheme for the flow equations. */
+	Kind_Upwind_TNE2,			/*!< \brief Upwind scheme for the flow equations. */
 	Kind_Upwind_LevelSet,			/*!< \brief Upwind scheme for the level set equations. */
 	Kind_Upwind_AdjLevelSet,			/*!< \brief Upwind scheme for the level set equations. */
 	Kind_Upwind_AdjFlow,			/*!< \brief Upwind scheme for the adjoint flow equations. */
+  Kind_Upwind_AdjTNE2,			/*!< \brief Upwind scheme for the adjoint TNE2 equations. */
 	Kind_Upwind_LinFlow,			/*!< \brief Upwind scheme for the linearized flow equations. */
 	Kind_Upwind_Turb,			/*!< \brief Upwind scheme for the turbulence model. */
 	Kind_Upwind_AdjTurb,		/*!< \brief Upwind scheme for the adjoint turbulence model. */
@@ -348,6 +367,8 @@ private:
 	double *Section_Limit;                  /*!< \brief Airfoil section limit. */
 	double* Kappa_Flow,           /*!< \brief Numerical dissipation coefficients for the flow equations. */
 	*Kappa_AdjFlow,                  /*!< \brief Numerical dissipation coefficients for the adjoint equations. */
+  *Kappa_TNE2,             /*!< \brief Numerical dissipation coefficients for the TNE2 equations. */
+  *Kappa_AdjTNE2,          /*!< \brief Numerical dissipation coefficients for the adjoint TNE2 equations. */
 	*Kappa_LinFlow;                  /*!< \brief Numerical dissipation coefficients for the linearized equations. */
 	double* Kappa_Plasma,           /*!< \brief Numerical dissipation coefficients for the plasma equations. */
 	*Kappa_AdjPlasma;                  /*!< \brief Numerical dissipation coefficients for the adjoint plasma equations. */
@@ -358,7 +379,11 @@ private:
 	Kappa_4th_LinFlow,			/*!< \brief JST 4th order dissipation coefficient for linearized flow equations. */
 	Kappa_1st_Flow,			/*!< \brief JST 1st order dissipation coefficient for flow equations (coarse multigrid levels). */
 	Kappa_2nd_Flow,			/*!< \brief JST 2nd order dissipation coefficient for flow equations. */
-	Kappa_4th_Flow;			/*!< \brief JST 4th order dissipation coefficient for flow equations. */
+	Kappa_4th_Flow,			/*!< \brief JST 4th order dissipation coefficient for flow equations. */
+	Kappa_1st_AdjTNE2,			/*!< \brief JST 1st order dissipation coefficient for flow equations (coarse multigrid levels). */
+	Kappa_2nd_AdjTNE2,			/*!< \brief JST 2nd order dissipation coefficient for flow equations. */
+	Kappa_4th_AdjTNE2;			/*!< \brief JST 4th order dissipation coefficient for flow equations. */
+
 	double Min_Beta_RoeTurkel,		/*!< \brief Minimum value of Beta for the Roe-Turkel low Mach preconditioner. */
 	Max_Beta_RoeTurkel;		/*!< \brief Maximum value of Beta for the Roe-Turkel low Mach preconditioner. */
 	double Kappa_1st_AdjPlasma,	/*!< \brief JST 1st order dissipation coefficient for adjoint plasma equations (coarse multigrid levels). */
@@ -467,7 +492,14 @@ private:
 	double *ArrheniusCoefficient,					/*!< \brief Arrhenius reaction coefficient */
 	*ArrheniusEta,								/*!< \brief Arrhenius reaction temperature exponent */
 	*ArrheniusTheta,							/*!< \brief Arrhenius reaction characteristic temperature */
-	*CharVibTemp;									/*!< \brief Characteristic vibrational temperature for e_vib */
+	*CharVibTemp,									/*!< \brief Characteristic vibrational temperature for e_vib */
+  *RotationModes,				/*!< \brief Rotational modes of energy storage */
+  *Ref_Temperature,   			/*!< \brief Reference temperature for thermodynamic relations */
+  *Tcf_a,   /*!< \brief Rate controlling temperature exponent (fwd) */
+  *Tcf_b,   /*!< \brief Rate controlling temperature exponent (fwd) */
+  *Tcb_a,   /*!< \brief Rate controlling temperature exponent (bkw) */
+  *Tcb_b,   /*!< \brief Rate controlling temperature exponent (bkw) */
+  *Diss;                /*!< \brief Dissociation potential. */
 	unsigned short nMass,                 /*!< \brief No of particle masses */
 	nTemp,						/*!< \brief No of freestream temperatures specified */
 	nRef_Temperature,   			/*!< \brief No of particle Reference Temperature */
@@ -500,6 +532,9 @@ private:
 	*Species_Ref_Viscosity;		/*!< \brief Reference viscosity  of all particles present in the plasma */
 	unsigned short nMonatomics,	/*!< \brief Number of monatomic species in the gas. */
 	nDiatomics;									/*!< \brief Number of diatomic species in the gas. */
+  unsigned short *nElStates; /*!< \brief Number of electron states. */
+  double **CharElTemp, /*!< \brief Characteristic temperature of electron states. */
+  **degen; /*!< \brief Degeneracy of electron states. */
 	double Gamma,			/*!< \brief Ratio of specific heats of the gas. */
 	GammaDiatomic,			/*!< \brief Ratio of specific heats of the diatomic gas. */ 
 	GammaMonatomic,			/*!< \brief Ratio of specific heats of the monatomic gas. */ 
@@ -522,6 +557,8 @@ private:
 	NuFactor_FreeStream,  /*!< \brief Ratio of turbulent to laminar viscosity. */
 	Pressure_FreeStream,     /*!< \brief Total pressure of the fluid.  */
 	Temperature_FreeStream,  /*!< \brief Total temperature of the fluid.  */
+  Temperature_ve_FreeStream,  /*!< \brief Total vibrational-electronic temperature of the fluid.  */
+  *MassFrac_FreeStream, /*!< \brief Mixture mass fractions of the fluid. */
 	Prandtl_Lam,      /*!< \brief Laminar Prandtl number for the gas.  */
 	Prandtl_Turb,     /*!< \brief Turbulent Prandtl number for the gas.  */
 	Length_Ref,       /*!< \brief Reference length for non-dimensionalization. */
@@ -624,6 +661,7 @@ private:
 	**Velocity_FreeStreamND_Time,
 	*Energy_FreeStreamND_Time,
 	*Mach_Inf_Time;
+
   bool ExtraOutput;
 
 	map<string, CAnyOptionRef*> param; /*!< \brief associates option names (strings) with options */
@@ -1188,6 +1226,12 @@ public:
 	 * \return Freestream temperature.
 	 */
 	double GetTemperature_FreeStream(void);
+  
+  /*!
+	 * \brief Get the value of the frestream vibrational-electronic temperature.
+	 * \return Freestream temperature.
+	 */
+	double GetTemperature_ve_FreeStream(void);
 
 	/*!
 	 * \brief Get the value of the laminar Prandtl number.
@@ -1363,6 +1407,13 @@ public:
 	 * \return Ratio of turbulent to laminar viscosity ratio.
 	 */
 	double GetTurb2LamViscRatio_FreeStream(void);
+  
+  /*!
+	 * \brief Get the vector of free stream mass fraction values.
+	 * \return Ratio of species mass to mixture mass.
+	 */
+	double* GetMassFrac_FreeStream(void);
+  
 	/*!
 	 * \brief Get the value of the Reynolds length.
 	 * \return Reynolds length.
@@ -2217,6 +2268,15 @@ public:
 	 * \return Kind of integration scheme for the flow equations.
 	 */
 	unsigned short GetKind_TimeIntScheme_Flow(void);
+  
+  /*!
+	 * \brief Get the kind of integration scheme (explicit or implicit)
+	 *        for the flow equations.
+	 * \note This value is obtained from the config file, and it is constant
+	 *       during the computation.
+	 * \return Kind of integration scheme for the flow equations.
+	 */
+	unsigned short GetKind_TimeIntScheme_TNE2(void);
 
 	/*! 
 	 * \brief Get the kind of integration scheme (explicit or implicit) 
@@ -2271,6 +2331,24 @@ public:
 	 * \return Kind of convective numerical scheme for the flow equations.
 	 */		
 	unsigned short GetKind_ConvNumScheme_Flow(void);
+  
+  /*!
+	 * \brief Get the kind of convective numerical scheme for the flow
+	 *        equations (centered or upwind).
+	 * \note This value is obtained from the config file, and it is constant
+	 *       during the computation.
+	 * \return Kind of convective numerical scheme for the flow equations.
+	 */
+	unsigned short GetKind_ConvNumScheme_TNE2(void);
+  
+  /*!
+	 * \brief Get the kind of convective numerical scheme for the flow
+	 *        equations (centered or upwind).
+	 * \note This value is obtained from the config file, and it is constant
+	 *       during the computation.
+	 * \return Kind of convective numerical scheme for the flow equations.
+	 */
+	unsigned short GetKind_ConvNumScheme_AdjTNE2(void);
 
 	/*! 
 	 * \brief Get the kind of convective numerical scheme for the plasma 
@@ -2326,6 +2404,26 @@ public:
 	 * \return Kind of viscous numerical scheme for the flow equations.
 	 */		
 	unsigned short GetKind_ViscNumScheme_Flow(void);
+  
+  /*!
+	 * \brief Get the kind of viscous numerical scheme for the flow
+	 *        equations (Galerkin, Average of gradients, Average of gradients
+	 *        with correction).
+	 * \note This value is obtained from the config file, and it is constant
+	 *       during the computation.
+	 * \return Kind of viscous numerical scheme for the flow equations.
+	 */
+	unsigned short GetKind_ViscNumScheme_TNE2(void);
+  
+  /*!
+	 * \brief Get the kind of viscous numerical scheme for the flow
+	 *        equations (Galerkin, Average of gradients, Average of gradients
+	 *        with correction).
+	 * \note This value is obtained from the config file, and it is constant
+	 *       during the computation.
+	 * \return Kind of viscous numerical scheme for the flow equations.
+	 */
+	unsigned short GetKind_ViscNumScheme_AdjTNE2(void);
 
 	/*!
 	 * \brief Get the kind of viscous numerical scheme for the level set
@@ -2397,6 +2495,22 @@ public:
 	 * \return Kind of source term for the flow equations.
 	 */			
 	unsigned short GetKind_SourNumScheme_Flow(void);
+  
+  /*!
+	 * \brief Get the kind of source term for the flow equations.
+	 * \note This value is obtained from the config file, and it is constant
+	 *       during the computation.
+	 * \return Kind of source term for the flow equations.
+	 */
+	unsigned short GetKind_SourNumScheme_TNE2(void);
+  
+  /*!
+	 * \brief Get the kind of source term for the flow equations.
+	 * \note This value is obtained from the config file, and it is constant
+	 *       during the computation.
+	 * \return Kind of source term for the flow equations.
+	 */
+	unsigned short GetKind_SourNumScheme_AdjTNE2(void);
 
 	/*! 
 	 * \brief Get the kind of source term for the plasma equations.
@@ -2437,6 +2551,22 @@ public:
 	 * \return Kind of center convective numerical scheme for the flow equations.
 	 */
 	unsigned short GetKind_Centered_Flow(void);
+  
+  /*!
+	 * \brief Get the kind of center convective numerical scheme for the two-temperature model.
+	 * \note This value is obtained from the config file, and it is constant
+	 *       during the computation.
+	 * \return Kind of center convective numerical scheme for the flow equations.
+	 */
+	unsigned short GetKind_Centered_TNE2(void);
+  
+  /*!
+	 * \brief Get the kind of center convective numerical scheme for the two-temperature model.
+	 * \note This value is obtained from the config file, and it is constant
+	 *       during the computation.
+	 * \return Kind of center convective numerical scheme for the flow equations.
+	 */
+	unsigned short GetKind_Centered_AdjTNE2(void);
 
 	/*! 
 	 * \brief Get the kind of center convective numerical scheme for the level set equations.
@@ -2485,6 +2615,22 @@ public:
 	 * \return Kind of upwind convective numerical scheme for the flow equations.
 	 */
 	unsigned short GetKind_Upwind_Flow(void);
+  
+  /*!
+	 * \brief Get the kind of upwind convective numerical scheme for the flow equations.
+	 * \note This value is obtained from the config file, and it is constant
+	 *       during the computation.
+	 * \return Kind of upwind convective numerical scheme for the flow equations.
+	 */
+	unsigned short GetKind_Upwind_TNE2(void);
+  
+  /*!
+	 * \brief Get the kind of upwind convective numerical scheme for the flow equations.
+	 * \note This value is obtained from the config file, and it is constant
+	 *       during the computation.
+	 * \return Kind of upwind convective numerical scheme for the flow equations.
+	 */
+	unsigned short GetKind_Upwind_AdjTNE2(void);
 
 	/*! 
 	 * \brief Get the kind of upwind convective numerical scheme for the level set equation.
@@ -2529,6 +2675,18 @@ public:
 	 * \return Method for limiting the spatial gradients solving the flow equations.
 	 */		
 	unsigned short GetKind_SlopeLimit_Flow(void);
+  
+  /*!
+	 * \brief Get the method for limiting the spatial gradients.
+	 * \return Method for limiting the spatial gradients solving the flow equations.
+	 */
+	unsigned short GetKind_SlopeLimit_TNE2(void);
+  
+  /*!
+	 * \brief Get the method for limiting the spatial gradients.
+	 * \return Method for limiting the spatial gradients solving the flow equations.
+	 */
+	unsigned short GetKind_SlopeLimit_AdjTNE2(void);
 
 	/*! 
 	 * \brief Get the method for limiting the spatial gradients.
@@ -2637,6 +2795,15 @@ public:
 	 * \return Kind of integration scheme for the adjoint flow equations.
 	 */
 	unsigned short GetKind_TimeIntScheme_AdjFlow(void);
+  
+  /*!
+	 * \brief Get the kind of integration scheme (explicit or implicit)
+	 *        for the adjoint flow equations.
+	 * \note This value is obtained from the config file, and it is constant
+	 *       during the computation.
+	 * \return Kind of integration scheme for the adjoint flow equations.
+	 */
+	unsigned short GetKind_TimeIntScheme_AdjTNE2(void);
 
 	/*! 
 	 * \brief Get the kind of convective numerical scheme for the adjoint flow 
@@ -2718,6 +2885,24 @@ public:
 	 * \return Calibrated constant for the low order center method for the adjoint flow equations.
 	 */
 	double GetKappa_1st_AdjFlow(void);
+  
+  /*!
+	 * \brief Value of the calibrated constant for the high order method (center scheme).
+	 * \return Calibrated constant for the high order center method for the adjoint flow equations.
+	 */
+	double GetKappa_2nd_AdjTNE2(void);
+  
+	/*!
+	 * \brief Value of the calibrated constant for the high order method (center scheme).
+	 * \return Calibrated constant for the high order center method for the adjoint flow equations.
+	 */
+	double GetKappa_4th_AdjTNE2(void);
+  
+	/*!
+	 * \brief Value of the calibrated constant for the low order method (center scheme).
+	 * \return Calibrated constant for the low order center method for the adjoint flow equations.
+	 */
+	double GetKappa_1st_AdjTNE2(void);
 
 	/*! 
 	 * \brief Get the kind of integration scheme (explicit or implicit) 
@@ -3019,7 +3204,74 @@ public:
 	 */
 	double GetArrheniusTheta(unsigned short iReaction);
 
-	/*! 
+  /*!
+	 * \brief Provides the rate controlling temperature exponents for chemistry.
+	 * \return: Rate controlling temperature exponents.
+	 */
+  double* GetRxnTcf_a(void);
+  
+  /*!
+	 * \brief Provides the rate controlling temperature exponents for chemistry.
+	 * \return: Rate controlling temperature exponents.
+	 */
+  double* GetRxnTcf_b(void);
+  
+  /*!
+	 * \brief Provides the rate controlling temperature exponents for chemistry.
+	 * \return: Rate controlling temperature exponents.
+	 */
+  double* GetRxnTcb_a(void);
+  
+  /*!
+	 * \brief Provides the rate controlling temperature exponents for chemistry.
+	 * \return: Rate controlling temperature exponents.
+	 */
+  double* GetRxnTcb_b(void);
+  
+  /*!
+	 * \brief Dissociation potential of species.
+	 * \return: Dissociation potential.
+	 */
+	double* GetDissociationPot(void);
+
+	/*!
+	 * \brief Provides the number of rotational modes of energy storage
+	 * \return: Vector of rotational mode count
+	 */
+  double* GetRotationModes(void);
+  
+	/*!
+	 * \brief Provides the characteristic vibrational temperature for calculating e_vib
+	 * \return: Vector of characteristic vibrational temperatures [K]
+	 */
+	double* GetCharVibTemp(void);
+  
+  /*!
+	 * \brief Provides the characteristic electronic temperature for calculating e_el
+	 * \return: Vector of characteristic vibrational temperatures [K]
+	 */
+	double** GetCharElTemp(void);
+  
+  /*!
+	 * \brief Provides the degeneracy of electron states for calculating e_el
+	 * \return: Vector of characteristic vibrational temperatures [K]
+	 */
+	double** GetElDegeneracy(void);
+  
+  /*!
+	 * \brief Provides number electron states for calculating e_el
+	 * \return: Vector of number of electron states for each species 
+	 */
+	unsigned short* GetnElStates(void);
+  
+
+  /*!
+	 * \brief Provides the thermodynamic reference temperatures from the JANAF tables
+	 * \return: Vector of reference temperatures [K]
+	 */
+  double* GetRefTemperature(void);
+  
+  /*!
 	 * \brief Provides the characteristic vibrational temperature for calculating e_vib
 	 * \return: The number of chemical reactions, read from input file
 	 */
@@ -3038,6 +3290,12 @@ public:
 	double GetParticle_Mass(unsigned short iSpecies);
 
 	/*!
+	 * \brief Provides the molar mass of each species present in multi species fluid
+	 * \return: Vector of molar mass of each species in kg/kmol
+	 */
+	double* GetMolar_Mass(void);
+	
+  /*!
 	 * \brief Provides the molar mass of each species present in multi species fluid
 	 * \return: Mass of each species in Kg
 	 */
@@ -3080,6 +3338,12 @@ public:
 	 */
 	double GetMixtureMolar_Mass();
 
+  /*!
+	 * \brief Provides the formation enthalpy of the specified species at standard conditions
+	 * \return: Enthalpy of formation
+	 */
+	double* GetEnthalpy_Formation(void);
+  
 	/*!
 	 * \brief Provides the formation enthalpy of the specified species at standard conditions
 	 * \return: Enthalpy of formation
@@ -3155,6 +3419,11 @@ public:
 	 */
 
 	bool GetRestart_Flow(void);
+  
+  /*!
+   * \brief Indicates whether electron gas is present in the gas mixture.
+   */
+  bool GetIonization(void);
 
 	/*! 
 	 * \brief Information about doing a full multigrid strategy (start in the coarse level).
@@ -4444,8 +4713,7 @@ public:
 	 * \returns The interpolated value of for x.
 	 */
 	double GetSpline(vector<double> &xa, vector<double> &ya, vector<double> &y2a, unsigned long n, double x);
-
-
+  
 };
 
 #include "config_structure.inl"

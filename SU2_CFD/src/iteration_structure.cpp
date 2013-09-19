@@ -342,7 +342,45 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
 	}
 }
 
-void PlasmaIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
+
+void TNE2Iteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+                   CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+                   CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
+  
+	double Physical_dt, Physical_t;
+	unsigned short iMesh; // Index for multi-grid level
+  unsigned short iZone; // Index for zone of the mesh
+	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
+  unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
+  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+  
+#ifndef NO_MPI
+	int rank = MPI::COMM_WORLD.Get_rank();
+#endif
+  
+	for (iZone = 0; iZone < nZone; iZone++) {
+    
+		/*--- Set the value of the internal iteration ---*/
+		IntIter = ExtIter;
+		if ((config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+				(config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) IntIter = 0;
+    
+		/*--- Set the initial condition ---*/
+		solver_container[iZone][MESH_0][TNE2_SOL]->SetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
+    
+		/*--- Update global parameters ---*/
+		if (config_container[iZone]->GetKind_Solver() == TNE2_EULER) config_container[iZone]->SetGlobalParam(TNE2_EULER, RUNTIME_TNE2_SYS, ExtIter);
+		if (config_container[iZone]->GetKind_Solver() == TNE2_NAVIER_STOKES) config_container[iZone]->SetGlobalParam(TNE2_NAVIER_STOKES, RUNTIME_TNE2_SYS, ExtIter);
+    
+		/*--- Solve the inviscid or viscous two-temperature flow equations (one iteration) ---*/
+		integration_container[iZone][TNE2_SOL]->MultiGrid_Iteration(geometry_container, solver_container,
+                                                                numerics_container, config_container,
+                                                                RUNTIME_FLOW_SYS, IntIter, iZone);
+	}
+}
+
+
+void PlasmaIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
 		CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
 		CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
 
