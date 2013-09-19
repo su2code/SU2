@@ -2,23 +2,23 @@
  * \file definition_structure.cpp
  * \brief Main subroutines used by SU2_CFD.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.6
+ * \version 2.0.7
  *
- * Stanford University Unstructured (SU2) Code
- * Copyright (C) 2012 Aerospace Design Laboratory
+ * Stanford University Unstructured (SU2).
+ * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "../include/definition_structure.hpp"
@@ -269,69 +269,88 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
 void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry, CConfig *config, unsigned short iZone) {
     
 	unsigned short iMGlevel;
-	bool euler, ns, plasma_euler, plasma_ns,
-	plasma_monatomic, plasma_diatomic, adj_euler,
-	lin_euler, adj_ns, lin_ns, turbulent, adj_turb, lin_turb, electric, wave, fea,
-	adj_plasma_euler, adj_plasma_ns, spalart_allmaras, menter_sst, template_solver, transition;
+	bool euler, ns, turbulent,
+  adj_euler, adj_ns, adj_turb,
+  lin_euler, lin_ns, lin_turb,
+  tne2_euler, tne2_ns,
+  adj_tne2_euler, adj_tne2_ns,
+  plasma_euler, plasma_ns, plasma_monatomic, plasma_diatomic,
+  adj_plasma_euler, adj_plasma_ns,
+	electric, wave, fea,
+  spalart_allmaras, menter_sst, transition,
+  template_solver;
     
     
 	/*--- Initialize some useful booleans ---*/
-	euler = false;		ns = false; turbulent = false;	electric = false;	plasma_monatomic = false;
-	plasma_diatomic = false; plasma_euler = false; plasma_ns = false; transition = false;
-	adj_euler = false;	adj_ns = false;			adj_turb = false;	wave = false; fea = false; spalart_allmaras = false;
-	lin_euler = false;	lin_ns = false;			lin_turb = false;	menter_sst = false; adj_plasma_euler = false;	adj_plasma_ns = false;
-	template_solver = false;
-    
-	/*--- Assign booleans ---*/
+	euler            = false;  ns              = false;  turbulent = false;
+  adj_euler        = false;	 adj_ns          = false;	 adj_turb  = false;
+  lin_euler        = false;	 lin_ns          = false;  lin_turb  = false;
+  tne2_euler       = false;  tne2_ns         = false;
+  adj_tne2_euler   = false;  adj_tne2_ns     = false;
+  plasma_euler     = false;  plasma_ns       = false;
+  adj_plasma_euler = false;	 adj_plasma_ns   = false;
+  plasma_monatomic = false;  plasma_diatomic = false;
+  spalart_allmaras = false;  menter_sst      = false;
+  electric         = false;
+  wave             = false;
+  fea              = false;
+  transition       = false;
+  template_solver  = false;
+  
+  /*--- Assign booleans ---*/
 	switch (config->GetKind_Solver()) {
-        case TEMPLATE_SOLVER: template_solver = true; break;
-        case EULER : euler = true; break;
-        case NAVIER_STOKES: ns = true; break;
-        case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
-        case FLUID_STRUCTURE_EULER: euler = true; fea = true; break;
-        case FLUID_STRUCTURE_NAVIER_STOKES: ns = true; fea = true; break;
-        case FLUID_STRUCTURE_RANS: ns = true; turbulent = true; fea = true; break;
-        case AEROACOUSTIC_NAVIER_STOKES: ns = true; wave = true; break;
-        case AEROACOUSTIC_RANS: ns = true; turbulent = true; wave = true; break;
-        case ELECTRIC_POTENTIAL: electric = true; break;
-        case WAVE_EQUATION: wave = true; break;
-        case LINEAR_ELASTICITY: fea = true; break;
-        case ADJ_EULER : euler = true; adj_euler = true; break;
-        case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-        case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
-        case ADJ_PLASMA_EULER : plasma_euler = true; adj_plasma_euler = true; break;
-        case ADJ_PLASMA_NAVIER_STOKES : plasma_ns = true; adj_plasma_ns = true; break;
-        case LIN_EULER: euler = true; lin_euler = true; break;
-            
-            /*--- Specify by zone for the aeroacoustic problem ---*/
-        case AEROACOUSTIC_EULER:
-            if (iZone == ZONE_0) {
-                euler = true;
-            } else if (iZone == ZONE_1) {
-                wave = true;
-            }
-            break;
-        case ADJ_AEROACOUSTIC_EULER:
-            if (iZone == ZONE_0) {
-                euler = true; adj_euler = true;
-            } else if (iZone == ZONE_1) {
-                wave = true;
-            }
-            break;
-        case PLASMA_EULER:
-            if (iZone == ZONE_0) {
-                plasma_euler = true;
-            } else if (iZone == ZONE_1) {
-                electric = true;
-            }
-            break;
-        case PLASMA_NAVIER_STOKES:
-            if (iZone == ZONE_0) {
-                plasma_ns = true;
-            } else if (iZone == ZONE_1) {
-                electric = true;
-            }
-            break;
+    case TEMPLATE_SOLVER: template_solver = true; break;
+    case EULER : euler = true; break;
+    case NAVIER_STOKES: ns = true; break;
+    case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
+    case TNE2_EULER : tne2_euler = true; break;
+    case TNE2_NAVIER_STOKES: tne2_ns = true; break;
+    case FLUID_STRUCTURE_EULER: euler = true; fea = true; break;
+    case FLUID_STRUCTURE_NAVIER_STOKES: ns = true; fea = true; break;
+    case FLUID_STRUCTURE_RANS: ns = true; turbulent = true; fea = true; break;
+    case AEROACOUSTIC_NAVIER_STOKES: ns = true; wave = true; break;
+    case AEROACOUSTIC_RANS: ns = true; turbulent = true; wave = true; break;
+    case ELECTRIC_POTENTIAL: electric = true; break;
+    case WAVE_EQUATION: wave = true; break;
+    case LINEAR_ELASTICITY: fea = true; break;
+    case ADJ_EULER : euler = true; adj_euler = true; break;
+    case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
+    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
+    case ADJ_TNE2_EULER : tne2_euler = true; adj_tne2_euler = true; break;
+    case ADJ_TNE2_NAVIER_STOKES : tne2_ns = true; adj_tne2_ns = true; break;
+    case ADJ_PLASMA_EULER : plasma_euler = true; adj_plasma_euler = true; break;
+    case ADJ_PLASMA_NAVIER_STOKES : plasma_ns = true; adj_plasma_ns = true; break;
+    case LIN_EULER: euler = true; lin_euler = true; break;
+      
+      /*--- Specify by zone for the aeroacoustic problem ---*/
+    case AEROACOUSTIC_EULER:
+      if (iZone == ZONE_0) {
+        euler = true;
+      } else if (iZone == ZONE_1) {
+        wave = true;
+      }
+      break;
+    case ADJ_AEROACOUSTIC_EULER:
+      if (iZone == ZONE_0) {
+        euler = true; adj_euler = true;
+      } else if (iZone == ZONE_1) {
+        wave = true;
+      }
+      break;
+    case PLASMA_EULER:
+      if (iZone == ZONE_0) {
+        plasma_euler = true;
+      } else if (iZone == ZONE_1) {
+        electric = true;
+      }
+      break;
+    case PLASMA_NAVIER_STOKES:
+      if (iZone == ZONE_0) {
+        plasma_ns = true;
+      } else if (iZone == ZONE_1) {
+        electric = true;
+      }
+      break;
 	}
 	/*--- Assign turbulence model booleans --- */
 	if (turbulent)
@@ -351,7 +370,6 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry, CCo
             case ARGON_SID: plasma_diatomic = true; break;
             default: cout << "Specified plasma model unavailable or none selected" << endl; cin.get(); break;
 		}
-		//if (config->GetElectricSolver()) electric  = true;
 	}
     
 	/*--- Definition of the Class for the solution: solver_container[DOMAIN][MESH_LEVEL][EQUATION]. Note that euler, ns
@@ -369,6 +387,12 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry, CCo
 		}
 		if (ns) {
 			solver_container[iMGlevel][FLOW_SOL] = new CNSSolver(geometry[iMGlevel], config, iMGlevel);
+		}
+    if (tne2_euler) {
+			solver_container[iMGlevel][TNE2_SOL] = new CTNE2EulerSolver(geometry[iMGlevel], config, iMGlevel);
+		}
+		if (tne2_ns) {
+			solver_container[iMGlevel][TNE2_SOL] = new CTNE2NSSolver(geometry[iMGlevel], config, iMGlevel);
 		}
 		if (turbulent) {
 			if (spalart_allmaras) {
@@ -405,6 +429,12 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry, CCo
 		if (adj_ns) {
 			solver_container[iMGlevel][ADJFLOW_SOL] = new CAdjNSSolver(geometry[iMGlevel], config, iMGlevel);
 		}
+    if (adj_tne2_euler) {
+			solver_container[iMGlevel][ADJTNE2_SOL] = new CAdjTNE2EulerSolver(geometry[iMGlevel], config, iMGlevel);
+		}
+		if (adj_tne2_ns) {
+			solver_container[iMGlevel][ADJTNE2_SOL] = new CAdjTNE2NSSolver(geometry[iMGlevel], config, iMGlevel);
+		}
 		if (adj_turb) {
 			solver_container[iMGlevel][ADJTURB_SOL] = new CAdjTurbSolver(geometry[iMGlevel], config);
 		}
@@ -424,71 +454,94 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry, CCo
     
 }
 
+void Integration_Preprocessing(CIntegration **integration_container,
+                               CGeometry **geometry, CConfig *config,
+                               unsigned short iZone) {
 
-void Integration_Preprocessing(CIntegration **integration_container, CGeometry **geometry, CConfig *config, unsigned short iZone) {
-    
-	bool euler, ns, plasma_euler, plasma_ns, plasma_monatomic, plasma_diatomic, adj_plasma_euler, adj_plasma_ns,
-	adj_euler, lin_euler, adj_ns, lin_ns, turbulent, adj_turb, lin_turb, electric, wave, fea, spalart_allmaras, menter_sst, template_solver, transition;
-    
+  bool
+  euler, adj_euler, lin_euler,
+  ns, adj_ns, lin_ns,
+  turbulent, adj_turb, lin_turb,
+  spalart_allmaras, menter_sst,
+  tne2_euler, adj_tne2_euler,
+  tne2_ns, adj_tne2_ns,
+  plasma_euler, adj_plasma_euler,
+  plasma_ns,   adj_plasma_ns,
+  plasma_monatomic, plasma_diatomic,
+	electric, wave, fea,  template_solver, transition;
+  
 	/*--- Initialize some useful booleans ---*/
-	euler = false;		ns = false; turbulent = false;	electric = false;	plasma_monatomic = false;
-	plasma_diatomic = false; plasma_euler = false; plasma_ns = false;
-	adj_euler = false;	adj_ns = false;			adj_turb = false;	wave = false; fea = false; spalart_allmaras = false;
-	lin_euler = false;	lin_ns = false;			lin_turb = false;	menter_sst = false; adj_plasma_euler = false; adj_plasma_ns = false; transition = false;
-	template_solver = false;
-    
+	euler            = false; adj_euler        = false; lin_euler = false;
+  ns               = false; adj_ns           = false; lin_ns    = false;
+  turbulent        = false; adj_turb         = false; lin_turb  = false;
+  spalart_allmaras = false; menter_sst       = false;
+  tne2_euler       = false; adj_tne2_euler   = false;
+  tne2_ns          = false; adj_tne2_ns      = false;
+  plasma_euler     = false; adj_plasma_euler = false;
+  plasma_ns        = false; adj_plasma_ns    = false;
+  plasma_monatomic = false;	plasma_diatomic  = false;
+  electric         = false;
+  wave             = false;
+  fea              = false;
+  transition       = false;
+	template_solver  = false;
+	 
 	/*--- Assign booleans ---*/
 	switch (config->GetKind_Solver()) {
-        case TEMPLATE_SOLVER: template_solver = true; break;
-        case EULER : euler = true; break;
-        case NAVIER_STOKES: ns = true; break;
-        case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
-        case FLUID_STRUCTURE_EULER: euler = true; fea = true; break;
-        case FLUID_STRUCTURE_NAVIER_STOKES: ns = true; fea = true; break;
-        case FLUID_STRUCTURE_RANS: ns = true; turbulent = true; fea = true; break;
-        case AEROACOUSTIC_NAVIER_STOKES: ns = true; wave = true; break;
-        case AEROACOUSTIC_RANS: ns = true; turbulent = true; wave = true; break;
-        case ELECTRIC_POTENTIAL: electric = true; break;
-        case WAVE_EQUATION: wave = true; break;
-        case LINEAR_ELASTICITY: fea = true; break;
-        case ADJ_EULER : euler = true; adj_euler = true; break;
-        case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-        case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
-        case ADJ_PLASMA_EULER : plasma_euler = true; adj_plasma_euler = true; break;
-        case ADJ_PLASMA_NAVIER_STOKES : plasma_ns = true; adj_plasma_ns = true; break;
-        case LIN_EULER: euler = true; lin_euler = true; break;
-            
-            /*--- Specify by zone for the aeroacoustic problem ---*/
-        case AEROACOUSTIC_EULER:
-            if (iZone == ZONE_0) {
-                euler = true;
-            } else if (iZone == ZONE_1) {
-                wave = true;
-            }
-            break;
-        case ADJ_AEROACOUSTIC_EULER:
-            if (iZone == ZONE_0) {
-                euler = true; adj_euler = true;
-            } else if (iZone == ZONE_1) {
-                wave = true;
-            }
-            break;
-        case PLASMA_EULER:
-            if (iZone == ZONE_0) {
-                plasma_euler = true;
-            } else if (iZone == ZONE_1) {
-                electric = true;
-            }
-            break;
-        case PLASMA_NAVIER_STOKES:
-            if (iZone == ZONE_0) {
-                plasma_ns = true;
-            } else if (iZone == ZONE_1) {
-                electric = true;
-            }
-            break;
+    case TEMPLATE_SOLVER: template_solver = true; break;
+    case EULER : euler = true; break;
+    case NAVIER_STOKES: ns = true; break;
+    case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
+    case TNE2_EULER : tne2_euler = true; break;
+    case TNE2_NAVIER_STOKES: tne2_ns = true; break;
+    case FLUID_STRUCTURE_EULER: euler = true; fea = true; break;
+    case FLUID_STRUCTURE_NAVIER_STOKES: ns = true; fea = true; break;
+    case FLUID_STRUCTURE_RANS: ns = true; turbulent = true; fea = true; break;
+    case AEROACOUSTIC_NAVIER_STOKES: ns = true; wave = true; break;
+    case AEROACOUSTIC_RANS: ns = true; turbulent = true; wave = true; break;
+    case ELECTRIC_POTENTIAL: electric = true; break;
+    case WAVE_EQUATION: wave = true; break;
+    case LINEAR_ELASTICITY: fea = true; break;
+    case ADJ_EULER : euler = true; adj_euler = true; break;
+    case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
+    case ADJ_TNE2_EULER : tne2_euler = true; adj_tne2_euler = true; break;
+    case ADJ_TNE2_NAVIER_STOKES : tne2_ns = true; adj_tne2_ns = true; break;
+    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
+    case ADJ_PLASMA_EULER : plasma_euler = true; adj_plasma_euler = true; break;
+    case ADJ_PLASMA_NAVIER_STOKES : plasma_ns = true; adj_plasma_ns = true; break;
+    case LIN_EULER: euler = true; lin_euler = true; break;
+      
+      /*--- Specify by zone for the aeroacoustic problem ---*/
+    case AEROACOUSTIC_EULER:
+      if (iZone == ZONE_0) {
+        euler = true;
+      } else if (iZone == ZONE_1) {
+        wave = true;
+      }
+      break;
+    case ADJ_AEROACOUSTIC_EULER:
+      if (iZone == ZONE_0) {
+        euler = true; adj_euler = true;
+      } else if (iZone == ZONE_1) {
+        wave = true;
+      }
+      break;
+    case PLASMA_EULER:
+      if (iZone == ZONE_0) {
+        plasma_euler = true;
+      } else if (iZone == ZONE_1) {
+        electric = true;
+      }
+      break;
+    case PLASMA_NAVIER_STOKES:
+      if (iZone == ZONE_0) {
+        plasma_ns = true;
+      } else if (iZone == ZONE_1) {
+        electric = true;
+      }
+      break;
 	}
-    
+  
 	/*--- Assign turbulence model booleans --- */
 	if (turbulent) {
 		switch (config->GetKind_Turb_Model()) {
@@ -517,6 +570,8 @@ void Integration_Preprocessing(CIntegration **integration_container, CGeometry *
 	/*--- Allocate solution for direct problem ---*/
 	if (euler) integration_container[FLOW_SOL] = new CMultiGridIntegration(config);
 	if (ns) integration_container[FLOW_SOL] = new CMultiGridIntegration(config);
+  if (tne2_euler) integration_container[TNE2_SOL] = new CMultiGridIntegration(config);
+	if (tne2_ns) integration_container[TNE2_SOL] = new CMultiGridIntegration(config);
 	if (turbulent) integration_container[TURB_SOL] = new CSingleGridIntegration(config);
 	if (transition) integration_container[TRANS_SOL] = new CSingleGridIntegration(config);
 	if (electric) integration_container[ELEC_SOL] = new CPotentialIntegration(config);
@@ -528,6 +583,8 @@ void Integration_Preprocessing(CIntegration **integration_container, CGeometry *
 	/*--- Allocate solution for adjoint problem ---*/
 	if (adj_euler) integration_container[ADJFLOW_SOL] = new CMultiGridIntegration(config);
 	if (adj_ns) integration_container[ADJFLOW_SOL] = new CMultiGridIntegration(config);
+  if (adj_tne2_euler) integration_container[ADJTNE2_SOL] = new CMultiGridIntegration(config);
+	if (adj_tne2_ns) integration_container[ADJTNE2_SOL] = new CMultiGridIntegration(config);
 	if (adj_turb) integration_container[ADJTURB_SOL] = new CSingleGridIntegration(config);
 	if (adj_plasma_euler) integration_container[ADJPLASMA_SOL] = new CMultiGridIntegration(config);
 	if (adj_plasma_ns) integration_container[ADJPLASMA_SOL] = new CMultiGridIntegration(config);
@@ -538,114 +595,148 @@ void Integration_Preprocessing(CIntegration **integration_container, CGeometry *
     
 }
 
-
 void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_container, CGeometry **geometry,
                             CConfig *config, unsigned short iZone) {
-    
-	unsigned short iMGlevel, iSol, nDim, nVar_Template = 0, nVar_Flow = 0, nVar_Trans = 0, nVar_Adj_Flow = 0, nVar_Plasma = 0,
-    nVar_Turb = 0, nVar_Adj_Turb = 0, nVar_Elec = 0, nVar_FEA = 0, nVar_Wave = 0, nVar_Lin_Flow = 0,
-    nVar_Adj_Plasma = 0, nSpecies = 0, nDiatomics = 0, nMonatomics = 0;
-    
+  
+	unsigned short iMGlevel, iSol, nDim,
+  nVar_Template   = 0,
+  nVar_Flow       = 0,
+  nVar_Trans      = 0,
+  nVar_TNE2       = 0,
+  nVar_Plasma     = 0,
+  nVar_Turb       = 0,
+  nVar_Adj_Flow   = 0,
+  nVar_Adj_Turb   = 0,
+  nVar_Adj_TNE2   = 0,
+  nVar_Adj_Plasma = 0,
+  nVar_Elec       = 0,
+  nVar_FEA        = 0,
+  nVar_Wave       = 0,
+  nVar_Lin_Flow   = 0,
+  nSpecies = 0, nDiatomics = 0, nMonatomics = 0;
+  
 	double *constants = NULL;
+  
+	bool
+  euler, adj_euler, lin_euler,
+  ns, adj_ns, lin_ns,
+  turbulent, adj_turb, lin_turb,
+  tne2_euler, adj_tne2_euler,
+  tne2_ns, adj_tne2_ns,
+  plasma_euler, adj_plasma_euler,
+  plasma_ns, adj_plasma_ns,
+  plasma_monatomic, plasma_diatomic,
+  spalart_allmaras, menter_sst,
+  electric,
+  wave,
+  fea,
+  transition,
+  template_solver;
     
-	bool euler, ns, plasma_euler, plasma_ns, plasma_monatomic, plasma_diatomic,
-	adj_plasma_euler, adj_plasma_ns, adj_euler, lin_euler, adj_ns, lin_ns, turbulent,
-	adj_turb, lin_turb, electric, wave, fea, spalart_allmaras, menter_sst, template_solver, transition;
-    
-    bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
 	bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 	bool freesurface = (config->GetKind_Regime() == FREESURFACE);
     
 	/*--- Initialize some useful booleans ---*/
-	euler          = false;   ns               = false;   turbulent        = false;
-	electric       = false;   plasma_monatomic = false;   plasma_diatomic  = false;  plasma_euler     = false;
-	plasma_ns      = false;   adj_euler        = false;	  adj_ns           = false;	 adj_turb         = false;
-	wave           = false;   fea              = false;   spalart_allmaras = false;
-	lin_euler      = false;   lin_ns           = false;   lin_turb         = false;	 menter_sst       = false;   adj_plasma_euler = false;
-	adj_plasma_ns  = false;   transition       = false;   template_solver  = false;
+	euler            = false;   ns               = false;   turbulent        = false;
+	electric         = false;   plasma_monatomic = false;   plasma_diatomic  = false;  plasma_euler     = false;
+	plasma_ns        = false;   adj_euler        = false;	  adj_ns           = false;	 adj_turb         = false;
+	adj_plasma_euler = false;   adj_plasma_ns    = false;
+  wave             = false;   fea              = false;   spalart_allmaras = false;
+  tne2_euler       = false;   tne2_ns          = false;
+  adj_tne2_euler   = false;	  adj_tne2_ns      = false;
+	lin_euler        = false;   lin_ns           = false;   lin_turb         = false;	 menter_sst       = false;
+  transition       = false;
+  template_solver  = false;
     
 	/*--- Assign booleans ---*/
 	switch (config->GetKind_Solver()) {
-        case TEMPLATE_SOLVER: template_solver = true; break;
-        case EULER : euler = true; break;
-        case NAVIER_STOKES: ns = true; break;
-        case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
-        case FLUID_STRUCTURE_EULER: euler = true; fea = true; break;
-        case FLUID_STRUCTURE_NAVIER_STOKES: ns = true; fea = true; break;
-        case FLUID_STRUCTURE_RANS: ns = true; turbulent = true; fea = true; break;
-        case AEROACOUSTIC_NAVIER_STOKES: ns = true; wave = true; break;
-        case AEROACOUSTIC_RANS: ns = true; turbulent = true; wave = true; break;
-        case ELECTRIC_POTENTIAL: electric = true; break;
-        case WAVE_EQUATION: wave = true; break;
-        case LINEAR_ELASTICITY: fea = true; break;
-        case ADJ_EULER : euler = true; adj_euler = true; break;
-        case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-        case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
-        case ADJ_PLASMA_EULER : plasma_euler = true; adj_plasma_euler = true; break;
-        case ADJ_PLASMA_NAVIER_STOKES : plasma_ns = true; adj_plasma_ns = true; break;
-        case LIN_EULER: euler = true; lin_euler = true; break;
-            
-            /*--- Specify by zone for the aeroacoustic problem ---*/
-        case AEROACOUSTIC_EULER:
-            if (iZone == ZONE_0) {
-                euler = true;
-            } else if (iZone == ZONE_1) {
-                wave = true;
-            }
-            break;
-        case ADJ_AEROACOUSTIC_EULER:
-            if (iZone == ZONE_0) {
-                euler = true; adj_euler = true;
-            } else if (iZone == ZONE_1) {
-                wave = true;
-            }
-            break;
-        case PLASMA_EULER:
-            if (iZone == ZONE_0) {
-                plasma_euler = true;
-            } else if (iZone == ZONE_1) {
-                electric = true;
-            }
-            break;
-        case PLASMA_NAVIER_STOKES:
-            if (iZone == ZONE_0) {
-                plasma_ns = true;
-            } else if (iZone == ZONE_1) {
-                electric = true;
-            }
-            break;
+    case TEMPLATE_SOLVER: template_solver = true; break;
+    case EULER : euler = true; break;
+    case NAVIER_STOKES: ns = true; break;
+    case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
+    case TNE2_EULER : tne2_euler = true; break;
+    case TNE2_NAVIER_STOKES: tne2_ns = true; break;
+    case FLUID_STRUCTURE_EULER: euler = true; fea = true; break;
+    case FLUID_STRUCTURE_NAVIER_STOKES: ns = true; fea = true; break;
+    case FLUID_STRUCTURE_RANS: ns = true; turbulent = true; fea = true; break;
+    case AEROACOUSTIC_NAVIER_STOKES: ns = true; wave = true; break;
+    case AEROACOUSTIC_RANS: ns = true; turbulent = true; wave = true; break;
+    case ELECTRIC_POTENTIAL: electric = true; break;
+    case WAVE_EQUATION: wave = true; break;
+    case LINEAR_ELASTICITY: fea = true; break;
+    case ADJ_EULER : euler = true; adj_euler = true; break;
+    case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
+    case ADJ_TNE2_EULER : tne2_euler = true; adj_tne2_euler = true; break;
+    case ADJ_TNE2_NAVIER_STOKES : tne2_ns = true; adj_tne2_ns = true; break;
+    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
+    case ADJ_PLASMA_EULER : plasma_euler = true; adj_plasma_euler = true; break;
+    case ADJ_PLASMA_NAVIER_STOKES : plasma_ns = true; adj_plasma_ns = true; break;
+    case LIN_EULER: euler = true; lin_euler = true; break;
+      
+      /*--- Specify by zone for the aeroacoustic problem ---*/
+    case AEROACOUSTIC_EULER:
+      if (iZone == ZONE_0) {
+        euler = true;
+      } else if (iZone == ZONE_1) {
+        wave = true;
+      }
+      break;
+    case ADJ_AEROACOUSTIC_EULER:
+      if (iZone == ZONE_0) {
+        euler = true; adj_euler = true;
+      } else if (iZone == ZONE_1) {
+        wave = true;
+      }
+      break;
+    case PLASMA_EULER:
+      if (iZone == ZONE_0) {
+        plasma_euler = true;
+      } else if (iZone == ZONE_1) {
+        electric = true;
+      }
+      break;
+    case PLASMA_NAVIER_STOKES:
+      if (iZone == ZONE_0) {
+        plasma_ns = true;
+      } else if (iZone == ZONE_1) {
+        electric = true;
+      }
+      break;
 	}
-    
+  
 	/*--- Assign turbulence model booleans --- */
 	if (turbulent)
 		switch (config->GetKind_Turb_Model()){
-            case SA: spalart_allmaras = true; break;
-            case SST: menter_sst = true; constants = solver_container[MESH_0][TURB_SOL]->GetConstants(); break;
-            default: cout << "Specified turbulence model unavailable or none selected" << endl; cin.get(); break;
+      case SA: spalart_allmaras = true; break;
+      case SST: menter_sst = true; constants = solver_container[MESH_0][TURB_SOL]->GetConstants(); break;
+      default: cout << "Specified turbulence model unavailable or none selected" << endl; cin.get(); break;
 		}
-    
+  
 	if (plasma_euler || plasma_ns) {
 		switch (config->GetKind_GasModel()){
-            case AIR7: plasma_diatomic = true; break;
-            case O2: plasma_diatomic = true; break;
-            case N2: plasma_diatomic = true; break;
-            case AIR5: plasma_diatomic = true; break;
-            case ARGON: plasma_monatomic = true; break;
-            case AIR21: plasma_diatomic = true; break;
-            case ARGON_SID: plasma_diatomic = true; break;
-            default: cout << "Specified plasma model unavailable or none selected" << endl; cin.get(); break;
+      case AIR7: plasma_diatomic = true; break;
+      case O2: plasma_diatomic = true; break;
+      case N2: plasma_diatomic = true; break;
+      case AIR5: plasma_diatomic = true; break;
+      case ARGON: plasma_monatomic = true; break;
+      case AIR21: plasma_diatomic = true; break;
+      case ARGON_SID: plasma_diatomic = true; break;
+      default: cout << "Specified plasma model unavailable or none selected" << endl; cin.get(); break;
 		}
 		//if (config->GetElectricSolver()) electric  = true;
 	}
-    
+  
 	/*--- Number of variables for the template ---*/
 	if (template_solver) nVar_Flow = solver_container[MESH_0][FLOW_SOL]->GetnVar();
-    
+  
 	/*--- Number of variables for direct problem ---*/
 	if (euler)				nVar_Flow = solver_container[MESH_0][FLOW_SOL]->GetnVar();
-	if (ns)	nVar_Flow = solver_container[MESH_0][FLOW_SOL]->GetnVar();
+	if (ns)	          nVar_Flow = solver_container[MESH_0][FLOW_SOL]->GetnVar();
 	if (turbulent)		nVar_Turb = solver_container[MESH_0][TURB_SOL]->GetnVar();
-	if (transition)		nVar_Trans = solver_container[MESH_0][TRANS_SOL]->GetnVar();
+  if (transition)		nVar_Trans = solver_container[MESH_0][TRANS_SOL]->GetnVar();
+  if (tne2_euler)   nVar_TNE2 = solver_container[MESH_0][TNE2_SOL]->GetnVar();
+  if (tne2_ns)	    nVar_TNE2 = solver_container[MESH_0][TNE2_SOL]->GetnVar();
 	if (electric)			nVar_Elec = solver_container[MESH_0][ELEC_SOL]->GetnVar();
 	if (plasma_euler || plasma_ns)	{
 		nVar_Plasma = solver_container[MESH_0][PLASMA_SOL]->GetnVar();
@@ -653,21 +744,25 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
 		nDiatomics  = solver_container[MESH_0][PLASMA_SOL]->GetnDiatomics();
 		nMonatomics = solver_container[MESH_0][PLASMA_SOL]->GetnMonatomics();
 	}
-	if (wave)				nVar_Wave = solver_container[MESH_0][WAVE_SOL]->GetnVar();
+  
+  if (wave)				nVar_Wave = solver_container[MESH_0][WAVE_SOL]->GetnVar();
 	if (fea)				nVar_FEA = solver_container[MESH_0][FEA_SOL]->GetnVar();
-    
+  
 	/*--- Number of variables for adjoint problem ---*/
-	if (adj_euler)  	nVar_Adj_Flow = solver_container[MESH_0][ADJFLOW_SOL]->GetnVar();
-	if (adj_ns)			  nVar_Adj_Flow = solver_container[MESH_0][ADJFLOW_SOL]->GetnVar();
-	if (adj_turb)		  nVar_Adj_Turb = solver_container[MESH_0][ADJTURB_SOL]->GetnVar();
-	if (adj_plasma_euler || adj_plasma_ns)		nVar_Adj_Plasma = solver_container[MESH_0][ADJPLASMA_SOL]->GetnVar();
-    
+	if (adj_euler)    	  nVar_Adj_Flow = solver_container[MESH_0][ADJFLOW_SOL]->GetnVar();
+	if (adj_ns)			      nVar_Adj_Flow = solver_container[MESH_0][ADJFLOW_SOL]->GetnVar();
+	if (adj_turb)		      nVar_Adj_Turb = solver_container[MESH_0][ADJTURB_SOL]->GetnVar();
+  if (adj_tne2_euler)   nVar_Adj_TNE2 = solver_container[MESH_0][ADJTNE2_SOL]->GetnVar();
+	if (adj_tne2_ns)      nVar_Adj_TNE2 = solver_container[MESH_0][ADJTNE2_SOL]->GetnVar();
+	if (adj_plasma_euler) nVar_Adj_Plasma = solver_container[MESH_0][ADJPLASMA_SOL]->GetnVar();
+  if (adj_plasma_ns)	  nVar_Adj_Plasma = solver_container[MESH_0][ADJPLASMA_SOL]->GetnVar();
+  
 	/*--- Number of variables for the linear problem ---*/
 	if (lin_euler)	nVar_Lin_Flow = solver_container[MESH_0][LINFLOW_SOL]->GetnVar();
-    
+  
 	/*--- Number of dimensions ---*/
 	nDim = geometry[MESH_0]->GetnDim();
-    
+  
 	/*--- Definition of the Class for the numerical method: numerics_container[MESH_LEVEL][EQUATION][EQ_TERM] ---*/
 	for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
 		numerics_container[iMGlevel] = new CNumerics** [MAX_SOLS];
@@ -938,7 +1033,120 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
 		}
         
 	}
+  
+  /*--- Solver definition for the Potential, Euler, Navier-Stokes problems ---*/
+	if ((tne2_euler) || (tne2_ns)) {
     
+		/*--- Definition of the convective scheme for each equation and mesh level ---*/
+		switch (config->GetKind_ConvNumScheme_TNE2()) {
+      case NO_CONVECTIVE :
+        cout << "No convective scheme." << endl; cin.get();
+        break;
+        
+      case SPACE_CENTERED :
+        /*--- Compressible two-temperature flow ---*/
+        switch (config->GetKind_Centered_TNE2()) {
+          case NO_CENTERED : cout << "No centered scheme." << endl; break;
+          case LAX :
+            for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+              numerics_container[iMGlevel][TNE2_SOL][CONV_TERM]       = new CCentLax_TNE2(nDim,nVar_TNE2, config);
+              numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] = new CUpwRoe_TNE2(nDim, nVar_TNE2, config);
+            }
+            break;
+          default : cout << "Centered scheme not implemented." << endl; cin.get(); break;
+        }
+        break;
+        
+      case SPACE_UPWIND :
+          /*--- Compressible two-temperature flow ---*/
+          switch (config->GetKind_Upwind_TNE2()) {
+            case NO_UPWIND : cout << "No upwind scheme." << endl; break;
+            case ROE_1ST : case ROE_2ND :
+              for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+                numerics_container[iMGlevel][TNE2_SOL][CONV_TERM] = new CUpwRoe_TNE2(nDim, nVar_TNE2, config);
+                numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] = new CUpwRoe_TNE2(nDim, nVar_TNE2, config);
+              }
+              break;
+              
+            case AUSM_1ST : case AUSM_2ND :
+              for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+                numerics_container[iMGlevel][TNE2_SOL][CONV_TERM] = new CUpwAUSM_TNE2(nDim, nVar_TNE2, config);
+                numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] = new CUpwAUSM_TNE2(nDim, nVar_TNE2, config);
+              }
+              break;
+              
+            case ROE_TURKEL_1ST : case ROE_TURKEL_2ND :
+              for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+//                numerics_container[iMGlevel][TNE2_SOL][CONV_TERM] = new CUpwRoe_Turkel_TNE2(nDim, nVar_TNE2, config);
+//                numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] = new CUpwRoe_Turkel_TNE2(nDim, nVar_TNE2, config);
+              }
+              break;
+              
+            case HLLC_1ST : case HLLC_2ND :
+              for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+//                numerics_container[iMGlevel][TNE2_SOL][CONV_TERM] = new CUpwHLLC_TNE2(nDim, nVar_TNE2, config);
+//                numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] = new CUpwHLLC_TNE2(nDim, nVar_TNE2, config);
+              }
+              break;
+              
+            default : cout << "Upwind scheme not implemented." << endl; cin.get(); break;          
+        }
+        break;
+        
+      default :
+        cout << "Convective scheme not implemented (TNE2)." << endl; cin.get();
+        break;
+		}
+    
+		/*--- Definition of the viscous scheme for each equation and mesh level ---*/
+		switch (config->GetKind_ViscNumScheme_TNE2()) {
+      case NONE :
+        break;
+      case AVG_GRAD :
+          /*--- Compressible TNE2 ---*/
+          for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+//            solver_container[iMGlevel][TNE2_SOL][VISC_TERM] = new CAvgGrad_TNE2(nDim, nVar_TNE2, config);
+//            solver_container[iMGlevel][TNE2_SOL][VISC_BOUND_TERM] = new CAvgGrad_TNE2(nDim, nVar_TNE2, config);
+          }
+        break;
+      case AVG_GRAD_CORRECTED :
+          /*--- Compressible TNE2 ---*/
+//          solver_container[MESH_0][TNE2_SOL][VISC_TERM] = new CAvgGradCorrected_TNE2(nDim, nVar_TNE2, config);
+          for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+//              solver_container[iMGlevel][TNE2_SOL][VISC_TERM] = new CAvgGrad_TNE2(nDim, nVar_TNE2, config);
+          }
+          /*--- Definition of the boundary condition method ---*/
+          for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+//              solver_container[iMGlevel][TNE2_SOL][VISC_BOUND_TERM] = new CAvgGrad_TNE2(nDim, nVar_TNE2, config);
+          }
+        break;
+      case GALERKIN :
+        cout << "Galerkin viscous scheme not implemented." << endl; cin.get(); exit(1);
+        break;
+      default :
+        cout << "Numerical viscous scheme not recognized." << endl; cin.get(); exit(1);
+        break;
+		}
+    
+		/*--- Definition of the source term integration scheme for each equation and mesh level ---*/
+		switch (config->GetKind_SourNumScheme_TNE2()) {
+      case NONE :
+        break;
+      case PIECEWISE_CONSTANT :
+        
+        for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+          numerics_container[iMGlevel][TNE2_SOL][SOURCE_FIRST_TERM] = new CSource_TNE2(nDim, nVar_TNE2, config);
+          numerics_container[iMGlevel][TNE2_SOL][SOURCE_SECOND_TERM] = new CSource_TNE2(nDim, nVar_TNE2, config);
+        }
+        
+        break;
+      default :
+        cout << "Source term not implemented." << endl; cin.get();
+        break;
+		}
+    
+	}
+  
 	/*--- Solver definition for the turbulent model problem ---*/
 	if (turbulent) {
         
@@ -1426,7 +1634,126 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
                 break;
 		}
 	}
+  
+  /*--- Solver definition for the flow adjoint problem ---*/
+	if (adj_tne2_euler || adj_tne2_ns) {
     
+		/*--- Definition of the convective scheme for each equation and mesh level ---*/
+		switch (config->GetKind_ConvNumScheme_AdjTNE2()) {
+      case NO_CONVECTIVE :
+        cout << "No convective scheme." << endl; cin.get();
+        break;
+      case SPACE_CENTERED :
+        switch (config->GetKind_Centered_AdjTNE2()) {
+          case NO_CENTERED : cout << "No centered scheme." << endl; break;
+          case LAX : numerics_container[MESH_0][ADJTNE2_SOL][CONV_TERM] = new CCentLax_AdjTNE2(nDim, nVar_Adj_Flow, config); break;
+          case JST : numerics_container[MESH_0][ADJTNE2_SOL][CONV_TERM] = new CCentJST_AdjTNE2(nDim, nVar_Adj_Flow, config); break;
+          default : cout << "Centered scheme not implemented." << endl; cin.get(); break;
+        }
+        for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+          numerics_container[iMGlevel][ADJTNE2_SOL][CONV_TERM] = new CCentLax_AdjTNE2(nDim, nVar_Adj_Flow, config);
+        
+        /*--- Definition of the boundary condition method ---*/
+        for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+          numerics_container[iMGlevel][ADJTNE2_SOL][CONV_BOUND_TERM] = new CUpwRoe_AdjTNE2(nDim, nVar_Adj_Flow, config);
+        break;
+      case SPACE_UPWIND :
+        switch (config->GetKind_Upwind_AdjTNE2()) {
+          case NO_UPWIND : cout << "No upwind scheme." << endl; break;
+          case ROE_1ST : case ROE_2ND :
+            for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+              numerics_container[iMGlevel][ADJTNE2_SOL][CONV_TERM] = new CUpwRoe_AdjTNE2(nDim, nVar_Adj_Flow, config);
+              numerics_container[iMGlevel][ADJTNE2_SOL][CONV_BOUND_TERM] = new CUpwRoe_AdjTNE2(nDim, nVar_Adj_Flow, config);
+            }
+            break;
+          default : cout << "Upwind scheme not implemented." << endl; cin.get(); break;
+        }
+        break;
+        
+      default :
+        cout << "Convective scheme not implemented (adj_tne2_euler and adj_tne2_ns)." << endl; cin.get();
+        break;
+		}
+    
+		/*--- Definition of the viscous scheme for each equation and mesh level ---*/
+		switch (config->GetKind_ViscNumScheme_AdjFlow()) {
+      case NONE :
+        break;
+      case AVG_GRAD :
+        if (incompressible) {
+          /*--- Incompressible flow, use artificial compressibility method ---*/
+          for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+            numerics_container[iMGlevel][ADJFLOW_SOL][VISC_TERM] = new CAvgGradArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
+        }
+        else {
+          /*--- Compressible flow ---*/
+          for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+            numerics_container[iMGlevel][ADJFLOW_SOL][VISC_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
+            numerics_container[iMGlevel][ADJFLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
+          }
+        }
+        break;
+      case AVG_GRAD_CORRECTED :
+        if (incompressible) {
+          /*--- Incompressible flow, use artificial compressibility method ---*/
+          numerics_container[MESH_0][ADJFLOW_SOL][VISC_TERM] = new CAvgGradCorrectedArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
+          for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+            numerics_container[iMGlevel][ADJFLOW_SOL][VISC_TERM] = new CAvgGradArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
+        }
+        else {
+          /*--- Compressible flow ---*/
+          numerics_container[MESH_0][ADJFLOW_SOL][VISC_TERM] = new CAvgGradCorrected_AdjFlow(nDim, nVar_Adj_Flow, config);
+          numerics_container[MESH_0][ADJFLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
+          for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+            numerics_container[iMGlevel][ADJFLOW_SOL][VISC_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
+            numerics_container[iMGlevel][ADJFLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
+          }
+          
+        }
+        break;
+      default :
+        cout << "Viscous scheme not implemented." << endl; cin.get();
+        break;
+		}
+    
+		/*--- Definition of the source term integration scheme for each equation and mesh level ---*/
+		switch (config->GetKind_SourNumScheme_AdjFlow()) {
+      case NONE :
+        break;
+      case PIECEWISE_CONSTANT :
+        for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+          
+          /*--- Note that RANS is incompatible with Axisymmetric or Rotational (Fix it!) ---*/
+          if ((adj_ns) && (!incompressible)) {
+            numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceViscous_AdjFlow(nDim, nVar_Adj_Flow, config);
+            if (config->GetRotating_Frame() == YES)
+              numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_SECOND_TERM] = new CSourceRotatingFrame_AdjFlow(nDim, nVar_Adj_Flow, config);
+            else
+              numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_SECOND_TERM] = new CSourceConservative_AdjFlow(nDim, nVar_Adj_Flow, config);
+            
+          }
+          else {
+            if (config->GetRotating_Frame() == YES)
+              numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceRotatingFrame_AdjFlow(nDim, nVar_Adj_Flow, config);
+            else
+              numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Adj_Flow, config);
+            
+            if (config->GetAxisymmetric() == YES)
+              numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceAxisymmetric_AdjFlow(nDim, nVar_Adj_Flow, config);
+            else
+              numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Adj_Flow, config);
+            
+            numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Adj_Flow, config);
+          }
+          
+        }
+        break;
+      default :
+        cout << "Source term not implemented." << endl; cin.get();
+        break;
+		}
+	}
+
 	/*--- Solver definition for the multi species plasma model problem ---*/
 	if (adj_plasma_euler || adj_plasma_ns) {
         

@@ -185,9 +185,13 @@ ___bin_SU2_MAC_SOURCES = ../include/SU2_MAC.hpp \
 # endif
 
 # if BUILD_TECIO
-___bin_SU2_MAC_CXXFLAGS = @CGNS_CXX@ @METIS_CXX@ @TECIO_CXX@
+# endif
+
+# if BUILD_MUTATIONPP
+___bin_SU2_MAC_CXXFLAGS = @CGNS_CXX@ @METIS_CXX@ @TECIO_CXX@ \
+	@MUTATIONPP_CXX@ $(am__empty)
 ___bin_SU2_MAC_LDADD = ../../Common/lib/libSU2.a @CGNS_LD@ @METIS_LD@ \
-	@TECIO_LD@ $(am__empty)
+	@TECIO_LD@ @MUTATIONPP_LD@ $(am__empty)
 all: all-am
 
 .SUFFIXES:

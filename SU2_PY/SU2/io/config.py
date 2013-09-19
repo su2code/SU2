@@ -1,7 +1,7 @@
 ## \file config.py
 #  \brief python package for config 
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.6
+#  \version 2.0.7
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory

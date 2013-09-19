@@ -34,3 +34,8 @@ ___bin_SU2_MAC_LDADD += @METIS_LD@
 ___bin_SU2_MAC_CXXFLAGS += @TECIO_CXX@
 ___bin_SU2_MAC_LDADD += @TECIO_LD@
 # endif
+
+# if BUILD_MUTATIONPP
+___bin_SU2_MAC_CXXFLAGS += @MUTATIONPP_CXX@
+___bin_SU2_MAC_LDADD += @MUTATIONPP_LD@
+# endif

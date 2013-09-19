@@ -2,33 +2,33 @@
  * \file vector_structure.inl
  * \brief inline subroutines of the <i>vector_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.6
+ * \version 2.0.7
  *
- * Stanford University Unstructured (SU2) Code
- * Copyright (C) 2012 Aerospace Design Laboratory
+ * Stanford University Unstructured (SU2).
+ * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * SU2 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #pragma once
 
 inline void CSysVector::SetValZero(void) { 
-  for (unsigned int i = 0; i < nElm; i++)
+  for (unsigned long i = 0; i < nElm; i++)
 		vec_val[i] = 0.0;
 }
 
-inline unsigned int CSysVector::GetLocSize() const { return nElm; }
+inline unsigned long CSysVector::GetLocSize() const { return nElm; }
 
 inline unsigned long CSysVector::GetSize() const {
 #ifndef NO_MPI
@@ -40,10 +40,10 @@ inline unsigned long CSysVector::GetSize() const {
 
 inline unsigned short CSysVector::GetNVar() const { return nVar; }
 
-inline unsigned int CSysVector::GetNBlk() const { return nBlk; }
+inline unsigned long CSysVector::GetNBlk() const { return nBlk; }
 
-inline unsigned int CSysVector::GetNBlkDomain() const { return nBlkDomain; }
+inline unsigned long CSysVector::GetNBlkDomain() const { return nBlkDomain; }
 
-inline double & CSysVector::operator[](const unsigned int & i) { return vec_val[i]; }
+inline double & CSysVector::operator[](const unsigned long & i) { return vec_val[i]; }
 
-inline const double & CSysVector::operator[](const unsigned int & i) const { return vec_val[i]; }
+inline const double & CSysVector::operator[](const unsigned long & i) const { return vec_val[i]; }
