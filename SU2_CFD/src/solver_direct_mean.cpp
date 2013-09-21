@@ -6993,7 +6993,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 		Velocity_Inlet[iDim] = Velocity_Inf[iDim];
 		Velocity_Outlet[iDim] = Velocity_Inf[iDim];
 	}
-    
+
 	/*--- Restart the solution from file information ---*/
 	if (!restart || geometry->GetFinestMGLevel() == false || nZone > 1) {
         
@@ -7003,7 +7003,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 	}
     
 	else {
-        
+    
 		/*--- Restart the solution from file information ---*/
 		ifstream restart_file;
 		string filename = config->GetSolution_FlowFileName();
@@ -7862,7 +7862,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
 			}
       
 			/*--- Impose the value of the velocity as a strong boundary
-       condition (Dirichlet). Fix the velocity and zero out any
+       condition (Dirichlet). Fix the velocity and remove any
        contribution to the residual at this node. ---*/
 			if (compressible)   node[iPoint]->SetVelocity_Old(Vector, COMPRESSIBLE);
       if (incompressible) node[iPoint]->SetVelocity_Old(Vector, INCOMPRESSIBLE);
@@ -8002,7 +8002,6 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
           /*--- Subtract the block from the Global Jacobian structure ---*/
           Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
         }
-        
 			}
       
 			/*--- Convective contribution to the residual at the wall ---*/
@@ -8030,8 +8029,8 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
   unsigned short iVar, jVar, iDim, jDim;
 	unsigned long iVertex, iPoint, Point_Normal, total_index;
   
-	double *Normal, *Coord_i, *Coord_j, Area, dist_ij, theta2, Gas_Constant;
-  double Twall, Temperature, dTdn, dTdrho, thermal_conductivity, cp;
+	double *Normal, *Coord_i, *Coord_j, Area, dist_ij, theta2;
+  double Twall, Temperature, dTdn, dTdrho, thermal_conductivity;
   double thetax, thetay, thetaz, etax, etay, etaz, pix, piy, piz, factor;
 	double ProjGridVel, *GridVel, GridVel2, Pressure, Density, Vel2, Energy;
   double total_viscosity, div_vel, turb_ke, tau_vel[3], UnitNormal[3];
@@ -8040,6 +8039,8 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
   
   double Prandtl_Lam  = config->GetPrandtl_Lam();
   double Prandtl_Turb = config->GetPrandtl_Turb();
+  double Gas_Constant = config->GetGas_ConstantND();
+	double cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   
 	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -8054,8 +8055,6 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
   
 	/*--- Retrieve the specified wall temperature ---*/
 	Twall = config->GetIsothermal_Temperature(Marker_Tag);
-	Gas_Constant = config->GetGas_ConstantND();
-	cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   
 	/*--- Loop over boundary points ---*/
 	for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {

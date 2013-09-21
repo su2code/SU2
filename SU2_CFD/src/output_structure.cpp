@@ -4598,8 +4598,8 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
           }
           cout.precision(4);
           cout.setf(ios::scientific,ios::floatfield);
-          cout.width(14); cout << Total_Sens_Geo;
-          cout.width(14); cout << Total_Sens_Mach;
+          cout.width(13); cout << Total_Sens_Geo;
+          cout.width(13); cout << Total_Sens_Mach;
           cout << endl;
           cout.unsetf(ios_base::floatfield);
           
