@@ -2304,9 +2304,9 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
   USens = new double[nVar];
   
 	double Gas_Constant = config->GetGas_ConstantND();
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
 	bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-	bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+	bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
 	bool grid_movement  = config->GetGrid_Movement();
   
 	/*--- Initialize sensitivities to zero ---*/
@@ -2388,10 +2388,6 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
           ConsPsi_Grad = node[iPoint]->GetAuxVarGradient();
           ConsPsi = node[iPoint]->GetAuxVar();
           
-          /*--- Adjustment for grid movement - double check this ---*/
-          
-          if (grid_movement) GridVel = geometry->node[iPoint]->GetGridVel();
-          
           d_press = 0.0; grad_v = 0.0; v_gradconspsi = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) {
             
@@ -2409,7 +2405,13 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
             if (compressible) v_gradconspsi += solver_container[FLOW_SOL]->node[iPoint]->GetVelocity(iDim, COMPRESSIBLE) * ConsPsi_Grad[iDim];
             if (incompressible || freesurface) v_gradconspsi += solver_container[FLOW_SOL]->node[iPoint]->GetVelocity(iDim, INCOMPRESSIBLE) * ConsPsi_Grad[iDim];
 
-            if (grid_movement) v_gradconspsi -= GridVel[iDim] * ConsPsi_Grad[iDim];
+            /*--- Additional sensitivity term for grid movement ---*/
+            
+            if (grid_movement) {
+              GridVel = geometry->node[iPoint]->GetGridVel();
+              v_gradconspsi -= GridVel[iDim] * ConsPsi_Grad[iDim];
+            }
+            
           }
           
           /*--- Compute additional term in the surface sensitivity for free surface problem. ---*/
@@ -5382,9 +5384,8 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
 	unsigned long iVertex, iPoint;
 	unsigned short iDim, jDim, iMarker, iPos, jPos;
 	double *d = NULL, **PsiVar_Grad = NULL, **PrimVar_Grad = NULL, div_phi, *Normal = NULL, Area,
-	normal_grad_psi5, normal_grad_T, sigma_partial,
-  cp, Laminar_Viscosity, heat_flux_factor, LevelSet, Target_LevelSet, temp_sens, *Psi = NULL, *U = NULL, Enthalpy, **GridVel_Grad, gradPsi5_v,
-  psi5_tau_partial, psi5_tau_grad_vel, source_v, Density, Pressure, div_vel, val_turb_ke, vartheta, vartheta_partial, psi5_p_div_vel,
+	normal_grad_psi5, normal_grad_T, sigma_partial, Laminar_Viscosity, heat_flux_factor, LevelSet, Target_LevelSet, temp_sens, *Psi = NULL, *U = NULL, Enthalpy, **GridVel_Grad, gradPsi5_v,
+  psi5_tau_partial, psi5_tau_grad_vel, source_v_1, source_v_2, Density, Pressure, div_vel, val_turb_ke, vartheta, vartheta_partial, psi5_p_div_vel,
   Omega[3], rho_v[3], CrossProduct[3], delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}}, r, ru, rv, rw, rE, p, T, dp_dr,
   dp_dru,dp_drv, dp_drw, dp_drE, dH_dr, dH_dru, dH_drv, dH_drw, dH_drE, H, *USens, D[3][3], Dd[3], Mach_Inf;
   
@@ -5408,15 +5409,16 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
 	for (iDim = 0; iDim < nDim; iDim++)
 		tau[iDim] = new double [nDim];
   double *Velocity = new double[nDim];
-
-	double Gas_Constant = config->GetGas_ConstantND();
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+	
+  bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
 	bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-	bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+	bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
   bool rotating_frame = config->GetRotating_Frame();
   bool grid_movement  = config->GetGrid_Movement();
   
-	cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
+  double Gas_Constant = config->GetGas_ConstantND();
+	double cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
+  double Prandtl_Lam  = config->GetPrandtl_Lam();
   
   /*--- Compute gradient of adjoint variables on the surface ---*/
   
@@ -5448,12 +5450,12 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
           PsiVar_Grad = node[iPoint]->GetGradient();
           PrimVar_Grad = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
           
-          if (compressible) Laminar_Viscosity  = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
-          if (incompressible || freesurface) Laminar_Viscosity  = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc();
+          if (compressible) Laminar_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+          if (incompressible || freesurface) Laminar_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc();
 
-          heat_flux_factor = cp * Laminar_Viscosity / PRANDTL;
+          heat_flux_factor = cp * Laminar_Viscosity / Prandtl_Lam;
           
-          /*--- Compute face area and the nondimensional normal to the surface ---*/
+          /*--- Compute face area and the unit normal to the surface ---*/
           
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
           Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) { Area += Normal[iDim]*Normal[iDim]; } Area = sqrt(Area);
@@ -5533,8 +5535,11 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             Psi = node[iPoint]->GetSolution();
             U = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
             Density = U[0];
-            Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure(COMPRESSIBLE);
+            if (compressible)   Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure(COMPRESSIBLE);
+            if (incompressible) Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure(INCOMPRESSIBLE);
+            if (freesurface)    Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure(FREESURFACE);
             Enthalpy = solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy();
+            d = node[iPoint]->GetForceProj_Vector();
             
             /*--- Turbulent kinetic energy ---*/
             if (config->GetKind_Turb_Model() == SST)
@@ -5554,7 +5559,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
                 - TWO3*Laminar_Viscosity*div_vel*delta[iDim][jDim]
                 - TWO3*Density*val_turb_ke*delta[iDim][jDim];
             
-            /*--- Form normal_grad_gridvel = \partial_n (u_x) ---*/
+            /*--- Form normal_grad_gridvel = \partial_n (u_omega) ---*/
             
             GridVel_Grad = geometry->node[iPoint]->GetGridVel_Grad();
             for (iDim = 0; iDim < nDim; iDim++) {
@@ -5563,7 +5568,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
                 normal_grad_gridvel[iDim] += GridVel_Grad[iDim][jDim]*UnitNormal[jDim];
             }
             
-            /*--- Form normal_grad_v_ux = \partial_n (v - u_x) ---*/
+            /*--- Form normal_grad_v_ux = \partial_n (v - u_omega) ---*/
             
             for (iDim = 0; iDim < nDim; iDim++)
               normal_grad_v_ux[iDim] = normal_grad_vel[iDim] - normal_grad_gridvel[iDim];
@@ -5580,7 +5585,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
               Sigma_Psi5v[iDim][iDim] -= TWO3*Laminar_Viscosity * gradPsi5_v;
             
             
-            /*--- Now compute various terms of surface sensitivity ---*/
+            /*--- Now compute terms of the surface sensitivity ---*/
             
             /*--- Form vartheta_partial = \vartheta * \partial_n (v - u_x) . n ---*/
             vartheta = Density*Psi[0] + Density*Enthalpy*Psi[nDim+1];
@@ -5591,12 +5596,17 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             for (iDim = 0; iDim < nDim; iDim++)
               vartheta_partial += vartheta * normal_grad_v_ux[iDim] * UnitNormal[iDim];
             
-//              /*--- Form sigma_partial = n_i ( \Sigma_Phi_{ij} + \Sigma_Psi5v_{ij} ) \partial_n (v - u_x)_j ---*/
-//              sigma_partial = 0.0;
-//              for (iDim = 0; iDim < nDim; iDim++)
-//                for (jDim = 0; jDim < nDim; jDim++)
-//                  sigma_partial += UnitNormal[iDim]*(Sigma[iDim][jDim]+Sigma_Psi5v[iDim][jDim])*normal_grad_v_ux[jDim];
+//            if (iVertex==50) {
+//              cout.precision(15);
+//              cout << Density*Psi[0] << "  " << Density*Enthalpy*Psi[nDim+1] << "  "  << U[0+1]*Psi[0+1] << "  " << U[1+1]*Psi[1+1] << "  "  <<vartheta << "  " << normal_grad_v_ux[0] << "  " << normal_grad_v_ux[1] << "  "<< UnitNormal[0] << "  " << UnitNormal[1] << endl;
+//            }
             
+              /*--- Form sigma_partial = n_i ( \Sigma_Phi_{ij} + \Sigma_Psi5v_{ij} ) \partial_n (v - u_x)_j ---*/
+              sigma_partial = 0.0;
+              for (iDim = 0; iDim < nDim; iDim++)
+                for (jDim = 0; jDim < nDim; jDim++)
+                  sigma_partial += UnitNormal[iDim]*(Sigma[iDim][jDim]+Sigma_Psi5v[iDim][jDim])*normal_grad_v_ux[jDim];
+
             /*--- Form psi5_tau_partial = \Psi_5 * \partial_n (v - u_x)_i * tau_{ij} * n_j ---*/
             psi5_tau_partial = 0.0;
             for (iDim = 0; iDim < nDim; iDim++)
@@ -5620,22 +5630,30 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
               Omega[2]  = (config->GetRotation_Rate_Z(ZONE_0)/config->GetOmega_Ref());
               
               /*--- Calculate momentum source terms as: rho * ( Omega X V ) ---*/
+              
               for(iDim = 0; iDim < nDim; iDim++)
                 rho_v[iDim] = U[iDim+1];
+              if (nDim == 2) rho_v[2] = 0.0;
               
               CrossProduct[0] = Omega[1]*rho_v[2] - Omega[2]*rho_v[1];
               CrossProduct[1] = Omega[2]*rho_v[0] - Omega[0]*rho_v[2];
               CrossProduct[2] = Omega[0]*rho_v[1] - Omega[1]*rho_v[0];
               
-              source_v = 0.0;
-              for(iDim = 0; iDim < nDim; iDim++)
-                source_v -= Psi[nDim+1]*CrossProduct[iDim]*Velocity[iDim];
+              source_v_1 = 0.0; source_v_2 = 0.0;
+              for(iDim = 0; iDim < nDim; iDim++) {
+                source_v_1 += Psi[iDim+1]*CrossProduct[iDim];
+              }
             }
             
-            /*--- For simplicity, store all additional terms within sigma_partial ---*/
-//            sigma_partial = sigma_partial + vartheta_partial + psi5_tau_partial + psi5_p_div_vel + psi5_tau_grad_vel + source_v;
-//            sigma_partial = sigma_partial + vartheta_partial + psi5_p_div_vel + psi5_tau_grad_vel;
+//            if (iVertex==50) {
+//              cout.precision(15);
+//              cout << sigma_partial << "  " << vartheta_partial << "  " <<  psi5_tau_partial<< "  " <<  psi5_p_div_vel << "  " <<  psi5_tau_grad_vel << "  " <<  source_v_1  <<endl;
+//              //cout <<
+//            }
             
+            /*--- For simplicity, store all additional terms within sigma_partial ---*/ //
+            sigma_partial = sigma_partial + vartheta_partial + psi5_tau_partial + psi5_p_div_vel + psi5_tau_grad_vel + source_v_1;
+
           }
           
           /*--- Compute additional term in the surface sensitivity for free surface problem. ---*/
@@ -5940,7 +5958,6 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
   
   double Prandtl_Lam  = config->GetPrandtl_Lam();
   double Prandtl_Turb = config->GetPrandtl_Turb();
-	double Gas_Constant = config->GetGas_ConstantND();
   
   double *Psi = new double[nVar];
 	double **Tau = new double*[nDim];
