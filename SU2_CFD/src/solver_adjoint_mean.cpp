@@ -5651,7 +5651,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
 //              //cout <<
 //            }
             
-            /*--- For simplicity, store all additional terms within sigma_partial ---*/ //
+            /*--- For simplicity, store all additional terms within sigma_partial ---*/ //  
             sigma_partial = sigma_partial + vartheta_partial + psi5_tau_partial + psi5_p_div_vel + psi5_tau_grad_vel + source_v_1;
 
           }
