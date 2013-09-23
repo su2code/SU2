@@ -6780,6 +6780,13 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
   void Set_MPI_PrimVar_Gradient(CGeometry *geometry, CConfig *config);
+
+  /*!
+	 * \brief Set the maximum value of the eigenvalue.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  void SetMax_Eigenvalue(CGeometry *geometry, CConfig *config);
   
 	/*!
 	 * \brief Compute the density at the inlet.

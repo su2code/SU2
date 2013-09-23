@@ -1509,19 +1509,22 @@ void CAdjTNE2EulerSolver::Source_Residual(CGeometry *geometry,
   numerics->SetHIndex      ( node[0]->GetHIndex()       );
   numerics->SetAIndex      ( node[0]->GetAIndex()       );
   numerics->SetRhoCvtrIndex( node[0]->GetRhoCvtrIndex() );
-  numerics->SetRhoCvveIndex( node[0]->GetRhoCvveIndex() );
-  
-  /*--- Initialize the Residual and Jacobian arrays ---*/
-	for (iVar = 0; iVar < nVar; iVar++)
-    Residual[iVar] = 0.0;
-  if (implicit) {
-    for (iVar = 0; iVar < nVar; iVar++)
-      for (jVar = 0; jVar < nVar; jVar++)
-        Jacobian_i[iVar][jVar] = 0.0;
-  }
+  numerics->SetRhoCvveIndex( node[0]->GetRhoCvveIndex() );  
   
   /*--- Loop over points in the domain ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    
+    /*--- Initialize the Residual and Jacobian arrays ---*/
+    for (iVar = 0; iVar < nVar; iVar++)
+      Residual[iVar] = 0.0;
+    if (implicit) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        for (jVar = 0; jVar < nVar; jVar++) {
+          Jacobian_i[iVar][jVar] = 0.0;
+          Jacobian_ii[iVar][jVar] = 0.0;
+        }
+      }
+    }
     
     /*--- Set conserved & primitive variables at point i ---*/
     numerics->SetConservative(solver_container[TNE2_SOL]->node[iPoint]->GetSolution(),
@@ -1546,10 +1549,15 @@ void CAdjTNE2EulerSolver::Source_Residual(CGeometry *geometry,
     /*--- Compute vibrational relaxation source terms ---*/
     numerics->ComputeVibRelaxation(Residual, Jacobian_i, config);
     
+    /*--- Take the transpose of the source Jacobian matrix ---*/
+    for (iVar = 0; iVar < nVar; iVar++)
+      for (jVar = 0; jVar < nVar; jVar++)
+        Jacobian_ii[iVar][jVar] = Jacobian_i[jVar][iVar];
+    
     /*--- Subtract Residual (and Jacobian) ---*/
     LinSysRes.SubtractBlock(iPoint, Residual);
     if (implicit)
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
   }
 }
 
@@ -1908,16 +1916,19 @@ void CAdjTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry,
                                         unsigned short val_marker) {
   // NOTE: Verify that the "GetVelocity" routine is working.
 	
-  bool implicit;
-  unsigned short iDim, iSpecies, iVar, jDim;
+  bool implicit, ionization;
+  unsigned short iDim, iSpecies, iVar, jVar, nHeavy, nEl;
+  unsigned short RHOCVTR_INDEX, RHOCVVE_INDEX;
   unsigned long iVertex, iPoint;
 	double *d, *Normal, Area, *UnitNormal, *Coord;
-  double *Psi, *Psi_Aux, phin, phis1, phis2;
-  double *U, *Velocity, ProjVel, bcn, vn, Enthalpy, sq_vel, *dPressure;
-	double *ObjFuncSource, DensityInc = 0.0, BetaInc2 = 0.0;
+  double *Psi, *Psi_Aux, phin;
+  double *U, *Density, *Velocity, ProjVel, bcn, vn, sq_vel, *dPdrhos, *Ms;
+  double Enthalpy, Energy_ve, Ru, rho_el, conc, rhoCvtr, rhoCvve;
+  double dPdrhoE, dPdrhoEve;
   
   /*--- Set booleans from config ---*/
-	implicit = (config->GetKind_TimeIntScheme_AdjTNE2() == EULER_IMPLICIT);
+	implicit   = (config->GetKind_TimeIntScheme_AdjTNE2() == EULER_IMPLICIT);
+  ionization = (config->GetIonization());
   
   /*--- Initialize ---*/
   d        = NULL;
@@ -1925,13 +1936,20 @@ void CAdjTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry,
   vn       = 0.0;
   Enthalpy = 0.0;
   
-  
   /*--- Allocate arrays ---*/
 	UnitNormal    = new double[nDim];
 	Velocity      = new double[nDim];
+  Density       = new double[nSpecies];
 	Psi           = new double[nVar];
-	ObjFuncSource = new double[nVar];
-	dPressure     = new double[nVar];
+  
+  /*--- Determine the number of heavy particle species ---*/
+  if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
+  else            { nHeavy = nSpecies;   nEl = 0; }
+  
+  /*--- Acquire parameters from config ---*/
+  Ms = config->GetMolar_Mass();
+  RHOCVTR_INDEX = solver_container[TNE2_SOL]->node[0]->GetRhoCvtrIndex();
+  RHOCVVE_INDEX = solver_container[TNE2_SOL]->node[0]->GetRhoCvveIndex();
   
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -1959,10 +1977,29 @@ void CAdjTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry,
         UnitNormal[iDim] = -Normal[iDim]/Area;
       
       /*--- Get the flow quantities ---*/
+      Ru = UNIVERSAL_GAS_CONSTANT;
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        Density[iSpecies] = U[iSpecies];
       for (iDim = 0; iDim < nDim; iDim++)
         Velocity[iDim] = solver_container[TNE2_SOL]->node[iPoint]->GetVelocity(iDim, false);
-      Enthalpy = solver_container[TNE2_SOL]->node[iPoint]->GetEnthalpy();
-      sq_vel   = 0.5*solver_container[TNE2_SOL]->node[iPoint]->GetVelocity2();
+      Enthalpy  = solver_container[TNE2_SOL]->node[iPoint]->GetEnthalpy();
+      Energy_ve = U[nSpecies+nDim+1]/solver_container[TNE2_SOL]->node[iPoint]->GetDensity();
+      sq_vel    = 0.5*solver_container[TNE2_SOL]->node[iPoint]->GetVelocity2();
+      dPdrhos   = solver_container[TNE2_SOL]->node[iPoint]->GetdPdrhos();
+      rhoCvtr   = solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar(RHOCVTR_INDEX);
+      rhoCvve   = solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar(RHOCVVE_INDEX);
+      
+      if (ionization)
+        rho_el   = U[nSpecies-1];
+      else
+        rho_el   = 0.0;
+      
+      /*--- Calculate quantities using Roe variables ---*/
+      conc = 0.0;
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        conc   += Density[iSpecies] / Ms[iSpecies];
+      dPdrhoE   = conc*Ru / rhoCvtr;
+      dPdrhoEve = -dPdrhoE + rho_el * Ru/Ms[nSpecies-1] * 1.0/rhoCvve;
       
       /*--- Compute projections ---*/
       ProjVel = 0.0; bcn = 0.0; vn = 0.0, phin = 0.0;
@@ -1977,52 +2014,30 @@ void CAdjTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry,
       for (iDim = 0; iDim < nDim; iDim++)
         Psi[nSpecies+iDim] -= ( phin - bcn ) * UnitNormal[iDim];
       
-      /*--- Inner products after introducing BC (Psi has changed) ---*/
-      phis1 = 0.0; phis2 = Psi[0] + Enthalpy * Psi[nVar-1];
-      for (iDim = 0; iDim < nDim; iDim++) {
-        phis1 -= Normal[iDim]*Psi[iDim+1];
-        phis2 += Velocity[iDim]*Psi[iDim+1];
-      }
+      numerics->GetInviscidProjJac(Density, Velocity, &Enthalpy, &Energy_ve,
+                                   dPdrhos, dPdrhoE, dPdrhoEve, UnitNormal,
+                                   1.0, Jacobian_i);
       
-      /*--- Flux of the Euler wall ---*/
-      Residual[0] = ProjVel * Psi[0] - phis2 * ProjVel + phis1 * Gamma_Minus_One * sq_vel;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Residual[iDim+1] = ProjVel * Psi[iDim+1] - phis2 * Normal[iDim] - phis1 * Gamma_Minus_One * Velocity[iDim];
-      Residual[nVar-1] = ProjVel * Psi[nVar-1] + phis1 * Gamma_Minus_One;
-      
-      if (implicit) {
-        
-        /*--- Adjoint density ---*/
-        Jacobian_ii[0][0] = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          Jacobian_ii[0][iDim+1] = -ProjVel * (Velocity[iDim] - UnitNormal[iDim] * vn);
-        Jacobian_ii[0][nVar-1] = -ProjVel * Enthalpy;
-        
-        /*--- Adjoint velocities ---*/
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Jacobian_ii[iDim+1][0] = -Normal[iDim];
-          for (jDim = 0; jDim < nDim; jDim++)
-            Jacobian_ii[iDim+1][jDim+1] = -ProjVel*(UnitNormal[jDim]*UnitNormal[iDim] - Normal[iDim] * (Velocity[jDim] - UnitNormal[jDim] * vn));
-          Jacobian_ii[iDim+1][iDim+1] += ProjVel;
-          Jacobian_ii[iDim+1][nVar-1] = -Normal[iDim] * Enthalpy;
+      /*--- Flux of the Euler wall: (Adotn)^T * Psi ---*/
+      for (iVar = 0; iVar < nVar; iVar++) {
+        for (jVar = 0; jVar < nVar; jVar++) {
+          Residual[iVar] += Jacobian_i[jVar][iVar]*Psi[jVar]*Area;
         }
-        
-        /*--- Adjoint energy ---*/
-        Jacobian_ii[nVar-1][0] = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          Jacobian_ii[nVar-1][iDim+1] = 0.0;
-        Jacobian_ii[nVar-1][nVar-1] = ProjVel;
-        
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
-        
       }
+      
+      if (implicit)
+        for (iVar = 0; iVar < nVar; iVar++)
+          for (jVar = 0; jVar < nVar; jVar++)
+            Jacobian_ii[iVar][jVar] = Jacobian_i[jVar][iVar];
       
       /*--- Update residual ---*/
       LinSysRes.SubtractBlock(iPoint, Residual);
+      if (implicit)
+        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
       
 		}
 	}
-  
+  delete [] Density;
 	delete [] Velocity;
 	delete [] UnitNormal;
 	delete [] Psi;
@@ -2035,17 +2050,42 @@ void CAdjTNE2EulerSolver::BC_Sym_Plane(CGeometry *geometry,
                                        CConfig *config,
                                        unsigned short val_marker) {
   
-	unsigned long iVertex, iPoint;
-	double *Normal, *U, *Psi_Aux, ProjVel = 0.0, vn = 0.0, Area, *UnitNormal, *Coord;
-	double *Velocity, *Psi, Enthalpy = 0.0, sq_vel, phin, phis1, phis2, DensityInc = 0.0, BetaInc2 = 0.0;
-	unsigned short iDim, iVar, jDim;
+  // NOTE: Verify that the "GetVelocity" routine is working.
+	
+  bool implicit, ionization;
+  unsigned short iDim, iSpecies, iVar, jVar, nHeavy, nEl;
+  unsigned short RHOCVTR_INDEX, RHOCVVE_INDEX;
+  unsigned long iVertex, iPoint;
+	double *Normal, Area, *UnitNormal, *Coord;
+  double *Psi, *Psi_Aux, phin;
+  double *U, *Density, *Velocity, ProjVel, vn, sq_vel, *dPdrhos, *Ms;
+  double Enthalpy, Energy_ve, Ru, rho_el, conc, rhoCvtr, rhoCvve;
+  double dPdrhoE, dPdrhoEve;
   
-	bool implicit = (config->GetKind_TimeIntScheme_AdjTNE2() == EULER_IMPLICIT);
-	bool grid_movement = config->GetGrid_Movement();
+  /*--- Set booleans from config ---*/
+	implicit   = (config->GetKind_TimeIntScheme_AdjTNE2() == EULER_IMPLICIT);
+  ionization = (config->GetIonization());
   
-	UnitNormal = new double[nDim];
-	Velocity = new double[nDim];
-	Psi      = new double[nVar];
+  /*--- Initialize ---*/
+  ProjVel  = 0.0;
+  vn       = 0.0;
+  Enthalpy = 0.0;
+  
+  /*--- Allocate arrays ---*/
+	UnitNormal    = new double[nDim];
+	Velocity      = new double[nDim];
+  Density       = new double[nSpecies];
+	Psi           = new double[nVar];
+  
+  /*--- Determine the number of heavy particle species ---*/
+  if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
+  else            { nHeavy = nSpecies;   nEl = 0; }
+  
+  /*--- Acquire parameters from config ---*/
+  Ms = config->GetMolar_Mass();
+  RHOCVTR_INDEX = solver_container[TNE2_SOL]->node[0]->GetRhoCvtrIndex();
+  RHOCVVE_INDEX = solver_container[TNE2_SOL]->node[0]->GetRhoCvveIndex();
+  
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
@@ -2053,118 +2093,82 @@ void CAdjTNE2EulerSolver::BC_Sym_Plane(CGeometry *geometry,
 			Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
 			Coord = geometry->node[iPoint]->GetCoord();
       
-			/*--- Create a copy of the adjoint solution ---*/
-			Psi_Aux = node[iPoint]->GetSolution();
-			for (iVar = 0; iVar < nVar; iVar++) Psi[iVar] = Psi_Aux[iVar];
+      /*--- Create a copy of the adjoint solution ---*/
+      Psi_Aux = node[iPoint]->GetSolution();
+      for (iVar = 0; iVar < nVar; iVar++) Psi[iVar] = Psi_Aux[iVar];
       
-			/*--- Flow solution ---*/
+			/*--- Set the direct solution ---*/
 			U = solver_container[TNE2_SOL]->node[iPoint]->GetSolution();
       
-			Area = 0;
-			for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-			Area = sqrt(Area);
-      
-			for (iDim = 0; iDim < nDim; iDim++)
-				UnitNormal[iDim]   = -Normal[iDim]/Area;
-      
+      /*--- Compute geometry parameters ---*/
+			Area = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
-        Velocity[iDim] = U[iDim+1] / U[0];
+        Area += Normal[iDim]*Normal[iDim];
+			Area = sqrt(Area);
+			for (iDim = 0; iDim < nDim; iDim++)
+        UnitNormal[iDim] = -Normal[iDim]/Area;
       
-      Enthalpy = solver_container[TNE2_SOL]->node[iPoint]->GetEnthalpy();
-      sq_vel   = 0.5*solver_container[TNE2_SOL]->node[iPoint]->GetVelocity2();
+      /*--- Get the flow quantities ---*/
+      Ru = UNIVERSAL_GAS_CONSTANT;
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        Density[iSpecies] = U[iSpecies];
+      for (iDim = 0; iDim < nDim; iDim++)
+        Velocity[iDim] = solver_container[TNE2_SOL]->node[iPoint]->GetVelocity(iDim, false);
+      Enthalpy  = solver_container[TNE2_SOL]->node[iPoint]->GetEnthalpy();
+      Energy_ve = U[nSpecies+nDim+1]/solver_container[TNE2_SOL]->node[iPoint]->GetDensity();
+      sq_vel    = 0.5*solver_container[TNE2_SOL]->node[iPoint]->GetVelocity2();
+      dPdrhos   = solver_container[TNE2_SOL]->node[iPoint]->GetdPdrhos();
+      rhoCvtr   = solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar(RHOCVTR_INDEX);
+      rhoCvve   = solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar(RHOCVVE_INDEX);
+      
+      if (ionization)
+        rho_el   = U[nSpecies-1];
+      else
+        rho_el   = 0.0;
+      
+      /*--- Calculate quantities using Roe variables ---*/
+      conc = 0.0;
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        conc   += Density[iSpecies] / Ms[iSpecies];
+      dPdrhoE   = conc*Ru / rhoCvtr;
+      dPdrhoEve = -dPdrhoE + rho_el * Ru/Ms[nSpecies-1] * 1.0/rhoCvve;
       
       /*--- Compute projections ---*/
       ProjVel = 0.0; vn = 0.0, phin = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         ProjVel -= Velocity[iDim]*Normal[iDim];
         vn      += Velocity[iDim]*UnitNormal[iDim];
-        phin    += Psi[iDim+1]*UnitNormal[iDim];
-      }
-      
-      /*--- Grid Movement ---*/
-      if (grid_movement) {
-        double ProjGridVel = 0.0;
-        double *GridVel = geometry->node[iPoint]->GetGridVel();
-        for (iDim = 0; iDim < nDim; iDim++) {
-          ProjGridVel += GridVel[iDim]*UnitNormal[iDim];
-        }
-        phin -= Psi[nVar-1]*ProjGridVel;
+        phin    += Psi[nSpecies+iDim]*UnitNormal[iDim];
       }
       
       /*--- Introduce the boundary condition ---*/
       for (iDim = 0; iDim < nDim; iDim++)
-        Psi[iDim+1] -= phin * UnitNormal[iDim];
+        Psi[nSpecies+iDim] -= phin * UnitNormal[iDim];
       
-      /*--- Inner products after introducing BC (Psi has changed) ---*/
-      phis1 = 0.0; phis2 = Psi[0] + Enthalpy * Psi[nVar-1];
-      for (iDim = 0; iDim < nDim; iDim++) {
-        phis1 -= Normal[iDim]*Psi[iDim+1];
-        phis2 += Velocity[iDim]*Psi[iDim+1];
+      conv_numerics->GetInviscidProjJac(Density, Velocity, &Enthalpy, &Energy_ve,
+                                        dPdrhos, dPdrhoE, dPdrhoEve, UnitNormal,
+                                        1.0, Jacobian_i);
+      
+      /*--- Flux of the Euler wall: (Adotn)^T * Psi ---*/
+      for (iVar = 0; iVar < nVar; iVar++) {
+        for (jVar = 0; jVar < nVar; jVar++) {
+          Residual[iVar] += Jacobian_i[jVar][iVar]*Psi[jVar]*Area;
+        }
       }
       
-      /*--- Flux of the Euler wall ---*/
-      Residual[0] = ProjVel * Psi[0] - phis2 * ProjVel + phis1 * Gamma_Minus_One * sq_vel;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Residual[iDim+1] = ProjVel * Psi[iDim+1] - phis2 * Normal[iDim] - phis1 * Gamma_Minus_One * Velocity[iDim];
-      Residual[nVar-1] = ProjVel * Psi[nVar-1] + phis1 * Gamma_Minus_One;
+      if (implicit)
+        for (iVar = 0; iVar < nVar; iVar++)
+          for (jVar = 0; jVar < nVar; jVar++)
+            Jacobian_ii[iVar][jVar] = Jacobian_i[jVar][iVar];
       
-      /*--- Grid Movement ---*/
-      if (grid_movement) {
-        double ProjGridVel = 0.0;
-        double *GridVel = geometry->node[iPoint]->GetGridVel();
-        for (iDim = 0; iDim < nDim; iDim++)
-          ProjGridVel -= GridVel[iDim]*Normal[iDim];
-        Residual[0] -= ProjGridVel*Psi[0];
-        for (iDim = 0; iDim < nDim; iDim++)
-          Residual[iDim+1] -= ProjGridVel*Psi[iDim+1];
-        Residual[nVar-1] -= ProjGridVel*Psi[nVar-1];
-      }
+      /*--- Update residual ---*/
+      LinSysRes.SubtractBlock(iPoint, Residual);
+      if (implicit)
+        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
       
-			/*--- Update residual ---*/
-			LinSysRes.SubtractBlock(iPoint, Residual);
-      
-      
-			/*--- Implicit stuff ---*/
-			if (implicit) {
-        
-        /*--- Adjoint density ---*/
-        Jacobian_ii[0][0] = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          Jacobian_ii[0][iDim+1] = -ProjVel * (Velocity[iDim] - UnitNormal[iDim] * vn);
-        Jacobian_ii[0][nVar-1] = -ProjVel * Enthalpy;
-        
-        /*--- Adjoint velocities ---*/
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Jacobian_ii[iDim+1][0] = -Normal[iDim];
-          for (jDim = 0; jDim < nDim; jDim++)
-            Jacobian_ii[iDim+1][jDim+1] = -ProjVel*(UnitNormal[jDim]*UnitNormal[iDim] - Normal[iDim] * (Velocity[jDim] - UnitNormal[jDim] * vn));
-          Jacobian_ii[iDim+1][iDim+1] += ProjVel;
-          Jacobian_ii[iDim+1][nVar-1] = -Normal[iDim] * Enthalpy;
-        }
-        
-        /*--- Adjoint energy ---*/
-        Jacobian_ii[nVar-1][0] = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          Jacobian_ii[nVar-1][iDim+1] = 0.0;
-        Jacobian_ii[nVar-1][nVar-1] = ProjVel;
-        
-        /*--- Contribution from grid movement ---*/
-        if (grid_movement) {
-          double ProjGridVel = 0.0;
-          double *GridVel = geometry->node[iPoint]->GetGridVel();
-          for (iDim = 0; iDim < nDim; iDim++)
-            ProjGridVel -= GridVel[iDim]*Normal[iDim];
-          Jacobian_ii[0][0] -= ProjGridVel;
-          for (iDim = 0; iDim < nDim; iDim++)
-            Jacobian_ii[iDim+1][iDim+1] -= ProjGridVel;
-          Jacobian_ii[nVar-1][nVar-1] -= ProjGridVel;
-        }
-        
-				Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
-			}
 		}
 	}
-  
+  delete [] Density;
 	delete [] Velocity;
 	delete [] UnitNormal;
 	delete [] Psi;

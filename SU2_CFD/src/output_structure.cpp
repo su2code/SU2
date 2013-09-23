@@ -3599,11 +3599,12 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
                 ConvHist_file[0] << flow_resid << levelset_resid << end;
             }
             break;
-            
+      
         case TNE2_EULER : case TNE2_NAVIER_STOKES:
             ConvHist_file[0] << begin << flow_coeff;
             if (isothermal) ConvHist_file[0] << heat_coeff;
-            ConvHist_file[0] << flow_resid;
+            for (unsigned short iSpecies = 0; iSpecies < config->GetnSpecies()+5; iSpecies++)
+              ConvHist_file[0] << ",\"Residual[" << iSpecies << "]\"";
             ConvHist_file[0] << end;
             break;
             
@@ -3686,6 +3687,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
         fea_resid[1000], end[1000];
         double dummy = 0.0;
         unsigned short iVar, iMarker;
+        unsigned short iSpecies, loc;
         
         unsigned long LinSolvIter = 0;
         double timeiter = double(timeused)/double(iExtIter+1);
@@ -4137,7 +4139,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                         break;
                         
                     case TNE2_EULER : case TNE2_NAVIER_STOKES:
-                        
+                    
                         /*--- Direct coefficients ---*/
                         sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
                                  Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy,
@@ -4145,13 +4147,12 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                         if (isothermal)
                             sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy,
                                      Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_Q, Total_MaxQ);
-                        
-                        /*--- Flow residual ---*/
-                        if (nDim == 2) {
-                            sprintf (flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_TNE2[0]), log10 (residual_TNE2[1]), log10 (residual_TNE2[2]), log10 (residual_TNE2[3]), dummy );
-                        }
-                        else {
-                            sprintf (flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_TNE2[0]), log10 (residual_TNE2[1]), log10 (residual_TNE2[2]), log10 (residual_TNE2[3]), log10 (residual_TNE2[4]) );
+                    
+                        /*--- Direct problem residual ---*/
+                        for (iVar = 0; iVar < nSpecies+nDim+2; iVar++) {
+                          sprintf (resid_aux, ", %12.10f", log10 (residual_TNE2[iVar]));
+                          if (iVar == 0) strcpy(flow_resid, resid_aux);
+                          else strcat(flow_resid, resid_aux);
                         }
                         
                         if (adjoint) {
@@ -4160,20 +4161,16 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                             sprintf (adjoint_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, 0.0", Total_Sens_Geo, Total_Sens_Mach, Total_Sens_AoA, Total_Sens_Press, Total_Sens_Temp);
                             
                             /*--- Adjoint flow residuals ---*/
-                            if (nDim == 2) {
-                                sprintf (adj_flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, 0.0", log10 (residual_adjTNE2[0]),log10 (residual_adjTNE2[1]),log10 (residual_adjTNE2[2]),log10 (residual_adjTNE2[3]) );
-                                
-                            }
-                            else {
-                                sprintf (adj_flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_adjTNE2[0]),log10 (residual_adjTNE2[1]),log10 (residual_adjTNE2[2]),log10 (residual_adjTNE2[3]), log10 (residual_adjTNE2[4]) );
-                            }
-                            
+                            for (iVar = 0; iVar < nSpecies+nDim+2; iVar++) {
+                              sprintf (resid_aux, ", %12.10f", log10 (residual_adjTNE2[iVar]));
+                              if (iVar == 0) strcpy(adj_flow_resid, resid_aux);
+                              else strcat(adj_flow_resid, resid_aux);
+                            }                            
                         }
                         
                         break;
                         
                     case PLASMA_EULER : case ADJ_PLASMA_EULER : case PLASMA_NAVIER_STOKES: case ADJ_PLASMA_NAVIER_STOKES:
-                        unsigned short iSpecies, loc;
                         
                         /*--- Direct problem coefficients ---*/
                         sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
@@ -4280,7 +4277,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                         if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
                         else cout << endl << " IntIter" << " ExtIter";
                         
-                        cout << "     Res[Rho]" << "     Res[RhoE]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
+                        cout << "     Res[Rho]" << "     Res[RhoE]" << "   Res[RhoEve]" << "   CDrag(Total)" << endl;
                         break;
                         
                     case RANS : case FLUID_STRUCTURE_RANS: case AEROACOUSTIC_RANS:
@@ -4514,12 +4511,9 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                     cout.precision(6);
                     cout.setf(ios::fixed,ios::floatfield);
                     cout.width(13); cout << log10(residual_TNE2[0]);
-                    if (!fluid_structure && !aeroacoustic && !equiv_area) {
-                        if (nDim == 2 ) { cout.width(14); cout << log10(residual_TNE2[3]); }
-                        else { cout.width(14); cout << log10(residual_TNE2[4]); }
-                    }
-                    
-                    cout.width(15); cout << Total_CLift; cout.width(15); cout << Total_CDrag;
+                    cout.width(14); cout << log10(residual_TNE2[nSpecies+nDim]);
+                    cout.width(14); cout << log10(residual_TNE2[nSpecies+nDim+1]);
+                    cout.width(15); cout << Total_CDrag;
                     cout << endl;
                     break;
                     
@@ -4682,7 +4676,11 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                         ConvHist_file[0].flush();
                     }
                     
-                    if ((config[val_iZone]->GetKind_GasModel() == ARGON_SID) || config[val_iZone]->GetKind_GasModel() == AIR7 || config[val_iZone]->GetKind_GasModel() == O2 || config[val_iZone]->GetKind_GasModel() == N2 || config[val_iZone]->GetKind_GasModel() == AIR5) {
+                    if ((config[val_iZone]->GetKind_GasModel() == ARGON_SID) ||
+                         config[val_iZone]->GetKind_GasModel() == AIR7       ||
+                         config[val_iZone]->GetKind_GasModel() == O2         ||
+                         config[val_iZone]->GetKind_GasModel() == N2         ||
+                         config[val_iZone]->GetKind_GasModel() == AIR5         ){
                         cout.width(19); cout << log10(residual_adjplasma[0]);
                         cout.width(19); cout << log10(residual_adjplasma[nDim+1]);
                         cout.width(19); cout << Total_Sens_Geo;
