@@ -530,12 +530,23 @@ void CCentJST_AdjTNE2::ComputeResidual (double *val_resconv_i, double *val_resvi
 
 CCentLax_AdjTNE2::CCentLax_AdjTNE2(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
-  
-	Diff_Psi   = new double [nVar];
+  Normal_ij  = new double [nDim];
+  Normal_ji  = new double [nDim];
+	DiffPsi   = new double [nVar];
+  MeanPsi    = new double [nVar];
   MeanPsiRho = new double [nSpecies];
   MeanPhi    = new double [nDim];
 	Velocity_i = new double [nDim];
   Velocity_j = new double [nDim];
+  Density_i = new double [nSpecies];
+  Density_j = new double [nSpecies];
+  
+  Proj_Jac_Tensor_i = new double*[nVar];
+  Proj_Jac_Tensor_j = new double*[nVar];
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    Proj_Jac_Tensor_i[iVar] = new double [nVar];
+    Proj_Jac_Tensor_j[iVar] = new double [nVar];
+  }
   
 	implicit = (config->GetKind_TimeIntScheme_AdjTNE2() == EULER_IMPLICIT);
   
@@ -546,173 +557,159 @@ CCentLax_AdjTNE2::CCentLax_AdjTNE2(unsigned short val_nDim, unsigned short val_n
 
 CCentLax_AdjTNE2::~CCentLax_AdjTNE2(void) {
   
-	delete [] Diff_Psi;
+  delete [] Normal_ij;
+  delete [] Normal_ji;
+	delete [] DiffPsi;
+  delete [] MeanPsi;
   delete [] MeanPsiRho;
   delete [] MeanPhi;
 	delete [] Velocity_i;
   delete [] Velocity_j;
-  
+  delete [] Density_i;
+  delete [] Density_j;
+
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    delete [] Proj_Jac_Tensor_i[iVar];
+    delete [] Proj_Jac_Tensor_j[iVar];
+  }
+  delete [] Proj_Jac_Tensor_i;
+  delete [] Proj_Jac_Tensor_j;
 }
 
-void CCentLax_AdjTNE2::ComputeResidual (double *val_resconv_i, double *val_resvisc_i, double *val_resconv_j, double *val_resvisc_j,
-                                        double **val_Jacobian_ii, double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj,
+void CCentLax_AdjTNE2::ComputeResidual (double *val_resconv_i,
+                                        double *val_resvisc_i,
+                                        double *val_resconv_j,
+                                        double *val_resvisc_j,
+                                        double **val_Jacobian_ii,
+                                        double **val_Jacobian_ij,
+                                        double **val_Jacobian_ji,
+                                        double **val_Jacobian_jj,
                                         CConfig *config) {
+  bool ionization;
+  unsigned short iDim, jDim, iSpecies, iVar, jVar, nHeavy, nEl;
+  double Energy_ve_i, Energy_ve_j, rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j;
+  double *Ms, Ru, conc_i, conc_j, rho_el_i, rho_el_j;
+  double dPdrhoE_i, dPdrhoE_j, dPdrhoEve_i, dPdrhoEve_j;
   
-  unsigned short iDim, iSpecies;
+  /*--- Initialize the residuals ---*/
+  for (iVar = 0; iVar < nVar; iVar++) {
+    val_resconv_i[iVar] = 0.0;
+    val_resconv_i[iVar] = 0.0;
+  }
   
-	/*--- Calculate the mean values of the adjoint variables ---*/
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    MeanPsiRho[iSpecies] =  0.5*(Psi_i[iSpecies]+Psi_j[iSpecies]);
-	for (iDim = 0; iDim < nDim; iDim++)
-		MeanPhi[iDim] = 0.5 * (Psi_i[nSpecies+iDim]   + Psi_j[nSpecies+iDim]);
-	MeanPsiE        = 0.5 * (Psi_i[nSpecies+nDim]   + Psi_j[nSpecies+nDim]);
-  MeanPsiEve      = 0.5 * (Psi_i[nSpecies+nDim+1] + Psi_j[nSpecies+nDim+1]);
+  /*--- Read parameters from config ---*/
+  ionization = config->GetIonization();
   
-	/*--- Evaluation at point i ---*/
-	ProjVelocity_i = 0; ProjPhi = 0; ProjPhi_Vel = 0; sq_vel = 0; Area = 0;
-	for (iDim = 0; iDim < nDim; iDim++) {
-		Velocity_i[iDim] = U_i[iDim+1] / U_i[0];
-		ProjVelocity_i += Velocity_i[iDim]*Normal[iDim];
-		ProjPhi += MeanPhi[iDim]*Normal[iDim];
-		ProjPhi_Vel += MeanPhi[iDim]*Velocity_i[iDim];
-		sq_vel += 0.5*Velocity_i[iDim]*Velocity_i[iDim];
-		Area += Normal[iDim]*Normal[iDim];
-	}
+  /*--- Compute face area ---*/
+	Area = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
 	Area = sqrt(Area);
-	phis1 = ProjPhi + ProjVelocity_i*MeanPsiE;
-	phis2 = MeanPsiRho + ProjPhi_Vel + Enthalpy_i*MeanPsiE;
   
-	/*--- Compute inviscid residual at point i ---*/
-	val_resconv_i[0] = ProjVelocity_i*MeanPsiRho - phis2*ProjVelocity_i + Gamma_Minus_One*phis1*sq_vel;
-	for (iDim = 0; iDim < nDim; iDim++)
-		val_resconv_i[iDim+1] = ProjVelocity_i*MeanPhi[iDim] + phis2*Normal[iDim] - Gamma_Minus_One*phis1*Velocity_i[iDim];
-	val_resconv_i[nVar-1] = ProjVelocity_i*MeanPsiE + Gamma_Minus_One*phis1;
-  
-	/*--- Flux contributions due to grid movement at point i (TDE) ---*/
-	if (grid_movement) {
-		double ProjGridVel = 0.0;
-		for (iDim = 0; iDim < nDim; iDim++)
-			ProjGridVel += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
-		val_resconv_i[0] -= ProjGridVel*MeanPsiRho;
-		for (iDim = 0; iDim < nDim; iDim++)
-			val_resconv_i[iDim+1] -= ProjGridVel*MeanPhi[iDim];
-		val_resconv_i[nVar-1] -= ProjGridVel*MeanPsiE;
-	}
-  
-	/*--- Inviscid contribution to the implicit part ---*/
-	if (implicit) {
-		val_Jacobian_ii[0][0] = 0.0;
-		for (jDim = 0; jDim < nDim; jDim++)
-			val_Jacobian_ii[0][jDim+1] = -0.5*ProjVelocity_i*Velocity_i[jDim] + Gamma_Minus_One*sq_vel*0.5*Normal[jDim];
-		val_Jacobian_ii[0][nVar-1] = 0.5*ProjVelocity_i*(Gamma_Minus_One*sq_vel - Enthalpy_i);
-		for (iDim = 0; iDim < nDim; iDim++) {
-			val_Jacobian_ii[iDim+1][0] = 0.5*Normal[iDim];
-			for (jDim = 0; jDim < nDim; jDim++)
-				val_Jacobian_ii[iDim+1][jDim+1] = 0.5*Normal[iDim]*Velocity_i[jDim] - 0.5*Gamma_Minus_One*Velocity_i[iDim]*Normal[jDim];
-			val_Jacobian_ii[iDim+1][iDim+1] += 0.5*ProjVelocity_i;
-			val_Jacobian_ii[iDim+1][nVar-1] = 0.5*Enthalpy_i*Normal[iDim] - 0.5*Gamma_Minus_One*Velocity_i[iDim]*ProjVelocity_i;
-		}
-		val_Jacobian_ii[nVar-1][0] = 0;
-		for (jDim = 0; jDim < nDim; jDim++)
-			val_Jacobian_ii[nVar-1][jDim+1] = 0.5*Gamma_Minus_One*Normal[jDim];
-		val_Jacobian_ii[nVar-1][nVar-1] = 0.5*Gamma*ProjVelocity_i;
-    
-		for (iVar = 0; iVar < nVar; iVar++)
-			for (jVar = 0; jVar < nVar; jVar++)
-				val_Jacobian_ij[iVar][jVar] = val_Jacobian_ii[iVar][jVar];
-    
-		/*--- Jacobian contributions due to grid movement at point i (TDE) ---*/
-		if (grid_movement) {
-			double ProjGridVel = 0.0;
-			for (iDim = 0; iDim < nDim; iDim++)
-				ProjGridVel += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
-			for (iVar = 0; iVar < nVar; iVar++) {
-				val_Jacobian_ii[iVar][iVar] -= 0.5*ProjGridVel;
-				val_Jacobian_ij[iVar][iVar] -= 0.5*ProjGridVel;
-			}
-		}
-	}
-  
-	/*--- Evaluation at point j ---*/
-	ProjVelocity_j = 0; ProjPhi_Vel = 0; sq_vel = 0;
+  /*--- Compute and unit normal vector ---*/
 	for (iDim = 0; iDim < nDim; iDim++) {
-		Velocity_j[iDim] = U_j[iDim+1] / U_j[0];
-		ProjVelocity_j += Velocity_j[iDim]*Normal[iDim];
-		ProjPhi_Vel += MeanPhi[iDim]*Velocity_j[iDim];
-		sq_vel += 0.5*Velocity_j[iDim]*Velocity_j[iDim];
+		UnitNormal[iDim] = Normal[iDim]/Area;
+    Normal_ij[iDim] = Normal[iDim];
+    Normal_ji[iDim] = -Normal[iDim];
+    if (fabs(UnitNormal[iDim]) < EPS) UnitNormal[iDim] = EPS;
+  }
+  
+  /*--- Calculate the mean values of the adjoint variables ---*/
+  for (iVar = 0; iVar < nVar; iVar++) {
+    MeanPsi[iVar] = 0.5 * (Psi_i[iVar] + Psi_j[iVar]);
+    DiffPsi[iVar] = Psi_i[iVar]-Psi_j[iVar];
+  }
+  
+//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//    MeanPsiRho[iSpecies] =  0.5*(Psi_i[iSpecies]+Psi_j[iSpecies]);
+//	for (iDim = 0; iDim < nDim; iDim++)
+//		MeanPhi[iDim] = 0.5 * (Psi_i[nSpecies+iDim]   + Psi_j[nSpecies+iDim]);
+//	MeanPsiE        = 0.5 * (Psi_i[nSpecies+nDim]   + Psi_j[nSpecies+nDim]);
+//  MeanPsiEve      = 0.5 * (Psi_i[nSpecies+nDim+1] + Psi_j[nSpecies+nDim+1]);
+  
+  /*--- Determine the number of heavy particle species ---*/
+  if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
+  else            { nHeavy = nSpecies;   nEl = 0; }
+  
+  /*--- Pull stored primitive variables ---*/
+  // Primitives: [rho1,...,rhoNs, T, Tve, u, v, w, P, rho, h, a]
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    Density_i[iSpecies] = V_i[RHOS_INDEX+iSpecies];
+    Density_j[iSpecies] = V_j[RHOS_INDEX+iSpecies];
+  }
+  for (iDim = 0; iDim < nDim; iDim++) {
+		Velocity_i[iDim] = V_i[VEL_INDEX+iDim];
+		Velocity_j[iDim] = V_j[VEL_INDEX+iDim];
 	}
+	Pressure_i   = V_i[P_INDEX];    Pressure_j   = V_j[P_INDEX];
+  Enthalpy_i   = V_i[H_INDEX];    Enthalpy_j   = V_j[H_INDEX];
+  SoundSpeed_i = V_i[A_INDEX];    SoundSpeed_j = V_j[A_INDEX];
+  Energy_ve_i  = U_i[nSpecies+nDim+1] / V_i[RHO_INDEX];
+  Energy_ve_j  = U_j[nSpecies+nDim+1] / V_j[RHO_INDEX];
+  rhoCvtr_i    = V_i[RHOCVTR_INDEX];
+  rhoCvtr_j    = V_j[RHOCVTR_INDEX];
+  rhoCvve_i    = V_i[RHOCVVE_INDEX];
+  rhoCvve_j    = V_j[RHOCVVE_INDEX];
   
-	phis1 = ProjPhi + ProjVelocity_j*MeanPsiE;
-	phis2 = MeanPsiRho + ProjPhi_Vel + Enthalpy_j*MeanPsiE;
+  /*--- Read parameters from CConfig ---*/
+  Ms = config->GetMolar_Mass();
   
-	/*--- Compute inviscid residual at point j ---*/
-	val_resconv_j[0] = -(ProjVelocity_j*MeanPsiRho - phis2*ProjVelocity_j + Gamma_Minus_One*phis1*sq_vel);
-	for (iDim = 0; iDim < nDim; iDim++)
-		val_resconv_j[iDim+1] = -(ProjVelocity_j*MeanPhi[iDim] + phis2*Normal[iDim] - Gamma_Minus_One*phis1*Velocity_j[iDim]);
-	val_resconv_j[nVar-1] = -(ProjVelocity_j*MeanPsiE + Gamma_Minus_One*phis1);
+  /*--- Rename for convenience ---*/
+  Ru = UNIVERSAL_GAS_CONSTANT;
   
-	/*--- Flux contributions due to grid movement at point j (TDE) ---*/
-	if (grid_movement) {
-		double ProjGridVel = 0.0;
-		for (iDim = 0; iDim < nDim; iDim++)
-			ProjGridVel += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
-		val_resconv_j[0] += ProjGridVel*MeanPsiRho;
-		for (iDim = 0; iDim < nDim; iDim++)
-			val_resconv_j[iDim+1] += ProjGridVel*MeanPhi[iDim];
-		val_resconv_j[nVar-1] += ProjGridVel*MeanPsiE;
-	}
+  /*--- Calculate useful quantities ---*/
+  if (ionization) {
+    rho_el_i = Density_i[nSpecies-1];
+    rho_el_j = Density_j[nSpecies-1];
+  } else {
+    rho_el_i = 0.0;
+    rho_el_j = 0.0;
+  }
+  conc_i = 0.0;
+  conc_j = 0.0;
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    conc_i += Density_i[iSpecies] / Ms[iSpecies];
+    conc_j += Density_j[iSpecies] / Ms[iSpecies];
+  }
+  dPdrhoE_i   = conc_i*Ru / rhoCvtr_i;
+  dPdrhoE_j   = conc_j*Ru / rhoCvtr_j;
+  dPdrhoEve_i = -dPdrhoE_i + rho_el_i * Ru/Ms[nSpecies-1] * 1.0/rhoCvve_i;
+  dPdrhoEve_j = -dPdrhoE_j + rho_el_j * Ru/Ms[nSpecies-1] * 1.0/rhoCvve_j;
   
-	/*--- Inviscid contribution to the implicit part ---*/
-	if (implicit) {
-		val_Jacobian_jj[0][0] = 0.0;
-		for (jDim = 0; jDim < nDim; jDim++)
-			val_Jacobian_jj[0][jDim+1] = 0.5*ProjVelocity_j*Velocity_j[jDim] - Gamma_Minus_One*sq_vel*0.5*Normal[jDim];
-		val_Jacobian_jj[0][nVar-1] = -0.5*ProjVelocity_j*(Gamma_Minus_One*sq_vel - Enthalpy_j);
-		for (iDim = 0; iDim < nDim; iDim++) {
-			val_Jacobian_jj[iDim+1][0] = -0.5*Normal[iDim];
-			for (jDim = 0; jDim < nDim; jDim++)
-				val_Jacobian_jj[iDim+1][jDim+1] = -0.5*Normal[iDim]*Velocity_j[jDim] + 0.5*Gamma_Minus_One*Velocity_j[iDim]*Normal[jDim];
-			val_Jacobian_jj[iDim+1][iDim+1] -= 0.5*ProjVelocity_j;
-			val_Jacobian_jj[iDim+1][nVar-1] = -0.5*Enthalpy_j*Normal[iDim] + 0.5*Gamma_Minus_One*Velocity_j[iDim]*ProjVelocity_j;
-		}
-		val_Jacobian_jj[nVar-1][0] = 0;
-		for (jDim = 0; jDim < nDim; jDim++)
-			val_Jacobian_jj[nVar-1][jDim+1] = -0.5*Gamma_Minus_One*Normal[jDim];
-		val_Jacobian_jj[nVar-1][nVar-1] = -0.5*Gamma*ProjVelocity_j;
-    
-		for (iVar = 0; iVar < nVar; iVar++)
-			for (jVar = 0; jVar < nVar; jVar++)
-				val_Jacobian_ji[iVar][jVar] = val_Jacobian_jj[iVar][jVar];
-    
-		/*--- Jacobian contributions due to grid movement at point j (TDE) ---*/
-		if (grid_movement) {
-			double ProjGridVel = 0.0;
-			for (iDim = 0; iDim < nDim; iDim++)
-				ProjGridVel += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
-			for (iVar = 0; iVar < nVar; iVar++) {
-				val_Jacobian_jj[iVar][iVar] += 0.5*ProjGridVel;
-				val_Jacobian_ji[iVar][iVar] += 0.5*ProjGridVel;
-			}
-		}
-	}
+	/*--- Calculate Projected Flux Jacobians (inviscid) ---*/
+  GetInviscidProjJac(Density_i, Velocity_i, &Enthalpy_i, &Energy_ve_i,
+                     dPdrhos_i, dPdrhoE_i, dPdrhoEve_i, Normal_ij, 1.0,
+                     Proj_Jac_Tensor_i);
+  GetInviscidProjJac(Density_j, Velocity_j, &Enthalpy_j, &Energy_ve_j,
+                     dPdrhos_j, dPdrhoE_j, dPdrhoEve_j, Normal_ji, 1.0,
+                     Proj_Jac_Tensor_j);
+	
   
-	/*--- Computes differences btw. variables ---*/
-	for (iVar = 0; iVar < nVar; iVar++)
-		Diff_Psi[iVar] = Psi_i[iVar]-Psi_j[iVar];
+  /*--- Compute inviscid residual at point i ---*/
+  for (iVar = 0; iVar < nVar; iVar++) {
+    for (jVar = 0; jVar < nVar; jVar++) {
+      val_resconv_i[iVar] += Proj_Jac_Tensor_i[jVar][iVar]*MeanPsi[jVar];
+      val_resconv_j[iVar] += Proj_Jac_Tensor_j[jVar][iVar]*MeanPsi[jVar];
+    }
+  }
   
-	/*--- Adjustment to projected velocity due to mesh motion (TDE) ---*/
-	if (grid_movement) {
-		double ProjGridVel_i = 0.0; double ProjGridVel_j = 0.0; double ProjGridVel = 0.0;
-		for (iDim = 0; iDim < nDim; iDim++) {
-			ProjGridVel += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
-			ProjGridVel_i += GridVel_i[iDim]*Normal[iDim];
-			ProjGridVel_j += GridVel_j[iDim]*Normal[iDim];
-		}
-		ProjVelocity_i -= ProjGridVel;
-		ProjVelocity_j += ProjGridVel;
-	}
+  if (implicit) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      for (jVar = 0; jVar < nVar; jVar++) {
+        val_Jacobian_ii[iVar][jVar] = Proj_Jac_Tensor_i[jVar][iVar];
+        val_Jacobian_ij[iVar][jVar] = Proj_Jac_Tensor_i[jVar][iVar];
+        val_Jacobian_jj[iVar][jVar] = Proj_Jac_Tensor_j[jVar][iVar];
+        val_Jacobian_ji[iVar][jVar] = Proj_Jac_Tensor_j[jVar][iVar];
+      }
+    }
+  }
   
 	/*--- Compute spectral radius ---*/
+  ProjVelocity_i = 0.0;
+  ProjVelocity_j = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    ProjVelocity_i += Velocity_i[iDim]*Normal[iDim];
+    ProjVelocity_j += Velocity_j[iDim]*Normal[iDim];
+  }
 	Local_Lambda_i = (fabs(ProjVelocity_i)+SoundSpeed_i*Area);
 	Local_Lambda_j = (fabs(ProjVelocity_j)+SoundSpeed_j*Area);
 	MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
@@ -727,7 +724,7 @@ void CCentLax_AdjTNE2::ComputeResidual (double *val_resconv_i, double *val_resvi
   
 	/*--- Artifical dissipation evaluation ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
-		Residual = Epsilon_0*StretchingFactor*MeanLambda*Diff_Psi[iVar];
+		Residual = Epsilon_0*StretchingFactor*MeanLambda*DiffPsi[iVar];
 		val_resvisc_i[iVar] = -Residual;
 		val_resvisc_j[iVar] =  Residual;
 	}

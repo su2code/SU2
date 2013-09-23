@@ -56,7 +56,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
 	unsigned long iPoint, index, counter_local = 0, counter_global = 0;
 	unsigned short iVar, iDim, iMarker, iSpecies, nZone;
   double *Mvec_Inf;
-  double Alpha, Beta;
+  double Alpha, Beta, dull_val;
 	bool restart, check_temp, check_press;	
   
   /*--- Get MPI rank ---*/
@@ -315,9 +315,15 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
 			iPoint_Local = Global2Local[iPoint_Global];
 			if (iPoint_Local >= 0) {
         point_line >> index;
-        for (iVar = 0; iVar < nVar; iVar++)
+        for (iDim = 0; iDim < nDim; iDim++)
+          point_line >> dull_val;
+        for (iVar = 0; iVar < nVar; iVar++) {
           point_line >> Solution[iVar];
-        
+//          cout << Solution[iVar] << endl;
+        }
+//        cout << "iPoint_Local: " << iPoint_Local << endl;
+//        cout << "iPoint_Global: " << iPoint_Global << endl;
+//        cin.get();
 				node[iPoint_Local] = new CTNE2EulerVariable(Solution, nDim, nVar, nPrimVar,
                                                     nPrimVarGrad, config);
 			}
@@ -1589,7 +1595,6 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry,
   unsigned long iPoint, ErrorCounter = 0;
 	bool implicit   = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   bool center     = (config->GetKind_ConvNumScheme_TNE2() == SPACE_CENTERED);
-  bool center_jst = center && (config->GetKind_Centered_Flow() == JST);
 	bool upwind_2nd = ((config->GetKind_Upwind_TNE2() == ROE_2ND)  ||
                      (config->GetKind_Upwind_TNE2() == AUSM_2ND) ||
                      (config->GetKind_Upwind_TNE2() == HLLC_2ND) ||
@@ -1618,6 +1623,10 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry,
 		/*--- Limiter computation ---*/
 		if ((limiter) && (iMesh == MESH_0)) SetSolution_Limiter(geometry, config);
 	}
+  
+  /*--- Artificial dissipation ---*/
+  if (center)
+    SetMax_Eigenvalue(geometry, config);
   
 	/*--- Initialize the jacobian matrices ---*/
 	if (implicit) Jacobian.SetValZero();
@@ -1720,6 +1729,71 @@ void CTNE2EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_cont
 			node[iPoint]->SetDelta_Time(Global_Delta_Time);
 	}
 }
+
+
+void CTNE2EulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
+  
+	double *Normal, Area, Vol, Mean_SoundSpeed, Mean_ProjVel, Lambda, Local_Delta_Time,
+	Global_Delta_Time = 1E6, Global_Delta_UnstTimeND;
+	unsigned long iEdge, iVertex, iPoint, jPoint;
+	unsigned short iDim, iMarker;
+  
+	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+  
+	Min_Delta_Time = 1.E6; Max_Delta_Time = 0.0;
+  
+	/*--- Set maximum inviscid eigenvalue to zero, and compute sound speed ---*/
+	for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+		node[iPoint]->SetLambda(0.0);
+  
+	/*--- Loop interior edges ---*/
+	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+    
+		/*--- Point identification, Normal vector and area ---*/
+		iPoint = geometry->edge[iEdge]->GetNode(0);
+		jPoint = geometry->edge[iEdge]->GetNode(1);
+    
+		Normal = geometry->edge[iEdge]->GetNormal();
+		Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+    
+		/*--- Mean Values ---*/
+    Mean_ProjVel = 0.5 * (node[iPoint]->GetProjVel(Normal) + node[jPoint]->GetProjVel(Normal));
+    Mean_SoundSpeed = 0.5 * (node[iPoint]->GetSoundSpeed() + node[jPoint]->GetSoundSpeed()) * Area;
+    
+		/*--- Inviscid contribution ---*/
+		Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
+		if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddLambda(Lambda);
+		if (geometry->node[jPoint]->GetDomain()) node[jPoint]->AddLambda(Lambda);
+    
+	}
+  
+	/*--- Loop boundary edges ---*/
+	for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+		for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+      
+			/*--- Point identification, Normal vector and area ---*/
+			iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+			Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+			Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+      
+			/*--- Mean Values ---*/
+      Mean_ProjVel = node[iPoint]->GetProjVel(Normal);
+      Mean_SoundSpeed = node[iPoint]->GetSoundSpeed() * Area;
+      
+			/*--- Inviscid contribution ---*/
+			Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
+			if (geometry->node[iPoint]->GetDomain()) {
+				node[iPoint]->AddLambda(Lambda);
+			}
+		}
+	}
+  
+  /*--- Call the MPI routine ---*/
+  Set_MPI_MaxEigenvalue(geometry, config);
+
+}
+
+
 
 void CTNE2EulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                          CConfig *config, unsigned short iMesh, unsigned short iRKStep) {

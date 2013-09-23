@@ -6320,12 +6320,16 @@ public:
 class CCentLax_AdjTNE2 : public CNumerics {
 private:
   bool implicit, stretching;
-	double *Diff_Psi;
+  double *Normal_ij, *Normal_ji;
+	double *DiffPsi;
+  double *Density_i, *Density_j;
 	double *Velocity_i, *Velocity_j, ProjVelocity_i, ProjVelocity_j, sq_vel;
+  double *MeanPsi;
   double *MeanPsiRho, MeanPsiE, MeanPsiEve;
 	double Phi_i, Phi_j, *MeanPhi, ProjPhi, ProjPhi_Vel, phis1, phis2;
 	double Residual, Local_Lambda_i, Local_Lambda_j, MeanLambda;
   double Param_p, Param_Kappa_0, sc2, StretchingFactor, Epsilon_0, cte_0;
+  double **Proj_Jac_Tensor_i, **Proj_Jac_Tensor_j;
   
 public:
   
