@@ -74,6 +74,8 @@ inline double CSolver::GetPhi_Inf(unsigned short val_dim) { return 0; }
 
 inline double CSolver::GetPsiRho_Inf(void) { return 0; }
 
+inline double* CSolver::GetPsiRhos_Inf(void) { return NULL; }
+
 inline double CSolver::GetPsiE_Inf(void) { return 0; }
 
 inline void CSolver::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *config) { }
@@ -829,7 +831,7 @@ inline double CAdjTNE2EulerSolver::GetPhi_Inf(unsigned short val_dim) { return P
 
 inline double CAdjTNE2EulerSolver::GetPsiE_Inf(void) { return PsiE_Inf; }
 
-inline double CAdjTNE2EulerSolver::GetPsiRho_Inf(void) { return PsiRho_Inf; }
+inline double* CAdjTNE2EulerSolver::GetPsiRhos_Inf(void) { return PsiRho_Inf; }
 
 inline double CAdjTNE2EulerSolver::GetTotal_Sens_Geo() { return Total_Sens_Geo; }
 
