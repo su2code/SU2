@@ -285,6 +285,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddEnumOption("TIME_DISCRE_FLOW", Kind_TimeIntScheme_Flow, Time_Int_Map, "RUNGE-KUTTA_EXPLICIT");
   /* DESCRIPTION: Time discretization */
 	AddEnumOption("TIME_DISCRE_TNE2", Kind_TimeIntScheme_TNE2, Time_Int_Map, "EULER_IMPLICIT");
+  /* DESCRIPTION: Time discretization */
+	AddEnumOption("TIME_DISCRE_ADJTNE2", Kind_TimeIntScheme_AdjTNE2, Time_Int_Map, "EULER_IMPLICIT");
 	/* DESCRIPTION: Time discretization */
 	AddEnumOption("TIME_DISCRE_LEVELSET", Kind_TimeIntScheme_LevelSet, Time_Int_Map, "RUNGE-KUTTA_EXPLICIT");
 	/* DESCRIPTION: Time discretization */
@@ -562,6 +564,18 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddEnumOption("SOUR_NUM_METHOD_TNE2", Kind_SourNumScheme_TNE2, Source_Map, "NONE");
 	/* DESCRIPTION: Slope limiter */
 	AddEnumOption("SLOPE_LIMITER_TNE2", Kind_SlopeLimit_TNE2, Limiter_Map, "NONE");
+  
+  /* DESCRIPTION: Convective numerical method */
+	AddConvectOption("CONV_NUM_METHOD_ADJTNE2", Kind_ConvNumScheme_AdjTNE2, Kind_Centered_AdjTNE2, Kind_Upwind_AdjTNE2);
+	/* DESCRIPTION: Viscous numerical method */
+	AddEnumOption("VISC_NUM_METHOD_ADJTNE2", Kind_ViscNumScheme_AdjTNE2, Viscous_Map, "NONE");
+	/* DESCRIPTION: Source term numerical method */
+	AddEnumOption("SOUR_NUM_METHOD_ADJTNE2", Kind_SourNumScheme_AdjTNE2, Source_Map, "NONE");
+	/* DESCRIPTION: Slope limiter */
+	AddEnumOption("SLOPE_LIMITER_ADJTNE2", Kind_SlopeLimit_AdjTNE2, Limiter_Map, "NONE");
+  default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
+	/* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
+	AddArrayOption("AD_COEFF_ADJTNE2", 3, Kappa_AdjFlow, default_vec_3d);
   
 	/* DESCRIPTION: Convective numerical method */
 	AddConvectOption("CONV_NUM_METHOD_PLASMA", Kind_ConvNumScheme_Plasma, Kind_Centered_Plasma, Kind_Upwind_Plasma);
@@ -3989,6 +4003,35 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			}
 		}
     
+    if (Kind_Solver == ADJ_TNE2_EULER || Kind_Solver == ADJ_TNE2_NAVIER_STOKES) {
+      if ((Kind_ConvNumScheme_AdjTNE2 == SPACE_CENTERED) && (Kind_Centered_AdjTNE2 == JST)) {
+				cout << "Jameson-Schmidt-Turkel scheme for the adjoint inviscid terms."<< endl;
+				cout << "JST viscous coefficients (1st, 2nd, & 4th): " << Kappa_1st_AdjTNE2
+        << ", " << Kappa_2nd_AdjTNE2 << ", " << Kappa_4th_AdjTNE2 <<"."<< endl;
+				cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
+        cout << "The reference sharp edge distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
+			}
+			if ((Kind_ConvNumScheme_AdjTNE2 == SPACE_CENTERED) && (Kind_Centered_AdjTNE2 == LAX))
+				cout << "Lax-Friedrich scheme for the adjoint inviscid terms."<< endl;
+			if ((Kind_ConvNumScheme_AdjTNE2 == SPACE_UPWIND) && (Kind_Upwind_AdjTNE2 == ROE_1ST))
+				cout << "1st order Roe solver for the adjoint inviscid terms."<< endl;
+			if ((Kind_ConvNumScheme_AdjTNE2 == SPACE_UPWIND) && (Kind_Upwind_AdjTNE2 == ROE_2ND)) {
+				cout << "2nd order Roe solver for the adjoint inviscid terms."<< endl;
+				switch (Kind_SlopeLimit_AdjTNE2) {
+          case NONE: cout << "Without slope-limiting method." << endl; break;
+          case VENKATAKRISHNAN:
+            cout << "Venkatakrishnan slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+            cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+            break;
+          case SHARP_EDGES:
+            cout << "Sharp edges slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+            cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+            cout << "The reference sharp edge distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
+            break;
+				}
+			}
+    }
+    
     if (Kind_Solver == TNE2_NAVIER_STOKES) {
 			switch (Kind_ViscNumScheme_TNE2) {
         case AVG_GRAD: cout << "Average of gradients (viscous flow terms)." << endl; break;
@@ -4195,6 +4238,22 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				cout << endl;
 				break;
 			case EULER_EXPLICIT: cout << "Euler explicit method for the linearized equations." << endl; break;
+			}
+		}
+    
+    if ((Kind_Solver == ADJ_TNE2_EULER) || (Kind_Solver == ADJ_TNE2_NAVIER_STOKES)) {
+			switch (Kind_TimeIntScheme_AdjTNE2) {
+        case RUNGE_KUTTA_EXPLICIT:
+          cout << "Runge-Kutta explicit method for the adjoint equations." << endl;
+          cout << "Number of steps: " << nRKStep << endl;
+          cout << "Alpha coefficients: ";
+          for (unsigned short iRKStep = 0; iRKStep < nRKStep; iRKStep++) {
+            cout << "\t" << RK_Alpha_Step[iRKStep];
+          }
+          cout << endl;
+          break;
+        case EULER_EXPLICIT: cout << "Euler explicit method for the adjoint equations." << endl; break;
+        case EULER_IMPLICIT: cout << "Euler implicit method for the adjoint equations." << endl; break;
 			}
 		}
 
@@ -5403,6 +5462,7 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
 	case RUNTIME_PLASMA_SYS: return PLASMA_SOL;
 	case RUNTIME_FLOW_SYS: return FLOW_SOL;
 	case RUNTIME_TURB_SYS: return TURB_SOL;
+  case RUNTIME_TNE2_SYS: return TNE2_SOL;
 	case RUNTIME_TRANS_SYS: return TRANS_SOL;
 	case RUNTIME_ELEC_SYS: return ELEC_SOL;
 	case RUNTIME_WAVE_SYS: return WAVE_SOL;
@@ -5410,6 +5470,7 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
 	case RUNTIME_ADJPOT_SYS: return ADJFLOW_SOL;
 	case RUNTIME_ADJFLOW_SYS: return ADJFLOW_SOL;
 	case RUNTIME_ADJTURB_SYS: return ADJTURB_SOL;
+  case RUNTIME_ADJTNE2_SYS: return ADJTNE2_SOL;
 	case RUNTIME_ADJPLASMA_SYS: return ADJPLASMA_SOL;
 	case RUNTIME_LINPOT_SYS: return LINFLOW_SOL;
 	case RUNTIME_LINFLOW_SYS: return LINFLOW_SOL;

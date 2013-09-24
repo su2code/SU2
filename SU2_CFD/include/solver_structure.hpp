@@ -112,6 +112,7 @@ public:
     CSysVector OutputVariables;		/*!< \brief vector to store the extra variables to be written. */
 
 	CVariable** node;	/*!< \brief Vector which the define the variables for each problem. */
+  CVariable* node_infty; /*!< \brief CVariable storing the free stream conditions. */
   
 	/*!
 	 * \brief Constructor of the class.
@@ -1355,7 +1356,13 @@ public:
 	 * \return Value of the adjoint density at the infinity.
 	 */
 	virtual double GetPsiRho_Inf(void);
-    
+  
+  /*!
+	 * \brief A virtual member.
+	 * \return Value of the adjoint density at the infinity.
+	 */
+	virtual double* GetPsiRhos_Inf(void);
+  
 	/*!
 	 * \brief A virtual member.
 	 * \return Value of the adjoint energy at the infinity.
@@ -6697,9 +6704,6 @@ protected:
 	bool
   roe_turkel,        /*!< \brief Indicator for roe-turkel preconditioning. */
 	least_squares;     /*!< \brief Indicator for least-squares computed grads. */
-
-  CVariable
-  *node_infty;       /*!< \brief CVariable for storing free-stream state. */
   
 public:
   
@@ -6782,6 +6786,13 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
   void Set_MPI_PrimVar_Gradient(CGeometry *geometry, CConfig *config);
+
+  /*!
+	 * \brief Set the maximum value of the eigenvalue.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  void SetMax_Eigenvalue(CGeometry *geometry, CConfig *config);
   
 	/*!
 	 * \brief Compute the density at the inlet.
@@ -7401,9 +7412,15 @@ public:
  */
 class CAdjTNE2EulerSolver : public CSolver {
 protected:
-	double PsiRho_Inf,	/*!< \brief PsiRho variable at the infinity. */
-	PsiE_Inf,			/*!< \brief PsiE variable at the infinity. */
-	*Phi_Inf;			/*!< \brief Phi vector at the infinity. */
+  unsigned short
+  nSpecies;
+  
+	double
+  *PsiRho_Inf,	/*!< \brief Free-stream adjoint density. */
+	*Phi_Inf,			/*!< \brief Phi vector at the infinity. */
+  PsiE_Inf,			/*!< \brief PsiE variable at the infinity. */
+  PsiEve_Inf;
+  
 	double *Sens_Mach, /*!< \brief Mach sensitivity coefficient for each boundary. */
 	*Sens_AoA,			/*!< \brief Angle of attack sensitivity coefficient for each boundary. */
 	*Sens_Geo,			/*!< \brief Shape sensitivity coefficient for each boundary. */
@@ -7483,7 +7500,7 @@ public:
 	 * \brief Compute adjoint density at the infinity.
 	 * \return Value of the adjoint density at the infinity.
 	 */
-	double GetPsiRho_Inf(void);
+	double* GetPsiRhos_Inf(void);
   
 	/*!
 	 * \brief Compute the adjoint energy at the infinity.
