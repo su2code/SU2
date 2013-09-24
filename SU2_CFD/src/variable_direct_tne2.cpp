@@ -22,6 +22,7 @@
  */
 
 #include "../include/variable_structure.hpp"
+#include <math.h>
 
 CTNE2EulerVariable::CTNE2EulerVariable(void) : CVariable() {  
 
