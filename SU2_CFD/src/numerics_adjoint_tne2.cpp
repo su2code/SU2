@@ -39,7 +39,7 @@ CUpwRoe_AdjTNE2::CUpwRoe_AdjTNE2(unsigned short val_nDim,
   /*--- Define useful constants ---*/
   nVar = val_nVar;
   nDim = val_nDim;
-  nSpecies = val_nVar - val_nDim - 2;
+  nSpecies = config->GetnSpecies();
   
   /*--- Allocate arrays ---*/
 	Residual_Roe       = new double [nVar];
@@ -134,10 +134,10 @@ void CUpwRoe_AdjTNE2::ComputeResidual (double *val_residual_i,
   /*--- Determine the number of heavy particle species ---*/
   if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
   else            { nHeavy = nSpecies;   nEl = 0; }
-  
+
   /*--- Pull stored primitive variables ---*/
   // Primitives: [rho1,...,rhoNs, T, Tve, u, v, w, P, rho, h, a]
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {    
     Density_i[iSpecies] = V_i[RHOS_INDEX+iSpecies];
     Density_j[iSpecies] = V_j[RHOS_INDEX+iSpecies];
   }

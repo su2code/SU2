@@ -380,6 +380,99 @@ void TNE2Iteration(COutput *output, CIntegration ***integration_container, CGeom
 }
 
 
+void AdjTNE2Iteration(COutput *output, CIntegration ***integration_container,
+                      CGeometry ***geometry_container,
+                      CSolver ****solver_container,
+                      CNumerics *****numerics_container,
+                      CConfig **config_container,
+                      CSurfaceMovement **surface_movement,
+                      CVolumetricMovement **grid_movement,
+                      CFreeFormDefBox*** FFDBox) {
+  
+	unsigned short iMesh, iZone, nZone;
+  unsigned long IntIter, ExtIter;
+  int rank;
+  double Physical_dt, Physical_t;
+  
+  /*--- Initialize parameters ---*/
+  nZone   = geometry_container[ZONE_0][MESH_0]->GetnZone();
+  IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
+  ExtIter = config_container[ZONE_0]->GetExtIter();
+  rank    = MASTER_NODE;
+  
+#ifndef NO_MPI
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+  
+  
+	for (iZone = 0; iZone < nZone; iZone++) {
+    
+		/*--- Continuous adjoint two-temperature equations  ---*/
+		if (ExtIter == 0) {
+      
+			if (config_container[iZone]->GetKind_Solver() == ADJ_TNE2_EULER)
+        config_container[iZone]->SetGlobalParam(ADJ_TNE2_EULER,
+                                                RUNTIME_TNE2_SYS, ExtIter);
+			if (config_container[iZone]->GetKind_Solver() == ADJ_TNE2_NAVIER_STOKES)
+        config_container[iZone]->SetGlobalParam(ADJ_TNE2_NAVIER_STOKES,
+                                                RUNTIME_TNE2_SYS, ExtIter);
+      
+      /*--- Perform one iteration of the gov. eqns. to store data ---*/
+			integration_container[iZone][TNE2_SOL]->MultiGrid_Iteration(geometry_container,
+                                                                  solver_container,
+                                                                  numerics_container,
+                                                                  config_container,
+                                                                  RUNTIME_TNE2_SYS,
+                                                                  0, iZone);
+      
+			/*--- Compute gradients of the flow variables, this is necessary for 
+            sensitivity computation, note that in the direct Euler problem we 
+            are not computing the gradients of the primitive variables ---*/
+			if (config_container[iZone]->GetKind_Gradient_Method() == GREEN_GAUSS)
+				solver_container[iZone][MESH_0][TNE2_SOL]->SetPrimVar_Gradient_GG(geometry_container[iZone][MESH_0],
+                                                                          config_container[iZone]);
+			if (config_container[iZone]->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)
+				solver_container[iZone][MESH_0][TNE2_SOL]->SetPrimVar_Gradient_LS(geometry_container[iZone][MESH_0],
+                                                                          config_container[iZone]);
+      
+			/*--- Set contribution from cost function for boundary conditions ---*/
+      for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
+        
+        /*--- Set the value of the non-dimensional coefficients in the coarse 
+              levels, using the fine level solution ---*/
+        solver_container[iZone][iMesh][TNE2_SOL]->SetTotal_CDrag(solver_container[iZone][MESH_0][TNE2_SOL]->GetTotal_CDrag());
+        solver_container[iZone][iMesh][TNE2_SOL]->SetTotal_CLift(solver_container[iZone][MESH_0][TNE2_SOL]->GetTotal_CLift());
+        solver_container[iZone][iMesh][TNE2_SOL]->SetTotal_CT(solver_container[iZone][MESH_0][TNE2_SOL]->GetTotal_CT());
+        solver_container[iZone][iMesh][TNE2_SOL]->SetTotal_CQ(solver_container[iZone][MESH_0][TNE2_SOL]->GetTotal_CQ());
+        
+        /*--- Compute the adjoint boundary condition on Euler walls ---*/
+        solver_container[iZone][iMesh][ADJTNE2_SOL]->SetForceProj_Vector(geometry_container[iZone][iMesh],
+                                                                         solver_container[iZone][iMesh],
+                                                                         config_container[iZone]);
+      }
+		}
+    
+		/*--- Set the value of the internal iteration ---*/
+		IntIter = ExtIter;
+
+		if (config_container[iZone]->GetKind_Solver() == ADJ_TNE2_EULER)
+      config_container[iZone]->SetGlobalParam(ADJ_TNE2_EULER,
+                                              RUNTIME_ADJTNE2_SYS, ExtIter);
+		if (config_container[iZone]->GetKind_Solver() == ADJ_TNE2_NAVIER_STOKES)
+      config_container[iZone]->SetGlobalParam(ADJ_TNE2_NAVIER_STOKES,
+                                              RUNTIME_ADJTNE2_SYS, ExtIter);
+    
+		/*--- Iteration of the flow adjoint problem ---*/
+		integration_container[iZone][ADJTNE2_SOL]->MultiGrid_Iteration(geometry_container,
+                                                                   solver_container,
+                                                                   numerics_container,
+                                                                   config_container,
+                                                                   RUNTIME_ADJTNE2_SYS,
+                                                                   IntIter, iZone);
+	}
+}
+
+
 void PlasmaIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
 		CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
 		CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {

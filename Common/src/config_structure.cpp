@@ -1700,7 +1700,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
              (Kind_Solver == RANS) ||
              (Kind_Solver == ADJ_RANS));
   
-  if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
+  if ((Kind_Solver == TNE2_EULER)             ||
+      (Kind_Solver == TNE2_NAVIER_STOKES)     ||
+      (Kind_Solver == ADJ_TNE2_EULER)         ||
+      (Kind_Solver == ADJ_TNE2_NAVIER_STOKES)   ) {
     
 		if (val_izone == ZONE_1 ) {
 			Divide_Element = true;
