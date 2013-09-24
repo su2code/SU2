@@ -22,7 +22,7 @@
  */
 
 #include "../include/solver_structure.hpp"
-
+#include <math.h>
 
 CTNE2EulerSolver::CTNE2EulerSolver(void) : CSolver() {
   
