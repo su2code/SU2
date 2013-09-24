@@ -266,7 +266,8 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
     
 }
 
-void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry, CConfig *config, unsigned short iZone) {
+void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
+                          CConfig *config, unsigned short iZone) {
     
 	unsigned short iMGlevel;
 	bool euler, ns, turbulent,
@@ -1676,7 +1677,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
 		}
     
 		/*--- Definition of the viscous scheme for each equation and mesh level ---*/
-		switch (config->GetKind_ViscNumScheme_AdjFlow()) {
+		switch (config->GetKind_ViscNumScheme_AdjTNE2()) {
       case NONE :
         break;
       case AVG_GRAD :

@@ -68,7 +68,7 @@ CAdjTNE2EulerSolver::CAdjTNE2EulerSolver(CGeometry *geometry, CConfig *config, u
   Jacobian_Axisymmetric = NULL;
   
   /*--- Set booleans for solver settings ---*/
-  restart      = config->GetRestart();
+  restart      = (config->GetRestart() || config->GetRestart_Flow());
 	axisymmetric = config->GetAxisymmetric();
   
 	/*--- Define constants in the solver structure ---*/
