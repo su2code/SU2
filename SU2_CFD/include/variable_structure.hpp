@@ -4007,6 +4007,7 @@ public:
  */
 class CAdjTNE2EulerVariable : public CVariable {
 protected:
+  unsigned short nSpecies;
 	double *Psi;		/*!< \brief Vector of the adjoint variables. */
 	double *ForceProj_Vector;	/*!< \brief Vector d. */
 	double *ObjFuncSource;    /*!< \brief Vector containing objective function sensitivity for discrete adjoint. */
@@ -4026,12 +4027,15 @@ public:
 	 * \param[in] val_psirho - Value of the adjoint density (initialization value).
 	 * \param[in] val_phi - Value of the adjoint velocity (initialization value).
 	 * \param[in] val_psie - Value of the adjoint energy (initialization value).
+   * \param[in] val_psieve - Value of the adjoint vibrational energy (initialization value).
 	 * \param[in] val_ndim - Number of dimensions of the problem.
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CAdjTNE2EulerVariable(double val_psirho, double *val_phi, double val_psie,
-                        unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+	CAdjTNE2EulerVariable(double *val_psirho, double *val_phi,
+                        double val_psie, double val_psieve,
+                        unsigned short val_ndim, unsigned short val_nvar,
+                        CConfig *config);
   
 	/*!
 	 * \overload
@@ -4115,7 +4119,10 @@ public:
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CAdjTNE2NSVariable(double val_psirho, double *val_phi, double val_psie, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+	CAdjTNE2NSVariable(double *val_psirho, double *val_phi,
+                     double val_psie, double val_psieve,
+                     unsigned short val_ndim, unsigned short val_nvar,
+                     CConfig *config);
   
 	/*!
 	 * \overload
