@@ -257,8 +257,15 @@ public:
 	 * \param[in] val_dim - Position to store the coordinate.		 
 	 * \param[in] val_coord - Coordinate for val_dim.			 
 	 */
-	
 	void SetCoord(unsigned short val_dim, double val_coord);
+  
+  /*!
+	 * \brief Set the coordinates for the control volume.
+	 * \param[in] val_dim - Position to store the coordinate.
+	 * \param[in] val_coord - Coordinate for val_dim.
+	 */
+	void AddCoord(unsigned short val_dim, double val_coord);
+  
 	/*! 
 	 * \overload
 	 * \param[in] val_coord - Coordinate of the point.		 
