@@ -69,7 +69,8 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   /*--- Initialization of linear solver structures ---*/
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-  
+  LinSysAux.Initialize(nPoint, nPointDomain, nVar, 0.0);
+
 	/*--- Computation of gradients by least squares ---*/
 	Smatrix = new double* [nDim];
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
@@ -183,14 +184,16 @@ CFEASolver::~CFEASolver(void) {
 	for (iVar = 0; iVar < nVar; iVar++)
 		delete [] cvector[iVar];
 	delete [] cvector;
+  
 }
 
 void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
 	
-  /*--- Set residuals to zero ---*/
+  /*--- Set residuals and auxiliar variable to zero ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
 		LinSysRes.SetBlock_Zero(iPoint);
+    LinSysAux.SetBlock_Zero(iPoint);
 	}
 	
 	/*--- Set matrix entries to zero ---*/
@@ -205,8 +208,7 @@ void CFEASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container
   
 	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3 = 0;
 	double a[3], b[3], c[3], d[3], Area_Local = 0.0, Volume_Local = 0.0, Time_Num;
-	double *Coord_0_ = NULL, *Coord_1_= NULL, *Coord_2_= NULL, *Coord_3_= NULL;
-	double Coord_0[3], Coord_1[3], Coord_2[3], Coord_3[3];
+	double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3= NULL;
 	unsigned short iDim, iVar, jVar;
 	double MassMatrix_Elem_2D [6][6] =
   {{ 2, 0, 1, 0, 1, 0 },
@@ -244,21 +246,11 @@ void CFEASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
 		
     /*--- Get node numbers and their coordinate vectors ---*/
-		Point_0 = geometry->elem[iElem]->GetNode(0);	Coord_0_ = geometry->node[Point_0]->GetCoord();
-		Point_1 = geometry->elem[iElem]->GetNode(1);	Coord_1_ = geometry->node[Point_1]->GetCoord();
-		Point_2 = geometry->elem[iElem]->GetNode(2);	Coord_2_ = geometry->node[Point_2]->GetCoord();
-		if (nDim == 3) { Point_3 = geometry->elem[iElem]->GetNode(3);	Coord_3_ = geometry->node[Point_3]->GetCoord(); }
+		Point_0 = geometry->elem[iElem]->GetNode(0);	Coord_0 = geometry->node[Point_0]->GetCoord();
+		Point_1 = geometry->elem[iElem]->GetNode(1);	Coord_1 = geometry->node[Point_1]->GetCoord();
+		Point_2 = geometry->elem[iElem]->GetNode(2);	Coord_2 = geometry->node[Point_2]->GetCoord();
+		if (nDim == 3) { Point_3 = geometry->elem[iElem]->GetNode(3);	Coord_3 = geometry->node[Point_3]->GetCoord(); }
     
-		/*--- Modification of the goemtry due to the current displacement (Value of the solution) ---*/
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Coord_0[iDim] = Coord_0_[iDim] + node[Point_0]->GetSolution()[iDim];
-			Coord_1[iDim] = Coord_1_[iDim] + node[Point_1]->GetSolution()[iDim];
-			Coord_2[iDim] = Coord_2_[iDim] + node[Point_2]->GetSolution()[iDim];
-			if (nDim == 3)
-				Coord_3[iDim] = Coord_3_[iDim] + node[Point_3]->GetSolution()[iDim];
-		}
-    
-		/*--- Modification of the geometry due to the current displacement (Value of the solution) ---*/
 		if (nDim == 2) {
 			for (iDim = 0; iDim < nDim; iDim++) {
 				a[iDim] = Coord_0[iDim]-Coord_2[iDim];
@@ -330,6 +322,7 @@ void CFEASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container
 		Jacobian.AddBlock(Point_1, Point_2, StiffMatrix_Node);
 		Jacobian.AddBlock(Point_2, Point_0, StiffMatrix_Node);
 		Jacobian.AddBlock(Point_2, Point_1, StiffMatrix_Node);
+    
 		if (nDim == 3) {
 			Jacobian.AddBlock(Point_0, Point_3, StiffMatrix_Node);
 			Jacobian.AddBlock(Point_1, Point_3, StiffMatrix_Node);
@@ -340,7 +333,7 @@ void CFEASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container
 		}
 		
 		/*--- Add volumetric forces as source term (gravity and coriollis) ---*/
-		double RhoG= Density*STANDART_GRAVITY;
+		double RhoG= Density*2.0; //STANDART_GRAVITY;
     
 		unsigned short NodesElement = 3; // Triangles in 2D
 		if (nDim == 3) NodesElement = 4;	// Tets in 3D
@@ -411,36 +404,20 @@ void CFEASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container
   
 }
 
-void CFEASolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                 CConfig *config, unsigned short iMesh) {
-  
-}
-
 void CFEASolver::Galerkin_Method(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                  CConfig *config, unsigned short iMesh) {
   
 	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3 = 0, iPoint, total_index;
-	double *Coord_0_ = NULL, *Coord_1_= NULL, *Coord_2_= NULL, *Coord_3_= NULL;
-	double Coord_0[3], Coord_1[3], Coord_2[3], Coord_3[3];
-	unsigned short iVar, jVar, iDim;
+	double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3= NULL;
+	unsigned short iVar, jVar;
   
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     
-		Point_0 = geometry->elem[iElem]->GetNode(0);	Coord_0_ = geometry->node[Point_0]->GetCoord();
-		Point_1 = geometry->elem[iElem]->GetNode(1);	Coord_1_ = geometry->node[Point_1]->GetCoord();
-		Point_2 = geometry->elem[iElem]->GetNode(2);	Coord_2_ = geometry->node[Point_2]->GetCoord();
-		if (nDim == 3) { Point_3 = geometry->elem[iElem]->GetNode(3);	Coord_3_ = geometry->node[Point_3]->GetCoord(); }
-		
-		/*--- Modification of the goemtry due to the current displacement (Value of the solution) ---*/
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Coord_0[iDim] = Coord_0_[iDim] + node[Point_0]->GetSolution()[iDim];
-			Coord_1[iDim] = Coord_1_[iDim] + node[Point_1]->GetSolution()[iDim];
-			Coord_2[iDim] = Coord_2_[iDim] + node[Point_2]->GetSolution()[iDim];
-			if (nDim == 3)
-				Coord_3[iDim] = Coord_3_[iDim] + node[Point_3]->GetSolution()[iDim];
-		}
-		/*--- Modification of the goemtry due to the current displacement (Value of the solution) ---*/
-		
+		Point_0 = geometry->elem[iElem]->GetNode(0);	Coord_0 = geometry->node[Point_0]->GetCoord();
+		Point_1 = geometry->elem[iElem]->GetNode(1);	Coord_1 = geometry->node[Point_1]->GetCoord();
+		Point_2 = geometry->elem[iElem]->GetNode(2);	Coord_2 = geometry->node[Point_2]->GetCoord();
+		if (nDim == 3) { Point_3 = geometry->elem[iElem]->GetNode(3);	Coord_3 = geometry->node[Point_3]->GetCoord(); }
+				
 		if (nDim == 2) numerics->SetCoord(Coord_0, Coord_1, Coord_2);
 		if (nDim == 3) numerics->SetCoord(Coord_0, Coord_1, Coord_2, Coord_3);
 		
@@ -608,15 +585,15 @@ void CFEASolver::Galerkin_Method(CGeometry *geometry, CSolver **solver_container
 		for (iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar+iVar;
 			LinSysSol[total_index] = node[iPoint]->GetSolution(iVar);
-			LinSysRes[total_index] = 0.0;
+			LinSysAux[total_index] = 0.0;
 		}
 	
-	StiffMatrixSpace.MatrixVectorProduct(LinSysSol, LinSysRes);
+	StiffMatrixSpace.MatrixVectorProduct(LinSysSol, LinSysAux);
 	
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
 		for (iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar+iVar;
-			Residual[iVar] = LinSysRes[total_index];
+			Residual[iVar] = LinSysAux[total_index];
 		}
 		LinSysRes.SubtractBlock(iPoint, Residual);
 	}
@@ -638,19 +615,79 @@ void CFEASolver::BC_Displacement(CGeometry *geometry, CSolver **solver_container
 			Residual[0] = 0.0;					Residual[1] = 0.0;	Residual[2] = 0.0;	Residual[3] = 0.0;
 		}
 		else {
-			Solution[0] = TotalDispl; Solution[1] = 0.0;	Solution[2] = 0.0;	Solution[3] = 0.0;	Solution[4] = 0.0;	Solution[5] = 0.0;
-			Residual[0] = 0.0; Residual[1] = 0.0;					Residual[2] = 0.0;	Residual[3] = 0.0;	Residual[4] = 0.0;	Residual[5] = 0.0;
+			Solution[0] = TotalDispl;   Solution[1] = 0.0;	Solution[2] = 0.0;	Solution[3] = 0.0;	Solution[4] = 0.0;	Solution[5] = 0.0;
+			Residual[0] = 0.0;          Residual[1] = 0.0;  Residual[2] = 0.0;	Residual[3] = 0.0;	Residual[4] = 0.0;	Residual[5] = 0.0;
 		}
 		
 		node[iPoint]->SetSolution(Solution);
 		node[iPoint]->SetSolution_Old(Solution);
+    
     LinSysRes.SetBlock(iPoint, Residual);
-		LinSysRes.SetBlock(iPoint, Residual);
+    
+    /*--- Set the dirichlet condition ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
       total_index = iPoint*nVar+iVar;
       Jacobian.DeleteValsRowi(total_index);
     }
+    
 	}
+}
+
+void CFEASolver::BC_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                         unsigned short val_marker) {
+	
+	double a[3], b[3];
+	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0;
+	double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL;
+	double Length_Elem = 0.0, Area_Elem = 0.0;
+	unsigned short iDim;
+	
+	double TotalLoad = config->GetLoad_Value(config->GetMarker_All_Tag(val_marker));
+	
+	for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
+		Point_0 = geometry->bound[val_marker][iElem]->GetNode(0);                   Coord_0 = geometry->node[Point_0]->GetCoord();
+		Point_1 = geometry->bound[val_marker][iElem]->GetNode(1);                   Coord_1 = geometry->node[Point_1]->GetCoord();
+		if (nDim == 3) { Point_2 = geometry->bound[val_marker][iElem]->GetNode(2);	Coord_2 = geometry->node[Point_2]->GetCoord(); }
+		
+		/*--- Compute area (3D), and length of the surfaces (2D) ---*/
+		if (nDim == 2) {
+			for (iDim = 0; iDim < nDim; iDim++)
+				a[iDim] = Coord_0[iDim]-Coord_1[iDim];
+			Length_Elem = sqrt(a[0]*a[0]+a[1]*a[1]);
+		}
+		if (nDim == 3) {
+			for (iDim = 0; iDim < nDim; iDim++) {
+				a[iDim] = Coord_0[iDim]-Coord_2[iDim];
+				b[iDim] = Coord_1[iDim]-Coord_2[iDim];
+			}
+			Area_Elem = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
+		}
+		
+		if (nDim == 2) {
+			Residual[0] = 0.0; Residual[1] = 0.0;
+			Residual[2] = (1.0/2.0)*TotalLoad*Length_Elem; Residual[3] = 0.0;
+			LinSysRes.AddBlock(Point_0, Residual);
+			
+			Residual[0] = 0.0; Residual[1] = 0.0;
+			Residual[2] = (1.0/2.0)*TotalLoad*Length_Elem; Residual[3] = 0.0;
+			LinSysRes.AddBlock(Point_1, Residual);
+		}
+		else {
+			Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = 0.0;
+			Residual[3] = 0.0; Residual[4] = 0.0; Residual[5] = (1.0/3.0)*TotalLoad*Area_Elem;
+			LinSysRes.AddBlock(Point_0, Residual);
+			
+			Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = 0.0;
+			Residual[3] = 0.0; Residual[4] = 0.0; Residual[5] = (1.0/3.0)*TotalLoad*Area_Elem;
+			LinSysRes.AddBlock(Point_1, Residual);
+			
+			Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = 0.0;
+			Residual[3] = 0.0; Residual[4] = 0.0; Residual[5] = (1.0/3.0)*TotalLoad*Area_Elem;
+			LinSysRes.AddBlock(Point_2, Residual);
+		}
+		
+	}
+	
 }
 
 void CFEASolver::BC_FlowLoad(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
@@ -658,24 +695,14 @@ void CFEASolver::BC_FlowLoad(CGeometry *geometry, CSolver **solver_container, CN
 	
 	double a[3], b[3], Press_0 = 0.0, Press_1 = 0.0, Press_2 = 0.0, Press_Elem;
 	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0;
-	double *Coord_0_ = NULL, *Coord_1_= NULL, *Coord_2_= NULL;
-	double Coord_0[3], Coord_1[3], Coord_2[3];
+	double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL;
 	double Length_Elem, Area_Elem, Normal_Elem[3] = {0.0,0.0,0.0};
 	unsigned short iDim;
   
 	for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
-		Point_0 = geometry->bound[val_marker][iElem]->GetNode(0);	Coord_0_ = geometry->node[Point_0]->GetCoord(); Press_0 = 1.0; //node[Point_0]->GetPressure();
-		Point_1 = geometry->bound[val_marker][iElem]->GetNode(1);	Coord_1_ = geometry->node[Point_1]->GetCoord(); Press_1 = 1.0; //node[Point_1]->GetPressure();
-		if (nDim == 3) { Point_2 = geometry->bound[val_marker][iElem]->GetNode(2);	Coord_2_ = geometry->node[Point_2]->GetCoord(); Press_2 = 1.0; }//node[Point_2]->GetPressure(); }
-		
-		/*--- Modification of the goemtry due to the current displacement (Value of the solution) ---*/
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Coord_0[iDim] = Coord_0_[iDim] + node[Point_0]->GetSolution()[iDim];
-			Coord_1[iDim] = Coord_1_[iDim] + node[Point_1]->GetSolution()[iDim];
-			if (nDim == 3)
-				Coord_2[iDim] = Coord_2_[iDim] + node[Point_2]->GetSolution()[iDim];
-		}
-		/*--- Modification of the goemtry due to the current displacement (Value of the solution) ---*/
+		Point_0 = geometry->bound[val_marker][iElem]->GetNode(0);	Coord_0 = geometry->node[Point_0]->GetCoord(); Press_0 = 1.0; //node[Point_0]->GetPressure();
+		Point_1 = geometry->bound[val_marker][iElem]->GetNode(1);	Coord_1 = geometry->node[Point_1]->GetCoord(); Press_1 = 1.0; //node[Point_1]->GetPressure();
+		if (nDim == 3) { Point_2 = geometry->bound[val_marker][iElem]->GetNode(2);	Coord_2 = geometry->node[Point_2]->GetCoord(); Press_2 = 1.0; }//node[Point_2]->GetPressure(); }
 		
 		/*--- Compute area (3D), and length of the surfaces (2D) ---*/
 		if (nDim == 2) {
@@ -798,72 +825,6 @@ void CFEASolver::BC_FlowLoad(CGeometry *geometry, CSolver **solver_container, CN
 	
 }
 
-void CFEASolver::BC_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                         unsigned short val_marker) {
-	
-	double a[3], b[3];
-	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0;
-	double *Coord_0_ = NULL, *Coord_1_= NULL, *Coord_2_= NULL;
-	double Coord_0[3], Coord_1[3], Coord_2[3];
-	double Length_Elem = 0.0, Area_Elem = 0.0;
-	unsigned short iDim;
-	
-	double TotalLoad = config->GetLoad_Value(config->GetMarker_All_Tag(val_marker));
-	
-	for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
-		Point_0 = geometry->bound[val_marker][iElem]->GetNode(0);	Coord_0_ = geometry->node[Point_0]->GetCoord();
-		Point_1 = geometry->bound[val_marker][iElem]->GetNode(1);	Coord_1_ = geometry->node[Point_1]->GetCoord();
-		if (nDim == 3) { Point_2 = geometry->bound[val_marker][iElem]->GetNode(2);	Coord_2_ = geometry->node[Point_2]->GetCoord();}
-		
-		/*--- Modification of the goemtry due to the current displacement (Value of the solution) ---*/
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Coord_0[iDim] = Coord_0_[iDim] + node[Point_0]->GetSolution()[iDim];
-			Coord_1[iDim] = Coord_1_[iDim] + node[Point_1]->GetSolution()[iDim];
-			if (nDim == 3)
-				Coord_2[iDim] = Coord_2_[iDim] + node[Point_2]->GetSolution()[iDim];
-		}
-		/*--- Modification of the goemtry due to the current displacement (Value of the solution) ---*/
-		
-		/*--- Compute area (3D), and length of the surfaces (2D) ---*/
-		if (nDim == 2) {
-			for (iDim = 0; iDim < nDim; iDim++)
-				a[iDim] = Coord_0[iDim]-Coord_1[iDim];
-			Length_Elem = sqrt(a[0]*a[0]+a[1]*a[1]);
-		}
-		if (nDim == 3) {
-			for (iDim = 0; iDim < nDim; iDim++) {
-				a[iDim] = Coord_0[iDim]-Coord_2[iDim];
-				b[iDim] = Coord_1[iDim]-Coord_2[iDim];
-			}
-			Area_Elem = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
-		}
-		
-		if (nDim == 2) {
-			Residual[0] = 0.0; Residual[1] = 0.0;
-			Residual[2] = (1.0/2.0)*TotalLoad*Length_Elem; Residual[3] = 0.0;
-			LinSysRes.AddBlock(Point_0, Residual);
-			
-			Residual[0] = 0.0; Residual[1] = 0.0;
-			Residual[2] = (1.0/2.0)*TotalLoad*Length_Elem; Residual[3] = 0.0;
-			LinSysRes.AddBlock(Point_1, Residual);
-		}
-		else {
-			Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = 0.0;
-			Residual[3] = 0.0; Residual[4] = 0.0; Residual[5] = (1.0/3.0)*TotalLoad*Area_Elem;
-			LinSysRes.AddBlock(Point_0, Residual);
-			
-			Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = 0.0;
-			Residual[3] = 0.0; Residual[4] = 0.0; Residual[5] = (1.0/3.0)*TotalLoad*Area_Elem;
-			LinSysRes.AddBlock(Point_1, Residual);
-			
-			Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = 0.0;
-			Residual[3] = 0.0; Residual[4] = 0.0; Residual[5] = (1.0/3.0)*TotalLoad*Area_Elem;
-			LinSysRes.AddBlock(Point_2, Residual);
-		}
-		
-	}
-	
-}
 
 void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
   
@@ -878,8 +839,7 @@ void CFEASolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_cont
 	
 	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3 = 0;
 	double a[3], b[3], c[3], d[3], Area_Local = 0.0, Volume_Local = 0.0, Time_Num;
-	double *Coord_0_ = NULL, *Coord_1_= NULL, *Coord_2_= NULL, *Coord_3_= NULL;
-	double Coord_0[3], Coord_1[3], Coord_2[3], Coord_3[3];
+	double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3= NULL;
 	unsigned short iDim, iVar, jVar;
 	double Density = config->GetMaterialDensity(), TimeJac = 0.0;
 	
@@ -893,20 +853,10 @@ void CFEASolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_cont
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
 		
     /*--- Get node numbers and their coordinate vectors ---*/
-		Point_0 = geometry->elem[iElem]->GetNode(0);	Coord_0_ = geometry->node[Point_0]->GetCoord();
-		Point_1 = geometry->elem[iElem]->GetNode(1);	Coord_1_ = geometry->node[Point_1]->GetCoord();
-		Point_2 = geometry->elem[iElem]->GetNode(2);	Coord_2_ = geometry->node[Point_2]->GetCoord();
-		if (nDim == 3) { Point_3 = geometry->elem[iElem]->GetNode(3);	Coord_3_ = geometry->node[Point_3]->GetCoord(); }
-		
-		/*--- Modification of the goemtry due to the current displacement (Value of the solution) ---*/
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Coord_0[iDim] = Coord_0_[iDim] + node[Point_0]->GetSolution()[iDim];
-			Coord_1[iDim] = Coord_1_[iDim] + node[Point_1]->GetSolution()[iDim];
-			Coord_2[iDim] = Coord_2_[iDim] + node[Point_2]->GetSolution()[iDim];
-			if (nDim == 3)
-				Coord_3[iDim] = Coord_3_[iDim] + node[Point_3]->GetSolution()[iDim];
-		}
-		/*--- Modification of the goemtry due to the current displacement (Value of the solution) ---*/
+		Point_0 = geometry->elem[iElem]->GetNode(0);	Coord_0 = geometry->node[Point_0]->GetCoord();
+		Point_1 = geometry->elem[iElem]->GetNode(1);	Coord_1 = geometry->node[Point_1]->GetCoord();
+		Point_2 = geometry->elem[iElem]->GetNode(2);	Coord_2 = geometry->node[Point_2]->GetCoord();
+		if (nDim == 3) { Point_3 = geometry->elem[iElem]->GetNode(3);	Coord_3 = geometry->node[Point_3]->GetCoord(); }
 		
 		if (nDim == 2) {
 			
@@ -1008,7 +958,6 @@ void CFEASolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_cont
 		/*--- Compute Residual ---*/
 		for(iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar+iVar;
-			LinSysRes[total_index] = 0.0;
 			if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
 				LinSysSol[total_index] = ( U_time_nP1[iVar] - U_time_n[iVar] );
 			if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
@@ -1016,11 +965,13 @@ void CFEASolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_cont
 		}
 	}
 	
-	StiffMatrixTime.MatrixVectorProduct(LinSysSol, LinSysRes);
+  /*--- Contribution to the residual ---*/
+	StiffMatrixTime.MatrixVectorProduct(LinSysSol, LinSysAux);
+  
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
 		for (iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar+iVar;
-			Residual[iVar] = LinSysRes[total_index];
+			Residual[iVar] = LinSysAux[total_index];
 		}
 		LinSysRes.SubtractBlock(iPoint, Residual);
 	}
@@ -1033,11 +984,6 @@ void CFEASolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_c
 	unsigned long iPoint, total_index;
 	double Norm;
   
-	/*--- Set maximum residual to zero ---*/
-	for (iVar = 0; iVar < nVar; iVar++) {
-		SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
 	
 	/*--- Build implicit system ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
@@ -1046,9 +992,8 @@ void CFEASolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_c
 		for (iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar+iVar;
 			LinSysSol[total_index] = 0.0;
-			AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
-      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex());
 		}
+
 	}
   
   /*--- Initialize residual and solution at the ghost points ---*/
@@ -1100,6 +1045,24 @@ void CFEASolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_c
 	
   /*--- MPI solution ---*/
   Set_MPI_Solution(geometry, config);
+  
+  /*---  Compute the residual Ax-f ---*/
+	Jacobian.ComputeResidual(LinSysSol, LinSysRes, LinSysAux);
+  
+  /*--- Set maximum residual to zero ---*/
+	for (iVar = 0; iVar < nVar; iVar++) {
+		SetRes_RMS(iVar, 0.0);
+    SetRes_Max(iVar, 0.0, 0);
+  }
+
+  /*--- Compute the residual ---*/
+	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+		for (iVar = 0; iVar < nVar; iVar++) {
+			total_index = iPoint*nVar+iVar;
+			AddRes_RMS(iVar, LinSysAux[total_index]*LinSysAux[total_index]);
+      AddRes_Max(iVar, fabs(LinSysAux[total_index]), geometry->node[iPoint]->GetGlobalIndex());
+		}
+	}
   
   /*--- Compute the root mean square residual ---*/
   SetResidual_RMS(geometry, config);
