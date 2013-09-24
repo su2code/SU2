@@ -748,12 +748,6 @@ bool CTNE2EulerVariable::SetPrimVar_Compressible(CConfig *config) {
 	check_sos   = SetSoundSpeed(config);      // Requires density, pressure, rhoCvtr, & rhoCvve.
   SetdPdrhos(config);                       // Requires density, pressure, rhoCvtr, & rhoCvve.  
   
-  for (iVar = 0; iVar < nPrimVar; iVar++) {
-    if (isnan(Primitive[iVar]))
-      cout << "iVar NaN: " << iVar << endl;
-  }
-  
-  
   /*--- Check that the solution has a physical meaning ---*/
   if (check_dens || check_press || check_sos || check_temp) {
     

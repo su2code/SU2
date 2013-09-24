@@ -57,7 +57,7 @@ CSysMatrix::~CSysMatrix(void) {
 void CSysMatrix::Initialize(unsigned long nPoint, unsigned long nPointDomain, unsigned short nVar, unsigned short nEqn, CGeometry *geometry) {
 	unsigned long iPoint, *row_ptr, *col_ind, *vneighs, index, nnz;
 	unsigned short iNeigh, nNeigh, Max_nNeigh;
-    
+  
 	/*--- Don't delete *row_ptr, *col_ind because they are asigned to the Jacobian structure. ---*/
 	row_ptr = new unsigned long [nPoint+1];
 	row_ptr[0] = 0;

@@ -320,6 +320,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
         for (iVar = 0; iVar < nVar; iVar++) {
           point_line >> Solution[iVar];
         }
+        
 				node[iPoint_Local] = new CTNE2EulerVariable(Solution, nDim, nVar, nPrimVar,
                                                     nPrimVarGrad, config);
 			}
@@ -2044,10 +2045,6 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
       cout << "Analytic dadrhos: " << dadrhos << endl;
       cin.get();*/
     /////////// TEST DERIVATIVES OF SOUNDSPEED!!! ///////////
-    
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      if (isnan(Res_Conv[iVar]))
-        cout << "Convective Residual iVar NaN: " << iVar << endl;
 		
     /*--- Update the residual values ---*/
 		LinSysRes.AddBlock(iPoint, Res_Conv);
@@ -2191,16 +2188,6 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
     LinSysRes.SubtractBlock(iPoint, Residual);
     if (implicit)
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-    
-//    cout << "Source resid NVar: " << nVar << endl;
-    
-    for (iVar = 0; iVar < nVar; iVar++) {
-      if (isnan(Residual[iVar])) {
-        cout << "Source Residual iVar NaN: " << iVar << endl;
-      }
-    }
-    
-
   }
   // Deallocate
 //  delete[] Res_new;
@@ -2503,26 +2490,26 @@ void CTNE2EulerSolver::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *conf
   
 	/*--- Gradient primitive variables compressible (temp, vx, vy, vz, P, rho)
    Gradient primitive variables incompressible (rho, vx, vy, vz, beta) ---*/
-	PrimVar_Vertex = new double [nPrimVar];
-	PrimVar_i = new double [nPrimVar];
-	PrimVar_j = new double [nPrimVar];
+	PrimVar_Vertex = new double [nPrimVarGrad];
+	PrimVar_i = new double [nPrimVarGrad];
+	PrimVar_j = new double [nPrimVarGrad];
   
 	/*--- Set Gradient_Primitive to zero ---*/
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-		node[iPoint]->SetGradient_PrimitiveZero(nPrimVar);
+		node[iPoint]->SetGradient_PrimitiveZero(nPrimVarGrad);
   
 	/*--- Loop interior edges ---*/
 	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 		iPoint = geometry->edge[iEdge]->GetNode(0);
 		jPoint = geometry->edge[iEdge]->GetNode(1);
     
-		for (iVar = 0; iVar < nPrimVar; iVar++) {
+		for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
 			PrimVar_i[iVar] = node[iPoint]->GetPrimVar(iVar);
 			PrimVar_j[iVar] = node[jPoint]->GetPrimVar(iVar);
 		}
     
 		Normal = geometry->edge[iEdge]->GetNormal();
-		for (iVar = 0; iVar < nPrimVar; iVar++) {
+		for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
 			PrimVar_Average =  0.5 * ( PrimVar_i[iVar] + PrimVar_j[iVar] );
 			for (iDim = 0; iDim < nDim; iDim++) {
 				Partial_Res = PrimVar_Average*Normal[iDim];
@@ -2540,11 +2527,11 @@ void CTNE2EulerSolver::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *conf
 			iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 			if (geometry->node[iPoint]->GetDomain()) {
         
-				for (iVar = 0; iVar < nPrimVar; iVar++)
+				for (iVar = 0; iVar < nPrimVarGrad; iVar++)
 					PrimVar_Vertex[iVar] = node[iPoint]->GetPrimVar(iVar);
         
 				Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-				for (iVar = 0; iVar < nPrimVar; iVar++)
+				for (iVar = 0; iVar < nPrimVarGrad; iVar++)
 					for (iDim = 0; iDim < nDim; iDim++) {
 						Partial_Res = PrimVar_Vertex[iVar]*Normal[iDim];
 						node[iPoint]->SubtractGradient_Primitive(iVar, iDim, Partial_Res);
@@ -2555,7 +2542,7 @@ void CTNE2EulerSolver::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *conf
   
 	/*--- Update gradient value ---*/
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-		for (iVar = 0; iVar < nPrimVar; iVar++) {
+		for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
 			for (iDim = 0; iDim < nDim; iDim++) {
 				Partial_Gradient = node[iPoint]->GetGradient_Primitive(iVar,iDim) / (geometry->node[iPoint]->GetVolume());
 				node[iPoint]->SetGradient_Primitive(iVar, iDim, Partial_Gradient);
@@ -2579,18 +2566,18 @@ void CTNE2EulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *conf
   
 	/*--- Gradient primitive variables compressible (temp, vx, vy, vz, P, rho)
    Gradient primitive variables incompressible (rho, vx, vy, vz, beta) ---*/
-	PrimVar_i = new double [nPrimVar];
-	PrimVar_j = new double [nPrimVar];
+	PrimVar_i = new double [nPrimVarGrad];
+	PrimVar_j = new double [nPrimVarGrad];
   
 	/*--- Loop over points of the grid ---*/
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 		Coord_i = geometry->node[iPoint]->GetCoord();
     
-		for (iVar = 0; iVar < nPrimVar; iVar++)
+		for (iVar = 0; iVar < nPrimVarGrad; iVar++)
 			PrimVar_i[iVar] = node[iPoint]->GetPrimVar(iVar);
     
 		/*--- Inizialization of variables ---*/
-		for (iVar = 0; iVar < nPrimVar; iVar++)
+		for (iVar = 0; iVar < nPrimVarGrad; iVar++)
 			for (iDim = 0; iDim < nDim; iDim++)
 				cvector[iVar][iDim] = 0.0;
     
@@ -2601,7 +2588,7 @@ void CTNE2EulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *conf
 			jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
 			Coord_j = geometry->node[jPoint]->GetCoord();
       
-			for (iVar = 0; iVar < nPrimVar; iVar++)
+			for (iVar = 0; iVar < nPrimVarGrad; iVar++)
 				PrimVar_j[iVar] = node[jPoint]->GetPrimVar(iVar);
       
 			weight = 0.0;
@@ -2620,7 +2607,7 @@ void CTNE2EulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *conf
 			}
       
 			/*--- Entries of c:= transpose(A)*b ---*/
-			for (iVar = 0; iVar < nPrimVar; iVar++)
+			for (iVar = 0; iVar < nPrimVarGrad; iVar++)
 				for (iDim = 0; iDim < nDim; iDim++)
 					cvector[iVar][iDim] += (Coord_j[iDim]-Coord_i[iDim])*(PrimVar_j[iVar]-PrimVar_i[iVar])/(weight);
 		}
@@ -2662,7 +2649,7 @@ void CTNE2EulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *conf
 			Smatrix[2][2] = (z33*z33)/(detR2);
 		}
 		/*--- Computation of the gradient: S*c ---*/
-		for (iVar = 0; iVar < nPrimVar; iVar++) {
+		for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
 			for (iDim = 0; iDim < nDim; iDim++) {
 				product = 0.0;
 				for (jDim = 0; jDim < nDim; jDim++)
