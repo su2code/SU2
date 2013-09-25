@@ -1009,8 +1009,9 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
                       CVolumetricMovement *grid_movement, CFreeFormDefBox **FFDBox,
                       CSolver ***solver_container, CConfig *config_container, unsigned short iZone, unsigned long ExtIter)   {
   
-  unsigned short iMGlevel, nMGlevels = config_container->GetMGLevels();
+  unsigned short iDim, iMGlevel, nMGlevels = config_container->GetMGLevels();
 	unsigned short Kind_Grid_Movement = config_container->GetKind_GridMovement(iZone);
+  unsigned long iPoint;
   bool adjoint = config_container->GetAdjoint();
 	bool time_spectral = (config_container->GetUnsteady_Simulation() == TIME_SPECTRAL);
   
@@ -1246,15 +1247,15 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
       if (ExtIter != 0) {
         
         if (rank == MASTER_NODE)
-          cout << " Deforming the grid using the FEA solution." << endl;
+          cout << " Deforming the grid using the Linear Elasticity solution." << endl;
         
         /*--- Update the coordinates of the grid using the linear elasticity solution. ---*/
-        for (unsigned long iPoint = 0; iPoint < geometry_container[MESH_0]->GetnPoint(); iPoint++) {
+        for (iPoint = 0; iPoint < geometry_container[MESH_0]->GetnPoint(); iPoint++) {
 
           double *U_time_nM1 = solver_container[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_time_n1();
           double *U_time_n   = solver_container[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_time_n();
 
-          for(unsigned short iDim = 0; iDim < geometry_container[MESH_0]->GetnDim(); iDim++)
+          for(iDim = 0; iDim < geometry_container[MESH_0]->GetnDim(); iDim++)
             geometry_container[MESH_0]->node[iPoint]->AddCoord(iDim, U_time_n[iDim] - U_time_nM1[iDim]);
           
         }
