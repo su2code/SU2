@@ -237,6 +237,8 @@ inline double CVariable::GetTemperature_vib(unsigned short val_iSpecies) { retur
 
 inline double CVariable::GetVelocity(unsigned short val_dim, unsigned short val_incomp) { return 0; }
 
+inline double CVariable::GetVelocity(unsigned short val_dim) { return 0; }
+
 inline double CVariable::GetVelocity2(void) { return 0; }
 
 inline double CVariable::GetVelocity2(unsigned short val_species) { return 0;}
@@ -824,7 +826,7 @@ inline double CTNE2EulerVariable::GetRhoCv_ve(void) { return Primitive[RHOCVVE_I
 
 inline double* CTNE2EulerVariable::GetdPdrhos(void) { return dPdrhos; }
 
-inline double CTNE2EulerVariable::GetVelocity(unsigned short val_dim, bool val_incomp) {
+inline double CTNE2EulerVariable::GetVelocity(unsigned short val_dim) {
 double velocity;
    //velocity = Solution[nSpecies+val_dim]/Primitive[RHO_INDEX]; 
    velocity = Primitive[VEL_INDEX+val_dim];

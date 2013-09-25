@@ -1456,7 +1456,7 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
                                             * (Cvvs[iSpecies]+Cves[iSpecies])
                                             * dTvedrhos[jSpecies] * Volume;
           }
-/*          val_Jacobian_i[nEve][nSpecies]   += Ms[iSpecies] * (fwdRxn-bkwRxn)
+          val_Jacobian_i[nEve][nSpecies]   += Ms[iSpecies] * (fwdRxn-bkwRxn)
                                             * (Cvvs[iSpecies]+Cves[iSpecies])
                                             * dTvedrhou * Volume;
           val_Jacobian_i[nEve][nSpecies+1] += Ms[iSpecies] * (fwdRxn-bkwRxn)
@@ -1467,7 +1467,7 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
                                             * dTvedrhow * Volume;
           val_Jacobian_i[nEve][nSpecies+3] += Ms[iSpecies] * (fwdRxn-bkwRxn)
                                             * (Cvvs[iSpecies]+Cves[iSpecies])
-                                            * dTvedrhoE * Volume;*/
+                                            * dTvedrhoE * Volume;
           val_Jacobian_i[nEve][nSpecies+4] += Ms[iSpecies] * (fwdRxn-bkwRxn)
                                             * (Cvvs[iSpecies]+Cves[iSpecies])
                                             * dTvedrhoEve * Volume;
@@ -1496,7 +1496,7 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
                                             * (Cvvs[iSpecies]+Cves[iSpecies])
                                             * dTvedrhos[jSpecies] * Volume;
           }
-/*          val_Jacobian_i[nEve][nSpecies]   -= Ms[iSpecies] * (fwdRxn-bkwRxn)
+          val_Jacobian_i[nEve][nSpecies]   -= Ms[iSpecies] * (fwdRxn-bkwRxn)
                                             * (Cvvs[iSpecies]+Cves[iSpecies])
                                             * dTvedrhou * Volume;
           val_Jacobian_i[nEve][nSpecies+1] -= Ms[iSpecies] * (fwdRxn-bkwRxn)
@@ -1507,7 +1507,7 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
                                             * dTvedrhow * Volume;
           val_Jacobian_i[nEve][nSpecies+3] -= Ms[iSpecies] * (fwdRxn-bkwRxn)
                                             * (Cvvs[iSpecies]+Cves[iSpecies])
-                                            * dTvedrhoE * Volume;*/
+                                            * dTvedrhoE * Volume;
           val_Jacobian_i[nEve][nSpecies+4] -= Ms[iSpecies] * (fwdRxn-bkwRxn)
                                             * (Cvvs[iSpecies]+Cves[iSpecies])
                                             * dTvedrhoEve * Volume;
