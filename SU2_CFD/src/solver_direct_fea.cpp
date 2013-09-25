@@ -31,6 +31,11 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 	unsigned short nMarker, iVar, NodesElement;
   double dull_val;
   
+  int rank = MASTER_NODE;
+#ifndef NO_MPI
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+  
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
 	nDim    = geometry->GetnDim();
@@ -64,6 +69,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 	/*--- Initialization of matrix structures ---*/
   StiffMatrixSpace.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
 	StiffMatrixTime.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
+  if (rank == MASTER_NODE) cout << "Initialize jacobian structure (Linear Elasticity)." << endl;
   Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
   
   /*--- Initialization of linear solver structures ---*/
@@ -236,8 +242,8 @@ void CFEASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container
 	
 	/*--- Numerical time step (this system is uncoditional stable... a very big number can be used) ---*/
 	if (config->GetUnsteady_Simulation() == TIME_STEPPING) Time_Num = config->GetDelta_UnstTimeND();
-	else Time_Num = 1E30;
-	if (config->GetUnsteady_Simulation() == NO) Time_Num = 0.01;
+	else Time_Num = 1.0;
+	if (config->GetUnsteady_Simulation() == NO) Time_Num = 1.0;
   
 	/*--- Loop through elements to compute contributions from the matrix
    blocks involving time. These contributions are also added to the
@@ -332,73 +338,72 @@ void CFEASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container
 			Jacobian.AddBlock(Point_3, Point_2, StiffMatrix_Node);
 		}
 		
-		/*--- Add volumetric forces as source term (gravity and coriollis) ---*/
-		double RhoG= Density*2.0; //STANDART_GRAVITY;
-    
-		unsigned short NodesElement = 3; // Triangles in 2D
-		if (nDim == 3) NodesElement = 4;	// Tets in 3D
-    
-		double *ElemForce = new double [nDim*NodesElement];
-		double *ElemResidual = new double [nDim*NodesElement];
-		
-		if (nDim == 2) {
-			ElemForce[0] = 0.0;	ElemForce[1] = -RhoG;
-			ElemForce[2] = 0.0;	ElemForce[3] = -RhoG;
-			ElemForce[4] = 0.0;	ElemForce[5] = -RhoG;
-			
-			for (iVar = 0; iVar < nDim*NodesElement; iVar++) {
-				ElemResidual[iVar] = 0.0;
-				for (jVar = 0; jVar < nDim*NodesElement; jVar++) {
-					ElemResidual[iVar] += MassMatrix_Elem_2D[iVar][jVar]*ElemForce[jVar]*Area_Local/12.0;
-				}
-			}
-			
-			Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = ElemResidual[0]; Residual[3] = ElemResidual[1];
-      LinSysRes.AddBlock(Point_0, Residual);
-      
-			Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = ElemResidual[2]; Residual[3] = ElemResidual[3];
-      LinSysRes.AddBlock(Point_1, Residual);
-			
-			Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = ElemResidual[4]; Residual[3] = ElemResidual[5];
-      LinSysRes.AddBlock(Point_2, Residual);
-			
-		}
-		
-		else {
-			
-			ElemForce[0] = 0.0; ElemForce[1] = 0.0;		ElemForce[2] = -RhoG;
-			ElemForce[3] = 0.0; ElemForce[4] = 0.0;		ElemForce[5] = -RhoG;
-			ElemForce[6] = 0.0; ElemForce[7] = 0.0;		ElemForce[8] = -RhoG;
-			ElemForce[9] = 0.0; ElemForce[10] = 0.0;	ElemForce[11] = -RhoG;
-			
-			for (iVar = 0; iVar < nDim*NodesElement; iVar++) {
-				ElemResidual[iVar] = 0.0;
-				for (jVar = 0; jVar < nDim*NodesElement; jVar++) {
-					ElemResidual[iVar] += MassMatrix_Elem_3D[iVar][jVar]*ElemForce[jVar]*Volume_Local/20.0;
-				}
-			}
-      
-			Residual[0] = 0.0;							Residual[1] = 0.0;							Residual[2] = 0.0;
-			Residual[3] = ElemResidual[0];	Residual[4] = ElemResidual[1];	Residual[5] = ElemResidual[2];
-      LinSysRes.AddBlock(Point_0, Residual);
-			
-			Residual[0] = 0.0;							Residual[1] = 0.0;							Residual[2] = 0.0;
-			Residual[3] = ElemResidual[3];	Residual[4] = ElemResidual[4];	Residual[5] = ElemResidual[5];
-      LinSysRes.AddBlock(Point_1, Residual);
-			
-			Residual[0] = 0.0;							Residual[1] = 0.0;							Residual[2] = 0.0;
-			Residual[3] = ElemResidual[6];	Residual[4] = ElemResidual[7];	Residual[5] = ElemResidual[8];
-      LinSysRes.AddBlock(Point_2, Residual);
-			
-			Residual[0] = 0.0;							Residual[1] = 0.0;							Residual[2] = 0.0;
-			Residual[3] = ElemResidual[9];	Residual[4] = ElemResidual[10];	Residual[5] = ElemResidual[11];
-			LinSysRes.AddBlock(Point_3, Residual);
-			
-		}
-		
-		delete [] ElemForce;
-		delete [] ElemResidual;
-		
+//		/*--- Add volumetric forces as source term (gravity and coriollis) ---*/
+//		double RhoG= Density*STANDART_GRAVITY;
+//    
+//		unsigned short NodesElement = 3; // Triangles in 2D
+//		if (nDim == 3) NodesElement = 4;	// Tets in 3D
+//    
+//		double *ElemForce = new double [nDim*NodesElement];
+//		double *ElemResidual = new double [nDim*NodesElement];
+//		
+//		if (nDim == 2) {
+//			ElemForce[0] = 0.0;	ElemForce[1] = -RhoG;
+//			ElemForce[2] = 0.0;	ElemForce[3] = -RhoG;
+//			ElemForce[4] = 0.0;	ElemForce[5] = -RhoG;
+//			
+//			for (iVar = 0; iVar < nDim*NodesElement; iVar++) {
+//				ElemResidual[iVar] = 0.0;
+//				for (jVar = 0; jVar < nDim*NodesElement; jVar++) {
+//					ElemResidual[iVar] += MassMatrix_Elem_2D[iVar][jVar]*ElemForce[jVar]*Area_Local/12.0;
+//				}
+//			}
+//			
+//			Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = ElemResidual[0]; Residual[3] = ElemResidual[1];
+//      LinSysRes.AddBlock(Point_0, Residual);
+//      
+//			Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = ElemResidual[2]; Residual[3] = ElemResidual[3];
+//      LinSysRes.AddBlock(Point_1, Residual);
+//			
+//			Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = ElemResidual[4]; Residual[3] = ElemResidual[5];
+//      LinSysRes.AddBlock(Point_2, Residual);
+//			
+//		}
+//		
+//		else {
+//			
+//			ElemForce[0] = 0.0; ElemForce[1] = 0.0;		ElemForce[2] = -RhoG;
+//			ElemForce[3] = 0.0; ElemForce[4] = 0.0;		ElemForce[5] = -RhoG;
+//			ElemForce[6] = 0.0; ElemForce[7] = 0.0;		ElemForce[8] = -RhoG;
+//			ElemForce[9] = 0.0; ElemForce[10] = 0.0;	ElemForce[11] = -RhoG;
+//			
+//			for (iVar = 0; iVar < nDim*NodesElement; iVar++) {
+//				ElemResidual[iVar] = 0.0;
+//				for (jVar = 0; jVar < nDim*NodesElement; jVar++) {
+//					ElemResidual[iVar] += MassMatrix_Elem_3D[iVar][jVar]*ElemForce[jVar]*Volume_Local/20.0;
+//				}
+//			}
+//      
+//			Residual[0] = 0.0;							Residual[1] = 0.0;							Residual[2] = 0.0;
+//			Residual[3] = ElemResidual[0];	Residual[4] = ElemResidual[1];	Residual[5] = ElemResidual[2];
+//      LinSysRes.AddBlock(Point_0, Residual);
+//			
+//			Residual[0] = 0.0;							Residual[1] = 0.0;							Residual[2] = 0.0;
+//			Residual[3] = ElemResidual[3];	Residual[4] = ElemResidual[4];	Residual[5] = ElemResidual[5];
+//      LinSysRes.AddBlock(Point_1, Residual);
+//			
+//			Residual[0] = 0.0;							Residual[1] = 0.0;							Residual[2] = 0.0;
+//			Residual[3] = ElemResidual[6];	Residual[4] = ElemResidual[7];	Residual[5] = ElemResidual[8];
+//      LinSysRes.AddBlock(Point_2, Residual);
+//			
+//			Residual[0] = 0.0;							Residual[1] = 0.0;							Residual[2] = 0.0;
+//			Residual[3] = ElemResidual[9];	Residual[4] = ElemResidual[10];	Residual[5] = ElemResidual[11];
+//			LinSysRes.AddBlock(Point_3, Residual);
+//			
+//		}
+//		
+//		delete [] ElemForce;
+//		delete [] ElemResidual;
 		
 	}
   
@@ -600,23 +605,33 @@ void CFEASolver::Galerkin_Method(CGeometry *geometry, CSolver **solver_container
   
 }
 
-void CFEASolver::BC_Displacement(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+void CFEASolver::BC_Normal_Displacement(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                                  unsigned short val_marker) {
 	unsigned long iPoint, iVertex, total_index;
-	unsigned short iVar;
+	unsigned short iVar, iDim;
+  double *Normal, Area, UnitaryNormal[3];
 	
 	double TotalDispl = config->GetDispl_Value(config->GetMarker_All_Tag(val_marker));
 	
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-		
+    Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+    
+    /*--- Compute area, and unitary normal ---*/
+		Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+    for (iDim = 0; iDim < nDim; iDim++) UnitaryNormal[iDim] = Normal[iDim]/Area;
+    
 		if (nDim == 2) {
-			Solution[0] = TotalDispl;		Solution[1] = 0.0;	Solution[2] = 0.0;	Solution[3] = 0.0;
-			Residual[0] = 0.0;					Residual[1] = 0.0;	Residual[2] = 0.0;	Residual[3] = 0.0;
+			Solution[0] = TotalDispl*UnitaryNormal[0];  Solution[1] = TotalDispl*UnitaryNormal[1];
+      Solution[2] = 0.0;                          Solution[3] = 0.0;
+			Residual[0] = 0.0;                          Residual[1] = 0.0;
+      Residual[2] = 0.0;                          Residual[3] = 0.0;
 		}
 		else {
-			Solution[0] = TotalDispl;   Solution[1] = 0.0;	Solution[2] = 0.0;	Solution[3] = 0.0;	Solution[4] = 0.0;	Solution[5] = 0.0;
-			Residual[0] = 0.0;          Residual[1] = 0.0;  Residual[2] = 0.0;	Residual[3] = 0.0;	Residual[4] = 0.0;	Residual[5] = 0.0;
+			Solution[0] = TotalDispl*UnitaryNormal[0];  Solution[1] = TotalDispl*UnitaryNormal[1];  Solution[2] = TotalDispl*UnitaryNormal[2];
+      Solution[3] = 0.0;                          Solution[4] = 0.0;                          Solution[5] = 0.0;
+			Residual[0] = 0.0;                          Residual[1] = 0.0;                          Residual[2] = 0.0;
+      Residual[3] = 0.0;                          Residual[4] = 0.0;                          Residual[5] = 0.0;
 		}
 		
 		node[iPoint]->SetSolution(Solution);
@@ -633,13 +648,13 @@ void CFEASolver::BC_Displacement(CGeometry *geometry, CSolver **solver_container
 	}
 }
 
-void CFEASolver::BC_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+void CFEASolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                          unsigned short val_marker) {
 	
 	double a[3], b[3];
 	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0;
 	double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL;
-	double Length_Elem = 0.0, Area_Elem = 0.0;
+	double Length_Elem = 0.0, Area_Elem = 0.0, Normal_Elem[3] = {0.0, 0.0, 0.0};
 	unsigned short iDim;
 	
 	double TotalLoad = config->GetLoad_Value(config->GetMarker_All_Tag(val_marker));
@@ -648,12 +663,16 @@ void CFEASolver::BC_Load(CGeometry *geometry, CSolver **solver_container, CNumer
 		Point_0 = geometry->bound[val_marker][iElem]->GetNode(0);                   Coord_0 = geometry->node[Point_0]->GetCoord();
 		Point_1 = geometry->bound[val_marker][iElem]->GetNode(1);                   Coord_1 = geometry->node[Point_1]->GetCoord();
 		if (nDim == 3) { Point_2 = geometry->bound[val_marker][iElem]->GetNode(2);	Coord_2 = geometry->node[Point_2]->GetCoord(); }
-		
+		    
 		/*--- Compute area (3D), and length of the surfaces (2D) ---*/
 		if (nDim == 2) {
 			for (iDim = 0; iDim < nDim; iDim++)
 				a[iDim] = Coord_0[iDim]-Coord_1[iDim];
 			Length_Elem = sqrt(a[0]*a[0]+a[1]*a[1]);
+      
+      Normal_Elem[0] = -a[1];
+			Normal_Elem[1] = a[0];
+      
 		}
 		if (nDim == 3) {
 			for (iDim = 0; iDim < nDim; iDim++) {
@@ -661,28 +680,31 @@ void CFEASolver::BC_Load(CGeometry *geometry, CSolver **solver_container, CNumer
 				b[iDim] = Coord_1[iDim]-Coord_2[iDim];
 			}
 			Area_Elem = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
+      
+      Normal_Elem[0] = 0.5*(a[1]*b[2]-a[2]*b[1]);
+			Normal_Elem[1] = -0.5*(a[0]*b[2]-a[2]*b[0]);
+			Normal_Elem[2] = 0.5*(a[0]*b[1]-a[1]*b[0]);
 		}
 		
 		if (nDim == 2) {
 			Residual[0] = 0.0; Residual[1] = 0.0;
-			Residual[2] = (1.0/2.0)*TotalLoad*Length_Elem; Residual[3] = 0.0;
+			Residual[2] = (1.0/2.0)*TotalLoad*Normal_Elem[0]; Residual[3] = (1.0/2.0)*TotalLoad*Normal_Elem[1];
 			LinSysRes.AddBlock(Point_0, Residual);
-			
 			Residual[0] = 0.0; Residual[1] = 0.0;
-			Residual[2] = (1.0/2.0)*TotalLoad*Length_Elem; Residual[3] = 0.0;
+			Residual[2] = (1.0/2.0)*TotalLoad*Normal_Elem[0]; Residual[3] = (1.0/2.0)*TotalLoad*Normal_Elem[1];
 			LinSysRes.AddBlock(Point_1, Residual);
 		}
 		else {
-			Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = 0.0;
-			Residual[3] = 0.0; Residual[4] = 0.0; Residual[5] = (1.0/3.0)*TotalLoad*Area_Elem;
+			Residual[0] = 0.0;                                          Residual[1] = 0.0;                                          Residual[2] = 0.0;
+			Residual[3] = (1.0/3.0)*TotalLoad*Normal_Elem[0]; Residual[4] = (1.0/3.0)*TotalLoad*Normal_Elem[1]; Residual[5] = (1.0/3.0)*TotalLoad*Normal_Elem[2];
 			LinSysRes.AddBlock(Point_0, Residual);
 			
-			Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = 0.0;
-			Residual[3] = 0.0; Residual[4] = 0.0; Residual[5] = (1.0/3.0)*TotalLoad*Area_Elem;
+			Residual[0] = 0.0;                                          Residual[1] = 0.0;                                          Residual[2] = 0.0;
+			Residual[3] = (1.0/3.0)*TotalLoad*Normal_Elem[0]; Residual[4] = (1.0/3.0)*TotalLoad*Normal_Elem[1]; Residual[5] = (1.0/3.0)*TotalLoad*Normal_Elem[2];
 			LinSysRes.AddBlock(Point_1, Residual);
 			
-			Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = 0.0;
-			Residual[3] = 0.0; Residual[4] = 0.0; Residual[5] = (1.0/3.0)*TotalLoad*Area_Elem;
+			Residual[0] = 0.0;                                          Residual[1] = 0.0;                                          Residual[2] = 0.0;
+			Residual[3] = (1.0/3.0)*TotalLoad*Normal_Elem[0]; Residual[4] = (1.0/3.0)*TotalLoad*Normal_Elem[1]; Residual[5] = (1.0/3.0)*TotalLoad*Normal_Elem[2];
 			LinSysRes.AddBlock(Point_2, Residual);
 		}
 		
@@ -690,7 +712,7 @@ void CFEASolver::BC_Load(CGeometry *geometry, CSolver **solver_container, CNumer
 	
 }
 
-void CFEASolver::BC_FlowLoad(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+void CFEASolver::BC_Flow_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                              unsigned short val_marker) {
 	
 	double a[3], b[3], Press_0 = 0.0, Press_1 = 0.0, Press_2 = 0.0, Press_Elem;

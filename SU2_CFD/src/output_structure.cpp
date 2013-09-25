@@ -4311,9 +4311,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                     ". Dual Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
                   }
                   else {
-                    cout << endl << " Min DT: " << solver_container[val_iZone][FinestMesh][FEA_SOL]->GetMin_Delta_Time()<<
-                    ". Max DT: " << solver_container[val_iZone][FinestMesh][FEA_SOL]->GetMax_Delta_Time() <<
-                    ". Dual Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
+                    cout << endl << " Dual Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
                   }
                 }
                 
