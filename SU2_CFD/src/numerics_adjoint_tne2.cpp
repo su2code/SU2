@@ -155,6 +155,27 @@ void CUpwRoe_AdjTNE2::ComputeResidual (double *val_residual_i,
   rhoCvve_i    = V_i[RHOCVVE_INDEX];
   rhoCvve_j    = V_j[RHOCVVE_INDEX];
   
+  cout << "Pressure_i: " << V_i[P_INDEX] << endl;
+  cout << "Pressure_j: " << V_j[P_INDEX] << endl;
+  cout << "Enthalpy_i: " << V_i[H_INDEX] << endl;
+  cout << "Enthalpy_j: " << V_j[H_INDEX] << endl;
+  cout << "Soundspeed_i: " << V_i[A_INDEX] << endl;
+  cout << "SoundSpeed_j: " << V_j[A_INDEX] << endl;
+  cout << "Energy_ve_i: " << U_i[nSpecies+nDim+1] / V_i[RHO_INDEX] << endl;
+  cout << "Energy_ve_j: " << U_j[nSpecies+nDim+1] / V_j[RHO_INDEX] << endl;
+  cout << "rhoCvtr_i: " << V_i[RHOCVTR_INDEX] << endl;
+  cout << "rhoCvtr_j: " << V_j[RHOCVTR_INDEX] << endl;
+  cout << "rhoCvve_i: " << V_i[RHOCVVE_INDEX] << endl;
+  cout << "rhoCvve_j: " << V_j[RHOCVVE_INDEX] << endl;
+  for (iDim = 0; iDim < nDim; iDim++)
+    cout << "Vel_i: " << Velocity_i[iDim] << "\t";
+  cout << endl;
+  for (iDim = 0; iDim < nDim; iDim++)
+    cout << "Vel_j: " << Velocity_j[iDim] << "\t";
+  cout << endl;
+  
+  cin.get();
+  
   /*--- Calculate mean quantities ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     RoeDensity[iSpecies] = 0.5 * (Density_i[iSpecies] + Density_j[iSpecies]);

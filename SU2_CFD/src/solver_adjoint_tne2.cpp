@@ -1502,18 +1502,18 @@ void CAdjTNE2EulerSolver::Upwind_Residual(CGeometry *geometry,
     LinSysRes.SubtractBlock(iPoint, Residual_i);
     LinSysRes.SubtractBlock(jPoint, Residual_j);
     
-//    unsigned short iVar, jVar;
-//    for (iVar = 0; iVar < nVar; iVar++)
-//      cout << "Residual[" << iVar << "]: " << Residual_i[iVar] << endl;
-//    
-//    cout << endl << endl << "Jacobian_ii: " << endl;
-//    for (iVar = 0; iVar < nVar; iVar++) {
-//      for (jVar = 0; jVar < nVar; jVar++) {
-//        cout << Jacobian_ii[iVar][jVar] << "\t";
-//      }
-//      cout << endl;
-//    }
-//    cin.get();
+    unsigned short iVar, jVar;
+    for (iVar = 0; iVar < nVar; iVar++)
+      cout << "Residual[" << iVar << "]: " << Residual_i[iVar] << endl;
+    
+    cout << endl << endl << "Jacobian_ii: " << endl;
+    for (iVar = 0; iVar < nVar; iVar++) {
+      for (jVar = 0; jVar < nVar; jVar++) {
+        cout << Jacobian_ii[iVar][jVar] << "\t";
+      }
+      cout << endl;
+    }
+    cin.get();
     
     /*--- Implicit contribution to the residual ---*/
     if (implicit) {
@@ -1620,18 +1620,18 @@ void CAdjTNE2EulerSolver::Source_Residual(CGeometry *geometry,
       for (jVar = 0; jVar < nVar; jVar++)
         Residual[iVar] = Jacobian_ii[iVar][jVar] * node[iPoint]->GetSolution(jVar);
     
-    unsigned short iVar, jVar;
-    for (iVar = 0; iVar < nVar; iVar++)
-      cout << "Residual[" << iVar << "]: " << Residual[iVar] << endl;
-    
-    cout << endl << endl << "Jacobian_ii: " << endl;
-    for (iVar = 0; iVar < nVar; iVar++) {
-      for (jVar = 0; jVar < nVar; jVar++) {
-        cout << Jacobian_ii[iVar][jVar] << "\t";
-      }
-      cout << endl;
-    }
-    cin.get();
+//    unsigned short iVar, jVar;
+//    for (iVar = 0; iVar < nVar; iVar++)
+//      cout << "Residual[" << iVar << "]: " << Residual[iVar] << endl;
+//    
+//    cout << endl << endl << "Jacobian_ii: " << endl;
+//    for (iVar = 0; iVar < nVar; iVar++) {
+//      for (jVar = 0; jVar < nVar; jVar++) {
+//        cout << Jacobian_ii[iVar][jVar] << "\t";
+//      }
+//      cout << endl;
+//    }
+//    cin.get();
     
     /*--- Subtract Residual (and Jacobian) ---*/
     LinSysRes.SubtractBlock(iPoint, Residual);
@@ -1976,7 +1976,7 @@ void CAdjTNE2EulerSolver::Inviscid_Sensitivity(CGeometry *geometry,
             grad_v += PrimVar_Grad[iDim+1][iDim]*ConsPsi;
             
             /*-- Retrieve the value of the theta gradient ---*/
-            v_gradconspsi += solver_container[TNE2_SOL]->node[iPoint]->GetVelocity(iDim, false) * ConsPsi_Grad[iDim];
+            v_gradconspsi += solver_container[TNE2_SOL]->node[iPoint]->GetVelocity(iDim) * ConsPsi_Grad[iDim];
           }
           
           /*--- Compute sensitivity for each surface point ---*/
@@ -2072,7 +2072,7 @@ void CAdjTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry,
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
         Density[iSpecies] = U[iSpecies];
       for (iDim = 0; iDim < nDim; iDim++)
-        Velocity[iDim] = solver_container[TNE2_SOL]->node[iPoint]->GetVelocity(iDim, false);
+        Velocity[iDim] = solver_container[TNE2_SOL]->node[iPoint]->GetVelocity(iDim);
       Enthalpy  = solver_container[TNE2_SOL]->node[iPoint]->GetEnthalpy();
       Energy_ve = U[nSpecies+nDim+1]/solver_container[TNE2_SOL]->node[iPoint]->GetDensity();
       sq_vel    = 0.5*solver_container[TNE2_SOL]->node[iPoint]->GetVelocity2();
@@ -2216,7 +2216,7 @@ void CAdjTNE2EulerSolver::BC_Sym_Plane(CGeometry *geometry,
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
         Density[iSpecies] = U[iSpecies];
       for (iDim = 0; iDim < nDim; iDim++)
-        Velocity[iDim] = solver_container[TNE2_SOL]->node[iPoint]->GetVelocity(iDim, false);
+        Velocity[iDim] = solver_container[TNE2_SOL]->node[iPoint]->GetVelocity(iDim);
       Enthalpy  = solver_container[TNE2_SOL]->node[iPoint]->GetEnthalpy();
       Energy_ve = U[nSpecies+nDim+1]/solver_container[TNE2_SOL]->node[iPoint]->GetDensity();
       sq_vel    = 0.5*solver_container[TNE2_SOL]->node[iPoint]->GetVelocity2();

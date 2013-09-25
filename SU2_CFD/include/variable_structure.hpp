@@ -892,6 +892,13 @@ public:
 	 * \return Value of the velocity for the dimension <i>val_dim</i>.
 	 */		
 	virtual double GetVelocity(unsigned short val_dim, unsigned short val_incomp);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_dim - Index of the dimension.
+	 * \return Value of the velocity for the dimension <i>val_dim</i>.
+	 */
+	virtual double GetVelocity(unsigned short val_dim);
 
 	/*!
 	 * \brief A virtual member.
@@ -3799,7 +3806,7 @@ public:
 	 * \param[in] val_dim - Index of the dimension.
 	 * \return Value of the velocity for the dimension <i>val_dim</i>.
 	 */
-	double GetVelocity(unsigned short val_dim, bool val_incomp);
+	double GetVelocity(unsigned short val_dim);
   
 	/*!
 	 * \brief Get the projected velocity in a unitary vector direction (compressible solver).

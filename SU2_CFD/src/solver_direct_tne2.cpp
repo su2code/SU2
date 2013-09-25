@@ -57,7 +57,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
 	unsigned short iVar, iDim, iMarker, iSpecies, nZone;
   double *Mvec_Inf;
   double Alpha, Beta, dull_val;
-	bool restart, check_temp, check_press;	
+	bool restart, check_infty, check_node, check_temp, check_press;
   
   /*--- Get MPI rank ---*/
 	int rank = MASTER_NODE;
@@ -231,11 +231,11 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
                                       Mvec_Inf, Temperature_Inf,
                                       Temperature_ve_Inf, nDim, nVar,
                                       nPrimVar, nPrimVarGrad, config);
-  node_infty->SetPrimVar_Compressible(config);
+  check_infty = node_infty->SetPrimVar_Compressible(config);
   
   Velocity_Inf = new double[nDim];
   for (iDim = 0; iDim < nDim; iDim++)
-    Velocity_Inf[iDim] = node_infty->GetVelocity(iDim, false);  
+    Velocity_Inf[iDim] = node_infty->GetVelocity(iDim);
   
 	/*--- Check for a restart and set up the variables at each node
    appropriately. Coarse multigrid levels will be intitially set to
@@ -314,12 +314,14 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
        will be returned and used to instantiate the vars. ---*/
 			iPoint_Local = Global2Local[iPoint_Global];
 			if (iPoint_Local >= 0) {
-        point_line >> index;
+/*        point_line >> index;
         for (iDim = 0; iDim < nDim; iDim++)
           point_line >> dull_val;
         for (iVar = 0; iVar < nVar; iVar++) {
           point_line >> Solution[iVar];
-        }
+        }*/
+        
+        point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4] >> Solution[5] >> Solution[6];
         
 				node[iPoint_Local] = new CTNE2EulerVariable(Solution, nDim, nVar, nPrimVar,
                                                     nPrimVarGrad, config);
@@ -330,7 +332,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
 		/*--- Instantiate the variable class with an arbitrary solution
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
-    Solution = node_infty->GetSolution();
+    //Solution = node_infty->GetSolution();
 		for(iPoint = nPointDomain; iPoint < nPoint; iPoint++)
       node[iPoint] = new CTNE2EulerVariable(Pressure_Inf, MassFrac_Inf,
                                             Mvec_Inf, Temperature_Inf,
@@ -347,132 +349,135 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
 	}
   
   /*--- Check that the initial solution is physical ---*/
-//  counter_local = 0;
-//  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-// 
-//    node[iPoint]->SetDensity();
-//    node[iPoint]->SetVelocity2();
-//    check_temp = node[iPoint]->SetTemperature(config);
-//    check_press = node[iPoint]->SetPressure(config);
-//    
-//    if (check_temp || check_press) {
-//      bool ionization;
-//      unsigned short iEl, nHeavy, nEl, *nElStates;
-//      double Ru, T, Tve, rhoCvtr, sqvel, rhoE, rhoEve, num, denom, conc;
-//      double rho, rhos, Ef, Ev, Ee, soundspeed;
-//      double *xi, *Ms, *thetav, **thetae, **g, *Tref, *hf;
-//      /*--- Determine the number of heavy species ---*/
-//      ionization = config->GetIonization();
-//      if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
-//      else            { nHeavy = nSpecies;   nEl = 0; }
-//      
-//      /*--- Load variables from the config class --*/
-//      xi        = config->GetRotationModes();      // Rotational modes of energy storage
-//      Ms        = config->GetMolar_Mass();         // Species molar mass
-//      thetav    = config->GetCharVibTemp();        // Species characteristic vib. temperature [K]
-//      thetae    = config->GetCharElTemp();         // Characteristic electron temperature [K]
-//      g         = config->GetElDegeneracy();       // Degeneracy of electron states
-//      nElStates = config->GetnElStates();          // Number of electron states
-//      Tref      = config->GetRefTemperature();     // Thermodynamic reference temperature [K]
-//      hf        = config->GetEnthalpy_Formation(); // Formation enthalpy [J/kg]
-//      
-//      /*--- Rename & initialize for convenience ---*/
-//      Ru      = UNIVERSAL_GAS_CONSTANT;         // Universal gas constant [J/(kmol*K)]
-//      Tve     = Temperature_ve_Inf;             // Vibrational temperature [K]
-//      T       = Temperature_Inf;                // Translational-rotational temperature [K]
-//      sqvel   = 0.0;                            // Velocity^2 [m2/s2]
-//      rhoE    = 0.0;                            // Mixture total energy per mass [J/kg]
-//      rhoEve  = 0.0;                            // Mixture vib-el energy per mass [J/kg]
-//      denom   = 0.0;
-//      conc    = 0.0;
-//      rhoCvtr = 0.0;
-//      
-//      /*--- Calculate mixture density from supplied primitive quantities ---*/
-//      for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
-//        denom += MassFrac_Inf[iSpecies] * (Ru/Ms[iSpecies]) * T;
-//      for (iSpecies = 0; iSpecies < nEl; iSpecies++)
-//        denom += MassFrac_Inf[nSpecies-1] * (Ru/Ms[nSpecies-1]) * Tve;
-//      rho = Pressure_Inf / denom;
-//      
-//      /*--- Calculate sound speed and extract velocities ---*/
-//      for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-//        conc += MassFrac_Inf[iSpecies]*rho/Ms[iSpecies];
-//        rhoCvtr += rho*MassFrac_Inf[iSpecies] * (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies];
-//      }
-//      soundspeed = sqrt((1.0 + Ru/rhoCvtr*conc) * Pressure_Inf/rho);
-//      for (iDim = 0; iDim < nDim; iDim++)
-//        sqvel += Mvec_Inf[iDim]*soundspeed * Mvec_Inf[iDim]*soundspeed;
-//      
-//      /*--- Calculate energy (RRHO) from supplied primitive quanitites ---*/
-//      for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-//        // Species density
-//        rhos = MassFrac_Inf[iSpecies]*rho;
-//        
-//        // Species formation energy
-//        Ef = hf[iSpecies] - Ru/Ms[iSpecies]*Tref[iSpecies];
-//        
-//        // Species vibrational energy
-//        if (thetav[iSpecies] != 0.0)
-//          Ev = Ru/Ms[iSpecies] * thetav[iSpecies] / (exp(thetav[iSpecies]/Tve)-1.0);
-//        else
-//          Ev = 0.0;
-//        
-//        // Species electronic energy
-//        num = 0.0;
-//        denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
-//        for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
-//          num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
-//          denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
-//        }
-//        Ee = Ru/Ms[iSpecies] * (num/denom);
-//        
-//        // Mixture total energy
-//        rhoE += rhos * ((3.0/2.0+xi[iSpecies]/2.0) * Ru/Ms[iSpecies] * (T-Tref[iSpecies])
-//                        + Ev + Ee + Ef + 0.5*sqvel);
-//        
-//        // Mixture vibrational-electronic energy
-//        rhoEve += rhos * (Ev + Ee);
-//      }
-//      for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
-//        // Species formation energy
-//        Ef = hf[nSpecies-1] - Ru/Ms[nSpecies-1] * Tref[nSpecies-1];
-//        
-//        // Electron t-r mode contributes to mixture vib-el energy
-//        rhoEve += (3.0/2.0) * Ru/Ms[nSpecies-1] * (Tve - Tref[nSpecies-1]);
-//      }
-//      
-//      /*--- Initialize Solution & Solution_Old vectors ---*/
-//      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-//        Solution[iSpecies]     = rho*MassFrac_Inf[iSpecies];
-//      }
-//      for (iDim = 0; iDim < nDim; iDim++) {
-//        Solution[nSpecies+iDim]     = rho*Mvec_Inf[iDim]*soundspeed;
-//      }
-//      Solution[nSpecies+nDim]       = rhoE;
-//      Solution[nSpecies+nDim+1]     = rhoEve;
-//      
-//      node[iPoint]->SetSolution(Solution);
-//      node[iPoint]->SetSolution_Old(Solution);
-//
-//      counter_local++;
-//    }
-//    
-//  }
-//  
-//#ifndef NO_MPI
-//  
-//  MPI::COMM_WORLD.Reduce(&counter_local, &counter_global, 1, MPI::UNSIGNED_LONG, MPI::SUM, MASTER_NODE);
-//  
-//#else
-//  
-//  counter_global = counter_local;
-//  
-//#endif
-//  
-//  
-//  if ((rank == MASTER_NODE) && (counter_global != 0))
-//    cout << "Warning. The original solution contains "<< counter_global
-//         << " points that are not physical." << endl;
+  counter_local = 0;
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+ 
+//    check_node = node[iPoint]->SetPrimVar_Compressible(config);
+    
+    
+    node[iPoint]->SetDensity();
+    node[iPoint]->SetVelocity2();
+    check_temp = node[iPoint]->SetTemperature(config);
+    check_press = node[iPoint]->SetPressure(config);
+    
+    if (check_temp || check_press) {
+      bool ionization;
+      unsigned short iEl, nHeavy, nEl, *nElStates;
+      double Ru, T, Tve, rhoCvtr, sqvel, rhoE, rhoEve, num, denom, conc;
+      double rho, rhos, Ef, Ev, Ee, soundspeed;
+      double *xi, *Ms, *thetav, **thetae, **g, *Tref, *hf;
+      /*--- Determine the number of heavy species ---*/
+      ionization = config->GetIonization();
+      if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
+      else            { nHeavy = nSpecies;   nEl = 0; }
+      
+      /*--- Load variables from the config class --*/
+      xi        = config->GetRotationModes();      // Rotational modes of energy storage
+      Ms        = config->GetMolar_Mass();         // Species molar mass
+      thetav    = config->GetCharVibTemp();        // Species characteristic vib. temperature [K]
+      thetae    = config->GetCharElTemp();         // Characteristic electron temperature [K]
+      g         = config->GetElDegeneracy();       // Degeneracy of electron states
+      nElStates = config->GetnElStates();          // Number of electron states
+      Tref      = config->GetRefTemperature();     // Thermodynamic reference temperature [K]
+      hf        = config->GetEnthalpy_Formation(); // Formation enthalpy [J/kg]
+      
+      /*--- Rename & initialize for convenience ---*/
+      Ru      = UNIVERSAL_GAS_CONSTANT;         // Universal gas constant [J/(kmol*K)]
+      Tve     = Temperature_ve_Inf;             // Vibrational temperature [K]
+      T       = Temperature_Inf;                // Translational-rotational temperature [K]
+      sqvel   = 0.0;                            // Velocity^2 [m2/s2]
+      rhoE    = 0.0;                            // Mixture total energy per mass [J/kg]
+      rhoEve  = 0.0;                            // Mixture vib-el energy per mass [J/kg]
+      denom   = 0.0;
+      conc    = 0.0;
+      rhoCvtr = 0.0;
+      
+      /*--- Calculate mixture density from supplied primitive quantities ---*/
+      for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
+        denom += MassFrac_Inf[iSpecies] * (Ru/Ms[iSpecies]) * T;
+      for (iSpecies = 0; iSpecies < nEl; iSpecies++)
+        denom += MassFrac_Inf[nSpecies-1] * (Ru/Ms[nSpecies-1]) * Tve;
+      rho = Pressure_Inf / denom;
+      
+      /*--- Calculate sound speed and extract velocities ---*/
+      for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+        conc += MassFrac_Inf[iSpecies]*rho/Ms[iSpecies];
+        rhoCvtr += rho*MassFrac_Inf[iSpecies] * (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies];
+      }
+      soundspeed = sqrt((1.0 + Ru/rhoCvtr*conc) * Pressure_Inf/rho);
+      for (iDim = 0; iDim < nDim; iDim++)
+        sqvel += Mvec_Inf[iDim]*soundspeed * Mvec_Inf[iDim]*soundspeed;
+      
+      /*--- Calculate energy (RRHO) from supplied primitive quanitites ---*/
+      for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+        // Species density
+        rhos = MassFrac_Inf[iSpecies]*rho;
+        
+        // Species formation energy
+        Ef = hf[iSpecies] - Ru/Ms[iSpecies]*Tref[iSpecies];
+        
+        // Species vibrational energy
+        if (thetav[iSpecies] != 0.0)
+          Ev = Ru/Ms[iSpecies] * thetav[iSpecies] / (exp(thetav[iSpecies]/Tve)-1.0);
+        else
+          Ev = 0.0;
+        
+        // Species electronic energy
+        num = 0.0;
+        denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
+        for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
+          num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+          denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+        }
+        Ee = Ru/Ms[iSpecies] * (num/denom);
+        
+        // Mixture total energy
+        rhoE += rhos * ((3.0/2.0+xi[iSpecies]/2.0) * Ru/Ms[iSpecies] * (T-Tref[iSpecies])
+                        + Ev + Ee + Ef + 0.5*sqvel);
+        
+        // Mixture vibrational-electronic energy
+        rhoEve += rhos * (Ev + Ee);
+      }
+      for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
+        // Species formation energy
+        Ef = hf[nSpecies-1] - Ru/Ms[nSpecies-1] * Tref[nSpecies-1];
+        
+        // Electron t-r mode contributes to mixture vib-el energy
+        rhoEve += (3.0/2.0) * Ru/Ms[nSpecies-1] * (Tve - Tref[nSpecies-1]);
+      }
+      
+      /*--- Initialize Solution & Solution_Old vectors ---*/
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+        Solution[iSpecies]     = rho*MassFrac_Inf[iSpecies];
+      }
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Solution[nSpecies+iDim]     = rho*Mvec_Inf[iDim]*soundspeed;
+      }
+      Solution[nSpecies+nDim]       = rhoE;
+      Solution[nSpecies+nDim+1]     = rhoEve;
+      
+      node[iPoint]->SetSolution(Solution);
+      node[iPoint]->SetSolution_Old(Solution);
+
+      counter_local++;
+    }
+    
+  }
+  
+#ifndef NO_MPI
+  
+  MPI::COMM_WORLD.Reduce(&counter_local, &counter_global, 1, MPI::UNSIGNED_LONG, MPI::SUM, MASTER_NODE);
+  
+#else
+  
+  counter_global = counter_local;
+  
+#endif
+  
+  
+  if ((rank == MASTER_NODE) && (counter_global != 0))
+    cout << "Warning. The original solution contains "<< counter_global
+         << " points that are not physical." << endl;
 
 	if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
 	else least_squares = false;
@@ -1898,153 +1903,17 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
     numerics->SetdPdrhos(node[iPoint]->GetdPdrhos(), node[jPoint]->GetdPdrhos());
     
     /*--- Compute the upwind residual ---*/
-		numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
-
+		numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);    
     
-    /////////// TEST UPWIND ///////////
-/*    unsigned short iSpecies, iDim;
-    double *density, *velocity, h, e_ve, a;
-    density = new double[nSpecies];
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-      density[iSpecies] = V_i[iSpecies];
-    }
-    for (iDim = 0; iDim < nDim; iDim++) {
-      velocity[iDim] = V_i[nSpecies+2+iDim];
-    }
-    h = V_i[nSpecies+nDim+4];
-    e_ve = U_i[nSpecies+nDim+1]/V_i[nSpecies+nDim+3];
-    a    = V_i[nSpecies+nDim+5];
-    
-    numerics->GetPMatrix(density, velocity, h, e_ve, a, node[iPoint]->GetdPdrhos(), dPdrhoE, dPdrhoEve, normal, l, m, p-tensor)*/
-    
-    /////////// TEST JACOBIAN ///////////
-/*    if (iPoint == 17) {
-      unsigned short iVar, jVar;
-      double delta;
-      double **FDJac, *Res_orig;
-      
-      Res_orig = new double[nVar];
-      FDJac = new double*[nVar];
-      for (iVar =0; iVar < nVar; iVar++) {
-        FDJac[iVar] = new double[nVar];
-        Res_orig[iVar] = Res_Conv[iVar];
-      }
-      
-      cout << "Analytic Jacobian: " << endl;
-      for (iVar =0; iVar < nVar; iVar++) {
-        for (jVar = 0; jVar < nVar; jVar++) {
-          cout << Jacobian_i[iVar][jVar] << "\t";
-        }
-        cout << endl;
-      }
-      
-      // Perturb
-      for (iVar =0; iVar < nVar; iVar++) {
-        delta = 1E-8*U_i[iVar];
-        if (delta == 0.0) delta = 1E-4;
-        U_i[iVar] += delta;
-        
-        // Re-calculate primitive quantities & pass to CNumerics
-        node[iPoint]->SetSolution(U_i);
-        node[iPoint]->SetPrimVar_Compressible(config);
-        U_i = node[iPoint]->GetSolution();
-        U_j = node[jPoint]->GetSolution();
-        V_i = node[iPoint]->GetPrimVar();
-        V_j = node[jPoint]->GetPrimVar();
-        numerics->SetPrimitive(V_i, V_j);
-        numerics->SetConservative(U_i, U_j);
-        numerics->SetdPdrhos(node[iPoint]->GetdPdrhos(), node[jPoint]->GetdPdrhos());
-        
-        // Compute residual
-        numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
-        for (jVar = 0; jVar < nVar; jVar++) {
-          FDJac[jVar][iVar] = (Res_Conv[jVar] - Res_orig[jVar])/delta;
-        }
-        
-        // Reset U_i
-        U_i[iVar] -= delta;
-        node[iPoint]->SetSolution(U_i);
-        node[iPoint]->SetPrimVar_Compressible(config);
-      }
-      
-      cout << endl << endl << "FD Jacobian: " << endl;
-      for (iVar =0; iVar < nVar; iVar++) {
-        for (jVar = 0; jVar < nVar; jVar++) {
-          cout << FDJac[iVar][jVar] << "\t";
-        }
-        cout << endl;
-      }
-      
-      cin.get();
-      // Deallocate
-      for (iVar = 0; iVar < nVar; iVar++)
-        delete [] FDJac[iVar];
-      delete[] FDJac;
-      delete[] Res_orig;
-    }*/
- 
-    /////////// TEST JACOBIAN ///////////
-    
-    
-    /////////// TEST DERIVATIVES OF SOUNDSPEED!!! ///////////
-
-/*      unsigned short iVar, iSpecies;
-      double delta, FD;
-      double *Ms, *xi, conc, Ru;
-      double rho     = V_i[nSpecies+nDim+3];
-      double rhoCvtr = V_i[nSpecies+nDim+6];
-      double rhoCvve = V_i[nSpecies+nDim+7];
-      double u = V_i[nSpecies+2];
-      double v = V_i[nSpecies+3];
-      double w = V_i[nSpecies+4];
-      double P = V_i[nSpecies+nDim+2];
-      double *dPdrhos, dPdrhoE, dPdrhoEve;
-      double a, a_new;
-      
-      Ru = UNIVERSAL_GAS_CONSTANT;
-      Ms = config->GetMolar_Mass();
-      xi = config->GetRotationModes();
-      conc = 0.0;
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-        conc += V_i[iSpecies]/Ms[iSpecies];
-      dPdrhoE = Ru/rhoCvtr * conc;
-      dPdrhoEve = -dPdrhoE;
-      dPdrhos = node[iPoint]->GetdPdrhos();
-      
-      a = V_i[nSpecies+nDim+5];
-      
-      // Perturb
-      iVar = 0;
-      delta = 1E-7*U_i[iVar];
-      U_i[iVar] += delta;
-      
-      // Re-calculate primitive quantities
-      node[iPoint]->SetSolution(U_i);
-      node[iPoint]->SetPrimVar_Compressible(config);
-      
-      a_new = node[iPoint]->GetPrimVar()[nSpecies+nDim+5];
-      
-      // Finite-difference
-      FD = (a_new - a) / delta;
-      
-      // analytic
-      double dadrhos, dadrhou, dadrhov, dadrhow, dadrhoE, dadrhoEve;
-      dadrhos = 1.0/(2.0*a) * (1/rhoCvtr*(Ru/Ms[0] - (3.0/2.0+xi[0]/2.0)*Ru/Ms[0]*dPdrhoE)*P/rho + 1.0/rho*(1.0+dPdrhoE)*(dPdrhos[0] - P/rho));
-      dadrhos = 1.0/(2.0*a*rho) * (1+dPdrhoE)*(dPdrhos[0] - P/rho);
-      
-      dadrhou = -1.0/(2.0*rho*a) * ((1.0+dPdrhoE)*dPdrhoE)*u;
-      dadrhov = -1.0/(2.0*rho*a) * ((1.0+dPdrhoE)*dPdrhoE)*v;
-      dadrhow = -1.0/(2.0*rho*a) * ((1.0+dPdrhoE)*dPdrhoE)*w;
-      dadrhoE = 1.0/(2.0*rho*a) * ((1.0+dPdrhoE)*dPdrhoE);
-      dadrhoEve = 1.0/(2.0*rho*a) * ((1.0+dPdrhoE)*dPdrhoEve);
-      // Reset U
-      U_i[iVar] -= delta;
-      
-      cout << "TNE2Solver Upwind Residual:" << endl;
-      cout << "FD a: " << FD << endl;
-      cout << "Analytic dadrhos: " << dadrhos << endl;
-      cin.get();*/
-    /////////// TEST DERIVATIVES OF SOUNDSPEED!!! ///////////
+//    unsigned short iVar, jVar;
+//    cout << endl << endl << "Upw Jacobian: " << endl;
+//    for (iVar =0; iVar < nVar; iVar++) {
+//      for (jVar = 0; jVar < nVar; jVar++) {
+//        cout << Jacobian_i[iVar][jVar] << "\t";
+//      }
+//      cout << endl;
+//    }
+//    cin.get();
 		
     /*--- Update the residual values ---*/
 		LinSysRes.AddBlock(iPoint, Res_Conv);
@@ -2109,76 +1978,9 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
     
     /*--- Set volume of the dual grid cell ---*/
     numerics->SetVolume(geometry->node[iPoint]->GetVolume());
-    
+
+    /*--- Compute the non-equilibrium chemistry ---*/
     numerics->ComputeChemistry(Residual, Jacobian_i, config);
-//    numerics->ComputeChemistry(Residual, Jacobian_j, config);
-    
-/*    if (iPoint == 3) {
-      cout << "Residual: " << endl;
-      for (iVar = 0; iVar < nVar; iVar++) {
-        cout << Residual[iVar] << endl;
-      }
-            
-      cout << "Analytic Jacobian: " << endl;
-      for (iVar = 0; iVar < nVar; iVar++) {
-        for (jVar = 0; jVar < nVar; jVar++) {
-          cout << Jacobian_i[iVar][jVar] << "\t";
-        }
-        cout << endl;
-      }
-      cin.get();
-      
-      /////////// TEST JACOBIAN ///////////
-      U_i = node[iPoint]->GetSolution();
-      V_i = node[iPoint]->GetPrimVar();
-      
-      cout << "U: " << V_i[nSpecies+2] << ", " << V_i[nSpecies+3] << ", " << V_i[nSpecies+4] << endl;
-      
-      for (iVar = 0; iVar < nVar; iVar++)
-        for (jVar = 0; jVar < nVar; jVar++)
-          FDJac[iVar][jVar] = 0.0;
-      
-      // Perturb
-      for (iVar =0; iVar < nVar; iVar++) {
-        delta = 1E-2*U_i[iVar];
-        if (delta == 0.0) delta = 1E-8;
-        U_i[iVar] += delta;
-        
-        for (jVar = 0; jVar < nVar; jVar++)
-          Res_new[jVar] = 0.0;
-        
-        // Re-calculate primitive quantities & pass to CNumerics
-        node[iPoint]->SetSolution(U_i);
-        node[iPoint]->SetPrimVar_Compressible(config);
-        U_i = node[iPoint]->GetSolution();
-        V_i = node[iPoint]->GetPrimVar();
-        numerics->SetPrimitive(V_i, V_i);
-        numerics->SetConservative(U_i, U_i);
-        numerics->SetdPdrhos(node[iPoint]->GetdPdrhos(), node[iPoint]->GetdPdrhos());
-        
-        // Compute residual
-        numerics->ComputeChemistry(Res_new, Jacobian_j, config);
-        for (jVar = 0; jVar < nVar; jVar++) {
-          FDJac[jVar][iVar] = (Res_new[jVar] - Residual[jVar])/delta;
-//          Jacobian_i[jVar][iVar] = (Res_new[jVar] - Residual[jVar])/delta;
-        }
-        
-        // Reset U_i
-        U_i[iVar] -= delta;
-        node[iPoint]->SetSolution(U_i);
-        node[iPoint]->SetPrimVar_Compressible(config);
-      }
-      /////////// TEST JACOBIAN ///////////
- 
-      cout << "FD Jacobian: " << endl;
-      for (iVar = 0; iVar < nVar; iVar++) {
-        for (jVar = 0; jVar < nVar; jVar++) {
-          cout << FDJac[iVar][jVar] << "\t";
-        }
-        cout << endl;
-      }
-      cin.get();
-    }*/
     
     /*--- Compute vibrational energy relaxation ---*/
     // NOTE: Jacobians don't account for relaxation time derivatives
@@ -2779,12 +2581,9 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solution_con
             Jacobian_i[iVar][jVar] = 0.0;
         
         rho     = node[iPoint]->GetDensity();
-        u       = node[iPoint]->GetPrimVar(node[iPoint]->GetVelIndex()+0);
-        v       = node[iPoint]->GetPrimVar(node[iPoint]->GetVelIndex()+1);
-        w       = node[iPoint]->GetPrimVar(node[iPoint]->GetVelIndex()+2);
-//        u       = node[iPoint]->GetVelocity(0, false);
-//        v       = node[iPoint]->GetVelocity(1, false);
-//        w       = node[iPoint]->GetVelocity(2, false);
+        u       = node[iPoint]->GetVelocity(0);
+        v       = node[iPoint]->GetVelocity(1);
+        w       = node[iPoint]->GetVelocity(2);
         rhoCvtr = node[iPoint]->GetRhoCv_tr();
         rhoCvve = node[iPoint]->GetRhoCv_ve();
         rhoE    = node[iPoint]->GetSolution(nSpecies+nDim);
@@ -3134,7 +2933,7 @@ void CTNE2EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
           
           /*--- Get primitives from current inlet state. ---*/
           for (iDim = 0; iDim < nDim; iDim++)
-            Velocity[iDim] = node[iPoint]->GetVelocity(iDim, false);
+            Velocity[iDim] = node[iPoint]->GetVelocity(iDim);
           Pressure    = node[iPoint]->GetPressure(false);
           SoundSpeed2 = Gamma*Pressure/U_domain[0];
           
@@ -4490,7 +4289,7 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 				WallShearStress = sqrt(WallShearStress);
         
 				/*--- Compute wall shear stress (using mu(delta u/delta y) ---*/
-				for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] = node[iPointNormal]->GetVelocity(iDim, false);
+				for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] = node[iPointNormal]->GetVelocity(iDim);
 				VelNormal = 0.0; for (iDim = 0; iDim < nDim; iDim++) VelNormal += Vel[iDim] * UnitaryNormal[iDim];
 				for (iDim = 0; iDim < nDim; iDim++) VelTang[iDim] = Vel[iDim] - VelNormal*UnitaryNormal[iDim];
 				VelTangMod = 0.0; for (iDim = 0; iDim < nDim; iDim++) VelTangMod += VelTang[iDim]*VelTang[iDim]; VelTangMod = sqrt(VelTangMod);
