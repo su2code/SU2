@@ -359,6 +359,14 @@ public:
 	 */
 	void ComputeIdentityPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config);
 	
+  /*!
+	 * \brief Compute the residual Ax-b
+	 * \param[in] sol - CSysVector to be multiplied by the preconditioner.
+	 * \param[in] f - Result of the product A*vec.
+   * \param[out] res - Result of the product A*vec.
+	 */
+  void ComputeResidual(const CSysVector & sol, const CSysVector & f, CSysVector & res);
+
 };
 
 /*!
