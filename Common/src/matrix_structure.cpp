@@ -948,3 +948,14 @@ void CSysMatrix::ComputeIdentityPreconditioner(const CSysVector & vec, CSysVecto
 	SendReceive_Solution(prod, geometry, config);
   
 }
+
+void CSysMatrix::ComputeResidual(const CSysVector & sol, const CSysVector & f, CSysVector & res) {
+	unsigned long iPoint, iVar;
+  
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+		RowProduct(sol, iPoint);
+		for (iVar = 0; iVar < nVar; iVar++) {
+			res[iPoint*nVar+iVar] = prod_row_vector[iVar] - f[iPoint*nVar+iVar];
+    }
+	}
+}
