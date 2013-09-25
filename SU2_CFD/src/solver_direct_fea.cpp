@@ -866,10 +866,81 @@ void CFEASolver::BC_Load(CGeometry *geometry, CSolver **solver_container, CNumer
 }
 
 void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
+  unsigned long iPoint;
+  double Strain_xx, Strain_yy, Strain_xy, Strain_zz, Strain_xz, Strain_yz, **Stress, VonMises_Stress, MaxVonMises_Stress = 0.0, Strain_Trace;
   
+  double E = config->GetElasticyMod();
+  double Nu = config->GetPoissonRatio();
+  double Mu = E / (2.0*(1.0 + Nu));
+  double Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));		// For plane strain and 3-D
+
 	/*--- Compute the gradient of the displacement ---*/
 	if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
 	if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
+  
+  /*--- Compute the strains and streeses ---*/
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    Strain_xx = node[iPoint]->GetGradient(0,0);
+    Strain_yy = node[iPoint]->GetGradient(1,1);
+    Strain_xy = 0.5*(node[iPoint]->GetGradient(0,1) + node[iPoint]->GetGradient(1,0));
+    Strain_Trace = Strain_xx + Strain_yy;
+        
+    if (geometry->GetnDim() == 3) {
+      Strain_zz = node[iPoint]->GetGradient(2,2);
+      Strain_xz = 0.5*(node[iPoint]->GetGradient(0,2) + node[iPoint]->GetGradient(2,0));
+      Strain_yz = 0.5*(node[iPoint]->GetGradient(1,2) + node[iPoint]->GetGradient(2,1));
+      Strain_Trace += Strain_zz;
+    }
+    
+    node[iPoint]->SetStress(0, 0, 2.0*Mu*Strain_xx + Lambda*Strain_Trace);
+    node[iPoint]->SetStress(1, 1, 2.0*Mu*Strain_yy + Lambda*Strain_Trace);
+    node[iPoint]->SetStress(0, 1, 2.0*Mu*Strain_xy);
+    node[iPoint]->SetStress(1, 0, 2.0*Mu*Strain_xy);
+
+    if (geometry->GetnDim() == 3) {
+      node[iPoint]->SetStress(2, 2, 2.0*Mu*Strain_zz + Lambda*Strain_Trace);
+      node[iPoint]->SetStress(0, 2, 2.0*Mu*Strain_xz);
+      node[iPoint]->SetStress(2, 0, 2.0*Mu*Strain_xz);
+      node[iPoint]->SetStress(1, 2, 2.0*Mu*Strain_yz);
+      node[iPoint]->SetStress(2, 1, 2.0*Mu*Strain_yz);
+    }
+    
+    /*---Compute Von Mises criteria ---*/
+    Stress = node[iPoint]->GetStress();
+    
+    if (geometry->GetnDim() == 2) {
+      VonMises_Stress = sqrt(  Stress[0][0]*Stress[0][0]
+                             - Stress[0][0]*Stress[1][1]
+                             + Stress[1][1]*Stress[1][1]
+                             + 3.0*Stress[0][1]*Stress[0][1]
+                             );
+    }
+    else {
+      VonMises_Stress = sqrt(0.5*(  pow(Stress[0][0] - Stress[1][1], 2.0)
+                                  + pow(Stress[1][1] - Stress[2][2], 2.0)
+                                  + pow(Stress[2][2] - Stress[0][0], 2.0)
+                                  + 6.0*(Stress[0][1]*Stress[0][1]+Stress[1][2]*Stress[1][2]+Stress[2][0]*Stress[2][0])
+                                  ));
+    }
+    
+    /*---Store the Von Mises criteria ---*/
+    node[iPoint]->SetVonMises_Stress(VonMises_Stress);
+    
+    /*--- Compute the maximum value of the Von Mises Stress ---*/
+    MaxVonMises_Stress = max(MaxVonMises_Stress, VonMises_Stress);
+    
+  }
+  
+#ifndef NO_MPI
+  
+  /*--- Compute MaxVonMises_Stress using all the nodes ---*/
+  double MyMaxVonMises_Stress = MaxVonMises_Stress; MaxVonMises_Stress = 0.0;
+  MPI::COMM_WORLD.Allreduce(&MyMaxVonMises_Stress, &MaxVonMises_Stress, 1, MPI::DOUBLE, MPI::MAX);
+  
+#endif
+  
+  /*--- Set the value of the MaxVonMises_Stress as the CFEA coeffient ---*/
+  Total_CFEA = MaxVonMises_Stress;
   
 }
 
@@ -1031,7 +1102,6 @@ void CFEASolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_c
 	
   unsigned short iVar;
 	unsigned long iPoint, total_index;
-	double Norm;
   
 	/*--- Set maximum residual to zero ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
@@ -1088,15 +1158,11 @@ void CFEASolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_c
   delete precond;
   
 	/*--- Update solution (system written in terms of increments) ---*/
-	Norm = 0.0;
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
 		for (iVar = 0; iVar < nVar; iVar++) {
 			node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*LinSysSol[iPoint*nVar+iVar]);
-			Norm += LinSysSol[iPoint*nVar+iVar]*LinSysSol[iPoint*nVar+iVar];
 		}
 	}
-	Norm = sqrt(Norm);
-	SetTotal_CFEA(Norm);
 	
   /*--- MPI solution ---*/
   Set_MPI_Solution(geometry, config);

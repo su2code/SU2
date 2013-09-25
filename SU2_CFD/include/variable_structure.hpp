@@ -1237,6 +1237,28 @@ public:
 	 * \brief A virtual member.
 	 */
 	virtual void SetPressureValue(double val_pressure);
+  
+	/*!
+	 * \brief A virtual member.
+	 */
+  virtual void SetStress(unsigned short iVar, unsigned short jVar, double val_stress);
+  
+	/*!
+	 * \brief A virtual member.
+   
+	 */
+  virtual double **GetStress(void);
+  
+	/*!
+	 * \brief A virtual member.
+	 */
+  virtual void SetVonMises_Stress(double val_stress);
+  
+	/*!
+	 * \brief A virtual member.
+   
+	 */
+  virtual double GetVonMises_Stress(void);
 
 	/*!
 	 * \brief A virtual member.
@@ -1835,7 +1857,9 @@ public:
 class CFEAVariable : public CVariable {
 protected:
 	double Pressure;	/*!< \brief Pressure of the fluid. */
-
+  double **Stress;  /*!< \brief Stress tensor. */
+  double VonMises_Stress; /*!< \brief Von Mises stress. */
+  
 public:
 
 	/*!
@@ -1861,6 +1885,32 @@ public:
 	 * \brief Set the value of the pressure.
 	 */
 	void SetPressureValue(double val_pressure);
+  
+  /*!
+	 * \brief Set the value of the stress.
+   * \param[in] iVar - i index.
+	 * \param[in] jVar - j index.
+	 * \param[in] val_stress - Value of the stress.
+	 */
+  void SetStress(unsigned short iVar, unsigned short jVar, double val_stress);
+  
+  /*!
+	 * \brief Get the value of the stress.
+   * \return Value of the stress.
+	 */
+  double **GetStress(void);
+
+  /*!
+	 * \brief Set the value of the Von Mises stress.
+	 * \param[in] val_stress - Value of the Von Mises stress.
+	 */
+  void SetVonMises_Stress(double val_stress);
+  
+  /*!
+	 * \brief Get the value of the Von Mises stress.
+   * \return Value of the Von Mises stress.
+	 */
+  double GetVonMises_Stress(void);
 
 };
 
@@ -1877,8 +1927,8 @@ protected:
 	double *TS_Source;		/*!< \brief Time spectral source term. */
 	double Precond_Beta;	/*!< \brief Low Mach number preconditioner value, Beta. */
 	double *B_Field;		/*! < \brief Magnetic field value */
-    double *WindGust;           /*! < \brief Wind gust value */
-    double *WindGustDer;        /*! < \brief Wind gust derivatives value */
+  double *WindGust;           /*! < \brief Wind gust value */
+  double *WindGustDer;        /*! < \brief Wind gust derivatives value */
 
 	/*--- Primitive variable definition ---*/
 	double *Primitive;	/*!< \brief Primitive variables (T,vx,vy,vz,P,rho,h,c) in compressible flows. */
