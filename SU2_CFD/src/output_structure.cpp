@@ -1547,7 +1547,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 	unsigned short nVar_First = 0, nVar_Second = 0, nVar_Third = 0, iVar_Eddy = 0, iVar_Sharp = 0;
 	unsigned short iVar_GridVel = 0, iVar_PressMach = 0, iVar_Density = 0, iVar_TempLam = 0,
     iVar_Tempv = 0,iVar_MagF = 0, iVar_EF =0, iVar_Temp = 0, iVar_Lam =0, iVar_Mach = 0, iVar_Press = 0,
-    iVar_ViscCoeffs = 0, iVar_Sens = 0, iVar_Extra = 0;
+    iVar_ViscCoeffs = 0, iVar_Sens = 0, iVar_FEA = 0, iVar_Extra = 0;
     
 	unsigned long iPoint = 0, jPoint = 0, iVertex = 0, iMarker = 0;
     
@@ -1715,7 +1715,13 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         iVar_Sens   = nVar_Total;
         nVar_Total += 2;
     }
-    
+  
+    if (Kind_Solver == LINEAR_ELASTICITY) {
+      /*--- Surface sensitivity coefficient, and solution sensor ---*/
+      iVar_FEA   = nVar_Total;
+      nVar_Total += 1;
+    }
+  
     if (config->GetExtraOutput()) {
         iVar_Extra  = nVar_Total;
         nVar_Extra  = solver[TURB_SOL]->GetnOutputVariables();
@@ -2013,7 +2019,12 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
                     if (config->GetKind_ConvNumScheme() == SPACE_UPWIND)
                     { Data[jVar][jPoint] = solver[ADJFLOW_SOL]->node[iPoint]->GetLimiter(0); jVar++; }
                     break;
-                    
+                
+              case LINEAR_ELASTICITY:
+                
+                Data[jVar][jPoint] = solver[FEA_SOL]->node[iPoint]->GetVonMises_Stress(); jVar++;
+                break;
+                
             }
         }
         
@@ -3054,12 +3065,52 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 			}
 		}
 	}
+  
+  /*--- Communicate the Linear elasticity ---*/
+	if ( Kind_Solver == LINEAR_ELASTICITY ) {
     
-    
-    if (config->GetExtraOutput()) {
+		/*--- Loop over this partition to collect the current variable ---*/
+		jPoint = 0;
+		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      
+      /*--- Check for halos & write only if requested ---*/
+      
+      if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
         
+        /*--- Load buffers with the temperature and laminar viscosity variables. ---*/
+        Buffer_Send_Var[jPoint] = solver[FEA_SOL]->node[iPoint]->GetVonMises_Stress();
+        jPoint++;
+      }
+		}
+    
+		/*--- Gather the data on the master node. ---*/
+		MPI::COMM_WORLD.Barrier();
+		MPI::COMM_WORLD.Gather(Buffer_Send_Var, nBuffer_Scalar, MPI::DOUBLE,
+                           Buffer_Recv_Var, nBuffer_Scalar, MPI::DOUBLE,
+                           MASTER_NODE);
+
+		/*--- The master node unpacks and sorts this variable by global index ---*/
+		if (rank == MASTER_NODE) {
+			jPoint = 0; iVar = iVar_FEA;
+			for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+				for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
+          
+					/*--- Get global index, then loop over each variable and store ---*/
+					iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
+					Data[iVar][iGlobal_Index]   = Buffer_Recv_Var[jPoint];
+					jPoint++;
+				}
+				/*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+				jPoint = (iProcessor+1)*nBuffer_Scalar;
+			}
+		}
+	}  
+  
+  
+    if (config->GetExtraOutput()) {
+      
         for (jVar = 0; jVar < nVar_Extra; jVar++) {
-            
+          
             /*--- Loop over this partition to collect the current variable ---*/
             
             jPoint = 0;
@@ -3408,7 +3459,11 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short va
     if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
         restart_file << "\t\"Surface_Sensitivity\"\t\"Solution_Sensor\"";
     }
-    
+  
+    if (Kind_Solver == LINEAR_ELASTICITY) {
+      restart_file << "\t\"Von_Mises_Stress\"";
+    }
+  
     if (config->GetExtraOutput()) {
         for (iVar = 0; iVar < nVar_Extra; iVar++) {
             restart_file << "\t\"ExtraOutput_" << iVar+1<<"\"";
@@ -4588,6 +4643,8 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                     cout.width(15); cout << log10(residual_fea[0]);
                     cout.width(15); cout << log10(residual_fea[1]);
                     if (nDim == 3) { cout.width(15); cout << log10(residual_fea[2]); }
+                    cout.precision(4);
+                    cout.setf(ios::scientific,ios::floatfield);
                     cout.width(14); cout << Total_CFEA;
                     cout << endl;
                     break;

@@ -239,6 +239,10 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
       Tecplot_File << ", \"Surface_Sensitivity\", \"Solution_Sensor\"";
     }
     
+    if (Kind_Solver == LINEAR_ELASTICITY) {
+      Tecplot_File << ", \"Von_Mises_Stress\"";
+    }
+    
     if (config->GetExtraOutput()) {
       for (iVar = 0; iVar < nVar_Extra; iVar++) {
         Tecplot_File << ", \"ExtraOutput_" << iVar+1<<"\"";
