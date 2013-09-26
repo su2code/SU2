@@ -57,7 +57,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
 	unsigned short iVar, iDim, iMarker, iSpecies, nZone;
   double *Mvec_Inf;
   double Alpha, Beta, dull_val;
-	bool restart, check_infty, check_node, check_temp, check_press;
+	bool restart, check_infty, check_temp, check_press;
   
   /*--- Get MPI rank ---*/
 	int rank = MASTER_NODE;
@@ -1646,11 +1646,9 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry,
 void CTNE2EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_container, CConfig *config,
                                       unsigned short iMesh, unsigned long Iteration) {
 	double *Normal, Area, Vol, Mean_SoundSpeed, Mean_ProjVel, Lambda, Local_Delta_Time,
-	Global_Delta_Time = 1E6, Global_Delta_UnstTimeND;
+	Global_Delta_Time = 1E6;
 	unsigned long iEdge, iVertex, iPoint, jPoint;
 	unsigned short iDim, iMarker;
-  
-	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   
 	Min_Delta_Time = 1.E6; Max_Delta_Time = 0.0;
   
@@ -1735,12 +1733,9 @@ void CTNE2EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_cont
 
 void CTNE2EulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
   
-	double *Normal, Area, Vol, Mean_SoundSpeed, Mean_ProjVel, Lambda, Local_Delta_Time,
-	Global_Delta_Time = 1E6, Global_Delta_UnstTimeND;
+	double *Normal, Area, Mean_SoundSpeed, Mean_ProjVel, Lambda;
 	unsigned long iEdge, iVertex, iPoint, jPoint;
 	unsigned short iDim, iMarker;
-  
-	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   
 	Min_Delta_Time = 1.E6; Max_Delta_Time = 0.0;
   
@@ -2000,8 +1995,6 @@ void CTNE2EulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 	unsigned short iDim, iMarker, Boundary, Monitoring;
 	double Pressure, *Normal = NULL, dist[3], *Coord, Face_Area, PressInviscid;
 	double factor, NFPressOF, RefVel2, RefDensity, RefPressure;
-  
-	bool grid_movement  = config->GetGrid_Movement();
   
 	double Alpha           = config->GetAoA()*PI_NUMBER/180.0;
 	double Beta            = config->GetAoS()*PI_NUMBER/180.0;
@@ -2523,7 +2516,7 @@ void CTNE2EulerSolver::SetPreconditioner(CConfig *config, unsigned short iPoint)
 
 void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solution_container,
                                      CNumerics *numerics, CConfig *config, unsigned short val_marker) {
-  unsigned short iDim, iSpecies, jSpecies, iVar, jVar;
+  unsigned short iDim, iSpecies, iVar, jVar;
 	unsigned long iPoint, iVertex;
   bool implicit;
   double *Normal, *UnitNormal, *Ms, *dPdrhos;
@@ -3949,7 +3942,6 @@ void CTNE2NSSolver::Preprocessing(CGeometry *geometry, CSolver **solution_contai
 	bool upwind_2nd = ((config->GetKind_Upwind_TNE2() == ROE_2ND) || (config->GetKind_Upwind_TNE2() == AUSM_2ND)
                      || (config->GetKind_Upwind_TNE2() == HLLC_2ND) || (config->GetKind_Upwind_TNE2() == ROE_TURKEL_2ND));
 	bool limiter = (config->GetKind_SlopeLimit_TNE2() != NONE);
-	double Gas_Constant = config->GetGas_ConstantND();
   
 	for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     

@@ -6162,17 +6162,19 @@ void CPhysicalGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
                                                vector<unsigned long> &point2_Airfoil, bool original_surface) {
     unsigned short iMarker, iNode, jNode, iDim, intersect;
     long MinDist_Point, MinDistAngle_Point;
-    unsigned long iPoint, jPoint, iElem, Trailing_Point, Airfoil_Point, iVertex, jVertex, n;
+    unsigned long iPoint, jPoint, iElem, Trailing_Point, Airfoil_Point, iVertex, jVertex;
+//    unsigned long n;
     double Segment_P0[3] = {0.0, 0.0, 0.0}, Segment_P1[3] = {0.0, 0.0, 0.0}, Intersection[3] = {0.0, 0.0, 0.0}, Trailing_Coord, MinDist_Value, MinDistAngle_Value, Dist_Value,
-    Airfoil_Tangent[3] = {0.0, 0.0, 0.0}, Segment[3] = {0.0, 0.0, 0.0}, Length, Angle_Value, Normal[3], Tangent[3], BiNormal[3], auxXCoord,
-    auxYCoord, auxZCoord, auxpoint1, auxpoint2, zp1, zpn, Camber_Line, MaxAngle = 15, CosValue;
+    Airfoil_Tangent[3] = {0.0, 0.0, 0.0}, Segment[3] = {0.0, 0.0, 0.0}, Length, Angle_Value, MaxAngle = 15, CosValue;
+//    double Normal[3], Tangent[3], BiNormal[3], auxXCoord, auxYCoord, auxZCoord, auxpoint1, auxpoint2, zp1, zpn, Camber_Line;
     vector<double> Xcoord, Ycoord, Zcoord, Z2coord, Xcoord_Normal, Ycoord_Normal, Zcoord_Normal, Xcoord_Camber, Ycoord_Camber, Zcoord_Camber;
     vector<unsigned long> Duplicate, point1, point2;
     vector<unsigned long>::iterator it;
     int rank = MASTER_NODE;
-    double **Coord_Variation;
-    bool Boundary, Monitoring;
-    
+//    double **Coord_Variation;
+    unsigned short Boundary;
+    bool Monitoring;
+
 #ifndef NO_MPI
 	unsigned long nLocalVertex, nGlobalVertex, MaxLocalVertex, *Buffer_Send_nVertex, *Buffer_Receive_nVertex, nBuffer;
 	int nProcessor, iProcessor;

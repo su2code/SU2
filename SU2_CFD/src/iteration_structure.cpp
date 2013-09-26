@@ -347,8 +347,6 @@ void TNE2Iteration(COutput *output, CIntegration ***integration_container, CGeom
                    CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
                    CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
   
-	double Physical_dt, Physical_t;
-	unsigned short iMesh; // Index for multi-grid level
   unsigned short iZone; // Index for zone of the mesh
 	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
@@ -377,8 +375,8 @@ void TNE2Iteration(COutput *output, CIntegration ***integration_container, CGeom
                                                                 numerics_container, config_container,
                                                                 RUNTIME_FLOW_SYS, IntIter, iZone);
 	}
+  
 }
-
 
 void AdjTNE2Iteration(COutput *output, CIntegration ***integration_container,
                       CGeometry ***geometry_container,
@@ -392,7 +390,6 @@ void AdjTNE2Iteration(COutput *output, CIntegration ***integration_container,
 	unsigned short iMesh, iZone, nZone;
   unsigned long IntIter, ExtIter;
   int rank;
-  double Physical_dt, Physical_t;
   
   /*--- Initialize parameters ---*/
   nZone   = geometry_container[ZONE_0][MESH_0]->GetnZone();
@@ -582,14 +579,9 @@ void WaveIteration(COutput *output, CIntegration ***integration_container, CGeom
 
 	double Physical_dt, Physical_t;
 	unsigned short iMesh, iZone;
-	int rank = MASTER_NODE;
 	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
-
-#ifndef NO_MPI
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
 
 	for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -633,14 +625,9 @@ void FEAIteration(COutput *output, CIntegration ***integration_container, CGeome
 		CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
 	double Physical_dt, Physical_t;
 	unsigned short iMesh, iZone;
-	int rank = MASTER_NODE;
 	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
-
-#ifndef NO_MPI
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
 
 	for (iZone = 0; iZone < nZone; iZone++) {
 
