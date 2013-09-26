@@ -1032,6 +1032,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		if (Unsteady_Simulation != DT_STEPPING_2ND) Unsteady_Simulation = DT_STEPPING_1ST;
 	}
 
+  /*--- Set the number of external iterations to 1 for the steady state problem ---*/
+  if ((Unsteady_Simulation == STEADY) && (Kind_Solver == LINEAR_ELASTICITY)) nExtIter = 1;
+  
 	/*--- Decide whether we should be writing unsteady solution files. ---*/
 	if (Unsteady_Simulation == STEADY ||
 			Unsteady_Simulation == TIME_STEPPING ||
