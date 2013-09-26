@@ -1208,7 +1208,7 @@ void CAdjTNE2EulerSolver::SetInitialCondition(CGeometry **geometry,
 
 	unsigned long iPoint, Point_Fine;
 	unsigned short iMesh, iChildren, iVar;
-	double LevelSet, Area_Children, Area_Parent, LevelSet_Fine;
+	double Area_Children, Area_Parent;
   double *Solution, *Solution_Fine;
   
 	bool restart = config->GetRestart();
@@ -1881,13 +1881,12 @@ void CAdjTNE2EulerSolver::Inviscid_Sensitivity(CGeometry *geometry,
                                                CNumerics *numerics,
                                                CConfig *config) {
 	unsigned long iVertex, iPoint, Neigh;
-	unsigned short iDim, iMarker, iPos, jPos, iNeigh;
+	unsigned short iDim, iMarker, iNeigh;
 	double *d, *Normal, *UnitNormal;
   double *Psi, *U;
-  double Enthalpy, conspsi, Mach_Inf, Area;
+  double Enthalpy, conspsi, Area;
   double **PrimVar_Grad, **ConsVar_Grad, *ConsPsi_Grad;
-  double ConsPsi, d_press, grad_v, Beta2, v_gradconspsi,
-  LevelSet, Target_LevelSet;
+  double ConsPsi, d_press, grad_v, v_gradconspsi;
   
   /*--- Initialization ---*/
   d            = NULL;
@@ -2592,7 +2591,6 @@ void CAdjTNE2NSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_conta
   bool center         = (config->GetKind_ConvNumScheme_AdjTNE2() == SPACE_CENTERED);
   bool center_jst     = (config->GetKind_Centered_AdjTNE2() == JST);
   bool limiter        = (config->GetKind_SlopeLimit() != NONE);
-  double adj_limit    = config->GetAdjointLimit();
   
 	/*--- Residual initialization ---*/
 	for (iPoint = 0; iPoint < nPoint; iPoint ++) {
@@ -2695,7 +2693,7 @@ void CAdjTNE2NSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_co
 void CAdjTNE2NSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
                                        CConfig *config, unsigned short iMesh) {
 	unsigned long iPoint;
-  unsigned short iVar, iDim;
+  unsigned short iVar;
   
   for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
   
@@ -2801,11 +2799,7 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver
 	unsigned short iDim, jDim, iMarker;
 	double **PsiVar_Grad, **PrimVar_Grad, div_phi, *Normal, Area,
 	normal_grad_psi5, normal_grad_T, sigma_partial,
-  cp, Laminar_Viscosity, heat_flux_factor, LevelSet, Target_LevelSet, temp_sens;
-  
-  double *Psi, *U, Enthalpy, **GridVel_Grad, gradPsi5_v, psi5_tau_partial, psi5_tau_grad_vel, source_v;
-  double Density, Pressure, div_vel, val_turb_ke, vartheta, vartheta_partial, psi5_p_div_vel, *Omega, rho_v[3], CrossProduct[3];
-  double delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
+  cp, Laminar_Viscosity, heat_flux_factor, temp_sens;
   
 	double Gas_Constant = config->GetGas_ConstantND();
   
@@ -3207,7 +3201,7 @@ void CAdjTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_co
 void CAdjTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned long iVertex, iPoint, total_index, Point_Normal;
 	unsigned short iDim, iVar, jVar, jDim;
-	double *d, q, *U, l1psi, mu_dyn, Temp, dVisc_T, rho, pressure, div_phi,
+	double *d, q, *U, mu_dyn, Temp, dVisc_T, rho, pressure, div_phi,
   force_stress, Sigma_5, **PsiVar_Grad, phi[3];
   double phis1, phis2, sq_vel, ProjVel, Enthalpy, *GridVel, phi_u, d_n;
   double Energy, ViscDens, XiDens, Density, SoundSpeed, Pressure, dPhiE_dn, Laminar_Viscosity, Eddy_Viscosity,

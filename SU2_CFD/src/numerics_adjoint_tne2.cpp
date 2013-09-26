@@ -607,7 +607,7 @@ void CCentLax_AdjTNE2::ComputeResidual (double *val_resconv_i,
                                         double **val_Jacobian_jj,
                                         CConfig *config) {
   bool ionization;
-  unsigned short iDim, jDim, iSpecies, iVar, jVar, nHeavy, nEl;
+  unsigned short iDim, iSpecies, iVar, jVar, nHeavy, nEl;
   double Energy_ve_i, Energy_ve_j, rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j;
   double *Ms, Ru, conc_i, conc_j, rho_el_i, rho_el_j;
   double dPdrhoE_i, dPdrhoE_j, dPdrhoEve_i, dPdrhoEve_j;

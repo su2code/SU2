@@ -639,7 +639,7 @@ void CTNE2EulerVariable::SetdPdrhos(CConfig *config) {
   
   unsigned short iDim, iSpecies, iEl, nHeavy, nEl, *nElStates;
   double *Ms, *Tref, *hf, *xi, *thetav, **thetae, **g;
-  double Ru, RuBAR, CvtrBAR, rhoCvtr, rhoCvve, Cvtrs, Cvves, rho_el, sqvel, conc;
+  double Ru, RuBAR, CvtrBAR, rhoCvtr, rhoCvve, Cvtrs, rho_el, sqvel, conc;
   double rho, rhos, rhoEve, T, Tve, evibs, eels, ef;
   double num, denom;
   
@@ -722,7 +722,7 @@ void CTNE2EulerVariable::SetdPdrhos(CConfig *config) {
 
 
 bool CTNE2EulerVariable::SetPrimVar_Compressible(CConfig *config) {
-	unsigned short iDim, iVar, iSpecies;
+	unsigned short iVar, iSpecies;
   bool check_dens, check_press, check_sos, check_temp;
   
   /*--- Initialize booleans that check for physical solutions ---*/
