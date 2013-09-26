@@ -27,6 +27,14 @@ inline void CVariable::SetVelocityInc2(void) { }
 
 inline void CVariable::SetPressureValue(double val_pressure) { }
 
+inline void CVariable::SetStress(unsigned short iVar, unsigned short jVar, double val_stress) { }
+  
+inline double **CVariable::GetStress(void) { return 0; }
+  
+inline void CVariable::SetVonMises_Stress(double val_stress) { }
+  
+inline double CVariable::GetVonMises_Stress(void) { return 0; }
+
 inline void CVariable::SetPressureInc(double val_pressure) { }
 
 inline double CVariable::GetBetaInc2(void) { return 0; }
@@ -754,6 +762,14 @@ inline void CLevelSetVariable::SetPrimVar(unsigned short val_var, double val_pri
 inline double CLevelSetVariable::GetPrimVar(unsigned short val_var) { return Primitive[val_var]; }
 
 inline void CFEAVariable::SetPressureValue(double val_pressure) { Pressure = val_pressure; }
+
+inline void CFEAVariable::SetStress(unsigned short iVar, unsigned short jVar, double val_stress) { Stress[iVar][jVar] = val_stress; }
+  
+inline double **CFEAVariable::GetStress(void) { return Stress; }
+  
+inline void CFEAVariable::SetVonMises_Stress(double val_stress) { VonMises_Stress = val_stress; }
+  
+inline double CFEAVariable::GetVonMises_Stress(void) { return VonMises_Stress; }
 
 inline void CWaveVariable::SetThickness_Noise(double val_thickness_noise) { Thickness_Noise = val_thickness_noise; }
 
