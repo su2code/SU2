@@ -3011,7 +3011,8 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
 		Monitoring = config->GetMarker_All_Monitoring(iMarker);
         
 		if (((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) ||
-             (Boundary == ISOTHERMAL)) && (Monitoring == YES))
+         (Boundary == ISOTHERMAL) || (Boundary == LOAD_BOUNDARY) ||
+         (Boundary == DISPLACEMENT_BOUNDARY)) && (Monitoring == YES))
 			for(iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
 				iPoint = vertex[iMarker][iVertex]->GetNode();
 				if (node[iPoint]->GetDomain()) {
@@ -3033,7 +3034,8 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
 		Monitoring = config->GetMarker_All_Monitoring(iMarker);
         
 		if (((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) ||
-             (Boundary == ISOTHERMAL)) && (Monitoring == YES))
+         (Boundary == ISOTHERMAL) || (Boundary == LOAD_BOUNDARY) ||
+         (Boundary == DISPLACEMENT_BOUNDARY) ) && (Monitoring == YES))
 			for(iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
 				iPoint = vertex[iMarker][iVertex]->GetNode();
 				if (node[iPoint]->GetDomain()) {

@@ -611,7 +611,7 @@ void WaveIteration(COutput *output, CIntegration ***integration_container, CGeom
         config_container[iZone]->SetIntIter(IntIter);
 				integration_container[iZone][WAVE_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
 						config_container, RUNTIME_WAVE_SYS, IntIter, iZone);
-				if (integration_container[iZone][WAVE_SOL]->GetConvergence()) {if (rank == MASTER_NODE) cout<<endl; break;}
+				if (integration_container[iZone][WAVE_SOL]->GetConvergence()) break;
 			}
 
 			/*--- Update dual time solver ---*/
@@ -644,6 +644,10 @@ void FEAIteration(COutput *output, CIntegration ***integration_container, CGeome
 
 	for (iZone = 0; iZone < nZone; iZone++) {
 
+    if (config_container[iZone]->GetGrid_Movement())
+      SetGrid_Movement(geometry_container[iZone], surface_movement[iZone],
+                       grid_movement[iZone], FFDBox[iZone], solver_container[iZone],config_container[iZone], iZone, ExtIter);
+    
 		/*--- Set the value of the internal iteration ---*/
 		IntIter = ExtIter;
 		if ((config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -666,7 +670,7 @@ void FEAIteration(COutput *output, CIntegration ***integration_container, CGeome
         config_container[iZone]->SetIntIter(IntIter);
 				integration_container[iZone][FEA_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
 						config_container, RUNTIME_FEA_SYS, IntIter, iZone);
-				if (integration_container[iZone][FEA_SOL]->GetConvergence()) {if (rank == MASTER_NODE) cout << endl; break;}
+				if (integration_container[iZone][FEA_SOL]->GetConvergence()) break;
 			}
 
 			/*--- Update dual time solver ---*/
@@ -932,7 +936,7 @@ void AdjAeroacousticIteration(COutput *output, CIntegration ***integration_conta
 			integration_container[ZONE_0][ADJFLOW_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
 					config_container, RUNTIME_ADJFLOW_SYS, IntIter, ZONE_0);
 
-			if (integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence()) {if (rank == MASTER_NODE) cout<<endl; break;}
+			if (integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence()) break;
 		}
 
 		/*--- Update dual time solver ---*/
@@ -1098,8 +1102,9 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
                       CVolumetricMovement *grid_movement, CFreeFormDefBox **FFDBox,
                       CSolver ***solver_container, CConfig *config_container, unsigned short iZone, unsigned long ExtIter)   {
   
-  unsigned short iMGlevel, nMGlevels = config_container->GetMGLevels();
+  unsigned short iDim, iMGlevel, nMGlevels = config_container->GetMGLevels();
 	unsigned short Kind_Grid_Movement = config_container->GetKind_GridMovement(iZone);
+  unsigned long iPoint;
   bool adjoint = config_container->GetAdjoint();
 	bool time_spectral = (config_container->GetUnsteady_Simulation() == TIME_SPECTRAL);
   
@@ -1328,6 +1333,28 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
           }
         }
       }
+      break;
+      
+    case ELASTICITY:
+      
+      if (ExtIter != 0) {
+        
+        if (rank == MASTER_NODE)
+          cout << " Deforming the grid using the Linear Elasticity solution." << endl;
+        
+        /*--- Update the coordinates of the grid using the linear elasticity solution. ---*/
+        for (iPoint = 0; iPoint < geometry_container[MESH_0]->GetnPoint(); iPoint++) {
+
+          double *U_time_nM1 = solver_container[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_time_n1();
+          double *U_time_n   = solver_container[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_time_n();
+
+          for(iDim = 0; iDim < geometry_container[MESH_0]->GetnDim(); iDim++)
+            geometry_container[MESH_0]->node[iPoint]->AddCoord(iDim, U_time_n[iDim] - U_time_nM1[iDim]);
+          
+        }
+        
+      }
+      
       break;
       
     case NONE: default:

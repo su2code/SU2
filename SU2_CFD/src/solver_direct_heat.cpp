@@ -273,7 +273,7 @@ void CHeatSolver::Galerkin_Method(CGeometry *geometry,
     
 	}
 	
-  /* Prepare solution vector for multiplication */
+  /*--- Prepare solution vector for multiplication ---*/
   
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
 		for (iVar = 0; iVar < nVar; iVar++) {
@@ -291,6 +291,7 @@ void CHeatSolver::Galerkin_Method(CGeometry *geometry,
 		}
 		LinSysRes.SubtractBlock(iPoint, Residual);
 	}
+  
 }
 
 
