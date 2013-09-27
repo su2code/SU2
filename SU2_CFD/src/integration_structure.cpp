@@ -119,13 +119,13 @@ void CIntegration::Space_Integration(CGeometry *geometry, CSolver **solver_conta
 				solver_container[MainSolver]->BC_Dielectric(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
 				break;
 			case DISPLACEMENT_BOUNDARY:
-				solver_container[MainSolver]->BC_Displacement(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+				solver_container[MainSolver]->BC_Normal_Displacement(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
 				break;
 			case FLOWLOAD_BOUNDARY:
-				solver_container[MainSolver]->BC_FlowLoad(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+				solver_container[MainSolver]->BC_Flow_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
 				break;
 			case LOAD_BOUNDARY:
-				solver_container[MainSolver]->BC_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+				solver_container[MainSolver]->BC_Normal_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
 				break;
 			case FWH_SURFACE:
 				solver_container[MainSolver]->BC_FWH(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);

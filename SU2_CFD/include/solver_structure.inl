@@ -74,6 +74,8 @@ inline double CSolver::GetPhi_Inf(unsigned short val_dim) { return 0; }
 
 inline double CSolver::GetPsiRho_Inf(void) { return 0; }
 
+inline double* CSolver::GetPsiRhos_Inf(void) { return NULL; }
+
 inline double CSolver::GetPsiE_Inf(void) { return 0; }
 
 inline void CSolver::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *config) { }
@@ -298,13 +300,13 @@ inline double* CSolver::GetConstants() {return NULL;}
 inline void CSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 									 unsigned short val_marker) { }
 									 
-inline void CSolver::BC_Displacement(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
+inline void CSolver::BC_Normal_Displacement(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 									 unsigned short val_marker) { }
 									 									 
-inline void CSolver::BC_FlowLoad(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
+inline void CSolver::BC_Flow_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 									 unsigned short val_marker) { }
 									 
-inline void CSolver::BC_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
+inline void CSolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 									 unsigned short val_marker) { }
                   
 inline void CSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
@@ -817,7 +819,7 @@ inline double CAdjTNE2EulerSolver::GetPhi_Inf(unsigned short val_dim) { return P
 
 inline double CAdjTNE2EulerSolver::GetPsiE_Inf(void) { return PsiE_Inf; }
 
-inline double CAdjTNE2EulerSolver::GetPsiRho_Inf(void) { return PsiRho_Inf; }
+inline double* CAdjTNE2EulerSolver::GetPsiRhos_Inf(void) { return PsiRho_Inf; }
 
 inline double CAdjTNE2EulerSolver::GetTotal_Sens_Geo() { return Total_Sens_Geo; }
 

@@ -454,6 +454,7 @@ private:
 	Flow_FileName,					/*!< \brief Flow variables output file. */
 	Farfield_FileName, 				/*!< \brief Data at farfield boundaries. */
 	Structure_FileName,					/*!< \brief Structure variables output file. */
+	SurfStructure_FileName,					/*!< \brief Surface structure variables output file. */
 	Wave_FileName,					/*!< \brief Wave variables output file. */
 	AdjWave_FileName,					/*!< \brief Adjoint wave variables output file. */
 	Residual_FileName,				/*!< \brief Residual variables output file. */
@@ -3448,6 +3449,12 @@ public:
 	 * \return Name of the file with the structure variables.
 	 */		
 	string GetStructure_FileName(void);
+  
+  /*!
+	 * \brief Get the name of the file with the structure variables.
+	 * \return Name of the file with the structure variables.
+	 */
+	string GetSurfStructure_FileName(void);
 
 	/*!
 	 * \brief Get the name of the file with the wave variables.

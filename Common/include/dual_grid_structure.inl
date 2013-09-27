@@ -34,6 +34,8 @@ inline double *CPoint::GetCoord(void) { return coord; }
 
 inline void CPoint::SetCoord(unsigned short val_dim, double val_coord) { coord[val_dim] = val_coord; }
 
+inline void CPoint::AddCoord(unsigned short val_dim, double val_coord) { coord[val_dim] += val_coord; }
+
 inline void CPoint::SetCoord(double *val_coord) { 
 	for (unsigned short iDim = 0; iDim < nDim; iDim++) 
 		coord[iDim]=val_coord[iDim]; 

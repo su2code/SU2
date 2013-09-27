@@ -212,9 +212,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    Format: (nacelle exhaust marker, total nozzle temp, total nozzle pressure, ... )*/
 	AddMarkerInlet("MARKER_NACELLE_EXHAUST", nMarker_NacelleExhaust, Marker_NacelleExhaust, Nozzle_Ttotal, Nozzle_Ptotal);
 	/* DESCRIPTION: Displacement boundary marker(s) */
-  AddMarkerDisplacement("MARKER_DISPL", nMarker_Displacement, Marker_Displacement, Displ_Value);
+  AddMarkerDisplacement("MARKER_NORMAL_DISPL", nMarker_Displacement, Marker_Displacement, Displ_Value);
 	/* DESCRIPTION: Load boundary marker(s) */
-	AddMarkerLoad("MARKER_LOAD", nMarker_Load, Marker_Load, Load_Value);
+	AddMarkerLoad("MARKER_NORMAL_LOAD", nMarker_Load, Marker_Load, Load_Value);
 	/* DESCRIPTION: Flow load boundary marker(s) */
 	AddMarkerFlowLoad("MARKER_FLOWLOAD", nMarker_FlowLoad, Marker_FlowLoad, FlowLoad_Value);
 	/* DESCRIPTION: FW-H boundary marker(s) */
@@ -281,6 +281,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddEnumOption("TIME_DISCRE_FLOW", Kind_TimeIntScheme_Flow, Time_Int_Map, "RUNGE-KUTTA_EXPLICIT");
   /* DESCRIPTION: Time discretization */
 	AddEnumOption("TIME_DISCRE_TNE2", Kind_TimeIntScheme_TNE2, Time_Int_Map, "EULER_IMPLICIT");
+  /* DESCRIPTION: Time discretization */
+	AddEnumOption("TIME_DISCRE_ADJTNE2", Kind_TimeIntScheme_AdjTNE2, Time_Int_Map, "EULER_IMPLICIT");
 	/* DESCRIPTION: Time discretization */
 	AddEnumOption("TIME_DISCRE_ADJLEVELSET", Kind_TimeIntScheme_AdjLevelSet, Time_Int_Map, "RUNGE-KUTTA_EXPLICIT");
 	/* DESCRIPTION: Time discretization */
@@ -550,6 +552,18 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	/* DESCRIPTION: Slope limiter */
 	AddEnumOption("SLOPE_LIMITER_TNE2", Kind_SlopeLimit_TNE2, Limiter_Map, "NONE");
   
+  /* DESCRIPTION: Convective numerical method */
+	AddConvectOption("CONV_NUM_METHOD_ADJTNE2", Kind_ConvNumScheme_AdjTNE2, Kind_Centered_AdjTNE2, Kind_Upwind_AdjTNE2);
+	/* DESCRIPTION: Viscous numerical method */
+	AddEnumOption("VISC_NUM_METHOD_ADJTNE2", Kind_ViscNumScheme_AdjTNE2, Viscous_Map, "NONE");
+	/* DESCRIPTION: Source term numerical method */
+	AddEnumOption("SOUR_NUM_METHOD_ADJTNE2", Kind_SourNumScheme_AdjTNE2, Source_Map, "NONE");
+	/* DESCRIPTION: Slope limiter */
+	AddEnumOption("SLOPE_LIMITER_ADJTNE2", Kind_SlopeLimit_AdjTNE2, Limiter_Map, "NONE");
+  default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
+	/* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
+	AddArrayOption("AD_COEFF_ADJTNE2", 3, Kappa_AdjTNE2, default_vec_3d);
+  
 	/* DESCRIPTION: Convective numerical method */
 	AddConvectOption("CONV_NUM_METHOD_PLASMA", Kind_ConvNumScheme_Plasma, Kind_Centered_Plasma, Kind_Upwind_Plasma);
 	/* DESCRIPTION: Viscous numerical method */
@@ -657,6 +671,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddScalarOption("VOLUME_FLOW_FILENAME", Flow_FileName, string("flow"));
 	/* DESCRIPTION: Output file structure (w/o extension) variables */
 	AddScalarOption("VOLUME_STRUCTURE_FILENAME", Structure_FileName, string("structure"));
+	/* DESCRIPTION: Output file structure (w/o extension) variables */
+	AddScalarOption("SURFACE_STRUCTURE_FILENAME", SurfStructure_FileName, string("surface_structure"));
 	/* DESCRIPTION: Output file wave (w/o extension) variables */
 	AddScalarOption("VOLUME_WAVE_FILENAME", Wave_FileName, string("wave"));
 	/* DESCRIPTION: Output file adj. wave (w/o extension) variables */
@@ -1017,6 +1033,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		if (Unsteady_Simulation != DT_STEPPING_2ND) Unsteady_Simulation = DT_STEPPING_1ST;
 	}
 
+  /*--- Set the number of external iterations to 1 for the steady state problem ---*/
+  if ((Unsteady_Simulation == STEADY) && (Kind_Solver == LINEAR_ELASTICITY)) nExtIter = 1;
+  
 	/*--- Decide whether we should be writing unsteady solution files. ---*/
 	if (Unsteady_Simulation == STEADY ||
 			Unsteady_Simulation == TIME_STEPPING ||
@@ -1673,7 +1692,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
              (Kind_Solver == RANS) ||
              (Kind_Solver == ADJ_RANS));
   
-  if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
+  if ((Kind_Solver == TNE2_EULER)             ||
+      (Kind_Solver == TNE2_NAVIER_STOKES)     ||
+      (Kind_Solver == ADJ_TNE2_EULER)         ||
+      (Kind_Solver == ADJ_TNE2_NAVIER_STOKES)   ) {
     
 		if (val_izone == ZONE_1 ) {
 			Divide_Element = true;
@@ -1786,7 +1808,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         
         // Reference temperature (JANAF values, [K])
         Ref_Temperature[0] = 0.0;
-        Ref_Temperature[1] = 298.15;
+        Ref_Temperature[1] = 0.0;
+//        Ref_Temperature[1] = 298.15;
         
         // Number of electron states
         nElStates[0] = 15;                    // N2
@@ -3505,7 +3528,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				break;
 			case ELECTRIC_POTENTIAL: cout << "Electric potential equation." << endl; break;
 			case WAVE_EQUATION: cout << "Wave equation." << endl; break;
-			case LINEAR_ELASTICITY: cout << "Finite Element Analysis." << endl; break;
+			case LINEAR_ELASTICITY: cout << "Linear elasticity solver." << endl; break;
 			case FLUID_STRUCTURE_EULER: case FLUID_STRUCTURE_NAVIER_STOKES: cout << "Fluid-structure interaction." << endl; break;
 			case ADJ_EULER: cout << "Continuous Euler adjoint equations." << endl; break;
 			case ADJ_NAVIER_STOKES:
@@ -3529,7 +3552,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         
 		}
 
-		if (Kind_Regime == COMPRESSIBLE) {
+		if ((Kind_Regime == COMPRESSIBLE) && (Kind_Solver != LINEAR_ELASTICITY)) {
 			cout << "Mach number: " << Mach <<"."<< endl;
 			cout << "Angle of attack (AoA): " << AoA <<" deg, and angle of sideslip (AoS): " << AoS <<" deg."<< endl;
 			if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == ADJ_NAVIER_STOKES) ||
@@ -3974,6 +3997,35 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			}
 		}
     
+    if (Kind_Solver == ADJ_TNE2_EULER || Kind_Solver == ADJ_TNE2_NAVIER_STOKES) {
+      if ((Kind_ConvNumScheme_AdjTNE2 == SPACE_CENTERED) && (Kind_Centered_AdjTNE2 == JST)) {
+				cout << "Jameson-Schmidt-Turkel scheme for the adjoint inviscid terms."<< endl;
+				cout << "JST viscous coefficients (1st, 2nd, & 4th): " << Kappa_1st_AdjTNE2
+        << ", " << Kappa_2nd_AdjTNE2 << ", " << Kappa_4th_AdjTNE2 <<"."<< endl;
+				cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
+        cout << "The reference sharp edge distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
+			}
+			if ((Kind_ConvNumScheme_AdjTNE2 == SPACE_CENTERED) && (Kind_Centered_AdjTNE2 == LAX))
+				cout << "Lax-Friedrich scheme for the adjoint inviscid terms."<< endl;
+			if ((Kind_ConvNumScheme_AdjTNE2 == SPACE_UPWIND) && (Kind_Upwind_AdjTNE2 == ROE_1ST))
+				cout << "1st order Roe solver for the adjoint inviscid terms."<< endl;
+			if ((Kind_ConvNumScheme_AdjTNE2 == SPACE_UPWIND) && (Kind_Upwind_AdjTNE2 == ROE_2ND)) {
+				cout << "2nd order Roe solver for the adjoint inviscid terms."<< endl;
+				switch (Kind_SlopeLimit_AdjTNE2) {
+          case NONE: cout << "Without slope-limiting method." << endl; break;
+          case VENKATAKRISHNAN:
+            cout << "Venkatakrishnan slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+            cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+            break;
+          case SHARP_EDGES:
+            cout << "Sharp edges slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+            cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+            cout << "The reference sharp edge distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
+            break;
+				}
+			}
+    }
+    
     if (Kind_Solver == TNE2_NAVIER_STOKES) {
 			switch (Kind_ViscNumScheme_TNE2) {
         case AVG_GRAD: cout << "Average of gradients (viscous flow terms)." << endl; break;
@@ -4182,6 +4234,22 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			case EULER_EXPLICIT: cout << "Euler explicit method for the linearized equations." << endl; break;
 			}
 		}
+    
+    if ((Kind_Solver == ADJ_TNE2_EULER) || (Kind_Solver == ADJ_TNE2_NAVIER_STOKES)) {
+			switch (Kind_TimeIntScheme_AdjTNE2) {
+        case RUNGE_KUTTA_EXPLICIT:
+          cout << "Runge-Kutta explicit method for the adjoint equations." << endl;
+          cout << "Number of steps: " << nRKStep << endl;
+          cout << "Alpha coefficients: ";
+          for (unsigned short iRKStep = 0; iRKStep < nRKStep; iRKStep++) {
+            cout << "\t" << RK_Alpha_Step[iRKStep];
+          }
+          cout << endl;
+          break;
+        case EULER_EXPLICIT: cout << "Euler explicit method for the adjoint equations." << endl; break;
+        case EULER_IMPLICIT: cout << "Euler implicit method for the adjoint equations." << endl; break;
+			}
+		}
 
 		if (FullMG) {
 			cout << "Full Multigrid." << endl;
@@ -4198,50 +4266,55 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			cout << "Damping factor for the residual restriction: " << Damp_Res_Restric <<"."<<endl;
 			cout << "Damping factor for the correction prolongation: " << Damp_Correc_Prolong <<"."<<endl;
 		}
-		if (CFLRamp[0] == 1.0) cout << "No CFL ramp." << endl;
-		else cout << "CFL ramp definition. factor: "<< CFLRamp[0] <<", every "<< int(CFLRamp[1]) <<" iterations, with a limit of "<< CFLRamp[2] <<"." << endl;
-
-		if (nMultiLevel !=0) {
-			cout << "Multigrid Level:                  ";
-			for (unsigned short iLevel = 0; iLevel < nMultiLevel+1; iLevel++) {
-				cout.width(6); cout << iLevel;
-			}
-			cout << endl;
-		}
-
-		cout << "Courant-Friedrichs-Lewy number:   ";
-		cout.precision(3);
-		for (unsigned short iCFL = 0; iCFL < nMultiLevel+1; iCFL++) {
-			cout.width(6); cout << CFL[iCFL];
-		}
-		cout << endl;
-
-		if (nMultiLevel !=0) {
-			cout.precision(3);
-			cout << "MG PreSmooth coefficients:        ";
-			for (unsigned short iMG_PreSmooth = 0; iMG_PreSmooth < nMultiLevel+1; iMG_PreSmooth++) {
-				cout.width(6); cout << MG_PreSmooth[iMG_PreSmooth];
-			}
-			cout << endl;
-		}
-
-		if (nMultiLevel !=0) {
-			cout.precision(3);
-			cout << "MG PostSmooth coefficients:       ";
-			for (unsigned short iMG_PostSmooth = 0; iMG_PostSmooth < nMultiLevel+1; iMG_PostSmooth++) {
-				cout.width(6); cout << MG_PostSmooth[iMG_PostSmooth];
-			}
-			cout << endl;
-		}
-
-		if (nMultiLevel !=0) {
-			cout.precision(3);
-			cout << "MG CorrecSmooth coefficients:     ";
-			for (unsigned short iMG_CorrecSmooth = 0; iMG_CorrecSmooth < nMultiLevel+1; iMG_CorrecSmooth++) {
-				cout.width(6); cout << MG_CorrecSmooth[iMG_CorrecSmooth];
-			}
-			cout << endl;
-		}
+    
+    if (Kind_Solver != LINEAR_ELASTICITY) {
+      
+      if (CFLRamp[0] == 1.0) cout << "No CFL ramp." << endl;
+      else cout << "CFL ramp definition. factor: "<< CFLRamp[0] <<", every "<< int(CFLRamp[1]) <<" iterations, with a limit of "<< CFLRamp[2] <<"." << endl;
+      
+      if (nMultiLevel !=0) {
+        cout << "Multigrid Level:                  ";
+        for (unsigned short iLevel = 0; iLevel < nMultiLevel+1; iLevel++) {
+          cout.width(6); cout << iLevel;
+        }
+        cout << endl;
+      }
+      
+      cout << "Courant-Friedrichs-Lewy number:   ";
+      cout.precision(3);
+      for (unsigned short iCFL = 0; iCFL < nMultiLevel+1; iCFL++) {
+        cout.width(6); cout << CFL[iCFL];
+      }
+      cout << endl;
+      
+      if (nMultiLevel !=0) {
+        cout.precision(3);
+        cout << "MG PreSmooth coefficients:        ";
+        for (unsigned short iMG_PreSmooth = 0; iMG_PreSmooth < nMultiLevel+1; iMG_PreSmooth++) {
+          cout.width(6); cout << MG_PreSmooth[iMG_PreSmooth];
+        }
+        cout << endl;
+      }
+      
+      if (nMultiLevel !=0) {
+        cout.precision(3);
+        cout << "MG PostSmooth coefficients:       ";
+        for (unsigned short iMG_PostSmooth = 0; iMG_PostSmooth < nMultiLevel+1; iMG_PostSmooth++) {
+          cout.width(6); cout << MG_PostSmooth[iMG_PostSmooth];
+        }
+        cout << endl;
+      }
+      
+      if (nMultiLevel !=0) {
+        cout.precision(3);
+        cout << "MG CorrecSmooth coefficients:     ";
+        for (unsigned short iMG_CorrecSmooth = 0; iMG_CorrecSmooth < nMultiLevel+1; iMG_CorrecSmooth++) {
+          cout.width(6); cout << MG_CorrecSmooth[iMG_CorrecSmooth];
+        }
+        cout << endl;
+      }
+      
+    }
 
 		if (Kind_Solver == RANS)
 			if (Kind_TimeIntScheme_Turb == EULER_IMPLICIT)
@@ -4364,25 +4437,33 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 		cout << "Convergence history file name: " << Conv_FileName << "." << endl;
 
-		if (!Linearized && !Adjoint) {
-			cout << "Surface flow coefficients file name: " << SurfFlowCoeff_FileName << "." << endl;
-			cout << "Flow variables file name: " << Flow_FileName << "." << endl;
-			cout << "Restart flow file name: " << Restart_FlowFileName << "." << endl;
-		}
-
-		if (Linearized) {
-			cout << "Linearized flow solution file name: " << Solution_LinFileName << "." << endl;
-			cout << "Restart linearized flow file name: " << Restart_LinFileName << "." << endl;
-			cout << "Linearized variables file name: " << Lin_FileName << "." << endl;
-			cout << "Surface linearized coefficients file name: " << SurfLinCoeff_FileName << "." << endl;
-		}
-
-		if (Adjoint || OneShot) {
-			cout << "Adjoint solution file name: " << Solution_AdjFileName << "." << endl;
-			cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
-			cout << "Adjoint variables file name: " << Adj_FileName << "." << endl;
-			cout << "Surface adjoint coefficients file name: " << SurfAdjCoeff_FileName << "." << endl;
-		}
+    if (Kind_Solver != LINEAR_ELASTICITY) {
+      if (!Linearized && !Adjoint) {
+        cout << "Surface flow coefficients file name: " << SurfFlowCoeff_FileName << "." << endl;
+        cout << "Flow variables file name: " << Flow_FileName << "." << endl;
+        cout << "Restart flow file name: " << Restart_FlowFileName << "." << endl;
+      }
+      
+      if (Linearized) {
+        cout << "Linearized flow solution file name: " << Solution_LinFileName << "." << endl;
+        cout << "Restart linearized flow file name: " << Restart_LinFileName << "." << endl;
+        cout << "Linearized variables file name: " << Lin_FileName << "." << endl;
+        cout << "Surface linearized coefficients file name: " << SurfLinCoeff_FileName << "." << endl;
+      }
+      
+      if (Adjoint || OneShot) {
+        cout << "Adjoint solution file name: " << Solution_AdjFileName << "." << endl;
+        cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
+        cout << "Adjoint variables file name: " << Adj_FileName << "." << endl;
+        cout << "Surface adjoint coefficients file name: " << SurfAdjCoeff_FileName << "." << endl;
+      }
+    }
+    else {
+      cout << "Surface structure coefficients file name: " << SurfStructure_FileName << "." << endl;
+      cout << "Structure variables file name: " << Structure_FileName << "." << endl;
+      cout << "Restart structure file name: " << Restart_FlowFileName << "." << endl;
+    }
+    
 	}
 
 	if (val_software == SU2_SOL) {
@@ -5285,6 +5366,12 @@ void CConfig::SetFileNameDomain(unsigned short val_domain) {
 		SurfAdjCoeff_FileName = old_name + buffer;
 	}
 
+  old_name = SurfStructure_FileName;
+	if (MPI::COMM_WORLD.Get_size() > 1) {
+		sprintf (buffer, "_%d", int(val_domain));
+		SurfStructure_FileName = old_name + buffer;
+	}
+  
 	if (MPI::COMM_WORLD.Get_size() > 1) {
 
 		/*--- Standard flow and adjoint output ---*/
@@ -5388,6 +5475,7 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
 	case RUNTIME_PLASMA_SYS: return PLASMA_SOL;
 	case RUNTIME_FLOW_SYS: return FLOW_SOL;
 	case RUNTIME_TURB_SYS: return TURB_SOL;
+  case RUNTIME_TNE2_SYS: return TNE2_SOL;
 	case RUNTIME_TRANS_SYS: return TRANS_SOL;
 	case RUNTIME_ELEC_SYS: return ELEC_SOL;
 	case RUNTIME_WAVE_SYS: return WAVE_SOL;
@@ -5395,6 +5483,7 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
 	case RUNTIME_ADJPOT_SYS: return ADJFLOW_SOL;
 	case RUNTIME_ADJFLOW_SYS: return ADJFLOW_SOL;
 	case RUNTIME_ADJTURB_SYS: return ADJTURB_SOL;
+  case RUNTIME_ADJTNE2_SYS: return ADJTNE2_SOL;
 	case RUNTIME_ADJPLASMA_SYS: return ADJPLASMA_SOL;
 	case RUNTIME_LINPOT_SYS: return LINFLOW_SOL;
 	case RUNTIME_LINFLOW_SYS: return LINFLOW_SOL;
@@ -6007,6 +6096,7 @@ double CConfig::GetFlowLoad_Value(string val_marker) {
 }
 
 void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short val_iZone) {
+  
 	double Mach2Vel_FreeStream, ModVel_FreeStream, Energy_FreeStream = 0.0, ModVel_FreeStreamND;
 	double Velocity_Reynolds;
 	unsigned short iDim;
@@ -6263,7 +6353,7 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 	double omega_Inf = Density_FreeStreamND*kine_Inf/(Viscosity_FreeStreamND*Turb2LamViscRatio_FreeStream);
   
 	/*--- Write output to the console if this is the master node and first domain ---*/
-	if ((rank == MASTER_NODE) && (val_iZone == 0)) {
+	if ((rank == MASTER_NODE) && (val_iZone == 0) && (Kind_Solver != LINEAR_ELASTICITY)) {
     
 		cout << endl <<"---------------- Flow & Non-dimensionalization information ---------------" << endl;
     

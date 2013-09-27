@@ -59,21 +59,6 @@ void CGalerkin_FEA::ComputeResidual(double **val_stiffmatrix_elem, CConfig *conf
 		c[1] = 0.5 * (Coord_0[0]-Coord_2[0]) / Area;
 		c[2] = 0.5 * (Coord_1[0]-Coord_0[0]) / Area;
     
-		/*		 cout << a[0]+b[0]*Coord_0[0]+c[0]*Coord_0[1] << endl;
-		 cout << a[0]+b[0]*Coord_1[0]+c[0]*Coord_1[1] << endl;
-		 cout << a[0]+b[0]*Coord_2[0]+c[0]*Coord_2[1] << endl;
-     
-		 cout << a[1]+b[1]*Coord_0[0]+c[1]*Coord_0[1] << endl;
-		 cout << a[1]+b[1]*Coord_1[0]+c[1]*Coord_1[1] << endl;
-		 cout << a[1]+b[1]*Coord_2[0]+c[1]*Coord_2[1] << endl;
-     
-		 cout << a[2]+b[2]*Coord_0[0]+c[2]*Coord_0[1]+d[2] << endl;
-		 cout << a[2]+b[2]*Coord_1[0]+c[2]*Coord_1[1]+d[2] << endl;
-		 cout << a[2]+b[2]*Coord_2[0]+c[2]*Coord_2[1]+d[2] << endl;
-     
-		 cin.get();
-		 */
-    
 		/*--- Compute the B Matrix ---*/
 		B_Matrix[0][0] = b[0];	B_Matrix[0][1] = 0.0;		B_Matrix[0][2] = b[1];	B_Matrix[0][3] = 0.0;		B_Matrix[0][4] = b[2];	B_Matrix[0][5] = 0.0;
 		B_Matrix[1][0] = 0.0;		B_Matrix[1][1] = c[0];	B_Matrix[1][2] = 0.0;		B_Matrix[1][3] = c[1];	B_Matrix[1][4] = 0.0;		B_Matrix[1][5] = c[2];

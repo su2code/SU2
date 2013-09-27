@@ -2,7 +2,7 @@
  * \file solution_direct_tne2.cpp
  * \brief Main subrotuines for solving flows in thermochemical nonequilibrium.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.6
+ * \version 2.0.7
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -22,7 +22,7 @@
  */
 
 #include "../include/solver_structure.hpp"
-
+#include <math.h>
 
 CTNE2EulerSolver::CTNE2EulerSolver(void) : CSolver() {
   
@@ -56,8 +56,8 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
 	unsigned long iPoint, index, counter_local = 0, counter_global = 0;
 	unsigned short iVar, iDim, iMarker, iSpecies, nZone;
   double *Mvec_Inf;
-  double Alpha, Beta;
-	bool restart, check_temp, check_press;	
+  double Alpha, Beta, dull_val;
+	bool restart, check_infty, check_temp, check_press;
   
   /*--- Get MPI rank ---*/
 	int rank = MASTER_NODE;
@@ -231,11 +231,11 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
                                       Mvec_Inf, Temperature_Inf,
                                       Temperature_ve_Inf, nDim, nVar,
                                       nPrimVar, nPrimVarGrad, config);
-  node_infty->SetPrimVar_Compressible(config);
+  check_infty = node_infty->SetPrimVar_Compressible(config);
   
   Velocity_Inf = new double[nDim];
   for (iDim = 0; iDim < nDim; iDim++)
-    Velocity_Inf[iDim] = node_infty->GetVelocity(iDim, false);  
+    Velocity_Inf[iDim] = node_infty->GetVelocity(iDim);
   
 	/*--- Check for a restart and set up the variables at each node
    appropriately. Coarse multigrid levels will be intitially set to
@@ -314,9 +314,14 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
        will be returned and used to instantiate the vars. ---*/
 			iPoint_Local = Global2Local[iPoint_Global];
 			if (iPoint_Local >= 0) {
-        point_line >> index;
-        for (iVar = 0; iVar < nVar; iVar++)
+/*        point_line >> index;
+        for (iDim = 0; iDim < nDim; iDim++)
+          point_line >> dull_val;
+        for (iVar = 0; iVar < nVar; iVar++) {
           point_line >> Solution[iVar];
+        }*/
+        
+        point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4] >> Solution[5] >> Solution[6];
         
 				node[iPoint_Local] = new CTNE2EulerVariable(Solution, nDim, nVar, nPrimVar,
                                                     nPrimVarGrad, config);
@@ -327,7 +332,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
 		/*--- Instantiate the variable class with an arbitrary solution
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
-    Solution = node_infty->GetSolution();
+    //Solution = node_infty->GetSolution();
 		for(iPoint = nPointDomain; iPoint < nPoint; iPoint++)
       node[iPoint] = new CTNE2EulerVariable(Pressure_Inf, MassFrac_Inf,
                                             Mvec_Inf, Temperature_Inf,
@@ -347,6 +352,9 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
   counter_local = 0;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
  
+//    check_node = node[iPoint]->SetPrimVar_Compressible(config);
+    
+    
     node[iPoint]->SetDensity();
     node[iPoint]->SetVelocity2();
     check_temp = node[iPoint]->SetTemperature(config);
@@ -603,9 +611,17 @@ void CTNE2EulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
          ordering is rotation about the x-axis, y-axis,
          then z-axis. Note that this is the transpose of the matrix
          used during the preprocessing stage. ---*/
-        rotMatrix[0][0] = cosPhi*cosPsi;    rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;     rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-        rotMatrix[0][1] = cosPhi*sinPsi;    rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;     rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-        rotMatrix[0][2] = -sinPhi;          rotMatrix[1][2] = sinTheta*cosPhi;                              rotMatrix[2][2] = cosTheta*cosPhi;
+        rotMatrix[0][0] = cosPhi*cosPsi;
+        rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
+        rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+        
+        rotMatrix[0][1] = cosPhi*sinPsi;
+        rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
+        rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+        
+        rotMatrix[0][2] = -sinPhi;
+        rotMatrix[1][2] = sinTheta*cosPhi;
+        rotMatrix[2][2] = cosTheta*cosPhi;
         
         /*--- Copy conserved variables before performing transformation. ---*/
         for (iVar = 0; iVar < nVar; iVar++)
@@ -613,9 +629,9 @@ void CTNE2EulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
         
         /*--- Rotate the momentum components. ---*/
         if (nDim == 2) {
-          Solution[nSpecies]   = rotMatrix[0][0]*Buffer_Receive_U[nSpecies*nVertexR+iVertex]
+          Solution[nSpecies]   = rotMatrix[0][0]*Buffer_Receive_U[(nSpecies)*nVertexR+iVertex]
                                + rotMatrix[0][1]*Buffer_Receive_U[(nSpecies+1)*nVertexR+iVertex];
-          Solution[nSpecies+1] = rotMatrix[1][0]*Buffer_Receive_U[nSpecies*nVertexR+iVertex]
+          Solution[nSpecies+1] = rotMatrix[1][0]*Buffer_Receive_U[(nSpecies)*nVertexR+iVertex]
                                + rotMatrix[1][1]*Buffer_Receive_U[(nSpecies+1)*nVertexR+iVertex];
         }
         else {
@@ -1581,7 +1597,6 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry,
   unsigned long iPoint, ErrorCounter = 0;
 	bool implicit   = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   bool center     = (config->GetKind_ConvNumScheme_TNE2() == SPACE_CENTERED);
-  bool center_jst = center && (config->GetKind_Centered_Flow() == JST);
 	bool upwind_2nd = ((config->GetKind_Upwind_TNE2() == ROE_2ND)  ||
                      (config->GetKind_Upwind_TNE2() == AUSM_2ND) ||
                      (config->GetKind_Upwind_TNE2() == HLLC_2ND) ||
@@ -1611,6 +1626,10 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry,
 		if ((limiter) && (iMesh == MESH_0)) SetSolution_Limiter(geometry, config);
 	}
   
+  /*--- Artificial dissipation ---*/
+  if (center)
+    SetMax_Eigenvalue(geometry, config);
+  
 	/*--- Initialize the jacobian matrices ---*/
 	if (implicit) Jacobian.SetValZero();
   
@@ -1627,11 +1646,9 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry,
 void CTNE2EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_container, CConfig *config,
                                       unsigned short iMesh, unsigned long Iteration) {
 	double *Normal, Area, Vol, Mean_SoundSpeed, Mean_ProjVel, Lambda, Local_Delta_Time,
-	Global_Delta_Time = 1E6, Global_Delta_UnstTimeND;
+	Global_Delta_Time = 1E6;
 	unsigned long iEdge, iVertex, iPoint, jPoint;
 	unsigned short iDim, iMarker;
-  
-	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   
 	Min_Delta_Time = 1.E6; Max_Delta_Time = 0.0;
   
@@ -1712,6 +1729,68 @@ void CTNE2EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_cont
 			node[iPoint]->SetDelta_Time(Global_Delta_Time);
 	}
 }
+
+
+void CTNE2EulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
+  
+	double *Normal, Area, Mean_SoundSpeed, Mean_ProjVel, Lambda;
+	unsigned long iEdge, iVertex, iPoint, jPoint;
+	unsigned short iDim, iMarker;
+  
+	Min_Delta_Time = 1.E6; Max_Delta_Time = 0.0;
+  
+	/*--- Set maximum inviscid eigenvalue to zero, and compute sound speed ---*/
+	for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+		node[iPoint]->SetLambda(0.0);
+  
+	/*--- Loop interior edges ---*/
+	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+    
+		/*--- Point identification, Normal vector and area ---*/
+		iPoint = geometry->edge[iEdge]->GetNode(0);
+		jPoint = geometry->edge[iEdge]->GetNode(1);
+    
+		Normal = geometry->edge[iEdge]->GetNormal();
+		Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+    
+		/*--- Mean Values ---*/
+    Mean_ProjVel = 0.5 * (node[iPoint]->GetProjVel(Normal) + node[jPoint]->GetProjVel(Normal));
+    Mean_SoundSpeed = 0.5 * (node[iPoint]->GetSoundSpeed() + node[jPoint]->GetSoundSpeed()) * Area;
+    
+		/*--- Inviscid contribution ---*/
+		Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
+		if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddLambda(Lambda);
+		if (geometry->node[jPoint]->GetDomain()) node[jPoint]->AddLambda(Lambda);
+    
+	}
+  
+	/*--- Loop boundary edges ---*/
+	for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+		for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+      
+			/*--- Point identification, Normal vector and area ---*/
+			iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+			Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+			Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+      
+			/*--- Mean Values ---*/
+      Mean_ProjVel = node[iPoint]->GetProjVel(Normal);
+      Mean_SoundSpeed = node[iPoint]->GetSoundSpeed() * Area;
+      
+			/*--- Inviscid contribution ---*/
+			Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
+			if (geometry->node[iPoint]->GetDomain()) {
+				node[iPoint]->AddLambda(Lambda);
+			}
+		}
+	}
+  
+  /*--- Call the MPI routine ---*/
+  Set_MPI_MaxEigenvalue(geometry, config);
+
+}
+
+
 
 void CTNE2EulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                          CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
@@ -1805,7 +1884,8 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
 	for(iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
 		/*--- Retrieve node numbers and pass edge normal to CNumerics ---*/
-		iPoint = geometry->edge[iEdge]->GetNode(0); jPoint = geometry->edge[iEdge]->GetNode(1);
+		iPoint = geometry->edge[iEdge]->GetNode(0);
+    jPoint = geometry->edge[iEdge]->GetNode(1);
 		numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
     
     /*--- Pass conserved and primitive variables from CVariable to CNumerics class ---*/
@@ -1817,161 +1897,18 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
     /*--- Pass supplementary information to CNumerics ---*/
     numerics->SetdPdrhos(node[iPoint]->GetdPdrhos(), node[jPoint]->GetdPdrhos());
     
-		/*--- Compute the residual ---*/
-/*    if (iPoint == 17) {
-      cout << "Test!" << endl;
-    }*/
-		numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
-
+    /*--- Compute the upwind residual ---*/
+		numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);    
     
-    /////////// TEST UPWIND ///////////
-/*    unsigned short iSpecies, iDim;
-    double *density, *velocity, h, e_ve, a;
-    density = new double[nSpecies];
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-      density[iSpecies] = V_i[iSpecies];
-    }
-    for (iDim = 0; iDim < nDim; iDim++) {
-      velocity[iDim] = V_i[nSpecies+2+iDim];
-    }
-    h = V_i[nSpecies+nDim+4];
-    e_ve = U_i[nSpecies+nDim+1]/V_i[nSpecies+nDim+3];
-    a    = V_i[nSpecies+nDim+5];
-    
-    numerics->GetPMatrix(density, velocity, h, e_ve, a, node[iPoint]->GetdPdrhos(), dPdrhoE, dPdrhoEve, normal, l, m, p-tensor)*/
-    
-    /////////// TEST JACOBIAN ///////////
-/*    if (iPoint == 17) {
-      unsigned short iVar, jVar;
-      double delta;
-      double **FDJac, *Res_orig;
-      
-      Res_orig = new double[nVar];
-      FDJac = new double*[nVar];
-      for (iVar =0; iVar < nVar; iVar++) {
-        FDJac[iVar] = new double[nVar];
-        Res_orig[iVar] = Res_Conv[iVar];
-      }
-      
-      cout << "Analytic Jacobian: " << endl;
-      for (iVar =0; iVar < nVar; iVar++) {
-        for (jVar = 0; jVar < nVar; jVar++) {
-          cout << Jacobian_i[iVar][jVar] << "\t";
-        }
-        cout << endl;
-      }
-      
-      // Perturb
-      for (iVar =0; iVar < nVar; iVar++) {
-        delta = 1E-8*U_i[iVar];
-        if (delta == 0.0) delta = 1E-4;
-        U_i[iVar] += delta;
-        
-        // Re-calculate primitive quantities & pass to CNumerics
-        node[iPoint]->SetSolution(U_i);
-        node[iPoint]->SetPrimVar_Compressible(config);
-        U_i = node[iPoint]->GetSolution();
-        U_j = node[jPoint]->GetSolution();
-        V_i = node[iPoint]->GetPrimVar();
-        V_j = node[jPoint]->GetPrimVar();
-        numerics->SetPrimitive(V_i, V_j);
-        numerics->SetConservative(U_i, U_j);
-        numerics->SetdPdrhos(node[iPoint]->GetdPdrhos(), node[jPoint]->GetdPdrhos());
-        
-        // Compute residual
-        numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
-        for (jVar = 0; jVar < nVar; jVar++) {
-          FDJac[jVar][iVar] = (Res_Conv[jVar] - Res_orig[jVar])/delta;
-        }
-        
-        // Reset U_i
-        U_i[iVar] -= delta;
-        node[iPoint]->SetSolution(U_i);
-        node[iPoint]->SetPrimVar_Compressible(config);
-      }
-      
-      cout << endl << endl << "FD Jacobian: " << endl;
-      for (iVar =0; iVar < nVar; iVar++) {
-        for (jVar = 0; jVar < nVar; jVar++) {
-          cout << FDJac[iVar][jVar] << "\t";
-        }
-        cout << endl;
-      }
-      
-      cin.get();
-      // Deallocate
-      for (iVar = 0; iVar < nVar; iVar++)
-        delete [] FDJac[iVar];
-      delete[] FDJac;
-      delete[] Res_orig;
-    }*/
- 
-    /////////// TEST JACOBIAN ///////////
-    
-    
-    /////////// TEST DERIVATIVES OF SOUNDSPEED!!! ///////////
-
-/*      unsigned short iVar, iSpecies;
-      double delta, FD;
-      double *Ms, *xi, conc, Ru;
-      double rho     = V_i[nSpecies+nDim+3];
-      double rhoCvtr = V_i[nSpecies+nDim+6];
-      double rhoCvve = V_i[nSpecies+nDim+7];
-      double u = V_i[nSpecies+2];
-      double v = V_i[nSpecies+3];
-      double w = V_i[nSpecies+4];
-      double P = V_i[nSpecies+nDim+2];
-      double *dPdrhos, dPdrhoE, dPdrhoEve;
-      double a, a_new;
-      
-      Ru = UNIVERSAL_GAS_CONSTANT;
-      Ms = config->GetMolar_Mass();
-      xi = config->GetRotationModes();
-      conc = 0.0;
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-        conc += V_i[iSpecies]/Ms[iSpecies];
-      dPdrhoE = Ru/rhoCvtr * conc;
-      dPdrhoEve = -dPdrhoE;
-      dPdrhos = node[iPoint]->GetdPdrhos();
-      
-      a = V_i[nSpecies+nDim+5];
-      
-      // Perturb
-      iVar = 0;
-      delta = 1E-7*U_i[iVar];
-      U_i[iVar] += delta;
-      
-      // Re-calculate primitive quantities
-      node[iPoint]->SetSolution(U_i);
-      node[iPoint]->SetPrimVar_Compressible(config);
-      
-      a_new = node[iPoint]->GetPrimVar()[nSpecies+nDim+5];
-      
-      // Finite-difference
-      FD = (a_new - a) / delta;
-      
-      // analytic
-      double dadrhos, dadrhou, dadrhov, dadrhow, dadrhoE, dadrhoEve;
-      dadrhos = 1.0/(2.0*a) * (1/rhoCvtr*(Ru/Ms[0] - (3.0/2.0+xi[0]/2.0)*Ru/Ms[0]*dPdrhoE)*P/rho + 1.0/rho*(1.0+dPdrhoE)*(dPdrhos[0] - P/rho));
-      dadrhos = 1.0/(2.0*a*rho) * (1+dPdrhoE)*(dPdrhos[0] - P/rho);
-      
-      dadrhou = -1.0/(2.0*rho*a) * ((1.0+dPdrhoE)*dPdrhoE)*u;
-      dadrhov = -1.0/(2.0*rho*a) * ((1.0+dPdrhoE)*dPdrhoE)*v;
-      dadrhow = -1.0/(2.0*rho*a) * ((1.0+dPdrhoE)*dPdrhoE)*w;
-      dadrhoE = 1.0/(2.0*rho*a) * ((1.0+dPdrhoE)*dPdrhoE);
-      dadrhoEve = 1.0/(2.0*rho*a) * ((1.0+dPdrhoE)*dPdrhoEve);
-      // Reset U
-      U_i[iVar] -= delta;
-      
-      cout << "TNE2Solver Upwind Residual:" << endl;
-      cout << "FD a: " << FD << endl;
-      cout << "Analytic dadrhos: " << dadrhos << endl;
-      cin.get();*/
-    /////////// TEST DERIVATIVES OF SOUNDSPEED!!! ///////////
-    
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      if (isnan(Res_Conv[iVar]))
-        cout << "Convective Residual iVar NaN: " << iVar << endl;
+//    unsigned short iVar, jVar;
+//    cout << endl << endl << "Upw Jacobian: " << endl;
+//    for (iVar =0; iVar < nVar; iVar++) {
+//      for (jVar = 0; jVar < nVar; jVar++) {
+//        cout << Jacobian_i[iVar][jVar] << "\t";
+//      }
+//      cout << endl;
+//    }
+//    cin.get();
 		
     /*--- Update the residual values ---*/
 		LinSysRes.AddBlock(iPoint, Res_Conv);
@@ -2036,95 +1973,18 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
     
     /*--- Set volume of the dual grid cell ---*/
     numerics->SetVolume(geometry->node[iPoint]->GetVolume());
-    
+
+    /*--- Compute the non-equilibrium chemistry ---*/
     numerics->ComputeChemistry(Residual, Jacobian_i, config);
-//    numerics->ComputeChemistry(Residual, Jacobian_j, config);
-    
-/*    if (iPoint == 3) {
-      cout << "Residual: " << endl;
-      for (iVar = 0; iVar < nVar; iVar++) {
-        cout << Residual[iVar] << endl;
-      }
-            
-      cout << "Analytic Jacobian: " << endl;
-      for (iVar = 0; iVar < nVar; iVar++) {
-        for (jVar = 0; jVar < nVar; jVar++) {
-          cout << Jacobian_i[iVar][jVar] << "\t";
-        }
-        cout << endl;
-      }
-      cin.get();
-      
-      /////////// TEST JACOBIAN ///////////
-      U_i = node[iPoint]->GetSolution();
-      V_i = node[iPoint]->GetPrimVar();
-      
-      cout << "U: " << V_i[nSpecies+2] << ", " << V_i[nSpecies+3] << ", " << V_i[nSpecies+4] << endl;
-      
-      for (iVar = 0; iVar < nVar; iVar++)
-        for (jVar = 0; jVar < nVar; jVar++)
-          FDJac[iVar][jVar] = 0.0;
-      
-      // Perturb
-      for (iVar =0; iVar < nVar; iVar++) {
-        delta = 1E-2*U_i[iVar];
-        if (delta == 0.0) delta = 1E-8;
-        U_i[iVar] += delta;
-        
-        for (jVar = 0; jVar < nVar; jVar++)
-          Res_new[jVar] = 0.0;
-        
-        // Re-calculate primitive quantities & pass to CNumerics
-        node[iPoint]->SetSolution(U_i);
-        node[iPoint]->SetPrimVar_Compressible(config);
-        U_i = node[iPoint]->GetSolution();
-        V_i = node[iPoint]->GetPrimVar();
-        numerics->SetPrimitive(V_i, V_i);
-        numerics->SetConservative(U_i, U_i);
-        numerics->SetdPdrhos(node[iPoint]->GetdPdrhos(), node[iPoint]->GetdPdrhos());
-        
-        // Compute residual
-        numerics->ComputeChemistry(Res_new, Jacobian_j, config);
-        for (jVar = 0; jVar < nVar; jVar++) {
-          FDJac[jVar][iVar] = (Res_new[jVar] - Residual[jVar])/delta;
-//          Jacobian_i[jVar][iVar] = (Res_new[jVar] - Residual[jVar])/delta;
-        }
-        
-        // Reset U_i
-        U_i[iVar] -= delta;
-        node[iPoint]->SetSolution(U_i);
-        node[iPoint]->SetPrimVar_Compressible(config);
-      }
-      /////////// TEST JACOBIAN ///////////
- 
-      cout << "FD Jacobian: " << endl;
-      for (iVar = 0; iVar < nVar; iVar++) {
-        for (jVar = 0; jVar < nVar; jVar++) {
-          cout << FDJac[iVar][jVar] << "\t";
-        }
-        cout << endl;
-      }
-      cin.get();
-    }*/
     
     /*--- Compute vibrational energy relaxation ---*/
     // NOTE: Jacobians don't account for relaxation time derivatives
     numerics->ComputeVibRelaxation(Residual, Jacobian_i, config);
     
-    /*--- Add Residual (and Jacobian) ---*/
+    /*--- Subtract Residual (and Jacobian) ---*/
     LinSysRes.SubtractBlock(iPoint, Residual);
     if (implicit)
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-    
-//    cout << "Source resid NVar: " << nVar << endl;
-    
-    for (iVar = 0; iVar < nVar; iVar++) {
-      if (isnan(Residual[iVar])) {
-        cout << "Source Residual iVar NaN: " << iVar << endl;
-      }
-    }
-    
-
   }
   // Deallocate
 //  delete[] Res_new;
@@ -2135,8 +1995,6 @@ void CTNE2EulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 	unsigned short iDim, iMarker, Boundary, Monitoring;
 	double Pressure, *Normal = NULL, dist[3], *Coord, Face_Area, PressInviscid;
 	double factor, NFPressOF, RefVel2, RefDensity, RefPressure;
-  
-	bool grid_movement  = config->GetGrid_Movement();
   
 	double Alpha           = config->GetAoA()*PI_NUMBER/180.0;
 	double Beta            = config->GetAoS()*PI_NUMBER/180.0;
@@ -2427,26 +2285,26 @@ void CTNE2EulerSolver::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *conf
   
 	/*--- Gradient primitive variables compressible (temp, vx, vy, vz, P, rho)
    Gradient primitive variables incompressible (rho, vx, vy, vz, beta) ---*/
-	PrimVar_Vertex = new double [nPrimVar];
-	PrimVar_i = new double [nPrimVar];
-	PrimVar_j = new double [nPrimVar];
+	PrimVar_Vertex = new double [nPrimVarGrad];
+	PrimVar_i = new double [nPrimVarGrad];
+	PrimVar_j = new double [nPrimVarGrad];
   
 	/*--- Set Gradient_Primitive to zero ---*/
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-		node[iPoint]->SetGradient_PrimitiveZero(nPrimVar);
+		node[iPoint]->SetGradient_PrimitiveZero(nPrimVarGrad);
   
 	/*--- Loop interior edges ---*/
 	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 		iPoint = geometry->edge[iEdge]->GetNode(0);
 		jPoint = geometry->edge[iEdge]->GetNode(1);
     
-		for (iVar = 0; iVar < nPrimVar; iVar++) {
+		for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
 			PrimVar_i[iVar] = node[iPoint]->GetPrimVar(iVar);
 			PrimVar_j[iVar] = node[jPoint]->GetPrimVar(iVar);
 		}
     
 		Normal = geometry->edge[iEdge]->GetNormal();
-		for (iVar = 0; iVar < nPrimVar; iVar++) {
+		for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
 			PrimVar_Average =  0.5 * ( PrimVar_i[iVar] + PrimVar_j[iVar] );
 			for (iDim = 0; iDim < nDim; iDim++) {
 				Partial_Res = PrimVar_Average*Normal[iDim];
@@ -2464,11 +2322,11 @@ void CTNE2EulerSolver::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *conf
 			iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 			if (geometry->node[iPoint]->GetDomain()) {
         
-				for (iVar = 0; iVar < nPrimVar; iVar++)
+				for (iVar = 0; iVar < nPrimVarGrad; iVar++)
 					PrimVar_Vertex[iVar] = node[iPoint]->GetPrimVar(iVar);
         
 				Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-				for (iVar = 0; iVar < nPrimVar; iVar++)
+				for (iVar = 0; iVar < nPrimVarGrad; iVar++)
 					for (iDim = 0; iDim < nDim; iDim++) {
 						Partial_Res = PrimVar_Vertex[iVar]*Normal[iDim];
 						node[iPoint]->SubtractGradient_Primitive(iVar, iDim, Partial_Res);
@@ -2479,7 +2337,7 @@ void CTNE2EulerSolver::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *conf
   
 	/*--- Update gradient value ---*/
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-		for (iVar = 0; iVar < nPrimVar; iVar++) {
+		for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
 			for (iDim = 0; iDim < nDim; iDim++) {
 				Partial_Gradient = node[iPoint]->GetGradient_Primitive(iVar,iDim) / (geometry->node[iPoint]->GetVolume());
 				node[iPoint]->SetGradient_Primitive(iVar, iDim, Partial_Gradient);
@@ -2503,18 +2361,18 @@ void CTNE2EulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *conf
   
 	/*--- Gradient primitive variables compressible (temp, vx, vy, vz, P, rho)
    Gradient primitive variables incompressible (rho, vx, vy, vz, beta) ---*/
-	PrimVar_i = new double [nPrimVar];
-	PrimVar_j = new double [nPrimVar];
+	PrimVar_i = new double [nPrimVarGrad];
+	PrimVar_j = new double [nPrimVarGrad];
   
 	/*--- Loop over points of the grid ---*/
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 		Coord_i = geometry->node[iPoint]->GetCoord();
     
-		for (iVar = 0; iVar < nPrimVar; iVar++)
+		for (iVar = 0; iVar < nPrimVarGrad; iVar++)
 			PrimVar_i[iVar] = node[iPoint]->GetPrimVar(iVar);
     
 		/*--- Inizialization of variables ---*/
-		for (iVar = 0; iVar < nPrimVar; iVar++)
+		for (iVar = 0; iVar < nPrimVarGrad; iVar++)
 			for (iDim = 0; iDim < nDim; iDim++)
 				cvector[iVar][iDim] = 0.0;
     
@@ -2525,7 +2383,7 @@ void CTNE2EulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *conf
 			jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
 			Coord_j = geometry->node[jPoint]->GetCoord();
       
-			for (iVar = 0; iVar < nPrimVar; iVar++)
+			for (iVar = 0; iVar < nPrimVarGrad; iVar++)
 				PrimVar_j[iVar] = node[jPoint]->GetPrimVar(iVar);
       
 			weight = 0.0;
@@ -2544,7 +2402,7 @@ void CTNE2EulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *conf
 			}
       
 			/*--- Entries of c:= transpose(A)*b ---*/
-			for (iVar = 0; iVar < nPrimVar; iVar++)
+			for (iVar = 0; iVar < nPrimVarGrad; iVar++)
 				for (iDim = 0; iDim < nDim; iDim++)
 					cvector[iVar][iDim] += (Coord_j[iDim]-Coord_i[iDim])*(PrimVar_j[iVar]-PrimVar_i[iVar])/(weight);
 		}
@@ -2586,7 +2444,7 @@ void CTNE2EulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *conf
 			Smatrix[2][2] = (z33*z33)/(detR2);
 		}
 		/*--- Computation of the gradient: S*c ---*/
-		for (iVar = 0; iVar < nPrimVar; iVar++) {
+		for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
 			for (iDim = 0; iDim < nDim; iDim++) {
 				product = 0.0;
 				for (jDim = 0; jDim < nDim; jDim++)
@@ -2658,7 +2516,7 @@ void CTNE2EulerSolver::SetPreconditioner(CConfig *config, unsigned short iPoint)
 
 void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solution_container,
                                      CNumerics *numerics, CConfig *config, unsigned short val_marker) {
-  unsigned short iDim, iSpecies, jSpecies, iVar, jVar;
+  unsigned short iDim, iSpecies, iVar, jVar;
 	unsigned long iPoint, iVertex;
   bool implicit;
   double *Normal, *UnitNormal, *Ms, *dPdrhos;
@@ -2716,12 +2574,9 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solution_con
             Jacobian_i[iVar][jVar] = 0.0;
         
         rho     = node[iPoint]->GetDensity();
-        u       = node[iPoint]->GetPrimVar(node[iPoint]->GetVelIndex()+0);
-        v       = node[iPoint]->GetPrimVar(node[iPoint]->GetVelIndex()+1);
-        w       = node[iPoint]->GetPrimVar(node[iPoint]->GetVelIndex()+2);
-//        u       = node[iPoint]->GetVelocity(0, false);
-//        v       = node[iPoint]->GetVelocity(1, false);
-//        w       = node[iPoint]->GetVelocity(2, false);
+        u       = node[iPoint]->GetVelocity(0);
+        v       = node[iPoint]->GetVelocity(1);
+        w       = node[iPoint]->GetVelocity(2);
         rhoCvtr = node[iPoint]->GetRhoCv_tr();
         rhoCvve = node[iPoint]->GetRhoCv_ve();
         rhoE    = node[iPoint]->GetSolution(nSpecies+nDim);
@@ -3071,7 +2926,7 @@ void CTNE2EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
           
           /*--- Get primitives from current inlet state. ---*/
           for (iDim = 0; iDim < nDim; iDim++)
-            Velocity[iDim] = node[iPoint]->GetVelocity(iDim, false);
+            Velocity[iDim] = node[iPoint]->GetVelocity(iDim);
           Pressure    = node[iPoint]->GetPressure(false);
           SoundSpeed2 = Gamma*Pressure/U_domain[0];
           
@@ -4087,7 +3942,6 @@ void CTNE2NSSolver::Preprocessing(CGeometry *geometry, CSolver **solution_contai
 	bool upwind_2nd = ((config->GetKind_Upwind_TNE2() == ROE_2ND) || (config->GetKind_Upwind_TNE2() == AUSM_2ND)
                      || (config->GetKind_Upwind_TNE2() == HLLC_2ND) || (config->GetKind_Upwind_TNE2() == ROE_TURKEL_2ND));
 	bool limiter = (config->GetKind_SlopeLimit_TNE2() != NONE);
-	double Gas_Constant = config->GetGas_ConstantND();
   
 	for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
@@ -4427,7 +4281,7 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 				WallShearStress = sqrt(WallShearStress);
         
 				/*--- Compute wall shear stress (using mu(delta u/delta y) ---*/
-				for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] = node[iPointNormal]->GetVelocity(iDim, false);
+				for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] = node[iPointNormal]->GetVelocity(iDim);
 				VelNormal = 0.0; for (iDim = 0; iDim < nDim; iDim++) VelNormal += Vel[iDim] * UnitaryNormal[iDim];
 				for (iDim = 0; iDim < nDim; iDim++) VelTang[iDim] = Vel[iDim] - VelNormal*UnitaryNormal[iDim];
 				VelTangMod = 0.0; for (iDim = 0; iDim < nDim; iDim++) VelTangMod += VelTang[iDim]*VelTang[iDim]; VelTangMod = sqrt(VelTangMod);
