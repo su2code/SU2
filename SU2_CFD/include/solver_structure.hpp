@@ -1012,6 +1012,20 @@ public:
 	 * \return Value of the z moment coefficient (viscous contribution) on the surface <i>val_marker</i>.
 	 */
 	virtual double GetCMz_Visc(unsigned short val_marker);
+    
+    /*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \return Value of the lift coefficient on the surface <i>val_marker</i>.
+	 */
+	virtual double GetSurface_CLift(unsigned short val_marker);
+    
+    /*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
+	 */
+	virtual double GetSurface_CMz(unsigned short val_marker);
 
   /*!
 	 * \brief A virtual member.
@@ -1816,6 +1830,8 @@ protected:
 	*CFx_Inv,			/*!< \brief x Force coefficient (inviscid contribution) for each boundary. */
 	*CFy_Inv,			/*!< \brief y Force coefficient (inviscid contribution) for each boundary. */
 	*CFz_Inv,			/*!< \brief z Force coefficient (inviscid contribution) for each boundary. */
+    *Surface_CLift_Inv, /*!< \brief Lift coefficient (inviscid contribution) for each monitoring surface. */
+    *Surface_CMz_Inv,   /*!< \brief z Moment coefficient (inviscid contribution) for each monitoring surface. */
 	*CEff_Inv,				/*!< \brief Efficiency (Cl/Cd) (inviscid contribution) for each boundary. */
 	*CMerit_Inv,				/*!< \brief Rotor Figure of Merit (inviscid contribution) for each boundary. */
 	*CT_Inv,			/*!< \brief Thrust coefficient (force in -x direction, inviscid contribution) for each boundary. */
@@ -1871,6 +1887,8 @@ protected:
 	Total_CEquivArea,			/*!< \brief Total Equivalent Area coefficient for all the boundaries. */
 	Total_CNearFieldOF,			/*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
     Total_CFreeSurface;			/*!< \brief Total Free Surface coefficient for all the boundaries. */
+    double *Surface_CLift,   /*!< \brief Lift coefficient for each monitoring surface. */
+    *Surface_CMz;            /*!< \brief z Moment coefficient for each monitoring surface. */
 	double *p1_Und_Lapl,	/*!< \brief Auxiliary variable for the undivided Laplacians. */
 	*p2_Und_Lapl;			/*!< \brief Auxiliary variable for the undivided Laplacians. */
 	double *PrimVar_i,	/*!< \brief Auxiliary vector for storing the solution at point i. */
@@ -2369,8 +2387,8 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void Inviscid_Forces(CGeometry *geometry, CConfig *config);
-  
-  /*!
+    
+    /*!
 	 * \brief Compute the pressure forces and all the adimensional coefficients.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
@@ -2390,6 +2408,20 @@ public:
 	 * \return Value of the z moment coefficient (inviscid contribution) on the surface <i>val_marker</i>.
 	 */
 	double GetCMz_Inv(unsigned short val_marker);
+    
+    /*!
+	 * \brief Provide the non dimensional lift coefficient.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \return Value of the lift coefficient on the surface <i>val_marker</i>.
+	 */
+	double GetSurface_CLift(unsigned short val_marker);
+    
+    /*!
+	 * \brief Provide the non dimensional z moment coefficient.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
+	 */
+	double GetSurface_CMz(unsigned short val_marker);
     
 	/*!
 	 * \brief Provide the non dimensional drag coefficient (inviscid contribution).
@@ -2704,6 +2736,8 @@ private:
 	*CFx_Visc,			/*!< \brief Force x coefficient (viscous contribution) for each boundary. */
 	*CFy_Visc,			/*!< \brief Force y coefficient (viscous contribution) for each boundary. */
 	*CFz_Visc,			/*!< \brief Force z coefficient (viscous contribution) for each boundary. */
+    *Surface_CLift_Visc,/*!< \brief Lift coefficient (viscous contribution) for each monitoring surface. */
+    *Surface_CMz_Visc,  /*!< \brief Moment z coefficient (viscous contribution) for each monitoring surface. */
 	*CEff_Visc,			/*!< \brief Efficiency (Cl/Cd) (Viscous contribution) for each boundary. */
 	*CMerit_Visc,			/*!< \brief Rotor Figure of Merit (Viscous contribution) for each boundary. */
 	*CT_Visc,		/*!< \brief Thrust coefficient (viscous contribution) for each boundary. */

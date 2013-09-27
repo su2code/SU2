@@ -451,9 +451,15 @@ private:
 	RefElemLength,				/*!< \brief Reference element length for computing the slope limiting epsilon. */
 	RefSharpEdges,				/*!< \brief Reference coefficient for detecting sharp edges. */
 	RefLengthMoment,			/*!< \brief Reference length for moment computation. */
-	*RefOriginMoment,			/*!< \brief Origin for moment computation. */
+    *RefOriginMoment,           /*!< \brief Origin for moment computation. */
+	*RefOriginMoment_X,			/*!< \brief X Origin for moment computation. */
+    *RefOriginMoment_Y,			/*!< \brief Y Origin for moment computation. */
+	*RefOriginMoment_Z,			/*!< \brief Z Origin for moment computation. */
 	*CFLRamp,			/*!< \brief Information about the CFL ramp. */
-	DomainVolume;		/*!< \brief Volume of the computational grid. */	
+	DomainVolume;		/*!< \brief Volume of the computational grid. */
+    unsigned short nRefOriginMoment_X,    /*!< \brief Number of X-coordinate moment computation origins. */
+	nRefOriginMoment_Y,           /*!< \brief Number of Y-coordinate moment computation origins. */
+	nRefOriginMoment_Z;           /*!< \brief Number of Z-coordinate moment computation origins. */
 	string Mesh_FileName,			/*!< \brief Mesh input file. */
 	Mesh_Out_FileName,				/*!< \brief Mesh output file. */
 	Solution_FlowFileName,			/*!< \brief Flow solution input file. */
@@ -980,9 +986,10 @@ public:
 
 	/*! 
 	 * \brief Get reference origin for moment computation.
+     * \param[in] val_marker - the marker we are monitoring.
 	 * \return Reference origin (in cartesians coordinates) for moment computation.
 	 */
-	double *GetRefOriginMoment(void);
+	double *GetRefOriginMoment(unsigned short val_marker);
 
 	/*! 
 	 * \brief Get maximum number of children in the agglomeration process.
@@ -1713,6 +1720,12 @@ public:
 	 * \return Total number of boundary markers.
 	 */
 	unsigned short GetnMarker_InterfaceBound(void);
+    
+    /*!
+	 * \brief Get the total number of monitoring markers.
+	 * \return Total number of monitoring markers.
+	 */
+	unsigned short GetnMarker_Monitoring(void);
 
 	/*!
 	 * \brief Stores the number of marker in the simulation.
@@ -1890,6 +1903,14 @@ public:
 	 *         has the marker <i>val_marker</i>.
 	 */
 	string GetMarker_NacelleExhaust(unsigned short val_marker);
+    
+    /*!
+	 * \brief Get the name of the surface defined in the geometry file.
+	 * \param[in] val_marker - Value of the marker in which we are interested.
+	 * \return Name that is in the geometry file for the surface that
+	 *         has the marker <i>val_marker</i>.
+	 */
+	string GetMarker_Monitoring(unsigned short val_marker);
     
 	/*! 
 	 * \brief Get the tag if the iMarker defined in the geometry file.
