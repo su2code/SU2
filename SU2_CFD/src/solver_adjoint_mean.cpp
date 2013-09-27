@@ -1013,7 +1013,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
 	double Beta       = (config->GetAoS()*PI_NUMBER)/180.0;
 	double RefAreaCoeff    = config->GetRefAreaCoeff();
 	double RefLengthMoment  = config->GetRefLengthMoment();
-	double *RefOriginMoment = config->GetRefOriginMoment();
+	double *RefOriginMoment = config->GetRefOriginMoment(0);
 	double RefVel2, RefDensity;
   
   bool grid_movement = config->GetGrid_Movement();

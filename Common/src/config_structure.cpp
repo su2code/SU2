@@ -102,7 +102,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	Pitching_Phase_X = NULL;    Pitching_Phase_Y = NULL;    Pitching_Phase_Z = NULL;
 	Plunging_Omega_X = NULL;    Plunging_Omega_Y = NULL;    Plunging_Omega_Z = NULL;
 	Plunging_Ampl_X = NULL;     Plunging_Ampl_Y = NULL;     Plunging_Ampl_Z = NULL;
-  
+    RefOriginMoment_X = NULL;   RefOriginMoment_Y = NULL;   RefOriginMoment_Z = NULL;
+
+    
 	/* BEGIN_CONFIG_OPTIONS */
   
 	/*--- Options related to problem definition and partitioning ---*/
@@ -775,10 +777,13 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
 	Length_Ref = 1.0; //<---- NOTE: this should be given an option or set as a const
   
-	default_vec_3d[0] = 0.0; default_vec_3d[1] = 0.0; default_vec_3d[2] = 0.0;
-	/* DESCRIPTION: Reference origin for moment computation */
-	AddArrayOption("REF_ORIGIN_MOMENT", 3, RefOriginMoment, default_vec_3d);
-	/* DESCRIPTION: Reference area for force coefficients (0 implies automatic calculation) */
+	/* DESCRIPTION: X Reference origin for moment computation */
+	AddListOption("REF_ORIGIN_MOMENT_X", nRefOriginMoment_X, RefOriginMoment_X);
+	/* DESCRIPTION: Y Reference origin for moment computation */
+	AddListOption("REF_ORIGIN_MOMENT_Y", nRefOriginMoment_Y, RefOriginMoment_Y);
+	/* DESCRIPTION: Z Reference origin for moment computation */
+	AddListOption("REF_ORIGIN_MOMENT_Z", nRefOriginMoment_Z, RefOriginMoment_Z);
+    /* DESCRIPTION: Reference area for force coefficients (0 implies automatic calculation) */
 	AddScalarOption("REF_AREA", RefAreaCoeff, 1.0);
 	/* DESCRIPTION: Reference length for pitching, rolling, and yawing non-dimensional moment */
 	AddScalarOption("REF_LENGTH_MOMENT", RefLengthMoment, 1.0);
@@ -1469,7 +1474,58 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		}
 
 	}
+    
+    /*--- Initialize the RefOriginMoment Pointer ---*/
+    RefOriginMoment = NULL;
+    RefOriginMoment = new double[3];
+    RefOriginMoment[0] = 0.0; RefOriginMoment[1] = 0.0; RefOriginMoment[2] = 0.0;
+    
+    /*--- In case the moment origin coordinates have not been declared in the
+     config file, set them equal to zero for safety. Also check to make sure
+     that for each marker, a value has been declared for the moment origin. ---*/
+    
+    unsigned short iMarker;
 
+    /*--- Moment Reference Origin: ---*/
+    if (RefOriginMoment_X == NULL) {
+        RefOriginMoment_X = new double[nMarker_Monitoring];
+        for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
+            RefOriginMoment_X[iMarker] = 0.0;
+    } else {
+        if (nRefOriginMoment_X != nMarker_Monitoring) {
+            cout << "Length of REF_ORIGIN_MOMENT_X must match number of Monitoring Markers!!" << endl;
+            cout << "Press any key to exit..." << endl;
+            cin.get();
+            exit(1);
+        }
+    }
+    
+    if (RefOriginMoment_Y == NULL) {
+        RefOriginMoment_Y = new double[nMarker_Monitoring];
+        for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
+            RefOriginMoment_Y[iMarker] = 0.0;
+    } else {
+        if (nRefOriginMoment_Y != nMarker_Monitoring) {
+            cout << "Length of REF_ORIGIN_MOMENT_Y must match number of Monitoring Markers!!" << endl;
+            cout << "Press any key to exit..." << endl;
+            cin.get();
+            exit(1);
+        }
+    }
+    
+    if (RefOriginMoment_Z == NULL) {
+        RefOriginMoment_Z = new double[nMarker_Monitoring];
+        for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
+            RefOriginMoment_Z[iMarker] = 0.0;
+    } else {
+        if (nRefOriginMoment_Z != nMarker_Monitoring) {
+            cout << "Length of REF_ORIGIN_MOMENT_Z must match number of Monitoring Markers!!" << endl;
+            cout << "Press any key to exit..." << endl;
+            cin.get();
+            exit(1);
+        }
+    }
+    
 	/*--- Allocating memory for previous time step solutions of Aeroelastic problem and Intializing variables. ---*/
 	if (Grid_Movement && (Kind_GridMovement[ZONE_0] == AEROELASTIC)) {
 		Aeroelastic_pitch = 0.0;
@@ -3591,11 +3647,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		if (RefAreaCoeff == 0) cout << "The reference length/area will be computed using y(2D) or z(3D) projection." <<endl;
 		else cout << "The reference length/area (force coefficient) is " << RefAreaCoeff << "." <<endl;
 		cout << "The reference length (moment computation) is " << RefLengthMoment << "." <<endl;
-		cout << "Reference origin (moment computation) is (" <<RefOriginMoment[0]<<", "<<RefOriginMoment[1]<<", "<<RefOriginMoment[2]<<")."<< endl;
 
-    cout << "Surface(s) where the force coefficients are evaluated: ";
+    cout << "Surface(s) where the force coefficients are evaluated and their reference origin for moment computation: ";
 		for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++) {
-			cout << Marker_Monitoring[iMarker_Monitoring];
+			cout << Marker_Monitoring[iMarker_Monitoring] << " (" << RefOriginMoment_X[iMarker_Monitoring] <<", "<<RefOriginMoment_Y[iMarker_Monitoring] <<", "<< RefOriginMoment_Z[iMarker_Monitoring] << ")";
 			if (iMarker_Monitoring < nMarker_Monitoring-1) cout << ", ";
 			else cout <<"."<<endl;
 		}
@@ -5282,6 +5337,15 @@ CConfig::~CConfig(void)
 		delete []Velocity_FreeStreamND_Time;
 
 	}
+
+    if (RefOriginMoment != NULL)
+		delete [] RefOriginMoment;
+    if (RefOriginMoment_X != NULL)
+		delete [] RefOriginMoment_X;
+	if (RefOriginMoment_Y != NULL)
+		delete [] RefOriginMoment_Y;
+	if (RefOriginMoment_Z != NULL)
+		delete [] RefOriginMoment_Z;
 }
 
 void CConfig::SetFileNameDomain(unsigned short val_domain) {

@@ -98,6 +98,10 @@ inline double CSolver::GetCMz_Inv(unsigned short val_marker) { return 0; }
 
 inline double CSolver::GetCDrag_Inv(unsigned short val_marker) { return 0; }
 
+inline double CSolver::GetSurface_CLift(unsigned short val_marker) { return 0; }
+
+inline double CSolver::GetSurface_CMz(unsigned short val_marker) { return 0; }
+
 inline double CSolver::GetFanFace_MassFlow(unsigned short val_marker) { return 0; }
 
 inline double CSolver::GetExhaust_MassFlow(unsigned short val_marker) { return 0; }
@@ -505,6 +509,10 @@ inline double CEulerSolver::GetCLift_Inv(unsigned short val_marker) { return CLi
 inline double CEulerSolver::GetCMz_Inv(unsigned short val_marker) { return CMz_Inv[val_marker]; }
 
 inline double CEulerSolver::GetCDrag_Inv(unsigned short val_marker) { return CDrag_Inv[val_marker]; }
+
+inline double CEulerSolver::GetSurface_CLift(unsigned short val_marker) { return Surface_CLift[val_marker]; }
+
+inline double CEulerSolver::GetSurface_CMz(unsigned short val_marker) { return Surface_CMz[val_marker]; }
 
 inline double CEulerSolver::GetFanFace_MassFlow(unsigned short val_marker) { return FanFace_MassFlow[val_marker]; }
 

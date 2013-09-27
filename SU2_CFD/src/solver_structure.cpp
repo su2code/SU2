@@ -1285,7 +1285,7 @@ void CSolver::Aeroelastic(CGeometry *geometry, CConfig *config, unsigned long In
     double Cl, Cm, Cl_proc, Cm_proc, pitch, plunge;
     double structural_solution[4]; //contains solution of typical section wing model.
     
-    unsigned short iMarker, jMarker;
+    unsigned short iMarker, jMarker, Monitoring;
     string Marker_Tag;
     
 //    /*--- Reset value of plunge and pitch for the new unsteady step ---*/
