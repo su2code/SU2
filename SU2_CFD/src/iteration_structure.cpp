@@ -347,8 +347,6 @@ void TNE2Iteration(COutput *output, CIntegration ***integration_container, CGeom
                    CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
                    CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
   
-	double Physical_dt, Physical_t;
-	unsigned short iMesh; // Index for multi-grid level
   unsigned short iZone; // Index for zone of the mesh
 	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
@@ -376,6 +374,98 @@ void TNE2Iteration(COutput *output, CIntegration ***integration_container, CGeom
 		integration_container[iZone][TNE2_SOL]->MultiGrid_Iteration(geometry_container, solver_container,
                                                                 numerics_container, config_container,
                                                                 RUNTIME_FLOW_SYS, IntIter, iZone);
+	}
+  
+}
+
+void AdjTNE2Iteration(COutput *output, CIntegration ***integration_container,
+                      CGeometry ***geometry_container,
+                      CSolver ****solver_container,
+                      CNumerics *****numerics_container,
+                      CConfig **config_container,
+                      CSurfaceMovement **surface_movement,
+                      CVolumetricMovement **grid_movement,
+                      CFreeFormDefBox*** FFDBox) {
+  
+	unsigned short iMesh, iZone, nZone;
+  unsigned long IntIter, ExtIter;
+  int rank;
+  
+  /*--- Initialize parameters ---*/
+  nZone   = geometry_container[ZONE_0][MESH_0]->GetnZone();
+  IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
+  ExtIter = config_container[ZONE_0]->GetExtIter();
+  rank    = MASTER_NODE;
+  
+#ifndef NO_MPI
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+  
+  
+	for (iZone = 0; iZone < nZone; iZone++) {
+    
+		/*--- Continuous adjoint two-temperature equations  ---*/
+		if (ExtIter == 0) {
+      
+			if (config_container[iZone]->GetKind_Solver() == ADJ_TNE2_EULER)
+        config_container[iZone]->SetGlobalParam(ADJ_TNE2_EULER,
+                                                RUNTIME_TNE2_SYS, ExtIter);
+			if (config_container[iZone]->GetKind_Solver() == ADJ_TNE2_NAVIER_STOKES)
+        config_container[iZone]->SetGlobalParam(ADJ_TNE2_NAVIER_STOKES,
+                                                RUNTIME_TNE2_SYS, ExtIter);
+      
+      /*--- Perform one iteration of the gov. eqns. to store data ---*/
+			integration_container[iZone][TNE2_SOL]->MultiGrid_Iteration(geometry_container,
+                                                                  solver_container,
+                                                                  numerics_container,
+                                                                  config_container,
+                                                                  RUNTIME_TNE2_SYS,
+                                                                  0, iZone);
+      
+			/*--- Compute gradients of the flow variables, this is necessary for 
+            sensitivity computation, note that in the direct Euler problem we 
+            are not computing the gradients of the primitive variables ---*/
+			if (config_container[iZone]->GetKind_Gradient_Method() == GREEN_GAUSS)
+				solver_container[iZone][MESH_0][TNE2_SOL]->SetPrimVar_Gradient_GG(geometry_container[iZone][MESH_0],
+                                                                          config_container[iZone]);
+			if (config_container[iZone]->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)
+				solver_container[iZone][MESH_0][TNE2_SOL]->SetPrimVar_Gradient_LS(geometry_container[iZone][MESH_0],
+                                                                          config_container[iZone]);
+      
+			/*--- Set contribution from cost function for boundary conditions ---*/
+      for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
+        
+        /*--- Set the value of the non-dimensional coefficients in the coarse 
+              levels, using the fine level solution ---*/
+        solver_container[iZone][iMesh][TNE2_SOL]->SetTotal_CDrag(solver_container[iZone][MESH_0][TNE2_SOL]->GetTotal_CDrag());
+        solver_container[iZone][iMesh][TNE2_SOL]->SetTotal_CLift(solver_container[iZone][MESH_0][TNE2_SOL]->GetTotal_CLift());
+        solver_container[iZone][iMesh][TNE2_SOL]->SetTotal_CT(solver_container[iZone][MESH_0][TNE2_SOL]->GetTotal_CT());
+        solver_container[iZone][iMesh][TNE2_SOL]->SetTotal_CQ(solver_container[iZone][MESH_0][TNE2_SOL]->GetTotal_CQ());
+        
+        /*--- Compute the adjoint boundary condition on Euler walls ---*/
+        solver_container[iZone][iMesh][ADJTNE2_SOL]->SetForceProj_Vector(geometry_container[iZone][iMesh],
+                                                                         solver_container[iZone][iMesh],
+                                                                         config_container[iZone]);
+      }
+		}
+    
+		/*--- Set the value of the internal iteration ---*/
+		IntIter = ExtIter;
+
+		if (config_container[iZone]->GetKind_Solver() == ADJ_TNE2_EULER)
+      config_container[iZone]->SetGlobalParam(ADJ_TNE2_EULER,
+                                              RUNTIME_ADJTNE2_SYS, ExtIter);
+		if (config_container[iZone]->GetKind_Solver() == ADJ_TNE2_NAVIER_STOKES)
+      config_container[iZone]->SetGlobalParam(ADJ_TNE2_NAVIER_STOKES,
+                                              RUNTIME_ADJTNE2_SYS, ExtIter);
+    
+		/*--- Iteration of the flow adjoint problem ---*/
+		integration_container[iZone][ADJTNE2_SOL]->MultiGrid_Iteration(geometry_container,
+                                                                   solver_container,
+                                                                   numerics_container,
+                                                                   config_container,
+                                                                   RUNTIME_ADJTNE2_SYS,
+                                                                   IntIter, iZone);
 	}
 }
 
@@ -489,14 +579,9 @@ void WaveIteration(COutput *output, CIntegration ***integration_container, CGeom
 
 	double Physical_dt, Physical_t;
 	unsigned short iMesh, iZone;
-	int rank = MASTER_NODE;
 	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
-
-#ifndef NO_MPI
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
 
 	for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -518,7 +603,7 @@ void WaveIteration(COutput *output, CIntegration ***integration_container, CGeom
         config_container[iZone]->SetIntIter(IntIter);
 				integration_container[iZone][WAVE_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
 						config_container, RUNTIME_WAVE_SYS, IntIter, iZone);
-				if (integration_container[iZone][WAVE_SOL]->GetConvergence()) {if (rank == MASTER_NODE) cout<<endl; break;}
+				if (integration_container[iZone][WAVE_SOL]->GetConvergence()) break;
 			}
 
 			/*--- Update dual time solver ---*/
@@ -540,17 +625,16 @@ void FEAIteration(COutput *output, CIntegration ***integration_container, CGeome
 		CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
 	double Physical_dt, Physical_t;
 	unsigned short iMesh, iZone;
-	int rank = MASTER_NODE;
 	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
 
-#ifndef NO_MPI
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
-
 	for (iZone = 0; iZone < nZone; iZone++) {
 
+    if (config_container[iZone]->GetGrid_Movement())
+      SetGrid_Movement(geometry_container[iZone], surface_movement[iZone],
+                       grid_movement[iZone], FFDBox[iZone], solver_container[iZone],config_container[iZone], iZone, ExtIter);
+    
 		/*--- Set the value of the internal iteration ---*/
 		IntIter = ExtIter;
 		if ((config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -573,7 +657,7 @@ void FEAIteration(COutput *output, CIntegration ***integration_container, CGeome
         config_container[iZone]->SetIntIter(IntIter);
 				integration_container[iZone][FEA_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
 						config_container, RUNTIME_FEA_SYS, IntIter, iZone);
-				if (integration_container[iZone][FEA_SOL]->GetConvergence()) {if (rank == MASTER_NODE) cout << endl; break;}
+				if (integration_container[iZone][FEA_SOL]->GetConvergence()) break;
 			}
 
 			/*--- Update dual time solver ---*/
@@ -839,7 +923,7 @@ void AdjAeroacousticIteration(COutput *output, CIntegration ***integration_conta
 			integration_container[ZONE_0][ADJFLOW_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
 					config_container, RUNTIME_ADJFLOW_SYS, IntIter, ZONE_0);
 
-			if (integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence()) {if (rank == MASTER_NODE) cout<<endl; break;}
+			if (integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence()) break;
 		}
 
 		/*--- Update dual time solver ---*/
@@ -1005,8 +1089,9 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
                       CVolumetricMovement *grid_movement, CFreeFormDefBox **FFDBox,
                       CSolver ***solver_container, CConfig *config_container, unsigned short iZone, unsigned long ExtIter)   {
   
-  unsigned short iMGlevel, nMGlevels = config_container->GetMGLevels();
+  unsigned short iDim, iMGlevel, nMGlevels = config_container->GetMGLevels();
 	unsigned short Kind_Grid_Movement = config_container->GetKind_GridMovement(iZone);
+  unsigned long iPoint;
   bool adjoint = config_container->GetAdjoint();
 	bool time_spectral = (config_container->GetUnsteady_Simulation() == TIME_SPECTRAL);
   
@@ -1235,6 +1320,28 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
           }
         }
       }
+      break;
+      
+    case ELASTICITY:
+      
+      if (ExtIter != 0) {
+        
+        if (rank == MASTER_NODE)
+          cout << " Deforming the grid using the Linear Elasticity solution." << endl;
+        
+        /*--- Update the coordinates of the grid using the linear elasticity solution. ---*/
+        for (iPoint = 0; iPoint < geometry_container[MESH_0]->GetnPoint(); iPoint++) {
+
+          double *U_time_nM1 = solver_container[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_time_n1();
+          double *U_time_n   = solver_container[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_time_n();
+
+          for(iDim = 0; iDim < geometry_container[MESH_0]->GetnDim(); iDim++)
+            geometry_container[MESH_0]->node[iPoint]->AddCoord(iDim, U_time_n[iDim] - U_time_nM1[iDim]);
+          
+        }
+        
+      }
+      
       break;
       
     case NONE: default:

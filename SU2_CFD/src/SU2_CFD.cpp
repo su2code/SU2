@@ -241,8 +241,8 @@ int main(int argc, char *argv[]) {
         
 		/*--- Computation of wall distances for turbulence modeling ---*/
         
-		if ((config_container[iZone]->GetKind_Solver() == RANS) ||
-            (config_container[iZone]->GetKind_Solver() == ADJ_RANS))
+		if ( (config_container[iZone]->GetKind_Solver() == RANS)     ||
+         (config_container[iZone]->GetKind_Solver() == ADJ_RANS)    )
 			geometry_container[iZone][MESH_0]->ComputeWall_Distance(config_container[iZone]);
         
 		/*--- Computation of positive surface area in the z-plane which is used for
@@ -370,19 +370,25 @@ int main(int argc, char *argv[]) {
                              surface_movement, grid_movement, FFDBox);
 				break;
 				
-				
 			case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
 				AdjMeanFlowIteration(output, integration_container, geometry_container,
                                      solver_container, numerics_container, config_container,
                                      surface_movement, grid_movement, FFDBox);
 				break;
+        
+      case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
+        AdjTNE2Iteration(output, integration_container, geometry_container,
+                         solver_container, numerics_container, config_container,
+                         surface_movement, grid_movement, FFDBox);
 				
+        
 			case ADJ_PLASMA_EULER: case ADJ_PLASMA_NAVIER_STOKES:
 				AdjPlasmaIteration(output, integration_container, geometry_container,
                                    solver_container, numerics_container, config_container,
                                    surface_movement, grid_movement, FFDBox);
 				break;
-                
+        
+        
 			case ADJ_AEROACOUSTIC_EULER:
 				AdjAeroacousticIteration(output, integration_container, geometry_container,
                                          solver_container, numerics_container, config_container,

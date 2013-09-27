@@ -36,7 +36,7 @@ CUpwRoe_TNE2::CUpwRoe_TNE2(unsigned short val_nDim, unsigned short val_nVar,
   /*--- Define useful constants ---*/
   nVar     = val_nVar;
   nDim     = val_nDim;
-  nSpecies = val_nVar - val_nDim - 2;
+  nSpecies = config->GetnSpecies();
   
   /*--- Allocate arrays ---*/
 	Diff_U      = new double [nVar];
@@ -111,7 +111,7 @@ void CUpwRoe_TNE2::ComputeResidual(double *val_residual, double **val_Jacobian_i
   else            { nHeavy = nSpecies;   nEl = 0; }
   
   /*--- Pull stored primitive variables ---*/
-  // Primitives: [rho1,...,rhoNs, T, Tve, u, v, w, P, rho, h, c]
+  // Primitives: [rho1,...,rhoNs, T, Tve, u, v, w, P, rho, h, a]
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     Density_i[iSpecies] = V_i[RHOS_INDEX+iSpecies];
     Density_j[iSpecies] = V_j[RHOS_INDEX+iSpecies];
@@ -266,21 +266,27 @@ void CUpwRoe_TNE2::ComputeResidual(double *val_residual, double **val_Jacobian_i
     cout << endl;
   }
   cin.get();*/
-  
   //////////////// TEST UPWINDING!!!! ////////////////////
   
-  //	/*--- Harten and Hyman (1983) entropy correction ---*/
-  //	for (iDim = 0; iDim < nDim; iDim++)
-  //		Epsilon[iDim] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,ProjVelocity_j-Lambda[iDim]));
-  //
-  //	Epsilon[nVar-2] = 4.0*max(0.0, max(Lambda[nVar-2]-(ProjVelocity_i+SoundSpeed_i),(ProjVelocity_j+SoundSpeed_j)-Lambda[nVar-2]));
-  //	Epsilon[nVar-1] = 4.0*max(0.0, max(Lambda[nVar-1]-(ProjVelocity_i-SoundSpeed_i),(ProjVelocity_j-SoundSpeed_j)-Lambda[nVar-1]));
-  //
-  //	for (iVar = 0; iVar < nVar; iVar++)
-  //		if ( fabs(Lambda[iVar]) < Epsilon[iVar] )
-  //			Lambda[iVar] = (Lambda[iVar]*Lambda[iVar] + Epsilon[iVar]*Epsilon[iVar])/(2.0*Epsilon[iVar]);
-  //		else
-  //			Lambda[iVar] = fabs(Lambda[iVar]);
+  	/*--- Harten and Hyman (1983) entropy correction ---*/
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    Epsilon[iSpecies] = 4.0*max(0.0, max( Lambda[iDim]-ProjVelocity_i,
+                                         ProjVelocity_j-Lambda[iDim] ));
+  for (iDim = 0; iDim < nDim-1; iDim++)
+    Epsilon[nSpecies+iDim] = 4.0*max(0.0, max( Lambda[iDim]-ProjVelocity_i,
+                                               ProjVelocity_j-Lambda[iDim] ));
+  
+  Epsilon[nSpecies+nDim-1] = 4.0*max(0.0, max(Lambda[nSpecies+nDim-1]-(ProjVelocity_i+SoundSpeed_i),
+                                              (ProjVelocity_j+SoundSpeed_j)-Lambda[nSpecies+nDim-1]));
+  Epsilon[nSpecies+nDim]   = 4.0*max(0.0, max(Lambda[nSpecies+nDim]-(ProjVelocity_i-SoundSpeed_i),(ProjVelocity_j-SoundSpeed_j)-Lambda[nSpecies+nDim]));
+  Epsilon[nSpecies+nDim+1] = 4.0*max(0.0, max( Lambda[iDim]-ProjVelocity_i,
+                                              ProjVelocity_j-Lambda[iDim] ));
+  
+  for (iVar = 0; iVar < nVar; iVar++)
+    if ( fabs(Lambda[iVar]) < Epsilon[iVar] )
+      Lambda[iVar] = (Lambda[iVar]*Lambda[iVar] + Epsilon[iVar]*Epsilon[iVar])/(2.0*Epsilon[iVar]);
+    else
+      Lambda[iVar] = fabs(Lambda[iVar]);
   
   for (iVar = 0; iVar < nVar; iVar++)
     Lambda[iVar] = fabs(Lambda[iVar]);
@@ -431,7 +437,7 @@ CUpwAUSM_TNE2::CUpwAUSM_TNE2(unsigned short val_nDim, unsigned short val_nVar, C
   /*--- Define useful constants ---*/
   nVar     = val_nVar;
   nDim     = val_nDim;
-  nSpecies = val_nVar - val_nDim - 2;
+  nSpecies = config->GetnSpecies();
   
 	FcL    = new double [nVar];
   FcR    = new double [nVar];
@@ -817,7 +823,7 @@ CCentLax_TNE2::CCentLax_TNE2(unsigned short val_nDim, unsigned short val_nVar, C
   /*--- Define useful constants ---*/
   nVar     = val_nVar;
   nDim     = val_nDim;
-  nSpecies = val_nVar - val_nDim - 2;
+  nSpecies = config->GetnSpecies();
   
 	/*--- Artifical dissipation part ---*/
 	Param_p = 0.3;
@@ -1010,6 +1016,11 @@ void CCentLax_TNE2::ComputeResidual(double *val_resconv, double *val_resvisc, do
 CSource_TNE2::CSource_TNE2(unsigned short val_nDim, unsigned short val_nVar,
                                    CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
+  /*--- Define useful constants ---*/
+  nVar     = val_nVar;
+  nDim     = val_nDim;
+  nSpecies = config->GetnSpecies();
+  
   X = new double[nSpecies];
   RxnConstantTable = new double*[6];
 	for (unsigned short iVar = 0; iVar < 6; iVar++)
@@ -1445,7 +1456,7 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
                                             * (Cvvs[iSpecies]+Cves[iSpecies])
                                             * dTvedrhos[jSpecies] * Volume;
           }
-/*          val_Jacobian_i[nEve][nSpecies]   += Ms[iSpecies] * (fwdRxn-bkwRxn)
+          val_Jacobian_i[nEve][nSpecies]   += Ms[iSpecies] * (fwdRxn-bkwRxn)
                                             * (Cvvs[iSpecies]+Cves[iSpecies])
                                             * dTvedrhou * Volume;
           val_Jacobian_i[nEve][nSpecies+1] += Ms[iSpecies] * (fwdRxn-bkwRxn)
@@ -1456,11 +1467,12 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
                                             * dTvedrhow * Volume;
           val_Jacobian_i[nEve][nSpecies+3] += Ms[iSpecies] * (fwdRxn-bkwRxn)
                                             * (Cvvs[iSpecies]+Cves[iSpecies])
-                                            * dTvedrhoE * Volume;*/
+                                            * dTvedrhoE * Volume;
           val_Jacobian_i[nEve][nSpecies+4] += Ms[iSpecies] * (fwdRxn-bkwRxn)
                                             * (Cvvs[iSpecies]+Cves[iSpecies])
                                             * dTvedrhoEve * Volume;
         }
+        
         /*--- Reactants ---*/
         iSpecies = RxnMap[iReaction][0][ii];
         if (iSpecies != nSpecies) {
@@ -1484,7 +1496,7 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
                                             * (Cvvs[iSpecies]+Cves[iSpecies])
                                             * dTvedrhos[jSpecies] * Volume;
           }
-/*          val_Jacobian_i[nEve][nSpecies]   -= Ms[iSpecies] * (fwdRxn-bkwRxn)
+          val_Jacobian_i[nEve][nSpecies]   -= Ms[iSpecies] * (fwdRxn-bkwRxn)
                                             * (Cvvs[iSpecies]+Cves[iSpecies])
                                             * dTvedrhou * Volume;
           val_Jacobian_i[nEve][nSpecies+1] -= Ms[iSpecies] * (fwdRxn-bkwRxn)
@@ -1495,7 +1507,7 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
                                             * dTvedrhow * Volume;
           val_Jacobian_i[nEve][nSpecies+3] -= Ms[iSpecies] * (fwdRxn-bkwRxn)
                                             * (Cvvs[iSpecies]+Cves[iSpecies])
-                                            * dTvedrhoE * Volume;*/
+                                            * dTvedrhoE * Volume;
           val_Jacobian_i[nEve][nSpecies+4] -= Ms[iSpecies] * (fwdRxn-bkwRxn)
                                             * (Cvvs[iSpecies]+Cves[iSpecies])
                                             * dTvedrhoEve * Volume;

@@ -2216,8 +2216,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       
 			/*--- No reconstruction for the velocities or level set ---*/
 			for (iVar = 1; iVar < nVar; iVar++) {
-				Solution_i[iVar] = U_i[iVar];
-				Solution_j[iVar] = U_j[iVar];
+				Solution_i[iVar] = U_i[iVar]+EPS;
+				Solution_j[iVar] = U_j[iVar]+EPS;
 			}
       
 			if (high_order_diss) {
@@ -2937,9 +2937,10 @@ void CEulerSolver::Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config
 	vector<double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil;
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   double rho_inf = Density_Inf;
-	double V_inf_mag = sqrt(pow(Velocity_Inf[0],2.0) + pow(Velocity_Inf[1],2.0) + pow(Velocity_Inf[2],2.0));	
+	double V_inf_mag = sqrt(pow(Velocity_Inf[0],2.0) + pow(Velocity_Inf[1],2.0) + pow(Velocity_Inf[2],2.0));
 	double dynamic_pressure = 0.5*rho_inf*pow(V_inf_mag,2.0);
-  bool Boundary, Monitoring;
+  unsigned short Boundary;
+  bool Monitoring;
   string Marker_Tag, Slice_Filename, Slice_Ext;
   ofstream Cp_File;
   char buffer[50];
