@@ -1275,59 +1275,39 @@ void CSolver::Gauss_Elimination(double** A, double* rhs, unsigned long nVar) {
 	}
 }
 
-void CSolver::Aeroelastic(CGeometry *geometry, CConfig *config, unsigned long IntIter, unsigned short iZone) {
-    
-    //Need to put stuff in here.
+void CSolver::Aeroelastic(CGeometry *geometry, CConfig *config, unsigned long IntIter) {
     
     //Move routines from CVolumetricMovement.
     
     /*--- Variables used for Aeroelastic case ---*/
-    double Cl, Cm, Cl_proc, Cm_proc, pitch, plunge;
+    
+    double Cl, Cm;
     double structural_solution[4]; //contains solution of typical section wing model.
     
-    unsigned short iMarker, jMarker, Monitoring;
-    string Marker_Tag;
+    unsigned short iMarker, iMarker_Monitoring, Monitoring;
+    string Marker_Tag, Monitoring_Tag;
     
-//    /*--- Reset value of plunge and pitch for the new unsteady step ---*/
-//    if (IntIter == 1) {
-//        pitch = 0.0;
-//        plunge = 0.0;
-//        config->SetAeroelastic_pitch(pitch);
-//        config->SetAeroelastic_plunge(plunge);
-//    }
-    
+    /*--- Loop over markers and find the ones being monitored. ---*/
     
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        if (config->GetMarker_All_Moving(iMarker) == YES) {
+        Monitoring = config->GetMarker_All_Monitoring(iMarker);
+        if (Monitoring == YES) {
             
-            /*--- Identify iMarker from the list of those under MARKER_MOVING ---*/
+            /*--- Find the particular marker being monitored and get the forces acting on it. ---*/
             
-            Marker_Tag = config->GetMarker_All_Tag(iMarker);
-            jMarker    = config->GetMarker_Moving(Marker_Tag);
-            
-            // Do I need to know which solver I'm calling? I need to make sure this works right.
-            //inline double CEulerSolver::GetCLift_Inv(unsigned short val_marker) { return CLift_Inv[val_marker]; }
-            //inline double CNSSolver::GetCLift_Visc(unsigned short val_marker) { return CLift_Visc[val_marker]; }
-            
-            /*--- Forces per processor ---*/
-            Cl_proc = GetCLift_Inv(jMarker) + GetCLift_Visc(jMarker);
-            Cm_proc = -1.0 * ( GetCMz_Inv(jMarker) + GetCMz_Visc(jMarker) );
-            
-            #ifndef NO_MPI
-            /*--- Add the forces over all the processors ---*/
-            MPI::COMM_WORLD.Allreduce(&Cl_proc, &Cl, 1, MPI::DOUBLE, MPI::SUM);
-            MPI::COMM_WORLD.Allreduce(&Cm_proc, &Cm, 1, MPI::DOUBLE, MPI::SUM);
-            MPI::COMM_WORLD.Barrier();
-            #else
-            /*--- Set the forces to the forces on the sole processor ---*/
-            Cl = Cl_proc;
-            Cm = Cm_proc;
-            #endif
-            
-            SolveTypicalSectionWingModel(geometry, Cl, Cm, config, iZone, IntIter, structural_solution);
-            AeroelasticDeform(geometry, config, iZone, structural_solution); //Maybe have this guy still in grid deform, move to surface deform from volume deform.
+            for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+                Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
+                Marker_Tag = config->GetMarker_All_Tag(iMarker);
+                if (Marker_Tag == Monitoring_Tag) {
+                    Cl = GetSurface_CLift(iMarker_Monitoring);
+                    Cm = -1.0*GetSurface_CMz(iMarker_Monitoring);
+                }
+            }
+            SolveTypicalSectionWingModel(geometry, Cl, Cm, config, IntIter, structural_solution);
+            AeroelasticDeform(geometry, config, iMarker, structural_solution); //Maybe have this guy still in grid deform, move to surface deform from volume deform.
 
         }
+        
     }
     
 }
@@ -1397,7 +1377,7 @@ void CSolver::SetUpTypicalSectionWingModel(double (&PHI)[2][2],double (&lambda)[
     
 }
 
-void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned short iZone, unsigned long iter, double (&displacements)[4]) {
+void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned long iter, double (&displacements)[4]) {
     
     /*--- The aeroelastic model solved in this routine is the typical section wing model
      The details of the implementation can be found in J.J. Alonso "Fully-Implicit Time-Marching Aeroelastic Solutions" 1994.
@@ -1597,63 +1577,68 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, doubl
     
 }
 
-void CSolver::AeroelasticDeform(CGeometry *geometry, CConfig *config, unsigned short iZone, double displacements[4]) {
+void CSolver::AeroelasticDeform(CGeometry *geometry, CConfig *config, unsigned short iMarker, double displacements[4]) {
     /* The sign conventions of these are those of the Typical Section Wing Model, below the signs are corrected */
     double dy = -displacements[0];           // relative plunge
     double dalpha = -displacements[1];       // relative pitch
-    
     double Center[2];
-    Center[0] = config->GetMotion_Origin_X(iZone);
-    Center[1] = config->GetMotion_Origin_Y(iZone);
+    unsigned short jMarker, iDim;
     double Lref = config->GetLength_Ref();
     double *Coord;
-    unsigned short iDim;
-    unsigned long iPoint;
+    unsigned long iPoint, iVertex;
     double x_new, y_new;
-    
-    unsigned short iMarker;
-    unsigned long iVertex;
     double VarCoord[3];
+    string Marker_Tag;
+
+#ifndef NO_MPI
+	int rank = MPI::COMM_WORLD.Get_rank();
+#else
+	int rank = MASTER_NODE;
+#endif
     
-	/*--- Store movement of each node on the moving surface ---*/
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        //if (config->GetMarker_All_DV(iMarker) == YES) {
-        if (config->GetMarker_All_Moving(iMarker) == YES) {
+    /*--- Check to see if we are supposed to move this marker(airfoil) ---*/
+    if (config->GetMarker_All_Moving(iMarker) == YES) {
+        
+        /*--- Identify iMarker from the list of those under MARKER_MOVING ---*/
+        
+        Marker_Tag = config->GetMarker_All_Tag(iMarker);
+        jMarker    = config->GetMarker_Moving(Marker_Tag);
+        
+        /*--- Pitching origin from config. ---*/
+        
+        Center[0] = config->GetMotion_Origin_X(jMarker);
+        Center[1] = config->GetMotion_Origin_Y(jMarker);
+        
+        for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+            /*--- Coordinates of the current point ---*/
+            Coord = geometry->node[iPoint]->GetCoord();
             
-            // Will need to put the jMarker and Markder stuff tag in here.
+            /*--- Calculate non-dim. position from rotation center ---*/
+            double r[2] = {0,0};
+            for (iDim = 0; iDim < nDim; iDim++)
+                r[iDim] = (Coord[iDim]-Center[iDim])/Lref;
             
-            for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-                iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-                /*--- Coordinates of the current point ---*/
-                Coord = geometry->node[iPoint]->GetCoord();
-                
-                /*--- Calculate non-dim. position from rotation center ---*/
-                double r[2] = {0,0};
-                for (iDim = 0; iDim < nDim; iDim++)
-                    r[iDim] = (Coord[iDim]-Center[iDim])/Lref;
-                
-                /*--- Compute delta of transformed point coordinates ---*/
-                // The deltas are needed for the Spring Method.
-                // rotation contribution + plunging contribution - previous position
-                x_new = cos(dalpha)*r[0] - sin(dalpha)*r[1] -r[0];
-                y_new = sin(dalpha)*r[0] + cos(dalpha)*r[1] -r[1] + dy;
-                
-                VarCoord[0] = x_new;
-                VarCoord[1] = y_new;
-                VarCoord[2] = 0.0;
-                
-                /*--- Store new delta node locations for the surface ---*/
-                geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
-            }
-		}
-	}
-    
-    /*--- Set the mesh motion center to the new location after incrementing the position with the plunge ---*/
-    config->SetMotion_Origin_Y(iZone,Center[1]+dy);
-    
-    /*--- Move/Deform the rest of the mesh by the Spring Method ---*/
-//    SetVolume_Deformation(geometry, config, true);
-    
+            /*--- Compute delta of transformed point coordinates ---*/
+            // The deltas are needed for the Spring Method.
+            // rotation contribution + plunging contribution - previous position
+            x_new = cos(dalpha)*r[0] - sin(dalpha)*r[1] -r[0];
+            y_new = sin(dalpha)*r[0] + cos(dalpha)*r[1] -r[1] + dy;
+            
+            VarCoord[0] = x_new;
+            VarCoord[1] = y_new;
+            VarCoord[2] = 0.0;
+            
+            /*--- Store new delta node locations for the surface ---*/
+            geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
+        }
+        /*--- Set the mesh motion center to the new location after incrementing the position with the plunge ---*/
+        config->SetMotion_Origin_Y(iMarker,Center[1]+dy);
+    }
+    else {
+        if (rank == MASTER_NODE)
+            std::cout << "WARNING: There is(are) marker(s) being monitored which are not being moved!" << std::endl;
+    }
 }
 
 CBaselineSolver::CBaselineSolver(void) : CSolver() { }
