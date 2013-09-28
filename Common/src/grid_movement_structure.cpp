@@ -2791,7 +2791,6 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
   
 #endif
   
-  
   AoA = atan((LPCoord[1] - TPCoord[1]) / (TPCoord[0] - LPCoord[0]))*180/PI_NUMBER;
   
 	/*--- Perform multiple airfoil deformation ---*/
@@ -2821,6 +2820,7 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
         ValSin = sin(AoA*PI_NUMBER/180.0);
         
         Coord[0] = Coord_[0]*ValCos - Coord_[1]*ValSin;
+        Coord[0] = max(0.0, Coord[0]); // Coord x should be always positive
         Coord[1] = Coord_[1]*ValCos + Coord_[0]*ValSin;
         
         Normal[0] = Normal_[0]*ValCos - Normal_[1]*ValSin;
@@ -2851,7 +2851,7 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
       
       VarCoord_[0] = VarCoord[0]*ValCos - VarCoord[1]*ValSin;
       VarCoord_[1] = VarCoord[1]*ValCos + VarCoord[0]*ValSin;
-      
+
 			boundary->vertex[iMarker][iVertex]->AddVarCoord(VarCoord_);
 		}
 	}
