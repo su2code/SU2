@@ -1423,7 +1423,7 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
 	int indexMax, elemMax; indexMax = elemMax = 0;
 	cgsize_t**** connElems = NULL;
 	cgsize_t* connElemTemp = NULL;
-	cgsize_t ElementDataSize = NULL;
+	cgsize_t ElementDataSize = 0;
 	cgsize_t* parentData = NULL;
 	int** dataSize = NULL;
 	bool** isInternal = NULL;
@@ -9956,7 +9956,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
             }
             
             /*--- Estimate the size of the buffer for each domain ---*/
-            int SizeBuffer[11];
+            int SizeBuffer[12];
             SizeBuffer[0] = (nPointTotal*nDim)*sizeof(double) + MPI_BSEND_OVERHEAD;
             SizeBuffer[1] = (nPointTotal)*sizeof(unsigned long) + MPI_BSEND_OVERHEAD;
             SizeBuffer[2] = (nElemTriangle*3)*sizeof(unsigned long) + MPI_BSEND_OVERHEAD;
