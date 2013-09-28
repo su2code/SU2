@@ -1713,9 +1713,8 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iter - Current sudo time iteration.
-     * \param[in] iZone - Zone number in the mesh.
 	 */
-	void Aeroelastic(CGeometry *geometry, CConfig *config, unsigned long IntIter, unsigned short iZone);
+	void Aeroelastic(CGeometry *geometry, CConfig *config, unsigned long IntIter);
 
     
     /*!
@@ -1732,21 +1731,19 @@ public:
      * \param[in] Cl - Coefficient of lift at particular iteration.
      * \param[in] Cm - Moment coefficient about z-axis at particular iteration.
 	 * \param[in] config - Definition of the particular problem.
-     * \param[in] iZone - Zone number in the mesh.
      * \param[in] iter - Sudo time iteration number.
      * \param[in] displacements - solution of typical section wing model.
 	 */
-    void SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned short iZone, unsigned long iter, double (&displacements)[4]);
+    void SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned long iter, double (&displacements)[4]);
     
     /*!
 	 * \brief Unsteady aeroelastic grid movement by deforming the mesh.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
-     * \param[in] iZone - Zone number in the mesh.
+     * \param[in] iMarker - Marker to deform.
      * \param[in] displacements - solution of typical section wing model.
 	 */
-    void AeroelasticDeform(CGeometry *geometry, CConfig *config, unsigned short iZone, double displacements[4]);
-
+    void AeroelasticDeform(CGeometry *geometry, CConfig *config, unsigned short iMarker, double displacements[4]);
 
 };
 

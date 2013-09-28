@@ -3456,12 +3456,15 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 		Boundary   = config->GetMarker_All_Boundary(iMarker);
 		Monitoring = config->GetMarker_All_Monitoring(iMarker);
         /*--- Obtain the origin for the moment computation ---*/
-        for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-            Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
-            Marker_Tag = config->GetMarker_All_Tag(iMarker);
-            if (Marker_Tag == Monitoring_Tag)
-                Origin = config->GetRefOriginMoment(iMarker_Monitoring);
+        if (Monitoring == YES) {
+            for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+                Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
+                Marker_Tag = config->GetMarker_All_Tag(iMarker);
+                if (Marker_Tag == Monitoring_Tag)
+                    Origin = config->GetRefOriginMoment(iMarker_Monitoring);
+            }
         }
+        
         
 		if ((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) ||
             (Boundary == ISOTHERMAL) || (Boundary == NEARFIELD_BOUNDARY)) {
@@ -7658,11 +7661,13 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 		Boundary = config->GetMarker_All_Boundary(iMarker);
 		Monitoring = config->GetMarker_All_Monitoring(iMarker);
         /*--- Obtain the origin for the moment computation ---*/
-        for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-            Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
-            Marker_Tag = config->GetMarker_All_Tag(iMarker);
-            if (Marker_Tag == Monitoring_Tag)
-                Origin = config->GetRefOriginMoment(iMarker_Monitoring);
+        if (Monitoring == YES) {
+            for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+                Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
+                Marker_Tag = config->GetMarker_All_Tag(iMarker);
+                if (Marker_Tag == Monitoring_Tag)
+                    Origin = config->GetRefOriginMoment(iMarker_Monitoring);
+            }
         }
         
 		if ((Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL)) {

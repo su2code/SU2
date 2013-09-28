@@ -1180,7 +1180,7 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
             
             /*--- Solve the aeroelastic equations for the new node locations of the moving markers(surfaces) ---*/
             
-            solver_container[MESH_0][FLOW_SOL]->Aeroelastic(geometry_container[MESH_0], config_container, ExtIter, iZone);
+            solver_container[MESH_0][FLOW_SOL]->Aeroelastic(geometry_container[MESH_0], config_container, ExtIter);
             
             /*--- Deform the volume grid around the new boundary locations ---*/
             
@@ -1189,15 +1189,12 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
             grid_movement->SetVolume_Deformation(geometry_container[MESH_0],
                                                  config_container, true);
             
-            
             /*--- Update the grid velocities on the fine mesh using finite
              differencing based on node coordinates at previous times. ---*/
             
-            if (!adjoint) {
-                if (rank == MASTER_NODE)
-                    cout << " Computing grid velocities by finite differencing." << endl;
-                geometry_container[MESH_0]->SetGridVelocity(config_container, ExtIter);
-            }
+            if (rank == MASTER_NODE)
+                cout << " Computing grid velocities by finite differencing." << endl;
+            geometry_container[MESH_0]->SetGridVelocity(config_container, ExtIter);
             
             /*--- Update the multigrid structure after moving the finest grid,
              including computing the grid velocities on the coarser levels. ---*/
