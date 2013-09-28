@@ -3013,7 +3013,7 @@ void CSurfaceMovement::SetRotation(CGeometry *boundary, CConfig *config, unsigne
 	
 	/*--- The angle of rotation. ---*/
   
-	double theta = -config->GetDV_Value(iDV)*PI_NUMBER/180.0;
+	double theta = config->GetDV_Value(iDV)*PI_NUMBER/180.0;
 	
 	/*--- An intermediate value used in computations. ---*/
   

@@ -225,7 +225,7 @@ def geometry( func_name, config, state=None ):
     
         Evaluates geometry with the following:
             SU2.run.decompose()
-	    SU2.run.deform()
+            SU2.run.deform()
             SU2.run.geometry()
         
         Assumptions:
@@ -262,14 +262,14 @@ def geometry( func_name, config, state=None ):
     else:
         log_geom = None
     
-    # ----------------------------------------------------    
-    #  Update Mesh
+    # ----------------------------------------------------
+    #  Update Mesh (check with Trent)
     # ----------------------------------------------------
     
     # does decomposition and deformation
-    info = update_mesh(config,state)    
-    
-    
+    # info = update_mesh(config,state)
+
+
     # ----------------------------------------------------    
     #  Geometry Solution
     # ----------------------------------------------------    
