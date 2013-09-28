@@ -96,7 +96,7 @@ def scipy_slsqp(project,x0=None,xb=None,its=100,grads=True):
                           args           = (project,)     , 
                           bounds         = xb             ,
                           iter           = its            ,
-                          iprint         = 1              ,
+                          iprint         = 2              ,
                           full_output    = 1              ,
                           acc            = 1e-10          ,
                           epsilon        = 1.0e-06         )
