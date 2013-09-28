@@ -924,7 +924,7 @@ public:
 	 * \brief Destructor of the class. 
 	 */
 	~CSurfaceMovement(void);
-	
+  
 	/*! 
 	 * \brief Set a Hicks-Henne deformation bump functions on an airfoil.
 	 * \param[in] boundary - Geometry of the boundary.
@@ -981,13 +981,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetObstacle(CGeometry *boundary, CConfig *config);
-	
-	/*! 
-	 * \brief Stretch one side of a channel.
-	 * \param[in] boundary - Geometry of the boundary.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetStretch(CGeometry *boundary, CConfig *config);
 	
 	/*! 
 	 * \brief Set a rotation for surface movement.
