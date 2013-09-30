@@ -2,7 +2,7 @@
  * \file variable_direct_tne2.cpp
  * \brief Definition of the solution fields.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.7
+ * \version 2.0.8
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -639,7 +639,7 @@ void CTNE2EulerVariable::SetdPdrhos(CConfig *config) {
   
   unsigned short iDim, iSpecies, iEl, nHeavy, nEl, *nElStates;
   double *Ms, *Tref, *hf, *xi, *thetav, **thetae, **g;
-  double Ru, RuBAR, CvtrBAR, rhoCvtr, rhoCvve, Cvtrs, Cvves, rho_el, sqvel, conc;
+  double Ru, RuBAR, CvtrBAR, rhoCvtr, rhoCvve, Cvtrs, rho_el, sqvel, conc;
   double rho, rhos, rhoEve, T, Tve, evibs, eels, ef;
   double num, denom;
   
@@ -722,6 +722,7 @@ void CTNE2EulerVariable::SetdPdrhos(CConfig *config) {
 
 
 bool CTNE2EulerVariable::SetPrimVar_Compressible(CConfig *config) {
+
 	unsigned short iDim, iVar, iSpecies;
   bool check_dens, check_press, check_sos, check_temp, RightVol;
   
@@ -939,7 +940,7 @@ void CTNE2NSVariable ::SetThermalConductivity(CConfig *config) {
   /*--- Mixture thermal conductivity via Gupta-Yos approximation ---*/
   ThermalCond    = 0.0;
   ThermalCond_ve = 0.0;
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+  for (iSpecies = 0; iSpecies < nSpecifes; iSpecies++) {
     
     /*--- Calculate molar concentration ---*/
     Mi      = Ms[iSpecies];

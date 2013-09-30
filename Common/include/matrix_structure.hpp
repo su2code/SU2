@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the sparse matrices-by-blocks.
  *        The subroutines and functions are in the <i>matrix_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.7
+ * \version 2.0.8
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -39,7 +39,7 @@ using namespace std;
  * \brief Main class for defining sparse matrices-by-blocks
  with compressed row format.
  * \author A. Bueno, F. Palacios.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CSysMatrix {
 private:
@@ -359,6 +359,14 @@ public:
 	 */
 	void ComputeIdentityPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config);
 	
+  /*!
+	 * \brief Compute the residual Ax-b
+	 * \param[in] sol - CSysVector to be multiplied by the preconditioner.
+	 * \param[in] f - Result of the product A*vec.
+   * \param[out] res - Result of the product A*vec.
+	 */
+  void ComputeResidual(const CSysVector & sol, const CSysVector & f, CSysVector & res);
+
 };
 
 /*!

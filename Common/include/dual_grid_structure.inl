@@ -2,7 +2,7 @@
  * \file dual_grid_structure.inl
  * \brief In-Line subroutines of the <i>dual_grid_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.7
+ * \version 2.0.8
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -33,6 +33,8 @@ inline double CPoint::GetCoord(unsigned short val_dim) { return coord[val_dim]; 
 inline double *CPoint::GetCoord(void) { return coord; }
 
 inline void CPoint::SetCoord(unsigned short val_dim, double val_coord) { coord[val_dim] = val_coord; }
+
+inline void CPoint::AddCoord(unsigned short val_dim, double val_coord) { coord[val_dim] += val_coord; }
 
 inline void CPoint::SetCoord(double *val_coord) { 
 	for (unsigned short iDim = 0; iDim < nDim; iDim++) 

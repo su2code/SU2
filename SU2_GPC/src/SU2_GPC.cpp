@@ -2,7 +2,7 @@
  * \file SU2_GPC.cpp
  * \brief Main file of the Gradient Projection Code (SU2_GPC).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.7
+ * \version 2.0.8
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -121,13 +121,13 @@ int main(int argc, char *argv[]) {
 				cout << "Perform 2D deformation of the surface." << endl;
 			
 			switch ( config->GetDesign_Variable(iDV) ) {
-				case COSINE_BUMP : surface_mov->SetCosBump(boundary, config, iDV, true); break;
-				case FOURIER : surface_mov->SetFourier(boundary, config, iDV, true); break;
-				case HICKS_HENNE : surface_mov->SetHicksHenne(boundary, config, iDV, true); break;
-				case DISPLACEMENT : surface_mov->SetDisplacement(boundary, config, iDV, true); break;
-				case ROTATION : surface_mov->SetRotation(boundary, config, iDV, true); break;
-				case NACA_4DIGITS : surface_mov->SetNACA_4Digits(boundary, config); break;
-				case PARABOLIC : surface_mov->SetParabolic(boundary, config); break;
+				case COSINE_BUMP :    surface_mov->SetCosBump(boundary, config, iDV, true); break;
+				case FOURIER :        surface_mov->SetFourier(boundary, config, iDV, true); break;
+				case HICKS_HENNE :    surface_mov->SetHicksHenne(boundary, config, iDV, true); break;
+				case DISPLACEMENT :   surface_mov->SetDisplacement(boundary, config, iDV, true); break;
+				case ROTATION :       surface_mov->SetRotation(boundary, config, iDV, true); break;
+				case NACA_4DIGITS :   surface_mov->SetNACA_4Digits(boundary, config); break;
+				case PARABOLIC :      surface_mov->SetParabolic(boundary, config); break;
 			}
 			
 		}

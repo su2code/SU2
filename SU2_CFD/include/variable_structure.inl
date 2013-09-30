@@ -2,7 +2,7 @@
  * \file variable_structure.inl
  * \brief In-Line subroutines of the <i>variable_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.7
+ * \version 2.0.8
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -26,6 +26,14 @@
 inline void CVariable::SetVelocityInc2(void) { }
 
 inline void CVariable::SetPressureValue(double val_pressure) { }
+
+inline void CVariable::SetStress(unsigned short iVar, unsigned short jVar, double val_stress) { }
+  
+inline double **CVariable::GetStress(void) { return 0; }
+  
+inline void CVariable::SetVonMises_Stress(double val_stress) { }
+  
+inline double CVariable::GetVonMises_Stress(void) { return 0; }
 
 inline void CVariable::SetPressureInc(double val_pressure) { }
 
@@ -758,6 +766,14 @@ inline void CLevelSetVariable::SetPrimVar(unsigned short val_var, double val_pri
 inline double CLevelSetVariable::GetPrimVar(unsigned short val_var) { return Primitive[val_var]; }
 
 inline void CFEAVariable::SetPressureValue(double val_pressure) { Pressure = val_pressure; }
+
+inline void CFEAVariable::SetStress(unsigned short iVar, unsigned short jVar, double val_stress) { Stress[iVar][jVar] = val_stress; }
+  
+inline double **CFEAVariable::GetStress(void) { return Stress; }
+  
+inline void CFEAVariable::SetVonMises_Stress(double val_stress) { VonMises_Stress = val_stress; }
+  
+inline double CFEAVariable::GetVonMises_Stress(void) { return VonMises_Stress; }
 
 inline void CWaveVariable::SetThickness_Noise(double val_thickness_noise) { Thickness_Noise = val_thickness_noise; }
 

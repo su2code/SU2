@@ -2,7 +2,7 @@
  * \file solution_direct_mean.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.7
+ * \version 2.0.8
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -1427,8 +1427,8 @@ void CEulerSolver::Set_MPI_PrimVar_Gradient(CGeometry *geometry, CConfig *config
 }
 
 void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
-	unsigned long iPoint, Point_Fine, iVertex, Point_Coarse;
-	unsigned short iMesh, iChildren, iVar, iDim, iMarker;
+	unsigned long iPoint, Point_Fine;
+	unsigned short iMesh, iChildren, iVar, iDim;
 	double Density, Pressure, yFreeSurface, PressFreeSurface, Froude, yCoord, Velx, Vely, Velz, RhoVelx, RhoVely, RhoVelz, XCoord, YCoord, ZCoord, DensityInc, ViscosityInc, Heaviside, LevelSet, lambda, DensityFreeSurface, Area_Children, Area_Parent, LevelSet_Fine, epsilon, *Solution_Fine, *Solution; //, Factor_nu, nu_tilde;
 
   unsigned short nDim = geometry[MESH_0]->GetnDim();
@@ -2885,11 +2885,11 @@ void CEulerSolver::Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config
 	double *Plane_P0, *Plane_Normal, MinPlane, MaxPlane;
 	vector<double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil;
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-	bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-	bool freesurface = (config->GetKind_Regime() == FREESURFACE);	double rho_inf = Density_Inf;
+	double rho_inf = Density_Inf;
 	double V_inf_mag = sqrt(pow(Velocity_Inf[0],2.0) + pow(Velocity_Inf[1],2.0) + pow(Velocity_Inf[2],2.0));	
 	double dynamic_pressure = 0.5*rho_inf*pow(V_inf_mag,2.0);
-  bool Boundary, Monitoring;
+  unsigned short Boundary;
+  bool Monitoring;
   string Marker_Tag, Slice_Filename, Slice_Ext;
   ofstream Cp_File;
   char buffer[50];
