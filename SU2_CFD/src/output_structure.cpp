@@ -1558,9 +1558,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 	bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 	bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool transition = (config->GetKind_Trans_Model() == LM);
-  bool flow = (config->GetKind_Regime() == EULER) || (config->GetKind_Regime() == NAVIER_STOKES) ||
-  (config->GetKind_Regime() == RANS) || (config->GetKind_Regime() == ADJ_EULER) ||
-  (config->GetKind_Regime() == ADJ_NAVIER_STOKES) || (config->GetKind_Regime() == ADJ_RANS);
+  bool flow = (config->GetKind_Solver() == EULER) || (config->GetKind_Solver() == NAVIER_STOKES) ||
+  (config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == ADJ_EULER) ||
+  (config->GetKind_Solver() == ADJ_NAVIER_STOKES) || (config->GetKind_Solver() == ADJ_RANS);
   
 	if (Kind_Solver == AEROACOUSTIC_EULER) {
 		if (val_iZone == ZONE_0) Kind_Solver = EULER;
@@ -1749,7 +1749,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
      will be placed in an auxiliary vector and then communicated like
      all other volumetric variables. ---*/
     
-    Aux_Press = new double [geometry->GetnPointDomain()];
+    Aux_Press = new double [geometry->GetnPoint()];
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Aux_Press[iPoint] = 0.0;
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
       if (config->GetMarker_All_Plotting(iMarker) == YES)
