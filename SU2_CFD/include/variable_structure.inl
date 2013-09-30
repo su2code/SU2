@@ -249,7 +249,11 @@ inline double CVariable::GetLaminarViscosityInc(void) { return 0; }
 
 inline double CVariable::GetLaminarViscosity(unsigned short iSpecies) { return 0; }
 
+inline double CVariable::GetThermalConductivity(void) { return 0; }
+
 inline double CVariable::GetThermalConductivity(unsigned short iSpecies) { return 0; }
+
+inline double CVariable::GetThermalConductivity_ve(void) { return 0; }
 
 inline double CVariable::GetThermalConductivity_vib(unsigned short iSpecies) { return 0; }
 
@@ -889,6 +893,10 @@ inline unsigned short CTNE2EulerVariable::GetRhoCvtrIndex(void) { return RHOCVTR
 inline unsigned short CTNE2EulerVariable::GetRhoCvveIndex(void) { return RHOCVVE_INDEX; }
 
 inline double  CTNE2NSVariable::GetLaminarViscosity(void) { return LaminarViscosity; }
+
+inline double  CTNE2NSVariable::GetThermalConductivity(void) { return ThermalCond; }
+
+inline double  CTNE2NSVariable::GetThermalConductivity_ve(void) { return ThermalCond_ve; }
 
 inline double  CTNE2NSVariable::GetVorticity(unsigned short val_dim) { return Vorticity[val_dim]; }
 

@@ -600,8 +600,8 @@ void CUpwAUSM_TNE2::ComputeResidual(double *val_residual,
     /*--- Calculate supplementary values ---*/
     conc_i = 0.0; conc_j = 0.0;
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-      conc_i += V_i[iSpecies]/Ms[iSpecies];
-      conc_j += V_j[iSpecies]/Ms[iSpecies];
+      conc_i += V_i[RHOS_INDEX+iSpecies]/Ms[iSpecies];
+      conc_j += V_j[RHOS_INDEX+iSpecies]/Ms[iSpecies];
     }
     dPdrhoE_i = Ru/rhoCvtr_i * conc_i;
     dPdrhoE_j = Ru/rhoCvtr_j * conc_j;
@@ -631,7 +631,6 @@ void CUpwAUSM_TNE2::ComputeResidual(double *val_residual,
     //Sound speed derivatives: Vib-el energy
     daL[nSpecies+nDim+1] = 1.0/(2.0*rho_i*a_i) * ((1.0+dPdrhoE_i)*dPdrhoEve_i);
     daR[nSpecies+nDim+1] = 1.0/(2.0*rho_j*a_j) * ((1.0+dPdrhoE_j)*dPdrhoEve_j);
-    
 
     /*--- Left state Jacobian ---*/
     if (mF >= 0) {
