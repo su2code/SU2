@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.7
+ * \version 2.0.8
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -49,7 +49,7 @@ using namespace std;
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
  * \author F. Palacios.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CConfig {
 private:
@@ -461,6 +461,7 @@ private:
 	Flow_FileName,					/*!< \brief Flow variables output file. */
 	Farfield_FileName, 				/*!< \brief Data at farfield boundaries. */
 	Structure_FileName,					/*!< \brief Structure variables output file. */
+	SurfStructure_FileName,					/*!< \brief Surface structure variables output file. */
 	Wave_FileName,					/*!< \brief Wave variables output file. */
 	AdjWave_FileName,					/*!< \brief Adjoint wave variables output file. */
 	Residual_FileName,				/*!< \brief Residual variables output file. */
@@ -3510,6 +3511,12 @@ public:
 	 * \return Name of the file with the structure variables.
 	 */		
 	string GetStructure_FileName(void);
+  
+  /*!
+	 * \brief Get the name of the file with the structure variables.
+	 * \return Name of the file with the structure variables.
+	 */
+	string GetSurfStructure_FileName(void);
 
 	/*!
 	 * \brief Get the name of the file with the wave variables.

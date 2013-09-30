@@ -2,7 +2,7 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.7
+ * \version 2.0.8
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -798,6 +798,8 @@ inline string CConfig::GetSolution_AdjFileName(void) { return Solution_AdjFileNa
 inline string CConfig::GetFlow_FileName(void) { return Flow_FileName; }
 
 inline string CConfig::GetStructure_FileName(void) { return Structure_FileName; }
+
+inline string CConfig::GetSurfStructure_FileName(void) { return SurfStructure_FileName; }
 
 inline string CConfig::GetWave_FileName(void) { return Wave_FileName; }
 

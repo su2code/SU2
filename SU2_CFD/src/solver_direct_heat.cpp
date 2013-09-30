@@ -2,7 +2,7 @@
  * \file solution_direct_heat.cpp
  * \brief Main subrotuines for solving the heat equation.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.7
+ * \version 2.0.8
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -273,7 +273,7 @@ void CHeatSolver::Galerkin_Method(CGeometry *geometry,
     
 	}
 	
-  /* Prepare solution vector for multiplication */
+  /*--- Prepare solution vector for multiplication ---*/
   
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
 		for (iVar = 0; iVar < nVar; iVar++) {
@@ -291,6 +291,7 @@ void CHeatSolver::Galerkin_Method(CGeometry *geometry,
 		}
 		LinSysRes.SubtractBlock(iPoint, Residual);
 	}
+  
 }
 
 
