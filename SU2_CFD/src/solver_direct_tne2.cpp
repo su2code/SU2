@@ -314,14 +314,14 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
        will be returned and used to instantiate the vars. ---*/
 			iPoint_Local = Global2Local[iPoint_Global];
 			if (iPoint_Local >= 0) {
-/*        point_line >> index;
+        point_line >> index;
         for (iDim = 0; iDim < nDim; iDim++)
           point_line >> dull_val;
         for (iVar = 0; iVar < nVar; iVar++) {
           point_line >> Solution[iVar];
-        }*/
+        }
         
-        point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4] >> Solution[5] >> Solution[6];
+//        point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4] >> Solution[5] >> Solution[6];
         
 				node[iPoint_Local] = new CTNE2EulerVariable(Solution, nDim, nVar, nPrimVar,
                                                     nPrimVarGrad, config);
@@ -353,7 +353,6 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
  
 //    check_node = node[iPoint]->SetPrimVar_Compressible(config);
-    
     
     node[iPoint]->SetDensity();
     node[iPoint]->SetVelocity2();
@@ -1904,16 +1903,6 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
     
     /*--- Compute the upwind residual ---*/
 		numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);    
-    
-//    unsigned short iVar, jVar;
-//    cout << endl << endl << "Upw Jacobian: " << endl;
-//    for (iVar =0; iVar < nVar; iVar++) {
-//      for (jVar = 0; jVar < nVar; jVar++) {
-//        cout << Jacobian_i[iVar][jVar] << "\t";
-//      }
-//      cout << endl;
-//    }
-//    cin.get();
 		
     /*--- Update the residual values ---*/
 		LinSysRes.AddBlock(iPoint, Res_Conv);
@@ -3617,96 +3606,128 @@ CTNE2NSSolver::CTNE2NSSolver(void) : CTNE2EulerSolver() {
   
 }
 
-CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CTNE2EulerSolver() {
-	unsigned long iPoint, index, counter_local = 0, counter_global = 0;
-	unsigned short iVar, iDim, iMarker;
-  double Density, Velocity2, Pressure, Temperature;
+CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
+                             unsigned short iMesh) : CTNE2EulerSolver() {
+  bool restart, check_infty, check_temp, check_press;
+  unsigned short iDim, iMarker, iSpecies, iVar, nZone;
+	unsigned long iPoint, index, counter_local, counter_global;
+  double *Mvec_Inf, Alpha, Beta, dull_val;
   
-	unsigned short nZone = geometry->GetnZone();
-	bool restart = (config->GetRestart() || config->GetRestart_Flow());
-  double Gas_Constant = config->GetGas_ConstantND();
-  
-	/*--- Array initialization ---*/
-	CDrag_Visc = NULL;
-	CLift_Visc = NULL;
-	CMx_Visc = NULL;
-	CMy_Visc = NULL;
-	CMz_Visc = NULL;
-	CFx_Visc = NULL;
-	CFy_Visc = NULL;
-	CFz_Visc = NULL;
-	CEff_Visc = NULL;
-  Q_Visc = NULL;
-  Maxq_Visc = NULL;
-	ForceViscous = NULL;
-	MomentViscous = NULL;
-	CSkinFriction = NULL;
-  
+  /*--- Get MPI rank ---*/
 	int rank = MASTER_NODE;
 #ifndef NO_MPI
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
   
-	/*--- Set the gamma value ---*/
-	Gamma = config->GetGamma();
-	Gamma_Minus_One = Gamma - 1.0;
+	/*--- Array initialization ---*/
+	CDrag_Visc    = NULL;
+	CLift_Visc    = NULL;
+	CMx_Visc      = NULL;
+	CMy_Visc      = NULL;
+	CMz_Visc      = NULL;
+	CFx_Visc      = NULL;
+	CFy_Visc      = NULL;
+	CFz_Visc      = NULL;
+	CEff_Visc     = NULL;
+  Q_Visc        = NULL;
+  Maxq_Visc     = NULL;
+	ForceViscous  = NULL;
+	MomentViscous = NULL;
+	CSkinFriction = NULL;
+  
+  /*--- Initialize counters ---*/
+  counter_local  = 0;
+  counter_global = 0;
+  
+  /*--- Set booleans from settings in CConfig ---*/
+  restart = (config->GetRestart() || config->GetRestart_Flow());
   
 	/*--- Define geometry constants in the solver structure ---*/
-	nDim = geometry->GetnDim();
-	nVar = nDim + 2; nPrimVar = nDim+5; nPrimVarGrad = nDim+3;
-	nMarker = config->GetnMarker_All();
-	nPoint = geometry->GetnPoint();
+  nSpecies     = config->GetnSpecies();
+  nMarker      = config->GetnMarker_All();
+  nPoint       = geometry->GetnPoint();
 	nPointDomain = geometry->GetnPointDomain();
+	nDim         = geometry->GetnDim();
+  nZone        = geometry->GetnZone();
   
-	/*--- Allocate the node variables ---*/
+  /*--- Set the size of the primitive and conserve vectors ---*/
+  //     U: [rho1, ..., rhoNs, rhou, rhov, rhow, rhoe, rhoeve]^T
+  //     V: [rho1, ..., rhoNs, T, Tve, u, v, w, P, rho, h, a, rhoCvtr, rhoCvve]^T
+  // GradV: [rho1, ..., rhoNs, T, Tve, u, v, w, P]^T
+	nVar         = nSpecies+nDim+2;
+  nPrimVar     = nSpecies+nDim+8;
+  nPrimVarGrad = nSpecies+nDim+3;
+  
+	/*--- Allocate an array of CVariable objects for each node in the  mesh ---*/
 	node = new CVariable*[nPoint];
   
-	/*--- Define some auxiliar vector related with the residual ---*/
-	Residual      = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]      = 0.0;
-	Residual_RMS  = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
-	Residual_Max  = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
-	Point_Max  = new unsigned long[nVar]; for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]  = 0;
-	Residual_i    = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]    = 0.0;
-	Residual_j    = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]    = 0.0;
-	Res_Conv      = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Conv[iVar]      = 0.0;
-	Res_Visc      = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Visc[iVar]      = 0.0;
-	Res_Sour      = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Sour[iVar]      = 0.0;
+	/*--- Define auxiliary vectors to store residual-related quantities ---*/
+	Residual      = new double[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]      = 0.0;
+	Residual_RMS  = new double[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
+	Residual_Max  = new double[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
+	Point_Max  = new unsigned long[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]  = 0;
+	Residual_i    = new double[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]    = 0.0;
+	Residual_j    = new double[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]    = 0.0;
+	Res_Conv      = new double[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) Res_Conv[iVar]      = 0.0;
+	Res_Visc      = new double[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) Res_Visc[iVar]      = 0.0;
+	Res_Sour      = new double[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) Res_Sour[iVar]      = 0.0;
   
 	/*--- Define some auxiliary vectors related to the solution ---*/
-	Solution   = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution[iVar]   = 0.0;
-	Solution_i = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution_i[iVar] = 0.0;
-	Solution_j = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution_j[iVar] = 0.0;
+	Solution   = new double[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) Solution[iVar]   = 0.0;
+	Solution_i = new double[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) Solution_i[iVar] = 0.0;
+	Solution_j = new double[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) Solution_j[iVar] = 0.0;
   
 	/*--- Define some auxiliary vectors related to the geometry ---*/
-	Vector   = new double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector[iDim]   = 0.0;
-	Vector_i = new double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_i[iDim] = 0.0;
-	Vector_j = new double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_j[iDim] = 0.0;
+	Vector   = new double[nDim];
+  for (iDim = 0; iDim < nDim; iDim++) Vector[iDim]   = 0.0;
+	Vector_i = new double[nDim];
+  for (iDim = 0; iDim < nDim; iDim++) Vector_i[iDim] = 0.0;
+	Vector_j = new double[nDim];
+  for (iDim = 0; iDim < nDim; iDim++) Vector_j[iDim] = 0.0;
   
-	if ((config->GetKind_Upwind_TNE2() == ROE_TURKEL_2ND) || (config->GetKind_Upwind_TNE2() == ROE_TURKEL_1ST)) {
+  roe_turkel = false;
+	if ((config->GetKind_Upwind_TNE2() == ROE_TURKEL_1ST) ||
+      (config->GetKind_Upwind_TNE2() == ROE_TURKEL_2ND)   ) {
 		Precon_Mat_inv = new double* [nVar];
 		for (iVar = 0; iVar < nVar; iVar ++)
 			Precon_Mat_inv[iVar] = new double[nVar];
+    roe_turkel = true;
 	}
   
+  /*--- Initialize the solution & residual CVectors ---*/
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
   
-	/*--- Jacobians and vector structures for implicit computations ---*/
+	/*--- Allocate Jacobians for implicit time-stepping ---*/
 	if (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT) {
-    
-		/*--- Point to point Jacobians ---*/
 		Jacobian_i = new double* [nVar];
 		Jacobian_j = new double* [nVar];
 		for (iVar = 0; iVar < nVar; iVar++) {
 			Jacobian_i[iVar] = new double [nVar];
 			Jacobian_j[iVar] = new double [nVar];
 		}
-		/*--- Initialization of the structure of the whole Jacobian ---*/
-		if (rank == MASTER_NODE) cout << "Initialize jacobian structure (Navier-Stokes). MG level: " << iMesh <<"." << endl;
+    
+		/*--- Initialization of the structure of the global Jacobian ---*/
+		if (rank == MASTER_NODE)
+      cout << "Initialize jacobian structure (TNE2 Navier-Stokes). MG level: "
+           << iMesh <<"." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
 	} else {
 		if (rank == MASTER_NODE)
-			cout << "Explicit scheme. No jacobian structure (Navier-Stokes). MG level: " << iMesh <<"." << endl;
+			cout << "Explicit scheme. No jacobian structure (TNE2 Navier-Stokes). MG level: "
+           << iMesh <<"." << endl;
 	}
   
 	/*--- Computation of gradients by least squares ---*/
@@ -3718,12 +3739,12 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config, unsigned shor
 			Smatrix[iDim] = new double [nDim];
     
 		/*--- c vector := transpose(WA)*(Wb) ---*/
-		cvector = new double* [nDim+3];
-		for (iVar = 0; iVar < nDim+3; iVar++)
+		cvector = new double* [nPrimVarGrad];
+		for (iVar = 0; iVar < nPrimVarGrad; iVar++)
 			cvector[iVar] = new double [nDim];
 	}
   
-	/*--- Inviscid forces definition and coefficient in all the markers ---*/
+	/*--- Allocate force & coefficient arrays on boundaries ---*/
 	CPressure = new double* [nMarker];
 	for (iMarker = 0; iMarker < nMarker; iMarker++)
 		CPressure[iMarker] = new double [geometry->nVertex[iMarker]];
@@ -3739,71 +3760,89 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config, unsigned shor
 		CSkinFriction[iMarker] = new double [geometry->nVertex[iMarker]];
   
 	/*--- Non dimensional coefficients ---*/
-	ForceInviscid = new double[3];
+	ForceInviscid  = new double[3];
 	MomentInviscid = new double[3];
-	CDrag_Inv = new double[nMarker];
-	CLift_Inv = new double[nMarker];
+	CDrag_Inv      = new double[nMarker];
+	CLift_Inv      = new double[nMarker];
 	CSideForce_Inv = new double[nMarker];
-	CMx_Inv = new double[nMarker];
-	CMy_Inv = new double[nMarker];
-	CMz_Inv = new double[nMarker];
-	CEff_Inv = new double[nMarker];
-	CFx_Inv = new double[nMarker];
-	CFy_Inv = new double[nMarker];
-	CFz_Inv = new double[nMarker];
+	CMx_Inv        = new double[nMarker];
+	CMy_Inv        = new double[nMarker];
+	CMz_Inv        = new double[nMarker];
+	CEff_Inv       = new double[nMarker];
+	CFx_Inv        = new double[nMarker];
+	CFy_Inv        = new double[nMarker];
+	CFz_Inv        = new double[nMarker];
   
-	/*--- Init total coefficients ---*/
-	Total_CDrag = 0.0;	Total_CLift = 0.0;			Total_CSideForce = 0.0;
-	Total_CMx = 0.0;		Total_CMy = 0.0;				Total_CMz = 0.0;
-	Total_CEff = 0.0;
-	Total_CFx = 0.0;		Total_CFy = 0.0;				Total_CFz = 0.0;
-  Total_Q = 0.0;
-  Total_Maxq = 0.0;
+	/*--- Initialize total coefficients ---*/
+	Total_CDrag = 0.0;  Total_CLift = 0.0;  Total_CSideForce = 0.0;
+  Total_CFx   = 0.0;  Total_CFy   = 0.0;  Total_CFz = 0.0;
+	Total_CMx   = 0.0;  Total_CMy   = 0.0;  Total_CMz = 0.0;
+	Total_CEff  = 0.0;
+  Total_Q     = 0.0;
+  Total_Maxq  = 0.0;
   
-	ForceViscous = new double[3];
+	ForceViscous  = new double[3];
 	MomentViscous = new double[3];
-	CDrag_Visc = new double[nMarker];
-	CLift_Visc = new double[nMarker];
-	CMx_Visc = new double[nMarker];
-	CMy_Visc = new double[nMarker];
-	CMz_Visc = new double[nMarker];
-	CEff_Visc = new double[nMarker];
-	CFx_Visc = new double[nMarker];
-	CFy_Visc = new double[nMarker];
-	CFz_Visc = new double[nMarker];
-  Q_Visc = new double[nMarker];
-  Maxq_Visc = new double[nMarker];
+	CDrag_Visc    = new double[nMarker];
+	CLift_Visc    = new double[nMarker];
+	CMx_Visc      = new double[nMarker];
+	CMy_Visc      = new double[nMarker];
+	CMz_Visc      = new double[nMarker];
+	CEff_Visc     = new double[nMarker];
+	CFx_Visc      = new double[nMarker];
+	CFy_Visc      = new double[nMarker];
+	CFz_Visc      = new double[nMarker];
+  Q_Visc        = new double[nMarker];
+  Maxq_Visc     = new double[nMarker];
   
 	/*--- Read farfield conditions from config ---*/
-//	Density_Inf   = config->GetDensity_FreeStreamND();
-	Pressure_Inf  = config->GetPressure_FreeStreamND();
-	Velocity_Inf  = config->GetVelocity_FreeStreamND();
-//	Energy_Inf    = config->GetEnergy_FreeStreamND();
+	Pressure_Inf       = config->GetPressure_FreeStream();
+  Temperature_Inf    = config->GetTemperature_FreeStream();
+  Temperature_ve_Inf = config->GetTemperature_ve_FreeStream();
+  MassFrac_Inf       = config->GetMassFrac_FreeStream();
+  Mach_Inf           = config->GetMach_FreeStreamND();
+  
+  // Note: May need to investigate these more carefully...
 	Viscosity_Inf = config->GetViscosity_FreeStreamND();
 	Mach_Inf      = config->GetMach_FreeStreamND();
 	Prandtl_Lam   = config->GetPrandtl_Lam();
 	Prandtl_Turb  = config->GetPrandtl_Turb();
   
-	/*--- Inlet/Outlet boundary conditions, using infinity values ---*/
-//	Density_Inlet = Density_Inf;		Density_Outlet = Density_Inf;
-	Pressure_Inlet = Pressure_Inf;	Pressure_Outlet = Pressure_Inf;
-//	Energy_Inlet = Energy_Inf;			Energy_Outlet = Energy_Inf;
-	Mach_Inlet = Mach_Inf;					Mach_Outlet = Mach_Inf;
-	Velocity_Inlet  = new double [nDim]; Velocity_Outlet = new double [nDim];
-	for (iDim = 0; iDim < nDim; iDim++) {
-		Velocity_Inlet[iDim] = Velocity_Inf[iDim];
-		Velocity_Outlet[iDim] = Velocity_Inf[iDim];
-	}
+  /*--- Vectorize free stream Mach number based on AoA & AoS ---*/
+  Mvec_Inf = new double[nDim];
+  Alpha    = config->GetAoA();
+  Beta     = config->GetAoS();
+  if (nDim == 2) {
+    Mvec_Inf[0] = cos(Alpha)*Mach_Inf;
+    Mvec_Inf[1] = sin(Alpha)*Mach_Inf;
+  }
+  if (nDim == 3) {
+    Mvec_Inf[0] = cos(Alpha)*cos(Beta)*Mach_Inf;
+    Mvec_Inf[1] = sin(Beta)*Mach_Inf;
+    Mvec_Inf[2] = sin(Alpha)*cos(Beta)*Mach_Inf;
+  }
   
-	/*--- Restart the solution from file information ---*/
+  /*--- Create a CVariable that stores the free-stream values ---*/
+  node_infty = new CTNE2NSVariable(Pressure_Inf, MassFrac_Inf,
+                                   Mvec_Inf, Temperature_Inf,
+                                   Temperature_ve_Inf, nDim, nVar,
+                                   nPrimVar, nPrimVarGrad, config);
+  check_infty = node_infty->SetPrimVar_Compressible(config);
+  
+  
+	/*--- Check for a restart and set up the variables at each node
+   appropriately. Coarse multigrid levels will be intitially set to
+   the farfield values bc the solver will immediately interpolate
+   the solution from the finest mesh to the coarser levels. ---*/
 	if (!restart || geometry->GetFinestMGLevel() == false || nZone > 1) {
     
-		/*--- Restart the solution from infinity ---*/
-//		for (iPoint = 0; iPoint < nPoint; iPoint++)
-//			node[iPoint] = new CNSVariable(Density_Inf, Velocity_Inf, Energy_Inf, nDim, nVar, config);
-	}
-  
-	else {
+		/*--- Initialize using freestream values ---*/
+		for (iPoint = 0; iPoint < nPoint; iPoint++)
+			node[iPoint] = new CTNE2NSVariable(Pressure_Inf, MassFrac_Inf,
+                                         Mvec_Inf, Temperature_Inf,
+                                         Temperature_ve_Inf, nDim, nVar,
+                                         nPrimVar, nPrimVarGrad, config);
+	} else {
     
 		/*--- Restart the solution from file information ---*/
 		ifstream restart_file;
@@ -3843,10 +3882,20 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config, unsigned shor
        Otherwise, the local index for this node on the current processor
        will be returned and used to instantiate the vars. ---*/
 			iPoint_Local = Global2Local[iPoint_Global];
-			if (iPoint_Local >= 0) {
-        if (nDim == 2) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-        if (nDim == 3) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
-				node[iPoint_Local] = new CNSVariable(Solution, nDim, nVar, config);
+      if (iPoint_Local >= 0) {
+        point_line >> index;
+        for (iDim = 0; iDim < nDim; iDim++)
+          point_line >> dull_val;
+        for (iVar = 0; iVar < nVar; iVar++) {
+          point_line >> Solution[iVar];
+        }
+      /// OLD
+//			if (iPoint_Local >= 0) {
+//        if (nDim == 2) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+//        if (nDim == 3) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
+        
+				node[iPoint_Local] = new CTNE2NSVariable(Solution, nDim, nVar,
+                                                 nPrimVar,nPrimVarGrad, config);
 			}
 			iPoint_Global++;
 		}
@@ -3855,7 +3904,8 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config, unsigned shor
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
 		for(iPoint = nPointDomain; iPoint < nPoint; iPoint++)
-			node[iPoint] = new CNSVariable(Solution, nDim, nVar, config);
+			node[iPoint] = new CTNE2NSVariable(Solution, nDim, nVar, nPrimVar,
+                                         nPrimVarGrad, config);
     
 		/*--- Close the restart file ---*/
 		restart_file.close();
@@ -3868,24 +3918,113 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config, unsigned shor
   counter_local = 0;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     
-    Density = node[iPoint]->GetSolution(0);
-    Velocity2 = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      Velocity2 += (node[iPoint]->GetSolution(iDim+1)/Density)*(node[iPoint]->GetSolution(iDim+1)/Density);
-    Pressure    = Gamma_Minus_One*Density*(node[iPoint]->GetSolution(nDim+1)/Density-0.5*Velocity2);
-    Temperature = Pressure / ( Gas_Constant * Density);
-    if ((Pressure < 0.0) || (Temperature < 0.0)) {
-//      Solution[0] = Density_Inf;
+    
+    node[iPoint]->SetDensity();
+    node[iPoint]->SetVelocity2();
+    check_temp = node[iPoint]->SetTemperature(config);
+    check_press = node[iPoint]->SetPressure(config);
+    
+    if (check_temp || check_press) {
+      bool ionization;
+      unsigned short iEl, nHeavy, nEl, *nElStates;
+      double Ru, T, Tve, rhoCvtr, sqvel, rhoE, rhoEve, num, denom, conc;
+      double rho, rhos, Ef, Ev, Ee, soundspeed;
+      double *xi, *Ms, *thetav, **thetae, **g, *Tref, *hf;
+      /*--- Determine the number of heavy species ---*/
+      ionization = config->GetIonization();
+      if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
+      else            { nHeavy = nSpecies;   nEl = 0; }
+      
+      /*--- Load variables from the config class --*/
+      xi        = config->GetRotationModes();      // Rotational modes of energy storage
+      Ms        = config->GetMolar_Mass();         // Species molar mass
+      thetav    = config->GetCharVibTemp();        // Species characteristic vib. temperature [K]
+      thetae    = config->GetCharElTemp();         // Characteristic electron temperature [K]
+      g         = config->GetElDegeneracy();       // Degeneracy of electron states
+      nElStates = config->GetnElStates();          // Number of electron states
+      Tref      = config->GetRefTemperature();     // Thermodynamic reference temperature [K]
+      hf        = config->GetEnthalpy_Formation(); // Formation enthalpy [J/kg]
+      
+      /*--- Rename & initialize for convenience ---*/
+      Ru      = UNIVERSAL_GAS_CONSTANT;         // Universal gas constant [J/(kmol*K)]
+      Tve     = Temperature_ve_Inf;             // Vibrational temperature [K]
+      T       = Temperature_Inf;                // Translational-rotational temperature [K]
+      sqvel   = 0.0;                            // Velocity^2 [m2/s2]
+      rhoE    = 0.0;                            // Mixture total energy per mass [J/kg]
+      rhoEve  = 0.0;                            // Mixture vib-el energy per mass [J/kg]
+      denom   = 0.0;
+      conc    = 0.0;
+      rhoCvtr = 0.0;
+      
+      /*--- Calculate mixture density from supplied primitive quantities ---*/
+      for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
+        denom += MassFrac_Inf[iSpecies] * (Ru/Ms[iSpecies]) * T;
+      for (iSpecies = 0; iSpecies < nEl; iSpecies++)
+        denom += MassFrac_Inf[nSpecies-1] * (Ru/Ms[nSpecies-1]) * Tve;
+      rho = Pressure_Inf / denom;
+      
+      /*--- Calculate sound speed and extract velocities ---*/
+      for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+        conc += MassFrac_Inf[iSpecies]*rho/Ms[iSpecies];
+        rhoCvtr += rho*MassFrac_Inf[iSpecies] * (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies];
+      }
+      soundspeed = sqrt((1.0 + Ru/rhoCvtr*conc) * Pressure_Inf/rho);
       for (iDim = 0; iDim < nDim; iDim++)
-//        Solution[iDim+1] = Velocity_Inf[iDim]*Density_Inf;
-//      Solution[nDim+1] = Energy_Inf*Density_Inf;
+        sqvel += Mvec_Inf[iDim]*soundspeed * Mvec_Inf[iDim]*soundspeed;
+      
+      /*--- Calculate energy (RRHO) from supplied primitive quanitites ---*/
+      for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+        // Species density
+        rhos = MassFrac_Inf[iSpecies]*rho;
+        
+        // Species formation energy
+        Ef = hf[iSpecies] - Ru/Ms[iSpecies]*Tref[iSpecies];
+        
+        // Species vibrational energy
+        if (thetav[iSpecies] != 0.0)
+          Ev = Ru/Ms[iSpecies] * thetav[iSpecies] / (exp(thetav[iSpecies]/Tve)-1.0);
+        else
+          Ev = 0.0;
+        
+        // Species electronic energy
+        num = 0.0;
+        denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
+        for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
+          num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+          denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+        }
+        Ee = Ru/Ms[iSpecies] * (num/denom);
+        
+        // Mixture total energy
+        rhoE += rhos * ((3.0/2.0+xi[iSpecies]/2.0) * Ru/Ms[iSpecies] * (T-Tref[iSpecies])
+                        + Ev + Ee + Ef + 0.5*sqvel);
+        
+        // Mixture vibrational-electronic energy
+        rhoEve += rhos * (Ev + Ee);
+      }
+      for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
+        // Species formation energy
+        Ef = hf[nSpecies-1] - Ru/Ms[nSpecies-1] * Tref[nSpecies-1];
+        
+        // Electron t-r mode contributes to mixture vib-el energy
+        rhoEve += (3.0/2.0) * Ru/Ms[nSpecies-1] * (Tve - Tref[nSpecies-1]);
+      }
+      
+      /*--- Initialize Solution & Solution_Old vectors ---*/
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+        Solution[iSpecies]     = rho*MassFrac_Inf[iSpecies];
+      }
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Solution[nSpecies+iDim]     = rho*Mvec_Inf[iDim]*soundspeed;
+      }
+      Solution[nSpecies+nDim]       = rhoE;
+      Solution[nSpecies+nDim+1]     = rhoEve;
       
       node[iPoint]->SetSolution(Solution);
       node[iPoint]->SetSolution_Old(Solution);
       
       counter_local++;
-    }
-    
+    }    
   }
   
 #ifndef NO_MPI
@@ -3899,18 +4038,21 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config, unsigned shor
 #endif
   
   
-  if ((rank == MASTER_NODE) && (counter_global != 0)) cout << "Warning. The original solution contains "<< counter_global << " points that are not physical." << endl;
+  if ((rank == MASTER_NODE) && (counter_global != 0))
+    cout << "Warning. The original solution contains "<< counter_global
+         << " points that are not physical." << endl;
   
 	/*--- Define solver parameters needed for execution of destructor ---*/
-	if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
-	else least_squares = false;
-  
-	if ((config->GetKind_Upwind_TNE2() == ROE_TURKEL_2ND) ||
-      (config->GetKind_Upwind_TNE2() == ROE_TURKEL_1ST)) roe_turkel = true;
-	else roe_turkel = false;
+	if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)
+    least_squares = true;
+	else
+    least_squares = false;
   
 	/*--- MPI solution ---*/
 	Set_MPI_Solution(geometry, config);
+  
+  /*--- Deallocate arrays ---*/
+  delete [] Mvec_Inf;
   
 }
 

@@ -934,6 +934,18 @@ public:
    * \brief A virtual member.
    * \return Value of the thermal conductivity (translational/rotational)
    */
+  virtual double GetThermalConductivity(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the thermal conductivity (vibrational)
+   */
+  virtual double GetThermalConductivity_ve(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the thermal conductivity (translational/rotational)
+   */
   virtual double GetThermalConductivity(unsigned short iSpecies);
   
   /*!
@@ -3915,6 +3927,8 @@ private:
 	double Viscosity_Ref;     /*!< \brief Reference viscosity of the fluid. */
 	double Viscosity_Inf;     /*!< \brief Viscosity of the fluid at the infinity. */
 	double LaminarViscosity;	/*!< \brief Viscosity of the fluid. */
+  double ThermalCond;       /*!< \brief T-R thermal conductivity of the gas mixture. */
+  double ThermalCond_ve;    /*!< \brief V-E thermal conductivity of the gas mixture. */
 	double Vorticity[3];		/*!< \brief Vorticity of the fluid. */
   
 public:
@@ -3961,7 +3975,13 @@ public:
 	/*!
 	 * \brief Set the laminar viscosity.
 	 */
-	void SetLaminarViscosity();
+	void SetLaminarViscosity(CConfig *config);
+  
+  /*!
+	 * \brief Get the laminar viscosity of the flow.
+	 * \return Value of the laminar viscosity of the flow.
+	 */
+	void SetThermalConductivity(CConfig *config);
   
 	/*!
 	 * \overload
@@ -3980,6 +4000,18 @@ public:
 	 */
 	double GetLaminarViscosity(void);
   
+  /*!
+	 * \brief Get the thermal conductivity of the flow.
+	 * \return Value of the laminar viscosity of the flow.
+	 */
+	double GetThermalConductivity(void);
+  
+  /*!
+	 * \brief Get the vib-el. thermal conductivity of the flow.
+	 * \return Value of the laminar viscosity of the flow.
+	 */
+	double GetThermalConductivity_ve(void);
+  
 	/*!
 	 * \brief Set the temperature at the wall
 	 */
@@ -3991,11 +4023,6 @@ public:
 	 * \return Value of the vorticity.
 	 */
 	double GetVorticity(unsigned short val_dim);
-  
-	/*!
-	 * \brief Set the value of pressure.
-	 */
-	bool SetPressure(CConfig *config);
 	
 	/*!
 	 * \brief Set all the primitive variables for compressible flows

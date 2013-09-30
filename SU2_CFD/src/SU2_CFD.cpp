@@ -335,8 +335,9 @@ int main(int argc, char *argv[]) {
 				break;
         
       case TNE2_EULER: case TNE2_NAVIER_STOKES:
-        TNE2Iteration(output, integration_container, geometry_container,
-                      solver_container, numerics_container, config_container,
+        TNE2Iteration(output, integration_container,
+                      geometry_container, solver_container,
+                      numerics_container, config_container,
                       surface_movement, grid_movement, FFDBox);
         break;
 				

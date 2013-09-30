@@ -65,8 +65,9 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry, CSolver *
 	FinestMesh = config[iZone]->GetFinestMesh();
     
 	/*--- Perform the Full Approximation Scheme multigrid ---*/
-	MultiGrid_Cycle(geometry, solver_container, numerics_container, config, FinestMesh,
-                        config[iZone]->GetMGCycle(), RunTime_EqSystem, Iteration, iZone);
+	MultiGrid_Cycle(geometry, solver_container, numerics_container, config,
+                  FinestMesh, config[iZone]->GetMGCycle(), RunTime_EqSystem,
+                  Iteration, iZone);
     
 	/*--- Compute non-dimensional parameters and the convergence monitor ---*/
 	NonDimensional_Parameters(geometry[iZone], solver_container[iZone], numerics_container[iZone], config[iZone],

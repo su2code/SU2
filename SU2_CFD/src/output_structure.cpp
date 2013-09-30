@@ -1680,7 +1680,13 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         iVar_Tempv = nVar_Total;
         nVar_Total++;
     }
-    
+  
+  if (Kind_Solver == TNE2_NAVIER_STOKES) {
+    /*--- Diffusivity, viscosity, & thermal conductivity ---*/
+    iVar_TempLam = nVar_Total;
+    nVar_Total += 4;
+  }
+  
 	if (Kind_Solver == ELECTRIC_POTENTIAL) {
 		iVar_EF = geometry->GetnDim();
 		nVar_Total += geometry->GetnDim();
@@ -1926,7 +1932,8 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
                     
                 case TNE2_EULER:
                     /*--- Write Mach number ---*/
-                    Data[jVar][jPoint] = sqrt(solver[TNE2_SOL]->node[iPoint]->GetVelocity2()) / solver[TNE2_SOL]->node[iPoint]->GetSoundSpeed();
+                    Data[jVar][jPoint] = sqrt(solver[TNE2_SOL]->node[iPoint]->GetVelocity2())
+                                       / solver[TNE2_SOL]->node[iPoint]->GetSoundSpeed();
                     jVar++;
                     /*--- Write Pressure ---*/
                     Data[jVar][jPoint] = solver[TNE2_SOL]->node[iPoint]->GetPressure();
