@@ -296,11 +296,15 @@ def read_config(filename):
         for case in switch(this_param):
             
             # comma delimited lists of strings with or without paren's
-            if case("TASKS")          : pass
-            if case("GRADIENTS")      : pass
-            if case("DV_KIND")        : 
+            if case("MARKER_EULER")      : pass
+            if case("MARKER_FAR")        : pass
+            if case("MARKER_PLOTTING")   : pass
+            if case("MARKER_SYM")        : pass
+            if case("DV_KIND")           : 
                 # remove white space
                 this_value = ''.join(this_value.split())   
+                # remove parens
+                this_value = this_value.strip('()')
                 # split by comma
                 data_dict[this_param] = this_value.split(",")
                 break

@@ -79,6 +79,7 @@ def deform ( config, dv_new=None, dv_old=None ):
     # redundancy check
     if konfig['DV_VALUE_NEW'] == konfig['DV_VALUE_OLD']:
         info = su2io.State()
+        info.FILES.MESH = konfig.MESH_FILENAME
         info.VARIABLES.DV_VALUE_NEW = konfig.DV_VALUE_NEW        
         return info
     
