@@ -545,6 +545,10 @@ def write_config(filename,param_dict):
                 break            
             
             # comma delimited list of strings inside paren's
+            if case("MARKER_EULER")      : pass
+            if case("MARKER_FAR")        : pass
+            if case("MARKER_PLOTTING")   : pass
+            if case("MARKER_SYM")        : pass            
             if case("DV_MARKER") : 
                 if not isinstance(new_value,list):
                     new_value = [ new_value ]                
