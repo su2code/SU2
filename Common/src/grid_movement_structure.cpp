@@ -2,7 +2,7 @@
  * \file grid_movement_structure.cpp
  * \brief Subroutines for doing the grid movement using different strategies.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.7
+ * \version 2.0.8
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -2018,22 +2018,28 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
     /*--- Bump deformation for 2D problems ---*/
   } else if (nDim == 2) {
     
-		/*--- Apply the design variables to the control point position ---*/
-		for (iDV = 0; iDV < config->GetnDV(); iDV++) {
+    /*--- Apply rotation, displacement and stretching design variables (this
+     should be done before the bump function design variables) ---*/
+    for (iDV = 0; iDV < config->GetnDV(); iDV++) {
 			switch ( config->GetDesign_Variable(iDV) ) {
-				case HICKS_HENNE : SetHicksHenne(geometry, config, iDV, false); break;
-				case COSINE_BUMP : SetCosBump(geometry, config, iDV, false); break;
-				case FOURIER : SetFourier(geometry, config, iDV, false); break;
+				case ROTATION :     SetRotation(geometry, config, iDV, false); break;
 				case DISPLACEMENT : SetDisplacement(geometry, config, iDV, false); break;
-				case ROTATION : SetRotation(geometry, config, iDV, false); break;
-				case NACA_4DIGITS : SetNACA_4Digits(geometry, config); break;
-				case PARABOLIC : SetParabolic(geometry, config); break;
-				case OBSTACLE : SetObstacle(geometry, config); break;
-				case STRETCH : SetStretch(geometry, config); break;
-        case SURFACE_FILE : SetExternal_Deformation(geometry, config, ZONE_0, iExtIter); break;
 			}
 		}
     
+		/*--- Apply the design variables to the control point position ---*/
+		for (iDV = 0; iDV < config->GetnDV(); iDV++) {
+			switch ( config->GetDesign_Variable(iDV) ) {
+				case HICKS_HENNE :  SetHicksHenne(geometry, config, iDV, false); break;
+				case COSINE_BUMP :  SetCosBump(geometry, config, iDV, false); break;
+				case FOURIER :      SetFourier(geometry, config, iDV, false); break;
+				case NACA_4DIGITS : SetNACA_4Digits(geometry, config); break;
+				case PARABOLIC :    SetParabolic(geometry, config); break;
+				case OBSTACLE :     SetObstacle(geometry, config); break;
+        case SURFACE_FILE : SetExternal_Deformation(geometry, config, ZONE_0, iExtIter); break;
+			}
+		}
+        
     /*--- Free Form Deformation for 3D problems ---*/
 	} else if (nDim == 3) {
 		    
@@ -2695,15 +2701,16 @@ void CSurfaceMovement::SetFFDRotation(CGeometry *geometry, CConfig *config, CFre
 	
 }
 
-
 void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
 	unsigned long iVertex, Point;
 	unsigned short iMarker;
-	double VarCoord[3], *Coord, *Normal, ek, fk, BumpSize = 1.0, BumpLoc = 0.0, xCoord;
+	double VarCoord[3], VarCoord_[3], *Coord_, *Normal_, ek, fk, BumpSize = 1.0, BumpLoc = 0.0, Coord[3], Normal[3],
+  xCoord, TPCoord[2] = {0.0, 0.0}, LPCoord[2] = {0.0, 0.0}, Distance, Chord, AoA, ValCos, ValSin;
   
 	bool upper = true, double_surface = false;
+
+	/*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
   
-	/*--- Reset airfoil deformation if first deformation ---*/
 	if ((iDV == 0) || (ResetDef == true)) {
 		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
 			for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
@@ -2712,7 +2719,82 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
 			}
 	}
   
+  /*--- Compute the angle of attack to apply the deformation ---*/
+  
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_DV(iMarker) == YES) {
+      Coord_ = boundary->vertex[iMarker][0]->GetCoord();
+      TPCoord[0] = Coord_[0]; TPCoord[1] = Coord_[1];
+      for (iVertex = 1; iVertex < boundary->nVertex[iMarker]; iVertex++) {
+				Coord_ = boundary->vertex[iMarker][iVertex]->GetCoord();
+        if (Coord_[0] > TPCoord[0]) { TPCoord[0] = Coord_[0]; TPCoord[1] = Coord_[1]; }
+			}
+		}
+	}
+  
+#ifndef NO_MPI
+
+  unsigned long *Buffer_Send_nVertex, *Buffer_Receive_nVertex;
+	int iProcessor;
+	double *Buffer_Send_Coord, *Buffer_Receive_Coord;
+  
+	int nProcessor = MPI::COMM_WORLD.Get_size();
+  
+	Buffer_Receive_Coord = new double [nProcessor*2];
+  Buffer_Send_Coord = new double [2];
+  
+  Buffer_Send_Coord[0] = TPCoord[0]; Buffer_Send_Coord[1] = TPCoord[1];
+	MPI::COMM_WORLD.Allgather(Buffer_Send_Coord, 2, MPI::DOUBLE, Buffer_Receive_Coord, 2, MPI::DOUBLE);
+  
+  TPCoord[0] = Buffer_Receive_Coord[0]; TPCoord[1] = Buffer_Receive_Coord[1];
+  for (iProcessor = 1; iProcessor < nProcessor; iProcessor++) {
+    Coord[0] = Buffer_Receive_Coord[iProcessor*2 + 0];
+    Coord[1] = Buffer_Receive_Coord[iProcessor*2 + 1];
+    if (Coord[0] > TPCoord[0]) { TPCoord[0] = Coord[0]; TPCoord[1] = Coord[1]; }
+  }
+  
+	delete[] Buffer_Send_Coord;   delete[] Buffer_Receive_Coord;
+  
+#endif
+
+
+  Chord = 0.0;
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_DV(iMarker) == YES) {
+      for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
+        Coord_ = boundary->vertex[iMarker][iVertex]->GetCoord();
+        Distance = sqrt(pow(Coord_[0] - TPCoord[0], 2.0) + pow(Coord_[1] - TPCoord[1], 2.0));
+        if (Chord < Distance) { Chord = Distance; LPCoord[0] = Coord_[0]; LPCoord[1] = Coord_[1]; }
+      }
+    }
+  }
+  
+#ifndef NO_MPI
+  
+	nProcessor = MPI::COMM_WORLD.Get_size();
+  
+	Buffer_Receive_Coord = new double [nProcessor*2];
+  Buffer_Send_Coord = new double [2];
+  
+  Buffer_Send_Coord[0] = LPCoord[0]; Buffer_Send_Coord[1] = LPCoord[1];
+	MPI::COMM_WORLD.Allgather(Buffer_Send_Coord, 2, MPI::DOUBLE, Buffer_Receive_Coord, 2, MPI::DOUBLE);
+  
+  Chord = 0.0;
+  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+    Coord[0] = Buffer_Receive_Coord[iProcessor*2 + 0];
+    Coord[1] = Buffer_Receive_Coord[iProcessor*2 + 1];
+    Distance = sqrt(pow(Coord[0] - TPCoord[0], 2.0) + pow(Coord[1] - TPCoord[1], 2.0));
+    if (Chord < Distance) { Chord = Distance; LPCoord[0] = Coord[0]; LPCoord[1] = Coord[1]; }
+  }
+  
+	delete[] Buffer_Send_Coord;   delete[] Buffer_Receive_Coord;
+  
+#endif
+  
+  AoA = atan((LPCoord[1] - TPCoord[1]) / (TPCoord[0] - LPCoord[0]))*180/PI_NUMBER;
+  
 	/*--- Perform multiple airfoil deformation ---*/
+  
 	double Ampl = config->GetDV_Value(iDV);
 	double xk = config->GetParamDV(iDV, 1);
 	const double t2 = 3.0;
@@ -2724,10 +2806,25 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
 
 		for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
 			VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
+      
+      
 			if (config->GetMarker_All_DV(iMarker) == YES) {
 				Point = boundary->vertex[iMarker][iVertex]->GetNode();
-				Coord = boundary->vertex[iMarker][iVertex]->GetCoord();
-				Normal = boundary->vertex[iMarker][iVertex]->GetNormal();
+        
+				Coord_ = boundary->vertex[iMarker][iVertex]->GetCoord();
+				Normal_ = boundary->vertex[iMarker][iVertex]->GetNormal();
+        
+        /*--- The Hicks Henne bump functions should be applied to a basic airfoil without AoA,
+         and unitary chord, a tranformation is required ---*/
+        ValCos = cos(AoA*PI_NUMBER/180.0);
+        ValSin = sin(AoA*PI_NUMBER/180.0);
+        
+        Coord[0] = Coord_[0]*ValCos - Coord_[1]*ValSin;
+        Coord[0] = max(0.0, Coord[0]); // Coord x should be always positive
+        Coord[1] = Coord_[1]*ValCos + Coord_[0]*ValSin;
+        
+        Normal[0] = Normal_[0]*ValCos - Normal_[1]*ValSin;
+        Normal[1] = Normal_[1]*ValCos + Normal_[0]*ValSin;
         
         /*--- Bump computation ---*/
 				if (double_surface) {
@@ -2748,9 +2845,17 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
 				}
 			}
       
-			boundary->vertex[iMarker][iVertex]->AddVarCoord(VarCoord);
+      /*--- Apply the transformation to the coordinate variation ---*/
+      ValCos = cos(-AoA*PI_NUMBER/180.0);
+      ValSin = sin(-AoA*PI_NUMBER/180.0);
+      
+      VarCoord_[0] = VarCoord[0]*ValCos - VarCoord[1]*ValSin;
+      VarCoord_[1] = VarCoord[1]*ValCos + VarCoord[0]*ValSin;
+
+			boundary->vertex[iMarker][iVertex]->AddVarCoord(VarCoord_);
 		}
 	}
+  
 }
 
 void CSurfaceMovement::SetSpherical(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
@@ -2876,13 +2981,119 @@ void CSurfaceMovement::SetSpherical(CGeometry *boundary, CConfig *config, unsign
 
 }
 
+void CSurfaceMovement::SetRotation(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
+	unsigned long iVertex;
+	unsigned short iMarker;
+	double VarCoord[3], *Coord;
+	double  movement[3], x, y, z;
+  
+  /*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
+  
+	if ((iDV == 0) || (ResetDef == true)) {
+		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+			for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
+				VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
+				boundary->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
+			}
+	}
+  
+	/*--- xyz-coordinates of a point on the line of rotation. */
+  
+	double a = config->GetParamDV(iDV, 0);
+	double b = config->GetParamDV(iDV, 1);
+	double c = 0.0;
+	if (boundary->GetnDim() == 3) c = config->GetParamDV(0,2);
+	
+	/*--- xyz-coordinate of the line's direction vector. ---*/
+  
+	double u = config->GetParamDV(iDV, 3)-config->GetParamDV(iDV, 0);
+	double v = config->GetParamDV(iDV, 4)-config->GetParamDV(iDV, 1);
+	double w = 1.0;
+	if (boundary->GetnDim() == 3) w = config->GetParamDV(iDV, 5)-config->GetParamDV(iDV, 2);
+	
+	/*--- The angle of rotation. ---*/
+  
+	double theta = config->GetDV_Value(iDV)*PI_NUMBER/180.0;
+	
+	/*--- An intermediate value used in computations. ---*/
+  
+	double u2=u*u; double v2=v*v; double w2=w*w;
+	double cosT = cos(theta); double sinT = sin(theta);
+	double l2 = u2 + v2 + w2; double l = sqrt(l2);
+  
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+		for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
+			VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
+			if (config->GetMarker_All_DV(iMarker) == YES) {
+				Coord = boundary->vertex[iMarker][iVertex]->GetCoord();
+				x = Coord[0]; y = Coord[1]; z = Coord[2];
+				
+				movement[0] = a*(v2 + w2) + u*(-b*v - c*w + u*x + v*y + w*z)
+				+ (-a*(v2 + w2) + u*(b*v + c*w - v*y - w*z) + (v2 + w2)*x)*cosT
+				+ l*(-c*v + b*w - w*y + v*z)*sinT;
+				movement[0] = movement[0]/l2 - x;
+				
+				movement[1] = b*(u2 + w2) + v*(-a*u - c*w + u*x + v*y + w*z)
+				+ (-b*(u2 + w2) + v*(a*u + c*w - u*x - w*z) + (u2 + w2)*y)*cosT
+				+ l*(c*u - a*w + w*x - u*z)*sinT;
+				movement[1] = movement[1]/l2 - y;
+				
+				movement[2] = c*(u2 + v2) + w*(-a*u - b*v + u*x + v*y + w*z)
+				+ (-c*(u2 + v2) + w*(a*u + b*v - u*x - v*y) + (u2 + v2)*z)*cosT
+				+ l*(-b*u + a*v - v*x + u*y)*sinT;
+				if (boundary->GetnDim() == 3) movement[2] = movement[2]/l2 - z;
+				else movement[2] = 0.0;
+				
+				VarCoord[0] = movement[0];
+				VarCoord[1] = movement[1];
+				if (boundary->GetnDim() == 3) VarCoord[2] = movement[2];
+				
+			}
+			boundary->vertex[iMarker][iVertex]->AddVarCoord(VarCoord);
+		}
+}
+
+void CSurfaceMovement::SetDisplacement(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
+	unsigned long iVertex;
+	unsigned short iMarker;
+	double VarCoord[3];
+	double Ampl = config->GetDV_Value(0);
+	
+  /*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
+  
+	if ((iDV == 0) || (ResetDef == true)) {
+		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+			for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
+				VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
+				boundary->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
+			}
+	}
+  
+	double xDispl = config->GetParamDV(iDV, 0);
+	double yDispl = config->GetParamDV(iDV, 1);
+	double zDispl = 0;
+	if (boundary->GetnDim() == 3) zDispl = config->GetParamDV(iDV, 2);
+	
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+		for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
+			VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
+			if (config->GetMarker_All_DV(iMarker) == YES) {
+				VarCoord[0] = Ampl*xDispl;
+				VarCoord[1] = Ampl*yDispl;
+				if (boundary->GetnDim() == 3) VarCoord[2] = Ampl*zDispl;
+			}
+			boundary->vertex[iMarker][iVertex]->AddVarCoord(VarCoord);
+		}
+  
+}
+
 void CSurfaceMovement::SetCosBump(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
 	unsigned long iVertex, Point;
 	unsigned short iMarker;
 	double VarCoord[3], *Coord, *Normal, fk, DesignSize = 2.0, DesignLoc = 1.0, xCoord, xCoord_Local;
   
 	bool upper = true, double_surface = false;
-
+  
 	/*--- Reset airfoil deformation if first deformation ---*/
 	if ((iDV == 0) || (ResetDef == true)) {
 		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
@@ -2905,7 +3116,7 @@ void CSurfaceMovement::SetCosBump(CGeometry *boundary, CConfig *config, unsigned
 		for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
 			VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
 			if (config->GetMarker_All_DV(iMarker) == YES) {
-
+        
 				Point = boundary->vertex[iMarker][iVertex]->GetNode();
 				Coord = boundary->vertex[iMarker][iVertex]->GetCoord();
 				Normal = boundary->vertex[iMarker][iVertex]->GetNormal();
@@ -2914,7 +3125,7 @@ void CSurfaceMovement::SetCosBump(CGeometry *boundary, CConfig *config, unsigned
 				if (double_surface) {
 					xCoord = Coord[0];
           xCoord_Local = (xCoord - BumpCenter);
-
+          
           if (fabs(xCoord_Local) < BumpSize) fk = 0.5*(1.0+cos(PI_NUMBER*xCoord_Local/BumpSize));
           else fk = 0.0;
 					/*--- Upper and lower surface ---*/
@@ -2922,23 +3133,23 @@ void CSurfaceMovement::SetCosBump(CGeometry *boundary, CConfig *config, unsigned
 					if ((!upper) && (Normal[1] < 0)) { VarCoord[1] = -Ampl*fk; }
 				}
 				else {
-
+          
 					xCoord = Coord[0];
           xCoord_Local = (xCoord - BumpCenter);
           
-//          if (fabs(xCoord_Local) < BumpSize*4.0) fk = 0.5*(1.0+cos(PI_NUMBER*xCoord_Local/BumpSize))*
-//            0.5*(1.0+cos(PI_NUMBER*xCoord_Local/(BumpSize*2.0)))*
-//            0.5*(1.0+cos(PI_NUMBER*xCoord_Local/(BumpSize*4.0)));
-//          else fk = 0.0;
+          //          if (fabs(xCoord_Local) < BumpSize*4.0) fk = 0.5*(1.0+cos(PI_NUMBER*xCoord_Local/BumpSize))*
+          //            0.5*(1.0+cos(PI_NUMBER*xCoord_Local/(BumpSize*2.0)))*
+          //            0.5*(1.0+cos(PI_NUMBER*xCoord_Local/(BumpSize*4.0)));
+          //          else fk = 0.0;
           
           if (fabs(xCoord_Local) < BumpSize) fk = 0.5*(1.0+cos(PI_NUMBER*xCoord_Local/BumpSize));
           else fk = 0.0;
           
-//					xCoord_Local = (xCoord - BumpCenter)/(0.5*BumpSize);
-//					ek = -1.0 / (1.0 - xCoord_Local*xCoord_Local);
-//          if (fabs(xCoord_Local) < 1.0) fk = exp(ek)/exp(-1.0);
-//          else fk = 0.0;
-
+          //					xCoord_Local = (xCoord - BumpCenter)/(0.5*BumpSize);
+          //					ek = -1.0 / (1.0 - xCoord_Local*xCoord_Local);
+          //          if (fabs(xCoord_Local) < 1.0) fk = exp(ek)/exp(-1.0);
+          //          else fk = 0.0;
+          
 					/*--- Only one surface ---*/
 					VarCoord[1] =  Ampl*fk;
 				}
@@ -2987,7 +3198,7 @@ void CSurfaceMovement::SetFourier(CGeometry *boundary, CConfig *config, unsigned
         
         /*--- Bump computation ---*/
 				if (double_surface) {
-
+          
           xCoord = Coord[0];
           xCoord_Local = (xCoord - (DesignLoc+0.5*DesignSize));
           
@@ -3026,91 +3237,6 @@ void CSurfaceMovement::SetFourier(CGeometry *boundary, CConfig *config, unsigned
 			boundary->vertex[iMarker][iVertex]->AddVarCoord(VarCoord);
 		}
 	}
-}
-
-void CSurfaceMovement::SetDisplacement(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
-	unsigned long iVertex;
-	unsigned short iMarker;
-	double VarCoord[3];
-	double Ampl = config->GetDV_Value(0);
-	
-	if (config->GetnDV() != 1) { cout << "This kind of design variable is not prepared for multiple deformations."; cin.get();	}
-	
-	double xDispl = config->GetParamDV(iDV, 0);
-	double yDispl = config->GetParamDV(iDV, 1);
-	double zDispl = 0;
-	if (boundary->GetnDim() == 3) zDispl = config->GetParamDV(iDV, 2);
-	
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
-			VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
-			if (config->GetMarker_All_DV(iMarker) == YES) {
-				VarCoord[0] = Ampl*xDispl;
-				VarCoord[1] = Ampl*yDispl;
-				if (boundary->GetnDim() == 3) VarCoord[2] = Ampl*zDispl;
-			}
-			boundary->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
-		}
-}
-
-void CSurfaceMovement::SetRotation(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
-	unsigned long iVertex;
-	unsigned short iMarker;
-	double VarCoord[3], *Coord;
-	double  movement[3], x, y, z;
-	
-	if (config->GetnDV() != 1) { cout << "This kind of design variable is not prepared for multiple deformations."; cin.get();	}
-	
-	/*--- xyz-coordinates of a point on the line of rotation. */
-	double a = config->GetParamDV(iDV, 0);
-	double b = config->GetParamDV(iDV, 1);
-	double c = 0.0;
-	if (boundary->GetnDim() == 3) c = config->GetParamDV(0,2);
-	
-	/*--- xyz-coordinate of the line's direction vector. ---*/
-	double u = config->GetParamDV(iDV, 3)-config->GetParamDV(iDV, 0);
-	double v = config->GetParamDV(iDV, 4)-config->GetParamDV(iDV, 1);
-	double w = 1.0;
-	if (boundary->GetnDim() == 3) w = config->GetParamDV(iDV, 5)-config->GetParamDV(iDV, 2);
-	
-	/*--- The angle of rotation. ---*/
-	double theta = config->GetDV_Value(iDV)*PI_NUMBER/180.0;
-	
-	/*--- An intermediate value used in computations. ---*/
-	double u2=u*u; double v2=v*v; double w2=w*w;     
-	double cosT = cos(theta); double sinT = sin(theta);  
-	double l2 = u2 + v2 + w2; double l = sqrt(l2);
-	
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
-			VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
-			if (config->GetMarker_All_DV(iMarker) == YES) {
-				Coord = boundary->vertex[iMarker][iVertex]->GetCoord();						
-				x = Coord[0]; y = Coord[1]; z = Coord[2];
-				
-				movement[0] = a*(v2 + w2) + u*(-b*v - c*w + u*x + v*y + w*z)
-				+ (-a*(v2 + w2) + u*(b*v + c*w - v*y - w*z) + (v2 + w2)*x)*cosT
-				+ l*(-c*v + b*w - w*y + v*z)*sinT;
-				movement[0] = movement[0]/l2 - x;
-				
-				movement[1] = b*(u2 + w2) + v*(-a*u - c*w + u*x + v*y + w*z) 
-				+ (-b*(u2 + w2) + v*(a*u + c*w - u*x - w*z) + (u2 + w2)*y)*cosT
-				+ l*(c*u - a*w + w*x - u*z)*sinT;
-				movement[1] = movement[1]/l2 - y;
-				
-				movement[2] = c*(u2 + v2) + w*(-a*u - b*v + u*x + v*y + w*z) 
-				+ (-c*(u2 + v2) + w*(a*u + b*v - u*x - v*y) + (u2 + v2)*z)*cosT
-				+ l*(-b*u + a*v - v*x + u*y)*sinT;
-				if (boundary->GetnDim() == 3) movement[2] = movement[2]/l2 - z;
-				else movement[2] = 0.0;
-				
-				VarCoord[0] = movement[0];
-				VarCoord[1] = movement[1];
-				if (boundary->GetnDim() == 3) VarCoord[2] = movement[2];
-				
-			}
-			boundary->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
-		}	
 }
 
 void CSurfaceMovement::Moving_Walls(CGeometry *geometry, CConfig *config,
@@ -3740,27 +3866,6 @@ void CSurfaceMovement::SetObstacle(CGeometry *boundary, CConfig *config) {
 					VarCoord[1] = (27.0/4.0)*(H/(L*L*L))*xCoord*(xCoord-L)*(xCoord-L);
 				else 
 					VarCoord[1] = 0.0;
-			}
-			boundary->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
-		}
-}
-
-void CSurfaceMovement::SetStretch(CGeometry *boundary, CConfig *config) {
-	unsigned long iVertex, Point;
-	unsigned short iMarker;
-	double VarCoord[3], *Coord;
-	
-	if (config->GetnDV() != 1) { cout << "This kind of design variable is not prepared for multiple deformations."; cin.get();	}
-	
-	double End = config->GetParamDV(0,1);
-	
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
-			VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
-			if (config->GetMarker_All_DV(iMarker) == YES) {
-				Point = boundary->vertex[iMarker][iVertex]->GetNode();
-				Coord = boundary->vertex[iMarker][iVertex]->GetCoord();
-				VarCoord[0] = End - Coord[0];
 			}
 			boundary->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
 		}

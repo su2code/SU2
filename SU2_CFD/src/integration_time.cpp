@@ -2,7 +2,7 @@
  * \file integration_time.cpp
  * \brief Time deppending numerical method.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.7
+ * \version 2.0.8
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -674,44 +674,44 @@ CSingleGridIntegration::~CSingleGridIntegration(void) { }
 
 void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ***geometry, CSolver ****solver_container,
                                                   CNumerics *****numerics_container, CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) {
-    unsigned short iMesh;
-    double monitor = 0.0;
-    
+  unsigned short iMesh;
+  double monitor = 0.0;
+
 	unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
-    
+  
 	/*--- Preprocessing ---*/
 	solver_container[iZone][MESH_0][SolContainer_Position]->Preprocessing(geometry[iZone][MESH_0], solver_container[iZone][MESH_0], config[iZone], MESH_0, 0, RunTime_EqSystem);
-    
-    /*--- Set the old solution ---*/
-    solver_container[iZone][MESH_0][SolContainer_Position]->Set_OldSolution(geometry[iZone][MESH_0]);
-    
+  
+  /*--- Set the old solution ---*/
+  solver_container[iZone][MESH_0][SolContainer_Position]->Set_OldSolution(geometry[iZone][MESH_0]);
+  
 	/*--- Time step evaluation ---*/
 	solver_container[iZone][MESH_0][SolContainer_Position]->SetTime_Step(geometry[iZone][MESH_0], solver_container[iZone][MESH_0], config[iZone], MESH_0, 0);
-    
+  
 	/*--- Space integration ---*/
 	Space_Integration(geometry[iZone][MESH_0], solver_container[iZone][MESH_0], numerics_container[iZone][MESH_0][SolContainer_Position],
-                      config[iZone], MESH_0, NO_RK_ITER, RunTime_EqSystem);
-    
+                    config[iZone], MESH_0, NO_RK_ITER, RunTime_EqSystem);
+  
 	/*--- Time integration ---*/
 	Time_Integration(geometry[iZone][MESH_0], solver_container[iZone][MESH_0], config[iZone], NO_RK_ITER,
-                     RunTime_EqSystem, Iteration);
-    
+                   RunTime_EqSystem, Iteration);
+  
 	/*--- Postprocessing ---*/
 	solver_container[iZone][MESH_0][SolContainer_Position]->Postprocessing(geometry[iZone][MESH_0], solver_container[iZone][MESH_0], config[iZone], MESH_0);
-    
+  
 	/*--- Compute adimensional parameters and the convergence monitor ---*/
 	switch (RunTime_EqSystem) {
-            
+      
 		case RUNTIME_WAVE_SYS:
-            
+      
 			/*--- Calculate the wave strength ---*/
 			solver_container[iZone][MESH_0][WAVE_SOL]->Wave_Strength(geometry[iZone][MESH_0], config[iZone]);
-            
+      
 			/*--- Evaluate convergence monitor ---*/
 			if (config[iZone]->GetConvCriteria() == CAUCHY) {
 				monitor = solver_container[iZone][MESH_0][WAVE_SOL]->GetTotal_CWave();
 			}
-            
+      
 			if (config[iZone]->GetConvCriteria() == RESIDUAL)
 #ifdef NO_MPI
 				monitor = log10(solver_container[iZone][MESH_0][WAVE_SOL]->GetRes_RMS(0));
@@ -719,7 +719,7 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ***geometry, CSolver
 			monitor = log10(sqrt(solver_container[iZone][MESH_0][WAVE_SOL]->GetRes_RMS(0)));
 #endif
 			break;
-            
+      
 		case RUNTIME_FEA_SYS:
 #ifdef NO_MPI
 			monitor = log10(solver_container[iZone][MESH_0][FEA_SOL]->GetRes_RMS(0));
@@ -728,14 +728,14 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ***geometry, CSolver
 #endif
 			break;
 	}
-    
+  
 	/*--- Convergence strategy ---*/
 	Convergence_Monitoring(geometry[iZone][MESH_0], config[iZone], Iteration, monitor);
-    
-    /*--- Copy the solution to the coarse levels ---*/
-    for (iMesh = 0; iMesh < config[iZone]->GetMGLevels(); iMesh++)
-        SetRestricted_Solution(RunTime_EqSystem, solver_container[iZone][iMesh], solver_container[iZone][iMesh+1], geometry[iZone][iMesh], geometry[iZone][iMesh+1], config[iZone]);
-    
+  
+  /*--- Copy the solution to the coarse levels ---*/
+  for (iMesh = 0; iMesh < config[iZone]->GetMGLevels(); iMesh++)
+    SetRestricted_Solution(RunTime_EqSystem, solver_container[iZone][iMesh], solver_container[iZone][iMesh+1], geometry[iZone][iMesh], geometry[iZone][iMesh+1], config[iZone]);
+
 }
 
 void CSingleGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver **sol_fine, CSolver **sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {

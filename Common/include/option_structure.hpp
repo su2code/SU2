@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.7
+ * \version 2.0.8
  *
  * Many of the classes in this file are templated, and therefore must
  * be declared and defined here; to keep all elements together, there
@@ -354,12 +354,13 @@ enum ENUM_GRIDMOVEMENT {
 	NO_MOVEMENT = 0, /*!< \brief Simulation on a static mesh. */
 	DEFORMING = 1,		/*!< \brief Simulation with dynamically deforming meshes (plunging/pitching/rotation). */
 	RIGID_MOTION = 2,		/*!< \brief Simulation with rigid mesh motion (plunging/pitching/rotation). */
-	FLUID_STRUCTURE = 3,		/*!< \brief _______. */
+	FLUID_STRUCTURE = 3,		/*!< \brief Fluid structure defromation. */
 	EXTERNAL = 4,  /*!< \brief Arbitrary grid motion specified by external files at each time step. */
 	EXTERNAL_ROTATION = 5,  /*!< \brief Arbitrary grid motion specified by external files at each time step with rigid rotation. */
   AEROELASTIC = 6,    /*!< \brief Simulation with aeroelastic motion. */
   MOVING_WALL = 7,    /*!< \brief Simulation with moving walls (translation/rotation). */
-  ROTATING_FRAME = 8    /*!< \brief Simulation in a rotating frame. */
+  ROTATING_FRAME = 8,    /*!< \brief Simulation in a rotating frame. */
+  ELASTICITY = 9    /*!< \brief Linear Elasticity. */
 
 };
 static const map<string, ENUM_GRIDMOVEMENT> GridMovement_Map = CCreateMap<string, ENUM_GRIDMOVEMENT>
@@ -371,6 +372,7 @@ static const map<string, ENUM_GRIDMOVEMENT> GridMovement_Map = CCreateMap<string
 ("EXTERNAL_ROTATION", EXTERNAL_ROTATION)
 ("AEROELASTIC", AEROELASTIC)
 ("ROTATING_FRAME", ROTATING_FRAME)
+("ELASTICITY", ELASTICITY)
 ("MOVING_WALL", MOVING_WALL);
 
 /*!

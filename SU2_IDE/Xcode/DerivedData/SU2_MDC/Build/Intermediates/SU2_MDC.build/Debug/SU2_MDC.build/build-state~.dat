@@ -1,0 +1,454 @@
+TSU2_MDC
+v6
+r1
+cCheck dependencies
+cCompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/config_structure.o /Users/fpalacios/SU2/trunk/Common/src/config_structure.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
+cCompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/dual_grid_structure.o /Users/fpalacios/SU2/trunk/Common/src/dual_grid_structure.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
+cCompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/geometry_structure.o /Users/fpalacios/SU2/trunk/Common/src/geometry_structure.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
+cCompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/grid_adaptation_structure.o /Users/fpalacios/SU2/trunk/Common/src/grid_adaptation_structure.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
+cCompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/grid_movement_structure.o /Users/fpalacios/SU2/trunk/Common/src/grid_movement_structure.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
+cCompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/linear_solvers_structure.o /Users/fpalacios/SU2/trunk/Common/src/linear_solvers_structure.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
+cCompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/matrix_structure.o /Users/fpalacios/SU2/trunk/Common/src/matrix_structure.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
+cCompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/primal_grid_structure.o /Users/fpalacios/SU2/trunk/Common/src/primal_grid_structure.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
+cCompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/vector_structure.o /Users/fpalacios/SU2/trunk/Common/src/vector_structure.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
+cCompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/SU2_MDC.o /Users/fpalacios/SU2/trunk/SU2_MDC/src/SU2_MDC.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
+cLd /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Products/Debug/SU2_MDC normal x86_64
+
+N/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk
+c000000005130312F00000000000000AA
+t1362112815
+s170
+
+N/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/SDKSettings.plist
+c000000005244629E00000000000004B3
+t1380213406
+s1203
+
+N/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/System/Library/CoreServices/SystemVersion.plist
+c000000005244629F00000000000001DE
+t1380213407
+s478
+
+N/Users/fpalacios/SU2/trunk/Common/src/config_structure.cpp
+c000000005244D841000000000004BB15
+t1380243521
+s310037
+
+N/Users/fpalacios/SU2/trunk/Common/src/dual_grid_structure.cpp
+c000000005238F7540000000000003BB3
+t1379465044
+s15283
+
+N/Users/fpalacios/SU2/trunk/Common/src/geometry_structure.cpp
+c00000000524497F80000000000086B4A
+t1380227064
+s551754
+
+N/Users/fpalacios/SU2/trunk/Common/src/grid_adaptation_structure.cpp
+c000000005238F7540000000000024E17
+t1379465044
+s151063
+
+N/Users/fpalacios/SU2/trunk/Common/src/grid_movement_structure.cpp
+c000000005238F75400000000000324F9
+t1379465044
+s206073
+
+N/Users/fpalacios/SU2/trunk/Common/src/linear_solvers_structure.cpp
+c000000005244D841000000000000393D
+t1380243521
+s14653
+
+N/Users/fpalacios/SU2/trunk/Common/src/matrix_structure.cpp
+c00000000524497F80000000000008A28
+t1380227064
+s35368
+
+N/Users/fpalacios/SU2/trunk/Common/src/primal_grid_structure.cpp
+c000000005238F7540000000000004640
+t1379465044
+s17984
+
+N/Users/fpalacios/SU2/trunk/Common/src/vector_structure.cpp
+c000000005238F7540000000000002DD0
+t1379465044
+s11728
+
+N/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/SU2_MDC.LinkFileList
+c000000005245EB420000000000000631
+t1380313922
+s1585
+
+N/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/SU2_MDC.o
+t1380314149
+s3075576
+
+N/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/config_structure.o
+t1380313995
+s6086736
+
+N/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/dual_grid_structure.o
+t1380314021
+s2997928
+
+N/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/geometry_structure.o
+t1380314049
+s4787784
+
+N/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/grid_adaptation_structure.o
+t1380314073
+s3297964
+
+N/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/grid_movement_structure.o
+t1380314099
+s3834364
+
+N/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/linear_solvers_structure.o
+t1380314112
+s187932
+
+N/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/matrix_structure.o
+t1380314135
+s3121144
+
+N/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/primal_grid_structure.o
+t1380314148
+s2960216
+
+N/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/vector_structure.o
+t1380314136
+s103896
+
+N/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Products/Debug/SU2_MDC
+t2
+s0
+
+N/Users/fpalacios/SU2/trunk/SU2_MDC/src/SU2_MDC.cpp
+c000000005245EBC80000000000004049
+t1380314056
+s16457
+
+CBuild AST from /Users/fpalacios/SU2/trunk/Common/src/config_structure.cpp
+r0
+
+CBuild AST from /Users/fpalacios/SU2/trunk/Common/src/dual_grid_structure.cpp
+r0
+
+CBuild AST from /Users/fpalacios/SU2/trunk/Common/src/geometry_structure.cpp
+r0
+
+CBuild AST from /Users/fpalacios/SU2/trunk/Common/src/grid_adaptation_structure.cpp
+r0
+
+CBuild AST from /Users/fpalacios/SU2/trunk/Common/src/grid_movement_structure.cpp
+r0
+
+CBuild AST from /Users/fpalacios/SU2/trunk/Common/src/linear_solvers_structure.cpp
+r0
+
+CBuild AST from /Users/fpalacios/SU2/trunk/Common/src/matrix_structure.cpp
+r0
+
+CBuild AST from /Users/fpalacios/SU2/trunk/Common/src/primal_grid_structure.cpp
+r0
+
+CBuild AST from /Users/fpalacios/SU2/trunk/Common/src/vector_structure.cpp
+r0
+
+CBuild AST from /Users/fpalacios/SU2/trunk/SU2_MDC/src/SU2_MDC.cpp
+r0
+
+CCheck dependencies
+r0
+lSLF06#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection18"Check dependencies18"Check dependencies6893c7c222f6b741^adc1dfc222f6b741^---0#1#1#--18"Check dependencies36"83062F67-B881-4EB8-BDE5-E3B64030A842-
+
+CCompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/SU2_MDC.o /Users/fpalacios/SU2/trunk/SU2_MDC/src/SU2_MDC.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
+s402006936.611864
+e402006949.780136
+r1
+xCompileC
+xDerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/SU2_MDC.o
+x/Users/fpalacios/SU2/trunk/SU2_MDC/src/SU2_MDC.cpp
+xnormal
+xx86_64
+xc++
+xcom.apple.compilers.llvm.clang.1_0.compiler
+d/Users/fpalacios/SU2/trunk/SU2_MDC/src/SU2_MDC.cpp
+d/Users/fpalacios/SU2/trunk/SU2_MDC/include/SU2_MDC.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/geometry_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/primal_grid_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/dual_grid_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/config_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/option_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/config_structure.inl
+d/Users/fpalacios/SU2/trunk/Common/include/dual_grid_structure.inl
+d/Users/fpalacios/SU2/trunk/Common/include/primal_grid_structure.inl
+d/Users/fpalacios/SU2/trunk/Common/include/geometry_structure.inl
+d/Users/fpalacios/SU2/trunk/Common/include/grid_movement_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/matrix_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/linear_solvers_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/vector_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/vector_structure.inl
+d/Users/fpalacios/SU2/trunk/Common/include/linear_solvers_structure.inl
+d/Users/fpalacios/SU2/trunk/Common/include/matrix_structure.inl
+d/Users/fpalacios/SU2/trunk/Common/include/grid_movement_structure.inl
+lSLF06#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection58"Compile /Users/fpalacios/SU2/trunk/SU2_MDC/src/SU2_MDC.cpp227"CompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/SU2_MDC.o /Users/fpalacios/SU2/trunk/SU2_MDC/src/SU2_MDC.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler5dbf9c9823f6b741^d520c8a523f6b741^---0#0#1#-19%DVTDocumentLocation2@66"file://localhost/Users/fpalacios/SU2/trunk/SU2_MDC/src/SU2_MDC.cpp0000000000000000^3096"CompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/SU2_MDC.o /Users/fpalacios/SU2/trunk/SU2_MDC/src/SU2_MDC.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler    cd /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode    setenv LANG en_US.US-ASCII    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -arch x86_64 -fmessage-length=0 -fdiagnostics-show-note-include-stack -fmacro-backtrace-limit=0 -Wno-trigraphs -fpascal-strings -O3 -Wno-missing-field-initializers -Wno-missing-prototypes -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wno-missing-braces -Wparentheses -Wswitch -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wunused-variable -Wunused-value -Wno-empty-body -Wno-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wno-constant-conversion -Wno-int-conversion -Wno-bool-conversion -Wno-enum-conversion -Wno-shorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions -DNO_METIS -DNO_OMP -DNO_MPI -DNO_MUTATIONPP -DNO_CGNS -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk -fasm-blocks -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -mmacosx-version-min=10.8 -g -fvisibility=hidden -fvisibility-inlines-hidden -Wno-sign-conversion -iquote /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-generated-files.hmap -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-own-target-headers.hmap -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-all-target-headers.hmap -iquote /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-project-headers.hmap -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Products/Debug/include -I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/DerivedSources/x86_64 -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/DerivedSources -F/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Products/Debug -MMD -MT dependencies -MF /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/SU2_MDC.d --serialize-diagnostics /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/SU2_MDC.dia -c /Users/fpalacios/SU2/trunk/SU2_MDC/src/SU2_MDC.cpp -o /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/SU2_MDC.o36"2A1CDD62-FF5A-40B4-BB8E-8719627293E2-
+bCF97BD07-B1B1-45D2-801A-27B6ACBE2D2B
+
+CCompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/config_structure.o /Users/fpalacios/SU2/trunk/Common/src/config_structure.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
+s402006766.979638
+e402006795.279177
+r1
+xCompileC
+xDerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/config_structure.o
+x/Users/fpalacios/SU2/trunk/Common/src/config_structure.cpp
+xnormal
+xx86_64
+xc++
+xcom.apple.compilers.llvm.clang.1_0.compiler
+d/Users/fpalacios/SU2/trunk/Common/src/config_structure.cpp
+d/Users/fpalacios/SU2/trunk/Common/include/config_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/option_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/config_structure.inl
+lSLF06#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection66"Compile /Users/fpalacios/SU2/trunk/Common/src/config_structure.cpp244"CompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/config_structure.o /Users/fpalacios/SU2/trunk/Common/src/config_structure.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compilereaeafaee22f6b741^6ea1470b23f6b741^---0#0#1#-19%DVTDocumentLocation2@74"file://localhost/Users/fpalacios/SU2/trunk/Common/src/config_structure.cpp0000000000000000^3148"CompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/config_structure.o /Users/fpalacios/SU2/trunk/Common/src/config_structure.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler    cd /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode    setenv LANG en_US.US-ASCII    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -arch x86_64 -fmessage-length=0 -fdiagnostics-show-note-include-stack -fmacro-backtrace-limit=0 -Wno-trigraphs -fpascal-strings -O3 -Wno-missing-field-initializers -Wno-missing-prototypes -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wno-missing-braces -Wparentheses -Wswitch -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wunused-variable -Wunused-value -Wno-empty-body -Wno-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wno-constant-conversion -Wno-int-conversion -Wno-bool-conversion -Wno-enum-conversion -Wno-shorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions -DNO_METIS -DNO_OMP -DNO_MPI -DNO_MUTATIONPP -DNO_CGNS -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk -fasm-blocks -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -mmacosx-version-min=10.8 -g -fvisibility=hidden -fvisibility-inlines-hidden -Wno-sign-conversion -iquote /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-generated-files.hmap -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-own-target-headers.hmap -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-all-target-headers.hmap -iquote /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-project-headers.hmap -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Products/Debug/include -I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/DerivedSources/x86_64 -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/DerivedSources -F/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Products/Debug -MMD -MT dependencies -MF /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/config_structure.d --serialize-diagnostics /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/config_structure.dia -c /Users/fpalacios/SU2/trunk/Common/src/config_structure.cpp -o /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/config_structure.o36"D96F3842-AF4D-4E73-9803-F9A2E4887619-
+bCF97BD07-B1B1-45D2-801A-27B6ACBE2D2B
+
+CCompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/dual_grid_structure.o /Users/fpalacios/SU2/trunk/Common/src/dual_grid_structure.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
+s402006809.914336
+e402006821.518796
+r1
+xCompileC
+xDerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/dual_grid_structure.o
+x/Users/fpalacios/SU2/trunk/Common/src/dual_grid_structure.cpp
+xnormal
+xx86_64
+xc++
+xcom.apple.compilers.llvm.clang.1_0.compiler
+d/Users/fpalacios/SU2/trunk/Common/src/dual_grid_structure.cpp
+d/Users/fpalacios/SU2/trunk/Common/include/dual_grid_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/config_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/option_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/config_structure.inl
+d/Users/fpalacios/SU2/trunk/Common/include/dual_grid_structure.inl
+lSLF06#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection69"Compile /Users/fpalacios/SU2/trunk/Common/src/dual_grid_structure.cpp250"CompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/dual_grid_structure.o /Users/fpalacios/SU2/trunk/Common/src/dual_grid_structure.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler5039ea1923f6b741^e1cf842523f6b741^---0#0#1#-19%DVTDocumentLocation2@77"file://localhost/Users/fpalacios/SU2/trunk/Common/src/dual_grid_structure.cpp0000000000000000^3166"CompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/dual_grid_structure.o /Users/fpalacios/SU2/trunk/Common/src/dual_grid_structure.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler    cd /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode    setenv LANG en_US.US-ASCII    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -arch x86_64 -fmessage-length=0 -fdiagnostics-show-note-include-stack -fmacro-backtrace-limit=0 -Wno-trigraphs -fpascal-strings -O3 -Wno-missing-field-initializers -Wno-missing-prototypes -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wno-missing-braces -Wparentheses -Wswitch -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wunused-variable -Wunused-value -Wno-empty-body -Wno-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wno-constant-conversion -Wno-int-conversion -Wno-bool-conversion -Wno-enum-conversion -Wno-shorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions -DNO_METIS -DNO_OMP -DNO_MPI -DNO_MUTATIONPP -DNO_CGNS -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk -fasm-blocks -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -mmacosx-version-min=10.8 -g -fvisibility=hidden -fvisibility-inlines-hidden -Wno-sign-conversion -iquote /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-generated-files.hmap -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-own-target-headers.hmap -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-all-target-headers.hmap -iquote /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-project-headers.hmap -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Products/Debug/include -I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/DerivedSources/x86_64 -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/DerivedSources -F/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Products/Debug -MMD -MT dependencies -MF /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/dual_grid_structure.d --serialize-diagnostics /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/dual_grid_structure.dia -c /Users/fpalacios/SU2/trunk/Common/src/dual_grid_structure.cpp -o /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/dual_grid_structure.o36"2C48A777-EF5A-4662-8BB5-D0C25DCA92E2-
+bCF97BD07-B1B1-45D2-801A-27B6ACBE2D2B
+
+CCompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/geometry_structure.o /Users/fpalacios/SU2/trunk/Common/src/geometry_structure.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
+s402006833.156235
+e402006850.711228
+r1
+xCompileC
+xDerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/geometry_structure.o
+x/Users/fpalacios/SU2/trunk/Common/src/geometry_structure.cpp
+xnormal
+xx86_64
+xc++
+xcom.apple.compilers.llvm.clang.1_0.compiler
+d/Users/fpalacios/SU2/trunk/Common/src/geometry_structure.cpp
+d/Users/fpalacios/SU2/trunk/Common/include/geometry_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/primal_grid_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/dual_grid_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/config_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/option_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/config_structure.inl
+d/Users/fpalacios/SU2/trunk/Common/include/dual_grid_structure.inl
+d/Users/fpalacios/SU2/trunk/Common/include/primal_grid_structure.inl
+d/Users/fpalacios/SU2/trunk/Common/include/geometry_structure.inl
+lSLF06#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection68"Compile /Users/fpalacios/SU2/trunk/Common/src/geometry_structure.cpp248"CompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/geometry_structure.o /Users/fpalacios/SU2/trunk/Common/src/geometry_structure.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler1232283123f6b741^8690b34523f6b741^---0#0#1#-19%DVTDocumentLocation2@76"file://localhost/Users/fpalacios/SU2/trunk/Common/src/geometry_structure.cpp0000000000000000^3160"CompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/geometry_structure.o /Users/fpalacios/SU2/trunk/Common/src/geometry_structure.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler    cd /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode    setenv LANG en_US.US-ASCII    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -arch x86_64 -fmessage-length=0 -fdiagnostics-show-note-include-stack -fmacro-backtrace-limit=0 -Wno-trigraphs -fpascal-strings -O3 -Wno-missing-field-initializers -Wno-missing-prototypes -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wno-missing-braces -Wparentheses -Wswitch -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wunused-variable -Wunused-value -Wno-empty-body -Wno-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wno-constant-conversion -Wno-int-conversion -Wno-bool-conversion -Wno-enum-conversion -Wno-shorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions -DNO_METIS -DNO_OMP -DNO_MPI -DNO_MUTATIONPP -DNO_CGNS -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk -fasm-blocks -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -mmacosx-version-min=10.8 -g -fvisibility=hidden -fvisibility-inlines-hidden -Wno-sign-conversion -iquote /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-generated-files.hmap -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-own-target-headers.hmap -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-all-target-headers.hmap -iquote /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-project-headers.hmap -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Products/Debug/include -I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/DerivedSources/x86_64 -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/DerivedSources -F/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Products/Debug -MMD -MT dependencies -MF /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/geometry_structure.d --serialize-diagnostics /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/geometry_structure.dia -c /Users/fpalacios/SU2/trunk/Common/src/geometry_structure.cpp -o /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/geometry_structure.o36"96C16F7C-304C-442A-8A0D-24D096647D91-
+bCF97BD07-B1B1-45D2-801A-27B6ACBE2D2B
+
+CCompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/grid_adaptation_structure.o /Users/fpalacios/SU2/trunk/Common/src/grid_adaptation_structure.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
+s402006860.831841
+e402006873.397643
+r1
+xCompileC
+xDerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/grid_adaptation_structure.o
+x/Users/fpalacios/SU2/trunk/Common/src/grid_adaptation_structure.cpp
+xnormal
+xx86_64
+xc++
+xcom.apple.compilers.llvm.clang.1_0.compiler
+d/Users/fpalacios/SU2/trunk/Common/src/grid_adaptation_structure.cpp
+d/Users/fpalacios/SU2/trunk/Common/include/grid_adaptation_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/geometry_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/primal_grid_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/dual_grid_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/config_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/option_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/config_structure.inl
+d/Users/fpalacios/SU2/trunk/Common/include/dual_grid_structure.inl
+d/Users/fpalacios/SU2/trunk/Common/include/primal_grid_structure.inl
+d/Users/fpalacios/SU2/trunk/Common/include/geometry_structure.inl
+d/Users/fpalacios/SU2/trunk/Common/include/grid_adaptation_structure.inl
+lSLF06#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection75"Compile /Users/fpalacios/SU2/trunk/Common/src/grid_adaptation_structure.cpp262"CompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/grid_adaptation_structure.o /Users/fpalacios/SU2/trunk/Common/src/grid_adaptation_structure.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler5919d54c23f6b741^dee6655923f6b741^---0#0#1#-19%DVTDocumentLocation2@83"file://localhost/Users/fpalacios/SU2/trunk/Common/src/grid_adaptation_structure.cpp0000000000000000^3202"CompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/grid_adaptation_structure.o /Users/fpalacios/SU2/trunk/Common/src/grid_adaptation_structure.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler    cd /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode    setenv LANG en_US.US-ASCII    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -arch x86_64 -fmessage-length=0 -fdiagnostics-show-note-include-stack -fmacro-backtrace-limit=0 -Wno-trigraphs -fpascal-strings -O3 -Wno-missing-field-initializers -Wno-missing-prototypes -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wno-missing-braces -Wparentheses -Wswitch -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wunused-variable -Wunused-value -Wno-empty-body -Wno-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wno-constant-conversion -Wno-int-conversion -Wno-bool-conversion -Wno-enum-conversion -Wno-shorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions -DNO_METIS -DNO_OMP -DNO_MPI -DNO_MUTATIONPP -DNO_CGNS -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk -fasm-blocks -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -mmacosx-version-min=10.8 -g -fvisibility=hidden -fvisibility-inlines-hidden -Wno-sign-conversion -iquote /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-generated-files.hmap -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-own-target-headers.hmap -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-all-target-headers.hmap -iquote /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-project-headers.hmap -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Products/Debug/include -I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/DerivedSources/x86_64 -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/DerivedSources -F/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Products/Debug -MMD -MT dependencies -MF /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/grid_adaptation_structure.d --serialize-diagnostics /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/grid_adaptation_structure.dia -c /Users/fpalacios/SU2/trunk/Common/src/grid_adaptation_structure.cpp -o /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/grid_adaptation_structure.o36"E281BBAD-6D28-4E99-B5CB-E6F1F56C4FE6-
+bCF97BD07-B1B1-45D2-801A-27B6ACBE2D2B
+
+CCompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/grid_movement_structure.o /Users/fpalacios/SU2/trunk/Common/src/grid_movement_structure.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
+s402006884.213874
+e402006899.405863
+r1
+xCompileC
+xDerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/grid_movement_structure.o
+x/Users/fpalacios/SU2/trunk/Common/src/grid_movement_structure.cpp
+xnormal
+xx86_64
+xc++
+xcom.apple.compilers.llvm.clang.1_0.compiler
+d/Users/fpalacios/SU2/trunk/Common/src/grid_movement_structure.cpp
+d/Users/fpalacios/SU2/trunk/Common/include/grid_movement_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/geometry_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/primal_grid_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/dual_grid_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/config_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/option_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/config_structure.inl
+d/Users/fpalacios/SU2/trunk/Common/include/dual_grid_structure.inl
+d/Users/fpalacios/SU2/trunk/Common/include/primal_grid_structure.inl
+d/Users/fpalacios/SU2/trunk/Common/include/geometry_structure.inl
+d/Users/fpalacios/SU2/trunk/Common/include/matrix_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/linear_solvers_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/vector_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/vector_structure.inl
+d/Users/fpalacios/SU2/trunk/Common/include/linear_solvers_structure.inl
+d/Users/fpalacios/SU2/trunk/Common/include/matrix_structure.inl
+d/Users/fpalacios/SU2/trunk/Common/include/grid_movement_structure.inl
+lSLF06#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection73"Compile /Users/fpalacios/SU2/trunk/Common/src/grid_movement_structure.cpp258"CompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/grid_movement_structure.o /Users/fpalacios/SU2/trunk/Common/src/grid_movement_structure.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compilerdae6366423f6b741^e6e6677323f6b741^---0#0#1#-19%DVTDocumentLocation2@81"file://localhost/Users/fpalacios/SU2/trunk/Common/src/grid_movement_structure.cpp0000000000000000^3190"CompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/grid_movement_structure.o /Users/fpalacios/SU2/trunk/Common/src/grid_movement_structure.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler    cd /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode    setenv LANG en_US.US-ASCII    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -arch x86_64 -fmessage-length=0 -fdiagnostics-show-note-include-stack -fmacro-backtrace-limit=0 -Wno-trigraphs -fpascal-strings -O3 -Wno-missing-field-initializers -Wno-missing-prototypes -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wno-missing-braces -Wparentheses -Wswitch -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wunused-variable -Wunused-value -Wno-empty-body -Wno-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wno-constant-conversion -Wno-int-conversion -Wno-bool-conversion -Wno-enum-conversion -Wno-shorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions -DNO_METIS -DNO_OMP -DNO_MPI -DNO_MUTATIONPP -DNO_CGNS -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk -fasm-blocks -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -mmacosx-version-min=10.8 -g -fvisibility=hidden -fvisibility-inlines-hidden -Wno-sign-conversion -iquote /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-generated-files.hmap -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-own-target-headers.hmap -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-all-target-headers.hmap -iquote /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-project-headers.hmap -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Products/Debug/include -I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/DerivedSources/x86_64 -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/DerivedSources -F/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Products/Debug -MMD -MT dependencies -MF /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/grid_movement_structure.d --serialize-diagnostics /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/grid_movement_structure.dia -c /Users/fpalacios/SU2/trunk/Common/src/grid_movement_structure.cpp -o /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/grid_movement_structure.o36"48C6E43E-8CD3-44B5-9156-2A102B7D4020-
+bCF97BD07-B1B1-45D2-801A-27B6ACBE2D2B
+
+CCompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/linear_solvers_structure.o /Users/fpalacios/SU2/trunk/Common/src/linear_solvers_structure.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
+s402006910.991530
+e402006912.426994
+r1
+xCompileC
+xDerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/linear_solvers_structure.o
+x/Users/fpalacios/SU2/trunk/Common/src/linear_solvers_structure.cpp
+xnormal
+xx86_64
+xc++
+xcom.apple.compilers.llvm.clang.1_0.compiler
+d/Users/fpalacios/SU2/trunk/Common/src/linear_solvers_structure.cpp
+d/Users/fpalacios/SU2/trunk/Common/include/linear_solvers_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/vector_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/vector_structure.inl
+d/Users/fpalacios/SU2/trunk/Common/include/linear_solvers_structure.inl
+lSLF06#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection74"Compile /Users/fpalacios/SU2/trunk/Common/src/linear_solvers_structure.cpp260"CompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/linear_solvers_structure.o /Users/fpalacios/SU2/trunk/Common/src/linear_solvers_structure.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compilerc2fcfd7e23f6b741^2e706d8023f6b741^---0#0#1#-19%DVTDocumentLocation2@82"file://localhost/Users/fpalacios/SU2/trunk/Common/src/linear_solvers_structure.cpp0000000000000000^3196"CompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/linear_solvers_structure.o /Users/fpalacios/SU2/trunk/Common/src/linear_solvers_structure.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler    cd /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode    setenv LANG en_US.US-ASCII    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -arch x86_64 -fmessage-length=0 -fdiagnostics-show-note-include-stack -fmacro-backtrace-limit=0 -Wno-trigraphs -fpascal-strings -O3 -Wno-missing-field-initializers -Wno-missing-prototypes -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wno-missing-braces -Wparentheses -Wswitch -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wunused-variable -Wunused-value -Wno-empty-body -Wno-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wno-constant-conversion -Wno-int-conversion -Wno-bool-conversion -Wno-enum-conversion -Wno-shorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions -DNO_METIS -DNO_OMP -DNO_MPI -DNO_MUTATIONPP -DNO_CGNS -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk -fasm-blocks -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -mmacosx-version-min=10.8 -g -fvisibility=hidden -fvisibility-inlines-hidden -Wno-sign-conversion -iquote /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-generated-files.hmap -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-own-target-headers.hmap -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-all-target-headers.hmap -iquote /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-project-headers.hmap -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Products/Debug/include -I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/DerivedSources/x86_64 -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/DerivedSources -F/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Products/Debug -MMD -MT dependencies -MF /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/linear_solvers_structure.d --serialize-diagnostics /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/linear_solvers_structure.dia -c /Users/fpalacios/SU2/trunk/Common/src/linear_solvers_structure.cpp -o /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/linear_solvers_structure.o36"921567CF-FF2E-424B-A52C-D432DBE88CD2-
+bCF97BD07-B1B1-45D2-801A-27B6ACBE2D2B
+
+CCompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/matrix_structure.o /Users/fpalacios/SU2/trunk/Common/src/matrix_structure.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
+s402006923.918929
+e402006935.406832
+r1
+xCompileC
+xDerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/matrix_structure.o
+x/Users/fpalacios/SU2/trunk/Common/src/matrix_structure.cpp
+xnormal
+xx86_64
+xc++
+xcom.apple.compilers.llvm.clang.1_0.compiler
+d/Users/fpalacios/SU2/trunk/Common/src/matrix_structure.cpp
+d/Users/fpalacios/SU2/trunk/Common/include/matrix_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/config_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/option_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/config_structure.inl
+d/Users/fpalacios/SU2/trunk/Common/include/geometry_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/primal_grid_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/dual_grid_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/dual_grid_structure.inl
+d/Users/fpalacios/SU2/trunk/Common/include/primal_grid_structure.inl
+d/Users/fpalacios/SU2/trunk/Common/include/geometry_structure.inl
+d/Users/fpalacios/SU2/trunk/Common/include/linear_solvers_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/vector_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/vector_structure.inl
+d/Users/fpalacios/SU2/trunk/Common/include/linear_solvers_structure.inl
+d/Users/fpalacios/SU2/trunk/Common/include/matrix_structure.inl
+lSLF06#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection66"Compile /Users/fpalacios/SU2/trunk/Common/src/matrix_structure.cpp244"CompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/matrix_structure.o /Users/fpalacios/SU2/trunk/Common/src/matrix_structure.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compilerbc59eb8b23f6b741^7028689723f6b741^---0#0#1#-19%DVTDocumentLocation2@74"file://localhost/Users/fpalacios/SU2/trunk/Common/src/matrix_structure.cpp0000000000000000^3148"CompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/matrix_structure.o /Users/fpalacios/SU2/trunk/Common/src/matrix_structure.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler    cd /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode    setenv LANG en_US.US-ASCII    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -arch x86_64 -fmessage-length=0 -fdiagnostics-show-note-include-stack -fmacro-backtrace-limit=0 -Wno-trigraphs -fpascal-strings -O3 -Wno-missing-field-initializers -Wno-missing-prototypes -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wno-missing-braces -Wparentheses -Wswitch -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wunused-variable -Wunused-value -Wno-empty-body -Wno-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wno-constant-conversion -Wno-int-conversion -Wno-bool-conversion -Wno-enum-conversion -Wno-shorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions -DNO_METIS -DNO_OMP -DNO_MPI -DNO_MUTATIONPP -DNO_CGNS -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk -fasm-blocks -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -mmacosx-version-min=10.8 -g -fvisibility=hidden -fvisibility-inlines-hidden -Wno-sign-conversion -iquote /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-generated-files.hmap -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-own-target-headers.hmap -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-all-target-headers.hmap -iquote /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-project-headers.hmap -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Products/Debug/include -I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/DerivedSources/x86_64 -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/DerivedSources -F/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Products/Debug -MMD -MT dependencies -MF /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/matrix_structure.d --serialize-diagnostics /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/matrix_structure.dia -c /Users/fpalacios/SU2/trunk/Common/src/matrix_structure.cpp -o /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/matrix_structure.o36"760C7AC4-E656-4D94-B907-A749BF763D85-
+bCF97BD07-B1B1-45D2-801A-27B6ACBE2D2B
+
+CCompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/primal_grid_structure.o /Users/fpalacios/SU2/trunk/Common/src/primal_grid_structure.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
+s402006935.409747
+e402006948.632951
+r1
+xCompileC
+xDerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/primal_grid_structure.o
+x/Users/fpalacios/SU2/trunk/Common/src/primal_grid_structure.cpp
+xnormal
+xx86_64
+xc++
+xcom.apple.compilers.llvm.clang.1_0.compiler
+d/Users/fpalacios/SU2/trunk/Common/src/primal_grid_structure.cpp
+d/Users/fpalacios/SU2/trunk/Common/include/primal_grid_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/dual_grid_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/config_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/option_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/config_structure.inl
+d/Users/fpalacios/SU2/trunk/Common/include/dual_grid_structure.inl
+d/Users/fpalacios/SU2/trunk/Common/include/primal_grid_structure.inl
+lSLF06#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection71"Compile /Users/fpalacios/SU2/trunk/Common/src/primal_grid_structure.cpp254"CompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/primal_grid_structure.o /Users/fpalacios/SU2/trunk/Common/src/primal_grid_structure.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler0306699723f6b741^a725a2a423f6b741^---0#0#1#-19%DVTDocumentLocation2@79"file://localhost/Users/fpalacios/SU2/trunk/Common/src/primal_grid_structure.cpp0000000000000000^3178"CompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/primal_grid_structure.o /Users/fpalacios/SU2/trunk/Common/src/primal_grid_structure.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler    cd /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode    setenv LANG en_US.US-ASCII    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -arch x86_64 -fmessage-length=0 -fdiagnostics-show-note-include-stack -fmacro-backtrace-limit=0 -Wno-trigraphs -fpascal-strings -O3 -Wno-missing-field-initializers -Wno-missing-prototypes -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wno-missing-braces -Wparentheses -Wswitch -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wunused-variable -Wunused-value -Wno-empty-body -Wno-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wno-constant-conversion -Wno-int-conversion -Wno-bool-conversion -Wno-enum-conversion -Wno-shorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions -DNO_METIS -DNO_OMP -DNO_MPI -DNO_MUTATIONPP -DNO_CGNS -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk -fasm-blocks -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -mmacosx-version-min=10.8 -g -fvisibility=hidden -fvisibility-inlines-hidden -Wno-sign-conversion -iquote /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-generated-files.hmap -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-own-target-headers.hmap -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-all-target-headers.hmap -iquote /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-project-headers.hmap -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Products/Debug/include -I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/DerivedSources/x86_64 -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/DerivedSources -F/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Products/Debug -MMD -MT dependencies -MF /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/primal_grid_structure.d --serialize-diagnostics /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/primal_grid_structure.dia -c /Users/fpalacios/SU2/trunk/Common/src/primal_grid_structure.cpp -o /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/primal_grid_structure.o36"5C2D94C4-B082-4679-9597-71579B26A6A8-
+bCF97BD07-B1B1-45D2-801A-27B6ACBE2D2B
+
+CCompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/vector_structure.o /Users/fpalacios/SU2/trunk/Common/src/vector_structure.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler
+s402006935.662827
+e402006936.610468
+r1
+xCompileC
+xDerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/vector_structure.o
+x/Users/fpalacios/SU2/trunk/Common/src/vector_structure.cpp
+xnormal
+xx86_64
+xc++
+xcom.apple.compilers.llvm.clang.1_0.compiler
+d/Users/fpalacios/SU2/trunk/Common/src/vector_structure.cpp
+d/Users/fpalacios/SU2/trunk/Common/include/vector_structure.hpp
+d/Users/fpalacios/SU2/trunk/Common/include/vector_structure.inl
+lSLF06#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection66"Compile /Users/fpalacios/SU2/trunk/Common/src/vector_structure.cpp244"CompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/vector_structure.o /Users/fpalacios/SU2/trunk/Common/src/vector_structure.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler97e3a99723f6b741^4e479c9823f6b741^---0#0#1#-19%DVTDocumentLocation2@74"file://localhost/Users/fpalacios/SU2/trunk/Common/src/vector_structure.cpp0000000000000000^3148"CompileC DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/vector_structure.o /Users/fpalacios/SU2/trunk/Common/src/vector_structure.cpp normal x86_64 c++ com.apple.compilers.llvm.clang.1_0.compiler    cd /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode    setenv LANG en_US.US-ASCII    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -arch x86_64 -fmessage-length=0 -fdiagnostics-show-note-include-stack -fmacro-backtrace-limit=0 -Wno-trigraphs -fpascal-strings -O3 -Wno-missing-field-initializers -Wno-missing-prototypes -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wno-missing-braces -Wparentheses -Wswitch -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wunused-variable -Wunused-value -Wno-empty-body -Wno-uninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wno-constant-conversion -Wno-int-conversion -Wno-bool-conversion -Wno-enum-conversion -Wno-shorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions -DNO_METIS -DNO_OMP -DNO_MPI -DNO_MUTATIONPP -DNO_CGNS -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk -fasm-blocks -fstrict-aliasing -Wdeprecated-declarations -Winvalid-offsetof -mmacosx-version-min=10.8 -g -fvisibility=hidden -fvisibility-inlines-hidden -Wno-sign-conversion -iquote /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-generated-files.hmap -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-own-target-headers.hmap -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-all-target-headers.hmap -iquote /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/SU2_MDC-project-headers.hmap -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Products/Debug/include -I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/DerivedSources/x86_64 -I/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/DerivedSources -F/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Products/Debug -MMD -MT dependencies -MF /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/vector_structure.d --serialize-diagnostics /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/vector_structure.dia -c /Users/fpalacios/SU2/trunk/Common/src/vector_structure.cpp -o /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/vector_structure.o36"98C3B47D-DEF7-48AF-837D-AEF640F91022-
+bCF97BD07-B1B1-45D2-801A-27B6ACBE2D2B
+
+CLd /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Products/Debug/SU2_MDC normal x86_64
+s402006949.790872
+e402006950.916831
+r1
+xLd
+x/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Products/Debug/SU2_MDC
+xnormal
+xx86_64
+d/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/SU2_MDC.LinkFileList
+d/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/config_structure.o
+d/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/dual_grid_structure.o
+d/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/geometry_structure.o
+d/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/grid_adaptation_structure.o
+d/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/grid_movement_structure.o
+d/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/linear_solvers_structure.o
+d/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/matrix_structure.o
+d/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/primal_grid_structure.o
+d/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/vector_structure.o
+d/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/SU2_MDC.o
+d/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/lib/libstdc++.dylib
+d/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/lib/libSystem.dylib
+d/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/5.0/lib/darwin/libclang_rt.osx.a
+d/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/lib/system/libcache.dylib
+d/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/lib/system/libcommonCrypto.dylib
+d/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/lib/system/libcompiler_rt.dylib
+d/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/lib/system/libcopyfile.dylib
+d/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/lib/system/libdispatch.dylib
+d/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/lib/system/libdnsinfo.dylib
+d/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/lib/system/libdyld.dylib
+d/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/lib/system/libkeymgr.dylib
+d/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/lib/system/liblaunch.dylib
+d/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/lib/system/libmacho.dylib
+d/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/lib/system/libquarantine.dylib
+d/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/lib/system/libremovefile.dylib
+d/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/lib/system/libsystem_blocks.dylib
+d/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/lib/system/libsystem_c.dylib
+d/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/lib/system/libsystem_dnssd.dylib
+d/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/lib/system/libsystem_info.dylib
+d/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/lib/system/libsystem_kernel.dylib
+d/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/lib/system/libsystem_m.dylib
+d/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/lib/system/libsystem_network.dylib
+d/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/lib/system/libsystem_notify.dylib
+d/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/lib/system/libsystem_sandbox.dylib
+d/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/lib/system/libunc.dylib
+d/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/lib/system/libunwind.dylib
+d/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/lib/system/libxpc.dylib
+lSLF06#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection94"Link /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Products/Debug/SU2_MDC65"Ld DerivedData/SU2_MDC/Build/Products/Debug/SU2_MDC normal x86_64b98dcaa523f6b741^f6b5eaa623f6b741^---0#0#1#--1031"Ld DerivedData/SU2_MDC/Build/Products/Debug/SU2_MDC normal x86_64    cd /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode    setenv MACOSX_DEPLOYMENT_TARGET 10.8    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++ -arch x86_64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk -L/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Products/Debug -F/Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Products/Debug -filelist /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/SU2_MDC.LinkFileList -mmacosx-version-min=10.8 -Xlinker -dependency_info -Xlinker /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Intermediates/SU2_MDC.build/Debug/SU2_MDC.build/Objects-normal/x86_64/SU2_MDC_dependency_info.dat -o /Users/fpalacios/SU2/trunk/SU2_IDE/Xcode/DerivedData/SU2_MDC/Build/Products/Debug/SU2_MDC36"37DC0DBC-7B82-48B0-9583-3AC1A264D522-
+bCF97BD07-B1B1-45D2-801A-27B6ACBE2D2B
+

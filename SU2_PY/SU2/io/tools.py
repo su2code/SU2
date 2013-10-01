@@ -3,7 +3,7 @@
 ## \file tools.py
 #  \brief file i/o functions
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.7
+#  \version 2.0.8
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -226,7 +226,9 @@ optnames_aero = [ "LIFT"               ,
 # Geometric Optimizer Function Names
 optnames_geo = [ "MAX_THICKNESS"      ,
                  "1/4_THICKNESS"      ,
+                 "1/3_THICKNESS"      ,
                  "1/2_THICKNESS"      ,
+                 "2/3_THICKNESS"      ,
                  "3/4_THICKNESS"      ,
                  "AREA"               ,
                  "AOA"                ,
@@ -241,11 +243,21 @@ optnames_geo = [ "MAX_THICKNESS"      ,
                  "1/4_THICKNESS_SEC3" ,
                  "1/4_THICKNESS_SEC4" ,
                  "1/4_THICKNESS_SEC5" ,
+                 "1/3_THICKNESS_SEC1" ,
+                 "1/3_THICKNESS_SEC2" ,
+                 "1/3_THICKNESS_SEC3" ,
+                 "1/3_THICKNESS_SEC4" ,
+                 "1/3_THICKNESS_SEC5" ,
                  "1/2_THICKNESS_SEC1" ,
                  "1/2_THICKNESS_SEC2" ,
                  "1/2_THICKNESS_SEC3" ,
                  "1/2_THICKNESS_SEC4" ,
                  "1/2_THICKNESS_SEC5" ,
+                 "2/3_THICKNESS_SEC1" ,
+                 "2/3_THICKNESS_SEC2" ,
+                 "2/3_THICKNESS_SEC3" ,
+                 "2/3_THICKNESS_SEC4" ,
+                 "2/3_THICKNESS_SEC5" ,
                  "3/4_THICKNESS_SEC1" ,
                  "3/4_THICKNESS_SEC2" ,
                  "3/4_THICKNESS_SEC3" ,

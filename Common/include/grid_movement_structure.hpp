@@ -5,7 +5,7 @@
  *        technique definition). The subroutines and functions are in 
  *        the <i>grid_movement_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.7
+ * \version 2.0.8
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -45,7 +45,7 @@ using namespace std;
  * \brief Class for moving the surface and volumetric 
  *        numerical grid (2D and 3D problems).
  * \author F. Palacios.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CGridMovement {
 public:
@@ -74,7 +74,7 @@ public:
  * \class CFreeFormDefBox
  * \brief Class for defining the free form FFDBox structure.
  * \author F. Palacios & A. Galdran.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CFreeFormDefBox : public CGridMovement {
 public:
@@ -659,7 +659,7 @@ public:
  * \class CVolumetricMovement
  * \brief Class for moving the volumetric numerical grid.
  * \author F. Palacios, A. Bueno, T. Economon, S. Padron.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CVolumetricMovement : public CGridMovement {
 protected:
@@ -904,7 +904,7 @@ public:
  * \class CSurfaceMovement
  * \brief Class for moving the surface numerical grid.
  * \author F. Palacios, T. Economon.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CSurfaceMovement : public CGridMovement {
 protected:
@@ -924,7 +924,7 @@ public:
 	 * \brief Destructor of the class. 
 	 */
 	~CSurfaceMovement(void);
-	
+  
 	/*! 
 	 * \brief Set a Hicks-Henne deformation bump functions on an airfoil.
 	 * \param[in] boundary - Geometry of the boundary.
@@ -981,13 +981,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetObstacle(CGeometry *boundary, CConfig *config);
-	
-	/*! 
-	 * \brief Stretch one side of a channel.
-	 * \param[in] boundary - Geometry of the boundary.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetStretch(CGeometry *boundary, CConfig *config);
 	
 	/*! 
 	 * \brief Set a rotation for surface movement.

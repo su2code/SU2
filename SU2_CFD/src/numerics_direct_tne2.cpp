@@ -2,7 +2,7 @@
  * \file numerics_direct_tne2.cpp
  * \brief This file contains all the convective term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.7
+ * \version 2.0.8
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -36,7 +36,7 @@ CUpwRoe_TNE2::CUpwRoe_TNE2(unsigned short val_nDim, unsigned short val_nVar,
   /*--- Define useful constants ---*/
   nVar     = val_nVar;
   nDim     = val_nDim;
-  nSpecies = val_nVar - val_nDim - 2;
+  nSpecies = config->GetnSpecies();
   
   /*--- Allocate arrays ---*/
 	Diff_U      = new double [nVar];
@@ -437,7 +437,7 @@ CUpwAUSM_TNE2::CUpwAUSM_TNE2(unsigned short val_nDim, unsigned short val_nVar, C
   /*--- Define useful constants ---*/
   nVar     = val_nVar;
   nDim     = val_nDim;
-  nSpecies = val_nVar - val_nDim - 2;
+  nSpecies = config->GetnSpecies();
   
 	FcL    = new double [nVar];
   FcR    = new double [nVar];
@@ -823,7 +823,7 @@ CCentLax_TNE2::CCentLax_TNE2(unsigned short val_nDim, unsigned short val_nVar, C
   /*--- Define useful constants ---*/
   nVar     = val_nVar;
   nDim     = val_nDim;
-  nSpecies = val_nVar - val_nDim - 2;
+  nSpecies = config->GetnSpecies();
   
 	/*--- Artifical dissipation part ---*/
 	Param_p = 0.3;
@@ -1016,6 +1016,11 @@ void CCentLax_TNE2::ComputeResidual(double *val_resconv, double *val_resvisc, do
 CSource_TNE2::CSource_TNE2(unsigned short val_nDim, unsigned short val_nVar,
                                    CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
+  /*--- Define useful constants ---*/
+  nVar     = val_nVar;
+  nDim     = val_nDim;
+  nSpecies = config->GetnSpecies();
+  
   X = new double[nSpecies];
   RxnConstantTable = new double*[6];
 	for (unsigned short iVar = 0; iVar < 6; iVar++)
@@ -1451,7 +1456,7 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
                                             * (Cvvs[iSpecies]+Cves[iSpecies])
                                             * dTvedrhos[jSpecies] * Volume;
           }
-/*          val_Jacobian_i[nEve][nSpecies]   += Ms[iSpecies] * (fwdRxn-bkwRxn)
+          val_Jacobian_i[nEve][nSpecies]   += Ms[iSpecies] * (fwdRxn-bkwRxn)
                                             * (Cvvs[iSpecies]+Cves[iSpecies])
                                             * dTvedrhou * Volume;
           val_Jacobian_i[nEve][nSpecies+1] += Ms[iSpecies] * (fwdRxn-bkwRxn)
@@ -1462,11 +1467,12 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
                                             * dTvedrhow * Volume;
           val_Jacobian_i[nEve][nSpecies+3] += Ms[iSpecies] * (fwdRxn-bkwRxn)
                                             * (Cvvs[iSpecies]+Cves[iSpecies])
-                                            * dTvedrhoE * Volume;*/
+                                            * dTvedrhoE * Volume;
           val_Jacobian_i[nEve][nSpecies+4] += Ms[iSpecies] * (fwdRxn-bkwRxn)
                                             * (Cvvs[iSpecies]+Cves[iSpecies])
                                             * dTvedrhoEve * Volume;
         }
+        
         /*--- Reactants ---*/
         iSpecies = RxnMap[iReaction][0][ii];
         if (iSpecies != nSpecies) {
@@ -1490,7 +1496,7 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
                                             * (Cvvs[iSpecies]+Cves[iSpecies])
                                             * dTvedrhos[jSpecies] * Volume;
           }
-/*          val_Jacobian_i[nEve][nSpecies]   -= Ms[iSpecies] * (fwdRxn-bkwRxn)
+          val_Jacobian_i[nEve][nSpecies]   -= Ms[iSpecies] * (fwdRxn-bkwRxn)
                                             * (Cvvs[iSpecies]+Cves[iSpecies])
                                             * dTvedrhou * Volume;
           val_Jacobian_i[nEve][nSpecies+1] -= Ms[iSpecies] * (fwdRxn-bkwRxn)
@@ -1501,7 +1507,7 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
                                             * dTvedrhow * Volume;
           val_Jacobian_i[nEve][nSpecies+3] -= Ms[iSpecies] * (fwdRxn-bkwRxn)
                                             * (Cvvs[iSpecies]+Cves[iSpecies])
-                                            * dTvedrhoE * Volume;*/
+                                            * dTvedrhoE * Volume;
           val_Jacobian_i[nEve][nSpecies+4] -= Ms[iSpecies] * (fwdRxn-bkwRxn)
                                             * (Cvvs[iSpecies]+Cves[iSpecies])
                                             * dTvedrhoEve * Volume;
