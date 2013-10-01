@@ -299,6 +299,7 @@ def read_config(filename):
             if case("MARKER_EULER")      : pass
             if case("MARKER_FAR")        : pass
             if case("MARKER_PLOTTING")   : pass
+            if case("MARKER_MONITORING") : pass
             if case("MARKER_SYM")        : pass
             if case("DV_KIND")           : 
                 # remove white space
@@ -548,6 +549,7 @@ def write_config(filename,param_dict):
             if case("MARKER_EULER")      : pass
             if case("MARKER_FAR")        : pass
             if case("MARKER_PLOTTING")   : pass
+            if case("MARKER_MONITORING") : pass
             if case("MARKER_SYM")        : pass            
             if case("DV_MARKER") : 
                 if not isinstance(new_value,list):
