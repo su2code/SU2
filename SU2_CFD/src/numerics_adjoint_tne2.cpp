@@ -2,7 +2,7 @@
  * \file numerics_adjoint_mean.cpp
  * \brief This file contains all the convective term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.7
+ * \version 2.0.8
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -39,7 +39,7 @@ CUpwRoe_AdjTNE2::CUpwRoe_AdjTNE2(unsigned short val_nDim,
   /*--- Define useful constants ---*/
   nVar = val_nVar;
   nDim = val_nDim;
-  nSpecies = val_nVar - val_nDim - 2;
+  nSpecies = config->GetnSpecies();
   
   /*--- Allocate arrays ---*/
 	Residual_Roe       = new double [nVar];
@@ -134,10 +134,10 @@ void CUpwRoe_AdjTNE2::ComputeResidual (double *val_residual_i,
   /*--- Determine the number of heavy particle species ---*/
   if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
   else            { nHeavy = nSpecies;   nEl = 0; }
-  
+
   /*--- Pull stored primitive variables ---*/
   // Primitives: [rho1,...,rhoNs, T, Tve, u, v, w, P, rho, h, a]
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {    
     Density_i[iSpecies] = V_i[RHOS_INDEX+iSpecies];
     Density_j[iSpecies] = V_j[RHOS_INDEX+iSpecies];
   }
@@ -154,6 +154,27 @@ void CUpwRoe_AdjTNE2::ComputeResidual (double *val_residual_i,
   rhoCvtr_j    = V_j[RHOCVTR_INDEX];
   rhoCvve_i    = V_i[RHOCVVE_INDEX];
   rhoCvve_j    = V_j[RHOCVVE_INDEX];
+  
+  cout << "Pressure_i: " << V_i[P_INDEX] << endl;
+  cout << "Pressure_j: " << V_j[P_INDEX] << endl;
+  cout << "Enthalpy_i: " << V_i[H_INDEX] << endl;
+  cout << "Enthalpy_j: " << V_j[H_INDEX] << endl;
+  cout << "Soundspeed_i: " << V_i[A_INDEX] << endl;
+  cout << "SoundSpeed_j: " << V_j[A_INDEX] << endl;
+  cout << "Energy_ve_i: " << U_i[nSpecies+nDim+1] / V_i[RHO_INDEX] << endl;
+  cout << "Energy_ve_j: " << U_j[nSpecies+nDim+1] / V_j[RHO_INDEX] << endl;
+  cout << "rhoCvtr_i: " << V_i[RHOCVTR_INDEX] << endl;
+  cout << "rhoCvtr_j: " << V_j[RHOCVTR_INDEX] << endl;
+  cout << "rhoCvve_i: " << V_i[RHOCVVE_INDEX] << endl;
+  cout << "rhoCvve_j: " << V_j[RHOCVVE_INDEX] << endl;
+  for (iDim = 0; iDim < nDim; iDim++)
+    cout << "Vel_i: " << Velocity_i[iDim] << "\t";
+  cout << endl;
+  for (iDim = 0; iDim < nDim; iDim++)
+    cout << "Vel_j: " << Velocity_j[iDim] << "\t";
+  cout << endl;
+  
+  cin.get();
   
   /*--- Calculate mean quantities ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
@@ -586,7 +607,7 @@ void CCentLax_AdjTNE2::ComputeResidual (double *val_resconv_i,
                                         double **val_Jacobian_jj,
                                         CConfig *config) {
   bool ionization;
-  unsigned short iDim, jDim, iSpecies, iVar, jVar, nHeavy, nEl;
+  unsigned short iDim, iSpecies, iVar, jVar, nHeavy, nEl;
   double Energy_ve_i, Energy_ve_j, rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j;
   double *Ms, Ru, conc_i, conc_j, rho_el_i, rho_el_j;
   double dPdrhoE_i, dPdrhoE_j, dPdrhoEve_i, dPdrhoEve_j;

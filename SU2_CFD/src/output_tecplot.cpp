@@ -2,7 +2,7 @@
  * \file output_tecplot.cpp
  * \brief Main subroutines for output solver information.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.7
+ * \version 2.0.8
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -56,8 +56,10 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
       filename = config->GetFlow_FileName();
   }
   
-	if (Kind_Solver == LINEAR_ELASTICITY)
-		filename = config->GetStructure_FileName().c_str();
+	if (Kind_Solver == LINEAR_ELASTICITY) {
+		if (surf_sol) filename = config->GetSurfStructure_FileName().c_str();
+    else filename = config->GetStructure_FileName().c_str();
+  }
   
 	if (Kind_Solver == WAVE_EQUATION)
 		filename = config->GetWave_FileName().c_str();
@@ -235,6 +237,10 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
     
     if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
       Tecplot_File << ", \"Surface_Sensitivity\", \"Solution_Sensor\"";
+    }
+    
+    if (Kind_Solver == LINEAR_ELASTICITY) {
+      Tecplot_File << ", \"Von_Mises_Stress\"";
     }
     
     if (config->GetExtraOutput()) {

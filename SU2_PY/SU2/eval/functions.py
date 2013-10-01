@@ -1,7 +1,7 @@
 ## \file functions.py
 #  \brief python package for functions
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.7
+#  \version 2.0.8
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -230,7 +230,7 @@ def geometry( func_name, config, state=None ):
     
         Evaluates geometry with the following:
             SU2.run.decompose()
-	    SU2.run.deform()
+            SU2.run.deform()
             SU2.run.geometry()
         
         Assumptions:
@@ -267,14 +267,14 @@ def geometry( func_name, config, state=None ):
     else:
         log_geom = None
     
-    # ----------------------------------------------------    
-    #  Update Mesh
+    # ----------------------------------------------------
+    #  Update Mesh (check with Trent)
     # ----------------------------------------------------
     
     # does decomposition and deformation
-    info = update_mesh(config,state)    
-    
-    
+    # info = update_mesh(config,state)
+
+
     # ----------------------------------------------------    
     #  Geometry Solution
     # ----------------------------------------------------    
