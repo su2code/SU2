@@ -441,9 +441,9 @@ inline double** CVariable::GetPlasmaRhoUGradient() { return 0;}
 
 inline double CVariable::GetPlasmaTimeStep() { return 0;}
 
-inline void CVariable::SetElectricField(double* val_ElectricField) { }
+inline void CVariable::SetpoissonField(double* val_poissonField) { }
 
-inline double* CVariable::GetElectricField() { return 0;}
+inline double* CVariable::GetpoissonField() { return 0;}
 
 inline void CVariable::SetTimeSpectral_Source(unsigned short val_var, double val_source) { }
 
@@ -735,9 +735,9 @@ inline void CPlasmaVariable::SetSensor(double val_sensor, unsigned short iSpecie
 
 inline double CPlasmaVariable::GetSensor(unsigned short iSpecies) {return Sensor_MultiSpecies[iSpecies]; }
 
-inline void CPlasmaVariable::SetElectricField(double* val_ElectricField) {Elec_Field = val_ElectricField; }
+inline void CPlasmaVariable::SetpoissonField(double* val_poissonField) {Elec_Field = val_poissonField; }
 
-inline double* CPlasmaVariable::GetElectricField() { return Elec_Field;}
+inline double* CPlasmaVariable::GetpoissonField() { return Elec_Field;}
 
 inline double* CPlasmaVariable::GetMagneticField() { return B_Field; }
 

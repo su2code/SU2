@@ -1,5 +1,5 @@
 /*!
- * \file variable_adjoint_electric.cpp
+ * \file variable_adjoint_poisson.cpp
  * \brief Definition of the solution fields.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
  * \version 2.0.8

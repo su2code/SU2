@@ -577,7 +577,7 @@ inline double CSourcePieceWise_TurbSA::GetDestruction(void) { return Destruction
 
 inline double CSourcePieceWise_TurbSA::GetCrossProduction(void) { return CrossProduction; }
 
-inline void CSourcePieceWise_Plasma::SetElecField(double *val_Efield) { ElectricField = val_Efield; }
+inline void CSourcePieceWise_Plasma::SetElecField(double *val_Efield) { poissonField = val_Efield; }
 
 inline double* CSourcePieceWise_Plasma::GetMagneticField() { return JcrossB; }
 

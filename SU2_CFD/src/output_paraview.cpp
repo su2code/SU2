@@ -66,7 +66,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
 	if ((Kind_Solver == WAVE_EQUATION) && (Kind_Solver == ADJ_AEROACOUSTIC_EULER))
 		filename = config->GetAdjWave_FileName().c_str();
   
-	if (Kind_Solver == ELECTRIC_POTENTIAL)
+	if (Kind_Solver == POISSON_EQUATION)
 		filename = config->GetStructure_FileName().c_str();
 
   if (Kind_Solver == HEAT_EQUATION)
@@ -74,11 +74,11 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
   
 	if (Kind_Solver == PLASMA_EULER) {
 		if (val_iZone == 0) Kind_Solver = PLASMA_EULER;
-		if (val_iZone == 1) Kind_Solver = ELECTRIC_POTENTIAL;
+		if (val_iZone == 1) Kind_Solver = POISSON_EQUATION;
 	}
 	if (Kind_Solver == PLASMA_NAVIER_STOKES) {
 		if (val_iZone == 0) Kind_Solver = PLASMA_NAVIER_STOKES;
-		if (val_iZone == 1) Kind_Solver = ELECTRIC_POTENTIAL;
+		if (val_iZone == 1) Kind_Solver = POISSON_EQUATION;
 	}
     
 #ifndef NO_MPI
@@ -88,7 +88,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
 #endif
     
 	strcpy (cstr, filename.c_str());
-	if (Kind_Solver == ELECTRIC_POTENTIAL) strcpy (cstr, config->GetStructure_FileName().c_str());
+	if (Kind_Solver == POISSON_EQUATION) strcpy (cstr, config->GetStructure_FileName().c_str());
     
 	/*--- Special cases where a number needs to be appended to the file name. ---*/
 	if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS) &&
@@ -105,7 +105,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
 	}
     
     /*--- Special cases where a number needs to be appended to the file name. ---*/
-	if (((Kind_Solver == ELECTRIC_POTENTIAL) &&( (Kind_Solver == PLASMA_EULER) || (Kind_Solver == PLASMA_NAVIER_STOKES)) )
+	if (((Kind_Solver == POISSON_EQUATION) &&( (Kind_Solver == PLASMA_EULER) || (Kind_Solver == PLASMA_NAVIER_STOKES)) )
         && config->GetUnsteady_Simulation()) {
 		sprintf (buffer, "_%d", int(iExtIter));
 		strcat(cstr,buffer);

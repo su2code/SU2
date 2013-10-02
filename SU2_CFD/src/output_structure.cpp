@@ -1568,11 +1568,11 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 	}
 	if (Kind_Solver == PLASMA_EULER) {
 		if (val_iZone == ZONE_0) Kind_Solver = PLASMA_EULER;
-		if (val_iZone == ZONE_1) Kind_Solver = ELECTRIC_POTENTIAL;
+		if (val_iZone == ZONE_1) Kind_Solver = POISSON_EQUATION;
 	}
 	if (Kind_Solver == PLASMA_NAVIER_STOKES) {
 		if (val_iZone == ZONE_0) Kind_Solver = PLASMA_NAVIER_STOKES;
-		if (val_iZone == ZONE_1) Kind_Solver = ELECTRIC_POTENTIAL;
+		if (val_iZone == ZONE_1) Kind_Solver = POISSON_EQUATION;
 	}
     
 	/*--- Prepare send buffers for the conservative variables. Need to
@@ -1593,8 +1593,8 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         case TNE2_EULER :
             FirstIndex = TNE2_SOL; SecondIndex = NONE; ThirdIndex = NONE;
             break;
-        case ELECTRIC_POTENTIAL:
-            FirstIndex = ELEC_SOL; SecondIndex = NONE; ThirdIndex = NONE;
+        case POISSON_EQUATION:
+            FirstIndex = POISSON_SOL; SecondIndex = NONE; ThirdIndex = NONE;
             break;
         case WAVE_EQUATION:
             FirstIndex = WAVE_SOL; SecondIndex = NONE; ThirdIndex = NONE;
@@ -1687,7 +1687,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         nVar_Total++;
     }
     
-	if (Kind_Solver == ELECTRIC_POTENTIAL) {
+	if (Kind_Solver == POISSON_EQUATION) {
 		iVar_EF = geometry->GetnDim();
 		nVar_Total += geometry->GetnDim();
 	}
@@ -1930,10 +1930,10 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
                     Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetEddyViscosity(); jVar++;
                     Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
                     break;
-                    /*--- Write electric field. ---*/
-                case ELECTRIC_POTENTIAL:
+                    /*--- Write poisson field. ---*/
+                case POISSON_EQUATION:
                     for (unsigned short iDim = 0; iDim < geometry->GetnDim(); iDim++) {
-                        Data[jVar][jPoint] = -1.0*solver[ELEC_SOL]->node[iPoint]->GetGradient(0,iDim);
+                        Data[jVar][jPoint] = -1.0*solver[POISSON_SOL]->node[iPoint]->GetGradient(0,iDim);
                         jVar++;
                     }
                     break;
@@ -3454,9 +3454,9 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short va
         }
     }
     
-    if (Kind_Solver == ELECTRIC_POTENTIAL) {
+    if (Kind_Solver == POISSON_EQUATION) {
         for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
-            restart_file << "\t\"ElectricField_" << iDim+1 << "\"";
+            restart_file << "\t\"poissonField_" << iDim+1 << "\"";
     }
     
     if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
