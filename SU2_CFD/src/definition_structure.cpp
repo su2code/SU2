@@ -277,7 +277,7 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
   adj_tne2_euler, adj_tne2_ns,
   plasma_euler, plasma_ns, plasma_monatomic, plasma_diatomic,
   adj_plasma_euler, adj_plasma_ns,
-	electric, wave, fea,
+	electric, wave, fea, heat,
   spalart_allmaras, menter_sst, transition,
   template_solver;
     
@@ -295,6 +295,7 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
   electric         = false;
   wave             = false;
   fea              = false;
+  heat             = false;
   transition       = false;
   template_solver  = false;
   
@@ -313,6 +314,7 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
     case AEROACOUSTIC_RANS: ns = true; turbulent = true; wave = true; break;
     case ELECTRIC_POTENTIAL: electric = true; break;
     case WAVE_EQUATION: wave = true; break;
+    case HEAT_EQUATION: heat = true; break;
     case LINEAR_ELASTICITY: fea = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
@@ -419,6 +421,9 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
 		if (wave) {
 			solver_container[iMGlevel][WAVE_SOL] = new CWaveSolver(geometry[iMGlevel], config);
 		}
+    if (heat) {
+			solver_container[iMGlevel][HEAT_SOL] = new CHeatSolver(geometry[iMGlevel], config);
+		}
 		if (fea) {
 			solver_container[iMGlevel][FEA_SOL] = new CFEASolver(geometry[iMGlevel], config);
 		}
@@ -469,7 +474,7 @@ void Integration_Preprocessing(CIntegration **integration_container,
   plasma_euler, adj_plasma_euler,
   plasma_ns,   adj_plasma_ns,
   plasma_monatomic, plasma_diatomic,
-	electric, wave, fea,  template_solver, transition;
+	electric, wave, fea, heat, template_solver, transition;
   
 	/*--- Initialize some useful booleans ---*/
 	euler            = false; adj_euler        = false; lin_euler = false;
@@ -483,6 +488,7 @@ void Integration_Preprocessing(CIntegration **integration_container,
   plasma_monatomic = false;	plasma_diatomic  = false;
   electric         = false;
   wave             = false;
+  heat             = false;
   fea              = false;
   transition       = false;
 	template_solver  = false;
@@ -502,6 +508,7 @@ void Integration_Preprocessing(CIntegration **integration_container,
     case AEROACOUSTIC_RANS: ns = true; turbulent = true; wave = true; break;
     case ELECTRIC_POTENTIAL: electric = true; break;
     case WAVE_EQUATION: wave = true; break;
+    case HEAT_EQUATION: heat = true; break;
     case LINEAR_ELASTICITY: fea = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
@@ -567,7 +574,7 @@ void Integration_Preprocessing(CIntegration **integration_container,
     
 	/*--- Allocate solution for a template problem ---*/
 	if (template_solver) integration_container[TEMPLATE_SOL] = new CSingleGridIntegration(config);
-    
+
 	/*--- Allocate solution for direct problem ---*/
 	if (euler) integration_container[FLOW_SOL] = new CMultiGridIntegration(config);
 	if (ns) integration_container[FLOW_SOL] = new CMultiGridIntegration(config);
@@ -579,6 +586,7 @@ void Integration_Preprocessing(CIntegration **integration_container,
 	if (plasma_euler) integration_container[PLASMA_SOL] = new CMultiGridIntegration(config);
 	if (plasma_ns) integration_container[PLASMA_SOL] = new CMultiGridIntegration(config);
 	if (wave) integration_container[WAVE_SOL] = new CSingleGridIntegration(config);
+	if (heat) integration_container[HEAT_SOL] = new CSingleGridIntegration(config);
 	if (fea) integration_container[FEA_SOL] = new CSingleGridIntegration(config);
     
 	/*--- Allocate solution for adjoint problem ---*/
@@ -613,6 +621,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
   nVar_Elec       = 0,
   nVar_FEA        = 0,
   nVar_Wave       = 0,
+  nVar_Heat       = 0,
   nVar_Lin_Flow   = 0,
   nSpecies = 0, nDiatomics = 0, nMonatomics = 0;
   
@@ -631,6 +640,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
   electric,
   wave,
   fea,
+  heat,
   transition,
   template_solver;
     
@@ -643,7 +653,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
 	electric         = false;   plasma_monatomic = false;   plasma_diatomic  = false;  plasma_euler     = false;
 	plasma_ns        = false;   adj_euler        = false;	  adj_ns           = false;	 adj_turb         = false;
 	adj_plasma_euler = false;   adj_plasma_ns    = false;
-  wave             = false;   fea              = false;   spalart_allmaras = false;
+  wave             = false;   heat             = false;   fea              = false;   spalart_allmaras = false;
   tne2_euler       = false;   tne2_ns          = false;
   adj_tne2_euler   = false;	  adj_tne2_ns      = false;
 	lin_euler        = false;   lin_ns           = false;   lin_turb         = false;	 menter_sst       = false;
@@ -665,6 +675,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
     case AEROACOUSTIC_RANS: ns = true; turbulent = true; wave = true; break;
     case ELECTRIC_POTENTIAL: electric = true; break;
     case WAVE_EQUATION: wave = true; break;
+    case HEAT_EQUATION: heat = true; break;
     case LINEAR_ELASTICITY: fea = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
@@ -748,6 +759,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
   
   if (wave)				nVar_Wave = solver_container[MESH_0][WAVE_SOL]->GetnVar();
 	if (fea)				nVar_FEA = solver_container[MESH_0][FEA_SOL]->GetnVar();
+  if (heat)				nVar_Heat = solver_container[MESH_0][HEAT_SOL]->GetnVar();
   
 	/*--- Number of variables for adjoint problem ---*/
 	if (adj_euler)    	  nVar_Adj_Flow = solver_container[MESH_0][ADJFLOW_SOL]->GetnVar();
@@ -1465,10 +1477,35 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
                 break;
 		}
 	}
+  
+  /*--- Solver definition for the electric potential problem ---*/
+	if (heat) {
     
+		/*--- Definition of the viscous scheme for each equation and mesh level ---*/
+		switch (config->GetKind_ViscNumScheme_Heat()) {
+      case GALERKIN :
+        numerics_container[MESH_0][HEAT_SOL][VISC_TERM] = new CGalerkin_Flow(nDim, nVar_Heat, config);
+        break;
+      default : cout << "Viscous scheme not implemented." << endl; cin.get(); break;
+		}
+    
+		/*--- Definition of the source term integration scheme for each equation and mesh level ---*/
+		switch (config->GetKind_SourNumScheme_Heat()) {
+      case NONE :
+        break;
+      case PIECEWISE_CONSTANT :
+        numerics_container[MESH_0][HEAT_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Heat, config);
+        numerics_container[MESH_0][HEAT_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Heat, config);
+        break;
+      default :
+        cout << "Source term not implemented." << endl; cin.get();
+        break;
+		}
+	}
+  
 	/*--- Solver definition for the flow adjoint problem ---*/
 	if (adj_euler || adj_ns) {
-        
+    
 		/*--- Definition of the convective scheme for each equation and mesh level ---*/
 		switch (config->GetKind_ConvNumScheme_AdjFlow()) {
             case NO_CONVECTIVE :

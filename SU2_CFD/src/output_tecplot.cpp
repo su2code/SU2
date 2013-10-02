@@ -61,8 +61,15 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
     else filename = config->GetStructure_FileName().c_str();
   }
   
-	if (Kind_Solver == WAVE_EQUATION)
-		filename = config->GetWave_FileName().c_str();
+	if (Kind_Solver == WAVE_EQUATION) {
+    if (surf_sol) filename = config->GetSurfWave_FileName().c_str();
+    else filename = config->GetWave_FileName().c_str();
+  }
+  
+  if (Kind_Solver == HEAT_EQUATION) {
+    if (surf_sol) filename = config->GetSurfHeat_FileName().c_str();
+    else filename = config->GetHeat_FileName().c_str();
+  }
   
 	if ((Kind_Solver == WAVE_EQUATION) && (Kind_Solver == ADJ_AEROACOUSTIC_EULER))
 		filename = config->GetAdjWave_FileName().c_str();

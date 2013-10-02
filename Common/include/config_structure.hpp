@@ -283,9 +283,11 @@ private:
 	Kind_TimeIntScheme_Plasma,	/*!< \brief Time integration for the plasma equations. */
 	Kind_TimeIntScheme_AdjPlasma,	/*!< \brief Time integration for the adjoint plasma equations. */
 	Kind_TimeIntScheme_Wave,	/*!< \brief Time integration for the wave equations. */
+	Kind_TimeIntScheme_Heat,	/*!< \brief Time integration for the wave equations. */
 	Kind_TimeIntScheme_FEA,	/*!< \brief Time integration for the FEA equations. */
 	Kind_ConvNumScheme,			/*!< \brief Global definition of the convective term. */
 	Kind_ConvNumScheme_Flow,	/*!< \brief Centered or upwind scheme for the flow equations. */
+	Kind_ConvNumScheme_Heat,	/*!< \brief Centered or upwind scheme for the flow equations. */
 	Kind_ConvNumScheme_TNE2,	/*!< \brief Centered or upwind scheme for the flow equations. */
 	Kind_ConvNumScheme_AdjFlow,		/*!< \brief Centered or upwind scheme for the adjoint flow equations. */
   Kind_ConvNumScheme_AdjTNE2,		/*!< \brief Centered or upwind scheme for the adjoint TNE2 equations. */
@@ -299,6 +301,7 @@ private:
 	Kind_ConvNumScheme_Template,	/*!< \brief Centered or upwind scheme for the level set equation. */
 	Kind_ViscNumScheme,			/*!< \brief Global definition of the viscous term. */
 	Kind_ViscNumScheme_Flow,	/*!< \brief Viscous scheme for the flow equations. */
+	Kind_ViscNumScheme_Heat,	/*!< \brief Viscous scheme for the flow equations. */
 	Kind_ViscNumScheme_AdjFlow,		/*!< \brief Viscous scheme for the adjoint flow equations. */
   Kind_ViscNumScheme_TNE2,	/*!< \brief Viscous scheme for the flow equations. */
   Kind_ViscNumScheme_AdjTNE2, /*!< \brief Viscous scheme for the flow equations. */
@@ -314,6 +317,7 @@ private:
 	Kind_ViscNumScheme_Template,	/*!< \brief Viscous scheme for the template. */
 	Kind_SourNumScheme,			/*!< \brief Global definition of the source term. */
 	Kind_SourNumScheme_Flow,	/*!< \brief Source numerical scheme for the flow equations. */
+	Kind_SourNumScheme_Heat,	/*!< \brief Source numerical scheme for the flow equations. */
 	Kind_SourNumScheme_AdjFlow,		/*!< \brief Source numerical scheme for the adjoint flow equations. */
   Kind_SourNumScheme_TNE2,	/*!< \brief Source numerical scheme for the flow equations. */
   Kind_SourNumScheme_AdjTNE2,	/*!< \brief Source numerical scheme for the flow equations. */
@@ -462,7 +466,10 @@ private:
 	Farfield_FileName, 				/*!< \brief Data at farfield boundaries. */
 	Structure_FileName,					/*!< \brief Structure variables output file. */
 	SurfStructure_FileName,					/*!< \brief Surface structure variables output file. */
+  SurfWave_FileName,					/*!< \brief Surface structure variables output file. */
+	SurfHeat_FileName,					/*!< \brief Surface structure variables output file. */
 	Wave_FileName,					/*!< \brief Wave variables output file. */
+	Heat_FileName,					/*!< \brief Heat variables output file. */
 	AdjWave_FileName,					/*!< \brief Adjoint wave variables output file. */
 	Residual_FileName,				/*!< \brief Residual variables output file. */
 	Conv_FileName,					/*!< \brief Convergence history output file. */
@@ -2304,6 +2311,15 @@ public:
 	 * \return Kind of integration scheme for the plasma equations.
 	 */
 	unsigned short GetKind_TimeIntScheme_Wave(void);
+  
+  /*!
+	 * \brief Get the kind of integration scheme (explicit or implicit)
+	 *        for the flow equations.
+	 * \note This value is obtained from the config file, and it is constant
+	 *       during the computation.
+	 * \return Kind of integration scheme for the plasma equations.
+	 */
+	unsigned short GetKind_TimeIntScheme_Heat(void);
 
 	/*! 
 	 * \brief Get the kind of integration scheme (explicit or implicit) 
@@ -2443,6 +2459,15 @@ public:
 	 */		
 	unsigned short GetKind_SourNumScheme_Wave(void);
 
+  /*!
+	 * \brief Get the kind of viscous numerical scheme for the wave
+	 (        equation.
+	 * \note This value is obtained from the config file, and it is constant
+	 *       during the computation.
+	 * \return Kind of viscous numerical scheme for the levelset equations.
+	 */
+	unsigned short GetKind_SourNumScheme_Heat(void);
+  
 	/*!
 	 * \brief Get the kind of viscous numerical scheme for the FEA
 	 (        equation.
@@ -2833,6 +2858,16 @@ public:
 	 * \return Kind of viscous numerical scheme for the adjoint flow equations.
 	 */
 	unsigned short GetKind_ViscNumScheme_Wave(void);
+  
+  /*!
+	 * \brief Get the kind of viscous numerical scheme for the wave
+	 *        equations (Galerkin, Average of gradients, Average of gradients
+	 *        with correction).
+	 * \note This value is obtained from the config file, and it is constant
+	 *       during the computation.
+	 * \return Kind of viscous numerical scheme for the adjoint flow equations.
+	 */
+	unsigned short GetKind_ViscNumScheme_Heat(void);
 
 	/*! 
 	 * \brief Get the kind of viscous numerical scheme for the FEA
@@ -3517,12 +3552,30 @@ public:
 	 * \return Name of the file with the structure variables.
 	 */
 	string GetSurfStructure_FileName(void);
+  
+  /*!
+	 * \brief Get the name of the file with the structure variables.
+	 * \return Name of the file with the structure variables.
+	 */
+	string GetSurfWave_FileName(void);
+  
+  /*!
+	 * \brief Get the name of the file with the structure variables.
+	 * \return Name of the file with the structure variables.
+	 */
+	string GetSurfHeat_FileName(void);
 
 	/*!
 	 * \brief Get the name of the file with the wave variables.
 	 * \return Name of the file with the wave variables.
 	 */		
 	string GetWave_FileName(void);
+  
+  /*!
+	 * \brief Get the name of the file with the wave variables.
+	 * \return Name of the file with the wave variables.
+	 */
+	string GetHeat_FileName(void);
 
 	/*!
 	 * \brief Get the name of the file with the adjoint wave variables.

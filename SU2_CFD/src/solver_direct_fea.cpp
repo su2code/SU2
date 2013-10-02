@@ -36,22 +36,22 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
   
-  nPoint = geometry->GetnPoint();
-  nPointDomain = geometry->GetnPointDomain();
-	nDim    = geometry->GetnDim();
-	nMarker = config->GetnMarker_All();
-	node    = new CVariable*[nPoint];
+  nPoint =        geometry->GetnPoint();
+  nPointDomain =  geometry->GetnPointDomain();
+	nDim =          geometry->GetnDim();
+	nMarker =       config->GetnMarker_All();
+	node =          new CVariable*[nPoint];
   if (config->GetUnsteady_Simulation() == STEADY) nVar = nDim;
   else nVar = 2*nDim;
   
-	if (nDim == 2) NodesElement = 3;	// Triangles in 2D
-	if (nDim == 3) NodesElement = 4;	// Tets in 3D
+	if (nDim == 2) NodesElement = 3;
+	if (nDim == 3) NodesElement = 4;
 	
   /*--- Define some auxiliary vectors related to the residual ---*/
-  Residual = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]      = 0.0;
-  Residual_RMS = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
-  Residual_Max = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
-  Point_Max = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]  = 0;
+  Residual = new double[nVar];          for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]      = 0.0;
+  Residual_RMS = new double[nVar];      for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
+  Residual_Max = new double[nVar];      for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
+  Point_Max = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]     = 0;
   
   /*--- Define some auxiliary vectors related to the solution ---*/
 	Solution   = new double[nVar];  for (iVar = 0; iVar < nVar; iVar++) Solution[iVar]   = 0.0;

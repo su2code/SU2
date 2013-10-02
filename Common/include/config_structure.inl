@@ -487,6 +487,8 @@ inline unsigned short CConfig::GetKind_TimeIntScheme_AdjPlasma(void) { return Ki
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_Wave(void) { return Kind_TimeIntScheme_Wave; }
 
+inline unsigned short CConfig::GetKind_TimeIntScheme_Heat(void) { return Kind_TimeIntScheme_Heat; }
+
 inline unsigned short CConfig::GetKind_TimeIntScheme_FEA(void) { return Kind_TimeIntScheme_FEA; }
 
 inline unsigned short CConfig::GetKind_ConvNumScheme_Flow(void) { return Kind_ConvNumScheme_Flow; }
@@ -510,6 +512,8 @@ inline unsigned short CConfig::GetKind_ViscNumScheme_TNE2(void) { return Kind_Vi
 inline unsigned short CConfig::GetKind_SourNumScheme_LevelSet(void) { return Kind_SourNumScheme_LevelSet; }
 
 inline unsigned short CConfig::GetKind_SourNumScheme_Wave(void) { return Kind_SourNumScheme_Wave; }
+
+inline unsigned short CConfig::GetKind_SourNumScheme_Heat(void) { return Kind_SourNumScheme_Heat; }
 
 inline unsigned short CConfig::GetKind_SourNumScheme_FEA(void) { return Kind_SourNumScheme_FEA; }
 
@@ -622,6 +626,8 @@ inline unsigned short CConfig::GetKind_ViscNumScheme_AdjTNE2(void) { return Kind
 inline unsigned short CConfig::GetKind_SourNumScheme_AdjTNE2(void) { return Kind_SourNumScheme_AdjTNE2; }
 
 inline unsigned short CConfig::GetKind_ViscNumScheme_Wave(void) { return Kind_ViscNumScheme_Wave; }
+
+inline unsigned short CConfig::GetKind_ViscNumScheme_Heat(void) { return Kind_ViscNumScheme_Heat; }
 
 inline unsigned short CConfig::GetKind_ViscNumScheme_FEA(void) { return Kind_ViscNumScheme_FEA; }
 
@@ -801,7 +807,13 @@ inline string CConfig::GetStructure_FileName(void) { return Structure_FileName; 
 
 inline string CConfig::GetSurfStructure_FileName(void) { return SurfStructure_FileName; }
 
+inline string CConfig::GetSurfWave_FileName(void) { return SurfWave_FileName; }
+
+inline string CConfig::GetSurfHeat_FileName(void) { return SurfHeat_FileName; }
+
 inline string CConfig::GetWave_FileName(void) { return Wave_FileName; }
+
+inline string CConfig::GetHeat_FileName(void) { return Heat_FileName; }
 
 inline string CConfig::GetAdjWave_FileName(void) { return AdjWave_FileName; }
 
