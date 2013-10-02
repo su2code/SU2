@@ -350,7 +350,7 @@ inline void CSolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_co
 inline void CSolver::BC_Neumann(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
 										  CConfig *config, unsigned short val_marker) { }
 								  
-inline void CSolver::BC_Dielectric(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
+inline void CSolver::BC_Dipoisson(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
 									 CConfig *config, unsigned short val_marker) { }
 									 										  
 inline void CSolver::BC_Electrode(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
@@ -618,9 +618,9 @@ inline double CLinEulerSolver::GetTotal_CDeltaLift() { return Total_CDeltaLift; 
 
 inline double CLinEulerSolver::GetTotal_CDeltaDrag() { return Total_CDeltaDrag; }
 
-inline double CElectricSolver::GetTotal_CCharge() { return Total_CCharge; }
+inline double CPoissonSolver::GetTotal_CCharge() { return Total_CCharge; }
 
-inline void CElectricSolver::SetTotal_CCharge(double val_Total_CCharge) {Total_CCharge = val_Total_CCharge; }
+inline void CPoissonSolver::SetTotal_CCharge(double val_Total_CCharge) {Total_CCharge = val_Total_CCharge; }
 
 inline unsigned short CPlasmaSolver::GetnSpecies(void) { return nSpecies; }
 

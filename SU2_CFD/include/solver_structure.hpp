@@ -664,7 +664,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_Dielectric(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+	virtual void BC_Dipoisson(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                CConfig *config, unsigned short val_marker);
     
 	/*!
@@ -4312,13 +4312,13 @@ public:
 	double GetTotal_CDeltaLift(void);
 };
 
-/*! \class CElectricSolver
- *  \brief Main class for defining the electric potential solver.
+/*! \class CPoissonSolver
+ *  \brief Main class for defining the poisson potential solver.
  *  \author F. Palacios.
  *  \version 2.0.8
  *  \date May 3, 2010.
  */
-class CElectricSolver : public CSolver {
+class CPoissonSolver : public CSolver {
 private:
 	double Total_CCharge;			/*!< \brief Total charge coefficient for all the domain. */
 	double *Source_Vector;		/*!< \brief Auxiliary vector for storing element source vector. */
@@ -4335,14 +4335,14 @@ public:
 	/*!
 	 * \brief Constructor of the class.
 	 */
-	CElectricSolver(void);
+	CPoissonSolver(void);
     
 	/*!
 	 * \overload
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CElectricSolver(CGeometry *geometry, CConfig *config);
+	CPoissonSolver(CGeometry *geometry, CConfig *config);
     
 	/*!
 	 * \brief A virtual member.
@@ -4358,7 +4358,7 @@ public:
 	/*!
 	 * \brief Destructor of the class.
 	 */
-	~CElectricSolver(void);
+	~CPoissonSolver(void);
     
 	/*!
 	 * \brief Integrate the Poisson equation using a Galerkin method.
@@ -6154,7 +6154,7 @@ public:
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
      
 	 */
-	void BC_Dielectric(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+	void BC_Dipoisson(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                        CConfig *config, unsigned short val_marker);
     
 	/*!

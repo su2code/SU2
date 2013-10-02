@@ -163,9 +163,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddMarkerOption("MARKER_DIRICHLET", nMarker_Dirichlet, Marker_Dirichlet);
   /* DESCRIPTION: Neumann boundary marker(s) */
 	AddMarkerOption("MARKER_NEUMANN", nMarker_Neumann, Marker_Neumann);
-  /* DESCRIPTION: Electric dirichlet boundary marker(s) */
+  /* DESCRIPTION: poisson dirichlet boundary marker(s) */
 	AddMarkerDirichlet("ELEC_DIRICHLET", nMarker_Dirichlet_Elec, Marker_Dirichlet_Elec, Dirichlet_Value );
-	/* DESCRIPTION: Electric neumann boundary marker(s) */
+	/* DESCRIPTION: poisson neumann boundary marker(s) */
 	AddMarkerOption("ELEC_NEUMANN", nMarker_Neumann_Elec, Marker_Neumann_Elec);
 	/* DESCRIPTION: Custom boundary marker(s) */
 	AddMarkerOption("MARKER_CUSTOM", nMarker_Custom, Marker_Custom);
@@ -611,7 +611,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	/* DESCRIPTION: Viscous numerical method */
 	AddEnumOption("VISC_NUM_METHOD_ELEC", Kind_ViscNumScheme_Elec, Viscous_Map, "NONE");
 	/* DESCRIPTION: Source term numerical method */
-	AddEnumOption("SOUR_NUM_METHOD_ELEC", Kind_SourNumScheme_Elec, Source_Map, "NONE");
+	AddEnumOption("SOUR_NUM_METHOD_ELEC", Kind_SourNumScheme_Poisson, Source_Map, "NONE");
   
 	/* DESCRIPTION: Viscous numerical method */
 	AddEnumOption("VISC_NUM_METHOD_FEA", Kind_ViscNumScheme_FEA, Viscous_Map, "GALERKIN");
@@ -869,8 +869,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddSpecialOption("MAGNET", MagneticForce, SetBoolOption, false);
 	/* DESCRIPTION: Joule heating simulation */
 	AddSpecialOption("JOULE_HEAT", JouleHeating, SetBoolOption, false);
-	/* DESCRIPTION: Flag for running the electric potential solver as part of the plasma solver */
-	AddSpecialOption("ELECTRIC_SOLVER", ElectricSolver, SetBoolOption, false);
+	/* DESCRIPTION: Flag for running the poisson potential solver as part of the plasma solver */
+	AddSpecialOption("poisson_SOLVER", PoissonSolver, SetBoolOption, false);
 	/* DESCRIPTION:  */
 	AddSpecialOption("MACCORMACK_RELAXATION", MacCormackRelaxation, SetBoolOption, false);
 	/* DESCRIPTION: Time stepping of the various species in a steady plasma solution */
@@ -878,7 +878,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	/* DESCRIPTION: Time Step for dual time stepping simulations (s) */
 	AddScalarOption("STAGNATION_BFIELD", Stagnation_B, 0.2);
 	/* DESCRIPTION: Time Step for dual time stepping simulations (s) */
-	AddScalarOption("ELECTRICAL_CONDUCTIVITY", Electric_Cond, 2000.0);
+	AddScalarOption("poissonAL_CONDUCTIVITY", poisson_Cond, 2000.0);
 	/* DESCRIPTION: Time Step for dual time stepping simulations (s) */
 	AddScalarOption("DIPOLE_DIST", DipoleDist, 1E-6);
 	/* DESCRIPTION: Restart a Plasma solution from an Euler native solution file */
@@ -3555,7 +3555,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				if (Kind_GasModel == N2) cout << "Using 2 species Nitrogen gas model." << endl;
 				if (Kind_GasModel == ARGON_SID) cout << "Using 2 species Sid gas model." << endl;
 				break;
-			case ELECTRIC_POTENTIAL: cout << "Electric potential equation." << endl; break;
+			case POISSON_EQUATION: cout << "poisson potential equation." << endl; break;
 			case WAVE_EQUATION: cout << "Wave equation." << endl; break;
 			case HEAT_EQUATION: cout << "Heat equation." << endl; break;
 			case LINEAR_ELASTICITY: cout << "Linear elasticity solver." << endl; break;
@@ -4116,8 +4116,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			if (Kind_SourNumScheme_Turb == PIECEWISE_CONSTANT) cout << "Piecewise constant integration of the turbulence model source terms." << endl;
 		}
 
-		if ((Kind_Solver == ELECTRIC_POTENTIAL) || (Kind_Solver == PLASMA_NAVIER_STOKES)) {
-			if (Kind_ViscNumScheme_Elec == GALERKIN) cout << "Galerkin method for viscous terms computation of the electric potential equation." << endl;
+		if ((Kind_Solver == POISSON_EQUATION) || (Kind_Solver == PLASMA_NAVIER_STOKES)) {
+			if (Kind_ViscNumScheme_Elec == GALERKIN) cout << "Galerkin method for viscous terms computation of the poisson potential equation." << endl;
 		}
 
 		if ((Kind_Solver == ADJ_RANS) && (!Frozen_Visc)) {
@@ -4131,8 +4131,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			if (Kind_SourNumScheme_AdjFlow == PIECEWISE_CONSTANT) cout << "Piecewise constant integration of the Navier-Stokes eq. source terms." << endl;
 		}
 
-		if (Kind_Solver == ELECTRIC_POTENTIAL) {
-			if (Kind_SourNumScheme_Elec == PIECEWISE_CONSTANT) cout << "Piecewise constant integration of the electric potential source terms." << endl;
+		if (Kind_Solver == POISSON_EQUATION) {
+			if (Kind_SourNumScheme_Poisson == PIECEWISE_CONSTANT) cout << "Piecewise constant integration of the poisson potential source terms." << endl;
 		}
     
     if (Kind_Solver == HEAT_EQUATION) {
@@ -5524,7 +5524,7 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
 	case RUNTIME_TURB_SYS:      return TURB_SOL;
   case RUNTIME_TNE2_SYS:      return TNE2_SOL;
 	case RUNTIME_TRANS_SYS:     return TRANS_SOL;
-	case RUNTIME_ELEC_SYS:      return ELEC_SOL;
+	case RUNTIME_POISSON_SYS:   return POISSON_SOL;
 	case RUNTIME_WAVE_SYS:      return WAVE_SOL;
   case RUNTIME_HEAT_SYS:      return HEAT_SOL;
   case RUNTIME_FEA_SYS:       return FEA_SOL;
@@ -5699,10 +5699,10 @@ void CConfig::SetGlobalParam(unsigned short val_solver, unsigned short val_syste
 			SetKind_SourNumScheme(GetKind_SourNumScheme_Plasma());
 			SetKind_TimeIntScheme(GetKind_TimeIntScheme_Plasma());
 		}
-		if (val_system == RUNTIME_ELEC_SYS) {
+		if (val_system == RUNTIME_POISSON_SYS) {
 			SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
-			SetKind_ViscNumScheme(GetKind_ViscNumScheme_Elec());
-			SetKind_SourNumScheme(GetKind_SourNumScheme_Elec());
+			SetKind_ViscNumScheme(GetKind_ViscNumScheme_Poisson());
+			SetKind_SourNumScheme(GetKind_SourNumScheme_Poisson());
 			SetKind_TimeIntScheme(NONE);
 		}
 		break;
@@ -5714,10 +5714,10 @@ void CConfig::SetGlobalParam(unsigned short val_solver, unsigned short val_syste
 			SetKind_SourNumScheme(GetKind_SourNumScheme_Plasma());
 			SetKind_TimeIntScheme(GetKind_TimeIntScheme_Plasma());
 		}
-		if (val_system == RUNTIME_ELEC_SYS) {
+		if (val_system == RUNTIME_POISSON_SYS) {
 			SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
-			SetKind_ViscNumScheme(GetKind_ViscNumScheme_Elec());
-			SetKind_SourNumScheme(GetKind_SourNumScheme_Elec());
+			SetKind_ViscNumScheme(GetKind_ViscNumScheme_Poisson());
+			SetKind_SourNumScheme(GetKind_SourNumScheme_Poisson());
 			SetKind_TimeIntScheme(NONE);
 		}
 		break;
@@ -5829,11 +5829,11 @@ void CConfig::SetGlobalParam(unsigned short val_solver, unsigned short val_syste
 			SetKind_TimeIntScheme(GetKind_TimeIntScheme_LinFlow());
 		}
 		break;
-	case ELECTRIC_POTENTIAL:
-		if (val_system == RUNTIME_ELEC_SYS) {
+	case POISSON_EQUATION:
+		if (val_system == RUNTIME_POISSON_SYS) {
 			SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
-			SetKind_SourNumScheme(GetKind_SourNumScheme_Elec());
-			SetKind_ViscNumScheme(GetKind_ViscNumScheme_Elec());
+			SetKind_SourNumScheme(GetKind_SourNumScheme_Poisson());
+			SetKind_ViscNumScheme(GetKind_ViscNumScheme_Poisson());
 			SetKind_TimeIntScheme(NONE);
 		}
 		break;

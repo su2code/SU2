@@ -405,7 +405,7 @@ inline double CConfig::GetParticle_Mass(unsigned short iSpecies) { return Partic
 
 inline double CConfig::GetStagnation_B() { return Stagnation_B; }
 
-inline double CConfig::GetElec_Conductivity() { return Electric_Cond; } 
+inline double CConfig::GetElec_Conductivity() { return poisson_Cond; } 
 
 inline double CConfig::GetDipoleDist() { return DipoleDist; } 
 
@@ -539,9 +539,9 @@ inline unsigned short CConfig::GetKind_SourJac_Plasma(void) { return Kind_SourJa
 
 inline unsigned short CConfig::GetKind_SourNumScheme_Template(void) { return Kind_SourNumScheme_Template; }
 
-inline unsigned short CConfig::GetKind_ViscNumScheme_Elec(void) { return Kind_ViscNumScheme_Elec; }
+inline unsigned short CConfig::GetKind_ViscNumScheme_Poisson(void) { return Kind_ViscNumScheme_Elec; }
 
-inline unsigned short CConfig::GetKind_SourNumScheme_Elec(void) { return Kind_SourNumScheme_Elec; }
+inline unsigned short CConfig::GetKind_SourNumScheme_Poisson(void) { return Kind_SourNumScheme_Poisson; }
 
 inline unsigned short CConfig::GetKind_Centered_Flow(void) { return Kind_Centered_Flow; }
 
@@ -907,7 +907,7 @@ inline bool CConfig::GetIsothermalWall(void) { return IsothermalWall; }
 
 inline bool CConfig::GetCatalyticWall(void) { return CatalyticWall; }
 
-inline bool CConfig::GetElectricSolver(void) { return ElectricSolver; }
+inline bool CConfig::GetPoissonSolver(void) { return PoissonSolver; }
 
 inline bool CConfig::Low_Mach_Preconditioning(void) { return Low_Mach_Precon; }
 

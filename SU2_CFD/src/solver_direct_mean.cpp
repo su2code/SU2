@@ -2464,7 +2464,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 					/*--- Set the coordinate ---*/
 					numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[jPoint]->GetCoord());
 
-					/*--- Set electrical conductivity  ---*/
+					/*--- Set poissonal conductivity  ---*/
 					numerics->SetElec_Cond();
 
 					/*--- Sum over points to get the integral  ---*/
@@ -2486,7 +2486,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 					/*--- Set the coordinate ---*/
 					numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
 
-					/*--- Set electrical conductivity  ---*/
+					/*--- Set poissonal conductivity  ---*/
 					numerics->SetElec_Cond();
 
 					/*--- Compute Residual ---*/
