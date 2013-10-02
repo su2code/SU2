@@ -27,23 +27,23 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\SU2_CFD\include\output_structure.hpp" />
-    <ClInclude Include="..\..\SU2_CFD\include\solver_structure.hpp" />
-    <ClInclude Include="..\..\SU2_CFD\include\variable_structure.hpp" />
-    <ClInclude Include="..\..\SU2_SOL\include\SU2_SOL.hpp" />
+    <ClInclude Include="..\..\..\SU2_CFD\include\output_structure.hpp" />
+    <ClInclude Include="..\..\..\SU2_CFD\include\solver_structure.hpp" />
+    <ClInclude Include="..\..\..\SU2_CFD\include\variable_structure.hpp" />
+    <ClInclude Include="..\..\..\SU2_SOL\include\SU2_SOL.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\SU2_CFD\src\output_cgns.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\output_paraview.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\output_structure.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\output_tecplot.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\solver_structure.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\variable_structure.cpp" />
-    <ClCompile Include="..\..\SU2_SOL\src\SU2_SOL.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\output_cgns.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\output_paraview.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\output_structure.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\output_tecplot.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\solver_structure.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\variable_structure.cpp" />
+    <ClCompile Include="..\..\..\SU2_SOL\src\SU2_SOL.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\SU2_CFD\include\solver_structure.inl" />
-    <None Include="..\..\SU2_CFD\include\variable_structure.inl" />
+    <None Include="..\..\..\SU2_CFD\include\solver_structure.inl" />
+    <None Include="..\..\..\SU2_CFD\include\variable_structure.inl" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{CF1AC016-1026-454A-BEFC-5CB6A14A95C3}</ProjectGuid>

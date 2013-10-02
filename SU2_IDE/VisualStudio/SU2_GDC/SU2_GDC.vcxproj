@@ -27,15 +27,15 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\SU2_SMC\include\SU2_SMC.hpp" />
+    <ClInclude Include="..\..\..\SU2_GDC\include\SU2_GDC.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\SU2_SMC\src\SU2_SMC.cpp" />
+    <ClCompile Include="..\..\..\SU2_GDC\src\SU2_GDC.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{AD4D2F03-E49D-4A4D-85B5-5616221D253E}</ProjectGuid>
-    <RootNamespace>SU2_SMC</RootNamespace>
-    <ProjectName>SU2_SMC</ProjectName>
+    <RootNamespace>SU2_GDC</RootNamespace>
+    <ProjectName>SU2_GDC</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

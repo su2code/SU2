@@ -27,91 +27,91 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\SU2_CFD\include\definition_structure.hpp" />
-    <ClInclude Include="..\..\SU2_CFD\include\integration_structure.hpp" />
-    <ClInclude Include="..\..\SU2_CFD\include\iteration_structure.hpp" />
-    <ClInclude Include="..\..\SU2_CFD\include\numerics_structure.hpp" />
-    <ClInclude Include="..\..\SU2_CFD\include\output_structure.hpp" />
-    <ClInclude Include="..\..\SU2_CFD\include\solver_structure.hpp" />
-    <ClInclude Include="..\..\SU2_CFD\include\SU2_CFD.hpp" />
-    <ClInclude Include="..\..\SU2_CFD\include\variable_structure.hpp" />
+    <ClInclude Include="..\..\..\SU2_CFD\include\definition_structure.hpp" />
+    <ClInclude Include="..\..\..\SU2_CFD\include\integration_structure.hpp" />
+    <ClInclude Include="..\..\..\SU2_CFD\include\iteration_structure.hpp" />
+    <ClInclude Include="..\..\..\SU2_CFD\include\numerics_structure.hpp" />
+    <ClInclude Include="..\..\..\SU2_CFD\include\output_structure.hpp" />
+    <ClInclude Include="..\..\..\SU2_CFD\include\solver_structure.hpp" />
+    <ClInclude Include="..\..\..\SU2_CFD\include\SU2_CFD.hpp" />
+    <ClInclude Include="..\..\..\SU2_CFD\include\variable_structure.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\SU2_CFD\src\definition_structure.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\integration_notime.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\integration_structure.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\integration_time.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\iteration_structure.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\numerics_adjoint_electric.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\numerics_adjoint_levelset.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\numerics_adjoint_mean.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\numerics_adjoint_plasma.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\numerics_adjoint_tne2.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\numerics_adjoint_turbulent.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\numerics_direct_electric.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\numerics_direct_fea.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\numerics_direct_heat.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\numerics_direct_levelset.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\numerics_direct_mean.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\numerics_direct_plasma.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\numerics_direct_tne2.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\numerics_direct_transition.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\numerics_direct_turbulent.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\numerics_direct_wave.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\numerics_linearized_mean.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\numerics_linearized_turbulent.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\numerics_structure.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\numerics_template.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\output_cgns.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\output_paraview.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\output_structure.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\output_tecplot.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\solver_adjoint_levelset.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\solver_adjoint_mean.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\solver_adjoint_plasma.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\solver_adjoint_tne2.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\solver_adjoint_turbulent.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\solver_direct_electric.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\solver_direct_fea.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\solver_direct_heat.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\solver_direct_levelset.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\solver_direct_mean.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\solver_direct_plasma.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\solver_direct_tne2.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\solver_direct_transition.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\solver_direct_turbulent.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\solver_direct_wave.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\solver_linearized_mean.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\solver_linearized_turbulent.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\solver_structure.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\solver_template.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\SU2_CFD.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\variable_adjoint_electric.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\variable_adjoint_levelset.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\variable_adjoint_mean.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\variable_adjoint_plasma.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\variable_adjoint_tne2.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\variable_adjoint_turbulent.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\variable_direct_electric.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\variable_direct_fea.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\variable_direct_heat.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\variable_direct_levelset.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\variable_direct_mean.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\variable_direct_plasma.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\variable_direct_tne2.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\variable_direct_transition.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\variable_direct_turbulent.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\variable_direct_wave.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\variable_linearized_mean.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\variable_linearized_turbulent.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\variable_structure.cpp" />
-    <ClCompile Include="..\..\SU2_CFD\src\variable_template.cpp" />
+    <None Include="..\..\..\SU2_CFD\include\integration_structure.inl" />
+    <None Include="..\..\..\SU2_CFD\include\numerics_structure.inl" />
+    <None Include="..\..\..\SU2_CFD\include\solver_structure.inl" />
+    <None Include="..\..\..\SU2_CFD\include\variable_structure.inl" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\SU2_CFD\include\integration_structure.inl" />
-    <None Include="..\..\SU2_CFD\include\numerics_structure.inl" />
-    <None Include="..\..\SU2_CFD\include\solver_structure.inl" />
-    <None Include="..\..\SU2_CFD\include\variable_structure.inl" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\definition_structure.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\integration_notime.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\integration_structure.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\integration_time.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\iteration_structure.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\numerics_adjoint_electric.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\numerics_adjoint_levelset.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\numerics_adjoint_mean.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\numerics_adjoint_plasma.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\numerics_adjoint_tne2.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\numerics_adjoint_turbulent.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\numerics_direct_electric.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\numerics_direct_fea.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\numerics_direct_heat.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\numerics_direct_levelset.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\numerics_direct_mean.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\numerics_direct_plasma.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\numerics_direct_tne2.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\numerics_direct_transition.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\numerics_direct_turbulent.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\numerics_direct_wave.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\numerics_linearized_mean.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\numerics_linearized_turbulent.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\numerics_structure.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\numerics_template.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\output_cgns.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\output_paraview.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\output_structure.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\output_tecplot.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\solver_adjoint_levelset.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\solver_adjoint_mean.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\solver_adjoint_plasma.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\solver_adjoint_tne2.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\solver_adjoint_turbulent.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\solver_direct_electric.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\solver_direct_fea.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\solver_direct_heat.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\solver_direct_levelset.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\solver_direct_mean.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\solver_direct_plasma.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\solver_direct_tne2.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\solver_direct_transition.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\solver_direct_turbulent.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\solver_direct_wave.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\solver_linearized_mean.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\solver_linearized_turbulent.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\solver_structure.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\solver_template.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\SU2_CFD.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\variable_adjoint_electric.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\variable_adjoint_levelset.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\variable_adjoint_mean.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\variable_adjoint_plasma.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\variable_adjoint_tne2.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\variable_adjoint_turbulent.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\variable_direct_electric.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\variable_direct_fea.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\variable_direct_heat.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\variable_direct_levelset.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\variable_direct_mean.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\variable_direct_plasma.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\variable_direct_tne2.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\variable_direct_transition.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\variable_direct_turbulent.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\variable_direct_wave.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\variable_linearized_mean.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\variable_linearized_turbulent.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\variable_structure.cpp" />
+    <ClCompile Include="..\..\..\SU2_CFD\src\variable_template.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{321107EE-9D20-416E-995B-413F6AE8FC64}</ProjectGuid>
@@ -270,7 +270,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>..\..\Common\include\CGNS\3.1.3;..\..\Common\include\METIS\5.0.2;..\..\Common\include;C:\Program Files\Tecplot\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>/DMETIS_5  /DNO_MPI  /DNO_MUTATIONPP /traceback %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/DMETIS_5  /DNO_MPI  /DNO_MUTATIONPP %(AdditionalOptions)</AdditionalOptions>
       <InterproceduralOptimization>NoIPO</InterproceduralOptimization>
       <Parallelization>false</Parallelization>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
