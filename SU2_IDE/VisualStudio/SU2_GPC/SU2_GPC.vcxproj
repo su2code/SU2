@@ -26,6 +26,12 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\SU2_GPC\include\SU2_GPC.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\SU2_GPC\src\SU2_GPC.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{DE1B3BA1-E394-40C1-99D1-4583FD5E1963}</ProjectGuid>
     <RootNamespace>SU2_GPC</RootNamespace>
@@ -194,12 +200,6 @@
       <AdditionalLibraryDirectories>..\..\Common\lib\Windows\64-bit\SU^2\Serial;..\..\Common\lib\Windows\64-bit\CGNS\3.1.3;..\..\Common\lib\Windows\64-bit\METIS\5.0.2;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\trunk\SU2_GPC\include\SU2_GPC.hpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\..\SU2_GPC\src\SU2_GPC.cpp" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

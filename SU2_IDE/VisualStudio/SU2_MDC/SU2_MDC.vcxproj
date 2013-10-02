@@ -27,10 +27,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\SU2_MDC\include\SU2_MDC.hpp" />
+    <ClInclude Include="..\..\..\SU2_MDC\include\SU2_MDC.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\SU2_MDC\src\SU2_MDC.cpp" />
+    <ClCompile Include="..\..\..\SU2_MDC\src\SU2_MDC.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{E6D6C33B-54D4-4B12-845F-DF74E27B3156}</ProjectGuid>
