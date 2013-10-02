@@ -1016,10 +1016,6 @@ inline double CConfig::GetAeroelastic_Frequency_Plunge(void) {return FreqPlungeA
 
 inline double CConfig::GetAeroelastic_Frequency_Pitch(void) {return FreqPitchAeroelastic;}
 
-inline unsigned short CConfig::GetType_Aeroelastic(void) {return Aeroelastic_Grid_Movement;}
-
-inline unsigned short CConfig::GetAeroelastic_GridVelocity(void) {return Aeroelastic_Grid_Velocity;}
-
 inline bool CConfig::GetWind_Gust(void) { return Wind_Gust; }
 
 inline bool CConfig::GetAeroelastic_Simulation(void) { return Aeroelastic_Simulation; }

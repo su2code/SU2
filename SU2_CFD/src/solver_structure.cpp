@@ -1275,9 +1275,7 @@ void CSolver::Gauss_Elimination(double** A, double* rhs, unsigned long nVar) {
 	}
 }
 
-void CSolver::Aeroelastic(CGeometry *geometry, CConfig *config, unsigned long IntIter) {
-    
-    //Move routines from CVolumetricMovement.
+void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometry, CConfig *config, unsigned long IntIter) {
     
     /*--- Variables used for Aeroelastic case ---*/
     
@@ -1303,8 +1301,12 @@ void CSolver::Aeroelastic(CGeometry *geometry, CConfig *config, unsigned long In
                     Cm = -1.0*GetSurface_CMz(iMarker_Monitoring);
                 }
             }
+            
+            /*--- Solve the aeroelastic equations for the particular marker(surface) ---*/
             SolveTypicalSectionWingModel(geometry, Cl, Cm, config, IntIter, structural_solution);
-            AeroelasticDeform(geometry, config, iMarker, structural_solution); //Maybe have this guy still in grid deform, move to surface deform from volume deform.
+            
+            /*--- Compute the new surface node locations ---*/
+            surface_movement->AeroelasticDeform(geometry, config, iMarker, structural_solution);
 
         }
         
@@ -1398,9 +1400,6 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, doubl
         }
     }
     
-    /*--- Amount of output to print to screen ---*/
-    bool verbose = true;
-    
     /*--- Retrieve values from the config file ---*/
     double w_a = config->GetAeroelastic_Frequency_Pitch();
     double dt = config->GetDelta_UnstTime();
@@ -1419,9 +1418,6 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, doubl
     
     /*--- Flutter Speep Index ---*/
     double Vf = (Mach_Inf*sqrt(gamma*P_Inf/Density_Inf))/(b*w_a*sqrt(mu));
-    if (verbose && (rank == MASTER_NODE) && (iter == 1)) {
-        std::cout << "Flutter Speed Index = " << Vf << std::endl;
-    }
     
     /*--- Eigenvectors and Eigenvalues of the Generalized EigenValue Problem. ---*/
     double PHI[2][2];   // generalized eigenvectors.
@@ -1528,23 +1524,6 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, doubl
     displacements[2] = y_dot;
     displacements[3] = alpha_dot;
     
-    /*--- write the plunging and pitching coordinates.
-     For now have python scripts that post-process the output to either the file or the screen
-     In the future could have the post-process values written to a solution file ---*/
-    if (rank == MASTER_NODE) {
-        std::fstream output_file;
-        output_file.open("plunging_pitching.txt", std::fstream::in | std::fstream::out | std::fstream::app);
-        
-        output_file << std::setprecision(15) << dy/b << "    " << dalpha << "\n";
-        output_file.close();
-        
-        if (verbose) {
-            std::cout.precision(15);
-            std::cout << "plunging movement = " << dy/b << std::endl;
-            std::cout << "pitching movement = " << dalpha << std::endl;
-        }
-    }
-    
     /*--- Calculate the total plunge and total pitch displacements for the unsteady step by summing the displacement at each sudo time step ---*/
     double pitch, plunge;
     pitch = config->GetAeroelastic_pitch();
@@ -1552,20 +1531,6 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, doubl
     
     config->SetAeroelastic_pitch(pitch+dalpha);
     config->SetAeroelastic_plunge(plunge+dy/b);
-    
-    
-    /*--- Output the plunge and pitch for the unsteady time step ---*/
-    if (rank == MASTER_NODE && iter == (config->GetUnst_nIntIter()-1)) {
-        std::fstream output_file;
-        output_file.open("plunging_pitching2.txt", std::fstream::in | std::fstream::out | std::fstream::app);
-        
-        output_file << std::setprecision(15) << config->GetAeroelastic_plunge() << "    " << config->GetAeroelastic_pitch() << "\n";
-        output_file.close();
-        
-        std::cout.precision(15);
-        std::cout << "plunge = " << config->GetAeroelastic_plunge() << std::endl;
-        std::cout << "pitch = " << config->GetAeroelastic_pitch() << std::endl;
-    }
     
     /*--- Set the Aeroelastic solution at time n+1. This gets update every sudo time step
      and after convering the sudo time step the solution at n+1 get moved to the solution at n
@@ -1575,70 +1540,6 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, doubl
     config->SetAeroelastic_np1(2, x2_np1[0]);
     config->SetAeroelastic_np1(3, x2_np1[1]);
     
-}
-
-void CSolver::AeroelasticDeform(CGeometry *geometry, CConfig *config, unsigned short iMarker, double displacements[4]) {
-    /* The sign conventions of these are those of the Typical Section Wing Model, below the signs are corrected */
-    double dy = -displacements[0];           // relative plunge
-    double dalpha = -displacements[1];       // relative pitch
-    double Center[2];
-    unsigned short jMarker, iDim;
-    double Lref = config->GetLength_Ref();
-    double *Coord;
-    unsigned long iPoint, iVertex;
-    double x_new, y_new;
-    double VarCoord[3];
-    string Marker_Tag;
-
-#ifndef NO_MPI
-	int rank = MPI::COMM_WORLD.Get_rank();
-#else
-	int rank = MASTER_NODE;
-#endif
-    
-    /*--- Check to see if we are supposed to move this marker(airfoil) ---*/
-    if (config->GetMarker_All_Moving(iMarker) == YES) {
-        
-        /*--- Identify iMarker from the list of those under MARKER_MOVING ---*/
-        
-        Marker_Tag = config->GetMarker_All_Tag(iMarker);
-        jMarker    = config->GetMarker_Moving(Marker_Tag);
-        
-        /*--- Pitching origin from config. ---*/
-        
-        Center[0] = config->GetMotion_Origin_X(jMarker);
-        Center[1] = config->GetMotion_Origin_Y(jMarker);
-        
-        for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-            /*--- Coordinates of the current point ---*/
-            Coord = geometry->node[iPoint]->GetCoord();
-            
-            /*--- Calculate non-dim. position from rotation center ---*/
-            double r[2] = {0,0};
-            for (iDim = 0; iDim < nDim; iDim++)
-                r[iDim] = (Coord[iDim]-Center[iDim])/Lref;
-            
-            /*--- Compute delta of transformed point coordinates ---*/
-            // The deltas are needed for the Spring Method.
-            // rotation contribution + plunging contribution - previous position
-            x_new = cos(dalpha)*r[0] - sin(dalpha)*r[1] -r[0];
-            y_new = sin(dalpha)*r[0] + cos(dalpha)*r[1] -r[1] + dy;
-            
-            VarCoord[0] = x_new;
-            VarCoord[1] = y_new;
-            VarCoord[2] = 0.0;
-            
-            /*--- Store new delta node locations for the surface ---*/
-            geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
-        }
-        /*--- Set the mesh motion center to the new location after incrementing the position with the plunge ---*/
-        config->SetMotion_Origin_Y(iMarker,Center[1]+dy);
-    }
-    else {
-        if (rank == MASTER_NODE)
-            std::cout << "WARNING: There is(are) marker(s) being monitored which are not being moved!" << std::endl;
-    }
 }
 
 CBaselineSolver::CBaselineSolver(void) : CSolver() { }

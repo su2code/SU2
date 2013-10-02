@@ -399,10 +399,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddScalarOption("FREQ_PLUNGE_AEROELASTIC", FreqPlungeAeroelastic, 100);
 	/* DESCRIPTION: Uncoupled Aeroelastic Frequency Pitch. */
 	AddScalarOption("FREQ_PITCH_AEROELASTIC", FreqPitchAeroelastic, 100);
-	/* DESCRIPTION: Type of aeroelastic grid movement */
-	AddEnumOption("TYPE_AEROELASTIC_GRID_MOVEMENT", Aeroelastic_Grid_Movement, Aeroelastic_Movement_Map, "RIGID");
-	/* DESCRIPTION: Type of grid velocities for aeroelastic motion */
-	AddEnumOption("TYPE_AEROELASTIC_GRID_VELOCITY", Aeroelastic_Grid_Velocity, Aeroelastic_Velocity_Map, "FD");
 
   /*--- Options related to wind gust simulations ---*/
 	/* CONFIG_CATEGORY: Wind Gust */
@@ -1528,8 +1524,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     
 	/*--- Allocating memory for previous time step solutions of Aeroelastic problem and Intializing variables. ---*/
 	if (Grid_Movement && (Kind_GridMovement[ZONE_0] == AEROELASTIC)) {
-		Aeroelastic_pitch = 0.0;
-		Aeroelastic_plunge = 0.0;
 		Aeroelastic_np1 = new double[4];
 		Aeroelastic_n   = new double[4];
 		Aeroelastic_n1  = new double[4];

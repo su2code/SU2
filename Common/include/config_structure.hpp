@@ -653,9 +653,7 @@ private:
 	FreqPitchAeroelastic, /*!< \brief Pitch natural frequency for Aeroelastic. */
     Aeroelastic_plunge, /*!< \brief Value of plunging coordinate at the end of an external iteration. */
 	Aeroelastic_pitch; /*!< \brief Value of pitching coordinate at the end of an external iteration. */
-	unsigned short Aeroelastic_Grid_Movement,	/*!< \brief Type of Aeroelastic grid movement. */
-	Aeroelastic_Grid_Velocity,	/*!< \brief Type of Aeroelastic grid velocity. */
-    Gust_Type,	/*!< \brief Type of Gust. */
+    unsigned short Gust_Type,	/*!< \brief Type of Gust. */
     Gust_Dir;   /*!< \brief Direction of the gust */
     double Gust_WaveLength,     /*!< \brief The gust wavelength. */
     Gust_Periods,              /*!< \brief Number of gust periods. */
@@ -4652,18 +4650,6 @@ public:
 	 * \brief Value of pitching coordinate at the end of an external iteration.
 	 */
 	void SetAeroelastic_pitch(double val);
-
-	/*!
-	 * \brief Get the type of aeroelastic grid movement.
-	 * \return type of aeroelastic grid movement.
-	 */
-	unsigned short GetType_Aeroelastic(void);
-
-	/*!
-	 * \brief Get the way to compute grid velocities for aeroelastic motion.
-	 * \return type of grid velocity computation used.
-	 */
-	unsigned short GetAeroelastic_GridVelocity(void);
     
     /*!
 	 * \brief Get information about the aeroelastic simulation.

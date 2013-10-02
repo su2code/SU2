@@ -1454,6 +1454,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
                (config->GetKind_Solver() == ADJ_RANS));
 	bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+    bool aeroelastic = config->GetAeroelastic_Simulation();
   
   /*--- Set the location and value of the free-surface ---*/
   
@@ -1791,6 +1792,12 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 		}
         
 	}
+    
+    if (aeroelastic) {
+        /*--- Reset the plunge and pitch value for the new unsteady step. ---*/
+        config->SetAeroelastic_pitch(0.0);
+        config->SetAeroelastic_plunge(0.0);
+    }
     
     
 }
