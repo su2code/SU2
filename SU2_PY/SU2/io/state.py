@@ -24,7 +24,7 @@
 # ----------------------------------------------------------------------
 
 import os, sys, shutil, copy, time
-from ..io   import expand_part, get_adjointSuffix, add_suffix, \
+from ..io   import expand_part, expand_time, get_adjointSuffix, add_suffix, \
                    get_specialCases, Config
 from ..util import bunch
 from ..util import ordered_bunch
