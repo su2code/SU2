@@ -25,7 +25,7 @@
 
 import os, sys, shutil, copy, time
 from ..io   import expand_part, get_adjointSuffix, add_suffix, \
-                   get_specialCases
+                   get_specialCases, Config
 from ..util import bunch
 from ..util import ordered_bunch
 
@@ -34,7 +34,7 @@ from ..util import ordered_bunch
 #  State Factory
 # ----------------------------------------------------------------------
 
-def State_Factory(state=None):
+def State_Factory(state=None,config=None):
     """ state = SU2.io.State()
         
         Starts a state class, an extension of ordered_bunch().
@@ -82,6 +82,10 @@ def State_Factory(state=None):
 
     """   
     
+    if isinstance(state,Config) and not config:
+        config = state
+        state = None
+    
     if not state is None:
         assert isinstance(state,State) , 'input is must be a state instance'
         return state
@@ -90,6 +94,9 @@ def State_Factory(state=None):
     
     for key in ['FUNCTIONS','GRADIENTS','VARIABLES','FILES','HISTORY']:
         NewClass[key] = ordered_bunch()
+            
+    if config:
+        NewClass.find_files(config)
             
     return NewClass
 
