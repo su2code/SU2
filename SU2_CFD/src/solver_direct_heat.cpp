@@ -184,9 +184,9 @@ void CHeatSolver::Source_Residual(CGeometry *geometry,
                                   CNumerics *numerics, CNumerics *second_numerics,
                                   CConfig   *config,
                                   unsigned short iMesh) {
-  
+
   if (config->GetUnsteady_Simulation() != STEADY) {
-    
+
     unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3 = 0;
     double a[3], b[3], c[3], d[3], Area_Local = 0.0, Volume_Local = 0.0, Time_Num;
     double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3= NULL;
@@ -194,8 +194,7 @@ void CHeatSolver::Source_Residual(CGeometry *geometry,
 
     /*--- Numerical time step (this system is uncoditional stable... a very big number can be used) ---*/
     if (config->GetUnsteady_Simulation() == TIME_STEPPING) Time_Num = config->GetDelta_UnstTimeND();
-    else Time_Num = 1.0;
-    if (config->GetUnsteady_Simulation() == STEADY) Time_Num = 1.0;
+    else Time_Num = 1E30;
     
     /*--- Loop through elements to compute contributions from the matrix
      blocks involving time. These contributions are also added to the
@@ -204,23 +203,22 @@ void CHeatSolver::Source_Residual(CGeometry *geometry,
     for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
       
       /*--- Get node numbers and their coordinate vectors ---*/
+      
       Point_0 = geometry->elem[iElem]->GetNode(0);	Coord_0 = geometry->node[Point_0]->GetCoord();
       Point_1 = geometry->elem[iElem]->GetNode(1);	Coord_1 = geometry->node[Point_1]->GetCoord();
       Point_2 = geometry->elem[iElem]->GetNode(2);	Coord_2 = geometry->node[Point_2]->GetCoord();
       if (nDim == 3) { Point_3 = geometry->elem[iElem]->GetNode(3);	Coord_3 = geometry->node[Point_3]->GetCoord(); }
+      
+      /*--- Compute area and volume ---*/
       
       if (nDim == 2) {
         for (iDim = 0; iDim < nDim; iDim++) {
           a[iDim] = Coord_0[iDim]-Coord_2[iDim];
           b[iDim] = Coord_1[iDim]-Coord_2[iDim];
         }
-        
-        /*--- Compute element area ---*/
-        
         Area_Local = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
-        
       }
-      if (nDim == 3) {
+      else {
         for (iDim = 0; iDim < nDim; iDim++) {
           a[iDim] = Coord_0[iDim]-Coord_2[iDim];
           b[iDim] = Coord_1[iDim]-Coord_2[iDim];
@@ -229,18 +227,10 @@ void CHeatSolver::Source_Residual(CGeometry *geometry,
         d[0] = a[1]*b[2]-a[2]*b[1];
         d[1] = -(a[0]*b[2]-a[2]*b[0]);
         d[2] = a[0]*b[1]-a[1]*b[0];
-        
-        /*--- Compute element volume ---*/
-        
         Volume_Local = fabs(c[0]*d[0] + c[1]*d[1] + c[2]*d[2])/6.0;
-        
       }
       
-      /*----------------------------------------------------------------*/
       /*--- Block contributions to the Jacobian (includes time step) ---*/
-      /*----------------------------------------------------------------*/
-      
-      /*--- Diagonal value ---*/
       
       if (nDim == 2) { StiffMatrix_Node[0][0] = (2.0/12.0)*(Area_Local/Time_Num); }
       else { StiffMatrix_Node[0][0] = (2.0/20.0)*(Volume_Local/Time_Num); }
@@ -248,8 +238,6 @@ void CHeatSolver::Source_Residual(CGeometry *geometry,
       Jacobian.AddBlock(Point_1, Point_1, StiffMatrix_Node);
       Jacobian.AddBlock(Point_2, Point_2, StiffMatrix_Node);
       if (nDim == 3) Jacobian.AddBlock(Point_3, Point_3, StiffMatrix_Node);
-      
-      /*--- Off Diagonal value ---*/
       
       if (nDim == 2) { StiffMatrix_Node[0][0] = (1.0/12.0)*(Area_Local/Time_Num); }
       else { StiffMatrix_Node[0][0] = (1.0/20.0)*(Volume_Local/Time_Num); }
@@ -260,7 +248,6 @@ void CHeatSolver::Source_Residual(CGeometry *geometry,
       Jacobian.AddBlock(Point_1, Point_2, StiffMatrix_Node);
       Jacobian.AddBlock(Point_2, Point_0, StiffMatrix_Node);
       Jacobian.AddBlock(Point_2, Point_1, StiffMatrix_Node);
-      
       if (nDim == 3) {
         Jacobian.AddBlock(Point_0, Point_3, StiffMatrix_Node);
         Jacobian.AddBlock(Point_1, Point_3, StiffMatrix_Node);
@@ -276,13 +263,14 @@ void CHeatSolver::Source_Residual(CGeometry *geometry,
   
 }
 
-
 void CHeatSolver::Galerkin_Method(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                   CConfig *config, unsigned short iMesh) {
   
 	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3 = 0, total_index, iPoint;
 	double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3 = NULL, Thermal_Diffusivity;
   
+  Thermal_Diffusivity  = -config->GetThermalDiffusivity();
+
 	if (nDim == 2 ) {
     
 		for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
@@ -293,8 +281,6 @@ void CHeatSolver::Galerkin_Method(CGeometry *geometry, CSolver **solver_containe
       
       numerics->SetCoord(Coord_0, Coord_1, Coord_2);
       numerics->ComputeResidual(StiffMatrix_Elem, config);
-      
-      Thermal_Diffusivity  = config->GetThermalDiffusivity();
       
       StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][0]; StiffMatrixSpace.AddBlock(Point_0, Point_0, StiffMatrix_Node); Jacobian.AddBlock(Point_0, Point_0, StiffMatrix_Node);
       StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][1]; StiffMatrixSpace.AddBlock(Point_0, Point_1, StiffMatrix_Node); Jacobian.AddBlock(Point_0, Point_1, StiffMatrix_Node);
@@ -344,6 +330,7 @@ void CHeatSolver::Galerkin_Method(CGeometry *geometry, CSolver **solver_containe
 	}
   
   if (config->GetUnsteady_Simulation() != STEADY) {
+    
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
       total_index = iPoint*nVar;
       LinSysSol[total_index] = node[iPoint]->GetSolution(0);
@@ -382,12 +369,14 @@ void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_conta
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
     Solution[0] = Twall;
-    Residual[0] = Twall;
     
     node[iPoint]->SetSolution(Solution);
     node[iPoint]->SetSolution_Old(Solution);
 
-    LinSysRes.SetBlock(iPoint, Solution);
+    /*--- Unsteady solution, the equation is solved in terms of increments ---*/
+    if (config->GetUnsteady_Simulation() != STEADY) Residual[0] = 0.0;
+    
+    LinSysRes.SetBlock(iPoint, Residual);
     LinSysSol.SetBlock(iPoint, Residual);
 
     total_index = iPoint*nVar;
@@ -423,28 +412,22 @@ void CHeatSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
 		Point_2 = geometry->elem[iElem]->GetNode(2);	Coord_2 = geometry->node[Point_2]->GetCoord();
 		if (nDim == 3) { Point_3 = geometry->elem[iElem]->GetNode(3);	Coord_3 = geometry->node[Point_3]->GetCoord(); }
 		
+    /*--- Compute area and volume ---*/
+
 		if (nDim == 2) {
-			
 			for (iDim = 0; iDim < nDim; iDim++) {
 				a[iDim] = Coord_0[iDim]-Coord_2[iDim];
 				b[iDim] = Coord_1[iDim]-Coord_2[iDim];
 			}
-			
-			/*--- Compute element area ---*/
-      
 			Area_Local = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
 		}
 		else {
-			
 			for (iDim = 0; iDim < nDim; iDim++) {
 				a[iDim] = Coord_0[iDim]-Coord_2[iDim];
 				b[iDim] = Coord_1[iDim]-Coord_2[iDim];
 				c[iDim] = Coord_3[iDim]-Coord_2[iDim];
 			}
 			d[0] = a[1]*b[2]-a[2]*b[1]; d[1] = -(a[0]*b[2]-a[2]*b[0]); d[2] = a[0]*b[1]-a[1]*b[0];
-			
-			/*--- Compute element volume ---*/
-      
 			Volume_Local = fabs(c[0]*d[0] + c[1]*d[1] + c[2]*d[2])/6.0;
 		}
 		
@@ -452,9 +435,7 @@ void CHeatSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
 				
 		if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST) TimeJac = 1.0/Time_Num;
 		if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) TimeJac = 3.0/(2.0*Time_Num);
-		
-		/*--- Diagonal value ---*/
-    
+		  
 		if (nDim == 2) { StiffMatrix_Node[0][0] = (2.0/12.0)*(Area_Local*TimeJac); }
 		else { StiffMatrix_Node[0][0] = (2.0/20.0)*(Volume_Local*TimeJac); }
     
@@ -462,9 +443,7 @@ void CHeatSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
 		Jacobian.AddBlock(Point_1, Point_1, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_1, Point_1, StiffMatrix_Node);
 		Jacobian.AddBlock(Point_2, Point_2, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_2, StiffMatrix_Node);
 		if (nDim == 3) { Jacobian.AddBlock(Point_3, Point_3, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_2, StiffMatrix_Node); }
-		
-		/*--- Off Diagonal value ---*/
-    
+		  
 		if (nDim == 2) { StiffMatrix_Node[0][0] = (1.0/12.0)*(Area_Local*TimeJac); }
 		else { StiffMatrix_Node[0][0] = (1.0/20.0)*(Volume_Local*TimeJac); }
     
@@ -482,6 +461,7 @@ void CHeatSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
 			Jacobian.AddBlock(Point_3, Point_1, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_3, Point_1, StiffMatrix_Node);
 			Jacobian.AddBlock(Point_3, Point_2, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_3, Point_2, StiffMatrix_Node);
 		}
+    
 	}
 	
 	unsigned long iPoint, total_index;
@@ -513,10 +493,8 @@ void CHeatSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
 	StiffMatrixTime.MatrixVectorProduct(LinSysSol, LinSysAux);
   
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-		for (iVar = 0; iVar < nVar; iVar++) {
-			total_index = iPoint*nVar+iVar;
-			Residual[iVar] = LinSysAux[total_index];
-		}
+    total_index = iPoint*nVar;
+    Residual[0] = LinSysAux[total_index];
 		LinSysRes.SubtractBlock(iPoint, Residual);
 	}
 	
@@ -583,10 +561,10 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
 		for (iVar = 0; iVar < nVar; iVar++) {
 			if (config->GetUnsteady_Simulation() == STEADY) node[iPoint]->SetSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
-      else node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*LinSysSol[iPoint*nVar+iVar]);
+      else node[iPoint]->AddSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
 		}
 	}
-	
+  
   /*--- MPI solution ---*/
   Set_MPI_Solution(geometry, config);
   
@@ -612,158 +590,3 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   SetResidual_RMS(geometry, config);
   
 }
-
-void CHeatSolver::SetTime_Matrix(CGeometry *geometry,
-                                 CConfig   *config) {
-  
-  /* Local variables and initialization */
-  
-	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0;
-	double a[3], b[3], Area_Local, Time_Num, Time_Phys;
-	double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL;
-	unsigned short iDim;
-	
-  /*--- Numerical time step. This system is unconditionally stable,
-   so a very big step can be used. ---*/
-	if (config->GetUnsteady_Simulation() == TIME_STEPPING)
-    Time_Num = config->GetDelta_UnstTimeND();
-	else Time_Num = 1E+30;
-  
-  /*--- Physical timestep for source terms ---*/
-  Time_Phys = config->GetDelta_UnstTimeND();
-  
-	/* Loop through elements to compute contributions from the matrix     */
-  /* blocks involving time. These contributions are also added to the   */
-  /* Jacobian w/ the time step. Spatial source terms are also computed. */
-  
-	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-		
-    /* Get node numbers and their coordinate vectors */
-    
-		Point_0 = geometry->elem[iElem]->GetNode(0);
-		Point_1 = geometry->elem[iElem]->GetNode(1);
-		Point_2 = geometry->elem[iElem]->GetNode(2);
-		
-    Coord_0 = geometry->node[Point_0]->GetCoord();
-		Coord_1 = geometry->node[Point_1]->GetCoord();
-		Coord_2 = geometry->node[Point_2]->GetCoord();
-		
-    /* Compute triangle area (2-D) */
-		
-    for (iDim = 0; iDim < nDim; iDim++) {
-			a[iDim] = Coord_0[iDim]-Coord_2[iDim];
-			b[iDim] = Coord_1[iDim]-Coord_2[iDim];
-		}
-		Area_Local = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
-		
-    /*--- Block contributions to the Jacobian (includes time step) ---*/
-    
-		StiffMatrix_Node[0][0] = 1.0/Time_Num; StiffMatrix_Node[0][1] = 0.0;
-    StiffMatrix_Node[1][0] = 0.0;            StiffMatrix_Node[1][1] = (2.0/12.0)*(Area_Local/Time_Num);
-    Jacobian.AddBlock(Point_0, Point_0, StiffMatrix_Node);
-    
-    StiffMatrix_Node[0][0] = 1.0/Time_Num; StiffMatrix_Node[0][1] = 0.0;
-    StiffMatrix_Node[1][0] = 0.0;            StiffMatrix_Node[1][1] = (1.0/12.0)*(Area_Local/Time_Num);
-    Jacobian.AddBlock(Point_0, Point_1, StiffMatrix_Node);
-    
-    StiffMatrix_Node[0][0] = 1.0/Time_Num; StiffMatrix_Node[0][1] = 0.0;
-    StiffMatrix_Node[1][0] = 0.0;            StiffMatrix_Node[1][1] = (1.0/12.0)*(Area_Local/Time_Num);
-    Jacobian.AddBlock(Point_0, Point_2, StiffMatrix_Node);
-    
-    StiffMatrix_Node[0][0] = 1.0/Time_Num; StiffMatrix_Node[0][1] = 0.0;
-    StiffMatrix_Node[1][0] = 0.0;            StiffMatrix_Node[1][1] = (1.0/12.0)*(Area_Local/Time_Num);
-    Jacobian.AddBlock(Point_1, Point_0, StiffMatrix_Node);
-    
-    StiffMatrix_Node[0][0] =  1.0/Time_Num; StiffMatrix_Node[0][1] = 0.0;
-    StiffMatrix_Node[1][0] = 0.0;            StiffMatrix_Node[1][1] = (2.0/12.0)*(Area_Local/Time_Num);
-    Jacobian.AddBlock(Point_1, Point_1, StiffMatrix_Node);
-    
-    StiffMatrix_Node[0][0] = 1.0/Time_Num; StiffMatrix_Node[0][1] = 0.0;
-    StiffMatrix_Node[1][0] = 0.0;            StiffMatrix_Node[1][1] = (1.0/12.0)*(Area_Local/Time_Num);
-    Jacobian.AddBlock(Point_1, Point_2, StiffMatrix_Node);
-    
-    StiffMatrix_Node[0][0] = 1.0/Time_Num; StiffMatrix_Node[0][1] = 0.0;
-    StiffMatrix_Node[1][0] = 0.0;            StiffMatrix_Node[1][1] = (1.0/12.0)*(Area_Local/Time_Num);
-    Jacobian.AddBlock(Point_2, Point_0, StiffMatrix_Node);
-    
-    StiffMatrix_Node[0][0] =  1.0/Time_Num; StiffMatrix_Node[0][1] = 0.0;
-    StiffMatrix_Node[1][0] = 0.0;            StiffMatrix_Node[1][1] = (1.0/12.0)*(Area_Local/Time_Num);
-    Jacobian.AddBlock(Point_2, Point_1, StiffMatrix_Node);
-    
-    StiffMatrix_Node[0][0] = 1.0/Time_Num; StiffMatrix_Node[0][1] = 0.0;
-    StiffMatrix_Node[1][0] = 0.0;            StiffMatrix_Node[1][1] = (2.0/12.0)*(Area_Local/Time_Num);
-    Jacobian.AddBlock(Point_2, Point_2, StiffMatrix_Node);
-    
-  }
-  
-  //unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0;
-	//double a[3], b[3], Area_Local, Time_Num;
-	//double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL;
-	unsigned short iVar, jVar;
-	double TimeJac = 0.0;
-	
-	/*--- Numerical time step (this system is uncoditional stable... a very big number can be used) ---*/
-  if (config->GetUnsteady_Simulation() == TIME_STEPPING)
-    Time_Num = 1E+30;
-	else Time_Num = config->GetDelta_UnstTimeND();
-	
-	/*--- Loop through elements to compute contributions from the matrix
-   blocks involving time. These contributions are also added to the
-   Jacobian w/ the time step. Spatial source terms are also computed. ---*/
-  
-	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-		
-    /* Get node numbers and their coordinate vectors */
-    
-		Point_0 = geometry->elem[iElem]->GetNode(0);
-		Point_1 = geometry->elem[iElem]->GetNode(1);
-		Point_2 = geometry->elem[iElem]->GetNode(2);
-		
-    Coord_0 = geometry->node[Point_0]->GetCoord();
-		Coord_1 = geometry->node[Point_1]->GetCoord();
-		Coord_2 = geometry->node[Point_2]->GetCoord();
-		
-    /* Compute triangle area (2-D) */
-		
-    for (iDim = 0; iDim < nDim; iDim++) {
-			a[iDim] = Coord_0[iDim]-Coord_2[iDim];
-			b[iDim] = Coord_1[iDim]-Coord_2[iDim];
-		}
-		Area_Local = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
-    
-		
-		/*----------------------------------------------------------------*/
-		/*--- Block contributions to the Jacobian (includes time step) ---*/
-		/*----------------------------------------------------------------*/
-		
-		for (iVar = 0; iVar < nVar; iVar++)
-			for (jVar = 0; jVar < nVar; jVar++)
-				StiffMatrix_Node[iVar][jVar] = 0.0;
-		
-		if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST) TimeJac = 1.0/Time_Num;
-		if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) TimeJac = 3.0/(2.0*Time_Num);
-		
-		/*--- Diagonal value identity matrix ---*/
-    StiffMatrix_Node[0][0] = 1.0*TimeJac;
-    
-		
-		/*--- Diagonal value ---*/
-    StiffMatrix_Node[1][1] = (2.0/12.0)*(Area_Local*TimeJac);
-    
-    Jacobian.AddBlock(Point_0, Point_0, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_0, Point_0, StiffMatrix_Node);
-		Jacobian.AddBlock(Point_1, Point_1, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_1, Point_1, StiffMatrix_Node);
-		Jacobian.AddBlock(Point_2, Point_2, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_2, StiffMatrix_Node);
-		
-		/*--- Off Diagonal value ---*/
-    StiffMatrix_Node[1][1] = (1.0/12.0)*(Area_Local*TimeJac);
-    
-		Jacobian.AddBlock(Point_0, Point_1, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_0, Point_1, StiffMatrix_Node);
-		Jacobian.AddBlock(Point_0, Point_2, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_0, Point_2, StiffMatrix_Node);
-		Jacobian.AddBlock(Point_1, Point_0, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_1, Point_0, StiffMatrix_Node);
-		Jacobian.AddBlock(Point_1, Point_2, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_1, Point_2, StiffMatrix_Node);
-		Jacobian.AddBlock(Point_2, Point_0, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_0, StiffMatrix_Node);
-		Jacobian.AddBlock(Point_2, Point_1, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_1, StiffMatrix_Node);
-    
-	}
-}
-

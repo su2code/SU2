@@ -1060,10 +1060,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 	}
 
   /*--- Set the number of external iterations to 1 for the steady state problem ---*/
-  if ((Unsteady_Simulation == STEADY) && (Kind_Solver == LINEAR_ELASTICITY)) nExtIter = 1;
-  
-  /*--- Set the number of external iterations to 1 for the steady state problem ---*/
-  if ((Unsteady_Simulation == STEADY) && (Kind_Solver == HEAT_EQUATION)) nExtIter = 1;
+  if ((Kind_Solver == LINEAR_ELASTICITY) || (Kind_Solver == HEAT_EQUATION) || (Kind_Solver == WAVE_EQUATION)) {
+    if (Unsteady_Simulation == STEADY) nExtIter = 1;
+    else Unst_nIntIter = 2;
+  }
   
 	/*--- Decide whether we should be writing unsteady solution files. ---*/
 	if (Unsteady_Simulation == STEADY ||
