@@ -678,6 +678,53 @@ void WaveIteration(COutput *output, CIntegration ***integration_container, CGeom
 
 }
 
+void HeatIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+                   CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+                   CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
+  
+	double Physical_dt, Physical_t;
+	unsigned short iMesh, iZone;
+	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
+  unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
+  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+  
+	for (iZone = 0; iZone < nZone; iZone++) {
+    
+		/*--- Set the value of the internal iteration ---*/
+		IntIter = ExtIter;
+		if ((config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+				(config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) IntIter = 0;
+    
+		/*--- Wave equations ---*/
+		config_container[iZone]->SetGlobalParam(HEAT_EQUATION, RUNTIME_HEAT_SYS, ExtIter);
+		integration_container[iZone][HEAT_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
+                                                                 config_container, RUNTIME_HEAT_SYS, IntIter, iZone);
+    
+		/*--- Dual time stepping strategy ---*/
+		if ((config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
+      
+			for(IntIter = 1; IntIter < config_container[iZone]->GetUnst_nIntIter(); IntIter++) {
+        output->SetConvergence_History(NULL, geometry_container, solver_container, config_container, integration_container, true, 0, iZone);
+        config_container[iZone]->SetIntIter(IntIter);
+				integration_container[iZone][HEAT_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
+                                                                     config_container, RUNTIME_HEAT_SYS, IntIter, iZone);
+				if (integration_container[iZone][HEAT_SOL]->GetConvergence()) break;
+			}
+      
+			/*--- Update dual time solver ---*/
+			for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
+				integration_container[iZone][HEAT_SOL]->SetDualTime_Solver(geometry_container[iZone][iMesh], solver_container[iZone][iMesh][HEAT_SOL], config_container[iZone]);
+				integration_container[iZone][HEAT_SOL]->SetConvergence(false);
+			}
+      
+			Physical_dt = config_container[iZone]->GetDelta_UnstTime(); Physical_t  = (ExtIter+1)*Physical_dt;
+			if (Physical_t >=  config_container[iZone]->GetTotal_UnstTime()) integration_container[iZone][HEAT_SOL]->SetConvergence(true);
+		}
+    
+	}
+  
+}
+
 void FEAIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
 		CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
 		CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
