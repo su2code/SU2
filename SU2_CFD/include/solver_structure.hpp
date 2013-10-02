@@ -1710,11 +1710,12 @@ public:
     
     /*!
 	 * \brief Prepares and solves the aeroelastic equations.
+     * \param[in] surface_movement - Surface movement classes of the problem.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iter - Current sudo time iteration.
 	 */
-	void Aeroelastic(CGeometry *geometry, CConfig *config, unsigned long IntIter);
+	void Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometry, CConfig *config, unsigned long IntIter);
 
     
     /*!
@@ -1735,15 +1736,6 @@ public:
      * \param[in] displacements - solution of typical section wing model.
 	 */
     void SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned long iter, double (&displacements)[4]);
-    
-    /*!
-	 * \brief Unsteady aeroelastic grid movement by deforming the mesh.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-     * \param[in] iMarker - Marker to deform.
-     * \param[in] displacements - solution of typical section wing model.
-	 */
-    void AeroelasticDeform(CGeometry *geometry, CConfig *config, unsigned short iMarker, double displacements[4]);
 
 };
 

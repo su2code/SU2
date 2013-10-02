@@ -374,28 +374,6 @@ static const map<string, ENUM_GRIDMOVEMENT> GridMovement_Map = CCreateMap<string
 ("MOVING_WALL", MOVING_WALL);
 
 /*!
- * \brief type of aeroelastic grid movement
- */
-enum ENUM_AEROELASTIC_GRIDMOVEMENT {
-	RIGID = 1, 		/*!< \brief Move mesh rigidly due to aeroelastic forces. */
-	DEFORM = 2,  		/*!< \brief Move mesh by deforming due to aeroelastic forces. */
-};
-static const map<string, ENUM_AEROELASTIC_GRIDMOVEMENT> Aeroelastic_Movement_Map = CCreateMap<string, ENUM_AEROELASTIC_GRIDMOVEMENT>
-("RIGID", RIGID)
-("DEFORM", DEFORM);
-
-/*!
- * \brief type of aeroelastic grid velocities
- */
-enum ENUM_AEROELASTIC_GRIDVELOCITY {
-	FD = 1, 		/*!< \brief Mesh velocities by finite difference. */
-	ANALYTIC = 2,  		/*!< \brief Analytic mesh velocities. */
-};
-static const map<string, ENUM_AEROELASTIC_GRIDVELOCITY> Aeroelastic_Velocity_Map = CCreateMap<string, ENUM_AEROELASTIC_GRIDVELOCITY>
-("FD", FD)
-("ANALYTIC", ANALYTIC);
-
-/*!
  * \brief type of wind gusts
  */
 enum ENUM_GUST_TYPE {

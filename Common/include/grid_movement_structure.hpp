@@ -844,23 +844,6 @@ public:
    * \param[in] iter - Physical time iteration number.
 	 */
 	void Rigid_Translation(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
-     
-    /*!
-	 * \brief Unsteady aeroelastic grid movement using rigid mesh motion.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-     * \param[in] iZone - Zone number in the mesh.
-     * \param[in] displacements - solution of typical section wing model.
-	 */
-  void AeroelasticRigid(CGeometry *geometry, CConfig *config, unsigned short iZone, double displacements[4]);
-  
-  /*!
-	 * \brief Sets up the generalized eigenvectors and eigenvalues needed to solve the structural equations.
-   * \param[in] PHI - Matrix of the generalized eigenvectors.
-   * \param[in] lambda - The eigenvalues of the generalized eigensystem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-  void SetUpTypicalSectionWingModel(double (&PHI)[2][2],double (&lambda)[2], CConfig *config);
   
   /*!
 	 * \brief Grid deformation using the spring analogy method.
@@ -995,6 +978,15 @@ public:
 	 */
 	void Surface_Pitching(CGeometry *geometry, CConfig *config,
                              unsigned long iter, unsigned short iZone);
+
+    /*!
+	 * \brief Unsteady aeroelastic grid movement by deforming the mesh.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+     * \param[in] iMarker - Marker to deform.
+     * \param[in] displacements - solution of typical section wing model.
+	 */
+    void AeroelasticDeform(CGeometry *geometry, CConfig *config, unsigned short iMarker, double displacements[4]);
     
    /*!
 	 * \brief Deforms a 3-D flutter/pitching surface during an unsteady simulation.

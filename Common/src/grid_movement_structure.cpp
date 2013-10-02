@@ -1545,153 +1545,6 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   
 }
 
-void CVolumetricMovement::AeroelasticRigid(CGeometry *geometry, CConfig *config, unsigned short iZone, double displacements[4]) {
-
-    /*--- The sign conventions of these are those of the Typical Section Wing Model, below the signs are corrected ---*/
-    double dy = -displacements[0];           // relative plunge
-    double dalpha = -displacements[1];       // relative pitch
-    double y_dot = -displacements[2];        // absolute plunge velocity
-    double alpha_dot = -displacements[3];    // absolute pitch velocity
-    
-    double Center[2];
-    Center[0] = config->GetMotion_Origin_X(iZone);
-    Center[1] = config->GetMotion_Origin_Y(iZone);
-    double Lref = config->GetLength_Ref();
-    double *Coord;
-    unsigned short iDim;
-    unsigned long iPoint;
-    double x_new, y_new;
-    
-    unsigned short Aeroelastic_Grid_Vel = config->GetAeroelastic_GridVelocity();
-
-    /*--- Loop over and rotate each node in the volume mesh ---*/
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-
-        /*--- Coordinates of the current point ---*/
-        Coord = geometry->node[iPoint]->GetCoord();
-
-        /*--- Calculate non-dim. position from rotation center ---*/
-        double r[2] = {0,0};
-        for (iDim = 0; iDim < nDim; iDim++)
-            r[iDim] = (Coord[iDim]-Center[iDim])/Lref;
-
-        /*--- Compute transformed point coordinates ---*/
-        // rotation contribution + Center + plunging contribution 
-        x_new = cos(dalpha)*r[0] - sin(dalpha)*r[1] + Center[0];
-        y_new = sin(dalpha)*r[0] + cos(dalpha)*r[1] + Center[1] + dy;
-
-        /*--- Store new node location ---*/
-        geometry->node[iPoint]->SetCoord(0,x_new);
-        geometry->node[iPoint]->SetCoord(1,y_new);
-    }
-
-        /*--- Set the mesh motion center to the new location after incrementing the position with the plunge ---*/
-    config->SetMotion_Origin_Y(iZone,Center[1]+dy);
-
-
-    /*--- After moving all nodes, update geometry class ---*/
-    geometry->SetCG();
-    geometry->SetControlVolume(config, UPDATE);
-    geometry->SetBoundControlVolume(config, UPDATE);
-
-
-    if (Aeroelastic_Grid_Vel == ANALYTIC) {
-        /*--- Find Analytic Grid Velocities ---*/
-        
-        /*--- Loop over each node in the volume mesh ---*/
-        for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-            
-            /*--- Coordinates of the current point ---*/
-            Coord = geometry->node[iPoint]->GetCoord();
-            
-            /*--- Calculate non-dim. position from rotation center ---*/
-            double r[2] = {0,0};
-            for (iDim = 0; iDim < nDim; iDim++)
-                r[iDim] = (Coord[iDim]-Center[iDim])/Lref;
-            
-            /*--- Cross Product of angular velocity and distance from center ---*/
-            double GridVel[2] = {0,0};
-            GridVel[0] = -alpha_dot*r[1];
-            GridVel[1] = alpha_dot*r[0] + y_dot;
-            
-            /*--- Set Grid Velocity for the point in the given zone ---*/
-            for(iDim = 0; iDim < nDim; iDim++) {
-                
-                /*--- Store grid velocity for this point ---*/
-                geometry->node[iPoint]->SetGridVel(iDim, GridVel[iDim]);
-                
-            }
-        }
-    }
-}
-
-
-void CVolumetricMovement::SetUpTypicalSectionWingModel(double (&PHI)[2][2],double (&lambda)[2], CConfig *config) {
-    
-    /*--- Retrieve values from the config file ---*/
-    double w_h = config->GetAeroelastic_Frequency_Plunge();
-    double w_a = config->GetAeroelastic_Frequency_Pitch();
-    
-    /*--- Geometrical Parameters */
-    double x_a = 1.8;
-    double r_a2 = 3.48;
-    
-    // Mass Matrix
-    // double M[2][2] = {{1,x_a},{x_a,r_a2}};
-    // Stiffness Matrix
-    double K[2][2] = {{(w_h/w_a)*(w_h/w_a),0},{0,r_a2}};
-    
-    
-    /* Eigenvector and Eigenvalue Matrices of the Generalized EigenValue Problem. */
-    
-    double LAMBDA[2][2];
-    double y;
-    y = sqrt(r_a2*pow(w_a,4) - 2*r_a2*pow(w_a,2)*pow(w_h,2) + r_a2*pow(w_h,4) + 4*pow(w_a,2)*pow(w_h,2)*pow(x_a,2));
-    
-    PHI[0][0] = (sqrt(r_a2)*y + r_a2*pow(w_a,2) - r_a2*pow(w_h,2))/(2*pow(w_h,2)*x_a);
-    PHI[0][1] = -(sqrt(r_a2)*y - r_a2*pow(w_a,2) + r_a2*pow(w_h,2))/(2*pow(w_h,2)*x_a);
-    PHI[1][0] = 1.0;
-    PHI[1][1] = 1.0;
-    
-    LAMBDA[0][0] = (r_a2*pow(w_a,2) + r_a2*pow(w_h,2) - sqrt(r_a2)*y) / (2*pow(w_a,2)*(r_a2-pow(x_a,2)));
-    LAMBDA[0][1] = 0;
-    LAMBDA[1][0] = 0;
-    LAMBDA[1][1] = (r_a2*pow(w_a,2) + r_a2*pow(w_h,2) + sqrt(r_a2)*y) / (2*pow(w_a,2)*(r_a2-pow(x_a,2)));
-    
-    /* Nondimesionalize the Eigenvectors such that PHI'*M*PHI = I and PHI'*K*PHI = LAMBDA */
-    double temp1[2][2], temp2[2][2];
-    for (int i=0; i<2; i++) {
-        for (int j=0; j<2; j++) {
-            temp1[i][j] = 0;
-            for (int k=0; k<2; k++) {
-                temp1[i][j] += K[i][k]*PHI[k][j];
-            }
-        }
-    }
-    
-    for (int i=0; i<2; i++) {
-        for (int j=0; j<2; j++) {
-            temp2[i][j] = 0;
-            for (int k=0; k<2; k++) {
-                temp2[i][j] += PHI[k][i]*temp1[k][j]; //PHI transpose
-            }
-        }
-    }
-    
-    //Modify the first column
-    PHI[0][0] = 1/sqrt(temp2[0][0]/LAMBDA[0][0])*PHI[0][0];
-    PHI[1][0] = 1/sqrt(temp2[0][0]/LAMBDA[0][0])*PHI[1][0];
-    //Modify the second column
-    PHI[0][1] = 1/sqrt(temp2[1][1]/LAMBDA[1][1])*PHI[0][1];
-    PHI[1][1] = 1/sqrt(temp2[1][1]/LAMBDA[1][1])*PHI[1][1];
-    
-    //Eigenvalues
-    lambda[0] = sqrt(LAMBDA[0][0]);
-    lambda[1] = sqrt(LAMBDA[1][1]);
-    
-}
-
-
 CSurfaceMovement::CSurfaceMovement(void) : CGridMovement() {
 	nFFDBox = 0;
 	FFDBoxDefinition = false;
@@ -3090,6 +2943,70 @@ void CSurfaceMovement::Surface_Pitching(CGeometry *geometry, CConfig *config,
       }
 		}
 	}
+}
+
+void CSurfaceMovement::AeroelasticDeform(CGeometry *geometry, CConfig *config, unsigned short iMarker, double displacements[4]) {
+    /* The sign conventions of these are those of the Typical Section Wing Model, below the signs are corrected */
+    double dy = -displacements[0];           // relative plunge
+    double dalpha = -displacements[1];       // relative pitch
+    double Center[2];
+    unsigned short jMarker, iDim;
+    double Lref = config->GetLength_Ref();
+    double *Coord;
+    unsigned long iPoint, iVertex;
+    double x_new, y_new;
+    double VarCoord[3];
+    string Marker_Tag;
+    
+#ifndef NO_MPI
+	int rank = MPI::COMM_WORLD.Get_rank();
+#else
+	int rank = MASTER_NODE;
+#endif
+    
+    /*--- Check to see if we are supposed to move this marker(airfoil) ---*/
+    if (config->GetMarker_All_Moving(iMarker) == YES) {
+        
+        /*--- Identify iMarker from the list of those under MARKER_MOVING ---*/
+        
+        Marker_Tag = config->GetMarker_All_Tag(iMarker);
+        jMarker    = config->GetMarker_Moving(Marker_Tag);
+        
+        /*--- Pitching origin from config. ---*/
+        
+        Center[0] = config->GetMotion_Origin_X(jMarker);
+        Center[1] = config->GetMotion_Origin_Y(jMarker);
+        
+        for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+            /*--- Coordinates of the current point ---*/
+            Coord = geometry->node[iPoint]->GetCoord();
+            
+            /*--- Calculate non-dim. position from rotation center ---*/
+            double r[2] = {0,0};
+            for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
+                r[iDim] = (Coord[iDim]-Center[iDim])/Lref;
+            
+            /*--- Compute delta of transformed point coordinates ---*/
+            // The deltas are needed for the Spring Method.
+            // rotation contribution + plunging contribution - previous position
+            x_new = cos(dalpha)*r[0] - sin(dalpha)*r[1] -r[0];
+            y_new = sin(dalpha)*r[0] + cos(dalpha)*r[1] -r[1] + dy;
+            
+            VarCoord[0] = x_new;
+            VarCoord[1] = y_new;
+            VarCoord[2] = 0.0;
+            
+            /*--- Store new delta node locations for the surface ---*/
+            geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
+        }
+        /*--- Set the mesh motion center to the new location after incrementing the position with the plunge ---*/
+        config->SetMotion_Origin_Y(iMarker,Center[1]+dy);
+    }
+    else {
+        if (rank == MASTER_NODE)
+            std::cout << "WARNING: There is(are) marker(s) being monitored which are not being moved!" << std::endl;
+    }
 }
 
 void CSurfaceMovement::SetBoundary_Flutter3D(CGeometry *geometry, CConfig *config,
