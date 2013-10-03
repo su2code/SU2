@@ -115,8 +115,8 @@ void CIntegration::Space_Integration(CGeometry *geometry, CSolver **solver_conta
 			case ELECTRODE_BOUNDARY:
 				solver_container[MainSolver]->BC_Electrode(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
 				break;
-			case DIELECTRIC_BOUNDARY:
-				solver_container[MainSolver]->BC_Dielectric(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+			case DIpoisson_BOUNDARY:
+				solver_container[MainSolver]->BC_Dipoisson(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
 				break;
 			case DISPLACEMENT_BOUNDARY:
 				solver_container[MainSolver]->BC_Normal_Displacement(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);

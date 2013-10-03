@@ -36,7 +36,7 @@ CGridAdaptation::CGridAdaptation(CGeometry *geometry, CConfig *config) {
 			nVar = config->GetnDiatomics()*(nDim+3) + config->GetnMonatomics()*(nDim+2);
 			break;			
 		
-		case ELECTRIC_POTENTIAL:
+		case POISSON_EQUATION:
 			nVar = 1;
 			break;
 			
