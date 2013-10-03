@@ -1528,7 +1528,7 @@ void CBaselineSolver::GetRestart(CGeometry *geometry, CConfig *config, int val_i
 	string filename;
 	unsigned long iPoint, index;
 	string UnstExt, text_line, AdjExt;
-	ifstream restart_file;
+	ifstream solution_file;
   unsigned short iField;
   unsigned long iExtIter = config->GetExtIter();
   
@@ -1546,10 +1546,10 @@ void CBaselineSolver::GetRestart(CGeometry *geometry, CConfig *config, int val_i
 	}
   
   /*--- Open the restart file ---*/
-  restart_file.open(filename.data(), ios::in);
+  solution_file.open(filename.data(), ios::in);
   
 	/*--- In case there is no file ---*/
-	if (restart_file.fail()) {
+	if (solution_file.fail()) {
 		cout << "There is no SU2 restart file!!" << endl;
 		cout << "Press any key to exit..." << endl;
 		cin.get(); exit(1);
@@ -1583,9 +1583,9 @@ void CBaselineSolver::GetRestart(CGeometry *geometry, CConfig *config, int val_i
 	long iPoint_Local = 0; unsigned long iPoint_Global = 0;
   
 	/*--- The first line is the header ---*/
-	getline (restart_file, text_line);
+	getline (solution_file, text_line);
   
-	while (getline (restart_file,text_line)) {
+	while (getline (solution_file,text_line)) {
 		istringstream point_line(text_line);
     
 		/*--- Retrieve local index. If this node from the restart file lives
@@ -1610,7 +1610,7 @@ void CBaselineSolver::GetRestart(CGeometry *geometry, CConfig *config, int val_i
 	}
   
 	/*--- Close the restart file ---*/
-	restart_file.close();
+	solution_file.close();
   
 	/*--- Free memory needed for the transformation ---*/
 	delete [] Global2Local;
