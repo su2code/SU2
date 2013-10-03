@@ -2,7 +2,7 @@
  * \file solver_structure.inl
  * \brief In-Line subroutines of the <i>solver_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.7
+ * \version 2.0.8
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -308,13 +308,13 @@ inline double* CSolver::GetConstants() {return NULL;}
 inline void CSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 									 unsigned short val_marker) { }
 									 
-inline void CSolver::BC_Displacement(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
+inline void CSolver::BC_Normal_Displacement(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 									 unsigned short val_marker) { }
 									 									 
-inline void CSolver::BC_FlowLoad(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
+inline void CSolver::BC_Flow_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 									 unsigned short val_marker) { }
 									 
-inline void CSolver::BC_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
+inline void CSolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 									 unsigned short val_marker) { }
                   
 inline void CSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
@@ -358,7 +358,7 @@ inline void CSolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_co
 inline void CSolver::BC_Neumann(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
 										  CConfig *config, unsigned short val_marker) { }
 								  
-inline void CSolver::BC_Dielectric(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
+inline void CSolver::BC_Dipoisson(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
 									 CConfig *config, unsigned short val_marker) { }
 									 										  
 inline void CSolver::BC_Electrode(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
@@ -634,9 +634,9 @@ inline double CLinEulerSolver::GetTotal_CDeltaLift() { return Total_CDeltaLift; 
 
 inline double CLinEulerSolver::GetTotal_CDeltaDrag() { return Total_CDeltaDrag; }
 
-inline double CElectricSolver::GetTotal_CCharge() { return Total_CCharge; }
+inline double CPoissonSolver::GetTotal_CCharge() { return Total_CCharge; }
 
-inline void CElectricSolver::SetTotal_CCharge(double val_Total_CCharge) {Total_CCharge = val_Total_CCharge; }
+inline void CPoissonSolver::SetTotal_CCharge(double val_Total_CCharge) {Total_CCharge = val_Total_CCharge; }
 
 inline unsigned short CPlasmaSolver::GetnSpecies(void) { return nSpecies; }
 

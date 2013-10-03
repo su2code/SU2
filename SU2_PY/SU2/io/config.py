@@ -1,7 +1,7 @@
 ## \file config.py
 #  \brief python package for config 
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.7
+#  \version 2.0.8
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -296,11 +296,16 @@ def read_config(filename):
         for case in switch(this_param):
             
             # comma delimited lists of strings with or without paren's
-            if case("TASKS")          : pass
-            if case("GRADIENTS")      : pass
-            if case("DV_KIND")        : 
+            if case("MARKER_EULER")      : pass
+            if case("MARKER_FAR")        : pass
+            if case("MARKER_PLOTTING")   : pass
+            if case("MARKER_MONITORING") : pass
+            if case("MARKER_SYM")        : pass
+            if case("DV_KIND")           : 
                 # remove white space
                 this_value = ''.join(this_value.split())   
+                # remove parens
+                this_value = this_value.strip('()')
                 # split by comma
                 data_dict[this_param] = this_value.split(",")
                 break
@@ -541,6 +546,11 @@ def write_config(filename,param_dict):
                 break            
             
             # comma delimited list of strings inside paren's
+            if case("MARKER_EULER")      : pass
+            if case("MARKER_FAR")        : pass
+            if case("MARKER_PLOTTING")   : pass
+            if case("MARKER_MONITORING") : pass
+            if case("MARKER_SYM")        : pass            
             if case("DV_MARKER") : 
                 if not isinstance(new_value,list):
                     new_value = [ new_value ]                

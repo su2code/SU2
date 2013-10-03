@@ -443,17 +443,30 @@ if __name__=="__main__":
   ramc.cfg_dir   = "TestCases/tne2/ramc"
   ramc.cfg_file  = "ramc61km.cfg"
   ramc.test_iter = 25
-  ramc.test_vals = [-4.638119,-3.018965,-0.000076,0.000176]
+  ramc.test_vals = [-4.638119,2.854480,-4.439634,0.000176]
   ramc.su2_exec  = "SU2_CFD"
   ramc.timeout   = 1600
   ramc.tol       = 0.00001
   passed19       = ramc.run_test()
   
+  ######################################
+  ### Spectral Method                ###
+  ######################################
+  spectral           = testcase('spectral')
+  spectral.cfg_dir   = "TestCases/spectral_method"
+  spectral.cfg_file  = "spectral.cfg"
+  spectral.test_iter = 25
+  spectral.test_vals = [-1.621870,3.852164,0.007537,0.086385]
+  spectral.su2_exec  = "SU2_CFD"
+  spectral.timeout   = 1600
+  spectral.tol       = 0.00001
+  passed20           = spectral.run_test()
+  
   
   if (passed1 and passed2 and passed3 and passed4 and passed5 and passed6 and 
       passed7 and passed8 and passed9 and passed10 and passed11 and passed12
       and passed13 and passed14 and passed15 and passed16 and passed17 and
-      passed18 and passed19):
+      passed18 and passed19 and passed20):
     sys.exit(0)
   else:
     sys.exit(1)

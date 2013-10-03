@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.7
+ * \version 2.0.8
  *
  * Many of the classes in this file are templated, and therefore must
  * be declared and defined here; to keep all elements together, there
@@ -184,7 +184,7 @@ enum ENUM_SOLVER {
 	EULER = 1,				/*!< \brief Definition of the Euler's solver. */
 	NAVIER_STOKES = 2,			/*!< \brief Definition of the Navier-Stokes' solver. */
 	RANS = 3,				/*!< \brief Definition of the Reynolds-averaged Navier-Stokes' (RANS) solver. */
-	ELECTRIC_POTENTIAL = 4,       	/*!< \brief Definition of the electric potential solver. */
+	POISSON_EQUATION = 4,       	/*!< \brief Definition of the poisson potential solver. */
 	PLASMA_EULER = 8,	/*!< \brief Definition of the plasma solver. */
 	PLASMA_NAVIER_STOKES = 9,	/*!< \brief Definition of the plasma solver. */
 	WAVE_EQUATION = 10,	/*!< \brief Definition of the wave solver. */
@@ -216,7 +216,7 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("EULER", EULER)
 ("NAVIER_STOKES", NAVIER_STOKES)
 ("RANS", RANS)
-("ELECTRIC_POTENTIAL", ELECTRIC_POTENTIAL)
+("POISSON_EQUATION", POISSON_EQUATION)
 ("ADJ_EULER", ADJ_EULER)
 ("ADJ_NAVIER_STOKES", ADJ_NAVIER_STOKES)
 ("ADJ_RANS", ADJ_RANS )
@@ -260,7 +260,7 @@ enum RUNTIME_TYPE {
 	RUNTIME_POT_SYS = 1,			/*!< \brief One-physics case, the code is solving the potential equation. */
 	RUNTIME_FLOW_SYS = 2,			/*!< \brief One-physics case, the code is solving the flow equations(Euler and Navier-Stokes). */
 	RUNTIME_TURB_SYS = 3,			/*!< \brief One-physics case, the code is solving the turbulence model. */
-	RUNTIME_ELEC_SYS = 4,			/*!< \brief One-physics case, the code is solving the electrical potential equation. */
+	RUNTIME_POISSON_SYS = 4,			/*!< \brief One-physics case, the code is solving the poissonal potential equation. */
 	RUNTIME_PLASMA_SYS = 15,		/*!< \brief One-physics case, the code is solving the plasma equations. */
 	RUNTIME_WAVE_SYS = 8,		/*!< \brief One-physics case, the code is solving the wave equation. */
 	RUNTIME_HEAT_SYS = 21,		/*!< \brief One-physics case, the code is solving the heat equation. */
@@ -294,7 +294,7 @@ const int ADJPLASMA_SOL = 1;	/*!< \brief Position of the continuous adjoint plas
 const int LINPLASMA_SOL = 1;	/*!< \brief Position of the linearized plasma solution in the solution container array. */
 
 const int TRANS_SOL = 4;	/*!< \brief Position of the transition model solution in the solver container array. */
-const int ELEC_SOL = 2;		/*!< \brief Position of the electronic potential solution in the solver container array. */
+const int POISSON_SOL = 2;		/*!< \brief Position of the electronic potential solution in the solver container array. */
 const int WAVE_SOL = 1;		/*!< \brief Position of the wave equation in the solution solver array. */
 const int HEAT_SOL = 2;		/*!< \brief Position of the heat equation in the solution solver array. */
 const int FEA_SOL = 1;		/*!< \brief Position of the FEA equation in the solution solver array. */
@@ -354,12 +354,13 @@ enum ENUM_GRIDMOVEMENT {
 	NO_MOVEMENT = 0, /*!< \brief Simulation on a static mesh. */
 	DEFORMING = 1,		/*!< \brief Simulation with dynamically deforming meshes (plunging/pitching/rotation). */
 	RIGID_MOTION = 2,		/*!< \brief Simulation with rigid mesh motion (plunging/pitching/rotation). */
-	FLUID_STRUCTURE = 3,		/*!< \brief _______. */
+	FLUID_STRUCTURE = 3,		/*!< \brief Fluid structure defromation. */
 	EXTERNAL = 4,  /*!< \brief Arbitrary grid motion specified by external files at each time step. */
 	EXTERNAL_ROTATION = 5,  /*!< \brief Arbitrary grid motion specified by external files at each time step with rigid rotation. */
   AEROELASTIC = 6,    /*!< \brief Simulation with aeroelastic motion. */
   MOVING_WALL = 7,    /*!< \brief Simulation with moving walls (translation/rotation). */
-  ROTATING_FRAME = 8    /*!< \brief Simulation in a rotating frame. */
+  ROTATING_FRAME = 8,    /*!< \brief Simulation in a rotating frame. */
+  ELASTICITY = 9    /*!< \brief Linear Elasticity. */
 
 };
 static const map<string, ENUM_GRIDMOVEMENT> GridMovement_Map = CCreateMap<string, ENUM_GRIDMOVEMENT>
@@ -371,6 +372,7 @@ static const map<string, ENUM_GRIDMOVEMENT> GridMovement_Map = CCreateMap<string
 ("EXTERNAL_ROTATION", EXTERNAL_ROTATION)
 ("AEROELASTIC", AEROELASTIC)
 ("ROTATING_FRAME", ROTATING_FRAME)
+("ELASTICITY", ELASTICITY)
 ("MOVING_WALL", MOVING_WALL);
 
 /*!
@@ -589,7 +591,7 @@ enum BC_TYPE {
 	PERIODIC_BOUNDARY = 7,	/*!< \brief Periodic boundary definition. */
 	NEARFIELD_BOUNDARY = 8,	/*!< \brief Near-Field boundary definition. */
 	ELECTRODE_BOUNDARY = 9,	/*!< \brief Electrode boundary definition. */
-	DIELECTRIC_BOUNDARY = 10,	/*!< \brief Dielectric boundary definition. */
+	DIpoisson_BOUNDARY = 10,	/*!< \brief Dipoisson boundary definition. */
 	CUSTOM_BOUNDARY = 11,         /*!< \brief custom boundary definition. */
 	INTERFACE_BOUNDARY = 12,	/*!< \brief Domain interface boundary definition. */
 	DIRICHLET = 13,		/*!< \brief Boundary Euler wall definition. */
@@ -599,7 +601,7 @@ enum BC_TYPE {
 	FLOWLOAD_BOUNDARY = 17,		/*!< \brief Boundary Load definition. */
 	FWH_SURFACE = 18,		/*!< \brief FW-H surface definition (aeroacoustic computations). */
 	WAVE_OBSERVER = 19,		/*!< \brief Wave observer surface definition. */
-	ELEC_DIELECTRIC_BOUNDARY = 22,	/*!< \brief Dielectric boundary definition for the electrical potential. */
+	ELEC_DIpoisson_BOUNDARY = 22,	/*!< \brief Dipoisson boundary definition for the poissonal potential. */
 	ELEC_NEUMANN = 23,		/*!< \brief Boundary Neumann definition. */
   SUPERSONIC_INLET = 24,		/*!< \brief Boundary supersonic inlet definition. */
 	NACELLE_INFLOW = 25,		/*!< \brief Boundary nacelle inflow. */
@@ -1752,7 +1754,7 @@ public:
 
 /*!
  * \class CMarkerDirichletRef
- * \brief Specialized option for Dirichlet for electrical solver boundary markers
+ * \brief Specialized option for Dirichlet for poissonal solver boundary markers
  * \author A. Lonkar
  */
 class CMarkerDirichletRef : public CAnyOptionRef {

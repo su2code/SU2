@@ -4,7 +4,7 @@
  *        each kind of governing equation (direct, adjoint and linearized).
  *        The subroutines and functions are in the <i>variable_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.7
+ * \version 2.0.8
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -37,7 +37,7 @@ using namespace std;
  * \class CVariable
  * \brief Main class for defining the variables.
  * \author F. Palacios.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CVariable {
 protected:
@@ -892,6 +892,13 @@ public:
 	 * \return Value of the velocity for the dimension <i>val_dim</i>.
 	 */		
 	virtual double GetVelocity(unsigned short val_dim, unsigned short val_incomp);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_dim - Index of the dimension.
+	 * \return Value of the velocity for the dimension <i>val_dim</i>.
+	 */
+	virtual double GetVelocity(unsigned short val_dim);
 
 	/*!
 	 * \brief A virtual member.
@@ -1237,6 +1244,28 @@ public:
 	 * \brief A virtual member.
 	 */
 	virtual void SetPressureValue(double val_pressure);
+  
+	/*!
+	 * \brief A virtual member.
+	 */
+  virtual void SetStress(unsigned short iVar, unsigned short jVar, double val_stress);
+  
+	/*!
+	 * \brief A virtual member.
+   
+	 */
+  virtual double **GetStress(void);
+  
+	/*!
+	 * \brief A virtual member.
+	 */
+  virtual void SetVonMises_Stress(double val_stress);
+  
+	/*!
+	 * \brief A virtual member.
+   
+	 */
+  virtual double GetVonMises_Stress(void);
 
 	/*!
 	 * \brief A virtual member.
@@ -1505,14 +1534,14 @@ public:
 
 	/*!
 	 * \brief A virtual member.
-	 * \param[in] ElectricField - ElectricField
+	 * \param[in] poissonField - poissonField
 	 */
-	virtual void SetElectricField(double* val_ElectricField);
+	virtual void SetpoissonField(double* val_poissonField);
 
 	/*!
 	 * \brief A virtual member.
 	 */
-	virtual double* GetElectricField();
+	virtual double* GetpoissonField();
 
 	/*!
 	 * \brief A virtual member.
@@ -1602,7 +1631,7 @@ public:
  * \class CBaselineVariable
  * \brief Main class for defining the variables of a baseline solution from a restart file (for output).
  * \author F. Palacios, T. Economon.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CBaselineVariable : public CVariable {
 public:
@@ -1632,7 +1661,7 @@ public:
  * \brief Main class for defining the variables of the potential solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CPotentialVariable : public CVariable {
 	double *Charge_Density;
@@ -1702,7 +1731,7 @@ public:
  * \brief Main class for defining the variables of the wave equation solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CWaveVariable : public CVariable {
 protected:
@@ -1784,7 +1813,7 @@ public:
  * \brief Main class for defining the variables of the Heat equation solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CHeatVariable : public CVariable {
 protected:
@@ -1830,12 +1859,14 @@ public:
  * \brief Main class for defining the variables of the FEA equation solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CFEAVariable : public CVariable {
 protected:
 	double Pressure;	/*!< \brief Pressure of the fluid. */
-
+  double **Stress;  /*!< \brief Stress tensor. */
+  double VonMises_Stress; /*!< \brief Von Mises stress. */
+  
 public:
 
 	/*!
@@ -1861,6 +1892,32 @@ public:
 	 * \brief Set the value of the pressure.
 	 */
 	void SetPressureValue(double val_pressure);
+  
+  /*!
+	 * \brief Set the value of the stress.
+   * \param[in] iVar - i index.
+	 * \param[in] jVar - j index.
+	 * \param[in] val_stress - Value of the stress.
+	 */
+  void SetStress(unsigned short iVar, unsigned short jVar, double val_stress);
+  
+  /*!
+	 * \brief Get the value of the stress.
+   * \return Value of the stress.
+	 */
+  double **GetStress(void);
+
+  /*!
+	 * \brief Set the value of the Von Mises stress.
+	 * \param[in] val_stress - Value of the Von Mises stress.
+	 */
+  void SetVonMises_Stress(double val_stress);
+  
+  /*!
+	 * \brief Get the value of the Von Mises stress.
+   * \return Value of the Von Mises stress.
+	 */
+  double GetVonMises_Stress(void);
 
 };
 
@@ -1869,7 +1926,7 @@ public:
  * \brief Main class for defining the variables of the Euler's solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CEulerVariable : public CVariable {
 protected:
@@ -1877,8 +1934,8 @@ protected:
 	double *TS_Source;		/*!< \brief Time spectral source term. */
 	double Precond_Beta;	/*!< \brief Low Mach number preconditioner value, Beta. */
 	double *B_Field;		/*! < \brief Magnetic field value */
-    double *WindGust;           /*! < \brief Wind gust value */
-    double *WindGustDer;        /*! < \brief Wind gust derivatives value */
+  double *WindGust;           /*! < \brief Wind gust value */
+  double *WindGustDer;        /*! < \brief Wind gust derivatives value */
 
 	/*--- Primitive variable definition ---*/
 	double *Primitive;	/*!< \brief Primitive variables (T,vx,vy,vz,P,rho,h,c) in compressible flows. */
@@ -2205,7 +2262,7 @@ public:
  * \brief Main class for defining the variables of the Navier-Stokes' solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CNSVariable : public CEulerVariable {
 private:
@@ -2354,7 +2411,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CTurbVariable : public CVariable {
 protected:
@@ -2398,7 +2455,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.7
+ * \version 2.0.8
  */
 
 class CTurbSAVariable : public CTurbVariable {
@@ -2444,7 +2501,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.7
+ * \version 2.0.8
  */
 
 class CTransLMVariable : public CTurbVariable {
@@ -2501,7 +2558,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.7
+ * \version 2.0.8
  */
 
 class CTurbSSTVariable : public CTurbVariable {
@@ -2563,7 +2620,7 @@ public:
  * \brief Main class for defining the variables of the adjoint potential solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CAdjPotentialVariable : public CVariable {
 private:
@@ -2598,7 +2655,7 @@ public:
  * \brief Main class for defining the variables of the adjoint Euler solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CAdjEulerVariable : public CVariable {
 protected:
@@ -2717,7 +2774,7 @@ public:
  * \brief Main class for defining the variables of the adjoint Navier-Stokes solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CAdjNSVariable : public CAdjEulerVariable {	
 private:
@@ -2789,7 +2846,7 @@ public:
  * \brief Main class for defining the variables of the adjoint turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CAdjTurbVariable : public CVariable {
 protected:
@@ -2839,7 +2896,7 @@ public:
  * \brief Main class for defining the variables of the linearized potential equation.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CLinPotentialVariable : public CVariable {
 public:	
@@ -2850,7 +2907,7 @@ public:
  * \brief Main class for defining the variables of the linearized Euler's equations.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CLinEulerVariable : public CVariable {
 private:
@@ -2927,7 +2984,7 @@ public:
  * \brief Main class for defining the variables of the linearized Navier-Stokes' equations.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CLinNSVariable : public CLinEulerVariable {
 public:
@@ -2936,7 +2993,7 @@ public:
 /*!
  * \class CPlasmaVariable
  * \brief Main class for defining the variables of the Plasma solver.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CPlasmaVariable : public CVariable {
 protected:	
@@ -2958,7 +3015,7 @@ protected:
 	*Residual_ElecForce,	/*!< \brief Residual of the electrostatic force source terms. */
 	*Residual_MomentumExch, /*!< \brief Residual of the collisional momentum exchange source terms. */
 	*Residual_EnergyExch;	/*! < \brief Residual of the collisional energy exchange source terms. */
-	double *Elec_Field;		/*! < \brief Electric field value from the electrical solver. */
+	double *Elec_Field;		/*! < \brief poisson field value from the poissonal solver. */
 	double *B_Field;		/*! < \brief Magnetic field value */
 	
 	/*--- Primitive variable definition ---*/
@@ -3333,14 +3390,14 @@ public:
 
 	/*!
 	 * \brief A virtual member.
-	 * \param[in] ElectricField - ElectricField
+	 * \param[in] poissonField - poissonField
 	 */
-	void SetElectricField(double* val_ElectricField);
+	void SetpoissonField(double* val_poissonField);
 
 	/*!
 	 * \brief A virtual member.
 	 */
-	double* GetElectricField();
+	double* GetpoissonField();
 
 	/*!
 	 * \brief Get the value of the magnetic field
@@ -3362,7 +3419,7 @@ public:
  * \brief Main class for defining the variables of the Level Set.
  * \ingroup LevelSet_Model
  * \author F. Palacios.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CLevelSetVariable : public CVariable {
 protected:
@@ -3432,7 +3489,7 @@ public:
  * \brief Main class for defining the variables of the Level Set.
  * \ingroup LevelSet_Model
  * \author F. Palacios.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CAdjLevelSetVariable : public CVariable {
 public:
@@ -3470,7 +3527,7 @@ public:
  * \brief Main class for defining the variables of the adjoint Euler solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CAdjPlasmaVariable : public CVariable {
 protected:
@@ -3799,7 +3856,7 @@ public:
 	 * \param[in] val_dim - Index of the dimension.
 	 * \return Value of the velocity for the dimension <i>val_dim</i>.
 	 */
-	double GetVelocity(unsigned short val_dim, bool val_incomp);
+	double GetVelocity(unsigned short val_dim);
   
 	/*!
 	 * \brief Get the projected velocity in a unitary vector direction (compressible solver).
@@ -4179,7 +4236,7 @@ public:
  * \brief Main class for defining the variables of the potential solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CTemplateVariable : public CVariable {
 public:
