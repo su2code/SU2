@@ -409,9 +409,11 @@ class Project(object):
                 results.GRADIENTS[key].append(new_grad)
             for TYPE in results.HISTORY.keys():
                 for key in results.HISTORY[TYPE].keys():
-                    try:
+                    if key in results.FUNCTIONS.keys():
+                        new_func = results.FUNCTIONS[key][-1]
+                    elif key in design.state.HISTORY[TYPE].keys():
                         new_func = design.state.HISTORY[TYPE][key][-1]
-                    except KeyError:
+                    else:
                         new_func = default
                     results.HISTORY[TYPE][key].append(new_func)
         #: for each design
