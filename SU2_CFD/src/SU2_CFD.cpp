@@ -92,19 +92,37 @@ int main(int argc, char *argv[]) {
 	CSurfaceMovement **surface_movement   = NULL;
 	CVolumetricMovement **grid_movement   = NULL;
 	CFreeFormDefBox*** FFDBox             = NULL;
-	
-	/*--- Definition and of the containers for all possible zones (MAX_ZONES is
-   a hard-coded constant in option_structure.hpp). ---*/
+		
+	/*--- Load in the number of zones and spatial dimensions in the mesh file (If no config
+   file is specified, default.cfg is used) ---*/
   
-	solver_container      = new CSolver***[MAX_ZONES];
-	integration_container = new CIntegration**[MAX_ZONES];
-	numerics_container    = new CNumerics****[MAX_ZONES];
-	config_container      = new CConfig*[MAX_ZONES];
-	geometry_container    = new CGeometry **[MAX_ZONES];
-	surface_movement      = new CSurfaceMovement *[MAX_ZONES];
-	grid_movement         = new CVolumetricMovement *[MAX_ZONES];
-	FFDBox                = new CFreeFormDefBox**[MAX_ZONES];
-  for (iZone = 0; iZone < MAX_ZONES; iZone++) {
+  char config_file_name[200];
+  if (argc == 2){ strcpy(config_file_name,argv[1]); }
+  else{ strcpy(config_file_name, "default.cfg"); }
+  
+  /*--- Read the name and format of the input mesh file ---*/
+   
+	CConfig *config = NULL;
+  config = new CConfig(config_file_name);
+  
+  /*--- Get the number of zones and dimensions from the numerical grid 
+   (required for variables allocation) ---*/
+  
+	nZone = GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+	nDim = GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
+  
+  /*--- Definition and of the containers for all possible zones. ---*/
+  
+	solver_container      = new CSolver***[nZone];
+	integration_container = new CIntegration**[nZone];
+	numerics_container    = new CNumerics****[nZone];
+	config_container      = new CConfig*[nZone];
+	geometry_container    = new CGeometry **[nZone];
+	surface_movement      = new CSurfaceMovement *[nZone];
+	grid_movement         = new CVolumetricMovement *[nZone];
+	FFDBox                = new CFreeFormDefBox**[nZone];
+  
+  for (iZone = 0; iZone < nZone; iZone++) {
     solver_container[iZone]       = NULL;
     integration_container[iZone]  = NULL;
     numerics_container[iZone]     = NULL;
@@ -114,18 +132,6 @@ int main(int argc, char *argv[]) {
     grid_movement[iZone]          = NULL;
     FFDBox[iZone]                 = NULL;
   }
-	
-	/*--- Load in the number of zones and spatial dimensions in the mesh file (If no config
-   file is specified, default.cfg is used) ---*/
-  
-  char config_file_name[200];
-  if (argc == 2){ strcpy(config_file_name,argv[1]); }
-  else{ strcpy(config_file_name, "default.cfg"); }
-  
-	CConfig *config = NULL;
-  config = new CConfig(config_file_name);
-	nZone = GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
-	nDim = GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
 	
   /*--- Loop over all zones to initialize the various classes. In most
    cases, nZone is equal to one. This represents the solution of a partial
@@ -158,7 +164,7 @@ int main(int argc, char *argv[]) {
                                                               iZone+1, nZone);
 		
   }
-  
+    
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Geometry Preprocessing ------------------------" << endl;
   

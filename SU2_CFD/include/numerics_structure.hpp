@@ -335,23 +335,23 @@ public:
 
 	/*!
 	 * \brief Set the value of the charge densities.
-	 * \param[in] val_Efield - Value of the electric field.
+	 * \param[in] val_Efield - Value of the poisson field.
 	 */
 	virtual void SetElecField(double *val_Efield);
 
 	/*!
-	 * \brief Set the value of the electrical conductivity
+	 * \brief Set the value of the poissonal conductivity
 	 */
 	virtual void SetElec_Cond();
 
 	/*!
-	 * \brief Get the integral in electrical conductivity calculation
+	 * \brief Get the integral in poissonal conductivity calculation
 	 * \param[out] value of the integral
 	 */
 	virtual double GetElec_CondIntegral();
 
 	/*!
-	 * \brief Set the square integral in electrical conductivity calculation
+	 * \brief Set the square integral in poissonal conductivity calculation
 	 * \param[in] value of the square of the integral
 	 */
 	virtual void SetElec_CondIntegralsqr(double val_var);
@@ -1539,7 +1539,7 @@ public:
 	virtual void ComputeResidual_ElecForce(double *val_residual, double **val_Jacobian, CConfig *config);
 
 	/*! 
-	 * \brief Calculation of electric force source term Jacobian
+	 * \brief Calculation of poisson force source term Jacobian
 	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
 	 * \param[in] config - Definition of the particular problem.
 	 */
@@ -1578,7 +1578,7 @@ public:
 	 * \overload
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[out] val_residual - Residual of the source terms.
-	 * \param[in] val_residual_ElecForce - Value of the electric force source terms.
+	 * \param[in] val_residual_ElecForce - Value of the poisson force source terms.
 	 */	
 	virtual void ComputeResidual_EnergyExch(double *val_residual, double **val_Jacobian, CConfig *config);
 
@@ -1587,7 +1587,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[out] val_residual - Residual of the source terms.
 	 * \param[out] val_Jacobian - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[in] val_residual_ElecForce - Value of the electric force source terms.
+	 * \param[in] val_residual_ElecForce - Value of the poisson force source terms.
 	 */
 	virtual void ComputeResidual_EnergyExch(double *val_residual, double *val_residual_ElecForce, double **val_Jacobian, CConfig *config);
 
@@ -4990,7 +4990,7 @@ public:
 	~CSourcePieceWise_FreeSurface(void);
 
 	/*! 
-	 * \brief Source term integration for the electrical potential.
+	 * \brief Source term integration for the poissonal potential.
 	 * \param[out] val_residual - Pointer to the total residual.
 	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
 	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
@@ -5025,7 +5025,7 @@ public:
 	~CSourceGravity(void);
 
 	/*! 
-	 * \brief Source term integration for the electrical potential.
+	 * \brief Source term integration for the poissonal potential.
 	 * \param[out] val_residual - Pointer to the total residual.
 	 * \param[in] config - Definition of the particular problem.
 	 */
@@ -5034,7 +5034,7 @@ public:
 
 /*!
  * \class CSourcePieceWise_Elec
- * \brief Class for the soruce term integration of the electrical potential equation.
+ * \brief Class for the soruce term integration of the poissonal potential equation.
  * \ingroup SourceDiscr
  * \author A. Bueno.
  * \version 2.0.8
@@ -5056,14 +5056,14 @@ public:
 	~CSourcePieceWise_Elec(void);
 
 	/*! 
-	 * \brief Source term integration for the electrical potential.
+	 * \brief Source term integration for the poissonal potential.
 	 * \param[out] val_residual - Pointer to the total residual.
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void ComputeResidual(double *val_residual, CConfig *config);
 
 	/*!
-	 * \brief Source term integration for the electrical potential.
+	 * \brief Source term integration for the poissonal potential.
 	 * \param[out] val_residual - Pointer to the total residual.
 	 * \param[in] config - Definition of the particular problem.
 	 */
@@ -5151,7 +5151,7 @@ public:
 
 /*!
  * \class CSourcePieceWise_AdjElec
- * \brief Class for source term integration of the adjoint electric potential equation.
+ * \brief Class for source term integration of the adjoint poisson potential equation.
  * \ingroup SourceDiscr
  * \author F. Palacios.
  * \version 2.0.8
@@ -5173,7 +5173,7 @@ public:
 	~CSourcePieceWise_AdjElec(void);
 
 	/*! 
-	 * \brief Source term integration of the adjoint electric potential equation.
+	 * \brief Source term integration of the adjoint poisson potential equation.
 	 * \param[out] val_residual - Pointer to the total residual.
 	 * \param[in] config - Definition of the particular problem.
 	 */
@@ -5204,7 +5204,7 @@ public:
 	~CSourcePieceWise_LevelSet(void);
 
 	/*! 
-	 * \brief Source term integration of the adjoint electric potential equation.
+	 * \brief Source term integration of the adjoint poisson potential equation.
 	 * \param[out] val_residual - Pointer to the total residual.
 	 * \param[in] config - Definition of the particular problem.
 	 */
@@ -5235,7 +5235,7 @@ public:
 	~CSourcePieceWise_AdjLevelSet(void);
 
 	/*! 
-	 * \brief Source term integration of the adjoint electric potential equation.
+	 * \brief Source term integration of the adjoint poisson potential equation.
 	 * \param[out] val_residual - Pointer to the total residual.
 	 * \param[in] config - Definition of the particular problem.
 	 */
@@ -5244,7 +5244,7 @@ public:
 
 /*!
  * \class CSourcePieceWise_LinElec
- * \brief Class for source term integration of the linearized electric potential equation.
+ * \brief Class for source term integration of the linearized poisson potential equation.
  * \ingroup SourceDiscr
  * \author F. Palacios.
  * \version 2.0.8
@@ -5266,7 +5266,7 @@ public:
 	~CSourcePieceWise_LinElec(void);
 
 	/*! 
-	 * \brief Source term integration of the linearized electric potential equation.
+	 * \brief Source term integration of the linearized poisson potential equation.
 	 * \param[out] val_residual - Pointer to the total residual.
 	 * \param[in] config - Definition of the particular problem.
 	 */
@@ -5321,8 +5321,8 @@ private:
 	double dR_dr1,dR_dm1,dR_dn1,dR_dl1,dR_de1;
 	double dR_dr2,dR_dm2,dR_dn2,dR_dl2,dR_de2;
 	double dR_dr3,dR_dm3,dR_dn3,dR_dl3,dR_de3;
-	double *ElectricField, *MagneticField, **VcrossB, *MagneticDipole,**velocity;
-	double Electric_Conductivity;
+	double *poissonField, *MagneticField, **VcrossB, *MagneticDipole,**velocity;
+	double poisson_Conductivity;
 	double *Current_Density, *VioncrossB, *JcrossB,	*dpcenter, *vector_r;
 	double *SourceVector;
 	double **SourceJacobian;
@@ -5454,13 +5454,13 @@ public:
 
 	/*! 
 	 * \brief Residual for source term integration.
-	 * \param[out] val_residual - Pointer to the source residual containing electric force terms.
+	 * \param[out] val_residual - Pointer to the source residual containing poisson force terms.
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void ComputeResidual_ElecForce(double *val_residual, CConfig *config);
 
 	/*! 
-	 * \brief Calculation of electric force source term Jacobian
+	 * \brief Calculation of poisson force source term Jacobian
 	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
 	 * \param[in] config - Definition of the particular problem.
 	 */
@@ -5496,7 +5496,7 @@ public:
 
 	/*!
 	 * \brief Set the value of the charge densities.
-	 * \param[in] val_Efield - Value of the electric field.
+	 * \param[in] val_Efield - Value of the poisson field.
 	 */
 	void SetElecField(double *val_Efield);
     
@@ -5733,7 +5733,7 @@ class CSource_Magnet : public CNumerics {
 private:
 	bool implicit;
 	double *MagneticField, *MagneticDipole,*velocity, *VcrossB;
-	double Electric_Conductivity,Stagnation_B;
+	double poisson_Conductivity,Stagnation_B;
 	double *Current_Density, *JcrossB,	*dpcenter, *vector_r;
 	unsigned short iDim, iVar;
 public:
@@ -5803,17 +5803,17 @@ public:
 	void ComputeResidual(double *val_residual, double **val_Jacobian_i,CConfig *config);
 
 	/*!
-	 * \brief Set the value of the electrical conductivity
+	 * \brief Set the value of the poissonal conductivity
 	 */
 	void SetElec_Cond();
 
 	/*!
-	 * \brief Set the integral in electrical conductivity calculation
+	 * \brief Set the integral in poissonal conductivity calculation
 	 */
 	double GetElec_CondIntegral();
 
 	/*!
-	 * \brief Set the square integral in electrical conductivity calculation
+	 * \brief Set the square integral in poissonal conductivity calculation
 	 * \param[in] value of the square of the integral
 	 */
 	void SetElec_CondIntegralsqr(double val_var);

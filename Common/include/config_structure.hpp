@@ -73,7 +73,7 @@ private:
 	IsothermalWall,			/*!< \brief Flag to know if we are using the Isothermal Wall. */
 	CatalyticWall,			/*!< \brief Flag to know if we are using the Catalytic Wall. */
 	PlasmaMultiTimeSteps,	/*!< \brief Flag to know if we are using multiple time steps for different species in plasma. */
-	ElectricSolver,			/*!< \brief Flag to know if we are solving  electric forces  in plasma solver. */
+	PoissonSolver,			/*!< \brief Flag to know if we are solving  poisson forces  in plasma solver. */
 	Low_Mach_Precon,		/*!< \brief Flag to know if we are using a low Mach number preconditioner. */
 	MacCormackRelaxation,	/*!< \brief Flag to know if we are using MacCormack's relaxation in solving Gauss's law. */
 	Unsteady_Farfield, 		/*!< \brief Flag to know if we are using time dependent farfield boundaries. */
@@ -182,7 +182,7 @@ private:
 	*Marker_Neumann,					/*!< \brief Neumann flow markers. */
 	*Marker_Neumann_Elec,					/*!< \brief Neumann flow markers. */
 	*Marker_Electrode,				/*!< \brief Electrode flow markers. */
-	*Marker_Dielectric,				/*!< \brief Dielectric flow markers. */
+	*Marker_Dipoisson,				/*!< \brief Dipoisson flow markers. */
 	*Marker_All_Tag;				/*!< \brief Global index for markers using grid information. */
 	double *Dirichlet_Value;    /*!< \brief Specified Dirichlet value at the boundaries. */
 	double *Nozzle_Ttotal;    /*!< \brief Specified total temperatures for nacelle boundaries. */
@@ -307,7 +307,7 @@ private:
   Kind_ViscNumScheme_AdjTNE2, /*!< \brief Viscous scheme for the flow equations. */
 	Kind_ViscNumScheme_LinFlow,		/*!< \brief Viscous scheme for the linearized flow equations. */
 	Kind_ViscNumScheme_Turb,	/*!< \brief Viscous scheme for the turbulence model. */
-	Kind_ViscNumScheme_Elec,	/*!< \brief Viscous scheme for the electric potential. */
+	Kind_ViscNumScheme_Elec,	/*!< \brief Viscous scheme for the poisson potential. */
 	Kind_ViscNumScheme_Wave,	/*!< \brief Viscous scheme for the wave equation. */
 	Kind_ViscNumScheme_FEA,	/*!< \brief Viscous scheme for the FEA equation. */
 	Kind_ViscNumScheme_AdjTurb,	/*!< \brief Viscous scheme for the adjoint turbulence model. */
@@ -323,7 +323,7 @@ private:
   Kind_SourNumScheme_AdjTNE2,	/*!< \brief Source numerical scheme for the flow equations. */
 	Kind_SourNumScheme_LinFlow,		/*!< \brief Source numerical scheme for the linearized flow equations. */
 	Kind_SourNumScheme_Turb,	/*!< \brief Source numerical scheme for the turbulence model. */
-	Kind_SourNumScheme_Elec,	/*!< \brief Source numerical scheme for the electric potential. */
+	Kind_SourNumScheme_Poisson,	/*!< \brief Source numerical scheme for the poisson potential. */
 	Kind_SourNumScheme_AdjTurb,	/*!< \brief Source numerical scheme for the adjoint turbulence model. */
 	Kind_SourNumScheme_AdjLevelSet,	/*!< \brief Source numerical scheme for the adjoint level set model. */
 	Kind_SourNumScheme_Plasma,	/*!< \brief Source numerical scheme for the plasma equations. */
@@ -402,7 +402,7 @@ private:
 	double Length_Reynolds;	/*!< \brief Reynolds length (dimensional). */
 	double AoA,			/*!< \brief Angle of attack (just external flow). */
 	AoS;				/*!< \brief Angle of sideSlip (just external flow). */
-	double ChargeCoeff;		/*!< \brief Charge coefficient (just for electric problems). */
+	double ChargeCoeff;		/*!< \brief Charge coefficient (just for poisson problems). */
 	double *U_FreeStreamND;			/*!< \brief Reference variables at the infinity, free stream values. */ 
 	unsigned short Cauchy_Func_Flow,	/*!< \brief Function where to apply the convergence criteria in the flow problem. */
 	Cauchy_Func_AdjFlow,				/*!< \brief Function where to apply the convergence criteria in the adjoint problem. */
@@ -546,7 +546,7 @@ private:
 	GammaDiatomic,			/*!< \brief Ratio of specific heats of the diatomic gas. */ 
 	GammaMonatomic,			/*!< \brief Ratio of specific heats of the monatomic gas. */ 
 	Stagnation_B,/*!< \brief value of the magnetic field in Tesla at the stagnation point */
-	Electric_Cond,/*!< \brief value of the electrical conductivity in mho/m */
+	poisson_Cond,/*!< \brief value of the poissonal conductivity in mho/m */
 	DipoleDist,/*!< \brief value of the minimum distance for the dipole. */
 	Bulk_Modulus,			/*!< \brief Value of the bulk modulus for incompressible flows. */ 
 	ArtComp_Factor,			/*!< \brief Value of the artificial compresibility factor for incompressible flows. */
@@ -1613,7 +1613,7 @@ public:
 	double GetAoS(void);
 
 	/*! 
-	 * \brief Get the charge coefficient that is used in the electrical potential simulation.
+	 * \brief Get the charge coefficient that is used in the poissonal potential simulation.
 	 * \return Value of the charge coefficient.
 	 */		
 	double GetChargeCoeff(void);	
@@ -3073,21 +3073,21 @@ public:
 	unsigned short GetKind_Upwind_Turb(void);
 
 	/*! 
-	 * \brief Get the kind of viscous numerical scheme for the electric potential
+	 * \brief Get the kind of viscous numerical scheme for the poisson potential
 	 *        equation (Galerkin).
 	 * \note This value is obtained from the config file, and it is constant 
 	 *       during the computation.
-	 * \return Kind of viscous numerical scheme for the electric potential equation.
+	 * \return Kind of viscous numerical scheme for the poisson potential equation.
 	 */
-	unsigned short GetKind_ViscNumScheme_Elec(void);
+	unsigned short GetKind_ViscNumScheme_Poisson(void);
 
 	/*! 
-	 * \brief Get the kind of source term for the electric potential equation.
+	 * \brief Get the kind of source term for the poisson potential equation.
 	 * \note This value is obtained from the config file, and it is constant 
 	 *       during the computation.
-	 * \return Kind of source term for the electric potential equation.
+	 * \return Kind of source term for the poisson potential equation.
 	 */	
-	unsigned short GetKind_SourNumScheme_Elec(void);
+	unsigned short GetKind_SourNumScheme_Poisson(void);
 
 	/*! 
 	 * \brief Get the kind of integration scheme (explicit or implicit) 
@@ -3412,8 +3412,8 @@ public:
 	double GetStagnation_B();
 
 	/*!
-	 * \brief Provides the value of the electrical conductivity
-	 * \return: electrical conductivity
+	 * \brief Provides the value of the poissonal conductivity
+	 * \return: poissonal conductivity
 	 */
 	double GetElec_Conductivity();
 
@@ -4030,10 +4030,10 @@ public:
 	bool MultipleTimeSteps(void);
 
 	/*!
-	 * \brief Get information about the electric solver condition
-	 * \return <code>TRUE</code> if it is a electric solver condition; otherwise <code>FALSE</code>.
+	 * \brief Get information about the poisson solver condition
+	 * \return <code>TRUE</code> if it is a poisson solver condition; otherwise <code>FALSE</code>.
 	 */
-	bool GetElectricSolver(void);
+	bool GetPoissonSolver(void);
 
 	/*!
 	 * \brief Get information about MacCormack's scheme for Gauss's law

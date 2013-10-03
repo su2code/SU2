@@ -541,9 +541,9 @@ void PlasmaIteration(COutput *output, CIntegration ***integration_container, CGe
 	if ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
 			(config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) IntIter = 0;
 
-	/*--- Plasma solver with electric potential ---*/
+	/*--- Plasma solver with poisson potential ---*/
 	if (nZone > 1)
-		solver_container[ZONE_1][MESH_0][ELEC_SOL]->Copy_Zone_Solution(solver_container[ZONE_1], geometry_container[ZONE_1], config_container[ZONE_1],
+		solver_container[ZONE_1][MESH_0][POISSON_SOL]->Copy_Zone_Solution(solver_container[ZONE_1], geometry_container[ZONE_1], config_container[ZONE_1],
 				solver_container[ZONE_0], geometry_container[ZONE_0], config_container[ZONE_0]);
   
 	/*--- Plasma solver ---*/
@@ -552,17 +552,17 @@ void PlasmaIteration(COutput *output, CIntegration ***integration_container, CGe
 	integration_container[ZONE_0][PLASMA_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
 			config_container, RUNTIME_PLASMA_SYS, IntIter, ZONE_0);
 
-	/*--- Electric potential solver ---*/
+	/*--- poisson potential solver ---*/
 	if (nZone > 1) {
 
 		if (config_container[ZONE_1]->GetKind_GasModel() == ARGON || config_container[ZONE_1]->GetKind_GasModel() == AIR21) {
 
-			if (config_container[ZONE_1]->GetElectricSolver()) {
+			if (config_container[ZONE_1]->GetPoissonSolver()) {
 				solver_container[ZONE_0][MESH_0][PLASMA_SOL]->Copy_Zone_Solution(solver_container[ZONE_0], geometry_container[ZONE_0], config_container[ZONE_0],
 						solver_container[ZONE_1], geometry_container[ZONE_1], config_container[ZONE_1]);
-				config_container[ZONE_1]->SetGlobalParam(PLASMA_NAVIER_STOKES, RUNTIME_ELEC_SYS, ExtIter);
-				integration_container[ZONE_1][ELEC_SOL]->SetPotential_Solver(geometry_container, solver_container, numerics_container,
-						config_container, RUNTIME_ELEC_SYS, MESH_0, ZONE_1);
+				config_container[ZONE_1]->SetGlobalParam(PLASMA_NAVIER_STOKES, RUNTIME_POISSON_SYS, ExtIter);
+				integration_container[ZONE_1][POISSON_SOL]->SetPotential_Solver(geometry_container, solver_container, numerics_container,
+						config_container, RUNTIME_POISSON_SYS, MESH_0, ZONE_1);
 
 			}
 

@@ -1534,14 +1534,14 @@ public:
 
 	/*!
 	 * \brief A virtual member.
-	 * \param[in] ElectricField - ElectricField
+	 * \param[in] poissonField - poissonField
 	 */
-	virtual void SetElectricField(double* val_ElectricField);
+	virtual void SetpoissonField(double* val_poissonField);
 
 	/*!
 	 * \brief A virtual member.
 	 */
-	virtual double* GetElectricField();
+	virtual double* GetpoissonField();
 
 	/*!
 	 * \brief A virtual member.
@@ -3015,7 +3015,7 @@ protected:
 	*Residual_ElecForce,	/*!< \brief Residual of the electrostatic force source terms. */
 	*Residual_MomentumExch, /*!< \brief Residual of the collisional momentum exchange source terms. */
 	*Residual_EnergyExch;	/*! < \brief Residual of the collisional energy exchange source terms. */
-	double *Elec_Field;		/*! < \brief Electric field value from the electrical solver. */
+	double *Elec_Field;		/*! < \brief poisson field value from the poissonal solver. */
 	double *B_Field;		/*! < \brief Magnetic field value */
 	
 	/*--- Primitive variable definition ---*/
@@ -3390,14 +3390,14 @@ public:
 
 	/*!
 	 * \brief A virtual member.
-	 * \param[in] ElectricField - ElectricField
+	 * \param[in] poissonField - poissonField
 	 */
-	void SetElectricField(double* val_ElectricField);
+	void SetpoissonField(double* val_poissonField);
 
 	/*!
 	 * \brief A virtual member.
 	 */
-	double* GetElectricField();
+	double* GetpoissonField();
 
 	/*!
 	 * \brief Get the value of the magnetic field
