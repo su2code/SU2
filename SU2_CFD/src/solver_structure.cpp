@@ -1275,6 +1275,273 @@ void CSolver::Gauss_Elimination(double** A, double* rhs, unsigned long nVar) {
 	}
 }
 
+void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometry, CConfig *config, unsigned long IntIter) {
+    
+    /*--- Variables used for Aeroelastic case ---*/
+    
+    double Cl, Cm;
+    double structural_solution[4]; //contains solution of typical section wing model.
+    
+    unsigned short iMarker, iMarker_Monitoring, Monitoring;
+    string Marker_Tag, Monitoring_Tag;
+    
+    /*--- Loop over markers and find the ones being monitored. ---*/
+    
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        Monitoring = config->GetMarker_All_Monitoring(iMarker);
+        if (Monitoring == YES) {
+            
+            /*--- Find the particular marker being monitored and get the forces acting on it. ---*/
+            
+            for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+                Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
+                Marker_Tag = config->GetMarker_All_Tag(iMarker);
+                if (Marker_Tag == Monitoring_Tag) {
+                    Cl = GetSurface_CLift(iMarker_Monitoring);
+                    Cm = -1.0*GetSurface_CMz(iMarker_Monitoring);
+                }
+            }
+            
+            /*--- Solve the aeroelastic equations for the particular marker(surface) ---*/
+            SolveTypicalSectionWingModel(geometry, Cl, Cm, config, IntIter, structural_solution);
+            
+            /*--- Compute the new surface node locations ---*/
+            surface_movement->AeroelasticDeform(geometry, config, iMarker, structural_solution);
+
+        }
+        
+    }
+    
+}
+
+void CSolver::SetUpTypicalSectionWingModel(double (&PHI)[2][2],double (&lambda)[2], CConfig *config) {
+    
+    /*--- Retrieve values from the config file ---*/
+    double w_h = config->GetAeroelastic_Frequency_Plunge();
+    double w_a = config->GetAeroelastic_Frequency_Pitch();
+    
+    /*--- Geometrical Parameters */
+    double x_a = 1.8;
+    double r_a2 = 3.48;
+    
+    // Mass Matrix
+    // double M[2][2] = {{1,x_a},{x_a,r_a2}};
+    // Stiffness Matrix
+    double K[2][2] = {{(w_h/w_a)*(w_h/w_a),0},{0,r_a2}};
+    
+    
+    /* Eigenvector and Eigenvalue Matrices of the Generalized EigenValue Problem. */
+    
+    double LAMBDA[2][2];
+    double y;
+    y = sqrt(r_a2*pow(w_a,4) - 2*r_a2*pow(w_a,2)*pow(w_h,2) + r_a2*pow(w_h,4) + 4*pow(w_a,2)*pow(w_h,2)*pow(x_a,2));
+    
+    PHI[0][0] = (sqrt(r_a2)*y + r_a2*pow(w_a,2) - r_a2*pow(w_h,2))/(2*pow(w_h,2)*x_a);
+    PHI[0][1] = -(sqrt(r_a2)*y - r_a2*pow(w_a,2) + r_a2*pow(w_h,2))/(2*pow(w_h,2)*x_a);
+    PHI[1][0] = 1.0;
+    PHI[1][1] = 1.0;
+    
+    LAMBDA[0][0] = (r_a2*pow(w_a,2) + r_a2*pow(w_h,2) - sqrt(r_a2)*y) / (2*pow(w_a,2)*(r_a2-pow(x_a,2)));
+    LAMBDA[0][1] = 0;
+    LAMBDA[1][0] = 0;
+    LAMBDA[1][1] = (r_a2*pow(w_a,2) + r_a2*pow(w_h,2) + sqrt(r_a2)*y) / (2*pow(w_a,2)*(r_a2-pow(x_a,2)));
+    
+    /* Nondimesionalize the Eigenvectors such that PHI'*M*PHI = I and PHI'*K*PHI = LAMBDA */
+    double temp1[2][2], temp2[2][2];
+    for (int i=0; i<2; i++) {
+        for (int j=0; j<2; j++) {
+            temp1[i][j] = 0;
+            for (int k=0; k<2; k++) {
+                temp1[i][j] += K[i][k]*PHI[k][j];
+            }
+        }
+    }
+    
+    for (int i=0; i<2; i++) {
+        for (int j=0; j<2; j++) {
+            temp2[i][j] = 0;
+            for (int k=0; k<2; k++) {
+                temp2[i][j] += PHI[k][i]*temp1[k][j]; //PHI transpose
+            }
+        }
+    }
+    
+    //Modify the first column
+    PHI[0][0] = 1/sqrt(temp2[0][0]/LAMBDA[0][0])*PHI[0][0];
+    PHI[1][0] = 1/sqrt(temp2[0][0]/LAMBDA[0][0])*PHI[1][0];
+    //Modify the second column
+    PHI[0][1] = 1/sqrt(temp2[1][1]/LAMBDA[1][1])*PHI[0][1];
+    PHI[1][1] = 1/sqrt(temp2[1][1]/LAMBDA[1][1])*PHI[1][1];
+    
+    //Eigenvalues
+    lambda[0] = sqrt(LAMBDA[0][0]);
+    lambda[1] = sqrt(LAMBDA[1][1]);
+    
+}
+
+void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned long iter, double (&displacements)[4]) {
+    
+    /*--- The aeroelastic model solved in this routine is the typical section wing model
+     The details of the implementation can be found in J.J. Alonso "Fully-Implicit Time-Marching Aeroelastic Solutions" 1994.
+     This routine is limited to 2 dimensional problems ---*/
+    
+    int rank = MASTER_NODE;
+#ifndef NO_MPI
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+    
+    unsigned short nDim=geometry->GetnDim();
+    if (nDim != 2) {
+        if (rank == MASTER_NODE) {
+            printf("\n\n   !!! Error !!!\n");
+            printf("Grid movement kind Aeroelastic is only available in 2 dimensions.");
+            printf("Now exiting...\n\n");
+            exit(0);
+        }
+    }
+    
+    /*--- Retrieve values from the config file ---*/
+    double w_a = config->GetAeroelastic_Frequency_Pitch();
+    double dt = config->GetDelta_UnstTime();
+    dt = dt*w_a; //Non-dimensionalize the structural time.
+    double Lref = config->GetLength_Ref();
+    double b = Lref/2.0;  // airfoil semichord
+    double Density_Inf  = config->GetDensity_FreeStreamND();
+    double P_Inf = config->GetPressure_FreeStreamND();
+    double Mach_Inf     = config->GetMach_FreeStreamND();
+    double gamma = config->GetGamma();
+    
+    /*--- airfoil mass ratio ---*/
+    double mu = 60;
+    /*--- Structural Equation damping ---*/
+    double xi[2] = {0.0,0.0};
+    
+    /*--- Flutter Speep Index ---*/
+    double Vf = (Mach_Inf*sqrt(gamma*P_Inf/Density_Inf))/(b*w_a*sqrt(mu));
+    
+    /*--- Eigenvectors and Eigenvalues of the Generalized EigenValue Problem. ---*/
+    double PHI[2][2];   // generalized eigenvectors.
+    double w[2];        //generalized eigenvalues.
+    SetUpTypicalSectionWingModel(PHI,w,config);
+    
+    /*--- Solving the Decoupled Aeroelastic Problem with second order time discretization Eq (9) ---*/
+    
+    /*--- Solution variables. //x1[i], i-equation. // Time (n+1)->np1, n->n, (n-1)->n1 ---*/
+    double x1_n[2], x1_n1[2], x1_np1[2];
+    double x2_n[2], x2_n1[2], x2_np1[2];
+    
+    double x1_np1_old[2];
+    double x2_np1_old[2];
+    
+    /*--- Values from previous movement of spring at true time step n+1
+     We use this values because we are solving for delta changes not absolute changes ---*/
+    double *source_np1 = config->GetAeroelastic_np1();
+    x1_np1_old[0] = source_np1[0];
+    x1_np1_old[1] = source_np1[1];
+    x2_np1_old[0] = source_np1[2];
+    x2_np1_old[1] = source_np1[3];
+    
+    /*--- Values at previous timesteps. ---*/
+    double *source_n = config->GetAeroelastic_n();
+    double *source_n1 = config->GetAeroelastic_n1();
+    
+    x1_n[0] = source_n[0];
+    x1_n[1] = source_n[1];
+    x2_n[0] = source_n[2];
+    x2_n[1] = source_n[3];
+    
+    x1_n1[0] = source_n1[0];
+    x1_n1[1] = source_n1[1];
+    x2_n1[0] = source_n1[2];
+    x2_n1[1] = source_n1[3];
+    
+    /*--- Set up of variables used to solve the structural problem. ---*/
+    double Q[2];
+    double A_inv[2][2];
+    double detA;
+    double S1, S2;
+    double RHS[2];
+    double eta[2];
+    double eta_dot[2];
+    
+    /*--- Forcing Term ---*/
+    double cons = Vf*Vf/PI_NUMBER;
+    double F[2] = {cons*(-Cl), cons*(2*Cm)};
+    
+    for (int i=0; i<2; i++) {
+        Q[i] = 0;
+        for (int k=0; k<2; k++) {
+            Q[i] += PHI[k][i]*F[k]; //PHI transpose
+        }
+    }
+    
+    /*--- solve each decoupled equation (The inverse of the 2x2 matrix is provided) ---*/
+    for (int i=0; i<2; i++) {
+        /* Matrix Inverse */
+        detA = 9.0/(4.0*dt*dt) + 3*w[i]*xi[i]/(dt) + w[i]*w[i];
+        A_inv[0][0] = 1/detA * 3/(2.0*dt) + 2*xi[i]*w[i];
+        A_inv[0][1] = 1/detA * 1;
+        A_inv[1][0] = 1/detA * -w[i]*w[i];
+        A_inv[1][1] = 1/detA * 3/(2.0*dt);
+        
+        /* Source Terms from previous iterations */
+        S1 = (-4*x1_n[i] + x1_n1[i])/(2.0*dt);
+        S2 = (-4*x2_n[i] + x2_n1[i])/(2.0*dt);
+        
+        /* Problem Right Hand Side */
+        RHS[0] = -S1;
+        RHS[1] = Q[i]-S2;
+        
+        /* Solve the equations */
+        x1_np1[i] = A_inv[0][0]*RHS[0] + A_inv[0][1]*RHS[1];
+        x2_np1[i] = A_inv[1][0]*RHS[0] + A_inv[1][1]*RHS[1];
+        
+        eta[i] = x1_np1[i]-x1_np1_old[i];  // For displacements, the change(deltas) is used.
+        eta_dot[i] = x2_np1[i]; // For velocities, absolute values are used.
+    }
+    
+    /*--- Transform back from the generalized coordinates to get the actual displacements in plunge and pitch ---*/
+    double q[2];
+    double q_dot[2];
+    for (int i=0; i<2; i++) {
+        q[i] = 0;
+        q_dot[i] = 0;
+        for (int k=0; k<2; k++) {
+            q[i] += PHI[i][k]*eta[k];
+            q_dot[i] += PHI[i][k]*eta_dot[k];
+        }
+    }
+    
+    double dy = b*q[0];
+    double dalpha = q[1];
+    
+    double y_dot = w_a*b*q_dot[0];
+    double alpha_dot = w_a*q_dot[1];
+    
+    /*--- Set the solution of the structural equations ---*/
+    displacements[0] = dy;
+    displacements[1] = dalpha;
+    displacements[2] = y_dot;
+    displacements[3] = alpha_dot;
+    
+    /*--- Calculate the total plunge and total pitch displacements for the unsteady step by summing the displacement at each sudo time step ---*/
+    double pitch, plunge;
+    pitch = config->GetAeroelastic_pitch();
+    plunge = config->GetAeroelastic_plunge();
+    
+    config->SetAeroelastic_pitch(pitch+dalpha);
+    config->SetAeroelastic_plunge(plunge+dy/b);
+    
+    /*--- Set the Aeroelastic solution at time n+1. This gets update every sudo time step
+     and after convering the sudo time step the solution at n+1 get moved to the solution at n
+     in SetDualTime_Solver method ---*/
+    config->SetAeroelastic_np1(0, x1_np1[0]);
+    config->SetAeroelastic_np1(1, x1_np1[1]);
+    config->SetAeroelastic_np1(2, x2_np1[0]);
+    config->SetAeroelastic_np1(3, x2_np1[1]);
+    
+}
+
 CBaselineSolver::CBaselineSolver(void) : CSolver() { }
 
 CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {

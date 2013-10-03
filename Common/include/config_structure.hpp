@@ -68,6 +68,7 @@ private:
 	Linearized,				/*!< \brief Flag to know if the code is solving a linearized problem. */
 	Grid_Movement,			/*!< \brief Flag to know if there is grid movement. */
     Wind_Gust,              /*!< \brief Flag to know if there is a wind gust. */
+    Aeroelastic_Simulation, /*!< \brief Flag to know if there is an aeroelastic simulation. */
 	Rotating_Frame,			/*!< \brief Flag to know if there is a rotating frame. */
 	AdiabaticWall,			/*!< \brief Flag to know if we are using the Adiabatic Wall. */
 	IsothermalWall,			/*!< \brief Flag to know if we are using the Isothermal Wall. */
@@ -448,9 +449,15 @@ private:
 	RefElemLength,				/*!< \brief Reference element length for computing the slope limiting epsilon. */
 	RefSharpEdges,				/*!< \brief Reference coefficient for detecting sharp edges. */
 	RefLengthMoment,			/*!< \brief Reference length for moment computation. */
-	*RefOriginMoment,			/*!< \brief Origin for moment computation. */
+    *RefOriginMoment,           /*!< \brief Origin for moment computation. */
+	*RefOriginMoment_X,			/*!< \brief X Origin for moment computation. */
+    *RefOriginMoment_Y,			/*!< \brief Y Origin for moment computation. */
+	*RefOriginMoment_Z,			/*!< \brief Z Origin for moment computation. */
 	*CFLRamp,			/*!< \brief Information about the CFL ramp. */
-	DomainVolume;		/*!< \brief Volume of the computational grid. */	
+	DomainVolume;		/*!< \brief Volume of the computational grid. */
+    unsigned short nRefOriginMoment_X,    /*!< \brief Number of X-coordinate moment computation origins. */
+	nRefOriginMoment_Y,           /*!< \brief Number of Y-coordinate moment computation origins. */
+	nRefOriginMoment_Z;           /*!< \brief Number of Z-coordinate moment computation origins. */
 	string Mesh_FileName,			/*!< \brief Mesh input file. */
 	Mesh_Out_FileName,				/*!< \brief Mesh output file. */
 	Solution_FlowFileName,			/*!< \brief Flow solution input file. */
@@ -648,9 +655,7 @@ private:
 	FreqPitchAeroelastic, /*!< \brief Pitch natural frequency for Aeroelastic. */
     Aeroelastic_plunge, /*!< \brief Value of plunging coordinate at the end of an external iteration. */
 	Aeroelastic_pitch; /*!< \brief Value of pitching coordinate at the end of an external iteration. */
-	unsigned short Aeroelastic_Grid_Movement,	/*!< \brief Type of Aeroelastic grid movement. */
-	Aeroelastic_Grid_Velocity,	/*!< \brief Type of Aeroelastic grid velocity. */
-    Gust_Type,	/*!< \brief Type of Gust. */
+    unsigned short Gust_Type,	/*!< \brief Type of Gust. */
     Gust_Dir;   /*!< \brief Direction of the gust */
     double Gust_WaveLength,     /*!< \brief The gust wavelength. */
     Gust_Periods,              /*!< \brief Number of gust periods. */
@@ -981,9 +986,10 @@ public:
 
 	/*! 
 	 * \brief Get reference origin for moment computation.
+     * \param[in] val_marker - the marker we are monitoring.
 	 * \return Reference origin (in cartesians coordinates) for moment computation.
 	 */
-	double *GetRefOriginMoment(void);
+	double *GetRefOriginMoment(unsigned short val_marker);
 
 	/*! 
 	 * \brief Get maximum number of children in the agglomeration process.
@@ -1708,6 +1714,12 @@ public:
 	 * \return Total number of boundary markers.
 	 */
 	unsigned short GetnMarker_InterfaceBound(void);
+    
+    /*!
+	 * \brief Get the total number of monitoring markers.
+	 * \return Total number of monitoring markers.
+	 */
+	unsigned short GetnMarker_Monitoring(void);
 
 	/*!
 	 * \brief Stores the number of marker in the simulation.
@@ -1885,6 +1897,14 @@ public:
 	 *         has the marker <i>val_marker</i>.
 	 */
 	string GetMarker_NacelleExhaust(unsigned short val_marker);
+    
+    /*!
+	 * \brief Get the name of the surface defined in the geometry file.
+	 * \param[in] val_marker - Value of the marker in which we are interested.
+	 * \return Name that is in the geometry file for the surface that
+	 *         has the marker <i>val_marker</i>.
+	 */
+	string GetMarker_Monitoring(unsigned short val_marker);
     
 	/*! 
 	 * \brief Get the tag if the iMarker defined in the geometry file.
@@ -4631,18 +4651,12 @@ public:
 	 * \brief Value of pitching coordinate at the end of an external iteration.
 	 */
 	void SetAeroelastic_pitch(double val);
-
-	/*!
-	 * \brief Get the type of aeroelastic grid movement.
-	 * \return type of aeroelastic grid movement.
+    
+    /*!
+	 * \brief Get information about the aeroelastic simulation.
+	 * \return <code>TRUE</code> if it is an aeroelastic case; otherwise <code>FALSE</code>.
 	 */
-	unsigned short GetType_Aeroelastic(void);
-
-	/*!
-	 * \brief Get the way to compute grid velocities for aeroelastic motion.
-	 * \return type of grid velocity computation used.
-	 */
-	unsigned short GetAeroelastic_GridVelocity(void);
+	bool GetAeroelastic_Simulation(void);
     
     /*!
 	 * \brief Get information about the wind gust.

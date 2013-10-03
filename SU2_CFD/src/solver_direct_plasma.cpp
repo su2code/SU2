@@ -1803,7 +1803,7 @@ void CPlasmaSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 	double Beta            = config->GetAoS()*PI_NUMBER/180.0;
 	double RefAreaCoeff    = config->GetRefAreaCoeff();
 	double RefLengthMoment = config->GetRefLengthMoment();
-	double *Origin         = config->GetRefOriginMoment();
+	double *Origin         = config->GetRefOriginMoment(0);
 
 	RefVel2 = 0.0;
 	for (iDim = 0; iDim < nDim; iDim++)
@@ -2021,7 +2021,7 @@ void CPlasmaSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 	double Alpha        = config->GetAoA()*PI_NUMBER/180.0;
 	double RefAreaCoeff = config->GetRefAreaCoeff();
 	double Beta         = config->GetAoS()*PI_NUMBER/180.0;
-	double *Origin      = config->GetRefOriginMoment();
+	double *Origin      = config->GetRefOriginMoment(0);
 
 	//	double Gas_Constant = config->GetGas_ConstantND();
 	//	cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
