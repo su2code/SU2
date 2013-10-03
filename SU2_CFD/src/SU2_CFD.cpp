@@ -100,8 +100,14 @@ int main(int argc, char *argv[]) {
   if (argc == 2){ strcpy(config_file_name,argv[1]); }
   else{ strcpy(config_file_name, "default.cfg"); }
   
+  /*--- Read the name and format of the input mesh file ---*/
+   
 	CConfig *config = NULL;
   config = new CConfig(config_file_name);
+  
+  /*--- Get the number of zones and dimensions from the numerical grid 
+   (required for variables allocation) ---*/
+  
 	nZone = GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
 	nDim = GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
   
@@ -115,6 +121,7 @@ int main(int argc, char *argv[]) {
 	surface_movement      = new CSurfaceMovement *[nZone];
 	grid_movement         = new CVolumetricMovement *[nZone];
 	FFDBox                = new CFreeFormDefBox**[nZone];
+  
   for (iZone = 0; iZone < nZone; iZone++) {
     solver_container[iZone]       = NULL;
     integration_container[iZone]  = NULL;
