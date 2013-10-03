@@ -5,7 +5,7 @@
  *        <i>solution_direct.cpp</i>, <i>solution_adjoint.cpp</i>, and
  *        <i>solution_linearized.cpp</i> files.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.7
+ * \version 2.0.8
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -57,7 +57,7 @@ using namespace std;
  * \brief Main class for defining the PDE solution, it requires
  * a child class for each particular solver (Euler, Navier-Stokes, Plasma, etc.)
  * \author F. Palacios.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CSolver {
 protected:
@@ -103,8 +103,9 @@ protected:
 
 public:
   
-    CSysVector LinSysSol;		/*!< \brief vector to store iterative solution of implicit linear system. */
-    CSysVector LinSysRes;		/*!< \brief vector to store iterative residual of implicit linear system. */
+  CSysVector LinSysSol;		/*!< \brief vector to store iterative solution of implicit linear system. */
+  CSysVector LinSysRes;		/*!< \brief vector to store iterative residual of implicit linear system. */
+  CSysVector LinSysAux;		/*!< \brief vector to store iterative residual of implicit linear system. */
 	CSysMatrix Jacobian; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
   
 	CSysMatrix StiffMatrix; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations, and grid movement. */
@@ -473,7 +474,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_Displacement(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+	virtual void BC_Normal_Displacement(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                                  unsigned short val_marker);
     
 	/*!
@@ -484,7 +485,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_FlowLoad(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+	virtual void BC_Flow_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                              unsigned short val_marker);
     
 	/*!
@@ -495,7 +496,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+	virtual void BC_Normal_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                          unsigned short val_marker);
     
 	/*!
@@ -663,7 +664,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_Dielectric(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+	virtual void BC_Dipoisson(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                CConfig *config, unsigned short val_marker);
     
 	/*!
@@ -1743,7 +1744,7 @@ public:
  * \class CBaselineSolver
  * \brief Main class for defining a baseline solution from a restart file (for output).
  * \author F. Palacios, T. Economon.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CBaselineSolver : public CSolver {
 public:
@@ -1787,7 +1788,7 @@ public:
  * \brief Main class for defining the Euler's flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CEulerSolver : public CSolver {
 protected:
@@ -2709,7 +2710,7 @@ public:
  * \brief Main class for defining the Navier-Stokes flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CNSSolver : public CEulerSolver {
 private:
@@ -2915,7 +2916,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CTurbSolver : public CSolver {
 protected:
@@ -3033,7 +3034,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.7
+ * \version 2.0.8
  */
 
 class CTurbSASolver: public CTurbSolver {
@@ -3252,7 +3253,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.7
+ * \version 2.0.8
  */
 
 class CTransLMSolver: public CTurbSolver {
@@ -3429,7 +3430,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Campos, F. Palacios, T. Economon
- * \version 2.0.7
+ * \version 2.0.8
  */
 
 class CTurbSSTSolver: public CTurbSolver {
@@ -3602,7 +3603,7 @@ public:
  * \brief Main class for defining the Euler's adjoint flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CAdjEulerSolver : public CSolver {
 protected:
@@ -4046,7 +4047,7 @@ public:
  * \brief Main class for defining the Navier-Stokes' adjoint flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CAdjNSSolver : public CAdjEulerSolver {
 public:
@@ -4139,7 +4140,7 @@ public:
  * \brief Main class for defining the adjoint turbulence model solver.
  * \ingroup Turbulence_Model
  * \author F. Palacios, A. Bueno.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CAdjTurbSolver : public CSolver {
 private:
@@ -4282,7 +4283,7 @@ public:
  * \brief Main class for defining the linearized Euler solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CLinEulerSolver : public CSolver {
 private:
@@ -4402,13 +4403,13 @@ public:
 	double GetTotal_CDeltaLift(void);
 };
 
-/*! \class CElectricSolver
- *  \brief Main class for defining the electric potential solver.
+/*! \class CPoissonSolver
+ *  \brief Main class for defining the poisson potential solver.
  *  \author F. Palacios.
- *  \version 2.0.7
+ *  \version 2.0.8
  *  \date May 3, 2010.
  */
-class CElectricSolver : public CSolver {
+class CPoissonSolver : public CSolver {
 private:
 	double Total_CCharge;			/*!< \brief Total charge coefficient for all the domain. */
 	double *Source_Vector;		/*!< \brief Auxiliary vector for storing element source vector. */
@@ -4425,14 +4426,14 @@ public:
 	/*!
 	 * \brief Constructor of the class.
 	 */
-	CElectricSolver(void);
+	CPoissonSolver(void);
     
 	/*!
 	 * \overload
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CElectricSolver(CGeometry *geometry, CConfig *config);
+	CPoissonSolver(CGeometry *geometry, CConfig *config);
     
 	/*!
 	 * \brief A virtual member.
@@ -4448,7 +4449,7 @@ public:
 	/*!
 	 * \brief Destructor of the class.
 	 */
-	~CElectricSolver(void);
+	~CPoissonSolver(void);
     
 	/*!
 	 * \brief Integrate the Poisson equation using a Galerkin method.
@@ -4598,7 +4599,7 @@ public:
 /*! \class CWaveSolver
  *  \brief Main class for defining the wave solver.
  *  \author F. Palacios.
- *  \version 2.0.7
+ *  \version 2.0.8
  *  \date May 3, 2010.
  */
 class CWaveSolver : public CSolver {
@@ -4758,17 +4759,7 @@ public:
 	 */
 	void SetSpace_Matrix(CGeometry *geometry,
                          CConfig   *config);
-    
-	/*!
-	 * \brief Build stiffness matrix & Jacobian in time.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iMesh - Index of the mesh in multigrid computations.
-	 */
-	void SetTime_Matrix(CGeometry *geometry,
-                        CConfig   *config);
+
 	/*!
 	 * \brief Provide the total wave strength.
 	 * \return Value of the wave strength.
@@ -4780,7 +4771,7 @@ public:
 /*! \class CHeatSolver
  *  \brief Main class for defining the heat solver.
  *  \author F. Palacios.
- *  \version 2.0.7
+ *  \version 2.0.8
  *  \date May 3, 2010.
  */
 class CHeatSolver : public CSolver {
@@ -4789,10 +4780,10 @@ private:
 	double AllBound_CHeat;	/*!< \brief Total Heat strength for all the boundaries. */
 	double Total_CHeat; /*!< \brief Total Heat strength for all the boundaries. */
     
-    CSysMatrix StiffMatrixSpace; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
+  CSysMatrix StiffMatrixSpace; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
 	CSysMatrix StiffMatrixTime;	/*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
     
-    double **StiffMatrix_Elem,			/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
+  double **StiffMatrix_Elem,			/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
 	**StiffMatrix_Node;							/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
     
 public:
@@ -4824,29 +4815,28 @@ public:
 	 */
 	void Galerkin_Method(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                          unsigned short iMesh);
-    
-	/*!
-	 * \brief Impose via the residual the Euler wall boundary condition.
+  
+  /*!
+	 * \brief Impose via the residual or brute force the Navier-Stokes adjoint boundary condition (heat flux).
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                       unsigned short val_marker);
-    
-	/*!
-	 * \brief Impose a Dirichlet boundary condition.
+	void BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+                        unsigned short val_marker);
+  
+  /*!
+	 * \brief Impose via the residual or brute force the Navier-Stokes adjoint boundary condition (heat flux).
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                      unsigned short val_marker);
-    
+	void BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+  
 	/*!
 	 * \brief Set residuals to zero.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -4869,17 +4859,6 @@ public:
                          CConfig *config, unsigned short iMesh);
     
 	/*!
-	 * \brief Source term computation.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iMesh - Index of the mesh in multigrid computations.
-	 */
-	void Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                         CConfig *config, unsigned short iMesh);
-    
-	/*!
 	 * \brief Update the solution using an implicit solver.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
@@ -4898,17 +4877,7 @@ public:
 	 */
 	void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                               unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
-    
-	/*!
-	 * \brief Build stiffness matrix & Jacobian in time.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iMesh - Index of the mesh in multigrid computations.
-	 */
-	void SetTime_Matrix(CGeometry *geometry,
-                        CConfig   *config);
+
 	/*!
 	 * \brief Provide the total heat strength.
 	 * \return Value of the heat strength.
@@ -4920,7 +4889,7 @@ public:
 /*! \class CFEASolver
  *  \brief Main class for defining the FEA solver.
  *  \author F. Palacios.
- *  \version 2.0.7
+ *  \version 2.0.8
  *  \date May 3, 2010.
  */
 class CFEASolver : public CSolver {
@@ -4971,7 +4940,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Displacement(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+	void BC_Normal_Displacement(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                          unsigned short val_marker);
     
 	/*!
@@ -4982,7 +4951,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_FlowLoad(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+	void BC_Flow_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                      unsigned short val_marker);
     
 	/*!
@@ -4993,7 +4962,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+	void BC_Normal_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                  unsigned short val_marker);
     
 	/*!
@@ -5024,17 +4993,6 @@ public:
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
 	void Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
-                         CConfig *config, unsigned short iMesh);
-    
-	/*!
-	 * \brief Source term computation.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iMesh - Index of the mesh in multigrid computations.
-	 */
-	void Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                          CConfig *config, unsigned short iMesh);
     
 	/*!
@@ -5093,7 +5051,7 @@ public:
  * \brief Main class for defining the level set solver.
  * \ingroup LevelSet_Model
  * \author F. Palacios.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CLevelSetSolver : public CSolver {
 protected:
@@ -5300,7 +5258,7 @@ public:
  * \brief Main class for defining the level set solver.
  * \ingroup LevelSet_Model
  * \author F. Palacios.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CAdjLevelSetSolver : public CSolver {
 protected:
@@ -5479,7 +5437,7 @@ public:
  * \brief Main class for defining the template model solver.
  * \ingroup Template_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CTemplateSolver : public CSolver {
 private:
@@ -5688,7 +5646,7 @@ public:
  * \class CPlasmaSolver
  * \brief Main class for defining the plasma solver.
  * \author ADL Stanford.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CPlasmaSolver : public CSolver {
 protected:
@@ -6287,7 +6245,7 @@ public:
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
      
 	 */
-	void BC_Dielectric(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+	void BC_Dipoisson(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                        CConfig *config, unsigned short val_marker);
     
 	/*!
@@ -6428,7 +6386,7 @@ public:
  * \brief Main class for defining the Euler's adjoint flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CAdjPlasmaSolver : public CSolver {
 protected:

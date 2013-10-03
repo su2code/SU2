@@ -2,7 +2,7 @@
  * \file variable_direct_tne2.cpp
  * \brief Definition of the solution fields.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.7
+ * \version 2.0.8
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -22,6 +22,7 @@
  */
 
 #include "../include/variable_structure.hpp"
+#include <math.h>
 
 CTNE2EulerVariable::CTNE2EulerVariable(void) : CVariable() {  
 
@@ -638,7 +639,7 @@ void CTNE2EulerVariable::SetdPdrhos(CConfig *config) {
   
   unsigned short iDim, iSpecies, iEl, nHeavy, nEl, *nElStates;
   double *Ms, *Tref, *hf, *xi, *thetav, **thetae, **g;
-  double Ru, RuBAR, CvtrBAR, rhoCvtr, rhoCvve, Cvtrs, Cvves, rho_el, sqvel, conc;
+  double Ru, RuBAR, CvtrBAR, rhoCvtr, rhoCvve, Cvtrs, rho_el, sqvel, conc;
   double rho, rhos, rhoEve, T, Tve, evibs, eels, ef;
   double num, denom;
   
@@ -721,7 +722,7 @@ void CTNE2EulerVariable::SetdPdrhos(CConfig *config) {
 
 
 bool CTNE2EulerVariable::SetPrimVar_Compressible(CConfig *config) {
-	unsigned short iDim, iVar, iSpecies;
+	unsigned short iVar, iSpecies;
   bool check_dens, check_press, check_sos, check_temp;
   
   /*--- Initialize booleans that check for physical solutions ---*/
@@ -747,12 +748,6 @@ bool CTNE2EulerVariable::SetPrimVar_Compressible(CConfig *config) {
  	check_press = SetPressure(config);        // Requires T & Tve computation.
 	check_sos   = SetSoundSpeed(config);      // Requires density, pressure, rhoCvtr, & rhoCvve.
   SetdPdrhos(config);                       // Requires density, pressure, rhoCvtr, & rhoCvve.  
-  
-  for (iVar = 0; iVar < nPrimVar; iVar++) {
-    if (isnan(Primitive[iVar]))
-      cout << "iVar NaN: " << iVar << endl;
-  }
-  
   
   /*--- Check that the solution has a physical meaning ---*/
   if (check_dens || check_press || check_sos || check_temp) {

@@ -1,7 +1,7 @@
 ## \file adjoint.py
 #  \brief python package for running adjoint problems 
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.7
+#  \version 2.0.8
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory

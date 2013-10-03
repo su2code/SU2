@@ -2,7 +2,7 @@
  * \file integration_structure.cpp
  * \brief This subroutine includes the space and time integration structure.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.7
+ * \version 2.0.8
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -115,17 +115,17 @@ void CIntegration::Space_Integration(CGeometry *geometry, CSolver **solver_conta
 			case ELECTRODE_BOUNDARY:
 				solver_container[MainSolver]->BC_Electrode(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
 				break;
-			case DIELECTRIC_BOUNDARY:
-				solver_container[MainSolver]->BC_Dielectric(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+			case DIpoisson_BOUNDARY:
+				solver_container[MainSolver]->BC_Dipoisson(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
 				break;
 			case DISPLACEMENT_BOUNDARY:
-				solver_container[MainSolver]->BC_Displacement(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+				solver_container[MainSolver]->BC_Normal_Displacement(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
 				break;
 			case FLOWLOAD_BOUNDARY:
-				solver_container[MainSolver]->BC_FlowLoad(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+				solver_container[MainSolver]->BC_Flow_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
 				break;
 			case LOAD_BOUNDARY:
-				solver_container[MainSolver]->BC_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+				solver_container[MainSolver]->BC_Normal_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
 				break;
 			case FWH_SURFACE:
 				solver_container[MainSolver]->BC_FWH(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);

@@ -2,7 +2,7 @@
  * \file variable_structure.inl
  * \brief In-Line subroutines of the <i>variable_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.7
+ * \version 2.0.8
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -26,6 +26,14 @@
 inline void CVariable::SetVelocityInc2(void) { }
 
 inline void CVariable::SetPressureValue(double val_pressure) { }
+
+inline void CVariable::SetStress(unsigned short iVar, unsigned short jVar, double val_stress) { }
+  
+inline double **CVariable::GetStress(void) { return 0; }
+  
+inline void CVariable::SetVonMises_Stress(double val_stress) { }
+  
+inline double CVariable::GetVonMises_Stress(void) { return 0; }
 
 inline void CVariable::SetPressureInc(double val_pressure) { }
 
@@ -237,6 +245,8 @@ inline double CVariable::GetTemperature_vib(unsigned short val_iSpecies) { retur
 
 inline double CVariable::GetVelocity(unsigned short val_dim, unsigned short val_incomp) { return 0; }
 
+inline double CVariable::GetVelocity(unsigned short val_dim) { return 0; }
+
 inline double CVariable::GetVelocity2(void) { return 0; }
 
 inline double CVariable::GetVelocity2(unsigned short val_species) { return 0;}
@@ -431,9 +441,9 @@ inline double** CVariable::GetPlasmaRhoUGradient() { return 0;}
 
 inline double CVariable::GetPlasmaTimeStep() { return 0;}
 
-inline void CVariable::SetElectricField(double* val_ElectricField) { }
+inline void CVariable::SetpoissonField(double* val_poissonField) { }
 
-inline double* CVariable::GetElectricField() { return 0;}
+inline double* CVariable::GetpoissonField() { return 0;}
 
 inline void CVariable::SetTimeSpectral_Source(unsigned short val_var, double val_source) { }
 
@@ -725,9 +735,9 @@ inline void CPlasmaVariable::SetSensor(double val_sensor, unsigned short iSpecie
 
 inline double CPlasmaVariable::GetSensor(unsigned short iSpecies) {return Sensor_MultiSpecies[iSpecies]; }
 
-inline void CPlasmaVariable::SetElectricField(double* val_ElectricField) {Elec_Field = val_ElectricField; }
+inline void CPlasmaVariable::SetpoissonField(double* val_poissonField) {Elec_Field = val_poissonField; }
 
-inline double* CPlasmaVariable::GetElectricField() { return Elec_Field;}
+inline double* CPlasmaVariable::GetpoissonField() { return Elec_Field;}
 
 inline double* CPlasmaVariable::GetMagneticField() { return B_Field; }
 
@@ -752,6 +762,14 @@ inline void CLevelSetVariable::SetPrimVar(unsigned short val_var, double val_pri
 inline double CLevelSetVariable::GetPrimVar(unsigned short val_var) { return Primitive[val_var]; }
 
 inline void CFEAVariable::SetPressureValue(double val_pressure) { Pressure = val_pressure; }
+
+inline void CFEAVariable::SetStress(unsigned short iVar, unsigned short jVar, double val_stress) { Stress[iVar][jVar] = val_stress; }
+  
+inline double **CFEAVariable::GetStress(void) { return Stress; }
+  
+inline void CFEAVariable::SetVonMises_Stress(double val_stress) { VonMises_Stress = val_stress; }
+  
+inline double CFEAVariable::GetVonMises_Stress(void) { return VonMises_Stress; }
 
 inline void CWaveVariable::SetThickness_Noise(double val_thickness_noise) { Thickness_Noise = val_thickness_noise; }
 
@@ -824,7 +842,7 @@ inline double CTNE2EulerVariable::GetRhoCv_ve(void) { return Primitive[RHOCVVE_I
 
 inline double* CTNE2EulerVariable::GetdPdrhos(void) { return dPdrhos; }
 
-inline double CTNE2EulerVariable::GetVelocity(unsigned short val_dim, bool val_incomp) {
+inline double CTNE2EulerVariable::GetVelocity(unsigned short val_dim) {
 double velocity;
    //velocity = Solution[nSpecies+val_dim]/Primitive[RHO_INDEX]; 
    velocity = Primitive[VEL_INDEX+val_dim];

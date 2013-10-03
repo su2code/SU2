@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.7
+ * \version 2.0.8
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -1547,29 +1547,32 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 	unsigned short nVar_First = 0, nVar_Second = 0, nVar_Third = 0, iVar_Eddy = 0, iVar_Sharp = 0;
 	unsigned short iVar_GridVel = 0, iVar_PressMach = 0, iVar_Density = 0, iVar_TempLam = 0,
     iVar_Tempv = 0,iVar_MagF = 0, iVar_EF =0, iVar_Temp = 0, iVar_Lam =0, iVar_Mach = 0, iVar_Press = 0,
-    iVar_ViscCoeffs = 0, iVar_Sens = 0, iVar_Extra = 0;
+    iVar_ViscCoeffs = 0, iVar_Sens = 0, iVar_FEA = 0, iVar_Extra = 0;
     
 	unsigned long iPoint = 0, jPoint = 0, iVertex = 0, iMarker = 0;
     
     double *Aux_Press, *Aux_Frict, *Aux_Heat, *Aux_yPlus, *Aux_Sens;
     
 	bool grid_movement = config->GetGrid_Movement();
-    bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
 	bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 	bool freesurface = (config->GetKind_Regime() == FREESURFACE);
-    bool transition = (config->GetKind_Trans_Model()==LM);
-    
+  bool transition = (config->GetKind_Trans_Model() == LM);
+  bool flow = (config->GetKind_Solver() == EULER) || (config->GetKind_Solver() == NAVIER_STOKES) ||
+  (config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == ADJ_EULER) ||
+  (config->GetKind_Solver() == ADJ_NAVIER_STOKES) || (config->GetKind_Solver() == ADJ_RANS);
+  
 	if (Kind_Solver == AEROACOUSTIC_EULER) {
 		if (val_iZone == ZONE_0) Kind_Solver = EULER;
 		if (val_iZone == ZONE_1) Kind_Solver = WAVE_EQUATION;
 	}
 	if (Kind_Solver == PLASMA_EULER) {
 		if (val_iZone == ZONE_0) Kind_Solver = PLASMA_EULER;
-		if (val_iZone == ZONE_1) Kind_Solver = ELECTRIC_POTENTIAL;
+		if (val_iZone == ZONE_1) Kind_Solver = POISSON_EQUATION;
 	}
 	if (Kind_Solver == PLASMA_NAVIER_STOKES) {
 		if (val_iZone == ZONE_0) Kind_Solver = PLASMA_NAVIER_STOKES;
-		if (val_iZone == ZONE_1) Kind_Solver = ELECTRIC_POTENTIAL;
+		if (val_iZone == ZONE_1) Kind_Solver = POISSON_EQUATION;
 	}
     
 	/*--- Prepare send buffers for the conservative variables. Need to
@@ -1590,11 +1593,14 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         case TNE2_EULER :
             FirstIndex = TNE2_SOL; SecondIndex = NONE; ThirdIndex = NONE;
             break;
-        case ELECTRIC_POTENTIAL:
-            FirstIndex = ELEC_SOL; SecondIndex = NONE; ThirdIndex = NONE;
+        case POISSON_EQUATION:
+            FirstIndex = POISSON_SOL; SecondIndex = NONE; ThirdIndex = NONE;
             break;
         case WAVE_EQUATION:
             FirstIndex = WAVE_SOL; SecondIndex = NONE; ThirdIndex = NONE;
+            break;
+        case HEAT_EQUATION:
+            FirstIndex = HEAT_SOL; SecondIndex = NONE; ThirdIndex = NONE;
             break;
         case LINEAR_ELASTICITY:
             FirstIndex = FEA_SOL; SecondIndex = NONE; ThirdIndex = NONE;
@@ -1681,7 +1687,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         nVar_Total++;
     }
     
-	if (Kind_Solver == ELECTRIC_POTENTIAL) {
+	if (Kind_Solver == POISSON_EQUATION) {
 		iVar_EF = geometry->GetnDim();
 		nVar_Total += geometry->GetnDim();
 	}
@@ -1712,7 +1718,13 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         iVar_Sens   = nVar_Total;
         nVar_Total += 2;
     }
-    
+  
+    if (Kind_Solver == LINEAR_ELASTICITY) {
+      /*--- Surface sensitivity coefficient, and solution sensor ---*/
+      iVar_FEA   = nVar_Total;
+      nVar_Total += 1;
+    }
+  
     if (config->GetExtraOutput()) {
         iVar_Extra  = nVar_Total;
         nVar_Extra  = solver[TURB_SOL]->GetnOutputVariables();
@@ -1733,21 +1745,23 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     
 	/*--- In case there is grid movement ---*/
 	double *Grid_Vel;
-    
+  
+  if (flow) {
     /*--- First, loop through the mesh in order to find and store the
      value of the coefficient of pressure at any surface nodes. They
      will be placed in an auxiliary vector and then communicated like
      all other volumetric variables. ---*/
     
-    Aux_Press = new double [geometry->GetnPointDomain()];
+    Aux_Press = new double [geometry->GetnPoint()];
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Aux_Press[iPoint] = 0.0;
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-        if (config->GetMarker_All_Plotting(iMarker) == YES)
-            for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-                iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-                Aux_Press[iPoint] = solver[FLOW_SOL]->GetCPressure(iMarker,iVertex);
-            }
-    
+      if (config->GetMarker_All_Plotting(iMarker) == YES)
+        for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          Aux_Press[iPoint] = solver[FLOW_SOL]->GetCPressure(iMarker,iVertex);
+        }
+  }
+  
 	if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
         
         Aux_Frict = new double [geometry->GetnPointDomain()];
@@ -1916,10 +1930,10 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
                     Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetEddyViscosity(); jVar++;
                     Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
                     break;
-                    /*--- Write electric field. ---*/
-                case ELECTRIC_POTENTIAL:
+                    /*--- Write poisson field. ---*/
+                case POISSON_EQUATION:
                     for (unsigned short iDim = 0; iDim < geometry->GetnDim(); iDim++) {
-                        Data[jVar][jPoint] = -1.0*solver[ELEC_SOL]->node[iPoint]->GetGradient(0,iDim);
+                        Data[jVar][jPoint] = -1.0*solver[POISSON_SOL]->node[iPoint]->GetGradient(0,iDim);
                         jVar++;
                     }
                     break;
@@ -2008,7 +2022,12 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
                     if (config->GetKind_ConvNumScheme() == SPACE_UPWIND)
                     { Data[jVar][jPoint] = solver[ADJFLOW_SOL]->node[iPoint]->GetLimiter(0); jVar++; }
                     break;
-                    
+                
+              case LINEAR_ELASTICITY:
+                
+                Data[jVar][jPoint] = solver[FEA_SOL]->node[iPoint]->GetVonMises_Stress(); jVar++;
+                break;
+                
             }
         }
         
@@ -3049,12 +3068,52 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 			}
 		}
 	}
+  
+  /*--- Communicate the Linear elasticity ---*/
+	if ( Kind_Solver == LINEAR_ELASTICITY ) {
     
-    
-    if (config->GetExtraOutput()) {
+		/*--- Loop over this partition to collect the current variable ---*/
+		jPoint = 0;
+		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      
+      /*--- Check for halos & write only if requested ---*/
+      
+      if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
         
+        /*--- Load buffers with the temperature and laminar viscosity variables. ---*/
+        Buffer_Send_Var[jPoint] = solver[FEA_SOL]->node[iPoint]->GetVonMises_Stress();
+        jPoint++;
+      }
+		}
+    
+		/*--- Gather the data on the master node. ---*/
+		MPI::COMM_WORLD.Barrier();
+		MPI::COMM_WORLD.Gather(Buffer_Send_Var, nBuffer_Scalar, MPI::DOUBLE,
+                           Buffer_Recv_Var, nBuffer_Scalar, MPI::DOUBLE,
+                           MASTER_NODE);
+
+		/*--- The master node unpacks and sorts this variable by global index ---*/
+		if (rank == MASTER_NODE) {
+			jPoint = 0; iVar = iVar_FEA;
+			for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+				for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
+          
+					/*--- Get global index, then loop over each variable and store ---*/
+					iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
+					Data[iVar][iGlobal_Index]   = Buffer_Recv_Var[jPoint];
+					jPoint++;
+				}
+				/*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+				jPoint = (iProcessor+1)*nBuffer_Scalar;
+			}
+		}
+	}  
+  
+  
+    if (config->GetExtraOutput()) {
+      
         for (jVar = 0; jVar < nVar_Extra; jVar++) {
-            
+          
             /*--- Loop over this partition to collect the current variable ---*/
             
             jPoint = 0;
@@ -3114,7 +3173,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 #endif
     
     /*--- Release memory needed for surface coefficients ---*/
-    
+  if (flow)
     delete [] Aux_Press;
 	if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
         delete [] Aux_Frict; delete [] Aux_Heat; delete [] Aux_yPlus;
@@ -3395,15 +3454,19 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short va
         }
     }
     
-    if (Kind_Solver == ELECTRIC_POTENTIAL) {
+    if (Kind_Solver == POISSON_EQUATION) {
         for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
-            restart_file << "\t\"ElectricField_" << iDim+1 << "\"";
+            restart_file << "\t\"poissonField_" << iDim+1 << "\"";
     }
     
     if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
         restart_file << "\t\"Surface_Sensitivity\"\t\"Solution_Sensor\"";
     }
-    
+  
+    if (Kind_Solver == LINEAR_ELASTICITY) {
+      restart_file << "\t\"Von_Mises_Stress\"";
+    }
+  
     if (config->GetExtraOutput()) {
         for (iVar = 0; iVar < nVar_Extra; iVar++) {
             restart_file << "\t\"ExtraOutput_" << iVar+1<<"\"";
@@ -3558,8 +3621,8 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
 	char plasma_coeff[]= ",\"CLift\",\"CDrag\",\"CSideForce\",\"CMx\",\"CMy\",\"CMz\",\"CFx\",\"CFy\",\"CFz\",\"CL/CD\",\"Q\",\"PressDrag\",\"ViscDrag\",\"MagnetDrag\"";
 	char wave_coeff[]= ",\"CWave\"";
 	char fea_coeff[]= ",\"CFEA\"";
-    char adj_coeff[]= ",\"Sens_Geo\",\"Sens_Mach\",\"Sens_AoA\",\"Sens_Press\",\"Sens_Temp\",\"Sens_AoS\"";
-    char adj_plasma_coeff[]= ",\"Sens_Geo\",\"Sens_Mach\",\"Sens_AoA\",\"Sens_Press\",\"Sens_Temp\",\"Sens_AoS\"";
+  char adj_coeff[]= ",\"Sens_Geo\",\"Sens_Mach\",\"Sens_AoA\",\"Sens_Press\",\"Sens_Temp\",\"Sens_AoS\"";
+  char adj_plasma_coeff[]= ",\"Sens_Geo\",\"Sens_Mach\",\"Sens_AoA\",\"Sens_Press\",\"Sens_Temp\",\"Sens_AoS\"";
     
     /*--- Header for the residuals ---*/
     
@@ -3574,7 +3637,8 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
 	char adj_levelset_resid[]= ",\"Res_AdjLevelSet\"";
 	char wave_resid[]= ",\"Res_Wave[0]\",\"Res_Wave[1]\"";
 	char fea_resid[]= ",\"Res_FEA\"";
-    
+  char heat_resid[]= ",\"Res_Heat\"";
+
     /*--- End of the header ---*/
     
 	char end[]= ",\"Linear_Solver_Iterations\",\"Time(min)\"\n";
@@ -3640,7 +3704,12 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
             ConvHist_file[0] << begin << wave_coeff;
             ConvHist_file[0] << wave_resid << end;
             break;
-            
+
+        case HEAT_EQUATION:
+            ConvHist_file[0] << begin << heat_coeff;
+            ConvHist_file[0] << heat_resid << end;
+            break;
+      
         case LINEAR_ELASTICITY:
             ConvHist_file[0] << begin << fea_coeff;
             ConvHist_file[0] << fea_resid << end;
@@ -3686,7 +3755,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
          may have to adjust them to be larger if adding more entries. ---*/
         char begin[1000], direct_coeff[1000], adjoint_coeff[1000], flow_resid[1000], adj_flow_resid[1000],
         turb_resid[1000], trans_resid[1000], adj_turb_resid[1000], plasma_resid[1000], adj_plasma_resid[1000], resid_aux[1000],
-        levelset_resid[1000], adj_levelset_resid[1000], wave_coeff[1000], fea_coeff[1000], wave_resid[1000],
+        levelset_resid[1000], adj_levelset_resid[1000], wave_coeff[1000], heat_coeff[1000], fea_coeff[1000], wave_resid[1000], heat_resid[1000],
         fea_resid[1000], end[1000];
         double dummy = 0.0;
         unsigned short iVar, iMarker;
@@ -3718,16 +3787,20 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
         bool aeroacoustic = ((config[val_iZone]->GetKind_Solver() == AEROACOUSTIC_EULER) || (config[val_iZone]->GetKind_Solver() == AEROACOUSTIC_NAVIER_STOKES) ||
                              (config[val_iZone]->GetKind_Solver() == AEROACOUSTIC_RANS));
         bool wave = (config[val_iZone]->GetKind_Solver() == WAVE_EQUATION);
+        bool heat = (config[val_iZone]->GetKind_Solver() == HEAT_EQUATION);
         bool fea = (config[val_iZone]->GetKind_Solver() == LINEAR_ELASTICITY);
         bool plasma = ((config[val_iZone]->GetKind_Solver() == PLASMA_EULER) || (config[val_iZone]->GetKind_Solver() == PLASMA_NAVIER_STOKES) ||
                        (config[val_iZone]->GetKind_Solver() == ADJ_PLASMA_EULER) || (config[val_iZone]->GetKind_Solver() == ADJ_PLASMA_NAVIER_STOKES));
         bool TNE2 = ((config[val_iZone]->GetKind_Solver() == TNE2_EULER) || (config[val_iZone]->GetKind_Solver() == TNE2_NAVIER_STOKES) ||
                      (config[val_iZone]->GetKind_Solver() == ADJ_TNE2_EULER) || (config[val_iZone]->GetKind_Solver() == ADJ_TNE2_NAVIER_STOKES));
-        
+        bool flow = (config[val_iZone]->GetKind_Regime() == EULER) || (config[val_iZone]->GetKind_Regime() == NAVIER_STOKES) ||
+                    (config[val_iZone]->GetKind_Regime() == RANS) || (config[val_iZone]->GetKind_Regime() == ADJ_EULER) ||
+                    (config[val_iZone]->GetKind_Regime() == ADJ_NAVIER_STOKES) || (config[val_iZone]->GetKind_Regime() == ADJ_RANS);
+
         /*--- Initialize variables to store information from all domains (direct solution) ---*/
         double Total_CLift = 0.0, Total_CDrag = 0.0, Total_CSideForce = 0.0, Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0,
         Total_CEquivArea = 0.0, Total_CNearFieldOF = 0.0, Total_CFx = 0.0, Total_CFy = 0.0, Total_CFz = 0.0, Total_CMerit = 0.0,
-        Total_CT = 0.0, Total_CQ = 0.0, Total_CFreeSurface = 0.0, Total_CWave = 0.0, Total_CFEA = 0.0, PressureDrag = 0.0, ViscDrag = 0.0, MagDrag = 0.0, Total_Q = 0.0, Total_MaxQ = 0.0, aeroelastic_plunge = 0.0, aeroelastic_pitch = 0.0;
+        Total_CT = 0.0, Total_CQ = 0.0, Total_CFreeSurface = 0.0, Total_CWave = 0.0, Total_CHeat = 0.0, Total_CFEA = 0.0, PressureDrag = 0.0, ViscDrag = 0.0, MagDrag = 0.0, Total_Q = 0.0, Total_MaxQ = 0.0, aeroelastic_plunge = 0.0, aeroelastic_pitch = 0.0;
         
         /*--- Initialize variables to store information from all domains (adjoint solution) ---*/
         double Total_Sens_Geo = 0.0, Total_Sens_Mach = 0.0, Total_Sens_AoA = 0.0;
@@ -3736,10 +3809,10 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
         /*--- Residual arrays ---*/
         double *residual_flow = NULL, *residual_turbulent = NULL, *residual_transition = NULL, *residual_TNE2 = NULL, *residual_levelset = NULL, *residual_plasma = NULL;
         double *residual_adjflow = NULL, *residual_adjturbulent = NULL, *residual_adjTNE2 = NULL, *residual_adjlevelset = NULL, *residual_adjplasma = NULL;
-        double *residual_wave = NULL; double *residual_fea = NULL;
+        double *residual_wave = NULL; double *residual_fea = NULL; double *residual_heat = NULL;
         
         /*--- Initialize number of variables ---*/
-        unsigned short nVar_Flow = 0, nVar_LevelSet = 0, nVar_Turb = 0, nVar_Trans = 0, nVar_TNE2 = 0, nVar_Wave = 0, nVar_FEA = 0, nVar_Plasma = 0,
+        unsigned short nVar_Flow = 0, nVar_LevelSet = 0, nVar_Turb = 0, nVar_Trans = 0, nVar_TNE2 = 0, nVar_Wave = 0, nVar_Heat = 0, nVar_FEA = 0, nVar_Plasma = 0,
         nVar_AdjFlow = 0, nVar_AdjTNE2 = 0, nVar_AdjPlasma = 0, nVar_AdjLevelSet = 0, nVar_AdjTurb = 0;
         
         /*--- Direct problem variables ---*/
@@ -3754,6 +3827,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
         if (TNE2) nVar_TNE2 = config[val_iZone]->GetnSpecies()+nDim+2;
         if (wave) nVar_Wave = 2;
         if (fea) nVar_FEA = nDim;
+        if (heat) nVar_Heat = 1;
         if (plasma) nVar_Plasma = config[val_iZone]->GetnMonatomics()*(nDim+2) + config[val_iZone]->GetnDiatomics()*(nDim+3);
         if (freesurface) nVar_LevelSet = 1;
         
@@ -3778,7 +3852,8 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
         residual_levelset = new double[nVar_LevelSet];
         residual_wave = new double[nVar_Wave];
         residual_fea = new double[nVar_FEA];
-        
+        residual_heat = new double[nVar_Heat];
+
         residual_adjflow = new double[nVar_AdjFlow];
         residual_adjturbulent = new double[nVar_AdjTurb];
         residual_adjTNE2 = new double[nVar_AdjTNE2];
@@ -4006,9 +4081,23 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                 }
                 
                 break;
-                
+            
+            case HEAT_EQUATION:
+            
+              /*--- Heat coefficients  ---*/
+            
+              Total_CHeat = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetTotal_CHeat();
+            
+              /*--- Wave Residuals ---*/
+            
+              for (iVar = 0; iVar < nVar_Heat; iVar++) {
+                residual_heat[iVar] = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetRes_RMS(iVar);
+              }
+            
+              break;
+            
             case LINEAR_ELASTICITY:
-                
+            
                 /*--- FEA coefficients ---*/
                 
                 Total_CFEA = solver_container[val_iZone][FinestMesh][FEA_SOL]->GetTotal_CFEA();
@@ -4218,7 +4307,14 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                         sprintf (wave_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_wave[0]), log10 (residual_wave[1]), dummy, dummy, dummy );
                         
                         break;
-                        
+                    
+                    case HEAT_EQUATION:
+                    
+                      sprintf (direct_coeff, ", %12.10f", Total_CHeat);
+                      sprintf (heat_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_heat[0]), dummy, dummy, dummy, dummy );
+                    
+                      break;
+                    
                     case LINEAR_ELASTICITY:
                         
                         sprintf (direct_coeff, ", %12.10f", Total_CFEA);
@@ -4251,9 +4347,14 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                     }
                 }
                 else {
+                  if (flow) {
                     cout << endl << " Min DT: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<<
                     ". Max DT: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() <<
                     ". Dual Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
+                  }
+                  else {
+                    cout << endl << " Dual Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
+                  }
                 }
                 
                 switch (config[val_iZone]->GetKind_Solver()) {
@@ -4333,9 +4434,19 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                         break;
                         
                     case WAVE_EQUATION :
+                        if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
+                        else cout << endl << " IntIter" << "  ExtIter";
+                    
                         cout << "      Res[Wave]" << "   CWave(Total)"<<  endl;
                         break;
-                        
+                    
+                    case HEAT_EQUATION :
+                        if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
+                        else cout << endl << " IntIter" << "  ExtIter";
+                    
+                        cout << "      Res[Heat]" << "   CHeat(Total)"<<  endl;
+                        break;
+                    
                     case LINEAR_ELASTICITY :
                         if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
                         else cout << endl << " IntIter" << "  ExtIter";
@@ -4580,9 +4691,23 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                     cout.width(14); cout << Total_CWave;
                     cout << endl;
                     break;
-                    
+                
+                case HEAT_EQUATION:
+                
+                  if (!DualTime_Iteration) {
+                    ConvHist_file[0] << begin << heat_coeff << heat_resid << end;
+                    ConvHist_file[0].flush();
+                  }
+                
+                  cout.precision(6);
+                  cout.setf(ios::fixed,ios::floatfield);
+                  cout.width(14); cout << log10(residual_heat[0]);
+                  cout.width(14); cout << Total_CHeat;
+                  cout << endl;
+                  break;
+                
                 case LINEAR_ELASTICITY:
-                    
+                
                     if (!DualTime_Iteration) {
                         ConvHist_file[0] << begin << fea_coeff << fea_resid << end;
                         ConvHist_file[0].flush();
@@ -4593,6 +4718,8 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                     cout.width(15); cout << log10(residual_fea[0]);
                     cout.width(15); cout << log10(residual_fea[1]);
                     if (nDim == 3) { cout.width(15); cout << log10(residual_fea[2]); }
+                    cout.precision(4);
+                    cout.setf(ios::scientific,ios::floatfield);
                     cout.width(14); cout << Total_CFEA;
                     cout << endl;
                     break;
@@ -4725,7 +4852,8 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
             delete [] residual_transition;
             delete [] residual_wave;
             delete [] residual_fea;
-            
+            delete [] residual_heat;
+
             delete [] residual_adjflow;
             delete [] residual_adjTNE2;
             delete [] residual_adjlevelset;

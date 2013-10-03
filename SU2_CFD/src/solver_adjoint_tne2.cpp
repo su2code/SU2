@@ -2,7 +2,7 @@
  * \file solution_adjoint_mean.cpp
  * \brief Main subrotuines for solving adjoint problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.7
+ * \version 2.0.8
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -1208,7 +1208,7 @@ void CAdjTNE2EulerSolver::SetInitialCondition(CGeometry **geometry,
 
 	unsigned long iPoint, Point_Fine;
 	unsigned short iMesh, iChildren, iVar;
-	double LevelSet, Area_Children, Area_Parent, LevelSet_Fine;
+	double Area_Children, Area_Parent;
   double *Solution, *Solution_Fine;
   
 	bool restart = config->GetRestart();
@@ -1314,6 +1314,18 @@ void CAdjTNE2EulerSolver::Centered_Residual(CGeometry *geometry,
 	high_order_diss = ((config->GetKind_Centered_AdjTNE2() == JST)
                      && (iMesh == MESH_0));
   
+  /*--- Pass structure of the primitive variable vector to CNumerics ---*/
+  numerics->SetRhosIndex   ( solver_container[TNE2_SOL]->node[0]->GetRhosIndex()    );
+  numerics->SetRhoIndex    ( solver_container[TNE2_SOL]->node[0]->GetRhoIndex()     );
+  numerics->SetPIndex      ( solver_container[TNE2_SOL]->node[0]->GetPIndex()       );
+  numerics->SetTIndex      ( solver_container[TNE2_SOL]->node[0]->GetTIndex()       );
+  numerics->SetTveIndex    ( solver_container[TNE2_SOL]->node[0]->GetTveIndex()     );
+  numerics->SetVelIndex    ( solver_container[TNE2_SOL]->node[0]->GetVelIndex()     );
+  numerics->SetHIndex      ( solver_container[TNE2_SOL]->node[0]->GetHIndex()       );
+  numerics->SetAIndex      ( solver_container[TNE2_SOL]->node[0]->GetAIndex()       );
+  numerics->SetRhoCvtrIndex( solver_container[TNE2_SOL]->node[0]->GetRhoCvtrIndex() );
+  numerics->SetRhoCvveIndex( solver_container[TNE2_SOL]->node[0]->GetRhoCvveIndex() );
+  
 	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
 		/*--- Identify points on the edge, normal, and neighbors ---*/
@@ -1352,6 +1364,20 @@ void CAdjTNE2EulerSolver::Centered_Residual(CGeometry *geometry,
 		LinSysRes.SubtractBlock(jPoint, Res_Conv_j);
     LinSysRes.SubtractBlock(iPoint, Res_Visc_i);
     LinSysRes.SubtractBlock(jPoint, Res_Visc_j);
+    
+//    unsigned short iVar, jVar;
+//    for (iVar = 0; iVar < nVar; iVar++)
+//      cout << "Residual[" << iVar << "]: " << Res_Conv_i[iVar] << endl;
+//    
+//    cout << endl << endl << "Jacobian_ii: " << endl;
+//    for (iVar = 0; iVar < nVar; iVar++) {
+//      for (jVar = 0; jVar < nVar; jVar++) {
+//        cout << Jacobian_ii[iVar][jVar] << "\t";
+//      }
+//      cout << endl;
+//    }
+//    cin.get();
+    
     
 		/*--- Implicit contribution to the residual ---*/
 		if (implicit) {
@@ -1398,16 +1424,16 @@ void CAdjTNE2EulerSolver::Upwind_Residual(CGeometry *geometry,
     cout << "WARNING!!! Upwind_Residual: Limiter not in place!" << endl;
   
   /*--- Pass structure of the primitive variable vector to CNumerics ---*/
-  numerics->SetRhosIndex   ( node[0]->GetRhosIndex()    );
-  numerics->SetRhoIndex    ( node[0]->GetRhoIndex()     );
-  numerics->SetPIndex      ( node[0]->GetPIndex()       );
-  numerics->SetTIndex      ( node[0]->GetTIndex()       );
-  numerics->SetTveIndex    ( node[0]->GetTveIndex()     );
-  numerics->SetVelIndex    ( node[0]->GetVelIndex()     );
-  numerics->SetHIndex      ( node[0]->GetHIndex()       );
-  numerics->SetAIndex      ( node[0]->GetAIndex()       );
-  numerics->SetRhoCvtrIndex( node[0]->GetRhoCvtrIndex() );
-  numerics->SetRhoCvveIndex( node[0]->GetRhoCvveIndex() );
+  numerics->SetRhosIndex   ( solver_container[TNE2_SOL]->node[0]->GetRhosIndex()    );
+  numerics->SetRhoIndex    ( solver_container[TNE2_SOL]->node[0]->GetRhoIndex()     );
+  numerics->SetPIndex      ( solver_container[TNE2_SOL]->node[0]->GetPIndex()       );
+  numerics->SetTIndex      ( solver_container[TNE2_SOL]->node[0]->GetTIndex()       );
+  numerics->SetTveIndex    ( solver_container[TNE2_SOL]->node[0]->GetTveIndex()     );
+  numerics->SetVelIndex    ( solver_container[TNE2_SOL]->node[0]->GetVelIndex()     );
+  numerics->SetHIndex      ( solver_container[TNE2_SOL]->node[0]->GetHIndex()       );
+  numerics->SetAIndex      ( solver_container[TNE2_SOL]->node[0]->GetAIndex()       );
+  numerics->SetRhoCvtrIndex( solver_container[TNE2_SOL]->node[0]->GetRhoCvtrIndex() );
+  numerics->SetRhoCvveIndex( solver_container[TNE2_SOL]->node[0]->GetRhoCvveIndex() );
   
   /*--- Loop over edges and calculate convective fluxes ---*/
 	for(iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -1476,6 +1502,19 @@ void CAdjTNE2EulerSolver::Upwind_Residual(CGeometry *geometry,
     LinSysRes.SubtractBlock(iPoint, Residual_i);
     LinSysRes.SubtractBlock(jPoint, Residual_j);
     
+    unsigned short iVar, jVar;
+    for (iVar = 0; iVar < nVar; iVar++)
+      cout << "Residual[" << iVar << "]: " << Residual_i[iVar] << endl;
+    
+    cout << endl << endl << "Jacobian_ii: " << endl;
+    for (iVar = 0; iVar < nVar; iVar++) {
+      for (jVar = 0; jVar < nVar; jVar++) {
+        cout << Jacobian_ii[iVar][jVar] << "\t";
+      }
+      cout << endl;
+    }
+    cin.get();
+    
     /*--- Implicit contribution to the residual ---*/
     if (implicit) {
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
@@ -1500,16 +1539,16 @@ void CAdjTNE2EulerSolver::Source_Residual(CGeometry *geometry,
   implicit = (config->GetKind_TimeIntScheme_AdjTNE2() == EULER_IMPLICIT);
   
   /*--- Pass structure of the primitive variable vector to CNumerics ---*/
-  numerics->SetRhosIndex   ( node[0]->GetRhosIndex()    );
-  numerics->SetRhoIndex    ( node[0]->GetRhoIndex()     );
-  numerics->SetPIndex      ( node[0]->GetPIndex()       );
-  numerics->SetTIndex      ( node[0]->GetTIndex()       );
-  numerics->SetTveIndex    ( node[0]->GetTveIndex()     );
-  numerics->SetVelIndex    ( node[0]->GetVelIndex()     );
-  numerics->SetHIndex      ( node[0]->GetHIndex()       );
-  numerics->SetAIndex      ( node[0]->GetAIndex()       );
-  numerics->SetRhoCvtrIndex( node[0]->GetRhoCvtrIndex() );
-  numerics->SetRhoCvveIndex( node[0]->GetRhoCvveIndex() );  
+  numerics->SetRhosIndex   ( solver_container[TNE2_SOL]->node[0]->GetRhosIndex()    );
+  numerics->SetRhoIndex    ( solver_container[TNE2_SOL]->node[0]->GetRhoIndex()     );
+  numerics->SetPIndex      ( solver_container[TNE2_SOL]->node[0]->GetPIndex()       );
+  numerics->SetTIndex      ( solver_container[TNE2_SOL]->node[0]->GetTIndex()       );
+  numerics->SetTveIndex    ( solver_container[TNE2_SOL]->node[0]->GetTveIndex()     );
+  numerics->SetVelIndex    ( solver_container[TNE2_SOL]->node[0]->GetVelIndex()     );
+  numerics->SetHIndex      ( solver_container[TNE2_SOL]->node[0]->GetHIndex()       );
+  numerics->SetAIndex      ( solver_container[TNE2_SOL]->node[0]->GetAIndex()       );
+  numerics->SetRhoCvtrIndex( solver_container[TNE2_SOL]->node[0]->GetRhoCvtrIndex() );
+  numerics->SetRhoCvveIndex( solver_container[TNE2_SOL]->node[0]->GetRhoCvveIndex() );  
   
   /*--- Loop over points in the domain ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -1544,15 +1583,55 @@ void CAdjTNE2EulerSolver::Source_Residual(CGeometry *geometry,
     numerics->SetVolume(geometry->node[iPoint]->GetVolume());
     
     /*--- Compute chemistry source terms ---*/
-    numerics->ComputeChemistry(Residual, Jacobian_i, config);
+    numerics->ComputeChemistry(Residual_i, Jacobian_i, config);
+    
+    
+//    cout << endl << endl << "Jacobian Chem: " << endl;
+//    for (iVar = 0; iVar < nVar; iVar++) {
+//      for (jVar = 0; jVar < nVar; jVar++) {
+//        cout << Jacobian_i[iVar][jVar] << "\t";
+//      }
+//      cout << endl;
+//    }
+//    cin.get();
+    
     
     /*--- Compute vibrational relaxation source terms ---*/
-    numerics->ComputeVibRelaxation(Residual, Jacobian_i, config);
+    numerics->ComputeVibRelaxation(Residual_i, Jacobian_i, config);
+    
+//    cout << endl << endl << "Jacobian Chem+Vib: " << endl;
+//    for (iVar = 0; iVar < nVar; iVar++) {
+//      for (jVar = 0; jVar < nVar; jVar++) {
+//        cout << Jacobian_i[iVar][jVar] << "\t";
+//      }
+//      cout << endl;
+//    }
+//    cin.get();
+    
+    
     
     /*--- Take the transpose of the source Jacobian matrix ---*/
     for (iVar = 0; iVar < nVar; iVar++)
       for (jVar = 0; jVar < nVar; jVar++)
         Jacobian_ii[iVar][jVar] = Jacobian_i[jVar][iVar];
+    
+    /*--- Compute the adjoint source term residual (dQ/dU^T * Psi) ---*/
+    for (iVar = 0; iVar < nVar; iVar ++)
+      for (jVar = 0; jVar < nVar; jVar++)
+        Residual[iVar] = Jacobian_ii[iVar][jVar] * node[iPoint]->GetSolution(jVar);
+    
+//    unsigned short iVar, jVar;
+//    for (iVar = 0; iVar < nVar; iVar++)
+//      cout << "Residual[" << iVar << "]: " << Residual[iVar] << endl;
+//    
+//    cout << endl << endl << "Jacobian_ii: " << endl;
+//    for (iVar = 0; iVar < nVar; iVar++) {
+//      for (jVar = 0; jVar < nVar; jVar++) {
+//        cout << Jacobian_ii[iVar][jVar] << "\t";
+//      }
+//      cout << endl;
+//    }
+//    cin.get();
     
     /*--- Subtract Residual (and Jacobian) ---*/
     LinSysRes.SubtractBlock(iPoint, Residual);
@@ -1802,13 +1881,12 @@ void CAdjTNE2EulerSolver::Inviscid_Sensitivity(CGeometry *geometry,
                                                CNumerics *numerics,
                                                CConfig *config) {
 	unsigned long iVertex, iPoint, Neigh;
-	unsigned short iDim, iMarker, iPos, jPos, iNeigh;
+	unsigned short iDim, iMarker, iNeigh;
 	double *d, *Normal, *UnitNormal;
   double *Psi, *U;
-  double Enthalpy, conspsi, Mach_Inf, Area;
+  double Enthalpy, conspsi, Area;
   double **PrimVar_Grad, **ConsVar_Grad, *ConsPsi_Grad;
-  double ConsPsi, d_press, grad_v, Beta2, v_gradconspsi,
-  LevelSet, Target_LevelSet;
+  double ConsPsi, d_press, grad_v, v_gradconspsi;
   
   /*--- Initialization ---*/
   d            = NULL;
@@ -1897,7 +1975,7 @@ void CAdjTNE2EulerSolver::Inviscid_Sensitivity(CGeometry *geometry,
             grad_v += PrimVar_Grad[iDim+1][iDim]*ConsPsi;
             
             /*-- Retrieve the value of the theta gradient ---*/
-            v_gradconspsi += solver_container[TNE2_SOL]->node[iPoint]->GetVelocity(iDim, false) * ConsPsi_Grad[iDim];
+            v_gradconspsi += solver_container[TNE2_SOL]->node[iPoint]->GetVelocity(iDim) * ConsPsi_Grad[iDim];
           }
           
           /*--- Compute sensitivity for each surface point ---*/
@@ -1929,6 +2007,18 @@ void CAdjTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry,
   /*--- Set booleans from config ---*/
 	implicit   = (config->GetKind_TimeIntScheme_AdjTNE2() == EULER_IMPLICIT);
   ionization = (config->GetIonization());
+  
+  /*--- Pass structure of the primitive variable vector to CNumerics ---*/
+  numerics->SetRhosIndex   ( solver_container[TNE2_SOL]->node[0]->GetRhosIndex()    );
+  numerics->SetRhoIndex    ( solver_container[TNE2_SOL]->node[0]->GetRhoIndex()     );
+  numerics->SetPIndex      ( solver_container[TNE2_SOL]->node[0]->GetPIndex()       );
+  numerics->SetTIndex      ( solver_container[TNE2_SOL]->node[0]->GetTIndex()       );
+  numerics->SetTveIndex    ( solver_container[TNE2_SOL]->node[0]->GetTveIndex()     );
+  numerics->SetVelIndex    ( solver_container[TNE2_SOL]->node[0]->GetVelIndex()     );
+  numerics->SetHIndex      ( solver_container[TNE2_SOL]->node[0]->GetHIndex()       );
+  numerics->SetAIndex      ( solver_container[TNE2_SOL]->node[0]->GetAIndex()       );
+  numerics->SetRhoCvtrIndex( solver_container[TNE2_SOL]->node[0]->GetRhoCvtrIndex() );
+  numerics->SetRhoCvveIndex( solver_container[TNE2_SOL]->node[0]->GetRhoCvveIndex() );
   
   /*--- Initialize ---*/
   d        = NULL;
@@ -1981,7 +2071,7 @@ void CAdjTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry,
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
         Density[iSpecies] = U[iSpecies];
       for (iDim = 0; iDim < nDim; iDim++)
-        Velocity[iDim] = solver_container[TNE2_SOL]->node[iPoint]->GetVelocity(iDim, false);
+        Velocity[iDim] = solver_container[TNE2_SOL]->node[iPoint]->GetVelocity(iDim);
       Enthalpy  = solver_container[TNE2_SOL]->node[iPoint]->GetEnthalpy();
       Energy_ve = U[nSpecies+nDim+1]/solver_container[TNE2_SOL]->node[iPoint]->GetDensity();
       sq_vel    = 0.5*solver_container[TNE2_SOL]->node[iPoint]->GetVelocity2();
@@ -2066,6 +2156,18 @@ void CAdjTNE2EulerSolver::BC_Sym_Plane(CGeometry *geometry,
 	implicit   = (config->GetKind_TimeIntScheme_AdjTNE2() == EULER_IMPLICIT);
   ionization = (config->GetIonization());
   
+  /*--- Pass structure of the primitive variable vector to CNumerics ---*/
+  conv_numerics->SetRhosIndex   ( solver_container[TNE2_SOL]->node[0]->GetRhosIndex()    );
+  conv_numerics->SetRhoIndex    ( solver_container[TNE2_SOL]->node[0]->GetRhoIndex()     );
+  conv_numerics->SetPIndex      ( solver_container[TNE2_SOL]->node[0]->GetPIndex()       );
+  conv_numerics->SetTIndex      ( solver_container[TNE2_SOL]->node[0]->GetTIndex()       );
+  conv_numerics->SetTveIndex    ( solver_container[TNE2_SOL]->node[0]->GetTveIndex()     );
+  conv_numerics->SetVelIndex    ( solver_container[TNE2_SOL]->node[0]->GetVelIndex()     );
+  conv_numerics->SetHIndex      ( solver_container[TNE2_SOL]->node[0]->GetHIndex()       );
+  conv_numerics->SetAIndex      ( solver_container[TNE2_SOL]->node[0]->GetAIndex()       );
+  conv_numerics->SetRhoCvtrIndex( solver_container[TNE2_SOL]->node[0]->GetRhoCvtrIndex() );
+  conv_numerics->SetRhoCvveIndex( solver_container[TNE2_SOL]->node[0]->GetRhoCvveIndex() );
+  
   /*--- Initialize ---*/
   ProjVel  = 0.0;
   vn       = 0.0;
@@ -2113,7 +2215,7 @@ void CAdjTNE2EulerSolver::BC_Sym_Plane(CGeometry *geometry,
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
         Density[iSpecies] = U[iSpecies];
       for (iDim = 0; iDim < nDim; iDim++)
-        Velocity[iDim] = solver_container[TNE2_SOL]->node[iPoint]->GetVelocity(iDim, false);
+        Velocity[iDim] = solver_container[TNE2_SOL]->node[iPoint]->GetVelocity(iDim);
       Enthalpy  = solver_container[TNE2_SOL]->node[iPoint]->GetEnthalpy();
       Energy_ve = U[nSpecies+nDim+1]/solver_container[TNE2_SOL]->node[iPoint]->GetDensity();
       sq_vel    = 0.5*solver_container[TNE2_SOL]->node[iPoint]->GetVelocity2();
@@ -2489,7 +2591,6 @@ void CAdjTNE2NSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_conta
   bool center         = (config->GetKind_ConvNumScheme_AdjTNE2() == SPACE_CENTERED);
   bool center_jst     = (config->GetKind_Centered_AdjTNE2() == JST);
   bool limiter        = (config->GetKind_SlopeLimit() != NONE);
-  double adj_limit    = config->GetAdjointLimit();
   
 	/*--- Residual initialization ---*/
 	for (iPoint = 0; iPoint < nPoint; iPoint ++) {
@@ -2592,7 +2693,7 @@ void CAdjTNE2NSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_co
 void CAdjTNE2NSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
                                        CConfig *config, unsigned short iMesh) {
 	unsigned long iPoint;
-  unsigned short iVar, iDim;
+  unsigned short iVar;
   
   for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
   
@@ -2698,11 +2799,7 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver
 	unsigned short iDim, jDim, iMarker;
 	double **PsiVar_Grad, **PrimVar_Grad, div_phi, *Normal, Area,
 	normal_grad_psi5, normal_grad_T, sigma_partial,
-  cp, Laminar_Viscosity, heat_flux_factor, LevelSet, Target_LevelSet, temp_sens;
-  
-  double *Psi, *U, Enthalpy, **GridVel_Grad, gradPsi5_v, psi5_tau_partial, psi5_tau_grad_vel, source_v;
-  double Density, Pressure, div_vel, val_turb_ke, vartheta, vartheta_partial, psi5_p_div_vel, *Omega, rho_v[3], CrossProduct[3];
-  double delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
+  cp, Laminar_Viscosity, heat_flux_factor, temp_sens;
   
 	double Gas_Constant = config->GetGas_ConstantND();
   
@@ -3104,7 +3201,7 @@ void CAdjTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_co
 void CAdjTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 	unsigned long iVertex, iPoint, total_index, Point_Normal;
 	unsigned short iDim, iVar, jVar, jDim;
-	double *d, q, *U, l1psi, mu_dyn, Temp, dVisc_T, rho, pressure, div_phi,
+	double *d, q, *U, mu_dyn, Temp, dVisc_T, rho, pressure, div_phi,
   force_stress, Sigma_5, **PsiVar_Grad, phi[3];
   double phis1, phis2, sq_vel, ProjVel, Enthalpy, *GridVel, phi_u, d_n;
   double Energy, ViscDens, XiDens, Density, SoundSpeed, Pressure, dPhiE_dn, Laminar_Viscosity, Eddy_Viscosity,

@@ -3,7 +3,7 @@
 ## \file shape_optimization.py
 #  \brief Python script for performing the shape optimization.
 #  \author Francisco Palacios, Tom Economon, Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.7
+#  \version 2.0.8
 #
 # Stanford University Unstructured (SU2).
 # Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -45,6 +45,8 @@ def main():
                       help="True/False Quiet all SU2 output (optimizer output only)", metavar="QUIET")
     parser.add_option("-c", "--cycle", dest="cycle", default=0,
                       help="number of mesh adaptation CYCLEs", metavar="CYCLE")
+    parser.add_option("-i", "--its", dest="its", default=100,
+                      help="number of ITERations", metavar="ITER")
     parser.add_option("-s", "--step", dest="step", default=1e-4,
                       help="finite difference STEP", metavar="STEP")
     
@@ -53,6 +55,7 @@ def main():
     # process inputs
     options.partitions  = int( options.partitions )
     options.cycle       = int( options.cycle )
+    options.its         = int( options.its )
     options.step        = float( options.step )
     options.quiet       = options.quiet.upper() == 'TRUE'
     options.gradient    = options.gradient.upper()
@@ -63,6 +66,7 @@ def main():
                         options.gradient    ,
                         options.quiet       ,
                         options.cycle       ,
+                        options.its         ,
                         options.step         )
     
 #: main()
@@ -73,6 +77,7 @@ def shape_optimization( filename                ,
                         gradient    = 'ADJOINT' ,
                         quiet       = False     , 
                         cycle       = 0         ,
+                        its         = 100       ,
                         step        = 1e-4       ):
     
     # TODO: findif step
@@ -87,7 +92,6 @@ def shape_optimization( filename                ,
     n_dv   = len(def_dv['KIND'])  
     x0     = [0.0]*n_dv # initial design
     xb     = []         # design bounds
-    its    = 200        # max iterations
     
     # State
     state = SU2.io.State()

@@ -2,7 +2,7 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.7
+ * \version 2.0.8
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -410,7 +410,7 @@ inline double CConfig::GetParticle_Mass(unsigned short iSpecies) { return Partic
 
 inline double CConfig::GetStagnation_B() { return Stagnation_B; }
 
-inline double CConfig::GetElec_Conductivity() { return Electric_Cond; } 
+inline double CConfig::GetElec_Conductivity() { return poisson_Cond; } 
 
 inline double CConfig::GetDipoleDist() { return DipoleDist; } 
 
@@ -492,6 +492,8 @@ inline unsigned short CConfig::GetKind_TimeIntScheme_AdjPlasma(void) { return Ki
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_Wave(void) { return Kind_TimeIntScheme_Wave; }
 
+inline unsigned short CConfig::GetKind_TimeIntScheme_Heat(void) { return Kind_TimeIntScheme_Heat; }
+
 inline unsigned short CConfig::GetKind_TimeIntScheme_FEA(void) { return Kind_TimeIntScheme_FEA; }
 
 inline unsigned short CConfig::GetKind_ConvNumScheme_Flow(void) { return Kind_ConvNumScheme_Flow; }
@@ -515,6 +517,8 @@ inline unsigned short CConfig::GetKind_ViscNumScheme_TNE2(void) { return Kind_Vi
 inline unsigned short CConfig::GetKind_SourNumScheme_LevelSet(void) { return Kind_SourNumScheme_LevelSet; }
 
 inline unsigned short CConfig::GetKind_SourNumScheme_Wave(void) { return Kind_SourNumScheme_Wave; }
+
+inline unsigned short CConfig::GetKind_SourNumScheme_Heat(void) { return Kind_SourNumScheme_Heat; }
 
 inline unsigned short CConfig::GetKind_SourNumScheme_FEA(void) { return Kind_SourNumScheme_FEA; }
 
@@ -540,9 +544,9 @@ inline unsigned short CConfig::GetKind_SourJac_Plasma(void) { return Kind_SourJa
 
 inline unsigned short CConfig::GetKind_SourNumScheme_Template(void) { return Kind_SourNumScheme_Template; }
 
-inline unsigned short CConfig::GetKind_ViscNumScheme_Elec(void) { return Kind_ViscNumScheme_Elec; }
+inline unsigned short CConfig::GetKind_ViscNumScheme_Poisson(void) { return Kind_ViscNumScheme_Elec; }
 
-inline unsigned short CConfig::GetKind_SourNumScheme_Elec(void) { return Kind_SourNumScheme_Elec; }
+inline unsigned short CConfig::GetKind_SourNumScheme_Poisson(void) { return Kind_SourNumScheme_Poisson; }
 
 inline unsigned short CConfig::GetKind_Centered_Flow(void) { return Kind_Centered_Flow; }
 
@@ -627,6 +631,8 @@ inline unsigned short CConfig::GetKind_ViscNumScheme_AdjTNE2(void) { return Kind
 inline unsigned short CConfig::GetKind_SourNumScheme_AdjTNE2(void) { return Kind_SourNumScheme_AdjTNE2; }
 
 inline unsigned short CConfig::GetKind_ViscNumScheme_Wave(void) { return Kind_ViscNumScheme_Wave; }
+
+inline unsigned short CConfig::GetKind_ViscNumScheme_Heat(void) { return Kind_ViscNumScheme_Heat; }
 
 inline unsigned short CConfig::GetKind_ViscNumScheme_FEA(void) { return Kind_ViscNumScheme_FEA; }
 
@@ -808,7 +814,15 @@ inline string CConfig::GetFlow_FileName(void) { return Flow_FileName; }
 
 inline string CConfig::GetStructure_FileName(void) { return Structure_FileName; }
 
+inline string CConfig::GetSurfStructure_FileName(void) { return SurfStructure_FileName; }
+
+inline string CConfig::GetSurfWave_FileName(void) { return SurfWave_FileName; }
+
+inline string CConfig::GetSurfHeat_FileName(void) { return SurfHeat_FileName; }
+
 inline string CConfig::GetWave_FileName(void) { return Wave_FileName; }
+
+inline string CConfig::GetHeat_FileName(void) { return Heat_FileName; }
 
 inline string CConfig::GetAdjWave_FileName(void) { return AdjWave_FileName; }
 
@@ -902,7 +916,7 @@ inline bool CConfig::GetIsothermalWall(void) { return IsothermalWall; }
 
 inline bool CConfig::GetCatalyticWall(void) { return CatalyticWall; }
 
-inline bool CConfig::GetElectricSolver(void) { return ElectricSolver; }
+inline bool CConfig::GetPoissonSolver(void) { return PoissonSolver; }
 
 inline bool CConfig::Low_Mach_Preconditioning(void) { return Low_Mach_Precon; }
 

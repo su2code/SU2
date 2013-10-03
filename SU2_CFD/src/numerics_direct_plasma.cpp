@@ -2,7 +2,7 @@
  * \file numerics_direct_plasma.cpp
  * \brief This file contains all the convective term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.7
+ * \version 2.0.8
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -2528,7 +2528,7 @@ CSourcePieceWise_Plasma::CSourcePieceWise_Plasma(unsigned short val_nDim, unsign
 	VioncrossB = new double [nDim];
 	Current_Density = new double [3];
 	JcrossB = new double [3];
-	Electric_Conductivity = config->GetElec_Conductivity();
+	poisson_Conductivity = config->GetElec_Conductivity();
 	vector_r = new double [nDim];
 	dpcenter = new double [nDim];
   
@@ -2540,7 +2540,7 @@ CSourcePieceWise_Plasma::CSourcePieceWise_Plasma(unsigned short val_nDim, unsign
 	/* Till here For the more accurate magnetic field model */
   
 	MagneticDipole = new double [3];
-	ElectricField = new double [nDim];
+	poissonField = new double [nDim];
   
 	for (iVar = 0; iVar < 3; iVar ++) {
 		MagneticField[iVar] = 0.0;
@@ -2556,7 +2556,7 @@ CSourcePieceWise_Plasma::CSourcePieceWise_Plasma(unsigned short val_nDim, unsign
 	MagneticDipole[2] = 0.0;
   
 	for (iDim = 0; iDim < nDim; iDim++)
-		ElectricField[iDim] = 0.0;
+		poissonField[iDim] = 0.0;
 	for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++) {
 		velocity[iSpecies] = new double [nDim];
 		for (iDim = 0; iDim < nDim; iDim ++) velocity[iSpecies][iDim]  = 0.0;
@@ -2650,7 +2650,7 @@ CSourcePieceWise_Plasma::~CSourcePieceWise_Plasma(void) {
 		delete [] SourceJacobian[iVar];
 	delete [] SourceVector;	delete[] SourceJacobian;
   
-	//delete [] ElectricField;
+	//delete [] poissonField;
 	delete[] MagneticField;
   
 	for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -2671,7 +2671,7 @@ void CSourcePieceWise_Plasma::ComputeResidual(double *val_residual, double **val
 	double zero = 1E-15;
 	double dens_ratio;
   
-  //	cout << " Electric Field = " << ElectricField[0] << " , " << ElectricField[1] << endl;
+  //	cout << " poisson Field = " << poissonField[0] << " , " << poissonField[1] << endl;
   //    cin.get();
   
 	/* brief: defining conservative variables, residual and jacobian for point i first: */
@@ -2946,7 +2946,7 @@ void CSourcePieceWise_Plasma::ComputeResidual(double *val_residual, double **val
 	double Bx = MagneticField[0];
 	double By = MagneticField[1];
 	double Bz = MagneticField[2];
-	double s0 = Electric_Conductivity;
+	double s0 = poisson_Conductivity;
   
   
 	for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++ ) {
@@ -2964,7 +2964,7 @@ void CSourcePieceWise_Plasma::ComputeResidual(double *val_residual, double **val
 	}
   
 	for (iDim = 0; iDim < nDim; iDim ++ )
-		Current_Density[iDim] = Electric_Conductivity*(ElectricField[iDim] + VcrossB[0][iDim]);
+		Current_Density[iDim] = poisson_Conductivity*(poissonField[iDim] + VcrossB[0][iDim]);
   
 	for (iDim = 0; iDim < nDim; iDim ++ ) {
 		JcrossB[0] = Current_Density[1]*MagneticField[2] - Current_Density[2]*MagneticField[1];
@@ -2980,13 +2980,13 @@ void CSourcePieceWise_Plasma::ComputeResidual(double *val_residual, double **val
 	JdotJoversgima = JdotJoversgima/s0 ;
 	/*
 	 * Magnetic Forces using the Jcross B formulation result in the following expression:
-	 * JcrossB[0] = Fx = ihat  [ Bz * ( Uz*Bx - Ux*Bz ) - By * ( Ux*By - Uy*Bx ) ] * ElectricalConductivity;
-	 * JcrossB[1] = Fy = jhat  [ Bx * ( Ux*By - Uy*Bx ) - Bz * ( Uy*Bz - Uz*By ) ] * ElectricalConductivity;
-	 * JcrossB[2] = Fz = khat  [ By * ( Uy*Bz - Uz*By ) - Bx * ( Uz*Bx - Ux*Bz ) ] * ElectricalConductivity;
+	 * JcrossB[0] = Fx = ihat  [ Bz * ( Uz*Bx - Ux*Bz ) - By * ( Ux*By - Uy*Bx ) ] * poissonalConductivity;
+	 * JcrossB[1] = Fy = jhat  [ Bx * ( Ux*By - Uy*Bx ) - Bz * ( Uy*Bz - Uz*By ) ] * poissonalConductivity;
+	 * JcrossB[2] = Fz = khat  [ By * ( Uy*Bz - Uz*By ) - Bx * ( Uz*Bx - Ux*Bz ) ] * poissonalConductivity;
 	 *
 	 * U dot JcrossB[0] =  [ Bz * ( Ux*Uz*Bx - Ux*Ux*Bz ) - By * ( Ux*Ux*By - Ux*Uy*Bx ) ] +
 	 *					   [ Bx * ( Uy*Ux*By - Uy*Uy*Bx ) - Bz * ( Uy*Uy*Bz - Uy*Uz*By ) ] +
-	 *	                   [ By * ( Uz*Uy*Bz - Uz*Uz*By ) - Bx * ( Uz*Uz*Bx - Uz*Ux*Bz ) ] * ElectricalConductivity
+	 *	                   [ By * ( Uz*Uy*Bz - Uz*Uz*By ) - Bx * ( Uz*Uz*Bx - Uz*Ux*Bz ) ] * poissonalConductivity
 	 */
   
 	double delJcrossBdelm = s0/r1/r1 * ( Bx * (l1*Bz +   n1*By) + By * (n1*Bx - 2*m1*By) + Bz * (l1*Bx - 2*m1*Bz) );
@@ -3082,7 +3082,7 @@ void CSourcePieceWise_Plasma::ComputeResidual(double *val_residual, double **val
 	loc = (nDim+2);
   
 	for (iDim = 0; iDim < nDim; iDim ++ )
-		Current_Density[iDim] = Electric_Conductivity*(ElectricField[iDim] + VcrossB[1][iDim]);
+		Current_Density[iDim] = poisson_Conductivity*(poissonField[iDim] + VcrossB[1][iDim]);
   
 	for (iDim = 0; iDim < nDim; iDim ++ ) {
 		JcrossB[0] = Current_Density[1]*MagneticField[2] - Current_Density[2]*MagneticField[1];
@@ -3182,7 +3182,7 @@ void CSourcePieceWise_Plasma::ComputeResidual(double *val_residual, double **val
 	loc = 2*(nDim+2);
   
 	for (iDim = 0; iDim < nDim; iDim ++ )
-		Current_Density[iDim] = Electric_Conductivity*(ElectricField[iDim] + VcrossB[2][iDim]);
+		Current_Density[iDim] = poisson_Conductivity*(poissonField[iDim] + VcrossB[2][iDim]);
   
 	for (iDim = 0; iDim < nDim; iDim ++ ) {
 		JcrossB[0] = Current_Density[1]*MagneticField[2] - Current_Density[2]*MagneticField[1];
@@ -3989,7 +3989,7 @@ CSource_Magnet::CSource_Magnet(unsigned short val_nDim, unsigned short val_nVar,
 	Current_Density = new double [3];
 	JcrossB = new double [3];
 	VcrossB = new double [3];
-	Electric_Conductivity = config->GetElec_Conductivity();
+	poisson_Conductivity = config->GetElec_Conductivity();
 	vector_r = new double [nDim];
 	dpcenter = new double [nDim];
 	velocity = new double[nDim];
@@ -4061,7 +4061,7 @@ void CSource_Magnet::ComputeResidual(double *val_residual, double **val_Jacobian
 	double Bx = MagneticField[0];
 	double By = MagneticField[1];
 	double Bz = MagneticField[2];
-	double s0 = Electric_Conductivity;
+	double s0 = poisson_Conductivity;
   
 	if (nDim ==3) {
 		VcrossB[0] = velocity[1]*MagneticField[2] - velocity[2]*MagneticField[1];
@@ -4070,7 +4070,7 @@ void CSource_Magnet::ComputeResidual(double *val_residual, double **val_Jacobian
 	}
   
 	for (iDim = 0; iDim < nDim; iDim ++ )
-		Current_Density[iDim] = Electric_Conductivity*VcrossB[iDim];
+		Current_Density[iDim] = poisson_Conductivity*VcrossB[iDim];
   
 	for (iDim = 0; iDim < nDim; iDim ++ ) {
 		JcrossB[0] = Current_Density[1]*MagneticField[2] - Current_Density[2]*MagneticField[1];
