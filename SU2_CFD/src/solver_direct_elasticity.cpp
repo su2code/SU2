@@ -1,6 +1,6 @@
 /*!
- * \file solution_direct_fea.cpp
- * \brief Main subrotuines for solving the FEA equation.
+ * \file solution_direct_elasticity.cpp
+ * \brief Main subrotuines for solving the linear elasticity equation.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
  * \version 2.0.8
  *

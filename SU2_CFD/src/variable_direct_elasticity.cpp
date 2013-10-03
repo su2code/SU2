@@ -1,5 +1,5 @@
 /*!
- * \file variable_adjoint_poisson.cpp
+ * \file variable_direct_elasticity.cpp
  * \brief Definition of the solution fields.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
  * \version 2.0.8
@@ -23,22 +23,35 @@
 
 #include "../include/variable_structure.hpp"
 
-CAdjPotentialVariable::CAdjPotentialVariable(void) : CVariable() {
+CFEAVariable::CFEAVariable(void) : CVariable() { }
+
+CFEAVariable::CFEAVariable(double *val_fea, unsigned short val_ndim, unsigned short val_nvar, CConfig *config)
+: CVariable(val_ndim, val_nvar, config) {
+	unsigned short iVar, iDim;
   
-  /*--- Array initialization ---*/
-	ForceProj_Vector = NULL;
+	/*--- Allocate residual structures ---*/
+	Residual_Sum = new double [nVar]; Residual_Old = new double [nVar];
+  
+	/*--- Initialization of variables ---*/
+	for (iVar = 0; iVar < nVar; iVar++) {
+		Solution[iVar] = val_fea[iVar];
+		Solution_Old[iVar] = val_fea[iVar];
+	}
+  
+  /*--- Allocate stress tensor ---*/
+	Stress = new double* [nDim];
+	for (iDim = 0; iDim < nDim; iDim++)
+		Stress[iDim] = new double [nDim];
   
 }
 
-CAdjPotentialVariable::CAdjPotentialVariable(double val_solution, unsigned short val_ndim, unsigned short val_nvar, CConfig *config) : CVariable(val_ndim, val_nvar, config) {
-  
-  /*--- Array initialization ---*/
-	ForceProj_Vector = NULL;
-  
-}
+CFEAVariable::~CFEAVariable(void) {
+  unsigned short iDim;
 
-CAdjPotentialVariable::~CAdjPotentialVariable(void) {
-  
-  if (ForceProj_Vector != NULL) delete [] ForceProj_Vector;
+	for (iDim = 0; iDim < nDim; iDim++)
+		delete [] Stress[iDim];
+	delete [] Stress;
+  delete [] Residual_Sum;
+  delete [] Residual_Old;
   
 }
