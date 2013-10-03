@@ -10,7 +10,6 @@
 		05E6DB5C17EB61D100FA1F7E /* config_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DB5317EB61D100FA1F7E /* config_structure.cpp */; };
 		05E6DB5D17EB61D100FA1F7E /* dual_grid_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DB5417EB61D100FA1F7E /* dual_grid_structure.cpp */; };
 		05E6DB5E17EB61D100FA1F7E /* geometry_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DB5517EB61D100FA1F7E /* geometry_structure.cpp */; };
-		05E6DB5F17EB61D100FA1F7E /* grid_adaptation_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DB5617EB61D100FA1F7E /* grid_adaptation_structure.cpp */; };
 		05E6DB6017EB61D100FA1F7E /* grid_movement_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DB5717EB61D100FA1F7E /* grid_movement_structure.cpp */; };
 		05E6DB6117EB61D100FA1F7E /* linear_solvers_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DB5817EB61D100FA1F7E /* linear_solvers_structure.cpp */; };
 		05E6DB6217EB61D100FA1F7E /* matrix_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DB5917EB61D100FA1F7E /* matrix_structure.cpp */; };
@@ -33,10 +32,10 @@
 
 /* Begin PBXFileReference section */
 		050BACD21374A60900564A35 /* SU2_MDC */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = SU2_MDC; sourceTree = BUILT_PRODUCTS_DIR; };
+		05AF5C2E17F63AD400BF6128 /* default.cfg */ = {isa = PBXFileReference; lastKnownFileType = text; name = default.cfg; path = DerivedData/SU2_MDC/Build/Products/Debug/default.cfg; sourceTree = "<group>"; };
 		05E6DA8417EB5FD800FA1F7E /* config_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = config_structure.inl; path = ../../Common/include/config_structure.inl; sourceTree = "<group>"; };
 		05E6DA8517EB5FD800FA1F7E /* dual_grid_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = dual_grid_structure.inl; path = ../../Common/include/dual_grid_structure.inl; sourceTree = "<group>"; };
 		05E6DA8617EB5FD800FA1F7E /* geometry_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = geometry_structure.inl; path = ../../Common/include/geometry_structure.inl; sourceTree = "<group>"; };
-		05E6DA8717EB5FD800FA1F7E /* grid_adaptation_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = grid_adaptation_structure.inl; path = ../../Common/include/grid_adaptation_structure.inl; sourceTree = "<group>"; };
 		05E6DA8817EB5FD800FA1F7E /* grid_movement_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = grid_movement_structure.inl; path = ../../Common/include/grid_movement_structure.inl; sourceTree = "<group>"; };
 		05E6DA8917EB5FD800FA1F7E /* linear_solvers_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = linear_solvers_structure.inl; path = ../../Common/include/linear_solvers_structure.inl; sourceTree = "<group>"; };
 		05E6DA8A17EB5FD800FA1F7E /* matrix_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = matrix_structure.inl; path = ../../Common/include/matrix_structure.inl; sourceTree = "<group>"; };
@@ -45,7 +44,6 @@
 		05E6DAE317EB609400FA1F7E /* config_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = config_structure.hpp; path = ../../Common/include/config_structure.hpp; sourceTree = "<group>"; };
 		05E6DAE417EB609400FA1F7E /* dual_grid_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = dual_grid_structure.hpp; path = ../../Common/include/dual_grid_structure.hpp; sourceTree = "<group>"; };
 		05E6DAE517EB609400FA1F7E /* geometry_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = geometry_structure.hpp; path = ../../Common/include/geometry_structure.hpp; sourceTree = "<group>"; };
-		05E6DAE617EB609400FA1F7E /* grid_adaptation_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = grid_adaptation_structure.hpp; path = ../../Common/include/grid_adaptation_structure.hpp; sourceTree = "<group>"; };
 		05E6DAE717EB609400FA1F7E /* grid_movement_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = grid_movement_structure.hpp; path = ../../Common/include/grid_movement_structure.hpp; sourceTree = "<group>"; };
 		05E6DAE817EB609400FA1F7E /* linear_solvers_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = linear_solvers_structure.hpp; path = ../../Common/include/linear_solvers_structure.hpp; sourceTree = "<group>"; };
 		05E6DAE917EB609400FA1F7E /* matrix_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = matrix_structure.hpp; path = ../../Common/include/matrix_structure.hpp; sourceTree = "<group>"; };
@@ -55,7 +53,6 @@
 		05E6DB5317EB61D100FA1F7E /* config_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = config_structure.cpp; path = ../../Common/src/config_structure.cpp; sourceTree = "<group>"; };
 		05E6DB5417EB61D100FA1F7E /* dual_grid_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = dual_grid_structure.cpp; path = ../../Common/src/dual_grid_structure.cpp; sourceTree = "<group>"; };
 		05E6DB5517EB61D100FA1F7E /* geometry_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = geometry_structure.cpp; path = ../../Common/src/geometry_structure.cpp; sourceTree = "<group>"; };
-		05E6DB5617EB61D100FA1F7E /* grid_adaptation_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = grid_adaptation_structure.cpp; path = ../../Common/src/grid_adaptation_structure.cpp; sourceTree = "<group>"; };
 		05E6DB5717EB61D100FA1F7E /* grid_movement_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = grid_movement_structure.cpp; path = ../../Common/src/grid_movement_structure.cpp; sourceTree = "<group>"; };
 		05E6DB5817EB61D100FA1F7E /* linear_solvers_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = linear_solvers_structure.cpp; path = ../../Common/src/linear_solvers_structure.cpp; sourceTree = "<group>"; };
 		05E6DB5917EB61D100FA1F7E /* matrix_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = matrix_structure.cpp; path = ../../Common/src/matrix_structure.cpp; sourceTree = "<group>"; };
@@ -82,7 +79,6 @@
 				05E6DA8417EB5FD800FA1F7E /* config_structure.inl */,
 				05E6DA8517EB5FD800FA1F7E /* dual_grid_structure.inl */,
 				05E6DA8617EB5FD800FA1F7E /* geometry_structure.inl */,
-				05E6DA8717EB5FD800FA1F7E /* grid_adaptation_structure.inl */,
 				05E6DA8817EB5FD800FA1F7E /* grid_movement_structure.inl */,
 				05E6DA8917EB5FD800FA1F7E /* linear_solvers_structure.inl */,
 				05E6DA8A17EB5FD800FA1F7E /* matrix_structure.inl */,
@@ -99,7 +95,6 @@
 				05E6DAE317EB609400FA1F7E /* config_structure.hpp */,
 				05E6DAE417EB609400FA1F7E /* dual_grid_structure.hpp */,
 				05E6DAE517EB609400FA1F7E /* geometry_structure.hpp */,
-				05E6DAE617EB609400FA1F7E /* grid_adaptation_structure.hpp */,
 				05E6DAE717EB609400FA1F7E /* grid_movement_structure.hpp */,
 				05E6DAE817EB609400FA1F7E /* linear_solvers_structure.hpp */,
 				05E6DAE917EB609400FA1F7E /* matrix_structure.hpp */,
@@ -113,6 +108,7 @@
 		08FB7794FE84155DC02AAC07 /* SU2_MDC */ = {
 			isa = PBXGroup;
 			children = (
+				05AF5C2E17F63AD400BF6128 /* default.cfg */,
 				050BACD81374A60F00564A35 /* InLine */,
 				050BACD91374A61F00564A35 /* Include */,
 				08FB7795FE84155DC02AAC07 /* Source */,
@@ -128,7 +124,6 @@
 				05E6DB5317EB61D100FA1F7E /* config_structure.cpp */,
 				05E6DB5417EB61D100FA1F7E /* dual_grid_structure.cpp */,
 				05E6DB5517EB61D100FA1F7E /* geometry_structure.cpp */,
-				05E6DB5617EB61D100FA1F7E /* grid_adaptation_structure.cpp */,
 				05E6DB5717EB61D100FA1F7E /* grid_movement_structure.cpp */,
 				05E6DB5817EB61D100FA1F7E /* linear_solvers_structure.cpp */,
 				05E6DB5917EB61D100FA1F7E /* matrix_structure.cpp */,
@@ -173,7 +168,7 @@
 		08FB7793FE84155DC02AAC07 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0460;
+				LastUpgradeCheck = 0500;
 			};
 			buildConfigurationList = 1DEB923508733DC60010E9CD /* Build configuration list for PBXProject "SU2_MDC" */;
 			compatibilityVersion = "Xcode 3.2";
@@ -202,7 +197,6 @@
 				05E6DB5C17EB61D100FA1F7E /* config_structure.cpp in Sources */,
 				05E6DB5D17EB61D100FA1F7E /* dual_grid_structure.cpp in Sources */,
 				05E6DB5E17EB61D100FA1F7E /* geometry_structure.cpp in Sources */,
-				05E6DB5F17EB61D100FA1F7E /* grid_adaptation_structure.cpp in Sources */,
 				05E6DB6017EB61D100FA1F7E /* grid_movement_structure.cpp in Sources */,
 				05E6DB6117EB61D100FA1F7E /* linear_solvers_structure.cpp in Sources */,
 				05E6DB6217EB61D100FA1F7E /* matrix_structure.cpp in Sources */,
@@ -242,7 +236,6 @@
 		1DEB923608733DC60010E9CD /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -262,7 +255,6 @@
 		1DEB923708733DC60010E9CD /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;

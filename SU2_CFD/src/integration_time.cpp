@@ -2,7 +2,7 @@
  * \file integration_time.cpp
  * \brief Time deppending numerical method.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.7
+ * \version 2.0.8
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -678,7 +678,7 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ***geometry, CSolver
   double monitor = 0.0;
 
 	unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
-  
+
 	/*--- Preprocessing ---*/
 	solver_container[iZone][MESH_0][SolContainer_Position]->Preprocessing(geometry[iZone][MESH_0], solver_container[iZone][MESH_0], config[iZone], MESH_0, 0, RunTime_EqSystem);
   
@@ -727,6 +727,23 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ***geometry, CSolver
 			monitor = log10(sqrt(solver_container[iZone][MESH_0][FEA_SOL]->GetRes_RMS(0)));
 #endif
 			break;
+      
+  case RUNTIME_HEAT_SYS:
+#ifdef NO_MPI
+    monitor = log10(solver_container[iZone][MESH_0][HEAT_SOL]->GetRes_RMS(0));
+#else
+    monitor = log10(sqrt(solver_container[iZone][MESH_0][HEAT_SOL]->GetRes_RMS(0)));
+#endif
+      break;
+      
+  case RUNTIME_POISSON_SYS:
+#ifdef NO_MPI
+    monitor = log10(solver_container[iZone][MESH_0][POISSON_SOL]->GetRes_RMS(0));
+#else
+    monitor = log10(sqrt(solver_container[iZone][MESH_0][POISSON_SOL]->GetRes_RMS(0)));
+#endif
+    break;
+      
 	}
   
 	/*--- Convergence strategy ---*/

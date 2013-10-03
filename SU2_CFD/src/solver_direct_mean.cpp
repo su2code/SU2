@@ -2,7 +2,7 @@
  * \file solution_direct_mean.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.7
+ * \version 2.0.8
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -2516,7 +2516,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
           
 					/*--- Set the coordinate ---*/
 					numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[jPoint]->GetCoord());
-          
+
 					/*--- Set electrical conductivity  ---*/
 					numerics->SetElec_Cond();
           
@@ -2538,7 +2538,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
           
 					/*--- Set the coordinate ---*/
 					numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
-          
+
 					/*--- Set electrical conductivity  ---*/
 					numerics->SetElec_Cond();
           

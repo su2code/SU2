@@ -2,7 +2,7 @@
  * \file definition_structure.cpp
  * \brief Main subroutines used by SU2_CFD.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.7
+ * \version 2.0.8
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -178,18 +178,18 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
         
 		/*--- Compute elements surrounding points, points surrounding points,
          and elements surrounding elements ---*/
-		if (rank == MASTER_NODE) cout << "Setting local point and element connectivity." <<endl;
+		if (rank == MASTER_NODE) cout << "Setting local point and element connectivity." << endl;
 		geometry[iZone][MESH_0]->SetEsuP();
 		geometry[iZone][MESH_0]->SetPsuP();
 		geometry[iZone][MESH_0]->SetEsuE();
         
 		/*--- Check the orientation before computing geometrical quantities ---*/
-		if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation." <<endl;
+		if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation." << endl;
 		geometry[iZone][MESH_0]->SetBoundVolume();
 		geometry[iZone][MESH_0]->Check_Orientation(config[iZone]);
         
 		/*--- Create the edge structure ---*/
-		if (rank == MASTER_NODE) cout << "Identifying edges and vertices." <<endl;
+		if (rank == MASTER_NODE) cout << "Identifying edges and vertices." << endl;
 		geometry[iZone][MESH_0]->SetEdges();
 		geometry[iZone][MESH_0]->SetVertex(config[iZone]);
         
@@ -277,7 +277,7 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
   adj_tne2_euler, adj_tne2_ns,
   plasma_euler, plasma_ns, plasma_monatomic, plasma_diatomic,
   adj_plasma_euler, adj_plasma_ns,
-	electric, wave, fea,
+	poisson, wave, fea, heat,
   spalart_allmaras, menter_sst, transition,
   template_solver;
     
@@ -292,9 +292,10 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
   adj_plasma_euler = false;	 adj_plasma_ns   = false;
   plasma_monatomic = false;  plasma_diatomic = false;
   spalart_allmaras = false;  menter_sst      = false;
-  electric         = false;
+  poisson          = false;
   wave             = false;
   fea              = false;
+  heat             = false;
   transition       = false;
   template_solver  = false;
   
@@ -311,8 +312,9 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
     case FLUID_STRUCTURE_RANS: ns = true; turbulent = true; fea = true; break;
     case AEROACOUSTIC_NAVIER_STOKES: ns = true; wave = true; break;
     case AEROACOUSTIC_RANS: ns = true; turbulent = true; wave = true; break;
-    case ELECTRIC_POTENTIAL: electric = true; break;
+    case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
+    case HEAT_EQUATION: heat = true; break;
     case LINEAR_ELASTICITY: fea = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
@@ -342,14 +344,14 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
       if (iZone == ZONE_0) {
         plasma_euler = true;
       } else if (iZone == ZONE_1) {
-        electric = true;
+        poisson = true;
       }
       break;
     case PLASMA_NAVIER_STOKES:
       if (iZone == ZONE_0) {
         plasma_ns = true;
       } else if (iZone == ZONE_1) {
-        electric = true;
+        poisson = true;
       }
       break;
 	}
@@ -410,14 +412,17 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
                 solver_container[iMGlevel][TRANS_SOL] = new CTransLMSolver(geometry[iMGlevel], config, iMGlevel);
             }
 		}
-		if (electric) {
-			solver_container[iMGlevel][ELEC_SOL] = new CElectricSolver(geometry[iMGlevel], config);
+		if (poisson) {
+			solver_container[iMGlevel][POISSON_SOL] = new CPoissonSolver(geometry[iMGlevel], config);
 		}
 		if (plasma_euler || plasma_ns) {
 			solver_container[iMGlevel][PLASMA_SOL] = new CPlasmaSolver(geometry[iMGlevel], config);
 		}
 		if (wave) {
 			solver_container[iMGlevel][WAVE_SOL] = new CWaveSolver(geometry[iMGlevel], config);
+		}
+    if (heat) {
+			solver_container[iMGlevel][HEAT_SOL] = new CHeatSolver(geometry[iMGlevel], config);
 		}
 		if (fea) {
 			solver_container[iMGlevel][FEA_SOL] = new CFEASolver(geometry[iMGlevel], config);
@@ -469,7 +474,7 @@ void Integration_Preprocessing(CIntegration **integration_container,
   plasma_euler, adj_plasma_euler,
   plasma_ns,   adj_plasma_ns,
   plasma_monatomic, plasma_diatomic,
-	electric, wave, fea,  template_solver, transition;
+	poisson, wave, fea, heat, template_solver, transition;
   
 	/*--- Initialize some useful booleans ---*/
 	euler            = false; adj_euler        = false; lin_euler = false;
@@ -481,8 +486,9 @@ void Integration_Preprocessing(CIntegration **integration_container,
   plasma_euler     = false; adj_plasma_euler = false;
   plasma_ns        = false; adj_plasma_ns    = false;
   plasma_monatomic = false;	plasma_diatomic  = false;
-  electric         = false;
+  poisson          = false;
   wave             = false;
+  heat             = false;
   fea              = false;
   transition       = false;
 	template_solver  = false;
@@ -500,8 +506,9 @@ void Integration_Preprocessing(CIntegration **integration_container,
     case FLUID_STRUCTURE_RANS: ns = true; turbulent = true; fea = true; break;
     case AEROACOUSTIC_NAVIER_STOKES: ns = true; wave = true; break;
     case AEROACOUSTIC_RANS: ns = true; turbulent = true; wave = true; break;
-    case ELECTRIC_POTENTIAL: electric = true; break;
+    case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
+    case HEAT_EQUATION: heat = true; break;
     case LINEAR_ELASTICITY: fea = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
@@ -531,14 +538,14 @@ void Integration_Preprocessing(CIntegration **integration_container,
       if (iZone == ZONE_0) {
         plasma_euler = true;
       } else if (iZone == ZONE_1) {
-        electric = true;
+        poisson = true;
       }
       break;
     case PLASMA_NAVIER_STOKES:
       if (iZone == ZONE_0) {
         plasma_ns = true;
       } else if (iZone == ZONE_1) {
-        electric = true;
+        poisson = true;
       }
       break;
 	}
@@ -567,7 +574,7 @@ void Integration_Preprocessing(CIntegration **integration_container,
     
 	/*--- Allocate solution for a template problem ---*/
 	if (template_solver) integration_container[TEMPLATE_SOL] = new CSingleGridIntegration(config);
-    
+
 	/*--- Allocate solution for direct problem ---*/
 	if (euler) integration_container[FLOW_SOL] = new CMultiGridIntegration(config);
 	if (ns) integration_container[FLOW_SOL] = new CMultiGridIntegration(config);
@@ -575,10 +582,11 @@ void Integration_Preprocessing(CIntegration **integration_container,
 	if (tne2_ns) integration_container[TNE2_SOL] = new CMultiGridIntegration(config);
 	if (turbulent) integration_container[TURB_SOL] = new CSingleGridIntegration(config);
 	if (transition) integration_container[TRANS_SOL] = new CSingleGridIntegration(config);
-	if (electric) integration_container[ELEC_SOL] = new CPotentialIntegration(config);
+	if (poisson) integration_container[POISSON_SOL] = new CSingleGridIntegration(config);
 	if (plasma_euler) integration_container[PLASMA_SOL] = new CMultiGridIntegration(config);
 	if (plasma_ns) integration_container[PLASMA_SOL] = new CMultiGridIntegration(config);
 	if (wave) integration_container[WAVE_SOL] = new CSingleGridIntegration(config);
+	if (heat) integration_container[HEAT_SOL] = new CSingleGridIntegration(config);
 	if (fea) integration_container[FEA_SOL] = new CSingleGridIntegration(config);
     
 	/*--- Allocate solution for adjoint problem ---*/
@@ -610,9 +618,10 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
   nVar_Adj_Turb   = 0,
   nVar_Adj_TNE2   = 0,
   nVar_Adj_Plasma = 0,
-  nVar_Elec       = 0,
+  nVar_Poisson    = 0,
   nVar_FEA        = 0,
   nVar_Wave       = 0,
+  nVar_Heat       = 0,
   nVar_Lin_Flow   = 0,
   nSpecies = 0, nDiatomics = 0, nMonatomics = 0;
   
@@ -628,9 +637,10 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
   plasma_ns, adj_plasma_ns,
   plasma_monatomic, plasma_diatomic,
   spalart_allmaras, menter_sst,
-  electric,
+  poisson,
   wave,
   fea,
+  heat,
   transition,
   template_solver;
     
@@ -640,10 +650,10 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
     
 	/*--- Initialize some useful booleans ---*/
 	euler            = false;   ns               = false;   turbulent        = false;
-	electric         = false;   plasma_monatomic = false;   plasma_diatomic  = false;  plasma_euler     = false;
+	poisson          = false;   plasma_monatomic = false;   plasma_diatomic  = false;  plasma_euler     = false;
 	plasma_ns        = false;   adj_euler        = false;	  adj_ns           = false;	 adj_turb         = false;
 	adj_plasma_euler = false;   adj_plasma_ns    = false;
-  wave             = false;   fea              = false;   spalart_allmaras = false;
+  wave             = false;   heat             = false;   fea              = false;   spalart_allmaras = false;
   tne2_euler       = false;   tne2_ns          = false;
   adj_tne2_euler   = false;	  adj_tne2_ns      = false;
 	lin_euler        = false;   lin_ns           = false;   lin_turb         = false;	 menter_sst       = false;
@@ -663,8 +673,9 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
     case FLUID_STRUCTURE_RANS: ns = true; turbulent = true; fea = true; break;
     case AEROACOUSTIC_NAVIER_STOKES: ns = true; wave = true; break;
     case AEROACOUSTIC_RANS: ns = true; turbulent = true; wave = true; break;
-    case ELECTRIC_POTENTIAL: electric = true; break;
+    case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
+    case HEAT_EQUATION: heat = true; break;
     case LINEAR_ELASTICITY: fea = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
@@ -694,14 +705,14 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
       if (iZone == ZONE_0) {
         plasma_euler = true;
       } else if (iZone == ZONE_1) {
-        electric = true;
+        poisson = true;
       }
       break;
     case PLASMA_NAVIER_STOKES:
       if (iZone == ZONE_0) {
         plasma_ns = true;
       } else if (iZone == ZONE_1) {
-        electric = true;
+        poisson = true;
       }
       break;
 	}
@@ -725,7 +736,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
       case ARGON_SID: plasma_diatomic = true; break;
       default: cout << "Specified plasma model unavailable or none selected" << endl; cin.get(); break;
 		}
-		//if (config->GetElectricSolver()) electric  = true;
+		//if (config->GetPoissonSolver()) poisson  = true;
 	}
   
 	/*--- Number of variables for the template ---*/
@@ -738,7 +749,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
   if (transition)		nVar_Trans = solver_container[MESH_0][TRANS_SOL]->GetnVar();
   if (tne2_euler)   nVar_TNE2 = solver_container[MESH_0][TNE2_SOL]->GetnVar();
   if (tne2_ns)	    nVar_TNE2 = solver_container[MESH_0][TNE2_SOL]->GetnVar();
-	if (electric)			nVar_Elec = solver_container[MESH_0][ELEC_SOL]->GetnVar();
+	if (poisson)			nVar_Poisson = solver_container[MESH_0][POISSON_SOL]->GetnVar();
 	if (plasma_euler || plasma_ns)	{
 		nVar_Plasma = solver_container[MESH_0][PLASMA_SOL]->GetnVar();
 		nSpecies    = solver_container[MESH_0][PLASMA_SOL]->GetnSpecies();
@@ -748,6 +759,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
   
   if (wave)				nVar_Wave = solver_container[MESH_0][WAVE_SOL]->GetnVar();
 	if (fea)				nVar_FEA = solver_container[MESH_0][FEA_SOL]->GetnVar();
+  if (heat)				nVar_Heat = solver_container[MESH_0][HEAT_SOL]->GetnVar();
   
 	/*--- Number of variables for adjoint problem ---*/
 	if (adj_euler)    	  nVar_Adj_Flow = solver_container[MESH_0][ADJFLOW_SOL]->GetnVar();
@@ -1441,34 +1453,59 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
 		}
 	}
     
-	/*--- Solver definition for the electric potential problem ---*/
-	if (electric) {
+	/*--- Solver definition for the poisson potential problem ---*/
+	if (poisson) {
         
 		/*--- Definition of the viscous scheme for each equation and mesh level ---*/
-		switch (config->GetKind_ViscNumScheme_Elec()) {
+		switch (config->GetKind_ViscNumScheme_Poisson()) {
             case GALERKIN :
-                numerics_container[MESH_0][ELEC_SOL][VISC_TERM] = new CGalerkin_Flow(nDim, nVar_Elec, config);
+                numerics_container[MESH_0][POISSON_SOL][VISC_TERM] = new CGalerkin_Flow(nDim, nVar_Poisson, config);
                 break;
             default : cout << "Viscous scheme not implemented." << endl; cin.get(); break;
 		}
         
 		/*--- Definition of the source term integration scheme for each equation and mesh level ---*/
-		switch (config->GetKind_SourNumScheme_Elec()) {
+		switch (config->GetKind_SourNumScheme_Poisson()) {
             case NONE :
                 break;
             case PIECEWISE_CONSTANT :
-                numerics_container[MESH_0][ELEC_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_Elec(nDim, nVar_Elec, config);
-                numerics_container[MESH_0][ELEC_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Elec, config);
+                numerics_container[MESH_0][POISSON_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Poisson, config);
+                numerics_container[MESH_0][POISSON_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Poisson, config);
                 break;
             default :
                 cout << "Source term not implemented." << endl; cin.get();
                 break;
 		}
 	}
+  
+  /*--- Solver definition for the poisson potential problem ---*/
+	if (heat) {
     
+		/*--- Definition of the viscous scheme for each equation and mesh level ---*/
+		switch (config->GetKind_ViscNumScheme_Heat()) {
+      case GALERKIN :
+        numerics_container[MESH_0][HEAT_SOL][VISC_TERM] = new CGalerkin_Flow(nDim, nVar_Heat, config);
+        break;
+      default : cout << "Viscous scheme not implemented." << endl; cin.get(); break;
+		}
+    
+		/*--- Definition of the source term integration scheme for each equation and mesh level ---*/
+		switch (config->GetKind_SourNumScheme_Heat()) {
+      case NONE :
+        break;
+      case PIECEWISE_CONSTANT :
+        numerics_container[MESH_0][HEAT_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Heat, config);
+        numerics_container[MESH_0][HEAT_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Heat, config);
+        break;
+      default :
+        cout << "Source term not implemented." << endl; cin.get();
+        break;
+		}
+	}
+  
 	/*--- Solver definition for the flow adjoint problem ---*/
 	if (adj_euler || adj_ns) {
-        
+    
 		/*--- Definition of the convective scheme for each equation and mesh level ---*/
 		switch (config->GetKind_ConvNumScheme_AdjFlow()) {
             case NO_CONVECTIVE :
