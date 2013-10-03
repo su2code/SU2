@@ -30,6 +30,11 @@ CPoissonSolver::CPoissonSolver(CGeometry *geometry, CConfig *config) : CSolver()
 	unsigned long nPoint, iPoint;
 	unsigned short nMarker, iVar, iDim;
   
+  int rank = MASTER_NODE;
+#ifndef NO_MPI
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+  
 	nDim =          geometry->GetnDim();
   nPoint =        geometry->GetnPoint();
   nPointDomain =  geometry->GetnPointDomain();
@@ -65,14 +70,15 @@ CPoissonSolver::CPoissonSolver(CGeometry *geometry, CConfig *config) : CSolver()
 	}
   
 	/*--- Initialization of the structure of the whole Jacobian ---*/
-  
+  if (rank == MASTER_NODE) cout << "Initialize jacobian structure (Poisson equation)." << endl;
 	StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
   
   /*--- Solution and residual vectors ---*/
   
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-  
+  LinSysAux.Initialize(nPoint, nPointDomain, nVar, 0.0);
+
 	/*--- Computation of gradients by least squares ---*/
   
 	Smatrix = new double* [nDim]; // S matrix := inv(R)*traspose(inv(R))
@@ -136,44 +142,6 @@ void CPoissonSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   
 }
 
-void CPoissonSolver::Solve_LinearSystem(CGeometry *geometry, CSolver **solver_container,
-                                        CConfig *config, unsigned short iMesh) {
-	unsigned long iPoint;
-	unsigned short iVar = 0;
-	double norm = 1E6;
-	int iter_max = 10000;
-  
-	/*--- Build lineal system ---*/
-	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-		LinSysRes[iPoint] = LinSysRes.GetBlock(iPoint, iVar);
-		LinSysSol[iPoint] = node[iPoint]->GetSolution(iVar);
-	}
-  
-	/*--- Solve the system ---*/
-	CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
-  
-	StiffMatrix.BuildJacobiPreconditioner();
-  
-	CPreconditioner* precond = NULL;
-	Jacobian.BuildJacobiPreconditioner();
-	precond = new CJacobiPreconditioner(Jacobian, geometry, config);
-  
-	CSysSolve system;
-	system.ConjugateGradient(LinSysRes, LinSysSol, *mat_vec, *precond, 1E-12, iter_max, true);
-  
-	delete mat_vec;
-	delete precond;
-  
-	SetRes_RMS(0, norm);
-  
-	/*--- Update solution ---*/
-	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-		node[iPoint]->SetSolution(0,LinSysSol[iPoint]);
-    
-	}
-  
-}
-
 void CPoissonSolver::Compute_Residual(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                       unsigned short iMesh) {
   
@@ -201,149 +169,149 @@ void CPoissonSolver::Compute_Residual(CGeometry *geometry, CSolver **solver_cont
  */
 void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
                                      CConfig *config, unsigned short iMesh) {
-  
-	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3 = 0;
-	double a[3], b[3],c[3], d[3], Area_Local,Volume_Local;
-	//	double Local_Delta_Time;
-	double **Gradient_0, **Gradient_1, **Gradient_2, **Gradient_3;
-	double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3= NULL;;
-	unsigned short iDim;
-	double  dt;
-	//	double  dx, u, c;
-	bool MacCormack_relaxation = (config->GetMacCormackRelaxation());
-  
-	if (nDim == 2) {
-		if (config->GetPoissonSolver()) {
-      
-			for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-        
-				Point_0 = geometry->elem[iElem]->GetNode(0);
-				Point_1 = geometry->elem[iElem]->GetNode(1);
-				Point_2 = geometry->elem[iElem]->GetNode(2);
-        
-				Coord_0 = geometry->node[Point_0]->GetCoord();
-				Coord_1 = geometry->node[Point_1]->GetCoord();
-				Coord_2 = geometry->node[Point_2]->GetCoord();
-        
-				for (iDim=0; iDim < nDim; iDim++) {
-					a[iDim] = Coord_0[iDim]-Coord_2[iDim];
-					b[iDim] = Coord_1[iDim]-Coord_2[iDim];
-				}
-        
-				Area_Local = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
-        
-				Gradient_0 = node[Point_0]->GetPlasmaRhoUGradient();
-				Gradient_1 = node[Point_1]->GetPlasmaRhoUGradient();
-				Gradient_2 = node[Point_2]->GetPlasmaRhoUGradient();
-        
-				numerics->SetVolume(Area_Local);
-        
-				dt = node[Point_0]->GetPlasmaTimeStep();
-        
-				/*		u = 4800;
-				 c = 87110;
-				 c = 800;
-				 dx = 0.004/81;
-				 Local_Delta_Time = config->GetCFL(iMesh) * dx/(u+c);
-				 numerics->SetTimeStep(Local_Delta_Time);
-				 */
-        
-				numerics->SetCoord(Coord_0, Coord_1, Coord_2);
-				numerics->SetTimeStep(dt);
-				numerics->SetChargeDensity(node[Point_0]->GetChargeDensity(), node[Point_1]->GetChargeDensity(), node[Point_2]->GetChargeDensity(), node[Point_3]->GetChargeDensity());
-				numerics->SetConsVarGradient(Gradient_0, Gradient_1, Gradient_2 );
-				numerics->ComputeResidual_MacCormack(Source_Vector, config);
-        
-				LinSysRes.AddBlock(Point_0, &Source_Vector[0]);
-				LinSysRes.AddBlock(Point_1, &Source_Vector[1]);
-				LinSysRes.AddBlock(Point_2, &Source_Vector[2]);
-        
-				if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE) {
-          
-					Point_0 = geometry->elem[iElem]->GetNode(3);
-					Point_1 = geometry->elem[iElem]->GetNode(0);
-					Point_2 = geometry->elem[iElem]->GetNode(2);
-          
-					Coord_0 = geometry->node[Point_0]->GetCoord();
-					Coord_1 = geometry->node[Point_1]->GetCoord();
-					Coord_2 = geometry->node[Point_2]->GetCoord();
-          
-					for (iDim=0; iDim < nDim; iDim++) {
-						a[iDim] = Coord_0[iDim]-Coord_2[iDim];
-						b[iDim] = Coord_1[iDim]-Coord_2[iDim];
-					}
-          
-					Area_Local = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
-          
-					Gradient_0 = node[Point_0]->GetPlasmaRhoUGradient();
-					Gradient_1 = node[Point_1]->GetPlasmaRhoUGradient();
-					Gradient_2 = node[Point_2]->GetPlasmaRhoUGradient();
-          
-					numerics->SetVolume(Area_Local);
-          
-					/*		u = 4800;
-					 c = 87110;
-					 c = 732.0;
-					 dx = 0.004/81;
-					 Local_Delta_Time = config->GetCFL(iMesh) * dx/(u+c);
-					 numerics->SetTimeStep(Local_Delta_Time);
-					 */
-          
-					dt = node[Point_0]->GetPlasmaTimeStep();
-					numerics->SetCoord(Coord_0, Coord_1, Coord_2);
-					numerics->SetTimeStep(dt);
-					numerics->SetChargeDensity(node[Point_0]->GetChargeDensity(), node[Point_1]->GetChargeDensity(), node[Point_2]->GetChargeDensity(), node[Point_3]->GetChargeDensity());
-					numerics->SetConsVarGradient(Gradient_0, Gradient_1, Gradient_2 );
-					numerics->ComputeResidual_MacCormack(Source_Vector, config);
-					LinSysRes.AddBlock(Point_0, &Source_Vector[0]);
-					LinSysRes.AddBlock(Point_1, &Source_Vector[1]);
-					LinSysRes.AddBlock(Point_2, &Source_Vector[2]);
-				}
-			}
-		}
-	}
-	if(nDim == 3) {
-		if (config->GetPoissonSolver()) {
-			for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-				Point_0 = geometry->elem[iElem]->GetNode(0);	Coord_0 = geometry->node[Point_0]->GetCoord();
-				Point_1 = geometry->elem[iElem]->GetNode(1);	Coord_1 = geometry->node[Point_1]->GetCoord();
-				Point_2 = geometry->elem[iElem]->GetNode(2);	Coord_2 = geometry->node[Point_2]->GetCoord();
-				Point_3 = geometry->elem[iElem]->GetNode(3);	Coord_3 = geometry->node[Point_3]->GetCoord();
-        
-				for (iDim = 0; iDim < nDim; iDim++) {
-					a[iDim] = Coord_0[iDim]-Coord_2[iDim];
-					b[iDim] = Coord_1[iDim]-Coord_2[iDim];
-					c[iDim] = Coord_3[iDim]-Coord_2[iDim];
-				}
-        
-				d[0] = a[1]*b[2]-a[2]*b[1];
-				d[1] = -(a[0]*b[2]-a[2]*b[0]);
-				d[2] = a[0]*b[1]-a[1]*b[0];
-        
-				/*--- Compute element volume ---*/
-				Volume_Local = fabs(c[0]*d[0] + c[1]*d[1] + c[2]*d[2])/6.0;
-				numerics->SetVolume(Volume_Local);
-				numerics->SetChargeDensity(node[Point_0]->GetChargeDensity(), node[Point_1]->GetChargeDensity(), node[Point_2]->GetChargeDensity(), node[Point_3]->GetChargeDensity());
-        
-				if (MacCormack_relaxation) {
-          
-					Gradient_0 = node[Point_0]->GetPlasmaRhoUGradient();
-					Gradient_1 = node[Point_1]->GetPlasmaRhoUGradient();
-					Gradient_2 = node[Point_2]->GetPlasmaRhoUGradient();
-					Gradient_3 = node[Point_3]->GetPlasmaRhoUGradient();
-					numerics->SetCoord(Coord_0, Coord_1, Coord_2, Coord_3);
-					numerics->SetConsVarGradient(Gradient_0, Gradient_1, Gradient_2, Gradient_3 );
-					numerics->ComputeResidual_MacCormack(Source_Vector, config);
-				}
-				else numerics->ComputeResidual(Source_Vector, config);
-        
-				LinSysRes.AddBlock(Point_0, &Source_Vector[0]);
-				LinSysRes.AddBlock(Point_1, &Source_Vector[1]);
-				LinSysRes.AddBlock(Point_2, &Source_Vector[2]);
-				LinSysRes.AddBlock(Point_3, &Source_Vector[3]);
-			}
-		}
-	}
+//  
+//	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3 = 0;
+//	double a[3], b[3],c[3], d[3], Area_Local,Volume_Local;
+//	//	double Local_Delta_Time;
+//	double **Gradient_0, **Gradient_1, **Gradient_2, **Gradient_3;
+//	double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3= NULL;;
+//	unsigned short iDim;
+//	double  dt;
+//	//	double  dx, u, c;
+//	bool MacCormack_relaxation = (config->GetMacCormackRelaxation());
+//  
+//	if (nDim == 2) {
+//		if (config->GetPoissonSolver()) {
+//      
+//			for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+//        
+//				Point_0 = geometry->elem[iElem]->GetNode(0);
+//				Point_1 = geometry->elem[iElem]->GetNode(1);
+//				Point_2 = geometry->elem[iElem]->GetNode(2);
+//        
+//				Coord_0 = geometry->node[Point_0]->GetCoord();
+//				Coord_1 = geometry->node[Point_1]->GetCoord();
+//				Coord_2 = geometry->node[Point_2]->GetCoord();
+//        
+//				for (iDim=0; iDim < nDim; iDim++) {
+//					a[iDim] = Coord_0[iDim]-Coord_2[iDim];
+//					b[iDim] = Coord_1[iDim]-Coord_2[iDim];
+//				}
+//        
+//				Area_Local = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
+//        
+//				Gradient_0 = node[Point_0]->GetPlasmaRhoUGradient();
+//				Gradient_1 = node[Point_1]->GetPlasmaRhoUGradient();
+//				Gradient_2 = node[Point_2]->GetPlasmaRhoUGradient();
+//        
+//				numerics->SetVolume(Area_Local);
+//        
+//				dt = node[Point_0]->GetPlasmaTimeStep();
+//        
+//				/*		u = 4800;
+//				 c = 87110;
+//				 c = 800;
+//				 dx = 0.004/81;
+//				 Local_Delta_Time = config->GetCFL(iMesh) * dx/(u+c);
+//				 numerics->SetTimeStep(Local_Delta_Time);
+//				 */
+//        
+//				numerics->SetCoord(Coord_0, Coord_1, Coord_2);
+//				numerics->SetTimeStep(dt);
+//				numerics->SetChargeDensity(node[Point_0]->GetChargeDensity(), node[Point_1]->GetChargeDensity(), node[Point_2]->GetChargeDensity(), node[Point_3]->GetChargeDensity());
+//				numerics->SetConsVarGradient(Gradient_0, Gradient_1, Gradient_2 );
+//				numerics->ComputeResidual_MacCormack(Source_Vector, config);
+//        
+//				LinSysRes.AddBlock(Point_0, &Source_Vector[0]);
+//				LinSysRes.AddBlock(Point_1, &Source_Vector[1]);
+//				LinSysRes.AddBlock(Point_2, &Source_Vector[2]);
+//        
+//				if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE) {
+//          
+//					Point_0 = geometry->elem[iElem]->GetNode(3);
+//					Point_1 = geometry->elem[iElem]->GetNode(0);
+//					Point_2 = geometry->elem[iElem]->GetNode(2);
+//          
+//					Coord_0 = geometry->node[Point_0]->GetCoord();
+//					Coord_1 = geometry->node[Point_1]->GetCoord();
+//					Coord_2 = geometry->node[Point_2]->GetCoord();
+//          
+//					for (iDim=0; iDim < nDim; iDim++) {
+//						a[iDim] = Coord_0[iDim]-Coord_2[iDim];
+//						b[iDim] = Coord_1[iDim]-Coord_2[iDim];
+//					}
+//          
+//					Area_Local = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
+//          
+//					Gradient_0 = node[Point_0]->GetPlasmaRhoUGradient();
+//					Gradient_1 = node[Point_1]->GetPlasmaRhoUGradient();
+//					Gradient_2 = node[Point_2]->GetPlasmaRhoUGradient();
+//          
+//					numerics->SetVolume(Area_Local);
+//          
+//					/*		u = 4800;
+//					 c = 87110;
+//					 c = 732.0;
+//					 dx = 0.004/81;
+//					 Local_Delta_Time = config->GetCFL(iMesh) * dx/(u+c);
+//					 numerics->SetTimeStep(Local_Delta_Time);
+//					 */
+//          
+//					dt = node[Point_0]->GetPlasmaTimeStep();
+//					numerics->SetCoord(Coord_0, Coord_1, Coord_2);
+//					numerics->SetTimeStep(dt);
+//					numerics->SetChargeDensity(node[Point_0]->GetChargeDensity(), node[Point_1]->GetChargeDensity(), node[Point_2]->GetChargeDensity(), node[Point_3]->GetChargeDensity());
+//					numerics->SetConsVarGradient(Gradient_0, Gradient_1, Gradient_2 );
+//					numerics->ComputeResidual_MacCormack(Source_Vector, config);
+//					LinSysRes.AddBlock(Point_0, &Source_Vector[0]);
+//					LinSysRes.AddBlock(Point_1, &Source_Vector[1]);
+//					LinSysRes.AddBlock(Point_2, &Source_Vector[2]);
+//				}
+//			}
+//		}
+//	}
+//	if(nDim == 3) {
+//		if (config->GetPoissonSolver()) {
+//			for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+//				Point_0 = geometry->elem[iElem]->GetNode(0);	Coord_0 = geometry->node[Point_0]->GetCoord();
+//				Point_1 = geometry->elem[iElem]->GetNode(1);	Coord_1 = geometry->node[Point_1]->GetCoord();
+//				Point_2 = geometry->elem[iElem]->GetNode(2);	Coord_2 = geometry->node[Point_2]->GetCoord();
+//				Point_3 = geometry->elem[iElem]->GetNode(3);	Coord_3 = geometry->node[Point_3]->GetCoord();
+//        
+//				for (iDim = 0; iDim < nDim; iDim++) {
+//					a[iDim] = Coord_0[iDim]-Coord_2[iDim];
+//					b[iDim] = Coord_1[iDim]-Coord_2[iDim];
+//					c[iDim] = Coord_3[iDim]-Coord_2[iDim];
+//				}
+//        
+//				d[0] = a[1]*b[2]-a[2]*b[1];
+//				d[1] = -(a[0]*b[2]-a[2]*b[0]);
+//				d[2] = a[0]*b[1]-a[1]*b[0];
+//        
+//				/*--- Compute element volume ---*/
+//				Volume_Local = fabs(c[0]*d[0] + c[1]*d[1] + c[2]*d[2])/6.0;
+//				numerics->SetVolume(Volume_Local);
+//				numerics->SetChargeDensity(node[Point_0]->GetChargeDensity(), node[Point_1]->GetChargeDensity(), node[Point_2]->GetChargeDensity(), node[Point_3]->GetChargeDensity());
+//        
+//				if (MacCormack_relaxation) {
+//          
+//					Gradient_0 = node[Point_0]->GetPlasmaRhoUGradient();
+//					Gradient_1 = node[Point_1]->GetPlasmaRhoUGradient();
+//					Gradient_2 = node[Point_2]->GetPlasmaRhoUGradient();
+//					Gradient_3 = node[Point_3]->GetPlasmaRhoUGradient();
+//					numerics->SetCoord(Coord_0, Coord_1, Coord_2, Coord_3);
+//					numerics->SetConsVarGradient(Gradient_0, Gradient_1, Gradient_2, Gradient_3 );
+//					numerics->ComputeResidual_MacCormack(Source_Vector, config);
+//				}
+//				else numerics->ComputeResidual(Source_Vector, config);
+//        
+//				LinSysRes.AddBlock(Point_0, &Source_Vector[0]);
+//				LinSysRes.AddBlock(Point_1, &Source_Vector[1]);
+//				LinSysRes.AddBlock(Point_2, &Source_Vector[2]);
+//				LinSysRes.AddBlock(Point_3, &Source_Vector[3]);
+//			}
+//		}
+//	}
 }
 
 void CPoissonSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
@@ -382,6 +350,7 @@ void CPoissonSolver::Galerkin_Method(CGeometry *geometry, CSolver **solver_conta
   
 	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3 = 0;
 	double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3 = NULL;
+  
 	if (nDim == 2 ) {
 		for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
       
@@ -397,109 +366,20 @@ void CPoissonSolver::Galerkin_Method(CGeometry *geometry, CSolver **solver_conta
 			numerics->ComputeResidual(StiffMatrix_Elem, config);
 			AddStiffMatrix(StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
 		}
-    
-		for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-			if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE) {
-        
-				Point_0 = geometry->elem[iElem]->GetNode(3);
-				Point_1 = geometry->elem[iElem]->GetNode(0);
-				Point_2 = geometry->elem[iElem]->GetNode(2);
-        
-				Coord_0 = geometry->node[Point_0]->GetCoord();
-				Coord_1 = geometry->node[Point_1]->GetCoord();
-				Coord_2 = geometry->node[Point_2]->GetCoord();
-        
-				numerics->SetCoord(Coord_0, Coord_1, Coord_2);
-				numerics->ComputeResidual(StiffMatrix_Elem, config);
-				AddStiffMatrix(StiffMatrix_Elem,Point_0, Point_1, Point_2, Point_3);
-			}
-		}
 	}
   
 	if (nDim == 3 ) {
     
 		for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
       
-			if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON) {
-        
-				Point_0 = geometry->elem[iElem]->GetNode(0); 	Coord_0 = geometry->node[Point_0]->GetCoord();
-				Point_1 = geometry->elem[iElem]->GetNode(1);	Coord_1 = geometry->node[Point_1]->GetCoord();
-				Point_2 = geometry->elem[iElem]->GetNode(2); 	Coord_2 = geometry->node[Point_2]->GetCoord();
-				Point_3 = geometry->elem[iElem]->GetNode(3);	Coord_3 = geometry->node[Point_3]->GetCoord();
-        
-				numerics->SetCoord(Coord_0, Coord_1, Coord_2, Coord_3);
-				numerics->ComputeResidual(StiffMatrix_Elem, config);
-				AddStiffMatrix(StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-			}
+      Point_0 = geometry->elem[iElem]->GetNode(0); 	Coord_0 = geometry->node[Point_0]->GetCoord();
+      Point_1 = geometry->elem[iElem]->GetNode(1);	Coord_1 = geometry->node[Point_1]->GetCoord();
+      Point_2 = geometry->elem[iElem]->GetNode(2); 	Coord_2 = geometry->node[Point_2]->GetCoord();
+      Point_3 = geometry->elem[iElem]->GetNode(3);	Coord_3 = geometry->node[Point_3]->GetCoord();
       
-			if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON) {
-        
-				/* Tetrahedron: 1, nodes: [0,2,3,6] */
-				Point_0 = geometry->elem[iElem]->GetNode(0); 	Coord_0 = geometry->node[Point_0]->GetCoord();
-				Point_1 = geometry->elem[iElem]->GetNode(2);	Coord_1 = geometry->node[Point_1]->GetCoord();
-				Point_2 = geometry->elem[iElem]->GetNode(3); 	Coord_2 = geometry->node[Point_2]->GetCoord();
-				Point_3 = geometry->elem[iElem]->GetNode(6);	Coord_3 = geometry->node[Point_3]->GetCoord();
-        
-				numerics->SetCoord(Coord_0, Coord_1, Coord_2, Coord_3);
-				numerics->ComputeResidual(StiffMatrix_Elem, config);
-				AddStiffMatrix(StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-				/******************/
-        
-				/* Tetrahedron: 2, nodes: [0,3,7,6]  */
-				Point_0 = geometry->elem[iElem]->GetNode(0); 	Coord_0 = geometry->node[Point_0]->GetCoord();
-				Point_1 = geometry->elem[iElem]->GetNode(3);	Coord_1 = geometry->node[Point_1]->GetCoord();
-				Point_2 = geometry->elem[iElem]->GetNode(7); 	Coord_2 = geometry->node[Point_2]->GetCoord();
-				Point_3 = geometry->elem[iElem]->GetNode(6);	Coord_3 = geometry->node[Point_3]->GetCoord();
-        
-				numerics->SetCoord(Coord_0, Coord_1, Coord_2, Coord_3);
-				numerics->ComputeResidual(StiffMatrix_Elem, config);
-				AddStiffMatrix(StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-				/******************/
-        
-				/* Tetrahedron: 3, nodes: [0,7,4, 6]  */
-				Point_0 = geometry->elem[iElem]->GetNode(0); 	Coord_0 = geometry->node[Point_0]->GetCoord();
-				Point_1 = geometry->elem[iElem]->GetNode(7);	Coord_1 = geometry->node[Point_1]->GetCoord();
-				Point_2 = geometry->elem[iElem]->GetNode(4); 	Coord_2 = geometry->node[Point_2]->GetCoord();
-				Point_3 = geometry->elem[iElem]->GetNode(6);	Coord_3 = geometry->node[Point_3]->GetCoord();
-        
-				numerics->SetCoord(Coord_0, Coord_1, Coord_2, Coord_3);
-				numerics->ComputeResidual(StiffMatrix_Elem, config);
-				AddStiffMatrix(StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-				/******************/
-        
-				/* Tetrahedron: 4, nodes: [0,5,6,4]  */
-				Point_0 = geometry->elem[iElem]->GetNode(0); 	Coord_0 = geometry->node[Point_0]->GetCoord();
-				Point_1 = geometry->elem[iElem]->GetNode(5);	Coord_1 = geometry->node[Point_1]->GetCoord();
-				Point_2 = geometry->elem[iElem]->GetNode(6); 	Coord_2 = geometry->node[Point_2]->GetCoord();
-				Point_3 = geometry->elem[iElem]->GetNode(4);	Coord_3 = geometry->node[Point_3]->GetCoord();
-        
-				numerics->SetCoord(Coord_0, Coord_1, Coord_2, Coord_3);
-				numerics->ComputeResidual(StiffMatrix_Elem, config);
-				AddStiffMatrix(StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-				/******************/
-        
-				/* Tetrahedron: 5, nodes: [1,5,6,0]  */
-				Point_0 = geometry->elem[iElem]->GetNode(1); 	Coord_0 = geometry->node[Point_0]->GetCoord();
-				Point_1 = geometry->elem[iElem]->GetNode(5);	Coord_1 = geometry->node[Point_1]->GetCoord();
-				Point_2 = geometry->elem[iElem]->GetNode(6); 	Coord_2 = geometry->node[Point_2]->GetCoord();
-				Point_3 = geometry->elem[iElem]->GetNode(0);	Coord_3 = geometry->node[Point_3]->GetCoord();
-        
-				numerics->SetCoord(Coord_0, Coord_1, Coord_2, Coord_3);
-				numerics->ComputeResidual(StiffMatrix_Elem, config);
-				AddStiffMatrix(StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-				/******************/
-        
-				/* Tetrahedron: 6, nodes: [1,6,2,0]  */
-				Point_0 = geometry->elem[iElem]->GetNode(1); 	Coord_0 = geometry->node[Point_0]->GetCoord();
-				Point_1 = geometry->elem[iElem]->GetNode(6);	Coord_1 = geometry->node[Point_1]->GetCoord();
-				Point_2 = geometry->elem[iElem]->GetNode(2); 	Coord_2 = geometry->node[Point_2]->GetCoord();
-				Point_3 = geometry->elem[iElem]->GetNode(0);	Coord_3 = geometry->node[Point_3]->GetCoord();
-        
-				numerics->SetCoord(Coord_0, Coord_1, Coord_2, Coord_3);
-				numerics->ComputeResidual(StiffMatrix_Elem, config);
-				AddStiffMatrix(StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
-				/******************/
-			}
+      numerics->SetCoord(Coord_0, Coord_1, Coord_2, Coord_3);
+      numerics->ComputeResidual(StiffMatrix_Elem, config);
+      AddStiffMatrix(StiffMatrix_Elem, Point_0, Point_1, Point_2, Point_3);
       
 		}
 	}
@@ -545,135 +425,109 @@ void CPoissonSolver::AddStiffMatrix(double **StiffMatrix_Elem, unsigned long Poi
 	}
 }
 
-/*!
- * \method BC_Euler_Wall
- * \brief Dirichlet/Neumann boundary condition
- * \author A. Lonkar
- */
-void CPoissonSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                   unsigned short val_marker) {
-	unsigned long Point, iVertex;
+void CPoissonSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solver_container,
+                                  CConfig *config, unsigned short val_marker) {
+  unsigned long Point, iVertex;
   
 	/*--- Identify if a boundary is Dirichlet or Neumman ---*/
-	bool Dirichlet = config->GetDirichlet_Boundary(config->GetMarker_All_Tag(val_marker));
-	if (Dirichlet) {
-		for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-			Point = geometry->vertex[val_marker][iVertex]->GetNode();
-			Solution[0]= config->GetDirichlet_Value(config->GetMarker_All_Tag(val_marker));
-			node[Point]->SetSolution(Solution);
-			LinSysRes.SetBlock(Point, Solution);
-			StiffMatrix.DeleteValsRowi(Point); // & includes 1 in the diagonal
-		}
-	}
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    Point = geometry->vertex[val_marker][iVertex]->GetNode();
+    Solution[0]= 10.0;
+    node[Point]->SetSolution(Solution);
+
+    LinSysRes.SetBlock(Point, Solution);
+    LinSysSol.SetBlock(Point, Solution);
+
+    StiffMatrix.DeleteValsRowi(Point); // & includes 1 in the diagonal
+  }
   
 }
 
-/*!
- * \method BC_Sym_Plane
- * \brief Dirichlet/Neumann boundary condition
- * \author A. Lonkar
- */
-void CPoissonSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                                  unsigned short val_marker) {
-	unsigned long Point, iVertex;
+void CPoissonSolver::BC_Neumann(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                                unsigned short val_marker) { }
+
+void CPoissonSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
   
-	/*--- Identify if a boundary is Dirichlet or Neumman ---*/
-	bool Dirichlet = config->GetDirichlet_Boundary(config->GetMarker_All_Tag(val_marker));
-	if (Dirichlet) {
-		for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-			Point = geometry->vertex[val_marker][iVertex]->GetNode();
-			Solution[0]= config->GetDirichlet_Value(config->GetMarker_All_Tag(val_marker));
-			node[Point]->SetSolution(Solution);
-			LinSysRes.SetBlock(Point, Solution);
-			StiffMatrix.DeleteValsRowi(Point); // & includes 1 in the diagonal
+	unsigned long iPoint, total_index;
+  unsigned short iVar;
+	
+	/*--- Build implicit system ---*/
+	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    
+		/*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
+		for (iVar = 0; iVar < nVar; iVar++) {
+			total_index = iPoint*nVar+iVar;
+			LinSysSol[total_index] = 0.0;
+		}
+    
+	}
+  
+  /*--- Initialize residual and solution at the ghost points ---*/
+  for (iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      total_index = iPoint*nVar + iVar;
+      LinSysRes[total_index] = 0.0;
+      LinSysSol[total_index] = 0.0;
+    }
+  }
+	
+	/*--- Solve the linear system (Krylov subspace methods) ---*/
+  CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
+  
+  CPreconditioner* precond = NULL;
+  if (config->GetKind_Linear_Solver_Prec() == JACOBI) {
+    StiffMatrix.BuildJacobiPreconditioner();
+    precond = new CJacobiPreconditioner(StiffMatrix, geometry, config);
+  }
+  else if (config->GetKind_Linear_Solver_Prec() == LU_SGS) {
+    precond = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
+  }
+  else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
+    StiffMatrix.BuildJacobiPreconditioner();
+    StiffMatrix.BuildLineletPreconditioner(geometry, config);
+    precond = new CLineletPreconditioner(StiffMatrix, geometry, config);
+  }
+  
+  CSysSolve system;
+  
+  if (config->GetKind_Linear_Solver() == BCGSTAB)
+    system.BCGSTAB(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(), config->GetLinear_Solver_Iter(), true);
+  else if (config->GetKind_Linear_Solver() == FGMRES)
+    system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(), config->GetLinear_Solver_Iter(), true);
+  
+  delete mat_vec;
+  delete precond;
+  
+	/*--- Update solution (system written in terms of increments) ---*/
+	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+		for (iVar = 0; iVar < nVar; iVar++) {
+			node[iPoint]->SetSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
 		}
 	}
+  
+  /*--- MPI solution ---*/
+  Set_MPI_Solution(geometry, config);
+  
+  /*---  Compute the residual Ax-f ---*/
+	StiffMatrix.ComputeResidual(LinSysSol, LinSysRes, LinSysAux);
+  
+  /*--- Set maximum residual to zero ---*/
+	for (iVar = 0; iVar < nVar; iVar++) {
+		SetRes_RMS(iVar, 0.0);
+    SetRes_Max(iVar, 0.0, 0);
+  }
+  
+  /*--- Compute the residual ---*/
+	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+		for (iVar = 0; iVar < nVar; iVar++) {
+			total_index = iPoint*nVar+iVar;
+			AddRes_RMS(iVar, LinSysAux[total_index]*LinSysAux[total_index]);
+      AddRes_Max(iVar, fabs(LinSysAux[total_index]), geometry->node[iPoint]->GetGlobalIndex());
+		}
+	}
+  
+  /*--- Compute the root mean square residual ---*/
+  SetResidual_RMS(geometry, config);
+  
 }
 
-/*!
- * \method BC_HeatFlux_Wall
- * \brief Dirichlet/Neumann boundary condition
- * \author A. Lonkar
- */
-void CPoissonSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                                      unsigned short val_marker) {
-	unsigned long Point, iVertex;
-  
-	/*--- Identify if a boundary is Dirichlet or Neumman ---*/
-	bool Dirichlet = config->GetDirichlet_Boundary(config->GetMarker_All_Tag(val_marker));
-	if (Dirichlet) {
-		for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-			Point = geometry->vertex[val_marker][iVertex]->GetNode();
-			Solution[0]= config->GetDirichlet_Value(config->GetMarker_All_Tag(val_marker));
-			node[Point]->SetSolution(Solution);
-			LinSysRes.SetBlock(Point, Solution);
-			StiffMatrix.DeleteValsRowi(Point); // & includes 1 in the diagonal
-		}
-	}
-}
-
-/*!
- * \method BC_Outlet
- * \brief Dirichlet/Neumann boundary condition
- * \author A. Lonkar
- */
-void CPoissonSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                               unsigned short val_marker) {
-	unsigned long Point, iVertex;
-  
-	/*--- Identify if a boundary is Dirichlet or Neumman ---*/
-	bool Dirichlet = config->GetDirichlet_Boundary(config->GetMarker_All_Tag(val_marker));
-	if (Dirichlet) {
-		for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-			Point = geometry->vertex[val_marker][iVertex]->GetNode();
-			Solution[0]= config->GetDirichlet_Value(config->GetMarker_All_Tag(val_marker));
-			node[Point]->SetSolution(Solution);
-			LinSysRes.SetBlock(Point, Solution);
-			StiffMatrix.DeleteValsRowi(Point); // & includes 1 in the diagonal
-		}
-	}
-}
-
-/*!
- * \method BC_Inlet
- * \brief Dirichlet/Neumann boundary condition
- * \author A. Lonkar
- */
-void CPoissonSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                              unsigned short val_marker) {
-	unsigned long Point, iVertex;
-  
-	/*--- Identify if a boundary is Dirichlet or Neumman ---*/
-	bool Dirichlet = config->GetDirichlet_Boundary(config->GetMarker_All_Tag(val_marker));
-	if (Dirichlet) {
-		for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-			Point = geometry->vertex[val_marker][iVertex]->GetNode();
-			Solution[0]= config->GetDirichlet_Value(config->GetMarker_All_Tag(val_marker));
-			node[Point]->SetSolution(Solution);
-			LinSysRes.SetBlock(Point, Solution);
-			StiffMatrix.DeleteValsRowi(Point); // & includes 1 in the diagonal
-		}
-	}
-}
-
-/*!
- * \method BC_Far_Field
- * \brief Dirichlet/Neumann boundary condition
- * \author A. Lonkar
- */
-void CPoissonSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                                  unsigned short val_marker) {
-	unsigned long Point, iVertex;
-  
-	/*--- Identify if a boundary is Dirichlet or Neumman ---*/
-	bool Dirichlet = config->GetDirichlet_Boundary(config->GetMarker_All_Tag(val_marker));
-	if (Dirichlet) {
-		for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-			Point = geometry->vertex[val_marker][iVertex]->GetNode();
-			Solution[0]= config->GetDirichlet_Value(config->GetMarker_All_Tag(val_marker));
-			node[Point]->SetSolution(Solution);
-			LinSysRes.SetBlock(Point, Solution);
-			StiffMatrix.DeleteValsRowi(Point); // & includes 1 in the diagonal
-		}
-	}
-}

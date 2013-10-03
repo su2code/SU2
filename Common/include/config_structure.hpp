@@ -284,6 +284,7 @@ private:
 	Kind_TimeIntScheme_AdjPlasma,	/*!< \brief Time integration for the adjoint plasma equations. */
 	Kind_TimeIntScheme_Wave,	/*!< \brief Time integration for the wave equations. */
 	Kind_TimeIntScheme_Heat,	/*!< \brief Time integration for the wave equations. */
+	Kind_TimeIntScheme_Poisson,	/*!< \brief Time integration for the wave equations. */
 	Kind_TimeIntScheme_FEA,	/*!< \brief Time integration for the FEA equations. */
 	Kind_ConvNumScheme,			/*!< \brief Global definition of the convective term. */
 	Kind_ConvNumScheme_Flow,	/*!< \brief Centered or upwind scheme for the flow equations. */
@@ -307,7 +308,7 @@ private:
   Kind_ViscNumScheme_AdjTNE2, /*!< \brief Viscous scheme for the flow equations. */
 	Kind_ViscNumScheme_LinFlow,		/*!< \brief Viscous scheme for the linearized flow equations. */
 	Kind_ViscNumScheme_Turb,	/*!< \brief Viscous scheme for the turbulence model. */
-	Kind_ViscNumScheme_Elec,	/*!< \brief Viscous scheme for the poisson potential. */
+	Kind_ViscNumScheme_Poisson,	/*!< \brief Viscous scheme for the poisson potential. */
 	Kind_ViscNumScheme_Wave,	/*!< \brief Viscous scheme for the wave equation. */
 	Kind_ViscNumScheme_FEA,	/*!< \brief Viscous scheme for the FEA equation. */
 	Kind_ViscNumScheme_AdjTurb,	/*!< \brief Viscous scheme for the adjoint turbulence model. */
@@ -2320,7 +2321,16 @@ public:
 	 * \return Kind of integration scheme for the plasma equations.
 	 */
 	unsigned short GetKind_TimeIntScheme_Heat(void);
-
+  
+  /*!
+	 * \brief Get the kind of integration scheme (explicit or implicit)
+	 *        for the flow equations.
+	 * \note This value is obtained from the config file, and it is constant
+	 *       during the computation.
+	 * \return Kind of integration scheme for the plasma equations.
+	 */
+	unsigned short GetKind_TimeIntScheme_Poisson(void);
+  
 	/*! 
 	 * \brief Get the kind of integration scheme (explicit or implicit) 
 	 *        for the flow equations.
