@@ -1,5 +1,5 @@
 /*!
- * \file numerics_direct_fea.cpp
+ * \file numerics_direct_elasticity.cpp
  * \brief This file contains all the convective term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
  * \version 2.0.8
