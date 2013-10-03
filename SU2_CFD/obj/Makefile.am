@@ -27,20 +27,17 @@ ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
 		../include/variable_structure.hpp \
 		../include/variable_structure.inl \
 		../src/definition_structure.cpp \
-		../src/integration_notime.cpp \
 		../src/integration_structure.cpp \
 		../src/integration_time.cpp \
 		../src/iteration_structure.cpp \
-		../src/numerics_adjoint_electric.cpp \
 		../src/numerics_adjoint_levelset.cpp \
 		../src/numerics_adjoint_mean.cpp \
 		../src/numerics_adjoint_plasma.cpp \
 		../src/numerics_adjoint_tne2.cpp \
 		../src/numerics_adjoint_turbulent.cpp \
-		../src/numerics_direct_electric.cpp \
-		../src/numerics_direct_fea.cpp \
+		../src/numerics_direct_poisson.cpp \
+		../src/numerics_direct_elasticity.cpp \
 		../src/numerics_direct_heat.cpp \
-		../src/numerics_direct_levelset.cpp \
 		../src/numerics_direct_mean.cpp \
 		../src/numerics_direct_plasma.cpp \
 		../src/numerics_direct_tne2.cpp \
@@ -60,10 +57,9 @@ ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
 		../src/solver_adjoint_plasma.cpp \
 		../src/solver_adjoint_tne2.cpp \
 		../src/solver_adjoint_turbulent.cpp \
-		../src/solver_direct_electric.cpp \
-		../src/solver_direct_fea.cpp \
+		../src/solver_direct_poisson.cpp \
+		../src/solver_direct_elasticity.cpp \
 		../src/solver_direct_heat.cpp \
-		../src/solver_direct_levelset.cpp \
 		../src/solver_direct_mean.cpp \
 		../src/solver_direct_plasma.cpp \
 		../src/solver_direct_tne2.cpp \
@@ -75,16 +71,14 @@ ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
 		../src/solver_structure.cpp \
 		../src/solver_template.cpp \
 		../src/SU2_CFD.cpp \
-		../src/variable_adjoint_electric.cpp \
 		../src/variable_adjoint_levelset.cpp \
 		../src/variable_adjoint_mean.cpp \
 		../src/variable_adjoint_plasma.cpp \
 		../src/variable_adjoint_tne2.cpp \
 		../src/variable_adjoint_turbulent.cpp \
-		../src/variable_direct_electric.cpp \
-		../src/variable_direct_fea.cpp \
+		../src/variable_direct_poisson.cpp \
+		../src/variable_direct_elasticity.cpp \
 		../src/variable_direct_heat.cpp \
-		../src/variable_direct_levelset.cpp \
 		../src/variable_direct_mean.cpp \
 		../src/variable_direct_plasma.cpp \
 		../src/variable_direct_tne2.cpp \

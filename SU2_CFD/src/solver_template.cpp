@@ -45,9 +45,6 @@ void CTemplateSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 void CTemplateSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
 																								 CConfig *config, unsigned short iMesh) { }
 
-void CTemplateSolver::Solve_LinearSystem(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
-																					 unsigned short iMesh) { }
-
 void CTemplateSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 																			unsigned short val_marker) { }
 
