@@ -115,8 +115,8 @@ void CIntegration::Space_Integration(CGeometry *geometry, CSolver **solver_conta
 			case ELECTRODE_BOUNDARY:
 				solver_container[MainSolver]->BC_Electrode(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
 				break;
-			case DIpoisson_BOUNDARY:
-				solver_container[MainSolver]->BC_Dipoisson(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+			case DIELEC_BOUNDARY:
+				solver_container[MainSolver]->BC_Dielec(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
 				break;
 			case DISPLACEMENT_BOUNDARY:
 				solver_container[MainSolver]->BC_Normal_Displacement(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
@@ -135,6 +135,9 @@ void CIntegration::Space_Integration(CGeometry *geometry, CSolver **solver_conta
 				break;
 			case NEUMANN:
 				solver_container[MainSolver]->BC_Neumann(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+				break;
+      case DIRICHLET:
+				solver_container[MainSolver]->BC_Dirichlet(geometry, solver_container, config, iMarker);
 				break;
 		}
 	}
@@ -204,17 +207,6 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
       break;
   }
   
-}
-
-void CIntegration::Solving_Linear_System(CGeometry *geometry, CSolver *solver, CSolver **solver_container, CConfig *config, 
-		unsigned short iMesh) {
-
-	/*--- Compute the solution of the linear system ---*/
-	solver->Solve_LinearSystem(geometry, solver_container, config, iMesh);
-
-	/*--- Compute the residual of the linear system ---*/
-	solver->Compute_Residual(geometry, solver_container, config, iMesh);
-
 }
 
 void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, unsigned long Iteration, double monitor) {

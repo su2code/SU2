@@ -257,7 +257,6 @@ static const map<string, ENUM_REGIME> Regime_Map = CCreateMap<string, ENUM_REGIM
  * \brief different types of systems
  */
 enum RUNTIME_TYPE {
-	RUNTIME_POT_SYS = 1,			/*!< \brief One-physics case, the code is solving the potential equation. */
 	RUNTIME_FLOW_SYS = 2,			/*!< \brief One-physics case, the code is solving the flow equations(Euler and Navier-Stokes). */
 	RUNTIME_TURB_SYS = 3,			/*!< \brief One-physics case, the code is solving the turbulence model. */
 	RUNTIME_POISSON_SYS = 4,			/*!< \brief One-physics case, the code is solving the poissonal potential equation. */
@@ -591,7 +590,7 @@ enum BC_TYPE {
 	PERIODIC_BOUNDARY = 7,	/*!< \brief Periodic boundary definition. */
 	NEARFIELD_BOUNDARY = 8,	/*!< \brief Near-Field boundary definition. */
 	ELECTRODE_BOUNDARY = 9,	/*!< \brief Electrode boundary definition. */
-	DIpoisson_BOUNDARY = 10,	/*!< \brief Dipoisson boundary definition. */
+	DIELEC_BOUNDARY = 10,	/*!< \brief Dipoisson boundary definition. */
 	CUSTOM_BOUNDARY = 11,         /*!< \brief custom boundary definition. */
 	INTERFACE_BOUNDARY = 12,	/*!< \brief Domain interface boundary definition. */
 	DIRICHLET = 13,		/*!< \brief Boundary Euler wall definition. */
@@ -601,7 +600,7 @@ enum BC_TYPE {
 	FLOWLOAD_BOUNDARY = 17,		/*!< \brief Boundary Load definition. */
 	FWH_SURFACE = 18,		/*!< \brief FW-H surface definition (aeroacoustic computations). */
 	WAVE_OBSERVER = 19,		/*!< \brief Wave observer surface definition. */
-	ELEC_DIpoisson_BOUNDARY = 22,	/*!< \brief Dipoisson boundary definition for the poissonal potential. */
+	ELEC_DIELEC_BOUNDARY = 22,	/*!< \brief Dipoisson boundary definition for the poissonal potential. */
 	ELEC_NEUMANN = 23,		/*!< \brief Boundary Neumann definition. */
   SUPERSONIC_INLET = 24,		/*!< \brief Boundary supersonic inlet definition. */
 	NACELLE_INFLOW = 25,		/*!< \brief Boundary nacelle inflow. */

@@ -48,7 +48,7 @@ inline double CSolver::GetCSensitivity(unsigned short val_marker, unsigned short
 inline void CSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep, 
 																		 unsigned short iMesh, unsigned short RunTime_EqSystem) { }
 																		 
-inline void CSolver::SetFreeSurface_Distance(CGeometry *geometry, CConfig *config, bool Initialization, bool WriteLevelSet) { }
+inline void CSolver::SetFreeSurface_Distance(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry, CGeometry **flow_geometry, CConfig *fea_config, CConfig *flow_config) { }
 
@@ -358,7 +358,7 @@ inline void CSolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_co
 inline void CSolver::BC_Neumann(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
 										  CConfig *config, unsigned short val_marker) { }
 								  
-inline void CSolver::BC_Dipoisson(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
+inline void CSolver::BC_Dielec(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
 									 CConfig *config, unsigned short val_marker) { }
 									 										  
 inline void CSolver::BC_Electrode(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
@@ -416,9 +416,6 @@ inline void CSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_
 inline void CSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
 inline void CSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
-
-inline void CSolver::Solve_LinearSystem(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
-										  unsigned short iMesh) { }
 
 inline void CSolver::Compute_Residual(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
 										unsigned short iMesh) { }
@@ -703,10 +700,6 @@ inline double CPlasmaSolver::Get_MagnetDrag() { return MagnetDrag; }
 inline double CPlasmaSolver::GetMax_Delta_Time(unsigned short val_Species) { return Max_Delta_Time[val_Species]; }
 
 inline double CPlasmaSolver::GetMin_Delta_Time(unsigned short val_Species) { return Min_Delta_Time[val_Species]; }
-
-inline double CLevelSetSolver::GetTotal_CFreeSurface() { return Total_CFreeSurface; }
-
-inline void CLevelSetSolver::SetTotal_CFreeSurface(double cfreesurface) { Total_CFreeSurface = cfreesurface; }
 
 inline unsigned short CAdjPlasmaSolver::GetnSpecies(void) { return nSpecies; }
 

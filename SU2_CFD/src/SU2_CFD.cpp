@@ -374,6 +374,12 @@ int main(int argc, char *argv[]) {
                       surface_movement, grid_movement, FFDBox);
 				break;
         
+      case POISSON_EQUATION:
+				PoissonIteration(output, integration_container, geometry_container,
+                      solver_container, numerics_container, config_container,
+                      surface_movement, grid_movement, FFDBox);
+				break;
+        
 			case LINEAR_ELASTICITY:
 				FEAIteration(output, integration_container, geometry_container,
                      solver_container, numerics_container, config_container,

@@ -36,6 +36,12 @@
 
 using namespace std;
 
+/*!
+ * \class CGridAdaptation
+ * \brief Parent class for defining the grid adaptation.
+ * \author F. Palacios.
+ * \version 2.0.7
+ */
 class CGridAdaptation {
 protected:
 	unsigned long nPoint_new,	/*!< \brief Number of new points. */
