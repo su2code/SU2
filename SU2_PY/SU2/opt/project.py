@@ -411,7 +411,8 @@ class Project(object):
                 for key in results.HISTORY[TYPE].keys():
                     if key in results.FUNCTIONS.keys():
                         new_func = results.FUNCTIONS[key][-1]
-                    elif key in design.state.HISTORY[TYPE].keys():
+                    elif ( TYPE in design.state.HISTORY.keys() and
+                            key in design.state.HISTORY[TYPE].keys() ):
                         new_func = design.state.HISTORY[TYPE][key][-1]
                     else:
                         new_func = default
