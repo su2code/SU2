@@ -664,7 +664,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_Dipoisson(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+	virtual void BC_Dielec(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                CConfig *config, unsigned short val_marker);
     
 	/*!
@@ -725,16 +725,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-    
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iMesh - Index of the mesh in multigrid computations.
-	 */
-	virtual void Solve_LinearSystem(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                                    unsigned short iMesh);
     
 	/*!
 	 * \brief A virtual member.
@@ -4376,16 +4366,7 @@ public:
 	 * \param[in] StiffMatrix_Elem - Element stiffness matrix
 	 */
 	void AddStiffMatrix(double **StiffMatrix_Elem, unsigned long Point_0, unsigned long Point_1, unsigned long Point_2, unsigned long Point_3);
-    
-	/*!
-	 * \brief Update the solution using a linear solver.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iMesh - Index of the mesh in multigrid computations.
-	 */
-	void Solve_LinearSystem(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                            unsigned short iMesh);
+
 	/*!
 	 * \brief Compute the residual.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -4395,70 +4376,26 @@ public:
 	 */
 	void Compute_Residual(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                           unsigned short iMesh);
-    
-	/*!
-	 * \brief Impose via the residual the Euler boundary condition.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Definition of hte solver settings.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-	void BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
-    
-	/*!
-	 * \brief Impose via the residual the Euler wall boundary condition.
+  
+  /*!
+	 * \brief Impose via the residual the Dirichlet boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                       unsigned short val_marker);
-    
-	/*!
-	 * \brief Impose the Navier-Stokes boundary condition (strong).
+  void BC_Dirichlet(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_marker);
+  
+  /*!
+	 * \brief Impose via the residual the Neumann boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                          unsigned short val_marker);
-    
-	/*!
-	 * \brief Impose the outlet boundary condition.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-	void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                   CConfig *config, unsigned short val_marker) ;
-	/*!
-	 * \brief Impose the inlet boundary condition.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-	void BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                  CConfig *config, unsigned short val_marker) ;
-    
-	/*!
-	 * \brief Impose the far-field boundary condition using characteristics.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-	void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                      CConfig *config, unsigned short val_marker);
+  void BC_Neumann(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker);
     
 	/*!
 	 * \brief Set residuals to zero.
@@ -4466,7 +4403,7 @@ public:
 	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-     * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
 	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
     
@@ -4503,6 +4440,15 @@ public:
 	 * \param[in] val_Total_CCharge - Value of the total charge coefficient.
 	 */
 	void SetTotal_CCharge(double val_Total_CCharge);
+  
+	/*!
+	 * \brief Update the solution using an implicit solver.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  
 };
 
 /*! \class CWaveSolver
@@ -5437,16 +5383,6 @@ public:
                          CConfig *config, unsigned short iMesh);
     
 	/*!
-	 * \brief Update the solution using a linear solver.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iMesh - Index of the mesh in multigrid computations.
-	 */
-	void Solve_LinearSystem(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                            unsigned short iMesh);
-    
-	/*!
 	 * \brief Impose via the residual the Euler wall boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
@@ -6154,7 +6090,7 @@ public:
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
      
 	 */
-	void BC_Dipoisson(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+	void BC_Dielec(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                        CConfig *config, unsigned short val_marker);
     
 	/*!
@@ -7500,14 +7436,6 @@ public:
 	 */
 	void Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
                        CConfig *config, unsigned short iMesh);
-  
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void Solve_LinearSystem(CGeometry *geometry, CSolver **solver_container, CConfig *config);
   
 	/*!
 	 * \brief Compute the undivided laplacian for the adjoint solution.

@@ -4049,7 +4049,7 @@ void CPlasmaSolver::BC_Electrode(CGeometry *geometry, CSolver **solver_container
 
 }
 
-void CPlasmaSolver::BC_Dipoisson(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+void CPlasmaSolver::BC_Dielec(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
 }
 

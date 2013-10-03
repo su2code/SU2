@@ -1823,59 +1823,6 @@ void CAdjTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
   
 }
 
-void CAdjTNE2EulerSolver::Solve_LinearSystem(CGeometry *geometry,
-                                             CSolver **solver_container,
-                                             CConfig *config){
-	unsigned long iPoint;
-	unsigned long total_index;
-	unsigned short iVar;
-	double *ObjFuncSource;
-  
-	/*--- Build linear system ---*/
-	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-		ObjFuncSource = node[iPoint]->GetObjFuncSource();
-		for (iVar = 0; iVar < nVar; iVar++) {
-			total_index = iPoint*nVar+iVar;
-			LinSysRes[total_index] = ObjFuncSource[iVar];
-			LinSysSol[total_index] = 0.0;
-		}
-	}
-  
-	/*--- Solve the linear system (Krylov subspace methods) ---*/
-  CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
-  
-  CPreconditioner* precond = NULL;
-  if (config->GetKind_Linear_Solver_Prec() == JACOBI) {
-    Jacobian.BuildJacobiPreconditioner();
-    precond = new CJacobiPreconditioner(Jacobian, geometry, config);
-  }
-  else if (config->GetKind_Linear_Solver_Prec() == LU_SGS) {
-    precond = new CLU_SGSPreconditioner(Jacobian, geometry, config);
-  }
-  else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-    Jacobian.BuildJacobiPreconditioner();
-    Jacobian.BuildLineletPreconditioner(geometry, config);
-    precond = new CLineletPreconditioner(Jacobian, geometry, config);
-  }
-  
-  CSysSolve system;
-  if (config->GetKind_Linear_Solver() == BCGSTAB)
-    system.BCGSTAB(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(),
-                   config->GetLinear_Solver_Iter(), true);
-  else if (config->GetKind_Linear_Solver() == FGMRES)
-    system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(),
-                  config->GetLinear_Solver_Iter(), true);
-  
-  delete mat_vec;
-  delete precond;
-  
-	/*--- Update solution (system written in terms of increments) ---*/
-	for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-		for (iVar = 0; iVar < nVar; iVar++)
-			node[iPoint]->SetSolution(iVar, config->GetLinear_Solver_Relax()*LinSysSol[iPoint*nVar+iVar]);
-  
-}
-
 void CAdjTNE2EulerSolver::Inviscid_Sensitivity(CGeometry *geometry,
                                                CSolver **solver_container,
                                                CNumerics *numerics,

@@ -292,7 +292,7 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
   adj_plasma_euler = false;	 adj_plasma_ns   = false;
   plasma_monatomic = false;  plasma_diatomic = false;
   spalart_allmaras = false;  menter_sst      = false;
-  poisson         = false;
+  poisson          = false;
   wave             = false;
   fea              = false;
   heat             = false;
@@ -486,7 +486,7 @@ void Integration_Preprocessing(CIntegration **integration_container,
   plasma_euler     = false; adj_plasma_euler = false;
   plasma_ns        = false; adj_plasma_ns    = false;
   plasma_monatomic = false;	plasma_diatomic  = false;
-  poisson         = false;
+  poisson          = false;
   wave             = false;
   heat             = false;
   fea              = false;
@@ -582,7 +582,7 @@ void Integration_Preprocessing(CIntegration **integration_container,
 	if (tne2_ns) integration_container[TNE2_SOL] = new CMultiGridIntegration(config);
 	if (turbulent) integration_container[TURB_SOL] = new CSingleGridIntegration(config);
 	if (transition) integration_container[TRANS_SOL] = new CSingleGridIntegration(config);
-	if (poisson) integration_container[POISSON_SOL] = new CPotentialIntegration(config);
+	if (poisson) integration_container[POISSON_SOL] = new CSingleGridIntegration(config);
 	if (plasma_euler) integration_container[PLASMA_SOL] = new CMultiGridIntegration(config);
 	if (plasma_ns) integration_container[PLASMA_SOL] = new CMultiGridIntegration(config);
 	if (wave) integration_container[WAVE_SOL] = new CSingleGridIntegration(config);
@@ -618,7 +618,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
   nVar_Adj_Turb   = 0,
   nVar_Adj_TNE2   = 0,
   nVar_Adj_Plasma = 0,
-  nVar_Elec       = 0,
+  nVar_Poisson    = 0,
   nVar_FEA        = 0,
   nVar_Wave       = 0,
   nVar_Heat       = 0,
@@ -650,7 +650,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
     
 	/*--- Initialize some useful booleans ---*/
 	euler            = false;   ns               = false;   turbulent        = false;
-	poisson         = false;   plasma_monatomic = false;   plasma_diatomic  = false;  plasma_euler     = false;
+	poisson          = false;   plasma_monatomic = false;   plasma_diatomic  = false;  plasma_euler     = false;
 	plasma_ns        = false;   adj_euler        = false;	  adj_ns           = false;	 adj_turb         = false;
 	adj_plasma_euler = false;   adj_plasma_ns    = false;
   wave             = false;   heat             = false;   fea              = false;   spalart_allmaras = false;
@@ -749,7 +749,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
   if (transition)		nVar_Trans = solver_container[MESH_0][TRANS_SOL]->GetnVar();
   if (tne2_euler)   nVar_TNE2 = solver_container[MESH_0][TNE2_SOL]->GetnVar();
   if (tne2_ns)	    nVar_TNE2 = solver_container[MESH_0][TNE2_SOL]->GetnVar();
-	if (poisson)			nVar_Elec = solver_container[MESH_0][POISSON_SOL]->GetnVar();
+	if (poisson)			nVar_Poisson = solver_container[MESH_0][POISSON_SOL]->GetnVar();
 	if (plasma_euler || plasma_ns)	{
 		nVar_Plasma = solver_container[MESH_0][PLASMA_SOL]->GetnVar();
 		nSpecies    = solver_container[MESH_0][PLASMA_SOL]->GetnSpecies();
@@ -1459,7 +1459,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
 		/*--- Definition of the viscous scheme for each equation and mesh level ---*/
 		switch (config->GetKind_ViscNumScheme_Poisson()) {
             case GALERKIN :
-                numerics_container[MESH_0][POISSON_SOL][VISC_TERM] = new CGalerkin_Flow(nDim, nVar_Elec, config);
+                numerics_container[MESH_0][POISSON_SOL][VISC_TERM] = new CGalerkin_Flow(nDim, nVar_Poisson, config);
                 break;
             default : cout << "Viscous scheme not implemented." << endl; cin.get(); break;
 		}
@@ -1469,8 +1469,8 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
             case NONE :
                 break;
             case PIECEWISE_CONSTANT :
-                numerics_container[MESH_0][POISSON_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_Elec(nDim, nVar_Elec, config);
-                numerics_container[MESH_0][POISSON_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Elec, config);
+                numerics_container[MESH_0][POISSON_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Poisson, config);
+                numerics_container[MESH_0][POISSON_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Poisson, config);
                 break;
             default :
                 cout << "Source term not implemented." << endl; cin.get();

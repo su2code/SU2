@@ -307,6 +307,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddEnumOption("TIME_DISCRE_FEA", Kind_TimeIntScheme_FEA, Time_Int_Map, "EULER_IMPLICIT");
 	/* DESCRIPTION: Time discretization */
 	AddEnumOption("TIME_DISCRE_HEAT", Kind_TimeIntScheme_Heat, Time_Int_Map, "EULER_IMPLICIT");
+  /* DESCRIPTION: Time discretization */
+	AddEnumOption("TIME_DISCRE_POISSON", Kind_TimeIntScheme_Poisson, Time_Int_Map, "EULER_IMPLICIT");
   
 	/*--- Options related to the linear solvers ---*/
 	/* CONFIG_CATEGORY: Linear solver definition */
@@ -609,9 +611,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddEnumOption("SOUR_NUM_METHOD_WAVE", Kind_SourNumScheme_Wave, Source_Map, "NONE");
   
 	/* DESCRIPTION: Viscous numerical method */
-	AddEnumOption("VISC_NUM_METHOD_ELEC", Kind_ViscNumScheme_Elec, Viscous_Map, "NONE");
+	AddEnumOption("VISC_NUM_METHOD_POISSON", Kind_ViscNumScheme_Poisson, Viscous_Map, "NONE");
 	/* DESCRIPTION: Source term numerical method */
-	AddEnumOption("SOUR_NUM_METHOD_ELEC", Kind_SourNumScheme_Poisson, Source_Map, "NONE");
+	AddEnumOption("SOUR_NUM_METHOD_POISSON", Kind_SourNumScheme_Poisson, Source_Map, "NONE");
   
 	/* DESCRIPTION: Viscous numerical method */
 	AddEnumOption("VISC_NUM_METHOD_FEA", Kind_ViscNumScheme_FEA, Viscous_Map, "GALERKIN");
@@ -1058,9 +1060,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 	if (Kind_Regime == FREESURFACE) {
 		if (Unsteady_Simulation != DT_STEPPING_2ND) Unsteady_Simulation = DT_STEPPING_1ST;
 	}
+  
+  if (Kind_Solver == POISSON_EQUATION) {
+    Unsteady_Simulation = STEADY;
+  }
 
   /*--- Set the number of external iterations to 1 for the steady state problem ---*/
-  if ((Kind_Solver == LINEAR_ELASTICITY) || (Kind_Solver == HEAT_EQUATION) || (Kind_Solver == WAVE_EQUATION)) {
+  if ((Kind_Solver == LINEAR_ELASTICITY) || (Kind_Solver == HEAT_EQUATION) ||
+      (Kind_Solver == WAVE_EQUATION) || (Kind_Solver == POISSON_EQUATION)) {
     if (Unsteady_Simulation == STEADY) nExtIter = 1;
     else Unst_nIntIter = 2;
   }
@@ -3555,7 +3562,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				if (Kind_GasModel == N2) cout << "Using 2 species Nitrogen gas model." << endl;
 				if (Kind_GasModel == ARGON_SID) cout << "Using 2 species Sid gas model." << endl;
 				break;
-			case POISSON_EQUATION: cout << "poisson potential equation." << endl; break;
+			case POISSON_EQUATION: cout << "Poisson equation." << endl; break;
 			case WAVE_EQUATION: cout << "Wave equation." << endl; break;
 			case HEAT_EQUATION: cout << "Heat equation." << endl; break;
 			case LINEAR_ELASTICITY: cout << "Linear elasticity solver." << endl; break;
@@ -4117,7 +4124,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		}
 
 		if ((Kind_Solver == POISSON_EQUATION) || (Kind_Solver == PLASMA_NAVIER_STOKES)) {
-			if (Kind_ViscNumScheme_Elec == GALERKIN) cout << "Galerkin method for viscous terms computation of the poisson potential equation." << endl;
+			if (Kind_ViscNumScheme_Poisson == GALERKIN) cout << "Galerkin method for viscous terms computation of the poisson potential equation." << endl;
 		}
 
 		if ((Kind_Solver == ADJ_RANS) && (!Frozen_Visc)) {
@@ -5518,7 +5525,6 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
 unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
 
 	switch (val_eqsystem) {
-	case RUNTIME_POT_SYS:       return FLOW_SOL;
 	case RUNTIME_PLASMA_SYS:    return PLASMA_SOL;
 	case RUNTIME_FLOW_SYS:      return FLOW_SOL;
 	case RUNTIME_TURB_SYS:      return TURB_SOL;
@@ -5528,7 +5534,7 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
 	case RUNTIME_WAVE_SYS:      return WAVE_SOL;
   case RUNTIME_HEAT_SYS:      return HEAT_SOL;
   case RUNTIME_FEA_SYS:       return FEA_SOL;
-	case RUNTIME_ADJPOT_SYS:    return ADJFLOW_SOL;
+  case RUNTIME_ADJPOT_SYS:    return ADJFLOW_SOL;
 	case RUNTIME_ADJFLOW_SYS:   return ADJFLOW_SOL;
 	case RUNTIME_ADJTURB_SYS:   return ADJTURB_SOL;
   case RUNTIME_ADJTNE2_SYS:   return ADJTNE2_SOL;
@@ -5834,7 +5840,7 @@ void CConfig::SetGlobalParam(unsigned short val_solver, unsigned short val_syste
 			SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
 			SetKind_SourNumScheme(GetKind_SourNumScheme_Poisson());
 			SetKind_ViscNumScheme(GetKind_ViscNumScheme_Poisson());
-			SetKind_TimeIntScheme(NONE);
+			SetKind_TimeIntScheme(GetKind_TimeIntScheme_Poisson());
 		}
 		break;
 	case WAVE_EQUATION:

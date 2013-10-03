@@ -725,6 +725,31 @@ void HeatIteration(COutput *output, CIntegration ***integration_container, CGeom
   
 }
 
+void PoissonIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+                   CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+                   CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
+  
+	unsigned short iZone;
+	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
+  unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
+  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+  
+	for (iZone = 0; iZone < nZone; iZone++) {
+    
+		/*--- Set the value of the internal iteration ---*/
+		IntIter = ExtIter;
+		if ((config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+				(config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) IntIter = 0;
+    
+		/*--- Wave equations ---*/
+		config_container[iZone]->SetGlobalParam(POISSON_EQUATION, RUNTIME_POISSON_SYS, ExtIter);
+		integration_container[iZone][POISSON_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
+                                                                 config_container, RUNTIME_POISSON_SYS, IntIter, iZone);
+    
+	}
+  
+}
+
 void FEAIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
 		CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
 		CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
