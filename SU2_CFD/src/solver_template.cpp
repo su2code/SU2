@@ -2,7 +2,7 @@
  * \file solution_template.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.7
+ * \version 2.0.8
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -44,9 +44,6 @@ void CTemplateSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
 void CTemplateSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
 																								 CConfig *config, unsigned short iMesh) { }
-
-void CTemplateSolver::Solve_LinearSystem(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
-																					 unsigned short iMesh) { }
 
 void CTemplateSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 																			unsigned short val_marker) { }

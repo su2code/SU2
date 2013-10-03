@@ -2,7 +2,7 @@
  * \file SU2_GPC.cpp
  * \brief Main file of the Gradient Projection Code (SU2_GPC).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.7
+ * \version 2.0.8
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -33,10 +33,11 @@ int main(int argc, char *argv[]) {
   double *VarCoord, Sensitivity;
 	double dalpha[3], deps[3], dalpha_deps;
 	char *cstr;
-	ofstream Gradient_file;
-	bool *UpdatePoint;
+	ofstream Gradient_file, Jacobian_file;
+	bool *UpdatePoint, Comma;
 	int rank = MASTER_NODE;
-	
+	int size = SINGLE_NODE;
+  
 #ifndef NO_MPI
 	/*--- MPI initialization, and buffer setting ---*/
 	void *buffer, *old_buffer;
@@ -46,6 +47,7 @@ int main(int argc, char *argv[]) {
 	MPI::Init(argc,argv);
 	MPI::Attach_buffer(buffer, bufsize);
 	rank = MPI::COMM_WORLD.Get_rank();
+  size = MPI::COMM_WORLD.Get_size();
 #endif
 	
 	/*--- Pointer to different structures that will be used throughout the entire code ---*/
@@ -110,10 +112,34 @@ int main(int argc, char *argv[]) {
 		cstr = new char [config->GetObjFunc_Grad_FileName().size()+1];
 		strcpy (cstr, config->GetObjFunc_Grad_FileName().c_str());
 		Gradient_file.open(cstr, ios::out);
+    
+    /*--- Write an additional file with the geometric Jacobian ---*/
+    /*--- WARNING: This is only for serial calculations!!! ---*/
+    if (size == SINGLE_NODE) {
+      Jacobian_file.open("geo_jacobian.csv", ios::out);
+      Jacobian_file.precision(15);
+      
+      /*--- Write the CSV file header ---*/
+      Comma = false;
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        if (config->GetMarker_All_DV(iMarker) == YES) {
+          for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
+            iPoint = boundary->vertex[iMarker][iVertex]->GetNode();
+            if (!Comma) { Jacobian_file << "\t\"DesignVariable\""; Comma = true;}
+            Jacobian_file  << ", " << "\t\"" << iPoint << "\"";
+          }
+        }
+      }
+      Jacobian_file << endl;
+    }
 	}
   
 	for (iDV = 0; iDV < config->GetnDV(); iDV++) {
 				
+    if (size == SINGLE_NODE) {
+      Jacobian_file << iDV;
+    }
+    
 		/*--- Bump deformation for 2D problems ---*/
 		if (boundary->GetnDim() == 2) {
 			
@@ -121,13 +147,13 @@ int main(int argc, char *argv[]) {
 				cout << "Perform 2D deformation of the surface." << endl;
 			
 			switch ( config->GetDesign_Variable(iDV) ) {
-				case COSINE_BUMP : surface_mov->SetCosBump(boundary, config, iDV, true); break;
-				case FOURIER : surface_mov->SetFourier(boundary, config, iDV, true); break;
-				case HICKS_HENNE : surface_mov->SetHicksHenne(boundary, config, iDV, true); break;
-				case DISPLACEMENT : surface_mov->SetDisplacement(boundary, config, iDV, true); break;
-				case ROTATION : surface_mov->SetRotation(boundary, config, iDV, true); break;
-				case NACA_4DIGITS : surface_mov->SetNACA_4Digits(boundary, config); break;
-				case PARABOLIC : surface_mov->SetParabolic(boundary, config); break;
+				case COSINE_BUMP :    surface_mov->SetCosBump(boundary, config, iDV, true); break;
+				case FOURIER :        surface_mov->SetFourier(boundary, config, iDV, true); break;
+				case HICKS_HENNE :    surface_mov->SetHicksHenne(boundary, config, iDV, true); break;
+				case DISPLACEMENT :   surface_mov->SetDisplacement(boundary, config, iDV, true); break;
+				case ROTATION :       surface_mov->SetRotation(boundary, config, iDV, true); break;
+				case NACA_4DIGITS :   surface_mov->SetNACA_4Digits(boundary, config); break;
+				case PARABOLIC :      surface_mov->SetParabolic(boundary, config); break;
 			}
 			
 		}
@@ -228,6 +254,11 @@ int main(int argc, char *argv[]) {
 								dalpha_deps -= dalpha[iDim]*deps[iDim];
 							}
 							
+              /*--- Store the geometric sensitivity for this DV (rows) & this node (column) ---*/
+              if (size == SINGLE_NODE) {
+                Jacobian_file  << ", " << dalpha_deps;
+              }
+              
 							my_Gradient += Sensitivity*dalpha_deps;
 							UpdatePoint[iPoint] = false;
 						}
@@ -306,10 +337,15 @@ int main(int argc, char *argv[]) {
 			      
     }
 		
+    /*--- End the line for the current DV in the geometric Jacobian file ---*/
+    if (size == SINGLE_NODE) Jacobian_file << endl;
 	}
 	
 	if (rank == MASTER_NODE)
 		Gradient_file.close();
+  
+  if (size == SINGLE_NODE)
+    Jacobian_file.close();
 	
 	delete [] UpdatePoint;
 	

@@ -2,7 +2,7 @@
  * \file solver_structure.inl
  * \brief In-Line subroutines of the <i>solver_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.7
+ * \version 2.0.8
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -350,7 +350,7 @@ inline void CSolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_co
 inline void CSolver::BC_Neumann(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
 										  CConfig *config, unsigned short val_marker) { }
 								  
-inline void CSolver::BC_Dielectric(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
+inline void CSolver::BC_Dielec(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
 									 CConfig *config, unsigned short val_marker) { }
 									 										  
 inline void CSolver::BC_Electrode(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
@@ -408,9 +408,6 @@ inline void CSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_
 inline void CSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
 inline void CSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
-
-inline void CSolver::Solve_LinearSystem(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
-										  unsigned short iMesh) { }
 
 inline void CSolver::Compute_Residual(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
 										unsigned short iMesh) { }
@@ -618,9 +615,9 @@ inline double CLinEulerSolver::GetTotal_CDeltaLift() { return Total_CDeltaLift; 
 
 inline double CLinEulerSolver::GetTotal_CDeltaDrag() { return Total_CDeltaDrag; }
 
-inline double CElectricSolver::GetTotal_CCharge() { return Total_CCharge; }
+inline double CPoissonSolver::GetTotal_CCharge() { return Total_CCharge; }
 
-inline void CElectricSolver::SetTotal_CCharge(double val_Total_CCharge) {Total_CCharge = val_Total_CCharge; }
+inline void CPoissonSolver::SetTotal_CCharge(double val_Total_CCharge) {Total_CCharge = val_Total_CCharge; }
 
 inline unsigned short CPlasmaSolver::GetnSpecies(void) { return nSpecies; }
 

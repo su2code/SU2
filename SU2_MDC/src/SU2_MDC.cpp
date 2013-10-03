@@ -2,7 +2,7 @@
  * \file SU2_MDC.cpp
  * \brief Main file of Mesh Deformation Code (SU2_MDC).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.7
+ * \version 2.0.8
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -115,6 +115,7 @@ int main(int argc, char *argv[]) {
 			else sprintf (buffer_char, ".stl");
 			strcpy (out_file, "original_surface_grid"); strcat(out_file, buffer_char); geometry[ZONE_0]->SetBoundSTL(config[ZONE_0],out_file);
 		}
+    
 	}
   
   /*--- Surface grid deformation using design variables ---*/
@@ -128,12 +129,10 @@ int main(int argc, char *argv[]) {
   if (rank == MASTER_NODE) cout << "Performing the deformation of the surface grid." << endl;
   surface_movement->SetSurface_Deformation(geometry[ZONE_0], config[ZONE_0]);
   
-  
 #ifndef NO_MPI
   /*--- MPI syncronization point ---*/
 	MPI::COMM_WORLD.Barrier();
 #endif
-	
   
   /*--- Volumetric grid deformation ---*/
 	if (rank == MASTER_NODE) cout << endl << "----------------------- Volumetric grid deformation ---------------------" << endl;

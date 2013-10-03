@@ -101,7 +101,7 @@
 
 /* Begin PBXFileReference section */
 		0541ABEE1370F5A6002D668B /* SU2_CFD */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = SU2_CFD; sourceTree = BUILT_PRODUCTS_DIR; };
-		05CE6A8517F377E900FF1653 /* default.cfg */ = {isa = PBXFileReference; lastKnownFileType = text; name = default.cfg; path = DerivedData/SU2_CFD/Build/Products/Debug/default.cfg; sourceTree = "<group>"; };
+		05BC1F0A17FCD62500D1BBA4 /* default.cfg */ = {isa = PBXFileReference; lastKnownFileType = text; name = default.cfg; path = DerivedData/SU2_CFD/Build/Products/Debug/default.cfg; sourceTree = "<group>"; };
 		05E6DA9F17EB603F00FA1F7E /* config_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = config_structure.inl; path = ../../Common/include/config_structure.inl; sourceTree = "<group>"; };
 		05E6DAA017EB603F00FA1F7E /* dual_grid_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = dual_grid_structure.inl; path = ../../Common/include/dual_grid_structure.inl; sourceTree = "<group>"; };
 		05E6DAA117EB603F00FA1F7E /* geometry_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = geometry_structure.inl; path = ../../Common/include/geometry_structure.inl; sourceTree = "<group>"; };
@@ -211,6 +211,7 @@
 		05E6DBFE17EB62A100FA1F7E /* variable_linearized_turbulent.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = variable_linearized_turbulent.cpp; path = ../../SU2_CFD/src/variable_linearized_turbulent.cpp; sourceTree = "<group>"; };
 		05E6DBFF17EB62A100FA1F7E /* variable_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = variable_structure.cpp; path = ../../SU2_CFD/src/variable_structure.cpp; sourceTree = "<group>"; };
 		05E6DC0017EB62A100FA1F7E /* variable_template.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = variable_template.cpp; path = ../../SU2_CFD/src/variable_template.cpp; sourceTree = "<group>"; };
+		E97B6C8117F941800008255B /* config_template.cfg */ = {isa = PBXFileReference; lastKnownFileType = text; name = config_template.cfg; path = ../../config_template.cfg; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -373,7 +374,8 @@
 		08FB7794FE84155DC02AAC07 /* SU2_CFD */ = {
 			isa = PBXGroup;
 			children = (
-				05CE6A8517F377E900FF1653 /* default.cfg */,
+				05BC1F0A17FCD62500D1BBA4 /* default.cfg */,
+				E97B6C8117F941800008255B /* config_template.cfg */,
 				0541ABE41370DC56002D668B /* InLine */,
 				0541ABE51370DC5E002D668B /* Include */,
 				08FB7795FE84155DC02AAC07 /* Source */,

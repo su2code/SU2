@@ -2,7 +2,7 @@
  * \file integration_structure.cpp
  * \brief This subroutine includes the space and time integration structure.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.7
+ * \version 2.0.8
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -115,8 +115,8 @@ void CIntegration::Space_Integration(CGeometry *geometry, CSolver **solver_conta
 			case ELECTRODE_BOUNDARY:
 				solver_container[MainSolver]->BC_Electrode(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
 				break;
-			case DIELECTRIC_BOUNDARY:
-				solver_container[MainSolver]->BC_Dielectric(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+			case DIELEC_BOUNDARY:
+				solver_container[MainSolver]->BC_Dielec(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
 				break;
 			case DISPLACEMENT_BOUNDARY:
 				solver_container[MainSolver]->BC_Normal_Displacement(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
@@ -135,6 +135,9 @@ void CIntegration::Space_Integration(CGeometry *geometry, CSolver **solver_conta
 				break;
 			case NEUMANN:
 				solver_container[MainSolver]->BC_Neumann(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+				break;
+      case DIRICHLET:
+				solver_container[MainSolver]->BC_Dirichlet(geometry, solver_container, config, iMarker);
 				break;
 		}
 	}
@@ -204,17 +207,6 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
       break;
   }
   
-}
-
-void CIntegration::Solving_Linear_System(CGeometry *geometry, CSolver *solver, CSolver **solver_container, CConfig *config, 
-		unsigned short iMesh) {
-
-	/*--- Compute the solution of the linear system ---*/
-	solver->Solve_LinearSystem(geometry, solver_container, config, iMesh);
-
-	/*--- Compute the residual of the linear system ---*/
-	solver->Compute_Residual(geometry, solver_container, config, iMesh);
-
 }
 
 void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, unsigned long Iteration, double monitor) {

@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.7
+ * \version 2.0.8
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -49,7 +49,7 @@ using namespace std;
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
  * \author F. Palacios.
- * \version 2.0.7
+ * \version 2.0.8
  */
 class CConfig {
 private:
@@ -73,7 +73,7 @@ private:
 	IsothermalWall,			/*!< \brief Flag to know if we are using the Isothermal Wall. */
 	CatalyticWall,			/*!< \brief Flag to know if we are using the Catalytic Wall. */
 	PlasmaMultiTimeSteps,	/*!< \brief Flag to know if we are using multiple time steps for different species in plasma. */
-	ElectricSolver,			/*!< \brief Flag to know if we are solving  electric forces  in plasma solver. */
+	PoissonSolver,			/*!< \brief Flag to know if we are solving  poisson forces  in plasma solver. */
 	Low_Mach_Precon,		/*!< \brief Flag to know if we are using a low Mach number preconditioner. */
 	MacCormackRelaxation,	/*!< \brief Flag to know if we are using MacCormack's relaxation in solving Gauss's law. */
 	Unsteady_Farfield, 		/*!< \brief Flag to know if we are using time dependent farfield boundaries. */
@@ -181,7 +181,7 @@ private:
 	*Marker_Neumann,					/*!< \brief Neumann flow markers. */
 	*Marker_Neumann_Elec,					/*!< \brief Neumann flow markers. */
 	*Marker_Electrode,				/*!< \brief Electrode flow markers. */
-	*Marker_Dielectric,				/*!< \brief Dielectric flow markers. */
+	*Marker_Dipoisson,				/*!< \brief Dipoisson flow markers. */
 	*Marker_All_Tag;				/*!< \brief Global index for markers using grid information. */
 	double *Dirichlet_Value;    /*!< \brief Specified Dirichlet value at the boundaries. */
 	double *Nozzle_Ttotal;    /*!< \brief Specified total temperatures for nacelle boundaries. */
@@ -279,9 +279,12 @@ private:
 	Kind_TimeIntScheme_Plasma,	/*!< \brief Time integration for the plasma equations. */
 	Kind_TimeIntScheme_AdjPlasma,	/*!< \brief Time integration for the adjoint plasma equations. */
 	Kind_TimeIntScheme_Wave,	/*!< \brief Time integration for the wave equations. */
+	Kind_TimeIntScheme_Heat,	/*!< \brief Time integration for the wave equations. */
+	Kind_TimeIntScheme_Poisson,	/*!< \brief Time integration for the wave equations. */
 	Kind_TimeIntScheme_FEA,	/*!< \brief Time integration for the FEA equations. */
 	Kind_ConvNumScheme,			/*!< \brief Global definition of the convective term. */
 	Kind_ConvNumScheme_Flow,	/*!< \brief Centered or upwind scheme for the flow equations. */
+	Kind_ConvNumScheme_Heat,	/*!< \brief Centered or upwind scheme for the flow equations. */
 	Kind_ConvNumScheme_TNE2,	/*!< \brief Centered or upwind scheme for the flow equations. */
 	Kind_ConvNumScheme_AdjFlow,		/*!< \brief Centered or upwind scheme for the adjoint flow equations. */
   Kind_ConvNumScheme_AdjTNE2,		/*!< \brief Centered or upwind scheme for the adjoint TNE2 equations. */
@@ -294,12 +297,13 @@ private:
 	Kind_ConvNumScheme_Template,	/*!< \brief Centered or upwind scheme for the level set equation. */
 	Kind_ViscNumScheme,			/*!< \brief Global definition of the viscous term. */
 	Kind_ViscNumScheme_Flow,	/*!< \brief Viscous scheme for the flow equations. */
+	Kind_ViscNumScheme_Heat,	/*!< \brief Viscous scheme for the flow equations. */
 	Kind_ViscNumScheme_AdjFlow,		/*!< \brief Viscous scheme for the adjoint flow equations. */
   Kind_ViscNumScheme_TNE2,	/*!< \brief Viscous scheme for the flow equations. */
   Kind_ViscNumScheme_AdjTNE2, /*!< \brief Viscous scheme for the flow equations. */
 	Kind_ViscNumScheme_LinFlow,		/*!< \brief Viscous scheme for the linearized flow equations. */
 	Kind_ViscNumScheme_Turb,	/*!< \brief Viscous scheme for the turbulence model. */
-	Kind_ViscNumScheme_Elec,	/*!< \brief Viscous scheme for the electric potential. */
+	Kind_ViscNumScheme_Poisson,	/*!< \brief Viscous scheme for the poisson potential. */
 	Kind_ViscNumScheme_Wave,	/*!< \brief Viscous scheme for the wave equation. */
 	Kind_ViscNumScheme_FEA,	/*!< \brief Viscous scheme for the FEA equation. */
 	Kind_ViscNumScheme_AdjTurb,	/*!< \brief Viscous scheme for the adjoint turbulence model. */
@@ -309,12 +313,13 @@ private:
 	Kind_ViscNumScheme_Template,	/*!< \brief Viscous scheme for the template. */
 	Kind_SourNumScheme,			/*!< \brief Global definition of the source term. */
 	Kind_SourNumScheme_Flow,	/*!< \brief Source numerical scheme for the flow equations. */
+	Kind_SourNumScheme_Heat,	/*!< \brief Source numerical scheme for the flow equations. */
 	Kind_SourNumScheme_AdjFlow,		/*!< \brief Source numerical scheme for the adjoint flow equations. */
   Kind_SourNumScheme_TNE2,	/*!< \brief Source numerical scheme for the flow equations. */
   Kind_SourNumScheme_AdjTNE2,	/*!< \brief Source numerical scheme for the flow equations. */
 	Kind_SourNumScheme_LinFlow,		/*!< \brief Source numerical scheme for the linearized flow equations. */
 	Kind_SourNumScheme_Turb,	/*!< \brief Source numerical scheme for the turbulence model. */
-	Kind_SourNumScheme_Elec,	/*!< \brief Source numerical scheme for the electric potential. */
+	Kind_SourNumScheme_Poisson,	/*!< \brief Source numerical scheme for the poisson potential. */
 	Kind_SourNumScheme_AdjTurb,	/*!< \brief Source numerical scheme for the adjoint turbulence model. */
 	Kind_SourNumScheme_AdjLevelSet,	/*!< \brief Source numerical scheme for the adjoint level set model. */
 	Kind_SourNumScheme_Plasma,	/*!< \brief Source numerical scheme for the plasma equations. */
@@ -391,7 +396,7 @@ private:
 	double Length_Reynolds;	/*!< \brief Reynolds length (dimensional). */
 	double AoA,			/*!< \brief Angle of attack (just external flow). */
 	AoS;				/*!< \brief Angle of sideSlip (just external flow). */
-	double ChargeCoeff;		/*!< \brief Charge coefficient (just for electric problems). */
+	double ChargeCoeff;		/*!< \brief Charge coefficient (just for poisson problems). */
 	double *U_FreeStreamND;			/*!< \brief Reference variables at the infinity, free stream values. */ 
 	unsigned short Cauchy_Func_Flow,	/*!< \brief Function where to apply the convergence criteria in the flow problem. */
 	Cauchy_Func_AdjFlow,				/*!< \brief Function where to apply the convergence criteria in the adjoint problem. */
@@ -455,7 +460,10 @@ private:
 	Farfield_FileName, 				/*!< \brief Data at farfield boundaries. */
 	Structure_FileName,					/*!< \brief Structure variables output file. */
 	SurfStructure_FileName,					/*!< \brief Surface structure variables output file. */
+  SurfWave_FileName,					/*!< \brief Surface structure variables output file. */
+	SurfHeat_FileName,					/*!< \brief Surface structure variables output file. */
 	Wave_FileName,					/*!< \brief Wave variables output file. */
+	Heat_FileName,					/*!< \brief Heat variables output file. */
 	AdjWave_FileName,					/*!< \brief Adjoint wave variables output file. */
 	Residual_FileName,				/*!< \brief Residual variables output file. */
 	Conv_FileName,					/*!< \brief Convergence history output file. */
@@ -532,7 +540,7 @@ private:
 	GammaDiatomic,			/*!< \brief Ratio of specific heats of the diatomic gas. */ 
 	GammaMonatomic,			/*!< \brief Ratio of specific heats of the monatomic gas. */ 
 	Stagnation_B,/*!< \brief value of the magnetic field in Tesla at the stagnation point */
-	Electric_Cond,/*!< \brief value of the electrical conductivity in mho/m */
+	poisson_Cond,/*!< \brief value of the poissonal conductivity in mho/m */
 	DipoleDist,/*!< \brief value of the minimum distance for the dipole. */
 	Bulk_Modulus,			/*!< \brief Value of the bulk modulus for incompressible flows. */ 
 	ArtComp_Factor,			/*!< \brief Value of the artificial compresibility factor for incompressible flows. */
@@ -1593,7 +1601,7 @@ public:
 	double GetAoS(void);
 
 	/*! 
-	 * \brief Get the charge coefficient that is used in the electrical potential simulation.
+	 * \brief Get the charge coefficient that is used in the poissonal potential simulation.
 	 * \return Value of the charge coefficient.
 	 */		
 	double GetChargeCoeff(void);	
@@ -2291,7 +2299,25 @@ public:
 	 * \return Kind of integration scheme for the plasma equations.
 	 */
 	unsigned short GetKind_TimeIntScheme_Wave(void);
-
+  
+  /*!
+	 * \brief Get the kind of integration scheme (explicit or implicit)
+	 *        for the flow equations.
+	 * \note This value is obtained from the config file, and it is constant
+	 *       during the computation.
+	 * \return Kind of integration scheme for the plasma equations.
+	 */
+	unsigned short GetKind_TimeIntScheme_Heat(void);
+  
+  /*!
+	 * \brief Get the kind of integration scheme (explicit or implicit)
+	 *        for the flow equations.
+	 * \note This value is obtained from the config file, and it is constant
+	 *       during the computation.
+	 * \return Kind of integration scheme for the plasma equations.
+	 */
+	unsigned short GetKind_TimeIntScheme_Poisson(void);
+  
 	/*! 
 	 * \brief Get the kind of integration scheme (explicit or implicit) 
 	 *        for the flow equations.
@@ -2412,6 +2438,15 @@ public:
 	 */		
 	unsigned short GetKind_SourNumScheme_Wave(void);
 
+  /*!
+	 * \brief Get the kind of viscous numerical scheme for the wave
+	 (        equation.
+	 * \note This value is obtained from the config file, and it is constant
+	 *       during the computation.
+	 * \return Kind of viscous numerical scheme for the levelset equations.
+	 */
+	unsigned short GetKind_SourNumScheme_Heat(void);
+  
 	/*!
 	 * \brief Get the kind of viscous numerical scheme for the FEA
 	 (        equation.
@@ -2780,6 +2815,16 @@ public:
 	 * \return Kind of viscous numerical scheme for the adjoint flow equations.
 	 */
 	unsigned short GetKind_ViscNumScheme_Wave(void);
+  
+  /*!
+	 * \brief Get the kind of viscous numerical scheme for the wave
+	 *        equations (Galerkin, Average of gradients, Average of gradients
+	 *        with correction).
+	 * \note This value is obtained from the config file, and it is constant
+	 *       during the computation.
+	 * \return Kind of viscous numerical scheme for the adjoint flow equations.
+	 */
+	unsigned short GetKind_ViscNumScheme_Heat(void);
 
 	/*! 
 	 * \brief Get the kind of viscous numerical scheme for the FEA
@@ -2976,21 +3021,21 @@ public:
 	unsigned short GetKind_Upwind_Turb(void);
 
 	/*! 
-	 * \brief Get the kind of viscous numerical scheme for the electric potential
+	 * \brief Get the kind of viscous numerical scheme for the poisson potential
 	 *        equation (Galerkin).
 	 * \note This value is obtained from the config file, and it is constant 
 	 *       during the computation.
-	 * \return Kind of viscous numerical scheme for the electric potential equation.
+	 * \return Kind of viscous numerical scheme for the poisson potential equation.
 	 */
-	unsigned short GetKind_ViscNumScheme_Elec(void);
+	unsigned short GetKind_ViscNumScheme_Poisson(void);
 
 	/*! 
-	 * \brief Get the kind of source term for the electric potential equation.
+	 * \brief Get the kind of source term for the poisson potential equation.
 	 * \note This value is obtained from the config file, and it is constant 
 	 *       during the computation.
-	 * \return Kind of source term for the electric potential equation.
+	 * \return Kind of source term for the poisson potential equation.
 	 */	
-	unsigned short GetKind_SourNumScheme_Elec(void);
+	unsigned short GetKind_SourNumScheme_Poisson(void);
 
 	/*! 
 	 * \brief Get the kind of integration scheme (explicit or implicit) 
@@ -3315,8 +3360,8 @@ public:
 	double GetStagnation_B();
 
 	/*!
-	 * \brief Provides the value of the electrical conductivity
-	 * \return: electrical conductivity
+	 * \brief Provides the value of the poissonal conductivity
+	 * \return: poissonal conductivity
 	 */
 	double GetElec_Conductivity();
 
@@ -3455,12 +3500,30 @@ public:
 	 * \return Name of the file with the structure variables.
 	 */
 	string GetSurfStructure_FileName(void);
+  
+  /*!
+	 * \brief Get the name of the file with the structure variables.
+	 * \return Name of the file with the structure variables.
+	 */
+	string GetSurfWave_FileName(void);
+  
+  /*!
+	 * \brief Get the name of the file with the structure variables.
+	 * \return Name of the file with the structure variables.
+	 */
+	string GetSurfHeat_FileName(void);
 
 	/*!
 	 * \brief Get the name of the file with the wave variables.
 	 * \return Name of the file with the wave variables.
 	 */		
 	string GetWave_FileName(void);
+  
+  /*!
+	 * \brief Get the name of the file with the wave variables.
+	 * \return Name of the file with the wave variables.
+	 */
+	string GetHeat_FileName(void);
 
 	/*!
 	 * \brief Get the name of the file with the adjoint wave variables.
@@ -3915,10 +3978,10 @@ public:
 	bool MultipleTimeSteps(void);
 
 	/*!
-	 * \brief Get information about the electric solver condition
-	 * \return <code>TRUE</code> if it is a electric solver condition; otherwise <code>FALSE</code>.
+	 * \brief Get information about the poisson solver condition
+	 * \return <code>TRUE</code> if it is a poisson solver condition; otherwise <code>FALSE</code>.
 	 */
-	bool GetElectricSolver(void);
+	bool GetPoissonSolver(void);
 
 	/*!
 	 * \brief Get information about MacCormack's scheme for Gauss's law
