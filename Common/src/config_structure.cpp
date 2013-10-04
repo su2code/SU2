@@ -1507,18 +1507,31 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     
     /*--- In case the moment origin coordinates have not been declared in the
      config file, set them equal to zero for safety. Also check to make sure
-     that for each marker, a value has been declared for the moment origin. ---*/
+     that for each marker, a value has been declared for the moment origin. 
+     Unless only one value was specified, then set this value for all the markers
+     being monitored. ---*/
     
     unsigned short iMarker;
 
-    /*--- Moment Reference Origin: ---*/
+    
+    if ((nRefOriginMoment_X != nRefOriginMoment_Y) || (nRefOriginMoment_X != nRefOriginMoment_Z) ) {
+        cout << "ERROR: Length of REF_ORIGIN_MOMENT_X, REF_ORIGIN_MOMENT_Y and REF_ORIGIN_MOMENT_Z must be the same!!" << endl;
+        cout << "Press any key to exit..." << endl;
+        cin.get();
+        exit(1);
+    }
+
     if (RefOriginMoment_X == NULL) {
         RefOriginMoment_X = new double[nMarker_Monitoring];
         for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
             RefOriginMoment_X[iMarker] = 0.0;
     } else {
-        if (nRefOriginMoment_X != nMarker_Monitoring) {
-            cout << "Length of REF_ORIGIN_MOMENT_X must match number of Monitoring Markers!!" << endl;
+        if (nRefOriginMoment_X == 1) {
+            for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
+                RefOriginMoment_X[iMarker] = RefOriginMoment_X[0];
+        }
+        else if (nRefOriginMoment_X != nMarker_Monitoring) {
+            cout << "ERROR: Length of REF_ORIGIN_MOMENT_X must match number of Monitoring Markers!!" << endl;
             cout << "Press any key to exit..." << endl;
             cin.get();
             exit(1);
@@ -1530,8 +1543,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
             RefOriginMoment_Y[iMarker] = 0.0;
     } else {
-        if (nRefOriginMoment_Y != nMarker_Monitoring) {
-            cout << "Length of REF_ORIGIN_MOMENT_Y must match number of Monitoring Markers!!" << endl;
+        if (nRefOriginMoment_Y == 1) {
+            for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
+                RefOriginMoment_Y[iMarker] = RefOriginMoment_Y[0];
+        }
+        else if (nRefOriginMoment_Y != nMarker_Monitoring) {
+            cout << "ERROR: Length of REF_ORIGIN_MOMENT_Y must match number of Monitoring Markers!!" << endl;
             cout << "Press any key to exit..." << endl;
             cin.get();
             exit(1);
@@ -1543,8 +1560,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
             RefOriginMoment_Z[iMarker] = 0.0;
     } else {
-        if (nRefOriginMoment_Z != nMarker_Monitoring) {
-            cout << "Length of REF_ORIGIN_MOMENT_Z must match number of Monitoring Markers!!" << endl;
+        if (nRefOriginMoment_Z == 1) {
+            for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
+                RefOriginMoment_Z[iMarker] = RefOriginMoment_Z[0];
+        }
+        else if (nRefOriginMoment_Z != nMarker_Monitoring) {
+            cout << "ERROR: Length of REF_ORIGIN_MOMENT_Z must match number of Monitoring Markers!!" << endl;
             cout << "Press any key to exit..." << endl;
             cin.get();
             exit(1);
@@ -3677,12 +3698,24 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		else cout << "The reference length/area (force coefficient) is " << RefAreaCoeff << "." <<endl;
 		cout << "The reference length (moment computation) is " << RefLengthMoment << "." <<endl;
 
-    cout << "Surface(s) where the force coefficients are evaluated and their reference origin for moment computation: ";
-		for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++) {
-			cout << Marker_Monitoring[iMarker_Monitoring] << " (" << RefOriginMoment_X[iMarker_Monitoring] <<", "<<RefOriginMoment_Y[iMarker_Monitoring] <<", "<< RefOriginMoment_Z[iMarker_Monitoring] << ")";
-			if (iMarker_Monitoring < nMarker_Monitoring-1) cout << ", ";
-			else cout <<"."<<endl;
-		}
+        if ((nRefOriginMoment_X > 1) || (nRefOriginMoment_Y > 1) || (nRefOriginMoment_Z > 1)) {
+            cout << "Surface(s) where the force coefficients are evaluated and their reference origin for moment computation: ";
+            for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++) {
+                cout << Marker_Monitoring[iMarker_Monitoring] << " (" << RefOriginMoment_X[iMarker_Monitoring] <<", "<<RefOriginMoment_Y[iMarker_Monitoring] <<", "<< RefOriginMoment_Z[iMarker_Monitoring] << ")";
+                if (iMarker_Monitoring < nMarker_Monitoring-1) cout << ", ";
+                else cout <<"."<<endl;
+            }
+        }
+        else {
+            cout << "Reference origin (moment computation) is (" << RefOriginMoment_X[0] << ", " << RefOriginMoment_Y[0] << ", " << RefOriginMoment_Z[0] << ")." << endl;
+            cout << "Surface(s) where the force coefficients are evaluated: ";
+            for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++) {
+                cout << Marker_Monitoring[iMarker_Monitoring];
+                if (iMarker_Monitoring < nMarker_Monitoring-1) cout << ", ";
+                else cout <<"."<<endl;
+            }
+        }
+    
     
     cout << "Surface(s) where the objective function is evaluated: ";
 		for (iMarker_Designing = 0; iMarker_Designing < nMarker_Designing; iMarker_Designing++) {
