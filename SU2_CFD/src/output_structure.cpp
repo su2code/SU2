@@ -3570,7 +3570,8 @@ void COutput::DeallocateSolution(CConfig *config, CGeometry *geometry) {
 
 void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
 	char cstr[200], buffer[50], turb_resid[1000];
-    unsigned short iMarker, iSpecies;
+    unsigned short iMarker, iMarker_Monitoring, iSpecies;
+    string Monitoring_Tag, Monitoring_coeff;
     
 	bool rotating_frame = config->GetRotating_Frame();
     bool aeroelastic = config->GetAeroelastic_Simulation();
@@ -3583,6 +3584,16 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
         if (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL) isothermal = true;
     
+    /* Find the markers being monitored and create a header for them */
+    /* Note that for now only the aeroelastic case will make use of this */
+    for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+        Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
+        Monitoring_coeff += ",\"CLift_" + Monitoring_Tag + "\"";
+        //Monitoring_coeff += ",\"CDrag_" + Monitoring_Tag + "\"";
+        //Monitoring_coeff += ",\"CMz_" + Monitoring_Tag + "\"";
+        std::cout << Monitoring_coeff << std::endl;
+    }
+
 	/*--- Write file name with extension ---*/
     string filename = config->GetConv_FileName();
     strcpy (cstr, filename.data());
@@ -3616,8 +3627,9 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
 	char heat_coeff[]= ",\"CHeat_Load\",\"CHeat_Max\"";
 	char equivalent_area_coeff[]= ",\"CEquivArea\",\"CNearFieldOF\"";
 	char rotating_frame_coeff[]= ",\"CMerit\",\"CT\",\"CQ\"";
-    char aeroelastic_coeff[]= ",\"plunge\",\"pitch\"";
-	char free_surface_coeff[]= ",\"CFreeSurface\"";
+    //char aeroelastic_coeff[]= ",\"plunge\",\"pitch\"" + Monitoring_coeff;
+	string aeroelastic_coeff = ",\"plunge\",\"pitch\"" + Monitoring_coeff;
+    char free_surface_coeff[]= ",\"CFreeSurface\"";
 	char plasma_coeff[]= ",\"CLift\",\"CDrag\",\"CSideForce\",\"CMx\",\"CMy\",\"CMz\",\"CFx\",\"CFy\",\"CFz\",\"CL/CD\",\"Q\",\"PressDrag\",\"ViscDrag\",\"MagnetDrag\"";
 	char wave_coeff[]= ",\"CWave\"";
 	char fea_coeff[]= ",\"CFEA\"";
@@ -3753,12 +3765,12 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
         
         /*--- WARNING: These buffers have hard-coded lengths. Note that you
          may have to adjust them to be larger if adding more entries. ---*/
-        char begin[1000], direct_coeff[1000], adjoint_coeff[1000], flow_resid[1000], adj_flow_resid[1000],
+        char begin[1000], direct_coeff[1000], surface_coeff[1000], adjoint_coeff[1000], flow_resid[1000], adj_flow_resid[1000],
         turb_resid[1000], trans_resid[1000], adj_turb_resid[1000], plasma_resid[1000], adj_plasma_resid[1000], resid_aux[1000],
         levelset_resid[1000], adj_levelset_resid[1000], wave_coeff[1000], heat_coeff[1000], fea_coeff[1000], wave_resid[1000], heat_resid[1000],
         fea_resid[1000], end[1000];
         double dummy = 0.0;
-        unsigned short iVar, iMarker;
+        unsigned short iVar, iMarker, iMarker_Monitoring;
         unsigned short iSpecies, loc;
         
         unsigned long LinSolvIter = 0;
@@ -3811,6 +3823,9 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
         double *residual_adjflow = NULL, *residual_adjturbulent = NULL, *residual_adjTNE2 = NULL, *residual_adjlevelset = NULL, *residual_adjplasma = NULL;
         double *residual_wave = NULL; double *residual_fea = NULL; double *residual_heat = NULL;
         
+        /*--- Coefficients Monitored arrays ---*/
+        double *Surface_CLift = NULL;
+        
         /*--- Initialize number of variables ---*/
         unsigned short nVar_Flow = 0, nVar_LevelSet = 0, nVar_Turb = 0, nVar_Trans = 0, nVar_TNE2 = 0, nVar_Wave = 0, nVar_Heat = 0, nVar_FEA = 0, nVar_Plasma = 0,
         nVar_AdjFlow = 0, nVar_AdjTNE2 = 0, nVar_AdjPlasma = 0, nVar_AdjLevelSet = 0, nVar_AdjTurb = 0;
@@ -3859,6 +3874,9 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
         residual_adjTNE2 = new double[nVar_AdjTNE2];
         residual_adjplasma = new double[nVar_AdjPlasma];
         residual_adjlevelset = new double[nVar_AdjLevelSet];
+                
+        /*--- Allocate memory for the coefficients being monitored ---*/
+        Surface_CLift = new double[config[ZONE_0]->GetnMarker_Monitoring()];
         
         /*--- Write information from nodes ---*/
         switch (config[val_iZone]->GetKind_Solver()) {
@@ -3908,6 +3926,11 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                 if (aeroelastic) {
                     aeroelastic_plunge = config[val_iZone]->GetAeroelastic_plunge();
                     aeroelastic_pitch  = config[val_iZone]->GetAeroelastic_pitch();
+                    /* Find the markers being monitored and get the force coefficients on them */
+                    /* Note that for now only the aeroelastic case will make use of this */
+                    for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+                        Surface_CLift[iMarker_Monitoring] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CLift(iMarker_Monitoring);
+                    }
                 }
                 
                 if (aeroacoustic) {
@@ -4160,9 +4183,14 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                         if (rotating_frame)
                             sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx,
                                      Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_CMerit, Total_CT, Total_CQ);
-                        if (aeroelastic)
+                        if (aeroelastic) {
                             sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx,
                                      Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, aeroelastic_plunge, aeroelastic_pitch);
+                            for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+                                sprintf(surface_coeff, ", %12.10f",Surface_CLift[iMarker_Monitoring]);
+                                strcat(direct_coeff, surface_coeff);
+                            }
+                        }
                         if (freesurface) {
                             sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy,
                                      Total_CFz, Total_CEff, Total_CFreeSurface);
@@ -4859,6 +4887,8 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
             delete [] residual_adjlevelset;
             delete [] residual_adjplasma;
             delete [] residual_adjturbulent;
+            
+            delete [] Surface_CLift;
             
         }
     }
