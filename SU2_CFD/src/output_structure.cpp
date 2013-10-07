@@ -3588,6 +3588,8 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
     /* Note that for now only the aeroelastic case will make use of this */
     for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
         Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
+        Monitoring_coeff += ",\"plunge_" + Monitoring_Tag + "\"";
+        Monitoring_coeff += ",\"pitch_" + Monitoring_Tag + "\"";
         Monitoring_coeff += ",\"CLift_" + Monitoring_Tag + "\"";
         //Monitoring_coeff += ",\"CDrag_" + Monitoring_Tag + "\"";
         //Monitoring_coeff += ",\"CMz_" + Monitoring_Tag + "\"";
@@ -3627,8 +3629,8 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
 	char heat_coeff[]= ",\"CHeat_Load\",\"CHeat_Max\"";
 	char equivalent_area_coeff[]= ",\"CEquivArea\",\"CNearFieldOF\"";
 	char rotating_frame_coeff[]= ",\"CMerit\",\"CT\",\"CQ\"";
-    //char aeroelastic_coeff[]= ",\"plunge\",\"pitch\"" + Monitoring_coeff;
-	string aeroelastic_coeff = ",\"plunge\",\"pitch\"" + Monitoring_coeff;
+    //char aeroelastic_coeff[]= Monitoring_coeff;
+    string aeroelastic_coeff = Monitoring_coeff;
     char free_surface_coeff[]= ",\"CFreeSurface\"";
 	char plasma_coeff[]= ",\"CLift\",\"CDrag\",\"CSideForce\",\"CMx\",\"CMy\",\"CMz\",\"CFx\",\"CFy\",\"CFz\",\"CL/CD\",\"Q\",\"PressDrag\",\"ViscDrag\",\"MagnetDrag\"";
 	char wave_coeff[]= ",\"CWave\"";
@@ -3812,7 +3814,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
         /*--- Initialize variables to store information from all domains (direct solution) ---*/
         double Total_CLift = 0.0, Total_CDrag = 0.0, Total_CSideForce = 0.0, Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0,
         Total_CEquivArea = 0.0, Total_CNearFieldOF = 0.0, Total_CFx = 0.0, Total_CFy = 0.0, Total_CFz = 0.0, Total_CMerit = 0.0,
-        Total_CT = 0.0, Total_CQ = 0.0, Total_CFreeSurface = 0.0, Total_CWave = 0.0, Total_CHeat = 0.0, Total_CFEA = 0.0, PressureDrag = 0.0, ViscDrag = 0.0, MagDrag = 0.0, Total_Q = 0.0, Total_MaxQ = 0.0, aeroelastic_plunge = 0.0, aeroelastic_pitch = 0.0;
+        Total_CT = 0.0, Total_CQ = 0.0, Total_CFreeSurface = 0.0, Total_CWave = 0.0, Total_CHeat = 0.0, Total_CFEA = 0.0, PressureDrag = 0.0, ViscDrag = 0.0, MagDrag = 0.0, Total_Q = 0.0, Total_MaxQ = 0.0;
         
         /*--- Initialize variables to store information from all domains (adjoint solution) ---*/
         double Total_Sens_Geo = 0.0, Total_Sens_Mach = 0.0, Total_Sens_AoA = 0.0;
@@ -3824,7 +3826,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
         double *residual_wave = NULL; double *residual_fea = NULL; double *residual_heat = NULL;
         
         /*--- Coefficients Monitored arrays ---*/
-        double *Surface_CLift = NULL;
+        double *aeroelastic_plunge = NULL, *aeroelastic_pitch = NULL, *Surface_CLift = NULL;
         
         /*--- Initialize number of variables ---*/
         unsigned short nVar_Flow = 0, nVar_LevelSet = 0, nVar_Turb = 0, nVar_Trans = 0, nVar_TNE2 = 0, nVar_Wave = 0, nVar_Heat = 0, nVar_FEA = 0, nVar_Plasma = 0,
@@ -3876,6 +3878,8 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
         residual_adjlevelset = new double[nVar_AdjLevelSet];
                 
         /*--- Allocate memory for the coefficients being monitored ---*/
+        aeroelastic_plunge = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+        aeroelastic_pitch = new double[config[ZONE_0]->GetnMarker_Monitoring()];
         Surface_CLift = new double[config[ZONE_0]->GetnMarker_Monitoring()];
         
         /*--- Write information from nodes ---*/
@@ -3924,11 +3928,10 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                 }
                 
                 if (aeroelastic) {
-                    aeroelastic_plunge = config[val_iZone]->GetAeroelastic_plunge();
-                    aeroelastic_pitch  = config[val_iZone]->GetAeroelastic_pitch();
-                    /* Find the markers being monitored and get the force coefficients on them */
-                    /* Note that for now only the aeroelastic case will make use of this */
+                    /*--- Look over the markers being monitored and get the desired values ---*/
                     for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+                        aeroelastic_plunge[iMarker_Monitoring] = config[val_iZone]->GetAeroelastic_plunge(iMarker_Monitoring);
+                        aeroelastic_pitch[iMarker_Monitoring]  = config[val_iZone]->GetAeroelastic_pitch(iMarker_Monitoring);
                         Surface_CLift[iMarker_Monitoring] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CLift(iMarker_Monitoring);
                     }
                 }
@@ -4184,9 +4187,14 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                             sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx,
                                      Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_CMerit, Total_CT, Total_CQ);
                         if (aeroelastic) {
-                            sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx,
-                                     Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, aeroelastic_plunge, aeroelastic_pitch);
+                            sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx,
+                                     Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff);
                             for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+                                //Append one by one the surface coeff to direct coeff.
+                                sprintf(surface_coeff, ", %12.10f",aeroelastic_plunge[iMarker_Monitoring]);
+                                strcat(direct_coeff, surface_coeff);
+                                sprintf(surface_coeff, ", %12.10f",aeroelastic_pitch[iMarker_Monitoring]);
+                                strcat(direct_coeff, surface_coeff);
                                 sprintf(surface_coeff, ", %12.10f",Surface_CLift[iMarker_Monitoring]);
                                 strcat(direct_coeff, surface_coeff);
                             }
@@ -4602,8 +4610,8 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                     else { cout.width(15); cout << min(1000.0,max(-1000.0, Total_CLift)); cout.width(15); cout << min(1000.0,max(-1000.0, Total_CDrag)); }
                     if (aeroelastic) {
                         cout.setf(ios::scientific,ios::floatfield);
-                        cout.width(15); cout << aeroelastic_plunge;
-                        cout.width(15); cout << aeroelastic_pitch;
+                        cout.width(15); cout << aeroelastic_plunge[0]; //Only output the first marker being monitored to the console.
+                        cout.width(15); cout << aeroelastic_pitch[0];
                         cout.unsetf(ios_base::floatfield);
                     }
                     cout << endl;
@@ -4641,8 +4649,8 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                     else { cout.width(15); cout << min(1000.0,max(-1000.0, Total_CLift)); cout.width(15); cout << min(1000.0,max(-1000.0, Total_CDrag)); }
                     if (aeroelastic) {
                         cout.setf(ios::scientific,ios::floatfield);
-                        cout.width(15); cout << aeroelastic_plunge; cout.width(15);
-                        cout << aeroelastic_pitch;
+                        cout.width(15); cout << aeroelastic_plunge[0]; //Only output the first marker being monitored to the console.
+                        cout.width(15); cout << aeroelastic_pitch[0];
                         cout.unsetf(ios_base::floatfield);
                     }
                     cout << endl;

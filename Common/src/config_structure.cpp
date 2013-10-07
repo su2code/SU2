@@ -1583,6 +1583,16 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 			Aeroelastic_n1[i]  = 0.0;
 		}
 	}
+    
+    /*--- Allocate memory for the plunge and pitch and initialized them to zero ---*/
+    if (Grid_Movement && (Kind_GridMovement[ZONE_0] == AEROELASTIC)) {
+        Aeroelastic_pitch = new double[nMarker_Monitoring];
+        Aeroelastic_plunge = new double(nMarker_Monitoring);
+        for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ ) {
+            Aeroelastic_pitch[iMarker] = 0.0;
+            Aeroelastic_plunge[iMarker] = 0.0;
+        }
+    }
 
     /*--- Set the boolean flag if we are carrying out an aeroelastic simulation. ---*/
 	if (Grid_Movement && Kind_GridMovement[ZONE_0] == AEROELASTIC)
@@ -5387,6 +5397,9 @@ CConfig::~CConfig(void)
 		delete[] Aeroelastic_np1;
 		delete[] Aeroelastic_n;
 		delete[] Aeroelastic_n1;
+        
+        delete[] Aeroelastic_pitch;
+        delete[] Aeroelastic_plunge;
 	}
 
 	/*--- Free memory for unspecified grid motion parameters ---*/

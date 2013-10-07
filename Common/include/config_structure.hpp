@@ -652,9 +652,9 @@ private:
 	*Aeroelastic_n, /*!< \brief Structural source terms used for Aeroelastic computation at time level n. */
 	*Aeroelastic_n1; /*!< \brief Structural Source terms used for Aeroelastic computation at time level n-1. */
     double FreqPlungeAeroelastic, /*!< \brief Plunging natural frequency for Aeroelastic. */
-	FreqPitchAeroelastic, /*!< \brief Pitch natural frequency for Aeroelastic. */
-    Aeroelastic_plunge, /*!< \brief Value of plunging coordinate at the end of an external iteration. */
-	Aeroelastic_pitch; /*!< \brief Value of pitching coordinate at the end of an external iteration. */
+	FreqPitchAeroelastic; /*!< \brief Pitch natural frequency for Aeroelastic. */
+    double *Aeroelastic_plunge, /*!< \brief Value of plunging coordinate at the end of an external iteration. */
+	*Aeroelastic_pitch; /*!< \brief Value of pitching coordinate at the end of an external iteration. */
     unsigned short Gust_Type,	/*!< \brief Type of Gust. */
     Gust_Dir;   /*!< \brief Direction of the gust */
     double Gust_WaveLength,     /*!< \brief The gust wavelength. */
@@ -4633,24 +4633,32 @@ public:
 	double GetAeroelastic_Frequency_Pitch(void);
 
 	/*!
-	 * \brief Value of plunging coordinate at the end of an external iteration.
+	 * \brief Value of plunging coordinate.
+     * \param[in] val_marker - the marker we are monitoring.
+	 * \return Value of plunging coordinate.
 	 */
-	double GetAeroelastic_plunge(void);
+	double GetAeroelastic_plunge(unsigned short val_marker);
+
+    /*!
+	 * \brief Value of pitching coordinate.
+     * \param[in] val_marker - the marker we are monitoring.
+	 * \return Value of pitching coordinate.
+	 */
+	double GetAeroelastic_pitch(unsigned short val_marker);
 
 	/*!
-	 * \brief Value of pitching coordinate at the end of an external iteration.
+	 * \brief Value of plunging coordinate.
+     * \param[in] val_marker - the marker we are monitoring.
+     * \param[in] val - value of plunging coordinate.
 	 */
-	double GetAeroelastic_pitch(void);
+	void SetAeroelastic_plunge(unsigned short val_marker, double val);
 
 	/*!
-	 * \brief Value of plunging coordinate at the end of an external iteration.
+	 * \brief Value of pitching coordinate.
+     * \param[in] val_marker - the marker we are monitoring.
+     * \param[in] val - value of pitching coordinate.
 	 */
-	void SetAeroelastic_plunge(double val);
-
-	/*!
-	 * \brief Value of pitching coordinate at the end of an external iteration.
-	 */
-	void SetAeroelastic_pitch(double val);
+	void SetAeroelastic_pitch(unsigned short val_marker, double val);
     
     /*!
 	 * \brief Get information about the aeroelastic simulation.
