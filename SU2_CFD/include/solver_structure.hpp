@@ -1724,9 +1724,10 @@ public:
      * \param[in] Cm - Moment coefficient about z-axis at particular iteration.
 	 * \param[in] config - Definition of the particular problem.
      * \param[in] iter - Sudo time iteration number.
+     * \param[in] val_Marker - Surface that is being monitored.
      * \param[in] displacements - solution of typical section wing model.
 	 */
-    void SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned long iter, double (&displacements)[4]);
+    void SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned long iter, unsigned short val_Marker, double (&displacements)[4]);
 
 };
 

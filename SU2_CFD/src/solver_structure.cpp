@@ -1299,11 +1299,10 @@ void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometr
                 if (Marker_Tag == Monitoring_Tag) {
                     Cl = GetSurface_CLift(iMarker_Monitoring);
                     Cm = -1.0*GetSurface_CMz(iMarker_Monitoring);
+                    /*--- Solve the aeroelastic equations for the particular marker(surface) ---*/
+                    SolveTypicalSectionWingModel(geometry, Cl, Cm, config, IntIter, iMarker_Monitoring, structural_solution);
                 }
             }
-            
-            /*--- Solve the aeroelastic equations for the particular marker(surface) ---*/
-            SolveTypicalSectionWingModel(geometry, Cl, Cm, config, IntIter, structural_solution);
             
             /*--- Compute the new surface node locations ---*/
             surface_movement->AeroelasticDeform(geometry, config, iMarker, structural_solution);
@@ -1379,7 +1378,7 @@ void CSolver::SetUpTypicalSectionWingModel(double (&PHI)[2][2],double (&lambda)[
     
 }
 
-void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned long iter, double (&displacements)[4]) {
+void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned long iter, unsigned short iMarker, double (&displacements)[4]) {
     
     /*--- The aeroelastic model solved in this routine is the typical section wing model
      The details of the implementation can be found in J.J. Alonso "Fully-Implicit Time-Marching Aeroelastic Solutions" 1994.
@@ -1526,11 +1525,11 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, doubl
     
     /*--- Calculate the total plunge and total pitch displacements for the unsteady step by summing the displacement at each sudo time step ---*/
     double pitch, plunge;
-    pitch = config->GetAeroelastic_pitch();
-    plunge = config->GetAeroelastic_plunge();
+    pitch = config->GetAeroelastic_pitch(iMarker);
+    plunge = config->GetAeroelastic_plunge(iMarker);
     
-    config->SetAeroelastic_pitch(pitch+dalpha);
-    config->SetAeroelastic_plunge(plunge+dy/b);
+    config->SetAeroelastic_pitch(iMarker ,pitch+dalpha);
+    config->SetAeroelastic_plunge(iMarker ,plunge+dy/b);
     
     /*--- Set the Aeroelastic solution at time n+1. This gets update every sudo time step
      and after convering the sudo time step the solution at n+1 get moved to the solution at n
