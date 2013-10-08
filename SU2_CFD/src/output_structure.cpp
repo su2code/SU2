@@ -3589,11 +3589,12 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
     for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
         Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
         Monitoring_coeff += ",\"plunge_" + Monitoring_Tag + "\"";
-        Monitoring_coeff += ",\"pitch_" + Monitoring_Tag + "\"";
-        Monitoring_coeff += ",\"CLift_" + Monitoring_Tag + "\"";
-        //Monitoring_coeff += ",\"CDrag_" + Monitoring_Tag + "\"";
-        //Monitoring_coeff += ",\"CMz_" + Monitoring_Tag + "\"";
-        std::cout << Monitoring_coeff << std::endl;
+        Monitoring_coeff += ",\"pitch_"  + Monitoring_Tag + "\"";
+        Monitoring_coeff += ",\"CLift_"  + Monitoring_Tag + "\"";
+        Monitoring_coeff += ",\"CDrag_"  + Monitoring_Tag + "\"";
+        Monitoring_coeff += ",\"CMx_"    + Monitoring_Tag + "\"";
+        Monitoring_coeff += ",\"CMy_"    + Monitoring_Tag + "\"";
+        Monitoring_coeff += ",\"CMz_"    + Monitoring_Tag + "\"";
     }
 
 	/*--- Write file name with extension ---*/
@@ -3826,7 +3827,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
         double *residual_wave = NULL; double *residual_fea = NULL; double *residual_heat = NULL;
         
         /*--- Coefficients Monitored arrays ---*/
-        double *aeroelastic_plunge = NULL, *aeroelastic_pitch = NULL, *Surface_CLift = NULL;
+        double *aeroelastic_plunge = NULL, *aeroelastic_pitch = NULL, *Surface_CLift = NULL, *Surface_CDrag = NULL, *Surface_CMx = NULL, *Surface_CMy = NULL, *Surface_CMz = NULL;
         
         /*--- Initialize number of variables ---*/
         unsigned short nVar_Flow = 0, nVar_LevelSet = 0, nVar_Turb = 0, nVar_Trans = 0, nVar_TNE2 = 0, nVar_Wave = 0, nVar_Heat = 0, nVar_FEA = 0, nVar_Plasma = 0,
@@ -3879,8 +3880,12 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                 
         /*--- Allocate memory for the coefficients being monitored ---*/
         aeroelastic_plunge = new double[config[ZONE_0]->GetnMarker_Monitoring()];
-        aeroelastic_pitch = new double[config[ZONE_0]->GetnMarker_Monitoring()];
-        Surface_CLift = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+        aeroelastic_pitch  = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+        Surface_CLift      = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+        Surface_CDrag      = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+        Surface_CMx        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+        Surface_CMy        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+        Surface_CMz        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
         
         /*--- Write information from nodes ---*/
         switch (config[val_iZone]->GetKind_Solver()) {
@@ -3932,7 +3937,11 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                     for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->GetnMarker_Monitoring(); iMarker_Monitoring++) {
                         aeroelastic_plunge[iMarker_Monitoring] = config[val_iZone]->GetAeroelastic_plunge(iMarker_Monitoring);
                         aeroelastic_pitch[iMarker_Monitoring]  = config[val_iZone]->GetAeroelastic_pitch(iMarker_Monitoring);
-                        Surface_CLift[iMarker_Monitoring] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CLift(iMarker_Monitoring);
+                        Surface_CLift[iMarker_Monitoring]      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CLift(iMarker_Monitoring);
+                        Surface_CDrag[iMarker_Monitoring]      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CDrag(iMarker_Monitoring);
+                        Surface_CMx[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMx(iMarker_Monitoring);
+                        Surface_CMy[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMy(iMarker_Monitoring);
+                        Surface_CMz[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMz(iMarker_Monitoring);
                     }
                 }
                 
@@ -4190,12 +4199,20 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                             sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx,
                                      Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff);
                             for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-                                //Append one by one the surface coeff to direct coeff.
+                                //Append one by one the surface coeff to direct coeff. (Think better way do this, maybe use string)
                                 sprintf(surface_coeff, ", %12.10f",aeroelastic_plunge[iMarker_Monitoring]);
                                 strcat(direct_coeff, surface_coeff);
                                 sprintf(surface_coeff, ", %12.10f",aeroelastic_pitch[iMarker_Monitoring]);
                                 strcat(direct_coeff, surface_coeff);
                                 sprintf(surface_coeff, ", %12.10f",Surface_CLift[iMarker_Monitoring]);
+                                strcat(direct_coeff, surface_coeff);
+                                sprintf(surface_coeff, ", %12.10f",Surface_CDrag[iMarker_Monitoring]);
+                                strcat(direct_coeff, surface_coeff);
+                                sprintf(surface_coeff, ", %12.10f",Surface_CMx[iMarker_Monitoring]);
+                                strcat(direct_coeff, surface_coeff);
+                                sprintf(surface_coeff, ", %12.10f",Surface_CMy[iMarker_Monitoring]);
+                                strcat(direct_coeff, surface_coeff);
+                                sprintf(surface_coeff, ", %12.10f",Surface_CMz[iMarker_Monitoring]);
                                 strcat(direct_coeff, surface_coeff);
                             }
                         }
@@ -4897,6 +4914,10 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
             delete [] residual_adjturbulent;
             
             delete [] Surface_CLift;
+            delete [] Surface_CDrag;
+            delete [] Surface_CMx;
+            delete [] Surface_CMy;
+            delete [] Surface_CMz;
             
         }
     }
