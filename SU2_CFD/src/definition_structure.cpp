@@ -596,24 +596,27 @@ void Integration_Preprocessing(CIntegration **integration_container,
     
 }
 
-void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_container, CGeometry **geometry,
+void Numerics_Preprocessing(CNumerics ****numerics_container,
+                            CSolver ***solver_container, CGeometry **geometry,
                             CConfig *config, unsigned short iZone) {
   
 	unsigned short iMGlevel, iSol, nDim,
-  nVar_Template   = 0,
-  nVar_Flow       = 0,
-  nVar_Trans      = 0,
-  nVar_TNE2       = 0,
-  nVar_Plasma     = 0,
-  nVar_Turb       = 0,
-  nVar_Adj_Flow   = 0,
-  nVar_Adj_Turb   = 0,
-  nVar_Adj_TNE2   = 0,
-  nVar_Adj_Plasma = 0,
-  nVar_Elec       = 0,
-  nVar_FEA        = 0,
-  nVar_Wave       = 0,
-  nVar_Lin_Flow   = 0,
+  nVar_Template     = 0,
+  nVar_Flow         = 0,
+  nVar_Trans        = 0,
+  nVar_TNE2         = 0,
+  nPrimVar_TNE2     = 0,
+  nPrimVarGrad_TNE2 = 0,
+  nVar_Plasma       = 0,
+  nVar_Turb         = 0,
+  nVar_Adj_Flow     = 0,
+  nVar_Adj_Turb     = 0,
+  nVar_Adj_TNE2     = 0,
+  nVar_Adj_Plasma   = 0,
+  nVar_Elec         = 0,
+  nVar_FEA          = 0,
+  nVar_Wave         = 0,
+  nVar_Lin_Flow     = 0,
   nSpecies = 0, nDiatomics = 0, nMonatomics = 0;
   
 	double *constants = NULL;
@@ -736,8 +739,11 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
 	if (ns)	          nVar_Flow = solver_container[MESH_0][FLOW_SOL]->GetnVar();
 	if (turbulent)		nVar_Turb = solver_container[MESH_0][TURB_SOL]->GetnVar();
   if (transition)		nVar_Trans = solver_container[MESH_0][TRANS_SOL]->GetnVar();
-  if (tne2_euler)   nVar_TNE2 = solver_container[MESH_0][TNE2_SOL]->GetnVar();
-  if (tne2_ns)	    nVar_TNE2 = solver_container[MESH_0][TNE2_SOL]->GetnVar();
+  if ((tne2_euler) || (tne2_ns)) {
+    nVar_TNE2         = solver_container[MESH_0][TNE2_SOL]->GetnVar();
+    nPrimVar_TNE2     = solver_container[MESH_0][TNE2_SOL]->GetnPrimVar();
+    nPrimVarGrad_TNE2 = solver_container[MESH_0][TNE2_SOL]->GetnPrimVarGrad();
+  }
 	if (electric)			nVar_Elec = solver_container[MESH_0][ELEC_SOL]->GetnVar();
 	if (plasma_euler || plasma_ns)	{
 		nVar_Plasma = solver_container[MESH_0][PLASMA_SOL]->GetnVar();
@@ -1106,19 +1112,19 @@ void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_
       case AVG_GRAD :
           /*--- Compressible TNE2 ---*/
           for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-//            solver_container[iMGlevel][TNE2_SOL][VISC_TERM] = new CAvgGrad_TNE2(nDim, nVar_TNE2, config);
-//            solver_container[iMGlevel][TNE2_SOL][VISC_BOUND_TERM] = new CAvgGrad_TNE2(nDim, nVar_TNE2, config);
+            numerics_container[iMGlevel][TNE2_SOL][VISC_TERM]       = new CAvgGrad_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
+            numerics_container[iMGlevel][TNE2_SOL][VISC_BOUND_TERM] = new CAvgGrad_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
           }
         break;
       case AVG_GRAD_CORRECTED :
           /*--- Compressible TNE2 ---*/
-//          solver_container[MESH_0][TNE2_SOL][VISC_TERM] = new CAvgGradCorrected_TNE2(nDim, nVar_TNE2, config);
+//          numerics_container[MESH_0][TNE2_SOL][VISC_TERM] = new CAvgGradCorrected_TNE2(nDim, nVar_TNE2, config);
           for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-//              solver_container[iMGlevel][TNE2_SOL][VISC_TERM] = new CAvgGrad_TNE2(nDim, nVar_TNE2, config);
+//              numerics_container[iMGlevel][TNE2_SOL][VISC_TERM] = new CAvgGrad_TNE2(nDim, nVar_TNE2, config);
           }
           /*--- Definition of the boundary condition method ---*/
           for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-//              solver_container[iMGlevel][TNE2_SOL][VISC_BOUND_TERM] = new CAvgGrad_TNE2(nDim, nVar_TNE2, config);
+//              numerics_container[iMGlevel][TNE2_SOL][VISC_BOUND_TERM] = new CAvgGrad_TNE2(nDim, nVar_TNE2, config);
           }
         break;
       case GALERKIN :

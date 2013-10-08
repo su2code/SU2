@@ -66,10 +66,15 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar, CConfig *
 	turb_ke_i = 0.0;
 	turb_ke_j = 0.0;
   
-  if ((config->GetKind_Solver() == TNE2_EULER) || (config->GetKind_Solver() == TNE2_NAVIER_STOKES))
+  Diffusion_Coeff_i = NULL;
+  Diffusion_Coeff_j = NULL;
+  
+  if ((config->GetKind_Solver() == TNE2_EULER)        ||
+      (config->GetKind_Solver() == TNE2_NAVIER_STOKES)  ) {
     nSpecies = nVar - nDim - 2;
-
-
+    Diffusion_Coeff_i = new double[nSpecies];
+    Diffusion_Coeff_j = new double[nSpecies];
+  }
 }
 /* Class overloaded to include multiple fluid equations for plasma */
 CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nSpecies, CConfig *config) {
@@ -220,6 +225,9 @@ CNumerics::~CNumerics(void) {
 	delete [] Vector_Gamma;
 	delete [] Enthalpy_formation;
 	delete [] Theta_v;
+  if (Diffusion_Coeff_i != NULL) delete [] Diffusion_Coeff_i;
+  if (Diffusion_Coeff_j != NULL) delete [] Diffusion_Coeff_j;
+
 	if (Laminar_Viscosity_MultipleSpecies_i        != NULL) delete [] Laminar_Viscosity_MultipleSpecies_i;
 	if (Laminar_Viscosity_MultipleSpecies_j        != NULL) delete [] Laminar_Viscosity_MultipleSpecies_j;
 	if (Eddy_Viscosity_MultipleSpecies_i           != NULL) delete [] Eddy_Viscosity_MultipleSpecies_i;
@@ -277,9 +285,12 @@ void CNumerics::GetInviscidFlux(double val_density, double *val_velocity,
 	}
 }
 
-void CNumerics::GetInviscidProjFlux(double *val_density, double *val_velocity,
-                                    double *val_pressure, double *val_enthalpy,
-                                    double *val_normal, double *val_Proj_Flux) {
+void CNumerics::GetInviscidProjFlux(double *val_density,
+                                    double *val_velocity,
+                                    double *val_pressure,
+                                    double *val_enthalpy,
+                                    double *val_normal,
+                                    double *val_Proj_Flux) {
     double rhou, rhov, rhow;
     
 //************************************************//
@@ -330,9 +341,12 @@ void CNumerics::GetInviscidProjFlux(double *val_density, double *val_velocity,
 //SU2_CPP2C SUB END GetInviscidProjFlux
 }
 
-void CNumerics::GetInviscidProjFlux(double *val_density, double *val_velocity,
-                                    double *val_pressure, double *val_enthalpy,
-                                    double *val_energy_ve, double *val_normal,
+void CNumerics::GetInviscidProjFlux(double *val_density,
+                                    double *val_velocity,
+                                    double *val_pressure,
+                                    double *val_enthalpy,
+                                    double *val_energy_ve,
+                                    double *val_normal,
                                     double *val_Proj_Flux) {
   unsigned short iSpecies;
   double rho, rhou, rhov, rhow;
@@ -405,9 +419,12 @@ void CNumerics::GetInviscidProjFlux(double *val_density, double *val_velocity,
 }
 
 
-void CNumerics::GetInviscidArtCompProjFlux(double *val_density, double *val_velocity,
-		double *val_pressure, double *val_betainc2, double *val_normal,
-		double *val_Proj_Flux) {
+void CNumerics::GetInviscidArtCompProjFlux(double *val_density,
+                                           double *val_velocity,
+                                           double *val_pressure,
+                                           double *val_betainc2,
+                                           double *val_normal,
+                                           double *val_Proj_Flux) {
     double rhou, rhov, rhow;
     
    	if (nDim == 2) {
@@ -2229,8 +2246,9 @@ void CNumerics::GetViscousFlux(double *val_primvar, double **val_gradprimvar,
 
 	for (unsigned short iDim = 0 ; iDim < nDim; iDim++) {
 		for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
-			tau[iDim][jDim] = total_viscosity*( val_gradprimvar[jDim+1][iDim] + val_gradprimvar[iDim+1][jDim] )
-																																																																																																									-TWO3*total_viscosity*div_vel*delta[iDim][jDim];
+			tau[iDim][jDim] = total_viscosity*( val_gradprimvar[jDim+1][iDim] +
+                                          val_gradprimvar[iDim+1][jDim] )
+                       -TWO3*total_viscosity*div_vel*delta[iDim][jDim];
 		}
 	}
 
@@ -2272,8 +2290,11 @@ void CNumerics::GetViscousFlux(double *val_primvar, double **val_gradprimvar,
 	}
 }
 
-void CNumerics::GetViscousProjFlux(double *val_primvar, double **val_gradprimvar, double val_turb_ke, double *val_normal, double val_laminar_viscosity,
-		double val_eddy_viscosity) {
+void CNumerics::GetViscousProjFlux(double *val_primvar,
+                                   double **val_gradprimvar, double val_turb_ke,
+                                   double *val_normal,
+                                   double val_laminar_viscosity,
+                                   double val_eddy_viscosity) {
 //************************************************//
 // Please do not delete //SU2_CPP2C comment lines //
 //************************************************//
@@ -2347,8 +2368,11 @@ void CNumerics::GetViscousProjFlux(double *val_primvar, double **val_gradprimvar
 //SU2_CPP2C SUB END GetViscousProjFlux
 }
 
-void CNumerics::GetViscousProjFlux(double *val_primvar, double **val_gradprimvar, double *val_normal, double* val_laminar_viscosity,
-		double* val_eddy_viscosity, unsigned short val_iSpecies) {
+void CNumerics::GetViscousProjFlux(double *val_primvar,
+                                   double **val_gradprimvar, double *val_normal,
+                                   double* val_laminar_viscosity,
+                                   double* val_eddy_viscosity,
+                                   unsigned short val_iSpecies) {
 	unsigned short iVar, iDim, jDim, nVar_species;
 	double total_viscosity, heat_flux_factor, heat_flux_factor_vib, div_vel, cp;
 
@@ -2394,7 +2418,15 @@ void CNumerics::GetViscousProjFlux(double *val_primvar, double **val_gradprimvar
 	}
 }
 
-void CNumerics::GetViscousProjFlux(double *val_primvar, double **val_gradprimvar, double *val_normal, double* val_laminar_viscosity, double* val_eddy_viscosity, double *val_therm_conductivity, double *val_therm_conductivity_vib, unsigned short val_iSpecies) {
+void CNumerics::GetViscousProjFlux(double *val_primvar,
+                                   double **val_gradprimvar,
+                                   double *val_normal,
+                                   double *val_laminar_viscosity,
+                                   double *val_eddy_viscosity,
+                                   double *val_therm_conductivity,
+                                   double *val_therm_conductivity_vib,
+                                   unsigned short val_iSpecies) {
+  
 	unsigned short iVar, iDim, jDim, nVar_species;
 	double total_viscosity, div_vel;
 
@@ -2434,6 +2466,58 @@ void CNumerics::GetViscousProjFlux(double *val_primvar, double **val_gradprimvar
 			Proj_Flux_Tensor[iVar] += Flux_Tensor[iVar][iDim]*val_normal[iDim];
 	}
 }
+
+void CNumerics::GetViscousProjFlux(double *val_primvar,
+                                   double **val_gradprimvar,
+                                   double *val_normal,
+                                   double *val_diffusioncoeff,
+                                   double val_viscosity,
+                                   double val_therm_conductivity,
+                                   double val_therm_conductivity_ve) {
+  
+	unsigned short iSpecies, iVar, iDim, jDim;
+	double mu, ktr, kve, div_vel;
+  
+  /*--- Initialize ---*/
+  for (iVar = 0; iVar < nVar; iVar++)
+    Proj_Flux_Tensor[iVar] = 0.0;
+  
+  /*--- Rename for convenience ---*/
+  mu      = val_viscosity;
+  ktr = val_therm_conductivity;
+  kve = val_therm_conductivity_ve;
+  
+  /*--- Calculate the velocity divergence ---*/
+	div_vel = 0.0;
+	for (iDim = 0 ; iDim < nDim; iDim++)
+		div_vel += val_gradprimvar[VEL_INDEX+iDim][iDim];
+  
+  /*--- Compute the viscous stress tensor ---*/
+	for (iDim = 0 ; iDim < nDim; iDim++)
+		for (jDim = 0 ; jDim < nDim; jDim++)
+			tau[iDim][jDim] = mu * (val_gradprimvar[VEL_INDEX+jDim][iDim] +
+                              val_gradprimvar[VEL_INDEX+iDim][jDim])
+                       -TWO3*mu*div_vel*delta[iDim][jDim];
+  
+	/*--- Populate entries in the viscous flux vector ---*/
+	for (iDim = 0; iDim < nDim; iDim++) {
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      Flux_Tensor[iSpecies][iDim] = 0.0;
+    Flux_Tensor[nSpecies+nDim][iDim] = 0.0;
+		for (jDim = 0; jDim < nDim; jDim++) {
+			Flux_Tensor[nSpecies+jDim][iDim]  = tau[iDim][jDim];
+			Flux_Tensor[nSpecies+nDim][iDim] += tau[iDim][jDim]*val_primvar[VEL_INDEX+jDim];
+		}
+		Flux_Tensor[nSpecies+nDim][iDim] += ktr*val_gradprimvar[T_INDEX][iDim] +
+                                        kve*val_gradprimvar[TVE_INDEX][iDim];
+    Flux_Tensor[nSpecies+nDim+1][iDim] = kve*val_gradprimvar[TVE_INDEX][iDim];
+	}
+  
+  for (iVar = 0; iVar < nVar; iVar++)
+    for (iDim = 0; iDim < nDim; iDim++)
+      Proj_Flux_Tensor[iVar] += Flux_Tensor[iVar][iDim]*val_normal[iDim];
+}
+
 
 void CNumerics::GetViscousArtCompProjFlux(double *val_primvar, double **val_gradprimvar, double *val_normal, double val_laminar_viscosity,
 		double val_eddy_viscosity) {
@@ -2608,6 +2692,30 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar, double val_laminar_
 	}
 
 }
+
+void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
+                                   double *val_diffusion_coeff,
+                                   double val_laminar_viscosity,
+                                   double val_thermal_conductivity,
+                                   double val_thermal_conductivity_ve,
+                                   double val_dist_ij,
+                                   double *val_normal, double val_dS,
+                                   double *val_Proj_Visc_Flux,
+                                   double **val_Proj_Jac_Tensor_i,
+                                   double **val_Proj_Jac_Tensor_j) {
+  unsigned short iVar, jVar;
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
+    for (jVar = 0; jVar < nVar; jVar++) {
+      val_Proj_Jac_Tensor_i[iVar][jVar] = 0.0;
+      val_Proj_Jac_Tensor_j[iVar][jVar] = 0.0;
+    }
+  }
+  
+}
+
+
+
 
 void CNumerics::GetViscousProjJacsDiatomics(double *val_Mean_PrimVar,   double *val_laminar_viscosity, double *val_eddy_viscosity, double *val_thermal_conductivity, double *val_thermal_conductivity_vib, double val_dist_ij, double *val_normal, double val_dS, double *val_Proj_Visc_Flux, double **val_Proj_Jac_Tensor_i, double **val_Proj_Jac_Tensor_j, unsigned short val_iSpecies) {
   

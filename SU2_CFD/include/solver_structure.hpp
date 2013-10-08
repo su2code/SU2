@@ -200,12 +200,17 @@ public:
   /*!
 	 * \brief Get the number of variables of the problem.
 	 */
-	unsigned short GetnOutputVariables(void);
-    
-    /*!
+	unsigned short GetnPrimVar(void);
+  
+  /*!
 	 * \brief Get the number of variables of the problem.
 	 */
-	unsigned short GetnPrimVar(void);
+	unsigned short GetnPrimVarGrad(void);
+  
+  /*!
+	 * \brief Get the number of variables of the problem.
+	 */
+	unsigned short GetnOutputVariables(void);
     
 	/*!
 	 * \brief A virtual member.

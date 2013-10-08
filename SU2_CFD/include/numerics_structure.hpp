@@ -63,10 +63,16 @@ public:
   double **dVdU, /*!< \brief Transformation matrix from primitive variables, V, to conserved, U. */
   **dFvdV_i, /*!< \brief Jacobian of viscous therms w.r.t. primitive variables at i. */
   **dFvdV_j; /*!< \brief Jacobian of viscous therms w.r.t. primitive variables at j. */
+  double *Diffusion_Coeff_i, /*!< \brief Species diffusion coefficients at point i. */
+  *Diffusion_Coeff_j; /*!< \brief Species diffusion coefficients at point j. */
 	double Laminar_Viscosity_i,	/*!< \brief Laminar viscosity at point i. */
 	Laminar_Viscosity_j,		/*!< \brief Laminar viscosity at point j. */
 	Laminar_Viscosity_id,	/*!< \brief Variation of laminar viscosity at point i. */
 	Laminar_Viscosity_jd;		/*!< \brief Variation of laminar viscosity at point j. */
+  double Thermal_Conductivity_i, /*!< \brief Thermal conductivity at point i. */
+  Thermal_Conductivity_j, /*!< \brief Thermal conductivity at point j. */
+  Thermal_Conductivity_ve_i, /*!< \brief Thermal conductivity at point i. */
+  Thermal_Conductivity_ve_j; /*!< \brief Thermal conductivity at point j. */
 	double *Laminar_Viscosity_MultipleSpecies_i,	/*!< \brief Laminar viscosity at point i. */
 	*Laminar_Viscosity_MultipleSpecies_j,		/*!< \brief Laminar viscosity at point j. */
   *Thermal_Conductivity_MultipleSpecies_i, /*!< \brief Thermal conductivity at point i (tr). */
@@ -530,6 +536,14 @@ public:
 	 * \param[in] val_primvar - Primitive variables.
 	 */
 	void ConsVar2PrimVar_MultiSpecies(double *val_consvar, double *val_primvar);
+  
+  /*!
+	 * \brief Set the diffusion coefficient 
+	 * \param[in] val_diffusioncoeff_i - Value of the diffusion coefficients at i.
+	 * \param[in] val_diffusioncoeff_j - Value of the diffusion coefficients at j
+	 */
+	void SetDiffusionCoeff(double* val_diffusioncoeff_i,
+                         double* val_diffusioncoeff_j);
 
 	/*! 
 	 * \brief Set the laminar viscosity.
@@ -552,8 +566,18 @@ public:
 	 * \param[in] val_thermal_conductivity_j - Value of the thermal conductivity at point j.
 	 * \param[in] iSpecies - Value of the species.
 	 */
-	void SetThermalConductivity(double val_thermal_conductivity_i, double val_thermal_conductivity_j, unsigned short iSpecies);
-
+	void SetThermalConductivity(double val_thermal_conductivity_i,
+                              double val_thermal_conductivity_j);
+  
+  /*!
+	 * \brief Set the thermal conductivity (translational/rotational)
+	 * \param[in] val_thermal_conductivity_i - Value of the thermal conductivity at point i.
+	 * \param[in] val_thermal_conductivity_j - Value of the thermal conductivity at point j.
+	 * \param[in] iSpecies - Value of the species.
+	 */
+	void SetThermalConductivity_ve(double val_thermal_conductivity_ve_i,
+                                 double val_thermal_conductivity_ve_j);
+  
   /*!
 	 * \brief Set the thermal conductivity (translational/rotational)
 	 * \param[in] val_thermal_conductivity_i - Value of the thermal conductivity at point i.
@@ -966,8 +990,24 @@ public:
 	 * \param[in] val_laminar_viscosity - Laminar viscosity.
 	 * \param[in] val_eddy_viscosity - Eddy viscosity.
 	 */
-
 	void GetViscousProjFlux(double *val_primvar, double **val_gradprimvar, double *val_normal, double *val_laminar_viscosity, double *val_eddy_viscosity, double *val_therm_conductivity, double *val_therm_conductivity_vib, unsigned short val_iSpecies);
+  
+  /*!
+	 * * \brief Compute the projection of the viscous fluxes into a direction.
+	 * \brief Overloaded function for multiple species viscous calculations
+	 * \param[in] val_primvar - Primitive variables.
+	 * \param[in] val_gradprimvar - Gradient of the primitive variables.
+	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+	 * \param[in] val_laminar_viscosity - Laminar viscosity.
+	 * \param[in] val_eddy_viscosity - Eddy viscosity.
+	 */
+	void GetViscousProjFlux(double *val_primvar,
+                          double **val_gradprimvar,
+                          double *val_normal,
+                          double *val_diffusioncoeff,
+                          double val_viscosity,
+                          double val_therm_conductivity,
+                          double val_therm_conductivity_ve);
 
 	/*! 
 	 * \brief Compute the projection of the viscous fluxes into a direction (artificial compresibility method).
@@ -1059,10 +1099,37 @@ public:
 	 * \param[out] val_Proj_Jac_Tensor_i - Pointer to the projected viscous Jacobian at point i.
 	 * \param[out] val_Proj_Jac_Tensor_j - Pointer to the projected viscous Jacobian at point j.
 	 */
-	void GetViscousProjJacs(double *val_Mean_PrimVar, double val_laminar_viscosity, 
-			double val_eddy_viscosity, double val_dist_ij, double *val_normal, double val_dS,
-			double *val_Proj_Visc_Flux, double **val_Proj_Jac_Tensor_i,
-			double **val_Proj_Jac_Tensor_j);
+	void GetViscousProjJacs(double *val_Mean_PrimVar,
+                          double val_laminar_viscosity,
+                          double val_eddy_viscosity,
+                          double val_dist_ij,
+                          double *val_normal, double val_dS,
+                          double *val_Proj_Visc_Flux,
+                          double **val_Proj_Jac_Tensor_i,
+                          double **val_Proj_Jac_Tensor_j);
+  
+  /*!
+	 * \brief TSL-Approximation of Viscous NS Jacobians.
+	 * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
+	 * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
+	 * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
+	 * \param[in] val_dist_ij - Distance between the points.
+	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+	 * \param[in] val_dS - Area of the face between two nodes.
+	 * \param[in] val_Proj_Visc_Flux - Pointer to the projected viscous flux.
+	 * \param[out] val_Proj_Jac_Tensor_i - Pointer to the projected viscous Jacobian at point i.
+	 * \param[out] val_Proj_Jac_Tensor_j - Pointer to the projected viscous Jacobian at point j.
+	 */
+	void GetViscousProjJacs(double *val_Mean_PrimVar,
+                          double *val_diffusion_coeff,
+                          double val_laminar_viscosity,
+                          double val_thermal_conductivity,
+                          double val_thermal_conductivity_ve,
+                          double val_dist_ij,
+                          double *val_normal, double val_dS,
+                          double *val_Proj_Visc_Flux,
+                          double **val_Proj_Jac_Tensor_i,
+                          double **val_Proj_Jac_Tensor_j);
 
   /*!
 	 * \brief TSL-Approximation of Viscous NS Jacobians.
@@ -6141,6 +6208,63 @@ public:
 };
 
 /*!
+ * \class CAvgGrad_Flow
+ * \brief Class for computing viscous term using the average of gradients.
+ * \ingroup ViscDiscr
+ * \author S. R. Copeland
+ * \version 2.0.8
+ */
+class CAvgGrad_TNE2 : public CNumerics {
+private:
+	unsigned short iDim, iVar, nPrimVar, nPrimVarGrad;		/*!< \brief Iterators in dimension an variable. */
+	double *Mean_PrimVar,					/*!< \brief Mean primitive variables. */
+	*PrimVar_i, *PrimVar_j,				/*!< \brief Primitives variables at point i and 1. */
+	**Mean_GradPrimVar,						/*!< \brief Mean value of the gradient. */
+	*Mean_Diffusion_Coeff, /*!< \brief Mean value of the species diffusion coefficient. */
+  Mean_Laminar_Viscosity, /*!< \brief Mean value of the viscosity. */
+  Mean_Thermal_Conductivity, /*!< \brief Mean value of the thermal conductivity. */
+  Mean_Thermal_Conductivity_ve, /*!< \brief Mean value of the vib-el. thermal conductivity. */
+
+	*Proj_flux_tensor,	/*!< \brief Projection of the viscous fluxes. */
+	dist_ij;						/*!< \brief Length of the edge and face. */
+	bool implicit; /*!< \brief Implicit calculus. */
+  
+public:
+  
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimension of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] val_nPrimVar - Number of primitive variables of the problem.
+   * \param[in] val_nPrimVarGrad - Number of variables in the primitive variable gradient.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CAvgGrad_TNE2(unsigned short val_nDim,
+                unsigned short val_nVar,
+                unsigned short val_nPrimVar,
+                unsigned short val_nPrimVarGrad,
+                CConfig *config);
+  
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CAvgGrad_TNE2(void);
+  
+	/*!
+	 * \brief Compute the viscous flow residual using an average of gradients.
+	 * \param[out] val_residual - Pointer to the total residual.
+	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ComputeResidual(double *val_residual,
+                       double **val_Jacobian_i,
+                       double **val_Jacobian_j,
+                       CConfig *config);
+};
+
+
+/*!
  * \class CSource_TNE2
  * \brief Class for two-temperature model source terms.
  * \ingroup SourceDiscr
@@ -6164,7 +6288,9 @@ public:
 	 * \param[in] val_nVar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CSource_TNE2(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+	CSource_TNE2(unsigned short val_nDim,
+               unsigned short val_nVar,
+               CConfig *config);
   
 	/*!
 	 * \brief Destructor of the class.
