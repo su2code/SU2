@@ -7026,6 +7026,11 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 	CFy_Inv = new double[nMarker];
 	CFz_Inv = new double[nMarker];
     
+    Surface_CLift_Inv= new double[config->GetnMarker_Monitoring()];
+    Surface_CMz_Inv  = new double[config->GetnMarker_Monitoring()];
+    Surface_CLift    = new double[config->GetnMarker_Monitoring()];
+    Surface_CMz      = new double[config->GetnMarker_Monitoring()];
+    
 	/*--- Rotational coefficients ---*/
 	CMerit_Inv = new double[nMarker];
 	CT_Inv = new double[nMarker];
