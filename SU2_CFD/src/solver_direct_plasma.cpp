@@ -1591,8 +1591,8 @@ void CPlasmaSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 			}
 		}
 
-		if (config->GetElectricSolver()) {
-			numerics->SetElecField(node[iPoint]->GetElectricField());
+		if (config->GetPoissonSolver()) {
+			numerics->SetElecField(node[iPoint]->GetpoissonField());
 		}
 
 		/*--- Set y coordinate ---*/
@@ -1608,7 +1608,7 @@ void CPlasmaSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 		//	numerics->SetTimeStep(node[iPoint]->GetDelta_Time());
 
 		//        node[iPoint]->GetDelta_Time()
-		//        [ELEC_SOL]->node[iPoint]->SetChargeDensity
+		//        [POISSON_SOL]->node[iPoint]->SetChargeDensity
 
 		//     node[iPoint]->SetDelta_Time(node[iPoint]->GetDelta_Time());
 
@@ -1650,7 +1650,7 @@ void CPlasmaSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 			LinSysRes.SubtractBlock(iPoint, Residual_Chemistry);
 			if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_Chemistry);
 
-			/*--- Electric force source terms ---*/
+			/*--- poisson force source terms ---*/
 			/*		numerics->ComputeResidual_ElecForce(Residual_ElecForce, config);
 			 numerics->SetJacobian_ElecForce(Jacobian_ElecForce, config);
 			 LinSysRes.SubtractBlock(iPoint, Residual_ElecForce);
@@ -1695,20 +1695,20 @@ void CPlasmaSolver::Copy_Zone_Solution(CSolver ***solver1_solution, CGeometry **
 	for (iPoint = 0; iPoint < solver1_geometry[MESH_0]->GetnPointDomain(); iPoint++) {
 		positive_charge = solver1_solution[MESH_0][PLASMA_SOL]->node[iPoint]->GetSolution(nVar_Ion);
 		negative_charge = solver1_solution[MESH_0][PLASMA_SOL]->node[iPoint]->GetSolution(nVar_Electron);
-		solver2_solution[MESH_0][ELEC_SOL]->node[iPoint]->SetChargeDensity(positive_charge, negative_charge);
-		solver2_solution[MESH_0][ELEC_SOL]->node[iPoint]->SetPlasmaTimeStep(solver1_solution[MESH_0][PLASMA_SOL]->node[iPoint]->GetDelta_Time());
+		solver2_solution[MESH_0][POISSON_SOL]->node[iPoint]->SetChargeDensity(positive_charge, negative_charge);
+		solver2_solution[MESH_0][POISSON_SOL]->node[iPoint]->SetPlasmaTimeStep(solver1_solution[MESH_0][PLASMA_SOL]->node[iPoint]->GetDelta_Time());
 
-		/*	if (solver1_config->GetElectricSolver()) {
+		/*	if (solver1_config->GetPoissonSolver()) {
      Gradient = solver1_solution[MESH_0][PLASMA_SOL]->node[iPoint]->GetGradient();
      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
      if ( iSpecies < nDiatomics ) loc = (nDim+3)*iSpecies;
      else loc = (nDim+3)*nDiatomics + (nDim+2)*(iSpecies-nDiatomics);
      for (iDim = 0; iDim < nDim; iDim++) {
      iVar = loc + iDim + 1;
-     solver2_solution[MESH_0][ELEC_SOL]->node[iPoint]->SetPlasmaRhoUGradient(iSpecies, Gradient[iVar][iDim], iDim);
+     solver2_solution[MESH_0][POISSON_SOL]->node[iPoint]->SetPlasmaRhoUGradient(iSpecies, Gradient[iVar][iDim], iDim);
      }
      }
-     solver2_solution[MESH_0][ELEC_SOL]->node[iPoint]->SetPlasmaTimeStep(node[iPoint]->GetDelta_Time());
+     solver2_solution[MESH_0][POISSON_SOL]->node[iPoint]->SetPlasmaTimeStep(node[iPoint]->GetDelta_Time());
      } */
 	}
 
@@ -1803,7 +1803,7 @@ void CPlasmaSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 	double Beta            = config->GetAoS()*PI_NUMBER/180.0;
 	double RefAreaCoeff    = config->GetRefAreaCoeff();
 	double RefLengthMoment = config->GetRefLengthMoment();
-	double *Origin         = config->GetRefOriginMoment();
+	double *Origin         = config->GetRefOriginMoment(0);
 
 	RefVel2 = 0.0;
 	for (iDim = 0; iDim < nDim; iDim++)
@@ -2021,7 +2021,7 @@ void CPlasmaSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 	double Alpha        = config->GetAoA()*PI_NUMBER/180.0;
 	double RefAreaCoeff = config->GetRefAreaCoeff();
 	double Beta         = config->GetAoS()*PI_NUMBER/180.0;
-	double *Origin      = config->GetRefOriginMoment();
+	double *Origin      = config->GetRefOriginMoment(0);
 
 	//	double Gas_Constant = config->GetGas_ConstantND();
 	//	cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
@@ -4049,7 +4049,7 @@ void CPlasmaSolver::BC_Electrode(CGeometry *geometry, CSolver **solver_container
 
 }
 
-void CPlasmaSolver::BC_Dielectric(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+void CPlasmaSolver::BC_Dielec(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
 }
 

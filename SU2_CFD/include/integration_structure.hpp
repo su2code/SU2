@@ -105,17 +105,6 @@ public:
 	 */
 	void Adjoint_Setup(CGeometry ***geometry, CSolver ****solver_container, CConfig **config,
                      unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
-	
-	/*!
-	 * \brief Numerical method for solving a non-time depending equation, like the potential equation.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution - Solution of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iMesh - Index of the mesh in multigrid computations.
-	 */
-	void Solving_Linear_System(CGeometry *geometry, CSolver *solver, CSolver **solver_container, 
-							   CConfig *config, unsigned short iMesh);
 
 	/*! 
 	 * \brief Do the convergence analisys to determine if the code must stop the execution.
@@ -538,39 +527,6 @@ public:
 	 */
 	void SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver **sol_fine, CSolver **sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
   
-};
-
-/*! 
- * \class CPotentialIntegration
- * \brief Class for doing the numerical integration of the potential equation.
- * \author F. Palacios.
- * \version 2.0.8
- */
-class CPotentialIntegration : public CIntegration {
-public:
-	
-	/*! 
-	 * \brief Constructor of the class.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CPotentialIntegration(CConfig *config);
-	
-	/*! 
-	 * \brief Destructor of the class. 
-	 */
-	~CPotentialIntegration(void);
-	
-	/*! 
-	 * \brief Do the numerical integration (Galerkin explicit) of the potential equation. 
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-	 * \param[in] iMesh - Index of the mesh in multigrid computations.
-	 */
-	void SetPotential_Solver(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
-                           CConfig **config, unsigned short RunTime_EqSystem, unsigned short iMesh, unsigned short iZone);
 };
 
 #include "integration_structure.inl"
