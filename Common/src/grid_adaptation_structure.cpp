@@ -3534,31 +3534,39 @@ void CGridAdaptation::SetIndicator_Computable_Robust(CGeometry *geometry, CConfi
 	
 }
 
-void CGridAdaptation::SetRestart_FlowSolution(CConfig *config, string mesh_flowfilename){
+void CGridAdaptation::SetRestart_FlowSolution(CConfig *config, CPhysicalGeometry *geo_adapt, string mesh_flowfilename){
 	
 	unsigned long iPoint;
-	unsigned short iVar;
+	unsigned short iVar, iDim;
 		
-	//	Restart of the direct problem
 	char *cstr = new char [mesh_flowfilename.size()+1];
 	strcpy (cstr, mesh_flowfilename.c_str());
 	
 	ofstream restart_flowfile;
 	restart_flowfile.open(cstr, ios::out);
 	restart_flowfile.precision(15);
+  
+  restart_flowfile << "Restart file generated with SU2_MAC" << endl;
+
 	for(iPoint = 0; iPoint < nPoint_new; iPoint++){
 		restart_flowfile << iPoint <<"\t";
-		for(iVar = 0; iVar < nVar; iVar++) {
-			restart_flowfile << scientific << ConsVar_Adapt[iPoint][iVar]<<"\t";
-		}
+
+    for(iDim = 0; iDim < nDim; iDim++)
+			restart_flowfile << scientific << geo_adapt->node[iPoint]->GetCoord(iDim) <<"\t";
+		for(iVar = 0; iVar < nVar; iVar++)
+			restart_flowfile << scientific << ConsVar_Adapt[iPoint][iVar] <<"\t";
+
 		restart_flowfile << endl;
 	}
 	restart_flowfile.close();
 	
 }
 
-void CGridAdaptation::SetRestart_AdjSolution(CConfig *config, string mesh_adjfilename){
-	char cstr[200], buffer[50];
+void CGridAdaptation::SetRestart_AdjSolution(CConfig *config, CPhysicalGeometry *geo_adapt, string mesh_adjfilename){
+	
+  char cstr[200], buffer[50];
+  unsigned short iDim, iVar;
+  unsigned long iPoint;
 	string copy;
 	
 	copy.assign(mesh_adjfilename);
@@ -3583,32 +3591,45 @@ void CGridAdaptation::SetRestart_AdjSolution(CConfig *config, string mesh_adjfil
 	ofstream restart_adjfile;
 	restart_adjfile.open(cstr, ios::out);
 	restart_adjfile.precision(15);
-	for(unsigned long iPoint = 0; iPoint < nPoint_new; iPoint++){
+  
+  restart_adjfile << "Restart file generated with SU2_MAC" << endl;
+  
+	for(iPoint = 0; iPoint < nPoint_new; iPoint++){
 		restart_adjfile << iPoint <<"\t";
-		for(unsigned short iVar = 0; iVar < nVar; iVar++)
+    
+    for(iDim = 0; iDim < nDim; iDim++)
+			restart_adjfile << scientific << geo_adapt->node[iPoint]->GetCoord(iDim) <<"\t";
+		for(iVar = 0; iVar < nVar; iVar++)
 			restart_adjfile << scientific << AdjVar_Adapt[iPoint][iVar]<<"\t";
 		restart_adjfile << endl;
+    
 	}
 	restart_adjfile.close();
 }
 
-void CGridAdaptation::SetRestart_LinSolution(CConfig *config, string mesh_linfilename){
+void CGridAdaptation::SetRestart_LinSolution(CConfig *config, CPhysicalGeometry *geo_adapt, string mesh_linfilename){
 	
 	unsigned long iPoint;
-	unsigned short iVar;
+	unsigned short iVar, iDim;
 	
-	//	Rearranque del problema adjunto
 	char *cstr_ = new char [mesh_linfilename.size()+1];
 	strcpy (cstr_, mesh_linfilename.c_str());
 	
 	ofstream restart_linfile;
 	restart_linfile.open(cstr_, ios::out);
 	restart_linfile.precision(15);
+
+  restart_linfile << "Restart file generated with SU2_MAC" << endl;
+
 	for(iPoint = 0; iPoint < nPoint_new; iPoint++){
 		restart_linfile << iPoint <<"\t";
+    
+    for(iDim = 0; iDim < nDim; iDim++)
+			restart_linfile << scientific << geo_adapt->node[iPoint]->GetCoord(iDim) <<"\t";
 		for(iVar = 0; iVar < nVar; iVar++)
 			restart_linfile << scientific << LinVar_Adapt[iPoint][iVar]<<"\t";
 		restart_linfile << endl;
+    
 	}
 	restart_linfile.close();
 }

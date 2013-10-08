@@ -327,21 +327,21 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] mesh_flowfilename - _________________________.
 	 */		
-	void SetRestart_FlowSolution(CConfig *config, string mesh_flowfilename);
+	void SetRestart_FlowSolution(CConfig *config, CPhysicalGeometry *geo_adapt, string mesh_flowfilename);
 	
 	/*! 
 	 * \brief Write the restart file with the adapted grid.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] mesh_adjfilename - _________________________.
 	 */		
-	void SetRestart_AdjSolution(CConfig *config, string mesh_adjfilename);
+	void SetRestart_AdjSolution(CConfig *config, CPhysicalGeometry *geo_adapt, string mesh_adjfilename);
 	
 	/*! 
 	 * \brief Read the flow solution from the restart file.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] mesh_linfilename - _________________________.
 	 */	
-	void SetRestart_LinSolution(CConfig *config, string mesh_linfilename);
+	void SetRestart_LinSolution(CConfig *config, CPhysicalGeometry *geo_adapt, string mesh_linfilename);
 	
 	/*! 
 	 * \brief Read the flow solution from the restart file.
