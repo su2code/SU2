@@ -68,12 +68,13 @@ private:
 	Linearized,				/*!< \brief Flag to know if the code is solving a linearized problem. */
 	Grid_Movement,			/*!< \brief Flag to know if there is grid movement. */
     Wind_Gust,              /*!< \brief Flag to know if there is a wind gust. */
+    Aeroelastic_Simulation, /*!< \brief Flag to know if there is an aeroelastic simulation. */
 	Rotating_Frame,			/*!< \brief Flag to know if there is a rotating frame. */
 	AdiabaticWall,			/*!< \brief Flag to know if we are using the Adiabatic Wall. */
 	IsothermalWall,			/*!< \brief Flag to know if we are using the Isothermal Wall. */
 	CatalyticWall,			/*!< \brief Flag to know if we are using the Catalytic Wall. */
 	PlasmaMultiTimeSteps,	/*!< \brief Flag to know if we are using multiple time steps for different species in plasma. */
-	ElectricSolver,			/*!< \brief Flag to know if we are solving  electric forces  in plasma solver. */
+	PoissonSolver,			/*!< \brief Flag to know if we are solving  poisson forces  in plasma solver. */
 	Low_Mach_Precon,		/*!< \brief Flag to know if we are using a low Mach number preconditioner. */
 	MacCormackRelaxation,	/*!< \brief Flag to know if we are using MacCormack's relaxation in solving Gauss's law. */
 	Unsteady_Farfield, 		/*!< \brief Flag to know if we are using time dependent farfield boundaries. */
@@ -116,7 +117,6 @@ private:
 	FreeSurface_Outlet,  /*!< \brief Outlet of the interfase for a free surface problem. */
 	FreeSurface_Damping_Coeff,  /*!< \brief Damping coefficient of the free surface for a free surface problem. */
 	FreeSurface_Damping_Length;  /*!< \brief Damping length of the free surface for a free surface problem. */
-	unsigned long FreeSurface_Reevaluation;  /*!< \brief Frecuency for level set reevaluation. */
 	unsigned short Kind_Adaptation;	/*!< \brief Kind of numerical grid adaptation. */
 	unsigned short nTimeInstances;  /*!< \brief Number of periodic time instances for Time Spectral integration. */
 	double TimeSpectral_Period;		/*!< \brief Period of oscillation to be used with time-spectral computations. */
@@ -182,7 +182,7 @@ private:
 	*Marker_Neumann,					/*!< \brief Neumann flow markers. */
 	*Marker_Neumann_Elec,					/*!< \brief Neumann flow markers. */
 	*Marker_Electrode,				/*!< \brief Electrode flow markers. */
-	*Marker_Dielectric,				/*!< \brief Dielectric flow markers. */
+	*Marker_Dipoisson,				/*!< \brief Dipoisson flow markers. */
 	*Marker_All_Tag;				/*!< \brief Global index for markers using grid information. */
 	double *Dirichlet_Value;    /*!< \brief Specified Dirichlet value at the boundaries. */
 	double *Nozzle_Ttotal;    /*!< \brief Specified total temperatures for nacelle boundaries. */
@@ -228,7 +228,6 @@ private:
 	double *CFL,		/*!< \brief CFL number for each multigrid level. */
 	**CFL_MS,               /*!< \brief CFL number for each multigrid level. */
 	MG_CFLRedCoeff,		/*!< \brief CFL reduction coefficient on the MG coarse level. */
-	LevelSet_CFLRedCoeff,		/*!< \brief CFL reduction coefficient on the LevelSet problem. */
 	Turb_CFLRedCoeff,		/*!< \brief CFL reduction coefficient on the LevelSet problem. */
 	Adj_CFLRedCoeff,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
 	AdjTurb_CFLRedCoeff,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
@@ -264,7 +263,6 @@ private:
 	Kind_SlopeLimit_TNE2,		/*!< \brief Slope limiter for flow equations.*/
   Kind_SlopeLimit_AdjTNE2,		/*!< \brief Slope limiter for flow equations.*/
 	Kind_SlopeLimit_Turb,		/*!< \brief Slope limiter for the turbulence equation.*/
-	Kind_SlopeLimit_LevelSet,		/*!< \brief Slope limiter for the level set equation.*/
 	Kind_SlopeLimit_AdjLevelSet,		/*!< \brief Slope limiter for the adjoint level set equation.*/
 	Kind_SlopeLimit_Plasma,		/*!< \brief Slope limiter for the plasma equation.*/
 	Kind_SlopeLimit_AdjPlasma,		/*!< \brief Slope limiter for the adjoint plasma equation.*/
@@ -277,15 +275,17 @@ private:
   Kind_TimeIntScheme_AdjTNE2, /*!< \brief Time integration for the flow equations. */
 	Kind_TimeIntScheme_LinFlow,		/*!< \brief Time integration for the linearized flow equations. */
 	Kind_TimeIntScheme_Turb,	/*!< \brief Time integration for the turbulence model. */
-	Kind_TimeIntScheme_LevelSet,	/*!< \brief Time integration for the level set model. */
 	Kind_TimeIntScheme_AdjLevelSet,	/*!< \brief Time integration for the adjoint level set model. */
 	Kind_TimeIntScheme_AdjTurb,	/*!< \brief Time integration for the adjoint turbulence model. */
 	Kind_TimeIntScheme_Plasma,	/*!< \brief Time integration for the plasma equations. */
 	Kind_TimeIntScheme_AdjPlasma,	/*!< \brief Time integration for the adjoint plasma equations. */
 	Kind_TimeIntScheme_Wave,	/*!< \brief Time integration for the wave equations. */
+	Kind_TimeIntScheme_Heat,	/*!< \brief Time integration for the wave equations. */
+	Kind_TimeIntScheme_Poisson,	/*!< \brief Time integration for the wave equations. */
 	Kind_TimeIntScheme_FEA,	/*!< \brief Time integration for the FEA equations. */
 	Kind_ConvNumScheme,			/*!< \brief Global definition of the convective term. */
 	Kind_ConvNumScheme_Flow,	/*!< \brief Centered or upwind scheme for the flow equations. */
+	Kind_ConvNumScheme_Heat,	/*!< \brief Centered or upwind scheme for the flow equations. */
 	Kind_ConvNumScheme_TNE2,	/*!< \brief Centered or upwind scheme for the flow equations. */
 	Kind_ConvNumScheme_AdjFlow,		/*!< \brief Centered or upwind scheme for the adjoint flow equations. */
   Kind_ConvNumScheme_AdjTNE2,		/*!< \brief Centered or upwind scheme for the adjoint TNE2 equations. */
@@ -294,17 +294,17 @@ private:
 	Kind_ConvNumScheme_AdjTurb,	/*!< \brief Centered or upwind scheme for the adjoint turbulence model. */
 	Kind_ConvNumScheme_Plasma,	/*!< \brief Centered or upwind scheme for the plasma equations. */
 	Kind_ConvNumScheme_AdjPlasma,	/*!< \brief Centered or upwind scheme for the adjoint plasma equations. */
-	Kind_ConvNumScheme_LevelSet,	/*!< \brief Centered or upwind scheme for the level set equation. */
 	Kind_ConvNumScheme_AdjLevelSet,	/*!< \brief Centered or upwind scheme for the adjoint level set equation. */
 	Kind_ConvNumScheme_Template,	/*!< \brief Centered or upwind scheme for the level set equation. */
 	Kind_ViscNumScheme,			/*!< \brief Global definition of the viscous term. */
 	Kind_ViscNumScheme_Flow,	/*!< \brief Viscous scheme for the flow equations. */
+	Kind_ViscNumScheme_Heat,	/*!< \brief Viscous scheme for the flow equations. */
 	Kind_ViscNumScheme_AdjFlow,		/*!< \brief Viscous scheme for the adjoint flow equations. */
   Kind_ViscNumScheme_TNE2,	/*!< \brief Viscous scheme for the flow equations. */
   Kind_ViscNumScheme_AdjTNE2, /*!< \brief Viscous scheme for the flow equations. */
 	Kind_ViscNumScheme_LinFlow,		/*!< \brief Viscous scheme for the linearized flow equations. */
 	Kind_ViscNumScheme_Turb,	/*!< \brief Viscous scheme for the turbulence model. */
-	Kind_ViscNumScheme_Elec,	/*!< \brief Viscous scheme for the electric potential. */
+	Kind_ViscNumScheme_Poisson,	/*!< \brief Viscous scheme for the poisson potential. */
 	Kind_ViscNumScheme_Wave,	/*!< \brief Viscous scheme for the wave equation. */
 	Kind_ViscNumScheme_FEA,	/*!< \brief Viscous scheme for the FEA equation. */
 	Kind_ViscNumScheme_AdjTurb,	/*!< \brief Viscous scheme for the adjoint turbulence model. */
@@ -314,12 +314,13 @@ private:
 	Kind_ViscNumScheme_Template,	/*!< \brief Viscous scheme for the template. */
 	Kind_SourNumScheme,			/*!< \brief Global definition of the source term. */
 	Kind_SourNumScheme_Flow,	/*!< \brief Source numerical scheme for the flow equations. */
+	Kind_SourNumScheme_Heat,	/*!< \brief Source numerical scheme for the flow equations. */
 	Kind_SourNumScheme_AdjFlow,		/*!< \brief Source numerical scheme for the adjoint flow equations. */
   Kind_SourNumScheme_TNE2,	/*!< \brief Source numerical scheme for the flow equations. */
   Kind_SourNumScheme_AdjTNE2,	/*!< \brief Source numerical scheme for the flow equations. */
 	Kind_SourNumScheme_LinFlow,		/*!< \brief Source numerical scheme for the linearized flow equations. */
 	Kind_SourNumScheme_Turb,	/*!< \brief Source numerical scheme for the turbulence model. */
-	Kind_SourNumScheme_Elec,	/*!< \brief Source numerical scheme for the electric potential. */
+	Kind_SourNumScheme_Poisson,	/*!< \brief Source numerical scheme for the poisson potential. */
 	Kind_SourNumScheme_AdjTurb,	/*!< \brief Source numerical scheme for the adjoint turbulence model. */
 	Kind_SourNumScheme_AdjLevelSet,	/*!< \brief Source numerical scheme for the adjoint level set model. */
 	Kind_SourNumScheme_Plasma,	/*!< \brief Source numerical scheme for the plasma equations. */
@@ -332,7 +333,6 @@ private:
 	Kind_Centered,				/*!< \brief Centered scheme. */
 	Kind_Centered_Flow,			/*!< \brief Centered scheme for the flow equations. */
 	Kind_Centered_TNE2,			/*!< \brief Centered scheme for the flow equations. */
-	Kind_Centered_LevelSet,			/*!< \brief Centered scheme for the level set equation. */
 	Kind_Centered_AdjLevelSet,			/*!< \brief Centered scheme for the level set equation. */
 	Kind_Centered_AdjFlow,			/*!< \brief Centered scheme for the adjoint flow equations. */
   Kind_Centered_AdjTNE2,			/*!< \brief Centered scheme for the adjoint TNE2 equations. */
@@ -345,7 +345,6 @@ private:
 	Kind_Upwind,				/*!< \brief Upwind scheme. */
 	Kind_Upwind_Flow,			/*!< \brief Upwind scheme for the flow equations. */
 	Kind_Upwind_TNE2,			/*!< \brief Upwind scheme for the flow equations. */
-	Kind_Upwind_LevelSet,			/*!< \brief Upwind scheme for the level set equations. */
 	Kind_Upwind_AdjLevelSet,			/*!< \brief Upwind scheme for the level set equations. */
 	Kind_Upwind_AdjFlow,			/*!< \brief Upwind scheme for the adjoint flow equations. */
   Kind_Upwind_AdjTNE2,			/*!< \brief Upwind scheme for the adjoint TNE2 equations. */
@@ -398,7 +397,7 @@ private:
 	double Length_Reynolds;	/*!< \brief Reynolds length (dimensional). */
 	double AoA,			/*!< \brief Angle of attack (just external flow). */
 	AoS;				/*!< \brief Angle of sideSlip (just external flow). */
-	double ChargeCoeff;		/*!< \brief Charge coefficient (just for electric problems). */
+	double ChargeCoeff;		/*!< \brief Charge coefficient (just for poisson problems). */
 	double *U_FreeStreamND;			/*!< \brief Reference variables at the infinity, free stream values. */ 
 	unsigned short Cauchy_Func_Flow,	/*!< \brief Function where to apply the convergence criteria in the flow problem. */
 	Cauchy_Func_AdjFlow,				/*!< \brief Function where to apply the convergence criteria in the adjoint problem. */
@@ -450,9 +449,15 @@ private:
 	RefElemLength,				/*!< \brief Reference element length for computing the slope limiting epsilon. */
 	RefSharpEdges,				/*!< \brief Reference coefficient for detecting sharp edges. */
 	RefLengthMoment,			/*!< \brief Reference length for moment computation. */
-	*RefOriginMoment,			/*!< \brief Origin for moment computation. */
+    *RefOriginMoment,           /*!< \brief Origin for moment computation. */
+	*RefOriginMoment_X,			/*!< \brief X Origin for moment computation. */
+    *RefOriginMoment_Y,			/*!< \brief Y Origin for moment computation. */
+	*RefOriginMoment_Z,			/*!< \brief Z Origin for moment computation. */
 	*CFLRamp,			/*!< \brief Information about the CFL ramp. */
-	DomainVolume;		/*!< \brief Volume of the computational grid. */	
+	DomainVolume;		/*!< \brief Volume of the computational grid. */
+    unsigned short nRefOriginMoment_X,    /*!< \brief Number of X-coordinate moment computation origins. */
+	nRefOriginMoment_Y,           /*!< \brief Number of Y-coordinate moment computation origins. */
+	nRefOriginMoment_Z;           /*!< \brief Number of Z-coordinate moment computation origins. */
 	string Mesh_FileName,			/*!< \brief Mesh input file. */
 	Mesh_Out_FileName,				/*!< \brief Mesh output file. */
 	Solution_FlowFileName,			/*!< \brief Flow solution input file. */
@@ -462,7 +467,10 @@ private:
 	Farfield_FileName, 				/*!< \brief Data at farfield boundaries. */
 	Structure_FileName,					/*!< \brief Structure variables output file. */
 	SurfStructure_FileName,					/*!< \brief Surface structure variables output file. */
+  SurfWave_FileName,					/*!< \brief Surface structure variables output file. */
+	SurfHeat_FileName,					/*!< \brief Surface structure variables output file. */
 	Wave_FileName,					/*!< \brief Wave variables output file. */
+	Heat_FileName,					/*!< \brief Heat variables output file. */
 	AdjWave_FileName,					/*!< \brief Adjoint wave variables output file. */
 	Residual_FileName,				/*!< \brief Residual variables output file. */
 	Conv_FileName,					/*!< \brief Convergence history output file. */
@@ -539,7 +547,7 @@ private:
 	GammaDiatomic,			/*!< \brief Ratio of specific heats of the diatomic gas. */ 
 	GammaMonatomic,			/*!< \brief Ratio of specific heats of the monatomic gas. */ 
 	Stagnation_B,/*!< \brief value of the magnetic field in Tesla at the stagnation point */
-	Electric_Cond,/*!< \brief value of the electrical conductivity in mho/m */
+	poisson_Cond,/*!< \brief value of the poissonal conductivity in mho/m */
 	DipoleDist,/*!< \brief value of the minimum distance for the dipole. */
 	Bulk_Modulus,			/*!< \brief Value of the bulk modulus for incompressible flows. */ 
 	ArtComp_Factor,			/*!< \brief Value of the artificial compresibility factor for incompressible flows. */
@@ -647,9 +655,7 @@ private:
 	FreqPitchAeroelastic, /*!< \brief Pitch natural frequency for Aeroelastic. */
     Aeroelastic_plunge, /*!< \brief Value of plunging coordinate at the end of an external iteration. */
 	Aeroelastic_pitch; /*!< \brief Value of pitching coordinate at the end of an external iteration. */
-	unsigned short Aeroelastic_Grid_Movement,	/*!< \brief Type of Aeroelastic grid movement. */
-	Aeroelastic_Grid_Velocity,	/*!< \brief Type of Aeroelastic grid velocity. */
-    Gust_Type,	/*!< \brief Type of Gust. */
+    unsigned short Gust_Type,	/*!< \brief Type of Gust. */
     Gust_Dir;   /*!< \brief Direction of the gust */
     double Gust_WaveLength,     /*!< \brief The gust wavelength. */
     Gust_Periods,              /*!< \brief Number of gust periods. */
@@ -980,9 +986,10 @@ public:
 
 	/*! 
 	 * \brief Get reference origin for moment computation.
+     * \param[in] val_marker - the marker we are monitoring.
 	 * \return Reference origin (in cartesians coordinates) for moment computation.
 	 */
-	double *GetRefOriginMoment(void);
+	double *GetRefOriginMoment(unsigned short val_marker);
 
 	/*! 
 	 * \brief Get maximum number of children in the agglomeration process.
@@ -1065,12 +1072,6 @@ public:
 	 * \return Damping of the interfase for a free surface problem.
 	 */
 	double GetFreeSurface_Damping_Length(void);
-
-	/*!
-	 * \brief Get the damping of the free surface for a free surface problem.
-	 * \return Damping of the interfase for a free surface problem.
-	 */
-	unsigned long GetFreeSurface_Reevaluation(void);
 
 	/*!
 	 * \brief Get the outlet position of the free surface for a free surface problem.
@@ -1606,7 +1607,7 @@ public:
 	double GetAoS(void);
 
 	/*! 
-	 * \brief Get the charge coefficient that is used in the electrical potential simulation.
+	 * \brief Get the charge coefficient that is used in the poissonal potential simulation.
 	 * \return Value of the charge coefficient.
 	 */		
 	double GetChargeCoeff(void);	
@@ -1713,6 +1714,12 @@ public:
 	 * \return Total number of boundary markers.
 	 */
 	unsigned short GetnMarker_InterfaceBound(void);
+    
+    /*!
+	 * \brief Get the total number of monitoring markers.
+	 * \return Total number of monitoring markers.
+	 */
+	unsigned short GetnMarker_Monitoring(void);
 
 	/*!
 	 * \brief Stores the number of marker in the simulation.
@@ -1890,6 +1897,14 @@ public:
 	 *         has the marker <i>val_marker</i>.
 	 */
 	string GetMarker_NacelleExhaust(unsigned short val_marker);
+    
+    /*!
+	 * \brief Get the name of the surface defined in the geometry file.
+	 * \param[in] val_marker - Value of the marker in which we are interested.
+	 * \return Name that is in the geometry file for the surface that
+	 *         has the marker <i>val_marker</i>.
+	 */
+	string GetMarker_Monitoring(unsigned short val_marker);
     
 	/*! 
 	 * \brief Get the tag if the iMarker defined in the geometry file.
@@ -2304,7 +2319,25 @@ public:
 	 * \return Kind of integration scheme for the plasma equations.
 	 */
 	unsigned short GetKind_TimeIntScheme_Wave(void);
-
+  
+  /*!
+	 * \brief Get the kind of integration scheme (explicit or implicit)
+	 *        for the flow equations.
+	 * \note This value is obtained from the config file, and it is constant
+	 *       during the computation.
+	 * \return Kind of integration scheme for the plasma equations.
+	 */
+	unsigned short GetKind_TimeIntScheme_Heat(void);
+  
+  /*!
+	 * \brief Get the kind of integration scheme (explicit or implicit)
+	 *        for the flow equations.
+	 * \note This value is obtained from the config file, and it is constant
+	 *       during the computation.
+	 * \return Kind of integration scheme for the plasma equations.
+	 */
+	unsigned short GetKind_TimeIntScheme_Poisson(void);
+  
 	/*! 
 	 * \brief Get the kind of integration scheme (explicit or implicit) 
 	 *        for the flow equations.
@@ -2377,15 +2410,6 @@ public:
 	 */		
 	unsigned short GetKind_ConvNumScheme_Template(void);
 
-	/*! 
-	 * \brief Get the kind of convective numerical scheme for the level set 
-	 *        equations (centered or upwind).
-	 * \note This value is obtained from the config file, and it is constant 
-	 *       during the computation.
-	 * \return Kind of convective numerical scheme for the level set equation.
-	 */		
-	unsigned short GetKind_ConvNumScheme_LevelSet(void);
-
 	/*!
 	 * \brief Get the kind of convective numerical scheme for the adjoint level set
 	 *        equations (centered or upwind).
@@ -2426,15 +2450,6 @@ public:
 	unsigned short GetKind_ViscNumScheme_AdjTNE2(void);
 
 	/*!
-	 * \brief Get the kind of viscous numerical scheme for the level set
-	 (        equation.
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of viscous numerical scheme for the levelset equations.
-	 */
-	unsigned short GetKind_SourNumScheme_LevelSet(void);
-
-	/*!
 	 * \brief Get the kind of viscous numerical scheme for the wave
 	 (        equation.
 	 * \note This value is obtained from the config file, and it is constant 
@@ -2443,6 +2458,15 @@ public:
 	 */		
 	unsigned short GetKind_SourNumScheme_Wave(void);
 
+  /*!
+	 * \brief Get the kind of viscous numerical scheme for the wave
+	 (        equation.
+	 * \note This value is obtained from the config file, and it is constant
+	 *       during the computation.
+	 * \return Kind of viscous numerical scheme for the levelset equations.
+	 */
+	unsigned short GetKind_SourNumScheme_Heat(void);
+  
 	/*!
 	 * \brief Get the kind of viscous numerical scheme for the FEA
 	 (        equation.
@@ -2568,14 +2592,6 @@ public:
 	 */
 	unsigned short GetKind_Centered_AdjTNE2(void);
 
-	/*! 
-	 * \brief Get the kind of center convective numerical scheme for the level set equations.
-	 * \note This value is obtained from the config file, and it is constant 
-	 *       during the computation.
-	 * \return Kind of center convective numerical scheme for the level set equations.
-	 */
-	unsigned short GetKind_Centered_LevelSet(void);
-
 	/*!
 	 * \brief Get the kind of center convective numerical scheme for the adjoint level set equations.
 	 * \note This value is obtained from the config file, and it is constant
@@ -2632,14 +2648,6 @@ public:
 	 */
 	unsigned short GetKind_Upwind_AdjTNE2(void);
 
-	/*! 
-	 * \brief Get the kind of upwind convective numerical scheme for the level set equation.
-	 * \note This value is obtained from the config file, and it is constant 
-	 *       during the computation.
-	 * \return Kind of upwind convective numerical scheme for the flow equations.
-	 */
-	unsigned short GetKind_Upwind_LevelSet(void);
-
 	/*!
 	 * \brief Get the kind of upwind convective numerical scheme for the adjoint level set equation.
 	 * \note This value is obtained from the config file, and it is constant
@@ -2693,12 +2701,6 @@ public:
 	 * \return Method for limiting the spatial gradients solving the turbulent equation.
 	 */		
 	unsigned short GetKind_SlopeLimit_Turb(void);
-
-	/*! 
-	 * \brief Get the method for limiting the spatial gradients.
-	 * \return Method for limiting the spatial gradients solving the level set equation.
-	 */		
-	unsigned short GetKind_SlopeLimit_LevelSet(void);
 
 	/*!
 	 * \brief Get the method for limiting the spatial gradients.
@@ -2833,6 +2835,16 @@ public:
 	 * \return Kind of viscous numerical scheme for the adjoint flow equations.
 	 */
 	unsigned short GetKind_ViscNumScheme_Wave(void);
+  
+  /*!
+	 * \brief Get the kind of viscous numerical scheme for the wave
+	 *        equations (Galerkin, Average of gradients, Average of gradients
+	 *        with correction).
+	 * \note This value is obtained from the config file, and it is constant
+	 *       during the computation.
+	 * \return Kind of viscous numerical scheme for the adjoint flow equations.
+	 */
+	unsigned short GetKind_ViscNumScheme_Heat(void);
 
 	/*! 
 	 * \brief Get the kind of viscous numerical scheme for the FEA
@@ -2976,15 +2988,6 @@ public:
 	 */
 	unsigned short GetKind_TimeIntScheme_Turb(void);
 
-	/*! 
-	 * \brief Get the kind of integration scheme (implicit) 
-	 *        for the level set equations.
-	 * \note This value is obtained from the config file, and it is constant 
-	 *       during the computation.
-	 * \return Kind of integration scheme for the level set equations.
-	 */
-	unsigned short GetKind_TimeIntScheme_LevelSet(void);
-
 	/*!
 	 * \brief Get the kind of integration scheme (implicit)
 	 *        for the level set equations.
@@ -3038,21 +3041,21 @@ public:
 	unsigned short GetKind_Upwind_Turb(void);
 
 	/*! 
-	 * \brief Get the kind of viscous numerical scheme for the electric potential
+	 * \brief Get the kind of viscous numerical scheme for the poisson potential
 	 *        equation (Galerkin).
 	 * \note This value is obtained from the config file, and it is constant 
 	 *       during the computation.
-	 * \return Kind of viscous numerical scheme for the electric potential equation.
+	 * \return Kind of viscous numerical scheme for the poisson potential equation.
 	 */
-	unsigned short GetKind_ViscNumScheme_Elec(void);
+	unsigned short GetKind_ViscNumScheme_Poisson(void);
 
 	/*! 
-	 * \brief Get the kind of source term for the electric potential equation.
+	 * \brief Get the kind of source term for the poisson potential equation.
 	 * \note This value is obtained from the config file, and it is constant 
 	 *       during the computation.
-	 * \return Kind of source term for the electric potential equation.
+	 * \return Kind of source term for the poisson potential equation.
 	 */	
-	unsigned short GetKind_SourNumScheme_Elec(void);
+	unsigned short GetKind_SourNumScheme_Poisson(void);
 
 	/*! 
 	 * \brief Get the kind of integration scheme (explicit or implicit) 
@@ -3377,8 +3380,8 @@ public:
 	double GetStagnation_B();
 
 	/*!
-	 * \brief Provides the value of the electrical conductivity
-	 * \return: electrical conductivity
+	 * \brief Provides the value of the poissonal conductivity
+	 * \return: poissonal conductivity
 	 */
 	double GetElec_Conductivity();
 
@@ -3517,12 +3520,30 @@ public:
 	 * \return Name of the file with the structure variables.
 	 */
 	string GetSurfStructure_FileName(void);
+  
+  /*!
+	 * \brief Get the name of the file with the structure variables.
+	 * \return Name of the file with the structure variables.
+	 */
+	string GetSurfWave_FileName(void);
+  
+  /*!
+	 * \brief Get the name of the file with the structure variables.
+	 * \return Name of the file with the structure variables.
+	 */
+	string GetSurfHeat_FileName(void);
 
 	/*!
 	 * \brief Get the name of the file with the wave variables.
 	 * \return Name of the file with the wave variables.
 	 */		
 	string GetWave_FileName(void);
+  
+  /*!
+	 * \brief Get the name of the file with the wave variables.
+	 * \return Name of the file with the wave variables.
+	 */
+	string GetHeat_FileName(void);
 
 	/*!
 	 * \brief Get the name of the file with the adjoint wave variables.
@@ -3977,10 +3998,10 @@ public:
 	bool MultipleTimeSteps(void);
 
 	/*!
-	 * \brief Get information about the electric solver condition
-	 * \return <code>TRUE</code> if it is a electric solver condition; otherwise <code>FALSE</code>.
+	 * \brief Get information about the poisson solver condition
+	 * \return <code>TRUE</code> if it is a poisson solver condition; otherwise <code>FALSE</code>.
 	 */
-	bool GetElectricSolver(void);
+	bool GetPoissonSolver(void);
 
 	/*!
 	 * \brief Get information about MacCormack's scheme for Gauss's law
@@ -4429,13 +4450,6 @@ public:
 	 * \return The total temperature.
 	 */
 	double GetOutlet_Species_Velocity(unsigned short iSpecies);
-
-
-	/*!
-	 * \brief Value of the CFL reduction in LevelSet problems.
-	 * \return Value of the CFL reduction in LevelSet problems.
-	 */
-	double GetLevelSet_CFLRedCoeff(void);
   
   /*!
 	 * \brief Value of the CFL reduction in LevelSet problems.
@@ -4637,18 +4651,12 @@ public:
 	 * \brief Value of pitching coordinate at the end of an external iteration.
 	 */
 	void SetAeroelastic_pitch(double val);
-
-	/*!
-	 * \brief Get the type of aeroelastic grid movement.
-	 * \return type of aeroelastic grid movement.
+    
+    /*!
+	 * \brief Get information about the aeroelastic simulation.
+	 * \return <code>TRUE</code> if it is an aeroelastic case; otherwise <code>FALSE</code>.
 	 */
-	unsigned short GetType_Aeroelastic(void);
-
-	/*!
-	 * \brief Get the way to compute grid velocities for aeroelastic motion.
-	 * \return type of grid velocity computation used.
-	 */
-	unsigned short GetAeroelastic_GridVelocity(void);
+	bool GetAeroelastic_Simulation(void);
     
     /*!
 	 * \brief Get information about the wind gust.

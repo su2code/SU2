@@ -1989,7 +1989,7 @@ void CTNE2EulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 	double Beta            = config->GetAoS()*PI_NUMBER/180.0;
 	double RefAreaCoeff    = config->GetRefAreaCoeff();
 	double RefLengthMoment = config->GetRefLengthMoment();
-	double *Origin         = config->GetRefOriginMoment();
+	double *Origin         = config->GetRefOriginMoment(0);
 	//double Pressure_Inf    = config->GetPressure_FreeStreamND();
 	//double *Velocity_Inf   = config->GetVelocity_FreeStreamND();
   
@@ -4398,7 +4398,7 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 	double Beta         = config->GetAoS()*PI_NUMBER/180.0;
 	double RefAreaCoeff = config->GetRefAreaCoeff();
 	double RefLengthMoment = config->GetRefLengthMoment();
-	double *Origin      = config->GetRefOriginMoment();
+	double *Origin      = config->GetRefOriginMoment(0);
 	double Gas_Constant = config->GetGas_ConstantND();
 	double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   

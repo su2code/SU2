@@ -43,6 +43,8 @@ inline double CVariable::GetDiffLevelSet(void) { return 0; }
 
 inline double CVariable::GetDensityInc(void) { return 0; }
 
+inline double CVariable::GetLevelSet(void) { return 0; }
+
 inline double CVariable::GetMassFraction(unsigned short val_Species) { return 0; }
 
 inline double CVariable::GetProjVelInc(double *val_vector) { return 0; }
@@ -295,11 +297,11 @@ inline bool CVariable::SetPrimVar_Compressible(double turb_ke, CConfig *config) 
 
 inline bool CVariable::SetPrimVar_Incompressible(double Density_Inf, CConfig *config) { return true; }
 
-inline bool CVariable::SetPrimVar_FreeSurface(double Density_Inf, CConfig *config) { return true; }
+inline bool CVariable::SetPrimVar_FreeSurface(CConfig *config) { return true; }
 
 inline bool CVariable::SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double turb_ke, CConfig *config) { return true; }
 
-inline bool CVariable::SetPrimVar_FreeSurface(double Density_Inf, double Viscosity_Inf, double turb_ke, CConfig *config) { return true; }
+inline bool CVariable::SetPrimVar_FreeSurface(double turb_ke, CConfig *config) { return true; }
 
 inline double CVariable::GetPrimVar(unsigned short val_var) { return 0; }
 
@@ -447,9 +449,9 @@ inline double** CVariable::GetPlasmaRhoUGradient() { return 0;}
 
 inline double CVariable::GetPlasmaTimeStep() { return 0;}
 
-inline void CVariable::SetElectricField(double* val_ElectricField) { }
+inline void CVariable::SetpoissonField(double* val_poissonField) { }
 
-inline double* CVariable::GetElectricField() { return 0;}
+inline double* CVariable::GetpoissonField() { return 0;}
 
 inline void CVariable::SetTimeSpectral_Source(unsigned short val_var, double val_source) { }
 
@@ -478,6 +480,8 @@ inline double CVariable::GetTimeSpectral_Source(unsigned short val_var) { return
 inline double CEulerVariable::GetDensity(void) { return Solution[0]; }
 
 inline double CEulerVariable::GetDensityInc(void) { return Primitive[0]; }
+
+inline double CEulerVariable::GetLevelSet(void) { return Solution[nDim+1]; }
 
 inline double CEulerVariable::GetBetaInc2(void) { return Primitive[nDim+1]; }
 
@@ -741,9 +745,9 @@ inline void CPlasmaVariable::SetSensor(double val_sensor, unsigned short iSpecie
 
 inline double CPlasmaVariable::GetSensor(unsigned short iSpecies) {return Sensor_MultiSpecies[iSpecies]; }
 
-inline void CPlasmaVariable::SetElectricField(double* val_ElectricField) {Elec_Field = val_ElectricField; }
+inline void CPlasmaVariable::SetpoissonField(double* val_poissonField) {Elec_Field = val_poissonField; }
 
-inline double* CPlasmaVariable::GetElectricField() { return Elec_Field;}
+inline double* CPlasmaVariable::GetpoissonField() { return Elec_Field;}
 
 inline double* CPlasmaVariable::GetMagneticField() { return B_Field; }
 
@@ -758,14 +762,6 @@ inline void CAdjPlasmaVariable::SetForceProj_Vector(double *val_ForceProj_Vector
 inline void CAdjPlasmaVariable::SetIntBoundary_Jump(double *val_IntBoundary_Jump) { for (unsigned short iVar = 0; iVar < nVar; iVar++) IntBoundary_Jump[iVar] = val_IntBoundary_Jump[iVar]; }
 
 inline void CAdjPlasmaVariable::SetPhi_Old(double *val_phi) { for (unsigned short iDim = 0; iDim < nDim; iDim++) Solution_Old[iDim+1]=val_phi[iDim]; };
-
-inline void CLevelSetVariable::SetDiffLevelSet(double val_difflevelset) { DiffLevelSet = val_difflevelset; }
-
-inline double CLevelSetVariable::GetDiffLevelSet(void) { return DiffLevelSet; }
-
-inline void CLevelSetVariable::SetPrimVar(unsigned short val_var, double val_prim) { Primitive[val_var] = val_prim; }
-
-inline double CLevelSetVariable::GetPrimVar(unsigned short val_var) { return Primitive[val_var]; }
 
 inline void CFEAVariable::SetPressureValue(double val_pressure) { Pressure = val_pressure; }
 

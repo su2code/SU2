@@ -341,23 +341,23 @@ public:
 
 	/*!
 	 * \brief Set the value of the charge densities.
-	 * \param[in] val_Efield - Value of the electric field.
+	 * \param[in] val_Efield - Value of the poisson field.
 	 */
 	virtual void SetElecField(double *val_Efield);
 
 	/*!
-	 * \brief Set the value of the electrical conductivity
+	 * \brief Set the value of the poissonal conductivity
 	 */
 	virtual void SetElec_Cond();
 
 	/*!
-	 * \brief Get the integral in electrical conductivity calculation
+	 * \brief Get the integral in poissonal conductivity calculation
 	 * \param[out] value of the integral
 	 */
 	virtual double GetElec_CondIntegral();
 
 	/*!
-	 * \brief Set the square integral in electrical conductivity calculation
+	 * \brief Set the square integral in poissonal conductivity calculation
 	 * \param[in] value of the square of the integral
 	 */
 	virtual void SetElec_CondIntegralsqr(double val_var);
@@ -941,6 +941,18 @@ public:
 	void GetInviscidArtCompProjFlux(double *val_density, double *val_velocity, double *val_pressure, double *val_betainc2, 
 			double *val_normal, double *val_Proj_Flux);
 
+  /*!
+	 * \brief Compute the projected inviscid flux vector for incompresible simulations
+	 * \param[in] val_density - Pointer to the density.
+	 * \param[in] val_velocity - Pointer to the velocity.
+	 * \param[in] val_pressure - Pointer to the pressure.
+	 * \param[in] val_betainc2 - Value of the artificial compresibility factor.
+	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+	 * \param[out] val_Proj_Flux - Pointer to the projected flux.
+	 */
+	void GetInviscidArtComp_FreeSurf_ProjFlux(double *val_density, double *val_velocity, double *val_pressure, double *val_betainc2, double *val_levelset,
+                                  double *val_normal, double *val_Proj_Flux);
+  
 	/*! 
 	 * \overload
 	 * \brief Overloaded function for multi-species formulation (compressible flow).
@@ -1044,6 +1056,18 @@ public:
 	void GetInviscidArtCompProjJac(double *val_density, double *val_velocity, double *val_betainc2, double *val_normal,
 			double val_scale, double **val_Proj_Jac_tensor);
 
+  /*!
+	 * \brief Compute the projection of the inviscid Jacobian matrices (artificial compresibility).
+	 * \param[in] val_density - Value of the density.
+	 * \param[in] val_velocity - Pointer to the velocity.
+	 * \param[in] val_betainc2 - Value of the artificial compresibility factor.
+	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+	 * \param[in] val_scale - Scale of the projection.
+	 * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
+	 */
+	void GetInviscidArtComp_FreeSurf_ProjJac(double *val_density, double *val_ddensity, double *val_velocity, double *val_betainc2, double *val_levelset, double *val_normal,
+                                 double val_scale, double **val_Proj_Jac_tensor);
+  
 	/*! 
 	 * \overload
 	 * \brief Compute the projection of the inviscid Jacobian matrices.
@@ -1298,7 +1322,18 @@ public:
 	 * \param[out] val_p_tensor - Pointer to the P matrix.
 	 */
 	void GetPArtCompMatrix(double *val_density, double *val_velocity, double *val_betainv2, double *val_normal, double **val_p_tensor);
-
+  
+  /*!
+	 * \brief Computation of the matrix P (artificial compresibility), this matrix diagonalize the conservative Jacobians in
+	 *        the form $P^{-1}(A.Normal)P=Lambda$.
+	 * \param[in] val_density - Value of the density.
+	 * \param[in] val_velocity - Value of the velocity.
+	 * \param[in] val_betainv2 - Value of the compresibility factor.
+	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+	 * \param[out] val_p_tensor - Pointer to the P matrix.
+	 */
+	void GetPArtComp_FreeSurf_Matrix(double *val_density, double *val_ddensity, double *val_velocity, double *val_betainv2, double *val_levelset, double *val_normal, double **val_p_tensor);
+  
 	/*! 
 	 * \brief Computation of the matrix P^{-1}, this matrix diagonalize the conservative Jacobians 
 	 *        in the form $P^{-1}(A.Normal)P=Lambda$.
@@ -1384,6 +1419,17 @@ public:
 	 */
 	void GetPArtCompMatrix_inv(double *val_density, double *val_velocity, double *val_betainv2, double *val_normal, double **val_invp_tensor);
 
+  /*!
+	 * \brief Computation of the matrix P^{-1} (artificial compresibility), this matrix diagonalize the conservative Jacobians
+	 *        in the form $P^{-1}(A.Normal)P=Lambda$.
+	 * \param[in] val_density - Value of the density.
+	 * \param[in] val_velocity - Value of the velocity.
+	 * \param[in] val_betainv2 - Value of the compresibility factor.
+	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+	 * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
+	 */
+	void GetPArtComp_FreeSurf_Matrix_inv(double *val_density, double *val_ddensity, double *val_velocity, double *val_betainv2, double *val_levelset, double *val_normal, double **val_invp_tensor);
+  
 	/*! 
 	 * \brief Computation of the projected inviscid lambda (eingenvalues).
 	 * \param[in] val_velocity - Value of the velocity.
@@ -1606,7 +1652,7 @@ public:
 	virtual void ComputeResidual_ElecForce(double *val_residual, double **val_Jacobian, CConfig *config);
 
 	/*! 
-	 * \brief Calculation of electric force source term Jacobian
+	 * \brief Calculation of poisson force source term Jacobian
 	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
 	 * \param[in] config - Definition of the particular problem.
 	 */
@@ -1645,7 +1691,7 @@ public:
 	 * \overload
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[out] val_residual - Residual of the source terms.
-	 * \param[in] val_residual_ElecForce - Value of the electric force source terms.
+	 * \param[in] val_residual_ElecForce - Value of the poisson force source terms.
 	 */	
 	virtual void ComputeResidual_EnergyExch(double *val_residual, double **val_Jacobian, CConfig *config);
 
@@ -1654,7 +1700,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[out] val_residual - Residual of the source terms.
 	 * \param[out] val_Jacobian - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[in] val_residual_ElecForce - Value of the electric force source terms.
+	 * \param[in] val_residual_ElecForce - Value of the poisson force source terms.
 	 */
 	virtual void ComputeResidual_EnergyExch(double *val_residual, double *val_residual_ElecForce, double **val_Jacobian, CConfig *config);
 
@@ -1929,13 +1975,13 @@ public:
 };
 
 /*!
- * \class CUpwRoeArtComp_Flow_FreeSurface
+ * \class CUpwRoeArtComp_FreeSurf_Flow
  * \brief Class for solving an approximate Riemann solver of Roe for the incompressible flow equations.
  * \ingroup ConvDiscr
  * \author F. Palacios.
  * \version 2.0.8
  */
-class CUpwRoeArtComp_Flow_FreeSurface : public CNumerics {
+class CUpwRoeArtComp_FreeSurf_Flow : public CNumerics {
 private:
 	bool implicit;
 	bool gravity;
@@ -1945,9 +1991,9 @@ private:
 	double *Proj_flux_tensor_i, *Proj_flux_tensor_j;
 	double *Lambda, *Epsilon;
 	double **P_Tensor, **invP_Tensor;
-	double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-	Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, MeanDensity, MeanEnthalpy, MeanSoundSpeed, MeanPressure, MeanBetaInc2,
-	ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel, delta_p, delta_rho, vn;
+	double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Pressure_i, LevelSet_i, dDensityInc_i, dDensityInc_j,
+	Density_j, Pressure_j, LevelSet_j, MeanDensityInc, dMeanDensityInc, MeanPressure, MeanLevelSet, MeanBetaInc2,
+	ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel;
 	unsigned short iDim, jDim, iVar, jVar, kVar;
   
 public:
@@ -1958,12 +2004,12 @@ public:
 	 * \param[in] val_nVar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CUpwRoeArtComp_Flow_FreeSurface(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+	CUpwRoeArtComp_FreeSurf_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
   
 	/*!
 	 * \brief Destructor of the class.
 	 */
-	~CUpwRoeArtComp_Flow_FreeSurface(void);
+	~CUpwRoeArtComp_FreeSurf_Flow(void);
   
 	/*!
 	 * \brief Compute the Roe's flux between two nodes i and j.
@@ -5057,7 +5103,7 @@ public:
 	~CSourcePieceWise_FreeSurface(void);
 
 	/*! 
-	 * \brief Source term integration for the electrical potential.
+	 * \brief Source term integration for the poissonal potential.
 	 * \param[out] val_residual - Pointer to the total residual.
 	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
 	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
@@ -5092,7 +5138,7 @@ public:
 	~CSourceGravity(void);
 
 	/*! 
-	 * \brief Source term integration for the electrical potential.
+	 * \brief Source term integration for the poissonal potential.
 	 * \param[out] val_residual - Pointer to the total residual.
 	 * \param[in] config - Definition of the particular problem.
 	 */
@@ -5101,7 +5147,7 @@ public:
 
 /*!
  * \class CSourcePieceWise_Elec
- * \brief Class for the soruce term integration of the electrical potential equation.
+ * \brief Class for the soruce term integration of the poissonal potential equation.
  * \ingroup SourceDiscr
  * \author A. Bueno.
  * \version 2.0.8
@@ -5123,14 +5169,14 @@ public:
 	~CSourcePieceWise_Elec(void);
 
 	/*! 
-	 * \brief Source term integration for the electrical potential.
+	 * \brief Source term integration for the poissonal potential.
 	 * \param[out] val_residual - Pointer to the total residual.
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void ComputeResidual(double *val_residual, CConfig *config);
 
 	/*!
-	 * \brief Source term integration for the electrical potential.
+	 * \brief Source term integration for the poissonal potential.
 	 * \param[out] val_residual - Pointer to the total residual.
 	 * \param[in] config - Definition of the particular problem.
 	 */
@@ -5218,7 +5264,7 @@ public:
 
 /*!
  * \class CSourcePieceWise_AdjElec
- * \brief Class for source term integration of the adjoint electric potential equation.
+ * \brief Class for source term integration of the adjoint poisson potential equation.
  * \ingroup SourceDiscr
  * \author F. Palacios.
  * \version 2.0.8
@@ -5240,7 +5286,7 @@ public:
 	~CSourcePieceWise_AdjElec(void);
 
 	/*! 
-	 * \brief Source term integration of the adjoint electric potential equation.
+	 * \brief Source term integration of the adjoint poisson potential equation.
 	 * \param[out] val_residual - Pointer to the total residual.
 	 * \param[in] config - Definition of the particular problem.
 	 */
@@ -5271,7 +5317,7 @@ public:
 	~CSourcePieceWise_LevelSet(void);
 
 	/*! 
-	 * \brief Source term integration of the adjoint electric potential equation.
+	 * \brief Source term integration of the adjoint poisson potential equation.
 	 * \param[out] val_residual - Pointer to the total residual.
 	 * \param[in] config - Definition of the particular problem.
 	 */
@@ -5302,7 +5348,7 @@ public:
 	~CSourcePieceWise_AdjLevelSet(void);
 
 	/*! 
-	 * \brief Source term integration of the adjoint electric potential equation.
+	 * \brief Source term integration of the adjoint poisson potential equation.
 	 * \param[out] val_residual - Pointer to the total residual.
 	 * \param[in] config - Definition of the particular problem.
 	 */
@@ -5311,7 +5357,7 @@ public:
 
 /*!
  * \class CSourcePieceWise_LinElec
- * \brief Class for source term integration of the linearized electric potential equation.
+ * \brief Class for source term integration of the linearized poisson potential equation.
  * \ingroup SourceDiscr
  * \author F. Palacios.
  * \version 2.0.8
@@ -5333,7 +5379,7 @@ public:
 	~CSourcePieceWise_LinElec(void);
 
 	/*! 
-	 * \brief Source term integration of the linearized electric potential equation.
+	 * \brief Source term integration of the linearized poisson potential equation.
 	 * \param[out] val_residual - Pointer to the total residual.
 	 * \param[in] config - Definition of the particular problem.
 	 */
@@ -5388,8 +5434,8 @@ private:
 	double dR_dr1,dR_dm1,dR_dn1,dR_dl1,dR_de1;
 	double dR_dr2,dR_dm2,dR_dn2,dR_dl2,dR_de2;
 	double dR_dr3,dR_dm3,dR_dn3,dR_dl3,dR_de3;
-	double *ElectricField, *MagneticField, **VcrossB, *MagneticDipole,**velocity;
-	double Electric_Conductivity;
+	double *poissonField, *MagneticField, **VcrossB, *MagneticDipole,**velocity;
+	double poisson_Conductivity;
 	double *Current_Density, *VioncrossB, *JcrossB,	*dpcenter, *vector_r;
 	double *SourceVector;
 	double **SourceJacobian;
@@ -5521,13 +5567,13 @@ public:
 
 	/*! 
 	 * \brief Residual for source term integration.
-	 * \param[out] val_residual - Pointer to the source residual containing electric force terms.
+	 * \param[out] val_residual - Pointer to the source residual containing poisson force terms.
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void ComputeResidual_ElecForce(double *val_residual, CConfig *config);
 
 	/*! 
-	 * \brief Calculation of electric force source term Jacobian
+	 * \brief Calculation of poisson force source term Jacobian
 	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
 	 * \param[in] config - Definition of the particular problem.
 	 */
@@ -5563,7 +5609,7 @@ public:
 
 	/*!
 	 * \brief Set the value of the charge densities.
-	 * \param[in] val_Efield - Value of the electric field.
+	 * \param[in] val_Efield - Value of the poisson field.
 	 */
 	void SetElecField(double *val_Efield);
     
@@ -5800,7 +5846,7 @@ class CSource_Magnet : public CNumerics {
 private:
 	bool implicit;
 	double *MagneticField, *MagneticDipole,*velocity, *VcrossB;
-	double Electric_Conductivity,Stagnation_B;
+	double poisson_Conductivity,Stagnation_B;
 	double *Current_Density, *JcrossB,	*dpcenter, *vector_r;
 	unsigned short iDim, iVar;
 public:
@@ -5870,17 +5916,17 @@ public:
 	void ComputeResidual(double *val_residual, double **val_Jacobian_i,CConfig *config);
 
 	/*!
-	 * \brief Set the value of the electrical conductivity
+	 * \brief Set the value of the poissonal conductivity
 	 */
 	void SetElec_Cond();
 
 	/*!
-	 * \brief Set the integral in electrical conductivity calculation
+	 * \brief Set the integral in poissonal conductivity calculation
 	 */
 	double GetElec_CondIntegral();
 
 	/*!
-	 * \brief Set the square integral in electrical conductivity calculation
+	 * \brief Set the square integral in poissonal conductivity calculation
 	 * \param[in] value of the square of the integral
 	 */
 	void SetElec_CondIntegralsqr(double val_var);
