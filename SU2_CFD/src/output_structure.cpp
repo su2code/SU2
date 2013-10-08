@@ -3573,6 +3573,7 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
     unsigned short iMarker, iSpecies;
     
 	bool rotating_frame = config->GetRotating_Frame();
+    bool aeroelastic = config->GetAeroelastic_Simulation();
 	bool equiv_area = config->GetEquivArea();
 	bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == ADJ_RANS));
     bool frozen_turb = config->GetFrozen_Visc();
@@ -3615,6 +3616,7 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
 	char heat_coeff[]= ",\"CHeat_Load\",\"CHeat_Max\"";
 	char equivalent_area_coeff[]= ",\"CEquivArea\",\"CNearFieldOF\"";
 	char rotating_frame_coeff[]= ",\"CMerit\",\"CT\",\"CQ\"";
+    char aeroelastic_coeff[]= ",\"plunge\",\"pitch\"";
 	char free_surface_coeff[]= ",\"CFreeSurface\"";
 	char plasma_coeff[]= ",\"CLift\",\"CDrag\",\"CSideForce\",\"CMx\",\"CMy\",\"CMz\",\"CFx\",\"CFy\",\"CFz\",\"CL/CD\",\"Q\",\"PressDrag\",\"ViscDrag\",\"MagnetDrag\"";
 	char wave_coeff[]= ",\"CWave\"";
@@ -3655,6 +3657,7 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
             if (isothermal) ConvHist_file[0] << heat_coeff;
             if (equiv_area) ConvHist_file[0] << equivalent_area_coeff;
             if (rotating_frame) ConvHist_file[0] << rotating_frame_coeff;
+            if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
             ConvHist_file[0] << flow_resid;
             if (turbulent) ConvHist_file[0] << turb_resid;
             ConvHist_file[0] << end;
@@ -3770,6 +3773,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
         bool freesurface = (config[val_iZone]->GetKind_Regime() == FREESURFACE);
         
         bool rotating_frame = config[val_iZone]->GetRotating_Frame();
+        bool aeroelastic = config[val_iZone]->GetAeroelastic_Simulation();
         bool equiv_area = config[val_iZone]->GetEquivArea();
         bool transition = (config[val_iZone]->GetKind_Trans_Model() == LM);
         bool isothermal = false;
@@ -3796,7 +3800,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
         /*--- Initialize variables to store information from all domains (direct solution) ---*/
         double Total_CLift = 0.0, Total_CDrag = 0.0, Total_CSideForce = 0.0, Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0,
         Total_CEquivArea = 0.0, Total_CNearFieldOF = 0.0, Total_CFx = 0.0, Total_CFy = 0.0, Total_CFz = 0.0, Total_CMerit = 0.0,
-        Total_CT = 0.0, Total_CQ = 0.0, Total_CFreeSurface = 0.0, Total_CWave = 0.0, Total_CHeat = 0.0, Total_CFEA = 0.0, PressureDrag = 0.0, ViscDrag = 0.0, MagDrag = 0.0, Total_Q = 0.0, Total_MaxQ = 0.0;
+        Total_CT = 0.0, Total_CQ = 0.0, Total_CFreeSurface = 0.0, Total_CWave = 0.0, Total_CHeat = 0.0, Total_CFEA = 0.0, PressureDrag = 0.0, ViscDrag = 0.0, MagDrag = 0.0, Total_Q = 0.0, Total_MaxQ = 0.0, aeroelastic_plunge = 0.0, aeroelastic_pitch = 0.0;
         
         /*--- Initialize variables to store information from all domains (adjoint solution) ---*/
         double Total_Sens_Geo = 0.0, Total_Sens_Mach = 0.0, Total_Sens_AoA = 0.0;
@@ -3899,6 +3903,11 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                     Total_CT      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CT();
                     Total_CQ      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CQ();
                     Total_CMerit  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMerit();
+                }
+                
+                if (aeroelastic) {
+                    aeroelastic_plunge = config[val_iZone]->GetAeroelastic_plunge();
+                    aeroelastic_pitch  = config[val_iZone]->GetAeroelastic_pitch();
                 }
                 
                 if (aeroacoustic) {
@@ -4151,6 +4160,9 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                         if (rotating_frame)
                             sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx,
                                      Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_CMerit, Total_CT, Total_CQ);
+                        if (aeroelastic)
+                            sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx,
+                                     Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, aeroelastic_plunge, aeroelastic_pitch);
                         if (freesurface) {
                             sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy,
                                      Total_CFz, Total_CEff, Total_CFreeSurface);
@@ -4361,6 +4373,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                             if (incompressible) cout << "   Res[Press]" << "     Res[Velx]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
                             else if (freesurface) cout << "   Res[Press]" << "     Res[Dist]" << "   CLift(Total)" << "     CLevelSet" << endl;
                             else if (rotating_frame && nDim == 3) cout << "     Res[Rho]" << "     Res[RhoE]" << " CThrust(Total)" << " CTorque(Total)" << endl;
+                            else if (aeroelastic) cout << "     Res[Rho]" << "     Res[RhoE]" << "   CLift(Total)" << "   CDrag(Total)" << "         plunge" << "          pitch" << endl;
                             else if (equiv_area) cout << "     Res[Rho]" << "   CLift(Total)" << "   CDrag(Total)" << "    CPress(N-F)" << endl;
                             else cout << "     Res[Rho]" << "     Res[RhoE]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
                         }
@@ -4399,6 +4412,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                         
                         if (transition) { cout << "      Res[Int]" << "       Res[Re]"; }
                         if (rotating_frame && nDim == 3 ) cout << "   CThrust(Total)" << "   CTorque(Total)" << endl;
+                        if (aeroelastic) cout << "     plunge" << "     pitch" << endl;
                         else cout << "   CLift(Total)"   << "   CDrag(Total)"   << endl;
                         break;
                         
@@ -4558,6 +4572,12 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                         cout << Total_CNearFieldOF; }
                     else if (freesurface) { cout.width(15); cout << Total_CLift; cout.width(15); cout << Total_CFreeSurface; }
                     else { cout.width(15); cout << min(1000.0,max(-1000.0, Total_CLift)); cout.width(15); cout << min(1000.0,max(-1000.0, Total_CDrag)); }
+                    if (aeroelastic) {
+                        cout.setf(ios::scientific,ios::floatfield);
+                        cout.width(15); cout << aeroelastic_plunge;
+                        cout.width(15); cout << aeroelastic_pitch;
+                        cout.unsetf(ios_base::floatfield);
+                    }
                     cout << endl;
                     
                     break;
@@ -4591,6 +4611,12 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                         cout.unsetf(ios_base::floatfield);
                     }
                     else { cout.width(15); cout << min(1000.0,max(-1000.0, Total_CLift)); cout.width(15); cout << min(1000.0,max(-1000.0, Total_CDrag)); }
+                    if (aeroelastic) {
+                        cout.setf(ios::scientific,ios::floatfield);
+                        cout.width(15); cout << aeroelastic_plunge; cout.width(15);
+                        cout << aeroelastic_pitch;
+                        cout.unsetf(ios_base::floatfield);
+                    }
                     cout << endl;
                     
                     if (freesurface) {

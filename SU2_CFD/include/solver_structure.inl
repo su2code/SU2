@@ -94,7 +94,13 @@ inline void CSolver::SetDistance(CGeometry *geometry, CConfig *config) { };
 
 inline double CSolver::GetCLift_Inv(unsigned short val_marker) { return 0; }
 
+inline double CSolver::GetCMz_Inv(unsigned short val_marker) { return 0; }
+
 inline double CSolver::GetCDrag_Inv(unsigned short val_marker) { return 0; }
+
+inline double CSolver::GetSurface_CLift(unsigned short val_marker) { return 0; }
+
+inline double CSolver::GetSurface_CMz(unsigned short val_marker) { return 0; }
 
 inline double CSolver::GetFanFace_MassFlow(unsigned short val_marker) { return 0; }
 
@@ -109,6 +115,8 @@ inline double CSolver::GetCSideForce_Inv(unsigned short val_marker) { return 0; 
 inline double CSolver::GetCEff_Inv(unsigned short val_marker) { return 0; }
 
 inline double CSolver::GetCLift_Visc(unsigned short val_marker) { return 0; }
+
+inline double CSolver::GetCMz_Visc(unsigned short val_marker) { return 0; }
 
 inline double CSolver::GetCSideForce_Visc(unsigned short val_marker) { return 0; }
 
@@ -495,7 +503,13 @@ inline double CEulerSolver::GetCPressure(unsigned short val_marker, unsigned sho
 
 inline double CEulerSolver::GetCLift_Inv(unsigned short val_marker) { return CLift_Inv[val_marker]; }
 
+inline double CEulerSolver::GetCMz_Inv(unsigned short val_marker) { return CMz_Inv[val_marker]; }
+
 inline double CEulerSolver::GetCDrag_Inv(unsigned short val_marker) { return CDrag_Inv[val_marker]; }
+
+inline double CEulerSolver::GetSurface_CLift(unsigned short val_marker) { return Surface_CLift[val_marker]; }
+
+inline double CEulerSolver::GetSurface_CMz(unsigned short val_marker) { return Surface_CMz[val_marker]; }
 
 inline double CEulerSolver::GetFanFace_MassFlow(unsigned short val_marker) { return FanFace_MassFlow[val_marker]; }
 
@@ -574,6 +588,8 @@ inline void CEulerSolver::SetTotal_CFreeSurface(double cfreesurface) { Total_CFr
 inline double CNSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 
 inline double CNSSolver::GetCLift_Visc(unsigned short val_marker) { return CLift_Visc[val_marker]; }
+
+inline double CNSSolver::GetCMz_Visc(unsigned short val_marker) { return CMz_Visc[val_marker]; }
 
 inline double CNSSolver::GetCSideForce_Visc(unsigned short val_marker) { return CSideForce_Visc[val_marker]; }
 
