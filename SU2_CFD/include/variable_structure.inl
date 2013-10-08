@@ -257,6 +257,8 @@ inline double CVariable::GetLaminarViscosityInc(void) { return 0; }
 
 inline double CVariable::GetLaminarViscosity(unsigned short iSpecies) { return 0; }
 
+inline double* CVariable::GetDiffusionCoeff(void) { return NULL; }
+
 inline double CVariable::GetThermalConductivity(void) { return 0; }
 
 inline double CVariable::GetThermalConductivity(unsigned short iSpecies) { return 0; }
@@ -868,7 +870,7 @@ inline void CTNE2EulerVariable::SetPrimVar(double *val_prim) {
 
 inline double *CTNE2EulerVariable::GetPrimVar(void) { return Primitive; }
 
-inline void CTNE2EulerVariable::SetVelocity_Old(double *val_velocity, bool val_incomp) {
+inline void CTNE2EulerVariable::SetVelocity_Old(double *val_velocity, unsigned short val_incomp) {
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
     Solution_Old[nSpecies+iDim] = val_velocity[iDim]*Primitive[RHO_INDEX];
 
@@ -907,6 +909,8 @@ inline unsigned short CTNE2EulerVariable::GetAIndex(void) { return A_INDEX; }
 inline unsigned short CTNE2EulerVariable::GetRhoCvtrIndex(void) { return RHOCVTR_INDEX; }
 
 inline unsigned short CTNE2EulerVariable::GetRhoCvveIndex(void) { return RHOCVVE_INDEX; }
+
+inline double* CTNE2NSVariable::GetDiffusionCoeff(void) { return DiffusionCoeff; }
 
 inline double  CTNE2NSVariable::GetLaminarViscosity(void) { return LaminarViscosity; }
 

@@ -202,8 +202,14 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
       Tecplot_File << ", \"Sharp_Edge_Dist\"";
     }
     
-    if (Kind_Solver == TNE2_EULER) {
+    if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
       Tecplot_File << ",\"Mach\",\"Pressure\",\"Temperature\",\"Temperature_ve\"";
+    }
+    
+    if (Kind_Solver == TNE2_NAVIER_STOKES) {
+      for (unsigned short iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++)
+        Tecplot_File << ",\"DiffusionCoeff_" << iSpecies << "\"";
+      Tecplot_File << ",\"Laminar_Viscosity\",\"ThermConductivity\",\"ThermConductivity_ve\"";
     }
     
     if ((Kind_Solver == PLASMA_EULER) || (Kind_Solver == PLASMA_NAVIER_STOKES)) {

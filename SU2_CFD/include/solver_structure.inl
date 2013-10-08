@@ -446,6 +446,8 @@ inline unsigned short CSolver::GetnOutputVariables(void) { return nOutputVariabl
 
 inline unsigned short CSolver::GetnPrimVar(void) { return nPrimVar; }
 
+inline unsigned short CSolver::GetnPrimVarGrad(void) { return nPrimVarGrad; }
+
 inline double CSolver::GetMax_Delta_Time(void) { return Max_Delta_Time; }
 
 inline double CSolver::GetMin_Delta_Time(void) { return Min_Delta_Time; }

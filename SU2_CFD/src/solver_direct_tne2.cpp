@@ -2268,15 +2268,19 @@ void CTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **so
 
 void CTNE2EulerSolver::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *config) {
 	unsigned long iPoint, jPoint, iEdge, iVertex;
-	unsigned short iDim, iVar, iMarker;
-	double *PrimVar_Vertex, *PrimVar_i, *PrimVar_j, PrimVar_Average,
+	unsigned short iDim, iSpecies, iVar, iMarker, RHOS_INDEX, RHO_INDEX;
+	double *PrimVar_Vertex, *PrimVar_i, *PrimVar_j, PrimVar_Average, rho_i, rho_j,
 	Partial_Gradient, Partial_Res, *Normal;
   
-	/*--- Gradient primitive variables compressible (temp, vx, vy, vz, P, rho)
-   Gradient primitive variables incompressible (rho, vx, vy, vz, beta) ---*/
+	/*--- Initialize arrays ---*/
+  // Primitive variables: [Y1, ..., YNs, T, Tve, u, v, w]^T
 	PrimVar_Vertex = new double [nPrimVarGrad];
 	PrimVar_i = new double [nPrimVarGrad];
 	PrimVar_j = new double [nPrimVarGrad];
+  
+  /*--- Get indices of species & mixture density ---*/
+  RHOS_INDEX = node[0]->GetRhosIndex();
+  RHO_INDEX  = node[0]->GetRhoIndex();
   
 	/*--- Set Gradient_Primitive to zero ---*/
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++)
@@ -2287,10 +2291,20 @@ void CTNE2EulerSolver::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *conf
 		iPoint = geometry->edge[iEdge]->GetNode(0);
 		jPoint = geometry->edge[iEdge]->GetNode(1);
     
+    /*--- Pull primitives from CVariable ---*/
 		for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
 			PrimVar_i[iVar] = node[iPoint]->GetPrimVar(iVar);
 			PrimVar_j[iVar] = node[jPoint]->GetPrimVar(iVar);
 		}
+    
+    rho_i = node[iPoint]->GetPrimVar(RHO_INDEX);
+    rho_j = node[jPoint]->GetPrimVar(RHO_INDEX);
+    
+    /*--- Modify densities to be mass concentration ---*/
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      PrimVar_i[RHOS_INDEX+iSpecies] = PrimVar_i[RHOS_INDEX+iSpecies]/rho_i;
+      PrimVar_j[RHOS_INDEX+iSpecies] = PrimVar_j[RHOS_INDEX+iSpecies]/rho_j;
+    }
     
 		Normal = geometry->edge[iEdge]->GetNormal();
 		for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
@@ -2311,8 +2325,14 @@ void CTNE2EulerSolver::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *conf
 			iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 			if (geometry->node[iPoint]->GetDomain()) {
         
+        /*--- Get primitives from CVariable ---*/
 				for (iVar = 0; iVar < nPrimVarGrad; iVar++)
 					PrimVar_Vertex[iVar] = node[iPoint]->GetPrimVar(iVar);
+        
+        /*--- Modify species density to mass concentration ---*/
+        rho_i = node[iPoint]->GetPrimVar(RHO_INDEX);
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+          PrimVar_Vertex[RHOS_INDEX+iSpecies] = PrimVar_Vertex[RHOS_INDEX+iSpecies]/rho_i;
         
 				Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 				for (iVar = 0; iVar < nPrimVarGrad; iVar++)
@@ -2343,22 +2363,32 @@ void CTNE2EulerSolver::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *conf
 }
 
 void CTNE2EulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
-	unsigned short iVar, iDim, jDim, iNeigh;
+	unsigned short iSpecies, iVar, iDim, jDim, iNeigh, RHOS_INDEX, RHO_INDEX;
 	unsigned long iPoint, jPoint;
 	double *PrimVar_i, *PrimVar_j, *Coord_i, *Coord_j, r11, r12, r13, r22, r23, r23_a,
-	r23_b, r33, weight, product;
+	r23_b, r33, rho_i, rho_j, weight, product;
   
-	/*--- Gradient primitive variables compressible (temp, vx, vy, vz, P, rho)
-   Gradient primitive variables incompressible (rho, vx, vy, vz, beta) ---*/
+	/*--- Initialize arrays ---*/
+  // Primitive variables: [Y1, ..., YNs, T, Tve, u, v, w]^T
 	PrimVar_i = new double [nPrimVarGrad];
 	PrimVar_j = new double [nPrimVarGrad];
+  
+  /*--- Get indices of species & mixture density ---*/
+  RHOS_INDEX = node[0]->GetRhosIndex();
+  RHO_INDEX  = node[0]->GetRhoIndex();
   
 	/*--- Loop over points of the grid ---*/
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 		Coord_i = geometry->node[iPoint]->GetCoord();
     
+    /*--- Get primitives from CVariable ---*/
 		for (iVar = 0; iVar < nPrimVarGrad; iVar++)
 			PrimVar_i[iVar] = node[iPoint]->GetPrimVar(iVar);
+    
+    /*--- Modify species density to mass fraction ---*/
+    rho_i = node[iPoint]->GetPrimVar(RHO_INDEX);
+    for (iSpecies =0 ; iSpecies < nSpecies; iSpecies++)
+      PrimVar_i[RHOS_INDEX+iSpecies] = PrimVar_i[RHOS_INDEX+iSpecies]/rho_i;
     
 		/*--- Inizialization of variables ---*/
 		for (iVar = 0; iVar < nPrimVarGrad; iVar++)
@@ -2374,6 +2404,11 @@ void CTNE2EulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *conf
       
 			for (iVar = 0; iVar < nPrimVarGrad; iVar++)
 				PrimVar_j[iVar] = node[jPoint]->GetPrimVar(iVar);
+      
+      /*--- Modify species density to mass fraction ---*/
+      rho_j = node[jPoint]->GetPrimVar(RHO_INDEX);
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        PrimVar_j[RHOS_INDEX+iSpecies] = PrimVar_j[RHOS_INDEX+iSpecies]/rho_j;
       
 			weight = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++)
@@ -4282,26 +4317,58 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_contain
   
 }
 
-void CTNE2NSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solution_container, CNumerics *numerics,
-                                     CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+void CTNE2NSSolver::Viscous_Residual(CGeometry *geometry,
+                                     CSolver **solution_container,
+                                     CNumerics *numerics,
+                                     CConfig *config, unsigned short iMesh,
+                                     unsigned short iRKStep) {
 	unsigned long iPoint, jPoint, iEdge;
   
 	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+  
+  /*--- Pass structure of the primitive variable vector to CNumerics ---*/
+  numerics->SetRhosIndex   ( node[0]->GetRhosIndex()    );
+  numerics->SetRhoIndex    ( node[0]->GetRhoIndex()     );
+  numerics->SetPIndex      ( node[0]->GetPIndex()       );
+  numerics->SetTIndex      ( node[0]->GetTIndex()       );
+  numerics->SetTveIndex    ( node[0]->GetTveIndex()     );
+  numerics->SetVelIndex    ( node[0]->GetVelIndex()     );
+  numerics->SetHIndex      ( node[0]->GetHIndex()       );
+  numerics->SetAIndex      ( node[0]->GetAIndex()       );
+  numerics->SetRhoCvtrIndex( node[0]->GetRhoCvtrIndex() );
+  numerics->SetRhoCvveIndex( node[0]->GetRhoCvveIndex() );
+  
   
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
     /*--- Points, coordinates and normal vector in edge ---*/
     iPoint = geometry->edge[iEdge]->GetNode(0);
     jPoint = geometry->edge[iEdge]->GetNode(1);
-    numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[jPoint]->GetCoord());
+    numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+                       geometry->node[jPoint]->GetCoord() );
     numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
     
     /*--- Primitive variables, and gradient ---*/
-    numerics->SetPrimitive(node[iPoint]->GetPrimVar(), node[jPoint]->GetPrimVar());
-    numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[jPoint]->GetGradient_Primitive());
+    numerics->SetPrimitive(node[iPoint]->GetPrimVar(),
+                           node[jPoint]->GetPrimVar() );
+    numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(),
+                                 node[jPoint]->GetGradient_Primitive() );
+    
+    /*--- Species diffusion coefficients ---*/
+    numerics->SetDiffusionCoeff(node[iPoint]->GetDiffusionCoeff(),
+                                node[jPoint]->GetDiffusionCoeff() );
     
     /*--- Laminar viscosity ---*/
-    numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(), node[jPoint]->GetLaminarViscosity());
+    numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(),
+                                  node[jPoint]->GetLaminarViscosity() );
+    
+    /*--- Thermal conductivity ---*/
+    numerics->SetThermalConductivity(node[iPoint]->GetThermalConductivity(),
+                                     node[jPoint]->GetThermalConductivity());
+    
+    /*--- Vib-el. thermal conductivity ---*/
+    numerics->SetThermalConductivity_ve(node[iPoint]->GetThermalConductivity_ve(),
+                                        node[jPoint]->GetThermalConductivity_ve() );
     
     /*--- Compute and update residual ---*/
     numerics->ComputeResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
@@ -4311,10 +4378,10 @@ void CTNE2NSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solution_con
     
     /*--- Implicit part ---*/
     if (implicit) {
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-      Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
-      Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
-      Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
+//      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+//      Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
+//      Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
+//      Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
     }
   }
   
@@ -4524,19 +4591,21 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 	delete [] TauElem;
 }
 
-void CTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solution_container,
-                                     CNumerics *conv_numerics, CNumerics *visc_numerics,
-                                     CConfig *config, unsigned short val_marker) {
+void CTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
+                                     CSolver **solution_container,
+                                     CNumerics *conv_numerics,
+                                     CNumerics *visc_numerics,
+                                     CConfig *config,
+                                     unsigned short val_marker) {
   
 	/*--- Local variables ---*/
 	unsigned short iDim, iVar;
 	unsigned long iVertex, iPoint, total_index;
   
 	double Wall_HeatFlux;
-	double *Grid_Vel, *Normal, Area;
+	double *Normal, Area;
   
 	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
-	bool grid_movement  = config->GetGrid_Movement();
   
 	/*--- Identify the boundary by string name ---*/
 	string Marker_Tag = config->GetMarker_All_Tag(val_marker);
@@ -4564,100 +4633,19 @@ void CTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solution_con
 				Res_Visc[iVar] = 0.0;
 			}
       
-			/*--- Store the corrected velocity at the wall which will
-       be zero (v = 0), unless there are moving walls (v = u_wall)---*/
-			if (grid_movement) {
-				Grid_Vel = geometry->node[iPoint]->GetGridVel();
-				for (iDim = 0; iDim < nDim; iDim++)
-					Vector[iDim] = Grid_Vel[iDim];
-			} else {
-				for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = 0.0;
-			}
+      /*--- Set wall velocity to zero ---*/
+      for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = 0.0;
       
 			/*--- Set the residual, truncation error, and velocity value ---*/
-			node[iPoint]->SetVelocity_Old(Vector, false);
-      for (iDim = 0; iDim < nDim; iDim++)
-        LinSysRes.SetBlock_Zero(iPoint, iDim+1);
-			node[iPoint]->SetVel_ResTruncError_Zero();
+			node[iPoint]->SetVelocity_Old(Vector, 0);
+      
+      for (iDim = 0; iDim < nDim; iDim++) {
+        LinSysRes.SetBlock_Zero(iPoint, nSpecies+iDim);
+        node[iPoint]->SetVal_ResTruncError_Zero(nSpecies+iDim);
+      }
       
 			/*--- Set the residual on the boundary with the specified heat flux ---*/
-			Res_Visc[nDim+1] = Wall_HeatFlux * Area;
-      
-			/*--- Flux contribution due to grid motion (energy equation) ---*/
-			if (grid_movement) {
-				double ProjGridVel = 0.0;
-				Grid_Vel = geometry->node[iPoint]->GetGridVel();
-				for (iDim = 0; iDim < nDim; iDim++)
-					ProjGridVel += Grid_Vel[iDim]*(-1.0)*Normal[iDim];
-				Res_Conv[nDim+1] = node[iPoint]->GetPressure(false)*ProjGridVel;
-			}
-      
-			/*--- Viscous contribution for moving walls ---*/
-			if (grid_movement) {
-        
-				unsigned short jDim;
-				double total_viscosity, div_vel, Density;
-				Density = node[iPoint]->GetSolution(0);
-				double val_laminar_viscosity = node[iPoint]->GetLaminarViscosity();
-				double **val_gradprimvar = node[iPoint]->GetGradient_Primitive();
-				double tau[3][3], delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
-				total_viscosity = val_laminar_viscosity;
-        
-				/*--- Get the appropriate grid velocity at this node ---*/
-				if (grid_movement) {
-					Grid_Vel = geometry->node[iPoint]->GetGridVel();
-				}
-        
-				double Flux_Tensor[nVar][nDim];
-				for (iVar = 0 ; iVar < nVar; iVar++)
-					for (jDim = 0 ; jDim < nDim; jDim++)
-						Flux_Tensor[iVar][jDim] = 0.0;
-        
-				div_vel = 0.0;
-				for (iDim = 0 ; iDim < nDim; iDim++)
-					div_vel += val_gradprimvar[iDim+1][iDim];
-        
-				for (iDim = 0 ; iDim < nDim; iDim++)
-					for (jDim = 0 ; jDim < nDim; jDim++)
-						tau[iDim][jDim] = total_viscosity*( val_gradprimvar[jDim+1][iDim] + val_gradprimvar[iDim+1][jDim] )
-						- TWO3*total_viscosity*div_vel*delta[iDim][jDim];
-        
-				if (nDim == 2) {
-					Flux_Tensor[0][0] = 0.0;
-					Flux_Tensor[1][0] = 0.0;
-					Flux_Tensor[2][0] = 0.0;
-					Flux_Tensor[3][0] = tau[0][0]*Grid_Vel[0] + tau[0][1]*Grid_Vel[1];
-          
-					Flux_Tensor[0][1] = 0.0;
-					Flux_Tensor[1][1] = 0.0;
-					Flux_Tensor[2][1] = 0.0;
-					Flux_Tensor[3][1] = tau[1][0]*Grid_Vel[0] + tau[1][1]*Grid_Vel[1];
-          
-				} else {
-					Flux_Tensor[0][0] = 0.0;
-					Flux_Tensor[1][0] = 0.0;
-					Flux_Tensor[2][0] = 0.0;
-					Flux_Tensor[3][0] = 0.0;
-					Flux_Tensor[4][0] = tau[0][0]*Grid_Vel[0] + tau[0][1]*Grid_Vel[1] + tau[0][2]*Grid_Vel[2];
-          
-					Flux_Tensor[0][1] = 0.0;
-					Flux_Tensor[1][1] = 0.0;
-					Flux_Tensor[2][1] = 0.0;
-					Flux_Tensor[3][1] = 0.0;
-					Flux_Tensor[4][1] = tau[1][0]*Grid_Vel[0] + tau[1][1]*Grid_Vel[1] + tau[1][2]*Grid_Vel[2];
-          
-					Flux_Tensor[0][2] = 0.0;
-					Flux_Tensor[1][2] = 0.0;
-					Flux_Tensor[2][2] = 0.0;
-					Flux_Tensor[3][2] = 0.0;
-					Flux_Tensor[4][2] = tau[2][0]*Grid_Vel[0] + tau[2][1]*Grid_Vel[1] + tau[2][2]*Grid_Vel[2];
-				}
-        
-				for (iVar = 0; iVar < nVar; iVar++) {
-					for (iDim = 0; iDim < nDim; iDim++)
-						Res_Visc[iVar] += Flux_Tensor[iVar][iDim] * -Normal[iDim];
-				}
-			}
+			Res_Visc[nSpecies+nDim] = Wall_HeatFlux * Area;
       
 			/*--- Convective contribution to the residual at the wall ---*/
       LinSysRes.AddBlock(iPoint, Res_Conv);
@@ -4669,135 +4657,126 @@ void CTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solution_con
        Note that we need to add a contribution for moving walls to the Jacobian. ---*/
 			if (implicit) {
 				/*--- Enforce the no-slip boundary condition in a strong way ---*/
-				for (iVar = 1; iVar <= nDim; iVar++) {
+				for (iVar = nSpecies; iVar < nSpecies+nDim; iVar++) {
 					total_index = iPoint*nVar+iVar;
 					Jacobian.DeleteValsRowi(total_index);
 				}
 			}
       
 		}
-    
 	}
 }
 
 void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solution_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
-	unsigned long iVertex, iPoint, Point_Normal, total_index;
-	unsigned short iVar, jVar, iDim;
-	double *Normal, *Coord_i, *Coord_j, Area, dist_ij, *Grid_Vel;
-	double UnitaryNormal[3];
-	double Twall, Temperature, dTdn, dTdrho;
-	double Density, Vel2, Energy;
-	double Laminar_Viscosity, Thermal_Conductivity, Gas_Constant, cp;
-	double Theta;
-	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
-	bool grid_movement = config->GetGrid_Movement();
-  
-	Point_Normal = 0;
-  
-	/*--- Identify the boundary ---*/
-	string Marker_Tag = config->GetMarker_All_Tag(val_marker);
-  
-	/*--- Retrieve the specified wall temperature ---*/
-	Twall = config->GetIsothermal_Temperature(Marker_Tag);
-	Gas_Constant = config->GetGas_ConstantND();
-	cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
-  
-	/*--- Loop over boundary points ---*/
-	for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-		if (geometry->node[iPoint]->GetDomain()) {
-      
-			/*--- Compute dual-grid area and boundary normal ---*/
-			Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-			Area = 0.0;
-			for (iDim = 0; iDim < nDim; iDim++)
-				Area += Normal[iDim]*Normal[iDim];
-			Area = sqrt (Area);
-			for (iDim = 0; iDim < nDim; iDim++)
-				UnitaryNormal[iDim] = -Normal[iDim]/Area;
-      
-			/*--- Calculate useful quantities ---*/
-			Theta = 0.0;
-			for (iDim = 0; iDim < nDim; iDim++)
-				Theta += UnitaryNormal[iDim]*UnitaryNormal[iDim];
-      
-			/*--- Compute closest normal neighbor ---*/
-			Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-      
-			/*--- Get cartesian coordinates of i & j and compute inter-node distance ---*/
-			Coord_i = geometry->node[iPoint]->GetCoord();
-			Coord_j = geometry->node[Point_Normal]->GetCoord();
-			dist_ij = 0;
-			for (iDim = 0; iDim < nDim; iDim++)
-				dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
-			dist_ij = sqrt(dist_ij);
-      
-      
-			/*--- Store the corrected velocity at the wall which will
-       be zero (v = 0), unless there is grid motion (v = u_wall)---*/
-			if (grid_movement) {
-				Grid_Vel = geometry->node[iPoint]->GetGridVel();
-				for (iDim = 0; iDim < nDim; iDim++)
-					Vector[iDim] = Grid_Vel[iDim];
-			} else {
-				for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = 0.0;
-			}
-      
-			/*--- Initialize viscous residual (and Jacobian if implicit) to zero ---*/
-			for (iVar = 0; iVar < nVar; iVar ++)
-				Res_Visc[iVar] = 0.0;
-			if (implicit) {
-				for (iVar = 0; iVar < nVar; iVar ++)
-					for (jVar = 0; jVar < nVar; jVar ++)
-						Jacobian_i[iVar][jVar] = 0.0;
-			}
-      
-			/*--- Set the residual, truncation error and velocity value on the boundary ---*/
-			node[iPoint]->SetVelocity_Old(Vector, false);
-			for (iDim = 0; iDim < nDim; iDim++)
-        LinSysRes.SetBlock_Zero(iPoint, iDim+1);
-			node[iPoint]->SetVel_ResTruncError_Zero();
-      
-			/*--- Retrieve temperatures from boundary nearest neighbor --*/
-			Temperature = node[Point_Normal]->GetPrimVar(0);
-      
-			/*--- Calculate temperature gradient normal to the wall using FD ---*/
-			dTdn                  = (Twall - Temperature)/dist_ij;
-			Laminar_Viscosity     = node[iPoint]->GetLaminarViscosity();
-			Thermal_Conductivity  = cp * (Laminar_Viscosity/PRANDTL);
-      
-			/*--- Set the residual on the boundary, enforcing the no-slip boundary condition ---*/
-			Res_Visc[nDim+1] = Thermal_Conductivity * dTdn * Area;
-      
-			/*--- Calculate Jacobian for implicit time stepping ---*/
-			// Note: Momentum equations are enforced in a strong way while the energy equation is enforced weakly
-			if (implicit) {
-        
-				/*--- Calculate useful quantities ---*/
-				Density = node[iPoint]->GetPrimVar(nDim+2);
-				Energy  = node[iPoint]->GetSolution(nDim+1);
-				Temperature = node[iPoint]->GetPrimVar(0);
-				Vel2 = 0.0;
-				for (iDim = 0; iDim < nDim; iDim++)
-					Vel2 += node[iPoint]->GetPrimVar(iDim+1) * node[iPoint]->GetPrimVar(iDim+1);
-				//dTdrho = (Gamma-1.0)/(Density*Gas_Constant) * (-Energy/Density + Vel2);
-				dTdrho = 1.0/Density * ( -Twall + (Gamma-1.0)/Gas_Constant*(Vel2/2.0) );
-        
-				/*--- Enforce the no-slip boundary condition in a strong way ---*/
-				for (iVar = 1; iVar <= nDim; iVar++) {
-					total_index = iPoint*nVar+iVar;
-					Jacobian.DeleteValsRowi(total_index);
-				}
-        
-				/*--- Add contributions to the Jacobian from the weak enforcement of the energy equations ---*/
-				Jacobian_i[nDim+1][0]      = -Thermal_Conductivity*Theta/dist_ij * dTdrho * Area;
-				Jacobian_i[nDim+1][nDim+1] = -Thermal_Conductivity*Theta/dist_ij * (Gamma-1.0)/(Gas_Constant*Density) * Area;
-			}
-      
-			/*--- Apply calculated residuals and Jacobians to the linear system ---*/
-      LinSysRes.SubtractBlock(iPoint, Res_Visc);
-			Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-		}
-	}
+//	unsigned long iVertex, iPoint, Point_Normal, total_index;
+//	unsigned short iVar, jVar, iDim;
+//	double *Normal, *Coord_i, *Coord_j, Area, dist_ij, *Grid_Vel;
+//	double UnitaryNormal[3];
+//	double Twall, Temperature, dTdn, dTdrho;
+//	double Density, Vel2, Energy;
+//	double Laminar_Viscosity, Thermal_Conductivity;
+//	double Theta;
+//	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+//  
+//	Point_Normal = 0;
+//  
+//	/*--- Identify the boundary ---*/
+//	string Marker_Tag = config->GetMarker_All_Tag(val_marker);
+//  
+//	/*--- Retrieve the specified wall temperature ---*/
+//	Twall = config->GetIsothermal_Temperature(Marker_Tag);
+//
+//  
+//	/*--- Loop over boundary points ---*/
+//	for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+//		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+//		if (geometry->node[iPoint]->GetDomain()) {
+//      
+//			/*--- Compute dual-grid area and boundary normal ---*/
+//			Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+//			Area = 0.0;
+//			for (iDim = 0; iDim < nDim; iDim++)
+//				Area += Normal[iDim]*Normal[iDim];
+//			Area = sqrt (Area);
+//			for (iDim = 0; iDim < nDim; iDim++)
+//				UnitaryNormal[iDim] = -Normal[iDim]/Area;
+//      
+//			/*--- Calculate useful quantities ---*/
+//			Theta = 0.0;
+//			for (iDim = 0; iDim < nDim; iDim++)
+//				Theta += UnitaryNormal[iDim]*UnitaryNormal[iDim];
+//      
+//			/*--- Compute closest normal neighbor ---*/
+//			Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+//      
+//			/*--- Get cartesian coordinates of i & j and compute inter-node distance ---*/
+//			Coord_i = geometry->node[iPoint]->GetCoord();
+//			Coord_j = geometry->node[Point_Normal]->GetCoord();
+//			dist_ij = 0;
+//			for (iDim = 0; iDim < nDim; iDim++)
+//				dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
+//			dist_ij = sqrt(dist_ij);
+//      
+//      
+//			/*--- Store the corrected velocity at the wall which will
+//       be zero (v = 0), unless there is grid motion (v = u_wall)---*/
+//      for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = 0.0;
+//      
+//			/*--- Initialize viscous residual (and Jacobian if implicit) to zero ---*/
+//			for (iVar = 0; iVar < nVar; iVar ++)
+//				Res_Visc[iVar] = 0.0;
+//			if (implicit) {
+//				for (iVar = 0; iVar < nVar; iVar ++)
+//					for (jVar = 0; jVar < nVar; jVar ++)
+//						Jacobian_i[iVar][jVar] = 0.0;
+//			}
+//      
+//			/*--- Set the residual, truncation error and velocity value on the boundary ---*/
+//			node[iPoint]->SetVelocity_Old(Vector, false);
+//			for (iDim = 0; iDim < nDim; iDim++)
+//        LinSysRes.SetBlock_Zero(iPoint, iDim+1);
+//			node[iPoint]->SetVel_ResTruncError_Zero();
+//      
+//			/*--- Retrieve temperatures from boundary nearest neighbor --*/
+//			Temperature = node[Point_Normal]->GetPrimVar(0);
+//      
+//			/*--- Calculate temperature gradient normal to the wall using FD ---*/
+//			dTdn                  = (Twall - Temperature)/dist_ij;
+//			Laminar_Viscosity     = node[iPoint]->GetLaminarViscosity();
+//			Thermal_Conductivity  = node[iPoint]->GetThermalConductivity();
+//      
+//			/*--- Set the residual on the boundary, enforcing the no-slip boundary condition ---*/
+//			Res_Visc[nDim+1] = Thermal_Conductivity * dTdn * Area;
+//      
+//			/*--- Calculate Jacobian for implicit time stepping ---*/
+//			// Note: Momentum equations are enforced in a strong way while the energy equation is enforced weakly
+//			if (implicit) {
+//        
+//				/*--- Calculate useful quantities ---*/
+//				Density = node[iPoint]->GetPrimVar(nDim+2);
+//				Energy  = node[iPoint]->GetSolution(nDim+1);
+//				Temperature = node[iPoint]->GetPrimVar(0);
+//				Vel2 = 0.0;
+//				for (iDim = 0; iDim < nDim; iDim++)
+//					Vel2 += node[iPoint]->GetPrimVar(iDim+1) * node[iPoint]->GetPrimVar(iDim+1);
+//				//dTdrho = (Gamma-1.0)/(Density*Gas_Constant) * (-Energy/Density + Vel2);
+//				dTdrho = 1.0/Density * ( -Twall + (Gamma-1.0)/Gas_Constant*(Vel2/2.0) );
+//        
+//				/*--- Enforce the no-slip boundary condition in a strong way ---*/
+//				for (iVar = 1; iVar <= nDim; iVar++) {
+//					total_index = iPoint*nVar+iVar;
+//					Jacobian.DeleteValsRowi(total_index);
+//				}
+//        
+//				/*--- Add contributions to the Jacobian from the weak enforcement of the energy equations ---*/
+//				Jacobian_i[nDim+1][0]      = -Thermal_Conductivity*Theta/dist_ij * dTdrho * Area;
+//				Jacobian_i[nDim+1][nDim+1] = -Thermal_Conductivity*Theta/dist_ij * (Gamma-1.0)/(Gas_Constant*Density) * Area;
+//			}
+//      
+//			/*--- Apply calculated residuals and Jacobians to the linear system ---*/
+//      LinSysRes.SubtractBlock(iPoint, Res_Visc);
+//			Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+//		}
+//	}
 }

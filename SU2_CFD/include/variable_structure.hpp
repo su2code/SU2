@@ -333,6 +333,11 @@ public:
 	 * \brief Set the truncation error to zero.
 	 */		
 	void SetRes_TruncErrorZero(void);
+  
+  /*!
+	 * \brief Set the truncation error to zero.
+	 */
+	void SetVal_ResTruncError_Zero(unsigned short val_var);
 
 	/*!
 	 * \brief Set the velocity of the truncation error to zero.
@@ -929,6 +934,12 @@ public:
 	 * \return The laminar viscosity of the flow.
 	 */
 	virtual double GetLaminarViscosity(unsigned short iSpecies);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the species diffusion coefficient.
+   */
+  virtual double* GetDiffusionCoeff(void);
   
   /*!
    * \brief A virtual member.
@@ -1287,7 +1298,7 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_velocity - Pointer to the velocity.
-	 */		
+	 */
 	virtual void SetVelocity_Old(double *val_velocity, unsigned short val_incomp);
 
 	/*!
@@ -3887,7 +3898,7 @@ public:
 	 * \brief Set the velocity vector from the old solution.
 	 * \param[in] val_velocity - Pointer to the velocity.
 	 */
-	void SetVelocity_Old(double *val_velocity, bool val_incomp);
+	void SetVelocity_Old(double *val_velocity, unsigned short val_incomp);
   
 	/*!
 	 * \brief Get the value of the preconditioner Beta.
@@ -3976,6 +3987,7 @@ private:
 	double Temperature_Ref;   /*!< \brief Reference temperature of the fluid. */
 	double Viscosity_Ref;     /*!< \brief Reference viscosity of the fluid. */
 	double Viscosity_Inf;     /*!< \brief Viscosity of the fluid at the infinity. */
+  double *DiffusionCoeff;    /*!< \brief Diffusion coefficient of the mixture. */
 	double LaminarViscosity;	/*!< \brief Viscosity of the fluid. */
   double ThermalCond;       /*!< \brief T-R thermal conductivity of the gas mixture. */
   double ThermalCond_ve;    /*!< \brief V-E thermal conductivity of the gas mixture. */
@@ -4021,6 +4033,11 @@ public:
 	 * \brief Destructor of the class.
 	 */
 	~CTNE2NSVariable(void);
+
+  /*!
+	 * \brief Set the laminar viscosity.
+	 */
+	void SetDiffusionCoeff(CConfig *config);
   
 	/*!
 	 * \brief Set the laminar viscosity.
@@ -4043,6 +4060,12 @@ public:
 	 * \brief Set the vorticity value.
 	 */
 	void SetVorticity(void);
+  
+  /*!
+	 * \brief Get the species diffusion coefficient.
+	 * \return Value of the species diffusion coefficient.
+	 */
+  double* GetDiffusionCoeff(void);
   
 	/*!
 	 * \brief Get the laminar viscosity of the flow.

@@ -1687,7 +1687,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   if (Kind_Solver == TNE2_NAVIER_STOKES) {
     /*--- Diffusivity, viscosity, & thermal conductivity ---*/
     iVar_TempLam = nVar_Total;
-    nVar_Total += 4;
+    nVar_Total += config->GetnSpecies()+3;
   }
   
 	if (Kind_Solver == ELECTRIC_POTENTIAL) {
@@ -1787,7 +1787,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
             }
     }
     
-    if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
+    if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) ||
+        (Kind_Solver == ADJ_RANS)  || (Kind_Solver == ADJ_PLASMA_EULER)  ||
+        (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
         
         Aux_Sens = new double [geometry->GetnPointDomain()];
         for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Aux_Sens[iPoint] = 0.0;
@@ -1956,7 +1958,36 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
                     Data[jVar][jPoint] = solver[TNE2_SOL]->node[iPoint]->GetTemperature_ve();
                     jVar++;
                     break;
-                    
+                
+              case TNE2_NAVIER_STOKES:
+                /*--- Write Mach number ---*/
+                Data[jVar][jPoint] = sqrt(solver[TNE2_SOL]->node[iPoint]->GetVelocity2())
+                / solver[TNE2_SOL]->node[iPoint]->GetSoundSpeed();
+                jVar++;
+                /*--- Write Pressure ---*/
+                Data[jVar][jPoint] = solver[TNE2_SOL]->node[iPoint]->GetPressure();
+                jVar++;
+                /*--- Write Temperature ---*/
+                Data[jVar][jPoint] = solver[TNE2_SOL]->node[iPoint]->GetTemperature();
+                jVar++;
+                /*--- Write Vib.-El. Temperature ---*/
+                Data[jVar][jPoint] = solver[TNE2_SOL]->node[iPoint]->GetTemperature_ve();
+                jVar++;
+                /*--- Write species diffusion coefficients ---*/
+                for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
+                  Data[jVar][jPoint] = solver[TNE2_SOL]->node[iPoint]->GetDiffusionCoeff()[iSpecies];
+                  jVar++;
+                }
+                /*--- Write viscosity ---*/
+                Data[jVar][jPoint] = solver[TNE2_SOL]->node[iPoint]->GetLaminarViscosity();
+                jVar++;
+                /*--- Write thermal conductivity ---*/
+                Data[jVar][jPoint] = solver[TNE2_SOL]->node[iPoint]->GetThermalConductivity();
+                jVar++;
+                Data[jVar][jPoint] = solver[TNE2_SOL]->node[iPoint]->GetThermalConductivity_ve();
+                break;
+                
+                
                 case PLASMA_EULER:
                     /*--- Write partial pressures ---*/
                     for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {

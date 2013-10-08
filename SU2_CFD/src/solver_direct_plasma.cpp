@@ -1532,8 +1532,8 @@ void CPlasmaSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_conta
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++) {
       numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(iSpecies), node[jPoint]->GetLaminarViscosity(iSpecies), iSpecies);
       numerics->SetEddyViscosity(node[iPoint]->GetEddyViscosity(iSpecies), node[jPoint]->GetEddyViscosity(iSpecies), iSpecies);
-      numerics->SetThermalConductivity(node[iPoint]->GetThermalConductivity(iSpecies), node[jPoint]->GetThermalConductivity(iSpecies), iSpecies);
-      numerics->SetThermalConductivity_vib(node[iPoint]->GetThermalConductivity_vib(iSpecies), node[jPoint]->GetThermalConductivity_vib(iSpecies), iSpecies);
+//      numerics->SetThermalConductivity(node[iPoint]->GetThermalConductivity(iSpecies), node[jPoint]->GetThermalConductivity(iSpecies), iSpecies);
+//      numerics->SetThermalConductivity_vib(node[iPoint]->GetThermalConductivity_vib(iSpecies), node[jPoint]->GetThermalConductivity_vib(iSpecies), iSpecies);
     }
     
     /*--- Compute and update residual ---*/
@@ -4594,8 +4594,8 @@ void CPlasmaSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++) {
           visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(iSpecies), node[iPoint]->GetLaminarViscosity(iSpecies), iSpecies);
           visc_numerics->SetEddyViscosity(node[iPoint]->GetEddyViscosity(iSpecies), node[iPoint]->GetEddyViscosity(iSpecies), iSpecies);
-          visc_numerics->SetThermalConductivity(node[iPoint]->GetThermalConductivity(iSpecies), node[iPoint]->GetThermalConductivity(iSpecies), iSpecies);
-          visc_numerics->SetThermalConductivity_vib(node[iPoint]->GetThermalConductivity_vib(iSpecies), node[iPoint]->GetThermalConductivity_vib(iSpecies), iSpecies);
+//          visc_numerics->SetThermalConductivity(node[iPoint]->GetThermalConductivity(iSpecies), node[iPoint]->GetThermalConductivity(iSpecies), iSpecies);
+//          visc_numerics->SetThermalConductivity_vib(node[iPoint]->GetThermalConductivity_vib(iSpecies), node[iPoint]->GetThermalConductivity_vib(iSpecies), iSpecies);
         }
         
         /*--- Compute and update residual ---*/

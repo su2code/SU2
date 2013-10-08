@@ -1717,7 +1717,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		}
     
     unsigned short maxEl = 0;
-    unsigned short iSpecies, iEl;
+    unsigned short iSpecies, jSpecies, iEl;
     
 		switch (Kind_GasModel) {
       case ONESPECIES:
@@ -1795,6 +1795,18 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
           Reactions[iRxn] = new int*[2];
           for (unsigned short ii = 0; ii < 2; ii++)
             Reactions[iRxn][ii] = new int[6];
+        }
+        
+        // Omega[iSpecies][jSpecies][iCoeff]
+        Omega00 = new double**[nSpecies];
+        Omega11 = new double**[nSpecies];
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          Omega00[iSpecies] = new double*[nSpecies];
+          Omega11[iSpecies] = new double*[nSpecies];
+          for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+            Omega00[iSpecies][jSpecies] = new double[4];
+            Omega11[iSpecies][jSpecies] = new double[4];
+          }
         }
         
         MassFrac_FreeStream = new double[nSpecies];
@@ -1924,6 +1936,17 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         /*--- Dissociation potential [KJ/kg] ---*/
         Diss[0] = 3.36E4;
         Diss[1] = 0.0;
+        
+        /*--- Collision integral data ---*/
+        Omega00[0][0][0] = -6.0614558E-03;  Omega00[0][0][1] = 1.2689102E-01;   Omega00[0][0][2] = -1.0616948E+00;  Omega00[0][0][3] = 8.0955466E+02;
+        Omega00[0][1][0] = -1.0796249E-02;  Omega00[0][1][1] = 2.2656509E-01;   Omega00[0][1][2] = -1.7910602E+00;  Omega00[0][1][3] = 4.0455218E+03;
+        Omega00[1][0][0] = -1.0796249E-02;  Omega00[1][0][1] = 2.2656509E-01;   Omega00[1][0][2] = -1.7910602E+00;  Omega00[1][0][3] = 4.0455218E+03;
+        Omega00[1][1][0] = -9.6083779E-03;  Omega00[1][1][1] = 2.0938971E-01;   Omega00[1][1][2] = -1.7386904E+00;  Omega00[1][1][3] = 3.3587983E+03;
+        
+        Omega11[0][0][0] = -7.6303990E-03;  Omega11[0][0][1] = 1.6878089E-01;   Omega11[0][0][2] = -1.4004234E+00;  Omega11[0][0][3] = 2.1427708E+03;
+        Omega11[0][1][0] = -8.3493693E-03;  Omega11[0][1][1] = 1.7808911E-01;   Omega11[0][1][2] = -1.4466155E+00;  Omega11[0][1][3] = 1.9324210E+03;
+        Omega11[1][0][0] = -8.3493693E-03;  Omega11[1][0][1] = 1.7808911E-01;   Omega11[1][0][2] = -1.4466155E+00;  Omega11[1][0][3] = 1.9324210E+03;
+        Omega11[1][1][0] = -7.7439615E-03;  Omega11[1][1][1] = 1.7129007E-01;   Omega11[1][1][2] = -1.4809088E+00;  Omega11[1][1][3] = 2.1284951E+03;
         
         break;
         

@@ -798,6 +798,7 @@ CTNE2NSVariable::CTNE2NSVariable(double val_pressure, double *val_massfrac,
 	Viscosity_Ref   = config->GetViscosity_Ref();
 	Viscosity_Inf   = config->GetViscosity_FreeStreamND();
 	Prandtl_Lam     = config->GetPrandtl_Lam();
+  DiffusionCoeff  = new double[nSpecies];
 }
 
 CTNE2NSVariable::CTNE2NSVariable(double *val_solution, unsigned short val_ndim,
@@ -814,10 +815,129 @@ CTNE2NSVariable::CTNE2NSVariable(double *val_solution, unsigned short val_ndim,
 	Viscosity_Ref   = config->GetViscosity_Ref();
 	Viscosity_Inf   = config->GetViscosity_FreeStreamND();
 	Prandtl_Lam     = config->GetPrandtl_Lam();
-  
+  DiffusionCoeff  = new double[nSpecies];
 }
 
-CTNE2NSVariable::~CTNE2NSVariable(void) { }
+CTNE2NSVariable::~CTNE2NSVariable(void) {
+  delete [] DiffusionCoeff;
+}
+
+void CTNE2NSVariable::SetDiffusionCoeff(CConfig *config) {
+  unsigned short iSpecies, jSpecies, nHeavy, nEl;
+  double rho, T, Tve, P;
+  double *Ms, Mi, Mj, pi, R, Ru, kb, gam_i, gam_j, gam_t, Theta_v;
+  double denom, d1_ij, D_ij;
+  double ***Omega00, Omega_ij;
+  
+  /*--- Acquire gas parameters from CConfig ---*/
+  Omega00 = config->GetCollisionIntegral00();
+  Ms      = config->GetMolar_Mass();
+  if (ionization) {nHeavy = nSpecies-1;  nEl = 1;}
+  else            {nHeavy = nSpecies;    nEl = 0;}
+  
+  /*--- Rename for convenience ---*/
+  rho  = Primitive[RHO_INDEX];
+  T    = Primitive[T_INDEX];
+  Tve  = Primitive[TVE_INDEX];
+  P    = Primitive[P_INDEX];
+  pi   = PI_NUMBER;
+  Ru   = UNIVERSAL_GAS_CONSTANT;
+  kb   = BOLTZMANN_CONSTANT;
+  
+  /*--- Calculate mixture gas constant ---*/
+  R     = 0.0;
+  gam_t = 0.0;
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    R     += Ru * Primitive[RHOS_INDEX+iSpecies]/rho;
+    gam_t += Primitive[RHOS_INDEX+iSpecies] / (rho*Ms[iSpecies]);
+  }
+  
+  /*--- Mixture thermal conductivity via Gupta-Yos approximation ---*/
+  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+    
+    /*--- Initialize the species diffusion coefficient ---*/
+    DiffusionCoeff[iSpecies] = 0.0;
+    
+    /*--- Calculate molar concentration ---*/
+    Mi      = Ms[iSpecies];
+    gam_i   = Primitive[RHOS_INDEX+iSpecies] / (rho*Mi);
+    Theta_v = config->GetCharVibTemp(iSpecies);
+    
+    denom = 0.0;
+    for (jSpecies = 0; jSpecies < nHeavy; jSpecies++) {
+      if (jSpecies != iSpecies) {
+        Mj    = config->GetMolar_Mass(jSpecies);
+        gam_j = Primitive[RHOS_INDEX+iSpecies] / (rho*Mj);
+        
+        /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
+        Omega_ij = 1E-20 * Omega00[iSpecies][jSpecies][3]
+        * pow(T, Omega00[iSpecies][jSpecies][0]*log(T)*log(T)
+              + Omega00[iSpecies][jSpecies][1]*log(T)
+              + Omega00[iSpecies][jSpecies][2]);
+        
+        /*--- Calculate "delta1_ij" ---*/
+        d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij;
+        
+        /*--- Calculate heavy-particle binary diffusion coefficient ---*/
+        D_ij = kb*T/(P*d1_ij);
+        
+        denom += gam_j/D_ij;
+      }
+    }
+    
+    if (ionization) {
+      jSpecies = nSpecies-1;
+      Mj       = config->GetMolar_Mass(jSpecies);
+      gam_j    = Primitive[RHOS_INDEX+iSpecies] / (rho*Mj);
+      
+      /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
+      Omega_ij = 1E-20 * Omega00[iSpecies][jSpecies][3]
+      * pow(Tve, Omega00[iSpecies][jSpecies][0]*log(Tve)*log(Tve)
+            + Omega00[iSpecies][jSpecies][1]*log(Tve)
+            + Omega00[iSpecies][jSpecies][2]);
+      
+      /*--- Calculate "delta1_ij" ---*/
+      d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
+    }
+    
+    /*--- Assign species diffusion coefficient ---*/
+    DiffusionCoeff[iSpecies] = gam_t*gam_t*Ms[iSpecies]*(1-Ms[iSpecies]*gam_i)
+                             / denom;
+  }
+  if (ionization) {
+    iSpecies = nSpecies-1;
+    /*--- Initialize the species diffusion coefficient ---*/
+    DiffusionCoeff[iSpecies] = 0.0;
+    
+    /*--- Calculate molar concentration ---*/
+    Mi      = Ms[iSpecies];
+    gam_i   = Primitive[RHOS_INDEX+iSpecies] / (rho*Mi);
+    
+    denom = 0.0;
+    for (jSpecies = 0; jSpecies < nHeavy; jSpecies++) {
+      if (iSpecies != jSpecies) {
+        Mj    = config->GetMolar_Mass(jSpecies);
+        gam_j = Primitive[RHOS_INDEX+iSpecies] / (rho*Mj);
+        
+        /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
+        Omega_ij = 1E-20 * Omega00[iSpecies][jSpecies][3]
+        * pow(Tve, Omega00[iSpecies][jSpecies][0]*log(Tve)*log(Tve)
+              + Omega00[iSpecies][jSpecies][1]*log(Tve)
+              + Omega00[iSpecies][jSpecies][2]);
+        
+        /*--- Calculate "delta1_ij" ---*/
+        d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
+        
+        /*--- Calculate heavy-particle binary diffusion coefficient ---*/
+        D_ij = kb*Tve/(P*d1_ij);
+        denom += gam_j/D_ij;
+      }
+    }
+    DiffusionCoeff[iSpecies] = gam_t*gam_t*Ms[iSpecies]*(1-Ms[iSpecies]*gam_i)
+                             / denom;
+  }
+}
+
 
 void CTNE2NSVariable::SetLaminarViscosity(CConfig *config) {
   unsigned short iSpecies, jSpecies, nHeavy, nEl;
@@ -1053,6 +1173,7 @@ bool CTNE2NSVariable::SetPrimVar_Compressible(CConfig *config) {
   }
   
   SetEnthalpy();                            // Requires density & pressure computation.
+  SetDiffusionCoeff(config);
   SetLaminarViscosity(config);                    // Requires temperature computation.
   SetThermalConductivity(config);
   
