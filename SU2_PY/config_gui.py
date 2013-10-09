@@ -277,15 +277,15 @@ def prepare_data():
   """
 
   # These variables should point to the configuration files
-  su2_basedir = os.path.expanduser('~/su2')
-  config_cpp = os.path.join(su2_basedir,'trunk/Common/src/config_structure.cpp')
-  config_hpp = os.path.join(su2_basedir,'trunk/Common/include/option_structure.hpp')
+  su2_basedir = os.environ['SU2_HOME']
+  config_cpp = os.path.join(su2_basedir,'Common/src/config_structure.cpp')
+  config_hpp = os.path.join(su2_basedir,'Common/include/option_structure.hpp')
 
   # Check that files exist
   if not os.path.isfile(config_cpp):
-    sys.exit('Could not find cpp file, please check that su2_basedir is set correctly in parse_config.py')
+    sys.exit('Could not find cpp file, please check that su2_basedir is set correctly in config_gui.py')
   if not os.path.isfile(config_hpp):
-    sys.exit('Could not find hpp file, please check that su2_basedir is set correctly in parse_config.py')
+    sys.exit('Could not find hpp file, please check that su2_basedir is set correctly in config_gui.py')
  
   # Run the parser
   option_list = parse_config(config_cpp, config_hpp)
