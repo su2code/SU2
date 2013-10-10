@@ -1153,7 +1153,8 @@ public:
                           double *val_normal, double val_dS,
                           double *val_Proj_Visc_Flux,
                           double **val_Proj_Jac_Tensor_i,
-                          double **val_Proj_Jac_Tensor_j);
+                          double **val_Proj_Jac_Tensor_j,
+                          CConfig *config);
 
   /*!
 	 * \brief TSL-Approximation of Viscous NS Jacobians.
