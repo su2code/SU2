@@ -1120,7 +1120,7 @@ void CAvgGrad_TNE2::ComputeResidual(double *val_residual,
                        Mean_Thermal_Conductivity_ve,
                        dist_ij, UnitNormal, Area,
                        Proj_Flux_Tensor, val_Jacobian_i,
-                       val_Jacobian_j);
+                       val_Jacobian_j, config);
 	}
 }
 
