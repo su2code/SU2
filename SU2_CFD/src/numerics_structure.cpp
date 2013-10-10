@@ -2646,24 +2646,43 @@ void CNumerics::GetViscousProjFlux(double *val_primvar,
                                    double *val_diffusioncoeff,
                                    double val_viscosity,
                                    double val_therm_conductivity,
-                                   double val_therm_conductivity_ve) {
+                                   double val_therm_conductivity_ve,
+                                   CConfig *config) {
   
-	unsigned short iSpecies, iVar, iDim, jDim;
-	double mu, ktr, kve, div_vel;
+  bool ionization;
+	unsigned short iSpecies, iVar, iDim, jDim, nHeavy, nEl;
+	double *Ds, mu, ktr, kve, div_vel, *sumY, Ys, rho;
+  
+  sumY = new double[nDim];
   
   /*--- Initialize ---*/
   for (iVar = 0; iVar < nVar; iVar++)
     Proj_Flux_Tensor[iVar] = 0.0;
   
+  /*--- Read from CConfig ---*/
+  ionization = config->GetIonization();
+  if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
+  else            { nHeavy = nSpecies;   nEl = 0; }
+  
   /*--- Rename for convenience ---*/
-  mu      = val_viscosity;
+  Ds  = val_diffusioncoeff;
+  mu  = val_viscosity;
   ktr = val_therm_conductivity;
   kve = val_therm_conductivity_ve;
+  rho = val_primvar[RHO_INDEX];
   
   /*--- Calculate the velocity divergence ---*/
 	div_vel = 0.0;
 	for (iDim = 0 ; iDim < nDim; iDim++)
 		div_vel += val_gradprimvar[VEL_INDEX+iDim][iDim];
+  
+  /*--- Pre-compute mixture quantities ---*/
+  for (iDim = 0; iDim < nDim; iDim++) {
+    sumY[iDim] = 0.0;
+    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+      sumY[iDim] += rho*Ds[iSpecies]*val_gradprimvar[RHOS_INDEX+iSpecies][iDim];
+    }
+  }
   
   /*--- Compute the viscous stress tensor ---*/
 	for (iDim = 0 ; iDim < nDim; iDim++)
@@ -2674,8 +2693,15 @@ void CNumerics::GetViscousProjFlux(double *val_primvar,
   
 	/*--- Populate entries in the viscous flux vector ---*/
 	for (iDim = 0; iDim < nDim; iDim++) {
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      Flux_Tensor[iSpecies][iDim] = 0.0;
+    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+      Ys = val_primvar[RHOS_INDEX+iSpecies]/rho;
+      Flux_Tensor[iSpecies][iDim] = -rho*Ds[iSpecies]*val_gradprimvar[RHOS_INDEX+iSpecies][iDim]
+                                  + Ys*sumY[iDim];
+    }
+    if (ionization) {
+      cout << "GetViscProjFlux -- NEED TO IMPLEMENT IONIZED FUNCTIONALITY!!!" << endl;
+      exit(1);
+    }
     Flux_Tensor[nSpecies+nDim][iDim] = 0.0;
 		for (jDim = 0; jDim < nDim; jDim++) {
 			Flux_Tensor[nSpecies+jDim][iDim]  = tau[iDim][jDim];
@@ -2689,6 +2715,8 @@ void CNumerics::GetViscousProjFlux(double *val_primvar,
   for (iVar = 0; iVar < nVar; iVar++)
     for (iDim = 0; iDim < nDim; iDim++)
       Proj_Flux_Tensor[iVar] += Flux_Tensor[iVar][iDim]*val_normal[iDim];
+  
+  delete [] sumY;
 }
 
 
@@ -2881,7 +2909,7 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
   // NOTE: Jacobian i & j should have the dVdU terms wrt i & j, but instead calculated using the mean
   
   bool ionization;
-  unsigned short iDim, iEl, iSpecies, iVar, jVar, nHeavy, nEl;
+  unsigned short iDim, iEl, iSpecies, jSpecies, iVar, jVar, nHeavy, nEl;
   unsigned short *nElStates;
   double rho, u, v, w, T, Tve, rhoCvtr, rhoCvve, v2, ef, Cvtrs;
   double evibs, eels, num, denom;
@@ -2891,6 +2919,7 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
   double pix, piy, piz;
   double *dTdrs, *dTvedrs;
   double *Ys, *Tref, *Ms, *hf, *xi, *thv, **the, **g;
+  double **dFdYj, **dFdYi;
 
   if (nDim == 2) {
     cout << "Viscous Proj Jacobian not available in 2D!!!" << endl;
@@ -2909,6 +2938,12 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
   Ys      = new double[nSpecies];
   dTdrs   = new double[nSpecies];
   dTvedrs = new double[nSpecies];
+  dFdYi   = new double*[nSpecies];
+  dFdYj   = new double*[nSpecies];
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    dFdYi[iSpecies] = new double[nSpecies];
+    dFdYj[iSpecies] = new double[nSpecies];
+  }
   
   /*--- Assign booleans from CConfig ---*/
   ionization = config->GetIonization();
@@ -2959,12 +2994,24 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
     eels = Ru/Ms[iSpecies] * (num/denom);
     dTdrs[iSpecies]   = (-ef + 0.5*v2 + Cvtrs*(Tref[iSpecies]-T)) / rhoCvtr;
     dTvedrs[iSpecies] = -(evibs+eels)/rhoCvve;
+    Ys[iSpecies] = val_Mean_PrimVar[RHOS_INDEX+iSpecies]/rho;
   }
   if (ionization) {
     cout <<  "GetViscousProjJacs: Need to implement dT & dTve for electrons!!" << endl;
     exit(1);
   }
   
+  /*--- Calculate derivatives of Fv w.r.t. mass fractions ---*/
+  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+    sumY = 0.0;
+    for (jSpecies = 0; jSpecies < nHeavy; jSpecies++) {
+      dFdYi[iSpecies][jSpecies] = -Ys[iSpecies]*rho*Ds[jSpecies]*theta/dij;
+      dFdYj[iSpecies][jSpecies] = Ys[iSpecies]*rho*Ds[jSpecies]*theta/dij;
+      sumY += rho*Ds[jSpecies]*theta/dij*(V_j[RHOS_INDEX+jSpecies] -
+                                          V_i[RHOS_INDEX+jSpecies])/rho;
+    }
+    dFdYj[iSpecies][iSpecies] += -rho*Ds[iSpecies]*theta/dij
+  }
   
   
   /*--- Calculate geometrical parameters ---*/
@@ -2983,6 +3030,8 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
   piz    = mu/dij * (etay*u   + etax*v   + thetaz*w);
   
   /*--- Populate the viscous Jacobian matrix ---*/
+  // species continuity
+
   // x-momentum
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     val_Jac_j[nSpecies][iSpecies] = -pix/rho;
@@ -3095,6 +3144,12 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
   delete [] Ys;
   delete [] dTdrs;
   delete [] dTvedrs;
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    delete [] dFdYi[iSpecies];
+    delete [] dFdYj[iSpecies];
+  }
+  delete [] dFdYi;
+  delete [] dFdYj;
 }
 
 

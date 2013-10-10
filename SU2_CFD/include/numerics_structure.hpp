@@ -1019,7 +1019,8 @@ public:
                           double *val_diffusioncoeff,
                           double val_viscosity,
                           double val_therm_conductivity,
-                          double val_therm_conductivity_ve);
+                          double val_therm_conductivity_ve,
+                          CConfig *config);
 
 	/*! 
 	 * \brief Compute the projection of the viscous fluxes into a direction (artificial compresibility method).

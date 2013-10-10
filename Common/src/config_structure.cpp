@@ -1920,8 +1920,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         
         // Reference temperature (JANAF values, [K])
         Ref_Temperature[0] = 0.0;
-        Ref_Temperature[1] = 0.0;
-//        Ref_Temperature[1] = 298.15;
+        Ref_Temperature[1] = 298.15;
         
         // Number of electron states
         nElStates[0] = 15;                    // N2
