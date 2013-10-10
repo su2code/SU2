@@ -1101,7 +1101,8 @@ void CAvgGrad_TNE2::ComputeResidual(double *val_residual,
                      Normal, Mean_Diffusion_Coeff,
                      Mean_Laminar_Viscosity,
                      Mean_Thermal_Conductivity,
-                     Mean_Thermal_Conductivity_ve);
+                     Mean_Thermal_Conductivity_ve,
+                     config);
   
 	/*--- Update viscous residual ---*/
 	for (iVar = 0; iVar < nVar; iVar++)
