@@ -2,11 +2,10 @@
 # Stanford University Aerospace Design Lab
 #
 # Created: 		10/26/12
-# Last updated: 4/4/2013
+# Last updated:         10/11/13
 #
 # Created by: 		M. Colonno  10/26/12
-# Updated by: 		M. Colonno  3/16/13
-#                   T. Lukaczyk 4/4/13
+# Updated by: 		T. Economon  10/11/13
 #
 ##########################
 
@@ -64,9 +63,6 @@ AC_ARG_ENABLE(MDC,
 AC_ARG_ENABLE(PBC,
    	AS_HELP_STRING([--disable-PBC], [build the SU2_PBC executable (default = yes)]), 
 	[build_PBC=$enableval], [build_PBC="yes"])
-AC_ARG_ENABLE(SMC,
-   	AS_HELP_STRING([--disable-SMC], [build the SU2_SMC executable (default = yes)]), 
-	[build_SMC=$enableval], [build_SMC="yes"])
 AC_ARG_ENABLE(SOL,
    	AS_HELP_STRING([--disable-SOL], [build the SU2_SOL executable (default = yes)]), 
 	[build_SOL=$enableval], [build_SOL="yes"])
@@ -284,7 +280,6 @@ AM_CONDITIONAL([BUILD_GPC],[test $build_GPC != "no"])
 AM_CONDITIONAL([BUILD_MAC],[test $build_MAC != "no"])
 AM_CONDITIONAL([BUILD_MDC],[test $build_MDC != "no"])
 AM_CONDITIONAL([BUILD_PBC],[test $build_PBC != "no"])
-AM_CONDITIONAL([BUILD_SMC],[test $build_SMC != "no"])
 AM_CONDITIONAL([BUILD_SOL],[test $build_SOL != "no"])
 AM_CONDITIONAL([BUILD_GDC],[test $build_GDC != "no"])
 
@@ -303,7 +298,6 @@ AC_OUTPUT(Makefile \
 	SU2_MAC/obj/Makefile \
 	SU2_MDC/obj/Makefile \
 	SU2_PBC/obj/Makefile \
-	SU2_SMC/obj/Makefile \
 	SU2_SOL/obj/Makefile \
 	SU2_GDC/obj/Makefile \
 	SU2_PY/Makefile)
@@ -335,7 +329,6 @@ Build Configuration Summary:
     Build SU2_MAC:        $build_MAC
     Build SU2_MDC:        $build_MDC
     Build SU2_PBC:        $build_PBC
-    Build SU2_SMC:        $build_SMC
     Build SU2_SOL:        $build_SOL
     Build SU2_GDC:        $build_GDC
 
