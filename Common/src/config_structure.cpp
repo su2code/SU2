@@ -27,7 +27,11 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
   
 	int rank = MASTER_NODE;
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
   /*--- Reading config options  ---*/
@@ -979,7 +983,11 @@ void CConfig::SetParsing(char case_filename[200]) {
   
 	int rank = MASTER_NODE;
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
   /*--- Read the configuration file ---*/
@@ -1015,7 +1023,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 #ifdef NO_MPI
   int size = SINGLE_NODE;
 #else
-  int size = MPI::COMM_WORLD.Get_size();
+  int size;
+#ifdef WINDOWS
+	MPI_Comm_size(MPI_COMM_WORLD, &size);
+#else
+	size = MPI::COMM_WORLD.Get_size();
+#endif
 #endif
   
 #ifdef NO_TECIO
@@ -1409,7 +1422,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 	if (Unsteady_Simulation == TIME_SPECTRAL) {
 
 		unsigned short N_MOTION_TYPES = 3;
-		double periods[N_MOTION_TYPES];
+		// double periods[N_MOTION_TYPES];
+		double *periods;
+		periods = new double[N_MOTION_TYPES];
 
 		/*--- rotation: ---*/
 		double Omega_mag_rot = sqrt(pow(Rotation_Rate_X[ZONE_0],2)+pow(Rotation_Rate_Y[ZONE_0],2)+pow(Rotation_Rate_Z[ZONE_0],2));
@@ -1439,6 +1454,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 			if (periods[iVar] > TimeSpectral_Period)
 				TimeSpectral_Period = periods[iVar];
 		}
+
+		delete periods;
 
 	}
     
@@ -3162,7 +3179,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 #ifdef NO_MPI
 			cout << "WARNING: No species temperature specified, using mean flow freestream value for all species." << endl;
 #else
-			if (MPI::COMM_WORLD.Get_rank() == MASTER_NODE)
+			int rank;
+#ifdef WINDOWS
+			MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
+			rank = MPI::COMM_WORLD.Get_rank();
+#endif
+			if (rank == MASTER_NODE)
 				cout << "WARNING: No species temperature specified, using mean flow freestream value for all species." << endl;
 #endif
 			Species_Temperature_FreeStream = new double[nSpecies];
@@ -3183,7 +3206,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 #ifdef NO_MPI
 				cout << "WARNING: No species CFL numbers specified for plasma multi-timestepping, using mean flow CFL parameters" << endl;
 #else
-				if (MPI::COMM_WORLD.Get_rank() == MASTER_NODE)
+				int rank;
+#ifdef WINDOWS
+				MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
+				rank = MPI::COMM_WORLD.Get_rank();				
+#endif
+				if (rank == MASTER_NODE)
 					cout << "WARNING: No species CFL numbers specified for plasma multi-timestepping, using mean flow CFL parameters" << endl;
 #endif
 				for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -3205,7 +3234,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 #ifdef NO_MPI
 				cout << "WARNING: No species CFL ramp iteration specified for plasma multi-timestepping, using mean flow CFL parameters" << endl;
 #else
-				if (MPI::COMM_WORLD.Get_rank() == MASTER_NODE)
+				int rank;
+#ifdef WINDOWS
+				MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
+				rank = MPI::COMM_WORLD.Get_rank();
+#endif
+				if (rank == MASTER_NODE)
 					cout << "WARNING: No species CFL ramp iteration specified for plasma multi-timestepping, using mean flow CFL parameters" << endl;
 #endif
 				CFL_Iter_Species = new unsigned short[nSpecies];
@@ -3218,7 +3253,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 #ifdef NO_MPI
 				cout << "WARNING: No maximum CFL specified for plasma multi-timestepping, using mean flow CFL parameters" << endl;
 #else
-				if (MPI::COMM_WORLD.Get_rank() == MASTER_NODE)
+				int rank;
+#ifdef WINDOWS
+				MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
+				rank = MPI::COMM_WORLD.Get_rank();
+#endif
+				if (rank == MASTER_NODE)
 					cout << "WARNING: No maximum CFL specified for plasma multi-timestepping, using mean flow CFL parameters" << endl;
 #endif
 				CFL_Max_Species = new double[nSpecies];
@@ -3238,13 +3279,17 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) {
 
 #ifdef NO_MPI
-  nDomain = SINGLE_NODE;
+	nDomain = SINGLE_NODE;
 #else
   /*--- Identify the solvers that work in serial ---*/
 	if ((val_software != SU2_DDC) && (val_software != SU2_MAC))
+#ifdef WINDOWS
+		MPI_Comm_size(MPI_COMM_WORLD, (int*)&nDomain);   // any issue with type conversion here? MC
+#else
 		nDomain = MPI::COMM_WORLD.Get_size();
-  else
-    nDomain = SINGLE_NODE;
+#endif		
+	else
+		nDomain = SINGLE_NODE;
 #endif
 
 	/*--- Boundary (marker) treatment ---*/
@@ -5442,42 +5487,48 @@ CConfig::~CConfig(void)
 void CConfig::SetFileNameDomain(unsigned short val_domain) {
 
 #ifndef NO_MPI
+	int size;
+#ifdef WINDOWS
+	MPI_Comm_size(MPI_COMM_WORLD, &size);
+#else
+	size = MPI::COMM_WORLD.Get_size();
+#endif
 
 	string old_name;
 	char buffer[10]; 
 
 	/*--- Standard surface output ---*/
 	old_name = SurfFlowCoeff_FileName;
-	if (MPI::COMM_WORLD.Get_size() > 1) {
+	if (size > 1) {
 		sprintf (buffer, "_%d", int(val_domain)); 
 		SurfFlowCoeff_FileName = old_name + buffer;	
 	}
 
 	old_name = SurfAdjCoeff_FileName;
-	if (MPI::COMM_WORLD.Get_size() > 1) {
+	if (size > 1) {
 		sprintf (buffer, "_%d", int(val_domain)); 
 		SurfAdjCoeff_FileName = old_name + buffer;
 	}
 
-  old_name = SurfStructure_FileName;
-	if (MPI::COMM_WORLD.Get_size() > 1) {
+	old_name = SurfStructure_FileName;
+	if (size > 1) {
 		sprintf (buffer, "_%d", int(val_domain));
 		SurfStructure_FileName = old_name + buffer;
 	}
   
-  old_name = SurfWave_FileName;
-	if (MPI::COMM_WORLD.Get_size() > 1) {
+	old_name = SurfWave_FileName;
+	if (size > 1) {
 		sprintf (buffer, "_%d", int(val_domain));
 		SurfWave_FileName = old_name + buffer;
 	}
   
-  old_name = SurfHeat_FileName;
-	if (MPI::COMM_WORLD.Get_size() > 1) {
+	old_name = SurfHeat_FileName;
+	if (size > 1) {
 		sprintf (buffer, "_%d", int(val_domain));
 		SurfHeat_FileName = old_name + buffer;
 	}
   
-	if (MPI::COMM_WORLD.Get_size() > 1) {
+	if (size > 1) {
 
 		/*--- Standard flow and adjoint output ---*/
 		sprintf (buffer, "_%d", int(val_domain));
@@ -5632,7 +5683,12 @@ void CConfig::UpdateCFL(unsigned long val_iter) {
 			cout << CFL[nMultiLevel] <<".\n"<< endl;
 		}
 #else
-		int rank = MPI::COMM_WORLD.Get_rank();
+		int rank;
+#ifdef WINDOWS
+		MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
+		rank = MPI::COMM_WORLD.Get_rank();
+#endif 
 		if ((change) && (rank == MASTER_NODE)) {
 			cout <<"\n New value of the CFL number: ";
 			for (iCFL = 0; iCFL < nMultiLevel; iCFL++)
@@ -5665,7 +5721,12 @@ void CConfig::UpdateCFL(unsigned long val_iter) {
 						cout << CFL_MS[iSpecies][nMultiLevel] <<".\n"<< endl;
 					}
 #else
-					int rank = MPI::COMM_WORLD.Get_rank();
+					int rank;
+#ifdef WINDOWS
+					MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
+					rank = MPI::COMM_WORLD.Get_rank();
+#endif					
 					if ((change) && (rank == MASTER_NODE)) {
 						cout <<"\n New value of the CFL number for Species: " << iSpecies << " = ";
 						for (iCFL = 0; iCFL < nMultiLevel; iCFL++)
@@ -6215,7 +6276,11 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 	int rank = MASTER_NODE;
   
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
 	Velocity_FreeStreamND = new double[val_nDim];
