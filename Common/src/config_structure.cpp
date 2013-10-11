@@ -66,8 +66,7 @@ CConfig::CConfig(char case_filename[200]) {
   
 	if (case_file.fail()) {
 		cout << "There is no configuration file!!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get(); exit(1);
+		exit(1);
 	}
   
 	/*--- Parse the configuration file and set the options ---*/
@@ -102,7 +101,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	Pitching_Phase_X = NULL;    Pitching_Phase_Y = NULL;    Pitching_Phase_Z = NULL;
 	Plunging_Omega_X = NULL;    Plunging_Omega_Y = NULL;    Plunging_Omega_Z = NULL;
 	Plunging_Ampl_X = NULL;     Plunging_Ampl_Y = NULL;     Plunging_Ampl_Z = NULL;
-  
+    RefOriginMoment_X = NULL;   RefOriginMoment_Y = NULL;   RefOriginMoment_Z = NULL;
+
+    
 	/* BEGIN_CONFIG_OPTIONS */
   
 	/*--- Options related to problem definition and partitioning ---*/
@@ -163,9 +164,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddMarkerOption("MARKER_DIRICHLET", nMarker_Dirichlet, Marker_Dirichlet);
   /* DESCRIPTION: Neumann boundary marker(s) */
 	AddMarkerOption("MARKER_NEUMANN", nMarker_Neumann, Marker_Neumann);
-  /* DESCRIPTION: Electric dirichlet boundary marker(s) */
+  /* DESCRIPTION: poisson dirichlet boundary marker(s) */
 	AddMarkerDirichlet("ELEC_DIRICHLET", nMarker_Dirichlet_Elec, Marker_Dirichlet_Elec, Dirichlet_Value );
-	/* DESCRIPTION: Electric neumann boundary marker(s) */
+	/* DESCRIPTION: poisson neumann boundary marker(s) */
 	AddMarkerOption("ELEC_NEUMANN", nMarker_Neumann_Elec, Marker_Neumann_Elec);
 	/* DESCRIPTION: Custom boundary marker(s) */
 	AddMarkerOption("MARKER_CUSTOM", nMarker_Custom, Marker_Custom);
@@ -260,8 +261,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddScalarOption("TURB_CFL_REDUCTION", Turb_CFLRedCoeff, 1.0);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the turbulent adjoint problem */
 	AddScalarOption("ADJTURB_CFL_REDUCTION", AdjTurb_CFLRedCoeff, 1.0);
-  /* DESCRIPTION: Reduction factor of the CFL coefficient in the level set problem */
-	AddScalarOption("LEVELSET_CFL_REDUCTION", LevelSet_CFLRedCoeff, 1E-2);
 	/* DESCRIPTION: Number of total iterations */
 	AddScalarOption("EXT_ITER", nExtIter, 999999);
 	// these options share nRKStep as their size, which is not a good idea in general
@@ -288,8 +287,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Time discretization */
 	AddEnumOption("TIME_DISCRE_ADJTNE2", Kind_TimeIntScheme_AdjTNE2, Time_Int_Map, "EULER_IMPLICIT");
 	/* DESCRIPTION: Time discretization */
-	AddEnumOption("TIME_DISCRE_LEVELSET", Kind_TimeIntScheme_LevelSet, Time_Int_Map, "RUNGE-KUTTA_EXPLICIT");
-	/* DESCRIPTION: Time discretization */
 	AddEnumOption("TIME_DISCRE_ADJLEVELSET", Kind_TimeIntScheme_AdjLevelSet, Time_Int_Map, "RUNGE-KUTTA_EXPLICIT");
 	/* DESCRIPTION: Time discretization */
 	AddEnumOption("TIME_DISCRE_PLASMA", Kind_TimeIntScheme_Plasma, Time_Int_Map, "RUNGE-KUTTA_EXPLICIT");
@@ -307,7 +304,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddEnumOption("TIME_DISCRE_WAVE", Kind_TimeIntScheme_Wave, Time_Int_Map, "EULER_IMPLICIT");
 	/* DESCRIPTION: Time discretization */
 	AddEnumOption("TIME_DISCRE_FEA", Kind_TimeIntScheme_FEA, Time_Int_Map, "EULER_IMPLICIT");
-
+	/* DESCRIPTION: Time discretization */
+	AddEnumOption("TIME_DISCRE_HEAT", Kind_TimeIntScheme_Heat, Time_Int_Map, "EULER_IMPLICIT");
+  /* DESCRIPTION: Time discretization */
+	AddEnumOption("TIME_DISCRE_POISSON", Kind_TimeIntScheme_Poisson, Time_Int_Map, "EULER_IMPLICIT");
+  
 	/*--- Options related to the linear solvers ---*/
 	/* CONFIG_CATEGORY: Linear solver definition */
   
@@ -401,10 +402,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddScalarOption("FREQ_PLUNGE_AEROELASTIC", FreqPlungeAeroelastic, 100);
 	/* DESCRIPTION: Uncoupled Aeroelastic Frequency Pitch. */
 	AddScalarOption("FREQ_PITCH_AEROELASTIC", FreqPitchAeroelastic, 100);
-	/* DESCRIPTION: Type of aeroelastic grid movement */
-	AddEnumOption("TYPE_AEROELASTIC_GRID_MOVEMENT", Aeroelastic_Grid_Movement, Aeroelastic_Movement_Map, "RIGID");
-	/* DESCRIPTION: Type of grid velocities for aeroelastic motion */
-	AddEnumOption("TYPE_AEROELASTIC_GRID_VELOCITY", Aeroelastic_Grid_Velocity, Aeroelastic_Velocity_Map, "FD");
 
   /*--- Options related to wind gust simulations ---*/
 	/* CONFIG_CATEGORY: Wind Gust */
@@ -541,13 +538,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddArrayOption("AD_COEFF_LIN", 2, Kappa_LinFlow, default_vec_3d);
   
 	/* DESCRIPTION: Slope limiter */
-	AddEnumOption("SLOPE_LIMITER_LEVELSET", Kind_SlopeLimit_LevelSet, Limiter_Map, "NONE");
-	/* DESCRIPTION: Convective numerical method */
-	AddConvectOption("CONV_NUM_METHOD_LEVELSET", Kind_ConvNumScheme_LevelSet, Kind_Centered_LevelSet, Kind_Upwind_LevelSet);
-	/* DESCRIPTION: Source term numerical method */
-	AddEnumOption("SOUR_NUM_METHOD_LEVELSET", Kind_SourNumScheme_LevelSet, Source_Map, "NONE");
-  
-	/* DESCRIPTION: Slope limiter */
 	AddEnumOption("SLOPE_LIMITER_ADJLEVELSET", Kind_SlopeLimit_AdjLevelSet, Limiter_Map, "NONE");
 	/* DESCRIPTION: Convective numerical method */
 	AddConvectOption("CONV_NUM_METHOD_ADJLEVELSET", Kind_ConvNumScheme_AdjLevelSet, Kind_Centered_AdjLevelSet, Kind_Upwind_AdjLevelSet);
@@ -609,14 +599,19 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddEnumOption("SOUR_NUM_METHOD_WAVE", Kind_SourNumScheme_Wave, Source_Map, "NONE");
   
 	/* DESCRIPTION: Viscous numerical method */
-	AddEnumOption("VISC_NUM_METHOD_ELEC", Kind_ViscNumScheme_Elec, Viscous_Map, "NONE");
+	AddEnumOption("VISC_NUM_METHOD_POISSON", Kind_ViscNumScheme_Poisson, Viscous_Map, "NONE");
 	/* DESCRIPTION: Source term numerical method */
-	AddEnumOption("SOUR_NUM_METHOD_ELEC", Kind_SourNumScheme_Elec, Source_Map, "NONE");
+	AddEnumOption("SOUR_NUM_METHOD_POISSON", Kind_SourNumScheme_Poisson, Source_Map, "NONE");
   
 	/* DESCRIPTION: Viscous numerical method */
 	AddEnumOption("VISC_NUM_METHOD_FEA", Kind_ViscNumScheme_FEA, Viscous_Map, "GALERKIN");
 	/* DESCRIPTION: Source term numerical method */
 	AddEnumOption("SOUR_NUM_METHOD_FEA", Kind_SourNumScheme_FEA, Source_Map, "NONE");
+  
+  /* DESCRIPTION: Viscous numerical method */
+	AddEnumOption("VISC_NUM_METHOD_HEAT", Kind_ViscNumScheme_Heat, Viscous_Map, "GALERKIN");
+	/* DESCRIPTION: Source term numerical method */
+	AddEnumOption("SOUR_NUM_METHOD_HEAT", Kind_SourNumScheme_Heat, Source_Map, "NONE");
   
 	/* DESCRIPTION: Source term numerical method */
 	AddEnumOption("SOUR_NUM_METHOD_TEMPLATE", Kind_SourNumScheme_Template, Source_Map, "NONE");
@@ -686,8 +681,14 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddScalarOption("VOLUME_STRUCTURE_FILENAME", Structure_FileName, string("structure"));
 	/* DESCRIPTION: Output file structure (w/o extension) variables */
 	AddScalarOption("SURFACE_STRUCTURE_FILENAME", SurfStructure_FileName, string("surface_structure"));
+  /* DESCRIPTION: Output file structure (w/o extension) variables */
+	AddScalarOption("SURFACE_WAVE_FILENAME", SurfWave_FileName, string("surface_wave"));
+  /* DESCRIPTION: Output file structure (w/o extension) variables */
+	AddScalarOption("SURFACE_HEAT_FILENAME", SurfHeat_FileName, string("surface_heat"));
 	/* DESCRIPTION: Output file wave (w/o extension) variables */
 	AddScalarOption("VOLUME_WAVE_FILENAME", Wave_FileName, string("wave"));
+  /* DESCRIPTION: Output file wave (w/o extension) variables */
+	AddScalarOption("VOLUME_HEAT_FILENAME", Heat_FileName, string("heat"));
 	/* DESCRIPTION: Output file adj. wave (w/o extension) variables */
 	AddScalarOption("VOLUME_ADJWAVE_FILENAME", AdjWave_FileName, string("adjoint_wave"));
 	/* DESCRIPTION: Output file adjoint (w/o extension) variables */
@@ -793,10 +794,13 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
 	Length_Ref = 1.0; //<---- NOTE: this should be given an option or set as a const
   
-	default_vec_3d[0] = 0.0; default_vec_3d[1] = 0.0; default_vec_3d[2] = 0.0;
-	/* DESCRIPTION: Reference origin for moment computation */
-	AddArrayOption("REF_ORIGIN_MOMENT", 3, RefOriginMoment, default_vec_3d);
-	/* DESCRIPTION: Reference area for force coefficients (0 implies automatic calculation) */
+	/* DESCRIPTION: X Reference origin for moment computation */
+	AddListOption("REF_ORIGIN_MOMENT_X", nRefOriginMoment_X, RefOriginMoment_X);
+	/* DESCRIPTION: Y Reference origin for moment computation */
+	AddListOption("REF_ORIGIN_MOMENT_Y", nRefOriginMoment_Y, RefOriginMoment_Y);
+	/* DESCRIPTION: Z Reference origin for moment computation */
+	AddListOption("REF_ORIGIN_MOMENT_Z", nRefOriginMoment_Z, RefOriginMoment_Z);
+    /* DESCRIPTION: Reference area for force coefficients (0 implies automatic calculation) */
 	AddScalarOption("REF_AREA", RefAreaCoeff, 1.0);
 	/* DESCRIPTION: Reference length for pitching, rolling, and yawing non-dimensional moment */
 	AddScalarOption("REF_LENGTH_MOMENT", RefLengthMoment, 1.0);
@@ -858,8 +862,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddSpecialOption("MAGNET", MagneticForce, SetBoolOption, false);
 	/* DESCRIPTION: Joule heating simulation */
 	AddSpecialOption("JOULE_HEAT", JouleHeating, SetBoolOption, false);
-	/* DESCRIPTION: Flag for running the electric potential solver as part of the plasma solver */
-	AddSpecialOption("ELECTRIC_SOLVER", ElectricSolver, SetBoolOption, false);
+	/* DESCRIPTION: Flag for running the poisson potential solver as part of the plasma solver */
+	AddSpecialOption("poisson_SOLVER", PoissonSolver, SetBoolOption, false);
 	/* DESCRIPTION:  */
 	AddSpecialOption("MACCORMACK_RELAXATION", MacCormackRelaxation, SetBoolOption, false);
 	/* DESCRIPTION: Time stepping of the various species in a steady plasma solution */
@@ -867,7 +871,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	/* DESCRIPTION: Time Step for dual time stepping simulations (s) */
 	AddScalarOption("STAGNATION_BFIELD", Stagnation_B, 0.2);
 	/* DESCRIPTION: Time Step for dual time stepping simulations (s) */
-	AddScalarOption("ELECTRICAL_CONDUCTIVITY", Electric_Cond, 2000.0);
+	AddScalarOption("poissonAL_CONDUCTIVITY", poisson_Cond, 2000.0);
 	/* DESCRIPTION: Time Step for dual time stepping simulations (s) */
 	AddScalarOption("DIPOLE_DIST", DipoleDist, 1E-6);
 	/* DESCRIPTION: Restart a Plasma solution from an Euler native solution file */
@@ -892,8 +896,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddScalarOption("FREESURFACE_DAMPING_LENGTH", FreeSurface_Damping_Length, 1.0);
 	/* DESCRIPTION: Location of the free surface outlet surface (x or y coordinate) */
 	AddScalarOption("FREESURFACE_OUTLET", FreeSurface_Outlet, 0.0);
-	/* DESCRIPTION: Writing convergence history frequency for the dual time */
-	AddScalarOption("FREESURFACE_REEVALUATION",  FreeSurface_Reevaluation, 1);
   
 	/*--- Options related to the grid deformation ---*/
 	// these options share nDV as their size in the option references; not a good idea
@@ -985,8 +987,7 @@ void CConfig::SetParsing(char case_filename[200]) {
   
   if (case_file.fail()) {
     cout << "There is no configuration file!!" << endl;
-    cout << "Press any key to exit..." << endl;
-    cin.get(); exit(1);
+    exit(1);
 	}
   
 	/*--- Parse the configuration file and set the options ---*/
@@ -1031,8 +1032,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if ((Kind_SU2 != SU2_DDC) && (Kind_SU2 != SU2_CFD) && (Kind_SU2 != SU2_SOL)) {
     if (Mesh_FileFormat == CGNS) {
     cout << "This software is not prepared for CGNS, please switch to SU2" << endl;
-    cout << "Press any key to exit..." << endl;
-    cin.get();
     exit(1);
     }
   }
@@ -1047,9 +1046,17 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 	if (Kind_Regime == FREESURFACE) {
 		if (Unsteady_Simulation != DT_STEPPING_2ND) Unsteady_Simulation = DT_STEPPING_1ST;
 	}
+  
+  if (Kind_Solver == POISSON_EQUATION) {
+    Unsteady_Simulation = STEADY;
+  }
 
   /*--- Set the number of external iterations to 1 for the steady state problem ---*/
-  if ((Unsteady_Simulation == STEADY) && (Kind_Solver == LINEAR_ELASTICITY)) nExtIter = 1;
+  if ((Kind_Solver == LINEAR_ELASTICITY) || (Kind_Solver == HEAT_EQUATION) ||
+      (Kind_Solver == WAVE_EQUATION) || (Kind_Solver == POISSON_EQUATION)) {
+    if (Unsteady_Simulation == STEADY) nExtIter = 1;
+    else Unst_nIntIter = 2;
+  }
   
 	/*--- Decide whether we should be writing unsteady solution files. ---*/
 	if (Unsteady_Simulation == STEADY ||
@@ -1067,8 +1074,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Kind_GridMovement[iZone] = NO_MOVEMENT;
     if (Grid_Movement == true) {
       cout << "GRID_MOVEMENT = YES but no type provided in GRID_MOVEMENT_KIND!!" << endl;
-      cout << "Press any key to exit..." << endl;
-      cin.get();
       exit(1);
     }
   }
@@ -1100,8 +1105,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       (Kind_GridMovement[ZONE_0] != ROTATING_FRAME) &&
       (nGridMovement != nMarker_Moving)) {
     cout << "Number of GRID_MOVEMENT_KIND must match number of MARKER_MOVING!!" << endl;
-    cout << "Press any key to exit..." << endl;
-    cin.get();
     exit(1);
   }
   
@@ -1111,15 +1114,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (Grid_Movement && (Kind_GridMovement[ZONE_0] == RIGID_MOTION) &&
       (nGridMovement > 1)) {
     cout << "Can not support more than one type of rigid motion in GRID_MOVEMENT_KIND!!" << endl;
-    cout << "Press any key to exit..." << endl;
-    cin.get();
     exit(1);
   }
   if (Grid_Movement && (Kind_GridMovement[ZONE_0] == ROTATING_FRAME) &&
       (nGridMovement > 1)) {
     cout << "Can not support more than one rotating frame in GRID_MOVEMENT_KIND!!" << endl;
-    cout << "Press any key to exit..." << endl;
-    cin.get();
     exit(1);
   }
   
@@ -1139,8 +1138,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nMotion_Origin_X != nGridMovement)) {
         cout << "Length of MOTION_ORIGIN_X must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1152,8 +1149,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nMotion_Origin_Y != nGridMovement)) {
         cout << "Length of MOTION_ORIGIN_Y must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1165,8 +1160,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nMotion_Origin_Z != nGridMovement)) {
         cout << "Length of MOTION_ORIGIN_Z must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1179,8 +1172,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nTranslation_Rate_X != nGridMovement)) {
         cout << "Length of TRANSLATION_RATE_X must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1192,8 +1183,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nTranslation_Rate_Y != nGridMovement)) {
         cout << "Length of TRANSLATION_RATE_Y must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1205,8 +1194,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nTranslation_Rate_Z != nGridMovement)) {
         cout << "Length of TRANSLATION_RATE_Z must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1219,8 +1206,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nRotation_Rate_X != nGridMovement)) {
         cout << "Length of ROTATION_RATE_X must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1232,8 +1217,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nRotation_Rate_Y != nGridMovement)) {
         cout << "Length of ROTATION_RATE_Y must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1245,8 +1228,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nRotation_Rate_Z != nGridMovement)) {
         cout << "Length of ROTATION_RATE_Z must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1259,8 +1240,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPitching_Omega_X != nGridMovement)) {
         cout << "Length of PITCHING_OMEGA_X must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1272,8 +1251,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPitching_Omega_Y != nGridMovement)) {
         cout << "Length of PITCHING_OMEGA_Y must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1285,8 +1262,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPitching_Omega_Z != nGridMovement)) {
         cout << "Length of PITCHING_OMEGA_Z must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1299,8 +1274,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPitching_Ampl_X != nGridMovement)) {
         cout << "Length of PITCHING_AMPL_X must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1312,8 +1285,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPitching_Ampl_Y != nGridMovement)) {
         cout << "Length of PITCHING_AMPL_Y must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1325,8 +1296,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPitching_Ampl_Z != nGridMovement)) {
         cout << "Length of PITCHING_AMPL_Z must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1339,8 +1308,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPitching_Phase_X != nGridMovement)) {
         cout << "Length of PITCHING_PHASE_X must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1352,8 +1319,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPitching_Phase_Y != nGridMovement)) {
         cout << "Length of PITCHING_PHASE_Y must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1365,8 +1330,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPitching_Phase_Z != nGridMovement)) {
         cout << "Length of PITCHING_PHASE_Z must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1379,8 +1342,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPlunging_Omega_X != nGridMovement)) {
         cout << "Length of PLUNGING_OMEGA_X must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1392,8 +1353,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPlunging_Omega_Y != nGridMovement)) {
         cout << "Length of PLUNGING_OMEGA_Y must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1405,8 +1364,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPlunging_Omega_Z != nGridMovement)) {
         cout << "Length of PLUNGING_OMEGA_Z must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1419,8 +1376,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPlunging_Ampl_X != nGridMovement)) {
         cout << "Length of PLUNGING_AMPL_X must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1432,8 +1387,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPlunging_Ampl_Y != nGridMovement)) {
         cout << "Length of PLUNGING_AMPL_Y must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1445,8 +1398,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPlunging_Ampl_Z != nGridMovement)) {
         cout << "Length of PLUNGING_AMPL_Z must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1490,11 +1441,91 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		}
 
 	}
+    
+    /*--- Initialize the RefOriginMoment Pointer ---*/
+    RefOriginMoment = NULL;
+    RefOriginMoment = new double[3];
+    RefOriginMoment[0] = 0.0; RefOriginMoment[1] = 0.0; RefOriginMoment[2] = 0.0;
+    
+    /*--- In case the moment origin coordinates have not been declared in the
+     config file, set them equal to zero for safety. Also check to make sure
+     that for each marker, a value has been declared for the moment origin. 
+     Unless only one value was specified, then set this value for all the markers
+     being monitored. ---*/
+    
+    unsigned short iMarker;
 
+    
+    if ((nRefOriginMoment_X != nRefOriginMoment_Y) || (nRefOriginMoment_X != nRefOriginMoment_Z) ) {
+        cout << "ERROR: Length of REF_ORIGIN_MOMENT_X, REF_ORIGIN_MOMENT_Y and REF_ORIGIN_MOMENT_Z must be the same!!" << endl;
+        exit(1);
+    }
+
+    if (RefOriginMoment_X == NULL) {
+        RefOriginMoment_X = new double[nMarker_Monitoring];
+        for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
+            RefOriginMoment_X[iMarker] = 0.0;
+    } else {
+        if (nRefOriginMoment_X == 1) {
+          
+          double aux_RefOriginMoment_X = RefOriginMoment_X[0];
+          delete [] RefOriginMoment_X;
+          RefOriginMoment_X = new double[nMarker_Monitoring];
+          nRefOriginMoment_X = nMarker_Monitoring;
+          
+            for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
+                RefOriginMoment_X[iMarker] = aux_RefOriginMoment_X;
+        }
+        else if (nRefOriginMoment_X != nMarker_Monitoring) {
+            cout << "ERROR: Length of REF_ORIGIN_MOMENT_X must match number of Monitoring Markers!!" << endl;
+            exit(1);
+        }
+    }
+    
+    if (RefOriginMoment_Y == NULL) {
+        RefOriginMoment_Y = new double[nMarker_Monitoring];
+        for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
+            RefOriginMoment_Y[iMarker] = 0.0;
+    } else {
+        if (nRefOriginMoment_Y == 1) {
+          
+            double aux_RefOriginMoment_Y = RefOriginMoment_Y[0];
+            delete [] RefOriginMoment_Y;
+            RefOriginMoment_Y = new double[nMarker_Monitoring];
+            nRefOriginMoment_Y = nMarker_Monitoring;
+          
+            for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
+                RefOriginMoment_Y[iMarker] = aux_RefOriginMoment_Y;
+        }
+        else if (nRefOriginMoment_Y != nMarker_Monitoring) {
+            cout << "ERROR: Length of REF_ORIGIN_MOMENT_Y must match number of Monitoring Markers!!" << endl;
+            exit(1);
+        }
+    }
+    
+    if (RefOriginMoment_Z == NULL) {
+        RefOriginMoment_Z = new double[nMarker_Monitoring];
+        for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
+            RefOriginMoment_Z[iMarker] = 0.0;
+    } else {
+        if (nRefOriginMoment_Z == 1) {
+          
+            double aux_RefOriginMoment_Z = RefOriginMoment_Z[0];
+            delete [] RefOriginMoment_Z;
+            RefOriginMoment_Z = new double[nMarker_Monitoring];
+            nRefOriginMoment_Z = nMarker_Monitoring;
+          
+            for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
+                RefOriginMoment_Z[iMarker] = aux_RefOriginMoment_Z;
+        }
+        else if (nRefOriginMoment_Z != nMarker_Monitoring) {
+            cout << "ERROR: Length of REF_ORIGIN_MOMENT_Z must match number of Monitoring Markers!!" << endl;
+            exit(1);
+        }
+    }
+  
 	/*--- Allocating memory for previous time step solutions of Aeroelastic problem and Intializing variables. ---*/
 	if (Grid_Movement && (Kind_GridMovement[ZONE_0] == AEROELASTIC)) {
-		Aeroelastic_pitch = 0.0;
-		Aeroelastic_plunge = 0.0;
 		Aeroelastic_np1 = new double[4];
 		Aeroelastic_n   = new double[4];
 		Aeroelastic_n1  = new double[4];
@@ -1505,6 +1536,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		}
 	}
 
+    /*--- Set the boolean flag if we are carrying out an aeroelastic simulation. ---*/
+	if (Grid_Movement && Kind_GridMovement[ZONE_0] == AEROELASTIC)
+		Aeroelastic_Simulation = true;
+    else
+        Aeroelastic_Simulation = false;
+    
   /*--- Fluid-Structure problems always have grid movement ---*/
 	if (Kind_Solver == FLUID_STRUCTURE_EULER ||
       Kind_Solver == FLUID_STRUCTURE_NAVIER_STOKES) {
@@ -1672,30 +1709,22 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if ((Kind_SU2 == SU2_CFD) && (Kind_Solver == NO_SOLVER)) {
 		cout << "You must define a solver type!!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get();
 		exit(1);
 	}
 
 	if (((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS))
 			&& (Kind_ViscNumScheme_Flow == NONE)) {
 		cout << "You must define a viscous numerical method for the flow equations!!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get();
 		exit(1);
 	}
 
 	if (((Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) && (Kind_ViscNumScheme_AdjFlow == NONE)) {
 		cout << "You must define a viscous numerical method for the adjoint Navier-Stokes equations!!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get();
 		exit(1);
 	}
 
 	if (((Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) && (Kind_SourNumScheme_AdjFlow == NONE)) {
 		cout << "You must define a source numerical method for the adjoint Navier-Stokes equations!!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get();
 		exit(1);
 	}
 
@@ -1719,7 +1748,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		}
     
     unsigned short maxEl = 0;
-    unsigned short iSpecies, iEl;
+    unsigned short iSpecies, jSpecies, iEl;
     
 		switch (Kind_GasModel) {
       case ONESPECIES:
@@ -1797,6 +1826,18 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
           Reactions[iRxn] = new int*[2];
           for (unsigned short ii = 0; ii < 2; ii++)
             Reactions[iRxn][ii] = new int[6];
+        }
+        
+        // Omega[iSpecies][jSpecies][iCoeff]
+        Omega00 = new double**[nSpecies];
+        Omega11 = new double**[nSpecies];
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          Omega00[iSpecies] = new double*[nSpecies];
+          Omega11[iSpecies] = new double*[nSpecies];
+          for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+            Omega00[iSpecies][jSpecies] = new double[4];
+            Omega11[iSpecies][jSpecies] = new double[4];
+          }
         }
         
         MassFrac_FreeStream = new double[nSpecies];
@@ -1926,6 +1967,17 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         /*--- Dissociation potential [KJ/kg] ---*/
         Diss[0] = 3.36E4;
         Diss[1] = 0.0;
+        
+        /*--- Collision integral data ---*/
+        Omega00[0][0][0] = -6.0614558E-03;  Omega00[0][0][1] = 1.2689102E-01;   Omega00[0][0][2] = -1.0616948E+00;  Omega00[0][0][3] = 8.0955466E+02;
+        Omega00[0][1][0] = -1.0796249E-02;  Omega00[0][1][1] = 2.2656509E-01;   Omega00[0][1][2] = -1.7910602E+00;  Omega00[0][1][3] = 4.0455218E+03;
+        Omega00[1][0][0] = -1.0796249E-02;  Omega00[1][0][1] = 2.2656509E-01;   Omega00[1][0][2] = -1.7910602E+00;  Omega00[1][0][3] = 4.0455218E+03;
+        Omega00[1][1][0] = -9.6083779E-03;  Omega00[1][1][1] = 2.0938971E-01;   Omega00[1][1][2] = -1.7386904E+00;  Omega00[1][1][3] = 3.3587983E+03;
+        
+        Omega11[0][0][0] = -7.6303990E-03;  Omega11[0][0][1] = 1.6878089E-01;   Omega11[0][0][2] = -1.4004234E+00;  Omega11[0][0][3] = 2.1427708E+03;
+        Omega11[0][1][0] = -8.3493693E-03;  Omega11[0][1][1] = 1.7808911E-01;   Omega11[0][1][2] = -1.4466155E+00;  Omega11[0][1][3] = 1.9324210E+03;
+        Omega11[1][0][0] = -8.3493693E-03;  Omega11[1][0][1] = 1.7808911E-01;   Omega11[1][0][2] = -1.4466155E+00;  Omega11[1][0][3] = 1.9324210E+03;
+        Omega11[1][1][0] = -7.7439615E-03;  Omega11[1][1][1] = 1.7129007E-01;   Omega11[1][1][2] = -1.4809088E+00;  Omega11[1][1][3] = 2.1284951E+03;
         
         break;
         
@@ -3185,12 +3237,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
 void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) {
 
-#ifndef NO_MPI
+#ifdef NO_MPI
+  nDomain = SINGLE_NODE;
+#else
   /*--- Identify the solvers that work in serial ---*/
 	if ((val_software != SU2_DDC) && (val_software != SU2_MAC))
 		nDomain = MPI::COMM_WORLD.Get_size();
   else
-    nDomain = 1;
+    nDomain = SINGLE_NODE;
 #endif
 
 	/*--- Boundary (marker) treatment ---*/
@@ -3541,8 +3595,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				if (Kind_GasModel == N2) cout << "Using 2 species Nitrogen gas model." << endl;
 				if (Kind_GasModel == ARGON_SID) cout << "Using 2 species Sid gas model." << endl;
 				break;
-			case ELECTRIC_POTENTIAL: cout << "Electric potential equation." << endl; break;
+			case POISSON_EQUATION: cout << "Poisson equation." << endl; break;
 			case WAVE_EQUATION: cout << "Wave equation." << endl; break;
+			case HEAT_EQUATION: cout << "Heat equation." << endl; break;
 			case LINEAR_ELASTICITY: cout << "Linear elasticity solver." << endl; break;
 			case FLUID_STRUCTURE_EULER: case FLUID_STRUCTURE_NAVIER_STOKES: cout << "Fluid-structure interaction." << endl; break;
 			case ADJ_EULER: cout << "Continuous Euler adjoint equations." << endl; break;
@@ -3567,7 +3622,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         
 		}
 
-		if ((Kind_Regime == COMPRESSIBLE) && (Kind_Solver != LINEAR_ELASTICITY)) {
+		if ((Kind_Regime == COMPRESSIBLE) && (Kind_Solver != LINEAR_ELASTICITY) &&
+        (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
 			cout << "Mach number: " << Mach <<"."<< endl;
 			cout << "Angle of attack (AoA): " << AoA <<" deg, and angle of sideslip (AoS): " << AoS <<" deg."<< endl;
 			if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == ADJ_NAVIER_STOKES) ||
@@ -3610,14 +3666,25 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		if (RefAreaCoeff == 0) cout << "The reference length/area will be computed using y(2D) or z(3D) projection." <<endl;
 		else cout << "The reference length/area (force coefficient) is " << RefAreaCoeff << "." <<endl;
 		cout << "The reference length (moment computation) is " << RefLengthMoment << "." <<endl;
-		cout << "Reference origin (moment computation) is (" <<RefOriginMoment[0]<<", "<<RefOriginMoment[1]<<", "<<RefOriginMoment[2]<<")."<< endl;
 
-    cout << "Surface(s) where the force coefficients are evaluated: ";
-		for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++) {
-			cout << Marker_Monitoring[iMarker_Monitoring];
-			if (iMarker_Monitoring < nMarker_Monitoring-1) cout << ", ";
-			else cout <<"."<<endl;
-		}
+        if ((nRefOriginMoment_X > 1) || (nRefOriginMoment_Y > 1) || (nRefOriginMoment_Z > 1)) {
+            cout << "Surface(s) where the force coefficients are evaluated and their reference origin for moment computation: ";
+            for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++) {
+                cout << Marker_Monitoring[iMarker_Monitoring] << " (" << RefOriginMoment_X[iMarker_Monitoring] <<", "<<RefOriginMoment_Y[iMarker_Monitoring] <<", "<< RefOriginMoment_Z[iMarker_Monitoring] << ")";
+                if (iMarker_Monitoring < nMarker_Monitoring-1) cout << ", ";
+                else cout <<"."<<endl;
+            }
+        }
+        else {
+            cout << "Reference origin (moment computation) is (" << RefOriginMoment_X[0] << ", " << RefOriginMoment_Y[0] << ", " << RefOriginMoment_Z[0] << ")." << endl;
+            cout << "Surface(s) where the force coefficients are evaluated: ";
+            for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++) {
+                cout << Marker_Monitoring[iMarker_Monitoring];
+                if (iMarker_Monitoring < nMarker_Monitoring-1) cout << ", ";
+                else cout <<"."<<endl;
+            }
+        }
+    
     
     cout << "Surface(s) where the objective function is evaluated: ";
 		for (iMarker_Designing = 0; iMarker_Designing < nMarker_Designing; iMarker_Designing++) {
@@ -4100,8 +4167,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			if (Kind_SourNumScheme_Turb == PIECEWISE_CONSTANT) cout << "Piecewise constant integration of the turbulence model source terms." << endl;
 		}
 
-		if ((Kind_Solver == ELECTRIC_POTENTIAL) || (Kind_Solver == PLASMA_NAVIER_STOKES)) {
-			if (Kind_ViscNumScheme_Elec == GALERKIN) cout << "Galerkin method for viscous terms computation of the electric potential equation." << endl;
+		if ((Kind_Solver == POISSON_EQUATION) || (Kind_Solver == PLASMA_NAVIER_STOKES)) {
+			if (Kind_ViscNumScheme_Poisson == GALERKIN) cout << "Galerkin method for viscous terms computation of the poisson potential equation." << endl;
 		}
 
 		if ((Kind_Solver == ADJ_RANS) && (!Frozen_Visc)) {
@@ -4115,8 +4182,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			if (Kind_SourNumScheme_AdjFlow == PIECEWISE_CONSTANT) cout << "Piecewise constant integration of the Navier-Stokes eq. source terms." << endl;
 		}
 
-		if (Kind_Solver == ELECTRIC_POTENTIAL) {
-			if (Kind_SourNumScheme_Elec == PIECEWISE_CONSTANT) cout << "Piecewise constant integration of the electric potential source terms." << endl;
+		if (Kind_Solver == POISSON_EQUATION) {
+			if (Kind_SourNumScheme_Poisson == PIECEWISE_CONSTANT) cout << "Piecewise constant integration of the poisson potential source terms." << endl;
+		}
+    
+    if (Kind_Solver == HEAT_EQUATION) {
+			if (Kind_SourNumScheme_Heat == PIECEWISE_CONSTANT) cout << "Piecewise constant integration of the heat equation source terms." << endl;
 		}
 
 		switch (Kind_Gradient_Method) {
@@ -4282,7 +4353,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			cout << "Damping factor for the correction prolongation: " << Damp_Correc_Prolong <<"."<<endl;
 		}
     
-    if (Kind_Solver != LINEAR_ELASTICITY) {
+    if ((Kind_Solver != LINEAR_ELASTICITY) && (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
       
       if (CFLRamp[0] == 1.0) cout << "No CFL ramp." << endl;
       else cout << "CFL ramp definition. factor: "<< CFLRamp[0] <<", every "<< int(CFLRamp[1]) <<" iterations, with a limit of "<< CFLRamp[2] <<"." << endl;
@@ -4452,7 +4523,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 		cout << "Convergence history file name: " << Conv_FileName << "." << endl;
 
-    if (Kind_Solver != LINEAR_ELASTICITY) {
+    if ((Kind_Solver != LINEAR_ELASTICITY) && (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
       if (!Linearized && !Adjoint) {
         cout << "Surface flow coefficients file name: " << SurfFlowCoeff_FileName << "." << endl;
         cout << "Flow variables file name: " << Flow_FileName << "." << endl;
@@ -5178,8 +5249,6 @@ unsigned short CConfig::GetMarker_Config_Tag(string val_marker) {
 			return iMarker_Config;
 
 	cout <<"The configuration file doesn't have any definition for marker "<< val_marker <<"!!" << endl;
-	cout <<"Press any key to exit..." << endl;
-	cin.get();
 	exit(1);
 }
 
@@ -5359,6 +5428,15 @@ CConfig::~CConfig(void)
 		delete []Velocity_FreeStreamND_Time;
 
 	}
+
+    if (RefOriginMoment != NULL)
+		delete [] RefOriginMoment;
+    if (RefOriginMoment_X != NULL)
+		delete [] RefOriginMoment_X;
+	if (RefOriginMoment_Y != NULL)
+		delete [] RefOriginMoment_Y;
+	if (RefOriginMoment_Z != NULL)
+		delete [] RefOriginMoment_Z;
 }
 
 void CConfig::SetFileNameDomain(unsigned short val_domain) {
@@ -5385,6 +5463,18 @@ void CConfig::SetFileNameDomain(unsigned short val_domain) {
 	if (MPI::COMM_WORLD.Get_size() > 1) {
 		sprintf (buffer, "_%d", int(val_domain));
 		SurfStructure_FileName = old_name + buffer;
+	}
+  
+  old_name = SurfWave_FileName;
+	if (MPI::COMM_WORLD.Get_size() > 1) {
+		sprintf (buffer, "_%d", int(val_domain));
+		SurfWave_FileName = old_name + buffer;
+	}
+  
+  old_name = SurfHeat_FileName;
+	if (MPI::COMM_WORLD.Get_size() > 1) {
+		sprintf (buffer, "_%d", int(val_domain));
+		SurfHeat_FileName = old_name + buffer;
 	}
   
 	if (MPI::COMM_WORLD.Get_size() > 1) {
@@ -5421,8 +5511,7 @@ string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {
   /*--- Check that a positive value iteration is requested (for now). ---*/
   if (val_iter < 0) {
     cout << "Requesting a negative iteration number for the restart file!!" << endl;
-    cout << "Press any key to exit..." << endl;
-    cin.get(); exit(1);
+    exit(1);
   }
   
   /*--- Append iteration number for unsteady cases ---*/
@@ -5486,22 +5575,22 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
 unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
 
 	switch (val_eqsystem) {
-	case RUNTIME_POT_SYS: return FLOW_SOL;
-	case RUNTIME_PLASMA_SYS: return PLASMA_SOL;
-	case RUNTIME_FLOW_SYS: return FLOW_SOL;
-	case RUNTIME_TURB_SYS: return TURB_SOL;
-  case RUNTIME_TNE2_SYS: return TNE2_SOL;
-	case RUNTIME_TRANS_SYS: return TRANS_SOL;
-	case RUNTIME_ELEC_SYS: return ELEC_SOL;
-	case RUNTIME_WAVE_SYS: return WAVE_SOL;
-	case RUNTIME_FEA_SYS: return FEA_SOL;
-	case RUNTIME_ADJPOT_SYS: return ADJFLOW_SOL;
-	case RUNTIME_ADJFLOW_SYS: return ADJFLOW_SOL;
-	case RUNTIME_ADJTURB_SYS: return ADJTURB_SOL;
-  case RUNTIME_ADJTNE2_SYS: return ADJTNE2_SOL;
+	case RUNTIME_PLASMA_SYS:    return PLASMA_SOL;
+	case RUNTIME_FLOW_SYS:      return FLOW_SOL;
+	case RUNTIME_TURB_SYS:      return TURB_SOL;
+  case RUNTIME_TNE2_SYS:      return TNE2_SOL;
+	case RUNTIME_TRANS_SYS:     return TRANS_SOL;
+	case RUNTIME_POISSON_SYS:   return POISSON_SOL;
+	case RUNTIME_WAVE_SYS:      return WAVE_SOL;
+  case RUNTIME_HEAT_SYS:      return HEAT_SOL;
+  case RUNTIME_FEA_SYS:       return FEA_SOL;
+  case RUNTIME_ADJPOT_SYS:    return ADJFLOW_SOL;
+	case RUNTIME_ADJFLOW_SYS:   return ADJFLOW_SOL;
+	case RUNTIME_ADJTURB_SYS:   return ADJTURB_SOL;
+  case RUNTIME_ADJTNE2_SYS:   return ADJTNE2_SOL;
 	case RUNTIME_ADJPLASMA_SYS: return ADJPLASMA_SOL;
-	case RUNTIME_LINPOT_SYS: return LINFLOW_SOL;
-	case RUNTIME_LINFLOW_SYS: return LINFLOW_SOL;
+	case RUNTIME_LINPOT_SYS:    return LINFLOW_SOL;
+	case RUNTIME_LINFLOW_SYS:   return LINFLOW_SOL;
 	case RUNTIME_MULTIGRID_SYS: return 0;
 	}
 	return 0;
@@ -5666,10 +5755,10 @@ void CConfig::SetGlobalParam(unsigned short val_solver, unsigned short val_syste
 			SetKind_SourNumScheme(GetKind_SourNumScheme_Plasma());
 			SetKind_TimeIntScheme(GetKind_TimeIntScheme_Plasma());
 		}
-		if (val_system == RUNTIME_ELEC_SYS) {
+		if (val_system == RUNTIME_POISSON_SYS) {
 			SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
-			SetKind_ViscNumScheme(GetKind_ViscNumScheme_Elec());
-			SetKind_SourNumScheme(GetKind_SourNumScheme_Elec());
+			SetKind_ViscNumScheme(GetKind_ViscNumScheme_Poisson());
+			SetKind_SourNumScheme(GetKind_SourNumScheme_Poisson());
 			SetKind_TimeIntScheme(NONE);
 		}
 		break;
@@ -5681,10 +5770,10 @@ void CConfig::SetGlobalParam(unsigned short val_solver, unsigned short val_syste
 			SetKind_SourNumScheme(GetKind_SourNumScheme_Plasma());
 			SetKind_TimeIntScheme(GetKind_TimeIntScheme_Plasma());
 		}
-		if (val_system == RUNTIME_ELEC_SYS) {
+		if (val_system == RUNTIME_POISSON_SYS) {
 			SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
-			SetKind_ViscNumScheme(GetKind_ViscNumScheme_Elec());
-			SetKind_SourNumScheme(GetKind_SourNumScheme_Elec());
+			SetKind_ViscNumScheme(GetKind_ViscNumScheme_Poisson());
+			SetKind_SourNumScheme(GetKind_SourNumScheme_Poisson());
 			SetKind_TimeIntScheme(NONE);
 		}
 		break;
@@ -5796,12 +5885,12 @@ void CConfig::SetGlobalParam(unsigned short val_solver, unsigned short val_syste
 			SetKind_TimeIntScheme(GetKind_TimeIntScheme_LinFlow());
 		}
 		break;
-	case ELECTRIC_POTENTIAL:
-		if (val_system == RUNTIME_ELEC_SYS) {
+	case POISSON_EQUATION:
+		if (val_system == RUNTIME_POISSON_SYS) {
 			SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
-			SetKind_SourNumScheme(GetKind_SourNumScheme_Elec());
-			SetKind_ViscNumScheme(GetKind_ViscNumScheme_Elec());
-			SetKind_TimeIntScheme(NONE);
+			SetKind_SourNumScheme(GetKind_SourNumScheme_Poisson());
+			SetKind_ViscNumScheme(GetKind_ViscNumScheme_Poisson());
+			SetKind_TimeIntScheme(GetKind_TimeIntScheme_Poisson());
 		}
 		break;
 	case WAVE_EQUATION:
@@ -5812,6 +5901,14 @@ void CConfig::SetGlobalParam(unsigned short val_solver, unsigned short val_syste
 			SetKind_TimeIntScheme(GetKind_TimeIntScheme_Wave());
 		}
 		break;
+  case HEAT_EQUATION:
+    if (val_system == RUNTIME_HEAT_SYS) {
+      SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
+      SetKind_SourNumScheme(GetKind_SourNumScheme_Heat());
+      SetKind_ViscNumScheme(GetKind_ViscNumScheme_Heat());
+      SetKind_TimeIntScheme(GetKind_TimeIntScheme_Heat());
+    }
+    break;
 	case LINEAR_ELASTICITY:
 		if (val_system == RUNTIME_FEA_SYS) {
 			SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
@@ -6148,8 +6245,7 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 		/*--- In case there is no restart file ---*/
 		if (farfield_file.fail()) {
 			cout << "There is no farfield bounadry data file!!" << endl;
-			cout << "Press any key to exit..." << endl;
-			cin.get(); exit(1);
+			exit(1);
 		}
     
 		/*--- The first line is the header ---*/
@@ -6368,7 +6464,8 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 	double omega_Inf = Density_FreeStreamND*kine_Inf/(Viscosity_FreeStreamND*Turb2LamViscRatio_FreeStream);
   
 	/*--- Write output to the console if this is the master node and first domain ---*/
-	if ((rank == MASTER_NODE) && (val_iZone == 0) && (Kind_Solver != LINEAR_ELASTICITY)) {
+	if ((rank == MASTER_NODE) && (val_iZone == 0) && (Kind_Solver != LINEAR_ELASTICITY) &&
+      (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
     
 		cout << endl <<"---------------- Flow & Non-dimensionalization information ---------------" << endl;
     

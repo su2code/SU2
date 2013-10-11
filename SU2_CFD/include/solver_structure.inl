@@ -48,7 +48,7 @@ inline double CSolver::GetCSensitivity(unsigned short val_marker, unsigned short
 inline void CSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep, 
 																		 unsigned short iMesh, unsigned short RunTime_EqSystem) { }
 																		 
-inline void CSolver::SetFreeSurface_Distance(CGeometry *geometry, CConfig *config, bool Initialization, bool WriteLevelSet) { }
+inline void CSolver::SetFreeSurface_Distance(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry, CGeometry **flow_geometry, CConfig *fea_config, CConfig *flow_config) { }
 
@@ -94,7 +94,13 @@ inline void CSolver::SetDistance(CGeometry *geometry, CConfig *config) { };
 
 inline double CSolver::GetCLift_Inv(unsigned short val_marker) { return 0; }
 
+inline double CSolver::GetCMz_Inv(unsigned short val_marker) { return 0; }
+
 inline double CSolver::GetCDrag_Inv(unsigned short val_marker) { return 0; }
+
+inline double CSolver::GetSurface_CLift(unsigned short val_marker) { return 0; }
+
+inline double CSolver::GetSurface_CMz(unsigned short val_marker) { return 0; }
 
 inline double CSolver::GetFanFace_MassFlow(unsigned short val_marker) { return 0; }
 
@@ -109,6 +115,8 @@ inline double CSolver::GetCSideForce_Inv(unsigned short val_marker) { return 0; 
 inline double CSolver::GetCEff_Inv(unsigned short val_marker) { return 0; }
 
 inline double CSolver::GetCLift_Visc(unsigned short val_marker) { return 0; }
+
+inline double CSolver::GetCMz_Visc(unsigned short val_marker) { return 0; }
 
 inline double CSolver::GetCSideForce_Visc(unsigned short val_marker) { return 0; }
 
@@ -350,7 +358,7 @@ inline void CSolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_co
 inline void CSolver::BC_Neumann(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
 										  CConfig *config, unsigned short val_marker) { }
 								  
-inline void CSolver::BC_Dielectric(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
+inline void CSolver::BC_Dielec(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
 									 CConfig *config, unsigned short val_marker) { }
 									 										  
 inline void CSolver::BC_Electrode(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
@@ -409,9 +417,6 @@ inline void CSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
 
 inline void CSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
-inline void CSolver::Solve_LinearSystem(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
-										  unsigned short iMesh) { }
-
 inline void CSolver::Compute_Residual(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
 										unsigned short iMesh) { }
 
@@ -445,6 +450,8 @@ inline unsigned short CSolver::GetnVar(void) { return nVar; }
 inline unsigned short CSolver::GetnOutputVariables(void) { return nOutputVariables; }
 
 inline unsigned short CSolver::GetnPrimVar(void) { return nPrimVar; }
+
+inline unsigned short CSolver::GetnPrimVarGrad(void) { return nPrimVarGrad; }
 
 inline double CSolver::GetMax_Delta_Time(void) { return Max_Delta_Time; }
 
@@ -498,7 +505,13 @@ inline double CEulerSolver::GetCPressure(unsigned short val_marker, unsigned sho
 
 inline double CEulerSolver::GetCLift_Inv(unsigned short val_marker) { return CLift_Inv[val_marker]; }
 
+inline double CEulerSolver::GetCMz_Inv(unsigned short val_marker) { return CMz_Inv[val_marker]; }
+
 inline double CEulerSolver::GetCDrag_Inv(unsigned short val_marker) { return CDrag_Inv[val_marker]; }
+
+inline double CEulerSolver::GetSurface_CLift(unsigned short val_marker) { return Surface_CLift[val_marker]; }
+
+inline double CEulerSolver::GetSurface_CMz(unsigned short val_marker) { return Surface_CMz[val_marker]; }
 
 inline double CEulerSolver::GetFanFace_MassFlow(unsigned short val_marker) { return FanFace_MassFlow[val_marker]; }
 
@@ -578,6 +591,8 @@ inline double CNSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 
 inline double CNSSolver::GetCLift_Visc(unsigned short val_marker) { return CLift_Visc[val_marker]; }
 
+inline double CNSSolver::GetCMz_Visc(unsigned short val_marker) { return CMz_Visc[val_marker]; }
+
 inline double CNSSolver::GetCSideForce_Visc(unsigned short val_marker) { return CSideForce_Visc[val_marker]; }
 
 inline double CNSSolver::GetCDrag_Visc(unsigned short val_marker) { return CDrag_Visc[val_marker]; }
@@ -618,9 +633,9 @@ inline double CLinEulerSolver::GetTotal_CDeltaLift() { return Total_CDeltaLift; 
 
 inline double CLinEulerSolver::GetTotal_CDeltaDrag() { return Total_CDeltaDrag; }
 
-inline double CElectricSolver::GetTotal_CCharge() { return Total_CCharge; }
+inline double CPoissonSolver::GetTotal_CCharge() { return Total_CCharge; }
 
-inline void CElectricSolver::SetTotal_CCharge(double val_Total_CCharge) {Total_CCharge = val_Total_CCharge; }
+inline void CPoissonSolver::SetTotal_CCharge(double val_Total_CCharge) {Total_CCharge = val_Total_CCharge; }
 
 inline unsigned short CPlasmaSolver::GetnSpecies(void) { return nSpecies; }
 
@@ -687,10 +702,6 @@ inline double CPlasmaSolver::Get_MagnetDrag() { return MagnetDrag; }
 inline double CPlasmaSolver::GetMax_Delta_Time(unsigned short val_Species) { return Max_Delta_Time[val_Species]; }
 
 inline double CPlasmaSolver::GetMin_Delta_Time(unsigned short val_Species) { return Min_Delta_Time[val_Species]; }
-
-inline double CLevelSetSolver::GetTotal_CFreeSurface() { return Total_CFreeSurface; }
-
-inline void CLevelSetSolver::SetTotal_CFreeSurface(double cfreesurface) { Total_CFreeSurface = cfreesurface; }
 
 inline unsigned short CAdjPlasmaSolver::GetnSpecies(void) { return nSpecies; }
 

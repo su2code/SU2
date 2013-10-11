@@ -116,8 +116,6 @@ CWaveSolver::CWaveSolver(CGeometry *geometry,
 	} else {
     
     cout << "Wave restart file not currently configured!!" << endl;
-    cout << "Press any key to exit..." << endl;
-    cin.get();
     exit(1);
     
 		string mesh_filename = config->GetSolution_FlowFileName();
@@ -129,8 +127,6 @@ CWaveSolver::CWaveSolver(CGeometry *geometry,
         
 		if (restart_file.fail()) {
 			cout << "There is no wave restart file!!" << endl;
-			cout << "Press any key to exit..." << endl;
-			cin.get();
 			exit(1);
 		}
 		unsigned long index;
@@ -144,11 +140,6 @@ CWaveSolver::CWaveSolver(CGeometry *geometry,
 		}
 		restart_file.close();
 	}
-  
-  /* Load all of the matrices and Jacobians that are fixed */
-  /* during the simulation in order to save effort.        */
-  //SetSpace_Matrix(geometry, Solution, config);
-  //SetTime_Matrix(geometry, config);
   
 }
 
@@ -996,162 +987,9 @@ void CWaveSolver::SetSpace_Matrix(CGeometry *geometry,
   
 }
 
-void CWaveSolver::SetTime_Matrix(CGeometry *geometry, 
-                                   CConfig   *config) {
-  
-  
-  /* Local variables and initialization */
-  
-	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0;
-	double a[3], b[3], Area_Local, Time_Num, Time_Phys;
-	double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL;
-	unsigned short iDim;
-	
-  /*--- Numerical time step. This system is unconditionally stable,
-   so a very big step can be used. ---*/
-	if (config->GetUnsteady_Simulation() == TIME_STEPPING) 
-    Time_Num = config->GetDelta_UnstTimeND();
-	else Time_Num = 1E+30;
-  
-  /*--- Physical timestep for source terms ---*/
-  Time_Phys = config->GetDelta_UnstTimeND();
-  
-	/* Loop through elements to compute contributions from the matrix     */
-  /* blocks involving time. These contributions are also added to the   */
-  /* Jacobian w/ the time step. Spatial source terms are also computed. */
-  
-	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-		
-    /* Get node numbers and their coordinate vectors */
-    
-		Point_0 = geometry->elem[iElem]->GetNode(0);
-		Point_1 = geometry->elem[iElem]->GetNode(1);
-		Point_2 = geometry->elem[iElem]->GetNode(2);
-		
-    Coord_0 = geometry->node[Point_0]->GetCoord();
-		Coord_1 = geometry->node[Point_1]->GetCoord();
-		Coord_2 = geometry->node[Point_2]->GetCoord();
-		
-    /* Compute triangle area (2-D) */
-		
-    for (iDim = 0; iDim < nDim; iDim++) {
-			a[iDim] = Coord_0[iDim]-Coord_2[iDim];
-			b[iDim] = Coord_1[iDim]-Coord_2[iDim];
-		}
-		Area_Local = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
-		
-    /*--- Block contributions to the Jacobian (includes time step) ---*/
-    
-		StiffMatrix_Node[0][0] = 1.0/Time_Num; StiffMatrix_Node[0][1] = 0.0;
-    StiffMatrix_Node[1][0] = 0.0;            StiffMatrix_Node[1][1] = (2.0/12.0)*(Area_Local/Time_Num);
-    Jacobian.AddBlock(Point_0, Point_0, StiffMatrix_Node);
-    
-    StiffMatrix_Node[0][0] = 1.0/Time_Num; StiffMatrix_Node[0][1] = 0.0;
-    StiffMatrix_Node[1][0] = 0.0;            StiffMatrix_Node[1][1] = (1.0/12.0)*(Area_Local/Time_Num);
-    Jacobian.AddBlock(Point_0, Point_1, StiffMatrix_Node);
-    
-    StiffMatrix_Node[0][0] = 1.0/Time_Num; StiffMatrix_Node[0][1] = 0.0;
-    StiffMatrix_Node[1][0] = 0.0;            StiffMatrix_Node[1][1] = (1.0/12.0)*(Area_Local/Time_Num);
-    Jacobian.AddBlock(Point_0, Point_2, StiffMatrix_Node);
-    
-    StiffMatrix_Node[0][0] = 1.0/Time_Num; StiffMatrix_Node[0][1] = 0.0;
-    StiffMatrix_Node[1][0] = 0.0;            StiffMatrix_Node[1][1] = (1.0/12.0)*(Area_Local/Time_Num);
-    Jacobian.AddBlock(Point_1, Point_0, StiffMatrix_Node);
-    
-    StiffMatrix_Node[0][0] =  1.0/Time_Num; StiffMatrix_Node[0][1] = 0.0;
-    StiffMatrix_Node[1][0] = 0.0;            StiffMatrix_Node[1][1] = (2.0/12.0)*(Area_Local/Time_Num);
-    Jacobian.AddBlock(Point_1, Point_1, StiffMatrix_Node);
-    
-    StiffMatrix_Node[0][0] = 1.0/Time_Num; StiffMatrix_Node[0][1] = 0.0;
-    StiffMatrix_Node[1][0] = 0.0;            StiffMatrix_Node[1][1] = (1.0/12.0)*(Area_Local/Time_Num);
-    Jacobian.AddBlock(Point_1, Point_2, StiffMatrix_Node);
-    
-    StiffMatrix_Node[0][0] = 1.0/Time_Num; StiffMatrix_Node[0][1] = 0.0;
-    StiffMatrix_Node[1][0] = 0.0;            StiffMatrix_Node[1][1] = (1.0/12.0)*(Area_Local/Time_Num);
-    Jacobian.AddBlock(Point_2, Point_0, StiffMatrix_Node);
-    
-    StiffMatrix_Node[0][0] =  1.0/Time_Num; StiffMatrix_Node[0][1] = 0.0;
-    StiffMatrix_Node[1][0] = 0.0;            StiffMatrix_Node[1][1] = (1.0/12.0)*(Area_Local/Time_Num);
-    Jacobian.AddBlock(Point_2, Point_1, StiffMatrix_Node);
-    
-    StiffMatrix_Node[0][0] = 1.0/Time_Num; StiffMatrix_Node[0][1] = 0.0;
-    StiffMatrix_Node[1][0] = 0.0;            StiffMatrix_Node[1][1] = (2.0/12.0)*(Area_Local/Time_Num);
-    Jacobian.AddBlock(Point_2, Point_2, StiffMatrix_Node);
-    
-  }
-  
-  //unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0;
-	//double a[3], b[3], Area_Local, Time_Num;
-	//double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL;
-	unsigned short iVar, jVar;
-	double TimeJac = 0.0;
-	
-	/*--- Numerical time step (this system is uncoditional stable... a very big number can be used) ---*/
-  if (config->GetUnsteady_Simulation() == TIME_STEPPING) 
-    Time_Num = 1E+30;
-	else Time_Num = config->GetDelta_UnstTimeND();
-	
-	/*--- Loop through elements to compute contributions from the matrix
-   blocks involving time. These contributions are also added to the 
-   Jacobian w/ the time step. Spatial source terms are also computed. ---*/
-  
-	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-		
-    /* Get node numbers and their coordinate vectors */
-    
-		Point_0 = geometry->elem[iElem]->GetNode(0);
-		Point_1 = geometry->elem[iElem]->GetNode(1);
-		Point_2 = geometry->elem[iElem]->GetNode(2);
-		
-    Coord_0 = geometry->node[Point_0]->GetCoord();
-		Coord_1 = geometry->node[Point_1]->GetCoord();
-		Coord_2 = geometry->node[Point_2]->GetCoord();
-		
-    /* Compute triangle area (2-D) */
-		
-    for (iDim = 0; iDim < nDim; iDim++) {
-			a[iDim] = Coord_0[iDim]-Coord_2[iDim];
-			b[iDim] = Coord_1[iDim]-Coord_2[iDim];
-		}
-		Area_Local = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
-    
-		
-		/*----------------------------------------------------------------*/
-		/*--- Block contributions to the Jacobian (includes time step) ---*/
-		/*----------------------------------------------------------------*/
-		
-		for (iVar = 0; iVar < nVar; iVar++)
-			for (jVar = 0; jVar < nVar; jVar++)
-				StiffMatrix_Node[iVar][jVar] = 0.0;	
-		
-		if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST) TimeJac = 1.0/Time_Num;
-		if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) TimeJac = 3.0/(2.0*Time_Num);
-		
-		/*--- Diagonal value identity matrix ---*/
-    StiffMatrix_Node[0][0] = 1.0*TimeJac; 
-    
-		
-		/*--- Diagonal value ---*/
-    StiffMatrix_Node[1][1] = (2.0/12.0)*(Area_Local*TimeJac);
-    
-    Jacobian.AddBlock(Point_0, Point_0, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_0, Point_0, StiffMatrix_Node);
-		Jacobian.AddBlock(Point_1, Point_1, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_1, Point_1, StiffMatrix_Node);
-		Jacobian.AddBlock(Point_2, Point_2, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_2, StiffMatrix_Node);
-		
-		/*--- Off Diagonal value ---*/
-    StiffMatrix_Node[1][1] = (1.0/12.0)*(Area_Local*TimeJac);
-    
-		Jacobian.AddBlock(Point_0, Point_1, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_0, Point_1, StiffMatrix_Node);
-		Jacobian.AddBlock(Point_0, Point_2, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_0, Point_2, StiffMatrix_Node);
-		Jacobian.AddBlock(Point_1, Point_0, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_1, Point_0, StiffMatrix_Node);
-		Jacobian.AddBlock(Point_1, Point_2, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_1, Point_2, StiffMatrix_Node);
-		Jacobian.AddBlock(Point_2, Point_0, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_0, StiffMatrix_Node);
-		Jacobian.AddBlock(Point_2, Point_1, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_1, StiffMatrix_Node);
-    
-	}
-}
 
 void CWaveSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter) {
+
   
 #ifndef NO_MPI
 	int rank = MPI::COMM_WORLD.Get_rank();
@@ -1202,8 +1040,7 @@ void CWaveSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   /*--- In case there is no file ---*/
   if (restart_file.fail()) {
     cout << "There is no wave restart file!!" << endl;
-    cout << "Press any key to exit..." << endl;
-    cin.get(); exit(1);
+    exit(1);
   }
   
   /*--- Read the restart file ---*/

@@ -26,7 +26,8 @@
 
 
 CUpwRoe_TNE2::CUpwRoe_TNE2(unsigned short val_nDim, unsigned short val_nVar,
-                           CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+                           CConfig *config) : CNumerics(val_nDim, val_nVar,
+                                                        config) {
 	unsigned short iVar;
   
   /*--- Read configuration parameters ---*/
@@ -87,8 +88,10 @@ CUpwRoe_TNE2::~CUpwRoe_TNE2(void) {
   
 }
 
-void CUpwRoe_TNE2::ComputeResidual(double *val_residual, double **val_Jacobian_i,
-                                   double **val_Jacobian_j, CConfig *config) {
+void CUpwRoe_TNE2::ComputeResidual(double *val_residual,
+                                   double **val_Jacobian_i,
+                                   double **val_Jacobian_j,
+                                   CConfig *config) {
   
   unsigned short iDim, iSpecies, iVar, jVar, kVar, nHeavy, nEl;
   double *Ms;
@@ -428,7 +431,9 @@ void CUpwRoe_TNE2::CreateBasis(double *val_Normal) {
   }
 }
 
-CUpwAUSM_TNE2::CUpwAUSM_TNE2(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CUpwAUSM_TNE2::CUpwAUSM_TNE2(unsigned short val_nDim, unsigned short val_nVar,
+                             CConfig *config) : CNumerics(val_nDim, val_nVar,
+                                                          config) {
   
   /*--- Read configuration parameters ---*/
 	implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -600,8 +605,8 @@ void CUpwAUSM_TNE2::ComputeResidual(double *val_residual,
     /*--- Calculate supplementary values ---*/
     conc_i = 0.0; conc_j = 0.0;
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-      conc_i += V_i[iSpecies]/Ms[iSpecies];
-      conc_j += V_j[iSpecies]/Ms[iSpecies];
+      conc_i += V_i[RHOS_INDEX+iSpecies]/Ms[iSpecies];
+      conc_j += V_j[RHOS_INDEX+iSpecies]/Ms[iSpecies];
     }
     dPdrhoE_i = Ru/rhoCvtr_i * conc_i;
     dPdrhoE_j = Ru/rhoCvtr_j * conc_j;
@@ -631,7 +636,6 @@ void CUpwAUSM_TNE2::ComputeResidual(double *val_residual,
     //Sound speed derivatives: Vib-el energy
     daL[nSpecies+nDim+1] = 1.0/(2.0*rho_i*a_i) * ((1.0+dPdrhoE_i)*dPdrhoEve_i);
     daR[nSpecies+nDim+1] = 1.0/(2.0*rho_j*a_j) * ((1.0+dPdrhoE_j)*dPdrhoEve_j);
-    
 
     /*--- Left state Jacobian ---*/
     if (mF >= 0) {
@@ -1011,10 +1015,121 @@ void CCentLax_TNE2::ComputeResidual(double *val_resconv, double *val_resvisc, do
 	}
 }
 
+CAvgGrad_TNE2::CAvgGrad_TNE2(unsigned short val_nDim,
+                             unsigned short val_nVar,
+                             unsigned short val_nPrimVar,
+                             unsigned short val_nPrimVarGrad,
+                             CConfig *config) : CNumerics(val_nDim,
+                                                          val_nVar,
+                                                          config) {
+  
+	implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+  
+  /*--- Rename for convenience ---*/
+  nPrimVar     = val_nPrimVar;
+  nPrimVarGrad = val_nPrimVarGrad;
+  
+  /*--- Compressible flow, primitive variables nDim+3, (T,vx,vy,vz,P,rho) ---*/
+	PrimVar_i    = new double [nPrimVar];
+	PrimVar_j    = new double [nPrimVar];
+	Mean_PrimVar = new double [nPrimVar];
+  
+  Mean_Diffusion_Coeff = new double[nSpecies];
+  
+  /*--- Compressible flow, primitive gradient variables nDim+3, (T,vx,vy,vz) ---*/
+	Mean_GradPrimVar = new double* [nPrimVarGrad];
+	for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+		Mean_GradPrimVar[iVar] = new double [nDim];
+}
+
+CAvgGrad_TNE2::~CAvgGrad_TNE2(void) {
+  
+	delete [] PrimVar_i;
+	delete [] PrimVar_j;
+	delete [] Mean_PrimVar;
+  delete [] Mean_Diffusion_Coeff;
+  
+	for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+		delete [] Mean_GradPrimVar[iVar];
+	delete [] Mean_GradPrimVar;
+}
+
+void CAvgGrad_TNE2::ComputeResidual(double *val_residual,
+                                    double **val_Jacobian_i,
+                                    double **val_Jacobian_j,
+                                    CConfig *config) {
+  
+  unsigned short iSpecies;
+  
+	/*--- Normalized normal vector ---*/
+	Area = 0;
+	for (iDim = 0; iDim < nDim; iDim++)
+		Area += Normal[iDim]*Normal[iDim];
+	Area = sqrt(Area);
+  
+	for (iDim = 0; iDim < nDim; iDim++)
+		UnitNormal[iDim] = Normal[iDim]/Area;
+  
+	for (iVar = 0; iVar < nPrimVar; iVar++) {
+		PrimVar_i[iVar] = V_i[iVar];
+		PrimVar_j[iVar] = V_j[iVar];
+		Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
+	}
+  
+	/*--- Mean transport coefficients ---*/
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    Mean_Diffusion_Coeff[iSpecies] = 0.5*(Diffusion_Coeff_i[iSpecies] +
+                                          Diffusion_Coeff_j[iSpecies]);
+	Mean_Laminar_Viscosity = 0.5*(Laminar_Viscosity_i +
+                                Laminar_Viscosity_j);
+  Mean_Thermal_Conductivity = 0.5*(Thermal_Conductivity_i +
+                                   Thermal_Conductivity_j);
+  Mean_Thermal_Conductivity_ve = 0.5*(Thermal_Conductivity_ve_i +
+                                      Thermal_Conductivity_ve_j);
+  
+  
+	/*--- Mean gradient approximation ---*/
+	for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+		for (iDim = 0; iDim < nDim; iDim++) {
+			Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar][iDim] +
+                                          PrimVar_Grad_j[iVar][iDim]);
+		}
+	}
+  
+	/*--- Get projected flux tensor ---*/
+	GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar,
+                     Normal, Mean_Diffusion_Coeff,
+                     Mean_Laminar_Viscosity,
+                     Mean_Thermal_Conductivity,
+                     Mean_Thermal_Conductivity_ve);
+  
+	/*--- Update viscous residual ---*/
+	for (iVar = 0; iVar < nVar; iVar++)
+		val_residual[iVar] = Proj_Flux_Tensor[iVar];
+  
+	/*--- Compute the implicit part ---*/
+	if (implicit) {
+		dist_ij = 0.0;
+		for (iDim = 0; iDim < nDim; iDim++)
+			dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
+		dist_ij = sqrt(dist_ij);
+    
+    GetViscousProjJacs(Mean_PrimVar, Mean_Diffusion_Coeff,
+                       Mean_Laminar_Viscosity,
+                       Mean_Thermal_Conductivity,
+                       Mean_Thermal_Conductivity_ve,
+                       dist_ij, UnitNormal, Area,
+                       Proj_Flux_Tensor, val_Jacobian_i,
+                       val_Jacobian_j, config);
+	}
+}
 
 
-CSource_TNE2::CSource_TNE2(unsigned short val_nDim, unsigned short val_nVar,
-                                   CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CSource_TNE2::CSource_TNE2(unsigned short val_nDim,
+                           unsigned short val_nVar,
+                           CConfig *config) : CNumerics(val_nDim,
+                                                        val_nVar,
+                                                        config) {
 
   /*--- Define useful constants ---*/
   nVar     = val_nVar;

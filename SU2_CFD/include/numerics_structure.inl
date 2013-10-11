@@ -235,9 +235,19 @@ inline void CNumerics::SetLaminarViscosity(double val_lam_viscosity_i, double va
 	Laminar_Viscosity_MultipleSpecies_j[iSpecies] = val_lam_viscosity_j;
 }
 
-inline void CNumerics::SetThermalConductivity(double val_therm_conductivity_i, double val_therm_conductivity_j, unsigned short iSpecies) {
-	Thermal_Conductivity_MultipleSpecies_i[iSpecies] = val_therm_conductivity_i;
-	Thermal_Conductivity_MultipleSpecies_j[iSpecies] = val_therm_conductivity_j;
+inline void CNumerics::SetThermalConductivity(double val_therm_conductivity_i, double val_therm_conductivity_j) {
+	Thermal_Conductivity_i = val_therm_conductivity_i;
+	Thermal_Conductivity_j = val_therm_conductivity_j;
+}
+
+inline void CNumerics::SetThermalConductivity_ve(double val_therm_conductivity_ve_i, double val_therm_conductivity_ve_j) {
+	Thermal_Conductivity_ve_i = val_therm_conductivity_ve_i;
+	Thermal_Conductivity_ve_j = val_therm_conductivity_ve_j;
+}
+
+inline void CNumerics::SetDiffusionCoeff(double* val_diffusioncoeff_i, double* val_diffusioncoeff_j) {
+	Diffusion_Coeff_i = val_diffusioncoeff_i;
+	Diffusion_Coeff_j = val_diffusioncoeff_j;
 }
 
 inline void CNumerics::SetThermalConductivity_vib(double val_therm_conductivity_vib_i, double val_therm_conductivity_vib_j, unsigned short iSpecies) {
@@ -577,7 +587,7 @@ inline double CSourcePieceWise_TurbSA::GetDestruction(void) { return Destruction
 
 inline double CSourcePieceWise_TurbSA::GetCrossProduction(void) { return CrossProduction; }
 
-inline void CSourcePieceWise_Plasma::SetElecField(double *val_Efield) { ElectricField = val_Efield; }
+inline void CSourcePieceWise_Plasma::SetElecField(double *val_Efield) { poissonField = val_Efield; }
 
 inline double* CSourcePieceWise_Plasma::GetMagneticField() { return JcrossB; }
 

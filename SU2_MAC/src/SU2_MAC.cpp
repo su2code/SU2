@@ -185,16 +185,16 @@ int main(int argc, char *argv[]) {
 		if ((config->GetKind_Adaptation() != SMOOTHING) && (config->GetKind_Adaptation() != FULL) &&
 				(config->GetKind_Adaptation() != WAKE) && (config->GetKind_Adaptation() != TWOPHASE) &&
 				(config->GetKind_Adaptation() != SUPERSONIC_SHOCK))
-			grid_adaptation->SetRestart_FlowSolution(config, config->GetRestart_FlowFileName());
+			grid_adaptation->SetRestart_FlowSolution(config, geo_adapt, config->GetRestart_FlowFileName());
 		
 		if ((config->GetKind_Adaptation() == GRAD_FLOW_ADJ) || (config->GetKind_Adaptation() == GRAD_ADJOINT)
 				|| (config->GetKind_Adaptation() == FULL_ADJOINT) || (config->GetKind_Adaptation() == ROBUST)
 				|| (config->GetKind_Adaptation() == COMPUTABLE) || (config->GetKind_Adaptation() == COMPUTABLE_ROBUST) ||
 				(config->GetKind_Adaptation() == REMAINING))
-			grid_adaptation->SetRestart_AdjSolution(config, config->GetRestart_AdjFileName());
+			grid_adaptation->SetRestart_AdjSolution(config, geo_adapt, config->GetRestart_AdjFileName());
 		
 		if ((config->GetKind_Adaptation() == FULL_LINEAR) || (config->GetKind_Adaptation() == COMPUTABLE_ROBUST)) {
-			grid_adaptation->SetRestart_LinSolution(config, config->GetRestart_LinFileName());
+			grid_adaptation->SetRestart_LinSolution(config, geo_adapt, config->GetRestart_LinFileName());
 		}
 	}
 	else {

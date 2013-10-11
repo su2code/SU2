@@ -428,8 +428,6 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
             break;
         default:
             cout << "Unrecognized mesh format specified!!" << endl;
-            cout << "Press any key to exit..." << endl;
-            cin.get();
 #ifdef NO_MPI
             exit(1);
 #else
@@ -520,8 +518,6 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
     /*--- Check the grid ---*/
     if (mesh_file.fail()) {
         cout << "There is no geometry file (CPhysicalGeometry)!! " << cstr << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
 #ifdef NO_MPI
         exit(1);
 #else
@@ -1098,8 +1094,6 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
             }
             else {
                 cout << "NPOIN improperly specified!!" << endl;
-                cout << "Press any key to exit..." << endl;
-                cin.get();
 #ifdef NO_MPI
                 exit(1);
 #else
@@ -1196,8 +1190,6 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
                                 
                                 if (nDim == 3) {
                                     cout << "Please remove line boundary conditions from the mesh file!" << endl;
-                                    cout << "Press any key to exit..." << endl;
-                                    cin.get();
 #ifdef NO_MPI
                                     exit(1);
 #else
@@ -1325,8 +1317,6 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
                     text_line.erase (0,15); iIndex = atoi(text_line.c_str());
                     if (iIndex != iPeriodic) {
                         cout << "PERIODIC_INDEX out of order in SU2 file!!" << endl;
-                        cout << "Press any key to exit..." << endl;
-                        cin.get();
 #ifdef NO_MPI
                         exit(1);
 #else
@@ -2049,9 +2039,12 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
                                 
                                 if (nDim == 3) {
                                     cout << "Please remove line boundary conditions from the mesh file!" << endl;
-                                    cout << "Press any key to exit..." << endl;
-                                    cin.get();
-                                    exit(1);
+#ifdef NO_MPI
+                                  exit(1);
+#else
+                                  MPI::COMM_WORLD.Abort(1);
+                                  MPI::Finalize();
+#endif
                                 }
                                 
                                 bound[iMarker][ielem] = new CLine(vnodes_cgns[0],vnodes_cgns[1],2);
@@ -2140,8 +2133,6 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
     cout << "To use CGNS, remove the -DNO_CGNS directive ";
     cout << "from the makefile and supply the correct path";
     cout << " to the CGNS library." << endl;
-    cout << "Press any key to exit..." << endl;
-    cin.get();
     exit(1);
 #endif
     
@@ -2174,8 +2165,6 @@ void CPhysicalGeometry::Read_NETCDF_Format(CConfig *config, string val_mesh_file
     /*--- Throw error if not in serial mode. ---*/
 #ifndef NO_MPI
     cout << "Parallel support with NETCDF format not yet implemented!!" << endl;
-    cout << "Press any key to exit..." << endl;
-    cin.get();
     MPI::COMM_WORLD.Abort(1);
     MPI::Finalize();
 #endif
@@ -2199,10 +2188,7 @@ void CPhysicalGeometry::Read_NETCDF_Format(CConfig *config, string val_mesh_file
     mesh_file.open(cstr, ios::in);
     if (mesh_file.fail()) {
         cout << "There is no geometry file (CPhysicalGeometry)!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
-        
     }
     
     while (getline (mesh_file, text_line)) {
@@ -3278,8 +3264,6 @@ void CPhysicalGeometry::SetBoundVolume(void) {
 			}
 			if (!CheckVol) {
 				cout << "The surface element ("<< iMarker <<", "<< iElem_Surface << ") doesn't have an associated volume element." << endl;
-				cout << "Press any key to exit..." << endl;
-				cin.get();
 				exit(1);
 			}
 		}
@@ -4884,8 +4868,7 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
 	eptr  = new int[ne+1];
 	if (nparts < 2) {
 		cout << "The number of domains must be greater than 1!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get(); exit(1);
+		exit(1);
 	}
     
 	iElem_Triangle = 0; iElem_Tetrahedron = 0;
@@ -8389,8 +8372,6 @@ CBoundaryGeometry::CBoundaryGeometry(CConfig *config, string val_mesh_filename, 
 	mesh_file.open(cstr, ios::in);
 	if (mesh_file.fail()) {
 		cout << "There is no geometry file (CBoundaryGeometry)!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get();
 #ifdef NO_MPI
 		exit(1);
 #else
@@ -8485,8 +8466,6 @@ CBoundaryGeometry::CBoundaryGeometry(CConfig *config, string val_mesh_filename, 
 			}
 			else {
 				cout << "NPOIN improperly specified!!" << endl;
-				cout << "Press any key to exit..." << endl;
-				cin.get();
 #ifdef NO_MPI
 				exit(1);
 #else
@@ -8644,8 +8623,6 @@ CBoundaryGeometry::CBoundaryGeometry(CConfig *config, string val_mesh_filename, 
 					text_line.erase (0,15); iIndex = atoi(text_line.c_str());
 					if (iIndex != iPeriodic) {
 						cout << "PERIODIC_INDEX out of order in SU2 file!!" << endl;
-						cout << "Press any key to exit..." << endl;
-						cin.get();
 #ifdef NO_MPI
 						exit(1);
 #else
