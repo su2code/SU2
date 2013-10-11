@@ -2522,9 +2522,9 @@ void CTurbSASolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_c
 void CTurbSASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter) {
   
 	/*--- Restart the solution from file information ---*/
-  unsigned short iDim, iVar, iMesh;
+  unsigned short iVar, iMesh;
 	unsigned long iPoint, index, iChildren, Point_Fine;
-  double dull_val, Area_Children, Area_Parent, Coord[3], *Solution_Fine;
+  double dull_val, Area_Children, Area_Parent, *Solution_Fine;
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
