@@ -1465,8 +1465,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
             RefOriginMoment_X[iMarker] = 0.0;
     } else {
         if (nRefOriginMoment_X == 1) {
+          
+          double aux_RefOriginMoment_X = RefOriginMoment_X[0];
+          delete [] RefOriginMoment_X;
+          RefOriginMoment_X = new double[nMarker_Monitoring];
+          nRefOriginMoment_X = nMarker_Monitoring;
+          
             for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
-                RefOriginMoment_X[iMarker] = RefOriginMoment_X[0];
+                RefOriginMoment_X[iMarker] = aux_RefOriginMoment_X;
         }
         else if (nRefOriginMoment_X != nMarker_Monitoring) {
             cout << "ERROR: Length of REF_ORIGIN_MOMENT_X must match number of Monitoring Markers!!" << endl;
@@ -1480,8 +1486,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
             RefOriginMoment_Y[iMarker] = 0.0;
     } else {
         if (nRefOriginMoment_Y == 1) {
+          
+            double aux_RefOriginMoment_Y = RefOriginMoment_Y[0];
+            delete [] RefOriginMoment_Y;
+            RefOriginMoment_Y = new double[nMarker_Monitoring];
+            nRefOriginMoment_Y = nMarker_Monitoring;
+          
             for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
-                RefOriginMoment_Y[iMarker] = RefOriginMoment_Y[0];
+                RefOriginMoment_Y[iMarker] = aux_RefOriginMoment_Y;
         }
         else if (nRefOriginMoment_Y != nMarker_Monitoring) {
             cout << "ERROR: Length of REF_ORIGIN_MOMENT_Y must match number of Monitoring Markers!!" << endl;
@@ -1495,15 +1507,21 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
             RefOriginMoment_Z[iMarker] = 0.0;
     } else {
         if (nRefOriginMoment_Z == 1) {
+          
+            double aux_RefOriginMoment_Z = RefOriginMoment_Z[0];
+            delete [] RefOriginMoment_Z;
+            RefOriginMoment_Z = new double[nMarker_Monitoring];
+            nRefOriginMoment_Z = nMarker_Monitoring;
+          
             for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
-                RefOriginMoment_Z[iMarker] = RefOriginMoment_Z[0];
+                RefOriginMoment_Z[iMarker] = aux_RefOriginMoment_Z;
         }
         else if (nRefOriginMoment_Z != nMarker_Monitoring) {
             cout << "ERROR: Length of REF_ORIGIN_MOMENT_Z must match number of Monitoring Markers!!" << endl;
             exit(1);
         }
     }
-    
+  
 	/*--- Allocating memory for previous time step solutions of Aeroelastic problem and Intializing variables. ---*/
 	if (Grid_Movement && (Kind_GridMovement[ZONE_0] == AEROELASTIC)) {
 		Aeroelastic_np1 = new double[4];
