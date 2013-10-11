@@ -458,10 +458,7 @@ void CSourcePieceWise_AdjTurb::ComputeResidual(double *val_residual, double **va
 		Bs += dTs_fw*dfw_g*dg_r*(dr_nuhat+dr_Shat*dShat_nuhat);	 // fw terms
     
 		val_residual[0] = -Bs*TurbPsi_i[0]*Volume;
-    
-    //        cout << val_residual[0] << endl;
-    //        cin.get();
-    
+        
 		if (implicit)
 			val_Jacobian_i[0][0] = -Bs*Volume;
     

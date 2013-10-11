@@ -66,8 +66,7 @@ CConfig::CConfig(char case_filename[200]) {
   
 	if (case_file.fail()) {
 		cout << "There is no configuration file!!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get(); exit(1);
+		exit(1);
 	}
   
 	/*--- Parse the configuration file and set the options ---*/
@@ -986,8 +985,7 @@ void CConfig::SetParsing(char case_filename[200]) {
   
   if (case_file.fail()) {
     cout << "There is no configuration file!!" << endl;
-    cout << "Press any key to exit..." << endl;
-    cin.get(); exit(1);
+    exit(1);
 	}
   
 	/*--- Parse the configuration file and set the options ---*/
@@ -1032,8 +1030,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if ((Kind_SU2 != SU2_DDC) && (Kind_SU2 != SU2_CFD) && (Kind_SU2 != SU2_SOL)) {
     if (Mesh_FileFormat == CGNS) {
     cout << "This software is not prepared for CGNS, please switch to SU2" << endl;
-    cout << "Press any key to exit..." << endl;
-    cin.get();
     exit(1);
     }
   }
@@ -1076,8 +1072,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Kind_GridMovement[iZone] = NO_MOVEMENT;
     if (Grid_Movement == true) {
       cout << "GRID_MOVEMENT = YES but no type provided in GRID_MOVEMENT_KIND!!" << endl;
-      cout << "Press any key to exit..." << endl;
-      cin.get();
       exit(1);
     }
   }
@@ -1109,8 +1103,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       (Kind_GridMovement[ZONE_0] != ROTATING_FRAME) &&
       (nGridMovement != nMarker_Moving)) {
     cout << "Number of GRID_MOVEMENT_KIND must match number of MARKER_MOVING!!" << endl;
-    cout << "Press any key to exit..." << endl;
-    cin.get();
     exit(1);
   }
   
@@ -1120,15 +1112,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (Grid_Movement && (Kind_GridMovement[ZONE_0] == RIGID_MOTION) &&
       (nGridMovement > 1)) {
     cout << "Can not support more than one type of rigid motion in GRID_MOVEMENT_KIND!!" << endl;
-    cout << "Press any key to exit..." << endl;
-    cin.get();
     exit(1);
   }
   if (Grid_Movement && (Kind_GridMovement[ZONE_0] == ROTATING_FRAME) &&
       (nGridMovement > 1)) {
     cout << "Can not support more than one rotating frame in GRID_MOVEMENT_KIND!!" << endl;
-    cout << "Press any key to exit..." << endl;
-    cin.get();
     exit(1);
   }
   
@@ -1148,8 +1136,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nMotion_Origin_X != nGridMovement)) {
         cout << "Length of MOTION_ORIGIN_X must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1161,8 +1147,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nMotion_Origin_Y != nGridMovement)) {
         cout << "Length of MOTION_ORIGIN_Y must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1174,8 +1158,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nMotion_Origin_Z != nGridMovement)) {
         cout << "Length of MOTION_ORIGIN_Z must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1188,8 +1170,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nTranslation_Rate_X != nGridMovement)) {
         cout << "Length of TRANSLATION_RATE_X must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1201,8 +1181,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nTranslation_Rate_Y != nGridMovement)) {
         cout << "Length of TRANSLATION_RATE_Y must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1214,8 +1192,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nTranslation_Rate_Z != nGridMovement)) {
         cout << "Length of TRANSLATION_RATE_Z must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1228,8 +1204,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nRotation_Rate_X != nGridMovement)) {
         cout << "Length of ROTATION_RATE_X must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1241,8 +1215,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nRotation_Rate_Y != nGridMovement)) {
         cout << "Length of ROTATION_RATE_Y must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1254,8 +1226,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nRotation_Rate_Z != nGridMovement)) {
         cout << "Length of ROTATION_RATE_Z must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1268,8 +1238,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPitching_Omega_X != nGridMovement)) {
         cout << "Length of PITCHING_OMEGA_X must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1281,8 +1249,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPitching_Omega_Y != nGridMovement)) {
         cout << "Length of PITCHING_OMEGA_Y must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1294,8 +1260,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPitching_Omega_Z != nGridMovement)) {
         cout << "Length of PITCHING_OMEGA_Z must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1308,8 +1272,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPitching_Ampl_X != nGridMovement)) {
         cout << "Length of PITCHING_AMPL_X must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1321,8 +1283,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPitching_Ampl_Y != nGridMovement)) {
         cout << "Length of PITCHING_AMPL_Y must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1334,8 +1294,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPitching_Ampl_Z != nGridMovement)) {
         cout << "Length of PITCHING_AMPL_Z must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1348,8 +1306,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPitching_Phase_X != nGridMovement)) {
         cout << "Length of PITCHING_PHASE_X must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1361,8 +1317,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPitching_Phase_Y != nGridMovement)) {
         cout << "Length of PITCHING_PHASE_Y must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1374,8 +1328,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPitching_Phase_Z != nGridMovement)) {
         cout << "Length of PITCHING_PHASE_Z must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1388,8 +1340,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPlunging_Omega_X != nGridMovement)) {
         cout << "Length of PLUNGING_OMEGA_X must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1401,8 +1351,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPlunging_Omega_Y != nGridMovement)) {
         cout << "Length of PLUNGING_OMEGA_Y must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1414,8 +1362,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPlunging_Omega_Z != nGridMovement)) {
         cout << "Length of PLUNGING_OMEGA_Z must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1428,8 +1374,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPlunging_Ampl_X != nGridMovement)) {
         cout << "Length of PLUNGING_AMPL_X must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1441,8 +1385,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPlunging_Ampl_Y != nGridMovement)) {
         cout << "Length of PLUNGING_AMPL_Y must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1454,8 +1396,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPlunging_Ampl_Z != nGridMovement)) {
         cout << "Length of PLUNGING_AMPL_Z must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1516,8 +1456,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     
     if ((nRefOriginMoment_X != nRefOriginMoment_Y) || (nRefOriginMoment_X != nRefOriginMoment_Z) ) {
         cout << "ERROR: Length of REF_ORIGIN_MOMENT_X, REF_ORIGIN_MOMENT_Y and REF_ORIGIN_MOMENT_Z must be the same!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
     }
 
@@ -1532,8 +1470,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         }
         else if (nRefOriginMoment_X != nMarker_Monitoring) {
             cout << "ERROR: Length of REF_ORIGIN_MOMENT_X must match number of Monitoring Markers!!" << endl;
-            cout << "Press any key to exit..." << endl;
-            cin.get();
             exit(1);
         }
     }
@@ -1549,8 +1485,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         }
         else if (nRefOriginMoment_Y != nMarker_Monitoring) {
             cout << "ERROR: Length of REF_ORIGIN_MOMENT_Y must match number of Monitoring Markers!!" << endl;
-            cout << "Press any key to exit..." << endl;
-            cin.get();
             exit(1);
         }
     }
@@ -1566,8 +1500,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         }
         else if (nRefOriginMoment_Z != nMarker_Monitoring) {
             cout << "ERROR: Length of REF_ORIGIN_MOMENT_Z must match number of Monitoring Markers!!" << endl;
-            cout << "Press any key to exit..." << endl;
-            cin.get();
             exit(1);
         }
     }
@@ -1757,30 +1689,22 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if ((Kind_SU2 == SU2_CFD) && (Kind_Solver == NO_SOLVER)) {
 		cout << "You must define a solver type!!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get();
 		exit(1);
 	}
 
 	if (((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS))
 			&& (Kind_ViscNumScheme_Flow == NONE)) {
 		cout << "You must define a viscous numerical method for the flow equations!!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get();
 		exit(1);
 	}
 
 	if (((Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) && (Kind_ViscNumScheme_AdjFlow == NONE)) {
 		cout << "You must define a viscous numerical method for the adjoint Navier-Stokes equations!!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get();
 		exit(1);
 	}
 
 	if (((Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) && (Kind_SourNumScheme_AdjFlow == NONE)) {
 		cout << "You must define a source numerical method for the adjoint Navier-Stokes equations!!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get();
 		exit(1);
 	}
 
@@ -5305,8 +5229,6 @@ unsigned short CConfig::GetMarker_Config_Tag(string val_marker) {
 			return iMarker_Config;
 
 	cout <<"The configuration file doesn't have any definition for marker "<< val_marker <<"!!" << endl;
-	cout <<"Press any key to exit..." << endl;
-	cin.get();
 	exit(1);
 }
 
@@ -5569,8 +5491,7 @@ string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {
   /*--- Check that a positive value iteration is requested (for now). ---*/
   if (val_iter < 0) {
     cout << "Requesting a negative iteration number for the restart file!!" << endl;
-    cout << "Press any key to exit..." << endl;
-    cin.get(); exit(1);
+    exit(1);
   }
   
   /*--- Append iteration number for unsteady cases ---*/
@@ -6304,8 +6225,7 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 		/*--- In case there is no restart file ---*/
 		if (farfield_file.fail()) {
 			cout << "There is no farfield bounadry data file!!" << endl;
-			cout << "Press any key to exit..." << endl;
-			cin.get(); exit(1);
+			exit(1);
 		}
     
 		/*--- The first line is the header ---*/

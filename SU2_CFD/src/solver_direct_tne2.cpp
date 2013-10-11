@@ -283,8 +283,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
 		if (restart_file.fail()) {
 			cout << "There is no flow restart file!! " << filename.data()
            << "."<< endl;
-			cout << "Press any key to exit..." << endl;
-			cin.get(); exit(1);
+			exit(1);
 		}
     
 		/*--- In case this is a parallel simulation, we need to perform the
@@ -3478,8 +3477,7 @@ void CTNE2EulerSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned
 	/*--- In case there is no file ---*/
 	if (restart_file.fail()) {
 		cout << "There is no flow restart file!! " << restart_filename.data() << "."<< endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get(); exit(1);
+		exit(1);
 	}
   
 	/*--- Store the previous solution (needed for aeroacoustic adjoint) ---*/
@@ -3880,8 +3878,7 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
 		/*--- In case there is no file ---*/
 		if (restart_file.fail()) {
 			cout << "There is no flow restart file!! " << filename.data() << "."<< endl;
-			cout << "Press any key to exit..." << endl;
-			cin.get(); exit(1);
+			exit(1);
 		}
     
 		/*--- In case this is a parallel simulation, we need to perform the

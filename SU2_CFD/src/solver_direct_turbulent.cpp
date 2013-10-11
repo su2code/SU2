@@ -893,8 +893,6 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 		restart_file.open(filename.data(), ios::in);
 		if (restart_file.fail()) {
 			cout << "There is no turbulent restart file!!" << endl;
-			cout << "Press any key to exit..." << endl;
-			cin.get();
 			exit(1);
 		}
         
@@ -2543,8 +2541,7 @@ void CTurbSASolver::GetRestart(CGeometry *geometry, CConfig *config, int val_ite
 	restart_file.open(restart_filename.data(), ios::in);
 	if (restart_file.fail()) {
 		cout << "There is no flow restart file!! " << restart_filename.data() << "."<< endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get(); exit(1);
+		exit(1);
 	}
     
 	/*--- In case this is a parallel simulation, we need to perform the
@@ -2755,8 +2752,6 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
         
 		if (restart_file.fail()) {
 			cout << "There is no turbulent restart file!!" << endl;
-			cout << "Press any key to exit..." << endl;
-			cin.get();
 			exit(1);
 		}
         

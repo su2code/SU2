@@ -336,8 +336,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 		restart_file.open(filename.data(), ios::in);
 		if (restart_file.fail()) {
 			cout << "There is no flow restart file!! " << filename.data() << "."<< endl;
-			cout << "Press any key to exit..." << endl;
-			cin.get(); exit(1);
+			exit(1);
 		}    
 
 		/*--- In case this is a parallel simulation, we need to perform the
@@ -6545,8 +6544,7 @@ void CEulerSolver::GetRestart(CGeometry *geometry, CConfig *config, int val_iter
 	restart_file.open(restart_filename.data(), ios::in);
 	if (restart_file.fail()) {
 		cout << "There is no flow restart file!! " << restart_filename.data() << "."<< endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get(); exit(1);
+		exit(1);
 	}
 
 	/*--- In case this is a parallel simulation, we need to perform the
@@ -7134,8 +7132,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 		restart_file.open(filename.data(), ios::in);
 		if (restart_file.fail()) {
 			cout << "There is no flow restart file!! " << filename.data() << "."<< endl;
-			cout << "Press any key to exit..." << endl;
-			cin.get(); exit(1);
+			exit(1);
 		}
         
 		/*--- In case this is a parallel simulation, we need to perform the

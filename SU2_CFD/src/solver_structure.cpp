@@ -1586,8 +1586,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- In case there is no restart file ---*/
   if (restart_file.fail()) {
     cout << "There is no SU2 restart file!!" << endl;
-    cout << "Press any key to exit..." << endl;
-    cin.get(); exit(1);
+    exit(1);
   }
   
   /*--- Output the file name to the console. ---*/
@@ -1818,8 +1817,7 @@ void CBaselineSolver::GetRestart(CGeometry *geometry, CConfig *config, int val_i
 	/*--- In case there is no file ---*/
 	if (solution_file.fail()) {
 		cout << "There is no SU2 restart file!!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get(); exit(1);
+		exit(1);
 	}
   
   /*--- Output the file name to the console. ---*/

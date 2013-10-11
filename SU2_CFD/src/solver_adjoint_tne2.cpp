@@ -241,8 +241,7 @@ CAdjTNE2EulerSolver::CAdjTNE2EulerSolver(CGeometry *geometry, CConfig *config, u
 		/*--- In case there is no file ---*/
 		if (restart_file.fail()) {
 			cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
-			cout << "Press any key to exit..." << endl;
-			cin.get(); exit(1);
+			exit(1);
 		}
     
 		/*--- In case this is a parallel simulation, we need to perform the
@@ -1095,7 +1094,7 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
             break;
           case SIDEFORCE_COEFFICIENT :
             if (nDim == 2) { cout << "This functional is not possible in 2D!!" << endl;
-              cout << "Press any key to exit..." << endl; cin.get(); exit(1);
+              exit(1);
             }
             if (nDim == 3) { ForceProj_Vector[0] = -C_p*sin(Beta) * cos(Alpha); ForceProj_Vector[1] = C_p*cos(Beta); ForceProj_Vector[2] = -C_p*sin(Beta) * sin(Alpha); }
             break;
@@ -1110,11 +1109,11 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
             }
             break;
           case MOMENT_X_COEFFICIENT :
-            if (nDim == 2) { cout << "This functional is not possible in 2D!!" << endl; cout << "Press any key to exit..." << endl; cin.get(); exit(1); }
+            if (nDim == 2) { cout << "This functional is not possible in 2D!!" << endl; exit(1); }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = -C_p*(z - z_origin)/RefLengthMoment; ForceProj_Vector[2] = C_p*(y - y_origin)/RefLengthMoment; }
             break;
           case MOMENT_Y_COEFFICIENT :
-            if (nDim == 2) { cout << "This functional is not possible in 2D!!" << endl; cout << "Press any key to exit..." << endl; cin.get(); exit(1); }
+            if (nDim == 2) { cout << "This functional is not possible in 2D!!" << endl; exit(1); }
             if (nDim == 3) { ForceProj_Vector[0] = C_p*(z - z_origin)/RefLengthMoment; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = -C_p*(x - x_origin)/RefLengthMoment; }
             break;
           case MOMENT_Z_COEFFICIENT :
@@ -1145,15 +1144,13 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
             break;
           case FORCE_Z_COEFFICIENT :
             if (nDim == 2) {cout << "This functional is not possible in 2D!!" << endl;
-              cout << "Press any key to exit..." << endl;
-              cin.get(); exit(1);
+              exit(1);
             }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = C_p; }
             break;
           case THRUST_COEFFICIENT :
             if (nDim == 2) {cout << "This functional is not possible in 2D!!" << endl;
-              cout << "Press any key to exit..." << endl;
-              cin.get(); exit(1);
+              exit(1);
             }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = C_p; }
             break;
@@ -1163,8 +1160,7 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
             break;
           case FIGURE_OF_MERIT :
             if (nDim == 2) {cout << "This functional is not possible in 2D!!" << endl;
-              cout << "Press any key to exit..." << endl;
-              cin.get(); exit(1);
+              exit(1);
             }
             if (nDim == 3) {
               ForceProj_Vector[0] = -C_p*invCQ;
@@ -2464,8 +2460,7 @@ CAdjTNE2NSSolver::CAdjTNE2NSSolver(CGeometry *geometry, CConfig *config, unsigne
 		/*--- In case there is no file ---*/
 		if (restart_file.fail()) {
 			cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
-			cout << "Press any key to exit..." << endl;
-			cin.get(); exit(1);
+			exit(1);
 		}
     
 		/*--- In case this is a parallel simulation, we need to perform the

@@ -2599,8 +2599,6 @@ void CSourceWindGust::ComputeResidual(double *val_residual, double **val_Jacobia
 		val_residual[3] = se*Volume;
 	} else {
         cout << "ERROR: You should only be in the gust source term in two dimensions" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
 #ifdef NO_MPI
         exit(1);
 #else

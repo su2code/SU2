@@ -112,8 +112,7 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config) : CSolver()
 		/*--- In case there is no file ---*/
 		if (restart_file.fail()) {
 			cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
-			cout << "Press any key to exit..." << endl;
-			cin.get(); exit(1);
+			exit(1);
 		}
     
     /*--- In case this is a parallel simulation, we need to perform the

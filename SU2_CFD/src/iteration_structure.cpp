@@ -1099,8 +1099,6 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
     /*--- Check to make sure gust lenght is not zero or negative ---*/
     if (L <= 0.0) {
         cout << "ERROR: The gust length needs to be positive" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
 #ifdef NO_MPI
         exit(1);
 #else
@@ -1807,8 +1805,6 @@ void SetSliding_Interfaces(CGeometry ***geometry_container, CSolver ****solver_c
 
 #ifndef NO_MPI
 	cout << "!!! Error: Sliding mesh interfaces not yet supported in parallel. !!!" << endl;
-	cout << "Press any key to exit..." << endl;
-	cin.get();
 	MPI::COMM_WORLD.Abort(1);
 	MPI::Finalize();
 #endif
@@ -1908,8 +1904,6 @@ void SetSliding_Interfaces(CGeometry ***geometry_container, CSolver ****solver_c
 
 								} else {
 									cout << "!!! Error: Sliding mesh interfaces not yet supported in 3-D. !!!" << endl;
-									cout << "Press any key to exit..." << endl;
-									cin.get();
 									exit(1);
 								}
 							}

@@ -133,8 +133,6 @@ CAdjLevelSetSolver::CAdjLevelSetSolver(CGeometry *geometry, CConfig *config, uns
 		
 		if (restart_file.fail()) {
 			cout << "There is no level set restart file!!" << endl;
-			cout << "Press any key to exit..." << endl;
-			cin.get();
 			exit(1);
 		}
     

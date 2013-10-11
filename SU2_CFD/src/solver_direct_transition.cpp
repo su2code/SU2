@@ -149,8 +149,6 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
 		restart_file.open(cstr, ios::in);
 		if (restart_file.fail()) {
 			cout << "There is no turbulent restart file!!" << endl;
-			cout << "Press any key to exit..." << endl;
-			cin.get();
 			exit(1);
 		}
 		

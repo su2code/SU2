@@ -3292,8 +3292,7 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
   /*--- Throw error if there is no file ---*/
   if (motion_file.fail()) {
     cout << "There is no mesh motion file!" << endl;
-    cout << "Press any key to exit..." << endl;
-    cin.get(); exit(1);
+    exit(1);
   }
   
   /*--- Read in and store the new mesh node locations ---*/ 
@@ -3552,8 +3551,6 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 	mesh_file.open(cstr, ios::in);
 	if (mesh_file.fail()) {
 		cout << "There is no geometry file (ReadFFDInfo)!!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get();
 		exit(1);
 	}
 	
