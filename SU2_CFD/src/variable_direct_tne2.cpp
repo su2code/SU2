@@ -723,7 +723,7 @@ void CTNE2EulerVariable::SetdPdrhos(CConfig *config) {
 
 bool CTNE2EulerVariable::SetPrimVar_Compressible(CConfig *config) {
 
-	unsigned short iDim, iVar, iSpecies;
+	unsigned short iVar, iSpecies;
   bool check_dens, check_press, check_sos, check_temp, RightVol;
   
   /*--- Initialize booleans that check for physical solutions ---*/
@@ -1131,7 +1131,7 @@ void CTNE2NSVariable::SetVorticity(void) {
 }
 
 bool CTNE2NSVariable::SetPrimVar_Compressible(CConfig *config) {
-	unsigned short iDim, iVar, iSpecies;
+	unsigned short iVar, iSpecies;
   bool check_dens, check_press, check_sos, check_temp, RightVol;
   
   /*--- Initialize booleans that check for physical solutions ---*/
