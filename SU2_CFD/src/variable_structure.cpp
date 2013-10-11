@@ -295,6 +295,10 @@ void CVariable::SetRes_TruncErrorZero(void) {
 		Res_TruncError[iVar] = 0.0;
 }
 
+void CVariable::SetVal_ResTruncError_Zero(unsigned short val_var) {
+		Res_TruncError[val_var] = 0.0;
+}
+
 void CVariable::GetResidual_Sum(double *val_residual) {
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		val_residual[iVar] = Residual_Sum[iVar];

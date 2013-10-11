@@ -333,6 +333,11 @@ public:
 	 * \brief Set the truncation error to zero.
 	 */		
 	void SetRes_TruncErrorZero(void);
+  
+  /*!
+	 * \brief Set the truncation error to zero.
+	 */
+	void SetVal_ResTruncError_Zero(unsigned short val_var);
 
 	/*!
 	 * \brief Set the velocity of the truncation error to zero.
@@ -832,6 +837,12 @@ public:
 	 */		
 	virtual double GetDensityInc(void);
 
+  /*!
+	 * \brief A virtual member.
+	 * \return Value of the levelset for the freesurface flows.
+	 */
+	virtual double GetLevelSet(void);
+  
 	/*!
 	 * \brief A virtual member.
 	 * \return Value of the beta for the incompressible flow.
@@ -929,6 +940,24 @@ public:
 	 * \return The laminar viscosity of the flow.
 	 */
 	virtual double GetLaminarViscosity(unsigned short iSpecies);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the species diffusion coefficient.
+   */
+  virtual double* GetDiffusionCoeff(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the thermal conductivity (translational/rotational)
+   */
+  virtual double GetThermalConductivity(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the thermal conductivity (vibrational)
+   */
+  virtual double GetThermalConductivity_ve(void);
   
   /*!
    * \brief A virtual member.
@@ -1048,7 +1077,7 @@ public:
   /*!
 	 * \brief A virtual member.
 	 */
-	virtual bool SetPrimVar_FreeSurface(double Density_Inf, CConfig *config);
+	virtual bool SetPrimVar_FreeSurface(CConfig *config);
 	
 	/*!
 	 * \brief A virtual member.
@@ -1058,7 +1087,7 @@ public:
   /*!
 	 * \brief A virtual member.
 	 */
-	virtual bool SetPrimVar_FreeSurface(double Density_Inf, double Viscosity_Inf, double turb_ke, CConfig *config);
+	virtual bool SetPrimVar_FreeSurface(double turb_ke, CConfig *config);
 	
 	/*!
 	 * \brief A virtual member.
@@ -1275,7 +1304,7 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_velocity - Pointer to the velocity.
-	 */		
+	 */
 	virtual void SetVelocity_Old(double *val_velocity, unsigned short val_incomp);
 
 	/*!
@@ -1534,14 +1563,14 @@ public:
 
 	/*!
 	 * \brief A virtual member.
-	 * \param[in] ElectricField - ElectricField
+	 * \param[in] poissonField - poissonField
 	 */
-	virtual void SetElectricField(double* val_ElectricField);
+	virtual void SetpoissonField(double* val_poissonField);
 
 	/*!
 	 * \brief A virtual member.
 	 */
-	virtual double* GetElectricField();
+	virtual double* GetpoissonField();
 
 	/*!
 	 * \brief A virtual member.
@@ -2062,7 +2091,7 @@ public:
   /*!
 	 * \brief Set all the primitive variables for incompressible flows.
 	 */
-	bool SetPrimVar_FreeSurface(double Density_Inf, CConfig *config);
+	bool SetPrimVar_FreeSurface(CConfig *config);
 	
 	/*!
 	 * \brief Get the primitive variables.
@@ -2131,6 +2160,12 @@ public:
 	 */
 	double GetDensityInc(void);
 
+  /*!
+	 * \brief Get the value of levelset for the freesurface flows
+	 * \return Value of beta squared.
+	 */
+	double GetLevelSet(void);
+  
 	/*!
 	 * \brief Get the value of beta squared for the incompressible flow
 	 * \return Value of beta squared.
@@ -2403,7 +2438,7 @@ public:
   /*!
 	 * \brief Set all the primitive variables for incompressible flows
 	 */
-	bool SetPrimVar_FreeSurface(double Density_Inf, double Viscosity_Inf, double turb_ke, CConfig *config);
+	bool SetPrimVar_FreeSurface(double turb_ke, CConfig *config);
 };
 
 /*! 
@@ -3015,7 +3050,7 @@ protected:
 	*Residual_ElecForce,	/*!< \brief Residual of the electrostatic force source terms. */
 	*Residual_MomentumExch, /*!< \brief Residual of the collisional momentum exchange source terms. */
 	*Residual_EnergyExch;	/*! < \brief Residual of the collisional energy exchange source terms. */
-	double *Elec_Field;		/*! < \brief Electric field value from the electrical solver. */
+	double *Elec_Field;		/*! < \brief poisson field value from the poissonal solver. */
 	double *B_Field;		/*! < \brief Magnetic field value */
 	
 	/*--- Primitive variable definition ---*/
@@ -3390,14 +3425,14 @@ public:
 
 	/*!
 	 * \brief A virtual member.
-	 * \param[in] ElectricField - ElectricField
+	 * \param[in] poissonField - poissonField
 	 */
-	void SetElectricField(double* val_ElectricField);
+	void SetpoissonField(double* val_poissonField);
 
 	/*!
 	 * \brief A virtual member.
 	 */
-	double* GetElectricField();
+	double* GetpoissonField();
 
 	/*!
 	 * \brief Get the value of the magnetic field
@@ -3410,77 +3445,6 @@ public:
 	 * \param[in] Value of the magnetic field
 	 */
 	void SetMagneticField(double* val_B);
-
-};
-
-
-/*! 
- * \class CLevelSetVariable
- * \brief Main class for defining the variables of the Level Set.
- * \ingroup LevelSet_Model
- * \author F. Palacios.
- * \version 2.0.8
- */
-class CLevelSetVariable : public CVariable {
-protected:
-	double DiffLevelSet;		/*!< \brief  Diff LevelSet Distribution. */
-
-  /*--- Primitive variable definition ---*/
-	double *Primitive;	/*!< \brief Level set function (distance based). */
-
-public:
-	/*!
-	 * \brief Constructor of the class. 
-	 */	
-	CLevelSetVariable(void);
-
-	/*!
-	 * \overload
-	 * \param[in] val_ndim - Number of dimensions of the problem.
-	 * \param[in] val_nvar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CLevelSetVariable(unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
-
-	/*!
-	 * \overload
-	 * \param[in] val_levelset - Level set variable value (initialization value).
-	 * \param[in] val_ndim - Number of dimensions of the problem.
-	 * \param[in] val_nvar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.	 
-	 */	
-	CLevelSetVariable(double val_levelset, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
-  
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	virtual ~CLevelSetVariable(void);
-  
-  /*!
-	 * \brief Get the primitive variables.
-	 * \param[in] val_var - Index of the variable.
-	 * \return Value of the primitive variable for the index <i>val_var</i>.
-	 */
-	double GetPrimVar(unsigned short val_var);
-  
-  /*!
-	 * \brief Set the value of the primitive variables.
-	 * \param[in] val_var - Index of the variable.
-   * \param[in] val_var - Index of the variable.
-	 * \return Set the value of the primitive variable for the index <i>val_var</i>.
-	 */
-	void SetPrimVar(unsigned short val_var, double val_prim);
-  
-	/*!
-	 * \brief Set the value of the diff level set (value-target).
-	 * \param[in] val_difflevelset - Value of the diff level set (value-target).
-	 */	
-	void SetDiffLevelSet(double val_difflevelset);
-
-	/*!
-	 * \brief Get the value of theta.
-	 */		
-	double GetDiffLevelSet(void);
 
 };
 
@@ -3875,7 +3839,7 @@ public:
 	 * \brief Set the velocity vector from the old solution.
 	 * \param[in] val_velocity - Pointer to the velocity.
 	 */
-	void SetVelocity_Old(double *val_velocity, bool val_incomp);
+	void SetVelocity_Old(double *val_velocity, unsigned short val_incomp);
   
 	/*!
 	 * \brief Get the value of the preconditioner Beta.
@@ -3964,7 +3928,10 @@ private:
 	double Temperature_Ref;   /*!< \brief Reference temperature of the fluid. */
 	double Viscosity_Ref;     /*!< \brief Reference viscosity of the fluid. */
 	double Viscosity_Inf;     /*!< \brief Viscosity of the fluid at the infinity. */
+  double *DiffusionCoeff;    /*!< \brief Diffusion coefficient of the mixture. */
 	double LaminarViscosity;	/*!< \brief Viscosity of the fluid. */
+  double ThermalCond;       /*!< \brief T-R thermal conductivity of the gas mixture. */
+  double ThermalCond_ve;    /*!< \brief V-E thermal conductivity of the gas mixture. */
 	double Vorticity[3];		/*!< \brief Vorticity of the fluid. */
   
 public:
@@ -4007,11 +3974,22 @@ public:
 	 * \brief Destructor of the class.
 	 */
 	~CTNE2NSVariable(void);
+
+  /*!
+	 * \brief Set the laminar viscosity.
+	 */
+	void SetDiffusionCoeff(CConfig *config);
   
 	/*!
 	 * \brief Set the laminar viscosity.
 	 */
-	void SetLaminarViscosity();
+	void SetLaminarViscosity(CConfig *config);
+  
+  /*!
+	 * \brief Get the laminar viscosity of the flow.
+	 * \return Value of the laminar viscosity of the flow.
+	 */
+	void SetThermalConductivity(CConfig *config);
   
 	/*!
 	 * \overload
@@ -4024,11 +4002,29 @@ public:
 	 */
 	void SetVorticity(void);
   
+  /*!
+	 * \brief Get the species diffusion coefficient.
+	 * \return Value of the species diffusion coefficient.
+	 */
+  double* GetDiffusionCoeff(void);
+  
 	/*!
 	 * \brief Get the laminar viscosity of the flow.
 	 * \return Value of the laminar viscosity of the flow.
 	 */
 	double GetLaminarViscosity(void);
+  
+  /*!
+	 * \brief Get the thermal conductivity of the flow.
+	 * \return Value of the laminar viscosity of the flow.
+	 */
+	double GetThermalConductivity(void);
+  
+  /*!
+	 * \brief Get the vib-el. thermal conductivity of the flow.
+	 * \return Value of the laminar viscosity of the flow.
+	 */
+	double GetThermalConductivity_ve(void);
   
 	/*!
 	 * \brief Set the temperature at the wall
@@ -4041,11 +4037,6 @@ public:
 	 * \return Value of the vorticity.
 	 */
 	double GetVorticity(unsigned short val_dim);
-  
-	/*!
-	 * \brief Set the value of pressure.
-	 */
-	bool SetPressure(CConfig *config);
 	
 	/*!
 	 * \brief Set all the primitive variables for compressible flows

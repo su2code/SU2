@@ -241,8 +241,7 @@ CAdjTNE2EulerSolver::CAdjTNE2EulerSolver(CGeometry *geometry, CConfig *config, u
 		/*--- In case there is no file ---*/
 		if (restart_file.fail()) {
 			cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
-			cout << "Press any key to exit..." << endl;
-			cin.get(); exit(1);
+			exit(1);
 		}
     
 		/*--- In case this is a parallel simulation, we need to perform the
@@ -1005,7 +1004,7 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
 	double Beta       = (config->GetAoS()*PI_NUMBER)/180.0;
 	double RefAreaCoeff    = config->GetRefAreaCoeff();
 	double RefLengthMoment  = config->GetRefLengthMoment();
-	double *RefOriginMoment = config->GetRefOriginMoment();
+	double *RefOriginMoment = config->GetRefOriginMoment(0);
   double *ForceProj_Vector, x = 0.0, y = 0.0, z = 0.0, *Normal, C_d, C_l, C_t, C_q;
 	double x_origin, y_origin, z_origin, WDrag, Area;
 	double RefVel2, RefDensity;
@@ -1095,7 +1094,7 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
             break;
           case SIDEFORCE_COEFFICIENT :
             if (nDim == 2) { cout << "This functional is not possible in 2D!!" << endl;
-              cout << "Press any key to exit..." << endl; cin.get(); exit(1);
+              exit(1);
             }
             if (nDim == 3) { ForceProj_Vector[0] = -C_p*sin(Beta) * cos(Alpha); ForceProj_Vector[1] = C_p*cos(Beta); ForceProj_Vector[2] = -C_p*sin(Beta) * sin(Alpha); }
             break;
@@ -1110,11 +1109,11 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
             }
             break;
           case MOMENT_X_COEFFICIENT :
-            if (nDim == 2) { cout << "This functional is not possible in 2D!!" << endl; cout << "Press any key to exit..." << endl; cin.get(); exit(1); }
+            if (nDim == 2) { cout << "This functional is not possible in 2D!!" << endl; exit(1); }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = -C_p*(z - z_origin)/RefLengthMoment; ForceProj_Vector[2] = C_p*(y - y_origin)/RefLengthMoment; }
             break;
           case MOMENT_Y_COEFFICIENT :
-            if (nDim == 2) { cout << "This functional is not possible in 2D!!" << endl; cout << "Press any key to exit..." << endl; cin.get(); exit(1); }
+            if (nDim == 2) { cout << "This functional is not possible in 2D!!" << endl; exit(1); }
             if (nDim == 3) { ForceProj_Vector[0] = C_p*(z - z_origin)/RefLengthMoment; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = -C_p*(x - x_origin)/RefLengthMoment; }
             break;
           case MOMENT_Z_COEFFICIENT :
@@ -1145,15 +1144,13 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
             break;
           case FORCE_Z_COEFFICIENT :
             if (nDim == 2) {cout << "This functional is not possible in 2D!!" << endl;
-              cout << "Press any key to exit..." << endl;
-              cin.get(); exit(1);
+              exit(1);
             }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = C_p; }
             break;
           case THRUST_COEFFICIENT :
             if (nDim == 2) {cout << "This functional is not possible in 2D!!" << endl;
-              cout << "Press any key to exit..." << endl;
-              cin.get(); exit(1);
+              exit(1);
             }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = C_p; }
             break;
@@ -1163,8 +1160,7 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
             break;
           case FIGURE_OF_MERIT :
             if (nDim == 2) {cout << "This functional is not possible in 2D!!" << endl;
-              cout << "Press any key to exit..." << endl;
-              cin.get(); exit(1);
+              exit(1);
             }
             if (nDim == 3) {
               ForceProj_Vector[0] = -C_p*invCQ;
@@ -1823,59 +1819,6 @@ void CAdjTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
   
 }
 
-void CAdjTNE2EulerSolver::Solve_LinearSystem(CGeometry *geometry,
-                                             CSolver **solver_container,
-                                             CConfig *config){
-	unsigned long iPoint;
-	unsigned long total_index;
-	unsigned short iVar;
-	double *ObjFuncSource;
-  
-	/*--- Build linear system ---*/
-	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-		ObjFuncSource = node[iPoint]->GetObjFuncSource();
-		for (iVar = 0; iVar < nVar; iVar++) {
-			total_index = iPoint*nVar+iVar;
-			LinSysRes[total_index] = ObjFuncSource[iVar];
-			LinSysSol[total_index] = 0.0;
-		}
-	}
-  
-	/*--- Solve the linear system (Krylov subspace methods) ---*/
-  CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
-  
-  CPreconditioner* precond = NULL;
-  if (config->GetKind_Linear_Solver_Prec() == JACOBI) {
-    Jacobian.BuildJacobiPreconditioner();
-    precond = new CJacobiPreconditioner(Jacobian, geometry, config);
-  }
-  else if (config->GetKind_Linear_Solver_Prec() == LU_SGS) {
-    precond = new CLU_SGSPreconditioner(Jacobian, geometry, config);
-  }
-  else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-    Jacobian.BuildJacobiPreconditioner();
-    Jacobian.BuildLineletPreconditioner(geometry, config);
-    precond = new CLineletPreconditioner(Jacobian, geometry, config);
-  }
-  
-  CSysSolve system;
-  if (config->GetKind_Linear_Solver() == BCGSTAB)
-    system.BCGSTAB(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(),
-                   config->GetLinear_Solver_Iter(), true);
-  else if (config->GetKind_Linear_Solver() == FGMRES)
-    system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(),
-                  config->GetLinear_Solver_Iter(), true);
-  
-  delete mat_vec;
-  delete precond;
-  
-	/*--- Update solution (system written in terms of increments) ---*/
-	for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-		for (iVar = 0; iVar < nVar; iVar++)
-			node[iPoint]->SetSolution(iVar, config->GetLinear_Solver_Relax()*LinSysSol[iPoint*nVar+iVar]);
-  
-}
-
 void CAdjTNE2EulerSolver::Inviscid_Sensitivity(CGeometry *geometry,
                                                CSolver **solver_container,
                                                CNumerics *numerics,
@@ -2517,8 +2460,7 @@ CAdjTNE2NSSolver::CAdjTNE2NSSolver(CGeometry *geometry, CConfig *config, unsigne
 		/*--- In case there is no file ---*/
 		if (restart_file.fail()) {
 			cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
-			cout << "Press any key to exit..." << endl;
-			cin.get(); exit(1);
+			exit(1);
 		}
     
 		/*--- In case this is a parallel simulation, we need to perform the

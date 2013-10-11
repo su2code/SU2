@@ -65,8 +65,9 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry, CSolver *
 	FinestMesh = config[iZone]->GetFinestMesh();
     
 	/*--- Perform the Full Approximation Scheme multigrid ---*/
-	MultiGrid_Cycle(geometry, solver_container, numerics_container, config, FinestMesh,
-                        config[iZone]->GetMGCycle(), RunTime_EqSystem, Iteration, iZone);
+	MultiGrid_Cycle(geometry, solver_container, numerics_container, config,
+                  FinestMesh, config[iZone]->GetMGCycle(), RunTime_EqSystem,
+                  Iteration, iZone);
     
 	/*--- Compute non-dimensional parameters and the convergence monitor ---*/
 	NonDimensional_Parameters(geometry[iZone], solver_container[iZone], numerics_container[iZone], config[iZone],
@@ -678,7 +679,7 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ***geometry, CSolver
   double monitor = 0.0;
 
 	unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
-  
+
 	/*--- Preprocessing ---*/
 	solver_container[iZone][MESH_0][SolContainer_Position]->Preprocessing(geometry[iZone][MESH_0], solver_container[iZone][MESH_0], config[iZone], MESH_0, 0, RunTime_EqSystem);
   
@@ -727,6 +728,23 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ***geometry, CSolver
 			monitor = log10(sqrt(solver_container[iZone][MESH_0][FEA_SOL]->GetRes_RMS(0)));
 #endif
 			break;
+      
+  case RUNTIME_HEAT_SYS:
+#ifdef NO_MPI
+    monitor = log10(solver_container[iZone][MESH_0][HEAT_SOL]->GetRes_RMS(0));
+#else
+    monitor = log10(sqrt(solver_container[iZone][MESH_0][HEAT_SOL]->GetRes_RMS(0)));
+#endif
+      break;
+      
+  case RUNTIME_POISSON_SYS:
+#ifdef NO_MPI
+    monitor = log10(solver_container[iZone][MESH_0][POISSON_SOL]->GetRes_RMS(0));
+#else
+    monitor = log10(sqrt(solver_container[iZone][MESH_0][POISSON_SOL]->GetRes_RMS(0)));
+#endif
+    break;
+      
 	}
   
 	/*--- Convergence strategy ---*/

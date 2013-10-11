@@ -36,7 +36,7 @@ CGridAdaptation::CGridAdaptation(CGeometry *geometry, CConfig *config) {
 			nVar = config->GetnDiatomics()*(nDim+3) + config->GetnMonatomics()*(nDim+2);
 			break;			
 		
-		case ELECTRIC_POTENTIAL:
+		case POISSON_EQUATION:
 			nVar = 1;
 			break;
 			
@@ -110,6 +110,8 @@ CGridAdaptation::~CGridAdaptation(void) {
 void CGridAdaptation::GetFlowSolution(CGeometry *geometry, CConfig *config) {
 	unsigned long iPoint, index;
 	unsigned short iVar;
+  double dummy;
+
 	string text_line;
 		
 	string mesh_filename = config->GetSolution_FlowFileName();
@@ -120,15 +122,20 @@ void CGridAdaptation::GetFlowSolution(CGeometry *geometry, CConfig *config) {
 	restart_file.open(cstr, ios::in);
 	if (restart_file.fail()) {
 		cout << "There is no flow restart file!!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get();
 		exit(1); }
 	
+  /*--- Read the header of the file ---*/
+  getline(restart_file,text_line);
+
 	for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
-		getline(restart_file,text_line);
+		getline(restart_file, text_line);
 		istringstream point_line(text_line);
 		
 		point_line >> index;
+    
+    if (nDim == 2) point_line >> dummy >> dummy;
+    else point_line >> dummy >> dummy >> dummy;
+      
 		for (iVar = 0; iVar < nVar; iVar ++)
 			point_line >> ConsVar_Sol[iPoint][iVar];
 	}
@@ -151,15 +158,20 @@ void CGridAdaptation::GetFlowResidual(CGeometry *geometry, CConfig *config) {
 	restart_file.open(cstr, ios::in);
 	if (restart_file.fail()) {
 		cout << "There is no flow restart file!!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get();
 		exit(1); }
 	
+  /*--- Read the header of the file ---*/
+  getline(restart_file,text_line);
+
 	for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
 		getline(restart_file,text_line);
 		istringstream point_line(text_line);
 
-		point_line >> index;
+    point_line >> index;
+    
+    if (nDim == 2) point_line >> dummy >> dummy;
+    else point_line >> dummy >> dummy >> dummy;
+    
 		for (iVar = 0; iVar < nVar; iVar++)
 			point_line >> dummy;
 		for (iVar = 0; iVar < nVar; iVar++)
@@ -170,7 +182,7 @@ void CGridAdaptation::GetFlowResidual(CGeometry *geometry, CConfig *config) {
 
 void CGridAdaptation::GetLinResidual(CGeometry *geometry, CConfig *config) {
 	unsigned long iPoint, index;
-	double dummy[5];
+	double dummy;
 	string text_line;
 	
 	string mesh_filename = config->GetSolution_LinFileName();
@@ -181,18 +193,25 @@ void CGridAdaptation::GetLinResidual(CGeometry *geometry, CConfig *config) {
 	restart_file.open(cstr, ios::in);
 	if (restart_file.fail()) {
 		cout << "There is no linear restart file!!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get();
 		exit(1); }
 	
+  /*--- Read the header of the file ---*/
+  getline(restart_file,text_line);
+
 	for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
 		getline(restart_file,text_line);
 		istringstream point_line(text_line);
-		if (nVar == 1) point_line >> index >> dummy[0] >> LinVar_Res[iPoint][0];
-		if (nVar == 4) point_line >> index >> dummy[0] >> dummy[1] >> dummy[2] >> dummy[3] >> 
+    
+    point_line >> index;
+    
+    if (nDim == 2) point_line >> dummy >> dummy;
+    else point_line >> dummy >> dummy >> dummy;
+    
+		if (nVar == 1) point_line >> dummy >> LinVar_Res[iPoint][0];
+		if (nVar == 4) point_line >> dummy >> dummy >> dummy >> dummy >>
 			LinVar_Res[iPoint][0] >> LinVar_Res[iPoint][1] >> LinVar_Res[iPoint][2] >> 
 			LinVar_Res[iPoint][3];
-		if (nVar == 5) point_line >> index >> dummy[0] >> dummy[1] >> dummy[2] >> dummy[3] >> dummy[4] >> 
+		if (nVar == 5) point_line >> dummy >> dummy >> dummy >> dummy >> dummy >>
 			LinVar_Res[iPoint][0] >> LinVar_Res[iPoint][1] >> LinVar_Res[iPoint][2] >> 
 			LinVar_Res[iPoint][3] >> LinVar_Res[iPoint][4];
 	}
@@ -203,6 +222,7 @@ void CGridAdaptation::GetLinResidual(CGeometry *geometry, CConfig *config) {
 void CGridAdaptation::GetAdjSolution(CGeometry *geometry, CConfig *config) {
 	unsigned long iPoint, index;
 	unsigned short iVar;
+  double dummy;
 	string text_line;
 	
 	string copy, mesh_filename;
@@ -215,15 +235,20 @@ void CGridAdaptation::GetAdjSolution(CGeometry *geometry, CConfig *config) {
 	restart_file.open(mesh_filename.c_str(), ios::in);
 	if (restart_file.fail()) {
 		cout << "There is no adjoint restart file!!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get();
 		exit(1); }
 	
+  /*--- Read the header of the file ---*/
+  getline(restart_file,text_line);
+  
 	for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
 		getline(restart_file,text_line);
 		istringstream point_line(text_line);
 		
-		point_line >> index;
+    point_line >> index;
+    
+    if (nDim == 2) point_line >> dummy >> dummy;
+    else point_line >> dummy >> dummy >> dummy;
+    
 		for (iVar = 0; iVar < nVar; iVar ++)
 			point_line >> AdjVar_Sol[iPoint][iVar];
 	}
@@ -232,7 +257,9 @@ void CGridAdaptation::GetAdjSolution(CGeometry *geometry, CConfig *config) {
 }
 
 void CGridAdaptation::GetLinSolution(CGeometry *geometry, CConfig *config) {
+
 	unsigned long iPoint, index;
+  double dummy;
 	string text_line;
 	
 	string mesh_filename;
@@ -245,16 +272,23 @@ void CGridAdaptation::GetLinSolution(CGeometry *geometry, CConfig *config) {
 	restart_file.open(cstr, ios::in);
 	if (restart_file.fail()) {
 		cout << "There is no linear restart file!!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get();
 		exit(1); }
 	
+  /*--- Read the header of the file ---*/
+  getline(restart_file,text_line);
+  
 	for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
 		getline(restart_file,text_line);
 		istringstream point_line(text_line);
-		if (nVar == 1) point_line >> index >> LinVar_Sol[iPoint][0];
-		if (nVar == 4) point_line >> index >> LinVar_Sol[iPoint][0] >> LinVar_Sol[iPoint][1] >> LinVar_Sol[iPoint][2] >> LinVar_Sol[iPoint][3];
-		if (nVar == 5) point_line >> index >> LinVar_Sol[iPoint][0] >> LinVar_Sol[iPoint][1] >> LinVar_Sol[iPoint][2] >> LinVar_Sol[iPoint][3] >> LinVar_Sol[iPoint][4];
+    
+    point_line >> index;
+    
+    if (nDim == 2) point_line >> dummy >> dummy;
+    else point_line >> dummy >> dummy >> dummy;
+    
+		if (nVar == 1) point_line >> LinVar_Sol[iPoint][0];
+		if (nVar == 4) point_line >> LinVar_Sol[iPoint][0] >> LinVar_Sol[iPoint][1] >> LinVar_Sol[iPoint][2] >> LinVar_Sol[iPoint][3];
+		if (nVar == 5) point_line >> LinVar_Sol[iPoint][0] >> LinVar_Sol[iPoint][1] >> LinVar_Sol[iPoint][2] >> LinVar_Sol[iPoint][3] >> LinVar_Sol[iPoint][4];
 	}
 	
 	restart_file.close();
@@ -263,7 +297,7 @@ void CGridAdaptation::GetLinSolution(CGeometry *geometry, CConfig *config) {
 void CGridAdaptation::GetAdjResidual(CGeometry *geometry, CConfig *config){
 	unsigned long iPoint, index;
 	string text_line;
-	double dummy[5];
+	double dummy;
 
 	string mesh_filename, copy;
 	ifstream restart_file;
@@ -293,18 +327,22 @@ void CGridAdaptation::GetAdjResidual(CGeometry *geometry, CConfig *config){
 	
 	if (restart_file.fail()) {
 		cout << "There is no flow restart file!!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get();
 		exit(1); }
 	
 	for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
 		getline(restart_file,text_line);
 		istringstream point_line(text_line);
-		if (nVar == 1) point_line >> index >> dummy[0] >>  AdjVar_Res[iPoint][0];		
-		if (nVar == 4) point_line >> index >> dummy[0] >> dummy[1] >> dummy[2] >> dummy[3] >>
+    
+    point_line >> index;
+    
+    if (nDim == 2) point_line >> dummy >> dummy;
+    else point_line >> dummy >> dummy >> dummy;
+    
+		if (nVar == 1) point_line >> dummy >>  AdjVar_Res[iPoint][0];
+		if (nVar == 4) point_line >> dummy >> dummy >> dummy >> dummy >>
 									AdjVar_Res[iPoint][0] >> AdjVar_Res[iPoint][1] >> AdjVar_Res[iPoint][2] >> 
 									AdjVar_Res[iPoint][3];
-		if (nVar == 5) point_line >> index >> dummy[0] >> dummy[1] >> dummy[2] >> dummy[3] >> dummy[4] >> 
+		if (nVar == 5) point_line >> dummy >> dummy >> dummy >> dummy >> dummy >>
 									AdjVar_Res[iPoint][0] >> AdjVar_Res[iPoint][1] >> AdjVar_Res[iPoint][2] >> 
 									AdjVar_Res[iPoint][3] >> AdjVar_Res[iPoint][4];
 	}
@@ -3484,31 +3522,39 @@ void CGridAdaptation::SetIndicator_Computable_Robust(CGeometry *geometry, CConfi
 	
 }
 
-void CGridAdaptation::SetRestart_FlowSolution(CConfig *config, string mesh_flowfilename){
+void CGridAdaptation::SetRestart_FlowSolution(CConfig *config, CPhysicalGeometry *geo_adapt, string mesh_flowfilename){
 	
 	unsigned long iPoint;
-	unsigned short iVar;
+	unsigned short iVar, iDim;
 		
-	//	Restart of the direct problem
 	char *cstr = new char [mesh_flowfilename.size()+1];
 	strcpy (cstr, mesh_flowfilename.c_str());
 	
 	ofstream restart_flowfile;
 	restart_flowfile.open(cstr, ios::out);
 	restart_flowfile.precision(15);
+  
+  restart_flowfile << "Restart file generated with SU2_MAC" << endl;
+
 	for(iPoint = 0; iPoint < nPoint_new; iPoint++){
 		restart_flowfile << iPoint <<"\t";
-		for(iVar = 0; iVar < nVar; iVar++) {
-			restart_flowfile << scientific << ConsVar_Adapt[iPoint][iVar]<<"\t";
-		}
+
+    for(iDim = 0; iDim < nDim; iDim++)
+			restart_flowfile << scientific << geo_adapt->node[iPoint]->GetCoord(iDim) <<"\t";
+		for(iVar = 0; iVar < nVar; iVar++)
+			restart_flowfile << scientific << ConsVar_Adapt[iPoint][iVar] <<"\t";
+
 		restart_flowfile << endl;
 	}
 	restart_flowfile.close();
 	
 }
 
-void CGridAdaptation::SetRestart_AdjSolution(CConfig *config, string mesh_adjfilename){
-	char cstr[200], buffer[50];
+void CGridAdaptation::SetRestart_AdjSolution(CConfig *config, CPhysicalGeometry *geo_adapt, string mesh_adjfilename){
+	
+  char cstr[200], buffer[50];
+  unsigned short iDim, iVar;
+  unsigned long iPoint;
 	string copy;
 	
 	copy.assign(mesh_adjfilename);
@@ -3533,32 +3579,45 @@ void CGridAdaptation::SetRestart_AdjSolution(CConfig *config, string mesh_adjfil
 	ofstream restart_adjfile;
 	restart_adjfile.open(cstr, ios::out);
 	restart_adjfile.precision(15);
-	for(unsigned long iPoint = 0; iPoint < nPoint_new; iPoint++){
+  
+  restart_adjfile << "Restart file generated with SU2_MAC" << endl;
+  
+	for(iPoint = 0; iPoint < nPoint_new; iPoint++){
 		restart_adjfile << iPoint <<"\t";
-		for(unsigned short iVar = 0; iVar < nVar; iVar++)
+    
+    for(iDim = 0; iDim < nDim; iDim++)
+			restart_adjfile << scientific << geo_adapt->node[iPoint]->GetCoord(iDim) <<"\t";
+		for(iVar = 0; iVar < nVar; iVar++)
 			restart_adjfile << scientific << AdjVar_Adapt[iPoint][iVar]<<"\t";
 		restart_adjfile << endl;
+    
 	}
 	restart_adjfile.close();
 }
 
-void CGridAdaptation::SetRestart_LinSolution(CConfig *config, string mesh_linfilename){
+void CGridAdaptation::SetRestart_LinSolution(CConfig *config, CPhysicalGeometry *geo_adapt, string mesh_linfilename){
 	
 	unsigned long iPoint;
-	unsigned short iVar;
+	unsigned short iVar, iDim;
 	
-	//	Rearranque del problema adjunto
 	char *cstr_ = new char [mesh_linfilename.size()+1];
 	strcpy (cstr_, mesh_linfilename.c_str());
 	
 	ofstream restart_linfile;
 	restart_linfile.open(cstr_, ios::out);
 	restart_linfile.precision(15);
+
+  restart_linfile << "Restart file generated with SU2_MAC" << endl;
+
 	for(iPoint = 0; iPoint < nPoint_new; iPoint++){
 		restart_linfile << iPoint <<"\t";
+    
+    for(iDim = 0; iDim < nDim; iDim++)
+			restart_linfile << scientific << geo_adapt->node[iPoint]->GetCoord(iDim) <<"\t";
 		for(iVar = 0; iVar < nVar; iVar++)
 			restart_linfile << scientific << LinVar_Adapt[iPoint][iVar]<<"\t";
 		restart_linfile << endl;
+    
 	}
 	restart_linfile.close();
 }

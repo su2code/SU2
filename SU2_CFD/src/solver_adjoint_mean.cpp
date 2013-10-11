@@ -210,8 +210,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 		/*--- In case there is no file ---*/
 		if (restart_file.fail()) {
 			cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
-			cout << "Press any key to exit..." << endl;
-			cin.get(); exit(1);
+			exit(1);
 		}
 
 		/*--- In case this is a parallel simulation, we need to perform the
@@ -1013,7 +1012,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
 	double Beta       = (config->GetAoS()*PI_NUMBER)/180.0;
 	double RefAreaCoeff    = config->GetRefAreaCoeff();
 	double RefLengthMoment  = config->GetRefLengthMoment();
-	double *RefOriginMoment = config->GetRefOriginMoment();
+	double *RefOriginMoment = config->GetRefOriginMoment(0);
 	double RefVel2, RefDensity;
   
   bool grid_movement = config->GetGrid_Movement();
@@ -1092,7 +1091,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
             break;
           case SIDEFORCE_COEFFICIENT :
             if (nDim == 2) { cout << "This functional is not possible in 2D!!" << endl;
-              cout << "Press any key to exit..." << endl; cin.get(); exit(1);
+              exit(1);
             }
             if (nDim == 3) { ForceProj_Vector[0] = -C_p*sin(Beta) * cos(Alpha); ForceProj_Vector[1] = C_p*cos(Beta); ForceProj_Vector[2] = -C_p*sin(Beta) * sin(Alpha); }
             break;
@@ -1107,11 +1106,11 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
             }
             break;
           case MOMENT_X_COEFFICIENT :
-            if (nDim == 2) { cout << "This functional is not possible in 2D!!" << endl; cout << "Press any key to exit..." << endl; cin.get(); exit(1); }
+            if (nDim == 2) { cout << "This functional is not possible in 2D!!" << endl; exit(1); }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = -C_p*(z - z_origin)/RefLengthMoment; ForceProj_Vector[2] = C_p*(y - y_origin)/RefLengthMoment; }
             break;
           case MOMENT_Y_COEFFICIENT :
-            if (nDim == 2) { cout << "This functional is not possible in 2D!!" << endl; cout << "Press any key to exit..." << endl; cin.get(); exit(1); }
+            if (nDim == 2) { cout << "This functional is not possible in 2D!!" << endl; exit(1); }
             if (nDim == 3) { ForceProj_Vector[0] = C_p*(z - z_origin)/RefLengthMoment; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = -C_p*(x - x_origin)/RefLengthMoment; }
             break;
           case MOMENT_Z_COEFFICIENT :
@@ -1142,15 +1141,13 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
             break;
           case FORCE_Z_COEFFICIENT :
             if (nDim == 2) {cout << "This functional is not possible in 2D!!" << endl;
-              cout << "Press any key to exit..." << endl;
-              cin.get(); exit(1);
+              exit(1);
             }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = C_p; }
             break;
           case THRUST_COEFFICIENT :
             if (nDim == 2) {cout << "This functional is not possible in 2D!!" << endl;
-              cout << "Press any key to exit..." << endl;
-              cin.get(); exit(1);
+              exit(1);
             }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = C_p; }
             break;
@@ -1160,8 +1157,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
             break;
           case FIGURE_OF_MERIT :
             if (nDim == 2) {cout << "This functional is not possible in 2D!!" << endl;
-              cout << "Press any key to exit..." << endl;
-              cin.get(); exit(1);
+              exit(1);
             }
             if (nDim == 3) {
               ForceProj_Vector[0] = -C_p*invCQ;
@@ -1221,8 +1217,6 @@ void CAdjEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_
 		index_file.open("WeightNF.dat", ios::in);
 		if (index_file.fail()) {
 			cout << "There is no Weight Nearfield Pressure file (WeightNF.dat)." << endl;
-			cout << "Press any key to exit..." << endl;
-			cin.get();
 			exit(1);
 		}
 
@@ -4225,7 +4219,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 					if (LevelSet > epsilon) Density_Outlet = RatioDensity*config->GetDensity_FreeStreamND();
 					U_outlet[0] = PressFreeSurface + Density_Outlet*((FreeSurface_Zero-Height)/(Froude*Froude));
           
-					/*--- Neumman condition in the interface for the pressure and density ---*/
+					/*--- Neumann condition in the interface for the pressure and density ---*/
 					if (fabs(LevelSet) <= epsilon) {
 						U_outlet[0] = solver_container[FLOW_SOL]->node[Point_Normal]->GetSolution(0);
 						Density_Outlet = solver_container[FLOW_SOL]->node[Point_Normal]->GetDensityInc();
@@ -4241,7 +4235,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           
 				}
         
-        /*--- Neumman condition for the velocity ---*/
+        /*--- Neumann condition for the velocity ---*/
 				for (iDim = 0; iDim < nDim; iDim++)
 					U_outlet[iDim+1] = node[Point_Normal]->GetSolution(iDim+1);
         
@@ -5005,8 +4999,7 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 		/*--- In case there is no file ---*/
 		if (restart_file.fail()) {
 			cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
-			cout << "Press any key to exit..." << endl;
-			cin.get(); exit(1);
+			exit(1);
 		}
 
 		/*--- In case this is a parallel simulation, we need to perform the
