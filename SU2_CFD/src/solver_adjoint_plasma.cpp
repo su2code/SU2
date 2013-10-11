@@ -156,8 +156,7 @@ CAdjPlasmaSolver::CAdjPlasmaSolver(CGeometry *geometry, CConfig *config) : CSolv
 		/*--- In case there is no file ---*/
 		if (restart_file.fail()) {
 			cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
-			cout << "Press any key to exit..." << endl;
-			cin.get(); exit(1);
+			exit(1);
 		}
 
     /*--- In case this is a parallel simulation, we need to perform the 
@@ -608,7 +607,7 @@ void CAdjPlasmaSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver
 						break;
 					case SIDEFORCE_COEFFICIENT :
 						if (nDim == 2) { cout << "This functional is not possible in 2D!!" << endl;
-							cout << "Press any key to exit..." << endl; cin.get(); exit(1);
+							exit(1);
 						}
 						if (nDim == 3) { ForceProj_Vector[0] = -sin(Beta) * cos(Alpha); ForceProj_Vector[1] = cos(Beta); ForceProj_Vector[2] = -sin(Beta) * sin(Alpha); }
 						break;
@@ -622,8 +621,7 @@ void CAdjPlasmaSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver
 						break;
           case FORCE_Z_COEFFICIENT :
 						if (nDim == 2) {cout << "This functional is not possible in 2D!!" << endl;
-							cout << "Press any key to exit..." << endl;
-							cin.get(); exit(1);
+							exit(1);
             }
 						if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 1.0; }
 						break;

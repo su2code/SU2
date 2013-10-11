@@ -122,8 +122,6 @@ void CGridAdaptation::GetFlowSolution(CGeometry *geometry, CConfig *config) {
 	restart_file.open(cstr, ios::in);
 	if (restart_file.fail()) {
 		cout << "There is no flow restart file!!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get();
 		exit(1); }
 	
   /*--- Read the header of the file ---*/
@@ -160,8 +158,6 @@ void CGridAdaptation::GetFlowResidual(CGeometry *geometry, CConfig *config) {
 	restart_file.open(cstr, ios::in);
 	if (restart_file.fail()) {
 		cout << "There is no flow restart file!!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get();
 		exit(1); }
 	
   /*--- Read the header of the file ---*/
@@ -197,8 +193,6 @@ void CGridAdaptation::GetLinResidual(CGeometry *geometry, CConfig *config) {
 	restart_file.open(cstr, ios::in);
 	if (restart_file.fail()) {
 		cout << "There is no linear restart file!!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get();
 		exit(1); }
 	
   /*--- Read the header of the file ---*/
@@ -241,8 +235,6 @@ void CGridAdaptation::GetAdjSolution(CGeometry *geometry, CConfig *config) {
 	restart_file.open(mesh_filename.c_str(), ios::in);
 	if (restart_file.fail()) {
 		cout << "There is no adjoint restart file!!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get();
 		exit(1); }
 	
   /*--- Read the header of the file ---*/
@@ -280,8 +272,6 @@ void CGridAdaptation::GetLinSolution(CGeometry *geometry, CConfig *config) {
 	restart_file.open(cstr, ios::in);
 	if (restart_file.fail()) {
 		cout << "There is no linear restart file!!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get();
 		exit(1); }
 	
   /*--- Read the header of the file ---*/
@@ -337,8 +327,6 @@ void CGridAdaptation::GetAdjResidual(CGeometry *geometry, CConfig *config){
 	
 	if (restart_file.fail()) {
 		cout << "There is no flow restart file!!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get();
 		exit(1); }
 	
 	for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
