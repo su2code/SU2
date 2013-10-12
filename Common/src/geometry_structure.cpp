@@ -410,7 +410,11 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
     
     /*--- Initialize counters for local/global points & elements ---*/
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
     
 	if (rank == MASTER_NODE)
@@ -431,8 +435,13 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
 #ifdef NO_MPI
             exit(1);
 #else
+#ifdef WINDOWS
+			MPI_Abort(MPI_COMM_WORLD,1);
+			MPI_Finalize();
+#else
             MPI::COMM_WORLD.Abort(1);
             MPI::Finalize();
+#endif
 #endif
             break;
 	}
@@ -465,7 +474,11 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
 #ifndef NO_MPI
     /*--- Synchronization point after reading the grid ---*/
     if (config->GetKind_SU2() != SU2_DDC) {
+#ifdef WINDOWS
+		MPI_Barrier(MPI_COMM_WORLD);
+#else
         MPI::COMM_WORLD.Barrier();
+#endif
     }
 #endif
     
@@ -498,8 +511,13 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
 	unsigned long Local_nElem;
     unsigned long Local_nElemTri, Local_nElemQuad, Local_nElemTet;
     unsigned long Local_nElemHex, Local_nElemWedge, Local_nElemPyramid;
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
 	size = MPI::COMM_WORLD.Get_size();
+#endif
 #endif
     FinestMGLevel = true;
 	Global_nPoint = 0; Global_nPointDomain = 0; Global_nElem = 0;
@@ -521,8 +539,13 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
 #ifdef NO_MPI
         exit(1);
 #else
-        MPI::COMM_WORLD.Abort(1);
-        MPI::Finalize();
+#ifdef WINDOWS
+			MPI_Abort(MPI_COMM_WORLD,1);
+			MPI_Finalize();
+#else
+            MPI::COMM_WORLD.Abort(1);
+            MPI::Finalize();
+#endif
 #endif
     }
     
@@ -623,7 +646,11 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
 #ifndef NO_MPI
             if (config->GetKind_SU2() != SU2_DDC) {
                 Local_nElem = nElem;
+#ifdef WINDOWS
+				MPI_Allreduce(&Local_nElem, &Global_nElem, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
                 MPI::COMM_WORLD.Allreduce(&Local_nElem, &Global_nElem, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+#endif
             }
             else {
                 Local_nElem = nElem;
@@ -992,23 +1019,27 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
 #ifndef NO_MPI
             if (config->GetKind_SU2() != SU2_DDC) {
                 Local_nElemTri = nelem_triangle;
-                MPI::COMM_WORLD.Allreduce(&Local_nElemTri, &Global_nelem_triangle,
-                                          1, MPI::UNSIGNED_LONG, MPI::SUM);
-                Local_nElemQuad = nelem_quad;
-                MPI::COMM_WORLD.Allreduce(&Local_nElemQuad,     &Global_nelem_quad,
-                                          1, MPI::UNSIGNED_LONG, MPI::SUM);
-                Local_nElemTet = nelem_tetra;
-                MPI::COMM_WORLD.Allreduce(&Local_nElemTet,    &Global_nelem_tetra,
-                                          1, MPI::UNSIGNED_LONG, MPI::SUM);
-                Local_nElemHex = nelem_hexa;
-                MPI::COMM_WORLD.Allreduce(&Local_nElemHex,     &Global_nelem_hexa,
-                                          1, MPI::UNSIGNED_LONG, MPI::SUM);
-                Local_nElemWedge = nelem_wedge;
-                MPI::COMM_WORLD.Allreduce(&Local_nElemWedge,    &Global_nelem_wedge,
-                                          1, MPI::UNSIGNED_LONG, MPI::SUM);
-                Local_nElemPyramid = nelem_pyramid;
-                MPI::COMM_WORLD.Allreduce(&Local_nElemPyramid,  &Global_nelem_pyramid,
-                                          1, MPI::UNSIGNED_LONG, MPI::SUM);
+				Local_nElemQuad = nelem_quad;
+				Local_nElemTet = nelem_tetra;
+				Local_nElemHex = nelem_hexa;
+				Local_nElemWedge = nelem_wedge;
+				Local_nElemPyramid = nelem_pyramid;
+#ifdef WINDOWS
+				// MPI_Allreduce(&Local_nElem, &Global_nElem, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+				MPI_Allreduce(&Local_nElemTri, &Global_nelem_triangle, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);                
+                MPI_Allreduce(&Local_nElemQuad, &Global_nelem_quad, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);                
+                MPI_Allreduce(&Local_nElemTet, &Global_nelem_tetra, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);               
+                MPI_Allreduce(&Local_nElemHex, &Global_nelem_hexa, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);               
+                MPI_Allreduce(&Local_nElemWedge, &Global_nelem_wedge, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);                
+                MPI_Allreduce(&Local_nElemPyramid, &Global_nelem_pyramid, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
+                MPI::COMM_WORLD.Allreduce(&Local_nElemTri, &Global_nelem_triangle, 1, MPI::UNSIGNED_LONG, MPI::SUM);                
+                MPI::COMM_WORLD.Allreduce(&Local_nElemQuad, &Global_nelem_quad, 1, MPI::UNSIGNED_LONG, MPI::SUM);                
+                MPI::COMM_WORLD.Allreduce(&Local_nElemTet, &Global_nelem_tetra, 1, MPI::UNSIGNED_LONG, MPI::SUM);               
+                MPI::COMM_WORLD.Allreduce(&Local_nElemHex, &Global_nelem_hexa, 1, MPI::UNSIGNED_LONG, MPI::SUM);               
+                MPI::COMM_WORLD.Allreduce(&Local_nElemWedge, &Global_nelem_wedge, 1, MPI::UNSIGNED_LONG, MPI::SUM);                
+                MPI::COMM_WORLD.Allreduce(&Local_nElemPyramid, &Global_nelem_pyramid, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+#endif
             }
             else {
                 Local_nElemTri = nelem_triangle;
@@ -1070,8 +1101,13 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
 #ifndef NO_MPI
                 if (config->GetKind_SU2() != SU2_DDC) {
                     Local_nPoint = nPoint; Local_nPointDomain = nPointDomain;
+#ifdef WINDOWS
+					MPI_Allreduce(&Local_nPoint, &Global_nPoint, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                    MPI_Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
                     MPI::COMM_WORLD.Allreduce(&Local_nPoint, &Global_nPoint, 1, MPI::UNSIGNED_LONG, MPI::SUM);
                     MPI::COMM_WORLD.Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+#endif
                 }
                 else {
                     Local_nPoint = nPoint; Local_nPointDomain = nPointDomain;
@@ -1097,8 +1133,13 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
 #ifdef NO_MPI
                 exit(1);
 #else
-                MPI::COMM_WORLD.Abort(1);
-                MPI::Finalize();
+#ifdef WINDOWS
+			MPI_Abort(MPI_COMM_WORLD,1);
+			MPI_Finalize();
+#else
+            MPI::COMM_WORLD.Abort(1);
+            MPI::Finalize();
+#endif
 #endif
             }
             
@@ -1193,8 +1234,13 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
 #ifdef NO_MPI
                                     exit(1);
 #else
-                                    MPI::COMM_WORLD.Abort(1);
-                                    MPI::Finalize();
+#ifdef WINDOWS
+									MPI_Abort(MPI_COMM_WORLD,1);
+									MPI_Finalize();
+#else
+									MPI::COMM_WORLD.Abort(1);
+									MPI::Finalize();
+#endif
 #endif
                                 }
                                 
@@ -1317,8 +1363,13 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
 #ifdef NO_MPI
                         exit(1);
 #else
-                        MPI::COMM_WORLD.Abort(1);
-                        MPI::Finalize();
+#ifdef WINDOWS
+						MPI_Abort(MPI_COMM_WORLD,1);
+						MPI_Finalize();
+#else
+						MPI::COMM_WORLD.Abort(1);
+						MPI::Finalize();
+#endif
 #endif
                     }
                 }
@@ -2037,10 +2088,15 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
                                 if (nDim == 3) {
                                     cout << "Please remove line boundary conditions from the mesh file!" << endl;
 #ifdef NO_MPI
-                                  exit(1);
+									exit(1);
 #else
-                                  MPI::COMM_WORLD.Abort(1);
-                                  MPI::Finalize();
+#ifdef WINDOWS
+									MPI_Abort(MPI_COMM_WORLD,1);
+									MPI_Finalize();
+#else
+									MPI::COMM_WORLD.Abort(1);
+									MPI::Finalize();
+#endif
 #endif
                                 }
                                 
@@ -2162,8 +2218,13 @@ void CPhysicalGeometry::Read_NETCDF_Format(CConfig *config, string val_mesh_file
     /*--- Throw error if not in serial mode. ---*/
 #ifndef NO_MPI
     cout << "Parallel support with NETCDF format not yet implemented!!" << endl;
+#ifdef WINDOWS
+	MPI_Abort(MPI_COMM_WORLD,1);
+	MPI_Finalize();
+#else
     MPI::COMM_WORLD.Abort(1);
     MPI::Finalize();
+#endif
 #endif
     
     unsigned short Marker_Index, marker, icommas, iDim;
@@ -2833,7 +2894,11 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
     
     int rank = MASTER_NODE;
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
 	if (rank == MASTER_NODE)
 		cout << "Computing wall distances." << endl;
@@ -2897,8 +2962,12 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
     
     /*--- Variables and buffers needed for MPI ---*/
     
-	int iProcessor;
-	int nProcessor = MPI::COMM_WORLD.Get_size();
+	int iProcessor, nProcessor;
+#ifdef WINDOWS
+	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+#else
+	nProcessor = MPI::COMM_WORLD.Get_size();
+#endif
     
 	unsigned long nLocalVertex_NS = 0, nGlobalVertex_NS = 0, MaxLocalVertex_NS = 0;
 	unsigned long *Buffer_Send_nVertex    = new unsigned long [1];
@@ -2917,12 +2986,18 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
      partition, and the number of no-slip nodes on each partition. ---*/
     
 	Buffer_Send_nVertex[0] = nLocalVertex_NS;
+#ifdef WINDOWS
+	MPI_Allreduce(&nLocalVertex_NS, &nGlobalVertex_NS,  1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+	MPI_Allreduce(&nLocalVertex_NS, &MaxLocalVertex_NS, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+	MPI_Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+#else
 	MPI::COMM_WORLD.Allreduce(&nLocalVertex_NS, &nGlobalVertex_NS,  1,
                               MPI::UNSIGNED_LONG, MPI::SUM);
 	MPI::COMM_WORLD.Allreduce(&nLocalVertex_NS, &MaxLocalVertex_NS, 1,
                               MPI::UNSIGNED_LONG, MPI::MAX);
 	MPI::COMM_WORLD.Allgather(Buffer_Send_nVertex, 1, MPI::UNSIGNED_LONG,
                               Buffer_Receive_nVertex, 1, MPI::UNSIGNED_LONG);
+#endif
     
     /*--- Create and initialize to zero some buffers to hold the coordinates
      of the boundary nodes that are communicated from each partition (all-to-all). ---*/
@@ -2948,8 +3023,12 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
 					Buffer_Send_Coord[nVertex_SolidWall*nDim+iDim] = node[iPoint]->GetCoord(iDim);
 				nVertex_SolidWall++;
 			}
+#ifdef WINDOWS
+	MPI_Allgather(Buffer_Send_Coord, nBuffer, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer, MPI_DOUBLE, MPI_COMM_WORLD);
+#else
 	MPI::COMM_WORLD.Allgather(Buffer_Send_Coord, nBuffer, MPI::DOUBLE,
                               Buffer_Receive_Coord, nBuffer, MPI::DOUBLE);
+#endif
     
     /*--- Loop over all interior mesh nodes on the local partition and compute
      the distances to each of the no-slip boundary nodes in the entire mesh.
@@ -3008,8 +3087,11 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
 #else
     
 	double TotalPositiveZArea;
-    
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
     
 	PositiveZArea = 0.0;
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -3027,10 +3109,16 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
 				}
 			}
 	}
-    
+#ifdef WINDOWS
+	MPI_Reduce(&PositiveZArea, &TotalPositiveZArea, 1, MPI_DOUBLE, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	if (rank == MASTER_NODE) PositiveZArea = TotalPositiveZArea;
+	MPI_Bcast(&PositiveZArea, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
 	MPI::COMM_WORLD.Reduce(&PositiveZArea, &TotalPositiveZArea, 1, MPI::DOUBLE, MPI::SUM, MASTER_NODE);
 	if (MPI::COMM_WORLD.Get_rank() == MASTER_NODE) PositiveZArea = TotalPositiveZArea;
-	MPI::COMM_WORLD.Bcast (&PositiveZArea, 1, MPI::DOUBLE, MASTER_NODE);
+	MPI::COMM_WORLD.Bcast(&PositiveZArea, 1, MPI::DOUBLE, MASTER_NODE);
+#endif
     
 #endif
     
@@ -3498,17 +3586,26 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
             }
         
 #else
-        
+#ifdef WINDOWS
+		MPI_Barrier(MPI_COMM_WORLD);
+#else
         MPI::COMM_WORLD.Barrier();
+#endif
         
         unsigned short iMarker, iDim;
         unsigned long iVertex, iPoint, pPoint = 0, jVertex, jPoint;
         double *Coord_i, Coord_j[3], dist = 0.0, mindist, maxdist_local, maxdist_global;
         int iProcessor, pProcessor = 0;
         unsigned long nLocalVertex_NearField = 0, nGlobalVertex_NearField = 0, MaxLocalVertex_NearField = 0;
-        
-        int rank = MPI::COMM_WORLD.Get_rank();
-        int nProcessor = MPI::COMM_WORLD.Get_size();
+		int rank, nProcessor;
+
+#ifdef WINDOWS
+		MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+		MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+#else
+        rank = MPI::COMM_WORLD.Get_rank();
+        nProcessor = MPI::COMM_WORLD.Get_size();
+#endif
         
         unsigned long *Buffer_Send_nVertex = new unsigned long [1];
         unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
@@ -3528,9 +3625,15 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
         Buffer_Send_nVertex[0] = nLocalVertex_NearField;
         
         /*--- Send Near-Field vertex information --*/
+#ifdef WINDOWS
+		MPI_Allreduce(&nLocalVertex_NearField, &nGlobalVertex_NearField, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+        MPI_Allreduce(&nLocalVertex_NearField, &MaxLocalVertex_NearField, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+        MPI_Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+#else
         MPI::COMM_WORLD.Allreduce(&nLocalVertex_NearField, &nGlobalVertex_NearField, 1, MPI::UNSIGNED_LONG, MPI::SUM);
         MPI::COMM_WORLD.Allreduce(&nLocalVertex_NearField, &MaxLocalVertex_NearField, 1, MPI::UNSIGNED_LONG, MPI::MAX);
         MPI::COMM_WORLD.Allgather(Buffer_Send_nVertex, 1, MPI::UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI::UNSIGNED_LONG);
+#endif
         
         double *Buffer_Send_Coord = new double [MaxLocalVertex_NearField*nDim];
         unsigned long *Buffer_Send_Point = new unsigned long [MaxLocalVertex_NearField];
@@ -3683,17 +3786,26 @@ void CPhysicalGeometry::MatchInterface(CConfig *config) {
             }
         
 #else
-        
+#ifdef WINDOWS
+		MPI_Barrier(MPI_COMM_WORLD);
+#else
         MPI::COMM_WORLD.Barrier();
+#endif
         
         unsigned short iMarker, iDim;
         unsigned long iVertex, iPoint, pPoint = 0, jVertex, jPoint;
         double *Coord_i, Coord_j[3], dist = 0.0, mindist, maxdist_local, maxdist_global;
         int iProcessor, pProcessor = 0;
         unsigned long nLocalVertex_Interface = 0, nGlobalVertex_Interface = 0, MaxLocalVertex_Interface = 0;
-        
-        int rank = MPI::COMM_WORLD.Get_rank();
-        int nProcessor = MPI::COMM_WORLD.Get_size();
+		int rank, nProcessor;
+
+#ifdef WINDOWS
+		MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+		MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+#else
+        rank = MPI::COMM_WORLD.Get_rank();
+        nProcessor = MPI::COMM_WORLD.Get_size();
+#endif
         
         unsigned long *Buffer_Send_nVertex = new unsigned long [1];
         unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
@@ -3713,9 +3825,15 @@ void CPhysicalGeometry::MatchInterface(CConfig *config) {
         Buffer_Send_nVertex[0] = nLocalVertex_Interface;
         
         /*--- Send Interface vertex information --*/
+#ifdef WINDOWS
+		MPI_Allreduce(&nLocalVertex_Interface, &nGlobalVertex_Interface, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+        MPI_Allreduce(&nLocalVertex_Interface, &MaxLocalVertex_Interface, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+        MPI_Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+#else
         MPI::COMM_WORLD.Allreduce(&nLocalVertex_Interface, &nGlobalVertex_Interface, 1, MPI::UNSIGNED_LONG, MPI::SUM);
         MPI::COMM_WORLD.Allreduce(&nLocalVertex_Interface, &MaxLocalVertex_Interface, 1, MPI::UNSIGNED_LONG, MPI::MAX);
         MPI::COMM_WORLD.Allgather(Buffer_Send_nVertex, 1, MPI::UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI::UNSIGNED_LONG);
+#endif
         
         double *Buffer_Send_Coord = new double [MaxLocalVertex_Interface*nDim];
         unsigned long *Buffer_Send_Point = new unsigned long [MaxLocalVertex_Interface];
@@ -3745,9 +3863,13 @@ void CPhysicalGeometry::MatchInterface(CConfig *config) {
                         nLocalVertex_Interface++;
                     }
                 }
-        
+#ifdef WINDOWS
+		MPI_Allgather(Buffer_Send_Coord, nBuffer_Coord, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer_Coord, MPI_DOUBLE, MPI_COMM_WORLD);
+        MPI_Allgather(Buffer_Send_Point, nBuffer_Point, MPI_UNSIGNED_LONG, Buffer_Receive_Point, nBuffer_Point, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+#else
         MPI::COMM_WORLD.Allgather(Buffer_Send_Coord, nBuffer_Coord, MPI::DOUBLE, Buffer_Receive_Coord, nBuffer_Coord, MPI::DOUBLE);
         MPI::COMM_WORLD.Allgather(Buffer_Send_Point, nBuffer_Point, MPI::UNSIGNED_LONG, Buffer_Receive_Point, nBuffer_Point, MPI::UNSIGNED_LONG);
+#endif
         
         /*--- Compute the closest point to a Near-Field boundary point ---*/
         maxdist_local = 0.0;
@@ -3794,8 +3916,11 @@ void CPhysicalGeometry::MatchInterface(CConfig *config) {
                 }
             }
         }
-        
+#ifdef WINDOWS
+		MPI_Reduce(&maxdist_local, &maxdist_global, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
+#else
         MPI::COMM_WORLD.Reduce(&maxdist_local, &maxdist_global, 1, MPI::DOUBLE, MPI::MAX, MASTER_NODE);
+#endif
         if (rank == MASTER_NODE) cout <<"The max distance between points is: " << maxdist_global <<"."<< endl;
         
         delete[] Buffer_Send_Coord;
@@ -3807,9 +3932,11 @@ void CPhysicalGeometry::MatchInterface(CConfig *config) {
         delete[] Buffer_Send_nVertex;
         delete[] Buffer_Receive_nVertex;
         
-        
+#ifdef WINDOWS
+		MPI_Barrier(MPI_COMM_WORLD);
+#else
         MPI::COMM_WORLD.Barrier();
-        
+#endif      
 #endif
         
     }
@@ -3849,18 +3976,27 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
 	}
     
 #else
-    
-	MPI::COMM_WORLD.Barrier();
+#ifdef WINDOWS
+		MPI_Barrier(MPI_COMM_WORLD);
+#else
+        MPI::COMM_WORLD.Barrier();
+#endif
     
 	unsigned short iMarker, iDim;
 	unsigned long iVertex, iPoint, pPoint = 0, jVertex, jPoint;
 	double *Coord_i, Coord_j[3], dist = 0.0, mindist, maxdist;
 	int iProcessor, pProcessor = 0;
 	unsigned long nLocalVertex_Zone = 0, nGlobalVertex_Zone = 0, MaxLocalVertex_Zone = 0;
-    
-	int rank = MPI::COMM_WORLD.Get_rank();
-	int nProcessor = MPI::COMM_WORLD.Get_size();
-    
+	int rank, nProcessor;
+
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+#else
+	rank = MPI::COMM_WORLD.Get_rank();
+	nProcessor = MPI::COMM_WORLD.Get_size();
+#endif
+
 	unsigned long *Buffer_Send_nVertex = new unsigned long [1];
 	unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
     
@@ -3876,10 +4012,16 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
 	Buffer_Send_nVertex[0] = nLocalVertex_Zone;
     
 	/*--- Send Interface vertex information --*/
+#ifdef WINDOWS
+	MPI_Allreduce(&nLocalVertex_Zone, &nGlobalVertex_Zone, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+	MPI_Allreduce(&nLocalVertex_Zone, &MaxLocalVertex_Zone, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+	MPI_Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+#else
 	MPI::COMM_WORLD.Allreduce(&nLocalVertex_Zone, &nGlobalVertex_Zone, 1, MPI::UNSIGNED_LONG, MPI::SUM);
 	MPI::COMM_WORLD.Allreduce(&nLocalVertex_Zone, &MaxLocalVertex_Zone, 1, MPI::UNSIGNED_LONG, MPI::MAX);
 	MPI::COMM_WORLD.Allgather(Buffer_Send_nVertex, 1, MPI::UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI::UNSIGNED_LONG);
-    
+#endif
+
 	double *Buffer_Send_Coord = new double [MaxLocalVertex_Zone*nDim];
 	unsigned long *Buffer_Send_Point = new unsigned long [MaxLocalVertex_Zone];
     
@@ -3907,10 +4049,15 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
 					nLocalVertex_Zone++;
 				}
 			}
-    
+
+#ifdef WINDOWS
+	MPI_Allgather(Buffer_Send_Coord, nBuffer_Coord, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer_Coord, MPI_DOUBLE, MPI_COMM_WORLD);
+	MPI_Allgather(Buffer_Send_Point, nBuffer_Point, MPI_UNSIGNED_LONG, Buffer_Receive_Point, nBuffer_Point, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+#else
 	MPI::COMM_WORLD.Allgather(Buffer_Send_Coord, nBuffer_Coord, MPI::DOUBLE, Buffer_Receive_Coord, nBuffer_Coord, MPI::DOUBLE);
 	MPI::COMM_WORLD.Allgather(Buffer_Send_Point, nBuffer_Point, MPI::UNSIGNED_LONG, Buffer_Receive_Point, nBuffer_Point, MPI::UNSIGNED_LONG);
-    
+#endif
+
 	/*--- Compute the closest point to a Near-Field boundary point ---*/
 	maxdist = 0.0;
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -3957,9 +4104,11 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
 	delete[] Buffer_Send_nVertex;
 	delete[] Buffer_Receive_nVertex;
     
-    
+#ifdef WINDOWS
+	MPI_Barrier(MPI_COMM_WORLD);
+#else
 	MPI::COMM_WORLD.Barrier();
-    
+#endif    
 #endif
     
 }
@@ -3972,11 +4121,16 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
 	double *Coord_Edge_CG, *Coord_FaceElem_CG, *Coord_Elem_CG, *Coord_FaceiPoint, *Coord_FacejPoint, Area,
 	Volume, DomainVolume, my_DomainVolume, *NormalFace = NULL;
 	bool change_face_orientation;
+	int rank;
     
 #ifdef NO_MPI
-	int rank = MASTER_NODE;
+	rank = MASTER_NODE;
 #else
-	int rank = MPI::COMM_WORLD.Get_rank();
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
     
 	/*--- Update values of faces of the edge ---*/
@@ -4073,7 +4227,11 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
 	//	}
     
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Allreduce(&my_DomainVolume, &DomainVolume, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
 	MPI::COMM_WORLD.Allreduce(&my_DomainVolume, &DomainVolume, 1, MPI::DOUBLE, MPI::SUM);
+#endif
 #else
 	DomainVolume = my_DomainVolume;
 #endif
@@ -4821,10 +4979,16 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
 	nElem_Tetrahedron, kPoint, jPoint, iVertex;
     unsigned short iMarker, iMaxColor = 0, iColor, MaxColor = 0, iNode, jNode;
 	int ne = 0, nn, *elmnts = NULL, etype, *epart = NULL, *npart = NULL, numflag, nparts, edgecut, *eptr;
-    
-    int rank = MPI::COMM_WORLD.Get_rank();
-	int size = MPI::COMM_WORLD.Get_size();
-    
+	int rank, size;
+
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+#else
+    rank = MPI::COMM_WORLD.Get_rank();
+	size = MPI::COMM_WORLD.Get_size();
+#endif
+
 	unsigned short nDomain = size;
     
 	nElem_Triangle = 0;
@@ -5038,7 +5202,11 @@ void CPhysicalGeometry::SetRotationalVelocity(CConfig *config) {
     
     int rank = MASTER_NODE;
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
     
     /*--- Center of rotation & angular velocity vector from config ---*/
@@ -5137,10 +5305,12 @@ void CPhysicalGeometry::Set_MPI_Coord(CConfig *config) {
 	int send_to, receive_from;
   
 #ifndef NO_MPI
-  
-  MPI::COMM_WORLD.Barrier();
+#ifdef WINDOWS
+	MPI_Barrier(MPI_COMM_WORLD);
+#else
+	MPI::COMM_WORLD.Barrier();
+#endif
 	double *Buffer_Send_Coord = NULL;
-  
 #endif
   
 	newCoord = new double[nDim];
@@ -5165,7 +5335,12 @@ void CPhysicalGeometry::Set_MPI_Coord(CConfig *config) {
           for (iDim = 0; iDim < nDim; iDim++)
             Buffer_Send_Coord[iDim*nVert+iVertex] = Coord[iDim];
 				}
-        MPI::COMM_WORLD.Bsend(Buffer_Send_Coord, nBuffer_Vector, MPI::DOUBLE, send_to, 0); delete [] Buffer_Send_Coord;
+#ifdef WINDOWS
+		MPI_Bsend(Buffer_Send_Coord, nBuffer_Vector, MPI_DOUBLE, send_to, 0, MPI_COMM_WORLD);
+#else
+        MPI::COMM_WORLD.Bsend(Buffer_Send_Coord, nBuffer_Vector, MPI::DOUBLE, send_to, 0);
+#endif
+		delete [] Buffer_Send_Coord;
 			}
       
 #endif
@@ -5185,8 +5360,12 @@ void CPhysicalGeometry::Set_MPI_Coord(CConfig *config) {
         }
         
 #else
-        
+#ifdef WINDOWS
+		MPI_Status status;
+		MPI_Recv(Buffer_Receive_Coord, nBuffer_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+#else
         MPI::COMM_WORLD.Recv(Buffer_Receive_Coord, nBuffer_Vector, MPI::DOUBLE, receive_from, 0);
+#endif
         
 #endif
         
@@ -5251,9 +5430,11 @@ void CPhysicalGeometry::Set_MPI_Coord(CConfig *config) {
 	delete [] newCoord;
   
 #ifndef NO_MPI
-  
-  MPI::COMM_WORLD.Barrier();
-  
+#ifdef WINDOWS
+	MPI_Barrier(MPI_COMM_WORLD);
+#else
+	MPI::COMM_WORLD.Barrier();
+#endif  
 #endif
   
 }
@@ -5267,10 +5448,12 @@ void CPhysicalGeometry::Set_MPI_GridVel(CConfig *config) {
 	int send_to, receive_from;
     
 #ifndef NO_MPI
-    
-    MPI::COMM_WORLD.Barrier();
-	double *Buffer_Send_GridVel = NULL;
-    
+#ifdef WINDOWS
+	MPI_Barrier(MPI_COMM_WORLD);
+#else
+	MPI::COMM_WORLD.Barrier();
+#endif
+	double *Buffer_Send_GridVel = NULL;    
 #endif
     
 	newGridVel = new double[nDim];
@@ -5295,7 +5478,12 @@ void CPhysicalGeometry::Set_MPI_GridVel(CConfig *config) {
           for (iDim = 0; iDim < nDim; iDim++)
             Buffer_Send_GridVel[iDim*nVert+iVertex] = GridVel[iDim];
 				}
-                MPI::COMM_WORLD.Bsend(Buffer_Send_GridVel, nBuffer_Vector, MPI::DOUBLE, send_to, 0); delete [] Buffer_Send_GridVel;
+#ifdef WINDOWS
+				MPI_Bsend(Buffer_Send_GridVel, nBuffer_Vector, MPI_DOUBLE, send_to, 0, MPI_COMM_WORLD);
+#else
+                MPI::COMM_WORLD.Bsend(Buffer_Send_GridVel, nBuffer_Vector, MPI::DOUBLE, send_to, 0); 
+#endif
+				delete [] Buffer_Send_GridVel;
 			}
             
 #endif
@@ -5315,9 +5503,12 @@ void CPhysicalGeometry::Set_MPI_GridVel(CConfig *config) {
         }
 
 #else
-                
+#ifdef WINDOWS
+				MPI_Status status; 
+				MPI_Recv(Buffer_Receive_GridVel, nBuffer_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+#else
                 MPI::COMM_WORLD.Recv(Buffer_Receive_GridVel, nBuffer_Vector, MPI::DOUBLE, receive_from, 0);
-                
+#endif               
 #endif
                 
 				/*--- Do the coordinate transformation ---*/
@@ -5382,9 +5573,11 @@ void CPhysicalGeometry::Set_MPI_GridVel(CConfig *config) {
 	delete [] newGridVel;
     
 #ifndef NO_MPI
-    
+#ifdef WINDOWS
+	MPI_Barrier(MPI_COMM_WORLD);
+#else
     MPI::COMM_WORLD.Barrier();
-    
+#endif    
 #endif
     
 }
@@ -5731,11 +5924,16 @@ void CPhysicalGeometry::ComputeSurf_Curvature(CConfig *config) {
     vector<unsigned long>::iterator it;
     double U[3], V[3], W[3], Length_U, Length_V, Length_W, CosValue, Angle_Value, *K, *Angle_Defect, *Area_Vertex, *Angle_Alpha, *Angle_Beta, **NormalMeanK, MeanK, GaussK, MaxPrinK, MinPrinK, cot_alpha, cot_beta, delta, X1, X2, X3, Y1, Y2, Y3, radius, *Buffer_Send_Coord, *Buffer_Receive_Coord, *Coord, Dist, MinDist, MaxK, MinK, SigmaK;
     bool *Check_Edge;
+	int rank;
     
 #ifdef NO_MPI
-	int rank = MASTER_NODE;
+	rank = MASTER_NODE;
 #else
-	int rank = MPI::COMM_WORLD.Get_rank();
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
     
     /*--- Allocate surface curvature ---*/
@@ -5978,9 +6176,15 @@ void CPhysicalGeometry::ComputeSurf_Curvature(CConfig *config) {
     double MyMeanK = MeanK; MeanK = 0.0;
     double MyMaxK = MaxK; MaxK = 0.0;
     unsigned long MynPointDomain = TotalnPointDomain; TotalnPointDomain = 0;
+#ifdef WINDOWS
+	MPI_Allreduce(&MyMeanK, &MeanK, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&MyMaxK, &MaxK, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+    MPI_Allreduce(&MynPointDomain, &TotalnPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
     MPI::COMM_WORLD.Allreduce(&MyMeanK, &MeanK, 1, MPI::DOUBLE, MPI::SUM);
     MPI::COMM_WORLD.Allreduce(&MyMaxK, &MaxK, 1, MPI::DOUBLE, MPI::MAX);
     MPI::COMM_WORLD.Allreduce(&MynPointDomain, &TotalnPointDomain, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+#endif
 #endif
     
     /*--- Compute the mean ---*/
@@ -6001,7 +6205,11 @@ void CPhysicalGeometry::ComputeSurf_Curvature(CConfig *config) {
     
 #ifndef NO_MPI
     double MySigmaK = SigmaK; SigmaK = 0.0;
+#ifdef WINDOWS
+	MPI_Allreduce(&MySigmaK, &SigmaK, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
     MPI::COMM_WORLD.Allreduce(&MySigmaK, &SigmaK, 1, MPI::DOUBLE, MPI::SUM);
+#endif
 #endif
     
     SigmaK = sqrt(SigmaK/double(TotalnPointDomain));
@@ -6027,7 +6235,11 @@ void CPhysicalGeometry::ComputeSurf_Curvature(CConfig *config) {
     /*--- Variables and buffers needed for MPI ---*/
     
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+#else
     nProcessor = MPI::COMM_WORLD.Get_size();
+#endif
 #else
 	nProcessor = 1;
 #endif
@@ -6042,12 +6254,18 @@ void CPhysicalGeometry::ComputeSurf_Curvature(CConfig *config) {
     
     /*--- Communicate to all processors the total number of critical edge nodes. ---*/
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Allreduce(&nLocalVertex, &nGlobalVertex,  1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+	MPI_Allreduce(&nLocalVertex, &MaxLocalVertex, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+	MPI_Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+#else
 	MPI::COMM_WORLD.Allreduce(&nLocalVertex, &nGlobalVertex,  1,
                               MPI::UNSIGNED_LONG, MPI::SUM);
 	MPI::COMM_WORLD.Allreduce(&nLocalVertex, &MaxLocalVertex, 1,
                               MPI::UNSIGNED_LONG, MPI::MAX);
 	MPI::COMM_WORLD.Allgather(Buffer_Send_nVertex, 1, MPI::UNSIGNED_LONG,
                               Buffer_Receive_nVertex, 1, MPI::UNSIGNED_LONG);
+#endif
 #else
     MaxLocalVertex = nLocalVertex;
     nGlobalVertex = nLocalVertex;
