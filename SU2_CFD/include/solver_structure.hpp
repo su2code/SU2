@@ -687,28 +687,6 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-	virtual void BC_FWH(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                        unsigned short val_marker);
-    
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-	virtual void BC_Observer(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                             unsigned short val_marker);
-    
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 */
@@ -1647,24 +1625,6 @@ public:
 	 */
 	virtual void SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement, CConfig *flow_config,
                                       CConfig *fea_config, CGeometry **fea_geometry, CSolver ***fea_solution);
-    
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] wave_geometry - Geometrical definition of the problem.
-	 * \param[in] flow_solution - Container vector with all the solutions.
-	 * \param[in] wave_config - Definition of the particular problem.
-	 */
-	virtual void SetNoise_Source(CSolver ***flow_solution, CGeometry **wave_geometry, CConfig *wave_config);
-    
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] wave_solution - Solution container from the wave problem.
-	 * \param[in] flow_solution - Solution container from the flow problem.
-	 * \param[in] flow_geometry - Geometrical definition for the flow problem.
-	 * \param[in] flow_config - Definition of the particular problem.
-	 */
-	virtual void SetAeroacoustic_Coupling(CSolver ***wave_solution, CSolver ***flow_solution, CNumerics *numerics,
-                                          CGeometry **flow_geometry, CConfig *flow_config);
     
 	/*!
 	 * \brief A virtual member.
@@ -3893,27 +3853,6 @@ public:
                            CConfig *config, unsigned short val_marker);
     
 	/*!
-	 * \brief Impose a dirchlet boundary condition to set the couple aeroacoustic solution.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-	void BC_FWH(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                unsigned short val_marker);
-    
-	/*!
-	 * \brief Set the coupling terms for the adjoint aeroacoustic problem.
-	 * \param[in] wave_solution - Solution container from the wave problem.
-	 * \param[in] flow_solution - Solution container from the flow problem.
-	 * \param[in] flow_geometry - Geometrical definition for the flow problem.
-	 * \param[in] flow_config - Definition of the particular problem.
-	 */
-	void SetAeroacoustic_Coupling(CSolver ***wave_solution,  CSolver ***flow_solution, CNumerics *numerics,
-                                  CGeometry **flow_geometry, CConfig *flow_config);
-    
-	/*!
 	 * \brief Update the solution using a Runge-Kutta strategy.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
@@ -4622,17 +4561,6 @@ public:
                       unsigned short val_marker);
     
 	/*!
-	 * \brief Impose a Neumann BC for the adjoint aeroacoustic problem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-	void BC_Observer(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                     unsigned short val_marker) ;
-    
-	/*!
 	 * \brief Set residuals to zero.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
@@ -4692,14 +4620,6 @@ public:
    * \param[in] val_iter - Current external iteration number.
 	 */
 	void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
-  
-	/*!
-	 * \brief Set the noise sources from the flow problem for aeroacoustic computations.
-	 * \param[in] wave_geometry - Geometrical definition of the problem.
-	 * \param[in] flow_solution - Container vector with all the solutions.
-	 * \param[in] wave_config - Definition of the particular problem.
-	 */
-	void SetNoise_Source(CSolver ***flow_solution, CGeometry **wave_geometry, CConfig *wave_config);
     
 	/*!
 	 * \brief Compute the total wave strength coefficient.

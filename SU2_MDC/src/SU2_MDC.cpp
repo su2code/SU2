@@ -375,8 +375,7 @@ void SetMultiZone_MeshFile(CPhysicalGeometry **geometry, CConfig **config, unsig
         for (iElem_Bound = 0; iElem_Bound < geometry[iZone]->nElem_Bound[iMarker]; iElem_Bound++) {
           output_file << geometry[iZone]->bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" <<
           geometry[iZone]->bound[iMarker][iElem_Bound]->GetNode(0) << "\t" <<
-          geometry[iZone]->bound[iMarker][iElem_Bound]->GetRotation_Type() << "\t" <<
-          geometry[iZone]->bound[iMarker][iElem_Bound]->GetMatching_Zone()<< endl;
+          geometry[iZone]->bound[iMarker][iElem_Bound]->GetRotation_Type()<< endl;
         }
         
       }

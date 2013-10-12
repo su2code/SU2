@@ -127,12 +127,6 @@ void CIntegration::Space_Integration(CGeometry *geometry, CSolver **solver_conta
 			case LOAD_BOUNDARY:
 				solver_container[MainSolver]->BC_Normal_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
 				break;
-			case FWH_SURFACE:
-				solver_container[MainSolver]->BC_FWH(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-				break;
-			case WAVE_OBSERVER:
-				solver_container[MainSolver]->BC_Observer(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-				break;
 			case NEUMANN:
 				solver_container[MainSolver]->BC_Neumann(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
 				break;

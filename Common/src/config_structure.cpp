@@ -180,10 +180,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    rotation_angle_z-axis, translation_x, translation_y, translation_z, ... ) */
 	AddMarkerPeriodic("MARKER_PERIODIC", nMarker_PerBound, Marker_PerBound, Marker_PerDonor,
                     Periodic_RotCenter, Periodic_RotAngles, Periodic_Translation);
-	/* DESCRIPTION: Sliding mesh interface boundary marker(s) for use with SU2_SMC
-   Format: ( sliding marker, zone # of sliding marker, donor marker, zone # of donor, ... ) */
-	AddMarkerSliding("MARKER_SLIDING", nMarker_Sliding, Marker_SlideBound, Marker_SlideDonor,
-                   SlideBound_Zone, SlideDonor_Zone);
   /* DESCRIPTION: Inlet boundary type */
 	AddEnumOption("INLET_TYPE", Kind_Inlet, Inlet_Map, "TOTAL_CONDITIONS");
 	/* DESCRIPTION: Inlet boundary marker(s) with the following formats,
@@ -222,10 +218,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddMarkerLoad("MARKER_NORMAL_LOAD", nMarker_Load, Marker_Load, Load_Value);
 	/* DESCRIPTION: Flow load boundary marker(s) */
 	AddMarkerFlowLoad("MARKER_FLOWLOAD", nMarker_FlowLoad, Marker_FlowLoad, FlowLoad_Value);
-	/* DESCRIPTION: FW-H boundary marker(s) */
-	AddMarkerOption("MARKER_FWH", nMarker_FWH, Marker_FWH);
-	/* DESCRIPTION: Observer boundary marker(s) */
-	AddMarkerOption("MARKER_OBSERVER", nMarker_Observer, Marker_Observer);
 	/* DESCRIPTION: Damping factor for engine inlet condition */
 	AddScalarOption("DAMP_NACELLE_INFLOW", Damp_Nacelle_Inflow, 0.1);
   
@@ -1122,8 +1114,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   /*--- Make sure that there aren't more than one rigid motion or 
-   rotating frame specified in GRID_MOVEMENT_KIND. This means that sliding
-   mesh simulations are currently disabled. ---*/
+   rotating frame specified in GRID_MOVEMENT_KIND. ---*/
   if (Grid_Movement && (Kind_GridMovement[ZONE_0] == RIGID_MOTION) &&
       (nGridMovement > 1)) {
     cout << "Can not support more than one type of rigid motion in GRID_MOVEMENT_KIND!!" << endl;
@@ -1566,13 +1557,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 			Kind_Solver = FLUID_STRUCTURE_RANS;
 		Grid_Movement = true;
 	}
-  
-	/*--- Set a flag for sliding interfaces so that a search
-   and interpolation is performed after each time step. ---*/
-	if (nMarker_Sliding > 0)
-		Relative_Motion = true;
-	else
-		Relative_Motion = false;
 
 	if (FullMG) FinestMesh = nMultiLevel;
 	else FinestMesh = MESH_0;
@@ -1679,7 +1663,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     if (Kind_Solver == RANS) Kind_Solver = ADJ_RANS;
     if (Kind_Solver == TNE2_EULER) Kind_Solver = ADJ_TNE2_EULER;
 		if (Kind_Solver == TNE2_NAVIER_STOKES) Kind_Solver = ADJ_TNE2_NAVIER_STOKES;
-    if (Kind_Solver == AEROACOUSTIC_EULER) Kind_Solver = ADJ_AEROACOUSTIC_EULER;
 		if (Kind_Solver == PLASMA_EULER) Kind_Solver = ADJ_PLASMA_EULER;
 		if (Kind_Solver == PLASMA_NAVIER_STOKES) Kind_Solver = ADJ_PLASMA_NAVIER_STOKES;
 	}
@@ -3296,7 +3279,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 	nMarker_All = nMarker_Euler + nMarker_FarField + nMarker_SymWall + nMarker_PerBound + nMarker_NearFieldBound + nMarker_Supersonic_Inlet
 			+ nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux
 			+ nMarker_NacelleInflow + nMarker_NacelleExhaust + nMarker_Dirichlet_Elec + nMarker_Displacement + nMarker_Load
-			+ nMarker_FlowLoad + nMarker_FWH + nMarker_Observer + nMarker_Custom + nMarker_Sliding + 2*nDomain;
+			+ nMarker_FlowLoad + nMarker_Custom + 2*nDomain;
 
 	Marker_All_Tag        = new string[nMarker_All+2];			    // Store the tag that correspond with each marker.
 	Marker_All_SendRecv   = new short[nMarker_All+2];						// +#domain (send), -#domain (receive) or 0 (neither send nor receive).
@@ -3307,13 +3290,12 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 	Marker_All_DV         = new unsigned short[nMarker_All+2];	// Store whether the boundary should be affected by design variables.
   Marker_All_Moving     = new unsigned short[nMarker_All+2];	// Store whether the boundary should be in motion.
 	Marker_All_PerBound   = new short[nMarker_All+2];						// Store whether the boundary belongs to a periodic boundary.
-	Marker_All_Sliding    = new unsigned short[nMarker_All+2];	// Store whether the boundary belongs to a sliding interface.
 
 	unsigned short iMarker_All, iMarker_Config, iMarker_Euler, iMarker_Custom, iMarker_FarField,
 	iMarker_SymWall, iMarker_PerBound, iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
 	iMarker_Inlet, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement, iMarker_Load,
-	iMarker_FlowLoad, iMarker_FWH, iMarker_Observer, iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_Plotting, iMarker_DV, iMarker_Moving,
-	iMarker_Supersonic_Inlet, iMarker_Sliding;
+	iMarker_FlowLoad, iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_Plotting, iMarker_DV, iMarker_Moving,
+	iMarker_Supersonic_Inlet;
 
 	for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
 		Marker_All_Tag[iMarker_All] = "NONE";
@@ -3325,11 +3307,10 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 		Marker_All_DV[iMarker_All]         = 0;
     Marker_All_Moving[iMarker_All]     = 0;
 		Marker_All_PerBound[iMarker_All]   = 0;
-		Marker_All_Sliding[iMarker_All]    = 0;
 	}
 
 	nMarker_Config = nMarker_Euler + nMarker_FarField + nMarker_SymWall + nMarker_PerBound + nMarker_NearFieldBound
-			+ nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux + nMarker_NacelleInflow + nMarker_NacelleExhaust + nMarker_Supersonic_Inlet + nMarker_Displacement + nMarker_Load + nMarker_FlowLoad + nMarker_FWH + nMarker_Observer + nMarker_Custom + nMarker_Sliding;
+			+ nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux + nMarker_NacelleInflow + nMarker_NacelleExhaust + nMarker_Supersonic_Inlet + nMarker_Displacement + nMarker_Load + nMarker_FlowLoad + nMarker_Custom;
 
 	Marker_Config_Tag        = new string[nMarker_Config];
 	Marker_Config_Boundary   = new unsigned short[nMarker_Config];
@@ -3339,8 +3320,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   Marker_Config_Moving     = new unsigned short[nMarker_Config];
 	Marker_Config_Designing  = new unsigned short[nMarker_Config];
 	Marker_Config_PerBound   = new unsigned short[nMarker_Config];
-	Marker_Config_Sliding    = new unsigned short[nMarker_Config];
-    
+  
 	for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++) {
 		Marker_Config_Tag[iMarker_Config] = "NONE";
 		Marker_Config_Boundary[iMarker_Config]   = 0;
@@ -3350,7 +3330,6 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 		Marker_Config_DV[iMarker_Config]         = 0;
     Marker_Config_Moving[iMarker_Config]     = 0;
 		Marker_Config_PerBound[iMarker_Config]   = 0;
-		Marker_Config_Sliding[iMarker_Config]    = 0;
 	}
 
 	iMarker_Config = 0;
@@ -3376,13 +3355,6 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 		Marker_Config_Tag[iMarker_Config] = Marker_PerBound[iMarker_PerBound];
 		Marker_Config_Boundary[iMarker_Config] = PERIODIC_BOUNDARY;
 		Marker_Config_PerBound[iMarker_Config] = iMarker_PerBound + 1;
-		iMarker_Config++;
-	}
-
-	for (iMarker_Sliding = 0; iMarker_Sliding < nMarker_Sliding; iMarker_Sliding++) {
-		Marker_Config_Tag[iMarker_Config] = Marker_SlideBound[iMarker_Sliding];
-		Marker_Config_Boundary[iMarker_Config] = SLIDING_INTERFACE;
-		Marker_Config_Sliding[iMarker_Config]  = iMarker_Sliding + 1;
 		iMarker_Config++;
 	}
 
@@ -3481,18 +3453,6 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 		iMarker_Config++;
 	}
 
-	for (iMarker_FWH = 0; iMarker_FWH < nMarker_FWH; iMarker_FWH++) {
-		Marker_Config_Tag[iMarker_Config] = Marker_FWH[iMarker_FWH];
-		Marker_Config_Boundary[iMarker_Config] = FWH_SURFACE;
-		iMarker_Config++;
-	}
-
-	for (iMarker_Observer = 0; iMarker_Observer < nMarker_Observer; iMarker_Observer++) {
-		Marker_Config_Tag[iMarker_Config] = Marker_Observer[iMarker_Observer];
-		Marker_Config_Boundary[iMarker_Config] = WAVE_OBSERVER;
-		iMarker_Config++;
-	}
-
 	for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++) {
 		Marker_Config_Monitoring[iMarker_Config] = NO;
 		for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++)
@@ -3533,7 +3493,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
 	iMarker_SymWall, iMarker_PerBound, iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
-	iMarker_Inlet, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_FWH, iMarker_Observer, iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_Plotting, iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet;
+	iMarker_Inlet, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement, iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_Plotting, iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet;
 
 	cout << endl <<"-------------------------------------------------------------------------" << endl;
 	cout <<"|    _____   _    _   ___                                               |" << endl;
@@ -3549,7 +3509,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	case SU2_MAC: cout << "|  |_____/   \\____/  |____|   Suite (Mesh Adaptation Code)              |" << endl; break;
 	case SU2_GDC: cout << "|  |_____/   \\____/  |____|   Suite (Geometry Design Code)              |" << endl; break;
 	case SU2_PBC: cout << "|  |_____/   \\____/  |____|   Suite (Periodic Boundary Code)            |" << endl; break;
-	case SU2_SMC: cout << "|  |_____/   \\____/  |____|   Suite (Sliding Mesh Code)                 |" << endl; break;
 	case SU2_SOL: cout << "|  |_____/   \\____/  |____|   Suite (Solution Exporting Code)           |" << endl; break;
 	}
 
@@ -3948,7 +3907,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     case HEAT_LOAD: cout << "Integrated heat flux objective function." << endl; break;
 		case FIGURE_OF_MERIT: cout << "Rotor Figure of Merit objective function." << endl; break;
 		case FREE_SURFACE: cout << "Free-Surface objective function." << endl; break;
-		case NOISE: cout << "Noise objective function." << endl; break;
 		}
 
 	}
@@ -4717,24 +4675,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		}
 	}
 
-	if (nMarker_FWH != 0) {
-		cout << "FW-H boundary marker(s): ";
-		for (iMarker_FWH = 0; iMarker_FWH < nMarker_FWH; iMarker_FWH++) {
-			cout << Marker_FWH[iMarker_FWH];
-			if (iMarker_FWH < nMarker_FWH-1) cout << ", ";
-			else cout <<"."<<endl;
-		}
-	}
-
-	if (nMarker_Observer != 0) {
-		cout << "Wave observer boundary marker(s): ";
-		for (iMarker_Observer = 0; iMarker_Observer < nMarker_Observer; iMarker_Observer++) {
-			cout << Marker_Observer[iMarker_Observer];
-			if (iMarker_Observer < nMarker_Observer-1) cout << ", ";
-			else cout <<"."<<endl;
-		}
-	}
-
 	if (nMarker_Neumann != 0) {
 		cout << "Neumann boundary marker(s): ";
 		for (iMarker_Neumann = 0; iMarker_Neumann < nMarker_Neumann; iMarker_Neumann++) {
@@ -5020,15 +4960,6 @@ void CConfig::AddMarkerPeriodic(const string & name, unsigned short & nMarker_Pe
 	CAnyOptionRef* option_ref = new CMarkerPeriodicRef(nMarker_PerBound, Marker_PerBound,
 			Marker_PerDonor, RotCenter,
 			RotAngles, Translation);
-	param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
-}
-
-void CConfig::AddMarkerSliding(const string & name, unsigned short & nMarker_Sliding,
-		string* & Marker_SlideBound, string* & Marker_SlideDonor,
-		unsigned short* & SlideBound_Zone, unsigned short* & SlideDonor_Zone) {
-	nMarker_Sliding = 0;
-	CAnyOptionRef* option_ref = new CMarkerSlidingRef(nMarker_Sliding, Marker_SlideBound,
-			Marker_SlideDonor, SlideBound_Zone, SlideDonor_Zone);
 	param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 }
 
@@ -5346,13 +5277,6 @@ unsigned short CConfig::GetMarker_Config_PerBound(string val_marker) {
 	return Marker_Config_PerBound[iMarker_Config];
 }
 
-unsigned short CConfig::GetMarker_Config_Sliding(string val_marker) {
-	unsigned short iMarker_Config;
-	for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++)
-		if (Marker_Config_Tag[iMarker_Config] == val_marker) break;
-	return Marker_Config_Sliding[iMarker_Config];
-}
-
 CConfig::~CConfig(void)
 {
 	delete [] RK_Alpha_Step;
@@ -5611,7 +5535,6 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case MAX_HEAT_FLUX:         AdjExt = "_qmax"; break;
       case FIGURE_OF_MERIT:       AdjExt = "_merit";break;
       case FREE_SURFACE:          AdjExt = "_fs";   break;
-      case NOISE:                 AdjExt = "_fwh";  break;
     }
     Filename.append(AdjExt);
     
@@ -5993,49 +5916,6 @@ void CConfig::SetGlobalParam(unsigned short val_solver, unsigned short val_syste
 			SetKind_TimeIntScheme(GetKind_TimeIntScheme_FEA());
 		}
 		break;
-	case AEROACOUSTIC_EULER:
-		if (val_system == RUNTIME_FLOW_SYS) {
-			SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
-					GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
-			SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
-			SetKind_ViscNumScheme(NONE);
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
-		}
-		if (val_system == RUNTIME_WAVE_SYS) {
-			SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
-			SetKind_SourNumScheme(GetKind_SourNumScheme_Wave());
-			SetKind_ViscNumScheme(GetKind_ViscNumScheme_Wave());
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_Wave());
-		}
-		break;
-	case ADJ_AEROACOUSTIC_EULER:
-		if (val_system == RUNTIME_FLOW_SYS) {
-			SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
-					GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
-			SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
-			SetKind_ViscNumScheme(NONE);
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
-		}
-		if (val_system == RUNTIME_WAVE_SYS) {
-			SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
-			SetKind_SourNumScheme(GetKind_SourNumScheme_Wave());
-			SetKind_ViscNumScheme(GetKind_ViscNumScheme_Wave());
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_Wave());
-		}
-		if (val_system == RUNTIME_ADJFLOW_SYS) {
-			SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjFlow(), GetKind_Centered_AdjFlow(),
-					GetKind_Upwind_AdjFlow(), GetKind_SlopeLimit_AdjFlow());
-			SetKind_SourNumScheme(GetKind_SourNumScheme_AdjFlow());
-			SetKind_ViscNumScheme(NONE);
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjFlow());
-		}
-		if (val_system == RUNTIME_WAVE_SYS) {
-			SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
-			SetKind_SourNumScheme(GetKind_SourNumScheme_Wave());
-			SetKind_ViscNumScheme(GetKind_ViscNumScheme_Wave());
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_Wave());
-		}
-		break;
 	}
 }
 
@@ -6088,37 +5968,6 @@ void CConfig::SetnPeriodicIndex(unsigned short val_index) {
 	Periodic_Rotation  = new double*[nPeriodic_Index];
 	Periodic_Translate = new double*[nPeriodic_Index];
 
-}
-
-string CConfig::GetMarker_Sliding_Donor(string val_marker) {
-	unsigned short iMarker_SlideBound;
-
-	/*--- Find the marker for this sliding boundary. ---*/
-	for (iMarker_SlideBound = 0; iMarker_SlideBound < nMarker_Sliding; iMarker_SlideBound++)
-		if (Marker_SlideBound[iMarker_SlideBound] == val_marker) break;
-
-	/*--- Return the tag for the sliding donor boundary. ---*/
-	return Marker_SlideDonor[iMarker_SlideBound];
-}
-
-unsigned short CConfig::GetSlideDonor_Zone(string val_marker) {
-	unsigned short iMarker_SlideBound;
-
-	/*--- Find the marker for this sliding boundary. ---*/
-	for (iMarker_SlideBound = 0; iMarker_SlideBound < nMarker_Sliding; iMarker_SlideBound++)
-		if (Marker_SlideBound[iMarker_SlideBound] == val_marker) break;
-
-	return SlideDonor_Zone[iMarker_SlideBound];
-}
-
-unsigned short CConfig::GetSlideBound_Zone(string val_marker) {
-	unsigned short iMarker_SlideBound;
-
-	/*--- Find the marker for this sliding boundary. ---*/
-	for (iMarker_SlideBound = 0; iMarker_SlideBound < nMarker_Sliding; iMarker_SlideBound++)
-		if (Marker_SlideBound[iMarker_SlideBound] == val_marker) break;
-
-	return SlideBound_Zone[iMarker_SlideBound];
 }
 
 unsigned short CConfig::GetMarker_Moving(string val_marker) {

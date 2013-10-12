@@ -1561,11 +1561,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   bool flow = (config->GetKind_Solver() == EULER) || (config->GetKind_Solver() == NAVIER_STOKES) ||
   (config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == ADJ_EULER) ||
   (config->GetKind_Solver() == ADJ_NAVIER_STOKES) || (config->GetKind_Solver() == ADJ_RANS);
-  
-	if (Kind_Solver == AEROACOUSTIC_EULER) {
-		if (val_iZone == ZONE_0) Kind_Solver = EULER;
-		if (val_iZone == ZONE_1) Kind_Solver = WAVE_EQUATION;
-	}
+
 	if (Kind_Solver == PLASMA_EULER) {
 		if (val_iZone == ZONE_0) Kind_Solver = PLASMA_EULER;
 		if (val_iZone == ZONE_1) Kind_Solver = POISSON_EQUATION;
@@ -1807,7 +1803,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     }
     
 	/*--- Loop over all points in the mesh, but only write data
-     for nodes in the domain (ignore periodic/sliding halo nodes). ---*/
+     for nodes in the domain (ignore periodic halo nodes). ---*/
 	jPoint = 0;
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
         
@@ -3394,7 +3390,7 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
 	}
     
 	/*--- Loop over all points in the mesh, but only write data
-     for nodes in the domain (ignore periodic/sliding halo nodes). ---*/
+     for nodes in the domain (ignore periodic halo nodes). ---*/
     jPoint = 0;
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
 		if (geometry->node[iPoint]->GetDomain()) {
@@ -3906,20 +3902,7 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
             ConvHist_file[0] << begin << fea_coeff;
             ConvHist_file[0] << fea_resid << end;
             break;
-            
-        case AEROACOUSTIC_EULER:
-            ConvHist_file[0] << begin << flow_coeff;
-            ConvHist_file[0] << wave_coeff;
-            ConvHist_file[0] << flow_resid;
-            ConvHist_file[0] << wave_resid << end;
-            break;
-            
-        case ADJ_AEROACOUSTIC_EULER:
-            ConvHist_file[0] << begin << adj_coeff;
-            ConvHist_file[0] << adj_flow_resid;
-            ConvHist_file[0] << wave_coeff;
-            ConvHist_file[0] << wave_resid << end;
-            break;
+    
 	}
     
 	if (config->GetOutput_FileFormat() == TECPLOT || config->GetOutput_FileFormat() == TECPLOT_BINARY) {
@@ -3976,8 +3959,6 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
         bool adjoint = config[val_iZone]->GetAdjoint();
         bool fluid_structure = ((config[val_iZone]->GetKind_Solver() == FLUID_STRUCTURE_EULER) || (config[val_iZone]->GetKind_Solver() == FLUID_STRUCTURE_NAVIER_STOKES) ||
                                 (config[val_iZone]->GetKind_Solver() == FLUID_STRUCTURE_RANS));
-        bool aeroacoustic = ((config[val_iZone]->GetKind_Solver() == AEROACOUSTIC_EULER) || (config[val_iZone]->GetKind_Solver() == AEROACOUSTIC_NAVIER_STOKES) ||
-                             (config[val_iZone]->GetKind_Solver() == AEROACOUSTIC_RANS));
         bool wave = (config[val_iZone]->GetKind_Solver() == WAVE_EQUATION);
         bool heat = (config[val_iZone]->GetKind_Solver() == HEAT_EQUATION);
         bool fea = (config[val_iZone]->GetKind_Solver() == LINEAR_ELASTICITY);
@@ -4057,10 +4038,8 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                 
             case EULER:                   case NAVIER_STOKES:                   case RANS:
             case FLUID_STRUCTURE_EULER:   case FLUID_STRUCTURE_NAVIER_STOKES:   case FLUID_STRUCTURE_RANS:
-            case AEROACOUSTIC_EULER:      case AEROACOUSTIC_NAVIER_STOKES:      case AEROACOUSTIC_RANS:
             case ADJ_EULER:               case ADJ_NAVIER_STOKES:               case ADJ_RANS:
-            case ADJ_AEROACOUSTIC_EULER:
-                
+          
                 /*--- Flow solution coefficients ---*/
                 Total_CLift       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CLift();
                 Total_CDrag       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CDrag();
@@ -4102,10 +4081,6 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                     aeroelastic_pitch  = config[val_iZone]->GetAeroelastic_pitch();
                 }
                 
-                if (aeroacoustic) {
-                    Total_CWave = solver_container[ZONE_1][FinestMesh][WAVE_SOL]->GetTotal_CWave();
-                }
-                
                 if (fluid_structure) {
                     Total_CFEA  = solver_container[ZONE_1][FinestMesh][FEA_SOL]->GetTotal_CFEA();
                 }
@@ -4141,13 +4116,6 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                 if (fluid_structure) {
                     for (iVar = 0; iVar < nVar_FEA; iVar++)
                         residual_fea[iVar] = solver_container[ZONE_1][FinestMesh][FEA_SOL]->GetRes_RMS(iVar);
-                }
-                
-                /*--- Aeroacoustic residual ---*/
-                
-                if (aeroacoustic) {
-                    for (iVar = 0; iVar < nVar_Wave; iVar++)
-                        residual_wave[iVar] = solver_container[ZONE_1][FinestMesh][WAVE_SOL]->GetRes_RMS(iVar);
                 }
                 
                 /*--- Iterations of the linear solver ---*/
@@ -4335,10 +4303,8 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                         
                     case EULER : case NAVIER_STOKES: case RANS:
                     case FLUID_STRUCTURE_EULER: case FLUID_STRUCTURE_NAVIER_STOKES: case FLUID_STRUCTURE_RANS:
-                    case AEROACOUSTIC_EULER: case AEROACOUSTIC_NAVIER_STOKES: case AEROACOUSTIC_RANS:
                     case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
-                    case ADJ_AEROACOUSTIC_EULER:
-                        
+                  
                         /*--- Direct coefficients ---*/
                         sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
                                  Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy,
@@ -4362,9 +4328,6 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                         if (fluid_structure)
                             sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz,
                                      Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_CFEA);
-                        if (aeroacoustic)
-                            sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz,
-                                     Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_CWave);
                         
                         /*--- Flow residual ---*/
                         if (nDim == 2) {
@@ -4398,11 +4361,6 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                         if (fluid_structure) {
                             if (nDim == 2) sprintf (levelset_resid, ", %12.10f, %12.10f, 0.0", log10 (residual_fea[0]), log10 (residual_fea[1]));
                             else sprintf (levelset_resid, ", %12.10f, %12.10f, %12.10f", log10 (residual_fea[0]), log10 (residual_fea[1]), log10 (residual_fea[2]));
-                        }
-                        
-                        /*--- Aeroacoustics residual ---*/
-                        if (aeroacoustic) {
-                            sprintf (levelset_resid, ", %12.10f, %12.10f", log10 (residual_wave[0]), log10 (residual_wave[1]));
                         }
                         
                         if (adjoint) {
@@ -4524,7 +4482,6 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                     switch (config[val_iZone]->GetKind_Solver()) {
                         case EULER :                  case NAVIER_STOKES:
                         case FLUID_STRUCTURE_EULER :  case FLUID_STRUCTURE_NAVIER_STOKES:
-                        case AEROACOUSTIC_EULER :     case AEROACOUSTIC_NAVIER_STOKES:
                             cout << endl << " Min Delta Time: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<<
                             ". Max Delta Time: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() << ".";
                             break;
@@ -4552,8 +4509,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                 switch (config[val_iZone]->GetKind_Solver()) {
                     case EULER :                  case NAVIER_STOKES:
                     case FLUID_STRUCTURE_EULER :  case FLUID_STRUCTURE_NAVIER_STOKES:
-                    case AEROACOUSTIC_EULER :     case AEROACOUSTIC_NAVIER_STOKES:
-                        
+                  
                         /*--- Visualize the maximum residual ---*/
                         cout << endl << " Maximum residual: " << log10(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_Max(0))
                         <<", located at point "<< solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max(0) << "." << endl;
@@ -4561,7 +4517,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                         if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
                         else cout << endl << " IntIter" << " ExtIter";
                         
-                        if (!fluid_structure && !aeroacoustic) {
+                        if (!fluid_structure) {
                             if (incompressible) cout << "   Res[Press]" << "     Res[Velx]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
                             else if (freesurface) cout << "   Res[Press]" << "     Res[Dist]" << "   CLift(Total)" << "     CLevelSet" << endl;
                             else if (rotating_frame && nDim == 3) cout << "     Res[Rho]" << "     Res[RhoE]" << " CThrust(Total)" << " CTorque(Total)" << endl;
@@ -4570,8 +4526,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                             else cout << "     Res[Rho]" << "     Res[RhoE]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
                         }
                         else if (fluid_structure) cout << "     Res[Rho]" << "   Res[Displx]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
-                        else if (aeroacoustic) cout << "     Res[Rho]" << "   Res[Wave]" << "   CLift(Total)" << "   CDrag(Total)" << "   CWave(Total)" << endl;
-                        
+                  
                         break;
                         
                     case TNE2_EULER :                  case TNE2_NAVIER_STOKES:
@@ -4586,7 +4541,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                         cout << "     Res[Rho]" << "     Res[RhoE]" << "   Res[RhoEve]" << "   CDrag(Total)" << endl;
                         break;
                         
-                    case RANS : case FLUID_STRUCTURE_RANS: case AEROACOUSTIC_RANS:
+                    case RANS : case FLUID_STRUCTURE_RANS:
                         
                         /*--- Visualize the maximum residual ---*/
                         cout << endl << " Maximum residual: " << log10(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_Max(0))
@@ -4661,8 +4616,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                         break;
                         
                     case ADJ_EULER :              case ADJ_NAVIER_STOKES :
-                    case ADJ_AEROACOUSTIC_EULER :
-                        
+                  
                         /*--- Visualize the maximum residual ---*/
                         cout << endl << " Maximum residual: " << log10(solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_Max(0))
                         <<", located at point "<< solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetPoint_Max(0) << "." << endl;
@@ -4725,14 +4679,12 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
             switch (config[val_iZone]->GetKind_Solver()) {
                 case EULER : case NAVIER_STOKES:
                 case FLUID_STRUCTURE_EULER: case FLUID_STRUCTURE_NAVIER_STOKES:
-                case AEROACOUSTIC_EULER: case AEROACOUSTIC_NAVIER_STOKES:
-                    
+              
                     if (!DualTime_Iteration) {
                         if (compressible) ConvHist_file[0] << begin << direct_coeff << flow_resid;
                         if (incompressible) ConvHist_file[0] << begin << direct_coeff << flow_resid;
                         if (freesurface) ConvHist_file[0] << begin << direct_coeff << flow_resid << levelset_resid << end;
                         if (fluid_structure) ConvHist_file[0] << fea_resid;
-                        if (aeroacoustic) ConvHist_file[0] << levelset_resid;
                         ConvHist_file[0] << end;
                         ConvHist_file[0].flush();
                     }
@@ -4740,7 +4692,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                     cout.precision(6);
                     cout.setf(ios::fixed,ios::floatfield);
                     cout.width(13); cout << log10(residual_flow[0]);
-                    if (!fluid_structure && !aeroacoustic && !equiv_area) {
+                    if (!fluid_structure && !equiv_area) {
                         if (compressible) {
                             if (nDim == 2 ) { cout.width(14); cout << log10(residual_flow[3]); }
                             else { cout.width(14); cout << log10(residual_flow[4]); }
@@ -4749,15 +4701,13 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                         if (freesurface) { cout.width(14); cout << log10(residual_levelset[0]); }
                     }
                     else if (fluid_structure) { cout.width(14); cout << log10(residual_fea[0]); }
-                    else if (aeroacoustic) { cout.width(14); cout << log10(residual_wave[0]); }
-                    
+              
                     if (rotating_frame && nDim == 3 ) {
                         cout.setf(ios::scientific,ios::floatfield);
                         cout.width(15); cout << Total_CT;
                         cout.width(15); cout << Total_CQ;
                         cout.unsetf(ios_base::floatfield);
                     }
-                    else if (aeroacoustic) { cout.width(15); cout << Total_CLift; cout.width(15); cout << Total_CDrag; cout.width(15); cout << Total_CWave; }
                     else if (equiv_area) { cout.width(15); cout << Total_CLift; cout.width(15); cout << Total_CDrag; cout.width(15);
                         cout.precision(4);
                         cout.setf(ios::scientific,ios::floatfield);
@@ -4917,8 +4867,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                     break;
                     
                 case ADJ_EULER :              case ADJ_NAVIER_STOKES :
-                case ADJ_AEROACOUSTIC_EULER :
-                    
+              
                     if (!DualTime_Iteration) {
                         ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid << end;
                         ConvHist_file[0].flush();
@@ -5104,17 +5053,6 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
                 
             case LIN_EULER : case LIN_NAVIER_STOKES :
                 if (Wrt_Csv) SetSurfaceCSV_Linearized(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0][LINFLOW_SOL], config[iZone]->GetSurfLinCoeff_FileName(), iExtIter);
-                break;
-                
-            case AEROACOUSTIC_EULER : case AEROACOUSTIC_NAVIER_STOKES : case AEROACOUSTIC_RANS:
-                if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0][FLOW_SOL], iExtIter,iZone);
-                break;
-            case ADJ_AEROACOUSTIC_EULER:
-                if (iZone == ZONE_0) {
-                    if (Wrt_Csv) SetSurfaceCSV_Adjoint(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0][ADJFLOW_SOL], solver_container[iZone][MESH_0][FLOW_SOL], iExtIter, iZone);
-                } else if (iZone == ZONE_1) {
-                    if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0][FLOW_SOL], iExtIter,iZone);
-                }
                 break;
 		}
         

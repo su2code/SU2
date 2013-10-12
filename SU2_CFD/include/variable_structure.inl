@@ -421,18 +421,6 @@ inline double CVariable::GetmuT() { return 0;}
 
 inline void CVariable::SetmuT(double val_muT) { }
 
-inline void CVariable::SetThickness_Noise(double val_thickness_noise) { }
-
-inline void CVariable::SetLoading_Noise(double val_loading_noise) { }
-
-inline void CVariable::SetQuadrupole_Noise(double val_quadrupole_noise) { }
-
-inline double CVariable::GetThickness_Noise() { return 0;}
-
-inline double CVariable::GetLoading_Noise() { return 0;}
-
-inline double CVariable::GetQuadrupole_Noise() { return 0;}
-
 inline double* CVariable::GetSolution_Direct() { return NULL; }
 
 inline void CVariable::SetSolution_Direct(double *val_solution_direct) { }
@@ -772,18 +760,6 @@ inline double **CFEAVariable::GetStress(void) { return Stress; }
 inline void CFEAVariable::SetVonMises_Stress(double val_stress) { VonMises_Stress = val_stress; }
   
 inline double CFEAVariable::GetVonMises_Stress(void) { return VonMises_Stress; }
-
-inline void CWaveVariable::SetThickness_Noise(double val_thickness_noise) { Thickness_Noise = val_thickness_noise; }
-
-inline void CWaveVariable::SetLoading_Noise(double val_loading_noise) { Loading_Noise = val_loading_noise; }
-
-inline void CWaveVariable::SetQuadrupole_Noise(double val_quadrupole_noise) { Quadrupole_Noise = val_quadrupole_noise; }
-
-inline double CWaveVariable::GetThickness_Noise() { return Thickness_Noise;}
-
-inline double CWaveVariable::GetLoading_Noise() { return Loading_Noise;}
-
-inline double CWaveVariable::GetQuadrupole_Noise() { return Quadrupole_Noise;}
 
 inline double* CWaveVariable::GetSolution_Direct() { return Solution_Direct;}
 
