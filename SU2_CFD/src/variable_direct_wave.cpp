@@ -53,11 +53,6 @@ CWaveVariable::CWaveVariable(double *val_wave, unsigned short val_ndim, unsigned
 		Solution_Direct[iVar] = 0.0;
 	}
   
-	/*--- Initialize sources to zero ---*/
-	Thickness_Noise  = 0.0;
-	Loading_Noise    = 0.0;
-	Quadrupole_Noise = 0.0;
-  
 }
 
 CWaveVariable::~CWaveVariable(void) {

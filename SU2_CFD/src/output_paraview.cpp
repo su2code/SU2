@@ -63,9 +63,6 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
 	if (Kind_Solver == WAVE_EQUATION)
 		filename = config->GetWave_FileName().c_str();
   
-	if ((Kind_Solver == WAVE_EQUATION) && (Kind_Solver == ADJ_AEROACOUSTIC_EULER))
-		filename = config->GetAdjWave_FileName().c_str();
-  
 	if (Kind_Solver == POISSON_EQUATION)
 		filename = config->GetStructure_FileName().c_str();
 

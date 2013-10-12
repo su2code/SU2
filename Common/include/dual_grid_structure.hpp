@@ -805,7 +805,6 @@ private:
 	double VarCoord[3];		/*!< \brief Used for storing the coordinate variation due to a surface modification. */
 	long PeriodicPoint[2];			/*!< \brief Store the periodic point of a boundary (iProcessor, iPoint) */
 	short Rotation_Type;			/*!< \brief Type of rotation associated with the vertex (MPI and periodic) */
-  short Matching_Zone;			/*!< \brief Donor zone associated with the vertex (MPI and sliding) */
 	unsigned long Normal_Neighbor; /*!< \brief Index of the closest neighbor. */
   unsigned long Donor_Elem;   /*!< \brief Store the donor element for interpolation across zones/ */
   double Basis_Function[3]; /*!< \brief Basis function values for interpolation across zones. */
@@ -944,18 +943,6 @@ public:
 	 * \return Value of the rotation that must be applied to the solution of the vertex
 	 */
 	short GetRotation_Type(void);
-  
-  /*!
-	 * \brief Get the matching zone index for a sliding interface vertex.
-	 * \return Matching zone for a sliding interface vertex.
-	 */
-  short GetMatching_Zone(void);
-	
-	/*!
-	 * \brief Set the matching zone index for a sliding interface vertex.
-	 * \param[in] val_matching_zone - Matching zone index for a sliding interface vertex.
-	 */
-  void SetMatching_Zone(short val_matching_zone);
 	
 	/*! 
 	 * \brief Set the periodic point of a vertex.

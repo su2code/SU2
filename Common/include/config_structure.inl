@@ -752,10 +752,6 @@ inline void CConfig::SetMarker_All_PerBound(unsigned short val_marker, short val
 
 inline short CConfig::GetMarker_All_PerBound(unsigned short val_marker) { return Marker_All_PerBound[val_marker]; }
 
-inline void CConfig::SetMarker_All_Sliding(unsigned short val_marker, unsigned short val_slidebound) { Marker_All_Sliding[val_marker] = val_slidebound; }
-
-inline unsigned short CConfig::GetMarker_All_Sliding(unsigned short val_marker) { return Marker_All_Sliding[val_marker]; }
-
 inline unsigned short CConfig::GetMarker_All_Monitoring(unsigned short val_marker) { return Marker_All_Monitoring[val_marker]; }
 
 inline unsigned short CConfig::GetMarker_All_Designing(unsigned short val_marker) { return Marker_All_Designing[val_marker]; }
@@ -985,8 +981,6 @@ inline bool CConfig::GetWrt_Residuals(void) { return Wrt_Residuals; }
 inline bool CConfig::GetWrt_Halo(void) { return Wrt_Halo; }
 
 inline bool CConfig::GetWrt_Sectional_Forces(void) { return Wrt_Sectional_Forces; }
-
-inline bool CConfig::GetRelative_Motion(void) { return Relative_Motion; }
 
 inline double* CConfig::GetAeroelastic_np1(void) {return Aeroelastic_np1; }
 

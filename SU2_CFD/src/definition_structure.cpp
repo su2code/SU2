@@ -306,8 +306,6 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
     case FLUID_STRUCTURE_EULER: euler = true; fea = true; break;
     case FLUID_STRUCTURE_NAVIER_STOKES: ns = true; fea = true; break;
     case FLUID_STRUCTURE_RANS: ns = true; turbulent = true; fea = true; break;
-    case AEROACOUSTIC_NAVIER_STOKES: ns = true; wave = true; break;
-    case AEROACOUSTIC_RANS: ns = true; turbulent = true; wave = true; break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
@@ -320,22 +318,6 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
     case ADJ_PLASMA_EULER : plasma_euler = true; adj_plasma_euler = true; break;
     case ADJ_PLASMA_NAVIER_STOKES : plasma_ns = true; adj_plasma_ns = true; break;
     case LIN_EULER: euler = true; lin_euler = true; break;
-      
-      /*--- Specify by zone for the aeroacoustic problem ---*/
-    case AEROACOUSTIC_EULER:
-      if (iZone == ZONE_0) {
-        euler = true;
-      } else if (iZone == ZONE_1) {
-        wave = true;
-      }
-      break;
-    case ADJ_AEROACOUSTIC_EULER:
-      if (iZone == ZONE_0) {
-        euler = true; adj_euler = true;
-      } else if (iZone == ZONE_1) {
-        wave = true;
-      }
-      break;
     case PLASMA_EULER:
       if (iZone == ZONE_0) {
         plasma_euler = true;
@@ -500,8 +482,6 @@ void Integration_Preprocessing(CIntegration **integration_container,
     case FLUID_STRUCTURE_EULER: euler = true; fea = true; break;
     case FLUID_STRUCTURE_NAVIER_STOKES: ns = true; fea = true; break;
     case FLUID_STRUCTURE_RANS: ns = true; turbulent = true; fea = true; break;
-    case AEROACOUSTIC_NAVIER_STOKES: ns = true; wave = true; break;
-    case AEROACOUSTIC_RANS: ns = true; turbulent = true; wave = true; break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
@@ -514,22 +494,6 @@ void Integration_Preprocessing(CIntegration **integration_container,
     case ADJ_PLASMA_EULER : plasma_euler = true; adj_plasma_euler = true; break;
     case ADJ_PLASMA_NAVIER_STOKES : plasma_ns = true; adj_plasma_ns = true; break;
     case LIN_EULER: euler = true; lin_euler = true; break;
-      
-      /*--- Specify by zone for the aeroacoustic problem ---*/
-    case AEROACOUSTIC_EULER:
-      if (iZone == ZONE_0) {
-        euler = true;
-      } else if (iZone == ZONE_1) {
-        wave = true;
-      }
-      break;
-    case ADJ_AEROACOUSTIC_EULER:
-      if (iZone == ZONE_0) {
-        euler = true; adj_euler = true;
-      } else if (iZone == ZONE_1) {
-        wave = true;
-      }
-      break;
     case PLASMA_EULER:
       if (iZone == ZONE_0) {
         plasma_euler = true;
@@ -672,8 +636,6 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     case FLUID_STRUCTURE_EULER: euler = true; fea = true; break;
     case FLUID_STRUCTURE_NAVIER_STOKES: ns = true; fea = true; break;
     case FLUID_STRUCTURE_RANS: ns = true; turbulent = true; fea = true; break;
-    case AEROACOUSTIC_NAVIER_STOKES: ns = true; wave = true; break;
-    case AEROACOUSTIC_RANS: ns = true; turbulent = true; wave = true; break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
@@ -686,22 +648,6 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     case ADJ_PLASMA_EULER : plasma_euler = true; adj_plasma_euler = true; break;
     case ADJ_PLASMA_NAVIER_STOKES : plasma_ns = true; adj_plasma_ns = true; break;
     case LIN_EULER: euler = true; lin_euler = true; break;
-      
-      /*--- Specify by zone for the aeroacoustic problem ---*/
-    case AEROACOUSTIC_EULER:
-      if (iZone == ZONE_0) {
-        euler = true;
-      } else if (iZone == ZONE_1) {
-        wave = true;
-      }
-      break;
-    case ADJ_AEROACOUSTIC_EULER:
-      if (iZone == ZONE_0) {
-        euler = true; adj_euler = true;
-      } else if (iZone == ZONE_1) {
-        wave = true;
-      }
-      break;
     case PLASMA_EULER:
       if (iZone == ZONE_0) {
         plasma_euler = true;

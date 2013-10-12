@@ -189,7 +189,6 @@ def get_headerMap():
                  "CT"              : "THRUST"             ,
                  "CEquivArea"      : "EQUIVALENT_AREA"    ,
                  "CNearFieldOF"    : "NEARFIELD_PRESSURE" ,
-                 "CWave"           : "NOISE"              ,
                  "Time(min)"       : "TIME"               ,
                  "CHeat_Load"      : "HEAT_LOAD"           }
     
@@ -219,7 +218,6 @@ optnames_aero = [ "LIFT"               ,
                   "THRUST"             ,
                   "EQUIVALENT_AREA"    ,
                   "NEARFIELD_PRESSURE" ,
-                  "NOISE"              ,
                   "HEAT_LOAD"           ]
 #: optnames_aero
 
@@ -388,7 +386,6 @@ def get_adjointSuffix(adj_objfunc=None):
                  "TORQUE"             : "cq"    ,
                  "FIGURE_OF_MERIT"    : "merit" ,  
                  "FREE_SURFACE"       : "fs"    ,
-                 "NOISE"              : "fwh"   ,
                  "HEAT_LOAD"          : "Q"       }
     
     # if none or false, return map
@@ -519,9 +516,7 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
             if key == "EQUIV_AREA"     : 
                 header.append(r',"Grad_CEquivArea","Grad_CNearFieldOF"') 
                 write_format.append(", %.10f, %.10f")  
-            if key == "AEROACOUSTIC_EULER"   : 
-                header.append(r',"Grad_CWave"')
-                write_format.append(", %.10f ")
+
     # otherwise...
     else: raise Exception('Unrecognized Gradient Type')          
         
@@ -623,10 +618,7 @@ def get_optFileFormat(plot_format,special_cases=None):
             write_format.append(r', %.10f, %.10f, %.10f')
         if key == "EQUIV_AREA"     : 
             header_list.extend(["CEquivArea","CNearFieldOF"]) 
-            write_format.append(r', %.10f, %.10f')  
-        if key == "AEROACOUSTIC_EULER"   : 
-            header_list.extend(["CWave"])
-            write_format.append(r', %.10f ')
+            write_format.append(r', %.10f, %.10f')
     
     # finish formats   
     header_format = (header_format) + ('"') + ('","').join(header_list) + ('"') + (' \n')
@@ -676,8 +668,7 @@ def get_specialCases(config):
     
     all_special_cases = [ 'FREE_SURFACE'        ,
                           'ROTATING_FRAME'      ,
-                          'EQUIV_AREA'          ,
-                          'AEROACOUSTIC_EULER'  ]
+                          'EQUIV_AREA'          ]
     
     special_cases = []
     for key in all_special_cases:
@@ -689,8 +680,8 @@ def get_specialCases(config):
     if config.get('UNSTEADY_SIMULATION','NO') != 'NO':
         special_cases.append('UNSTEADY_SIMULATION')
      
-    # no support for more than one special case (except for noise)
-    if len(special_cases) > 1 and 'AEROACOUSTIC_EULER' not in special_cases:
+    # no support for more than one special case
+    if len(special_cases) > 1:
         error_str = 'Currently cannot support ' + ' and '.join(special_cases) + ' at once'
         raise Exception(error_str)   
     

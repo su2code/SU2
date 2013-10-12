@@ -35,10 +35,8 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry, CSolver *
 	const bool restart = (config[iZone]->GetRestart() || config[iZone]->GetRestart_Flow());
 	const bool startup_multigrid = (config[iZone]->GetRestart_Flow() && (RunTime_EqSystem == RUNTIME_FLOW_SYS) && (Iteration == 0));
 	const bool direct = ((config[iZone]->GetKind_Solver() == EULER) || (config[iZone]->GetKind_Solver() == NAVIER_STOKES) ||
-                   (config[iZone]->GetKind_Solver() == RANS) ||
-                   (config[iZone]->GetKind_Solver() == FLUID_STRUCTURE_EULER) || (config[iZone]->GetKind_Solver() == FLUID_STRUCTURE_NAVIER_STOKES) ||
-                   (config[iZone]->GetKind_Solver() == FLUID_STRUCTURE_RANS) || (config[iZone]->GetKind_Solver() == AEROACOUSTIC_EULER) ||
-                   (config[iZone]->GetKind_Solver() == AEROACOUSTIC_NAVIER_STOKES) || (config[iZone]->GetKind_Solver() == AEROACOUSTIC_RANS) ||
+                   (config[iZone]->GetKind_Solver() == RANS) || (config[iZone]->GetKind_Solver() == FLUID_STRUCTURE_EULER) ||
+                       (config[iZone]->GetKind_Solver() == FLUID_STRUCTURE_NAVIER_STOKES) || (config[iZone]->GetKind_Solver() == FLUID_STRUCTURE_RANS) ||
                    (config[iZone]->GetKind_Solver() == PLASMA_EULER) || (config[iZone]->GetKind_Solver() == PLASMA_NAVIER_STOKES));
     const unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
 
