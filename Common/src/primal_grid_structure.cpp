@@ -95,9 +95,6 @@ CVertexMPI::CVertexMPI(unsigned long val_point, unsigned short val_ndim) : CPrim
 	
 	/*--- By default, no rotation in the solution ---*/
 	Rotation_Type = 0;
-  
-  /*--- By default, assume a single-zone mesh ---*/
-  Matching_Zone = ZONE_0;
 	
 }
 

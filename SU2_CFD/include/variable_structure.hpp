@@ -1482,51 +1482,6 @@ public:
 
 	/*!
 	 * \brief A virtual member.
-	 * \param[in] val_thickness_noise - Value of the thickness noise.
-	 */	
-	virtual void SetThickness_Noise(double val_thickness_noise);
-
-	/*!
-	 * \brief A virtual member.
-	 */	
-	virtual double GetThickness_Noise(void);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_loading_noise - Value of the loading noise.
-	 */	
-	virtual void SetLoading_Noise(double val_loading_noise);
-
-	/*!
-	 * \brief A virtual member.
-	 */	
-	virtual double GetLoading_Noise(void);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_quadrupole_noise - Value of the quadrupole noise.
-	 */	
-	virtual void SetQuadrupole_Noise(double val_quadrupole_noise);
-
-	/*!
-	 * \brief A virtual member.
-	 */	
-	virtual double GetQuadrupole_Noise(void);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_solution_direct - Value of the direct solution.
-	 */
-	virtual void SetSolution_Direct(double *val_solution_direct);
-
-	/*!
-	 * \brief A virtual member.
-	 * \return Pointer to the direct solution vector.
-	 */
-	virtual double *GetSolution_Direct(void);
-
-	/*!
-	 * \brief A virtual member.
 	 * \param[in] positive_charge - Mass density of positive charge.
 	 * \param[in] negative_charge - Mass density of negative charge.
 	 */
@@ -1654,6 +1609,18 @@ public:
 	 */
   virtual unsigned short GetRhoCvveIndex(void);
   
+  /*!
+	 * \brief A virtual member. Set the direct solution for the adjoint solver.
+	 * \param[in] val_solution_direct - Value of the direct solution.
+	 */
+	virtual void SetSolution_Direct(double *val_solution_direct);
+  
+	/*!
+	 * \brief A virtual member. Get the direct solution for the adjoint solver.
+	 * \return Pointer to the direct solution vector.
+	 */
+	virtual double *GetSolution_Direct(void);
+  
 };
 
 /*!
@@ -1765,9 +1732,6 @@ public:
 class CWaveVariable : public CVariable {
 protected:
 	double *Solution_Direct;  /*!< \brief Direct solution container for use in the adjoint wave solver. */
-	double Thickness_Noise;	/*!< \brief Noise source term from the fluid problem. */
-	double Loading_Noise;	/*!< \brief Noise source term from the fluid problem. */
-	double Quadrupole_Noise;	/*!< \brief Noise source term from the fluid problem. */
 
 public:
 
@@ -1789,39 +1753,6 @@ public:
 	 * \brief Destructor of the class. 
 	 */	
 	~CWaveVariable(void);
-
-	/*!
-	 * \brief Set the value of the thickness noise.
-	 */
-	void SetThickness_Noise(double val_thickness_noise);
-
-	/*!
-	 * \brief Get the thickness noise.
-	 * \return Value of the thickness noise.
-	 */
-	double GetThickness_Noise(void);
-
-	/*!
-	 * \brief Set the value of the loading noise.
-	 */
-	void SetLoading_Noise(double val_loading_noise);
-
-	/*!
-	 * \brief Get the loading noise.
-	 * \return Value of the loading noise.
-	 */
-	double GetLoading_Noise(void);
-
-	/*!
-	 * \brief Set the value of the quadrupole noise.
-	 */
-	void SetQuadrupole_Noise(double val_quadrupole_noise);
-
-	/*!
-	 * \brief Get the quadrupole noise.
-	 * \return Value of the quadrupole noise.
-	 */
-	double GetQuadrupole_Noise(void);
 
 	/*!
 	 * \brief Set the direct solution for the adjoint solver.

@@ -135,7 +135,6 @@ const double PI_NUMBER = 4.0 * atan(1.0);	/*!< \brief Pi number. */
 const unsigned int MAX_NUMBER_DOMAIN = 1000;	/*!< \brief Maximum number of domains. */
 const unsigned int MAX_COMM_LEVEL = 1000;	/*!< \brief Maximum number of communication levels. */
 const unsigned int MAX_NUMBER_PERIODIC = 10;	/*!< \brief Maximum number of periodic boundary conditions. */
-const unsigned int MAX_NUMBER_SLIDING  = 10;	/*!< \brief Maximum number of sliding boundary conditions. */
 const int MASTER_NODE = 0;			/*!< \brief Master node for MPI parallelization. */
 const int SINGLE_NODE = 1;			/*!< \brief There is only a node in the MPI parallelization. */
 const int AUX_NODE = 1;			/*!< \brief Computational node that is used for IO stuff. */
@@ -193,9 +192,6 @@ enum ENUM_SOLVER {
 	FLUID_STRUCTURE_EULER = 12,	/*!< \brief Definition of the FEA solver. */
 	FLUID_STRUCTURE_NAVIER_STOKES = 13,	/*!< \brief Definition of the FEA solver. */
 	FLUID_STRUCTURE_RANS = 14,	/*!< \brief Definition of the FEA solver. */
-	AEROACOUSTIC_EULER = 15,	/*!< \brief Definition of the aeroacoustic solver. */
-	AEROACOUSTIC_NAVIER_STOKES = 16,	/*!< \brief Definition of the aeroacoustic solver. */
-	AEROACOUSTIC_RANS = 17,	/*!< \brief Definition of the aeroacoustic solver. */	
 	ADJ_EULER = 18,			/*!< \brief Definition of the continuous adjoint Euler's solver. */
 	ADJ_NAVIER_STOKES = 19,		/*!< \brief Definition of the continuous adjoint Navier-Stokes' solver. */
 	ADJ_RANS = 20,				/*!< \brief Definition of the continuous adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
@@ -203,7 +199,6 @@ enum ENUM_SOLVER {
 	LIN_NAVIER_STOKES = 22,		/*!< \brief Definition of the linear Navier-Stokes' solver. */
 	ADJ_PLASMA_NAVIER_STOKES = 26,	/*!< \brief Definition of the adjoint plasma solver. */
 	ADJ_PLASMA_EULER = 27,	/*!< \brief Definition of the adjoint plasma solver. */
-	ADJ_AEROACOUSTIC_EULER = 28,			/*!< \brief Definition of the adjoint aeroacoustic Euler solver. */
 	TEMPLATE_SOLVER = 30,                  /*!< \brief Definition of template solver. */
   TNE2_EULER = 31,
   TNE2_NAVIER_STOKES = 32,
@@ -234,9 +229,6 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("FLUID_STRUCTURE_EULER", FLUID_STRUCTURE_EULER)
 ("FLUID_STRUCTURE_NAVIER_STOKES", FLUID_STRUCTURE_NAVIER_STOKES)
 ("FLUID_STRUCTURE_RANS", FLUID_STRUCTURE_RANS)
-("AEROACOUSTIC_EULER", AEROACOUSTIC_EULER)
-("AEROACOUSTIC_NAVIER_STOKES", AEROACOUSTIC_NAVIER_STOKES)
-("AEROACOUSTIC_RANS", AEROACOUSTIC_RANS)
 ("TEMPLATE_SOLVER", TEMPLATE_SOLVER);
 
 /*!
@@ -598,14 +590,11 @@ enum BC_TYPE {
 	DISPLACEMENT_BOUNDARY = 15,		/*!< \brief Boundary displacement definition. */
 	LOAD_BOUNDARY = 16,		/*!< \brief Boundary Load definition. */
 	FLOWLOAD_BOUNDARY = 17,		/*!< \brief Boundary Load definition. */
-	FWH_SURFACE = 18,		/*!< \brief FW-H surface definition (aeroacoustic computations). */
-	WAVE_OBSERVER = 19,		/*!< \brief Wave observer surface definition. */
 	ELEC_DIELEC_BOUNDARY = 22,	/*!< \brief Dipoisson boundary definition for the poissonal potential. */
 	ELEC_NEUMANN = 23,		/*!< \brief Boundary Neumann definition. */
   SUPERSONIC_INLET = 24,		/*!< \brief Boundary supersonic inlet definition. */
 	NACELLE_INFLOW = 25,		/*!< \brief Boundary nacelle inflow. */
 	NACELLE_EXHAUST = 26,		/*!< \brief Boundary nacelle exhaust. */
-	SLIDING_INTERFACE = 27,		/*!< \brief Boundary sliding interface definition. */
   ISOTHERMAL = 28,      /*!< \brief No slip isothermal wall boundary condition. */
   HEAT_FLUX  = 29,      /*!< \brief No slip constant heat flux wall boundary condition. */
 	SEND_RECEIVE = 99		/*!< \brief Boundary send-receive definition. */
@@ -657,7 +646,6 @@ enum ENUM_OBJECTIVE {
 	TORQUE_COEFFICIENT = 16,		/*!< \brief Torque objective function definition. */
 	FIGURE_OF_MERIT = 17,		/*!< \brief Rotor Figure of Merit objective function definition. */
 	FREE_SURFACE = 18,				/*!< \brief Free Surface objective function definition. */
-	NOISE = 19,             /*!< \brief Noise objective function definition. */
 	MAX_THICKNESS = 20,       /*!< \brief Maximum thickness. */
 	TOTAL_VOLUME = 21,       /*!< \brief Total volume. */
   CLEARANCE = 22,       /*!< \brief Clearance. */
@@ -690,7 +678,6 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("HEAT_LOAD", HEAT_LOAD)
 ("FIGURE_OF_MERIT", FIGURE_OF_MERIT)
 ("FREE_SURFACE", FREE_SURFACE)
-("NOISE", NOISE)
 ("TOTAL_VOLUME", TOTAL_VOLUME)
 ("MAX_THICKNESS", MAX_THICKNESS)
 ("CLEARANCE", CLEARANCE)
@@ -1380,93 +1367,6 @@ public:
 			cout << (*marker_ref_)[i] << ", ";
 		cout << endl;
 	}
-};
-
-/*!
- * \class CMarkerSlidingRef
- * \brief Specialized option for sliding boundary markers
- * \author T. Economon
- */
-class CMarkerSlidingRef : public CAnyOptionRef {
-private:
-	unsigned short* nMarker_Sliding_;     /*!< \brief Number of sliding boundary markers. */
-	string** Marker_SlideBound_;          /*!< \brief Sliding boundary markers. */
-	string** Marker_SlideDonor_;          /*!< \brief Sliding boundary donor markers. */
-	unsigned short **SlideBound_Zone_;    /*!< \brief Zone number of the sliding mesh markers. */
-	unsigned short **SlideDonor_Zone_;    /*!< \brief Zone number of the donor sliding mesh markers. */
-
-public:
-
-	/*!
-	 * \brief constructor for sliding marker option
-	 * \param[in] nMarker_Sliding - number of periodic boundary markers
-	 * \param[in] Marker_SlideBound - sliding boundary markers
-	 * \param[in] Marker_SlideDonor - sliding boundary donor markers
-	 * \param[in] SlideBound_Zone - zone number of the sliding mesh markers
-	 * \param[in] SlideDonor_Zone - zone number of the donor sliding mesh markers
-	 */
-	CMarkerSlidingRef(unsigned short & nMarker_Sliding, string* & Marker_SlideBound, string* & Marker_SlideDonor,
-			unsigned short* & SlideBound_Zone, unsigned short* & SlideDonor_Zone) {
-		nMarker_Sliding_ = &nMarker_Sliding;
-		Marker_SlideBound_ = &Marker_SlideBound;
-		*Marker_SlideBound_ = NULL;
-		Marker_SlideDonor_ = &Marker_SlideDonor;
-		*Marker_SlideDonor_ = NULL;
-		SlideBound_Zone_ = &SlideBound_Zone;
-		*SlideBound_Zone_ = NULL;
-		SlideDonor_Zone_ = &SlideDonor_Zone;
-		*SlideDonor_Zone_ = NULL;
-	}
-
-	/*!
-	 * \brief sets the value of the sliding boundary parameters given the vector of strings
-	 * \param[in] value - a set of strings used to define the option
-	 */
-	void SetValue(const vector<string> & value) {
-		if ( (*Marker_SlideBound_ != NULL) || (*Marker_SlideDonor_ != NULL) ||
-				(*SlideBound_Zone_ != NULL) || (*SlideDonor_Zone_ != NULL) ) {
-			cerr << "Error in CMarkerSlidingRef::SetValue(): "
-					<< "one or more sliding-marker option arrays have already been allocated."
-					<< endl;
-			throw(-1);
-		}
-		if (static_cast<int>(value.size()) % 4 != 0) {
-			if (value[0].compare("NONE") == 0) {
-				*nMarker_Sliding_ = 0;
-				return;
-			}
-			cerr << "Error in CMarkerSlidingRef::SetValue(): "
-					<< "incorrect number of MARKER_SLIDING parameters in the configuration file."
-					<< endl;
-			throw(-1);
-		}
-		*nMarker_Sliding_ = static_cast<unsigned short>(value.size())/4;
-		(*Marker_SlideBound_) = new string[*nMarker_Sliding_];
-		(*SlideBound_Zone_)    = new unsigned short[*nMarker_Sliding_];
-		(*Marker_SlideDonor_) = new string[*nMarker_Sliding_];
-		(*SlideDonor_Zone_)      = new unsigned short[*nMarker_Sliding_];
-
-		stringstream ss;
-		unsigned short i = 0;
-		for (unsigned short iMarker_Sliding = 0; iMarker_Sliding < *nMarker_Sliding_; iMarker_Sliding++) {
-			ss << value[i++] << " ";
-			ss >> (*Marker_SlideBound_)[iMarker_Sliding];
-			ss << value[i++] << " ";
-			ss >> (*SlideBound_Zone_)[iMarker_Sliding];
-			ss << value[i++] << " ";
-			ss >> (*Marker_SlideDonor_)[iMarker_Sliding];
-			ss << value[i++] << " ";
-			ss >> (*SlideDonor_Zone_)[iMarker_Sliding];
-		}
-	}
-
-	/*!
-	 * \brief write the value of the option to std out (mostly for debugging)
-	 */
-	void WriteValue() {
-		cout << "CMarkerSlidingRef::WriteValue(): not implemented yet" << endl;
-	}
-
 };
 
 /*!

@@ -322,9 +322,6 @@ int main(int argc, char *argv[]) {
 				case FREE_SURFACE :
 					if (iDV == 0) Gradient_file << "Free-Surface grad. using cont. adj."<< endl;
 					cout << "Free-surface gradient: "<< Gradient << "." << endl; break;
-        case NOISE :
-					if (iDV == 0) Gradient_file << "Noise grad. using cont. adj."<< endl;
-					cout << "Noise gradient: "<< Gradient << "." << endl; break;
         case HEAT_LOAD :
 					if (iDV == 0) Gradient_file << "Integrated surface heat flux. using cont. adj."<< endl;
 					cout << "Heat load gradient: "<< Gradient << "." << endl; break;

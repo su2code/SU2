@@ -1257,7 +1257,6 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
                     config->SetMarker_All_DV(iMarker, config->GetMarker_Config_DV(Marker_Tag));
                     config->SetMarker_All_Moving(iMarker, config->GetMarker_Config_Moving(Marker_Tag));
                     config->SetMarker_All_PerBound(iMarker, config->GetMarker_Config_PerBound(Marker_Tag));
-                    config->SetMarker_All_Sliding(iMarker, config->GetMarker_Config_Sliding(Marker_Tag));
                     config->SetMarker_All_SendRecv(iMarker, NONE);
                     
                 }
@@ -1265,7 +1264,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
                 /*--- Send-Receive boundaries definition ---*/
                 else {
                     unsigned long nelem_vertex = 0, vnodes_vertex;
-                    unsigned short transform, matching_zone;
+                    unsigned short transform;
                     getline (mesh_file,text_line);
                     text_line.erase (0,13); nElem_Bound[iMarker] = atoi(text_line.c_str());
                     bound[iMarker] = new CPrimalGrid* [nElem_Bound[iMarker]];
@@ -1280,10 +1279,8 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
                         istringstream bound_line(text_line);
                         bound_line >> VTK_Type; bound_line >> vnodes_vertex; bound_line >> transform;
                         
-                        if (val_nZone > 1) bound_line >> matching_zone;
                         bound[iMarker][ielem] = new CVertexMPI(vnodes_vertex, nDim);
                         bound[iMarker][ielem]->SetRotation_Type(transform);
-                        if (val_nZone > 1) bound[iMarker][ielem]->SetMatching_Zone(matching_zone);
                         ielem++; nelem_vertex++;
                         if (config->GetMarker_All_SendRecv(iMarker) < 0)
                             node[vnodes_vertex]->SetDomain(false);
@@ -3318,7 +3315,6 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
                     
 					if (config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) {
 						vertex[iMarker][iVertex]->SetRotation_Type(bound[iMarker][iElem]->GetRotation_Type());
-						vertex[iMarker][iVertex]->SetMatching_Zone(bound[iMarker][iElem]->GetMatching_Zone());
 					}
 					node[iPoint]->SetVertex(nVertex[iMarker],iMarker);
 					nVertex[iMarker]++;
@@ -3832,7 +3828,6 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
     
 	maxdist = 0.0;
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		if (config->GetMarker_All_Boundary(iMarker) != SLIDING_INTERFACE) {
 			for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
 				iPoint = vertex[iMarker][iVertex]->GetNode();
 				Coord_i = node[iPoint]->GetCoord();
@@ -3851,7 +3846,6 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
 				vertex[iMarker][iVertex]->SetDonorPoint(pPoint);
                 
 			}
-		}
 	}
     
 #else
@@ -3874,7 +3868,6 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
     
 	nLocalVertex_Zone = 0;
 	for (iMarker = 0; iMarker < config_donor->GetnMarker_All(); iMarker++)
-		if (config->GetMarker_All_Boundary(iMarker) != SLIDING_INTERFACE)
 			for (iVertex = 0; iVertex < geometry_donor->GetnVertex(iMarker); iVertex++) {
 				iPoint = geometry_donor->vertex[iMarker][iVertex]->GetNode();
 				if (geometry_donor->node[iPoint]->GetDomain()) nLocalVertex_Zone ++;
@@ -3905,7 +3898,6 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
 	/*--- Copy coordinates and point to the auxiliar vector --*/
 	nLocalVertex_Zone = 0;
 	for (iMarker = 0; iMarker < config_donor->GetnMarker_All(); iMarker++)
-		if (config->GetMarker_All_Boundary(iMarker) != SLIDING_INTERFACE)
 			for (iVertex = 0; iVertex < geometry_donor->GetnVertex(iMarker); iVertex++) {
 				iPoint = geometry_donor->vertex[iMarker][iVertex]->GetNode();
 				if (geometry_donor->node[iPoint]->GetDomain()) {
@@ -3922,7 +3914,6 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
 	/*--- Compute the closest point to a Near-Field boundary point ---*/
 	maxdist = 0.0;
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		if (config->GetMarker_All_Boundary(iMarker) != SLIDING_INTERFACE) {
 			for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
 				iPoint = vertex[iMarker][iVertex]->GetNode();
                 
@@ -3955,7 +3946,6 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
                     
 				}
 			}
-		}
 	}
     
 	delete[] Buffer_Send_Coord;
@@ -4180,8 +4170,7 @@ void CPhysicalGeometry::SetMeshFile (CConfig *config, string val_mesh_out_filena
 			for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
 				output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" <<
                 bound[iMarker][iElem_Bound]->GetNode(0) << "\t" <<
-                bound[iMarker][iElem_Bound]->GetRotation_Type() << "\t" <<
-                bound[iMarker][iElem_Bound]->GetMatching_Zone()<< endl;
+                bound[iMarker][iElem_Bound]->GetRotation_Type() << endl;
 			}
             
 		}
@@ -4212,7 +4201,7 @@ void CPhysicalGeometry::SetMeshFile (CConfig *config, string val_mesh_out_filena
 
 void CPhysicalGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename, string val_mesh_in_filename) {
 	unsigned long iElem, iPoint, iElem_Bound, nElem_, nElem_Bound_, vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4], vnodes_tetra[4], vnodes_hexa[8], vnodes_wedge[6], vnodes_pyramid[5], vnodes_vertex;
-	unsigned short iMarker, iDim, iChar, iPeriodic, nPeriodic = 0, VTK_Type, nDim_, nMarker_, transform, matching_zone = 0;
+	unsigned short iMarker, iDim, iChar, iPeriodic, nPeriodic = 0, VTK_Type, nDim_, nMarker_, transform;
     char *cstr;
 	double *center, *angles, *transl;
     long SendRecv;
@@ -4384,7 +4373,7 @@ void CPhysicalGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filenam
                         getline(input_file,text_line);
                         istringstream bound_line(text_line);
                         bound_line >> VTK_Type; bound_line >> vnodes_vertex; bound_line >> transform;
-                        output_file << VTK_Type << "\t" << vnodes_vertex << "\t" << transform << "\t" << matching_zone << endl;
+                        output_file << VTK_Type << "\t" << vnodes_vertex << "\t" << transform << endl;
                     }
                 }
                 
@@ -7049,7 +7038,7 @@ void CPhysicalGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
 CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_container, unsigned short iMesh, unsigned short iZone) : CGeometry() {
     
 	/*--- CGeometry & CConfig pointers to the fine grid level for clarity. We may
-     need access to the other zones in the mesh for zone/sliding boundaries. ---*/
+     need access to the other zones in the mesh for zone boundaries. ---*/
 	CGeometry *fine_grid = geometry[iZone][iMesh-1];
 	CConfig *config = config_container[iZone];
     
@@ -7426,9 +7415,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
 			 computation with access to all nodes. Note that there is an
 			 implicit ordering in the list. ---*/
 			for (iVertex = 0; iVertex < fine_grid->nVertex[iMarker]; iVertex++) {
-                
-				/*--- Check the donor zone in case there is more than one in the mesh. ---*/
-				donorZone = fine_grid->vertex[iMarker][iVertex]->GetMatching_Zone();
                 
 				/*--- For now, search for donor marker for every receive point. Probably
                  a more efficient way to do this in the future. ---*/
@@ -7854,9 +7840,7 @@ void CMultiGridGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) {
 						/*--- Set the transformation to apply ---*/
 						unsigned long ChildVertex = fine_grid->node[iFinePoint]->GetVertex(iMarker);
 						unsigned short RotationKind = fine_grid->vertex[iMarker][ChildVertex]->GetRotation_Type();
-						unsigned short MatchingZone = fine_grid->vertex[iMarker][ChildVertex]->GetMatching_Zone();
 						vertex[iMarker][iVertex]->SetRotation_Type(RotationKind);
-						vertex[iMarker][iVertex]->SetMatching_Zone(MatchingZone);
 						nVertex[iMarker]++;
 					}
 				}
@@ -11166,8 +11150,7 @@ void CDomainGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename)
                     for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
                         output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
                         output_file << bound[iMarker][iElem_Bound]->GetNode(0) << "\t";
-                        output_file << bound[iMarker][iElem_Bound]->GetRotation_Type() << "\t";
-                        output_file << bound[iMarker][iElem_Bound]->GetMatching_Zone() << endl;
+                        output_file << bound[iMarker][iElem_Bound]->GetRotation_Type() << endl;
                     }
                 }
             }
@@ -11184,8 +11167,7 @@ void CDomainGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename)
                     for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
                         output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
                         output_file << bound[iMarker][iElem_Bound]->GetNode(0) << "\t";
-                        output_file << bound[iMarker][iElem_Bound]->GetRotation_Type() << "\t";
-                        output_file << bound[iMarker][iElem_Bound]->GetMatching_Zone() << endl;
+                        output_file << bound[iMarker][iElem_Bound]->GetRotation_Type() << endl;
                     }
                 }
             }
@@ -11205,8 +11187,7 @@ void CDomainGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename)
             for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
                 output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
                 output_file << bound[iMarker][iElem_Bound]->GetNode(0) << "\t";
-                output_file << bound[iMarker][iElem_Bound]->GetRotation_Type() << "\t";
-                output_file << bound[iMarker][iElem_Bound]->GetMatching_Zone() << endl;
+                output_file << bound[iMarker][iElem_Bound]->GetRotation_Type() << endl;
             }
         }
     }
@@ -11786,8 +11767,7 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
 			for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
 				output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" << 
                 NewSort[bound[iMarker][iElem_Bound]->GetNode(0)] << "\t" <<
-                bound[iMarker][iElem_Bound]->GetRotation_Type() << "\t" <<
-                bound[iMarker][iElem_Bound]->GetMatching_Zone() << endl;
+                bound[iMarker][iElem_Bound]->GetRotation_Type()  << endl;
 			}
 		}
 	}

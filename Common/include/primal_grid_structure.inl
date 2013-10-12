@@ -31,10 +31,6 @@ inline void CPrimalGrid::SetRotation_Type(unsigned short val_rotation_type) { }
 
 inline unsigned short CPrimalGrid::GetRotation_Type(void) { return 0; }
 
-inline unsigned short CPrimalGrid::GetMatching_Zone(void) { return 0; }
-
-inline void CPrimalGrid::SetMatching_Zone(unsigned short val_matching_zone) { }
-
 inline unsigned long CPrimalGrid::GetDomainElement(void) { return DomainElement; }
 
 inline void CPrimalGrid::SetNeighbor_Elements(unsigned long val_elem, unsigned short val_face) { Neighbor_Elements[val_face] = val_elem; }
@@ -58,10 +54,6 @@ inline unsigned short CVertexMPI::GetVTK_Type(void) { return VTK_Type; }
 inline unsigned short CVertexMPI::GetRotation_Type(void) { return Rotation_Type; }
 
 inline void CVertexMPI::SetRotation_Type(unsigned short val_rotation_type) { Rotation_Type = val_rotation_type; }
-
-inline unsigned short CVertexMPI::GetMatching_Zone(void) { return Matching_Zone; }
-
-inline void CVertexMPI::SetMatching_Zone(unsigned short val_matching_zone) { Matching_Zone = val_matching_zone; }
 
 inline unsigned short CVertexMPI::GetnNeighbor_Nodes(unsigned short val_node) { return 0; }
 
