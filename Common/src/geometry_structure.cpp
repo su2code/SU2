@@ -3637,7 +3637,7 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
         MPI::COMM_WORLD.Allreduce(&nLocalVertex_NearField, &nGlobalVertex_NearField, 1, MPI::UNSIGNED_LONG, MPI::SUM);
         MPI::COMM_WORLD.Allreduce(&nLocalVertex_NearField, &MaxLocalVertex_NearField, 1, MPI::UNSIGNED_LONG, MPI::MAX);
         MPI::COMM_WORLD.Allgather(Buffer_Send_nVertex, 1, MPI::UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI::UNSIGNED_LONG);
-#end
+#endif
         
         double *Buffer_Send_Coord = new double [MaxLocalVertex_NearField*nDim];
         unsigned long *Buffer_Send_Point = new unsigned long [MaxLocalVertex_NearField];
@@ -5938,7 +5938,7 @@ void CPhysicalGeometry::ComputeSurf_Curvature(CConfig *config) {
 	int rank;
     
 #ifdef NO_MPI
-	int rank = MASTER_NODE;
+	rank = MASTER_NODE;
 #else
 #ifdef WINDOWS
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
