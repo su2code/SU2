@@ -944,6 +944,13 @@ public:
 	 */
 	void SetObstacle(CGeometry *boundary, CConfig *config);
 	
+  /*!
+	 * \brief Set a obstacle in a channel.
+	 * \param[in] boundary - Geometry of the boundary.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetAirfoil(CGeometry *boundary, CConfig *config);
+  
 	/*! 
 	 * \brief Set a rotation for surface movement.
 	 * \param[in] boundary - Geometry of the boundary.

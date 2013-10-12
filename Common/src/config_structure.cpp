@@ -3814,6 +3814,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				case NACA_4DIGITS: cout << "NACA four digits <-> "; break;
 				case PARABOLIC: cout << "Parabolic <-> "; break;
 				case OBSTACLE: cout << "Obstacle <-> "; break;
+        case AIRFOIL: cout << "Airfoil <-> "; break;
 				case STRETCH: cout << "Stretch <-> "; break;
 				case ROTATION: cout << "Rotation <-> "; break;
 				case FFD_CONTROL_POINT: cout << "FFD (control point) <-> "; break;
@@ -3841,6 +3842,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				if (Design_Variable[iDV] == NACA_4DIGITS) nParamDV = 3;
 				if (Design_Variable[iDV] == PARABOLIC) nParamDV = 2;
 				if (Design_Variable[iDV] == OBSTACLE) nParamDV = 2;
+        if (Design_Variable[iDV] == AIRFOIL) nParamDV = 2;
 				if (Design_Variable[iDV] == STRETCH) nParamDV = 2;
 				if (Design_Variable[iDV] == FFD_CONTROL_POINT) nParamDV = 7;
 				if (Design_Variable[iDV] == FFD_DIHEDRAL_ANGLE) nParamDV = 7;
@@ -3875,6 +3877,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			case NACA_4DIGITS: cout << "NACA four digits <-> "; break;
 			case PARABOLIC: cout << "Parabolic <-> "; break;
 			case OBSTACLE: cout << "Obstacle <-> "; break;
+      case AIRFOIL: cout << "Airfoil <-> "; break;
 			case STRETCH: cout << "Stretch <-> "; break;
 			case ROTATION: cout << "Rotation <-> "; break;
 			case FFD_CONTROL_POINT: cout << "FFD (control point) <-> "; break;
@@ -3902,6 +3905,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			if (Design_Variable[iDV] == NACA_4DIGITS) nParamDV = 3;
 			if (Design_Variable[iDV] == PARABOLIC) nParamDV = 2;
 			if (Design_Variable[iDV] == OBSTACLE) nParamDV = 2;
+      if (Design_Variable[iDV] == AIRFOIL) nParamDV = 2;
 			if (Design_Variable[iDV] == STRETCH) nParamDV = 2;
 			if (Design_Variable[iDV] == FFD_CONTROL_POINT) nParamDV = 7;
 			if (Design_Variable[iDV] == FFD_DIHEDRAL_ANGLE) nParamDV = 7;

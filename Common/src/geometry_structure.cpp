@@ -335,9 +335,9 @@ double CGeometry::GetSpline(vector<double>&xa, vector<double>&ya, vector<double>
 	unsigned long klo, khi, k;
 	double h, b, a, y;
     
-    if (x < xa[0]) x = xa[0];       // Clip max and min values
-    if (x > xa[n-1]) x = xa[n-1];
-    
+  if (x < xa[0]) x = xa[0];       // Clip max and min values
+  if (x > xa[n-1]) x = xa[n-1];
+  
 	klo = 1;										// We will find the right place in the table by means of
 	khi = n;										// bisection. This is optimal if sequential calls to this
 	while (khi-klo > 1) {			// routine are at random values of x. If sequential calls
