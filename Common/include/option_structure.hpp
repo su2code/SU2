@@ -879,7 +879,8 @@ enum ENUM_PARAM {
   SURFACE_FILE = 20,		   /*!< Nodal coordinates set using a surface file. */
   COSINE_BUMP = 21,		/*!< \brief Gauss bump function for airfoil deformation. */
   FOURIER = 22,		/*!< \brief Fourier function for airfoil deformation. */
-  SPHERICAL = 23		/*!< \brief Spherical geometry parameterization with spline-based radial profile. */
+  SPHERICAL = 23,		/*!< \brief Spherical geometry parameterization with spline-based radial profile. */
+  AIRFOIL = 24		/*!< \brief Airfoil definition as design variables. */
 };
 static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("NO_DEFORMATION", NO_DEFORMATION)
@@ -901,6 +902,7 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("STRETCH", STRETCH)
 ("COSINE_BUMP", COSINE_BUMP)
 ("FOURIER", FOURIER)
+("AIRFOIL", AIRFOIL)
 ("SURFACE_FILE", SURFACE_FILE);
 
 /*!
@@ -2326,6 +2328,7 @@ public:
 			case NACA_4DIGITS: nParamDV = 3; break;
 			case PARABOLIC: nParamDV = 2; break;
 			case OBSTACLE: nParamDV = 2; break;
+      case AIRFOIL: nParamDV = 2; break;
 			case STRETCH: nParamDV = 2; break;
 			case FFD_CONTROL_POINT: nParamDV = 7; break;
 			case FFD_DIHEDRAL_ANGLE: nParamDV = 7; break;
