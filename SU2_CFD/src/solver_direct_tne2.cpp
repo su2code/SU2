@@ -3480,11 +3480,6 @@ void CTNE2EulerSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned
 		exit(1);
 	}
   
-	/*--- Store the previous solution (needed for aeroacoustic adjoint) ---*/
-	if (config->GetExtIter() > 0)
-		for (iPoint = 0; iPoint < nPoint; iPoint++)
-			node[iPoint]->Set_Solution_time_n();
-  
 	/*--- In case this is a parallel simulation, we need to perform the
    Global2Local index transformation first. ---*/
 	long *Global2Local = NULL;
@@ -3536,29 +3531,7 @@ void CTNE2EulerSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned
 		}
 		iPoint_Global++;
 	}
-  
-	/*--- Set an average grid velocity at any halo nodes for the unsteady adjoint ---*/
-	if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady() && grid_movement) {
-		unsigned long jPoint;
-		unsigned short nNeighbors;
-		double AvgVel[3], *GridVel;
-		for(iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-			AvgVel[0] = 0.0; AvgVel[1] = 0.0; AvgVel[2] = 0.0; nNeighbors = 0;
-			/*--- Find & store any neighbor points to the sliding boundary in the donor zone (jZone). ---*/
-			for (unsigned short iNeighbor = 0; iNeighbor < geometry->node[iPoint]->GetnPoint(); iNeighbor++) {
-				jPoint = geometry->node[iPoint]->GetPoint(iNeighbor);
-				if (geometry->node[jPoint]->GetDomain()) {
-					GridVel = geometry->node[jPoint]->GetGridVel();
-					for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-						AvgVel[iDim] += GridVel[iDim];
-						nNeighbors++;
-					}
-				}
-			}
-			for (unsigned short iDim = 0; iDim < nDim; iDim++)
-				geometry->node[iPoint]->SetGridVel(iDim, AvgVel[iDim]/(double)nNeighbors);
-		}
-	}
+
   
 	/*--- Close the restart file ---*/
 	restart_file.close();

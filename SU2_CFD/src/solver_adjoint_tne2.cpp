@@ -232,7 +232,6 @@ CAdjTNE2EulerSolver::CAdjTNE2EulerSolver(CGeometry *geometry, CConfig *config, u
       case TORQUE_COEFFICIENT:    AdjExt = "_cq.dat"; break;
       case FIGURE_OF_MERIT:       AdjExt = "_merit.dat"; break;
       case FREE_SURFACE:          AdjExt = "_fs.dat"; break;
-      case NOISE:                 AdjExt = "_fwh.dat"; break;
       case HEAT_LOAD:             AdjExt = "_Q.dat"; break;
 		}
 		filename.append(AdjExt);
@@ -1171,13 +1170,6 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
           case FREE_SURFACE :
             if (nDim == 2) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 0.0; }
-            break;
-          case NOISE:
-            if (nDim == 2) { ForceProj_Vector[0] = 0.0;
-              ForceProj_Vector[1] = 0.0; }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0;
-              ForceProj_Vector[1] = 0.0;
-              ForceProj_Vector[2] = 0.0; }
             break;
           case HEAT_LOAD:
             if (nDim == 2) { ForceProj_Vector[0] = 0.0;
@@ -2451,7 +2443,6 @@ CAdjTNE2NSSolver::CAdjTNE2NSSolver(CGeometry *geometry, CConfig *config, unsigne
       case TORQUE_COEFFICIENT: AdjExt = "_cq.dat"; break;
       case FIGURE_OF_MERIT: AdjExt = "_merit.dat"; break;
       case FREE_SURFACE: AdjExt = "_fs.dat"; break;
-      case NOISE: AdjExt = "_fwh.dat"; break;
       case HEAT_LOAD: AdjExt = "_Q.dat"; break;
 		}
 		filename.append(AdjExt);

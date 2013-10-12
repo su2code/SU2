@@ -132,7 +132,6 @@ private:
 	nMarker_Custom,
 	nMarker_SymWall,				/*!< \brief Number of symmetry wall markers. */
 	nMarker_PerBound,				/*!< \brief Number of periodic boundary markers. */
-	nMarker_Sliding,        /*!< \brief Number of sliding boundary markers. */
 	nMarker_NearFieldBound,				/*!< \brief Number of near field boundary markers. */
 	nMarker_InterfaceBound,				/*!< \brief Number of interface boundary markers. */
 	nMarker_Dirichlet,				/*!< \brief Number of interface boundary markers. */
@@ -147,8 +146,6 @@ private:
 	nMarker_Displacement,					/*!< \brief Number of displacement surface markers. */
 	nMarker_Load,					/*!< \brief Number of load surface markers. */
 	nMarker_FlowLoad,					/*!< \brief Number of load surface markers. */
-	nMarker_FWH,					/*!< \brief Number of FW-H surface markers. */
-	nMarker_Observer,					/*!< \brief Number of wave observer surface markers. */
 	nMarker_Neumann,				/*!< \brief Number of Neumann flow markers. */
 	nMarker_Neumann_Elec,				/*!< \brief Number of Neumann flow markers. */
 	nMarker_All,					/*!< \brief Total number of markers using the grid information. */
@@ -161,8 +158,6 @@ private:
 	*Marker_SymWall,				/*!< \brief Symmetry wall markers. */
 	*Marker_PerBound,				/*!< \brief Periodic boundary markers. */
 	*Marker_PerDonor,				/*!< \brief Rotationally periodic boundary donor markers. */
-	*Marker_SlideBound,      /*!< \brief Sliding boundary markers. */
-	*Marker_SlideDonor,      /*!< \brief Sliding boundary donor markers. */
 	*Marker_NearFieldBound,				/*!< \brief Near Field boundaries markers. */
 	*Marker_InterfaceBound,				/*!< \brief Interface boundaries markers. */
 	*Marker_Dirichlet,				/*!< \brief Interface boundaries markers. */
@@ -177,8 +172,6 @@ private:
 	*Marker_Displacement,					/*!< \brief Displacement markers. */
 	*Marker_Load,					/*!< \brief Load markers. */
 	*Marker_FlowLoad,					/*!< \brief Flow Load markers. */
-	*Marker_FWH,					/*!< \brief FW-H markers. */
-	*Marker_Observer,					/*!< \brief Wave observer markers. */
 	*Marker_Neumann,					/*!< \brief Neumann flow markers. */
 	*Marker_Neumann_Elec,					/*!< \brief Neumann flow markers. */
 	*Marker_Electrode,				/*!< \brief Electrode flow markers. */
@@ -214,8 +207,6 @@ private:
 	*Marker_Config_Boundary;		/*!< \brief Global index for boundaries using config file. */
 	short *Marker_All_SendRecv;		/*!< \brief Information about if the boundary is sended (+), received (-). */
 	short *Marker_All_PerBound;	/*!< \brief Global index for periodic bc using the grid information. */
-	unsigned short *SlideBound_Zone,  /*!< \brief Zone number for sliding mesh markers. */
-	*SlideDonor_Zone;    /*!< \brief Zone number for donors to sliding mesh markers. */
 	unsigned long nExtIter;			/*!< \brief Number of external iterations. */
 	unsigned long ExtIter;			/*!< \brief Current external iteration number. */
 	unsigned long IntIter;			/*!< \brief Current internal iteration number. */
@@ -432,13 +423,11 @@ private:
 	*Marker_All_DV,					/*!< \brief Global index for design variable markers using the grid information. */
   *Marker_All_Moving,					/*!< \brief Global index for moving surfaces using the grid information. */
 	*Marker_All_Designing,					/*!< \brief Global index for moving using the grid information. */
-	*Marker_All_Sliding,					/*!< \brief Global index for sliding interfaces using the grid information. */
 	*Marker_Config_Monitoring,			/*!< \brief Global index for monitoring using the config information. */
 	*Marker_Config_Designing,			/*!< \brief Global index for monitoring using the config information. */
 	*Marker_Config_Plotting,			/*!< \brief Global index for plotting using the config information. */
   *Marker_Config_Moving,				/*!< \brief Global index for moving surfaces using the config information. */
 	*Marker_Config_DV,				/*!< \brief Global index for design variable markers using the config information. */
-	*Marker_Config_Sliding,				/*!< \brief Global index for sliding interfaces using the config information. */
 	*Marker_Config_PerBound;			/*!< \brief Global index for periodic boundaries using the config information. */
 	string *PlaneTag;			/*!< \brief Global index for the plane adaptation (upper, lower). */
 	unsigned short nDomain;			/*!< \brief Number of domains in the MPI parallelization. */
@@ -648,7 +637,6 @@ private:
 	nPlunging_Ampl_X,           /*!< \brief Number of Plunging amplitudes in the x-direction. */
 	nPlunging_Ampl_Y,           /*!< \brief Number of Plunging amplitudes in the y-direction. */
 	nPlunging_Ampl_Z;           /*!< \brief Number of Plunging amplitudes in the z-direction. */
-	bool Relative_Motion;       /*!< \brief Flag for relative motion between zones (search & interpolate required). */
 	double *Aeroelastic_np1, /*!< \brief Structural source terms used for Aeroelastic computation at time level n+1. */
 	*Aeroelastic_n, /*!< \brief Structural source terms used for Aeroelastic computation at time level n. */
 	*Aeroelastic_n1; /*!< \brief Structural Source terms used for Aeroelastic computation at time level n-1. */
@@ -874,19 +862,6 @@ public:
 	void AddMarkerPeriodic(const string & name, unsigned short & nMarker_PerBound,
 			string* & Marker_PerBound, string* & Marker_PerDonor,
 			double** & RotCenter, double** & RotAngles, double** & Translation);
-
-	/*!
-	 * \brief adds a sliding marker option to the param map
-	 * \param[in] name - name of the sliding marker option in the config file
-	 * \param[in] nMarker_Sliding - the number of sliding marker boundaries
-	 * \param[in] Marker_SlideBound - string names of sliding boundaries
-	 * \param[in] Marker_SlideDonor - names of boundaries that supply data to sliding boundaries
-	 * \param[in] SlideBound_Zone - zone number of the sliding mesh markers
-	 * \param[in] SlideDonor_Zone - zone number of the donor sliding mesh markers
-	 */
-	void AddMarkerSliding(const string & name, unsigned short & nMarker_Sliding,
-			string* & Marker_SlidingBound, string* & Marker_SlidingDonor,
-			unsigned short* & SlideBound_Zone, unsigned short* & SlideDonor_Zone);
 
 	/*!
 	 * \brief adds an inlet marker option to the param map
@@ -1994,14 +1969,6 @@ public:
 	 */	
 	void SetMarker_All_PerBound(unsigned short val_marker, short val_perbound);
 
-	/*!
-	 * \brief Set if a marker <i>val_marker</i> is going to be sliding <i>val_perbound</i>
-	 *        (read from the config file).
-	 * \param[in] val_marker - Index of the marker in which we are interested.
-	 * \param[in] val_slidebound - Index of the surface with the sliding boundary.
-	 */
-	void SetMarker_All_Sliding(unsigned short val_marker, unsigned short val_slidebound);
-
 	/*! 
 	 * \brief Set if a marker <i>val_marker</i> is going to be sent or receive <i>val_index</i> 
 	 *        from another domain.
@@ -2024,13 +1991,6 @@ public:
 	 * \return The internal index of the periodic boundary condition. 
 	 */		
 	short GetMarker_All_PerBound(unsigned short val_marker);
-
-	/*!
-	 * \brief Get an internal index that identifies the sliding boundary conditions.
-	 * \param[in] val_marker - Value of the marker that corresponds with the sliding boundary.
-	 * \return The internal index of the sliding boundary condition.
-	 */
-	unsigned short GetMarker_All_Sliding(unsigned short val_marker);
 
 	/*! 
 	 * \brief Get the monitoring information for a marker <i>val_marker</i>.
@@ -4144,12 +4104,6 @@ public:
 	 */	
 	unsigned short GetMarker_Config_PerBound(string val_marker);
 
-	/*!
-	 * \brief Get the sliding information from the config definition of the marker <i>val_marker</i>.
-	 * \return Sliding information of the boundary in the config information of the marker <i>val_marker</i>.
-	 */
-	unsigned short GetMarker_Config_Sliding(string val_marker);
-
 	/*! 
 	 * \brief Determines if problem is adjoint
 	 * \return true if Adjoint
@@ -4250,36 +4204,12 @@ public:
 	 * \return Periodic donor marker from the config information for the marker <i>val_marker</i>.
 	 */	
 	unsigned short GetMarker_Periodic_Donor(string val_marker);
-
-	/*!
-	 * \brief Get the sliding interface donor marker for boundary <i>val_marker</i>.
-	 * \return Sliding interface donor marker from the config information for the marker <i>val_marker</i>.
-	 */
-	string GetMarker_Sliding_Donor(string val_marker);
-
-	/*!
-	 * \brief Get the sliding interface donor domain for boundary <i>val_marker</i>.
-	 * \return Sliding interface donor domain from the config information for the marker <i>val_marker</i>.
-	 */
-	unsigned short GetSlideDonor_Zone(string val_marker);
-
-	/*!
-	 * \brief Get the sliding interface domain for boundary <i>val_marker</i>.
-	 * \return Sliding interface domain from the config information for the marker <i>val_marker</i>.
-	 */
-	unsigned short GetSlideBound_Zone(string val_marker);
   
   /*!
 	 * \brief Get the internal index for a moving boundary <i>val_marker</i>.
 	 * \return Internal index for a moving boundary <i>val_marker</i>.
 	 */
 	unsigned short GetMarker_Moving(string val_marker);
-  
-	/*!
-	 * \brief Flag for relative motion between zones.
-	 * \return <code>TRUE</code> if there is relative motion (need to search & interpolate); otherwise <code>FALSE</code>.
-	 */
-	bool GetRelative_Motion(void);
 
 	/*!
 	 * \brief Get information about converting a mesh from CGNS to SU2 format.
