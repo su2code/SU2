@@ -3518,6 +3518,7 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
         
         if ( (geometry->node[iPoint]->GetDomain()) && (Monitoring == YES) ) {
           
+          /*--- Outward normal ---*/
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
           Coord = geometry->node[iPoint]->GetCoord();
           
@@ -3543,10 +3544,10 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
           /*--- Moment with respect to the reference axis ---*/
           
           if (iDim == 3) {
-            MomentInviscid[0] -= (Pressure - Pressure_Inf)*(Normal[2]*dist[1]-Normal[1]*dist[2])*factor/RefLengthMoment;
-            MomentInviscid[1] -= (Pressure - Pressure_Inf)*(Normal[0]*dist[2]-Normal[2]*dist[0])*factor/RefLengthMoment;
+            MomentInviscid[0] += (Pressure - Pressure_Inf)*(Normal[2]*dist[1]-Normal[1]*dist[2])*factor/RefLengthMoment;
+            MomentInviscid[1] += (Pressure - Pressure_Inf)*(Normal[0]*dist[2]-Normal[2]*dist[0])*factor/RefLengthMoment;
           }
-          MomentInviscid[2]   -= (Pressure - Pressure_Inf)*(Normal[1]*dist[0]-Normal[0]*dist[1])*factor/RefLengthMoment;
+          MomentInviscid[2]   += (Pressure - Pressure_Inf)*(Normal[1]*dist[0]-Normal[0]*dist[1])*factor/RefLengthMoment;
           
         }
       }
@@ -7748,6 +7749,8 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
         Coord = geometry->node[iPoint]->GetCoord();
         Coord_Normal = geometry->node[iPointNormal]->GetCoord();
         
+        /*--- Outward normal ---*/
+        
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
         Grad_PrimVar = node[iPoint]->GetGradient_Primitive();
         if (compressible) {
@@ -7832,10 +7835,10 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
           }
           
           if (iDim == 3) {
-            MomentViscous[0] += (TauElem[2]*MomentDist[1] - TauElem[1]*MomentDist[2])*Area*factor/RefLengthMoment;
-            MomentViscous[1] += (TauElem[0]*MomentDist[2] - TauElem[2]*MomentDist[0])*Area*factor/RefLengthMoment;
+            MomentViscous[0] -= (TauElem[2]*MomentDist[1] - TauElem[1]*MomentDist[2])*Area*factor/RefLengthMoment;
+            MomentViscous[1] -= (TauElem[0]*MomentDist[2] - TauElem[2]*MomentDist[0])*Area*factor/RefLengthMoment;
           }
-          MomentViscous[2] += (TauElem[1]*MomentDist[0] - TauElem[0]*MomentDist[1])*Area*factor/RefLengthMoment;
+          MomentViscous[2] -= (TauElem[1]*MomentDist[0] - TauElem[0]*MomentDist[1])*Area*factor/RefLengthMoment;
           
         }
       }

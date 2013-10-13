@@ -1134,7 +1134,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
             case AVG_GRAD :
                 for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++){
                     if (spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGrad_TurbSA(nDim, nVar_Turb, config);
-                    else if (menter_sst) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGrad_TurbSST(nDim, nVar_Turb, config);
+                    else if (menter_sst) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGrad_TurbSST(nDim, nVar_Turb, constants, config);
                 }
                 break;
             case AVG_GRAD_CORRECTED :
@@ -1175,7 +1175,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
             }
 			else if (menter_sst) {
                 numerics_container[iMGlevel][TURB_SOL][CONV_BOUND_TERM] = new CUpwSca_TurbSST(nDim, nVar_Turb, config);
-                numerics_container[iMGlevel][TURB_SOL][VISC_BOUND_TERM] = new CAvgGrad_TurbSST(nDim, nVar_Turb, config);
+                numerics_container[iMGlevel][TURB_SOL][VISC_BOUND_TERM] = new CAvgGrad_TurbSST(nDim, nVar_Turb, constants, config);
             }
 		}
 	}
